@@ -326,7 +326,7 @@ Contains
 
     ! halt program if potential cutoff exceeds the minimum half-config%cell width
     det=Min(celprp(7),celprp(8),celprp(9))
-    If (neigh%cutoff_extended > det/2.0_wp) Then
+    If (neigh%cutoff_extended >= det/2.0_wp) Then
       Call warning(3,neigh%cutoff_extended,det/2.0_wp,0.0_wp)
       Call error(95)
     End If
