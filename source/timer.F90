@@ -442,7 +442,7 @@ Contains
     Character ( len = * ) :: message
 
     call timer_write('')
-    call timer_report(dummy_timer, timer_comm)
+    ! call timer_report(dummy_timer, timer_comm)
     call timer_write(message)
     call timer_write('')
     call dump_call_stack()
