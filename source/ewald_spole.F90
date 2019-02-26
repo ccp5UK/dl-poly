@@ -62,7 +62,7 @@ Contains
     !! amended   - j. wilkins september 2018
     !!
     !!-----------------------------------------------------------------------
-    use constants, only : rt2
+    use constants, only : rsqrpi
     implicit none
 
     Type( neighbours_type ),                              Intent( In    ) :: neigh
@@ -129,8 +129,8 @@ Contains
 
         ! Because function is g_p(ar)/(r^n)
         ! => -n*(g/r^(n + 1) + a(dg/dr))
-        erf_gamma = prefac * ( e_comp * inv_mod_r_ij + rt2*exp(-alpha_r**2)*alpha )
-        
+        erf_gamma = ( e_comp * inv_mod_r_ij + prefac*2.0_wp*rsqrpi*alpha*exp(-(alpha_r**2)) )
+
         ! calculate forces ( dU * r/||r|| )
 
         force_temp_comp = erf_gamma*pos_j*inv_mod_r_ij
@@ -1568,6 +1568,9 @@ Contains
     Real( Kind = wp ),    Dimension( 3,3 )                      :: recip_cell_mat          !! In matrix form
     Real( Kind = wp ),    Dimension( 3 )                        :: recip_kmax
 
+    Real( Kind = wp ),    Dimension( ewld%bspline%num_splines )   :: bspline_d1_x, bspline_d1_y, bspline_d1_z,&
+      &                                                              bspline_d0_x, bspline_d0_y, bspline_d0_z
+    
     Integer, Dimension( 3, 2 ), save :: extended_domain                                   !! Size of extended grid with halo splines
     Integer, Dimension( 3, 2 )       :: spline_bounds
 
@@ -1576,6 +1579,8 @@ Contains
     Integer :: fail
     Integer, save :: mxspl2_old = -1
 
+    call start_timer('FE Init')
+    
     recip_cell_mat = reshape(recip_cell,[3,3])
     recip_kmax = matmul(recip_cell_mat, ewld%kspace%k_vec_dim_real)
 
@@ -1610,51 +1615,76 @@ Contains
     forces   = 0.0_wp
     force_total = 0.0_wp
 
+    call stop_timer('FE Init')
     ! Calculate per-particle contributions
 
+    call start_timer('FE Calc')
     atom:do i = 1, config%natms
 
       energy_total = 0.0_wp
       curr_force_temp = 0.0_wp
       atom_coeffs = coeffs(i)
 
+      bspline_d0_x = ewld%bspline%derivs(1,0,:,i)
+      bspline_d0_y = ewld%bspline%derivs(2,0,:,i)
+      bspline_d0_z = ewld%bspline%derivs(3,0,:,i)
+      
+      bspline_d1_x = ewld%bspline%derivs(1,1,:,i)
+      bspline_d1_y = ewld%bspline%derivs(2,1,:,i)
+      bspline_d1_z = ewld%bspline%derivs(3,1,:,i)
+      
       do l = 1, ewld%bspline%num_splines
         ll = recip_indices(3,i) + 1 - ewld%bspline%num_splines + l
 
-        energy_temp(3)  = atom_coeffs * ewld%bspline%derivs(3,0,l,i)
+        energy_temp(3)  = atom_coeffs * bspline_d0_z(l)
+        
+        force_temp(1,3) = atom_coeffs * bspline_d0_z(l)
+        force_temp(2,3) = atom_coeffs * bspline_d0_z(l)
+        force_temp(3,3) = atom_coeffs * bspline_d1_z(l)
 
-        force_temp(1,3) = atom_coeffs * ewld%bspline%derivs(3,0,l,i)
-        force_temp(2,3) = atom_coeffs * ewld%bspline%derivs(3,0,l,i)
-        force_temp(3,3) = atom_coeffs * ewld%bspline%derivs(3,1,l,i)
+        ! energy_temp(3)  = atom_coeffs * ewld%bspline%derivs(3,0,l,i)
+
+        ! force_temp(1,3) = atom_coeffs * ewld%bspline%derivs(3,0,l,i)
+        ! force_temp(2,3) = atom_coeffs * ewld%bspline%derivs(3,0,l,i)
+        ! force_temp(3,3) = atom_coeffs * ewld%bspline%derivs(3,1,l,i)
 
         do k = 1, ewld%bspline%num_splines
           kk = recip_indices(2,i) + 1  - ewld%bspline%num_splines + k
 
-          energy_temp(2)  = energy_temp(3) * ewld%bspline%derivs(2,0,k,i)
+          energy_temp(2)  = energy_temp(3) * bspline_d0_y(k)
+          
+          force_temp(1,2) = force_temp(1,3) * bspline_d0_y(k)
+          force_temp(2,2) = force_temp(2,3) * bspline_d1_y(k)
+          force_temp(3,2) = force_temp(3,3) * bspline_d0_y(k)
 
-          ! force_temp(:,2) = force_temp(:,3) * ewld%bspline%derivs(2,current_derivs,k,i)
-          force_temp(1,2) = force_temp(1,3) * ewld%bspline%derivs(2,0,k,i)
-          force_temp(2,2) = force_temp(2,3) * ewld%bspline%derivs(2,1,k,i)
-          force_temp(3,2) = force_temp(3,3) * ewld%bspline%derivs(2,0,k,i)
+          ! energy_temp(2)  = energy_temp(3) * ewld%bspline%derivs(2,0,k,i)
+
+          ! ! force_temp(:,2) = force_temp(:,3) * ewld%bspline%derivs(2,current_derivs,k,i)
+          ! force_temp(1,2) = force_temp(1,3) * ewld%bspline%derivs(2,0,k,i)
+          ! force_temp(2,2) = force_temp(2,3) * ewld%bspline%derivs(2,1,k,i)
+          ! force_temp(3,2) = force_temp(3,3) * ewld%bspline%derivs(2,0,k,i)
 
           do j = 1, ewld%bspline%num_splines
             jj = recip_indices(1,i) + 1  - ewld%bspline%num_splines + j
 
             ! force_temp(:,1) = force_temp(:,2) * ewld%bspline%derivs(1,current_derivs,j,i) * &
             !   & extended_potential_grid(jj,kk,ll) * recip_kmax
-            force_temp(1,1) = force_temp(1,2) * ewld%bspline%derivs(1,1,j,i) * & 
-              & extended_potential_grid(jj,kk,ll) * recip_kmax(1)
-            force_temp(2,1) = force_temp(2,2) * ewld%bspline%derivs(1,0,j,i) * & 
-              & extended_potential_grid(jj,kk,ll) * recip_kmax(2)
-            force_temp(3,1) = force_temp(3,2) * ewld%bspline%derivs(1,0,j,i) * & 
-              & extended_potential_grid(jj,kk,ll) * recip_kmax(3)
+            ! force_temp(1,1) = force_temp(1,2) * ewld%bspline%derivs(1,1,j,i) * & 
+            !   & extended_potential_grid(jj,kk,ll) * recip_kmax(1)
+            ! force_temp(2,1) = force_temp(2,2) * ewld%bspline%derivs(1,0,j,i) * & 
+            !   & extended_potential_grid(jj,kk,ll) * recip_kmax(2)
+            ! force_temp(3,1) = force_temp(3,2) * ewld%bspline%derivs(1,0,j,i) * & 
+            !   & extended_potential_grid(jj,kk,ll) * recip_kmax(3)
+
+            force_temp(1,1) = force_temp(1,2) * bspline_d1_x(j) * extended_potential_grid(jj,kk,ll) * recip_kmax(1)
+            force_temp(2,1) = force_temp(2,2) * bspline_d0_x(j) * extended_potential_grid(jj,kk,ll) * recip_kmax(2)
+            force_temp(3,1) = force_temp(3,2) * bspline_d0_x(j) * extended_potential_grid(jj,kk,ll) * recip_kmax(3)
 
             ! Sum force contributions
             force_total = force_total - force_temp(:,1)
             curr_force_temp = curr_force_temp + force_temp(:,1)
             ! energy_total now holds omega_j * 2piV
-            energy_total = energy_total + &
-              & energy_temp(2) * ewld%bspline%derivs(1,0,j,i) * extended_potential_grid(jj,kk,ll) !energy_temp(1)
+            energy_total = energy_total + energy_temp(2) * bspline_d0_x(j) * extended_potential_grid(jj,kk,ll)
 
           end do
         end do
@@ -1666,7 +1696,9 @@ Contains
       forces(:,i) = forces(:,i) - curr_force_temp
 
     end do atom
+    call stop_timer('FE Calc')
 
+    call start_timer('FE End')
     ! Correct for CoM term
     call gsum(comm, force_total)
 
@@ -1675,6 +1707,7 @@ Contains
     do i = 1, config%natms
       forces(:,i) = (forces(:,i) - force_total)
     end do
+    call stop_timer('FE End')
 
   end subroutine spme_calc_force_energy
 
