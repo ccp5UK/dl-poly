@@ -84,12 +84,12 @@ Contains
   Subroutine pop_stack ( name )
     Character ( Len = * ) :: name
 
-    if ( name /= calls%name(calls%depth)) &
-      & call timer_error('Child timer '//name//' ended before parent')
+    If ( name /= calls%name(calls%depth)) &
+    & call timer_error('Child timer '//name//' ended before parent')
     calls%name(calls%depth) = ''
     calls%depth = calls%depth - 1
 
-  end Subroutine pop_stack
+  End Subroutine pop_stack
 
   subroutine init_timer_system ( nrite, comm )
 
@@ -442,7 +442,7 @@ Contains
     Character ( len = * ) :: message
 
     call timer_write('')
-    call timer_report(dummy_timer, timer_comm)
+    ! call timer_report(dummy_timer, timer_comm)
     call timer_write(message)
     call timer_write('')
     call dump_call_stack()
