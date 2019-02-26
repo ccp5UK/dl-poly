@@ -671,7 +671,7 @@ Contains
     Allocate(rigid(array_size))
     Allocate(electro(array_size))
     Allocate(domain(array_size))
-    Allocate(flow(array_size))
+    !  Allocate(flow(array_size))
     Allocate(seed(array_size))
     Allocate(traj(array_size))
     Allocate(kim_data(array_size))
