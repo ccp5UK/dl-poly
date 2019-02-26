@@ -5359,7 +5359,7 @@ Contains
       ! number of writers
 
       tmp = Min( Real(comm%mxnode,wp), 8.0_wp*Real(comm%mxnode,wp)**0.5_wp )
-      itmp = 2**Int(Nearest( Log(tmp)/Log(2.0_wp) , +1.0_wp ))
+      itmp = 2**Int(Nearest( Log(tmp)/Log(2.0_wp) + epsilon_wp , +1.0_wp ))
       Do While ( Mod( comm%mxnode, itmp ) /= 0 )
         itmp = itmp - 1
       End Do

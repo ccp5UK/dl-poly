@@ -105,7 +105,7 @@ Contains
 
   end subroutine init_timer_system
 
-  Function find_timer ( name ) result(current)
+  Recursive Function find_timer ( name ) result(current)
     Character ( Len = * ) :: name
     Type ( node ), Pointer :: current
     Integer :: depth
@@ -442,7 +442,7 @@ Contains
     Character ( len = * ) :: message
 
     call timer_write('')
-    call timer_report(dummy_timer, timer_comm)
+    ! call timer_report(dummy_timer, timer_comm)
     call timer_write(message)
     call timer_write('')
     call dump_call_stack()

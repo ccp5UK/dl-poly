@@ -1784,7 +1784,6 @@ Contains
             buffer(imove+iadd)=Real(config%ixyz(i)-Merge(jxyz,kxyz,j == jxyz),wp)
 
           Else
-
             safe=.false.
 
           End If
@@ -1798,6 +1797,7 @@ Contains
 
     ! Check for array bound overflow (have arrays coped with outgoing data)
 
+      
     Call gcheck(comm,safe)
     If (.not.safe) Then
       itmp=Merge(2,1,comm%mxnode > 1)*imove

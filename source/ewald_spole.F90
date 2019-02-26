@@ -379,7 +379,7 @@ Contains
     allocate(recip_coords (3,config%mxatms), stat=fail(1))
     allocate(recip_indices(3,config%mxatms), stat=fail(2))
     allocate(to_calc      (0:config%mxatms), stat=fail(3))
-
+    
     ! If not per-particle only need global sum, else need everything
     if (.not. per_part_step) then
       allocate(Q_abc(0:0), F_abc(3,config%natms), S_abc(3,3,0:0), stat=fail(4))
@@ -387,7 +387,7 @@ Contains
       allocate(Q_abc(0:config%natms), F_abc(3,config%natms), S_abc(3,3,0:config%natms), stat=fail(4))
     end if
     if (any(fail > 0)) call error_alloc('output_arrays','ewald_spme_forces')
-
+    
     ! Initialise accumulator
 
     to_calc(0) = 0
@@ -1284,12 +1284,13 @@ Contains
     Real( Kind = wp ),       Dimension( :,:,: ), Allocatable, Intent (   out ) :: charge_grid
     complex( Kind = wp ),    Dimension( :,:,: ), Allocatable, Intent (   out ) :: potential_grid
     complex( Kind = wp ),    Dimension( :,:,: ), Allocatable, Intent (   out ) :: stress_grid
+    Integer, dimension(3) :: temp_kspace_grid
     Integer, dimension(4) :: fail
     
     fail = 0
 
-    print*, "hi"
-    call setup_kspace(kspace, domain, kspace%k_vec_dim)
+    temp_kspace_grid = kspace%k_vec_dim
+    call setup_kspace(kspace, domain, temp_kspace_grid)
     
 !!! begin cardinal b-splines set-up
 

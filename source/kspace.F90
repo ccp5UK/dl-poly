@@ -55,7 +55,7 @@ contains
     !!
     !!----------------------------------------------------------------------!
     use domains, only : domains_type
-    type ( kspace_type ),  intent(   out ) :: kspace_in
+    type ( kspace_type ),  intent( inout ) :: kspace_in
     type ( domains_type ),    intent( in    ) :: domain_in
     integer, dimension(3), intent( in    ) :: kpoint_grid
     integer :: fail

@@ -245,11 +245,21 @@ Contains
         neigh,mpoles,domain,tmr,config,comm)
     End If
 
+#ifdef CHRONO
+    Call stop_timer('Two-Body Init')
+#endif
+
     ! Calculate all contributions from KIM
     If (kim_data%active) Then
+#ifdef CHRONO
+    Call start_timer('KIM')
+#endif
       Call kim_energy_and_forces(kim_data,config%natms,config%nlast,config%parts, &
         neigh%list,domain%map,config%lsite,config%lsi,config%lsa,config%ltg, &
         sites%site_name,engkim,virkim,stats%stress,comm)
+#ifdef CHRONO
+      Call stop_timer('KIM')
+#endif
     End If
 
     If (met%n_potentials > 0) Then
