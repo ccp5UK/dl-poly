@@ -1255,7 +1255,7 @@ Contains
 
 !!! Internals
 
-  subroutine ewald_spme_init(domain, max_atoms, comm, kspace, &
+  subroutine ewald_spme_init(domain, max_atoms, comm, kspace_in, &
     & bspline_in, charge_grid, potential_grid, stress_grid)
     !!----------------------------------------------------------------------!
     !!
@@ -1275,7 +1275,7 @@ Contains
     implicit none
 
 
-    Type( kspace_type ),                                      Intent ( inout ) :: kspace
+    Type( kspace_type ),                                      Intent ( inout ) :: kspace_in
     Type( bspline_type ),                                     Intent ( inout ) :: bspline_in
     Type( domains_type ),                                     Intent ( in    ) :: domain
     Type( comms_type ),                                       Intent ( in    ) :: comm
@@ -1284,13 +1284,11 @@ Contains
     Real( Kind = wp ),       Dimension( :,:,: ), Allocatable, Intent (   out ) :: charge_grid
     complex( Kind = wp ),    Dimension( :,:,: ), Allocatable, Intent (   out ) :: potential_grid
     complex( Kind = wp ),    Dimension( :,:,: ), Allocatable, Intent (   out ) :: stress_grid
-    Integer, dimension(3) :: temp_kspace_grid
     Integer, dimension(4) :: fail
     
     fail = 0
 
-    temp_kspace_grid = kspace%k_vec_dim
-    call setup_kspace(kspace, domain, temp_kspace_grid)
+    call setup_kspace(kspace_in, domain, (kspace_in%k_vec_dim))
     
 !!! begin cardinal b-splines set-up
 
@@ -1299,7 +1297,7 @@ Contains
     if (fail(1) > 0) call error_alloc('bspline_in%derivs','ewald_spme_init')
     
     ! calculate the global b-spline coefficients
-    call bspline_coeffs_gen(kspace, bspline_in)
+    call bspline_coeffs_gen(kspace_in, bspline_in)
 
 !!! end cardinal b-splines set-up
 
@@ -1307,21 +1305,21 @@ Contains
 
     ! set up the parallel fft and useful related quantities
 
-    Call initialize_fft( 3, kspace%k_vec_dim, &
+    Call initialize_fft( 3, kspace_in%k_vec_dim, &
       [ domain%nx, domain%ny, domain%nz ], [ domain%idx, domain%idy, domain%idz ],   &
-      [ kspace%block_x, kspace%block_y, kspace%block_z ],               &
-      comm%comm, kspace%context )
+      [ kspace_in%block_x, kspace_in%block_y, kspace_in%block_z ],               &
+      comm%comm, kspace_in%context )
 
-    Call pfft_indices( kspace%k_vec_dim(1), kspace%block_x, domain%idx, domain%nx, kspace%index_x )
-    Call pfft_indices( kspace%k_vec_dim(2), kspace%block_y, domain%idy, domain%ny, kspace%index_y )
-    Call pfft_indices( kspace%k_vec_dim(3), kspace%block_z, domain%idz, domain%nz, kspace%index_z )
+    Call pfft_indices( kspace_in%k_vec_dim(1), kspace_in%block_x, domain%idx, domain%nx, kspace_in%index_x )
+    Call pfft_indices( kspace_in%k_vec_dim(2), kspace_in%block_y, domain%idy, domain%ny, kspace_in%index_y )
+    Call pfft_indices( kspace_in%k_vec_dim(3), kspace_in%block_z, domain%idz, domain%nz, kspace_in%index_z )
 
     ! workspace arrays for DaFT
 
-    allocate ( charge_grid   ( 1:kspace%block_x, 1:kspace%block_y, 1:kspace%block_z ), stat = fail(1) )
-    allocate ( potential_grid( 1:kspace%block_x, 1:kspace%block_y, 1:kspace%block_z ), stat = fail(2) )
-    allocate ( stress_grid   ( 1:kspace%block_x, 1:kspace%block_y, 1:kspace%block_z ), stat = fail(3) )
-    allocate ( pfft_work     ( 1:kspace%block_x, 1:kspace%block_y, 1:kspace%block_z ), stat = fail(4) )
+    allocate ( charge_grid   ( 1:kspace_in%block_x, 1:kspace_in%block_y, 1:kspace_in%block_z ), stat = fail(1) )
+    allocate ( potential_grid( 1:kspace_in%block_x, 1:kspace_in%block_y, 1:kspace_in%block_z ), stat = fail(2) )
+    allocate ( stress_grid   ( 1:kspace_in%block_x, 1:kspace_in%block_y, 1:kspace_in%block_z ), stat = fail(3) )
+    allocate ( pfft_work     ( 1:kspace_in%block_x, 1:kspace_in%block_y, 1:kspace_in%block_z ), stat = fail(4) )
     if (any(fail > 0)) call error_alloc('SPME DaFT workspace arrays','ewald_spme_init')
 
 !!! end daft set-up
