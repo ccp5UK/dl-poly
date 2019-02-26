@@ -1906,12 +1906,16 @@ Contains
     !! author    - j.s.wilkins august 2018
     !!
     !!----------------------------------------------------------------------!
-    use mpi,       only : mpi_offset_Kind, mpi_mode_wronly, mpi_info_null, mpi_mode_create, mpi_comm_self
-    use io, only : io_type, io_get_parameters, io_set_parameters, io_init, io_open, io_close, &
+#ifdef SERIAL
+    Use mpi_api,       only : mpi_offset_Kind, mpi_mode_wronly, mpi_info_null, mpi_mode_create, mpi_comm_self
+#else
+    Use mpi,       only : mpi_offset_Kind, mpi_mode_wronly, mpi_info_null, mpi_mode_create, mpi_comm_self
+#endif
+    Use io, only : io_type, io_get_parameters, io_set_parameters, io_init, io_open, io_close, &
       & io_finalize, io_write_sorted_file, io_base_comm_not_set, io_allocation_error, &
       & io_unknown_write_option, io_unknown_write_level, io_write_sorted_mpiio, io_delete, io_write_batch
-    use io, only : io_histord, io_restart, io_history
-    use comms, only : gsync, gsum
+    Use io, only : io_histord, io_restart, io_history
+    Use comms, only : gsync, gsum
 
     implicit none
     Type( configuration_type ),           Intent ( in    )  :: config    !! Atom details
