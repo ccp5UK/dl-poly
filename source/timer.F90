@@ -34,6 +34,7 @@ Module timer
     Type ( node ), pointer :: child => null()
     Type ( node ), pointer :: parent => null()
     Type ( node ), pointer :: next_sibling => null()
+    Logical :: done = .false.
   end type node
 
   Type( timer_type ),                              save :: dummy_timer
@@ -55,15 +56,15 @@ Module timer
   Public :: stop_timer
   Public :: init_timer_system
   Public :: dump_call_stack
-  Public :: start_timer_head
-  Public :: stop_timer_head
+  Public :: start_timer_path
+  Public :: stop_timer_path
   
   Public :: time_elapsed
 
 Contains
 
   Subroutine dump_call_stack ( stack )
-    type ( call_tree ), optional :: stack
+    type ( call_stack ), optional :: stack
     integer :: i
 
     call timer_write('')
@@ -109,7 +110,7 @@ Contains
     out_unit = nrite
     dummy_timer%max_depth = huge(1)
     dummy_timer%proc_detail = .false.
-    call init_timer ( call_tree%time, 'Main')
+    call init_timer ( call_tree%time, 'Head')
     Call start_timer('Main')
     
   end subroutine init_timer_system
@@ -128,7 +129,7 @@ Contains
     end if
     
     current => call_tree
-    depth = 1
+    depth = 0
 
     do while ( depth < stack%depth )
       if ( .not. associated(current%child)) call timer_error('Call stack does not match call tree (no child)')
@@ -284,21 +285,20 @@ Contains
     
     sum_timed = 0.0_wp
 
-!    call_tree%parent => call_tree
-    timer => call_tree
+    timer => call_tree%child
     total_elapsed = timer%time%total
     call gmax(comm,total_elapsed)
 
     i = 0
     depth = 0
 
-    do !while (associated(timer%parent))
-!      nullify(call_tree%parent)
-      print*, timer%time%name
+    do while (depth > -1)
       if (timer%time%running) Call timer_write('Program terminated while timer '//&
         & trim(timer%time%name)//' still running')
 
-      if ( associated(timer%child) ) then
+      if ( depth == 0 .and. timer%time%name /= "Main") then
+        depth_symb = repeat('-', 7)
+      else if ( associated(timer%child) ) then
         depth_symb = repeat(" ",depth)//"|v"
       else
         depth_symb = repeat(" ",depth)//"|-"
@@ -322,9 +322,10 @@ Contains
       write(message(0), 102 ) depth_symb,timer%time%name, timer%time%calls, &
         & call_min, call_max, call_av,  &
         & total_min, total_max, total_av, total_av*100.0_wp/total_elapsed
+      timer%done = .true.
       call timer_write(message(0))
       
-      if (associated(timer%child) .and. depth < tmr%max_depth) then
+      if (associated(timer%child) .and. depth < tmr%max_depth ) then
         timer => timer%child
         depth = depth + 1
       else if (associated(timer%next_sibling)) then
@@ -339,10 +340,8 @@ Contains
           end if
         end do
       else
-        i = i + 1
         exit
       end if
-      i = i + 1
 
     end do
 
@@ -423,7 +422,7 @@ Contains
 101 format("|",12X,"Name",12X,"|   Calls  ","| Call Min ","| Call Max ","| Call Ave ", &
       & "|  Tot Min  ","|  Tot Max  ","|  Tot Ave  ","|    %    ","|")
 102 format("|",1X,A7,1X,A18,1X,"|",1X,I8.1,1X,3("|",1X,F8.4,1X),3("|",1X,F9.4,1X),"|",1X,F7.3,1X,"|")
-103 format("|",9X,A18,1X,4("|",10X),2("|",11X),"|",1X,F9.4,1X,"|",1X,F7.3,1X,"|")
+103 format("|",1X,7("-"),1X,A18,1X,4("|",10X),2("|",11X),"|",1X,F9.4,1X,"|",1X,F7.3,1X,"|")
 
 200 format("+",28("-"),5("+",10("-")),"+",11("-"),"+",9("-"),"+")
 201 format("|",12X,"Name",12X,"| Process  ","|   Calls  ","| Call Min ","| Call Max ","| Call Ave ", &

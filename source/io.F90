@@ -29,7 +29,7 @@ Module io
   Use kinds, Only : wp, li
   Use comms, Only : comms_type,  wp_mpi
   Use errors_warnings, Only : error
-  Use timer, Only : start_timer_head, stop_timer_head
+  Use timer, Only : start_timer_path, stop_timer_path
   Use particle, Only: corePart
 #ifdef SERIAL
   Use mpi_api
@@ -775,7 +775,7 @@ Contains
     ! Ever the optimist
     error = 0
 
-    call start_timer_head('I/O:Write')
+    call start_timer_path('I/O')
     
     ! Check we have a communicator
     If ( .not. ok(io, io%base_comm /= MPI_COMM_NULL, io%base_comm ) ) Then
@@ -1201,7 +1201,7 @@ Contains
     ! Leave in sync
     Call MPI_BARRIER( io%base_comm, ierr )
 
-    call stop_timer_head('I/O:Write')
+    call stop_timer_path('I/O')
 
   Contains
 
@@ -2112,7 +2112,7 @@ Contains
     ! Ever the optimist
     error = 0
 
-    call start_timer_head('I/O:Write')
+    call start_timer_path('I/O')
 
     ! Check we have a communicator
     If ( .not. ok(io, io%base_comm /= MPI_COMM_NULL, io%base_comm ) ) Then
@@ -2539,7 +2539,7 @@ Contains
     ! Leave in sync
     Call MPI_BARRIER( io%base_comm, ierr )
 
-    call stop_timer_head('I/O:Write')
+    call stop_timer_path('I/O')
 
   Contains
 
@@ -3461,7 +3461,7 @@ Contains
     ! Ever the optimist
     error = 0
 
-    call start_timer_head('I/O:Write')
+    call start_timer_path('I/O')
 
     ! Check we have a communicator
     If ( .not. ok(io, io%base_comm /= MPI_COMM_NULL, io%base_comm ) ) Then
@@ -3884,7 +3884,7 @@ Contains
     ! Free comms
     Call free_io_comm( do_io, io_comm, io_gather_comm )
 
-    call stop_timer_head('I/O:Write')
+    call stop_timer_path('I/O')
 
     ! Leave in sync
     Call MPI_BARRIER( io%base_comm, ierr )
