@@ -62,15 +62,22 @@ Module timer
 
 Contains
 
-  Subroutine dump_call_stack ( )
+  Subroutine dump_call_stack ( stack )
+    type ( call_tree ), optional :: stack
     integer :: i
 
     call timer_write('')
     call timer_write('Process stack:')
-    do i = 1, calls%depth
-      call timer_write(calls%name(i))
-    end do
-
+    if ( .not. present(stack) ) then
+      do i = 1, calls%depth
+        call timer_write(calls%name(i))
+      end do
+    else
+      do i = 1, stack%depth
+        call timer_write(stack%name(i))
+      end do
+    end if
+    
   end Subroutine dump_call_stack
 
   Subroutine push_stack ( name )
@@ -218,36 +225,6 @@ Contains
 
   End Subroutine stop_timer
 
-  Subroutine split_stack_string(stack_string, newStack, name)
-    Character( Len = * ), intent( in    ) :: stack_string
-    Character( Len = 256 ) :: stack
-    Type ( call_stack ), intent(   out ) :: newStack
-    Character( Len = max_name ), intent(   out ) :: name
-    Integer :: i
-    Integer :: cnt
-    
-    stack = adjustl(stack_string)
-    cnt = 1
-    do i = 1, len(stack)
-      if (stack(i:i) == ":") cnt = cnt + 1
-    end do
-   
-    if (cnt > max_depth) call timer_error('Stack depth greater than max depth in split_stack')
-
-    newStack%depth = 0
-    do while (index(stack,':') > 0)
-      newStack%depth = newStack%depth + 1
-      newStack%name(newStack%depth) = trim(stack(1:index(stack,':')-1))
-
-      stack(1:index(stack,':')) = " "
-      stack = adjustl(stack)
-      
-    end do
-
-    name = trim(stack)
-          
-  end Subroutine split_stack_string
-  
   Subroutine start_timer_path(name_in)
     !! This routine has no header !
     Character ( Len = * )  :: name_in
@@ -256,7 +233,7 @@ Contains
     Type ( node ), pointer :: timer
     integer :: i
 
-    call split_stack_string(name_in, stack, name)
+    call timer_split_stack_string(name_in, stack, name)
     timer => find_timer(name, stack)
     
     Call mtime(timer%time%start)
@@ -271,7 +248,7 @@ Contains
     Type ( call_stack ) :: stack
     Type ( node ), pointer :: timer
 
-    call split_stack_string(name_in, stack, name)
+    call timer_split_stack_string(name_in, stack, name)
     timer => find_timer(name, stack)
 
     if ( .not. timer%time%running ) call timer_error('Timer '//trim(timer%time%name)//' stopped but not running')
@@ -307,7 +284,7 @@ Contains
     
     sum_timed = 0.0_wp
 
-    call_tree%parent => call_tree
+!    call_tree%parent => call_tree
     timer => call_tree
     total_elapsed = timer%time%total
     call gmax(comm,total_elapsed)
@@ -315,8 +292,8 @@ Contains
     i = 0
     depth = 0
 
-    do while (associated(timer%parent))
-      nullify(call_tree%parent)
+    do !while (associated(timer%parent))
+!      nullify(call_tree%parent)
       print*, timer%time%name
       if (timer%time%running) Call timer_write('Program terminated while timer '//&
         & trim(timer%time%name)//' still running')
@@ -442,8 +419,6 @@ Contains
       end do
     end if
 
-
-
 100 format("+",28("-"),4("+",10("-")),3("+",11("-")),"+",9("-"),"+")
 101 format("|",12X,"Name",12X,"|   Calls  ","| Call Min ","| Call Max ","| Call Ave ", &
       & "|  Tot Min  ","|  Tot Max  ","|  Tot Ave  ","|    %    ","|")
@@ -522,7 +497,6 @@ Contains
 
   end Subroutine timer_write_mul
 
-
   Subroutine timer_error(message)
     Character ( len = * ) :: message
 
@@ -534,5 +508,35 @@ Contains
 
     stop
   end Subroutine timer_error
+
+  Subroutine timer_split_stack_string(stack_string, newStack, name)
+    Character( Len = * ), intent( in    ) :: stack_string
+    Character( Len = 256 ) :: stack
+    Type ( call_stack ), intent(   out ) :: newStack
+    Character( Len = max_name ), intent(   out ) :: name
+    Integer :: i
+    Integer :: cnt
+    
+    stack = adjustl(stack_string)
+    cnt = 1
+    do i = 1, len(stack)
+      if (stack(i:i) == ":") cnt = cnt + 1
+    end do
+   
+    if (cnt > max_depth) call timer_error('Stack depth greater than max depth in timer_split_stack')
+
+    newStack%depth = 0
+    do while (index(stack,':') > 0)
+      newStack%depth = newStack%depth + 1
+      newStack%name(newStack%depth) = trim(stack(1:index(stack,':')-1))
+
+      stack(1:index(stack,':')) = " "
+      stack = adjustl(stack)
+      
+    end do
+
+    name = trim(stack)
+          
+  end Subroutine timer_split_stack_string
 
 End Module timer
