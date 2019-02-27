@@ -194,35 +194,35 @@ Contains
   Subroutine start_timer(name)
     !! This routine has no header !
     Character ( Len = * )  :: name
-    Type ( node ), pointer :: timer
+    Type ( node ), pointer :: current_timer
 
-    timer => find_timer(name)
+    current_timer => find_timer(name)
 
     call push_stack(name)
-    Call mtime(timer%time%start)
-    timer%time%running = .true.
+    Call mtime(current_timer%time%start)
+    current_timer%time%running = .true.
 
   end Subroutine start_timer
 
   Subroutine stop_timer(name)
     !! This routine has no header !
     Character ( Len = * )  :: name
-    Type ( node ), pointer :: timer
+    Type ( node ), pointer :: current_timer
 
 
-    timer => find_timer(name)
+    current_timer => find_timer(name)
 
     call pop_stack(name)
-    if ( .not. timer%time%running ) call timer_error('Timer '//trim(timer%time%name)//' stopped but not running')
+    if ( .not. current_timer%time%running ) call timer_error('Timer '//trim(current_timer%time%name)//' stopped but not running')
 
-    Call mtime(timer%time%stop)
+    Call mtime(current_timer%time%stop)
 
-    timer%time%running = .false.
-    timer%time%last = timer%time%stop - timer%time%start
-    if ( timer%time%last > timer%time%max ) timer%time%max = timer%time%last
-    if ( timer%time%last < timer%time%min ) timer%time%min = timer%time%last
-    timer%time%total = timer%time%total + timer%time%last
-    timer%time%calls = timer%time%calls + 1
+    current_timer%time%running = .false.
+    current_timer%time%last = current_timer%time%stop - current_timer%time%start
+    if ( current_timer%time%last > current_timer%time%max ) current_timer%time%max = current_timer%time%last
+    if ( current_timer%time%last < current_timer%time%min ) current_timer%time%min = current_timer%time%last
+    current_timer%time%total = current_timer%time%total + current_timer%time%last
+    current_timer%time%calls = current_timer%time%calls + 1
 
   End Subroutine stop_timer
 
@@ -231,14 +231,14 @@ Contains
     Character ( Len = * )  :: name_in
     Character ( Len = max_name ) :: name
     Type ( call_stack ) :: stack
-    Type ( node ), pointer :: timer
+    Type ( node ), pointer :: current_timer
     integer :: i
 
     call timer_split_stack_string(name_in, stack, name)
-    timer => find_timer(name, stack)
+    current_timer => find_timer(name, stack)
     
-    Call mtime(timer%time%start)
-    timer%time%running = .true.
+    Call mtime(current_timer%time%start)
+    current_timer%time%running = .true.
 
   end Subroutine start_timer_path
 
@@ -247,21 +247,21 @@ Contains
     Character ( Len = * )  :: name_in
     Character ( Len = max_name ) :: name
     Type ( call_stack ) :: stack
-    Type ( node ), pointer :: timer
+    Type ( node ), pointer :: current_timer
 
     call timer_split_stack_string(name_in, stack, name)
-    timer => find_timer(name, stack)
+    current_timer => find_timer(name, stack)
 
-    if ( .not. timer%time%running ) call timer_error('Timer '//trim(timer%time%name)//' stopped but not running')
+    if ( .not. current_timer%time%running ) call timer_error('Timer '//trim(current_timer%time%name)//' stopped but not running')
 
-    Call mtime(timer%time%stop)
+    Call mtime(current_timer%time%stop)
 
-    timer%time%running = .false.
-    timer%time%last = timer%time%stop - timer%time%start
-    if ( timer%time%last > timer%time%max ) timer%time%max = timer%time%last
-    if ( timer%time%last < timer%time%min ) timer%time%min = timer%time%last
-    timer%time%total = timer%time%total + timer%time%last
-    timer%time%calls = timer%time%calls + 1
+    current_timer%time%running = .false.
+    current_timer%time%last = current_timer%time%stop - current_timer%time%start
+    if ( current_timer%time%last > current_timer%time%max ) current_timer%time%max = current_timer%time%last
+    if ( current_timer%time%last < current_timer%time%min ) current_timer%time%min = current_timer%time%last
+    current_timer%time%total = current_timer%time%total + current_timer%time%last
+    current_timer%time%calls = current_timer%time%calls + 1
 
   End Subroutine stop_timer_path
   
@@ -274,7 +274,7 @@ Contains
     Real ( kind = wp ) :: total_min, total_max, total_av
     Real ( kind = wp ) :: total_elapsed, sum_timed
     Character ( len = 7 ) :: depth_symb
-    Type ( node ), pointer :: timer
+    Type ( node ), pointer :: current_timer
     Integer :: proc
     Integer :: i, depth
 
@@ -285,57 +285,57 @@ Contains
     
     sum_timed = 0.0_wp
 
-    timer => call_tree%child
-    total_elapsed = timer%time%total
+    current_timer => call_tree%child
+    total_elapsed = current_timer%time%total
     call gmax(comm,total_elapsed)
 
     i = 0
     depth = 0
 
     do while (depth > -1)
-      if (timer%time%running) Call timer_write('Program terminated while timer '//&
-        & trim(timer%time%name)//' still running')
+      if (current_timer%time%running) Call timer_write('Program terminated while timer '//&
+        & trim(current_timer%time%name)//' still running')
 
-      if ( depth == 0 .and. timer%time%name /= "Main") then
+      if ( depth == 0 .and. current_timer%time%name /= "Main") then
         depth_symb = repeat('-', 7)
-      else if ( associated(timer%child) ) then
+      else if ( associated(current_timer%child) ) then
         depth_symb = repeat(" ",depth)//"|v"
       else
         depth_symb = repeat(" ",depth)//"|-"
       end if
 
-      total_min = timer%time%total
-      total_max = timer%time%total
-      total_av  = timer%time%total
+      total_min = current_timer%time%total
+      total_max = current_timer%time%total
+      total_av  = current_timer%time%total
       Call gmin(comm,total_min)
       Call gmax(comm,total_max)
       Call gsum(comm,total_av)
       total_av = total_av / comm%mxnode
       if (depth == 1) sum_timed = sum_timed + total_av
 
-      call_min  = timer%time%min
-      call_max  = timer%time%max
+      call_min  = current_timer%time%min
+      call_max  = current_timer%time%max
       Call gmin(comm,call_min)
       Call gmax(comm,call_max)
-      call_av   = total_av/timer%time%calls
+      call_av   = total_av/current_timer%time%calls
 
-      write(message(0), 102 ) depth_symb,timer%time%name, timer%time%calls, &
+      write(message(0), 102 ) depth_symb,current_timer%time%name, current_timer%time%calls, &
         & call_min, call_max, call_av,  &
         & total_min, total_max, total_av, total_av*100.0_wp/total_elapsed
-      timer%done = .true.
+      current_timer%done = .true.
       call timer_write(message(0))
       
-      if (associated(timer%child) .and. depth < tmr%max_depth ) then
-        timer => timer%child
+      if (associated(current_timer%child) .and. depth < tmr%max_depth ) then
+        current_timer => current_timer%child
         depth = depth + 1
-      else if (associated(timer%next_sibling)) then
-        timer => timer%next_sibling
-      else if (associated(timer%parent)) then ! Recurse back up
-        do while (associated(timer%parent))
-          timer => timer%parent
+      else if (associated(current_timer%next_sibling)) then
+        current_timer => current_timer%next_sibling
+      else if (associated(current_timer%parent)) then ! Recurse back up
+        do while (associated(current_timer%parent))
+          current_timer => current_timer%parent
           depth = depth - 1
-          if (associated(timer%next_sibling)) then
-            timer => timer%next_sibling
+          if (associated(current_timer%next_sibling)) then
+            current_timer => current_timer%next_sibling
             exit
           end if
         end do
@@ -365,38 +365,38 @@ Contains
           write(message(-1), 201)
 
           call_tree%parent => call_tree
-          timer => call_tree
+          current_timer => call_tree
           i = 0
-          do while (associated(timer%parent))
+          do while (associated(current_timer%parent))
             nullify(call_tree%parent)
 
-            if ( associated(timer%child) ) then
+            if ( associated(current_timer%child) ) then
               depth_symb = repeat(" ",depth)//"|v"
             else
               depth_symb = repeat(" ",depth)//"|-"
             end if
-            total_av  = timer%time%total
+            total_av  = current_timer%time%total
             sum_timed = sum_timed + total_av
-            call_min  = timer%time%min
-            call_max  = timer%time%max
-            call_av   = total_av/timer%time%calls
-            write(message(i), 202 ) depth_symb,timer%time%name, proc, timer%time%calls, &
+            call_min  = current_timer%time%min
+            call_max  = current_timer%time%max
+            call_av   = total_av/current_timer%time%calls
+            write(message(i), 202 ) depth_symb,current_timer%time%name, proc, current_timer%time%calls, &
               & call_min, call_max, call_av, total_av, total_av*100.0_wp/total_elapsed
 
-            if (associated(timer%child) .and. depth < tmr%max_depth) then
-              timer => timer%child
+            if (associated(current_timer%child) .and. depth < tmr%max_depth) then
+              current_timer => current_timer%child
               depth = depth + 1
 
-            else if (associated(timer%next_sibling)) then
-              timer => timer%next_sibling
+            else if (associated(current_timer%next_sibling)) then
+              current_timer => current_timer%next_sibling
 
             else
-              do while (associated(timer%parent))
-                timer => timer%parent
+              do while (associated(current_timer%parent))
+                current_timer => current_timer%parent
                 depth = depth - 1
 
-                if (associated(timer%next_sibling)) then
-                  timer => timer%next_sibling
+                if (associated(current_timer%next_sibling)) then
+                  current_timer => current_timer%next_sibling
                   exit
                 end if
               end do
@@ -431,17 +431,17 @@ Contains
 
   End Subroutine timer_report
 
-  Subroutine init_timer(timer, name)
+  Subroutine init_timer(current_timer, name)
     !! This routine has no header !
-    Type ( timer_type_new ) :: timer
+    Type ( timer_type_new ) :: current_timer
     Character ( Len = * )  :: name
 
-    timer%name  = name
-    timer%calls = 0
-    timer%max   = -1.0_wp
-    timer%min   = huge(1.0_wp)
-    timer%total = 0.0_wp
-    timer%last  = huge(1.0_wp)
+    current_timer%name  = name
+    current_timer%calls = 0
+    current_timer%max   = -1.0_wp
+    current_timer%min   = huge(1.0_wp)
+    current_timer%total = 0.0_wp
+    current_timer%last  = huge(1.0_wp)
 
   end Subroutine init_timer
 
@@ -451,16 +451,16 @@ Contains
     Logical, Optional :: screen
     Logical :: to_screen
     Character ( Len = 72 ) :: message
-    Type ( node ), pointer :: timer
+    Type ( node ), pointer :: current_timer
 
     to_screen = .false.
     if (present(screen)) to_screen = screen
 
-    timer => find_timer(name)
+    current_timer => find_timer(name)
     if (to_screen) then
-      write(*,*) timer%time%name, timer%time%calls, timer%time%last
+      write(*,*) current_timer%time%name, current_timer%time%calls, current_timer%time%last
     else
-      write(message,'(a,2(1X,i0))') timer%time%name, timer%time%calls, timer%time%last
+      write(message,'(a,2(1X,i0))') current_timer%time%name, current_timer%time%calls, current_timer%time%last
       call timer_write(message)
     end if
   end Subroutine timer_last_time
