@@ -29,6 +29,7 @@ Module io
   Use kinds, Only : wp, li
   Use comms, Only : comms_type,  wp_mpi
   Use errors_warnings, Only : error
+  Use timer, Only : start_timer_path, stop_timer_path
   Use particle, Only: corePart
 #ifdef SERIAL
   Use mpi_api
@@ -193,7 +194,7 @@ Module io
     Module Procedure io_nc_put_var_int_0d
     Module Procedure io_nc_put_var_int_1d
     Module Procedure io_nc_put_var_chr_2d
-  End Interface
+  End Interface io_nc_put_var
 
   Interface io_nc_get_var
     Module Procedure io_nc_get_var_rwp_0d
@@ -203,18 +204,18 @@ Module io
     Module Procedure io_nc_get_var_int_1d
     Module Procedure io_nc_get_var_chr_1d
     Module Procedure io_nc_get_var_chr_2d
-  End Interface
+  End Interface io_nc_get_var
 
   Interface io_nc_get_att
     Module Procedure io_nc_get_att_int
     Module Procedure io_nc_get_att_chr
-  End Interface
+  End Interface io_nc_get_att
 
   Interface io_write_sorted_file
     Module Procedure io_write_sorted_file_parts
     Module Procedure io_write_sorted_file_parts_subset
     Module Procedure io_write_sorted_file_arrays
-  End Interface
+  End Interface io_write_sorted_file
 
 Contains
 
@@ -774,6 +775,10 @@ Contains
     ! Ever the optimist
     error = 0
 
+#ifdef CHRONO
+    call start_timer_path('I/O')
+#endif
+    
     ! Check we have a communicator
     If ( .not. ok(io, io%base_comm /= MPI_COMM_NULL, io%base_comm ) ) Then
       error = IO_BASE_COMM_NOT_SET
@@ -1198,6 +1203,10 @@ Contains
     ! Leave in sync
     Call MPI_BARRIER( io%base_comm, ierr )
 
+#ifdef CHRONO
+    call stop_timer_path('I/O')
+#endif
+    
   Contains
 
     Subroutine sort_local( write_level, write_options, global_index_rank,                    &
@@ -2107,6 +2116,11 @@ Contains
     ! Ever the optimist
     error = 0
 
+
+#ifdef CHRONO
+    call start_timer_path('I/O')
+#endif
+    
     ! Check we have a communicator
     If ( .not. ok(io, io%base_comm /= MPI_COMM_NULL, io%base_comm ) ) Then
       error = IO_BASE_COMM_NOT_SET
@@ -2528,9 +2542,14 @@ Contains
     ! Free comms
     Call free_io_comm( do_io, io_comm, io_gather_comm )
 
+
     ! Leave in sync
     Call MPI_BARRIER( io%base_comm, ierr )
 
+#ifdef CHRONO
+    call stop_timer_path('I/O')
+#endif
+    
   Contains
 
     Subroutine sort_local( write_level, write_options, global_index_rank,                    &
@@ -3451,6 +3470,10 @@ Contains
     ! Ever the optimist
     error = 0
 
+#ifdef CHRONO
+    call start_timer_path('I/O')
+#endif
+    
     ! Check we have a communicator
     If ( .not. ok(io, io%base_comm /= MPI_COMM_NULL, io%base_comm ) ) Then
       error = IO_BASE_COMM_NOT_SET
@@ -3874,6 +3897,10 @@ Contains
 
     ! Leave in sync
     Call MPI_BARRIER( io%base_comm, ierr )
+
+#ifdef CHRONO
+    call stop_timer_path('I/O')
+#endif
 
   Contains
 
