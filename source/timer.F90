@@ -55,7 +55,9 @@ Module timer
   Public :: stop_timer
   Public :: init_timer_system
   Public :: dump_call_stack
-
+  Public :: start_timer_head
+  Public :: stop_timer_head
+  
   Public :: time_elapsed
 
 Contains
@@ -102,23 +104,30 @@ Contains
     dummy_timer%proc_detail = .false.
     call init_timer ( call_tree%time, 'Main')
     Call start_timer('Main')
-
+    
   end subroutine init_timer_system
 
-  Function find_timer ( name ) result(current)
+  Function find_timer ( name, stack_in ) result(current)
     Character ( Len = * ) :: name
+    Type ( call_stack ), optional :: stack_in
+    Type ( call_stack ) :: stack
     Type ( node ), Pointer :: current
     Integer :: depth
 
-
+    if (present(stack_in)) then
+      stack = stack_in
+    else
+      stack = calls
+    end if
+    
     current => call_tree
     depth = 1
 
-    do while ( depth < calls%depth )
+    do while ( depth < stack%depth )
       if ( .not. associated(current%child)) call timer_error('Call stack does not match call tree (no child)')
       depth = depth + 1
       current => current%child
-      do while ( current%time%name /= calls%name(depth) )
+      do while ( current%time%name /= stack%name(depth) )
         if ( .not. associated(current%next_sibling)) &
           & call timer_error('Call stack does not match call tree (no sibling)')
         current => current%next_sibling
@@ -209,11 +218,80 @@ Contains
 
   End Subroutine stop_timer
 
+  Subroutine split_stack_string(stack_string, newStack, name)
+    Character( Len = * ), intent( in    ) :: stack_string
+    Character( Len = 256 ) :: stack
+    Type ( call_stack ), intent(   out ) :: newStack
+    Character( Len = max_name ), intent(   out ) :: name
+    Integer :: i
+    Integer :: cnt
+    
+    stack = adjustl(stack_string)
+    cnt = 1
+    do i = 1, len(stack)
+      if (stack(i:i) == ":") cnt = cnt + 1
+    end do
+   
+    if (cnt > max_depth) call timer_error('Stack depth greater than max depth in split_stack')
+
+    newStack%depth = 0
+    do while (index(stack,':') > 0)
+      newStack%depth = newStack%depth + 1
+      newStack%name(newStack%depth) = trim(stack(1:index(stack,':')-1))
+
+      stack(1:index(stack,':')) = " "
+      stack = adjustl(stack)
+      
+    end do
+
+    name = trim(stack)
+          
+  end Subroutine split_stack_string
+  
+  Subroutine start_timer_path(name_in)
+    !! This routine has no header !
+    Character ( Len = * )  :: name_in
+    Character ( Len = max_name ) :: name
+    Type ( call_stack ) :: stack
+    Type ( node ), pointer :: timer
+    integer :: i
+
+    call split_stack_string(name_in, stack, name)
+    timer => find_timer(name, stack)
+    
+    Call mtime(timer%time%start)
+    timer%time%running = .true.
+
+  end Subroutine start_timer_path
+
+  Subroutine stop_timer_path(name_in)
+    !! This routine has no header !
+    Character ( Len = * )  :: name_in
+    Character ( Len = max_name ) :: name
+    Type ( call_stack ) :: stack
+    Type ( node ), pointer :: timer
+
+    call split_stack_string(name_in, stack, name)
+    timer => find_timer(name, stack)
+
+    if ( .not. timer%time%running ) call timer_error('Timer '//trim(timer%time%name)//' stopped but not running')
+
+    Call mtime(timer%time%stop)
+
+    timer%time%running = .false.
+    timer%time%last = timer%time%stop - timer%time%start
+    if ( timer%time%last > timer%time%max ) timer%time%max = timer%time%last
+    if ( timer%time%last < timer%time%min ) timer%time%min = timer%time%last
+    timer%time%total = timer%time%total + timer%time%last
+    timer%time%calls = timer%time%calls + 1
+
+  End Subroutine stop_timer_path
+  
   Subroutine timer_report(tmr,comm)
     !! This routine has no header !
     Type( timer_type ), intent( In    ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
-    Character( Len = 132 ), dimension(-2:max_timers + 2) :: message
+    Character( Len = 132 ), dimension(-2:2) :: message
     Real ( kind = wp ) :: call_min, call_max, call_av
     Real ( kind = wp ) :: total_min, total_max, total_av
     Real ( kind = wp ) :: total_elapsed, sum_timed
@@ -225,7 +303,8 @@ Contains
     call stop_timer('Main')
     write(message(-2), 100)
     write(message(-1), 101)
-
+    call timer_write(message(-2:-1))
+    
     sum_timed = 0.0_wp
 
     call_tree%parent => call_tree
@@ -238,6 +317,7 @@ Contains
 
     do while (associated(timer%parent))
       nullify(call_tree%parent)
+      print*, timer%time%name
       if (timer%time%running) Call timer_write('Program terminated while timer '//&
         & trim(timer%time%name)//' still running')
 
@@ -261,16 +341,18 @@ Contains
       Call gmin(comm,call_min)
       Call gmax(comm,call_max)
       call_av   = total_av/timer%time%calls
-      write(message(i), 102 ) depth_symb,timer%time%name, timer%time%calls, &
+
+      write(message(0), 102 ) depth_symb,timer%time%name, timer%time%calls, &
         & call_min, call_max, call_av,  &
         & total_min, total_max, total_av, total_av*100.0_wp/total_elapsed
-
+      call timer_write(message(0))
+      
       if (associated(timer%child) .and. depth < tmr%max_depth) then
         timer => timer%child
         depth = depth + 1
       else if (associated(timer%next_sibling)) then
         timer => timer%next_sibling
-      else
+      else if (associated(timer%parent)) then ! Recurse back up
         do while (associated(timer%parent))
           timer => timer%parent
           depth = depth - 1
@@ -279,15 +361,18 @@ Contains
             exit
           end if
         end do
+      else
+        i = i + 1
+        exit
       end if
       i = i + 1
 
     end do
 
-    write(message(i), 103) "Untimed           ", & 
+    write(message(0), 103) "Untimed           ", & 
       & total_elapsed - sum_timed , 100.0_wp - sum_timed*100.0_wp/total_elapsed
-    write(message(i+1), 100)
-    call timer_write(message(-2:i+1))
+    write(message(1), 100)
+    call timer_write(message(0:1))
 
     call timer_write('')
 
