@@ -145,8 +145,7 @@ program dl_poly
   Use filename, Only : file_type,default_filenames
   Use flow_control, Only : flow_type,EVB,FFS,MD
   Use kinetics, Only : cap_forces
-  Use timer, Only  : timer_type, time_elapsed, start_timer, stop_timer, timer_report &
-  & , init_timer_system
+  Use timer, Only  : timer_type
   Use meta, Only : molecular_dynamics
 
   Implicit None
