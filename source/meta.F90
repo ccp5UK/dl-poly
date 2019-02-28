@@ -235,7 +235,7 @@ Contains
 
 #ifdef CHRONO
     ! Start main timer
-    Call init_timer_system(files(FILE_OUTPUT)%unit_no,dlp_world(0))
+    Call init_timer_system(tmr, files(FILE_OUTPUT)%unit_no,dlp_world(0))
     Call start_timer('Initialisation')
 #endif
 
@@ -259,7 +259,7 @@ Contains
 
     Call info('',.true.)
     Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
-    Call time_elapsed(tmr%elapsed)
+    Call time_elapsed(tmr)
 
     ! ALLOCATE SITE & CONFIG
     Call sites%init(sites%mxtmls,sites%mxatyp)
@@ -324,7 +324,7 @@ Contains
 
     Call info('',.true.)
     Call info("*** all reading and connectivity checks DONE ***",.true.)
-    Call time_elapsed(tmr%elapsed)
+    Call time_elapsed(tmr)
 
 #ifdef CHRONO
     Call stop_timer('Initialisation')
@@ -338,7 +338,7 @@ Contains
       Call origin_config(config,ios,devel,netcdf,comm)
 
       Call info("*** ALL DONE ***",.true.)
-      Call time_elapsed(tmr%elapsed)
+      Call time_elapsed(tmr)
     End If
 
     ! devel%l_scl: rescale CONFIG to CFGSCL and exit gracefully
@@ -349,7 +349,7 @@ Contains
       Call scale_config(config,ios,devel,netcdf,comm)
 
       Call info("*** ALL DONE ***",.true.)
-      Call time_elapsed(tmr%elapsed)
+      Call time_elapsed(tmr)
     End If
 
     ! devel%l_his: generate HISTORY and exit gracefully
@@ -363,7 +363,7 @@ Contains
       Call trajectory_write(flow%restart_key,flow%step,thermo%tstep,flow%time,ios,stats%rsd,netcdf,config,traj,files,comm)
 
       Call info("*** ALL DONE ***",.true.)
-      Call time_elapsed(tmr%elapsed)
+      Call time_elapsed(tmr)
     End If
 
     ! Expand current system if opted for
@@ -383,7 +383,7 @@ Contains
 
     Call info('',.true.)
     Call info("*** initialisation and haloing DONE ***",.true.)
-    Call time_elapsed(tmr%elapsed)
+    Call time_elapsed(tmr)
 
     ! For any intra-like interaction, construct book keeping arrays and
     ! exclusion arrays for overlapped two-body inter-like interactions
@@ -424,7 +424,7 @@ Contains
 
     Call info('',.true.)
     Call info("*** bookkeeping DONE ***",.true.)
-    Call time_elapsed(tmr%elapsed)
+    Call time_elapsed(tmr)
 
     ! set and halo rotational matrices and their infinitesimal rotations
     If (mpoles%max_mpoles > 0) Then
@@ -439,7 +439,7 @@ Contains
 
     Call info('',.true.)
     Call info("*** temperature setting DONE ***",.true.)
-    Call time_elapsed(tmr%elapsed)
+    Call time_elapsed(tmr)
 
     ! Read ttm table file and initialise electronic temperature
     ! grid from any available restart file
@@ -472,7 +472,7 @@ Contains
     End If
 
     ! start-up time when forces are not recalculated
-    Call time_elapsed(tmr%elapsed)
+    Call time_elapsed(tmr)
 
 #ifdef CHRONO
   call start_timer('Main Calc')

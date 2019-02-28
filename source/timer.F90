@@ -6,13 +6,8 @@ Module timer
 
   Private
 
-  Integer, Parameter :: max_depth = 6, max_timers = 50, max_name = 18
+  Integer, Parameter :: max_depth = 6, max_name = 18
 
-  Type, Public :: timer_type
-    Real( Kind = wp) :: elapsed,job,clear_screen
-    Logical :: proc_detail = .false.
-    Integer :: max_depth = 1
-  End Type timer_type
 
   Type :: timer_type_new
     Character( Len = max_name ) :: name
@@ -30,20 +25,29 @@ Module timer
 
   Type :: node
     Type ( timer_type_new ) :: time
-    Integer :: id
+    Type ( timer_tree ), pointer :: tree => null()
     Type ( node ), pointer :: child => null()
     Type ( node ), pointer :: parent => null()
     Type ( node ), pointer :: next_sibling => null()
-    Logical :: done = .false.
   end type node
+  
+  Type :: timer_tree
+    Type ( call_stack ) :: stack
+    Type ( node ), pointer :: head => null()
+    Integer :: n_timers = 0
+  end type timer_tree
 
-  Type( timer_type ),                              save :: dummy_timer
+  Type, Public :: timer_type
+    Type ( timer_tree ) :: tree
+    Real( Kind = wp) :: elapsed,job,clear_screen
+    Logical :: proc_detail = .false.
+    Integer :: max_depth = 1
+    Integer :: proc_id
+    Integer :: out_unit
+  End Type timer_type
+  
   Type( call_stack ),                              save :: calls
-  Type( node ), target,                            save :: call_tree
-  Integer, save :: id = 1
-
-  Type ( comms_type ), save :: timer_comm
-  Integer, save :: out_unit
+  Type( timer_tree ), target,                      save :: call_tree
 
   interface timer_write
     module procedure timer_write_sing
@@ -101,16 +105,16 @@ Contains
 
   End Subroutine pop_stack
 
-  subroutine init_timer_system ( nrite, comm )
-
-    Type ( comms_type ), intent ( in ) :: comm
+  subroutine init_timer_system ( timer_in, nrite, comm )
+    Type ( timer_type ), intent ( inout ) :: timer_in
+    Type ( comms_type ), intent ( in    ) :: comm
     Integer, intent ( in ) :: nrite
 
-    timer_comm = comm
-    out_unit = nrite
-    dummy_timer%max_depth = huge(1)
-    dummy_timer%proc_detail = .false.
-    call init_timer ( call_tree%time, 'Head')
+    timer_in%proc_id = comm%idnode
+    timer_in%out_unit = nrite
+    allocate(call_tree%head)
+    call_tree%head%tree => call_tree
+    call init_timer ( call_tree%head%time, 'Head')
     Call start_timer('Main')
     
   end subroutine init_timer_system
@@ -128,7 +132,7 @@ Contains
       stack = calls
     end if
     
-    current => call_tree
+    current => call_tree%head
     depth = 0
 
     do while ( depth < stack%depth )
@@ -167,11 +171,9 @@ Contains
     Type ( node ), target :: parent
 
     allocate ( parent%child )
-    if ( id > max_timers ) call timer_error('Too many timers active')
-    parent%child%id = id
-    id = id + 1
     parent%child%parent => parent
-
+    parent%child%tree => parent%tree
+    parent%tree%n_timers = parent%tree%n_timers + 1
     call init_timer(parent%child%time, name)
 
   end subroutine init_child_node
@@ -183,10 +185,11 @@ Contains
 
     allocate ( sibling%next_sibling )
     child => sibling%next_sibling
-    if ( id > max_timers ) call timer_error('Too many timers active')
-    child%id = id
-    id = id + 1
     child%parent => sibling%parent
+
+    sibling%next_sibling%tree => sibling%tree
+    sibling%tree%n_timers = sibling%tree%n_timers + 1
+    
     call init_timer(child%time, name)
 
   end subroutine init_sibling_node
@@ -208,7 +211,6 @@ Contains
     !! This routine has no header !
     Character ( Len = * )  :: name
     Type ( node ), pointer :: current_timer
-
 
     current_timer => find_timer(name)
 
@@ -232,7 +234,6 @@ Contains
     Character ( Len = max_name ) :: name
     Type ( call_stack ) :: stack
     Type ( node ), pointer :: current_timer
-    integer :: i
 
     call timer_split_stack_string(name_in, stack, name)
     current_timer => find_timer(name, stack)
@@ -269,33 +270,82 @@ Contains
     !! This routine has no header !
     Type( timer_type ), intent( In    ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
-    Character( Len = 132 ), dimension(-2:2) :: message
-    Real ( kind = wp ) :: call_min, call_max, call_av
-    Real ( kind = wp ) :: total_min, total_max, total_av
-    Real ( kind = wp ) :: total_elapsed, sum_timed
-    Character ( len = 7 ) :: depth_symb
     Type ( node ), pointer :: current_timer
+    Character( Len = 138 ), dimension(:), allocatable :: message
     Integer :: proc
-    Integer :: i, depth
-
+    Integer :: ierr
+    
     call stop_timer('Main')
-    write(message(-2), 100)
-    write(message(-1), 101)
-    call timer_write(message(-2:-1))
+
+    current_timer => call_tree%head%child
+    allocate(message(-2:call_tree%n_timers+3), stat=ierr)
+    if ( ierr > 0 ) call timer_error('Error allocating message in timer_print_tree')
+
+    call timer_print_tree(comm, tmr, current_timer, tmr%max_depth, -1, message)
+    call timer_write(message, tmr)
+    
+    if (tmr%proc_detail) then
+      do proc = 0, comm%mxnode-1
+        if (comm%idnode == proc) then
+          call timer_print_tree(comm, tmr, current_timer, tmr%max_depth, proc, message)
+        end if
+
+        if (proc /= 0) then
+          if (comm%idnode == proc) call gsend(comm, message, 0, timer_tag)
+          if (comm%idnode == 0) call grecv(comm, message, proc, timer_tag)
+        end if
+        
+        call timer_write(message, tmr)
+        call gsync(comm)
+      end do
+    end if
+
+  End Subroutine timer_report
+
+  Subroutine timer_print_tree(comm, tmr, init_node, max_depth, proc_id, message)
+    implicit none
+    Type ( comms_type ), intent ( inout ) :: comm
+    Type ( timer_type ), intent ( in    ) :: tmr
+    Type ( node ), target, intent ( in     )  :: init_node
+    Character( Len = 138 ), dimension(-2:), intent(   out ) :: message
+    Type ( node ), pointer :: current_timer
+    Integer, intent ( in    ) :: proc_id
+    Integer, intent ( in    ) :: max_depth
+    Integer :: write_node
+    Real ( kind = wp ) :: total_min, total_max, total_av
+    Real ( kind = wp ) :: call_min, call_max, call_av
+    Real ( kind = wp ) :: sum_timed, total_elapsed
+    Integer :: depth, itimer
+    Character( Len = 8   )                 :: proc_string
+    Character( Len = 7   )                 :: depth_symb
+
+    message(:) = ''
     
     sum_timed = 0.0_wp
 
-    current_timer => call_tree%child
+    if ( proc_id < 0 ) then
+      write_node = 0
+      proc_string = "All"
+    else
+      write_node = proc_id
+      write(proc_string,'(i8.1)') proc_id
+    end if
+    
+    current_timer => init_node
     total_elapsed = current_timer%time%total
-    call gmax(comm,total_elapsed)
-
-    i = 0
+    
     depth = 0
+    itimer = 0
+    
+    ! Write table open and header
+    write(message(-2), 100)
+    write(message(-1), 101)
 
     do while (depth > -1)
-      if (current_timer%time%running) Call timer_write('Program terminated while timer '//&
-        & trim(current_timer%time%name)//' still running')
 
+      if (current_timer%time%running) &
+        & Call timer_error('Program terminated while timer '// trim(current_timer%time%name)//' still running')
+      
       if ( depth == 0 .and. current_timer%time%name /= "Main") then
         depth_symb = repeat('-', 7)
       else if ( associated(current_timer%child) ) then
@@ -307,25 +357,31 @@ Contains
       total_min = current_timer%time%total
       total_max = current_timer%time%total
       total_av  = current_timer%time%total
-      Call gmin(comm,total_min)
-      Call gmax(comm,total_max)
-      Call gsum(comm,total_av)
-      total_av = total_av / comm%mxnode
+
+      if ( proc_id < 0 ) then
+        Call gmin(comm,total_min)
+        Call gmax(comm,total_max)
+        Call gsum(comm,total_av)
+        total_av = total_av / comm%mxnode
+      end if
+      
       if (depth == 1) sum_timed = sum_timed + total_av
 
       call_min  = current_timer%time%min
       call_max  = current_timer%time%max
-      Call gmin(comm,call_min)
-      Call gmax(comm,call_max)
+
+      if ( proc_id < 0 ) then
+        Call gmin(comm,call_min)
+        Call gmax(comm,call_max)
+      end if
+      
       call_av   = total_av/current_timer%time%calls
 
-      write(message(0), 102 ) depth_symb,current_timer%time%name, current_timer%time%calls, &
+      write(message(itimer), 102 ) depth_symb,current_timer%time%name, proc_string, current_timer%time%calls, &
         & call_min, call_max, call_av,  &
         & total_min, total_max, total_av, total_av*100.0_wp/total_elapsed
-      current_timer%done = .true.
-      call timer_write(message(0))
       
-      if (associated(current_timer%child) .and. depth < tmr%max_depth ) then
+      if (associated(current_timer%child) .and. depth < max_depth ) then
         current_timer => current_timer%child
         depth = depth + 1
       else if (associated(current_timer%next_sibling)) then
@@ -342,95 +398,25 @@ Contains
       else
         exit
       end if
+      itimer = itimer + 1
 
     end do
 
-    write(message(0), 103) "Untimed           ", & 
+    write(message(itimer), 102) repeat('-',7), "Untimed           ", proc_string, 0, &
+      & 0.0_wp, 0.0_wp, 0.0_wp, 0.0_wp, 0.0_wp, & 
       & total_elapsed - sum_timed , 100.0_wp - sum_timed*100.0_wp/total_elapsed
-    write(message(1), 100)
-    call timer_write(message(0:1))
+    write(message(itimer+1), 100)
+    write(message(itimer+2), *) ''
 
-    call timer_write('')
-
-    if (tmr%proc_detail) then
-      write(message(-2),200)
-      write(message(-1),201)
-      call timer_write(message(-2:-1))
-
-      depth = 0 
-
-      do proc = 0, comm%mxnode-1
-        if (comm%idnode == proc) then
-          write(message(-2), 100)
-          write(message(-1), 201)
-
-          call_tree%parent => call_tree
-          current_timer => call_tree
-          i = 0
-          do while (associated(current_timer%parent))
-            nullify(call_tree%parent)
-
-            if ( associated(current_timer%child) ) then
-              depth_symb = repeat(" ",depth)//"|v"
-            else
-              depth_symb = repeat(" ",depth)//"|-"
-            end if
-            total_av  = current_timer%time%total
-            sum_timed = sum_timed + total_av
-            call_min  = current_timer%time%min
-            call_max  = current_timer%time%max
-            call_av   = total_av/current_timer%time%calls
-            write(message(i), 202 ) depth_symb,current_timer%time%name, proc, current_timer%time%calls, &
-              & call_min, call_max, call_av, total_av, total_av*100.0_wp/total_elapsed
-
-            if (associated(current_timer%child) .and. depth < tmr%max_depth) then
-              current_timer => current_timer%child
-              depth = depth + 1
-
-            else if (associated(current_timer%next_sibling)) then
-              current_timer => current_timer%next_sibling
-
-            else
-              do while (associated(current_timer%parent))
-                current_timer => current_timer%parent
-                depth = depth - 1
-
-                if (associated(current_timer%next_sibling)) then
-                  current_timer => current_timer%next_sibling
-                  exit
-                end if
-              end do
-            end if
-            i = i + 1
-
-          End do
-          write(message(i), 200)
-          if (proc > 0) call gsend(comm, message, 0, timer_tag)
-        end if
-        if (comm%idnode == 0 .and. proc > 0) then
-          call grecv(comm, message, proc, timer_tag)
-          call timer_write(message(0:i))
-        else if (proc == 0) then
-          call timer_write(message(0:i))
-        end if
-
-        call gsync(comm)
-      end do
-    end if
-
-100 format("+",28("-"),4("+",10("-")),3("+",11("-")),"+",9("-"),"+")
-101 format("|",12X,"Name",12X,"|   Calls  ","| Call Min ","| Call Max ","| Call Ave ", &
-      & "|  Tot Min  ","|  Tot Max  ","|  Tot Ave  ","|    %    ","|")
-102 format("|",1X,A7,1X,A18,1X,"|",1X,I8.1,1X,3("|",1X,F8.4,1X),3("|",1X,F9.4,1X),"|",1X,F7.3,1X,"|")
-103 format("|",1X,7("-"),1X,A18,1X,4("|",10X),2("|",11X),"|",1X,F9.4,1X,"|",1X,F7.3,1X,"|")
-
-200 format("+",28("-"),5("+",10("-")),"+",11("-"),"+",9("-"),"+")
-201 format("|",12X,"Name",12X,"| Process  ","|   Calls  ","| Call Min ","| Call Max ","| Call Ave ", &
-      & "|   Total   ","|    %    ","|")
-202 format("|",1X,A7,1X,A18,1X,2("|",1X,I8.1,1X),3("|",1X,F8.4,1X),"|",1X,F9.4,1X,"|",1X,F7.3,1X,"|")
-
-  End Subroutine timer_report
-
+100 format(1X,"+",28("-"),2("+",10("-")),7("+",11("-")),"+")
+101 format(1X,"|",12X,"Name",12X,"| Process  ","|  Calls   ","| Call Min  ","| Call Max  ",&
+      & "| Call Ave  ","|  Tot Min  ","|  Tot Max  ","|  Tot Ave  ","|     %     ","|")
+102 format(1X,"|",1X,A7,1X,A18,1X,"|",1X,A8,1X,"|",1X,I8,1X,"|",1X,F9.4,1X,"|",1X,F9.4,1X,&
+      & "|",1X,F9.4,1X,"|",1X,F9.4,1X,"|",1X,F9.4,1X,"|",1X,F9.4,1X,"|",2X,F8.4,1X,"|")
+    
+  end Subroutine timer_print_tree
+  
+  
   Subroutine init_timer(current_timer, name)
     !! This routine has no header !
     Type ( timer_type_new ) :: current_timer
@@ -445,8 +431,9 @@ Contains
 
   end Subroutine init_timer
 
-  Subroutine timer_last_time(name, screen)
+  Subroutine timer_last_time(tmr, name, screen)
     !! This routine has no header !
+    Type ( timer_type ), intent ( in    ) :: tmr
     Character ( Len = * )  :: name
     Logical, Optional :: screen
     Logical :: to_screen
@@ -458,47 +445,69 @@ Contains
 
     current_timer => find_timer(name)
     if (to_screen) then
-      write(*,*) current_timer%time%name, current_timer%time%calls, current_timer%time%last
+      write(0,*) current_timer%time%name, current_timer%time%calls, current_timer%time%last
     else
       write(message,'(a,2(1X,i0))') current_timer%time%name, current_timer%time%calls, current_timer%time%last
-      call timer_write(message)
+      call timer_write(message, tmr)
     end if
   end Subroutine timer_last_time
 
-  Subroutine time_elapsed(time)
+  Subroutine time_elapsed(tmr)
     !! This routine has no header !
-    Real( Kind = wp ), Intent( InOut ) :: time
+    Type ( timer_type ), Intent( InOut ) :: tmr
 
     Character( Len = 256 ) :: message
 
-    Call gtime(time)
-    Write(message,'(a,f12.3,a)') "time elapsed since job start: ", time, " sec"
-    Call timer_write(message)
+    Call gtime(tmr%elapsed)
+    Write(message,'(a,f12.3,a)') "time elapsed since job start: ", tmr%elapsed, " sec"
+    Call timer_write(message, tmr)
+    
   End Subroutine time_elapsed
 
-  Subroutine timer_write_sing(message)
-    Character( Len = * ), intent(in) :: message
-
-    if ( timer_comm%idnode == 0 ) &
-      write(out_unit,*) message
-
-  end Subroutine timer_write_sing
-
-  Subroutine timer_write_mul(message)
+  Subroutine timer_write_mul(message, timer_in)
     Character( Len = * ), dimension(:), intent(in) :: message
+    Type ( timer_type ), optional, intent ( in    ):: timer_in
     Integer :: i
 
-    if ( timer_comm%idnode == 0 ) then
-      do i = 1, size(message)
-        write(out_unit,*) message(i)
-      end do
-    end if
+    if (present(timer_in)) then
 
+      if ( timer_in%proc_id == 0 ) then
+        do i = 1, size(message)
+          write(timer_in%out_unit,*) message(i)
+        end do
+      end if
+      
+    else
+
+      do i = 1, size(message)
+        write(0,*) message(i)
+      end do
+      
+    end if
+    
   end Subroutine timer_write_mul
+
+  Subroutine timer_write_sing(message, timer_in)
+    Character( Len = * ), intent(in) :: message
+    Type ( timer_type ), optional, intent ( in    ):: timer_in
+    
+    if (present(timer_in)) then
+
+      if ( timer_in%proc_id == 0 ) then
+          write(timer_in%out_unit,*) message
+      end if
+      
+    else
+
+        write(0,*) message
+      
+    end if
+    
+  end Subroutine timer_write_sing
 
   Subroutine timer_error(message)
     Character ( len = * ) :: message
-
+   
     call timer_write('')
     ! call timer_report(dummy_timer, timer_comm)
     call timer_write(message)
