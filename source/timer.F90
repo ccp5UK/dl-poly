@@ -194,27 +194,29 @@ Contains
 
   end subroutine init_sibling_node
 
-  Subroutine start_timer(name)
+  Subroutine start_timer(name, stack)
     !! This routine has no header !
-    Character ( Len = * )  :: name
+    Character ( Len = * ), Intent ( In    )  :: name
+    Type ( call_stack ), optional :: stack
     Type ( node ), pointer :: current_timer
 
-    current_timer => find_timer(name)
+    current_timer => find_timer(name, stack)
 
-    call push_stack(name)
+    if (.not. present(stack)) call push_stack(name)
     Call mtime(current_timer%time%start)
     current_timer%time%running = .true.
 
   end Subroutine start_timer
 
-  Subroutine stop_timer(name)
+  Subroutine stop_timer(name, stack)
     !! This routine has no header !
-    Character ( Len = * )  :: name
+    Character ( Len = * ), Intent ( In    ) :: name
+    Type ( call_stack ), optional :: stack
     Type ( node ), pointer :: current_timer
 
-    current_timer => find_timer(name)
+    current_timer => find_timer(name, stack)
 
-    call pop_stack(name)
+    if (.not. present(stack)) call pop_stack(name)
     if ( .not. current_timer%time%running ) call timer_error('Timer '//trim(current_timer%time%name)//' stopped but not running')
 
     Call mtime(current_timer%time%stop)
@@ -228,43 +230,60 @@ Contains
 
   End Subroutine stop_timer
 
-  Subroutine start_timer_path(name_in)
+  Subroutine start_timer_path(name_in, start_parents)
     !! This routine has no header !
     Character ( Len = * )  :: name_in
+    Logical, Intent ( In    ), Optional :: start_parents
+    Logical :: parents
     Character ( Len = max_name ) :: name
+    Type ( node ), pointer :: is_running
     Type ( call_stack ) :: stack
-    Type ( node ), pointer :: current_timer
+    integer :: depth
 
     call timer_split_stack_string(name_in, stack, name)
-    current_timer => find_timer(name, stack)
-    
-    Call mtime(current_timer%time%start)
-    current_timer%time%running = .true.
 
+    parents = .true.
+    if ( present(start_parents) ) parents = start_parents
+
+    if (parents) then
+      do depth = 1, stack%depth
+        stack%depth = depth-1
+        is_running => find_timer( stack%name(depth), stack )
+        if (.not. is_running%time%running) call start_timer( (stack%name(depth)), stack)
+      end do
+      stack%depth = depth-1
+    end if
+    
+    call start_timer(name, stack)
+    
   end Subroutine start_timer_path
 
-  Subroutine stop_timer_path(name_in)
+  Subroutine stop_timer_path(name_in, stop_parents)
     !! This routine has no header !
     Character ( Len = * )  :: name_in
+    Logical, Intent ( In    ), Optional :: stop_parents
+    Logical :: parents
     Character ( Len = max_name ) :: name
+    Type ( node ), pointer :: is_running
     Type ( call_stack ) :: stack
-    Type ( node ), pointer :: current_timer
+    integer :: depth
 
     call timer_split_stack_string(name_in, stack, name)
-    current_timer => find_timer(name, stack)
 
-    if ( .not. current_timer%time%running ) call timer_error('Timer '//trim(current_timer%time%name)//' stopped but not running')
+    parents = .true.
+    if ( present(stop_parents) ) parents = stop_parents
 
-    Call mtime(current_timer%time%stop)
+    call stop_timer(name, stack)
 
-    current_timer%time%running = .false.
-    current_timer%time%last = current_timer%time%stop - current_timer%time%start
-    if ( current_timer%time%last > current_timer%time%max ) current_timer%time%max = current_timer%time%last
-    if ( current_timer%time%last < current_timer%time%min ) current_timer%time%min = current_timer%time%last
-    current_timer%time%total = current_timer%time%total + current_timer%time%last
-    current_timer%time%calls = current_timer%time%calls + 1
+    if (parents) then
+      do depth = stack%depth, 1, -1
+        stack%depth = depth-1
+        is_running => find_timer( stack%name(depth), stack )
+        if (is_running%time%running) call stop_timer( (stack%name(depth)), stack)
+      end do
+    end if
 
-  End Subroutine stop_timer_path
+  end Subroutine stop_timer_path
   
   Subroutine timer_report(tmr,comm)
     !! This routine has no header !
@@ -365,7 +384,7 @@ Contains
         total_av = total_av / comm%mxnode
       end if
       
-      if (depth == 1) sum_timed = sum_timed + total_av
+      if (depth == 1 .and. current_timer%parent%time%name == "Main") sum_timed = sum_timed + total_av
 
       call_min  = current_timer%time%min
       call_max  = current_timer%time%max
