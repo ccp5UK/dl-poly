@@ -198,7 +198,7 @@ Contains
 
     ! calculate coulombic forces, Ewald sum - fourier contribution
 #ifdef CHRONO
-    Call start_timer('Long Range')
+    Call start_timer(tmr, 'Long Range')
 #endif
 
     If (electro%key == ELECTROSTATIC_EWALD .and. ewld%l_fce) Then
@@ -216,12 +216,10 @@ Contains
       End If
     End If
 #ifdef CHRONO
-    Call stop_timer('Long Range')
+    Call stop_timer(tmr, 'Long Range')
+    Call start_timer(tmr, 'Short Range')
 #endif
 
-#ifdef CHRONO
-    Call start_timer('Short Range')
-#endif
     ! outer loop over atoms
 
     Do i=1,config%natms
@@ -661,7 +659,7 @@ Contains
     stats%stress(9) = stats%stress(9) + tmp
 
 #ifdef CHRONO
-    Call stop_timer('Short Range')
+    Call stop_timer(tmr, 'Short Range')
 #endif
 
   End Subroutine two_body_forces

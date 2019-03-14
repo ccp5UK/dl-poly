@@ -12,7 +12,6 @@
 
 Module errors_warnings
   Use, intrinsic :: iso_fortran_env, only : error_unit,input_unit,output_unit
-  Use timer, Only : dump_call_stack
   Use kinds, Only : wp
   Use comms, Only : comms_type,abort_comms
   
@@ -2197,8 +2196,6 @@ Contains
 
     End If
 
-    Call dump_call_stack ()
-    
     ! close all I/O channels
     Call close_unit(ounit)
 
@@ -2223,8 +2220,6 @@ Contains
 
     Write(ounit,'(/,1x,a)') 'error - allocation failure in '//trim(routine)//' -> '//trim(array)
 
-    Call dump_call_stack ()
-
     Call close_unit(ounit)
     Call abort_comms(eworld,1001)
 
@@ -2243,8 +2238,6 @@ Contains
     Character (Len=*) :: array, routine 
 
     Write(ounit,'(/,1x,a)') 'error - deallocation failure in '//trim(routine)//' -> '//trim(array)
-
-    Call dump_call_stack ()
 
     Call close_unit(ounit)
     Call abort_comms(eworld,1002)

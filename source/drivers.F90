@@ -283,7 +283,11 @@ Contains
     ! Calculate four-body forces
 
     If (fourbody%n_potential > 0) Call four_body_forces(fourbody,stat,neigh,domain,cnfig,comm)
-    call start_timer('Bonded Forces')
+
+#ifdef CHRONO
+    call start_timer(tmr, 'Bonded Forces')
+#endif
+    
     ! Calculate shell model forces
 
     If (cshell%megshl > 0) Call core_shell_forces(cshell,stat,cnfig,comm)
@@ -338,8 +342,11 @@ Contains
       switch = 1 + Merge(1,0,ltmp)
       Call inversions_forces(switch,stat%enginv,stat%virinv,stat%stress,inversion,cnfig,comm)
     End If
-    call stop_timer('Bonded Forces')
 
+#ifdef CHRONO
+    call stop_timer(tmr, 'Bonded Forces')
+#endif
+    
     ! Apply external field
 
     If (ext_field%key /= FIELD_NULL) Then
