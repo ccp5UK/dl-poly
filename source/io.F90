@@ -156,6 +156,10 @@ Module io
     Integer  :: buffer_size_write  = default_buffer_size_write       ! Number of lines in each buffer
     Integer  :: buffer_size_read   = default_buffer_size_read        ! Number of lines in each buffer
     Logical  :: global_error_check = .false.                         ! Whether to check across all processors for errors.
+    Integer  :: io_comm            = MPI_COMM_NULL                   ! Specific IO Communicator
+    Integer  :: io_gather_comm     = MPI_COMM_NULL                   ! IO Gather communicator
+    Logical  :: do_io              = .false.                         ! Whether this rank performs IO in current operation.
+
     Character:: lf    =  default_lf                     ! The line feed character to use
     ! These indices depend on the write level, so can't parameterise them
     Integer :: Q_IND
@@ -754,7 +758,6 @@ Contains
     Integer, Dimension( : ), Allocatable :: sorted_indices
     Integer, Dimension( : ), Allocatable :: n_reorg
 
-    Integer :: io_comm, io_gather_comm
     Integer :: actual_io_procs
     Integer :: size_local
     Integer :: bottom_batch, top_batch
@@ -766,7 +769,6 @@ Contains
     Integer :: itmp
     Integer :: iter
 
-    Logical :: do_io
 
     Character( Len = 1 ), Dimension( :, : ), Allocatable :: local_name
     Character( Len = 1 ), Dimension( :, : ), Allocatable :: gathered_name
@@ -792,10 +794,12 @@ Contains
     ! a member of a given communicator or not ( if it's not in a communicator
     ! it has no data about it ) also return DO_IO to indicate whether this
     ! processor will perform I/O, i.e.  if it is a member of IO_COMM.
-    Call split_io_comm( io%base_comm, io%n_io_procs_write, io_comm, io_gather_comm, do_io )
-    If ( do_io ) Then
-      Call MPI_COMM_RANK( io_comm, me_in_io, ierr )
-      Call MPI_COMM_SIZE( io_comm, actual_io_procs, ierr )
+    If( io%io_gather_comm == MPI_COMM_NULL ) Then
+      Call split_io_comm( io%base_comm, io%n_io_procs_write, io%io_comm, io%io_gather_comm, io%do_io )
+    End If
+    If ( io%do_io ) Then
+      Call MPI_COMM_RANK( io%io_comm, me_in_io, ierr )
+      Call MPI_COMM_SIZE( io%io_comm, actual_io_procs, ierr )
     End If
 
     ! Allocate required data structures for stuff local to this processor,
@@ -895,7 +899,7 @@ Contains
     ! Note it's not a standard to pass an unallocated array unless the
     ! dummy argument is allocatable.  Here this is not the case hence allocate
     ! to size zero on procs that will not need the array.
-    If ( do_io ) Then
+    If ( io%do_io ) Then
       Allocate ( n_reorg( 0:actual_io_procs - 1 ), Stat = error )
     Else
       Allocate ( n_reorg( 0:-1 ), Stat = error )
@@ -943,7 +947,7 @@ Contains
       Call netcdf_close( desc )
     End If
 
-    If ( do_io ) Then
+    If ( io%do_io ) Then
       If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
         Call netcdf_open( Trim( io%known_files( file_handle )%name ), desc, io_comm, MPI_INFO_NULL )
         Call netcdf_get_def( desc )
@@ -991,18 +995,18 @@ Contains
         ! needs to hold ? First find out within an io_gather_group how many
         ! atoms the I/O processor for that group will hold
         Call MPI_ALLREDUCE( Max( local_top - local_bottom + 1, 0 ), n_gathered, 1, &
-          MPI_INTEGER, MPI_SUM, io_gather_comm, ierr )
+          MPI_INTEGER, MPI_SUM, io%io_gather_comm, ierr )
         ! If we are covering all the remaining atoms can now exit
         If ( top_batch == tot_atoms ) Then
           Exit
         End If
         ! Then max over the I/O processors and broadcast it back over the io_gather_group.
-        If ( do_io ) Then
+        If ( io%do_io ) Then
           Call MPI_ALLREDUCE( n_gathered, itmp, 1, &
-            MPI_INTEGER, MPI_MAX, io_comm, ierr )
+            MPI_INTEGER, MPI_MAX, io%io_comm, ierr )
           n_gathered = itmp
         End If
-        Call MPI_BCAST( n_gathered, 1, MPI_INTEGER, 0, io_gather_comm, ierr )
+        Call MPI_BCAST( n_gathered, 1, MPI_INTEGER, 0, io%io_gather_comm, ierr )
         ! Check if the required memory to hold the atoms is too much
         If ( n_gathered > io%batch_size_write ) Then
           ! If it is the last iteration was the last acceptable, so go back
@@ -1012,7 +1016,7 @@ Contains
           Call batch_limits_set( local_global_indices, bottom_batch, top_batch, &
             local_bottom, local_top )
           Call MPI_ALLREDUCE( local_top - local_bottom + 1, n_gathered, 1, &
-            MPI_INTEGER, MPI_SUM, io_gather_comm, ierr )
+            MPI_INTEGER, MPI_SUM, io%io_gather_comm, ierr )
           Exit
         Else
           ! The batch is till smaller than the limit.  Try again.
@@ -1025,7 +1029,7 @@ Contains
       ! Gather the data onto the I/O processors.  Note allocation to full
       ! size only occurs on the I/O processor, as that is where it is needed,
       ! but to keep to the standard alloc to zero on the other procs
-      If ( do_io ) Then
+      If ( io%do_io ) Then
         Allocate ( gathered_global_indices( 1:this_batch_size ), Stat = error )
       Else
         Allocate ( gathered_global_indices( 0:-1 ), Stat = error )
@@ -1057,7 +1061,7 @@ Contains
         Return
       End If
 
-      Call gather_data( io_gather_comm, local_bottom, local_top,               &
+      Call gather_data( io%io_gather_comm, local_bottom, local_top,               &
         local_global_indices   , local_data   , local_name,    &
         gathered_global_indices, gathered_data, gathered_name, &
         n_gathered, error )
@@ -1067,7 +1071,7 @@ Contains
 
       itmp=0 ; error=0
       ! Data now on the I/O procs - so they only do work now.
-      IO_PROCS_ONLY: If ( do_io ) Then
+      IO_PROCS_ONLY: If ( io%do_io ) Then
 
         ! Sort the data currently on the I/O processors into order of increasing ( local values of
         ! the ) global indices
@@ -1075,44 +1079,44 @@ Contains
 
         ! Avoid deadlock problems on error
 
-        If ( ok(io,  error == 0, io_comm ) ) Then
+        If ( ok(io,  error == 0, io%io_comm ) ) Then
 
           ! Work out how much data is on each IO processor
           ! after the reorganization in the global sort
-          Call how_much_after_reorg( io_comm, n_gathered, n_reorg )
+          Call how_much_after_reorg( io%io_comm, n_gathered, n_reorg )
 
           ! Now allocate the data for use after the global sort
           n_me = n_reorg( me_in_io )
           Allocate ( sorted_indices( 1:n_me ), Stat = error )
-          If ( ok(io,  error == 0, io_comm ) ) Then
+          If ( ok(io,  error == 0, io%io_comm ) ) Then
             Allocate ( sorted_data( 1:size_local, 1:n_me ), Stat = error )
-            If ( ok(io,  error == 0, io_comm ) ) Then
+            If ( ok(io,  error == 0, io%io_comm ) ) Then
               Allocate ( sorted_name( 1:Len( atom_name ), 1:n_me ), Stat = error )
-              If ( ok(io,  error == 0, io_comm ) ) Then
+              If ( ok(io,  error == 0, io%io_comm ) ) Then
                 ! And sort the data across the I/O processors
-                Call global_sort( io_comm, &
+                Call global_sort( io%io_comm, &
                   n_gathered, gathered_global_indices, gathered_data, gathered_name, &
                   n_reorg   , sorted_indices         , sorted_data  , sorted_name,   &
                   error )
 
-                If ( ok(io,  error == 0, io_comm ) ) Then
+                If ( ok(io,  error == 0, io%io_comm ) ) Then
                   ! Finally write the damn thing !!
-                  Call config_out(io, io_comm, write_level, write_options, file_handle, first_record, &
+                  Call config_out(io, io%io_comm, write_level, write_options, file_handle, first_record, &
                     n_me, sorted_indices, sorted_data, sorted_name, error )
                 End If
 
                 Deallocate ( sorted_name , Stat = error )
-                If ( .not. ok(io, error == 0, io_comm ) ) Then
+                If ( .not. ok(io, error == 0, io%io_comm ) ) Then
                   error = IO_DEALLOCATION_ERROR
                   Exit
                 End If
                 Deallocate ( sorted_data , Stat = error )
-                If ( .not. ok(io, error == 0, io_comm ) ) Then
+                If ( .not. ok(io, error == 0, io%io_comm ) ) Then
                   error = IO_DEALLOCATION_ERROR
                   Exit
                 End If
                 Deallocate ( sorted_indices , Stat = error )
-                If ( .not. ok(io, error == 0, io_comm ) ) Then
+                If ( .not. ok(io, error == 0, io%io_comm ) ) Then
                   error = IO_DEALLOCATION_ERROR
                   Exit
                 End If
@@ -1185,7 +1189,7 @@ Contains
     End If
 
     ! For netCDF reopen the file in its original state
-    If ( do_io ) Then
+    If ( io%do_io ) Then
       If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
         Call netcdf_close( desc )
       End If
@@ -1198,7 +1202,7 @@ Contains
     End If
 
     ! Free comms
-    Call free_io_comm( do_io, io_comm, io_gather_comm )
+    Call free_io_comm( io%do_io, io%io_comm, io%io_gather_comm )
 
     ! Leave in sync
     Call MPI_BARRIER( io%base_comm, ierr )
@@ -2095,7 +2099,6 @@ Contains
     Integer, Dimension( : ), Allocatable :: sorted_indices
     Integer, Dimension( : ), Allocatable :: n_reorg
 
-    Integer :: io_comm, io_gather_comm
     Integer :: actual_io_procs
     Integer :: size_local
     Integer :: bottom_batch, top_batch
@@ -2107,7 +2110,6 @@ Contains
     Integer :: itmp
     Integer :: iter
 
-    Logical :: do_io
 
     Character( Len = 1 ), Dimension( :, : ), Allocatable :: local_name
     Character( Len = 1 ), Dimension( :, : ), Allocatable :: gathered_name
@@ -2134,10 +2136,12 @@ Contains
     ! a member of a given communicator or not ( if it's not in a communicator
     ! it has no data about it ) also return DO_IO to indicate whether this
     ! processor will perform I/O, i.e.  if it is a member of IO_COMM.
-    Call split_io_comm( io%base_comm, io%n_io_procs_write, io_comm, io_gather_comm, do_io )
-    If ( do_io ) Then
-      Call MPI_COMM_RANK( io_comm, me_in_io, ierr )
-      Call MPI_COMM_SIZE( io_comm, actual_io_procs, ierr )
+    If( io%io_comm == MPI_COMM_NULL ) Then
+      Call split_io_comm( io%base_comm, io%n_io_procs_write, io%io_comm, io%io_gather_comm, io%do_io )
+    End If
+    If ( io%do_io ) Then
+      Call MPI_COMM_RANK( io%io_comm, me_in_io, ierr )
+      Call MPI_COMM_SIZE( io%io_comm, actual_io_procs, ierr )
     End If
 
     ! Allocate required data structures for stuff local to this processor,
@@ -2237,7 +2241,7 @@ Contains
     ! Note it's not a standard to pass an unallocated array unless the
     ! dummy argument is allocatable.  Here this is not the case hence allocate
     ! to size zero on procs that will not need the array.
-    If ( do_io ) Then
+    If ( io%do_io ) Then
       Allocate ( n_reorg( 0:actual_io_procs - 1 ), Stat = error )
     Else
       Allocate ( n_reorg( 0:-1 ), Stat = error )
@@ -2287,7 +2291,7 @@ Contains
 
     If ( do_io ) Then
       If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-        Call netcdf_open( Trim( io%known_files( file_handle )%name ), desc, io_comm, MPI_INFO_NULL )
+        Call netcdf_open( Trim( io%known_files( file_handle )%name ), desc, io%io_comm, MPI_INFO_NULL )
         Call netcdf_get_def( desc )
       End If
     End If
@@ -2333,7 +2337,7 @@ Contains
         ! needs to hold ? First find out within an io_gather_group how many
         ! atoms the I/O processor for that group will hold
         Call MPI_ALLREDUCE( Max( local_top - local_bottom + 1, 0 ), n_gathered, 1, &
-          MPI_INTEGER, MPI_SUM, io_gather_comm, ierr )
+          MPI_INTEGER, MPI_SUM, io%io_gather_comm, ierr )
         ! If we are covering all the remaining atoms can now exit
         If ( top_batch == tot_atoms ) Then
           Exit
@@ -2341,10 +2345,10 @@ Contains
         ! Then max over the I/O processors and broadcast it back over the io_gather_group.
         If ( do_io ) Then
           Call MPI_ALLREDUCE( n_gathered, itmp, 1, &
-            MPI_INTEGER, MPI_MAX, io_comm, ierr )
+            MPI_INTEGER, MPI_MAX, io%io_comm, ierr )
           n_gathered = itmp
         End If
-        Call MPI_BCAST( n_gathered, 1, MPI_INTEGER, 0, io_gather_comm, ierr )
+        Call MPI_BCAST( n_gathered, 1, MPI_INTEGER, 0, io%io_gather_comm, ierr )
         ! Check if the required memory to hold the atoms is too much
         If ( n_gathered > io%batch_size_write ) Then
           ! If it is the last iteration was the last acceptable, so go back
@@ -2367,7 +2371,7 @@ Contains
       ! Gather the data onto the I/O processors.  Note allocation to full
       ! size only occurs on the I/O processor, as that is where it is needed,
       ! but to keep to the standard alloc to zero on the other procs
-      If ( do_io ) Then
+      If ( io%do_io ) Then
         Allocate ( gathered_global_indices( 1:this_batch_size ), Stat = error )
       Else
         Allocate ( gathered_global_indices( 0:-1 ), Stat = error )
@@ -2377,7 +2381,7 @@ Contains
         Return
       End If
 
-      If ( do_io ) Then
+      If ( io%do_io ) Then
         Allocate ( gathered_data( 1:Size( local_data, Dim = 1 ), 1:this_batch_size ), &
           Stat = error )
       Else
@@ -2409,7 +2413,7 @@ Contains
 
       itmp=0 ; error=0
       ! Data now on the I/O procs - so they only do work now.
-      IO_PROCS_ONLY: If ( do_io ) Then
+      IO_PROCS_ONLY: If ( io%do_io ) Then
 
         ! Sort the data currently on the I/O processors into order of increasing ( local values of
         ! the ) global indices
@@ -2417,44 +2421,44 @@ Contains
 
         ! Avoid deadlock problems on error
 
-        If ( ok(io,  error == 0, io_comm ) ) Then
+        If ( ok(io,  error == 0, io%io_comm ) ) Then
 
           ! Work out how much data is on each IO processor
           ! after the reorganization in the global sort
-          Call how_much_after_reorg( io_comm, n_gathered, n_reorg )
+          Call how_much_after_reorg( io%io_comm, n_gathered, n_reorg )
 
           ! Now allocate the data for use after the global sort
           n_me = n_reorg( me_in_io )
           Allocate ( sorted_indices( 1:n_me ), Stat = error )
-          If ( ok(io,  error == 0, io_comm ) ) Then
+          If ( ok(io,  error == 0, io%io_comm ) ) Then
             Allocate ( sorted_data( 1:size_local, 1:n_me ), Stat = error )
-            If ( ok(io,  error == 0, io_comm ) ) Then
+            If ( ok(io,  error == 0, io%io_comm ) ) Then
               Allocate ( sorted_name( 1:Len( atom_name ), 1:n_me ), Stat = error )
-              If ( ok(io,  error == 0, io_comm ) ) Then
+              If ( ok(io,  error == 0, io%io_comm ) ) Then
                 ! And sort the data across the I/O processors
-                Call global_sort( io_comm, &
+                Call global_sort( io%io_comm, &
                   n_gathered, gathered_global_indices, gathered_data, gathered_name, &
                   n_reorg   , sorted_indices         , sorted_data  , sorted_name,   &
                   error )
 
-                If ( ok(io,  error == 0, io_comm ) ) Then
+                If ( ok(io,  error == 0, io%io_comm ) ) Then
                   ! Finally write the damn thing !!
-                  Call config_out(io, io_comm, write_level, write_options, file_handle, first_record, &
+                  Call config_out(io, io%io_comm, write_level, write_options, file_handle, first_record, &
                     n_me, sorted_indices, sorted_data, sorted_name, error )
                 End If
 
                 Deallocate ( sorted_name , Stat = error )
-                If ( .not. ok(io, error == 0, io_comm ) ) Then
+                If ( .not. ok(io, error == 0, io%io_comm ) ) Then
                   error = IO_DEALLOCATION_ERROR
                   Exit
                 End If
                 Deallocate ( sorted_data , Stat = error )
-                If ( .not. ok(io, error == 0, io_comm ) ) Then
+                If ( .not. ok(io, error == 0, io%io_comm ) ) Then
                   error = IO_DEALLOCATION_ERROR
                   Exit
                 End If
                 Deallocate ( sorted_indices , Stat = error )
-                If ( .not. ok(io, error == 0, io_comm ) ) Then
+                If ( .not. ok(io, error == 0, io%io_comm ) ) Then
                   error = IO_DEALLOCATION_ERROR
                   Exit
                 End If
@@ -2527,7 +2531,7 @@ Contains
     End If
 
     ! For netCDF reopen the file in its original state
-    If ( do_io ) Then
+    If ( io%do_io ) Then
       If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
         Call netcdf_close( desc )
       End If
@@ -2540,7 +2544,7 @@ Contains
     End If
 
     ! Free comms
-    Call free_io_comm( do_io, io_comm, io_gather_comm )
+    Call free_io_comm( io%do_io, io%io_comm, io%io_gather_comm )
 
 
     ! Leave in sync
@@ -3449,7 +3453,6 @@ Contains
     Integer, Dimension( : ), Allocatable :: sorted_indices
     Integer, Dimension( : ), Allocatable :: n_reorg
 
-    Integer :: io_comm, io_gather_comm
     Integer :: actual_io_procs
     Integer :: size_local
     Integer :: bottom_batch, top_batch
@@ -3460,8 +3463,6 @@ Contains
     Integer :: me_in_io, n_me
     Integer :: itmp
     Integer :: iter
-
-    Logical :: do_io
 
     Character( Len = 1 ), Dimension( :, : ), Allocatable :: local_name
     Character( Len = 1 ), Dimension( :, : ), Allocatable :: gathered_name
@@ -3487,10 +3488,12 @@ Contains
     ! a member of a given communicator or not ( if it's not in a communicator
     ! it has no data about it ) also return DO_IO to indicate whether this
     ! processor will perform I/O, i.e.  if it is a member of IO_COMM.
-    Call split_io_comm( io%base_comm, io%n_io_procs_write, io_comm, io_gather_comm, do_io )
-    If ( do_io ) Then
-      Call MPI_COMM_RANK( io_comm, me_in_io, ierr )
-      Call MPI_COMM_SIZE( io_comm, actual_io_procs, ierr )
+    If( io%io_comm == MPI_COMM_NULL) Then
+      Call split_io_comm( io%base_comm, io%n_io_procs_write, io_comm, io_gather_comm, do_io )
+    End If
+    If ( io%do_io ) Then
+      Call MPI_COMM_RANK( io%io_comm, me_in_io, ierr )
+      Call MPI_COMM_SIZE( io%io_comm, actual_io_procs, ierr )
     End If
 
     ! Allocate required data structures for stuff local to this processor,
@@ -3686,18 +3689,18 @@ Contains
         ! needs to hold ? First find out within an io_gather_group how many
         ! atoms the I/O processor for that group will hold
         Call MPI_ALLREDUCE( Max( local_top - local_bottom + 1, 0 ), n_gathered, 1, &
-          MPI_INTEGER, MPI_SUM, io_gather_comm, ierr )
+          MPI_INTEGER, MPI_SUM, io%io_gather_comm, ierr )
         ! If we are covering all the remaining atoms can now exit
         If ( top_batch == tot_atoms ) Then
           Exit
         End If
         ! Then max over the I/O processors and broadcast it back over the io_gather_group.
-        If ( do_io ) Then
+        If ( io%do_io ) Then
           Call MPI_ALLREDUCE( n_gathered, itmp, 1, &
-            MPI_INTEGER, MPI_MAX, io_comm, ierr )
+            MPI_INTEGER, MPI_MAX, io%io_comm, ierr )
           n_gathered = itmp
         End If
-        Call MPI_BCAST( n_gathered, 1, MPI_INTEGER, 0, io_gather_comm, ierr )
+        Call MPI_BCAST( n_gathered, 1, MPI_INTEGER, 0, io%io_gather_comm, ierr )
         ! Check if the required memory to hold the atoms is too much
         If ( n_gathered > io%batch_size_write ) Then
           ! If it is the last iteration was the last acceptable, so go back
@@ -3707,7 +3710,7 @@ Contains
           Call batch_limits_set( local_global_indices, bottom_batch, top_batch, &
             local_bottom, local_top )
           Call MPI_ALLREDUCE( local_top - local_bottom + 1, n_gathered, 1, &
-            MPI_INTEGER, MPI_SUM, io_gather_comm, ierr )
+            MPI_INTEGER, MPI_SUM, io%io_gather_comm, ierr )
           Exit
         Else
           ! The batch is till smaller than the limit.  Try again.
@@ -3730,7 +3733,7 @@ Contains
         Return
       End If
 
-      If ( do_io ) Then
+      If ( io%do_io ) Then
         Allocate ( gathered_data( 1:Size( local_data, Dim = 1 ), 1:this_batch_size ), &
           Stat = error )
       Else
@@ -3741,7 +3744,7 @@ Contains
         Return
       End If
 
-      If ( do_io ) Then
+      If ( io%do_io ) Then
         Allocate ( gathered_name( 1:Size( local_name, Dim = 1 ), 1:this_batch_size ), &
           Stat = error )
       Else
@@ -3762,7 +3765,7 @@ Contains
 
       itmp=0 ; error=0
       ! Data now on the I/O procs - so they only do work now.
-      IO_PROCS_ONLY: If ( do_io ) Then
+      IO_PROCS_ONLY: If ( io%do_io ) Then
 
         ! Sort the data currently on the I/O processors into order of increasing ( local values of
         ! the ) global indices
@@ -3770,11 +3773,11 @@ Contains
 
         ! Avoid deadlock problems on error
 
-        If ( ok(io,  error == 0, io_comm ) ) Then
+        If ( ok(io,  error == 0, io%io_comm ) ) Then
 
           ! Work out how much data is on each IO processor
           ! after the reorganization in the global sort
-          Call how_much_after_reorg( io_comm, n_gathered, n_reorg )
+          Call how_much_after_reorg( io%io_comm, n_gathered, n_reorg )
 
           ! Now allocate the data for use after the global sort
           n_me = n_reorg( me_in_io )
@@ -3783,31 +3786,31 @@ Contains
             Allocate ( sorted_data( 1:size_local, 1:n_me ), Stat = error )
             If ( ok(io,  error == 0, io_comm ) ) Then
               Allocate ( sorted_name( 1:Len( atom_name ), 1:n_me ), Stat = error )
-              If ( ok(io,  error == 0, io_comm ) ) Then
+              If ( ok(io,  error == 0, io%io_comm ) ) Then
                 ! And sort the data across the I/O processors
-                Call global_sort( io_comm, &
+                Call global_sort( io%io_comm, &
                   n_gathered, gathered_global_indices, gathered_data, gathered_name, &
                   n_reorg   , sorted_indices         , sorted_data  , sorted_name,   &
                   error )
 
-                If ( ok(io,  error == 0, io_comm ) ) Then
+                If ( ok(io,  error == 0, io%io_comm ) ) Then
                   ! Finally write the damn thing !!
-                  Call config_out(io, io_comm, write_level, write_options, file_handle, first_record, &
+                  Call config_out(io, io%io_comm, write_level, write_options, file_handle, first_record, &
                     n_me, sorted_indices, sorted_data, sorted_name, error )
                 End If
 
                 Deallocate ( sorted_name , Stat = error )
-                If ( .not. ok(io, error == 0, io_comm ) ) Then
+                If ( .not. ok(io, error == 0, io%io_comm ) ) Then
                   error = IO_DEALLOCATION_ERROR
                   Exit
                 End If
                 Deallocate ( sorted_data , Stat = error )
-                If ( .not. ok(io, error == 0, io_comm ) ) Then
+                If ( .not. ok(io, error == 0, io%io_comm ) ) Then
                   error = IO_DEALLOCATION_ERROR
                   Exit
                 End If
                 Deallocate ( sorted_indices , Stat = error )
-                If ( .not. ok(io, error == 0, io_comm ) ) Then
+                If ( .not. ok(io, error == 0, io%io_comm ) ) Then
                   error = IO_DEALLOCATION_ERROR
                   Exit
                 End If
@@ -3880,7 +3883,7 @@ Contains
     End If
 
     ! For netCDF reopen the file in its original state
-    If ( do_io ) Then
+    If ( io%do_io ) Then
       If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
         Call netcdf_close( desc )
       End If
@@ -3893,7 +3896,7 @@ Contains
     End If
 
     ! Free comms
-    Call free_io_comm( do_io, io_comm, io_gather_comm )
+    Call free_io_comm( io%do_io, io%io_comm, io%io_gather_comm )
 
     ! Leave in sync
     Call MPI_BARRIER( io%base_comm, ierr )
@@ -5219,7 +5222,7 @@ Contains
       Else
         colour = MPI_UNDEFINED
       End If
-      do_io = colour == 0
+      do_io = (colour == 0)
       Call MPI_COMM_SPLIT( base_comm, colour, key, io_comm, ierr )
 
       ! And now the gather comm
@@ -5233,16 +5236,18 @@ Contains
 
     ! Freeing IO_COMM and IO_GATHER_COMM.
 
-    Logical                  :: do_io
+    Logical, Intent( InOut )  :: do_io
     ! Note we can not set an intent on this - on procs NOT doing I/O it is
     ! intent Out, on procs doing I/O it is InOut
-    Integer                  :: io_comm
+    Integer, Intent( InOut ) :: io_comm
     Integer, Intent( InOut ) :: io_gather_comm
     Integer :: ierr
     If( do_io ) Then
       Call MPI_COMM_FREE( io_comm, ierr )
     End If
     Call MPI_COMM_FREE( io_gather_comm, ierr )
+    io_comm = MPI_COMM_NULL
+    io_gather_comm = MPI_COMM_NULL
 
   End Subroutine free_io_comm
 

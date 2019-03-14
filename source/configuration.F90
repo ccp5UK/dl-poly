@@ -2960,7 +2960,11 @@ Contains
 
       Call io_set_parameters(io, user_comm = comm%comm )
       Call io_init(io, recsz )
-      Call io_open(io, io_write, comm%comm, fname, mode_wronly, fh )
+      Call split_io_comm( io%base_comm, io%n_io_procs_write, io%io_comm, io%io_gather_comm, io%do_io )
+      !Only ranks that do IO should open the files.
+      If( io%do_io ) Then
+        Call io_open(io, io_write, comm%comm, fname, mode_wronly, fh )
+      End If
 
       rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
       Call io_write_sorted_file(io, fh, levcfg, IO_RESTART, rec_mpi_io, config%natms,      &
@@ -2979,8 +2983,10 @@ Contains
           Call error( 1059 )
         End Select
       End If
-
-      Call io_close(io, fh )
+      If( io%do_io ) Then
+        Call io_close(io, fh )
+      End If
+      io%do_io = .false.
       Call io_finalize(io)
 
       ! SORTED Serial Direct Access FORTRAN
