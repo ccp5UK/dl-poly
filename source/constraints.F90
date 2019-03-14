@@ -613,7 +613,7 @@ Contains
     Character( Len = 256 ) :: message
 
 #ifdef CHRONO
-    Call start_timer('Rattle Constraints')
+    Call start_timer(tmr, 'Rattle Constraints')
 #endif
     fail=0
     Allocate (vxt(1:config%mxatms),vyt(1:config%mxatms),vzt(1:config%mxatms), Stat=fail)
@@ -768,7 +768,7 @@ Contains
       Call error(0,message)
     End If
 #ifdef CHRONO
-    Call stop_timer('Rattle Constraints')
+    Call stop_timer(tmr, 'Rattle Constraints')
 #endif
 
   End Subroutine constraints_rattle
@@ -813,7 +813,7 @@ Contains
 
     Character(Len=256) :: message
 #ifdef CHRONO
-    Call start_timer('SHAKE Constraints')
+    Call start_timer(tmr, 'SHAKE Constraints')
 #endif
     fail=0
     Allocate (xxt(1:config%mxatms),yyt(1:config%mxatms),zzt(1:config%mxatms),                              Stat=fail(1))
@@ -1033,7 +1033,7 @@ Contains
     End If
 
 #ifdef CHRONO
-    Call stop_timer('SHAKE Constraints')
+    Call stop_timer(tmr, 'SHAKE Constraints')
 #endif
   End Subroutine constraints_shake_vv
 

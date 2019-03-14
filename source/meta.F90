@@ -236,7 +236,7 @@ Contains
 #ifdef CHRONO
     ! Start main timer
     Call init_timer_system(tmr, files(FILE_OUTPUT)%unit_no,dlp_world(0))
-    Call start_timer('Initialisation')
+    Call start_timer(tmr,'Initialisation')
 #endif
 
 
@@ -327,7 +327,7 @@ Contains
     Call time_elapsed(tmr)
 
 #ifdef CHRONO
-    Call stop_timer('Initialisation')
+    Call stop_timer(tmr,'Initialisation')
 #endif
 
     ! devel%l_org: translate CONFIG into CFGORG and exit gracefully
@@ -475,7 +475,7 @@ Contains
     Call time_elapsed(tmr)
 
 #ifdef CHRONO
-  call start_timer('Main Calc')
+  call start_timer(tmr,'Main Calc')
 #endif
 
     ! Now you can run fast, boy
@@ -504,8 +504,8 @@ Contains
 
 
 #ifdef CHRONO
-    call stop_timer('Main Calc')
-    call start_timer('Termination')
+    call stop_timer(tmr,'Main Calc')
+    call start_timer(tmr,'Termination')
 #endif
 
     !Close the statis file if we used it.
@@ -562,7 +562,7 @@ Contains
     If (plume%l_plumed) Call plumed_finalize()
 
 #ifdef CHRONO
-    Call stop_timer('Termination')
+    Call stop_timer(tmr,'Termination')
     Call timer_report(tmr, comm)
 #endif
 

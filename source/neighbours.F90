@@ -320,7 +320,7 @@ Contains
     ! Get the dimensional properties of the MD config%cell
 
 #ifdef CHRONO
-    Call start_timer('Linked Cells')
+    Call start_timer(tmr, 'Linked Cells')
 #endif
     Call dcell(config%cell,celprp)
 
@@ -1143,7 +1143,7 @@ Contains
       Call error(0,message)
     End If
 #ifdef CHRONO
-    Call stop_timer('Linked Cells')
+    Call stop_timer(tmr, 'Linked Cells')
 #endif
 
   End Subroutine link_cell_pairs
