@@ -1,3 +1,4 @@
+Module errors_warnings
 !> Module controlling errors and warnings
 !>
 !> Copyright - Daresbury Laboratory
@@ -9,8 +10,8 @@
 !>           - a.b.g.chalk march-october 2018
 !>           - i.scivetti march-october 2018
 !> contrib - a.m.elena October 2018 - use standard integer for units
+!> contrib - a.m.elena March 2019 - remove error 145
 
-Module errors_warnings
   Use, intrinsic :: iso_fortran_env, only : error_unit,input_unit,output_unit
   Use kinds, Only : wp
   Use comms, Only : comms_type,abort_comms
@@ -1266,10 +1267,6 @@ Contains
       Else If (kode ==  141) Then
 
         Write(ounit,'(/,1x,a)') 'error - duplicate metal potential specified'
-
-      Else If (kode ==  145) Then
-
-        Write(ounit,'(/,1x,a)') 'error - no two-body like interactions specified'
 
       Else If (kode ==  150) Then
 
