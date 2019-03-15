@@ -118,6 +118,7 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    ! contrib   - a.m.elena march 2019 (remove error 145)
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -4890,14 +4891,6 @@ Contains
 
         Call dihedrals_14_check &
           (flow%strict,flow%print_topology,angle,dihedral,sites,comm)
-
-        ! test for existence/appliance of any two-body or tersoff or KIM model defined interactions!!!
-
-        If ( electro%key == ELECTROSTATIC_NULL .and. vdws%n_vdw == 0 .and. &
-          met%n_potentials == 0 .and. tersoffs%n_potential == 0 .and.  &
-          (.not. kim_data%active)) Then
-          Call error(145)
-        End If
 
         ! test for mixing KIM model with external interactions
 
