@@ -1,5 +1,12 @@
 Module timer
-  !! This module has no header !
+  !!------------------------------------------------!
+  !!
+  !! dl_poly_4 module containing timing routines 
+  !!
+  !! copyright - daresbury laboratory
+  !! author    - j.s.wilkins february 2019
+  !!
+  !!------------------------------------------------!
   Use kinds, Only : wp
   Use comms, Only : comms_type,gtime,mtime,gmin,gmax,gsum,gsync,gsend,grecv,timer_tag,abort_comms
   Implicit None
@@ -10,33 +17,48 @@ Module timer
 
 
   Type :: node_timer
+    !!------------------------------------------------!
+    !! Timer
+    !!------------------------------------------------!
     Character( Len = max_name ) :: name
     Integer           :: id
     Real( Kind = wp ) :: max, min, total, last
     Real( Kind = wp ) :: start, stop
     Integer           :: calls
     Logical           :: running = .false.
-  end type node_timer
+  End Type node_timer
 
   Type :: call_stack
-    Character ( Len = max_name ), dimension( max_depth ) :: name
+    !!------------------------------------------------!
+    !! Call stack
+    !!------------------------------------------------!
+    Character ( Len = max_name ), Dimension( max_depth ) :: name
     Integer :: depth = 0
-  end type call_stack
+  End Type call_stack
 
   Type :: node
+    !!------------------------------------------------!
+    !! Tree node
+    !!------------------------------------------------!
     Type ( node_timer ) :: time
-    Type ( timer_tree ), pointer :: tree => null()
-    Type ( node ), pointer :: child => null()
-    Type ( node ), pointer :: parent => null()
-    Type ( node ), pointer :: next_sibling => null()
-  end type node
+    Type ( timer_tree ), Pointer :: tree => null()
+    Type ( node ), Pointer :: child => null()
+    Type ( node ), Pointer :: parent => null()
+    Type ( node ), Pointer :: next_sibling => null()
+  End Type node
   
   Type :: timer_tree
-    Type ( node ), pointer :: head => null()
+    !!------------------------------------------------!
+    !! Tree structure
+    !!------------------------------------------------!
+    Type ( node ), Pointer :: head => null()
     Integer :: n_timers = 0
-  end type timer_tree
+  End Type timer_tree
 
   Type, Public :: timer_type
+    !!------------------------------------------------!
+    !! Main timer system
+    !!------------------------------------------------!
     Type ( timer_tree ), pointer :: tree
     Type ( call_stack ) :: stack
     Real( Kind = wp) :: elapsed,job,clear_screen
@@ -46,10 +68,10 @@ Module timer
     Integer :: out_unit
   End Type timer_type
   
-  interface timer_write
-    module procedure timer_write_sing
-    module procedure timer_write_mul
-  end interface timer_write
+  Interface timer_write
+    Module Procedure timer_write_sing
+    Module Procedure timer_write_mul
+  End Interface timer_write
 
   Public :: timer_report
   Public :: timer_last_time
@@ -65,6 +87,14 @@ Module timer
 Contains
 
   Subroutine dump_call_stack ( stack )
+    !!------------------------------------------------!
+    !!
+    !! Print out a call stack to dump current location
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
     Type ( call_stack ) :: stack
     Integer :: i
 
@@ -77,6 +107,14 @@ Contains
   End Subroutine dump_call_stack
 
   Subroutine push_stack ( tmr, name )
+    !!------------------------------------------------!
+    !!
+    !! Add a timer to the call stack
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
     Type ( timer_type ), Intent( InOut ) :: tmr
     Character ( Len = * ), Intent ( In    ) :: name
 
@@ -88,6 +126,14 @@ Contains
   End Subroutine push_stack
 
   Subroutine pop_stack ( tmr, name )
+    !!------------------------------------------------!
+    !!
+    !! Remove a timer from the call stack
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
     Type ( timer_type ), Intent( InOut ) :: tmr
     Character ( Len = * ), Intent( In    ) :: name
 
@@ -99,6 +145,14 @@ Contains
   End Subroutine pop_stack
 
   Subroutine init_timer_system ( tmr, nrite, comm )
+    !!------------------------------------------------!
+    !!
+    !! Initialise a timer system
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
     Type ( timer_type ), intent ( inout ) :: tmr
     Type ( comms_type ), intent ( in    ) :: comm
     Integer, intent ( in ) :: nrite
@@ -114,6 +168,14 @@ Contains
   End Subroutine init_timer_system
 
   Function find_timer ( tmr, name, stack_in ) result(current)
+    !!------------------------------------------------!
+    !!
+    !! Locate a timer node witin a given timer system
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
     Type ( timer_type ), Intent ( InOut ) :: tmr
     Character ( Len = * ) :: name
     Type ( call_stack ), Optional :: stack_in
@@ -162,6 +224,14 @@ Contains
   End Function find_timer
 
   Subroutine init_child_node(name, parent)
+    !!------------------------------------------------!
+    !!
+    !! Create a timer node which is a child of the parent node
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
     Character ( len = * ), Intent( In    ) :: name
     Type ( node ), Target :: parent
 
@@ -174,6 +244,14 @@ Contains
   End Subroutine init_child_node
 
   Subroutine init_sibling_node(name, sibling)
+    !!------------------------------------------------!
+    !!
+    !! Create a timer node which is a child of the parent node
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
     Character ( len = * ) :: name
     Type ( node ) :: sibling
     Type ( node ), pointer :: child
@@ -190,7 +268,15 @@ Contains
   End Subroutine init_sibling_node
 
   Subroutine start_timer(tmr, name, stack)
-    !! This routine has no header !
+    !!------------------------------------------------!
+    !!
+    !! Start a timer running on a given timer system
+    !! If stack is supplied bypass standard call stack
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
     Type ( timer_type ), Intent( InOut ) :: tmr
     Character ( Len = * ), Intent( In    )  :: name
     Type ( call_stack ), optional :: stack
@@ -205,7 +291,15 @@ Contains
   End Subroutine start_timer
 
   Subroutine stop_timer(tmr, name, stack)
-    !! This routine has no header !
+    !!------------------------------------------------!
+    !!
+    !! Stop a timer running on a given timer system
+    !! If stack is supplied bypass standard call stack
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
     Type ( timer_type ), Intent( InOut ) :: tmr
     Character ( Len = * ), Intent( In    )  :: name
     Type ( call_stack ), optional :: stack
@@ -229,7 +323,19 @@ Contains
   End Subroutine stop_timer
 
   Subroutine start_timer_path(tmr, name_in, start_parents)
-    !! This routine has no header !
+    !!------------------------------------------------!
+    !!
+    !! Start a timer running on a given timer system
+    !! ignoring the timer call stack
+    !! If start_parents start all non-running timers
+    !! which are on the path -- Default TRUE
+    !! - Path should be colon separated
+    !! 
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
     Type ( timer_type ), Intent( InOut ) :: tmr
     Character ( Len = * ), Intent( In    )  :: name_in
     Logical, Intent ( In    ), Optional :: start_parents
@@ -260,10 +366,22 @@ Contains
   End Subroutine start_timer_path
 
   Subroutine stop_timer_path(tmr, name_in, stop_parents)
-    !! This routine has no header !
+    !!------------------------------------------------!
+    !!
+    !! Stop a timer running on a given timer system
+    !! ignoring the timer call stack
+    !! If stop_parents stop all running timers
+    !! which are on the path -- Default TRUE
+    !! - Path should be colon separated
+    !! 
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
     Type ( timer_type ), Intent( InOut ) :: tmr
     Character ( Len = * ), Intent( In    )  :: name_in
-        Logical, Intent ( In    ), Optional :: stop_parents
+    Logical, Intent ( In    ), Optional :: stop_parents
     Logical :: parents
     Character ( Len = max_name ) :: name
     Type ( call_stack ) :: stack
@@ -289,7 +407,16 @@ Contains
   End Subroutine stop_timer_path
   
   Subroutine timer_report(tmr,comm)
-    !! This routine has no header !
+    !!------------------------------------------------!
+    !!
+    !! Stop the main timer system and print the full
+    !! table of timers to stdout
+    !! 
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
     Type ( node ), Pointer :: current_timer
@@ -326,6 +453,15 @@ Contains
   End Subroutine timer_report
 
   Subroutine timer_print_tree(comm, tmr, init_node, max_depth, proc_id, message)
+    !!------------------------------------------------!
+    !!
+    !! Return a table of the given timer system to
+    !! the message variable
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
     Implicit None
     Type ( comms_type ), Intent ( InOut ) :: comm
     Type ( timer_type ), Intent ( In    ) :: tmr
@@ -440,7 +576,14 @@ Contains
   End Subroutine timer_print_tree
   
   Subroutine init_timer(current_timer, name)
-    !! This routine has no header !
+    !!------------------------------------------------!
+    !!
+    !! Initialise a node timer
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
     Type ( node_timer ) :: current_timer
     Character ( Len = * )  :: name
 
@@ -454,7 +597,15 @@ Contains
   End Subroutine init_timer
 
   Subroutine timer_last_time(tmr, name, screen)
-    !! This routine has no header !
+    !!------------------------------------------------!
+    !!
+    !! Write the length of the previous call to a given
+    !! node timer
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
     Type ( timer_type ), Intent ( InOut ) :: tmr
     Character ( Len = * )  :: name
     Logical, Optional :: screen
@@ -475,7 +626,15 @@ Contains
   End Subroutine timer_last_time
 
   Subroutine time_elapsed(tmr)
-    !! This routine has no header !
+    !!------------------------------------------------!
+    !!
+    !! Write the elapsed time since the start of the
+    !! program
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
     Type ( timer_type ), Intent( InOut ) :: tmr
 
     Character( Len = 256 ) :: message
@@ -487,6 +646,14 @@ Contains
   End Subroutine time_elapsed
 
   Subroutine timer_write_mul(message, timer_in)
+    !!------------------------------------------------!
+    !!
+    !! Write multiple lines to standard out
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
     Character( Len = * ), Dimension(:), Intent( In    ) :: message
     Type ( timer_type ), Optional, Intent ( In    ):: timer_in
     Integer :: i
@@ -510,6 +677,14 @@ Contains
   End Subroutine timer_write_mul
 
   Subroutine timer_write_sing(message, timer_in)
+    !!------------------------------------------------!
+    !!
+    !! Write a single line to standard out
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
     Character( Len = * ), Intent( In    ) :: message
     Type ( timer_type ), Optional, Intent ( In    ):: timer_in
     
@@ -528,6 +703,14 @@ Contains
   End Subroutine timer_write_sing
 
   Subroutine timer_error(tmr, message)
+    !!------------------------------------------------!
+    !!
+    !! Report an error with the timer system
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
     Type ( timer_type ), Intent ( In    ):: tmr
     Character ( len = * ), Intent( In    ) :: message
    
@@ -541,6 +724,14 @@ Contains
   End Subroutine timer_error
 
   Subroutine timer_split_stack_string(tmr, stack_string, newStack, name)
+    !!------------------------------------------------!
+    !!
+    !! Split a colon-separated path string into a stack
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
     Type ( timer_type ), Intent ( In    ):: tmr
     Character( Len = * ), Intent( In    ) :: stack_string
     Character( Len = 256 ) :: stack
