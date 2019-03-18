@@ -44,6 +44,7 @@ Module configuration
     io_get_var,                &
     io_nc_get_var,             &
     io_nc_get_att,             &
+    split_io_comm,             &
     IO_READ_MASTER,            &
     IO_READ_NETCDF,            &
     IO_RESTART,                &

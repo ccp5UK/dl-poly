@@ -105,6 +105,7 @@ Module io
   Public :: io_nc_set_real_precision
   Public :: io_nc_get_real_precision
   Public :: io_nc_get_file_real_precision
+  Public :: split_io_comm
 
   ! Private entities
   Private
