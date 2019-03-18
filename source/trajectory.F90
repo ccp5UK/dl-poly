@@ -21,6 +21,7 @@ Module trajectory
     io_close, io_finalize,         &
     io_nc_get_real_precision,      &
     io_nc_get_file_real_precision, &
+    split_io_comm,                 &
     IO_HISTORY,IO_HISTORD,         &
     IO_BASE_COMM_NOT_SET,          &
     IO_ALLOCATION_ERROR,           &
@@ -1497,7 +1498,11 @@ Contains
 
       Call io_set_parameters(io, user_comm = comm%comm )
       Call io_init(io, traj%recsz_write )
-      Call io_open(io, io_write, comm%comm, traj%fname, mode_wronly, fh )
+      Call split_io_comm( io%base_comm, io%n_io_procs_write, io%io_comm, io%io_gather_comm, io%do_io )
+      !Only ranks that do IO should open the files.
+      If( io%do_io ) Then
+        Call io_open(io, io_write, comm%comm, fname, mode_wronly, fh )
+      End If
 
       Call io_write_sorted_file(io, fh, traj%file_key(), IO_HISTORY, rec_mpi_io, config%natms, &
         config%ltg, config%atmnam, config%weight, rsd, config%parts,                   &
@@ -1526,8 +1531,10 @@ Contains
           Call io_write_record(io, fh, Int(1,offset_kind), record(1:traj%recsz_write) )
         End If
       End If
-
-      Call io_close(io, fh )
+      
+      If( io%do_io ) Then
+        Call io_close(io, fh )
+      End If
       Call io_finalize(io)
 
       ! SORTED Serial Ditraj%rec_writet Access FORTRAN
@@ -2032,7 +2039,11 @@ Contains
 
       Call io_set_parameters(io, user_comm = comm%comm )
       Call io_init(io, traj%recsz_write )
-      Call io_open(io, io_write, comm%comm, traj%fname, mode_wronly, fh )
+      Call split_io_comm( io%base_comm, io%n_io_procs_write, io%io_comm, io%io_gather_comm, io%do_io )
+      !Only ranks that do IO should open the files.
+      If( io%do_io ) Then
+        Call io_open(io, io_write, comm%comm, fname, mode_wronly, fh )
+      End If
 
       Call io_write_sorted_file(io, fh, 0*traj%file_key(), IO_HISTORD, rec_mpi_io, config%natms, &
         config%ltg, config%atmnam, (/ 0.0_wp /),  rsd, config%parts,     &
@@ -2063,7 +2074,9 @@ Contains
         End If
       End If
 
-      Call io_close(io, fh )
+      If( io%do_io ) Then
+        Call io_close(io, fh )
+      End If
       Call io_finalize(io)
 
       ! SORTED Serial Ditraj%rec_writet Access FORTRAN
