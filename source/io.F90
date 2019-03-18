@@ -2403,7 +2403,7 @@ Contains
         Return
       End If
 
-      Call gather_data( io_gather_comm, local_bottom, local_top,               &
+      Call gather_data( io%io_gather_comm, local_bottom, local_top,               &
         local_global_indices   , local_data   , local_name,    &
         gathered_global_indices, gathered_data, gathered_name, &
         n_gathered, error )
@@ -3489,7 +3489,7 @@ Contains
     ! it has no data about it ) also return DO_IO to indicate whether this
     ! processor will perform I/O, i.e.  if it is a member of IO_COMM.
     If( io%io_comm == MPI_COMM_NULL) Then
-      Call split_io_comm( io%base_comm, io%n_io_procs_write, io_comm, io_gather_comm, do_io )
+      Call split_io_comm( io%base_comm, io%n_io_procs_write, io%io_comm, io%io_gather_comm, io%do_io )
     End If
     If ( io%do_io ) Then
       Call MPI_COMM_RANK( io%io_comm, me_in_io, ierr )
