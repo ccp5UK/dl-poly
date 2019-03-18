@@ -3643,7 +3643,7 @@ Contains
 
     If ( io%do_io ) Then
       If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-        Call netcdf_open( Trim( io%known_files( file_handle )%name ), desc, io_comm, MPI_INFO_NULL )
+        Call netcdf_open( Trim( io%known_files( file_handle )%name ), desc, io%io_comm, MPI_INFO_NULL )
         Call netcdf_get_def( desc )
       End If
     End If
@@ -3755,7 +3755,7 @@ Contains
         Return
       End If
 
-      Call gather_data( io_gather_comm, local_bottom, local_top,               &
+      Call gather_data( io%io_gather_comm, local_bottom, local_top,               &
         local_global_indices   , local_data   , local_name,    &
         gathered_global_indices, gathered_data, gathered_name, &
         n_gathered, error )
