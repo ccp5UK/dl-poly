@@ -1501,7 +1501,7 @@ Contains
       Call split_io_comm( io%base_comm, io%n_io_procs_write, io%io_comm, io%io_gather_comm, io%do_io )
       !Only ranks that do IO should open the files.
       If( io%do_io ) Then
-        Call io_open(io, io_write, comm%comm, fname, mode_wronly, fh )
+        Call io_open(io, io_write, comm%comm, traj%fname, mode_wronly, fh )
       End If
 
       Call io_write_sorted_file(io, fh, traj%file_key(), IO_HISTORY, rec_mpi_io, config%natms, &
@@ -2042,7 +2042,7 @@ Contains
       Call split_io_comm( io%base_comm, io%n_io_procs_write, io%io_comm, io%io_gather_comm, io%do_io )
       !Only ranks that do IO should open the files.
       If( io%do_io ) Then
-        Call io_open(io, io_write, comm%comm, fname, mode_wronly, fh )
+        Call io_open(io, io_write, comm%comm, traj%fname, mode_wronly, fh )
       End If
 
       Call io_write_sorted_file(io, fh, 0*traj%file_key(), IO_HISTORD, rec_mpi_io, config%natms, &
