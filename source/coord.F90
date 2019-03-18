@@ -306,8 +306,8 @@ contains
     integer :: i,ii,j,jj,k,kk,defn,defectcnt,totdefectcnt
     real :: rcut,rab,rdis
     integer, allocatable :: buff(:)
-    character(len=60) :: aux
-    character(len=60), allocatable :: rbuff(:)
+    character(len=68) :: aux
+    character(len=68), allocatable :: rbuff(:)
     logical :: coordchange,coordfound,thisopen
     
     If(crd%coordon .Eqv. .False.)Return
@@ -368,26 +368,18 @@ contains
         Write(Unit=nccrdt, Fmt='(a60)') config%cfgname(1:60)
         Write(Unit=nccrdt, Fmt='(a20,I10)')'Number of frames',(flow%run_steps-crd%coordstart)/crd%coordinterval+1
         endif
-
-        If(impa%imd>0)then
-         Write(Unit=nccrdt,Fmt='(A30,I10,I10,f20.6)')'Number of coordination changes',totdefectcnt+1,flow%step,flow%time
-        else
          Write(Unit=nccrdt,Fmt='(A30,I10,I10,f20.6)')'Number of coordination changes',totdefectcnt,flow%step,flow%time
-        endif
+        
       Do i = 0, 2
           write(Unit=nccrdt,fmt= '( 3f20.10 )' ) &
              config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 )
       enddo
-  
-      If(impa%imd>0)then
-       write(Unit=nccrdt,Fmt='(a2,I10,3f20.10)') &
-         trim(sites%unique_atom(config%ltype(impa%imd))),config%ltg(impa%imd), &
-         config%parts(impa%imd)%xxx,config%parts(impa%imd)%yyy,config%parts(impa%imd)%zzz
-      endif
+
       Do i=1, crd%defectlist(0)
-        write(Unit=nccrdt,Fmt='(a2,I10,3f20.10)') &
+        write(Unit=nccrdt,Fmt='(a2,I10,3f20.10,f8.5)') &
           trim(sites%unique_atom(config%ltype(crd%defectlist(i)))),config%ltg(crd%defectlist(i)), &
-          config%parts(crd%defectlist(i))%xxx,config%parts(crd%defectlist(i))%yyy,config%parts(crd%defectlist(i))%zzz
+          config%parts(crd%defectlist(i))%xxx,config%parts(crd%defectlist(i))%yyy,config%parts(crd%defectlist(i))%zzz,&
+          stats%rsd(i)
       enddo
 
       do j=1,comm%mxnode-1
@@ -415,8 +407,8 @@ contains
       do i =1, defectcnt
         buff(2*i-1)=config%ltype(crd%defectlist(i))
         buff(2*i)=config%ltg(crd%defectlist(i))
-        write(aux,'(3f20.10)')config%parts(crd%defectlist(i))%xxx,config%parts(crd%defectlist(i))%yyy,  &
-        config%parts(crd%defectlist(i))%zzz
+        write(aux,'(3f20.10,f8.5)')config%parts(crd%defectlist(i))%xxx,config%parts(crd%defectlist(i))%yyy,  &
+        config%parts(crd%defectlist(i))%zzz,stats%rsd(crd%defectlist(i))
         rbuff(i)=aux
       End do
       Call gsend(comm,defectcnt,0,comm%idnode)
