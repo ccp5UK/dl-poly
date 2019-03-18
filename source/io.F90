@@ -949,7 +949,7 @@ Contains
 
     If ( io%do_io ) Then
       If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-        Call netcdf_open( Trim( io%known_files( file_handle )%name ), desc, io_comm, MPI_INFO_NULL )
+        Call netcdf_open( Trim( io%known_files( file_handle )%name ), desc, io%io_comm, MPI_INFO_NULL )
         Call netcdf_get_def( desc )
       End If
     End If
@@ -1039,7 +1039,7 @@ Contains
         Return
       End If
 
-      If ( do_io ) Then
+      If ( io%do_io ) Then
         Allocate ( gathered_data( 1:Size( local_data, Dim = 1 ), 1:this_batch_size ), &
           Stat = error )
       Else
@@ -1050,7 +1050,7 @@ Contains
         Return
       End If
 
-      If ( do_io ) Then
+      If ( io%do_io ) Then
         Allocate ( gathered_name( 1:Size( local_name, Dim = 1 ), 1:this_batch_size ), &
           Stat = error )
       Else
@@ -2289,7 +2289,7 @@ Contains
       Call netcdf_close( desc )
     End If
 
-    If ( do_io ) Then
+    If ( io%do_io ) Then
       If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
         Call netcdf_open( Trim( io%known_files( file_handle )%name ), desc, io%io_comm, MPI_INFO_NULL )
         Call netcdf_get_def( desc )
@@ -2343,7 +2343,7 @@ Contains
           Exit
         End If
         ! Then max over the I/O processors and broadcast it back over the io_gather_group.
-        If ( do_io ) Then
+        If ( io%do_io ) Then
           Call MPI_ALLREDUCE( n_gathered, itmp, 1, &
             MPI_INTEGER, MPI_MAX, io%io_comm, ierr )
           n_gathered = itmp
@@ -2358,7 +2358,7 @@ Contains
           Call batch_limits_set( local_global_indices, bottom_batch, top_batch, &
             local_bottom, local_top )
           Call MPI_ALLREDUCE( local_top - local_bottom + 1, n_gathered, 1, &
-            MPI_INTEGER, MPI_SUM, io_gather_comm, ierr )
+            MPI_INTEGER, MPI_SUM, io%io_gather_comm, ierr )
           Exit
         Else
           ! The batch is till smaller than the limit.  Try again.
@@ -2392,7 +2392,7 @@ Contains
         Return
       End If
 
-      If ( do_io ) Then
+      If ( io%do_io ) Then
         Allocate ( gathered_name( 1:Size( local_name, Dim = 1 ), 1:this_batch_size ), &
           Stat = error )
       Else
@@ -3593,7 +3593,7 @@ Contains
     ! Note it's not a standard to pass an unallocated array unless the
     ! dummy argument is allocatable.  Here this is not the case hence allocate
     ! to size zero on procs that will not need the array.
-    If ( do_io ) Then
+    If ( io%do_io ) Then
       Allocate ( n_reorg( 0:actual_io_procs - 1 ), Stat = error )
     Else
       Allocate ( n_reorg( 0:-1 ), Stat = error )
@@ -3641,7 +3641,7 @@ Contains
       Call netcdf_close( desc )
     End If
 
-    If ( do_io ) Then
+    If ( io%do_io ) Then
       If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
         Call netcdf_open( Trim( io%known_files( file_handle )%name ), desc, io_comm, MPI_INFO_NULL )
         Call netcdf_get_def( desc )
@@ -3723,7 +3723,7 @@ Contains
       ! Gather the data onto the I/O processors.  Note allocation to full
       ! size only occurs on the I/O processor, as that is where it is needed,
       ! but to keep to the standard alloc to zero on the other procs
-      If ( do_io ) Then
+      If ( io%do_io ) Then
         Allocate ( gathered_global_indices( 1:this_batch_size ), Stat = error )
       Else
         Allocate ( gathered_global_indices( 0:-1 ), Stat = error )
