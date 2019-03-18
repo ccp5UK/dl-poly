@@ -3782,9 +3782,9 @@ Contains
           ! Now allocate the data for use after the global sort
           n_me = n_reorg( me_in_io )
           Allocate ( sorted_indices( 1:n_me ), Stat = error )
-          If ( ok(io,  error == 0, io_comm ) ) Then
+          If ( ok(io,  error == 0, io%io_comm ) ) Then
             Allocate ( sorted_data( 1:size_local, 1:n_me ), Stat = error )
-            If ( ok(io,  error == 0, io_comm ) ) Then
+            If ( ok(io,  error == 0, io%io_comm ) ) Then
               Allocate ( sorted_name( 1:Len( atom_name ), 1:n_me ), Stat = error )
               If ( ok(io,  error == 0, io%io_comm ) ) Then
                 ! And sort the data across the I/O processors
