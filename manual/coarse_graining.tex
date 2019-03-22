@@ -93,7 +93,7 @@ whereas for angles the possible ranges are known {\em a priory}
 by definition. If no cutoff is supplied for bonds, then it
 defaults to 2~\AA.  It is worth noting that, for the sake of
 accuracy, the number of bins per PDF must be larger than or equal
-to $N_{\rm min} = {\tt nint} \left( \frac{\rm PDF~cutoff}{\Delta_{\rm max}} \right)$,
+to $N_{\rm min} = {\tt Nint} \left( \frac{\rm PDF~cutoff}{\Delta_{\rm max}} \right)$,
 where the max bin size, $\Delta_{\rm max}$, is defined internally
 for each type of PDF (see {\tt setup\_module.f90}).  Otherwise,
 it will default to ${\tt max}(N_{\rm min},N_{\rm tab})$,
@@ -212,7 +212,7 @@ pairwise force dependencies (virial for bonds), which are stored in
 the *PMF and, upon resampling onto a {\em bin-edge} grid, *TAB files.
 {\bf It is important to note} that, unlike the *PMF files containing
 the bare $-\ln$(PDF) data (converted to the requested energy units)
-{\em on the same grid as the PDF histograms}, the force-field data in *TAB 
+{\em on the same grid as the PDF histograms}, the force-field data in *TAB
 files are {\em resampled} onto $\max(N_{\rm min},N_{\rm tab})$ grid points
 located at the bin edges (as expected by \D when reading the potential
 and force tables), where $N_{\rm tab}$ is the grid number for

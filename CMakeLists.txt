@@ -16,7 +16,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake" "${CMAKE_
 include(DLPOLYBuildOptions)
 include(DLPOLYBuildFunctions)
 include(GNUInstallDirs)
-include(FeatureSummary)
 
 if(COMMAND cmake_policy)
   #  cmake_policy(SET CMP0004 OLD)
@@ -75,7 +74,6 @@ if(WITH_NETCDF)
 else()
   message(STATUS "Build without netcdf support")
 endif()
-
 
 if(WITH_KIM)
   find_package(PkgConfig REQUIRED)
@@ -208,11 +206,18 @@ if(BUILD_TESTING)
       message(STATUS "Trying to download ${arg}.tar.xz")
       if ("${HOST}" MATCHES ".*.dl.ac.uk")
         file(DOWNLOAD ccforge.dl.ac.uk:1848/${DLPOLY_VERSION_MAJOR}.${DLPOLY_VERSION_MINOR}/${arg}.tar.xz
-          ${CMAKE_SOURCE_DIR}/data/${arg}.tar.xz)
+          ${CMAKE_SOURCE_DIR}/data/${arg}.tar.xz STATUS DL_TEST SHOW_PROGRESS)
       else()
         file(DOWNLOAD https://www.ccp5.ac.uk/sites/www.ccp5.ac.uk/files/DL_POLY/data/${DLPOLY_VERSION_MAJOR}.${DLPOLY_VERSION_MINOR}/${arg}.tar.xz
-          ${CMAKE_SOURCE_DIR}/data/${arg}.tar.xz)
+          ${CMAKE_SOURCE_DIR}/data/${arg}.tar.xz STATUS DL_TEST SHOW_PROGRESS)
       endif()
+      list(GET DL_TEST 0 ERRNO)
+      if ("${ERRNO}" EQUAL "0")
+        message(STATUS "Download successful for ${arg}.tar.xz")
+      else()
+        list(GET DL_TEST 1 ERRMSG)
+        message(FATAL_ERROR "Download failed for ${arg}.tar.xz  with message: ${ERRMSG}")
+      endif()  
     endif()
     file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/Testing/${arg})
     file(COPY ${CMAKE_SOURCE_DIR}/data/${arg}.tar.xz
@@ -242,13 +247,10 @@ if(BUILD_TESTING)
   foreach(test RANGE 169 171 1)
     do_test("TEST${test}")
   endforeach()
-  foreach(test RANGE 173 175 1)
+  foreach(test RANGE 173 179 1)
     do_test("TEST${test}")
   endforeach()
 
 else()
   message(STATUS "Build without testing target")
 endif()
-
-feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
-

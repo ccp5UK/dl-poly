@@ -1305,19 +1305,6 @@ During reading of metal potentials (pairs of atom types) in FIELD
 
 Delete one of the duplicate entries and resubmit.
 
-\subsubsection*{\underline{Message 145}: error - no two-body like interactions specified}
-
-This error arises when there are no two-body like interactions
-specified in FIELD and CONTROL.  I.e. none of the following
-interactions exists or if does, it has been switched off;
-any coulombic, vdw, metal, tersoff.  In \D expects that particles will
-be kept apparat, stay separated and never go through each other
-due to one of the fore-specified interactions.
-
-\noindent \underline{\em Action}:
-
-Users must alone take measures to prevent such outcome.
-
 \subsubsection*{\underline{Message 150}: error - unknown van der waals potential selected}
 
 \D checks when constructing the interpolation tables for the short
@@ -1410,7 +1397,8 @@ happen!
 
 Contact \D authors.
 
-\subsubsection*{\underline{Message 172}: error - duplicate intra-molecular entries specified in TABBND\textbar\textbar TABANG\textbar\textbar TABDIH\textbar\textbar TABINV}
+\subsubsection*{\underline{Message 172}: error - duplicate intra-molecular entries specified \\
+in TABBND\textbar\textbar TABANG\textbar\textbar TABDIH\textbar\textbar TABINV}
 
 A duplicate entry has been encountered in the intra-molecular table file.
 
@@ -1711,7 +1699,8 @@ potential\index{potential!four-body} it does not recognise.
 \noindent \underline{\em Action}:
 
 Check the FIELD file and make sure the keyword is correctly
-defined.  Make sure that subroutine {\sc three\_body\_forces}
+defined.  Make sure that subroutine \\
+{\sc three\_body\_forces}
 contains the code necessary to deal with the requested potential.
 Add the code required if necessary, by amending subroutines {\sc
 read\_field} and {\sc three\_body\_forces}.
@@ -2629,9 +2618,9 @@ and try to run the system.
 
 \subsubsection*{\underline{Message 670}: error - insufficient electronic temperature cells for TTM heat diffusion}
 
-The number of coarse-grained electronic temperature (CET) cells for the 
-heat diffusion calculations of the two-temperature model (TTM) in any direction 
-(x, y or z) is less than the number of coarse-grained ionic temperature (CIT) 
+The number of coarse-grained electronic temperature (CET) cells for the
+heat diffusion calculations of the two-temperature model (TTM) in any direction
+(x, y or z) is less than the number of coarse-grained ionic temperature (CIT)
 cells.
 
 \noindent \underline{\em Action}:
@@ -2642,45 +2631,45 @@ electronic temperature cells.
 
 \subsubsection*{\underline{Message 680}: error - rpad too large for calculation of ionic temperatures}
 
-The padding distance applied to pair interactions is the maximum 
+The padding distance applied to pair interactions is the maximum
 distance a particle may exist beyond a periodic boundary. In the case of
 calculating ionic temperatures for TTM, this distance extends beyond the
-extent (in any direction) of the ionic temperature cells and thus this 
+extent (in any direction) of the ionic temperature cells and thus this
 property cannot be reliably calculated.
 
 \noindent \underline{\em Action}:
 
-Reduce the padding distance for pair interactions with the {\bf rpad} directive in 
+Reduce the padding distance for pair interactions with the {\bf rpad} directive in
 the CONTROL file.
 
 \subsubsection*{\underline{Message 681}: error - electronic specific heat not fully specified}
 
-Not enough information is given for electronic specific heat capacity functions 
+Not enough information is given for electronic specific heat capacity functions
 (other than a constant value) used in two-temperature model calculations.
 
 \noindent \underline{\em Action}:
 
-Ensure that two positive parameters are given with either the {\bf ttm cetanh} or 
+Ensure that two positive parameters are given with either the {\bf ttm cetanh} or
 {\bf ttm celin} directives in the CONTROL file.
 
 \subsubsection*{\underline{Message 682}: error - thermal conductivity of metal not specified}
 
-No information given for thermal conductivity of metal used in two-temperature 
+No information given for thermal conductivity of metal used in two-temperature
 model calculations.
- 
+
 \noindent \underline{\em Action}:
 
-Ensure that a positive parameter is given with either the {\bf ttm keconst} or 
+Ensure that a positive parameter is given with either the {\bf ttm keconst} or
 {\bf ttm kedrude} directives in the CONTROL file.
 
 \subsubsection*{\underline{Message 683}: error - thermal diffusivity of non-metal not specified}
 
-No information given for thermal diffusivity of non-metal used in two-temperature 
+No information given for thermal diffusivity of non-metal used in two-temperature
 model calculations.
- 
+
 \noindent \underline{\em Action}:
 
-Ensure that a positive parameter is given with the {\bf ttm diff} directive in the 
+Ensure that a positive parameter is given with the {\bf ttm diff} directive in the
 CONTROL file.
 
 \subsubsection*{\underline{Message 684}: error - cannot find or open thermal conductivity table file (Ke.dat)}
@@ -2689,8 +2678,8 @@ No readable file (Ke.dat) is available to read tabulated thermal conductivities.
 
 \noindent \underline{\em Action}:
 
-Ensure that a readable text file named Ke.dat is available in the directory 
-where \D is being run. (This must be supplied if the {\bf ttm ketab} directive 
+Ensure that a readable text file named Ke.dat is available in the directory
+where \D is being run. (This must be supplied if the {\bf ttm ketab} directive
 is given in the CONTROL file.)
 
 \subsubsection*{\underline{Message 685}: error - no data found in thermal conductivity table file (Ke.dat)}
@@ -2699,7 +2688,7 @@ No tabulated thermal conductivities can be read from the Ke.dat file.
 
 \noindent \underline{\em Action}:
 
-Ensure that the Ke.dat file is formatted correctly in two columns: temperature 
+Ensure that the Ke.dat file is formatted correctly in two columns: temperature
 and thermal conductivity. Temperatures should be greater than or equal to 0 kelvin.
 
 \subsubsection*{\underline{Message 686}: error - cannot find or open volumetric heat capacity table file (Ce.dat)}
@@ -2708,8 +2697,8 @@ No readable file (Ce.dat) is available to read tabulated volumetric heat capacit
 
 \noindent \underline{\em Action}:
 
-Ensure that a readable text file named Ce.dat is available in the directory 
-where \D is being run. (This must be supplied if the {\bf ttm cetab} directive 
+Ensure that a readable text file named Ce.dat is available in the directory
+where \D is being run. (This must be supplied if the {\bf ttm cetab} directive
 is given in the CONTROL file.)
 
 \subsubsection*{\underline{Message 687}: error - no data found in volumetric heat capacity table file (Ce.dat)}
@@ -2718,8 +2707,8 @@ No tabulated volumetric heat capacities can be read from the Ce.dat file.
 
 \noindent \underline{\em Action}:
 
-Ensure that the Ce.dat file is formatted correctly in two columns: temperature 
-and volumetric heat capacity (equal to product of specific heat capacity and 
+Ensure that the Ce.dat file is formatted correctly in two columns: temperature
+and volumetric heat capacity (equal to product of specific heat capacity and
 density). Temperatures should be greater than or equal to 0 kelvin.
 
 \subsubsection*{\underline{Message 688}: error - cannot find or open thermal diffusivity table file (De.dat)}
@@ -2728,8 +2717,8 @@ No readable file (Ce.dat) is available to read tabulated volumetric heat capacit
 
 \noindent \underline{\em Action}:
 
-Ensure that a readable text file named De.dat is available in the directory 
-where \D is being run. (This must be supplied if the {\bf ttm detab} directive 
+Ensure that a readable text file named De.dat is available in the directory
+where \D is being run. (This must be supplied if the {\bf ttm detab} directive
 is given in the CONTROL file.)
 
 \subsubsection*{\underline{Message 689}: error - no data found in thermal diffusivity table file (De.dat)}
@@ -2738,7 +2727,7 @@ No tabulated thermal diffusivities can be read from the De.dat file.
 
 \noindent \underline{\em Action}:
 
-Ensure that the De.dat file is formatted correctly in two columns: temperature 
+Ensure that the De.dat file is formatted correctly in two columns: temperature
 and thermal diffusivity. Temperatures should be greater than or equal to 0 kelvin.
 
 \subsubsection*{\underline{Message 690}: error - cannot find or open coupling constant table file (g.dat)}
@@ -2747,8 +2736,8 @@ No readable file (g.dat) is available to read tabulated electron-phonon coupling
 
 \noindent \underline{\em Action}:
 
-Ensure that a readable text file named g.dat is available in the directory 
-where \D is being run. (This must be supplied if the {\bf ttm gvar} directive 
+Ensure that a readable text file named g.dat is available in the directory
+where \D is being run. (This must be supplied if the {\bf ttm gvar} directive
 is given in the CONTROL file.)
 
 \subsubsection*{\underline{Message 691}: error - no data found in coupling constant table file (g.dat)}
@@ -2757,13 +2746,13 @@ No tabulated thermal conductivities can be read from the g.dat file.
 
 \noindent \underline{\em Action}:
 
-Ensure that the g.dat file is formatted correctly in two columns: temperature 
-and electron-phonon coupling constant. Temperatures should be greater than 
+Ensure that the g.dat file is formatted correctly in two columns: temperature
+and electron-phonon coupling constant. Temperatures should be greater than
 or equal to 0 kelvin.
 
 \subsubsection*{\underline{Message 692}: error - end of file encountered in table file (Ke.dat, Ce.dat, De.dat or g.dat)}
 
-\D encountered the end of one of the tabulated files (Ke.dat, Ce.dat, De.dat or g.dat) 
+\D encountered the end of one of the tabulated files (Ke.dat, Ce.dat, De.dat or g.dat)
 for two-temperature model calculations prematurely.
 
 \noindent \underline{\em Action}:
@@ -2772,22 +2761,22 @@ Check that the tabulated files are not corrupted or incomplete in some way.
 
 \subsubsection*{\underline{Message 693}: error - negative electronic temperature: instability in electronic heat diffusion equation}
 
-A negative (non-physical) electronic temperature has been obtained during 
-solution of the thermal diffusion equation used in the two-temperature model. 
-This is an indication of instability in the numerical solution of this partial 
-differential equation. 
+A negative (non-physical) electronic temperature has been obtained during
+solution of the thermal diffusion equation used in the two-temperature model.
+This is an indication of instability in the numerical solution of this partial
+differential equation.
 
 \noindent \underline{\em Action}:
 
-This error should not happen due to careful selection of the timestep used 
-for the explicit difference solver. In some limited circumstances, it may be 
-possible to improve the solver stability by decreasing the value of 
-{\tt fopttstep} in {\sc ttm\_thermal\_diffusion}, which is used to scale the 
+This error should not happen due to careful selection of the timestep used
+for the explicit difference solver. In some limited circumstances, it may be
+possible to improve the solver stability by decreasing the value of
+{\tt fopttstep} in {\sc ttm\_thermal\_diffusion}, which is used to scale the
 timestep.
 
 \subsubsection*{\underline{Message 694}: error - electronic temperature restart file (DUMP\_E) does not exist}
 
-The DUMP\_E file (containing electronic temperatures for restarting 
+The DUMP\_E file (containing electronic temperatures for restarting
 simulations with the two-temperature model) does not exist.
 
 \noindent \underline{\em Action}:
@@ -2797,19 +2786,19 @@ the CONTROL file.
 
 \subsubsection*{\underline{Message 695}: error - mismatch in electronic temperature lattice sizes between restart (DUMP\_E) and CONTROL files}
 
-The electronic temperature lattice size (number of CET cells) given in 
-the DUMP\_E restart file for two-temperature model simulations does 
+The electronic temperature lattice size (number of CET cells) given in
+the DUMP\_E restart file for two-temperature model simulations does
 not correspond to the size given in the CONTROL file.
 
 \noindent \underline{\em Action}:
 
-Ensure that the {\bf ttm ncet} directive in the CONTROL file matches up with 
+Ensure that the {\bf ttm ncet} directive in the CONTROL file matches up with
 the three numbers in the first line of the DUMP\_E file.
 
 \subsubsection*{\underline{Message 696}: error - cannot read electronic temperature restart (DUMP\_E) file}
 
-The electronic temperature lattice size (number of CET cells) given in 
-the DUMP\_E restart file for two-temperature model simulations does 
+The electronic temperature lattice size (number of CET cells) given in
+the DUMP\_E restart file for two-temperature model simulations does
 not correspond to the size given in the CONTROL file.
 
 \noindent \underline{\em Action}:

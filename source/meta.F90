@@ -57,7 +57,7 @@ Module meta
   Use build_tplg, Only : build_tplg_intra
   Use build_chrm, Only : build_chrm_intra
   Use thermostat, Only : thermostat_type
-  Use timer, Only  : timer_type, time_elapsed,timer_report
+  Use timer, Only  : timer_type, time_elapsed,timer_report, start_timer, stop_timer, init_timer_system
   Use poisson, Only : poisson_type
   Use analysis, Only : analysis_result
   Use constraints, Only : constraints_type
@@ -138,7 +138,7 @@ Contains
     Character( Len = 1024 ) :: control_filename
 
     ! Allocate type arrays
-    Call allocate_types_uniform(TYPE_SIZE,dlp_world,thermo,ewld,tmr,devel,stats, &
+    Call allocate_types_uniform(TYPE_SIZE,thermo,ewld,tmr,devel,stats, &
       green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
       tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
       fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow, &
@@ -216,17 +216,12 @@ Contains
     character( len = 1024 ), Intent(In) :: control_filename
 
     character( len = 256 ) :: message
-    character( len = 66 )  :: banner(14)
 
-    character( len = * ), parameter :: fmt1 = '(a)', &
-      fmt2 = '(a25,a8,a4,a14,a15)', &
-      fmt3 = '(a,i10,a)'
-
-    Integer( Kind = wi ) :: i,j
+    Integer( Kind = wi ) :: vacuum
     Logical :: lfce
 
     Call gtime(tmr%elapsed) ! Initialise wall clock time
-
+    
     ! Set default file names
     Call default_filenames(files)
     ! Rename control file if argument was passed
@@ -243,6 +238,13 @@ Contains
     End If
     dlp_world(0)%ou=files(FILE_OUTPUT)%unit_no
     Call init_error_system(files(FILE_OUTPUT)%unit_no,dlp_world(0))
+
+#ifdef CHRONO
+    ! Start main timer
+    Call init_timer_system(tmr, files(FILE_OUTPUT)%unit_no,dlp_world(0))
+    Call start_timer(tmr,'Initialisation')
+#endif
+
 
     ! OPEN MAIN OUTPUT CHANNEL & PRINT HEADER AND MACHINE RESOURCES
     Call scan_control_output(files,comm)
@@ -263,7 +265,7 @@ Contains
 
     Call info('',.true.)
     Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
-    Call time_elapsed(tmr%elapsed)
+    Call time_elapsed(tmr)
 
     ! ALLOCATE SITE & CONFIG
     Call sites%init(sites%mxtmls,sites%mxatyp)
@@ -322,12 +324,17 @@ Contains
       Call rdf%init_block(flow%run_steps,sites%ntype_atom)
     End If
 
+
     ! CHECK MD CONFIGURATION
     Call check_config(config,electro%key,thermo,sites,flow,comm)
 
     Call info('',.true.)
     Call info("*** all reading and connectivity checks DONE ***",.true.)
-    Call time_elapsed(tmr%elapsed)
+    Call time_elapsed(tmr)
+
+#ifdef CHRONO
+    Call stop_timer(tmr,'Initialisation')
+#endif
 
     ! devel%l_org: translate CONFIG into CFGORG and exit gracefully
     If (devel%l_org) Then
@@ -337,7 +344,7 @@ Contains
       Call origin_config(config,ios,devel,netcdf,comm)
 
       Call info("*** ALL DONE ***",.true.)
-      Call time_elapsed(tmr%elapsed)
+      Call time_elapsed(tmr)
     End If
 
     ! devel%l_scl: rescale CONFIG to CFGSCL and exit gracefully
@@ -348,7 +355,7 @@ Contains
       Call scale_config(config,ios,devel,netcdf,comm)
 
       Call info("*** ALL DONE ***",.true.)
-      Call time_elapsed(tmr%elapsed)
+      Call time_elapsed(tmr)
     End If
 
     ! devel%l_his: generate HISTORY and exit gracefully
@@ -358,11 +365,11 @@ Contains
 
       Call traj%init(key=0,freq=1,start=0)
       flow%step  = 0                            ! no steps done
-      flow%time   = 0.0_wp                       ! time is not relevant
+      flow%time  = 0.0_wp                       ! time is not relevant
       Call trajectory_write(flow%restart_key,flow%step,thermo%tstep,flow%time,ios,stats%rsd,netcdf,config,traj,files,comm)
 
       Call info("*** ALL DONE ***",.true.)
-      Call time_elapsed(tmr%elapsed)
+      Call time_elapsed(tmr)
     End If
 
     ! Expand current system if opted for
@@ -382,7 +389,7 @@ Contains
 
     Call info('',.true.)
     Call info("*** initialisation and haloing DONE ***",.true.)
-    Call time_elapsed(tmr%elapsed)
+    Call time_elapsed(tmr)
 
     ! For any intra-like interaction, construct book keeping arrays and
     ! exclusion arrays for overlapped two-body inter-like interactions
@@ -423,7 +430,7 @@ Contains
 
     Call info('',.true.)
     Call info("*** bookkeeping DONE ***",.true.)
-    Call time_elapsed(tmr%elapsed)
+    Call time_elapsed(tmr)
 
     ! set and halo rotational matrices and their infinitesimal rotations
     If (mpoles%max_mpoles > 0) Then
@@ -438,7 +445,7 @@ Contains
 
     Call info('',.true.)
     Call info("*** temperature setting DONE ***",.true.)
-    Call time_elapsed(tmr%elapsed)
+    Call time_elapsed(tmr)
 
     ! Read ttm table file and initialise electronic temperature
     ! grid from any available restart file
@@ -460,16 +467,22 @@ Contains
     Call print_initial_configuration(config)
 
     ! Indicate nodes mapped on vacuum (no particles)
-    j=0
+    vacuum = 0
     If (config%natms == 0) Then
-      j=1
+      vacuum = 1
       Call warning('mapped on vacuum (no particles)')
     End If
-    Call gsum(comm,j)
-    If (j > 0) Call warning(2,Real(j,wp),Real(comm%mxnode,wp),0.0_wp)
+    Call gsum(comm,vacuum)
+    If (vacuum > 0) Then
+      Call warning(2,Real(vacuum,wp),Real(comm%mxnode,wp),0.0_wp)
+    End If
 
     ! start-up time when forces are not recalculated
-    Call time_elapsed(tmr%elapsed)
+    Call time_elapsed(tmr)
+
+#ifdef CHRONO
+  call start_timer(tmr,'Main Calc')
+#endif
 
     ! Now you can run fast, boy
     If (devel%l_fast) Call gsync(comm,devel%l_fast)
@@ -494,6 +507,12 @@ Contains
           seed,traj,kim_data,dfcts,files,tmr,tether,green,ewld,devel,comm)
       End If
     End If
+
+
+#ifdef CHRONO
+    call stop_timer(tmr,'Main Calc')
+    call start_timer(tmr,'Termination')
+#endif
 
     !Close the statis file if we used it.
     If (stats%statis_file_open) Call files(FILE_STATS)%close()
@@ -549,8 +568,11 @@ Contains
     If (plume%l_plumed) Call plumed_finalize()
 
 #ifdef CHRONO
-    Call timer_report(tmr,comm)
+    Call stop_timer(tmr,'Termination')
+    Call timer_report(tmr, comm)
 #endif
+
+    ! Ask for reference in publications
 
     Call print_citations(electro,mpoles,ttms)
 
@@ -568,14 +590,13 @@ Contains
   End Subroutine molecular_dynamics_driver
 
   !> Allocate all types uniformly, _i.e._ N of every type
-  Subroutine allocate_types_uniform(array_size,dlp_world,thermo,ewld,tmr,devel,stats, &
-    green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
-    tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
-    fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow, &
-    seed,traj,kim_data,config,ios,ttms,rsdsc,files)
+  Subroutine allocate_types_uniform(array_size,thermo,ewld,tmr,devel,stats, &
+      green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
+      tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
+      fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow, &
+      seed,traj,kim_data,config,ios,ttms,rsdsc,files)
 
     Integer( Kind = wi ), Intent( In    ) :: array_size
-    Type(comms_type), Intent(InOut) :: dlp_world(0:)
     Type(thermostat_type), Allocatable, Intent(InOut) :: thermo(:)
     Type(ewald_type), Allocatable, Intent(InOut) :: ewld(:)
     Type(timer_type), Allocatable, Intent(InOut) :: tmr(:)
@@ -656,7 +677,7 @@ Contains
     Allocate(rigid(array_size))
     Allocate(electro(array_size))
     Allocate(domain(array_size))
-    Allocate(flow(array_size))
+    !  Allocate(flow(array_size))
     Allocate(seed(array_size))
     Allocate(traj(array_size))
     Allocate(kim_data(array_size))

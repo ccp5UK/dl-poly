@@ -112,11 +112,13 @@ Contains
     ! contrib   - a.m.elena december 2017 (zblb)
     ! contrib   - a.m.elena april 2018 (mlj/mbuc)
     ! contrib   - a.m.elena may 2018 (m126)
+    ! amended   - i.t.todorov november 2018 (external field wall default)
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    ! contrib   - a.m.elena march 2019 (remove error 145)
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -4849,6 +4851,12 @@ Contains
           Call warning('external field is ignored as only applicable for imcon=6 (SLAB geometry)',.true.)
         End If
 
+        If (ext_field%key == FIELD_WALL .and. Abs(Abs(ext_field%param(3))-1.0_wp) > zero_plus) Then
+          ext_field%param(3)=Sign(1.0_wp,ext_field%param(3))
+          Write(message,'(a,i0)') "repulsive wall parameter f reset to ", Anint(ext_field%param(3))
+          Call warning(message,.true.)
+        End If
+
         If (ext_field%key == FIELD_WALL_PISTON .and. thermo%ensemble /= ENS_NVE) Call error(7)
 
         ! close force field file
@@ -4883,14 +4891,6 @@ Contains
 
         Call dihedrals_14_check &
           (flow%strict,flow%print_topology,angle,dihedral,sites,comm)
-
-        ! test for existence/appliance of any two-body or tersoff or KIM model defined interactions!!!
-
-        If ( electro%key == ELECTROSTATIC_NULL .and. vdws%n_vdw == 0 .and. &
-          met%n_potentials == 0 .and. tersoffs%n_potential == 0 .and.  &
-          (.not. kim_data%active)) Then
-          Call error(145)
-        End If
 
         ! test for mixing KIM model with external interactions
 

@@ -428,7 +428,7 @@ ensemble\index{ensemble!NVE}.  Instead trajectories in the canonical
 (NVT) ensemble\index{ensemble!canonical}, or something close to it
 are generated.  \D comes with seven different thermostats: Evans
 (Gaussian constraints)\index{constraints!Gaussian} \cite{evans-84a},
-Langevin (both standard \cite{adelman-76a,izaguirre-01a} and 
+Langevin (both standard \cite{adelman-76a,izaguirre-01a} and
 inhomogeneous \cite{duffy-07a} variants), Andersen \cite{andersen-79a},
 Berendsen \cite{berendsen-84a}, Nos\'e-Hoover (N-H) \cite{hoover-85a} and
 the gentle stochastic thermostat (GST) \cite{leimkuhler-09a,samoletov-07a}
@@ -581,15 +581,15 @@ efficiently kept under control and cannot propagate.
 The generation of random forces is implemented in the routine
 {\sc langevin\_forces}.
 
-An inhomogeneous variant of the Langevin thermostat \cite{duffy-07a} 
-allows $\chi$ to vary according to atomic velocity: it can be increased 
-from $\chi_{ep}$ to $\chi_{ep} + \chi_{es}$ when the atomic speed is 
-higher than a cut-off value. When using this thermostat as part of the 
-two-temperature model (TTM), $\chi_{ep}$ represents the required 
-friction parameter for electron-phonon coupling and $\chi_{es}$ gives 
-the increase due to electronic stopping. TTM simulations also 
-require the random deviate to be scaled by 
-$\sqrt{\frac{2~\chi_{ep}~m_{i}~k_{B}T_{e}}{\Delta t}}$, where 
+An inhomogeneous variant of the Langevin thermostat \cite{duffy-07a}
+allows $\chi$ to vary according to atomic velocity: it can be increased
+from $\chi_{ep}$ to $\chi_{ep} + \chi_{es}$ when the atomic speed is
+higher than a cut-off value. When using this thermostat as part of the
+two-temperature model (TTM), $\chi_{ep}$ represents the required
+friction parameter for electron-phonon coupling and $\chi_{es}$ gives
+the increase due to electronic stopping. TTM simulations also
+require the random deviate to be scaled by
+$\sqrt{\frac{2~\chi_{ep}~m_{i}~k_{B}T_{e}}{\Delta t}}$, where
 $T_{e}$ is the local electronic temperature for the atom.
 
 The VV implementation of the algorithm is tailored in a Langevin
@@ -698,9 +698,9 @@ species to mass- and system size-dependent temperatures.
 The VV and LFV flavours of the Langevin thermostat are implemented in
 the \D routines {\sc nvt\_l0\_vv} and {\sc nvt\_l0\_lfv} respectively.
 The routines {\sc nvt\_l1\_vv} and {\sc nvt\_l1\_lfv} implement the
-same but also incorporate RB dynamics. The inhomogeneous Langevin 
-thermostat is implemented in the \D routines {\sc nvt\_l2\_vv} and 
-{\sc nvt\_l2\_lfv} for the VV and LFV flavours respectively: no RB dynamics 
+same but also incorporate RB dynamics. The inhomogeneous Langevin
+thermostat is implemented in the \D routines {\sc nvt\_l2\_vv} and
+{\sc nvt\_l2\_lfv} for the VV and LFV flavours respectively: no RB dynamics
 are currently available for this form of Langevin thermostat.
 
 \subsection{Andersen Thermostat}
@@ -1278,7 +1278,7 @@ pressure variable
 \left< R_{p}(t)~R_{p}(t^\prime)\right> = 2~\chi_{p}~p_{mass}~k_{B}T~\delta(t-t^\prime)~~,
 \end{equation}
 which is drawn from Gaussian distribution of zero mean and
-unit variance, ${\tt Gauss}(0,1)$, scaled by
+unit variance, ${\tt Gauss}(0,1)$, scaled by //
 $\sqrt{\frac{2~\chi_{p}~p_{mass}~k_{B}T}{\Delta t}}$.  $k_{B}$
 is the Boltzmann constant, $T$ the target temperature and
 $p_{mass}$ the barostat mass.  \mat{H} is the cell matrix whose
@@ -1446,7 +1446,7 @@ and extending the Langevin pressure variable $R_{p}$ to a stochastic
 \left< R_{p,i}(t)~R_{p,j}(t^\prime)\right> = 2~\chi_{p}~p_{mass}~k_{B}T~\delta_{ij}~\delta(t-t^\prime)~~,
 \end{equation}
 which is drawn from Gaussian distribution of zero mean and
-unit variance, ${\tt Gauss}(0,1)$, scaled by
+unit variance, ${\tt Gauss}(0,1)$, scaled by \\
 $\sqrt{\frac{2~\chi_{p}~p_{mass}~k_{B}T}{\Delta t}}$.
 $k_{B}$ is the Boltzmann constant, $T$ the target temperature
 and $p_{mass}$ the barostat mass.  {\bf Note} that $\mat{R_{p}}$
