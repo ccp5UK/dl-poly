@@ -141,7 +141,7 @@ Contains
     Call allocate_types_uniform(TYPE_SIZE,thermo,ewld,tmr,devel,stats, &
       green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
       tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
-      fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow, &
+      fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain, &
       seed,traj,kim_data,config,ios,ttms,rsdsc,files)
 
     comm=dlp_world(0) ! this shall vanish asap w_ are proper things
@@ -157,7 +157,7 @@ Contains
     Call deallocate_types_uniform(thermo,ewld,tmr,devel,stats, &
       green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
       tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
-      fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow, &
+      fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain, &
       seed,traj,kim_data,config,ios,ttms,rsdsc,files)
   End Subroutine molecular_dynamics
 
@@ -593,7 +593,7 @@ Contains
   Subroutine allocate_types_uniform(array_size,thermo,ewld,tmr,devel,stats, &
       green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
       tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
-      fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow, &
+      fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain, &
       seed,traj,kim_data,config,ios,ttms,rsdsc,files)
 
     Integer( Kind = wi ), Intent( In    ) :: array_size
@@ -632,7 +632,6 @@ Contains
     Type( rigid_bodies_type ), Allocatable, Intent(InOut) :: rigid(:)
     Type( electrostatic_type ), Allocatable, Intent(InOut) :: electro(:)
     Type( domains_type ), Allocatable, Intent(InOut) :: domain(:)
-    Type( flow_type ), Allocatable, Intent(InOut) :: flow(:)
     Type( seed_type ), Allocatable, Intent(InOut) :: seed(:)
     Type( trajectory_type ), Allocatable, Intent(InOut) :: traj(:)
     Type( kim_type ), Allocatable, Target, Intent(InOut) :: kim_data(:)
@@ -691,7 +690,7 @@ Contains
   Subroutine deallocate_types_uniform(thermo,ewld,tmr,devel,stats, &
     green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
     tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
-    fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow, &
+    fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain, &
     seed,traj,kim_data,config,ios,ttms,rsdsc,files)
 
     Type( angles_type ), Allocatable, Intent(InOut) :: angle(:)
@@ -707,7 +706,6 @@ Contains
     Type(ewald_type), Allocatable, Intent(InOut) :: ewld(:)
     Type( external_field_type ), Allocatable, Intent(InOut) :: ext_field(:)
     Type( file_type ), Allocatable, Intent(InOut) :: files(:,:)
-    Type( flow_type ), Allocatable, Intent(InOut) :: flow(:)
     Type( four_body_type ), Allocatable, Intent(InOut) :: fourbody(:)
     Type(greenkubo_type), Allocatable, Intent(InOut) :: green(:)
     Type(impact_type), Allocatable, Intent(InOut) :: impa(:)
@@ -752,7 +750,6 @@ Contains
     If (Allocated(ewld)) Deallocate(ewld)
     If (Allocated(ext_field)) Deallocate(ext_field)
     If (Allocated(files)) Deallocate(files)
-    If (Allocated(flow)) Deallocate(flow)
     If (Allocated(fourbody)) Deallocate(fourbody)
     If (Allocated(green)) Deallocate(green)
     If (Allocated(impa)) Deallocate(impa)
