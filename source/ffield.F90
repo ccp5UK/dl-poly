@@ -1,4 +1,9 @@
 Module ffield
+!> Module containing routines for field files
+!>
+!> Copyright - Daresbury Laboratory
+!
+!> contrib a.m.elena, march 2019, fix wrong unit for zblb
   Use kinds, Only : wp,wi
   Use comms, Only : comms_type
   Use constants, Only : engunit, eu_ev, eu_kcpm, eu_kjpm, boltz, zero_plus, pi, r4pie0, prsunt, ntable, VA_to_dl, tesla_to_dl
@@ -3572,6 +3577,7 @@ Contains
             Else If (keypot == VDW_ZBL_SWITCH_BUCKINGHAM) Then
               parpot(1)=parpot(1)/engunit
               parpot(5)=parpot(5)*engunit
+              parpot(7)=parpot(7)*engunit
             Else If (keypot == VDW_BUCKINGHAM_MDF) Then
               parpot(3)=parpot(3)*engunit
             Else If (keypot == VDW_126_MDF) Then
