@@ -59,7 +59,6 @@ program dl_poly
 
   Use site, Only : site_type
   Use configuration, Only : configuration_type,check_config, scale_config, origin_config, freeze_atoms
-  Use control, Only : read_control,scan_control_output,scan_control_io
 
   ! VNL module
 
