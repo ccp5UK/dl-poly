@@ -11,6 +11,7 @@ Module errors_warnings
 !>           - i.scivetti march-october 2018
 !> contrib - a.m.elena October 2018 - use standard integer for units
 !> contrib - a.m.elena March 2019 - remove error 145
+!> contrib - a.m.elena March 2019 - fix wrong logic in warning
 
   Use, intrinsic :: iso_fortran_env, only : error_unit,input_unit,output_unit
   Use kinds, Only : wp
@@ -693,11 +694,11 @@ Contains
     If (Present(master_only)) zeroOnly=master_only
 
     If (zeroOnly) Then
-      Write(ounit,'(a,1x,i0,a)')"*** warning - "//Trim(message)//", node: ",eworld%idnode, " !!! ***"
-    Else
       If (eworld%idnode == 0 ) Then
         Write(ounit,'(a)')"*** warning - "//Trim(message)//" !!! ***"
       End If
+    Else
+      Write(ounit,'(a,1x,i0,a)')"*** warning - "//Trim(message)//", node: ",eworld%idnode, " !!! ***"
     End If
 
   End Subroutine  warning_general
