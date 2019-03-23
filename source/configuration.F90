@@ -1636,7 +1636,7 @@ Contains
             End If
 
             ! Atom details
-
+            record=''
             this_rec_buff = this_rec_buff + 1
             Do j = 1, Min( Len( record ), Size( rec_buff, Dim = 1 ) )
               record( j:j ) = rec_buff( j, this_rec_buff )

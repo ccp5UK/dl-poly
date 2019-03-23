@@ -1,9 +1,10 @@
+Module meta
 !> meta-simulation routines
 !>
 !> Copyright - Daresbury Laboratory
 !>
 !> Author - J. Madge October 2018
-Module meta
+!> contrib - a.m.elena march 2019 updated deallocate uniform routine
   Use, Intrinsic :: iso_fortran_env, Only : error_unit
   Use kinds, Only : wi,wp
   Use comms, Only : comms_type, init_comms, exit_comms, gsync, gtime,gsum
@@ -81,10 +82,10 @@ Contains
 
   !> A 'simple', single MD simulation
   Subroutine molecular_dynamics(dlp_world,thermo,ewld,tmr,devel,stats, &
-      green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
-      tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
-      fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow, &
-      seed,traj,kim_data,config,ios,ttms,rsdsc,files,control_filename)
+    green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
+    tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
+    fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow, &
+    seed,traj,kim_data,config,ios,ttms,rsdsc,files,control_filename)
 
     Type(comms_type), Intent(InOut) :: dlp_world(0:)
     Type(thermostat_type), Allocatable, Intent(InOut) :: thermo(:)
@@ -140,7 +141,7 @@ Contains
     Call allocate_types_uniform(TYPE_SIZE,thermo,ewld,tmr,devel,stats, &
       green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
       tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
-      fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow, &
+      fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain, &
       seed,traj,kim_data,config,ios,ttms,rsdsc,files)
 
     comm=dlp_world(0) ! this shall vanish asap w_ are proper things
@@ -153,14 +154,19 @@ Contains
       minim(1),mpoles(1),ext_field(1),rigid(1),electro(1),domain(1),flow(1), &
       seed(1),traj(1),kim_data(1),config(1),ios(1),ttms(1),rsdsc(1),files(1,:), &
       control_filename)
+    Call deallocate_types_uniform(thermo,ewld,tmr,devel,stats, &
+      green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
+      tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
+      fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain, &
+      seed,traj,kim_data,config,ios,ttms,rsdsc,files)
   End Subroutine molecular_dynamics
 
   !> Simple MD driver
   Subroutine molecular_dynamics_driver(dlp_world,comm,thermo,ewld,tmr,devel, &
-      stats,green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral, &
-      inversion,tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells, &
-      vdws,tersoffs,fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro, &
-      domain,flow,seed,traj,kim_data,config,ios,ttms,rsdsc,files,control_filename)
+    stats,green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral, &
+    inversion,tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells, &
+    vdws,tersoffs,fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro, &
+    domain,flow,seed,traj,kim_data,config,ios,ttms,rsdsc,files,control_filename)
 
     Type(comms_type), Intent(InOut) :: dlp_world(0:),comm
     Type(thermostat_type), Intent(InOut) :: thermo
@@ -519,7 +525,7 @@ Contains
     ! Print out sample of final configuration on node zero
     Call print_final_configuration(config)
 
-    ! Two-temperature model simulations: calculate final ionic temperatures and 
+    ! Two-temperature model simulations: calculate final ionic temperatures and
     !print statistics to files (final)
     If (ttms%l_ttm) Then
       Call ttm_ion_temperature (ttms,thermo,domain,config,comm)
@@ -587,7 +593,7 @@ Contains
   Subroutine allocate_types_uniform(array_size,thermo,ewld,tmr,devel,stats, &
       green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
       tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
-      fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow, &
+      fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain, &
       seed,traj,kim_data,config,ios,ttms,rsdsc,files)
 
     Integer( Kind = wi ), Intent( In    ) :: array_size
@@ -626,7 +632,6 @@ Contains
     Type( rigid_bodies_type ), Allocatable, Intent(InOut) :: rigid(:)
     Type( electrostatic_type ), Allocatable, Intent(InOut) :: electro(:)
     Type( domains_type ), Allocatable, Intent(InOut) :: domain(:)
-    Type( flow_type ), Allocatable, Intent(InOut) :: flow(:)
     Type( seed_type ), Allocatable, Intent(InOut) :: seed(:)
     Type( trajectory_type ), Allocatable, Intent(InOut) :: traj(:)
     Type( kim_type ), Allocatable, Target, Intent(InOut) :: kim_data(:)
@@ -681,6 +686,102 @@ Contains
     Allocate(rsdsc(array_size))
     Allocate(files(array_size,FILENAME_SIZE))
   End Subroutine allocate_types_uniform
+
+  Subroutine deallocate_types_uniform(thermo,ewld,tmr,devel,stats, &
+    green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
+    tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
+    fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain, &
+    seed,traj,kim_data,config,ios,ttms,rsdsc,files)
+
+    Type( angles_type ), Allocatable, Intent(InOut) :: angle(:)
+    Type(bonds_type), Allocatable, Intent(InOut) :: bond(:)
+    Type( configuration_type ), Allocatable, Intent(InOut) :: config(:)
+    Type( constraints_type ), Allocatable, Intent(InOut) :: cons(:)
+    Type( core_shell_type ), Allocatable, Intent(InOut) :: core_shells(:)
+    Type(defects_type), Allocatable, Intent(InOut) :: dfcts(:,:)
+    Type(development_type), Allocatable, Intent(InOut) :: devel(:)
+    Type( dihedrals_type ), Allocatable, Intent(InOut) :: dihedral(:)
+    Type( domains_type ), Allocatable, Intent(InOut) :: domain(:)
+    Type( electrostatic_type ), Allocatable, Intent(InOut) :: electro(:)
+    Type(ewald_type), Allocatable, Intent(InOut) :: ewld(:)
+    Type( external_field_type ), Allocatable, Intent(InOut) :: ext_field(:)
+    Type( file_type ), Allocatable, Intent(InOut) :: files(:,:)
+    Type( four_body_type ), Allocatable, Intent(InOut) :: fourbody(:)
+    Type(greenkubo_type), Allocatable, Intent(InOut) :: green(:)
+    Type(impact_type), Allocatable, Intent(InOut) :: impa(:)
+    Type( inversions_type ), Allocatable, Intent(InOut) :: inversion(:)
+    Type( io_type), Allocatable, Intent(InOut) :: ios(:)
+    Type( kim_type ), Allocatable, Target, Intent(InOut) :: kim_data(:)
+    Type(metal_type), Allocatable, Intent(InOut) :: met(:)
+    Type( minimise_type ), Allocatable, Intent(InOut) :: minim(:)
+    Type( mpole_type ), Allocatable, Intent(InOut) :: mpoles(:)
+    Type(msd_type), Allocatable, Intent(InOut) :: msd_data(:)
+    Type( neighbours_type ), Allocatable, Intent(InOut) :: neigh(:)
+    Type( netcdf_param ), Allocatable, Intent(InOut) :: netcdf(:)
+    Type(plumed_type), Allocatable, Intent(InOut) :: plume(:)
+    Type( pmf_type ), Allocatable, Intent(InOut) :: pmfs(:)
+    Type(poisson_type), Allocatable, Intent(InOut) :: pois(:)
+    Type( rdf_type ), Allocatable, Intent(InOut) :: rdf(:)
+    Type( rigid_bodies_type ), Allocatable, Intent(InOut) :: rigid(:)
+    Type( rsd_type ), Allocatable, Target, Intent(InOut) :: rsdsc(:)
+    Type( seed_type ), Allocatable, Intent(InOut) :: seed(:)
+    Type( site_type ), Allocatable, Intent(InOut) :: sites(:)
+    Type(stats_type), Allocatable, Intent(InOut) :: stats(:)
+    Type( tersoff_type ), Allocatable, Intent(InOut) :: tersoffs(:)
+    Type( tethers_type ), Allocatable, Intent(InOut) :: tether(:)
+    Type(thermostat_type), Allocatable, Intent(InOut) :: thermo(:)
+    Type( threebody_type ), Allocatable, Intent(InOut) :: threebody(:)
+    Type(timer_type), Allocatable, Intent(InOut) :: tmr(:)
+    Type( trajectory_type ), Allocatable, Intent(InOut) :: traj(:)
+    Type( ttm_type), Allocatable, Intent(InOut) :: ttms(:)
+    Type( vdw_type ), Allocatable, Intent(InOut) :: vdws(:)
+    Type( z_density_type ), Allocatable, Intent(InOut) :: zdensity(:)
+
+    If (Allocated(angle)) Deallocate(angle)
+    If (Allocated(bond)) Deallocate(bond)
+    If (Allocated(config)) Deallocate(config)
+    If (Allocated(cons)) Deallocate(cons)
+    If (Allocated(core_shells)) Deallocate(core_shells)
+    If (Allocated(devel)) Deallocate(devel)
+    If (Allocated(dfcts)) Deallocate(dfcts)
+    If (Allocated(dihedral)) Deallocate(dihedral)
+    If (Allocated(domain)) Deallocate(domain)
+    If (Allocated(electro)) Deallocate(electro)
+    If (Allocated(ewld)) Deallocate(ewld)
+    If (Allocated(ext_field)) Deallocate(ext_field)
+    If (Allocated(files)) Deallocate(files)
+    If (Allocated(fourbody)) Deallocate(fourbody)
+    If (Allocated(green)) Deallocate(green)
+    If (Allocated(impa)) Deallocate(impa)
+    If (Allocated(inversion)) Deallocate(inversion)
+    If (Allocated(ios)) Deallocate(ios)
+    If (Allocated(kim_data)) Deallocate(kim_data)
+    If (Allocated(met)) Deallocate(met)
+    If (Allocated(minim)) Deallocate(minim)
+    If (Allocated(mpoles)) Deallocate(mpoles)
+    If (Allocated(msd_data)) Deallocate(msd_data)
+    If (Allocated(neigh)) Deallocate(neigh)
+    If (Allocated(netcdf)) Deallocate(netcdf)
+    If (Allocated(plume)) Deallocate(plume)
+    If (Allocated(pmfs)) Deallocate(pmfs)
+    If (Allocated(pois)) Deallocate(pois)
+    If (Allocated(rdf)) Deallocate(rdf)
+    If (Allocated(rigid)) Deallocate(rigid)
+    If (Allocated(rsdsc)) Deallocate(rsdsc)
+    If (Allocated(seed)) Deallocate(seed)
+    If (Allocated(sites)) Deallocate(sites)
+    If (Allocated(stats)) Deallocate(stats)
+    If (Allocated(tersoffs)) Deallocate(tersoffs)
+    If (Allocated(tether)) Deallocate(tether)
+    If (Allocated(thermo)) Deallocate(thermo)
+    If (Allocated(threebody)) Deallocate(threebody)
+    If (Allocated(tmr)) Deallocate(tmr)
+    If (Allocated(traj)) Deallocate(traj)
+    If (Allocated(ttms)) Deallocate(ttms)
+    If (Allocated(vdws)) Deallocate(vdws)
+    If (Allocated(zdensity)) Deallocate(zdensity)
+
+  End Subroutine deallocate_types_uniform
 
   Subroutine print_banner(dlp_world)
     Type(comms_type), Intent(In) :: dlp_world(0:)
