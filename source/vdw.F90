@@ -250,10 +250,12 @@ Contains
     If (r<rm) Then
       t = Exp(-(rm-r)*ic)*0.5_wp
       f = 1.0_wp-t
+      ! -r∂f/∂r
       df = r*ic*t
     Else
       t = Exp(-(r-rm)*ic)*0.5_wp
       f = t
+      ! -r∂f/∂r
       df = r*ic*t
     End If
   End Subroutine fm
@@ -309,7 +311,6 @@ Contains
     call buckingham(r,A,r0,C,b,db)
     V = f*z+(1.0_wp-f)*b
     dV = f*dz+df*z+(1.0_wp-f)*db-df*b
-
   End Subroutine zblb
 
   Pure Real(wp) Function intRadZBL(kk,a,rw,prec)
@@ -2210,7 +2211,6 @@ Contains
 
           vdws%tab_potential(i,ivdw) = phi
           vdws%tab_force(i,ivdw) = dphi
-          write(888,*)r,phi/9648.530821_wp,phi/kk,dphi
 
         End Do
         vdws%tab_potential(0,ivdw)=Huge(vdws%tab_potential(1,ivdw))
@@ -2272,7 +2272,6 @@ Contains
           Call zblb(r,kk,a,rm,c,e0,r0,k,phi,dphi)
           vdws%tab_potential(i,ivdw) = phi
           vdws%tab_force(i,ivdw) = dphi
-          write(777,*)r,phi,dphi
         End Do
         vdws%tab_potential(0,ivdw)=Huge(vdws%tab_potential(1,ivdw))
         vdws%tab_force(0,ivdw)=Huge(vdws%tab_force(1,ivdw))
