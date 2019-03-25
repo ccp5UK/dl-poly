@@ -160,6 +160,7 @@ Module io
     Integer  :: io_comm            = MPI_COMM_NULL                   ! Specific IO Communicator
     Integer  :: io_gather_comm     = MPI_COMM_NULL                   ! IO Gather communicator
     Logical  :: do_io              = .false.                         ! Whether this rank performs IO in current operation.
+    Logical  :: io_comm_inited     = .false.                         ! Whether the communicator has been inisitalised
 
     Character:: lf    =  default_lf                     ! The line feed character to use
     ! These indices depend on the write level, so can't parameterise them
@@ -795,8 +796,9 @@ Contains
     ! a member of a given communicator or not ( if it's not in a communicator
     ! it has no data about it ) also return DO_IO to indicate whether this
     ! processor will perform I/O, i.e.  if it is a member of IO_COMM.
-    If( io%io_gather_comm == MPI_COMM_NULL ) Then
+    If( .not. io%io_comm_inited ) Then
       Call split_io_comm( io%base_comm, io%n_io_procs_write, io%io_comm, io%io_gather_comm, io%do_io )
+      io%io_comm_inited = .true.
     End If
     If ( io%do_io ) Then
       Call MPI_COMM_RANK( io%io_comm, me_in_io, ierr )
@@ -943,17 +945,17 @@ Contains
     ! For netCDF close the file and reopen it so that the communicator
     ! associated with the file only contains those processors which will actually
     ! do the I/O.  This seems to avoid some problems on the Cray XT series.
-    If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-      desc = io%known_files( file_handle )%desc
-      Call netcdf_close( desc )
-    End If
-
-    If ( io%do_io ) Then
-      If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-        Call netcdf_open( Trim( io%known_files( file_handle )%name ), desc, io%io_comm, MPI_INFO_NULL )
-        Call netcdf_get_def( desc )
-      End If
-    End If
+!    If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
+!      desc = io%known_files( file_handle )%desc
+!      Call netcdf_close( desc )
+!    End If
+!
+!    If ( io%do_io ) Then
+!      If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
+!        Call netcdf_open( Trim( io%known_files( file_handle )%name ), desc, io%io_comm, MPI_INFO_NULL )
+!        Call netcdf_get_def( desc )
+!      End If
+!    End If
 
     Do
 
@@ -1190,20 +1192,21 @@ Contains
     End If
 
     ! For netCDF reopen the file in its original state
-    If ( io%do_io ) Then
-      If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-        Call netcdf_close( desc )
-      End If
-    End If
-
-    If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-      Call netcdf_open( Trim( io%known_files( file_handle )%name ), io%known_files( file_handle )%desc, &
-        io%base_comm, MPI_INFO_NULL )
-      Call netcdf_get_def( io%known_files( file_handle )%desc )
-    End If
+!    If ( io%do_io ) Then
+!      If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
+!        Call netcdf_close( desc )
+!      End If
+!    End If
+!
+!    If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
+!      Call netcdf_open( Trim( io%known_files( file_handle )%name ), io%known_files( file_handle )%desc, &
+!        io%base_comm, MPI_INFO_NULL )
+!      Call netcdf_get_def( io%known_files( file_handle )%desc )
+!    End If
 
     ! Free comms
     Call free_io_comm( io%do_io, io%io_comm, io%io_gather_comm )
+    io%io_comm_inited = .false.
 
     ! Leave in sync
     Call MPI_BARRIER( io%base_comm, ierr )
@@ -2137,8 +2140,9 @@ Contains
     ! a member of a given communicator or not ( if it's not in a communicator
     ! it has no data about it ) also return DO_IO to indicate whether this
     ! processor will perform I/O, i.e.  if it is a member of IO_COMM.
-    If( io%io_comm == MPI_COMM_NULL ) Then
+    If( .not. io%io_comm_inited ) Then
       Call split_io_comm( io%base_comm, io%n_io_procs_write, io%io_comm, io%io_gather_comm, io%do_io )
+      io%io_comm_inited = .true.
     End If
     If ( io%do_io ) Then
       Call MPI_COMM_RANK( io%io_comm, me_in_io, ierr )
@@ -2285,17 +2289,17 @@ Contains
     ! For netCDF close the file and reopen it so that the communicator
     ! associated with the file only contains those processors which will actually
     ! do the I/O.  This seems to avoid some problems on the Cray XT series.
-    If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-      desc = io%known_files( file_handle )%desc
-      Call netcdf_close( desc )
-    End If
-
-    If ( io%do_io ) Then
-      If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-        Call netcdf_open( Trim( io%known_files( file_handle )%name ), desc, io%io_comm, MPI_INFO_NULL )
-        Call netcdf_get_def( desc )
-      End If
-    End If
+!    If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
+!      desc = io%known_files( file_handle )%desc
+!      Call netcdf_close( desc )
+!    End If
+!
+!    If ( io%do_io ) Then
+!      If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
+!        Call netcdf_open( Trim( io%known_files( file_handle )%name ), desc, io%io_comm, MPI_INFO_NULL )
+!        Call netcdf_get_def( desc )
+!      End If
+!    End If
 
     Do
 
@@ -2532,20 +2536,21 @@ Contains
     End If
 
     ! For netCDF reopen the file in its original state
-    If ( io%do_io ) Then
-      If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-        Call netcdf_close( desc )
-      End If
-    End If
-
-    If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-      Call netcdf_open( Trim( io%known_files( file_handle )%name ), io%known_files( file_handle )%desc, &
-        io%base_comm, MPI_INFO_NULL )
-      Call netcdf_get_def( io%known_files( file_handle )%desc )
-    End If
+!    If ( io%do_io ) Then
+!      If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
+!        Call netcdf_close( desc )
+!      End If
+!    End If
+!
+!    If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
+!      Call netcdf_open( Trim( io%known_files( file_handle )%name ), io%known_files( file_handle )%desc, &
+!        io%base_comm, MPI_INFO_NULL )
+!      Call netcdf_get_def( io%known_files( file_handle )%desc )
+!    End If
 
     ! Free comms
     Call free_io_comm( io%do_io, io%io_comm, io%io_gather_comm )
+    io%io_comm_inited = .false.
 
 
     ! Leave in sync
@@ -3489,8 +3494,9 @@ Contains
     ! a member of a given communicator or not ( if it's not in a communicator
     ! it has no data about it ) also return DO_IO to indicate whether this
     ! processor will perform I/O, i.e.  if it is a member of IO_COMM.
-    If( io%io_comm == MPI_COMM_NULL) Then
+    If( .not. io%io_comm_inited) Then
       Call split_io_comm( io%base_comm, io%n_io_procs_write, io%io_comm, io%io_gather_comm, io%do_io )
+      io%io_comm_inited = .true.
     End If
     If ( io%do_io ) Then
       Call MPI_COMM_RANK( io%io_comm, me_in_io, ierr )
@@ -3637,17 +3643,17 @@ Contains
     ! For netCDF close the file and reopen it so that the communicator
     ! associated with the file only contains those processors which will actually
     ! do the I/O.  This seems to avoid some problems on the Cray XT series.
-    If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-      desc = io%known_files( file_handle )%desc
-      Call netcdf_close( desc )
-    End If
-
-    If ( io%do_io ) Then
-      If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-        Call netcdf_open( Trim( io%known_files( file_handle )%name ), desc, io%io_comm, MPI_INFO_NULL )
-        Call netcdf_get_def( desc )
-      End If
-    End If
+!    If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
+!      desc = io%known_files( file_handle )%desc
+!      Call netcdf_close( desc )
+!    End If
+!
+!    If ( io%do_io ) Then
+!      If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
+!        Call netcdf_open( Trim( io%known_files( file_handle )%name ), desc, io%io_comm, MPI_INFO_NULL )
+!        Call netcdf_get_def( desc )
+!      End If
+!    End If
 
     Do
 
@@ -3884,20 +3890,21 @@ Contains
     End If
 
     ! For netCDF reopen the file in its original state
-    If ( io%do_io ) Then
-      If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-        Call netcdf_close( desc )
-      End If
-    End If
-
-    If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-      Call netcdf_open( Trim( io%known_files( file_handle )%name ), io%known_files( file_handle )%desc, &
-        io%base_comm, MPI_INFO_NULL )
-      Call netcdf_get_def( io%known_files( file_handle )%desc )
-    End If
+!    If ( io%do_io ) Then
+!      If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
+!        Call netcdf_close( desc )
+!      End If
+!    End If
+!
+!    If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
+!      Call netcdf_open( Trim( io%known_files( file_handle )%name ), io%known_files( file_handle )%desc, &
+!        io%base_comm, MPI_INFO_NULL )
+!      Call netcdf_get_def( io%known_files( file_handle )%desc )
+!    End If
 
     ! Free comms
     Call free_io_comm( io%do_io, io%io_comm, io%io_gather_comm )
+    io%io_comm_inited = .false.
 
     ! Leave in sync
     Call MPI_BARRIER( io%base_comm, ierr )
