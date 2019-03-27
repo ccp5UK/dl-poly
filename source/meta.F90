@@ -696,13 +696,14 @@ Contains
     green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
     tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
     fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain, &
-    seed,traj,kim_data,config,ios,ttms,rsdsc,files)
+    seed,traj,kim_data,config,ios,ttms,rsdsc,files,crd)
 
     Type( angles_type ), Allocatable, Intent(InOut) :: angle(:)
     Type(bonds_type), Allocatable, Intent(InOut) :: bond(:)
     Type( configuration_type ), Allocatable, Intent(InOut) :: config(:)
     Type( constraints_type ), Allocatable, Intent(InOut) :: cons(:)
     Type( core_shell_type ), Allocatable, Intent(InOut) :: core_shells(:)
+    Type( coord_type), Allocatable, Intent(InOut) :: crd(:)
     Type(defects_type), Allocatable, Intent(InOut) :: dfcts(:,:)
     Type(development_type), Allocatable, Intent(InOut) :: devel(:)
     Type( dihedrals_type ), Allocatable, Intent(InOut) :: dihedral(:)
@@ -747,6 +748,7 @@ Contains
     If (Allocated(config)) Deallocate(config)
     If (Allocated(cons)) Deallocate(cons)
     If (Allocated(core_shells)) Deallocate(core_shells)
+    If (Allocated(crd)) Deallocate(crd)
     If (Allocated(devel)) Deallocate(devel)
     If (Allocated(dfcts)) Deallocate(dfcts)
     If (Allocated(dihedral)) Deallocate(dihedral)
