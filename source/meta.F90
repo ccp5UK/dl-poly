@@ -144,7 +144,7 @@ Contains
       green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
       tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
       fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain, &
-      seed,traj,kim_data,config,ios,ttms,rsdsc,files,crf)
+      seed,traj,kim_data,config,ios,ttms,rsdsc,files,crd)
 
     comm=dlp_world(0) ! this shall vanish asap w_ are proper things
 
