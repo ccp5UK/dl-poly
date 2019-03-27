@@ -111,6 +111,7 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    ! contrib   - a.m.elena february 2019, cherry pick 4.09.2
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -508,7 +509,8 @@ Contains
 
     tmr%job = 0.0_wp ; l_timjob=.false.
     tmr%clear_screen = 0.0_wp ; l_timcls=.false.
-
+    tmr%max_depth = 2
+    
     ! major cutoff, padding and vdw cutoff defaults
 
     rcut1 = 0.0_wp
@@ -549,7 +551,9 @@ Contains
       ! record is commented out
 
       If (word(1:1) == '#' .or. word(1:1) == ' ') Then
-
+      Else If (word(1:5) == 'l_scr') Then
+      Else If (word(1:6) == 'l_fast') Then
+      Else If (word(1:5) == 'l_tim') Then
       Else If (word(1:5) == 'l_eng') Then
         devel%l_eng = .true.
         Call info('%%% OUTPUT contains an extra last line with E_tot !!! %%%',.true.)
@@ -822,13 +826,14 @@ Contains
 
         Call get_word(record,word)
         l_0 = (word(1:4) == 'fire')
+        If (l_0) Call get_word(record,word)
         thermo%freq_zero = Max(1,Abs(Nint(word_2_real(word,0.0_wp))))
 
         If (word(1:5) == 'every') Call get_word(record,word)
         thermo%freq_zero = Max(thermo%freq_zero,Abs(Nint(word_2_real(word,0.0_wp))))
 
         Call info('zero K optimisation on (during equilibration)',.true.)
-        Write(message,'(a,i10)') 'temperature regaussing interval',thermo%freq_zero
+        Write(message,'(a,i10)') 'zero K application interval',thermo%freq_zero
 
         If (l_0) Then
           If (comm%idnode == 0) &
@@ -836,7 +841,7 @@ Contains
         Else
           ltemp  = .true.
           thermo%temp = 10.0_wp
-          Call info('fire option off - actual temperature reset to 10 Kelvin',.true.)
+          Call info('fire option off - target temperature reset to 10 Kelvin',.true.)
         End If
 
         ! read pressure
@@ -2858,8 +2863,18 @@ Contains
         If (word(1:4) == 'dens' .or. word(1:6) == 'thresh') Call get_word(record,word)
         neigh%pdplnc = Max(Abs(word_2_real(word)),1.0_wp) ! disallow any less than 1
 
-        ! read machine time for simulation run (in seconds)
+        ! Set maximum tree depth printed
+      Else If (word(1:10) == 'time_depth') Then
 
+        Call get_word(record,word)
+        tmr%max_depth = Int(word_2_real(word))
+                
+        ! See if detailed processor timing is requested
+      Else If (word(1:12) == 'time_per_mpi') Then
+
+        tmr%proc_detail = .true.
+        
+        ! read machine time for simulation run (in seconds)
       Else If (word(1:3) == 'job') Then
 
         Call get_word(record,word1)
@@ -3727,6 +3742,8 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 
   rdf%l_collect  = (rdf%max_rdf > 0)
   l_n_r = .not.rdf%l_collect
+
+  lzdn = .false.
 
   lvdw  = (vdws%max_vdw > 0)
   vdws%no_vdw = .false.

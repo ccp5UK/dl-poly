@@ -89,15 +89,15 @@ FFLAGS="-fpp -O3 -xHost -fimf-domain-exclusion=15"
 for the flags matching the _running machine_
 
 ## Debugging, or when things go unexpected
-* gfortran
+* gfortran/ifort
 
 ```sh
-FFLAGS="-g -frecord-gcc-switches -O0 -std=f2008 -pedantic -fbacktrace -fcheck=all -finit-integer=2147483647 -finit-real=snan -finit-logical=true -finit-character=42 -finit-derived -ffpe-trap=invalid,zero,overflow -fdump-core -fstack-protector-all -Wall -pipe"
+cmake ../ -DCMAKE_BUILD_TYPE=Debug
 ```
-* Intel
+* other compilers
 
 ```sh
-FFLAGS="-g -O0 -stand f08 -traceback -C -fp-stack-check -ftrapuv -qopt-report=5 -init=snan -init=arrays"
+FFLAGS="desired flags" cmake ../
 ```
 
 ## Building with NETCDF support

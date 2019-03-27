@@ -1,0 +1,20 @@
+name =  "DL_POLY_4"
+version = "4.09"
+homepage = "htpps://a.b.org"
+description = "classical md"
+
+toolchain = {'name':'foss','version':'2018b'}
+
+sources = [{'filename': 'dl_poly-%(version)s.tar.xz',
+'source_urls':['.'],
+'extract_cmd':'tar xvf %s'
+}]
+
+configopts='-DWITH_PLUMED=On'
+dependencies=[('PLUMED','2.4.2')]
+builddependencies = [('PLUMED','2.4.2')]
+easyblock = 'CMakeMake'
+sanity_check_paths = {
+    'files': ['bin/DLPOLY.Z'],
+    'dirs':[]
+}

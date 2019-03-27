@@ -78,7 +78,6 @@ if(PLUMED_INCLUDE_DIR AND EXISTS "${VERSION_FILE}")
 endif()
 # handle the QUIETLY and REQUIRED arguments and set PLUMED_FOUND to TRUE if
 # all listed variables are TRUE
-include(${CMAKE_CURRENT_LIST_DIR}/FindPackageHandleStandardArgs.cmake)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(PLUMED REQUIRED_VARS PLUMED_LIBRARY PLUMED_INCLUDE_DIR 
                                        VERSION_VAR PLUMED_VERSION_STRING)
 

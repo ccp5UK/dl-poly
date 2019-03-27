@@ -15,7 +15,7 @@ Module neighbours
   Use development, Only : development_type
   Use errors_warnings, Only : error,warning,info
   Use numerics, Only : dcell,images,invert,match
-  Use timer,  Only : timer_type,start_timer,stop_timer
+  Use timer,     Only : timer_type, start_timer, stop_timer
   Use statistics, Only : stats_type
   Use kim, Only : kim_type
   Implicit None
@@ -320,13 +320,13 @@ Contains
     ! Get the dimensional properties of the MD config%cell
 
 #ifdef CHRONO
-    Call start_timer(tmr%t_linkcell)
+    Call start_timer(tmr, 'Linked Cells')
 #endif
     Call dcell(config%cell,celprp)
 
     ! halt program if potential cutoff exceeds the minimum half-config%cell width
     det=Min(celprp(7),celprp(8),celprp(9))
-    If (neigh%cutoff_extended > det/2.0_wp) Then
+    If (neigh%cutoff_extended >= det/2.0_wp) Then
       Call warning(3,neigh%cutoff_extended,det/2.0_wp,0.0_wp)
       Call error(95)
     End If
@@ -1143,7 +1143,7 @@ Contains
       Call error(0,message)
     End If
 #ifdef CHRONO
-    Call stop_timer(tmr%t_linkcell)
+    Call stop_timer(tmr, 'Linked Cells')
 #endif
 
   End Subroutine link_cell_pairs
