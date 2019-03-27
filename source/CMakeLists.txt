@@ -33,7 +33,6 @@ set(dlpoly_SRCS
   numerics.F90
   impacts.F90
   errors_warnings.F90
-  potentials.F90
   rdfs.F90
   kinds.F90
   vdw.F90

@@ -65,7 +65,8 @@ Module comms
     Grid1_tag     = 3300, &
     Grid2_tag     = 3311, &
     Grid3_tag     = 3322, &
-    Grid4_tag     = 3333
+    Grid4_tag     = 3333, &
+    Timer_tag     = 4000
 
   ! MPI operations
   Integer, Parameter, Public :: op_sum = MPI_SUM, &
