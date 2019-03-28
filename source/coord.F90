@@ -176,8 +176,8 @@ contains
       If((crd%coordops ==2) .or. crd%coordstart==flow%step)then
       Do i=1,config%natms
         m=crd%coordlist(0,i)
-        write (nicrdt,Fmt='(i12,1x,i12,1x)',advance="no") &
-          config%ltg(i),crd%coordlist(0,i)
+        write (nicrdt,Fmt='(i12,1x,A8,i12,1x)',advance="no") &
+          config%ltg(i),trim(sites%unique_atom(config%ltype(config%ltg(i)))),crd%coordlist(0,i)
         do ii=1,m
           write(nicrdt,'(i0,1x)',advance="no") config%ltg(crd%coordlist(ii,i))
         enddo 
@@ -194,8 +194,8 @@ contains
           Call grecv(comm,buff,j,j)
           Call grecv(comm,cbuff,j,j)
           Do i=1,en/2
-            write (nicrdt,Fmt='(i12,1x,i12,a)') &
-              buff(2*i-1),buff(2*i),trim(cbuff(i))
+            write (nicrdt,Fmt='(i12,1x,A8,i12,a)') &
+              buff(2*i-1),trim(sites%unique_atom(config%ltype(config%ltg(buff(2*i-1))))),buff(2*i),trim(cbuff(i))
           enddo
         endif
       enddo
@@ -323,9 +323,10 @@ contains
         Do ii= 1 , crd%ncoorddis
           if ((config%ltype(i)==crd%disltype(ii)))then
            rdis=crd%discuts(ii)
+           
           endif
         end Do
-
+     
     if(stats%rsd(i).gt.rdis)then
       coordchange=.False.
       coordfound=.False.
@@ -379,7 +380,7 @@ contains
         write(Unit=nccrdt,Fmt='(a2,I10,3f20.10,f8.5)') &
           trim(sites%unique_atom(config%ltype(crd%defectlist(i)))),config%ltg(crd%defectlist(i)), &
           config%parts(crd%defectlist(i))%xxx,config%parts(crd%defectlist(i))%yyy,config%parts(crd%defectlist(i))%zzz,&
-          stats%rsd(i)
+          stats%rsd(crd%defectlist(i))
       enddo
 
       do j=1,comm%mxnode-1
