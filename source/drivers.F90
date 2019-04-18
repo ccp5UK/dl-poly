@@ -271,7 +271,8 @@ Contains
     stat%vircpe    = 0.0_wp    
 
     ! Set up non-bonded interaction (verlet) list using link cells
-    If (neigh%update) Then
+    If ((.not.(met%max_metal == 0 .and. electro%key == ELECTROSTATIC_NULL .and. &
+        vdws%no_vdw .and. rdf%max_rdf == 0) .or. kim_data%active).and.neigh%update) Then
        Call link_cell_pairs(vdws%cutoff,met%rcut,flow%book,cnfig%megfrz,cshell,devel, &
                           neigh,mpoles,domain,tmr,cnfig,comm)
     End If
@@ -287,7 +288,11 @@ Contains
     ! Calculate four-body forces
 
     If (fourbody%n_potential > 0) Call four_body_forces(fourbody,stat,neigh,domain,cnfig,comm)
-    call start_timer(tmr,'Bonded Forces')
+
+#ifdef CHRONO
+    Call start_timer(tmr, 'Bonded Forces')
+#endif
+
     ! Calculate shell model forces
 
     If (cshell%megshl > 0) Call core_shell_forces(cshell,stat,cnfig,comm)
@@ -344,8 +349,9 @@ Contains
       switch = 1 + Merge(1,0,ltmp)
       Call inversions_forces(switch,stat%enginv,stat%virinv,stat%stress,inversion,cnfig,comm)
     End If
-    call stop_timer(tmr,'Bonded Forces')
-
+#ifdef CHRONO
+    Call stop_timer(tmr,'Bonded Forces')
+#endif
     
     ! Calculate pair-like forces (metal,vdws,electrostatic) and add lrc
 
