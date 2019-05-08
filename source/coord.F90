@@ -195,7 +195,8 @@ contains
           Call grecv(comm,cbuff,j,j)
           Do i=1,en/2
             write (nicrdt,Fmt='(i12,1x,A8,i12,a)') &
-              buff(2*i-1),trim(sites%unique_atom(config%ltype(config%ltg(buff(2*i-1))))),buff(2*i),trim(cbuff(i))
+!              buff(2*i-1),trim(sites%unique_atom(config%ltype(config%ltg(buff(2*i-1))))),buff(2*i),trim(cbuff(i))
+               buff(2*i-1),trim(sites%unique_atom(config%ltype(buff(2*i-1)))),buff(2*i),trim(cbuff(i))
           enddo
         endif
       enddo
@@ -214,7 +215,8 @@ contains
         do ii=1,crd%coordlist(0,i)
           write(aux,'(a)') trim(sites%unique_atom(config%ltype(crd%coordlist(ii,i))))
           cbuff(i)=trim(cbuff(i))//" "//trim(aux)
-        enddo 
+ 
+          enddo 
       enddo
       Call gsend(comm,en,0,comm%idnode)
       if (en>0) then
