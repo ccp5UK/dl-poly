@@ -194,9 +194,9 @@ contains
           Call grecv(comm,buff,j,j)
           Call grecv(comm,cbuff,j,j)
           Do i=1,en/2
-            write (nicrdt,Fmt='(i12,1x,A8,i12,a)') &
+            write (nicrdt,Fmt='(i12,1x,i12,a)') &
 !              buff(2*i-1),trim(sites%unique_atom(config%ltype(config%ltg(buff(2*i-1))))),buff(2*i),trim(cbuff(i))
-               buff(2*i-1),trim(sites%unique_atom(config%ltype(buff(2*i-1)))),buff(2*i),trim(cbuff(i))
+               buff(2*i-1),buff(2*i),trim(cbuff(i))
           enddo
         endif
       enddo
@@ -208,6 +208,7 @@ contains
         buff(2*i-1) = config%ltg(i)
         buff(2*i) = crd%coordlist(0,i)
         cbuff(i)=''
+!        dbuff(i) = trim(sites%unique_atom(config%ltype(config%ltg(i))))
         do ii=1,crd%coordlist(0,i)
           write(aux,'(i0)') config%ltg(crd%coordlist(ii,i))
           cbuff(i)=trim(cbuff(i))//" "//trim(aux)
