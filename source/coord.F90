@@ -82,7 +82,7 @@ contains
     real :: rcut,rab
     Character(len=8) :: aux 
     Character(len=1000),allocatable :: cbuff(:)
-    integer, allocatable :: buff(:),coordbuff(:)
+    integer, allocatable :: buff(:),coordbuff(:),dbuff(:)
     Logical :: newatom,itsopen
 
     !Check whether option is called
@@ -163,6 +163,7 @@ contains
 
     allocate(buff(2*config%mxatms))
     allocate(cbuff(config%mxatms))
+    allocate(dbuff(config%mxatms))
     If (comm%idnode==0) Then
       inquire(Unit=nicrdt, opened=itsopen)
       if ( .not. itsopen ) Then
@@ -176,8 +177,8 @@ contains
       If((crd%coordops ==2) .or. crd%coordstart==flow%step)then
       Do i=1,config%natms
         m=crd%coordlist(0,i)
-        write (nicrdt,Fmt='(i12,1x,A8,i12,1x)',advance="no") &
-          config%ltg(i),trim(sites%unique_atom(config%ltype(config%ltg(i)))),crd%coordlist(0,i)
+        write (nicrdt,Fmt='(i12,1x,a8,i12,1x)',advance="no") &
+          config%ltg(i),trim(sites%unique_atom(config%ltype(i))),crd%coordlist(0,i)
         do ii=1,m
           write(nicrdt,'(i0,1x)',advance="no") config%ltg(crd%coordlist(ii,i))
         enddo 
@@ -193,10 +194,11 @@ contains
         if (en>0) Then
           Call grecv(comm,buff,j,j)
           Call grecv(comm,cbuff,j,j)
+          Call grecv(comm,dbuff,j,j)
           Do i=1,en/2
-            write (nicrdt,Fmt='(i12,1x,i12,a)') &
+                write (nicrdt,Fmt='(i12,1x,a8,i12,a)') &
 !              buff(2*i-1),trim(sites%unique_atom(config%ltype(config%ltg(buff(2*i-1))))),buff(2*i),trim(cbuff(i))
-               buff(2*i-1),buff(2*i),trim(cbuff(i))
+               buff(2*i-1),sites%unique_atom(dbuff(i)),buff(2*i),trim(cbuff(i))
           enddo
         endif
       enddo
@@ -208,7 +210,7 @@ contains
         buff(2*i-1) = config%ltg(i)
         buff(2*i) = crd%coordlist(0,i)
         cbuff(i)=''
-!        dbuff(i) = trim(sites%unique_atom(config%ltype(config%ltg(i))))
+        dbuff(i) = config%ltype(i)
         do ii=1,crd%coordlist(0,i)
           write(aux,'(i0)') config%ltg(crd%coordlist(ii,i))
           cbuff(i)=trim(cbuff(i))//" "//trim(aux)
@@ -223,12 +225,13 @@ contains
       if (en>0) then
         Call gsend(comm,buff,0,comm%idnode)
         Call gsend(comm,cbuff,0,comm%idnode)
+        Call gsend(comm,dbuff,0,comm%idnode)
       endif
     endif
     endif
     deallocate(buff)
     deallocate(cbuff)
-
+    deallocate(dbuff)
     
 
     If (comm%idnode==0) Then
