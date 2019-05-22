@@ -239,15 +239,16 @@ Contains
     stats%engcpe    = 0.0_wp
     stats%vircpe    = 0.0_wp
 
+#ifdef CHRONO
+    Call stop_timer('Two-Body Init')
+#endif
+
     ! Set up non-bonded interaction (verlet) list using link cells
     If (neigh%update) Then
       Call link_cell_pairs(vdws%cutoff,met%rcut,lbook,megfrz,cshell,devel, &
         neigh,mpoles,domain,tmr,config,comm)
     End If
 
-#ifdef CHRONO
-    Call stop_timer('Two-Body Init')
-#endif
 
     ! Calculate all contributions from KIM
     If (kim_data%active) Then
@@ -611,6 +612,11 @@ Contains
       rdf%n_configs = rdf%n_configs + 1
     End If
 
+#ifdef CHRONO
+    Call stop_timer('Short Range')
+    Call start_timer('Two-Body Final')
+#endif
+
     Deallocate (xxt,yyt,zzt,rrt, Stat=fail)
     If (fail > 0) call error_dealloc('distance arrays','two_body_forces')
 
@@ -742,8 +748,8 @@ Contains
     stats%stress(9) = stats%stress(9) + tmp
 
 #ifdef CHRONO
-    Call stop_timer('Short Range')
+    Call stop_timer('Two-Body Final')
 #endif
-
+    
   End Subroutine two_body_forces
 End Module two_body

@@ -876,21 +876,6 @@ Contains
           config%parts(l_ind(i))%fyy=config%parts(l_ind(i))%fyy-force_temp_comp(2)
           config%parts(l_ind(i))%fzz=config%parts(l_ind(i))%fzz-force_temp_comp(3)
 
-          ! redundant calculations copying
-
-          ! If (ewld%lf_cp) Then
-          !    ewld%ffx(l_ind(i))=ewld%ffx(l_ind(i))-force_temp_comp(1)
-          !    ewld%ffy(l_ind(i))=ewld%ffy(l_ind(i))-force_temp_comp(2)
-          !    ewld%ffz(l_ind(i))=ewld%ffz(l_ind(i))-force_temp_comp(3)
-          ! End If
-
-          ! infrequent calculations copying
-
-          ! If (ewld%l_cp) Then
-          !    ewld%fcx(l_ind(i))=ewld%fcx(l_ind(i))-force_temp_comp(1)
-          !    ewld%fcy(l_ind(i))=ewld%fcy(l_ind(i))-force_temp_comp(2)
-          !    ewld%fcz(l_ind(i))=ewld%fcz(l_ind(i))-force_temp_comp(3)
-          ! End If
         End Do
 
         Do j=i+1,nz_fr(comm%idnode+1) ! =, node=comm%idnode (OVERLAP but no SELF)!
@@ -942,30 +927,6 @@ Contains
           config%parts(l_ind(j))%fxx=config%parts(l_ind(j))%fxx+force_temp_comp(1)
           config%parts(l_ind(j))%fyy=config%parts(l_ind(j))%fyy+force_temp_comp(2)
           config%parts(l_ind(j))%fzz=config%parts(l_ind(j))%fzz+force_temp_comp(3)
-
-          ! redundant calculations copying
-
-          ! If (ewld%lf_cp) Then
-          !    ewld%ffx(l_ind(i))=ewld%ffx(l_ind(i))-force_temp_comp(1)
-          !    ewld%ffy(l_ind(i))=ewld%ffy(l_ind(i))-force_temp_comp(2)
-          !    ewld%ffz(l_ind(i))=ewld%ffz(l_ind(i))-force_temp_comp(3)
-
-          !    ewld%ffx(l_ind(j))=ewld%ffx(l_ind(j))+force_temp_comp(1)
-          !    ewld%ffy(l_ind(j))=ewld%ffy(l_ind(j))+force_temp_comp(2)
-          !    ewld%ffz(l_ind(j))=ewld%ffz(l_ind(j))+force_temp_comp(3)
-          ! End If
-
-          ! infrequent calculations copying
-
-          ! If (ewld%l_cp) Then
-          !    ewld%fcx(l_ind(i))=ewld%fcx(l_ind(i))-force_temp_comp(1)
-          !    ewld%fcy(l_ind(i))=ewld%fcy(l_ind(i))-force_temp_comp(2)
-          !    ewld%fcz(l_ind(i))=ewld%fcz(l_ind(i))-force_temp_comp(3)
-
-          !    ewld%fcx(l_ind(j))=ewld%fcx(l_ind(j))+force_temp_comp(1)
-          !    ewld%fcy(l_ind(j))=ewld%fcy(l_ind(j))+force_temp_comp(2)
-          !    ewld%fcz(l_ind(j))=ewld%fcz(l_ind(j))+force_temp_comp(3)
-          ! End If
 
           ! calculate potential energy and virial
 
@@ -1025,22 +986,6 @@ Contains
           config%parts(l_ind(i))%fxx=config%parts(l_ind(i))%fxx-force_temp_comp(1)
           config%parts(l_ind(i))%fyy=config%parts(l_ind(i))%fyy-force_temp_comp(2)
           config%parts(l_ind(i))%fzz=config%parts(l_ind(i))%fzz-force_temp_comp(3)
-
-          ! redundant calculations copying
-
-          ! If (ewld%lf_cp) Then
-          !    ewld%ffx(l_ind(i))=ewld%ffx(l_ind(i))-force_temp_comp(1)
-          !    ewld%ffy(l_ind(i))=ewld%ffy(l_ind(i))-force_temp_comp(2)
-          !    ewld%ffz(l_ind(i))=ewld%ffz(l_ind(i))-force_temp_comp(3)
-          ! End If
-
-          ! infrequent calculations copying
-
-          ! If (ewld%l_cp) Then
-          !    ewld%fcx(l_ind(i))=ewld%fcx(l_ind(i))-force_temp_comp(1)
-          !    ewld%fcy(l_ind(i))=ewld%fcy(l_ind(i))-force_temp_comp(2)
-          !    ewld%fcz(l_ind(i))=ewld%fcz(l_ind(i))-force_temp_comp(3)
-          ! End If
 
           ! calculate potential energy and virial
 
@@ -1132,43 +1077,11 @@ Contains
               config%parts(i)%fyy=config%parts(i)%fyy-force_temp_comp(2)
               config%parts(i)%fzz=config%parts(i)%fzz-force_temp_comp(3)
 
-              ! redundant calculations copying
-
-              ! If (ewld%lf_cp) Then
-              !    ewld%ffx(i)=ewld%ffx(i)-force_temp_comp(1)
-              !    ewld%ffy(i)=ewld%ffy(i)-force_temp_comp(2)
-              !    ewld%ffz(i)=ewld%ffz(i)-force_temp_comp(3)
-              ! End If
-
-              ! ! infrequent calculations copying
-
-              ! If (ewld%l_cp) Then
-              !    ewld%fcx(i)=ewld%fcx(i)-force_temp_comp(1)
-              !    ewld%fcy(i)=ewld%fcy(i)-force_temp_comp(2)
-              !    ewld%fcz(i)=ewld%fcz(i)-force_temp_comp(3)
-              ! End If
-
               If (j <= config%natms) Then
 
                 config%parts(j)%fxx=config%parts(j)%fxx+force_temp_comp(1)
                 config%parts(j)%fyy=config%parts(j)%fyy+force_temp_comp(2)
                 config%parts(j)%fzz=config%parts(j)%fzz+force_temp_comp(3)
-
-                ! redundant calculations copying
-
-                ! If (ewld%lf_cp) Then
-                !    ewld%ffx(j)=ewld%ffx(j)+force_temp_comp(1)
-                !    ewld%ffy(j)=ewld%ffy(j)+force_temp_comp(2)
-                !    ewld%ffz(j)=ewld%ffz(j)+force_temp_comp(3)
-                ! End If
-
-                ! ! infrequent calculations copying
-
-                ! If (ewld%l_cp) Then
-                !    ewld%fcx(j)=ewld%fcx(j)+force_temp_comp(1)
-                !    ewld%fcy(j)=ewld%fcy(j)+force_temp_comp(2)
-                !    ewld%fcz(j)=ewld%fcz(j)+force_temp_comp(3)
-                ! End If
 
               End If
 
@@ -1211,40 +1124,6 @@ Contains
     stress(7) = stress(7) + stress_temp(3)
     stress(8) = stress(8) + stress_temp(6)
     stress(9) = stress(9) + stress_temp(9)
-
-    ! redundant calculations copying
-
-    ! If (ewld%lf_cp) Then
-    !    ewld%ef_fr=engcpe_fr
-    !    ewld%vf_fr=vircpe_fr
-
-    !    ewld%sf_fr(1) = stress_temp(1)
-    !    ewld%sf_fr(2) = stress_temp(2)
-    !    ewld%sf_fr(3) = stress_temp(3)
-    !    ewld%sf_fr(4) = stress_temp(2)
-    !    ewld%sf_fr(5) = stress_temp(5)
-    !    ewld%sf_fr(6) = stress_temp(6)
-    !    ewld%sf_fr(7) = stress_temp(3)
-    !    ewld%sf_fr(8) = stress_temp(6)
-    !    ewld%sf_fr(9) = stress_temp(9)
-    ! End If
-
-    ! infrequent calculations copying
-
-    ! If (ewld%l_cp) Then
-    !    ewld%e_fr=engcpe_fr
-    !    ewld%v_fr=vircpe_fr
-
-    !    ewld%s_fr(1) = stress_temp(1)
-    !    ewld%s_fr(2) = stress_temp(2)
-    !    ewld%s_fr(3) = stress_temp(3)
-    !    ewld%s_fr(4) = stress_temp(2)
-    !    ewld%s_fr(5) = stress_temp(5)
-    !    ewld%s_fr(6) = stress_temp(6)
-    !    ewld%s_fr(7) = stress_temp(3)
-    !    ewld%s_fr(8) = stress_temp(6)
-    !    ewld%s_fr(9) = stress_temp(9)
-    ! End If
 
     Deallocate (l_ind,nz_fr, Stat=fail)
     If (fail > 0) Then
@@ -1577,8 +1456,6 @@ Contains
     Integer :: fail
     Integer, save :: mxspl2_old = -1
 
-    call start_timer('FE Init')
-    
     recip_cell_mat = reshape(recip_cell,[3,3])
     recip_kmax = matmul(recip_cell_mat, ewld%kspace%k_vec_dim_real)
 
@@ -1613,10 +1490,7 @@ Contains
     forces   = 0.0_wp
     force_total = 0.0_wp
 
-    call stop_timer('FE Init')
     ! Calculate per-particle contributions
-
-    call start_timer('FE Calc')
     atom:do i = 1, config%natms
 
       energy_total = 0.0_wp
@@ -1640,12 +1514,6 @@ Contains
         force_temp(2,3) = atom_coeffs * bspline_d0_z(l)
         force_temp(3,3) = atom_coeffs * bspline_d1_z(l)
 
-        ! energy_temp(3)  = atom_coeffs * ewld%bspline%derivs(3,0,l,i)
-
-        ! force_temp(1,3) = atom_coeffs * ewld%bspline%derivs(3,0,l,i)
-        ! force_temp(2,3) = atom_coeffs * ewld%bspline%derivs(3,0,l,i)
-        ! force_temp(3,3) = atom_coeffs * ewld%bspline%derivs(3,1,l,i)
-
         do k = 1, ewld%bspline%num_splines
           kk = recip_indices(2,i) + 1  - ewld%bspline%num_splines + k
 
@@ -1655,24 +1523,8 @@ Contains
           force_temp(2,2) = force_temp(2,3) * bspline_d1_y(k)
           force_temp(3,2) = force_temp(3,3) * bspline_d0_y(k)
 
-          ! energy_temp(2)  = energy_temp(3) * ewld%bspline%derivs(2,0,k,i)
-
-          ! ! force_temp(:,2) = force_temp(:,3) * ewld%bspline%derivs(2,current_derivs,k,i)
-          ! force_temp(1,2) = force_temp(1,3) * ewld%bspline%derivs(2,0,k,i)
-          ! force_temp(2,2) = force_temp(2,3) * ewld%bspline%derivs(2,1,k,i)
-          ! force_temp(3,2) = force_temp(3,3) * ewld%bspline%derivs(2,0,k,i)
-
           do j = 1, ewld%bspline%num_splines
             jj = recip_indices(1,i) + 1  - ewld%bspline%num_splines + j
-
-            ! force_temp(:,1) = force_temp(:,2) * ewld%bspline%derivs(1,current_derivs,j,i) * &
-            !   & extended_potential_grid(jj,kk,ll) * recip_kmax
-            ! force_temp(1,1) = force_temp(1,2) * ewld%bspline%derivs(1,1,j,i) * & 
-            !   & extended_potential_grid(jj,kk,ll) * recip_kmax(1)
-            ! force_temp(2,1) = force_temp(2,2) * ewld%bspline%derivs(1,0,j,i) * & 
-            !   & extended_potential_grid(jj,kk,ll) * recip_kmax(2)
-            ! force_temp(3,1) = force_temp(3,2) * ewld%bspline%derivs(1,0,j,i) * & 
-            !   & extended_potential_grid(jj,kk,ll) * recip_kmax(3)
 
             force_temp(1,1) = force_temp(1,2) * bspline_d1_x(j) * extended_potential_grid(jj,kk,ll) * recip_kmax(1)
             force_temp(2,1) = force_temp(2,2) * bspline_d0_x(j) * extended_potential_grid(jj,kk,ll) * recip_kmax(2)
@@ -1694,9 +1546,7 @@ Contains
       forces(:,i) = forces(:,i) - curr_force_temp
 
     end do atom
-    call stop_timer('FE Calc')
 
-    call start_timer('FE End')
     ! Correct for CoM term
     call gsum(comm, force_total)
 
@@ -1705,7 +1555,6 @@ Contains
     do i = 1, config%natms
       forces(:,i) = (forces(:,i) - force_total)
     end do
-    call stop_timer('FE End')
 
   end subroutine spme_calc_force_energy
 
