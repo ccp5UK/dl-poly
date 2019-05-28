@@ -312,8 +312,8 @@ contains
     integer :: i,ii,j,jj,k,kk,defn,defectcnt,totdefectcnt
     real :: rcut,rab,rdis
     integer, allocatable :: buff(:)
-    character(len=68) :: aux
-    character(len=68), allocatable :: rbuff(:)
+    character(len=80) :: aux
+    character(len=80), allocatable :: rbuff(:)
     logical :: coordchange,coordfound,thisopen
     
     If(crd%coordon .Eqv. .False.)Return
@@ -383,7 +383,7 @@ contains
       enddo
 
       Do i=1, crd%defectlist(0)
-        write(Unit=nccrdt,Fmt='(a2,I10,3f20.10,f8.5)') &
+        write(Unit=nccrdt,Fmt='(a2,I10,3f20.10,f10.5)') &
           trim(sites%unique_atom(config%ltype(crd%defectlist(i)))),config%ltg(crd%defectlist(i)), &
           config%parts(crd%defectlist(i))%xxx,config%parts(crd%defectlist(i))%yyy,config%parts(crd%defectlist(i))%zzz,&
           stats%rsd(crd%defectlist(i))
@@ -414,7 +414,7 @@ contains
       do i =1, defectcnt
         buff(2*i-1)=config%ltype(crd%defectlist(i))
         buff(2*i)=config%ltg(crd%defectlist(i))
-        write(aux,'(3f20.10,f8.5)')config%parts(crd%defectlist(i))%xxx,config%parts(crd%defectlist(i))%yyy,  &
+        write(aux,'(3f20.10,f10.5)')config%parts(crd%defectlist(i))%xxx,config%parts(crd%defectlist(i))%yyy,  &
         config%parts(crd%defectlist(i))%zzz,stats%rsd(crd%defectlist(i))
         rbuff(i)=aux
       End do
