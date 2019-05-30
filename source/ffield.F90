@@ -124,6 +124,7 @@ Contains
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
     ! contrib   - a.m.elena march 2019 (remove error 145)
+    ! contrib   - i.scivetti may 2019 (EVB implementation)
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -301,7 +302,6 @@ Contains
     tersoffs%cutoff=0.0_wp
     threebody%cutoff=0.0_wp
     fourbody%cutoff=0.0_wp
-
 
     ! open force field data file
 

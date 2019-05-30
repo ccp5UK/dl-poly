@@ -142,10 +142,11 @@ program dl_poly
     peakProfilerElec,peakProfiler
   Use ttm_track, Only : ttm_ion_temperature
   Use filename, Only : file_type,default_filenames
-  Use flow_control, Only : flow_type,EVB,FFS,MD
+  Use flow_control, Only : flow_type, VB, FFS, MD
   Use kinetics, Only : cap_forces
   Use timer, Only  : timer_type
   Use meta, Only : molecular_dynamics
+  Use evb, Only  : evb_molecular_dynamics
 
   Implicit None
 
@@ -213,8 +214,10 @@ program dl_poly
   End If
 
   ! temporary stuff this will need to be abstracted 
-  Allocate(flow(1))
-  flow(1)%simulation_method = MD
+  Allocate(flow(2))
+  flow(1)%simulation_method = VB 
+  flow(2)%simulation_method = VB 
+
   ! Select metasimulation method
   If (flow(1)%simulation_method == MD) Then
     write(0,*) "simulation type: MD" 
@@ -223,8 +226,15 @@ program dl_poly
       threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs,fourbody, &
       rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow,seed,traj, &
       kim_data,config,ios,ttms,rsdsc,files,control_filename)
-  Else If (flow(1)%simulation_method == EVB) Then 
-    write(0,*) "simulation type: EVB" 
+  Else If (flow(1)%simulation_method == VB) Then 
+    write(0,*) "simulation type: EVB"
+    flow(1)%TYPE_SIZE_FF      = 2 
+    flow(2)%TYPE_SIZE_FF      = 2 
+    Call evb_molecular_dynamics(dlp_world,thermo,ewld,tmr,devel,stats, &
+      green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion,tether, &
+      threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs,fourbody, &
+      rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow,seed,traj, &
+      kim_data,config,ios,ttms,rsdsc,files,control_filename)
   Else If (flow(1)%simulation_method == FFS) Then 
     write(0,*) "simulation type: FFS" 
   Else

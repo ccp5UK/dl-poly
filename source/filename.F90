@@ -48,7 +48,7 @@ Module filename
   !> Size of filename array
   Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 10
 
-  Public :: default_filenames
+  Public :: default_filenames, default_filenames_evb
 
 Contains
 
@@ -86,6 +86,42 @@ Contains
       Call filenames(file_no)%init(default_names(file_no))
     End Do
   End Subroutine default_filenames
+
+  !> Allocate filename array and set defaults for EVB simulation
+  Subroutine default_filenames_evb(field_no,filenames)
+    Type(file_type), Intent( InOut )  :: filenames(:)
+    Integer(Kind=wi), Intent ( In   ) :: field_no
+
+    !> Default file names array
+    Character(Len=1024), Dimension(FILENAME_SIZE) :: default_names
+
+    Integer(Kind=wi) :: file_no
+    Character(Len=1024) :: tmp 
+
+    write(tmp,'(i0)') field_no
+
+    ! Populate default names array
+    default_names(FILE_CONTROL) = "CONTROL"
+    default_names(FILE_CONFIG)  = "CONFIG"
+    default_names(FILE_OUTPUT)  = "OUTPUT"
+    default_names(FILE_STATS)   = "STATIS"
+    default_names(FILE_HISTORY) = "HISTORY"
+    default_names(FILE_HISTORF) = "HISTORF"
+    default_names(FILE_REVIVE)  = "REVIVE"
+    default_names(FILE_REVOLD)  = "REVOLD"
+    default_names(FILE_REVCON)  = "REVCON"
+
+    If(field_no == 1)then
+      default_names(FILE_FIELD) = "FIELD"
+    Else
+      default_names(FILE_FIELD) = "FIELD"   !//trim(tmp)     
+    End If        
+
+    ! Set default filenames
+    Do file_no = 1, FILENAME_SIZE
+      Call filenames(file_no)%init(default_names(file_no))
+    End Do
+  End Subroutine default_filenames_evb
 
   !> close a unit and restore it default value 
   Subroutine close_file(T)

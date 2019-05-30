@@ -16,7 +16,7 @@ Module flow_control
   !> Simulation type keys: MD
   Integer(Kind=wi), Parameter, Public :: MD = 1
   !> Simulation type keys: EVB
-  Integer(Kind=wi), Parameter, Public :: EVB = 2
+  Integer(Kind=wi), Parameter, Public :: VB = 2
   !> Simulation type keys: FFS
   Integer(Kind=wi), Parameter, Public :: FFS = 3
 
@@ -91,6 +91,8 @@ Module flow_control
     Logical, Public :: reset_padding
     !> Type of Simulation we perform
     Integer, Public :: simulation_method = MD
+    !> Define number of force-fields to be coupled
+    Integer(Kind = wi), Public :: TYPE_SIZE_FF
   Contains
     Procedure, Public :: new_page => flow_type_new_page
     Procedure, Public :: line_printed => flow_type_line_printed

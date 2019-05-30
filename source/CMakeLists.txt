@@ -26,6 +26,7 @@ set(dlpoly_SRCS
   external_field.F90
   stochastic_boundary.F90
   four_body.F90
+  evb.F90
   langevin.F90
   coul_spole.F90
   shared_units.F90

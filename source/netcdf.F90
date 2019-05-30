@@ -2,7 +2,7 @@ Module netcdf_wrap
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
-  ! dl_poly_4 module implementing netCDF wrappers for the sorrted parallel
+  ! dl_poly_4 module implementing netCDF wrappers for the sorted parallel
   ! I/O only in the CONFIG like files: REFERENCE, HISTORY, REVCON & CFGMIN
   !
   ! copyright - daresbury laboratory

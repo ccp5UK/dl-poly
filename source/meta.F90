@@ -76,7 +76,7 @@ Module meta
   Implicit None
   Private
 
-  Public :: molecular_dynamics
+  Public :: molecular_dynamics, print_initial_configuration, print_final_configuration, print_citations, print_banner
 
 Contains
 
