@@ -397,6 +397,8 @@ Contains
       Call build_book_intra(flow%strict,flow%print_topology,flow%simulation, &
         flow,core_shells,cons,pmfs,bond,angle,dihedral,inversion,tether, &
         neigh,sites,rigid,domain,config,comm)
+! Setting newjob_build_book to FALSE
+        flow%newjob_build_book=.FALSE.
       If (mpoles%max_mpoles > 0) Then
         Call build_tplg_intra(neigh%max_exclude,bond,angle,dihedral,inversion, &
           mpoles,config,comm)

@@ -16,7 +16,7 @@ Module flow_control
   !> Simulation type keys: MD
   Integer(Kind=wi), Parameter, Public :: MD = 1
   !> Simulation type keys: EVB
-  Integer(Kind=wi), Parameter, Public :: VB = 2
+  Integer(Kind=wi), Parameter, Public :: EmpVB = 2
   !> Simulation type keys: FFS
   Integer(Kind=wi), Parameter, Public :: FFS = 3
 
@@ -26,6 +26,12 @@ Module flow_control
     !> Check if is first time we call build_book_intra
     Logical, Public :: newjob_build_book = .true.
     Logical, Public :: oldjob_shared_units = .false.
+
+    !> Check if is first time we call set_bounds
+    Logical, Public :: newjob_set_bounds = .true.
+
+    !> Check if is first time we call read_control
+    Logical, Public :: newjob_read_control = .true.
 
     ! STDOUT printing control
     !> Number of print events before starting a new 'page'
@@ -92,7 +98,7 @@ Module flow_control
     !> Type of Simulation we perform
     Integer, Public :: simulation_method = MD
     !> Define number of force-fields to be coupled
-    Integer(Kind = wi), Public :: TYPE_SIZE_FF
+    Integer(Kind = wi), Public :: NUM_FF
   Contains
     Procedure, Public :: new_page => flow_type_new_page
     Procedure, Public :: line_printed => flow_type_line_printed

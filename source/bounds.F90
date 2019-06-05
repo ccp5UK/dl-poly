@@ -55,7 +55,7 @@ Contains
   Subroutine set_bounds(site,ttm,io,cshell,cons,pmf,stats,thermo,green,devel, &
       msd_data,met,pois,bond,angle,dihedral,inversion,tether,threebody,zdensity, &
       neigh,vdws,tersoffs,fourbody,rdf,mpoles,ext_field,rigid,electro,domain, &
-      config,ewld,kim_data,files,flow,comm)
+      config,ewld,kim_data,files,flow,comm,ff)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -113,6 +113,7 @@ Contains
     Type( file_type ), Intent( InOut ) :: files(:)
     Type( flow_type ), Intent( InOut ) :: flow
     Type( comms_type ), Intent( InOut ) :: comm
+    Integer( Kind = wi ), Intent( In   ), Optional :: ff
 
     Logical           :: l_usr,l_n_r,lzdn,lext,lrpad0
     Integer           :: megatm,i,ilx,ily,ilz,qlx,qly,qlz, &
@@ -134,7 +135,7 @@ Contains
     Call scan_field(megatm,site,neigh%max_exclude,mtshl, &
       mtcons,l_usr,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv,rcter,rctbp,rcfbp, &
       lext,cshell,cons,pmf,met,bond,angle,dihedral,inversion,tether,threebody, &
-      vdws,tersoffs,fourbody,rdf,mpoles,rigid,kim_data,files,electro,comm)
+      vdws,tersoffs,fourbody,rdf,mpoles,rigid,kim_data,files,electro,comm,ff)
 
     ! Get imc_r & set config%dvar
 
@@ -226,7 +227,7 @@ Contains
       ! halt program if potential cutoff exceeds the minimum half-cell config%width
 
       If (neigh%cutoff >= config%width/2.0_wp) Then
-        Call warning(3,neigh%cutoff,config%width/2.0_wp,0.0_wp)
+        If(flow%newjob_set_bounds) Call warning(3,neigh%cutoff,config%width/2.0_wp,0.0_wp)
         Call error(95)
       End If
     End If
@@ -541,10 +542,10 @@ Contains
 
     Call map_domains(config%imc_n,celprp(7),celprp(8),celprp(9),domain,comm)
 
-    Call info(' ',.true.)
+    If(flow%newjob_set_bounds) Call info(' ',.true.)
     Write(message,'(a,3(i6,1x))') 'node/domain decomposition (x,y,z): ', &
       domain%nx,domain%ny,domain%nz
-    Call info(message,.true.)
+    If(flow%newjob_set_bounds) Call info(message,.true.)
 
     ! TTM
     padding2 = 0.0_wp
@@ -590,7 +591,7 @@ Contains
 
     If (ttm%redistribute .and. (ttm%eltsys(1)<ttm%ntsys(1)+2 &
       .or. ttm%eltsys(2)<ttm%ntsys(2)+2 .or. ttm%eltsys(3)<ttm%ntsys(3)+2)) Then
-      Call warning(500,0.0_wp,0.0_wp,0.0_wp)
+      If(flow%newjob_set_bounds) Call warning(500,0.0_wp,0.0_wp,0.0_wp)
       ttm%redistribute = .false.
     End If
 
@@ -619,7 +620,7 @@ Contains
       Write(message,'(a,i6,a,3(i0,a))')                           &
         'pure cutoff driven limit on largest possible decomposition:', qlx*qly*qlz , &
         ' nodes/domains (', qlx,',',qly,',',qlz,')'
-      Call info(message,.true.)
+      If(flow%newjob_set_bounds) Call info(message,.true.)
 
       qlx=Max(1,qlx/2)
       qly=Max(1,qly/2)
@@ -628,7 +629,7 @@ Contains
       Write(message,'(a,i6,a,3(i0,a))')                           &
         'pure cutoff driven limit on largest balanced decomposition:', qlx*qly*qlz , &
         ' nodes/domains (', qlx,',',qly,',',qlz,')'
-      Call info(message,.true.)
+      If(flow%newjob_set_bounds) Call info(message,.true.)
     Else
       If (flow%reset_padding) Then
         lrpad0=.true.
@@ -654,7 +655,7 @@ Contains
     Write(message,'(a,i6,a,3(i0,a))')                       &
       'cutoffs driven limit on largest possible decomposition:', qlx*qly*qlz , &
       ' nodes/domains (', qlx,',',qly,',',qlz,')'
-    Call info(message,.true.)
+    If(flow%newjob_set_bounds) Call info(message,.true.)
 
     qlx=Max(1,qlx/2)
     qly=Max(1,qly/2)
@@ -663,7 +664,7 @@ Contains
     Write(message,'(a,i6,a,3(i0,a))')                       &
       'cutoffs driven limit on largest balanced decomposition:', qlx*qly*qlz , &
       ' nodes/domains (', qlx,',',qly,',',qlz,')'
-    Call info(message,.true.)
+    If(flow%newjob_set_bounds) Call info(message,.true.)
 
     ! calculate link cell dimensions per node
 
@@ -674,7 +675,7 @@ Contains
     ! print link cell algorithm and check for violations or...
 
     Write(message,'(a,3i6)') "link-cell decomposition 1 (x,y,z): ",ilx,ily,ilz
-    Call info(message,.true.)
+    If(flow%newjob_set_bounds) Call info(message,.true.)
 
     tol=Min(0.05_wp,0.005_wp*neigh%cutoff)                                        ! tolerance
     test = 0.02_wp * Merge( 1.0_wp, 2.0_wp, ewld%bspline > 0)                    ! 2% (w/ SPME/PS) or 4% (w/o SPME/PS)
@@ -685,12 +686,12 @@ Contains
         neigh%cutoff = cut   ! - neigh%padding (was zeroed in scan_control)
         Write(message,'(a)') &
           "real space cutoff reset has occurred, early run termination is due"
-        Call warning(message,.true.)
+        If(flow%newjob_set_bounds) Call warning(message,.true.)
         Go To 10
       Else
         If (cut < neigh%cutoff) Then
           Write(message,'(a)') 'neigh%cutoff <= Min(domain config%width) < neigh%cutoff_extended = neigh%cutoff + neigh%padding'
-          Call warning(message,.true.)
+          If(flow%newjob_set_bounds) Call warning(message,.true.)
           Call error(307)
         Else ! neigh%padding is defined & in 'no strict' mode
           If (neigh%padding > zero_plus .and. (.not.flow%strict)) Then ! Re-set neigh%padding with some slack
@@ -701,7 +702,7 @@ Contains
             Go To 10
           Else
             Write(message,'(a)') 'neigh%cutoff <= Min(domain config%width) < neigh%cutoff_extended = neigh%cutoff + neigh%padding'
-            Call warning(message,.true.)
+            If(flow%newjob_set_bounds) Call warning(message,.true.)
             Call error(307)
           End If
         End If
@@ -769,7 +770,9 @@ Contains
 
     neigh%unconditional_update = (neigh%padding > zero_plus) ! Determine/Detect conditional VNL updating at start
 
-    If (ilx < 3 .or. ily < 3 .or. ilz < 3) Call warning(100,0.0_wp,0.0_wp,0.0_wp)
+    If (ilx < 3 .or. ily < 3 .or. ilz < 3)Then
+      If(flow%newjob_set_bounds) Call warning(100,0.0_wp,0.0_wp,0.0_wp)
+    End If  
 
     ! get total link cells per domain (boundary padding included)
     ! total link-cells per node/domain is ncells = (ilx+2)*(ily+2)*(ilz+2)
@@ -860,7 +863,7 @@ Contains
           Write(messages(3),'(a,f6.2,a)') &
             'SPME suggested factor to increase current Ewald precision by: ',                   &
             (1.0_wp-tol)*100.0_wp, ' for currently specified cutoff (with padding) & domain decomposition'
-          Call info(messages,3,.true.)
+          If(flow%newjob_set_bounds) Call info(messages,3,.true.)
         End If
         Call error(308)
       End If
@@ -899,7 +902,7 @@ Contains
     neigh%max_list = Min(neigh%max_list,megatm-1) ! neigh%max_exclude
 
     If (neigh%max_list < neigh%max_exclude-1) Then
-      Call warning(6,Real(neigh%max_list,wp),Real(neigh%max_exclude,wp),0.0_wp)
+      If(flow%newjob_set_bounds) Call warning(6,Real(neigh%max_list,wp),Real(neigh%max_exclude,wp),0.0_wp)
       neigh%max_list=neigh%max_exclude-1
     End If
 
@@ -995,7 +998,7 @@ Contains
       ilz=Int(domain%nz_recip*celprp(9)/cut)
 
       Write(message,'(a,3i6)') "link-ccell decomposition 2 (x,y,z): ",ilx,ily,ilz
-      Call info(message,.true.)
+      If(flow%newjob_set_bounds) Call info(message,.true.)
 
       If (ilx < 3 .or. ily < 3 .or. ilz < 3) Call error(305)
 

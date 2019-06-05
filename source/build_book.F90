@@ -1644,8 +1644,6 @@ Contains
 
     If (flow%newjob_build_book) Then
 
-      flow%newjob_build_book=.false.
-
       ! Set RB particulars and quaternions
 
       If (rigid%on) Then

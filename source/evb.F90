@@ -69,7 +69,7 @@ Module evb
   Use ttm_utils, Only : printElecLatticeStatsToFile,printLatticeStatsToFile,&
     peakProfilerElec,peakProfiler
   Use ttm_track, Only : ttm_ion_temperature
-  Use filename, Only : file_type,default_filenames_evb,FILE_CONTROL,FILE_OUTPUT, &
+  Use filename, Only : file_type,default_filenames,FILE_CONTROL,FILE_OUTPUT, &
     FILE_STATS,FILENAME_SIZE
   Use flow_control, Only : flow_type
   Use kinetics, Only : cap_forces
@@ -139,7 +139,7 @@ Contains
     Character( Len = 1024 ) :: control_filename
 
     ! Allocate type arrays
-    Call evb_allocate_types_uniform(flow(1)%TYPE_SIZE_FF,thermo,ewld,tmr,devel,stats, &
+    Call evb_allocate_types_uniform(flow(1)%NUM_FF,thermo,ewld,tmr,devel,stats, &
       green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
       tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
       fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain, &
@@ -148,12 +148,12 @@ Contains
     comm=dlp_world(0) ! this shall vanish asap w_ are proper things
 
     Call evb_molecular_dynamics_driver(dlp_world(0:),comm,thermo,ewld, &
-      tmr(1),devel,stats,green,plume,msd_data,met,pois, &
+      tmr(1),devel(1),stats,green,plume,msd_data,met,pois, &
       impa(1),dfcts(1,:),bond,angle,dihedral,inversion,tether, &
       threebody,zdensity,cons,neigh,pmfs,sites, &
-      core_shells,vdws,tersoffs,fourbody,rdf,netcdf, &
-      minim,mpoles,ext_field,rigid,electro,domain,flow, &
-      seed,traj,kim_data,config,ios(1),ttms,rsdsc,files, &
+      core_shells,vdws,tersoffs,fourbody,rdf,netcdf(1), &
+      minim,mpoles,ext_field,rigid,electro,domain,flow(1), &
+      seed,traj,kim_data,config,ios(1),ttms,rsdsc,files(1,:), &
       control_filename)
 
     Call evb_deallocate_types_uniform(thermo,ewld,tmr,devel,stats, &
@@ -180,7 +180,7 @@ Contains
     Type(thermostat_type), Intent(InOut) :: thermo(:)
     Type(ewald_type), Intent(InOut) :: ewld(:)
     Type(timer_type), Intent(InOut) :: tmr
-    Type(development_type), Intent(InOut) :: devel(:)
+    Type(development_type), Intent(InOut) :: devel
     Type(stats_type), Intent(InOut) :: stats(:)
     Type(greenkubo_type), Intent(InOut) :: green(:)
     Type(plumed_type), Intent(InOut) :: plume(:)
@@ -205,14 +205,14 @@ Contains
     Type( tersoff_type ), Intent(InOut) :: tersoffs(:)
     Type( four_body_type ), Intent(InOut) :: fourbody(:)
     Type( rdf_type ), Intent(InOut) :: rdf(:)
-    Type( netcdf_param ), Intent(InOut) :: netcdf(:)
+    Type( netcdf_param ), Intent(InOut) :: netcdf
     Type( minimise_type ), Intent(InOut) :: minim(:)
     Type( mpole_type ), Intent(InOut) :: mpoles(:)
     Type( external_field_type ), Intent(InOut) :: ext_field(:)
     Type( rigid_bodies_type ), Intent(InOut) :: rigid(:)
     Type( electrostatic_type ), Intent(InOut) :: electro(:)
     Type( domains_type ), Intent(InOut) :: domain(:)
-    Type( flow_type ), Intent(InOut) :: flow(:)
+    Type( flow_type ), Intent(InOut) :: flow
     Type( seed_type ), Intent(InOut) :: seed(:)
     Type( trajectory_type ), Intent(InOut) :: traj(:)
     Type( kim_type ), Target, Intent(InOut) :: kim_data(:)
@@ -220,7 +220,7 @@ Contains
     Type( io_type), Intent(InOut) :: ios
     Type( ttm_type), Intent(InOut) :: ttms(:)
     Type( rsd_type ), Target, Intent(InOut) :: rsdsc(:)
-    Type( file_type ), Intent(InOut) :: files(:,:)
+    Type( file_type ), Intent(InOut) :: files(FILENAME_SIZE)
     character( len = 1024 ), Intent(In) :: control_filename
 
     character( len = 256 ) :: message
@@ -232,69 +232,62 @@ Contains
     Call gtime(tmr%elapsed) ! Initialise wall clock time
 
     ! Set default file names. Here we loop over the numer of fields to be coupled via the EVB method
-    Do ff=1,flow(1)%TYPE_SIZE_FF
-      Call default_filenames_evb(ff,files(ff,:))
-    End Do
-
+    Call default_filenames(files)
     ! Rename control file if argument was passed. No need to consider the loop over other 
     ! fields as there is only one CONTROL file
     If (command_argument_count() == 1) Then
-      Do ff=1,flow(1)%TYPE_SIZE_FF      
-        Call files(ff,FILE_CONTROL)%rename(control_filename)
-      End Do  
+      Call files(FILE_CONTROL)%rename(control_filename)
     End If
 
-    Do ff=1,flow(1)%TYPE_SIZE_FF
-      Call scan_development(devel(ff),files(ff,:),comm)
-    End Do
+    Call scan_development(devel,files,comm)
 
     ! Open output file, or direct output unit to stderr. 
     ! Only one OUTPUT is considered
-    If (.not.devel(1)%l_scr) Then
-      Open(Newunit=files(1,FILE_OUTPUT)%unit_no, File=files(1,FILE_OUTPUT)%filename, Status='replace')
+    If (.not.devel%l_scr) Then
+      Open(Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Status='replace')
     Else
-      files(1,FILE_OUTPUT)%unit_no = error_unit
+      files(FILE_OUTPUT)%unit_no = error_unit
     End If
 
-    dlp_world(0)%ou=files(1,FILE_OUTPUT)%unit_no
+    dlp_world(0)%ou=files(FILE_OUTPUT)%unit_no
 
-    Call init_error_system(files(1,FILE_OUTPUT)%unit_no,dlp_world(0))
+    Call init_error_system(files(FILE_OUTPUT)%unit_no,dlp_world(0))
 
 #ifdef CHRONO
     ! Start main timer
-    Call init_timer_system(tmr, files(1,FILE_OUTPUT)%unit_no,dlp_world(0))
+    Call init_timer_system(tmr, files(FILE_OUTPUT)%unit_no,dlp_world(0))
     Call start_timer(tmr,'Initialisation')
 #endif
 
     ! OPEN MAIN OUTPUT CHANNEL & PRINT HEADER AND MACHINE RESOURCES
-    Do ff=1,flow(1)%TYPE_SIZE_FF
-      Call scan_control_output(files(ff,:),comm)
-    End Do
+    Call scan_control_output(files,comm)
 
     Call print_banner(dlp_world)
 
     Call build_info()
 
-    Do ff=1,flow(1)%TYPE_SIZE_FF
-      Call scan_control_io(ios,netcdf(ff),files(ff,:),comm)
-    End Do
+    Call scan_control_io(ios,netcdf,files,comm)
 
     ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
     ! (setup and domains)
 
-    Do ff=1,flow(1)%TYPE_SIZE_FF
-    Call set_bounds ( &
-      sites(ff),ttms(ff),ios,core_shells(ff),cons(ff),pmfs(ff),stats(ff), &
-      thermo(ff),green(ff),devel(ff),msd_data(ff),met(ff),pois(ff),bond(ff),angle(ff),dihedral(ff),inversion(ff), &
-      tether(ff),threebody(ff),zdensity(ff),neigh(ff),vdws(ff),tersoffs(ff),fourbody(ff),rdf(ff),mpoles(ff), & 
-      ext_field(ff),rigid(ff),electro(ff),domain(ff),config(ff),ewld(ff),kim_data(ff),files(ff,:),flow(ff),comm)
+    Do ff=1,flow%NUM_FF
+      Call set_bounds ( &
+        sites(ff),ttms(ff),ios,core_shells(ff),cons(ff),pmfs(ff),stats(ff), &
+        thermo(ff),green(ff),devel,msd_data(ff),met(ff),pois(ff),bond(ff),angle(ff),dihedral(ff),inversion(ff), &
+        tether(ff),threebody(ff),zdensity(ff),neigh(ff),vdws(ff),tersoffs(ff),fourbody(ff),rdf(ff),mpoles(ff), & 
+        ext_field(ff),rigid(ff),electro(ff),domain(ff),config(ff),ewld(ff),kim_data(ff),files,flow,comm)
+      ! Print set_bound details once
+      If(ff .Eq. 1)Then
+        flow%newjob_set_bounds = .False.
+      End If  
     End Do
 
     Call info('',.true.)
     Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
     Call time_elapsed(tmr)
 
-    Do ff=1,flow(1)%TYPE_SIZE_FF
+    Do ff=1,flow%NUM_FF
       ! ALLOCATE SITE & CONFIG
       Call sites(ff)%init(sites(ff)%mxtmls,sites(ff)%mxatyp)
       Call config(ff)%init()
@@ -336,27 +329,37 @@ Contains
       ! Setup KIM
       Call kim_setup(kim_data(ff),config(ff)%mxatms,config(ff)%mxatdm,config(ff)%megatm,& 
         neigh(ff)%max_list,domain(ff)%mxbfxp,comm%mxnode)
- 
+
+    End Do
+    
       ! READ SIMULATION CONTROL PARAMETERS
+    Do ff=1,flow%NUM_FF
       Call read_control(lfce,impa,ttms(ff),dfcts,rigid(ff),rsdsc(ff),core_shells(ff),cons(ff),pmfs(ff), &
-        stats(ff),thermo(ff),green(ff),devel(ff),plume(ff),msd_data(ff),met(ff),pois(ff),bond(ff),angle(ff),dihedral(ff), &
+        stats(ff),thermo(ff),green(ff),devel,plume(ff),msd_data(ff),met(ff),pois(ff),bond(ff),angle(ff),dihedral(ff), &
         inversion(ff),zdensity(ff),neigh(ff),vdws(ff),rdf(ff),minim(ff),mpoles(ff),electro(ff),ewld(ff), &
-        seed(ff),traj(ff),files(ff,:),tmr,config(ff),flow(ff),comm)
-  
-      ! READ SIMULATION FORCE FIELD
+        seed(ff),traj(ff),files,tmr,config(ff),flow,comm)
+
+      If(ff .Eq. 1)Then
+        flow%newjob_read_control = .False.
+      End If
+    End Do  
+
+    ! READ SIMULATION FORCE FIELD
+    Do ff=1,flow%NUM_FF
       write(message,'(i0)') ff
+      Call info(" ",.true.)
       Call info("*** DETAILS OF INTERACTIONS FOR FIELD "//trim(message)//" ***",.true.)
       Call read_field(neigh(ff)%cutoff,core_shells(ff),pmfs(ff),cons(ff),thermo(ff),met(ff),bond(ff),angle(ff), &
         dihedral(ff),inversion(ff),tether(ff),threebody(ff),sites(ff),vdws(ff),tersoffs(ff),fourbody(ff),rdf(ff), &
-        mpoles(ff),ext_field(ff),rigid(ff),electro(ff),config(ff),kim_data(ff),files(ff,:),flow(ff),comm)
+        mpoles(ff),ext_field(ff),rigid(ff),electro(ff),config(ff),kim_data(ff),files,flow,comm,ff)
   
       ! If computing rdf errors, we need to initialise the arrays.
       If(rdf(ff)%l_errors_jack .or. rdf(ff)%l_errors_block) then
-        Call rdf(ff)%init_block(flow(ff)%run_steps,sites(ff)%ntype_atom)
+        Call rdf(ff)%init_block(flow%run_steps,sites(ff)%ntype_atom)
       End If
   
       ! CHECK MD CONFIGURATION
-      Call check_config(config(ff),electro(ff)%key,thermo(ff),sites(ff),flow(ff),comm)
+      Call check_config(config(ff),electro(ff)%key,thermo(ff),sites(ff),flow,comm)
   
     End Do
 
@@ -369,12 +372,12 @@ Contains
 #endif
 
     ! devel%l_org: translate CONFIG into CFGORG and exit gracefully
-    If (devel(1)%l_org) Then
+    If (devel%l_org) Then
       Call info('',.true.)
       Call info("*** Translating the MD system along a vector (CONFIG to CFGORG) ***",.true.)
   
-      Do ff=1,flow(1)%TYPE_SIZE_FF
-        Call origin_config(config(ff),ios,devel(ff),netcdf(ff),comm)
+      Do ff=1,flow%NUM_FF
+        Call origin_config(config(ff),ios,devel,netcdf,comm)
       End Do
 
       Call info("*** ALL DONE ***",.true.)
@@ -382,12 +385,12 @@ Contains
     End If
   
     ! devel%l_scl: rescale CONFIG to CFGSCL and exit gracefully
-    If (devel(1)%l_scl) Then
+    If (devel%l_scl) Then
       Call info('',.true.)
       Call info("*** Rescaling the MD system lattice (CONFIG to CFGSCL) ***",.true.)
   
-      Do ff=1,flow(1)%TYPE_SIZE_FF
-        Call scale_config(config(1),ios,devel(1),netcdf(1),comm)
+      Do ff=1,flow%NUM_FF
+        Call scale_config(config(1),ios,devel,netcdf,comm)
       End Do
 
       Call info("*** ALL DONE ***",.true.)
@@ -395,35 +398,35 @@ Contains
     End If
 
     ! devel%l_his: generate HISTORY and exit gracefully
-    If (devel(1)%l_his) Then
+    If (devel%l_his) Then
       Call info('',.true.)
       Call info("*** Generating a zero timestep HISTORY frame of the MD system ***",.true.)
 
-      Do ff=1,flow(1)%TYPE_SIZE_FF 
+      Do ff=1,flow%NUM_FF 
         Call traj(ff)%init(key=0,freq=1,start=0)
-        flow(ff)%step  = 0                            ! no steps done
-        flow(ff)%time  = 0.0_wp                       ! time is not relevant
-        Call trajectory_write(flow(ff)%restart_key,flow(ff)%step,thermo(ff)%tstep,flow(ff)%time,ios, &
-                              stats(ff)%rsd,netcdf(ff),config(ff),traj(ff),files(ff,:),comm)
+        flow%step  = 0                            ! no steps done
+        flow%time  = 0.0_wp                       ! time is not relevant
+        Call trajectory_write(flow%restart_key,flow%step,thermo(ff)%tstep,flow%time,ios, &
+                              stats(ff)%rsd,netcdf,config(ff),traj(ff),files,comm)
       End Do 
       Call info("*** ALL DONE ***",.true.)
       Call time_elapsed(tmr)
     End If
 
-    Do ff=1,flow(1)%TYPE_SIZE_FF
+    Do ff=1,flow%NUM_FF
     ! Expand current system if opted for
       If (config(ff)%l_exp) Then
-        Call system_expand(flow(ff)%strict,neigh(ff)%cutoff,ios,core_shells(ff), &
+        Call system_expand(flow%strict,neigh(ff)%cutoff,ios,core_shells(ff), &
           cons(ff),bond(ff),angle(ff),dihedral(ff),inversion(ff),sites(ff),  &
-          netcdf(ff),rigid(ff),config(ff),files(ff,:),comm)
+          netcdf,rigid(ff),config(ff),files,comm)
       End If
 
       write(message,'(i0)') ff
       Call info("*** LONG RANGE INFORMATION FOR FIELD "//trim(message)//" ***",.true.)
     ! READ REVOLD (thermodynamic and structural data from restart file)
-      Call system_init(neigh(ff)%cutoff,flow(ff)%restart_key,flow(ff)%time,flow(ff)%start_time,flow(ff)%step, &
-        stats(ff),devel(ff),green(ff),thermo(ff),met(ff),bond(ff),angle(ff),dihedral(ff),inversion(ff), &
-        zdensity(ff),sites(ff),vdws(ff),rdf(ff),config(ff),files(ff,:),comm)
+      Call system_init(neigh(ff)%cutoff,flow%restart_key,flow%time,flow%start_time,flow%step, &
+        stats(ff),devel,green(ff),thermo(ff),met(ff),bond(ff),angle(ff),dihedral(ff),inversion(ff), &
+        zdensity(ff),sites(ff),vdws(ff),rdf(ff),config(ff),files,comm)
 
     ! SET domain borders and link-config%cells as default for new jobs
     ! exchange atomic data and positions in border regions
@@ -437,13 +440,17 @@ Contains
 
     ! For any intra-like interaction, construct book keeping arrays and
     ! exclusion arrays for overlapped two-body inter-like interactions
-    Do ff=1,flow(1)%TYPE_SIZE_FF
+    Do ff=1,flow%NUM_FF
       write(message,'(i0)') ff
       Call info("*** TOPOLOGY FOR FIELD "//trim(message)//" ***",.true.) 
-      If (flow(ff)%book) Then
-        Call build_book_intra(flow(ff)%strict,flow(ff)%print_topology,flow(ff)%simulation, & 
-        flow(ff),core_shells(ff),cons(ff),pmfs(ff),bond(ff),angle(ff),dihedral(ff),inversion(ff),tether(ff), &
+      If (flow%book) Then
+        Call build_book_intra(flow%strict,flow%print_topology,flow%simulation, & 
+        flow,core_shells(ff),cons(ff),pmfs(ff),bond(ff),angle(ff),dihedral(ff),inversion(ff),tether(ff), &
         neigh(ff),sites(ff),rigid(ff),domain(ff),config(ff),comm)
+        ! Setting newjob_build_book to FALSE if ff == flow%NUM_FF
+        If(ff == flow%NUM_FF)Then
+          flow%newjob_build_book=.FALSE.
+        EndIf  
         If (mpoles(ff)%max_mpoles > 0) Then
           Call build_tplg_intra(neigh(ff)%max_exclude,bond(ff),angle(ff),dihedral(ff),inversion(ff), &
             mpoles(ff),config(ff),comm)
@@ -454,7 +461,7 @@ Contains
           End If
         ! CHARMM core-shell screened electrostatic induction interactions
         End If
-        If (flow(ff)%exclusions) Then
+        If (flow%exclusions) Then
           Call build_excl_intra(electro(ff)%lecx,core_shells(ff),cons(ff),bond(ff),angle(ff),dihedral(ff), &
             inversion(ff),neigh(ff),rigid(ff),config(ff),comm)
         End If
@@ -464,7 +471,7 @@ Contains
           core_shells(ff),cons(ff),pmfs(ff),bond(ff),angle(ff),dihedral(ff),inversion(ff),tether(ff),sites(ff),rigid(ff))
 
         ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
-        If (flow(ff)%simulation) Then
+        If (flow%simulation) Then
           Call core_shells(ff)%deallocate_core_shell_tmp_arrays()
 
           Call cons(ff)%deallocate_constraints_temps()
@@ -481,7 +488,7 @@ Contains
     Call info("*** bookkeeping DONE ***",.true.)
     Call time_elapsed(tmr)
 
-    Do ff=1,flow(1)%TYPE_SIZE_FF
+    Do ff=1,flow%NUM_FF
       write(message,'(i0)') ff
       Call info("*** DETAILS OF NEIGHBOUR LIST FOR FIELD "//trim(message)//" ***",.true.) 
       ! set and halo rotational matrices and their infinitesimal rotations
@@ -491,7 +498,7 @@ Contains
   
       ! SET initial system temperature
       Call set_temperature               &
-        (flow(ff)%restart_key,flow(ff)%step,flow(ff)%run_steps, &
+        (flow%restart_key,flow%step,flow%run_steps, &
         stats(ff)%engrot,sites(ff)%dof_site,core_shells(ff),stats(ff),cons(ff),pmfs(ff),thermo(ff),minim(ff), &
         rigid(ff),domain(ff),config(ff),seed(ff),comm)
     End Do
@@ -502,10 +509,10 @@ Contains
 
     ! Read ttm table file and initialise electronic temperature
     ! grid from any available restart file
-    Do ff=1,flow(1)%TYPE_SIZE_FF
+    Do ff=1,flow%NUM_FF
       If (ttms(ff)%l_ttm) Then
         Call ttm_table_read(ttms(ff),comm)
-        Call ttm_system_init(flow(ff)%step,flow(ff)%equil_steps,flow(ff)%restart_key,'DUMP_E',flow(ff)%time,& 
+        Call ttm_system_init(flow%step,flow%equil_steps,flow%restart_key,'DUMP_E',flow%time,& 
           thermo(ff)%temp,domain(ff),ttms(ff),comm)
       End If
   
@@ -513,7 +520,7 @@ Contains
       Call freeze_atoms(config(ff))
   
       ! Cap forces in equilibration mode
-      If (flow(ff)%step <= flow(ff)%equil_steps .and. flow(ff)%force_cap) Call cap_forces(thermo(ff)%temp,config(ff),comm)
+      If (flow%step <= flow%equil_steps .and. flow%force_cap) Call cap_forces(thermo(ff)%temp,config(ff),comm)
   
       ! PLUMED initialisation or information message
       If (plume(ff)%l_plumed) Call plumed_init(config(ff)%megatm,thermo(ff)%tstep,thermo(ff)%temp,plume(ff),comm)
@@ -542,27 +549,27 @@ Contains
 #endif
 
     ! Now you can run fast, boy
-    If (devel(1)%l_fast) Call gsync(comm,devel(1)%l_fast)
+    If (devel%l_fast) Call gsync(comm,devel%l_fast)
     ! Note to reviewer: For the time being we only pass one field. Once we are all happy with the structuring
     ! we proceed to change w_md_vv --> w_md_vv_evb, etc
-    If (flow(1)%simulation) Then
-      Call w_md_vv(config(1),ttms(1),ios,rsdsc(1),flow(1),core_shells(1),cons(1),pmfs(1),stats(1),thermo(1), &
+    If (flow%simulation) Then
+      Call w_md_vv(config(1),ttms(1),ios,rsdsc(1),flow,core_shells(1),cons(1),pmfs(1),stats(1),thermo(1), &
         plume(1),pois(1),bond(1),angle(1),dihedral(1),inversion(1),zdensity(1),neigh(1),sites(1),fourbody(1),rdf(1), &
-        netcdf(1),mpoles(1),ext_field(1),rigid(1),domain(1),seed(1),traj(1),kim_data(1),files(1,:),tmr,minim(1), &
+        netcdf,mpoles(1),ext_field(1),rigid(1),domain(1),seed(1),traj(1),kim_data(1),files,tmr,minim(1), &
         impa,green(1),ewld(1),electro(1),dfcts,msd_data(1),tersoffs(1),tether(1),threebody(1),vdws(1), &
-        devel(1),met(1),comm)
+        devel,met(1),comm)
     Else
       If (lfce) Then
-        Call w_replay_historf(config(1),ios,rsdsc(1),flow(1),core_shells(1),cons(1),pmfs(1),stats(1), &
+        Call w_replay_historf(config(1),ios,rsdsc(1),flow,core_shells(1),cons(1),pmfs(1),stats(1), &
           thermo(1),plume(1),msd_data(1),bond(1),angle(1),dihedral(1),inversion(1),zdensity(1),neigh(1), &
-          sites(1),vdws(1),tersoffs(1),fourbody(1),rdf(1),netcdf(1),minim(1),mpoles(1),ext_field(1),rigid(1), &
-          electro(1),domain(1),seed(1),traj(1),kim_data(1),files(1,:),dfcts,tmr,tether(1),threebody(1), &
-          pois(1),green(1),ewld(1),devel(1),met(1),comm)
+          sites(1),vdws(1),tersoffs(1),fourbody(1),rdf(1),netcdf,minim(1),mpoles(1),ext_field(1),rigid(1), &
+          electro(1),domain(1),seed(1),traj(1),kim_data(1),files,dfcts,tmr,tether(1),threebody(1), &
+          pois(1),green(1),ewld(1),devel,met(1),comm)
       Else
-        Call w_replay_history(config(1),ios,rsdsc(1),flow(1),core_shells(1),cons(1),pmfs(1),stats(1), &
+        Call w_replay_history(config(1),ios,rsdsc(1),flow,core_shells(1),cons(1),pmfs(1),stats(1), &
           thermo(1),msd_data(1),met(1),pois(1),bond(1),angle(1),dihedral(1),inversion(1),zdensity(1),neigh(1), &
-          sites(1),vdws(1),rdf(1),netcdf(1),minim(1),mpoles(1),ext_field(1),rigid(1),electro(1),domain(1), &
-          seed(1),traj(1),kim_data(1),dfcts,files(1,:),tmr,tether(1),green(1),ewld(1),devel(1),comm)
+          sites(1),vdws(1),rdf(1),netcdf,minim(1),mpoles(1),ext_field(1),rigid(1),electro(1),domain(1), &
+          seed(1),traj(1),kim_data(1),dfcts,files,tmr,tether(1),green(1),ewld(1),devel,comm)
       End If
     End If
 
@@ -572,7 +579,7 @@ Contains
 #endif
 
     !Close the statis file if we used it.
-    If (stats(1)%statis_file_open) Call files(1,FILE_STATS)%close()
+    If (stats(1)%statis_file_open) Call files(FILE_STATS)%close()
 
     ! Report termination of the MD simulation
     Write(message,'(3(a,f12.3),a)') 'run terminating... elapsed  cpu time: ', &
@@ -586,24 +593,24 @@ Contains
     !print statistics to files (final)
     If (ttms(1)%l_ttm) Then
       Call ttm_ion_temperature (ttms(1),thermo(1),domain(1),config(1),comm)
-      Call printElecLatticeStatsToFile('PEAK_E', flow(1)%time, thermo(1)%temp, flow(1)%step, ttms(1)%ttmstats,ttms(1),comm)
-      Call peakProfilerElec('LATS_E', flow(1)%step, ttms(1)%ttmtraj,ttms(1),comm)
-      Call printLatticeStatsToFile(ttms(1)%tempion, 'PEAK_I', flow(1)%time, flow(1)%step, ttms(1)%ttmstats,ttms(1),comm)
-      Call peakProfiler(ttms(1)%tempion, 'LATS_I', flow(1)%step, ttms(1)%ttmtraj,ttms(1),comm)
+      Call printElecLatticeStatsToFile('PEAK_E', flow%time, thermo(1)%temp, flow%step, ttms(1)%ttmstats,ttms(1),comm)
+      Call peakProfilerElec('LATS_E', flow%step, ttms(1)%ttmtraj,ttms(1),comm)
+      Call printLatticeStatsToFile(ttms(1)%tempion, 'PEAK_I', flow%time, flow%step, ttms(1)%ttmstats,ttms(1),comm)
+      Call peakProfiler(ttms(1)%tempion, 'LATS_I', flow%step, ttms(1)%ttmtraj,ttms(1),comm)
     End If
 
     ! Save restart data for real simulations only (final)
-    If (flow(1)%simulation .and. (.not.devel(1)%l_tor)) Then
-      Call system_revive(neigh(1)%cutoff,flow(1)%step,flow(1)%time,sites(1),ios,flow(1)%start_time,stats(1), &
-        devel(1),green(1),thermo(1),bond(1),angle(1),dihedral(1),inversion(1),zdensity(1),rdf(1),netcdf(1),config(1), &
-        files(1,:),comm)
+    If (flow%simulation .and. (.not.devel%l_tor)) Then
+      Call system_revive(neigh(1)%cutoff,flow%step,flow%time,sites(1),ios,flow%start_time,stats(1), &
+        devel,green(1),thermo(1),bond(1),angle(1),dihedral(1),inversion(1),zdensity(1),rdf(1),netcdf,config(1), &
+        files,comm)
       If (ttms(1)%l_ttm)Then
-        Call ttm_system_revive ('DUMP_E',flow(1)%step,flow(1)%time,1,flow(1)%run_steps,ttms(1),comm)
+        Call ttm_system_revive ('DUMP_E',flow%step,flow%time,1,flow%run_steps,ttms(1),comm)
       End If  
     End If
 
     ! Produce summary of simulation
-    If (neigh(1)%unconditional_update .and. flow(1)%step > 0) Then
+    If (neigh(1)%unconditional_update .and. flow%step > 0) Then
       If (.not.neigh(1)%update) Then ! Include the final skip in skipping statistics
         stats(1)%neighskip(3)=stats(1)%neighskip(2)*stats(1)%neighskip(3)
         stats(1)%neighskip(2)=stats(1)%neighskip(2)+1.0_wp
@@ -615,8 +622,8 @@ Contains
 
     Call statistics_result                                        &
       (config(1),minim(1)%minimise,msd_data(1)%l_msd, &
-      flow(1)%run_steps,core_shells(1)%keyshl,cons(1)%megcon,pmfs(1)%megpmf,              &
-      flow(1)%step,flow(1)%time,flow(1)%start_time,config(1)%mxatdm,neigh(1)%unconditional_update,&
+      flow%run_steps,core_shells(1)%keyshl,cons(1)%megcon,pmfs(1)%megpmf,              &
+      flow%step,flow%time,flow%start_time,config(1)%mxatdm,neigh(1)%unconditional_update,&
       stats(1),thermo(1),sites(1),comm)
 
     ! Final anlysis
@@ -637,7 +644,7 @@ Contains
 
     ! Get just the one number to compare against
 
-    If (devel(1)%l_eng) Then
+    If (devel%l_eng) Then
       Write(message,'(a,1p,e20.10)') "TOTAL ENERGY: ", stats(1)%stpval(1)
       Call info('',.true.)
       Call info(message,.true.)
@@ -645,7 +652,7 @@ Contains
 
     ! Close output channel
 
-    If (.not.devel(1)%l_scr) Call files(1,FILE_OUTPUT)%close()
+    If (.not.devel%l_scr) Call files(FILE_OUTPUT)%close()
 
   End Subroutine evb_molecular_dynamics_driver
 
@@ -704,7 +711,7 @@ Contains
     Allocate(thermo(array_size))
     Allocate(ewld(array_size))
     Allocate(tmr(1))
-    Allocate(devel(array_size))
+    Allocate(devel(1))
     Allocate(stats(array_size))
     Allocate(green(array_size))
     Allocate(plume(array_size))
@@ -729,7 +736,7 @@ Contains
     Allocate(tersoffs(array_size))
     Allocate(fourbody(array_size))
     Allocate(rdf(array_size))
-    Allocate(netcdf(array_size))
+    Allocate(netcdf(1))
     Allocate(minim(array_size))
     Allocate(mpoles(array_size))
     Allocate(ext_field(array_size))
@@ -743,7 +750,7 @@ Contains
     Allocate(ios(array_size))
     Allocate(ttms(array_size))
     Allocate(rsdsc(array_size))
-    Allocate(files(array_size,FILENAME_SIZE))
+    Allocate(files(1,FILENAME_SIZE))
   End Subroutine evb_allocate_types_uniform
 
   Subroutine evb_deallocate_types_uniform(thermo,ewld,tmr,devel,stats, &
