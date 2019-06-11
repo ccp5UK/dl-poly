@@ -39,7 +39,7 @@ Module evb
   Use statistics, Only : stats_type,statistics_result
   Use greenkubo, Only : greenkubo_type
   Use msd, Only : msd_type
-  Use drivers, Only : w_md_vv, w_replay_historf,w_replay_history
+  Use drivers, Only : w_md_vv_evb
   Use errors_warnings, Only : init_error_system,info, warning
   Use ewald, Only : ewald_type
   Use impacts, Only : impact_type
@@ -276,7 +276,7 @@ Contains
         sites(ff),ttms(ff),ios,core_shells(ff),cons(ff),pmfs(ff),stats(ff), &
         thermo(ff),green(ff),devel,msd_data(ff),met(ff),pois(ff),bond(ff),angle(ff),dihedral(ff),inversion(ff), &
         tether(ff),threebody(ff),zdensity(ff),neigh(ff),vdws(ff),tersoffs(ff),fourbody(ff),rdf(ff),mpoles(ff), & 
-        ext_field(ff),rigid(ff),electro(ff),domain(ff),config(ff),ewld(ff),kim_data(ff),files,flow,comm)
+        ext_field(ff),rigid(ff),electro(ff),domain(ff),config(ff),ewld(ff),kim_data(ff),files,flow,comm,ff)
       ! Print set_bound details once
       If(ff .Eq. 1)Then
         flow%newjob_set_bounds = .False.
@@ -287,12 +287,18 @@ Contains
     Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
     Call time_elapsed(tmr)
 
+    ! ALLOCATE RDF, Z-DENSITY, STATISTICS & GREEN-KUBO ARRAYS
+!    Call rdf(ff)%init()
+!    Call zdensity(ff)%init(rdf(ff)%max_grid,sites(ff)%mxatyp)
+!    Call stats(ff)%init(config(ff)%mxatms)
+!    Call green(ff)%init(config(ff)%mxatms,sites(ff)%mxatyp)
+
     Do ff=1,flow%NUM_FF
       ! ALLOCATE SITE & CONFIG
       Call sites(ff)%init(sites(ff)%mxtmls,sites(ff)%mxatyp)
       Call config(ff)%init()
       Call neigh(ff)%init_list(config(ff)%mxatdm)
-  
+
       ! ALLOCATE DPD ARRAYS
       Call thermo(ff)%init_dpd(vdws(ff)%max_vdw)
   
@@ -316,12 +322,14 @@ Contains
       Call fourbody(ff)%init(sites(ff)%max_site)
       Call ext_field(ff)%init()
   
+
       ! ALLOCATE RDF, Z-DENSITY, STATISTICS & GREEN-KUBO ARRAYS
       Call rdf(ff)%init()
       Call zdensity(ff)%init(rdf(ff)%max_grid,sites(ff)%mxatyp)
       Call stats(ff)%init(config(ff)%mxatms)
       Call green(ff)%init(config(ff)%mxatms,sites(ff)%mxatyp)
-  
+
+
       ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
       Call allocate_ttm_arrays(ttms(ff),domain(ff),config(ff),comm)
       Call ttm_table_scan(config(ff)%mxbuff,ttms(ff),comm)
@@ -390,7 +398,7 @@ Contains
       Call info("*** Rescaling the MD system lattice (CONFIG to CFGSCL) ***",.true.)
   
       Do ff=1,flow%NUM_FF
-        Call scale_config(config(1),ios,devel,netcdf,comm)
+        Call scale_config(config(ff),ios,devel,netcdf,comm)
       End Do
 
       Call info("*** ALL DONE ***",.true.)
@@ -418,7 +426,7 @@ Contains
       If (config(ff)%l_exp) Then
         Call system_expand(flow%strict,neigh(ff)%cutoff,ios,core_shells(ff), &
           cons(ff),bond(ff),angle(ff),dihedral(ff),inversion(ff),sites(ff),  &
-          netcdf,rigid(ff),config(ff),files,comm)
+          netcdf,rigid(ff),config(ff),files,comm,ff)
       End If
 
       write(message,'(i0)') ff
@@ -553,24 +561,24 @@ Contains
     ! Note to reviewer: For the time being we only pass one field. Once we are all happy with the structuring
     ! we proceed to change w_md_vv --> w_md_vv_evb, etc
     If (flow%simulation) Then
-      Call w_md_vv(config(1),ttms(1),ios,rsdsc(1),flow,core_shells(1),cons(1),pmfs(1),stats(1),thermo(1), &
+      Call w_md_vv_evb(config(1),ttms(1),ios,rsdsc(1),flow,core_shells(1),cons(1),pmfs(1),stats(1),thermo(1), &
         plume(1),pois(1),bond(1),angle(1),dihedral(1),inversion(1),zdensity(1),neigh(1),sites(1),fourbody(1),rdf(1), &
         netcdf,mpoles(1),ext_field(1),rigid(1),domain(1),seed(1),traj(1),kim_data(1),files,tmr,minim(1), &
         impa,green(1),ewld(1),electro(1),dfcts,msd_data(1),tersoffs(1),tether(1),threebody(1),vdws(1), &
         devel,met(1),comm)
     Else
-      If (lfce) Then
-        Call w_replay_historf(config(1),ios,rsdsc(1),flow,core_shells(1),cons(1),pmfs(1),stats(1), &
-          thermo(1),plume(1),msd_data(1),bond(1),angle(1),dihedral(1),inversion(1),zdensity(1),neigh(1), &
-          sites(1),vdws(1),tersoffs(1),fourbody(1),rdf(1),netcdf,minim(1),mpoles(1),ext_field(1),rigid(1), &
-          electro(1),domain(1),seed(1),traj(1),kim_data(1),files,dfcts,tmr,tether(1),threebody(1), &
-          pois(1),green(1),ewld(1),devel,met(1),comm)
-      Else
-        Call w_replay_history(config(1),ios,rsdsc(1),flow,core_shells(1),cons(1),pmfs(1),stats(1), &
-          thermo(1),msd_data(1),met(1),pois(1),bond(1),angle(1),dihedral(1),inversion(1),zdensity(1),neigh(1), &
-          sites(1),vdws(1),rdf(1),netcdf,minim(1),mpoles(1),ext_field(1),rigid(1),electro(1),domain(1), &
-          seed(1),traj(1),kim_data(1),dfcts,files,tmr,tether(1),green(1),ewld(1),devel,comm)
-      End If
+!      If (lfce) Then
+!        Call w_replay_historf(config(1),ios,rsdsc(1),flow,core_shells(1),cons(1),pmfs(1),stats(1), &
+!          thermo(1),plume(1),msd_data(1),bond(1),angle(1),dihedral(1),inversion(1),zdensity(1),neigh(1), &
+!          sites(1),vdws(1),tersoffs(1),fourbody(1),rdf(1),netcdf,minim(1),mpoles(1),ext_field(1),rigid(1), &
+!          electro(1),domain(1),seed(1),traj(1),kim_data(1),files,dfcts,tmr,tether(1),threebody(1), &
+!          pois(1),green(1),ewld(1),devel,met(1),comm)
+!      Else
+!        Call w_replay_history(config(1),ios,rsdsc(1),flow,core_shells(1),cons(1),pmfs(1),stats(1), &
+!          thermo(1),msd_data(1),met(1),pois(1),bond(1),angle(1),dihedral(1),inversion(1),zdensity(1),neigh(1), &
+!          sites(1),vdws(1),rdf(1),netcdf,minim(1),mpoles(1),ext_field(1),rigid(1),electro(1),domain(1), &
+!          seed(1),traj(1),kim_data(1),dfcts,files,tmr,tether(1),green(1),ewld(1),devel,comm)
+!      End If
     End If
 
 #ifdef CHRONO

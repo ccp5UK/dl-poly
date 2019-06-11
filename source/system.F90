@@ -1,6 +1,6 @@
 Module system
 
-  Use kinds, Only : wp,li
+  Use kinds, Only : wp,li,wi
   Use comms, Only : comms_type, gbcast,SysExpand_tag,Revive_tag,gsync, &
     gsend,grecv,offset_kind,mode_wronly,comm_self,mode_create, &
     gtime,gsum,gcheck
@@ -48,8 +48,8 @@ Module system
   Use errors_warnings, Only : error, info, warning
   Use numerics, Only : dcell, images
   Use thermostat, Only : thermostat_type
-  Use filename, Only : file_type,FILE_REVOLD,FILE_REVIVE,FILE_CONFIG, &
-    FILE_REVCON,FILE_FIELD
+  Use filename, Only : file_type,FILE_REVOLD,FILE_REVIVE,FILE_CONFIG,FILE_CONFIG_2,  &
+    FILE_REVCON,FILE_FIELD,FILE_FIELD_2
   Use flow_control, Only : RESTART_KEY_NOSCALE, RESTART_KEY_OLD
   Implicit None
   Private
@@ -645,7 +645,7 @@ Contains
   End Subroutine system_init
 
   Subroutine system_expand(l_str,rcut,io,cshell,cons,bond,angle, &
-      dihedral,inversion,sites,netcdf,rigid,config,files,comm)
+      dihedral,inversion,sites,netcdf,rigid,config,files,comm,ff)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -678,6 +678,7 @@ Contains
     Type( configuration_type ),   Intent( InOut ) :: config
     Type( file_type ), Intent( InOut ) :: files(:)
     Type( comms_type ), Intent( InOut ) :: comm
+    Integer( Kind = wi ), Intent( In   ), Optional :: ff
 
 
     Logical                :: safex,safey,safez,safer,safel,safem,safe,safeg,lmpldt
@@ -723,6 +724,24 @@ Contains
     Integer :: ierr
 
     Character ( len = 256 )  :: message,messages(5)
+
+    Integer( Kind = wi )                :: conftag, fftag
+
+    ! Choose which CONFIG file to read
+    If (present(ff)) then
+      If (ff == 1 ) Then
+        conftag=FILE_CONFIG
+        fftag=FILE_FIELD
+      ElseIf( ff ==2 )Then
+        conftag=FILE_CONFIG_2
+        fftag=FILE_FIELD_2
+      EndIf
+    Else
+      conftag=FILE_CONFIG
+      fftag=FILE_FIELD
+    Endif
+   
+
     lmpldt=.false.
 
     fail=0
@@ -768,9 +787,9 @@ Contains
 
     record= ' ' ; Write(record,'(3(a1,i0))') '_',config%nx,'_',config%ny,'_',config%nz
     fcfg=' '
-    fcfg=Trim(files(FILE_CONFIG)%filename) // record(1:Len_Trim(record))
+    fcfg=Trim(files(conftag)%filename) // record(1:Len_Trim(record))
     ffld=' '
-    ffld=Trim(files(FILE_FIELD)%filename) // record(1:Len_Trim(record))
+    ffld=Trim(files(fftag)%filename) // record(1:Len_Trim(record))
     fmpl=' '
     fmpl="MPOLES" // record(1:Len_Trim(record))
 
@@ -854,9 +873,9 @@ Contains
       Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
         io_write == IO_WRITE_SORTED_MASTER ) Then
 
-        Open(Newunit=files(FILE_CONFIG)%unit_no, File=fcfg(1:Len_Trim(fcfg)), Status='replace')
-        Call files(FILE_CONFIG)%close()
-        Open(Newunit=files(FILE_CONFIG)%unit_no, File=fcfg(1:Len_Trim(fcfg)), Form='formatted', Access='direct', Recl=recsz)
+        Open(Newunit=files(conftag)%unit_no, File=fcfg(1:Len_Trim(fcfg)), Status='replace')
+        Call files(conftag)%close()
+        Open(Newunit=files(conftag)%unit_no, File=fcfg(1:Len_Trim(fcfg)), Form='formatted', Access='direct', Recl=recsz)
       End If
 
       ! Write configuration file headers
@@ -918,15 +937,15 @@ Contains
       Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
         io_write == IO_WRITE_SORTED_MASTER ) Then
 
-        Write(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a72,a1)',         Rec=Int(1,li)) &
+        Write(Unit=files(conftag)%unit_no, Fmt='(a72,a1)',         Rec=Int(1,li)) &
           config%cfgname(1:72),lf
-        Write(Unit=files(FILE_CONFIG)%unit_no, Fmt='(3i10,a42,a1)',    Rec=Int(2,li)) &
+        Write(Unit=files(conftag)%unit_no, Fmt='(3i10,a42,a1)',    Rec=Int(2,li)) &
           0,config%imcon,nall*config%megatm,Repeat(' ',42),lf
-        Write(Unit=files(FILE_CONFIG)%unit_no, Fmt='(3f20.12,a12,a1)', Rec=Int(3,li)) &
+        Write(Unit=files(conftag)%unit_no, Fmt='(3f20.12,a12,a1)', Rec=Int(3,li)) &
           fx*config%cell(1),fx*config%cell(2),fx*config%cell(3),Repeat(' ',12),lf
-        Write(Unit=files(FILE_CONFIG)%unit_no, Fmt='(3f20.12,a12,a1)', Rec=Int(4,li)) &
+        Write(Unit=files(conftag)%unit_no, Fmt='(3f20.12,a12,a1)', Rec=Int(4,li)) &
           fy*config%cell(4),fy*config%cell(5),fy*config%cell(6),Repeat(' ',12),lf
-        Write(Unit=files(FILE_CONFIG)%unit_no, Fmt='(3f20.12,a12,a1)', Rec=Int(5,li)) &
+        Write(Unit=files(conftag)%unit_no, Fmt='(3f20.12,a12,a1)', Rec=Int(5,li)) &
           fz*config%cell(7),fz*config%cell(8),fz*config%cell(9),Repeat(' ',12),lf
 
       End If
@@ -1573,9 +1592,9 @@ Contains
 
                       If (comm%idnode == 0) Then
                         rec=rec+Int(1,li)
-                        Write(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a73)', Rec=rec) record2
+                        Write(Unit=files(conftag)%unit_no, Fmt='(a73)', Rec=rec) record2
                         rec=rec+Int(1,li)
-                        Write(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a73)', Rec=rec) record3
+                        Write(Unit=files(conftag)%unit_no, Fmt='(a73)', Rec=rec) record3
                       Else
                         Call gsend(comm,record2,0,SysExpand_tag)
                         Call gsend(comm,record3,0,SysExpand_tag)
@@ -1612,9 +1631,9 @@ Contains
                       Call grecv(comm,record3,idm,SysExpand_tag)
 
                       rec=rec+Int(1,li)
-                      Write(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a73)', Rec=rec) record2
+                      Write(Unit=files(conftag)%unit_no, Fmt='(a73)', Rec=rec) record2
                       rec=rec+Int(1,li)
-                      Write(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a73)', Rec=rec) record3
+                      Write(Unit=files(conftag)%unit_no, Fmt='(a73)', Rec=rec) record3
                     End If
                   End Do
                 End Do
@@ -1689,7 +1708,7 @@ Contains
     Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
       io_write == IO_WRITE_SORTED_MASTER) Then
 
-      Call files(FILE_CONFIG)%close()
+      Call files(conftag)%close()
 
     End If
 
@@ -1708,23 +1727,23 @@ Contains
     Call info(message,.true.)
 
     If (comm%idnode == 0) Then
-      Open(Newunit=files(FILE_FIELD)%unit_no, File='FIELD', Status='old')
-      Open(Newunit=files(FILE_CONFIG)%unit_no, File=ffld(1:Len_Trim(ffld)), Status='replace')
+      Open(Newunit=files(fftag)%unit_no, File='FIELD', Status='old')
+      Open(Newunit=files(conftag)%unit_no, File=ffld(1:Len_Trim(ffld)), Status='replace')
       Write(message,'(2a)')'*** Expanding FIELD in file ', ffld(1:Len_Trim(ffld))
       Call info(message,.true.)
 
       ! omit first line
 
       record=' '
-      Read(Unit=files(FILE_FIELD)%unit_no, Fmt='(a)', End=10) record
+      Read(Unit=files(fftag)%unit_no, Fmt='(a)', End=10) record
       Call tabs_2_blanks(record) ; Call strip_blanks(record)
-      Write(files(FILE_CONFIG)%unit_no,'(a)') record(1:Len_Trim(record))
+      Write(files(conftag)%unit_no,'(a)') record(1:Len_Trim(record))
 
       ! read and process directives from field file
 
       Do
         record=' '
-        Read(Unit=files(FILE_FIELD)%unit_no, Fmt='(a)', End=10) record
+        Read(Unit=files(fftag)%unit_no, Fmt='(a)', End=10) record
         Call tabs_2_blanks(record) ; Call strip_blanks(record)
         record1=record
         Call get_word(record,word)
@@ -1743,7 +1762,7 @@ Contains
           Call get_word(record,word)
           index=Nint(word_2_real(word))
           Call get_word(record1,word)
-          Write(Unit=files(FILE_CONFIG)%unit_no,Fmt='(a,i10)') word(1:Len_Trim(word)), nall*index
+          Write(Unit=files(conftag)%unit_no,Fmt='(a,i10)') word(1:Len_Trim(word)), nall*index
 
           ! close force field file
 
@@ -1751,9 +1770,9 @@ Contains
 
           Call gtime(t)
 
-          Write(Unit=files(FILE_CONFIG)%unit_no,Fmt='(a)') record1(1:Len_Trim(record1))
-          Call files(FILE_FIELD)%close()
-          Call files(FILE_CONFIG)%close()
+          Write(Unit=files(conftag)%unit_no,Fmt='(a)') record1(1:Len_Trim(record1))
+          Call files(fftag)%close()
+          Call files(conftag)%close()
           Write(message,'(3a)') '*** ', ffld(1:Len_Trim(ffld)), ' expansion done !'
           Call info(message,.true.)
           Exit
@@ -1762,7 +1781,7 @@ Contains
 
         Else
 
-          Write(files(FILE_CONFIG)%unit_no,'(a)') record1(1:Len_Trim(record1))
+          Write(files(conftag)%unit_no,'(a)') record1(1:Len_Trim(record1))
 
         End If
       End Do
@@ -1772,7 +1791,7 @@ Contains
       If (lmpldt) Inquire(File='MPOLES', Exist=lmpldt)
       If (lmpldt) Then
         Open(Unit=nmpldt, File='MPOLES', Status='old')
-        Open(Newunit=files(FILE_CONFIG)%unit_no, File=fmpl(1:Len_Trim(fmpl)), Status='replace')
+        Open(Newunit=files(conftag)%unit_no, File=fmpl(1:Len_Trim(fmpl)), Status='replace')
         Write(message,'(2a)')'*** Expanding MPOLES in file ', fmpl(1:Len_Trim(fmpl))
         Call info(message,.true.)
 
@@ -1781,7 +1800,7 @@ Contains
         record=' '
         Read(Unit=nmpldt, Fmt='(a)', End=10) record
         Call tabs_2_blanks(record) ; Call strip_blanks(record)
-        Write(files(FILE_CONFIG)%unit_no,'(a)') record(1:Len_Trim(record))
+        Write(files(conftag)%unit_no,'(a)') record(1:Len_Trim(record))
 
         ! read and process directives from mpoles file
 
@@ -1798,7 +1817,7 @@ Contains
             Call get_word(record,word)
             index=Nint(word_2_real(word))
             Call get_word(record1,word)
-            Write(Unit=files(FILE_CONFIG)%unit_no,Fmt='(a,i10)') word(1:Len_Trim(word)), nall*index
+            Write(Unit=files(conftag)%unit_no,Fmt='(a,i10)') word(1:Len_Trim(word)), nall*index
 
             ! close mpoles file
 
@@ -1806,9 +1825,9 @@ Contains
 
             Call gtime(t)
 
-            Write(Unit=files(FILE_CONFIG)%unit_no,Fmt='(a)') record1(1:Len_Trim(record1))
+            Write(Unit=files(conftag)%unit_no,Fmt='(a)') record1(1:Len_Trim(record1))
             Close(Unit=nmpldt)
-            Call files(FILE_CONFIG)%close()
+            Call files(conftag)%close()
             Write(message,'(3a)') '*** ', fmpl(1:Len_Trim(fmpl)), ' expansion done !'
             Call info(message,.true.)
             Exit
@@ -1817,7 +1836,7 @@ Contains
 
           Else
 
-            Write(files(FILE_CONFIG)%unit_no,'(a)') record1(1:Len_Trim(record1))
+            Write(files(conftag)%unit_no,'(a)') record1(1:Len_Trim(record1))
 
           End If
         End Do

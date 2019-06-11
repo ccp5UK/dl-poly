@@ -46,9 +46,11 @@ Module filename
   Integer, Parameter, Public :: FILE_REVCON = 10
   !> FIELD2 file
   Integer, Parameter, Public :: FILE_FIELD_2=  11
+  !> CONFIG2 file
+  Integer, Parameter, Public :: FILE_CONFIG_2 = 12
 
   !> Size of filename array
-  Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 11
+  Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 12
 
   Public :: default_filenames
 
@@ -83,6 +85,7 @@ Contains
     default_names(FILE_REVOLD) = "REVOLD"
     default_names(FILE_REVCON) = "REVCON"
     default_names(FILE_FIELD_2) = "FIELD"
+    default_names(FILE_CONFIG_2) = "CONFIG"
 
     ! Set default filenames
     Do file_no = 1, FILENAME_SIZE

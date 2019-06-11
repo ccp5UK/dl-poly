@@ -143,7 +143,7 @@ Contains
 
     ! scan CONFIG file data
 
-    Call scan_config(config,megatm,config%dvar,config%levcfg,xhi,yhi,zhi,io,domain,files,comm)
+    Call scan_config(config,megatm,config%dvar,config%levcfg,xhi,yhi,zhi,io,domain,files,comm,ff)
 
     ! halt execution for unsupported image conditions in DD
     ! checks for some inherited from DL_POLY_2 are though kept
@@ -874,7 +874,7 @@ Contains
     ! decide on MXATMS while reading CONFIG and scan particle density
 
     Call read_config(config,megatm,config%levcfg,config%l_ind,flow%strict,neigh%cutoff,config%dvar,xhi,yhi, &
-      zhi,dens0,dens,io,domain,files,comm)
+      zhi,dens0,dens,io,domain,files,comm,ff)
 
     ! Create f(fdvar,dens0,dens)
 
