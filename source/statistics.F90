@@ -320,7 +320,7 @@ Contains
 
   Subroutine statistics_collect(config,lsim,leql,nsteql,lmsd,keyres,degfre,degshl, &
       degrot,nstep,tstep,time,tmst,mxatdm,max_grid_rdf,stats,thermo,zdensity, &
-      sites,files,comm)
+      sites,files,comm,ff)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -353,7 +353,7 @@ Contains
     Type( configuration_type ), Intent( InOut ) :: config
     Type( file_type ), Intent( InOut ) :: files(:)
     Type( comms_type ), Intent( InOut ) :: comm
-
+    Integer( Kind = wi ), Intent( In   ), Optional :: ff
 
     Logical                 :: l_tmp
     Integer                 :: fail,i,j,k,iadd,kstak
@@ -374,7 +374,7 @@ Contains
 
     ! open statistics file and put header
 
-    If (stats%newjob .and. comm%idnode == 0) Then
+    If (stats%newjob .and. comm%idnode == 0 .and. ff==1) Then
       stats%newjob = .false.
 
       ! If the keyres = RESTART_KEY_OLD is the file old (does it exist)?
@@ -614,7 +614,7 @@ Contains
 
     ! write statistics file
 
-    If (comm%idnode == 0 .and. Mod(nstep,stats%intsta) == 0) Then
+    If (comm%idnode == 0 .and. Mod(nstep,stats%intsta) == 0 .and. ff==1) Then
       If (.not. stats%statis_file_open) Then
         Open(Newunit=files(FILE_STATS)%unit_no, File=files(FILE_STATS)%filename, Position='append')
         stats%statis_file_open = .true.

@@ -152,8 +152,8 @@ Contains
       impa(1),dfcts(1,:),bond,angle,dihedral,inversion,tether, &
       threebody,zdensity,cons,neigh,pmfs,sites, &
       core_shells,vdws,tersoffs,fourbody,rdf,netcdf(1), &
-      minim,mpoles,ext_field,rigid,electro,domain,flow(1), &
-      seed,traj,kim_data,config,ios(1),ttms,rsdsc,files(1,:), &
+      minim(1),mpoles,ext_field(1),rigid,electro,domain,flow(1), &
+      seed(1),traj(1),kim_data,config,ios(1),ttms,rsdsc,files(1,:), &
       control_filename)
 
     Call evb_deallocate_types_uniform(thermo,ewld,tmr,devel,stats, &
@@ -206,15 +206,15 @@ Contains
     Type( four_body_type ), Intent(InOut) :: fourbody(:)
     Type( rdf_type ), Intent(InOut) :: rdf(:)
     Type( netcdf_param ), Intent(InOut) :: netcdf
-    Type( minimise_type ), Intent(InOut) :: minim(:)
+    Type( minimise_type ), Intent(InOut) :: minim
     Type( mpole_type ), Intent(InOut) :: mpoles(:)
-    Type( external_field_type ), Intent(InOut) :: ext_field(:)
+    Type( external_field_type ), Intent(InOut) :: ext_field
     Type( rigid_bodies_type ), Intent(InOut) :: rigid(:)
     Type( electrostatic_type ), Intent(InOut) :: electro(:)
     Type( domains_type ), Intent(InOut) :: domain(:)
     Type( flow_type ), Intent(InOut) :: flow
-    Type( seed_type ), Intent(InOut) :: seed(:)
-    Type( trajectory_type ), Intent(InOut) :: traj(:)
+    Type( seed_type ), Intent(InOut) :: seed
+    Type( trajectory_type ), Intent(InOut) :: traj
     Type( kim_type ), Target, Intent(InOut) :: kim_data(:)
     Type( configuration_type ), Intent(InOut) :: config(:)
     Type( io_type), Intent(InOut) :: ios
@@ -276,7 +276,7 @@ Contains
         sites(ff),ttms(ff),ios,core_shells(ff),cons(ff),pmfs(ff),stats(ff), &
         thermo(ff),green(ff),devel,msd_data(ff),met(ff),pois(ff),bond(ff),angle(ff),dihedral(ff),inversion(ff), &
         tether(ff),threebody(ff),zdensity(ff),neigh(ff),vdws(ff),tersoffs(ff),fourbody(ff),rdf(ff),mpoles(ff), & 
-        ext_field(ff),rigid(ff),electro(ff),domain(ff),config(ff),ewld(ff),kim_data(ff),files,flow,comm,ff)
+        ext_field,rigid(ff),electro(ff),domain(ff),config(ff),ewld(ff),kim_data(ff),files,flow,comm,ff)
       ! Print set_bound details once
       If(ff .Eq. 1)Then
         flow%newjob_set_bounds = .False.
@@ -286,12 +286,6 @@ Contains
     Call info('',.true.)
     Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
     Call time_elapsed(tmr)
-
-    ! ALLOCATE RDF, Z-DENSITY, STATISTICS & GREEN-KUBO ARRAYS
-!    Call rdf(ff)%init()
-!    Call zdensity(ff)%init(rdf(ff)%max_grid,sites(ff)%mxatyp)
-!    Call stats(ff)%init(config(ff)%mxatms)
-!    Call green(ff)%init(config(ff)%mxatms,sites(ff)%mxatyp)
 
     Do ff=1,flow%NUM_FF
       ! ALLOCATE SITE & CONFIG
@@ -320,7 +314,6 @@ Contains
       Call tersoffs(ff)%init(sites(ff)%max_site)
       Call threebody(ff)%init(sites(ff)%max_site)
       Call fourbody(ff)%init(sites(ff)%max_site)
-      Call ext_field(ff)%init()
   
 
       ! ALLOCATE RDF, Z-DENSITY, STATISTICS & GREEN-KUBO ARRAYS
@@ -340,12 +333,15 @@ Contains
 
     End Do
     
+      Call ext_field%init()
+
+
       ! READ SIMULATION CONTROL PARAMETERS
     Do ff=1,flow%NUM_FF
       Call read_control(lfce,impa,ttms(ff),dfcts,rigid(ff),rsdsc(ff),core_shells(ff),cons(ff),pmfs(ff), &
         stats(ff),thermo(ff),green(ff),devel,plume(ff),msd_data(ff),met(ff),pois(ff),bond(ff),angle(ff),dihedral(ff), &
-        inversion(ff),zdensity(ff),neigh(ff),vdws(ff),rdf(ff),minim(ff),mpoles(ff),electro(ff),ewld(ff), &
-        seed(ff),traj(ff),files,tmr,config(ff),flow,comm)
+        inversion(ff),zdensity(ff),neigh(ff),vdws(ff),rdf(ff),minim,mpoles(ff),electro(ff),ewld(ff), &
+        seed,traj,files,tmr,config(ff),flow,comm)
 
       If(ff .Eq. 1)Then
         flow%newjob_read_control = .False.
@@ -359,7 +355,7 @@ Contains
       Call info("*** DETAILS OF INTERACTIONS FOR FIELD "//trim(message)//" ***",.true.)
       Call read_field(neigh(ff)%cutoff,core_shells(ff),pmfs(ff),cons(ff),thermo(ff),met(ff),bond(ff),angle(ff), &
         dihedral(ff),inversion(ff),tether(ff),threebody(ff),sites(ff),vdws(ff),tersoffs(ff),fourbody(ff),rdf(ff), &
-        mpoles(ff),ext_field(ff),rigid(ff),electro(ff),config(ff),kim_data(ff),files,flow,comm,ff)
+        mpoles(ff),ext_field,rigid(ff),electro(ff),config(ff),kim_data(ff),files,flow,comm,ff)
   
       ! If computing rdf errors, we need to initialise the arrays.
       If(rdf(ff)%l_errors_jack .or. rdf(ff)%l_errors_block) then
@@ -411,11 +407,11 @@ Contains
       Call info("*** Generating a zero timestep HISTORY frame of the MD system ***",.true.)
 
       Do ff=1,flow%NUM_FF 
-        Call traj(ff)%init(key=0,freq=1,start=0)
+        Call traj%init(key=0,freq=1,start=0)
         flow%step  = 0                            ! no steps done
         flow%time  = 0.0_wp                       ! time is not relevant
         Call trajectory_write(flow%restart_key,flow%step,thermo(ff)%tstep,flow%time,ios, &
-                              stats(ff)%rsd,netcdf,config(ff),traj(ff),files,comm)
+                              stats(ff)%rsd,netcdf,config(ff),traj,files,comm)
       End Do 
       Call info("*** ALL DONE ***",.true.)
       Call time_elapsed(tmr)
@@ -507,8 +503,8 @@ Contains
       ! SET initial system temperature
       Call set_temperature               &
         (flow%restart_key,flow%step,flow%run_steps, &
-        stats(ff)%engrot,sites(ff)%dof_site,core_shells(ff),stats(ff),cons(ff),pmfs(ff),thermo(ff),minim(ff), &
-        rigid(ff),domain(ff),config(ff),seed(ff),comm)
+        stats(ff)%engrot,sites(ff)%dof_site,core_shells(ff),stats(ff),cons(ff),pmfs(ff),thermo(ff),minim, &
+        rigid(ff),domain(ff),config(ff),seed,comm)
     End Do
 
     Call info('',.true.)
@@ -561,24 +557,20 @@ Contains
     ! Note to reviewer: For the time being we only pass one field. Once we are all happy with the structuring
     ! we proceed to change w_md_vv --> w_md_vv_evb, etc
     If (flow%simulation) Then
-      Call w_md_vv_evb(config(1),ttms(1),ios,rsdsc(1),flow,core_shells(1),cons(1),pmfs(1),stats(1),thermo(1), &
-        plume(1),pois(1),bond(1),angle(1),dihedral(1),inversion(1),zdensity(1),neigh(1),sites(1),fourbody(1),rdf(1), &
-        netcdf,mpoles(1),ext_field(1),rigid(1),domain(1),seed(1),traj(1),kim_data(1),files,tmr,minim(1), &
-        impa,green(1),ewld(1),electro(1),dfcts,msd_data(1),tersoffs(1),tether(1),threebody(1),vdws(1), &
-        devel,met(1),comm)
+      Call w_md_vv_evb(config,ttms,ios,rsdsc(1),flow,core_shells,cons,pmfs,stats,thermo, &
+        plume,pois,bond,angle,dihedral,inversion,zdensity(1),neigh,sites,fourbody,rdf, &
+        netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,files,tmr,minim, &
+        impa,green,ewld,electro,dfcts,msd_data,tersoffs,tether,threebody,vdws, &
+        devel,met,comm)
     Else
-!      If (lfce) Then
-!        Call w_replay_historf(config(1),ios,rsdsc(1),flow,core_shells(1),cons(1),pmfs(1),stats(1), &
-!          thermo(1),plume(1),msd_data(1),bond(1),angle(1),dihedral(1),inversion(1),zdensity(1),neigh(1), &
-!          sites(1),vdws(1),tersoffs(1),fourbody(1),rdf(1),netcdf,minim(1),mpoles(1),ext_field(1),rigid(1), &
-!          electro(1),domain(1),seed(1),traj(1),kim_data(1),files,dfcts,tmr,tether(1),threebody(1), &
-!          pois(1),green(1),ewld(1),devel,met(1),comm)
-!      Else
-!        Call w_replay_history(config(1),ios,rsdsc(1),flow,core_shells(1),cons(1),pmfs(1),stats(1), &
-!          thermo(1),msd_data(1),met(1),pois(1),bond(1),angle(1),dihedral(1),inversion(1),zdensity(1),neigh(1), &
-!          sites(1),vdws(1),rdf(1),netcdf,minim(1),mpoles(1),ext_field(1),rigid(1),electro(1),domain(1), &
-!          seed(1),traj(1),kim_data(1),dfcts,files,tmr,tether(1),green(1),ewld(1),devel,comm)
-!      End If
+
+! Call w_calculate_forces(cnfig(1),flow,io,cshell(1),cons(1),pmf(1),stat(1),plume(1),pois(1),bond(1),angle(1),dihedral(1),&
+!     inversion(1),tether,threebody,neigh(1),sites(1),vdws,tersoffs,fourbody(1),rdf(1),netcdf, &
+!     minim,mpoles(1),ext_field,rigid(1),electro,domain(1),kim_data,msd_data,tmr,files,green,devel,ewld,met,seed,thermo,comm)    
+   print*, "Fix error message for EVB"  
+   stop
+
+
     End If
 
 #ifdef CHRONO
@@ -629,7 +621,7 @@ Contains
     End If
 
     Call statistics_result                                        &
-      (config(1),minim(1)%minimise,msd_data(1)%l_msd, &
+      (config(1),minim%minimise,msd_data(1)%l_msd, &
       flow%run_steps,core_shells(1)%keyshl,cons(1)%megcon,pmfs(1)%megpmf,              &
       flow%step,flow%time,flow%start_time,config(1)%mxatdm,neigh(1)%unconditional_update,&
       stats(1),thermo(1),sites(1),comm)
@@ -745,14 +737,14 @@ Contains
     Allocate(fourbody(array_size))
     Allocate(rdf(array_size))
     Allocate(netcdf(1))
-    Allocate(minim(array_size))
+    Allocate(minim(1))
     Allocate(mpoles(array_size))
     Allocate(ext_field(array_size))
     Allocate(rigid(array_size))
     Allocate(electro(array_size))
     Allocate(domain(array_size))
-    Allocate(seed(array_size))
-    Allocate(traj(array_size))
+    Allocate(seed(1))
+    Allocate(traj(1))
     Allocate(kim_data(array_size))
     Allocate(config(array_size))
     Allocate(ios(array_size))
