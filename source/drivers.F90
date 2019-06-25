@@ -127,6 +127,9 @@ Module drivers
 
   Use msd, Only : msd_type,msd_write
 
+  ! EVB MODULE
+  Use evb, Only : evb_pes, evb_type
+
   Implicit None
   Private
 
@@ -362,7 +365,6 @@ Contains
         mpoles,electro,domain,tmr,kim_data,cnfig,comm)
     End If
 
-
     ! Apply external field
 
     If (ext_field%key /= FIELD_NULL) Then
@@ -370,12 +372,14 @@ Contains
         ext_field,rigid,domain,cnfig,comm)
     End If
 
+    ! Configurational energy
+      stat%stpcfg =stat%engcpe + stat%engsrp + stat%engter + stat%engtbp + stat%engfbp + &
+                   stat%engshl + stat%engtet + stat%engfld +                   &
+                   stat%engbnd + stat%engang + stat%engdih + stat%enginv
+
     ! Apply PLUMED driven dynamics
 
     If (plume%l_plumed) Then
-      stat%stpcfg =stat%engcpe + stat%engsrp + stat%engter + stat%engtbp + stat%engfbp + &
-        stat%engshl + stat%engtet + stat%engfld +                   &
-        stat%engbnd + stat%engang + stat%engdih + stat%enginv
       Call plumed_apply(cnfig,flow%run_steps,flow%step,stat,plume,comm)
     End If
     ! Apply pseudo thermostat - force cycle (0)
@@ -395,10 +399,6 @@ Contains
     ! Minimisation option and Relaxed shell model optimisation
 
     If (flow%simulation .and. (minim%minimise .or. cshell%keyshl == SHELL_RELAXED)) Then
-        stat%stpcfg = stat%engcpe + stat%engsrp + stat%engter + stat%engtbp + stat%engfbp + &
-        stat%engshl + stat%engtet + stat%engfld +                   &
-        stat%engbnd + stat%engang + stat%engdih + stat%enginv
-    
       If (cshell%keyshl == SHELL_RELAXED) Then
         Call core_shell_relax(flow%strict,rdf%l_collect, &
           stat%stpcfg,cshell,stat,domain,cnfig,files,comm)
@@ -471,7 +471,7 @@ Contains
       Call update_shared_units(cnfig,rigid%list_shared, &
         rigid%map_shared,SHARED_UNIT_UPDATE_FORCES,domain,comm)
     End If
-  
+
 
     !!!!!!!!!!!!!!!!!!  W_CALCULATE_FORCES INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
@@ -1658,6 +1658,8 @@ Contains
     Type( development_type ), Intent( InOut ) :: devel
     Type( metal_type ), Intent( InOut ) :: met(:) 
 
+    Type( evb_type ) :: evbff
+
     Integer( Kind = wi ) :: ff
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV_EVB INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
@@ -1668,6 +1670,8 @@ Contains
 
     !!!!!!!!!!!!!!!!!!!!!!!  W_AT_START_VV_EVB INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
+    ! Allocate EVB variables
+    Call evbff%init(cnfig(1)%mxatms,flow%NUM_FF)
 
     ! Calculate kinetic tensor and energy at restart
     Do ff=1,flow%NUM_FF
@@ -1781,48 +1785,7 @@ Contains
               files,green(ff),devel,ewld(ff),met(ff),seed,thermo(ff),comm)
       End Do
 
-
-        if( abs(stat(1)%stpcfg-stat(2)%stpcfg).gt.1E-12) then
-          print*, 'stpcfg', flow%step, abs(stat(1)%stpcfg-stat(2)%stpcfg)
-          stop
-        elseif(abs(stat(1)%engcpe-stat(2)%engcpe).gt.1E-12) then
-          print*, 'engcpe', flow%step, abs(stat(1)%engcpe-stat(2)%engcpe) 
-          stop
-        elseif(abs(stat(1)%engsrp-stat(2)%engsrp).gt.1E-12) then
-          print*, 'engsrp', flow%step, abs(stat(1)%engsrp-stat(2)%engsrp)
-          stop
-        elseif(abs(stat(1)%engter-stat(2)%engter).gt.1E-12) then
-          print*, 'engter', flow%step, abs(stat(1)%engter-stat(2)%engter)
-          stop
-        elseif(abs(stat(1)%engtbp-stat(2)%engtbp).gt.1E-12) then
-          print*, 'engtbp', flow%step, abs(stat(1)%engtbp-stat(2)%engtbp)                     
-          stop
-        elseif(abs(stat(1)%engfbp-stat(2)%engfbp).gt.1E-12) then
-          print*, 'engfbp', flow%step, abs(stat(1)%engfbp-stat(2)%engfbp)
-          stop
-        elseif(abs(stat(1)%engshl-stat(2)%engshl).gt.1E-12) then
-          print*, 'engshl', flow%step, abs(stat(1)%engshl-stat(2)%engshl)
-          stop
-        elseif(abs(stat(1)%engtet-stat(2)%engtet).gt.1E-12) then
-          print*, 'engtet', flow%step, abs(stat(1)%engtet-stat(2)%engtet)
-          stop
-        elseif(abs(stat(1)%engfld-stat(2)%engfld).gt.1E-12) then
-          print*, 'engfld', flow%step, abs(stat(1)%engfld-stat(2)%engfld)
-          stop
-        elseif(abs(stat(1)%engbnd-stat(2)%engbnd).gt.1E-12) then
-          print*, 'engbnd', flow%step, abs(stat(1)%engbnd-stat(2)%engbnd)
-          stop
-        elseif(abs(stat(1)%engang-stat(2)%engang).gt.1E-12) then
-          print*, 'engang', flow%step, abs(stat(1)%engang-stat(2)%engang)
-          stop
-        elseif(abs(stat(1)%engdih-stat(2)%engdih).gt.1E-12) then
-          print*, 'engdih', flow%step, abs(stat(1)%engdih-stat(2)%engdih)
-          stop
-        elseif(abs(stat(1)%enginv-stat(2)%enginv).gt.1E-12) then
-          print*, 'enginv', flow%step, abs(stat(1)%enginv-stat(2)%enginv)
-          stop
-        end if
-         
+      Call evb_pes(evbff,flow,cnfig,stat,comm) 
 
       ! Calculate physical quantities, collect statistics and report at t=0
 
@@ -1859,7 +1822,6 @@ Contains
         End Do
 
         ! Update total flow%time of simulation
-
         flow%time = flow%time + thermo(1)%tstep
 
         ! Calculate physical quantities, collect statistics and report regularly

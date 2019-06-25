@@ -146,7 +146,7 @@ program dl_poly
   Use kinetics, Only : cap_forces
   Use timer, Only  : timer_type
   Use meta, Only : molecular_dynamics
-  Use evb, Only  : evb_molecular_dynamics
+  Use md_evb, Only  : evb_molecular_dynamics
 
   Implicit None
 

@@ -76,7 +76,8 @@ Module meta
   Implicit None
   Private
 
-  Public :: molecular_dynamics, print_initial_configuration, print_final_configuration, print_citations, print_banner
+  Public :: molecular_dynamics, print_initial_configuration, print_final_configuration, print_citations, print_banner, &
+            deallocate_types_uniform, allocate_types_uniform
 
 Contains
 
@@ -645,16 +646,12 @@ Contains
 
     Allocate(thermo(array_size))
     Allocate(ewld(array_size))
-    Allocate(tmr(array_size))
-    Allocate(devel(array_size))
     Allocate(stats(array_size))
     Allocate(green(array_size))
     Allocate(plume(array_size))
     Allocate(msd_data(array_size))
     Allocate(met(array_size))
     Allocate(pois(array_size))
-    Allocate(impa(array_size))
-    Allocate(dfcts(array_size,2))
     Allocate(bond(array_size))
     Allocate(angle(array_size))
     Allocate(dihedral(array_size))
@@ -671,22 +668,39 @@ Contains
     Allocate(tersoffs(array_size))
     Allocate(fourbody(array_size))
     Allocate(rdf(array_size))
-    Allocate(netcdf(array_size))
-    Allocate(minim(array_size))
     Allocate(mpoles(array_size))
     Allocate(ext_field(array_size))
     Allocate(rigid(array_size))
     Allocate(electro(array_size))
     Allocate(domain(array_size))
-    !  Allocate(flow(array_size))
-    Allocate(seed(array_size))
-    Allocate(traj(array_size))
     Allocate(kim_data(array_size))
     Allocate(config(array_size))
     Allocate(ios(array_size))
     Allocate(ttms(array_size))
     Allocate(rsdsc(array_size))
-    Allocate(files(array_size,FILENAME_SIZE))
+
+    If(array_size == 1)Then
+      Allocate(tmr(array_size))
+      Allocate(impa(array_size))
+      Allocate(dfcts(array_size,2))
+      Allocate(devel(array_size))
+      Allocate(netcdf(array_size))
+      Allocate(minim(array_size))
+      Allocate(seed(array_size))
+      Allocate(traj(array_size))
+      Allocate(files(array_size,FILENAME_SIZE))
+    Else
+      Allocate(tmr(1))
+      Allocate(impa(1))
+      Allocate(dfcts(1,2))
+      Allocate(devel(1))
+      Allocate(netcdf(1))
+      Allocate(minim(1))
+      Allocate(seed(1))
+      Allocate(traj(1))
+      Allocate(files(1,FILENAME_SIZE))
+    End If
+
   End Subroutine allocate_types_uniform
 
   Subroutine deallocate_types_uniform(thermo,ewld,tmr,devel,stats, &
