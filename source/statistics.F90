@@ -407,11 +407,9 @@ Contains
 
     ! instantaneous properties of system
 
-    ! configurational energy
-
-    stats%stpcfg = stats%engcpe + stats%engsrp + stats%engter + stats%engtbp + stats%engfbp + &
-      stats%engfld + stats%engshl +                            &
-      stats%engtet + stats%engbnd + stats%engang + stats%engdih + stats%enginv
+    ! configurational energy has been defined in subroutine w_calculateorces within drivers.F90
+    ! In the case of EVB calculations, the configurational energy is recomputed via diagonalisation 
+    ! of the EVB matrix (subroutine evb.F90)
 
     ! system energy
 
@@ -437,9 +435,7 @@ Contains
     ! Note: originally, purely angle dependent interactions have zero virial!!!
     ! So, stats%virfbp, stats%virinv and stats%virdih are allegedly always zero!  virdih has an exception!
 
-    stats%stpvir = stats%vircpe + stats%virsrp + stats%virter + stats%virtbp + stats%virfbp + &
-      stats%virfld + stats%virshl + stats%vircon + stats%virpmf + stats%vircom + &
-      stats%virtet + stats%virbnd + stats%virang + stats%virdih + stats%virinv + stats%virdpd
+     stats%stpvir= stats%virtot + stats%virfld + stats%vircon + stats%virpmf + stats%vircom 
 
     ! system volume
 
