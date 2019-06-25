@@ -1671,7 +1671,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!  W_AT_START_VV_EVB INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
     ! Allocate EVB variables
-    Call evbff%init(cnfig(1)%mxatms,flow%NUM_FF)
+    Call evbff%init(flow%NUM_FF)
 
     ! Calculate kinetic tensor and energy at restart
     Do ff=1,flow%NUM_FF

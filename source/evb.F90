@@ -57,11 +57,11 @@ Module evb
 Contains
 
           
-  Subroutine allocate_evb_arrays(evb,mxatms,nff)
+  Subroutine allocate_evb_arrays(evb,nff)
   Class(evb_type), Intent(InOut) :: evb
-  Integer( Kind = wi ), Intent (In ) :: mxatms, nff
+  Integer( Kind = wi ), Intent (In ) :: nff
   
-  Integer :: fail(1:11), i
+  Integer :: fail(1:11)
 
   Allocate (evb%eshift(1:nff)   ,  Stat=fail(1))
   Allocate (evb%matrix(nff,nff) ,  Stat=fail(2))
