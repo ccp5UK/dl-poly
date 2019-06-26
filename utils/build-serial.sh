@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-module gnu openblas
+module load gnu openblas
 mkdir build-serial
 pushd build-serial
 cmake ../ -DWITH_MPI=OFF  -DWITH_EVB=ON
