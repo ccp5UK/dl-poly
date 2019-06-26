@@ -106,7 +106,7 @@ Contains
 
   Integer( Kind = wi ) :: mevb, info, mxatms
    
-
+#ifdef EVB
 ! Initialise matrx elements
   evb%matrix=0.0_wp
 
@@ -146,7 +146,7 @@ Contains
     End Do
 
 ! Diagonalisation
-    call DSYEVX( 'V', 'I', 'U', flow%NUM_FF, evb%matrix, flow%NUM_FF, -1., 0., 1, flow%NUM_FF, &
+    call dsyevx( 'V', 'I', 'U', flow%NUM_FF, evb%matrix, flow%NUM_FF, -1., 0., 1, flow%NUM_FF, &
                   1.d-20, mevb, evb%eigval, evb%psi, flow%NUM_FF, evb%work, 8*flow%NUM_FF,     &
                   evb%iwork, evb%ifail, info)
 
@@ -260,7 +260,7 @@ Contains
    Do m=1,flow%NUM_FF
    stat(m)%virtot=-(stat(m)%stress(1)+stat(m)%stress(5)+stat(m)%stress(9))
    End Do
-
+#endif 
   End Subroutine evb_pes
 
 End Module evb        
