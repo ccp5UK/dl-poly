@@ -80,7 +80,7 @@ Contains
  
 ! Initialise coupling terms and energy shifts
   evb%ac=0.0_wp ! 20000.0_wp
-  evb%bc=1.0E-14
+  evb%bc=0.0_wp ! 1.0E-14
   evb%eshift(1)=0.0_wp
   evb%eshift(2)=10.0_wp
 
@@ -106,7 +106,6 @@ Contains
 
   Integer( Kind = wi ) :: mevb, info, mxatms
    
-#ifdef EVB
 ! Initialise matrx elements
   evb%matrix=0.0_wp
 
@@ -260,7 +259,6 @@ Contains
    Do m=1,flow%NUM_FF
    stat(m)%virtot=-(stat(m)%stress(1)+stat(m)%stress(5)+stat(m)%stress(9))
    End Do
-#endif 
   End Subroutine evb_pes
 
 End Module evb        
