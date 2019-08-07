@@ -3643,6 +3643,7 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
   !           - j.madge march-october 2018
   !           - a.b.g.chalk march-october 2018
   !           - i.scivetti march-october 2018
+  ! contrib   - i.t.todorov april 2019 l_trm reading and setting
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Type( ttm_type ), Intent( InOut ) :: ttm
@@ -3828,6 +3829,12 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
     ! record is commented out
 
     If      (word(1:1) == '#' .or. word(1:1) == ' ') Then
+
+! read termination
+
+    Else If (word(1:5) == 'l_trm') Then
+
+      devel%l_trm = .true.
 
       ! read slab option (limiting DD slicing in z direction to 2)
 
@@ -4729,7 +4736,7 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
   ! When not having dynamics or prepared to terminate
   ! expanding and not running the small system prepare to exit gracefully
 
-  devel%l_trm = (l_exp .and. nstrun == 0)
+  devel%l_trm = devel%l_trm .or. (l_exp .and. nstrun == 0)
   If (((.not.flow%simulation) .or. devel%l_trm) .and. flow%reset_padding) neigh%padding=0.0_wp
 
   Return

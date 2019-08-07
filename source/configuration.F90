@@ -763,6 +763,7 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    ! contrib   - i.t.todorov may 2019 - maximum domain density change
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1363,35 +1364,22 @@ Contains
     Call gsum(comm,pda_ave)
     pda_ave=pda_ave/Real(comm%mxnode,wp)
 
-    ! Approximation for maximum global density by
-    ! the inter-domain imbalance of domain density
+    ! define dens0 & dens
+    dens0=pda_max/vcell      ! maximum local density
+   dens =pda_dom_max/vcell  ! maximum domain density
 
-    dens0=pda_max/vcell
-    If (comm%mxnode > 1) Then
-      If (Nint(pda_dom_min) == 0) Then
-        dens = dens0 ! domain(s) matched on vacuum (take no risk)
-      Else If (1.15_wp*pda_dom_min > pda_dom_max) Then
-        dens = pda_ave/vcell
-      Else If (1.25_wp*pda_dom_min > pda_dom_max) Then
-        dens = pda_dom_max/vcell
-      Else
-        dens = dens0 ! too big an imbalance (take no risk)
-      End If
-    Else
-      dens = 1.25_wp*pda_ave/vcell ! allow 25% imbalance
-    End If
 
-    Deallocate (pda, Stat=fail(1))
-    If (fail(1) > 0) Then
-      Write(message,'(a)') 'read_config deallocation failure'
-      Call error(0,message)
-    End If
+   Deallocate (pda, Stat=fail(1))
+   If (fail(1) > 0) Then
+     Write(message,'(a)') 'read_config deallocation failure'
+     Call error(0,message)
+   End If
 
-    ! PARTICLE DENSITY END
+   ! PARTICLE DENSITY END
 
-    Return
+   Return
 
-    ! error exit for CONFIG file read
+   ! error exit for CONFIG file read
 
 50  Continue
     If (comm%idnode == 0) Call files(FILE_CONFIG)%close()
