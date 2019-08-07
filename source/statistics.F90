@@ -27,7 +27,7 @@ Module statistics
   Use domains,    Only : domains_type
   Use z_density,   Only : z_density_type,z_density_collect
   Use errors_warnings, Only : error,warning,info
-  Use numerics,    Only : dcell,invert,shellsort,shellsort2,pbcshfrc,pbcshfrl
+  Use numerics,    Only : dcell,invert,shellsort,shellsort2,pbcshift,pbcshfrc,pbcshfrl
   Use thermostat, Only : thermostat_type,CONSTRAINT_NONE,CONSTRAINT_SURFACE_TENSION, &
     CONSTRAINT_SEMI_ORTHORHOMBIC
   Use filename, Only : file_type, FILE_STATS
@@ -336,6 +336,7 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    ! contrib   - i.t.todorov july 2019 - RSD as the true displacement
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -499,7 +500,7 @@ Contains
     ! iadd = iadd + 1 ! for the stpval(0)!!! Thus to account for in printing
 
     ! mean squared displacements per species, dependent on
-    ! particle displacements from initial positions (at t=0)
+    ! particle mean square displacements from initial positions (at t=0)
 
     amsd = 0.0_wp ! initialise
 
@@ -565,6 +566,31 @@ Contains
         stats%stpval(iadd+j  )=config%vxx(i)**2+config%vyy(i)**2+config%vzz(i)**2
       End Do
       iadd = iadd + 2*mxatdm
+    End If
+! Calculate true displacements from original position in RSD,
+! rather than keep the RMSD=Sqrt(MSD)
+
+    Allocate (xxt(1:config%mxatms),yyt(1:config%mxatms),zzt(1:config%mxatms), Stat=fail)
+    If (fail > 0) Then
+      Write(message,'(a)') 'statistics_collect allocation failure 2'
+      Call error(0,message)
+    End If
+    Do i=1,config%natms
+      xxt(i) = config%parts(i)%xxx - stats%xin(i)
+      yyt(i) = config%parts(i)%yyy - stats%yin(i)
+      zzt(i) = config%parts(i)%zzz - stats%zin(i)
+    End Do
+    Call pbcshift(config%imcon,config%cell,config%natms,xxt,yyt,zzt)
+    Do i=1,config%natms
+      stats%rsd(i)=xxt(i)**2+yyt(i)**2+zzt(i)**2
+    End Do
+    Do i=1,config%natms
+      stats%rsd(i)=Sqrt(stats%rsd(i))
+    End Do
+    Deallocate (xxt,yyt,zzt, Stat=fail)
+    If (fail > 0) Then
+      Write(message,'(a)') 'statistics_collect deallocation failure 2'
+      Call error(0,message)
     End If
 
     Do k=1,sites%ntype_atom
