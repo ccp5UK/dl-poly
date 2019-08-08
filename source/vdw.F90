@@ -2032,8 +2032,7 @@ Contains
       nr,mr,rc,sig,eps,alpha,beta,       &
       fix,fiy,fiz,fx,fy,fz,              &
       gk,gk1,gk2,vk,vk1,vk2,t1,t2,t3,t,  &
-      strs1,strs2,strs3,strs5,strs6,     &
-      strs9,z1,z2,rm,ri
+      z1,z2,rm,ri
 
     ! define grid resolution for potential arrays and interpolation spacing
 

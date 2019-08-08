@@ -2,7 +2,7 @@ Module drivers
   Use kinds, Only : wp,wi
   Use comms, Only : comms_type,gsum,gtime,gmax
   Use kinetics, Only : kinstresf, kinstrest, kinstress,getknr,getknr, cap_forces
-  Use constants, Only : boltz
+  Use constants, Only : boltz, prsunt
 
   Use impacts, Only : impact_type, impact
   Use shared_units, Only : update_shared_units, SHARED_UNIT_UPDATE_FORCES
@@ -1395,7 +1395,6 @@ Contains
     Type( metal_type ), Intent( InOut ) :: met
 
     Integer                 :: heat_flux_out
-
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -1473,6 +1472,35 @@ Contains
 
       ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
 
+      ! If system is to write per-particle data
+      If (stat%require_pp .and. Mod(flow%step, stat%intsta) == 0) then
+        call stat%allocate_per_particle_arrays(cnfig%natms)
+      end If
+
+      ! Evaluate forces
+
+      Call w_calculate_forces(cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
+        inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
+        minim,mpoles,ext_field,rigid,electro,domain,kim_data,msd_data,tmr,files,green,devel,ewld,met,seed,thermo,comm)
+
+      ! If system has written per-particle data
+      If (stat%collect_pp) then
+        if (flow%heat_flux .and. comm%idnode == 0) then
+          Open(Newunit=heat_flux_out, File = 'HEATFLUX', Position = 'append')
+          Write(heat_flux_out, *) flow%step, stat%stptmp, cnfig%volm, calculate_heat_flux(stat, cnfig)
+          Close(heat_flux_out)
+        end If
+
+        if (flow%write_per_particle) then
+          write(0, *) stat%stress
+          write(0, *) sum(stat%pp_stress, dim=2)
+          
+          call write_per_part_contribs(cnfig, comm, stat%pp_energy, stat%pp_stress, flow%step)
+        end if
+
+        call stat%deallocate_per_particle_arrays()
+      end If
+
       If (flow%step >= 0 .and. flow%step < flow%run_steps .and. cnfig%levcfg == 2) Then
 
         ! Increase step counter
@@ -1500,17 +1528,6 @@ Contains
           dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data,ewld,green,minim,thermo,electro,comm)
 
       End If ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
-
-      ! If system is to write per-particle data
-      If (stat%require_pp .and. Mod(flow%step, stat%intsta) == 0) then
-        call stat%allocate_per_particle_arrays(cnfig%natms)
-      end If
-
-      ! Evaluate forces
-
-      Call w_calculate_forces(cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
-        inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
-        minim,mpoles,ext_field,rigid,electro,domain,kim_data,msd_data,tmr,files,green,devel,ewld,met,seed,thermo,comm)
 
       ! Calculate physical quantities, collect statistics and report at t=0
 
@@ -1564,20 +1581,6 @@ Contains
         End If
 
       End If ! DO THAT ONLY IF 0<flow%step<=flow%run_steps AND THIS IS AN OLD JOB (flow%newjob=.false.)
-
-      ! If system has written per-particle data
-      If (stat%collect_pp) then
-        if (flow%heat_flux .and. comm%idnode == 0) then
-          Open(Newunit=heat_flux_out, File = 'HEATFLUX', Position = 'append')
-          Write(heat_flux_out, *) flow%step, stat%stptmp, cnfig%volm, calculate_heat_flux(stat, cnfig)
-          Close(heat_flux_out)
-        end If
-        if (flow%write_per_particle) then
-          call write_per_part_contribs(cnfig, comm, stat%pp_energy, stat%pp_stress, flow%step)
-        end if
-
-        call stat%deallocate_per_particle_arrays()
-      end If
 
       1000  Continue ! Escape forces evaluation at t=0 when flow%step=flow%run_steps=0 and flow%newjob=.false.
 
