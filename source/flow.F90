@@ -50,6 +50,12 @@ Module flow_control
     !> Excluded interactions flag
     Logical, Public :: exclusions
 
+    !> Write per-particle information
+    Logical, Public :: write_per_particle
+
+    !> Calculate heat-flux
+    Logical, Public :: heat_flux
+
     !> Restart key
     Integer(Kind=wi), Public :: restart_key
 

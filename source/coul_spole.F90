@@ -1,7 +1,7 @@
 Module coul_spole
   !! This module has no header !
   Use kinds,           Only : wp
-  Use configuration,   Only : configuration_type     
+  Use configuration,   Only : configuration_type
   Use constants,       Only : r4pie0,zero_plus,sqrpi
   Use errors_warnings, Only : error, error_alloc, error_dealloc
   Use numerics,        Only : erfcgen, erfc, erfc_deriv, three_p_interp
@@ -11,7 +11,7 @@ Module coul_spole
     ELECTROSTATIC_EWALD,ELECTROSTATIC_DDDP, &
     ELECTROSTATIC_COULOMB,ELECTROSTATIC_COULOMB_FORCE_SHIFT, &
     ELECTROSTATIC_COULOMB_REACTION_FIELD
-
+  Use statistics,      Only : calculate_stress, stats_type
   Implicit None
 
   Private
@@ -143,7 +143,7 @@ Contains
     End If
   End Subroutine intra_coul
 
-  Subroutine coul_fscp_forces(iatm,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh, &
+  Subroutine coul_fscp_forces(iatm,xxt,yyt,zzt,rrt,engcpe,vircpe,stats,neigh, &
     electro,config)
 
     !!------------------------------------------------------------------------!
@@ -171,20 +171,20 @@ Contains
     !!
     !!------------------------------------------------------------------------!
 
-    Integer,                                  Intent( In    ) :: iatm
-    Type( neighbours_type ), Intent( In    ) :: neigh
+    Integer,                                          Intent( In    ) :: iatm
+    Type( neighbours_type ),                          Intent( In    ) :: neigh
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
-    Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
-    Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
-    Type( electrostatic_type ), Intent( InOut ) :: electro
-    Type( configuration_type ),               Intent( InOut ) :: config
-
+    Real( Kind = wp ),                                Intent(   Out ) :: engcpe,vircpe
+    Type( stats_type ),                               Intent( InOut ) :: stats
+    Type( electrostatic_type ),                       Intent( InOut ) :: electro
+    Type( configuration_type ),                       Intent( InOut ) :: config
+    Real( Kind = wp ), Dimension( 9 )                                 :: stress_temp, stress_temp_comp
+    Real( Kind = wp ) :: coul
 
     Integer           :: idi,jatm,m
 
     Real( Kind = wp ) :: chgea,chgprd,rsq,rrr,egamma, &
-      fix,fiy,fiz,fx,fy,fz,            &
-      strs1,strs2,strs3,strs5,strs6,strs9
+      fix,fiy,fiz,fx,fy,fz
 
     Logical, save :: newjob = .true.
 
@@ -212,12 +212,7 @@ Contains
 
     ! initialise stress tensor accumulators
 
-    strs1=0.0_wp
-    strs2=0.0_wp
-    strs3=0.0_wp
-    strs5=0.0_wp
-    strs6=0.0_wp
-    strs9=0.0_wp
+    stress_temp = 0.0_wp
 
     ! global identity of iatm
 
@@ -294,27 +289,32 @@ Contains
 
               ! calculate interaction energy using 3-point interpolation
 
-              engcpe = engcpe + (three_p_interp(erfc,rrr) + electro%force_shift*rrr + electro%energy_shift)*chgprd
+              coul = (three_p_interp(erfc,rrr) + electro%force_shift*rrr + electro%energy_shift)*chgprd
             Else
 
-              engcpe = engcpe + chgprd*(1.0_wp/rrr + electro%force_shift*rrr + electro%energy_shift)
+              coul = chgprd*(1.0_wp/rrr + electro%force_shift*rrr + electro%energy_shift)
 
             End If
 
+            engcpe = engcpe + coul
             vircpe = vircpe - egamma*rsq
 
             ! calculate stress tensor
 
-            strs1 = strs1 + xxt(m)*fx
-            strs2 = strs2 + xxt(m)*fy
-            strs3 = strs3 + xxt(m)*fz
-            strs5 = strs5 + yyt(m)*fy
-            strs6 = strs6 + yyt(m)*fz
-            strs9 = strs9 + zzt(m)*fz
+            stress_temp_comp = calculate_stress( [xxt(m), yyt(m), zzt(m)], [fx,fy,fz] )
+            stress_temp = stress_temp + stress_temp_comp
+
+            if (stats%collect_pp) then
+              stats%pp_energy(iatm) = stats%pp_energy(iatm) + coul * 0.5_wp
+              stats%pp_energy(jatm) = stats%pp_energy(jatm) + coul * 0.5_wp
+              stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
+              stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
+            end if
 
           End If
 
         End If
+
 
       End Do
 
@@ -326,20 +326,14 @@ Contains
 
       ! complete stress tensor
 
-      stress(1) = stress(1) + strs1
-      stress(2) = stress(2) + strs2
-      stress(3) = stress(3) + strs3
-      stress(4) = stress(4) + strs2
-      stress(5) = stress(5) + strs5
-      stress(6) = stress(6) + strs6
-      stress(7) = stress(7) + strs3
-      stress(8) = stress(8) + strs6
-      stress(9) = stress(9) + strs9
+      stats%stress = stats%stress + stress_temp
+
 
     End If
+
   End Subroutine coul_fscp_forces
 
-  Subroutine coul_rfp_forces(iatm,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh, &
+  Subroutine coul_rfp_forces(iatm,xxt,yyt,zzt,rrt,engcpe,vircpe,stats,neigh, &
     electro,config)
 
     !!------------------------------------------------------------------------!
@@ -366,13 +360,15 @@ Contains
     !!
     !!------------------------------------------------------------------------!
 
-    Integer,                                  Intent( In    ) :: iatm
-    Type( neighbours_type ), Intent( In    ) :: neigh
+    Integer,                                          Intent( In    ) :: iatm
+    Type( neighbours_type ),                          Intent( In    ) :: neigh
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
-    Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
-    Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
-    Type( electrostatic_type ), Intent( InOut ) :: electro
-    Type( configuration_type ),               Intent( InOut ) :: config
+    Real( Kind = wp ),                                Intent(   Out ) :: engcpe,vircpe
+    Type( stats_type ),                               Intent( InOut ) :: stats
+    Type( electrostatic_type ),                       Intent( InOut ) :: electro
+    Type( configuration_type ),                       Intent( InOut ) :: config
+    Real( Kind = wp ), Dimension( 9 )                                 :: stress_temp, stress_temp_comp
+    Real( Kind = wp ) :: coul
 
     !> Intermediate reaction field variable
     Real( Kind = wp ) :: b0
@@ -380,7 +376,7 @@ Contains
     Integer           :: idi,jatm,m
 
     Real( Kind = wp ) :: chgea,chgprd,rsq,rrr,egamma, &
-      fix,fiy,fiz,fx,fy,fz, strs1,strs2,strs3,strs5,strs6,strs9
+      fix,fiy,fiz,fx,fy,fz
 
     Logical, save :: newjob = .true.
 
@@ -409,12 +405,7 @@ Contains
 
     ! initialise stress tensor accumulators
 
-    strs1=0.0_wp
-    strs2=0.0_wp
-    strs3=0.0_wp
-    strs5=0.0_wp
-    strs6=0.0_wp
-    strs9=0.0_wp
+    stress_temp = 0.0_wp
 
     ! global identity of iatm
 
@@ -491,25 +482,29 @@ Contains
 
               ! calculate interaction energy using 3-point interpolation
 
-              engcpe = engcpe + (three_p_interp(erfc,rrr) + electro%force_shift*rrr + electro%energy_shift + &
+              coul = (three_p_interp(erfc,rrr) + electro%force_shift*rrr + electro%energy_shift + &
                 electro%reaction_field(2)*(rsq-neigh%cutoff_2))*chgprd
 
             Else
 
-              engcpe = engcpe + chgprd*(1.0_wp/rrr + electro%reaction_field(2)*rsq - electro%reaction_field(1))
+              coul = chgprd*(1.0_wp/rrr + electro%reaction_field(2)*rsq - electro%reaction_field(1))
 
             End If
 
+            engcpe = engcpe + coul
             vircpe = vircpe - egamma*rsq
 
             ! calculate stress tensor
 
-            strs1 = strs1 + xxt(m)*fx
-            strs2 = strs2 + xxt(m)*fy
-            strs3 = strs3 + xxt(m)*fz
-            strs5 = strs5 + yyt(m)*fy
-            strs6 = strs6 + yyt(m)*fz
-            strs9 = strs9 + zzt(m)*fz
+            stress_temp_comp = calculate_stress( [xxt(m), yyt(m), zzt(m)], [fx,fy,fz] )
+            stress_temp = stress_temp + stress_temp_comp
+
+            if (stats%collect_pp) then
+              stats%pp_energy(iatm) = stats%pp_energy(iatm) + coul * 0.5_wp
+              stats%pp_energy(jatm) = stats%pp_energy(jatm) + coul * 0.5_wp
+              stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
+              stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
+            end if
 
           End If
 
@@ -525,20 +520,12 @@ Contains
 
       ! complete stress tensor
 
-      stress(1) = stress(1) + strs1
-      stress(2) = stress(2) + strs2
-      stress(3) = stress(3) + strs3
-      stress(4) = stress(4) + strs2
-      stress(5) = stress(5) + strs5
-      stress(6) = stress(6) + strs6
-      stress(7) = stress(7) + strs3
-      stress(8) = stress(8) + strs6
-      stress(9) = stress(9) + strs9
-
+      stats%stress = stats%stress + stress_temp
     End If
+
   End Subroutine coul_rfp_forces
 
-  Subroutine coul_cp_forces(iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,config)
+  Subroutine coul_cp_forces(iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stats,neigh,config)
 
     !!------------------------------------------------------------------------!
     !!
@@ -556,19 +543,18 @@ Contains
     !!
     !!------------------------------------------------------------------------!
 
-    Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: eps
-    Type( neighbours_type ), Intent( In    ) :: neigh
+    Integer,                                          Intent( In    ) :: iatm
+    Real( Kind = wp ),                                Intent( In    ) :: eps
+    Type( neighbours_type ),                          Intent( In    ) :: neigh
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
-    Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
-    Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
-    Type( configuration_type ),               Intent( InOut ) :: config
-
+    Real( Kind = wp ),                                Intent(   Out ) :: engcpe,vircpe
+    Type( stats_type ),                               Intent( InOut ) :: stats
+    Type( configuration_type ),                       Intent( InOut ) :: config
+    Real( Kind = wp ), Dimension( 9 )                                 :: stress_temp, stress_temp_comp
     Integer           :: idi,jatm,m
 
     Real( Kind = wp ) :: chgea,chgprd,rrr,coul,fcoul, &
-      fix,fiy,fiz,fx,fy,fz,        &
-      strs1,strs2,strs3,strs5,strs6,strs9
+      fix,fiy,fiz,fx,fy,fz
 
     ! initialise potential energy and virial
 
@@ -577,12 +563,7 @@ Contains
 
     ! initialise stress tensor accumulators
 
-    strs1=0.0_wp
-    strs2=0.0_wp
-    strs3=0.0_wp
-    strs5=0.0_wp
-    strs6=0.0_wp
-    strs9=0.0_wp
+    stress_temp = 0.0_wp
 
     ! global identity of iatm
 
@@ -652,15 +633,24 @@ Contains
 
             ! calculate stress tensor
 
-            strs1 = strs1 + xxt(m)*fx
-            strs2 = strs2 + xxt(m)*fy
-            strs3 = strs3 + xxt(m)*fz
-            strs5 = strs5 + yyt(m)*fy
-            strs6 = strs6 + yyt(m)*fz
-            strs9 = strs9 + zzt(m)*fz
+            ! calculate stress tensor
+
+            stress_temp_comp = calculate_stress( [xxt(m), yyt(m), zzt(m)], [fx,fy,fz] )
+            stress_temp = stress_temp + stress_temp_comp
+
+            if (stats%collect_pp) then
+              stats%pp_energy(iatm) = stats%pp_energy(iatm) + coul * 0.5_wp
+              stats%pp_energy(jatm) = stats%pp_energy(jatm) + coul * 0.5_wp
+              stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
+              stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
+            end if
 
           End If
 
+        End If
+
+        If (stats%collect_pp) Then
+          stats%pp_energy(iatm) = stats%pp_energy(iatm) + coul
         End If
 
       End Do
@@ -677,20 +667,12 @@ Contains
 
       ! complete stress tensor
 
-      stress(1) = stress(1) + strs1
-      stress(2) = stress(2) + strs2
-      stress(3) = stress(3) + strs3
-      stress(4) = stress(4) + strs2
-      stress(5) = stress(5) + strs5
-      stress(6) = stress(6) + strs6
-      stress(7) = stress(7) + strs3
-      stress(8) = stress(8) + strs6
-      stress(9) = stress(9) + strs9
+      stats%stress = stats%stress + stress_temp
 
     End If
   End Subroutine coul_cp_forces
 
-  Subroutine coul_dddp_forces(iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,config)
+  Subroutine coul_dddp_forces(iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stats,neigh,config)
 
     !!------------------------------------------------------------------------!
     !!
@@ -709,19 +691,18 @@ Contains
     !!
     !!------------------------------------------------------------------------!
 
-    Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: eps
-    Type( neighbours_type ), Intent( In    ) :: neigh
+    Integer,                                          Intent( In    ) :: iatm
+    Real( Kind = wp ),                                Intent( In    ) :: eps
+    Type( neighbours_type ),                          Intent( In    ) :: neigh
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
-    Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
-    Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
-    Type( configuration_type ),               Intent( InOut ) :: config
-
+    Real( Kind = wp ),                                Intent(   Out ) :: engcpe,vircpe
+    Type( stats_type ),                               Intent( InOut ) :: stats
+    Type( configuration_type ),                       Intent( InOut ) :: config
+    Real( Kind = wp ), Dimension( 9 )                                 :: stress_temp, stress_temp_comp
     Integer           :: idi,jatm,m
 
     Real( Kind = wp ) :: chgea,chgprd,rrr,rsq,coul,fcoul, &
-      fix,fiy,fiz,fx,fy,fz,            &
-      strs1,strs2,strs3,strs5,strs6,strs9
+      fix,fiy,fiz,fx,fy,fz
 
     ! initialise potential energy and virial
 
@@ -730,13 +711,8 @@ Contains
 
     ! initialise stress tensor accumulators
 
-    strs1=0.0_wp
-    strs2=0.0_wp
-    strs3=0.0_wp
-    strs5=0.0_wp
-    strs6=0.0_wp
-    strs9=0.0_wp
-
+    stress_temp = 0.0_wp
+    
     ! global identity of iatm
 
     idi=config%ltg(iatm)
@@ -809,16 +785,20 @@ Contains
 
             ! calculate stress tensor
 
-            strs1 = strs1 + xxt(m)*fx
-            strs2 = strs2 + xxt(m)*fy
-            strs3 = strs3 + xxt(m)*fz
-            strs5 = strs5 + yyt(m)*fy
-            strs6 = strs6 + yyt(m)*fz
-            strs9 = strs9 + zzt(m)*fz
+            stress_temp_comp = calculate_stress( [xxt(m), yyt(m), zzt(m)], [fx,fy,fz] )
+            stress_temp = stress_temp + stress_temp_comp
+
+            if (stats%collect_pp) then
+              stats%pp_energy(iatm) = stats%pp_energy(iatm) + coul * 0.5_wp
+              stats%pp_energy(jatm) = stats%pp_energy(jatm) + coul * 0.5_wp
+              stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
+              stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
+            end if
 
           End If
 
         End If
+
 
       End Do
 
@@ -834,15 +814,7 @@ Contains
 
       ! complete stress tensor
 
-      stress(1) = stress(1) + strs1
-      stress(2) = stress(2) + strs2
-      stress(3) = stress(3) + strs3
-      stress(4) = stress(4) + strs2
-      stress(5) = stress(5) + strs5
-      stress(6) = stress(6) + strs6
-      stress(7) = stress(7) + strs3
-      stress(8) = stress(8) + strs6
-      stress(9) = stress(9) + strs9
+      stats%stress = stats%stress + stress_temp
 
     End If
   End Subroutine coul_dddp_forces

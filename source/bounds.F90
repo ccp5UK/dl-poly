@@ -717,7 +717,7 @@ Contains
         If (comm%mxnode == 1 .and. Min(ilx,ily,ilz) < 2) Then
           padding1 = 0.95_wp * (0.5_wp*config%width - neigh%cutoff - 1.0e-6_wp)
         End If
-
+        test = 1.0_wp
         If (neigh%padding <= zero_plus) Then ! When neigh%padding is undefined give it some value
           If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) >= 2) Then ! good non-exception
             neigh%padding = test * neigh%cutoff

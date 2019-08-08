@@ -1764,15 +1764,6 @@ Contains
         if (.not. ewld%active) call error(0,'Ewald VdW requested but ewald not enabled')
         ewld%vdw = .true.
 
-        ! Read Per-particle write frequency
-
-      Else If ( word(1:6) == 'ppfreq' ) then
-
-        Call get_word(record,word)
-
-        ewld%pp_write_freq = int(word_2_real(word))
-        Write(message,'(a,i0)') 'Per particle write frequency (Steps) ', ewld%pp_write_freq
-
         ! read Ewald sum parameters
 
       Else If (word(1:5) == 'ewald' .or. word(1:4) == 'spme') Then
@@ -2695,6 +2686,23 @@ Contains
         stats%intsta = Nint(word_2_real(word))
         Write(message,'(a,i10)') 'statistics file interval ',stats%intsta
         Call info(message,.true.)
+
+
+        ! Perform thermal flux
+
+      Else If ( word(1:9) == 'heat_flux' ) then
+
+        flow%heat_flux = .true.
+        stats%require_pp = .true.
+        Write(message,'(a)') 'Writing per-particle data'
+
+        ! Read Per-particle write
+
+      Else If ( word(1:7) == 'dump_pp' ) then
+
+        flow%write_per_particle = .true.
+        stats%require_pp = .true.
+        Write(message,'(a)') 'Writing per-particle data'
 
         ! read MSDTMP printing option
 

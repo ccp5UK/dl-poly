@@ -27,6 +27,7 @@ Module vdw
   Use neighbours, Only : neighbours_type
   Use numerics, Only : nequal
   Use errors_warnings, Only : error,warning,info
+  Use statistics, Only : stats_type, calculate_stress
   Implicit None
 
   Private
@@ -1990,7 +1991,7 @@ Contains
   End Subroutine vdw_generate
 
 
-  Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws,config)
+  Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stats,neigh,vdws,config)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2014,15 +2015,15 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,                                  Intent( In    ) :: iatm
-    Type( neighbours_type ), Intent( In    ) :: neigh
+    Integer,                                          Intent( In    ) :: iatm
+    Type( neighbours_type ),                          Intent( In    ) :: neigh
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
-    Real( Kind = wp ),                        Intent(   Out ) :: engvdw,virvdw
-    Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
-    Type( vdw_type ), Intent( InOut ) :: vdws
-    Type( configuration_type ),               Intent( InOut ) :: config
+    Real( Kind = wp ),                                Intent(   Out ) :: engvdw,virvdw
+    Type( stats_type ),                               Intent( InOut ) :: stats
+    Type( vdw_type ),                                 Intent( InOut ) :: vdws
+    Type( configuration_type ),                       Intent( InOut ) :: config
 
-
+    Real( Kind = wp ), dimension( 9 )                                 :: stress_temp, stress_temp_comp
     Integer           :: mm,idi,ai,aj,jatm,key,k,l,ityp,n,m
     Real( Kind = wp ) :: rrr,ppp,gamma,eng,                 &
       rsq,r_rrr,r_rsq,r_rvdw,r_rrv,rscl, &
@@ -2050,13 +2051,8 @@ Contains
 
     ! initialise stress tensor accumulators
 
-    strs1=0.0_wp
-    strs2=0.0_wp
-    strs3=0.0_wp
-    strs5=0.0_wp
-    strs6=0.0_wp
-    strs9=0.0_wp
-
+    stress_temp = 0.0_wp
+    
     ! global identity and type of iatm
 
     idi=config%ltg(iatm)
@@ -2674,12 +2670,19 @@ Contains
 
           ! add stress tensor
 
-          strs1 = strs1 + xxt(mm)*fx
-          strs2 = strs2 + xxt(mm)*fy
-          strs3 = strs3 + xxt(mm)*fz
-          strs5 = strs5 + yyt(mm)*fy
-          strs6 = strs6 + yyt(mm)*fz
-          strs9 = strs9 + zzt(mm)*fz
+          stress_temp_comp = calculate_stress( [xxt(mm), yyt(mm), zzt(mm)], [fx,fy,fz] )
+          stress_temp = stress_temp + stress_temp_comp
+
+          if (stats%collect_pp) then
+            block
+              integer :: global_id_j
+              global_id_j = config%ltg(jatm)
+              stats%pp_energy(iatm) = stats%pp_energy(iatm) + eng * 0.5_wp
+              stats%pp_energy(global_id_j) = stats%pp_energy(global_id_j) + eng * 0.5_wp
+              stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
+              stats%pp_stress(:, global_id_j) = stats%pp_stress(:, global_id_j) + stress_temp_comp * 0.5_wp
+            end block
+          end if
 
         End If
 
@@ -2695,15 +2698,7 @@ Contains
 
     ! complete stress tensor
 
-    stress(1) = stress(1) + strs1
-    stress(2) = stress(2) + strs2
-    stress(3) = stress(3) + strs3
-    stress(4) = stress(4) + strs2
-    stress(5) = stress(5) + strs5
-    stress(6) = stress(6) + strs6
-    stress(7) = stress(7) + strs3
-    stress(8) = stress(8) + strs6
-    stress(9) = stress(9) + strs9
+    stats%stress = stats%stress + stress_temp
 
   End Subroutine vdw_forces
 

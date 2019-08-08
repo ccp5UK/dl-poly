@@ -132,7 +132,7 @@ Contains
 
     call start_timer('Two-Body Init')
 
-    safe = .True. 
+    safe = .True.
     fail=0
 
     Allocate (xxt(1:neigh%max_list),yyt(1:neigh%max_list),zzt(1:neigh%max_list),rrt(1:neigh%max_list), Stat=fail)
@@ -151,12 +151,12 @@ Contains
       allocate(coul_coeffs(config%mxatms), stat=fail)
       if (fail>0) call error_alloc('coul_coeffs','two_body_forces')
       coul_coeffs = config%parts(:)%chge
-      
+
       if ( newjob ) then
-        
+
           ! Assume no VDW
           ewld%num_pots = 0
-          
+
           if ( ewld%vdw ) call ewald_vdw_count(ewld, vdws, reduced_VdW)
 
           allocate ( ewld%spme_data(0:ewld%num_pots), stat=fail )
@@ -186,12 +186,12 @@ Contains
             end do
 
           end if
-          
+
         newjob = .false.
 
       end if
-      
-      
+
+
     end if
 
     ! initialise energy and virial accumulators
@@ -283,22 +283,22 @@ Contains
     If (electro%key == ELECTROSTATIC_EWALD) Then
 
         call ewald_spme_forces(ewld,ewld%spme_data(0),electro,domain,config,comm, &
-          coul_coeffs,nstep,engcpe_rc,vircpe_rc,stats%stress)
+          & coul_coeffs,nstep,stats,engcpe_rc,vircpe_rc)
 
     End If
-   
+
 #ifdef CHRONO
     Call stop_timer('Long Range')
 #endif
 
     if (ewld%vdw) then
       call start_timer('SPME Order-n')
-      
+
       do ipot = 1, ewld%num_pots
 
         call start_timer('Long Range')
         call ewald_spme_forces(ewld,ewld%spme_data(ipot),electro,domain,config,comm, &
-          vdw_coeffs(:,ipot),nstep,engacc,viracc,stats%stress)
+          & vdw_coeffs(:,ipot),nstep,stats,engacc,viracc)
         call stop_timer('Long Range')
 
         engvdw_rc=engvdw_rc+engacc
@@ -356,15 +356,15 @@ Contains
 
         if ( .not. ewld%vdw ) then
 
-          Call vdw_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,vdws,config)
+          Call vdw_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats,neigh,vdws,config)
           engvdw=engvdw+engacc
           virvdw=virvdw+viracc
 
         else
           do ipot = 1, ewld%num_pots
 
-            Call ewald_real_forces_gen(ewld%alpha,ewld%spme_data(ipot),neigh,config,i, &
-              & vdw_coeffs(:,ipot),xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
+            Call ewald_real_forces_gen(ewld%alpha,ewld%spme_data(ipot),neigh,config,stats, &
+              & vdw_coeffs(:,ipot),i,xxt,yyt,zzt,rrt,engacc,viracc)
 
             engvdw_rl=engvdw_rl+engacc
             virvdw_rl=virvdw_rl+viracc
@@ -386,8 +386,8 @@ Contains
 
           ! calculate coulombic forces, Ewald sum - real space contribution
 
-          Call ewald_real_forces_coul(ewld%alpha,ewld%spme_data(0),neigh,config, &
-            & i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
+          Call ewald_real_forces_coul(ewld%alpha,ewld%spme_data(0),neigh,config,stats, &
+            & i,xxt,yyt,zzt,rrt,engacc,viracc)
 
           engcpe_rl=engcpe_rl+engacc
           vircpe_rl=vircpe_rl+viracc
@@ -436,8 +436,8 @@ Contains
 
           ! calculate coulombic forces, Ewald sum - real space contribution
 
-          Call ewald_real_forces_coul(ewld%alpha,ewld%spme_data(0),neigh,config, &
-            & i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
+          Call ewald_real_forces_coul(ewld%alpha,ewld%spme_data(0),neigh,config,stats, &
+            & i,xxt,yyt,zzt,rrt,engacc,viracc)
 
           engcpe_rl=engcpe_rl+engacc
           vircpe_rl=vircpe_rl+viracc
@@ -446,7 +446,7 @@ Contains
 
           ! distance dependant dielectric potential
 
-          Call coul_dddp_forces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,config)
+          Call coul_dddp_forces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats,neigh,config)
 
           engcpe_rl=engcpe_rl+engacc
           vircpe_rl=vircpe_rl+viracc
@@ -455,7 +455,7 @@ Contains
 
           ! coulombic 1/r potential with no truncation or damping
 
-          Call coul_cp_forces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,config)
+          Call coul_cp_forces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats,neigh,config)
 
           engcpe_rl=engcpe_rl+engacc
           vircpe_rl=vircpe_rl+viracc
@@ -464,7 +464,7 @@ Contains
 
           ! force-shifted coulomb potentials
 
-          Call coul_fscp_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,config)
+          Call coul_fscp_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats,neigh,electro,config)
 
           engcpe_rl=engcpe_rl+engacc
           vircpe_rl=vircpe_rl+viracc
@@ -473,7 +473,7 @@ Contains
 
           ! reaction field potential
 
-          Call coul_rfp_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,config)
+          Call coul_rfp_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats,neigh,electro,config)
 
           engcpe_rl=engcpe_rl+engacc
           vircpe_rl=vircpe_rl+viracc
@@ -636,7 +636,7 @@ Contains
           if (fail>0) call error_dealloc('vdw_coeffs','two_body_forces')
         end if
       end If
-      
+
       ! non-zero total system charge correction (for the whole system)
       ! ( Fuchs, Proc. R. Soc., A, 151, (585),1935 )
       If (Abs(config%sumchg) > 1.0e-6_wp) Then
@@ -704,10 +704,10 @@ Contains
     engcpe_fr = buffer(17)
     vircpe_fr = buffer(18)
     vircpe_dt = buffer(19)
-    engvdw_rl = buffer(20) 
-    engvdw_rc = buffer(21) 
-    virvdw_rl = buffer(22) 
-    virvdw_rc = buffer(23) 
+    engvdw_rl = buffer(20)
+    engvdw_rc = buffer(21)
+    virvdw_rl = buffer(22)
+    virvdw_rc = buffer(23)
 
 
     safe=(tmp < 0.5_wp)
@@ -750,6 +750,6 @@ Contains
 #ifdef CHRONO
     Call stop_timer('Two-Body Final')
 #endif
-    
+
   End Subroutine two_body_forces
 End Module two_body

@@ -29,10 +29,11 @@ Module ewald_spole
   Use constants,       Only : sqrpi,twopi,zero_plus,r4pie0
   Use timer,           Only : start_timer, stop_timer
   Use spme,            Only : spme_component
+  Use statistics,      Only : stats_type, calculate_stress
   Implicit None
 
   Private
-  
+
   Public ::  ewald_real_forces_coul, ewald_real_forces_gen
   Public ::  ewald_spme_forces
   Public ::  ewald_excl_forces, ewald_frzn_forces
@@ -46,8 +47,8 @@ Module ewald_spole
 
 Contains
 
-  Subroutine ewald_real_forces_coul(alpha,spme_datum,neigh,config,iatm,x_pos,y_pos,z_pos,mod_dr_ij, &
-    & engcpe_rl,vircpe_rl,stress)
+  Subroutine ewald_real_forces_coul(alpha,spme_datum,neigh,config,stats,iatm,x_pos,y_pos,z_pos,mod_dr_ij, &
+    & engcpe_rl,vircpe_rl)
 
     !!-----------------------------------------------------------------------
     !!
@@ -69,20 +70,20 @@ Contains
     Type( configuration_type ),                           Intent( InOut ) :: config
     Type( spme_component ),                               Intent( In    ) :: spme_datum
     Real( Kind = wp ),                                    Intent( In    ) :: alpha
-    Integer,                                              Intent( In    ) :: iatm                                         !! Current atom
-    Real( Kind = wp ),     Dimension( 1:neigh%max_list ), Intent( In    ) :: x_pos,y_pos,z_pos,mod_dr_ij                  !! Atoms positions (neighbours, not global) and inter-particle separations
-    Real( Kind = wp ),                                    Intent(   Out ) :: engcpe_rl,vircpe_rl                          !! Energy and virial for the Real component
-    Real( Kind = wp ),     Dimension( 1:9 ),              Intent( InOut ) :: stress                                       !! Stress tensor
+    Integer,                                              Intent( In    ) :: iatm                            !! Current atom
+    Real( Kind = wp ),     Dimension( 1:neigh%max_list ), Intent( In    ) :: x_pos,y_pos,z_pos,mod_dr_ij     !! Atoms positions (neighbours, not global) and inter-particle separations
+    Real( Kind = wp ),                                    Intent(   Out ) :: engcpe_rl,vircpe_rl             !! Energy and virial for the Real component
+    Type( stats_type ),                                   Intent( InOut ) :: stats                           !! Type containing stress and per-particle info
 
-    Real( Kind = wp )                                                     :: atom_coeffs_i, atom_coeffs_ij                !! Atom storage of coeffs !!Dimension(size(coeffs,1))
-    Real( Kind = wp ),     Dimension( 9 )                                 :: stress_temp                                  !! Tempeorary stress tensor
-    Real( Kind = wp ),     Dimension( 3 )                                 :: force_temp, force_temp_comp                  !! Temporary force vectors
-    Real( Kind = wp ),     Dimension( 3 )                                 :: pos_j                                        !! Position of ion j
+    Real( Kind = wp )                                                     :: atom_coeffs_i, atom_coeffs_ij   !! Atom storage of coeffs !!Dimension(size(coeffs,1))
+    Real( Kind = wp ),     Dimension( 9 )                                 :: stress_temp, stress_temp_comp   !! Tempeorary stress tensor
+    Real( Kind = wp ),     Dimension( 3 )                                 :: force_temp, force_temp_comp     !! Temporary force vectors
+    Real( Kind = wp ),     Dimension( 3 )                                 :: pos_j                           !! Position of ion j
     Real( Kind = wp ),     Dimension( 3 )                                 :: norm_pos_j
-    Real( Kind = wp )                                                     :: g_fac, e_comp                                !! g_p & d/dr[g_p]
-    Real( Kind = wp )                                                     :: erf_gamma                                    !! Q*g_p
-    Real( Kind = wp )                                                     :: prefac                                       !! Coeffs*inv_mod_r_ij**n
-    Real( Kind = wp )                                                     :: mod_r_ij, inv_mod_r_ij, alpha_r              !! Inter-particle distances
+    Real( Kind = wp )                                                     :: g_fac, e_comp                   !! g_p & d/dr[g_p]
+    Real( Kind = wp )                                                     :: erf_gamma                       !! Q*g_p
+    Real( Kind = wp )                                                     :: prefac                          !! Coeffs*inv_mod_r_ij**n
+    Real( Kind = wp )                                                     :: mod_r_ij, inv_mod_r_ij, alpha_r !! Inter-particle distances
     Integer                                                               :: global_id_i
     Integer                                                               :: m,jatm
 
@@ -92,7 +93,7 @@ Contains
     vircpe_rl=0.0_wp
     stress_temp = 0.0_wp
     force_temp = 0.0_wp
-    
+
     ! global identity of iatm
 
     global_id_i = config%ltg(iatm)
@@ -120,7 +121,7 @@ Contains
         pos_j = [x_pos(m),y_pos(m),z_pos(m)]
         alpha_r = mod_r_ij * alpha
         inv_mod_r_ij = 1.0_wp / mod_r_ij
-      
+
         ! Complete prefactor
         prefac = atom_coeffs_i*prefac*inv_mod_r_ij
 
@@ -139,11 +140,11 @@ Contains
 
         if (jatm <= config%natms .or. global_id_i < config%ltg(jatm)) then
           if (jatm <= config%natms) then
-            
+
             config%parts(jatm)%fxx=config%parts(jatm)%fxx-force_temp_comp(1)
             config%parts(jatm)%fyy=config%parts(jatm)%fyy-force_temp_comp(2)
             config%parts(jatm)%fzz=config%parts(jatm)%fzz-force_temp_comp(3)
-            
+
           end if
 
           ! calculate interaction energy
@@ -154,10 +155,15 @@ Contains
           vircpe_rl = vircpe_rl - erf_gamma*mod_r_ij
 
           ! calculate stress tensor
-
-          stress_temp(1:9:3) = stress_temp(1:9:3) + pos_j*force_temp_comp(1)
-          stress_temp(2:9:3) = stress_temp(2:9:3) + pos_j*force_temp_comp(2)
-          stress_temp(3:9:3) = stress_temp(3:9:3) + pos_j*force_temp_comp(3)
+          stress_temp_comp = calculate_stress(pos_j, force_temp_comp)
+          stress_temp = stress_temp + stress_temp_comp
+          if (stats%collect_pp) then
+            stats%pp_energy(iatm) = stats%pp_energy(iatm) + e_comp * 0.5_wp
+            stats%pp_energy(jatm) = stats%pp_energy(jatm) + e_comp * 0.5_wp
+            stats%pp_stress(:,iatm) = stats%pp_stress(:,iatm) + stress_temp_comp
+            stats%pp_stress(:,jatm) = stats%pp_stress(:,jatm) + stress_temp_comp
+          end if
+          
         end if
 
       End If
@@ -172,12 +178,12 @@ Contains
 
     ! complete stress tensor
 
-    stress = stress + stress_temp
+    stats%stress = stats%stress + stress_temp
 
   End Subroutine ewald_real_forces_coul
-  
-  Subroutine ewald_real_forces_gen(alpha,spme_datum,neigh,config,iatm,coeffs,x_pos,y_pos,z_pos,mod_dr_ij, &
-    & engcpe_rl,vircpe_rl,stress)
+
+  Subroutine ewald_real_forces_gen(alpha,spme_datum,neigh,config,stats,coeffs,iatm,x_pos,y_pos,z_pos,mod_dr_ij, &
+    & engcpe_rl,vircpe_rl)
 
     !!-----------------------------------------------------------------------
     !!
@@ -199,21 +205,21 @@ Contains
     Type( configuration_type ),                           Intent( InOut ) :: config
     Type( spme_component ),                               Intent( In    ) :: spme_datum
     Real( Kind = wp ),                                    Intent( In    ) :: alpha
-    Integer,                                              Intent( In    ) :: iatm                                         !! Current atom
-    Real( Kind = wp ),     Dimension( : ),                Intent( In    ) :: coeffs                                       !! Coulomb charges/ multipole coeffs, etc.
-    Real( Kind = wp ),     Dimension( 1:neigh%max_list ), Intent( In    ) :: x_pos,y_pos,z_pos,mod_dr_ij                  !! Atoms positions (neighbours, not global) and inter-particle separations
-    Real( Kind = wp ),                                    Intent(   Out ) :: engcpe_rl,vircpe_rl                          !! Energy and virial for the Real component
-    Real( Kind = wp ),     Dimension( 1:9 ),              Intent( InOut ) :: stress                                       !! Stress tensor
+    Integer,                                              Intent( In    ) :: iatm                            !! Current atom
+    Real( Kind = wp ),     Dimension( : ),                Intent( In    ) :: coeffs                          !! Coulomb charges/ multipole coeffs, etc.
+    Real( Kind = wp ),     Dimension( 1:neigh%max_list ), Intent( In    ) :: x_pos,y_pos,z_pos,mod_dr_ij     !! Atoms positions (neighbours, not global) and inter-particle separations
+    Real( Kind = wp ),                                    Intent(   Out ) :: engcpe_rl,vircpe_rl             !! Energy and virial for the Real component
+    Type( stats_type ),                                   Intent( InOut ) :: stats                           !! Type containing stress and per-particle info
 
-    Real( Kind = wp )                                                     :: atom_coeffs_i, atom_coeffs_ij                !! Atom storage of coeffs !!Dimension(size(coeffs,1))
-    Real( Kind = wp ),     Dimension( 9 )                                 :: stress_temp                                  !! Tempeorary stress tensor
-    Real( Kind = wp ),     Dimension( 3 )                                 :: force_temp, force_temp_comp                  !! Temporary force vectors
-    Real( Kind = wp ),     Dimension( 3 )                                 :: pos_j                                        !! Position of ion j
+    Real( Kind = wp )                                                     :: atom_coeffs_i, atom_coeffs_ij   !! Atom storage of coeffs !!Dimension(size(coeffs,1))
+    Real( Kind = wp ),     Dimension( 9 )                                 :: stress_temp, stress_temp_comp   !! Tempeorary stress tensor
+    Real( Kind = wp ),     Dimension( 3 )                                 :: force_temp, force_temp_comp     !! Temporary force vectors
+    Real( Kind = wp ),     Dimension( 3 )                                 :: pos_j                           !! Position of ion j
     Real( Kind = wp ),     Dimension( 3 )                                 :: norm_pos_j
-    Real( Kind = wp )                                                     :: g_fac, e_comp                                !! g_p & d/dr[g_p]
-    Real( Kind = wp )                                                     :: erf_gamma                                    !! Q*g_p
-    Real( Kind = wp )                                                     :: prefac                                       !! Coeffs*inv_mod_r_ij**n
-    Real( Kind = wp )                                                     :: mod_r_ij, inv_mod_r_ij, alpha_r              !! Inter-particle distances
+    Real( Kind = wp )                                                     :: g_fac, e_comp                   !! g_p & d/dr[g_p]
+    Real( Kind = wp )                                                     :: erf_gamma                       !! Q*g_p
+    Real( Kind = wp )                                                     :: prefac                          !! Coeffs*inv_mod_r_ij**n
+    Real( Kind = wp )                                                     :: mod_r_ij, inv_mod_r_ij, alpha_r !! Inter-particle distances
     Integer                                                               :: global_id_i
     Integer                                                               :: m,jatm
 
@@ -223,7 +229,7 @@ Contains
     vircpe_rl=0.0_wp
     stress_temp = 0.0_wp
     force_temp = 0.0_wp
-    
+
     ! global identity of iatm
 
     global_id_i = config%ltg(iatm)
@@ -251,7 +257,7 @@ Contains
         pos_j = [x_pos(m),y_pos(m),z_pos(m)]
         alpha_r = mod_r_ij * alpha
         inv_mod_r_ij = 1.0_wp / mod_r_ij
-      
+
         ! Complete prefactor
         prefac = atom_coeffs_i*prefac*inv_mod_r_ij**spme_datum%pot_order
 
@@ -273,11 +279,11 @@ Contains
 
         if (jatm <= config%natms .or. global_id_i < config%ltg(jatm)) then
           if (jatm <= config%natms) then
-            
+
             config%parts(jatm)%fxx=config%parts(jatm)%fxx-force_temp_comp(1)
             config%parts(jatm)%fyy=config%parts(jatm)%fyy-force_temp_comp(2)
             config%parts(jatm)%fzz=config%parts(jatm)%fzz-force_temp_comp(3)
-            
+
           end if
 
           ! calculate interaction energy
@@ -288,15 +294,21 @@ Contains
           vircpe_rl = vircpe_rl - erf_gamma*mod_r_ij
 
           ! calculate stress tensor
+          stress_temp_comp = calculate_stress(pos_j, force_temp_comp)
+          stress_temp = stress_temp + stress_temp_comp
 
-          stress_temp(1:9:3) = stress_temp(1:9:3) + pos_j*force_temp_comp(1)
-          stress_temp(2:9:3) = stress_temp(2:9:3) + pos_j*force_temp_comp(2)
-          stress_temp(3:9:3) = stress_temp(3:9:3) + pos_j*force_temp_comp(3)
+          if (stats%collect_pp) then
+            stats%pp_energy(iatm) = stats%pp_energy(iatm) + e_comp * 0.5_wp
+            stats%pp_energy(jatm) = stats%pp_energy(jatm) + e_comp * 0.5_wp
+            stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
+            stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
+          end if
+
         end if
 
       end if
 
-    end do
+    End Do
 
     ! load back forces
 
@@ -306,11 +318,12 @@ Contains
 
     ! complete stress tensor
 
-    stress = stress + stress_temp
+    stats%stress = stats%stress + stress_temp
 
   End Subroutine ewald_real_forces_gen
 
-  subroutine ewald_spme_forces(ewld,spme_datum,electro,domain,config,comm,coeffs,nstep,engcpe_rc,vircpe_rc,stress)
+  subroutine ewald_spme_forces(ewld,spme_datum,electro,domain,config,comm,coeffs,nstep,stats, &
+    & engcpe_rc,vircpe_rc)
     !!----------------------------------------------------------------------!
     !!
     !! dl_poly_4 subroutine for calculating coulombic energy and force terms
@@ -330,42 +343,43 @@ Contains
 
     implicit none
 
-!!! Inputs and Outputs
-    type( ewald_type ),                                  intent( inout ) :: ewld
-    type( spme_component ),                                   intent( inout ) :: spme_datum
-    type( electrostatic_type ),                               intent( in    ) :: electro
-    type( domains_type ),                                     intent( in    ) :: domain
-    type( configuration_type ),                               intent( inout ) :: config
-    type( comms_type ),                                       intent( inout ) :: comm
-    real( kind = wp ),     dimension(:),                      intent( in    ) :: coeffs              !! Coefficients such as charges or pot params
-    integer,                                                  intent( in    ) :: nstep               !! Number of steps taken since calculation start
-    real( kind = wp ),                                        intent(   out ) :: engcpe_rc,vircpe_rc !! Energy and virial of Coulomb interaction
-    real( kind = wp ),     dimension(1:9),                    intent( inout ) :: stress              !! Output stress tensor
+    ! Inputs and Outputs
+    type( ewald_type ),                intent( inout ) :: ewld
+    type( spme_component ),            intent( inout ) :: spme_datum
+    type( electrostatic_type ),        intent( in    ) :: electro
+    type( domains_type ),              intent( in    ) :: domain
+    type( configuration_type ),        intent( inout ) :: config
+    type( comms_type ),                intent( inout ) :: comm
+    real( kind = wp ), dimension( : ), intent( in    ) :: coeffs              !! Coefficients such as charges or pot params
+    type( stats_type ),                intent( inout ) :: stats               !! Type containing details of stress and per-particle
+    integer,                           intent( in    ) :: nstep               !! Number of steps taken since calculation start
+    real( kind = wp ),                 intent(   out ) :: engcpe_rc,vircpe_rc !! Energy and virial of Coulomb interaction
 
-    integer,               dimension( : ), allocatable                        :: to_calc             !! List of points to calculate
-    logical                                                                   :: llspl               !! Unknown? Does this want to be saved?
-    integer                                                                   :: i, dim              !! Loop counters
-    real( kind = wp ),     dimension(9)                                       :: rcell               !! Reciprocal lattice vectors
+    integer,          dimension( : ),    allocatable :: to_calc             !! List of points to calculate
+    logical                                           :: llspl               !! Unknown? Does this want to be saved?
+    integer                                           :: i, dim              !! Loop counters
+    real( kind = wp ), dimension(9)                   :: rcell               !! Reciprocal lattice vectors
 
-!!! Data constants and intermediate variables
+    ! Data constants and intermediate variables
     real( kind = wp ), dimension(9) :: stress_temp                                         !! Temporary stress tensor
     real( kind = wp )  :: det                                                              !! Determinant of inverse matrix
     real( kind = wp )  :: rvolm                                                            !! Reciprocal volume
     real( kind = wp )  :: scale                                                            !! Coulomb factor / epsq?
     real( kind = wp )  :: eng                                                              !! Energy contribution
 
+    real( kind = wp ), dimension( : ),   allocatable :: Q_abc           !! Energies
+    real( kind = wp ), dimension( :,: ), allocatable :: F_abc           !! Forces
+    real( kind = wp ), dimension( :,: ), allocatable :: S_abc           !! Stress
+
     real( kind = wp ),    dimension( :,:,: ), allocatable, save :: charge_grid
     complex( kind = wp ), dimension( :,:,: ), allocatable, save :: potential_grid
     complex( kind = wp ), dimension( :,:,: ), allocatable, save :: stress_grid
-    real( kind = wp ),    dimension( : ),     allocatable       :: Q_abc                   !! Per-particle Energies
-    real( kind = wp ),    dimension( :,: ),   allocatable       :: F_abc                   !!     ""       Forces
-    real( kind = wp ),    dimension( :,:,:),  allocatable       :: S_abc                   !!     ""       Stress
     integer, dimension(4) :: fail                                                          !! Ierr
-    logical   :: per_part_step
     logical, save :: newjob = .true.
 
+    if ( all ( abs(coeffs) < zero_plus )) return
+
     call start_timer('Setup')
-    per_part_step = mod(nstep,ewld%pp_write_freq) == 0 .and. ewld%pp_write_freq > 0
 
     if (newjob) then
       call ewald_spme_init(domain, config%mxatms, comm, ewld%kspace, &
@@ -373,21 +387,20 @@ Contains
       newjob = .false.
     end if
 
-    if ( all ( abs(coeffs) < zero_plus )) return
 
     fail=0
     allocate(recip_coords (3,config%mxatms), stat=fail(1))
     allocate(recip_indices(3,config%mxatms), stat=fail(2))
     allocate(to_calc      (0:config%mxatms), stat=fail(3))
-    
+
     ! If not per-particle only need global sum, else need everything
-    if (.not. per_part_step) then
-      allocate(Q_abc(0:0), F_abc(3,config%natms), S_abc(3,3,0:0), stat=fail(4))
+    if (.not. stats%collect_pp) then
+      allocate(Q_abc(0:0), F_abc(3,config%natms), S_abc(9,0:0), stat=fail(4))
     else
-      allocate(Q_abc(0:config%natms), F_abc(3,config%natms), S_abc(3,3,0:config%natms), stat=fail(4))
+      allocate(Q_abc(0:config%natms), F_abc(3,config%natms), S_abc(9,0:config%natms), stat=fail(4))
     end if
     if (any(fail > 0)) call error_alloc('output_arrays','ewald_spme_forces')
-    
+
     ! Initialise accumulator
 
     to_calc(0) = 0
@@ -475,16 +488,16 @@ Contains
     call start_timer('Charge')
     call spme_construct_charge_array(to_calc(0),ewld,to_calc(1:),recip_indices, electro, coeffs, charge_grid)
     call stop_timer('Charge')
-    if (.not.per_part_step .or. spme_datum%pot_order /= 1) then
+    if (.not.stats%collect_pp .or. spme_datum%pot_order /= 1) then
 
       ! If we don't need per-particle data, we can use the old method of getting the stress (cheaper)
       call start_timer('Potential')
       call spme_construct_potential_grid(ewld, rcell, charge_grid, spme_datum, &
-        & potential_kernel, potential_grid, s_abc(:,:,0))
+        & potential_kernel, potential_grid, s_abc(:,0))
       call stop_timer('Potential')
       call start_timer('ForceEnergy')
       call spme_calc_force_energy(ewld, electro, comm, domain, config, coeffs, &
-        & rcell, recip_indices, potential_grid, per_part_step, q_abc, f_abc)
+        & rcell, recip_indices, potential_grid, stats%collect_pp, q_abc, f_abc)
       call stop_timer('ForceEnergy')
     else
 
@@ -494,7 +507,7 @@ Contains
         & stress_kernel, stress_grid)
 
       call spme_calc_force_energy(ewld, electro, comm, domain, config, coeffs, &
-        & rcell, recip_indices, potential_grid, per_part_step, q_abc, f_abc)
+        & rcell, recip_indices, potential_grid, stats%collect_pp, q_abc, f_abc)
       call spme_calc_stress(ewld, electro, comm, domain, config, coeffs, &
         & rcell, recip_indices, stress_grid, s_abc)
 
@@ -505,8 +518,6 @@ Contains
     q_abc = q_abc * scale / real(comm%mxnode)
     f_abc = f_abc * scale * 2.0_wp
     s_abc = s_abc * scale / real(comm%mxnode)
-
-    if (per_part_step) call write_per_part_contribs(config, comm, q_abc, f_abc, s_abc, nstep, spme_datum%pot_order)
 
     eng = Q_abc(0)
 
@@ -524,7 +535,7 @@ Contains
 
     ! Put accumulated stress tensor into stress temp to save on cache problems and translate to linear regime
 
-    stress_temp = reshape(s_abc(:,:,0), [9])
+    stress_temp = s_abc(:,0)
 
     ! as only looped over local stuff, we need to gsum stress
 
@@ -533,8 +544,14 @@ Contains
     ! scale strs and distribute per node
 
     stress_temp(1:9:4) = stress_temp(1:9:4) + eng
-    stress = stress + stress_temp
+    stats%stress = stats%stress + stress_temp
     vircpe_rc = -sum(stress_temp(1:9:4))
+
+    if (stats%collect_pp) then
+      stats%pp_energy = stats%pp_energy + Q_abc(1:)
+      stats%pp_stress = stats%pp_stress + S_abc(:, 1:)
+    end if
+
 
     deallocate (recip_indices, stat=fail(1))
     ! deallocate (ewld%bspline%derivs, stat=fail(2))
@@ -1164,17 +1181,17 @@ Contains
     complex( Kind = wp ),    Dimension( :,:,: ), Allocatable, Intent (   out ) :: potential_grid
     complex( Kind = wp ),    Dimension( :,:,: ), Allocatable, Intent (   out ) :: stress_grid
     Integer, dimension(4) :: fail
-    
+
     fail = 0
 
     call setup_kspace(kspace_in, domain, (kspace_in%k_vec_dim))
-    
+
 !!! begin cardinal b-splines set-up
 
     bspline_in%num_deriv = 2
     allocate(bspline_in%derivs(3,0:bspline_in%num_deriv,1:bspline_in%num_splines,1:max_atoms), stat=fail(1))
     if (fail(1) > 0) call error_alloc('bspline_in%derivs','ewald_spme_init')
-    
+
     ! calculate the global b-spline coefficients
     call bspline_coeffs_gen(kspace_in, bspline_in)
 
@@ -1290,12 +1307,12 @@ Contains
     use parallel_fft, only : pfft
     implicit none
 
-    type( ewald_type ),                Intent ( in    )           :: ewld
-    type( spme_component ),                 Intent ( in    )           :: spme_datum
-    Real( Kind = wp ),    Dimension(3,3),   Intent (   out ), optional :: stress_contrib        !! SPME contribution to the stress
-    complex( Kind = wp ), Dimension(:,:,:), Intent (   out )           :: potential_grid
-    Real( Kind = wp ),    Dimension(:,:,:), Intent ( in    )           :: charge_grid
-    Real( Kind = wp ),    Dimension(9),     Intent ( in    )           :: recip_cell            !! Reciprocal lattice vectors
+    type( ewald_type ),                     Intent ( In    )           :: ewld
+    type( spme_component ),                 Intent ( In    )           :: spme_datum
+    Real( Kind = wp ),    Dimension(9),     Intent (   Out ), optional :: stress_contrib        !! SPME contribution to the stress
+    complex( Kind = wp ), Dimension(:,:,:), Intent (   Out )           :: potential_grid
+    Real( Kind = wp ),    Dimension(:,:,:), Intent ( In    )           :: charge_grid
+    Real( Kind = wp ),    Dimension(9),     Intent ( In    )           :: recip_cell            !! Reciprocal lattice vectors
     complex ( Kind = wp ),    external                                 :: kernel                !! Core function to FT
     Real( Kind = wp ),    Dimension(10)                                :: recip_cell_properties !! bbb(1 to 3) - lengths of cell vectors: a(x,y,z) , b(x,y,z) , c(x,y,z)
     !! bbb(4 to 6) - cosines of cell angles: gamma(a,b) , beta(a,c) , alpha(b,c)
@@ -1359,7 +1376,7 @@ Contains
         do j_local=1,ewld%kspace%block_x
           j=ewld%kspace%index_x(j_local)
 
-          jj = j-1                                                               
+          jj = j-1
           if (2*jj > ewld%kspace%k_vec_dim(1)) jj = jj - ewld%kspace%k_vec_dim(1)
 
           recip_pos(:,1) = recip_pos(:,2) + Real(jj,wp)*recip_cell(1:9:3)
@@ -1397,7 +1414,7 @@ Contains
       end do
     end do
 
-    if (present(stress_contrib)) stress_contrib = stress_temp
+    if (present(stress_contrib)) stress_contrib = reshape(stress_temp, [9])
 
     call pfft(potential_grid,pfft_work,ewld%kspace%context,-1)
 
@@ -1447,7 +1464,7 @@ Contains
 
     Real( Kind = wp ),    Dimension( ewld%bspline%num_splines )   :: bspline_d1_x, bspline_d1_y, bspline_d1_z,&
       &                                                              bspline_d0_x, bspline_d0_y, bspline_d0_z
-    
+
     Integer, Dimension( 3, 2 ), save :: extended_domain                                   !! Size of extended grid with halo splines
     Integer, Dimension( 3, 2 )       :: spline_bounds
 
@@ -1500,16 +1517,16 @@ Contains
       bspline_d0_x = ewld%bspline%derivs(1,0,:,i)
       bspline_d0_y = ewld%bspline%derivs(2,0,:,i)
       bspline_d0_z = ewld%bspline%derivs(3,0,:,i)
-      
+
       bspline_d1_x = ewld%bspline%derivs(1,1,:,i)
       bspline_d1_y = ewld%bspline%derivs(2,1,:,i)
       bspline_d1_z = ewld%bspline%derivs(3,1,:,i)
-      
+
       do l = 1, ewld%bspline%num_splines
         ll = recip_indices(3,i) + 1 - ewld%bspline%num_splines + l
 
         energy_temp(3)  = atom_coeffs * bspline_d0_z(l)
-        
+
         force_temp(1,3) = atom_coeffs * bspline_d0_z(l)
         force_temp(2,3) = atom_coeffs * bspline_d0_z(l)
         force_temp(3,3) = atom_coeffs * bspline_d1_z(l)
@@ -1518,7 +1535,7 @@ Contains
           kk = recip_indices(2,i) + 1  - ewld%bspline%num_splines + k
 
           energy_temp(2)  = energy_temp(3) * bspline_d0_y(k)
-          
+
           force_temp(1,2) = force_temp(1,3) * bspline_d0_y(k)
           force_temp(2,2) = force_temp(2,3) * bspline_d1_y(k)
           force_temp(3,2) = force_temp(3,3) * bspline_d0_y(k)
@@ -1581,7 +1598,7 @@ Contains
     type( domains_type ),                      Intent ( in    ) :: domain
     type( configuration_type ),                Intent ( in    ) :: config
 
-    Real( Kind = wp ),    Dimension( :,:,0: ), Intent (   out ) :: stress_out              !! Output stress
+    Real( Kind = wp ),    Dimension( :,0: ),   Intent (   out ) :: stress_out              !! Output stress
     complex( Kind = wp ), Dimension( :,:,: ),  Intent ( in    ) :: stress_grid             !! Grid containing back FT'd stress_contrib
     Real( Kind = wp ),    Dimension( : ),      Intent ( in    ) :: coeffs                  !! Coefficients such as charges or potentials
     Real( Kind = wp ),    Dimension( 9 ),      Intent ( in    ) :: recip_cell              !! Reciprocal lattice vectors
@@ -1630,7 +1647,7 @@ Contains
       & extended_domain(1,2), extended_domain(2,2), extended_domain(3,2), extended_stress_grid, domain, comm  )
 
     ! Zero accumulator
-    stress_out(:,:,0) = 0.0_wp
+    stress_out(:,0) = 0.0_wp
 
     ! Calculate per-particle contributions
 
@@ -1687,8 +1704,8 @@ Contains
         end do
       end do
 
-      stress_out(:,:,0) = stress_out(:,:,0) + stress_temp(:,:,0)
-      stress_out(:,:,i) = stress_temp(:,:,0)
+      stress_out(:,0) = stress_out(:,0) + reshape(stress_temp(:,:,0), [9])
+      stress_out(:,i) = reshape(stress_temp(:,:,0), [9])
 
     end do atom
 
@@ -1742,140 +1759,9 @@ Contains
     Real ( Kind = wp ) :: x
 
     energy = f_p(pi_m_over_a,pot_order)
-    stress_kernel = B_m * pot * f_p_d(pi_m_over_a, energy, pot_order) !* pi / (sqrt(mod_kvec_2)*conv_factor)
+    stress_kernel = B_m * pot * f_p_d(pi_m_over_a, energy, pot_order)
 
   end function stress_kernel
-
-  subroutine write_per_part_contribs(config, comm, energies, forces, stresses, nstep, pot_ref)
-    !!----------------------------------------------------------------------!
-    !!
-    !! Write out per-particle contributions to energy, force, stress, etc
-    !!
-    !! copyright - daresbury laboratory
-    !! author    - j.s.wilkins august 2018
-    !!
-    !!----------------------------------------------------------------------!
-#ifdef SERIAL
-    Use mpi_api,       only : mpi_offset_Kind, mpi_mode_wronly, mpi_info_null, mpi_mode_create, mpi_comm_self
-#else
-    Use mpi,       only : mpi_offset_Kind, mpi_mode_wronly, mpi_info_null, mpi_mode_create, mpi_comm_self
-#endif
-    Use io, only : io_type, io_get_parameters, io_set_parameters, io_init, io_open, io_close, &
-      & io_finalize, io_write_sorted_file, io_base_comm_not_set, io_allocation_error, &
-      & io_unknown_write_option, io_unknown_write_level, io_write_sorted_mpiio, io_delete, io_write_batch
-    Use io, only : io_histord, io_restart, io_history
-    Use comms, only : gsync, gsum
-
-    implicit none
-    Type( configuration_type ),           Intent ( in    )  :: config    !! Atom details
-    Type( comms_type ),                   Intent ( inout )  :: comm      !! Communicator
-    Real( Kind = wp ), Dimension(0:),     Intent ( in    )  :: energies  !! Per-particle energies
-    Real( Kind = wp ), Dimension(:,1:),   Intent ( in    )  :: forces    !!     ""       forces
-    Real( Kind = wp ), Dimension(:,:,0:), Intent ( in    )  :: stresses  !!     ""       stresses
-    Integer,                              Intent ( in    )  :: nstep     !! Steps since calculation start
-    Integer,                              Intent ( in    )  :: pot_ref
-
-
-    Type( io_type )  :: my_io                              !! Use our own IO job for now because passing through will be hell
-
-    Real( Kind = wp ), Dimension(:), allocatable :: dummy !! Don't like this, but quick cheat?
-
-    Integer, Parameter                                     :: record_size = 73 !! default record size (apparently)
-    Integer( Kind = mpi_offset_Kind )                      :: rec_mpi_io
-    Integer                                                :: energy_force_handle !! File handles
-    Integer                                                :: io_write !! Write state
-    Integer                                                :: batsz
-    character(len=record_size)                             :: record
-    character, Dimension(record_size,10)                   :: buffer
-    character                                              :: lf
-    character( len = 40 )                                  :: filename
-    Integer                                                :: i, jj
-    Integer                                                :: ierr
-
-    call gsync(comm)
-
-    ! Force MPIIO write for now
-    io_write = 0
-    ! Call io_get_parameters( user_method_write      = io_write )
-    Call io_get_parameters( my_io, user_buffer_size_write = batsz, user_line_feed = lf )
-
-    ! Write current time-step to character string
-    allocate(dummy(config%natms), stat=ierr)
-    if (ierr .ne. 0) call error_alloc('dummy','write_per_part_contribs')
-    dummy = 0.0_wp
-
-    write(filename,'("PPCONT",2("_",i0))') pot_ref, nstep
-
-    call io_init( my_io, record_size )
-
-    rec_mpi_io = int(0,mpi_offset_Kind)
-    jj=0
-    if (comm%idnode == 0) then
-
-      call io_set_parameters( my_io, user_comm = mpi_comm_self )
-      call io_delete( my_io, filename, comm ) ! sort existence issues
-      call io_open( my_io, io_write, mpi_comm_self, trim(filename), mpi_mode_wronly + mpi_mode_create, energy_force_handle )
-
-      jj=jj+1
-      Write(record, Fmt='(a72,a1)') "Energy and force contributions on a per-particle basis",lf
-      buffer(:,jj) = [(record(i:i),i=1,record_size)]
-      Write(record, Fmt='(a72,a1)') config%cfgname(1:72),lf
-      buffer(:,jj) = [(record(i:i),i=1,record_size)]
-      jj=jj+1
-      Write(record, Fmt='(3i10,42X,a1)') config%imcon,config%megatm,nstep,lf
-      buffer(:,jj) = [(record(i:i),i=1,record_size)]
-
-      If (config%imcon > 0) Then
-        Do i = 0, 2
-          jj=jj+1
-          Write(record, Fmt='(3f20.10,a12,a1)') &
-            config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
-          buffer(:,jj) = [(record(i:i),i=1,record_size)]
-        End Do
-      End If
-
-      call io_write_batch( my_io, energy_force_handle, rec_mpi_io, jj, buffer )
-
-      Call io_close( my_io, energy_force_handle )
-
-    end if
-
-    call gsync(comm)
-
-    call io_set_parameters( my_io, user_comm = comm%comm )
-    call io_open( my_io, io_write, comm%comm, trim(filename), mpi_mode_wronly, energy_force_handle ) ! Io sorted mpiio, per-particle contrib
-
-    rec_mpi_io = int(jj,mpi_offset_Kind)
-    ! Only write E&F (r/v in write_sorted...) hence 1
-    ! Need to skip 0th element (accumulator/total)
-    call io_write_sorted_file( my_io, energy_force_handle, 2, io_history, rec_mpi_io, config%natms,      &
-      config%ltg, config%atmnam, dummy, dummy, energies(1:config%natms), &
-      forces(1,1:config%natms), forces(2,1:config%natms), forces(3,1:config%natms), &
-      & stresses(1,1,1:config%natms), stresses(2,2,1:config%natms), stresses(3,3,1:config%natms), &
-      & stresses(1,2,1:config%natms), stresses(1,3,1:config%natms), stresses(2,3,1:config%natms), ierr)
-
-    if ( ierr /= 0 ) then
-      select case( ierr )
-      case( io_base_comm_not_set )
-        call error( 1050 )
-      case( io_allocation_error )
-        call error( 1053 )
-      case( io_unknown_write_option )
-        call error( 1056 )
-      case( io_unknown_write_level )
-        call error( 1059 )
-      end select
-    end if
-    call io_close( my_io, energy_force_handle )
-
-    call gsync(comm)
-
-    call io_finalize(my_io)
-
-    deallocate(dummy, stat=ierr)
-    if ( ierr > 0 ) call error_dealloc('dummy','write_per_part_contribs')
-
-  end subroutine write_per_part_contribs
 
   function f_p(x, pot_order)
     !!----------------------------------------------------------------------!
@@ -1906,7 +1792,7 @@ Contains
       else
         f_p = 0.0_wp
       end if
-      
+
     case (2)
       if ( x > 1.0e-6_wp ) then
         f_p = f_2(x)
@@ -1922,7 +1808,7 @@ Contains
      case (:0)
        call error(0,'Invalid pot order in f_p')
     case default
-      
+
       x_2 = x**2
       exp_xsq = exp( -x_2 )
       p_work = 2 - pot_order
@@ -1979,7 +1865,7 @@ Contains
 
       f_p = 2.0_wp * x**(pot_order-3) * calc_inv_gamma_1_2(pot_order) * f_p
     end select
-    
+
   end function f_p
 
   function f_p_d(x, energy, pot_order)
@@ -2034,7 +1920,7 @@ Contains
     case (:0)
       call error(0,'Invalid pot order in g_p')
     case default
-      
+
       x_2 = x**2
 
       if (mod(pot_order,2) == 0) then !Even orders
@@ -2066,7 +1952,7 @@ Contains
 
       g_p = g_p
     end select
-  
+
   end function g_p
 
   function g_p_d(x, pot_order)

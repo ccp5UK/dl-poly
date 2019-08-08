@@ -10,7 +10,7 @@ Module drivers
   Use parse, Only : strip_blanks,lower_case
   Use langevin, Only : langevin_forces
 
-  Use errors_warnings, Only : error,warning,info 
+  Use errors_warnings, Only : error,warning,info
 
   Use minimise, Only : minimise_type,minimise_relax,zero_k_optimise
   Use two_body, Only : two_body_forces
@@ -26,7 +26,7 @@ Module drivers
   Use rsds, Only : rsd_write,rsd_type
   Use trajectory, Only : trajectory_type, trajectory_write,read_history
   Use system, Only : system_revive
-  Use build_excl, Only : build_excl_intra 
+  Use build_excl, Only : build_excl_intra
   Use build_book, Only : build_book_intra
   Use thermostat, Only : thermostat_type, &
     ENS_NVE, ENS_NVT_EVANS, ENS_NVT_LANGEVIN,  &
@@ -51,7 +51,7 @@ Module drivers
   Use npt_langevin, Only : npt_l0_vv,npt_l1_vv
   Use npt_mtk, Only : npt_m0_vv,npt_m1_vv
   Use npt_nose_hoover, Only : npt_h0_vv,npt_h1_vv
-  Use nve, Only : nve_0_vv, nve_1_vv 
+  Use nve, Only : nve_0_vv, nve_1_vv
   Use timer, Only  : timer_type, time_elapsed,start_timer,stop_timer
   Use poisson, Only : poisson_type
   Use constraints, Only : constraints_type, constraints_quench
@@ -120,7 +120,7 @@ Module drivers
   Use rdfs, Only : rdf_type
   Use z_density, Only : z_density_type
   Use statistics, Only : stats_type,statistics_result,statistics_collect, &
-    statistics_connect_set,statistics_connect_frames
+    statistics_connect_set,statistics_connect_frames,write_per_part_contribs,calculate_heat_flux
   Use greenkubo, Only : greenkubo_type,vaf_collect,vaf_write
 
   ! MSD MODULE
@@ -1388,12 +1388,13 @@ Contains
     Type( msd_type ), Intent( InOut ) :: msd_data
     Type( tersoff_type), Intent( InOut ) :: tersoffs
     Type( tethers_type), Intent( InOut ) :: tether
-    Type( threebody_type ), Intent( InOut ) :: threebody 
+    Type( threebody_type ), Intent( InOut ) :: threebody
     Type( vdw_type ), Intent( InOut ) :: vdws
     Type( comms_type )    ,   Intent( InOut ) :: comm
     Type( development_type ), Intent( InOut ) :: devel
-    Type( metal_type ), Intent( InOut ) :: met 
+    Type( metal_type ), Intent( InOut ) :: met
 
+    Integer                 :: heat_flux_out
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
@@ -1496,9 +1497,14 @@ Contains
         ! Refresh mappings
 
         Call w_refresh_mappings(cnfig,flow,cshell,cons,pmf,stat,msd_data,bond,angle, &
-          dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data,ewld,green,minim,thermo,electro,comm)        
+          dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data,ewld,green,minim,thermo,electro,comm)
 
       End If ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
+
+      ! If system is to write per-particle data
+      If (stat%require_pp .and. Mod(flow%step, stat%intsta) == 0) then
+        call stat%allocate_per_particle_arrays(cnfig%natms)
+      end If
 
       ! Evaluate forces
 
@@ -1559,7 +1565,21 @@ Contains
 
       End If ! DO THAT ONLY IF 0<flow%step<=flow%run_steps AND THIS IS AN OLD JOB (flow%newjob=.false.)
 
-      1000 Continue ! Escape forces evaluation at t=0 when flow%step=flow%run_steps=0 and flow%newjob=.false.
+      ! If system has written per-particle data
+      If (stat%collect_pp) then
+        if (flow%heat_flux .and. comm%idnode == 0) then
+          Open(Newunit=heat_flux_out, File = 'HEATFLUX', Position = 'append')
+          Write(heat_flux_out, *) flow%step, stat%stptmp, cnfig%volm, calculate_heat_flux(stat, cnfig)
+          Close(heat_flux_out)
+        end If
+        if (flow%write_per_particle) then
+          call write_per_part_contribs(cnfig, comm, stat%pp_energy, stat%pp_stress, flow%step)
+        end if
+
+        call stat%deallocate_per_particle_arrays()
+      end If
+
+      1000  Continue ! Escape forces evaluation at t=0 when flow%step=flow%run_steps=0 and flow%newjob=.false.
 
       ! Refresh output
 

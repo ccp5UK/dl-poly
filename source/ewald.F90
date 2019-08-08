@@ -41,9 +41,6 @@ Module ewald
     !> FFT and KSpace info container
     Type( kspace_type ), Public :: kspace
 
-    !> Frequency of writing per-particle data
-    Integer, Public :: pp_write_freq = -1
-
     !> Ewald convergence parameter or Coulomb damping parameter (A^-1)
     Real( Kind = wp ), Public :: alpha
 
