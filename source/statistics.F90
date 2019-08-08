@@ -2016,7 +2016,7 @@ Contains
       config%ltg, config%atmnam, dummy, dummy, energies(1:config%natms)/engunit, &
       & dummy, dummy, dummy, &
       & stresses(1,1:config%natms), stresses(2,1:config%natms), stresses(3,1:config%natms), &
-      & stresses(4,1:config%natms), stresses(5,1:config%natms), stresses(9,1:config%natms), ierr)
+      & stresses(5,1:config%natms), stresses(6,1:config%natms), stresses(9,1:config%natms), ierr)
       ! forces(1,1:config%natms), forces(2,1:config%natms), forces(3,1:config%natms), &
     write(0, *) "TotalE", sum(energies(1:config%natms))/engunit
     select case( ierr )
