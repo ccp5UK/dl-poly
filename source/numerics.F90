@@ -106,22 +106,23 @@ Module numerics
     Procedure, Public :: init => init_seed
   End Type seed_type
 
-  Type, public :: interp_table
+  Type, Public :: interp_table
     !> Interpolation table for use with three_p_interp
-    real( kind = wp ), dimension(:), allocatable :: table
-    real( kind = wp )                            :: spacing
-    real( kind = wp )                            :: recip_spacing
-    integer                                      :: nsamples
-    logical                                      :: initialised
+    Private
+
+    Real( Kind = wp ), Dimension(:), Allocatable, Public :: table
+    Real( Kind = wp ),                            Public :: end_sample
+    Real( Kind = wp )                                    :: spacing
+    Real( Kind = wp )                                    :: recip_spacing
+    Integer,                                      Public :: nsamples
+    Logical,                                      Public :: initialised
+  Contains
+    Private
+
+    Procedure, Public :: init => init_interp_table
+    Procedure, Public :: calc => three_p_interp
+    Final :: destroy_interp_table
   end type interp_table
-
-  !! Jw952
-  ! Cannot specify protected as certain things need to be read in outside of this module
-  !> Erfc tables
-  type ( interp_table ), Save, Public :: erfc, erfc_deriv
-  !> n choose k values
-  Real ( Kind = wp ), Save, Allocatable, Public :: n_choose_k(:,:)
-
 
   Public :: uni
   Public :: sarurnd
@@ -135,7 +136,6 @@ Module numerics
   Public :: box_mueller_uni
   Public :: gauss_1
   Public :: gauss_2
-  Public :: erfcgen
   Public :: shellsort
   Public :: shellsort2
   Public :: dcell
@@ -153,14 +153,13 @@ Module numerics
   Public :: calc_erf_deriv
   Public :: calc_erfc
   Public :: calc_erfc_deriv
-  Public :: three_p_interp
   Public :: calc_exp_int
   Public :: calc_gamma_1_2
   Public :: calc_inv_gamma_1_2
   Public :: true_factorial
   Public :: inv_true_factorial
-  
-  
+  Public :: three_p_interp
+
   Interface pbcshfrc
     Module Procedure pbcshfrc_parts
     Module Procedure pbcshfrc_arrays
@@ -187,6 +186,100 @@ Module numerics
   Public :: equal,nequal
 
 Contains
+
+  Subroutine init_interp_table(table_in, range, func)
+    !!-----------------------------------------------------------------------
+    !!
+    !! dl_poly_4 routine for generating interpolation tables
+    !! Generates a table from 0 -> range
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins september 2018
+    !!
+    !!-----------------------------------------------------------------------
+    Implicit None
+
+    Class( interp_table ),       Intent( InOut ) :: table_in
+    Real( Kind = wp ),           Intent( In    ) :: range
+    Real( Kind = wp ),           External        :: func
+
+    Real( Kind = wp ) :: x
+    Integer :: i
+    Integer :: fail
+
+    if (table_in%initialised) return
+
+    allocate(table_in%table(table_in%nsamples), stat=fail)
+    if (fail > 0) call error_alloc('table_in%table','init_interp_table')
+    table_in%spacing = range/Real(table_in%nsamples-4,wp)
+    table_in%recip_spacing = 1.0_wp / table_in%spacing
+
+    Do i=1,table_in%nsamples
+      x = Real(i,wp)*table_in%spacing
+      table_in%table(i) = func(x)
+    End Do
+
+    table_in%end_sample = table_in%table(table_in%nsamples-4)
+    table_in%initialised = .true.
+
+  End Subroutine init_interp_table
+
+  Function three_p_interp(samples, point)
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 routine to calculate 3 point interpolation of points
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - w.smith & i.t.todorov august 2015
+    !! functionalised - j.s.wilkins august 2018
+    !!----------------------------------------------------------------------!
+    Implicit None
+    Real( Kind = wp )                 :: three_p_interp
+
+    Class( interp_table )             :: samples              !! Either erfc, erf, erfc_deriv, etc.
+    Real( Kind = wp )                 :: point                !! Point to evaluate
+
+    Real( Kind = wp ), Dimension( 2 ) :: temp                 !! Intermediate variables
+    Real( Kind = wp ), Dimension( 3 ) :: points               !! Sample points (assumed evenly spaced)
+    Real( Kind = wp )                 :: difference           !! Difference between closest sample and exact
+    Integer                           :: nearest_sample_index !! Index of closest sample
+
+    nearest_sample_index = int(point*samples%recip_spacing)
+    if (nearest_sample_index > samples%nsamples - 2) &
+      & call error(0,'Error - Interpolation beyond table limit in three_p_interp')
+
+    difference  = point*samples%recip_spacing - Real(nearest_sample_index,wp)
+    points = samples%table(nearest_sample_index:nearest_sample_index+2)
+
+    ! Catch minimum interp
+    if (nearest_sample_index == 0) points(1) = points(1)*point
+
+    temp(1) = points(1) + (points(2) - points(1))*difference
+    temp(2) = points(2) + (points(3) - points(2))*(difference - 1.0_wp)
+    three_p_interp = (temp(1) + (temp(2)-temp(1))*difference*0.5_wp)
+
+  End Function three_p_interp
+
+  Subroutine destroy_interp_table(table_in)
+    !!-----------------------------------------------------------------------
+    !!
+    !! dl_poly_4 routine for destroying interpolation tables
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins august 2019
+    !!
+    !!-----------------------------------------------------------------------
+    Type( interp_table ),       Intent( InOut ) :: table_in
+    Integer :: fail
+
+    if (.not. table_in%initialised) return
+
+    deallocate(table_in%table, stat=fail)
+    if (fail > 0) call error_dealloc('table_in%table','init_interp_table')
+    table_in%spacing = -1.0_wp
+    table_in%recip_spacing = -1.0_wp
+    table_in%nsamples = 0
+    table_in%initialised = .false.
+
+  End Subroutine destroy_interp_table
 
   !> Initialise a seed
   Subroutine init_seed(T, seed)
@@ -2253,7 +2346,7 @@ Contains
 
     Integer,                              Intent( In    ) :: imcon,natms
     Real( Kind = wp ), Dimension( 1:9 ),  Intent( In    ) :: cell
-    Type( corePart ) , Dimension( 1:* ),  Intent( InOut ) :: parts 
+    Type( corePart ) , Dimension( 1:* ),  Intent( InOut ) :: parts
 
     Integer           :: i
     Real( Kind = wp ) :: aaa,bbb,ccc,ddd,det,rcell(1:9), &
@@ -2506,7 +2599,7 @@ Contains
 
     Integer,                              Intent( In    ) :: imcon,natms
     Real( Kind = wp ), Dimension( 1:9 ),  Intent( In    ) :: cell
-    Real( Kind = wp ), Dimension( 1:* ),  Intent( InOut ) :: xxx,yyy,zzz 
+    Real( Kind = wp ), Dimension( 1:* ),  Intent( InOut ) :: xxx,yyy,zzz
 
     Integer           :: i
     Real( Kind = wp ) :: aaa,bbb,ccc,ddd,det,rcell(1:9), &
@@ -3393,10 +3486,10 @@ Contains
     Do i = 2, n
       Factorial = Factorial + Log(Real(i,Kind=wp))
     End Do
-    
+
   End Function Factorial
 
-  pure Function true_factorial(n) result(factorial)
+  Pure Function true_factorial(n) result(factorial)
     !!----------------------------------------------------------------------!
     !!
     !! Function to determine the factorial (n!)
@@ -3420,10 +3513,10 @@ Contains
           factorial = factorial*real(i,wp)
        end do
     end if
-    
+
   end Function true_factorial
 
-  pure Function inv_true_factorial(n) result(factorial)
+  Pure Function inv_true_factorial(n) result(factorial)
     !!----------------------------------------------------------------------!
     !!
     !! Function to determine the factorial (n!)
@@ -3448,9 +3541,9 @@ Contains
        end do
        factorial = 1.0_wp/factorial
     end if
-    
+
   end Function inv_true_factorial
-  
+
   Subroutine factor( n, facs )
 
     !!----------------------------------------------------------------------!
@@ -3540,137 +3633,7 @@ Contains
 
   End Function get_nth_prime
 
-  function three_p_interp(samples, point)
-    !!----------------------------------------------------------------------!
-    !!
-    !! dl_poly_4 routine to calculate 3 point interpolation of points
-    !!
-    !! copyright - daresbury laboratory
-    !! author    - w.smith & i.t.todorov august 2015
-    !! functionalised - j.s.wilkins august 2018
-    !!----------------------------------------------------------------------!
-    implicit none
-    Real( Kind = wp )                 :: three_p_interp
-
-    Type( interp_table )              :: samples              !! Either erfc, erf, erfc_deriv, etc.
-    Real( Kind = wp )                 :: point                !! Point to evaluate
-
-    Real( Kind = wp ), Dimension( 2 ) :: temp                 !! Intermediate variables
-    Real( Kind = wp ), Dimension( 3 ) :: points               !! Sample points (assumed evenly spaced)
-    Real( Kind = wp )                 :: difference           !! Difference between closest sample and exact
-    Integer                           :: nearest_sample_index !! Index of closest sample
-
-    nearest_sample_index = int(point*samples%recip_spacing)
-    if (nearest_sample_index > samples%nsamples - 2) call error(0,'Error - Interpolation beyond table limit in three_p_interp')
-
-    difference  = point*samples%recip_spacing - Real(nearest_sample_index,wp)
-    points = samples%table(nearest_sample_index:nearest_sample_index+2)
-
-    ! Catch minimum interp
-    if (nearest_sample_index == 0) points(1) = points(1)*point
-
-    temp(1) = points(1) + (points(2) - points(1))*difference
-    temp(2) = points(2) + (points(3) - points(2))*(difference - 1.0_wp)
-    three_p_interp = (temp(1) + (temp(2)-temp(1))*difference*0.5_wp)
-
-  end function three_p_interp
-
-  Subroutine erfcgen(rcut,alpha,erc,fer)
-
-    !!-----------------------------------------------------------------------
-    !!
-    !! dl_poly_4 routine for generating interpolation tables for erfc and its
-    !! derivative - for use with Ewald sum
-    !!
-    !! copyright - daresbury laboratory
-    !! author    - t.forester december 1994
-    !! amended   - i.t.todorov february 2016
-    !! amended   - j.s.wilkins october  2018
-    !!-----------------------------------------------------------------------
-
-    Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
-    Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
-    Real( Kind = wp ), Parameter :: a3 =  1.421413741_wp
-    Real( Kind = wp ), Parameter :: a4 = -1.453152027_wp
-    Real( Kind = wp ), Parameter :: a5 =  1.061405429_wp
-    Real( Kind = wp ), Parameter :: pp =  0.3275911_wp
-
-    Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha
-    Type( interp_table ),                     Intent( InOut ) :: erc, fer
-
-    Integer           :: i
-    Real( Kind = wp ) :: exp1,rrr,rsq,tt
-    Integer           :: fail
-
-    if (erc%initialised .and. fer%initialised) return
-
-    allocate(erc%table(0:erc%nsamples), stat=fail)
-    if (fail > 0) call error_alloc('erc%table','erfcgen')
-    allocate(fer%table(0:fer%nsamples), stat=fail)
-    if (fail > 0) call error_alloc('fer%table','erfcgen')
-
-    ! look-up tables for real space part of ewald sum
-
-    erc%spacing = rcut/Real(erc%nsamples-4,wp)
-    fer%spacing = erc%spacing
-
-    erc%recip_spacing = 1.0_wp / erc%spacing
-    fer%recip_spacing = 1.0_wp / fer%spacing
-
-    Do i=1,erc%nsamples
-      rrr = Real(i,wp)*erc%spacing
-      rsq = rrr*rrr
-
-      tt = 1.0_wp/(1.0_wp + pp*alpha*rrr)
-      exp1 = Exp(-(alpha*rrr)**2)
-
-      erc%table(i) = tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1/rrr
-      fer%table(i) = (erc%table(i) + 2.0_wp*(alpha/sqrpi)*exp1)/rsq
-    End Do
-
-    ! extrapolation for grid point 0 at distances close to 0
-
-    erc%table(0) = Huge(1.0_wp)
-    fer%table(0) = Huge(1.0_wp+2.0_wp*(alpha/sqrpi))
-
-    erc%initialised = .true.
-    fer%initialised = .true.
-
-  End Subroutine erfcgen
-
-  subroutine init_interp_table(table_in, range, func)
-    !!-----------------------------------------------------------------------
-    !!
-    !! dl_poly_4 routine for generating interpolation tables
-    !! copyright - daresbury laboratory
-    !! author    - j.wilkins september 2018
-    !!
-    !!-----------------------------------------------------------------------
-    implicit none
-
-    type( interp_table ),        intent( inout ) :: table_in
-    real( Kind = wp ),           intent( in    ) :: range
-    real( Kind = wp ),           external        :: func
-
-    real( Kind = wp ) :: x
-    integer :: i
-    integer :: fail
-
-    allocate(table_in%table(table_in%nsamples), stat=fail)
-    if (fail > 0) call error_alloc('table_in%table','init_interp_table')
-    table_in%spacing = range/Real(table_in%nsamples-4,wp)
-    table_in%recip_spacing = 1.0_wp / table_in%spacing
-
-    Do i=1,table_in%nsamples
-      x = Real(i,wp)*table_in%spacing
-      table_in%table = func(x)
-    End Do
-
-    table_in%initialised = .true.
-
-  end subroutine init_interp_table
-
-  function calc_erfc(x) result(erfc)
+  Pure Function calc_erfc(x) Result(erfc)
     !!-----------------------------------------------------------------------
     !!
     !! dl_poly_4 routine for calculating a point on the complementary error function
@@ -3697,7 +3660,7 @@ Contains
 
   end function calc_erfc
 
-  function calc_erfc_deriv(x) result(d_erfc)
+  Pure Function calc_erfc_deriv(x) result(d_erfc)
     !!-----------------------------------------------------------------------
     !!
     !! dl_poly_4 routine for calculating a point on the complementary error function derivative
@@ -3715,9 +3678,9 @@ Contains
 
     d_erfc = 2.0_wp*exp(-(x**2))*rsqrpi
 
-  end function calc_erfc_deriv
+  End Function calc_erfc_deriv
 
-  function calc_erf(x) result(erf)
+  Pure Function calc_erf(x) result(erf)
     !!-----------------------------------------------------------------------
     !!
     !! dl_poly_4 routine for calculating a point on the error function
@@ -3744,9 +3707,9 @@ Contains
     tt = 1.0_wp/(1.0_wp + pp*x)
     erf = (1.0_wp - tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*Exp(-(x**2)))
 
-  end function calc_erf
+  End Function calc_erf
 
-  function calc_erf_deriv(x) result(d_erf)
+  Function calc_erf_deriv(x) result(d_erf)
     !!-----------------------------------------------------------------------
     !!
     !! dl_poly_4 routine for calculating the derivative of the error function
@@ -3764,7 +3727,7 @@ Contains
 
     d_erf = 2.0_wp*exp(-(x**2))*rsqrpi
 
-  end function calc_erf_deriv
+  End Function calc_erf_deriv
 
   function calc_gamma_1_2(x) result(gam)
     use constants, only : gamma_1_2
@@ -3772,7 +3735,7 @@ Contains
     Real( wp ) :: gam
     Integer :: top
     Integer :: i
-    !> Number of pre-calculated Gamma in constants 
+    !> Number of pre-calculated Gamma in constants
     Integer, parameter :: maxgam = size(gamma_1_2)
 
     if ( x < 1 )then
@@ -3795,7 +3758,7 @@ Contains
     Real( wp ) :: gam
     Integer :: top
     Integer :: i
-    !> Number of pre-calculated Gamma in constants 
+    !> Number of pre-calculated Gamma in constants
     Integer, parameter :: maxgam = size(inv_gamma_1_2)
 
     if ( x < 1 )then
@@ -3806,7 +3769,7 @@ Contains
       top = maxgam - mod(x,2)
       gam = inv_gamma_1_2(top)
       do i = top, x - 2, 2
-        gam = 2.0_wp * gam / real(i,wp) 
+        gam = 2.0_wp * gam / real(i,wp)
       end do
     end if
 
@@ -3822,59 +3785,59 @@ Contains
     !! Based on : V. Pegoraro & P. Slusallek (2011)
     !! On the Evaluation of the Complex-Valued Exponential Integral
     !! Journal of Graphics, GPU, and Game Tools, 15:3, 183-198
-    !! DOI: 10.1080/2151237X.2011.617177 
+    !! DOI: 10.1080/2151237X.2011.617177
     !!-----------------------------------------------------------------------
     Real ( kind = wp ), intent ( in    ) :: x
     Real ( kind = wp )                   :: ei
-    
+
     Real ( kind = wp ), parameter :: e_m_gamma = 0.57721566490153286_wp
     Real ( kind = wp ), parameter :: tolerance = 1.0e-8_wp
     Real ( kind = wp ) :: zero = 0.0_wp
     integer,            parameter :: max_iter = 100
-    
+
     ! Constant determined by exp(-x)/x * (1 + 1/x) = huge
     if ( abs(x) > 701.0_wp ) then
       ei = exp(x)/x
-      
+
     else if ( abs(x) < zero_plus ) then
       ei = -log(zero)
-      
+
     else if ( abs(x) > 2.0_wp - 1.035*log(tolerance) ) then
       ei = ei_asym_ser(x)
-      
+
     else if ( abs(x) > 1.0_wp .and. x < 0 ) then
       ei = ei_cont_frac(x)
-      
+
     else if ( x > 0 ) then
       ei = ei_pow_ser(x)
-      
+
     else
       call error(0,'Unable to solve exponential integral')
     end if
-    
+
   contains
 
-    function ei_cont_frac_for(x) result (ei)             
-      real ( kind = wp ), intent( in    ) :: x           
-      real ( kind = wp ) :: ei, old                      
-      real ( kind = wp ) :: a,b,c,d                      
-      integer :: i                                       
-                                                         
-      c = 0.0_wp                                         
-      d = 1.0_wp / (1.0_wp - x )                         
-      ei= d*(-exp(x))                                    
-                                                         
-      do i = 1, max_iter                                 
-        old = ei                                         
-        a = real(2*i,wp) + 1.0_wp - x                    
-        b = real(i**2,wp)                                
-        c = 1.0_wp / ( a - b*c )                         
-        d = 1.0_wp / ( a - b*d )                         
-        ei = ei * d/c                                    
-        if ( abs(ei - old) < abs(tolerance*ei) ) exit    
-      end do                                             
-                                                         
-    end function ei_cont_frac_for                        
+    function ei_cont_frac_for(x) result (ei)
+      real ( kind = wp ), intent( in    ) :: x
+      real ( kind = wp ) :: ei, old
+      real ( kind = wp ) :: a,b,c,d
+      integer :: i
+
+      c = 0.0_wp
+      d = 1.0_wp / (1.0_wp - x )
+      ei= d*(-exp(x))
+
+      do i = 1, max_iter
+        old = ei
+        a = real(2*i,wp) + 1.0_wp - x
+        b = real(i**2,wp)
+        c = 1.0_wp / ( a - b*c )
+        d = 1.0_wp / ( a - b*d )
+        ei = ei * d/c
+        if ( abs(ei - old) < abs(tolerance*ei) ) exit
+      end do
+
+    end function ei_cont_frac_for
 
     function ei_cont_frac(x) result (ei)
 
@@ -3888,7 +3851,7 @@ Contains
       end do
 
       ei = - exp(x) / (1.0_wp - x + ei )
-      
+
     end function ei_cont_frac
 
     function ei_pow_ser(x) result (ei)
@@ -3898,7 +3861,7 @@ Contains
       real ( kind = wp ) :: k
       real ( kind = wp ) :: tmp
       integer :: i
-      
+
       ei = e_m_gamma + log(x)
       tmp = 1.0_wp
       do i = 1, max_iter
@@ -3908,13 +3871,12 @@ Contains
         ei = ei + tmp
         if ( ei - old < tolerance ) exit
       end do
-      
+
     end function ei_pow_ser
 
     function ei_asym_ser(x) result (ei)
       real ( kind = wp ) :: ei, old
       real ( kind = wp ), intent( in    ) :: x
-      real ( kind = wp ) :: k
       real ( kind = wp ) :: tmp
       integer :: i
 
@@ -3926,9 +3888,9 @@ Contains
         if ( ei - old < tolerance ) exit
         tmp = tmp * real(i,wp)/x
       end do
-      
+
     end function ei_asym_ser
-    
+
   end function calc_exp_int
 
   Pure Function equal_real_wp(a,b) Result(equal)

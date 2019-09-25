@@ -105,6 +105,8 @@ analyze_mode = False
 print("Beetest (0.7)")
 print()
 
+os.system = lambda call: subprocess.call(call, shell=True, executable="/bin/bash")
+
 # Assume that the test suite is defined in beetest.xml if not given explicitly
 if options.testinput:
 	filename = options.testinput

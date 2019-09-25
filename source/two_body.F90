@@ -18,7 +18,7 @@ Module two_body
     VDW_N_M_SHIFT, VDW_MORSE, VDW_WCA, VDW_DPD, VDW_AMOEBA, &
     VDW_LENNARD_JONES_COHESIVE, VDW_MORSE_12, VDW_RYDBERG, VDW_ZBL, &
     VDW_ZBL_SWITCH_MORSE, VDW_ZBL_SWITCH_BUCKINGHAM
-
+  Use numerics, Only : calc_erfc, calc_erfc_deriv
   Use metal,   Only : metal_type,metal_forces,metal_ld_compute,metal_lrc
   Use kim,     Only : kim_type,kim_energy_and_forces
   Use rdfs,    Only : rdf_type,rdf_collect,rdf_excl_collect,rdf_frzn_collect, &
@@ -147,10 +147,18 @@ Contains
     ! frozen-frozen evaluations in constant volume ensembles only.
 
     ! Coulomb
+    if (ewld%vdw .and. .not. ewld%active) call error(0,'Ewald VdW requested but ewald not enabled')
     if (ewld%active) then
       allocate(coul_coeffs(config%mxatms), stat=fail)
       if (fail>0) call error_alloc('coul_coeffs','two_body_forces')
       coul_coeffs = config%parts(:)%chge
+
+      call electro%erfc%init(ewld%alpha*neigh%cutoff, calc_erfc)
+      call electro%erfc_deriv%init(ewld%alpha*neigh%cutoff, calc_erfc_deriv)
+
+      write(0, *) electro%erfc%calc(0.1_wp), calc_erfc(0.1_wp)
+      write(0, *) electro%erfc%calc(3.1_wp), calc_erfc(3.1_wp)
+      write(0, *) electro%erfc%calc(6.1_wp), calc_erfc(6.1_wp)
 
       if ( newjob ) then
 
@@ -184,6 +192,10 @@ Contains
             do ipot = 1, ewld%num_pots
               call spme_self_interaction(ewld%alpha, config%natms, vdw_coeffs(:,ipot), comm, ewld%spme_data(ipot))
             end do
+
+            ! Disable long-range corrections (calculating long range explicitly)
+            vdws%elrc = 0.0_wp
+            vdws%vlrc = 0.0_wp
 
           end if
 
@@ -248,7 +260,6 @@ Contains
       Call link_cell_pairs(vdws%cutoff,met%rcut,lbook,megfrz,cshell,devel, &
         neigh,mpoles,domain,tmr,config,comm)
     End If
-
 
     ! Calculate all contributions from KIM
     If (kim_data%active) Then
@@ -386,7 +397,7 @@ Contains
 
           ! calculate coulombic forces, Ewald sum - real space contribution
 
-          Call ewald_real_forces_coul(ewld%alpha,ewld%spme_data(0),neigh,config,stats, &
+          Call ewald_real_forces_coul(electro, ewld%alpha,ewld%spme_data(0),neigh,config,stats, &
             & i,xxt,yyt,zzt,rrt,engacc,viracc)
 
           engcpe_rl=engcpe_rl+engacc
@@ -436,7 +447,7 @@ Contains
 
           ! calculate coulombic forces, Ewald sum - real space contribution
 
-          Call ewald_real_forces_coul(ewld%alpha,ewld%spme_data(0),neigh,config,stats, &
+          Call ewald_real_forces_coul(electro, ewld%alpha,ewld%spme_data(0),neigh,config,stats, &
             & i,xxt,yyt,zzt,rrt,engacc,viracc)
 
           engcpe_rl=engcpe_rl+engacc

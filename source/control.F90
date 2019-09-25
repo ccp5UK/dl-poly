@@ -286,7 +286,7 @@ Contains
 
     thermo%tau_t   = 0.0_wp ! thermostat relaxation time
     thermo%chi    = 0.0_wp ! Stochastic Dynamics (SD Langevin) thermostat friction
-    thermo%chi_ep = 0.5_wp ! Inhomogeneous Stochastic Dynamics (SD Langevin) 
+    thermo%chi_ep = 0.5_wp ! Inhomogeneous Stochastic Dynamics (SD Langevin)
     ! thermostat/electron-phonon friction
     thermo%chi_es = 0.0_wp ! Inhomogeneous Stochastic Dynamics (SD Langevin)
     ! thermostat/electronic stopping friction
@@ -365,7 +365,7 @@ Contains
     ttm%cellrho = 0.0_wp
 
     ! default initial stopping power to be deposited in
-    ! electronic system (standard cascade) and laser 
+    ! electronic system (standard cascade) and laser
     ! ttm%fluence and penetration depth
 
     ttm%dEdX    = 0.0_wp
@@ -642,6 +642,12 @@ Contains
           vdws%l_direct = .true.
           Call info('vdw direct option on',.true.)
 
+          ! Is ewald going to perform VdW stuff
+
+        Else if ( word1(1:5) == 'ewald') then
+
+          ewld%vdw = .true.
+          
         Else If (word1(1:3) == 'mix') Then
 
           ! mixing type keywords
@@ -1757,13 +1763,6 @@ Contains
         Write(message,'(a,1p,e12.4)') 'vdw cutoff (Angs) ', rvdw1
         Call info(message,.true.)
 
-        ! Is ewald going to perform VdW stuff
-
-      Else if ( word(1:7) == 'ewldvdw') then
-
-        if (.not. ewld%active) call error(0,'Ewald VdW requested but ewald not enabled')
-        ewld%vdw = .true.
-
         ! read Ewald sum parameters
 
       Else If (word(1:5) == 'ewald' .or. word(1:4) == 'spme') Then
@@ -2287,7 +2286,7 @@ Contains
 
         Else If (word1(1:6) == 'redist') Then
 
-          ! redistribution of electronic energy from deactivated cells 
+          ! redistribution of electronic energy from deactivated cells
           ! to active neighbours
 
           If (ttm%redistribute) Then
@@ -2418,8 +2417,8 @@ Contains
 
           ! variable electron-phonon coupling constant (thermo%chi_ep) based on
           ! tabular electronic stopping terms (in g.dat file): option to
-          ! apply value homogeneously across system (based on average 
-          ! electronic temperature) or heterogeneously (using local 
+          ! apply value homogeneously across system (based on average
+          ! electronic temperature) or heterogeneously (using local
           ! electronic temperature for each voxel)
 
           Select Case (ttm%gvar)
@@ -2505,7 +2504,7 @@ Contains
 
         Else If (word1(1:4) == 'traj') Then
 
-          ! ttm trajectory (one-dimensional ionic and electronic 
+          ! ttm trajectory (one-dimensional ionic and electronic
           ! temperature profile) file option and output frequency
 
           Call get_word(record,word)
@@ -4135,7 +4134,7 @@ Contains
         If (word(1:4) == 'ncit') Then
 
           ! number of coarse-grained ion temperature cells (CIT)
-          ! in z-direction: geometry of system determines 
+          ! in z-direction: geometry of system determines
           ! CITs in x- and y-directions
 
           Call get_word(record,word)
@@ -4253,8 +4252,8 @@ Contains
 
           ! variable electron-phonon coupling constant (thermo%chi_ep) based on
           ! tabular electronic stopping terms (in g.dat file): option to
-          ! apply value homogeneously across system (based on average 
-          ! electronic temperature) or heterogeneously (using local 
+          ! apply value homogeneously across system (based on average
+          ! electronic temperature) or heterogeneously (using local
           ! electronic temperature for each voxel)
 
           Call get_word(record,word)
@@ -4395,12 +4394,12 @@ Contains
       Call get_word(record,word)
 
       ! record is commented out
-
       If      (word(1:1) == '#' .or. word(1:1) == ' ') Then
 
-      Else If (lelec .and. ((word(1:5) == 'ewald' .or. word(1:4) == 'spme') .or. &
+      Else If ((ewld%vdw .or. lelec) .and. ((word(1:5) == 'ewald' .or. word(1:4) == 'spme') .or. &
         (word(1:5) == 'poiss' .or. word(1:5) == 'psolv'))) Then
 
+        print*, "BEEP:", neigh%cutoff
         ! Double the kmax size if specified "ewald sum" instead of "spme sum"
 
         itmp=0
@@ -4444,7 +4443,7 @@ Contains
             cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
 
           End If
-          
+
           If (itmp > 0) Then ! SPME
 
             ewld%active = .true.
@@ -4523,7 +4522,7 @@ Contains
 
           Else !If (itmp == 0) Then ! Poisson Solver
 
-            pois%active = .true. 
+            pois%active = .true.
             Do i=1,4
               If (word(1:5) == 'delta') Then   ! spacing
                 Call get_word(record,word)

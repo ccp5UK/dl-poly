@@ -4,7 +4,6 @@ Module coul_spole
   Use configuration,   Only : configuration_type
   Use constants,       Only : r4pie0,zero_plus,sqrpi
   Use errors_warnings, Only : error, error_alloc, error_dealloc
-  Use numerics,        Only : erfcgen, erfc, erfc_deriv, three_p_interp
   Use numerics,        Only : calc_erfc, calc_erfc_deriv
   Use neighbours,      Only : neighbours_type
   Use electrostatic,   Only : electrostatic_type, &
@@ -61,11 +60,8 @@ Contains
 
       If (electro%damp) Then
 
-        exp1= Exp(-(electro%damping*rcut)**2)
-        tt  = 1.0_wp/(1.0_wp+pp*electro%damping*rcut)
-
-        erc = tt*(aa1+tt*(aa2+tt*(aa3+tt*(aa4+tt*aa5))))*exp1/rcut
-        fer = (erc + 2.0_wp*(electro%damping/sqrpi)*exp1)/rcut**2
+        erc = calc_erfc(electro%damping*rcut) / rcut
+        fer = (erc + electro%damping*calc_erfc_deriv(electro%damping*rcut)) / rcut**2
 
         electro%force_shift  = fer*rcut
         electro%energy_shift  = -(erc + electro%force_shift*rcut)
@@ -192,10 +188,10 @@ Contains
       newjob = .false.
 
       if ( electro%damp ) then
-        call erfcgen(neigh%cutoff, electro%damping, erfc, erfc_deriv)
+        call electro%erfcgen(neigh%cutoff, electro%damping)
 
-        electro%force_shift =   erfc_deriv%table(erfc_deriv%nsamples-4)*neigh%cutoff
-        electro%energy_shift = -(erfc%table(erfc%nsamples-4)+electro%force_shift*neigh%cutoff)
+        electro%force_shift =   electro%erfc_deriv%end_sample * neigh%cutoff
+        electro%energy_shift = -(electro%erfc%end_sample + electro%force_shift*neigh%cutoff)
       else
 
         electro%force_shift =  1.0_wp/neigh%cutoff**2
@@ -260,7 +256,7 @@ Contains
           ! calculate forces
 
           If (electro%damp) Then
-            egamma = (three_p_interp(erfc_deriv,rrr) - electro%force_shift/rrr)*chgprd
+            egamma = (electro%calc_erfc_deriv(rrr) - electro%force_shift/rrr)*chgprd
           Else
             egamma=chgprd*(1.0_wp/rsq - electro%force_shift)/rrr
           End If
@@ -289,7 +285,7 @@ Contains
 
               ! calculate interaction energy using 3-point interpolation
 
-              coul = (three_p_interp(erfc,rrr) + electro%force_shift*rrr + electro%energy_shift)*chgprd
+              coul = (electro%calc_erfc(rrr) + electro%force_shift*rrr + electro%energy_shift)*chgprd
             Else
 
               coul = chgprd*(1.0_wp/rrr + electro%force_shift*rrr + electro%energy_shift)
@@ -391,9 +387,9 @@ Contains
       electro%reaction_field(2) = 0.5_wp*electro%reaction_field(0)
 
       If (electro%damp) Then
-        call erfcgen(neigh%cutoff, electro%damping, erfc, erfc_deriv)
-        electro%force_shift =   erfc_deriv%table(erfc_deriv%nsamples-4)*neigh%cutoff
-        electro%energy_shift = -(erfc%table      (erfc%nsamples      -4)+electro%force_shift*neigh%cutoff)
+        call electro%erfcgen(neigh%cutoff, electro%damping)
+        electro%force_shift =   electro%erfc_deriv%end_sample * neigh%cutoff
+        electro%energy_shift = -(electro%erfc%end_sample + electro%force_shift*neigh%cutoff)
       End If
 
     End If
@@ -453,7 +449,8 @@ Contains
           ! calculate forces
 
           If (electro%damp) Then
-            egamma = (three_p_interp(erfc_deriv,rrr) - electro%force_shift/rrr - electro%reaction_field(0))*chgprd
+            egamma = (electro%calc_erfc_deriv(rrr) - &
+              & electro%force_shift/rrr - electro%reaction_field(0))*chgprd
           Else
             egamma=chgprd*(1.0_wp/rsq/rrr - electro%reaction_field(0))
           End If
@@ -482,7 +479,7 @@ Contains
 
               ! calculate interaction energy using 3-point interpolation
 
-              coul = (three_p_interp(erfc,rrr) + electro%force_shift*rrr + electro%energy_shift + &
+              coul = (electro%calc_erfc(rrr) + electro%force_shift*rrr + electro%energy_shift + &
                 electro%reaction_field(2)*(rsq-neigh%cutoff_2))*chgprd
 
             Else
@@ -712,7 +709,7 @@ Contains
     ! initialise stress tensor accumulators
 
     stress_temp = 0.0_wp
-    
+
     ! global identity of iatm
 
     idi=config%ltg(iatm)

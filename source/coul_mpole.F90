@@ -22,7 +22,7 @@ Module coul_mpole
   Use mpoles_container, Only : coul_deriv, ewald_deriv, &
     explicit_fscp_rfp_loops, explicit_ewald_real_loops, &
     explicit_ewald_real_loops
-  Use numerics,         Only : erfcgen, images_s, erfc_deriv, erfc, three_p_interp
+  Use numerics,         Only : images_s
   Use neighbours,       Only : neighbours_type
   Use electrostatic,    Only : electrostatic_type, &
     ELECTROSTATIC_EWALD,ELECTROSTATIC_DDDP, &
@@ -481,10 +481,10 @@ Contains
 
       If (electro%damp) Then
 
-        call erfcgen(neigh%cutoff, electro%damping, erfc, erfc_deriv)
+        call electro%erfcgen(neigh%cutoff, electro%damping)
 
-        electro%force_shift =   erfc_deriv%table(erfc_deriv%nsamples-4)*neigh%cutoff
-        electro%energy_shift = -(erfc%table(erfc%nsamples-4)+electro%force_shift*neigh%cutoff)
+        electro%force_shift =   electro%erfc_deriv%end_sample * neigh%cutoff
+        electro%energy_shift = -(electro%erfc%end_sample + electro%force_shift*neigh%cutoff)
 
       Else
 
@@ -588,7 +588,7 @@ Contains
 
             ! erfcr = (t1 + (t2-t1)*ppp*0.5_wp)/electro%damping
 
-            erfcr = three_p_interp(erfc, rrr)/electro%damping
+            erfcr = electro%erfc%calc(rrr)/electro%damping
             ! compute derivatives of the ewald real space kernel
 
             Call ewald_deriv(-2,2*mpoles%max_order+1,1,erfcr,electro%damping*xxt(m), &
@@ -1016,10 +1016,10 @@ Contains
 
       If (electro%damp) Then
 
-        call erfcgen(neigh%cutoff,electro%damping,erfc,erfc_deriv)
+        call electro%erfcgen(neigh%cutoff, electro%damping)
 
-        electro%force_shift =   erfc_deriv%table(erfc_deriv%nsamples-4)*neigh%cutoff
-        electro%energy_shift = -(erfc%table(erfc%nsamples-4)+electro%force_shift*neigh%cutoff)
+        electro%force_shift =   electro%erfc_deriv%end_sample * neigh%cutoff
+        electro%energy_shift = -(electro%erfc%end_sample + electro%force_shift*neigh%cutoff)
 
       Else
 
@@ -1128,7 +1128,7 @@ Contains
             ! get the value of the ewald real space kernel using 3pt interpolation
 
             ! erfcr = (t1 + (t2-t1)*ppp*0.5_wp)/electro%damping
-            erfcr = three_p_interp(erfc,rrr)/electro%damping
+            erfcr = electro%erfc%calc(rrr)/electro%damping
 
             ! compute derivatives of the ewald real space kernel
 

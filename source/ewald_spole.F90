@@ -23,8 +23,7 @@ Module ewald_spole
   Use kinds,           Only : wp, wi
   Use kspace,          Only : kspace_type
   Use neighbours,      Only : neighbours_type
-  Use numerics,        Only : erfcgen, invert, dcell, calc_erf, calc_erf_deriv, calc_erfc
-  Use numerics,        Only : invert, dcell
+  Use numerics,        Only : invert, dcell, calc_erf, calc_erf_deriv, calc_erfc, calc_erfc_deriv
   Use parallel_fft,    Only : initialize_fft, pfft, pfft_indices
   Use constants,       Only : sqrpi,twopi,zero_plus,r4pie0
   Use timer,           Only : start_timer, stop_timer
@@ -47,7 +46,7 @@ Module ewald_spole
 
 Contains
 
-  Subroutine ewald_real_forces_coul(alpha,spme_datum,neigh,config,stats,iatm,x_pos,y_pos,z_pos,mod_dr_ij, &
+  Subroutine ewald_real_forces_coul(electro,alpha,spme_datum,neigh,config,stats,iatm,x_pos,y_pos,z_pos,mod_dr_ij, &
     & engcpe_rl,vircpe_rl)
 
     !!-----------------------------------------------------------------------
@@ -66,6 +65,7 @@ Contains
     use constants, only : rsqrpi
     implicit none
 
+    Type( electrostatic_type ),                           Intent( In    ) :: electro
     Type( neighbours_type ),                              Intent( In    ) :: neigh
     Type( configuration_type ),                           Intent( InOut ) :: config
     Type( spme_component ),                               Intent( In    ) :: spme_datum
@@ -84,7 +84,7 @@ Contains
     Real( Kind = wp )                                                     :: erf_gamma                       !! Q*g_p
     Real( Kind = wp )                                                     :: prefac                          !! Coeffs*inv_mod_r_ij**n
     Real( Kind = wp )                                                     :: mod_r_ij, inv_mod_r_ij, alpha_r !! Inter-particle distances
-    Integer                                                               :: global_id_i
+    Integer                                                               :: global_id_i, global_id_j
     Integer                                                               :: m,jatm
 
     ! initialise accumulators
@@ -110,6 +110,7 @@ Contains
       ! atomic index and charge
 
       jatm=neigh%list(m,iatm)
+      global_id_j = config%ltg(jatm)
 
       ! interatomic distance
       mod_r_ij=mod_dr_ij(m)
@@ -126,11 +127,11 @@ Contains
         prefac = atom_coeffs_i*prefac*inv_mod_r_ij
 
         ! calculate components of G
-        e_comp = prefac * calc_erfc(alpha_r)
+        e_comp = prefac * electro%erfc%calc(alpha_r) ! electro%
 
         ! Because function is g_p(ar)/(r^n)
         ! => -n*(g/r^(n + 1) + a(dg/dr))
-        erf_gamma = ( e_comp * inv_mod_r_ij + prefac*2.0_wp*rsqrpi*alpha*exp(-(alpha_r**2)) )
+        erf_gamma = ( e_comp * inv_mod_r_ij + prefac*alpha*electro%erfc_deriv%calc(alpha_r))!2.0_wp*rsqrpi*alpha*exp(-(alpha_r**2)) )
 
         ! calculate forces ( dU * r/||r|| )
 
@@ -138,7 +139,7 @@ Contains
         force_temp = force_temp + force_temp_comp
 
 
-        if (jatm <= config%natms .or. global_id_i < config%ltg(jatm)) then
+        if (jatm <= config%natms .or. global_id_i < global_id_j) then
           if (jatm <= config%natms) then
 
             config%parts(jatm)%fxx=config%parts(jatm)%fxx-force_temp_comp(1)
@@ -159,11 +160,11 @@ Contains
           stress_temp = stress_temp + stress_temp_comp
           if (stats%collect_pp) then
             stats%pp_energy(iatm) = stats%pp_energy(iatm) + e_comp * 0.5_wp
-            stats%pp_energy(jatm) = stats%pp_energy(jatm) + e_comp * 0.5_wp
+            stats%pp_energy(global_id_j) = stats%pp_energy(global_id_j) + e_comp * 0.5_wp
             stats%pp_stress(:,iatm) = stats%pp_stress(:,iatm) + stress_temp_comp
-            stats%pp_stress(:,jatm) = stats%pp_stress(:,jatm) + stress_temp_comp
+            stats%pp_stress(:,global_id_j) = stats%pp_stress(:,global_id_j) + stress_temp_comp
           end if
-          
+
         end if
 
       End If

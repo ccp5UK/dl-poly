@@ -19,7 +19,7 @@ Module bounds
   Use greenkubo,       Only : greenkubo_type
   Use mpole,           Only : mpole_type,POLARISATION_CHARMM
   Use ttm,             Only : ttm_type
-  Use numerics,        Only : dcell, erfc, erfc_deriv
+  Use numerics,        Only : dcell
   Use control,         Only : scan_control, scan_control_pre
   Use ffield,          Only : scan_field
   Use errors_warnings, Only : error,warning,info
@@ -437,9 +437,7 @@ Contains
     inversion%bin_tab = Merge(inversion%bin_tab,Min(inversion%bin_tab,Nint(180.0_wp/delth_max)+4),inversion%bin_tab < 0)
 
     ! maximum number of grid points for electrostatics
-
-    erfc%nsamples = Merge(-1,Max(1004,Nint(neigh%cutoff/delr_max)+4),electro%no_elec)
-    erfc_deriv%nsamples = erfc%nsamples
+    call electro%init_erf_tables( Merge(-1,Max(1004,Nint(neigh%cutoff/delr_max)+4),electro%no_elec) )
 
     ! maximum number of grid points for vdw interactions - overwritten
 
@@ -456,7 +454,7 @@ Contains
     ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
     mxgrid = Max(mxgrid,bond%bin_tab,angle%bin_tab,dihedral%bin_tab, &
-      inversion%bin_tab,erfc%nsamples,vdws%max_grid,met%maxgrid,tersoffs%max_grid)
+      inversion%bin_tab,electro%erfc%nsamples,vdws%max_grid,met%maxgrid,tersoffs%max_grid)
 
     !!! INTER-LIKE POTENTIAL PARAMETERS !!!
 
