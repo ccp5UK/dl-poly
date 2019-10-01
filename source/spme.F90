@@ -119,7 +119,7 @@ contains
       write(message,'(/,1x,3a)') "Error: ", trim(spme_datum%name), " not supported (negative)"
       call error(0, message)
     end if
-         
+
     ! select case (pot_order)
     ! case (1)
     !   spme_datum%f_p       => f_1
@@ -404,7 +404,7 @@ contains
         f_p = 0.0_wp ! if p < 3 && x is small
         return
       end if
-      
+
       continue
     else if( curr_pot_order > p_work ) then
       ! recurse down

@@ -647,7 +647,8 @@ Contains
         Else if ( word1(1:5) == 'ewald') then
 
           ewld%vdw = .true.
-          
+          Call info('vdw ewald option on',.true.)
+
         Else If (word1(1:3) == 'mix') Then
 
           ! mixing type keywords
@@ -4396,10 +4397,19 @@ Contains
       ! record is commented out
       If      (word(1:1) == '#' .or. word(1:1) == ' ') Then
 
+      Else If (word(1:3) == 'vdw') Then
+        Call get_word(record,word1)
+
+        If ( word1(1:5) == 'ewald') then
+
+          ewld%vdw = .true.
+
+        End If
+
+
       Else If ((ewld%vdw .or. lelec) .and. ((word(1:5) == 'ewald' .or. word(1:4) == 'spme') .or. &
         (word(1:5) == 'poiss' .or. word(1:5) == 'psolv'))) Then
 
-        print*, "BEEP:", neigh%cutoff
         ! Double the kmax size if specified "ewald sum" instead of "spme sum"
 
         itmp=0

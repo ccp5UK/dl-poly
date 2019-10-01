@@ -221,7 +221,7 @@ Contains
     Real( Kind = wp )                                                     :: erf_gamma                       !! Q*g_p
     Real( Kind = wp )                                                     :: prefac                          !! Coeffs*inv_mod_r_ij**n
     Real( Kind = wp )                                                     :: mod_r_ij, inv_mod_r_ij, alpha_r !! Inter-particle distances
-    Integer                                                               :: global_id_i
+    Integer                                                               :: global_id_i, global_id_j
     Integer                                                               :: m,jatm
 
     ! initialise accumulators
@@ -247,6 +247,7 @@ Contains
       ! atomic index and charge
 
       jatm=neigh%list(m,iatm)
+      global_id_j = config%ltg(jatm)
 
       ! interatomic distance
       mod_r_ij=mod_dr_ij(m)
@@ -300,9 +301,9 @@ Contains
 
           if (stats%collect_pp) then
             stats%pp_energy(iatm) = stats%pp_energy(iatm) + e_comp * 0.5_wp
-            stats%pp_energy(jatm) = stats%pp_energy(jatm) + e_comp * 0.5_wp
-            stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
-            stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
+            stats%pp_energy(global_id_j) = stats%pp_energy(global_id_j) + e_comp * 0.5_wp
+            stats%pp_stress(:,iatm) = stats%pp_stress(:,iatm) + stress_temp_comp
+            stats%pp_stress(:,global_id_j) = stats%pp_stress(:,global_id_j) + stress_temp_comp
           end if
 
         end if
@@ -378,9 +379,13 @@ Contains
     integer, dimension(4) :: fail                                                          !! Ierr
     logical, save :: newjob = .true.
 
-    if ( all ( abs(coeffs) < zero_plus )) return
-
     call start_timer('Setup')
+
+    if ( any ( abs(coeffs) > zero_plus )) then
+      continue
+    else
+      return
+    end if
 
     if (newjob) then
       call ewald_spme_init(domain, config%mxatms, comm, ewld%kspace, &
@@ -390,9 +395,9 @@ Contains
 
 
     fail=0
-    allocate(recip_coords (3,config%mxatms), stat=fail(1))
-    allocate(recip_indices(3,config%mxatms), stat=fail(2))
-    allocate(to_calc      (0:config%mxatms), stat=fail(3))
+    allocate(recip_coords (3,config%nlast), stat=fail(1))
+    allocate(recip_indices(3,config%nlast), stat=fail(2))
+    allocate(to_calc      (0:config%nlast), stat=fail(3))
 
     ! If not per-particle only need global sum, else need everything
     if (.not. stats%collect_pp) then
@@ -466,6 +471,7 @@ Contains
     end do
 
     recip_indices = int (recip_coords)
+
     call stop_timer('Recip')
 
     call start_timer('BSpline')
@@ -489,6 +495,7 @@ Contains
     call start_timer('Charge')
     call spme_construct_charge_array(to_calc(0),ewld,to_calc(1:),recip_indices, electro, coeffs, charge_grid)
     call stop_timer('Charge')
+
     if (.not.stats%collect_pp .or. spme_datum%pot_order /= 1) then
 
       ! If we don't need per-particle data, we can use the old method of getting the stress (cheaper)
@@ -515,6 +522,7 @@ Contains
     end if
 
     call start_timer('Output')
+
     ! Rescale to real space
     q_abc = q_abc * scale / real(comm%mxnode)
     f_abc = f_abc * scale * 2.0_wp

@@ -208,6 +208,8 @@ Contains
 
     if (table_in%initialised) return
 
+    if (table_in%nsamples < 10) call error(0,'Too few samples to generate interpolation in init_interp_table')
+    
     allocate(table_in%table(table_in%nsamples), stat=fail)
     if (fail > 0) call error_alloc('table_in%table','init_interp_table')
     table_in%spacing = range/Real(table_in%nsamples-4,wp)

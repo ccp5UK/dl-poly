@@ -153,24 +153,22 @@ Contains
       if (fail>0) call error_alloc('coul_coeffs','two_body_forces')
       coul_coeffs = config%parts(:)%chge
 
+
       call electro%erfc%init(ewld%alpha*neigh%cutoff, calc_erfc)
       call electro%erfc_deriv%init(ewld%alpha*neigh%cutoff, calc_erfc_deriv)
-
-      write(0, *) electro%erfc%calc(0.1_wp), calc_erfc(0.1_wp)
-      write(0, *) electro%erfc%calc(3.1_wp), calc_erfc(3.1_wp)
-      write(0, *) electro%erfc%calc(6.1_wp), calc_erfc(6.1_wp)
 
       if ( newjob ) then
 
           ! Assume no VDW
           ewld%num_pots = 0
 
+          ! Set number of pots
           if ( ewld%vdw ) call ewald_vdw_count(ewld, vdws, reduced_VdW)
 
-          allocate ( ewld%spme_data(0:ewld%num_pots), stat=fail )
-          if ( fail > 0 ) call error_alloc('ewld%spme_data','two_body_forces')
-
           if ( electro%key == ELECTROSTATIC_EWALD ) then
+            allocate ( ewld%spme_data(0:ewld%num_pots), stat=fail )
+            if ( fail > 0 ) call error_alloc('ewld%spme_data','two_body_forces')
+
             ewld%spme_data(0)%scaling = r4pie0/electro%eps
             call init_spme_data( ewld%spme_data(0), 1 )
 
@@ -203,6 +201,7 @@ Contains
 
       end if
 
+      if (ewld%vdw) call ewald_vdw_coeffs(config, vdws, ewld, reduced_vdw, vdw_coeffs)
 
     end if
 
@@ -298,19 +297,16 @@ Contains
 
     End If
 
-#ifdef CHRONO
-    Call stop_timer('Long Range')
-#endif
+
 
     if (ewld%vdw) then
+#ifdef CHRONO
       call start_timer('SPME Order-n')
-
+#endif
       do ipot = 1, ewld%num_pots
 
-        call start_timer('Long Range')
         call ewald_spme_forces(ewld,ewld%spme_data(ipot),electro,domain,config,comm, &
           & vdw_coeffs(:,ipot),nstep,stats,engacc,viracc)
-        call stop_timer('Long Range')
 
         engvdw_rc=engvdw_rc+engacc
         virvdw_rc=virvdw_rc+viracc
@@ -318,10 +314,13 @@ Contains
 
       end do
 
+#ifdef CHRONO
       call stop_timer('SPME Order-n')
+#endif
     end if
 
 #ifdef CHRONO
+    Call stop_timer('Long Range')
     Call start_timer('Short Range')
 #endif
     ! outer loop over atoms
@@ -638,6 +637,12 @@ Contains
 
     ! Further Ewald/Poisson Solver corrections or an infrequent refresh
 
+
+    if (ewld%vdw) then
+      engvdw = engvdw_rc + engvdw_rl
+      virvdw = virvdw_rc + virvdw_rl
+    end if
+
     If (any([ELECTROSTATIC_EWALD,ELECTROSTATIC_POISSON] == electro%key)) Then
       If (ELECTROSTATIC_EWALD == electro%key) Then
         deallocate(coul_coeffs,stat=fail)
@@ -747,7 +752,8 @@ Contains
 
     ! Globalise short-range, KIM and metal interactions with
     ! their long-range corrections contributions: srp
-
+    print*,"HONK:",  engvdw_rc, engvdw_rl
+    
     stats%engsrp = engkim + (engden + engmet + met%elrc(0)) + (engvdw + vdws%elrc)
     stats%virsrp = virkim + (virden + virmet + met%vlrc(0)) + (virvdw + vdws%vlrc)
 

@@ -72,8 +72,33 @@ contains
 
     integer :: fail
 
-    allocate(reduced_vdw(vdws%n_vdw), stat=fail)
+    ! Count number of variables needed (overallocate?)
+    ewld%num_pots = 0
+
+    countloop:do ivdw=1,vdws%n_vdw
+      keypot=vdws%ltp(ivdw)
+
+      ! Need to remove duplicates of the same pot for mapping to linear array
+      do ipot = 1, ewld%num_pots
+        if (keypot == reduced_VdW(ipot)) cycle countloop
+      end do
+
+      select case (keypot)
+      case (VDW_12_6, VDW_LENNARD_JONES, VDW_N_M,VDW_N_M_SHIFT, VDW_HYDROGEN_BOND, VDW_BORN_HUGGINS_MEYER) ! 6-12
+        ewld%num_pots = ewld%num_pots + 2
+      case (VDW_MORSE_12, VDW_BUCKINGHAM)
+        ewld%num_pots = ewld%num_pots + 1
+      case default
+        call error(0,'Ewald VdW potential requested but not possible')
+      end select
+    end do countloop
+
+
+    allocate(reduced_vdw(ewld%num_pots), stat=fail)
     if (fail>0) call error_alloc('reduced_vdw','two_body_forces')
+
+    ! Reset counter for assignment
+    ewld%num_pots = 0
 
     ! Need to know how many we're doing
     vdwloop:do ivdw=1,vdws%n_vdw
@@ -127,7 +152,7 @@ contains
     Integer :: keypot
     Integer :: ipot
     Logical :: skip
-    Integer, dimension(vdws%n_vdw), intent( in    ) :: reduced_VdW
+    Integer, dimension(:), intent( in    ) :: reduced_VdW
 
     skip = .false.
 
@@ -142,46 +167,36 @@ contains
       select case (keypot)
 
       case (VDW_12_6, VDW_LENNARD_JONES) ! 12-6
-        ewld%spme_data(ipot)%scaling = 1.0_wp
         call init_spme_data( ewld%spme_data(ipot), 12 )
-
-        ewld%spme_data(ipot+1)%scaling = -1.0_wp
         call init_spme_data( ewld%spme_data(ipot+1), 6 )
 
         skip = .true.
 
       case (VDW_N_M,VDW_N_M_SHIFT) ! N-M
-        ewld%spme_data(ipot)%scaling = 1.0_wp
-        call init_spme_data( ewld%spme_data(ipot), 6 )
-
-        ewld%spme_data(ipot)%scaling = -1.0_wp
-        call init_spme_data( ewld%spme_data(ipot+1), 12 )
-
-        skip = .true.
-
-      case (VDW_BORN_HUGGINS_MEYER) ! 6-8
-        ewld%spme_data(ipot)%scaling = -1.0_wp
-        call init_spme_data( ewld%spme_data(ipot), 6 )
-
-        ewld%spme_data(ipot)%scaling = -1.0_wp
-        call init_spme_data( ewld%spme_data(ipot+1), 8 )
+        ! Initialised in ewald_vdw_coeffs
 
         skip = .true.
 
       case (VDW_HYDROGEN_BOND) ! 12-10
-        ewld%spme_data(ipot)%scaling = -1.0_wp
         call init_spme_data( ewld%spme_data(ipot), 12 )
-
-        ewld%spme_data(ipot)%scaling = -1.0_wp
         call init_spme_data( ewld%spme_data(ipot+1), 10 )
 
         skip = .true.
 
+      case (VDW_BORN_HUGGINS_MEYER) ! 6-8
+        call error(0,'Ewald VdW N-M potential requested but not possible (contains exponential)')
+        call init_spme_data( ewld%spme_data(ipot), 6 )
+        call init_spme_data( ewld%spme_data(ipot+1), 8 )
+
+        skip = .true.
+
       case (VDW_MORSE_12) ! 12
+        call error(0,'Ewald VdW N-M potential requested but not possible (contains exponential)')
         ewld%spme_data(ipot)%scaling = 1.0_wp
         call init_spme_data( ewld%spme_data(ipot), 12 )
 
       case (VDW_BUCKINGHAM) ! -6
+        call error(0,'Ewald VdW N-M potential requested but not possible (contains exponential)')
         ewld%spme_data(ipot)%scaling = -1.0_wp
         call init_spme_data( ewld%spme_data(ipot), 6 )
 
@@ -199,17 +214,18 @@ contains
       VDW_N_M_SHIFT, VDW_MORSE, VDW_WCA, VDW_DPD, VDW_AMOEBA, &
       VDW_LENNARD_JONES_COHESIVE, VDW_MORSE_12, VDW_RYDBERG, VDW_ZBL, &
       VDW_ZBL_SWITCH_MORSE, VDW_ZBL_SWITCH_BUCKINGHAM
+    use spme, only : init_spme_data
 
     type ( configuration_type ), intent ( in    ) :: config
     type ( ewald_type ),    intent ( inout ) :: ewld
     type ( vdw_type ),           intent ( in    ) :: vdws
     integer, dimension( : ), intent ( in    ) :: reduced_vdw
     real ( kind = wp ), dimension( :,: ), allocatable, intent (   out ) :: vdw_coeffs
-    
+
     integer :: keypot
     integer :: j, k, ipot
     integer :: fail
-    
+
     ! Set up potentials
 
     allocate(vdw_coeffs(config%mxatms,ewld%num_pots), stat =fail)
@@ -234,19 +250,41 @@ contains
       ! Assign params to this atom
       select case (keypot)
 
-      case (VDW_12_6, VDW_LENNARD_JONES) ! 12-6
+      case (VDW_LENNARD_JONES) ! 12-6
+        ! 4eps * (A)
+        ewld%spme_data(ipot)%scaling = vdws%param(1,j) * 4.0_wp
+        ewld%spme_data(ipot+1)%scaling = -vdws%param(1,j) * 4.0_wp
+        vdw_coeffs(k,ipot) = vdws%param(2,j)**6
+        vdw_coeffs(k,ipot+1) = vdws%param(2,j)**3
+
+      case (VDW_12_6) ! 12-6
+        ewld%spme_data(ipot)%scaling = 1.0_wp
+        ewld%spme_data(ipot)%scaling = -1.0_wp
         vdw_coeffs(k,ipot) = vdws%param(1,j)
         vdw_coeffs(k,ipot+1) = vdws%param(2,j)
 
       case (VDW_N_M,VDW_N_M_SHIFT) ! N-M
-        vdw_coeffs(k,ipot) = vdws%param(1,j)
-        vdw_coeffs(k,ipot+1) = vdws%param(2,j)
+        if (.not. ewld%spme_data(ipot)%initialised) then
+          call init_spme_data( ewld%spme_data(ipot), int(vdws%param(2,j)) )
+          call init_spme_data( ewld%spme_data(ipot+1), int(vdws%param(3,j)) )
+        end if
+
+        ! Prefac
+        ewld%spme_data(ipot)%scaling = vdws%param(1,j) / (vdws%param(2,j) - vdws%param(3,j))
+
+        ewld%spme_data(ipot+1)%scaling = -vdws%param(2,j) * ewld%spme_data(ipot)%scaling
+        ewld%spme_data(ipot)%scaling = vdws%param(3,j) * ewld%spme_data(ipot)%scaling
+
+        vdw_coeffs(k,ipot) = vdws%param(4,j)
+        vdw_coeffs(k,ipot+1) = vdws%param(4,j)
 
       case (VDW_BORN_HUGGINS_MEYER) ! 6-8
-        vdw_coeffs(k,ipot) = vdws%param(1,j)
-        vdw_coeffs(k,ipot+1) = vdws%param(2,j)
+        vdw_coeffs(k,ipot) = -vdws%param(4,j)
+        vdw_coeffs(k,ipot+1) = -vdws%param(5,j)
 
       case (VDW_HYDROGEN_BOND) ! 12-10
+        ewld%spme_data(ipot)%scaling = 1.0_wp
+        ewld%spme_data(ipot)%scaling = -1.0_wp
         vdw_coeffs(k,ipot) = vdws%param(1,j)
         vdw_coeffs(k,ipot+1) = vdws%param(2,j)
 
