@@ -647,10 +647,10 @@ Contains
       End If
 
       If (lmsd) Then
-        Write(files(FILE_STATS)%unit_no,'(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &
+        Write(files(FILE_STATS)%unit_no,'(i10,1p,es12.4,0p,i10,/,(1p,5(es19.12,1x)))') &
           nstep,time,iadd+1-2*mxatdm,stats%stpval(1:  27),stats%stpval(0),stats%stpval(28+2*mxatdm:iadd)
       Else
-        Write(files(FILE_STATS)%unit_no,'(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &
+        Write(files(FILE_STATS)%unit_no,'(i10,1p,es12.4,0p,i10,/,(1p,5(es19.12,1x)))') &
           nstep,time,iadd+1,         stats%stpval(1:  27),stats%stpval(0),stats%stpval(28         :iadd)
       End If
 
