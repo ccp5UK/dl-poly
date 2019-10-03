@@ -5,6 +5,6 @@ module load plumed/gnu
 
 folder="build-mpi-testing" 
 rm -rf $folder && mkdir $folder && pushd $folder
-FFLAGS="-O3 -march=native -mtune=native" cmake ../ -DBUILD_TESTING=ON -DWITH_PLUMED=ON -DBUILDER="Gitlab Slave" && make -j10 && ctest -j 2 
+cmake ../ -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DWITH_PLUMED=ON -DBUILDER="Gitlab Slave" && make -j10 && ctest -j 2 
 
 
