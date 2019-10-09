@@ -12,6 +12,17 @@ set(DESCRIPTION "DL_POLY4 classical MD code")
 set(src_dir ${CMAKE_SOURCE_DIR}/source)
 set(target_name DLPOLY.Z)
 
+#check compilers play fine
+if(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
+  if (${CMAKE_Fortran_COMPILER_VERSION} STRGREATER "5.9.9" )
+    message(STATUS "Compiler version acceptable? Yes")
+  else()
+    message(STATUS "Compiler version acceptable? No")
+    message(FATAL_ERROR "You need a GNU supported compiler, minimum version 6.0.0")
+  endif()
+elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel")
+endif()
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake" "${CMAKE_SOURCE_DIR}/cmake/Modules")
 include(DLPOLYBuildOptions)
 include(DLPOLYBuildFunctions)
@@ -66,21 +77,63 @@ else()
 endif()
 
 if(WITH_KIM)
-  find_package(PkgConfig REQUIRED)
-  pkg_check_modules(KIM REQUIRED libkim-api-v2>=2.0.0)
-  include_directories(${KIM_INCLUDE_DIRS})
-  link_directories(${KIM_LIBRARY_DIRS})
-  set(LIBS ${LIBS} ${KIM_LIBRARIES})
-  message(STATUS "Build with KIM support")
-  message(STATUS "KIM include dirs ${KIM_INCLUDE_DIRS}")
+  if(INTERNAL_KIM)
+    include(ExternalProject)
+    ExternalProject_Add(int-kim-api
+      GIT_REPOSITORY https://github.com/openkim/kim-api
+      GIT_TAG v2.1.3
+      GIT_SHALLOW true
+      GIT_PROGRESS true
+      PREFIX int-kim-api
+      BINARY_DIR int-kim-api/kim-api-build
+      SOURCE_DIR int-kim-api/kim-api
+      CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}  -DBUILD_SHARED_LIBS=off -DCMAKE_BUILD_TYPE=Release
+    )
+
+    set(KIM_INC ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/kim-api/mod)
+    set(KIM_LIB ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+    set(LIBS ${LIBS} kim-api)
+    message(STATUS "Build with OpenKIM support")
+    message(STATUS "Building OpenKIM for you")
+  else()
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(KIM REQUIRED libkim-api>=2.1.3)
+    set(KIM_INC ${KIM_LIBDIR}/kim-api/mod)
+    set(KIM_LIB ${KIM_LIBRARY_DIRS})
+    set(LIBS ${LIBS} ${KIM_LIBRARIES})
+    message(STATUS "Build with OpenKIM support")
+    message(STATUS "OpenKIM include dirs ${KIM_LIBRARIES}")
+  endif()
+  link_directories(${KIM_LIB})
 else()
-  message(STATUS "Build without KIM support")
+  message(STATUS "Build without OpenKIM support")
 endif()
 
 if(WITH_PLUMED)
-  find_package(PLUMED 2.1 REQUIRED)
-  message(STATUS "Build with PLUMED support")
-  set(LIBS ${LIBS} ${PLUMED_LIBRARIES})
+
+  if (INTERNAL_PLUMED)
+    include(ExternalProject)
+    ExternalProject_Add(int-plumed
+      GIT_REPOSITORY https://github.com/plumed/plumed2.git
+      GIT_TAG v2.5.2
+      GIT_SHALLOW true
+      GIT_PROGRESS true
+      BUILD_IN_SOURCE 1
+
+      PREFIX int-plumed-api
+      CONFIGURE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/int-plumed-api/plumed-api/configure --prefix=${CMAKE_INSTALL_PREFIX}
+      SOURCE_DIR int-plumed-api/plumed-api
+    )
+    set(PLUMED_LIB ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+    set(LIBS ${LIBS} plumed)
+    message(STATUS "Build with PLUMED support")
+    message(STATUS "Building PLUMED for you")
+  else()
+    find_package(PLUMED 2.1 REQUIRED)
+    message(STATUS "Build with PLUMED support")
+    set(LIBS ${LIBS} ${PLUMED_LIBRARIES})
+  endif()
+  link_directories(${PLUMED_LIB})
 else()
   message(STATUS "Build without PLUMED support")
 endif()
