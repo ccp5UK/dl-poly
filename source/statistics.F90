@@ -1931,7 +1931,7 @@ Contains
     Use io, only : io_histord, io_restart, io_history
     Use comms, only : gsync, gsum
     Use constants, Only : prsunt
-    
+
     Implicit None
     Type( configuration_type ),           Intent ( In    )  :: config    !! Atom details
     Type( comms_type ),                   Intent ( InOut )  :: comm      !! Communicator
@@ -2019,9 +2019,7 @@ Contains
       & stresses(4,1:config%natms) * prsunt, stresses(5,1:config%natms) * prsunt, stresses(6,1:config%natms) * prsunt, &
       & stresses(7,1:config%natms) * prsunt, stresses(8,1:config%natms) * prsunt, stresses(9,1:config%natms) * prsunt, ierr)
       ! forces(1,1:config%natms), forces(2,1:config%natms), forces(3,1:config%natms), &
-    write(0, *) "TotalE", sum(energies(1:config%natms))/engunit
-    write(0, *) "PRSUNT", prsunt, engunit
-    write(0, *) "TotalP", sum(stresses(1:9:4, 1:config%natms))*prsunt/(3.0_wp*config%volm)
+
     select case( ierr )
     case ( 0 )
       continue
@@ -2069,10 +2067,11 @@ Contains
     Integer :: iatm
 
     e_v = 0.0_wp
-    s_v = 0.0_wp
-    
+    S_v = 0.0_wp
+
     do iatm = 1, config%natms
       velocity = [config%vxx(iatm), config%vyy(iatm), config%vzz(iatm)]
+      !      Σ    (        P              +                     K                 ) *     V
       e_v = e_v + ( stats%pp_energy(iatm) + config%weight(iatm) * norm2(velocity) ) * velocity
       S_v = S_v + matmul(reshape(stats%pp_stress(:, iatm), [3,3]), velocity)
     end do

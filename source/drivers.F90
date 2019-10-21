@@ -1484,7 +1484,8 @@ Contains
         minim,mpoles,ext_field,rigid,electro,domain,kim_data,msd_data,tmr,files,green,devel,ewld,met,seed,thermo,comm)
 
       ! If system has written per-particle data
-      If (stat%collect_pp) then
+      If (stat%collect_pp .and. flow%step - flow%equil_steps >= 0) then
+
         if (flow%heat_flux .and. comm%idnode == 0) then
           Open(Newunit=heat_flux_out, File = 'HEATFLUX', Position = 'append')
           Write(heat_flux_out, *) flow%step, stat%stptmp, cnfig%volm, calculate_heat_flux(stat, cnfig)
@@ -1492,9 +1493,6 @@ Contains
         end If
 
         if (flow%write_per_particle) then
-          write(0, *) stat%stress
-          write(0, *) sum(stat%pp_stress, dim=2)
-          
           call write_per_part_contribs(cnfig, comm, stat%pp_energy, stat%pp_stress, flow%step)
         end if
 

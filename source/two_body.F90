@@ -148,6 +148,7 @@ Contains
 
     ! Coulomb
     if (ewld%vdw .and. .not. ewld%active) call error(0,'Ewald VdW requested but ewald not enabled')
+
     if (ewld%active) then
       allocate(coul_coeffs(config%mxatms), stat=fail)
       if (fail>0) call error_alloc('coul_coeffs','two_body_forces')
@@ -752,8 +753,6 @@ Contains
 
     ! Globalise short-range, KIM and metal interactions with
     ! their long-range corrections contributions: srp
-    print*,"HONK:",  engvdw_rc, engvdw_rl
-    
     stats%engsrp = engkim + (engden + engmet + met%elrc(0)) + (engvdw + vdws%elrc)
     stats%virsrp = virkim + (virden + virmet + met%vlrc(0)) + (virvdw + vdws%vlrc)
 

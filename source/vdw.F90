@@ -892,7 +892,6 @@ Contains
 
   End Subroutine vdw_direct_fs_generate
 
-
   Subroutine vdw_table_read(vdws,sites,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1989,7 +1988,6 @@ Contains
     End Do
 
   End Subroutine vdw_generate
-
 
   Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stats,neigh,vdws,config)
 
