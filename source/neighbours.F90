@@ -38,6 +38,8 @@ Module neighbours
 
     !> Largest vdw cutoff, defines Verlet neighbour list radius
     Real( Kind = wp ), Public :: cutoff
+    !> Cutoff squared
+    Real( Kind = wp ), Public :: cutoff_2
     !> Padding around cutoff
     Real( Kind = wp ), Public :: padding
     !> Actual Verlet neighbour list cutoff (cutoff+padding)

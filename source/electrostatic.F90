@@ -128,7 +128,4 @@ contains
 
   End Subroutine erfcgen
 
-
-
-
 End Module electrostatic

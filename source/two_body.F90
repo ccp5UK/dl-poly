@@ -255,12 +255,6 @@ Contains
     Call stop_timer(tmr, 'Two-Body Init')
 #endif
 
-    ! Set up non-bonded interaction (verlet) list using link cells
-    If (neigh%update) Then
-      Call link_cell_pairs(vdws%cutoff,met%rcut,lbook,megfrz,cshell,devel, &
-        neigh,mpoles,domain,tmr,config,comm)
-    End If
-
     ! Calculate all contributions from KIM
     If (kim_data%active) Then
 #ifdef CHRONO
@@ -294,7 +288,7 @@ Contains
     If (electro%key == ELECTROSTATIC_EWALD) Then
 
         call ewald_spme_forces(ewld,ewld%spme_data(0),electro,domain,config,comm, &
-          & coul_coeffs,nstep,stats,engcpe_rc,vircpe_rc)
+          & coul_coeffs,nstep,stats,engcpe_rc,vircpe_rc, tmr)
 
     End If
 
@@ -307,7 +301,7 @@ Contains
       do ipot = 1, ewld%num_pots
 
         call ewald_spme_forces(ewld,ewld%spme_data(ipot),electro,domain,config,comm, &
-          & vdw_coeffs(:,ipot),nstep,stats,engacc,viracc)
+          & vdw_coeffs(:,ipot),nstep,stats,engacc,viracc, tmr)
 
         engvdw_rc=engvdw_rc+engacc
         virvdw_rc=virvdw_rc+viracc

@@ -26,7 +26,7 @@ Module ewald_spole
   Use numerics,        Only : invert, dcell, calc_erf, calc_erf_deriv, calc_erfc, calc_erfc_deriv
   Use parallel_fft,    Only : initialize_fft, pfft, pfft_indices
   Use constants,       Only : sqrpi,twopi,zero_plus,r4pie0
-  Use timer,           Only : start_timer, stop_timer
+  Use timer,           Only : timer_type, start_timer, stop_timer
   Use spme,            Only : spme_component
   Use statistics,      Only : stats_type, calculate_stress
   Implicit None
@@ -325,7 +325,7 @@ Contains
   End Subroutine ewald_real_forces_gen
 
   subroutine ewald_spme_forces(ewld,spme_datum,electro,domain,config,comm,coeffs,nstep,stats, &
-    & engcpe_rc,vircpe_rc)
+    & engcpe_rc,vircpe_rc, tmr)
     !!----------------------------------------------------------------------!
     !!
     !! dl_poly_4 subroutine for calculating coulombic energy and force terms
@@ -356,7 +356,7 @@ Contains
     type( stats_type ),                intent( inout ) :: stats               !! Type containing details of stress and per-particle
     integer,                           intent( in    ) :: nstep               !! Number of steps taken since calculation start
     real( kind = wp ),                 intent(   out ) :: engcpe_rc,vircpe_rc !! Energy and virial of Coulomb interaction
-
+    type( timer_type ),                Intent( InOut ) :: tmr
     integer,          dimension( : ),    allocatable :: to_calc             !! List of points to calculate
     logical                                           :: llspl               !! Unknown? Does this want to be saved?
     integer                                           :: i, dim              !! Loop counters
@@ -379,7 +379,7 @@ Contains
     integer, dimension(4) :: fail                                                          !! Ierr
     logical, save :: newjob = .true.
 
-    call start_timer('Setup')
+    call start_timer(tmr, 'Setup')
 
     if ( any ( abs(coeffs) > zero_plus )) then
       continue
@@ -428,7 +428,7 @@ Contains
 
     call invert(config%cell,rcell,det)
     if (abs(det) < 1.0e-6_wp) call error(120)
-    call stop_timer('Setup')
+    call stop_timer(tmr, 'Setup')
 
     ! convert cell coordinates to fractional coordinates intervalled [0,1)
     ! (bottom left corner of md cell) and stretch over kmaxs in different
@@ -445,7 +445,7 @@ Contains
     ! (1:natms) particle can enter the halo and vice versa.  so dd
     ! bounding is unsafe!!!
 
-    call start_timer('Recip')
+    call start_timer(tmr, 'Recip')
     llspl=.true.
     do i=1,config%nlast
       do dim = 1, 3
@@ -472,9 +472,9 @@ Contains
 
     recip_indices = int (recip_coords)
 
-    call stop_timer('Recip')
+    call stop_timer(tmr, 'Recip')
 
-    call start_timer('BSpline')
+    call start_timer(tmr, 'BSpline')
     ! check for breakage of llspl when .not.llvnl = (ewld%bspline%num_spline_pad == ewld%bspline)
 
     ewld%bspline%num_spline_padded=ewld%bspline%num_spline_pad
@@ -490,23 +490,23 @@ Contains
 
     deallocate (recip_coords, stat = fail(1))
     if (fail(1) > 0) call error_dealloc('recip_coords','ewald_spme_forces')
-    call stop_timer('BSpline')
+    call stop_timer(tmr, 'BSpline')
 
-    call start_timer('Charge')
+    call start_timer(tmr, 'Charge')
     call spme_construct_charge_array(to_calc(0),ewld,to_calc(1:),recip_indices, electro, coeffs, charge_grid)
-    call stop_timer('Charge')
+    call stop_timer(tmr, 'Charge')
 
     if (.not.stats%collect_pp .or. spme_datum%pot_order /= 1) then
 
       ! If we don't need per-particle data, we can use the old method of getting the stress (cheaper)
-      call start_timer('Potential')
+      call start_timer(tmr, 'Potential')
       call spme_construct_potential_grid(ewld, rcell, charge_grid, spme_datum, &
         & potential_kernel, potential_grid, s_abc(:,0))
-      call stop_timer('Potential')
-      call start_timer('ForceEnergy')
+      call stop_timer(tmr, 'Potential')
+      call start_timer(tmr, 'ForceEnergy')
       call spme_calc_force_energy(ewld, electro, comm, domain, config, coeffs, &
         & rcell, recip_indices, potential_grid, stats%collect_pp, q_abc, f_abc)
-      call stop_timer('ForceEnergy')
+      call stop_timer(tmr, 'ForceEnergy')
     else
 
       call spme_construct_potential_grid(ewld, rcell, charge_grid, spme_datum, &
@@ -521,7 +521,7 @@ Contains
 
     end if
 
-    call start_timer('Output')
+    call start_timer(tmr, 'Output')
 
     ! Rescale to real space
     q_abc = q_abc * scale / real(comm%mxnode)
@@ -567,7 +567,7 @@ Contains
     deallocate (to_calc, stat=fail(3))
     deallocate (Q_abc, F_abc, S_abc, stat=fail(4))
     if (any(fail > 0)) call error_dealloc('output_arrays','ewald_spme_forces')
-    call stop_timer('Output')
+    call stop_timer(tmr, 'Output')
 
   end subroutine ewald_spme_forces
 

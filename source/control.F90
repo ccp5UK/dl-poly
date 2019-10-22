@@ -4708,6 +4708,9 @@ Contains
 
           If (.not.lrcut) Call error(382)
 
+          ! Set cutoff^2 now that cutoff won't change
+          neigh%cutoff_2 = neigh%cutoff**2
+
           ! define cut
 
           cut=neigh%cutoff+1.0e-6_wp
