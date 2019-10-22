@@ -1,53 +1,77 @@
 Module timer
-  !! This module has no header !
+  !!------------------------------------------------!
+  !!
+  !! dl_poly_4 module containing timing routines 
+  !!
+  !! copyright - daresbury laboratory
+  !! author    - j.s.wilkins february 2019
+  !!
+  !!------------------------------------------------!
   Use kinds, Only : wp
   Use comms, Only : comms_type,gtime,mtime,gmin,gmax,gsum,gsync,gsend,grecv,timer_tag,abort_comms
   Implicit None
 
   Private
 
-  Integer, Parameter :: max_depth = 6, max_timers = 50, max_name = 18
+  Integer, Parameter :: max_depth = 6, max_name = 18
 
-  Type, Public :: timer_type
-    Real( Kind = wp) :: elapsed,job,clear_screen
-    Logical :: proc_detail = .false.
-    Integer :: max_depth = 1
-  End Type timer_type
 
-  Type :: timer_type_new
+  Type :: node_timer
+    !!------------------------------------------------!
+    !! Timer
+    !!------------------------------------------------!
     Character( Len = max_name ) :: name
     Integer           :: id
     Real( Kind = wp ) :: max, min, total, last
     Real( Kind = wp ) :: start, stop
     Integer           :: calls
     Logical           :: running = .false.
-  end type timer_type_new
+  End Type node_timer
 
   Type :: call_stack
-    Character ( Len = max_name ), dimension( max_depth ) :: name
+    !!------------------------------------------------!
+    !! Call stack
+    !!------------------------------------------------!
+    Character ( Len = max_name ), Dimension( max_depth ) :: name
     Integer :: depth = 0
-  end type call_stack
+  End Type call_stack
 
   Type :: node
-    Type ( timer_type_new ) :: time
-    Integer :: id
-    Type ( node ), pointer :: child => null()
-    Type ( node ), pointer :: parent => null()
-    Type ( node ), pointer :: next_sibling => null()
-  end type node
+    !!------------------------------------------------!
+    !! Tree node
+    !!------------------------------------------------!
+    Type ( node_timer ) :: time
+    Type ( timer_tree ), Pointer :: tree => null()
+    Type ( node ), Pointer :: child => null()
+    Type ( node ), Pointer :: parent => null()
+    Type ( node ), Pointer :: next_sibling => null()
+  End Type node
+  
+  Type :: timer_tree
+    !!------------------------------------------------!
+    !! Tree structure
+    !!------------------------------------------------!
+    Type ( node ), Pointer :: head => null()
+    Integer :: n_timers = 0
+  End Type timer_tree
 
-  Type( timer_type ),                              save :: dummy_timer
-  Type( call_stack ),                              save :: calls
-  Type( node ), target,                            save :: call_tree
-  Integer, save :: id = 1
-
-  Type ( comms_type ), save :: timer_comm
-  Integer, save :: out_unit
-
-  interface timer_write
-    module procedure timer_write_sing
-    module procedure timer_write_mul
-  end interface timer_write
+  Type, Public :: timer_type
+    !!------------------------------------------------!
+    !! Main timer system
+    !!------------------------------------------------!
+    Type ( timer_tree ), pointer :: tree
+    Type ( call_stack ) :: stack
+    Real( Kind = wp) :: elapsed,job,clear_screen
+    Logical :: proc_detail = .false.
+    Integer :: max_depth = 1
+    Integer :: proc_id
+    Integer :: out_unit
+  End Type timer_type
+  
+  Interface timer_write
+    Module Procedure timer_write_sing
+    Module Procedure timer_write_mul
+  End Interface timer_write
 
   Public :: timer_report
   Public :: timer_last_time
@@ -55,399 +79,687 @@ Module timer
   Public :: stop_timer
   Public :: init_timer_system
   Public :: dump_call_stack
-
+  Public :: start_timer_path
+  Public :: stop_timer_path
+  
   Public :: time_elapsed
 
 Contains
 
-  Subroutine dump_call_stack ( )
-    integer :: i
+  Subroutine dump_call_stack ( stack )
+    !!------------------------------------------------!
+    !!
+    !! Print out a call stack to dump current location
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
+    Type ( call_stack ) :: stack
+    Integer :: i
 
-    call timer_write('')
-    call timer_write('Process stack:')
-    do i = 1, calls%depth
-      call timer_write(calls%name(i))
-    end do
+    Call timer_write('')
+    Call timer_write('Process stack:')
+    Do i = 1, stack%depth
+      call timer_write(stack%name(i))
+    End Do
+    
+  End Subroutine dump_call_stack
 
-  end Subroutine dump_call_stack
+  Subroutine push_stack ( tmr, name )
+    !!------------------------------------------------!
+    !!
+    !! Add a timer to the call stack
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
+    Type ( timer_type ), Intent( InOut ) :: tmr
+    Character ( Len = * ), Intent ( In    ) :: name
 
-  Subroutine push_stack ( name )
-    Character ( Len = * ) :: name
+    tmr%stack%depth = tmr%stack%depth + 1
+    If ( tmr%stack%depth > max_depth ) &
+      & Call timer_error(tmr, 'Call stack exceeds max depth : recursive call or unended timer?')
+    tmr%stack%name(tmr%stack%depth) = name
 
-    calls%depth = calls%depth + 1
-    if ( calls%depth > max_depth ) &
-      & call timer_error('Call stack exceeds max depth : recursive call or unended timer?')
-    calls%name(calls%depth) = name
+  End Subroutine push_stack
 
-  end Subroutine push_stack
+  Subroutine pop_stack ( tmr, name )
+    !!------------------------------------------------!
+    !!
+    !! Remove a timer from the call stack
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
+    Type ( timer_type ), Intent( InOut ) :: tmr
+    Character ( Len = * ), Intent( In    ) :: name
 
-  Subroutine pop_stack ( name )
-    Character ( Len = * ) :: name
+    If ( name /= tmr%stack%name(tmr%stack%depth)) &
+      & Call timer_error(tmr, 'Child timer '//name//' ended before parent')
+    tmr%stack%name(tmr%stack%depth) = ''
+    tmr%stack%depth = tmr%stack%depth - 1
 
-    if ( name /= calls%name(calls%depth)) &
-      & call timer_error('Child timer '//name//' ended before parent')
-    calls%name(calls%depth) = ''
-    calls%depth = calls%depth - 1
+  End Subroutine pop_stack
 
-  end Subroutine pop_stack
-
-  subroutine init_timer_system ( nrite, comm )
-
-    Type ( comms_type ), intent ( in ) :: comm
+  Subroutine init_timer_system ( tmr, nrite, comm )
+    !!------------------------------------------------!
+    !!
+    !! Initialise a timer system
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
+    Type ( timer_type ), intent ( inout ) :: tmr
+    Type ( comms_type ), intent ( in    ) :: comm
     Integer, intent ( in ) :: nrite
 
-    timer_comm = comm
-    out_unit = nrite
-    dummy_timer%max_depth = huge(1)
-    dummy_timer%proc_detail = .false.
-    call init_timer ( call_tree%time, 'Main')
-    Call start_timer('Main')
+    tmr%proc_id = comm%idnode
+    tmr%out_unit = nrite
+    Allocate(tmr%tree)
+    Allocate(tmr%tree%head)
+    tmr%tree%head%tree => tmr%tree
+    Call init_timer ( tmr%tree%head%time, 'Head')
+    Call start_timer( tmr, 'Main' )
+    
+  End Subroutine init_timer_system
 
-  end subroutine init_timer_system
-
-  Recursive Function find_timer ( name ) result(current)
+  Function find_timer ( tmr, name, stack_in ) result(current)
+    !!------------------------------------------------!
+    !!
+    !! Locate a timer node witin a given timer system
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
+    Type ( timer_type ), Intent ( InOut ) :: tmr
     Character ( Len = * ) :: name
+    Type ( call_stack ), Optional :: stack_in
+    Type ( call_stack ) :: stack
     Type ( node ), Pointer :: current
     Integer :: depth
 
+    If (Present(stack_in)) Then
+      stack = stack_in
+    Else
+      stack = tmr%stack
+    End If
+    
+    current => tmr%tree%head
+    depth = 0
 
-    current => call_tree
-    depth = 1
-
-    do while ( depth < calls%depth )
-      if ( .not. associated(current%child)) call timer_error('Call stack does not match call tree (no child)')
+    Do While ( depth < stack%depth )
+      If ( .not. associated(current%child)) call timer_error(tmr, 'Call stack does not match call tree (no child)')
       depth = depth + 1
       current => current%child
-      do while ( current%time%name /= calls%name(depth) )
-        if ( .not. associated(current%next_sibling)) &
-          & call timer_error('Call stack does not match call tree (no sibling)')
+      Do While ( current%time%name /= stack%name(depth) )
+        If ( .not. associated(current%next_sibling)) &
+          & Call timer_error(tmr, 'Call stack does not match call tree (no sibling)')
         current => current%next_sibling
-      end do
-    end do
+      End Do
+    End Do
 
-    if (current%time%name == name ) then
-      continue
-    else if (.not. associated(current%child)) then
-      call init_child_node(name, current)
+    If (current%time%name == name ) Then
+      Continue
+    Else If (.not. associated(current%child)) Then
+      Call init_child_node(name, current)
       current => current%child
-      return
-    else
+      Return
+    Else
       current => current%child
       do while ( current%time%name /= name )
-        if ( .not. associated(current%next_sibling)) then
-          call init_sibling_node(name, current)
+        If ( .not. Associated(current%next_sibling)) Then
+          Call init_sibling_node(name, current)
           current => current%next_sibling
-          return
-        end if
+          Return
+        End If
         current => current%next_sibling
-      end do
-    end if
+      End Do
+    End If
 
-  end Function find_timer
+  End Function find_timer
 
-  subroutine init_child_node(name, parent)
-    Character ( len = * ) :: name
-    Type ( node ), target :: parent
+  Subroutine init_child_node(name, parent)
+    !!------------------------------------------------!
+    !!
+    !! Create a timer node which is a child of the parent node
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
+    Character ( len = * ), Intent( In    ) :: name
+    Type ( node ), Target :: parent
 
-    allocate ( parent%child )
-    if ( id > max_timers ) call timer_error('Too many timers active')
-    parent%child%id = id
-    id = id + 1
+    Allocate ( parent%child )
     parent%child%parent => parent
+    parent%child%tree => parent%tree
+    parent%tree%n_timers = parent%tree%n_timers + 1
+    Call init_timer(parent%child%time, name)
 
-    call init_timer(parent%child%time, name)
+  End Subroutine init_child_node
 
-  end subroutine init_child_node
-
-  subroutine init_sibling_node(name, sibling)
+  Subroutine init_sibling_node(name, sibling)
+    !!------------------------------------------------!
+    !!
+    !! Create a timer node which is a child of the parent node
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
     Character ( len = * ) :: name
     Type ( node ) :: sibling
     Type ( node ), pointer :: child
 
-    allocate ( sibling%next_sibling )
+    Allocate ( sibling%next_sibling )
     child => sibling%next_sibling
-    if ( id > max_timers ) call timer_error('Too many timers active')
-    child%id = id
-    id = id + 1
     child%parent => sibling%parent
-    call init_timer(child%time, name)
 
-  end subroutine init_sibling_node
+    sibling%next_sibling%tree => sibling%tree
+    sibling%tree%n_timers = sibling%tree%n_timers + 1
+    
+    Call init_timer(child%time, name)
 
-  Subroutine start_timer(name)
-    !! This routine has no header !
-    Character ( Len = * )  :: name
-    Type ( node ), pointer :: timer
+  End Subroutine init_sibling_node
 
-    timer => find_timer(name)
+  Subroutine start_timer(tmr, name, stack)
+    !!------------------------------------------------!
+    !!
+    !! Start a timer running on a given timer system
+    !! If stack is supplied bypass standard call stack
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
+    Type ( timer_type ), Intent( InOut ) :: tmr
+    Character ( Len = * ), Intent( In    )  :: name
+    Type ( call_stack ), optional :: stack
+    Type ( node ), Pointer :: current_timer
 
-    call push_stack(name)
-    Call mtime(timer%time%start)
-    timer%time%running = .true.
+    current_timer => find_timer(tmr, name, stack)
 
-  end Subroutine start_timer
+    if (.not. present(stack)) Call push_stack(tmr, name)
+    Call mtime(current_timer%time%start)
+    current_timer%time%running = .true.
 
-  Subroutine stop_timer(name)
-    !! This routine has no header !
-    Character ( Len = * )  :: name
-    Type ( node ), pointer :: timer
+  End Subroutine start_timer
 
+  Subroutine stop_timer(tmr, name, stack)
+    !!------------------------------------------------!
+    !!
+    !! Stop a timer running on a given timer system
+    !! If stack is supplied bypass standard call stack
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
+    Type ( timer_type ), Intent( InOut ) :: tmr
+    Character ( Len = * ), Intent( In    )  :: name
+    Type ( call_stack ), optional :: stack
+    Type ( node ), Pointer :: current_timer
 
-    timer => find_timer(name)
+    current_timer => find_timer(tmr, name, stack)
 
-    call pop_stack(name)
-    if ( .not. timer%time%running ) call timer_error('Timer '//trim(timer%time%name)//' stopped but not running')
+    if (.not. present(stack)) Call pop_stack(tmr, name)
+    If ( .not. current_timer%time%running ) &
+      & Call timer_error(tmr, 'Timer '//Trim(current_timer%time%name)//' stopped but not running')
 
-    Call mtime(timer%time%stop)
+    Call mtime(current_timer%time%stop)
 
-    timer%time%running = .false.
-    timer%time%last = timer%time%stop - timer%time%start
-    if ( timer%time%last > timer%time%max ) timer%time%max = timer%time%last
-    if ( timer%time%last < timer%time%min ) timer%time%min = timer%time%last
-    timer%time%total = timer%time%total + timer%time%last
-    timer%time%calls = timer%time%calls + 1
+    current_timer%time%running = .false.
+    current_timer%time%last = current_timer%time%stop - current_timer%time%start
+    If ( current_timer%time%last > current_timer%time%max ) current_timer%time%max = current_timer%time%last
+    If ( current_timer%time%last < current_timer%time%min ) current_timer%time%min = current_timer%time%last
+    current_timer%time%total = current_timer%time%total + current_timer%time%last
+    current_timer%time%calls = current_timer%time%calls + 1
 
   End Subroutine stop_timer
 
-  Subroutine timer_report(tmr,comm)
-    !! This routine has no header !
-    Type( timer_type ), intent( In    ) :: tmr
-    Type( comms_type ), Intent( InOut ) :: comm
-    Character( Len = 132 ), dimension(-2:max_timers + 2) :: message
-    Real ( kind = wp ) :: call_min, call_max, call_av
-    Real ( kind = wp ) :: total_min, total_max, total_av
-    Real ( kind = wp ) :: total_elapsed, sum_timed
-    Character ( len = 7 ) :: depth_symb
-    Type ( node ), pointer :: timer
-    Integer :: proc
-    Integer :: i, depth
+  Subroutine start_timer_path(tmr, name_in, start_parents)
+    !!------------------------------------------------!
+    !!
+    !! Start a timer running on a given timer system
+    !! ignoring the timer call stack
+    !! If start_parents start all non-running timers
+    !! which are on the path -- Default TRUE
+    !! - Path should be colon separated
+    !! 
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
+    Type ( timer_type ), Intent( InOut ) :: tmr
+    Character ( Len = * ), Intent( In    )  :: name_in
+    Logical, Intent ( In    ), Optional :: start_parents
+    Logical :: parents
+    Character ( Len = max_name ) :: name
+    Type ( call_stack ) :: stack
+    Type ( node ), pointer :: is_running
+    Type ( node ), Pointer :: current_timer
+    Integer :: depth
 
-    call stop_timer('Main')
-    write(message(-2), 100)
-    write(message(-1), 101)
+    Call timer_split_stack_string(tmr, name_in, stack, name)
+    current_timer => find_timer(tmr, name, stack)
+    
+    parents = .true.
+    if ( present(start_parents) ) parents = start_parents
 
-    sum_timed = 0.0_wp
+    if (parents) then
+      do depth = 1, tmr%stack%depth
+        tmr%stack%depth = depth-1
+        is_running => find_timer(tmr, stack%name(depth), stack )
+        if (.not. is_running%time%running) call start_timer(tmr, (tmr%stack%name(depth)), stack)
+      end do
+      tmr%stack%depth = depth-1
+    end if
+    
+    call start_timer(tmr, name, stack)
 
-    call_tree%parent => call_tree
-    timer => call_tree
-    total_elapsed = timer%time%total
-    call gmax(comm,total_elapsed)
+  End Subroutine start_timer_path
 
-    i = 0
-    depth = 0
+  Subroutine stop_timer_path(tmr, name_in, stop_parents)
+    !!------------------------------------------------!
+    !!
+    !! Stop a timer running on a given timer system
+    !! ignoring the timer call stack
+    !! If stop_parents stop all running timers
+    !! which are on the path -- Default TRUE
+    !! - Path should be colon separated
+    !! 
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
+    Type ( timer_type ), Intent( InOut ) :: tmr
+    Character ( Len = * ), Intent( In    )  :: name_in
+    Logical, Intent ( In    ), Optional :: stop_parents
+    Logical :: parents
+    Character ( Len = max_name ) :: name
+    Type ( call_stack ) :: stack
+    Type ( node ), pointer :: is_running
+    Type ( node ), Pointer :: current_timer
+    Integer :: depth
 
-    do while (associated(timer%parent))
-      nullify(call_tree%parent)
-      if (timer%time%running) Call timer_write('Program terminated while timer '//&
-        & trim(timer%time%name)//' still running')
+    Call timer_split_stack_string(tmr, name_in, stack, name)
 
-      if ( associated(timer%child) ) then
-        depth_symb = repeat(" ",depth)//"|v"
-      else
-        depth_symb = repeat(" ",depth)//"|-"
-      end if
+    call stop_timer(tmr, name, stack)
 
-      total_min = timer%time%total
-      total_max = timer%time%total
-      total_av  = timer%time%total
-      Call gmin(comm,total_min)
-      Call gmax(comm,total_max)
-      Call gsum(comm,total_av)
-      total_av = total_av / comm%mxnode
-      if (depth == 1) sum_timed = sum_timed + total_av
+    parents = .true.
+    if ( present(stop_parents) ) parents = stop_parents
 
-      call_min  = timer%time%min
-      call_max  = timer%time%max
-      Call gmin(comm,call_min)
-      Call gmax(comm,call_max)
-      call_av   = total_av/timer%time%calls
-      write(message(i), 102 ) depth_symb,timer%time%name, timer%time%calls, &
-        & call_min, call_max, call_av,  &
-        & total_min, total_max, total_av, total_av*100.0_wp/total_elapsed
-
-      if (associated(timer%child) .and. depth < tmr%max_depth) then
-        timer => timer%child
-        depth = depth + 1
-      else if (associated(timer%next_sibling)) then
-        timer => timer%next_sibling
-      else
-        do while (associated(timer%parent))
-          timer => timer%parent
-          depth = depth - 1
-          if (associated(timer%next_sibling)) then
-            timer => timer%next_sibling
-            exit
-          end if
-        end do
-      end if
-      i = i + 1
-
-    end do
-
-    write(message(i), 103) "Untimed           ", & 
-      & total_elapsed - sum_timed , 100.0_wp - sum_timed*100.0_wp/total_elapsed
-    write(message(i+1), 100)
-    call timer_write(message(-2:i+1))
-
-    call timer_write('')
-
-    if (tmr%proc_detail) then
-      write(message(-2),200)
-      write(message(-1),201)
-      call timer_write(message(-2:-1))
-
-      depth = 0 
-
-      do proc = 0, comm%mxnode-1
-        if (comm%idnode == proc) then
-          write(message(-2), 100)
-          write(message(-1), 201)
-
-          call_tree%parent => call_tree
-          timer => call_tree
-          i = 0
-          do while (associated(timer%parent))
-            nullify(call_tree%parent)
-
-            if ( associated(timer%child) ) then
-              depth_symb = repeat(" ",depth)//"|v"
-            else
-              depth_symb = repeat(" ",depth)//"|-"
-            end if
-            total_av  = timer%time%total
-            sum_timed = sum_timed + total_av
-            call_min  = timer%time%min
-            call_max  = timer%time%max
-            call_av   = total_av/timer%time%calls
-            write(message(i), 202 ) depth_symb,timer%time%name, proc, timer%time%calls, &
-              & call_min, call_max, call_av, total_av, total_av*100.0_wp/total_elapsed
-
-            if (associated(timer%child) .and. depth < tmr%max_depth) then
-              timer => timer%child
-              depth = depth + 1
-
-            else if (associated(timer%next_sibling)) then
-              timer => timer%next_sibling
-
-            else
-              do while (associated(timer%parent))
-                timer => timer%parent
-                depth = depth - 1
-
-                if (associated(timer%next_sibling)) then
-                  timer => timer%next_sibling
-                  exit
-                end if
-              end do
-            end if
-            i = i + 1
-
-          End do
-          write(message(i), 200)
-          if (proc > 0) call gsend(comm, message, 0, timer_tag)
-        end if
-        if (comm%idnode == 0 .and. proc > 0) then
-          call grecv(comm, message, proc, timer_tag)
-          call timer_write(message(0:i))
-        else if (proc == 0) then
-          call timer_write(message(0:i))
-        end if
-
-        call gsync(comm)
+    if (parents) then
+      do depth = tmr%stack%depth, 1, -1
+        tmr%stack%depth = depth-1
+        is_running => find_timer(tmr, tmr%stack%name(depth), stack )
+        if (is_running%time%running) call stop_timer(tmr, (tmr%stack%name(depth)), stack)
       end do
     end if
 
+  End Subroutine stop_timer_path
+  
+  Subroutine timer_report(tmr,comm)
+    !!------------------------------------------------!
+    !!
+    !! Stop the main timer system and print the full
+    !! table of timers to stdout
+    !! 
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
+    Type( timer_type ), Intent( InOut ) :: tmr
+    Type( comms_type ), Intent( InOut ) :: comm
+    Type ( node ), Pointer :: current_timer
+    Character( Len = 138 ), Dimension(:), Allocatable :: message
+    Integer :: proc
+    Integer :: ierr
+    
+    Call stop_timer(tmr, 'Main')
 
+    current_timer => tmr%tree%head%child
+    
+    Allocate(message(-2:tmr%tree%n_timers+3), stat=ierr)
+    If ( ierr > 0 ) call timer_error(tmr, 'Error allocating message in timer_print_tree')
 
-100 format("+",28("-"),4("+",10("-")),3("+",11("-")),"+",9("-"),"+")
-101 format("|",12X,"Name",12X,"|   Calls  ","| Call Min ","| Call Max ","| Call Ave ", &
-      & "|  Tot Min  ","|  Tot Max  ","|  Tot Ave  ","|    %    ","|")
-102 format("|",1X,A7,1X,A18,1X,"|",1X,I8.1,1X,3("|",1X,F8.4,1X),3("|",1X,F9.4,1X),"|",1X,F7.3,1X,"|")
-103 format("|",9X,A18,1X,4("|",10X),2("|",11X),"|",1X,F9.4,1X,"|",1X,F7.3,1X,"|")
+    Call timer_print_tree(comm, tmr, current_timer, tmr%max_depth, -1, message)
+    Call timer_write(message, tmr)
+    
+    If (tmr%proc_detail) Then
+      Do proc = 0, comm%mxnode-1
+        If (comm%idnode == proc) Then
+          Call timer_print_tree(comm, tmr, current_timer, tmr%max_depth, proc, message)
+        End If
 
-200 format("+",28("-"),5("+",10("-")),"+",11("-"),"+",9("-"),"+")
-201 format("|",12X,"Name",12X,"| Process  ","|   Calls  ","| Call Min ","| Call Max ","| Call Ave ", &
-      & "|   Total   ","|    %    ","|")
-202 format("|",1X,A7,1X,A18,1X,2("|",1X,I8.1,1X),3("|",1X,F8.4,1X),"|",1X,F9.4,1X,"|",1X,F7.3,1X,"|")
+        If (proc /= 0) Then
+          If (comm%idnode == proc) Call gsend(comm, message, 0, timer_tag)
+          If (comm%idnode == 0) Call grecv(comm, message, proc, timer_tag)
+        End If
+        
+        Call timer_write(message, tmr)
+        Call gsync(comm)
+      End Do
+    End If
 
   End Subroutine timer_report
 
-  Subroutine init_timer(timer, name)
-    !! This routine has no header !
-    Type ( timer_type_new ) :: timer
+  Subroutine timer_print_tree(comm, tmr, init_node, max_depth, proc_id, message)
+    !!------------------------------------------------!
+    !!
+    !! Return a table of the given timer system to
+    !! the message variable
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
+    Implicit None
+    Type ( comms_type ), Intent ( InOut ) :: comm
+    Type ( timer_type ), Intent ( In    ) :: tmr
+    Type ( node ), Target, Intent ( In     )  :: init_node
+    Character( Len = 138 ), Dimension(-2:), Intent(   Out ) :: message
+    Type ( node ), Pointer :: current_timer
+    Integer, Intent ( In    ) :: proc_id
+    Integer, Intent ( In    ) :: max_depth
+    Integer :: write_node
+    Real ( Kind = wp ) :: total_min, total_max, total_av
+    Real ( Kind = wp ) :: call_min, call_max, call_av
+    Real ( Kind = wp ) :: sum_timed, total_elapsed
+    Integer :: depth, itimer
+    Character( Len = 8   ) :: proc_string
+    Character( Len = 7   ) :: depth_symb
+
+    message(:) = ''
+    
+    sum_timed = 0.0_wp
+
+    If ( proc_id < 0 ) Then
+      write_node = 0
+      proc_string = "All"
+    Else
+      write_node = proc_id
+      Write(proc_string,'(i8.1)') proc_id
+    End If
+    
+    current_timer => init_node
+    total_elapsed = current_timer%time%total
+    
+    depth = 0
+    itimer = 0
+    
+    ! Write table open and header
+    Write(message(-2), 100)
+    Write(message(-1), 101)
+
+    Do While (depth > -1)
+
+      If (current_timer%time%running) &
+        & Call timer_error(tmr, 'Program terminated while timer '// trim(current_timer%time%name)//' still running')
+      
+      If ( depth == 0 .and. current_timer%time%name /= "Main") Then
+        depth_symb = Repeat('-', 7)
+      Else If ( Associated(current_timer%child) ) Then
+        depth_symb = Repeat(" ",depth)//"|v"
+      Else
+        depth_symb = Repeat(" ",depth)//"|-"
+      End If
+
+      total_min = current_timer%time%total
+      total_max = current_timer%time%total
+      total_av  = current_timer%time%total
+
+      If ( proc_id < 0 ) Then
+        Call gmin(comm,total_min)
+        Call gmax(comm,total_max)
+        Call gsum(comm,total_av)
+        total_av = total_av / comm%mxnode
+      End If
+      
+      if (depth == 1 .and. current_timer%parent%time%name == "Main") sum_timed = sum_timed + total_av
+
+      call_min  = current_timer%time%min
+      call_max  = current_timer%time%max
+
+      If ( proc_id < 0 ) Then
+        Call gmin(comm,call_min)
+        Call gmax(comm,call_max)
+      End If
+      
+      call_av   = total_av/current_timer%time%calls
+
+      Write(message(itimer), 102 ) depth_symb,current_timer%time%name, proc_string, current_timer%time%calls, &
+        & call_min, call_max, call_av,  &
+        & total_min, total_max, total_av, total_av*100.0_wp/total_elapsed
+      
+      If (Associated(current_timer%child) .and. depth < max_depth ) Then
+        current_timer => current_timer%child
+        depth = depth + 1
+      Else If (Associated(current_timer%next_sibling)) Then
+        current_timer => current_timer%next_sibling
+      Else If (Associated(current_timer%parent)) Then ! Recurse back up
+        Do While (Associated(current_timer%parent))
+          current_timer => current_timer%parent
+          depth = depth - 1
+          If (associated(current_timer%next_sibling)) Then
+            current_timer => current_timer%next_sibling
+            Exit
+          End If
+        End Do
+      Else
+        Exit
+      End If
+      itimer = itimer + 1
+
+    End Do
+
+    Write(message(itimer), 102) Repeat('-',7), "Untimed           ", proc_string, 0, &
+      & 0.0_wp, 0.0_wp, 0.0_wp, 0.0_wp, 0.0_wp, & 
+      & total_elapsed - sum_timed , 100.0_wp - sum_timed*100.0_wp/total_elapsed
+    Write(message(itimer+1), 100)
+    Write(message(itimer+2), *) ''
+
+100 Format(1X,"+",28("-"),2("+",10("-")),7("+",11("-")),"+")
+101 Format(1X,"|",12X,"Name",12X,"| Process  ","|  Calls   ","| Call Min  ","| Call Max  ",&
+      & "| Call Ave  ","|  Tot Min  ","|  Tot Max  ","|  Tot Ave  ","|     %     ","|")
+102 Format(1X,"|",1X,A7,1X,A18,1X,"|",1X,A8,1X,"|",1X,I8,1X,"|",1X,F9.4,1X,"|",1X,F9.4,1X,&
+      & "|",1X,F9.4,1X,"|",1X,F9.4,1X,"|",1X,F9.4,1X,"|",1X,F9.4,1X,"|",2X,F8.4,1X,"|")
+    
+  End Subroutine timer_print_tree
+  
+  Subroutine init_timer(current_timer, name)
+    !!------------------------------------------------!
+    !!
+    !! Initialise a node timer
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
+    Type ( node_timer ) :: current_timer
     Character ( Len = * )  :: name
 
-    timer%name  = name
-    timer%calls = 0
-    timer%max   = -1.0_wp
-    timer%min   = huge(1.0_wp)
-    timer%total = 0.0_wp
-    timer%last  = huge(1.0_wp)
+    current_timer%name  = name
+    current_timer%calls = 0
+    current_timer%max   = -1.0_wp
+    current_timer%min   = huge(1.0_wp)
+    current_timer%total = 0.0_wp
+    current_timer%last  = huge(1.0_wp)
 
-  end Subroutine init_timer
+  End Subroutine init_timer
 
-  Subroutine timer_last_time(name, screen)
-    !! This routine has no header !
+  Subroutine timer_last_time(tmr, name, screen)
+    !!------------------------------------------------!
+    !!
+    !! Write the length of the previous call to a given
+    !! node timer
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
+    Type ( timer_type ), Intent ( InOut ) :: tmr
     Character ( Len = * )  :: name
     Logical, Optional :: screen
     Logical :: to_screen
     Character ( Len = 72 ) :: message
-    Type ( node ), pointer :: timer
+    Type ( node ), pointer :: current_timer
 
     to_screen = .false.
-    if (present(screen)) to_screen = screen
+    If (Present(screen)) to_screen = screen
 
-    timer => find_timer(name)
-    if (to_screen) then
-      write(*,*) timer%time%name, timer%time%calls, timer%time%last
-    else
-      write(message,'(a,2(1X,i0))') timer%time%name, timer%time%calls, timer%time%last
-      call timer_write(message)
-    end if
-  end Subroutine timer_last_time
+    current_timer => find_timer(tmr, name)
+    If (to_screen) Then
+      Write(0,*) current_timer%time%name, current_timer%time%calls, current_timer%time%last
+    Else
+      Write(message,'(a,2(1X,i0))') current_timer%time%name, current_timer%time%calls, current_timer%time%last
+      Call timer_write(message, tmr)
+    End If
+  End Subroutine timer_last_time
 
-  Subroutine time_elapsed(time)
-    !! This routine has no header !
-    Real( Kind = wp ), Intent( InOut ) :: time
+  Subroutine time_elapsed(tmr)
+    !!------------------------------------------------!
+    !!
+    !! Write the elapsed time since the start of the
+    !! program
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
+    Type ( timer_type ), Intent( InOut ) :: tmr
 
     Character( Len = 256 ) :: message
 
-    Call gtime(time)
-    Write(message,'(a,f12.3,a)') "time elapsed since job start: ", time, " sec"
-    Call timer_write(message)
+    Call gtime(tmr%elapsed)
+    Write(message,'(a,f12.3,a)') "time elapsed since job start: ", tmr%elapsed, " sec"
+    Call timer_write(message, tmr)
+    
   End Subroutine time_elapsed
 
-  Subroutine timer_write_sing(message)
-    Character( Len = * ), intent(in) :: message
-
-    if ( timer_comm%idnode == 0 ) &
-      write(out_unit,*) message
-
-  end Subroutine timer_write_sing
-
-  Subroutine timer_write_mul(message)
-    Character( Len = * ), dimension(:), intent(in) :: message
+  Subroutine timer_write_mul(message, timer_in)
+    !!------------------------------------------------!
+    !!
+    !! Write multiple lines to standard out
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
+    Character( Len = * ), Dimension(:), Intent( In    ) :: message
+    Type ( timer_type ), Optional, Intent ( In    ):: timer_in
     Integer :: i
 
-    if ( timer_comm%idnode == 0 ) then
-      do i = 1, size(message)
-        write(out_unit,*) message(i)
-      end do
-    end if
+    If (Present(timer_in)) Then
 
-  end Subroutine timer_write_mul
+      If ( timer_in%proc_id == 0 ) Then
+        Do i = 1, Size(message)
+          Write(timer_in%out_unit,*) message(i)
+        End Do
+      End If
+      
+    Else
 
+      Do i = 1, Size(message)
+        Write(0,*) message(i)
+      End Do
+      
+    End If
+    
+  End Subroutine timer_write_mul
 
-  Subroutine timer_error(message)
-    Character ( len = * ) :: message
+  Subroutine timer_write_sing(message, timer_in)
+    !!------------------------------------------------!
+    !!
+    !! Write a single line to standard out
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
+    Character( Len = * ), Intent( In    ) :: message
+    Type ( timer_type ), Optional, Intent ( In    ):: timer_in
+    
+    If (Present(timer_in)) Then
 
-    call timer_write('')
-    ! call timer_report(dummy_timer, timer_comm)
-    call timer_write(message)
-    call timer_write('')
-    call dump_call_stack()
+      If ( timer_in%proc_id == 0 ) Then
+          Write(timer_in%out_unit,*) message
+      End If
+      
+    Else
 
-    stop
-  end Subroutine timer_error
+        Write(0,*) message
+      
+    End If
+    
+  End Subroutine timer_write_sing
+
+  Subroutine timer_error(tmr, message)
+    !!------------------------------------------------!
+    !!
+    !! Report an error with the timer system
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
+    Type ( timer_type ), Intent ( In    ):: tmr
+    Character ( len = * ), Intent( In    ) :: message
+   
+    Call timer_write('')
+    ! Call timer_report(dummy_timer, timer_comm)
+    Call timer_write(message)
+    Call timer_write('')
+    Call dump_call_stack(tmr%stack)
+
+    Stop
+  End Subroutine timer_error
+
+  Subroutine timer_split_stack_string(tmr, stack_string, newStack, name)
+    !!------------------------------------------------!
+    !!
+    !! Split a colon-separated path string into a stack
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins february 2019
+    !!
+    !!------------------------------------------------!
+    Type ( timer_type ), Intent ( In    ):: tmr
+    Character( Len = * ), Intent( In    ) :: stack_string
+    Character( Len = 256 ) :: stack
+    Type ( call_stack ), Intent(   Out ) :: newStack
+    Character( Len = max_name ), Intent(   Out ) :: name
+    Integer :: i
+    Integer :: cnt
+    
+    stack = Adjustl(stack_string)
+    cnt = 1
+    Do i = 1, Len(stack)
+      If (stack(i:i) == ":") cnt = cnt + 1
+    End Do
+   
+    If (cnt > max_depth) Call timer_error(tmr, 'Stack depth greater than max depth in timer_split_stack')
+
+    newStack%depth = 0
+    Do While (Index(stack,':') > 0)
+      newStack%depth = newStack%depth + 1
+      newStack%name(newStack%depth) = Trim(stack(1:index(stack,':')-1))
+
+      stack(1:index(stack,':')) = " "
+      stack = adjustl(stack)
+      
+    End Do
+
+    name = Trim(stack)
+          
+  End Subroutine timer_split_stack_string
 
 End Module timer

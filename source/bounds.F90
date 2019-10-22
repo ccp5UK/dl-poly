@@ -39,7 +39,7 @@ Module bounds
   Use external_field, Only : external_field_type
   Use rigid_bodies, Only : rigid_bodies_type
   Use electrostatic, Only : electrostatic_type
-  Use ewald, Only : ewald_type, ewald_type
+  Use ewald, Only : ewald_type
   Use io, Only : io_type
   Use filename, Only : file_type
   Use site, Only : site_type
@@ -674,7 +674,7 @@ Contains
     Call info(message,.true.)
 
     tol=Min(0.05_wp,0.005_wp*neigh%cutoff)                                        ! tolerance
-    if (ewld%active) then
+    if (ewld%active) then ! 2% (w/ SPME) or 4% (w/ PS)
       test = 0.02_wp
     else if (pois%active) then
       test = 0.04_wp
@@ -716,7 +716,7 @@ Contains
         If (comm%mxnode == 1 .and. Min(ilx,ily,ilz) < 2) Then
           padding1 = 0.95_wp * (0.5_wp*config%width - neigh%cutoff - 1.0e-6_wp)
         End If
-        test = 1.0_wp
+
         If (neigh%padding <= zero_plus) Then ! When neigh%padding is undefined give it some value
           If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) >= 2) Then ! good non-exception
             neigh%padding = test * neigh%cutoff

@@ -1,5 +1,4 @@
 Module coul_spole
-  !! This module has no header !
   Use kinds,           Only : wp
   Use configuration,   Only : configuration_type
   Use constants,       Only : r4pie0,zero_plus,sqrpi

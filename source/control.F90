@@ -65,7 +65,7 @@ Module control
     ELECTROSTATIC_EWALD,ELECTROSTATIC_DDDP, &
     ELECTROSTATIC_COULOMB,ELECTROSTATIC_COULOMB_FORCE_SHIFT, &
     ELECTROSTATIC_COULOMB_REACTION_FIELD,ELECTROSTATIC_POISSON
-  Use ewald, Only : ewald_type, ewald_type
+  Use ewald, Only : ewald_type
   Use trajectory, Only : trajectory_type
   Use errors_warnings, Only : error,info,warning
   Use filename, Only : file_type,FILE_CONTROL,FILE_OUTPUT,FILE_CONFIG,FILE_FIELD, &
@@ -91,28 +91,28 @@ Contains
     pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws, &
     rdf,minim,mpoles,electro,ewld,seed,traj,files,tmr,config,flow,comm)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for reading in the simulation control parameters
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov february 2017
-    ! contrib   - i.j.bush february 2014
-    ! contrib   - a.v.brukhno march 2014
-    ! contrib   - m.a.seaton june 2014
-    ! contrib   - h.a.boateng february 2015
-    ! contrib   - p.s.petkov february 2015
-    ! contrib   - a.m.elena september 2015
-    ! contrib   - a.m.elena february 2017
-    ! contrib   - g.khara & m.a.seaton march 2017
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    ! contrib   - a.m.elena february 2019, cherry pick 4.09.2
-    !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!---------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for reading in the simulation control parameters
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov february 2017
+    !! contrib   - i.j.bush february 2014
+    !! contrib   - a.v.brukhno march 2014
+    !! contrib   - m.a.seaton june 2014
+    !! contrib   - h.a.boateng february 2015
+    !! contrib   - p.s.petkov february 2015
+    !! contrib   - a.m.elena september 2015
+    !! contrib   - a.m.elena february 2017
+    !! contrib   - g.khara & m.a.seaton march 2017
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !! contrib   - a.m.elena february 2019, cherry pick 4.09.2
+    !!
+    !!---------------------------------------------------------------------!
 
     Type( ttm_type ), Intent( InOut ) :: ttm
     Logical,                Intent(   Out ) :: lfce
@@ -2841,7 +2841,7 @@ Contains
 
         Call warning(36,0.0_wp,0.0_wp,0.0_wp)
 
-!!!! OTHER NON-TRANSFERABLE OPTIONS FROM DL_POLY_2/Classic !!!!
+        !!!! OTHER NON-TRANSFERABLE OPTIONS FROM DL_POLY_2/Classic !!!!
         ! read primary cutoff option for multiple timestepping
 
       Else If (word(1:4) == 'prim') Then
@@ -2854,7 +2854,7 @@ Contains
 
         Call warning(37,0.0_wp,0.0_wp,0.0_wp)
 
-!!!! OTHER NON-TRANSFERABLE OPTIONS FROM DL_POLY_2/Classic !!!!
+        !!!! OTHER NON-TRANSFERABLE OPTIONS FROM DL_POLY_2/Classic !!!!
 
         ! read data dumping interval
 
@@ -3002,7 +3002,7 @@ Contains
 2000 Continue
     If (comm%idnode == 0) Call files(FILE_CONTROL)%close()
 
-!!! FIXES !!!
+    !!! FIXES !!!
     ! fix on step-dependent options
 
     If (minim%freq  == 0) minim%freq  = flow%equil_steps+1
@@ -3010,7 +3010,7 @@ Contains
     If (thermo%freq_tgaus == 0) thermo%freq_tgaus = flow%equil_steps+1
     If (thermo%freq_tscale == 0) thermo%freq_tscale = flow%equil_steps+1
 
-!!! REPORTS !!!
+    !!! REPORTS !!!
     ! report restart
 
     If (flow%restart_key == RESTART_KEY_CLEAN) Then
@@ -3412,7 +3412,7 @@ Contains
       End If
     End If
 
-!!! RESORT TO DEFAULTS IF NEED BE !!!
+    !!! RESORT TO DEFAULTS IF NEED BE !!!
 
     If      (flow%run_steps == 0) Then !!! DRY RUN
       ltemp = .true. ! zero is ok
@@ -3473,7 +3473,7 @@ Contains
     thermo%vel_es2 = thermo%vel_es2 * thermo%vel_es2 ! square of cutoff velocity for inhomogeneous Langevin thermostat and ttm
     ttm%amin = Max (ttm%amin, 1)        ! minimum number of atoms for ttm ionic temperature cell
 
-!!! ERROR CHECKS !!!
+    !!! ERROR CHECKS !!!
     ! Temperature
 
     If ((.not.ltemp) .or. (flow%run_steps > 0 .and. thermo%temp < 1.0_wp)) Call error(380)
@@ -3656,26 +3656,26 @@ Contains
     pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf,mpoles, &
     electro,ewld,kim_data,files,flow,comm)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for raw scanning the contents of the control file
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov february 2017
-    ! contrib   - i.j.bush february 2014
-    ! contrib   - a.v.brukhno & i.t.todorov april 2014 (intramolecular TPs & PDFs)
-    ! contrib   - m.a.seaton june 2014 (VAF)
-    ! contrib   - p.s.petkov february 2015
-    ! contrib   - a.m.elena february 2017
-    ! contrib   - m.a.seaton march 2017 (TTM)
-    ! contrib   - a.b.g.chalk march 2017
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!---------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for raw scanning the contents of the control file
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov february 2017
+    !! contrib   - i.j.bush february 2014
+    !! contrib   - a.v.brukhno & i.t.todorov april 2014 (intramolecular TPs & PDFs)
+    !! contrib   - m.a.seaton june 2014 (VAF)
+    !! contrib   - p.s.petkov february 2015
+    !! contrib   - a.m.elena february 2017
+    !! contrib   - m.a.seaton march 2017 (TTM)
+    !! contrib   - a.b.g.chalk march 2017
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!---------------------------------------------------------------------!
     Type( ttm_type ), Intent( InOut ) :: ttm
     Logical,           Intent(   Out ) :: l_n_r,lzdn,l_ind
     Integer,           Intent( In    ) :: max_rigid,imcon
@@ -3756,6 +3756,8 @@ Contains
 
     rdf%l_collect  = (rdf%max_rdf > 0)
     l_n_r = .not.rdf%l_collect
+
+    lzdn = .false.
 
     lvdw  = (vdws%max_vdw > 0)
     vdws%no_vdw = .false.
@@ -4705,9 +4707,6 @@ Contains
           ! neigh%cutoff must exist
 
           If (.not.lrcut) Call error(382)
-
-          ! Set cutoff^2 now that cutoff won't change
-          neigh%cutoff_2 = neigh%cutoff**2
 
           ! define cut
 

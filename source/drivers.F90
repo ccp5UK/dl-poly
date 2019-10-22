@@ -14,7 +14,7 @@ Module drivers
 
   Use minimise, Only : minimise_type,minimise_relax,zero_k_optimise
   Use two_body, Only : two_body_forces
-  Use ewald, Only : ewald_type, ewald_type
+  Use ewald, Only : ewald_type
 
 
   ! DEFECTS MODULE
@@ -76,7 +76,7 @@ Module drivers
 
   ! VNL module
 
-  Use neighbours, Only : neighbours_type,vnl_check
+  Use neighbours, Only : neighbours_type,vnl_check, link_cell_pairs
 
   ! DPD module
 
@@ -222,7 +222,7 @@ Contains
     Type( msd_type ), Intent( InOut ) :: msd_data
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( development_type ), Intent( InOut ) :: devel
-    Class( ewald_type ), Intent( InOut ) :: ewld
+    Type( ewald_type ), Intent( InOut ) :: ewld
     Type( metal_type ), Intent( InOut ) :: met
     Type( file_type ), Intent( InOut ) :: files(:)
     Type( greenkubo_type ), Intent( InOut ) :: green
@@ -263,13 +263,18 @@ Contains
     End If
     stat%stress = 0.0_wp
 
-    ! Calculate pair-like forces (metal,vdws,electrostatic) and add lrc
 
-    If (.not.(met%max_metal == 0 .and. electro%key == ELECTROSTATIC_NULL .and. &
-      vdws%no_vdw .and. rdf%max_rdf == 0) .or. kim_data%active) Then
-      Call two_body_forces(thermo%ensemble,flow%book,cnfig%megfrz, &
-        flow%equilibration,flow%equil_steps,flow%step,cshell,stat,ewld,devel,met,pois,neigh,sites,vdws,rdf, &
-        mpoles,electro,domain,tmr,kim_data,cnfig,comm)
+    ! Initialise variables for two_body interaction (including long range, which is not strictly a two_body interaction problem)
+    stat%engsrp    = 0.0_wp
+    stat%virsrp    = 0.0_wp
+    stat%engcpe    = 0.0_wp
+    stat%vircpe    = 0.0_wp    
+
+    ! Set up non-bonded interaction (verlet) list using link cells
+    If ((.not.(met%max_metal == 0 .and. electro%key == ELECTROSTATIC_NULL .and. &
+        vdws%no_vdw .and. rdf%max_rdf == 0) .or. kim_data%active).and.neigh%update) Then
+       Call link_cell_pairs(vdws%cutoff,met%rcut,flow%book,cnfig%megfrz,cshell,devel, &
+                          neigh,mpoles,domain,tmr,cnfig,comm)
     End If
 
     ! Calculate tersoff forces
@@ -283,7 +288,11 @@ Contains
     ! Calculate four-body forces
 
     If (fourbody%n_potential > 0) Call four_body_forces(fourbody,stat,neigh,domain,cnfig,comm)
-    call start_timer('Bonded Forces')
+
+#ifdef CHRONO
+    Call start_timer(tmr, 'Bonded Forces')
+#endif
+
     ! Calculate shell model forces
 
     If (cshell%megshl > 0) Call core_shell_forces(cshell,stat,cnfig,comm)
@@ -338,7 +347,18 @@ Contains
       switch = 1 + Merge(1,0,ltmp)
       Call inversions_forces(switch,stat%enginv,stat%virinv,stat%stress,inversion,cnfig,comm)
     End If
-    call stop_timer('Bonded Forces')
+#ifdef CHRONO
+    Call stop_timer(tmr,'Bonded Forces')
+#endif
+    
+    ! Calculate pair-like forces (metal,vdws,electrostatic) and add lrc
+
+    If (.not.(met%max_metal == 0 .and. electro%key == ELECTROSTATIC_NULL .and. &
+      vdws%no_vdw .and. rdf%max_rdf == 0) .or. kim_data%active) Then
+      Call two_body_forces(thermo%ensemble,flow%book,cnfig%megfrz, &
+        flow%equilibration,flow%equil_steps,flow%step,cshell,stat,ewld,devel,met,pois,neigh,sites,vdws,rdf, &
+        mpoles,electro,domain,tmr,kim_data,cnfig,comm)
+    End If
 
     ! Apply external field
 
@@ -475,7 +495,7 @@ Contains
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
     Type( kim_type ), Intent( InOut ) :: kim_data
-    Class( ewald_type), Intent( InOut ) :: ewld
+    Type( ewald_type), Intent( InOut ) :: ewld
     Type( greenkubo_type), Intent( InOut ) :: green
     Type( minimise_type), Intent( InOut ) :: minim
     Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -494,7 +514,7 @@ Contains
 
     !! JW952
     ! Hack
-    Call vnl_check(flow%strict,cnfig%width,neigh,stat,domain,cnfig,12,kim_data,comm)
+    Call vnl_check(flow%strict,cnfig%width,neigh,stat,domain,cnfig,ewld%bspline%num_splines,kim_data,comm)
 
     If (neigh%update) Then
 
@@ -1381,7 +1401,7 @@ Contains
     Type( file_type ), Intent( InOut ) :: files(:)
     Type( defects_type), Intent( InOut) :: dfcts(:)
     Type( electrostatic_type ), Intent( InOut ) :: electro
-    Class( ewald_type), Intent ( InOut ) :: ewld
+    Type( ewald_type), Intent ( InOut ) :: ewld
     Type( greenkubo_type ), Intent( InOut ) :: green
     Type( impact_type ), Intent( InOut ) :: impa
     Type( minimise_type ), Intent( InOut ) :: minim
@@ -1527,6 +1547,12 @@ Contains
 
       End If ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
 
+      ! Evaluate forces
+
+      Call w_calculate_forces(cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
+        inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
+        minim,mpoles,ext_field,rigid,electro,domain,kim_data,msd_data,tmr,files,green,devel,ewld,met,seed,thermo,comm)
+
       ! Calculate physical quantities, collect statistics and report at t=0
 
       If (flow%step == 0) Then
@@ -1643,7 +1669,7 @@ Contains
     Type( timer_type), Intent( InOut ) :: tmr
     Type( tethers_type), Intent( InOut ) :: tether
     Type( greenkubo_type), Intent( InOut ) :: green
-    Class( ewald_type), Intent( InOut ) :: ewld
+    Type( ewald_type), Intent( InOut ) :: ewld
     Type( development_type), Intent( InOut ) :: devel
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -1809,6 +1835,16 @@ Contains
           ! Make sure RDFs are complete (flow%book=.false. - no exclusion lists)
 
           If (rdf%l_collect) Then
+          ! Initialise variables for two_body interaction (including long range, which is not strictly a two_body interaction problem)
+            stat%engsrp    = 0.0_wp
+            stat%virsrp    = 0.0_wp
+            stat%engcpe    = 0.0_wp
+            stat%vircpe    = 0.0_wp    
+          ! Set up non-bonded interaction (verlet) list using link cells
+            If (neigh%update) Then
+              Call link_cell_pairs(vdws%cutoff,met%rcut,flow%book,cnfig%megfrz,cshell,devel, &
+                          neigh,mpoles,domain,tmr,cnfig,comm)
+            End If
             Call two_body_forces(thermo%ensemble,.false.,cnfig%megfrz, &
               flow%equilibration,flow%equil_steps,nstph,cshell,stat,ewld,devel,met,pois,neigh,sites, &
               vdws,rdf,mpoles,electro,domain,tmr,kim_data,cnfig,comm)
@@ -2065,7 +2101,7 @@ Contains
     Type( threebody_type ), Intent( InOut ) :: threebody
     Type( greenkubo_type), Intent( InOut ) :: green
     Type( poisson_type), Intent( InOut ) :: pois
-    Class( ewald_type), Intent( InOut ) :: ewld
+    Type( ewald_type), Intent( InOut ) :: ewld
     Type( metal_type), Intent( InOut ) :: met
     Type( development_type) , Intent( InOut ) :: devel
     Type( comms_type ), Intent( InOut ) :: comm

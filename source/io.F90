@@ -29,6 +29,7 @@ Module io
   Use kinds, Only : wp, li
   Use comms, Only : comms_type,  wp_mpi
   Use errors_warnings, Only : error
+  Use timer, Only : start_timer_path, stop_timer_path
   Use particle, Only: corePart
 #ifdef SERIAL
   Use mpi_api
@@ -193,7 +194,7 @@ Module io
     Module Procedure io_nc_put_var_int_0d
     Module Procedure io_nc_put_var_int_1d
     Module Procedure io_nc_put_var_chr_2d
-  End Interface
+  End Interface io_nc_put_var
 
   Interface io_nc_get_var
     Module Procedure io_nc_get_var_rwp_0d
@@ -203,18 +204,18 @@ Module io
     Module Procedure io_nc_get_var_int_1d
     Module Procedure io_nc_get_var_chr_1d
     Module Procedure io_nc_get_var_chr_2d
-  End Interface
+  End Interface io_nc_get_var
 
   Interface io_nc_get_att
     Module Procedure io_nc_get_att_int
     Module Procedure io_nc_get_att_chr
-  End Interface
+  End Interface io_nc_get_att
 
   Interface io_write_sorted_file
     Module Procedure io_write_sorted_file_parts
     Module Procedure io_write_sorted_file_parts_subset
     Module Procedure io_write_sorted_file_arrays
-  End Interface
+  End Interface io_write_sorted_file
 
 Contains
 

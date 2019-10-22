@@ -36,38 +36,38 @@ from io import open
 #          Utility functions
 # *****************************************
 def EqualToAbsolutePrecision(operand1,operand2,precision):
-	return abs(operand1 - operand2) < abs(precision)
+  return abs(operand1 - operand2) < abs(precision)
 
 def EqualToRelativePrecision(operand1,operand2,precision):
-	# Handle division by zero kind of joke
-	if (operand1 == 0.0 and operand2 == 0.0):
-		return True
-	elif operand2 == 0.0:
-		return abs(operand1 - operand2) < abs(precision)
-	else:
-		return abs((operand1 - operand2)/operand2) < abs(precision)
+  # Handle division by zero kind of joke
+  if (operand1 == 0.0 and operand2 == 0.0):
+    return True
+  elif operand2 == 0.0:
+    return abs(operand1 - operand2) < abs(precision)
+  else:
+    return abs((operand1 - operand2)/operand2) < abs(precision)
 
 def NotifyFailure(actual,expected):
-	print('     {0:17}{1:>32}'.format("Actual result:",actual))
-	print('     {0:17}{1:>32}'.format("Expected result:",expected))
+  print('     {0:17}{1:>32}'.format("Actual result:",actual))
+  print('     {0:17}{1:>32}'.format("Expected result:",expected))
 
-	if type(actual) == int or type(actual) == float:
-		print('     {0:17}{1:22}{2:>+1.3e}'.format("Delta: ","",actual-expected))
-		print('     {0:17}{1:22}{2:>+1.3e}'.format("Relative error: ","",abs((actual-expected)/expected)))
+  if type(actual) == int or type(actual) == float:
+    print('     {0:17}{1:22}{2:>+1.3e}'.format("Delta: ","",actual-expected))
+    print('     {0:17}{1:22}{2:>+1.3e}'.format("Relative error: ","",abs((actual-expected)/expected)))
 
 def EnforceTrailingSlash(path):
-	if path[-1] != '/':
-		return path + '/'
-	else:
-		return path
-		
+  if path[-1] != '/':
+    return path + '/'
+  else:
+    return path
+    
 def PrintHorizontalBar(text = ""):
-	# The magic number 92 is chosen to match stdout produced by VASP
-	if text == "":
-		print('{0:-^92}'.format(""))
-	else:
-		print('{0:-^92}'.format("| " + text +" |"))
-		
+  # The magic number 92 is chosen to match stdout produced by VASP
+  if text == "":
+    print('{0:-^92}'.format(""))
+  else:
+    print('{0:-^92}'.format("| " + text +" |"))
+    
 def Indentation(element, level = 0):
     i = "\n" + level*"    "
     if len(element):
@@ -109,16 +109,16 @@ os.system = lambda call: subprocess.call(call, shell=True, executable="/bin/bash
 
 # Assume that the test suite is defined in beetest.xml if not given explicitly
 if options.testinput:
-	filename = options.testinput
+  filename = options.testinput
 else:
-	filename = "beetest.xml"
+  filename = "beetest.xml"
 
 try:
-	xmltree = ElementTree()
-	xmltree.parse(filename)
+  xmltree = ElementTree()
+  xmltree.parse(filename)
 except IOError:
-	print("There was a problem reading the %s file. Does it exist in the current working directory?" % (filename))
-	exit(1)
+  print("There was a problem reading the %s file. Does it exist in the current working directory?" % (filename))
+  exit(1)
 
 # Check if we are running all test suites in this file or just a subset
 # The names are not case sensitive
@@ -126,402 +126,404 @@ selected_testsuites = []
 
 available_testsuites = []
 for testsuite in xmltree.findall("testsuite"):
-	available_testsuites.append(testsuite.get("name").lower())
+  available_testsuites.append(testsuite.get("name").lower())
 
 if options.suite:
-	selected_testsuites = options.suite.split(",")
-	for testsuite in selected_testsuites:
-		if not testsuite in available_testsuites:
-			print("You want to a run a test suite that does not exist!\nCheck your test definition file (beetest.xml) for <testsuite name=\"%s\"> tags." % (testsuite))
-			exit(1)
+  selected_testsuites = options.suite.split(",")
+  for testsuite in selected_testsuites:
+    if not testsuite in available_testsuites:
+      print("You want to a run a test suite that does not exist!\nCheck your test definition file (beetest.xml) for <testsuite name=\"%s\"> tags." % (testsuite))
+      exit(1)
 selected_tests= []
 if options.test:
-	selected_tests = options.test.split(",")
-	for testsuite in xmltree.findall("testsuite"):
-		if selected_testsuites != []:
-			if testsuite.get("name").lower() not in selected_testsuites:
-				continue
-		for tt in selected_tests:
-			ttb=False
-			for testcase in testsuite.findall("testcase"):
-				if testcase.attrib['name'] == tt:
-					ttb=True
-					continue
-			if not ttb:
-				print("test "+tt+" not found in suite "+ testsuite.attrib['name']) 
-				if not options.keep_going:
-					print("I will stop now... consider -k option if you run a multi-suite test")
-					exit(1)
+  selected_tests = options.test.split(",")
+  for testsuite in xmltree.findall("testsuite"):
+    if selected_testsuites != []:
+      if testsuite.get("name").lower() not in selected_testsuites:
+        continue
+    for tt in selected_tests:
+      ttb=False
+      for testcase in testsuite.findall("testcase"):
+        if testcase.attrib['name'] == tt:
+          ttb=True
+          continue
+      if not ttb:
+        print("test "+tt+" not found in suite "+ testsuite.attrib['name']) 
+        if not options.keep_going:
+          print("I will stop now... consider -k option if you run a multi-suite test")
+          exit(1)
 
 # Check which properties that are defined and construct a hash that we use later.
 # This is mainly to work around the fact that find by attribute is not available in
 # ElementTree 1.2.x.
 defined_properties = dict()
 for p in xmltree.findall("properties/property"):
-	proplist = dict()
-	for f in p.getchildren():
-		proplist[f.tag] = f.text
-	defined_properties[p.attrib["name"]] = proplist
+  proplist = dict()
+  for f in p.getchildren():
+    proplist[f.tag] = f.text
+  defined_properties[p.attrib["name"]] = proplist
 
 assert len(defined_properties) > 0
 
 outdir_specified = False
 if options.outdir:
-	outdir_specified = True
-	outdir=EnforceTrailingSlash(options.outdir)
+  outdir_specified = True
+  outdir=EnforceTrailingSlash(options.outdir)
 for testsuite in xmltree.findall("testsuite"):
-	if selected_testsuites != []:
-		if testsuite.get("name").lower() not in selected_testsuites:
-			continue
-			
-	PrintHorizontalBar("Test suite: " + testsuite.attrib['name'])
-	if not outdir_specified: 
-		outdir=testsuite.find("outdir")
-		if outdir != None:
-			outdir_specified=True
-			outdir=EnforceTrailingSlash(outdir.text)
-	if options.verbose:
-		print("Description: " + testsuite.find("description").text)
-		print("Date: " + testsuite.find("date").text)
-		print("Author: " + testsuite.find("author").text)
-		if outdir_specified:
-			print("Output Folder: " + outdir)
-		print("Found " + str(len(testsuite.findall("testcase"))) + " test cases")
-		print("Available tests: ")
-		for testcase in testsuite.findall("testcase"):
-			print(testcase.attrib['name']+" - "+testcase.find('description').text)
-		if selected_tests != []:
-			print("Running " + str(len(selected_tests)) + " test cases")
-		elif not options.test:
-			print("Running all test cases from suite "+testsuite.get("name").lower())
-		else:
-			print("Running no test cases from suite "+testsuite.get("name").lower())
+  if selected_testsuites != []:
+    if testsuite.get("name").lower() not in selected_testsuites:
+      continue
+      
+  PrintHorizontalBar("Test suite: " + testsuite.attrib['name'])
+  if not outdir_specified: 
+    outdir=testsuite.find("outdir")
+    if outdir != None:
+      outdir_specified=True
+      outdir=EnforceTrailingSlash(outdir.text)
+  if options.verbose:
+    print("Description: " + testsuite.find("description").text)
+    print("Date: " + testsuite.find("date").text)
+    print("Author: " + testsuite.find("author").text)
+    if outdir_specified:
+      print("Output Folder: " + outdir)
+    print("Found " + str(len(testsuite.findall("testcase"))) + " test cases")
+    print("Available tests: ")
+    for testcase in testsuite.findall("testcase"):
+      print(testcase.attrib['name']+" - "+testcase.find('description').text)
+    if selected_tests != []:
+      print("Running " + str(len(selected_tests)) + " test cases")
+    elif not options.test:
+      print("Running all test cases from suite "+testsuite.get("name").lower())
+    else:
+      print("Running no test cases from suite "+testsuite.get("name").lower())
 
-	# Determine in which directory to run the test suite
-	# Priority order BEETEST_PATH > Environment:Path > pwd
-	if 'BEETEST_PATH' in os.environ:
-		testpath = os.environ['BEETEST_PATH']
-		if options.verbose:
-			print("Using test path defined in BEETEST_PATH")
-	else:
-		envpath = testsuite.find("environment/path")
-		if envpath != None:
-			if os.path.isdir(envpath):
-				testpath = envpath.text
-			else:
-				print("The given path to the test suite does not exit (or permissions problem).")
-				sys.exit(1)
+  # Determine in which directory to run the test suite
+  # Priority order BEETEST_PATH > Environment:Path > pwd
+  if 'BEETEST_PATH' in os.environ:
+    testpath = os.environ['BEETEST_PATH']
+    if options.verbose:
+      print("Using test path defined in BEETEST_PATH")
+  else:
+    envpath = testsuite.find("environment/path")
+    if envpath != None:
+      if os.path.isdir(envpath):
+        testpath = envpath.text
+      else:
+        print("The given path to the test suite does not exit (or permissions problem).")
+        sys.exit(1)
 
-			if options.verbose:
-				print("Using test path defined in file")
-		else:
-			testpath = subprocess.getoutput('pwd')
-			if options.verbose:
-				print("Using current working directory as test path: "+testpath)
+      if options.verbose:
+        print("Using test path defined in file")
+    else:
+      testpath = subprocess.getoutput('pwd')
+      if options.verbose:
+        print("Using current working directory as test path: "+testpath)
 
-	testpath = EnforceTrailingSlash(testpath)
-	rtestcasepath=testpath
-	if outdir_specified:
-		if os.path.isabs(outdir):
-			os.system("mkdir -p "+outdir)
-		else:
-			os.system("mkdir -p "+testpath+outdir)
-	# Determine which executable to run
-	if 'BEETEST_EXE' in os.environ:
-		testexe = os.environ['BEETEST_EXE']
-		if options.verbose: 
-			print("Using test executable %s defined in BEETEST_EXE" % (testexe))
-	else:
-		envexe = testsuite.find("environment/executable")
-		if envexe != None:
-#			if os.path.isfile(envexe):
-			testexe = envexe.text
-#			else:
-#				print "Cannot find test executable at the given path."
-#				sys.exit(1)
+  testpath = EnforceTrailingSlash(testpath)
+  rtestcasepath=testpath
+  if outdir_specified:
+    if os.path.isabs(outdir):
+      os.system("mkdir -p "+outdir)
+    else:
+      os.system("mkdir -p "+testpath+outdir)
+  # Determine which executable to run
+  if 'BEETEST_EXE' in os.environ:
+    testexe = os.environ['BEETEST_EXE']
+    if options.verbose: 
+      print("Using test executable %s defined in BEETEST_EXE" % (testexe))
+  else:
+    envexe = testsuite.find("environment/executable")
+    if envexe != None:
+#     if os.path.isfile(envexe):
+      testexe = envexe.text
+#     else:
+#       print "Cannot find test executable at the given path."
+#       sys.exit(1)
 
-			if options.verbose:
-				print("Using test executable %s defined in xml file"%(testexe))
-		else:
-			if len(args) >= 1:
-#				if os.access(args[0], os.X_OK):
-				testexe = args[0]
-#				else:
-#					print "Looks like there is a problem running %s (Did you specify the full path?)" % (args[0])
-#					sys.exit(1)
+      if options.verbose:
+        print("Using test executable %s defined in xml file"%(testexe))
+    else:
+      if len(args) >= 1:
+#       if os.access(args[0], os.X_OK):
+        testexe = args[0]
+#       else:
+#         print "Looks like there is a problem running %s (Did you specify the full path?)" % (args[0])
+#         sys.exit(1)
 
-				if options.verbose:
-					print("Using test executable %s defined in command line argument" % (testexe))
-			else:
-				analyze_mode = True
+        if options.verbose:
+          print("Using test executable %s defined in command line argument" % (testexe))
+      else:
+        analyze_mode = True
 
-	# Main loop, run all test cases defined in test suite
-	passed = 0
-	failed = 0
-	error = 0
+  # Main loop, run all test cases defined in test suite
+  passed = 0
+  failed = 0
+  error = 0
 
-	for testcase in testsuite.findall("testcase"):
-		testcasepath = EnforceTrailingSlash(testcase.find('path').text)
-		if testcase.attrib['name'] not in selected_tests and options.test:
-			continue		
-		# Check if we need to provide a specified input file to the test binary
-		inputfile_specified = False
-		inputfile = testcase.find('input')
-		if inputfile != None:
-			inputfile_specified = True
-			inputfile = inputfile.text
+  for testcase in testsuite.findall("testcase"):
+    testcasepath = EnforceTrailingSlash(testcase.find('path').text)
+    if testcase.attrib['name'] not in selected_tests and options.test:
+      continue    
+    # Check if we need to provide a specified input file to the test binary
+    inputfile_specified = False
+    inputfile = testcase.find('input')
+    if inputfile != None:
+      inputfile_specified = True
+      inputfile = inputfile.text
 
-		# Check if we need to provide a specified ouput file to the test binary
-		outputfile_specified = False
-		outputfile = testcase.find('output')
-		if outputfile != None:
-			outputfile_specified = True
-			outputfile = outputfile.text
-		
-		if not analyze_mode:
-			if testcase.find('path').get('archive') == "Yes":
-				isArchived=True
-			else:
-				isArchived=False
-			if options.verbose:
-				PrintHorizontalBar("Running " + testcase.attrib['name'])
-				print("Description: " + testcase.find('description').text)
-				sys.stdout.flush()
-			else:
-				print("Running " + testcase.attrib['name']+"...")
-				print("Description: " + testcase.find('description').text)
-				#Flush because there might be a delay while the binary is running below
-				sys.stdout.flush()
-			rtestcasepath = testpath + testcasepath
-			if outdir_specified:
-				if os.path.isabs(outdir):
-					print("copy the files from "+rtestcasepath + " to "+ outdir + testcasepath)
-					os.system("rm -rf " + outdir + testcasepath)
-					os.system("mkdir -p " + outdir + testcasepath)
-					os.system("cp -r  " + testpath + testcasepath + "* " + outdir + testcasepath)
-					if isArchived:
-					   os.system("pushd  " + outdir + testcasepath+" >> /dev/null; tar -xf *.tar.xz;rm -f *.tar.xz; popd >>/dev/null")
-					rtestcasepath = outdir + testcasepath
-				else:
-					print("copy the files from "+rtestcasepath + " to "+testpath + outdir + testcasepath)
-					os.system("rm -rf " + testpath + outdir + testcasepath)
-					os.system("mkdir -p " + testpath + outdir + testcasepath)
-					os.system("cp -r  " + testpath + testcasepath + "* " + testpath + outdir + testcasepath)
-					rtestcasepath = testpath + outdir + testcasepath
-					if isArchived:
-					  os.system("pushd  " + outdir + testcasepath + " >>/dev/null ;  tar -xf *.tar.xz --strip-components 1  && rm -f *.tar.xz && popd >>/dev/null")
-			if options.verbose:
-				if inputfile_specified:
-					if outputfile_specified:
-						status = os.system("cd " + rtestcasepath + "; " + testexe + " < " + inputfile + " > " + outputfile)
-					else:
-						status = os.system("cd " + rtestcasepath  + "; " + testexe + " < " + inputfile)
-				else: 
-					if outputfile_specified:
-						status = os.system("cd " + rtestcasepath  + "; " + testexe + " > " + outputfile)
-					else:
-						status = os.system("cd " + rtestcasepath  + "; " + testexe)
-			else:
-				if inputfile_specified:
-					if outputfile_specified:
-						(status,stdout) = subprocess.getstatusoutput("cd " + rtestcasepath + "; " + testexe  + " < " + inputfile + " | tee " + outputfile + " > stdout")
-					else:
-						(status,stdout) = subprocess.getstatusoutput("cd " + rtestcasepath + "; " + testexe  + " < " + inputfile + " > stdout")
-				else:
-					if outputfile_specified:
-						(status,stdout) = subprocess.getstatusoutput("cd " + rtestcasepath + "; " + testexe + " > stdout | tee " + outputfile)
-					else:
-						(status,stdout) = subprocess.getstatusoutput("cd " + rtestcasepath + "; " + testexe + " > stdout")
-					
-			if status != 0:
-				print("Test ERROR: test executable exited with status %d" % (status))
-				error = error + 1
-				if options.keep_going:
-					continue
-				else:
-					exit(1)
-		elif not options.verbose:
-			print("Analyzing " + testcase.attrib['name']+"...")
-			print("Description: " + testcase.find('description').text)
-			#Flush because there might be a delay while the binary is running below
-			sys.stdout.flush()
-			
-		#properties = [prop.tag for prop in testcase.getchildren()]
-		properties = [prop for prop in testcase.getchildren()]
-		properties = list(filterfalse(lambda x: x.tag == "path", properties))
-		properties = list(filterfalse(lambda x: x.tag == "input", properties))
-		properties = list(filterfalse(lambda x: x.tag == "output", properties))
-		properties = list(filterfalse(lambda x: x.tag == "description", properties))
-		
-		if options.verbose:
-			PrintHorizontalBar("Analyzing " + testcase.attrib['name'])
-			print("Description: " + testcase.find('description').text)
-			if outdir_specified:
-				print("Path: " + outdir+testcasepath)
-			else:
-				print("Path: " + testcasepath)
-		if outdir_specified:
-			if os.path.isabs(outdir):
-				logtestcasepath=outdir+testcasepath
-			else:
-				logtestcasepath=testpath+outdir+testcasepath
-		else:
-			logtestcasepath=testpath+testcasepath
-		test_passed = True
-		for propp in properties:
-			prop=propp.tag
-			if prop in defined_properties:
-				property_passed = True
-				description = defined_properties[prop]['description']
-				script = defined_properties[prop]['script']
-				kind = defined_properties[prop]['type']
-				iter_arg=""
-				iter_defined=False
-				if 'iteration' in propp.attrib:
-						iter_arg=propp.attrib['iteration']
-						iter_defined=True
-				(status,resultdata) = subprocess.getstatusoutput("cd " + logtestcasepath + "; " + script+" "+iter_arg)
-				if status != 0 or resultdata.isspace() or len(resultdata) == 0:
-					print("Test ERROR: could not extract data using %s script" % (script + " "+ iter_arg))
-					error = error + 1
-					if options.keep_going:
-						continue
-					else:
-						exit(1)
-				if kind == 'Float':
-					actual_result = float(resultdata)
-					expected_result = float(propp.text)
-					value_defined = False
-					if 'tolerance' in propp.attrib:
-						value=float(propp.attrib['tolerance'])
-						value_defined = True
-					if "absoluteprecision" in defined_properties[prop]:
-						if value_defined:
-							match = EqualToAbsolutePrecision(actual_result,expected_result, value)
-						else:
-							match = EqualToAbsolutePrecision(actual_result,expected_result, float(defined_properties[prop]["absoluteprecision"]))
-					elif "relativeprecision" in defined_properties[prop]:
-						if value_defined:
-							match = EqualToRelativePrecision(actual_result,expected_result,value) 
-						else:
-							match = EqualToRelativePrecision(actual_result,expected_result, float(defined_properties[prop]["relativeprecision"]))
-					else:
-						#Direct comparison, dangerous!
-						match = (actual_result == expected_result)
-					if not match:
-						property_passed = False
-				elif kind == 'Integer':
-					actual_result = int(resultdata)
-					expected_result = int(propp.text)
-					
-					if actual_result != expected_result:
-						property_passed = False
-				elif kind == 'String':
-					actual_result = resultdata
-					expected_result = propp.text
-					
-					if actual_result != expected_result:
-						property_passed = False
-				
-				if not property_passed:
-					test_passed = False
-			else:
-				print("ERROR: Undefined test property " + prop + ". Please check the \'Properties:\' section in your yaml file")
-				error = error + 1
-				if options.keep_going:
-					continue
-				else:
-					exit(1)
-			if iter_defined:
-				description = description +"@iteration "+iter_arg
-			if property_passed:
-				print('{0:3}{1:.<79}{2:.>10}'.format(" * ",description,"[ OK ]"))
-			else:
-				print('{0:3}{1:.<79}{2:.>10}'.format(" * ",description,"[ FAILED ]"))
-				NotifyFailure(actual_result,expected_result)
-				print
-		# End of property loop
-		if error != 0:
-			test_passed = False
-		if test_passed:
-			if options.verbose:
-				PrintHorizontalBar(testcase.attrib["name"] + " PASSED")
-			passed = passed + 1
-			testcase.set("status","PASSED")
-		else:
-			if options.verbose:
-				PrintHorizontalBar(testcase.attrib["name"] + " FAILED")
-			failed = failed + 1
-			testcase.set("status","FAILED")
-		print
+    # Check if we need to provide a specified ouput file to the test binary
+    outputfile_specified = False
+    outputfile = testcase.find('output')
+    if outputfile != None:
+      outputfile_specified = True
+      outputfile = outputfile.text
+    
+    if not analyze_mode:
+      if testcase.find('path').get('archive') == "Yes":
+        isArchived=True
+      else:
+        isArchived=False
+      if options.verbose:
+        PrintHorizontalBar("Running " + testcase.attrib['name'])
+        print("Description: " + testcase.find('description').text)
+        sys.stdout.flush()
+      else:
+        print("Running " + testcase.attrib['name']+"...")
+        print("Description: " + testcase.find('description').text)
+        #Flush because there might be a delay while the binary is running below
+        sys.stdout.flush()
+      rtestcasepath = testpath + testcasepath
+      if outdir_specified:
+        if os.path.isabs(outdir):
+          print("copy the files from "+rtestcasepath + " to "+ outdir + testcasepath)
+          os.system("rm -rf " + outdir + testcasepath)
+          os.system("mkdir -p " + outdir + testcasepath)
+          os.system("cp -r  " + testpath + testcasepath + "* " + outdir + testcasepath)
+          if isArchived:
+             pwd = os.getcwd()
+             os.system("cd  " + outdir + testcasepath+" >> /dev/null; tar -xf *.tar.xz;rm -f *.tar.xz; cd "+ pwd +" >>/dev/null")
+          rtestcasepath = outdir + testcasepath
+        else:
+          print("copy the files from "+rtestcasepath + " to "+testpath + outdir + testcasepath)
+          os.system("rm -rf " + testpath + outdir + testcasepath)
+          os.system("mkdir -p " + testpath + outdir + testcasepath)
+          os.system("cp -r  " + testpath + testcasepath + "* " + testpath + outdir + testcasepath)
+          rtestcasepath = testpath + outdir + testcasepath
+          if isArchived:
+            pwd = os.getcwd()
+            os.system("cd  " + outdir + testcasepath + " >>/dev/null ;  tar -xf *.tar.xz --strip-components 1  && rm -f *.tar.xz && cd " + pwd + "  >>/dev/null")
+      if options.verbose:
+        if inputfile_specified:
+          if outputfile_specified:
+            status = os.system("cd " + rtestcasepath + "; " + testexe + " < " + inputfile + " > " + outputfile)
+          else:
+            status = os.system("cd " + rtestcasepath  + "; " + testexe + " < " + inputfile)
+        else: 
+          if outputfile_specified:
+            status = os.system("cd " + rtestcasepath  + "; " + testexe + " > " + outputfile)
+          else:
+            status = os.system("cd " + rtestcasepath  + "; " + testexe)
+      else:
+        if inputfile_specified:
+          if outputfile_specified:
+            (status,stdout) = subprocess.getstatusoutput("cd " + rtestcasepath + "; " + testexe  + " < " + inputfile + " | tee " + outputfile + " > stdout")
+          else:
+            (status,stdout) = subprocess.getstatusoutput("cd " + rtestcasepath + "; " + testexe  + " < " + inputfile + " > stdout")
+        else:
+          if outputfile_specified:
+            (status,stdout) = subprocess.getstatusoutput("cd " + rtestcasepath + "; " + testexe + " > stdout | tee " + outputfile)
+          else:
+            (status,stdout) = subprocess.getstatusoutput("cd " + rtestcasepath + "; " + testexe + " > stdout")
+          
+      if status != 0:
+        print("Test ERROR: test executable exited with status %d" % (status))
+        error = error + 1
+        if options.keep_going:
+          continue
+        else:
+          exit(1)
+    elif not options.verbose:
+      print("Analyzing " + testcase.attrib['name']+"...")
+      print("Description: " + testcase.find('description').text)
+      #Flush because there might be a delay while the binary is running below
+      sys.stdout.flush()
+      
+    #properties = [prop.tag for prop in testcase.getchildren()]
+    properties = [prop for prop in testcase.getchildren()]
+    properties = list(filterfalse(lambda x: x.tag == "path", properties))
+    properties = list(filterfalse(lambda x: x.tag == "input", properties))
+    properties = list(filterfalse(lambda x: x.tag == "output", properties))
+    properties = list(filterfalse(lambda x: x.tag == "description", properties))
+    
+    if options.verbose:
+      PrintHorizontalBar("Analyzing " + testcase.attrib['name'])
+      print("Description: " + testcase.find('description').text)
+      if outdir_specified:
+        print("Path: " + outdir+testcasepath)
+      else:
+        print("Path: " + testcasepath)
+    if outdir_specified:
+      if os.path.isabs(outdir):
+        logtestcasepath=outdir+testcasepath
+      else:
+        logtestcasepath=testpath+outdir+testcasepath
+    else:
+      logtestcasepath=testpath+testcasepath
+    test_passed = True
+    for propp in properties:
+      prop=propp.tag
+      if prop in defined_properties:
+        property_passed = True
+        description = defined_properties[prop]['description']
+        script = defined_properties[prop]['script']
+        kind = defined_properties[prop]['type']
+        iter_arg=""
+        iter_defined=False
+        if 'iteration' in propp.attrib:
+            iter_arg=propp.attrib['iteration']
+            iter_defined=True
+        (status,resultdata) = subprocess.getstatusoutput("cd " + logtestcasepath + "; " + script+" "+iter_arg)
+        if status != 0 or resultdata.isspace() or len(resultdata) == 0:
+          print("Test ERROR: could not extract data using %s script" % (script + " "+ iter_arg))
+          error = error + 1
+          if options.keep_going:
+            continue
+          else:
+            exit(1)
+        if kind == 'Float':
+          actual_result = float(resultdata)
+          expected_result = float(propp.text)
+          value_defined = False
+          if 'tolerance' in propp.attrib:
+            value=float(propp.attrib['tolerance'])
+            value_defined = True
+          if "absoluteprecision" in defined_properties[prop]:
+            if value_defined:
+              match = EqualToAbsolutePrecision(actual_result,expected_result, value)
+            else:
+              match = EqualToAbsolutePrecision(actual_result,expected_result, float(defined_properties[prop]["absoluteprecision"]))
+          elif "relativeprecision" in defined_properties[prop]:
+            if value_defined:
+              match = EqualToRelativePrecision(actual_result,expected_result,value) 
+            else:
+              match = EqualToRelativePrecision(actual_result,expected_result, float(defined_properties[prop]["relativeprecision"]))
+          else:
+            #Direct comparison, dangerous!
+            match = (actual_result == expected_result)
+          if not match:
+            property_passed = False
+        elif kind == 'Integer':
+          actual_result = int(resultdata)
+          expected_result = int(propp.text)
+          
+          if actual_result != expected_result:
+            property_passed = False
+        elif kind == 'String':
+          actual_result = resultdata
+          expected_result = propp.text
+          
+          if actual_result != expected_result:
+            property_passed = False
+        
+        if not property_passed:
+          test_passed = False
+      else:
+        print("ERROR: Undefined test property " + prop + ". Please check the \'Properties:\' section in your yaml file")
+        error = error + 1
+        if options.keep_going:
+          continue
+        else:
+          exit(1)
+      if iter_defined:
+        description = description +"@iteration "+iter_arg
+      if property_passed:
+        print('{0:3}{1:.<79}{2:.>10}'.format(" * ",description,"[ OK ]"))
+      else:
+        print('{0:3}{1:.<79}{2:.>10}'.format(" * ",description,"[ FAILED ]"))
+        NotifyFailure(actual_result,expected_result)
+        print
+    # End of property loop
+    if error != 0:
+      test_passed = False
+    if test_passed:
+      if options.verbose:
+        PrintHorizontalBar(testcase.attrib["name"] + " PASSED")
+      passed = passed + 1
+      testcase.set("status","PASSED")
+    else:
+      if options.verbose:
+        PrintHorizontalBar(testcase.attrib["name"] + " FAILED")
+      failed = failed + 1
+      testcase.set("status","FAILED")
+    print
 
-	print("Summary")
-	print()
-	print("   Passed: " + str(passed))
-	print("   Failed: " + str(failed))
-	print("   Errors: " + str(error))
-	print()
+  print("Summary")
+  print()
+  print("   Passed: " + str(passed))
+  print("   Failed: " + str(failed))
+  print("   Errors: " + str(error))
+  print()
 
-	status = ""
-	if error != 0:
-		status = "ERROR"
-	elif failed == 0:
-		status = "PASSED"
-	else:
-		status = "FAILED"
-	print("Status: " + status)
-	
-	if options.regression:
-		regression = ""
-		regrfile = open(options.regression, 'r')
-		regrtree = ElementTree()
-		regrtree.parse(regrfile)
-		
-		if options.verbose:
-			print("Doing regression testing versus the results in " + options.regression)
-		
-		# Find the corresponding test suite with the same name as this one
-		for ts in regrtree.findall("testsuite"):
-			if ts.get("name") == testsuite.get("name"):
-				old_ts = ts
-		
-		old_ts_hash = dict()
-		for tc in old_ts.findall("testcase"):
-			old_ts_hash[tc.get("name")] = tc.get("status")
+  status = ""
+  if error != 0:
+    status = "ERROR"
+  elif failed == 0:
+    status = "PASSED"
+  else:
+    status = "FAILED"
+  print("Status: " + status)
+  
+  if options.regression:
+    regression = ""
+    regrfile = open(options.regression, 'r')
+    regrtree = ElementTree()
+    regrtree.parse(regrfile)
+    
+    if options.verbose:
+      print("Doing regression testing versus the results in " + options.regression)
+    
+    # Find the corresponding test suite with the same name as this one
+    for ts in regrtree.findall("testsuite"):
+      if ts.get("name") == testsuite.get("name"):
+        old_ts = ts
+    
+    old_ts_hash = dict()
+    for tc in old_ts.findall("testcase"):
+      old_ts_hash[tc.get("name")] = tc.get("status")
 
-		new_ts_hash = dict()
-		for tc in testsuite.findall("testcase"):
-			new_ts_hash[tc.get("name")] = tc.get("status")
+    new_ts_hash = dict()
+    for tc in testsuite.findall("testcase"):
+      new_ts_hash[tc.get("name")] = tc.get("status")
 
-		if old_ts_hash == new_ts_hash:
-			regression = "PASSED"
-		else:
-			regression = "FAILED"
-		print("Regression test: "+regression)
-			
-		regrelem = SubElement(testsuite,"regression")
-		SubElement(regrelem,"protocol").text = options.regression
-		SubElement(regrelem,"status").text = regression
-		
-	PrintHorizontalBar("End of test suite: " + testsuite.attrib['name'])
-	print
-		
-	if options.protocol:
-		isotime = datetime.now().isoformat()
-		hostname = subprocess.getoutput("hostname")
-		summary = SubElement(testsuite,"summary")
-		SubElement(summary,"computer").text = hostname
-		SubElement(summary,"date").text = isotime
-		SubElement(summary,"status").text = status
-		SubElement(summary,"passed").text = str(passed)
-		SubElement(summary,"failed").text = str(failed)
-		SubElement(summary,"errors").text = str(error)
-	# End of test case loop
+    if old_ts_hash == new_ts_hash:
+      regression = "PASSED"
+    else:
+      regression = "FAILED"
+    print("Regression test: "+regression)
+      
+    regrelem = SubElement(testsuite,"regression")
+    SubElement(regrelem,"protocol").text = options.regression
+    SubElement(regrelem,"status").text = regression
+    
+  PrintHorizontalBar("End of test suite: " + testsuite.attrib['name'])
+  print
+    
+  if options.protocol:
+    isotime = datetime.now().isoformat()
+    hostname = subprocess.getoutput("hostname")
+    summary = SubElement(testsuite,"summary")
+    SubElement(summary,"computer").text = hostname
+    SubElement(summary,"date").text = isotime
+    SubElement(summary,"status").text = status
+    SubElement(summary,"passed").text = str(passed)
+    SubElement(summary,"failed").text = str(failed)
+    SubElement(summary,"errors").text = str(error)
+  # End of test case loop
 # End of test suite loop
 
 if options.protocol:
-	protocolname = "beetest-results-" + isotime.split('.')[0] + ".xml"
-	print("Writing test protocol to file " + protocolname)
-	Indentation(xmltree.getroot())
-	xmltree.write(protocolname)
+  protocolname = "beetest-results-" + isotime.split('.')[0] + ".xml"
+  print("Writing test protocol to file " + protocolname)
+  Indentation(xmltree.getroot())
+  xmltree.write(protocolname)
 

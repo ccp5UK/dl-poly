@@ -36,12 +36,9 @@ Module statistics
   Implicit None
   Type, Public :: stats_type
 
-    Integer( Kind = wi )           :: numacc = 0 , natms0 = 0
-    Integer( Kind = wi )           :: mxnstk,mxstak
-
-    !> Statistics file interval
-    Integer( Kind = wi )           :: intsta
-
+    Integer( Kind = wi )           :: numacc = 0 , &
+      natms0 = 0
+    Integer( Kind = wi )           :: mxnstk,mxstak,intsta
     Logical                        :: statis_file_open = .false.
     Logical                        :: newjob = .true.
     Logical                        :: lpana
@@ -670,6 +667,7 @@ Contains
         Write(files(FILE_STATS)%unit_no,'(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &
           nstep,time,iadd+1,         stats%stpval(1:  27),stats%stpval(0),stats%stpval(28         :iadd)
       End If
+
     End If
 
     ! check on number of variables for stack

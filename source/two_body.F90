@@ -4,9 +4,9 @@ Module two_body
   Use constants, Only : pi, r4pie0
   Use site, Only : site_type
   Use configuration,  Only : configuration_type
-  Use neighbours,     Only : neighbours_type,link_cell_pairs
+  Use neighbours,     Only : neighbours_type
   Use spme,  Only : init_spme_data, spme_self_interaction
-  Use ewald,           Only : ewald_type, ewald_type, ewald_vdw_init, ewald_vdw_count, ewald_vdw_coeffs
+  Use ewald,           Only : ewald_type, ewald_vdw_init, ewald_vdw_count, ewald_vdw_coeffs
   Use mpole,          Only : mpole_type,POLARISATION_CHARMM
   Use coul_spole,     Only : coul_fscp_forces, coul_rfp_forces, coul_cp_forces, coul_dddp_forces
   Use coul_mpole,    Only : coul_fscp_mforces, coul_rfp_mforces, coul_cp_mforces, &
@@ -130,7 +130,7 @@ Contains
 
     Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rrt
 
-    call start_timer('Two-Body Init')
+    call start_timer(tmr, 'Two-Body Init')
 
     safe = .True.
     fail=0
@@ -252,7 +252,7 @@ Contains
     stats%vircpe    = 0.0_wp
 
 #ifdef CHRONO
-    Call stop_timer('Two-Body Init')
+    Call stop_timer(tmr, 'Two-Body Init')
 #endif
 
     ! Set up non-bonded interaction (verlet) list using link cells
@@ -264,13 +264,13 @@ Contains
     ! Calculate all contributions from KIM
     If (kim_data%active) Then
 #ifdef CHRONO
-    Call start_timer('KIM')
+    Call start_timer(tmr, 'KIM')
 #endif
       Call kim_energy_and_forces(kim_data,config%natms,config%nlast,config%parts, &
         neigh%list,domain%map,config%lsite,config%lsi,config%lsa,config%ltg, &
         sites%site_name,engkim,virkim,stats%stress,comm)
 #ifdef CHRONO
-      Call stop_timer('KIM')
+      Call stop_timer(tmr, 'KIM')
 #endif
     End If
 
@@ -288,7 +288,7 @@ Contains
 
     ! calculate coulombic forces, Ewald sum - fourier contribution
 #ifdef CHRONO
-    Call start_timer('Long Range')
+    Call start_timer(tmr, 'Long Range')
 #endif
 
     If (electro%key == ELECTROSTATIC_EWALD) Then
@@ -302,7 +302,7 @@ Contains
 
     if (ewld%vdw) then
 #ifdef CHRONO
-      call start_timer('SPME Order-n')
+      call start_timer(tmr, 'SPME Order-n')
 #endif
       do ipot = 1, ewld%num_pots
 
@@ -316,14 +316,15 @@ Contains
       end do
 
 #ifdef CHRONO
-      call stop_timer('SPME Order-n')
+      call stop_timer(tmr, 'SPME Order-n')
 #endif
     end if
 
 #ifdef CHRONO
-    Call stop_timer('Long Range')
-    Call start_timer('Short Range')
+    Call stop_timer(tmr, 'Long Range')
+    Call start_timer(tmr, 'Short Range')
 #endif
+
     ! outer loop over atoms
 
     Do i=1,config%natms
@@ -391,7 +392,7 @@ Contains
 
       If (mpoles%max_mpoles > 0) Then
 
-!!! MULTIPOLAR ATOMIC SITES
+        !!! MULTIPOLAR ATOMIC SITES
 
         If (electro%key == ELECTROSTATIC_EWALD) Then
 
@@ -624,8 +625,8 @@ Contains
     End If
 
 #ifdef CHRONO
-    Call stop_timer('Short Range')
-    Call start_timer('Two-Body Final')
+    Call stop_timer(tmr, 'Short Range')
+    Call start_timer(tmr, 'Two-Body Final')
 #endif
 
     Deallocate (xxt,yyt,zzt,rrt, Stat=fail)
@@ -740,8 +741,8 @@ Contains
 
     ! Globalise coulombic contributions: cpe
 
-    stats%engcpe = engcpe_rc + engcpe_rl + engcpe_ch + engcpe_ex + engcpe_fr + engcpe_nz
-    stats%vircpe = vircpe_rc + vircpe_rl + vircpe_ch + vircpe_ex + vircpe_fr + vircpe_nz + vircpe_dt
+    stats%engcpe = stats%engcpe + engcpe_rc + engcpe_rl + engcpe_ch + engcpe_ex + engcpe_fr + engcpe_nz
+    stats%vircpe = stats%vircpe + vircpe_rc + vircpe_rl + vircpe_ch + vircpe_ex + vircpe_fr + vircpe_nz + vircpe_dt
 
     ! Add non-zero total system charge correction to
     ! diagonal terms of stress tensor (per node)
@@ -753,8 +754,9 @@ Contains
 
     ! Globalise short-range, KIM and metal interactions with
     ! their long-range corrections contributions: srp
-    stats%engsrp = engkim + (engden + engmet + met%elrc(0)) + (engvdw + vdws%elrc)
-    stats%virsrp = virkim + (virden + virmet + met%vlrc(0)) + (virvdw + vdws%vlrc)
+
+    stats%engsrp = stats%engsrp + engkim + (engden + engmet + met%elrc(0)) + (engvdw + vdws%elrc)
+    stats%virsrp = stats%virsrp + virkim + (virden + virmet + met%vlrc(0)) + (virvdw + vdws%vlrc)
 
     ! Add long-range corrections to diagonal terms of stress tensor (per node)
 
@@ -764,7 +766,7 @@ Contains
     stats%stress(9) = stats%stress(9) + tmp
 
 #ifdef CHRONO
-    Call stop_timer('Two-Body Final')
+    Call stop_timer(tmr, 'Two-Body Final')
 #endif
 
   End Subroutine two_body_forces

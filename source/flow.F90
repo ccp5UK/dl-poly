@@ -13,6 +13,12 @@ Module flow_control
   Integer(Kind=wi), Parameter, Public :: RESTART_KEY_SCALE = 2
   !> Unscaled restart
   Integer(Kind=wi), Parameter, Public :: RESTART_KEY_NOSCALE = 3
+  !> Simulation type keys: MD
+  Integer(Kind=wi), Parameter, Public :: MD = 1
+  !> Simulation type keys: EVB
+  Integer(Kind=wi), Parameter, Public :: EVB = 2
+  !> Simulation type keys: FFS
+  Integer(Kind=wi), Parameter, Public :: FFS = 3
 
   !> Type containing program flow data
   Type, Public :: flow_type
@@ -89,6 +95,8 @@ Module flow_control
 
     !> Reset padding flag
     Logical, Public :: reset_padding
+    !> Type of Simulation we perform
+    Integer, Public :: simulation_method = MD
   Contains
     Procedure, Public :: new_page => flow_type_new_page
     Procedure, Public :: line_printed => flow_type_line_printed

@@ -38,8 +38,6 @@ Module neighbours
 
     !> Largest vdw cutoff, defines Verlet neighbour list radius
     Real( Kind = wp ), Public :: cutoff
-    !> Cutoff squared
-    Real( Kind = wp ), Public :: cutoff_2
     !> Padding around cutoff
     Real( Kind = wp ), Public :: padding
     !> Actual Verlet neighbour list cutoff (cutoff+padding)
@@ -322,7 +320,7 @@ Contains
     ! Get the dimensional properties of the MD config%cell
 
 #ifdef CHRONO
-    Call start_timer('Linked Cells')
+    Call start_timer(tmr, 'Linked Cells')
 #endif
     Call dcell(config%cell,celprp)
 
@@ -1145,7 +1143,7 @@ Contains
       Call error(0,message)
     End If
 #ifdef CHRONO
-    Call stop_timer('Linked Cells')
+    Call stop_timer(tmr, 'Linked Cells')
 #endif
 
   End Subroutine link_cell_pairs
