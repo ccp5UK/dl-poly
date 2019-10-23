@@ -2069,8 +2069,8 @@ Contains
 
     do iatm = 1, config%natms
       velocity = [config%vxx(iatm), config%vyy(iatm), config%vzz(iatm)]
-      !      Σ    (        P              +                     K                 ) *     V
-      e_v = e_v + ( stats%pp_energy(iatm) + config%weight(iatm) * norm2(velocity) ) * velocity
+      !      Σ    (        P              +                                  K                           ) *     V
+      e_v = e_v + ( stats%pp_energy(iatm) + 0.5_wp*config%weight(iatm) * dot_product(velocity, velocity) ) * velocity
       S_v = S_v + matmul(reshape(stats%pp_stress(:, iatm), [3,3]), velocity)
     end do
 
