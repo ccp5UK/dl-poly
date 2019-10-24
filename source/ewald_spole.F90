@@ -1767,9 +1767,12 @@ Contains
     Real ( Kind = wp ) :: energy
     Real ( Kind = wp ) :: x
 
-    energy = f_p(pi_m_over_a,pot_order)
-    stress_kernel = B_m * pot * f_p_d(pi_m_over_a, energy, pot_order)
-
+    if (pi_m_over_a > zero_plus) then
+      energy = f_p(pi_m_over_a,pot_order)
+      stress_kernel = B_m * pot * f_p_d(pi_m_over_a, energy, pot_order)
+    else
+      stress_kernel = (0.0_wp, 0.0_wp)
+    end if
   end function stress_kernel
 
   function f_p(x, pot_order)

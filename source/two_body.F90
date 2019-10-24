@@ -735,6 +735,7 @@ Contains
 
     ! Globalise coulombic contributions: cpe
 
+    print*, stats%vircpe , vircpe_rc , vircpe_rl , vircpe_ch , vircpe_ex , vircpe_fr , vircpe_nz , vircpe_dt
     stats%engcpe = stats%engcpe + engcpe_rc + engcpe_rl + engcpe_ch + engcpe_ex + engcpe_fr + engcpe_nz
     stats%vircpe = stats%vircpe + vircpe_rc + vircpe_rl + vircpe_ch + vircpe_ex + vircpe_fr + vircpe_nz + vircpe_dt
 
