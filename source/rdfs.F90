@@ -40,7 +40,7 @@ Module rdfs
 
     Logical, Public :: l_print
     !> Total number of blocks?
-    Integer( Kind = wi ), Public :: num_blocks = 25
+    Integer( Kind = wi ), Public :: num_blocks = 2
 
     !> RDF collection frequency (in steps)
     Integer( Kind = wi ), Public :: freq
