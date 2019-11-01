@@ -3275,7 +3275,7 @@ Contains
     fail = 0
     Allocate (mol(1:(ifinish-istart+1),0:3), Stat = fail)
     If (fail > 0) Then
-      Write(message,'(/,1x,a,i0)') 'getcom_mol allocation failure'
+      Write(message,'(/,1x,a,i0)') 'getcom_mol allocation failure', fail
       Call error(0,message)
     End If
 

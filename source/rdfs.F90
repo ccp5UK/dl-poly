@@ -40,7 +40,7 @@ Module rdfs
 
     Logical, Public :: l_print
     !> Total number of blocks?
-    Integer( Kind = wi ), Public :: num_blocks = 25
+    Integer( Kind = wi ), Public :: num_blocks = 2
 
     !> RDF collection frequency (in steps)
     Integer( Kind = wi ), Public :: freq
@@ -1074,9 +1074,10 @@ Contains
     Type( rdf_type ), Intent( InOut ) :: rdf
     Integer( Kind = wi ), Intent( In    ) :: nstep
 
-    If ((rdf%l_errors_block .or. rdf%l_errors_jack) .and. &
-      mod(nstep, rdf%block_size) == 0) Then
-      rdf%block_number = rdf%block_number + 1
+    If (rdf%l_errors_block .or. rdf%l_errors_jack) Then 
+      If (mod(nstep, rdf%block_size) == 0) Then
+        rdf%block_number = rdf%block_number + 1
+      End If
     End If
   End Subroutine rdf_increase_block_number
 
