@@ -1,4 +1,11 @@
 Module drivers
+!> Module for driving DL-POLY simulations 
+!>
+!> Copyright - Daresbury Laboratory
+!
+!> Author  - J. Madge    September 2018
+!> EVB     - i.scivetti  October   2019
+!>
   Use kinds, Only : wp,wi
   Use comms, Only : comms_type,gsum,gtime,gmax
   Use kinetics, Only : kinstresf, kinstrest, kinstress,getknr,getknr, cap_forces
@@ -128,7 +135,7 @@ Module drivers
   Use msd, Only : msd_type,msd_write
 
   ! EVB MODULE
-  Use evb, Only : evb_pes, evb_type
+  Use evb, Only : evb_type, evb_pes, read_evb, evb_checkconfig, evb_merge_stochastic, evb_setzero
 
   Implicit None
   Private
@@ -264,8 +271,8 @@ Contains
     If (mpoles%max_mpoles > 0) Then
       mpoles%torque_x=0.0_wp ; mpoles%torque_y=0.0_wp ; mpoles%torque_z=0.0_wp
     End If
-    stat%stress = 0.0_wp
 
+    stat%stress = 0.0_wp
 
     ! Initialise variables for two_body interaction (including long range, which is not strictly a two_body interaction problem)
     stat%engsrp    = 0.0_wp
@@ -327,7 +334,6 @@ Contains
       Call angles_forces(switch,stat%engang,stat%virang,stat%stress,angle,cnfig,comm)
     End If
 
-
     ! Calculate dihedral forces
 
     If (dihedral%total > 0) Then
@@ -341,7 +347,6 @@ Contains
         stat%virsrp,dihedral,vdws,mpoles,electro,cnfig,comm)
     End If
   
-
     ! Calculate inversion forces
 
     If (inversion%total > 0) Then
@@ -352,6 +357,7 @@ Contains
       switch = 1 + Merge(1,0,ltmp)
       Call inversions_forces(switch,stat%enginv,stat%virinv,stat%stress,inversion,cnfig,comm)
     End If
+
 #ifdef CHRONO
     Call stop_timer(tmr,'Bonded Forces')
 #endif
@@ -460,8 +466,8 @@ Contains
     ! NOTE(2):  virfbp, virinv and virdih are allegedly always zero
 
     stat%virtot = stat%vircpe + stat%virsrp + stat%virter + stat%virtbp + stat%virfbp + &
-      stat%virshl + stat%virtet + stat%virbnd + stat%virang + stat%virdih + &
-      stat%virinv + stat%virfld
+                  stat%virshl + stat%virtet + stat%virbnd + stat%virang + stat%virdih + &
+                  stat%virinv + stat%virfld
 
     Call gsum(comm,stat%stress)
 
@@ -476,6 +482,338 @@ Contains
     !!!!!!!!!!!!!!!!!!  W_CALCULATE_FORCES INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
   End Subroutine w_calculate_forces
+
+   Subroutine w_calculate_forces_evb(evbff,cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
+      inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
+      minim,mpoles,ext_field,rigid,electro,domain,kim_data,msd_data,tmr,files,&
+      green,devel,ewld,met,seed,thermo,comm)
+
+    Type( evb_type ), Intent( InOut  ) :: evbff
+    Type( configuration_type), Intent( InOut  )  :: cnfig(:)
+    Type( io_type ), Intent( InOut ) :: io
+    Type( flow_type ), Intent( InOut ) :: flow
+    Type( core_shell_type ), Intent( InOut ) :: cshell(:)
+    Type( constraints_type ), Intent( InOut ) :: cons(:)
+    Type( pmf_type ), Intent( InOut ) :: pmf(:)
+    Type(stats_type), Intent(InOut) :: stat(:)
+    Type(plumed_type), Intent(InOut) :: plume(:)
+    Type(poisson_type), Intent(InOut) :: pois(:)
+    Type( bonds_type ), Intent( InOut ) :: bond(:)
+    Type( angles_type ), Intent( InOut ) :: angle(:)
+    Type( dihedrals_type ), Intent( InOut ) :: dihedral(:)
+    Type( inversions_type ), Intent( InOut ) :: inversion(:)
+    Type( tethers_type ), Intent( InOut ) :: tether(:)
+    Type( threebody_type ), Intent( InOut ) :: threebody(:)
+    Type( neighbours_type ), Intent( InOut ) :: neigh(:)
+    Type( site_type ), Intent( InOut ) :: sites(:)
+    Type( vdw_type ), Intent( InOut ) :: vdws(:)
+    Type( tersoff_type ), Intent( InOut )  :: tersoffs(:)
+    Type( four_body_type ), Intent( InOut ) :: fourbody(:)
+    Type( rdf_type ), Intent( InOut ) :: rdf(:)
+    Type( netcdf_param ), Intent( In    ) :: netcdf
+    Type( minimise_type ), Intent( InOut ) :: minim(:)
+    Type( mpole_type ), Intent( InOut ) :: mpoles(:)
+    Type( external_field_type ), Intent( InOut ) :: ext_field
+    Type( rigid_bodies_type ), Intent( InOut ) :: rigid(:)
+    Type( electrostatic_type ), Intent( InOut ) :: electro(:)
+    Type( domains_type ), Intent( In    ) :: domain(:)
+    Type( kim_type ), Intent( InOut) :: kim_data(:)
+    Type( msd_type ), Intent( InOut ) :: msd_data(:)
+    Type( timer_type ), Intent( InOut ) :: tmr
+    Type( file_type ), Intent( InOut ) :: files(1)
+    Type( greenkubo_type ), Intent( InOut ) :: green(:)
+    Type( development_type ), Intent( InOut ) :: devel
+    Type( ewald_type ), Intent( InOut ) :: ewld(:)
+    Type( metal_type ), Intent( InOut ) :: met(:)
+    Type( seed_type ), Intent( InOut ) :: seed
+    Type( thermostat_type ), Intent( InOut ) :: thermo(:)
+    Type(comms_type)    ,   Intent( InOut ) :: comm
+ 
+    Logical :: ltmp
+    Integer :: i, ff, imin100
+    Integer(Kind=wi) :: switch
+
+    !!!!!!!!!!!!!!!!!!  W_CALCULATE_FORCES INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
+
+
+    ! for new simulations when using the relaxed shell model
+    ! set shells on top of their cores preventatively
+
+     Do ff=1,flow%NUM_FF  
+
+       If ( (cshell(ff)%megshl > 0 .and. cshell(ff)%keyshl == SHELL_RELAXED) .and. &
+         (flow%restart_key == RESTART_KEY_CLEAN .and. flow%step == 0 .and. flow%equil_steps > 0) ) Then
+         Call core_shell_on_top(cshell(ff),cnfig(ff),comm)
+
+      ! Refresh mappings
+
+         Call w_refresh_mappings(cnfig(ff),flow,cshell(ff),cons(ff),pmf(ff),stat(ff),msd_data(ff),bond(ff),angle(ff), &
+          dihedral(ff),inversion(ff),tether(ff),neigh(ff),sites(ff),mpoles(ff),rigid(ff),domain(ff),kim_data(ff), &
+          ewld(ff),green(ff),minim(ff),thermo(ff),electro(ff),comm)
+       End If
+
+     End Do
+
+
+    100  Continue ! Only used when relaxed is false
+    imin100=0 
+ 
+
+    ! Initialise force arrays and possible torques for multipolar electrostatics, 
+    ! stress tensor (these are all additive in the force subroutines) and torques
+
+    Do ff=1,flow%NUM_FF  
+      Do i=1,cnfig(ff)%mxatms
+        cnfig(ff)%parts(i)%fxx=0.0_wp
+        cnfig(ff)%parts(i)%fyy=0.0_wp
+        cnfig(ff)%parts(i)%fzz=0.0_wp
+      End Do
+     
+      stat(ff)%stress = 0.0_wp
+
+      If (mpoles(ff)%max_mpoles > 0) Then
+        mpoles(ff)%torque_x=0.0_wp ; mpoles(ff)%torque_y=0.0_wp ; mpoles(ff)%torque_z=0.0_wp
+      End If
+    End Do
+
+#ifdef CHRONO
+    Call start_timer(tmr, 'Bonded Forces')
+#endif
+
+    ! Initialise variables for two_body interaction (including long range, which is not strictly a two_body interaction problem)
+    stat(ff)%engsrp    = 0.0_wp
+    stat(ff)%virsrp    = 0.0_wp
+    stat(ff)%engcpe    = 0.0_wp
+    stat(ff)%vircpe    = 0.0_wp    
+
+    Do ff=1,flow%NUM_FF
+ 
+    ! Set up non-bonded interaction (verlet) list using link cells
+      If ((.not.(met(ff)%max_metal == 0 .and. electro(ff)%key == ELECTROSTATIC_NULL .and. &
+          vdws(ff)%no_vdw .and. rdf(ff)%max_rdf == 0) .or. kim_data(ff)%active).and.neigh(ff)%update) Then
+         Call link_cell_pairs(vdws(ff)%cutoff,met(ff)%rcut,flow%book,cnfig(ff)%megfrz,cshell(ff),devel, &
+                           neigh(ff),mpoles(ff),domain(ff),tmr,cnfig(ff),comm)
+      End If
+
+      ! Calculate tersoff forces
+
+      If (tersoffs(ff)%n_potential > 0) Call tersoff_forces(tersoffs(ff),stat(ff),neigh(ff),domain(ff),cnfig(ff),comm)
+
+      ! Calculate three-body forces
+
+      If (threebody(ff)%ntptbp > 0) Call three_body_forces(stat(ff),threebody(ff),neigh(ff),domain(ff),cnfig(ff),comm)
+
+      ! Calculate four-body forces
+
+      If (fourbody(ff)%n_potential > 0) Call four_body_forces(fourbody(ff),stat(ff),neigh(ff),domain(ff),cnfig(ff),comm)
+
+
+      ! Calculate shell model forces
+
+      If (cshell(ff)%megshl > 0) Call core_shell_forces(cshell(ff),stat(ff),cnfig(ff),comm)
+
+      ! Calculate tethered atom forces
+ 
+      If (tether(ff)%total > 0) Call tethers_forces(stat(ff),tether(ff),cnfig(ff),comm)
+
+      ! Calculate bond forces
+
+      If (bond(ff)%total > 0) Then
+        ltmp = (bond(ff)%bin_pdf > 0 .and. &
+          ((.not.flow%equilibration) .or. flow%step >= flow%equil_steps) .and. &
+          Mod(flow%step,flow%freq_bond) == 0)
+
+         switch = 1 + Merge(1,0,ltmp)
+         Call bonds_forces(switch,stat(ff)%engbnd,stat(ff)%virbnd,stat(ff)%stress,neigh(ff)%cutoff, &
+           stat(ff)%engcpe,stat(ff)%vircpe,bond(ff),mpoles(ff),electro(ff),cnfig(ff),comm)
+      End If
+
+      ! Calculate valence angle forces
+
+      If(angle(ff)%total > 0) Then
+        ltmp = (angle(ff)%bin_adf > 0 .and. &
+        ((.not.flow%equilibration) .or. flow%step >= flow%equil_steps) .and. &
+        Mod(flow%step,flow%freq_angle) == 0)
+        switch = 1 + Merge(1,0,ltmp)
+        Call angles_forces(switch,stat(ff)%engang,stat(ff)%virang,stat(ff)%stress,angle(ff),cnfig(ff),comm)
+      End If
+
+      ! Calculate dihedral forces
+
+      If (dihedral(ff)%total > 0) Then
+        ltmp = (dihedral(ff)%bin_adf > 0 .and. &
+        ((.not.flow%equilibration) .or. flow%step >= flow%equil_steps) &
+        .and. Mod(flow%step,flow%freq_dihedral) == 0)
+
+        switch = 1 + Merge(1,0,ltmp)
+        Call dihedrals_forces(switch,stat(ff)%engdih,stat(ff)%virdih,stat(ff)%stress, &
+          neigh(ff)%cutoff,stat(ff)%engcpe,stat(ff)%vircpe,stat(ff)%engsrp, &
+          stat(ff)%virsrp,dihedral(ff),vdws(ff),mpoles(ff),electro(ff),cnfig(ff),comm)
+      End If
+  
+      ! Calculate inversion forces
+
+      If (inversion(ff)%total > 0) Then
+        ltmp = (inversion(ff)%bin_adf > 0 .and. &
+        ((.not.flow%equilibration) .or. flow%step >= flow%equil_steps) .and. &
+         Mod(flow%step,flow%freq_inversion) == 0)
+         switch = 1 + Merge(1,0,ltmp)
+         Call inversions_forces(switch,stat(ff)%enginv,stat(ff)%virinv,stat(ff)%stress,inversion(ff),cnfig(ff),comm)
+       End If
+
+    End Do
+#ifdef CHRONO
+    Call stop_timer(tmr,'Bonded Forces')
+#endif
+    
+    Do ff=1,flow%NUM_FF
+    
+    ! Calculate pair-like forces (metal,vdws,electrostatic) and add lrc
+
+    If (.not.(met(ff)%max_metal == 0 .and. electro(ff)%key == ELECTROSTATIC_NULL .and. &
+      vdws(ff)%no_vdw .and. rdf(ff)%max_rdf == 0) .or. kim_data(ff)%active) Then
+      Call two_body_forces(thermo(ff)%ensemble,flow%book,cnfig(ff)%megfrz, &
+        flow%equilibration,flow%equil_steps,flow%step,cshell(ff),stat(ff),ewld(ff),devel, & 
+        met(ff),pois(ff),neigh(ff),sites(ff),vdws(ff),rdf(ff),mpoles(ff),electro(ff),domain(ff), &
+        tmr,kim_data(ff),cnfig(ff),comm)
+    End If
+
+    End Do
+
+    Do ff=1,flow%NUM_FF
+      Call gsum(comm,stat(ff)%stress)
+    End do
+
+    ! Configurational energy
+    Do ff=1,flow%NUM_FF
+      stat(ff)%stpcfg =stat(ff)%engcpe + stat(ff)%engsrp + stat(ff)%engter + stat(ff)%engtbp +  &
+                       stat(ff)%engfbp + stat(ff)%engshl + stat(ff)%engtet + stat(ff)%engfld +  &
+                       stat(ff)%engbnd + stat(ff)%engang + stat(ff)%engdih + stat(ff)%enginv
+    End Do
+
+! Compute EVB energy, forces and stress tensor     
+    If(flow%NUM_FF > 1)Then
+      Call evb_pes(evbff,flow,cnfig,stat) 
+    End If  
+
+!   If(comm%idnode==0) write(12,*) evbff%psi(1,1)**2 , evbff%psi(2,1)**2
+
+    ! Apply external field
+
+    Do ff=1,flow%NUM_FF
+      If (ext_field%key /= FIELD_NULL) Then
+        Call external_field_apply(flow%time,flow%equilibration,flow%equil_steps,flow%step,cshell(ff),stat(ff),rdf(ff), &
+                                ext_field,rigid(ff),domain(ff),cnfig(ff),comm)
+      End If
+    End Do 
+
+    Do ff=1,flow%NUM_FF
+
+    ! Apply PLUMED driven dynamics
+      If (plume(ff)%l_plumed) Then
+         Call plumed_apply(cnfig(ff),flow%run_steps,flow%step,stat(ff),plume(ff),comm)
+      End If
+
+    !  Apply pseudo thermostat - force cycle (0)
+ 
+      If (thermo(ff)%l_stochastic_boundaries) Then
+        Call stochastic_boundary_vv(0,thermo(ff)%tstep,flow%step,sites(ff)%dof_site,cshell(ff),stat(ff),thermo(ff), &
+                                    rigid(ff),domain(ff),cnfig(ff),seed,comm)
+      End If
+ 
+     ! Cap forces in equilibration mode
+ 
+      If (flow%step <= flow%equil_steps .and. flow%force_cap) Call cap_forces(thermo(ff)%temp,cnfig(ff),comm)
+
+     ! Frozen atoms option
+
+     Call freeze_atoms(cnfig(ff))
+
+    End Do
+
+    ! Minimisation option and Relaxed shell model optimisation
+
+    Do ff=1,flow%NUM_FF
+      If (flow%simulation .and. (minim(ff)%minimise .or. cshell(ff)%keyshl == SHELL_RELAXED)) Then
+        If (cshell(ff)%keyshl == SHELL_RELAXED) Then
+          Call core_shell_relax(flow%strict,rdf(ff)%l_collect, stat(ff)%stpcfg,cshell(ff), &
+                                stat(ff),domain(ff),cnfig(ff),files,comm)
+        End If
+
+        If (.not.cshell(ff)%relaxed) Go To 200 ! Shells relaxation takes priority over minimisation
+
+        If (minim(ff)%minimise .and. flow%step >= 0 .and. flow%step <= flow%run_steps .and. flow%step <= flow%equil_steps) Then
+          If(minim(ff)%freq == 0 .and. flow%step == 0) Then
+            Call minimise_relax(flow%strict .or. cshell(ff)%keyshl == SHELL_RELAXED, &
+                             rdf(ff)%l_collect,thermo(ff)%tstep,stat(ff)%stpcfg,io,stat(ff),pmf(ff),cons(ff), &
+                             netcdf,minim(ff),rigid(ff),domain(ff),cnfig(ff),files,comm)
+          Else If (minim(ff)%freq >  0 .and. flow%step >  0) Then
+            If (Mod(flow%step-flow%equil_steps,minim(ff)%freq) == 0) Then
+              Call minimise_relax(flow%strict .or. cshell(ff)%keyshl == SHELL_RELAXED, &
+                        rdf(ff)%l_collect,thermo(ff)%tstep,stat(ff)%stpcfg,io,stat(ff),pmf(ff),cons(ff), &
+                        netcdf,minim(ff),rigid(ff),domain(ff),cnfig(ff),files,comm)
+            End If
+          End If
+        End If
+
+      200     Continue
+
+      ! Refresh mappings
+         If (.not.(cshell(ff)%relaxed .and. minim(ff)%relaxed)) Then
+            Call w_refresh_mappings(cnfig(ff),flow,cshell(ff),cons(ff),pmf(ff),stat(ff),msd_data(ff),bond(ff),angle(ff), &
+                          dihedral(ff),inversion(ff),tether(ff),neigh(ff),sites(ff),mpoles(ff),rigid(ff),domain(ff), &
+                          kim_data(ff),ewld(ff),green(ff),minim(ff),thermo(ff),electro(ff),comm)
+            imin100=imin100+1
+         End If
+      End If
+    End Do
+
+    ! IS: This is an awful patch to circunvent the goto 100, which was set after the previous w_refresh_mappings
+    If(imin100 > 0 .And. imin100 < flow%NUM_FF)Then
+       stop     
+    Else If(imin100==flow%NUM_FF)Then 
+       Go To 100
+    End If        
+
+    ! Get RB COM stress and virial at restart only - also available at w_at_start_vv for cnfig%levcfg==2
+    If (flow%newjob) Then
+      Do ff=1,flow%NUM_FF
+        If (rigid(ff)%total > 0) Then
+          If (thermo(ff)%l_langevin) Then
+            Call langevin_forces(flow%step,thermo(ff)%temp,thermo(ff)%tstep,thermo(ff)%chi, &
+                           thermo(ff)%fxl,thermo(ff)%fyl,thermo(ff)%fzl,cshell(ff),cnfig(ff),seed)
+            If (rigid(ff)%share) Then
+               Call update_shared_units(cnfig(ff),rigid(ff)%list_shared, &
+                           rigid(ff)%map_shared,thermo(ff)%fxl,thermo(ff)%fyl,thermo(ff)%fzl,domain(ff),comm)
+            End If
+            Call rigid_bodies_stress(stat(ff)%strcom,cnfig(ff),rigid(ff),comm,thermo(ff)%fxl,thermo(ff)%fyl,thermo(ff)%fzl)
+          Else
+            Call rigid_bodies_stress(stat(ff)%strcom,rigid(ff),cnfig(ff),comm)
+          End If
+          stat(ff)%vircom=-(stat(ff)%strcom(1)+stat(ff)%strcom(5)+stat(ff)%strcom(9))
+        End If
+      End Do
+    End If
+
+    !> For EVB it is not possible to have a decomposition of the energy and virial into separate contributions for each type of interaction
+    !> (e.g. angles, bonds, dihedrals, etc). For this reason, we set all these components to zero in the subroutine ebv_setzero. 
+    If(flow%NUM_FF > 1)Then
+      Call evb_setzero(flow,stat)
+    End If
+
+
+    Do ff=1,flow%NUM_FF
+     ! If RBs are present update forces on shared ones
+     If (rigid(ff)%share) Then
+       Call update_shared_units(cnfig(ff),rigid(ff)%list_shared, &
+                rigid(ff)%map_shared,SHARED_UNIT_UPDATE_FORCES,domain(ff),comm)
+     End If
+    End Do
+ 
+!    !!!!!!!!!!!!!!!!!!  W_CALCULATE_FORCES INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
+!
+  End Subroutine w_calculate_forces_evb
+
 
   Subroutine w_refresh_mappings(cnfig,flow,cshell,cons,pmf,stat,msd_data,bond,angle, &
       dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data,ewld,green,minim,thermo,&
@@ -520,7 +858,6 @@ Contains
     If (neigh%update) Then
 
       ! Relocate atoms to new domains and restore bonding description
-
       Call relocate_particles(cnfig%dvar,neigh%cutoff_extended,flow%book, &
         msd_data%l_msd,cnfig%megatm,flow,cshell,cons,pmf,stat,ewld,thermo,green, &
         bond,angle,dihedral,inversion,tether,neigh,sites,minim,mpoles, &
@@ -986,7 +1323,7 @@ Contains
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type(stats_type), Intent(InOut) :: stat
-    Type( site_type ), Intent( InOut ) :: sites
+    Type( site_type ), Intent( In    ) :: sites
     Type( external_field_type ), Intent( In    ) :: ext_field
     Type( domains_type ), Intent( In    ) :: domain
     Type( seed_type ), Intent( InOut ) :: seed
@@ -1018,7 +1355,6 @@ Contains
       thermo%chi_t = 0.0_wp
       thermo%chi_p = 0.0_wp
       thermo%eta  = 0.0_wp
-
       Call regauss_temperature(rigid,domain,cnfig,seed,comm)
 
       ! quench constraints & PMFs
@@ -1123,10 +1459,23 @@ Contains
     Type( greenkubo_type), Intent(InOut ) :: green
     Type(timer_type ), Intent( InOut ):: tmr
     Type( comms_type ), Intent( InOut ) :: comm
-    Integer( Kind = wi ), Intent( In   ), Optional :: ff
+    Integer( Kind = wi ), Intent( In     ), Optional :: ff
 
     !!!!!!!!!!!!!!!!!  W_STATISTICS_REPORT INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
     Character( Len = 256 ) :: message,messages(5)
+
+    Logical                 :: ffpass
+
+    If (present(ff)) then
+      If(ff==1)Then
+        ffpass=.True.
+      Else
+        ffpass=.False.
+      End If
+    Else
+      ffpass= .True.
+    Endif    
+
 
     ! Get complete stress tensor
 
@@ -1156,7 +1505,7 @@ Contains
 
     ! line-printer output every flow%freq_output steps
 
-    If (flow%lines == 0 .or. Mod(flow%step,flow%freq_output) == 0 .and. ff==1)Then
+    If ((flow%lines == 0 .or. Mod(flow%step,flow%freq_output) == 0) .and. ffpass)Then
 
       ! Update cpu flow%time
 
@@ -1194,7 +1543,7 @@ Contains
 
     ! Reports at end of equilibration period
 
-    If (flow%step == flow%equil_steps .and. ff==1) Then
+    If (flow%step == flow%equil_steps .and. ffpass) Then
 
       If (flow%step > 0) Then
         Call info(repeat('-',130),.true.)
@@ -1648,7 +1997,7 @@ Contains
     Type( ewald_type), Intent ( InOut ) :: ewld(:)
     Type( greenkubo_type ), Intent( InOut ) :: green(:)
     Type( impact_type ), Intent( InOut ) :: impa
-    Type( minimise_type ), Intent( InOut ) :: minim
+    Type( minimise_type ), Intent( InOut ) :: minim(:)
     Type( msd_type ), Intent( InOut ) :: msd_data(:)
     Type( tersoff_type), Intent( InOut ) :: tersoffs(:)
     Type( tethers_type), Intent( InOut ) :: tether(:)
@@ -1659,8 +2008,9 @@ Contains
     Type( metal_type ), Intent( InOut ) :: met(:) 
 
     Type( evb_type ) :: evbff
-
     Integer( Kind = wi ) :: ff
+
+    Logical              :: fregauss
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV_EVB INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
@@ -1670,8 +2020,14 @@ Contains
 
     !!!!!!!!!!!!!!!!!!!!!!!  W_AT_START_VV_EVB INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
-    ! Allocate EVB variables
-    Call evbff%init(flow%NUM_FF)
+    If(flow%NUM_FF>1)Then
+      ! Allocate EVB variables
+      Call evbff%init(flow%NUM_FF)
+      ! Check consistency between config files   
+      Call evb_checkconfig(cnfig,flow,comm)
+      ! Read EVB coupling parameters
+      Call read_evb(evbff,flow,comm)
+    End If
 
     ! Calculate kinetic tensor and energy at restart
     Do ff=1,flow%NUM_FF
@@ -1688,7 +2044,7 @@ Contains
       ! If cnfig%levcfg=2 and RBs are present, update forces on shared ones
       ! and get RB COM stress and virial at restart.  If cnfig%levcfg<2
       ! forces are calculated at (re)start
-  
+       
       If (cnfig(ff)%levcfg == 2) Then
         If (rigid(ff)%total > 0) Then
           If (rigid(ff)%share) Then
@@ -1706,10 +2062,10 @@ Contains
           Else
             Call rigid_bodies_stress(stat(ff)%strcom,rigid(ff),cnfig(ff),comm)
           End If
-  
           stat(ff)%vircom=-(stat(ff)%strcom(1)+stat(ff)%strcom(5)+stat(ff)%strcom(9))
         End If
       End If
+
     End Do
 
 
@@ -1741,6 +2097,8 @@ Contains
           If (flow%step == 0 .and. flow%step == flow%run_steps) Go To 1000
         End If
       End If
+
+
       ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
 
       If (flow%step >= 0 .and. flow%step < flow%run_steps .and. cnfig(1)%levcfg == 2) Then
@@ -1750,7 +2108,6 @@ Contains
         flow%step=flow%step+1
 
         ! zero Kelvin structure optimisation
-
         Do ff=1,flow%NUM_FF
           If (thermo(ff)%l_zero .and. flow%step <= flow%equil_steps .and. &
               Mod(flow%step-flow%equil_steps,thermo(ff)%freq_zero) == 0) Then
@@ -1759,9 +2116,10 @@ Contains
         End Do
 
         Do ff=1,flow%NUM_FF
-        ! Switch on electron-phonon coupling only after flow%time offset
 
+        ! Switch on electron-phonon coupling only after flow%time offset
         ttm(ff)%l_epcp = (flow%time >= ttm(ff)%ttmoffset)
+
 
         ! Integrate equations of motion - velocity verlet first stage
           Call w_integrate_vv(VV_FIRST_STAGE,flow,cnfig(ff),ttm(ff),cshell(ff),cons(ff),pmf(ff),stat(ff), &
@@ -1771,28 +2129,22 @@ Contains
 
         Call w_refresh_mappings(cnfig(ff),flow,cshell(ff),cons(ff),pmf(ff),stat(ff),msd_data(ff),bond(ff),angle(ff), &
           dihedral(ff),inversion(ff),tether(ff),neigh(ff),sites(ff),mpoles(ff),rigid(ff),domain(ff),kim_data(ff),ewld(ff), &
-          green(ff),minim,thermo(ff),electro(ff),comm)        
+          green(ff),minim(ff),thermo(ff),electro(ff),comm)        
         EndDo
 
       End If ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
 
-      ! Evaluate forces
-
-      Do ff=1,flow%NUM_FF
-        Call w_calculate_forces(cnfig(ff),flow,io,cshell(ff),cons(ff),pmf(ff),stat(ff),plume(ff),pois(ff),bond(ff), &
-              angle(ff),dihedral(ff),inversion(ff),tether(ff),threebody(ff),neigh(ff),sites(ff),vdws(ff),tersoffs(ff),fourbody(ff),&
-              rdf(ff),netcdf, minim,mpoles(ff),ext_field,rigid(ff),electro(ff),domain(ff),kim_data(ff),msd_data(ff),tmr,  &
-              files,green(ff),devel,ewld(ff),met(ff),seed,thermo(ff),comm)
-      End Do
-
-      Call evb_pes(evbff,flow,cnfig,stat,comm) 
+        Call w_calculate_forces_evb(evbff,cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond, &
+              angle,dihedral,inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,&
+              rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,kim_data,msd_data,tmr,  &
+              files,green,devel,ewld,met,seed,thermo,comm)
 
       ! Calculate physical quantities, collect statistics and report at t=0
 
       If (flow%step == 0) Then
         Do ff=1,flow%NUM_FF
           Call w_statistics_report(cnfig(ff),cshell(ff),cons(ff),pmf(ff),stat(ff),msd_data(ff),zdensity, &
-            sites(ff),rdf(ff),domain(ff),flow,files,thermo(ff),tmr,green(ff),minim,comm,ff)
+                                   sites(ff),rdf(ff),domain(ff),flow,files,thermo(ff),tmr,green(ff),minim(ff),comm,ff)
         EndDo
       End If
 
@@ -1809,17 +2161,30 @@ Contains
           End If
         End Do 
 
+
         ! Integrate equations of motion - velocity verlet second stage
         Do ff=1,flow%NUM_FF
-        Call w_integrate_vv(VV_SECOND_STAGE,flow,cnfig(ff),ttm(ff),cshell(ff),cons(ff),pmf(ff),stat(ff), &
-          thermo(ff),sites(ff),vdws(ff),rigid(ff),domain(ff),seed,tmr,neigh(ff),comm)
-
-        ! Apply kinetic options
-
-        Call w_kinetic_options(flow,cnfig(ff),cshell(ff),cons(ff),pmf(ff),stat(ff),sites(ff),ext_field,domain(ff), &
-                               seed,rigid(ff),thermo(ff),comm)
+          Call w_integrate_vv(VV_SECOND_STAGE,flow,cnfig(ff),ttm(ff),cshell(ff),cons(ff),pmf(ff),stat(ff), &
+            thermo(ff),sites(ff),vdws(ff),rigid(ff),domain(ff),seed,tmr,neigh(ff),comm)
 
         End Do
+
+
+        ! Apply kinetic options
+        fregauss=.False.
+        If(thermo(1)%l_tgaus .and. (flow%step <= flow%equil_steps) .and. Mod(flow%step-flow%equil_steps,thermo(1)%freq_tgaus) == 0)&
+          fregauss=.True.       
+
+        If(thermo(1)%l_stochastic_boundaries .or. fregauss)Then
+          Call w_kinetic_options(flow,cnfig(1),cshell(1),cons(1),pmf(1),stat(1),sites(1),ext_field,domain(1), &
+                                 seed,rigid(1),thermo(1),comm)
+          Call evb_merge_stochastic(flow,cnfig,stat,rigid,thermo,cshell,cons,pmf)                
+        Else        
+        Do ff=1,flow%NUM_FF
+         Call w_kinetic_options(flow,cnfig(ff),cshell(ff),cons(ff),pmf(ff),stat(ff),sites(ff),ext_field,domain(ff), &
+                                 seed,rigid(ff),thermo(ff),comm)
+        End Do
+        End If 
 
         ! Update total flow%time of simulation
         flow%time = flow%time + thermo(1)%tstep
@@ -1828,22 +2193,19 @@ Contains
 
         Do ff=1,flow%NUM_FF
         Call w_statistics_report(cnfig(ff),cshell(ff),cons(ff),pmf(ff),stat(ff),msd_data(ff),zdensity, &
-          sites(ff),rdf(ff),domain(ff),flow,files,thermo(ff),tmr,green(ff),minim,comm,ff)
+          sites(ff),rdf(ff),domain(ff),flow,files,thermo(ff),tmr,green(ff),minim(ff),comm,ff)
         End Do
 
         ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
-
         Call w_write_options(cnfig(1),io,rsdc,cshell(1),stat(1),sites(1),netcdf,domain(1),traj,files,dfcts,&
           flow,thermo(1),msd_data(1),green(1),neigh(1),comm)
 
         ! Save restart data in event of system crash
-
         If (Mod(flow%step,flow%freq_restart) == 0 .and. flow%step /= flow%run_steps .and. (.not.devel%l_tor)) Then
-          Do ff=1,flow%NUM_FF
-            Call system_revive(neigh(ff)%cutoff,flow%step,flow%time,sites(ff),io,flow%start_time, &
-            stat(ff),devel,green(ff),thermo(ff),bond(ff),angle(ff),dihedral(ff),inversion(ff),zdensity,rdf(ff), &
-            netcdf,cnfig(ff),files,comm)
-          End Do
+        ! Only print the data from FIELD 1
+           Call system_revive(neigh(1)%cutoff,flow%step,flow%time,sites(1),io,flow%start_time, &
+            stat(1),devel,green(1),thermo(1),bond(1),angle(1),dihedral(1),inversion(1),zdensity,rdf(1), &
+            netcdf,cnfig(1),files,comm)
         End If
 
       End If ! DO THAT ONLY IF 0<flow%step<=flow%run_steps AND THIS IS AN OLD JOB (flow%newjob=.false.)
@@ -1857,6 +2219,14 @@ Contains
       ! Complete flow%time check
 
       Call gtime(tmr%elapsed)
+
+      Do ff=1,2
+!       write(6,*) cnfig(ff)%parts(1)%fxx, cnfig(ff)%parts(1)%fyy, cnfig(ff)%parts(1)%fzz
+!       write(6,*) stat(ff)%stress(1),stat(ff)%stress(2),stat(ff)%stress(3)
+!       write(6,*) stat(ff)%stress(4),stat(ff)%stress(5),stat(ff)%stress(6)
+!       write(6,*) stat(ff)%stress(7),stat(ff)%stress(8),stat(ff)%stress(9)
+      End Do
+
 
       ! Change cnfig%levcfg appropriately
       Do ff=1,flow%NUM_FF 

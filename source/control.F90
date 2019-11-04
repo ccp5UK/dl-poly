@@ -1,3 +1,27 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 module and subroutines for reading in the simulation control parameters
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov february 2017
+! contrib   - i.j.bush february 2014
+! contrib   - a.v.brukhno march 2014
+! contrib   - m.a.seaton june 2014
+! contrib   - h.a.boateng february 2015
+! contrib   - p.s.petkov february 2015
+! contrib   - a.m.elena september 2015
+! contrib   - a.m.elena february 2017
+! contrib   - g.khara & m.a.seaton march 2017
+! refactoring:
+!           - a.m.elena march-october 2018
+!           - j.madge march-october 2018
+!           - a.b.g.chalk march-october 2018
+!           - i.scivetti march-october 2018
+! contrib   - a.m.elena february 2019, cherry pick 4.09.2
+! EVB       - i.scivetti june-october 2019 
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 Module control
   Use kinds, only : wi,wp,sp,dp
   Use comms,      Only : comms_type,gcheck
@@ -91,31 +115,9 @@ Contains
     pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws, &
     rdf,minim,mpoles,electro,ewld,seed,traj,files,tmr,config,flow,comm)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for reading in the simulation control parameters
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov february 2017
-    ! contrib   - i.j.bush february 2014
-    ! contrib   - a.v.brukhno march 2014
-    ! contrib   - m.a.seaton june 2014
-    ! contrib   - h.a.boateng february 2015
-    ! contrib   - p.s.petkov february 2015
-    ! contrib   - a.m.elena september 2015
-    ! contrib   - a.m.elena february 2017
-    ! contrib   - g.khara & m.a.seaton march 2017
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    ! contrib   - a.m.elena february 2019, cherry pick 4.09.2
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( ttm_type ), Intent( InOut ) :: ttm
     Logical,                Intent(   Out ) :: lfce
+    Type( ttm_type ), Intent( InOut ) :: ttm
     Type( rigid_bodies_type ), Intent ( InOut ) :: rigid
     Type( rsd_type ), Intent ( InOut ) :: rsdc
     Type( pmf_type ), Intent (   InOut )   :: pmf
@@ -2914,6 +2916,11 @@ Contains
           Call error(3)
 
         End If
+
+        ! EVB settings, this flag has been already read by read_simtype.  
+
+      Else If (word(1:5) == 'evb') Then 
+
 
         ! close control file
 

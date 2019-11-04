@@ -1,19 +1,17 @@
 Module statistics
-
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-  ! dl_poly_4 module declaring global simulation property variables and
-  ! arrays
-  !
-  ! copyright - daresbury laboratory
-  ! author    - i.t.todorov february 2016
-  ! refactoring:
-  !           - a.m.elena march-october 2018
-  !           - j.madge march-october 2018
-  !           - a.b.g.chalk march-october 2018
-  !           - i.scivetti march-october 2018
-  !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!>
+!> dl_poly_4 module declaring global simulation property variables and
+!> arrays
+!
+!> copyright - daresbury laboratory
+!> author    - i.t.todorov february 2016
+!> refactoring:
+!           - a.m.elena march-october 2018
+!           - j.madge march-october 2018
+!           - a.b.g.chalk march-october 2018
+!           - i.scivetti march-october 2018
+!> contrib  - i.scivetti September 2019. Required changes to allow EVB simulations
+!
 
   Use kinds, Only : wp,wi,li
   Use constants, Only : zero_plus,&
@@ -353,7 +351,8 @@ Contains
     Type( configuration_type ), Intent( InOut ) :: config
     Type( file_type ), Intent( InOut ) :: files(:)
     Type( comms_type ), Intent( InOut ) :: comm
-    Integer( Kind = wi ), Intent( In   ), Optional :: ff
+    Integer( Kind = wi ), Intent( In  ), Optional :: ff
+
 
     Logical                 :: l_tmp
     Integer                 :: fail,i,j,k,iadd,kstak
@@ -363,7 +362,18 @@ Contains
     Real( Kind = wp ), Allocatable :: amsd(:)
     Real( Kind = wp ), Allocatable :: xxt(:),yyt(:),zzt(:)
     Character( Len = 256 ) :: message
+    Logical                 :: ffpass
 
+
+    If (present(ff)) then
+      If(ff==1)Then      
+        ffpass=.True.
+      Else
+        ffpass=.False.      
+      End If
+    Else
+      ffpass= .True.
+    Endif 
 
     fail=0
     Allocate (amsd(1:sites%mxatyp), Stat=fail)
@@ -373,8 +383,7 @@ Contains
     End If
 
     ! open statistics file and put header
-
-    If (stats%newjob .and. comm%idnode == 0 .and. ff==1) Then
+    If (stats%newjob .and. comm%idnode == 0 .and. ffpass) Then
       stats%newjob = .false.
 
       ! If the keyres = RESTART_KEY_OLD is the file old (does it exist)?
@@ -435,7 +444,12 @@ Contains
     ! Note: originally, purely angle dependent interactions have zero virial!!!
     ! So, stats%virfbp, stats%virinv and stats%virdih are allegedly always zero!  virdih has an exception!
 
-     stats%stpvir= stats%virtot + stats%virfld + stats%vircon + stats%virpmf + stats%vircom 
+     stats%stpvir= stats%virtot + stats%vircon + stats%virpmf + stats%vircom 
+!     stats%stpvir= stats%virtot + stats%virfld + stats%vircon + stats%virpmf + stats%vircom 
+   
+!   print*, stats%virtot, stats%vircon , stats%virpmf , stats%vircom
+!   print*, stats%stress(1), stats%stress(5), stats%stress(9)
+!   stop
 
     ! system volume
 
@@ -610,7 +624,7 @@ Contains
 
     ! write statistics file
 
-    If (comm%idnode == 0 .and. Mod(nstep,stats%intsta) == 0 .and. ff==1) Then
+    If (comm%idnode == 0 .and. Mod(nstep,stats%intsta) == 0 .and. ffpass) Then
       If (.not. stats%statis_file_open) Then
         Open(Newunit=files(FILE_STATS)%unit_no, File=files(FILE_STATS)%filename, Position='append')
         stats%statis_file_open = .true.

@@ -1,5 +1,23 @@
 Module flow_control
+!> Module to define flow settings
+!>
+!> Copyright - Daresbury Laboratory
+!
+!> Author - a.m.elena March 2018
+!> refactoring:
+!>           - a.m.elena march-october 2018
+!>           - j.madge march-october 2018
+!>           - a.b.g.chalk march-october 2018
+!>           - i.scivetti march-october 2018
+!> contrib   - i.scivetti Aug 2019 - Add read_simtype
+
   Use kinds, Only : wi,wp
+  Use parse, Only : get_line,get_word,lower_case, word_2_real
+
+  Use errors_warnings, Only : info, error
+
+  Use comms,      Only : comms_type,gcheck
+
   Implicit None
 
   Private
@@ -13,8 +31,8 @@ Module flow_control
   Integer(Kind=wi), Parameter, Public :: RESTART_KEY_SCALE = 2
   !> Unscaled restart
   Integer(Kind=wi), Parameter, Public :: RESTART_KEY_NOSCALE = 3
-  !> Simulation type keys: MD
-  Integer(Kind=wi), Parameter, Public :: MD = 1
+  !> Simulation type keys: STD
+  Integer(Kind=wi), Parameter, Public :: STD = 1
   !> Simulation type keys: EVB
   Integer(Kind=wi), Parameter, Public :: EmpVB = 2
   !> Simulation type keys: FFS
@@ -96,13 +114,15 @@ Module flow_control
     !> Reset padding flag
     Logical, Public :: reset_padding
     !> Type of Simulation we perform
-    Integer, Public :: simulation_method = MD
+    Integer, Public :: simulation_method 
     !> Define number of force-fields to be coupled
     Integer(Kind = wi), Public :: NUM_FF
   Contains
     Procedure, Public :: new_page => flow_type_new_page
     Procedure, Public :: line_printed => flow_type_line_printed
   End Type flow_type
+
+  Public :: read_simtype
 
 Contains
 
@@ -118,5 +138,71 @@ Contains
 
     T%lines = T%lines + 1
   End Subroutine flow_type_line_printed
+
+
+! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+! Read type of calculation from CONTROL
+! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Subroutine read_simtype(flow,comm) 
+  Type( flow_type ) , Intent(   Out ) :: flow
+  Type( comms_type ), Intent( InOut ) :: comm
+
+  Logical                :: carry,safe, stdtype
+  Character( Len = 200 ) :: record
+  Character( Len = 40  ) :: word
+
+  Integer       :: unit_no
+
+  ! Set safe flag
+    safe    =.true.
+    stdtype =.true.
+
+  ! Open CONTROL file
+  If (comm%idnode == 0) Inquire(File='CONTROL', Exist=safe)
+  Call gcheck(comm,safe,"enforce")
+  If (.not.safe) Then
+   Call error(126) 
+  Else
+   If (comm%idnode == 0) Then
+     Open(Newunit=unit_no, File='CONTROL',Status='old')
+   End If
+  End If
+  Call get_line(safe,unit_no,record,comm)  
+
+
+  If (safe) Then
+    carry = .true.
+    Do While (carry)
+      Call get_line(safe,unit_no,record,comm)
+      If (.not.safe) Exit
+      Call lower_case(record)
+      Call get_word(record,word)
+    ! read EVB option: OUTPUT to screen
+      If (word(1:3) == 'evb') Then
+        flow%simulation_method=EmpVB
+        write(0,*) 'Simulation type: EVB'
+        stdtype =.false.
+        Call get_word(record,word)
+        flow%NUM_FF = Nint(word_2_real(word))
+        If(flow%NUM_FF <=1)Then
+          Call error(1091)         
+        End If        
+      Else If (word(1:6) == 'finish') Then
+        carry=.false.
+      End If
+    End Do
+    If(stdtype)Then
+    ! Set standard option: OUTPUT to screen
+      write(0,*) 'Simulation type: Standard'
+      flow%simulation_method=STD
+      flow%NUM_FF = 1 
+    End If         
+  End If
+
+  If (comm%idnode == 0) Close(unit_no)    
+
+  End Subroutine read_simtype
+          
 
 End Module flow_control

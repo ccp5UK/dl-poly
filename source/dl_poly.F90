@@ -40,6 +40,8 @@ program dl_poly
   !           - a.b.g.chalk march-october 2018
   !           - i.scivetti march-october 2018
   !
+  ! EVB       - i.scivetti march-october 2019 
+  ! 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   ! SETUP MODULES
@@ -142,7 +144,7 @@ program dl_poly
     peakProfilerElec,peakProfiler
   Use ttm_track, Only : ttm_ion_temperature
   Use filename, Only : file_type,default_filenames
-  Use flow_control, Only : flow_type, EmpVB, FFS, MD
+  Use flow_control, Only : flow_type, EmpVB, STD, read_simtype
   Use kinetics, Only : cap_forces
   Use timer, Only  : timer_type
   Use meta, Only : molecular_dynamics
@@ -150,7 +152,8 @@ program dl_poly
 
   Implicit None
 
-  ! all your simulation variables
+  ! all your allocatable simulation variables
+  Type( flow_type ), Allocatable :: flow(:)
   Type(comms_type), Allocatable :: dlp_world(:)
   Type(thermostat_type), Allocatable :: thermo(:)
   Type(ewald_type), Allocatable :: ewld(:)
@@ -187,7 +190,6 @@ program dl_poly
   Type( rigid_bodies_type ), Allocatable :: rigid(:)
   Type( electrostatic_type ), Allocatable :: electro(:)
   Type( domains_type ), Allocatable :: domain(:)
-  Type( flow_type ), Allocatable :: flow(:)
   Type( seed_type ), Allocatable :: seed(:)
   Type( trajectory_type ), Allocatable :: traj(:)
   Type( kim_type ), Allocatable, Target :: kim_data(:)
@@ -213,30 +215,29 @@ program dl_poly
     End If
   End If
 
-  ! temporary stuff this will need to be abstracted 
-  Allocate(flow(1))
-  flow(1)%simulation_method = EmpVB
+  ! IS: This has to be abstracted or defined to be of dimension 1 in module flow. 
+  ! I think this should always be of dimension 1. 
+  Allocate(flow(1))                                      
+  ! Set the type of calculation to be performed
+  Call read_simtype(flow(1),dlp_world(0))
 
   ! Select metasimulation method
-  If (flow(1)%simulation_method == MD) Then
-    write(0,*) "simulation type: MD" 
+  ! IS: The following two subroutines should be merged into a single one. We separate them
+  ! for the time being though.
+  If (flow(1)%simulation_method == STD) Then
     Call molecular_dynamics(dlp_world,thermo,ewld,tmr,devel,stats, &
       green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion,tether, &
       threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs,fourbody, &
       rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow,seed,traj, &
       kim_data,config,ios,ttms,rsdsc,files,control_filename)
   Else If (flow(1)%simulation_method == EmpVB) Then 
-    write(0,*) "simulation type: EVB"
-    flow(1)%NUM_FF      = 2 
-    Call evb_molecular_dynamics(dlp_world,thermo,ewld,tmr,devel,stats, &
+   Call evb_molecular_dynamics(dlp_world,thermo,ewld,tmr,devel,stats, &
       green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion,tether, &
       threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs,fourbody, &
       rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow,seed,traj, &
       kim_data,config,ios,ttms,rsdsc,files,control_filename)
-  Else If (flow(1)%simulation_method == FFS) Then 
-    write(0,*) "simulation type: FFS" 
-  Else
-    write(0,*) "Unknown simulation type" 
+!  Else If (flow(1)%simulation_method == FFS) Then 
+!    write(0,*) "simulation type: FFS" 
   End IF
 
   ! Terminate job

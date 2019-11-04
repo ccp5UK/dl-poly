@@ -1,10 +1,11 @@
+Module filename
 !> Module maintaining access to DL_POLY files
 !>
 !> Copyright - Daresbury Laboratory
 !
-!> Author - J. Madge September 2018
-!> contrib - a.m.elena October 2018 - use standard integer for units
-Module filename
+!> Author - J. Madge    September 2018
+!> contrib - a.m.elena  October   2018 - use standard integer for units
+!> contrib - i.Scivetti Aug       2018 - addition of extra files for EVB calculations 
   Use kinds, only : wi
   Implicit None
 
@@ -48,9 +49,11 @@ Module filename
   Integer, Parameter, Public :: FILE_FIELD_2=  11
   !> CONFIG2 file
   Integer, Parameter, Public :: FILE_CONFIG_2 = 12
+  !> REVCON2 file
+  Integer, Parameter, Public :: FILE_REVCON_2 = 13
 
   !> Size of filename array
-  Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 12
+  Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 13
 
   Public :: default_filenames
 
@@ -74,18 +77,19 @@ Contains
     Integer(Kind=wi) :: file_no
 
     ! Populate default names array
-    default_names(FILE_CONTROL) = "CONTROL"
-    default_names(FILE_OUTPUT) = "OUTPUT"
-    default_names(FILE_CONFIG) = "CONFIG"
-    default_names(FILE_FIELD) = "FIELD"
-    default_names(FILE_STATS) = "STATIS"
-    default_names(FILE_HISTORY) = "HISTORY"
-    default_names(FILE_HISTORF) = "HISTORF"
-    default_names(FILE_REVIVE) = "REVIVE"
-    default_names(FILE_REVOLD) = "REVOLD"
-    default_names(FILE_REVCON) = "REVCON"
-    default_names(FILE_FIELD_2) = "FIELD"
-    default_names(FILE_CONFIG_2) = "CONFIG"
+    default_names(FILE_CONTROL)  = "CONTROL"
+    default_names(FILE_OUTPUT)   = "OUTPUT"
+    default_names(FILE_CONFIG)   = "CONFIG"
+    default_names(FILE_FIELD)    = "FIELD"
+    default_names(FILE_STATS)    = "STATIS"
+    default_names(FILE_HISTORY)  = "HISTORY"
+    default_names(FILE_HISTORF)  = "HISTORF"
+    default_names(FILE_REVIVE)   = "REVIVE"
+    default_names(FILE_REVOLD)   = "REVOLD"
+    default_names(FILE_REVCON)   = "REVCON"
+    default_names(FILE_REVCON_2) = "REVCON2"
+    default_names(FILE_FIELD_2)  = "FIELD2"
+    default_names(FILE_CONFIG_2) = "CONFIG2"
 
     ! Set default filenames
     Do file_no = 1, FILENAME_SIZE

@@ -13,7 +13,8 @@ Module meta
   Use domains, Only : domains_type
   Use site, Only : site_type
   Use constants, Only : DLP_RELEASE,DLP_VERSION
-  Use configuration, Only : configuration_type,check_config, scale_config, origin_config, freeze_atoms
+  Use configuration, Only : configuration_type,check_config, scale_config, origin_config, &
+                            freeze_atoms, write_config
   Use control, Only : read_control,scan_control_output,scan_control_io
   Use neighbours, Only : neighbours_type
   Use core_shell, Only : core_shell_type
@@ -70,7 +71,7 @@ Module meta
     peakProfilerElec,peakProfiler
   Use ttm_track, Only : ttm_ion_temperature
   Use filename, Only : file_type,default_filenames,FILE_CONTROL,FILE_OUTPUT, &
-    FILE_STATS,FILENAME_SIZE
+    FILE_STATS,FILENAME_SIZE, FILE_REVCON
   Use flow_control, Only : flow_type
   Use kinetics, Only : cap_forces
   Implicit None
@@ -134,12 +135,12 @@ Contains
     Type( rsd_type ), Allocatable, Target, Intent(InOut) :: rsdsc(:)
     Type( file_type ), Allocatable, Intent(InOut) :: files(:,:)
 
-    Integer( Kind = wi ), Parameter :: TYPE_SIZE = 1
     Type(comms_type) :: comm
     Character( Len = 1024 ) :: control_filename
+   
 
     ! Allocate type arrays
-    Call allocate_types_uniform(TYPE_SIZE,thermo,ewld,tmr,devel,stats, &
+    Call allocate_types_uniform(flow(1)%NUM_FF,thermo,ewld,tmr,devel,stats, &
       green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
       tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
       fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain, &
@@ -181,7 +182,7 @@ Contains
     Type(metal_type), Intent(InOut) :: met
     Type(poisson_type), Intent(InOut) :: pois
     Type(impact_type), Intent(InOut) :: impa
-    Type(defects_type), Intent(InOut) :: dfcts(2)
+    Type(defects_type), Intent(InOut) :: dfcts(:)
     Type(bonds_type), Intent(InOut) :: bond
     Type( angles_type ), Intent(InOut) :: angle
     Type( dihedrals_type ), Intent(InOut) :: dihedral
@@ -213,7 +214,7 @@ Contains
     Type( io_type), Intent(InOut) :: ios
     Type( ttm_type), Intent(InOut) :: ttms
     Type( rsd_type ), Target, Intent(InOut) :: rsdsc
-    Type( file_type ), Intent(InOut) :: files(FILENAME_SIZE)
+    Type( file_type ), Intent(InOut) :: files(:)
     character( len = 1024 ), Intent(In) :: control_filename
 
     character( len = 256 ) :: message
@@ -540,6 +541,8 @@ Contains
 
     ! Save restart data for real simulations only (final)
     If (flow%simulation .and. (.not.devel%l_tor)) Then
+      ! Write REVCON      
+      Call write_config(config,files(FILE_REVCON),2,flow%step,thermo%tstep,ios,flow%time,netcdf,comm)      
       Call system_revive(neigh%cutoff,flow%step,flow%time,sites,ios,flow%start_time,stats, &
         devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config, &
         files,comm)
@@ -678,14 +681,14 @@ Contains
     Allocate(ios(array_size))
     Allocate(ttms(array_size))
     Allocate(rsdsc(array_size))
+    Allocate(minim(array_size))
 
     If(array_size == 1)Then
+      Allocate(dfcts(array_size,2))
       Allocate(tmr(array_size))
       Allocate(impa(array_size))
-      Allocate(dfcts(array_size,2))
       Allocate(devel(array_size))
       Allocate(netcdf(array_size))
-      Allocate(minim(array_size))
       Allocate(seed(array_size))
       Allocate(traj(array_size))
       Allocate(files(array_size,FILENAME_SIZE))
@@ -695,7 +698,6 @@ Contains
       Allocate(dfcts(1,2))
       Allocate(devel(1))
       Allocate(netcdf(1))
-      Allocate(minim(1))
       Allocate(seed(1))
       Allocate(traj(1))
       Allocate(files(1,FILENAME_SIZE))

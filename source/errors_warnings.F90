@@ -12,6 +12,7 @@ Module errors_warnings
 !> contrib - a.m.elena October 2018 - use standard integer for units
 !> contrib - a.m.elena March 2019 - remove error 145
 !> contrib - a.m.elena March 2019 - fix wrong logic in warning
+!> contrib - i.scivetti Aug  2019 - Add errors for EVB simuations
 
   Use, intrinsic :: iso_fortran_env, only : error_unit,input_unit,output_unit
   Use kinds, Only : wp
@@ -735,7 +736,6 @@ Contains
 
     zeroOnly=.false.
     If (Present(master_only)) zeroOnly=master_only
-
     If (zeroOnly) Then
       If (eworld%idnode == 0 ) Then
         Write(ounit,'(a)')Trim(message)
@@ -2186,9 +2186,64 @@ Contains
 
         Write(ounit,'(/,1x,a)') 'error - deallocation failure in ttm_track_module -> depoevolve'
 
-      Else
+!     EVB errors
+!     !!!!!!!!!!
+      Else If (kode == 1091) Then
+        Write(ounit,'(/,1x,a)') 'error - No (or wrong) specificaton of number of fields to be coupled via EVB &
+                                &following the keyword "evb" in CONTROL. The number of fields should be larger than 1.'      
 
-        Write(ounit,'(/,1x,a)') 'error - unnamed error found'
+      Else If (kode == 1092) Then
+        Write(ounit,'(/,1x,a)') 'error - File SETEVB (settings for EVB coupling terms) not found'
+
+      Else If (kode == 1093) Then
+        Write(ounit,'(/,1x,a)') 'error - In file SETEVB, incomplete line after one of the "evbcoupl" keys. &
+                                &See specification for the correct syntax in manual'
+
+      Else If (kode == 1095) Then
+        Write(ounit,'(/,1x,a)') 'error - In file SETEVB multiple definition of "evbcoupl" for the same pair of &
+                                &force fields to be coupled'
+
+
+      Else If (kode == 1096) Then
+        Write(ounit,'(/,1x,a)') 'error - In file SETEVB two (real) coupling parameters are required after "evbcoupl" and the &
+                                &pair of indexes for the fields to be coupled.'
+
+      Else If (kode == 1097) Then
+        Write(ounit,'(/,1x,a)') 'error - In file SETEVB, incomplete line after one of the "evbshift" keys. &
+                                &See specification for the correct syntax in manual'
+
+      Else If (kode == 1098) Then
+        Write(ounit,'(/,1x,a)') 'error - In file SETEVB, wrong field index for adding the energy shift after  &
+                                &one of the "evbshift" keys. Index should be between 1 and the total number of fields' 
+
+      Else If (kode == 1099) Then
+        Write(ounit,'(/,1x,a)') 'error - In file SETEVB multiple definition of "evbshift" for the same force field'
+
+      Else If (kode == 1100) Then
+        Write(ounit,'(/,1x,a)') 'error - In file SETEVB there are combinations of "evbcoupl" missing.'
+
+      Else If (kode == 1101) Then
+        Write(ounit,'(/,1x,a)') 'error - In file SETEVB there are energy shifts values "evbshift" missing.'
+
+      Else If (kode == 1102) Then
+        Write(ounit,'(/,1x,a)') 'error - unknown directive found in SETEVB file'
+
+      Else If (kode == 1103) Then
+        Write(ounit,'(/,1x,a)') 'error - Units for the FIELDS fiels are different. Please set both files to &
+                                &have the same units.'
+
+      Else If (kode == 1104) Then
+        Write(ounit,'(/,1x,a)') 'error - Ionic coordinates differ between different CONFIGs files. & 
+                                &Ionic coordinates should be the same for all the CONFIG files.'
+
+      Else If (kode == 1105) Then
+        Write(ounit,'(/,1x,a)') 'error - Simulation cell differ between different CONFIGs files.'  
+
+      Else If (kode == 1106) Then
+        Write(ounit,'(/,1x,a)') 'error - Values for levcfg differ between different CONFIGs files and should be the same.'   
+
+      Else
+         Write(ounit,'(/,1x,a)') 'error - unnamed error found'
 
       End If
 

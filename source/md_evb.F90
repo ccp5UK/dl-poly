@@ -1,10 +1,9 @@
 Module md_evb 
-!> evb-simulation routines
+!> Equivalent of meta for EVB simulations 
 !>
 !> Copyright - Daresbury Laboratory
 !>
-!> Author  - i.scivetti  xxx 2019 
-!> contrib - a.m.elena   xxx 2019
+!> Author  - i.scivetti  September 2019 
   Use, Intrinsic :: iso_fortran_env, Only : error_unit
   Use kinds, Only : wi,wp
   Use comms, Only : comms_type, init_comms, exit_comms, gsync, gtime,gsum
@@ -12,8 +11,9 @@ Module md_evb
   Use netcdf_wrap, Only : netcdf_param
   Use domains, Only : domains_type
   Use site, Only : site_type
-  Use constants, Only : DLP_RELEASE,DLP_VERSION
-  Use configuration, Only : configuration_type,check_config, scale_config, origin_config, freeze_atoms
+  Use constants, Only : DLP_RELEASE,DLP_VERSION, engunit
+  Use configuration, Only : configuration_type,check_config, scale_config, origin_config, & 
+                            freeze_atoms, write_config
   Use control, Only : read_control,scan_control_output,scan_control_io
   Use neighbours, Only : neighbours_type
   Use core_shell, Only : core_shell_type
@@ -40,7 +40,7 @@ Module md_evb
   Use greenkubo, Only : greenkubo_type
   Use msd, Only : msd_type
   Use drivers, Only : w_md_vv_evb
-  Use errors_warnings, Only : init_error_system,info, warning
+  Use errors_warnings, Only : init_error_system,info, warning, error
   Use ewald, Only : ewald_type
   Use impacts, Only : impact_type
   Use defects, Only : defects_type
@@ -69,8 +69,8 @@ Module md_evb
   Use ttm_utils, Only : printElecLatticeStatsToFile,printLatticeStatsToFile,&
     peakProfilerElec,peakProfiler
   Use ttm_track, Only : ttm_ion_temperature
-  Use filename, Only : file_type,default_filenames,FILE_CONTROL,FILE_OUTPUT, &
-    FILE_STATS,FILENAME_SIZE
+  Use filename, Only : file_type,default_filenames,FILE_CONTROL,FILE_OUTPUT, FILE_REVCON, FILE_REVCON_2,  &
+                       FILE_STATS,FILENAME_SIZE
   Use flow_control, Only : flow_type
   Use kinetics, Only : cap_forces
   Use meta, Only: print_initial_configuration, print_final_configuration, print_citations, print_banner, &
@@ -153,7 +153,7 @@ Contains
       impa(1),dfcts(1,:),bond,angle,dihedral,inversion,tether, &
       threebody,zdensity,cons,neigh,pmfs,sites, &
       core_shells,vdws,tersoffs,fourbody,rdf,netcdf(1), &
-      minim(1),mpoles,ext_field(1),rigid,electro,domain,flow(1), &
+      minim,mpoles,ext_field(1),rigid,electro,domain,flow(1), &
       seed(1),traj(1),kim_data,config,ios(1),ttms,rsdsc,files(1,:), &
       control_filename)
 
@@ -188,7 +188,7 @@ Contains
     Type(metal_type), Intent(InOut) :: met(:)
     Type(poisson_type), Intent(InOut) :: pois(:)
     Type(impact_type), Intent(InOut) :: impa
-    Type(defects_type), Intent(InOut) :: dfcts(2)
+    Type(defects_type), Intent(InOut) :: dfcts(:)
     Type(bonds_type), Intent(InOut) :: bond(:)
     Type( angles_type ), Intent(InOut) :: angle(:)
     Type( dihedrals_type ), Intent(InOut) :: dihedral(:)
@@ -206,7 +206,7 @@ Contains
     Type( four_body_type ), Intent(InOut) :: fourbody(:)
     Type( rdf_type ), Intent(InOut) :: rdf(:)
     Type( netcdf_param ), Intent(InOut) :: netcdf
-    Type( minimise_type ), Intent(InOut) :: minim
+    Type( minimise_type ), Intent(InOut) :: minim(:)
     Type( mpole_type ), Intent(InOut) :: mpoles(:)
     Type( external_field_type ), Intent(InOut) :: ext_field
     Type( rigid_bodies_type ), Intent(InOut) :: rigid(:)
@@ -220,14 +220,15 @@ Contains
     Type( io_type), Intent(InOut) :: ios
     Type( ttm_type), Intent(InOut) :: ttms(:)
     Type( rsd_type ), Target, Intent(InOut) :: rsdsc(:)
-    Type( file_type ), Intent(InOut) :: files(FILENAME_SIZE)
+    Type( file_type ), Intent(InOut) :: files(:)
     character( len = 1024 ), Intent(In) :: control_filename
 
     character( len = 256 ) :: message
 
-    Integer( Kind = wi ) :: vacuum, ff
+    Integer( Kind = wi ) :: vacuum, ff, frevc
     Logical :: lfce
 
+    Real( Kind = wp )      :: evbunit
 
     Call gtime(tmr%elapsed) ! Initialise wall clock time
 
@@ -270,7 +271,6 @@ Contains
 
     ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
     ! (setup and domains)
-
     Do ff=1,flow%NUM_FF
       Call set_bounds ( &
         sites(ff),ttms(ff),ios,core_shells(ff),cons(ff),pmfs(ff),stats(ff), &
@@ -339,13 +339,13 @@ Contains
     Do ff=1,flow%NUM_FF
       Call read_control(lfce,impa,ttms(ff),dfcts,rigid(ff),rsdsc(ff),core_shells(ff),cons(ff),pmfs(ff), &
         stats(ff),thermo(ff),green(ff),devel,plume(ff),msd_data(ff),met(ff),pois(ff),bond(ff),angle(ff),dihedral(ff), &
-        inversion(ff),zdensity(ff),neigh(ff),vdws(ff),rdf(ff),minim,mpoles(ff),electro(ff),ewld(ff), &
+        inversion(ff),zdensity(ff),neigh(ff),vdws(ff),rdf(ff),minim(ff),mpoles(ff),electro(ff),ewld(ff), &
         seed,traj,files,tmr,config(ff),flow,comm)
-
-      If(ff .Eq. 1)Then
+      If(ff == 1)Then
         flow%newjob_read_control = .False.
       End If
     End Do  
+ 
 
     ! READ SIMULATION FORCE FIELD
     Do ff=1,flow%NUM_FF
@@ -360,10 +360,18 @@ Contains
       If(rdf(ff)%l_errors_jack .or. rdf(ff)%l_errors_block) then
         Call rdf(ff)%init_block(flow%run_steps,sites(ff)%ntype_atom)
       End If
-  
+ 
       ! CHECK MD CONFIGURATION
       Call check_config(config(ff),electro(ff)%key,thermo(ff),sites(ff),flow,comm)
   
+      ! Check if the Units of FIELD files is the same for all.
+      If (ff == 1) Then
+        evbunit=engunit
+      Else 
+        If(Abs(evbunit-engunit) >= epsilon(evbunit)) Then 
+          Call error(1103) 
+        End If        
+      End If        
     End Do
 
     Call info('',.true.)
@@ -502,7 +510,7 @@ Contains
       ! SET initial system temperature
       Call set_temperature               &
         (flow%restart_key,flow%step,flow%run_steps, &
-        stats(ff)%engrot,sites(ff)%dof_site,core_shells(ff),stats(ff),cons(ff),pmfs(ff),thermo(ff),minim, &
+        stats(ff)%engrot,sites(ff)%dof_site,core_shells(ff),stats(ff),cons(ff),pmfs(ff),thermo(ff),minim(ff), &
         rigid(ff),domain(ff),config(ff),seed,comm)
     End Do
 
@@ -562,10 +570,8 @@ Contains
         impa,green,ewld,electro,dfcts,msd_data,tersoffs,tether,threebody,vdws, &
         devel,met,comm)
     Else
-     print*, "Fix error message for EVB"  
-   stop
-
-
+      print*, "Fix error message for EVB"  
+      stop
     End If
 
 #ifdef CHRONO
@@ -596,7 +602,17 @@ Contains
 
     ! Save restart data for real simulations only (final)
     If (flow%simulation .and. (.not.devel%l_tor)) Then
-      Call system_revive(neigh(1)%cutoff,flow%step,flow%time,sites(1),ios,flow%start_time,stats(1), &
+    ! Write REVCON
+      Do ff=1,flow%NUM_FF
+        If(ff ==1)Then
+          frevc=FILE_REVCON
+        Else
+          frevc=FILE_REVCON_2
+        End If      
+        Call write_config(config(ff),files(frevc),2,flow%step,thermo(ff)%tstep,ios,flow%time,netcdf,comm)
+      End Do
+
+     Call system_revive(neigh(1)%cutoff,flow%step,flow%time,sites(1),ios,flow%start_time,stats(1), &
         devel,green(1),thermo(1),bond(1),angle(1),dihedral(1),inversion(1),zdensity(1),rdf(1),netcdf,config(1), &
         files,comm)
       If (ttms(1)%l_ttm)Then
@@ -616,7 +632,7 @@ Contains
     End If
 
     Call statistics_result                                        &
-      (config(1),minim%minimise,msd_data(1)%l_msd, &
+      (config(1),minim(1)%minimise,msd_data(1)%l_msd, &
       flow%run_steps,core_shells(1)%keyshl,cons(1)%megcon,pmfs(1)%megpmf,              &
       flow%step,flow%time,flow%start_time,config(1)%mxatdm,neigh(1)%unconditional_update,&
       stats(1),thermo(1),sites(1),comm)

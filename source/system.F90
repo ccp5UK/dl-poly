@@ -1,4 +1,10 @@
 Module system
+!
+!> System related subroutines
+!> authour -  J. Magdge Aug 2018  
+!>
+!> 
+!> contrib - i. scivetti Aug 2019
 
   Use kinds, Only : wp,li,wi
   Use comms, Only : comms_type, gbcast,SysExpand_tag,Revive_tag,gsync, &
@@ -6,7 +12,7 @@ Module system
     gtime,gsum,gcheck
   Use constants, Only : engunit, zero_plus, nmpldt 
   Use site, Only : site_type
-  Use configuration,      Only : configuration_type,write_config
+  Use configuration,      Only : configuration_type
   Use statistics, Only : stats_type
   Use rdfs,        Only : rdf_type
   Use z_density,   Only : z_density_type
@@ -2049,10 +2055,6 @@ Contains
       End If
 
     End If
-
-    ! Write REVCON
-    levcfg = 2      ! define level of information in REVCON
-    Call write_config(config,files(FILE_REVCON),levcfg,nstep,thermo%tstep,io,time,netcdf,comm)
 
     ! node 0 handles I/O
 

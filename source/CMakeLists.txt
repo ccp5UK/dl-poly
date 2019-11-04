@@ -117,6 +117,12 @@ if( NOT WITH_MPI)
     )
 endif()
 
+if(WITH_EVB)
+  set_target_properties(dlpoly PROPERTIES
+    COMPILE_DEFINITIONS "EVB"
+    )
+endif()
+
 if(WITH_NETCDF)
   set_target_properties(dlpoly PROPERTIES
     COMPILE_DEFINITIONS "NETCDF"
