@@ -132,12 +132,19 @@ if(WITH_PLUMED)
   set_target_properties(dlpoly PROPERTIES
     COMPILE_DEFINITIONS "PLUMED"
     )
+  if (INTERNAL_PLUMED)
+    add_dependencies(dlpoly int-plumed)
+  endif()
 endif()
 
 if(WITH_KIM)
   set_target_properties(dlpoly PROPERTIES
     COMPILE_DEFINITIONS "KIM"
     )
+  if (INTERNAL_KIM)
+    add_dependencies(dlpoly int-kim-api)
+  endif()
+  target_include_directories(dlpoly PUBLIC  ${KIM_INC})
 endif()
 ## sets the linking
 link_directories (${LIBRARY_OUTPUT_PATH})
