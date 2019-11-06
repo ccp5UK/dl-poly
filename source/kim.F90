@@ -300,8 +300,9 @@ Contains
     kim_data%n_particles = megatm
 
     ! Get influence distance
-    Call kim_get_influence_distance(kim_data%model_handle, &
-      kim_data%influence_distance)
+    If (.not. kim_data%padding_neighbours_required) Then
+      Call kim_get_influence_distance(kim_data%model_handle, kim_data%influence_distance)
+    End If
 
     ! Get number of neighbour lists
     Call kim_get_number_of_neighbor_lists(kim_data%model_handle, &
@@ -316,7 +317,12 @@ Contains
     ! Get neighbour list cutoffs and hints
     Allocate(cutoffs(kim_data%n_lists))
     Call kim_get_neighbor_list_values(kim_data%model_handle, &
-      cutoffs, kim_data%hints_padding, kerror)
+      cutoffs, &
+      kim_data%hints_padding, &
+      kerror)
+    If (kerror /= 0) Then
+      Call kim_error('kim_get_neighbor_list_values', __LINE__)
+    End If
     Do list_index = 1, kim_data%n_lists
       kim_data%neigh(list_index)%cutoff = cutoffs(list_index)
     End Do
@@ -335,10 +341,6 @@ Contains
       Call kim_neighbour_list_pointer_type_init(kim_data%neigh_pointer(list_index), &
         kim_data%neigh(list_index),max_atoms,max_list)
     End Do
-
-    If (kerror /= 0) Then
-      Call kim_error('kim_get_neighbor_list_values', __LINE__)
-    End If
 
     ! Allocate KIM pointers
     ! Number of particles
@@ -470,6 +472,9 @@ Contains
         'non-contributing particles. This may significantly affect performance', &
         __LINE__)
       kim_data%padding_neighbours_required = .true.
+
+      ! Get influence distance
+      Call kim_get_influence_distance(model_handle, kim_data%influence_distance)
     End If
 
     ! Deallocate temporary variables
