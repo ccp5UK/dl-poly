@@ -16,6 +16,14 @@ Module kim
   Use errors_warnings, Only : error,warning
 #ifdef KIM
   Use kim_simulator_headers_module, Only : &
+    kim_collection_item_type_type, &
+    KIM_COLLECTION_ITEM_TYPE_PORTABLE_MODEL, &
+    KIM_COLLECTION_ITEM_TYPE_SIMULATOR_MODEL, &
+    kim_collections_handle_type, &
+    kim_collections_create, &
+    kim_collections_destroy, &
+    kim_get_item_type, &
+    operator (.eq.), &
     kim_model_create, &
     kim_model_destroy, &
     kim_compute, &
@@ -157,6 +165,8 @@ Module kim
     Type(kim_model_handle_type) :: model_handle
     !> Compute arguments handle
     Type(kim_compute_arguments_handle_type) :: compute_arguments_handle
+    !> Model type
+    Type(kim_collection_item_type_type) :: model_type
 
     !> Number of particles
     Integer(Kind=c_int) :: n_particles
@@ -428,6 +438,8 @@ Contains
     Type(kim_type), Target, Intent(InOut) :: kim_data
 
 #ifdef KIM
+    Type(kim_collections_handle_type) :: kim_coll
+
     Type(kim_model_handle_type) :: model_handle
 #endif
     Integer(Kind=c_int) :: requested_units_accepted
@@ -441,45 +453,64 @@ Contains
     End If
 
 #ifdef KIM
-    Call kim_model_create(kim_numbering_one_based, &
-      kim_length_unit_a, &
-      kim_energy_unit_amu_a2_per_ps2, &
-      kim_charge_unit_e, &
-      kim_temperature_unit_k, &
-      kim_time_unit_ps, &
-      Trim(kim_data%model_name), &
-      requested_units_accepted, &
-      model_handle, kerror)
-    If (requested_units_accepted == 0) Then
-      Call kim_error('kim_model_create, the selected KIM model does not support DL_POLY internal units', __LINE__)
-    End If
+    Call kim_collections_create(kim_coll, kerror)
     If (kerror /= 0) Then
-      Call kim_error('kim_cutoff', __LINE__)
+      Call kim_error('kim_collections_create, unable to access KIM Collections to find Model', __LINE__)
     End If
-
-    ! Get number of neighbour lists
-    Call kim_get_number_of_neighbor_lists(model_handle, n_lists)
-
-    ! Get neighbour list cutoffs and record maximum
-    Allocate(cutoffs(n_lists), hints_padding(n_lists))
-    Call kim_get_neighbor_list_values(model_handle, &
-      cutoffs, hints_padding, kerror)
-    kim_data%cutoff = Real(maxval(cutoffs), wp)
-
-    ! Check if the padding hint is defined
-    If (Any(hints_padding /= 1)) Then
-      Call kim_warning('The selected KIM model requires neighbours of ' // &
-        'non-contributing particles. This may significantly affect performance', &
-        __LINE__)
-      kim_data%padding_neighbours_required = .true.
-
-      ! Get influence distance
-      Call kim_get_influence_distance(model_handle, kim_data%influence_distance)
+    Call kim_get_item_type(kim_coll, &
+      Trim(kim_data%model_name), &
+      kim_data%model_type, &
+      kerror)
+    If (kerror /= 0) Then
+      Call kim_error('kim_get_item_type, KIM Model name not found', __LINE__)
     End If
+    Call kim_collections_destroy(kim_coll)
 
-    ! Deallocate temporary variables
-    Deallocate(cutoffs, hints_padding)
-    Call kim_model_destroy(model_handle)
+    If (kim_data%model_type .eq. KIM_COLLECTION_ITEM_TYPE_PORTABLE_MODEL) Then
+      Call kim_model_create(kim_numbering_one_based, &
+        kim_length_unit_a, &
+        kim_energy_unit_amu_a2_per_ps2, &
+        kim_charge_unit_e, &
+        kim_temperature_unit_k, &
+        kim_time_unit_ps, &
+        Trim(kim_data%model_name), &
+        requested_units_accepted, &
+        model_handle, kerror)
+      If (requested_units_accepted == 0) Then
+        Call kim_error('kim_model_create, the selected KIM model does not support DL_POLY internal units', __LINE__)
+      End If
+      If (kerror /= 0) Then
+        Call kim_error('kim_cutoff', __LINE__)
+      End If
+
+      ! Get number of neighbour lists
+      Call kim_get_number_of_neighbor_lists(model_handle, n_lists)
+
+      ! Get neighbour list cutoffs and record maximum
+      Allocate(cutoffs(n_lists), hints_padding(n_lists))
+      Call kim_get_neighbor_list_values(model_handle, &
+        cutoffs, hints_padding, kerror)
+      kim_data%cutoff = Real(maxval(cutoffs), wp)
+
+      ! Check if the padding hint is defined
+      If (Any(hints_padding /= 1)) Then
+        Call kim_warning('The selected KIM model requires neighbours of ' // &
+          'non-contributing particles. This may significantly affect performance', &
+          __LINE__)
+        kim_data%padding_neighbours_required = .true.
+
+        ! Get influence distance
+        Call kim_get_influence_distance(model_handle, kim_data%influence_distance)
+      End If
+
+      ! Deallocate temporary variables
+      Deallocate(cutoffs, hints_padding)
+      Call kim_model_destroy(model_handle)
+    Else If (kim_data%model_type .eq. KIM_COLLECTION_ITEM_TYPE_SIMULATOR_MODEL) Then
+      Call kim_error('kim_cutoff, currently DL_POLY does not support KIM Simulator model', __LINE__)
+    ELSE
+      Call kim_error('kim_cutoff, unknown model type', __LINE__)
+    End If
 #endif
   End Subroutine kim_cutoff
 
