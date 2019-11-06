@@ -435,7 +435,7 @@ Contains
     Integer(Kind=c_int), Allocatable :: hints_padding(:)
 
     If (COMPILED_WITH_KIM .eqv. .false.) Then
-      Call error(0,'KIM directive found in FIELD, but the program with not built with openKIM support',.true.)
+      Call error(0,'KIM directive found in FIELD, but the program is not built with openKIM support',.true.)
     End If
 
 #ifdef KIM
