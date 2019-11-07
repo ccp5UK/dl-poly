@@ -685,7 +685,8 @@ Contains
     Call kim_share_halo_forces(kim_data,parts,natms,nlast,lsi,lsa,ltg,map,comm)
 
     ! Virials (and pressure?)
-    ! Why the strange numbers?
+    ! In OpenKIM virial has 6 components and is stored as
+    ! a 6-element vector in the following order: xx, yy, zz, yz, xz, xy.
     stress(1) = stress(1) - Real(kim_data%virial(1), wp)
     stress(2) = stress(2) - Real(kim_data%virial(6), wp)
     stress(3) = stress(3) - Real(kim_data%virial(5), wp)
