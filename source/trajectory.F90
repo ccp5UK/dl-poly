@@ -281,7 +281,7 @@ Contains
           End If
 
           If (traj%io_read == IO_READ_MPIIO) Then
-            Call files(FILE_HISTORY)%close()
+            If (comm%idnode == 0) Call files(FILE_HISTORY)%close()
 
             Call io_set_parameters(io, user_comm = comm%comm )
             Call io_init(io, traj%recsz_read )
