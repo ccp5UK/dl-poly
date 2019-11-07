@@ -693,9 +693,9 @@ Contains
       Allocate(traj(array_size))
       Allocate(files(array_size,FILENAME_SIZE))
     Else
+      Allocate(dfcts(1,2))
       Allocate(tmr(1))
       Allocate(impa(1))
-      Allocate(dfcts(1,2))
       Allocate(devel(1))
       Allocate(netcdf(1))
       Allocate(seed(1))

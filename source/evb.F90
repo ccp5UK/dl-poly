@@ -28,6 +28,8 @@ Module evb
   Use pmf, only : pmf_type
   Use core_shell, Only : core_shell_type
 
+  Use filename, Only : file_type, FILE_SETEVB 
+
 
   Implicit None
   Private
@@ -104,20 +106,19 @@ Contains
 
   End Subroutine allocate_evb_arrays
 
+  Subroutine read_evb(evb, flow, files,comm) 
 !> !>!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
 !> Read EVB settings and parameters from CONTROL
 !> !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Subroutine read_evb(evb, flow, comm) 
   Type(evb_type), Intent(InOut) :: evb
   Type( flow_type ), Intent(InOut) :: flow
+  Type( file_type ), Intent( InOut ) :: files(:)
   Type( comms_type ), Intent( InOut ) :: comm
   Logical                :: carry,safe
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word
 
-  Character( Len = 6 )   :: setevb
-  Integer                :: unit_no
   Integer                :: ncoupl, icoupl
   Integer                :: i, j, ieshift
 
@@ -134,9 +135,6 @@ Contains
   couplflag=.False.
   eshiftflag=.False.
 
-  ! Name of the EVB file (this might need to be defined somewhere else)
-  setevb='SETEVB'
-
   ! Set the total number of coupling elements for later check
   ncoupl=0
   Do i=1,(flow%NUM_FF-1) 
@@ -152,21 +150,21 @@ Contains
 
   ! Open the simulation input file
 
-  If (comm%idnode == 0) Inquire(File=setevb, Exist=safe)
+  If (comm%idnode == 0) Inquire(File=files(FILE_SETEVB)%filename, Exist=safe)
      Call gcheck(comm,safe,"enforce")
   If (.not.safe) Then
     Call error(1092)
   Else
     If (comm%idnode == 0) Then
-      Open(Newunit=unit_no, File=setevb,Status='old')
+      Open(Newunit=files(FILE_SETEVB)%unit_no, File=files(FILE_SETEVB)%filename,Status='old')
     End If
   End If
-  Call get_line(safe,unit_no,record,comm)  
+  Call get_line(safe,files(FILE_SETEVB)%unit_no,record,comm)  
 
   If (safe) Then
     carry = .true.
     Do While (carry)
-      Call get_line(safe,unit_no,record,comm)
+      Call get_line(safe,files(FILE_SETEVB)%unit_no,record,comm)
       If (.not.safe) Exit
       Call lower_case(record)
       Call get_word(record,word)
@@ -276,7 +274,7 @@ Contains
 
   Deallocate(eshiftflag, couplflag)
 
-  If (comm%idnode == 0) Close(unit_no)    
+  If (comm%idnode == 0) Close(files(FILE_SETEVB)%unit_no)    
 
   Call get_word(record,word) ; Call lower_case(word)
 
@@ -567,7 +565,6 @@ Contains
   Integer( Kind = wi ) :: mevb, evbinfo
 
 #ifdef EVB
-
 ! Initialise matrix elements
   evb%matrix=0.0_wp
 
@@ -663,6 +660,7 @@ Contains
      End Do
 
    End Do
+
 
    End subroutine evb_force
 
@@ -803,29 +801,29 @@ Contains
 
   Do ff=1,flow%NUM_FF
 !  Energy components
-    stat(ff)%engcpe = 0.0_wp
-    stat(ff)%engsrp = 0.0_wp 
-    stat(ff)%engter = 0.0_wp 
-    stat(ff)%engtbp = 0.0_wp 
-    stat(ff)%engfbp = 0.0_wp 
-    stat(ff)%engshl = 0.0_wp 
-    stat(ff)%engtet = 0.0_wp 
-    stat(ff)%engbnd = 0.0_wp 
-    stat(ff)%engang = 0.0_wp 
-    stat(ff)%engdih = 0.0_wp 
-    stat(ff)%enginv = 0.0_wp
-!  Virial components
-    stat(ff)%vircpe = 0.0_wp 
-    stat(ff)%virsrp = 0.0_wp
-    stat(ff)%virter = 0.0_wp
-    stat(ff)%virtbp = 0.0_wp
-    stat(ff)%virfbp = 0.0_wp
-    stat(ff)%virshl = 0.0_wp
-    stat(ff)%virtet = 0.0_wp 
-    stat(ff)%virbnd = 0.0_wp
-    stat(ff)%virang = 0.0_wp
-    stat(ff)%virdih = 0.0_wp 
-    stat(ff)%virinv = 0.0_wp
+!    stat(ff)%engcpe = 0.0_wp
+!    stat(ff)%engsrp = 0.0_wp 
+!    stat(ff)%engter = 0.0_wp 
+!    stat(ff)%engtbp = 0.0_wp 
+!    stat(ff)%engfbp = 0.0_wp 
+!    stat(ff)%engshl = 0.0_wp 
+!    stat(ff)%engtet = 0.0_wp 
+!    stat(ff)%engbnd = 0.0_wp 
+!    stat(ff)%engang = 0.0_wp 
+!    stat(ff)%engdih = 0.0_wp 
+!    stat(ff)%enginv = 0.0_wp
+!!  Virial components
+!    stat(ff)%vircpe = 0.0_wp 
+!    stat(ff)%virsrp = 0.0_wp
+!    stat(ff)%virter = 0.0_wp
+!    stat(ff)%virtbp = 0.0_wp
+!    stat(ff)%virfbp = 0.0_wp
+!    stat(ff)%virshl = 0.0_wp
+!    stat(ff)%virtet = 0.0_wp 
+!    stat(ff)%virbnd = 0.0_wp
+!    stat(ff)%virang = 0.0_wp
+!    stat(ff)%virdih = 0.0_wp 
+!    stat(ff)%virinv = 0.0_wp
   End Do 
 
   End subroutine evb_setzero

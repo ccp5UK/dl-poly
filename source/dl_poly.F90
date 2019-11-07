@@ -216,21 +216,22 @@ program dl_poly
   End If
 
   ! IS: This has to be abstracted or defined to be of dimension 1 in module flow. 
-  ! I think this should always be of dimension 1. 
-  Allocate(flow(1))                                      
-  ! Set the type of calculation to be performed
+  Allocate(flow(1)) 
+
+  ! Set the type of calculation to be performed. By default it is the standard DL_POLY 
+  ! calculation. Tag evb activates EVB calculation
   Call read_simtype(flow(1),dlp_world(0))
 
   ! Select metasimulation method
   ! IS: The following two subroutines should be merged into a single one. We separate them
   ! for the time being though.
-  If (flow(1)%simulation_method == STD) Then
-    Call molecular_dynamics(dlp_world,thermo,ewld,tmr,devel,stats, &
-      green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion,tether, &
-      threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs,fourbody, &
-      rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow,seed,traj, &
-      kim_data,config,ios,ttms,rsdsc,files,control_filename)
-  Else If (flow(1)%simulation_method == EmpVB) Then 
+!  If (flow(1)%simulation_method == STD) Then
+!    Call molecular_dynamics(dlp_world,thermo,ewld,tmr,devel,stats, &
+!      green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion,tether, &
+!      threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs,fourbody, &
+!      rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow,seed,traj, &
+!      kim_data,config,ios,ttms,rsdsc,files,control_filename)
+!  Else If (flow(1)%simulation_method == EmpVB) Then 
    Call evb_molecular_dynamics(dlp_world,thermo,ewld,tmr,devel,stats, &
       green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion,tether, &
       threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs,fourbody, &
@@ -238,7 +239,7 @@ program dl_poly
       kim_data,config,ios,ttms,rsdsc,files,control_filename)
 !  Else If (flow(1)%simulation_method == FFS) Then 
 !    write(0,*) "simulation type: FFS" 
-  End IF
+!  End IF
 
   ! Terminate job
 

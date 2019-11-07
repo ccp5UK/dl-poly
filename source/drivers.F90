@@ -581,10 +581,10 @@ Contains
 #endif
 
     ! Initialise variables for two_body interaction (including long range, which is not strictly a two_body interaction problem)
-    stat(ff)%engsrp    = 0.0_wp
-    stat(ff)%virsrp    = 0.0_wp
-    stat(ff)%engcpe    = 0.0_wp
-    stat(ff)%vircpe    = 0.0_wp    
+    stat%engsrp    = 0.0_wp
+    stat%virsrp    = 0.0_wp
+    stat%engcpe    = 0.0_wp
+    stat%vircpe    = 0.0_wp    
 
     Do ff=1,flow%NUM_FF
  
@@ -679,6 +679,8 @@ Contains
     End If
 
     End Do
+
+!    print*, 'coul=', stat(:)%engcpe 
 
     Do ff=1,flow%NUM_FF
       Call gsum(comm,stat(ff)%stress)
@@ -794,6 +796,20 @@ Contains
         End If
       End Do
     End If
+
+    ! Total virial (excluding constraint, PMF and RB COM virials for npt routines)
+    ! Total stress (excluding constraint, PMF, RB COM and kinetic stress for npt routines)
+    !
+    ! NOTE(1):  virsrp already includes vdws%vlrc and vlrcm(0) and so
+    !           does the stress diagonal elements (by minus a third),
+    !           engsrp includes vdws%elrc and elrcm(0)
+    !
+    ! NOTE(2):  virfbp, virinv and virdih are allegedly always zero
+    If(flow%NUM_FF == 1)Then
+      stat(1)%virtot = stat(1)%vircpe + stat(1)%virsrp + stat(1)%virter + stat(1)%virtbp + stat(1)%virfbp + &
+                       stat(1)%virshl + stat(1)%virtet + stat(1)%virbnd + stat(1)%virang + stat(1)%virdih + &
+                       stat(1)%virinv + stat(1)%virfld
+    EndIf      
 
     !> For EVB it is not possible to have a decomposition of the energy and virial into separate contributions for each type of interaction
     !> (e.g. angles, bonds, dihedrals, etc). For this reason, we set all these components to zero in the subroutine ebv_setzero. 
@@ -2026,7 +2042,7 @@ Contains
       ! Check consistency between config files   
       Call evb_checkconfig(cnfig,flow,comm)
       ! Read EVB coupling parameters
-      Call read_evb(evbff,flow,comm)
+      Call read_evb(evbff,flow,files,comm)
     End If
 
     ! Calculate kinetic tensor and energy at restart

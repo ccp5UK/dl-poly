@@ -2242,6 +2242,9 @@ Contains
       Else If (kode == 1106) Then
         Write(ounit,'(/,1x,a)') 'error - Values for levcfg differ between different CONFIGs files and should be the same.'   
 
+      Else If (kode == 1107) Then
+        Write(ounit,'(/,1x,a)') 'error - replay option is not implemented for the EVB method.'   
+
       Else
          Write(ounit,'(/,1x,a)') 'error - unnamed error found'
 

@@ -39,7 +39,7 @@ Module md_evb
   Use statistics, Only : stats_type,statistics_result
   Use greenkubo, Only : greenkubo_type
   Use msd, Only : msd_type
-  Use drivers, Only : w_md_vv_evb
+  Use drivers, Only : w_md_vv_evb, w_replay_historf,w_replay_history
   Use errors_warnings, Only : init_error_system,info, warning, error
   Use ewald, Only : ewald_type
   Use impacts, Only : impact_type
@@ -240,6 +240,7 @@ Contains
       Call files(FILE_CONTROL)%rename(control_filename)
     End If
 
+    ! IS: this subroutine shoud be merged/changed to something else.
     Call scan_development(devel,files,comm)
 
     ! Open output file, or direct output unit to stderr. 
@@ -287,6 +288,7 @@ Contains
     Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
     Call time_elapsed(tmr)
 
+    ! Now the loop is over the number of force fields to be coupled. Variable flow%NUM_FF was read from CONTROL
     Do ff=1,flow%NUM_FF
       ! ALLOCATE SITE & CONFIG
       Call sites(ff)%init(sites(ff)%mxtmls,sites(ff)%mxatyp)
@@ -561,7 +563,8 @@ Contains
 
     ! Now you can run fast, boy
     If (devel%l_fast) Call gsync(comm,devel%l_fast)
-    ! Note to reviewer: For the time being we only pass one field. Once we are all happy with the structuring
+
+    ! IS's note to reviewer: For the time being we only pass one field. Once we are all happy with the structuring
     ! we proceed to change w_md_vv --> w_md_vv_evb, etc
     If (flow%simulation) Then
       Call w_md_vv_evb(config,ttms,ios,rsdsc(1),flow,core_shells,cons,pmfs,stats,thermo, &
@@ -570,8 +573,22 @@ Contains
         impa,green,ewld,electro,dfcts,msd_data,tersoffs,tether,threebody,vdws, &
         devel,met,comm)
     Else
-      print*, "Fix error message for EVB"  
-      stop
+      If(flow%NUM_FF==1)Then      
+        If (lfce) Then
+          Call w_replay_historf(config(1),ios,rsdsc(1),flow,core_shells(1),cons(1),pmfs(1),stats(1),       &
+            thermo(1),plume(1),msd_data(1),bond(1),angle(1),dihedral(1),inversion(1),zdensity(1),neigh(1), &
+            sites(1),vdws(1),tersoffs(1),fourbody(1),rdf(1),netcdf,minim(1),mpoles(1),ext_field,rigid(1),  &
+            electro(1),domain(1),seed,traj,kim_data(1),files,dfcts,tmr,tether(1),threebody(1),             &
+            pois(1),green(1),ewld(1),devel,met(1),comm)
+        Else
+          Call w_replay_history(config(1),ios,rsdsc(1),flow,core_shells(1),cons(1),pmfs(1),stats(1),       &
+            thermo(1),msd_data(1),met(1),pois(1),bond(1),angle(1),dihedral(1),inversion(1),zdensity(1),    &  
+            neigh(1),sites(1),vdws(1),rdf(1),netcdf,minim(1),mpoles(1),ext_field,rigid(1),electro(1),      &
+            domain(1),seed,traj,kim_data(1),dfcts,files,tmr,tether(1),green(1),ewld(1),devel,comm)   
+        EndIf
+      Else
+        Call error(1107)
+      End If  
     End If
 
 #ifdef CHRONO
