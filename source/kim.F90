@@ -8,7 +8,7 @@
 !> by R. S. Elliot
 Module kim
   Use, Intrinsic :: iso_c_binding, Only : c_double,c_int,c_char,c_ptr, &
-    c_null_ptr,c_funloc,c_loc,c_f_pointer
+    c_null_ptr,c_funloc,c_loc,c_f_pointer,c_signed_char
   Use kinds, Only : wi,wp
   Use numerics, Only: local_index
   Use particle, Only : corepart
@@ -24,6 +24,9 @@ Module kim
     kim_collections_destroy, &
     kim_get_item_type, &
     operator (.eq.), &
+    kim_cache_list_of_item_metadata_files, &
+    kim_get_item_metadata_file_length, &
+    kim_get_item_metadata_file_values, &
     kim_model_create, &
     kim_model_destroy, &
     kim_compute, &
@@ -209,6 +212,7 @@ Module kim
   Public :: kim_setup, kim_cutoff
   Public :: kim_energy_and_forces
   Public :: get_neigh
+  Public :: kim_citations
 
 Contains
 
@@ -513,6 +517,79 @@ Contains
     End If
 #endif
   End Subroutine kim_cutoff
+
+  !> Provide KIM citations to reference publication
+  Subroutine kim_citations(kim_data, comm)
+    Implicit None
+    !> KIM data type
+    Type(kim_type), Target, Intent(In   ) :: kim_data
+    !> Comms data
+    Type(comms_type), Intent(In   ) :: comm
+
+#ifdef KIM
+    Type(kim_collections_handle_type) :: kim_coll
+#endif
+
+    Integer :: unit_no = -2
+    Integer(Kind=c_int) :: kerror
+    Integer(Kind=c_int) :: extent
+    Integer(Kind=c_int) :: index
+    Integer(Kind=c_signed_char) :: cite_file_raw_data(10000)
+
+    Character(Kind=c_char, Len=2048) :: cite_file_name
+    Character(Kind=c_char, Len=10000) :: cite_file_string
+
+#ifdef KIM
+    Call kim_collections_create(kim_coll, kerror)
+    If (kerror /= 0) Then
+      Call kim_error('kim_collections_create, unable to access KIM Collections to find Model', __LINE__)
+    End If
+
+    If (kim_data%model_type .eq. KIM_COLLECTION_ITEM_TYPE_PORTABLE_MODEL) Then
+      Call kim_cache_list_of_item_metadata_files(kim_coll, &
+        KIM_COLLECTION_ITEM_TYPE_PORTABLE_MODEL, &
+        Trim(kim_data%model_name), &
+        extent, &
+        kerror)
+      If (kerror /= 0) Then
+        Call kim_error('kim_cache_list_of_item_metadata_files', __LINE__)
+      End If
+    Else If (kim_data%model_type .eq. KIM_COLLECTION_ITEM_TYPE_SIMULATOR_MODEL) Then
+      Call kim_error('kim_citations, currently DL_POLY does not support KIM Simulator model', __LINE__)
+    ELSE
+      Call kim_error('kim_citations, unknown model type', __LINE__)
+    End If
+
+    If (comm%idnode == 0) Then
+      Open(Newunit=unit_no, File='kim.cite', Status='replace')
+    End If
+
+    Do index = 1, extent
+      Call kim_get_item_metadata_file_values(kim_coll, &
+        index, &
+        cite_file_name, &
+        cite_file_raw_data, &
+        cite_file_string, &
+        kerror)
+      If (kerror /= 0) Then
+        Call kim_error('kim_get_item_metadata_file_length', __LINE__)
+      End If
+
+      If (comm%idnode == 0) Then
+        If (cite_file_name(1:7) == 'kimcite') Then
+          Write(unit_no, Fmt='(A)') Trim(cite_file_string)
+          Write(unit_no, Fmt='(A)')
+        End If
+      End If
+    End Do
+
+    If (comm%idnode == 0) Then
+      Close(Unit=unit_no)
+    End If
+
+    Call kim_collections_destroy(kim_coll)
+#endif
+  End Subroutine kim_citations
 
   !> Compute KIM energy and forces
   Subroutine kim_energy_and_forces(kim_data,natms,nlast,parts,neigh_list,map, &

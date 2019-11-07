@@ -31,7 +31,7 @@ Module meta
   Use metal, Only : metal_type
   Use tersoff, Only : tersoff_type
   Use four_body, Only : four_body_type
-  Use kim, Only : kim_type,kim_setup
+  Use kim, Only : kim_type,kim_setup,kim_citations
   Use plumed, Only : plumed_type,plumed_init,plumed_finalize
   Use external_field, Only : external_field_type
   Use rdfs, Only : rdf_type
@@ -221,7 +221,7 @@ Contains
     Logical :: lfce
 
     Call gtime(tmr%elapsed) ! Initialise wall clock time
-    
+
     ! Set default file names
     Call default_filenames(files)
     ! Rename control file if argument was passed
@@ -575,6 +575,10 @@ Contains
     ! Ask for reference in publications
 
     Call print_citations(electro,mpoles,ttms)
+
+    If (kim_data%active) Then
+      Call kim_citations(kim_data, comm)
+    End If
 
     ! Get just the one number to compare against
 
