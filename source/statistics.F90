@@ -539,7 +539,7 @@ Contains
           yyt(i)=config%parts(i)%yyy
           zzt(i)=config%parts(i)%zzz
         End Do
-        Call pbcshfrc(config%imcon,config%cell,config%natms,config%parts)
+        Call pbcshfrc(config%imcon,config%cell,config%natms,xxt,yyt,zzt)
         Call pbcshfrc(config%imcon,stats%clin,config%natms,stats%xin,stats%yin,stats%zin)
         Do i=1,config%natms
           stats%xin(i)=xxt(i)-stats%xin(i)

@@ -230,13 +230,13 @@ Contains
 
         ! Open HISTORY
 
-        If (comm%idnode == 0) Open(Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
+        If (comm%idnode == 0) Open(Newunit=files(FILE_HISTORY)%unit_no, File=files(FILE_HISTORY)%filename)
 
         ! read the HISTORY file header
 
-        Call get_line(safe,files(FILE_CONFIG)%unit_no,record,comm); If (.not.safe) Go To 300
+        Call get_line(safe,files(FILE_HISTORY)%unit_no,record,comm); If (.not.safe) Go To 300
 
-        Call get_line(safe,files(FILE_CONFIG)%unit_no,record,comm); If (.not.safe) Go To 300
+        Call get_line(safe,files(FILE_HISTORY)%unit_no,record,comm); If (.not.safe) Go To 300
         Call get_word(record,word) ; levcfg=Nint(word_2_real(word,0.0_wp))
         Call get_word(record,word)
         Call get_word(record,word) ; If (Nint(word_2_real(word)) /= megatm) Go To 300
@@ -281,7 +281,7 @@ Contains
           End If
 
           If (traj%io_read == IO_READ_MPIIO) Then
-            Call files(FILE_CONFIG)%close()
+            If (comm%idnode == 0) Call files(FILE_HISTORY)%close()
 
             Call io_set_parameters(io, user_comm = comm%comm )
             Call io_init(io, traj%recsz_read )
@@ -347,7 +347,7 @@ Contains
 
       ! read timestep and time
 
-      Call get_line(safe,files(FILE_CONFIG)%unit_no,record,comm); If (.not.safe) Go To 200
+      Call get_line(safe,files(FILE_HISTORY)%unit_no,record,comm); If (.not.safe) Go To 200
 
       Do i=1,config%mxatms
         config%parts(i)%xxx=0.0_wp
@@ -377,17 +377,17 @@ Contains
 
       ! read cell vectors
 
-      Call get_line(safe,files(FILE_CONFIG)%unit_no,record,comm); If (.not.safe) Go To 300
+      Call get_line(safe,files(FILE_HISTORY)%unit_no,record,comm); If (.not.safe) Go To 300
       Call get_word(record,word); config%cell(1)=word_2_real(word)
       Call get_word(record,word); config%cell(2)=word_2_real(word)
       Call get_word(record,word); config%cell(3)=word_2_real(word)
 
-      Call get_line(safe,files(FILE_CONFIG)%unit_no,record,comm); If (.not.safe) Go To 300
+      Call get_line(safe,files(FILE_HISTORY)%unit_no,record,comm); If (.not.safe) Go To 300
       Call get_word(record,word); config%cell(4)=word_2_real(word)
       Call get_word(record,word); config%cell(5)=word_2_real(word)
       Call get_word(record,word); config%cell(6)=word_2_real(word)
 
-      Call get_line(safe,files(FILE_CONFIG)%unit_no,record,comm); If (.not.safe) Go To 300
+      Call get_line(safe,files(FILE_HISTORY)%unit_no,record,comm); If (.not.safe) Go To 300
       Call get_word(record,word); config%cell(7)=word_2_real(word)
       Call get_word(record,word); config%cell(8)=word_2_real(word)
       Call get_word(record,word); config%cell(9)=word_2_real(word)
@@ -427,7 +427,7 @@ Contains
             ! Read in transmission arrays
 
             If (comm%idnode == 0 .and. safe) Then
-              record=' '; Read(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a)', End=30) record
+              record=' '; Read(Unit=files(FILE_HISTORY)%unit_no, Fmt='(a)', End=30) record
               Call tabs_2_blanks(record) ; Call strip_blanks(record)
               Call get_word(record,word) ; chbuf(indatm)=word(1:8)
               If (traj%l_ind_read) Then
@@ -443,11 +443,11 @@ Contains
               End If
 
               If (levcfg /= 3) Then
-                Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30) axx(indatm),ayy(indatm),azz(indatm)
+                Read(Unit=files(FILE_HISTORY)%unit_no, Fmt=*, End=30) axx(indatm),ayy(indatm),azz(indatm)
 
                 If (levcfg > 0) Then
-                  Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30) bxx(indatm),byy(indatm),bzz(indatm)
-                  If (levcfg > 1) Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30) cxx(indatm),cyy(indatm),czz(indatm)
+                  Read(Unit=files(FILE_HISTORY)%unit_no, Fmt=*, End=30) bxx(indatm),byy(indatm),bzz(indatm)
+                  If (levcfg > 1) Read(Unit=files(FILE_HISTORY)%unit_no, Fmt=*, End=30) cxx(indatm),cyy(indatm),czz(indatm)
                 End If
               Else
                 Call get_word(record,word) ; axx(indatm)=word_2_real(word)
@@ -745,7 +745,7 @@ Contains
     Call info('HISTORY end of file reached',.true.)
 
     If (traj%io_read == IO_READ_MASTER) Then
-      If (config%imcon == 0) Call files(FILE_CONFIG)%close()
+      If (config%imcon == 0) Call files(FILE_HISTORY)%close()
       Deallocate (chbuf,       Stat=fail(1))
       Deallocate (iwrk,        Stat=fail(2))
       Deallocate (axx,ayy,azz, Stat=fail(3))
@@ -769,7 +769,7 @@ Contains
     Call info('HISTORY data mishmash detected',.true.)
     exout = -1 ! It's an indicator of the end of reading.
     If (traj%io_read == IO_READ_MASTER) Then
-      If (config%imcon == 0) Call files(FILE_CONFIG)%close()
+      If (config%imcon == 0) Call files(FILE_HISTORY)%close()
       Deallocate (chbuf,       Stat=fail(1))
       Deallocate (iwrk,        Stat=fail(2))
       Deallocate (axx,ayy,azz, Stat=fail(3))

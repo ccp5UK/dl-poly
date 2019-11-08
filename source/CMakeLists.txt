@@ -27,7 +27,7 @@ set(dlpoly_SRCS
   stochastic_boundary.F90
   four_body.F90
   evb.F90
-  md_evb.F90
+  meta_evb.F90
   langevin.F90
   coul_spole.F90
   shared_units.F90
