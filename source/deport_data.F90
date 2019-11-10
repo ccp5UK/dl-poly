@@ -2841,7 +2841,7 @@ Contains
 
     ! Halt program if potential cutoff exceeds cell width
 
-    If (cutoff_extended > Min(celprp(7),celprp(8),celprp(9))/2.0_wp) Call error(95)
+    If (cutoff_extended >= Min(celprp(7),celprp(8),celprp(9))/2.0_wp) Call error(95)
 
   End Subroutine relocate_particles
 

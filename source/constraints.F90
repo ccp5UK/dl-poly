@@ -24,7 +24,7 @@ Module constraints
   Use shared_units,    Only : update_shared_units,SHARED_UNIT_UPDATE_POSITIONS
   Use numerics,        Only : images,local_index
   Use statistics, Only : stats_type
-  Use timer, Only : timer_type, stop_timer, start_timer
+  Use timer, Only   : start_timer, stop_timer, timer_type
   Use domains, Only : domains_type
   Use thermostat, Only : thermostat_type
   Implicit None
@@ -613,7 +613,7 @@ Contains
     Character( Len = 256 ) :: message
 
 #ifdef CHRONO
-    Call start_timer(tmr%t_rattle)
+    Call start_timer(tmr, 'Rattle Constraints')
 #endif
     fail=0
     Allocate (vxt(1:config%mxatms),vyt(1:config%mxatms),vzt(1:config%mxatms), Stat=fail)
@@ -768,7 +768,7 @@ Contains
       Call error(0,message)
     End If
 #ifdef CHRONO
-    Call stop_timer(tmr%t_rattle)
+    Call stop_timer(tmr, 'Rattle Constraints')
 #endif
 
   End Subroutine constraints_rattle
@@ -813,7 +813,7 @@ Contains
 
     Character(Len=256) :: message
 #ifdef CHRONO
-    Call start_timer(tmr%t_shake)
+    Call start_timer(tmr, 'SHAKE Constraints')
 #endif
     fail=0
     Allocate (xxt(1:config%mxatms),yyt(1:config%mxatms),zzt(1:config%mxatms),                              Stat=fail(1))
@@ -1033,7 +1033,7 @@ Contains
     End If
 
 #ifdef CHRONO
-    Call stop_timer(tmr%t_shake)
+    Call stop_timer(tmr, 'SHAKE Constraints')
 #endif
   End Subroutine constraints_shake_vv
 

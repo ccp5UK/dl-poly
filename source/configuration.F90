@@ -1636,7 +1636,7 @@ Contains
             End If
 
             ! Atom details
-
+            record=''
             this_rec_buff = this_rec_buff + 1
             Do j = 1, Min( Len( record ), Size( rec_buff, Dim = 1 ) )
               record( j:j ) = rec_buff( j, this_rec_buff )
@@ -3275,7 +3275,7 @@ Contains
     fail = 0
     Allocate (mol(1:(ifinish-istart+1),0:3), Stat = fail)
     If (fail > 0) Then
-      Write(message,'(/,1x,a,i0)') 'getcom_mol allocation failure'
+      Write(message,'(/,1x,a,i0)') 'getcom_mol allocation failure', fail
       Call error(0,message)
     End If
 

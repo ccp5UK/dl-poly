@@ -48,7 +48,7 @@ program dl_poly
 
   ! DEVELOPMENT MODULE
 
-  Use development, Only : development_type,scan_development,build_info
+  Use development, Only : development_type
 
   ! IO & DOMAINS MODULES
 
@@ -59,7 +59,6 @@ program dl_poly
 
   Use site, Only : site_type
   Use configuration, Only : configuration_type,check_config, scale_config, origin_config, freeze_atoms
-  Use control, Only : read_control,scan_control_output,scan_control_io
 
   ! VNL module
 
@@ -131,7 +130,6 @@ program dl_poly
   Use build_tplg, Only : build_tplg_intra
   Use build_chrm, Only : build_chrm_intra
   Use thermostat, Only : thermostat_type
-  Use timer, Only  : timer_type, time_elapsed,timer_report
   Use poisson, Only : poisson_type
   Use analysis, Only : analysis_result
   Use constraints, Only : constraints_type
@@ -144,8 +142,9 @@ program dl_poly
     peakProfilerElec,peakProfiler
   Use ttm_track, Only : ttm_ion_temperature
   Use filename, Only : file_type,default_filenames
-  Use flow_control, Only : flow_type
+  Use flow_control, Only : flow_type,EVB,FFS,MD
   Use kinetics, Only : cap_forces
+  Use timer, Only  : timer_type
   Use meta, Only : molecular_dynamics
 
   Implicit None
@@ -213,18 +212,24 @@ program dl_poly
     End If
   End If
 
-
+  ! temporary stuff this will need to be abstracted 
+  Allocate(flow(1))
+  flow(1)%simulation_method = MD
   ! Select metasimulation method
-  !If (simulation_method = SIMPLE)
-  Call molecular_dynamics(dlp_world,thermo,ewld,tmr,devel,stats, &
-    green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion,tether, &
-    threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs,fourbody, &
-    rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow,seed,traj, &
-    kim_data,config,ios,ttms,rsdsc,files,control_filename)
-  !Else If (simulation_method = FFS)
-  !  Call forward_flux_sampling()
-  !Else If ...
-
+  If (flow(1)%simulation_method == MD) Then
+    write(0,*) "simulation type: MD" 
+    Call molecular_dynamics(dlp_world,thermo,ewld,tmr,devel,stats, &
+      green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion,tether, &
+      threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs,fourbody, &
+      rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow,seed,traj, &
+      kim_data,config,ios,ttms,rsdsc,files,control_filename)
+  Else If (flow(1)%simulation_method == EVB) Then 
+    write(0,*) "simulation type: EVB" 
+  Else If (flow(1)%simulation_method == FFS) Then 
+    write(0,*) "simulation type: FFS" 
+  Else
+    write(0,*) "Unknown simulation type" 
+  End IF
 
   ! Terminate job
 
@@ -232,5 +237,6 @@ program dl_poly
   Call exit_comms(dlp_world)
 
   ! Create wrappers for the MD cycle in VV, and replay history
+  Deallocate(flow)
   Deallocate(dlp_world)
 End Program dl_poly

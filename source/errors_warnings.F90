@@ -1,3 +1,4 @@
+Module errors_warnings
 !> Module controlling errors and warnings
 !>
 !> Copyright - Daresbury Laboratory
@@ -9,12 +10,13 @@
 !>           - a.b.g.chalk march-october 2018
 !>           - i.scivetti march-october 2018
 !> contrib - a.m.elena October 2018 - use standard integer for units
+!> contrib - a.m.elena March 2019 - remove error 145
+!> contrib - a.m.elena March 2019 - fix wrong logic in warning
 
-Module errors_warnings
   Use, intrinsic :: iso_fortran_env, only : error_unit,input_unit,output_unit
   Use kinds, Only : wp
   Use comms, Only : comms_type,abort_comms
-
+  
   Implicit None
 
   Private
@@ -26,7 +28,8 @@ Module errors_warnings
   Public :: error
   Public :: info
   Public :: init_error_system
-
+  Public :: error_alloc, error_dealloc
+  
 
   Interface warning
     Module Procedure warning_special
@@ -691,11 +694,11 @@ Contains
     If (Present(master_only)) zeroOnly=master_only
 
     If (zeroOnly) Then
-      Write(ounit,'(a,1x,i0,a)')"*** warning - "//Trim(message)//", node: ",eworld%idnode, " !!! ***"
-    Else
       If (eworld%idnode == 0 ) Then
         Write(ounit,'(a)')"*** warning - "//Trim(message)//" !!! ***"
       End If
+    Else
+      Write(ounit,'(a,1x,i0,a)')"*** warning - "//Trim(message)//", node: ",eworld%idnode, " !!! ***"
     End If
 
   End Subroutine  warning_general
@@ -1265,10 +1268,6 @@ Contains
       Else If (kode ==  141) Then
 
         Write(ounit,'(/,1x,a)') 'error - duplicate metal potential specified'
-
-      Else If (kode ==  145) Then
-
-        Write(ounit,'(/,1x,a)') 'error - no two-body like interactions specified'
 
       Else If (kode ==  150) Then
 
@@ -2203,6 +2202,45 @@ Contains
     Call abort_comms(eworld,kode)
 
   End Subroutine error
+
+  Subroutine error_alloc(array, routine)
+
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for printing standard message for allocation errors
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins october 2018
+    !!
+    !!----------------------------------------------------------------------!
+
+    Character (Len=*) :: array, routine 
+
+    Write(ounit,'(/,1x,a)') 'error - allocation failure in '//trim(routine)//' -> '//trim(array)
+
+    Call close_unit(ounit)
+    Call abort_comms(eworld,1001)
+
+  end Subroutine error_alloc
+
+  Subroutine error_dealloc(array, routine)
+
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for printing standard message for deallocation errors
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins october 2018
+    !!
+    !!----------------------------------------------------------------------!
+    Character (Len=*) :: array, routine 
+
+    Write(ounit,'(/,1x,a)') 'error - deallocation failure in '//trim(routine)//' -> '//trim(array)
+
+    Call close_unit(ounit)
+    Call abort_comms(eworld,1002)
+
+  end Subroutine error_dealloc
 
   !> Close all open file units
   Subroutine close_unit(i)

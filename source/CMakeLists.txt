@@ -32,7 +32,6 @@ set(dlpoly_SRCS
   numerics.F90
   impacts.F90
   errors_warnings.F90
-  potentials.F90
   rdfs.F90
   kinds.F90
   vdw.F90
@@ -110,27 +109,31 @@ endif()
 
 add_library(dlpoly ${dlpoly_SRCS} ${dlpoly_SERIAL_SRCS})
 if( NOT WITH_MPI)
-  set_target_properties(dlpoly PROPERTIES
-    COMPILE_DEFINITIONS "SERIAL"
-    INCLUDE_DIR ${src_dir}/SERIAL
-    )
+  set_property(TARGET dlpoly APPEND PROPERTY
+    COMPILE_DEFINITIONS "SERIAL")
+  set_property(TARGET dlpoly APPEND PROPERTY
+    INCLUDE_DIR ${src_dir}/SERIAL)
 endif()
 
 if(WITH_NETCDF)
-  set_target_properties(dlpoly PROPERTIES
-    COMPILE_DEFINITIONS "NETCDF"
-    )
+  set_property(TARGET dlpoly APPEND PROPERTY
+    COMPILE_DEFINITIONS "NETCDF")
 endif()
 if(WITH_PLUMED)
-  set_target_properties(dlpoly PROPERTIES
-    COMPILE_DEFINITIONS "PLUMED"
-    )
+  set_property(TARGET dlpoly APPEND PROPERTY
+    COMPILE_DEFINITIONS "PLUMED")
+  if (INTERNAL_PLUMED)
+    add_dependencies(dlpoly int-plumed)
+  endif()
 endif()
 
 if(WITH_KIM)
-  set_target_properties(dlpoly PROPERTIES
-    COMPILE_DEFINITIONS "KIM"
-    )
+  set_property(TARGET dlpoly APPEND PROPERTY
+    COMPILE_DEFINITIONS "KIM")
+  if (INTERNAL_KIM)
+    add_dependencies(dlpoly int-kim-api)
+  endif()
+  target_include_directories(dlpoly PUBLIC  ${KIM_INC})
 endif()
 ## sets the linking
 link_directories (${LIBRARY_OUTPUT_PATH})

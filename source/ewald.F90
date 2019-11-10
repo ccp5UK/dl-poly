@@ -696,6 +696,7 @@ Contains
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
     !
+    ! amended   - a.m.elena february 2019, cherry pick from 4.09.1 j.wilkins august 2018
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type( ewald_type ), Intent( In    ) :: ewld
@@ -733,7 +734,7 @@ Contains
     Do i=1,ewld%bspline
       real_no(i) = Real(i,wp)
       inv_no(i)  = 1.0_wp / real_no(i)
-      pmo_no(i)  = Real(-1**i,wp)
+      pmo_no(i)  = Real((-1)**i,wp)
     End Do
 
     Do i=1,nospl

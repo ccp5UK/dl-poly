@@ -1,5 +1,5 @@
-project(DL_POLY Fortran)
 cmake_minimum_required(VERSION 3.0.2)
+project(DL_POLY Fortran)
 
 set(DLPOLY_VERSION_MAJOR "4")
 set(DLPOLY_VERSION_MINOR "10")
@@ -12,12 +12,22 @@ set(DESCRIPTION "DL_POLY4 classical MD code")
 set(src_dir ${CMAKE_SOURCE_DIR}/source)
 set(target_name DLPOLY.Z)
 
+#check compilers play fine
+if(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
+  if (${CMAKE_Fortran_COMPILER_VERSION} STRGREATER "5.9.9" )
+    message(STATUS "Compiler version acceptable? Yes")
+  else()
+    message(STATUS "Compiler version acceptable? No")
+    message(FATAL_ERROR "You need a GNU supported compiler, minimum version 6.0.0")
+  endif()
+elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel")
+endif()
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake" "${CMAKE_SOURCE_DIR}/cmake/Modules")
 include(DLPOLYBuildOptions)
 include(DLPOLYBuildFunctions)
 include(GNUInstallDirs)
-include(FeatureSummary)
-
+include(debug)
 if(COMMAND cmake_policy)
   #  cmake_policy(SET CMP0004 OLD)
 endif(COMMAND cmake_policy)
@@ -27,9 +37,7 @@ if(WITH_MPI)
   find_package(MPI REQUIRED)
   include_directories(${MPI_Fortran_INCLUDE_PATH})
   message(STATUS "MPI_Fortran_INCLUDE_PATH ${MPI_Fortran_INCLUDE_PATH}")
-  if(NOT WITH_PHI)
-    set(LIBS ${LIBS} ${MPI_Fortran_LINK_FLAGS} ${MPI_Fortran_LIBRARIES})
-  endif()
+  set(LIBS ${LIBS} ${MPI_Fortran_LINK_FLAGS} ${MPI_Fortran_LIBRARIES})
   string(REGEX REPLACE "^ " "" LIBS "${LIBS}")
   message(STATUS "Build with MPI support!")
 else()
@@ -58,14 +66,6 @@ else()
   message(STATUS "Build without OPENMP support")
 endif()
 
-if(WITH_PHI)
-  add_definitions("-mmic")
-  set(MIC_LINK_FLAGS "-mmic")
-  message(STATUS "Build for Xeon Phi Native")
-else()
-  message(STATUS "Build for CPU host")
-endif()
-
 if(WITH_NETCDF)
   set(NETCDF_F90 "YES")
   find_package(NetCDF REQUIRED)
@@ -77,21 +77,63 @@ else()
 endif()
 
 if(WITH_KIM)
-  find_package(PkgConfig REQUIRED)
-  pkg_check_modules(KIM REQUIRED libkim-api-v2>=2.0.0)
-  include_directories(${KIM_INCLUDE_DIRS})
-  link_directories(${KIM_LIBRARY_DIRS})
-  set(LIBS ${LIBS} ${KIM_LIBRARIES})
-  message(STATUS "Build with KIM support")
-  message(STATUS "KIM include dirs ${KIM_INCLUDE_DIRS}")
+  if(INTERNAL_KIM)
+    include(ExternalProject)
+    ExternalProject_Add(int-kim-api
+      GIT_REPOSITORY https://github.com/openkim/kim-api
+      GIT_TAG v2.1.3
+      GIT_SHALLOW true
+      GIT_PROGRESS true
+      PREFIX int-kim-api
+      BINARY_DIR int-kim-api/kim-api-build
+      SOURCE_DIR int-kim-api/kim-api
+      CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}  -DBUILD_SHARED_LIBS=off -DCMAKE_BUILD_TYPE=Release
+    )
+
+    set(KIM_INC ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/kim-api/mod)
+    set(KIM_LIB ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+    set(LIBS ${LIBS} kim-api)
+    message(STATUS "Build with OpenKIM support")
+    message(STATUS "Building OpenKIM for you")
+  else()
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(KIM REQUIRED libkim-api>=2.1.3)
+    set(KIM_INC ${KIM_LIBDIR}/kim-api/mod)
+    set(KIM_LIB ${KIM_LIBRARY_DIRS})
+    set(LIBS ${LIBS} ${KIM_LIBRARIES})
+    message(STATUS "Build with OpenKIM support")
+    message(STATUS "OpenKIM include dirs ${KIM_LIBRARIES}")
+  endif()
+  link_directories(${KIM_LIB})
 else()
-  message(STATUS "Build without KIM support")
+  message(STATUS "Build without OpenKIM support")
 endif()
 
 if(WITH_PLUMED)
-  find_package(PLUMED 2.1 REQUIRED)
-  message(STATUS "Build with PLUMED support")
-  set(LIBS ${LIBS} ${PLUMED_LIBRARIES})
+
+  if (INTERNAL_PLUMED)
+    include(ExternalProject)
+    ExternalProject_Add(int-plumed
+      GIT_REPOSITORY https://github.com/plumed/plumed2.git
+      GIT_TAG v2.5.2
+      GIT_SHALLOW true
+      GIT_PROGRESS true
+      BUILD_IN_SOURCE 1
+
+      PREFIX int-plumed-api
+      CONFIGURE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/int-plumed-api/plumed-api/configure --prefix=${CMAKE_INSTALL_PREFIX}
+      SOURCE_DIR int-plumed-api/plumed-api
+    )
+    set(PLUMED_LIB ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+    set(LIBS ${LIBS} plumed)
+    message(STATUS "Build with PLUMED support")
+    message(STATUS "Building PLUMED for you")
+  else()
+    find_package(PLUMED 2.1 REQUIRED)
+    message(STATUS "Build with PLUMED support")
+    set(LIBS ${LIBS} ${PLUMED_LIBRARIES})
+  endif()
+  link_directories(${PLUMED_LIB})
 else()
   message(STATUS "Build without PLUMED support")
 endif()
@@ -207,11 +249,18 @@ if(BUILD_TESTING)
       message(STATUS "Trying to download ${arg}.tar.xz")
       if ("${HOST}" MATCHES ".*.dl.ac.uk")
         file(DOWNLOAD ccforge.dl.ac.uk:1848/${DLPOLY_VERSION_MAJOR}.${DLPOLY_VERSION_MINOR}/${arg}.tar.xz
-          ${CMAKE_SOURCE_DIR}/data/${arg}.tar.xz)
+          ${CMAKE_SOURCE_DIR}/data/${arg}.tar.xz STATUS DL_TEST SHOW_PROGRESS)
       else()
         file(DOWNLOAD https://www.ccp5.ac.uk/sites/www.ccp5.ac.uk/files/DL_POLY/data/${DLPOLY_VERSION_MAJOR}.${DLPOLY_VERSION_MINOR}/${arg}.tar.xz
-          ${CMAKE_SOURCE_DIR}/data/${arg}.tar.xz)
+          ${CMAKE_SOURCE_DIR}/data/${arg}.tar.xz STATUS DL_TEST SHOW_PROGRESS)
       endif()
+      list(GET DL_TEST 0 ERRNO)
+      if ("${ERRNO}" EQUAL "0")
+        message(STATUS "Download successful for ${arg}.tar.xz")
+      else()
+        list(GET DL_TEST 1 ERRMSG)
+        message(FATAL_ERROR "Download failed for ${arg}.tar.xz  with message: ${ERRMSG}")
+      endif()  
     endif()
     file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/Testing/${arg})
     file(COPY ${CMAKE_SOURCE_DIR}/data/${arg}.tar.xz
@@ -222,7 +271,7 @@ if(BUILD_TESTING)
   endmacro (do_test)
   configure_file(${CMAKE_SOURCE_DIR}/cmake/all.xml.cmake Testing/all.xml)
 
-  set(dlp "${MPIEXEC} -n ${MPI_NPROCS} ${CMAKE_BINARY_DIR}/bin/${target_name} >& err.log")
+  set(dlp "${MPIEXEC} ${MPIEXEC_PREFLAGS} -n ${MPI_NPROCS} ${CMAKE_BINARY_DIR}/bin/${target_name} >& err.log")
   foreach(test RANGE 1 9 1)
     do_test("TEST0${test}")
   endforeach()
@@ -248,6 +297,3 @@ if(BUILD_TESTING)
 else()
   message(STATUS "Build without testing target")
 endif()
-
-feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
-

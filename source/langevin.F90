@@ -85,63 +85,76 @@ Contains
     Integer           :: i,ia,ja,ka,ijk
     Real( Kind = wp ) :: scale,tmp
 
-    If (Present(ttm) .and. ttm%l_ttm .and. nstep>ttm%nstepcpl) Then
+    If (Present(ttm)) Then
+      If (ttm%l_ttm .and. nstep>ttm%nstepcpl ) Then
 
-      ! Rescale chi for average electronic temperature if using
-      ! homogeneous electron-phonon coupling
+        ! Rescale chi for average electronic temperature if using
+        ! homogeneous electron-phonon coupling
 
-      Select Case (ttm%gvar)
-      Case (0,1)
-        ! constant electron-phonon chi parameter and homogeneous
-        ! e-p coupling cases
-        scale = Sqrt(2.0_wp * chi * boltz / tstep)
-        Do i=1,config%natms
-          If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
-            Call box_mueller_saru3(seed,config%ltg(i),nstep,fxr(i),fyr(i),fzr(i))
-            ia = Floor((config%parts(i)%xxx+ttm%zerocell(1))/ttm%delx) + 1
-            ja = Floor((config%parts(i)%yyy+ttm%zerocell(2))/ttm%dely) + 1
-            ka = Floor((config%parts(i)%zzz+ttm%zerocell(3))/ttm%delz) + 1
-            ijk = 1 + ia + (ttm%ntcell(1)+2) * (ja + (ttm%ntcell(2)+2) * ka)
-            tmp = scale*Sqrt(ttm%eltemp(ijk,0,0,0)*config%weight(i))
+        Select Case (ttm%gvar)
+        Case (0,1)
+          ! constant electron-phonon chi parameter and homogeneous
+          ! e-p coupling cases
+          scale = Sqrt(2.0_wp * chi * boltz / tstep)
+          Do i=1,config%natms
+            If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
+              Call box_mueller_saru3(seed,config%ltg(i),nstep,fxr(i),fyr(i),fzr(i))
+              ia = Floor((config%parts(i)%xxx+ttm%zerocell(1))/ttm%delx) + 1
+              ja = Floor((config%parts(i)%yyy+ttm%zerocell(2))/ttm%dely) + 1
+              ka = Floor((config%parts(i)%zzz+ttm%zerocell(3))/ttm%delz) + 1
+              ijk = 1 + ia + (ttm%ntcell(1)+2) * (ja + (ttm%ntcell(2)+2) * ka)
+              tmp = scale*Sqrt(ttm%eltemp(ijk,0,0,0)*config%weight(i))
 
-            fxr(i) = fxr(i)*tmp
-            fyr(i) = fyr(i)*tmp
-            fzr(i) = fzr(i)*tmp
-          Else
-            fxr(i) = 0.0_wp
-            fyr(i) = 0.0_wp
-            fzr(i) = 0.0_wp
-          End If
-        End Do
+              fxr(i) = fxr(i)*tmp
+              fyr(i) = fyr(i)*tmp
+              fzr(i) = fzr(i)*tmp
+            Else
+              fxr(i) = 0.0_wp
+              fyr(i) = 0.0_wp
+              fzr(i) = 0.0_wp
+            End If
+          End Do
 
-      Case (2)
-        ! heterogeneous electron-phonon coupling case: calculate individual
-        ! chi value for each ionic temperature voxel (ignore input value)
-        scale = Sqrt(2.0_wp * boltz / tstep)
-        Do i=1,config%natms
-          If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
-            Call box_mueller_saru3(seed,config%ltg(i),nstep,fxr(i),fyr(i),fzr(i))
-            ia = Floor((config%parts(i)%xxx+ttm%zerocell(1))/ttm%delx) + 1
-            ja = Floor((config%parts(i)%yyy+ttm%zerocell(2))/ttm%dely) + 1
-            ka = Floor((config%parts(i)%zzz+ttm%zerocell(3))/ttm%delz) + 1
-            ijk = 1 + ia + (ttm%ntcell(1)+2) * (ja + (ttm%ntcell(2)+2) * ka)
-            tmp = scale*Sqrt(Gep(ttm%eltemp(ijk,0,0,0),ttm)*ttm%eltemp(ijk,0,0,0)*config%weight(i))
+        Case (2)
+          ! heterogeneous electron-phonon coupling case: calculate individual
+          ! chi value for each ionic temperature voxel (ignore input value)
+          scale = Sqrt(2.0_wp * boltz / tstep)
+          Do i=1,config%natms
+            If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
+              Call box_mueller_saru3(seed,config%ltg(i),nstep,fxr(i),fyr(i),fzr(i))
+              ia = Floor((config%parts(i)%xxx+ttm%zerocell(1))/ttm%delx) + 1
+              ja = Floor((config%parts(i)%yyy+ttm%zerocell(2))/ttm%dely) + 1
+              ka = Floor((config%parts(i)%zzz+ttm%zerocell(3))/ttm%delz) + 1
+              ijk = 1 + ia + (ttm%ntcell(1)+2) * (ja + (ttm%ntcell(2)+2) * ka)
+              tmp = scale*Sqrt(Gep(ttm%eltemp(ijk,0,0,0),ttm)*ttm%eltemp(ijk,0,0,0)*config%weight(i))
 
-            fxr(i) = fxr(i)*tmp
-            fyr(i) = fyr(i)*tmp
-            fzr(i) = fzr(i)*tmp
-          Else
-            fxr(i) = 0.0_wp
-            fyr(i) = 0.0_wp
-            fzr(i) = 0.0_wp
-          End If
+              fxr(i) = fxr(i)*tmp
+              fyr(i) = fyr(i)*tmp
+              fzr(i) = fzr(i)*tmp
+            Else
+              fxr(i) = 0.0_wp
+              fyr(i) = 0.0_wp
+              fzr(i) = 0.0_wp
+            End If
 
-        End Do
+          End Do
 
-      End Select
+        End Select
+      Else
+      
+        Call setforces()
+
+      End If
 
     Else
 
+      Call setforces()
+
+    End If
+
+  Contains 
+    
+    Subroutine setforces()
       ! Get scaler to target variance*Sqrt(weight)
 
       scale = Sqrt(2.0_wp * chi * boltz * temp / tstep)
@@ -164,9 +177,8 @@ Contains
         End If
       End Do
 
-    End If
+    End Subroutine setforces
 
   End Subroutine langevin_forces
-
 
 End Module langevin

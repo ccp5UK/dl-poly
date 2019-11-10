@@ -52,7 +52,7 @@ Module drivers
   Use npt_mtk, Only : npt_m0_vv,npt_m1_vv
   Use npt_nose_hoover, Only : npt_h0_vv,npt_h1_vv
   Use nve, Only : nve_0_vv, nve_1_vv 
-  Use timer, Only  : timer_type, start_timer,stop_timer
+  Use timer, Only  : timer_type, time_elapsed,start_timer,stop_timer
   Use poisson, Only : poisson_type
   Use constraints, Only : constraints_type, constraints_quench
   Use electrostatic, Only : electrostatic_type,ELECTROSTATIC_NULL
@@ -76,7 +76,7 @@ Module drivers
 
   ! VNL module
 
-  Use neighbours, Only : neighbours_type,vnl_check
+  Use neighbours, Only : neighbours_type,vnl_check, link_cell_pairs
 
   ! DPD module
 
@@ -263,13 +263,18 @@ Contains
     End If
     stat%stress = 0.0_wp
 
-    ! Calculate pair-like forces (metal,vdws,electrostatic) and add lrc
 
-    If (.not.(met%max_metal == 0 .and. electro%key == ELECTROSTATIC_NULL .and. &
-      vdws%no_vdw .and. rdf%max_rdf == 0) .or. kim_data%active) Then
-      Call two_body_forces(thermo%ensemble,flow%book,cnfig%megfrz, &
-        flow%equilibration,flow%equil_steps,flow%step,cshell,stat,ewld,devel,met,pois,neigh,sites,vdws,rdf, &
-        mpoles,electro,domain,tmr,kim_data,cnfig,comm)
+    ! Initialise variables for two_body interaction (including long range, which is not strictly a two_body interaction problem)
+    stat%engsrp    = 0.0_wp
+    stat%virsrp    = 0.0_wp
+    stat%engcpe    = 0.0_wp
+    stat%vircpe    = 0.0_wp    
+
+    ! Set up non-bonded interaction (verlet) list using link cells
+    If ((.not.(met%max_metal == 0 .and. electro%key == ELECTROSTATIC_NULL .and. &
+        vdws%no_vdw .and. rdf%max_rdf == 0) .or. kim_data%active).and.neigh%update) Then
+       Call link_cell_pairs(vdws%cutoff,met%rcut,flow%book,cnfig%megfrz,cshell,devel, &
+                          neigh,mpoles,domain,tmr,cnfig,comm)
     End If
 
     ! Calculate tersoff forces
@@ -283,7 +288,11 @@ Contains
     ! Calculate four-body forces
 
     If (fourbody%n_potential > 0) Call four_body_forces(fourbody,stat,neigh,domain,cnfig,comm)
-    call start_timer(tmr%t_bonded)
+
+#ifdef CHRONO
+    Call start_timer(tmr, 'Bonded Forces')
+#endif
+
     ! Calculate shell model forces
 
     If (cshell%megshl > 0) Call core_shell_forces(cshell,stat,cnfig,comm)
@@ -315,6 +324,7 @@ Contains
       Call angles_forces(switch,stat%engang,stat%virang,stat%stress,angle,cnfig,comm)
     End If
 
+
     ! Calculate dihedral forces
 
     If (dihedral%total > 0) Then
@@ -328,6 +338,7 @@ Contains
         stat%virsrp,dihedral,vdws,mpoles,electro,cnfig,comm)
     End If
 
+
     ! Calculate inversion forces
 
     If (inversion%total > 0) Then
@@ -338,7 +349,18 @@ Contains
       switch = 1 + Merge(1,0,ltmp)
       Call inversions_forces(switch,stat%enginv,stat%virinv,stat%stress,inversion,cnfig,comm)
     End If
-    call stop_timer(tmr%t_bonded)
+#ifdef CHRONO
+    Call stop_timer(tmr,'Bonded Forces')
+#endif
+    
+    ! Calculate pair-like forces (metal,vdws,electrostatic) and add lrc
+
+    If (.not.(met%max_metal == 0 .and. electro%key == ELECTROSTATIC_NULL .and. &
+      vdws%no_vdw .and. rdf%max_rdf == 0) .or. kim_data%active) Then
+      Call two_body_forces(thermo%ensemble,flow%book,cnfig%megfrz, &
+        flow%equilibration,flow%equil_steps,flow%step,cshell,stat,ewld,devel,met,pois,neigh,sites,vdws,rdf, &
+        mpoles,electro,domain,tmr,kim_data,cnfig,comm)
+    End If
 
     ! Apply external field
 
@@ -1786,6 +1808,16 @@ Contains
           ! Make sure RDFs are complete (flow%book=.false. - no exclusion lists)
 
           If (rdf%l_collect) Then
+          ! Initialise variables for two_body interaction (including long range, which is not strictly a two_body interaction problem)
+            stat%engsrp    = 0.0_wp
+            stat%virsrp    = 0.0_wp
+            stat%engcpe    = 0.0_wp
+            stat%vircpe    = 0.0_wp    
+          ! Set up non-bonded interaction (verlet) list using link cells
+            If (neigh%update) Then
+              Call link_cell_pairs(vdws%cutoff,met%rcut,flow%book,cnfig%megfrz,cshell,devel, &
+                          neigh,mpoles,domain,tmr,cnfig,comm)
+            End If
             Call two_body_forces(thermo%ensemble,.false.,cnfig%megfrz, &
               flow%equilibration,flow%equil_steps,nstph,cshell,stat,ewld,devel,met,pois,neigh,sites, &
               vdws,rdf,mpoles,electro,domain,tmr,kim_data,cnfig,comm)
