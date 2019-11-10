@@ -5,6 +5,6 @@ module load gnu openmpi/3.1.1
 
 folder="build-mpi-testing-paranoid" 
 rm -rf $folder && mkdir $folder && pushd $folder
-cmake ../ -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON -DWITH_PLUMED=Off -DBUILDER="Gitlab Worker" && make -j10 && ctest --timeout 200
+cmake ../ -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON -DWITH_PLUMED=Off -DBUILDER="Gitlab Worker" && make -j10 && ctest --timeout 200 -E TEST29
 
 
