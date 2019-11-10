@@ -337,7 +337,7 @@ Contains
   ! Convert coupling EVB parameters and energy shifts to internal units
   evb%eshift = engunit*evb%eshift
   evb%ac     = engunit*evb%ac  
-  evb%bc     = evb%bc/engunit**2  
+  evb%bc     = engunit*evb%bc  
 
   End Subroutine read_evb
           
@@ -472,9 +472,6 @@ Contains
    End If  
 
 
-
-
-
   Call info(' ',.true.)
   Call info(' EVB check for atomic coordinates and supercell dimensions between different CONFIG files: Passed!',.true.) 
   Call info(' ',.true.)
@@ -577,7 +574,7 @@ Contains
 ! Off-diagonal terms
     Do m=1,flow%NUM_FF
       Do k=m+1,flow%NUM_FF
-        evb%matrix(m,k) =evb%ac(m,k)*exp(-evb%bc(m,k)*(evb%eneFF(m)-evb%eneFF(k))**2)
+        evb%matrix(m,k) =evb%ac(m,k)*exp(-((evb%eneFF(m)-evb%eneFF(k))/evb%bc(m,k))**2)
         evb%matrix(k,m) =evb%matrix(m,k)
       End Do
     End Do
@@ -633,11 +630,12 @@ Contains
        ! Off-diagonal elements     
        Do m=1,flow%NUM_FF
          Do k=m+1,flow%NUM_FF
-           evb%matrix(m,k)=-2.0*evb%ac(m,k)*evb%bc(m,k)*(evb%eneFF(m)-evb%eneFF(k))*(evb%force(j,m)-evb%force(j,k))* & 
-                        exp(-evb%bc(m,k)*(evb%eneFF(m)-evb%eneFF(k))**2)
+           evb%matrix(m,k)=-2.0*evb%ac(m,k)/evb%bc(m,k)**2 *(evb%eneFF(m)-evb%eneFF(k))*(evb%force(j,m)-evb%force(j,k))* & 
+                        exp(-((evb%eneFF(m)-evb%eneFF(k))/evb%bc(m,k))**2)
            evb%matrix(k,m)=evb%matrix(m,k)
          End Do 
-       End Do 
+       End Do
+  
        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
        !Set the first column of evb%force to zero   
        evb%force(j,1)=0.0_wp
@@ -737,8 +735,8 @@ Contains
           Do i2=1,3
             evb%strmat(m,k)=evb%strmat(m,k)+(strff(m,i,i2)-strff(k,i,i2))*rcell(j,i2)
           End Do
-          evb%strmat(m,k)=-2.0*evb%ac(m,k)*evb%bc(m,k)*(evb%eneFF(m)-evb%eneFF(k))*evb%strmat(m,k)* & 
-                           exp(-evb%bc(m,k)*(evb%eneFF(m)-evb%eneFF(k))**2)
+          evb%strmat(m,k)=-2.0*evb%ac(m,k)/evb%bc(m,k)**2 *(evb%eneFF(m)-evb%eneFF(k))*evb%strmat(m,k)* & 
+                           exp(-((evb%eneFF(m)-evb%eneFF(k))/evb%bc(m,k))**2)
           evb%strmat(k,m)=evb%strmat(m,k)
         End Do 
       End Do
