@@ -375,14 +375,8 @@ Contains
   Call info(' ',.true.)
   
   ! Convert coupling EVB parameters and energy shifts to internal units
-<<<<<<< HEAD
   evb%eshift     = engunit*evb%eshift
   evb%couplparam = engunit*evb%couplparam  
-=======
-  evb%eshift = engunit*evb%eshift
-  evb%ac     = engunit*evb%ac  
-  evb%bc     = engunit*evb%bc  
->>>>>>> 55e830e48c4b056fa058eb879f51cadf95d7e7c0
 
   End Subroutine read_evb
           
