@@ -2205,8 +2205,13 @@ Contains
 
 
       Else If (kode == 1096) Then
-        Write(ounit,'(/,1x,a)') 'error - In file SETEVB two (real) coupling parameters are required after "evbcoupl" and the &
-                                &pair of indexes for the fields to be coupled.'
+        Write(ounit,'(/,1x,a)') 'error - Wrong input data for coupling parameters in file SETEVB. The correct format is: ' 
+        Write(ounit,'(/,1x,a)') '        "evbcoupl"       i       j       type      list with coupling-parameters'
+        Write(ounit,'(/,1x,a)') '        where i and j are the fields to be couplped' 
+        Write(ounit,'(/,1x,a)') '        If type=const, 1 coupling-parameter is needed'
+        Write(ounit,'(/,1x,a)') '        If type=gauss, 2 coupling-parameters are needed'
+        Write(ounit,'(/,1x,a)') '        If type=quadf, 5 coupling-parameters are needed'
+       
 
       Else If (kode == 1097) Then
         Write(ounit,'(/,1x,a)') 'error - In file SETEVB, incomplete line after one of the "evbshift" keys. &
