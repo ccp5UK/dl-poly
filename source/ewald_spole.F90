@@ -407,6 +407,10 @@ Contains
     end if
     if (any(fail > 0)) call error_alloc('output_arrays','ewald_spme_forces')
 
+    Q_abc = 0.0_wp
+    F_abc = 0.0_wp
+    S_abc = 0.0_wp
+    
     ! Initialise accumulator
 
     to_calc(0) = 0
@@ -507,6 +511,7 @@ Contains
       call spme_calc_force_energy(ewld, electro, comm, domain, config, coeffs, &
         & rcell, recip_indices, potential_grid, stats%collect_pp, q_abc, f_abc)
       call stop_timer(tmr, 'ForceEnergy')
+
     else
 
       call spme_construct_potential_grid(ewld, rcell, charge_grid, spme_datum, &
@@ -1335,6 +1340,7 @@ Contains
     Real( Kind = wp )                                                  :: k_vec_2               !! Magnitude of RK vectors
     Real( Kind = wp )                                                  :: recip_conv_fac        !! Reciprocal convergence factor
     Real( Kind = wp )                                                  :: f_p_fac               !! pi*m/beta
+    Real( Kind = wp )                                                  :: m
     complex( Kind = wp )                                               :: potential_component   !! Contribution to the potential
     Real( Kind = wp )                                                  :: pressure_virial       !! Virial contribution to the pressure
     Integer                                                            :: j,k,l, jj,kk,ll, j_local, k_local, l_local
@@ -1395,6 +1401,7 @@ Contains
 
           if ( k_vec_2 <= cut_off_2 ) then
 
+            m = sqrt(k_vec_2)
             f_p_fac = pi*sqrt(k_vec_2)*recip_conv_fac
 
             potential_component = kernel(bb1, potential_grid(j_local,k_local,l_local), &
@@ -1405,7 +1412,8 @@ Contains
 
               pressure_virial = Real( stress_kernel(bb1, potential_grid(j_local,k_local,l_local), &
                 & f_p_fac, ewld%alpha, spme_datum%pot_order)  &
-                & * conjg(potential_grid(j_local,k_local,l_local)),wp ) * f_p_fac/k_vec_2
+                & * conjg(potential_grid(j_local,k_local,l_local)),wp ) * pi * recip_conv_fac
+
               do alpha = 1,3
                 do beta = 1,3
                   stress_temp(beta,alpha) = stress_temp(beta,alpha) + &
@@ -1596,12 +1604,12 @@ Contains
     !!
     !!----------------------------------------------------------------------!
     use comms,  only : gsum
-    use constants,  only : twopi
+    use constants,  only : twopi, pi
     use domains, only : exchange_grid
 
     implicit none
 
-    type( ewald_type ),                   Intent ( in    ) :: ewld
+    type( ewald_type ),                        Intent ( in    ) :: ewld
     type( electrostatic_type ),                Intent ( in    ) :: electro
     type( comms_type ),                        Intent ( inout ) :: comm
     type( domains_type ),                      Intent ( in    ) :: domain
@@ -1620,9 +1628,14 @@ Contains
     Real( Kind = wp ),    Dimension( 3,3 )                       :: recip_cell_mat          !! In matrix form
     Real( Kind = wp ),    Dimension( 3 )                         :: recip_kmax
 
+    Real( Kind = wp )                                          :: c_fac
     Integer, Dimension( 3, 2 ), save :: extended_domain                                   !! Size of extended grid with halo splines
-    Integer, Dimension( 3, 2 ) :: spline_bounds
 
+    Real( Kind = wp ),    Dimension( ewld%bspline%num_splines )   :: bspline_d2_x, bspline_d2_y, bspline_d2_z, &
+      &                                                              bspline_d1_x, bspline_d1_y, bspline_d1_z, &
+      &                                                              bspline_d0_x, bspline_d0_y, bspline_d0_z
+
+    
     Integer :: i,j,k,l,jj,kk,ll
     Integer :: alpha, beta
     Integer, save :: mxspl2_old = -1
@@ -1631,11 +1644,15 @@ Contains
     recip_cell_mat = reshape(recip_cell,[3,3])
     recip_kmax = matmul(recip_cell_mat, ewld%kspace%k_vec_dim_real)
 
+    c_fac = 2.0_wp * twopi * ewld%alpha
+    c_fac = 1.0_wp / c_fac
+    
     ! Exchange grid
     if (ewld%bspline%num_spline_padded .ne. mxspl2_old) then
       mxspl2_old = ewld%bspline%num_spline_padded
       extended_domain(:,1) = ewld%kspace%domain_indices(:,1) - ewld%bspline%num_spline_padded
-      extended_domain(:,2) = ewld%kspace%domain_indices(:,2) + ewld%bspline%num_spline_padded - ewld%bspline%num_splines
+      extended_domain(:,2) = ewld%kspace%domain_indices(:,2) + ewld%bspline%num_spline_padded &
+        & - ewld%bspline%num_splines
 
       if (allocated(extended_stress_grid)) then
         deallocate (extended_stress_grid, stat=fail)
@@ -1649,75 +1666,83 @@ Contains
     end if
 
     call exchange_grid( &
-      & ewld%kspace%domain_indices(1,1) , ewld%kspace%domain_indices(1,2) , &
-      & ewld%kspace%domain_indices(2,1) , ewld%kspace%domain_indices(2,2) , &
-      & ewld%kspace%domain_indices(3,1) , ewld%kspace%domain_indices(3,2) , Real(stress_grid, wp) , &
+      & ewld%kspace%domain_indices(1,1), ewld%kspace%domain_indices(1,2) , &
+      & ewld%kspace%domain_indices(2,1), ewld%kspace%domain_indices(2,2) , &
+      & ewld%kspace%domain_indices(3,1), ewld%kspace%domain_indices(3,2) , Real(stress_grid, wp) , &
       & extended_domain(1,1), extended_domain(2,1), extended_domain(3,1), &
-      & extended_domain(1,2), extended_domain(2,2), extended_domain(3,2), extended_stress_grid, domain, comm  )
+      & extended_domain(1,2), extended_domain(2,2), extended_domain(3,2), extended_stress_grid, domain, comm)
 
     ! Zero accumulator
     stress_out(:,0) = 0.0_wp
 
     ! Calculate per-particle contributions
-
     atom:do i = 1, config%natms
 
       stress_temp = 0.0_wp
       atom_coeffs = coeffs(i)
 
-      spline_bounds(:,1) = recip_indices(:,i) - ewld%bspline%num_splines + 2
-      spline_bounds(:,2) = recip_indices(:,i) + 1
+      bspline_d0_x = ewld%bspline%derivs(1,0,:,i)
+      bspline_d0_y = ewld%bspline%derivs(2,0,:,i)
+      bspline_d0_z = ewld%bspline%derivs(3,0,:,i)
+
+      bspline_d1_x = ewld%bspline%derivs(1,1,:,i)
+      bspline_d1_y = ewld%bspline%derivs(2,1,:,i)
+      bspline_d1_z = ewld%bspline%derivs(3,1,:,i)
+
+      bspline_d2_x = ewld%bspline%derivs(1,2,:,i)
+      bspline_d2_y = ewld%bspline%derivs(2,2,:,i)
+      bspline_d2_z = ewld%bspline%derivs(3,2,:,i)
 
       do l = 1, ewld%bspline%num_splines
         ll = recip_indices(3,i) + 1 - ewld%bspline%num_splines + l
 
-        stress_temp(1,1,3) = atom_coeffs * ewld%bspline%derivs(3,0,l,i)
-        stress_temp(2,1,3) = atom_coeffs * ewld%bspline%derivs(3,0,l,i)
-        stress_temp(3,1,3) = atom_coeffs * ewld%bspline%derivs(3,1,l,i)
-        stress_temp(2,2,3) = atom_coeffs * ewld%bspline%derivs(3,0,l,i)
-        stress_temp(3,2,3) = atom_coeffs * ewld%bspline%derivs(3,1,l,i)
-        stress_temp(3,3,3) = atom_coeffs * ewld%bspline%derivs(3,2,l,i)
+        stress_temp(1,1,3) = atom_coeffs * bspline_d0_z(l)
+        stress_temp(2,1,3) = atom_coeffs * bspline_d0_z(l)
+        stress_temp(3,1,3) = atom_coeffs * bspline_d1_z(l)
+        stress_temp(2,2,3) = atom_coeffs * bspline_d0_z(l)
+        stress_temp(3,2,3) = atom_coeffs * bspline_d1_z(l)
+        stress_temp(3,3,3) = atom_coeffs * bspline_d2_z(l)
 
         do k = 1, ewld%bspline%num_splines
           kk = recip_indices(2,i) + 1 - ewld%bspline%num_splines + k
 
-          stress_temp(1,1,2) = stress_temp(1,1,3) * ewld%bspline%derivs(2,0,k,i)
-          stress_temp(2,1,2) = stress_temp(2,1,3) * ewld%bspline%derivs(2,1,k,i)
-          stress_temp(3,1,2) = stress_temp(3,1,3) * ewld%bspline%derivs(2,0,k,i)
-          stress_temp(2,2,2) = stress_temp(2,2,3) * ewld%bspline%derivs(2,2,k,i)
-          stress_temp(3,2,2) = stress_temp(3,2,3) * ewld%bspline%derivs(2,1,k,i)
-          stress_temp(3,3,2) = stress_temp(3,3,3) * ewld%bspline%derivs(2,0,k,i)
+          stress_temp(1,1,2) = stress_temp(1,1,3) * bspline_d0_y(k)
+          stress_temp(2,1,2) = stress_temp(2,1,3) * bspline_d1_y(k)
+          stress_temp(3,1,2) = stress_temp(3,1,3) * bspline_d0_y(k)
+          stress_temp(2,2,2) = stress_temp(2,2,3) * bspline_d2_y(k)
+          stress_temp(3,2,2) = stress_temp(3,2,3) * bspline_d1_y(k)
+          stress_temp(3,3,2) = stress_temp(3,3,3) * bspline_d0_y(k)
 
           do j = 1, ewld%bspline%num_splines
             jj = recip_indices(1,i) + 1 - ewld%bspline%num_splines + j
 
-            stress_temp(1,1,1) = stress_temp(1,1,2) * ewld%bspline%derivs(1,2,j,i) * extended_stress_grid(jj,kk,ll)
-            stress_temp(2,1,1) = stress_temp(2,1,2) * ewld%bspline%derivs(1,1,j,i) * extended_stress_grid(jj,kk,ll)
-            stress_temp(3,1,1) = stress_temp(3,1,2) * ewld%bspline%derivs(1,1,j,i) * extended_stress_grid(jj,kk,ll)
-            stress_temp(2,2,1) = stress_temp(2,2,2) * ewld%bspline%derivs(1,0,j,i) * extended_stress_grid(jj,kk,ll)
-            stress_temp(3,2,1) = stress_temp(3,2,2) * ewld%bspline%derivs(1,0,j,i) * extended_stress_grid(jj,kk,ll)
-            stress_temp(3,3,1) = stress_temp(3,3,2) * ewld%bspline%derivs(1,0,j,i) * extended_stress_grid(jj,kk,ll)
+
+            stress_temp(1,1,1) = stress_temp(1,1,2) * bspline_d2_x(j) * extended_stress_grid(jj,kk,ll)
+            stress_temp(2,1,1) = stress_temp(2,1,2) * bspline_d1_x(j) * extended_stress_grid(jj,kk,ll)
+            stress_temp(3,1,1) = stress_temp(3,1,2) * bspline_d1_x(j) * extended_stress_grid(jj,kk,ll)
+            stress_temp(2,2,1) = stress_temp(2,2,2) * bspline_d0_x(j) * extended_stress_grid(jj,kk,ll)
+            stress_temp(3,2,1) = stress_temp(3,2,2) * bspline_d0_x(j) * extended_stress_grid(jj,kk,ll)
+            stress_temp(3,3,1) = stress_temp(3,3,2) * bspline_d0_x(j) * extended_stress_grid(jj,kk,ll)
 
             do beta = 1,3
               do alpha = beta,3
-                stress_temp(alpha,beta,0) = stress_temp(alpha,beta,0) - stress_temp(alpha,beta,1) &
-                  & * recip_kmax(alpha) * recip_kmax(beta)
+                stress_temp(alpha,beta,0) = stress_temp(alpha,beta,0) - &
+                  & (stress_temp(alpha,beta,1) * recip_kmax(alpha) * recip_kmax(beta) * c_fac)
               end do
             end do
-
-            stress_temp(1,2,0) = stress_temp(2,1,0)
-            stress_temp(1,3,0) = stress_temp(3,1,0)
-            stress_temp(2,3,0) = stress_temp(3,2,0)
 
           end do
         end do
       end do
 
+      stress_temp(1,2,0) = stress_temp(2,1,0)
+      stress_temp(1,3,0) = stress_temp(3,1,0)
+      stress_temp(2,3,0) = stress_temp(3,2,0)
+
       stress_out(:,0) = stress_out(:,0) + reshape(stress_temp(:,:,0), [9])
       stress_out(:,i) = reshape(stress_temp(:,:,0), [9])
 
     end do atom
-
   end subroutine spme_calc_stress
 
 !!! Kernels
@@ -1767,9 +1792,10 @@ Contains
     Real ( Kind = wp ) :: energy
     Real ( Kind = wp ) :: x
 
-    if (pi_m_over_a > zero_plus) then
+    if (pi_m_over_a > 1.0e-6) then
       energy = f_p(pi_m_over_a,pot_order)
-      stress_kernel = B_m * pot * f_p_d(pi_m_over_a, energy, pot_order)
+                                                                        ! (            1/m              )
+      stress_kernel = B_m * pot * f_p_d(pi_m_over_a, energy, pot_order) * pi / pi_m_over_a / conv_factor
     else
       stress_kernel = (0.0_wp, 0.0_wp)
     end if

@@ -2054,9 +2054,12 @@ Contains
 
   End Function calculate_stress
 
-  Pure Function calculate_heat_flux(stats, config) result(heat_flux)
+  Function calculate_heat_flux(stats, config, comm) result(heat_flux)
+    Use comms, only : gsum
+    
     Type( stats_type ), Intent( In    ) :: stats
     Type( configuration_type ), Intent( In    ) :: config
+    Type( comms_type ), Intent( InOut) :: comm
     Real( Kind = wp ), Dimension( 3 ) :: heat_flux
 
     Real( Kind = wp ), Dimension( 3 ) :: e_v !! Per-particle energy * velocity
@@ -2074,6 +2077,9 @@ Contains
       S_v = S_v + matmul(reshape(stats%pp_stress(:, iatm), [3,3]), velocity)
     end do
 
+    call gsum(comm, e_v)
+    call gsum(comm, S_v)
+    
     heat_flux = (e_v + S_v) / (1000.0_wp * engunit * config%volm)
 
   End Function calculate_heat_flux

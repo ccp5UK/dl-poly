@@ -1492,8 +1492,9 @@ Contains
 
       ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
 
-      ! If system is to write per-particle data
-      If (stat%require_pp .and. Mod(flow%step, stat%intsta) == 0) then
+      ! If system is to write per-particle data AND write step AND not equilibration
+      If (stat%require_pp .and. Mod(flow%step, stat%intsta) == 0 .and. flow%step - flow%equil_steps >= 0) then
+        print*, "PP", flow%step
         call stat%allocate_per_particle_arrays(cnfig%natms)
       end If
 
@@ -1508,7 +1509,7 @@ Contains
 
         if (flow%heat_flux .and. comm%idnode == 0) then
           Open(Newunit=heat_flux_out, File = 'HEATFLUX', Position = 'append')
-          Write(heat_flux_out, *) flow%step, stat%stptmp, cnfig%volm, calculate_heat_flux(stat, cnfig)
+          Write(heat_flux_out, *) flow%step, stat%stptmp, cnfig%volm, calculate_heat_flux(stat, cnfig, comm)
           Close(heat_flux_out)
         end If
 
