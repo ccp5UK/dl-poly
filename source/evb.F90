@@ -375,8 +375,14 @@ Contains
   Call info(' ',.true.)
   
   ! Convert coupling EVB parameters and energy shifts to internal units
+<<<<<<< HEAD
   evb%eshift     = engunit*evb%eshift
   evb%couplparam = engunit*evb%couplparam  
+=======
+  evb%eshift = engunit*evb%eshift
+  evb%ac     = engunit*evb%ac  
+  evb%bc     = engunit*evb%bc  
+>>>>>>> 55e830e48c4b056fa058eb879f51cadf95d7e7c0
 
   End Subroutine read_evb
           
@@ -696,7 +702,8 @@ Contains
            ! Make matrix symmetric
            evb%force_matrix(k,m)=evb%force_matrix(m,k)
          End Do 
-       End Do 
+       End Do
+  
        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
        !Set the first column of evb%force to zero   
        evb%force(j,1)=0.0_wp
