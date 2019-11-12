@@ -16,11 +16,11 @@ Module coord
   Implicit None
 
   type, public :: coord_type
-    Integer :: ncoordpairs,coordinterval,coordstart,coordops,ncoorddis
+    Integer :: ncoordpairs,coordinterval,coordstart,coordops,ncoorddis,ncoordab
     real(wp), allocatable :: arraycuts(:),discuts(:)
     character( Len = 8 ), allocatable :: arraypairs(:,:),disatms(:)
     Integer, allocatable :: coordlist(:,:),icoordlist(:,:),defectlist(:)
-    integer, allocatable :: ltype(:,:),cstat(:,:),disltype(:)
+    integer, allocatable :: ltype(:,:),ltypeA(:,:),ltypeB(:,:),cstat(:,:),disltype(:)
     Logical :: coordon
     real(wp) :: coordis 
   contains
@@ -39,6 +39,8 @@ contains
     allocate(T%discuts(1:T%ncoorddis))
     allocate(T%arraypairs(1:T%ncoordpairs,1:2))
     allocate(T%ltype(1:T%ncoordpairs,1:2))
+    allocate(T%ltypeA(1:2*T%ncoordpairs,0:2*T%ncoordpairs))
+    allocate(T%ltypeB(1:2*T%ncoordpairs,0:2*T%ncoordpairs))
     allocate(T%cstat(-3:1000,1:(2*T%ncoordpairs)))
     allocate(T%disltype(1:T%ncoorddis))
 !   allocate(T%coordatoms(0:2*T%ncoordpairs))
@@ -92,6 +94,10 @@ contains
     If(crd%coordstart>flow%step)Return
     If(mod(flow%step,crd%coordinterval).NE.0)Return
     crd%coordlist(0,:)=0
+    Do i=1, crd%ncoordab
+    print*,crd%ltypeA(i,:)
+    print*,crd%ltypeB(i,:)
+    End do
     ncb=0
     Do j = 1, config%natms
       ncoord = 0
@@ -121,11 +127,6 @@ contains
         End if
       End Do
     End Do
-
-!     !Create icoordlist
-!     if (flow%step==crd%coordstart) then
-!      crd%icoordlist=crd%coordlist
-!     end if
 
     !Create coordination statistics array
     crd%cstat(-3:,:)=0

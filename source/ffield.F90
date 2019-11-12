@@ -181,7 +181,7 @@ Contains
       itpter,keyter,icross,                               &
       itbp,itptbp,keytbp,ktbp,                            &
       ifbp,itpfbp,keyfbp,ka1,ka2,ka3,kfbp,nfld,itmp,      &
-      ntpcrd,ntpcrd2,itpcrd
+      ntpcrd,ntpcrd2,ntpcrd3,itpcrd
     Real( Kind = wp )      :: weight,charge,pmf_tmp(1:2),parpot(1:30),tmp,        &
       sig(0:2),eps(0:2),del(0:2),                         &
       q_core_p, q_core_s , q_core,                        &
@@ -3440,14 +3440,15 @@ Contains
         Else If (word(1:3) == 'crd') Then
         Call get_word(record,word)
         ntpcrd=Nint(word_2_real(word))
-         crd%ncoordpairs = ntpcrd
-         Call get_word(record,word)
-         ntpcrd2=Nint(word_2_real(word))
-         crd%ncoorddis = ntpcrd2 
-         call crd%init()
-!         If (comm%idnode == 0) Then
-!           Write(message,"(/,/,1x,'number of connetivity pairs to be looked at    ',i10)") ntpcrd
-!         End If
+        crd%ncoordpairs = ntpcrd
+        Call get_word(record,word)
+        ntpcrd2=Nint(word_2_real(word))
+        crd%ncoorddis = ntpcrd2
+        Call get_word(record,word)
+        ntpcrd3=Nint(word_2_real(word))
+        crd%ncoordab = ntpcrd3 
+        !Assigning element pairs
+        call crd%init()
          Do itpcrd=1,ntpcrd
 
            word(1:1)='#'
@@ -3470,31 +3471,67 @@ Contains
            Do jtpatm=1,sites%ntype_atom
              If (atom0 == sites%unique_atom(jtpatm)) katom0=jtpatm
              If (atom1 == sites%unique_atom(jtpatm)) katom1=jtpatm
-           End do
+           End Do
            crd%ltype(itpcrd,1)=katom0
            crd%ltype(itpcrd,2)=katom1
-         enddo    
-           
-           Do itpcrd=1,ntpcrd2
+         End Do    
+         !Assigning element displacements
+         Do itpcrd=1,ntpcrd2
 
-             word(1:1)='#'
-             Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
-              If (.not.safe) Go To 2000
-              Call get_word(record,word)
-             End Do
-             
-             atom0=word(1:8)
-             call get_word(record,word)
-             crd%discuts(itpcrd)=Abs(word_2_real(word))
-             katom0=0
-            Do jtpatm=1,sites%ntype_atom
-               if(atom0 == sites%unique_atom(jtpatm)) katom0=jtpatm
-            enddo
-            crd%disltype(itpcrd)=katom0
+           word(1:1)='#'
+           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+            Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
+            If (.not.safe) Go To 2000
+            Call get_word(record,word)
+           End Do
            
-          enddo
-          
+           atom0=word(1:8)
+           call get_word(record,word)
+           crd%discuts(itpcrd)=Abs(word_2_real(word))
+           katom0=0
+          Do jtpatm=1,sites%ntype_atom
+             if(atom0 == sites%unique_atom(jtpatm)) katom0=jtpatm
+          End Do
+          crd%disltype(itpcrd)=katom0
+         
+         End Do
+         
+         !Assigning A B pair lists
+           crd%ltypeA(:,0)=0
+           crd%ltypeB(:,0)=0
+        Do itpcrd=1,ntpcrd3
+
+           word(1:1)='#'
+           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+            Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
+            If (.not.safe) Go To 2000
+            Call get_word(record,word)
+           End Do
+          i=1
+          Do While (word(1:1) .ne. "-")
+           atom0 = word(1:8)
+           Do jtpatm=1,sites%ntype_atom
+             If (atom0 == sites%unique_atom(jtpatm)) katom0=jtpatm
+           End Do
+           crd%ltypeA(itpcrd,i)=katom0
+           crd%ltypeA(itpcrd,0)=crd%ltypeA(itpcrd,0)+1
+            i=i+1
+            Call get_word(record,word)
+          End Do
+          i=1
+          Call get_word(record,word)
+          Do While (word(1:1) .ne. " ")
+           atom0 = word(1:8)
+           Do jtpatm=1,sites%ntype_atom
+             If (atom0 == sites%unique_atom(jtpatm)) katom0=jtpatm
+           End Do
+           crd%ltypeB(itpcrd,i)=katom0
+           crd%ltypeB(itpcrd,0)=crd%ltypeB(itpcrd,0)+1
+            i=i+1
+            Call get_word(record,word)
+          End Do
+
+        End Do
 
 
 
