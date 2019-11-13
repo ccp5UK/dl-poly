@@ -312,11 +312,19 @@ contains
       enddo
 
       write(nicrdt,'(A36,I10,F20.6)')"Coordination distribution statistics",flow%step,flow%time
-      Do i=1,2*crd%ncoordpairs+2*crd%ncoordab
+
+      Do i=1,2*crd%ncoordpairs
         Do j=0,crd%cstat(-1,i)
           write(nicrdt,*)sites%unique_atom(crd%cstat(-3,i)),sites%unique_atom(crd%cstat(-2,i)),j,crd%cstat(j,i)
         End Do
       End Do
+
+      Do i=2*crd%ncoordpairs+1,2*crd%ncoordab-1
+        Do j=0,crd%cstat(-1,i)
+        write(nicrdt,*)'Type A',i-2*crd%ncoordpairs,'Type B',i-2*crd%ncoordpairs,j,crd%cstat(j,i)
+        End Do
+      End Do
+
     else
       allocate(coordbuff(ncb))
       k=1
