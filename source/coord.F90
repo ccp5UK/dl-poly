@@ -16,7 +16,7 @@ Module coord
   Implicit None
 
   type, public :: coord_type
-    Integer :: ncoordpairs,coordinterval,coordstart,coordops,ncoorddis,ncoordab
+    Integer :: ncoordpairs,coordinterval,coordstart,coordops,ncoorddis,ncoordab,maxlist=1000
     real(wp), allocatable :: arraycuts(:),discuts(:)
     character( Len = 8 ), allocatable :: arraypairs(:,:),disatms(:)
     Integer, allocatable :: coordlist(:,:),icoordlist(:,:),defectlist(:)
@@ -39,9 +39,9 @@ contains
     allocate(T%discuts(1:T%ncoorddis))
     allocate(T%arraypairs(1:T%ncoordpairs,1:2))
     allocate(T%ltype(1:T%ncoordpairs,1:2))
-    allocate(T%ltypeA(1:2*T%ncoordpairs,0:2*T%ncoordpairs))
-    allocate(T%ltypeB(1:2*T%ncoordpairs,0:2*T%ncoordpairs))
-    allocate(T%cstat(-3:1000,1:(2*T%ncoordpairs)))
+    allocate(T%ltypeA(1:2*T%ncoordab,0:2*T%ncoordpairs))
+    allocate(T%ltypeB(1:2*T%ncoordab,0:2*T%ncoordpairs))
+    allocate(T%cstat(-3:T%maxlist,1:(2*(T%ncoordpairs+T%ncoordab))))
     allocate(T%disltype(1:T%ncoorddis))
 !   allocate(T%coordatoms(0:2*T%ncoordpairs))
   end subroutine init_coord
@@ -84,7 +84,7 @@ contains
     real :: rcut,rab
     Character(len=8) :: aux 
     Character(len=1000),allocatable :: cbuff(:)
-    integer, allocatable :: buff(:),coordbuff(:),dbuff(:)
+    integer, allocatable :: buff(:),coordbuff(:),dbuff(:),ltypeAB(:,:)
     Logical :: newatom,itsopen
 
     !Check whether option is called
@@ -95,8 +95,8 @@ contains
     If(mod(flow%step,crd%coordinterval).NE.0)Return
     crd%coordlist(0,:)=0
     Do i=1, crd%ncoordab
-    print*,crd%ltypeA(i,:)
-    print*,crd%ltypeB(i,:)
+!    print*,crd%ltypeA(i,:)
+!    print*,crd%ltypeB(i,:)
     End do
     ncb=0
     Do j = 1, config%natms
@@ -155,9 +155,59 @@ contains
       End do 
     End do
 
+    !Create coordination AB statistics array
+    allocate(ltypeAB(1:2*crd%ncoordab,0:2*crd%ncoordpairs))
+    Do i=1,crd%ncoordab
+!     Do ii=1,crd%ncoordpairs
+       ltypeAB(2*i-1,:)=crd%ltypeA(i,:)
+       ltypeAB(2*i,:)=crd%ltypeB(i,:)
+ !   End Do
+     End Do
+    If (crd%ncoordab > 0) then
+      Do i=1,crd%ncoordab
+        crd%cstat(-3,2*crd%ncoordpairs+(2*i-1))=2*i-1
+        crd%cstat(-2,2*crd%ncoordpairs+(2*i-1))=2*i
+        crd%cstat(-3,2*crd%ncoordpairs+(2*i))=2*i
+        crd%cstat(-2,2*crd%ncoordpairs+(2*i))=2*i-1
+      End do
+    End if
    
+!    Do i=1, 2*(crd%ncoordpairs+crd%ncoordab)
+!      print*,crd%cstat(-3:0,i)
+!    End do
+     Do i=1, 2*crd%ncoordab
+      print*,ltypeAB(i,:)
+    End do
+    !Collect AB coordination statistics
+    Do i=1,config%natms
+      Do j=1,2*crd%ncoordab
+        mcoord=0
+!        print*,ltypeAB(crd%cstat(-3,j+(2*crd%ncoordpairs)),1:ltypeAB(crd%cstat(-3,j+(2*crd%ncoordpairs)),0))
+!        print*,config%ltype(i)
+!        if ((config%ltype(i)) == Any(ltypeAB(crd%cstat(-3,j+(2*crd%ncoordpairs)),1:))) then
+            If (Any(ltypeAB(crd%cstat(-3,j+(2*crd%ncoordpairs)),1:ltypeAB(crd%cstat(-3,j+(2*crd%ncoordpairs)),0))&
+&==config%ltype(i))) then
+          Do k=1,crd%coordlist(0,i)
+!            If (config%ltype(crd%coordlist(k,i)) == Any(ltypeAB(crd%cstat(-2,j+(2*crd%ncoordpairs)),:))) then
+            If (Any(ltypeAB(crd%cstat(-2,j+(2*crd%ncoordpairs)),1:ltypeAB(crd%cstat(-2,j+(2*crd%ncoordpairs)),0))&
+&==config%ltype(crd%coordlist(k,i)))) then
+              mcoord=mcoord+1
+            End If
+          End Do
+          crd%cstat(mcoord,j+(2*crd%ncoordpairs))=crd%cstat(mcoord,(j+(2*crd%ncoordpairs)))+1
+          If (mcoord>crd%cstat(-1,j+(2*crd%ncoordpairs))) then
+            crd%cstat(-1,j+(2*crd%ncoordpairs))=mcoord
+          End If
+        End if
+      End Do
+    End Do
+
+!     Do i=1, 2*(crd%ncoordpairs+crd%ncoordab)
+!      print*,crd%cstat(-3:10,i)
+!    End do
+
 !Set coordbuff size
-    Do i=1,2*crd%ncoordpairs
+    Do i=1,2*(crd%ncoordpairs+crd%ncoordab)
       ncb=ncb+(crd%cstat(-1,i)+4)
     End do
 
@@ -244,7 +294,7 @@ contains
           allocate(coordbuff(ncb))
           Call grecv(comm,coordbuff,j,j)
           jj=1
-          do ii=1,2*crd%ncoordpairs
+          do ii=1,2*(crd%ncoordpairs+crd%ncoordab)
             nmax=coordbuff(jj)
             if (nmax>crd%cstat(-1,ii)) then
               crd%cstat(-1,ii)=nmax
@@ -262,7 +312,7 @@ contains
       enddo
 
       write(nicrdt,'(A36,I10,F20.6)')"Coordination distribution statistics",flow%step,flow%time
-      Do i=1,2*crd%ncoordpairs
+      Do i=1,2*crd%ncoordpairs+2*crd%ncoordab
         Do j=0,crd%cstat(-1,i)
           write(nicrdt,*)sites%unique_atom(crd%cstat(-3,i)),sites%unique_atom(crd%cstat(-2,i)),j,crd%cstat(j,i)
         End Do
@@ -270,7 +320,7 @@ contains
     else
       allocate(coordbuff(ncb))
       k=1
-      Do i=1,2*crd%ncoordpairs
+      Do i=1,2*(crd%ncoordpairs+crd%ncoordab)
         coordbuff(k)=crd%cstat(-1,i)
         k=k+1
         coordbuff(k:k+1)=crd%cstat(-3:-2,i)
