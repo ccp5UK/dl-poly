@@ -319,10 +319,17 @@ contains
         End Do
       End Do
 
-      Do i=2*crd%ncoordpairs+1,2*crd%ncoordab-1
+      Do i=2*crd%ncoordpairs+1,2*(crd%ncoordpairs+crd%ncoordab)
+        If (mod(i,2)==1) then
         Do j=0,crd%cstat(-1,i)
-        write(nicrdt,*)'Type A',i-2*crd%ncoordpairs,'Type B',i-2*crd%ncoordpairs,j,crd%cstat(j,i)
+          write(nicrdt,'(A6,I0,1X,A6,I0,2X,I12,I12)')'ListA',i-2*crd%ncoordpairs,'ListB',i-2*crd%ncoordpairs,j,crd%cstat(j,i)
         End Do
+        End If
+        If (mod(i,2)==0) then
+        Do j=0,crd%cstat(-1,i)
+          write(nicrdt,'(A6,I0,1X,A6,I0,2X,I12,I12)')'ListB',i-2*crd%ncoordpairs-1,'ListA',i-2*crd%ncoordpairs-1,j,crd%cstat(j,i)
+        End Do
+        End If
       End Do
 
     else
