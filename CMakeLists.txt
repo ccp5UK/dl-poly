@@ -271,7 +271,7 @@ if(BUILD_TESTING)
   endmacro (do_test)
   configure_file(${CMAKE_SOURCE_DIR}/cmake/all.xml.cmake Testing/all.xml)
 
-  set(dlp "${MPIEXEC} -n ${MPI_NPROCS} ${CMAKE_BINARY_DIR}/bin/${target_name} >& err.log")
+  set(dlp "${MPIEXEC} ${MPIEXEC_PREFLAGS} -n ${MPI_NPROCS} ${CMAKE_BINARY_DIR}/bin/${target_name} >& err.log")
   foreach(test RANGE 1 9 1)
     do_test("TEST0${test}")
   endforeach()

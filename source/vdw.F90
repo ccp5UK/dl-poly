@@ -758,16 +758,16 @@ Contains
 
           Else If (keypot == VDW_N_M) Then
 
-            ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
+            ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(r0/r)^m]
 
             e0=vdws%param(1,k)
-            n =Nint(vdws%param(2,k)) ; nr=Real(n,wp)
-            m =Nint(vdws%param(3,k)) ; mr=Real(m,wp)
-            r0=vdws%param(4,k)
-            r =vdws%cutoff
+            nr = vdws%param(2,k)
+            mr = vdws%param(3,k)
+            r0 = vdws%param(4,k)
+            r = vdws%cutoff
 
-            eadd = e0/(nr-mr)*( mr*r0**n/((nr-3.0_wp)*r**(n-3)) - nr*r0**m/((mr-3.0_wp)*r**(m-3)) )
-            padd = e0/(nr-mr)*nr*mr*( r0**n/((nr-3.0_wp)*r**(n-3)) - r0**m/((mr-3.0_wp)*r**(m-3)) )
+            eadd = e0/(nr-mr)*( mr*r0**nr/((nr-3.0_wp)*r**(nr-3.0_wp)) - nr*r0**mr/((mr-3.0_wp)*r**(mr-3.0_wp)) )
+            padd = e0/(nr-mr)*nr*mr*( r0**nr/((nr-3.0_wp)*r**(nr-3.0_wp)) - r0**mr/((mr-3.0_wp)*r**(mr-3.0_wp)) )
 
           Else If (keypot == VDW_BUCKINGHAM) Then
 
@@ -1067,15 +1067,15 @@ Contains
 
         ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
 
-        e0=vdws%param(1,ivdw)
-        n =Nint(vdws%param(2,ivdw)) ; nr=Real(n,wp)
-        m =Nint(vdws%param(3,ivdw)) ; mr=Real(m,wp)
+        e0 = vdws%param(1,ivdw)
+        nr = vdws%param(2,ivdw)
+        mr = vdws%param(3,ivdw)
         r0=vdws%param(4,ivdw)
 
         a=r0/vdws%cutoff
-        b=1.0_wp/Real(n-m,wp)
-        r0rn=a**n
-        r0rm=a**m
+        b=1.0_wp/Real(nr-mr,wp)
+        r0rn=a**nr
+        r0rm=a**mr
 
         vdws%afs(ivdw) = e0*mr*nr*(r0rn-r0rm)*b
         vdws%bfs(ivdw) =-e0*(mr*r0rn-nr*r0rm)*b - vdws%afs(ivdw)
@@ -1791,8 +1791,8 @@ Contains
         ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
 
         e0=vdws%param(1,ivdw)
-        n =Nint(vdws%param(2,ivdw)) ; nr=Real(n,wp)
-        m =Nint(vdws%param(3,ivdw)) ; mr=Real(m,wp)
+        nr = vdws%param(2,ivdw)
+        mr = vdws%param(3,ivdw)
         r0=vdws%param(4,ivdw)
 
         Do i=1,vdws%max_grid
@@ -1800,8 +1800,8 @@ Contains
 
           a=r0/r
           b=1.0_wp/(nr-mr)
-          r0rn=(a)**n
-          r0rm=(a)**m
+          r0rn  = a**nr
+          r0rm = a**mr
 
           vdws%tab_potential(i,ivdw)=e0*(mr*r0rn-nr*r0rm)*b
           vdws%tab_force(i,ivdw)=e0*mr*nr*(r0rn-r0rm)*b
@@ -2589,17 +2589,17 @@ Contains
 
           Else If (ityp == VDW_N_M) Then
 
-            ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
+            ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(r0/r)^m]
 
             e0=vdws%param(1,k)
-            n =Nint(vdws%param(2,k)) ; nr=Real(n,wp)
-            m =Nint(vdws%param(3,k)) ; mr=Real(m,wp)
+            nr = vdws%param(2,k)
+            mr = vdws%param(3,k)
             r0=vdws%param(4,k)
 
             a=r0*r_rrr
             b=1.0_wp/(nr-mr)
-            r0rn=a**n
-            r0rm=a**m
+            r0rn=a**nr
+            r0rm=a**mr
 
             If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng   = e0*(mr*r0rn-nr*r0rm)*b
