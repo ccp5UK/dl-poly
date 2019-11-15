@@ -193,7 +193,7 @@ Contains
         End If
         cut = Real( Int( 100.0_wp * cut ) , wp ) / 100.0_wp
         If ((.not.(cut < tol)) .and. cut-neigh%padding > 0.005_wp) Then ! Do bother
-          Write(message,'(2(a,f5.2),a)') 'cutoff padding reset from ', neigh%padding, &
+          Write(message,'(2(a,f0.2),a)') 'cutoff padding reset from ', neigh%padding, &
             ' Angs to ', cut, ' Angs'
           Call info(message,.true.)
           neigh%padding = cut
@@ -221,7 +221,7 @@ Contains
       End If
       stat%neighskip(5)=Max(stat%neighskip(1),stat%neighskip(5))
 
-      stat%neighskip(1) = 0.0_wp              ! Reset here, checkpoit set by vnl_set_check in set_halo_particles
+      stat%neighskip(1) = 0.0_wp              ! Reset here, checkpoint set by vnl_set_check in set_halo_particles
     Else            ! Enjoy telephoning
       stat%neighskip(1) = stat%neighskip(1) + 1.0_wp ! Increment, telephony done for xxx,yyy,zzz in set_halo_positions
     End If
@@ -1093,7 +1093,7 @@ Contains
             If (det < devel%r_dis) Then
               safe=.false.
               Write(message,'(a,2(i10,a),f5.3,a)') &
-                ' the pair with global indeces: ', ii,'  &',jj, &
+                ' the pair with global indices: ', ii,'  &',jj, &
                 '  violates minimum separation distance (', det,' Angs)'
               Call warning(message)
               cnt(0)=cnt(0)+1.0_wp ! sum up violators
