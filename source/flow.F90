@@ -19,6 +19,8 @@ Module flow_control
   Integer(Kind=wi), Parameter, Public :: EVB = 2
   !> Simulation type keys: FFS
   Integer(Kind=wi), Parameter, Public :: FFS = 3
+  !> Simulation type keys: DFTB+
+  Integer(Kind=wi), Parameter, Public :: DFTB = 4 
 
   !> Type containing program flow data
   Type, Public :: flow_type
@@ -91,6 +93,10 @@ Module flow_control
     Logical, Public :: reset_padding
     !> Type of Simulation we perform
     Integer, Public :: simulation_method = MD
+
+    !> Driver type
+    Integer(Kind=wi), Public :: driver_type
+    
   Contains
     Procedure, Public :: new_page => flow_type_new_page
     Procedure, Public :: line_printed => flow_type_line_printed

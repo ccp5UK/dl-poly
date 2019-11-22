@@ -61,7 +61,7 @@ Module drivers
   Use ttm, Only : ttm_type
   Use ttm_track, Only : ttm_ion_temperature,ttm_thermal_diffusion
   Use filename, Only : file_type,FILE_OUTPUT,FILE_HISTORF,FILE_HISTORY
-  Use flow_control, Only : flow_type,RESTART_KEY_OLD,RESTART_KEY_CLEAN
+  Use flow_control, Only : flow_type,RESTART_KEY_OLD,RESTART_KEY_CLEAN, DFTB
   Use development, Only : development_type
 
   ! IO & DOMAINS MODULES
@@ -72,7 +72,9 @@ Module drivers
   ! SITE & CONFIG MODULES
 
   Use site, Only : site_type
-  Use configuration, Only : configuration_type,check_config, freeze_atoms
+  Use configuration, Only : configuration_type,check_config, freeze_atoms, &
+       coordinate_buffer_type,len_atmnam, gather_coordinates,gather_atomic_names,&
+       distribute_forces
 
   ! VNL module
 
@@ -472,10 +474,11 @@ Contains
     End If
 
 
-    !!!!!!!!!!!!!!!!!!  W_CALCULATE_FORCES INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!  W_CALCULATE_FORCES INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
   End Subroutine w_calculate_forces
 
+  
   Subroutine w_refresh_mappings(cnfig,flow,cshell,cons,pmf,stat,msd_data,bond,angle, &
       dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data,ewld,green,minim,thermo,&
       electro,comm)
@@ -1522,10 +1525,14 @@ Contains
 
       ! Evaluate forces
 
-      Call w_calculate_forces(cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
-        inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
-        minim,mpoles,ext_field,rigid,electro,domain,kim_data,msd_data,tmr,files,green,devel,ewld,met,seed,thermo,comm)
-
+      If(flow%driver_type == 0) Then
+         Call w_calculate_forces(cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
+              inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
+              minim,mpoles,ext_field,rigid,electro,domain,kim_data,msd_data,tmr,files,green,devel,ewld,met,seed,thermo,comm)
+      !Else If(flow%driver_type == DFTB) Then
+      !   Call w_calculate_dftb_forces(comm, flow, cnfig)
+      Endif
+         
       ! Calculate physical quantities, collect statistics and report at t=0
 
       If (flow%step == 0) Then

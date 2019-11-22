@@ -7,7 +7,7 @@ Module meta
 !> contrib - a.m.elena march 2019 updated deallocate uniform routine
   Use, Intrinsic :: iso_fortran_env, Only : error_unit
   Use kinds, Only : wi,wp
-  Use comms, Only : comms_type, init_comms, exit_comms, gsync, gtime,gsum
+  Use comms, Only : comms_type, init_comms, exit_comms, gsync, gtime,gsum, root_id
   Use development, Only : development_type,scan_development,build_info
   Use netcdf_wrap, Only : netcdf_param
   Use domains, Only : domains_type
@@ -73,6 +73,8 @@ Module meta
     FILE_STATS,FILENAME_SIZE
   Use flow_control, Only : flow_type
   Use kinetics, Only : cap_forces
+  Use test_configuration, Only : run_configuration_tests
+
   Implicit None
   Private
 
@@ -484,6 +486,20 @@ Contains
   call start_timer(tmr,'Main Calc')
 #endif
 
+    ! Unit testing (in the absence of a unit testing framework)
+    If (devel%run_unit_tests) Then
+
+       If (devel%unit_test%configuration) Then
+          if(comm%idnode == root_id) Then
+             Write(*,*) 'Running unit tests for configuration module'
+          Endif
+          Call run_configuration_tests()
+       End If
+       
+       if(comm%idnode == root_id) Write(*,*) 'Unit tests completed' 
+       Call exit_comms(dlp_world)
+    Endif
+  
     ! Now you can run fast, boy
     If (devel%l_fast) Call gsync(comm,devel%l_fast)
 

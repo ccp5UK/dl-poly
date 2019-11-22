@@ -1,6 +1,7 @@
 include_directories("${CMAKE_BINARY_DIR}/source")
 
 set(dlpoly_SRCS
+  asserts.F90
   meta.F90
   build_book.F90
   build_chrm.F90
@@ -95,6 +96,7 @@ set(dlpoly_SRCS
   npt_nose_hoover.F90
   npt_langevin.F90
   npt_mtk.F90
+  unit_tests/test_configuration.F90
   )
 if(BUILDER)
   set_property(SOURCE development.F90 APPEND PROPERTY

@@ -72,7 +72,7 @@ Module control
     FILE_STATS,FILE_HISTORY,FILE_HISTORF,FILE_REVIVE,FILE_REVCON, &
     FILE_REVOLD
   Use flow_control, Only : flow_type,RESTART_KEY_OLD,RESTART_KEY_CLEAN, &
-    RESTART_KEY_NOSCALE,RESTART_KEY_SCALE
+    RESTART_KEY_NOSCALE,RESTART_KEY_SCALE, DFTB
   Use rigid_bodies, Only : rigid_bodies_type
   Implicit None
 
@@ -490,6 +490,10 @@ Contains
 
     flow%freq_restart = 1000
 
+    ! default driver type
+    
+    flow%driver_type = 0 
+
     ! default value for the particle density per link cell limit
     ! below which subcelling (decreasing link-cell dimensions) stops
 
@@ -506,7 +510,7 @@ Contains
     rcut1 = 0.0_wp
     rpad1 = 0.0_wp
     rvdw1 = 0.0_wp
-
+    
     ! open the simulation control file
 
     If (comm%idnode == 0) Open(Newunit=files(FILE_CONTROL)%unit_no, File=files(FILE_CONTROL)%filename, Status = 'old')
@@ -629,7 +633,11 @@ Contains
         Call info('%%% Turn on the check on minimum separation distance between VNL pairs at re/start !!! %%%',.true.)
         Write(message,'(a,1p,e12.4)') '%%% separation criterion (Angstroms) %%%', devel%r_dis
         Call info(message,.true.)
-
+      Else If(word(1:9) == 'unit_test') Then
+         devel%run_unit_tests = .true.
+         !TODO(Alex) Would like keyword options: 'all' or list of modules [configuration, comms]  
+         devel%unit_test%configuration = .true.
+        
         ! read VDW options
 
       Else If (word(1:3) == 'vdw') Then
@@ -4273,6 +4281,12 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 
         ttm%redistribute = .true.
 
+      ! dftb_driver  
+      Else If (word(1:6) == 'dftb_d') Then
+
+         !Use DFTB+ as the force calculator instead of classical force fields 
+         flow%driver_type = DFTB
+         
       End If
 
       ! read finish

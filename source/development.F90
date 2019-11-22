@@ -31,6 +31,12 @@ Module development
 
   Private
 
+  !> Logicals indicating whether unit tests should be run for 
+  !> corresponding module. Add as required
+  Type, Public :: unit_testing_type
+     Logical :: configuration
+  End Type unit_testing_type
+  
   !> Type containing development module variables
   Type, Public :: development_type
     Private
@@ -76,8 +82,13 @@ Module development
 
     !> Devel start time
     Real( Kind = wp ), Public :: t_zero
-  End Type development_type
 
+    !> Unit testing
+    Logical, Public :: run_unit_tests = .false.
+    Type(unit_testing_type), Public :: unit_test
+
+ End Type development_type
+ 
   Public :: scan_development
   Public :: build_info
 

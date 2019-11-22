@@ -508,7 +508,37 @@ Contains
 
   End Subroutine get_line
 
-
+  !> @brief Get number of lines in file
+  !!
+  !! copyright - daresbury laboratory
+  !! author    - a. buccheri 2019
+  !!
+  !! @param[in]  fname   Name of file
+  !! @param[out] nlines  Number of lines in file 
+  !
+  Function number_of_lines(fname) Result(nlines)
+    
+    Character(Len=*), Intent(In) :: fname
+    Integer                      :: ios,nlines
+    Character(Len=50)            :: error_message
+    
+    nlines = 0
+    Open(unit=100,file=Trim(Adjustl(fname)), &
+         form='formatted', status='old', iostat=ios)
+    
+    If(ios/=0)Then
+       error_message = 'Error openning: '//Trim(Adjustl(fname))
+       Call error(0,message=error_message,master_only=.true.)
+    End If
+    
+    Do
+       Read(100,*,End=1000)
+       nlines=nlines+1
+    End Do
+    rewind(unit=100)
+    
+    1000 Close(100)
+  End Function number_of_lines
 
   Function word_2_real(word,def,report)
 
