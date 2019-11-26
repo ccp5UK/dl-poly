@@ -59,8 +59,9 @@ Module evb
 !> The functional form for the off-diagonal elements for the EVB matrix (coupling terms) is
 !> matrix(i,j)=ac(i,j)*exp[-bc(i,j)*(matrix(i,i)-matrix(j,j))^2]=matrix(j,i)
 !> Thus, a(i,j)=a(j,i) and b(i,j)=b(j,i)
-   Integer                             :: maxfitparam=4        !  maximum number of fitting parameters
+   Integer                             :: maxfitparam=7        !  maximum number of fitting parameters
    Real( Kind = wp )     , Allocatable :: couplparam(:,:,:)    !  Array with coupling parameters
+   Real( Kind = wp )     , Allocatable :: grad_coupl(:,:)      !  Array with coupling parameters
    Character( Len = 5  ) , Allocatable :: typcoupl(:,:)
    !> Working arrays for diagonalization
    Real( Kind = wp ), Allocatable :: work(:)
@@ -83,7 +84,7 @@ Contains
   Class(evb_type), Intent(InOut) :: evb
   Integer( Kind = wi ), Intent (In ) :: nff
   
-  Integer :: fail(1:15)
+  Integer :: fail(1:16)
 
 
   Allocate (evb%eshift(1:nff)            ,  Stat=fail(1))
@@ -101,6 +102,7 @@ Contains
   Allocate (evb%stress_matrix(nff,nff)   ,  Stat=fail(13))
   Allocate (evb%couplparam(nff,nff,evb%maxfitparam)  ,  Stat=fail(14))
   Allocate (evb%typcoupl(nff,nff)                    ,  Stat=fail(15))
+  Allocate (evb%grad_coupl(nff,nff)      ,  Stat=fail(16))
 
   If ( Any(fail /= 0 )) Call error(1025)
  
@@ -212,11 +214,10 @@ Contains
         End If
 
         ! Read type of functional form for the coupling term
-        Call get_word(record,word)
+        Call get_word(record,evb%typcoupl(i,j))
         If (word(1:2) == '  ') Then
           Call error(1096)
         Else 
-          evb%typcoupl(i,j)= word
           evb%typcoupl(j,i)= evb%typcoupl(i,j) 
         End If        
 
@@ -228,29 +229,29 @@ Contains
             If (word(1:2) == '  ') Then
               Call error(1096)
             Else
-              evb%couplparam(i,j,k)= Abs(word_2_real(word))
+              evb%couplparam(i,j,k)= word_2_real(word)
               evb%couplparam(j,i,k)=evb%couplparam(i,j,k)
             End If
           End Do
         Else If (evb%typcoupl(i,j) == 'gauss') Then
-          kparam=2      
+          kparam=3      
           Do k=1, kparam        
             Call get_word(record,word)
             If (word(1:2) == '  ') Then
               Call error(1096)
             Else
-              evb%couplparam(i,j,k)= Abs(word_2_real(word))
+              evb%couplparam(i,j,k)= word_2_real(word)
               evb%couplparam(j,i,k)= evb%couplparam(i,j,k)
             End If
           End Do
-        Else If (evb%typcoupl(i,j) == 'quadf') Then
+        Else If (evb%typcoupl(i,j) == 'gdump') Then
           kparam=evb%maxfitparam
           Do k=1, kparam        
             Call get_word(record,word)
             If (word(1:2) == '  ') Then
               Call error(1096)
             Else
-              evb%couplparam(i,j,k)= Abs(word_2_real(word))
+              evb%couplparam(i,j,k)= word_2_real(word)
               evb%couplparam(j,i,k)= evb%couplparam(i,j,k)
             End If
           End Do
@@ -288,7 +289,7 @@ Contains
         If (word(1:2) == '  ') Then
           Call error(1097)
         Else  
-          evb%eshift(i)= Abs(word_2_real(word))
+          evb%eshift(i)= word_2_real(word)
         End If 
 
         ieshift=ieshift+1
@@ -331,13 +332,13 @@ Contains
   Call info(messages,3,.true.) 
   Write(messages(1),'(1x,a)') '1) Coupling terms between Force Fields.'
   Write(messages(2),'(1x,a)') 'The adopted functional form for the coupling between fields i and j (C_{ij})' 
-  Write(messages(3),'(1x,a)') 'can be of three types: constant (const), Gaussian (gauss) or Quadratic-Fermi (quadf)'
+  Write(messages(3),'(1x,a)') 'can be of three types: constant (const), Gaussian (gauss) or Gauss-dumping (gdump)'
   Write(messages(4),'(1x,a)') 'See manual for details on the functional forms'
   Write(messages(5),'(1x,a)') 'Details for coupling terms are summarised in the following table:'
   Call info(messages,5,.true.)
   Write(messages(1),'(1x,a)')               '______________________________________________________________________'
   Write(messages(2),'(1x,a,5x,a,5x,a)')           'Force Field pair' , 'Type' , 'Parameters ('//trim(evbunit)//')'
-  Write(messages(3),'(5x,a,5x,a,10x,a,4(15x,a))')             'i','j', '    '  , 'A1', 'A2','A3','A4'
+  Write(messages(3),'(5x,a,5x,a,10x,a,7(15x,a))')             'i','j', '    '  , 'A1', 'A2','A3','A4', 'A5', 'A6','A7'
   Write(messages(4),'(1x,a)')               '______________________________________________________________________'
   Call info(messages,4,.true.)
   Do i=1,flow%NUM_FF
@@ -346,10 +347,10 @@ Contains
        Write(message,'(2(4x,i2),10x,a,10x,1(E12.5,5x))') i , j, evb%typcoupl(i,j), (evb%couplparam(i,j,k),k=1,1)
        Call info(message,.true.)
      ElseIf(evb%typcoupl(i,j)=='gauss')Then
-       Write(message,'(2(4x,i2),10x,a,10x,2(E12.5,5x))') i , j, evb%typcoupl(i,j), (evb%couplparam(i,j,k),k=1,2)
+       Write(message,'(2(4x,i2),10x,a,10x,3(E12.5,5x))') i , j, evb%typcoupl(i,j), (evb%couplparam(i,j,k),k=1,3)
        Call info(message,.true.)
-     ElseIf(evb%typcoupl(i,j)=='quadf')Then
-       Write(message,'(2(4x,i2),10x,a,10x,4(E12.5,5x))') i , j, evb%typcoupl(i,j), (evb%couplparam(i,j,k),k=1,4)
+     ElseIf(evb%typcoupl(i,j)=='gdump')Then
+       Write(message,'(2(4x,i2),10x,a,10x,7(E12.5,5x))') i , j, evb%typcoupl(i,j), (evb%couplparam(i,j,k),k=1,7)
        Call info(message,.true.)
      End If  
    End Do
@@ -575,6 +576,10 @@ Contains
 !> -----------------
   Call evb_energy(evb,flow,stat)
 
+!> Compute gradients for the coupling terms of the EVB matrix
+!> -----------------
+  Call grad_evb_couplings(flow,evb)
+
 !> Compute EVB forces
 !> -----------------
   Call evb_force(evb,flow,config)
@@ -618,7 +623,7 @@ Contains
         evb%ene_matrix(k,m) =evb%ene_matrix(m,k)
       End Do
     End Do
-    
+  
 ! Diagonalisation
     call dsyevx( 'V', 'I', 'U', flow%NUM_FF, evb%ene_matrix, flow%NUM_FF, -1., 0., 1, flow%NUM_FF, &
                   1.d-30, mevb, evb%eigval, evb%psi, flow%NUM_FF, evb%work, 8*flow%NUM_FF,     &
@@ -645,19 +650,59 @@ Contains
   A(:)  = evb%couplparam(m,k,:)
   ! Define energy difference, which is the reaction corrdinate between fields m and k
   ediff = evb%eneFF(m)-evb%eneFF(k)
-
+ 
   If(evb%typcoupl(m,k)=='const')Then
     evb%ene_matrix(m,k) = A(1)
   Else If (evb%typcoupl(m,k)=='gauss')Then
-    evb%ene_matrix(m,k) = A(1)*exp(-(ediff/A(2))**2)
-  Else If (evb%typcoupl(m,k)=='quadf')Then
-    evb%ene_matrix(m,k) = (A(1)-(ediff/A(2))**2)/(exp((abs(ediff)-A(3))/A(4))+1.0)      
+    evb%ene_matrix(m,k) =  A(1)*exp(-((ediff-A(2))/A(3))**2)
+  Else If (evb%typcoupl(m,k)=='gdump')Then
+    evb%ene_matrix(m,k) = A(1)*exp(-((ediff-A(2))/A(3))**2)*(1.0d0+tanh((ediff+A(4))/A(5)))*(1.0d0+tanh((-ediff+A(6))/A(7)))      
   End If        
 
   End Subroutine evb_energy_couplings
 
-!> Subroutine to compute EVB forces
-  Subroutine evb_force(evb,flow,config)
+!> Compute gradient of coupling terms for the EVB matrix
+  Subroutine grad_evb_couplings(flow,evb)
+
+  Type( flow_type ), Intent(In )   :: flow
+  Type( evb_type  ), Intent(InOut) :: evb
+  Integer                          :: m,k
+
+  Real( Kind = wp )                :: ediff
+  Real( Kind = wp )                :: A(evb%maxfitparam)
+  Real( Kind = wp )                :: t1, t2, t3, grad_t1, grad_t2, grad_t3
+
+
+  Do m=1,flow%NUM_FF
+    Do k=m+1,flow%NUM_FF
+    ! Copy evb coupling parameters to array A, for the sake of clarity in coding the formulae
+      A(:)  = evb%couplparam(m,k,:)
+    ! Define energy difference, which is the reaction corrdinate between fields m and k
+      ediff = evb%eneFF(m)-evb%eneFF(k)
+
+      If(evb%typcoupl(m,k)=='const')Then
+        evb%grad_coupl(m,k) = 0.0d0 
+      Else If (evb%typcoupl(m,k)=='gauss')Then
+        evb%grad_coupl(m,k) = -2.0* (A(1)/A(3)**2)*(ediff-A(2))*exp(-((ediff-A(2))/A(3))**2)
+      Else If (evb%typcoupl(m,k)=='gdump')Then
+        t1  = (A(1)*exp(-((ediff-A(2))/A(3))**2))
+        t2  = (1.0d0+tanh(( ediff+A(4))/A(5)))
+        t3  = (1.0d0+tanh((-ediff+A(6))/A(7)))
+        grad_t1= -2.0* (A(1)/A(3)**2)*(ediff-A(2))*exp(-((ediff-A(2))/A(3))**2)
+        grad_t2= 1.0/A(5)/(cosh(( ediff+A(4))/A(5)))**2
+        grad_t3=-1.0/A(7)/(cosh((-ediff+A(6))/A(7)))**2 
+        evb%grad_coupl(m,k) = grad_t1*t2*t3+t1*grad_t2*t3+t1*t2*grad_t3
+      End If       
+
+    End Do
+  End Do 
+
+
+  End Subroutine grad_evb_couplings
+
+  
+   Subroutine evb_force(evb,flow,config)
+!> Compute EVB forces
  
   Type(evb_type), Intent(InOut) :: evb
   Type( configuration_type ), Intent(InOut) :: config(:)
@@ -668,6 +713,10 @@ Contains
   Integer( Kind = wi ) :: i,j     ! Indices for atoms and/or coordinates
 
   Integer( Kind = wi ) :: mxatms
+
+  Real( Kind = wp )    :: fdiff
+
+  evb%grad_coupl=0.0d0
 
 ! Maximum number of atoms
   mxatms=config(1)%mxatms 
@@ -691,13 +740,14 @@ Contains
        ! Off-diagonal elements     
        Do m=1,flow%NUM_FF
          Do k=m+1,flow%NUM_FF
-           ! Compute coupling forces for element (k,m) of the matrix
-           Call force_evb_couplings(m,k,j,evb)
+         fdiff=evb%force(j,m)-evb%force(j,k)       
+         ! Compute coupling forces for element (k,m) of the matrix, gradients of coupling terms are computed in 
+           evb%force_matrix(m,k)=fdiff*evb%grad_coupl(m,k) 
            ! Make matrix symmetric
            evb%force_matrix(k,m)=evb%force_matrix(m,k)
-         End Do 
+         End Do
        End Do
-  
+ 
        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
        !Set the first column of evb%force to zero   
        evb%force(j,1)=0.0_wp
@@ -712,6 +762,7 @@ Contains
 ! Finish loop over coordinates
      End Do
 
+
    ! Copy evb-force to config-force
      Do m=1,flow%NUM_FF
        config(m)%parts(i)%fxx=evb%force(1,1)
@@ -721,43 +772,9 @@ Contains
 
    End Do
 
+
    End subroutine evb_force
 
-!> Compute coupling force for matrix element m,k
-  Subroutine force_evb_couplings(m,k,j,evb)
-
-  Type(evb_type), Intent(InOut) :: evb
-  Integer       , Intent(In   ) :: m,k,j
-
-  Real( Kind = wp )             :: ediff, fdiff
-  Real( Kind = wp )             :: A(evb%maxfitparam)
-
-  Real( Kind = wp )             :: num, den, der_num, der_den
-  
-  ! Copy evb coupling parameters to array A, for the sake of clarity in coding the formulae
-  A(:)  = evb%couplparam(m,k,:)
-  ! Define energy difference, which is the reaction corrdinate between fields m and k
-  ediff = evb%eneFF(m)-evb%eneFF(k)
-  ! Define energy difference, which is the reaction corrdinate between fields m and k
-  fdiff = evb%force(j,m)-evb%force(j,k)
-
-  If(evb%typcoupl(m,k)=='const')Then
-    evb%force_matrix(m,k) = 0.0d0 
-  Else If (evb%typcoupl(m,k)=='gauss')Then
-    evb%force_matrix(m,k) = -2.0* (A(1)/A(2)**2)*ediff*fdiff*exp(-(ediff/A(2))**2)
-  Else If (evb%typcoupl(m,k)=='quadf')Then
-    num = (A(1)-(ediff/A(2))**2)
-    den = (exp((abs(ediff)-A(3))/A(4))+1.0) 
-    der_num=-2.0d0*ediff/A(2)**2
-    If(ediff >= 0.0d0)Then
-      der_den=1.0d0/A(4)*exp((ediff-A(3))/A(4))    
-    Else
-      der_den=-1.0d0/A(4)*exp((-ediff-A(3))/A(4))
-    End If  
-    evb%force_matrix(m,k) = fdiff*(der_num*den-num*der_den)/den**2
-  End If        
-
-  End Subroutine force_evb_couplings
 
 !> Subroutine to compute EVB stress
   Subroutine evb_stress(evb,flow,config,stat)
@@ -833,7 +850,8 @@ Contains
             evb%stress_matrix(m,k)=evb%stress_matrix(m,k)+(strff(m,i,i2)-strff(k,i,i2))*rcell(j,i2)
           End Do
            ! Compute coupling stress for element (k,m) of the matrix
-          Call stress_evb_couplings(m,k,j,evb)
+           evb%stress_matrix(m,k) = evb%stress_matrix(m,k)*evb%grad_coupl(m,k)
+           !  Make matrix symmetric
           evb%stress_matrix(k,m)=evb%stress_matrix(m,k)
         End Do 
       End Do
@@ -881,40 +899,6 @@ Contains
 
   End subroutine evb_stress
 
-!> Compute coupling stress for matrix element m,k
-  Subroutine stress_evb_couplings(m,k,j,evb)
-
-  Type(evb_type), Intent(InOut) :: evb
-  Integer       , Intent(In   ) :: m,k,j
-
-  Real( Kind = wp )             :: ediff, fdiff
-  Real( Kind = wp )             :: A(evb%maxfitparam)
-
-  Real( Kind = wp )             :: num, den, der_num, der_den
-
-  ! Copy evb coupling parameters to array A, for the sake of clarity in coding the formulae
-  A(:)  = evb%couplparam(m,k,:)
-  ! Define energy difference, which is the reaction corrdinate between fields m and k
-  ediff = evb%eneFF(m)-evb%eneFF(k)
-
-  If(evb%typcoupl(m,k)=='const')Then
-    evb%stress_matrix(m,k) = 0.0d0 
-  Else If (evb%typcoupl(m,k)=='gauss')Then
-    evb%stress_matrix(m,k)=-2.0*A(1)/A(2)**2 *(ediff)*evb%stress_matrix(m,k)*exp(-(ediff/A(2))**2)
-  Else If (evb%typcoupl(m,k)=='quadf')Then
-    num = (A(1)-(ediff/A(2))**2)
-    den = (exp((abs(ediff)-A(3))/A(4))+1.0) 
-    der_num=-2.0d0*ediff/A(2)**2
-    If(ediff >= 0.0d0)Then
-      der_den=1.0d0/A(4)*exp((ediff-A(3))/A(4))    
-    Else
-      der_den=-1.0d0/A(4)*exp((-ediff-A(3))/A(4))
-    End If  
-    evb%stress_matrix(m,k) = evb%stress_matrix(m,k)*(der_num*den-num*der_den)/den**2      
-  End If        
-
-  End Subroutine stress_evb_couplings
- 
 !> This subroutine sets to zero most of the decomposed terms of the virial and energy
 !> By construction, it is not possible to decompose the EVB virial for the different 
 !> types of interactions (bond, angle, dihedral, etc). We thus opt to set them to zero

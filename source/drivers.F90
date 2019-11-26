@@ -811,8 +811,9 @@ Contains
                        stat(1)%virinv + stat(1)%virfld
     EndIf      
 
-    !> For EVB it is not possible to have a decomposition of the energy and virial into separate contributions for each type of interaction
-    !> (e.g. angles, bonds, dihedrals, etc). For this reason, we set all these components to zero in the subroutine ebv_setzero. 
+    !> For EVB it is not possible to have a decomposition of the energy and virial 
+    !> into separate contributions for each type of interaction (e.g. angles, bonds, dihedrals, etc). 
+    !> For this reason, we set all these components to zero in the subroutine ebv_setzero. 
     If(flow%NUM_FF > 1)Then
       Call evb_setzero(flow,stat)
     End If

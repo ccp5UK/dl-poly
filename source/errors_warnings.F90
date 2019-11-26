@@ -2209,8 +2209,8 @@ Contains
         Write(ounit,'(/,1x,a)') '        "evbcoupl"       i       j       type      list with coupling-parameters'
         Write(ounit,'(/,1x,a)') '        where i and j are the fields to be couplped' 
         Write(ounit,'(/,1x,a)') '        If type=const, 1 coupling-parameter is needed'
-        Write(ounit,'(/,1x,a)') '        If type=gauss, 2 coupling-parameters are needed'
-        Write(ounit,'(/,1x,a)') '        If type=quadf, 5 coupling-parameters are needed'
+        Write(ounit,'(/,1x,a)') '        If type=gauss, 3 coupling-parameters are needed'
+        Write(ounit,'(/,1x,a)') '        If type=gdump, 7 coupling-parameters are needed'
        
 
       Else If (kode == 1097) Then
