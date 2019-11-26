@@ -13,7 +13,7 @@ Module kim
   Use numerics, Only: local_index
   Use particle, Only : corepart
   Use comms, Only : comms_type,gsend,girecv,gwait,Export_tag
-  Use errors_warnings, Only : error,warning
+  Use errors_warnings, Only : error,warning,info
 #ifdef KIM
   Use kim_simulator_headers_module, Only : &
     kim_collection_item_type_type, &
@@ -27,6 +27,12 @@ Module kim
     kim_cache_list_of_item_metadata_files, &
     kim_get_item_metadata_file_length, &
     kim_get_item_metadata_file_values, &
+    kim_get_number_of_parameters, &
+    kim_get_parameter_metadata, &
+    kim_data_type_type, &
+    KIM_DATA_TYPE_INTEGER, &
+    KIM_DATA_TYPE_DOUBLE, &
+    kim_to_string, &
     kim_model_create, &
     kim_model_destroy, &
     kim_compute, &
@@ -265,6 +271,22 @@ Contains
     Real(Kind=c_double), Allocatable :: cutoffs(:)
     Integer(Kind=wi) :: list_index, max_atoms
     Integer(Kind=c_int) :: kerror
+    Integer(Kind=c_int) :: n_parameters
+    Integer(Kind=c_int) :: extent
+    Integer(Kind=c_int) :: parameter_index
+    Integer(Kind=wi) :: max_len, i
+
+    Character(Kind=c_char, Len=256) :: parameter_name
+    Character(Kind=c_char, Len=1024) :: parameter_description
+    Character(Kind=c_char, Len=256) :: parameter_string
+
+    Character(Len=68) :: fmt, banner(7)
+    Character(Len=256) :: message
+
+#ifdef KIM
+    Type(kim_collections_handle_type) :: kim_coll
+    Type(kim_data_type_type) :: kim_data_type
+#endif
 
     ! Early return if a KIM model is not being used
     If (.not. kim_data%active) Then
@@ -272,163 +294,245 @@ Contains
     End If
 
 #ifdef KIM
-    ! Allocate KIM data type arrays
-    Call kim_data%init(mxatms)
-
-    ! Initialise comms type
-    Call kim_data%kcomms%init(mxbfxp*span,mxnode)
-
-    ! Create KIM object
-    ! kim_numbering_one_based - numbering from 1 (fortran style arrays)
-    !
-    ! DL_POLY internal units:
-    ! - length Angstrom
-    ! - energy 10J/mol (equivalent KIM energy unit selected here)
-    ! - charge electrons
-    ! - temperature K
-    ! - time ps
-    Call kim_model_create(kim_numbering_one_based, &
-      kim_length_unit_a, &
-      kim_energy_unit_amu_a2_per_ps2, &
-      kim_charge_unit_e, &
-      kim_temperature_unit_k, &
-      kim_time_unit_ps, &
-      Trim(kim_data%model_name), &
-      requested_units_accepted, &
-      kim_data%model_handle, kerror)
-    If (requested_units_accepted /= 1) Then
-      Call kim_error('kim_model_create, the selected KIM model does not support DL_POLY internal units', __LINE__)
-    End If
+    Call kim_collections_create(kim_coll, kerror)
     If (kerror /= 0) Then
-      Call kim_error('kim_model_create', __LINE__)
+      Call kim_error('kim_collections_create, unable to access the KIM Collections', __LINE__)
     End If
-
-    ! Create compute_arguments object
-    Call kim_compute_arguments_create(kim_data%model_handle, &
-      kim_data%compute_arguments_handle,kerror)
+    Call kim_get_item_type(kim_coll, Trim(kim_data%model_name), kim_data%model_type, kerror)
     If (kerror /= 0) Then
-      Call kim_error('kim_compute_arguments_create', __LINE__)
+      Call kim_error('kim_get_item_type, KIM Model name not found', __LINE__)
     End If
+    Call kim_collections_destroy(kim_coll)
 
-    ! Set number of particles
-    kim_data%n_particles = megatm
+    If (kim_data%model_type .eq. KIM_COLLECTION_ITEM_TYPE_PORTABLE_MODEL) Then
+      ! Allocate KIM data type arrays
+      Call kim_data%init(mxatms)
 
-    ! Get influence distance
-    If (.not. kim_data%padding_neighbours_required) Then
-      Call kim_get_influence_distance(kim_data%model_handle, kim_data%influence_distance)
-    End If
+      ! Initialise comms type
+      Call kim_data%kcomms%init(mxbfxp*span,mxnode)
 
-    ! Get number of neighbour lists
-    Call kim_get_number_of_neighbor_lists(kim_data%model_handle, &
-      kim_data%n_lists)
-
-    ! Allocate neighbour list, neighbour list pointer
-    Allocate(kim_data%neigh(kim_data%n_lists))
-    Allocate(kim_data%neigh_pointer(kim_data%n_lists))
-    ! Allocate hint arrays
-    Allocate(kim_data%hints_padding(kim_data%n_lists))
-
-    ! Get neighbour list cutoffs and hints
-    Allocate(cutoffs(kim_data%n_lists))
-    Call kim_get_neighbor_list_values(kim_data%model_handle, &
-      cutoffs, &
-      kim_data%hints_padding, &
-      kerror)
-    If (kerror /= 0) Then
-      Call kim_error('kim_get_neighbor_list_values', __LINE__)
-    End If
-    Do list_index = 1, kim_data%n_lists
-      kim_data%neigh(list_index)%cutoff = cutoffs(list_index)
-    End Do
-    Deallocate(cutoffs)
-    ! Initialise neighbour list and neighbour list pointer types
-    Do list_index = 1, kim_data%n_lists
-      If (kim_data%hints_padding(list_index) == 1) Then
-        max_atoms = mxatdm
-      Else
-        max_atoms = mxatms
+      ! Create KIM object
+      ! kim_numbering_one_based - numbering from 1 (fortran style arrays)
+      !
+      ! DL_POLY internal units:
+      ! - length Angstrom
+      ! - energy 10J/mol (equivalent KIM energy unit selected here)
+      ! - charge electrons
+      ! - temperature K
+      ! - time ps
+      Call kim_model_create(kim_numbering_one_based, &
+        kim_length_unit_a, &
+        kim_energy_unit_amu_a2_per_ps2, &
+        kim_charge_unit_e, &
+        kim_temperature_unit_k, &
+        kim_time_unit_ps, &
+        Trim(kim_data%model_name), &
+        requested_units_accepted, &
+        kim_data%model_handle, kerror)
+      If (requested_units_accepted /= 1) Then
+        Call kim_error('kim_model_create, the selected KIM model does not support DL_POLY internal units', __LINE__)
       End If
-      ! Initialise neighbour list type
-      Call kim_data%neigh(list_index)%init(max_atoms,max_list)
+      If (kerror /= 0) Then
+        Call kim_error('kim_model_create', __LINE__)
+      End If
 
-      ! Initialise neighbour list pointer type
-      Call kim_neighbour_list_pointer_type_init(kim_data%neigh_pointer(list_index), &
-        kim_data%neigh(list_index),max_atoms,max_list)
-    End Do
+      ! Print KIM model parameters
+      Call kim_get_number_of_parameters(kim_data%model_handle, n_parameters)
 
-    ! Allocate KIM pointers
-    ! Number of particles
-    Call kim_set_argument_pointer( &
-      kim_data%compute_arguments_handle, &
-      kim_compute_argument_name_number_of_particles, &
-      kim_data%n_particles, kerror)
-    If (kerror /= 0) Then
-      Call kim_error('kim_compute_arguments_set_arugment_pointer for number of particles', __LINE__)
-    End If
+      Write(banner(1),'(a)') ""
+      Write(banner(2),'(a)') '//'//Repeat("=",30) //' KIM '// Repeat("=",31)
+      Write(banner(3),'(a)') '||'
+      Write(banner(5),'(a)') '||'
+      Write(banner(6),'(a)') '||'
+      Write(banner(7),'(a)') '\\'//Repeat("=",66)
+      If (n_parameters .gt. 0) Then
+        Write(banner(4),'(a,i0,a)') '|| This model has ', n_parameters, ' mutable parameters.'
+        Call info(banner,6,.true.)
 
-    ! Species codes
-    Call kim_set_argument_pointer( &
-      kim_data%compute_arguments_handle, &
-      kim_compute_argument_name_particle_species_codes, &
-      kim_data%species_code, kerror)
-    If (kerror /= 0) Then
-      Call kim_error('kim_compute_arguments_set_arugment_pointer for species codes', __LINE__)
-    End If
+        max_len = 18
+        Do parameter_index = 1, n_parameters
+          Call kim_get_parameter_metadata(kim_data%model_handle, &
+            parameter_index, &
+            kim_data_type, &
+            extent, &
+            parameter_name, &
+            parameter_description, kerror)
+          If (kerror /= 0) Then
+            Call kim_error('kim_get_parameter_metadata', __LINE__)
+          End If
+          max_len = max(max_len, len_trim(parameter_name))
+        End Do
 
-    ! Contributing status
-    Call kim_set_argument_pointer( &
-      kim_data%compute_arguments_handle, &
-      kim_compute_argument_name_particle_contributing, &
-      kim_data%contributing, kerror)
-    If (kerror /= 0) Then
-      Call kim_error('kim_compute_arguments_set_arugment_pointer for contributing status', __LINE__)
-    End If
+        Write(message,'(a,a,a)') '|| No.     |  Parameter name  ', Repeat(' ',max_len-18), '|  Data type  |  Extent'
+        Call info(message,.true.)
 
-    ! Coordinates
-    Call kim_set_argument_pointer( &
-      kim_data%compute_arguments_handle, &
-      kim_compute_argument_name_coordinates, &
-      kim_data%coords, kerror)
-    If (kerror /= 0) Then
-      Call kim_error('kim_compute_arguments_set_arugment_pointer for coordinates', __LINE__)
-    End If
+        Write(message,'(a)') '||'//Repeat('=',66)
+        Call info(message,.true.)
 
-    ! Energy
-    Call kim_set_argument_pointer( &
-      kim_data%compute_arguments_handle, &
-      kim_compute_argument_name_partial_energy, &
-      kim_data%energy, kerror)
-    If (kerror /= 0) Then
-      Call kim_error('kim_compute_arguments_set_arugment_pointer for energy', __LINE__)
-    End If
+        Do parameter_index = 1, n_parameters
+          Call kim_get_parameter_metadata(kim_data%model_handle, &
+            parameter_index, &
+            kim_data_type, &
+            extent, &
+            parameter_name, &
+            parameter_description, kerror)
 
-    ! Forces
-    Call kim_set_argument_pointer( &
-      kim_data%compute_arguments_handle, &
-      kim_compute_argument_name_partial_forces, &
-      kim_data%forces, kerror)
-    If (kerror /= 0) Then
-      Call kim_error('kim_compute_arguments_set_arugment_pointer for forces', __LINE__)
-    End If
+          Call kim_to_string(kim_data_type, parameter_string)
 
-    ! Virials
-    Call kim_set_argument_pointer( &
-      kim_data%compute_arguments_handle, &
-      kim_compute_argument_name_partial_virial, &
-      kim_data%virial, kerror)
-    If (kerror /= 0) Then
-      Call kim_warning('The selected KIM model does not compute virials, stress and pressure will be incorrect', __LINE__)
-      ! Set KIM virials to 0 so they will not contribute to the total
-      kim_data%virial = 0.0_wp
-    End If
+          Write(fmt,'(i0)') parameter_index
 
-    ! Set KIM pointer to neighbour list routine and type
-    Call kim_set_callback_pointer( &
-      kim_data%compute_arguments_handle, &
-      kim_compute_callback_name_get_neighbor_list, kim_language_name_fortran, &
-      C_funloc(get_neigh), C_loc(kim_data%neigh_pointer), kerror)
-    If (kerror /= 0) Then
-      Call kim_error('kim_set_callback_pointer', __LINE__)
+          If (kim_data_type .eq. KIM_DATA_TYPE_INTEGER) Then
+            Write(message,'(a,i0,7a,i0)') '|| ',parameter_index, &
+              Repeat(' ',8-len_trim(fmt)), '| ', Trim(parameter_name), &
+              Repeat(' ',max(17,Len_Trim(parameter_name))-Len_Trim(parameter_name)), &
+              '|  "', Trim(parameter_string), '"  | ', extent
+          Else
+            Write(message,'(a,i0,7a,i0)') '|| ',parameter_index, &
+              Repeat(' ',8-Len_Trim(fmt)), '| ', Trim(parameter_name), &
+              Repeat(' ',max(17,Len_Trim(parameter_name))-Len_Trim(parameter_name)), &
+              '|  "', Trim(parameter_string), '"   | ', extent
+          End If
+          Call info(message,.true.)
+        End Do
+        Call info(banner(7),.true.)
+      Else
+        Write(banner(4),'(a)') '|| This model has No mutable parameters.'
+
+        Call info(banner,5,.true.)
+        Call info(banner(7),.true.)
+      End If
+
+      ! Create compute_arguments object
+      Call kim_compute_arguments_create(kim_data%model_handle, &
+        kim_data%compute_arguments_handle,kerror)
+      If (kerror /= 0) Then
+        Call kim_error('kim_compute_arguments_create', __LINE__)
+      End If
+
+      ! Set number of particles
+      kim_data%n_particles = megatm
+
+      ! Get influence distance
+      If (.not. kim_data%padding_neighbours_required) Then
+        Call kim_get_influence_distance(kim_data%model_handle, &
+          kim_data%influence_distance)
+      End If
+
+      ! Get number of neighbour lists
+      Call kim_get_number_of_neighbor_lists(kim_data%model_handle, &
+        kim_data%n_lists)
+
+      ! Allocate neighbour list, neighbour list pointer
+      Allocate(kim_data%neigh(kim_data%n_lists))
+      Allocate(kim_data%neigh_pointer(kim_data%n_lists))
+      ! Allocate hint arrays
+      Allocate(kim_data%hints_padding(kim_data%n_lists))
+
+      ! Get neighbour list cutoffs and hints
+      Allocate(cutoffs(kim_data%n_lists))
+      Call kim_get_neighbor_list_values(kim_data%model_handle, &
+        cutoffs, kim_data%hints_padding, kerror)
+      If (kerror /= 0) Then
+        Call kim_error('kim_get_neighbor_list_values', __LINE__)
+      End If
+
+      Do list_index = 1, kim_data%n_lists
+        kim_data%neigh(list_index)%cutoff = cutoffs(list_index)
+      End Do
+      Deallocate(cutoffs)
+      ! Initialise neighbour list and neighbour list pointer types
+      Do list_index = 1, kim_data%n_lists
+        If (kim_data%hints_padding(list_index) == 1) Then
+          max_atoms = mxatdm
+        Else
+          max_atoms = mxatms
+        End If
+        ! Initialise neighbour list type
+        Call kim_data%neigh(list_index)%init(max_atoms,max_list)
+
+        ! Initialise neighbour list pointer type
+        Call kim_neighbour_list_pointer_type_init(kim_data%neigh_pointer(list_index), &
+          kim_data%neigh(list_index),max_atoms,max_list)
+      End Do
+
+      ! Allocate KIM pointers
+      ! Number of particles
+      Call kim_set_argument_pointer( &
+        kim_data%compute_arguments_handle, &
+        kim_compute_argument_name_number_of_particles, &
+        kim_data%n_particles, kerror)
+      If (kerror /= 0) Then
+        Call kim_error('kim_compute_arguments_set_arugment_pointer for number of particles', __LINE__)
+      End If
+
+      ! Species codes
+      Call kim_set_argument_pointer( &
+        kim_data%compute_arguments_handle, &
+        kim_compute_argument_name_particle_species_codes, &
+        kim_data%species_code, kerror)
+      If (kerror /= 0) Then
+        Call kim_error('kim_compute_arguments_set_arugment_pointer for species codes', __LINE__)
+      End If
+
+      ! Contributing status
+      Call kim_set_argument_pointer( &
+        kim_data%compute_arguments_handle, &
+        kim_compute_argument_name_particle_contributing, &
+        kim_data%contributing, kerror)
+      If (kerror /= 0) Then
+        Call kim_error('kim_compute_arguments_set_arugment_pointer for contributing status', __LINE__)
+      End If
+
+      ! Coordinates
+      Call kim_set_argument_pointer( &
+        kim_data%compute_arguments_handle, &
+        kim_compute_argument_name_coordinates, &
+        kim_data%coords, kerror)
+      If (kerror /= 0) Then
+        Call kim_error('kim_compute_arguments_set_arugment_pointer for coordinates', __LINE__)
+      End If
+
+      ! Energy
+      Call kim_set_argument_pointer( &
+        kim_data%compute_arguments_handle, &
+        kim_compute_argument_name_partial_energy, &
+        kim_data%energy, kerror)
+      If (kerror /= 0) Then
+        Call kim_error('kim_compute_arguments_set_arugment_pointer for energy', __LINE__)
+      End If
+
+      ! Forces
+      Call kim_set_argument_pointer( &
+        kim_data%compute_arguments_handle, &
+        kim_compute_argument_name_partial_forces, &
+        kim_data%forces, kerror)
+      If (kerror /= 0) Then
+        Call kim_error('kim_compute_arguments_set_arugment_pointer for forces', __LINE__)
+      End If
+
+      ! Virials
+      Call kim_set_argument_pointer( &
+        kim_data%compute_arguments_handle, &
+        kim_compute_argument_name_partial_virial, &
+        kim_data%virial, kerror)
+      If (kerror /= 0) Then
+        Call kim_warning('The selected KIM model does not compute virials, stress and pressure will be incorrect', __LINE__)
+        ! Set KIM virials to 0 so they will not contribute to the total
+        kim_data%virial = 0.0_wp
+      End If
+
+      ! Set KIM pointer to neighbour list routine and type
+      Call kim_set_callback_pointer( &
+        kim_data%compute_arguments_handle, &
+        kim_compute_callback_name_get_neighbor_list, kim_language_name_fortran, &
+        C_funloc(get_neigh), C_loc(kim_data%neigh_pointer), kerror)
+      If (kerror /= 0) Then
+        Call kim_error('kim_set_callback_pointer', __LINE__)
+      End If
+    Else If (kim_data%model_type .eq. KIM_COLLECTION_ITEM_TYPE_SIMULATOR_MODEL) Then
+      Call kim_error('kim_setup, currently DL_POLY does not support KIM Simulator model', __LINE__)
+    ELSE
+      Call kim_error('kim_setup, unknown model type', __LINE__)
     End If
 #endif
   End Subroutine kim_setup
