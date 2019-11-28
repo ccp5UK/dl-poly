@@ -76,6 +76,8 @@ Contains
     ! contrib   - i.t.todorov may 2019 (rpad & rcut feedback, mxatms & mxatdm setting)
     ! contrib   - i.t.todorov july 2019 (SPME b-spline corrected mxatms & buffers,l_trm)
     ! contrib   - i.t.todorov november 2019 (commenting on magic numbers with changes to magic & buffers' sizes)
+    ! contrib   - i.t.todorov november 2019 (increasing bond%max_bonds, angle%max_angles, amending domain%mxbfxp)
+    !
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -310,7 +312,7 @@ Contains
     If (bond%max_bonds > 0) Then
       If (comm%mxnode > 1) Then
         bond%max_bonds = Max(bond%max_bonds,comm%mxnode*mtbond)
-        bond%max_bonds = (3*(Nint(fdvar*Real(bond%max_bonds,wp))+comm%mxnode-1))/comm%mxnode
+        bond%max_bonds = (4*(Nint(fdvar*Real(bond%max_bonds,wp))+comm%mxnode-1))/comm%mxnode
       End If
       bond%max_param = 4
     Else
@@ -323,7 +325,7 @@ Contains
     If (angle%max_angles > 0) Then
       If (comm%mxnode > 1) Then
         angle%max_angles = Max(angle%max_angles,comm%mxnode*mtangl)
-        angle%max_angles = (3*(Nint(fdvar*Real(angle%max_angles,wp))+comm%mxnode-1))/comm%mxnode
+        angle%max_angles = (4*(Nint(fdvar*Real(angle%max_angles,wp))+comm%mxnode-1))/comm%mxnode
       End If
       angle%max_param = 6
     Else
@@ -1058,7 +1060,7 @@ Contains
 
     ! exporting, total per atom per direction (times 13 up to 35)
 
-    domain%mxbfxp = 2 * Nint(Real(config%mxatdm,wp) * dens0) ! included induced dipoles
+    domain%mxbfxp = 2 * Nint(Real(config%mxatms,wp) * dens0) ! included induced dipoles
 
     ! deporting, total per atom per direction
     ! pass the full LC contents or 0.5*neigh%padding/neigh%cutoff_extended fraction of it (doubled for safety)
