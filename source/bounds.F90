@@ -76,6 +76,7 @@ Contains
     ! contrib   - i.t.todorov may 2019 (rpad & rcut feedback, mxatms & mxatdm setting)
     ! contrib   - i.t.todorov july 2019 (SPME b-spline corrected mxatms & buffers,l_trm)
     ! contrib   - i.t.todorov november 2019 (commenting on magic numbers with changes to magic & buffers' sizes)
+    ! contrib   - i.t.todorov november 2019 (changing fdens choosing to handle imbalance better)
     ! contrib   - i.t.todorov november 2019 (increasing bond%max_bonds, angle%max_angles, amending domain%mxbfxp)
     !
     ! refactoring:
@@ -956,13 +957,12 @@ Contains
 
     ! Create f(fdvar,dens0,dens) function of density push, maximum 'local' density, maximum domains' density
 
-    If ((comm%mxnode == 1 .or. Min(ilx,ily,ilz) < 3) .or. &
-        (config%imcon == 0 .or. config%imcon == 6 .or. config%imc_n == 6)) Then
-      fdens = fdvar * (0.65_wp*dens0 + 0.35_wp*dens) ! mixing 2/3 local density and 1/3 global density  (local over global)
-    Else If (Min(ilx,ily,ilz) < 5) Then
-      fdens = fdvar * (0.50_wp*dens0 + 0.50_wp*dens) ! mixing 50:50 for parallel but limiting case scenario
+    If ( (comm%mxnode == 1 .or. Min(ilx,ily,ilz) < 3)                      .or. &
+         (config%imcon == 0 .or. config%imcon == 6 .or. config%imc_n == 6) .or. &
+         (dens/dens0 <= 0.5_wp) .or. (fdvar > 10.0_wp) ) Then
+      fdens = dens0                                ! for all possibly bad cases resort to max density
     Else
-      fdens = fdvar * (0.35_wp*dens0 + 0.65_wp*dens) ! mixing 1/3 local density and 2/3 global density (global over local)
+      fdens = fdvar * (0.5_wp*dens0 + 0.5_wp*dens) ! mix 50:50 and push
     End If
 
     ! Get reasonable to set fdens limit - all particles in one link-cell

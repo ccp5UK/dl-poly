@@ -15,74 +15,77 @@ Module configuration
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp,li,wi
-  Use comms, Only : comms_type,gbcast,WriteConf_tag,gcheck,gsync,gsum,&
-    gmax,gmin,gsend,grecv,gscatter,gscatterv,gscatter_columns, &
-    gallgather,galltoall,galltoallv,gallreduce,op_land, &
-    offset_kind,comm_self,mode_create,mode_rdonly,mode_wronly
-  Use site, Only : site_type
+  Use kinds,           Only : wp,li,wi
+  Use comms,           Only : comms_type,gbcast,WriteConf_tag,gcheck,gsync,gsum,&
+                              gmax,gmin,gsend,grecv,gscatter,gscatterv,gscatter_columns, &
+                              gallgather,galltoall,galltoallv,gallreduce,op_land, &
+                              offset_kind,comm_self,mode_create,mode_rdonly,mode_wronly
+  Use site,            Only : site_type
 
-  Use constants,   Only : half_minus,zero_plus
-  Use parse,   Only : tabs_2_blanks, &
-    strip_blanks, get_word, word_2_real,get_line
-  Use domains, Only : domains_type
-  Use development, Only : development_type
-  Use particle, Only : corePart
+  Use constants,       Only : half_minus,zero_plus
+  Use parse,           Only : tabs_2_blanks, &
+                              strip_blanks, get_word, word_2_real,get_line
+  Use domains,         Only : domains_type
+  Use development,     Only : development_type
+  Use particle,        Only : corePart
 
-  Use netcdf_wrap, Only : netcdf_param
-  Use io,     Only : io_type,io_set_parameters,         &
-    io_get_parameters,         &
-    io_init, io_nc_create,     &
-    io_open, io_write_record,  &
-    io_write_batch,            &
-    io_nc_put_var,             &
-    io_write_sorted_file,      &
-    io_delete,                 &
-    io_close, io_finalize,     &
-    io_read_batch,             &
-    io_nc_get_dim,             &
-    io_get_var,                &
-    io_nc_get_var,             &
-    io_nc_get_att,             &
-    IO_READ_MASTER,            &
-    IO_READ_NETCDF,            &
-    IO_RESTART,                &
-    IO_BASE_COMM_NOT_SET,      &
-    IO_ALLOCATION_ERROR,       &
-    IO_UNKNOWN_WRITE_OPTION,   &
-    IO_UNKNOWN_WRITE_LEVEL,    &
-    IO_WRITE_UNSORTED_MPIIO,   &
-    IO_WRITE_UNSORTED_DIRECT,  &
-    IO_WRITE_UNSORTED_MASTER,  &
-    IO_WRITE_SORTED_MPIIO,     &
-    IO_WRITE_SORTED_DIRECT,    &
-    IO_WRITE_SORTED_NETCDF,    &
-    IO_WRITE_SORTED_MASTER,    &
-    IO_SUBSET_POSITIONS,       &
-    IO_SUBSET_FORCES,recsz
+  Use netcdf_wrap,     Only : netcdf_param
+  Use io,              Only : io_type,io_set_parameters, &
+                              io_get_parameters,         &
+                              io_init, io_nc_create,     &
+                              io_open, io_write_record,  &
+                              io_write_batch,            &
+                              io_nc_put_var,             &
+                              io_write_sorted_file,      &
+                              io_delete,                 &
+                              io_close, io_finalize,     &
+                              io_read_batch,             &
+                              io_nc_get_dim,             &
+                              io_get_var,                &
+                              io_nc_get_var,             &
+                              io_nc_get_att,             &
+                              IO_READ_MASTER,            &
+                              IO_READ_NETCDF,            &
+                              IO_RESTART,                &
+                              IO_BASE_COMM_NOT_SET,      &
+                              IO_ALLOCATION_ERROR,       &
+                              IO_UNKNOWN_WRITE_OPTION,   &
+                              IO_UNKNOWN_WRITE_LEVEL,    &
+                              IO_WRITE_UNSORTED_MPIIO,   &
+                              IO_WRITE_UNSORTED_DIRECT,  &
+                              IO_WRITE_UNSORTED_MASTER,  &
+                              IO_WRITE_SORTED_MPIIO,     &
+                              IO_WRITE_SORTED_DIRECT,    &
+                              IO_WRITE_SORTED_NETCDF,    &
+                              IO_WRITE_SORTED_MASTER,    &
+                              IO_SUBSET_POSITIONS,       &
+                              IO_SUBSET_FORCES,recsz
 
   Use errors_warnings, Only : error,warning,info
-  Use numerics, Only : shellsort2,invert,dcell,images,shellsort,pbcshift
-  Use thermostat, Only : thermostat_type,CONSTRAINT_NONE
-  Use electrostatic, Only : ELECTROSTATIC_NULL,ELECTROSTATIC_EWALD
-  Use filename, Only : file_type,FILE_CONFIG
-  Use flow_control, Only : flow_type, RESTART_KEY_CLEAN
+  Use numerics,        Only : shellsort2,invert,dcell,images,shellsort,pbcshift
+  Use thermostat,      Only : thermostat_type,CONSTRAINT_NONE
+  Use electrostatic,   Only : ELECTROSTATIC_NULL,ELECTROSTATIC_EWALD
+  Use filename,        Only : file_type,FILE_CONFIG
+  Use flow_control,    Only : flow_type, RESTART_KEY_CLEAN
+
   Implicit None
+
   Private
 
-  Type, Public ::  configuration_type
+  Type, Public :: configuration_type
+
     Character( Len = 72 )       :: cfgname = ' ' , &
-      sysname = ' '
+                                   sysname = ' '
 
     Integer                     :: imcon =-1 , &
-      imc_n =-1 , &
-      natms = 0 , &
-      nlast = 0 , &
-      nfree = 0
+                                   imc_n =-1 , &
+                                   natms = 0 , &
+                                   nlast = 0 , &
+                                   nfree = 0
 
     Real( Kind = wp )           :: cell(1:9) = 0.0_wp , &
-      volm      = 0.0_wp , &
-      sumchg    = 0.0_wp
+                                   volm      = 0.0_wp , &
+                                   sumchg    = 0.0_wp
 
 
     Character( Len = 8 ), Allocatable       :: atmnam(:)
@@ -99,31 +102,45 @@ Module configuration
     !  Real( Kind = wp ),    Allocatable, Save :: fxx(:),fyy(:),fzz(:)
 
     Type(corePart),       Allocatable       :: parts(:)
+
     Logical :: newjob_check_config = .true.
-    Logical :: newjob_totmas = .true.
-    Logical :: newjob_totmas_r = .true.
-    Logical :: newjob_meg = .true.
+
+    Logical :: newjob_totmas       = .true.
+    Logical :: newjob_totmas_r     = .true.
+    Logical :: newjob_meg          = .true.
+
     Real( Kind = wp ) :: totmas
     Real( Kind = wp ) :: totmas_r
     Real( Kind = wp ) :: meg
-    Logical, Public :: l_vom=.true.,lvom=.true. ! this is confusing and needless complicated
-    Integer( Kind = wi ),Public    :: mxtana,mxgana,mxbfss,mxbuff
-    Integer( Kind = wi ),Public    :: mxlshp,mxatms,mxatdm
+
+    Logical, Public   :: l_vom =.true., &
+                         lvom  =.true. ! this is confusing and needless complicated
+
+    Integer( Kind = wi ), Public :: mxtana,mxgana,mxbfss,mxbuff
+    Integer( Kind = wi ), Public :: mxlshp,mxatms,mxatdm
 
     ! general flags
+
     Logical           :: l_ind,l_exp
     Integer           :: levcfg,nx,ny,nz,&
-      atmfre,atmfrz,megatm,megfrz
+                         atmfre,atmfrz,megatm,megfrz
+
     ! Degrees of freedom must be in long integers so we do 2.1x10^9 particles
+
     Integer(Kind=li)  :: degfre,degshl,degtra,degrot
+
     ! vdws%elrc,vdws%vlrc - vdw energy and virial are scalars and in vdw
+
     Real(Kind=wp) :: dvar,fmax,width
 
   Contains
+
     Private
+
     Procedure, Public :: chvom
     Procedure, Public :: init => allocate_config_arrays
     Procedure, Public :: init_read => allocate_config_arrays_read
+
   End Type configuration_type
 
   Interface reallocate
@@ -132,6 +149,7 @@ Module configuration
     Module Procedure reallocate_rwp_v
     Module Procedure reallocate_corePart_v
   End Interface
+
   Interface getcom
     Module Procedure getcom_parts
     Module Procedure getcom_arrays
@@ -139,7 +157,7 @@ Module configuration
 
   Public :: reallocate
   Public :: check_config
-  Public :: read_config,read_config_parallel
+  Public :: read_config, read_config_parallel
   Public :: scan_config
   Public :: scale_config
   Public :: origin_config
@@ -164,14 +182,14 @@ Contains
     !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    Class(configuration_type), Intent( InOut ) :: T
-    Logical, Intent( In ),Optional :: flag
 
+    Class(configuration_type), Intent( InOut )           :: T
+    Logical,                   Intent( In    ), Optional :: flag
 
     Logical :: lflag
 
     lflag=T%l_vom
-    If (present(flag)) lflag=flag
+    If (Present(flag)) lflag=flag
 
     If (lflag) Then
       T%lvom=.true.  ! Remove COM momentum
@@ -182,6 +200,7 @@ Contains
   End Subroutine chvom
 
   Subroutine  reallocate_corePart_v( delta, a, stat )
+
     Integer,                           Intent( In    ) :: delta
     Type( corePart ), Allocatable,     Intent( InOut ) :: a(:)
     Integer,                           Intent(   Out ) :: stat
@@ -293,15 +312,15 @@ Contains
   End Subroutine reallocate_rwp_v
 
   Subroutine allocate_config_arrays_read(config)
-    Class(configuration_type), Intent(InOut) :: config
+
+    Class(configuration_type), Intent( InOut ) :: config
 
     Integer :: fail(1:4), i
 
     fail = 0
-
-    Allocate (config%atmnam(1:config%mxatms), Stat=fail(1))
+    Allocate (config%atmnam(1:config%mxatms),                                                      Stat=fail(1))
     Allocate (config%lsi(1:config%mxatms),config%lsa(1:config%mxatms),config%ltg(1:config%mxatms), Stat=fail(2))
-    Allocate (config%parts(1:config%mxatms), Stat=fail(3))
+    Allocate (config%parts(1:config%mxatms),                                                       Stat=fail(3))
     Allocate (config%vxx(1:config%mxatms),config%vyy(1:config%mxatms),config%vzz(1:config%mxatms), Stat=fail(4))
     If (Any(fail > 0)) Call error(1025)
 
@@ -318,20 +337,22 @@ Contains
       config%parts(i)%fzz=0.0_wp
       config%parts(i)%chge=0.0_wp
     End Do
+
   End Subroutine allocate_config_arrays_read
 
   Subroutine allocate_config_arrays(config)
+
     Class(configuration_type), Intent(InOut) :: config
 
-    Integer           :: fail(1:5),stat(1:13)
+    Integer :: fail(1:5),stat(1:13)
 
     fail = 0
 
-    Allocate (config%lsite(1:config%mxatms),config%ltype(1:config%mxatms),           Stat = fail(1))
-    Allocate (config%lfrzn(1:config%mxatms),config%lfree(1:config%mxatms),           Stat = fail(2))
-    Allocate (config%ixyz(1:config%mxatms),                                   Stat = fail(3))
-    Allocate (config%lstfre(1:config%mxatdm),                                 Stat = fail(4))
-    Allocate (config%weight(1:config%mxatms),                                 Stat = fail(5))
+    Allocate (config%lsite(1:config%mxatms),config%ltype(1:config%mxatms), Stat = fail(1))
+    Allocate (config%lfrzn(1:config%mxatms),config%lfree(1:config%mxatms), Stat = fail(2))
+    Allocate (config%ixyz(1:config%mxatms),                                Stat = fail(3))
+    Allocate (config%lstfre(1:config%mxatdm),                              Stat = fail(4))
+    Allocate (config%weight(1:config%mxatms),                              Stat = fail(5))
 
     If (Any(fail > 0)) Call error(1025)
 
@@ -356,7 +377,8 @@ Contains
     Call reallocate( config%mxatms - Size( config%vyy    ), config%vyy,    stat( 7) )
     Call reallocate( config%mxatms - Size( config%vzz    ), config%vzz,    stat( 8) )
 
-    If ( Any(stat /= 0 )) Call error(1025)
+    If (Any(stat /= 0 )) Call error(1025)
+
   End Subroutine allocate_config_arrays
 
   Subroutine check_config(config,electro_key,thermo,sites,flow,comm)
@@ -370,6 +392,8 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov january 2015
+    ! amended   - i.t.todorov november 2019 (global index printing for errors)
+    !
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -378,20 +402,22 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer, Intent( In    ) :: electro_key
+    Integer,                    Intent( In    ) :: electro_key
     Type( configuration_type ), Intent( InOut ) :: config
-    Type( thermostat_type ), Intent( In    ) :: thermo
-    Type( site_type ), Intent( In    ) :: sites
-    Type( flow_type ), Intent( In    ) :: flow
-    Type( comms_type ), Intent( InOut ) :: comm
+    Type( thermostat_type ),    Intent( In    ) :: thermo
+    Type( site_type ),          Intent( In    ) :: sites
+    Type( flow_type ),          Intent( In    ) :: flow
+    Type( comms_type ),         Intent( InOut ) :: comm
 
-    Logical           :: safe
-    Integer           :: fail,k,l,m, &
-      indatm,totatm,mol_sit,loc_ind
-    Real( Kind = wp ) :: rcell(1:9),det
+    Logical                :: safe
+    Integer                :: fail,k,l,m, &
+                              indatm,totatm,mol_sit,loc_ind
+    Real( Kind = wp )      :: rcell(1:9),det
+
+    Character( Len = 256 ) :: message
 
     Integer, Allocatable :: iwrk(:)
-    Character( Len = 256 ) :: message
+
 
     fail=0
     If (flow%strict) Then
@@ -413,9 +439,9 @@ Contains
     ! Check things for non-periodic systems
 
     If (config%imcon == 0 .or. config%imcon == 6) Then
-      If (electro_key == ELECTROSTATIC_EWALD) Then
+      If      (electro_key == ELECTROSTATIC_EWALD) Then
         Call warning(220,0.0_wp,0.0_wp,0.0_wp)
-      Else If (electro_key /= ELECTROSTATIC_NULL) Then
+      Else If (electro_key /= ELECTROSTATIC_NULL)  Then
         Call warning(30,0.0_wp,0.0_wp,0.0_wp)
       End If
 
@@ -424,7 +450,7 @@ Contains
       If (thermo%variable_cell) Call error(390)
     End If
 
-    ! Check image conditions for nst ensembles
+    ! Check and adapt image conditions for nst ensembles
 
     If (thermo%anisotropic_pressure) Then
       If (thermo%iso == CONSTRAINT_NONE) Then
@@ -461,7 +487,7 @@ Contains
       Call Info(message,.true.)
     End If
 
-    ! Check on validity of config file contents
+    ! Check on validity of CONFIG contents wrt FIELD
 
     If (flow%restart_key /= RESTART_KEY_CLEAN .and. config%levcfg < 1) Call error(85)
 
@@ -509,7 +535,7 @@ Contains
             ! Check for unidentified atoms in CONFIG by their existence in FIELD
 
             If (config%atmnam(loc_ind) /= sites%site_name(mol_sit+m)) Then
-              Write(message,"( 'unidentified atom label :',a8,': atom number ',i5)") config%atmnam(loc_ind),loc_ind
+              Write(message,"( 'unidentified atom label :',a8,': atom number ',i5)") config%atmnam(loc_ind),totatm
               Call info(message)
               safe=.false.
             End If
@@ -580,6 +606,7 @@ Contains
       ! copyright - daresbury laboratory
       ! author    - i.j.bush march 2009
       ! adapted   - i.t.todorov june 2010
+      !
       ! refactoring:
       !           - a.m.elena march-october 2018
       !           - j.madge march-october 2018
@@ -745,9 +772,6 @@ Contains
 
   End Subroutine check_config
 
-
-
-
   Subroutine read_config(config,megatm,levcfg,l_ind,strict,rcut,dvar,xhi,yhi,zhi,dens0,dens,io,domain,files,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -758,26 +782,27 @@ Contains
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov february 2015
     ! contrib   - a.m.elena february 2017
+    ! contrib   - i.t.todorov may 2019 - maximum domain density change
+    !
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
-    ! contrib   - i.t.todorov may 2019 - maximum domain density change
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-    Type( io_type ), Intent( InOut ) :: io
-    Integer,           Intent( In    ) :: megatm,levcfg
-    Logical,           Intent( In    ) :: l_ind,strict
-    Real( Kind = wp ), Intent( In    ) :: rcut,dvar
-    Real( Kind = wp ), Intent( InOut ) :: xhi,yhi,zhi
-    Real( Kind = wp ), Intent(   Out ) :: dens0,dens
+    Type( io_type ),            Intent( InOut ) :: io
+    Integer,                    Intent( In    ) :: megatm,levcfg
+    Logical,                    Intent( In    ) :: l_ind,strict
+    Real( Kind = wp ),          Intent( In    ) :: rcut,dvar
+    Real( Kind = wp ),          Intent( InOut ) :: xhi,yhi,zhi
+    Real( Kind = wp ),          Intent(   Out ) :: dens0,dens
     Type( configuration_type ), Intent( InOut ) :: config
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( file_type ), Intent( InOut ) :: files(:)
-    Type( comms_type), Intent( InOut ) :: comm
+    Type( domains_type ),       Intent( In    ) :: domain
+    Type( file_type ),          Intent( InOut ) :: files(:)
+    Type( comms_type),          Intent( InOut ) :: comm
 
     Real( Kind = wp ) :: cut
 
@@ -785,19 +810,19 @@ Contains
     Character( Len = 40  ) :: word,fname
     Logical                :: safe, l_his, l_xtr, fast
     Integer                :: fail(1:4),i,j,idm,max_fail,min_fail, &
-      icell,ncells,                        &
-      indatm,nattot,totatm,                &
-      ipx,ipy,ipz,nlx,nly,nlz,             &
-      ix,iy,iz,jx,jy,jz
+                              icell,ncells,                        &
+                              indatm,nattot,totatm,                &
+                              ipx,ipy,ipz,nlx,nly,nlz,             &
+                              ix,iy,iz,jx,jy,jz
     Real( Kind = wp )      :: celprp(1:10),rcell(1:9),celh(1:9),det, &
-      volm,vcell,                            &
-      sxx,syy,szz,xdc,ydc,zdc,               &
-      pda_max,pda_min,pda_ave,               &
-      pda_dom_max,pda_dom_min
+                              volm,vcell,                            &
+                              sxx,syy,szz,xdc,ydc,zdc,               &
+                              pda_max,pda_min,pda_ave,               &
+                              pda_dom_max,pda_dom_min
 
     ! Some parameters and variables needed by io interfaces
 
-    Integer                           :: fh, io_read
+    Integer                       :: fh, io_read
     Integer( Kind = offset_kind ) :: top_skip
 
     Real( Kind = wp ),    Dimension( : ), Allocatable :: pda
@@ -805,15 +830,17 @@ Contains
     Character( Len = 8 ), Dimension( : ), Allocatable :: chbuf
     Integer,              Dimension( : ), Allocatable :: iwrk
     Real( Kind = wp ),    Dimension( : ), Allocatable :: axx,ayy,azz, &
-      bxx,byy,bzz, &
-      cxx,cyy,czz
+                                                         bxx,byy,bzz, &
+                                                         cxx,cyy,czz
 
     Character( Len = 256) :: message
     Character( Len = 256) :: messages(3)
 
-    safe  = .true.
-    l_his = .false.
-    l_xtr = .false.
+
+    safe  = .true.  ! we start safe
+    l_his = .false. ! no HISTORY reading
+    l_xtr = .false. ! no CONFIG cell extremes needed
+
     ! image conditions not compliant with DD and link-cell
 
     If (config%imcon == 4 .or. config%imcon == 5 .or. config%imcon == 7) Call error(300)
@@ -863,7 +890,7 @@ Contains
     ! Approximate density and mxatms
 
     dens = Real(megatm,wp) / volm
-    config%mxatms = Max(1 , Nint( (dvar**1.7_wp) * dens*vcell * Real((nlx+3)*(nly+3)*(nlz+3),wp)))
+    config%mxatms = 10 * Max(1 , Nint( (dvar**1.7_wp) * dens*vcell * Real((nlx+3)*(nly+3)*(nlz+3),wp)))
 
     ! Allocate necessary arrays to read CONFIG
 
@@ -1160,7 +1187,7 @@ Contains
           If (.not.safe) Then
             Write(messages(1),'(a,i0)') 'next error due to maximum number of atoms per domain set to : ', config%mxatms
             Write(messages(2),'(2(a,i0))') 'but maximum & minumum numbers of atoms per domain asked for : ', &
-              max_fail, ' & ', min_fail
+                                            max_fail, ' & ', min_fail
             Write(messages(3),'(a,i0)') 'estimated densvar value for passing this stage safely is : ', &
               Ceiling((dvar*(Real(max_fail,wp)/Real(config%mxatms,wp))**(1.0_wp/1.7_wp)-1.0_wp)*100.0_wp)
             Call info(messages,3,.true.)
@@ -1365,9 +1392,9 @@ Contains
     pda_ave=pda_ave/Real(comm%mxnode,wp)
 
     ! define dens0 & dens
-    dens0=pda_max/vcell      ! maximum local density
-   dens =pda_dom_max/vcell  ! maximum domain density
 
+    dens0=pda_max/vcell      ! maximum local density
+    dens =pda_dom_max/vcell  ! maximum domain density
 
    Deallocate (pda, Stat=fail(1))
    If (fail(1) > 0) Then
@@ -1396,6 +1423,9 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - i.j.bush & i.t.todorov march 2016
+    ! amended   - i.t.todorov february 2018 - non-fast read fix
+    ! amended   - i.t.todorov september 2018 - record initialisation
+    !
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -1405,37 +1435,43 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-    Type( io_type ), Intent( InOut ) :: io
+    Type( io_type ),                   Intent( InOut ) :: io
     Logical,                           Intent( In    ) :: l_ind,strict,l_his,fast,l_xtr
     Integer,                           Intent( In    ) :: levcfg,megatm,fh
-    Integer( Kind = offset_kind ), Intent( In    ) :: top_skip
+    Integer( Kind = offset_kind ),     Intent( In    ) :: top_skip
     Real( Kind = wp ),                 Intent( In    ) :: dvar
     Real( Kind = wp ),                 Intent(   Out ) :: xhi,yhi,zhi
-    Type( configuration_type ), Intent( InOut ) :: config
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( file_type ), Intent( InOut ) :: files(:)
+    Type( configuration_type ),        Intent( InOut ) :: config
+    Type( domains_type ),              Intent( In    ) :: domain
+    Type( file_type ),                 Intent( InOut ) :: files(:)
     Type( comms_type ),                Intent( InOut ) :: comm
 
     Logical                :: safe,do_read
     Character( Len = 200 ) :: record
     Character( Len = 40  ) :: word,forma
     Integer                :: fail(1:8),i,j,k,max_fail,min_fail, &
-      idm,ipx,ipy,ipz,indatm,            &
-      n_read_procs_use,per_read_proc,    &
-      my_read_proc_num,ats_per_proc,     &
-      recs_per_at,recs_per_proc,         &
-      wp_vals_per_at,n_loc,              &
-      to_read,which_read_proc,this_base_proc
+                              idm,ipx,ipy,ipz,indatm,            &
+                              n_read_procs_use,per_read_proc,    &
+                              my_read_proc_num,ats_per_proc,     &
+                              recs_per_at,recs_per_proc,         &
+                              wp_vals_per_at,n_loc,              &
+                              to_read,which_read_proc,this_base_proc
     Integer( Kind = li )   :: n_sk,n_ii,n_jj
     Real( Kind = wp )      :: rcell(1:9),det,sxx,syy,szz
 
+
+    Integer :: ierr
+
+    Character( Len =  256 )  ::  message
+    Character( Len =  256 )  ::  messages(3)
+
     ! Some parameters and variables needed by io interfaces
 
-    Integer                           :: io_read
-    Integer                           :: recsz, batsz
+    Integer                       :: io_read
+    Integer                       :: recsz, batsz
     Integer( Kind = offset_kind ) :: rec_mpi_io, n_skip
-    Integer                           :: this_rec_buff, recs_to_read
-    Integer                           :: n_ats_in_file
+    Integer                       :: this_rec_buff, recs_to_read
+    Integer                       :: n_ats_in_file
 
     ! netCDF
 
@@ -1444,8 +1480,8 @@ Contains
     Character( Len = 8 ), Dimension( : ),    Allocatable :: chbuf
     Integer,              Dimension( : ),    Allocatable :: iwrk
     Real( Kind = wp ),    Dimension( : ),    Allocatable :: axx_read,ayy_read,azz_read, &
-      bxx_read,byy_read,bzz_read, &
-      cxx_read,cyy_read,czz_read
+                                                            bxx_read,byy_read,bzz_read, &
+                                                            cxx_read,cyy_read,czz_read
 
     Character( Len = 8 ), Dimension( : ),    Allocatable :: chbuf_read,chbuf_scat
     Integer,              Dimension( : ),    Allocatable :: iwrk_read,iwrk_scat
@@ -1458,10 +1494,6 @@ Contains
     Real( Kind = wp ),    Dimension( :, : ), Allocatable :: scatter_buffer
 
     Character( Len = 1 ), Dimension( :, : ), Allocatable :: rec_buff
-    Integer :: ierr
-
-    Character( Len =  256 )  ::  message
-    Character( Len =  256 )  ::  messages(3)
 
     ! Get reading method, total number of I/O heads and buffer size
 
@@ -1520,7 +1552,7 @@ Contains
     If (do_read) Then
 
       n_skip = Int(recs_per_at,offset_kind) * Int(first_at(my_read_proc_num),offset_kind) + &
-        top_skip-Int(1,offset_kind)
+               top_skip-Int(1,offset_kind)
       If (.not.fast) Then
         n_sk=Int(n_skip,li)
         n_jj=73*batsz ! Assuming average max line length of 73
@@ -1554,9 +1586,9 @@ Contains
       ! Allocate record buffer, reading buffers, scatter buffers and indexing arrays
 
       If (io_read /= IO_READ_NETCDF) Then
-        Allocate (rec_buff(1:recsz,1:batsz),                                  Stat=fail(1))
+        Allocate (rec_buff(1:recsz,1:batsz),                                   Stat=fail(1))
       Else
-        Allocate (rec_buff(1:Len( chbuf_read ),1:batsz),                      Stat=fail(1))
+        Allocate (rec_buff(1:Len( chbuf_read ),1:batsz),                       Stat=fail(1))
       End If
       Allocate (chbuf_read(1:batsz),iwrk_read(1:batsz),                        Stat=fail(2))
       Allocate (axx_read(1:batsz),ayy_read(1:batsz),azz_read(1:batsz),         Stat=fail(3))
@@ -2052,6 +2084,7 @@ Contains
     ! author    - i.t.todorov february 2014
     ! contrib   - i.j.bush april 2010
     ! contrib   - a.m.elena february 2017
+    !
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -2060,15 +2093,15 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( io_type ), Intent( InOut ) :: io
-    Integer,              Intent( In    ) :: megatm
-    Real( Kind = wp ),    Intent( In    ) :: dvar
-    Integer,              Intent(   Out ) :: levcfg
-    Real( Kind = wp ),    Intent(   Out ) :: xhi,yhi,zhi
+    Type( io_type ),            Intent( InOut ) :: io
+    Integer,                    Intent( In    ) :: megatm
+    Real( Kind = wp ),          Intent( In    ) :: dvar
+    Integer,                    Intent(   Out ) :: levcfg
+    Real( Kind = wp ),          Intent(   Out ) :: xhi,yhi,zhi
     Type( configuration_type ), Intent( InOut ) :: config
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( file_type ), Intent( InOut ) :: files(:)
-    Type( comms_type ),   Intent( InOut ) :: comm
+    Type( domains_type ),       Intent( In    ) :: domain
+    Type( file_type ),          Intent( InOut ) :: files(:)
+    Type( comms_type ),         Intent( InOut ) :: comm
 
     Character( Len = 200 ) :: record
     Character( Len = 40  ) :: word,fname
@@ -2078,16 +2111,16 @@ Contains
 
     ! Some parameters and variables needed by io interfaces
 
-    Integer                           :: recsz  ! default record size
-    Integer                           :: fh, io_read
+    Integer                       :: recsz  ! default record size
+    Integer                       :: fh, io_read
     Integer( Kind = offset_kind ) :: top_skip
 
-    safe  = .True.
-    l_ind = .False.
-    strict = .False.
-    l_his = .False.
-    l_xtr = .True.
-    recsz = 73
+    safe   = .True.  ! we start safe
+    l_ind  = .False. ! no indeces needed
+    strict = .False. ! not in a strict mode
+    l_his  = .False. ! not reading history
+    l_xtr  = .True.  ! seeking extreme cell dimensions
+    recsz  = 73      ! ASCII record size for CONFIG
 
 
     ! Get type of I/O for reading
@@ -2417,6 +2450,7 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov february 2015
+    !
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -2425,15 +2459,16 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( io_type ), Intent( InOut ) :: io
+    Type( io_type ),            Intent( InOut ) :: io
     Type( configuration_type ), Intent( InOut ) :: config
-    Integer               :: i,step
-    Real( Kind = wp )     :: rcell(1:9),det,uuu,vvv,www,tstep,time
-    Type( development_type ), Intent( In    ) :: devel
-    Type( netcdf_param ), Intent( In    ) :: netcdf
-    Type( comms_type ), Intent( InOut ) :: comm
+    Type( development_type ),  Intent( In    ) :: devel
+    Type( netcdf_param ),      Intent( In    ) :: netcdf
+    Type( comms_type ),        Intent( InOut ) :: comm
 
     Type( file_type ) :: cfgscl
+    Integer           :: i,step
+    Real( Kind = wp ) :: rcell(1:9),det,uuu,vvv,www,tstep,time
+
 
     ! Get the inverse cell matrix
 
@@ -2472,7 +2507,6 @@ Contains
 
   End Subroutine scale_config
 
-
   Subroutine write_config(config,cfile,levcfg,step,tstep,io,time,netcdf,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2482,6 +2516,7 @@ Contains
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov february 2015
     ! contrib   - i.j.bush
+    !
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -2489,30 +2524,33 @@ Contains
     !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    Type( io_type ), Intent( InOut ) :: io
-    Type( file_type ), Intent( InOut ) :: cfile
-    Integer,              Intent( In    ) :: levcfg,step
-    Real( Kind = wp ),    Intent( In    ) :: tstep,time
-    Type( netcdf_param ), Intent( In    ) :: netcdf
+
+    Type( io_type ),            Intent( InOut ) :: io
+    Type( file_type ),          Intent( InOut ) :: cfile
+    Integer,                    Intent( In    ) :: levcfg,step
+    Real( Kind = wp ),          Intent( In    ) :: tstep,time
+    Type( netcdf_param ),       Intent( In    ) :: netcdf
     Type( configuration_type ), Intent( InOut ) :: config
-    Type( comms_type ),   Intent( InOut ) :: comm
+    Type( comms_type ),         Intent( InOut ) :: comm
 
-    Logical               :: ready
+    Logical                 :: ready
     Character( Len = 1024 ) :: fname
-    Integer(Kind=li)      :: rec,rec1     ! record line
+    Integer(Kind=li)        :: rec,rec1     ! record line
 
-    Integer               :: fail(1:4),i,k,jj,jdnode,jatms
+    Integer                 :: fail(1:4),i,k,jj,jdnode,jatms
+    Integer                 :: ierr
+    Character ( Len = 256 ) ::  message
 
-    Real( Kind = wp )     :: celprp(1:10),cell_vecs(1:3,1:3)
-    Real( Kind = wp )     :: lengths(1:3), angles(1:3)
+    Real( Kind = wp )       :: celprp(1:10),cell_vecs(1:3,1:3)
+    Real( Kind = wp )       :: lengths(1:3), angles(1:3)
 
     ! Some parameters and variables needed by io interfaces
 
-    Integer                           :: fh
-    Integer                           :: io_write,batsz
+    Integer                       :: fh
+    Integer                       :: io_write,batsz
     Integer( Kind = offset_kind ) :: rec_mpi_io
-    Character( Len = recsz )          :: record
-    Character                         :: lf
+    Character( Len = recsz )      :: record
+    Character                     :: lf
 
     Character( Len = 1 ), Dimension( :, : ), Allocatable :: chbat
     Character( Len = 8 ), Dimension( : ),    Allocatable :: chbuf
@@ -2520,9 +2558,6 @@ Contains
     Real( Kind = wp ),    Dimension( : ),    Allocatable :: axx,ayy,azz
     Real( Kind = wp ),    Dimension( : ),    Allocatable :: bxx,byy,bzz
     Real( Kind = wp ),    Dimension( : ),    Allocatable :: cxx,cyy,czz
-
-    Integer :: ierr
-    Character ( Len = 256 )  ::  message
 
     ! Get write method buffer size and line feed character
 
@@ -3137,6 +3172,7 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov october 2012
+    !
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -3146,11 +3182,11 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Real( Kind = wp ), Dimension( : ), Intent( In    ) :: txx,tyy,tzz
-    Type(configuration_type),            Intent( InOut ) :: config
+    Type(configuration_type),          Intent( InOut ) :: config
     Real( Kind = wp ), Dimension( : ), Intent(   Out ) :: com
-    Type(comms_type),                    Intent( InOut ) :: comm
+    Type(comms_type),                  Intent( InOut ) :: comm
 
-    Integer                 :: i
+    Integer :: i
 
     ! total system mass
 
@@ -3178,9 +3214,7 @@ Contains
     Call gsum(comm,com)
     If (config%totmas >= zero_plus) com = com/config%totmas
 
-
   End Subroutine getcom_arrays
-
 
   Subroutine getcom_parts(config,com,comm)
 
@@ -3190,6 +3224,7 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov october 2012
+    !
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -3198,11 +3233,11 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( configuration_type ),          Intent( InOut    ) :: config
+    Type( configuration_type ),          Intent( InOut ) :: config
     Real( Kind = wp ), Dimension( 1:3 ), Intent(   Out ) :: com
-    Type(comms_type), Intent ( InOut )                   :: comm
+    Type(comms_type),                    Intent( InOut ) :: comm
 
-    Integer                 :: i
+    Integer :: i
 
     ! total system mass
 
@@ -3246,19 +3281,16 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
-    Integer,           Intent( In    ) :: istart,ifinish
-
-    Real( Kind = wp ), Intent(   Out ) :: cmm(0:3)
+    Integer,                  Intent( In    ) :: istart,ifinish
+    Real( Kind = wp ),        Intent(   Out ) :: cmm(0:3)
     Type(configuration_type), Intent( InOut ) :: config
-    Type(comms_type), Intent ( InOut ) :: comm
+    Type(comms_type),         Intent( InOut ) :: comm
 
-    Integer           :: fail,i,j,k
-    Real( Kind = wp ) :: mass,r(1:3)
+    Character ( Len = 256 ) ::  message
+    Integer                 :: fail,i,j,k
+    Real( Kind = wp )       :: mass,r(1:3)
 
     Real( Kind = wp ), Allocatable :: mol(:,:)
-
-    Character ( Len = 256 )   ::  message
 
     fail = 0
     Allocate (mol(1:(ifinish-istart+1),0:3), Stat = fail)
@@ -3321,7 +3353,6 @@ Contains
 
   End Subroutine getcom_mol
 
-
   Subroutine freeze_atoms(config)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3334,12 +3365,18 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type( configuration_type ), Intent( InOut ) :: config
+
     Integer :: i
 
     Do i=1,config%natms
       If (config%lfrzn(i) /= 0) Then
-        config%vxx(i) = 0.0_wp ; config%vyy(i) = 0.0_wp ; config%vzz(i) = 0.0_wp
-        config%parts(i)%fxx = 0.0_wp ; config%parts(i)%fyy = 0.0_wp ; config%parts(i)%fzz = 0.0_wp
+        config%vxx(i) = 0.0_wp
+        config%vyy(i) = 0.0_wp
+        config%vzz(i) = 0.0_wp
+
+        config%parts(i)%fxx = 0.0_wp
+        config%parts(i)%fyy = 0.0_wp
+        config%parts(i)%fzz = 0.0_wp
       End If
     End Do
 
@@ -3350,23 +3387,23 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine for translating the origin of the MD box as
-    ! defined in CONFIG by the (devel%xorg,devel%yorg,devel%zorg) vector and saving it in
-    ! CFGORG
+    ! defined in CONFIG by the (devel%xorg,devel%yorg,devel%zorg) vector
+    ! and saving it in CFGORG
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov february 2015
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( io_type ), Intent( InOut ) :: io
+    Type( io_type ),            Intent( InOut ) :: io
     Type( configuration_type ), Intent( InOut ) :: config
-    Type( development_type ), Intent( In    ) :: devel
-    Type( netcdf_param ), Intent( In    ) :: netcdf
-    Type( comms_type ), Intent( InOut ) :: comm
+    Type( development_type ),   Intent( In    ) :: devel
+    Type( netcdf_param ),       Intent( In    ) :: netcdf
+    Type( comms_type ),         Intent( InOut ) :: comm
 
     Type( file_type ) :: cfgorg
-    Integer               :: i,step
-    Real( Kind = wp )     :: tstep,time
+    Integer           :: i,step
+    Real( Kind = wp ) :: tstep,time
 
     ! Translate
 
@@ -3384,10 +3421,11 @@ Contains
 
     Call cfgorg%init('CFGORG')
     step  = 0        ! no steps done
-    tstep  = 0.0_wp   ! no step exists
-    time   = 0.0_wp   ! time is not relevant
+    tstep = 0.0_wp   ! no step exists
+    time  = 0.0_wp   ! time is not relevant
 
     Call write_config(config,cfgorg,devel%lvcforg,step,tstep,io,time,netcdf,comm)
 
   End Subroutine origin_config
+
 End Module configuration
