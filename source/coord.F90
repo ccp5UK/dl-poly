@@ -19,7 +19,7 @@ Module coord
     Integer :: ncoordpairs,coordinterval,coordstart,coordops,ncoorddis,ncoordab,maxlist=1000
     real(wp), allocatable :: arraycuts(:),discuts(:)
     character( Len = 8 ), allocatable :: arraypairs(:,:),disatms(:)
-    Integer, allocatable :: coordlist(:,:),icoordlist(:,:),defectlist(:)
+    Integer, allocatable :: coordlist(:,:),icoordlist(:,:),defectlist(:),adfcoordlist(:,:)
     integer, allocatable :: ltype(:,:),ltypeA(:,:),ltypeB(:,:),cstat(:,:),disltype(:)
     Logical :: coordon
     real(wp) :: coordis 
@@ -51,6 +51,7 @@ contains
     allocate(T%coordlist(0:n,1:m))
     allocate(T%icoordlist(0:n,1:m))
     allocate(T%defectlist(0:m))
+    allocate(T%adfcoordlist(0:n,1:m))
   end subroutine init_coordlist
 
   subroutine clean_coord(T)
@@ -68,6 +69,9 @@ contains
     if (allocated(T%icoordlist)) then
       deallocate(T%icoordlist)
     end if
+    If (allocated(T%adfcoordlist)) then
+      deallocate(T%adfcoordlist)
+    end if
     if (allocated(T%defectlist)) then
       deallocate(T%defectlist)
     end if
@@ -79,7 +83,7 @@ contains
     Type(comms_type), Intent(InOut) :: comm
     Type(flow_type), Intent(In) :: flow
     Type(site_type), Intent(In) :: sites
-    Type(coord_type), Intent(InOut) :: crd 
+    Type(coord_type), Intent(InOut) :: crd
     integer :: i,ii,j,jj,k,kk, ncoord,en,ierr,m,mcoord,lgcoord,nmax,ncb !ncb size coordbuff
     real :: rcut,rab
     Character(len=8) :: aux 
@@ -88,7 +92,6 @@ contains
     Logical :: newatom,itsopen
 
     !Check whether option is called
-
     If(crd%coordon .Eqv. .False.)Return
     If(crd%ncoordpairs==0)Return
     If(crd%coordstart>flow%step)Return
@@ -104,9 +107,15 @@ contains
       k=neigh%list(0,j)
       Do i=1,k
         kk=neigh%list(i,j)
+     
+
+
         rab = (config%parts(j)%xxx-config%parts(kk)%xxx)**2+(config%parts(j)%yyy-config%parts(kk)%yyy)**2 &
               + (config%parts(j)%zzz-config%parts(kk)%zzz)**2
+!        if(j.eq.2)then
+!        print*,j,kk,rab
 
+!        endif        
         rcut=0.00
 
         Do ii= 1 , crd%ncoordpairs
@@ -355,6 +364,7 @@ contains
 
     do i=1,config%natms
       do j=1,crd%coordlist(0,i)
+        crd%adfcoordlist(j,i)=crd%coordlist(j,i)
         crd%coordlist(j,i)=config%ltg(crd%coordlist(j,i))
       end do
     end do

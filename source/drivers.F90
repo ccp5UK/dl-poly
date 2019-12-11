@@ -130,7 +130,10 @@ Module drivers
   ! COORD MODULE
 
   Use coord, Only : coord_type,init_coord_list,checkcoord
-
+  
+  ! ADF MODULE
+  Use angular_distribution, Only : adf_type,adf_calculate
+ 
   Implicit None
   Private
 
@@ -192,7 +195,7 @@ Contains
   Subroutine w_calculate_forces(cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
       inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
       minim,mpoles,ext_field,rigid,electro,domain,kim_data,msd_data,tmr,files,&
-      green,devel,ewld,met,seed,thermo,crd,comm)
+      green,devel,ewld,met,seed,thermo,crd,adf,comm)
 
     Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( io_type ), Intent( InOut ) :: io
@@ -233,7 +236,8 @@ Contains
     Type( seed_type ), Intent( InOut ) :: seed
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type(coord_type), Intent( InOut ) :: crd
-    Type(comms_type)    ,   Intent( InOut ) :: comm
+    Type(adf_type), Intent(InOut) :: adf
+    Type(comms_type),   Intent( InOut ) :: comm
 
     Logical :: ltmp
     Integer :: i
@@ -1372,7 +1376,7 @@ Contains
       pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
       netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,files,tmr,&
       minim,impa,green,ewld,electro,dfcts,&
-      msd_data,tersoffs,tether,threebody,vdws,devel,met,crd,comm)
+      msd_data,tersoffs,tether,threebody,vdws,devel,met,crd,adf,comm)
 
     Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( ttm_type ), Intent( InOut ) :: ttm
@@ -1420,7 +1424,7 @@ Contains
     Type( development_type ), Intent( InOut ) :: devel
     Type( metal_type ), Intent( InOut ) :: met
     Type( coord_type ), Intent( InOut ) :: crd 
- 
+    Type( adf_type ), Intent( InOut) :: adf 
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
@@ -1533,7 +1537,7 @@ Contains
 
       Call w_calculate_forces(cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
         inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
-        minim,mpoles,ext_field,rigid,electro,domain,kim_data,msd_data,tmr,files,green,devel,ewld,met,seed,thermo,crd,comm)
+        minim,mpoles,ext_field,rigid,electro,domain,kim_data,msd_data,tmr,files,green,devel,ewld,met,seed,thermo,crd,adf,comm)
 
       ! Calculate physical quantities, collect statistics and report at t=0
 
@@ -1543,7 +1547,7 @@ Contains
        call crd%init_coordlist(neigh%max_list,cnfig%mxatms)
        Call init_coord_list(cnfig,neigh,crd,sites,flow,comm)
        Call checkcoord(cnfig,neigh,crd,sites,flow,stat,impa,comm)
-       
+       Call adf_calculate(cnfig,sites,crd,adf) 
       End If
 
       ! DO THAT ONLY IF 0<flow%step<=flow%run_steps AND THIS IS AN OLD JOB (flow%newjob=.false.)
@@ -1591,6 +1595,7 @@ Contains
         End If
          Call init_coord_list(cnfig,neigh,crd,sites,flow,comm)
          Call checkcoord(cnfig,neigh,crd,sites,flow,stat,impa,comm)
+         Call adf_calculate(cnfig,sites,crd,adf)
       End If ! DO THAT ONLY IF 0<flow%step<=flow%run_steps AND THIS IS AN OLD JOB (flow%newjob=.false.)
 
       1000 Continue ! Escape forces evaluation at t=0 when flow%step=flow%run_steps=0 and flow%newjob=.false.
@@ -2051,7 +2056,7 @@ Contains
   Subroutine w_replay_historf(cnfig,io,rsdc,flow,cshell,cons,pmf,stat,thermo,plume, &
       msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
       fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj, &
-      kim_data,files,dfcts,tmr,tether,threebody,pois,green,ewld,devel,met,crd,comm)
+      kim_data,files,dfcts,tmr,tether,threebody,pois,green,ewld,devel,met,crd,adf,comm)
 
     Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( io_type ), Intent( InOut ) :: io
@@ -2096,6 +2101,7 @@ Contains
     Type( metal_type), Intent( InOut ) :: met
     Type( development_type) , Intent( InOut ) :: devel
     Type( coord_type), Intent(InOut) :: crd
+    Type( adf_type), Intent(InOut) :: adf
     Type( comms_type ), Intent( InOut ) :: comm
 
     Real(Kind=wp) :: tsths
@@ -2238,7 +2244,7 @@ Contains
           Call w_calculate_forces(cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral, &
             inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf, &
             netcdf,minim,mpoles,ext_field,rigid,electro,domain,kim_data,msd_data,tmr,files,&
-            green,devel,ewld,met,seed,thermo,crd,comm)
+            green,devel,ewld,met,seed,thermo,crd,adf,comm)
 
 
           ! Evaluate kinetics if available

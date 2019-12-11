@@ -145,6 +145,7 @@ program dl_poly
   Use flow_control, Only : flow_type,EVB,FFS,MD
   Use kinetics, Only : cap_forces
   Use coord, Only : coord_type
+  Use angular_distribution, Only : adf_type
   Use timer, Only  : timer_type
   Use meta, Only : molecular_dynamics
 
@@ -197,6 +198,7 @@ program dl_poly
   Type( rsd_type ), Allocatable, Target :: rsdsc(:)
   Type( file_type ), Allocatable :: files(:,:)
   Type( coord_type ), Allocatable :: crd(:)
+  Type( adf_type ), Allocatable :: adf(:)
 
   ! Local Variables
   character( len = 1024 ) :: control_filename
@@ -224,7 +226,7 @@ program dl_poly
       green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion,tether, &
       threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs,fourbody, &
       rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow,seed,traj, &
-      kim_data,config,ios,ttms,rsdsc,files,control_filename,crd)
+      kim_data,config,ios,ttms,rsdsc,files,control_filename,crd,adf)
   Else If (flow(1)%simulation_method == EVB) Then 
     write(0,*) "simulation type: EVB" 
   Else If (flow(1)%simulation_method == FFS) Then 
