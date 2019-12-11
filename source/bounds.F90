@@ -1094,7 +1094,6 @@ Contains
       stats%mxnstk*stats%mxstak, mxgrid, rdf%max_grid,                                        &
       rigid%max_list*Max(rigid%max_rigid,rigid%max_type),                                     &
       rigid%max_type*(4+3*rigid%max_list), 10000 )
-
     ! reset (increase) link-cell maximum (neigh%max_cell)
     ! if tersoff or three- or four-body potentials exist
 

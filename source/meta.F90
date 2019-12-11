@@ -5,74 +5,75 @@ Module meta
 !>
 !> Author - J. Madge October 2018
 !> contrib - a.m.elena march 2019 updated deallocate uniform routine
-  Use, Intrinsic :: iso_fortran_env, Only : error_unit
-  Use kinds, Only : wi,wp
-  Use comms, Only : comms_type, init_comms, exit_comms, gsync, gtime,gsum
-  Use development, Only : development_type,scan_development,build_info
-  Use netcdf_wrap, Only : netcdf_param
-  Use domains, Only : domains_type
-  Use site, Only : site_type
-  Use constants, Only : DLP_RELEASE,DLP_VERSION
-  Use configuration, Only : configuration_type,check_config, scale_config, origin_config, freeze_atoms
-  Use control, Only : read_control,scan_control_output,scan_control_io
-  Use neighbours, Only : neighbours_type
-  Use core_shell, Only : core_shell_type
-  Use pmf, only : pmf_type
-  Use rigid_bodies, Only : rigid_bodies_type
-  Use minimise, Only : minimise_type
-  Use tethers, Only : tethers_type
-  Use bonds, Only : bonds_type
-  Use angles, Only : angles_type
-  Use dihedrals, Only : dihedrals_type
-  Use inversions, Only : inversions_type
-  Use three_body, Only : threebody_type
-  Use mpole, Only : mpole_type,POLARISATION_CHARMM
-  Use vdw, Only : vdw_type
-  Use metal, Only : metal_type
-  Use tersoff, Only : tersoff_type
-  Use four_body, Only : four_body_type
-  Use kim, Only : kim_type,kim_setup
-  Use plumed, Only : plumed_type,plumed_init,plumed_finalize
-  Use external_field, Only : external_field_type
-  Use rdfs, Only : rdf_type
-  Use z_density, Only : z_density_type
-  Use statistics, Only : stats_type,statistics_result
-  Use greenkubo, Only : greenkubo_type
-  Use msd, Only : msd_type
-  Use drivers, Only : w_md_vv, w_replay_historf,w_replay_history
+  Use,                 Intrinsic :: iso_fortran_env, Only : error_unit
+
+  Use kinds,           Only : wi,wp
+  Use comms,           Only : comms_type, init_comms, exit_comms, gsync, gtime,gsum
+  Use development,     Only : development_type,scan_development,build_info
+  Use netcdf_wrap,     Only : netcdf_param
+  Use domains,         Only : domains_type
+  Use site,            Only : site_type
+  Use constants,       Only : DLP_RELEASE,DLP_VERSION
+  Use configuration,   Only : configuration_type,check_config, scale_config, origin_config, freeze_atoms
+  Use control,         Only : read_control,scan_control_output,scan_control_io
+  Use neighbours,      Only : neighbours_type
+  Use core_shell,      Only : core_shell_type
+  Use pmf,             only : pmf_type
+  Use rigid_bodies,    Only : rigid_bodies_type
+  Use minimise,        Only : minimise_type
+  Use tethers,         Only : tethers_type
+  Use bonds,           Only : bonds_type
+  Use angles,          Only : angles_type
+  Use dihedrals,       Only : dihedrals_type
+  Use inversions,      Only : inversions_type
+  Use three_body,      Only : threebody_type
+  Use mpole,           Only : mpole_type,POLARISATION_CHARMM
+  Use vdw,             Only : vdw_type
+  Use metal,           Only : metal_type
+  Use tersoff,         Only : tersoff_type
+  Use four_body,       Only : four_body_type
+  Use kim,             Only : kim_type,kim_setup
+  Use plumed,          Only : plumed_type,plumed_init,plumed_finalize
+  Use external_field,  Only : external_field_type
+  Use rdfs,            Only : rdf_type
+  Use z_density,       Only : z_density_type
+  Use statistics,      Only : stats_type,statistics_result
+  Use greenkubo,       Only : greenkubo_type
+  Use msd,             Only : msd_type
+  Use drivers,         Only : md_vv, replay_historf, replay_history
   Use errors_warnings, Only : init_error_system,info, warning
-  Use ewald, Only : ewald_type
-  Use impacts, Only : impact_type
-  Use defects, Only : defects_type
-  Use halo, Only : set_halo_particles
-  Use deport_data, Only : mpoles_rotmat_set_halo
-  Use temperature, Only : set_temperature
-  Use rsds, Only : rsd_type
-  Use trajectory, Only : trajectory_write,trajectory_type
-  Use system, Only : system_revive,system_expand,system_init
-  Use build_excl, Only : build_excl_intra
-  Use build_book, Only : build_book_intra
-  Use ffield, Only : read_field,report_topology
-  Use bounds, Only : set_bounds
-  Use build_tplg, Only : build_tplg_intra
-  Use build_chrm, Only : build_chrm_intra
-  Use thermostat, Only : thermostat_type
-  Use timer, Only  : timer_type, time_elapsed,timer_report, start_timer, stop_timer, init_timer_system
-  Use poisson, Only : poisson_type
-  Use analysis, Only : analysis_result
-  Use constraints, Only : constraints_type
-  Use electrostatic, Only : electrostatic_type,ELECTROSTATIC_EWALD
-  Use numerics, Only : seed_type
-  Use io, Only : io_type
-  Use ttm, Only : ttm_type, ttm_system_init,ttm_system_revive,ttm_table_scan,&
-    ttm_table_read,allocate_ttm_arrays
-  Use ttm_utils, Only : printElecLatticeStatsToFile,printLatticeStatsToFile,&
-    peakProfilerElec,peakProfiler
-  Use ttm_track, Only : ttm_ion_temperature
-  Use filename, Only : file_type,default_filenames,FILE_CONTROL,FILE_OUTPUT, &
-    FILE_STATS,FILENAME_SIZE
-  Use flow_control, Only : flow_type
-  Use kinetics, Only : cap_forces
+  Use ewald,           Only : ewald_type
+  Use impacts,         Only : impact_type
+  Use defects,         Only : defects_type
+  Use halo,            Only : set_halo_particles
+  Use deport_data,     Only : mpoles_rotmat_set_halo
+  Use temperature,     Only : set_temperature
+  Use rsds,            Only : rsd_type
+  Use trajectory,      Only : trajectory_write,trajectory_type
+  Use system,          Only : system_revive,system_expand,system_init
+  Use build_excl,      Only : build_excl_intra
+  Use build_book,      Only : build_book_intra
+  Use ffield,          Only : read_field,report_topology
+  Use bounds,          Only : set_bounds
+  Use build_tplg,      Only : build_tplg_intra
+  Use build_chrm,      Only : build_chrm_intra
+  Use thermostat,      Only : thermostat_type
+  Use timer,           Only : timer_type, time_elapsed,timer_report, start_timer, stop_timer, init_timer_system
+  Use poisson,         Only : poisson_type
+  Use analysis,        Only : analysis_result
+  Use constraints,     Only : constraints_type
+  Use electrostatic,   Only : electrostatic_type,ELECTROSTATIC_EWALD
+  Use numerics,        Only : seed_type
+  Use io,              Only : io_type
+  Use ttm,             Only : ttm_type, ttm_system_init,ttm_system_revive,ttm_table_scan,&
+    ttm_table_read,    allocate_ttm_arrays
+  Use ttm_utils,       Only : printElecLatticeStatsToFile,printLatticeStatsToFile,&
+    peakProfilerElec,  peakProfiler
+  Use ttm_track,       Only : ttm_ion_temperature
+  Use filename,        Only : file_type,default_filenames,FILE_CONTROL,FILE_OUTPUT, &
+    FILE_STATS,        FILENAME_SIZE,FILE_CURRENT
+  Use flow_control,    Only : flow_type
+  Use kinetics,        Only : cap_forces
   Implicit None
   Private
 
@@ -87,55 +88,55 @@ Contains
     fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow, &
     seed,traj,kim_data,config,ios,ttms,rsdsc,files,control_filename)
 
-    Type(comms_type), Intent(InOut) :: dlp_world(0:)
-    Type(thermostat_type), Allocatable, Intent(InOut) :: thermo(:)
-    Type(ewald_type), Allocatable, Intent(InOut) :: ewld(:)
-    Type(timer_type), Allocatable, Intent(InOut) :: tmr(:)
-    Type(development_type), Allocatable, Intent(InOut) :: devel(:)
-    Type(stats_type), Allocatable, Intent(InOut) :: stats(:)
-    Type(greenkubo_type), Allocatable, Intent(InOut) :: green(:)
-    Type(plumed_type), Allocatable, Intent(InOut) :: plume(:)
-    Type(msd_type), Allocatable, Intent(InOut) :: msd_data(:)
-    Type(metal_type), Allocatable, Intent(InOut) :: met(:)
-    Type(poisson_type), Allocatable, Intent(InOut) :: pois(:)
-    Type(impact_type), Allocatable, Intent(InOut) :: impa(:)
-    Type(defects_type), Allocatable, Intent(InOut) :: dfcts(:,:)
-    Type(bonds_type), Allocatable, Intent(InOut) :: bond(:)
-    Type( angles_type ), Allocatable, Intent(InOut) :: angle(:)
-    Type( dihedrals_type ), Allocatable, Intent(InOut) :: dihedral(:)
-    Type( inversions_type ), Allocatable, Intent(InOut) :: inversion(:)
-    Type( tethers_type ), Allocatable, Intent(InOut) :: tether(:)
-    Type( threebody_type ), Allocatable, Intent(InOut) :: threebody(:)
-    Type( z_density_type ), Allocatable, Intent(InOut) :: zdensity(:)
-    Type( constraints_type ), Allocatable, Intent(InOut) :: cons(:)
-    Type( neighbours_type ), Allocatable, Intent(InOut) :: neigh(:)
-    Type( pmf_type ), Allocatable, Intent(InOut) :: pmfs(:)
-    Type( site_type ), Allocatable, Intent(InOut) :: sites(:)
-    Type( core_shell_type ), Allocatable, Intent(InOut) :: core_shells(:)
-    Type( vdw_type ), Allocatable, Intent(InOut) :: vdws(:)
-    Type( tersoff_type ), Allocatable, Intent(InOut) :: tersoffs(:)
-    Type( four_body_type ), Allocatable, Intent(InOut) :: fourbody(:)
-    Type( rdf_type ), Allocatable, Intent(InOut) :: rdf(:)
-    Type( netcdf_param ), Allocatable, Intent(InOut) :: netcdf(:)
-    Type( minimise_type ), Allocatable, Intent(InOut) :: minim(:)
-    Type( mpole_type ), Allocatable, Intent(InOut) :: mpoles(:)
-    Type( external_field_type ), Allocatable, Intent(InOut) :: ext_field(:)
-    Type( rigid_bodies_type ), Allocatable, Intent(InOut) :: rigid(:)
-    Type( electrostatic_type ), Allocatable, Intent(InOut) :: electro(:)
-    Type( domains_type ), Allocatable, Intent(InOut) :: domain(:)
-    Type( flow_type ), Allocatable, Intent(InOut) :: flow(:)
-    Type( seed_type ), Allocatable, Intent(InOut) :: seed(:)
-    Type( trajectory_type ), Allocatable, Intent(InOut) :: traj(:)
-    Type( kim_type ), Allocatable, Target, Intent(InOut) :: kim_data(:)
-    Type( configuration_type ), Allocatable, Intent(InOut) :: config(:)
-    Type( io_type), Allocatable, Intent(InOut) :: ios(:)
-    Type( ttm_type), Allocatable, Intent(InOut) :: ttms(:)
-    Type( rsd_type ), Allocatable, Target, Intent(InOut) :: rsdsc(:)
-    Type( file_type ), Allocatable, Intent(InOut) :: files(:,:)
+    Type(comms_type),                                 Intent(InOut) :: dlp_world(0:)
+    Type(thermostat_type),       Allocatable,         Intent(InOut) :: thermo(:)
+    Type(ewald_type),            Allocatable,         Intent(InOut) :: ewld(:)
+    Type(timer_type),            Allocatable,         Intent(InOut) :: tmr(:)
+    Type(development_type),      Allocatable,         Intent(InOut) :: devel(:)
+    Type(stats_type),            Allocatable,         Intent(InOut) :: stats(:)
+    Type(greenkubo_type),        Allocatable,         Intent(InOut) :: green(:)
+    Type(plumed_type),           Allocatable,         Intent(InOut) :: plume(:)
+    Type(msd_type),              Allocatable,         Intent(InOut) :: msd_data(:)
+    Type(metal_type),            Allocatable,         Intent(InOut) :: met(:)
+    Type(poisson_type),          Allocatable,         Intent(InOut) :: pois(:)
+    Type(impact_type),           Allocatable,         Intent(InOut) :: impa(:)
+    Type(defects_type),          Allocatable,         Intent(InOut) :: dfcts(:, :)
+    Type(bonds_type),            Allocatable,         Intent(InOut) :: bond(:)
+    Type( angles_type ),         Allocatable,         Intent(InOut) :: angle(:)
+    Type( dihedrals_type ),      Allocatable,         Intent(InOut) :: dihedral(:)
+    Type( inversions_type ),     Allocatable,         Intent(InOut) :: inversion(:)
+    Type( tethers_type ),        Allocatable,         Intent(InOut) :: tether(:)
+    Type( threebody_type ),      Allocatable,         Intent(InOut) :: threebody(:)
+    Type( z_density_type ),      Allocatable,         Intent(InOut) :: zdensity(:)
+    Type( constraints_type ),    Allocatable,         Intent(InOut) :: cons(:)
+    Type( neighbours_type ),     Allocatable,         Intent(InOut) :: neigh(:)
+    Type( pmf_type ),            Allocatable,         Intent(InOut) :: pmfs(:)
+    Type( site_type ),           Allocatable,         Intent(InOut) :: sites(:)
+    Type( core_shell_type ),     Allocatable,         Intent(InOut) :: core_shells(:)
+    Type( vdw_type ),            Allocatable,         Intent(InOut) :: vdws(:)
+    Type( tersoff_type ),        Allocatable,         Intent(InOut) :: tersoffs(:)
+    Type( four_body_type ),      Allocatable,         Intent(InOut) :: fourbody(:)
+    Type( rdf_type ),            Allocatable,         Intent(InOut) :: rdf(:)
+    Type( netcdf_param ),        Allocatable,         Intent(InOut) :: netcdf(:)
+    Type( minimise_type ),       Allocatable,         Intent(InOut) :: minim(:)
+    Type( mpole_type ),          Allocatable,         Intent(InOut) :: mpoles(:)
+    Type( external_field_type ), Allocatable,         Intent(InOut) :: ext_field(:)
+    Type( rigid_bodies_type ),   Allocatable,         Intent(InOut) :: rigid(:)
+    Type( electrostatic_type ),  Allocatable,         Intent(InOut) :: electro(:)
+    Type( domains_type ),        Allocatable,         Intent(InOut) :: domain(:)
+    Type( flow_type ),           Allocatable,         Intent(InOut) :: flow(:)
+    Type( seed_type ),           Allocatable,         Intent(InOut) :: seed(:)
+    Type( trajectory_type ),     Allocatable,         Intent(InOut) :: traj(:)
+    Type( kim_type ),            Allocatable, Target, Intent(InOut) :: kim_data(:)
+    Type( configuration_type ),  Allocatable,         Intent(InOut) :: config(:)
+    Type( io_type),              Allocatable,         Intent(InOut) :: ios(:)
+    Type( ttm_type),             Allocatable,         Intent(InOut) :: ttms(:)
+    Type( rsd_type ),            Allocatable, Target, Intent(InOut) :: rsdsc(:)
+    Type( file_type ),           Allocatable,         Intent(InOut) :: files(:, :)
 
-    Integer( Kind = wi ), Parameter :: TYPE_SIZE = 1
-    Type(comms_type) :: comm
-    Character( Len = 1024 ) :: control_filename
+    Integer(         Kind = wi ), Parameter :: TYPE_SIZE = 1
+    Type(comms_type)                        :: comm
+    Character(       Len = 1024 )           :: control_filename
 
     ! Allocate type arrays
     Call allocate_types_uniform(TYPE_SIZE,thermo,ewld,tmr,devel,stats, &
@@ -168,52 +169,52 @@ Contains
     vdws,tersoffs,fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro, &
     domain,flow,seed,traj,kim_data,config,ios,ttms,rsdsc,files,control_filename)
 
-    Type(comms_type), Intent(InOut) :: dlp_world(0:),comm
-    Type(thermostat_type), Intent(InOut) :: thermo
-    Type(ewald_type), Intent(InOut) :: ewld
-    Type(timer_type), Intent(InOut) :: tmr
-    Type(development_type), Intent(InOut) :: devel
-    Type(stats_type), Intent(InOut) :: stats
-    Type(greenkubo_type), Intent(InOut) :: green
-    Type(plumed_type), Intent(InOut) :: plume
-    Type(msd_type), Intent(InOut) :: msd_data
-    Type(metal_type), Intent(InOut) :: met
-    Type(poisson_type), Intent(InOut) :: pois
-    Type(impact_type), Intent(InOut) :: impa
-    Type(defects_type), Intent(InOut) :: dfcts(2)
-    Type(bonds_type), Intent(InOut) :: bond
-    Type( angles_type ), Intent(InOut) :: angle
-    Type( dihedrals_type ), Intent(InOut) :: dihedral
-    Type( inversions_type ), Intent(InOut) :: inversion
-    Type( tethers_type ), Intent(InOut) :: tether
-    Type( threebody_type ), Intent(InOut) :: threebody
-    Type( z_density_type ), Intent(InOut) :: zdensity
-    Type( constraints_type ), Intent(InOut) :: cons
-    Type( neighbours_type ), Intent(InOut) :: neigh
-    Type( pmf_type ), Intent(InOut) :: pmfs
-    Type( site_type ), Intent(InOut) :: sites
-    Type( core_shell_type ), Intent(InOut) :: core_shells
-    Type( vdw_type ), Intent(InOut) :: vdws
-    Type( tersoff_type ), Intent(InOut) :: tersoffs
-    Type( four_body_type ), Intent(InOut) :: fourbody
-    Type( rdf_type ), Intent(InOut) :: rdf
-    Type( netcdf_param ), Intent(InOut) :: netcdf
-    Type( minimise_type ), Intent(InOut) :: minim
-    Type( mpole_type ), Intent(InOut) :: mpoles
-    Type( external_field_type ), Intent(InOut) :: ext_field
-    Type( rigid_bodies_type ), Intent(InOut) :: rigid
-    Type( electrostatic_type ), Intent(InOut) :: electro
-    Type( domains_type ), Intent(InOut) :: domain
-    Type( flow_type ), Intent(InOut) :: flow
-    Type( seed_type ), Intent(InOut) :: seed
-    Type( trajectory_type ), Intent(InOut) :: traj
-    Type( kim_type ), Target, Intent(InOut) :: kim_data
-    Type( configuration_type ), Intent(InOut) :: config
-    Type( io_type), Intent(InOut) :: ios
-    Type( ttm_type), Intent(InOut) :: ttms
-    Type( rsd_type ), Target, Intent(InOut) :: rsdsc
-    Type( file_type ), Intent(InOut) :: files(FILENAME_SIZE)
-    character( len = 1024 ), Intent(In) :: control_filename
+    Type(comms_type),            Intent(InOut)         :: dlp_world(0:),comm
+    Type(thermostat_type),       Intent(InOut)         :: thermo
+    Type(ewald_type),            Intent(InOut)         :: ewld
+    Type(timer_type),            Intent(InOut)         :: tmr
+    Type(development_type),      Intent(InOut)         :: devel
+    Type(stats_type),            Intent(InOut)         :: stats
+    Type(greenkubo_type),        Intent(InOut)         :: green
+    Type(plumed_type),           Intent(InOut)         :: plume
+    Type(msd_type),              Intent(InOut)         :: msd_data
+    Type(metal_type),            Intent(InOut)         :: met
+    Type(poisson_type),          Intent(InOut)         :: pois
+    Type(impact_type),           Intent(InOut)         :: impa
+    Type(defects_type),          Intent(InOut)         :: dfcts(2)
+    Type(bonds_type),            Intent(InOut)         :: bond
+    Type( angles_type ),         Intent(InOut)         :: angle
+    Type( dihedrals_type ),      Intent(InOut)         :: dihedral
+    Type( inversions_type ),     Intent(InOut)         :: inversion
+    Type( tethers_type ),        Intent(InOut)         :: tether
+    Type( threebody_type ),      Intent(InOut)         :: threebody
+    Type( z_density_type ),      Intent(InOut)         :: zdensity
+    Type( constraints_type ),    Intent(InOut)         :: cons
+    Type( neighbours_type ),     Intent(InOut)         :: neigh
+    Type( pmf_type ),            Intent(InOut)         :: pmfs
+    Type( site_type ),           Intent(InOut)         :: sites
+    Type( core_shell_type ),     Intent(InOut)         :: core_shells
+    Type( vdw_type ),            Intent(InOut)         :: vdws
+    Type( tersoff_type ),        Intent(InOut)         :: tersoffs
+    Type( four_body_type ),      Intent(InOut)         :: fourbody
+    Type( rdf_type ),            Intent(InOut)         :: rdf
+    Type( netcdf_param ),        Intent(InOut)         :: netcdf
+    Type( minimise_type ),       Intent(InOut)         :: minim
+    Type( mpole_type ),          Intent(InOut)         :: mpoles
+    Type( external_field_type ), Intent(InOut)         :: ext_field
+    Type( rigid_bodies_type ),   Intent(InOut)         :: rigid
+    Type( electrostatic_type ),  Intent(InOut)         :: electro
+    Type( domains_type ),        Intent(InOut)         :: domain
+    Type( flow_type ),           Intent(InOut)         :: flow
+    Type( seed_type ),           Intent(InOut)         :: seed
+    Type( trajectory_type ),     Intent(InOut)         :: traj
+    Type( kim_type ),            Target, Intent(InOut) :: kim_data
+    Type( configuration_type ),  Intent(InOut)         :: config
+    Type( io_type),              Intent(InOut)         :: ios
+    Type( ttm_type),             Intent(InOut)         :: ttms
+    Type( rsd_type ),            Target, Intent(InOut) :: rsdsc
+    Type( file_type ),           Intent(InOut)         :: files(FILENAME_SIZE)
+    character( len = 1024 ),     Intent(In)            :: control_filename
 
     character( len = 256 ) :: message
 
@@ -270,6 +271,7 @@ Contains
     ! ALLOCATE SITE & CONFIG
     Call sites%init(sites%mxtmls,sites%mxatyp)
     Call config%init()
+    Call config%k%init('KPOINTS',comm)
     Call neigh%init_list(config%mxatdm)
 
     ! ALLOCATE DPD ARRAYS
@@ -299,6 +301,7 @@ Contains
     Call rdf%init()
     Call zdensity%init(rdf%max_grid,sites%mxatyp)
     Call stats%init(config%mxatms)
+    Call stats%cur%init(config%k%n,200,files(FILE_CURRENT),comm)
     Call green%init(config%mxatms,sites%mxatyp)
 
     ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
@@ -463,9 +466,6 @@ Contains
     ! PLUMED initialisation or information message
     If (plume%l_plumed) Call plumed_init(config%megatm,thermo%tstep,thermo%temp,plume,comm)
 
-    ! Print out sample of initial configuration on node zero
-    Call print_initial_configuration(config)
-
     ! Indicate nodes mapped on vacuum (no particles)
     vacuum = 0
     If (config%natms == 0) Then
@@ -488,20 +488,20 @@ Contains
     If (devel%l_fast) Call gsync(comm,devel%l_fast)
 
     If (flow%simulation) Then
-      Call w_md_vv(config,ttms,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo, &
+      Call md_vv(config,ttms,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo, &
         plume,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
         netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,files,tmr,minim, &
         impa,green,ewld,electro,dfcts,msd_data,tersoffs,tether,threebody,vdws, &
         devel,met,comm)
     Else
       If (lfce) Then
-        Call w_replay_historf(config,ios,rsdsc,flow,core_shells,cons,pmfs,stats, &
+        Call replay_historf(config,ios,rsdsc,flow,core_shells,cons,pmfs,stats, &
           thermo,plume,msd_data,bond,angle,dihedral,inversion,zdensity,neigh, &
           sites,vdws,tersoffs,fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid, &
           electro,domain,seed,traj,kim_data,files,dfcts,tmr,tether,threebody, &
           pois,green,ewld,devel,met,comm)
       Else
-        Call w_replay_history(config,ios,rsdsc,flow,core_shells,cons,pmfs,stats, &
+        Call replay_history(config,ios,rsdsc,flow,core_shells,cons,pmfs,stats, &
           thermo,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,neigh, &
           sites,vdws,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain, &
           seed,traj,kim_data,dfcts,files,tmr,tether,green,ewld,devel,comm)
@@ -521,9 +521,6 @@ Contains
     Write(message,'(3(a,f12.3),a)') 'run terminating... elapsed  cpu time: ', &
       tmr%elapsed , ' sec, job time: ', tmr%job, ' sec, close time: ', tmr%clear_screen, ' sec'
     Call info(message,.true.)
-
-    ! Print out sample of final configuration on node zero
-    Call print_final_configuration(config)
 
     ! Two-temperature model simulations: calculate final ionic temperatures and
     !print statistics to files (final)
@@ -596,50 +593,50 @@ Contains
       fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain, &
       seed,traj,kim_data,config,ios,ttms,rsdsc,files)
 
-    Integer( Kind = wi ), Intent( In    ) :: array_size
-    Type(thermostat_type), Allocatable, Intent(InOut) :: thermo(:)
-    Type(ewald_type), Allocatable, Intent(InOut) :: ewld(:)
-    Type(timer_type), Allocatable, Intent(InOut) :: tmr(:)
-    Type(development_type), Allocatable, Intent(InOut) :: devel(:)
-    Type(stats_type), Allocatable, Intent(InOut) :: stats(:)
-    Type(greenkubo_type), Allocatable, Intent(InOut) :: green(:)
-    Type(plumed_type), Allocatable, Intent(InOut) :: plume(:)
-    Type(msd_type), Allocatable, Intent(InOut) :: msd_data(:)
-    Type(metal_type), Allocatable, Intent(InOut) :: met(:)
-    Type(poisson_type), Allocatable, Intent(InOut) :: pois(:)
-    Type(impact_type), Allocatable, Intent(InOut) :: impa(:)
-    Type(defects_type), Allocatable, Intent(InOut) :: dfcts(:,:)
-    Type(bonds_type), Allocatable, Intent(InOut) :: bond(:)
-    Type( angles_type ), Allocatable, Intent(InOut) :: angle(:)
-    Type( dihedrals_type ), Allocatable, Intent(InOut) :: dihedral(:)
-    Type( inversions_type ), Allocatable, Intent(InOut) :: inversion(:)
-    Type( tethers_type ), Allocatable, Intent(InOut) :: tether(:)
-    Type( threebody_type ), Allocatable, Intent(InOut) :: threebody(:)
-    Type( z_density_type ), Allocatable, Intent(InOut) :: zdensity(:)
-    Type( constraints_type ), Allocatable, Intent(InOut) :: cons(:)
-    Type( neighbours_type ), Allocatable, Intent(InOut) :: neigh(:)
-    Type( pmf_type ), Allocatable, Intent(InOut) :: pmfs(:)
-    Type( site_type ), Allocatable, Intent(InOut) :: sites(:)
-    Type( core_shell_type ), Allocatable, Intent(InOut) :: core_shells(:)
-    Type( vdw_type ), Allocatable, Intent(InOut) :: vdws(:)
-    Type( tersoff_type ), Allocatable, Intent(InOut) :: tersoffs(:)
-    Type( four_body_type ), Allocatable, Intent(InOut) :: fourbody(:)
-    Type( rdf_type ), Allocatable, Intent(InOut) :: rdf(:)
-    Type( netcdf_param ), Allocatable, Intent(InOut) :: netcdf(:)
-    Type( minimise_type ), Allocatable, Intent(InOut) :: minim(:)
-    Type( mpole_type ), Allocatable, Intent(InOut) :: mpoles(:)
-    Type( external_field_type ), Allocatable, Intent(InOut) :: ext_field(:)
-    Type( rigid_bodies_type ), Allocatable, Intent(InOut) :: rigid(:)
-    Type( electrostatic_type ), Allocatable, Intent(InOut) :: electro(:)
-    Type( domains_type ), Allocatable, Intent(InOut) :: domain(:)
-    Type( seed_type ), Allocatable, Intent(InOut) :: seed(:)
-    Type( trajectory_type ), Allocatable, Intent(InOut) :: traj(:)
-    Type( kim_type ), Allocatable, Target, Intent(InOut) :: kim_data(:)
-    Type( configuration_type ), Allocatable, Intent(InOut) :: config(:)
-    Type( io_type), Allocatable, Intent(InOut) :: ios(:)
-    Type( ttm_type), Allocatable, Intent(InOut) :: ttms(:)
-    Type( rsd_type ), Allocatable, Target, Intent(InOut) :: rsdsc(:)
-    Type( file_type ), Allocatable, Intent(InOut) :: files(:,:)
+    Integer( Kind = wi ),        Intent( In    )                    :: array_size
+    Type(thermostat_type),       Allocatable, Intent(InOut)         :: thermo(:)
+    Type(ewald_type),            Allocatable, Intent(InOut)         :: ewld(:)
+    Type(timer_type),            Allocatable, Intent(InOut)         :: tmr(:)
+    Type(development_type),      Allocatable, Intent(InOut)         :: devel(:)
+    Type(stats_type),            Allocatable, Intent(InOut)         :: stats(:)
+    Type(greenkubo_type),        Allocatable, Intent(InOut)         :: green(:)
+    Type(plumed_type),           Allocatable, Intent(InOut)         :: plume(:)
+    Type(msd_type),              Allocatable, Intent(InOut)         :: msd_data(:)
+    Type(metal_type),            Allocatable, Intent(InOut)         :: met(:)
+    Type(poisson_type),          Allocatable, Intent(InOut)         :: pois(:)
+    Type(impact_type),           Allocatable, Intent(InOut)         :: impa(:)
+    Type(defects_type),          Allocatable, Intent(InOut)         :: dfcts(:,:)
+    Type(bonds_type),            Allocatable, Intent(InOut)         :: bond(:)
+    Type( angles_type ),         Allocatable, Intent(InOut)         :: angle(:)
+    Type( dihedrals_type ),      Allocatable, Intent(InOut)         :: dihedral(:)
+    Type( inversions_type ),     Allocatable, Intent(InOut)         :: inversion(:)
+    Type( tethers_type ),        Allocatable, Intent(InOut)         :: tether(:)
+    Type( threebody_type ),      Allocatable, Intent(InOut)         :: threebody(:)
+    Type( z_density_type ),      Allocatable, Intent(InOut)         :: zdensity(:)
+    Type( constraints_type ),    Allocatable, Intent(InOut)         :: cons(:)
+    Type( neighbours_type ),     Allocatable, Intent(InOut)         :: neigh(:)
+    Type( pmf_type ),            Allocatable, Intent(InOut)         :: pmfs(:)
+    Type( site_type ),           Allocatable, Intent(InOut)         :: sites(:)
+    Type( core_shell_type ),     Allocatable, Intent(InOut)         :: core_shells(:)
+    Type( vdw_type ),            Allocatable, Intent(InOut)         :: vdws(:)
+    Type( tersoff_type ),        Allocatable, Intent(InOut)         :: tersoffs(:)
+    Type( four_body_type ),      Allocatable, Intent(InOut)         :: fourbody(:)
+    Type( rdf_type ),            Allocatable, Intent(InOut)         :: rdf(:)
+    Type( netcdf_param ),        Allocatable, Intent(InOut)         :: netcdf(:)
+    Type( minimise_type ),       Allocatable, Intent(InOut)         :: minim(:)
+    Type( mpole_type ),          Allocatable, Intent(InOut)         :: mpoles(:)
+    Type( external_field_type ), Allocatable, Intent(InOut)         :: ext_field(:)
+    Type( rigid_bodies_type ),   Allocatable, Intent(InOut)         :: rigid(:)
+    Type( electrostatic_type ),  Allocatable, Intent(InOut)         :: electro(:)
+    Type( domains_type ),        Allocatable, Intent(InOut)         :: domain(:)
+    Type( seed_type ),           Allocatable, Intent(InOut)         :: seed(:)
+    Type( trajectory_type ),     Allocatable, Intent(InOut)         :: traj(:)
+    Type( kim_type ),            Allocatable, Target, Intent(InOut) :: kim_data(:)
+    Type( configuration_type ),  Allocatable, Intent(InOut)         :: config(:)
+    Type( io_type),              Allocatable, Intent(InOut)         :: ios(:)
+    Type( ttm_type),             Allocatable, Intent(InOut)         :: ttms(:)
+    Type( rsd_type ),            Allocatable, Target, Intent(InOut) :: rsdsc(:)
+    Type( file_type ),           Allocatable, Intent(InOut)         :: files(:,:)
 
     Allocate(thermo(array_size))
     Allocate(ewld(array_size))
@@ -693,49 +690,49 @@ Contains
     fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain, &
     seed,traj,kim_data,config,ios,ttms,rsdsc,files)
 
-    Type( angles_type ), Allocatable, Intent(InOut) :: angle(:)
-    Type(bonds_type), Allocatable, Intent(InOut) :: bond(:)
-    Type( configuration_type ), Allocatable, Intent(InOut) :: config(:)
-    Type( constraints_type ), Allocatable, Intent(InOut) :: cons(:)
-    Type( core_shell_type ), Allocatable, Intent(InOut) :: core_shells(:)
-    Type(defects_type), Allocatable, Intent(InOut) :: dfcts(:,:)
-    Type(development_type), Allocatable, Intent(InOut) :: devel(:)
-    Type( dihedrals_type ), Allocatable, Intent(InOut) :: dihedral(:)
-    Type( domains_type ), Allocatable, Intent(InOut) :: domain(:)
-    Type( electrostatic_type ), Allocatable, Intent(InOut) :: electro(:)
-    Type(ewald_type), Allocatable, Intent(InOut) :: ewld(:)
-    Type( external_field_type ), Allocatable, Intent(InOut) :: ext_field(:)
-    Type( file_type ), Allocatable, Intent(InOut) :: files(:,:)
-    Type( four_body_type ), Allocatable, Intent(InOut) :: fourbody(:)
-    Type(greenkubo_type), Allocatable, Intent(InOut) :: green(:)
-    Type(impact_type), Allocatable, Intent(InOut) :: impa(:)
-    Type( inversions_type ), Allocatable, Intent(InOut) :: inversion(:)
-    Type( io_type), Allocatable, Intent(InOut) :: ios(:)
-    Type( kim_type ), Allocatable, Target, Intent(InOut) :: kim_data(:)
-    Type(metal_type), Allocatable, Intent(InOut) :: met(:)
-    Type( minimise_type ), Allocatable, Intent(InOut) :: minim(:)
-    Type( mpole_type ), Allocatable, Intent(InOut) :: mpoles(:)
-    Type(msd_type), Allocatable, Intent(InOut) :: msd_data(:)
-    Type( neighbours_type ), Allocatable, Intent(InOut) :: neigh(:)
-    Type( netcdf_param ), Allocatable, Intent(InOut) :: netcdf(:)
-    Type(plumed_type), Allocatable, Intent(InOut) :: plume(:)
-    Type( pmf_type ), Allocatable, Intent(InOut) :: pmfs(:)
-    Type(poisson_type), Allocatable, Intent(InOut) :: pois(:)
-    Type( rdf_type ), Allocatable, Intent(InOut) :: rdf(:)
-    Type( rigid_bodies_type ), Allocatable, Intent(InOut) :: rigid(:)
-    Type( rsd_type ), Allocatable, Target, Intent(InOut) :: rsdsc(:)
-    Type( seed_type ), Allocatable, Intent(InOut) :: seed(:)
-    Type( site_type ), Allocatable, Intent(InOut) :: sites(:)
-    Type(stats_type), Allocatable, Intent(InOut) :: stats(:)
-    Type( tersoff_type ), Allocatable, Intent(InOut) :: tersoffs(:)
-    Type( tethers_type ), Allocatable, Intent(InOut) :: tether(:)
-    Type(thermostat_type), Allocatable, Intent(InOut) :: thermo(:)
-    Type( threebody_type ), Allocatable, Intent(InOut) :: threebody(:)
-    Type(timer_type), Allocatable, Intent(InOut) :: tmr(:)
-    Type( trajectory_type ), Allocatable, Intent(InOut) :: traj(:)
-    Type( ttm_type), Allocatable, Intent(InOut) :: ttms(:)
-    Type( vdw_type ), Allocatable, Intent(InOut) :: vdws(:)
-    Type( z_density_type ), Allocatable, Intent(InOut) :: zdensity(:)
+    Type( angles_type ),         Allocatable,                           Intent(InOut) :: angle(:)
+    Type(bonds_type),            Allocatable,                           Intent(InOut) :: bond(:)
+    Type( configuration_type ),  Allocatable,                           Intent(InOut) :: config(:)
+    Type( constraints_type ),    Allocatable,                           Intent(InOut) :: cons(:)
+    Type( core_shell_type ),     Allocatable,                           Intent(InOut) :: core_shells(:)
+    Type(defects_type),          Allocatable, Intent(InOut)                           :: dfcts(:, :)
+    Type(development_type),      Allocatable,                           Intent(InOut) :: devel(:)
+    Type( dihedrals_type ),      Allocatable,                           Intent(InOut) :: dihedral(:)
+    Type( domains_type ),        Allocatable,                           Intent(InOut) :: domain(:)
+    Type( electrostatic_type ),  Allocatable,                           Intent(InOut) :: electro(:)
+    Type(ewald_type),            Allocatable,                           Intent(InOut) :: ewld(:)
+    Type( external_field_type ), Allocatable,                           Intent(InOut) :: ext_field(:)
+    Type( file_type ),           Allocatable, Intent(InOut)                           :: files(:, :)
+    Type( four_body_type ),      Allocatable,                           Intent(InOut) :: fourbody(:)
+    Type(greenkubo_type),        Allocatable,                           Intent(InOut) :: green(:)
+    Type(impact_type),           Allocatable,                           Intent(InOut) :: impa(:)
+    Type( inversions_type ),     Allocatable,                           Intent(InOut) :: inversion(:)
+    Type( io_type),              Allocatable,                           Intent(InOut) :: ios(:)
+    Type( kim_type ),            Allocatable, Target,                   Intent(InOut) :: kim_data(:)
+    Type(metal_type),            Allocatable,                           Intent(InOut) :: met(:)
+    Type( minimise_type ),       Allocatable,                           Intent(InOut) :: minim(:)
+    Type( mpole_type ),          Allocatable,                           Intent(InOut) :: mpoles(:)
+    Type(msd_type),              Allocatable,                           Intent(InOut) :: msd_data(:)
+    Type( neighbours_type ),     Allocatable,                           Intent(InOut) :: neigh(:)
+    Type( netcdf_param ),        Allocatable,                           Intent(InOut) :: netcdf(:)
+    Type(plumed_type),           Allocatable,                           Intent(InOut) :: plume(:)
+    Type( pmf_type ),            Allocatable,                           Intent(InOut) :: pmfs(:)
+    Type(poisson_type),          Allocatable,                           Intent(InOut) :: pois(:)
+    Type( rdf_type ),            Allocatable,                           Intent(InOut) :: rdf(:)
+    Type( rigid_bodies_type ),   Allocatable,                           Intent(InOut) :: rigid(:)
+    Type( rsd_type ),            Allocatable, Target,                   Intent(InOut) :: rsdsc(:)
+    Type( seed_type ),           Allocatable,                           Intent(InOut) :: seed(:)
+    Type( site_type ),           Allocatable,                           Intent(InOut) :: sites(:)
+    Type(stats_type),            Allocatable,                           Intent(InOut) :: stats(:)
+    Type( tersoff_type ),        Allocatable,                           Intent(InOut) :: tersoffs(:)
+    Type( tethers_type ),        Allocatable,                           Intent(InOut) :: tether(:)
+    Type(thermostat_type),       Allocatable,                           Intent(InOut) :: thermo(:)
+    Type( threebody_type ),      Allocatable,                           Intent(InOut) :: threebody(:)
+    Type(timer_type),            Allocatable,                           Intent(InOut) :: tmr(:)
+    Type( trajectory_type ),     Allocatable,                           Intent(InOut) :: traj(:)
+    Type( ttm_type),             Allocatable,                           Intent(InOut) :: ttms(:)
+    Type( vdw_type ),            Allocatable,                           Intent(InOut) :: vdws(:)
+    Type( z_density_type ),      Allocatable,                           Intent(InOut) :: zdensity(:)
 
     If (Allocated(angle)) Deallocate(angle)
     If (Allocated(bond)) Deallocate(bond)
@@ -856,68 +853,4 @@ Contains
     End If
     Call info(Repeat("*",66),.true.)
   End Subroutine print_citations
-
-
-  Subroutine print_initial_configuration(config)
-    Type(configuration_type), Intent(In) :: config
-
-    ! Print out sample of initial configuration on node zero
-    Call info('',.true.)
-    Call info('sample of starting configuration on node zero:',.true.)
-
-    Call print_configuration_sample(config)
-
-    Call info('',.true.)
-  End Subroutine print_initial_configuration
-
-  Subroutine print_final_configuration(config)
-    Type(configuration_type), Intent(In) :: config
-
-    ! Print out sample of initial configuration on node zero
-    Call info('',.true.)
-    Call info("sample of final configuration on node zero",.true.)
-
-    Call print_configuration_sample(config)
-
-    Call info('',.true.)
-  End Subroutine print_final_configuration
-
-  Subroutine print_configuration_sample(config)
-    Type(configuration_type), Intent(In) :: config
-
-    Integer(Kind=wi) :: atom, span
-    Character(Len=256) :: message
-
-    If (config%levcfg <= 1) Then
-      Write(message,'(7x,a1,7x,a4,2(8x,a4),3(7x,a5))') &
-        'i', 'x(i)', 'y(i)', 'z(i)', 'vx(i)', 'vy(i)', 'vz(i)'
-      Call info(message,.true.)
-    End If
-
-    If (config%levcfg == 2) Then
-      Write(message,'(7x,a1,7x,a4,2(8x,a4),6(7x,a5))') &
-        'i', 'x(i)', 'y(i)', 'z(i)', 'vx(i)', 'vy(i)', 'vz(i)', &
-        'fx(i)', 'fy(i)', 'fz(i)'
-      Call info(message,.true.)
-    End If
-
-    span=(config%natms+19)/20
-    If (span > 0) Then
-      Do atom=1,config%natms,span
-        If (config%levcfg <= 1) Then
-          Write(message,'(i8,1p,6e12.4)') config%ltg(atom), &
-            config%parts(atom)%xxx,config%parts(atom)%yyy,config%parts(atom)%zzz, &
-            config%vxx(atom),config%vyy(atom),config%vzz(atom)
-        End If
-
-        If (config%levcfg == 2) Then
-          Write(message,"(i8,1p,9e12.4)") config%ltg(atom), &
-            config%parts(atom)%xxx,config%parts(atom)%yyy,config%parts(atom)%zzz,&
-            config%vxx(atom),config%vyy(atom),config%vzz(atom), &
-            config%parts(atom)%fxx,config%parts(atom)%fyy,config%parts(atom)%fzz
-        End If
-        Call info(message,.true.)
-      End Do
-    End If
-  End Subroutine print_configuration_sample
 End Module meta

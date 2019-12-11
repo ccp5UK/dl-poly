@@ -44,9 +44,13 @@ Module filename
   Integer, Parameter, Public :: FILE_REVOLD = 9
   !> REVCON file
   Integer, Parameter, Public :: FILE_REVCON = 10
+  !> CURRENT file
+  Integer, Parameter, Public :: FILE_CURRENT = 11
+  !> KPOOINTS file
+  Integer, Parameter, Public :: FILE_KPOINTS = 12
 
   !> Size of filename array
-  Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 10
+  Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 12
 
   Public :: default_filenames
 
@@ -80,6 +84,8 @@ Contains
     default_names(FILE_REVIVE) = "REVIVE"
     default_names(FILE_REVOLD) = "REVOLD"
     default_names(FILE_REVCON) = "REVCON"
+    default_names(FILE_CURRENT) = "CURRENTS"
+    default_names(FILE_KPOINTS) = "KPOINTS"
 
     ! Set default filenames
     Do file_no = 1, FILENAME_SIZE

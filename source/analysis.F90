@@ -1,20 +1,20 @@
 !> Module for run time analysis
 Module analysis
-  Use kinds,         Only : wp,wi
-  Use constants,         Only : zero_plus
-  Use configuration, Only : configuration_type
-  Use site, Only : site_type
-  Use statistics,    Only : stats_type
-  Use bonds,         Only : bonds_type,bonds_compute
-  Use angles,        Only : angles_type,angles_compute
-  Use dihedrals,     Only : dihedrals_type,dihedrals_compute
-  Use inversions,    Only : inversions_type,inversions_compute
-  Use greenkubo,     Only : greenkubo_type,vaf_compute
-  Use rdfs,          Only : rdf_type,rdf_compute,usr_compute,calculate_errors, &
+  Use kinds,         Only:     wp,wi
+  Use constants,         Only: zero_plus
+  Use configuration, Only:     configuration_type
+  Use site, Only:              site_type
+  Use statistics,    Only:     stats_type
+  Use bonds,         Only:     bonds_type,bonds_compute
+  Use angles,        Only:     angles_type,angles_compute
+  Use dihedrals,     Only:     dihedrals_type,dihedrals_compute
+  Use inversions,    Only:     inversions_type,inversions_compute
+  Use greenkubo,     Only:     greenkubo_type,vaf_compute
+  Use rdfs,          Only:     rdf_type,rdf_compute,usr_compute,calculate_errors, &
     calculate_errors_jackknife
-  Use z_density,     Only : z_density_type,z_density_compute
-  Use comms,         Only : comms_type
-  Use thermostat, Only : thermostat_type
+  Use z_density,     Only:     z_density_type,z_density_compute
+  Use comms,         Only:     comms_type
+  Use thermostat, Only:        thermostat_type
   Implicit None
 
   Private
@@ -30,36 +30,36 @@ Contains
     green,zdensity,sites,rdf,config,comm)
 
     !> Cut off
-    Real( Kind = wp ), Intent( In    ) :: rcut
+    Real( Kind = wp ),          Intent( In    ) :: rcut
     !> Ensemble key
-    Type( thermostat_type ), Intent( In    ) :: thermo
+    Type( thermostat_type ),    Intent( In    ) :: thermo
     !> Bonds data
-    Type( bonds_type ), Intent( InOut ) :: bond
+    Type( bonds_type ),         Intent( InOut ) :: bond
     !> Angles data
-    Type( angles_type ), Intent( InOut ) :: angle
+    Type( angles_type ),        Intent( InOut ) :: angle
     !> Dihedrals data
-    Type( dihedrals_type ), Intent( InOut ) :: dihedral
+    Type( dihedrals_type ),     Intent( InOut ) :: dihedral
     !> Inversion angles data
-    Type( inversions_type ), Intent( InOut ) :: inversion
+    Type( inversions_type ),    Intent( InOut ) :: inversion
     !> Statistics data
-    Type( stats_type ), Intent( In    ) :: stats
+    Type( stats_type ),         Intent( In    ) :: stats
     !> Greenkubo data
-    Type( greenkubo_type ), Intent( In    ) :: green
+    Type( greenkubo_type ),     Intent( In    ) :: green
     !> Z density data
-    Type( z_density_type ), Intent( InOut ) :: zdensity
+    Type( z_density_type ),     Intent( InOut ) :: zdensity
     !> Site data
-    Type( site_type ), Intent( InOut ) :: sites
+    Type( site_type ),          Intent( InOut ) :: sites
     !> RDF data
-    Type( rdf_type ), Intent( InOut ) :: rdf
+    Type( rdf_type ),           Intent( InOut ) :: rdf
     !> Config data
     Type( configuration_type ), Intent( InOut ) :: config
     !> Comms
-    Type( comms_type ), Intent( InOut ) :: comm
+    Type( comms_type ),         Intent( InOut ) :: comm
 
     !> Average volume
-    Real( Kind = wp ) :: avvol
+    Real( Kind = wp )    :: avvol
     Integer( Kind = wi ) :: i
-    Real( Kind = wp ) :: temp
+    Real( Kind = wp )    :: temp
 
     temp = stats%sumval(2)
 
@@ -122,5 +122,6 @@ Contains
         Call inversions_compute(temp,sites%unique_atom,inversion,config,comm)
       End If
     End If
+
   End Subroutine analysis_result
 End Module analysis

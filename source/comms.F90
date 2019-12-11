@@ -126,6 +126,8 @@ Module comms
     Module Procedure grsum_matrix
     Module Procedure grsum_vector
     Module Procedure grsum_scalar
+    
+    Module Procedure gcsum_vector
   End Interface !gsum
 
   Interface gmax
@@ -150,6 +152,7 @@ Module comms
     Module procedure gbcast_integer_scalar_16
     Module procedure gbcast_real
     Module procedure gbcast_real_scalar
+    Module procedure gbcast_real_matrix
     Module procedure gbcast_char
   End Interface !gbcast
 
@@ -689,6 +692,50 @@ Contains
     End If
 
   End Subroutine grsum_vector
+  
+  Subroutine gcsum_vector(comm, aaa)
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 global summation subroutine - complex vector
+    !                                         version
+    !
+    ! copyright - daresbury laboratory
+    ! author    - a.m.elena december 2019
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type(comms_type), Intent (InOut)                   :: comm
+    Complex( Kind = wp ), Dimension( : ), Intent( InOut ) :: aaa
+
+    Integer                                            :: n_l,n_u,n_s,fail
+    Complex( Kind = wp ), Dimension( : ), Allocatable     :: bbb
+
+    If (comm%mxnode == 1) Return
+
+    n_l = Lbound(aaa, Dim = 1)
+    n_u = Ubound(aaa, Dim = 1)
+
+    fail = 0
+    Allocate (bbb(n_l:n_u), Stat = fail)
+    If (fail > 0) Then
+      Write(comm%ou,'(/,1x,a)') 'error - allocation failure in comms -> gcsum_vector'
+      Call abort_comms(comm,1005)
+    End If
+
+    n_s = Size(aaa, Dim = 1)
+
+    Call MPI_ALLREDUCE(aaa,bbb,n_s,wp_mpi,MPI_SUM,comm%comm,comm%ierr)
+
+    aaa = bbb
+
+    Deallocate (bbb, Stat = fail)
+    If (fail > 0) Then
+      Write(comm%ou,'(/,1x,a)') 'error - deallocation failure in comms -> gcsum_vector'
+      Call abort_comms(comm,1006)
+    End If
+
+  End Subroutine gcsum_vector
 
   Subroutine grsum_scalar(comm,aaa)
 
@@ -1007,6 +1054,32 @@ Contains
     Call MPI_BCAST(vec(n_l:n_u), n_s, MPI_INTEGER, root, comm%comm, comm%ierr)
 
   End Subroutine gbcast_integer
+  
+  Subroutine gbcast_real_matrix(comm,vec,root)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 broadcast an integer array subroutine
+    !
+    ! copyright - daresbury laboratory
+    ! author    - a.m.elena may 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Real(Kind = wp), Intent( InOut )  :: vec(:,:)
+    Integer, Intent( In    )          :: root
+    Type(comms_type), Intent (InOut)  :: comm
+
+    Integer                           :: n_l_1,n_u_1,n_s,n_l_2,n_u_2
+
+    If (comm%mxnode == 1) Return
+    n_l_1 = Lbound(vec, Dim = 1)
+    n_u_1 = Ubound(vec, Dim = 1)
+    n_l_2 = Lbound(vec, Dim = 2)
+    n_u_2 = Ubound(vec, Dim = 2)
+    n_s = Size(vec)
+
+    Call MPI_BCAST(vec(n_l_1:n_u_1,n_l_2:n_u_2), n_s, MPI_INTEGER, root, comm%comm, comm%ierr)
+
+  End Subroutine gbcast_real_matrix
 
   Subroutine gbcast_integer_scalar(comm,s,root)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

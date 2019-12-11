@@ -1,150 +1,114 @@
 Module drivers
-  Use kinds, Only : wp,wi
-  Use comms, Only : comms_type,gsum,gtime,gmax
-  Use kinetics, Only : kinstresf, kinstrest, kinstress,getknr,getknr, cap_forces
-  Use constants, Only : boltz
-
-  Use impacts, Only : impact_type, impact
-  Use shared_units, Only : update_shared_units, SHARED_UNIT_UPDATE_FORCES
-  Use numerics, Only : seed_type
-  Use parse, Only : strip_blanks,lower_case
-  Use langevin, Only : langevin_forces
-
-  Use errors_warnings, Only : error,warning,info 
-
-  Use minimise, Only : minimise_type,minimise_relax,zero_k_optimise
-  Use two_body, Only : two_body_forces
-  Use ewald, Only : ewald_type
-
-
-  ! DEFECTS MODULE
-  Use defects, Only : defects_type,defects_write
-
-  Use halo, Only : refresh_halo_positions,set_halo_particles
-  Use deport_data, Only : mpoles_rotmat_set_halo,relocate_particles
-  Use temperature, Only : scale_temperature,regauss_temperature,set_temperature
-  Use rsds, Only : rsd_write,rsd_type
-  Use trajectory, Only : trajectory_type, trajectory_write,read_history
-  Use system, Only : system_revive
-  Use build_excl, Only : build_excl_intra 
-  Use build_book, Only : build_book_intra
-  Use thermostat, Only : thermostat_type, &
-    ENS_NVE, ENS_NVT_EVANS, ENS_NVT_LANGEVIN,  &
-    ENS_NVT_ANDERSON, ENS_NVT_BERENDSEN, ENS_NVT_NOSE_HOOVER, &
-    ENS_NVT_GENTLE, ENS_NVT_LANGEVIN_INHOMO, &
-    ENS_NPT_LANGEVIN, ENS_NPT_BERENDSEN, ENS_NPT_NOSE_HOOVER, &
-    ENS_NPT_MTK, ENS_NPT_LANGEVIN_ANISO, ENS_NPT_BERENDSEN_ANISO, &
-    ENS_NPT_NOSE_HOOVER_ANISO,ENS_NPT_MTK_ANISO, &
-    DPD_NULL, DPD_SECOND_ORDER, &
-    VV_FIRST_STAGE,VV_SECOND_STAGE
-  Use nvt_anderson, Only : nvt_a0_vv, nvt_a1_vv
-  Use nvt_berendsen, Only : nvt_b0_vv, nvt_b1_vv
-  Use nvt_ekin, Only : nvt_e0_vv, nvt_e1_vv
-  Use nvt_gst, Only : nvt_g0_vv, nvt_g1_vv
-  Use nvt_langevin, Only : nvt_l0_vv, nvt_l1_vv, nvt_l2_vv
-  Use nvt_nose_hoover, Only : nvt_h0_vv, nvt_h1_vv
-  Use nst_berendsen, Only : nst_b0_vv,nst_b1_vv
-  Use nst_langevin, Only : nst_l0_vv,nst_l1_vv
-  Use nst_mtk, Only : nst_m0_vv,nst_m1_vv
-  Use nst_nose_hoover, Only : nst_h0_vv,nst_h1_vv
-  Use npt_berendsen, Only : npt_b0_vv,npt_b1_vv
-  Use npt_langevin, Only : npt_l0_vv,npt_l1_vv
-  Use npt_mtk, Only : npt_m0_vv,npt_m1_vv
-  Use npt_nose_hoover, Only : npt_h0_vv,npt_h1_vv
-  Use nve, Only : nve_0_vv, nve_1_vv 
-  Use timer, Only  : timer_type, time_elapsed,start_timer,stop_timer
-  Use poisson, Only : poisson_type
-  Use constraints, Only : constraints_type, constraints_quench
-  Use electrostatic, Only : electrostatic_type,ELECTROSTATIC_NULL
-  Use stochastic_boundary, Only : stochastic_boundary_vv
-  Use io, Only : io_type
-  Use ttm, Only : ttm_type
-  Use ttm_track, Only : ttm_ion_temperature,ttm_thermal_diffusion
-  Use filename, Only : file_type,FILE_OUTPUT,FILE_HISTORF,FILE_HISTORY
-  Use flow_control, Only : flow_type,RESTART_KEY_OLD,RESTART_KEY_CLEAN
-  Use development, Only : development_type
-
-  ! IO & DOMAINS MODULES
-
-  Use netcdf_wrap, Only : netcdf_param
-  Use domains, Only : domains_type
-
-  ! SITE & CONFIG MODULES
-
-  Use site, Only : site_type
-  Use configuration, Only : configuration_type,check_config, freeze_atoms
-
-  ! VNL module
-
-  Use neighbours, Only : neighbours_type,vnl_check, link_cell_pairs
-
-  ! DPD module
-
-  Use dpd, Only : dpd_thermostat
-
-  ! INTERACTION MODULES
-
-  Use core_shell, Only : core_shell_type,core_shell_relax,SHELL_RELAXED,SHELL_ADIABATIC,&
-    core_shell_kinetic,core_shell_quench,core_shell_on_top,&
+  Use kinds,                   Only: wp,wi
+  Use comms,                   Only: comms_type,gsum,gtime,gmax
+  Use kinetics,                Only: kinstresf, kinstrest, kinstress,getknr,getknr, cap_forces
+  Use constants,               Only: boltz
+  Use impacts,                 Only: impact_type, impact
+  Use shared_units,            Only: update_shared_units, SHARED_UNIT_UPDATE_FORCES
+  Use numerics,                Only: seed_type
+  Use parse,                   Only: strip_blanks,lower_case
+  Use langevin,                Only: langevin_forces
+  Use errors_warnings,         Only: error,warning,info
+  Use minimise,                Only: minimise_type,minimise_relax,zero_k_optimise
+  Use two_body,                Only: two_body_forces
+  Use ewald,                   Only: ewald_type
+  Use defects,                 Only: defects_type,defects_write
+  Use halo,                    Only: refresh_halo_positions,set_halo_particles
+  Use deport_data,             Only: mpoles_rotmat_set_halo,relocate_particles
+  Use temperature,             Only: scale_temperature,regauss_temperature,set_temperature
+  Use rsds,                    Only: rsd_write,rsd_type
+  Use trajectory,              Only: trajectory_type, trajectory_write,read_history
+  Use system,                  Only: system_revive
+  Use build_excl,              Only: build_excl_intra
+  Use build_book,              Only: build_book_intra
+  Use thermostat,              Only: thermostat_type, &
+    ENS_NVE,                   ENS_NVT_EVANS, ENS_NVT_LANGEVIN,  &
+    ENS_NVT_ANDERSON,          ENS_NVT_BERENDSEN, ENS_NVT_NOSE_HOOVER, &
+    ENS_NVT_GENTLE,            ENS_NVT_LANGEVIN_INHOMO, &
+    ENS_NPT_LANGEVIN,          ENS_NPT_BERENDSEN, ENS_NPT_NOSE_HOOVER, &
+    ENS_NPT_MTK,               ENS_NPT_LANGEVIN_ANISO, ENS_NPT_BERENDSEN_ANISO, &
+    ENS_NPT_NOSE_HOOVER_ANISO, ENS_NPT_MTK_ANISO, &
+    DPD_NULL,                  DPD_SECOND_ORDER, &
+    VV_FIRST_STAGE,            VV_SECOND_STAGE
+  Use nvt_anderson,            Only: nvt_a0_vv, nvt_a1_vv
+  Use nvt_berendsen,           Only: nvt_b0_vv, nvt_b1_vv
+  Use nvt_ekin,                Only: nvt_e0_vv, nvt_e1_vv
+  Use nvt_gst,                 Only: nvt_g0_vv, nvt_g1_vv
+  Use nvt_langevin,            Only: nvt_l0_vv, nvt_l1_vv, nvt_l2_vv
+  Use nvt_nose_hoover,         Only: nvt_h0_vv, nvt_h1_vv
+  Use nst_berendsen,           Only: nst_b0_vv,nst_b1_vv
+  Use nst_langevin,            Only: nst_l0_vv,nst_l1_vv
+  Use nst_mtk,                 Only: nst_m0_vv,nst_m1_vv
+  Use nst_nose_hoover,         Only: nst_h0_vv,nst_h1_vv
+  Use npt_berendsen,           Only: npt_b0_vv,npt_b1_vv
+  Use npt_langevin,            Only: npt_l0_vv,npt_l1_vv
+  Use npt_mtk,                 Only: npt_m0_vv,npt_m1_vv
+  Use npt_nose_hoover,         Only: npt_h0_vv,npt_h1_vv
+  Use nve,                     Only: nve_0_vv, nve_1_vv
+  Use timer,                   Only: timer_type, time_elapsed,start_timer,stop_timer
+  Use poisson,                 Only: poisson_type
+  Use constraints,             Only: constraints_type, constraints_quench
+  Use electrostatic,           Only: electrostatic_type,ELECTROSTATIC_NULL
+  Use stochastic_boundary,     Only: stochastic_boundary_vv
+  Use io,                      Only: io_type
+  Use ttm,                     Only: ttm_type
+  Use ttm_track,               Only: ttm_ion_temperature,ttm_thermal_diffusion
+  Use filename,                Only: file_type,FILE_OUTPUT,FILE_HISTORF,FILE_HISTORY
+  Use flow_control,            Only: flow_type,RESTART_KEY_OLD,RESTART_KEY_CLEAN
+  Use development,             Only: development_type
+  Use netcdf_wrap,             Only: netcdf_param
+  Use domains,                 Only: domains_type
+  Use site,                    Only: site_type
+  Use configuration,           Only: configuration_type,check_config, freeze_atoms
+  Use neighbours,              Only: neighbours_type,vnl_check, link_cell_pairs
+  Use dpd,                     Only: dpd_thermostat
+  Use core_shell,              Only: core_shell_type,core_shell_relax,SHELL_RELAXED,SHELL_ADIABATIC,&
+    core_shell_kinetic,        core_shell_quench,core_shell_on_top,&
     core_shell_forces
-
-  Use pmf, only : pmf_type,pmf_quench
-
-  Use rigid_bodies, Only : rigid_bodies_type,rigid_bodies_quench,rigid_bodies_stress, &
-    xscale,rigid_bodies_tags, &
+  Use pmf,                     only: pmf_type,pmf_quench
+  Use rigid_bodies,            Only: rigid_bodies_type,rigid_bodies_quench,rigid_bodies_stress, &
+    xscale,                    rigid_bodies_tags, &
     rigid_bodies_coms
-
-  Use tethers, Only : tethers_type, tethers_forces
-
-  Use bonds, Only : bonds_type,bonds_forces
-  Use angles, Only : angles_type,angles_forces
-  Use dihedrals, Only : dihedrals_type,dihedrals_forces
-  Use inversions, Only : inversions_type,inversions_forces
-  Use three_body, Only : threebody_type, three_body_forces
-
-  Use mpole, Only : mpole_type
-
-  Use vdw, Only : vdw_type
-  Use metal, Only : metal_type
-  Use tersoff, Only : tersoff_type,tersoff_forces
-  Use four_body, Only : four_body_type,four_body_forces
-
-  Use kim, Only : kim_type
-  Use plumed, Only : plumed_type,plumed_apply
-
-  Use external_field, Only : external_field_type, external_field_apply, &
-    external_field_correct,FIELD_NULL
-
-  ! STATISTICS MODULES
-
-  Use rdfs, Only : rdf_type
-  Use z_density, Only : z_density_type
-  Use statistics, Only : stats_type,statistics_result,statistics_collect, &
-    statistics_connect_set,statistics_connect_frames
-  Use greenkubo, Only : greenkubo_type,vaf_collect,vaf_write
-
-  ! MSD MODULE
-
-  Use msd, Only : msd_type,msd_write
+  Use tethers,                 Only: tethers_type, tethers_forces
+  Use bonds,                   Only: bonds_type,bonds_forces
+  Use angles,                  Only: angles_type,angles_forces
+  Use dihedrals,               Only: dihedrals_type,dihedrals_forces
+  Use inversions,              Only: inversions_type,inversions_forces
+  Use three_body,              Only: threebody_type, three_body_forces
+  Use mpole,                   Only: mpole_type
+  Use vdw,                     Only: vdw_type
+  Use metal,                   Only: metal_type
+  Use tersoff,                 Only: tersoff_type,tersoff_forces
+  Use four_body,               Only: four_body_type,four_body_forces
+  Use kim,                     Only: kim_type
+  Use plumed,                  Only: plumed_type,plumed_apply
+  Use external_field,          Only: external_field_type, external_field_apply, &
+    external_field_correct,    FIELD_NULL
+  Use rdfs,                    Only: rdf_type
+  Use z_density,               Only: z_density_type
+  Use statistics,              Only: stats_type,statistics_result,statistics_collect, &
+    statistics_connect_set,    statistics_connect_frames
+  Use greenkubo,               Only: greenkubo_type,vaf_collect,vaf_write
+  Use msd,                     Only: msd_type,msd_write
 
   Implicit None
   Private
 
-  Public :: w_impact_option
-  Public :: w_md_vv
-  Public :: w_replay_historf, w_replay_history
+  Public :: md_vv
+  Public :: replay_historf
+  Public :: replay_history
 
 Contains
 
-  Subroutine w_impact_option(levcfg,nstep,nsteql,rigid,cshell,stats,impa,config,comm)
+  Subroutine impact_option(levcfg,nstep,nsteql,rigid,cshell,stats,impa,config,comm)
 
-    Integer( Kind = wi ),   Intent( InOut ) :: levcfg,nstep,nsteql
-    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type(stats_type)   ,   Intent( InOut ) :: stats
-    Type(core_shell_type)   ,   Intent( InOut ) :: cshell
-    Type(impact_type)   ,   Intent( InOut ) :: impa
+    Integer( Kind = wi ),       Intent( InOut ) :: levcfg,nstep,nsteql
+    Type( rigid_bodies_type ),  Intent( InOut ) :: rigid
+    Type(stats_type),           Intent( InOut ) :: stats
+    Type(core_shell_type),      Intent( InOut ) :: cshell
+    Type(impact_type),          Intent( InOut ) :: impa
     Type( configuration_type ), Intent( InOut ) :: config
-    Type(comms_type)    ,   Intent( InOut ) :: comm
+    Type(comms_type),           Intent( InOut ) :: comm
 
     Character( Len = 256 ) :: messages(6)
 
@@ -182,53 +146,53 @@ Contains
     End If
 
     !!!!!!!!!!!!!!!!!!!!!  W_IMPACT_OPTION INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
-  End Subroutine w_impact_option
+  End Subroutine impact_option
 
 
-  Subroutine w_calculate_forces(cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
+  Subroutine calculate_forces(cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
       inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
       minim,mpoles,ext_field,rigid,electro,domain,kim_data,msd_data,tmr,files,&
       green,devel,ewld,met,seed,thermo,comm)
 
-    Type( configuration_type), Intent( InOut  )  :: cnfig
-    Type( io_type ), Intent( InOut ) :: io
-    Type( flow_type ), Intent( InOut ) :: flow
-    Type( constraints_type ), Intent( InOut ) :: cons
-    Type( core_shell_type ), Intent( InOut ) :: cshell
-    Type( pmf_type ), Intent( InOut ) :: pmf
-    Type(stats_type), Intent(InOut) :: stat
-    Type(plumed_type), Intent(InOut) :: plume
-    Type(poisson_type), Intent(InOut) :: pois
-    Type( bonds_type ), Intent( InOut ) :: bond
-    Type( angles_type ), Intent( InOut ) :: angle
-    Type( dihedrals_type ), Intent( InOut ) :: dihedral
-    Type( inversions_type ), Intent( InOut ) :: inversion
-    Type( tethers_type ), Intent( InOut ) :: tether
-    Type( threebody_type ), Intent( InOut ) :: threebody
-    Type( neighbours_type ), Intent( InOut ) :: neigh
-    Type( site_type ), Intent( InOut ) :: sites
-    Type( vdw_type ), Intent( InOut ) :: vdws
-    Type( tersoff_type ), Intent( InOut )  :: tersoffs
-    Type( four_body_type ), Intent( InOut ) :: fourbody
-    Type( rdf_type ), Intent( InOut ) :: rdf
-    Type( netcdf_param ), Intent( In    ) :: netcdf
-    Type( minimise_type ), Intent( InOut ) :: minim
-    Type( mpole_type ), Intent( InOut ) :: mpoles
-    Type( external_field_type ), Intent( InOut ) :: ext_field
-    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( electrostatic_type ), Intent( InOut ) :: electro
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( kim_type ), Intent( InOut) :: kim_data
-    Type( msd_type ), Intent( InOut ) :: msd_data
-    Type( timer_type ), Intent( InOut ) :: tmr
-    Type( development_type ), Intent( InOut ) :: devel
-    Type( ewald_type ), Intent( InOut ) :: ewld
-    Type( metal_type ), Intent( InOut ) :: met
-    Type( file_type ), Intent( InOut ) :: files(:)
-    Type( greenkubo_type ), Intent( InOut ) :: green
-    Type( seed_type ), Intent( InOut ) :: seed
-    Type( thermostat_type ), Intent( InOut ) :: thermo
-    Type(comms_type)    ,   Intent( InOut ) :: comm
+    Type( configuration_type),   Intent( InOut  ) :: cnfig
+    Type( io_type ),             Intent( InOut )  :: io
+    Type( flow_type ),           Intent( InOut )  :: flow
+    Type( constraints_type ),    Intent( InOut )  :: cons
+    Type( core_shell_type ),     Intent( InOut )  :: cshell
+    Type( pmf_type ),            Intent( InOut )  :: pmf
+    Type(stats_type),            Intent(InOut)    :: stat
+    Type(plumed_type),           Intent(InOut)    :: plume
+    Type(poisson_type),          Intent(InOut)    :: pois
+    Type( bonds_type ),          Intent( InOut )  :: bond
+    Type( angles_type ),         Intent( InOut )  :: angle
+    Type( dihedrals_type ),      Intent( InOut )  :: dihedral
+    Type( inversions_type ),     Intent( InOut )  :: inversion
+    Type( tethers_type ),        Intent( InOut )  :: tether
+    Type( threebody_type ),      Intent( InOut )  :: threebody
+    Type( neighbours_type ),     Intent( InOut )  :: neigh
+    Type( site_type ),           Intent( InOut )  :: sites
+    Type( vdw_type ),            Intent( InOut )  :: vdws
+    Type( tersoff_type ),        Intent( InOut )  :: tersoffs
+    Type( four_body_type ),      Intent( InOut )  :: fourbody
+    Type( rdf_type ),            Intent( InOut )  :: rdf
+    Type( netcdf_param ),        Intent( In    )  :: netcdf
+    Type( minimise_type ),       Intent( InOut )  :: minim
+    Type( mpole_type ),          Intent( InOut )  :: mpoles
+    Type( external_field_type ), Intent( InOut )  :: ext_field
+    Type( rigid_bodies_type ),   Intent( InOut )  :: rigid
+    Type( electrostatic_type ),  Intent( InOut )  :: electro
+    Type( domains_type ),        Intent( In    )  :: domain
+    Type( kim_type ),            Intent( InOut)   :: kim_data
+    Type( msd_type ),            Intent( InOut )  :: msd_data
+    Type( timer_type ),          Intent( InOut )  :: tmr
+    Type( development_type ),    Intent( InOut )  :: devel
+    Type( ewald_type ),          Intent( InOut )  :: ewld
+    Type( metal_type ),          Intent( InOut )  :: met
+    Type( file_type ),           Intent( InOut )  :: files(:)
+    Type( greenkubo_type ),      Intent( InOut )  :: green
+    Type( seed_type ),           Intent( InOut )  :: seed
+    Type( thermostat_type ),     Intent( InOut )  :: thermo
+    Type(comms_type),            Intent( InOut )  :: comm
 
     Logical :: ltmp
     Integer :: i
@@ -245,7 +209,7 @@ Contains
 
       ! Refresh mappings
 
-      Call w_refresh_mappings(cnfig,flow,cshell,cons,pmf,stat,msd_data,bond,angle, &
+      Call refresh_mappings(cnfig,flow,cshell,cons,pmf,stat,msd_data,bond,angle, &
         dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data,ewld,green,minim,thermo,electro,comm)
     End If
 
@@ -424,7 +388,7 @@ Contains
       ! Refresh mappings
 
       If (.not.(cshell%relaxed .and. minim%relaxed)) Then
-        Call w_refresh_mappings(cnfig,flow,cshell,cons,pmf,stat,msd_data,bond,angle, &
+        Call refresh_mappings(cnfig,flow,cshell,cons,pmf,stat,msd_data,bond,angle, &
           dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data,ewld,green,minim,thermo,electro,comm)
         Go To 100
       End If
@@ -474,9 +438,9 @@ Contains
 
     !!!!!!!!!!!!!!!!!!  W_CALCULATE_FORCES INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
-  End Subroutine w_calculate_forces
+  End Subroutine calculate_forces
 
-  Subroutine w_refresh_mappings(cnfig,flow,cshell,cons,pmf,stat,msd_data,bond,angle, &
+  Subroutine refresh_mappings(cnfig,flow,cshell,cons,pmf,stat,msd_data,bond,angle, &
       dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data,ewld,green,minim,thermo,&
       electro,comm)
     Type( configuration_type), Intent( InOut  )  :: cnfig
@@ -553,9 +517,9 @@ Contains
     !!!!!!!!!!!!!!!!!!  W_REFRESH_MAPPINGS INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
 
-  End Subroutine w_refresh_mappings
+  End Subroutine refresh_mappings
 
-  Subroutine w_integrate_vv(stage,flow, cnfig,ttm,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr,neigh,comm)
+  Subroutine integrate_vv(stage,flow, cnfig,ttm,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr,neigh,comm)
     Integer, Intent( In    ) :: stage ! used for vv stage control
     Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( ttm_type ), Intent( InOut ) :: ttm
@@ -977,22 +941,23 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!  W_INTEGRATE_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
 
-  End Subroutine w_integrate_vv
+  End Subroutine integrate_vv
 
-  Subroutine w_kinetic_options(flow,cnfig,cshell,cons,pmf,stat,sites,ext_field,domain,seed,rigid,thermo,comm)
-    Type( configuration_type), Intent( InOut  )  :: cnfig
-    Type( constraints_type ), Intent( InOut ) :: cons
-    Type( core_shell_type ), Intent( InOut ) :: cshell
-    Type( pmf_type ), Intent( InOut ) :: pmf
-    Type(stats_type), Intent(InOut) :: stat
-    Type( site_type ), Intent( InOut ) :: sites
-    Type( external_field_type ), Intent( In    ) :: ext_field
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( seed_type ), Intent( InOut ) :: seed
-    Type( rigid_bodies_type), Intent( InOut ) :: rigid
-    Type( flow_type), Intent( InOut ) :: flow
-    Type( thermostat_type), Intent( InOut ) :: thermo
-    Type(comms_type)    ,   Intent( InOut ) :: comm
+  Subroutine kinetic_options(flow,cnfig,cshell,cons,pmf,stat,sites,ext_field,domain,seed,rigid,thermo,comm)
+
+    Type( configuration_type),   Intent( InOut  ) :: cnfig
+    Type( constraints_type ),    Intent( InOut )  :: cons
+    Type( core_shell_type ),     Intent( InOut )  :: cshell
+    Type( pmf_type ),            Intent( InOut )  :: pmf
+    Type(stats_type),            Intent(InOut)    :: stat
+    Type( site_type ),           Intent( InOut )  :: sites
+    Type( external_field_type ), Intent( In    )  :: ext_field
+    Type( domains_type ),        Intent( In    )  :: domain
+    Type( seed_type ),           Intent( InOut )  :: seed
+    Type( rigid_bodies_type),    Intent( InOut )  :: rigid
+    Type( flow_type),            Intent( InOut )  :: flow
+    Type( thermostat_type),      Intent( InOut )  :: thermo
+    Type(comms_type),            Intent( InOut )  :: comm
 
 
     Logical :: safe
@@ -1101,27 +1066,28 @@ Contains
 
     !!!!!!!!!!!!!!!!!!!  W_KINETIC_OPTIONS INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
-  End Subroutine w_kinetic_options
+  End Subroutine kinetic_options
 
-  Subroutine w_statistics_report(cnfig,cshell,cons,pmf,stat,msd_data,zdensity, &
+  Subroutine statistics_report(cnfig,cshell,cons,pmf,stat,msd_data,zdensity, &
       sites,rdf,domain,flow,files,thermo,tmr,green,minim,comm)
-    Type( configuration_type), Intent( InOut  )  :: cnfig
-    Type( core_shell_type ), Intent( InOut ) :: cshell
-    Type( constraints_type ), Intent( InOut ) :: cons
-    Type( pmf_type ), Intent( InOut ) :: pmf
-    Type(stats_type), Intent(InOut) :: stat
-    Type(msd_type), Intent(InOut) :: msd_data
-    Type( z_density_type ), Intent( InOut ) :: zdensity
-    Type( site_type ), Intent( InOut ) :: sites
-    Type( rdf_type ), Intent( In    ) :: rdf
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( flow_type ), Intent( InOut ) :: flow
-    Type( file_type ), Intent( InOut ) :: files(:)
-    Type( thermostat_type), Intent( InOut ) :: thermo
-    Type(minimise_type), Intent( InOut ) :: minim
-    Type( greenkubo_type), Intent(InOut ) :: green
-    Type(timer_type ), Intent( InOut ):: tmr
-    Type( comms_type ), Intent( InOut ) :: comm
+
+    Type(                configuration_type), Intent( InOut  ) :: cnfig
+    Type(                core_shell_type ),   Intent( InOut )  :: cshell
+    Type(                constraints_type ),  Intent( InOut )  :: cons
+    Type(                pmf_type ),          Intent( InOut )  :: pmf
+    Type(stats_type),    Intent(InOut)                         :: stat
+    Type(msd_type),      Intent(InOut)                         :: msd_data
+    Type(                z_density_type ),    Intent( InOut )  :: zdensity
+    Type(                site_type ),         Intent( InOut )  :: sites
+    Type(                rdf_type ),          Intent( In    )  :: rdf
+    Type(                domains_type ),      Intent( In    )  :: domain
+    Type(                flow_type ),         Intent( InOut )  :: flow
+    Type(                file_type ),         Intent( InOut )  :: files(:)
+    Type(                thermostat_type),    Intent( InOut )  :: thermo
+    Type(minimise_type),                      Intent( InOut )  :: minim
+    Type(                greenkubo_type),     Intent(InOut )   :: green
+    Type(timer_type),                         Intent( InOut )  :: tmr
+    Type(                comms_type ),        Intent( InOut )  :: comm
 
     !!!!!!!!!!!!!!!!!  W_STATISTICS_REPORT INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
     Character( Len = 256 ) :: message,messages(5)
@@ -1256,31 +1222,32 @@ Contains
 
     If (green%samp > 0) Call vaf_collect(cnfig,sites%mxatyp,flow%equilibration,flow%equil_steps,flow%step,flow%time,green,comm)
 
+     If (stat%cur%on) then
+       Call stat%cur%compute(cnfig,comm)
+     End If
 
-    !!!!!!!!!!!!!!!!!  W_STATISTICS_REPORT INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
+  End Subroutine statistics_report
 
-
-  End Subroutine w_statistics_report
-
-  Subroutine w_write_options(cnfig,io,rsdc,cshell,stat,sites,netcdf,domain,traj,files,dfcts,&
+  Subroutine write_options(cnfig,io,rsdc,cshell,stat,sites,netcdf,domain,traj,files,dfcts,&
       flow,thermo,msd_data,green,neigh,comm)
-    Type( configuration_type), Intent( InOut  )  :: cnfig
-    Type( io_type ), Intent( InOut ) :: io
-    Type( rsd_type ), Intent( Inout ) :: rsdc
-    Type( core_shell_type ), Intent( InOut ) :: cshell
-    Type(stats_type), Intent(InOut) :: stat
-    Type( site_type ), Intent( InOut ) :: sites
-    Type( netcdf_param ), Intent( In    ) :: netcdf
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( trajectory_type ), Intent( InOut ) :: traj
-    Type( flow_type ), Intent( InOut ) ::  flow
-    Type( thermostat_type), Intent (InOut ) :: thermo
-    Type( msd_type) , Intent( InOut ):: msd_data
-    Type( greenkubo_type), Intent( InOut ):: green
-    Type( file_type ), Intent( InOut ) :: files(:)
-    Type( defects_type ), Intent( InOut ) :: dfcts(:)
-    Type(neighbours_type), Intent( InOut ) :: neigh
-    Type( comms_type), Intent( InOut ) :: comm
+
+    Type( configuration_type), Intent( InOut  ) :: cnfig
+    Type( io_type ),           Intent( InOut )  :: io
+    Type( rsd_type ),          Intent( Inout )  :: rsdc
+    Type( core_shell_type ),   Intent( InOut )  :: cshell
+    Type(stats_type),          Intent(InOut)    :: stat
+    Type( site_type ),         Intent( InOut )  :: sites
+    Type( netcdf_param ),      Intent( In    )  :: netcdf
+    Type( domains_type ),      Intent( In    )  :: domain
+    Type( trajectory_type ),   Intent( InOut )  :: traj
+    Type( flow_type ),         Intent( InOut )  :: flow
+    Type( thermostat_type),    Intent (InOut )  :: thermo
+    Type( msd_type),           Intent( InOut )  :: msd_data
+    Type( greenkubo_type),     Intent( InOut )  :: green
+    Type( file_type ),         Intent( InOut )  :: files(:)
+    Type( defects_type ),      Intent( InOut )  :: dfcts(:)
+    Type(neighbours_type),     Intent( InOut )  :: neigh
+    Type( comms_type),         Intent( InOut )  :: comm
 
 
     !!!!!!!!!!!!!!!!!!!!!  W_WRITE_OPTIONS INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
@@ -1318,9 +1285,9 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!  W_WRITE_OPTIONS INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
 
-  End Subroutine w_write_options
+  End Subroutine write_options
 
-  Subroutine w_refresh_output(files,flow,tmr,comm)
+  Subroutine refresh_output(files,flow,tmr,comm)
 
     Type( file_type ), Intent( InOut ) :: files(:)
     Type(flow_type), Intent( InOut ) :: flow
@@ -1360,59 +1327,59 @@ Contains
     !!!!!!!!!!!!!!!!!!!!  W_REFRESH_OUTPUT INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
 
-  End Subroutine w_refresh_output
+  End Subroutine refresh_output
 
-  Subroutine w_md_vv(cnfig,ttm,io,rsdc,flow,cshell,cons,pmf,stat,thermo,plume, &
+  Subroutine md_vv(cnfig,ttm,io,rsdc,flow,cshell,cons,pmf,stat,thermo,plume, &
       pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
       netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,files,tmr,&
       minim,impa,green,ewld,electro,dfcts,&
       msd_data,tersoffs,tether,threebody,vdws,devel,met,comm)
 
-    Type( configuration_type), Intent( InOut  )  :: cnfig
-    Type( ttm_type ), Intent( InOut ) :: ttm
-    Type( io_type ), Intent( InOut ) :: io
-    Type( rsd_type ), Intent( InOut ) :: rsdc
-    Type( flow_type ), Intent( InOut ) :: flow
-    Type( constraints_type ), Intent( InOut ) :: cons
-    Type( core_shell_type ), Intent( InOut ) :: cshell
-    Type( pmf_type ), Intent( InOut ) :: pmf
-    Type(stats_type), Intent(InOut) :: stat
-    Type(thermostat_type), Intent(InOut) :: thermo
-    Type(plumed_type), Intent(InOut) :: plume
-    Type(poisson_type), Intent(InOut) :: pois
-    Type( bonds_type ), Intent( InOut ) :: bond
-    Type( angles_type ), Intent( InOut ) :: angle
-    Type( dihedrals_type ), Intent( InOut ) :: dihedral
-    Type( inversions_type ), Intent( InOut ) :: inversion
-    Type( z_density_type ), Intent( InOut ) :: zdensity
-    Type( neighbours_type ), Intent( InOut ) :: neigh
-    Type( site_type ), Intent( InOut ) :: sites
-    Type( four_body_type ), Intent( InOut ) :: fourbody
-    Type( rdf_type ), Intent( InOut ) :: rdf
-    Type( netcdf_param ), Intent( In    ) :: netcdf
-    Type( mpole_type ), Intent( InOut ) :: mpoles
-    Type( external_field_type ), Intent( InOut ) :: ext_field
-    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( seed_type ), Intent( InOut ) :: seed
-    Type( trajectory_type ), Intent( InOut ) :: traj
-    Type( kim_type ), Intent( InOut ) :: kim_data
-    Type( timer_type ), Intent( InOut ) :: tmr
-    Type( file_type ), Intent( InOut ) :: files(:)
-    Type( defects_type), Intent( InOut) :: dfcts(:)
-    Type( electrostatic_type ), Intent( InOut ) :: electro
-    Type( ewald_type), Intent ( InOut ) :: ewld
-    Type( greenkubo_type ), Intent( InOut ) :: green
-    Type( impact_type ), Intent( InOut ) :: impa
-    Type( minimise_type ), Intent( InOut ) :: minim
-    Type( msd_type ), Intent( InOut ) :: msd_data
-    Type( tersoff_type), Intent( InOut ) :: tersoffs
-    Type( tethers_type), Intent( InOut ) :: tether
-    Type( threebody_type ), Intent( InOut ) :: threebody 
-    Type( vdw_type ), Intent( InOut ) :: vdws
-    Type( comms_type )    ,   Intent( InOut ) :: comm
-    Type( development_type ), Intent( InOut ) :: devel
-    Type( metal_type ), Intent( InOut ) :: met 
+    Type( configuration_type),   Intent( InOut  ) :: cnfig
+    Type( ttm_type ),            Intent( InOut )  :: ttm
+    Type( io_type ),             Intent( InOut )  :: io
+    Type( rsd_type ),            Intent( InOut )  :: rsdc
+    Type( flow_type ),           Intent( InOut )  :: flow
+    Type( constraints_type ),    Intent( InOut )  :: cons
+    Type( core_shell_type ),     Intent( InOut )  :: cshell
+    Type( pmf_type ),            Intent( InOut )  :: pmf
+    Type(stats_type),            Intent(InOut)    :: stat
+    Type(thermostat_type),       Intent(InOut)    :: thermo
+    Type(plumed_type),           Intent(InOut)    :: plume
+    Type(poisson_type),          Intent(InOut)    :: pois
+    Type( bonds_type ),          Intent( InOut )  :: bond
+    Type( angles_type ),         Intent( InOut )  :: angle
+    Type( dihedrals_type ),      Intent( InOut )  :: dihedral
+    Type( inversions_type ),     Intent( InOut )  :: inversion
+    Type( z_density_type ),      Intent( InOut )  :: zdensity
+    Type( neighbours_type ),     Intent( InOut )  :: neigh
+    Type( site_type ),           Intent( InOut )  :: sites
+    Type( four_body_type ),      Intent( InOut )  :: fourbody
+    Type( rdf_type ),            Intent( InOut )  :: rdf
+    Type( netcdf_param ),        Intent( In    )  :: netcdf
+    Type( mpole_type ),          Intent( InOut )  :: mpoles
+    Type( external_field_type ), Intent( InOut )  :: ext_field
+    Type( rigid_bodies_type ),   Intent( InOut )  :: rigid
+    Type( domains_type ),        Intent( In    )  :: domain
+    Type( seed_type ),           Intent( InOut )  :: seed
+    Type( trajectory_type ),     Intent( InOut )  :: traj
+    Type( kim_type ),            Intent( InOut )  :: kim_data
+    Type( timer_type ),          Intent( InOut )  :: tmr
+    Type( file_type ),           Intent( InOut )  :: files(:)
+    Type( defects_type),         Intent( InOut)   :: dfcts(:)
+    Type( electrostatic_type ),  Intent( InOut )  :: electro
+    Type( ewald_type),           Intent ( InOut ) :: ewld
+    Type( greenkubo_type ),      Intent( InOut )  :: green
+    Type( impact_type ),         Intent( InOut )  :: impa
+    Type( minimise_type ),       Intent( InOut )  :: minim
+    Type( msd_type ),            Intent( InOut )  :: msd_data
+    Type( tersoff_type),         Intent( InOut )  :: tersoffs
+    Type( tethers_type),         Intent( InOut )  :: tether
+    Type( threebody_type ),      Intent( InOut )  :: threebody
+    Type( vdw_type ),            Intent( InOut )  :: vdws
+    Type( comms_type ),          Intent( InOut )  :: comm
+    Type( development_type ),    Intent( InOut )  :: devel
+    Type( metal_type ),          Intent( InOut )  :: met
 
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
@@ -1472,7 +1439,7 @@ Contains
 
       ! Apply impact
 
-      Call w_impact_option(cnfig%levcfg,flow%step,flow%equil_steps,rigid,cshell,stat,impa,cnfig,comm)
+      Call impact_option(cnfig%levcfg,flow%step,flow%equil_steps,rigid,cshell,stat,impa,cnfig,comm)
 
       ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT if needed immediately after restart
       ! cnfig%levcfg == 2 avoids application twice when forces are calculated at (re)start
@@ -1482,7 +1449,7 @@ Contains
           flow%newjob = .false.
 
           If (flow%restart_key /= RESTART_KEY_OLD) Then
-            Call w_write_options(cnfig,io,rsdc,cshell,stat,sites,netcdf,domain,traj,files,dfcts,&
+            Call write_options(cnfig,io,rsdc,cshell,stat,sites,netcdf,domain,traj,files,dfcts,&
               flow,thermo,msd_data,green,neigh,comm)
           End If
 
@@ -1510,26 +1477,26 @@ Contains
 
         ! Integrate equations of motion - velocity verlet first stage
 
-        Call w_integrate_vv(VV_FIRST_STAGE,flow,cnfig,ttm,cshell,cons,pmf,stat, &
+        Call integrate_vv(VV_FIRST_STAGE,flow,cnfig,ttm,cshell,cons,pmf,stat, &
           thermo,sites,vdws,rigid,domain,seed,tmr,neigh,comm)
 
         ! Refresh mappings
 
-        Call w_refresh_mappings(cnfig,flow,cshell,cons,pmf,stat,msd_data,bond,angle, &
+        Call refresh_mappings(cnfig,flow,cshell,cons,pmf,stat,msd_data,bond,angle, &
           dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data,ewld,green,minim,thermo,electro,comm)        
 
       End If ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
 
       ! Evaluate forces
 
-      Call w_calculate_forces(cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
+      Call calculate_forces(cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
         inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
         minim,mpoles,ext_field,rigid,electro,domain,kim_data,msd_data,tmr,files,green,devel,ewld,met,seed,thermo,comm)
 
       ! Calculate physical quantities, collect statistics and report at t=0
 
       If (flow%step == 0) Then
-        Call w_statistics_report(cnfig,cshell,cons,pmf,stat,msd_data,zdensity, &
+        Call statistics_report(cnfig,cshell,cons,pmf,stat,msd_data,zdensity, &
           sites,rdf,domain,flow,files,thermo,tmr,green,minim,comm)
       End If
 
@@ -1547,12 +1514,12 @@ Contains
 
         ! Integrate equations of motion - velocity verlet second stage
 
-        Call w_integrate_vv(VV_SECOND_STAGE,flow,cnfig,ttm,cshell,cons,pmf,stat, &
+        Call integrate_vv(VV_SECOND_STAGE,flow,cnfig,ttm,cshell,cons,pmf,stat, &
           thermo,sites,vdws,rigid,domain,seed,tmr,neigh,comm)
 
         ! Apply kinetic options
 
-        Call w_kinetic_options(flow,cnfig,cshell,cons,pmf,stat,sites,ext_field,domain,seed,rigid,thermo,comm)
+        Call kinetic_options(flow,cnfig,cshell,cons,pmf,stat,sites,ext_field,domain,seed,rigid,thermo,comm)
 
         ! Update total flow%time of simulation
 
@@ -1560,13 +1527,13 @@ Contains
 
         ! Calculate physical quantities, collect statistics and report regularly
 
-        Call w_statistics_report(cnfig,cshell,cons,pmf,stat,msd_data,zdensity, &
+        Call statistics_report(cnfig,cshell,cons,pmf,stat,msd_data,zdensity, &
           sites,rdf,domain,flow,files,thermo,tmr,green,minim,comm)
 
 
         ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
 
-        Call w_write_options(cnfig,io,rsdc,cshell,stat,sites,netcdf,domain,traj,files,dfcts,&
+        Call write_options(cnfig,io,rsdc,cshell,stat,sites,netcdf,domain,traj,files,dfcts,&
           flow,thermo,msd_data,green,neigh,comm)
 
         ! Save restart data in event of system crash
@@ -1583,7 +1550,7 @@ Contains
 
       ! Refresh output
 
-      Call w_refresh_output(files,flow,tmr,comm)
+      Call refresh_output(files,flow,tmr,comm)
 
       ! Complete flow%time check
 
@@ -1599,63 +1566,63 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
 
-  End Subroutine w_md_vv
+  End Subroutine md_vv
 
-  Subroutine w_replay_history(cnfig,io,rsdc,flow,cshell,cons,pmf,stat,thermo,msd_data, &
+  Subroutine replay_history(cnfig,io,rsdc,flow,cshell,cons,pmf,stat,thermo,msd_data, &
       met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
       netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj,kim_data,dfcts,files,&
     tmr,tether,green,ewld,devel,comm)
 
-    Type( configuration_type), Intent( InOut  )  :: cnfig
-    Type( io_type ), Intent( InOut ) :: io
-    Type( rsd_type ), Intent( Inout ) :: rsdc
-    Type( flow_type ), Intent( InOut ) :: flow
-    Type( constraints_type ), Intent( InOut ) :: cons
-    Type( core_shell_type ), Intent( InOut ) :: cshell
-    Type( pmf_type ), Intent( InOut ) :: pmf
-    Type(stats_type), Intent(InOut) :: stat
-    Type(thermostat_type), Intent(InOut) :: thermo
-    Type(msd_type), Intent(InOut) :: msd_data
-    Type( metal_type ), Intent( InOut ) :: met
-    Type( poisson_type ), Intent( InOut ) :: pois
-    Type( bonds_type ), Intent( InOut ) :: bond
-    Type( angles_type ), Intent( InOut ) :: angle
-    Type( dihedrals_type ), Intent( InOut ) :: dihedral
-    Type( inversions_type ), Intent( InOut ) :: inversion
-    Type( z_density_type ), Intent( InOut ) :: zdensity
-    Type( neighbours_type ), Intent( InOut ) :: neigh
-    Type( site_type ), Intent( InOut ) :: sites
-    Type( vdw_type ), Intent( InOut ) :: vdws
-    Type( rdf_type ), Intent( InOut ) :: rdf
-    Type( netcdf_param ), Intent( In    ) :: netcdf
-    Type( minimise_type ), Intent( InOut ) :: minim
-    Type( mpole_type ), Intent( InOut ) :: mpoles
-    Type( external_field_type ), Intent( InOut ) :: ext_field
-    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( electrostatic_type ), Intent( InOut ) :: electro
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( seed_type ), Intent( InOut ) :: seed
-    Type( trajectory_type ), Intent( InOut ) :: traj
-    Type( kim_type ), Intent( InOut ) :: kim_data
-    Type( file_type ), Intent( InOut ) :: files(:)
-    Type( defects_type ), Intent( inOut ) :: dfcts(:)
-    Type( timer_type), Intent( InOut ) :: tmr
-    Type( tethers_type), Intent( InOut ) :: tether
-    Type( greenkubo_type), Intent( InOut ) :: green
-    Type( ewald_type), Intent( InOut ) :: ewld
-    Type( development_type), Intent( InOut ) :: devel
-    Type( comms_type ), Intent( InOut ) :: comm
+    Type( configuration_type),   Intent( InOut  ) :: cnfig
+    Type( io_type ),             Intent( InOut )  :: io
+    Type( rsd_type ),            Intent( Inout )  :: rsdc
+    Type( flow_type ),           Intent( InOut )  :: flow
+    Type( constraints_type ),    Intent( InOut )  :: cons
+    Type( core_shell_type ),     Intent( InOut )  :: cshell
+    Type( pmf_type ),            Intent( InOut )  :: pmf
+    Type(stats_type),            Intent(InOut)    :: stat
+    Type(thermostat_type),       Intent(InOut)    :: thermo
+    Type(msd_type),              Intent(InOut)    :: msd_data
+    Type( metal_type ),          Intent( InOut )  :: met
+    Type( poisson_type ),        Intent( InOut )  :: pois
+    Type( bonds_type ),          Intent( InOut )  :: bond
+    Type( angles_type ),         Intent( InOut )  :: angle
+    Type( dihedrals_type ),      Intent( InOut )  :: dihedral
+    Type( inversions_type ),     Intent( InOut )  :: inversion
+    Type( z_density_type ),      Intent( InOut )  :: zdensity
+    Type( neighbours_type ),     Intent( InOut )  :: neigh
+    Type( site_type ),           Intent( InOut )  :: sites
+    Type( vdw_type ),            Intent( InOut )  :: vdws
+    Type( rdf_type ),            Intent( InOut )  :: rdf
+    Type( netcdf_param ),        Intent( In    )  :: netcdf
+    Type( minimise_type ),       Intent( InOut )  :: minim
+    Type( mpole_type ),          Intent( InOut )  :: mpoles
+    Type( external_field_type ), Intent( InOut )  :: ext_field
+    Type( rigid_bodies_type ),   Intent( InOut )  :: rigid
+    Type( electrostatic_type ),  Intent( InOut )  :: electro
+    Type( domains_type ),        Intent( In    )  :: domain
+    Type( seed_type ),           Intent( InOut )  :: seed
+    Type( trajectory_type ),     Intent( InOut )  :: traj
+    Type( kim_type ),            Intent( InOut )  :: kim_data
+    Type( file_type ),           Intent( InOut )  :: files(:)
+    Type( defects_type ),        Intent( inOut )  :: dfcts(:)
+    Type( timer_type),           Intent( InOut )  :: tmr
+    Type( tethers_type),         Intent( InOut )  :: tether
+    Type( greenkubo_type),       Intent( InOut )  :: green
+    Type( ewald_type),           Intent( InOut )  :: ewld
+    Type( development_type),     Intent( InOut )  :: devel
+    Type( comms_type ),          Intent( InOut )  :: comm
 
-    Real(Kind=wp) :: tsths
-    Real( Kind = wp ) :: tmsh        ! flow%start_time replacement
-    Integer( Kind = wi )           :: nstpe,nstph ! flow%step replacements
-    Integer           :: exout       ! exit indicator for reading
-    Logical :: l_out
-    Character(Len=10) :: c_out
+    Real(Kind=wp)        :: tsths
+    Real( Kind = wp )    :: tmsh        ! flow%start_time replacement
+    Integer( Kind = wi ) :: nstpe,nstph ! flow%step replacements
+    Integer              :: exout       ! exit indicator for reading
+    Logical              :: l_out
+    Character(Len=10)    :: c_out
 
     Character( Len = 256 ) :: messages(6)
-    Integer :: i
-    Integer(Kind=wi) :: switch
+    Integer                :: i
+    Integer(Kind=wi)       :: switch
 
     !!!!!!!!!!!!!!!!!!!!  W_REPLAY HISTORY INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
     ! Report work
@@ -1877,7 +1844,7 @@ Contains
 
             ! Apply kinetic options
 
-            Call w_kinetic_options(flow,cnfig,cshell,cons,pmf,stat,sites,ext_field,domain,seed,rigid,thermo,comm)
+            Call kinetic_options(flow,cnfig,cshell,cons,pmf,stat,sites,ext_field,domain,seed,rigid,thermo,comm)
 
 
             ! Get core-shell kinetic energy for adiabatic shell model
@@ -2028,62 +1995,62 @@ Contains
 
     !!!!!!!!!!!!!!!!!!!!  W_REPLAY HISTORY INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
-  End Subroutine w_replay_history
+  End Subroutine replay_history
 
-  Subroutine w_replay_historf(cnfig,io,rsdc,flow,cshell,cons,pmf,stat,thermo,plume, &
+  Subroutine replay_historf(cnfig,io,rsdc,flow,cshell,cons,pmf,stat,thermo,plume, &
       msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
       fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj, &
       kim_data,files,dfcts,tmr,tether,threebody,pois,green,ewld,devel,met,comm)
 
-    Type( configuration_type), Intent( InOut  )  :: cnfig
-    Type( io_type ), Intent( InOut ) :: io
-    Type( rsd_type ), Intent( Inout ) :: rsdc
-    Type( flow_type ), Intent( InOut ) :: flow
-    Type( core_shell_type ), Intent( InOut ) :: cshell
-    Type( constraints_type ), Intent( InOut ) :: cons
-    Type( pmf_type ), Intent( InOut ) :: pmf
-    Type(stats_type), Intent(InOut) :: stat
-    Type(thermostat_type), Intent(InOut) :: thermo
-    Type(plumed_type), Intent(InOut) :: plume
-    Type(msd_type), Intent(InOut) :: msd_data
-    Type( bonds_type ), Intent( InOut ) :: bond
-    Type( angles_type ), Intent( InOut ) :: angle
-    Type( dihedrals_type ), Intent( InOut ) :: dihedral
-    Type( inversions_type ), Intent( InOut ) :: inversion
-    Type( z_density_type ), Intent( InOut ) :: zdensity
-    Type( neighbours_type ), Intent( InOut ) :: neigh
-    Type( site_type ), Intent( InOut ) :: sites
-    Type( vdw_type ), Intent( InOut ) :: vdws
-    Type( tersoff_type ), Intent( InOut )  :: tersoffs
-    Type( four_body_type ), Intent( InOut ) :: fourbody
-    Type( rdf_type ), Intent( InOut ) :: rdf
-    Type( netcdf_param ), Intent( In    ) :: netcdf
-    Type( minimise_type ), Intent( InOut ) :: minim
-    Type( mpole_type ), Intent( InOut ) :: mpoles
-    Type( external_field_type ), Intent( InOut ) :: ext_field
-    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( electrostatic_type ), Intent( InOut ) :: electro
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( seed_type ), Intent( InOut ) :: seed
-    Type( trajectory_type ), Intent( InOut ) :: traj
-    Type( kim_type ), Intent( InOut ) :: kim_data
-    Type( file_type ), Intent( InOut ) :: files(:)
-    Type( timer_type ), Intent( InOut ) :: tmr
-    Type( defects_type ), Intent( inOut ) :: dfcts(:)
-    Type( tethers_type), Intent( InOut ):: tether
-    Type( threebody_type ), Intent( InOut ) :: threebody
-    Type( greenkubo_type), Intent( InOut ) :: green
-    Type( poisson_type), Intent( InOut ) :: pois
-    Type( ewald_type), Intent( InOut ) :: ewld
-    Type( metal_type), Intent( InOut ) :: met
-    Type( development_type) , Intent( InOut ) :: devel
-    Type( comms_type ), Intent( InOut ) :: comm
+    Type( configuration_type),   Intent( InOut  ) :: cnfig
+    Type( io_type ),             Intent( InOut )  :: io
+    Type( rsd_type ),            Intent( Inout )  :: rsdc
+    Type( flow_type ),           Intent( InOut )  :: flow
+    Type( core_shell_type ),     Intent( InOut )  :: cshell
+    Type( constraints_type ),    Intent( InOut )  :: cons
+    Type( pmf_type ),            Intent( InOut )  :: pmf
+    Type(stats_type),            Intent(InOut)    :: stat
+    Type(thermostat_type),       Intent(InOut)    :: thermo
+    Type(plumed_type),           Intent(InOut)    :: plume
+    Type(msd_type),              Intent(InOut)    :: msd_data
+    Type( bonds_type ),          Intent( InOut )  :: bond
+    Type( angles_type ),         Intent( InOut )  :: angle
+    Type( dihedrals_type ),      Intent( InOut )  :: dihedral
+    Type( inversions_type ),     Intent( InOut )  :: inversion
+    Type( z_density_type ),      Intent( InOut )  :: zdensity
+    Type( neighbours_type ),     Intent( InOut )  :: neigh
+    Type( site_type ),           Intent( InOut )  :: sites
+    Type( vdw_type ),            Intent( InOut )  :: vdws
+    Type( tersoff_type ),        Intent( InOut )  :: tersoffs
+    Type( four_body_type ),      Intent( InOut )  :: fourbody
+    Type( rdf_type ),            Intent( InOut )  :: rdf
+    Type( netcdf_param ),        Intent( In    )  :: netcdf
+    Type( minimise_type ),       Intent( InOut )  :: minim
+    Type( mpole_type ),          Intent( InOut )  :: mpoles
+    Type( external_field_type ), Intent( InOut )  :: ext_field
+    Type( rigid_bodies_type ),   Intent( InOut )  :: rigid
+    Type( electrostatic_type ),  Intent( InOut )  :: electro
+    Type( domains_type ),        Intent( In    )  :: domain
+    Type( seed_type ),           Intent( InOut )  :: seed
+    Type( trajectory_type ),     Intent( InOut )  :: traj
+    Type( kim_type ),            Intent( InOut )  :: kim_data
+    Type( file_type ),           Intent( InOut )  :: files(:)
+    Type( timer_type ),          Intent( InOut )  :: tmr
+    Type( defects_type ),        Intent( inOut )  :: dfcts(:)
+    Type( tethers_type),         Intent( InOut )  :: tether
+    Type( threebody_type ),      Intent( InOut )  :: threebody
+    Type( greenkubo_type),       Intent( InOut )  :: green
+    Type( poisson_type),         Intent( InOut )  :: pois
+    Type( ewald_type),           Intent( InOut )  :: ewld
+    Type( metal_type),           Intent( InOut )  :: met
+    Type( development_type),     Intent( InOut )  :: devel
+    Type( comms_type ),          Intent( InOut )  :: comm
 
-    Real(Kind=wp) :: tsths
+    Real(Kind=wp)     :: tsths
     Real( Kind = wp ) :: tmsh        ! flow%start_time replacement
-    Integer           :: nstpe,nstph ! flow%step replacements
+    Integer           :: nstpe, nstph ! flow%step replacements
     Integer           :: exout       ! exit indicator for reading
-    Logical :: l_out
+    Logical           :: l_out
     Character(Len=10) :: c_out
 
     !!!!!!!!!!!!!!!!!!!!  W_REPLAY HISTORF INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
@@ -2216,7 +2183,7 @@ Contains
 
           ! Evaluate forces, flow%newjob must always be true for vircom evaluation
 
-          Call w_calculate_forces(cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral, &
+          Call calculate_forces(cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral, &
             inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf, &
             netcdf,minim,mpoles,ext_field,rigid,electro,domain,kim_data,msd_data,tmr,files,&
             green,devel,ewld,met,seed,thermo,comm)
@@ -2255,7 +2222,7 @@ Contains
 
             ! Apply kinetic options
 
-            Call w_kinetic_options(flow,cnfig,cshell,cons,pmf,stat,sites,ext_field,domain,seed,rigid,thermo,comm)
+            Call kinetic_options(flow,cnfig,cshell,cons,pmf,stat,sites,ext_field,domain,seed,rigid,thermo,comm)
 
             ! Get core-shell kinetic energy for adiabatic shell model
 
@@ -2427,6 +2394,6 @@ Contains
     !!!!!!!!!!!!!!!!!!!!  W_REPLAY HISTORF INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
 
-  End Subroutine w_replay_historf
+  End Subroutine replay_historf
 
 End Module drivers

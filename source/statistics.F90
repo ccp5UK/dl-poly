@@ -32,7 +32,8 @@ Module statistics
     CONSTRAINT_SEMI_ORTHORHOMBIC
   Use filename, Only : file_type, FILE_STATS
   Use flow_control, Only : RESTART_KEY_OLD
-
+  Use currents, Only: current_type
+  
   Implicit None
   Type, Public :: stats_type
 
@@ -111,6 +112,7 @@ Module statistics
       0.0_wp         , & ! average cycles
       999999999.0_wp , & ! minimum cycles : ~Huge(1)
       0.0_wp ]           ! maximum cycles
+    Type( current_type) :: cur
 
 
     Real( Kind = wp ), Allocatable :: xin(:),yin(:),zin(:)

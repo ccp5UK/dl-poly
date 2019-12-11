@@ -67,7 +67,7 @@ Module configuration
   Use electrostatic,   Only : ELECTROSTATIC_NULL,ELECTROSTATIC_EWALD
   Use filename,        Only : file_type,FILE_CONFIG
   Use flow_control,    Only : flow_type, RESTART_KEY_CLEAN
-
+  Use kpoints,         Only : kpoints_type
   Implicit None
 
   Private
@@ -132,6 +132,7 @@ Module configuration
     ! vdws%elrc,vdws%vlrc - vdw energy and virial are scalars and in vdw
 
     Real(Kind=wp) :: dvar,fmax,width
+    Type(kpoints_type) :: k
 
   Contains
 
