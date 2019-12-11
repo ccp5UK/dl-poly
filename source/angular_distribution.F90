@@ -25,8 +25,8 @@ contains
     Type(site_type), Intent(In) :: sites
     integer :: i,ii,iii,j,jj,jjj,k,kk,kkk
     real :: costheta,temptheta
+    
     Open(Unit=nchadf, File='ADFDAT', Form='formatted')
-    Open(99,file='testing')
    allocate(adf%astat(-1:180,1:2*crd%ncoordpairs))
     adf%astat(:,:)=0
     do i=1,crd%ncoordpairs
@@ -52,16 +52,16 @@ contains
          if(config%ltype(j).eq.config%ltype(jj))then
           do ii = 1,2*crd%ncoordpairs
          if(adf%astat(-1,ii)==config%ltype(crd%coordlist(j,i)) .and. adf%astat(0,ii)==config%ltype(i))then       
-
+           
          adf%rjk=(config%parts(crd%adfcoordlist(j,i))%xxx - config%parts(crd%adfcoordlist(jj,i))%xxx)**2 &
                 + (config%parts(crd%adfcoordlist(j,i))%yyy - config%parts(crd%adfcoordlist(jj,i))%yyy)**2 &
                 + (config%parts(crd%adfcoordlist(j,i))%zzz - config%parts(crd%adfcoordlist(jj,i))%zzz)**2
         costheta=((adf%rij(j) + adf%rij(jj) - adf%rjk)/(2*sqrt(adf%rij(j))*sqrt(adf%rij(jj)) ))
         temptheta=ACOS(costheta)*(180/pi)
-        
 
             do iii=1,180
              if(temptheta.ge.(iii-1) .and. temptheta.lt.(iii))then
+
              adf%astat(iii,ii)=adf%astat(iii,ii)+1
              End If
             End Do
