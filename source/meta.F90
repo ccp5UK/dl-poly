@@ -71,7 +71,7 @@ Module meta
     peakProfilerElec,  peakProfiler
   Use ttm_track,       Only : ttm_ion_temperature
   Use filename,        Only : file_type,default_filenames,FILE_CONTROL,FILE_OUTPUT, &
-    FILE_STATS,        FILENAME_SIZE,FILE_CURRENT
+    FILE_STATS,FILENAME_SIZE,FILE_CURRENT,FILE_KPOINTS
   Use flow_control,    Only : flow_type
   Use kinetics,        Only : cap_forces
   Implicit None
@@ -271,7 +271,10 @@ Contains
     ! ALLOCATE SITE & CONFIG
     Call sites%init(sites%mxtmls,sites%mxatyp)
     Call config%init()
-    Call config%k%init('KPOINTS',comm)
+    
+    If (stats%cur%on) Then
+      Call config%k%init(files(FILE_KPOINTS)%filename,comm)
+    End If
     Call neigh%init_list(config%mxatdm)
 
     ! ALLOCATE DPD ARRAYS
@@ -301,7 +304,9 @@ Contains
     Call rdf%init()
     Call zdensity%init(rdf%max_grid,sites%mxatyp)
     Call stats%init(config%mxatms)
-    Call stats%cur%init(config%k%n,200,files(FILE_CURRENT),comm)
+    If (stats%cur%on) Then
+      Call stats%cur%init(config%k%n,200,files(FILE_CURRENT),comm)
+    End If
     Call green%init(config%mxatms,sites%mxatyp)
 
     ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS

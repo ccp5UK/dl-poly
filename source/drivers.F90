@@ -1222,8 +1222,10 @@ Contains
 
     If (green%samp > 0) Call vaf_collect(cnfig,sites%mxatyp,flow%equilibration,flow%equil_steps,flow%step,flow%time,green,comm)
 
-     If (stat%cur%on) then
-       Call stat%cur%compute(cnfig,comm)
+     If (stat%cur%on .and. (Mod(flow%step,flow%freq_output) == 0) .and. (flow%step > flow%equil_steps)) then
+       
+       Call stat%cur%compute(cnfig,flow%time,comm)
+
      End If
 
   End Subroutine statistics_report
