@@ -5,10 +5,13 @@ module angular_distribution
   Use site, Only : site_type
   Use neighbours, Only : neighbours_type
   Use coord, Only : coord_type
+  Use flow_control, Only : flow_type
   Implicit none
   type, public :: adf_type
         real(wp) :: rij(1:10),rik,rjk
         Integer, allocatable :: astat(:,:),coordlist(:,:)
+        Integer :: adfinterval
+        Logical :: adfon
 !        real(wp), allocatable :: rij(1:10)
 
   end type adf_type
@@ -18,16 +21,21 @@ contains
 
 
 
-  subroutine adf_calculate(config,sites,crd,adf)
+  subroutine adf_calculate(config,sites,flow,crd,adf)
     Type(configuration_type), Intent(In) :: config
     Type(coord_type), Intent(In) :: crd
     Type(adf_type), Intent(InOUT) :: adf
     Type(site_type), Intent(In) :: sites
+    Type(flow_type), Intent(In) :: flow
     integer :: i,ii,iii,j,jj,jjj,k,kk,kkk
     real :: costheta,temptheta
-    
+    if (adf%adfon .Eqv. .False.)Return
+    If(crd%coordon .Eqv. .False.)Return
+    If(mod(flow%step,adf%adfinterval).NE.0)Return
     Open(Unit=nchadf, File='ADFDAT', Form='formatted')
+    If(flow%step.eq.0)then
    allocate(adf%astat(-1:180,1:2*crd%ncoordpairs))
+    endif
     adf%astat(:,:)=0
     do i=1,crd%ncoordpairs
        adf%astat(-1,(2*i)-1)=crd%ltype(i,1)
@@ -76,9 +84,11 @@ contains
 
     End do
 
+
+    write(nchadf,'(A29,I10,F20.6)')"Angular distribution function",flow%step,flow%time
     Do i=1,2*crd%ncoordpairs
-    write(nchadf,*)sites%unique_atom(adf%astat(-1,i)),'-',sites%unique_atom(adf%astat(0,i))&
-            ,'-',sites%unique_atom(adf%astat(-1,i))
+    write(nchadf,*)trim(sites%unique_atom(adf%astat(-1,i))),'-',trim(sites%unique_atom(adf%astat(0,i)))&
+            ,'-',trim(sites%unique_atom(adf%astat(-1,i)))
     do ii= 1,180
     write(nchadf,*)real(ii)-0.5,adf%astat(ii,i)
     End Do

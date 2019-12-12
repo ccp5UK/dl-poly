@@ -317,7 +317,7 @@ Contains
     Call read_control(lfce,impa,ttms,dfcts,rigid,rsdsc,core_shells,cons,pmfs, &
       stats,thermo,green,devel,plume,msd_data,met,pois,bond,angle,dihedral, &
       inversion,zdensity,neigh,vdws,rdf, minim,mpoles,electro,ewld, &
-      seed,traj,files,tmr,config,flow,crd,comm)
+      seed,traj,files,tmr,config,flow,crd,adf,comm)
 
     ! READ SIMULATION FORCE FIELD
     Call read_field(neigh%cutoff,core_shells,pmfs,cons,thermo,met,bond,angle, &

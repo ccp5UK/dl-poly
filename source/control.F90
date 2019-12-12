@@ -75,6 +75,7 @@ Module control
     RESTART_KEY_NOSCALE,RESTART_KEY_SCALE
   Use rigid_bodies, Only : rigid_bodies_type
   Use coord, Only : coord_type
+  Use angular_distribution, Only : adf_type,adf_calculate
   Implicit None
 
   Private
@@ -90,7 +91,7 @@ Contains
   Subroutine read_control( lfce,impa,ttm,dfcts,rigid, &
     rsdc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data,met, &
     pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws, &
-    rdf,minim,mpoles,electro,ewld,seed,traj,files,tmr,config,flow,crd,comm)
+    rdf,minim,mpoles,electro,ewld,seed,traj,files,tmr,config,flow,crd,adf,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -152,6 +153,7 @@ Contains
     Type( flow_type ), Intent( InOut ) :: flow
     Type( comms_type ),     Intent( InOut )  :: comm
     Type( coord_type ), Intent( InOut ) :: crd
+    Type( adf_type ), Intent(InOut) :: adf
     Integer( Kind = wi ) :: tmp_seed(1:3)
 
 
@@ -495,6 +497,9 @@ Contains
      crd%coordstart= 0
      crd%coordinterval= 100
      crd%coordops= 0
+    !Default switch for angular distribution
+    adf%adfon=.false.
+    adf%adfinterval= 100
 
     ! default value for data dumping interval
 
@@ -2612,7 +2617,6 @@ Contains
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         rdf%freq = Abs(Nint(word_2_real(word,1.0_wp)))
 
-        ! read z-density profile option
         ! coordination reading from control file
       Else If (word(1:5) == 'coord')then
         crd%coordon = .true.
@@ -2621,8 +2625,16 @@ Contains
         call get_word(record,word)
           crd%coordinterval= abs(Nint(word_2_real(word)))
         call get_word(record,word)
-                crd%coordops= abs(Nint(word_2_real(word,1.0_wp)))  
+                crd%coordops= abs(Nint(word_2_real(word,1.0_wp))) 
+        ! anugular distribution reading from control file
+         Else If (word(1:3) == 'adf')then
+           adf%adfon=.true.
+         call get_word(record,word)
+          adf%adfinterval= abs(Nint(word_2_real(word)))
+        
 
+
+      ! read z-density profile option
       Else If (word(1:4) == 'zden') Then
 
         zdensity%l_collect = .true.
