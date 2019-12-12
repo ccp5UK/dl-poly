@@ -725,7 +725,7 @@ Contains
 
     n_s = Size(aaa, Dim = 1)
 
-    Call MPI_ALLREDUCE(aaa,bbb,n_s,wp_mpi,MPI_SUM,comm%comm,comm%ierr)
+    Call MPI_ALLREDUCE(aaa,bbb,n_s,MPI_DOUBLE_COMPLEX,MPI_SUM,comm%comm,comm%ierr)
 
     aaa = bbb
 

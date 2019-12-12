@@ -998,7 +998,7 @@ Contains
     config%mxatms = Max(1 , Nint(test * Real((ilx+3)*(ily+3)*(ilz+3),wp))) ! Overestimate & then bound down
     If (comm%mxnode == 1 .or. config%imcon == 0) Then ! ilx >= 2 && ily >= 2 && ilz >= 2
       ! maximum of 8 fold increase in of surface thickness (domain+halo) to volume (domain only) as per geometric reasoning
-      config%mxatms = Nint(Min(Real(config%mxatms,wp),8.0_wp*fdvar*Real(megatm,wp)))
+      config%mxatms = Nint(Min(Real(config%mxatms,wp),12.0_wp*fdvar*Real(megatm,wp)))
     Else If (config%imcon == 6 .or. config%imc_n == 6)   Then ! comm%mxnode >= 4 .or. (ilx >= 2 && ily >= 2)
       ! maximum of 7 fold increase in of surface thickness (domain+halo) to volume (domain only) as per geometric reasoning
       config%mxatms = Nint(Min(Real(config%mxatms,wp),7.0_wp*fdvar*Real(megatm,wp)))
@@ -1120,7 +1120,6 @@ Contains
         neigh%max_cell = Max(neigh%max_cell,Nint((fdvar**2) * Real((ilx+5)*(ily+5)*(ilz+5),wp)))
       End If
     End If
-
   End Subroutine set_bounds
 
 End Module bounds

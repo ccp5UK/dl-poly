@@ -882,6 +882,11 @@ Contains
 
           thermo%press = thermo%press/prsunt
         End If
+      
+      Else If (word(1:8) == 'currents') Then
+      
+        stats%cur%on = .true.
+        call info("computing currents is on!",.true.)
 
         ! read restart
 
@@ -959,8 +964,6 @@ Contains
       Else If (word(1:7) == 'collect') Then
         flow%equilibration = .false.
         Call info('equilibration included in overall averages',.true.)
-      Else If (word(1:8) == 'currents') Then
-        stats%cur%on = .true.
         ! read pseudo thermostat option
       Else If (word(1:6) == 'pseudo') Then
 

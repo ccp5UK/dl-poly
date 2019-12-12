@@ -12,7 +12,7 @@ module currents
     complex(kind=wp),    allocatable :: c(:,:,:) ! lags,kpoints,xyz
     complex(kind=wp),    allocatable :: fc(:,:,:) ! lags,kpoints,xyz
     integer                          :: nkpoints, lag
-    integer                          :: file_handle
+    integer                          :: file_handle = -2
     logical                          :: on = .False.
 
   contains
@@ -25,7 +25,6 @@ module currents
 contains
 
   subroutine init(T,nk,lag,fcurrent,comm)
-  
   class(current_type)                  :: T
     Type( file_type ), Intent( InOut ) :: fcurrent
     Type(comms_type),  intent( In )    :: comm
@@ -36,15 +35,13 @@ contains
     allocate(T%jlk(nk,3))
     T%nkpoints = nk
     T%lag=lag
-    T%on = .True.
-    If (comm%idnode == 0) Open(Newunit=fcurrent%unit_no, File=fcurrent%filename, Status='unknown',&
-      action="write")
-    T%file_handle = fcurrent%unit_no
+    If (comm%idnode == 0) Then 
+      Open(Newunit=fcurrent%unit_no, File=fcurrent%filename, Status='unknown',action="write")
+      T%file_handle = fcurrent%unit_no
+    end if
   end subroutine init
 
-
   subroutine compute(T,config,time,comm)
-
   class(current_type)                       :: T
     type(configuration_type), intent(in)    :: config
     Type(comms_type),         intent(inout) :: comm
@@ -62,13 +59,15 @@ contains
         h = h + [config%vxx(i),config%vyy(i),config%vzz(i)]*exp(cmplx(0.0_wp,tmp,wp))
       enddo
       !current%jlk(:,k,j)=kp%u(:,k)*dot_product(kp%u(:,k),h)
+      write(0,*)comm%idnode,k,h,config%natms
       call gsum(comm,h)
       T%jlk(k,:) = h
     end do
 
     if (comm%idnode==0) then
-      write(T%file_handle,'(g0.8,*(g0.8,1x))') time,T%jlk(:,:)
-    end if  
+      write(T%file_handle,'(g0.8,1x,*(g0.8,1x))') time,T%jlk(:,:)
+    end if
+
   end subroutine compute
 
   subroutine cleanup(T)

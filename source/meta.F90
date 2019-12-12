@@ -272,9 +272,6 @@ Contains
     Call sites%init(sites%mxtmls,sites%mxatyp)
     Call config%init()
     
-    If (stats%cur%on) Then
-      Call config%k%init(files(FILE_KPOINTS)%filename,comm)
-    End If
     Call neigh%init_list(config%mxatdm)
 
     ! ALLOCATE DPD ARRAYS
@@ -304,9 +301,6 @@ Contains
     Call rdf%init()
     Call zdensity%init(rdf%max_grid,sites%mxatyp)
     Call stats%init(config%mxatms)
-    If (stats%cur%on) Then
-      Call stats%cur%init(config%k%n,200,files(FILE_CURRENT),comm)
-    End If
     Call green%init(config%mxatms,sites%mxatyp)
 
     ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
@@ -321,6 +315,11 @@ Contains
       stats,thermo,green,devel,plume,msd_data,met,pois,bond,angle,dihedral, &
       inversion,zdensity,neigh,vdws,rdf, minim,mpoles,electro,ewld, &
       seed,traj,files,tmr,config,flow,comm)
+    
+    If (stats%cur%on) Then
+      Call config%k%init(files(FILE_KPOINTS)%filename,comm)
+      Call stats%cur%init(config%k%n,200,files(FILE_CURRENT),comm)
+    End If
 
     ! READ SIMULATION FORCE FIELD
     Call read_field(neigh%cutoff,core_shells,pmfs,cons,thermo,met,bond,angle, &
