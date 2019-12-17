@@ -676,7 +676,7 @@ Contains
         cite_file_string, &
         kerror)
       If (kerror /= 0) Then
-        Call kim_error('kim_get_item_metadata_file_length', __LINE__)
+        Call kim_error('kim_get_item_metadata_file_values', __LINE__)
       End If
 
       If (comm%idnode == 0) Then
