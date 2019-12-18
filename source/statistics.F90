@@ -2084,6 +2084,4 @@ Contains
 
   End Function calculate_heat_flux
 
-
-
 End Module statistics

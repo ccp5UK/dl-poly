@@ -301,9 +301,9 @@ Contains
 
             if (stats%collect_pp) then
               stats%pp_energy(iatm) = stats%pp_energy(iatm) + coul * 0.5_wp
-              stats%pp_energy(jatm) = stats%pp_energy(jatm) + coul * 0.5_wp
+              stats%pp_energy(config%ltg(jatm)) = stats%pp_energy(config%ltg(jatm)) + coul * 0.5_wp
               stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
-              stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
+              stats%pp_stress(:, config%ltg(jatm)) = stats%pp_stress(:, config%ltg(jatm)) + stress_temp_comp * 0.5_wp
             end if
 
           End If
@@ -497,9 +497,9 @@ Contains
 
             if (stats%collect_pp) then
               stats%pp_energy(iatm) = stats%pp_energy(iatm) + coul * 0.5_wp
-              stats%pp_energy(jatm) = stats%pp_energy(jatm) + coul * 0.5_wp
+              stats%pp_energy(config%ltg(jatm)) = stats%pp_energy(config%ltg(jatm)) + coul * 0.5_wp
               stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
-              stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
+              stats%pp_stress(:, config%ltg(jatm)) = stats%pp_stress(:, config%ltg(jatm)) + stress_temp_comp * 0.5_wp
             end if
 
           End If
@@ -636,18 +636,15 @@ Contains
 
             if (stats%collect_pp) then
               stats%pp_energy(iatm) = stats%pp_energy(iatm) + coul * 0.5_wp
-              stats%pp_energy(jatm) = stats%pp_energy(jatm) + coul * 0.5_wp
+              stats%pp_energy(config%ltg(jatm)) = stats%pp_energy(config%ltg(jatm)) + coul * 0.5_wp
               stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
-              stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
+              stats%pp_stress(:, config%ltg(jatm)) = stats%pp_stress(:, config%ltg(jatm)) + stress_temp_comp * 0.5_wp
             end if
 
           End If
 
         End If
 
-        If (stats%collect_pp) Then
-          stats%pp_energy(iatm) = stats%pp_energy(iatm) + coul
-        End If
 
       End Do
 
@@ -786,9 +783,9 @@ Contains
 
             if (stats%collect_pp) then
               stats%pp_energy(iatm) = stats%pp_energy(iatm) + coul * 0.5_wp
-              stats%pp_energy(jatm) = stats%pp_energy(jatm) + coul * 0.5_wp
+              stats%pp_energy(config%ltg(jatm)) = stats%pp_energy(config%ltg(jatm)) + coul * 0.5_wp
               stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
-              stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
+              stats%pp_stress(:, config%ltg(jatm)) = stats%pp_stress(:, config%ltg(jatm)) + stress_temp_comp * 0.5_wp
             end if
 
           End If
