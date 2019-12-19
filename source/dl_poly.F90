@@ -88,7 +88,7 @@ program dl_poly
   Use tersoff, Only : tersoff_type
   Use four_body, Only : four_body_type
 
-  Use kim, Only : kim_type,kim_setup
+  Use kim, Only : kim_type
   Use plumed, Only : plumed_type,plumed_init,plumed_finalize
 
   Use external_field, Only : external_field_type
@@ -212,23 +212,23 @@ program dl_poly
     End If
   End If
 
-  ! temporary stuff this will need to be abstracted 
+  ! temporary stuff this will need to be abstracted
   Allocate(flow(1))
   flow(1)%simulation_method = MD
   ! Select metasimulation method
   If (flow(1)%simulation_method == MD) Then
-    write(0,*) "simulation type: MD" 
+    write(0,*) "simulation type: MD"
     Call molecular_dynamics(dlp_world,thermo,ewld,tmr,devel,stats, &
       green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion,tether, &
       threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs,fourbody, &
       rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow,seed,traj, &
       kim_data,config,ios,ttms,rsdsc,files,control_filename)
-  Else If (flow(1)%simulation_method == EVB) Then 
-    write(0,*) "simulation type: EVB" 
-  Else If (flow(1)%simulation_method == FFS) Then 
-    write(0,*) "simulation type: FFS" 
+  Else If (flow(1)%simulation_method == EVB) Then
+    write(0,*) "simulation type: EVB"
+  Else If (flow(1)%simulation_method == FFS) Then
+    write(0,*) "simulation type: FFS"
   Else
-    write(0,*) "Unknown simulation type" 
+    write(0,*) "Unknown simulation type"
   End IF
 
   ! Terminate job
