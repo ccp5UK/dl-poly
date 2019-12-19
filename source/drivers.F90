@@ -1547,7 +1547,7 @@ Contains
        call crd%init_coordlist(neigh%max_list,cnfig%mxatms)
        Call init_coord_list(cnfig,neigh,crd,sites,flow,comm)
        Call checkcoord(cnfig,neigh,crd,sites,flow,stat,impa,comm)
-       Call adf_calculate(cnfig,sites,flow,crd,adf) 
+       Call adf_calculate(cnfig,sites,flow,crd,adf,comm) 
       End If
 
       ! DO THAT ONLY IF 0<flow%step<=flow%run_steps AND THIS IS AN OLD JOB (flow%newjob=.false.)
@@ -1595,7 +1595,7 @@ Contains
         End If
          Call init_coord_list(cnfig,neigh,crd,sites,flow,comm)
          Call checkcoord(cnfig,neigh,crd,sites,flow,stat,impa,comm)
-         Call adf_calculate(cnfig,sites,flow,crd,adf)
+         Call adf_calculate(cnfig,sites,flow,crd,adf,comm)
       End If ! DO THAT ONLY IF 0<flow%step<=flow%run_steps AND THIS IS AN OLD JOB (flow%newjob=.false.)
 
       1000 Continue ! Escape forces evaluation at t=0 when flow%step=flow%run_steps=0 and flow%newjob=.false.

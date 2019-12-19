@@ -363,11 +363,13 @@ contains
 
 
     do i=1,config%natms
+       crd%adfcoordlist(0,i)=crd%coordlist(0,i)
       do j=1,crd%coordlist(0,i)
         crd%adfcoordlist(j,i)=crd%coordlist(j,i)
         crd%coordlist(j,i)=config%ltg(crd%coordlist(j,i))
       end do
     end do
+    
      !Create icoordlist
      if (flow%step==crd%coordstart) then
       crd%icoordlist=crd%coordlist
