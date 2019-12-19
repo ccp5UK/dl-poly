@@ -285,6 +285,8 @@ Contains
     Character(Len = 68) :: fmt, banner(7)
     Character(Len = 256) :: message
 
+    Integer :: fail(4)
+
 #ifdef KIM
     Type(kim_collections_handle_type) :: kim_coll
     Type(kim_data_type_type) :: kim_data_type
@@ -433,14 +435,20 @@ Contains
       Call kim_get_number_of_neighbor_lists(kim_data%model_handle, &
         kim_data%n_lists)
 
-      ! Allocate neighbour list, neighbour list pointer
-      Allocate(kim_data%neigh(kim_data%n_lists))
-      Allocate(kim_data%neigh_pointer(kim_data%n_lists))
-      ! Allocate hint arrays
-      Allocate(kim_data%hints_padding(kim_data%n_lists))
+      fail = 0
 
+      ! Allocate neighbour list, neighbour list pointer
+      Allocate(kim_data%neigh(kim_data%n_lists), Stat = fail(1))
+      Allocate(kim_data%neigh_pointer(kim_data%n_lists), Stat = fail(2))
+      ! Allocate hint arrays
+      Allocate(kim_data%hints_padding(kim_data%n_lists), Stat = fail(3))
       ! Get neighbour list cutoffs and hints
-      Allocate(cutoffs(kim_data%n_lists))
+      Allocate(cutoffs(kim_data%n_lists), Stat = fail(4))
+
+      If (Any(fail /= 0)) Then
+        Call kim_error('kim_setup, allocation failure ', __LINE__)
+      End If
+
       Call kim_get_neighbor_list_values(kim_data%model_handle, &
         cutoffs, kim_data%hints_padding, kerror)
       If (kerror /= 0) Then
@@ -450,7 +458,14 @@ Contains
       Do list_index = 1, kim_data%n_lists
         kim_data%neigh(list_index)%cutoff = cutoffs(list_index)
       End Do
-      Deallocate(cutoffs)
+
+      fail(1) = 0
+      Deallocate(cutoffs, Stat = fail(1))
+      If (fail(1) /= 0) Then
+        Call kim_error('kim_setup, cutoffs ' // &
+        'deallocation failure ', __LINE__)
+      End If
+
       ! Initialise neighbour list and neighbour list pointer types
       Do list_index = 1, kim_data%n_lists
         If (kim_data%hints_padding(list_index) == 1) Then
@@ -586,6 +601,8 @@ Contains
     Real(Kind = c_double), Allocatable :: cutoffs(:)
     Integer(Kind = c_int), Allocatable :: hints_padding(:)
 
+    Integer :: fail
+
     If (COMPILED_WITH_KIM .eqv. .false.) Then
       Call error(0, 'KIM directive found in FIELD, but the program is ' // &
         'not built with openKIM support', .true.)
@@ -627,8 +644,14 @@ Contains
       ! Get number of neighbour lists
       Call kim_get_number_of_neighbor_lists(model_handle, n_lists)
 
+      fail = 0
       ! Get neighbour list cutoffs and record maximum
-      Allocate(cutoffs(n_lists), hints_padding(n_lists))
+      Allocate(cutoffs(n_lists), hints_padding(n_lists), Stat = fail)
+      If (fail /= 0) Then
+        Call kim_error('kim_cutoff, cutoffs, and hints_padding ' // &
+        'allocation failure ', __LINE__)
+      End If
+
       Call kim_get_neighbor_list_values(model_handle, &
         cutoffs, hints_padding, kerror)
       kim_data%cutoff = Real(maxval(cutoffs), wp)
@@ -645,8 +668,14 @@ Contains
           kim_data%influence_distance)
       End If
 
+      fail = 0
       ! Deallocate temporary variables
-      Deallocate(cutoffs, hints_padding)
+      Deallocate(cutoffs, hints_padding, Stat = fail)
+      If (fail /= 0) Then
+        Call kim_error('kim_cutoff, cutoffs, and hints_padding ' // &
+        'deallocation failure ', __LINE__)
+      End If
+
       Call kim_model_destroy(model_handle)
     Else If (kim_data%model_type .eq. &
         KIM_COLLECTION_ITEM_TYPE_SIMULATOR_MODEL) Then
@@ -1138,20 +1167,45 @@ Contains
     !> Extent of neighbour list arrays
     Integer(Kind = wi), Intent(In   ) :: max_list
 
+    Integer :: fail
+
+    fail = 0
     ! Allocate KIM neighbour list type arrays
-    Allocate(T%n_neigh(max_atoms))
-    Allocate(T%neigh_list(max_list, max_atoms))
+    Allocate(T%n_neigh(max_atoms), Stat = fail)
+    If (fail /= 0) Then
+      Call kim_error('kim_neighbour_list_type_init, n_neigh ' // &
+      'allocation failure ', __LINE__)
+    End If
+
+    Allocate(T%neigh_list(max_list, max_atoms), Stat = fail)
+    If (fail /= 0) Then
+      Call kim_error('kim_neighbour_list_type_init, neigh_list ' // &
+      'allocation failure ', __LINE__)
+    End If
   End Subroutine kim_neighbour_list_type_init
 
   !> Deallocate memory used by the KIM neighbour list type
   Subroutine kim_neighbour_list_type_cleanup(T)
     Type(kim_neighbour_list_type) :: T
 
+    Integer :: fail
+
+    fail = 0
+
     If (Allocated(T%n_neigh)) Then
-      Deallocate(T%n_neigh)
+      Deallocate(T%n_neigh, Stat = fail)
+      If (fail /= 0) Then
+        Call kim_error('kim_neighbour_list_type_cleanup, n_neigh ' // &
+        'deallocation failure ', __LINE__)
+      End If
     End If
+
     If (Allocated(T%neigh_list)) Then
-      Deallocate(T%neigh_list)
+      Deallocate(T%neigh_list, Stat = fail)
+      If (fail /= 0) Then
+        Call kim_error('kim_neighbour_list_type_cleanup, neigh_list ' // &
+        'deallocation failure ', __LINE__)
+      End If
     End If
   End Subroutine kim_neighbour_list_type_cleanup
 
@@ -1179,8 +1233,16 @@ Contains
     !> Number of nodes
     Integer(Kind = wi), Intent(In   ) :: mxnode
 
+    Integer :: fail
+
+    fail = 0
+
     ! Allocate buffer
-    Allocate(T%buffer(buffer_size))
+    Allocate(T%buffer(buffer_size), Stat = fail)
+    If (fail /= 0) Then
+      Call kim_error('kim_comms_type_init, buffer ' // &
+      'allocation failure ', __LINE__)
+    End If
 
     ! Set begining of receive portion
     T%recv_start = buffer_size / Merge(2, 1, mxnode > 1)
@@ -1205,8 +1267,16 @@ Contains
   Subroutine kim_comms_type_cleanup(T)
     Type(kim_comms_type) :: T
 
+    Integer :: fail
+
+    fail = 0
+
     If (Allocated(T%buffer)) Then
-      Deallocate(T%buffer)
+      Deallocate(T%buffer, Stat = fail)
+      If (fail /= 0) Then
+        Call kim_error('kim_comms_type_cleanup, buffer ' // &
+          'deallocation failure ', __LINE__)
+      End If
     End If
   End Subroutine kim_comms_type_cleanup
 
@@ -1216,12 +1286,19 @@ Contains
     !> Extent of particle arrays including halo particles (coordinates, forces, etc.)
     Integer(Kind = wi), Intent(In   ) :: mxatms
 
+    Integer :: fail(5)
 #ifdef KIM
-    Allocate(T%species_name(mxatms))
-    Allocate(T%species_code(mxatms))
-    Allocate(T%contributing(mxatms))
-    Allocate(T%coords(3, mxatms))
-    Allocate(T%forces(3, mxatms))
+    fail = 0
+
+    Allocate(T%species_name(mxatms), Stat = fail(1))
+    Allocate(T%species_code(mxatms), Stat = fail(2))
+    Allocate(T%contributing(mxatms), Stat = fail(3))
+    Allocate(T%coords(3, mxatms), Stat = fail(4))
+    Allocate(T%forces(3, mxatms), Stat = fail(5))
+
+    If (Any(fail /= 0)) Then
+      Call kim_error('kim_type_init, allocation failure ', __LINE__)
+    End If
 #endif
   End Subroutine kim_type_init
 
@@ -1231,26 +1308,57 @@ Contains
 
     Integer(Kind = c_int) :: kerror
 
+    Integer :: fail
+
 #ifdef KIM
+    fail = 0
+
     If (Allocated(T%species_name)) Then
-      Deallocate(T%species_name)
+      Deallocate(T%species_name, Stat = fail)
+      If (fail /= 0) Then
+        Call kim_error('kim_type_cleanup, species_name ' // &
+        'deallocation failure ', __LINE__)
+      End If
     End If
+
     If (Allocated(T%species_code)) Then
-      Deallocate(T%species_code)
+      Deallocate(T%species_code, Stat = fail)
+      If (fail /= 0) Then
+        Call kim_error('kim_type_cleanup, species_code ' // &
+        'deallocation failure ', __LINE__)
+      End If
     End If
 
     If (Allocated(T%forces)) Then
-      Deallocate(T%forces)
+      Deallocate(T%forces, Stat = fail)
+      If (fail /= 0) Then
+        Call kim_error('kim_type_cleanup, forces ' // &
+        'deallocation failure ', __LINE__)
+      End If
     End If
+
     If (Allocated(T%coords)) Then
-      Deallocate(T%coords)
+      Deallocate(T%coords, Stat = fail)
+      If (fail /= 0) Then
+        Call kim_error('kim_type_cleanup, coords ' // &
+        'deallocation failure ', __LINE__)
+      End If
     End If
 
     If (Allocated(T%neigh)) Then
-      Deallocate(T%neigh)
+      Deallocate(T%neigh, Stat = fail)
+      If (fail /= 0) Then
+        Call kim_error('kim_type_cleanup, neigh ' // &
+        'deallocation failure ', __LINE__)
+      End If
     End If
+
     If (Allocated(T%neigh_pointer)) Then
-      Deallocate(T%neigh_pointer)
+      Deallocate(T%neigh_pointer, Stat = fail)
+      If (fail /= 0) Then
+        Call kim_error('kim_type_cleanup, neigh_pointer ' // &
+        'deallocation failure ', __LINE__)
+      End If
     End If
 
     Call kim_compute_arguments_destroy(T%model_handle, &
