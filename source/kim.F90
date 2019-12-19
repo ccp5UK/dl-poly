@@ -3,6 +3,7 @@
 !> Copyright - Daresbury Laboratory
 !>
 !> Author - J. Madge July 2018
+!>        - Y. Afshar Dec 2019
 !>
 !> Based on KIM v2.0 simulator example in Fortran and the KIM v1 implementation
 !> by R. S. Elliot
@@ -73,26 +74,26 @@ Module kim
 #endif
 
   !> Name of this source file
-  Character(Len=*), Parameter :: FILE_NAME="kim.F90"
+  Character(Len = *), Parameter :: FILE_NAME = "kim.F90"
 
   !> Number of scalars per particle to be sent during communication.
   !> In this case force_x, force_y, > force_z and global_id
-  Integer(Kind=wi), Parameter :: span = 4
+  Integer(Kind = wi), Parameter :: span = 4
 
   !> Neighbour list type containing KIM neighbour list data
   Type :: kim_neighbour_list_type
     Private
 
     !> Potential cut off
-    Real(Kind=c_double) :: cutoff
+    Real(Kind = c_double) :: cutoff
     !> Total number of particles
-    Integer(Kind=c_int) :: n_part
+    Integer(Kind = c_int) :: n_part
     !> Number of neighbours for each particle
-    Integer(Kind=c_int), Allocatable :: n_neigh(:)
+    Integer(Kind = c_int), Allocatable :: n_neigh(:)
     !> Neighbour list
     !>
     !> `list(n,part)` is the number of the `n`th neighbour of particle `part`
-    Integer(Kind=c_int), Allocatable :: neigh_list(:,:)
+    Integer(Kind = c_int), Allocatable :: neigh_list(:,:)
   Contains
     Private
 
@@ -127,14 +128,14 @@ Module kim
     Private
 
     !> Buffer for message passing
-    Real(Kind=wp), Allocatable :: buffer(:)
+    Real(Kind = wp), Allocatable :: buffer(:)
     !> Half buffer size, used to divide the portion for sending and the portion
     !> for receiving
-    Integer(Kind=wi) :: recv_start
+    Integer(Kind = wi) :: recv_start
     !> Number of atoms to receive in each direction
-    Integer(Kind=wi) :: n_recv(6)
+    Integer(Kind = wi) :: n_recv(6)
     !> ids of first and last atoms to send respectively in each direction
-    Integer(Kind=wi) :: first(6), last(6)
+    Integer(Kind = wi) :: first(6), last(6)
 
   Contains
     Private
@@ -155,12 +156,12 @@ Module kim
     Logical, Public :: padding_neighbours_required = .false.
 
     !> Name of the KIM model requested
-    Character(Len=:, Kind=c_char), Allocatable, Public :: model_name
+    Character(Len = :, Kind = c_char), Allocatable, Public :: model_name
 
     !> Largest model cutoff, used to determining cell list and domain size
-    Real(Kind=wp), Public :: cutoff = 0.0_wp
+    Real(Kind = wp), Public :: cutoff = 0.0_wp
     !> Model influence distance
-    Real(Kind=c_double), Public :: influence_distance
+    Real(Kind = c_double), Public :: influence_distance
 
     !> Neighbour list type
     Type(kim_neighbour_list_type), Allocatable :: neigh(:)
@@ -178,35 +179,35 @@ Module kim
     Type(kim_collection_item_type_type) :: model_type
 
     !> Number of particles
-    Integer(Kind=c_int) :: n_particles
+    Integer(Kind = c_int) :: n_particles
 
     !> Number of model neighbour lists
-    Integer(Kind=c_int) :: n_lists
+    Integer(Kind = c_int) :: n_lists
 
     !> Neighbour list padding hints
-    Integer(Kind=c_int), Allocatable :: hints_padding(:)
+    Integer(Kind = c_int), Allocatable :: hints_padding(:)
 
     ! Species
     !> List of species names
     Type(kim_species_name_type), Allocatable :: species_name(:)
     !> List of species codes
-    Integer(Kind=c_int), Allocatable :: species_code(:)
+    Integer(Kind = c_int), Allocatable :: species_code(:)
 
     !> Contributing list
     !>
     !> - 1 if particle contributes
     !> - 0 otherwise
-    Integer(Kind=c_int), Allocatable :: contributing(:)
+    Integer(Kind = c_int), Allocatable :: contributing(:)
 
     !> Coordinates
-    Real(Kind=c_double), Allocatable :: coords(:,:)
+    Real(Kind = c_double), Allocatable :: coords(:, :)
 
     !> KIM energy
-    Real(Kind=c_double) :: energy
+    Real(Kind = c_double) :: energy
     !> KIM forces
-    Real(Kind=c_double), Allocatable :: forces(:,:)
+    Real(Kind = c_double), Allocatable :: forces(:, :)
     !> KIM virial
-    Real(Kind=c_double) :: virial(6)
+    Real(Kind = c_double) :: virial(6)
 #endif
   Contains
     Private
@@ -215,7 +216,8 @@ Module kim
     Final :: kim_type_cleanup
   End Type kim_type
 
-  Public :: kim_setup, kim_cutoff
+  Public :: kim_setup
+  Public :: kim_cutoff
   Public :: kim_energy_and_forces
   Public :: get_neigh
   Public :: kim_citations
@@ -224,30 +226,30 @@ Contains
 
   !> Interface to DL_POLY error routine
   Subroutine kim_error(message,line)
-    Character(Kind=c_char, Len=*), Intent(In) :: message
-    Integer(Kind=wi), Intent(In) :: line
+    Character(Kind = c_char, Len = *), Intent(In   ) :: message
+    Integer(Kind = wi), Intent(In   ) :: line
 
-    Character(Len=3) :: line_str
-    Character(Len=:), Allocatable :: error_message
+    Character(Len = 3) :: line_str
+    Character(Len = :), Allocatable :: error_message
 
-    Write(line_str,'(i3)') line
+    Write(line_str, '(i3)') line
     error_message = 'KIM error: ' // Trim(message) // ' line: ' // &
       Trim(Adjustl(line_str)) // ' file: ' // FILE_NAME
-    Call error(0,error_message,.true.)
+    Call error(0, error_message, .true.)
   End subroutine kim_error
 
   !> Interface to DL_POLY warning routine
   Subroutine kim_warning(message,line)
-    Character(Kind=c_char, Len=*), Intent(In) :: message
-    Integer(Kind=wi), Intent(In) :: line
+    Character(Kind = c_char, Len = *), Intent(In   ) :: message
+    Integer(Kind = wi), Intent(In   ) :: line
 
-    Character(Len=3) :: line_str
-    Character(Len=:), Allocatable :: warning_message
+    Character(Len = 3) :: line_str
+    Character(Len = :), Allocatable :: warning_message
 
-    Write(line_str,'(i3)') line
+    Write(line_str, '(i3)') line
     warning_message = 'KIM warning: ' // Trim(message) // ' line: ' // &
       Trim(Adjustl(line_str)) // ' file: ' // FILE_NAME
-    Call warning(warning_message,.true.)
+    Call warning(warning_message, .true.)
   End subroutine kim_warning
 
   !> Initialise KIM types
@@ -255,33 +257,33 @@ Contains
     !> KIM data type
     Type(kim_type), Target, Intent(InOut) :: kim_data
     !> Extent of particle arrays including halo particles (coordinates, forces, etc.)
-    Integer(Kind=wi), Intent(In) :: mxatms
+    Integer(Kind = wi), Intent(In   ) :: mxatms
     !> Extent of particle arrays not including halo particles (neighbours, contraints, etc.)
-    Integer(Kind=wi), Intent(In) :: mxatdm
+    Integer(Kind = wi), Intent(In   ) :: mxatdm
     !> Total number of particles on all domains/nodes
-    Integer(Kind=wi), Intent(In) :: megatm
+    Integer(Kind = wi), Intent(In   ) :: megatm
     !> Extent of neighbour list arrays
-    Integer(Kind=wi), Intent(In) :: max_list
+    Integer(Kind = wi), Intent(In   ) :: max_list
     !> Extent of force arrays
-    Integer(Kind=wi), Intent(In) :: mxbfxp
+    Integer(Kind = wi), Intent(In   ) :: mxbfxp
     !> Number of nodes
-    Integer(Kind=wi), Intent(In) :: mxnode
+    Integer(Kind = wi), Intent(In   ) :: mxnode
 
-    Integer(Kind=c_int) :: requested_units_accepted
-    Real(Kind=c_double), Allocatable :: cutoffs(:)
-    Integer(Kind=wi) :: list_index, max_atoms
-    Integer(Kind=c_int) :: kerror
-    Integer(Kind=c_int) :: n_parameters
-    Integer(Kind=c_int) :: extent
-    Integer(Kind=c_int) :: parameter_index
-    Integer(Kind=wi) :: max_len, i
+    Integer(Kind = c_int) :: requested_units_accepted
+    Real(Kind = c_double), Allocatable :: cutoffs(:)
+    Integer(Kind = wi) :: list_index, max_atoms
+    Integer(Kind = c_int) :: kerror
+    Integer(Kind = c_int) :: n_parameters
+    Integer(Kind = c_int) :: extent
+    Integer(Kind = c_int) :: parameter_index
+    Integer(Kind = wi) :: max_len, i
 
-    Character(Kind=c_char, Len=256) :: parameter_name
-    Character(Kind=c_char, Len=1024) :: parameter_description
-    Character(Kind=c_char, Len=256) :: parameter_string
+    Character(Kind = c_char, Len = 256) :: parameter_name
+    Character(Kind = c_char, Len = 1024) :: parameter_description
+    Character(Kind = c_char, Len = 256) :: parameter_string
 
-    Character(Len=68) :: fmt, banner(7)
-    Character(Len=256) :: message
+    Character(Len = 68) :: fmt, banner(7)
+    Character(Len = 256) :: message
 
 #ifdef KIM
     Type(kim_collections_handle_type) :: kim_coll
@@ -296,20 +298,23 @@ Contains
 #ifdef KIM
     Call kim_collections_create(kim_coll, kerror)
     If (kerror /= 0) Then
-      Call kim_error('kim_collections_create, unable to access the KIM Collections', __LINE__)
+      Call kim_error('kim_collections_create, unable to access ' // &
+        'the KIM Collections', __LINE__)
     End If
-    Call kim_get_item_type(kim_coll, Trim(kim_data%model_name), kim_data%model_type, kerror)
+    Call kim_get_item_type(kim_coll, Trim(kim_data%model_name), &
+      kim_data%model_type, kerror)
     If (kerror /= 0) Then
       Call kim_error('kim_get_item_type, KIM Model name not found', __LINE__)
     End If
     Call kim_collections_destroy(kim_coll)
 
-    If (kim_data%model_type .eq. KIM_COLLECTION_ITEM_TYPE_PORTABLE_MODEL) Then
+    If (kim_data%model_type .eq. &
+        KIM_COLLECTION_ITEM_TYPE_PORTABLE_MODEL) Then
       ! Allocate KIM data type arrays
       Call kim_data%init(mxatms)
 
       ! Initialise comms type
-      Call kim_data%kcomms%init(mxbfxp*span,mxnode)
+      Call kim_data%kcomms%init(mxbfxp * span, mxnode)
 
       ! Create KIM object
       ! kim_numbering_one_based - numbering from 1 (fortran style arrays)
@@ -330,7 +335,8 @@ Contains
         requested_units_accepted, &
         kim_data%model_handle, kerror)
       If (requested_units_accepted /= 1) Then
-        Call kim_error('kim_model_create, the selected KIM model does not support DL_POLY internal units', __LINE__)
+        Call kim_error('kim_model_create, the selected KIM model does ' // &
+          'not support DL_POLY internal units', __LINE__)
       End If
       If (kerror /= 0) Then
         Call kim_error('kim_model_create', __LINE__)
@@ -339,15 +345,17 @@ Contains
       ! Print KIM model parameters
       Call kim_get_number_of_parameters(kim_data%model_handle, n_parameters)
 
-      Write(banner(1),'(a)') ""
-      Write(banner(2),'(a)') '//'//Repeat("=",30) //' KIM '// Repeat("=",31)
-      Write(banner(3),'(a)') '||'
-      Write(banner(5),'(a)') '||'
-      Write(banner(6),'(a)') '||'
-      Write(banner(7),'(a)') '\\'//Repeat("=",66)
+      Write(banner(1), '(a)') ""
+      Write(banner(2), '(a)') '//' // Repeat("=", 30) //' KIM '// &
+        Repeat("=", 31)
+      Write(banner(3), '(a)') '||'
+      Write(banner(5), '(a)') '||'
+      Write(banner(6), '(a)') '||'
+      Write(banner(7), '(a)') '\\' // Repeat("=", 66)
       If (n_parameters .gt. 0) Then
-        Write(banner(4),'(a,i0,a)') '|| This model has ', n_parameters, ' mutable parameters.'
-        Call info(banner,6,.true.)
+        Write(banner(4), '(a, i0, a)') '|| This model has ', n_parameters, &
+          ' mutable parameters.'
+        Call info(banner, 6, .true.)
 
         max_len = 18
         Do parameter_index = 1, n_parameters
@@ -363,11 +371,12 @@ Contains
           max_len = max(max_len, len_trim(parameter_name))
         End Do
 
-        Write(message,'(a,a,a)') '|| No.     |  Parameter name  ', Repeat(' ',max_len-18), '|  Data type  |  Extent'
+        Write(message, '(a, a, a)') '|| No.     |  Parameter name  ', &
+          Repeat(' ', max_len-18), '|  Data type  |  Extent'
         Call info(message,.true.)
 
-        Write(message,'(a)') '||'//Repeat('=',66)
-        Call info(message,.true.)
+        Write(message, '(a)') '||' // Repeat('=', 66)
+        Call info(message, .true.)
 
         Do parameter_index = 1, n_parameters
           Call kim_get_parameter_metadata(kim_data%model_handle, &
@@ -379,32 +388,34 @@ Contains
 
           Call kim_to_string(kim_data_type, parameter_string)
 
-          Write(fmt,'(i0)') parameter_index
+          Write(fmt, '(i0)') parameter_index
 
           If (kim_data_type .eq. KIM_DATA_TYPE_INTEGER) Then
-            Write(message,'(a,i0,7a,i0)') '|| ',parameter_index, &
-              Repeat(' ',8-len_trim(fmt)), '| ', Trim(parameter_name), &
-              Repeat(' ',max(17,Len_Trim(parameter_name))-Len_Trim(parameter_name)), &
-              '|  "', Trim(parameter_string), '"  | ', extent
+            Write(message,'(a, i0, 7a, i0)') '|| ', parameter_index, &
+              Repeat(' ', 8 - len_trim(fmt)), '| ', Trim(parameter_name), &
+              Repeat(' ', max(17, Len_Trim(parameter_name)) - &
+                Len_Trim(parameter_name)), &
+                '|  "', Trim(parameter_string), '"  | ', extent
           Else
-            Write(message,'(a,i0,7a,i0)') '|| ',parameter_index, &
-              Repeat(' ',8-Len_Trim(fmt)), '| ', Trim(parameter_name), &
-              Repeat(' ',max(17,Len_Trim(parameter_name))-Len_Trim(parameter_name)), &
-              '|  "', Trim(parameter_string), '"   | ', extent
+            Write(message, '(a, i0, 7a, i0)') '|| ', parameter_index, &
+              Repeat(' ', 8 - Len_Trim(fmt)), '| ', Trim(parameter_name), &
+              Repeat(' ',max(17, Len_Trim(parameter_name)) - &
+                Len_Trim(parameter_name)), &
+                '|  "', Trim(parameter_string), '"   | ', extent
           End If
-          Call info(message,.true.)
+          Call info(message, .true.)
         End Do
-        Call info(banner(7),.true.)
+        Call info(banner(7), .true.)
       Else
-        Write(banner(4),'(a)') '|| This model has No mutable parameters.'
+        Write(banner(4), '(a)') '|| This model has No mutable parameters.'
 
-        Call info(banner,5,.true.)
-        Call info(banner(7),.true.)
+        Call info(banner, 5, .true.)
+        Call info(banner(7), .true.)
       End If
 
       ! Create compute_arguments object
       Call kim_compute_arguments_create(kim_data%model_handle, &
-        kim_data%compute_arguments_handle,kerror)
+        kim_data%compute_arguments_handle, kerror)
       If (kerror /= 0) Then
         Call kim_error('kim_compute_arguments_create', __LINE__)
       End If
@@ -448,11 +459,12 @@ Contains
           max_atoms = mxatms
         End If
         ! Initialise neighbour list type
-        Call kim_data%neigh(list_index)%init(max_atoms,max_list)
+        Call kim_data%neigh(list_index)%init(max_atoms, max_list)
 
         ! Initialise neighbour list pointer type
-        Call kim_neighbour_list_pointer_type_init(kim_data%neigh_pointer(list_index), &
-          kim_data%neigh(list_index),max_atoms,max_list)
+        Call kim_neighbour_list_pointer_type_init( &
+          kim_data%neigh_pointer(list_index), &
+          kim_data%neigh(list_index), max_atoms,max_list)
       End Do
 
       ! Allocate KIM pointers
@@ -462,7 +474,9 @@ Contains
         kim_compute_argument_name_number_of_particles, &
         kim_data%n_particles, kerror)
       If (kerror /= 0) Then
-        Call kim_error('kim_compute_arguments_set_arugment_pointer for number of particles', __LINE__)
+        Call kim_error('kim_set_argument_pointer, ' // &
+          'kim_compute_arguments_set_arugment_pointer for ' // &
+          'number of particles', __LINE__)
       End If
 
       ! Species codes
@@ -471,7 +485,9 @@ Contains
         kim_compute_argument_name_particle_species_codes, &
         kim_data%species_code, kerror)
       If (kerror /= 0) Then
-        Call kim_error('kim_compute_arguments_set_arugment_pointer for species codes', __LINE__)
+        Call kim_error('kim_set_argument_pointer, ' // &
+          'kim_compute_arguments_set_arugment_pointer ' // &
+          'for species codes', __LINE__)
       End If
 
       ! Contributing status
@@ -480,7 +496,9 @@ Contains
         kim_compute_argument_name_particle_contributing, &
         kim_data%contributing, kerror)
       If (kerror /= 0) Then
-        Call kim_error('kim_compute_arguments_set_arugment_pointer for contributing status', __LINE__)
+        Call kim_error('kim_set_argument_pointer, ' // &
+          'kim_compute_arguments_set_arugment_pointer ' // &
+          'for contributing status', __LINE__)
       End If
 
       ! Coordinates
@@ -489,7 +507,9 @@ Contains
         kim_compute_argument_name_coordinates, &
         kim_data%coords, kerror)
       If (kerror /= 0) Then
-        Call kim_error('kim_compute_arguments_set_arugment_pointer for coordinates', __LINE__)
+        Call kim_error('kim_set_argument_pointer, ' // &
+          'kim_compute_arguments_set_arugment_pointer ' // &
+          'for coordinates', __LINE__)
       End If
 
       ! Energy
@@ -498,7 +518,9 @@ Contains
         kim_compute_argument_name_partial_energy, &
         kim_data%energy, kerror)
       If (kerror /= 0) Then
-        Call kim_error('kim_compute_arguments_set_arugment_pointer for energy', __LINE__)
+        Call kim_error('kim_set_argument_pointer, ' // &
+          'kim_compute_arguments_set_arugment_pointer ' // &
+          'for energy', __LINE__)
       End If
 
       ! Forces
@@ -507,7 +529,9 @@ Contains
         kim_compute_argument_name_partial_forces, &
         kim_data%forces, kerror)
       If (kerror /= 0) Then
-        Call kim_error('kim_compute_arguments_set_arugment_pointer for forces', __LINE__)
+        Call kim_error('kim_set_argument_pointer, ' // &
+          'kim_compute_arguments_set_arugment_pointer ' // &
+          'for forces', __LINE__)
       End If
 
       ! Virials
@@ -516,7 +540,9 @@ Contains
         kim_compute_argument_name_partial_virial, &
         kim_data%virial, kerror)
       If (kerror /= 0) Then
-        Call kim_warning('The selected KIM model does not compute virials, stress and pressure will be incorrect', __LINE__)
+        Call kim_warning('kim_set_argument_pointer, ' // &
+          'The selected KIM model does not compute ' // &
+          'virials, stress and pressure will be incorrect', __LINE__)
         ! Set KIM virials to 0 so they will not contribute to the total
         kim_data%virial = 0.0_wp
       End If
@@ -524,13 +550,17 @@ Contains
       ! Set KIM pointer to neighbour list routine and type
       Call kim_set_callback_pointer( &
         kim_data%compute_arguments_handle, &
-        kim_compute_callback_name_get_neighbor_list, kim_language_name_fortran, &
-        C_funloc(get_neigh), C_loc(kim_data%neigh_pointer), kerror)
+        kim_compute_callback_name_get_neighbor_list, &
+        kim_language_name_fortran, &
+        c_funloc(get_neigh), &
+        c_loc(kim_data%neigh_pointer), kerror)
       If (kerror /= 0) Then
         Call kim_error('kim_set_callback_pointer', __LINE__)
       End If
-    Else If (kim_data%model_type .eq. KIM_COLLECTION_ITEM_TYPE_SIMULATOR_MODEL) Then
-      Call kim_error('kim_setup, currently DL_POLY does not support KIM Simulator model', __LINE__)
+    Else If (kim_data%model_type .eq. &
+        KIM_COLLECTION_ITEM_TYPE_SIMULATOR_MODEL) Then
+      Call kim_error('kim_setup, currently DL_POLY does not support ' // &
+        'KIM Simulator model', __LINE__)
     ELSE
       Call kim_error('kim_setup, unknown model type', __LINE__)
     End If
@@ -550,20 +580,22 @@ Contains
 
     Type(kim_model_handle_type) :: model_handle
 #endif
-    Integer(Kind=c_int) :: requested_units_accepted
-    Integer(Kind=c_int) :: kerror
-    Integer(Kind=c_int) :: n_lists
-    Real(Kind=c_double), Allocatable :: cutoffs(:)
-    Integer(Kind=c_int), Allocatable :: hints_padding(:)
+    Integer(Kind = c_int) :: requested_units_accepted
+    Integer(Kind = c_int) :: kerror
+    Integer(Kind = c_int) :: n_lists
+    Real(Kind = c_double), Allocatable :: cutoffs(:)
+    Integer(Kind = c_int), Allocatable :: hints_padding(:)
 
     If (COMPILED_WITH_KIM .eqv. .false.) Then
-      Call error(0,'KIM directive found in FIELD, but the program is not built with openKIM support',.true.)
+      Call error(0, 'KIM directive found in FIELD, but the program is ' // &
+        'not built with openKIM support', .true.)
     End If
 
 #ifdef KIM
     Call kim_collections_create(kim_coll, kerror)
     If (kerror /= 0) Then
-      Call kim_error('kim_collections_create, unable to access KIM Collections to find Model', __LINE__)
+      Call kim_error('kim_collections_create, unable to access KIM ' // &
+        'Collections to find Model', __LINE__)
     End If
     Call kim_get_item_type(kim_coll, &
       Trim(kim_data%model_name), &
@@ -585,7 +617,8 @@ Contains
         requested_units_accepted, &
         model_handle, kerror)
       If (requested_units_accepted == 0) Then
-        Call kim_error('kim_model_create, the selected KIM model does not support DL_POLY internal units', __LINE__)
+        Call kim_error('kim_model_create, the selected KIM model does ' // &
+          'not support DL_POLY internal units', __LINE__)
       End If
       If (kerror /= 0) Then
         Call kim_error('kim_cutoff', __LINE__)
@@ -603,19 +636,22 @@ Contains
       ! Check if the padding hint is defined
       If (Any(hints_padding /= 1)) Then
         Call kim_warning('The selected KIM model requires neighbours of ' // &
-          'non-contributing particles. This may significantly affect performance', &
-          __LINE__)
+          'non-contributing particles. This may significantly affect ' // &
+          'performance', __LINE__)
         kim_data%padding_neighbours_required = .true.
 
         ! Get influence distance
-        Call kim_get_influence_distance(model_handle, kim_data%influence_distance)
+        Call kim_get_influence_distance(model_handle, &
+          kim_data%influence_distance)
       End If
 
       ! Deallocate temporary variables
       Deallocate(cutoffs, hints_padding)
       Call kim_model_destroy(model_handle)
-    Else If (kim_data%model_type .eq. KIM_COLLECTION_ITEM_TYPE_SIMULATOR_MODEL) Then
-      Call kim_error('kim_cutoff, currently DL_POLY does not support KIM Simulator model', __LINE__)
+    Else If (kim_data%model_type .eq. &
+        KIM_COLLECTION_ITEM_TYPE_SIMULATOR_MODEL) Then
+      Call kim_error('kim_cutoff, currently DL_POLY does not support ' // &
+        'KIM Simulator model', __LINE__)
     ELSE
       Call kim_error('kim_cutoff, unknown model type', __LINE__)
     End If
@@ -624,7 +660,6 @@ Contains
 
   !> Provide KIM citations to reference publication
   Subroutine kim_citations(kim_data, comm)
-    Implicit None
     !> KIM data type
     Type(kim_type), Target, Intent(In   ) :: kim_data
     !> Comms data
@@ -635,21 +670,23 @@ Contains
 #endif
 
     Integer :: unit_no = -2
-    Integer(Kind=c_int) :: kerror
-    Integer(Kind=c_int) :: extent
-    Integer(Kind=c_int) :: index
-    Integer(Kind=c_signed_char) :: cite_file_raw_data(10000)
+    Integer(Kind = c_int) :: kerror
+    Integer(Kind = c_int) :: extent
+    Integer(Kind = c_int) :: index
+    Integer(Kind = c_signed_char) :: cite_file_raw_data(10000)
 
-    Character(Kind=c_char, Len=2048) :: cite_file_name
-    Character(Kind=c_char, Len=10000) :: cite_file_string
+    Character(Kind = c_char, Len = 2048) :: cite_file_name
+    Character(Kind = c_char, Len = 10000) :: cite_file_string
 
 #ifdef KIM
     Call kim_collections_create(kim_coll, kerror)
     If (kerror /= 0) Then
-      Call kim_error('kim_collections_create, unable to access KIM Collections to find Model', __LINE__)
+      Call kim_error('kim_collections_create, unable to access KIM ' // &
+        'Collections to find Model', __LINE__)
     End If
 
-    If (kim_data%model_type .eq. KIM_COLLECTION_ITEM_TYPE_PORTABLE_MODEL) Then
+    If (kim_data%model_type .eq. &
+        KIM_COLLECTION_ITEM_TYPE_PORTABLE_MODEL) Then
       Call kim_cache_list_of_item_metadata_files(kim_coll, &
         KIM_COLLECTION_ITEM_TYPE_PORTABLE_MODEL, &
         Trim(kim_data%model_name), &
@@ -658,14 +695,16 @@ Contains
       If (kerror /= 0) Then
         Call kim_error('kim_cache_list_of_item_metadata_files', __LINE__)
       End If
-    Else If (kim_data%model_type .eq. KIM_COLLECTION_ITEM_TYPE_SIMULATOR_MODEL) Then
-      Call kim_error('kim_citations, currently DL_POLY does not support KIM Simulator model', __LINE__)
+    Else If (kim_data%model_type .eq. &
+        KIM_COLLECTION_ITEM_TYPE_SIMULATOR_MODEL) Then
+      Call kim_error('kim_citations, currently DL_POLY does not ' // &
+        'support KIM Simulator model', __LINE__)
     ELSE
       Call kim_error('kim_citations, unknown model type', __LINE__)
     End If
 
     If (comm%idnode == 0) Then
-      Open(Newunit=unit_no, File='kim.cite', Status='replace')
+      Open(Newunit = unit_no, File = 'kim.cite', Status = 'replace')
     End If
 
     Do index = 1, extent
@@ -681,14 +720,14 @@ Contains
 
       If (comm%idnode == 0) Then
         If (cite_file_name(1:7) == 'kimcite') Then
-          Write(unit_no, Fmt='(A)') Trim(cite_file_string)
-          Write(unit_no, Fmt='(A)')
+          Write(unit_no, Fmt = '(A)') Trim(cite_file_string)
+          Write(unit_no, Fmt = '(A)')
         End If
       End If
     End Do
 
     If (comm%idnode == 0) Then
-      Close(Unit=unit_no)
+      Close(Unit = unit_no)
     End If
 
     Call kim_collections_destroy(kim_coll)
@@ -696,43 +735,43 @@ Contains
   End Subroutine kim_citations
 
   !> Compute KIM energy and forces
-  Subroutine kim_energy_and_forces(kim_data,natms,nlast,parts,neigh_list,map, &
-      lsite,lsi,lsa,ltg,site_name,energy_kim,virial_kim,stress,comm)
+  Subroutine kim_energy_and_forces(kim_data,natms,nlast,parts,neigh_list, &
+      map,lsite,lsi,lsa,ltg,site_name,energy_kim,virial_kim,stress,comm)
     !> KIM data type
     Type(kim_type), Target, Intent(InOut) :: kim_data
     !> Number of particles in this domain (excluding the halo)
-    Integer(Kind=wi), Intent(In) :: natms
+    Integer(Kind = wi), Intent(In   ) :: natms
     !> Number of particles in this domain and it's halo
-    Integer(Kind=wi), Intent(In) :: nlast
+    Integer(Kind = wi), Intent(In   ) :: nlast
     !> Particles
     Type(corepart), Dimension(:), Intent(InOut) :: parts
     !> DL_POLY neighbour list
     !>
     !> - list(0,n) is the number of neighbours of particle n
     !> - list(m,n) is the 'm'th neighbour of particle n
-    Integer(Kind=wi), Intent(In) :: neigh_list(-3:,1:)
+    Integer(Kind = wi), Intent(In   ) :: neigh_list(-3:, 1:)
     !> Map of neighbouring domain ids
-    Integer(Kind=wi), Intent(In) :: map(1:26)
+    Integer(Kind = wi), Intent(In   ) :: map(1:26)
     !> Site local index to global index
-    Integer(Kind=wi), Intent(In) :: lsite(:)
+    Integer(Kind = wi), Intent(In   ) :: lsite(:)
     !> Some sort of local to global arrays
-    Integer(Kind=wi), Intent(In) :: lsi(:),lsa(:)
+    Integer(Kind = wi), Intent(In   ) :: lsi(:),lsa(:)
     !> Local to global id
-    Integer(Kind=wi), Intent(In) :: ltg(:)
+    Integer(Kind = wi), Intent(In   ) :: ltg(:)
     !> Names of each atom
-    Character(Len=8), Intent(In) :: site_name(:)
+    Character(Len = 8), Intent(In   ) :: site_name(:)
     !> KIM model energy
-    Real(Kind=wp), Intent(Out) :: energy_kim
+    Real(Kind = wp), Intent(  Out) :: energy_kim
     !> KIM model virial
-    Real(Kind=wp), Intent(Out) :: virial_kim
+    Real(Kind = wp), Intent(  Out) :: virial_kim
     !> Virial
-    Real(Kind=wp), Dimension(9), Intent(InOut) :: stress
+    Real(Kind = wp), Dimension(9), Intent(InOut) :: stress
     !> Comms data
     Type(comms_type), Intent(InOut) :: comm
 
-    Integer(Kind=wi) :: atom, list_index
-    Integer(Kind=c_int) :: species_is_supported
-    Integer(Kind=c_int) :: kerror
+    Integer(Kind = wi) :: atom, list_index
+    Integer(Kind = c_int) :: species_is_supported
+    Integer(Kind = c_int) :: kerror
 
 #ifdef KIM
     ! Set number of particles
@@ -740,24 +779,28 @@ Contains
 
     ! Copy coordinates to KIM coordinates array
     kim_data%coords = 0
-    Do atom=1,nlast
-      kim_data%coords(1,atom) = Real(parts(atom)%xxx, c_double)
-      kim_data%coords(2,atom) = Real(parts(atom)%yyy, c_double)
-      kim_data%coords(3,atom) = Real(parts(atom)%zzz, c_double)
+    Do atom = 1, nlast
+      kim_data%coords(1, atom) = Real(parts(atom)%xxx, c_double)
+      kim_data%coords(2, atom) = Real(parts(atom)%yyy, c_double)
+      kim_data%coords(3, atom) = Real(parts(atom)%zzz, c_double)
     End Do
 
     ! Enter species information
     Do atom = 1, nlast
-      Call kim_from_string(Trim(site_name(lsite(atom))), &
+      Call kim_from_string( &
+        Trim(site_name(lsite(atom))), &
         kim_data%species_name(atom))
 
       ! Check model supports the requested species
-      Call kim_get_species_support_and_code(kim_data%model_handle, &
-        kim_data%species_name(atom),species_is_supported, &
-        kim_data%species_code(atom),kerror)
+      Call kim_get_species_support_and_code( &
+        kim_data%model_handle, &
+        kim_data%species_name(atom), &
+        species_is_supported, &
+        kim_data%species_code(atom), kerror)
 
-      If ( (kerror/=0) .or. (species_is_supported/=1) ) Then
-        Call kim_error('Model does not support species', __LINE__)
+      If ((kerror /= 0) .or. (species_is_supported /= 1)) Then
+        Call kim_error('kim_get_species_support_and_code, ' // &
+          'Model does not support species', __LINE__)
       End If
     End Do
 
@@ -767,14 +810,15 @@ Contains
 
     ! Construct neighbour lists
     Do list_index = 1, kim_data%n_lists
-      Call kim_neighbour_list(kim_data,list_index,nlast,natms,neigh_list)
+      Call kim_neighbour_list(kim_data, list_index, nlast, natms, neigh_list)
     End Do
 
     ! Call KIM API to compute energy and forces
     Call kim_compute(kim_data%model_handle, &
       kim_data%compute_arguments_handle, kerror)
     If (kerror /= 0) Then
-      Call kim_error('kim_model_compute returned an error', __LINE__)
+      Call kim_error('kim_compute, kim_model_compute returned an error', &
+        __LINE__)
     End If
 
     ! Retrieve KIM energy and forces from pointers (allocated in kim_setup)
@@ -786,7 +830,8 @@ Contains
     End Do
     ! Distribute the partial forces on boundary atoms calculated on this processor
     ! to the appropriate neighbour
-    Call kim_share_halo_forces(kim_data,parts,natms,nlast,lsi,lsa,ltg,map,comm)
+    Call kim_share_halo_forces(kim_data, parts, natms, nlast, lsi, lsa, &
+      ltg, map, comm)
 
     ! Virials (and pressure?)
     ! In OpenKIM virial has 6 components and is stored as
@@ -801,7 +846,8 @@ Contains
     stress(8) = stress(8) - Real(kim_data%virial(4), wp)
     stress(9) = stress(9) - Real(kim_data%virial(3), wp)
 
-    virial_kim = Real(kim_data%virial(1)+kim_data%virial(2)+kim_data%virial(3), wp)
+    virial_kim = Real(kim_data%virial(1) + kim_data%virial(2) + &
+      kim_data%virial(3), wp)
 #else
     energy_kim = 0.0_wp
     virial_kim = 0.0_wp
@@ -813,28 +859,28 @@ Contains
     !> KIM data type
     Type(kim_type), Target, Intent(InOut) :: kim_data
     !> Label of list to generate
-    Integer(Kind=wi), Intent(In) :: list_index
+    Integer(Kind = wi), Intent(In   ) :: list_index
     !> Number of particles in this domain and it's halo
-    Integer(Kind=wi), Intent(In) :: nlast
+    Integer(Kind = wi), Intent(In   ) :: nlast
     !> Number of particles in this domain (excluding the halo)
-    Integer(Kind=wi), Intent(In) :: natms
+    Integer(Kind = wi), Intent(In   ) :: natms
     !> DL_POLY neighbour list
     !>
     !> - list(0,n) is the number of neighbours of particle n
     !> - list(m,n) is the 'm'th neighbour of particle n
-    Integer(Kind=wi), Intent(In) :: list(-3:,1:)
+    Integer(Kind = wi), Intent(In   ) :: list(-3:, 1:)
 
-    Integer(Kind=wi) :: ipart, jpart
-    Integer(Kind=wi) :: neighbour
+    Integer(Kind = wi) :: ipart, jpart
+    Integer(Kind = wi) :: neighbour
     Logical :: padding_hint
-    Real(Kind=c_double) :: dr(1:3), r
+    Real(Kind = c_double) :: dr(1:3), r
 
 #ifdef KIM
     padding_hint = kim_data%hints_padding(list_index) == 1
 
     Associate(n_neigh => kim_data%neigh(list_index)%n_neigh, &
-        kim_list => kim_data%neigh(list_index)%neigh_list, &
-        cutoff => kim_data%neigh(list_index)%cutoff)
+              kim_list => kim_data%neigh(list_index)%neigh_list, &
+              cutoff => kim_data%neigh(list_index)%cutoff)
 
       ! Set number of particles
       kim_data%neigh%n_part = natms
@@ -846,19 +892,19 @@ Contains
       ! Build KIM neighbour list
       Do ipart = 1, natms
 
-        Do neighbour = 1, list(0,ipart)
+        Do neighbour = 1, list(0, ipart)
           ! Determine the 'neighbour'th neighbour of particles ipart
-          jpart = list(neighbour,ipart)
+          jpart = list(neighbour, ipart)
 
           ! Add this neighbour to the KIM neighbour list of ipart
           n_neigh(ipart) = n_neigh(ipart) + 1
-          kim_list(n_neigh(ipart),ipart) = jpart
+          kim_list(n_neigh(ipart), ipart) = jpart
 
           ! Add symmetric entry as KIM requires a full list. If the padding hint
           ! is true, then this is only nessecary if jpart is not a halo atom.
           If (padding_hint .eqv. .false. .or. jpart <= natms) Then
             n_neigh(jpart) = n_neigh(jpart) + 1
-            kim_list(n_neigh(jpart),jpart) = ipart
+            kim_list(n_neigh(jpart), jpart) = ipart
           End If
         End Do
       End Do
@@ -867,20 +913,21 @@ Contains
       ! non-padding neighbours of padding particles have been added to the
       ! neighbour list above.
       If (padding_hint .eqv. .false.) Then
-        Do ipart = natms+1, nlast-1
-          Do jpart = ipart+1, nlast
+        Do ipart = natms + 1, nlast - 1
+          Do jpart = ipart + 1, nlast
 
             ! Add to list if the pair ipart-jpart are within the cutoff
-            dr(1:3) = kim_data%coords(1:3,jpart) - kim_data%coords(1:3,ipart)
-            r = Sqrt(Dot_product(dr,dr))
+            dr(1:3) = kim_data%coords(1:3, jpart) - &
+              kim_data%coords(1:3, ipart)
+            r = Sqrt(Dot_product(dr, dr))
 
             If (r < cutoff) Then
               n_neigh(ipart) = n_neigh(ipart) + 1
-              kim_list(n_neigh(ipart),ipart) = jpart
+              kim_list(n_neigh(ipart), ipart) = jpart
 
               ! Add symmetric entry
               n_neigh(jpart) = n_neigh(jpart) + 1
-              kim_list(n_neigh(jpart),jpart) = ipart
+              kim_list(n_neigh(jpart), jpart) = ipart
             End If
 
           End Do
@@ -893,42 +940,42 @@ Contains
   !> KIM does not assume that the entirity of an atoms force will be calculated
   !> on the domain to which it belongs. It is therefore necessary to send the
   !> partial forces calculated on padding atoms to the appropriate domain.
-  Subroutine kim_share_halo_forces(kim_data,parts,natms,nlast,lsi,lsa,ltg,map, &
-      comm)
+  Subroutine kim_share_halo_forces(kim_data,parts,natms,nlast,lsi,lsa,ltg, &
+      map,comm)
     !> KIM data type
     Type(kim_type), Target, Intent(InOut) :: kim_data
     !> Particles
     Type(corepart), Dimension(:), Intent(InOut) :: parts
     !> Number of particles in this domain (excluding the halo)
-    Integer(Kind=wi), Intent(In) :: natms
+    Integer(Kind = wi), Intent(In   ) :: natms
     !> Number of particles in this domain and it's halo
-    Integer(Kind=wi), Intent(In) :: nlast
+    Integer(Kind = wi), Intent(In   ) :: nlast
     !> Some sort of local to global arrays
-    Integer(Kind=wi), Intent(In) :: lsi(:),lsa(:)
+    Integer(Kind = wi), Intent(In   ) :: lsi(:), lsa(:)
     !> Local to global id
-    Integer(Kind=wi), Intent(In) :: ltg(:)
+    Integer(Kind = wi), Intent(In   ) :: ltg(:)
     !> Map of neighbouring domain ids
-    Integer(Kind=wi), Intent(In) :: map(1:26)
+    Integer(Kind = wi), Intent(In   ) :: map(1:26)
     !> Communicator type
     Type(comms_type), Intent(InOut) :: comm
 
     !> Direction to send and receive in
-    Integer(Kind=wi) :: direction
+    Integer(Kind = wi) :: direction
     !> id of the node to send and receive from respectively
-    Integer(Kind=wi) :: destination,source
+    Integer(Kind = wi) :: destination, source
     !> Local atom number iterator
-    Integer(Kind=wi) :: atom
+    Integer(Kind = wi) :: atom
     !> Buffer location
-    Integer(Kind=wi) :: buf
+    Integer(Kind = wi) :: buf
     !> Size of buffer to send and receive respectively
-    Integer(Kind=wi) :: send_size, recv_size
+    Integer(Kind = wi) :: send_size, recv_size
     !> The position in the buffer where data to receive begins
-    Integer(Kind=wi) :: recv_start
-    Integer(Kind=wi) :: i
+    Integer(Kind = wi) :: recv_start
+    Integer(Kind = wi) :: i
 
 #ifdef KIM
     ! Iterate over each direction to send and receive
-    Do direction=1,6
+    Do direction = 1, 6
 
       ! Determine the id of the appropriate neighbour
       If (direction == 1) Then
@@ -961,11 +1008,12 @@ Contains
         ! Pack data to send
         buf = 0
         ! Loop over atoms to send
-        Do atom=kim_data%kcomms%first(direction), kim_data%kcomms%last(direction)
+        Do atom = kim_data%kcomms%first(direction), &
+            kim_data%kcomms%last(direction)
           ! Pack forces
-          buffer(buf + 1) = Real(kim_data%forces(1,atom), wp)
-          buffer(buf + 2) = Real(kim_data%forces(2,atom), wp)
-          buffer(buf + 3) = Real(kim_data%forces(3,atom), wp)
+          buffer(buf + 1) = Real(kim_data%forces(1, atom), wp)
+          buffer(buf + 2) = Real(kim_data%forces(2, atom), wp)
+          buffer(buf + 3) = Real(kim_data%forces(3, atom), wp)
 
           ! Pack global atom id
           buffer(buf + 4) = Real(ltg(atom), wp)
@@ -982,8 +1030,9 @@ Contains
           recv_size = kim_data%kcomms%n_recv(direction) * span
           recv_start = kim_data%kcomms%recv_start
           If (recv_size > 0) Then
-            Call girecv(comm,buffer(recv_start+1:recv_start+recv_size),source,Export_tag)
-            Call gsend(comm,buffer(1:send_size),destination,Export_tag)
+            Call girecv(comm, buffer(recv_start + 1:recv_start + &
+              recv_size), source, Export_tag)
+            Call gsend(comm, buffer(1:send_size), destination, Export_tag)
             Call gwait(comm)
           End  If
         Else
@@ -997,7 +1046,7 @@ Contains
         ! Loop number over atoms to receive
         Do i = 1, recv_size/span
           ! Find local index of received atom
-          atom = local_index(Nint(buffer(buf+4)),nlast,lsi,lsa)
+          atom = local_index(Nint(buffer(buf + 4)), nlast, lsi, lsa)
 
           ! Add partial force to local force arrays
           parts(atom)%fxx = parts(atom)%fxx + buffer(buf + 1)
@@ -1015,28 +1064,28 @@ Contains
   Subroutine get_neigh(data_object,n_lists,cutoffs,neighbour_list_index, &
       request,n_neigh,first,kerror) bind(c)
     !> KIM neighbour type address
-    Type(c_ptr), Value, Intent(In) :: data_object
+    Type(c_ptr), Value, Intent(In   ) :: data_object
     !> Number of potential cutoffs in model
-    Integer(c_int), Value, Intent(In) :: n_lists
+    Integer(c_int), Value, Intent(In   ) :: n_lists
     !> Array of cutoffs
-    Real(c_double), Intent(In) :: cutoffs(n_lists)
+    Real(c_double), Intent(In   ) :: cutoffs(n_lists)
     !> Which neighbour list to inspect
-    Integer(c_int), Value, Intent(In) :: neighbour_list_index
+    Integer(c_int), Value, Intent(In   ) :: neighbour_list_index
     !> Number of the particle for which list information is requested
-    Integer(c_int), Value, Intent(In) :: request
+    Integer(c_int), Value, Intent(In   ) :: request
     !> Number of neighbours of the requested particle
-    Integer(c_int), Intent(out) :: n_neigh
+    Integer(c_int), Intent(  Out) :: n_neigh
     !> Location of the first neighbour of the returned neighbour list
-    Type(c_ptr), Intent(out) :: first
+    Type(c_ptr), Intent(  Out) :: first
     !> Error status
-    Integer(c_int), Intent(out) :: kerror
+    Integer(c_int), Intent(  Out) :: kerror
 
     Type(kim_neighbour_list_pointer_type), Pointer :: neigh(:)
     Integer(c_int), Pointer :: kim_neigh(:)
-    Integer(c_int), Pointer :: kim_list(:,:)
+    Integer(c_int), Pointer :: kim_list(:, :)
     Real(c_double), Pointer :: kim_cutoff
     Integer(c_int), Pointer :: kim_n_part
-    Character(Len=80) :: message
+    Character(Len = 80) :: message
 
 #ifdef KIM
     ! Assign local KIM neighbour type pointer to address of C data object
@@ -1044,20 +1093,23 @@ Contains
     Call c_f_pointer(neigh(neighbour_list_index)%n_neigh, kim_neigh, &
       [neigh(neighbour_list_index)%max_atoms])
     Call c_f_pointer(neigh(neighbour_list_index)%neigh_list, kim_list, &
-      [neigh(neighbour_list_index)%max_neigh,neigh(neighbour_list_index)%max_atoms])
+      [neigh(neighbour_list_index)%max_neigh, &
+      neigh(neighbour_list_index)%max_atoms])
     Call c_f_pointer(neigh(neighbour_list_index)%cutoff, kim_cutoff)
     Call c_f_pointer(neigh(neighbour_list_index)%n_part, kim_n_part)
 
     ! Ensure neighbour list cutoff is larger than KIM model cutoff
     If (cutoffs(neighbour_list_index) > kim_cutoff) Then
-      Call kim_warning('Neighbour list cutoff too small for model cutoff', __LINE__)
+      Call kim_warning('Neighbour list cutoff too small for model cutoff', &
+        __LINE__)
       kerror = 1
       Return
     End If
 
     ! Ensure requested particle exists
-    If ( (request > kim_n_part) .or. (request < 1) ) Then
-      Write(message,'(a,g0)') 'Invalid particle number requested in get_neigh: ', request
+    If ((request > kim_n_part) .or. (request < 1)) Then
+      Write(message, '(a, g0)') 'Invalid particle number requested ' // &
+        'in get_neigh: ', request
       Call kim_warning(message, __LINE__)
       kerror = 1
       Return
@@ -1066,7 +1118,7 @@ Contains
     ! Set number of neighbours for requested particle
     n_neigh = kim_neigh(request)
     ! Set the location for beginning of the returned neighbour list
-    first = c_loc(kim_list(1,request))
+    first = c_loc(kim_list(1, request))
 
     kerror = 0
 #else
@@ -1082,13 +1134,13 @@ Contains
     !> Extent of particle arrays. When the padding hint is true this is the
     !> maximum number of atoms on a node excluding the halo. When the hint is
     !> false this is the maximum number of atoms on a node including the halo.
-    Integer(Kind=wi), Intent(In) :: max_atoms
+    Integer(Kind = wi), Intent(In   ) :: max_atoms
     !> Extent of neighbour list arrays
-    Integer(Kind=wi), Intent(In) :: max_list
+    Integer(Kind = wi), Intent(In   ) :: max_list
 
     ! Allocate KIM neighbour list type arrays
     Allocate(T%n_neigh(max_atoms))
-    Allocate(T%neigh_list(max_list,max_atoms))
+    Allocate(T%neigh_list(max_list, max_atoms))
   End Subroutine kim_neighbour_list_type_init
 
   !> Deallocate memory used by the KIM neighbour list type
@@ -1104,17 +1156,17 @@ Contains
   End Subroutine kim_neighbour_list_type_cleanup
 
   !> Initialise the KIM neighbour list pointer type
-  Subroutine kim_neighbour_list_pointer_type_init(neigh_pointer,neigh,max_atoms, &
-      max_list)
+  Subroutine kim_neighbour_list_pointer_type_init(neigh_pointer,neigh, &
+      max_atoms,max_list)
     Type(kim_neighbour_list_pointer_type), Intent(InOut) :: neigh_pointer
-    Type(kim_neighbour_list_type), Target, Intent(In) :: neigh
-    Integer(Kind=wi), Intent(In) :: max_atoms
-    Integer(Kind=wi), Intent(In) :: max_list
+    Type(kim_neighbour_list_type), Target, Intent(In   ) :: neigh
+    Integer(Kind = wi), Intent(In   ) :: max_atoms
+    Integer(Kind = wi), Intent(In   ) :: max_list
 
-    neigh_pointer%cutoff = C_loc(neigh%cutoff)
-    neigh_pointer%n_part = C_loc(neigh%n_part)
-    neigh_pointer%neigh_list = C_loc(neigh%neigh_list)
-    neigh_pointer%n_neigh = C_loc(neigh%n_neigh)
+    neigh_pointer%cutoff = c_loc(neigh%cutoff)
+    neigh_pointer%n_part = c_loc(neigh%n_part)
+    neigh_pointer%neigh_list = c_loc(neigh%neigh_list)
+    neigh_pointer%n_neigh = c_loc(neigh%n_neigh)
     neigh_pointer%max_atoms = max_atoms
     neigh_pointer%max_neigh = max_list
   End Subroutine kim_neighbour_list_pointer_type_init
@@ -1123,26 +1175,26 @@ Contains
   Subroutine kim_comms_type_init(T,buffer_size,mxnode)
   Class(kim_comms_type) :: T
     !> Size of the buffer to allocate
-    Integer(Kind=wi), Intent(In) :: buffer_size
+    Integer(Kind = wi), Intent(In   ) :: buffer_size
     !> Number of nodes
-    Integer(Kind=wi), Intent(In) :: mxnode
+    Integer(Kind = wi), Intent(In   ) :: mxnode
 
     ! Allocate buffer
     Allocate(T%buffer(buffer_size))
 
     ! Set begining of receive portion
-    T%recv_start = buffer_size/Merge(2,1,mxnode > 1)
+    T%recv_start = buffer_size / Merge(2, 1, mxnode > 1)
   End Subroutine kim_comms_type_init
 
   !> Set the ids of atoms to be sent in kim_share_halo_forces
   Subroutine kim_comms_type_set(T,direction,n_recv,first,last)
   Class(kim_comms_type) :: T
     !> The direction in which data is being sent and received
-    Integer(Kind=wi), Intent(In) :: direction
+    Integer(Kind = wi), Intent(In   ) :: direction
     !> Number of atoms to receive in each direction
-    Integer(Kind=wi), Intent(In) :: n_recv
+    Integer(Kind = wi), Intent(In   ) :: n_recv
     !> ids of first and last atoms to send respectively in each direction
-    Integer(Kind=wi) :: first, last
+    Integer(Kind = wi) :: first, last
 
     T%n_recv(direction) = n_recv
     T%first(direction) = first
@@ -1162,16 +1214,14 @@ Contains
   Subroutine kim_type_init(T,mxatms)
   Class(kim_type) :: T
     !> Extent of particle arrays including halo particles (coordinates, forces, etc.)
-    Integer(Kind=wi), Intent(In) :: mxatms
+    Integer(Kind = wi), Intent(In   ) :: mxatms
 
 #ifdef KIM
     Allocate(T%species_name(mxatms))
     Allocate(T%species_code(mxatms))
-
     Allocate(T%contributing(mxatms))
-
-    Allocate(T%coords(3,mxatms))
-    Allocate(T%forces(3,mxatms))
+    Allocate(T%coords(3, mxatms))
+    Allocate(T%forces(3, mxatms))
 #endif
   End Subroutine kim_type_init
 
@@ -1179,7 +1229,7 @@ Contains
   Subroutine kim_type_cleanup(T)
     Type(kim_type) :: T
 
-    Integer(Kind=c_int) :: kerror
+    Integer(Kind = c_int) :: kerror
 
 #ifdef KIM
     If (Allocated(T%species_name)) Then
