@@ -959,25 +959,27 @@ Contains
 
       Associate(buffer => kim_data%kcomms%buffer)
         ! Pack data to send
-        buf=0
+        buf = 0
         ! Loop over atoms to send
-        Do atom=kim_data%kcomms%first(direction),kim_data%kcomms%last(direction)
+        Do atom=kim_data%kcomms%first(direction), kim_data%kcomms%last(direction)
           ! Pack forces
-          buffer(buf+1)=Real(kim_data%forces(1,atom), wp)
-          buffer(buf+2)=Real(kim_data%forces(2,atom), wp)
-          buffer(buf+3)=Real(kim_data%forces(3,atom), wp)
+          buffer(buf + 1) = Real(kim_data%forces(1,atom), wp)
+          buffer(buf + 2) = Real(kim_data%forces(2,atom), wp)
+          buffer(buf + 3) = Real(kim_data%forces(3,atom), wp)
 
           ! Pack global atom id
-          buffer(buf+4)=Real(ltg(atom), wp)
+          buffer(buf + 4) = Real(ltg(atom), wp)
 
-          buf=buf+span
+          buf = buf + span
         End Do
+
+        ! Determine buffer size to send
+        send_size = buf
 
         ! Exchange buffers
         If (comm%mxnode > 1) Then
-          ! Determine sizes of buffers to send and receive
-          send_size = buf
-          recv_size = kim_data%kcomms%n_recv(direction)*span
+          ! Determine buffer size to receive
+          recv_size = kim_data%kcomms%n_recv(direction) * span
           recv_start = kim_data%kcomms%recv_start
           If (recv_size > 0) Then
             Call girecv(comm,buffer(recv_start+1:recv_start+recv_size),source,Export_tag)
@@ -989,18 +991,18 @@ Contains
           recv_start = kim_data%kcomms%recv_start
         End If
 
-        ! Unpack data received
+        ! Unpack received data
         ! Determine where received data begins in the buffer
-        buf = Merge(recv_start,0,comm%mxnode > 1)
+        buf = Merge(recv_start, 0, comm%mxnode > 1)
         ! Loop number over atoms to receive
         Do i = 1, recv_size/span
           ! Find local index of received atom
           atom = local_index(Nint(buffer(buf+4)),nlast,lsi,lsa)
 
           ! Add partial force to local force arrays
-          parts(atom)%fxx = parts(atom)%fxx + buffer(buf+1)
-          parts(atom)%fyy = parts(atom)%fyy + buffer(buf+2)
-          parts(atom)%fzz = parts(atom)%fzz + buffer(buf+3)
+          parts(atom)%fxx = parts(atom)%fxx + buffer(buf + 1)
+          parts(atom)%fyy = parts(atom)%fyy + buffer(buf + 2)
+          parts(atom)%fzz = parts(atom)%fzz + buffer(buf + 3)
 
           buf = buf + span
         End Do
