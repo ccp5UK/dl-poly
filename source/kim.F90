@@ -226,7 +226,9 @@ Contains
 
   !> Interface to DL_POLY error routine
   Subroutine kim_error(message,line)
+    !> Error message for printing in the standard output file
     Character(Kind = c_char, Len = *), Intent(In   ) :: message
+    !> Line number in the source file where error happened
     Integer(Kind = wi), Intent(In   ) :: line
 
     Character(Len = 3) :: line_str
@@ -240,7 +242,9 @@ Contains
 
   !> Interface to DL_POLY warning routine
   Subroutine kim_warning(message,line)
+    !> Warning message for printing in the standard output file
     Character(Kind = c_char, Len = *), Intent(In   ) :: message
+    !> Line number in the source file
     Integer(Kind = wi), Intent(In   ) :: line
 
     Character(Len = 3) :: line_str
