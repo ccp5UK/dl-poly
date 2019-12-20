@@ -296,7 +296,6 @@ Contains
     Integer :: fail(4)
 
 #ifdef KIM
-    Type(kim_collections_handle_type) :: kim_coll
     Type(kim_data_type_type) :: kim_data_type
 #endif
 
@@ -306,18 +305,6 @@ Contains
     End If
 
 #ifdef KIM
-    Call kim_collections_create(kim_coll, kerror)
-    If (kerror /= 0_c_int) Then
-      Call kim_error('kim_collections_create, unable to access ' // &
-        'the KIM Collections', __LINE__)
-    End If
-    Call kim_get_item_type(kim_coll, Trim(kim_data%model_name), &
-      kim_data%model_type, kerror)
-    If (kerror /= 0_c_int) Then
-      Call kim_error('kim_get_item_type, KIM Model name not found', __LINE__)
-    End If
-    Call kim_collections_destroy(kim_coll)
-
     If (kim_data%model_type .eq. &
         KIM_COLLECTION_ITEM_TYPE_PORTABLE_MODEL) Then
       ! Allocate KIM data type arrays
