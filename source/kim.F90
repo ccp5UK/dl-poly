@@ -622,11 +622,15 @@ Contains
       Call kim_push_default_verbosity(KIM_LOG_VERBOSITY_ERROR)
     End If
 
+    ! Create a new KIM API collection object
     Call kim_collections_create(kim_coll, kerror)
     If (kerror /= 0_c_int) Then
       Call kim_error('kim_collections_create, unable to access KIM ' // &
         'Collections to find Model', __LINE__)
     End If
+
+    ! Get the collection item with the requested name. It should be
+    ! a KIM portableModel type otherwise it fails
     Call kim_get_item_type(kim_coll, &
       Trim(kim_data%model_name), &
       kim_data%model_type, &
@@ -634,9 +638,13 @@ Contains
     If (kerror /= 0_c_int) Then
       Call kim_error('kim_get_item_type, KIM Model name not found', __LINE__)
     End If
+
+    ! Destroy a previously created collection.
     Call kim_collections_destroy(kim_coll)
 
-    If (kim_data%model_type .eq. KIM_COLLECTION_ITEM_TYPE_PORTABLE_MODEL) Then
+    ! Check if the item type is a KIM portable model
+    If (kim_data%model_type .eq. &
+      KIM_COLLECTION_ITEM_TYPE_PORTABLE_MODEL) Then
       Call kim_model_create(kim_numbering_one_based, &
         kim_length_unit_a, &
         kim_energy_unit_amu_a2_per_ps2, &
@@ -721,15 +729,19 @@ Contains
     Character(Kind = c_char, Len = 10000) :: cite_file_string
 
 #ifdef KIM
+    ! Create a KIM API collection object
     Call kim_collections_create(kim_coll, kerror)
     If (kerror /= 0_c_int) Then
       Call kim_error('kim_collections_create, unable to access KIM ' // &
         'Collections to find Model', __LINE__)
     End If
 
+    ! Check if the item type is a KIM portable model
     If (kim_data%model_type .eq. &
         KIM_COLLECTION_ITEM_TYPE_PORTABLE_MODEL) Then
-      Call kim_cache_list_of_item_metadata_files(kim_coll, &
+      ! Cache a list of an item's metadata files.
+      Call kim_cache_list_of_item_metadata_files( &
+        kim_coll, &
         KIM_COLLECTION_ITEM_TYPE_PORTABLE_MODEL, &
         Trim(kim_data%model_name), &
         extent, &
@@ -750,7 +762,9 @@ Contains
     End If
 
     Do index = 1_c_int, extent
-      Call kim_get_item_metadata_file_values(kim_coll, &
+      ! Get the name and content of the metadata files.
+      Call kim_get_item_metadata_file_values( &
+        kim_coll, &
         index, &
         cite_file_name, &
         cite_file_raw_data, &
@@ -772,6 +786,7 @@ Contains
       Close(Unit = unit_no)
     End If
 
+    ! Destroy a previously created collection.
     Call kim_collections_destroy(kim_coll)
 #endif
   End Subroutine kim_citations
