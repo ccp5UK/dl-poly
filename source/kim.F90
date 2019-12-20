@@ -61,6 +61,10 @@ Module kim
     kim_species_name_type, &
     kim_length_unit_a, kim_energy_unit_amu_a2_per_ps2, kim_charge_unit_e, &
     kim_temperature_unit_k, kim_time_unit_ps
+  Use kim_log_verbosity_module, Only : KIM_LOG_VERBOSITY_ERROR, &
+    KIM_LOG_VERBOSITY_DEBUG
+  Use kim_log_module, Only : kim_pop_default_verbosity, &
+    kim_push_default_verbosity
 #endif
   Implicit None
 
@@ -595,18 +599,23 @@ Contains
   Subroutine kim_cutoff(kim_data)
     Type(kim_type), Target, Intent(InOut) :: kim_data
 
-#ifdef KIM
-    Type(kim_collections_handle_type) :: kim_coll
-
-    Type(kim_model_handle_type) :: model_handle
-#endif
+    Real(Kind = c_double), Allocatable :: cutoffs(:)
+    Integer(Kind = c_int), Allocatable :: hints_padding(:)
     Integer(Kind = c_int) :: requested_units_accepted
     Integer(Kind = c_int) :: kerror
     Integer(Kind = c_int) :: n_lists
-    Real(Kind = c_double), Allocatable :: cutoffs(:)
-    Integer(Kind = c_int), Allocatable :: hints_padding(:)
 
     Integer :: fail
+
+#ifdef KIM
+    Type(kim_collections_handle_type) :: kim_coll
+    Type(kim_model_handle_type) :: model_handle
+
+    ! This is the debugging flag to be set manually.
+    ! @todo
+    ! It can be set with the CMAKE flag as CMAKE_BUILD_TYPE=Debug
+    Logical :: debug = .false.
+#endif
 
     If (COMPILED_WITH_KIM .eqv. .false.) Then
       Call error(0, 'KIM directive found in FIELD, but the program is ' // &
@@ -614,6 +623,18 @@ Contains
     End If
 
 #ifdef KIM
+    ! Set the the KIM API verbosity mode.
+    Call kim_pop_default_verbosity()
+    If (debug) Then
+      ! The standard debug verbosity. It should not be used for runtime
+      ! since there would be too much of information to print.
+      Call kim_push_default_verbosity(KIM_LOG_VERBOSITY_DEBUG)
+    Else
+      ! The standard error verbosity. It only reports when the execution of
+      ! some task could not be completed.
+      Call kim_push_default_verbosity(KIM_LOG_VERBOSITY_ERROR)
+    End If
+
     Call kim_collections_create(kim_coll, kerror)
     If (kerror /= 0_c_int) Then
       Call kim_error('kim_collections_create, unable to access KIM ' // &
