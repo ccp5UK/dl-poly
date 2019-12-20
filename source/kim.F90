@@ -759,30 +759,26 @@ Contains
 
     If (comm%idnode == 0) Then
       Open(Newunit = unit_no, File = 'kim.cite', Status = 'replace')
-    End If
 
-    Do index = 1_c_int, extent
-      ! Get the name and content of the metadata files.
-      Call kim_get_item_metadata_file_values( &
-        kim_coll, &
-        index, &
-        cite_file_name, &
-        cite_file_raw_data, &
-        cite_file_string, &
-        kerror)
-      If (kerror /= 0_c_int) Then
-        Call kim_error('kim_get_item_metadata_file_values', __LINE__)
-      End If
+      Do index = 1_c_int, extent
+        ! Get the name and content of the metadata files.
+        Call kim_get_item_metadata_file_values( &
+          kim_coll, &
+          index, &
+          cite_file_name, &
+          cite_file_raw_data, &
+          cite_file_string, &
+          kerror)
+        If (kerror /= 0_c_int) Then
+          Call kim_error('kim_get_item_metadata_file_values', __LINE__)
+        End If
 
-      If (comm%idnode == 0) Then
         If (cite_file_name(1:7) == 'kimcite') Then
           Write(unit_no, Fmt = '(A)') Trim(cite_file_string)
           Write(unit_no, Fmt = '(A)')
         End If
-      End If
-    End Do
+      End Do
 
-    If (comm%idnode == 0) Then
       Close(Unit = unit_no)
     End If
 
