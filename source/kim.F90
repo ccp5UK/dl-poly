@@ -1,13 +1,14 @@
+Module kim
 !> Module providing support for the KIM v2.0 library
 !>
 !> Copyright - Daresbury Laboratory
 !>
-!> Author - J. Madge July 2018
-!>        - Y. Afshar Dec 2019
+!> Author  - J. Madge July 2018
+!> Contrib - Y. Afshar Dec 2019
+!> Contrib - A.M. Elena Dec 2019
 !>
 !> Based on KIM v2.0 simulator example in Fortran and the KIM v1 implementation
 !> by R. S. Elliot
-Module kim
   Use, Intrinsic :: iso_c_binding, Only : c_double,c_int,c_char,c_ptr, &
     c_null_ptr,c_funloc,c_loc,c_f_pointer,c_signed_char
   Use kinds, Only : wi,wp
@@ -604,7 +605,7 @@ Contains
     Logical :: debug = .false.
 #endif
 
-    If (COMPILED_WITH_KIM .eqv. .false.) Then
+    If (.Not. COMPILED_WITH_KIM) Then
       Call error(0, 'KIM directive found in FIELD, but the program is ' // &
         'not built with openKIM support', .true.)
     End If
@@ -985,7 +986,7 @@ Contains
 
             ! Add symmetric entry as KIM requires a full list. If the padding hint
             ! is true, then this is only nessecary if jpart is not a halo atom.
-            If (padding_hint .eqv. .false. .or. jpart <= c_natms) Then
+            If ( (.Not. padding_hint) .or. jpart <= c_natms) Then
               n_neigh(jpart) = n_neigh(jpart) + 1_c_int
               kim_list(n_neigh(jpart), jpart) = ipart
             End If ! padding_hint
@@ -995,7 +996,7 @@ Contains
         ! Determine padding neighbours of padding particles if required. The
         ! non-padding neighbours of padding particles have been added to the
         ! neighbour list above.
-        If (padding_hint .eqv. .false.) Then
+        If (.Not. padding_hint) Then
           c_nlast = Int(nlast, c_int)
 
           Do ipart = c_natms + 1_c_int, c_nlast - 1_c_int
@@ -1037,7 +1038,7 @@ Contains
 
                 ! Add symmetric entry as KIM requires a full list. If the padding hint
                 ! is true, then this is only nessecary if jpart is not a halo atom.
-                If (padding_hint .eqv. .false. .or. jpart <= c_natms) Then
+                If ( (.not. padding_hint) .or. jpart <= c_natms) Then
                   n_neigh(jpart) = n_neigh(jpart) + 1_c_int
                   kim_list(n_neigh(jpart), jpart) = ipart
                 End If ! padding_hint
@@ -1049,7 +1050,7 @@ Contains
         ! Determine padding neighbours of padding particles if required. The
         ! non-padding neighbours of padding particles have been added to the
         ! neighbour list above.
-        If (padding_hint .eqv. .false.) Then
+        If (.Not. padding_hint) Then
           c_nlast = Int(nlast, c_int)
 
           Do ipart = c_natms + 1_c_int, c_nlast - 1_c_int
