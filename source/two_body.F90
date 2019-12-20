@@ -1,35 +1,34 @@
 Module two_body
-  Use kinds, Only : wp
-  Use comms,   Only : comms_type,gsum
-  Use constants, Only : pi, r4pie0
-  Use site, Only : site_type
-  Use configuration,  Only : configuration_type
-  Use neighbours,     Only : neighbours_type
-  Use ewald,           Only : ewald_type
-  Use mpole,          Only : mpole_type,POLARISATION_CHARMM
-  Use coul_spole,     Only : coul_fscp_forces, coul_rfp_forces, coul_cp_forces, coul_dddp_forces
-  Use coul_mpole,    Only : coul_fscp_mforces, coul_rfp_mforces, coul_cp_mforces, &
-    coul_dddp_mforces, coul_chrm_forces, d_ene_trq_mpoles
-  Use poisson, Only : poisson_type,poisson_forces,poisson_frzn_forces
-  Use vdw,     Only : vdw_type,vdw_forces
-  Use metal,   Only : metal_type,metal_forces,metal_ld_compute,metal_lrc
-  Use kim,     Only : kim_type,kim_energy_and_forces
-  Use rdfs,    Only : rdf_type,rdf_collect,rdf_excl_collect,rdf_frzn_collect, &
+  Use kinds,                              Only : wp
+  Use comms,                              Only : comms_type,gsum
+  Use constants,                          Only : pi, r4pie0
+  Use site,                               Only : site_type
+  Use configuration,                      Only : configuration_type
+  Use neighbours,                         Only : neighbours_type
+  Use ewald,                              Only : ewald_type
+  Use mpole,                              Only : mpole_type,POLARISATION_CHARMM
+  Use coul_spole,                         Only : coul_fscp_forces, coul_rfp_forces, coul_cp_forces, coul_dddp_forces
+  Use coul_mpole,                         Only : coul_fscp_mforces, coul_rfp_mforces, coul_cp_mforces, &
+    coul_dddp_mforces,                    coul_chrm_forces, d_ene_trq_mpoles
+  Use poisson,                            Only : poisson_type,poisson_forces,poisson_frzn_forces
+  Use vdw,                                Only : vdw_type,vdw_forces
+  Use metal,                              Only : metal_type,metal_forces,metal_ld_compute,metal_lrc
+  Use kim,                                Only : kim_type,kim_energy_and_forces
+  Use rdfs,                               Only : rdf_type,rdf_collect,rdf_excl_collect,rdf_frzn_collect, &
     rdf_increase_block_number
-  Use errors_warnings, Only : error
-  Use ewald_spole, Only : ewald_spme_forces,ewald_real_forces,ewald_frzn_forces, ewald_excl_forces
-  Use ewald_mpole, Only : ewald_spme_mforces, ewald_real_mforces,ewald_frzn_mforces,ewald_excl_mforces, &
-    ewald_spme_mforces_d,ewald_real_mforces_d,ewald_excl_mforces_d,ewald_excl_mforces
-
-  Use timer,      Only : timer_type, start_timer, stop_timer
-  Use development, Only : development_type
-  Use statistics, Only : stats_type
-  Use core_shell, Only : core_shell_type
-  Use electrostatic, Only : electrostatic_type, &
-    ELECTROSTATIC_NULL,ELECTROSTATIC_EWALD,ELECTROSTATIC_DDDP, &
-    ELECTROSTATIC_COULOMB,ELECTROSTATIC_COULOMB_FORCE_SHIFT, &
-    ELECTROSTATIC_COULOMB_REACTION_FIELD,ELECTROSTATIC_POISSON
-  Use domains, Only : domains_type
+  Use errors_warnings,                    Only : error
+  Use ewald_spole,                        Only : ewald_spme_forces,ewald_real_forces,ewald_frzn_forces, ewald_excl_forces
+  Use ewald_mpole,                        Only : ewald_spme_mforces, ewald_real_mforces,ewald_frzn_mforces,ewald_excl_mforces, &
+    ewald_spme_mforces_d,                 ewald_real_mforces_d,ewald_excl_mforces_d,ewald_excl_mforces
+  Use timer,                              Only : timer_type, start_timer, stop_timer
+  Use development,                        Only : development_type
+  Use statistics,                         Only : stats_type
+  Use core_shell,                         Only : core_shell_type
+  Use electrostatic,                      Only : electrostatic_type, &
+    ELECTROSTATIC_NULL,                   ELECTROSTATIC_EWALD,ELECTROSTATIC_DDDP, &
+    ELECTROSTATIC_COULOMB,                ELECTROSTATIC_COULOMB_FORCE_SHIFT, &
+    ELECTROSTATIC_COULOMB_REACTION_FIELD, ELECTROSTATIC_POISSON
+  Use domains,                            Only : domains_type
   Implicit None
 
   Private
@@ -37,9 +36,7 @@ Module two_body
   Public :: two_body_forces
 Contains
 
-  Subroutine two_body_forces(ensemble,    &
-      lbook,megfrz, &
-      leql,nsteql,nstep,         &
+  Subroutine two_body_forces(ensemble,lbook,megfrz,leql,nsteql,nstep,       &
       cshell,stats,ewld,devel,met,pois,neigh,sites,vdws,rdf,mpoles,electro, &
       domain,tmr,kim_data,config,comm)
 
@@ -70,32 +67,32 @@ Contains
 
 
 
-    Logical,                                  Intent( In    ) :: lbook,leql
-    Integer,                                  Intent( In    ) :: ensemble,        &
-      megfrz, &
-      nsteql,nstep
-    Type( core_shell_type ), Intent( InOut ) :: cshell
-    Type( stats_type ), Intent( InOut )                       :: stats
-    Type( ewald_type ),                       Intent( InOut ) :: ewld
-    Type( development_type ),                 Intent( In    ) :: devel
-    Type( metal_type ),                       Intent( InOut ) :: met
-    Type( poisson_type ),                     Intent( InOut ) :: pois
-    Type( neighbours_type ),                  Intent( InOut ) :: neigh
-    Type( site_type ),                        Intent( In    ) :: sites
-    Type( vdw_type ),                         Intent( InOut ) :: vdws
-    Type( rdf_type ),                         Intent( InOut ) :: rdf
-    Type( mpole_type ),                       Intent( InOut ) :: mpoles
-    Type( timer_type ),                       Intent( InOut ) :: tmr
+    Logical,                    Intent( In    ) :: lbook,leql
+    Integer,                    Intent( In    ) :: ensemble,megfrz,nsteql,nstep
+    Type( core_shell_type ),    Intent( InOut ) :: cshell
+    Type( stats_type ),         Intent( InOut ) :: stats
+    Type( ewald_type ),         Intent( InOut ) :: ewld
+    Type( development_type ),   Intent( In    ) :: devel
+    Type( metal_type ),         Intent( InOut ) :: met
+    Type( poisson_type ),       Intent( InOut ) :: pois
+    Type( neighbours_type ),    Intent( InOut ) :: neigh
+    Type( site_type ),          Intent( In    ) :: sites
+    Type( vdw_type ),           Intent( InOut ) :: vdws
+    Type( rdf_type ),           Intent( InOut ) :: rdf
+    Type( mpole_type ),         Intent( InOut ) :: mpoles
+    Type( timer_type ),         Intent( InOut ) :: tmr
     Type( electrostatic_type ), Intent( InOut ) :: electro
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( kim_type ), Intent( InOut ) :: kim_data
-    Type( configuration_type ),               Intent( InOut ) :: config
-    Type( comms_type ),                       Intent( InOut ) :: comm
+    Type( domains_type ),       Intent( In    ) :: domain
+    Type( kim_type ),           Intent( InOut ) :: kim_data
+    Type( configuration_type ), Intent( InOut ) :: config
+    Type( comms_type ),         Intent( InOut ) :: comm
 
 
     Real( Kind = wp ) :: factor_nz
-
-    Logical           :: safe, l_do_rdf, l_do_outer_loop
+    Logical           :: safe, l_do_rdf
+#ifdef KIM
+    Logical           :: l_do_outer_loop
+#endif 
     Integer           :: fail,i,j,k,limit
     Real( Kind = wp ) :: engcpe_rc,vircpe_rc,engcpe_rl,vircpe_rl, &
       engcpe_ch,vircpe_ch,engcpe_ex,vircpe_ex, &
@@ -207,6 +204,7 @@ Contains
     Call start_timer(tmr, 'Short Range')
 #endif
 
+#ifdef KIM
     l_do_outer_loop = ((met%n_potentials > 0) .or. &
                       (vdws%n_vdw > 0) .or. &
                       (mpoles%max_mpoles > 0) .or. &
@@ -215,7 +213,7 @@ Contains
                       l_do_rdf)
 
     If (l_do_outer_loop) Then
-
+#endif
       ! outer loop over atoms
 
       Do i=1,config%natms
@@ -465,7 +463,9 @@ Contains
 
         End If
       End Do
+#ifdef KIM      
     End If
+#endif    
 
     ! counter for rdf%rdf statistics outside loop structures
     ! and frozen-frozen rdf%rdf completeness
