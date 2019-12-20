@@ -378,8 +378,9 @@ Contains
 
       End Do
 
+#ifdef KIM      
     End If
-
+#endif
     ! Poisson solver alternative to Ewald
 
     If (electro%key == ELECTROSTATIC_POISSON) Then
@@ -463,9 +464,8 @@ Contains
 
         End If
       End Do
-#ifdef KIM      
     End If
-#endif    
+    
 
     ! counter for rdf%rdf statistics outside loop structures
     ! and frozen-frozen rdf%rdf completeness
