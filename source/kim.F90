@@ -838,6 +838,10 @@ Contains
       kim_data%coords(3, atom) = Real(parts(atom)%zzz, c_double)
     End Do
 
+    ! Set contributing status, atoms in the halo do not contribute
+    kim_data%contributing = 0_c_int
+    kim_data%contributing(1:natms) = 1_c_int
+
     ! Enter species information
     Do atom = 1, nlast
       Call kim_from_string( &
@@ -850,16 +854,18 @@ Contains
         kim_data%species_name(atom), &
         species_is_supported, &
         kim_data%species_code(atom), kerror)
+      If (kerror /= 0_c_int) Then
+        Call kim_error('The species ' // Trim(site_name(lsite(atom))) // &
+          ' is not supported by KIM API.', __LINE__)
+      End If
 
-      If ((kerror /= 0_c_int) .or. (species_is_supported /= 1_c_int)) Then
-        Call kim_error('kim_get_species_support_and_code, ' // &
-          'Model does not support species', __LINE__)
+      If (species_is_supported /= 1_c_int) Then
+        ! The current model does not support a specific species which means
+        ! it does not contribute. Here we mark the species and later correct
+        ! the contributing array to only 0 and 1
+        kim_data%contributing(atom) = -2_c_int
       End If
     End Do
-
-    ! Set contributing status, atoms in the halo do not contribute
-    kim_data%contributing = 0_c_int
-    kim_data%contributing(1:natms) = 1_c_int
 
     ! Construct neighbour lists
     Do list_index = 1, Int(kim_data%n_lists, wi)
@@ -926,13 +932,28 @@ Contains
     Integer(Kind = wi), Intent(In   ) :: list(-3:, 1:)
 
     Integer(Kind = wi) :: neighbour
-    Logical :: padding_hint
+    Logical :: padding_hint, any_non_supporting_species
 
     Integer(Kind = c_int) :: ipart, jpart
     Integer(Kind = c_int) :: c_natms, c_nlast
     Real(Kind = c_double) :: dr(1:3), r
 
 #ifdef KIM
+    !
+    ! With the current KIM neighbour list implementation here in DL_POLY
+    ! The user can combine the KIM model with any other internal DL_POLY
+    ! interaction. While this is very interesting, It puts the
+    ! responsibility on the user to make sure including all the additional
+    ! interactions plus KIM interactions.
+    !
+    ! @todo
+    ! Add extra check to the DL_POLY to make sure all the interactions are
+    ! considered
+
+    ! Check if any species in the simulation is not supported by the current
+    ! model
+    any_non_supporting_species = Any(kim_data%contributing < 0_c_int)
+
     padding_hint = kim_data%hints_padding(list_index) == 1_c_int
 
     c_natms = Int(natms, c_int)
@@ -948,56 +969,120 @@ Contains
       kim_list = 0_c_int
       n_neigh = 0_c_int
 
-      ! Build KIM neighbour list
-      Do ipart = 1_c_int, c_natms
-        Do neighbour = 1, list(0, ipart)
+      ! If all species in the simulation are supported by the current model
+      If (.not. any_non_supporting_species) Then
 
-          ! Determine the 'neighbour'th neighbour of particles ipart
-          jpart = list(neighbour, ipart)
+        ! Build KIM neighbour list
+        Do ipart = 1_c_int, c_natms
+          Do neighbour = 1, list(0, ipart)
+            ! Determine the 'neighbour'th neighbour of particles ipart
+            jpart = list(neighbour, ipart)
 
-          ! Add this neighbour to the KIM neighbour list of ipart
-          n_neigh(ipart) = n_neigh(ipart) + 1_c_int
+            ! Add this neighbour to the KIM neighbour list of ipart
+            n_neigh(ipart) = n_neigh(ipart) + 1_c_int
 
-          kim_list(n_neigh(ipart), ipart) = jpart
+            kim_list(n_neigh(ipart), ipart) = jpart
 
-          ! Add symmetric entry as KIM requires a full list. If the padding hint
-          ! is true, then this is only nessecary if jpart is not a halo atom.
-          If (padding_hint .eqv. .false. .or. jpart <= c_natms) Then
-            n_neigh(jpart) = n_neigh(jpart) + 1_c_int
-            kim_list(n_neigh(jpart), jpart) = ipart
-          End If
-
-        End Do
-      End Do
-
-      ! Determine padding neighbours of padding particles if required. The
-      ! non-padding neighbours of padding particles have been added to the
-      ! neighbour list above.
-      If (padding_hint .eqv. .false.) Then
-
-        c_nlast = Int(nlast, c_int)
-
-        Do ipart = c_natms + 1_c_int, c_nlast - 1_c_int
-          Do jpart = ipart + 1_c_int, c_nlast
-
-            ! Add to list if the pair ipart-jpart are within the cutoff
-            dr(1:3) = kim_data%coords(1:3, jpart) - &
-              kim_data%coords(1:3, ipart)
-            r = Sqrt(Dot_product(dr, dr))
-
-            If (r < cutoff) Then
-              n_neigh(ipart) = n_neigh(ipart) + 1_c_int
-              kim_list(n_neigh(ipart), ipart) = jpart
-
-              ! Add symmetric entry
+            ! Add symmetric entry as KIM requires a full list. If the padding hint
+            ! is true, then this is only nessecary if jpart is not a halo atom.
+            If (padding_hint .eqv. .false. .or. jpart <= c_natms) Then
               n_neigh(jpart) = n_neigh(jpart) + 1_c_int
               kim_list(n_neigh(jpart), jpart) = ipart
-            End If
+            End If ! padding_hint
+          End Do   ! neighbour
+        End Do     ! ipart
 
-          End Do
-        End Do
+        ! Determine padding neighbours of padding particles if required. The
+        ! non-padding neighbours of padding particles have been added to the
+        ! neighbour list above.
+        If (padding_hint .eqv. .false.) Then
+          c_nlast = Int(nlast, c_int)
 
-      End If
+          Do ipart = c_natms + 1_c_int, c_nlast - 1_c_int
+            Do jpart = ipart + 1_c_int, c_nlast
+              ! Add to list if the pair ipart-jpart are within the cutoff
+              dr(1:3) = kim_data%coords(1:3, jpart) - &
+                kim_data%coords(1:3, ipart)
+              r = Sqrt(Dot_product(dr, dr))
+
+              If (r < cutoff) Then
+                n_neigh(ipart) = n_neigh(ipart) + 1_c_int
+                kim_list(n_neigh(ipart), ipart) = jpart
+
+                ! Add symmetric entry
+                n_neigh(jpart) = n_neigh(jpart) + 1_c_int
+                kim_list(n_neigh(jpart), jpart) = ipart
+              End If ! r < cutoff
+            End Do   ! jpart
+          End Do     ! ipart
+        End If       ! padding_hint
+
+      ! If there is any non-supporting species by model in the simulation
+      Else
+
+        ! Build KIM neighbour list
+        Do ipart = 1_c_int, c_natms
+          ! If the atom is contributing we need its neighbours
+          If (kim_data%contributing(ipart) > 0_c_int) Then
+            Do neighbour = 1, list(0, ipart)
+              ! Determine the 'neighbour'th neighbour of particles ipart
+              jpart = list(neighbour, ipart)
+
+              ! If the species is supported by model we add it to the neigbour list
+              If (kim_data%contributing(jpart) > -1_c_int) Then
+                ! Add this neighbour to the KIM neighbour list of ipart
+                n_neigh(ipart) = n_neigh(ipart) + 1_c_int
+
+                kim_list(n_neigh(ipart), ipart) = jpart
+
+                ! Add symmetric entry as KIM requires a full list. If the padding hint
+                ! is true, then this is only nessecary if jpart is not a halo atom.
+                If (padding_hint .eqv. .false. .or. jpart <= c_natms) Then
+                  n_neigh(jpart) = n_neigh(jpart) + 1_c_int
+                  kim_list(n_neigh(jpart), jpart) = ipart
+                End If ! padding_hint
+              End If   ! contributing(jpart)
+            End Do     ! neighbour
+          End If       ! contributing(ipart)
+        End Do         ! ipart
+
+        ! Determine padding neighbours of padding particles if required. The
+        ! non-padding neighbours of padding particles have been added to the
+        ! neighbour list above.
+        If (padding_hint .eqv. .false.) Then
+          c_nlast = Int(nlast, c_int)
+
+          Do ipart = c_natms + 1_c_int, c_nlast - 1_c_int
+            ! If the species is supported by model we want the neigbour list
+            If (kim_data%contributing(ipart) > -1_c_int) Then
+              Do jpart = ipart + 1_c_int, c_nlast
+                ! If the species is supported by model we check to add it to the neigbour list
+                If (kim_data%contributing(jpart) > -1_c_int) Then
+                  ! Add to list if the pair ipart-jpart are within the cutoff
+                  dr(1:3) = kim_data%coords(1:3, jpart) - &
+                  kim_data%coords(1:3, ipart)
+                  r = Sqrt(Dot_product(dr, dr))
+
+                  If (r < cutoff) Then
+                    n_neigh(ipart) = n_neigh(ipart) + 1_c_int
+                    kim_list(n_neigh(ipart), ipart) = jpart
+
+                    ! Add symmetric entry
+                    n_neigh(jpart) = n_neigh(jpart) + 1_c_int
+                    kim_list(n_neigh(jpart), jpart) = ipart
+                  End If ! r < cutoff
+                End If   ! contributing(jpart)
+              End Do     ! jpart
+            End If       ! contributing(ipart)
+          End Do         ! ipart
+        End If           ! padding_hint
+
+        ! Correct the array to contributing and non-contributing atoms
+        kim_data%contributing = Merge(0_c_int, kim_data%contributing, &
+          (kim_data%contributing < 0_c_int))
+
+      End If ! any_non_supporting_species
+
     End Associate
 #endif
   End Subroutine kim_neighbour_list
