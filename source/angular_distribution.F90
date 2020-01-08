@@ -1,4 +1,7 @@
 module angular_distribution
+  !Module to calculate the angular distribution function
+  ! author  Aaron Diver and Oliver Dicks  December 2019
+
   Use constants, Only : pi,nchadf
   Use configuration, Only : configuration_type
   Use kinds, Only : wp
@@ -9,7 +12,7 @@ module angular_distribution
   Use comms, Only : comms_type,grecv,gsend
   Implicit none
   type, public :: adf_type
-        real(wp) :: rij(1:10),rik,rjk
+        real(wp) :: rij(1:100),rik,rjk
         Integer, allocatable :: astat(:,:),coordlist(:,:)
         Integer :: adfinterval
         Logical :: adfon
@@ -38,7 +41,7 @@ contains
     If(mod(flow%step,adf%adfinterval).NE.0)Return
     Open(Unit=nchadf, File='ADFDAT', Form='formatted')
     If(flow%step.eq.0)then
-   allocate(adf%astat(-1:180,1:2*crd%ncoordpairs))
+   allocate(adf%astat(-1:1800,1:2*crd%ncoordpairs))
     endif
     adf%astat(:,:)=0
     do i=1,crd%ncoordpairs
@@ -70,9 +73,10 @@ contains
         costheta=((adf%rij(j) + adf%rij(jj) - adf%rjk)/(2*sqrt(adf%rij(j))*sqrt(adf%rij(jj)) ))
         temptheta=ACOS(costheta)*(180/pi)
 
-            do iii=1,180
-             if(temptheta.ge.(iii-1) .and. temptheta.lt.(iii))then
+            do iii=1,1800
 
+             if(temptheta.ge.(iii-1)*(0.1) .and. temptheta.lt.(iii)*0.1)then
+                                                     
              adf%astat(iii,ii)=adf%astat(iii,ii)+1
              End If
             End Do
@@ -85,10 +89,9 @@ contains
 
 
     End do
-    print*,adf%astat(170,1),adf%astat(180,2)
 nab=0
    do i=1,2*crd%ncoordpairs
-   nab=nab+182
+   nab=nab+1802
    enddo
 
    
@@ -105,11 +108,11 @@ nab=0
             allocate(adfbuff(nab))
             call grecv(comm,adfbuff,j,j)
             do ii=1,2*crd%ncoordpairs
-              if(adf%astat(-1,ii)/=adfbuff(1+182*(ii-1)) .or. adf%astat(0,ii)/=adfbuff(2+182*(ii-1)))then
+              if(adf%astat(-1,ii)/=adfbuff(1+1802*(ii-1)) .or. adf%astat(0,ii)/=adfbuff(2+1802*(ii-1)))then
                  write(*,*) 'ERROR: adf pairs do not match in MPI'
               endif
-            do kk=1,180
-               adf%astat(kk,ii)=adf%astat(kk,ii)+adfbuff(2+kk+182*(ii-1))
+            do kk=1,1800
+               adf%astat(kk,ii)=adf%astat(kk,ii)+adfbuff(2+kk+1802*(ii-1))
             enddo
             enddo
             deallocate(adfbuff)
@@ -127,8 +130,8 @@ nab=0
     Do i=1,2*crd%ncoordpairs
     write(nchadf,*)trim(sites%unique_atom(adf%astat(-1,i))),'-',trim(sites%unique_atom(adf%astat(0,i)))&
             ,'-',trim(sites%unique_atom(adf%astat(-1,i)))
-    do ii= 1,180
-    write(nchadf,*)real(ii)-0.5,adf%astat(ii,i)
+    do ii= 1,1800
+    write(nchadf,*)(0.1*ii)-0.05,adf%astat(ii,i)
     End Do
     End DO
    
@@ -143,7 +146,7 @@ nab=0
        adfbuff(k)=adf%astat(-1,i)    
        k=k+1
        adfbuff(k)=adf%astat(0,i)
-       do ii=1,180
+       do ii=1,1800
           k=k+1
        adfbuff(K)=adf%astat(ii,i)
        enddo
