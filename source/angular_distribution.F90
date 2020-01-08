@@ -12,9 +12,9 @@ module angular_distribution
   Use comms, Only : comms_type,grecv,gsend
   Implicit none
   type, public :: adf_type
-        real(wp) :: rij(1:100),rik,rjk
+        real(wp) :: rij(1:100),rik,rjk,prec
         Integer, allocatable :: astat(:,:),coordlist(:,:)
-        Integer :: adfinterval
+        Integer :: interval
         Logical :: adfon
 !        real(wp), allocatable :: rij(1:10)
 
@@ -32,16 +32,18 @@ contains
     Type(site_type), Intent(In) :: sites
     Type(flow_type), Intent(In) :: flow
     Type(comms_type), Intent(InOut) :: comm
-    integer :: i,ii,iii,j,jj,jjj,k,kk,kkk,nab
+    integer :: i,ii,iii,j,jj,jjj,k,kk,kkk,nab,numbins
     integer, allocatable :: adfbuff(:)
     real :: costheta,temptheta
     logical :: itsopen
     if (adf%adfon .Eqv. .False.)Return
     If(crd%coordon .Eqv. .False.)Return
-    If(mod(flow%step,adf%adfinterval).NE.0)Return
+    If(mod(flow%step,adf%interval).NE.0)Return
     Open(Unit=nchadf, File='ADFDAT', Form='formatted')
     If(flow%step.eq.0)then
-   allocate(adf%astat(-1:1800,1:2*crd%ncoordpairs))
+      numbins=180.0/adf%prec
+     print*,numbins,adf%prec     
+   allocate(adf%astat(-1:numbins,1:2*crd%ncoordpairs))
     endif
     adf%astat(:,:)=0
     do i=1,crd%ncoordpairs
@@ -50,7 +52,7 @@ contains
        adf%astat(-1,(2*i))=crd%ltype(i,2)
        adf%astat(0,(2*i))=crd%ltype(i,1)
     enddo
-    
+   numbins=180.0/adf%prec 
     Do i= 1,config%natms
      adf%rij(:)=0_wp
      adf%rjk=0_wp
@@ -73,9 +75,9 @@ contains
         costheta=((adf%rij(j) + adf%rij(jj) - adf%rjk)/(2*sqrt(adf%rij(j))*sqrt(adf%rij(jj)) ))
         temptheta=ACOS(costheta)*(180/pi)
 
-            do iii=1,1800
+            do iii=1,numbins
 
-             if(temptheta.ge.(iii-1)*(0.1) .and. temptheta.lt.(iii)*0.1)then
+             if(temptheta.ge.(iii-1)*adf%prec .and. temptheta.lt.(iii)*adf%prec)then
                                                      
              adf%astat(iii,ii)=adf%astat(iii,ii)+1
              End If
@@ -91,7 +93,7 @@ contains
     End do
 nab=0
    do i=1,2*crd%ncoordpairs
-   nab=nab+1802
+   nab=nab+2+numbins
    enddo
 
    
@@ -108,11 +110,11 @@ nab=0
             allocate(adfbuff(nab))
             call grecv(comm,adfbuff,j,j)
             do ii=1,2*crd%ncoordpairs
-              if(adf%astat(-1,ii)/=adfbuff(1+1802*(ii-1)) .or. adf%astat(0,ii)/=adfbuff(2+1802*(ii-1)))then
+             if(adf%astat(-1,ii)/=adfbuff(1+(numbins+2)*(ii-1)) .or. adf%astat(0,ii)/=adfbuff(2+(numbins+2)*(ii-1)))then
                  write(*,*) 'ERROR: adf pairs do not match in MPI'
-              endif
-            do kk=1,1800
-               adf%astat(kk,ii)=adf%astat(kk,ii)+adfbuff(2+kk+1802*(ii-1))
+             endif
+            do kk=1,numbins
+               adf%astat(kk,ii)=adf%astat(kk,ii)+adfbuff(2+kk+(numbins+2)*(ii-1))
             enddo
             enddo
             deallocate(adfbuff)
@@ -130,8 +132,8 @@ nab=0
     Do i=1,2*crd%ncoordpairs
     write(nchadf,*)trim(sites%unique_atom(adf%astat(-1,i))),'-',trim(sites%unique_atom(adf%astat(0,i)))&
             ,'-',trim(sites%unique_atom(adf%astat(-1,i)))
-    do ii= 1,1800
-    write(nchadf,*)(0.1*ii)-0.05,adf%astat(ii,i)
+    do ii= 1,numbins
+    write(nchadf,*)(adf%prec*ii)-adf%prec/2,adf%astat(ii,i)
     End Do
     End DO
    
@@ -146,7 +148,7 @@ nab=0
        adfbuff(k)=adf%astat(-1,i)    
        k=k+1
        adfbuff(k)=adf%astat(0,i)
-       do ii=1,1800
+       do ii=1,numbins
           k=k+1
        adfbuff(K)=adf%astat(ii,i)
        enddo
