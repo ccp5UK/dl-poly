@@ -499,8 +499,8 @@ Contains
      crd%coordops= 0
     !Default switch for angular distribution
     adf%adfon=.false.
-    adf%adfinterval= 100
-
+    adf%interval= 100
+    adf%prec=0.1
     ! default value for data dumping interval
 
     flow%freq_restart = 1000
@@ -2630,8 +2630,9 @@ Contains
          Else If (word(1:3) == 'adf')then
            adf%adfon=.true.
          call get_word(record,word)
-          adf%adfinterval= abs(Nint(word_2_real(word)))
-        
+          adf%interval= abs(Nint(word_2_real(word)))
+         call get_word(record,word)
+          adf%prec = Abs(word_2_real(word)) 
 
 
       ! read z-density profile option
