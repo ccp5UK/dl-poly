@@ -236,7 +236,7 @@ Contains
     !> Line number in the source file where error happened
     Integer(Kind = wi), Intent(In   ) :: line
 
-    Character(Len = 3) :: line_str
+    Character(Len = 3)              :: line_str
     Character(Len = :), Allocatable :: error_message
 
     Write(line_str, '(i3)') line
@@ -252,7 +252,7 @@ Contains
     !> Line number in the source file
     Integer(Kind = wi), Intent(In   ) :: line
 
-    Character(Len = 3) :: line_str
+    Character(Len = 3)              :: line_str
     Character(Len = :), Allocatable :: warning_message
 
     Write(line_str, '(i3)') line
@@ -331,7 +331,8 @@ Contains
 
         max_len = 18
         Do parameter_index = 1_c_int, n_parameters
-          Call kim_get_parameter_metadata(kim_data%model_handle, &
+          Call kim_get_parameter_metadata( &
+            kim_data%model_handle, &
             parameter_index, &
             kim_data_type, &
             extent, &
@@ -352,7 +353,8 @@ Contains
         Call info(message, .true.)
 
         Do parameter_index = 1_c_int, n_parameters
-          Call kim_get_parameter_metadata(kim_data%model_handle, &
+          Call kim_get_parameter_metadata( &
+            kim_data%model_handle, &
             parameter_index, &
             kim_data_type, &
             extent, &
@@ -388,7 +390,8 @@ Contains
       End If
 
       ! Create compute_arguments object
-      Call kim_compute_arguments_create(kim_data%model_handle, &
+      Call kim_compute_arguments_create( &
+        kim_data%model_handle, &
         kim_data%compute_arguments_handle, &
         kerror)
       If (kerror /= 0_c_int) Then
@@ -413,8 +416,11 @@ Contains
         Call kim_error('kim_setup, allocation failure ', __LINE__)
       End If
 
-      Call kim_get_neighbor_list_values(kim_data%model_handle, &
-        cutoffs, kim_data%hints_padding, kerror)
+      Call kim_get_neighbor_list_values( &
+        kim_data%model_handle, &
+        cutoffs, &
+        kim_data%hints_padding, &
+        kerror)
       If (kerror /= 0_c_int) Then
         Call kim_error('kim_setup, kim_get_neighbor_list_values, ' // &
           'Wrong number of neighbour lists ', __LINE__)
@@ -609,7 +615,8 @@ Contains
 
     ! Get the collection item with the requested name. It should be
     ! a KIM portableModel type otherwise it fails
-    Call kim_get_item_type(kim_coll, &
+    Call kim_get_item_type( &
+      kim_coll, &
       Trim(kim_data%model_name), &
       kim_data%model_type, &
       kerror)
@@ -633,7 +640,8 @@ Contains
       ! - charge electrons
       ! - temperature K
       ! - time ps
-      Call kim_model_create(kim_numbering_one_based, &
+      Call kim_model_create( &
+        kim_numbering_one_based, &
         kim_length_unit_a, &
         kim_energy_unit_amu_a2_per_ps2, &
         kim_charge_unit_e, &
@@ -669,8 +677,11 @@ Contains
       End If
 
       ! Get neighbour list cutoffs and record maximum
-      Call kim_get_neighbor_list_values(kim_data%model_handle, &
-        cutoffs, hints_padding, kerror)
+      Call kim_get_neighbor_list_values( &
+        kim_data%model_handle, &
+        cutoffs, &
+        hints_padding, &
+        kerror)
       If (kerror /= 0_c_int) Then
         Call kim_error('kim_cutoff, kim_get_neighbor_list_values, ' // &
           'Wrong number of neighbour lists ', __LINE__)
@@ -720,13 +731,13 @@ Contains
     Type(kim_collections_handle_type) :: kim_coll
 #endif
 
-    Integer :: unit_no = -2
-    Integer(Kind = c_int) :: kerror
-    Integer(Kind = c_int) :: extent
-    Integer(Kind = c_int) :: index
+    Integer                       :: unit_no = -2
+    Integer(Kind = c_int)         :: kerror
+    Integer(Kind = c_int)         :: extent
+    Integer(Kind = c_int)         :: index
     Integer(Kind = c_signed_char) :: cite_file_raw_data(10000)
 
-    Character(Kind = c_char, Len = 2048) :: cite_file_name
+    Character(Kind = c_char, Len = 2048)  :: cite_file_name
     Character(Kind = c_char, Len = 10000) :: cite_file_string
 
 #ifdef KIM
@@ -825,7 +836,7 @@ Contains
     !> Comms data
     Type(comms_type), Intent(InOut) :: comm
 
-    Integer(Kind = wi) :: atom, list_index
+    Integer(Kind = wi)    :: atom, list_index
     Integer(Kind = c_int) :: species_is_supported
     Integer(Kind = c_int) :: kerror
 
@@ -856,7 +867,8 @@ Contains
         kim_data%model_handle, &
         kim_data%species_name(atom), &
         species_is_supported, &
-        kim_data%species_code(atom), kerror)
+        kim_data%species_code(atom), &
+        kerror)
       If (kerror /= 0_c_int) Then
         Call kim_error('kim_energy_and_forces, ' // &
           'The species ' // Trim(site_name(lsite(atom))) // &
@@ -878,10 +890,11 @@ Contains
 
     ! Call KIM API to compute energy and forces
     Call kim_compute(kim_data%model_handle, &
-      kim_data%compute_arguments_handle, kerror)
+      kim_data%compute_arguments_handle, &
+      kerror)
     If (kerror /= 0_c_int) Then
       Call kim_error('kim_energy_and_forces, kim_compute, ' // &
-        'kim_model_compute returned an error', __LINE__)
+        'returned an error', __LINE__)
     End If
 
     ! Retrieve KIM energy and forces from pointers (allocated in kim_setup)
@@ -1486,7 +1499,8 @@ Contains
       End If
     End If
 
-    Call kim_compute_arguments_destroy(T%model_handle, &
+    Call kim_compute_arguments_destroy( &
+      T%model_handle, &
       T%compute_arguments_handle, &
       kerror)
 
