@@ -278,23 +278,22 @@ Contains
     !> Number of nodes
     Integer(Kind = wi), Intent(In   ) :: mxnode
 
-    Integer(Kind = c_int) :: requested_units_accepted
     Real(Kind = c_double), Allocatable :: cutoffs(:)
-    Integer(Kind = wi) :: list_index, max_atoms
+
+    Integer(Kind = c_int) :: requested_units_accepted
+    Integer(Kind = wi)    :: list_index, max_atoms
     Integer(Kind = c_int) :: kerror
     Integer(Kind = c_int) :: n_parameters
     Integer(Kind = c_int) :: extent
     Integer(Kind = c_int) :: parameter_index
-    Integer(Kind = wi) :: max_len, i
+    Integer(Kind = wi)    :: max_len, i
+    Integer               :: fail(4)
 
-    Character(Kind = c_char, Len = 256) :: parameter_name
+    Character(Kind = c_char, Len = 256)  :: parameter_name
     Character(Kind = c_char, Len = 1024) :: parameter_description
-    Character(Kind = c_char, Len = 256) :: parameter_string
-
-    Character(Len = 68) :: fmt, banner(7)
-    Character(Len = 256) :: message
-
-    Integer :: fail(4)
+    Character(Kind = c_char, Len = 256)  :: parameter_string
+    Character(Len = 68)                  :: fmt, banner(7)
+    Character(Len = 256)                 :: message
 
 #ifdef KIM
     Type(kim_data_type_type) :: kim_data_type
@@ -307,38 +306,13 @@ Contains
 
 #ifdef KIM
     If (kim_data%model_type .eq. &
-        KIM_COLLECTION_ITEM_TYPE_PORTABLE_MODEL) Then
+      KIM_COLLECTION_ITEM_TYPE_PORTABLE_MODEL) Then
+
       ! Allocate KIM data type arrays
       Call kim_data%init(mxatms)
 
       ! Initialise comms type
       Call kim_data%kcomms%init(mxbfxp * span, mxnode)
-
-      ! Create KIM object
-      ! kim_numbering_one_based - numbering from 1 (fortran style arrays)
-      !
-      ! DL_POLY internal units:
-      ! - length Angstrom
-      ! - energy 10J/mol (equivalent KIM energy unit selected here)
-      ! - charge electrons
-      ! - temperature K
-      ! - time ps
-      Call kim_model_create(kim_numbering_one_based, &
-        kim_length_unit_a, &
-        kim_energy_unit_amu_a2_per_ps2, &
-        kim_charge_unit_e, &
-        kim_temperature_unit_k, &
-        kim_time_unit_ps, &
-        Trim(kim_data%model_name), &
-        requested_units_accepted, &
-        kim_data%model_handle, kerror)
-      If (requested_units_accepted /= 1_c_int) Then
-        Call kim_error('kim_model_create, the selected KIM model does ' // &
-          'not support DL_POLY internal units', __LINE__)
-      End If
-      If (kerror /= 0_c_int) Then
-        Call kim_error('kim_model_create', __LINE__)
-      End If
 
       ! Print KIM model parameters
       Call kim_get_number_of_parameters(kim_data%model_handle, n_parameters)
@@ -362,9 +336,10 @@ Contains
             kim_data_type, &
             extent, &
             parameter_name, &
-            parameter_description, kerror)
+            parameter_description, &
+            kerror)
           If (kerror /= 0_c_int) Then
-            Call kim_error('kim_get_parameter_metadata', __LINE__)
+            Call kim_error('kim_setup, kim_get_parameter_metadata', __LINE__)
           End If
           max_len = max(max_len, len_trim(parameter_name))
         End Do
@@ -382,7 +357,8 @@ Contains
             kim_data_type, &
             extent, &
             parameter_name, &
-            parameter_description, kerror)
+            parameter_description, &
+            kerror)
 
           Call kim_to_string(kim_data_type, parameter_string)
 
@@ -413,34 +389,26 @@ Contains
 
       ! Create compute_arguments object
       Call kim_compute_arguments_create(kim_data%model_handle, &
-        kim_data%compute_arguments_handle, kerror)
+        kim_data%compute_arguments_handle, &
+        kerror)
       If (kerror /= 0_c_int) Then
-        Call kim_error('kim_compute_arguments_create', __LINE__)
+        Call kim_error('kim_setup, kim_compute_arguments_create, ' // &
+          'Failed to allocate a new ComputeArguments object', __LINE__)
       End If
 
       ! Set number of particles
       kim_data%n_particles = Int(megatm, c_int)
 
-      ! Get influence distance
-      If (.not. kim_data%padding_neighbours_required) Then
-        Call kim_get_influence_distance(kim_data%model_handle, &
-          kim_data%influence_distance)
-      End If
-
-      ! Get number of neighbour lists
-      Call kim_get_number_of_neighbor_lists(kim_data%model_handle, &
-        kim_data%n_lists)
-
       fail = 0
 
-      ! Allocate neighbour list, neighbour list pointer
+      ! Allocate neighbour list
       Allocate(kim_data%neigh(kim_data%n_lists), Stat = fail(1))
+      ! Allocate neighbour list pointer
       Allocate(kim_data%neigh_pointer(kim_data%n_lists), Stat = fail(2))
       ! Allocate hint arrays
       Allocate(kim_data%hints_padding(kim_data%n_lists), Stat = fail(3))
-      ! Get neighbour list cutoffs and hints
+      ! Get neighbour list cutoffs
       Allocate(cutoffs(kim_data%n_lists), Stat = fail(4))
-
       If (Any(fail /= 0)) Then
         Call kim_error('kim_setup, allocation failure ', __LINE__)
       End If
@@ -448,7 +416,8 @@ Contains
       Call kim_get_neighbor_list_values(kim_data%model_handle, &
         cutoffs, kim_data%hints_padding, kerror)
       If (kerror /= 0_c_int) Then
-        Call kim_error('kim_get_neighbor_list_values', __LINE__)
+        Call kim_error('kim_setup, kim_get_neighbor_list_values, ' // &
+          'Wrong number of neighbour lists ', __LINE__)
       End If
 
       Do list_index = 1, Int(kim_data%n_lists, wi)
@@ -458,8 +427,7 @@ Contains
       fail(1) = 0
       Deallocate(cutoffs, Stat = fail(1))
       If (fail(1) /= 0) Then
-        Call kim_error('kim_setup, cutoffs ' // &
-        'deallocation failure ', __LINE__)
+        Call kim_error('kim_setup, cutoffs deallocation failure ', __LINE__)
       End If
 
       ! Initialise neighbour list and neighbour list pointer types
@@ -476,7 +444,9 @@ Contains
         ! Initialise neighbour list pointer type
         Call kim_neighbour_list_pointer_type_init( &
           kim_data%neigh_pointer(list_index), &
-          kim_data%neigh(list_index), max_atoms, max_list)
+          kim_data%neigh(list_index), &
+          max_atoms, &
+          max_list)
       End Do
 
       ! Allocate KIM pointers
@@ -484,75 +454,82 @@ Contains
       Call kim_set_argument_pointer( &
         kim_data%compute_arguments_handle, &
         kim_compute_argument_name_number_of_particles, &
-        kim_data%n_particles, kerror)
+        kim_data%n_particles, &
+        kerror)
       If (kerror /= 0_c_int) Then
-        Call kim_error('kim_set_argument_pointer, ' // &
-          'kim_compute_arguments_set_arugment_pointer for ' // &
-          'number of particles', __LINE__)
+        Call kim_error('kim_setup, kim_set_argument_pointer, ' // &
+          'kim_compute_arguments_set_arugment_pointer, ' // &
+          'failed to set arugment pointer for number of particles', __LINE__)
       End If
 
       ! Species codes
       Call kim_set_argument_pointer( &
         kim_data%compute_arguments_handle, &
         kim_compute_argument_name_particle_species_codes, &
-        kim_data%species_code, kerror)
+        kim_data%species_code, &
+        kerror)
       If (kerror /= 0_c_int) Then
-        Call kim_error('kim_set_argument_pointer, ' // &
-          'kim_compute_arguments_set_arugment_pointer ' // &
-          'for species codes', __LINE__)
+        Call kim_error('kim_setup, kim_set_argument_pointer, ' // &
+          'kim_compute_arguments_set_arugment_pointer, ' // &
+          'failed to set arugment pointer for species codes', __LINE__)
       End If
 
       ! Contributing status
       Call kim_set_argument_pointer( &
         kim_data%compute_arguments_handle, &
         kim_compute_argument_name_particle_contributing, &
-        kim_data%contributing, kerror)
+        kim_data%contributing, &
+        kerror)
       If (kerror /= 0_c_int) Then
-        Call kim_error('kim_set_argument_pointer, ' // &
+        Call kim_error('kim_setup, kim_set_argument_pointer, ' // &
           'kim_compute_arguments_set_arugment_pointer ' // &
-          'for contributing status', __LINE__)
+          'failed to set arugment pointer for contributing status', __LINE__)
       End If
 
       ! Coordinates
       Call kim_set_argument_pointer( &
         kim_data%compute_arguments_handle, &
         kim_compute_argument_name_coordinates, &
-        kim_data%coords, kerror)
+        kim_data%coords, &
+        kerror)
       If (kerror /= 0_c_int) Then
-        Call kim_error('kim_set_argument_pointer, ' // &
+        Call kim_error('kim_setup, kim_set_argument_pointer, ' // &
           'kim_compute_arguments_set_arugment_pointer ' // &
-          'for coordinates', __LINE__)
+          'failed to set arugment pointer for coordinates', __LINE__)
       End If
 
       ! Energy
       Call kim_set_argument_pointer( &
         kim_data%compute_arguments_handle, &
         kim_compute_argument_name_partial_energy, &
-        kim_data%energy, kerror)
+        kim_data%energy, &
+        kerror)
       If (kerror /= 0_c_int) Then
-        Call kim_error('kim_set_argument_pointer, ' // &
+        Call kim_error('kim_setup, kim_set_argument_pointer, ' // &
           'kim_compute_arguments_set_arugment_pointer ' // &
-          'for energy', __LINE__)
+          'failed to set arugment pointer for energy', __LINE__)
       End If
 
       ! Forces
       Call kim_set_argument_pointer( &
         kim_data%compute_arguments_handle, &
         kim_compute_argument_name_partial_forces, &
-        kim_data%forces, kerror)
+        kim_data%forces, &
+        kerror)
       If (kerror /= 0_c_int) Then
-        Call kim_error('kim_set_argument_pointer, ' // &
+        Call kim_error('kim_setup, kim_set_argument_pointer, ' // &
           'kim_compute_arguments_set_arugment_pointer ' // &
-          'for forces', __LINE__)
+          'failed to set arugment pointer for forces', __LINE__)
       End If
 
       ! Virials
       Call kim_set_argument_pointer( &
         kim_data%compute_arguments_handle, &
         kim_compute_argument_name_partial_virial, &
-        kim_data%virial, kerror)
+        kim_data%virial, &
+        kerror)
       If (kerror /= 0_c_int) Then
-        Call kim_warning('kim_set_argument_pointer, ' // &
+        Call kim_warning('kim_setup, kim_set_argument_pointer, ' // &
           'The selected KIM model does not compute ' // &
           'virials, stress and pressure will be incorrect', __LINE__)
         ! Set KIM virials to 0 so they will not contribute to the total
@@ -565,12 +542,13 @@ Contains
         kim_compute_callback_name_get_neighbor_list, &
         kim_language_name_fortran, &
         c_funloc(get_neigh), &
-        c_loc(kim_data%neigh_pointer), kerror)
+        c_loc(kim_data%neigh_pointer), &
+        kerror)
       If (kerror /= 0_c_int) Then
-        Call kim_error('kim_set_callback_pointer', __LINE__)
+        Call kim_error('kim_setup, kim_set_callback_pointer', __LINE__)
       End If
     Else If (kim_data%model_type .eq. &
-        KIM_COLLECTION_ITEM_TYPE_SIMULATOR_MODEL) Then
+      KIM_COLLECTION_ITEM_TYPE_SIMULATOR_MODEL) Then
       Call kim_error('kim_setup, currently DL_POLY does not support ' // &
         'KIM Simulator model', __LINE__)
     ELSE
@@ -585,19 +563,18 @@ Contains
   !> are of an appropriate size. Perhaps with a reworking of the way the input
   !> files are read could remedy this clumsy implementation.
   Subroutine kim_cutoff(kim_data)
+    !> KIM data type
     Type(kim_type), Target, Intent(InOut) :: kim_data
 
     Real(Kind = c_double), Allocatable :: cutoffs(:)
-    Integer(Kind = c_int), Allocatable :: hints_padding(:)
-    Integer(Kind = c_int) :: requested_units_accepted
-    Integer(Kind = c_int) :: kerror
-    Integer(Kind = c_int) :: n_lists
 
-    Integer :: fail
+    Integer(Kind = c_int), Allocatable :: hints_padding(:)
+    Integer(Kind = c_int)              :: requested_units_accepted
+    Integer(Kind = c_int)              :: kerror
+    Integer                            :: fail(2)
 
 #ifdef KIM
     Type(kim_collections_handle_type) :: kim_coll
-    Type(kim_model_handle_type) :: model_handle
 
     ! This is the debugging flag to be set manually.
     ! @todo
@@ -626,8 +603,8 @@ Contains
     ! Create a new KIM API collection object
     Call kim_collections_create(kim_coll, kerror)
     If (kerror /= 0_c_int) Then
-      Call kim_error('kim_collections_create, unable to access KIM ' // &
-        'Collections to find Model', __LINE__)
+      Call kim_error('kim_cutoff, kim_collections_create, unable to ' // &
+        'access KIM Collections to find the requested Model', __LINE__)
     End If
 
     ! Get the collection item with the requested name. It should be
@@ -637,7 +614,8 @@ Contains
       kim_data%model_type, &
       kerror)
     If (kerror /= 0_c_int) Then
-      Call kim_error('kim_get_item_type, KIM Model name not found', __LINE__)
+      Call kim_error('kim_cutoff, kim_get_item_type, KIM Model name ' // &
+        'not found', __LINE__)
     End If
 
     ! Destroy a previously created collection.
@@ -646,6 +624,15 @@ Contains
     ! Check if the item type is a KIM portable model
     If (kim_data%model_type .eq. &
       KIM_COLLECTION_ITEM_TYPE_PORTABLE_MODEL) Then
+      ! Create KIM object
+      ! kim_numbering_one_based - numbering from 1 (fortran style arrays)
+      !
+      ! DL_POLY internal units:
+      ! - length Angstrom
+      ! - energy 10J/mol (equivalent KIM energy unit selected here)
+      ! - charge electrons
+      ! - temperature K
+      ! - time ps
       Call kim_model_create(kim_numbering_one_based, &
         kim_length_unit_a, &
         kim_energy_unit_amu_a2_per_ps2, &
@@ -654,53 +641,66 @@ Contains
         kim_time_unit_ps, &
         Trim(kim_data%model_name), &
         requested_units_accepted, &
-        model_handle, kerror)
+        kim_data%model_handle, &
+        kerror)
       If (requested_units_accepted == 0_c_int) Then
-        Call kim_error('kim_model_create, the selected KIM model does ' // &
-          'not support DL_POLY internal units', __LINE__)
+        Call kim_error('kim_cutoff, kim_model_create, the selected ' // &
+          'KIM model does not support the DL_POLY internal units', __LINE__)
       End If
       If (kerror /= 0_c_int) Then
-        Call kim_error('kim_cutoff', __LINE__)
+        Call kim_error('kim_cutoff, kim_model_create, Unable to load ' // &
+          'KIM Model.', __LINE__)
       End If
 
       ! Get number of neighbour lists
-      Call kim_get_number_of_neighbor_lists(model_handle, n_lists)
+      Call kim_get_number_of_neighbor_lists(kim_data%model_handle, &
+        kim_data%n_lists)
+
+      ! Get neighbour list cutoffs and hints
 
       fail = 0
-      ! Get neighbour list cutoffs and record maximum
-      Allocate(cutoffs(n_lists), hints_padding(n_lists), Stat = fail)
-      If (fail /= 0) Then
-        Call kim_error('kim_cutoff, cutoffs, and hints_padding ' // &
-        'allocation failure ', __LINE__)
+
+      ! Allocate cutoffs and hint arrays
+      Allocate(hints_padding(kim_data%n_lists), Stat = fail(1))
+      Allocate(cutoffs(kim_data%n_lists), Stat = fail(2))
+      If (Any(fail /= 0)) Then
+        Call kim_error('kim_cutoff, cutoffs, and/or hints_padding ' // &
+          'allocation failure ', __LINE__)
       End If
 
-      Call kim_get_neighbor_list_values(model_handle, &
+      ! Get neighbour list cutoffs and record maximum
+      Call kim_get_neighbor_list_values(kim_data%model_handle, &
         cutoffs, hints_padding, kerror)
+      If (kerror /= 0_c_int) Then
+        Call kim_error('kim_cutoff, kim_get_neighbor_list_values, ' // &
+          'Wrong number of neighbour lists ', __LINE__)
+      End If
+
       kim_data%cutoff = Real(maxval(cutoffs), wp)
 
       ! Check if the padding hint is defined
       If (Any(hints_padding /= 1_c_int)) Then
-        Call kim_warning('The selected KIM model requires neighbours of ' // &
-          'non-contributing particles. This may significantly affect ' // &
-          'performance', __LINE__)
-        kim_data%padding_neighbours_required = .true.
+        Call kim_warning('The selected KIM model requires neighbours ' // &
+          'of non-contributing particles. This may significantly ' // &
+          'affect the performance', __LINE__)
 
-        ! Get influence distance
-        Call kim_get_influence_distance(model_handle, &
-          kim_data%influence_distance)
+        kim_data%padding_neighbours_required = .true.
       End If
+
+      ! Get influence distance
+      Call kim_get_influence_distance(kim_data%model_handle, &
+        kim_data%influence_distance)
 
       fail = 0
       ! Deallocate temporary variables
-      Deallocate(cutoffs, hints_padding, Stat = fail)
-      If (fail /= 0) Then
-        Call kim_error('kim_cutoff, cutoffs, and hints_padding ' // &
-        'deallocation failure ', __LINE__)
+      Deallocate(cutoffs, Stat = fail(1))
+      Deallocate(hints_padding, Stat = fail(2))
+      If (Any(fail /= 0)) Then
+        Call kim_error('kim_cutoff, cutoffs, and/or hints_padding ' // &
+          'deallocation failure ', __LINE__)
       End If
-
-      Call kim_model_destroy(model_handle)
     Else If (kim_data%model_type .eq. &
-        KIM_COLLECTION_ITEM_TYPE_SIMULATOR_MODEL) Then
+      KIM_COLLECTION_ITEM_TYPE_SIMULATOR_MODEL) Then
       Call kim_error('kim_cutoff, currently DL_POLY does not support ' // &
         'KIM Simulator model', __LINE__)
     ELSE
@@ -733,13 +733,13 @@ Contains
     ! Create a KIM API collection object
     Call kim_collections_create(kim_coll, kerror)
     If (kerror /= 0_c_int) Then
-      Call kim_error('kim_collections_create, unable to access KIM ' // &
-        'Collections to find Model', __LINE__)
+      Call kim_error('kim_citations, kim_collections_create, ' // &
+        'unable to access KIM Collections to find the Model', __LINE__)
     End If
 
     ! Check if the item type is a KIM portable model
     If (kim_data%model_type .eq. &
-        KIM_COLLECTION_ITEM_TYPE_PORTABLE_MODEL) Then
+      KIM_COLLECTION_ITEM_TYPE_PORTABLE_MODEL) Then
       ! Cache a list of an item's metadata files.
       Call kim_cache_list_of_item_metadata_files( &
         kim_coll, &
@@ -748,10 +748,11 @@ Contains
         extent, &
         kerror)
       If (kerror /= 0_c_int) Then
-        Call kim_error('kim_cache_list_of_item_metadata_files', __LINE__)
+        Call kim_error('kim_citations, ' // &
+          'kim_cache_list_of_item_metadata_files', __LINE__)
       End If
     Else If (kim_data%model_type .eq. &
-        KIM_COLLECTION_ITEM_TYPE_SIMULATOR_MODEL) Then
+      KIM_COLLECTION_ITEM_TYPE_SIMULATOR_MODEL) Then
       Call kim_error('kim_citations, currently DL_POLY does not ' // &
         'support KIM Simulator model', __LINE__)
     ELSE
@@ -771,7 +772,8 @@ Contains
           cite_file_string, &
           kerror)
         If (kerror /= 0_c_int) Then
-          Call kim_error('kim_get_item_metadata_file_values', __LINE__)
+          Call kim_error('kim_citations, ' // &
+            'kim_get_item_metadata_file_values', __LINE__)
         End If
 
         If (cite_file_name(1:7) == 'kimcite') Then
@@ -856,7 +858,8 @@ Contains
         species_is_supported, &
         kim_data%species_code(atom), kerror)
       If (kerror /= 0_c_int) Then
-        Call kim_error('The species ' // Trim(site_name(lsite(atom))) // &
+        Call kim_error('kim_energy_and_forces, ' // &
+          'The species ' // Trim(site_name(lsite(atom))) // &
           ' is not supported by KIM API.', __LINE__)
       End If
 
@@ -877,8 +880,8 @@ Contains
     Call kim_compute(kim_data%model_handle, &
       kim_data%compute_arguments_handle, kerror)
     If (kerror /= 0_c_int) Then
-      Call kim_error('kim_compute, kim_model_compute returned an error', &
-        __LINE__)
+      Call kim_error('kim_energy_and_forces, kim_compute, ' // &
+        'kim_model_compute returned an error', __LINE__)
     End If
 
     ! Retrieve KIM energy and forces from pointers (allocated in kim_setup)
@@ -1251,16 +1254,16 @@ Contains
 
     ! Ensure neighbour list cutoff is larger than KIM model cutoff
     If (cutoffs(neighbour_list_index) > kim_cutoff) Then
-      Call kim_warning('Neighbour list cutoff too small for model cutoff', &
-        __LINE__)
+      Call kim_warning('get_neigh, Neighbour list cutoff too small for ' // &
+        'model cutoff', __LINE__)
       kerror = 1_c_int
       Return
     End If
 
     ! Ensure requested particle exists
     If ((request > kim_n_part) .or. (request < 1)) Then
-      Write(message, '(a, g0)') 'Invalid particle number requested ' // &
-        'in get_neigh: ', request
+      Write(message, '(a, g0)') 'get_neigh, Invalid particle number ' // &
+        'requested: ', request
       Call kim_warning(message, __LINE__)
       kerror = 1_c_int
       Return
@@ -1296,13 +1299,13 @@ Contains
     Allocate(T%n_neigh(max_atoms), Stat = fail)
     If (fail /= 0) Then
       Call kim_error('kim_neighbour_list_type_init, n_neigh ' // &
-      'allocation failure ', __LINE__)
+        'allocation failure ', __LINE__)
     End If
 
     Allocate(T%neigh_list(max_list, max_atoms), Stat = fail)
     If (fail /= 0) Then
       Call kim_error('kim_neighbour_list_type_init, neigh_list ' // &
-      'allocation failure ', __LINE__)
+        'allocation failure ', __LINE__)
     End If
   End Subroutine kim_neighbour_list_type_init
 
@@ -1318,7 +1321,7 @@ Contains
       Deallocate(T%n_neigh, Stat = fail)
       If (fail /= 0) Then
         Call kim_error('kim_neighbour_list_type_cleanup, n_neigh ' // &
-        'deallocation failure ', __LINE__)
+          'deallocation failure ', __LINE__)
       End If
     End If
 
@@ -1326,7 +1329,7 @@ Contains
       Deallocate(T%neigh_list, Stat = fail)
       If (fail /= 0) Then
         Call kim_error('kim_neighbour_list_type_cleanup, neigh_list ' // &
-        'deallocation failure ', __LINE__)
+          'deallocation failure ', __LINE__)
       End If
     End If
   End Subroutine kim_neighbour_list_type_cleanup
@@ -1363,7 +1366,7 @@ Contains
     Allocate(T%buffer(buffer_size), Stat = fail)
     If (fail /= 0) Then
       Call kim_error('kim_comms_type_init, buffer ' // &
-      'allocation failure ', __LINE__)
+        'allocation failure ', __LINE__)
     End If
 
     ! Set begining of receive portion
@@ -1439,7 +1442,7 @@ Contains
       Deallocate(T%species_name, Stat = fail)
       If (fail /= 0) Then
         Call kim_error('kim_type_cleanup, species_name ' // &
-        'deallocation failure ', __LINE__)
+          'deallocation failure ', __LINE__)
       End If
     End If
 
@@ -1447,7 +1450,7 @@ Contains
       Deallocate(T%species_code, Stat = fail)
       If (fail /= 0) Then
         Call kim_error('kim_type_cleanup, species_code ' // &
-        'deallocation failure ', __LINE__)
+          'deallocation failure ', __LINE__)
       End If
     End If
 
@@ -1455,7 +1458,7 @@ Contains
       Deallocate(T%forces, Stat = fail)
       If (fail /= 0) Then
         Call kim_error('kim_type_cleanup, forces ' // &
-        'deallocation failure ', __LINE__)
+          'deallocation failure ', __LINE__)
       End If
     End If
 
@@ -1463,7 +1466,7 @@ Contains
       Deallocate(T%coords, Stat = fail)
       If (fail /= 0) Then
         Call kim_error('kim_type_cleanup, coords ' // &
-        'deallocation failure ', __LINE__)
+          'deallocation failure ', __LINE__)
       End If
     End If
 
@@ -1471,7 +1474,7 @@ Contains
       Deallocate(T%neigh, Stat = fail)
       If (fail /= 0) Then
         Call kim_error('kim_type_cleanup, neigh ' // &
-        'deallocation failure ', __LINE__)
+          'deallocation failure ', __LINE__)
       End If
     End If
 
@@ -1479,12 +1482,13 @@ Contains
       Deallocate(T%neigh_pointer, Stat = fail)
       If (fail /= 0) Then
         Call kim_error('kim_type_cleanup, neigh_pointer ' // &
-        'deallocation failure ', __LINE__)
+          'deallocation failure ', __LINE__)
       End If
     End If
 
     Call kim_compute_arguments_destroy(T%model_handle, &
-      T%compute_arguments_handle, kerror)
+      T%compute_arguments_handle, &
+      kerror)
 
     Call kim_model_destroy(T%model_handle)
 #endif
