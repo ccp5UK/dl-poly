@@ -44,7 +44,7 @@ program dl_poly
 
   ! SETUP MODULES
 
-  Use comms, Only : comms_type, init_comms, exit_comms, gsync, gtime,gsum
+  Use comms, Only : comms_type,init_comms,exit_comms,gsync,gtime,gsum
 
   ! DEVELOPMENT MODULE
 
@@ -58,7 +58,7 @@ program dl_poly
   ! SITE & CONFIG MODULES
 
   Use site, Only : site_type
-  Use configuration, Only : configuration_type,check_config, scale_config, origin_config, freeze_atoms
+  Use configuration, Only : configuration_type,check_config,scale_config,origin_config,freeze_atoms
 
   ! VNL module
 
@@ -106,8 +106,8 @@ program dl_poly
 
   ! TWO-TEMPERATURE MODEL MODULES
 
-  Use drivers, Only : w_md_vv, w_replay_historf,w_replay_history
-  Use errors_warnings, Only : init_error_system,info, warning
+  Use drivers, Only : w_md_vv,w_replay_historf,w_replay_history
+  Use errors_warnings, Only : init_error_system,info,warning
 
   Use ewald, Only : ewald_type
 
@@ -136,7 +136,7 @@ program dl_poly
   Use electrostatic, Only : electrostatic_type
   Use numerics, Only : seed_type
   Use io, Only : io_type
-  Use ttm, Only : ttm_type, ttm_system_init,ttm_system_revive,ttm_table_scan,&
+  Use ttm, Only : ttm_type,ttm_system_init,ttm_system_revive,ttm_table_scan,&
     ttm_table_read,allocate_ttm_arrays
   Use ttm_utils, Only : printElecLatticeStatsToFile,printLatticeStatsToFile,&
     peakProfilerElec,peakProfiler
@@ -144,26 +144,26 @@ program dl_poly
   Use filename, Only : file_type,default_filenames
   Use flow_control, Only : flow_type,EVB,FFS,MD
   Use kinetics, Only : cap_forces
-  Use timer, Only  : timer_type
+  Use timer, Only : timer_type
   Use meta, Only : molecular_dynamics
 
   Implicit None
 
   ! all your simulation variables
-  Type(comms_type), Allocatable :: dlp_world(:)
-  Type(thermostat_type), Allocatable :: thermo(:)
-  Type(ewald_type), Allocatable :: ewld(:)
-  Type(timer_type), Allocatable :: tmr(:)
-  Type(development_type), Allocatable :: devel(:)
-  Type(stats_type), Allocatable :: stats(:)
-  Type(greenkubo_type), Allocatable :: green(:)
-  Type(plumed_type), Allocatable :: plume(:)
-  Type(msd_type), Allocatable :: msd_data(:)
-  Type(metal_type), Allocatable :: met(:)
-  Type(poisson_type), Allocatable :: pois(:)
-  Type(impact_type), Allocatable :: impa(:)
-  Type(defects_type), Allocatable :: dfcts(:,:)
-  Type(bonds_type), Allocatable :: bond(:)
+  Type( comms_type ), Allocatable :: dlp_world(:)
+  Type( thermostat_type ), Allocatable :: thermo(:)
+  Type( ewald_type ), Allocatable :: ewld(:)
+  Type( timer_type ), Allocatable :: tmr(:)
+  Type( development_type ), Allocatable :: devel(:)
+  Type( stats_type ), Allocatable :: stats(:)
+  Type( greenkubo_type ), Allocatable :: green(:)
+  Type( plumed_type ), Allocatable :: plume(:)
+  Type( msd_type ), Allocatable :: msd_data(:)
+  Type( metal_type ), Allocatable :: met(:)
+  Type( poisson_type ), Allocatable :: pois(:)
+  Type( impact_type ), Allocatable :: impa(:)
+  Type( defects_type ), Allocatable :: dfcts(:,:)
+  Type( bonds_type ), Allocatable :: bond(:)
   Type( angles_type ), Allocatable :: angle(:)
   Type( dihedrals_type ), Allocatable :: dihedral(:)
   Type( inversions_type ), Allocatable :: inversion(:)
