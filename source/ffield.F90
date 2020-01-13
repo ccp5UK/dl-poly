@@ -483,7 +483,7 @@ Contains
               ! reference point
 
               ksite=0
-              Do While (ksite < sites%num_site(itmols)) 
+              Do While (ksite < sites%num_site(itmols))
 
                 ! read atom name, mass, charge, repeat, freeze option
 
@@ -632,9 +632,9 @@ Contains
 
                 ! catch unidentified entry
 
-                If (Any(cshell%lstshl(1:2,nshels) < 1) .or. Any(cshell%lstshl(1:2,nshels) > sites%num_site(itmols))) Then 
+                If (Any(cshell%lstshl(1:2,nshels) < 1) .or. Any(cshell%lstshl(1:2,nshels) > sites%num_site(itmols))) Then
                   Call error(27)
-                End If   
+                End If
 
                 ! abort if a shell is frozen
 
@@ -3581,7 +3581,7 @@ Contains
             Else If (keypot == VDW_BUCKINGHAM_MDF) Then
               parpot(3)=parpot(3)*engunit
             Else If (keypot == VDW_126_MDF) Then
-              parpot(2)=parpot(2)*engunit  
+              parpot(2)=parpot(2)*engunit
             End If
           End If
 
@@ -4019,7 +4019,7 @@ Contains
 
               Call info('Ensemble NVT dpd defaulting to NVE (Microcanonical)' &
                 //'due to all drag coefficients equal to zero',.true.)
-            Else If (Any(thermo%gamdpd(1:vdws%max_vdw) <= zero_plus)) Then 
+            Else If (Any(thermo%gamdpd(1:vdws%max_vdw) <= zero_plus)) Then
               ! in principle we should come up with the error before here
               Call warning('there is a two-body interaction with a' &
                 //'non-zero mutual drag coefficient',.true.)
@@ -4732,12 +4732,22 @@ Contains
           If (rcut < 2.0_wp*fourbody%cutoff) Call error(472)
         End If
 
-        ! read kim interaction data - kim and rkim set in scan_field
+        ! read kim interaction data - kim set in scan_field
 
       Else If (word(1:3) == 'kim') Then
 
-        Write(message,'(2a)') 'using open KIM interaction model: ',kim_data%model_name
-        Call info(message,.true.)
+        If (.not. kim_data%active) Then
+          Write(message, '(a, 1x, 2a)') new_line('a'), &
+            'read_field, `kim_init` must be used to initialise the ', &
+            'kim interatomic model'
+          Call error(0, message)
+        End If
+
+        If (word(1:8) == 'kim_init') Then
+          Write(message,'(2a)') 'using open KIM interatomic model: ', &
+            kim_data%model_name
+          Call info(message, .true.)
+        End If
 
         ! read external field data
 
@@ -4838,7 +4848,7 @@ Contains
         Else If (ext_field%key == FIELD_WALL_PISTON) Then
           ext_field%param(3) = ext_field%param(3)/prsunt ! piston pressure specified in k-atm
           ext_field%param(3) = ext_field%param(3)*config%cell(5)*config%cell(9) ! convert to force
- 
+
         Else If (Any([FIELD_ZRES,FIELD_ZRES_MINUS,FIELD_ZRES_PLUS] == ext_field%key)) Then
           If (.not.lunits) Call error(6)
 
@@ -5207,6 +5217,7 @@ Contains
     Character( Len = 200 ) :: record,record_raw
     Character( Len = 40  ) :: word
     Character( Len = 8   ) :: name
+    Character( Len = 256 ) :: message
 
     Logical           :: check,safe,l_usr,lext
     Integer           :: itmols,nummols,numsit,mxnmst,ksite,nrept,        &
@@ -6026,15 +6037,32 @@ Contains
           rcfbp=Max(rcfbp,rct)
         End Do
 
-      Else If (word(1:7) == 'kim') Then
+      Else If (word(1:3) == 'kim') Then
 
         ! Get KIM's IM name and cutoff
 
-        kim_data%active = .true.
-        Call get_word(record_raw,word)
-        Call strip_blanks(record_raw)
-        kim_data%model_name=record_raw(1:Len_Trim(record_raw))
-        Call kim_cutoff(kim_data)
+        If (word(1:8) == 'kim_init') Then
+
+          If (kim_data%active) Then
+            Write(message,'(a, 1x, a)') new_line('a'), &
+              'scan_field, `kim_init` has been used before'
+            Call error(0, message)
+          End If
+
+          kim_data%active = .true.
+          Call get_word(record_raw,word)
+          Call strip_blanks(record_raw)
+          kim_data%model_name=record_raw(1:Len_Trim(record_raw))
+          Call kim_cutoff(kim_data)
+
+        End If
+
+        If (.not. kim_data%active) Then
+          Write(message,'(a, 1x, 2a)') new_line('a'), &
+            'scan_field, `kim_init` must be used to initialise ', &
+            'the kim interatomic model'
+          Call error(0, message)
+        End If
 
       Else If (word(1:6) == 'extern') Then
 
