@@ -97,8 +97,8 @@ Module comms
     Integer               :: request
     Integer               :: status(1:MPI_STATUS_SIZE) = 0
     Integer               :: comm
-    Integer               :: idnode = 0
-    Integer               :: mxnode = 1
+    Integer               :: idnode = -1
+    Integer               :: mxnode = -1
     Logical               :: l_fast = .false.
     Integer               :: ou
     Integer               :: part_type
