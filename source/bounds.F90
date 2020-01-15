@@ -76,6 +76,9 @@ Contains
     ! contrib   - i.t.todorov may 2019 (rpad & rcut feedback, mxatms & mxatdm setting)
     ! contrib   - i.t.todorov july 2019 (SPME b-spline corrected mxatms & buffers,l_trm)
     ! contrib   - i.t.todorov november 2019 (commenting on magic numbers with changes to magic & buffers' sizes)
+    ! contrib   - i.t.todorov november 2019 (changing fdens choosing to handle imbalance better)
+    ! contrib   - i.t.todorov november 2019 (increasing bond%max_bonds, angle%max_angles, amending domain%mxbfxp)
+    !
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -310,7 +313,7 @@ Contains
     If (bond%max_bonds > 0) Then
       If (comm%mxnode > 1) Then
         bond%max_bonds = Max(bond%max_bonds,comm%mxnode*mtbond)
-        bond%max_bonds = (3*(Nint(fdvar*Real(bond%max_bonds,wp))+comm%mxnode-1))/comm%mxnode
+        bond%max_bonds = (4*(Nint(fdvar*Real(bond%max_bonds,wp))+comm%mxnode-1))/comm%mxnode
       End If
       bond%max_param = 4
     Else
@@ -323,7 +326,7 @@ Contains
     If (angle%max_angles > 0) Then
       If (comm%mxnode > 1) Then
         angle%max_angles = Max(angle%max_angles,comm%mxnode*mtangl)
-        angle%max_angles = (3*(Nint(fdvar*Real(angle%max_angles,wp))+comm%mxnode-1))/comm%mxnode
+        angle%max_angles = (4*(Nint(fdvar*Real(angle%max_angles,wp))+comm%mxnode-1))/comm%mxnode
       End If
       angle%max_param = 6
     Else
@@ -954,13 +957,12 @@ Contains
 
     ! Create f(fdvar,dens0,dens) function of density push, maximum 'local' density, maximum domains' density
 
-    If ((comm%mxnode == 1 .or. Min(ilx,ily,ilz) < 3) .or. &
-        (config%imcon == 0 .or. config%imcon == 6 .or. config%imc_n == 6)) Then
-      fdens = fdvar * (0.65_wp*dens0 + 0.35_wp*dens) ! mixing 2/3 local density and 1/3 global density  (local over global)
-    Else If (Min(ilx,ily,ilz) < 5) Then
-      fdens = fdvar * (0.50_wp*dens0 + 0.50_wp*dens) ! mixing 50:50 for parallel but limiting case scenario
+    If ( (comm%mxnode == 1 .or. Min(ilx,ily,ilz) < 3)                      .or. &
+         (config%imcon == 0 .or. config%imcon == 6 .or. config%imc_n == 6) .or. &
+         (dens/dens0 <= 0.5_wp) .or. (fdvar > 10.0_wp) ) Then
+      fdens = dens0                                ! for all possibly bad cases resort to max density
     Else
-      fdens = fdvar * (0.35_wp*dens0 + 0.65_wp*dens) ! mixing 1/3 local density and 2/3 global density (global over local)
+      fdens = fdvar * (0.5_wp*dens0 + 0.5_wp*dens) ! mix 50:50 and push
     End If
 
     ! Get reasonable to set fdens limit - all particles in one link-cell
@@ -1058,7 +1060,7 @@ Contains
 
     ! exporting, total per atom per direction (times 13 up to 35)
 
-    domain%mxbfxp = 2 * Nint(Real(config%mxatdm,wp) * dens0) ! included induced dipoles
+    domain%mxbfxp = 2 * Nint(Real(config%mxatms,wp) * dens0) ! included induced dipoles
 
     ! deporting, total per atom per direction
     ! pass the full LC contents or 0.5*neigh%padding/neigh%cutoff_extended fraction of it (doubled for safety)

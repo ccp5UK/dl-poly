@@ -82,19 +82,18 @@ Module site
 Contains
 
   !> Allocate and initialise site_type arrays
-  Subroutine allocate_site_arrays(T,mxtmls,mxatyp)
+  Subroutine allocate_site_arrays(T)
   Class( site_type ) :: T
-    Integer( Kind = wi ), Intent( In    ) :: mxtmls,mxatyp
     Integer, Dimension(1:6) :: fail
 
     fail = 0
 
-    Allocate (T%mol_name(1:mxtmls), stat=fail(1))
+    Allocate (T%mol_name(1:T%mxtmls), stat=fail(1))
     Allocate (T%site_name(1:T%max_site),T%unique_atom(1:T%max_site),T%unique_shell(1:T%max_site), stat=fail(2))
-    Allocate (T%num_mols(1:mxtmls),T%num_site(1:mxtmls),T%num_freeze(1:mxtmls), stat=fail(3))
+    Allocate (T%num_mols(1:T%mxtmls),T%num_site(1:T%mxtmls),T%num_freeze(1:T%mxtmls), stat=fail(3))
     Allocate (T%type_site(1:T%max_site),T%freeze_site(1:T%max_site),T%free_site(1:T%max_site), stat=fail(4))
     Allocate (T%weight_site(1:T%max_site),T%charge_site(1:T%max_site),T%dof_site(1:T%max_site), stat=fail(5))
-    Allocate (T%num_type(1:mxatyp),T%num_type_nf(1:mxatyp),T%dens(1:mxatyp), stat=fail(6))
+    Allocate (T%num_type(1:T%mxatyp),T%num_type_nf(1:T%mxatyp),T%dens(1:T%mxatyp), stat=fail(6))
 
     If (Any(fail > 0)) Call error(1026)
 
