@@ -1,79 +1,81 @@
 Module control
-  Use kinds, only : wi,wp,sp,dp
-  Use comms,      Only : comms_type,gcheck
-  Use timer,      Only : timer_type
-  Use configuration,     Only : configuration_type
-  Use mpole,     Only : mpole_type,POLARISATION_DEFAULT,POLARISATION_CHARMM
-  Use langevin,   Only : langevin_allocate_arrays
-  Use bonds,      Only : bonds_type
-  Use angles,     Only : angles_type
-  Use dihedrals,  Only : dihedrals_type
-  Use inversions, Only : inversions_type
-  Use vdw, Only : vdw_type,MIX_NULL,MIX_LORENTZ_BERTHELOT,MIX_FENDER_HASLEY, &
+
+  Use kinds,           Only : wi,wp,sp,dp
+  Use comms,           Only : comms_type,gcheck
+  Use timer,           Only : timer_type
+  Use configuration,   Only : configuration_type
+  Use mpole,           Only : mpole_type,POLARISATION_DEFAULT,POLARISATION_CHARMM
+  Use langevin,        Only : langevin_allocate_arrays
+  Use bonds,           Only : bonds_type
+  Use angles,          Only : angles_type
+  Use dihedrals,       Only : dihedrals_type
+  Use inversions,      Only : inversions_type
+  Use vdw,             Only : vdw_type,MIX_NULL,MIX_LORENTZ_BERTHELOT,MIX_FENDER_HASLEY, &
     MIX_HALGREN,MIX_HOGERVORST,MIX_WALDMAN_HAGLER,MIX_TANG_TOENNIES, &
     MIX_FUNCTIONAL
-  Use tersoff, Only : tersoff_type
-  Use metal,      Only : metal_type
-  Use poisson,    Only : poisson_type
-  Use msd,        Only : msd_type
-  Use plumed,   Only : plumed_type
+  Use tersoff,         Only : tersoff_type
+  Use metal,           Only : metal_type
+  Use poisson,         Only : poisson_type
+  Use msd,             Only : msd_type
+  Use plumed,          Only : plumed_type
   Use constants,       Only : pi,zero_plus,prsunt,tenunt
-  Use parse,       Only : get_line,get_word,lower_case,word_2_real,strip_blanks
-  Use kim,         Only : kim_type
-  Use greenkubo,   Only : greenkubo_type
-  Use rdfs,        Only : rdf_type
-  Use development, Only : development_type
-  Use ttm, Only : ttm_type
-  Use impacts,     Only : impact_type
-  Use defects,     Only : defects_type
-  Use rsds, Only : rsd_type
-  Use io,     Only : io_set_parameters,io_type,        &
-    io_get_parameters,        &
-    io_nc_set_real_precision, &
-    io_nc_compiled,           &
-    IO_READ_MPIIO,            &
-    IO_READ_DIRECT,           &
-    IO_READ_MASTER,           &
-    IO_READ_NETCDF,           &
-    IO_WRITE_UNSORTED_MPIIO,  &
-    IO_WRITE_UNSORTED_DIRECT, &
-    IO_WRITE_UNSORTED_MASTER, &
-    IO_WRITE_SORTED_MPIIO,    &
-    IO_WRITE_SORTED_DIRECT,   &
-    IO_WRITE_SORTED_NETCDF,   &
+  Use parse,           Only : get_line,get_word,lower_case,word_2_real,strip_blanks
+  Use kim,             Only : kim_type
+  Use greenkubo,       Only : greenkubo_type
+  Use rdfs,            Only : rdf_type
+  Use development,     Only : development_type
+  Use ttm,             Only : ttm_type
+  Use impacts,         Only : impact_type
+  Use defects,         Only : defects_type
+  Use rsds,            Only : rsd_type
+  Use io,              Only : io_set_parameters,io_type,        &
+    io_get_parameters,                    &
+    io_nc_set_real_precision,             &
+    io_nc_compiled,                       &
+    IO_READ_MPIIO,                        &
+    IO_READ_DIRECT,                       &
+    IO_READ_MASTER,                       &
+    IO_READ_NETCDF,                       &
+    IO_WRITE_UNSORTED_MPIIO,              &
+    IO_WRITE_UNSORTED_DIRECT,             &
+    IO_WRITE_UNSORTED_MASTER,             &
+    IO_WRITE_SORTED_MPIIO,                &
+    IO_WRITE_SORTED_DIRECT,               &
+    IO_WRITE_SORTED_NETCDF,               &
     IO_WRITE_SORTED_MASTER
-  Use netcdf_wrap, Only : netcdf_param
-  Use numerics, Only : dcell, invert, seed_type
-  Use thermostat, Only : thermostat_type, &
+  Use netcdf_wrap,     Only : netcdf_param
+  Use numerics,        Only : dcell, invert, seed_type
+  Use thermostat,      Only : thermostat_type, &
     ENS_NVE, ENS_NVT_EVANS, ENS_NVT_LANGEVIN,  &
     ENS_NVT_ANDERSON, ENS_NVT_BERENDSEN, ENS_NVT_NOSE_HOOVER, &
-    ENS_NVT_GENTLE, ENS_NVT_LANGEVIN_INHOMO, &
-    ENS_NPT_LANGEVIN, ENS_NPT_BERENDSEN, ENS_NPT_NOSE_HOOVER, &
-    ENS_NPT_MTK, ENS_NPT_LANGEVIN_ANISO, ENS_NPT_BERENDSEN_ANISO, &
+    ENS_NVT_GENTLE,ENS_NVT_LANGEVIN_INHOMO, &
+    ENS_NPT_LANGEVIN,ENS_NPT_BERENDSEN, ENS_NPT_NOSE_HOOVER, &
+    ENS_NPT_MTK,ENS_NPT_LANGEVIN_ANISO, ENS_NPT_BERENDSEN_ANISO, &
     ENS_NPT_NOSE_HOOVER_ANISO,ENS_NPT_MTK_ANISO, &
-    CONSTRAINT_NONE, CONSTRAINT_SURFACE_AREA, &
-    CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC, &
+    CONSTRAINT_NONE,CONSTRAINT_SURFACE_AREA, &
+    CONSTRAINT_SURFACE_TENSION,CONSTRAINT_SEMI_ORTHORHOMBIC, &
     DPD_NULL,DPD_FIRST_ORDER,DPD_SECOND_ORDER
-  Use statistics, Only : stats_type
-  USe z_density, Only : z_density_type
-  Use constraints, Only : constraints_type
-  Use pmf, Only : pmf_type
-  Use neighbours, Only : neighbours_type
-  Use core_shell, Only : core_shell_type
-  Use minimise, Only : minimise_type,MIN_NULL,MIN_FORCE, MIN_DISTANCE, MIN_ENERGY
-  Use electrostatic, Only : electrostatic_type, ELECTROSTATIC_NULL, &
+  Use statistics,      Only : stats_type
+  USe z_density,       Only : z_density_type
+  Use constraints,     Only : constraints_type
+  Use pmf,             Only : pmf_type
+  Use neighbours,      Only : neighbours_type
+  Use core_shell,      Only : core_shell_type
+  Use minimise,        Only : minimise_type,MIN_NULL,MIN_FORCE, MIN_DISTANCE, MIN_ENERGY
+  Use electrostatic,   Only : electrostatic_type, ELECTROSTATIC_NULL, &
     ELECTROSTATIC_EWALD,ELECTROSTATIC_DDDP, &
     ELECTROSTATIC_COULOMB,ELECTROSTATIC_COULOMB_FORCE_SHIFT, &
     ELECTROSTATIC_COULOMB_REACTION_FIELD,ELECTROSTATIC_POISSON
-  Use ewald, Only : ewald_type
-  Use trajectory, Only : trajectory_type
+  Use ewald,           Only : ewald_type
+  Use trajectory,      Only : trajectory_type
   Use errors_warnings, Only : error,info,warning
-  Use filename, Only : file_type,FILE_CONTROL,FILE_OUTPUT,FILE_CONFIG,FILE_FIELD, &
+  Use filename,        Only : file_type,FILE_CONTROL,FILE_OUTPUT,FILE_CONFIG,FILE_FIELD, &
     FILE_STATS,FILE_HISTORY,FILE_HISTORF,FILE_REVIVE,FILE_REVCON, &
     FILE_REVOLD
-  Use flow_control, Only : flow_type,RESTART_KEY_OLD,RESTART_KEY_CLEAN, &
+  Use flow_control,    Only : flow_type,RESTART_KEY_OLD,RESTART_KEY_CLEAN, &
     RESTART_KEY_NOSCALE,RESTART_KEY_SCALE
-  Use rigid_bodies, Only : rigid_bodies_type
+  Use rigid_bodies,    Only : rigid_bodies_type
+
   Implicit None
 
   Private
@@ -114,61 +116,54 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( ttm_type ), Intent( InOut ) :: ttm
-    Logical,                Intent(   Out ) :: lfce
-    Type( rigid_bodies_type ), Intent ( InOut ) :: rigid
-    Type( rsd_type ), Intent ( InOut ) :: rsdc
-    Type( pmf_type ), Intent (   InOut )   :: pmf
-    Type( core_shell_type ), Intent (   InOut  )   :: cshell
-    Type( constraints_type ), Intent (   InOut )   :: cons
-    Type( stats_type ), Intent (   InOut )   :: stats
-    Type( impact_type ),     Intent(   Out ) :: impa
-    Type ( thermostat_type), Intent( InOut ) :: thermo
-    Type( development_type ), Intent( InOut ) :: devel
-    Type( greenkubo_type ), Intent( InOut ) :: green
-    Type( plumed_type ), Intent( InOut ) :: plume
-    Type( msd_type ), Intent( InOut ) :: msd_data
-    Type( metal_type ), Intent( InOut ) :: met
-    Type( poisson_type ), Intent( InOut ) :: pois
-    Type( bonds_type ), Intent( InOut ) :: bond
-    Type( angles_type ), Intent( In    ) :: angle
-    Type( dihedrals_type ), Intent( In    ) :: dihedral
-    Type( inversions_type ), Intent( InOut ) :: inversion
-    Type( z_density_type ), Intent( InOut ) :: zdensity
-    Type( neighbours_type ), Intent( InOut    ) :: neigh
-    Type( vdw_type ), Intent( InOut ) :: vdws
-    Type( rdf_type ), Intent( InOut ) :: rdf
-    Type( minimise_type ), Intent( InOut ) :: minim
-    Type( mpole_type ), Intent( InOut ) :: mpoles
-    Type( timer_type ),      Intent( InOut ) :: tmr
-    Type( defects_type ),    Intent( InOut ) :: dfcts(:)
+    Type( ttm_type ),           Intent( InOut ) :: ttm
+    Logical,                    Intent(   Out ) :: lfce
+    Type( rigid_bodies_type ),  Intent( InOut ) :: rigid
+    Type( rsd_type ),           Intent( InOut ) :: rsdc
+    Type( pmf_type ),           Intent( InOut ) :: pmf
+    Type( core_shell_type ),    Intent( InOut ) :: cshell
+    Type( constraints_type ),   Intent( InOut ) :: cons
+    Type( stats_type ),         Intent( InOut ) :: stats
+    Type( impact_type ),        Intent(   Out ) :: impa
+    Type ( thermostat_type),    Intent( InOut ) :: thermo
+    Type( development_type ),   Intent( InOut ) :: devel
+    Type( greenkubo_type ),     Intent( InOut ) :: green
+    Type( plumed_type ),        Intent( InOut ) :: plume
+    Type( msd_type ),           Intent( InOut ) :: msd_data
+    Type( metal_type ),         Intent( InOut ) :: met
+    Type( poisson_type ),       Intent( InOut ) :: pois
+    Type( bonds_type ),         Intent( InOut ) :: bond
+    Type( angles_type ),        Intent( In    ) :: angle
+    Type( dihedrals_type ),     Intent( In    ) :: dihedral
+    Type( inversions_type ),    Intent( InOut ) :: inversion
+    Type( z_density_type ),     Intent( InOut ) :: zdensity
+    Type( neighbours_type ),    Intent( InOut ) :: neigh
+    Type( vdw_type ),           Intent( InOut ) :: vdws
+    Type( rdf_type ),           Intent( InOut ) :: rdf
+    Type( minimise_type ),      Intent( InOut ) :: minim
+    Type( mpole_type ),         Intent( InOut ) :: mpoles
+    Type( timer_type ),         Intent( InOut ) :: tmr
+    Type( defects_type ),       Intent( InOut ) :: dfcts(:)
     Type( electrostatic_type ), Intent( InOut ) :: electro
-    Type( ewald_type ), Intent( InOut ) :: ewld
-    Type( seed_type ), Intent( InOut ) :: seed
-    Type( trajectory_type ), Intent( InOut ) :: traj
+    Type( ewald_type ),         Intent( InOut ) :: ewld
+    Type( seed_type ),          Intent( InOut ) :: seed
+    Type( trajectory_type ),    Intent( InOut ) :: traj
     Type( configuration_type ), Intent( InOut ) :: config
-    Type( file_type ), Intent( InOut ) :: files(:)
-    Type( flow_type ), Intent( InOut ) :: flow
-    Type( comms_type ),     Intent( InOut )  :: comm
+    Type( file_type ),          Intent( InOut ) :: files(:)
+    Type( flow_type ),          Intent( InOut ) :: flow
+    Type( comms_type ),         Intent( InOut ) :: comm
 
-    Integer( Kind = wi ) :: tmp_seed(1:3)
-
-
-    Logical                                 :: limp,lens,lforc,     &
+    Integer( Kind = wi )   :: tmp_seed(1:3)
+    Logical                :: limp,lens,lforc,     &
       ltemp,l_0,lpres,lstrext, &
       lstep,lplumed,safe,      &
       l_timjob,l_timcls
-
-    Character( Len = 200 )                  :: record
-    Character( Len = 40  )                  :: word,word1,word2,word3,akey
-
-    Integer                                 :: i,j,k,itmp,nstana,grdana,grdbnd,grdang, &
+    Character( Len = 200 ) :: record
+    Character( Len = 40  ) :: word,word1,word2,word3,akey
+    Integer                :: i,j,k,itmp,nstana,grdana,grdbnd,grdang, &
       grddih,grdinv,nstall
-
-    Real( Kind = wp )                       :: rcell(1:9),rcut1,rpad1,rvdw1,tmp,eps0,tol,rcb_d,prmps(1:4)
-
-    Integer( Kind = wi ) :: traj_key,traj_freq,traj_start
-
+    Real( Kind = wp )      :: rcell(1:9),rcut1,rpad1,rvdw1,tmp,eps0,tol,rcb_d,prmps(1:4)
+    Integer( Kind = wi )   :: traj_key,traj_freq,traj_start
     Character( Len = 256 ) :: message,messages(7)
     Character( Len = 80 )  :: banner(9)
 
@@ -196,22 +191,22 @@ Contains
     ! default impact option: option applied, particle index,
     ! timestep of impact, energy of impact, (3) direction of impact
 
-    limp = .false.
-    impa%imd  = 0
-    impa%tmd  = -1
-    impa%emd  = 0.0_wp
-    impa%vmx  = 0.0_wp
-    impa%vmy  = 0.0_wp
-    impa%vmz  = 0.0_wp
+    limp     = .false.
+    impa%imd = 0
+    impa%tmd = -1
+    impa%emd = 0.0_wp
+    impa%vmx = 0.0_wp
+    impa%vmy = 0.0_wp
+    impa%vmz = 0.0_wp
 
     ! temperature & pressure (stress) switches and default values
 
-    ltemp   = .false.
-    lpres   = .false.
-    lstrext = .false.
-    thermo%temp    = 0.0_wp
-    thermo%press   = 0.0_wp
-    thermo%stress  = 0.0_wp
+    ltemp         = .false.
+    lpres         = .false.
+    lstrext       = .false.
+    thermo%temp   = 0.0_wp
+    thermo%press  = 0.0_wp
+    thermo%stress = 0.0_wp
 
     ! default restart key (general)
 
@@ -219,7 +214,7 @@ Contains
 
     ! timestep switch and default value
 
-    lstep = .false.
+    lstep        = .false.
     thermo%tstep = 0.0_wp
 
     ! variable timestep switches and default minimum and maximum
@@ -1129,7 +1124,8 @@ Contains
         If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record,word)
         If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record,word)
         If (word(1:6) == 'charmm') Then
-          If (word(1:6) == 'thole') Then
+          Call get_word(record,word)
+          If (word(1:5) == 'thole') Then
             Call get_word(record,word)
             If (word(1:4) == 'dump' .or. word(1:6) == 'factor') Call get_word(record,word)
             If (word(1:4) == 'dump' .or. word(1:6) == 'factor') Call get_word(record,word)
@@ -3646,45 +3642,45 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
   ! contrib   - i.t.todorov april 2019 l_trm reading and setting
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  Type( ttm_type ), Intent( InOut ) :: ttm
-  Logical,           Intent(   Out ) :: l_n_r,lzdn,l_ind
-  Integer,           Intent( In    ) :: max_rigid,imcon
-  Integer,           Intent( InOut ) :: imc_n
-  Integer,           Intent(   Out ) :: mxgana,nstfce
-  Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
-  Real( Kind = wp ), Intent( InOut ) :: cell(1:9)
-  Type( core_shell_type ), Intent (   In  )   :: cshell
-  Type( stats_type ), Intent( InOut ) :: stats
-  Type( thermostat_type ), Intent( InOut ) :: thermo
-  Type( development_type ), Intent( InOut ) :: devel
-  Type( greenkubo_type ), Intent( InOut ) :: green
-  Type( msd_type ), Intent( InOut ) :: msd_data
-  Type( metal_type ), Intent( InOut ) :: met
-  Type( poisson_type ), Intent( InOut ) :: pois
-  Type( bonds_type ), Intent( InOut ) :: bond
-  Type( angles_type ), Intent( InOut ) :: angle
-  Type( dihedrals_type ), Intent( InOut ) :: dihedral
-  Type( inversions_type ), Intent( InOut ) :: inversion
-  Type( z_density_type ), Intent( InOut ) :: zdensity
-  Type( neighbours_type ), Intent( InOut ) :: neigh
-  Type( vdw_type ), Intent( InOut ) :: vdws
-  Type( tersoff_type ), Intent( In    )  :: tersoffs
-  Type( rdf_type ), Intent( InOut ) :: rdf
-  Type( mpole_type ), Intent( InOut ) :: mpoles
+
+  Type( ttm_type ),           Intent( InOut ) :: ttm
+  Logical,                    Intent(   Out ) :: l_n_r,lzdn,l_ind
+  Integer,                    Intent( In    ) :: max_rigid,imcon
+  Integer,                    Intent( InOut ) :: imc_n
+  Integer,                    Intent(   Out ) :: mxgana,nstfce
+  Real( Kind = wp ),          Intent( In    ) :: xhi,yhi,zhi,rcter
+  Real( Kind = wp ),          Intent( InOut ) :: cell(1:9)
+  Type( core_shell_type ),    Intent( In    ) :: cshell
+  Type( stats_type ),         Intent( InOut ) :: stats
+  Type( thermostat_type ),    Intent( InOut ) :: thermo
+  Type( development_type ),   Intent( InOut ) :: devel
+  Type( greenkubo_type ),     Intent( InOut ) :: green
+  Type( msd_type ),           Intent( InOut ) :: msd_data
+  Type( metal_type ),         Intent( InOut ) :: met
+  Type( poisson_type ),       Intent( InOut ) :: pois
+  Type( bonds_type ),         Intent( InOut ) :: bond
+  Type( angles_type ),        Intent( InOut ) :: angle
+  Type( dihedrals_type ),     Intent( InOut ) :: dihedral
+  Type( inversions_type ),    Intent( InOut ) :: inversion
+  Type( z_density_type ),     Intent( InOut ) :: zdensity
+  Type( neighbours_type ),    Intent( InOut ) :: neigh
+  Type( vdw_type ),           Intent( InOut ) :: vdws
+  Type( tersoff_type ),       Intent( In    ) :: tersoffs
+  Type( rdf_type ),           Intent( InOut ) :: rdf
+  Type( mpole_type ),         Intent( InOut ) :: mpoles
   Type( electrostatic_type ), Intent( InOut ) :: electro
-  Type( ewald_type ), Intent( InOut ) :: ewld
-  Type( kim_type), Intent( InOut ) :: kim_data
-  Type( file_type ), Intent( InOut ) :: files(:)
-  Type( flow_type ), Intent( InOut ) :: flow
-  Type( comms_type ), Intent( InOut ) :: comm
+  Type( ewald_type ),         Intent( InOut ) :: ewld
+  Type( kim_type),            Intent( InOut ) :: kim_data
+  Type( file_type ),          Intent( InOut ) :: files(:)
+  Type( flow_type ),          Intent( InOut ) :: flow
+  Type( comms_type ),         Intent( InOut ) :: comm
 
-  Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
+  Logical                      :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
     lrcut,lrvdw,lrmet,lelec,lvdw,lmet,l_n_m,lter,l_exp
-  Character( Len = 200 ) :: record
-  Character( Len = 40  ) :: word,word1,akey
-  Integer                :: i,itmp,nstrun,bspline_local
-  Real( Kind = wp )      :: celprp(1:10),cut,eps0,fac,tol,tol1
-
+  Character( Len = 200 )       :: record
+  Character( Len = 40  )       :: word,word1,akey
+  Integer                      :: i,itmp,nstrun,bspline_local
+  Real( Kind = wp )            :: celprp(1:10),cut,eps0,fac,tol,tol1
   Integer,           Parameter :: mxspl_def = 8,        & ! default spline for SPME (4 & 6 possible)
     mxspl_min = 3           ! minimum spline order, needed for derivatives of forces
   Real( Kind = wp ), Parameter :: rcut_def  = 1.0_wp  , & ! minimum real space cutoff
@@ -4772,9 +4768,9 @@ Subroutine scan_control_pre(imc_n,dvar,files,comm)
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer,           Intent( InOut ) :: imc_n
-  Real( Kind = wp ), Intent(   Out ) :: dvar
-  Type( file_type ), Intent( InOut ) :: files(:)
+  Integer,            Intent( InOut ) :: imc_n
+  Real( Kind = wp ),  Intent(   Out ) :: dvar
+  Type( file_type ),  Intent( InOut ) :: files(:)
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe
@@ -4874,10 +4870,10 @@ Subroutine scan_control_io(io,netcdf,files,comm)
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Type( io_type ), Intent( InOut ) :: io
+  Type( io_type ),      Intent( InOut ) :: io
   Type( netcdf_param ), Intent( InOut ) :: netcdf
-  Type( file_type ), Intent( InOut ) :: files(:)
-  Type( comms_type ), Intent( InOut ) :: comm
+  Type( file_type ),    Intent( InOut ) :: files(:)
+  Type( comms_type ),   Intent( InOut ) :: comm
 
   Logical                :: carry,safe
   Character( Len = 200 ) :: record,record1
@@ -5400,8 +5396,9 @@ Subroutine scan_control_output(files,comm)
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Type( file_type ), Intent( InOut ) :: files(:)
+  Type( file_type ),  Intent( InOut ) :: files(:)
   Type( comms_type ), Intent( InOut ) :: comm
+
   Logical                :: carry,safe
   Character( Len = 200 ) :: record,rec_case_sensitive
   Character( Len = 40  ) :: word,word1,wordo
