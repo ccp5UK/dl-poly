@@ -7,7 +7,7 @@ Module ffield
   Use kinds, Only : wp,wi
   Use comms, Only : comms_type
   Use constants, Only : engunit, eu_ev, eu_kcpm, eu_kjpm, boltz, zero_plus, pi, r4pie0, prsunt, ntable, VA_to_dl, tesla_to_dl
-  Use kim,   Only : kim_type,kim_cutoff
+  Use kim, Only : kim_type,kim_cutoff,kim_interactions
 
   ! SITE MODULE
 
@@ -157,7 +157,8 @@ Contains
     Type( flow_type ), Intent( InOut ) :: flow
     Type( comms_type), Intent( InOut ) :: comm
 
-    Logical                :: safe,lunits,lmols,atmchk,                        &
+    Logical                ::                          &
+      safe,lunits,lmols,atmchk,                        &
       l_shl,l_con,l_rgd,l_tet,l_bnd,l_ang,l_dih,l_inv, &
       lshl_one,lshl_all,lshl_abort,lpmf,               &
       lmet_safe,lter_safe,ldpd_safe
@@ -168,7 +169,8 @@ Contains
     Character( Len = 16  ) :: idbond
     Character( Len = 8   ) :: atom0,atom1,atom2,atom3
     Character( Len = 4   ) :: keyword
-    Integer                :: fail(1:4),itmols,isite,jsite,ksite,msite,nsite,     &
+    Integer                ::                             &
+      fail(1:4),itmols,isite,jsite,ksite,msite,nsite,     &
       isite1,isite2,isite3,isite4,is(0:4),js(0:4),        &
       irept,nrept,ifrz,ntmp,i,j,ia,ja,jtpatm,ntab,keypot, &
       iatm1,iatm2,iatm3,iatm4,                            &
@@ -180,8 +182,9 @@ Contains
       itprdf,keyrdf,itpvdw,keyvdw,itpmet,keymet,          &
       itpter,keyter,icross,                               &
       itbp,itptbp,keytbp,ktbp,                            &
-      ifbp,itpfbp,keyfbp,ka1,ka2,ka3,kfbp,nfld,itmp
-    Real( Kind = wp )      :: weight,charge,pmf_tmp(1:2),parpot(1:30),tmp,        &
+      ifbp,itpfbp,keyfbp,ka1,ka2,ka3,kfbp,nfld,itmp,nkim
+    Real( Kind = wp )      ::                             &
+      weight,charge,pmf_tmp(1:2),parpot(1:30),tmp,        &
       sig(0:2),eps(0:2),del(0:2),                         &
       q_core_p, q_core_s , q_core,                        &
       q_shel_p, q_shel_s , q_shel,                        &
@@ -195,6 +198,7 @@ Contains
     Character ( Len = 256 )             :: message,messages(3)
     Integer                             :: iter,rwidth
     Character ( Len = 100 )             :: rfmt
+    Character ( Len = 8 ),  Allocatable :: kim_name(:)
 
     ! Initialise number of unique atom and shell types and of different types of molecules
     sites%ntype_atom = 0
@@ -226,6 +230,7 @@ Contains
     nangle = 0
     ndihed = 0
     ninver = 0
+    nkim   = 0
 
     ! Allocate auxiliary identity arrays for intramolecular TPs and PDFs
 
@@ -4736,6 +4741,8 @@ Contains
 
       Else If (word(1:3) == 'kim') Then
 
+        If (.not. lmols) Call error(13)
+
         If (.not. kim_data%active) Then
           Write(message, '(a, 1x, 2a)') new_line('a'), &
             'read_field, `kim_init` must be used to initialise the ', &
@@ -4743,10 +4750,94 @@ Contains
           Call error(0, message)
         End If
 
+        ! kim init
         If (word(1:8) == 'kim_init') Then
           Write(message,'(2a)') 'using open KIM interatomic model: ', &
             kim_data%model_name
           Call info(message, .true.)
+        End If
+
+        ! kim interactions
+        If (word(1:16) == 'kim_interactions') Then
+
+          fail(1) = 0
+
+          Allocate(kim_name(sites%ntype_atom), Stat=fail(1))
+          If (fail(1) /= 0) Then
+            Write(message,'(a)') 'read_field, kim_name allocation failure'
+            Call error(0,message)
+          End If
+
+          ! Get the list of unique species for kim interactions
+          kim_name = ' '
+
+          Do While (word(1:1) /= ' ')
+            Call get_word(record,word)
+
+            If (word(1:1) /= ' ') Then
+
+              ! Establish a list of unique species
+
+              atmchk=.true.
+
+              Do ia=1,nkim
+                If (kim_name(ia) == word(1:8)) Then
+                  atmchk=.false.
+                End If
+              End Do
+
+              If (atmchk) Then
+                nkim = nkim + 1
+                kim_name(nkim) = word(1:8)
+              End If
+
+            End If
+          End Do
+
+          ! The number of unique species for kim interactions should be
+          ! less or equal to the number of unique atom types
+          If (nkim > sites%ntype_atom) Call error(14)
+
+          If (nkim == 0) Then
+            Write(message,'(a, 1x, a)') new_line('a'), &
+              'read_field, Illegal `kim_interactions` keyword'
+            Call error(0, message)
+          End If
+
+          ! Extra check to make sure all the species in kim_interactions
+          ! have been defined before
+          atmchk=.true.
+          Do ia=1,nkim
+            Do ja=1,sites%ntype_atom
+              If (kim_name(ia) == sites%unique_atom(ja)) Then
+                ! We found the species
+                atmchk=.false.
+                ! Break the inside loop
+                Exit
+              End If
+            End Do
+
+            ! If the species is not found
+            If (atmchk) Then
+              Write(message,'(a, 1x, 3a)') new_line('a'), &
+                'read_field, `kim_interactions` has species `', &
+                Trim(kim_name(ia)), '` which is not defined before'
+              Call error(0, message)
+            End If
+          End Do
+
+          Call kim_interactions( &
+            kim_data, &
+            sites%ntype_atom, &
+            sites%unique_atom, &
+            nkim, &
+            kim_name)
+
+          Deallocate(kim_name, Stat = fail(1))
+          If (fail(1) /= 0) Then
+            Write(message,'(a)') 'read_field, deallocation failure'
+            Call error(0,message)
+          End If
         End If
 
         ! read external field data
@@ -4940,7 +5031,7 @@ Contains
 
     2000 Continue
 
-         If (comm%idnode == 0) Call files(FILE_FIELD)%close()
+    If (comm%idnode == 0) Call files(FILE_FIELD)%close()
     Call error(52)
 
   End Subroutine read_field
@@ -5219,21 +5310,22 @@ Contains
     Character( Len = 8   ) :: name
     Character( Len = 256 ) :: message
 
-    Logical           :: check,safe,l_usr,lext
-    Integer           :: itmols,nummols,numsit,mxnmst,ksite,nrept,        &
-      megatm,i,j,k,        &
-      numshl,ishls,                 &
-      numcon,mtcons,icon,                &
-      ipmf,jpmf,                     &
-      numrgd,mtrgd,irgd,jrgd,lrgd, &
-      inumteth,mtteth,iteth,  &
-      numbonds,mtbond,ibonds, &
-      numang,mtangl,iang,         &
-      numdih,mtdihd,idih,         &
-      numinv,mtinv,iinv,           &
-      itprdf,itpvdw,                       &
-      itpmet,                        &
-      itpter,itptbp,itpfbp,                 &
+    Logical           :: check,safe,l_usr,lext,lkim
+    Integer           ::                        &
+      itmols,nummols,numsit,mxnmst,ksite,nrept, &
+      megatm,i,j,k,                             &
+      numshl,ishls,                             &
+      numcon,mtcons,icon,                       &
+      ipmf,jpmf,                                &
+      numrgd,mtrgd,irgd,jrgd,lrgd,              &
+      inumteth,mtteth,iteth,                    &
+      numbonds,mtbond,ibonds,                   &
+      numang,mtangl,iang,                       &
+      numdih,mtdihd,idih,                       &
+      numinv,mtinv,iinv,                        &
+      itprdf,itpvdw,                            &
+      itpmet,                                   &
+      itpter,itptbp,itpfbp,                     &
       mxt(1:9),mxf(1:9)
     Real( Kind = wp ) :: rct,tmp,tmp1,tmp2
 
@@ -5334,6 +5426,7 @@ Contains
 
     lext =.false.
     l_usr=.false.
+    lkim =.false.
 
     ! Set safe flag
 
@@ -6041,6 +6134,7 @@ Contains
 
         ! Get KIM's IM name and cutoff
 
+        ! kim init
         If (word(1:8) == 'kim_init') Then
 
           If (kim_data%active) Then
@@ -6056,6 +6150,9 @@ Contains
           Call kim_cutoff(kim_data)
 
         End If
+
+        ! kim interactions
+        If (word(1:16) == 'kim_interactions') lkim=.true.
 
         If (.not. kim_data%active) Then
           Write(message,'(a, 1x, 2a)') new_line('a'), &
@@ -6086,7 +6183,18 @@ Contains
     End Do
 
     10 Continue
-       If (comm%idnode == 0) Call files(FILE_FIELD)%close()
+
+    If (comm%idnode == 0) Call files(FILE_FIELD)%close()
+
+    If (kim_data%active) Then
+      If (.not. lkim) Then
+        Write(message,'(a, 1x, 3a)') new_line('a'), &
+          'scan_field, `kim_interactions` must be used to perform all ', &
+          'the necessary steps and set up the kim interatomic model ', &
+          'selected in `kim_init` '
+        Call error(0, message)
+      End If
+    End If
 
     ! Define legend arrays lengths.  If length > 0 then
     ! length=Max(length)+1 for the violation excess element
