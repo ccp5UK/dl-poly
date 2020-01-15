@@ -193,10 +193,10 @@ Module kim
     Integer(Kind = c_int), Allocatable :: hints_padding(:)
 
     ! Species
-    !> List of species names
-    Type(kim_species_name_type), Allocatable :: species_name(:)
     !> List of species codes
     Integer(Kind = c_int), Allocatable :: species_code(:)
+    !> List of unique species codes
+    Integer(Kind = c_int), Allocatable :: unique_species_code(:)
 
     !> Contributing list
     !>
@@ -223,6 +223,7 @@ Module kim
 
   Public :: kim_setup
   Public :: kim_cutoff
+  Public :: kim_interactions
   Public :: kim_energy_and_forces
   Public :: get_neigh
   Public :: kim_citations
@@ -720,6 +721,86 @@ Contains
 #endif
   End Subroutine kim_cutoff
 
+  !> Function that defines a list of N species, and defines a mapping between
+  !> atom types in DL_POLY to the available species in the OpenKIM IM
+  !>
+  !> This function must be preceded by the DL_POLY defination of the number
+  !> of atom types and a 'kim_cutoff' call through using the 'kim_init'
+  !> keyword in the FIELD file
+  Subroutine kim_interactions(kim_data,ntype_atom,unique_atom, &
+      kim_ntype_atom,kim_species_name)
+    !> KIM data type
+    Type(kim_type), Target, Intent(InOut) :: kim_data
+    !> Number of atom types
+    Integer(Kind = wi), Intent(In   ) :: ntype_atom
+    !> Unique atom labels
+    Character(Len = 8), Intent(In   ) :: unique_atom(:)
+    !> Number of atom types in the KIM interaction
+    Integer(Kind = wi), Intent(In   ) :: kim_ntype_atom
+    !> Unique atom labels in the KIM interaction
+    Character(Len = 8), Intent(In   ) :: kim_species_name(:)
+
+    Integer(Kind = c_int) :: species_is_supported
+    Integer(Kind = c_int) :: species_code
+    Integer(Kind = c_int) :: kerror
+    Integer(Kind = wi)    :: iatom, jatom
+    Integer(Kind = wi)    :: fail
+
+#ifdef KIM
+    Type(kim_species_name_type) :: species_name
+#endif
+
+    fail = 0
+
+#ifdef KIM
+    ! Allocate KIM unique_species_code array
+    Allocate(kim_data%unique_species_code(ntype_atom), Stat = fail)
+    If (fail /= 0) Then
+      Call kim_error('kim_interactions, unique_species_code ' // &
+        'allocation failure ', __LINE__)
+    End If
+
+    ! Initialise the species code
+    kim_data%unique_species_code = -2_c_int
+
+    ! Loop through the kim interactions atom types
+    Do iatom = 1, kim_ntype_atom
+      Call kim_from_string(Trim(kim_species_name(iatom)), species_name)
+
+      ! Check model supports the requested species
+      Call kim_get_species_support_and_code( &
+        kim_data%model_handle, &
+        species_name, &
+        species_is_supported, &
+        species_code, &
+        kerror)
+      If ((kerror /= 0_c_int) .or. (species_is_supported /= 1_c_int)) Then
+        Call kim_error('kim_interactions, ' // &
+          'The species ' // Trim(kim_species_name(iatom)) // &
+          ' is not supported by KIM API.', __LINE__)
+      End If
+
+      Do jatom = 1, ntype_atom
+        If (kim_species_name(iatom) == unique_atom(jatom)) Then
+          ! Assign the unique code
+          kim_data%unique_species_code(jatom) = species_code
+          ! Break the inside loop
+          Exit
+        End If
+      End Do
+    End Do
+
+    ! Extra check
+    If (Count(kim_data%unique_species_code /= -2_c_int) /= &
+      Int(kim_ntype_atom, c_int)) Then
+      Call kim_error('kim_interactions, There is an undefined ' // &
+        'species type passed to `kim_interactions`. ', __LINE__)
+    End If
+
+#endif
+  End Subroutine kim_interactions
+
+
   !> Provide KIM citations to reference publication
   Subroutine kim_citations(kim_data, comm)
     !> KIM data type
@@ -803,7 +884,8 @@ Contains
 
   !> Compute KIM energy and forces
   Subroutine kim_energy_and_forces(kim_data,natms,nlast,parts,neigh_list, &
-      map,lsite,lsi,lsa,ltg,site_name,energy_kim,virial_kim,stress,comm)
+      map,lsite,ltype,lsi,lsa,ltg,site_name,energy_kim,virial_kim,stress, &
+      comm)
     !> KIM data type
     Type(kim_type), Target, Intent(InOut) :: kim_data
     !> Number of particles in this domain (excluding the halo)
@@ -821,23 +903,27 @@ Contains
     Integer(Kind = wi), Intent(In   ) :: map(1:26)
     !> Site local index to global index
     Integer(Kind = wi), Intent(In   ) :: lsite(:)
+    !> Type of each local atom
+    Integer(Kind = wi), Intent(In   ) :: ltype(:)
     !> Some sort of local to global arrays
-    Integer(Kind = wi), Intent(In   ) :: lsi(:),lsa(:)
+    Integer(Kind = wi), Intent(In   ) :: lsi(:)
+    !> Some sort of local to global arrays
+    Integer(Kind = wi), Intent(In   ) :: lsa(:)
     !> Local to global id
     Integer(Kind = wi), Intent(In   ) :: ltg(:)
     !> Names of each atom
     Character(Len = 8), Intent(In   ) :: site_name(:)
     !> KIM model energy
-    Real(Kind = wp), Intent(  Out) :: energy_kim
+    Real(Kind = wp),    Intent(  Out) :: energy_kim
     !> KIM model virial
-    Real(Kind = wp), Intent(  Out) :: virial_kim
+    Real(Kind = wp),    Intent(  Out) :: virial_kim
     !> Virial
-    Real(Kind = wp), Dimension(9), Intent(InOut) :: stress
+    Real(Kind = wp),    Intent(InOut) :: stress(1:9)
     !> Comms data
-    Type(comms_type), Intent(InOut) :: comm
+    Type(comms_type),   Intent(InOut) :: comm
 
     Integer(Kind = wi)    :: atom, list_index
-    Integer(Kind = c_int) :: species_is_supported
+    Integer(Kind = c_int) :: species_code
     Integer(Kind = c_int) :: kerror
 
 #ifdef KIM
@@ -856,29 +942,14 @@ Contains
     kim_data%contributing = 0_c_int
     kim_data%contributing(1:natms) = 1_c_int
 
-    ! Enter species information
+    ! Enter species information of species codes & contributing
     Do atom = 1, nlast
-      Call kim_from_string( &
-        Trim(site_name(lsite(atom))), &
-        kim_data%species_name(atom))
-
-      ! Check model supports the requested species
-      Call kim_get_species_support_and_code( &
-        kim_data%model_handle, &
-        kim_data%species_name(atom), &
-        species_is_supported, &
-        kim_data%species_code(atom), &
-        kerror)
-      If (kerror /= 0_c_int) Then
-        Call kim_error('kim_energy_and_forces, ' // &
-          'The species ' // Trim(site_name(lsite(atom))) // &
-          ' is not supported by KIM API.', __LINE__)
-      End If
-
-      If (species_is_supported /= 1_c_int) Then
-        ! The current model does not support a specific species which means
-        ! it does not contribute. Here we mark the species and later correct
-        ! the contributing array to only 0 and 1
+      species_code = kim_data%unique_species_code(ltype(atom))
+      kim_data%species_code(atom) = species_code
+      If (species_code < 0_c_int) Then
+        ! If the current model does not support a specific species, means the
+        ! species does not contribute. Here we mark the species and later
+        ! correct the contributing array to only 0 and 1
         kim_data%contributing(atom) = -2_c_int
       End If
     End Do
@@ -889,12 +960,13 @@ Contains
     End Do
 
     ! Call KIM API to compute energy and forces
-    Call kim_compute(kim_data%model_handle, &
+    Call kim_compute( &
+      kim_data%model_handle, &
       kim_data%compute_arguments_handle, &
       kerror)
     If (kerror /= 0_c_int) Then
       Call kim_error('kim_energy_and_forces, kim_compute, ' // &
-        'returned an error', __LINE__)
+        'returned an error ', __LINE__)
     End If
 
     ! Retrieve KIM energy and forces from pointers (allocated in kim_setup)
@@ -1428,7 +1500,6 @@ Contains
 #ifdef KIM
     fail = 0
 
-    Allocate(T%species_name(mxatms), Stat = fail(1))
     Allocate(T%species_code(mxatms), Stat = fail(2))
     Allocate(T%contributing(mxatms), Stat = fail(3))
     Allocate(T%coords(3, mxatms), Stat = fail(4))
@@ -1442,27 +1513,26 @@ Contains
 
   !> Deallocate memory from KIM type
   Subroutine kim_type_cleanup(T)
-    Type(kim_type) :: T
+  Type(kim_type) :: T
 
+    Integer(Kind = wi)    :: fail
     Integer(Kind = c_int) :: kerror
 
-    Integer :: fail
-
-#ifdef KIM
     fail = 0
 
-    If (Allocated(T%species_name)) Then
-      Deallocate(T%species_name, Stat = fail)
-      If (fail /= 0) Then
-        Call kim_error('kim_type_cleanup, species_name ' // &
-          'deallocation failure ', __LINE__)
-      End If
-    End If
-
+#ifdef KIM
     If (Allocated(T%species_code)) Then
       Deallocate(T%species_code, Stat = fail)
       If (fail /= 0) Then
         Call kim_error('kim_type_cleanup, species_code ' // &
+          'deallocation failure ', __LINE__)
+      End If
+    End If
+
+    If (Allocated(T%unique_species_code)) Then
+      Deallocate(T%unique_species_code, Stat = fail)
+      If (fail /= 0) Then
+        Call kim_error('kim_type_cleanup, unique_species_code ' // &
           'deallocation failure ', __LINE__)
       End If
     End If
@@ -1503,6 +1573,10 @@ Contains
       T%model_handle, &
       T%compute_arguments_handle, &
       kerror)
+    If (kerror /= 0_c_int) Then
+      Call kim_error('kim_type_cleanup, kim_compute_arguments_destroy ' // &
+        'returned an error ', __LINE__)
+    End If
 
     Call kim_model_destroy(T%model_handle)
 #endif
