@@ -38,7 +38,7 @@ Module bounds
   Use rdfs,            Only : rdf_type
   Use external_field,  Only : external_field_type
   Use rigid_bodies,    Only : rigid_bodies_type
-  Use electrostatic,   Only : electrostatic_type
+  Use electrostatic,   Only : electrostatic_type,ELECTROSTATIC_NULL
   Use ewald,           Only : ewald_type
   Use io,              Only : io_type
   Use filename,        Only : file_type
@@ -73,12 +73,6 @@ Contains
     ! contrib   - i.t.todorov june 2018 (fdens & mxatms fixes)
     ! contrib   - i.t.todorov august 2018 (rpad refinements)
     ! contrib   - i.t.todorov january 2019 (mxatms increase)
-    ! contrib   - i.t.todorov may 2019 (rpad & rcut feedback, mxatms & mxatdm setting)
-    ! contrib   - i.t.todorov july 2019 (SPME b-spline corrected mxatms & buffers,l_trm)
-    ! contrib   - i.t.todorov november 2019 (commenting on magic numbers with changes to magic & buffers' sizes)
-    ! contrib   - i.t.todorov november 2019 (changing fdens choosing to handle imbalance better)
-    ! contrib   - i.t.todorov november 2019 (increasing bond%max_bonds, angle%max_angles, amending domain%mxbfxp)
-    !
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -86,7 +80,12 @@ Contains
     !           - i.scivetti march-october 2018
     ! contrib   - a.m.elena february 2019 (cherry pick 4.09.2)
     ! contrib   - a.m.elena february 2019 (get back to 4.08 magic numbers for mxnode=1)
-    !
+    ! contrib   - i.t.todorov may 2019 (rpad & rcut feedback, mxatms & mxatdm setting)
+    ! contrib   - i.t.todorov july 2019 (SPME b-spline corrected mxatms & buffers,l_trm)
+    ! contrib   - i.t.todorov november 2019 (commenting on magic numbers with changes to magic & buffers' sizes)
+    ! contrib   - i.t.todorov november 2019 (changing fdens choosing to handle imbalance better)
+    ! contrib   - i.t.todorov november 2019 (increasing bond%max_bonds, angle%max_angles, amending domain%mxbfxp)
+    ! contrib   - a.m.elena january 2020 avoid division by zero when shited couloumb is used
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type( site_type),            Intent( InOut ) :: site
@@ -1022,16 +1021,18 @@ Contains
     ! must be redefined by the config%mxatdm based desnity
 
     If ( .not. electro%no_elec) Then
-      xhi=Max(1.0_wp,Real(ewld%bspline1,wp)/(Real(ewld%fft_dim_a,wp)/Real(domain%nx,wp)/Real(ilx,wp)))+1.0_wp
-      yhi=Max(1.0_wp,Real(ewld%bspline1,wp)/(Real(ewld%fft_dim_b,wp)/Real(domain%ny,wp)/Real(ily,wp)))+1.0_wp
-      zhi=Max(1.0_wp,Real(ewld%bspline1,wp)/(Real(ewld%fft_dim_c,wp)/Real(domain%nz,wp)/Real(ilz,wp)))+1.0_wp
-      If (xhi*yhi*zhi > 8.0_wp) Then
-        vcell=config%mxatdm/Real(ilx*ily*ilz,wp)
-        xhi=xhi+Real(ilx,wp)
-        yhi=yhi+Real(ily,wp)
-        zhi=zhi+Real(ilz,wp)
-        config%mxatms=Nint(vcell*(xhi*yhi*zhi))
-      End If
+      If ( electro%key /= ELECTROSTATIC_NULL ) Then
+        xhi=Max(1.0_wp,Real(ewld%bspline1,wp)/(Real(ewld%fft_dim_a,wp)/Real(domain%nx,wp)/Real(ilx,wp)))+1.0_wp
+        yhi=Max(1.0_wp,Real(ewld%bspline1,wp)/(Real(ewld%fft_dim_b,wp)/Real(domain%ny,wp)/Real(ily,wp)))+1.0_wp
+        zhi=Max(1.0_wp,Real(ewld%bspline1,wp)/(Real(ewld%fft_dim_c,wp)/Real(domain%nz,wp)/Real(ilz,wp)))+1.0_wp
+        If (xhi*yhi*zhi > 8.0_wp) Then
+          vcell=config%mxatdm/Real(ilx*ily*ilz,wp)
+          xhi=xhi+Real(ilx,wp)
+          yhi=yhi+Real(ily,wp)
+          zhi=zhi+Real(ilz,wp)
+          config%mxatms=Nint(vcell*(xhi*yhi*zhi))
+        End If
+      End IF
     End if
 
     ! limit mxatdm as it cannot exceed mxatdm
