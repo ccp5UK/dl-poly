@@ -18,45 +18,46 @@ Module constraints
   Use kinds,           Only : wp,wi
   Use comms,           Only : comms_type,gsum,gcheck,gsync
   Use configuration,   Only : configuration_type
-  Use pmf, Only : pmf_shake_vv,pmf_rattle,pmf_type
-  Use constants,           Only : zero_plus
+  Use pmf,             Only : pmf_shake_vv,pmf_rattle,pmf_type
+  Use constants,       Only : zero_plus
   Use errors_warnings, Only : error,warning,info
   Use shared_units,    Only : update_shared_units,SHARED_UNIT_UPDATE_POSITIONS
   Use numerics,        Only : images,local_index
-  Use statistics, Only : stats_type
-  Use timer, Only   : start_timer, stop_timer, timer_type
-  Use domains, Only : domains_type
-  Use thermostat, Only : thermostat_type
+  Use statistics,      Only : stats_type
+  Use timer,           Only : start_timer, stop_timer, timer_type
+  Use domains,         Only : domains_type
+  Use thermostat,      Only : thermostat_type
   Implicit None
 
   Private
 
-  Type, Public :: constraints_type
+  Type,      Public :: constraints_type
     Private
-    Logical,                        Public :: lshmv_con = .false.
 
-    Integer,                        Public :: ntcons  = 0 , &
-      ntcons1 = 0 , &
-      m_con   = 0 , megcon
-
-    Integer,                        Public :: mxtcon,mxcons,mxfcon
-    Integer,                        Public :: max_iter_shake
-    Real( Kind = wp ), Public :: tolerance
+    Logical,           Public              :: lshmv_con = .false.
+    Integer,           Public              :: ntcons  = 0
+    Integer,           Public              :: ntcons1 = 0
+    Integer,           Public              :: m_con   = 0
+    Integer,           Public              :: megcon
+    Integer,           Public              :: mxtcon,mxcons,mxfcon
+    Integer,           Public              :: max_iter_shake
+    Real( Kind = wp ), Public              :: tolerance
     Integer,           Allocatable, Public :: numcon(:)
     Integer,           Allocatable, Public :: lstcon(:,:),listcon(:,:),legcon(:,:)
     Integer,           Allocatable, Public :: lishp_con(:),lashp_con(:)
-
-    Integer,           Allocatable :: lstopt(:,:),listot(:)
-    Real( Kind = wp ), Allocatable :: dxx(:),dyy(:),dzz(:)
-
+    Integer,           Allocatable         :: lstopt(:,:),listot(:)
+    Real( Kind = wp ), Allocatable         :: dxx(:),dyy(:),dzz(:)
     Real( Kind = wp ), Allocatable, Public :: prmcon(:)
+
   Contains
     Private
+
     Procedure, Public :: init => allocate_constraints_arrays
     Procedure, Public :: deallocate_constraints_temps
     Procedure, Public :: allocate_work
     Procedure, Public :: deallocate_work
-    Final :: deallocate_constraints_arrays
+    Final             :: deallocate_constraints_arrays
+ 
   End Type
 
   Public :: constraints_pseudo_bonds
@@ -72,8 +73,8 @@ Contains
   Subroutine allocate_work(T,n)
   Class(constraints_type) :: T
     Integer, Intent( In ) :: n
-    Integer :: fail(2)
-    Character(Len=100) :: message
+    Integer               :: fail(2)
+    Character(Len=100)    :: message
 
     If (T%megcon > 0) Then
       Allocate (T%lstopt(0:2,1:T%mxcons),T%listot(1:n),          Stat=fail( 1)) 
@@ -89,7 +90,7 @@ Contains
   Subroutine deallocate_work(T)
   Class(constraints_type) :: T
 
-    Integer :: fail(2)
+    Integer            :: fail(2)
     Character(Len=100) :: message
 
     If (T%megcon > 0) Then
@@ -178,11 +179,11 @@ Contains
 
 
 
-    Real( Kind = wp ), Intent( InOut )  :: gxx(:),gyy(:),gzz(:)
-    Type( stats_type), Intent( InOut ) :: stat
-    Type( constraints_type), Intent( InOut) :: cons
+    Real( Kind = wp ),          Intent( InOut ) :: gxx(:),gyy(:),gzz(:)
+    Type( stats_type),          Intent( InOut ) :: stat
+    Type( constraints_type),    Intent( InOut ) :: cons
     Type( configuration_type ), Intent( InOut ) :: config
-    Type( comms_type ), Intent( InOut ) :: comm
+    Type( comms_type ),         Intent( InOut ) :: comm
 
     Real( Kind = wp ), Parameter :: rigid=1.0e6_wp
 
@@ -248,20 +249,19 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( constraints_type ), Intent( InOut ) :: cons
-    Type( stats_type), Intent( InOut ) :: stat
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( comms_type), Intent( InOut ) :: comm
-
+    Type( constraints_type ),   Intent( InOut ) :: cons
+    Type( stats_type),          Intent( InOut ) :: stat
+    Type( domains_type ),       Intent( In    ) :: domain
+    Type( comms_type),          Intent( InOut ) :: comm
     Type( configuration_type ), Intent( InOut ) :: config
 
-    Logical           :: safe
-    Integer           :: fail(1:2),i,j,k,icyc
-    Real( Kind = wp ) :: dis,amti,amtj,dlj,dli,esig,gamma,gammi,gammj
+    Logical                :: safe
+    Integer                :: fail(1:2),i,j,k,icyc
+    Real( Kind = wp )      :: dis,amti,amtj,dlj,dli,esig,gamma,gammi,gammj
+    Character( Len = 256 ) :: message
 
     Logical,           Allocatable :: lstitr(:)
     Real( Kind = wp ), Allocatable :: vxt(:),vyt(:),vzt(:)
-    Character( Len = 256 )         :: message
 
     fail=0
     Allocate (lstitr(1:config%mxatms),                          Stat=fail(1))
@@ -443,17 +443,17 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Logical,            Intent( InOut ) :: lstitr(:)
-    Type( constraints_type ), Intent( InOut ) :: cons
+    Logical,                    Intent( InOut ) :: lstitr(:)
+    Type( constraints_type ),   Intent( InOut ) :: cons
     Type( configuration_type ), Intent( InOut ) :: config
-    Type( comms_type ), Intent( InOut ) :: comm
+    Type( comms_type ),         Intent( InOut ) :: comm
 
-    Logical :: safe
-    Integer :: fail,i,j,k,l
+    Logical                :: safe
+    Integer                :: fail,i,j,k,l
+    Character( Len = 256 ) :: message
 
     Logical, Allocatable :: lunsafe(:)
 
-    Character( Len = 256 ) :: message
 
     fail=0
     Allocate (lunsafe(1:cons%mxcons), Stat=fail)
@@ -595,22 +595,22 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp ), Intent( In    ) :: tstep
-    Logical,           Intent( In    ) :: lfst,lcol
+    Real( Kind = wp ),          Intent( In    ) :: tstep
+    Logical,                    Intent( In    ) :: lfst,lcol
     Type( configuration_type ), Intent( InOut ) :: config
-    Type( stats_type ), Intent( InOut ) :: stat
-    Type( constraints_type ), Intent( InOut ) :: cons
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( timer_type ), Intent( InOut ) :: tmr
-    Type( comms_type ), Intent( InOut ) :: comm
+    Type( stats_type ),         Intent( InOut ) :: stat
+    Type( constraints_type ),   Intent( InOut ) :: cons
+    Type( domains_type ),       Intent( In    ) :: domain
+    Type( timer_type ),         Intent( InOut ) :: tmr
+    Type( comms_type ),         Intent( InOut ) :: comm
 
-    Logical           :: safe
-    Integer           :: fail,i,j,k,icyc
-    Real( Kind = wp ) :: dis,amti,amtj,dli,dlj,esig,gamma,gammi,gammj
+    Logical                :: safe
+    Integer                :: fail,i,j,k,icyc
+    Real( Kind = wp )      :: dis,amti,amtj,dli,dlj,esig,gamma,gammi,gammj
+    Character( Len = 256 ) :: message
 
     Real( Kind = wp ), Dimension( : ), Allocatable :: vxt,vyt,vzt
 
-    Character( Len = 256 ) :: message
 
 #ifdef CHRONO
     Call start_timer(tmr, 'Rattle Constraints')
@@ -795,14 +795,14 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-    Real( Kind = wp ), Intent( In    ) :: tstep
+    Real( Kind = wp ),          Intent( In    ) :: tstep
     Type( configuration_type ), Intent( InOut ) :: config
-    Real( Kind = wp ), Intent( InOut ) :: vir, str(:) 
-    Type( constraints_type), Intent( InOut ) :: cons
-    Type( stats_type), Intent( InOut ) :: stat
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( timer_type ), Intent( InOut ) :: tmr
-    TYpe( comms_type ), Intent( InOut ) :: comm
+    Real( Kind = wp ),          Intent( InOut ) :: vir, str(:)
+    Type( constraints_type),    Intent( InOut ) :: cons
+    Type( stats_type),          Intent( InOut ) :: stat
+    Type( domains_type ),       Intent( In    ) :: domain
+    Type( timer_type ),         Intent( InOut ) :: tmr
+    TYpe( comms_type ),         Intent( InOut ) :: comm
 
     Logical           :: safe
     Integer           :: fail(1:2),i,j,k,icyc
@@ -1039,18 +1039,19 @@ Contains
 
   Subroutine apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,config,comm)
 
-    Integer, Intent( In ) :: kit
+    Integer,                    Intent( In    ) :: kit
     Type( configuration_type ), Intent( InOut ) :: config
-    Real( Kind = wp ), Intent( In ) :: tstep
-    Type( stats_type), Intent( InOut ) :: stat
-    Type( pmf_type ), Intent( InOut ) :: pmf
-    Type( constraints_type), Intent( InOut ) :: cons
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( timer_type ), Intent( InOut ) :: tmr
-    Type( comms_type ), Intent( InOut ) :: comm
+    Real( Kind = wp ),          Intent( In    ) :: tstep
+    Type( stats_type),          Intent( InOut ) :: stat
+    Type( pmf_type ),           Intent( InOut ) :: pmf
+    Type( constraints_type),    Intent( InOut ) :: cons
+    Type( domains_type ),       Intent( In    ) :: domain
+    Type( timer_type ),         Intent( InOut ) :: tmr
+    Type( comms_type ),         Intent( InOut ) :: comm
 
     Logical :: lfst, lcol
     Integer :: i
+
     Do i=1,kit
       lfst = (i == 1)
       lcol = (i == kit)
@@ -1068,23 +1069,24 @@ Contains
 
   Subroutine apply_shake(tstep,oxt,oyt,ozt,lstitr,stat,pmf,cons, &
       domain,tmr,config,thermo,comm)
-    Logical, Intent( In ) :: lstitr(:)
-    Real( Kind = wp ),  Intent( InOut ) :: oxt(:),oyt(:),ozt(:)
-    Real( Kind = wp ),  Intent( In ) :: tstep
-    Type( stats_type), Intent( InOut ) :: stat
-    Type( pmf_type ), Intent( InOut ) :: pmf
-    Type( constraints_type), Intent( InOut ) :: cons
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( timer_type ), Intent( InOut ) :: tmr
-    Type( thermostat_type ), Intent( InOut ) :: thermo
-    Type( comms_type ), Intent( InOut ) :: comm
-
+ 
+    Logical,                   Intent( In    ) :: lstitr(:)
+    Real( Kind = wp ),         Intent( InOut ) :: oxt(:),oyt(:),ozt(:)
+    Real( Kind = wp ),         Intent( In    ) :: tstep
+    Type( stats_type),         Intent( InOut ) :: stat
+    Type( pmf_type ),          Intent( InOut ) :: pmf
+    Type( constraints_type),   Intent( InOut ) :: cons
+    Type( domains_type ),      Intent( In    ) :: domain
+    Type( timer_type ),        Intent( InOut ) :: tmr
+    Type( thermostat_type ),   Intent( InOut ) :: thermo
+    Type( comms_type ),        Intent( InOut ) :: comm
     Type( configuration_type), Intent( InOut ) :: config
     ! constraint virial and stress tensor
 
-    Logical :: safe
-    Integer(kind=wi) :: i,j
+    Logical           :: safe
+    Integer(kind=wi)  :: i,j
     Real( Kind = wp ) :: xt,yt,zt,vir,str(1:9),hstep,rstep,tmp
+    
     hstep = 0.5_wp*tstep
     rstep = 1.0_wp/tstep
 
