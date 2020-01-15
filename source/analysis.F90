@@ -1,20 +1,21 @@
 !> Module for run time analysis
 Module analysis
-  Use kinds,         Only:     wp,wi
-  Use constants,         Only: zero_plus
-  Use configuration, Only:     configuration_type
-  Use site, Only:              site_type
-  Use statistics,    Only:     stats_type
-  Use bonds,         Only:     bonds_type,bonds_compute
-  Use angles,        Only:     angles_type,angles_compute
-  Use dihedrals,     Only:     dihedrals_type,dihedrals_compute
-  Use inversions,    Only:     inversions_type,inversions_compute
-  Use greenkubo,     Only:     greenkubo_type,vaf_compute
-  Use rdfs,          Only:     rdf_type,rdf_compute,usr_compute,calculate_errors, &
-    calculate_errors_jackknife
-  Use z_density,     Only:     z_density_type,z_density_compute
-  Use comms,         Only:     comms_type
-  Use thermostat, Only:        thermostat_type
+
+  Use kinds,         Only: wp,wi
+  Use constants,     Only: zero_plus
+  Use configuration, Only: configuration_type
+  Use site,          Only: site_type
+  Use statistics,    Only: stats_type
+  Use bonds,         Only: bonds_type,bonds_compute
+  Use angles,        Only: angles_type,angles_compute
+  Use dihedrals,     Only: dihedrals_type,dihedrals_compute
+  Use inversions,    Only: inversions_type,inversions_compute
+  Use greenkubo,     Only: greenkubo_type,vaf_compute
+  Use rdfs,          Only: rdf_type,rdf_compute,usr_compute,calculate_errors,calculate_errors_jackknife
+  Use z_density,     Only: z_density_type,z_density_compute
+  Use comms,         Only: comms_type
+  Use thermostat,    Only: thermostat_type
+
   Implicit None
 
   Private
