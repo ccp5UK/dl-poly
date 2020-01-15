@@ -678,6 +678,8 @@ Contains
       test = 0.02_wp
     else if (pois%active) then
       test = 0.04_wp
+    else
+      test = 0.0_wp
     end if
 
     cut=Min(domain%nx_recip*celprp(7),domain%ny_recip*celprp(8),domain%nz_recip*celprp(9))-1.0e-6_wp ! domain size

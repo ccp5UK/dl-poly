@@ -752,6 +752,8 @@ Contains
     stats%engsrp = stats%engsrp + engkim + (engden + engmet + met%elrc(0)) + (engvdw + vdws%elrc)
     stats%virsrp = stats%virsrp + virkim + (virden + virmet + met%vlrc(0)) + (virvdw + vdws%vlrc)
 
+    if (stats%collect_pp) stats%pp_energy = stats%pp_energy + vdws%elrc/config%megatm
+    
     ! Add long-range corrections to diagonal terms of stress tensor (per node)
 
     tmp = - (vdws%vlrc+met%vlrc(0))/(3.0_wp*Real(comm%mxnode,wp))

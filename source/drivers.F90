@@ -1414,7 +1414,8 @@ Contains
     Type( development_type ), Intent( InOut ) :: devel
     Type( metal_type ), Intent( InOut ) :: met
 
-    Integer                 :: heat_flux_out
+    Real( kind = wp ), dimension(3) :: heat_flux
+    Integer :: heat_flux_unit
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -1494,7 +1495,6 @@ Contains
 
       ! If system is to write per-particle data AND write step AND not equilibration
       If (stat%require_pp .and. Mod(flow%step, stat%intsta) == 0 .and. flow%step - flow%equil_steps >= 0) then
-        print*, "PP", flow%step
         call stat%allocate_per_particle_arrays(cnfig%natms)
       end If
 
@@ -1506,13 +1506,14 @@ Contains
 
       ! If system has written per-particle data
       If (stat%collect_pp .and. flow%step - flow%equil_steps >= 0) then
-
+        heat_flux = calculate_heat_flux(stat, cnfig, comm)
+        
         if (flow%heat_flux .and. comm%idnode == 0) then
-          Open(Newunit=heat_flux_out, File = 'HEATFLUX', Position = 'append')
-          Write(heat_flux_out, *) flow%step, stat%stptmp, cnfig%volm, calculate_heat_flux(stat, cnfig, comm)
-          Close(heat_flux_out)
+          Open(Newunit=heat_flux_unit, File = 'HEATFLUX', Position = 'append')
+          Write(heat_flux_unit, *) flow%step, stat%stptmp, cnfig%volm, heat_flux
+          Close(heat_flux_unit)
         end If
-
+        
         if (flow%write_per_particle) then
           call write_per_part_contribs(cnfig, comm, stat%pp_energy, stat%pp_stress, flow%step)
         end if

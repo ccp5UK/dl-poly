@@ -158,17 +158,22 @@ Contains
           ! calculate stress tensor
           stress_temp_comp = calculate_stress(pos_j, force_temp_comp)
           stress_temp = stress_temp + stress_temp_comp
-          if (stats%collect_pp) then
-            stats%pp_energy(iatm) = stats%pp_energy(iatm) + e_comp * 0.5_wp
-            stats%pp_energy(global_id_j) = stats%pp_energy(global_id_j) + e_comp * 0.5_wp
-            stats%pp_stress(:,iatm) = stats%pp_stress(:,iatm) + stress_temp_comp
-            stats%pp_stress(:,global_id_j) = stats%pp_stress(:,global_id_j) + stress_temp_comp
-          end if
 
         end if
 
+        If (stats%collect_pp) Then
+          stress_temp_comp = calculate_stress(pos_j, force_temp_comp)
+          stats%pp_energy(iatm) = stats%pp_energy(iatm) + e_comp * 0.5_wp
+          stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
+          If (jatm <= config%natms) Then
+            stats%pp_energy(jatm) = stats%pp_energy(jatm) + e_comp * 0.5_wp
+            stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
+          End If
+        End If
+
       End If
 
+        
     End Do
 
     ! load back forces
@@ -299,15 +304,18 @@ Contains
           stress_temp_comp = calculate_stress(pos_j, force_temp_comp)
           stress_temp = stress_temp + stress_temp_comp
 
-          if (stats%collect_pp) then
-            stats%pp_energy(iatm) = stats%pp_energy(iatm) + e_comp * 0.5_wp
-            stats%pp_energy(global_id_j) = stats%pp_energy(global_id_j) + e_comp * 0.5_wp
-            stats%pp_stress(:,iatm) = stats%pp_stress(:,iatm) + stress_temp_comp
-            stats%pp_stress(:,global_id_j) = stats%pp_stress(:,global_id_j) + stress_temp_comp
-          end if
-
         end if
 
+        If (stats%collect_pp) Then
+          stress_temp_comp = calculate_stress(pos_j, force_temp_comp)
+          stats%pp_energy(iatm) = stats%pp_energy(iatm) + e_comp * 0.5_wp
+          stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
+          If (jatm <= config%natms) Then
+            stats%pp_energy(jatm) = stats%pp_energy(jatm) + e_comp * 0.5_wp
+            stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
+          End If
+        End If
+        
       end if
 
     End Do
