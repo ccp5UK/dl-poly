@@ -92,7 +92,7 @@ Contains
     Logical           :: safe, l_do_rdf
 #ifdef KIM
     Logical           :: l_do_outer_loop
-#endif 
+#endif
     Integer           :: fail,i,j,k,limit
     Real( Kind = wp ) :: engcpe_rc,vircpe_rc,engcpe_rl,vircpe_rl, &
       engcpe_ch,vircpe_ch,engcpe_ex,vircpe_ex, &
@@ -163,9 +163,10 @@ Contains
 
     ! Calculate all contributions from KIM
     If (kim_data%active) Then
-      Call kim_energy_and_forces(kim_data,config%natms,config%nlast,config%parts, &
-        neigh%list,domain%map,config%lsite,config%lsi,config%lsa,config%ltg, &
-        sites%site_name,engkim,virkim,stats%stress,comm)
+      Call kim_energy_and_forces(kim_data,config%natms,config%nlast, &
+        config%parts,neigh%list,domain%map,config%lsite,config%ltype, &
+        config%lsi,config%lsa,config%ltg,sites%site_name,engkim, &
+        virkim,stats%stress,comm)
     End If
 
     If (met%n_potentials > 0) Then
@@ -378,7 +379,7 @@ Contains
 
       End Do
 
-#ifdef KIM      
+#ifdef KIM
     End If
 #endif
     ! Poisson solver alternative to Ewald
@@ -465,7 +466,7 @@ Contains
         End If
       End Do
     End If
-    
+
 
     ! counter for rdf%rdf statistics outside loop structures
     ! and frozen-frozen rdf%rdf completeness
