@@ -1,70 +1,70 @@
 Module kpoints
 
-  use kinds,     only : wp
+  Use kinds,     Only : wp
   Use constants, Only : epsilon_wp
   Use comms,     Only : comms_type, gbcast
 
-  implicit none
-  private
+  Implicit None
+  Private
 
-  type, public :: kpoints_type
+  Type, Public :: kpoints_type
 
-    integer                     :: n
-    real(kind = wp),allocatable :: r(:,:)
-    real(kind = wp),allocatable :: u(:,:)
-    integer                     :: uf
+    Integer                     :: n
+    Real(Kind = wp),Allocatable :: r(:,:)
+    Real(Kind = wp),Allocatable :: u(:,:)
+    Integer                     :: uf
 
-  contains
-    private 
+  Contains
+    Private 
 
-    procedure, public :: init
-    final             :: cleanup
-  end type
+    Procedure, Public :: init
+    Final             :: cleanup
+  End Type
 
-contains
+Contains
 
-  subroutine init(T,filename,comm)
-  class(kpoints_type)               :: T
-    character(len=*), intent(in)    :: filename
-    type(comms_type), intent(inout) :: comm
+  Subroutine init(T,filename,comm)
+  Class(kpoints_type)               :: T
+    Character(Len=*), Intent(In)    :: filename
+    Type(comms_type), Intent(InOut) :: comm
 
-    integer         :: i
-    real(kind = wp) :: h
+    Integer         :: i
+    Real(Kind = wp) :: h
 
 
-    if (comm%idnode == 0) then 
-      open(file=trim(filename),newunit=T%uf, action="read",status="old")
-      read(t%uf,*) T%n
-    endif
+    If (comm%idnode == 0) Then 
+      Open(File=Trim(filename),Newunit=T%uf, Action="Read",Status="old")
+      Read(t%uf,*) T%n
+    End If
 
-    call gbcast(comm,T%n,0)
+    Call gbcast(comm,T%n,0)
 
-    if (T%n>0) allocate(T%r(3,t%n))
-    if (T%n>0) allocate(T%u(3,t%n))
+    If (T%n>0) Allocate(T%r(3,t%n))
+    If (T%n>0) Allocate(T%u(3,t%n))
 
-    if (comm%idnode == 0) then 
-      do i = 1,t%n 
-        read(t%uf,*) t%r(:,i)
-      end do
-    endif
-    call gbcast(comm,T%r,0)
-    do i=1,T%n
-      h=norm2(T%r(:,i))
-      if (abs(h) > epsilon_wp) & 
+    If (comm%idnode == 0) Then 
+      Do i = 1,t%n 
+        Read(t%uf,*) t%r(:,i)
+      End Do
+    End If
+    Call gbcast(comm,T%r,0)
+    Do i=1,T%n
+      h=Norm2(T%r(:,i))
+      If (Abs(h) > epsilon_wp) & 
         T%u(:,i) = T%r(:,i)/h
-    end do
-    if (comm%idnode == 0) then 
-      close(t%uf)
-    endif
+    End Do
+    If (comm%idnode == 0) Then 
+      Close(t%uf)
+    End If
 
-  end subroutine init
+  End Subroutine init
 
-  subroutine cleanup(T)
-    type(kpoints_type) :: T
+  Subroutine cleanup(T)
+    Type(kpoints_type) :: T
 
-    if (allocated(t%r)) deallocate(t%r)
-    if (allocated(t%u)) deallocate(t%u)
+    If (Allocated(t%r)) Deallocate(t%r)
+    If (Allocated(t%u)) Deallocate(t%u)
 
-  end subroutine cleanup
+  End Subroutine cleanup
 
-end module kpoints
+End Module kpoints
