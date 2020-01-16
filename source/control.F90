@@ -115,61 +115,54 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( ttm_type ),           Intent( InOut )     :: ttm
-    Logical,                    Intent(   Out )     :: lfce
-    Type( rigid_bodies_type ),  Intent ( InOut )    :: rigid
-    Type( rsd_type ),           Intent ( InOut )    :: rsdc
-    Type( pmf_type ),           Intent (   InOut )  :: pmf
-    Type( core_shell_type ),    Intent (   InOut  ) :: cshell
-    Type( constraints_type ),   Intent (   InOut )  :: cons
-    Type( stats_type ),         Intent (   InOut )  :: stats
-    Type( impact_type ),        Intent(   Out )     :: impa
-    Type ( thermostat_type),    Intent( InOut )     :: thermo
-    Type( development_type ),   Intent( InOut )     :: devel
-    Type( greenkubo_type ),     Intent( InOut )     :: green
-    Type( plumed_type ),        Intent( InOut )     :: plume
-    Type( msd_type ),           Intent( InOut )     :: msd_data
-    Type( metal_type ),         Intent( InOut )     :: met
-    Type( poisson_type ),       Intent( InOut )     :: pois
-    Type( bonds_type ),         Intent( InOut )     :: bond
-    Type( angles_type ),        Intent( In    )     :: angle
-    Type( dihedrals_type ),     Intent( In    )     :: dihedral
-    Type( inversions_type ),    Intent( InOut )     :: inversion
-    Type( z_density_type ),     Intent( InOut )     :: zdensity
-    Type( neighbours_type ),    Intent( InOut    )  :: neigh
-    Type( vdw_type ),           Intent( InOut )     :: vdws
-    Type( rdf_type ),           Intent( InOut )     :: rdf
-    Type( minimise_type ),      Intent( InOut )     :: minim
-    Type( mpole_type ),         Intent( InOut )     :: mpoles
-    Type( timer_type ),         Intent( InOut )     :: tmr
-    Type( defects_type ),       Intent( InOut )     :: dfcts(:)
-    Type( electrostatic_type ), Intent( InOut )     :: electro
-    Type( ewald_type ),         Intent( InOut )     :: ewld
-    Type( seed_type ),          Intent( InOut )     :: seed
-    Type( trajectory_type ),    Intent( InOut )     :: traj
-    Type( configuration_type ), Intent( InOut )     :: config
-    Type( file_type ),          Intent( InOut )     :: files(:)
-    Type( flow_type ),          Intent( InOut )     :: flow
-    Type( comms_type ),         Intent( InOut )     :: comm
+    Type( ttm_type ),           Intent( InOut ) :: ttm
+    Logical,                    Intent(   Out ) :: lfce
+    Type( rigid_bodies_type ),  Intent( InOut ) :: rigid
+    Type( rsd_type ),           Intent( InOut ) :: rsdc
+    Type( pmf_type ),           Intent( InOut ) :: pmf
+    Type( core_shell_type ),    Intent( InOut ) :: cshell
+    Type( constraints_type ),   Intent( InOut ) :: cons
+    Type( stats_type ),         Intent( InOut ) :: stats
+    Type( impact_type ),        Intent(   Out ) :: impa
+    Type( thermostat_type ),    Intent( InOut ) :: thermo
+    Type( development_type ),   Intent( InOut ) :: devel
+    Type( greenkubo_type ),     Intent( InOut ) :: green
+    Type( plumed_type ),        Intent( InOut ) :: plume
+    Type( msd_type ),           Intent( InOut ) :: msd_data
+    Type( metal_type ),         Intent( InOut ) :: met
+    Type( poisson_type ),       Intent( InOut ) :: pois
+    Type( bonds_type ),         Intent( InOut ) :: bond
+    Type( angles_type ),        Intent( In    ) :: angle
+    Type( dihedrals_type ),     Intent( In    ) :: dihedral
+    Type( inversions_type ),    Intent( InOut ) :: inversion
+    Type( z_density_type ),     Intent( InOut ) :: zdensity
+    Type( neighbours_type ),    Intent( InOut ) :: neigh
+    Type( vdw_type ),           Intent( InOut ) :: vdws
+    Type( rdf_type ),           Intent( InOut ) :: rdf
+    Type( minimise_type ),      Intent( InOut ) :: minim
+    Type( mpole_type ),         Intent( InOut ) :: mpoles
+    Type( timer_type ),         Intent( InOut ) :: tmr
+    Type( defects_type ),       Intent( InOut ) :: dfcts(:)
+    Type( electrostatic_type ), Intent( InOut ) :: electro
+    Type( ewald_type ),         Intent( InOut ) :: ewld
+    Type( seed_type ),          Intent( InOut ) :: seed
+    Type( trajectory_type ),    Intent( InOut ) :: traj
+    Type( configuration_type ), Intent( InOut ) :: config
+    Type( file_type ),          Intent( InOut ) :: files(:)
+    Type( flow_type ),          Intent( InOut ) :: flow
+    Type( comms_type ),         Intent( InOut ) :: comm
 
-    Integer( Kind = wi ) :: tmp_seed(1:3)
-
-
-    Logical                                 :: limp,lens,lforc,     &
+    Integer( Kind = wi )   :: tmp_seed(1:3)
+    Logical                :: limp,lens,lforc,     &
       ltemp,l_0,lpres,lstrext, &
       lstep,lplumed,safe,      &
       l_timjob,l_timcls
-
-    Character( Len = 200 )                  :: record
-    Character( Len = 40  )                  :: word,word1,word2,word3,akey
-
-    Integer                                 :: i,j,k,itmp,nstana,grdana,grdbnd,grdang, &
+    Character( Len = 200 ) :: record
+    Character( Len = 40  ) :: word,word1,word2,word3,akey
+    Integer                :: i,j,k,itmp,nstana,grdana,grdbnd,grdang, &
       grddih,grdinv,nstall
-
-    Real( Kind = wp )                       :: rcell(1:9),rcut1,rpad1,rvdw1,tmp,eps0,tol,rcb_d,prmps(1:4)
-
-    Integer( Kind = wi ) :: traj_key,traj_freq,traj_start
-
+    Real( Kind = wp )      :: rcell(1:9),rcut1,rpad1,rvdw1,tmp,eps0,tol,rcb_d,prmps(1:4)
+    Integer( Kind = wi )   :: traj_key,traj_freq,traj_start
     Character( Len = 256 ) :: message,messages(7)
     Character( Len = 80 )  :: banner(9)
 
@@ -197,22 +190,22 @@ Contains
     ! default impact option: option applied, particle index,
     ! timestep of impact, energy of impact, (3) direction of impact
 
-    limp = .false.
-    impa%imd  = 0
-    impa%tmd  = -1
-    impa%emd  = 0.0_wp
-    impa%vmx  = 0.0_wp
-    impa%vmy  = 0.0_wp
-    impa%vmz  = 0.0_wp
+    limp     = .false.
+    impa%imd = 0
+    impa%tmd = -1
+    impa%emd = 0.0_wp
+    impa%vmx = 0.0_wp
+    impa%vmy = 0.0_wp
+    impa%vmz = 0.0_wp
 
     ! temperature & pressure (stress) switches and default values
 
-    ltemp   = .false.
-    lpres   = .false.
-    lstrext = .false.
-    thermo%temp    = 0.0_wp
-    thermo%press   = 0.0_wp
-    thermo%stress  = 0.0_wp
+    ltemp         = .false.
+    lpres         = .false.
+    lstrext       = .false.
+    thermo%temp   = 0.0_wp
+    thermo%press  = 0.0_wp
+    thermo%stress = 0.0_wp
 
     ! default restart key (general)
 
@@ -220,7 +213,7 @@ Contains
 
     ! timestep switch and default value
 
-    lstep = .false.
+    lstep        = .false.
     thermo%tstep = 0.0_wp
 
     ! variable timestep switches and default minimum and maximum
@@ -238,65 +231,65 @@ Contains
     ! number of steps for equilibration and default for exclusion of
     ! statistics collection during those steps
 
-    flow%equil_steps = 0
-    flow%equilibration   = .true.
+    flow%equil_steps   = 0
+    flow%equilibration = .true.
 
     ! switch for pseudo thermostat (not applied), type of scaling
     ! (default 0 where 0 - Langevin+direct, 1 - Langevin, 2 - gauss, 3 - direct )
     ! and minimum config%width of the thermostatted boundaries in Angs
     ! minimum temperature of the thermostat
 
-    thermo%l_stochastic_boundaries   = .false.
-    thermo%key_pseudo = 0
-    thermo%width_pseudo = 2.0_wp
-    thermo%temp_pseudo = 1.0_wp
+    thermo%l_stochastic_boundaries = .false.
+    thermo%key_pseudo              = 0
+    thermo%width_pseudo            = 2.0_wp
+    thermo%temp_pseudo             = 1.0_wp
 
     ! default switch for conjugate gradient minimisation during equilibration
 
-    minim%minimise   = .false.
-    minim%key = MIN_NULL
-    minim%freq = 0
-    minim%tolerance = 0.0_wp
+    minim%minimise    = .false.
+    minim%key         = MIN_NULL
+    minim%freq        = 0
+    minim%tolerance   = 0.0_wp
     minim%step_length = -1.0_wp
 
     ! default switch for regaussing temperature and default number of
     ! steps when to be applied
 
-    thermo%l_tgaus  = .false.
+    thermo%l_tgaus    = .false.
     thermo%freq_tgaus = 0
 
     ! default switch for temperature scaling and default number of
     ! steps when to be applied
 
-    thermo%l_tscale  = .false.
+    thermo%l_tscale    = .false.
     thermo%freq_tscale = 0
 
     ! default switch for zero temperature optimisation and default number of
     ! steps when to be applied
 
-    thermo%l_zero   = .false.
+    thermo%l_zero    = .false.
     thermo%freq_zero = 0
-    l_0     = .false. ! T/=10K
+    l_0              = .false. ! T/=10K
 
     ! default ensemble switch (not defined) and key
 
-    lens   = .false.
+    lens            = .false.
     thermo%ensemble = ENS_NVE
 
     ! default thermostat and barostat friction time constants
 
     thermo%tau_t   = 0.0_wp ! thermostat relaxation time
-    thermo%chi    = 0.0_wp ! Stochastic Dynamics (SD Langevin) thermostat friction
-    thermo%chi_ep = 0.5_wp ! Inhomogeneous Stochastic Dynamics (SD Langevin) 
+    thermo%chi     = 0.0_wp ! Stochastic Dynamics (SD Langevin) thermostat friction
+    thermo%chi_ep  = 0.5_wp ! Inhomogeneous Stochastic Dynamics (SD Langevin)
     ! thermostat/electron-phonon friction
-    thermo%chi_es = 0.0_wp ! Inhomogeneous Stochastic Dynamics (SD Langevin)
+    thermo%chi_es  = 0.0_wp ! Inhomogeneous Stochastic Dynamics (SD Langevin)
     ! thermostat/electronic stopping friction
-    thermo%soft   = 0.0_wp ! Softness for Andersen thermostat
-    thermo%gama   = 0.0_wp ! Stochastic (Langevin) friction on a thermostat
+    thermo%soft    = 0.0_wp ! Softness for Andersen thermostat
+    thermo%gama    = 0.0_wp ! Stochastic (Langevin) friction on a thermostat
     thermo%tau_p   = 0.0_wp ! barostat relaxation time
-    thermo%tai    = 0.0_wp ! Stochastic Dynamics (SD Langevin) barostat friction
-    thermo%iso= CONSTRAINT_NONE      ! no semi-isotropic feature
-    thermo%tension    = 0.0_wp ! surface tension
+    thermo%tai     = 0.0_wp ! Stochastic Dynamics (SD Langevin) barostat friction
+    thermo%iso     = CONSTRAINT_NONE      ! no semi-isotropic feature
+    thermo%tension = 0.0_wp ! surface tension
 
     ! default value for inhomogeneous Langevin thermostat/
     ! two-temperature model source term cutoff velocity
@@ -311,7 +304,7 @@ Contains
     ! default switch for force capping and cap value
 
     flow%force_cap = .false.
-    config%fmax  = 1000.0_wp
+    config%fmax    = 1000.0_wp
 
     ! default switch for printing topology
 
@@ -324,20 +317,20 @@ Contains
     ! specified force field = not yet, relative dielectric constant = 1
 
     electro%key = ELECTROSTATIC_NULL
-    lforc  = .false.
-    electro%eps   = 1.0_wp
+    lforc       = .false.
+    electro%eps = 1.0_wp
 
     ! default maximum number of iterations and maximum tolerance
     ! for constraint algorithms
 
     cons%max_iter_shake = 250
-    cons%tolerance = 1.0e-6_wp
+    cons%tolerance      = 1.0e-6_wp
 
     ! default maximum number of iterations and maximum tolerance
     ! for LFV quaternion integration algorithms
 
-    rigid%mxquat =100
-    rigid%quattol=1.0e-8_wp
+    rigid%mxquat  = 100
+    rigid%quattol = 1.0e-8_wp
 
     ! Default relaxed shell model tolerance and optional CGM step
 
@@ -358,11 +351,8 @@ Contains
     ttm%sh_B    = 0.0_wp
     ttm%Cemax   = 0.0_wp
     ttm%Tfermi  = 0.0_wp
-
     ttm%Ka0     = 0.0_wp
-
     ttm%Diff0   = 0.0_wp
-
     ttm%cellrho = 0.0_wp
 
     ! default initial stopping power to be deposited in
@@ -420,32 +410,33 @@ Contains
 
     ! default switches for calculation and printing of intramolecular analysis
 
-    nstana = 0 ; grdana = 0
-    flow%freq_bond = 0 ; grdbnd = 0 ; rcb_d  = 0.0_wp
-    flow%freq_angle = 0 ; grdang = 0
-    flow%freq_dihedral = 0 ; grddih = 0
+    nstana              = 0 ; grdana = 0
+    flow%freq_bond      = 0 ; grdbnd = 0 ; rcb_d = 0.0_wp
+    flow%freq_angle     = 0 ; grdang = 0
+    flow%freq_dihedral  = 0 ; grddih = 0
     flow%freq_inversion = 0 ; grdinv = 0
-    stats%lpana  = .false.
 
+    stats%lpana  = .false.
+    stats%cur%on = .false.
     ! default switch for calculation of rdfs, default number of steps
     ! when to be collected and default switch for printing them
 
-    rdf%l_collect   = .false.
-    rdf%freq = 1
-    rdf%l_print  = .false.
+    rdf%l_collect = .false.
+    rdf%freq      = 1
+    rdf%l_print   = .false.
 
     ! default switch for calculation of z-density profile, default number of steps
     ! when to be collected and default switch for printing it
 
-    zdensity%l_collect   = .false.
+    zdensity%l_collect = .false.
     zdensity%frequency = 1
-    zdensity%l_print  = .false.
+    zdensity%l_print   = .false.
 
     ! default switches for calculation of velocity autocorrelation functions:
     ! time-averaging and printing
 
     green%l_average = .true.
-    green%l_print  = .false.
+    green%l_print   = .false.
 
     ! default for data printing interval
 
@@ -459,7 +450,7 @@ Contains
     ! (i) step to start at, (ii) every step after to be collected
 
     msd_data%start = 0
-    msd_data%freq = 1
+    msd_data%freq  = 1
 
     ! default switch for trajectory outputting and defaults for
     ! (i) step to start at, (ii) every step after to be collected,
@@ -498,9 +489,9 @@ Contains
 
     ! default times for job execution and output dump
 
-    tmr%job = 0.0_wp ; l_timjob=.false.
-    tmr%clear_screen = 0.0_wp ; l_timcls=.false.
-    tmr%max_depth = 2
+    tmr%job          = 0.0_wp ; l_timjob = .false.
+    tmr%clear_screen = 0.0_wp ; l_timcls = .false.
+    tmr%max_depth    = 2
     
     ! major cutoff, padding and vdw cutoff defaults
 
@@ -4779,9 +4770,9 @@ Subroutine scan_control_pre(imc_n,dvar,files,comm)
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer,           Intent( InOut ) :: imc_n
-  Real( Kind = wp ), Intent(   Out ) :: dvar
-  Type( file_type ), Intent( InOut ) :: files(:)
+  Integer,            Intent( InOut ) :: imc_n
+  Real( Kind = wp ),  Intent(   Out ) :: dvar
+  Type( file_type ),  Intent( InOut ) :: files(:)
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe
@@ -4881,10 +4872,10 @@ Subroutine scan_control_io(io,netcdf,files,comm)
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Type( io_type ), Intent( InOut ) :: io
+  Type( io_type ),      Intent( InOut ) :: io
   Type( netcdf_param ), Intent( InOut ) :: netcdf
-  Type( file_type ), Intent( InOut ) :: files(:)
-  Type( comms_type ), Intent( InOut ) :: comm
+  Type( file_type ),    Intent( InOut ) :: files(:)
+  Type( comms_type ),   Intent( InOut ) :: comm
 
   Logical                :: carry,safe
   Character( Len = 200 ) :: record,record1
@@ -5407,11 +5398,11 @@ Subroutine scan_control_output(files,comm)
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Type( file_type ), Intent( InOut ) :: files(:)
-  Type( comms_type ), Intent( InOut ) :: comm
-  Logical                :: carry,safe
-  Character( Len = 200 ) :: record,rec_case_sensitive
-  Character( Len = 40  ) :: word,word1,wordo
+  Type( file_type ),                Intent( InOut ) :: files(:)
+  Type( comms_type ),               Intent( InOut ) :: comm
+  Logical                                           :: carry,  safe
+  Character( Len = 200 )                            :: record, rec_case_sensitive
+  Character( Len = 40  )                            :: word,   word1,wordo
 
   safe   = .true.  ! all is safe
 
