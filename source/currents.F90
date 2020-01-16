@@ -72,8 +72,9 @@ contains
 
   subroutine cleanup(T)
     type(current_type) :: T
+
     if (allocated(T%jlk)) deallocate(T%jlk)
-    close(t%file_handle)
+    !close(t%file_handle)
   end subroutine cleanup
 
 end module currents
