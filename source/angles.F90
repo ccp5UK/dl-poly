@@ -16,25 +16,32 @@ Module angles
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use comms,                           Only: comms_type,&
-                                             gbcast,&
-                                             gcheck,&
-                                             gsum,&
-                                             gsync
-  Use configuration,                   Only: configuration_type
-  Use constants,                       Only: &
-       boltz, delth_max, engunit, npdfdt, npdgdt, ntable, pi, twopi, zero_plus
-  Use errors_warnings,                 Only: error,&
-                                             info,&
-                                             warning
-  Use kinds,                           Only: wi,&
-                                             wp
-  Use numerics,                        Only: images,&
-                                             local_index
-  Use parse,                           Only: get_line,&
-                                             get_word,&
-                                             word_2_real
-  Use site,                            Only: site_type
+  Use comms,           Only: comms_type,&
+                             gbcast,&
+                             gcheck,&
+                             gsum,&
+                             gsync
+  Use configuration,   Only: configuration_type
+  Use constants,       Only: boltz,&
+                             delth_max,&
+                             engunit,&
+                             npdfdt,&
+                             npdgdt,&
+                             ntable,&
+                             pi,&
+                             twopi,&
+                             zero_plus
+  Use errors_warnings, Only: error,&
+                             info,&
+                             warning
+  Use kinds,           Only: wi,&
+                             wp
+  Use numerics,        Only: images,&
+                             local_index
+  Use parse,           Only: get_line,&
+                             get_word,&
+                             word_2_real
+  Use site,            Only: site_type
 
   Implicit None
 
@@ -137,7 +144,7 @@ Contains
 
   Subroutine allocate_angles_arrays(angle, mxatdm, mxtmls)
     Class(angles_type), Intent(InOut) :: angle
-    Integer(Kind=wi),   Intent(In   ) :: mxatdm, mxtmls
+    Integer(Kind=wi), Intent(In) :: mxatdm, mxtmls
 
     Integer :: fail(1:9)
 
@@ -157,13 +164,13 @@ Contains
 
     If (Any(fail > 0)) Call error(1013)
 
-    angle%num        = 0
-    angle%key        = ANGLE_NULL
+    angle%num = 0
+    angle%key = ANGLE_NULL
     angle%restrained = .false.
-    angle%lst        = 0
-    angle%list       = 0
-    angle%legend     = 0
-    angle%param      = 0.0_wp
+    angle%lst = 0
+    angle%list = 0
+    angle%legend = 0
+    angle%param = 0.0_wp
 
     If (angle%l_tab) &
       angle%ltp = 0
@@ -232,9 +239,10 @@ Contains
     Character(Len=256)         :: message
     Integer                    :: fail, i, ig, j, kk, ll, ngrid
     Logical                    :: zero
-    Real(Kind=wp)              :: coef, delth, dfed, dfed0, dfed1, dfed2, dgr2rad, dgrid, factor, factor1, fed, &
-      fed0, fed1, fed2, kT2engo, pdfang, pdfang1, pdfzero, rad2dgr, rdlth, rsint, sinth, sum, &
-      sum1, t1, t2, theta, tmp
+    Real(Kind=wp)              :: coef, delth, dfed, dfed0, dfed1, dfed2, dgr2rad, dgrid, factor, &
+                                  factor1, fed, fed0, fed1, fed2, kT2engo, pdfang, pdfang1, &
+                                  pdfzero, rad2dgr, rdlth, rsint, sinth, sum, sum1, t1, t2, theta, &
+                                  tmp
     Real(Kind=wp), Allocatable :: dstdang(:, :), pmf(:), vir(:)
 
     fail = 0
@@ -295,7 +303,8 @@ Contains
       Write (npdfdt, '(a)') '# ANGLES: Probability Density Functions (PDF) := histogram(bin)/hist_sum(bins)/dTheta_bin'
       Write (npdfdt, '(a,4(1x,i10))') '# bins, cutoff, frames, types: ', angle%bin_adf, 180, angle%n_frames, kk
       Write (npdfdt, '(a)') '#'
-     Write (npdfdt, '(a,f8.5)') '# Theta(degrees)  PDF_norm(Theta)  PDF_norm(Theta)/Sin(Theta)   @   dTheta_bin = ', delth * rad2dgr
+      Write (npdfdt, '(a,f8.5)') '# Theta(degrees)  PDF_norm(Theta)  PDF_norm(Theta)/Sin(Theta)   @   dTheta_bin = ', &
+        delth * rad2dgr
       Write (npdfdt, '(a)') '#'
     End If
 
@@ -566,8 +575,8 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,                  Intent(In)    :: isw
-    Real(Kind=wp),            Intent(Out)   :: engang, virang
+    Integer,                  Intent(In   ) :: isw
+    Real(Kind=wp),            Intent(  Out) :: engang, virang
     Real(Kind=wp),            Intent(InOut) :: stress(1:9)
     Type(angles_type),        Intent(InOut) :: angle
     Type(configuration_type), Intent(InOut) :: config
@@ -578,13 +587,13 @@ Contains
     Integer, Allocatable       :: lstopt(:, :)
     Logical                    :: safe
     Logical, Allocatable       :: lunsafe(:)
-    Real(Kind=wp)              :: a, b, buffer(1:2), c, cost, delta, dr1, dr2, dth, dth0pi, dtheta, dthpi, fxa, &
-      fxc, fya, fyc, fza, fzc, gamma, gamsa, gamsc, gr, k, k2, k3, k4, m, ppp, pterm, rab, rbc, &
-      rdelth, rdr, rho, rho1, rho2, rm, rrab, rrbc, rsint, sint, strs1, strs2, strs3, strs5, &
-      strs6, strs9, switch, t1, t2, theta, theta0, tmp, vk, vk1, vk2, vterm, xab, xbc, yab, ybc, &
-      zab, zbc
-    Real(Kind=wp), Allocatable :: xdab(:), xdbc(:), ydab(:), ydbc(:), &
-      zdab(:), zdbc(:)
+    Real(Kind=wp)              :: a, b, buffer(1:2), c, cost, delta, dr1, dr2, dth, dth0pi, &
+                                  dtheta, dthpi, fxa, fxc, fya, fyc, fza, fzc, gamma, gamsa, &
+                                  gamsc, gr, k, k2, k3, k4, m, ppp, pterm, rab, rbc, rdelth, rdr, &
+                                  rho, rho1, rho2, rm, rrab, rrbc, rsint, sint, strs1, strs2, &
+                                  strs3, strs5, strs6, strs9, switch, t1, t2, theta, theta0, tmp, &
+                                  vk, vk1, vk2, vterm, xab, xbc, yab, ybc, zab, zbc
+    Real(Kind=wp), Allocatable :: xdab(:), xdbc(:), ydab(:), ydbc(:), zdab(:), zdbc(:)
 
     fail = 0
     Allocate (lunsafe(1:angle%max_angles), lstopt(0:3, 1:angle%max_angles), Stat=fail(1))
@@ -769,11 +778,11 @@ Contains
 
           ! quartic potential
 
-          k2     = angle%param(1, kk)
+          k2 = angle%param(1, kk)
           theta0 = angle%param(2, kk)
           dtheta = theta - theta0
-          k3     = angle%param(3, kk)
-          k4     = angle%param(4, kk)
+          k3 = angle%param(3, kk)
+          k4 = angle%param(4, kk)
 
           pterm = 0.5_wp * k2 * dtheta**2 + (k3 / 3.0_wp) * dtheta**3 + 0.25 * k4 * dtheta**4
           gamma = dtheta * (k2 + k3 * dtheta + k4 * dtheta**2) * rsint
@@ -785,10 +794,10 @@ Contains
 
           ! truncated Harmonic potential
 
-          k      = angle%param(1, kk)
+          k = angle%param(1, kk)
           theta0 = angle%param(2, kk)
           dtheta = theta - theta0
-          rho    = angle%param(3, kk)
+          rho = angle%param(3, kk)
           switch = -(rab**8 + rbc**8) / rho**8
 
           tmp = k * dtheta * Exp(switch)
@@ -803,11 +812,11 @@ Contains
 
           ! screened Harmonic potential
 
-          k      = angle%param(1, kk)
+          k = angle%param(1, kk)
           theta0 = angle%param(2, kk)
           dtheta = theta - theta0
-          rho1   = angle%param(3, kk)
-          rho2   = angle%param(4, kk)
+          rho1 = angle%param(3, kk)
+          rho2 = angle%param(4, kk)
           switch = -(rab / rho1 + rbc / rho2)
 
           tmp = k * dtheta * Exp(switch)
@@ -822,13 +831,13 @@ Contains
 
           ! screened Vessal potential (type 1)
 
-          k      = angle%param(1, kk)
+          k = angle%param(1, kk)
           theta0 = angle%param(2, kk)
           dth0pi = theta0 - pi
-          dthpi  = theta - pi
-          dth    = dth0pi**2 - dthpi**2
-          rho1   = angle%param(3, kk)
-          rho2   = angle%param(4, kk)
+          dthpi = theta - pi
+          dth = dth0pi**2 - dthpi**2
+          rho1 = angle%param(3, kk)
+          rho2 = angle%param(4, kk)
           switch = -(rab / rho1 + rbc / rho2)
 
           tmp = (k * dth / (2.0_wp * dth0pi**2)) * Exp(switch)
@@ -843,13 +852,13 @@ Contains
 
           ! truncated Vessal potential (type 2)
 
-          k      = angle%param(1, kk)
+          k = angle%param(1, kk)
           theta0 = angle%param(2, kk)
           dtheta = theta - theta0
           dth0pi = theta0 - pi
-          dthpi  = theta - pi
-          a      = angle%param(3, kk)
-          rho    = angle%param(4, kk)
+          dthpi = theta - pi
+          a = angle%param(3, kk)
+          rho = angle%param(4, kk)
           switch = -(rab**8 + rbc**8) / rho**8
 
           tmp = k * dtheta * Exp(switch)
@@ -866,7 +875,7 @@ Contains
 
           ! harmonic cosine potential (note cancellation of sint in gamma)
 
-          k      = angle%param(1, kk)
+          k = angle%param(1, kk)
           theta0 = angle%param(2, kk)
           dtheta = Cos(theta) - Cos(theta0)
 
@@ -882,10 +891,10 @@ Contains
 
           ! ordinary cosine potential
 
-          k     = angle%param(1, kk)
+          k = angle%param(1, kk)
           delta = angle%param(2, kk)
-          m     = angle%param(3, kk)
-          a     = m * theta - delta
+          m = angle%param(3, kk)
+          a = m * theta - delta
 
           pterm = k * (1.0_wp + Cos(a))
           gamma = -k * m * Sin(a) * rsint
@@ -897,13 +906,13 @@ Contains
 
           ! MM3-stretch-bend potential
 
-          a      = angle%param(1, kk)
+          a = angle%param(1, kk)
           theta0 = angle%param(2, kk)
           dtheta = theta - theta0
-          rho1   = angle%param(3, kk)
-          dr1    = rab - rho1
-          rho2   = angle%param(4, kk)
-          dr2    = rbc - rho2
+          rho1 = angle%param(3, kk)
+          dr1 = rab - rho1
+          rho2 = angle%param(4, kk)
+          dr2 = rbc - rho2
 
           tmp = a * dr1 * dr2
 
@@ -1171,13 +1180,12 @@ Contains
     Character(Len=256)         :: message, messages(4)
     Character(Len=40)          :: word
     Character(Len=8)           :: atom1, atom2, atom3
-    Integer                    :: fail(1:2), i, itang, jtang, jtpatm, &
-                                                          katom1, katom2, katom3, l, ngrid, rtang
+    Integer                    :: fail(1:2), i, itang, jtang, jtpatm, katom1, katom2, katom3, l, &
+                                  ngrid, rtang
     Integer, Allocatable       :: read_type(:)
     Logical                    :: remake, safe
-    Real(Kind=wp)              :: bufp0, bufv0, delpot, dgr2rad, dlrpot, &
-                                                          ppp, rad2dgr, rdr, rrr, rrr0, t1, t2, &
-                                                          vk, vk1, vk2
+    Real(Kind=wp)              :: bufp0, bufv0, delpot, dgr2rad, dlrpot, ppp, rad2dgr, rdr, rrr, &
+                                  rrr0, t1, t2, vk, vk1, vk2
     Real(Kind=wp), Allocatable :: bufpot(:), bufvir(:)
 
     If (comm%idnode == 0) Open (Unit=ntable, File='TABANG')

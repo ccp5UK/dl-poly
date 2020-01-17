@@ -1,113 +1,112 @@
 Module control
-  Use angles,                Only: angles_type
-  Use bonds,                 Only: bonds_type
-  Use comms,                 Only: comms_type,&
-                                   gcheck
-  Use configuration,         Only: configuration_type
-  Use constants,             Only: pi,&
-                                   prsunt,&
-                                   tenunt,&
-                                   zero_plus
-  Use constraints,           Only: constraints_type
-  Use core_shell,            Only: core_shell_type
-  Use defects,               Only: defects_type
-  Use development,           Only: development_type
-  Use dihedrals,             Only: dihedrals_type
-  Use electrostatic,         Only: ELECTROSTATIC_COULOMB,&
-                                   ELECTROSTATIC_COULOMB_FORCE_SHIFT,&
-                                   ELECTROSTATIC_COULOMB_REACTION_FIELD,&
-                                   ELECTROSTATIC_DDDP,&
-                                   ELECTROSTATIC_EWALD,&
-                                   ELECTROSTATIC_NULL,&
-                                   ELECTROSTATIC_POISSON,&
-                                   electrostatic_type
-  Use errors_warnings,       Only: error,&
-                                   info,&
-                                   warning
-  Use ewald,                 Only: ewald_type
-  Use filename,              Only: FILE_CONFIG,&
-                                   FILE_CONTROL,&
-                                   FILE_FIELD,&
-                                   FILE_HISTORF,&
-                                   FILE_HISTORY,&
-                                   FILE_OUTPUT,&
-                                   FILE_REVCON,&
-                                   FILE_REVIVE,&
-                                   FILE_REVOLD,&
-                                   FILE_STATS,&
-                                   file_type
-  Use flow_control,          Only: RESTART_KEY_CLEAN,&
-                                   RESTART_KEY_NOSCALE,&
-                                   RESTART_KEY_OLD,&
-                                   RESTART_KEY_SCALE,&
-                                   flow_type
-  Use greenkubo,             Only: greenkubo_type
-  Use impacts,               Only: impact_type
-  Use inversions,            Only: inversions_type
-  Use io,                    Only: &
-                                   IO_READ_DIRECT, IO_READ_MASTER, IO_READ_MPIIO, IO_READ_NETCDF, &
-                                   IO_WRITE_SORTED_DIRECT, IO_WRITE_SORTED_MASTER, &
-                                   IO_WRITE_SORTED_MPIIO, IO_WRITE_SORTED_NETCDF, &
-                                   IO_WRITE_UNSORTED_DIRECT, IO_WRITE_UNSORTED_MASTER, &
-                                   IO_WRITE_UNSORTED_MPIIO, io_get_parameters, io_nc_compiled, &
-                                   io_nc_set_real_precision, io_set_parameters, io_type
-  Use kim,                   Only: kim_type
-  Use kinds,                 Only: dp,&
-                                   sp,&
-                                   wi,&
-                                   wp
-  Use langevin,              Only: langevin_allocate_arrays
-  Use metal,                 Only: metal_type
-  Use minimise,              Only: MIN_DISTANCE,&
-                                   MIN_ENERGY,&
-                                   MIN_FORCE,&
-                                   MIN_NULL,&
-                                   minimise_type
-  Use mpole,                 Only: POLARISATION_CHARMM,&
-                                   POLARISATION_DEFAULT,&
-                                   mpole_type
-  Use msd,                   Only: msd_type
-  Use neighbours,            Only: neighbours_type
-  Use netcdf_wrap,           Only: netcdf_param
-  Use numerics,              Only: dcell,&
-                                   invert,&
-                                   seed_type
-  Use parse,                 Only: get_line,&
-                                   get_word,&
-                                   lower_case,&
-                                   strip_blanks,&
-                                   word_2_real
-  Use plumed,                Only: plumed_type
-  Use pmf,                   Only: pmf_type
-  Use poisson,               Only: poisson_type
-  Use rdfs,                  Only: rdf_type
-  Use rigid_bodies,          Only: rigid_bodies_type
-  Use rsds,                  Only: rsd_type
-  Use statistics,            Only: stats_type
-  Use tersoff,               Only: tersoff_type
-  Use thermostat,            Only: &
-                                   CONSTRAINT_NONE, CONSTRAINT_SEMI_ORTHORHOMBIC, &
-                                   CONSTRAINT_SURFACE_AREA, CONSTRAINT_SURFACE_TENSION, &
-                                   DPD_FIRST_ORDER, DPD_NULL, DPD_SECOND_ORDER, ENS_NPT_BERENDSEN, &
-                                   ENS_NPT_BERENDSEN_ANISO, ENS_NPT_LANGEVIN, &
-                                   ENS_NPT_LANGEVIN_ANISO, ENS_NPT_MTK, ENS_NPT_MTK_ANISO, &
-                                   ENS_NPT_NOSE_HOOVER, ENS_NPT_NOSE_HOOVER_ANISO, ENS_NVE, &
-                                   ENS_NVT_ANDERSON, ENS_NVT_BERENDSEN, ENS_NVT_EVANS, &
-                                   ENS_NVT_GENTLE, ENS_NVT_LANGEVIN, ENS_NVT_LANGEVIN_INHOMO, &
-                                   ENS_NVT_NOSE_HOOVER, thermostat_type
-  Use timer,                 Only: timer_type
-  Use trajectory,            Only: trajectory_type
-  Use ttm,                   Only: ttm_type
-  Use vdw,                   Only: MIX_FENDER_HASLEY,&
-                                   MIX_FUNCTIONAL,&
-                                   MIX_HALGREN,&
-                                   MIX_HOGERVORST,&
-                                   MIX_LORENTZ_BERTHELOT,&
-                                   MIX_NULL,&
-                                   MIX_TANG_TOENNIES,&
-                                   MIX_WALDMAN_HAGLER,&
-                                   vdw_type
-  Use z_density,             Only: z_density_type
+  Use angles,          Only: angles_type
+  Use bonds,           Only: bonds_type
+  Use comms,           Only: comms_type,&
+                             gcheck
+  Use configuration,   Only: configuration_type
+  Use constants,       Only: pi,&
+                             prsunt,&
+                             tenunt,&
+                             zero_plus
+  Use constraints,     Only: constraints_type
+  Use core_shell,      Only: core_shell_type
+  Use defects,         Only: defects_type
+  Use development,     Only: development_type
+  Use dihedrals,       Only: dihedrals_type
+  Use electrostatic,   Only: ELECTROSTATIC_COULOMB,&
+                             ELECTROSTATIC_COULOMB_FORCE_SHIFT,&
+                             ELECTROSTATIC_COULOMB_REACTION_FIELD,&
+                             ELECTROSTATIC_DDDP,&
+                             ELECTROSTATIC_EWALD,&
+                             ELECTROSTATIC_NULL,&
+                             ELECTROSTATIC_POISSON,&
+                             electrostatic_type
+  Use errors_warnings, Only: error,&
+                             info,&
+                             warning
+  Use ewald,           Only: ewald_type
+  Use filename,        Only: FILE_CONFIG,&
+                             FILE_CONTROL,&
+                             FILE_FIELD,&
+                             FILE_HISTORF,&
+                             FILE_HISTORY,&
+                             FILE_OUTPUT,&
+                             FILE_REVCON,&
+                             FILE_REVIVE,&
+                             FILE_REVOLD,&
+                             FILE_STATS,&
+                             file_type
+  Use flow_control,    Only: RESTART_KEY_CLEAN,&
+                             RESTART_KEY_NOSCALE,&
+                             RESTART_KEY_OLD,&
+                             RESTART_KEY_SCALE,&
+                             flow_type
+  Use greenkubo,       Only: greenkubo_type
+  Use impacts,         Only: impact_type
+  Use inversions,      Only: inversions_type
+  Use io,              Only: &
+                             IO_READ_DIRECT, IO_READ_MASTER, IO_READ_MPIIO, IO_READ_NETCDF, &
+                             IO_WRITE_SORTED_DIRECT, IO_WRITE_SORTED_MASTER, &
+                             IO_WRITE_SORTED_MPIIO, IO_WRITE_SORTED_NETCDF, &
+                             IO_WRITE_UNSORTED_DIRECT, IO_WRITE_UNSORTED_MASTER, &
+                             IO_WRITE_UNSORTED_MPIIO, io_get_parameters, io_nc_compiled, &
+                             io_nc_set_real_precision, io_set_parameters, io_type
+  Use kim,             Only: kim_type
+  Use kinds,           Only: dp,&
+                             sp,&
+                             wi,&
+                             wp
+  Use langevin,        Only: langevin_allocate_arrays
+  Use metal,           Only: metal_type
+  Use minimise,        Only: MIN_DISTANCE,&
+                             MIN_ENERGY,&
+                             MIN_FORCE,&
+                             MIN_NULL,&
+                             minimise_type
+  Use mpole,           Only: POLARISATION_CHARMM,&
+                             POLARISATION_DEFAULT,&
+                             mpole_type
+  Use msd,             Only: msd_type
+  Use neighbours,      Only: neighbours_type
+  Use netcdf_wrap,     Only: netcdf_param
+  Use numerics,        Only: dcell,&
+                             invert,&
+                             seed_type
+  Use parse,           Only: get_line,&
+                             get_word,&
+                             lower_case,&
+                             strip_blanks,&
+                             word_2_real
+  Use plumed,          Only: plumed_type
+  Use pmf,             Only: pmf_type
+  Use poisson,         Only: poisson_type
+  Use rdfs,            Only: rdf_type
+  Use rigid_bodies,    Only: rigid_bodies_type
+  Use rsds,            Only: rsd_type
+  Use statistics,      Only: stats_type
+  Use tersoff,         Only: tersoff_type
+  Use thermostat,      Only: &
+                             CONSTRAINT_NONE, CONSTRAINT_SEMI_ORTHORHOMBIC, &
+                             CONSTRAINT_SURFACE_AREA, CONSTRAINT_SURFACE_TENSION, DPD_FIRST_ORDER, &
+                             DPD_NULL, DPD_SECOND_ORDER, ENS_NPT_BERENDSEN, &
+                             ENS_NPT_BERENDSEN_ANISO, ENS_NPT_LANGEVIN, ENS_NPT_LANGEVIN_ANISO, &
+                             ENS_NPT_MTK, ENS_NPT_MTK_ANISO, ENS_NPT_NOSE_HOOVER, &
+                             ENS_NPT_NOSE_HOOVER_ANISO, ENS_NVE, ENS_NVT_ANDERSON, &
+                             ENS_NVT_BERENDSEN, ENS_NVT_EVANS, ENS_NVT_GENTLE, ENS_NVT_LANGEVIN, &
+                             ENS_NVT_LANGEVIN_INHOMO, ENS_NVT_NOSE_HOOVER, thermostat_type
+  Use timer,           Only: timer_type
+  Use trajectory,      Only: trajectory_type
+  Use ttm,             Only: ttm_type
+  Use vdw,             Only: MIX_FENDER_HASLEY,&
+                             MIX_FUNCTIONAL,&
+                             MIX_HALGREN,&
+                             MIX_HOGERVORST,&
+                             MIX_LORENTZ_BERTHELOT,&
+                             MIX_NULL,&
+                             MIX_TANG_TOENNIES,&
+                             MIX_WALDMAN_HAGLER,&
+                             vdw_type
+  Use z_density,       Only: z_density_type
 
   Implicit None
 
@@ -150,96 +149,52 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Logical, Intent(Out)   :: lfce
-    Type(impact_type), &
-      Intent(Out)          :: impa
-    Type(ttm_type), &
-      Intent(InOut)        :: ttm
-    Type(defects_type), &
-      Intent(InOut)        :: dfcts(:)
-    Type(rigid_bodies_type&
-      ), Intent(InOut)     :: rigid
-    Type(rsd_type), &
-      Intent(InOut)        :: rsdc
-    Type&
-      (core_shell_type), &
-      Intent(InOut)        :: cshell
-    Type&
-      (constraints_type), &
-      Intent(InOut)        :: cons
-    Type(pmf_type), &
-      Intent(InOut)        :: pmf
-    Type(stats_type), &
-      Intent(InOut)        :: stats
-    Type&
-      (thermostat_type), &
-      Intent(InOut)        :: thermo
-    Type(greenkubo_type), &
-      Intent(InOut)        :: green
-    Type&
-      (development_type), &
-      Intent(InOut)        :: devel
-    Type(plumed_type), &
-      Intent(InOut)        :: plume
-    Type(msd_type), &
-      Intent(InOut)        :: msd_data
-    Type(metal_type), &
-      Intent(InOut)        :: met
-    Type(poisson_type), &
-      Intent(InOut)        :: pois
-    Type(bonds_type), &
-      Intent(InOut)        :: bond
-    Type(angles_type), &
-      Intent(In)           :: angle
-    Type(dihedrals_type), &
-      Intent(In)           :: dihedral
-    Type&
-      (inversions_type), &
-      Intent(InOut)        :: inversion
-    Type(z_density_type), &
-      Intent(InOut)        :: zdensity
-    Type&
-      (neighbours_type), &
-      Intent(InOut)        :: neigh
-    Type(vdw_type), &
-      Intent(InOut)        :: vdws
-    Type(rdf_type), &
-      Intent(InOut)        :: rdf
-    Type(minimise_type), &
-      Intent(InOut)        :: minim
-    Type(mpole_type), &
-      Intent(InOut)        :: mpoles
-    Type(&
-      electrostatic_type),&
-      Intent(InOut)        :: electro
-    Type(ewald_type), &
-      Intent(InOut)        :: ewld
-    Type(seed_type), &
-      Intent(InOut)        :: seed
-    Type&
-      (trajectory_type), &
-      Intent(InOut)        :: traj
-    Type(file_type), &
-      Intent(InOut)        :: files(:)
-    Type(timer_type), &
-      Intent(InOut)        :: tmr
-    Type(&
-      configuration_type),&
-      Intent(InOut)        :: config
-    Type(flow_type), &
-      Intent(InOut)        :: flow
-    Type(comms_type), &
-      Intent(InOut)        :: comm
+    Logical,                  Intent(  Out) :: lfce
+    Type(impact_type),        Intent(  Out) :: impa
+    Type(ttm_type),           Intent(InOut) :: ttm
+    Type(defects_type),       Intent(InOut) :: dfcts(:)
+    Type(rigid_bodies_type),  Intent(InOut) :: rigid
+    Type(rsd_type),           Intent(InOut) :: rsdc
+    Type(core_shell_type),    Intent(InOut) :: cshell
+    Type(constraints_type),   Intent(InOut) :: cons
+    Type(pmf_type),           Intent(InOut) :: pmf
+    Type(stats_type),         Intent(InOut) :: stats
+    Type(thermostat_type),    Intent(InOut) :: thermo
+    Type(greenkubo_type),     Intent(InOut) :: green
+    Type(development_type),   Intent(InOut) :: devel
+    Type(plumed_type),        Intent(InOut) :: plume
+    Type(msd_type),           Intent(InOut) :: msd_data
+    Type(metal_type),         Intent(InOut) :: met
+    Type(poisson_type),       Intent(InOut) :: pois
+    Type(bonds_type),         Intent(InOut) :: bond
+    Type(angles_type),        Intent(In   ) :: angle
+    Type(dihedrals_type),     Intent(In   ) :: dihedral
+    Type(inversions_type),    Intent(InOut) :: inversion
+    Type(z_density_type),     Intent(InOut) :: zdensity
+    Type(neighbours_type),    Intent(InOut) :: neigh
+    Type(vdw_type),           Intent(InOut) :: vdws
+    Type(rdf_type),           Intent(InOut) :: rdf
+    Type(minimise_type),      Intent(InOut) :: minim
+    Type(mpole_type),         Intent(InOut) :: mpoles
+    Type(electrostatic_type), Intent(InOut) :: electro
+    Type(ewald_type),         Intent(InOut) :: ewld
+    Type(seed_type),          Intent(InOut) :: seed
+    Type(trajectory_type),    Intent(InOut) :: traj
+    Type(file_type),          Intent(InOut) :: files(:)
+    Type(timer_type),         Intent(InOut) :: tmr
+    Type(configuration_type), Intent(InOut) :: config
+    Type(flow_type),          Intent(InOut) :: flow
+    Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=200)     :: record
-    Character(Len=256)     :: message, messages(7)
-    Character(Len=40)      :: akey, word, word1, word2, word3
-    Character(Len=80)      :: banner(9)
-    Integer                :: grdana, grdang, grdbnd, grddih, grdinv, i, itmp, j, k, nstall, nstana
-    Integer(Kind=wi)       :: tmp_seed(1:3), traj_freq, traj_key, traj_start
-    Logical                :: l_0, l_timcls, l_timjob, lens, lforc, limp, lplumed, lpres, lstep, &
-                              lstrext, ltemp, safe
-    Real(Kind=wp)          :: eps0, prmps(1:4), rcb_d, rcell(1:9), rcut1, rpad1, rvdw1, tmp, tol
+    Character(Len=200) :: record
+    Character(Len=256) :: message, messages(7)
+    Character(Len=40)  :: akey, word, word1, word2, word3
+    Character(Len=80)  :: banner(9)
+    Integer            :: grdana, grdang, grdbnd, grddih, grdinv, i, itmp, j, k, nstall, nstana
+    Integer(Kind=wi)   :: tmp_seed(1:3), traj_freq, traj_key, traj_start
+    Logical            :: l_0, l_timcls, l_timjob, lens, lforc, limp, lplumed, lpres, lstep, &
+                          lstrext, ltemp, safe
+    Real(Kind=wp)      :: eps0, prmps(1:4), rcb_d, rcell(1:9), rcut1, rpad1, rvdw1, tmp, tol
 
     ! initialise system control variables and their logical switches
 
@@ -744,8 +699,8 @@ Contains
           Else If (word2(1:4) == 'func') Then
             vdws%mixing = MIX_FUNCTIONAL
             Call info('type of mixing selected - Functional :: ' &
-                     //'e_ij=3 * (e_i*e_j)^(1/2) * (s_i*s_j)^3 / '&
-                     //'SUM_L=0^2{[(s_i^3+s_j^3)^2 / (4*(s_i*s_j)^L)]^(6/(6-2L))}', .true.)
+                      //'e_ij=3 * (e_i*e_j)^(1/2) * (s_i*s_j)^3 / ' &
+                      //'SUM_L=0^2{[(s_i^3+s_j^3)^2 / (4*(s_i*s_j)^L)]^(6/(6-2L))}', .true.)
             Call info(Repeat(' ', 40)//'s_ij=(1/3) * SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))}', .true.)
           Else
             Call strip_blanks(record)
@@ -3713,84 +3668,49 @@ Contains
     ! contrib   - i.t.todorov april 2019 l_trm reading and setting
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    Real(Kind=wp), &
-      Intent(In)           :: rcter
-    Integer, Intent(In)    :: max_rigid, imcon
-    Integer, Intent(InOut) :: imc_n
-    Real(Kind=wp), &
-      Intent(InOut)        :: cell(1:9)
-    Real(Kind=wp), &
-      Intent(In)           :: xhi, yhi, zhi
-    Integer, Intent(Out)   :: mxgana
-    Logical, Intent(Out)   :: l_n_r, lzdn, l_ind
-    Integer, Intent(Out)   :: nstfce
-    Type(ttm_type), &
-      Intent(InOut)        :: ttm
-    Type&
-      (core_shell_type), &
-      Intent(In)           :: cshell
-    Type(stats_type), &
-      Intent(InOut)        :: stats
-    Type&
-      (thermostat_type), &
-      Intent(InOut)        :: thermo
-    Type(greenkubo_type), &
-      Intent(InOut)        :: green
-    Type&
-      (development_type), &
-      Intent(InOut)        :: devel
-    Type(msd_type), &
-      Intent(InOut)        :: msd_data
-    Type(metal_type), &
-      Intent(InOut)        :: met
-    Type(poisson_type), &
-      Intent(InOut)        :: pois
-    Type(bonds_type), &
-      Intent(InOut)        :: bond
-    Type(angles_type), &
-      Intent(InOut)        :: angle
-    Type(dihedrals_type), &
-      Intent(InOut)        :: dihedral
-    Type&
-      (inversions_type), &
-      Intent(InOut)        :: inversion
-    Type(z_density_type), &
-      Intent(InOut)        :: zdensity
-    Type&
-      (neighbours_type), &
-      Intent(InOut)        :: neigh
-    Type(vdw_type), &
-      Intent(InOut)        :: vdws
-    Type(tersoff_type), &
-      Intent(In)           :: tersoffs
-    Type(rdf_type), &
-      Intent(InOut)        :: rdf
-    Type(mpole_type), &
-      Intent(InOut)        :: mpoles
-    Type(&
-      electrostatic_type),&
-      Intent(InOut)        :: electro
-    Type(ewald_type), &
-      Intent(InOut)        :: ewld
-    Type(kim_type), &
-      Intent(InOut)        :: kim_data
-    Type(file_type), &
-      Intent(InOut)        :: files(:)
-    Type(flow_type), &
-      Intent(InOut)        :: flow
-    Type(comms_type), &
-      Intent(InOut)        :: comm
+    Real(Kind=wp),            Intent(In   ) :: rcter
+    Integer,                  Intent(In   ) :: max_rigid, imcon
+    Integer,                  Intent(InOut) :: imc_n
+    Real(Kind=wp),            Intent(InOut) :: cell(1:9)
+    Real(Kind=wp),            Intent(In   ) :: xhi, yhi, zhi
+    Integer,                  Intent(  Out) :: mxgana
+    Logical,                  Intent(  Out) :: l_n_r, lzdn, l_ind
+    Integer,                  Intent(  Out) :: nstfce
+    Type(ttm_type),           Intent(InOut) :: ttm
+    Type(core_shell_type),    Intent(In   ) :: cshell
+    Type(stats_type),         Intent(InOut) :: stats
+    Type(thermostat_type),    Intent(InOut) :: thermo
+    Type(greenkubo_type),     Intent(InOut) :: green
+    Type(development_type),   Intent(InOut) :: devel
+    Type(msd_type),           Intent(InOut) :: msd_data
+    Type(metal_type),         Intent(InOut) :: met
+    Type(poisson_type),       Intent(InOut) :: pois
+    Type(bonds_type),         Intent(InOut) :: bond
+    Type(angles_type),        Intent(InOut) :: angle
+    Type(dihedrals_type),     Intent(InOut) :: dihedral
+    Type(inversions_type),    Intent(InOut) :: inversion
+    Type(z_density_type),     Intent(InOut) :: zdensity
+    Type(neighbours_type),    Intent(InOut) :: neigh
+    Type(vdw_type),           Intent(InOut) :: vdws
+    Type(tersoff_type),       Intent(In   ) :: tersoffs
+    Type(rdf_type),           Intent(InOut) :: rdf
+    Type(mpole_type),         Intent(InOut) :: mpoles
+    Type(electrostatic_type), Intent(InOut) :: electro
+    Type(ewald_type),         Intent(InOut) :: ewld
+    Type(kim_type),           Intent(InOut) :: kim_data
+    Type(file_type),          Intent(InOut) :: files(:)
+    Type(flow_type),          Intent(InOut) :: flow
+    Type(comms_type),         Intent(InOut) :: comm
 
-    Integer, Parameter     :: mxspl_def = 8, mxspl_min = 3
-    Real(Kind=wp), &
-      Parameter            :: rbin_def = 0.05_wp, rcbnd_def = 2.5_wp, rcut_def = 1.0_wp
+    Integer, Parameter       :: mxspl_def = 8, mxspl_min = 3
+    Real(Kind=wp), Parameter :: rbin_def = 0.05_wp, rcbnd_def = 2.5_wp, rcut_def = 1.0_wp
 
-    Character(Len=200)     :: record
-    Character(Len=40)      :: akey, word, word1
-    Integer                :: bspline_local, i, itmp, nstrun
-    Logical                :: carry, l_exp, l_n_m, la_ana, la_ang, la_bnd, la_dih, la_inv, lelec, &
-                              lmet, lrcut, lrmet, lrvdw, lter, lvdw, safe
-    Real(Kind=wp)          :: celprp(1:10), cut, eps0, fac, tol, tol1
+    Character(Len=200) :: record
+    Character(Len=40)  :: akey, word, word1
+    Integer            :: bspline_local, i, itmp, nstrun
+    Logical            :: carry, l_exp, l_n_m, la_ana, la_ang, la_bnd, la_dih, la_inv, lelec, &
+                          lmet, lrcut, lrmet, lrvdw, lter, lvdw, safe
+    Real(Kind=wp)      :: celprp(1:10), cut, eps0, fac, tol, tol1
 
 ! default spline for SPME (4 & 6 possible)
 ! minimum spline order, needed for derivatives of forces
@@ -4880,17 +4800,14 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer, Intent(InOut) :: imc_n
-    Real(Kind=wp), &
-      Intent(Out)          :: dvar
-    Type(file_type), &
-      Intent(InOut)        :: files(:)
-    Type(comms_type), &
-      Intent(InOut)        :: comm
+    Integer,          Intent(InOut) :: imc_n
+    Real(Kind=wp),    Intent(  Out) :: dvar
+    Type(file_type),  Intent(InOut) :: files(:)
+    Type(comms_type), Intent(InOut) :: comm
 
-    Character(Len=200)     :: record
-    Character(Len=40)      :: word
-    Logical                :: carry, safe
+    Character(Len=200) :: record
+    Character(Len=40)  :: word
+    Logical            :: carry, safe
 
     safe = .true. ! all is safe
 
@@ -4985,23 +4902,19 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type(io_type), &
-      Intent(InOut)        :: io
-    Type(netcdf_param), &
-      Intent(InOut)        :: netcdf
-    Type(file_type), &
-      Intent(InOut)        :: files(:)
-    Type(comms_type), &
-      Intent(InOut)        :: comm
+    Type(io_type),      Intent(InOut) :: io
+    Type(netcdf_param), Intent(InOut) :: netcdf
+    Type(file_type),    Intent(InOut) :: files(:)
+    Type(comms_type),   Intent(InOut) :: comm
 
-    Integer, Parameter     :: MAX_BATCH_SIZE = 10000000, MAX_BUFFER_SIZE = 100000
+    Integer, Parameter :: MAX_BATCH_SIZE = 10000000, MAX_BUFFER_SIZE = 100000
 
-    Character(Len=200)     :: record, record1
-    Character(Len=256)     :: message
-    Character(Len=40)      :: word, word1
-    Integer                :: err_r, io_read, io_write, itmp
-    Logical                :: carry, l_io_r, l_io_w, l_tmp, safe
-    Real(Kind=wp)          :: tmp
+    Character(Len=200) :: record, record1
+    Character(Len=256) :: message
+    Character(Len=40)  :: word, word1
+    Integer            :: err_r, io_read, io_write, itmp
+    Logical            :: carry, l_io_r, l_io_w, l_tmp, safe
+    Real(Kind=wp)      :: tmp
 
 ! Some parameters and variables needed for dealing with I/O options
 !~1GB memory per writer
@@ -5513,14 +5426,12 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type(file_type), &
-      Intent(InOut)        :: files(:)
-    Type(comms_type), &
-      Intent(InOut)        :: comm
+    Type(file_type),  Intent(InOut) :: files(:)
+    Type(comms_type), Intent(InOut) :: comm
 
-    Character(Len=200)     :: rec_case_sensitive, record
-    Character(Len=40)      :: word, word1, wordo
-    Logical                :: carry, safe
+    Character(Len=200) :: rec_case_sensitive, record
+    Character(Len=40)  :: word, word1, wordo
+    Logical            :: carry, safe
 
     safe = .true. ! all is safe
 
