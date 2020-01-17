@@ -1,81 +1,82 @@
-module currents
-  use kinds,         only : wp
-  Use configuration, Only : configuration_type
-  Use constants,     Only : czero
-  Use comms,         Only : comms_type, gsum
-  Use filename,      Only : file_type
-  implicit none
+Module currents
+  Use comms,                           Only: comms_type,&
+                                             gsum
+  Use configuration,                   Only: configuration_type
+  Use constants,                       Only: czero
+  Use filename,                        Only: file_type
+  Use kinds,                           Only: wp
 
-  type, public :: current_type
+  Implicit None
 
-    complex(kind=wp),    allocatable :: jlk(:,:)
-    complex(kind=wp),    allocatable :: c(:,:,:) ! lags,kpoints,xyz
-    complex(kind=wp),    allocatable :: fc(:,:,:) ! lags,kpoints,xyz
-    integer                          :: nkpoints, lag
-    integer                          :: file_handle = -2
-    logical                          :: on = .False.
+  Type, Public :: current_type
 
-  contains
-    private
-    procedure,public :: init
-    procedure,public :: compute
-    final            :: cleanup
-  end type
+    Complex(Kind=wp), Allocatable :: jlk(:, :)
+    Complex(Kind=wp), Allocatable :: c(:, :, :) ! lags,kpoints,xyz
+    Complex(Kind=wp), Allocatable :: fc(:, :, :) ! lags,kpoints,xyz
+    Integer                       :: nkpoints, lag
+    Integer                       :: file_handle = -2
+    Logical                       :: on = .false.
 
-contains
+  Contains
+    Private
+    Procedure, Public :: init
+    Procedure, Public :: compute
+    Final             :: cleanup
+  End Type
 
-  subroutine init(T,nk,lag,fcurrent,comm)
-  class(current_type)                  :: T
-    Type( file_type ), Intent( InOut ) :: fcurrent
-    Type(comms_type),  intent( In )    :: comm
+Contains
 
-    integer, intent(in) :: nk
-    integer, intent(in) :: lag
+  Subroutine init(T, nk, lag, fcurrent, comm)
+    Class(current_type)             :: T
+    Type(file_type),  Intent(InOut) :: fcurrent
+    Type(comms_type), Intent(In   ) :: comm
+    Integer,          Intent(In   ) :: nk
+    Integer,          Intent(In   ) :: lag
 
-    allocate(T%jlk(nk,3))
+    Allocate (T%jlk(nk, 3))
     T%nkpoints = nk
-    T%lag=lag
-    If (comm%idnode == 0) Then 
-      Open(Newunit=fcurrent%unit_no, File=fcurrent%filename, Status='unknown',action="write")
+    T%lag = lag
+    If (comm%idnode == 0) Then
+      Open (Newunit=fcurrent%unit_no, File=fcurrent%filename, Status='unknown', Action="Write")
       T%file_handle = fcurrent%unit_no
-    end if
-  end subroutine init
+    End If
+  End Subroutine init
 
-  subroutine compute(T,config,time,comm)
-  class(current_type)                       :: T
-    type(configuration_type), intent(in)    :: config
-    Type(comms_type),         intent(inout) :: comm
-    real(kind=wp),            intent(in)    :: time
+  Subroutine compute(T, config, time, comm)
+    Class(current_type)                     :: T
+    Type(configuration_type), Intent(In   ) :: config
+    Type(comms_type),         Intent(InOut) :: comm
+    Real(Kind=wp),            Intent(In   ) :: time
 
-    integer :: i,k 
-    real(kind=wp) :: tmp
-    complex(kind=wp) :: h(3)
+    Integer          :: i, k
+    Real(Kind=wp)    :: tmp
+    Complex(Kind=wp) :: h(3)
 
-    do k=1,config%k%n
-      T%jlk(k,:)=czero
+    Do k = 1, config%k%n
+      T%jlk(k, :) = czero
       h = czero
-      do i=1,config%natms
-        tmp=dot_product(config%k%r(:,k),[config%parts(i)%xxx,config%parts(i)%yyy,config%parts(i)%zzz])
-        h = h + [config%vxx(i),config%vyy(i),config%vzz(i)]*exp(cmplx(0.0_wp,tmp,wp))
-      enddo
-      !current%jlk(:,k,j)=kp%u(:,k)*dot_product(kp%u(:,k),h)
-      write(0,*)comm%idnode,k,h,config%natms
-      call gsum(comm,h)
-      T%jlk(k,:) = h
-    end do
+      Do i = 1, config%natms
+        tmp = Dot_product(config%k%r(:, k), [config%parts(i)%xxx, config%parts(i)%yyy, config%parts(i)%zzz])
+        h = h + [config%vxx(i), config%vyy(i), config%vzz(i)] * Exp(Cmplx(0.0_wp, tmp, wp))
+      End Do
+      !current%jlk(:,k,j)=kp%u(:,k)*Dot_product(kp%u(:,k),h)
+      Write (0, *) comm%idnode, k, h, config%natms
+      Call gsum(comm, h)
+      T%jlk(k, :) = h
+    End Do
 
-    if (comm%idnode==0) then
-      write(T%file_handle,'(g0.8,1x,*(g0.8,1x))') time,T%jlk(:,:)
-    end if
+    If (comm%idnode == 0) Then
+      Write (T%file_handle, '(g0.8,1x,*(g0.8,1x))') time, T%jlk(:, :)
+    End If
 
-  end subroutine compute
+  End Subroutine compute
 
-  subroutine cleanup(T)
-    type(current_type) :: T
+  Subroutine cleanup(T)
+    Type(current_type) :: T
 
-    if (allocated(T%jlk)) deallocate(T%jlk)
-    !close(t%file_handle)
-  end subroutine cleanup
+    If (Allocated(T%jlk)) Deallocate (T%jlk)
+    !Close(t%file_handle)
+  End Subroutine cleanup
 
-end module currents
+End Module currents
 
