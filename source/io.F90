@@ -26,11 +26,6 @@ Module io
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#ifdef SERIAL
-  Use mpi_api
-#else
-  Use mpi
-#endif
 
   Use comms,           Only: comms_type,&
                              wp_mpi
@@ -44,6 +39,11 @@ Module io
                              netcdf_get_var, netcdf_open, netcdf_param, netcdf_put_var, &
                              netcdf_set_def, netcdf_set_real_precision
   Use particle,        Only: corePart
+#ifdef SERIAL
+  Use mpi_api
+#else
+  Use mpi
+#endif
 
   Implicit None
 

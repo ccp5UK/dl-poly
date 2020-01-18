@@ -15,9 +15,15 @@ Module comms
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds,           Only: wi, wp, sp, dp, qp, si
-  Use particle,        Only: corePart
-  Use iso_fortran_env, Only: CHARACTER_STORAGE_SIZE
+  Use kinds,    Only: dp,&
+                      qp,&
+                      si,&
+                      sp,&
+                      wi,&
+                      wp
+  Use particle, Only: corePart
+
+  Use, Intrinsic :: iso_fortran_env, Only: CHARACTER_STORAGE_SIZE
 #ifdef SERIAL
   Use mpi_api
 #else

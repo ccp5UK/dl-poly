@@ -18,11 +18,6 @@ Module parallel_fft
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#ifdef SERIAL
-  Use mpi_api
-#else
-  Use mpi
-#endif
   Use comms,     Only: wp_mpi
 ! access to the generalised wp_mpi and
   ! the intrinsics in mpif.h/mpi-module
@@ -31,6 +26,11 @@ Module parallel_fft
   Use kinds,     Only: wp
   Use numerics,  Only: factor,&
                        get_nth_prime
+#ifdef SERIAL
+  Use mpi_api
+#else
+  Use mpi
+#endif
 
   Implicit None
 
