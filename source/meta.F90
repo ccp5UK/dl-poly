@@ -268,7 +268,7 @@ Contains
     Call time_elapsed(tmr)
 
     ! ALLOCATE SITE & CONFIG
-    Call sites%init(sites%mxtmls, sites%mxatyp)
+    Call sites%init()
     Call config%init()
 
     Call neigh%init_list(config%mxatdm)
