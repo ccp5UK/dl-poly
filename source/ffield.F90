@@ -201,7 +201,7 @@ Contains
                                       keyter, keyvdw, kfbp, kpmf, krgd, ksite, ktbp, lrgd, msite, &
                                       nangle, nbonds, nconst, ndihed, nfld, ninver, nrept, nrigid, &
                                       nshels, nsite, ntab, nteth, ntmp, ntpang, ntpbnd, ntpdih, &
-                                      ntpinv, rwidth
+                                      ntpinv, rwidth, nkim
     Logical                        :: atmchk, l_ang, l_bnd, l_con, l_dih, l_inv, l_rgd, l_shl, &
                                       l_tet, ldpd_safe, lmet_safe, lmols, lpmf, lshl_abort, &
                                       lshl_all, lshl_one, lter_safe, lunits, safe
@@ -209,6 +209,7 @@ Contains
                                       k_crsh, k_crsh_p, k_crsh_s, p_core, p_core_p, p_core_s, &
                                       parpot(1:30), pmf_tmp(1:2), q_core, q_core_p, q_core_s, &
                                       q_shel, q_shel_p, q_shel_s, sig(0:2), tmp, weight
+    Character ( Len = 8 ),  Allocatable :: kim_name(:)
 
     ! Initialise number of unique atom and shell types and of different types of molecules
     sites%ntype_atom = 0
@@ -4768,7 +4769,6 @@ Contains
         If (word(1:16) == 'kim_interactions') Then
 
           fail(1) = 0
-
           Allocate(kim_name(sites%ntype_atom), Stat=fail(1))
           If (fail(1) /= 0) Then
             Write(message,'(a)') 'read_field, kim_name allocation failure'
@@ -4846,7 +4846,6 @@ Contains
             Call error(0,message)
           End If
         End If
-
         ! read external field data
 
       Else If (word(1:6) == 'extern') Then
@@ -5303,12 +5302,13 @@ Contains
     Character(Len=40)                  :: word
     Character(Len=8)                   :: name
     Character(Len=8), Dimension(1:mmk) :: chr
+    Character(Len=256) :: message
     Integer                            :: i, iang, ibonds, icon, idih, iinv, inumteth, ipmf, irgd, &
                                           ishls, iteth, itmols, itpfbp, itpmet, itprdf, itptbp, &
                                           itpter, itpvdw, j, jpmf, jrgd, k, ksite, lrgd, mxf(1:9), &
                                           mxnmst, mxt(1:9), nrept, numang, numbonds, numcon, &
                                           numdih, numinv, nummols, numrgd, numshl, numsit
-    Logical                            :: check, safe
+    Logical                            :: check, safe,lkim
     Real(Kind=wp)                      :: rct, tmp, tmp1, tmp2
 
 ! Max number of different atom types
@@ -6168,7 +6168,6 @@ Contains
     End Do
 
     10 Continue
-<<<<<<< HEAD
 
     If (comm%idnode == 0) Call files(FILE_FIELD)%close()
 
@@ -6181,9 +6180,6 @@ Contains
         Call error(0, message)
       End If
     End If
-=======
-    If (comm%idnode == 0) Call files(FILE_FIELD)%close ()
->>>>>>> origin/devel
 
     ! Define legend arrays lengths.  If length > 0 then
     ! length=Max(length)+1 for the violation excess element

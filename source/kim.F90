@@ -9,9 +9,9 @@ Module kim
 !>
 !> Based on KIM v2.0 simulator example in Fortran and the KIM v1 implementation
 !> by R. S. Elliot
+  Use kinds, Only : wi,wp
   Use, Intrinsic :: iso_c_binding, Only : c_double,c_int,c_char,c_ptr, &
     c_null_ptr,c_funloc,c_loc,c_f_pointer,c_signed_char
-  Use kinds, Only : wi,wp
   Use numerics, Only: local_index
   Use particle, Only : corepart
   Use comms, Only : comms_type,gsend,girecv,gwait,Export_tag
