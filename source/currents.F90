@@ -1,10 +1,10 @@
 Module currents
-  Use comms,                           Only: comms_type,&
-                                             gsum
-  Use configuration,                   Only: configuration_type
-  Use constants,                       Only: czero
-  Use filename,                        Only: file_type
-  Use kinds,                           Only: wp
+  Use comms,         Only: comms_type,&
+                           gsum
+  Use configuration, Only: configuration_type
+  Use constants,     Only: czero
+  Use filename,      Only: file_type
+  Use kinds,         Only: wp
 
   Implicit None
 
@@ -28,10 +28,9 @@ Contains
 
   Subroutine init(T, nk, lag, fcurrent, comm)
     Class(current_type)             :: T
+    Integer,          Intent(In   ) :: nk, lag
     Type(file_type),  Intent(InOut) :: fcurrent
     Type(comms_type), Intent(In   ) :: comm
-    Integer,          Intent(In   ) :: nk
-    Integer,          Intent(In   ) :: lag
 
     Allocate (T%jlk(nk, 3))
     T%nkpoints = nk
@@ -43,14 +42,14 @@ Contains
   End Subroutine init
 
   Subroutine compute(T, config, time, comm)
-    Class(current_type)                     :: T
+    Class(current_type),      Intent(InOut) :: T
     Type(configuration_type), Intent(In   ) :: config
-    Type(comms_type),         Intent(InOut) :: comm
     Real(Kind=wp),            Intent(In   ) :: time
+    Type(comms_type),         Intent(InOut) :: comm
 
+    Complex(Kind=wp) :: h(3)
     Integer          :: i, k
     Real(Kind=wp)    :: tmp
-    Complex(Kind=wp) :: h(3)
 
     Do k = 1, config%k%n
       T%jlk(k, :) = czero

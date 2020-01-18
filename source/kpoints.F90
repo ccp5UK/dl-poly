@@ -1,9 +1,9 @@
 Module kpoints
 
-  Use comms,                           Only: comms_type,&
-                                             gbcast
-  Use constants,                       Only: epsilon_wp
-  Use kinds,                           Only: wp
+  Use comms,     Only: comms_type,&
+                       gbcast
+  Use constants, Only: epsilon_wp
+  Use kinds,     Only: wp
 
   Implicit None
   Private

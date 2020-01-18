@@ -88,7 +88,7 @@ Contains
 
   Subroutine allocate_core_shell_arrays(T, mxatdm, mxtmls, mxlshp, neighbours)
     Class(core_shell_type) :: T
-    Integer, Intent(In) :: mxatdm, mxtmls, mxlshp, neighbours
+    Integer, Intent(In   ) :: mxatdm, mxtmls, mxlshp, neighbours
 
     Integer, Dimension(1:6) :: fail
 

@@ -255,7 +255,6 @@ Contains
     Integer, Dimension(1:9)        :: block_lengths, types
     Type(corePart)                 :: part_array(1:5), part_temp
 
-
     Call MPI_INIT(comm%ierr)
 
     Call MPI_COMM_DUP(MPI_COMM_WORLD, comm%comm, comm%ierr)
