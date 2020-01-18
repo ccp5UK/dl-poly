@@ -85,9 +85,10 @@ Contains
 
   Subroutine allocate_work(T, n)
     Class(constraints_type) :: T
-    Integer, Intent(In) :: n
-    Integer               :: fail(2)
-    Character(Len=100)    :: message
+    Integer,  Intent(In   ) :: n
+
+    Character(Len=100) :: message
+    Integer            :: fail(2)
 
     If (T%megcon > 0) Then
       Allocate (T%lstopt(0:2, 1:T%mxcons), T%listot(1:n), Stat=fail(1))
@@ -103,8 +104,8 @@ Contains
   Subroutine deallocate_work(T)
     Class(constraints_type) :: T
 
-    Integer            :: fail(2)
     Character(Len=100) :: message
+    Integer            :: fail(2)
 
     If (T%megcon > 0) Then
       Deallocate (T%lstopt, T%listot, Stat=fail(1))
@@ -117,8 +118,8 @@ Contains
   End Subroutine deallocate_work
 
   Subroutine allocate_constraints_arrays(T, mxtmls, mxatdm, mxlshp, neighbours)
-    Class(constraints_type) :: T
-    Integer(kind=wi), Intent(In) :: mxtmls, mxatdm, neighbours, mxlshp
+    Class(constraints_type)         :: T
+    Integer(kind=wi), Intent(In   ) :: mxtmls, mxatdm, mxlshp, neighbours
 
     Integer :: fail(7)
 
@@ -147,7 +148,9 @@ Contains
 
   Subroutine deallocate_constraints_temps(T)
     Class(constraints_type) :: T
+
     Integer :: fail(2)
+
     If (Allocated(T%numcon)) Deallocate (T%numcon, Stat=fail(1))
     If (Allocated(T%lstcon)) Deallocate (T%lstcon, Stat=fail(2))
     If (Any(fail > 0)) Call error(1032)

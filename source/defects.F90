@@ -94,7 +94,7 @@ Contains
     Class(defects_type), Intent(InOut) :: dfcts
     Integer(Kind=wi),    Intent(In   ) :: mxatms
 
-    Integer(Kind=wi)                   :: fail(3)
+    Integer(Kind=wi) :: fail(3)
 
     fail = 0
     Allocate (dfcts%namr(1:mxatms), Stat=fail(1))
@@ -2184,7 +2184,7 @@ Contains
     Type(comms_type),         Intent(InOut) :: comm
 
     Integer, Parameter                      :: nsbcll = 27, recsz = 73
-    Integer, Dimension(1:nsbcll), Parameter :: nix = [ 0, -1, -1, -1, 0, 0, 0, 1, 1, 1, -1, -1, -1&
+    Integer, Dimension(1:nsbcll), Parameter :: nix = [0, -1, -1, -1, 0, 0, 0, 1, 1, 1, -1, -1, -1&
                                                , 0, 0, 1, 1, 1, -1, -1, -1, 0, 0, 0, 1, 1, 1], niy&
                                                = [0, -1, 0, 1, -1, 0, 1, -1, 0, 1, -1, 0, 1, -1, &
                                                1, -1, 0, 1, -1, 0, 1, -1, 0, 1, -1, 0, 1], niz = [&

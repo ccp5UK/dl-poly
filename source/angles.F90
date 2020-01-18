@@ -144,7 +144,7 @@ Contains
 
   Subroutine allocate_angles_arrays(angle, mxatdm, mxtmls)
     Class(angles_type), Intent(InOut) :: angle
-    Integer(Kind=wi), Intent(In) :: mxatdm, mxtmls
+    Integer(Kind=wi),   Intent(In   ) :: mxatdm, mxtmls
 
     Integer :: fail(1:9)
 

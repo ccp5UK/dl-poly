@@ -164,8 +164,8 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Class(configuration_type), Intent(InOut)           :: T
-    Logical, Intent(In), Optional :: flag
+    Class(configuration_type), Intent(InOut) :: T
+    Logical, Optional,         Intent(In   ) :: flag
 
     Logical :: lflag
 

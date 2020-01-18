@@ -144,7 +144,7 @@ Contains
 
   Subroutine allocate_bonds_arrays(bond, mxatdm, mxtmls)
     Class(bonds_type), Intent(InOut) :: bond
-    Integer, Intent(In) :: mxatdm, mxtmls
+    Integer,           Intent(In   ) :: mxatdm, mxtmls
 
     Integer :: fail(9)
 
