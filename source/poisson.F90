@@ -265,7 +265,7 @@ Contains
         tzz=pois%kmaxc_r*(rcell(3)*config%parts(n)%xxx+rcell(6)*config%parts(n)%yyy+&
           rcell(9)*config%parts(n)%zzz+0.5_wp)
 
-        ! global indeces
+        ! global indices
 
         i=Int(txx)
         j=Int(tyy)
@@ -307,7 +307,7 @@ Contains
       tzz=pois%kmaxc_r*(rcell(3)*config%parts(n)%xxx+rcell(6)*config%parts(n)%yyy+&
         rcell(9)*config%parts(n)%zzz+0.5_wp)
 
-      ! global indeces
+      ! global indices
 
       i=Int(txx)
       j=Int(tyy)
@@ -856,7 +856,7 @@ Contains
       tzz=Real(ewld%fft_dim_c,wp)*(rcell(3)*config%parts(n)%xxx+rcell(6)*config%parts(n)%yyy+&
         rcell(9)*config%parts(n)%zzz+half_minus)
 
-      ! global indeces
+      ! global indices
 
       ii=Int(txx)
       jj=Int(tyy)
