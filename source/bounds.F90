@@ -19,7 +19,8 @@ Module bounds
   Use dihedrals,       Only: dihedrals_type
   Use domains,         Only: domains_type,&
                              map_domains
-  Use electrostatic,   Only: electrostatic_type
+  Use electrostatic,   Only: electrostatic_type,&
+                             ELECTROSTATIC_NULL
   Use errors_warnings, Only: error,&
                              info,&
                              warning
@@ -1001,20 +1002,20 @@ Contains
     ! accounted for by the default halo (the product xhi*yhi*zhi<=8); beyond that config% mxatms
     ! must be redefined by the config%mxatdm based desnity
 
-    If ( .not. electro%no_elec) Then
-      If ( electro%key /= ELECTROSTATIC_NULL ) Then
-        xhi=Max(1.0_wp,Real(ewld%bspline1,wp)/(Real(ewld%fft_dim_a,wp)/Real(domain%nx,wp)/Real(ilx,wp)))+1.0_wp
-        yhi=Max(1.0_wp,Real(ewld%bspline1,wp)/(Real(ewld%fft_dim_b,wp)/Real(domain%ny,wp)/Real(ily,wp)))+1.0_wp
-        zhi=Max(1.0_wp,Real(ewld%bspline1,wp)/(Real(ewld%fft_dim_c,wp)/Real(domain%nz,wp)/Real(ilz,wp)))+1.0_wp
-        If (xhi*yhi*zhi > 8.0_wp) Then
-          vcell=config%mxatdm/Real(ilx*ily*ilz,wp)
-          xhi=xhi+Real(ilx,wp)
-          yhi=yhi+Real(ily,wp)
-          zhi=zhi+Real(ilz,wp)
-          config%mxatms=Nint(vcell*(xhi*yhi*zhi))
+    If (.not. electro%no_elec) Then
+      If (electro%key /= ELECTROSTATIC_NULL) Then
+        xhi = Max(1.0_wp, Real(ewld%bspline1, wp) / (Real(ewld%fft_dim_a, wp) / Real(domain%nx, wp) / Real(ilx, wp))) + 1.0_wp
+        yhi = Max(1.0_wp, Real(ewld%bspline1, wp) / (Real(ewld%fft_dim_b, wp) / Real(domain%ny, wp) / Real(ily, wp))) + 1.0_wp
+        zhi = Max(1.0_wp, Real(ewld%bspline1, wp) / (Real(ewld%fft_dim_c, wp) / Real(domain%nz, wp) / Real(ilz, wp))) + 1.0_wp
+        If (xhi * yhi * zhi > 8.0_wp) Then
+          vcell = config%mxatdm / Real(ilx * ily * ilz, wp)
+          xhi = xhi + Real(ilx, wp)
+          yhi = yhi + Real(ily, wp)
+          zhi = zhi + Real(ilz, wp)
+          config%mxatms = Nint(vcell * (xhi * yhi * zhi))
         End If
-      End IF
-    End if
+      End If
+    End If
 
     ! limit mxatdm as it cannot exceed mxatdm
 

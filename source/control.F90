@@ -242,7 +242,7 @@ Contains
 
     ! timestep switch and default value
 
-    lstep        = .false.
+    lstep = .false.
     thermo%tstep = 0.0_wp
 
     ! variable timestep switches and default minimum and maximum
@@ -1156,12 +1156,12 @@ Contains
         If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record, word)
         If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record, word)
         If (word(1:6) == 'charmm') Then
-          Call get_word(record,word)
+          Call get_word(record, word)
           If (word(1:5) == 'thole') Then
-            Call get_word(record,word)
-            If (word(1:4) == 'dump' .or. word(1:6) == 'factor') Call get_word(record,word)
-            If (word(1:4) == 'dump' .or. word(1:6) == 'factor') Call get_word(record,word)
-            mpoles%thole = Abs(word_2_real(word,0.0_wp))
+            Call get_word(record, word)
+            If (word(1:4) == 'dump' .or. word(1:6) == 'factor') Call get_word(record, word)
+            If (word(1:4) == 'dump' .or. word(1:6) == 'factor') Call get_word(record, word)
+            mpoles%thole = Abs(word_2_real(word, 0.0_wp))
           End If
 
           Write (message, '(a,f5.2)') &
@@ -3605,122 +3605,26 @@ Contains
     End Select
 
     Select Case (ttm%KeType)
-    ! constant and Drude thermal conductivity: convert from W m^-1 K^-1
-    ! to kB ps^-1 A^-1
-  Case (1,2)
-    If (ttm%isMetal .and. Abs(ttm%Ka0) <= zero_plus) Call error(682)
-    ttm%Ka0 = ttm%Ka0*ttm%JKms_to_kBAps
-  End Select
+      ! constant and Drude thermal conductivity: convert from W m^-1 K^-1
+      ! to kB ps^-1 A^-1
+    Case (1, 2)
+      If (ttm%isMetal .and. Abs(ttm%Ka0) <= zero_plus) Call error(682)
+      ttm%Ka0 = ttm%Ka0 * ttm%JKms_to_kBAps
+    End Select
 
-  Select Case (ttm%DeType)
-  Case (1)
-    ! constant thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
-    If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus) Call error(683)
-    ttm%Diff0 = ttm%Diff0*1.0e8_wp
-  Case (2)
-    ! reciprocal thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
-    ! and ttm%Diff0 scaled with system temperature
-    If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus .or. Abs(ttm%Tfermi) <= zero_plus) Call error(683)
-    ttm%Diff0 = ttm%Diff0*thermo%temp*1.0e8_wp
-  End Select
+    Select Case (ttm%DeType)
+    Case (1)
+      ! constant thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
+      If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus) Call error(683)
+      ttm%Diff0 = ttm%Diff0 * 1.0e8_wp
+    Case (2)
+      ! reciprocal thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
+      ! and ttm%Diff0 scaled with system temperature
+      If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus .or. Abs(ttm%Tfermi) <= zero_plus) Call error(683)
+      ttm%Diff0 = ttm%Diff0 * thermo%temp * 1.0e8_wp
+    End Select
 
-  ! spatial deposition (gaussian) standard deviation: convert from nm to A
-  ttm%sig = ttm%sig*10.0_wp
-
-  ! penetration depth: convert from nm to A
-  If ((ttm%sdepoType == 2 .and. Abs(ttm%dEdX) <= zero_plus .and. Abs(ttm%pdepth-1.0_wp)<=zero_plus) .or. &
-    (ttm%sdepoType == 3 .and. Abs(ttm%pdepth-1.0_wp) <= zero_plus)) &
-    Call warning(510,0.0_wp,0.0_wp,0.0_wp)
-  ttm%pdepth = 10.0_wp*ttm%pdepth
-
-
-  ! electronic stopping power: convert from eV/nm to eV/A
-  ! ttm%fluence: convert from mJ cm^-2 to eV A^-2
-  If (ttm%sdepoType>0 .and. ttm%sdepoType<3 .and. (Abs(ttm%dEdx) <= zero_plus .or. Abs(ttm%fluence)<zero_plus)) &
-    Call warning(515,0.0_wp,0.0_wp,0.0_wp)
-
-  ttm%fluence = ttm%fluence*ttm%mJcm2_to_eVA2
-  ttm%dEdX = 0.1_wp*ttm%dEdX
-
-End Subroutine read_control
-
-Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
-    l_n_r,lzdn,l_ind,nstfce,ttm,cshell,stats,thermo,green,devel,msd_data,met, &
-    pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf,mpoles, &
-    electro,ewld,kim_data,files,flow,comm)
-
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-  ! dl_poly_4 subroutine for raw scanning the contents of the control file
-  !
-  ! copyright - daresbury laboratory
-  ! author    - i.t.todorov february 2017
-  ! contrib   - i.j.bush february 2014
-  ! contrib   - a.v.brukhno & i.t.todorov april 2014 (intramolecular TPs & PDFs)
-  ! contrib   - m.a.seaton june 2014 (VAF)
-  ! contrib   - p.s.petkov february 2015
-  ! contrib   - a.m.elena february 2017
-  ! contrib   - m.a.seaton march 2017 (TTM)
-  ! contrib   - a.b.g.chalk march 2017
-  ! refactoring:
-  !           - a.m.elena march-october 2018
-  !           - j.madge march-october 2018
-  !           - a.b.g.chalk march-october 2018
-  !           - i.scivetti march-october 2018
-  ! contrib   - i.t.todorov april 2019 l_trm reading and setting
-  !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Type( ttm_type ),           Intent( InOut ) :: ttm
-  Logical,                    Intent(   Out ) :: l_n_r,lzdn,l_ind
-  Integer,                    Intent( In    ) :: max_rigid,imcon
-  Integer,                    Intent( InOut ) :: imc_n
-  Integer,                    Intent(   Out ) :: mxgana,nstfce
-  Real( Kind = wp ),          Intent( In    ) :: xhi,yhi,zhi,rcter
-  Real( Kind = wp ),          Intent( InOut ) :: cell(1:9)
-  Type( core_shell_type ),    Intent( In    ) :: cshell
-  Type( stats_type ),         Intent( InOut ) :: stats
-  Type( thermostat_type ),    Intent( InOut ) :: thermo
-  Type( development_type ),   Intent( InOut ) :: devel
-  Type( greenkubo_type ),     Intent( InOut ) :: green
-  Type( msd_type ),           Intent( InOut ) :: msd_data
-  Type( metal_type ),         Intent( InOut ) :: met
-  Type( poisson_type ),       Intent( InOut ) :: pois
-  Type( bonds_type ),         Intent( InOut ) :: bond
-  Type( angles_type ),        Intent( InOut ) :: angle
-  Type( dihedrals_type ),     Intent( InOut ) :: dihedral
-  Type( inversions_type ),    Intent( InOut ) :: inversion
-  Type( z_density_type ),     Intent( InOut ) :: zdensity
-  Type( neighbours_type ),    Intent( InOut ) :: neigh
-  Type( vdw_type ),           Intent( InOut ) :: vdws
-  Type( tersoff_type ),       Intent( In    ) :: tersoffs
-  Type( rdf_type ),           Intent( InOut ) :: rdf
-  Type( mpole_type ),         Intent( InOut ) :: mpoles
-  Type( electrostatic_type ), Intent( InOut ) :: electro
-  Type( ewald_type ),         Intent( InOut ) :: ewld
-  Type( kim_type),            Intent( InOut ) :: kim_data
-  Type( file_type ),          Intent( InOut ) :: files(:)
-  Type( flow_type ),          Intent( InOut ) :: flow
-  Type( comms_type ),         Intent( InOut ) :: comm
-
-  Logical                      :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
-    lrcut,lrvdw,lrmet,lelec,lvdw,lmet,l_n_m,lter,l_exp
-  Character( Len = 200 )       :: record
-  Character( Len = 40  )       :: word,word1,akey
-  Integer                      :: i,itmp,nstrun,bspline_local
-  Real( Kind = wp )            :: celprp(1:10),cut,eps0,fac,tol,tol1
-  Integer,           Parameter :: mxspl_def = 8,        & ! default spline for SPME (4 & 6 possible)
-    mxspl_min = 3           ! minimum spline order, needed for derivatives of forces
-  Real( Kind = wp ), Parameter :: rcut_def  = 1.0_wp  , & ! minimum real space cutoff
-    rbin_def  = 0.05_wp , & ! default bin size (RDF/USR & z-density)
-    rcbnd_def = 2.5_wp      ! minimum bond length for bond analysis
-
-  ! default reading indices options
-
-  l_ind=.true.
-
-  ! strict flag
->>>>>>> project/devel
+    ! strict flag
 
     ! spatial deposition (gaussian) standard deviation: convert from nm to A
     ttm%sig = ttm%sig * 10.0_wp
@@ -5527,7 +5431,6 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 
     Type(file_type),  Intent(InOut) :: files(:)
     Type(comms_type), Intent(InOut) :: comm
-
 
     Character(Len=200) :: rec_case_sensitive, record
     Character(Len=40)  :: word, word1, wordo
