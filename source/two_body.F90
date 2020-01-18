@@ -20,6 +20,7 @@ Module two_body
                              ELECTROSTATIC_COULOMB_REACTION_FIELD,&
                              ELECTROSTATIC_DDDP,&
                              ELECTROSTATIC_EWALD,&
+                             ELECTROSTATIC_NULL,&
                              ELECTROSTATIC_POISSON,&
                              electrostatic_type
   Use errors_warnings, Only: error
