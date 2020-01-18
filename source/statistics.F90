@@ -47,6 +47,7 @@ Module statistics
                              wp
   Use numerics,        Only: dcell,&
                              invert,&
+                             pbcshift,&
                              pbcshfrc,&
                              pbcshfrl,&
                              shellsort,&
