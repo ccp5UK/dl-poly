@@ -11,14 +11,6 @@ genTest(){
   echo "    <testcase name=\"TEST${test}\">" >> ../$testf
   echo "      <path archive=\"Yes\">TEST${test}</path>" >> ../$testf
   echo "      <description>TEST ${test} - ${name}</description>" >> ../$testf
-  rm -rf Tests/Test${test}
-  mkdir -p Tests/Test${test}
-  cp * Tests/Test${test}/
-  rm -f Tests/Test${test}/STATIS
-  rm -f Tests/Test${test}/OUTPUT
-  pushd Tests/Test${test}/ >>/dev/null
- # tar --remove-files -cJf T${test}.tar.xz * 
-  popd >>/dev/null
   for iteration in $iterations; do
     for prop in $props; do
       val=$(${DLP_ROOT}/utils/Scripts/${prop}.py $iteration)
@@ -44,7 +36,7 @@ testf="one.xml"
 #echo "    <author>Alin Marin Elena</author>" >> $testf
 #echo "    <outdir>TestsOut</outdir>" >> $testf
    
-genTest $1 "0 10 30" 
+genTest $1 "0 10 20 30" 
 
 
 #echo "  </testsuite>" >> $testf
