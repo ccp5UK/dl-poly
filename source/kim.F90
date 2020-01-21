@@ -26,10 +26,9 @@ Module kim
   Use errors_warnings,              Only: error,&
                                           info,&
                                           warning
-!#ifdef KIM
+#ifdef KIM
   Use kim_log_module,               Only: kim_pop_default_verbosity,&
                                           kim_push_default_verbosity
-!#endif
   Use kim_log_verbosity_module,     Only: KIM_LOG_VERBOSITY_DEBUG,&
                                           KIM_LOG_VERBOSITY_ERROR
   Use kim_simulator_headers_module, Only: &
@@ -65,6 +64,7 @@ Module kim
                                           kim_set_argument_pointer, kim_set_callback_pointer, &
                                           kim_species_name_type, kim_temperature_unit_k, &
                                           kim_time_unit_ps, kim_to_string, Operator(.eq.)
+#endif
   Use kinds,                        Only: wi,&
                                           wp
   Use numerics,                     Only: local_index
