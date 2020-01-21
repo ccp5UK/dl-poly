@@ -342,7 +342,7 @@ Contains
             kerror)
           If (kerror /= 0_c_int) Then
             Call kim_error('kim_setup, kim_get_parameter_metadata ' // &
-              'returned error.', __LINE__)
+              'returned an error.', __LINE__)
           End If
           max_len = max(max_len, len_trim(parameter_name))
         End Do
@@ -398,7 +398,7 @@ Contains
         kerror)
       If (kerror /= 0_c_int) Then
         Call kim_error('kim_setup, kim_compute_arguments_create, ' // &
-          'Failed to allocate a new ComputeArguments object.', __LINE__)
+          'failed to allocate a new ComputeArguments object.', __LINE__)
       End If
 
       ! Set number of particles
@@ -425,7 +425,7 @@ Contains
         kerror)
       If (kerror /= 0_c_int) Then
         Call kim_error('kim_setup, kim_get_neighbor_list_values, ' // &
-          'Wrong number of neighbour lists.', __LINE__)
+          'wrong number of neighbour lists.', __LINE__)
       End If
 
       Do list_index = 1, Int(kim_data%n_lists, wi)
@@ -558,8 +558,8 @@ Contains
       End If
     Else If (kim_data%model_type .Eq. &
       KIM_COLLECTION_ITEM_TYPE_SIMULATOR_MODEL) Then
-      Call kim_error('kim_setup, currently DL_POLY does not support.' // &
-        'KIM Simulator model', __LINE__)
+      Call kim_error('kim_setup, currently DL_POLY does not support ' // &
+        'KIM Simulator model.', __LINE__)
     ELSE
       Call kim_error('kim_setup, unknown model type.', __LINE__)
     End If
@@ -624,8 +624,8 @@ Contains
       kim_data%model_type, &
       kerror)
     If (kerror /= 0_c_int) Then
-      Call kim_error('kim_cutoff, kim_get_item_type, KIM Model name ' // &
-        'not found.', __LINE__)
+      Call kim_error('kim_cutoff, kim_get_item_type, KIM Model name = `' // &
+        Trim(kim_data%model_name) // '` not found.', __LINE__)
     End If
 
     ! Destroy a previously created collection.
@@ -759,7 +759,7 @@ Contains
     Allocate(kim_data%unique_species_code(ntype_atom), Stat = fail)
     If (fail /= 0) Then
       Call kim_error('kim_interactions, unique_species_code.' // &
-        'allocation failure ', __LINE__)
+        'allocation failure.', __LINE__)
     End If
 
     ! Initialise the species code
@@ -778,8 +778,8 @@ Contains
         kerror)
       If ((kerror /= 0_c_int) .Or. (species_is_supported /= 1_c_int)) Then
         Call kim_error('kim_interactions, ' // &
-          'The species ' // Trim(kim_species_name(iatom)) // &
-          ' is not supported by KIM API.', __LINE__)
+          'The species `' // Trim(kim_species_name(iatom)) // &
+          '` is not supported by KIM API.', __LINE__)
       End If
 
       Do jatom = 1, ntype_atom
@@ -828,7 +828,7 @@ Contains
     Call kim_collections_create(kim_coll, kerror)
     If (kerror /= 0_c_int) Then
       Call kim_error('kim_citations, kim_collections_create, ' // &
-        'unable to access KIM Collections to find the Model', __LINE__)
+        'unable to access KIM Collections to find the Model.', __LINE__)
     End If
 
     ! Check if the item type is a KIM portable model
@@ -843,14 +843,15 @@ Contains
         kerror)
       If (kerror /= 0_c_int) Then
         Call kim_error('kim_citations, ' // &
-          'kim_cache_list_of_item_metadata_files', __LINE__)
+          'kim_cache_list_of_item_metadata_files, failed to cache ' // &
+          'a list of metadata files.', __LINE__)
       End If
     Else If (kim_data%model_type .Eq. &
       KIM_COLLECTION_ITEM_TYPE_SIMULATOR_MODEL) Then
       Call kim_error('kim_citations, currently DL_POLY does not ' // &
-        'support KIM Simulator model', __LINE__)
+        'support KIM Simulator model.', __LINE__)
     ELSE
-      Call kim_error('kim_citations, unknown model type', __LINE__)
+      Call kim_error('kim_citations, unknown model type.', __LINE__)
     End If
 
     If (comm%idnode == 0) Then
@@ -867,7 +868,8 @@ Contains
           kerror)
         If (kerror /= 0_c_int) Then
           Call kim_error('kim_citations, ' // &
-            'kim_get_item_metadata_file_values', __LINE__)
+            'kim_get_item_metadata_file_values, failed to get ' // &
+            'the name and content of metadata files.', __LINE__)
         End If
 
         If (cite_file_name(1:7) == 'kimcite') Then
