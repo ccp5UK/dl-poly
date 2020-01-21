@@ -3,6 +3,7 @@ Module stochastic_boundary
                              gsum
   Use configuration,   Only: configuration_type
   Use constants,       Only: boltz,&
+                             half_minus,&
                              zero_plus
   Use core_shell,      Only: SHELL_ADIABATIC,&
                              core_shell_type
@@ -58,6 +59,7 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    ! contrib   - i.t.todorov july 2019 (pseudo boundary & -3 DoF)
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -76,9 +78,10 @@ Contains
 
     Character(Len=256)         :: message
     Integer                    :: fail(1:3), i, i1, i2, irgd, j, jrgd, k, krgd, lrgd, matms, rgdtyp
-    Real(Kind=wp)              :: buffer(1:4), celprp(1:10), fmx, fmy, fmz, mxdr, odott, rot(1:9), &
-                                  scale, ssx, ssy, ssz, tkin, tmp, tqx, tqy, tqz, trot, trx, try, &
-                                  trz, vdotf, vom(1:3), vpx, vpy, vpz, x(1:1), y(1:1), z(1:1)
+    Real(Kind=wp)              :: buffer(1:4), celprp(1:10), cwx, cwy, cwz, ecwx, ecwy, ecwz, fmx, &
+                                  fmy, fmz, mxdr, odott, rot(1:9), scale, tkin, tmp, tqx, tqy, &
+                                  tqz, trot, trx, try, trz, vdotf, vom(1:3), vpx, vpy, vpz, &
+                                  x(1:1), y(1:1), z(1:1)
     Real(Kind=wp), Allocatable :: ggx(:), ggy(:), ggz(:), rgdfxx(:), rgdfyy(:), rgdfzz(:), &
                                   rgdtxx(:), rgdtyy(:), rgdtzz(:), xxt(:), yyt(:), zzt(:)
 
@@ -111,26 +114,23 @@ Contains
 
         Call invert(config%cell, thermo%rcell, celprp(10))
         Call dcell(config%cell, celprp)
+! pseudo layer width in reduced space
 
-        ! The origin of the Coordinate System is in the middle of the MD box (remember)
-        ! Get the real coordinates of the close end edge of the thermostat as if the
-        ! origin of the Coordinate System was in the left-most corner of the MD box
+        cwx = thermo%width_pseudo / celprp(7)
+        cwy = thermo%width_pseudo / celprp(8)
+        cwz = thermo%width_pseudo / celprp(9)
 
-        ssx = thermo%width_pseudo * celprp(1) / celprp(7)
-        ssy = thermo%width_pseudo * celprp(2) / celprp(8)
-        ssz = thermo%width_pseudo * celprp(3) / celprp(9)
+! Distance from the - edge of the MD cell
 
-        ! 1. Get the boundary thermostat thicknesses in fractional coordinates
-        ! 2. thermo%sx,thermo%sy,thermo%sz are intervalled as [-0.5,+0.5) {as by construction are (0,+0.25]}
-        ! 3. Outline the edge beyond which a particle belongs to the thermostat
-        !    0.5*thicknesses[MD box] - thickness[boundary thermostat]
+        ecwx = Nearest(-half_minus + cwx, +1.0_wp) + zero_plus
+        ecwy = Nearest(-half_minus + cwy, +1.0_wp) + zero_plus
+        ecwy = Nearest(-half_minus + cwz, +1.0_wp) + zero_plus
 
-        thermo%sx = thermo%rcell(1) * ssx + thermo%rcell(4) * ssy + thermo%rcell(7) * ssz; thermo%sx = thermo%sx - Anint(thermo%sx)
-        thermo%sx = 0.5_wp - thermo%sx
-        thermo%sy = thermo%rcell(2) * ssx + thermo%rcell(5) * ssy + thermo%rcell(8) * ssz; thermo%sy = thermo%sy - Anint(thermo%sy)
-        thermo%sy = 0.5_wp - thermo%sy
-        thermo%sz = thermo%rcell(3) * ssx + thermo%rcell(6) * ssy + thermo%rcell(9) * ssz; thermo%sz = thermo%sz - Anint(thermo%sz)
-        thermo%sz = 0.5_wp - thermo%sz
+! Distance from the + edge of the MD cell
+
+        cwx = Nearest(half_minus - cwx, -1.0_wp) - zero_plus
+        cwy = Nearest(half_minus - cwy, -1.0_wp) - zero_plus
+        cwy = Nearest(half_minus - cwz, -1.0_wp) - zero_plus
       End If
 
       ! qualify non-shell, non-frozen free particles (n) for a random kick
@@ -146,20 +146,24 @@ Contains
       j = 0
       Do i = 1, config%natms
 
-        ! For all particles on this domain get how far they are
-        ! from the origin of the MD box
+! For all particles on this domain qualify if they fall in the boundary layer
+        thermo%sx = thermo%rcell(1) * config%parts(i)%xxx + thermo%rcell(4) * config%parts(i)%yyy + &
+                    thermo%rcell(7) * config%parts(i)%zzz
+        thermo%sx = Abs(thermo%sx - Anint(thermo%sx))
+        thermo%sy = thermo%rcell(2) * config%parts(i)%xxx + thermo%rcell(5) * config%parts(i)%yyy + &
+                    thermo%rcell(8) * config%parts(i)%zzz
+        thermo%sy = Abs(thermo%sy - Anint(thermo%sy))
+        thermo%sz = thermo%rcell(3) * config%parts(i)%xxx + thermo%rcell(6) * config%parts(i)%yyy + &
+                    thermo%rcell(9) * config%parts(i)%zzz
+        thermo%sz = Abs(thermo%sz - Anint(thermo%sz))
 
-        ssx = thermo%rcell(1) * config%parts(i)%xxx + thermo%rcell(4) * config%parts(i)%yyy + &
-              thermo%rcell(7) * config%parts(i)%zzz; ssx = Abs(ssx - Anint(ssx))
-        ssy = thermo%rcell(2) * config%parts(i)%xxx + thermo%rcell(5) * config%parts(i)%yyy + &
-              thermo%rcell(8) * config%parts(i)%zzz; ssy = Abs(ssy - Anint(ssy))
-        ssz = thermo%rcell(3) * config%parts(i)%xxx + thermo%rcell(6) * config%parts(i)%yyy + &
-              thermo%rcell(9) * config%parts(i)%zzz; ssz = Abs(ssz - Anint(ssz))
-
-        If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp .and. cshell%legshl(0, i) >= 0 .and. &
-            (ssx >= thermo%sx .or. ssy >= thermo%sy .or. ssz >= thermo%sz)) Then
-          j = j + 1
-          thermo%qn(i) = 1
+        If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp .and. cshell%legshl(0, i) >= 0) Then
+          If ((thermo%sx <= ecwx .or. thermo%sx >= cwx) .or. &
+              (thermo%sy <= ecwy .or. thermo%sy >= cwy) .or. &
+              (thermo%sz <= ecwz .or. thermo%sz >= cwz)) Then
+            j = j + 1
+            thermo%qn(i) = 1
+          End If
         End If
       End Do
       thermo%tpn(comm%idnode) = j
@@ -350,10 +354,6 @@ Contains
           Call error(0, message)
         End If
 
-        ! Here we become node-dependent (using of uni and gauss) - i.e.
-        ! pseudo-randomness depends on the DD mapping which depends on
-        ! the number of nodes and thermo%system size
-        !
         ! Get gaussian distribution
 
         tkin = 0.0_wp
@@ -440,7 +440,7 @@ Contains
 
         ! Scale to target temperature and apply thermostat
 
-        scale = Sqrt(mxdr * boltz * thermo%temp_pseudo / tkin)
+        scale = Sqrt(Max(mxdr - 3.0_wp, 0.0_wp) * boltz * thermo%temp_pseudo / tkin)
 
         ! Scale config%velocity within the thermostat layer to the gaussian config%velocities
         ! scaled with the config%variance for the target temperature
@@ -863,9 +863,34 @@ Contains
 
       If (thermo%key_pseudo == 0 .or. thermo%key_pseudo == 3) Then ! Apply DIRECT temperature scaling
 
+        mxdr = 0.0_wp
+        Do i = 1, config%natms
+          If (thermo%qn(i) == 1 .and. config%lfree(i) == 0) Then
+            If (dof_site(config%lsite(i)) > zero_plus) mxdr = mxdr + dof_site(config%lsite(i))
+          End If
+        End Do
+
+        If (thermo%rtp > 0) Then
+          Do irgd = 1, rigid%n_types
+            If (thermo%qr(irgd) == 1) Then
+              rgdtyp = rigid%list(0, irgd)
+
+              lrgd = rigid%list(-1, irgd)
+              Do jrgd = 1, lrgd
+                i = rigid%index_local(jrgd, irgd) ! local rigid body index
+                If (i <= config%natms) Then
+                  If (dof_site(config%lsite(i)) > zero_plus) mxdr = mxdr + dof_site(config%lsite(i))
+                End If
+              End Do
+            End If
+          End Do
+        End If
+
+        Call gsum(comm, mxdr)
+
         ! Targeted energy
 
-        scale = boltz * thermo%temp_pseudo
+        scale = boltz * thermo%temp_pseudo * (Max(mxdr - 3.0_wp, 0.0_wp) / Max(mxdr, 1.0_wp))
 
         ! Scale config%velocity within the thermostat layer
 
