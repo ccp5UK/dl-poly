@@ -246,7 +246,7 @@ Contains
     Integer                           :: nearest_sample_index !! Index of closest sample
 
     nearest_sample_index = int(point*samples%recip_spacing)
-    if (nearest_sample_index > samples%nsamples - 2) &
+    if (nearest_sample_index > samples%nsamples - 2 .or. nearest_sample_index < 0) &
       & call error(0,'Error - Interpolation beyond table limit in three_p_interp')
 
     difference  = point*samples%recip_spacing - Real(nearest_sample_index,wp)

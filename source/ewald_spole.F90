@@ -537,12 +537,16 @@ Contains
     call start_timer(tmr, 'Output')
 
     ! Rescale to real space
-    q_abc = q_abc * scale / real(comm%mxnode)
+    q_abc = q_abc * scale
     f_abc = f_abc * scale * 2.0_wp
-    s_abc = s_abc * scale / real(comm%mxnode)
+    s_abc = s_abc * scale
 
-    eng = Q_abc(0)
+    Q_abc(0) = Q_abc(0)  / real(comm%mxnode)
+    S_abc(:,0) = S_abc(:,0)  / real(comm%mxnode)
+    
+    eng = Q_abc(0) 
 
+    
     ! as only looped over local stuff, we need to gsum the eng
 
     call gsum(comm, eng)
@@ -570,10 +574,9 @@ Contains
     vircpe_rc = -sum(stress_temp(1:9:4))
 
     if (stats%collect_pp) then
-      stats%pp_energy = stats%pp_energy + Q_abc(1:)
+      stats%pp_energy = stats%pp_energy + Q_abc(1:) + comm%mxnode*spme_datum%self_interaction/config%megatm
       stats%pp_stress = stats%pp_stress + S_abc(:, 1:)
     end if
-
 
     deallocate (recip_indices, stat=fail(1))
     ! deallocate (ewld%bspline%derivs, stat=fail(2))
@@ -1496,6 +1499,7 @@ Contains
     Integer :: i,j,k,l,jj,kk,ll
 
     Integer :: fail
+    Character( Len = 256 ) :: message
     Integer, save :: mxspl2_old = -1
 
     recip_cell_mat = reshape(recip_cell,[3,3])
@@ -1526,6 +1530,13 @@ Contains
       & ewld%kspace%domain_indices(3,1) , ewld%kspace%domain_indices(3,2) , Real(potential_grid, wp) , &
       & extended_domain(1,1), extended_domain(2,1), extended_domain(3,1), &
       & extended_domain(1,2), extended_domain(2,2), extended_domain(3,2), extended_potential_grid, domain, comm )
+    
+    if (any(minval(recip_indices(:,1:config%natms),dim=2) + 2 - ewld%bspline%num_splines < extended_domain(:,1)) .or. & 
+        any(maxval(recip_indices(:,1:config%natms),dim=2) + 1 > extended_domain(:,2))) then
+       write(message,'(A)') 'Atoms beyond box bounds, unstable system'
+       call error(0, message)
+     end if
+    
 
     ! Zero accumulators, energies and forces
     energies(0) = 0.0_wp

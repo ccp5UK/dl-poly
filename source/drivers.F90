@@ -1510,9 +1510,13 @@ Contains
         
         if (flow%heat_flux .and. comm%idnode == 0) then
           Open(Newunit=heat_flux_unit, File = 'HEATFLUX', Position = 'append')
-          Write(heat_flux_unit, *) flow%step, stat%stptmp, cnfig%volm, heat_flux
+          Write(heat_flux_unit, '(I8.1, 1X, 5(G19.12, 1X))') flow%step, stat%stptmp, cnfig%volm, heat_flux
           Close(heat_flux_unit)
         end If
+
+        heat_flux(1) = sum(stat%pp_energy)
+        call gsum(comm, heat_flux(1))
+        if (comm%idnode == 0) print*, heat_flux(1), stat%engcpe + stat%engsrp, stat%engcpe, stat%engsrp
         
         if (flow%write_per_particle) then
           call write_per_part_contribs(cnfig, comm, stat%pp_energy, stat%pp_stress, flow%step)
