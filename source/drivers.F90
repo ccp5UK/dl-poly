@@ -1514,10 +1514,6 @@ Contains
           Close(heat_flux_unit)
         end If
 
-        heat_flux(1) = sum(stat%pp_energy)
-        call gsum(comm, heat_flux(1))
-        if (comm%idnode == 0) print*, heat_flux(1), stat%engcpe + stat%engsrp, stat%engcpe, stat%engsrp
-        
         if (flow%write_per_particle) then
           call write_per_part_contribs(cnfig, comm, stat%pp_energy, stat%pp_stress, flow%step)
         end if
