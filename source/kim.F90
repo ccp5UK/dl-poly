@@ -549,7 +549,7 @@ Contains
         Call kim_error('kim_setup, kim_set_callback_pointer '// &
                        'returned an error.', __LINE__)
       End If
-    Else If (kim_data%model_type .eq. &
+    Else If (kim_data%model_type == &
              KIM_COLLECTION_ITEM_TYPE_SIMULATOR_MODEL) Then
       Call kim_error('kim_setup, currently DL_POLY does not support '// &
                      'KIM Simulator model.', __LINE__)
@@ -836,7 +836,7 @@ Contains
                        'kim_cache_list_of_item_metadata_files, failed to cache '// &
                        'a list of metadata files.', __LINE__)
       End If
-    Else If (kim_data%model_type .eq. &
+    Else If (kim_data%model_type == &
              KIM_COLLECTION_ITEM_TYPE_SIMULATOR_MODEL) Then
       Call kim_error('kim_citations, currently DL_POLY does not '// &
                      'support KIM Simulator model.', __LINE__)

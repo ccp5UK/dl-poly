@@ -4813,7 +4813,8 @@ Contains
               'in one simulation, where only part of species in the ' // &
               'simulation are counted in KIM interactions', new_line('a'), &
               'This is an experimental feature, implemented in DL_POLY ' // &
-              'and is not compliant with the KIM-API standard'
+              'and is not compliant with the KIM-API standard. (See ' // &
+              'the DL_POLY manual for more information)'
             Call warning(message, .true.)
           End If
 
