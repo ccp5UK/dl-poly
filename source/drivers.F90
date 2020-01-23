@@ -67,7 +67,7 @@ Module drivers
   Use io, Only : io_type
   Use ttm, Only : ttm_type
   Use ttm_track, Only : ttm_ion_temperature,ttm_thermal_diffusion
-  Use filename, Only : file_type,FILE_OUTPUT,FILE_HISTORF,FILE_HISTORY
+  Use filename, Only : file_type,FILE_OUTPUT,FILE_HISTORF,FILE_HISTORY, FILE_POPEVB
   Use flow_control, Only : flow_type,RESTART_KEY_OLD,RESTART_KEY_CLEAN
   Use development, Only : development_type
 
@@ -135,7 +135,7 @@ Module drivers
   Use msd, Only : msd_type,msd_write
 
   ! EVB MODULE
-  Use evb, Only : evb_type, evb_pes, read_evb, evb_checkconfig, evb_merge_stochastic, evb_setzero
+  Use evb, Only : evb_type, evb_pes, read_evb, evb_checkconfig, evb_merge_stochastic, evb_setzero, evb_population
 
   Implicit None
   Private
@@ -2165,6 +2165,11 @@ Contains
         EndDo
       End If
 
+      ! Evaluate and write EVB population 
+      If(flow%NUM_FF>1 .and. evbff%population)then
+        Call evb_population(evbff,flow,files,comm)
+      End If      
+
       ! DO THAT ONLY IF 0<flow%step<=flow%run_steps AND THIS IS AN OLD JOB (flow%newjob=.false.)
 
       If (flow%step > 0 .and. flow%step <= flow%run_steps .and. (.not.flow%newjob)) Then
@@ -2237,23 +2242,20 @@ Contains
 
       Call gtime(tmr%elapsed)
 
-      Do ff=1,2
-!       write(6,*) cnfig(ff)%parts(1)%fxx, cnfig(ff)%parts(1)%fyy, cnfig(ff)%parts(1)%fzz
-!       write(6,*) stat(ff)%stress(1),stat(ff)%stress(2),stat(ff)%stress(3)
-!       write(6,*) stat(ff)%stress(4),stat(ff)%stress(5),stat(ff)%stress(6)
-!       write(6,*) stat(ff)%stress(7),stat(ff)%stress(8),stat(ff)%stress(9)
-      End Do
-
-
       ! Change cnfig%levcfg appropriately
       Do ff=1,flow%NUM_FF 
         If (cnfig(ff)%levcfg == 1) cnfig(ff)%levcfg=2
       End Do
 
+
     End Do
 
+      !Close EVB population file if opened
+      If (evbff%population_file_open .and. comm%idnode==0) Then 
+        Call files(FILE_POPEVB)%close()
+      End If  
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV_EVB INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
 
   End Subroutine w_md_vv_evb

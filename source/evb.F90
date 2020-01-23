@@ -13,14 +13,14 @@ Module evb
   Use comms,      Only : comms_type,gcheck,grecv, gsend, WriteConf_tag 
 
   Use errors_warnings, Only : error, info
-  Use flow_control, Only : flow_type
+  Use flow_control, Only : flow_type, RESTART_KEY_OLD
   Use configuration, Only : configuration_type
   Use statistics, Only : stats_type
   Use numerics, Only : invert
 
   Use constants, Only : engunit, eu_ev, eu_kcpm, eu_kjpm, boltz
 
-  Use parse, Only : get_line,get_word,lower_case,clean_string, word_2_real
+  Use parse, Only : get_line,get_word,lower_case,clean_string, word_2_real, strip_blanks
 
   Use thermostat, Only : thermostat_type
   Use rigid_bodies, Only : rigid_bodies_type
@@ -28,13 +28,19 @@ Module evb
   Use pmf, only : pmf_type
   Use core_shell, Only : core_shell_type
 
-  Use filename, Only : file_type, FILE_SETEVB 
+  Use filename, Only : file_type, FILE_SETEVB, FILE_POPEVB 
 
 
   Implicit None
   Private
 
   Type, Public ::  evb_type
+!> Flag for activating printing of EVB population    
+   Logical                        :: population = .false.
+!> Flag for opening EVB population file     
+   Logical                        :: population_file_open = .false.
+!> Flag for newjob
+   Logical                        :: newjob = .true.
 !> EVB force
    Real( Kind = wp ), Allocatable :: force(:,:)
 !> Energy shift for fields
@@ -75,7 +81,7 @@ Module evb
 
   Public :: read_evb
   Public :: evb_pes, evb_setzero
-  Public :: evb_checkconfig, evb_merge_stochastic
+  Public :: evb_checkconfig, evb_merge_stochastic, evb_population
 
 Contains
 
@@ -175,9 +181,15 @@ Contains
       Call lower_case(record)
       Call get_word(record,word)
 
+      If (word(1:1) == '#' .or. word(1:3) == '   ') Then
+
+!> Read setting to print EVB population
+      Else If (word(1:6) == 'evbpop') Then
+        evb%population = .True.
+
 !> Read all coupling elements
 
-      If (word(1:8) == 'evbcoupl') Then
+      Else If(word(1:8) == 'evbcoupl') Then
         Call get_word(record,word)
         If (word(1:2) == '  ') Then
           Call error(1093)        
@@ -234,7 +246,7 @@ Contains
             End If
           End Do
         Else If (evb%typcoupl(i,j) == 'gauss') Then
-          kparam=3      
+          kparam=4      
           Do k=1, kparam        
             Call get_word(record,word)
             If (word(1:2) == '  ') Then
@@ -297,6 +309,12 @@ Contains
       Else If (word(1:6) == 'finish') Then
         carry=.false.
 
+      Else 
+        Call strip_blanks(record)
+        Write(message,'(2a)') word(1:Len_Trim(word)+1),record
+        Call info(message,.true.)
+        call error(1102)
+
       End If
 
     End Do
@@ -347,7 +365,7 @@ Contains
        Write(message,'(2(4x,i2),10x,a,10x,1(E12.5,5x))') i , j, evb%typcoupl(i,j), (evb%couplparam(i,j,k),k=1,1)
        Call info(message,.true.)
      ElseIf(evb%typcoupl(i,j)=='gauss')Then
-       Write(message,'(2(4x,i2),10x,a,10x,3(E12.5,5x))') i , j, evb%typcoupl(i,j), (evb%couplparam(i,j,k),k=1,3)
+       Write(message,'(2(4x,i2),10x,a,10x,4(E12.5,5x))') i , j, evb%typcoupl(i,j), (evb%couplparam(i,j,k),k=1,4)
        Call info(message,.true.)
      ElseIf(evb%typcoupl(i,j)=='gdump')Then
        Write(message,'(2(4x,i2),10x,a,10x,7(E12.5,5x))') i , j, evb%typcoupl(i,j), (evb%couplparam(i,j,k),k=1,7)
@@ -654,10 +672,11 @@ Contains
   If(evb%typcoupl(m,k)=='const')Then
     evb%ene_matrix(m,k) = A(1)
   Else If (evb%typcoupl(m,k)=='gauss')Then
-    evb%ene_matrix(m,k) =  A(1)*exp(-((ediff-A(2))/A(3))**2)
+    evb%ene_matrix(m,k) =  A(1)*exp(-((ediff-A(2))/A(3))**2)+A(4)
   Else If (evb%typcoupl(m,k)=='gdump')Then
     evb%ene_matrix(m,k) = A(1)*exp(-((ediff-A(2))/A(3))**2)*(1.0d0+tanh((ediff+A(4))/A(5)))*(1.0d0+tanh((-ediff+A(6))/A(7)))      
   End If        
+
 
   End Subroutine evb_energy_couplings
 
@@ -672,6 +691,7 @@ Contains
   Real( Kind = wp )                :: A(evb%maxfitparam)
   Real( Kind = wp )                :: t1, t2, t3, grad_t1, grad_t2, grad_t3
 
+  evb%grad_coupl=0.0d0
 
   Do m=1,flow%NUM_FF
     Do k=m+1,flow%NUM_FF
@@ -716,8 +736,6 @@ Contains
 
   Real( Kind = wp )    :: fdiff
 
-  evb%grad_coupl=0.0d0
-
 ! Maximum number of atoms
   mxatms=config(1)%mxatms 
 
@@ -747,7 +765,7 @@ Contains
            evb%force_matrix(k,m)=evb%force_matrix(m,k)
          End Do
        End Do
- 
+
        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
        !Set the first column of evb%force to zero   
        evb%force(j,1)=0.0_wp
@@ -899,6 +917,47 @@ Contains
 
   End subroutine evb_stress
 
+
+!> Population analysis
+  Subroutine evb_population(evb,flow,files,comm)
+  Type(evb_type)   , Intent(InOut)   :: evb
+  Type( flow_type ), Intent(In   )   :: flow
+  Type( file_type ), Intent( InOut ) :: files(:)
+  Type( comms_type), Intent( InOut ) :: comm
+  Integer( Kind = wi ) :: ff
+  Logical              :: l_tmp
+
+    ! open EVB file file and write header
+    If (evb%newjob .and. comm%idnode == 0) Then
+
+      evb%newjob = .false.
+      l_tmp=.false.
+      
+      ! If the flow%restart_key = RESTART_KEY_OLD is the file old (does it exist)?
+      If (flow%restart_key == RESTART_KEY_OLD)Then
+        Inquire(File=files(FILE_POPEVB)%filename, Exist=l_tmp)
+      End If
+
+      If (.not.l_tmp) Then
+        Open(Newunit=files(FILE_POPEVB)%unit_no,File=files(FILE_POPEVB)%filename, Status='Replace')
+        write(files(FILE_POPEVB)%unit_no,'(a,17x,a)') '# Time (ps)','Weights of each FFs in the total EVB state (FF 1, 2, etc)'
+      Else
+        Open(Newunit=files(FILE_POPEVB)%unit_no,File=files(FILE_POPEVB)%filename, Position='append')      
+      End If  
+  
+    End If
+
+  ! Only print after equilibration
+  If(flow%step>flow%equil_steps+1)Then
+     If (comm%idnode == 0)Then
+        write(files(FILE_POPEVB)%unit_no,*) flow%time, (evb%psi(ff,1)**2, ff=1,flow%NUM_FF) 
+     End If
+  End If
+
+  End subroutine evb_population
+
+
+
 !> This subroutine sets to zero most of the decomposed terms of the virial and energy
 !> By construction, it is not possible to decompose the EVB virial for the different 
 !> types of interactions (bond, angle, dihedral, etc). We thus opt to set them to zero
@@ -913,17 +972,17 @@ Contains
 
   Do ff=1,flow%NUM_FF
 !  Energy components
-!    stat(ff)%engcpe = 0.0_wp
-!    stat(ff)%engsrp = 0.0_wp 
-!    stat(ff)%engter = 0.0_wp 
-!    stat(ff)%engtbp = 0.0_wp 
-!    stat(ff)%engfbp = 0.0_wp 
-!    stat(ff)%engshl = 0.0_wp 
-!    stat(ff)%engtet = 0.0_wp 
-!    stat(ff)%engbnd = 0.0_wp 
-!    stat(ff)%engang = 0.0_wp 
-!    stat(ff)%engdih = 0.0_wp 
-!    stat(ff)%enginv = 0.0_wp
+    stat(ff)%engcpe = 0.0_wp
+    stat(ff)%engsrp = 0.0_wp 
+    stat(ff)%engter = 0.0_wp 
+    stat(ff)%engtbp = 0.0_wp 
+    stat(ff)%engfbp = 0.0_wp 
+    stat(ff)%engshl = 0.0_wp 
+    stat(ff)%engtet = 0.0_wp 
+    stat(ff)%engbnd = 0.0_wp 
+    stat(ff)%engang = 0.0_wp 
+    stat(ff)%engdih = 0.0_wp 
+    stat(ff)%enginv = 0.0_wp
 !!  Virial components
 !    stat(ff)%vircpe = 0.0_wp 
 !    stat(ff)%virsrp = 0.0_wp

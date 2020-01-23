@@ -53,9 +53,11 @@ Module filename
   Integer, Parameter, Public :: FILE_REVCON_2 = 13
   !> SETEVB file
   Integer, Parameter, Public :: FILE_SETEVB = 14
+  !> POPEVB file
+  Integer, Parameter, Public :: FILE_POPEVB = 15
 
   !> Size of filename array
-  Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 14
+  Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 15
 
   Public :: default_filenames
 
@@ -93,6 +95,7 @@ Contains
     default_names(FILE_FIELD_2)  = "FIELD2"
     default_names(FILE_CONFIG_2) = "CONFIG2"
     default_names(FILE_SETEVB)   = "SETEVB"
+    default_names(FILE_POPEVB)   = "POPEVB"
 
     ! Set default filenames
     Do file_no = 1, FILENAME_SIZE

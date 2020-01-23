@@ -2917,12 +2917,12 @@ Contains
 
         End If
 
-        ! EVB settings, this flag has been already read by read_simtype.  
+      ! EVB settings, this flag has been already read by read_simtype.  
 
-      Else If (word(1:5) == 'evb') Then 
+      Else If (word(1:3) == 'evb') Then 
+      ! here do nothing
 
-
-        ! close control file
+      ! close control file
 
       Else If (word(1:6) == 'finish') Then
 
