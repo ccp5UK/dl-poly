@@ -1,11 +1,9 @@
 Module two_body
-
   Use comms,           Only: comms_type,&
                              gsum
   Use configuration,   Only: configuration_type
   Use constants,       Only: pi,&
                              r4pie0
-  Use core_shell,      Only: core_shell_type
   Use coul_mpole,      Only: coul_chrm_forces,&
                              coul_cp_mforces,&
                              coul_dddp_mforces,&
@@ -16,13 +14,13 @@ Module two_body
                              coul_dddp_forces,&
                              coul_fscp_forces,&
                              coul_rfp_forces
-  Use development,     Only: development_type
   Use domains,         Only: domains_type
   Use electrostatic,   Only: ELECTROSTATIC_COULOMB,&
                              ELECTROSTATIC_COULOMB_FORCE_SHIFT,&
                              ELECTROSTATIC_COULOMB_REACTION_FIELD,&
                              ELECTROSTATIC_DDDP,&
                              ELECTROSTATIC_EWALD,&
+                             ELECTROSTATIC_NULL,&
                              ELECTROSTATIC_POISSON,&
                              electrostatic_type
   Use errors_warnings, Only: error
@@ -71,9 +69,7 @@ Module two_body
   Public :: two_body_forces
 Contains
 
-  Subroutine two_body_forces(ensemble, &
-                             lbook, megfrz, &
-                             leql, nsteql, nstep, &
+  Subroutine two_body_forces(ensemble, lbook, megfrz, leql, nsteql, nstep, &
                              stats, ewld, met, pois, neigh, sites, vdws, rdf, mpoles, electro, &
                              domain, tmr, kim_data, config, comm)
 
@@ -125,7 +121,7 @@ Contains
 
     Character(Len=256)                       :: message
     Integer                                  :: fail, i, j, k, limit
-    Logical                                  :: l_do_rdf, safe
+    Logical                                  :: l_do_outer_loop, l_do_rdf, safe
     Real(Kind=wp)                            :: buffer(0:19), engacc, engcpe_ch, engcpe_ex, &
                                                 engcpe_fr, engcpe_nz, engcpe_rc, engcpe_rl, &
                                                 engden, engkim, engmet, engvdw, factor_nz, tmp, &
@@ -191,7 +187,7 @@ Contains
     ! Calculate all contributions from KIM
     If (kim_data%active) Then
       Call kim_energy_and_forces(kim_data, config%natms, config%nlast, config%parts, &
-                                 neigh%list, domain%map, config%lsite, config%lsi, config%lsa, config%ltg, &
+                                 neigh%list, domain%map, config%lsite, config%ltype, config%lsi, config%lsa, config%ltg, &
                                  sites%site_name, engkim, virkim, stats%stress, comm)
     End If
 
@@ -231,170 +227,180 @@ Contains
     Call start_timer(tmr, 'Short Range')
 #endif
 
-    ! outer loop over atoms
+#ifdef KIM
+    l_do_outer_loop = ((met%n_potentials > 0) .or. &
+                       (vdws%n_vdw > 0) .or. &
+                       (mpoles%max_mpoles > 0) .or. &
+                       ((electro%key /= ELECTROSTATIC_NULL) .and. &
+                        (electro%key /= ELECTROSTATIC_POISSON)) .or. &
+                       l_do_rdf)
 
-    Do i = 1, config%natms
+    If (l_do_outer_loop) Then
+      ! outer loop over atoms
+#endif
+      Do i = 1, config%natms
 
-      ! Get neigh%list limit
+        ! Get neigh%list limit
+        limit = neigh%list(0, i)
 
-      limit = neigh%list(0, i)
+        ! calculate interatomic distances
 
-      ! calculate interatomic distances
+        Do k = 1, limit
+          j = neigh%list(k, i)
+          xxt(k) = config%parts(i)%xxx - config%parts(j)%xxx
+          yyt(k) = config%parts(i)%yyy - config%parts(j)%yyy
+          zzt(k) = config%parts(i)%zzz - config%parts(j)%zzz
+        End Do
 
-      Do k = 1, limit
-        j = neigh%list(k, i)
+        ! periodic boundary conditions not needed by LC construction
+        !
+        !     Call images(imcon,cell,limit,xxt,yyt,zzt)
 
-        xxt(k) = config%parts(i)%xxx - config%parts(j)%xxx
-        yyt(k) = config%parts(i)%yyy - config%parts(j)%yyy
-        zzt(k) = config%parts(i)%zzz - config%parts(j)%zzz
-      End Do
+        ! distances, thanks to Alin Elena (one too many changes)
 
-      ! periodic boundary conditions not needed by LC construction
-      !
-      !     Call images(imcon,cell,limit,xxt,yyt,zzt)
+        Do k = 1, limit
+          rrt(k) = Sqrt(xxt(k)**2 + yyt(k)**2 + zzt(k)**2)
+        End Do
 
-      ! distances, thanks to Alin Elena (one too many changes)
+        ! calculate metal forces and potential
 
-      Do k = 1, limit
-        rrt(k) = Sqrt(xxt(k)**2 + yyt(k)**2 + zzt(k)**2)
-      End Do
+        If (met%n_potentials > 0) Then
+          Call metal_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, safe, sites%ntype_atom, met, neigh, config)
 
-      ! calculate metal forces and potential
+          engmet = engmet + engacc
+          virmet = virmet + viracc
+        End If
 
-      If (met%n_potentials > 0) Then
-        Call metal_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, safe, sites%ntype_atom, met, neigh, config)
+        ! calculate short-range force and potential terms
 
-        engmet = engmet + engacc
-        virmet = virmet + viracc
-      End If
+        If (vdws%n_vdw > 0) Then
+          Call vdw_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, vdws, config)
 
-      ! calculate short-range force and potential terms
+          engvdw = engvdw + engacc
+          virvdw = virvdw + viracc
+        End If
 
-      If (vdws%n_vdw > 0) Then
-        Call vdw_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, vdws, config)
+        !!!!!!!!!!!!!!!!!!!!!!!!!
+        ! COULOMBIC CONTRIBUTIONS
+        !!!!!!!!!!!!!!!!!!!!!!!!1
 
-        engvdw = engvdw + engacc
-        virvdw = virvdw + viracc
-      End If
+        If (mpoles%max_mpoles > 0) Then
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!
-      ! COULOMBIC CONTRIBUTIONS
-      !!!!!!!!!!!!!!!!!!!!!!!!1
+          !!! MULTIPOLAR ATOMIC SITES
 
-      If (mpoles%max_mpoles > 0) Then
+          If (electro%key == ELECTROSTATIC_EWALD) Then
 
-        !!! MULTIPOLAR ATOMIC SITES
+            ! calculate coulombic forces, Ewald sum - real space contribution
 
-        If (electro%key == ELECTROSTATIC_EWALD) Then
+            If (mpoles%max_order <= 2) Then
+              Call ewald_real_mforces_d(i, xxt, yyt, zzt, rrt, engacc, &
+                                        viracc, stats%stress, ewld, neigh, mpoles, electro, config)
+            Else
+              Call ewald_real_mforces(i, xxt, yyt, zzt, rrt, engacc, &
+                                      viracc, stats%stress, neigh, mpoles, electro, config)
+            End If
 
-          ! calculate coulombic forces, Ewald sum - real space contribution
+            engcpe_rl = engcpe_rl + engacc
+            vircpe_rl = vircpe_rl + viracc
 
-          If (mpoles%max_order <= 2) Then
-            Call ewald_real_mforces_d(i, xxt, yyt, zzt, rrt, engacc, &
-                                      viracc, stats%stress, ewld, neigh, mpoles, electro, config)
-          Else
-            Call ewald_real_mforces(i, xxt, yyt, zzt, rrt, engacc, &
-                                    viracc, stats%stress, neigh, mpoles, electro, config)
+          Else If (electro%key == ELECTROSTATIC_DDDP) Then
+
+            ! distance dependant dielectric potential
+
+            Call coul_dddp_mforces(i, electro%eps, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, mpoles, config)
+
+            engcpe_rl = engcpe_rl + engacc
+            vircpe_rl = vircpe_rl + viracc
+
+          Else If (electro%key == ELECTROSTATIC_COULOMB) Then
+
+            ! coulombic 1/r potential with no truncation or damping
+
+            Call coul_cp_mforces(i, electro%eps, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, mpoles, config)
+
+            engcpe_rl = engcpe_rl + engacc
+            vircpe_rl = vircpe_rl + viracc
+
+          Else If (electro%key == ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then
+
+            ! force-shifted coulomb potentials
+
+            Call coul_fscp_mforces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, mpoles, electro, config)
+
+            engcpe_rl = engcpe_rl + engacc
+            vircpe_rl = vircpe_rl + viracc
+
+          Else If (electro%key == ELECTROSTATIC_COULOMB_REACTION_FIELD) Then
+
+            ! reaction field potential
+
+            Call coul_rfp_mforces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, mpoles, electro, config)
+
+            engcpe_rl = engcpe_rl + engacc
+            vircpe_rl = vircpe_rl + viracc
+
           End If
 
-          engcpe_rl = engcpe_rl + engacc
-          vircpe_rl = vircpe_rl + viracc
+        Else
 
-        Else If (electro%key == ELECTROSTATIC_DDDP) Then
+          If (electro%key == ELECTROSTATIC_EWALD) Then
 
-          ! distance dependant dielectric potential
+            ! calculate coulombic forces, Ewald sum - real space contribution
 
-          Call coul_dddp_mforces(i, electro%eps, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, mpoles, config)
+            Call ewald_real_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, electro, config)
 
-          engcpe_rl = engcpe_rl + engacc
-          vircpe_rl = vircpe_rl + viracc
+            engcpe_rl = engcpe_rl + engacc
+            vircpe_rl = vircpe_rl + viracc
 
-        Else If (electro%key == ELECTROSTATIC_COULOMB) Then
+          Else If (electro%key == ELECTROSTATIC_DDDP) Then
 
-          ! coulombic 1/r potential with no truncation or damping
+            ! distance dependant dielectric potential
 
-          Call coul_cp_mforces(i, electro%eps, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, mpoles, config)
+            Call coul_dddp_forces(i, electro%eps, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, config)
 
-          engcpe_rl = engcpe_rl + engacc
-          vircpe_rl = vircpe_rl + viracc
+            engcpe_rl = engcpe_rl + engacc
+            vircpe_rl = vircpe_rl + viracc
 
-        Else If (electro%key == ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then
+          Else If (electro%key == ELECTROSTATIC_COULOMB) Then
 
-          ! force-shifted coulomb potentials
+            ! coulombic 1/r potential with no truncation or damping
 
-          Call coul_fscp_mforces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, mpoles, electro, config)
+            Call coul_cp_forces(i, electro%eps, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, config)
 
-          engcpe_rl = engcpe_rl + engacc
-          vircpe_rl = vircpe_rl + viracc
+            engcpe_rl = engcpe_rl + engacc
+            vircpe_rl = vircpe_rl + viracc
 
-        Else If (electro%key == ELECTROSTATIC_COULOMB_REACTION_FIELD) Then
+          Else If (electro%key == ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then
 
-          ! reaction field potential
+            ! force-shifted coulomb potentials
 
-          Call coul_rfp_mforces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, mpoles, electro, config)
+            Call coul_fscp_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, electro, config)
 
-          engcpe_rl = engcpe_rl + engacc
-          vircpe_rl = vircpe_rl + viracc
+            engcpe_rl = engcpe_rl + engacc
+            vircpe_rl = vircpe_rl + viracc
 
-        End If
+          Else If (electro%key == ELECTROSTATIC_COULOMB_REACTION_FIELD) Then
 
-      Else
+            ! reaction field potential
 
-        If (electro%key == ELECTROSTATIC_EWALD) Then
+            Call coul_rfp_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, electro, config)
 
-          ! calculate coulombic forces, Ewald sum - real space contribution
+            engcpe_rl = engcpe_rl + engacc
+            vircpe_rl = vircpe_rl + viracc
 
-          Call ewald_real_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, electro, config)
-
-          engcpe_rl = engcpe_rl + engacc
-          vircpe_rl = vircpe_rl + viracc
-
-        Else If (electro%key == ELECTROSTATIC_DDDP) Then
-
-          ! distance dependant dielectric potential
-
-          Call coul_dddp_forces(i, electro%eps, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, config)
-
-          engcpe_rl = engcpe_rl + engacc
-          vircpe_rl = vircpe_rl + viracc
-
-        Else If (electro%key == ELECTROSTATIC_COULOMB) Then
-
-          ! coulombic 1/r potential with no truncation or damping
-
-          Call coul_cp_forces(i, electro%eps, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, config)
-
-          engcpe_rl = engcpe_rl + engacc
-          vircpe_rl = vircpe_rl + viracc
-
-        Else If (electro%key == ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then
-
-          ! force-shifted coulomb potentials
-
-          Call coul_fscp_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, electro, config)
-
-          engcpe_rl = engcpe_rl + engacc
-          vircpe_rl = vircpe_rl + viracc
-
-        Else If (electro%key == ELECTROSTATIC_COULOMB_REACTION_FIELD) Then
-
-          ! reaction field potential
-
-          Call coul_rfp_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, electro, config)
-
-          engcpe_rl = engcpe_rl + engacc
-          vircpe_rl = vircpe_rl + viracc
+          End If
 
         End If
 
-      End If
+        ! accumulate radial distribution functions
 
-      ! accumulate radial distribution functions
+        If (l_do_rdf) Call rdf_collect(i, rrt, neigh, config, rdf)
 
-      If (l_do_rdf) Call rdf_collect(i, rrt, neigh, config, rdf)
+      End Do
 
-    End Do
-
+#ifdef KIM
+    End If
+#endif
     ! Poisson solver alternative to Ewald
 
     If (electro%key == ELECTROSTATIC_POISSON) Then

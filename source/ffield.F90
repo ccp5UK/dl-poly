@@ -60,7 +60,8 @@ Module ffield
                              inversions_table_read,&
                              inversions_type
   Use kim,             Only: kim_cutoff,&
-                             kim_type
+                             kim_type,&
+                             kim_interactions
   ! SITE MODULE
   Use kinds,           Only: wi,&
                              wp
@@ -200,7 +201,7 @@ Contains
                                       keyter, keyvdw, kfbp, kpmf, krgd, ksite, ktbp, lrgd, msite, &
                                       nangle, nbonds, nconst, ndihed, nfld, ninver, nrept, nrigid, &
                                       nshels, nsite, ntab, nteth, ntmp, ntpang, ntpbnd, ntpdih, &
-                                      ntpinv, rwidth
+                                      ntpinv, rwidth, nkim
     Logical                        :: atmchk, l_ang, l_bnd, l_con, l_dih, l_inv, l_rgd, l_shl, &
                                       l_tet, ldpd_safe, lmet_safe, lmols, lpmf, lshl_abort, &
                                       lshl_all, lshl_one, lter_safe, lunits, safe
@@ -208,6 +209,7 @@ Contains
                                       k_crsh, k_crsh_p, k_crsh_s, p_core, p_core_p, p_core_s, &
                                       parpot(1:30), pmf_tmp(1:2), q_core, q_core_p, q_core_s, &
                                       q_shel, q_shel_p, q_shel_s, sig(0:2), tmp, weight
+    Character ( Len = 8 ),  Allocatable :: kim_name(:)
 
     ! Initialise number of unique atom and shell types and of different types of molecules
     sites%ntype_atom = 0
@@ -239,6 +241,7 @@ Contains
     nangle = 0
     ndihed = 0
     ninver = 0
+    nkim   = 0
 
     ! Allocate auxiliary identity arrays for intramolecular TPs and PDFs
 
@@ -4742,13 +4745,120 @@ Contains
           If (rcut < 2.0_wp * fourbody%cutoff) Call error(472)
         End If
 
-        ! read kim interaction data - kim and rkim set in scan_field
+        ! read kim interaction data - kim set in scan_field
 
       Else If (word(1:3) == 'kim') Then
 
-        Write (message, '(2a)') 'using open KIM interaction model: ', kim_data%model_name
-        Call info(message, .true.)
+        If (.not. lmols) Call error(13)
 
+        If (.not. kim_data%active) Then
+          Write(message, '(a, 1x, 2a)') new_line('a'), &
+            'read_field, `kim_init` must be used to initialise the ', &
+            'kim interatomic model'
+          Call error(0, message)
+        End If
+
+        ! kim init
+        If (word(1:8) == 'kim_init') Then
+          Write(message,'(2a)') 'using open KIM interatomic model: ', &
+            kim_data%model_name
+          Call info(message, .true.)
+        End If
+
+        ! kim interactions
+        If (word(1:16) == 'kim_interactions') Then
+
+          fail(1) = 0
+          Allocate(kim_name(sites%ntype_atom), Stat=fail(1))
+          If (fail(1) /= 0) Then
+            Write(message,'(a)') 'read_field, kim_name allocation failure'
+            Call error(0,message)
+          End If
+
+          ! Get the list of unique species for kim interactions
+          kim_name = ' '
+
+          Do While (word(1:1) /= ' ')
+            Call get_word(record,word)
+
+            If (word(1:1) /= ' ') Then
+
+              ! Establish a list of unique species
+
+              atmchk=.true.
+
+              Do ia=1,nkim
+                If (kim_name(ia) == word(1:8)) Then
+                  atmchk=.false.
+                End If
+              End Do
+
+              If (atmchk) Then
+                nkim = nkim + 1
+                kim_name(nkim) = word(1:8)
+              End If
+
+            End If
+          End Do
+
+          ! The number of unique species for kim interactions should be
+          ! less or equal to the number of unique atom types
+          If (nkim > sites%ntype_atom) Call error(14)
+
+          If (nkim < sites%ntype_atom) Then
+            Call warning('The number of species in kim interactions' // &
+              '< number of species in the simulation', .true.)
+            Write(message,'(3a)') 'KIM in a hybrid style. It enables ' // &
+              'the use of DL_POLY interactions and KIM interactions ' // &
+              'in one simulation, where only part of species in the ' // &
+              'simulation are counted in KIM interactions', new_line('a'), &
+              'This is an experimental feature, implemented in DL_POLY ' // &
+              'and is not compliant with the KIM-API standard. (See ' // &
+              'the DL_POLY manual for more information)'
+            Call warning(message, .true.)
+          End If
+
+          If (nkim == 0) Then
+            Write(message,'(a, 1x, a)') new_line('a'), &
+              'read_field, Illegal `kim_interactions` keyword'
+            Call error(0, message)
+          End If
+
+          ! Extra check to make sure all the species in kim_interactions
+          ! have been defined before
+          atmchk=.true.
+          Do ia=1,nkim
+            Do ja=1,sites%ntype_atom
+              If (kim_name(ia) == sites%unique_atom(ja)) Then
+                ! We found the species
+                atmchk=.false.
+                ! Break the inside loop
+                Exit
+              End If
+            End Do
+
+            ! If the species is not found
+            If (atmchk) Then
+              Write(message,'(a, 1x, 3a)') new_line('a'), &
+                'read_field, `kim_interactions` has species `', &
+                Trim(kim_name(ia)), '` which is not defined before'
+              Call error(0, message)
+            End If
+          End Do
+
+          Call kim_interactions( &
+            kim_data, &
+            sites%ntype_atom, &
+            sites%unique_atom, &
+            nkim, &
+            kim_name)
+
+          Deallocate(kim_name, Stat = fail(1))
+          If (fail(1) /= 0) Then
+            Write(message,'(a)') 'read_field, deallocation failure'
+            Call error(0,message)
+          End If
+        End If
         ! read external field data
 
       Else If (word(1:6) == 'extern') Then
@@ -5205,12 +5315,13 @@ Contains
     Character(Len=40)                  :: word
     Character(Len=8)                   :: name
     Character(Len=8), Dimension(1:mmk) :: chr
+    Character(Len=256) :: message
     Integer                            :: i, iang, ibonds, icon, idih, iinv, inumteth, ipmf, irgd, &
                                           ishls, iteth, itmols, itpfbp, itpmet, itprdf, itptbp, &
                                           itpter, itpvdw, j, jpmf, jrgd, k, ksite, lrgd, mxf(1:9), &
                                           mxnmst, mxt(1:9), nrept, numang, numbonds, numcon, &
                                           numdih, numinv, nummols, numrgd, numshl, numsit
-    Logical                            :: check, safe
+    Logical                            :: check, safe,lkim
     Real(Kind=wp)                      :: rct, tmp, tmp1, tmp2
 
 ! Max number of different atom types
@@ -5313,6 +5424,7 @@ Contains
 
     lext = .false.
     l_usr = .false.
+    lkim =.false.
 
     ! Set safe flag
 
@@ -6016,15 +6128,36 @@ Contains
           rcfbp = Max(rcfbp, rct)
         End Do
 
-      Else If (word(1:7) == 'kim') Then
+      Else If (word(1:3) == 'kim') Then
 
         ! Get KIM's IM name and cutoff
 
-        kim_data%active = .true.
-        Call get_word(record_raw, word)
-        Call strip_blanks(record_raw)
-        kim_data%model_name = record_raw(1:Len_trim(record_raw))
-        Call kim_cutoff(kim_data)
+        ! kim init
+        If (word(1:8) == 'kim_init') Then
+
+          If (kim_data%active) Then
+            Write(message,'(a, 1x, a)') new_line('a'), &
+              'scan_field, `kim_init` has been used before'
+            Call error(0, message)
+          End If
+
+          kim_data%active = .true.
+          Call get_word(record_raw,word)
+          Call strip_blanks(record_raw)
+          kim_data%model_name=record_raw(1:Len_Trim(record_raw))
+          Call kim_cutoff(kim_data)
+
+        End If
+
+        ! kim interactions
+        If (word(1:16) == 'kim_interactions') lkim=.true.
+
+        If (.not. kim_data%active) Then
+          Write(message,'(a, 1x, 2a)') new_line('a'), &
+            'scan_field, `kim_init` must be used to initialise ', &
+            'the kim interatomic model'
+          Call error(0, message)
+        End If
 
       Else If (word(1:6) == 'extern') Then
 
@@ -6048,7 +6181,18 @@ Contains
     End Do
 
     10 Continue
-    If (comm%idnode == 0) Call files(FILE_FIELD)%close ()
+
+    If (comm%idnode == 0) Call files(FILE_FIELD)%close()
+
+    If (kim_data%active) Then
+      If (.not. lkim) Then
+        Write(message,'(a, 1x, 3a)') new_line('a'), &
+          'scan_field, `kim_interactions` must be used to perform all ', &
+          'the necessary steps and set up the kim interatomic model ', &
+          'selected in `kim_init` '
+        Call error(0, message)
+      End If
+    End If
 
     ! Define legend arrays lengths.  If length > 0 then
     ! length=Max(length)+1 for the violation excess element
