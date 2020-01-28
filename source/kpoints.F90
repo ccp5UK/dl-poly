@@ -47,8 +47,8 @@ Contains
         Read (t%uf, *) t%r(:, i)
       End Do
     End If
-    Call gbcast(comm, T%r, 0)
     Do i = 1, T%n
+      Call gbcast(comm, T%r(:,i), 0)
       h = Norm2(T%r(:, i))
       If (Abs(h) > epsilon_wp) &
         T%u(:, i) = T%r(:, i) / h

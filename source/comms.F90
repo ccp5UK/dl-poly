@@ -157,7 +157,6 @@ Module comms
     Module Procedure gbcast_integer_scalar_16
     Module Procedure gbcast_real
     Module Procedure gbcast_real_scalar
-    Module Procedure gbcast_real_matrix
     Module Procedure gbcast_char
   End Interface !gbcast
 
@@ -1053,32 +1052,6 @@ Contains
     Call MPI_BCAST(vec(n_l:n_u), n_s, MPI_INTEGER, root, comm%comm, comm%ierr)
 
   End Subroutine gbcast_integer
-
-  Subroutine gbcast_real_matrix(comm, vec, root)
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 broadcast an integer array subroutine
-    !
-    ! copyright - daresbury laboratory
-    ! author    - a.m.elena may 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    Type(comms_type), Intent(InOut) :: comm
-    Real(Kind=wp),    Intent(InOut) :: vec(:, :)
-    Integer,          Intent(In   ) :: root
-
-    Integer :: n_l_1, n_l_2, n_s, n_u_1, n_u_2
-
-    If (comm%mxnode == 1) Return
-    n_l_1 = Lbound(vec, Dim=1)
-    n_u_1 = Ubound(vec, Dim=1)
-    n_l_2 = Lbound(vec, Dim=2)
-    n_u_2 = Ubound(vec, Dim=2)
-    n_s = Size(vec)
-
-    Call MPI_BCAST(vec(n_l_1:n_u_1, n_l_2:n_u_2), n_s, MPI_INTEGER, root, comm%comm, comm%ierr)
-
-  End Subroutine gbcast_real_matrix
 
   Subroutine gbcast_integer_scalar(comm, s, root)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
