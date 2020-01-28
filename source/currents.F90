@@ -59,7 +59,6 @@ Contains
         h = h + [config%vxx(i), config%vyy(i), config%vzz(i)] * Exp(Cmplx(0.0_wp, tmp, wp))
       End Do
       !current%jlk(:,k,j)=kp%u(:,k)*Dot_product(kp%u(:,k),h)
-      Write (0, *) comm%idnode, k, h, config%natms
       Call gsum(comm, h)
       T%jlk(k, :) = h
     End Do
