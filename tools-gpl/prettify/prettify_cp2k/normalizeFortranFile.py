@@ -12,12 +12,13 @@ R_USE = 0
 R_VAR = 0
 VAR_RE = re.compile(r" *(?P<var>[a-zA-Z_0-9]+) *(?P<rest>(?:\((?P<param>(?:[^()]+|\((?:[^()]+|\([^()]*\))*\))*)\))? *(?:= *(?P<value>(:?[^\"',()]+|\((?:[^()\"']+|\([^()\"']*\)|\"[^\"]*\"|'[^']*')*\)|\"[^\"]*\"|'[^']*')+))?)? *(?:(?P<continue>,)|\n?) *", re.IGNORECASE)
 USE_PARSE_RE = re.compile(
-    r" *use +(?P<module>[a-zA-Z_][a-zA-Z_0-9]*)(?P<only> *, *only *:)? *(?P<imports>.*)$",
+        r" *use( +|(?P<intrinsic> *, *Intrinsic * :: *))(?P<module>[a-zA-Z_][a-zA-Z_0-9]*)(?P<only> *, *only *:)? *(?P<imports>.*)$",
     flags=re.IGNORECASE)
 commonUsesRe = re.compile(
     "^#include *\"([^\"]*(cp_common_uses.f90|base_uses.f90))\"")
 localNameRe = re.compile(
     " *(?P<localName>[a-zA-Z_0-9]+)(?: *= *> *[a-zA-Z_0-9]+)? *$")
+operatormRe = re.compile("\s*(?P<localName>Operator\s*\(.*\))?\s*$",flags=re.I)
 VAR_DECL_RE = re.compile(
     r" *(?P<type>integer(?: *\* *[0-9]+)?|logical|character(?: *\* *[0-9]+)?|real(?: *\* *[0-9]+)?|complex(?: *\**[0-9]+)?|type|class) *(?P<parameters>\((?:[^()]+|\((?:[^()]+|\([^()]*\))*\))*\))? *(?P<attributes>(?: *, *[a-zA-Z_0-9]+(?: *\((?:[^()]+|\((?:[^()]+|\([^()]*\))*\))*\))?)+)? *(?P<dpnt>::)?(?P<vars>[^\n]+)\n?", re.IGNORECASE)  # $
 INDENT_SIZE = 2
@@ -611,7 +612,7 @@ def writeExtendedDeclarationA(declaration, file,offset):
         if d['attributes']:
             sintent = ''
             for a in d['attributes']:
-                if a[0:6] <> 'Intent':
+                if a[0:6] != 'Intent':
                    dLine[-1:] = [dLine[-1] + ", "]
                    dLine.append(a)
                 else:
@@ -962,8 +963,10 @@ def parseUse(inFile):
         # parse use
         m = USE_PARSE_RE.match(jline)
         if m:
-            useAtt = {'module': m.group('module'), 'comments': []}
+            useAtt = {'module': m.group('module'), 'comments': [], 'intrinsic': False}
 
+            if m.group('intrinsic'):
+                useAtt['intrinsic'] = True
             if m.group('only'):
                 useAtt['only'] = list(map(str.strip,
                                       str.split(m.group('imports'), ',')))
@@ -1103,7 +1106,7 @@ def cleanUse(modulesDict, rest, implicitUses=None):
     logger = logging.getLogger('prettify-logger')
 
     global R_USE
-    exceptions = {}
+    exceptions = set()
     modules = modulesDict['modules']
     rest = rest.lower()
     for i in range(len(modules) - 1, -1, -1):
@@ -1119,16 +1122,23 @@ def cleanUse(modulesDict, rest, implicitUses=None):
             els = modules[i]['only']
             for j in range(len(els) - 1, -1, -1):
                 m = localNameRe.match(els[j])
-                if not m:
+                n = operatormRe.match(els[j])
+                if not m and not n:
                     raise SyntaxError(
                         'could not parse use only:' + repr(els[j]))
-                impAtt = m.group('localName').lower()
+                impAtt = ''    
+                if m:
+                   impAtt = m.group('localName').lower()
+                if n:
+                   impAtt = n.group('localName').capitalize()
+                   exceptions.add(impAtt)
+
                 if impAtt in m_att.keys():
                     R_USE += 1
                     logger.info("removed USE " + m_name +
                                 ", only: " + repr(els[j]) + "\n")
                     del els[j]
-                elif impAtt not in exceptions.keys():
+                elif impAtt not in exceptions:
                     if findWord(impAtt, rest) == -1:
                         R_USE += 1
                         logger.info("removed USE " + m_name +
