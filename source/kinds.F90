@@ -3,12 +3,12 @@
 !> Copyright - Daresbury Laboratory
 Module kinds
 
-  Use, Intrinsic :: iso_fortran_env, Only: int16, &
-    int32, &
-    int64, &
-    real128, &
-    real32, &
-    real64
+  Use, Intrinsic :: iso_fortran_env, Only: int16,&
+                                           int32,&
+                                           int64,&
+                                           real128,&
+                                           real32,&
+                                           real64
 
   Implicit None
 

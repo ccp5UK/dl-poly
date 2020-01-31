@@ -608,7 +608,7 @@ def writeExtendedDeclarationA(declaration, file,offset):
         if d['parameters']:  # do not drop empty parameter lists?
             dLine.append(d['parameters'])
         intent = False
-        i = 0 
+        i = 0
         if d['attributes']:
             sintent = ''
             for a in d['attributes']:
@@ -1019,30 +1019,41 @@ def normalizeModules(modules):
 def writeUses(modules, outFile):
     """Writes the use declaration using a long or short form depending on how
     many only statements there are"""
-    maxoffset = 0 
+    maxoffset = 0
+    lint = 0
     for m in modules:
         maxoffset = max(maxoffset,len(m['module']))
+        if m['intrinsic']:
+            lint = 14
 
 
     for m in modules:
         if 'only' in m.keys() and len(m['only']) > 11:
-            writeUseShort(m, outFile,maxoffset+11)
+            writeUseShort(m, outFile,maxoffset+11+lint)
         else:
-            writeUseLong(m, outFile,maxoffset+11)
+            writeUseLong(m, outFile,maxoffset+11+lint)
 
 
 def writeUseLong(m, outFile,maxoffset):
     """Writes a use declaration in a nicer, but longer way"""
+    lint = 0
     if 'only' in m.keys():
-        outFile.write(INDENT_SIZE * ' ' + "Use " + m['module'] + "," +
+        if m['intrinsic']:
+            outFile.write(INDENT_SIZE * ' ' + "Use, Intrinsic :: " + m['module'] + "," +
+                      str.rjust('Only: ', maxoffset - 18 - len(m['module'])))
+        else:
+            outFile.write(INDENT_SIZE * ' ' + "Use " + m['module'] + "," +
                       str.rjust('Only: ', maxoffset - 4 - len(m['module'])))
         if m['only']:
             outFile.write(m['only'][0])
         for i in range(1, len(m['only'])):
-            outFile.write(",&\n" + str.ljust("", maxoffset + 1 +
+            outFile.write(",&\n" + str.ljust("", maxoffset + lint + 1 +
                                                 INDENT_SIZE) + m['only'][i])
     else:
-        outFile.write(INDENT_SIZE * ' ' + "Use " + m['module'])
+        if m['intrinsic']:
+            outFile.write(INDENT_SIZE * ' ' + "Use, Intrinsic :: " + m['module'])
+        else:
+            outFile.write(INDENT_SIZE * ' ' + "Use " + m['module'])
         if 'renames' in m.keys() and m['renames']:
             outFile.write("," + str.ljust("", maxoffset - 4) +
                           m['renames'][0])
@@ -1059,7 +1070,11 @@ def writeUseShort(m, file,maxoffset):
     """Writes a use declaration in a compact way"""
     uLine = []
     if 'only' in m.keys():
-        file.write(INDENT_SIZE * ' ' + "Use " + m['module'] + "," +
+        if m['intrinsic']:
+            file.write(INDENT_SIZE * ' ' + "Use, Intrinsic :: " + m['module'] + "," +
+                   str.rjust('Only: &\n', maxoffset - 2 - len(m['module'])))
+        else:
+            file.write(INDENT_SIZE * ' ' + "Use " + m['module'] + "," +
                    str.rjust('Only: &\n', maxoffset - 2 - len(m['module'])))
         for k in m['only'][:-1]:
             uLine.append(k + ", ")
@@ -1071,7 +1086,10 @@ def writeUseShort(m, file,maxoffset):
             uLine.append(k + ", ")
         uLine.append(m['renames'][-1])
     else:
-        uLine.append(INDENT_SIZE * ' ' + "Use " + m['module'])
+        if m['intrinsic']:
+            uLine.append(INDENT_SIZE * ' ' + "Use, Intrinsic :: " + m['module'])
+        else:
+            uLine.append(INDENT_SIZE * ' ' + "Use " + m['module'])
     writeInCols(uLine, maxoffset + 1 + INDENT_SIZE, DECL_LINELENGTH, 0, file)
     if m['comments']:
         file.write("\n")
@@ -1126,7 +1144,7 @@ def cleanUse(modulesDict, rest, implicitUses=None):
                 if not m and not n:
                     raise SyntaxError(
                         'could not parse use only:' + repr(els[j]))
-                impAtt = ''    
+                impAtt = ''
                 if m:
                    impAtt = m.group('localName').lower()
                 if n:
