@@ -5,7 +5,7 @@ module load plumed/gnu
 
 mkdir build-mpi-plumed
 pushd build-mpi-plumed
-cmake ../ -DWITH_PLUMED=ON
+cmake ../ -DWITH_PLUMED=ON -DINTERNAL_PLUMED=off
 make -j10
 
 

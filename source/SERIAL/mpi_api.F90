@@ -90,6 +90,7 @@ Module mpi_api
     Module Procedure MPI_BCAST_int_s_16
     Module Procedure MPI_BCAST_rwp_s
     Module Procedure MPI_BCAST_rwp_v
+    Module Procedure MPI_BCAST_rwp_m
   End Interface !MPI_BCAST
 
   Interface MPI_ALLREDUCE
@@ -100,6 +101,7 @@ Module mpi_api
     Module Procedure MPI_ALLREDUCE_rwp_s
     Module Procedure MPI_ALLREDUCE_rwp_v
     Module Procedure MPI_ALLREDUCE_rwp_m
+    Module Procedure MPI_ALLREDUCE_cwp_v
   End Interface !MPI_ALLREDUCE
 
   Interface MPI_GATHERV
@@ -580,6 +582,7 @@ Contains
     End If
 
   End Subroutine MPI_BCAST_rwp_s
+
   Subroutine MPI_BCAST_rwp_v(aaa,n,MPI_WP,idnode,MPI_COMM_WORLD,ierr)
 
     Integer,           Intent( In    ) :: MPI_WP,idnode,MPI_COMM_WORLD
@@ -595,7 +598,22 @@ Contains
     End If
 
   End Subroutine MPI_BCAST_rwp_v
+  
+  Subroutine MPI_BCAST_rwp_m(aaa,n,MPI_WP,idnode,MPI_COMM_WORLD,ierr)
 
+    Integer,           Intent( In    ) :: MPI_WP,idnode,MPI_COMM_WORLD
+    Integer,           Intent(   Out ) :: ierr
+
+    Integer,           Intent( In    ) :: n
+    Real( Kind = wp ), Intent( In    ) :: aaa(:,:)
+
+    ierr = 0
+    If (idnode /= 0 .or. n > Size(aaa) .or. n < 1) Then
+      ierr = 1
+      Stop
+    End If
+
+  End Subroutine MPI_BCAST_rwp_m
 
   Subroutine MPI_ALLREDUCE_log_s(aaa,bbb,n,MPI_LOGICAL,MPI,MPI_COMM_WORLD,ierr)
 
@@ -682,6 +700,7 @@ Contains
     bbb=aaa
 
   End Subroutine MPI_ALLREDUCE_rwp_s
+
   Subroutine MPI_ALLREDUCE_rwp_v(aaa,bbb,n,MPI_WP,MPI,MPI_COMM_WORLD,ierr)
 
     Integer,           Intent( In    ) :: MPI_WP,MPI,MPI_COMM_WORLD
@@ -699,6 +718,25 @@ Contains
     bbb(1:n)=aaa(1:n)
 
   End Subroutine MPI_ALLREDUCE_rwp_v
+  
+  Subroutine MPI_ALLREDUCE_cwp_v(aaa,bbb,n,MPI_WP,MPI,MPI_COMM_WORLD,ierr)
+
+    Integer,              Intent( In    ) :: MPI_WP,MPI,MPI_COMM_WORLD
+    Integer,              Intent(   Out ) :: ierr
+    Integer,              Intent( In    ) :: n
+    Complex( Kind = wp ), Intent( In    ) :: aaa(:)
+    Complex( Kind = wp ), Intent( InOut ) :: bbb(:)
+
+    ierr = 0
+    If (n > Size(aaa) .or. n > Size(bbb) .or. n < 1) Then
+      ierr = 1
+      Stop
+    End If
+    bbb(1:n)=aaa(1:n)
+  
+  End Subroutine MPI_ALLREDUCE_cwp_v
+
+
   Subroutine MPI_ALLREDUCE_rwp_m(aaa,bbb,n,MPI_WP,MPI,MPI_COMM_WORLD,ierr)
 
     Integer,           Intent( In    ) :: MPI_WP,MPI,MPI_COMM_WORLD
