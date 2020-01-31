@@ -6,8 +6,8 @@ Module coord
 ! date    22/02/2018
   Use site, Only : site_type
   Use configuration, Only : configuration_type
-  Use neighbours, Only : neighbours_type 
-  Use flow_control, Only : flow_type  
+  Use neighbours, Only : neighbours_type
+  Use flow_control, Only : flow_type
   Use kinds, only : wp
   Use comms, Only : comms_type,grecv,gsend
   Use constants, Only : nicrdt,nccrdt
@@ -22,7 +22,7 @@ Module coord
     Integer, allocatable :: coordlist(:,:),icoordlist(:,:),defectlist(:),adfcoordlist(:,:)
     integer, allocatable :: ltype(:,:),ltypeA(:,:),ltypeB(:,:),cstat(:,:),disltype(:)
     Logical :: coordon
-    real(wp) :: coordis 
+    real(wp) :: coordis
   contains
     procedure :: init=>init_coord
     procedure :: init_coordlist
@@ -59,7 +59,7 @@ contains
 
     if (allocated(T%arraycuts)) then
       deallocate(T%arraycuts)
-    end if   
+    end if
     if (allocated(T%discuts)) then
        deallocate(T%discuts)
     end if
@@ -86,7 +86,7 @@ contains
     Type(coord_type), Intent(InOut) :: crd
     integer :: i,ii,j,jj,k,kk, ncoord,en,ierr,m,mcoord,lgcoord,nmax,ncb !ncb size coordbuff
     real :: rcut,rab
-    Character(len=8) :: aux 
+    Character(len=8) :: aux
     Character(len=1000),allocatable :: cbuff(:)
     integer, allocatable :: buff(:),coordbuff(:),dbuff(:),ltypeAB(:,:)
     Logical :: newatom,itsopen
@@ -107,7 +107,7 @@ contains
       k=neigh%list(0,j)
       Do i=1,k
         kk=neigh%list(i,j)
-     
+
 
 
         rab = (config%parts(j)%xxx-config%parts(kk)%xxx)**2+(config%parts(j)%yyy-config%parts(kk)%yyy)**2 &
@@ -115,7 +115,7 @@ contains
 !        if(j.eq.2)then
 !        print*,j,kk,rab
 
-!        endif        
+!        endif
         rcut=0.00
 
         Do ii= 1 , crd%ncoordpairs
@@ -161,7 +161,7 @@ contains
           crd%cstat(-1,j)=mcoord
         End if
         End if
-      End do 
+      End do
     End do
 
     !Create coordination AB statistics array
@@ -180,7 +180,7 @@ contains
         crd%cstat(-2,2*crd%ncoordpairs+(2*i))=2*i-1
       End do
     End if
-   
+
 !    Do i=1, 2*(crd%ncoordpairs+crd%ncoordab)
 !      print*,crd%cstat(-3:0,i)
 !    End do
@@ -233,7 +233,7 @@ contains
          Write(Unit=nicrdt, Fmt='(a72)') config%cfgname(1:72)
          Write(Unit=nicrdt, Fmt='(a40)')'Initial coordination between atoms'
        Endif
-     
+
       If((crd%coordops ==2) .or. crd%coordstart==flow%step)then
       Do i=1,config%natms
         m=crd%coordlist(0,i)
@@ -241,10 +241,10 @@ contains
           config%ltg(i),trim(sites%unique_atom(config%ltype(i))),crd%coordlist(0,i)
         do ii=1,m
           write(nicrdt,'(i0,1x)',advance="no") config%ltg(crd%coordlist(ii,i))
-        enddo 
+        enddo
         do ii=1,m
           write(nicrdt,'(a,1x)',advance="no") trim(sites%unique_atom(config%ltype(crd%coordlist(ii,i))))
-        enddo 
+        enddo
         write(nicrdt,*)
       enddo
 
@@ -274,12 +274,12 @@ contains
         do ii=1,crd%coordlist(0,i)
           write(aux,'(i0)') config%ltg(crd%coordlist(ii,i))
           cbuff(i)=trim(cbuff(i))//" "//trim(aux)
-        enddo 
+        enddo
         do ii=1,crd%coordlist(0,i)
           write(aux,'(a)') trim(sites%unique_atom(config%ltype(crd%coordlist(ii,i))))
           cbuff(i)=trim(cbuff(i))//" "//trim(aux)
- 
-          enddo 
+
+          enddo
       enddo
       Call gsend(comm,en,0,comm%idnode)
       if (en>0) then
@@ -292,7 +292,7 @@ contains
     deallocate(buff)
     deallocate(cbuff)
     deallocate(dbuff)
-    
+
 
     If (comm%idnode==0) Then
       Open(Unit=nicrdt, File='ICOORD', Form='formatted')
@@ -369,7 +369,7 @@ contains
         crd%coordlist(j,i)=config%ltg(crd%coordlist(j,i))
       end do
     end do
-    
+
      !Create icoordlist
      if (flow%step==crd%coordstart) then
       crd%icoordlist=crd%coordlist
@@ -378,7 +378,7 @@ contains
   end subroutine init_coord_list
 
 
-  subroutine checkcoord(config,neigh,crd,sites,flow,stats,impa,comm) 
+  subroutine checkcoord(config,neigh,crd,sites,flow,stats,impa,comm)
     Type(neighbours_type), Intent(In) :: neigh
     Type(configuration_type), Intent(In)  :: config
     Type(comms_type), Intent(InOut) :: comm
@@ -386,18 +386,18 @@ contains
     Type(site_type), Intent(In) :: sites
     Type(coord_type), Intent(InOut) :: crd
     Type(stats_type), Intent(InOUT) :: stats
-    Type(impact_type), Intent(In) :: impa    
+    Type(impact_type), Intent(In) :: impa
     integer :: i,ii,j,jj,k,kk,defn,defectcnt,totdefectcnt
     real :: rcut,rab,rdis
     integer, allocatable :: buff(:)
     character(len=80) :: aux
     character(len=80), allocatable :: rbuff(:)
     logical :: coordchange,coordfound,thisopen
-    
+
     If(crd%coordon .Eqv. .False.)Return
     If(crd%ncoordpairs==0)Return
     If(crd%coordops .eq.0)Return
-    If(crd%coordstart>flow%step)Return    
+    If(crd%coordstart>flow%step)Return
     If(mod(flow%step,crd%coordinterval).NE.0)Return
 
     defectcnt=0
@@ -407,10 +407,10 @@ contains
         Do ii= 1 , crd%ncoorddis
           if ((config%ltype(i)==crd%disltype(ii)))then
            rdis=crd%discuts(ii)
-           
+
           endif
         end Do
-     
+
     if(stats%rsd(i).gt.rdis)then
       coordchange=.False.
       coordfound=.False.
@@ -434,7 +434,7 @@ contains
          crd%defectlist(0)=defectcnt
          crd%defectlist(defectcnt)=i
        endif
-    endif   
+    endif
    enddo
 
     If (comm%idnode==0) Then
@@ -454,7 +454,7 @@ contains
         Write(Unit=nccrdt, Fmt='(a20,I10)')'Number of frames',(flow%run_steps-crd%coordstart)/crd%coordinterval+1
         endif
          Write(Unit=nccrdt,Fmt='(A30,I10,I10,f20.6)')'Number of coordination changes',totdefectcnt,flow%step,flow%time
-        
+
       Do i = 0, 2
           write(Unit=nccrdt,fmt= '( 3f20.10 )' ) &
              config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 )
@@ -470,7 +470,7 @@ contains
       do j=1,comm%mxnode-1
         Call grecv(comm,defectcnt,j,j)
         if (defectcnt>0) Then
-          allocate(buff(2*defectcnt)) 
+          allocate(buff(2*defectcnt))
           allocate(rbuff(defectcnt))
           Call grecv(comm,buff,j,j)
           Call grecv(comm,rbuff,j,j)
@@ -486,7 +486,7 @@ contains
     else
       defectcnt=crd%defectlist(0)
       defn=crd%defectlist(0)
-      allocate(buff(2*crd%defectlist(0))) 
+      allocate(buff(2*crd%defectlist(0)))
       allocate(rbuff(crd%defectlist(0)))
       Call gsend(comm,defn,0,comm%idnode)
       do i =1, defectcnt

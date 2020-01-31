@@ -91,13 +91,13 @@ Module constants
   Integer, Parameter :: nmpldt = 31
 
   ! ICOORD channel number
-  Integer, parameter :: nicrdt = 32
+  Integer, Parameter :: nicrdt = 32
 
   ! CCORD channel number
-  Integer, parameter :: nccrdt = 33
+  Integer, Parameter :: nccrdt = 33
 
   ! ADF channel number
-  Integer, parameter :: nchadf = 34
+  Integer, Parameter :: nchadf = 34
 
   Integer, Parameter           :: nmpldt = 31
   !> +0.0 in working precision
