@@ -2250,6 +2250,18 @@ Contains
       Else If (kode == 1107) Then
         Write(ounit,'(/,1x,a)') 'error - replay option is not implemented for the EVB method.'   
 
+      Else If (kode == 1108) Then
+        Write(ounit,'(/,1x,a)') 'error - CONFIG files have different number of atoms'   
+
+      Else If (kode == 1109) Then
+        Write(ounit,'(/,1x,a)') 'error - Inconsistency in the specification of frozen/free ions between different FIELD files.'   
+
+      Else If (kode == 1110) Then
+        Write(ounit,'(/,1x,a)') 'error - Inconsistency in the specification of bond constraints between different FIELD files.'   
+
+      Else If (kode == 1111) Then
+        Write(ounit,'(/,1x,a)') 'error - Inconsistency in the specification of core-shell units between different FIELD files.'   
+
       Else
          Write(ounit,'(/,1x,a)') 'error - unnamed error found'
 

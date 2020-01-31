@@ -135,7 +135,9 @@ Module drivers
   Use msd, Only : msd_type,msd_write
 
   ! EVB MODULE
-  Use evb, Only : evb_type, evb_pes, read_evb, evb_checkconfig, evb_merge_stochastic, evb_setzero, evb_population
+  Use evb, Only : evb_type, evb_pes, read_evb, evb_merge_stochastic, &
+                                     evb_setzero, evb_population   , &
+                                     evb_check_topology, evb_check_configs
 
   Implicit None
   Private
@@ -2038,11 +2040,16 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!  W_AT_START_VV_EVB INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
     If(flow%NUM_FF>1)Then
+      ! Call evb_prevent
+
+      ! Check consistency between config files
+      Call evb_check_configs(cnfig,flow,comm)
+      ! Check consistency in the topology between different FFs
+      Call evb_check_topology(cnfig, cons, cshell, sites, flow,rigid,comm)
+
       ! Allocate EVB variables
       Call evbff%init(flow%NUM_FF)
-      ! Check consistency between config files   
-      Call evb_checkconfig(cnfig,flow,comm)
-      ! Read EVB coupling parameters
+      ! Read EVB settings 
       Call read_evb(evbff,flow,files,comm)
     End If
 
