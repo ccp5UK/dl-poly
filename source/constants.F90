@@ -99,7 +99,6 @@ Module constants
   ! ADF channel number
   Integer, Parameter :: nchadf = 34
 
-  Integer, Parameter           :: nmpldt = 31
   !> +0.0 in working precision
   Real(Kind=wp), Parameter     :: zero_plus = Tiny(1.0_wp)
   !> Nearest number to 0.5, greater than 0.5, in working precision
