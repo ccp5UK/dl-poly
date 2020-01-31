@@ -5,120 +5,120 @@ Module meta
 !>
 !> Author - J. Madge October 2018
 !> contrib - a.m.elena march 2019 updated deallocate uniform routine
-  Use analysis,        Only: analysis_result
-  Use angles,          Only: angles_type
-  Use bonds,           Only: bonds_type
-  Use bounds,          Only: set_bounds
-  Use build_book,      Only: build_book_intra
-  Use build_chrm,      Only: build_chrm_intra
-  Use build_excl,      Only: build_excl_intra
-  Use build_tplg,      Only: build_tplg_intra
-  Use comms,           Only: comms_type,&
-                             gsum,&
-                             gsync,&
-                             gtime
-  Use configuration,   Only: check_config,&
-                             configuration_type,&
-                             freeze_atoms,&
-                             origin_config,&
-                             scale_config
-  Use constants,       Only: DLP_RELEASE,&
-                             DLP_VERSION
-  Use constraints,     Only: constraints_type
-  Use control,         Only: read_control,&
-                             scan_control_io,&
-                             scan_control_output
-  Use core_shell,      Only: core_shell_type
-  Use defects,         Only: defects_type
-  Use deport_data,     Only: mpoles_rotmat_set_halo
-  Use development,     Only: build_info,&
-                             development_type,&
-                             scan_development
-  Use dihedrals,       Only: dihedrals_type
-  Use domains,         Only: domains_type
-  Use drivers,         Only: md_vv,&
-                             replay_historf,&
-                             replay_history
-  Use electrostatic,   Only: ELECTROSTATIC_EWALD,&
-                             electrostatic_type
-  Use errors_warnings, Only: info,&
-                             init_error_system,&
-                             warning
-  Use ewald,           Only: ewald_type
-  Use external_field,  Only: external_field_type
-  Use ffield,          Only: read_field,&
-                             report_topology
-  Use filename,        Only: FILENAME_SIZE,&
-                             FILE_CONTROL,&
-                             FILE_CURRENT,&
-                             FILE_KPOINTS,&
-                             FILE_OUTPUT,&
-                             FILE_STATS,&
-                             default_filenames,&
-                             file_type
-  Use flow_control,    Only: flow_type
-  Use four_body,       Only: four_body_type
-  Use greenkubo,       Only: greenkubo_type
-  Use halo,            Only: set_halo_particles
-  Use impacts,         Only: impact_type
-  Use inversions,      Only: inversions_type
-  Use io,              Only: io_type
-  Use kim,             Only: kim_citations,&
-                             kim_setup,&
-                             kim_type
-  Use kinds,           Only: wi,&
-                             wp
-  Use kinetics,        Only: cap_forces
-  Use metal,           Only: metal_type
-  Use minimise,        Only: minimise_type
-  Use mpole,           Only: POLARISATION_CHARMM,&
-                             mpole_type
-  Use msd,             Only: msd_type
-  Use neighbours,      Only: neighbours_type
-  Use netcdf_wrap,     Only: netcdf_param
-  Use numerics,        Only: seed_type
-  Use plumed,          Only: plumed_finalize,&
-                             plumed_init,&
-                             plumed_type
-  Use pmf,             Only: pmf_type
-  Use poisson,         Only: poisson_type
-  Use rdfs,            Only: rdf_type
-  Use rigid_bodies,    Only: rigid_bodies_type
-  Use rsds,            Only: rsd_type
-  Use site,            Only: site_type
-  Use statistics,      Only: statistics_result,&
-                             stats_type
-  Use system,          Only: system_expand,&
-                             system_init,&
-                             system_revive
-  Use temperature,     Only: set_temperature
-  Use tersoff,         Only: tersoff_type
-  Use tethers,         Only: tethers_type
-  Use thermostat,      Only: thermostat_type
-  Use three_body,      Only: threebody_type
-  Use timer,           Only: init_timer_system,&
-                             start_timer,&
-                             stop_timer,&
-                             time_elapsed,&
-                             timer_report,&
-                             timer_type
-  Use trajectory,      Only: trajectory_type,&
-                             trajectory_write
-  Use ttm,             Only: allocate_ttm_arrays,&
-                             ttm_system_init,&
-                             ttm_system_revive,&
-                             ttm_table_read,&
-                             ttm_table_scan,&
-                             ttm_type
-  Use ttm_track,       Only: ttm_ion_temperature
-  Use ttm_utils,       Only: peakProfiler,&
-                             peakProfilerElec,&
-                             printElecLatticeStatsToFile,&
-                             printLatticeStatsToFile
-  Use vdw,             Only: vdw_type
-  Use z_density,       Only: z_density_type
+  Use analysis,                      Only: analysis_result
+  Use angles,                        Only: angles_type
+  Use bonds,                         Only: bonds_type
+  Use bounds,                        Only: set_bounds
+  Use build_book,                    Only: build_book_intra
+  Use build_chrm,                    Only: build_chrm_intra
+  Use build_excl,                    Only: build_excl_intra
+  Use build_tplg,                    Only: build_tplg_intra
+  Use comms,                         Only: comms_type,&
+                                           gsum,&
+                                           gsync,&
+                                           gtime
+  Use configuration,                 Only: check_config,&
+                                           configuration_type,&
+                                           freeze_atoms,&
+                                           origin_config,&
+                                           scale_config
+  Use constants,                     Only: DLP_RELEASE,&
+                                           DLP_VERSION
+  Use constraints,                   Only: constraints_type
+  Use control,                       Only: read_control,&
+                                           scan_control_io,&
+                                           scan_control_output
+  Use core_shell,                    Only: core_shell_type
+  Use defects,                       Only: defects_type
+  Use deport_data,                   Only: mpoles_rotmat_set_halo
+  Use development,                   Only: build_info,&
+                                           development_type,&
+                                           scan_development
+  Use dihedrals,                     Only: dihedrals_type
+  Use domains,                       Only: domains_type
+  Use drivers,                       Only: md_vv,&
+                                           replay_historf,&
+                                           replay_history
+  Use electrostatic,                 Only: ELECTROSTATIC_EWALD,&
+                                           electrostatic_type
+  Use errors_warnings,               Only: info,&
+                                           init_error_system,&
+                                           warning
+  Use ewald,                         Only: ewald_type
+  Use external_field,                Only: external_field_type
+  Use ffield,                        Only: read_field,&
+                                           report_topology
+  Use filename,                      Only: FILENAME_SIZE,&
+                                           FILE_CONTROL,&
+                                           FILE_CURRENT,&
+                                           FILE_KPOINTS,&
+                                           FILE_OUTPUT,&
+                                           FILE_STATS,&
+                                           default_filenames,&
+                                           file_type
+  Use flow_control,                  Only: flow_type
+  Use four_body,                     Only: four_body_type
+  Use greenkubo,                     Only: greenkubo_type
+  Use halo,                          Only: set_halo_particles
+  Use impacts,                       Only: impact_type
+  Use inversions,                    Only: inversions_type
+  Use io,                            Only: io_type
+  Use, Intrinsic :: iso_fortran_env, Only: error_unit
+  Use kim,                           Only: kim_citations,&
+                                           kim_setup,&
+                                           kim_type
+  Use kinds,                         Only: wi,&
+                                           wp
+  Use kinetics,                      Only: cap_forces
+  Use metal,                         Only: metal_type
+  Use minimise,                      Only: minimise_type
+  Use mpole,                         Only: POLARISATION_CHARMM,&
+                                           mpole_type
+  Use msd,                           Only: msd_type
+  Use neighbours,                    Only: neighbours_type
+  Use netcdf_wrap,                   Only: netcdf_param
+  Use numerics,                      Only: seed_type
+  Use plumed,                        Only: plumed_finalize,&
+                                           plumed_init,&
+                                           plumed_type
+  Use pmf,                           Only: pmf_type
+  Use poisson,                       Only: poisson_type
+  Use rdfs,                          Only: rdf_type
+  Use rigid_bodies,                  Only: rigid_bodies_type
+  Use rsds,                          Only: rsd_type
+  Use site,                          Only: site_type
+  Use statistics,                    Only: statistics_result,&
+                                           stats_type
+  Use system,                        Only: system_expand,&
+                                           system_init,&
+                                           system_revive
+  Use temperature,                   Only: set_temperature
+  Use tersoff,                       Only: tersoff_type
+  Use tethers,                       Only: tethers_type
+  Use thermostat,                    Only: thermostat_type
+  Use three_body,                    Only: threebody_type
+  Use timer,                         Only: init_timer_system,&
+                                           start_timer,&
+                                           stop_timer,&
+                                           time_elapsed,&
+                                           timer_report,&
+                                           timer_type
+  Use trajectory,                    Only: trajectory_type,&
+                                           trajectory_write
+  Use ttm,                           Only: allocate_ttm_arrays,&
+                                           ttm_system_init,&
+                                           ttm_system_revive,&
+                                           ttm_table_read,&
+                                           ttm_table_scan,&
+                                           ttm_type
+  Use ttm_track,                     Only: ttm_ion_temperature
+  Use ttm_utils,                     Only: peakProfiler,&
+                                           peakProfilerElec,&
+                                           printElecLatticeStatsToFile,&
+                                           printLatticeStatsToFile
+  Use vdw,                           Only: vdw_type
+  Use z_density,                     Only: z_density_type
 
-  Use, Intrinsic ::  iso_fortran_env, Only: error_unit
   Implicit None
   Private
 

@@ -13,9 +13,12 @@ Module errors_warnings
 !> contrib - a.m.elena March 2019 - remove error 145
 !> contrib - a.m.elena March 2019 - fix wrong logic in warning
 
-  Use, Intrinsic :: iso_fortran_env, Only: error_unit, input_unit, output_unit
-  Use kinds, Only: wp
-  Use comms, Only: comms_type, abort_comms
+  Use comms,                         Only: abort_comms,&
+                                           comms_type
+  Use, Intrinsic :: iso_fortran_env, Only: error_unit,&
+                                           input_unit,&
+                                           output_unit
+  Use kinds,                         Only: wp
 
   Implicit None
 
