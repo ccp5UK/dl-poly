@@ -13,22 +13,41 @@ Module rigid_bodies
   ! ammend - a.m.elena october 2018 - create interface for rigid_bodies_stress
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds,           Only : wp,wi,li
-  Use comms,           Only : comms_type,gsum,gmin,gmax,gsync,gcheck
-  Use constants,           Only : zero_plus
-  Use site, Only : site_type
-  Use neighbours,      Only : neighbours_type
-  Use configuration,   Only : configuration_type,getcom
-  Use statistics,      Only : stats_type
-  Use numerics,        Only : images, jacobi, invert, local_index,pbcshift
-  Use shared_units,    Only : update_shared_units
-  Use errors_warnings, Only : info, error, warning
-  Use thermostat,      Only : thermostat_type, &
-    ENS_NPT_BERENDSEN, ENS_NPT_BERENDSEN_ANISO, &
-    ENS_NPT_LANGEVIN, ENS_NPT_LANGEVIN_ANISO, &
-    ENS_NPT_NOSE_HOOVER, ENS_NPT_NOSE_HOOVER_ANISO, &
-    ENS_NPT_MTK, ENS_NPT_MTK_ANISO
-  Use domains,         Only : domains_type
+  Use comms,           Only: comms_type,&
+                             gcheck,&
+                             gmax,&
+                             gmin,&
+                             gsum,&
+                             gsync
+  Use configuration,   Only: configuration_type,&
+                             getcom
+  Use constants,       Only: zero_plus
+  Use domains,         Only: domains_type
+  Use errors_warnings, Only: error,&
+                             info,&
+                             warning
+  Use kinds,           Only: li,&
+                             wi,&
+                             wp
+  Use neighbours,      Only: neighbours_type
+  Use numerics,        Only: images,&
+                             invert,&
+                             jacobi,&
+                             local_index,&
+                             pbcshift
+  Use shared_units,    Only: update_shared_units
+  Use site,            Only: site_type
+  Use statistics,      Only: stats_type
+  Use thermostat,      Only: ENS_NPT_BERENDSEN,&
+                             ENS_NPT_BERENDSEN_ANISO,&
+                             ENS_NPT_LANGEVIN,&
+                             ENS_NPT_LANGEVIN_ANISO,&
+                             ENS_NPT_MTK,&
+                             ENS_NPT_MTK_ANISO,&
+                             ENS_NPT_NOSE_HOOVER,&
+                             ENS_NPT_NOSE_HOOVER_ANISO,&
+                             thermostat_type
+
   Implicit None
 
   Private
@@ -38,112 +57,97 @@ Module rigid_bodies
     Private
 
     !> Rigid bodies switch
-    Logical, Public :: on = .false.
-
+    Logical, Public                       :: on = .false.
     !> Number of types of rigid body
-    Integer( Kind = wi ), Public :: n_types = 0
-    Integer( Kind = wi ), Public :: n_types_book
-
+    Integer(Kind=wi), Public              :: n_types = 0
+    Integer(Kind=wi), Public              :: n_types_book
     !> Total number of rigid bodies
-    Integer( Kind = wi ), Public :: total
-
+    Integer(Kind=wi), Public              :: total
     !> Number of rigid bodies of each type?
-    Integer( Kind = wi ), Allocatable, Public :: num(:)
-
+    Integer(Kind=wi), Allocatable, Public :: num(:)
     !> Atom indicies (local)
-    Integer( Kind = wi ), Allocatable, Public :: lst(:,:)
+    Integer(Kind=wi), Allocatable, Public :: lst(:, :)
     !> Atom indices
-    Integer( Kind = wi ), Allocatable, Public :: list(:,:)
+    Integer(Kind=wi), Allocatable, Public :: list(:, :)
     !> Legend
-    Integer( Kind = wi ), Allocatable, Public :: legend(:,:)
-
+    Integer(Kind=wi), Allocatable, Public :: legend(:, :)
     !> Frozen list
-    Integer( Kind = wi ), Allocatable, Public :: frozen(:,:)
-
+    Integer(Kind=wi), Allocatable, Public :: frozen(:, :)
     !> Index of particle/site
-    Integer( Kind = wi ), Allocatable, Public :: index_global(:,:)
+    Integer(Kind=wi), Allocatable, Public :: index_global(:, :)
     !> Local index of particle/site
-    Integer( Kind = wi ), Allocatable, Public :: index_local(:,:)
-
+    Integer(Kind=wi), Allocatable, Public :: index_local(:, :)
     !> Switch for sharing rigid bodies between domains
-    Logical, Public :: share = .false.
+    Logical, Public                       :: share = .false.
     !> List of particles shared between domains?
-    Integer( Kind = wi ), Allocatable, Public :: list_shared(:)
+    Integer(Kind=wi), Allocatable, Public :: list_shared(:)
     !> Domain decomposition map of shared particles around idnode
-    Integer( Kind = wi ), Allocatable, Public :: map_shared(:)
-
+    Integer(Kind=wi), Allocatable, Public :: map_shared(:)
     !> Rigid body atom weight
-    Real( Kind = wp ), Allocatable, Public :: weight(:,:)
+    Real(Kind=wp), Allocatable, Public    :: weight(:, :)
     !> Weightless atoms in rigid bodies?!?
-    Real( Kind = wp ), Allocatable, Public :: weightless(:,:)
-
+    Real(Kind=wp), Allocatable, Public    :: weightless(:, :)
     !> Local x coordinate or atom in rigid body?
-    Real( Kind = wp ), Allocatable, Public :: x(:,:)
+    Real(Kind=wp), Allocatable, Public    :: x(:, :)
     !> Local y coordinate or atom in rigid body?
-    Real( Kind = wp ), Allocatable, Public :: y(:,:)
+    Real(Kind=wp), Allocatable, Public    :: y(:, :)
     !> Local z coordinate or atom in rigid body?
-    Real( Kind = wp ), Allocatable, Public :: z(:,:)
-
+    Real(Kind=wp), Allocatable, Public    :: z(:, :)
     !> Rotational velocity and inertia?
-    Real( Kind = wp ), Allocatable, Public :: rix(:,:)
+    Real(Kind=wp), Allocatable, Public    :: rix(:, :)
     !> Rotational velocity and inertia?
-    Real( Kind = wp ), Allocatable, Public :: riy(:,:)
+    Real(Kind=wp), Allocatable, Public    :: riy(:, :)
     !> Rotational velocity and inertia?
-    Real( Kind = wp ), Allocatable, Public :: riz(:,:)
-
+    Real(Kind=wp), Allocatable, Public    :: riz(:, :)
     !> Rigid body orientation?
-    Real( Kind = wp ), Allocatable, Public :: axs(:,:)
+    Real(Kind=wp), Allocatable, Public    :: axs(:, :)
     !> Quaternion components
-    Real( Kind = wp ), Allocatable, Public :: q0(:),q1(:),q2(:),q3(:)
-
+    Real(Kind=wp), Allocatable, Public    :: q0(:), q1(:), q2(:), q3(:)
     ! Rigid body coordinates
     !> Rigid body x coordinate
-    Real( Kind = wp ), Allocatable, Public :: xxx(:)
+    Real(Kind=wp), Allocatable, Public    :: xxx(:)
     !> Rigid body y coordinate
-    Real( Kind = wp ), Allocatable, Public :: yyy(:)
+    Real(Kind=wp), Allocatable, Public    :: yyy(:)
     !> Rigid body z coordinate
-    Real( Kind = wp ), Allocatable, Public :: zzz(:)
-
+    Real(Kind=wp), Allocatable, Public    :: zzz(:)
     ! Rigid body velocities
     !> Rigid body x velocity
-    Real( Kind = wp ), Allocatable, Public :: vxx(:)
+    Real(Kind=wp), Allocatable, Public    :: vxx(:)
     !> Rigid body y velocity
-    Real( Kind = wp ), Allocatable, Public :: vyy(:)
+    Real(Kind=wp), Allocatable, Public    :: vyy(:)
     !> Rigid body z velocity
-    Real( Kind = wp ), Allocatable, Public :: vzz(:)
-
+    Real(Kind=wp), Allocatable, Public    :: vzz(:)
     ! Rigid body rotational velocities
     !> Rigid body x rotational velocity
-    Real( Kind = wp ), Allocatable, Public :: oxx(:)
+    Real(Kind=wp), Allocatable, Public    :: oxx(:)
     !> Rigid body y rotational velocity
-    Real( Kind = wp ), Allocatable, Public :: oyy(:)
+    Real(Kind=wp), Allocatable, Public    :: oyy(:)
     !> Rigid body z rotational velocity
-    Real( Kind = wp ), Allocatable, Public :: ozz(:)
-
+    Real(Kind=wp), Allocatable, Public    :: ozz(:)
     !> Maximum number of rigid bodies
-    Integer( Kind = wi ), Public :: max_rigid
+    Integer(Kind=wi), Public              :: max_rigid
     !> Maximum number of types of rigid bodies
-    Integer( Kind = wi ), Public :: max_type
+    Integer(Kind=wi), Public              :: max_type
     !> Maximum number of frozen rigid bodies
-    Integer( Kind = wi ), Public :: max_frozen
+    Integer(Kind=wi), Public              :: max_frozen
     !> Maximum list size
-    Integer( Kind = wi ), Public :: max_list
+    Integer(Kind=wi), Public              :: max_list
 
-    Integer( Kind = wi ), Public :: mxquat
-    Real( Kind = wp ), Public :: quattol
+    Integer(Kind=wi), Public :: mxquat
+    Real(Kind=wp), Public :: quattol
   Contains
     Private
 
     Procedure, Public :: init => allocate_rigid_bodies_arrays
     Procedure, Public :: deallocate_temp => deallocate_rigid_bodies_arrays
-    Final :: cleanup
+    Final             :: cleanup
   End Type rigid_bodies_type
 
   Public :: rigid_bodies_stress, &
-    getrotmat, q_setup, rigid_bodies_split_torque, &
-    rigid_bodies_move, rigid_bodies_quench, no_squish, xscale, &
-    rigid_bodies_tags, rigid_bodies_coms, rigid_bodies_setup, &
-    rigid_bodies_widths
+            getrotmat, q_setup, rigid_bodies_split_torque, &
+            rigid_bodies_move, rigid_bodies_quench, no_squish, xscale, &
+            rigid_bodies_tags, rigid_bodies_coms, rigid_bodies_setup, &
+            rigid_bodies_widths
 
   Interface rigid_bodies_coms
     Module Procedure rigid_bodies_coms_arrays
@@ -155,180 +159,180 @@ Module rigid_bodies
     Module Procedure rigid_bodies_str_ss
     Module Procedure rigid_bodies_str__s
     Module Procedure rigid_bodies_stre_s
-  End Interface rigid_bodies_stress 
+  End Interface rigid_bodies_stress
 
 Contains
 
-  Subroutine allocate_rigid_bodies_arrays(T,mxlshp,mxtmls,mxatdm,neighbours)
-    Class( rigid_bodies_type) :: T
-    Integer( Kind = wi ), Intent( In    ) :: mxlshp, mxtmls,mxatdm,neighbours
+  Subroutine allocate_rigid_bodies_arrays(T, mxlshp, mxtmls, mxatdm, neighbours)
+    Class(rigid_bodies_type)        :: T
+    Integer(Kind=wi), Intent(In   ) :: mxlshp, mxtmls, mxatdm, neighbours
 
     Integer, Dimension(1:15) :: fail
 
     fail = 0
 
     Allocate (T%num(1:mxtmls), stat=fail(1))
-    Allocate (T%lst(0:T%max_list,1:T%max_type), stat=fail(2))
-    Allocate (T%list(-1:T%max_list,1:T%max_rigid), stat=fail(3))
-    Allocate (T%legend(0:T%max_frozen,1:mxatdm), stat=fail(4))
-    Allocate (T%list_shared(1:mxlshp),T%map_shared(1:neighbours), stat=fail(5))
-    Allocate (T%frozen(0:T%max_list,1:T%max_type),T%index_global(0:T%max_list,1:T%max_type), stat=fail(6))
-    Allocate (T%weight(0:T%max_list,1:T%max_type),T%weightless(0:T%max_list,1:T%max_type), stat=fail(7))
-    Allocate (T%index_local(0:T%max_list,1:T%max_rigid), stat=fail(8))
-    Allocate (T%x(1:T%max_list,1:T%max_type),T%y(1:T%max_list,1:T%max_type),T%z(1:T%max_list,1:T%max_type), stat=fail(9))
-    Allocate (T%rix(1:2,1:T%max_type),T%riy(1:2,1:T%max_type),T%riz(1:2,1:T%max_type), stat=fail(10))
-    Allocate (T%axs(1:9,1:T%max_type), stat=fail(11))
-    Allocate (T%q0(1:T%max_rigid),T%q1(1:T%max_rigid),T%q2(1:T%max_rigid),T%q3(1:T%max_rigid), stat=fail(12))
-    Allocate (T%xxx(1:T%max_rigid),T%yyy(1:T%max_rigid),T%zzz(1:T%max_rigid), stat=fail(13))
-    Allocate (T%vxx(1:T%max_rigid),T%vyy(1:T%max_rigid),T%vzz(1:T%max_rigid), stat=fail(14))
-    Allocate (T%oxx(1:T%max_rigid),T%oyy(1:T%max_rigid),T%ozz(1:T%max_rigid), stat=fail(15))
+    Allocate (T%lst(0:T%max_list, 1:T%max_type), stat=fail(2))
+    Allocate (T%list(-1:T%max_list, 1:T%max_rigid), stat=fail(3))
+    Allocate (T%legend(0:T%max_frozen, 1:mxatdm), stat=fail(4))
+    Allocate (T%list_shared(1:mxlshp), T%map_shared(1:neighbours), stat=fail(5))
+    Allocate (T%frozen(0:T%max_list, 1:T%max_type), T%index_global(0:T%max_list, 1:T%max_type), stat=fail(6))
+    Allocate (T%weight(0:T%max_list, 1:T%max_type), T%weightless(0:T%max_list, 1:T%max_type), stat=fail(7))
+    Allocate (T%index_local(0:T%max_list, 1:T%max_rigid), stat=fail(8))
+    Allocate (T%x(1:T%max_list, 1:T%max_type), T%y(1:T%max_list, 1:T%max_type), T%z(1:T%max_list, 1:T%max_type), stat=fail(9))
+    Allocate (T%rix(1:2, 1:T%max_type), T%riy(1:2, 1:T%max_type), T%riz(1:2, 1:T%max_type), stat=fail(10))
+    Allocate (T%axs(1:9, 1:T%max_type), stat=fail(11))
+    Allocate (T%q0(1:T%max_rigid), T%q1(1:T%max_rigid), T%q2(1:T%max_rigid), T%q3(1:T%max_rigid), stat=fail(12))
+    Allocate (T%xxx(1:T%max_rigid), T%yyy(1:T%max_rigid), T%zzz(1:T%max_rigid), stat=fail(13))
+    Allocate (T%vxx(1:T%max_rigid), T%vyy(1:T%max_rigid), T%vzz(1:T%max_rigid), stat=fail(14))
+    Allocate (T%oxx(1:T%max_rigid), T%oyy(1:T%max_rigid), T%ozz(1:T%max_rigid), stat=fail(15))
 
     If (Any(fail > 0)) Call error(1042)
 
-    T%num  = 0
-    T%lst  = 0
+    T%num = 0
+    T%lst = 0
     T%list = 0
-    T%legend  = 0
+    T%legend = 0
 
-    T%list_shared = 0 ; T%map_shared = 0
+    T%list_shared = 0; T%map_shared = 0
 
-    T%frozen = 0 ; T%index_global = 0 ; T%index_local = 0
+    T%frozen = 0; T%index_global = 0; T%index_local = 0
 
-    T%weight = 0.0_wp ; T%weightless = 0.0_wp
-    T%x   = 0.0_wp ; T%y   = 0.0_wp ; T%z   = 0.0_wp
-    T%rix = 0.0_wp ; T%riy = 0.0_wp ; T%riz = 0.0_wp
+    T%weight = 0.0_wp; T%weightless = 0.0_wp
+    T%x = 0.0_wp; T%y = 0.0_wp; T%z = 0.0_wp
+    T%rix = 0.0_wp; T%riy = 0.0_wp; T%riz = 0.0_wp
     T%axs = 0.0_wp
 
-    T%q0 = 0.0_wp ; T%q1 = 0.0_wp ; T%q2 = 0.0_wp ; T%q3 = 0.0_wp
+    T%q0 = 0.0_wp; T%q1 = 0.0_wp; T%q2 = 0.0_wp; T%q3 = 0.0_wp
 
-    T%xxx = 0.0_wp ; T%yyy = 0.0_wp ; T%zzz = 0.0_wp
-    T%vxx = 0.0_wp ; T%vyy = 0.0_wp ; T%vzz = 0.0_wp
-    T%oxx = 0.0_wp ; T%oyy = 0.0_wp ; T%ozz = 0.0_wp
+    T%xxx = 0.0_wp; T%yyy = 0.0_wp; T%zzz = 0.0_wp
+    T%vxx = 0.0_wp; T%vyy = 0.0_wp; T%vzz = 0.0_wp
+    T%oxx = 0.0_wp; T%oyy = 0.0_wp; T%ozz = 0.0_wp
   End Subroutine allocate_rigid_bodies_arrays
 
   Subroutine deallocate_rigid_bodies_arrays(T)
-  Class( rigid_bodies_type ) :: T
+    Class(rigid_bodies_type) :: T
 
     Integer :: fail
 
     fail = 0
 
-    Deallocate (T%num,T%lst, Stat = fail)
+    Deallocate (T%num, T%lst, Stat=fail)
 
     If (fail > 0) Call error(1043)
 
   End Subroutine deallocate_rigid_bodies_arrays
 
   Subroutine cleanup(T)
-    Type( rigid_bodies_type ) :: T
+    Type(rigid_bodies_type) :: T
 
     If (Allocated(T%num)) Then
-      Deallocate(T%num)
+      Deallocate (T%num)
     End If
 
     If (Allocated(T%lst)) Then
-      Deallocate(T%lst)
+      Deallocate (T%lst)
     End If
     If (Allocated(T%list)) Then
-      Deallocate(T%list)
+      Deallocate (T%list)
     End If
     If (Allocated(T%legend)) Then
-      Deallocate(T%legend)
+      Deallocate (T%legend)
     End If
 
     If (Allocated(T%frozen)) Then
-      Deallocate(T%frozen)
+      Deallocate (T%frozen)
     End If
 
     If (Allocated(T%index_global)) Then
-      Deallocate(T%index_global)
+      Deallocate (T%index_global)
     End If
     If (Allocated(T%index_local)) Then
-      Deallocate(T%index_local)
+      Deallocate (T%index_local)
     End If
 
     If (Allocated(T%list_shared)) Then
-      Deallocate(T%list_shared)
+      Deallocate (T%list_shared)
     End If
     If (Allocated(T%map_shared)) Then
-      Deallocate(T%map_shared)
+      Deallocate (T%map_shared)
     End If
 
     If (Allocated(T%weight)) Then
-      Deallocate(T%weight)
+      Deallocate (T%weight)
     End If
     If (Allocated(T%weightless)) Then
-      Deallocate(T%weightless)
+      Deallocate (T%weightless)
     End If
 
     If (Allocated(T%x)) Then
-      Deallocate(T%x)
+      Deallocate (T%x)
     End If
     If (Allocated(T%y)) Then
-      Deallocate(T%y)
+      Deallocate (T%y)
     End If
     If (Allocated(T%z)) Then
-      Deallocate(T%z)
+      Deallocate (T%z)
     End If
 
     If (Allocated(T%rix)) Then
-      Deallocate(T%rix)
+      Deallocate (T%rix)
     End If
     If (Allocated(T%riy)) Then
-      Deallocate(T%riy)
+      Deallocate (T%riy)
     End If
     If (Allocated(T%riz)) Then
-      Deallocate(T%riz)
+      Deallocate (T%riz)
     End If
 
     If (Allocated(T%axs)) Then
-      Deallocate(T%axs)
+      Deallocate (T%axs)
     End If
     If (Allocated(T%q0)) Then
-      Deallocate(T%q0)
+      Deallocate (T%q0)
     End If
     If (Allocated(T%q1)) Then
-      Deallocate(T%q1)
+      Deallocate (T%q1)
     End If
     If (Allocated(T%q2)) Then
-      Deallocate(T%q2)
+      Deallocate (T%q2)
     End If
     If (Allocated(T%q3)) Then
-      Deallocate(T%q3)
+      Deallocate (T%q3)
     End If
 
     If (Allocated(T%xxx)) Then
-      Deallocate(T%xxx)
+      Deallocate (T%xxx)
     End If
     If (Allocated(T%yyy)) Then
-      Deallocate(T%yyy)
+      Deallocate (T%yyy)
     End If
     If (Allocated(T%zzz)) Then
-      Deallocate(T%zzz)
+      Deallocate (T%zzz)
     End If
 
     If (Allocated(T%vxx)) Then
-      Deallocate(T%vxx)
+      Deallocate (T%vxx)
     End If
     If (Allocated(T%vyy)) Then
-      Deallocate(T%vyy)
+      Deallocate (T%vyy)
     End If
     If (Allocated(T%vzz)) Then
-      Deallocate(T%vzz)
+      Deallocate (T%vzz)
     End If
 
     If (Allocated(T%oxx)) Then
-      Deallocate(T%oxx)
+      Deallocate (T%oxx)
     End If
     If (Allocated(T%oyy)) Then
-      Deallocate(T%oyy)
+      Deallocate (T%oyy)
     End If
     If (Allocated(T%ozz)) Then
-      Deallocate(T%ozz)
+      Deallocate (T%ozz)
     End If
   End Subroutine cleanup
 
-  Subroutine rigid_bodies_coms_arrays(config,xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz,rigid)
+  Subroutine rigid_bodies_coms_arrays(config, xxx, yyy, zzz, rgdxxx, rgdyyy, rgdzzz, rigid)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -347,88 +351,85 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( configuration_type ), Intent( InOut ) :: config
-    Real( Kind = wp ),  Intent( In    ) :: xxx(:),yyy(:),zzz(:)
-    !    Real( Kind = wp ),  Intent( In    ) :: xxx(1:config%mxatms),yyy(1:config%mxatms),zzz(1:config%mxatms)
-    Type( rigid_bodies_type ), Intent( In    ) :: rigid
-    Real( Kind = wp ),  Intent(   Out ) :: rgdxxx(1:rigid%max_rigid), &
-      rgdyyy(1:rigid%max_rigid), &
-      rgdzzz(1:rigid%max_rigid)
+    Type(configuration_type), Intent(InOut) :: config
+    Real(Kind=wp),            Intent(In   ) :: xxx(:), yyy(:), zzz(:)
+    Type(rigid_bodies_type),  Intent(In   ) :: rigid
+    Real(Kind=wp),            Intent(  Out) :: rgdzzz(1:rigid%max_rigid), &
+                                               rgdyyy(1:rigid%max_rigid), rgdxxx(1:rigid%max_rigid)
 
-    Integer           :: fail,irgd,jrgd,krgd,lrgd,rgdtyp
-    Real( Kind = wp ) :: tmp
+    Character(Len=256)         :: message
+    Integer                    :: fail, irgd, jrgd, krgd, lrgd, rgdtyp
+    Real(Kind=wp)              :: tmp
+    Real(Kind=wp), Allocatable :: gxx(:), gyy(:), gzz(:)
 
-    Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
-    Character ( Len = 256 ) :: message
+!    Real( Kind = wp ),  Intent( In    ) :: xxx(1:config%mxatms),yyy(1:config%mxatms),zzz(1:config%mxatms)
 
     fail = 0
-    Allocate (gxx(1:rigid%max_list*rigid%max_rigid), &
-      gyy(1:rigid%max_list*rigid%max_rigid), &
-      gzz(1:rigid%max_list*rigid%max_rigid), Stat = fail)
+    Allocate (gxx(1:rigid%max_list * rigid%max_rigid), &
+              gyy(1:rigid%max_list * rigid%max_rigid), &
+              gzz(1:rigid%max_list * rigid%max_rigid), Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'rigid_bodies_coms allocation failure'
-      Call error(0,message)
+      Write (message, '(a)') 'rigid_bodies_coms allocation failure'
+      Call error(0, message)
     End If
 
     ! Loop over all local RB units and get in the local scope of the unit
 
-    krgd=0
-    Do irgd=1,rigid%n_types
-      lrgd=rigid%list(-1,irgd)
-      Do jrgd=1,lrgd
-        krgd=krgd+1
+    krgd = 0
+    Do irgd = 1, rigid%n_types
+      lrgd = rigid%list(-1, irgd)
+      Do jrgd = 1, lrgd
+        krgd = krgd + 1
 
-        gxx(krgd) = xxx(rigid%index_local(jrgd,irgd)) - xxx(rigid%index_local(1,irgd))
-        gyy(krgd) = yyy(rigid%index_local(jrgd,irgd)) - yyy(rigid%index_local(1,irgd))
-        gzz(krgd) = zzz(rigid%index_local(jrgd,irgd)) - zzz(rigid%index_local(1,irgd))
+        gxx(krgd) = xxx(rigid%index_local(jrgd, irgd)) - xxx(rigid%index_local(1, irgd))
+        gyy(krgd) = yyy(rigid%index_local(jrgd, irgd)) - yyy(rigid%index_local(1, irgd))
+        gzz(krgd) = zzz(rigid%index_local(jrgd, irgd)) - zzz(rigid%index_local(1, irgd))
       End Do
     End Do
 
     ! minimum image convention for bond vectors
 
-    Call images(config%imcon,config%cell,krgd,gxx,gyy,gzz)
+    Call images(config%imcon, config%cell, krgd, gxx, gyy, gzz)
 
     ! Get the COM vector
 
-    krgd=0
-    Do irgd=1,rigid%n_types
-      rgdtyp=rigid%list(0,irgd)
+    krgd = 0
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
 
-      rgdxxx(irgd)=0.0_wp
-      rgdyyy(irgd)=0.0_wp
-      rgdzzz(irgd)=0.0_wp
+      rgdxxx(irgd) = 0.0_wp
+      rgdyyy(irgd) = 0.0_wp
+      rgdzzz(irgd) = 0.0_wp
 
-      lrgd=rigid%list(-1,irgd)
-      Do jrgd=1,lrgd
-        krgd=krgd+1
+      lrgd = rigid%list(-1, irgd)
+      Do jrgd = 1, lrgd
+        krgd = krgd + 1
 
-        rgdxxx(irgd) = rgdxxx(irgd) + rigid%weightless(jrgd,rgdtyp)*gxx(krgd)
-        rgdyyy(irgd) = rgdyyy(irgd) + rigid%weightless(jrgd,rgdtyp)*gyy(krgd)
-        rgdzzz(irgd) = rgdzzz(irgd) + rigid%weightless(jrgd,rgdtyp)*gzz(krgd)
+        rgdxxx(irgd) = rgdxxx(irgd) + rigid%weightless(jrgd, rgdtyp) * gxx(krgd)
+        rgdyyy(irgd) = rgdyyy(irgd) + rigid%weightless(jrgd, rgdtyp) * gyy(krgd)
+        rgdzzz(irgd) = rgdzzz(irgd) + rigid%weightless(jrgd, rgdtyp) * gzz(krgd)
       End Do
     End Do
 
-    Do irgd=1,rigid%n_types
-      rgdtyp=rigid%list(0,irgd)
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
 
-      tmp=1.0_wp/rigid%weightless(0,rgdtyp)
+      tmp = 1.0_wp / rigid%weightless(0, rgdtyp)
 
-      rgdxxx(irgd) = rgdxxx(irgd)*tmp + xxx(rigid%index_local(1,irgd))
-      rgdyyy(irgd) = rgdyyy(irgd)*tmp + yyy(rigid%index_local(1,irgd))
-      rgdzzz(irgd) = rgdzzz(irgd)*tmp + zzz(rigid%index_local(1,irgd))
+      rgdxxx(irgd) = rgdxxx(irgd) * tmp + xxx(rigid%index_local(1, irgd))
+      rgdyyy(irgd) = rgdyyy(irgd) * tmp + yyy(rigid%index_local(1, irgd))
+      rgdzzz(irgd) = rgdzzz(irgd) * tmp + zzz(rigid%index_local(1, irgd))
     End Do
 
-    Deallocate (gxx,gyy,gzz, Stat = fail)
+    Deallocate (gxx, gyy, gzz, Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'rigid_bodies_coms deallocation failure'
-      Call error(0,message)
+      Write (message, '(a)') 'rigid_bodies_coms deallocation failure'
+      Call error(0, message)
     End If
 
   End Subroutine rigid_bodies_coms_arrays
 
-
-
-  Subroutine rigid_bodies_coms_parts(config,rgdxxx,rgdyyy,rgdzzz,rigid)
+  Subroutine rigid_bodies_coms_parts(config, rgdxxx, rgdyyy, rgdzzz, rigid)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -447,84 +448,81 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( configuration_type ) ,  Intent( In    ) :: config
-    Type( rigid_bodies_type ), Intent( In    ) :: rigid
-    Real( Kind = wp ),  Intent(   Out ), Dimension(1:rigid%max_rigid) :: rgdxxx,rgdyyy,rgdzzz
+    Type(configuration_type),                    Intent(In   ) :: config
+    Type(rigid_bodies_type),                     Intent(In   ) :: rigid
+    Real(Kind=wp), Dimension(1:rigid%max_rigid), Intent(  Out) :: rgdzzz, rgdyyy, rgdxxx
 
-    Integer           :: fail,irgd,jrgd,krgd,lrgd,rgdtyp
-    Real( Kind = wp ) :: tmp
-
-    Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
-    Character ( Len = 256 ) :: message
+    Character(Len=256)         :: message
+    Integer                    :: fail, irgd, jrgd, krgd, lrgd, rgdtyp
+    Real(Kind=wp)              :: tmp
+    Real(Kind=wp), Allocatable :: gxx(:), gyy(:), gzz(:)
 
     fail = 0
-    Allocate (gxx(1:rigid%max_list*rigid%max_rigid), &
-      gyy(1:rigid%max_list*rigid%max_rigid), &
-      gzz(1:rigid%max_list*rigid%max_rigid), Stat = fail)
+    Allocate (gxx(1:rigid%max_list * rigid%max_rigid), &
+              gyy(1:rigid%max_list * rigid%max_rigid), &
+              gzz(1:rigid%max_list * rigid%max_rigid), Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'rigid_bodies_coms allocation failure'
-      Call error(0,message)
+      Write (message, '(a)') 'rigid_bodies_coms allocation failure'
+      Call error(0, message)
     End If
 
     ! Loop over all local RB units and get in the local scope of the unit
 
-    krgd=0
-    Do irgd=1,rigid%n_types
-      lrgd=rigid%list(-1,irgd)
-      Do jrgd=1,lrgd
-        krgd=krgd+1
+    krgd = 0
+    Do irgd = 1, rigid%n_types
+      lrgd = rigid%list(-1, irgd)
+      Do jrgd = 1, lrgd
+        krgd = krgd + 1
 
-        gxx(krgd) = config%parts(rigid%index_local(jrgd,irgd))%xxx - config%parts(rigid%index_local(1,irgd))%xxx
-        gyy(krgd) = config%parts(rigid%index_local(jrgd,irgd))%yyy - config%parts(rigid%index_local(1,irgd))%yyy
-        gzz(krgd) = config%parts(rigid%index_local(jrgd,irgd))%zzz - config%parts(rigid%index_local(1,irgd))%zzz
+        gxx(krgd) = config%parts(rigid%index_local(jrgd, irgd))%xxx - config%parts(rigid%index_local(1, irgd))%xxx
+        gyy(krgd) = config%parts(rigid%index_local(jrgd, irgd))%yyy - config%parts(rigid%index_local(1, irgd))%yyy
+        gzz(krgd) = config%parts(rigid%index_local(jrgd, irgd))%zzz - config%parts(rigid%index_local(1, irgd))%zzz
       End Do
     End Do
 
     ! minimum image convention for bond vectors
 
-    Call images(config%imcon,config%cell,krgd,gxx,gyy,gzz)
+    Call images(config%imcon, config%cell, krgd, gxx, gyy, gzz)
 
     ! Get the COM vector
 
-    krgd=0
-    Do irgd=1,rigid%n_types
-      rgdtyp=rigid%list(0,irgd)
+    krgd = 0
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
 
-      rgdxxx(irgd)=0.0_wp
-      rgdyyy(irgd)=0.0_wp
-      rgdzzz(irgd)=0.0_wp
+      rgdxxx(irgd) = 0.0_wp
+      rgdyyy(irgd) = 0.0_wp
+      rgdzzz(irgd) = 0.0_wp
 
-      lrgd=rigid%list(-1,irgd)
-      Do jrgd=1,lrgd
-        krgd=krgd+1
+      lrgd = rigid%list(-1, irgd)
+      Do jrgd = 1, lrgd
+        krgd = krgd + 1
 
-        rgdxxx(irgd) = rgdxxx(irgd) + rigid%weightless(jrgd,rgdtyp)*gxx(krgd)
-        rgdyyy(irgd) = rgdyyy(irgd) + rigid%weightless(jrgd,rgdtyp)*gyy(krgd)
-        rgdzzz(irgd) = rgdzzz(irgd) + rigid%weightless(jrgd,rgdtyp)*gzz(krgd)
+        rgdxxx(irgd) = rgdxxx(irgd) + rigid%weightless(jrgd, rgdtyp) * gxx(krgd)
+        rgdyyy(irgd) = rgdyyy(irgd) + rigid%weightless(jrgd, rgdtyp) * gyy(krgd)
+        rgdzzz(irgd) = rgdzzz(irgd) + rigid%weightless(jrgd, rgdtyp) * gzz(krgd)
       End Do
     End Do
 
-    Do irgd=1,rigid%n_types
-      rgdtyp=rigid%list(0,irgd)
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
 
-      tmp=1.0_wp/rigid%weightless(0,rgdtyp)
+      tmp = 1.0_wp / rigid%weightless(0, rgdtyp)
 
-      rgdxxx(irgd) = rgdxxx(irgd)*tmp + config%parts(rigid%index_local(1,irgd))%xxx
-      rgdyyy(irgd) = rgdyyy(irgd)*tmp + config%parts(rigid%index_local(1,irgd))%yyy
-      rgdzzz(irgd) = rgdzzz(irgd)*tmp + config%parts(rigid%index_local(1,irgd))%zzz
+      rgdxxx(irgd) = rgdxxx(irgd) * tmp + config%parts(rigid%index_local(1, irgd))%xxx
+      rgdyyy(irgd) = rgdyyy(irgd) * tmp + config%parts(rigid%index_local(1, irgd))%yyy
+      rgdzzz(irgd) = rgdzzz(irgd) * tmp + config%parts(rigid%index_local(1, irgd))%zzz
     End Do
 
-    Deallocate (gxx,gyy,gzz, Stat = fail)
+    Deallocate (gxx, gyy, gzz, Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'rigid_bodies_coms deallocation failure'
-      Call error(0,message)
+      Write (message, '(a)') 'rigid_bodies_coms deallocation failure'
+      Call error(0, message)
     End If
-
 
   End Subroutine rigid_bodies_coms_parts
 
-
-  Subroutine rigid_bodies_move(stride,oxx,oyy,ozz,txx,tyy,tzz,uxx,uyy,uzz,dist_tol,rigid,config)
+  Subroutine rigid_bodies_move(stride, oxx, oyy, ozz, txx, tyy, tzz, uxx, uyy, uzz, dist_tol, rigid, config)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 routine for updating positions of atoms in RBs
@@ -541,46 +539,44 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp ), Intent( In    ) :: stride,                                    &
-      oxx(:),oyy(:),ozz(:), &
-      txx(:),tyy(:),tzz(:), &
-      uxx(:),uyy(:),uzz(:)
-    Real( Kind = wp ), Intent( InOut ) :: dist_tol
-    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( configuration_type ),           Intent( InOut ) :: config
+    Real(Kind=wp),            Intent(In   ) :: stride, oxx(:), oyy(:), ozz(:), txx(:), tyy(:), &
+                                               tzz(:), uxx(:), uyy(:), uzz(:)
+    Real(Kind=wp),            Intent(InOut) :: dist_tol
+    Type(rigid_bodies_type),  Intent(InOut) :: rigid
+    Type(configuration_type), Intent(InOut) :: config
 
-    Integer           :: i,irgd,jrgd,lrgd,rgdtyp
-    Real( Kind = wp ) :: ttt,uuu,the,dtol,coz,zin,x,y,z
+    Integer       :: i, irgd, jrgd, lrgd, rgdtyp
+    Real(Kind=wp) :: coz, dtol, the, ttt, uuu, x, y, z, zin
 
-    dtol=0.0_wp
-    Do irgd=1,rigid%n_types
-      rgdtyp=rigid%list(0,irgd)
+    dtol = 0.0_wp
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
 
       ! For all good RBs
 
-      lrgd=rigid%list(-1,irgd)
-      If (rigid%frozen(0,rgdtyp) < lrgd) Then
-        Do jrgd=1,lrgd
-          If (rigid%frozen(jrgd,rgdtyp) == 0) Then ! Apply restrictions
-            i=rigid%index_local(jrgd,irgd) ! local index of particle/site
+      lrgd = rigid%list(-1, irgd)
+      If (rigid%frozen(0, rgdtyp) < lrgd) Then
+        Do jrgd = 1, lrgd
+          If (rigid%frozen(jrgd, rgdtyp) == 0) Then ! Apply restrictions
+            i = rigid%index_local(jrgd, irgd) ! local index of particle/site
 
             If (i <= config%natms) Then
 
               ! translational motion
 
-              If (rigid%frozen(0,rgdtyp) == 0) Then
-                x=stride*oxx(i)
-                y=stride*oyy(i)
-                z=stride*ozz(i)
+              If (rigid%frozen(0, rgdtyp) == 0) Then
+                x = stride * oxx(i)
+                y = stride * oyy(i)
+                z = stride * ozz(i)
               Else
-                x=0.0_wp
-                y=0.0_wp
-                z=0.0_wp
+                x = 0.0_wp
+                y = 0.0_wp
+                z = 0.0_wp
               End If
 
               ! calculate this RB's particle distance to the axis of rotation
 
-              uuu=Sqrt(uxx(i)**2+uyy(i)**2+uzz(i)**2)
+              uuu = Sqrt(uxx(i)**2 + uyy(i)**2 + uzz(i)**2)
 
               ! add rotational motion for big enough distances
 
@@ -588,27 +584,27 @@ Contains
 
                 ! force magnitude
 
-                ttt=Sqrt(txx(i)**2+tyy(i)**2+tzz(i)**2)
+                ttt = Sqrt(txx(i)**2 + tyy(i)**2 + tzz(i)**2)
 
                 ! angle of rotation
 
-                the=(ttt/uuu)*stride
+                the = (ttt / uuu) * stride
 
-                coz=Cos(the)-1.0_wp
-                zin=(Sin(the)/the)*stride
+                coz = Cos(the) - 1.0_wp
+                zin = (Sin(the) / the) * stride
 
-                x=x+coz*uxx(i)+zin*txx(i)
-                y=y+coz*uyy(i)+zin*tyy(i)
-                z=z+coz*uzz(i)+zin*tzz(i)
+                x = x + coz * uxx(i) + zin * txx(i)
+                y = y + coz * uyy(i) + zin * tyy(i)
+                z = z + coz * uzz(i) + zin * tzz(i)
               End If
 
               ! Add motion
 
-              config%parts(i)%xxx=config%parts(i)%xxx+x
-              config%parts(i)%yyy=config%parts(i)%yyy+y
-              config%parts(i)%zzz=config%parts(i)%zzz+z
+              config%parts(i)%xxx = config%parts(i)%xxx + x
+              config%parts(i)%yyy = config%parts(i)%yyy + y
+              config%parts(i)%zzz = config%parts(i)%zzz + z
 
-              dtol=Max(dtol,x**2+y**2+z**2)
+              dtol = Max(dtol, x**2 + y**2 + z**2)
 
             End If
           End If
@@ -616,10 +612,10 @@ Contains
       End If
     End Do
 
-    dist_tol=Max(dist_tol,Sqrt(dtol))
+    dist_tol = Max(dist_tol, Sqrt(dtol))
   End Subroutine rigid_bodies_move
 
-  Subroutine rigid_bodies_quench(rigid,domain,config,comm)
+  Subroutine rigid_bodies_quench(rigid, domain, config, comm)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine to convert atomic velocities to RB COM and
@@ -635,170 +631,168 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( configuration_type ),   Intent( InOut ) :: config
-    Type( comms_type ), Intent( InOut ) :: comm
+    Type(rigid_bodies_type),  Intent(InOut) :: rigid
+    Type(domains_type),       Intent(In   ) :: domain
+    Type(configuration_type), Intent(InOut) :: config
+    Type(comms_type),         Intent(InOut) :: comm
 
-    Integer           :: fail,i,i1,i2,irgd,jrgd,krgd,lrgd,rgdtyp
-    Real( Kind = wp ) :: weight,rot(1:9),wxx,wyy,wzz,x(1:1),y(1:1),z(1:1),tmp
-
-    Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
-    Character ( Len = 256 )        :: message
-
+    Character(Len=256)         :: message
+    Integer                    :: fail, i, i1, i2, irgd, jrgd, krgd, lrgd, rgdtyp
+    Real(Kind=wp)              :: rot(1:9), tmp, weight, wxx, wyy, wzz, x(1:1), y(1:1), z(1:1)
+    Real(Kind=wp), Allocatable :: gxx(:), gyy(:), gzz(:)
 
     fail = 0
-    Allocate (gxx(1:rigid%max_list*rigid%max_rigid), &
-      gyy(1:rigid%max_list*rigid%max_rigid), &
-      gzz(1:rigid%max_list*rigid%max_rigid), Stat = fail)
+    Allocate (gxx(1:rigid%max_list * rigid%max_rigid), &
+              gyy(1:rigid%max_list * rigid%max_rigid), &
+              gzz(1:rigid%max_list * rigid%max_rigid), Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'rigid_bodies_quench allocation failure'
-      Call error(0,message)
+      Write (message, '(a)') 'rigid_bodies_quench allocation failure'
+      Call error(0, message)
     End If
 
     ! Halo velocity field across onto neighbouring domains
 
     If (rigid%share) Then
-      Call update_shared_units(config,rigid%list_shared, &
-        rigid%map_shared,config%vxx,config%vyy,config%vzz,domain,comm)
+      Call update_shared_units(config, rigid%list_shared, &
+                               rigid%map_shared, config%vxx, config%vyy, config%vzz, domain, comm)
     End If
 
     ! translate atomic velocities to COM velocity & angular velocity
     ! frozen velocities and massless sites weights are assumed zero!!!
 
-    krgd=0
-    Do irgd=1,rigid%n_types
-      rgdtyp=rigid%list(0,irgd)
+    krgd = 0
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
 
-      rigid%vxx(irgd)=0.0_wp ; rigid%vyy(irgd)=0.0_wp ; rigid%vzz(irgd)=0.0_wp
+      rigid%vxx(irgd) = 0.0_wp; rigid%vyy(irgd) = 0.0_wp; rigid%vzz(irgd) = 0.0_wp
 
       ! For all good RBs
 
-      lrgd=rigid%list(-1,irgd)
-      If (rigid%frozen(0,rgdtyp) < lrgd) Then ! Not that it matters
-        Do jrgd=1,lrgd
-          krgd=krgd+1
+      lrgd = rigid%list(-1, irgd)
+      If (rigid%frozen(0, rgdtyp) < lrgd) Then ! Not that it matters
+        Do jrgd = 1, lrgd
+          krgd = krgd + 1
 
           ! local index and mass of particle/site
 
-          i=rigid%index_local(jrgd,irgd)
-          weight=rigid%weight(jrgd,rgdtyp)
+          i = rigid%index_local(jrgd, irgd)
+          weight = rigid%weight(jrgd, rgdtyp)
 
           ! COM distances
 
-          gxx(krgd)=config%parts(i)%xxx-rigid%xxx(irgd)
-          gyy(krgd)=config%parts(i)%yyy-rigid%yyy(irgd)
-          gzz(krgd)=config%parts(i)%zzz-rigid%zzz(irgd)
+          gxx(krgd) = config%parts(i)%xxx - rigid%xxx(irgd)
+          gyy(krgd) = config%parts(i)%yyy - rigid%yyy(irgd)
+          gzz(krgd) = config%parts(i)%zzz - rigid%zzz(irgd)
 
           ! If the RB has a frozen particle then no net COM momentum
 
-          If (rigid%frozen(0,rgdtyp) == 0) Then
-            rigid%vxx(irgd)=rigid%vxx(irgd)+weight*config%vxx(i)
-            rigid%vyy(irgd)=rigid%vyy(irgd)+weight*config%vyy(i)
-            rigid%vzz(irgd)=rigid%vzz(irgd)+weight*config%vzz(i)
+          If (rigid%frozen(0, rgdtyp) == 0) Then
+            rigid%vxx(irgd) = rigid%vxx(irgd) + weight * config%vxx(i)
+            rigid%vyy(irgd) = rigid%vyy(irgd) + weight * config%vyy(i)
+            rigid%vzz(irgd) = rigid%vzz(irgd) + weight * config%vzz(i)
           End If
         End Do
 
         ! COM velocity
         ! If the RB has a frozen particle then no net COM momentum
 
-        If (rigid%frozen(0,rgdtyp) == 0) Then
-          tmp=1.0_wp/rigid%weight(0,rgdtyp)
-          rigid%vxx(irgd)=rigid%vxx(irgd)*tmp
-          rigid%vyy(irgd)=rigid%vyy(irgd)*tmp
-          rigid%vzz(irgd)=rigid%vzz(irgd)*tmp
+        If (rigid%frozen(0, rgdtyp) == 0) Then
+          tmp = 1.0_wp / rigid%weight(0, rgdtyp)
+          rigid%vxx(irgd) = rigid%vxx(irgd) * tmp
+          rigid%vyy(irgd) = rigid%vyy(irgd) * tmp
+          rigid%vzz(irgd) = rigid%vzz(irgd) * tmp
         End If
       End If
     End Do
 
     ! minimum image convention for bond vectors
 
-    Call images(config%imcon,config%cell,krgd,gxx,gyy,gzz)
+    Call images(config%imcon, config%cell, krgd, gxx, gyy, gzz)
 
     ! Get RBs' angular momenta
 
-    krgd=0
-    Do irgd=1,rigid%n_types
-      rgdtyp=rigid%list(0,irgd)
+    krgd = 0
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
 
-      rigid%oxx(irgd)=0.0_wp ; rigid%oyy(irgd)=0.0_wp; rigid%ozz(irgd)=0.0_wp
+      rigid%oxx(irgd) = 0.0_wp; rigid%oyy(irgd) = 0.0_wp; rigid%ozz(irgd) = 0.0_wp
 
       ! For all good RBs
 
-      lrgd=rigid%list(-1,irgd)
-      If (rigid%frozen(0,rgdtyp) < lrgd) Then ! Not that it matters
+      lrgd = rigid%list(-1, irgd)
+      If (rigid%frozen(0, rgdtyp) < lrgd) Then ! Not that it matters
 
         ! new rotational matrix
 
-        Call getrotmat(rigid%q0(irgd),rigid%q1(irgd),rigid%q2(irgd),rigid%q3(irgd),rot)
+        Call getrotmat(rigid%q0(irgd), rigid%q1(irgd), rigid%q2(irgd), rigid%q3(irgd), rot)
 
         ! angular momentum accumulators
 
-        wxx=0.0_wp
-        wyy=0.0_wp
-        wzz=0.0_wp
+        wxx = 0.0_wp
+        wyy = 0.0_wp
+        wzz = 0.0_wp
 
-        Do jrgd=1,lrgd
-          krgd=krgd+1
+        Do jrgd = 1, lrgd
+          krgd = krgd + 1
 
           ! local index and mass of particle/site - assumption must hold here
 
-          i=rigid%index_local(jrgd,irgd)
-          weight=rigid%weight(jrgd,rgdtyp)
+          i = rigid%index_local(jrgd, irgd)
+          weight = rigid%weight(jrgd, rgdtyp)
 
-          wxx=wxx+weight*(gyy(krgd)*config%vzz(i)-gzz(krgd)*config%vyy(i))
-          wyy=wyy+weight*(gzz(krgd)*config%vxx(i)-gxx(krgd)*config%vzz(i))
-          wzz=wzz+weight*(gxx(krgd)*config%vyy(i)-gyy(krgd)*config%vxx(i))
+          wxx = wxx + weight * (gyy(krgd) * config%vzz(i) - gzz(krgd) * config%vyy(i))
+          wyy = wyy + weight * (gzz(krgd) * config%vxx(i) - gxx(krgd) * config%vzz(i))
+          wzz = wzz + weight * (gxx(krgd) * config%vyy(i) - gyy(krgd) * config%vxx(i))
         End Do
 
         ! If the RB has 2+ frozen particles (ill=1) the net angular momentum
         ! must align along the axis of rotation keeping its magnitude
 
-        If (rigid%frozen(0,rgdtyp) > 1) Then
-          i1=rigid%index_local(rigid%index_global(1,rgdtyp),irgd)
-          i2=rigid%index_local(rigid%index_global(2,rgdtyp),irgd)
+        If (rigid%frozen(0, rgdtyp) > 1) Then
+          i1 = rigid%index_local(rigid%index_global(1, rgdtyp), irgd)
+          i2 = rigid%index_local(rigid%index_global(2, rgdtyp), irgd)
 
-          x(1)=config%parts(i1)%xxx-config%parts(i2)%xxx
-          y(1)=config%parts(i1)%yyy-config%parts(i2)%yyy
-          z(1)=config%parts(i1)%zzz-config%parts(i2)%zzz
+          x(1) = config%parts(i1)%xxx - config%parts(i2)%xxx
+          y(1) = config%parts(i1)%yyy - config%parts(i2)%yyy
+          z(1) = config%parts(i1)%zzz - config%parts(i2)%zzz
 
-          Call images(config%imcon,config%cell,1,x,y,z)
+          Call images(config%imcon, config%cell, 1, x, y, z)
 
-          tmp=Sign( Sqrt((wxx**2+wyy**2+wzz**2)/(x(1)**2+y(1)**2+z(1)**2)) , &
-            Nearest((x(1)*wxx+y(1)*wyy+z(1)*wzz),-1.0_wp) )
+          tmp = Sign(Sqrt((wxx**2 + wyy**2 + wzz**2) / (x(1)**2 + y(1)**2 + z(1)**2)), &
+                     Nearest((x(1) * wxx + y(1) * wyy + z(1) * wzz), -1.0_wp))
 
-          wxx=x(1)*tmp
-          wyy=y(1)*tmp
-          wzz=z(1)*tmp
+          wxx = x(1) * tmp
+          wyy = y(1) * tmp
+          wzz = z(1) * tmp
         End If
 
         ! angular velocity in body fixed frame
 
-        rigid%oxx(irgd)=(rot(1)*wxx+rot(4)*wyy+rot(7)*wzz)*rigid%rix(2,rgdtyp)
-        rigid%oyy(irgd)=(rot(2)*wxx+rot(5)*wyy+rot(8)*wzz)*rigid%riy(2,rgdtyp)
-        rigid%ozz(irgd)=(rot(3)*wxx+rot(6)*wyy+rot(9)*wzz)*rigid%riz(2,rgdtyp)
+        rigid%oxx(irgd) = (rot(1) * wxx + rot(4) * wyy + rot(7) * wzz) * rigid%rix(2, rgdtyp)
+        rigid%oyy(irgd) = (rot(2) * wxx + rot(5) * wyy + rot(8) * wzz) * rigid%riy(2, rgdtyp)
+        rigid%ozz(irgd) = (rot(3) * wxx + rot(6) * wyy + rot(9) * wzz) * rigid%riz(2, rgdtyp)
 
-        Do jrgd=1,lrgd
-          If (rigid%frozen(jrgd,rgdtyp) == 0) Then ! Apply restrictions
-            i=rigid%index_local(jrgd,irgd) ! local index of particle/site
+        Do jrgd = 1, lrgd
+          If (rigid%frozen(jrgd, rgdtyp) == 0) Then ! Apply restrictions
+            i = rigid%index_local(jrgd, irgd) ! local index of particle/site
 
             If (i <= config%natms) Then
 
               ! site velocity in body frame
 
-              x(1)=rigid%x(jrgd,rgdtyp)
-              y(1)=rigid%y(jrgd,rgdtyp)
-              z(1)=rigid%z(jrgd,rgdtyp)
+              x(1) = rigid%x(jrgd, rgdtyp)
+              y(1) = rigid%y(jrgd, rgdtyp)
+              z(1) = rigid%z(jrgd, rgdtyp)
 
-              wxx=rigid%oyy(irgd)*z(1)-rigid%ozz(irgd)*y(1)
-              wyy=rigid%ozz(irgd)*x(1)-rigid%oxx(irgd)*z(1)
-              wzz=rigid%oxx(irgd)*y(1)-rigid%oyy(irgd)*x(1)
+              wxx = rigid%oyy(irgd) * z(1) - rigid%ozz(irgd) * y(1)
+              wyy = rigid%ozz(irgd) * x(1) - rigid%oxx(irgd) * z(1)
+              wzz = rigid%oxx(irgd) * y(1) - rigid%oyy(irgd) * x(1)
 
               ! new atomic velocities in lab frame
 
-              config%vxx(i)=rot(1)*wxx+rot(2)*wyy+rot(3)*wzz+rigid%vxx(irgd)
-              config%vyy(i)=rot(4)*wxx+rot(5)*wyy+rot(6)*wzz+rigid%vyy(irgd)
-              config%vzz(i)=rot(7)*wxx+rot(8)*wyy+rot(9)*wzz+rigid%vzz(irgd)
+              config%vxx(i) = rot(1) * wxx + rot(2) * wyy + rot(3) * wzz + rigid%vxx(irgd)
+              config%vyy(i) = rot(4) * wxx + rot(5) * wyy + rot(6) * wzz + rigid%vyy(irgd)
+              config%vzz(i) = rot(7) * wxx + rot(8) * wyy + rot(9) * wzz + rigid%vzz(irgd)
 
             End If
           End If
@@ -806,14 +800,14 @@ Contains
       End If
     End Do
 
-    Deallocate (gxx,gyy,gzz, Stat = fail)
+    Deallocate (gxx, gyy, gzz, Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'rigid_bodies_quench deallocation failure'
-      Call error(0,message)
+      Write (message, '(a)') 'rigid_bodies_quench deallocation failure'
+      Call error(0, message)
     End If
   End Subroutine rigid_bodies_quench
 
-  Subroutine rigid_bodies_setup(l_str,l_top,megatm,megfrz,degtra,degrot,rcut,sites,rigid,config,comm)
+  Subroutine rigid_bodies_setup(l_str, l_top, megatm, megfrz, degtra, degrot, rcut, sites, rigid, config, comm)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine for constructing RBs' rotational inertia tesnors
@@ -828,41 +822,37 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Logical,            Intent( In    ) :: l_str,l_top
-    Integer,            Intent( In    ) :: megatm
-    Integer,            Intent( InOut ) :: megfrz
-    Integer(Kind=li),   Intent( InOut ) :: degtra,degrot
-    Real( Kind = wp ), Intent( In    ) :: rcut
-    Type( site_type ), Intent( InOut ) :: sites
-    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( configuration_type ),   Intent( InOut ) :: config
-    Type( comms_type ), Intent( InOut ) :: comm
+    Logical,                  Intent(In   ) :: l_str, l_top
+    Integer,                  Intent(In   ) :: megatm
+    Integer,                  Intent(InOut) :: megfrz
+    Integer(Kind=li),         Intent(InOut) :: degtra, degrot
+    Real(Kind=wp),            Intent(In   ) :: rcut
+    Type(site_type),          Intent(InOut) :: sites
+    Type(rigid_bodies_type),  Intent(InOut) :: rigid
+    Type(configuration_type), Intent(InOut) :: config
+    Type(comms_type),         Intent(InOut) :: comm
 
-    Logical           :: l_print,safe,pass1,pass2
-    Integer           :: fail(1:2),irgd,jrgd,krgd,lrgd,rgdtyp, &
-      i,ill,i1,i2,i3, nsite,itmols,nrigid,frzrgd, &
-      ifrz, rotrgd,trargd,iatm1,isite1,ntmp
-    Real( Kind = wp ) :: tmp,weight,                            &
-      rotinr(1:3,1:3),rot1(1:3,1:3),rot(1:9),     &
-      rotall,rotxyz,aa(1:9),bb(1:9),det,rsq,dettest
+    Character(Len=256)         :: message, messages(2)
+    Integer                    :: fail(1:2), frzrgd, i, i1, i2, i3, iatm1, ifrz, ill, irgd, &
+                                  isite1, itmols, jrgd, krgd, lrgd, nrigid, nsite, ntmp, rgdtyp, &
+                                  rotrgd, trargd
+    Integer, Allocatable       :: allrgd(:), fstrgd(:), lstsit(:)
+    Logical                    :: l_print, pass1, pass2, safe
+    Real(Kind=wp)              :: aa(1:9), bb(1:9), det, dettest, rot(1:9), rot1(1:3, 1:3), &
+                                  rotall, rotinr(1:3, 1:3), rotxyz, rsq, tmp, weight
+    Real(Kind=wp), Allocatable :: buffer(:), gxx(:), gyy(:), gzz(:)
 
-    Integer,           Allocatable :: allrgd(:),fstrgd(:),lstsit(:)
-    Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
-    Real( Kind = wp ), Allocatable :: buffer(:)
-    Character ( Len = 256 )        :: message,messages(2)
-
-    fail = 0 ; ntmp = rigid%max_list*Max(rigid%max_rigid,rigid%max_type)
-    Allocate (allrgd(1:rigid%max_type),fstrgd(1:rigid%max_rigid),      Stat = fail(1))
-    Allocate (gxx(1:ntmp),gyy(1:ntmp), gzz(1:ntmp),  Stat = fail(2))
+    fail = 0; ntmp = rigid%max_list * Max(rigid%max_rigid, rigid%max_type)
+    Allocate (allrgd(1:rigid%max_type), fstrgd(1:rigid%max_rigid), Stat=fail(1))
+    Allocate (gxx(1:ntmp), gyy(1:ntmp), gzz(1:ntmp), Stat=fail(2))
     If (Any(fail > 0)) Then
-      Write(message,'(a)') 'rigid_bodies_setup allocation failure'
-      Call error(0,message)
+      Write (message, '(a)') 'rigid_bodies_setup allocation failure'
+      Call error(0, message)
     End If
-
 
     ! Initialise safety flag
 
-    safe=.true.
+    safe = .true.
 
     ! decide on detailed printing
 
@@ -870,23 +860,23 @@ Contains
 
     ! Tag RBs, find their COMs and check their widths to rcut (system cutoff)
 
-    Call rigid_bodies_tags(config,rigid,comm)
-    Call rigid_bodies_coms(config,rigid%xxx,rigid%yyy,rigid%zzz,rigid)
-    Call rigid_bodies_widths(rcut,rigid,config,comm)
+    Call rigid_bodies_tags(config, rigid, comm)
+    Call rigid_bodies_coms(config, rigid%xxx, rigid%yyy, rigid%zzz, rigid)
+    Call rigid_bodies_widths(rcut, rigid, config, comm)
 
     ! Find as many as possible different groups of RB units on this domain
     ! and qualify a representative by the oldest copy of the very first one
 
-    allrgd=0        ! Initialise presence counter (un-encountered yet)
-    fstrgd=megatm+1 ! Initialise order of presence (outside particle range)
-    Do irgd=1,rigid%n_types
-      rgdtyp=rigid%list(0,irgd)
+    allrgd = 0 ! Initialise presence counter (un-encountered yet)
+    fstrgd = megatm + 1 ! Initialise order of presence (outside particle range)
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
 
-      If (allrgd(rgdtyp) == 0) allrgd(rgdtyp)=1
+      If (allrgd(rgdtyp) == 0) allrgd(rgdtyp) = 1
 
       If (allrgd(rgdtyp) == 1) Then
-        i1=rigid%index_local(1,irgd) ! local index of first member
-        iatm1=config%ltg(i1)     ! global index of first member
+        i1 = rigid%index_local(1, irgd) ! local index of first member
+        iatm1 = config%ltg(i1) ! global index of first member
         If (iatm1 < fstrgd(rgdtyp)) fstrgd(rgdtyp) = iatm1
       End If
     End Do
@@ -894,93 +884,93 @@ Contains
     ! Loop over all local, only domain present representatives of unique RB types
     ! and get principal axis systems of these RB unit types
 
-    krgd=0
-    Do irgd=1,rigid%n_types
-      rgdtyp=rigid%list(0,irgd)
+    krgd = 0
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
 
-      If (allrgd(rgdtyp) == 1 .and. fstrgd(rgdtyp) == config%ltg(rigid%index_local(1,irgd))) Then
+      If (allrgd(rgdtyp) == 1 .and. fstrgd(rgdtyp) == config%ltg(rigid%index_local(1, irgd))) Then
 
         ! Get in the local scope of the unit if not fully frozen
 
-        lrgd=rigid%list(-1,irgd)
-        If (rigid%frozen(0,rgdtyp) < lrgd) Then ! If not fully frozen
-          rigid%index_global(0,rgdtyp)=0             ! Not fully frozen (yet)
+        lrgd = rigid%list(-1, irgd)
+        If (rigid%frozen(0, rgdtyp) < lrgd) Then ! If not fully frozen
+          rigid%index_global(0, rgdtyp) = 0 ! Not fully frozen (yet)
 
-          Do jrgd=1,lrgd
-            krgd=krgd+1
+          Do jrgd = 1, lrgd
+            krgd = krgd + 1
 
-            i=rigid%index_local(jrgd,irgd) ! local index of particle/site
+            i = rigid%index_local(jrgd, irgd) ! local index of particle/site
 
-            gxx(krgd)=config%parts(i)%xxx-rigid%xxx(irgd)
-            gyy(krgd)=config%parts(i)%yyy-rigid%yyy(irgd)
-            gzz(krgd)=config%parts(i)%zzz-rigid%zzz(irgd)
+            gxx(krgd) = config%parts(i)%xxx - rigid%xxx(irgd)
+            gyy(krgd) = config%parts(i)%yyy - rigid%yyy(irgd)
+            gzz(krgd) = config%parts(i)%zzz - rigid%zzz(irgd)
           End Do
-        Else                              ! Fully frozen (as if frozen point particle)
-          rigid%index_global(0,rgdtyp)=5
-          rigid%index_global(1,rgdtyp)=1
-          rigid%index_global(2,rgdtyp)=1
-          rigid%index_global(3,rgdtyp)=1
+        Else ! Fully frozen (as if frozen point particle)
+          rigid%index_global(0, rgdtyp) = 5
+          rigid%index_global(1, rgdtyp) = 1
+          rigid%index_global(2, rgdtyp) = 1
+          rigid%index_global(3, rgdtyp) = 1
         End If
       End If
     End Do
 
     ! minimum image convention for bond vectors
 
-    Call images(config%imcon,config%cell,krgd,gxx,gyy,gzz)
+    Call images(config%imcon, config%cell, krgd, gxx, gyy, gzz)
 
     ! Get RB members internal coordinates for these unique RB unit types
     ! that are not fully frozen
 
-    krgd=0
-    Do irgd=1,rigid%n_types
-      rgdtyp=rigid%list(0,irgd)
+    krgd = 0
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
 
-      If (allrgd(rgdtyp) == 1 .and. fstrgd(rgdtyp) == config%ltg(rigid%index_local(1,irgd))) Then
-        lrgd=rigid%list(-1,irgd)
-        If (rigid%frozen(0,rgdtyp) < lrgd) Then ! If not fully frozen
-          rotinr=0.0_wp
+      If (allrgd(rgdtyp) == 1 .and. fstrgd(rgdtyp) == config%ltg(rigid%index_local(1, irgd))) Then
+        lrgd = rigid%list(-1, irgd)
+        If (rigid%frozen(0, rgdtyp) < lrgd) Then ! If not fully frozen
+          rotinr = 0.0_wp
 
-          Do jrgd=1,lrgd
-            krgd=krgd+1
+          Do jrgd = 1, lrgd
+            krgd = krgd + 1
 
             ! A slight shortcut here as we care about the diagonaliser only
             ! M = D(diagonal(d,d,d)) +/- R(rest) = d*1 +/- R.  The diagonaliser
             ! C does not care about d*1 & the +/- as C^-1*M*C == d*1 +/- C^-1*R*C
 
-            weight=Real(1-rigid%frozen(jrgd,rgdtyp),wp)*rigid%weight(jrgd,rgdtyp)
+            weight = Real(1 - rigid%frozen(jrgd, rgdtyp), wp) * rigid%weight(jrgd, rgdtyp)
 
-            rotinr(1,1)=rotinr(1,1)+weight*gxx(krgd)**2
-            rotinr(2,1)=rotinr(2,1)+weight*gxx(krgd)*gyy(krgd)
-            rotinr(3,1)=rotinr(3,1)+weight*gxx(krgd)*gzz(krgd)
-            rotinr(2,2)=rotinr(2,2)+weight*gyy(krgd)**2
-            rotinr(3,2)=rotinr(3,2)+weight*gyy(krgd)*gzz(krgd)
-            rotinr(3,3)=rotinr(3,3)+weight*gzz(krgd)**2
+            rotinr(1, 1) = rotinr(1, 1) + weight * gxx(krgd)**2
+            rotinr(2, 1) = rotinr(2, 1) + weight * gxx(krgd) * gyy(krgd)
+            rotinr(3, 1) = rotinr(3, 1) + weight * gxx(krgd) * gzz(krgd)
+            rotinr(2, 2) = rotinr(2, 2) + weight * gyy(krgd)**2
+            rotinr(3, 2) = rotinr(3, 2) + weight * gyy(krgd) * gzz(krgd)
+            rotinr(3, 3) = rotinr(3, 3) + weight * gzz(krgd)**2
           End Do
-          rotinr(1,2)=rotinr(2,1)
-          rotinr(1,3)=rotinr(3,1)
-          rotinr(2,3)=rotinr(3,2)
+          rotinr(1, 2) = rotinr(2, 1)
+          rotinr(1, 3) = rotinr(3, 1)
+          rotinr(2, 3) = rotinr(3, 2)
 
           ! Diagonalise to get eigen values and vectors
 
-          Call jacobi(3,rotinr,rot1)
+          Call jacobi(3, rotinr, rot1)
 
-          rot(1)=rot1(1,1)
-          rot(2)=rot1(1,2)
-          rot(3)=rot1(1,3)
-          rot(4)=rot1(2,1)
-          rot(5)=rot1(2,2)
-          rot(6)=rot1(2,3)
-          rot(7)=rot1(3,1)
-          rot(8)=rot1(3,2)
-          rot(9)=rot1(3,3)
+          rot(1) = rot1(1, 1)
+          rot(2) = rot1(1, 2)
+          rot(3) = rot1(1, 3)
+          rot(4) = rot1(2, 1)
+          rot(5) = rot1(2, 2)
+          rot(6) = rot1(2, 3)
+          rot(7) = rot1(3, 1)
+          rot(8) = rot1(3, 2)
+          rot(9) = rot1(3, 3)
 
-          krgd=krgd-lrgd
-          Do jrgd=1,lrgd
-            krgd=krgd+1
+          krgd = krgd - lrgd
+          Do jrgd = 1, lrgd
+            krgd = krgd + 1
 
-            rigid%x(jrgd,rgdtyp)=rot(1)*gxx(krgd)+rot(4)*gyy(krgd)+rot(7)*gzz(krgd)
-            rigid%y(jrgd,rgdtyp)=rot(2)*gxx(krgd)+rot(5)*gyy(krgd)+rot(8)*gzz(krgd)
-            rigid%z(jrgd,rgdtyp)=rot(3)*gxx(krgd)+rot(6)*gyy(krgd)+rot(9)*gzz(krgd)
+            rigid%x(jrgd, rgdtyp) = rot(1) * gxx(krgd) + rot(4) * gyy(krgd) + rot(7) * gzz(krgd)
+            rigid%y(jrgd, rgdtyp) = rot(2) * gxx(krgd) + rot(5) * gyy(krgd) + rot(8) * gzz(krgd)
+            rigid%z(jrgd, rgdtyp) = rot(3) * gxx(krgd) + rot(6) * gyy(krgd) + rot(9) * gzz(krgd)
           End Do
         End If
       End If
@@ -992,170 +982,170 @@ Contains
     ! by broadcasting from the lowest rank processor that holds a copy
     ! of the original representative via global summation.
 
-    Allocate (buffer(1:rigid%max_type*(4+3*rigid%max_list)), Stat = fail(1))
+    Allocate (buffer(1:rigid%max_type * (4 + 3 * rigid%max_list)), Stat=fail(1))
     If (fail(1) > 0) Then
-      Write(message,'(a)') 'rigid_bodies_setup allocation failure 1'
-      Call error(0,message)
+      Write (message, '(a)') 'rigid_bodies_setup allocation failure 1'
+      Call error(0, message)
     End If
 
-    krgd=0
-    Do irgd=1,rigid%max_type
-      lrgd=rigid%lst(0,irgd)
+    krgd = 0
+    Do irgd = 1, rigid%max_type
+      lrgd = rigid%lst(0, irgd)
 
-      iatm1=fstrgd(irgd)
-      Call gmin(comm,iatm1)
+      iatm1 = fstrgd(irgd)
+      Call gmin(comm, iatm1)
 
       If (allrgd(irgd) == 1 .and. fstrgd(irgd) == iatm1) Then
-        ntmp=comm%idnode
+        ntmp = comm%idnode
       Else
-        ntmp=comm%mxnode
+        ntmp = comm%mxnode
       End If
-      Call gmin(comm,ntmp)
+      Call gmin(comm, ntmp)
 
       If (comm%idnode == ntmp) Then
-        buffer(krgd+1)=Real(rigid%index_global(0,irgd),wp)
-        buffer(krgd+2)=Real(rigid%index_global(1,irgd),wp)
-        buffer(krgd+3)=Real(rigid%index_global(2,irgd),wp)
-        buffer(krgd+4)=Real(rigid%index_global(3,irgd),wp)
-        krgd=krgd+4
+        buffer(krgd + 1) = Real(rigid%index_global(0, irgd), wp)
+        buffer(krgd + 2) = Real(rigid%index_global(1, irgd), wp)
+        buffer(krgd + 3) = Real(rigid%index_global(2, irgd), wp)
+        buffer(krgd + 4) = Real(rigid%index_global(3, irgd), wp)
+        krgd = krgd + 4
 
-        Do jrgd=1,lrgd
-          buffer(krgd+1)=rigid%x(jrgd,irgd)
-          buffer(krgd+2)=rigid%y(jrgd,irgd)
-          buffer(krgd+3)=rigid%z(jrgd,irgd)
-          krgd=krgd+3
+        Do jrgd = 1, lrgd
+          buffer(krgd + 1) = rigid%x(jrgd, irgd)
+          buffer(krgd + 2) = rigid%y(jrgd, irgd)
+          buffer(krgd + 3) = rigid%z(jrgd, irgd)
+          krgd = krgd + 3
         End Do
       Else
-        buffer(krgd+1)=0.0_wp
-        buffer(krgd+2)=0.0_wp
-        buffer(krgd+3)=0.0_wp
-        buffer(krgd+4)=0.0_wp
-        krgd=krgd+4
+        buffer(krgd + 1) = 0.0_wp
+        buffer(krgd + 2) = 0.0_wp
+        buffer(krgd + 3) = 0.0_wp
+        buffer(krgd + 4) = 0.0_wp
+        krgd = krgd + 4
 
-        Do jrgd=1,lrgd
-          buffer(krgd+1)=0.0_wp
-          buffer(krgd+2)=0.0_wp
-          buffer(krgd+3)=0.0_wp
-          krgd=krgd+3
+        Do jrgd = 1, lrgd
+          buffer(krgd + 1) = 0.0_wp
+          buffer(krgd + 2) = 0.0_wp
+          buffer(krgd + 3) = 0.0_wp
+          krgd = krgd + 3
         End Do
       End If
     End Do
 
-    Call gsum(comm,buffer(1:krgd))
+    Call gsum(comm, buffer(1:krgd))
 
-    krgd=0
-    Do irgd=1,rigid%max_type
-      rigid%index_global(0,irgd)=Nint(buffer(krgd+1))
-      rigid%index_global(1,irgd)=Nint(buffer(krgd+2))
-      rigid%index_global(2,irgd)=Nint(buffer(krgd+3))
-      rigid%index_global(3,irgd)=Nint(buffer(krgd+4))
-      krgd=krgd+4
+    krgd = 0
+    Do irgd = 1, rigid%max_type
+      rigid%index_global(0, irgd) = Nint(buffer(krgd + 1))
+      rigid%index_global(1, irgd) = Nint(buffer(krgd + 2))
+      rigid%index_global(2, irgd) = Nint(buffer(krgd + 3))
+      rigid%index_global(3, irgd) = Nint(buffer(krgd + 4))
+      krgd = krgd + 4
 
-      lrgd=rigid%lst(0,irgd)
-      Do jrgd=1,lrgd
-        rigid%x(jrgd,irgd)=buffer(krgd+1)
-        rigid%y(jrgd,irgd)=buffer(krgd+2)
-        rigid%z(jrgd,irgd)=buffer(krgd+3)
-        krgd=krgd+3
+      lrgd = rigid%lst(0, irgd)
+      Do jrgd = 1, lrgd
+        rigid%x(jrgd, irgd) = buffer(krgd + 1)
+        rigid%y(jrgd, irgd) = buffer(krgd + 2)
+        rigid%z(jrgd, irgd) = buffer(krgd + 3)
+        krgd = krgd + 3
       End Do
     End Do
 
-    Deallocate (buffer, Stat = fail(1))
+    Deallocate (buffer, Stat=fail(1))
     If (fail(1) > 0) Then
-      Write(message,'(a)') 'rigid_bodies_setup deallocation failure 1'
-      Call error(0,message)
+      Write (message, '(a)') 'rigid_bodies_setup deallocation failure 1'
+      Call error(0, message)
     End If
 
-    Deallocate (allrgd,fstrgd, Stat = fail(1))
-    Deallocate (gxx,gyy,gzz,   Stat = fail(2))
+    Deallocate (allrgd, fstrgd, Stat=fail(1))
+    Deallocate (gxx, gyy, gzz, Stat=fail(2))
     If (Any(fail > 0)) Then
-      Write(message,'(a)') 'rigid_bodies_setup deallocation failure'
-      Call error(0,message)
+      Write (message, '(a)') 'rigid_bodies_setup deallocation failure'
+      Call error(0, message)
     End If
 
-    Do irgd=1,rigid%max_type
-      lrgd=rigid%lst(0,irgd)
-      If (rigid%frozen(0,irgd) < lrgd) Then ! If not fully frozen
-        Do jrgd=1,lrgd
+    Do irgd = 1, rigid%max_type
+      lrgd = rigid%lst(0, irgd)
+      If (rigid%frozen(0, irgd) < lrgd) Then ! If not fully frozen
+        Do jrgd = 1, lrgd
 
           ! Impose rounding
 
-          If (Abs(rigid%x(jrgd,irgd)) < 1.0e-8_wp) rigid%x(jrgd,irgd)=0.0_wp
-          If (Abs(rigid%y(jrgd,irgd)) < 1.0e-8_wp) rigid%y(jrgd,irgd)=0.0_wp
-          If (Abs(rigid%z(jrgd,irgd)) < 1.0e-8_wp) rigid%z(jrgd,irgd)=0.0_wp
+          If (Abs(rigid%x(jrgd, irgd)) < 1.0e-8_wp) rigid%x(jrgd, irgd) = 0.0_wp
+          If (Abs(rigid%y(jrgd, irgd)) < 1.0e-8_wp) rigid%y(jrgd, irgd) = 0.0_wp
+          If (Abs(rigid%z(jrgd, irgd)) < 1.0e-8_wp) rigid%z(jrgd, irgd) = 0.0_wp
 
           ! rotational inertia tensor of group type
 
-          weight=Real(1-rigid%frozen(jrgd,irgd),wp)*rigid%weight(jrgd,irgd)
+          weight = Real(1 - rigid%frozen(jrgd, irgd), wp) * rigid%weight(jrgd, irgd)
 
-          rigid%rix(1,irgd) = rigid%rix(1,irgd) + &
-            weight*(rigid%y(jrgd,irgd)**2+rigid%z(jrgd,irgd)**2)
-          rigid%riy(1,irgd) = rigid%riy(1,irgd) + &
-            weight*(rigid%z(jrgd,irgd)**2+rigid%x(jrgd,irgd)**2)
-          rigid%riz(1,irgd) = rigid%riz(1,irgd) + &
-            weight*(rigid%x(jrgd,irgd)**2+rigid%y(jrgd,irgd)**2)
+          rigid%rix(1, irgd) = rigid%rix(1, irgd) + &
+                               weight * (rigid%y(jrgd, irgd)**2 + rigid%z(jrgd, irgd)**2)
+          rigid%riy(1, irgd) = rigid%riy(1, irgd) + &
+                               weight * (rigid%z(jrgd, irgd)**2 + rigid%x(jrgd, irgd)**2)
+          rigid%riz(1, irgd) = rigid%riz(1, irgd) + &
+                               weight * (rigid%x(jrgd, irgd)**2 + rigid%y(jrgd, irgd)**2)
 
         End Do
 
         ! set axis system such that: Ixx >= Iyy >= Izz
 
-        rotxyz=Max(rigid%rix(1,irgd),rigid%riy(1,irgd),rigid%riz(1,irgd))
+        rotxyz = Max(rigid%rix(1, irgd), rigid%riy(1, irgd), rigid%riz(1, irgd))
 
-        If (rotxyz >= rigid%rix(1,irgd)) Then
-          If (rotxyz <= rigid%riy(1,irgd)) Then
-            Do jrgd=1,lrgd
-              tmp=rigid%x(jrgd,irgd)
-              rigid%x(jrgd,irgd)=rigid%y(jrgd,irgd)
-              rigid%y(jrgd,irgd)=-tmp
+        If (rotxyz >= rigid%rix(1, irgd)) Then
+          If (rotxyz <= rigid%riy(1, irgd)) Then
+            Do jrgd = 1, lrgd
+              tmp = rigid%x(jrgd, irgd)
+              rigid%x(jrgd, irgd) = rigid%y(jrgd, irgd)
+              rigid%y(jrgd, irgd) = -tmp
             End Do
-            rigid%riy(1,irgd)=rigid%rix(1,irgd)
-            rigid%rix(1,irgd)=rotxyz
-          Else If (rotxyz <= rigid%riz(1,irgd)) Then
-            Do jrgd=1,lrgd
-              tmp=rigid%x(jrgd,irgd)
-              rigid%x(jrgd,irgd)=rigid%z(jrgd,irgd)
-              rigid%z(jrgd,irgd)=-tmp
+            rigid%riy(1, irgd) = rigid%rix(1, irgd)
+            rigid%rix(1, irgd) = rotxyz
+          Else If (rotxyz <= rigid%riz(1, irgd)) Then
+            Do jrgd = 1, lrgd
+              tmp = rigid%x(jrgd, irgd)
+              rigid%x(jrgd, irgd) = rigid%z(jrgd, irgd)
+              rigid%z(jrgd, irgd) = -tmp
             End Do
-            rigid%riz(1,irgd)=rigid%rix(1,irgd)
-            rigid%rix(1,irgd)=rotxyz
+            rigid%riz(1, irgd) = rigid%rix(1, irgd)
+            rigid%rix(1, irgd) = rotxyz
           End If
         End If
 
-        If (rigid%riz(1,irgd) > rigid%riy(1,irgd)) Then
-          Do jrgd=1,lrgd
-            tmp=rigid%y(jrgd,irgd)
-            rigid%y(jrgd,irgd)=rigid%z(jrgd,irgd)
-            rigid%z(jrgd,irgd)=-tmp
+        If (rigid%riz(1, irgd) > rigid%riy(1, irgd)) Then
+          Do jrgd = 1, lrgd
+            tmp = rigid%y(jrgd, irgd)
+            rigid%y(jrgd, irgd) = rigid%z(jrgd, irgd)
+            rigid%z(jrgd, irgd) = -tmp
           End Do
-          tmp=rigid%riz(1,irgd)
-          rigid%riz(1,irgd)=rigid%riy(1,irgd)
-          rigid%riy(1,irgd)=tmp
+          tmp = rigid%riz(1, irgd)
+          rigid%riz(1, irgd) = rigid%riy(1, irgd)
+          rigid%riy(1, irgd) = tmp
         End If
 
-        rotall=rigid%rix(1,irgd)+rigid%riy(1,irgd)+rigid%riz(1,irgd)
-        If (rotall <= 1.0e-5_wp) rotall=1.0_wp
+        rotall = rigid%rix(1, irgd) + rigid%riy(1, irgd) + rigid%riz(1, irgd)
+        If (rotall <= 1.0e-5_wp) rotall = 1.0_wp
 
         ! test for type of unit (point/linear/bulk RB == ill=2/1/0)
         ! and get reciprocal of RI in RB unit internal frame of axis
 
-        ill=0
-        If (rigid%rix(1,irgd)/rotall < 1.0e-5_wp) Then
-          ill=ill+1
+        ill = 0
+        If (rigid%rix(1, irgd) / rotall < 1.0e-5_wp) Then
+          ill = ill + 1
         Else
-          rigid%rix(2,irgd)=1.0_wp/rigid%rix(1,irgd)
+          rigid%rix(2, irgd) = 1.0_wp / rigid%rix(1, irgd)
         End If
-        If (rigid%riy(1,irgd)/rotall < 1.0e-5_wp) Then
-          ill=ill+1
+        If (rigid%riy(1, irgd) / rotall < 1.0e-5_wp) Then
+          ill = ill + 1
         Else
-          rigid%riy(2,irgd)=1.0_wp/rigid%riy(1,irgd)
+          rigid%riy(2, irgd) = 1.0_wp / rigid%riy(1, irgd)
         End If
-        If (rigid%riz(1,irgd)/rotall < 1.0e-5_wp) Then
-          ill=ill+1
+        If (rigid%riz(1, irgd) / rotall < 1.0e-5_wp) Then
+          ill = ill + 1
         Else
-          rigid%riz(2,irgd)=1.0_wp/rigid%riz(1,irgd)
+          rigid%riz(2, irgd) = 1.0_wp / rigid%riz(1, irgd)
         End If
 
-        rigid%index_global(0,irgd)=ill
+        rigid%index_global(0, irgd) = ill
 
         If (ill > 1) Then
 
@@ -1163,79 +1153,79 @@ Contains
           ! also, partly frozen RBs with only massless unfrozen particles are
           ! caught in read_field!!!
 
-          safe=.false.
+          safe = .false.
           Exit
 
         Else If (ill == 1) Then
 
-          If      (rigid%frozen(0,irgd) == 0) Then
+          If (rigid%frozen(0, irgd) == 0) Then
 
             ! linear unfrozen molecule
 
-            rigid%index_global(1,irgd)=1
-            rigid%index_global(2,irgd)=2
+            rigid%index_global(1, irgd) = 1
+            rigid%index_global(2, irgd) = 2
 
-          Else If (rigid%frozen(0,irgd) >  1) Then
+          Else If (rigid%frozen(0, irgd) > 1) Then
 
             ! RB with 2+ frozen sites in line (not possible for 1 frozen site only)
 
-            i=0
-            Do jrgd=1,lrgd
-              If (rigid%frozen(jrgd,irgd) == 1) Then
-                i=i+1
-                rigid%index_global(i,irgd)=jrgd
+            i = 0
+            Do jrgd = 1, lrgd
+              If (rigid%frozen(jrgd, irgd) == 1) Then
+                i = i + 1
+                rigid%index_global(i, irgd) = jrgd
                 If (i == 3) Exit
               End If
             End Do
 
           End If
 
-          If (rigid%index_global(3,irgd) == 0) Then
-            rigid%index_global(3,irgd)=rigid%index_global(1,irgd)
+          If (rigid%index_global(3, irgd) == 0) Then
+            rigid%index_global(3, irgd) = rigid%index_global(1, irgd)
           End If
 
-          i1=rigid%index_global(1,irgd)
-          i2=rigid%index_global(2,irgd)
+          i1 = rigid%index_global(1, irgd)
+          i2 = rigid%index_global(2, irgd)
 
-          aa(1)=rigid%x(i1,irgd)-rigid%x(i2,irgd)
-          aa(4)=rigid%y(i1,irgd)-rigid%y(i2,irgd)
-          aa(7)=rigid%z(i1,irgd)-rigid%z(i2,irgd)
-          rsq=Sqrt(aa(1)**2+aa(4)**2+aa(7)**2)
+          aa(1) = rigid%x(i1, irgd) - rigid%x(i2, irgd)
+          aa(4) = rigid%y(i1, irgd) - rigid%y(i2, irgd)
+          aa(7) = rigid%z(i1, irgd) - rigid%z(i2, irgd)
+          rsq = Sqrt(aa(1)**2 + aa(4)**2 + aa(7)**2)
 
-          If      (Abs(aa(7)/rsq) > 0.5_wp) Then
-            rsq=Sqrt(aa(4)**2+aa(7)**2)
-            aa(2)= 0.0_wp
-            aa(5)= aa(7)/rsq
-            aa(8)=-aa(4)/rsq
-          Else If (Abs(aa(4)/rsq) > 0.5_wp) Then
-            rsq=Sqrt(aa(4)**2+aa(1)**2)
-            aa(2)=-aa(4)/rsq
-            aa(5)= aa(1)/rsq
-            aa(8)= 0.0_wp
-          Else If (Abs(aa(1)/rsq) > 0.5_wp) Then
-            rsq=Sqrt(aa(1)**2+aa(7)**2)
-            aa(2)=-aa(7)/rsq
-            aa(5)= 0.0_wp
-            aa(8)= aa(1)/rsq
+          If (Abs(aa(7) / rsq) > 0.5_wp) Then
+            rsq = Sqrt(aa(4)**2 + aa(7)**2)
+            aa(2) = 0.0_wp
+            aa(5) = aa(7) / rsq
+            aa(8) = -aa(4) / rsq
+          Else If (Abs(aa(4) / rsq) > 0.5_wp) Then
+            rsq = Sqrt(aa(4)**2 + aa(1)**2)
+            aa(2) = -aa(4) / rsq
+            aa(5) = aa(1) / rsq
+            aa(8) = 0.0_wp
+          Else If (Abs(aa(1) / rsq) > 0.5_wp) Then
+            rsq = Sqrt(aa(1)**2 + aa(7)**2)
+            aa(2) = -aa(7) / rsq
+            aa(5) = 0.0_wp
+            aa(8) = aa(1) / rsq
           End If
 
-          aa(3)=aa(4)*aa(8)-aa(7)*aa(5)
-          aa(6)=aa(7)*aa(2)-aa(1)*aa(8)
-          aa(9)=aa(1)*aa(5)-aa(4)*aa(2)
+          aa(3) = aa(4) * aa(8) - aa(7) * aa(5)
+          aa(6) = aa(7) * aa(2) - aa(1) * aa(8)
+          aa(9) = aa(1) * aa(5) - aa(4) * aa(2)
 
-          Call invert(aa,bb,det)
+          Call invert(aa, bb, det)
 
           ! Check aa validity
 
-          If (rigid%frozen(0,irgd) /= 1 .and. Abs(det) < 1.0e-5_wp) Then
-            safe=.false.
+          If (rigid%frozen(0, irgd) /= 1 .and. Abs(det) < 1.0e-5_wp) Then
+            safe = .false.
             Exit
           End If
 
           ! Store tensor
 
-          Do i=1,9
-            rigid%axs(i,irgd)=bb(i)
+          Do i = 1, 9
+            rigid%axs(i, irgd) = bb(i)
           End Do
 
         Else If (ill == 0) Then
@@ -1243,73 +1233,73 @@ Contains
           ! (1) non-linear molecule or (2) RB with 3+ frozen sites
           ! as at least 3 not in line (as if all were)
 
-          If (rigid%frozen(0,irgd) > 1) Then
-            rigid%index_global(0,irgd)=4
-            rigid%index_global(1,irgd)=1
-            rigid%index_global(2,irgd)=1
-            rigid%index_global(3,irgd)=1
+          If (rigid%frozen(0, irgd) > 1) Then
+            rigid%index_global(0, irgd) = 4
+            rigid%index_global(1, irgd) = 1
+            rigid%index_global(2, irgd) = 1
+            rigid%index_global(3, irgd) = 1
           Else
-            i1=1
-            i2=1
-            i3=1
+            i1 = 1
+            i2 = 1
+            i3 = 1
 
-            pass1=.true.
-            dettest=1.0e-1_wp
+            pass1 = .true.
+            dettest = 1.0e-1_wp
 
-            Do While (pass1 .and. i2 < lrgd-1)
+            Do While (pass1 .and. i2 < lrgd - 1)
 
-              i2=i2+1
-              i3=i2
-              pass2=.true.
+              i2 = i2 + 1
+              i3 = i2
+              pass2 = .true.
 
               Do While (pass2 .and. i3 < lrgd)
 
-                i3=i3+1
+                i3 = i3 + 1
 
-                aa(1)=rigid%x(i1,irgd)-rigid%x(i2,irgd)
-                aa(4)=rigid%y(i1,irgd)-rigid%y(i2,irgd)
-                aa(7)=rigid%z(i1,irgd)-rigid%z(i2,irgd)
+                aa(1) = rigid%x(i1, irgd) - rigid%x(i2, irgd)
+                aa(4) = rigid%y(i1, irgd) - rigid%y(i2, irgd)
+                aa(7) = rigid%z(i1, irgd) - rigid%z(i2, irgd)
 
-                aa(2)=rigid%x(i1,irgd)-rigid%x(i3,irgd)
-                aa(5)=rigid%y(i1,irgd)-rigid%y(i3,irgd)
-                aa(8)=rigid%z(i1,irgd)-rigid%z(i3,irgd)
+                aa(2) = rigid%x(i1, irgd) - rigid%x(i3, irgd)
+                aa(5) = rigid%y(i1, irgd) - rigid%y(i3, irgd)
+                aa(8) = rigid%z(i1, irgd) - rigid%z(i3, irgd)
 
-                aa(3)=aa(4)*aa(8)-aa(7)*aa(5)
-                aa(6)=aa(7)*aa(2)-aa(1)*aa(8)
-                aa(9)=aa(1)*aa(5)-aa(4)*aa(2)
+                aa(3) = aa(4) * aa(8) - aa(7) * aa(5)
+                aa(6) = aa(7) * aa(2) - aa(1) * aa(8)
+                aa(9) = aa(1) * aa(5) - aa(4) * aa(2)
 
                 ! invert matrix
 
-                Call invert(aa,bb,det)
+                Call invert(aa, bb, det)
 
                 ! check on size of determinant - to see if the 3 sites are
                 ! too close to being linear for safety.
 
-                pass2=(Abs(det) < dettest)
+                pass2 = (Abs(det) < dettest)
 
               End Do
 
-              pass1=(Abs(det) < dettest)
+              pass1 = (Abs(det) < dettest)
 
             End Do
 
             ! Check aa validity
 
             If (Abs(det) < dettest) Then
-              safe=.false.
+              safe = .false.
               Exit
             End If
 
             ! store indices used
 
-            rigid%index_global(1,irgd)=i1
-            rigid%index_global(2,irgd)=i2
-            rigid%index_global(3,irgd)=i3
+            rigid%index_global(1, irgd) = i1
+            rigid%index_global(2, irgd) = i2
+            rigid%index_global(3, irgd) = i3
 
             ! store coefficients
 
-            Do i=1,9
-              rigid%axs(i,irgd)=bb(i)
+            Do i = 1, 9
+              rigid%axs(i, irgd) = bb(i)
             End Do
           End If
 
@@ -1319,83 +1309,83 @@ Contains
 
     ! Report the naughty RB type, number of unit in molecule type and abort
 
-    If (.not.safe) Then
-      nrigid=0
-      S: Do itmols=1,sites%ntype_mol
-        Do i=1,rigid%num(itmols)
-          nrigid=nrigid+1
+    If (.not. safe) Then
+      nrigid = 0
+      S: Do itmols = 1, sites%ntype_mol
+        Do i = 1, rigid%num(itmols)
+          nrigid = nrigid + 1
           If (nrigid == irgd) Exit S
         End Do
       End Do S
 
-      Call warning(307,Real(irgd,wp),Real(itmols,wp),Real(ill,wp))
+      Call warning(307, Real(irgd, wp), Real(itmols, wp), Real(ill, wp))
       Call error(650)
     End If
 
     ! Sort out degrees of freedom (redundancy & corrections)
     ! correct sites%freeze_site,sites%dof_site,rigid%weight,rigid%weightless if needed
 
-    Allocate (lstsit(0:rigid%max_list*rigid%max_type), Stat = fail(1))
+    Allocate (lstsit(0:rigid%max_list * rigid%max_type), Stat=fail(1))
     If (fail(1) > 0) Then
-      Write(message,'(a)') 'rigid_bodies_setup allocation failure 2'
-      Call error(0,message)
+      Write (message, '(a)') 'rigid_bodies_setup allocation failure 2'
+      Call error(0, message)
     End If
-    lstsit=0
+    lstsit = 0
 
     ! initialise rotational and translational DoF
 
-    degtra=Int(0,li)
-    degrot=Int(0,li)
+    degtra = Int(0, li)
+    degrot = Int(0, li)
 
-    nsite =0
-    nrigid=0
-    Do itmols=1,sites%ntype_mol
-      ifrz=0
+    nsite = 0
+    nrigid = 0
+    Do itmols = 1, sites%ntype_mol
+      ifrz = 0
 
-      frzrgd=0
-      trargd=0
-      rotrgd=0
+      frzrgd = 0
+      trargd = 0
+      rotrgd = 0
 
-      Do irgd=1,rigid%num(itmols)
-        nrigid=nrigid+1
+      Do irgd = 1, rigid%num(itmols)
+        nrigid = nrigid + 1
 
-        lrgd=rigid%lst(0,nrigid)
-        ill=rigid%index_global(0,nrigid)
+        lrgd = rigid%lst(0, nrigid)
+        ill = rigid%index_global(0, nrigid)
 
         If (ill == 1) Then
 
-          If (rigid%frozen(0,nrigid) == 0) Then
+          If (rigid%frozen(0, nrigid) == 0) Then
 
             ! linear molecules lose one axis of rotation but com moves about
 
-            rotrgd=rotrgd+2
-            trargd=trargd+3
+            rotrgd = rotrgd + 2
+            trargd = trargd + 3
 
           Else
 
             ! not fully frozen RB with 2+ frozen sites in line have
             ! no COM momentum and rotate only around 1 axis
 
-            rotrgd=rotrgd+1
+            rotrgd = rotrgd + 1
 
           End If
 
         Else If (ill == 0) Then
 
-          If (rigid%frozen(0,nrigid) == 0) Then
+          If (rigid%frozen(0, nrigid) == 0) Then
 
             ! proper unfrozen RB with 3 rot DoFs (rot axis)
             ! and 3 tra DoF (COM moves about)
 
-            trargd=trargd+3
-            rotrgd=rotrgd+3
+            trargd = trargd + 3
+            rotrgd = rotrgd + 3
 
           Else
 
             ! not fully frozen RB with 1 frozen site
             ! no COM momentum with 3 rot DoFs (rot axis)
 
-            rotrgd=rotrgd+3
+            rotrgd = rotrgd + 3
 
           End If
 
@@ -1403,175 +1393,175 @@ Contains
 
           ! As if fully frozen RBs - must get fully frozen then
 
-          rigid%index_global(0,nrigid)=5
-          rigid%index_global(1,rgdtyp)=1
-          rigid%index_global(2,rgdtyp)=1
-          rigid%index_global(3,rgdtyp)=1
+          rigid%index_global(0, nrigid) = 5
+          rigid%index_global(1, rgdtyp) = 1
+          rigid%index_global(2, rgdtyp) = 1
+          rigid%index_global(3, rgdtyp) = 1
 
-          rigid%frozen(0,nrigid)=lrgd
-          rigid%weight(0,nrigid)=0.0_wp
-          rigid%weightless(0,nrigid)=Real(lrgd,wp)
+          rigid%frozen(0, nrigid) = lrgd
+          rigid%weight(0, nrigid) = 0.0_wp
+          rigid%weightless(0, nrigid) = Real(lrgd, wp)
 
-          rigid%x(:,nrigid)=0.0_wp
-          rigid%y(:,nrigid)=0.0_wp
-          rigid%z(:,nrigid)=0.0_wp
+          rigid%x(:, nrigid) = 0.0_wp
+          rigid%y(:, nrigid) = 0.0_wp
+          rigid%z(:, nrigid) = 0.0_wp
 
-          rigid%rix(:,nrigid)=0.0_wp
-          rigid%riy(:,nrigid)=0.0_wp
-          rigid%riz(:,nrigid)=0.0_wp
+          rigid%rix(:, nrigid) = 0.0_wp
+          rigid%riy(:, nrigid) = 0.0_wp
+          rigid%riz(:, nrigid) = 0.0_wp
 
-          Call warning(305,Real(irgd,wp),Real(itmols,wp),0.0_wp)
+          Call warning(305, Real(irgd, wp), Real(itmols, wp), 0.0_wp)
 
-          frzrgd=frzrgd+1
+          frzrgd = frzrgd + 1
 
-          Do jrgd=1,lrgd
-            iatm1=rigid%lst(jrgd,nrigid)
-            isite1=nsite+iatm1
+          Do jrgd = 1, lrgd
+            iatm1 = rigid%lst(jrgd, nrigid)
+            isite1 = nsite + iatm1
 
             If (sites%freeze_site(isite1) == 0) Then
-              ifrz=ifrz+1
+              ifrz = ifrz + 1
 
-              sites%freeze_site(isite1)=1
-              sites%dof_site(isite1)=0.0_wp
+              sites%freeze_site(isite1) = 1
+              sites%dof_site(isite1) = 0.0_wp
 
-              lstsit(0)=lstsit(0)+1
-              lstsit(lstsit(0))=isite1
+              lstsit(0) = lstsit(0) + 1
+              lstsit(lstsit(0)) = isite1
             End If
           End Do
 
         End If
       End Do
 
-      megfrz=megfrz+ifrz*sites%num_mols(itmols)
+      megfrz = megfrz + ifrz * sites%num_mols(itmols)
 
-      rigid%total=rigid%total-frzrgd*sites%num_mols(itmols)
-      degtra=degtra+Int(sites%num_mols(itmols),li)*Int(trargd,li)
-      degrot=degrot+Int(sites%num_mols(itmols),li)*Int(rotrgd,li)
+      rigid%total = rigid%total - frzrgd * sites%num_mols(itmols)
+      degtra = degtra + Int(sites%num_mols(itmols), li) * Int(trargd, li)
+      degrot = degrot + Int(sites%num_mols(itmols), li) * Int(rotrgd, li)
 
-      nsite=nsite+sites%num_site(itmols)
+      nsite = nsite + sites%num_site(itmols)
     End Do
 
     ! In case of any refreezing changes refresh the local neigh%list of frozen atoms
 
     If (lstsit(0) > 0) Then
-      Do i=1,config%nlast
-        config%lfrzn(i)=sites%freeze_site(config%lsite(i))
+      Do i = 1, config%nlast
+        config%lfrzn(i) = sites%freeze_site(config%lsite(i))
       End Do
     End If
 
-    Deallocate (lstsit, Stat = fail(1))
+    Deallocate (lstsit, Stat=fail(1))
     If (fail(1) > 0) Then
-      Write(message,'(a)') 'rigid_bodies_setup deallocation failure 2'
-      Call error(0,message)
+      Write (message, '(a)') 'rigid_bodies_setup deallocation failure 2'
+      Call error(0, message)
     End If
 
     ! summarise results
 
-    If (comm%idnode==0 .and. l_print) Then
-      Call info('summary of rigid body set up',.true.)
+    If (comm%idnode == 0 .and. l_print) Then
+      Call info('summary of rigid body set up', .true.)
 
-      nrigid=0
-      Do itmols=1,sites%ntype_mol
-        Write(message,'(2x,a,i6)') 'in molecule',itmols
-        Call info(message,.true.)
+      nrigid = 0
+      Do itmols = 1, sites%ntype_mol
+        Write (message, '(2x,a,i6)') 'in molecule', itmols
+        Call info(message, .true.)
 
         If (rigid%num(itmols) == 0) Then
-          Write(message,'(2x,a)') 'no rigid bodies specified'
-          Call info(message,.true.)
+          Write (message, '(2x,a)') 'no rigid bodies specified'
+          Call info(message, .true.)
         End If
 
-        Do i=1,rigid%num(itmols)
-          If (Mod(nrigid,5) == 0) Then
-            Write(messages(1),'(2x,a)') &
+        Do i = 1, rigid%num(itmols)
+          If (Mod(nrigid, 5) == 0) Then
+            Write (messages(1), '(2x,a)') &
               'type :: members :: frozen status :: unfrozen mass :: ' &
               //'translational DoF :: rotational DoF'
-            Write(messages(2),'(4x,a)') &
+            Write (messages(2), '(4x,a)') &
               'rotational inertia:        x                   y                   z'
-            Call info(messages,2,.true.)
+            Call info(messages, 2, .true.)
           End If
-          nrigid=nrigid+1
+          nrigid = nrigid + 1
 
-          lrgd=rigid%lst(0,nrigid)
-          ifrz=rigid%frozen(0,nrigid)
-          ill =rigid%index_global(0,nrigid)
+          lrgd = rigid%lst(0, nrigid)
+          ifrz = rigid%frozen(0, nrigid)
+          ill = rigid%index_global(0, nrigid)
 
-          If      (ifrz < lrgd) Then
-            If      (ill == 1) Then ! Linear RB
-              If      (ifrz == 0) Then
-                trargd=3
-                rotrgd=2
-              Else If (ifrz >  1) Then
-                trargd=0
-                rotrgd=1
+          If (ifrz < lrgd) Then
+            If (ill == 1) Then ! Linear RB
+              If (ifrz == 0) Then
+                trargd = 3
+                rotrgd = 2
+              Else If (ifrz > 1) Then
+                trargd = 0
+                rotrgd = 1
               End If
             Else If (ill == 0) Then ! Proper RB
-              If      (ifrz == 0) Then
-                trargd=3
-                rotrgd=3
+              If (ifrz == 0) Then
+                trargd = 3
+                rotrgd = 3
               Else If (ifrz == 1) Then
-                trargd=0
-                rotrgd=3
+                trargd = 0
+                rotrgd = 3
               End If
             End If
           Else If (ifrz == lrgd) Then
-            trargd=0
-            rotrgd=0
+            trargd = 0
+            rotrgd = 0
           End If
 
-          Write(messages(1),'(i5,2x,i6,9x,i6,9x,f13.6,8x,i6,14x,i6)') &
-            nrigid,lrgd,ifrz,rigid%weight(0,nrigid),trargd,rotrgd
-          Write(messages(2),'(18x,3f20.10)') &
-            rigid%rix(1,nrigid),rigid%riy(1,nrigid),rigid%riz(1,nrigid)
-          Call info(messages,2,.true.)
+          Write (messages(1), '(i5,2x,i6,9x,i6,9x,f13.6,8x,i6,14x,i6)') &
+            nrigid, lrgd, ifrz, rigid%weight(0, nrigid), trargd, rotrgd
+          Write (messages(2), '(18x,3f20.10)') &
+            rigid%rix(1, nrigid), rigid%riy(1, nrigid), rigid%riz(1, nrigid)
+          Call info(messages, 2, .true.)
           If (lrgd > ifrz) Then
-            Write(message,'(6x,a)') &
+            Write (message, '(6x,a)') &
               'member  ::   coordinates:        x                   y                   z'
-            Call info(message,.true.)
-            Do jrgd=1,lrgd
-              Write(message,'(3x,i6,17x,3f20.10)') &
-                jrgd,rigid%x(jrgd,nrigid),rigid%y(jrgd,nrigid),rigid%z(jrgd,nrigid)
-              Call info(message,.true.)
+            Call info(message, .true.)
+            Do jrgd = 1, lrgd
+              Write (message, '(3x,i6,17x,3f20.10)') &
+                jrgd, rigid%x(jrgd, nrigid), rigid%y(jrgd, nrigid), rigid%z(jrgd, nrigid)
+              Call info(message, .true.)
             End Do
           End If
         End Do
       End Do
     End If
     If (l_print) Then
-      Call info('',.true.)
+      Call info('', .true.)
     End If
 
     ! equalise sites DoF due to participating in a good RB (not fully frozen)
 
-    nsite =0
-    nrigid=0
-    Do itmols=1,sites%ntype_mol
-      Do irgd=1,rigid%num(itmols)
-        nrigid=nrigid+1
+    nsite = 0
+    nrigid = 0
+    Do itmols = 1, sites%ntype_mol
+      Do irgd = 1, rigid%num(itmols)
+        nrigid = nrigid + 1
 
-        lrgd=rigid%lst(0,nrigid)
-        ill=rigid%index_global(0,nrigid)
+        lrgd = rigid%lst(0, nrigid)
+        ill = rigid%index_global(0, nrigid)
 
         ! 6 = 3(rot) + 3(tra) DoF per RB
 
         If (ill == 1) Then
 
-          ntmp=0
-          Do jrgd=1,lrgd
-            iatm1=rigid%lst(jrgd,nrigid)
-            isite1=nsite+iatm1
+          ntmp = 0
+          Do jrgd = 1, lrgd
+            iatm1 = rigid%lst(jrgd, nrigid)
+            isite1 = nsite + iatm1
 
-            If (sites%dof_site(isite1) > zero_plus) ntmp=ntmp+1
+            If (sites%dof_site(isite1) > zero_plus) ntmp = ntmp + 1
           End Do
 
-          If (rigid%frozen(0,nrigid) == 0) Then
+          If (rigid%frozen(0, nrigid) == 0) Then
 
             ! linear molecule losing one axis of rotation - losing 1(rot) DoF
 
-            Do jrgd=1,lrgd
-              iatm1=rigid%lst(jrgd,nrigid)
-              isite1=nsite+iatm1
+            Do jrgd = 1, lrgd
+              iatm1 = rigid%lst(jrgd, nrigid)
+              isite1 = nsite + iatm1
 
-              If (sites%dof_site(isite1) > zero_plus) sites%dof_site(isite1)=5.0_wp/Real(ntmp,wp)
+              If (sites%dof_site(isite1) > zero_plus) sites%dof_site(isite1) = 5.0_wp / Real(ntmp, wp)
             End Do
 
           Else
@@ -1579,55 +1569,55 @@ Contains
             ! RB with 2+ frozen sites in line with members restricted to
             ! a circular line around one axis - losing 2(rot) & 3(tra) DoF
 
-            Do jrgd=1,lrgd
-              iatm1=rigid%lst(jrgd,nrigid)
-              isite1=nsite+iatm1
+            Do jrgd = 1, lrgd
+              iatm1 = rigid%lst(jrgd, nrigid)
+              isite1 = nsite + iatm1
 
-              If (sites%dof_site(isite1) > zero_plus) sites%dof_site(isite1)=1.0_wp/Real(ntmp,wp)
+              If (sites%dof_site(isite1) > zero_plus) sites%dof_site(isite1) = 1.0_wp / Real(ntmp, wp)
             End Do
 
           End If
 
         Else If (ill == 0) Then
 
-          ntmp=0
-          Do jrgd=1,lrgd
-            iatm1=rigid%lst(jrgd,nrigid)
-            isite1=nsite+iatm1
+          ntmp = 0
+          Do jrgd = 1, lrgd
+            iatm1 = rigid%lst(jrgd, nrigid)
+            isite1 = nsite + iatm1
 
-            If (sites%dof_site(isite1) > zero_plus) ntmp=ntmp+1
+            If (sites%dof_site(isite1) > zero_plus) ntmp = ntmp + 1
           End Do
 
-          If (rigid%frozen(0,nrigid) == 0) Then
+          If (rigid%frozen(0, nrigid) == 0) Then
 
             ! Proper RB
 
-            Do jrgd=1,lrgd
-              iatm1=rigid%lst(jrgd,nrigid)
-              isite1=nsite+iatm1
+            Do jrgd = 1, lrgd
+              iatm1 = rigid%lst(jrgd, nrigid)
+              isite1 = nsite + iatm1
 
-              If (sites%dof_site(isite1) > zero_plus) sites%dof_site(isite1)=6.0_wp/Real(ntmp,wp)
+              If (sites%dof_site(isite1) > zero_plus) sites%dof_site(isite1) = 6.0_wp / Real(ntmp, wp)
             End Do
 
-          Else If (rigid%frozen(0,nrigid) == 1) Then
+          Else If (rigid%frozen(0, nrigid) == 1) Then
 
             ! RB with 1 frozen site with members restricted
             ! to a spherical surface - losing 3(tra) DoF
 
-            Do jrgd=1,lrgd
-              iatm1=rigid%lst(jrgd,nrigid)
-              isite1=nsite+iatm1
+            Do jrgd = 1, lrgd
+              iatm1 = rigid%lst(jrgd, nrigid)
+              isite1 = nsite + iatm1
 
-              If (sites%dof_site(isite1) > zero_plus) sites%dof_site(isite1)=3.0_wp/Real(ntmp,wp)
+              If (sites%dof_site(isite1) > zero_plus) sites%dof_site(isite1) = 3.0_wp / Real(ntmp, wp)
             End Do
 
           Else
 
-            Do jrgd=1,lrgd
-              iatm1=rigid%lst(jrgd,nrigid)
-              isite1=nsite+iatm1
+            Do jrgd = 1, lrgd
+              iatm1 = rigid%lst(jrgd, nrigid)
+              isite1 = nsite + iatm1
 
-              If (sites%dof_site(isite1) > zero_plus) safe=.false.
+              If (sites%dof_site(isite1) > zero_plus) safe = .false.
             End Do
 
           End If
@@ -1637,23 +1627,23 @@ Contains
 
       ! Report the naughty RB type, number of unit in molecule type and abort
 
-      If (.not.safe) Then
-        Call warning(307,Real(irgd,wp),Real(itmols,wp),Real(ill,wp))
+      If (.not. safe) Then
+        Call warning(307, Real(irgd, wp), Real(itmols, wp), Real(ill, wp))
         Call error(644)
       End If
 
-      nsite=nsite+sites%num_site(itmols)
+      nsite = nsite + sites%num_site(itmols)
     End Do
 
     ! OUT OF GLOBAL SCOPE & BACK IN DOMAIN SCOPE
 
     ! set-up quaternions
 
-    Call q_setup(rigid,config,comm)
+    Call q_setup(rigid, config, comm)
 
   End Subroutine rigid_bodies_setup
 
-  Subroutine rigid_bodies_split_torque(gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz,rigid,config)
+  Subroutine rigid_bodies_split_torque(gxx, gyy, gzz, txx, tyy, tzz, uxx, uyy, uzz, rigid, config)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine for resolving RBs' torques into equivalent atomic
@@ -1670,220 +1660,219 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp ),  Intent( InOut ) :: gxx(:),gyy(:),gzz(:)
-    Real( Kind = wp ),  Intent(   Out ) :: txx(:),tyy(:),tzz(:), &
-      uxx(:),uyy(:),uzz(:)
-    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( configuration_type ),   Intent( InOut ) :: config
+    Real(Kind=wp),            Intent(InOut) :: gxx(:), gyy(:), gzz(:)
+    Real(Kind=wp),            Intent(  Out) :: txx(:), tyy(:), tzz(:), uxx(:), uyy(:), uzz(:)
+    Type(rigid_bodies_type),  Intent(InOut) :: rigid
+    Type(configuration_type), Intent(InOut) :: config
 
-    Integer           :: fail,i,i1,i2,irgd,jrgd,krgd,lrgd,rgdtyp
-    Real( Kind = wp ) :: fmx,fmy,fmz,x(1:1),y(1:1),z(1:1),tqx,tqy,tqz,torque,tmp,qqq
-
-    Real( Kind = wp ), Allocatable :: ggx(:),ggy(:),ggz(:)
-    Character ( Len = 256 )        :: message
+    Character(Len=256)         :: message
+    Integer                    :: fail, i, i1, i2, irgd, jrgd, krgd, lrgd, rgdtyp
+    Real(Kind=wp)              :: fmx, fmy, fmz, qqq, tmp, torque, tqx, tqy, tqz, x(1:1), y(1:1), &
+                                  z(1:1)
+    Real(Kind=wp), Allocatable :: ggx(:), ggy(:), ggz(:)
 
     fail = 0
-    Allocate (ggx(1:rigid%max_list*rigid%max_rigid), &
-      ggy(1:rigid%max_list*rigid%max_rigid), &
-      ggz(1:rigid%max_list*rigid%max_rigid), Stat = fail)
+    Allocate (ggx(1:rigid%max_list * rigid%max_rigid), &
+              ggy(1:rigid%max_list * rigid%max_rigid), &
+              ggz(1:rigid%max_list * rigid%max_rigid), Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'rigid_bodies_split_torque allocation failure'
-      Call error(0,message)
+      Write (message, '(a)') 'rigid_bodies_split_torque allocation failure'
+      Call error(0, message)
     End If
 
     ! Get a RB particles vectors wrt the RB's COM
 
-    krgd=0
-    Do irgd=1,rigid%n_types
-      rgdtyp=rigid%list(0,irgd)
+    krgd = 0
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
 
       ! For all good RBs
 
-      lrgd=rigid%list(-1,irgd)
-      If (rigid%frozen(0,rgdtyp) < lrgd) Then
-        Do jrgd=1,lrgd
-          krgd=krgd+1
+      lrgd = rigid%list(-1, irgd)
+      If (rigid%frozen(0, rgdtyp) < lrgd) Then
+        Do jrgd = 1, lrgd
+          krgd = krgd + 1
 
-          i=rigid%index_local(jrgd,irgd) ! local index of particle/site
+          i = rigid%index_local(jrgd, irgd) ! local index of particle/site
 
           ! COM distances
 
-          ggx(krgd)=config%parts(i)%xxx-rigid%xxx(irgd)
-          ggy(krgd)=config%parts(i)%yyy-rigid%yyy(irgd)
-          ggz(krgd)=config%parts(i)%zzz-rigid%zzz(irgd)
+          ggx(krgd) = config%parts(i)%xxx - rigid%xxx(irgd)
+          ggy(krgd) = config%parts(i)%yyy - rigid%yyy(irgd)
+          ggz(krgd) = config%parts(i)%zzz - rigid%zzz(irgd)
         End Do
       End If
     End Do
 
     ! minimum image convention for bond vectors
 
-    Call images(config%imcon,config%cell,krgd,ggx,ggy,ggz)
+    Call images(config%imcon, config%cell, krgd, ggx, ggy, ggz)
 
-    krgd=0
-    Do irgd=1,rigid%n_types
-      rgdtyp=rigid%list(0,irgd)
+    krgd = 0
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
 
       ! For all good RBs
 
-      lrgd=rigid%list(-1,irgd)
-      If (rigid%frozen(0,rgdtyp) < lrgd) Then
+      lrgd = rigid%list(-1, irgd)
+      If (rigid%frozen(0, rgdtyp) < lrgd) Then
 
         ! calculate net force and torque on the RB - assumption must hold here
 
-        fmx=0.0_wp ; fmy=0.0_wp ; fmz=0.0_wp
-        tqx=0.0_wp ; tqy=0.0_wp ; tqz=0.0_wp
+        fmx = 0.0_wp; fmy = 0.0_wp; fmz = 0.0_wp
+        tqx = 0.0_wp; tqy = 0.0_wp; tqz = 0.0_wp
 
-        Do jrgd=1,lrgd
-          krgd=krgd+1
+        Do jrgd = 1, lrgd
+          krgd = krgd + 1
 
-          i=rigid%index_local(jrgd,irgd) ! local index of particle/site
+          i = rigid%index_local(jrgd, irgd) ! local index of particle/site
 
           ! If the RB has a frozen particle then no net force
 
-          If (rigid%frozen(0,rgdtyp) == 0) Then
-            fmx=fmx+gxx(i)
-            fmy=fmy+gyy(i)
-            fmz=fmz+gzz(i)
+          If (rigid%frozen(0, rgdtyp) == 0) Then
+            fmx = fmx + gxx(i)
+            fmy = fmy + gyy(i)
+            fmz = fmz + gzz(i)
           End If
 
-          tqx=tqx+ggy(krgd)*gzz(i)-ggz(krgd)*gyy(i)
-          tqy=tqy+ggz(krgd)*gxx(i)-ggx(krgd)*gzz(i)
-          tqz=tqz+ggx(krgd)*gyy(i)-ggy(krgd)*gxx(i)
+          tqx = tqx + ggy(krgd) * gzz(i) - ggz(krgd) * gyy(i)
+          tqy = tqy + ggz(krgd) * gxx(i) - ggx(krgd) * gzz(i)
+          tqz = tqz + ggx(krgd) * gyy(i) - ggy(krgd) * gxx(i)
         End Do
 
         ! offload new forces on RB members
 
-        If (rigid%frozen(0,rgdtyp) == 0) Then
-          tmp=1.0_wp/Real(lrgd,wp)
+        If (rigid%frozen(0, rgdtyp) == 0) Then
+          tmp = 1.0_wp / Real(lrgd, wp)
 
-          fmx=fmx*tmp
-          fmy=fmy*tmp
-          fmz=fmz*tmp
+          fmx = fmx * tmp
+          fmy = fmy * tmp
+          fmz = fmz * tmp
         Else
-          fmx=0.0_wp
-          fmy=0.0_wp
-          fmz=0.0_wp
+          fmx = 0.0_wp
+          fmy = 0.0_wp
+          fmz = 0.0_wp
         End If
 
-        Do jrgd=1,lrgd
-          i=rigid%index_local(jrgd,irgd) ! local index of particle/site
+        Do jrgd = 1, lrgd
+          i = rigid%index_local(jrgd, irgd) ! local index of particle/site
 
-          gxx(i)=fmx
-          gyy(i)=fmy
-          gzz(i)=fmz
+          gxx(i) = fmx
+          gyy(i) = fmy
+          gzz(i) = fmz
         End Do
 
         ! If the RB has 2+ frozen particles (ill=1) the net torque
         ! must align along the axis of rotation
 
-        If (rigid%frozen(0,rgdtyp) > 1) Then
-          i1=rigid%index_local(rigid%index_global(1,rgdtyp),irgd)
-          i2=rigid%index_local(rigid%index_global(2,rgdtyp),irgd)
+        If (rigid%frozen(0, rgdtyp) > 1) Then
+          i1 = rigid%index_local(rigid%index_global(1, rgdtyp), irgd)
+          i2 = rigid%index_local(rigid%index_global(2, rgdtyp), irgd)
 
-          x(1)=config%parts(i1)%xxx-config%parts(i2)%xxx
-          y(1)=config%parts(i1)%yyy-config%parts(i2)%yyy
-          z(1)=config%parts(i1)%zzz-config%parts(i2)%zzz
+          x(1) = config%parts(i1)%xxx - config%parts(i2)%xxx
+          y(1) = config%parts(i1)%yyy - config%parts(i2)%yyy
+          z(1) = config%parts(i1)%zzz - config%parts(i2)%zzz
 
-          Call images(config%imcon,config%cell,1,x,y,z)
+          Call images(config%imcon, config%cell, 1, x, y, z)
 
-          tmp=(x(1)*tqx+y(1)*tqy+z(1)*tqz)/(x(1)**2+y(1)**2+z(1)**2)
-          tqx=x(1)*tmp
-          tqy=y(1)*tmp
-          tqz=z(1)*tmp
+          tmp = (x(1) * tqx + y(1) * tqy + z(1) * tqz) / (x(1)**2 + y(1)**2 + z(1)**2)
+          tqx = x(1) * tmp
+          tqy = y(1) * tmp
+          tqz = z(1) * tmp
         End If
 
         ! Get magnitude of torque
 
-        torque=Sqrt(tqx**2+tqy**2+tqz**2)
+        torque = Sqrt(tqx**2 + tqy**2 + tqz**2)
 
         ! Calculate unit vectors for new site forces
 
-        krgd=krgd-lrgd
-        Do jrgd=1,lrgd
-          krgd=krgd+1
+        krgd = krgd - lrgd
+        Do jrgd = 1, lrgd
+          krgd = krgd + 1
 
-          i=rigid%index_local(jrgd,irgd) ! local index of particle/site
-          If (rigid%frozen(jrgd,rgdtyp) == 0) Then ! Apply restrictions
-            txx(i)=ggy(krgd)*tqz-tqy*ggz(krgd)
-            tyy(i)=ggz(krgd)*tqx-tqz*ggx(krgd)
-            tzz(i)=ggx(krgd)*tqy-tqx*ggy(krgd)
+          i = rigid%index_local(jrgd, irgd) ! local index of particle/site
+          If (rigid%frozen(jrgd, rgdtyp) == 0) Then ! Apply restrictions
+            txx(i) = ggy(krgd) * tqz - tqy * ggz(krgd)
+            tyy(i) = ggz(krgd) * tqx - tqz * ggx(krgd)
+            tzz(i) = ggx(krgd) * tqy - tqx * ggy(krgd)
 
-            tmp=Sqrt(txx(i)**2+tyy(i)**2+tzz(i)**2)
+            tmp = Sqrt(txx(i)**2 + tyy(i)**2 + tzz(i)**2)
             If (tmp > 1.0e-10_wp) Then
-              tmp=1.0_wp/tmp
-              txx(i)=txx(i)*tmp
-              tyy(i)=tyy(i)*tmp
-              tzz(i)=tzz(i)*tmp
+              tmp = 1.0_wp / tmp
+              txx(i) = txx(i) * tmp
+              tyy(i) = tyy(i) * tmp
+              tzz(i) = tzz(i) * tmp
             Else
-              txx(i)=0.0_wp
-              tyy(i)=0.0_wp
-              tzz(i)=0.0_wp
+              txx(i) = 0.0_wp
+              tyy(i) = 0.0_wp
+              tzz(i) = 0.0_wp
             End If
           Else
-            txx(i)=0.0_wp
-            tyy(i)=0.0_wp
-            tzz(i)=0.0_wp
+            txx(i) = 0.0_wp
+            tyy(i) = 0.0_wp
+            tzz(i) = 0.0_wp
           End If
         End Do
 
         ! construct unit vectors for new radial positions of
         ! RB's sites with respect to the axis of rotation
 
-        tmp=1.0_wp
-        If (torque > 1.0e-10_wp) tmp=1.0_wp/torque
+        tmp = 1.0_wp
+        If (torque > 1.0e-10_wp) tmp = 1.0_wp / torque
 
-        Do jrgd=1,lrgd
-          If (rigid%frozen(jrgd,rgdtyp) == 0) Then ! Apply restrictions
-            i=rigid%index_local(jrgd,irgd) ! local index of particle/site
+        Do jrgd = 1, lrgd
+          If (rigid%frozen(jrgd, rgdtyp) == 0) Then ! Apply restrictions
+            i = rigid%index_local(jrgd, irgd) ! local index of particle/site
 
-            uxx(i)=(tyy(i)*tqz-tqy*tzz(i))*tmp
-            uyy(i)=(tzz(i)*tqx-tqz*txx(i))*tmp
-            uzz(i)=(txx(i)*tqy-tqx*tyy(i))*tmp
+            uxx(i) = (tyy(i) * tqz - tqy * tzz(i)) * tmp
+            uyy(i) = (tzz(i) * tqx - tqz * txx(i)) * tmp
+            uzz(i) = (txx(i) * tqy - tqx * tyy(i)) * tmp
           Else
-            uxx(i)=0.0_wp
-            uyy(i)=0.0_wp
-            uzz(i)=0.0_wp
+            uxx(i) = 0.0_wp
+            uyy(i) = 0.0_wp
+            uzz(i) = 0.0_wp
           End If
         End Do
 
         ! scale unit vectors to working lengths
 
-        qqq=0.0_wp
+        qqq = 0.0_wp
 
-        krgd=krgd-lrgd
-        Do jrgd=1,lrgd
-          krgd=krgd+1
+        krgd = krgd - lrgd
+        Do jrgd = 1, lrgd
+          krgd = krgd + 1
 
-          If (rigid%frozen(jrgd,rgdtyp) == 0) Then ! Apply restrictions
-            i=rigid%index_local(jrgd,irgd) ! local index of particle/site
+          If (rigid%frozen(jrgd, rgdtyp) == 0) Then ! Apply restrictions
+            i = rigid%index_local(jrgd, irgd) ! local index of particle/site
 
-            tmp=ggx(krgd)*uxx(i)+ggy(krgd)*uyy(i)+ggz(krgd)*uzz(i)
+            tmp = ggx(krgd) * uxx(i) + ggy(krgd) * uyy(i) + ggz(krgd) * uzz(i)
 
-            txx(i)=txx(i)*tmp
-            tyy(i)=tyy(i)*tmp
-            tzz(i)=tzz(i)*tmp
+            txx(i) = txx(i) * tmp
+            tyy(i) = tyy(i) * tmp
+            tzz(i) = tzz(i) * tmp
 
-            uxx(i)=uxx(i)*tmp
-            uyy(i)=uyy(i)*tmp
-            uzz(i)=uzz(i)*tmp
+            uxx(i) = uxx(i) * tmp
+            uyy(i) = uyy(i) * tmp
+            uzz(i) = uzz(i) * tmp
 
-            qqq=qqq+tmp**2
+            qqq = qqq + tmp**2
           End If
         End Do
 
         ! scale new site forces so that all RB members rotate
         ! to the same angle in their plains of rotation
 
-        tmp=0.0_wp
-        If (qqq > 1.0e-10_wp) tmp=torque/qqq
+        tmp = 0.0_wp
+        If (qqq > 1.0e-10_wp) tmp = torque / qqq
 
-        Do jrgd=1,lrgd
-          If (rigid%frozen(jrgd,rgdtyp) == 0) Then ! Apply restrictions
-            i=rigid%index_local(jrgd,irgd) ! local index of particle/site
+        Do jrgd = 1, lrgd
+          If (rigid%frozen(jrgd, rgdtyp) == 0) Then ! Apply restrictions
+            i = rigid%index_local(jrgd, irgd) ! local index of particle/site
 
-            txx(i)=txx(i)*tmp
-            tyy(i)=tyy(i)*tmp
-            tzz(i)=tzz(i)*tmp
+            txx(i) = txx(i) * tmp
+            tyy(i) = tyy(i) * tmp
+            tzz(i) = tzz(i) * tmp
           End If
         End Do
 
@@ -1892,25 +1881,25 @@ Contains
         ! Initialise unit vectors for new site forces and radial location
         ! in the plane of rotation wrt the axis of rotation (torque vector)
 
-        Do jrgd=1,lrgd
-          i=rigid%index_local(jrgd,irgd) ! local index of particle/site
+        Do jrgd = 1, lrgd
+          i = rigid%index_local(jrgd, irgd) ! local index of particle/site
 
-          txx(i)=0.0_wp ; tyy(i)=0.0_wp ; tzz(i)=0.0_wp
-          uxx(i)=0.0_wp ; uyy(i)=0.0_wp ; uzz(i)=0.0_wp
-          gxx(i)=0.0_wp ; gyy(i)=0.0_wp ; gzz(i)=0.0_wp
+          txx(i) = 0.0_wp; tyy(i) = 0.0_wp; tzz(i) = 0.0_wp
+          uxx(i) = 0.0_wp; uyy(i) = 0.0_wp; uzz(i) = 0.0_wp
+          gxx(i) = 0.0_wp; gyy(i) = 0.0_wp; gzz(i) = 0.0_wp
         End Do
 
       End If
     End Do
 
-    Deallocate (ggx,ggy,ggz, Stat = fail)
+    Deallocate (ggx, ggy, ggz, Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'rigid_bodies_split_torque deallocation failure'
-      Call error(0,message)
+      Write (message, '(a)') 'rigid_bodies_split_torque deallocation failure'
+      Call error(0, message)
     End If
   End Subroutine rigid_bodies_split_torque
 
-  Subroutine rigid_bodies_stresss(strcom,ggx,ggy,ggz,rigid,config,comm)
+  Subroutine rigid_bodies_stresss(strcom, ggx, ggy, ggz, rigid, config, comm)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 routine to calculate RB contributions to the atomic stress
@@ -1926,65 +1915,65 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp ), Intent(   Out ) :: strcom(1:9)
-    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Real( Kind = wp ), Intent( In    ) :: ggx(1:rigid%max_list*rigid%max_rigid), &
-      ggy(1:rigid%max_list*rigid%max_rigid), &
-      ggz(1:rigid%max_list*rigid%max_rigid)
-    Type( configuration_type ),   Intent( InOut ) :: config
-    Type( comms_type ), Intent( InOut ) :: comm
+    Real(Kind=wp),            Intent(  Out) :: strcom(1:9)
+    Type(rigid_bodies_type),  Intent(InOut) :: rigid
+    Real(Kind=wp),            Intent(In   ) :: ggz(1:rigid%max_list * rigid%max_rigid), &
+                                               ggy(1:rigid%max_list * rigid%max_rigid), &
+                                               ggx(1:rigid%max_list * rigid%max_rigid)
+    Type(configuration_type), Intent(InOut) :: config
+    Type(comms_type),         Intent(InOut) :: comm
 
-    Integer :: i,irgd,jrgd,krgd,lrgd,rgdtyp
+    Integer :: i, irgd, jrgd, krgd, lrgd, rgdtyp
 
     ! Initialise stress
 
-    strcom=0.0_wp
+    strcom = 0.0_wp
 
     ! convert atomic virial to molecular
     ! note convention: virial(atom-atom) = -sum(Ri.Fi)
     ! : virial(com-com) = -sum(Rcom.Fcom) so
     ! virial(com-com) = virial(atom-atom)+sum((Ri-Rcom).Fi)
 
-    krgd=0
-    Do irgd=1,rigid%n_types
-      rgdtyp=rigid%list(0,irgd)
+    krgd = 0
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
 
-      lrgd=rigid%list(-1,irgd)
-      If (rigid%frozen(0,rgdtyp) < lrgd) Then
-        Do jrgd=1,lrgd
-          krgd=krgd+1
+      lrgd = rigid%list(-1, irgd)
+      If (rigid%frozen(0, rgdtyp) < lrgd) Then
+        Do jrgd = 1, lrgd
+          krgd = krgd + 1
 
-          i=rigid%index_local(jrgd,irgd) ! local index of particle/site
+          i = rigid%index_local(jrgd, irgd) ! local index of particle/site
 
           If (i > 0 .and. i <= config%natms .and. config%lfrzn(i) == 0) Then
-            strcom(1)=strcom(1)-ggx(krgd)*config%parts(i)%fxx
-            strcom(2)=strcom(2)-ggx(krgd)*config%parts(i)%fyy
-            strcom(3)=strcom(3)-ggx(krgd)*config%parts(i)%fzz
-            strcom(4)=strcom(4)-ggy(krgd)*config%parts(i)%fxx
-            strcom(5)=strcom(5)-ggy(krgd)*config%parts(i)%fyy
-            strcom(6)=strcom(6)-ggy(krgd)*config%parts(i)%fzz
-            strcom(7)=strcom(7)-ggz(krgd)*config%parts(i)%fxx
-            strcom(8)=strcom(8)-ggz(krgd)*config%parts(i)%fyy
-            strcom(9)=strcom(9)-ggz(krgd)*config%parts(i)%fzz
+            strcom(1) = strcom(1) - ggx(krgd) * config%parts(i)%fxx
+            strcom(2) = strcom(2) - ggx(krgd) * config%parts(i)%fyy
+            strcom(3) = strcom(3) - ggx(krgd) * config%parts(i)%fzz
+            strcom(4) = strcom(4) - ggy(krgd) * config%parts(i)%fxx
+            strcom(5) = strcom(5) - ggy(krgd) * config%parts(i)%fyy
+            strcom(6) = strcom(6) - ggy(krgd) * config%parts(i)%fzz
+            strcom(7) = strcom(7) - ggz(krgd) * config%parts(i)%fxx
+            strcom(8) = strcom(8) - ggz(krgd) * config%parts(i)%fyy
+            strcom(9) = strcom(9) - ggz(krgd) * config%parts(i)%fzz
           End If
         End Do
       End If
     End Do
 
-    Call gsum(comm,strcom)
+    Call gsum(comm, strcom)
 
     ! Symmetrise
 
-    strcom(2)=0.5_wp*(strcom(2)+strcom(4))
-    strcom(4)=strcom(2)
-    strcom(3)=0.5_wp*(strcom(3)+strcom(7))
-    strcom(7)=strcom(3)
-    strcom(6)=0.5_wp*(strcom(6)+strcom(8))
-    strcom(8)=strcom(6)
+    strcom(2) = 0.5_wp * (strcom(2) + strcom(4))
+    strcom(4) = strcom(2)
+    strcom(3) = 0.5_wp * (strcom(3) + strcom(7))
+    strcom(7) = strcom(3)
+    strcom(6) = 0.5_wp * (strcom(6) + strcom(8))
+    strcom(8) = strcom(6)
 
-  End subroutine rigid_bodies_stresss
+  End Subroutine rigid_bodies_stresss
 
-  Subroutine rigid_bodies_stre_s(strcom,ggx,ggy,ggz,config,rigid,comm,fxl,fyl,fzl)
+  Subroutine rigid_bodies_stre_s(strcom, ggx, ggy, ggz, config, rigid, comm, fxl, fyl, fzl)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2001,70 +1990,70 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp ),  Intent(   Out ) :: strcom(1:9)
-    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Real( Kind = wp ),  Intent( In    ) :: ggx(1:rigid%max_list*rigid%max_rigid), &
-      ggy(1:rigid%max_list*rigid%max_rigid), &
-      ggz(1:rigid%max_list*rigid%max_rigid)
-    Type( configuration_type ),   Intent( In    ) :: config
-    Real( Kind = wp ),  Intent( In    ) :: fxl(:),fyl(:),fzl(:)
-    Type( comms_type ), Intent( InOut ) :: comm
+    Real(Kind=wp),            Intent(  Out) :: strcom(1:9)
+    Type(configuration_type), Intent(In   ) :: config
+    Type(rigid_bodies_type),  Intent(InOut) :: rigid
+    Real(Kind=wp),            Intent(In   ) :: ggz(1:rigid%max_list * rigid%max_rigid), &
+                                               ggy(1:rigid%max_list * rigid%max_rigid), &
+                                               ggx(1:rigid%max_list * rigid%max_rigid)
+    Type(comms_type),         Intent(InOut) :: comm
+    Real(Kind=wp),            Intent(In   ) :: fxl(:), fyl(:), fzl(:)
 
-    Integer :: i,irgd,jrgd,krgd,lrgd,rgdtyp
-    Real( Kind = wp ) :: tmp_fx, tmp_fy, tmp_fz
+    Integer       :: i, irgd, jrgd, krgd, lrgd, rgdtyp
+    Real(Kind=wp) :: tmp_fx, tmp_fy, tmp_fz
 
     ! Initialise stress
 
-    strcom=0.0_wp
+    strcom = 0.0_wp
 
     ! convert atomic virial to molecular
     ! note convention: virial(atom-atom) = -sum(Ri.Fi)
     ! : virial(com-com) = -sum(Rcom.Fcom) so
     ! virial(com-com) = virial(atom-atom)+sum((Ri-Rcom).Fi)
 
-    krgd=0
-    Do irgd=1,rigid%n_types
-      rgdtyp=rigid%list(0,irgd)
+    krgd = 0
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
 
-      lrgd=rigid%list(-1,irgd)
-      If (rigid%frozen(0,rgdtyp) < lrgd) Then
-        Do jrgd=1,lrgd
-          krgd=krgd+1
+      lrgd = rigid%list(-1, irgd)
+      If (rigid%frozen(0, rgdtyp) < lrgd) Then
+        Do jrgd = 1, lrgd
+          krgd = krgd + 1
 
-          i=rigid%index_local(jrgd,irgd) ! local index of particle/site
+          i = rigid%index_local(jrgd, irgd) ! local index of particle/site
 
           If (i > 0 .and. i <= config%natms .and. config%lfrzn(i) == 0) Then
-            tmp_fx = config%parts(i)%fxx+fxl(i)
-            tmp_fy = config%parts(i)%fyy+fyl(i)
-            tmp_fz = config%parts(i)%fzz+fzl(i)
-            strcom(1)=strcom(1)-ggx(krgd)*tmp_fx
-            strcom(2)=strcom(2)-ggx(krgd)*tmp_fy
-            strcom(3)=strcom(3)-ggx(krgd)*tmp_fz
-            strcom(4)=strcom(4)-ggy(krgd)*tmp_fx
-            strcom(5)=strcom(5)-ggy(krgd)*tmp_fy
-            strcom(6)=strcom(6)-ggy(krgd)*tmp_fz
-            strcom(7)=strcom(7)-ggz(krgd)*tmp_fx
-            strcom(8)=strcom(8)-ggz(krgd)*tmp_fy
-            strcom(9)=strcom(9)-ggz(krgd)*tmp_fz
+            tmp_fx = config%parts(i)%fxx + fxl(i)
+            tmp_fy = config%parts(i)%fyy + fyl(i)
+            tmp_fz = config%parts(i)%fzz + fzl(i)
+            strcom(1) = strcom(1) - ggx(krgd) * tmp_fx
+            strcom(2) = strcom(2) - ggx(krgd) * tmp_fy
+            strcom(3) = strcom(3) - ggx(krgd) * tmp_fz
+            strcom(4) = strcom(4) - ggy(krgd) * tmp_fx
+            strcom(5) = strcom(5) - ggy(krgd) * tmp_fy
+            strcom(6) = strcom(6) - ggy(krgd) * tmp_fz
+            strcom(7) = strcom(7) - ggz(krgd) * tmp_fx
+            strcom(8) = strcom(8) - ggz(krgd) * tmp_fy
+            strcom(9) = strcom(9) - ggz(krgd) * tmp_fz
           End If
         End Do
       End If
     End Do
 
-    Call gsum(comm,strcom)
+    Call gsum(comm, strcom)
 
     ! Symmetrise
 
-    strcom(2)=0.5_wp*(strcom(2)+strcom(4))
-    strcom(4)=strcom(2)
-    strcom(3)=0.5_wp*(strcom(3)+strcom(7))
-    strcom(7)=strcom(3)
-    strcom(6)=0.5_wp*(strcom(6)+strcom(8))
-    strcom(8)=strcom(6)
+    strcom(2) = 0.5_wp * (strcom(2) + strcom(4))
+    strcom(4) = strcom(2)
+    strcom(3) = 0.5_wp * (strcom(3) + strcom(7))
+    strcom(7) = strcom(3)
+    strcom(6) = 0.5_wp * (strcom(6) + strcom(8))
+    strcom(8) = strcom(6)
 
   End Subroutine rigid_bodies_stre_s
 
-  Subroutine rigid_bodies_str_ss(strcom,rigid,config,comm)
+  Subroutine rigid_bodies_str_ss(strcom, rigid, config, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2081,108 +2070,108 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Character(Len=*), Parameter  :: sub="rigid_bodies_str_ss"
-    Real( Kind = wp ),  Intent(   Out ) :: strcom(1:9)
-    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( configuration_type ),   Intent( InOut ) :: config
-    Type( comms_type ), Intent( InOut ) :: comm
+    Real(Kind=wp),            Intent(  Out) :: strcom(1:9)
+    Type(rigid_bodies_type),  Intent(InOut) :: rigid
+    Type(configuration_type), Intent(InOut) :: config
+    Type(comms_type),         Intent(InOut) :: comm
 
-    Integer :: fail,i,irgd,jrgd,krgd,lrgd,rgdtyp
+    Character(Len=*), Parameter :: sub = "rigid_bodies_str_ss"
 
-    Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
-    Character ( Len = 256 )        :: message
+    Character(Len=256)         :: message
+    Integer                    :: fail, i, irgd, jrgd, krgd, lrgd, rgdtyp
+    Real(Kind=wp), Allocatable :: gxx(:), gyy(:), gzz(:)
 
     fail = 0
-    Allocate (gxx(1:rigid%max_list*rigid%max_rigid), &
-      gyy(1:rigid%max_list*rigid%max_rigid), &
-      gzz(1:rigid%max_list*rigid%max_rigid), Stat = fail)
+    Allocate (gxx(1:rigid%max_list * rigid%max_rigid), &
+              gyy(1:rigid%max_list * rigid%max_rigid), &
+              gzz(1:rigid%max_list * rigid%max_rigid), Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') Trim(sub)//' allocation failure'
-      Call error(0,message)
+      Write (message, '(a)') Trim(sub)//' allocation failure'
+      Call error(0, message)
     End If
 
     ! Loop over all local RB units and get in the local scope of the unit
 
-    krgd=0
-    Do irgd=1,rigid%n_types
-      rgdtyp=rigid%list(0,irgd)
+    krgd = 0
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
 
-      lrgd=rigid%list(-1,irgd)
-      If (rigid%frozen(0,rgdtyp) < lrgd) Then
-        Do jrgd=1,lrgd
-          krgd=krgd+1
+      lrgd = rigid%list(-1, irgd)
+      If (rigid%frozen(0, rgdtyp) < lrgd) Then
+        Do jrgd = 1, lrgd
+          krgd = krgd + 1
 
-          i=rigid%index_local(jrgd,irgd) ! local index of particle/site
+          i = rigid%index_local(jrgd, irgd) ! local index of particle/site
 
           ! COM distances
 
-          gxx(krgd)=config%parts(i)%xxx-rigid%xxx(irgd)
-          gyy(krgd)=config%parts(i)%yyy-rigid%yyy(irgd)
-          gzz(krgd)=config%parts(i)%zzz-rigid%zzz(irgd)
+          gxx(krgd) = config%parts(i)%xxx - rigid%xxx(irgd)
+          gyy(krgd) = config%parts(i)%yyy - rigid%yyy(irgd)
+          gzz(krgd) = config%parts(i)%zzz - rigid%zzz(irgd)
         End Do
       End If
     End Do
 
     ! minimum image convention for bond vectors
 
-    Call images(config%imcon,config%cell,krgd,gxx,gyy,gzz)
+    Call images(config%imcon, config%cell, krgd, gxx, gyy, gzz)
 
     ! Initialise stress
 
-    strcom=0.0_wp
+    strcom = 0.0_wp
 
     ! convert atomic virial to molecular
     ! note convention: virial(atom-atom) = -sum(Ri.Fi)
     ! : virial(com-com) = -sum(Rcom.Fcom) so
     ! virial(com-com) = virial(atom-atom)+sum((Ri-Rcom).Fi)
 
-    krgd=0
-    Do irgd=1,rigid%n_types
-      rgdtyp=rigid%list(0,irgd)
+    krgd = 0
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
 
-      lrgd=rigid%list(-1,irgd)
-      If (rigid%frozen(0,rgdtyp) < lrgd) Then
-        Do jrgd=1,lrgd
-          krgd=krgd+1
+      lrgd = rigid%list(-1, irgd)
+      If (rigid%frozen(0, rgdtyp) < lrgd) Then
+        Do jrgd = 1, lrgd
+          krgd = krgd + 1
 
-          i=rigid%index_local(jrgd,irgd) ! local index of particle/site
+          i = rigid%index_local(jrgd, irgd) ! local index of particle/site
 
           If (i > 0 .and. i <= config%natms .and. config%lfrzn(i) == 0) Then
-            strcom(1)=strcom(1)-gxx(krgd)*config%parts(i)%fxx
-            strcom(2)=strcom(2)-gxx(krgd)*config%parts(i)%fyy
-            strcom(3)=strcom(3)-gxx(krgd)*config%parts(i)%fzz
-            strcom(4)=strcom(4)-gyy(krgd)*config%parts(i)%fxx
-            strcom(5)=strcom(5)-gyy(krgd)*config%parts(i)%fyy
-            strcom(6)=strcom(6)-gyy(krgd)*config%parts(i)%fzz
-            strcom(7)=strcom(7)-gzz(krgd)*config%parts(i)%fxx
-            strcom(8)=strcom(8)-gzz(krgd)*config%parts(i)%fyy
-            strcom(9)=strcom(9)-gzz(krgd)*config%parts(i)%fzz
+            strcom(1) = strcom(1) - gxx(krgd) * config%parts(i)%fxx
+            strcom(2) = strcom(2) - gxx(krgd) * config%parts(i)%fyy
+            strcom(3) = strcom(3) - gxx(krgd) * config%parts(i)%fzz
+            strcom(4) = strcom(4) - gyy(krgd) * config%parts(i)%fxx
+            strcom(5) = strcom(5) - gyy(krgd) * config%parts(i)%fyy
+            strcom(6) = strcom(6) - gyy(krgd) * config%parts(i)%fzz
+            strcom(7) = strcom(7) - gzz(krgd) * config%parts(i)%fxx
+            strcom(8) = strcom(8) - gzz(krgd) * config%parts(i)%fyy
+            strcom(9) = strcom(9) - gzz(krgd) * config%parts(i)%fzz
           End If
         End Do
       End If
     End Do
 
-    Call gsum(comm,strcom)
+    Call gsum(comm, strcom)
 
     ! Symmetrise
 
-    strcom(2)=0.5_wp*(strcom(2)+strcom(4))
-    strcom(4)=strcom(2)
-    strcom(3)=0.5_wp*(strcom(3)+strcom(7))
-    strcom(7)=strcom(3)
-    strcom(6)=0.5_wp*(strcom(6)+strcom(8))
-    strcom(8)=strcom(6)
+    strcom(2) = 0.5_wp * (strcom(2) + strcom(4))
+    strcom(4) = strcom(2)
+    strcom(3) = 0.5_wp * (strcom(3) + strcom(7))
+    strcom(7) = strcom(3)
+    strcom(6) = 0.5_wp * (strcom(6) + strcom(8))
+    strcom(8) = strcom(6)
 
     fail = 0
-    Deallocate (gxx,gyy,gzz, Stat = fail)
+    Deallocate (gxx, gyy, gzz, Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') Trim(sub)//" deallocation failure"
-      Call error(0,message)
+      Write (message, '(a)') Trim(sub)//" deallocation failure"
+      Call error(0, message)
     End If
 
-  End subroutine rigid_bodies_str_ss
+  End Subroutine rigid_bodies_str_ss
 
-  Subroutine rigid_bodies_str__s(strcom,config,rigid,comm,fxl,fyl,fzl)
+  Subroutine rigid_bodies_str__s(strcom, config, rigid, comm, fxl, fyl, fzl)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2198,114 +2187,113 @@ Contains
     !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Real(Kind=wp),            Intent(  Out) :: strcom(1:9)
+    Type(configuration_type), Intent(In   ) :: config
+    Type(rigid_bodies_type),  Intent(InOut) :: rigid
+    Type(comms_type),         Intent(InOut) :: comm
+    Real(Kind=wp),            Intent(In   ) :: fxl(:), fyl(:), fzl(:)
 
     Character(Len=*), Parameter :: sub = "rigid_bodies_str__s"
-    Real( Kind = wp ),  Intent(   Out ) :: strcom(1:9)
-    Type( configuration_type ),   Intent( In    ) :: config
-    Real( Kind = wp ),  Intent( In    ) :: fxl(:),fyl(:),fzl(:)
-    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( comms_type ), Intent( InOut ) :: comm
 
-    Integer :: fail,i,irgd,jrgd,krgd,lrgd,rgdtyp
-    Real( Kind = wp ) :: tmp_fx, tmp_fy, tmp_fz
-
-    Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
-    Character ( Len = 256 )  :: message
-
+    Character(Len=256)         :: message
+    Integer                    :: fail, i, irgd, jrgd, krgd, lrgd, rgdtyp
+    Real(Kind=wp)              :: tmp_fx, tmp_fy, tmp_fz
+    Real(Kind=wp), Allocatable :: gxx(:), gyy(:), gzz(:)
 
     fail = 0
-    Allocate (gxx(1:rigid%max_list*rigid%max_rigid), &
-      gyy(1:rigid%max_list*rigid%max_rigid), &
-      gzz(1:rigid%max_list*rigid%max_rigid), Stat = fail)
+    Allocate (gxx(1:rigid%max_list * rigid%max_rigid), &
+              gyy(1:rigid%max_list * rigid%max_rigid), &
+              gzz(1:rigid%max_list * rigid%max_rigid), Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') Trim(sub)//' allocation failure'
-      Call error(0,message)
+      Write (message, '(a)') Trim(sub)//' allocation failure'
+      Call error(0, message)
     End If
 
     ! Loop over all local RB units and get in the local scope of the unit
 
-    krgd=0
-    Do irgd=1,rigid%n_types
-      rgdtyp=rigid%list(0,irgd)
+    krgd = 0
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
 
-      lrgd=rigid%list(-1,irgd)
-      If (rigid%frozen(0,rgdtyp) < lrgd) Then
-        Do jrgd=1,lrgd
-          krgd=krgd+1
+      lrgd = rigid%list(-1, irgd)
+      If (rigid%frozen(0, rgdtyp) < lrgd) Then
+        Do jrgd = 1, lrgd
+          krgd = krgd + 1
 
-          i=rigid%index_local(jrgd,irgd) ! local index of particle/site
+          i = rigid%index_local(jrgd, irgd) ! local index of particle/site
 
           ! COM distances
 
-          gxx(krgd)=config%parts(i)%xxx-rigid%xxx(irgd)
-          gyy(krgd)=config%parts(i)%yyy-rigid%yyy(irgd)
-          gzz(krgd)=config%parts(i)%zzz-rigid%zzz(irgd)
+          gxx(krgd) = config%parts(i)%xxx - rigid%xxx(irgd)
+          gyy(krgd) = config%parts(i)%yyy - rigid%yyy(irgd)
+          gzz(krgd) = config%parts(i)%zzz - rigid%zzz(irgd)
         End Do
       End If
     End Do
 
     ! minimum image convention for bond vectors
 
-    Call images(config%imcon,config%cell,krgd,gxx,gyy,gzz)
+    Call images(config%imcon, config%cell, krgd, gxx, gyy, gzz)
 
     ! Initialise stress
 
-    strcom=0.0_wp
+    strcom = 0.0_wp
 
     ! convert atomic virial to molecular
     ! note convention: virial(atom-atom) = -sum(Ri.Fi)
     ! : virial(com-com) = -sum(Rcom.Fcom) so
     ! virial(com-com) = virial(atom-atom)+sum((Ri-Rcom).Fi)
 
-    krgd=0
-    Do irgd=1,rigid%n_types
-      rgdtyp=rigid%list(0,irgd)
+    krgd = 0
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
 
-      lrgd=rigid%list(-1,irgd)
-      If (rigid%frozen(0,rgdtyp) < lrgd) Then
-        Do jrgd=1,lrgd
-          krgd=krgd+1
+      lrgd = rigid%list(-1, irgd)
+      If (rigid%frozen(0, rgdtyp) < lrgd) Then
+        Do jrgd = 1, lrgd
+          krgd = krgd + 1
 
-          i=rigid%index_local(jrgd,irgd) ! local index of particle/site
+          i = rigid%index_local(jrgd, irgd) ! local index of particle/site
 
           If (i > 0 .and. i <= config%natms .and. config%lfrzn(i) == 0) Then
-            tmp_fx = config%parts(i)%fxx+fxl(i)
-            tmp_fy = config%parts(i)%fyy+fyl(i)
-            tmp_fz = config%parts(i)%fzz+fzl(i)
-            strcom(1)=strcom(1)-gxx(krgd)*tmp_fx
-            strcom(2)=strcom(2)-gxx(krgd)*tmp_fy
-            strcom(3)=strcom(3)-gxx(krgd)*tmp_fz
-            strcom(4)=strcom(4)-gyy(krgd)*tmp_fx
-            strcom(5)=strcom(5)-gyy(krgd)*tmp_fy
-            strcom(6)=strcom(6)-gyy(krgd)*tmp_fz
-            strcom(7)=strcom(7)-gzz(krgd)*tmp_fx
-            strcom(8)=strcom(8)-gzz(krgd)*tmp_fy
-            strcom(9)=strcom(9)-gzz(krgd)*tmp_fz
+            tmp_fx = config%parts(i)%fxx + fxl(i)
+            tmp_fy = config%parts(i)%fyy + fyl(i)
+            tmp_fz = config%parts(i)%fzz + fzl(i)
+            strcom(1) = strcom(1) - gxx(krgd) * tmp_fx
+            strcom(2) = strcom(2) - gxx(krgd) * tmp_fy
+            strcom(3) = strcom(3) - gxx(krgd) * tmp_fz
+            strcom(4) = strcom(4) - gyy(krgd) * tmp_fx
+            strcom(5) = strcom(5) - gyy(krgd) * tmp_fy
+            strcom(6) = strcom(6) - gyy(krgd) * tmp_fz
+            strcom(7) = strcom(7) - gzz(krgd) * tmp_fx
+            strcom(8) = strcom(8) - gzz(krgd) * tmp_fy
+            strcom(9) = strcom(9) - gzz(krgd) * tmp_fz
           End If
         End Do
       End If
     End Do
 
-    Call gsum(comm,strcom)
+    Call gsum(comm, strcom)
 
     ! Symmetrise
 
-    strcom(2)=0.5_wp*(strcom(2)+strcom(4))
-    strcom(4)=strcom(2)
-    strcom(3)=0.5_wp*(strcom(3)+strcom(7))
-    strcom(7)=strcom(3)
-    strcom(6)=0.5_wp*(strcom(6)+strcom(8))
-    strcom(8)=strcom(6)
+    strcom(2) = 0.5_wp * (strcom(2) + strcom(4))
+    strcom(4) = strcom(2)
+    strcom(3) = 0.5_wp * (strcom(3) + strcom(7))
+    strcom(7) = strcom(3)
+    strcom(6) = 0.5_wp * (strcom(6) + strcom(8))
+    strcom(8) = strcom(6)
 
     fail = 0
-    Deallocate (gxx,gyy,gzz, Stat = fail)
+    Deallocate (gxx, gyy, gzz, Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') Trim(sub)//' deallocation failure'
-      Call error(0,message)
+      Write (message, '(a)') Trim(sub)//' deallocation failure'
+      Call error(0, message)
     End If
-  End subroutine rigid_bodies_str__s
+  End Subroutine rigid_bodies_str__s
 
-  Subroutine rigid_bodies_tags(config,rigid,comm)
+  Subroutine rigid_bodies_tags(config, rigid, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2323,47 +2311,45 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( configuration_type ), Intent( InOut ) :: config
-    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( comms_type ), Intent( InOut ) :: comm
+    Type(configuration_type), Intent(InOut) :: config
+    Type(rigid_bodies_type),  Intent(InOut) :: rigid
+    Type(comms_type),         Intent(InOut) :: comm
 
-    Logical :: safe
-    Integer :: fail,irgd,jrgd,lrgd,s,i
-
+    Character(Len=256)   :: message
+    Integer              :: fail, i, irgd, jrgd, lrgd, s
+    Logical              :: safe
     Logical, Allocatable :: lunsafe(:)
-    Character ( Len = 256 ) :: message
 
-
-    fail=0
+    fail = 0
     Allocate (lunsafe(1:rigid%max_rigid), Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'rigid_bodies_tags allocation failure'
-      Call error(0,message)
+      Write (message, '(a)') 'rigid_bodies_tags allocation failure'
+      Call error(0, message)
     End If
 
     ! Loop over all local to this node RB units and save the indices of the members
     ! and their presence on the domain in total
 
-    Do irgd=1,rigid%n_types
-      lunsafe(irgd)=.false.
-      lrgd=rigid%list(-1,irgd)
+    Do irgd = 1, rigid%n_types
+      lunsafe(irgd) = .false.
+      lrgd = rigid%list(-1, irgd)
 
       ! Initialise local indices
 
-      rigid%index_local(:,irgd)=0
-      Do jrgd=1,lrgd
-        s=rigid%list(jrgd,irgd)
-        i=local_index(s,config%nlast,config%lsi,config%lsa)
+      rigid%index_local(:, irgd) = 0
+      Do jrgd = 1, lrgd
+        s = rigid%list(jrgd, irgd)
+        i = local_index(s, config%nlast, config%lsi, config%lsa)
 
-        rigid%index_local(jrgd,irgd)=i
-        If (i > 0 .and. i <= config%natms) rigid%index_local(0,irgd)=rigid%index_local(0,irgd)+1
+        rigid%index_local(jrgd, irgd) = i
+        If (i > 0 .and. i <= config%natms) rigid%index_local(0, irgd) = rigid%index_local(0, irgd) + 1
       End Do
 
       ! Detect uncompressed unit
 
-      If (Any(rigid%index_local(1:lrgd,irgd) == 0) .and. &
-        rigid%index_local(0,irgd) > 0) Then
-        lunsafe(irgd)=.true.
+      If (Any(rigid%index_local(1:lrgd, irgd) == 0) .and. &
+          rigid%index_local(0, irgd) > 0) Then
+        lunsafe(irgd) = .true.
       End If
     End Do
 
@@ -2371,15 +2357,15 @@ Contains
     ! Check for uncompressed units
 
     safe = .not. Any(lunsafe(1:rigid%n_types))
-    Call gcheck(comm,safe)
-    If (.not.safe) Then
-      Do i=0,comm%mxnode-1
+    Call gcheck(comm, safe)
+    If (.not. safe) Then
+      Do i = 0, comm%mxnode - 1
         If (comm%idnode == i) Then
-          Do irgd=1,rigid%n_types
+          Do irgd = 1, rigid%n_types
             If (lunsafe(irgd)) Then
-              Write(message,'(a,2(i10,a))') &
-                'global unit number', rigid%list(0,irgd), &
-                ' , with a head particle number', rigid%list(1,irgd), &
+              Write (message, '(a,2(i10,a))') &
+                'global unit number', rigid%list(0, irgd), &
+                ' , with a head particle number', rigid%list(1, irgd), &
                 ' contributes towards next error'
               Call warning(message)
             End If
@@ -2392,12 +2378,12 @@ Contains
 
     Deallocate (lunsafe, Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'rigid_bodies_tags deallocation failure, node'
-      Call error(0,message)
+      Write (message, '(a)') 'rigid_bodies_tags deallocation failure, node'
+      Call error(0, message)
     End If
   End Subroutine rigid_bodies_tags
 
-  Subroutine rigid_bodies_widths(rcut,rigid,config,comm)
+  Subroutine rigid_bodies_widths(rcut, rigid, config, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2414,66 +2400,65 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp ),  Intent( In    ) :: rcut
-    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( configuration_type ),   Intent( InOut ) :: config
-    Type( comms_type ), Intent( InOut ) :: comm
+    Real(Kind=wp),            Intent(In   ) :: rcut
+    Type(rigid_bodies_type),  Intent(InOut) :: rigid
+    Type(configuration_type), Intent(InOut) :: config
+    Type(comms_type),         Intent(InOut) :: comm
 
-    Integer           :: fail,irgd,jrgd,krgd,lrgd,mrgd,nrgd,rgdtyp
-    Real( Kind = wp ) :: d,width
-
-    Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
-    Character ( Len = 256 ) ::  message
+    Character(Len=256)         :: message
+    Integer                    :: fail, irgd, jrgd, krgd, lrgd, mrgd, nrgd, rgdtyp
+    Real(Kind=wp)              :: d, width
+    Real(Kind=wp), Allocatable :: gxx(:), gyy(:), gzz(:)
 
     fail = 0
-    Allocate (gxx(1:rigid%max_list*rigid%max_rigid), &
-      gyy(1:rigid%max_list*rigid%max_rigid), &
-      gzz(1:rigid%max_list*rigid%max_rigid), Stat = fail)
+    Allocate (gxx(1:rigid%max_list * rigid%max_rigid), &
+              gyy(1:rigid%max_list * rigid%max_rigid), &
+              gzz(1:rigid%max_list * rigid%max_rigid), Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'rigid_bodies_widths allocation failure'
-      Call error(0,message)
+      Write (message, '(a)') 'rigid_bodies_widths allocation failure'
+      Call error(0, message)
     End If
 
     ! Loop over all local RB units and get in the local scope of the unit
 
-    krgd=0
-    Do irgd=1,rigid%n_types
-      lrgd=rigid%list(-1,irgd)
+    krgd = 0
+    Do irgd = 1, rigid%n_types
+      lrgd = rigid%list(-1, irgd)
 
-      Do jrgd=1,lrgd
-        krgd=krgd+1
+      Do jrgd = 1, lrgd
+        krgd = krgd + 1
 
-        gxx(krgd) = config%parts(rigid%index_local(jrgd,irgd))%xxx - config%parts(rigid%index_local(1,irgd))%xxx
-        gyy(krgd) = config%parts(rigid%index_local(jrgd,irgd))%yyy - config%parts(rigid%index_local(1,irgd))%yyy
-        gzz(krgd) = config%parts(rigid%index_local(jrgd,irgd))%zzz - config%parts(rigid%index_local(1,irgd))%zzz
+        gxx(krgd) = config%parts(rigid%index_local(jrgd, irgd))%xxx - config%parts(rigid%index_local(1, irgd))%xxx
+        gyy(krgd) = config%parts(rigid%index_local(jrgd, irgd))%yyy - config%parts(rigid%index_local(1, irgd))%yyy
+        gzz(krgd) = config%parts(rigid%index_local(jrgd, irgd))%zzz - config%parts(rigid%index_local(1, irgd))%zzz
       End Do
     End Do
 
     ! minimum image convention for bond vectors
 
-    Call images(config%imcon,config%cell,krgd,gxx,gyy,gzz)
+    Call images(config%imcon, config%cell, krgd, gxx, gyy, gzz)
 
     ! Get the COM vector and check of diameter safety of units
 
-    krgd=0
-    width=0.0_wp
-    Do irgd=1,rigid%n_types
-      rgdtyp=rigid%list(0,irgd)
+    krgd = 0
+    width = 0.0_wp
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
 
-      lrgd=rigid%list(-1,irgd)
-      Do jrgd=1,lrgd
-        krgd=krgd+1
+      lrgd = rigid%list(-1, irgd)
+      Do jrgd = 1, lrgd
+        krgd = krgd + 1
 
-        Do mrgd=jrgd+1,lrgd
-          nrgd=krgd+mrgd-jrgd
+        Do mrgd = jrgd + 1, lrgd
+          nrgd = krgd + mrgd - jrgd
 
-          d=Sqrt((gxx(krgd)-gxx(nrgd))**2+(gyy(krgd)-gyy(nrgd))**2+(gzz(krgd)-gzz(nrgd))**2)
-          width=Max(width,d)
+          d = Sqrt((gxx(krgd) - gxx(nrgd))**2 + (gyy(krgd) - gyy(nrgd))**2 + (gzz(krgd) - gzz(nrgd))**2)
+          width = Max(width, d)
 
           If (d > rcut) Then
-            Write(message,'(a,3i5,2f8.3)') &
+            Write (message, '(a,3i5,2f8.3)') &
               'RB type, members(1,2), width > cutoff', &
-              rgdtyp,jrgd,mrgd,width,rcut
+              rgdtyp, jrgd, mrgd, width, rcut
             Call info(message)
           End If
         End Do
@@ -2482,20 +2467,20 @@ Contains
 
     ! Check if a RB unit has a diameter > the cutoff
 
-    Call gmax(comm,width)
+    Call gmax(comm, width)
     If (width > rcut) Then
-      Call warning(8,width,rcut,0.0_wp)
+      Call warning(8, width, rcut, 0.0_wp)
       Call error(642)
     End If
 
-    Deallocate (gxx,gyy,gzz, Stat = fail)
+    Deallocate (gxx, gyy, gzz, Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'rigid_bodies_widths deallocation failure'
-      Call error(0,message)
+      Write (message, '(a)') 'rigid_bodies_widths deallocation failure'
+      Call error(0, message)
     End If
   End Subroutine rigid_bodies_widths
 
-  Subroutine xscale(config,tstep,thermo,stats,neigh,rigid,domain,comm)
+  Subroutine xscale(config, tstep, thermo, stats, neigh, rigid, domain, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2511,22 +2496,20 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Type(configuration_type), Intent(InOut) :: config
+    Real(Kind=wp),            Intent(In   ) :: tstep
+    Type(thermostat_type),    Intent(InOut) :: thermo
+    Type(stats_type),         Intent(InOut) :: stats
+    Type(neighbours_type),    Intent(InOut) :: neigh
+    Type(rigid_bodies_type),  Intent(InOut) :: rigid
+    Type(domains_type),       Intent(In   ) :: domain
+    Type(comms_type),         Intent(InOut) :: comm
 
-    Type( configuration_type ), Intent( InOut ) :: config
-    Real( Kind = wp ), Intent( In    ) :: tstep
-    Type( thermostat_type), Intent( InOut ) :: thermo
-    Type( stats_type), Intent( InOut ) :: stats
-    Type( neighbours_type ), Intent( InOut ) :: neigh
-    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( comms_type), Intent( InOut ) :: comm
-
-    Integer           :: fail,i,j,irgd,jrgd,lrgd
-    Real( Kind = wp ) :: a1,a2,a3,a5,a6,a9,b1,b2,b3,b5,b6,b9,scale, &
-      xa,ya,za,x,y,z,com(1:3)
-
-    Real( Kind = wp ), Allocatable :: rgdxin(:),rgdyin(:),rgdzin(:)
-    Character ( Len = 256 )        :: message
+    Character(Len=256)         :: message
+    Integer                    :: fail, i, irgd, j, jrgd, lrgd
+    Real(Kind=wp)              :: a1, a2, a3, a5, a6, a9, b1, b2, b3, b5, b6, b9, com(1:3), scale, &
+                                  x, xa, y, ya, z, za
+    Real(Kind=wp), Allocatable :: rgdxin(:), rgdyin(:), rgdzin(:)
 
     If (.not. thermo%variable_cell) Return
 
@@ -2540,18 +2523,18 @@ Contains
 
           scale = thermo%eta(1)
 
-          Do i=1,config%natms
-            stats%xin(i) = scale*stats%xin(i)
-            stats%yin(i) = scale*stats%yin(i)
-            stats%zin(i) = scale*stats%zin(i)
+          Do i = 1, config%natms
+            stats%xin(i) = scale * stats%xin(i)
+            stats%yin(i) = scale * stats%yin(i)
+            stats%zin(i) = scale * stats%zin(i)
           End Do
 
         Else
 
-          Do i=1,config%natms
-            xa = stats%xin(i)*thermo%eta(1)+stats%yin(i)*thermo%eta(2)+stats%zin(i)*thermo%eta(3)
-            ya = stats%xin(i)*thermo%eta(4)+stats%yin(i)*thermo%eta(5)+stats%zin(i)*thermo%eta(6)
-            za = stats%xin(i)*thermo%eta(7)+stats%yin(i)*thermo%eta(8)+stats%zin(i)*thermo%eta(9)
+          Do i = 1, config%natms
+            xa = stats%xin(i) * thermo%eta(1) + stats%yin(i) * thermo%eta(2) + stats%zin(i) * thermo%eta(3)
+            ya = stats%xin(i) * thermo%eta(4) + stats%yin(i) * thermo%eta(5) + stats%zin(i) * thermo%eta(6)
+            za = stats%xin(i) * thermo%eta(7) + stats%yin(i) * thermo%eta(8) + stats%zin(i) * thermo%eta(9)
 
             stats%xin(i) = xa
             stats%yin(i) = ya
@@ -2564,98 +2547,98 @@ Contains
 
         ! hoover npt/nst
 
-        Call getcom(stats%xin,stats%yin,stats%zin,config,com,comm)
+        Call getcom(stats%xin, stats%yin, stats%zin, config, com, comm)
 
         If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
 
-          scale = Exp(tstep*thermo%eta(1))
+          scale = Exp(tstep * thermo%eta(1))
 
-          Do i=1,config%natms
-            stats%xin(i) = scale*(stats%xin(i)-com(1))+com(1)
-            stats%yin(i) = scale*(stats%yin(i)-com(2))+com(2)
-            stats%zin(i) = scale*(stats%zin(i)-com(3))+com(3)
+          Do i = 1, config%natms
+            stats%xin(i) = scale * (stats%xin(i) - com(1)) + com(1)
+            stats%yin(i) = scale * (stats%yin(i) - com(2)) + com(2)
+            stats%zin(i) = scale * (stats%zin(i) - com(3)) + com(3)
           End Do
 
         Else
 
           ! second order taylor expansion of Exp(tstep*thermo%eta)
 
-          a1 = tstep*thermo%eta(1)
-          a2 = tstep*thermo%eta(2)
-          a3 = tstep*thermo%eta(3)
-          a5 = tstep*thermo%eta(5)
-          a6 = tstep*thermo%eta(6)
-          a9 = tstep*thermo%eta(9)
+          a1 = tstep * thermo%eta(1)
+          a2 = tstep * thermo%eta(2)
+          a3 = tstep * thermo%eta(3)
+          a5 = tstep * thermo%eta(5)
+          a6 = tstep * thermo%eta(6)
+          a9 = tstep * thermo%eta(9)
 
-          b1 = (a1*a1 + a2*a2 + a3*a3)*0.5_wp + a1 + 1.0_wp
-          b2 = (a1*a2 + a2*a5 + a3*a6)*0.5_wp + a2
-          b3 = (a1*a3 + a2*a6 + a3*a9)*0.5_wp + a3
-          b5 = (a2*a2 + a5*a5 + a6*a6)*0.5_wp + a5 + 1.0_wp
-          b6 = (a2*a3 + a5*a6 + a6*a9)*0.5_wp + a6
-          b9 = (a3*a3 + a6*a6 + a9*a9)*0.5_wp + a9 + 1.0_wp
+          b1 = (a1 * a1 + a2 * a2 + a3 * a3) * 0.5_wp + a1 + 1.0_wp
+          b2 = (a1 * a2 + a2 * a5 + a3 * a6) * 0.5_wp + a2
+          b3 = (a1 * a3 + a2 * a6 + a3 * a9) * 0.5_wp + a3
+          b5 = (a2 * a2 + a5 * a5 + a6 * a6) * 0.5_wp + a5 + 1.0_wp
+          b6 = (a2 * a3 + a5 * a6 + a6 * a9) * 0.5_wp + a6
+          b9 = (a3 * a3 + a6 * a6 + a9 * a9) * 0.5_wp + a9 + 1.0_wp
 
-          Do i=1,config%natms
-            xa = stats%xin(i)-com(1)
-            ya = stats%yin(i)-com(2)
-            za = stats%zin(i)-com(3)
+          Do i = 1, config%natms
+            xa = stats%xin(i) - com(1)
+            ya = stats%yin(i) - com(2)
+            za = stats%zin(i) - com(3)
 
-            stats%xin(i) = xa*b1 + ya*b2 + za*b3 + com(1)
-            stats%yin(i) = xa*b2 + ya*b5 + za*b6 + com(2)
-            stats%zin(i) = xa*b3 + ya*b6 + za*b9 + com(3)
+            stats%xin(i) = xa * b1 + ya * b2 + za * b3 + com(1)
+            stats%yin(i) = xa * b2 + ya * b5 + za * b6 + com(2)
+            stats%zin(i) = xa * b3 + ya * b6 + za * b9 + com(3)
           End Do
 
         End If
 
       Else If (thermo%ensemble == ENS_NPT_LANGEVIN .or. &
-        thermo%ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
-        thermo%ensemble == ENS_NPT_MTK .or. &
-        thermo%ensemble == ENS_NPT_MTK_ANISO) Then
+               thermo%ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
+               thermo%ensemble == ENS_NPT_MTK .or. &
+               thermo%ensemble == ENS_NPT_MTK_ANISO) Then
 
         ! Langevin and MTK npt/nst
 
         If (thermo%ensemble == ENS_NPT_LANGEVIN .or. thermo%ensemble == ENS_NPT_MTK) Then
 
-          scale = Exp(tstep*thermo%eta(1))
+          scale = Exp(tstep * thermo%eta(1))
 
-          Do i=1,config%natms
-            stats%xin(i) = scale*stats%xin(i)
-            stats%yin(i) = scale*stats%yin(i)
-            stats%zin(i) = scale*stats%zin(i)
+          Do i = 1, config%natms
+            stats%xin(i) = scale * stats%xin(i)
+            stats%yin(i) = scale * stats%yin(i)
+            stats%zin(i) = scale * stats%zin(i)
           End Do
 
         Else
 
           ! second order taylor expansion of Exp(tstep*thermo%eta)
 
-          a1 = tstep*thermo%eta(1)
-          a2 = tstep*thermo%eta(2)
-          a3 = tstep*thermo%eta(3)
-          a5 = tstep*thermo%eta(5)
-          a6 = tstep*thermo%eta(6)
-          a9 = tstep*thermo%eta(9)
+          a1 = tstep * thermo%eta(1)
+          a2 = tstep * thermo%eta(2)
+          a3 = tstep * thermo%eta(3)
+          a5 = tstep * thermo%eta(5)
+          a6 = tstep * thermo%eta(6)
+          a9 = tstep * thermo%eta(9)
 
-          b1 = (a1*a1 + a2*a2 + a3*a3)*0.5_wp + a1 + 1.0_wp
-          b2 = (a1*a2 + a2*a5 + a3*a6)*0.5_wp + a2
-          b3 = (a1*a3 + a2*a6 + a3*a9)*0.5_wp + a3
-          b5 = (a2*a2 + a5*a5 + a6*a6)*0.5_wp + a5 + 1.0_wp
-          b6 = (a2*a3 + a5*a6 + a6*a9)*0.5_wp + a6
-          b9 = (a3*a3 + a6*a6 + a9*a9)*0.5_wp + a9 + 1.0_wp
+          b1 = (a1 * a1 + a2 * a2 + a3 * a3) * 0.5_wp + a1 + 1.0_wp
+          b2 = (a1 * a2 + a2 * a5 + a3 * a6) * 0.5_wp + a2
+          b3 = (a1 * a3 + a2 * a6 + a3 * a9) * 0.5_wp + a3
+          b5 = (a2 * a2 + a5 * a5 + a6 * a6) * 0.5_wp + a5 + 1.0_wp
+          b6 = (a2 * a3 + a5 * a6 + a6 * a9) * 0.5_wp + a6
+          b9 = (a3 * a3 + a6 * a6 + a9 * a9) * 0.5_wp + a9 + 1.0_wp
 
-          Do i=1,config%natms
+          Do i = 1, config%natms
             xa = stats%xin(i)
             ya = stats%yin(i)
             za = stats%zin(i)
 
-            stats%xin(i) = xa*b1 + ya*b2 + za*b3
-            stats%yin(i) = xa*b2 + ya*b5 + za*b6
-            stats%zin(i) = xa*b3 + ya*b6 + za*b9
+            stats%xin(i) = xa * b1 + ya * b2 + za * b3
+            stats%yin(i) = xa * b2 + ya * b5 + za * b6
+            stats%zin(i) = xa * b3 + ya * b6 + za * b9
           End Do
 
         End If
 
       End If
 
-      If (.not.neigh%update) Then
+      If (.not. neigh%update) Then
 
         If (thermo%ensemble == ENS_NPT_BERENDSEN .or. thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
 
@@ -2665,18 +2648,18 @@ Contains
 
             scale = thermo%eta(1)
 
-            Do i=1,config%natms
-              neigh%xbg(i) = scale*neigh%xbg(i)
-              neigh%ybg(i) = scale*neigh%ybg(i)
-              neigh%zbg(i) = scale*neigh%zbg(i)
+            Do i = 1, config%natms
+              neigh%xbg(i) = scale * neigh%xbg(i)
+              neigh%ybg(i) = scale * neigh%ybg(i)
+              neigh%zbg(i) = scale * neigh%zbg(i)
             End Do
 
           Else
 
-            Do i=1,config%natms
-              xa = neigh%xbg(i)*thermo%eta(1)+neigh%ybg(i)*thermo%eta(2)+neigh%zbg(i)*thermo%eta(3)
-              ya = neigh%xbg(i)*thermo%eta(4)+neigh%ybg(i)*thermo%eta(5)+neigh%zbg(i)*thermo%eta(6)
-              za = neigh%xbg(i)*thermo%eta(7)+neigh%ybg(i)*thermo%eta(8)+neigh%zbg(i)*thermo%eta(9)
+            Do i = 1, config%natms
+              xa = neigh%xbg(i) * thermo%eta(1) + neigh%ybg(i) * thermo%eta(2) + neigh%zbg(i) * thermo%eta(3)
+              ya = neigh%xbg(i) * thermo%eta(4) + neigh%ybg(i) * thermo%eta(5) + neigh%zbg(i) * thermo%eta(6)
+              za = neigh%xbg(i) * thermo%eta(7) + neigh%ybg(i) * thermo%eta(8) + neigh%zbg(i) * thermo%eta(9)
 
               neigh%xbg(i) = xa
               neigh%ybg(i) = ya
@@ -2689,91 +2672,91 @@ Contains
 
           ! hoover npt/nst
 
-          Call getcom(neigh%xbg,neigh%ybg,neigh%zbg,config,com,comm)
+          Call getcom(neigh%xbg, neigh%ybg, neigh%zbg, config, com, comm)
 
           If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
 
-            scale = Exp(tstep*thermo%eta(1))
+            scale = Exp(tstep * thermo%eta(1))
 
-            Do i=1,config%natms
-              neigh%xbg(i) = scale*(neigh%xbg(i)-com(1))+com(1)
-              neigh%ybg(i) = scale*(neigh%ybg(i)-com(2))+com(2)
-              neigh%zbg(i) = scale*(neigh%zbg(i)-com(3))+com(3)
+            Do i = 1, config%natms
+              neigh%xbg(i) = scale * (neigh%xbg(i) - com(1)) + com(1)
+              neigh%ybg(i) = scale * (neigh%ybg(i) - com(2)) + com(2)
+              neigh%zbg(i) = scale * (neigh%zbg(i) - com(3)) + com(3)
             End Do
 
           Else
 
             ! second order taylor expansion of Exp(tstep*thermo%eta)
 
-            a1 = tstep*thermo%eta(1)
-            a2 = tstep*thermo%eta(2)
-            a3 = tstep*thermo%eta(3)
-            a5 = tstep*thermo%eta(5)
-            a6 = tstep*thermo%eta(6)
-            a9 = tstep*thermo%eta(9)
+            a1 = tstep * thermo%eta(1)
+            a2 = tstep * thermo%eta(2)
+            a3 = tstep * thermo%eta(3)
+            a5 = tstep * thermo%eta(5)
+            a6 = tstep * thermo%eta(6)
+            a9 = tstep * thermo%eta(9)
 
-            b1 = (a1*a1 + a2*a2 + a3*a3)*0.5_wp + a1 + 1.0_wp
-            b2 = (a1*a2 + a2*a5 + a3*a6)*0.5_wp + a2
-            b3 = (a1*a3 + a2*a6 + a3*a9)*0.5_wp + a3
-            b5 = (a2*a2 + a5*a5 + a6*a6)*0.5_wp + a5 + 1.0_wp
-            b6 = (a2*a3 + a5*a6 + a6*a9)*0.5_wp + a6
-            b9 = (a3*a3 + a6*a6 + a9*a9)*0.5_wp + a9 + 1.0_wp
+            b1 = (a1 * a1 + a2 * a2 + a3 * a3) * 0.5_wp + a1 + 1.0_wp
+            b2 = (a1 * a2 + a2 * a5 + a3 * a6) * 0.5_wp + a2
+            b3 = (a1 * a3 + a2 * a6 + a3 * a9) * 0.5_wp + a3
+            b5 = (a2 * a2 + a5 * a5 + a6 * a6) * 0.5_wp + a5 + 1.0_wp
+            b6 = (a2 * a3 + a5 * a6 + a6 * a9) * 0.5_wp + a6
+            b9 = (a3 * a3 + a6 * a6 + a9 * a9) * 0.5_wp + a9 + 1.0_wp
 
-            Do i=1,config%natms
-              xa = neigh%xbg(i)-com(1)
-              ya = neigh%ybg(i)-com(2)
-              za = neigh%zbg(i)-com(3)
+            Do i = 1, config%natms
+              xa = neigh%xbg(i) - com(1)
+              ya = neigh%ybg(i) - com(2)
+              za = neigh%zbg(i) - com(3)
 
-              neigh%xbg(i) = xa*b1 + ya*b2 + za*b3 + com(1)
-              neigh%ybg(i) = xa*b2 + ya*b5 + za*b6 + com(2)
-              neigh%zbg(i) = xa*b3 + ya*b6 + za*b9 + com(3)
+              neigh%xbg(i) = xa * b1 + ya * b2 + za * b3 + com(1)
+              neigh%ybg(i) = xa * b2 + ya * b5 + za * b6 + com(2)
+              neigh%zbg(i) = xa * b3 + ya * b6 + za * b9 + com(3)
             End Do
 
           End If
 
         Else If (thermo%ensemble == ENS_NPT_LANGEVIN .or. &
-          thermo%ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
-          thermo%ensemble == ENS_NPT_MTK .or. &
-          thermo%ensemble == ENS_NPT_MTK_ANISO) Then
+                 thermo%ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
+                 thermo%ensemble == ENS_NPT_MTK .or. &
+                 thermo%ensemble == ENS_NPT_MTK_ANISO) Then
 
           ! Langevin and MTK npt/nst
 
           If (thermo%ensemble == ENS_NPT_LANGEVIN .or. thermo%ensemble == ENS_NPT_MTK) Then
 
-            scale = Exp(tstep*thermo%eta(1))
+            scale = Exp(tstep * thermo%eta(1))
 
-            Do i=1,config%natms
-              neigh%xbg(i) = scale*neigh%xbg(i)
-              neigh%ybg(i) = scale*neigh%ybg(i)
-              neigh%zbg(i) = scale*neigh%zbg(i)
+            Do i = 1, config%natms
+              neigh%xbg(i) = scale * neigh%xbg(i)
+              neigh%ybg(i) = scale * neigh%ybg(i)
+              neigh%zbg(i) = scale * neigh%zbg(i)
             End Do
 
           Else
 
             ! second order taylor expansion of Exp(tstep*thermo%eta)
 
-            a1 = tstep*thermo%eta(1)
-            a2 = tstep*thermo%eta(2)
-            a3 = tstep*thermo%eta(3)
-            a5 = tstep*thermo%eta(5)
-            a6 = tstep*thermo%eta(6)
-            a9 = tstep*thermo%eta(9)
+            a1 = tstep * thermo%eta(1)
+            a2 = tstep * thermo%eta(2)
+            a3 = tstep * thermo%eta(3)
+            a5 = tstep * thermo%eta(5)
+            a6 = tstep * thermo%eta(6)
+            a9 = tstep * thermo%eta(9)
 
-            b1 = (a1*a1 + a2*a2 + a3*a3)*0.5_wp + a1 + 1.0_wp
-            b2 = (a1*a2 + a2*a5 + a3*a6)*0.5_wp + a2
-            b3 = (a1*a3 + a2*a6 + a3*a9)*0.5_wp + a3
-            b5 = (a2*a2 + a5*a5 + a6*a6)*0.5_wp + a5 + 1.0_wp
-            b6 = (a2*a3 + a5*a6 + a6*a9)*0.5_wp + a6
-            b9 = (a3*a3 + a6*a6 + a9*a9)*0.5_wp + a9 + 1.0_wp
+            b1 = (a1 * a1 + a2 * a2 + a3 * a3) * 0.5_wp + a1 + 1.0_wp
+            b2 = (a1 * a2 + a2 * a5 + a3 * a6) * 0.5_wp + a2
+            b3 = (a1 * a3 + a2 * a6 + a3 * a9) * 0.5_wp + a3
+            b5 = (a2 * a2 + a5 * a5 + a6 * a6) * 0.5_wp + a5 + 1.0_wp
+            b6 = (a2 * a3 + a5 * a6 + a6 * a9) * 0.5_wp + a6
+            b9 = (a3 * a3 + a6 * a6 + a9 * a9) * 0.5_wp + a9 + 1.0_wp
 
-            Do i=1,config%natms
+            Do i = 1, config%natms
               xa = neigh%xbg(i)
               ya = neigh%ybg(i)
               za = neigh%zbg(i)
 
-              neigh%xbg(i) = xa*b1 + ya*b2 + za*b3
-              neigh%ybg(i) = xa*b2 + ya*b5 + za*b6
-              neigh%zbg(i) = xa*b3 + ya*b6 + za*b9
+              neigh%xbg(i) = xa * b1 + ya * b2 + za * b3
+              neigh%ybg(i) = xa * b2 + ya * b5 + za * b6
+              neigh%zbg(i) = xa * b3 + ya * b6 + za * b9
             End Do
 
           End If
@@ -2785,20 +2768,20 @@ Contains
     Else ! RBs exist
 
       fail = 0
-      Allocate (rgdxin(1:rigid%max_rigid),rgdyin(1:rigid%max_rigid),rgdzin(1:rigid%max_rigid), Stat = fail)
+      Allocate (rgdxin(1:rigid%max_rigid), rgdyin(1:rigid%max_rigid), rgdzin(1:rigid%max_rigid), Stat=fail)
       If (fail > 0) Then
-        Write(message,'(a)') 'xscale allocation failure'
-        Call error(0,message)
+        Write (message, '(a)') 'xscale allocation failure'
+        Call error(0, message)
       End If
 
       ! Halo initial RB members positions across onto neighbouring domains
       ! to get initial COMs
 
       If (rigid%share) Then
-        Call update_shared_units(config,rigid%list_shared, &
-          rigid%map_shared,stats%xin,stats%yin,stats%zin,domain,comm)
+        Call update_shared_units(config, rigid%list_shared, &
+                                 rigid%map_shared, stats%xin, stats%yin, stats%zin, domain, comm)
       End If
-      Call rigid_bodies_coms(config,stats%xin,stats%yin,stats%zin,rgdxin,rgdyin,rgdzin,rigid)
+      Call rigid_bodies_coms(config, stats%xin, stats%yin, stats%zin, rgdxin, rgdyin, rgdzin, rigid)
 
       If (thermo%ensemble == ENS_NPT_BERENDSEN .or. thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
 
@@ -2808,26 +2791,26 @@ Contains
 
           scale = thermo%eta(1)
 
-          Do j=1,config%nfree
-            i=config%lstfre(j)
+          Do j = 1, config%nfree
+            i = config%lstfre(j)
 
-            stats%xin(i) = scale*stats%xin(i)
-            stats%yin(i) = scale*stats%yin(i)
-            stats%zin(i) = scale*stats%zin(i)
+            stats%xin(i) = scale * stats%xin(i)
+            stats%yin(i) = scale * stats%yin(i)
+            stats%zin(i) = scale * stats%zin(i)
           End Do
 
-          Do irgd=1,rigid%n_types
+          Do irgd = 1, rigid%n_types
             x = rgdxin(irgd)
             y = rgdyin(irgd)
             z = rgdzin(irgd)
 
-            rgdxin(irgd) = scale*rgdxin(irgd)
-            rgdyin(irgd) = scale*rgdyin(irgd)
-            rgdzin(irgd) = scale*rgdzin(irgd)
+            rgdxin(irgd) = scale * rgdxin(irgd)
+            rgdyin(irgd) = scale * rgdyin(irgd)
+            rgdzin(irgd) = scale * rgdzin(irgd)
 
-            lrgd=rigid%list(-1,irgd)
-            Do jrgd=1,lrgd
-              i=rigid%index_local(jrgd,irgd)
+            lrgd = rigid%list(-1, irgd)
+            Do jrgd = 1, lrgd
+              i = rigid%index_local(jrgd, irgd)
 
               If (i <= config%natms) Then
                 stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
@@ -2839,34 +2822,34 @@ Contains
 
         Else
 
-          Do j=1,config%nfree
-            i=config%lstfre(j)
+          Do j = 1, config%nfree
+            i = config%lstfre(j)
 
-            xa = stats%xin(i)*thermo%eta(1)+stats%yin(i)*thermo%eta(2)+stats%zin(i)*thermo%eta(3)
-            ya = stats%xin(i)*thermo%eta(4)+stats%yin(i)*thermo%eta(5)+stats%zin(i)*thermo%eta(6)
-            za = stats%xin(i)*thermo%eta(7)+stats%yin(i)*thermo%eta(8)+stats%zin(i)*thermo%eta(9)
+            xa = stats%xin(i) * thermo%eta(1) + stats%yin(i) * thermo%eta(2) + stats%zin(i) * thermo%eta(3)
+            ya = stats%xin(i) * thermo%eta(4) + stats%yin(i) * thermo%eta(5) + stats%zin(i) * thermo%eta(6)
+            za = stats%xin(i) * thermo%eta(7) + stats%yin(i) * thermo%eta(8) + stats%zin(i) * thermo%eta(9)
 
             stats%xin(i) = xa
             stats%yin(i) = ya
             stats%zin(i) = za
           End Do
 
-          Do irgd=1,rigid%n_types
+          Do irgd = 1, rigid%n_types
             x = rgdxin(irgd)
             y = rgdyin(irgd)
             z = rgdzin(irgd)
 
-            xa = rgdxin(irgd)*thermo%eta(1)+rgdyin(irgd)*thermo%eta(2)+rgdzin(irgd)*thermo%eta(3)
-            ya = rgdxin(irgd)*thermo%eta(4)+rgdyin(irgd)*thermo%eta(5)+rgdzin(irgd)*thermo%eta(6)
-            za = rgdxin(irgd)*thermo%eta(7)+rgdyin(irgd)*thermo%eta(8)+rgdzin(irgd)*thermo%eta(9)
+            xa = rgdxin(irgd) * thermo%eta(1) + rgdyin(irgd) * thermo%eta(2) + rgdzin(irgd) * thermo%eta(3)
+            ya = rgdxin(irgd) * thermo%eta(4) + rgdyin(irgd) * thermo%eta(5) + rgdzin(irgd) * thermo%eta(6)
+            za = rgdxin(irgd) * thermo%eta(7) + rgdyin(irgd) * thermo%eta(8) + rgdzin(irgd) * thermo%eta(9)
 
             rgdxin(irgd) = xa
             rgdyin(irgd) = ya
             rgdzin(irgd) = za
 
-            lrgd=rigid%list(-1,irgd)
-            Do jrgd=1,lrgd
-              i=rigid%index_local(jrgd,irgd)
+            lrgd = rigid%list(-1, irgd)
+            Do jrgd = 1, lrgd
+              i = rigid%index_local(jrgd, irgd)
 
               If (i <= config%natms) Then
                 stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
@@ -2882,32 +2865,32 @@ Contains
 
         ! hoover npt/nst
 
-        Call getcom(stats%xin,stats%yin,stats%zin,config,com,comm)
+        Call getcom(stats%xin, stats%yin, stats%zin, config, com, comm)
 
         If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
 
-          scale = Exp(tstep*thermo%eta(1))
+          scale = Exp(tstep * thermo%eta(1))
 
-          Do j=1,config%nfree
-            i=config%lstfre(j)
+          Do j = 1, config%nfree
+            i = config%lstfre(j)
 
-            stats%xin(i) = scale*(stats%xin(i)-com(1))+com(1)
-            stats%yin(i) = scale*(stats%yin(i)-com(2))+com(2)
-            stats%zin(i) = scale*(stats%zin(i)-com(3))+com(3)
+            stats%xin(i) = scale * (stats%xin(i) - com(1)) + com(1)
+            stats%yin(i) = scale * (stats%yin(i) - com(2)) + com(2)
+            stats%zin(i) = scale * (stats%zin(i) - com(3)) + com(3)
           End Do
 
-          Do irgd=1,rigid%n_types
+          Do irgd = 1, rigid%n_types
             x = rgdxin(irgd)
             y = rgdyin(irgd)
             z = rgdzin(irgd)
 
-            rgdxin(irgd) = scale*(rgdxin(irgd)-com(1))+com(1)
-            rgdyin(irgd) = scale*(rgdyin(irgd)-com(2))+com(2)
-            rgdzin(irgd) = scale*(rgdzin(irgd)-com(3))+com(3)
+            rgdxin(irgd) = scale * (rgdxin(irgd) - com(1)) + com(1)
+            rgdyin(irgd) = scale * (rgdyin(irgd) - com(2)) + com(2)
+            rgdzin(irgd) = scale * (rgdzin(irgd) - com(3)) + com(3)
 
-            lrgd=rigid%list(-1,irgd)
-            Do jrgd=1,lrgd
-              i=rigid%index_local(jrgd,irgd)
+            lrgd = rigid%list(-1, irgd)
+            Do jrgd = 1, lrgd
+              i = rigid%index_local(jrgd, irgd)
 
               If (i <= config%natms) Then
                 stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
@@ -2921,48 +2904,48 @@ Contains
 
           ! second order taylor expansion of Exp(tstep*thermo%eta)
 
-          a1 = tstep*thermo%eta(1)
-          a2 = tstep*thermo%eta(2)
-          a3 = tstep*thermo%eta(3)
-          a5 = tstep*thermo%eta(5)
-          a6 = tstep*thermo%eta(6)
-          a9 = tstep*thermo%eta(9)
+          a1 = tstep * thermo%eta(1)
+          a2 = tstep * thermo%eta(2)
+          a3 = tstep * thermo%eta(3)
+          a5 = tstep * thermo%eta(5)
+          a6 = tstep * thermo%eta(6)
+          a9 = tstep * thermo%eta(9)
 
-          b1 = (a1*a1 + a2*a2 + a3*a3)*0.5_wp + a1 + 1.0_wp
-          b2 = (a1*a2 + a2*a5 + a3*a6)*0.5_wp + a2
-          b3 = (a1*a3 + a2*a6 + a3*a9)*0.5_wp + a3
-          b5 = (a2*a2 + a5*a5 + a6*a6)*0.5_wp + a5 + 1.0_wp
-          b6 = (a2*a3 + a5*a6 + a6*a9)*0.5_wp + a6
-          b9 = (a3*a3 + a6*a6 + a9*a9)*0.5_wp + a9 + 1.0_wp
+          b1 = (a1 * a1 + a2 * a2 + a3 * a3) * 0.5_wp + a1 + 1.0_wp
+          b2 = (a1 * a2 + a2 * a5 + a3 * a6) * 0.5_wp + a2
+          b3 = (a1 * a3 + a2 * a6 + a3 * a9) * 0.5_wp + a3
+          b5 = (a2 * a2 + a5 * a5 + a6 * a6) * 0.5_wp + a5 + 1.0_wp
+          b6 = (a2 * a3 + a5 * a6 + a6 * a9) * 0.5_wp + a6
+          b9 = (a3 * a3 + a6 * a6 + a9 * a9) * 0.5_wp + a9 + 1.0_wp
 
-          Do j=1,config%nfree
-            i=config%lstfre(j)
+          Do j = 1, config%nfree
+            i = config%lstfre(j)
 
-            xa = stats%xin(i)-com(1)
-            ya = stats%yin(i)-com(2)
-            za = stats%zin(i)-com(3)
+            xa = stats%xin(i) - com(1)
+            ya = stats%yin(i) - com(2)
+            za = stats%zin(i) - com(3)
 
-            stats%xin(i) = xa*b1 + ya*b2 + za*b3 + com(1)
-            stats%yin(i) = xa*b2 + ya*b5 + za*b6 + com(2)
-            stats%zin(i) = xa*b3 + ya*b6 + za*b9 + com(3)
+            stats%xin(i) = xa * b1 + ya * b2 + za * b3 + com(1)
+            stats%yin(i) = xa * b2 + ya * b5 + za * b6 + com(2)
+            stats%zin(i) = xa * b3 + ya * b6 + za * b9 + com(3)
           End Do
 
-          Do irgd=1,rigid%n_types
+          Do irgd = 1, rigid%n_types
             x = rgdxin(irgd)
             y = rgdyin(irgd)
             z = rgdzin(irgd)
 
-            xa = rgdxin(irgd)-com(1)
-            ya = rgdyin(irgd)-com(2)
-            za = rgdzin(irgd)-com(3)
+            xa = rgdxin(irgd) - com(1)
+            ya = rgdyin(irgd) - com(2)
+            za = rgdzin(irgd) - com(3)
 
-            rgdxin(irgd) = xa*b1 + ya*b2 + za*b3 + com(1)
-            rgdyin(irgd) = xa*b2 + ya*b5 + za*b6 + com(2)
-            rgdzin(irgd) = xa*b3 + ya*b6 + za*b9 + com(3)
+            rgdxin(irgd) = xa * b1 + ya * b2 + za * b3 + com(1)
+            rgdyin(irgd) = xa * b2 + ya * b5 + za * b6 + com(2)
+            rgdzin(irgd) = xa * b3 + ya * b6 + za * b9 + com(3)
 
-            lrgd=rigid%list(-1,irgd)
-            Do jrgd=1,lrgd
-              i=rigid%index_local(jrgd,irgd)
+            lrgd = rigid%list(-1, irgd)
+            Do jrgd = 1, lrgd
+              i = rigid%index_local(jrgd, irgd)
 
               If (i <= config%natms) Then
                 stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
@@ -2975,36 +2958,36 @@ Contains
         End If
 
       Else If (thermo%ensemble == ENS_NPT_LANGEVIN .or. &
-        thermo%ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
-        thermo%ensemble == ENS_NPT_MTK .or. &
-        thermo%ensemble == ENS_NPT_MTK_ANISO) Then
+               thermo%ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
+               thermo%ensemble == ENS_NPT_MTK .or. &
+               thermo%ensemble == ENS_NPT_MTK_ANISO) Then
 
         ! Langevin and MTK npt/nst
 
         If (thermo%ensemble == ENS_NPT_LANGEVIN .or. thermo%ensemble == ENS_NPT_MTK) Then
 
-          scale = Exp(tstep*thermo%eta(1))
+          scale = Exp(tstep * thermo%eta(1))
 
-          Do j=1,config%nfree
-            i=config%lstfre(j)
+          Do j = 1, config%nfree
+            i = config%lstfre(j)
 
-            stats%xin(i) = scale*stats%xin(i)
-            stats%yin(i) = scale*stats%yin(i)
-            stats%zin(i) = scale*stats%zin(i)
+            stats%xin(i) = scale * stats%xin(i)
+            stats%yin(i) = scale * stats%yin(i)
+            stats%zin(i) = scale * stats%zin(i)
           End Do
 
-          Do irgd=1,rigid%n_types
+          Do irgd = 1, rigid%n_types
             x = rgdxin(irgd)
             y = rgdyin(irgd)
             z = rgdzin(irgd)
 
-            rgdxin(irgd) = scale*rgdxin(irgd)
-            rgdyin(irgd) = scale*rgdyin(irgd)
-            rgdzin(irgd) = scale*rgdzin(irgd)
+            rgdxin(irgd) = scale * rgdxin(irgd)
+            rgdyin(irgd) = scale * rgdyin(irgd)
+            rgdzin(irgd) = scale * rgdzin(irgd)
 
-            lrgd=rigid%list(-1,irgd)
-            Do jrgd=1,lrgd
-              i=rigid%index_local(jrgd,irgd)
+            lrgd = rigid%list(-1, irgd)
+            Do jrgd = 1, lrgd
+              i = rigid%index_local(jrgd, irgd)
 
               If (i <= config%natms) Then
                 stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
@@ -3018,33 +3001,33 @@ Contains
 
           ! second order taylor expansion of Exp(tstep*thermo%eta)
 
-          a1 = tstep*thermo%eta(1)
-          a2 = tstep*thermo%eta(2)
-          a3 = tstep*thermo%eta(3)
-          a5 = tstep*thermo%eta(5)
-          a6 = tstep*thermo%eta(6)
-          a9 = tstep*thermo%eta(9)
+          a1 = tstep * thermo%eta(1)
+          a2 = tstep * thermo%eta(2)
+          a3 = tstep * thermo%eta(3)
+          a5 = tstep * thermo%eta(5)
+          a6 = tstep * thermo%eta(6)
+          a9 = tstep * thermo%eta(9)
 
-          b1 = (a1*a1 + a2*a2 + a3*a3)*0.5_wp + a1 + 1.0_wp
-          b2 = (a1*a2 + a2*a5 + a3*a6)*0.5_wp + a2
-          b3 = (a1*a3 + a2*a6 + a3*a9)*0.5_wp + a3
-          b5 = (a2*a2 + a5*a5 + a6*a6)*0.5_wp + a5 + 1.0_wp
-          b6 = (a2*a3 + a5*a6 + a6*a9)*0.5_wp + a6
-          b9 = (a3*a3 + a6*a6 + a9*a9)*0.5_wp + a9 + 1.0_wp
+          b1 = (a1 * a1 + a2 * a2 + a3 * a3) * 0.5_wp + a1 + 1.0_wp
+          b2 = (a1 * a2 + a2 * a5 + a3 * a6) * 0.5_wp + a2
+          b3 = (a1 * a3 + a2 * a6 + a3 * a9) * 0.5_wp + a3
+          b5 = (a2 * a2 + a5 * a5 + a6 * a6) * 0.5_wp + a5 + 1.0_wp
+          b6 = (a2 * a3 + a5 * a6 + a6 * a9) * 0.5_wp + a6
+          b9 = (a3 * a3 + a6 * a6 + a9 * a9) * 0.5_wp + a9 + 1.0_wp
 
-          Do j=1,config%nfree
-            i=config%lstfre(j)
+          Do j = 1, config%nfree
+            i = config%lstfre(j)
 
             xa = stats%xin(i)
             ya = stats%yin(i)
             za = stats%zin(i)
 
-            stats%xin(i) = xa*b1 + ya*b2 + za*b3
-            stats%yin(i) = xa*b2 + ya*b5 + za*b6
-            stats%zin(i) = xa*b3 + ya*b6 + za*b9
+            stats%xin(i) = xa * b1 + ya * b2 + za * b3
+            stats%yin(i) = xa * b2 + ya * b5 + za * b6
+            stats%zin(i) = xa * b3 + ya * b6 + za * b9
           End Do
 
-          Do irgd=1,rigid%n_types
+          Do irgd = 1, rigid%n_types
             x = rgdxin(irgd)
             y = rgdyin(irgd)
             z = rgdzin(irgd)
@@ -3053,13 +3036,13 @@ Contains
             ya = rgdyin(irgd)
             za = rgdzin(irgd)
 
-            rgdxin(irgd) = xa*b1 + ya*b2 + za*b3
-            rgdyin(irgd) = xa*b2 + ya*b5 + za*b6
-            rgdzin(irgd) = xa*b3 + ya*b6 + za*b9
+            rgdxin(irgd) = xa * b1 + ya * b2 + za * b3
+            rgdyin(irgd) = xa * b2 + ya * b5 + za * b6
+            rgdzin(irgd) = xa * b3 + ya * b6 + za * b9
 
-            lrgd=rigid%list(-1,irgd)
-            Do jrgd=1,lrgd
-              i=rigid%index_local(jrgd,irgd)
+            lrgd = rigid%list(-1, irgd)
+            Do jrgd = 1, lrgd
+              i = rigid%index_local(jrgd, irgd)
 
               If (i <= config%natms) Then
                 stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
@@ -3073,9 +3056,9 @@ Contains
 
       End If
 
-      If (.not.neigh%update) Then
+      If (.not. neigh%update) Then
 
-        Call rigid_bodies_coms(config,neigh%xbg,neigh%ybg,neigh%zbg,rgdxin,rgdyin,rgdzin,rigid)
+        Call rigid_bodies_coms(config, neigh%xbg, neigh%ybg, neigh%zbg, rgdxin, rgdyin, rgdzin, rigid)
 
         If (thermo%ensemble == ENS_NPT_BERENDSEN .or. thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
 
@@ -3085,26 +3068,26 @@ Contains
 
             scale = thermo%eta(1)
 
-            Do j=1,config%nfree
-              i=config%lstfre(j)
+            Do j = 1, config%nfree
+              i = config%lstfre(j)
 
-              neigh%xbg(i) = scale*neigh%xbg(i)
-              neigh%ybg(i) = scale*neigh%ybg(i)
-              neigh%zbg(i) = scale*neigh%zbg(i)
+              neigh%xbg(i) = scale * neigh%xbg(i)
+              neigh%ybg(i) = scale * neigh%ybg(i)
+              neigh%zbg(i) = scale * neigh%zbg(i)
             End Do
 
-            Do irgd=1,rigid%n_types
+            Do irgd = 1, rigid%n_types
               x = rgdxin(irgd)
               y = rgdyin(irgd)
               z = rgdzin(irgd)
 
-              rgdxin(irgd) = scale*rgdxin(irgd)
-              rgdyin(irgd) = scale*rgdyin(irgd)
-              rgdzin(irgd) = scale*rgdzin(irgd)
+              rgdxin(irgd) = scale * rgdxin(irgd)
+              rgdyin(irgd) = scale * rgdyin(irgd)
+              rgdzin(irgd) = scale * rgdzin(irgd)
 
-              lrgd=rigid%list(-1,irgd)
-              Do jrgd=1,lrgd
-                i=rigid%index_local(jrgd,irgd)
+              lrgd = rigid%list(-1, irgd)
+              Do jrgd = 1, lrgd
+                i = rigid%index_local(jrgd, irgd)
 
                 If (i <= config%natms) Then
                   neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
@@ -3116,34 +3099,34 @@ Contains
 
           Else
 
-            Do j=1,config%nfree
-              i=config%lstfre(j)
+            Do j = 1, config%nfree
+              i = config%lstfre(j)
 
-              xa = neigh%xbg(i)*thermo%eta(1)+neigh%ybg(i)*thermo%eta(2)+neigh%zbg(i)*thermo%eta(3)
-              ya = neigh%xbg(i)*thermo%eta(4)+neigh%ybg(i)*thermo%eta(5)+neigh%zbg(i)*thermo%eta(6)
-              za = neigh%xbg(i)*thermo%eta(7)+neigh%ybg(i)*thermo%eta(8)+neigh%zbg(i)*thermo%eta(9)
+              xa = neigh%xbg(i) * thermo%eta(1) + neigh%ybg(i) * thermo%eta(2) + neigh%zbg(i) * thermo%eta(3)
+              ya = neigh%xbg(i) * thermo%eta(4) + neigh%ybg(i) * thermo%eta(5) + neigh%zbg(i) * thermo%eta(6)
+              za = neigh%xbg(i) * thermo%eta(7) + neigh%ybg(i) * thermo%eta(8) + neigh%zbg(i) * thermo%eta(9)
 
               neigh%xbg(i) = xa
               neigh%ybg(i) = ya
               neigh%zbg(i) = za
             End Do
 
-            Do irgd=1,rigid%n_types
+            Do irgd = 1, rigid%n_types
               x = rgdxin(irgd)
               y = rgdyin(irgd)
               z = rgdzin(irgd)
 
-              xa = rgdxin(irgd)*thermo%eta(1)+rgdyin(irgd)*thermo%eta(2)+rgdzin(irgd)*thermo%eta(3)
-              ya = rgdxin(irgd)*thermo%eta(4)+rgdyin(irgd)*thermo%eta(5)+rgdzin(irgd)*thermo%eta(6)
-              za = rgdxin(irgd)*thermo%eta(7)+rgdyin(irgd)*thermo%eta(8)+rgdzin(irgd)*thermo%eta(9)
+              xa = rgdxin(irgd) * thermo%eta(1) + rgdyin(irgd) * thermo%eta(2) + rgdzin(irgd) * thermo%eta(3)
+              ya = rgdxin(irgd) * thermo%eta(4) + rgdyin(irgd) * thermo%eta(5) + rgdzin(irgd) * thermo%eta(6)
+              za = rgdxin(irgd) * thermo%eta(7) + rgdyin(irgd) * thermo%eta(8) + rgdzin(irgd) * thermo%eta(9)
 
               rgdxin(irgd) = xa
               rgdyin(irgd) = ya
               rgdzin(irgd) = za
 
-              lrgd=rigid%list(-1,irgd)
-              Do jrgd=1,lrgd
-                i=rigid%index_local(jrgd,irgd)
+              lrgd = rigid%list(-1, irgd)
+              Do jrgd = 1, lrgd
+                i = rigid%index_local(jrgd, irgd)
 
                 If (i <= config%natms) Then
                   neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
@@ -3159,32 +3142,32 @@ Contains
 
           ! hoover npt/nst
 
-          Call getcom(neigh%xbg,neigh%ybg,neigh%zbg,config,com,comm)
+          Call getcom(neigh%xbg, neigh%ybg, neigh%zbg, config, com, comm)
 
           If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
 
-            scale = Exp(tstep*thermo%eta(1))
+            scale = Exp(tstep * thermo%eta(1))
 
-            Do j=1,config%nfree
-              i=config%lstfre(j)
+            Do j = 1, config%nfree
+              i = config%lstfre(j)
 
-              neigh%xbg(i) = scale*(neigh%xbg(i)-com(1))+com(1)
-              neigh%ybg(i) = scale*(neigh%ybg(i)-com(2))+com(2)
-              neigh%zbg(i) = scale*(neigh%zbg(i)-com(3))+com(3)
+              neigh%xbg(i) = scale * (neigh%xbg(i) - com(1)) + com(1)
+              neigh%ybg(i) = scale * (neigh%ybg(i) - com(2)) + com(2)
+              neigh%zbg(i) = scale * (neigh%zbg(i) - com(3)) + com(3)
             End Do
 
-            Do irgd=1,rigid%n_types
+            Do irgd = 1, rigid%n_types
               x = rgdxin(irgd)
               y = rgdyin(irgd)
               z = rgdzin(irgd)
 
-              rgdxin(irgd) = scale*(rgdxin(irgd)-com(1))+com(1)
-              rgdyin(irgd) = scale*(rgdyin(irgd)-com(2))+com(2)
-              rgdzin(irgd) = scale*(rgdzin(irgd)-com(3))+com(3)
+              rgdxin(irgd) = scale * (rgdxin(irgd) - com(1)) + com(1)
+              rgdyin(irgd) = scale * (rgdyin(irgd) - com(2)) + com(2)
+              rgdzin(irgd) = scale * (rgdzin(irgd) - com(3)) + com(3)
 
-              lrgd=rigid%list(-1,irgd)
-              Do jrgd=1,lrgd
-                i=rigid%index_local(jrgd,irgd)
+              lrgd = rigid%list(-1, irgd)
+              Do jrgd = 1, lrgd
+                i = rigid%index_local(jrgd, irgd)
 
                 If (i <= config%natms) Then
                   neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
@@ -3198,48 +3181,48 @@ Contains
 
             ! second order taylor expansion of Exp(tstep*thermo%eta)
 
-            a1 = tstep*thermo%eta(1)
-            a2 = tstep*thermo%eta(2)
-            a3 = tstep*thermo%eta(3)
-            a5 = tstep*thermo%eta(5)
-            a6 = tstep*thermo%eta(6)
-            a9 = tstep*thermo%eta(9)
+            a1 = tstep * thermo%eta(1)
+            a2 = tstep * thermo%eta(2)
+            a3 = tstep * thermo%eta(3)
+            a5 = tstep * thermo%eta(5)
+            a6 = tstep * thermo%eta(6)
+            a9 = tstep * thermo%eta(9)
 
-            b1 = (a1*a1 + a2*a2 + a3*a3)*0.5_wp + a1 + 1.0_wp
-            b2 = (a1*a2 + a2*a5 + a3*a6)*0.5_wp + a2
-            b3 = (a1*a3 + a2*a6 + a3*a9)*0.5_wp + a3
-            b5 = (a2*a2 + a5*a5 + a6*a6)*0.5_wp + a5 + 1.0_wp
-            b6 = (a2*a3 + a5*a6 + a6*a9)*0.5_wp + a6
-            b9 = (a3*a3 + a6*a6 + a9*a9)*0.5_wp + a9 + 1.0_wp
+            b1 = (a1 * a1 + a2 * a2 + a3 * a3) * 0.5_wp + a1 + 1.0_wp
+            b2 = (a1 * a2 + a2 * a5 + a3 * a6) * 0.5_wp + a2
+            b3 = (a1 * a3 + a2 * a6 + a3 * a9) * 0.5_wp + a3
+            b5 = (a2 * a2 + a5 * a5 + a6 * a6) * 0.5_wp + a5 + 1.0_wp
+            b6 = (a2 * a3 + a5 * a6 + a6 * a9) * 0.5_wp + a6
+            b9 = (a3 * a3 + a6 * a6 + a9 * a9) * 0.5_wp + a9 + 1.0_wp
 
-            Do j=1,config%nfree
-              i=config%lstfre(j)
+            Do j = 1, config%nfree
+              i = config%lstfre(j)
 
-              xa = neigh%xbg(i)-com(1)
-              ya = neigh%ybg(i)-com(2)
-              za = neigh%zbg(i)-com(3)
+              xa = neigh%xbg(i) - com(1)
+              ya = neigh%ybg(i) - com(2)
+              za = neigh%zbg(i) - com(3)
 
-              neigh%xbg(i) = xa*b1 + ya*b2 + za*b3 + com(1)
-              neigh%ybg(i) = xa*b2 + ya*b5 + za*b6 + com(2)
-              neigh%zbg(i) = xa*b3 + ya*b6 + za*b9 + com(3)
+              neigh%xbg(i) = xa * b1 + ya * b2 + za * b3 + com(1)
+              neigh%ybg(i) = xa * b2 + ya * b5 + za * b6 + com(2)
+              neigh%zbg(i) = xa * b3 + ya * b6 + za * b9 + com(3)
             End Do
 
-            Do irgd=1,rigid%n_types
+            Do irgd = 1, rigid%n_types
               x = rgdxin(irgd)
               y = rgdyin(irgd)
               z = rgdzin(irgd)
 
-              xa = rgdxin(irgd)-com(1)
-              ya = rgdyin(irgd)-com(2)
-              za = rgdzin(irgd)-com(3)
+              xa = rgdxin(irgd) - com(1)
+              ya = rgdyin(irgd) - com(2)
+              za = rgdzin(irgd) - com(3)
 
-              rgdxin(irgd) = xa*b1 + ya*b2 + za*b3 + com(1)
-              rgdyin(irgd) = xa*b2 + ya*b5 + za*b6 + com(2)
-              rgdzin(irgd) = xa*b3 + ya*b6 + za*b9 + com(3)
+              rgdxin(irgd) = xa * b1 + ya * b2 + za * b3 + com(1)
+              rgdyin(irgd) = xa * b2 + ya * b5 + za * b6 + com(2)
+              rgdzin(irgd) = xa * b3 + ya * b6 + za * b9 + com(3)
 
-              lrgd=rigid%list(-1,irgd)
-              Do jrgd=1,lrgd
-                i=rigid%index_local(jrgd,irgd)
+              lrgd = rigid%list(-1, irgd)
+              Do jrgd = 1, lrgd
+                i = rigid%index_local(jrgd, irgd)
 
                 If (i <= config%natms) Then
                   neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
@@ -3252,36 +3235,36 @@ Contains
           End If
 
         Else If (thermo%ensemble == ENS_NPT_LANGEVIN .or. &
-          thermo%ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
-          thermo%ensemble == ENS_NPT_MTK .or. &
-          thermo%ensemble == ENS_NPT_MTK_ANISO) Then
+                 thermo%ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
+                 thermo%ensemble == ENS_NPT_MTK .or. &
+                 thermo%ensemble == ENS_NPT_MTK_ANISO) Then
 
           ! Langevin and MTK npt/nst
 
           If (thermo%ensemble == ENS_NPT_LANGEVIN .or. thermo%ensemble == ENS_NPT_MTK) Then
 
-            scale = Exp(tstep*thermo%eta(1))
+            scale = Exp(tstep * thermo%eta(1))
 
-            Do j=1,config%nfree
-              i=config%lstfre(j)
+            Do j = 1, config%nfree
+              i = config%lstfre(j)
 
-              neigh%xbg(i) = scale*neigh%xbg(i)
-              neigh%ybg(i) = scale*neigh%ybg(i)
-              neigh%zbg(i) = scale*neigh%zbg(i)
+              neigh%xbg(i) = scale * neigh%xbg(i)
+              neigh%ybg(i) = scale * neigh%ybg(i)
+              neigh%zbg(i) = scale * neigh%zbg(i)
             End Do
 
-            Do irgd=1,rigid%n_types
+            Do irgd = 1, rigid%n_types
               x = rgdxin(irgd)
               y = rgdyin(irgd)
               z = rgdzin(irgd)
 
-              rgdxin(irgd) = scale*rgdxin(irgd)
-              rgdyin(irgd) = scale*rgdyin(irgd)
-              rgdzin(irgd) = scale*rgdzin(irgd)
+              rgdxin(irgd) = scale * rgdxin(irgd)
+              rgdyin(irgd) = scale * rgdyin(irgd)
+              rgdzin(irgd) = scale * rgdzin(irgd)
 
-              lrgd=rigid%list(-1,irgd)
-              Do jrgd=1,lrgd
-                i=rigid%index_local(jrgd,irgd)
+              lrgd = rigid%list(-1, irgd)
+              Do jrgd = 1, lrgd
+                i = rigid%index_local(jrgd, irgd)
 
                 If (i <= config%natms) Then
                   neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
@@ -3295,33 +3278,33 @@ Contains
 
             ! second order taylor expansion of Exp(tstep*thermo%eta)
 
-            a1 = tstep*thermo%eta(1)
-            a2 = tstep*thermo%eta(2)
-            a3 = tstep*thermo%eta(3)
-            a5 = tstep*thermo%eta(5)
-            a6 = tstep*thermo%eta(6)
-            a9 = tstep*thermo%eta(9)
+            a1 = tstep * thermo%eta(1)
+            a2 = tstep * thermo%eta(2)
+            a3 = tstep * thermo%eta(3)
+            a5 = tstep * thermo%eta(5)
+            a6 = tstep * thermo%eta(6)
+            a9 = tstep * thermo%eta(9)
 
-            b1 = (a1*a1 + a2*a2 + a3*a3)*0.5_wp + a1 + 1.0_wp
-            b2 = (a1*a2 + a2*a5 + a3*a6)*0.5_wp + a2
-            b3 = (a1*a3 + a2*a6 + a3*a9)*0.5_wp + a3
-            b5 = (a2*a2 + a5*a5 + a6*a6)*0.5_wp + a5 + 1.0_wp
-            b6 = (a2*a3 + a5*a6 + a6*a9)*0.5_wp + a6
-            b9 = (a3*a3 + a6*a6 + a9*a9)*0.5_wp + a9 + 1.0_wp
+            b1 = (a1 * a1 + a2 * a2 + a3 * a3) * 0.5_wp + a1 + 1.0_wp
+            b2 = (a1 * a2 + a2 * a5 + a3 * a6) * 0.5_wp + a2
+            b3 = (a1 * a3 + a2 * a6 + a3 * a9) * 0.5_wp + a3
+            b5 = (a2 * a2 + a5 * a5 + a6 * a6) * 0.5_wp + a5 + 1.0_wp
+            b6 = (a2 * a3 + a5 * a6 + a6 * a9) * 0.5_wp + a6
+            b9 = (a3 * a3 + a6 * a6 + a9 * a9) * 0.5_wp + a9 + 1.0_wp
 
-            Do j=1,config%nfree
-              i=config%lstfre(j)
+            Do j = 1, config%nfree
+              i = config%lstfre(j)
 
               xa = neigh%xbg(i)
               ya = neigh%ybg(i)
               za = neigh%zbg(i)
 
-              neigh%xbg(i) = xa*b1 + ya*b2 + za*b3
-              neigh%ybg(i) = xa*b2 + ya*b5 + za*b6
-              neigh%zbg(i) = xa*b3 + ya*b6 + za*b9
+              neigh%xbg(i) = xa * b1 + ya * b2 + za * b3
+              neigh%ybg(i) = xa * b2 + ya * b5 + za * b6
+              neigh%zbg(i) = xa * b3 + ya * b6 + za * b9
             End Do
 
-            Do irgd=1,rigid%n_types
+            Do irgd = 1, rigid%n_types
               x = rgdxin(irgd)
               y = rgdyin(irgd)
               z = rgdzin(irgd)
@@ -3330,13 +3313,13 @@ Contains
               ya = rgdyin(irgd)
               za = rgdzin(irgd)
 
-              rgdxin(irgd) = xa*b1 + ya*b2 + za*b3
-              rgdyin(irgd) = xa*b2 + ya*b5 + za*b6
-              rgdzin(irgd) = xa*b3 + ya*b6 + za*b9
+              rgdxin(irgd) = xa * b1 + ya * b2 + za * b3
+              rgdyin(irgd) = xa * b2 + ya * b5 + za * b6
+              rgdzin(irgd) = xa * b3 + ya * b6 + za * b9
 
-              lrgd=rigid%list(-1,irgd)
-              Do jrgd=1,lrgd
-                i=rigid%index_local(jrgd,irgd)
+              lrgd = rigid%list(-1, irgd)
+              Do jrgd = 1, lrgd
+                i = rigid%index_local(jrgd, irgd)
 
                 If (i <= config%natms) Then
                   neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
@@ -3353,24 +3336,23 @@ Contains
         ! Halo final RB members positions across onto neighbouring domains
 
         If (rigid%share) Then
-          Call update_shared_units(config,rigid%list_shared, &
-            rigid%map_shared,neigh%xbg,neigh%ybg,neigh%zbg,domain,comm)
+          Call update_shared_units(config, rigid%list_shared, &
+                                   rigid%map_shared, neigh%xbg, neigh%ybg, neigh%zbg, domain, comm)
         End If
       End If
 
-      Deallocate (rgdxin,rgdyin,rgdzin, Stat = fail)
+      Deallocate (rgdxin, rgdyin, rgdzin, Stat=fail)
       If (fail > 0) Then
-        Write(message,'(a)') 'xscale deallocation failure, node'
-        Call error(0,message)
+        Write (message, '(a)') 'xscale deallocation failure, node'
+        Call error(0, message)
       End If
 
     End If
 
-    Call pbcshift(config%imcon,config%cell,config%natms,stats%xin,stats%yin,stats%zin)
-    If (neigh%unconditional_update) Call pbcshift(config%imcon,config%cell,config%natms,neigh%xbg,neigh%ybg,neigh%zbg)
+    Call pbcshift(config%imcon, config%cell, config%natms, stats%xin, stats%yin, stats%zin)
+    If (neigh%unconditional_update) Call pbcshift(config%imcon, config%cell, config%natms, neigh%xbg, neigh%ybg, neigh%zbg)
 
   End Subroutine xscale
-
 
   !!!!!!!!!!!!!!!!!!!!! THIS IS QUATERNIONS_CONTAINER !!!!!!!!!!!!!!!!!!!!
   !
@@ -3385,7 +3367,7 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Subroutine q_setup(rigid,config,comm)
+  Subroutine q_setup(rigid, config, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -3401,176 +3383,173 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( configuration_type ),   Intent( InOut ) :: config
-    Type( comms_type ), Intent( InOut ) :: comm
+    Type(rigid_bodies_type),  Intent(InOut) :: rigid
+    Type(configuration_type), Intent(InOut) :: config
+    Type(comms_type),         Intent(InOut) :: comm
 
-    Integer           :: fail,irgd,jrgd,krgd,lrgd,rgdtyp, &
-      ill,i1,i2,i3,itmp
-    Real( Kind = wp ) :: rot(1:9),aa(1:9),rsq,tol, &
-      aq,bq,cq,dq,eq,fq,gq,hq,rnorm, x,y,z
-
-    Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
-
-    Character( Len = 256 ) :: message
+    Character(Len=256)         :: message
+    Integer                    :: fail, i1, i2, i3, ill, irgd, itmp, jrgd, krgd, lrgd, rgdtyp
+    Real(Kind=wp)              :: aa(1:9), aq, bq, cq, dq, eq, fq, gq, hq, rnorm, rot(1:9), rsq, &
+                                  tol, x, y, z
+    Real(Kind=wp), Allocatable :: gxx(:), gyy(:), gzz(:)
 
     fail = 0
-    Allocate (gxx(1:rigid%max_list*rigid%max_rigid), &
-      gyy(1:rigid%max_list*rigid%max_rigid), &
-      gzz(1:rigid%max_list*rigid%max_rigid), Stat = fail)
+    Allocate (gxx(1:rigid%max_list * rigid%max_rigid), &
+              gyy(1:rigid%max_list * rigid%max_rigid), &
+              gzz(1:rigid%max_list * rigid%max_rigid), Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'q_setup allocation failure'
-      Call error(0,message)
+      Write (message, '(a)') 'q_setup allocation failure'
+      Call error(0, message)
     End If
 
     ! quaternions for all RB on this domain
 
-    Do irgd=1,rigid%n_types
-      rgdtyp=rigid%list(0,irgd)
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
 
       ! For all good RBs
 
-      lrgd=rigid%list(-1,irgd)
-      If (rigid%frozen(0,rgdtyp) < lrgd) Then
-        i1=rigid%index_local(rigid%index_global(1,rgdtyp),irgd)
-        i2=rigid%index_local(rigid%index_global(2,rgdtyp),irgd)
-        i3=rigid%index_local(rigid%index_global(3,rgdtyp),irgd)
+      lrgd = rigid%list(-1, irgd)
+      If (rigid%frozen(0, rgdtyp) < lrgd) Then
+        i1 = rigid%index_local(rigid%index_global(1, rgdtyp), irgd)
+        i2 = rigid%index_local(rigid%index_global(2, rgdtyp), irgd)
+        i3 = rigid%index_local(rigid%index_global(3, rgdtyp), irgd)
 
         ! group basis vectors
 
-        aa(1)=config%parts(i1)%xxx-config%parts(i2)%xxx
-        aa(4)=config%parts(i1)%yyy-config%parts(i2)%yyy
-        aa(7)=config%parts(i1)%zzz-config%parts(i2)%zzz
+        aa(1) = config%parts(i1)%xxx - config%parts(i2)%xxx
+        aa(4) = config%parts(i1)%yyy - config%parts(i2)%yyy
+        aa(7) = config%parts(i1)%zzz - config%parts(i2)%zzz
 
         ! minimum image convention for bond vectors
 
-        Call images(config%imcon,config%cell,1,aa(1),aa(4),aa(7))
+        Call images(config%imcon, config%cell, 1, aa(1), aa(4), aa(7))
 
-        ill=rigid%index_global(0,rgdtyp)
+        ill = rigid%index_global(0, rgdtyp)
         If (ill == 0) Then
-          aa(2)=config%parts(i1)%xxx-config%parts(i3)%xxx
-          aa(5)=config%parts(i1)%yyy-config%parts(i3)%yyy
-          aa(8)=config%parts(i1)%zzz-config%parts(i3)%zzz
+          aa(2) = config%parts(i1)%xxx - config%parts(i3)%xxx
+          aa(5) = config%parts(i1)%yyy - config%parts(i3)%yyy
+          aa(8) = config%parts(i1)%zzz - config%parts(i3)%zzz
         Else
-          rsq=Sqrt(aa(1)**2+aa(4)**2+aa(7)**2)
-          If      (Abs(aa(7)/rsq) > 0.5_wp) Then
-            rsq=Sqrt(aa(4)**2+aa(7)**2)
-            aa(2)= 0.0_wp
-            aa(5)= aa(7)/rsq
-            aa(8)=-aa(4)/rsq
-          Else If (Abs(aa(4)/rsq) > 0.5_wp) Then
-            rsq=Sqrt(aa(4)**2+aa(1)**2)
-            aa(2)=-aa(4)/rsq
-            aa(5)= aa(1)/rsq
-            aa(8)= 0.0_wp
-          Else If (Abs(aa(1)/rsq) > 0.5_wp) Then
-            rsq=Sqrt(aa(1)**2+aa(7)**2)
-            aa(2)=-aa(7)/rsq
-            aa(5)= 0.0_wp
-            aa(8)= aa(1)/rsq
+          rsq = Sqrt(aa(1)**2 + aa(4)**2 + aa(7)**2)
+          If (Abs(aa(7) / rsq) > 0.5_wp) Then
+            rsq = Sqrt(aa(4)**2 + aa(7)**2)
+            aa(2) = 0.0_wp
+            aa(5) = aa(7) / rsq
+            aa(8) = -aa(4) / rsq
+          Else If (Abs(aa(4) / rsq) > 0.5_wp) Then
+            rsq = Sqrt(aa(4)**2 + aa(1)**2)
+            aa(2) = -aa(4) / rsq
+            aa(5) = aa(1) / rsq
+            aa(8) = 0.0_wp
+          Else If (Abs(aa(1) / rsq) > 0.5_wp) Then
+            rsq = Sqrt(aa(1)**2 + aa(7)**2)
+            aa(2) = -aa(7) / rsq
+            aa(5) = 0.0_wp
+            aa(8) = aa(1) / rsq
           End If
         End If
 
         ! minimum image convention for bond vectors
 
-        Call images(config%imcon,config%cell,1,aa(2),aa(5),aa(8))
+        Call images(config%imcon, config%cell, 1, aa(2), aa(5), aa(8))
 
-        aa(3)=aa(4)*aa(8)-aa(7)*aa(5)
-        aa(6)=aa(7)*aa(2)-aa(1)*aa(8)
-        aa(9)=aa(1)*aa(5)-aa(4)*aa(2)
+        aa(3) = aa(4) * aa(8) - aa(7) * aa(5)
+        aa(6) = aa(7) * aa(2) - aa(1) * aa(8)
+        aa(9) = aa(1) * aa(5) - aa(4) * aa(2)
 
         ! group rotational matrix
 
-        rot(1)=rigid%axs(1,rgdtyp)*aa(1)+rigid%axs(4,rgdtyp)*aa(2)+rigid%axs(7,rgdtyp)*aa(3)
-        rot(2)=rigid%axs(2,rgdtyp)*aa(1)+rigid%axs(5,rgdtyp)*aa(2)+rigid%axs(8,rgdtyp)*aa(3)
-        rot(3)=rigid%axs(3,rgdtyp)*aa(1)+rigid%axs(6,rgdtyp)*aa(2)+rigid%axs(9,rgdtyp)*aa(3)
-        rot(4)=rigid%axs(1,rgdtyp)*aa(4)+rigid%axs(4,rgdtyp)*aa(5)+rigid%axs(7,rgdtyp)*aa(6)
-        rot(5)=rigid%axs(2,rgdtyp)*aa(4)+rigid%axs(5,rgdtyp)*aa(5)+rigid%axs(8,rgdtyp)*aa(6)
-        rot(6)=rigid%axs(3,rgdtyp)*aa(4)+rigid%axs(6,rgdtyp)*aa(5)+rigid%axs(9,rgdtyp)*aa(6)
-        rot(7)=rigid%axs(1,rgdtyp)*aa(7)+rigid%axs(4,rgdtyp)*aa(8)+rigid%axs(7,rgdtyp)*aa(9)
-        rot(8)=rigid%axs(2,rgdtyp)*aa(7)+rigid%axs(5,rgdtyp)*aa(8)+rigid%axs(8,rgdtyp)*aa(9)
-        rot(9)=rigid%axs(3,rgdtyp)*aa(7)+rigid%axs(6,rgdtyp)*aa(8)+rigid%axs(9,rgdtyp)*aa(9)
+        rot(1) = rigid%axs(1, rgdtyp) * aa(1) + rigid%axs(4, rgdtyp) * aa(2) + rigid%axs(7, rgdtyp) * aa(3)
+        rot(2) = rigid%axs(2, rgdtyp) * aa(1) + rigid%axs(5, rgdtyp) * aa(2) + rigid%axs(8, rgdtyp) * aa(3)
+        rot(3) = rigid%axs(3, rgdtyp) * aa(1) + rigid%axs(6, rgdtyp) * aa(2) + rigid%axs(9, rgdtyp) * aa(3)
+        rot(4) = rigid%axs(1, rgdtyp) * aa(4) + rigid%axs(4, rgdtyp) * aa(5) + rigid%axs(7, rgdtyp) * aa(6)
+        rot(5) = rigid%axs(2, rgdtyp) * aa(4) + rigid%axs(5, rgdtyp) * aa(5) + rigid%axs(8, rgdtyp) * aa(6)
+        rot(6) = rigid%axs(3, rgdtyp) * aa(4) + rigid%axs(6, rgdtyp) * aa(5) + rigid%axs(9, rgdtyp) * aa(6)
+        rot(7) = rigid%axs(1, rgdtyp) * aa(7) + rigid%axs(4, rgdtyp) * aa(8) + rigid%axs(7, rgdtyp) * aa(9)
+        rot(8) = rigid%axs(2, rgdtyp) * aa(7) + rigid%axs(5, rgdtyp) * aa(8) + rigid%axs(8, rgdtyp) * aa(9)
+        rot(9) = rigid%axs(3, rgdtyp) * aa(7) + rigid%axs(6, rgdtyp) * aa(8) + rigid%axs(9, rgdtyp) * aa(9)
 
         ! determine quaternions from rotational matrix
 
-        aq=rot(1)+rot(5)
-        bq=rot(2)-rot(4)
-        cq=rot(6)-rot(8)
-        dq=rot(2)+rot(4)
-        eq=rot(3)+rot(7)
-        fq=rot(6)+rot(8)
-        gq=rot(3)-rot(7)
-        hq=rot(1)-rot(5)
+        aq = rot(1) + rot(5)
+        bq = rot(2) - rot(4)
+        cq = rot(6) - rot(8)
+        dq = rot(2) + rot(4)
+        eq = rot(3) + rot(7)
+        fq = rot(6) + rot(8)
+        gq = rot(3) - rot(7)
+        hq = rot(1) - rot(5)
 
-        rigid%q0(irgd)=0.5_wp*Sqrt(aq+Sqrt(aq*aq+bq*bq))
+        rigid%q0(irgd) = 0.5_wp * Sqrt(aq + Sqrt(aq * aq + bq * bq))
 
         If (rigid%q0(irgd) > 1.0e-4_wp) Then
-          rigid%q1(irgd)=-0.25_wp*cq/rigid%q0(irgd)
-          rigid%q2(irgd)= 0.25_wp*gq/rigid%q0(irgd)
-          rigid%q3(irgd)=-0.25_wp*bq/rigid%q0(irgd)
+          rigid%q1(irgd) = -0.25_wp * cq / rigid%q0(irgd)
+          rigid%q2(irgd) = 0.25_wp * gq / rigid%q0(irgd)
+          rigid%q3(irgd) = -0.25_wp * bq / rigid%q0(irgd)
         Else
-          rigid%q1(irgd)=0.5_wp*Sqrt(hq+Sqrt(hq*hq+dq*dq))
+          rigid%q1(irgd) = 0.5_wp * Sqrt(hq + Sqrt(hq * hq + dq * dq))
 
           If (rigid%q1(irgd) > 1.0e-4_wp) Then
-            rigid%q2(irgd)=0.25_wp*dq/rigid%q1(irgd)
-            rigid%q3(irgd)=0.25_wp*eq/rigid%q1(irgd)
+            rigid%q2(irgd) = 0.25_wp * dq / rigid%q1(irgd)
+            rigid%q3(irgd) = 0.25_wp * eq / rigid%q1(irgd)
           Else
-            rigid%q2(irgd)=0.5_wp*Sqrt(-hq+Sqrt(hq*hq+dq*dq))
+            rigid%q2(irgd) = 0.5_wp * Sqrt(-hq + Sqrt(hq * hq + dq * dq))
 
             If (rigid%q2(irgd) > 1.0e-4_wp) Then
-              rigid%q3(irgd)=0.25_wp*fq/rigid%q2(irgd)
+              rigid%q3(irgd) = 0.25_wp * fq / rigid%q2(irgd)
             Else
-              rigid%q3(irgd)=1.0_wp
+              rigid%q3(irgd) = 1.0_wp
             End If
           End If
         End If
 
         ! normalise quaternions
 
-        rnorm=1.0_wp/Sqrt(rigid%q0(irgd)**2+rigid%q1(irgd)**2+rigid%q2(irgd)**2+rigid%q3(irgd)**2)
-        rigid%q0(irgd)=rnorm*rigid%q0(irgd)
-        rigid%q1(irgd)=rnorm*rigid%q1(irgd)
-        rigid%q2(irgd)=rnorm*rigid%q2(irgd)
-        rigid%q3(irgd)=rnorm*rigid%q3(irgd)
+        rnorm = 1.0_wp / Sqrt(rigid%q0(irgd)**2 + rigid%q1(irgd)**2 + rigid%q2(irgd)**2 + rigid%q3(irgd)**2)
+        rigid%q0(irgd) = rnorm * rigid%q0(irgd)
+        rigid%q1(irgd) = rnorm * rigid%q1(irgd)
+        rigid%q2(irgd) = rnorm * rigid%q2(irgd)
+        rigid%q3(irgd) = rnorm * rigid%q3(irgd)
       Else
-        rigid%q0(irgd)=0.0_wp
-        rigid%q1(irgd)=0.0_wp
-        rigid%q2(irgd)=0.0_wp
-        rigid%q3(irgd)=1.0_wp
+        rigid%q0(irgd) = 0.0_wp
+        rigid%q1(irgd) = 0.0_wp
+        rigid%q2(irgd) = 0.0_wp
+        rigid%q3(irgd) = 1.0_wp
       End If
     End Do
 
     ! Check of quaternion set up with atomic positions
 
-    krgd=0
-    Do irgd=1,rigid%n_types
-      rgdtyp=rigid%list(0,irgd)
+    krgd = 0
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
 
       ! For all good RBs
 
-      lrgd=rigid%list(-1,irgd)
-      If (rigid%frozen(0,rgdtyp) < lrgd) Then ! Not that it matters
+      lrgd = rigid%list(-1, irgd)
+      If (rigid%frozen(0, rgdtyp) < lrgd) Then ! Not that it matters
 
         ! new rotational matrix
 
-        Call getrotmat(rigid%q0(irgd),rigid%q1(irgd),rigid%q2(irgd),rigid%q3(irgd),rot)
+        Call getrotmat(rigid%q0(irgd), rigid%q1(irgd), rigid%q2(irgd), rigid%q3(irgd), rot)
 
-        Do jrgd=1,lrgd
-          krgd=krgd+1
+        Do jrgd = 1, lrgd
+          krgd = krgd + 1
 
-          x=rot(1)*rigid%x(jrgd,rgdtyp)+ &
-            rot(2)*rigid%y(jrgd,rgdtyp)+ &
-            rot(3)*rigid%z(jrgd,rgdtyp)+rigid%xxx(irgd)
-          y=rot(4)*rigid%x(jrgd,rgdtyp)+ &
-            rot(5)*rigid%y(jrgd,rgdtyp)+ &
-            rot(6)*rigid%z(jrgd,rgdtyp)+rigid%yyy(irgd)
-          z=rot(7)*rigid%x(jrgd,rgdtyp)+&
-            rot(8)*rigid%y(jrgd,rgdtyp)+ &
-            rot(9)*rigid%z(jrgd,rgdtyp)+rigid%zzz(irgd)
+          x = rot(1) * rigid%x(jrgd, rgdtyp) + &
+              rot(2) * rigid%y(jrgd, rgdtyp) + &
+              rot(3) * rigid%z(jrgd, rgdtyp) + rigid%xxx(irgd)
+          y = rot(4) * rigid%x(jrgd, rgdtyp) + &
+              rot(5) * rigid%y(jrgd, rgdtyp) + &
+              rot(6) * rigid%z(jrgd, rgdtyp) + rigid%yyy(irgd)
+          z = rot(7) * rigid%x(jrgd, rgdtyp) + &
+              rot(8) * rigid%y(jrgd, rgdtyp) + &
+              rot(9) * rigid%z(jrgd, rgdtyp) + rigid%zzz(irgd)
 
-          gxx(krgd)=config%parts(rigid%index_local(jrgd,irgd))%xxx-x
-          gyy(krgd)=config%parts(rigid%index_local(jrgd,irgd))%yyy-y
-          gzz(krgd)=config%parts(rigid%index_local(jrgd,irgd))%zzz-z
+          gxx(krgd) = config%parts(rigid%index_local(jrgd, irgd))%xxx - x
+          gyy(krgd) = config%parts(rigid%index_local(jrgd, irgd))%yyy - y
+          gzz(krgd) = config%parts(rigid%index_local(jrgd, irgd))%zzz - z
         End Do
 
       End If
@@ -3578,59 +3557,59 @@ Contains
 
     ! minimum image convention for bond vectors
 
-    Call images(config%imcon,config%cell,krgd,gxx,gyy,gzz)
+    Call images(config%imcon, config%cell, krgd, gxx, gyy, gzz)
 
     ! test quaternion setup
 
-    tol=1.0e-2_wp
-    rsq=0.0_wp
-    krgd=0
-    ill=0
-    Do irgd=1,rigid%n_types
-      rgdtyp=rigid%list(0,irgd)
+    tol = 1.0e-2_wp
+    rsq = 0.0_wp
+    krgd = 0
+    ill = 0
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
 
       ! For all good RBs
 
-      lrgd=rigid%list(-1,irgd)
-      If (rigid%frozen(0,rgdtyp) < lrgd) Then ! Keep consistent with above
+      lrgd = rigid%list(-1, irgd)
+      If (rigid%frozen(0, rgdtyp) < lrgd) Then ! Keep consistent with above
 
-        itmp=0
-        Do jrgd=1,lrgd
-          krgd=krgd+1
+        itmp = 0
+        Do jrgd = 1, lrgd
+          krgd = krgd + 1
 
-          rnorm=gxx(krgd)**2+gyy(krgd)**2+gzz(krgd)**2
+          rnorm = gxx(krgd)**2 + gyy(krgd)**2 + gzz(krgd)**2
 
           If (rnorm > tol) Then
-            itmp=1
-            Write(message,'(a,2i7,0p,2f7.3)')                                                            &
+            itmp = 1
+            Write (message, '(a,2i7,0p,2f7.3)') &
               '*** warning - q_setup failure for RB local_id member, with norm > tolerance : ', &
-              irgd,jrgd,rnorm,tol
+              irgd, jrgd, rnorm, tol
             Call info(message)
           End If
 
-          rsq=Max(rsq,rnorm)
+          rsq = Max(rsq, rnorm)
         End Do
-        If (itmp == 1) ill=ill+1
+        If (itmp == 1) ill = ill + 1
 
       End If
     End Do
-    Call gmax(comm,rsq)
+    Call gmax(comm, rsq)
     If (rsq > tol) Then
-      Call gsum(comm,ill)
-      Write(message,'(a,i7,2f7.3)') &
-        '*** warning - q_setup failure for RBs total, with Max(norm) > tolerance : ', ill,rsq,tol
-      Call error(648,message,.true.)
+      Call gsum(comm, ill)
+      Write (message, '(a,i7,2f7.3)') &
+        '*** warning - q_setup failure for RBs total, with Max(norm) > tolerance : ', ill, rsq, tol
+      Call error(648, message, .true.)
     End If
 
-    Deallocate (gxx,gyy,gzz, Stat = fail)
+    Deallocate (gxx, gyy, gzz, Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'q_setup deallocation failure'
-      Call error(0,message)
+      Write (message, '(a)') 'q_setup deallocation failure'
+      Call error(0, message)
     End If
 
   End Subroutine q_setup
 
-  Subroutine getrotmat(q0,q1,q2,q3,rot)
+  Subroutine getrotmat(q0, q1, q2, q3, rot)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -3647,24 +3626,24 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp ), Intent( In    ) :: q0,q1,q2,q3
-    Real( Kind = wp ), Intent(   Out ) :: rot(1:9)
+    Real(Kind=wp), Intent(In   ) :: q0, q1, q2, q3
+    Real(Kind=wp), Intent(  Out) :: rot(1:9)
 
-    rot(1)=q0**2+q1**2-q2**2-q3**2
-    rot(2)=2.0_wp*(q1*q2-q0*q3)
-    rot(3)=2.0_wp*(q1*q3+q0*q2)
-    rot(4)=2.0_wp*(q1*q2+q0*q3)
-    rot(5)=q0**2-q1**2+q2**2-q3**2
-    rot(6)=2.0_wp*(q2*q3-q0*q1)
-    rot(7)=2.0_wp*(q1*q3-q0*q2)
-    rot(8)=2.0_wp*(q2*q3+q0*q1)
-    rot(9)=q0**2-q1**2-q2**2+q3**2
+    rot(1) = q0**2 + q1**2 - q2**2 - q3**2
+    rot(2) = 2.0_wp * (q1 * q2 - q0 * q3)
+    rot(3) = 2.0_wp * (q1 * q3 + q0 * q2)
+    rot(4) = 2.0_wp * (q1 * q2 + q0 * q3)
+    rot(5) = q0**2 - q1**2 + q2**2 - q3**2
+    rot(6) = 2.0_wp * (q2 * q3 - q0 * q1)
+    rot(7) = 2.0_wp * (q1 * q3 - q0 * q2)
+    rot(8) = 2.0_wp * (q2 * q3 + q0 * q1)
+    rot(9) = q0**2 - q1**2 - q2**2 + q3**2
 
   End Subroutine getrotmat
 
-  Subroutine no_squish                    &
-      (tstep,rix,riy,riz, &
-      q0,q1,q2,q3,p0,p1,p2,p3)
+  Subroutine no_squish &
+    (tstep, rix, riy, riz, &
+     q0, q1, q2, q3, p0, p1, p2, p3)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -3682,110 +3661,111 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp ), Intent( In    ) :: tstep,rix,riy,riz
-    Real( Kind = wp ), Intent( InOut ) :: q0,q1,q2,q3,p0,p1,p2,p3
+    Real(Kind=wp), Intent(In   ) :: tstep, rix, riy, riz
+    Real(Kind=wp), Intent(InOut) :: q0, q1, q2, q3, p0, p1, p2, p3
 
-    Integer, Parameter :: mrot = 10 ! Rotational timesteps
-    Integer            :: m
-    Real( Kind = wp )  :: rotstep,zetax,zetay,zetaz,cs,sn, &
-      qn1(0:3),pq2(0:3), &
-      qn2(0:3),pq3(0:3), &
-      qn3(0:3),pq4(0:3), rnorm
+    Integer, Parameter :: mrot = 10
+
+    Integer       :: m
+    Real(Kind=wp) :: cs, pq2(0:3), pq3(0:3), pq4(0:3), qn1(0:3), qn2(0:3), qn3(0:3), rnorm, &
+                     rotstep, sn, zetax, zetay, zetaz
+
+! Rotational timesteps
 
     ! rotation: iterate over mrot rotational time steps
 
-    rotstep=tstep/Real(mrot,wp) ! rotational time step
-    Do m=1,mrot
-      zetaz=0.125_wp*riz*rotstep* &
-        ( -p0*q3+p1*q2-          &
-        p2*q1+p3*q0 )
-      cs=Cos(zetaz)
-      sn=Sin(zetaz)
+    rotstep = tstep / Real(mrot, wp) ! rotational time step
+    Do m = 1, mrot
+      zetaz = 0.125_wp * riz * rotstep * &
+              (-p0 * q3 + p1 * q2 - &
+               p2 * q1 + p3 * q0)
+      cs = Cos(zetaz)
+      sn = Sin(zetaz)
 
-      qn1(0)=cs*q0-sn*q3
-      qn1(1)=cs*q1+sn*q2
-      qn1(2)=cs*q2-sn*q1
-      qn1(3)=cs*q3+sn*q0
+      qn1(0) = cs * q0 - sn * q3
+      qn1(1) = cs * q1 + sn * q2
+      qn1(2) = cs * q2 - sn * q1
+      qn1(3) = cs * q3 + sn * q0
 
-      pq2(0)=cs*p0-sn*p3
-      pq2(1)=cs*p1+sn*p2
-      pq2(2)=cs*p2-sn*p1
-      pq2(3)=cs*p3+sn*p0
+      pq2(0) = cs * p0 - sn * p3
+      pq2(1) = cs * p1 + sn * p2
+      pq2(2) = cs * p2 - sn * p1
+      pq2(3) = cs * p3 + sn * p0
 
-      zetay=0.125_wp*riy*rotstep*        &
-        ( -pq2(0)*qn1(2)-pq2(1)*qn1(3)+ &
-        pq2(2)*qn1(0)+pq2(3)*qn1(1) )
-      cs=Cos(zetay)
-      sn=Sin(zetay)
+      zetay = 0.125_wp * riy * rotstep * &
+              (-pq2(0) * qn1(2) - pq2(1) * qn1(3) + &
+               pq2(2) * qn1(0) + pq2(3) * qn1(1))
+      cs = Cos(zetay)
+      sn = Sin(zetay)
 
-      qn2(0)=cs*qn1(0)-sn*qn1(2)
-      qn2(1)=cs*qn1(1)-sn*qn1(3)
-      qn2(2)=cs*qn1(2)+sn*qn1(0)
-      qn2(3)=cs*qn1(3)+sn*qn1(1)
+      qn2(0) = cs * qn1(0) - sn * qn1(2)
+      qn2(1) = cs * qn1(1) - sn * qn1(3)
+      qn2(2) = cs * qn1(2) + sn * qn1(0)
+      qn2(3) = cs * qn1(3) + sn * qn1(1)
 
-      pq3(0)=cs*pq2(0)-sn*pq2(2)
-      pq3(1)=cs*pq2(1)-sn*pq2(3)
-      pq3(2)=cs*pq2(2)+sn*pq2(0)
-      pq3(3)=cs*pq2(3)+sn*pq2(1)
+      pq3(0) = cs * pq2(0) - sn * pq2(2)
+      pq3(1) = cs * pq2(1) - sn * pq2(3)
+      pq3(2) = cs * pq2(2) + sn * pq2(0)
+      pq3(3) = cs * pq2(3) + sn * pq2(1)
 
-      zetax=0.250_wp*rix*rotstep*        &
-        ( -pq3(0)*qn2(1)+pq3(1)*qn2(0)+ &
-        pq3(2)*qn2(3)-pq3(3)*qn2(2) )
-      cs=Cos(zetax)
-      sn=Sin(zetax)
+      zetax = 0.250_wp * rix * rotstep * &
+              (-pq3(0) * qn2(1) + pq3(1) * qn2(0) + &
+               pq3(2) * qn2(3) - pq3(3) * qn2(2))
+      cs = Cos(zetax)
+      sn = Sin(zetax)
 
-      qn3(0)=cs*qn2(0)-sn*qn2(1)
-      qn3(1)=cs*qn2(1)+sn*qn2(0)
-      qn3(2)=cs*qn2(2)+sn*qn2(3)
-      qn3(3)=cs*qn2(3)-sn*qn2(2)
+      qn3(0) = cs * qn2(0) - sn * qn2(1)
+      qn3(1) = cs * qn2(1) + sn * qn2(0)
+      qn3(2) = cs * qn2(2) + sn * qn2(3)
+      qn3(3) = cs * qn2(3) - sn * qn2(2)
 
-      pq4(0)=cs*pq3(0)-sn*pq3(1)
-      pq4(1)=cs*pq3(1)+sn*pq3(0)
-      pq4(2)=cs*pq3(2)+sn*pq3(3)
-      pq4(3)=cs*pq3(3)-sn*pq3(2)
+      pq4(0) = cs * pq3(0) - sn * pq3(1)
+      pq4(1) = cs * pq3(1) + sn * pq3(0)
+      pq4(2) = cs * pq3(2) + sn * pq3(3)
+      pq4(3) = cs * pq3(3) - sn * pq3(2)
 
-      zetay=0.125_wp*riy*rotstep*        &
-        ( -pq4(0)*qn3(2)-pq4(1)*qn3(3)+ &
-        pq4(2)*qn3(0)+pq4(3)*qn3(1) )
-      cs=Cos(zetay)
-      sn=Sin(zetay)
+      zetay = 0.125_wp * riy * rotstep * &
+              (-pq4(0) * qn3(2) - pq4(1) * qn3(3) + &
+               pq4(2) * qn3(0) + pq4(3) * qn3(1))
+      cs = Cos(zetay)
+      sn = Sin(zetay)
 
-      qn2(0)=cs*qn3(0)-sn*qn3(2)
-      qn2(1)=cs*qn3(1)-sn*qn3(3)
-      qn2(2)=cs*qn3(2)+sn*qn3(0)
-      qn2(3)=cs*qn3(3)+sn*qn3(1)
+      qn2(0) = cs * qn3(0) - sn * qn3(2)
+      qn2(1) = cs * qn3(1) - sn * qn3(3)
+      qn2(2) = cs * qn3(2) + sn * qn3(0)
+      qn2(3) = cs * qn3(3) + sn * qn3(1)
 
-      pq3(0)=cs*pq4(0)-sn*pq4(2)
-      pq3(1)=cs*pq4(1)-sn*pq4(3)
-      pq3(2)=cs*pq4(2)+sn*pq4(0)
-      pq3(3)=cs*pq4(3)+sn*pq4(1)
+      pq3(0) = cs * pq4(0) - sn * pq4(2)
+      pq3(1) = cs * pq4(1) - sn * pq4(3)
+      pq3(2) = cs * pq4(2) + sn * pq4(0)
+      pq3(3) = cs * pq4(3) + sn * pq4(1)
 
-      zetaz=0.125_wp*riz*rotstep*        &
-        ( -pq3(0)*qn2(3)+pq3(1)*qn2(2)- &
-        pq3(2)*qn2(1)+pq3(3)*qn2(0) )
-      cs=Cos(zetaz)
-      sn=Sin(zetaz)
+      zetaz = 0.125_wp * riz * rotstep * &
+              (-pq3(0) * qn2(3) + pq3(1) * qn2(2) - &
+               pq3(2) * qn2(1) + pq3(3) * qn2(0))
+      cs = Cos(zetaz)
+      sn = Sin(zetaz)
 
-      q0=cs*qn2(0)-sn*qn2(3)
-      q1=cs*qn2(1)+sn*qn2(2)
-      q2=cs*qn2(2)-sn*qn2(1)
-      q3=cs*qn2(3)+sn*qn2(0)
+      q0 = cs * qn2(0) - sn * qn2(3)
+      q1 = cs * qn2(1) + sn * qn2(2)
+      q2 = cs * qn2(2) - sn * qn2(1)
+      q3 = cs * qn2(3) + sn * qn2(0)
 
-      p0=cs*pq3(0)-sn*pq3(3)
-      p1=cs*pq3(1)+sn*pq3(2)
-      p2=cs*pq3(2)-sn*pq3(1)
-      p3=cs*pq3(3)+sn*pq3(0)
+      p0 = cs * pq3(0) - sn * pq3(3)
+      p1 = cs * pq3(1) + sn * pq3(2)
+      p2 = cs * pq3(2) - sn * pq3(1)
+      p3 = cs * pq3(3) + sn * pq3(0)
     End Do
 
     ! stay normalised (long term drift)
 
-    rnorm=1.0_wp/Sqrt(q0**2+q1**2+q2**2+q3**2)
+    rnorm = 1.0_wp / Sqrt(q0**2 + q1**2 + q2**2 + q3**2)
 
-    q0=q0*rnorm
-    q1=q1*rnorm
-    q2=q2*rnorm
-    q3=q3*rnorm
+    q0 = q0 * rnorm
+    q1 = q1 * rnorm
+    q2 = q2 * rnorm
+    q3 = q3 * rnorm
 
   End Subroutine no_squish
 
-End module rigid_bodies
+End Module rigid_bodies
