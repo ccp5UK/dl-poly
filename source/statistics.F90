@@ -47,9 +47,9 @@ Module statistics
                              wp
   Use numerics,        Only: dcell,&
                              invert,&
-                             pbcshift,&
                              pbcshfrc,&
                              pbcshfrl,&
+                             pbcshift,&
                              shellsort,&
                              shellsort2
   Use site,            Only: site_type
@@ -59,6 +59,7 @@ Module statistics
                              thermostat_type
   Use z_density,       Only: z_density_collect,&
                              z_density_type
+
   Implicit None
   Type, Public :: stats_type
 
@@ -583,27 +584,27 @@ Contains
 ! Calculate true displacements from original position in RSD,
 ! rather than keep the RMSD=Sqrt(MSD)
 
-    Allocate (xxt(1:config%mxatms),yyt(1:config%mxatms),zzt(1:config%mxatms), Stat=fail)
+    Allocate (xxt(1:config%mxatms), yyt(1:config%mxatms), zzt(1:config%mxatms), Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'statistics_collect allocation failure 2'
-      Call error(0,message)
+      Write (message, '(a)') 'statistics_collect allocation failure 2'
+      Call error(0, message)
     End If
-    Do i=1,config%natms
+    Do i = 1, config%natms
       xxt(i) = config%parts(i)%xxx - stats%xin(i)
       yyt(i) = config%parts(i)%yyy - stats%yin(i)
       zzt(i) = config%parts(i)%zzz - stats%zin(i)
     End Do
-    Call pbcshift(config%imcon,config%cell,config%natms,xxt,yyt,zzt)
-    Do i=1,config%natms
-      stats%rsd(i)=xxt(i)**2+yyt(i)**2+zzt(i)**2
+    Call pbcshift(config%imcon, config%cell, config%natms, xxt, yyt, zzt)
+    Do i = 1, config%natms
+      stats%rsd(i) = xxt(i)**2 + yyt(i)**2 + zzt(i)**2
     End Do
-    Do i=1,config%natms
-      stats%rsd(i)=Sqrt(stats%rsd(i))
+    Do i = 1, config%natms
+      stats%rsd(i) = Sqrt(stats%rsd(i))
     End Do
-    Deallocate (xxt,yyt,zzt, Stat=fail)
+    Deallocate (xxt, yyt, zzt, Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'statistics_collect deallocation failure 2'
-      Call error(0,message)
+      Write (message, '(a)') 'statistics_collect deallocation failure 2'
+      Call error(0, message)
     End If
 
     Do k = 1, sites%ntype_atom
@@ -1703,7 +1704,8 @@ Contains
           Call info(message, .true.)
         End Do
 
- Write (message, '(2x,a,1p,e12.4)') 'trace/3  ', (stats%stpval(iadd + 1) + stats%stpval(iadd + 5) + stats%stpval(iadd + 9)) / 3.0_wp
+        Write (message, '(2x,a,1p,e12.4)') 'trace/3  ', (stats%stpval(iadd + 1) + &
+                                                         stats%stpval(iadd + 5) + stats%stpval(iadd + 9)) / 3.0_wp
         Call info(message, .true.)
       End If
 
@@ -1812,7 +1814,8 @@ Contains
           Call info(message, .true.)
         End Do
 
- Write (message, '(2x,a,1p,e12.4)') 'trace/3  ', (stats%sumval(iadd + 1) + stats%sumval(iadd + 5) + stats%sumval(iadd + 9)) / 3.0_wp
+        Write (message, '(2x,a,1p,e12.4)') 'trace/3  ', (stats%sumval(iadd + 1) + &
+                                                         stats%sumval(iadd + 5) + stats%sumval(iadd + 9)) / 3.0_wp
         Call info(message, .true.)
         Call info('', .true.)
       End If
