@@ -48,7 +48,7 @@ Contains
     If (.not. crd%coordon) Return
     If (Mod(flow%step, adf%interval) /= 0) Return
     Open (Unit=nchadf, File='ADFDAT', Form='formatted')
-    If (flow%step .eq. 0) Then
+    If (flow%step == 0) Then
       numbins = 180.0 / adf%prec
       Allocate (adf%astat(-1:numbins, 1:2 * crd%ncoordpairs))
     Endif
@@ -61,8 +61,8 @@ Contains
     Enddo
     numbins = 180.0 / adf%prec
     Do i = 1, config%natms
-      adf%rij(:) = 0_wp
-      adf%rjk = 0_wp
+      adf%rij(:) = 0.0_wp
+      adf%rjk = 0.0_wp
 
       Do j = 1, crd%adfcoordlist(0, i)
         adf%rij(j) = (config%parts(i)%xxx - config%parts(crd%adfcoordlist(j, i))%xxx)**2 &
@@ -72,7 +72,7 @@ Contains
 
       Do j = 1, crd%adfcoordlist(0, i) - 1
         Do jj = 1 + j, crd%adfcoordlist(0, i)
-          If (config%ltype(j) .eq. config%ltype(jj)) Then
+          If (config%ltype(j) == config%ltype(jj)) Then
             Do ii = 1, 2 * crd%ncoordpairs
               If (adf%astat(-1, ii) == config%ltype(crd%adfcoordlist(j, i)) .and. adf%astat(0, ii) == config%ltype(i)) Then
                 adf%rjk = (config%parts(crd%adfcoordlist(j, i))%xxx - config%parts(crd%adfcoordlist(jj, i))%xxx)**2 &
