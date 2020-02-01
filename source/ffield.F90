@@ -197,14 +197,14 @@ Contains
     Integer                        :: fail(1:4), frzcon, frzrgd, i, ia, iang, iatm1, iatm2, iatm3, &
                                       iatm4, ibond, icnst, icross, idih, ifbp, ifrz, iinv, ipmf, &
                                       irept, irgd, is(0:4), ishls, isite, isite1, isite2, isite3, &
-                                      isite4, itbp, iter, iteth, itmols, itmp, itpfbp, itpmet, &
-                                      itprdf, itptbp, itpter, itpvdw, j, ja, jpmf, jrgd, js(0:4), &
-                                      jsite, jtpatm, ka1, ka2, ka3, katom0, katom1, katom2, &
-                                      katom3, katom4, keyfbp, keymet, keypot, keyrdf, keytbp, &
-                                      keyter, keyvdw, kfbp, kpmf, krgd, ksite, ktbp, lrgd, msite, &
-                                      nangle, nbonds, nconst, ndihed, nfld, ninver, nkim, nrept, &
-                                      nrigid, nshels, nsite, ntab, nteth, ntmp, ntpang, ntpbnd, &
-                                      ntpdih, ntpinv, rwidth
+                                      isite4, itbp, iter, iteth, itmols, itmp, itpcrd, itpfbp, &
+                                      itpmet, itprdf, itptbp, itpter, itpvdw, j, ja, jpmf, jrgd, &
+                                      js(0:4), jsite, jtpatm, ka1, ka2, ka3, katom0, katom1, &
+                                      katom2, katom3, katom4, keyfbp, keymet, keypot, keyrdf, &
+                                      keytbp, keyter, keyvdw, kfbp, kpmf, krgd, ksite, ktbp, lrgd, &
+                                      msite, nangle, nbonds, nconst, ndihed, nfld, ninver, nkim, &
+                                      nrept, nrigid, nshels, nsite, ntab, nteth, ntmp, ntpang, &
+                                      ntpbnd, ntpcrd, ntpcrd2, ntpcrd3, ntpdih, ntpinv, rwidth
     Logical                        :: atmchk, l_ang, l_bnd, l_con, l_dih, l_inv, l_rgd, l_shl, &
                                       l_tet, ldpd_safe, lmet_safe, lmols, lpmf, lshl_abort, &
                                       lshl_all, lshl_one, lter_safe, lunits, safe
