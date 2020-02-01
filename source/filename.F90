@@ -1,10 +1,10 @@
+Module filename
 !> Module maintaining access to DL_POLY files
 !>
 !> Copyright - Daresbury Laboratory
 !
 !> Author - J. Madge September 2018
 !> contrib - a.m.elena October 2018 - use standard integer for units
-Module filename
   Use kinds, Only: wi
 
   Implicit None

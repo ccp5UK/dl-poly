@@ -1,213 +1,228 @@
 Module coord
 
-!Module to calculate the coordination number distributions during a DLPOLY run
-!
-! author  Oliver Dicks and Aaron Diver
-! date    22/02/2018
-  Use site, Only : site_type
-  Use configuration, Only : configuration_type
-  Use neighbours, Only : neighbours_type
-  Use flow_control, Only : flow_type
-  Use kinds, only : wp
-  Use comms, Only : comms_type,grecv,gsend
-  Use constants, Only : nicrdt,nccrdt
-  Use statistics, Only : stats_type
-  Use impacts,     Only : impact_type
+!> Module to calculate the coordination number distributions during a DLPOLY run
+!>
+!> Author  Oliver Dicks and Aaron Diver, February 2018
+!> Contrib a.m.elena January 2020 - cleanup and errors
+
+  Use comms,           Only: comms_type,&
+                             grecv,&
+                             gsend
+  Use configuration,   Only: configuration_type
+  Use constants,       Only: nccrdt,&
+                             nicrdt
+  Use errors_warnings, Only: error
+  Use flow_control,    Only: flow_type
+  Use impacts,         Only: impact_type
+  Use kinds,           Only: wp
+  Use neighbours,      Only: neighbours_type
+  Use site,            Only: site_type
+  Use statistics,      Only: stats_type
+
   Implicit None
 
-  type, public :: coord_type
-    Integer :: ncoordpairs,coordinterval,coordstart,coordops,ncoorddis,ncoordab,maxlist=1000
-    real(wp), allocatable :: arraycuts(:),discuts(:)
-    character( Len = 8 ), allocatable :: arraypairs(:,:),disatms(:)
-    Integer, allocatable :: coordlist(:,:),icoordlist(:,:),defectlist(:),adfcoordlist(:,:)
-    integer, allocatable :: ltype(:,:),ltypeA(:,:),ltypeB(:,:),cstat(:,:),disltype(:)
-    Logical :: coordon
-    real(wp) :: coordis
-  contains
-    procedure :: init=>init_coord
-    procedure :: init_coordlist
-    final :: clean_coord
-  end type coord_type
-  private
-  public :: init_coord_list,checkcoord
+  Type, Public :: coord_type
 
-contains
+    Integer                       :: ncoordpairs, coordinterval, coordstart, coordops, &
+                                     ncoorddis, ncoordab, maxlist = 1000
+    Real(wp), Allocatable         :: arraycuts(:), discuts(:)
+    Character(Len=8), Allocatable :: arraypairs(:, :), disatms(:)
+    Integer, Allocatable          :: coordlist(:, :), icoordlist(:, :), defectlist(:), adfcoordlist(:, :)
+    Integer, Allocatable          :: ltype(:, :), ltypeA(:, :), ltypeB(:, :), cstat(:, :), disltype(:)
+    Logical                       :: coordon
+    Real(wp)                      :: coordis
 
-  subroutine init_coord(T)
+  Contains
+
+    Procedure :: init => init_coord
+    Procedure :: init_coordlist
+    final     :: clean_coord
+
+  End Type coord_type
+  Private
+  Public :: init_coord_list, checkcoord
+
+Contains
+
+  Subroutine init_coord(T)
     class(coord_type) :: T
-    allocate(T%arraycuts(1:T%ncoordpairs))
-    allocate(T%discuts(1:T%ncoorddis))
-    allocate(T%arraypairs(1:T%ncoordpairs,1:2))
-    allocate(T%ltype(1:T%ncoordpairs,1:2))
-    allocate(T%ltypeA(1:2*T%ncoordab,0:2*T%ncoordpairs))
-    allocate(T%ltypeB(1:2*T%ncoordab,0:2*T%ncoordpairs))
-    allocate(T%cstat(-3:T%maxlist,1:(2*(T%ncoordpairs+T%ncoordab))))
-    allocate(T%disltype(1:T%ncoorddis))
+
+    Allocate (T%arraycuts(1:T%ncoordpairs))
+    Allocate (T%discuts(1:T%ncoorddis))
+    Allocate (T%arraypairs(1:T%ncoordpairs, 1:2))
+    Allocate (T%ltype(1:T%ncoordpairs, 1:2))
+    Allocate (T%ltypeA(1:2 * T%ncoordab, 0:2 * T%ncoordpairs))
+    Allocate (T%ltypeB(1:2 * T%ncoordab, 0:2 * T%ncoordpairs))
+    Allocate (T%cstat(-3:T%maxlist, 1:(2 * (T%ncoordpairs + T%ncoordab))))
+    Allocate (T%disltype(1:T%ncoorddis))
 !   allocate(T%coordatoms(0:2*T%ncoordpairs))
-  end subroutine init_coord
-  subroutine init_coordlist(T,n,m)
-    class(coord_type) :: T
-    Integer, Intent(In) :: n,m
-    allocate(T%coordlist(0:n,1:m))
-    allocate(T%icoordlist(0:n,1:m))
-    allocate(T%defectlist(0:m))
-    allocate(T%adfcoordlist(0:n,1:m))
-  end subroutine init_coordlist
+  End Subroutine init_coord
 
-  subroutine clean_coord(T)
-    type(coord_type) :: T
+  Subroutine init_coordlist(T, n, m)
+    class(coord_type)      :: T
+    Integer, Intent(In   ) :: n, m
 
-    if (allocated(T%arraycuts)) then
-      deallocate(T%arraycuts)
-    end if
-    if (allocated(T%discuts)) then
-       deallocate(T%discuts)
-    end if
-    if (allocated(T%coordlist)) then
-      deallocate(T%coordlist)
-    end if
-    if (allocated(T%icoordlist)) then
-      deallocate(T%icoordlist)
-    end if
-    If (allocated(T%adfcoordlist)) then
-      deallocate(T%adfcoordlist)
-    end if
-    if (allocated(T%defectlist)) then
-      deallocate(T%defectlist)
-    end if
-  end subroutine clean_coord
+    Allocate (T%coordlist(0:n, 1:m))
+    Allocate (T%icoordlist(0:n, 1:m))
+    Allocate (T%defectlist(0:m))
+    Allocate (T%adfcoordlist(0:n, 1:m))
+  End Subroutine init_coordlist
 
-  subroutine init_coord_list(config,neigh,crd,sites,flow,comm)
-    Type(neighbours_type), Intent(In) :: neigh
-    Type(configuration_type), Intent(In)  :: config
-    Type(comms_type), Intent(InOut) :: comm
-    Type(flow_type), Intent(In) :: flow
-    Type(site_type), Intent(In) :: sites
-    Type(coord_type), Intent(InOut) :: crd
-    integer :: i,ii,j,jj,k,kk, ncoord,en,ierr,m,mcoord,lgcoord,nmax,ncb !ncb size coordbuff
-    real :: rcut,rab
-    Character(len=8) :: aux
-    Character(len=1000),allocatable :: cbuff(:)
-    integer, allocatable :: buff(:),coordbuff(:),dbuff(:),ltypeAB(:,:)
-    Logical :: newatom,itsopen
+  Subroutine clean_coord(T)
+    Type(coord_type) :: T
+
+    If (Allocated(T%arraycuts)) Then
+      Deallocate (T%arraycuts)
+    End If
+    If (Allocated(T%discuts)) Then
+      Deallocate (T%discuts)
+    End If
+    If (Allocated(T%coordlist)) Then
+      Deallocate (T%coordlist)
+    End If
+    If (Allocated(T%icoordlist)) Then
+      Deallocate (T%icoordlist)
+    End If
+    If (Allocated(T%adfcoordlist)) Then
+      Deallocate (T%adfcoordlist)
+    End If
+    If (Allocated(T%defectlist)) Then
+      Deallocate (T%defectlist)
+    End If
+  End Subroutine clean_coord
+
+  Subroutine init_coord_list(config, neigh, crd, sites, flow, comm)
+    Type(configuration_type), Intent(In   ) :: config
+    Type(neighbours_type),    Intent(In   ) :: neigh
+    Type(coord_type),         Intent(InOut) :: crd
+    Type(site_type),          Intent(In   ) :: sites
+    Type(flow_type),          Intent(In   ) :: flow
+    Type(comms_type),         Intent(InOut) :: comm
+
+    Character(len=1000), Allocatable :: cbuff(:)
+    Character(len=8)                 :: aux
+    Integer                          :: en, i, ii, j, jj, k, kk, m, mcoord, ncb, ncoord, nmax
+    Integer, Allocatable             :: buff(:), coordbuff(:), dbuff(:), ltypeAB(:, :)
+    Logical                          :: itsopen
+    Real                             :: rab, rcut
+
+!ncb size coordbuff
 
     !Check whether option is called
-    If(crd%coordon .Eqv. .False.)Return
-    If(crd%ncoordpairs==0)Return
-    If(crd%coordstart>flow%step)Return
-    If(mod(flow%step,crd%coordinterval).NE.0)Return
-    crd%coordlist(0,:)=0
-    Do i=1, crd%ncoordab
+    If (.not. crd%coordon) Return
+    If (crd%ncoordpairs == 0) Return
+    If (crd%coordstart > flow%step) Return
+    If (Mod(flow%step, crd%coordinterval) /= 0) Return
+    crd%coordlist(0, :) = 0
+    Do i = 1, crd%ncoordab
 !    print*,crd%ltypeA(i,:)
 !    print*,crd%ltypeB(i,:)
-    End do
-    ncb=0
+    End Do
+    ncb = 0
     Do j = 1, config%natms
       ncoord = 0
-      k=neigh%list(0,j)
-      Do i=1,k
-        kk=neigh%list(i,j)
+      k = neigh%list(0, j)
+      Do i = 1, k
+        kk = neigh%list(i, j)
 
-
-
-        rab = (config%parts(j)%xxx-config%parts(kk)%xxx)**2+(config%parts(j)%yyy-config%parts(kk)%yyy)**2 &
-              + (config%parts(j)%zzz-config%parts(kk)%zzz)**2
+        rab = (config%parts(j)%xxx - config%parts(kk)%xxx)**2 + (config%parts(j)%yyy - config%parts(kk)%yyy)**2 &
+              + (config%parts(j)%zzz - config%parts(kk)%zzz)**2
 !        if(j.eq.2)then
 !        print*,j,kk,rab
 
 !        endif
-        rcut=0.00
+        rcut = 0.00
 
-        Do ii= 1 , crd%ncoordpairs
-          if (((config%ltype(j)==crd%ltype(ii,1)) .and. (config%ltype(kk)==crd%ltype(ii,2)))&
-            .or.&
-            ((config%ltype(j)==crd%ltype(ii,2)) .and. (config%ltype(kk)==crd%ltype(ii,1)))) Then
-            rcut=crd%arraycuts(ii)*crd%arraycuts(ii)
-          endif
-        end Do
+        Do ii = 1, crd%ncoordpairs
+          If (((config%ltype(j) == crd%ltype(ii, 1)) .and. (config%ltype(kk) == crd%ltype(ii, 2))) &
+              .or. &
+              ((config%ltype(j) == crd%ltype(ii, 2)) .and. (config%ltype(kk) == crd%ltype(ii, 1)))) Then
+            rcut = crd%arraycuts(ii) * crd%arraycuts(ii)
+          Endif
+        End Do
 
-        if (rab <= rcut) Then
-          crd%coordlist(0,j)=crd%coordlist(0,j)+1
-          crd%coordlist(crd%coordlist(0,j),j)=kk
-          if (kk<=config%natms) Then
-            crd%coordlist(0,kk)=crd%coordlist(0,kk)+1
-            crd%coordlist(crd%coordlist(0,kk),kk)=j
-          endif
-        End if
+        If (rab <= rcut) Then
+          crd%coordlist(0, j) = crd%coordlist(0, j) + 1
+          crd%coordlist(crd%coordlist(0, j), j) = kk
+          If (kk <= config%natms) Then
+            crd%coordlist(0, kk) = crd%coordlist(0, kk) + 1
+            crd%coordlist(crd%coordlist(0, kk), kk) = j
+          Endif
+        End If
       End Do
     End Do
 
     !Create coordination statistics array
-    crd%cstat(-3:,:)=0
-    Do i=1,crd%ncoordpairs
-      crd%cstat(-3,(2*i)-1)=crd%ltype(i,1)
-      crd%cstat(-2,(2*i)-1)=crd%ltype(i,2)
-      crd%cstat(-3,(2*i))=crd%ltype(i,2)
-      crd%cstat(-2,(2*i))=crd%ltype(i,1)
+    crd%cstat(-3:, :) = 0
+    Do i = 1, crd%ncoordpairs
+      crd%cstat(-3, (2 * i) - 1) = crd%ltype(i, 1)
+      crd%cstat(-2, (2 * i) - 1) = crd%ltype(i, 2)
+      crd%cstat(-3, (2 * i)) = crd%ltype(i, 2)
+      crd%cstat(-2, (2 * i)) = crd%ltype(i, 1)
     End Do
 
     !Collect coordination statistics
-    Do i=1,config%natms
-      Do j=1,2*crd%ncoordpairs
-      mcoord=0
-        if ((config%ltype(i)) == crd%cstat(-3,j)) then
-          Do k=1,crd%coordlist(0,i)
-            if (config%ltype(crd%coordlist(k,i)) == crd%cstat(-2,j)) then
-              mcoord=mcoord+1
-            end if
-          End do
-        crd%cstat(mcoord,j)=crd%cstat(mcoord,j)+1
-        if (mcoord>crd%cstat(-1,j)) then
-          crd%cstat(-1,j)=mcoord
-        End if
-        End if
-      End do
-    End do
+    Do i = 1, config%natms
+      Do j = 1, 2 * crd%ncoordpairs
+        mcoord = 0
+        If ((config%ltype(i)) == crd%cstat(-3, j)) Then
+          Do k = 1, crd%coordlist(0, i)
+            If (config%ltype(crd%coordlist(k, i)) == crd%cstat(-2, j)) Then
+              mcoord = mcoord + 1
+            End If
+          End Do
+          crd%cstat(mcoord, j) = crd%cstat(mcoord, j) + 1
+          If (mcoord > crd%cstat(-1, j)) Then
+            crd%cstat(-1, j) = mcoord
+          End If
+        End If
+      End Do
+    End Do
 
     !Create coordination AB statistics array
-    allocate(ltypeAB(1:2*crd%ncoordab,0:2*crd%ncoordpairs))
-    Do i=1,crd%ncoordab
+    Allocate (ltypeAB(1:2 * crd%ncoordab, 0:2 * crd%ncoordpairs))
+    Do i = 1, crd%ncoordab
 !     Do ii=1,crd%ncoordpairs
-       ltypeAB(2*i-1,:)=crd%ltypeA(i,:)
-       ltypeAB(2*i,:)=crd%ltypeB(i,:)
- !   End Do
-     End Do
-    If (crd%ncoordab > 0) then
-      Do i=1,crd%ncoordab
-        crd%cstat(-3,2*crd%ncoordpairs+(2*i-1))=2*i-1
-        crd%cstat(-2,2*crd%ncoordpairs+(2*i-1))=2*i
-        crd%cstat(-3,2*crd%ncoordpairs+(2*i))=2*i
-        crd%cstat(-2,2*crd%ncoordpairs+(2*i))=2*i-1
-      End do
-    End if
+      ltypeAB(2 * i - 1, :) = crd%ltypeA(i, :)
+      ltypeAB(2 * i, :) = crd%ltypeB(i, :)
+      !   End Do
+    End Do
+    If (crd%ncoordab > 0) Then
+      Do i = 1, crd%ncoordab
+        crd%cstat(-3, 2 * crd%ncoordpairs + (2 * i - 1)) = 2 * i - 1
+        crd%cstat(-2, 2 * crd%ncoordpairs + (2 * i - 1)) = 2 * i
+        crd%cstat(-3, 2 * crd%ncoordpairs + (2 * i)) = 2 * i
+        crd%cstat(-2, 2 * crd%ncoordpairs + (2 * i)) = 2 * i - 1
+      End Do
+    End If
 
 !    Do i=1, 2*(crd%ncoordpairs+crd%ncoordab)
 !      print*,crd%cstat(-3:0,i)
 !    End do
-     Do i=1, 2*crd%ncoordab
-      print*,ltypeAB(i,:)
-    End do
+    !   Do i = 1, 2 * crd%ncoordab
+    !     Print *, ltypeAB(i, :)
+    !   End Do
     !Collect AB coordination statistics
-    Do i=1,config%natms
-      Do j=1,2*crd%ncoordab
-        mcoord=0
+    Do i = 1, config%natms
+      Do j = 1, 2 * crd%ncoordab
+        mcoord = 0
 !        print*,ltypeAB(crd%cstat(-3,j+(2*crd%ncoordpairs)),1:ltypeAB(crd%cstat(-3,j+(2*crd%ncoordpairs)),0))
 !        print*,config%ltype(i)
 !        if ((config%ltype(i)) == Any(ltypeAB(crd%cstat(-3,j+(2*crd%ncoordpairs)),1:))) then
-            If (Any(ltypeAB(crd%cstat(-3,j+(2*crd%ncoordpairs)),1:ltypeAB(crd%cstat(-3,j+(2*crd%ncoordpairs)),0))&
-&==config%ltype(i))) then
-          Do k=1,crd%coordlist(0,i)
+        If (Any(ltypeAB(crd%cstat(-3, j + (2 * crd%ncoordpairs)), 1:ltypeAB(crd%cstat(-3, j + (2 * crd%ncoordpairs)), 0)) &
+                == config%ltype(i))) Then
+          Do k = 1, crd%coordlist(0, i)
 !            If (config%ltype(crd%coordlist(k,i)) == Any(ltypeAB(crd%cstat(-2,j+(2*crd%ncoordpairs)),:))) then
-            If (Any(ltypeAB(crd%cstat(-2,j+(2*crd%ncoordpairs)),1:ltypeAB(crd%cstat(-2,j+(2*crd%ncoordpairs)),0))&
-&==config%ltype(crd%coordlist(k,i)))) then
-              mcoord=mcoord+1
+            If (Any(ltypeAB(crd%cstat(-2, j + (2 * crd%ncoordpairs)), 1:ltypeAB(crd%cstat(-2, j + (2 * crd%ncoordpairs)), 0)) &
+                    == config%ltype(crd%coordlist(k, i)))) Then
+              mcoord = mcoord + 1
             End If
           End Do
-          crd%cstat(mcoord,j+(2*crd%ncoordpairs))=crd%cstat(mcoord,(j+(2*crd%ncoordpairs)))+1
-          If (mcoord>crd%cstat(-1,j+(2*crd%ncoordpairs))) then
-            crd%cstat(-1,j+(2*crd%ncoordpairs))=mcoord
+          crd%cstat(mcoord, j + (2 * crd%ncoordpairs)) = crd%cstat(mcoord, (j + (2 * crd%ncoordpairs))) + 1
+          If (mcoord > crd%cstat(-1, j + (2 * crd%ncoordpairs))) Then
+            crd%cstat(-1, j + (2 * crd%ncoordpairs)) = mcoord
           End If
-        End if
+        End If
       End Do
     End Do
 
@@ -216,295 +231,293 @@ contains
 !    End do
 
 !Set coordbuff size
-    Do i=1,2*(crd%ncoordpairs+crd%ncoordab)
-      ncb=ncb+(crd%cstat(-1,i)+4)
-    End do
+    Do i = 1, 2 * (crd%ncoordpairs + crd%ncoordab)
+      ncb = ncb + (crd%cstat(-1, i) + 4)
+    End Do
 
+    Allocate (buff(2 * config%mxatms))
+    Allocate (cbuff(config%mxatms))
+    Allocate (dbuff(config%mxatms))
+    If (comm%idnode == 0) Then
+      Inquire (Unit=nicrdt, opened=itsopen)
+      If (.not. itsopen) Then
+        Open (Unit=nicrdt, File='ICOORD', Form='formatted')
+      End If
+      If (flow%step == crd%coordstart) Then
+        Write (Unit=nicrdt, Fmt='(a72)') config%cfgname(1:72)
+        Write (Unit=nicrdt, Fmt='(a40)') 'Initial coordination between atoms'
+      Endif
 
-    allocate(buff(2*config%mxatms))
-    allocate(cbuff(config%mxatms))
-    allocate(dbuff(config%mxatms))
-    If (comm%idnode==0) Then
-      inquire(Unit=nicrdt, opened=itsopen)
-      if ( .not. itsopen ) Then
-        Open(Unit=nicrdt, File='ICOORD', Form='formatted')
-      end if
-      If(flow%step==crd%coordstart)then
-         Write(Unit=nicrdt, Fmt='(a72)') config%cfgname(1:72)
-         Write(Unit=nicrdt, Fmt='(a40)')'Initial coordination between atoms'
-       Endif
+      If ((crd%coordops == 2) .or. crd%coordstart == flow%step) Then
+      Do i = 1, config%natms
+        m = crd%coordlist(0, i)
+        Write (nicrdt, Fmt='(i12,1x,a8,i12,1x)', advance="no") &
+          config%ltg(i), Trim(sites%unique_atom(config%ltype(i))), crd%coordlist(0, i)
+        Do ii = 1, m
+          Write (nicrdt, '(i0,1x)', advance="no") config%ltg(crd%coordlist(ii, i))
+        Enddo
+        Do ii = 1, m
+          Write (nicrdt, '(a,1x)', advance="no") Trim(sites%unique_atom(config%ltype(crd%coordlist(ii, i))))
+        Enddo
+        Write (nicrdt, *)
+      Enddo
 
-      If((crd%coordops ==2) .or. crd%coordstart==flow%step)then
-      Do i=1,config%natms
-        m=crd%coordlist(0,i)
-        write (nicrdt,Fmt='(i12,1x,a8,i12,1x)',advance="no") &
-          config%ltg(i),trim(sites%unique_atom(config%ltype(i))),crd%coordlist(0,i)
-        do ii=1,m
-          write(nicrdt,'(i0,1x)',advance="no") config%ltg(crd%coordlist(ii,i))
-        enddo
-        do ii=1,m
-          write(nicrdt,'(a,1x)',advance="no") trim(sites%unique_atom(config%ltype(crd%coordlist(ii,i))))
-        enddo
-        write(nicrdt,*)
-      enddo
+      Do j = 1, comm%mxnode - 1
+        Call grecv(comm, en, j, j)
+        If (en > 0) Then
+          Call grecv(comm, buff, j, j)
+          Call grecv(comm, cbuff, j, j)
+          Call grecv(comm, dbuff, j, j)
+          Do i = 1, en / 2
+            Write (nicrdt, Fmt='(i12,1x,a8,i12,a)') &
+              !              buff(2*i-1),trim(sites%unique_atom(config%ltype(config%ltg(buff(2*i-1))))),buff(2*i),trim(cbuff(i))
+              buff(2 * i - 1), sites%unique_atom(dbuff(i)), buff(2 * i), Trim(cbuff(i))
+          Enddo
+        Endif
+      Enddo
+      Endif
+    Else
+      If ((crd%coordops == 2) .or. crd%coordstart == flow%step) Then
+        en = 2 * config%natms
+        Do i = 1, config%natms
+          buff(2 * i - 1) = config%ltg(i)
+          buff(2 * i) = crd%coordlist(0, i)
+          cbuff(i) = ''
+          dbuff(i) = config%ltype(i)
+          Do ii = 1, crd%coordlist(0, i)
+            Write (aux, '(i0)') config%ltg(crd%coordlist(ii, i))
+            cbuff(i) = Trim(cbuff(i))//" "//Trim(aux)
+          Enddo
+          Do ii = 1, crd%coordlist(0, i)
+            Write (aux, '(a)') Trim(sites%unique_atom(config%ltype(crd%coordlist(ii, i))))
+            cbuff(i) = Trim(cbuff(i))//" "//Trim(aux)
 
+          Enddo
+        Enddo
+        Call gsend(comm, en, 0, comm%idnode)
+        If (en > 0) Then
+          Call gsend(comm, buff, 0, comm%idnode)
+          Call gsend(comm, cbuff, 0, comm%idnode)
+          Call gsend(comm, dbuff, 0, comm%idnode)
+        Endif
+      Endif
+    Endif
+    Deallocate (buff)
+    Deallocate (cbuff)
+    Deallocate (dbuff)
 
-      do j=1,comm%mxnode-1
-        Call grecv(comm,en,j,j)
-        if (en>0) Then
-          Call grecv(comm,buff,j,j)
-          Call grecv(comm,cbuff,j,j)
-          Call grecv(comm,dbuff,j,j)
-          Do i=1,en/2
-                write (nicrdt,Fmt='(i12,1x,a8,i12,a)') &
-!              buff(2*i-1),trim(sites%unique_atom(config%ltype(config%ltg(buff(2*i-1))))),buff(2*i),trim(cbuff(i))
-               buff(2*i-1),sites%unique_atom(dbuff(i)),buff(2*i),trim(cbuff(i))
-          enddo
-        endif
-      enddo
-      endif
-    else
-     If((crd%coordops ==2) .or. crd%coordstart==flow%step)then
-      en=2*config%natms
-      do i=1,config%natms
-        buff(2*i-1) = config%ltg(i)
-        buff(2*i) = crd%coordlist(0,i)
-        cbuff(i)=''
-        dbuff(i) = config%ltype(i)
-        do ii=1,crd%coordlist(0,i)
-          write(aux,'(i0)') config%ltg(crd%coordlist(ii,i))
-          cbuff(i)=trim(cbuff(i))//" "//trim(aux)
-        enddo
-        do ii=1,crd%coordlist(0,i)
-          write(aux,'(a)') trim(sites%unique_atom(config%ltype(crd%coordlist(ii,i))))
-          cbuff(i)=trim(cbuff(i))//" "//trim(aux)
+    If (comm%idnode == 0) Then
+      Open (Unit=nicrdt, File='ICOORD', Form='formatted')
 
-          enddo
-      enddo
-      Call gsend(comm,en,0,comm%idnode)
-      if (en>0) then
-        Call gsend(comm,buff,0,comm%idnode)
-        Call gsend(comm,cbuff,0,comm%idnode)
-        Call gsend(comm,dbuff,0,comm%idnode)
-      endif
-    endif
-    endif
-    deallocate(buff)
-    deallocate(cbuff)
-    deallocate(dbuff)
+      Do j = 1, comm%mxnode - 1
+        Call grecv(comm, ncb, j, j)
+        If (ncb > 0) Then
+          Allocate (coordbuff(ncb))
+          Call grecv(comm, coordbuff, j, j)
+          jj = 1
+          Do ii = 1, 2 * (crd%ncoordpairs + crd%ncoordab)
+            nmax = coordbuff(jj)
+            If (nmax > crd%cstat(-1, ii)) Then
+              crd%cstat(-1, ii) = nmax
+            End If
+            If (crd%cstat(-3, ii) /= coordbuff(jj + 1) .or. crd%cstat(-2, ii) /= coordbuff(jj + 2)) Then
+              Call error(0, "ERROR: coord pairs do not match in MPI")
+            End If
+            Do kk = 0, nmax
+              crd%cstat(kk, ii) = crd%cstat(kk, ii) + coordbuff(jj + 3 + kk)
+            End Do
+            jj = jj + nmax + 4
+          End Do
+          Deallocate (coordbuff)
+        End If
+      Enddo
 
+      Write (nicrdt, '(A36,I10,F20.6)') "Coordination distribution statistics", flow%step, flow%time
 
-    If (comm%idnode==0) Then
-      Open(Unit=nicrdt, File='ICOORD', Form='formatted')
-
-      do j=1,comm%mxnode-1
-        Call grecv(comm,ncb,j,j)
-        if (ncb>0) then
-          allocate(coordbuff(ncb))
-          Call grecv(comm,coordbuff,j,j)
-          jj=1
-          do ii=1,2*(crd%ncoordpairs+crd%ncoordab)
-            nmax=coordbuff(jj)
-            if (nmax>crd%cstat(-1,ii)) then
-              crd%cstat(-1,ii)=nmax
-            end if
-            if (crd%cstat(-3,ii)/=coordbuff(jj+1) .or. crd%cstat(-2,ii)/=coordbuff(jj+2)) then
-              write(*,*) "ERROR: coord pairs do not match in MPI"
-            end if
-            do kk=0,nmax
-              crd%cstat(kk,ii)=crd%cstat(kk,ii)+coordbuff(jj+3+kk)
-            end do
-            jj=jj+nmax+4
-          end do
-          deallocate(coordbuff)
-        end if
-      enddo
-
-      write(nicrdt,'(A36,I10,F20.6)')"Coordination distribution statistics",flow%step,flow%time
-
-      Do i=1,2*crd%ncoordpairs
-        Do j=0,crd%cstat(-1,i)
-          write(nicrdt,*)sites%unique_atom(crd%cstat(-3,i)),sites%unique_atom(crd%cstat(-2,i)),j,crd%cstat(j,i)
+      Do i = 1, 2 * crd%ncoordpairs
+        Do j = 0, crd%cstat(-1, i)
+          Write (nicrdt, *) sites%unique_atom(crd%cstat(-3, i)), sites%unique_atom(crd%cstat(-2, i)), j, crd%cstat(j, i)
         End Do
       End Do
 
-      Do i=2*crd%ncoordpairs+1,2*(crd%ncoordpairs+crd%ncoordab)
-        If (mod(i,2)==1) then
-        Do j=0,crd%cstat(-1,i)
-          write(nicrdt,'(A6,I0,1X,A6,I0,2X,I12,I12)')'ListA',i-2*crd%ncoordpairs,'ListB',i-2*crd%ncoordpairs,j,crd%cstat(j,i)
+      Do i = 2 * crd%ncoordpairs + 1, 2 * (crd%ncoordpairs + crd%ncoordab)
+        If (Mod(i, 2) == 1) Then
+        Do j = 0, crd%cstat(-1, i)
+          Write (nicrdt, '(A6,I0,1X,A6,I0,2X,I12,I12)') 'ListA', i - 2 * crd%ncoordpairs, &
+            'ListB', i - 2 * crd%ncoordpairs, j, crd%cstat(j, i)
         End Do
         End If
-        If (mod(i,2)==0) then
-        Do j=0,crd%cstat(-1,i)
-          write(nicrdt,'(A6,I0,1X,A6,I0,2X,I12,I12)')'ListB',i-2*crd%ncoordpairs-1,'ListA',i-2*crd%ncoordpairs-1,j,crd%cstat(j,i)
+        If (Mod(i, 2) == 0) Then
+        Do j = 0, crd%cstat(-1, i)
+          Write (nicrdt, '(A6,I0,1X,A6,I0,2X,I12,I12)') 'ListB', i - 2 * crd%ncoordpairs - 1, &
+            'ListA', i - 2 * crd%ncoordpairs - 1, j, crd%cstat(j, i)
         End Do
         End If
       End Do
 
-    else
-      allocate(coordbuff(ncb))
-      k=1
-      Do i=1,2*(crd%ncoordpairs+crd%ncoordab)
-        coordbuff(k)=crd%cstat(-1,i)
-        k=k+1
-        coordbuff(k:k+1)=crd%cstat(-3:-2,i)
-        k=k+2
-        Do j=0,crd%cstat(-1,i)
-          coordbuff(k)=crd%cstat(j,i)
-          k=k+1
+    Else
+      Allocate (coordbuff(ncb))
+      k = 1
+      Do i = 1, 2 * (crd%ncoordpairs + crd%ncoordab)
+        coordbuff(k) = crd%cstat(-1, i)
+        k = k + 1
+        coordbuff(k:k + 1) = crd%cstat(-3:-2, i)
+        k = k + 2
+        Do j = 0, crd%cstat(-1, i)
+          coordbuff(k) = crd%cstat(j, i)
+          k = k + 1
         End Do
       End Do
-      Call gsend(comm,ncb,0,comm%idnode)
-      if (ncb>0) then
-        Call gsend(comm,coordbuff,0,comm%idnode)
-      endif
-    deallocate(coordbuff)
-    endif
+      Call gsend(comm, ncb, 0, comm%idnode)
+      If (ncb > 0) Then
+        Call gsend(comm, coordbuff, 0, comm%idnode)
+      Endif
+      Deallocate (coordbuff)
+    Endif
 
+    Do i = 1, config%natms
+      crd%adfcoordlist(0, i) = crd%coordlist(0, i)
+      Do j = 1, crd%coordlist(0, i)
+        crd%adfcoordlist(j, i) = crd%coordlist(j, i)
+        crd%coordlist(j, i) = config%ltg(crd%coordlist(j, i))
+      End Do
+    End Do
 
-    do i=1,config%natms
-       crd%adfcoordlist(0,i)=crd%coordlist(0,i)
-      do j=1,crd%coordlist(0,i)
-        crd%adfcoordlist(j,i)=crd%coordlist(j,i)
-        crd%coordlist(j,i)=config%ltg(crd%coordlist(j,i))
-      end do
-    end do
+    !Create icoordlist
+    If (flow%step == crd%coordstart) Then
+      crd%icoordlist = crd%coordlist
+    End If
 
-     !Create icoordlist
-     if (flow%step==crd%coordstart) then
-      crd%icoordlist=crd%coordlist
-     end if
+  End Subroutine init_coord_list
 
-  end subroutine init_coord_list
+  Subroutine checkcoord(config, neigh, crd, sites, flow, stats, impa, comm)
+    Type(configuration_type), Intent(In   ) :: config
+    Type(neighbours_type),    Intent(In   ) :: neigh
+    Type(coord_type),         Intent(InOut) :: crd
+    Type(site_type),          Intent(In   ) :: sites
+    Type(flow_type),          Intent(In   ) :: flow
+    Type(stats_type),         Intent(InOUT) :: stats
+    Type(impact_type),        Intent(In   ) :: impa
+    Type(comms_type),         Intent(InOut) :: comm
 
+    Character(len=80)              :: aux
+    Character(len=80), Allocatable :: rbuff(:)
+    Integer                        :: defectcnt, defn, i, ii, j, k, totdefectcnt
+    Integer, Allocatable           :: buff(:)
+    Logical                        :: coordchange, coordfound, thisopen
+    Real                           :: rdis
 
-  subroutine checkcoord(config,neigh,crd,sites,flow,stats,impa,comm)
-    Type(neighbours_type), Intent(In) :: neigh
-    Type(configuration_type), Intent(In)  :: config
-    Type(comms_type), Intent(InOut) :: comm
-    Type(flow_type), Intent(In) :: flow
-    Type(site_type), Intent(In) :: sites
-    Type(coord_type), Intent(InOut) :: crd
-    Type(stats_type), Intent(InOUT) :: stats
-    Type(impact_type), Intent(In) :: impa
-    integer :: i,ii,j,jj,k,kk,defn,defectcnt,totdefectcnt
-    real :: rcut,rab,rdis
-    integer, allocatable :: buff(:)
-    character(len=80) :: aux
-    character(len=80), allocatable :: rbuff(:)
-    logical :: coordchange,coordfound,thisopen
+    If (.not. crd%coordon) Return
+    If (crd%ncoordpairs == 0) Return
+    If (crd%coordops == 0) Return
+    If (crd%coordstart > flow%step) Return
+    If (Mod(flow%step, crd%coordinterval) /= 0) Return
 
-    If(crd%coordon .Eqv. .False.)Return
-    If(crd%ncoordpairs==0)Return
-    If(crd%coordops .eq.0)Return
-    If(crd%coordstart>flow%step)Return
-    If(mod(flow%step,crd%coordinterval).NE.0)Return
+    defectcnt = 0
+    crd%defectlist(:) = 0
 
-    defectcnt=0
-    crd%defectlist(:)=0
+    Do i = 1, config%natms
+      Do ii = 1, crd%ncoorddis
+        If ((config%ltype(i) == crd%disltype(ii))) Then
+          rdis = crd%discuts(ii)
 
-   do i = 1, config%natms
-        Do ii= 1 , crd%ncoorddis
-          if ((config%ltype(i)==crd%disltype(ii)))then
-           rdis=crd%discuts(ii)
+        Endif
+      End Do
 
-          endif
-        end Do
+      If (stats%rsd(i) > rdis) Then
+        coordchange = .false.
+        coordfound = .false.
+        If (crd%coordlist(0, i) /= crd%icoordlist(0, i)) Then
+          coordchange = .true.
+        Else
+          Do j = 1, crd%coordlist(0, i)
+            coordfound = .false.
+            Do k = 1, crd%icoordlist(0, i)
+              If (crd%coordlist(j, i) == crd%icoordlist(k, i)) Then
+                coordfound = .true.
+              Endif
+            Enddo
+            If (.not. coordfound) Then
+              coordchange = .true.
+            Endif
+          Enddo
+        End If
+        If (coordchange) Then
+          defectcnt = defectcnt + 1
+          crd%defectlist(0) = defectcnt
+          crd%defectlist(defectcnt) = i
+        Endif
+      Endif
+    Enddo
 
-    if(stats%rsd(i).gt.rdis)then
-      coordchange=.False.
-      coordfound=.False.
-      if (crd%coordlist(0,i) /= crd%icoordlist(0,i)) then
-      coordchange=.true.
-      else
-        do j = 1, crd%coordlist(0,i)
-         coordfound=.False.
-          do k=1, crd%icoordlist(0,i)
-            if (crd%coordlist(j,i) == crd%icoordlist(k,i)) Then
-              coordfound=.True.
-            endif
-          enddo
-          if (coordfound .eqv. .False.) Then
-            coordchange = .True.
-          endif
-         enddo
-       end if
-       if (coordchange .eqv. .True.) Then
-         defectcnt=defectcnt+1
-         crd%defectlist(0)=defectcnt
-         crd%defectlist(defectcnt)=i
-       endif
-    endif
-   enddo
+    If (comm%idnode == 0) Then
+      totdefectcnt = 0
+      Do j = 1, comm%mxnode - 1
+        Call grecv(comm, defn, j, j)
+        totdefectcnt = totdefectcnt + defn
+      End Do
+      totdefectcnt = totdefectcnt + crd%defectlist(0)
 
-    If (comm%idnode==0) Then
-      totdefectcnt=0
-      do j=1,comm%mxnode-1
-        Call grecv(comm,defn,j,j)
-        totdefectcnt=totdefectcnt+defn
-      end do
-      totdefectcnt=totdefectcnt+crd%defectlist(0)
-
-      inquire(Unit=nccrdt, opened=thisopen)
-      if ( .not. thisopen ) Then
-        Open(Unit=nccrdt, File='CCOORD', Form='formatted')
-      end if
-        if(flow%step<=crd%coordstart)then
-        Write(Unit=nccrdt, Fmt='(a60)') config%cfgname(1:60)
-        Write(Unit=nccrdt, Fmt='(a20,I10)')'Number of frames',(flow%run_steps-crd%coordstart)/crd%coordinterval+1
-        endif
-         Write(Unit=nccrdt,Fmt='(A30,I10,I10,f20.6)')'Number of coordination changes',totdefectcnt,flow%step,flow%time
+      Inquire (Unit=nccrdt, opened=thisopen)
+      If (.not. thisopen) Then
+        Open (Unit=nccrdt, File='CCOORD', Form='formatted')
+      End If
+      If (flow%step <= crd%coordstart) Then
+        Write (Unit=nccrdt, Fmt='(a60)') config%cfgname(1:60)
+        Write (Unit=nccrdt, Fmt='(a20,I10)') 'Number of frames', (flow%run_steps - crd%coordstart) / crd%coordinterval + 1
+      Endif
+      Write (Unit=nccrdt, Fmt='(A30,I10,I10,f20.6)') 'Number of coordination changes', totdefectcnt, flow%step, flow%time
 
       Do i = 0, 2
-          write(Unit=nccrdt,fmt= '( 3f20.10 )' ) &
-             config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 )
-      enddo
+        Write (Unit=nccrdt, fmt='( 3f20.10 )') &
+          config%cell(1 + i * 3), config%cell(2 + i * 3), config%cell(3 + i * 3)
+      Enddo
 
-      Do i=1, crd%defectlist(0)
-        write(Unit=nccrdt,Fmt='(a2,I10,3f20.10,f10.5)') &
-          trim(sites%unique_atom(config%ltype(crd%defectlist(i)))),config%ltg(crd%defectlist(i)), &
-          config%parts(crd%defectlist(i))%xxx,config%parts(crd%defectlist(i))%yyy,config%parts(crd%defectlist(i))%zzz,&
+      Do i = 1, crd%defectlist(0)
+        Write (Unit=nccrdt, Fmt='(a2,I10,3f20.10,f10.5)') &
+          Trim(sites%unique_atom(config%ltype(crd%defectlist(i)))), config%ltg(crd%defectlist(i)), &
+          config%parts(crd%defectlist(i))%xxx, config%parts(crd%defectlist(i))%yyy, config%parts(crd%defectlist(i))%zzz, &
           stats%rsd(crd%defectlist(i))
-      enddo
+      Enddo
 
-      do j=1,comm%mxnode-1
-        Call grecv(comm,defectcnt,j,j)
-        if (defectcnt>0) Then
-          allocate(buff(2*defectcnt))
-          allocate(rbuff(defectcnt))
-          Call grecv(comm,buff,j,j)
-          Call grecv(comm,rbuff,j,j)
-          do i=1,defectcnt
-            write(nccrdt,Fmt='(a2,I10,a)') trim(sites%unique_atom(buff(2*i-1))),buff(2*i),  &
-            rbuff(i)
-          end do
-          deallocate(buff)
-          deallocate(rbuff)
-        end if
-      end do
+      Do j = 1, comm%mxnode - 1
+        Call grecv(comm, defectcnt, j, j)
+        If (defectcnt > 0) Then
+          Allocate (buff(2 * defectcnt))
+          Allocate (rbuff(defectcnt))
+          Call grecv(comm, buff, j, j)
+          Call grecv(comm, rbuff, j, j)
+          Do i = 1, defectcnt
+            Write (nccrdt, Fmt='(a2,I10,a)') Trim(sites%unique_atom(buff(2 * i - 1))), buff(2 * i), &
+              rbuff(i)
+          End Do
+          Deallocate (buff)
+          Deallocate (rbuff)
+        End If
+      End Do
 
-    else
-      defectcnt=crd%defectlist(0)
-      defn=crd%defectlist(0)
-      allocate(buff(2*crd%defectlist(0)))
-      allocate(rbuff(crd%defectlist(0)))
-      Call gsend(comm,defn,0,comm%idnode)
-      do i =1, defectcnt
-        buff(2*i-1)=config%ltype(crd%defectlist(i))
-        buff(2*i)=config%ltg(crd%defectlist(i))
-        write(aux,'(3f20.10,f10.5)')config%parts(crd%defectlist(i))%xxx,config%parts(crd%defectlist(i))%yyy,  &
-        config%parts(crd%defectlist(i))%zzz,stats%rsd(crd%defectlist(i))
-        rbuff(i)=aux
-      End do
-      Call gsend(comm,defectcnt,0,comm%idnode)
-      if (defectcnt>0) then
-        Call gsend(comm,buff,0,comm%idnode)
-        Call gsend(comm,rbuff,0,comm%idnode)
-      End if
-    deallocate(buff)
-    deallocate(rbuff)
-    End if
+    Else
+      defectcnt = crd%defectlist(0)
+      defn = crd%defectlist(0)
+      Allocate (buff(2 * crd%defectlist(0)))
+      Allocate (rbuff(crd%defectlist(0)))
+      Call gsend(comm, defn, 0, comm%idnode)
+      Do i = 1, defectcnt
+        buff(2 * i - 1) = config%ltype(crd%defectlist(i))
+        buff(2 * i) = config%ltg(crd%defectlist(i))
+        Write (aux, '(3f20.10,f10.5)') config%parts(crd%defectlist(i))%xxx, config%parts(crd%defectlist(i))%yyy, &
+          config%parts(crd%defectlist(i))%zzz, stats%rsd(crd%defectlist(i))
+        rbuff(i) = aux
+      End Do
+      Call gsend(comm, defectcnt, 0, comm%idnode)
+      If (defectcnt > 0) Then
+        Call gsend(comm, buff, 0, comm%idnode)
+        Call gsend(comm, rbuff, 0, comm%idnode)
+      End If
+      Deallocate (buff)
+      Deallocate (rbuff)
+    End If
 
-  end subroutine checkcoord
+  End Subroutine checkcoord
 
-end Module coord
+End Module coord
