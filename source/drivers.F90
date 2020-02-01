@@ -1352,7 +1352,7 @@ Contains
                          flow%time, io, cshell, dfcts(1), &
                          neigh, sites, netcdf, domain, cnfig, files, comm)
       If (dfcts(2)%ldef) Then
-        Call defects_write(flow%restart_key thermo%ensemble, flow%step, thermo%tstep, &
+        Call defects_write(flow%restart_key, thermo%ensemble, flow%step, thermo%tstep, &
                            flow%time, io, cshell, dfcts(2), &
                            neigh, sites, netcdf, domain, cnfig, files, comm)
       End If
