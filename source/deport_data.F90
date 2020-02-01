@@ -106,7 +106,7 @@ Contains
                                                 jxyz, k, kangle, katm, kbonds, kconst, kdihed, &
                                                 kdnode, keep, kinver, kk, kmove, kpmf, krigid, &
                                                 kshels, kteths, kx, ky, kz, l, latm, ll, matm, &
-                                                natm, newatm
+                                                natm, newatm, jcrd
     Integer, Allocatable, Dimension(:)       :: i1pmf, i2pmf, ind_off, ind_on, lrgd
     Logical                                  :: check, lex, ley, lez, lsx, lsy, lsz, lwrap, safe, &
                                                 safe1, stay
