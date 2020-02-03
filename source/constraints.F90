@@ -164,8 +164,6 @@ Contains
     fail = 0
     If (Allocated(T%numcon)) Deallocate (T%numcon, Stat=fail(1))
     If (Allocated(T%lstcon)) Deallocate (T%lstcon, Stat=fail(2))
-    If (Allocated(T%numcon)) Deallocate (T%numcon, Stat=fail(1))
-    If (Allocated(T%lstcon)) Deallocate (T%lstcon, Stat=fail(2))
     If (Allocated(T%listcon)) Deallocate (T%listcon, Stat=fail(3))
     If (Allocated(T%legcon)) Deallocate (T%legcon, Stat=fail(4))
     If (Allocated(T%lishp_con)) Deallocate (T%lishp_con, Stat=fail(5))
