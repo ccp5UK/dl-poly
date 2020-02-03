@@ -5085,7 +5085,7 @@ Contains
     Type(rigid_bodies_type), Intent(In   ) :: rigid
 
     Character(Len=20)  :: fmt1, fmt2, fmt3
-    Character(Len=256) :: banner(18)
+    Character(Len=256) :: banner(19)
     Character(Len=4)   :: frzpmf
     Integer            :: frzang, frzbnd, frzdih, frzinv, frzshl, frztet, iang, iatm1, iatm2, &
                           iatm3, iatm4, ibond, idih, iinv, ipmf, ishls, isite1, isite2, isite3, &
@@ -5239,20 +5239,20 @@ Contains
     Write (banner(4), fmt1) '||'//Repeat(' ', 62)//'||'
     Write (banner(5), fmt1) '||'//Repeat('-', 62)//'||'
     Write (banner(6), fmt1) '||  INTERACTION  OR  TYPE  |  GRAND TOTAL | Fully/Partly FROZEN ||'
-    Write (banner(6), fmt1) '||-------------------------+--------------+---------------------||'
-    Write (banner(7), fmt2) '||  all particles/sites    | ', megatm, '  |  F  ', megfrz, '     ||'
-    Write (banner(8), fmt2) '||  free particles         | ', atmfre, '  |  F  ', atmfrz, '     ||'
-    Write (banner(9), fmt2) '||  core-shell units       | ', cshell%megshl, '  |  P  ', mgfrsh, '     ||'
-    Write (banner(10), fmt2) '||  constraint bond units  | ', mgcon, '  |  F  ', mgcon - cons%megcon, '     ||'
-    Write (banner(11), fmt3) '||  PMF units              | ', pmf%megpmf, '  |  P         ', frzpmf, '     ||'
-    Write (banner(12), fmt2) '||  rigid body units       | ', mgrgd, '  |  F  ', mgrgd - rigid%total, '     ||'
-    Write (banner(13), fmt2) '||  tethered atom units    | ', tether%total, '  |  F  ', mgfrtt, '     ||'
-    Write (banner(14), fmt2) '||  chemical bond units    | ', bond%total, '  |  F  ', mgfrbn, '     ||'
-    Write (banner(15), fmt2) '||  bond angle units       | ', angle%total, '  |  F  ', mgfran, '     ||'
-    Write (banner(16), fmt2) '||  dihedral angle units   | ', dihedral%total, '  |  F  ', mgfrdh, '     ||'
-    Write (banner(17), fmt2) '||  inversion angle units  | ', inversion%total, '  |  F  ', mgfrin, '     ||'
-    Write (banner(18), fmt1) '\\'//Repeat('=', 62)//'//'
-    Call info(banner, 18, .true.)
+    Write (banner(7), fmt1) '||-------------------------+--------------+---------------------||'
+    Write (banner(8), fmt2) '||  all particles/sites    | ', megatm, '  |  F  ', megfrz, '     ||'
+    Write (banner(9), fmt2) '||  free particles         | ', atmfre, '  |  F  ', atmfrz, '     ||'
+    Write (banner(10), fmt2) '||  core-shell units       | ', cshell%megshl, '  |  P  ', mgfrsh, '     ||'
+    Write (banner(11), fmt2) '||  constraint bond units  | ', mgcon, '  |  F  ', mgcon - cons%megcon, '     ||'
+    Write (banner(12), fmt3) '||  PMF units              | ', pmf%megpmf, '  |  P         ', frzpmf, '     ||'
+    Write (banner(13), fmt2) '||  rigid body units       | ', mgrgd, '  |  F  ', mgrgd - rigid%total, '     ||'
+    Write (banner(14), fmt2) '||  tethered atom units    | ', tether%total, '  |  F  ', mgfrtt, '     ||'
+    Write (banner(15), fmt2) '||  chemical bond units    | ', bond%total, '  |  F  ', mgfrbn, '     ||'
+    Write (banner(16), fmt2) '||  bond angle units       | ', angle%total, '  |  F  ', mgfran, '     ||'
+    Write (banner(17), fmt2) '||  dihedral angle units   | ', dihedral%total, '  |  F  ', mgfrdh, '     ||'
+    Write (banner(18), fmt2) '||  inversion angle units  | ', inversion%total, '  |  F  ', mgfrin, '     ||'
+    Write (banner(19), fmt1) '\\'//Repeat('=', 62)//'//'
+    Call info(banner, 19, .true.)
   End Subroutine report_topology
 
   Subroutine scan_field(megatm, site, max_exclude, mtshl, &
