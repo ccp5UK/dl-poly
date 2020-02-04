@@ -16,6 +16,7 @@ Module deport_data
   Use constants,        Only: half_minus,&
                               half_plus
   Use constraints,      Only: constraints_type
+  Use coord,            Only: coord_type
   Use core_shell,       Only: core_shell_type
   Use dihedrals,        Only: dihedrals_type
   Use domains,          Only: domains_type
@@ -55,8 +56,7 @@ Contains
 
   Subroutine deport_atomic_data(mdir, lbook, lmsd, cshell, cons, pmf, stats, ewld, thermo, &
                                 green, bond, angle, dihedral, inversion, tether, neigh, minim, mpoles, rigid, domain, &
-                                config, comm)
-
+                                config, crd, comm)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 routine to deport atomic and topological data of particles
@@ -96,6 +96,7 @@ Contains
     Type(rigid_bodies_type),  Intent(InOut) :: rigid
     Type(domains_type),       Intent(In   ) :: domain
     Type(configuration_type), Intent(InOut) :: config
+    Type(coord_type),         Intent(InOut) :: crd
     Type(comms_type),         Intent(InOut) :: comm
 
     Character(Len=256)                       :: message
@@ -105,7 +106,7 @@ Contains
                                                 jxyz, k, kangle, katm, kbonds, kconst, kdihed, &
                                                 kdnode, keep, kinver, kk, kmove, kpmf, krigid, &
                                                 kshels, kteths, kx, ky, kz, l, latm, ll, matm, &
-                                                natm, newatm
+                                                natm, newatm, jcrd
     Integer, Allocatable, Dimension(:)       :: i1pmf, i2pmf, ind_off, ind_on, lrgd
     Logical                                  :: check, lex, ley, lez, lsx, lsy, lsz, lwrap, safe, &
                                                 safe1, stay
@@ -795,6 +796,14 @@ Contains
           End If
 
         End If
+        If (crd%coordon) Then
+          buffer(imove + 1) = crd%icoordlist(0, i)
+          imove = imove + 1
+          Do jcrd = 1, crd%icoordlist(0, i)
+            buffer(imove + 1) = crd%icoordlist(jcrd, i)
+            imove = imove + 1
+          End Do
+        Endif
 
       End If
     End Do
@@ -909,6 +918,12 @@ Contains
         angle%legend(:, keep) = angle%legend(:, i)
         dihedral%legend(:, keep) = dihedral%legend(:, i)
         inversion%legend(:, keep) = inversion%legend(:, i)
+      End If
+      If (crd%coordon) Then
+        crd%icoordlist(0, keep) = crd%icoordlist(0, i)
+        Do jcrd = 1, crd%icoordlist(0, i)
+          crd%icoordlist(jcrd, keep) = crd%icoordlist(jcrd, i)
+        End Do
       End If
     End Do
     keep = k ! How many particles are to be kept
@@ -1647,6 +1662,14 @@ Contains
         inversion%n_types = jinver
 
       End If
+      If (crd%coordon) Then
+        crd%icoordlist(0, newatm) = buffer(kmove + 1)
+        kmove = kmove + 1
+        Do jcrd = 1, crd%icoordlist(0, newatm)
+          crd%icoordlist(jcrd, newatm) = buffer(kmove + 1)
+          kmove = kmove + 1
+        End Do
+      Endif
     End Do
 
     ! check error flags
@@ -2517,7 +2540,7 @@ Contains
 
   Subroutine relocate_particles(dvar, cutoff_extended, lbook, lmsd, megatm, flow, cshell, cons, &
                                 pmf, stats, ewld, thermo, green, bond, angle, dihedral, inversion, tether, &
-                                neigh, sites, minim, mpoles, rigid, domain, config, comm)
+                                neigh, sites, minim, mpoles, rigid, domain, config, crd, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2558,6 +2581,7 @@ Contains
     Type(rigid_bodies_type),  Intent(InOut) :: rigid
     Type(domains_type),       Intent(In   ) :: domain
     Type(configuration_type), Intent(InOut) :: config
+    Type(coord_type),         Intent(InOut) :: crd
     Type(comms_type),         Intent(InOut) :: comm
 
     Character(Len=256) :: message
@@ -2673,28 +2697,28 @@ Contains
 
       Call deport_atomic_data(-1, lbook, lmsd, cshell, cons, pmf, stats, ewld, thermo, &
                               green, bond, angle, dihedral, inversion, tether, neigh, minim, mpoles, rigid, &
-                              domain, config, comm)
+                              domain, config, crd, comm)
       Call deport_atomic_data(1, lbook, lmsd, cshell, cons, pmf, stats, ewld, thermo, &
                               green, bond, angle, dihedral, inversion, tether, neigh, minim, mpoles, rigid, &
-                              domain, config, comm)
+                              domain, config, crd, comm)
 
       ! exchange atom data in -/+ y directions
 
       Call deport_atomic_data(-2, lbook, lmsd, cshell, cons, pmf, stats, ewld, thermo, &
                               green, bond, angle, dihedral, inversion, tether, neigh, minim, mpoles, rigid, &
-                              domain, config, comm)
+                              domain, config, crd, comm)
       Call deport_atomic_data(2, lbook, lmsd, cshell, cons, pmf, stats, ewld, thermo, &
                               green, bond, angle, dihedral, inversion, tether, neigh, minim, mpoles, rigid, &
-                              domain, config, comm)
+                              domain, config, crd, comm)
 
       ! exchange atom data in -/+ z directions
 
       Call deport_atomic_data(-3, lbook, lmsd, cshell, cons, pmf, stats, ewld, thermo, &
                               green, bond, angle, dihedral, inversion, tether, neigh, minim, mpoles, rigid, &
-                              domain, config, comm)
+                              domain, config, crd, comm)
       Call deport_atomic_data(3, lbook, lmsd, cshell, cons, pmf, stats, ewld, thermo, &
                               green, bond, angle, dihedral, inversion, tether, neigh, minim, mpoles, rigid, &
-                              domain, config, comm)
+                              domain, config, crd, comm)
 
       ! check system for loss of atoms
 

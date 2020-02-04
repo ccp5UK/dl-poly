@@ -22,6 +22,7 @@ Module ffield
                              VA_to_dl, boltz, engunit, eu_ev, eu_kcpm, eu_kjpm, ntable, pi, &
                              prsunt, r4pie0, tesla_to_dl, zero_plus
   Use constraints,     Only: constraints_type
+  Use coord,           Only: coord_type
   Use core_shell,      Only: SHELL_ADIABATIC,&
                              SHELL_RELAXED,&
                              core_shell_type
@@ -60,8 +61,8 @@ Module ffield
                              inversions_table_read,&
                              inversions_type
   Use kim,             Only: kim_cutoff,&
-                             kim_type,&
-                             kim_interactions
+                             kim_interactions,&
+                             kim_type
   ! SITE MODULE
   Use kinds,           Only: wi,&
                              wp
@@ -118,7 +119,7 @@ Contains
 
   Subroutine read_field(rcut, cshell, pmf, cons, thermo, met, bond, angle, dihedral, &
                         inversion, tether, threebody, sites, vdws, tersoffs, fourbody, rdf, mpoles, &
-                        ext_field, rigid, electro, config, kim_data, files, flow, comm)
+                        ext_field, rigid, electro, config, kim_data, files, flow, crd, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -177,6 +178,7 @@ Contains
     Type(kim_type),            Intent(InOut) :: kim_data
     Type(file_type),           Intent(InOut) :: files(:)
     Type(flow_type),           Intent(InOut) :: flow
+    Type(coord_type),          Intent(InOut) :: crd
     Type(comms_type),          Intent(InOut) :: comm
 
     Character(Len=100)             :: rfmt
@@ -191,17 +193,18 @@ Contains
     Character(Len=4)               :: keyword
     Character(Len=40)              :: word
     Character(Len=8)               :: atom0, atom1, atom2, atom3
+    Character(Len=8), Allocatable  :: kim_name(:)
     Integer                        :: fail(1:4), frzcon, frzrgd, i, ia, iang, iatm1, iatm2, iatm3, &
                                       iatm4, ibond, icnst, icross, idih, ifbp, ifrz, iinv, ipmf, &
                                       irept, irgd, is(0:4), ishls, isite, isite1, isite2, isite3, &
-                                      isite4, itbp, iter, iteth, itmols, itmp, itpfbp, itpmet, &
-                                      itprdf, itptbp, itpter, itpvdw, j, ja, jpmf, jrgd, js(0:4), &
-                                      jsite, jtpatm, ka1, ka2, ka3, katom0, katom1, katom2, &
-                                      katom3, katom4, keyfbp, keymet, keypot, keyrdf, keytbp, &
-                                      keyter, keyvdw, kfbp, kpmf, krgd, ksite, ktbp, lrgd, msite, &
-                                      nangle, nbonds, nconst, ndihed, nfld, ninver, nrept, nrigid, &
-                                      nshels, nsite, ntab, nteth, ntmp, ntpang, ntpbnd, ntpdih, &
-                                      ntpinv, rwidth, nkim
+                                      isite4, itbp, iter, iteth, itmols, itmp, itpcrd, itpfbp, &
+                                      itpmet, itprdf, itptbp, itpter, itpvdw, j, ja, jpmf, jrgd, &
+                                      js(0:4), jsite, jtpatm, ka1, ka2, ka3, katom0, katom1, &
+                                      katom2, katom3, katom4, keyfbp, keymet, keypot, keyrdf, &
+                                      keytbp, keyter, keyvdw, kfbp, kpmf, krgd, ksite, ktbp, lrgd, &
+                                      msite, nangle, nbonds, nconst, ndihed, nfld, ninver, nkim, &
+                                      nrept, nrigid, nshels, nsite, ntab, nteth, ntmp, ntpang, &
+                                      ntpbnd, ntpcrd, ntpcrd2, ntpcrd3, ntpdih, ntpinv, rwidth
     Logical                        :: atmchk, l_ang, l_bnd, l_con, l_dih, l_inv, l_rgd, l_shl, &
                                       l_tet, ldpd_safe, lmet_safe, lmols, lpmf, lshl_abort, &
                                       lshl_all, lshl_one, lter_safe, lunits, safe
@@ -209,7 +212,6 @@ Contains
                                       k_crsh, k_crsh_p, k_crsh_s, p_core, p_core_p, p_core_s, &
                                       parpot(1:30), pmf_tmp(1:2), q_core, q_core_p, q_core_s, &
                                       q_shel, q_shel_p, q_shel_s, sig(0:2), tmp, weight
-    Character ( Len = 8 ),  Allocatable :: kim_name(:)
 
     ! Initialise number of unique atom and shell types and of different types of molecules
     sites%ntype_atom = 0
@@ -241,7 +243,7 @@ Contains
     nangle = 0
     ndihed = 0
     ninver = 0
-    nkim   = 0
+    nkim = 0
 
     ! Allocate auxiliary identity arrays for intramolecular TPs and PDFs
 
@@ -3448,6 +3450,103 @@ Contains
 
         ! read in the vdw potential energy parameters
 
+        ! reads in coord pairs
+      Else If (word(1:3) == 'crd') Then
+        Call get_word(record, word)
+        ntpcrd = Nint(word_2_real(word))
+        crd%ncoordpairs = ntpcrd
+        Call get_word(record, word)
+        ntpcrd2 = Nint(word_2_real(word))
+        crd%ncoorddis = ntpcrd2
+        Call get_word(record, word)
+        ntpcrd3 = Nint(word_2_real(word))
+        crd%ncoordab = ntpcrd3
+        !Assigning element pairs
+        Call crd%init()
+        Do itpcrd = 1, ntpcrd
+
+          word(1:1) = '#'
+          Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+            Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+            If (.not. safe) Go To 2000
+            Call get_word(record, word)
+          End Do
+
+          crd%arraypairs(itpcrd, 1) = word(1:8)
+          Call get_word(record, word)
+          crd%arraypairs(itpcrd, 2) = word(1:8)
+
+          Call get_word(record, word)
+          crd%arraycuts(itpcrd) = Abs(word_2_real(word))
+          katom0 = 0
+          katom1 = 0
+          atom0 = crd%arraypairs(itpcrd, 1)
+          atom1 = crd%arraypairs(itpcrd, 2)
+          Do jtpatm = 1, sites%ntype_atom
+            If (atom0 == sites%unique_atom(jtpatm)) katom0 = jtpatm
+            If (atom1 == sites%unique_atom(jtpatm)) katom1 = jtpatm
+          End Do
+          crd%ltype(itpcrd, 1) = katom0
+          crd%ltype(itpcrd, 2) = katom1
+        End Do
+        !Assigning element displacements
+        Do itpcrd = 1, ntpcrd2
+
+          word(1:1) = '#'
+          Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+            Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+            If (.not. safe) Go To 2000
+            Call get_word(record, word)
+          End Do
+
+          atom0 = word(1:8)
+          Call get_word(record, word)
+          crd%discuts(itpcrd) = Abs(word_2_real(word))
+          katom0 = 0
+          Do jtpatm = 1, sites%ntype_atom
+            If (atom0 == sites%unique_atom(jtpatm)) katom0 = jtpatm
+          End Do
+          crd%disltype(itpcrd) = katom0
+
+        End Do
+
+        !Assigning A B pair lists
+        crd%ltypeA(:, 0) = 0
+        crd%ltypeB(:, 0) = 0
+        Do itpcrd = 1, ntpcrd3
+
+          word(1:1) = '#'
+          Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+            Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+            If (.not. safe) Go To 2000
+            Call get_word(record, word)
+          End Do
+          i = 1
+          Do While (word(1:1) .ne. "-")
+            atom0 = word(1:8)
+            Do jtpatm = 1, sites%ntype_atom
+              If (atom0 == sites%unique_atom(jtpatm)) katom0 = jtpatm
+            End Do
+            crd%ltypeA(itpcrd, i) = katom0
+            crd%ltypeA(itpcrd, 0) = crd%ltypeA(itpcrd, 0) + 1
+            i = i + 1
+            Call get_word(record, word)
+          End Do
+          i = 1
+          Call get_word(record, word)
+          Do While (word(1:1) .ne. " ")
+            atom0 = word(1:8)
+            Do jtpatm = 1, sites%ntype_atom
+              If (atom0 == sites%unique_atom(jtpatm)) katom0 = jtpatm
+            End Do
+            crd%ltypeB(itpcrd, i) = katom0
+            crd%ltypeB(itpcrd, 0) = crd%ltypeB(itpcrd, 0) + 1
+            i = i + 1
+            Call get_word(record, word)
+          End Do
+
+        End Do
+
       Else If (word(1:3) == 'vdw') Then
 
         Call get_word(record, word)
@@ -4752,7 +4851,7 @@ Contains
         If (.not. lmols) Call error(13)
 
         If (.not. kim_data%active) Then
-          Write(message, '(a, 1x, 2a)') new_line('a'), &
+          Write (message, '(a, 1x, 2a)') new_line('a'), &
             'read_field, `kim_init` must be used to initialise the ', &
             'kim interatomic model'
           Call error(0, message)
@@ -4760,7 +4859,7 @@ Contains
 
         ! kim init
         If (word(1:8) == 'kim_init') Then
-          Write(message,'(2a)') 'using open KIM interatomic model: ', &
+          Write (message, '(2a)') 'using open KIM interatomic model: ', &
             kim_data%model_name
           Call info(message, .true.)
         End If
@@ -4769,27 +4868,27 @@ Contains
         If (word(1:16) == 'kim_interactions') Then
 
           fail(1) = 0
-          Allocate(kim_name(sites%ntype_atom), Stat=fail(1))
+          Allocate (kim_name(sites%ntype_atom), Stat=fail(1))
           If (fail(1) /= 0) Then
-            Write(message,'(a)') 'read_field, kim_name allocation failure'
-            Call error(0,message)
+            Write (message, '(a)') 'read_field, kim_name allocation failure'
+            Call error(0, message)
           End If
 
           ! Get the list of unique species for kim interactions
           kim_name = ' '
 
           Do While (word(1:1) /= ' ')
-            Call get_word(record,word)
+            Call get_word(record, word)
 
             If (word(1:1) /= ' ') Then
 
               ! Establish a list of unique species
 
-              atmchk=.true.
+              atmchk = .true.
 
-              Do ia=1,nkim
+              Do ia = 1, nkim
                 If (kim_name(ia) == word(1:8)) Then
-                  atmchk=.false.
+                  atmchk = .false.
                 End If
               End Do
 
@@ -4806,32 +4905,32 @@ Contains
           If (nkim > sites%ntype_atom) Call error(14)
 
           If (nkim < sites%ntype_atom) Then
-            Call warning('The number of species in kim interactions' // &
-              '< number of species in the simulation', .true.)
-            Write(message,'(3a)') 'KIM in a hybrid style. It enables ' // &
-              'the use of DL_POLY interactions and KIM interactions ' // &
-              'in one simulation, where only part of species in the ' // &
+            Call warning('The number of species in kim interactions'// &
+                         '< number of species in the simulation', .true.)
+            Write (message, '(3a)') 'KIM in a hybrid style. It enables '// &
+              'the use of DL_POLY interactions and KIM interactions '// &
+              'in one simulation, where only part of species in the '// &
               'simulation are counted in KIM interactions', new_line('a'), &
-              'This is an experimental feature, implemented in DL_POLY ' // &
-              'and is not compliant with the KIM-API standard. (See ' // &
+              'This is an experimental feature, implemented in DL_POLY '// &
+              'and is not compliant with the KIM-API standard. (See '// &
               'the DL_POLY manual for more information)'
             Call warning(message, .true.)
           End If
 
           If (nkim == 0) Then
-            Write(message,'(a, 1x, a)') new_line('a'), &
+            Write (message, '(a, 1x, a)') new_line('a'), &
               'read_field, Illegal `kim_interactions` keyword'
             Call error(0, message)
           End If
 
           ! Extra check to make sure all the species in kim_interactions
           ! have been defined before
-          atmchk=.true.
-          Do ia=1,nkim
-            Do ja=1,sites%ntype_atom
+          atmchk = .true.
+          Do ia = 1, nkim
+            Do ja = 1, sites%ntype_atom
               If (kim_name(ia) == sites%unique_atom(ja)) Then
                 ! We found the species
-                atmchk=.false.
+                atmchk = .false.
                 ! Break the inside loop
                 Exit
               End If
@@ -4839,7 +4938,7 @@ Contains
 
             ! If the species is not found
             If (atmchk) Then
-              Write(message,'(a, 1x, 3a)') new_line('a'), &
+              Write (message, '(a, 1x, 3a)') new_line('a'), &
                 'read_field, `kim_interactions` has species `', &
                 Trim(kim_name(ia)), '` which is not defined before'
               Call error(0, message)
@@ -4853,10 +4952,10 @@ Contains
             nkim, &
             kim_name)
 
-          Deallocate(kim_name, Stat = fail(1))
+          Deallocate (kim_name, Stat=fail(1))
           If (fail(1) /= 0) Then
-            Write(message,'(a)') 'read_field, deallocation failure'
-            Call error(0,message)
+            Write (message, '(a)') 'read_field, deallocation failure'
+            Call error(0, message)
           End If
         End If
         ! read external field data
@@ -5312,16 +5411,16 @@ Contains
     Integer, Parameter :: mmk = 1000, mxb = 6
 
     Character(Len=200)                 :: record, record_raw
+    Character(Len=256)                 :: message
     Character(Len=40)                  :: word
     Character(Len=8)                   :: name
     Character(Len=8), Dimension(1:mmk) :: chr
-    Character(Len=256) :: message
     Integer                            :: i, iang, ibonds, icon, idih, iinv, inumteth, ipmf, irgd, &
                                           ishls, iteth, itmols, itpfbp, itpmet, itprdf, itptbp, &
                                           itpter, itpvdw, j, jpmf, jrgd, k, ksite, lrgd, mxf(1:9), &
                                           mxnmst, mxt(1:9), nrept, numang, numbonds, numcon, &
                                           numdih, numinv, nummols, numrgd, numshl, numsit
-    Logical                            :: check, safe,lkim
+    Logical                            :: check, lkim, safe
     Real(Kind=wp)                      :: rct, tmp, tmp1, tmp2
 
 ! Max number of different atom types
@@ -5424,7 +5523,7 @@ Contains
 
     lext = .false.
     l_usr = .false.
-    lkim =.false.
+    lkim = .false.
 
     ! Set safe flag
 
@@ -6136,24 +6235,24 @@ Contains
         If (word(1:8) == 'kim_init') Then
 
           If (kim_data%active) Then
-            Write(message,'(a, 1x, a)') new_line('a'), &
+            Write (message, '(a, 1x, a)') new_line('a'), &
               'scan_field, `kim_init` has been used before'
             Call error(0, message)
           End If
 
           kim_data%active = .true.
-          Call get_word(record_raw,word)
+          Call get_word(record_raw, word)
           Call strip_blanks(record_raw)
-          kim_data%model_name=record_raw(1:Len_Trim(record_raw))
+          kim_data%model_name = record_raw(1:Len_trim(record_raw))
           Call kim_cutoff(kim_data)
 
         End If
 
         ! kim interactions
-        If (word(1:16) == 'kim_interactions') lkim=.true.
+        If (word(1:16) == 'kim_interactions') lkim = .true.
 
         If (.not. kim_data%active) Then
-          Write(message,'(a, 1x, 2a)') new_line('a'), &
+          Write (message, '(a, 1x, 2a)') new_line('a'), &
             'scan_field, `kim_init` must be used to initialise ', &
             'the kim interatomic model'
           Call error(0, message)
@@ -6182,11 +6281,11 @@ Contains
 
     10 Continue
 
-    If (comm%idnode == 0) Call files(FILE_FIELD)%close()
+    If (comm%idnode == 0) Call files(FILE_FIELD)%close ()
 
     If (kim_data%active) Then
       If (.not. lkim) Then
-        Write(message,'(a, 1x, 3a)') new_line('a'), &
+        Write (message, '(a, 1x, 3a)') new_line('a'), &
           'scan_field, `kim_interactions` must be used to perform all ', &
           'the necessary steps and set up the kim interatomic model ', &
           'selected in `kim_init` '

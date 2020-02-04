@@ -1,173 +1,180 @@
 Module drivers
-  Use angles,              Only: angles_forces,&
-                                 angles_type
-  Use bonds,               Only: bonds_forces,&
-                                 bonds_type
-  Use build_book,          Only: build_book_intra
-  Use build_excl,          Only: build_excl_intra
-  Use comms,               Only: comms_type,&
-                                 gmax,&
-                                 gsum,&
-                                 gtime
-  Use configuration,       Only: check_config,&
-                                 configuration_type,&
-                                 freeze_atoms
-  Use constants,           Only: boltz
-  Use constraints,         Only: constraints_quench,&
-                                 constraints_type
-  Use core_shell,          Only: SHELL_ADIABATIC,&
-                                 SHELL_RELAXED,&
-                                 core_shell_forces,&
-                                 core_shell_kinetic,&
-                                 core_shell_on_top,&
-                                 core_shell_quench,&
-                                 core_shell_relax,&
-                                 core_shell_type
-  Use defects,             Only: defects_type,&
-                                 defects_write
-  Use deport_data,         Only: mpoles_rotmat_set_halo,&
-                                 relocate_particles
-  Use development,         Only: development_type
-  Use dihedrals,           Only: dihedrals_forces,&
-                                 dihedrals_type
-  Use domains,             Only: domains_type
-  Use dpd,                 Only: dpd_thermostat
-  Use electrostatic,       Only: ELECTROSTATIC_NULL,&
-                                 electrostatic_type
-  Use errors_warnings,     Only: error,&
-                                 info,&
-                                 warning
-  Use ewald,               Only: ewald_type
-  Use external_field,      Only: FIELD_NULL,&
-                                 external_field_apply,&
-                                 external_field_correct,&
-                                 external_field_type
-  Use filename,            Only: FILE_HISTORF,&
-                                 FILE_HISTORY,&
-                                 FILE_OUTPUT,&
-                                 file_type
-  Use flow_control,        Only: RESTART_KEY_CLEAN,&
-                                 RESTART_KEY_OLD,&
-                                 flow_type
-  Use four_body,           Only: four_body_forces,&
-                                 four_body_type
-  Use greenkubo,           Only: greenkubo_type,&
-                                 vaf_collect,&
-                                 vaf_write
-  Use halo,                Only: refresh_halo_positions,&
-                                 set_halo_particles
-  Use impacts,             Only: impact,&
-                                 impact_type
-  Use inversions,          Only: inversions_forces,&
-                                 inversions_type
-  Use io,                  Only: io_type
-  Use kim,                 Only: kim_type
-  Use kinds,               Only: wi,&
-                                 wp
-  Use kinetics,            Only: cap_forces,&
-                                 getknr,&
-                                 kinstresf,&
-                                 kinstress,&
-                                 kinstrest
-  Use langevin,            Only: langevin_forces
-  Use metal,               Only: metal_type
-  Use minimise,            Only: minimise_relax,&
-                                 minimise_type,&
-                                 zero_k_optimise
-  Use mpole,               Only: mpole_type
-  Use msd,                 Only: msd_type,&
-                                 msd_write
-  Use neighbours,          Only: link_cell_pairs,&
-                                 neighbours_type,&
-                                 vnl_check
-  Use netcdf_wrap,         Only: netcdf_param
-  Use npt_berendsen,       Only: npt_b0_vv,&
-                                 npt_b1_vv
-  Use npt_langevin,        Only: npt_l0_vv,&
-                                 npt_l1_vv
-  Use npt_mtk,             Only: npt_m0_vv,&
-                                 npt_m1_vv
-  Use npt_nose_hoover,     Only: npt_h0_vv,&
-                                 npt_h1_vv
-  Use nst_berendsen,       Only: nst_b0_vv,&
-                                 nst_b1_vv
-  Use nst_langevin,        Only: nst_l0_vv,&
-                                 nst_l1_vv
-  Use nst_mtk,             Only: nst_m0_vv,&
-                                 nst_m1_vv
-  Use nst_nose_hoover,     Only: nst_h0_vv,&
-                                 nst_h1_vv
-  Use numerics,            Only: seed_type
-  Use nve,                 Only: nve_0_vv,&
-                                 nve_1_vv
-  Use nvt_anderson,        Only: nvt_a0_vv,&
-                                 nvt_a1_vv
-  Use nvt_berendsen,       Only: nvt_b0_vv,&
-                                 nvt_b1_vv
-  Use nvt_ekin,            Only: nvt_e0_vv,&
-                                 nvt_e1_vv
-  Use nvt_gst,             Only: nvt_g0_vv,&
-                                 nvt_g1_vv
-  Use nvt_langevin,        Only: nvt_l0_vv,&
-                                 nvt_l1_vv,&
-                                 nvt_l2_vv
-  Use nvt_nose_hoover,     Only: nvt_h0_vv,&
-                                 nvt_h1_vv
-  Use parse,               Only: lower_case,&
-                                 strip_blanks
-  Use plumed,              Only: plumed_apply,&
-                                 plumed_type
-  Use pmf,                 Only: pmf_quench,&
-                                 pmf_type
-  Use poisson,             Only: poisson_type
-  Use rdfs,                Only: rdf_type
-  Use rigid_bodies,        Only: rigid_bodies_coms,&
-                                 rigid_bodies_quench,&
-                                 rigid_bodies_stress,&
-                                 rigid_bodies_tags,&
-                                 rigid_bodies_type,&
-                                 xscale
-  Use rsds,                Only: rsd_type,&
-                                 rsd_write
-  Use shared_units,        Only: SHARED_UNIT_UPDATE_FORCES,&
-                                 update_shared_units
-  Use site,                Only: site_type
-  Use statistics,          Only: statistics_collect,&
-                                 statistics_connect_frames,&
-                                 statistics_connect_set,&
-                                 stats_type
-  Use stochastic_boundary, Only: stochastic_boundary_vv
-  Use system,              Only: system_revive
-  Use temperature,         Only: regauss_temperature,&
-                                 scale_temperature,&
-                                 set_temperature
-  Use tersoff,             Only: tersoff_forces,&
-                                 tersoff_type
-  Use tethers,             Only: tethers_forces,&
-                                 tethers_type
-  Use thermostat,          Only: &
-                                 DPD_NULL, DPD_SECOND_ORDER, ENS_NPT_BERENDSEN, &
-                                 ENS_NPT_BERENDSEN_ANISO, ENS_NPT_LANGEVIN, &
-                                 ENS_NPT_LANGEVIN_ANISO, ENS_NPT_MTK, ENS_NPT_MTK_ANISO, &
-                                 ENS_NPT_NOSE_HOOVER, ENS_NPT_NOSE_HOOVER_ANISO, ENS_NVE, &
-                                 ENS_NVT_ANDERSON, ENS_NVT_BERENDSEN, ENS_NVT_EVANS, &
-                                 ENS_NVT_GENTLE, ENS_NVT_LANGEVIN, ENS_NVT_LANGEVIN_INHOMO, &
-                                 ENS_NVT_NOSE_HOOVER, VV_FIRST_STAGE, VV_SECOND_STAGE, &
-                                 thermostat_type
-  Use three_body,          Only: three_body_forces,&
-                                 threebody_type
-  Use timer,               Only: start_timer,&
-                                 stop_timer,&
-                                 timer_type
-  Use trajectory,          Only: read_history,&
-                                 trajectory_type,&
-                                 trajectory_write
-  Use ttm,                 Only: ttm_type
-  Use ttm_track,           Only: ttm_ion_temperature,&
-                                 ttm_thermal_diffusion
-  Use two_body,            Only: two_body_forces
-  Use vdw,                 Only: vdw_type
-  Use z_density,           Only: z_density_type
+  Use angles,               Only: angles_forces,&
+                                  angles_type
+  Use angular_distribution, Only: adf_calculate,&
+                                  adf_type
+  Use bonds,                Only: bonds_forces,&
+                                  bonds_type
+  Use build_book,           Only: build_book_intra
+  Use build_excl,           Only: build_excl_intra
+  Use comms,                Only: comms_type,&
+                                  gmax,&
+                                  gsum,&
+                                  gtime
+  Use configuration,        Only: check_config,&
+                                  configuration_type,&
+                                  freeze_atoms
+  Use constants,            Only: boltz
+  Use constraints,          Only: constraints_quench,&
+                                  constraints_type
+  Use coord,                Only: checkcoord,&
+                                  coord_type,&
+                                  init_coord_list
+  ! ADF MODULE
+  Use core_shell,           Only: SHELL_ADIABATIC,&
+                                  SHELL_RELAXED,&
+                                  core_shell_forces,&
+                                  core_shell_kinetic,&
+                                  core_shell_on_top,&
+                                  core_shell_quench,&
+                                  core_shell_relax,&
+                                  core_shell_type
+  Use defects,              Only: defects_type,&
+                                  defects_write
+  Use deport_data,          Only: mpoles_rotmat_set_halo,&
+                                  relocate_particles
+  Use development,          Only: development_type
+  Use dihedrals,            Only: dihedrals_forces,&
+                                  dihedrals_type
+  Use domains,              Only: domains_type
+  Use dpd,                  Only: dpd_thermostat
+  Use electrostatic,        Only: ELECTROSTATIC_NULL,&
+                                  electrostatic_type
+  Use errors_warnings,      Only: error,&
+                                  info,&
+                                  warning
+  Use ewald,                Only: ewald_type
+  Use external_field,       Only: FIELD_NULL,&
+                                  external_field_apply,&
+                                  external_field_correct,&
+                                  external_field_type
+  Use filename,             Only: FILE_HISTORF,&
+                                  FILE_HISTORY,&
+                                  FILE_OUTPUT,&
+                                  file_type
+  Use flow_control,         Only: RESTART_KEY_CLEAN,&
+                                  RESTART_KEY_OLD,&
+                                  flow_type
+  Use four_body,            Only: four_body_forces,&
+                                  four_body_type
+  Use greenkubo,            Only: greenkubo_type,&
+                                  vaf_collect,&
+                                  vaf_write
+  Use halo,                 Only: refresh_halo_positions,&
+                                  set_halo_particles
+  Use impacts,              Only: impact,&
+                                  impact_type
+  Use inversions,           Only: inversions_forces,&
+                                  inversions_type
+  Use io,                   Only: io_type
+  Use kim,                  Only: kim_type
+  Use kinds,                Only: wi,&
+                                  wp
+  Use kinetics,             Only: cap_forces,&
+                                  getknr,&
+                                  kinstresf,&
+                                  kinstress,&
+                                  kinstrest
+  Use langevin,             Only: langevin_forces
+  Use metal,                Only: metal_type
+  Use minimise,             Only: minimise_relax,&
+                                  minimise_type,&
+                                  zero_k_optimise
+  Use mpole,                Only: mpole_type
+  Use msd,                  Only: msd_type,&
+                                  msd_write
+  Use neighbours,           Only: link_cell_pairs,&
+                                  neighbours_type,&
+                                  vnl_check
+  Use netcdf_wrap,          Only: netcdf_param
+  Use npt_berendsen,        Only: npt_b0_vv,&
+                                  npt_b1_vv
+  Use npt_langevin,         Only: npt_l0_vv,&
+                                  npt_l1_vv
+  Use npt_mtk,              Only: npt_m0_vv,&
+                                  npt_m1_vv
+  Use npt_nose_hoover,      Only: npt_h0_vv,&
+                                  npt_h1_vv
+  Use nst_berendsen,        Only: nst_b0_vv,&
+                                  nst_b1_vv
+  Use nst_langevin,         Only: nst_l0_vv,&
+                                  nst_l1_vv
+  Use nst_mtk,              Only: nst_m0_vv,&
+                                  nst_m1_vv
+  Use nst_nose_hoover,      Only: nst_h0_vv,&
+                                  nst_h1_vv
+  Use numerics,             Only: seed_type
+  Use nve,                  Only: nve_0_vv,&
+                                  nve_1_vv
+  Use nvt_anderson,         Only: nvt_a0_vv,&
+                                  nvt_a1_vv
+  Use nvt_berendsen,        Only: nvt_b0_vv,&
+                                  nvt_b1_vv
+  Use nvt_ekin,             Only: nvt_e0_vv,&
+                                  nvt_e1_vv
+  Use nvt_gst,              Only: nvt_g0_vv,&
+                                  nvt_g1_vv
+  Use nvt_langevin,         Only: nvt_l0_vv,&
+                                  nvt_l1_vv,&
+                                  nvt_l2_vv
+  Use nvt_nose_hoover,      Only: nvt_h0_vv,&
+                                  nvt_h1_vv
+  Use parse,                Only: lower_case,&
+                                  strip_blanks
+  Use plumed,               Only: plumed_apply,&
+                                  plumed_type
+  Use pmf,                  Only: pmf_quench,&
+                                  pmf_type
+  Use poisson,              Only: poisson_type
+  Use rdfs,                 Only: rdf_type
+  Use rigid_bodies,         Only: rigid_bodies_coms,&
+                                  rigid_bodies_quench,&
+                                  rigid_bodies_stress,&
+                                  rigid_bodies_tags,&
+                                  rigid_bodies_type,&
+                                  xscale
+  Use rsds,                 Only: rsd_type,&
+                                  rsd_write
+  Use shared_units,         Only: SHARED_UNIT_UPDATE_FORCES,&
+                                  update_shared_units
+  Use site,                 Only: site_type
+  Use statistics,           Only: statistics_collect,&
+                                  statistics_connect_frames,&
+                                  statistics_connect_set,&
+                                  stats_type
+  Use stochastic_boundary,  Only: stochastic_boundary_vv
+  Use system,               Only: system_revive
+  Use temperature,          Only: regauss_temperature,&
+                                  scale_temperature,&
+                                  set_temperature
+  Use tersoff,              Only: tersoff_forces,&
+                                  tersoff_type
+  Use tethers,              Only: tethers_forces,&
+                                  tethers_type
+  Use thermostat,           Only: &
+                                  DPD_NULL, DPD_SECOND_ORDER, ENS_NPT_BERENDSEN, &
+                                  ENS_NPT_BERENDSEN_ANISO, ENS_NPT_LANGEVIN, &
+                                  ENS_NPT_LANGEVIN_ANISO, ENS_NPT_MTK, ENS_NPT_MTK_ANISO, &
+                                  ENS_NPT_NOSE_HOOVER, ENS_NPT_NOSE_HOOVER_ANISO, ENS_NVE, &
+                                  ENS_NVT_ANDERSON, ENS_NVT_BERENDSEN, ENS_NVT_EVANS, &
+                                  ENS_NVT_GENTLE, ENS_NVT_LANGEVIN, ENS_NVT_LANGEVIN_INHOMO, &
+                                  ENS_NVT_NOSE_HOOVER, VV_FIRST_STAGE, VV_SECOND_STAGE, &
+                                  thermostat_type
+  Use three_body,           Only: three_body_forces,&
+                                  threebody_type
+  Use timer,                Only: start_timer,&
+                                  stop_timer,&
+                                  timer_type
+  Use trajectory,           Only: read_history,&
+                                  trajectory_type,&
+                                  trajectory_write
+  Use ttm,                  Only: ttm_type
+  Use ttm_track,            Only: ttm_ion_temperature,&
+                                  ttm_thermal_diffusion
+  Use two_body,             Only: two_body_forces
+  Use vdw,                  Only: vdw_type
+  Use z_density,            Only: z_density_type
+  ! COORD MODULE
 
   Implicit None
   Private
@@ -229,7 +236,7 @@ Contains
   Subroutine calculate_forces(cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &
                               inversion, tether, threebody, neigh, sites, vdws, tersoffs, fourbody, rdf, netcdf, &
                               minim, mpoles, ext_field, rigid, electro, domain, kim_data, msd_data, tmr, files, &
-                              green, devel, ewld, met, seed, thermo, comm)
+                              green, devel, ewld, met, seed, thermo, crd, adf, comm)
 
     Type(configuration_type),  Intent(InOut) :: cnfig
     Type(flow_type),           Intent(InOut) :: flow
@@ -269,6 +276,8 @@ Contains
     Type(metal_type),          Intent(InOut) :: met
     Type(seed_type),           Intent(InOut) :: seed
     Type(thermostat_type),     Intent(InOut) :: thermo
+    Type(coord_type),          Intent(InOut) :: crd
+    Type(adf_type),            Intent(InOut) :: adf
     Type(comms_type),          Intent(InOut) :: comm
 
     Integer          :: i
@@ -287,7 +296,9 @@ Contains
       ! Refresh mappings
 
       Call refresh_mappings(cnfig, flow, cshell, cons, pmf, stat, msd_data, bond, angle, &
-              dihedral, inversion, tether, neigh, sites, mpoles, rigid, domain, kim_data, ewld, green, minim, thermo, electro, comm)
+                            dihedral, inversion, tether, neigh, sites, mpoles, rigid, &
+                            domain, kim_data, ewld, green, &
+                            minim, thermo, electro, crd, comm)
     End If
 
     100 Continue ! Only used when relaxed is false
@@ -396,7 +407,7 @@ Contains
     If (.not. (met%max_metal == 0 .and. electro%key == ELECTROSTATIC_NULL .and. &
                vdws%no_vdw .and. rdf%max_rdf == 0) .or. kim_data%active) Then
       Call two_body_forces(thermo%ensemble, flow%book, cnfig%megfrz, &
-                   flow%equilibration, flow%equil_steps, flow%step, stat, ewld, met, pois, neigh, sites, vdws, rdf, &
+                           flow%equilibration, flow%equil_steps, flow%step, stat, ewld, met, pois, neigh, sites, vdws, rdf, &
                            mpoles, electro, domain, tmr, kim_data, cnfig, comm)
     End If
 
@@ -418,7 +429,8 @@ Contains
     ! Apply pseudo thermostat - force cycle (0)
 
     If (thermo%l_stochastic_boundaries) Then
-     Call stochastic_boundary_vv(0, thermo%tstep, flow%step, sites%dof_site, cshell, stat, thermo, rigid, domain, cnfig, seed, comm)
+      Call stochastic_boundary_vv(0, thermo%tstep, flow%step, sites%dof_site, cshell, &
+                                  stat, thermo, rigid, domain, cnfig, seed, comm)
     End If
 
     ! Cap forces in equilibration mode
@@ -463,7 +475,9 @@ Contains
 
       If (.not. (cshell%relaxed .and. minim%relaxed)) Then
         Call refresh_mappings(cnfig, flow, cshell, cons, pmf, stat, msd_data, bond, angle, &
-              dihedral, inversion, tether, neigh, sites, mpoles, rigid, domain, kim_data, ewld, green, minim, thermo, electro, comm)
+                              dihedral, inversion, tether, neigh, sites, mpoles, rigid, domain, &
+                              kim_data, ewld, green, minim, thermo, &
+                              electro, crd, comm)
         Go To 100
       End If
     End If
@@ -514,8 +528,9 @@ Contains
   End Subroutine calculate_forces
 
   Subroutine refresh_mappings(cnfig, flow, cshell, cons, pmf, stat, msd_data, bond, angle, &
-                           dihedral, inversion, tether, neigh, sites, mpoles, rigid, domain, kim_data, ewld, green, minim, thermo, &
-                              electro, comm)
+                              dihedral, inversion, tether, neigh, sites, mpoles, rigid, domain, &
+                              kim_data, ewld, green, minim, thermo, &
+                              electro, crd, comm)
     Type(configuration_type), Intent(InOut) :: cnfig
     Type(flow_type),          Intent(InOut) :: flow
     Type(core_shell_type),    Intent(InOut) :: cshell
@@ -539,6 +554,7 @@ Contains
     Type(minimise_type),      Intent(InOut) :: minim
     Type(thermostat_type),    Intent(InOut) :: thermo
     Type(electrostatic_type), Intent(InOut) :: electro
+    Type(coord_type),         Intent(InOut) :: crd
     Type(comms_type),         Intent(InOut) :: comm
 
     !!!!!!!!!!!!!!!!!!  W_REFRESH_MAPPINGS INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
@@ -558,7 +574,7 @@ Contains
       Call relocate_particles(cnfig%dvar, neigh%cutoff_extended, flow%book, &
                               msd_data%l_msd, cnfig%megatm, flow, cshell, cons, pmf, stat, ewld, thermo, green, &
                               bond, angle, dihedral, inversion, tether, neigh, sites, minim, mpoles, &
-                              rigid, domain, cnfig, comm)
+                              rigid, domain, cnfig, crd, comm)
 
       ! Exchange atomic data in border regions
 
@@ -589,7 +605,8 @@ Contains
 
   End Subroutine refresh_mappings
 
-  Subroutine integrate_vv(stage,flow, cnfig,ttm,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr,neigh,comm)
+  Subroutine integrate_vv(stage, flow, cnfig, ttm, cshell, cons, pmf, stat, thermo, &
+                          sites, vdws, rigid, domain, seed, tmr, neigh, comm)
     Integer,                  Intent(In   ) :: stage
     Type(flow_type),          Intent(InOut) :: flow
     Type(configuration_type), Intent(InOut) :: cnfig
@@ -1038,12 +1055,14 @@ Contains
 
     ! Apply pseudo thermostat - velocity cycle (1)
     If (thermo%l_stochastic_boundaries) Then
-     Call stochastic_boundary_vv(1, thermo%tstep, flow%step, sites%dof_site, cshell, stat, thermo, rigid, domain, cnfig, seed, comm)
+      Call stochastic_boundary_vv(1, thermo%tstep, flow%step, sites%dof_site, cshell, &
+                                  stat, thermo, rigid, domain, cnfig, seed, comm)
     End If
 
     ! Apply temperature regaussing
 
-    If (thermo%l_tgaus .and. flow%step <= flow%equil_steps .and. Mod(flow%step - flow%equil_steps, thermo%freq_tgaus) == 0) Then
+    If (thermo%l_tgaus .and. flow%step <= flow%equil_steps .and. &
+        Mod(flow%step - flow%equil_steps, thermo%freq_tgaus) == 0) Then
       thermo%chi_t = 0.0_wp
       thermo%chi_p = 0.0_wp
       thermo%eta = 0.0_wp
@@ -1285,7 +1304,10 @@ Contains
 
     ! Calculate green-kubo properties
 
-  If (green%samp > 0) Call vaf_collect(cnfig, sites%mxatyp, flow%equilibration, flow%equil_steps, flow%step, flow%time, green, comm)
+    If (green%samp > 0) Then
+      Call vaf_collect(cnfig, sites%mxatyp, flow%equilibration, flow%equil_steps, &
+                       flow%step, flow%time, green, comm)
+    End If
 
     If (stat%cur%on .and. (Mod(flow%step, flow%freq_output) == 0) .and. (flow%step > flow%equil_steps)) Then
 
@@ -1326,21 +1348,25 @@ Contains
     End If
 
     If (dfcts(1)%ldef) Then
-      Call defects_write(flow%restart_key, thermo%ensemble, flow%step, thermo%tstep, flow%time, io, cshell, dfcts(1), &
+      Call defects_write(flow%restart_key, thermo%ensemble, flow%step, thermo%tstep, &
+                         flow%time, io, cshell, dfcts(1), &
                          neigh, sites, netcdf, domain, cnfig, files, comm)
       If (dfcts(2)%ldef) Then
-        Call defects_write(flow%restart_key, thermo%ensemble, flow%step, thermo%tstep, flow%time, io, cshell, dfcts(2), &
+        Call defects_write(flow%restart_key, thermo%ensemble, flow%step, thermo%tstep, &
+                           flow%time, io, cshell, dfcts(2), &
                            neigh, sites, netcdf, domain, cnfig, files, comm)
       End If
     End If
 
     If (msd_data%l_msd) Then
-      Call msd_write(cnfig, flow%restart_key, cnfig%megatm, flow%step, thermo%tstep, flow%time, stat%stpval, sites%dof_site, &
+      Call msd_write(cnfig, flow%restart_key, cnfig%megatm, flow%step, thermo%tstep, &
+                     flow%time, stat%stpval, sites%dof_site, &
                      io, msd_data, files, comm)
     End If
 
     If (rsdc%lrsd) Then
-      Call rsd_write(flow%restart_key, flow%step, thermo%tstep, io, rsdc, flow%time, cshell, stat%rsd, cnfig, comm)
+      Call rsd_write(flow%restart_key, flow%step, thermo%tstep, io, rsdc, flow%time, &
+                     cshell, stat%rsd, cnfig, comm)
     End If
 
     If (green%samp > 0) Then
@@ -1394,7 +1420,7 @@ Contains
                    pois, bond, angle, dihedral, inversion, zdensity, neigh, sites, fourbody, rdf, &
                    netcdf, mpoles, ext_field, rigid, domain, seed, traj, kim_data, files, tmr, &
                    minim, impa, green, ewld, electro, dfcts, &
-                   msd_data, tersoffs, tether, threebody, vdws, devel, met, comm)
+                   msd_data, tersoffs, tether, threebody, vdws, devel, met, crd, adf, comm)
 
     Type(configuration_type),  Intent(InOut) :: cnfig
     Type(ttm_type),            Intent(InOut) :: ttm
@@ -1440,6 +1466,8 @@ Contains
     Type(vdw_type),            Intent(InOut) :: vdws
     Type(development_type),    Intent(InOut) :: devel
     Type(metal_type),          Intent(InOut) :: met
+    Type(coord_type),          Intent(InOut) :: crd
+    Type(adf_type),            Intent(InOut) :: adf
     Type(comms_type),          Intent(InOut) :: comm
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
@@ -1472,7 +1500,8 @@ Contains
         End If
 
         If (thermo%l_langevin) Then
-     Call langevin_forces(flow%step, thermo%temp, thermo%tstep, thermo%chi, thermo%fxl, thermo%fyl, thermo%fzl, cshell, cnfig, seed)
+          Call langevin_forces(flow%step, thermo%temp, thermo%tstep, thermo%chi, thermo%fxl, &
+                               thermo%fyl, thermo%fzl, cshell, cnfig, seed)
           If (rigid%share) Then
             Call update_shared_units(cnfig, rigid%list_shared, rigid%map_shared, &
                                      thermo%fxl, thermo%fyl, thermo%fzl, domain, comm)
@@ -1539,7 +1568,8 @@ Contains
         ! Refresh mappings
 
         Call refresh_mappings(cnfig, flow, cshell, cons, pmf, stat, msd_data, bond, angle, &
-              dihedral, inversion, tether, neigh, sites, mpoles, rigid, domain, kim_data, ewld, green, minim, thermo, electro, comm)
+                              dihedral, inversion, tether, neigh, sites, mpoles, rigid, domain, kim_data, ewld, green, minim, &
+                              thermo, electro, crd, comm)
 
       End If ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
 
@@ -1547,11 +1577,17 @@ Contains
 
       Call calculate_forces(cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &
                             inversion, tether, threebody, neigh, sites, vdws, tersoffs, fourbody, rdf, netcdf, &
-      minim, mpoles, ext_field, rigid, electro, domain, kim_data, msd_data, tmr, files, green, devel, ewld, met, seed, thermo, comm)
+                            minim, mpoles, ext_field, rigid, electro, domain, kim_data, &
+                            msd_data, tmr, files, green, devel, ewld, &
+                            met, seed, thermo, crd, adf, comm)
 
       ! Calculate physical quantities, collect statistics and report at t=0
 
       If (flow%step == 0) Then
+        Call crd%init_coordlist(neigh%max_list, cnfig%mxatms)
+        Call init_coord_list(cnfig, neigh, crd, sites, flow, comm)
+        Call checkcoord(cnfig, neigh, crd, sites, flow, stat, impa, comm)
+        Call adf_calculate(cnfig, sites, flow, crd, adf, comm)
         Call statistics_report(cnfig, cshell, cons, pmf, stat, msd_data, zdensity, &
                                sites, rdf, domain, flow, files, thermo, tmr, green, minim, comm)
       End If
@@ -1598,12 +1634,18 @@ Contains
                              stat, devel, green, thermo, bond, angle, dihedral, inversion, zdensity, rdf, &
                              netcdf, cnfig, files, comm)
         End If
-
+        Call init_coord_list(cnfig, neigh, crd, sites, flow, comm)
+        Call checkcoord(cnfig, neigh, crd, sites, flow, stat, impa, comm)
+        Call adf_calculate(cnfig, sites, flow, crd, adf, comm)
       End If ! DO THAT ONLY IF 0<flow%step<=flow%run_steps AND THIS IS AN OLD JOB (flow%newjob=.false.)
 
       1000 Continue ! Escape forces evaluation at t=0 when flow%step=flow%run_steps=0 and flow%newjob=.false.
 
       ! Refresh output
+
+      !calls coordination after intial step
+!       call crd%init_coordlist(neigh%max_list,cnfig%mxatms)
+!      Call init_coord_list(cnfig,neigh,crd,sites,flow,comm)
 
       Call refresh_output(files, flow, tmr, comm)
 
@@ -1945,10 +1987,12 @@ Contains
                            sites%dof_site, io, msd_data, files, comm)
           End If
           If (rsdc%lrsd) Then
-            Call rsd_write(flow%restart_key, flow%step, thermo%tstep, io, rsdc, flow%time, cshell, stat%rsd, cnfig, comm)
+            Call rsd_write(flow%restart_key, flow%step, thermo%tstep, io, rsdc, &
+                           flow%time, cshell, stat%rsd, cnfig, comm)
           End If
-          If (green%samp > 0) Call vaf_write & ! (flow%step->nstph,tstep->tsths,flow%start_time->tmsh)
-            (cnfig, flow%restart_key, nstph, tsths, green, sites, comm)
+          If (green%samp > 0) Then
+            Call vaf_write(cnfig, flow%restart_key, nstph, tsths, green, sites, comm)
+          End If
 
           ! Complete flow%time check
 
@@ -2051,7 +2095,8 @@ Contains
   Subroutine replay_historf(cnfig, io, rsdc, flow, cshell, cons, pmf, stat, thermo, plume, &
                             msd_data, bond, angle, dihedral, inversion, zdensity, neigh, sites, vdws, tersoffs, &
                             fourbody, rdf, netcdf, minim, mpoles, ext_field, rigid, electro, domain, seed, traj, &
-                            kim_data, files, dfcts, tmr, tether, threebody, pois, green, ewld, devel, met, comm)
+                            kim_data, files, dfcts, tmr, tether, threebody, pois, green, ewld, devel, met, &
+                            crd, adf, comm)
 
     Type(configuration_type),  Intent(InOut) :: cnfig
     Type(io_type),             Intent(InOut) :: io
@@ -2095,6 +2140,8 @@ Contains
     Type(ewald_type),          Intent(InOut) :: ewld
     Type(development_type),    Intent(InOut) :: devel
     Type(metal_type),          Intent(InOut) :: met
+    Type(coord_type),          Intent(InOut) :: crd
+    Type(adf_type),            Intent(InOut) :: adf
     Type(comms_type),          Intent(InOut) :: comm
 
     Character(Len=10)  :: c_out
@@ -2236,7 +2283,7 @@ Contains
           Call calculate_forces(cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &
                                 inversion, tether, threebody, neigh, sites, vdws, tersoffs, fourbody, rdf, &
                                 netcdf, minim, mpoles, ext_field, rigid, electro, domain, kim_data, msd_data, tmr, files, &
-                                green, devel, ewld, met, seed, thermo, comm)
+                                green, devel, ewld, met, seed, thermo, crd, adf, comm)
 
           ! Evaluate kinetics if available
 
@@ -2350,9 +2397,13 @@ Contains
             Call msd_write(cnfig, flow%restart_key, cnfig%megatm, flow%step, thermo%tstep, flow%time, stat%stpval, &
                            sites%dof_site, io, msd_data, files, comm)
           End If
-        If (rsdc%lrsd) Call rsd_write(flow%restart_key, flow%step, thermo%tstep, io, rsdc, flow%time, cshell, stat%rsd, cnfig, comm)
-          If (green%samp > 0) Call vaf_write & ! (flow%step->nstph,tstep->tsths,flow%start_time->tmsh)
-            (cnfig, flow%restart_key, nstph, tsths, green, sites, comm)
+          If (rsdc%lrsd) Then
+            Call rsd_write(flow%restart_key, flow%step, thermo%tstep, io, rsdc, &
+                           flow%time, cshell, stat%rsd, cnfig, comm)
+          End If
+          If (green%samp > 0) Then
+            Call vaf_write(cnfig, flow%restart_key, nstph, tsths, green, sites, comm)
+          End If
 
           ! Save restart data in event of system crash
 

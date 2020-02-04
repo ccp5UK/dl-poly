@@ -1,112 +1,115 @@
 Module control
-  Use angles,          Only: angles_type
-  Use bonds,           Only: bonds_type
-  Use comms,           Only: comms_type,&
-                             gcheck
-  Use configuration,   Only: configuration_type
-  Use constants,       Only: pi,&
-                             prsunt,&
-                             tenunt,&
-                             zero_plus
-  Use constraints,     Only: constraints_type
-  Use core_shell,      Only: core_shell_type
-  Use defects,         Only: defects_type
-  Use development,     Only: development_type
-  Use dihedrals,       Only: dihedrals_type
-  Use electrostatic,   Only: ELECTROSTATIC_COULOMB,&
-                             ELECTROSTATIC_COULOMB_FORCE_SHIFT,&
-                             ELECTROSTATIC_COULOMB_REACTION_FIELD,&
-                             ELECTROSTATIC_DDDP,&
-                             ELECTROSTATIC_EWALD,&
-                             ELECTROSTATIC_NULL,&
-                             ELECTROSTATIC_POISSON,&
-                             electrostatic_type
-  Use errors_warnings, Only: error,&
-                             info,&
-                             warning
-  Use ewald,           Only: ewald_type
-  Use filename,        Only: FILE_CONFIG,&
-                             FILE_CONTROL,&
-                             FILE_FIELD,&
-                             FILE_HISTORF,&
-                             FILE_HISTORY,&
-                             FILE_OUTPUT,&
-                             FILE_REVCON,&
-                             FILE_REVIVE,&
-                             FILE_REVOLD,&
-                             FILE_STATS,&
-                             file_type
-  Use flow_control,    Only: RESTART_KEY_CLEAN,&
-                             RESTART_KEY_NOSCALE,&
-                             RESTART_KEY_OLD,&
-                             RESTART_KEY_SCALE,&
-                             flow_type
-  Use greenkubo,       Only: greenkubo_type
-  Use impacts,         Only: impact_type
-  Use inversions,      Only: inversions_type
-  Use io,              Only: &
-                             IO_READ_DIRECT, IO_READ_MASTER, IO_READ_MPIIO, IO_READ_NETCDF, &
-                             IO_WRITE_SORTED_DIRECT, IO_WRITE_SORTED_MASTER, &
-                             IO_WRITE_SORTED_MPIIO, IO_WRITE_SORTED_NETCDF, &
-                             IO_WRITE_UNSORTED_DIRECT, IO_WRITE_UNSORTED_MASTER, &
-                             IO_WRITE_UNSORTED_MPIIO, io_get_parameters, io_nc_compiled, &
-                             io_nc_set_real_precision, io_set_parameters, io_type
-  Use kim,             Only: kim_type
-  Use kinds,           Only: dp,&
-                             sp,&
-                             wi,&
-                             wp
-  Use langevin,        Only: langevin_allocate_arrays
-  Use metal,           Only: metal_type
-  Use minimise,        Only: MIN_DISTANCE,&
-                             MIN_ENERGY,&
-                             MIN_FORCE,&
-                             MIN_NULL,&
-                             minimise_type
-  Use mpole,           Only: POLARISATION_CHARMM,&
-                             POLARISATION_DEFAULT,&
-                             mpole_type
-  Use msd,             Only: msd_type
-  Use neighbours,      Only: neighbours_type
-  Use netcdf_wrap,     Only: netcdf_param
-  Use numerics,        Only: dcell,&
-                             invert,&
-                             seed_type
-  Use parse,           Only: get_line,&
-                             get_word,&
-                             lower_case,&
-                             strip_blanks,&
-                             word_2_real
-  Use plumed,          Only: plumed_type
-  Use pmf,             Only: pmf_type
-  Use poisson,         Only: poisson_type
-  Use rdfs,            Only: rdf_type
-  Use rigid_bodies,    Only: rigid_bodies_type
-  Use rsds,            Only: rsd_type
-  Use statistics,      Only: stats_type
-  Use tersoff,         Only: tersoff_type
-  Use thermostat,      Only: &
-                             CONSTRAINT_NONE, CONSTRAINT_SEMI_ORTHORHOMBIC, &
-                             CONSTRAINT_SURFACE_AREA, CONSTRAINT_SURFACE_TENSION, DPD_FIRST_ORDER, &
-                             DPD_NULL, DPD_SECOND_ORDER, ENS_NPT_BERENDSEN, &
-                             ENS_NPT_BERENDSEN_ANISO, ENS_NPT_LANGEVIN, ENS_NPT_LANGEVIN_ANISO, &
-                             ENS_NPT_MTK, ENS_NPT_MTK_ANISO, ENS_NPT_NOSE_HOOVER, &
-                             ENS_NPT_NOSE_HOOVER_ANISO, ENS_NVE, ENS_NVT_ANDERSON, &
-                             ENS_NVT_BERENDSEN, ENS_NVT_EVANS, ENS_NVT_GENTLE, ENS_NVT_LANGEVIN, &
-                             ENS_NVT_LANGEVIN_INHOMO, ENS_NVT_NOSE_HOOVER, thermostat_type
-  Use timer,           Only: timer_type
-  Use trajectory,      Only: trajectory_type
-  Use ttm,             Only: ttm_type
-  Use vdw,             Only: MIX_FENDER_HASLEY,&
-                             MIX_FUNCTIONAL,&
-                             MIX_HALGREN,&
-                             MIX_HOGERVORST,&
-                             MIX_LORENTZ_BERTHELOT,&
-                             MIX_NULL,&
-                             MIX_TANG_TOENNIES,&
-                             MIX_WALDMAN_HAGLER,&
-                             vdw_type
-  Use z_density,       Only: z_density_type
+  Use angles,               Only: angles_type
+  Use angular_distribution, Only: adf_type
+  Use bonds,                Only: bonds_type
+  Use comms,                Only: comms_type,&
+                                  gcheck
+  Use configuration,        Only: configuration_type
+  Use constants,            Only: pi,&
+                                  prsunt,&
+                                  tenunt,&
+                                  zero_plus
+  Use constraints,          Only: constraints_type
+  Use coord,                Only: coord_type
+  Use core_shell,           Only: core_shell_type
+  Use defects,              Only: defects_type
+  Use development,          Only: development_type
+  Use dihedrals,            Only: dihedrals_type
+  Use electrostatic,        Only: ELECTROSTATIC_COULOMB,&
+                                  ELECTROSTATIC_COULOMB_FORCE_SHIFT,&
+                                  ELECTROSTATIC_COULOMB_REACTION_FIELD,&
+                                  ELECTROSTATIC_DDDP,&
+                                  ELECTROSTATIC_EWALD,&
+                                  ELECTROSTATIC_NULL,&
+                                  ELECTROSTATIC_POISSON,&
+                                  electrostatic_type
+  Use errors_warnings,      Only: error,&
+                                  info,&
+                                  warning
+  Use ewald,                Only: ewald_type
+  Use filename,             Only: FILE_CONFIG,&
+                                  FILE_CONTROL,&
+                                  FILE_FIELD,&
+                                  FILE_HISTORF,&
+                                  FILE_HISTORY,&
+                                  FILE_OUTPUT,&
+                                  FILE_REVCON,&
+                                  FILE_REVIVE,&
+                                  FILE_REVOLD,&
+                                  FILE_STATS,&
+                                  file_type
+  Use flow_control,         Only: RESTART_KEY_CLEAN,&
+                                  RESTART_KEY_NOSCALE,&
+                                  RESTART_KEY_OLD,&
+                                  RESTART_KEY_SCALE,&
+                                  flow_type
+  Use greenkubo,            Only: greenkubo_type
+  Use impacts,              Only: impact_type
+  Use inversions,           Only: inversions_type
+  Use io,                   Only: &
+                                  IO_READ_DIRECT, IO_READ_MASTER, IO_READ_MPIIO, IO_READ_NETCDF, &
+                                  IO_WRITE_SORTED_DIRECT, IO_WRITE_SORTED_MASTER, &
+                                  IO_WRITE_SORTED_MPIIO, IO_WRITE_SORTED_NETCDF, &
+                                  IO_WRITE_UNSORTED_DIRECT, IO_WRITE_UNSORTED_MASTER, &
+                                  IO_WRITE_UNSORTED_MPIIO, io_get_parameters, io_nc_compiled, &
+                                  io_nc_set_real_precision, io_set_parameters, io_type
+  Use kim,                  Only: kim_type
+  Use kinds,                Only: dp,&
+                                  sp,&
+                                  wi,&
+                                  wp
+  Use langevin,             Only: langevin_allocate_arrays
+  Use metal,                Only: metal_type
+  Use minimise,             Only: MIN_DISTANCE,&
+                                  MIN_ENERGY,&
+                                  MIN_FORCE,&
+                                  MIN_NULL,&
+                                  minimise_type
+  Use mpole,                Only: POLARISATION_CHARMM,&
+                                  POLARISATION_DEFAULT,&
+                                  mpole_type
+  Use msd,                  Only: msd_type
+  Use neighbours,           Only: neighbours_type
+  Use netcdf_wrap,          Only: netcdf_param
+  Use numerics,             Only: dcell,&
+                                  invert,&
+                                  seed_type
+  Use parse,                Only: get_line,&
+                                  get_word,&
+                                  lower_case,&
+                                  strip_blanks,&
+                                  word_2_real
+  Use plumed,               Only: plumed_type
+  Use pmf,                  Only: pmf_type
+  Use poisson,              Only: poisson_type
+  Use rdfs,                 Only: rdf_type
+  Use rigid_bodies,         Only: rigid_bodies_type
+  Use rsds,                 Only: rsd_type
+  Use statistics,           Only: stats_type
+  Use tersoff,              Only: tersoff_type
+  Use thermostat,           Only: &
+                                  CONSTRAINT_NONE, CONSTRAINT_SEMI_ORTHORHOMBIC, &
+                                  CONSTRAINT_SURFACE_AREA, CONSTRAINT_SURFACE_TENSION, &
+                                  DPD_FIRST_ORDER, DPD_NULL, DPD_SECOND_ORDER, ENS_NPT_BERENDSEN, &
+                                  ENS_NPT_BERENDSEN_ANISO, ENS_NPT_LANGEVIN, &
+                                  ENS_NPT_LANGEVIN_ANISO, ENS_NPT_MTK, ENS_NPT_MTK_ANISO, &
+                                  ENS_NPT_NOSE_HOOVER, ENS_NPT_NOSE_HOOVER_ANISO, ENS_NVE, &
+                                  ENS_NVT_ANDERSON, ENS_NVT_BERENDSEN, ENS_NVT_EVANS, &
+                                  ENS_NVT_GENTLE, ENS_NVT_LANGEVIN, ENS_NVT_LANGEVIN_INHOMO, &
+                                  ENS_NVT_NOSE_HOOVER, thermostat_type
+  Use timer,                Only: timer_type
+  Use trajectory,           Only: trajectory_type
+  Use ttm,                  Only: ttm_type
+  Use vdw,                  Only: MIX_FENDER_HASLEY,&
+                                  MIX_FUNCTIONAL,&
+                                  MIX_HALGREN,&
+                                  MIX_HOGERVORST,&
+                                  MIX_LORENTZ_BERTHELOT,&
+                                  MIX_NULL,&
+                                  MIX_TANG_TOENNIES,&
+                                  MIX_WALDMAN_HAGLER,&
+                                  vdw_type
+  Use z_density,            Only: z_density_type
 
   Implicit None
 
@@ -123,7 +126,7 @@ Contains
   Subroutine read_control(lfce, impa, ttm, dfcts, rigid, &
                           rsdc, cshell, cons, pmf, stats, thermo, green, devel, plume, msd_data, met, &
                           pois, bond, angle, dihedral, inversion, zdensity, neigh, vdws, &
-                          rdf, minim, mpoles, electro, ewld, seed, traj, files, tmr, config, flow, comm)
+                          rdf, minim, mpoles, electro, ewld, seed, traj, files, tmr, config, flow, crd, adf, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -184,6 +187,8 @@ Contains
     Type(timer_type),         Intent(InOut) :: tmr
     Type(configuration_type), Intent(InOut) :: config
     Type(flow_type),          Intent(InOut) :: flow
+    Type(coord_type),         Intent(InOut) :: crd
+    Type(adf_type),           Intent(InOut) :: adf
     Type(comms_type),         Intent(InOut) :: comm
 
     Character(Len=200) :: record
@@ -507,6 +512,18 @@ Contains
     rsdc%isrsd = 1
     rsdc%rrsd = 0.15_wp
 
+    ! Defauly swith for coordination outputting and defaults for
+    ! (i) step to start, (ii) every step to be collected
+    ! (iii) options for what is collected
+
+    crd%coordon = .false.
+    crd%coordstart = 0
+    crd%coordinterval = 100
+    crd%coordops = 0
+    !Default switch for angular distribution
+    adf%adfon = .false.
+    adf%interval = 100
+    adf%prec = 0.1
     ! default value for data dumping interval
 
     flow%freq_restart = 1000
@@ -2628,8 +2645,24 @@ Contains
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record, word)
         rdf%freq = Abs(Nint(word_2_real(word, 1.0_wp)))
 
-        ! read z-density profile option
+        ! coordination reading from control file
+      Else If (word(1:5) == 'coord') Then
+        crd%coordon = .true.
+        Call get_word(record, word)
+        crd%coordstart = Abs(Nint(word_2_real(word)))
+        Call get_word(record, word)
+        crd%coordinterval = Abs(Nint(word_2_real(word)))
+        Call get_word(record, word)
+        crd%coordops = Abs(Nint(word_2_real(word, 1.0_wp)))
+        ! anugular distribution reading from control file
+      Else If (word(1:3) == 'adf') Then
+        adf%adfon = .true.
+        Call get_word(record, word)
+        adf%interval = Abs(Nint(word_2_real(word)))
+        Call get_word(record, word)
+        adf%prec = Abs(word_2_real(word))
 
+        ! read z-density profile option
       Else If (word(1:4) == 'zden') Then
 
         zdensity%l_collect = .true.

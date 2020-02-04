@@ -87,7 +87,18 @@ Module constants
                                   npdgdt = 29
   Integer, Parameter           :: nvafdt = 30
   ! multipoles file channel number
-  Integer, Parameter           :: nmpldt = 31
+
+  Integer, Parameter :: nmpldt = 31
+
+  ! ICOORD channel number
+  Integer, Parameter :: nicrdt = 32
+
+  ! CCORD channel number
+  Integer, Parameter :: nccrdt = 33
+
+  ! ADF channel number
+  Integer, Parameter :: nchadf = 34
+
   !> +0.0 in working precision
   Real(Kind=wp), Parameter     :: zero_plus = Tiny(1.0_wp)
   !> Nearest number to 0.5, greater than 0.5, in working precision
