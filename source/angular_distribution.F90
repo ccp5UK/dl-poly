@@ -72,7 +72,7 @@ Contains
 
       Do j = 1, crd%adfcoordlist(0, i) - 1
         Do jj = 1 + j, crd%adfcoordlist(0, i)
-          If (config%ltype(j) == config%ltype(jj)) Then
+          If (config%ltype(crd%adfcoordlist(j, i)) == config%ltype(crd%adfcoordlist(jj, i))) Then
             Do ii = 1, 2 * crd%ncoordpairs
               If (adf%astat(-1, ii) == config%ltype(crd%adfcoordlist(j, i)) .and. adf%astat(0, ii) == config%ltype(i)) Then
                 adf%rjk = (config%parts(crd%adfcoordlist(j, i))%xxx - config%parts(crd%adfcoordlist(jj, i))%xxx)**2 &
