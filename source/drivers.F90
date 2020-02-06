@@ -66,8 +66,7 @@ Module drivers
                                   impact_type
   Use inversions,           Only: inversions_forces,&
                                   inversions_type
-  Use io,                   Only: io_type,&
-                                  write_per_part_contribs
+  Use io,                   Only: io_type
   Use kim,                  Only: kim_type
   Use kinds,                Only: wi,&
                                   wp
@@ -143,7 +142,8 @@ Module drivers
                                   statistics_collect,&
                                   statistics_connect_frames,&
                                   statistics_connect_set,&
-                                  stats_type
+                                  stats_type,&
+                                  write_per_part_contribs
   Use stochastic_boundary,  Only: stochastic_boundary_vv
   Use system,               Only: system_revive
   Use temperature,          Only: regauss_temperature,&

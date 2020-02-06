@@ -1986,4 +1986,136 @@ Contains
 
   End Function calculate_heat_flux
 
+  Subroutine write_per_part_contribs(config, comm, energies, stresses, nstep) !, forces
+    !!----------------------------------------------------------------------!
+    !!
+    !! Write out per-particle contributions to energy, force, stress, etc
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins august 2018
+    !!
+    !!----------------------------------------------------------------------!
+#ifdef SERIAL
+    Use mpi_api,       only : mpi_offset_Kind, mpi_mode_wronly, mpi_info_null, mpi_mode_create, mpi_comm_self
+#else
+    Use mpi,       only : mpi_offset_Kind, mpi_mode_wronly, mpi_info_null, mpi_mode_create, mpi_comm_self
+#endif
+    Use io, only : io_type, io_get_parameters, io_set_parameters, io_init, io_open, io_close, &
+      & io_finalize, io_write_sorted_file, io_base_comm_not_set, io_allocation_error, &
+      & io_unknown_write_option, io_unknown_write_level, io_write_sorted_mpiio, io_delete, io_write_batch
+    Use io, only : io_histord, io_restart, io_history
+    Use comms, only : gsync, gsum
+    Use constants, Only : prsunt
+
+    Implicit None
+    Type( configuration_type ),           Intent ( In    )  :: config    !! Atom details
+    Type( comms_type ),                   Intent ( InOut )  :: comm      !! Communicator
+    Real( Kind = wp ), Dimension(1:),     Intent ( In    )  :: energies  !! Per-particle energies
+    ! Real( Kind = wp ), Dimension(:,1:),   Intent ( In    )  :: forces    !!     ""       forces
+    Real( Kind = wp ), Dimension(:,1:), Intent ( In    )  :: stresses  !!     ""       stresses
+    Integer,                              Intent ( In    )  :: nstep     !! Steps since calculation start
+
+
+    Type( io_type )  :: my_io                              !! Use our own IO job for now because passing through will be hell
+
+    Real( Kind = wp ), Dimension(:), allocatable :: dummy !! Don't like this, but quick cheat?
+
+    Integer, Parameter                                     :: record_size = 73 !! default record size (apparently)
+    Integer( Kind = mpi_offset_Kind )                      :: rec_mpi_io
+    Integer                                                :: energy_force_handle !! File handles
+    Integer                                                :: io_write !! Write state
+    Integer                                                :: batsz
+    character(len=record_size)                             :: record
+    character, Dimension(record_size,10)                   :: buffer
+    character                                              :: lf
+    character( len = 40 )                                  :: filename
+    Integer                                                :: i, jj
+    Integer                                                :: ierr
+
+    call gsync(comm)
+
+    ! Force MPIIO write for now
+    io_write = 0
+    ! Call io_get_parameters( user_method_write      = io_write )
+    Call io_get_parameters( my_io, user_buffer_size_write = batsz, user_line_feed = lf )
+
+    ! Write current time-step to character string
+    allocate(dummy(config%natms), stat=ierr)
+    if (ierr .ne. 0) call error_alloc('dummy','write_per_part_contribs')
+    dummy = 0.0_wp
+
+    write(filename,'("PPCONT",("_",i0))') nstep
+
+    call io_init( my_io, record_size )
+
+    rec_mpi_io = int(0,mpi_offset_Kind)
+    jj=0
+    if (comm%idnode == 0) then
+
+      call io_set_parameters( my_io, user_comm = mpi_comm_self )
+      call io_delete( my_io, filename, comm ) ! sort existence issues
+      call io_open( my_io, io_write, mpi_comm_self, trim(filename), mpi_mode_wronly + mpi_mode_create, energy_force_handle )
+
+      jj=jj+1
+      Write(record, Fmt='(a72,a1)') "Energy and force contributions on a per-particle basis",lf
+      buffer(:,jj) = [(record(i:i),i=1,record_size)]
+      Write(record, Fmt='(a72,a1)') config%cfgname(1:72),lf
+      buffer(:,jj) = [(record(i:i),i=1,record_size)]
+      jj=jj+1
+      Write(record, Fmt='(3i10,42X,a1)') config%imcon,config%megatm,nstep,lf
+      buffer(:,jj) = [(record(i:i),i=1,record_size)]
+
+      If (config%imcon > 0) Then
+        Do i = 0, 2
+          jj=jj+1
+          Write(record, Fmt='(3f20.10,a12,a1)') &
+            config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+          buffer(:,jj) = [(record(i:i),i=1,record_size)]
+        End Do
+      End If
+
+      call io_write_batch( my_io, energy_force_handle, rec_mpi_io, jj, buffer )
+
+      Call io_close( my_io, energy_force_handle )
+
+    end if
+
+    call gsync(comm)
+
+    call io_set_parameters( my_io, user_comm = comm%comm )
+    call io_open( my_io, io_write, comm%comm, trim(filename), mpi_mode_wronly, energy_force_handle ) ! Io sorted mpiio, per-particle contrib
+
+    rec_mpi_io = int(jj,mpi_offset_Kind)
+    ! Only write E&F (r/v in write_sorted...) hence 1
+    ! Need to skip 0th element (accumulator/total)
+    call io_write_sorted_file( my_io, energy_force_handle, 2, io_history, rec_mpi_io, config%natms,      &
+      config%ltg, config%atmnam, dummy, dummy, energies(1:config%natms)/engunit, &
+      & stresses(1,1:config%natms) * prsunt, stresses(2,1:config%natms) * prsunt, stresses(3,1:config%natms) * prsunt, &
+      & stresses(4,1:config%natms) * prsunt, stresses(5,1:config%natms) * prsunt, stresses(6,1:config%natms) * prsunt, &
+      & stresses(7,1:config%natms) * prsunt, stresses(8,1:config%natms) * prsunt, stresses(9,1:config%natms) * prsunt, ierr)
+      ! forces(1,1:config%natms), forces(2,1:config%natms), forces(3,1:config%natms), &
+
+    select case( ierr )
+    case ( 0 )
+      continue
+    case( io_base_comm_not_set )
+      call error( 1050 )
+    case( io_allocation_error )
+      call error( 1053 )
+    case( io_unknown_write_option )
+      call error( 1056 )
+    case( io_unknown_write_level )
+      call error( 1059 )
+    end select
+    call io_close( my_io, energy_force_handle )
+
+    call gsync(comm)
+
+    call io_finalize(my_io)
+
+    deallocate(dummy, stat=ierr)
+    if ( ierr > 0 ) call error_dealloc('dummy','write_per_part_contribs')
+
+  end subroutine write_per_part_contribs
+
 End Module statistics

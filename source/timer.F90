@@ -675,14 +675,14 @@ Contains
 
       If (timer_in%proc_id == 0) Then
         Do i = 1, Size(message)
-          Write (timer_in%out_unit, *) message(i)
+          Write (timer_in%out_unit, *) Trim(message(i))
         End Do
       End If
 
     Else
 
       Do i = 1, Size(message)
-        Write (0, *) message(i)
+        Write (0, *) Trim(message(i))
       End Do
 
     End If
@@ -704,12 +704,12 @@ Contains
     If (Present(timer_in)) Then
 
       If (timer_in%proc_id == 0) Then
-        Write (timer_in%out_unit, *) message
+        Write (timer_in%out_unit, *) Trim(message)
       End If
 
     Else
 
-      Write (0, *) message
+      Write (0, *) Trim(message)
 
     End If
 
