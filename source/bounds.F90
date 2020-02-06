@@ -19,8 +19,8 @@ Module bounds
   Use dihedrals,       Only: dihedrals_type
   Use domains,         Only: domains_type,&
                              map_domains
-  Use electrostatic,   Only: electrostatic_type,&
-                             ELECTROSTATIC_NULL
+  Use electrostatic,   Only: ELECTROSTATIC_NULL,&
+                             electrostatic_type
   Use errors_warnings, Only: error,&
                              info,&
                              warning
@@ -137,7 +137,7 @@ Contains
     Type(flow_type),           Intent(InOut) :: flow
     Type(comms_type),          Intent(InOut) :: comm
 
-    Character(Len=256) :: message, messages(3)
+    Character(Len=256) :: message
     Integer            :: i, ilx, ily, ilz, megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, &
                           mtshl, mtteth, qlx, qly, qlz
     Integer(Kind=wi)   :: mxgrid
@@ -442,8 +442,8 @@ Contains
     inversion%bin_tab = Merge(inversion%bin_tab, Min(inversion%bin_tab, Nint(180.0_wp / delth_max) + 4), inversion%bin_tab < 0)
 
     ! maximum number of grid points for electrostatics
-    call electro%init_erf_tables( Merge(-1,Max(1004,Nint(neigh%cutoff/delr_max)+4), &
-      & electro%no_elec .and. .not. ewld%vdw ) )
+    Call electro%init_erf_tables(Merge(-1, Max(1004, Nint(neigh%cutoff / delr_max) + 4), &
+      & electro%no_elec .and. .not. ewld%vdw))
 
     ! maximum number of grid points for vdw interactions - overwritten
 
@@ -460,7 +460,7 @@ Contains
     ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
     mxgrid = Max(mxgrid, bond%bin_tab, angle%bin_tab, dihedral%bin_tab, &
-                 inversion%bin_tab, electro%ewald_exclusion_grid, vdws%max_grid, met%maxgrid, tersoffs%max_grid)
+                 inversion%bin_tab, electro%erfc%nsamples, vdws%max_grid, met%maxgrid, tersoffs%max_grid)
 
     !!! INTER-LIKE POTENTIAL PARAMETERS !!!
 
@@ -687,16 +687,16 @@ Contains
     Write (message, '(a,3i6)') "link-cell decomposition 1 (x,y,z): ", ilx, ily, ilz
     Call info(message, .true.)
 
-    tol=Min(0.05_wp,0.005_wp*neigh%cutoff)                                        ! tolerance
-    if (ewld%active) then ! 2% (w/ SPME) or 4% (w/ PS)
+    tol = Min(0.05_wp, 0.005_wp * neigh%cutoff) ! tolerance
+    If (ewld%active) Then ! 2% (w/ SPME) or 4% (w/ PS)
       test = 0.02_wp
-    else if (pois%active) then
+    Else If (pois%active) Then
       test = 0.04_wp
-    else
+    Else
       test = 0.0_wp
-    end if
+    End If
 
-    cut=Min(domain%nx_recip*celprp(7),domain%ny_recip*celprp(8),domain%nz_recip*celprp(9))-1.0e-6_wp ! domain size
+    cut = Min(domain%nx_recip * celprp(7), domain%ny_recip * celprp(8), domain%nz_recip * celprp(9)) - 1.0e-6_wp ! domain size
 
     If (ilx * ily * ilz == 0) Then
       If (devel%l_trm) Then ! we are prepared to exit gracefully(-:
@@ -818,51 +818,57 @@ Contains
     ! that is not on the immediate neighbouring nodes in negative
     ! directions but beyond them (which may mean self-halo in some cases)
 
-    if (ewld%active) then
-        ewld%kspace%k_vec_dim(1) = ewld%kspace%k_vec_dim_cont(1)
-        ewld%kspace%k_vec_dim(2) = ewld%kspace%k_vec_dim_cont(2)
-        ewld%kspace%k_vec_dim(3) = ewld%kspace%k_vec_dim_cont(3)
-        qlx = ilx
-        qly = ily
-        qlz = ilz
+    If ((ewld%active .or. pois%active) .and. devel%l_trm) Then
+      qlx = ilx
+      qly = ily
+      qlz = ilz
+      Write (message, '(a)') "SPME partitioning aborted, early run termination is due"
+      Call warning(message, .true.)
+    Else If (ewld%active) Then
+      ewld%kspace%k_vec_dim(1) = ewld%kspace%k_vec_dim_cont(1)
+      ewld%kspace%k_vec_dim(2) = ewld%kspace%k_vec_dim_cont(2)
+      ewld%kspace%k_vec_dim(3) = ewld%kspace%k_vec_dim_cont(3)
+      qlx = ilx
+      qly = ily
+      qlz = ilz
 
-        ! ensure (ewld%kspace%k_vec_dim(1),ewld%kspace%k_vec_dim(2),ewld%kspace%k_vec_dim(3)) consistency between the DD
-        ! processor grid (map_domains is already called) and the grid
-        ! method or comment out adjustments if using ewald_spme_force~
+      ! ensure (ewld%kspace%k_vec_dim(1),ewld%kspace%k_vec_dim(2),ewld%kspace%k_vec_dim(3)) consistency between the DD
+      ! processor grid (map_domains is already called) and the grid
+      ! method or comment out adjustments if using ewald_spme_force~
 
-        Call adjust_kmax( ewld%kspace%k_vec_dim(1), domain%nx )
-        Call adjust_kmax( ewld%kspace%k_vec_dim(2), domain%ny )
-        Call adjust_kmax( ewld%kspace%k_vec_dim(3), domain%nz )
+      Call adjust_kmax(ewld%kspace%k_vec_dim(1), domain%nx)
+      Call adjust_kmax(ewld%kspace%k_vec_dim(2), domain%ny)
+      Call adjust_kmax(ewld%kspace%k_vec_dim(3), domain%nz)
 
-        ! Calculate and check ql.
+      ! Calculate and check ql.
 
-        qlx = Min(qlx , ewld%kspace%k_vec_dim(1)/(ewld%bspline%num_splines*domain%nx))
-        qly = Min(qly , ewld%kspace%k_vec_dim(2)/(ewld%bspline%num_splines*domain%ny))
-        qlz = Min(qlz , ewld%kspace%k_vec_dim(3)/(ewld%bspline%num_splines*domain%nz))
+      qlx = Min(qlx, ewld%kspace%k_vec_dim(1) / (ewld%bspline%num_splines * domain%nx))
+      qly = Min(qly, ewld%kspace%k_vec_dim(2) / (ewld%bspline%num_splines * domain%ny))
+      qlz = Min(qlz, ewld%kspace%k_vec_dim(3) / (ewld%bspline%num_splines * domain%nz))
 
-        If (.not.neigh%unconditional_update) Then
-          ewld%bspline%num_spline_pad=ewld%bspline%num_splines
-        Else
-          ewld%bspline%num_spline_pad=&
-            & ewld%bspline%num_splines+Ceiling((neigh%padding*Real(ewld%bspline%num_splines,wp))/neigh%cutoff)
+      If (.not. neigh%unconditional_update) Then
+        ewld%bspline%num_spline_pad = ewld%bspline%num_splines
+      Else
+        ewld%bspline%num_spline_pad =&
+          & ewld%bspline%num_splines + Ceiling((neigh%padding * Real(ewld%bspline%num_splines, wp)) / neigh%cutoff)
 
-          ! Redifine ql.
+        ! Redifine ql.
 
-          qlx = Min(ilx , ewld%kspace%k_vec_dim(1)/(ewld%bspline%num_spline_pad*domain%nx))
-          qly = Min(ily , ewld%kspace%k_vec_dim(2)/(ewld%bspline%num_spline_pad*domain%ny))
-          qlz = Min(ilz , ewld%kspace%k_vec_dim(3)/(ewld%bspline%num_spline_pad*domain%nz))
-        End If
+        qlx = Min(ilx, ewld%kspace%k_vec_dim(1) / (ewld%bspline%num_spline_pad * domain%nx))
+        qly = Min(ily, ewld%kspace%k_vec_dim(2) / (ewld%bspline%num_spline_pad * domain%ny))
+        qlz = Min(ilz, ewld%kspace%k_vec_dim(3) / (ewld%bspline%num_spline_pad * domain%nz))
+      End If
 
-        ! Hard luck, giving up
+      ! Hard luck, giving up
 
-        If (qlx*qly*qlz == 0) Then
-          Write(message,'(a,i6,a,2(i0,","),i0,a)') &
-            & 'SPME driven limit on largest possible decomposition:',  &
-            & product(ewld%kspace%k_vec_dim/ewld%bspline%num_spline_pad), &
-            & ' nodes/domains (', ewld%kspace%k_vec_dim/ewld%bspline%num_spline_pad,')'
-          Call info(message)
-          Call error(308)
-        End If
+      If (qlx * qly * qlz == 0) Then
+        Write (message, '(a,i6,a,2(i0,","),i0,a)') &
+          & 'SPME driven limit on largest possible decomposition:',  &
+          & Product(ewld%kspace%k_vec_dim / ewld%bspline%num_spline_pad), &
+          & ' nodes/domains (', ewld%kspace%k_vec_dim / ewld%bspline%num_spline_pad, ')'
+        Call info(message)
+        Call error(308)
+      End If
 
       qlx = ilx
       qly = ily
@@ -872,53 +878,40 @@ Contains
       ! processor grid (map_domains is already called) and the grid
       ! method or comment out adjustments if using ewald_spme_force~
 
-    Else if (pois%active) Then
-      Call adjust_kmax( pois%grid_dimensions(1), domain%nx )
-      Call adjust_kmax( pois%grid_dimensions(2), domain%ny )
-      Call adjust_kmax( pois%grid_dimensions(3), domain%nz )
+    Else If (pois%active) Then
+      Call adjust_kmax(pois%grid_dimensions(1), domain%nx)
+      Call adjust_kmax(pois%grid_dimensions(2), domain%ny)
+      Call adjust_kmax(pois%grid_dimensions(3), domain%nz)
 
       ! Calculate and check ql.
 
-      qlx = Min(qlx , pois%grid_dimensions(1)/(pois%halo_size*domain%nx))
-      qly = Min(qly , pois%grid_dimensions(2)/(pois%halo_size*domain%ny))
-      qlz = Min(qlz , pois%grid_dimensions(3)/(pois%halo_size*domain%nz))
+      qlx = Min(qlx, pois%grid_dimensions(1) / (pois%halo_size * domain%nx))
+      qly = Min(qly, pois%grid_dimensions(2) / (pois%halo_size * domain%ny))
+      qlz = Min(qlz, pois%grid_dimensions(3) / (pois%halo_size * domain%nz))
 
-      If (.not.neigh%unconditional_update) Then
-        pois%halo_size1=pois%halo_size
+      If (.not. neigh%unconditional_update) Then
+        pois%halo_size1 = pois%halo_size
       Else
-        pois%halo_size1=&
-          & pois%halo_size+Ceiling((neigh%padding*Real(pois%halo_size,wp))/neigh%cutoff)
+        pois%halo_size1 =&
+          & pois%halo_size + Ceiling((neigh%padding * Real(pois%halo_size, wp)) / neigh%cutoff)
 
         ! Redefine ql.
 
-        qlx = Min(ilx , pois%grid_dimensions(1)/(pois%halo_size1*domain%nx))
-        qly = Min(ily , pois%grid_dimensions(2)/(pois%halo_size1*domain%ny))
-        qlz = Min(ilz , pois%grid_dimensions(3)/(pois%halo_size1*domain%nz))
+        qlx = Min(ilx, pois%grid_dimensions(1) / (pois%halo_size1 * domain%nx))
+        qly = Min(ily, pois%grid_dimensions(2) / (pois%halo_size1 * domain%ny))
+        qlz = Min(ilz, pois%grid_dimensions(3) / (pois%halo_size1 * domain%nz))
       End If
 
       ! Hard luck, giving up after trying once more
 
-      If (qlx*qly*qlz == 0) Then
-        Write(message,'(a,i6,a,2(i0,","),i0,a)') &
+      If (qlx * qly * qlz == 0) Then
+        Write (message, '(a,i6,a,2(i0,","),i0,a)') &
           & 'Pois driven limit on largest possible decomposition:',  &
-          & product(pois%grid_dimensions/pois%halo_size1), &
-          & ' nodes/domains (', pois%grid_dimensions/pois%halo_size1,')'
+          & Product(pois%grid_dimensions / pois%halo_size1), &
+          & ' nodes/domains (', pois%grid_dimensions / pois%halo_size1, ')'
         Call info(message)
         Call error(308)
       End If
-    End If
-
-        If (devel%l_trm) Then
-          qlx = ilx
-          qly = ily
-          qlz = ilz
-          Write (message, '(a)') "SPME partitioning aborted, early run termination is due"
-          Call warning(message, .true.)
-        Else
-          Call error(308)
-        End If
-      End If
-
     End If
 
     ! decide on MXATMS while reading CONFIG and scan particle density
@@ -994,9 +987,12 @@ Contains
 
     If (.not. electro%no_elec) Then
       If (electro%key /= ELECTROSTATIC_NULL) Then
-        xhi = Max(1.0_wp, Real(ewld%bspline1, wp) / (Real(ewld%fft_dim_a, wp) / Real(domain%nx, wp) / Real(ilx, wp))) + 1.0_wp
-        yhi = Max(1.0_wp, Real(ewld%bspline1, wp) / (Real(ewld%fft_dim_b, wp) / Real(domain%ny, wp) / Real(ily, wp))) + 1.0_wp
-        zhi = Max(1.0_wp, Real(ewld%bspline1, wp) / (Real(ewld%fft_dim_c, wp) / Real(domain%nz, wp) / Real(ilz, wp))) + 1.0_wp
+        xhi = Max(1.0_wp, Real(ewld%bspline%num_spline_pad, wp) / (Real(ewld%kspace%k_vec_dim(1), wp) &
+          & / Real(domain%nx, wp) / Real(ilx, wp))) + 1.0_wp
+        yhi = Max(1.0_wp, Real(ewld%bspline%num_spline_pad, wp) / (Real(ewld%kspace%k_vec_dim(2), wp) &
+          & / Real(domain%ny, wp) / Real(ily, wp))) + 1.0_wp
+        zhi = Max(1.0_wp, Real(ewld%bspline%num_spline_pad, wp) / (Real(ewld%kspace%k_vec_dim(3), wp) &
+          & / Real(domain%nz, wp) / Real(ilz, wp))) + 1.0_wp
         If (xhi * yhi * zhi > 8.0_wp) Then
           vcell = config%mxatdm / Real(ilx * ily * ilz, wp)
           xhi = xhi + Real(ilx, wp)
@@ -1056,30 +1052,28 @@ Contains
 
     dens0 = Real(Max(ilx - 1, 1) * Max(ily - 1, 1) * Max(ilz - 1, 1), wp) / Real(Min(ilx, ily, ilz), wp) / Real(ilx * ily * ilz, wp)
 
-
-    if (pois%active) then
-      config%mxbuff = Max(domain%mxbfdp, 35*domain%mxbfxp, 4*domain%mxbfsh, &
-        2*(pois%grid_dimensions(1)/domain%nx)* &
-        & (pois%grid_dimensions(2)/domain%ny)* &
-        & (pois%grid_dimensions(3)/domain%nz)+10, &
-        stats%mxnstk*stats%mxstak, mxgrid, rdf%max_grid,  &
-        rigid%max_list*Max(rigid%max_rigid,rigid%max_type),  &
-        rigid%max_type*(4+3*rigid%max_list), 10000 )
-    else if (ewld%active) then
-      config%mxbuff = Max(domain%mxbfdp, 35*domain%mxbfxp, 4*domain%mxbfsh, &
-        2*(ewld%kspace%k_vec_dim(1)/domain%nx)* &
-        & (ewld%kspace%k_vec_dim(2)/domain%ny)* &
-        & (ewld%kspace%k_vec_dim(3)/domain%nz)+10, &
-        stats%mxnstk*stats%mxstak, mxgrid, rdf%max_grid,  &
-        rigid%max_list*Max(rigid%max_rigid,rigid%max_type),  &
-        rigid%max_type*(4+3*rigid%max_list), 10000 )
-    else
-      config%mxbuff = Max(domain%mxbfdp, 35*domain%mxbfxp, 4*domain%mxbfsh, &
-        stats%mxnstk*stats%mxstak, mxgrid, rdf%max_grid,  &
-        rigid%max_list*Max(rigid%max_rigid,rigid%max_type),  &
-        rigid%max_type*(4+3*rigid%max_list), 10000 )
-    end if
-
+    If (pois%active) Then
+      config%mxbuff = Max(domain%mxbfdp, 35 * domain%mxbfxp, 4 * domain%mxbfsh, &
+        2 * (pois%grid_dimensions(1) / domain%nx) * &
+        & (pois%grid_dimensions(2) / domain%ny) * &
+        & (pois%grid_dimensions(3) / domain%nz) + 10, &
+        stats%mxnstk * stats%mxstak, mxgrid, rdf%max_grid, &
+        rigid%max_list * Max(rigid%max_rigid, rigid%max_type), &
+        rigid%max_type * (4 + 3 * rigid%max_list), 10000)
+    Else If (ewld%active) Then
+      config%mxbuff = Max(domain%mxbfdp, 35 * domain%mxbfxp, 4 * domain%mxbfsh, &
+        2 * (ewld%kspace%k_vec_dim(1) / domain%nx) * &
+        & (ewld%kspace%k_vec_dim(2) / domain%ny) * &
+        & (ewld%kspace%k_vec_dim(3) / domain%nz) + 10, &
+        stats%mxnstk * stats%mxstak, mxgrid, rdf%max_grid, &
+        rigid%max_list * Max(rigid%max_rigid, rigid%max_type), &
+        rigid%max_type * (4 + 3 * rigid%max_list), 10000)
+    Else
+      config%mxbuff = Max(domain%mxbfdp, 35 * domain%mxbfxp, 4 * domain%mxbfsh, &
+                          stats%mxnstk * stats%mxstak, mxgrid, rdf%max_grid, &
+                          rigid%max_list * Max(rigid%max_rigid, rigid%max_type), &
+                          rigid%max_type * (4 + 3 * rigid%max_list), 10000)
+    End If
 
     domain%mxbfsh = Merge(2, 0, comm%mxnode > 1) * &
                     Nint(Real(Max(2 * cshell%mxshl, 2 * cons%mxcons, rigid%max_list * rigid%max_rigid), wp) * dens0)
@@ -1087,7 +1081,7 @@ Contains
     ! largest principal buffer
 
     config%mxbuff = Max(domain%mxbfdp, 35 * domain%mxbfxp, 4 * domain%mxbfsh, &
-                        2 * (ewld%fft_dim_a / domain%nx) * (ewld%fft_dim_b / domain%ny) * (ewld%fft_dim_c / domain%nz) + 10, &
+                        2 * Product(ewld%kspace%k_vec_dim/[domain%nx, domain%ny, domain%nz]) + 10, &
                         stats%mxnstk * stats%mxstak, mxgrid, rdf%max_grid, &
                         rigid%max_list * Max(rigid%max_rigid, rigid%max_type), &
                         rigid%max_type * (4 + 3 * rigid%max_list), 10000)

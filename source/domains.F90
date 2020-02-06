@@ -56,7 +56,7 @@ Module domains
     Integer(Kind=wi), Public :: mxbfdp, mxbfxp, mxbfsh
   End Type domains_type
 
-  Public :: map_domains,idcube, exchange_grid
+  Public :: map_domains, idcube, exchange_grid
 
 Contains
 
@@ -357,10 +357,9 @@ Contains
     id = i + domain%nx * (j + domain%ny * k)
   End Function idcube
 
-
-  Subroutine exchange_grid( ixb , ixt , iyb , iyt , izb , izt , qqc_local , &
-    ixdb, iydb, izdb, ixdt, iydt, izdt, qqc_domain, &
-    domain, comm)
+  Subroutine exchange_grid(ixb, ixt, iyb, iyt, izb, izt, qqc_local, &
+                           ixdb, iydb, izdb, ixdt, iydt, izdt, qqc_domain, &
+                           domain, comm)
 
     !!-----------------------------------------------------------------------
     !!
@@ -380,19 +379,19 @@ Contains
     !! author    - i.j.bush & i.t.todorov june 2014
     !! modified  - j.s.wilkins       september 2018
     !!-----------------------------------------------------------------------
-    Use comms,           Only : ExchgGrid_tag,comms_type,gsend,gwait,girecv
-    implicit none
-    
-    Integer,            Intent( In    ) :: ixb , iyb , izb
-    Integer,            Intent( In    ) :: ixt , iyt , izt
-    Integer,            Intent( In    ) :: ixdb, iydb, izdb
-    Integer,            Intent( In    ) :: ixdt, iydt, izdt
-    Real( Kind = wp ),  Intent( In    ) :: qqc_local(   ixb:ixt ,  iyb:iyt ,  izb:izt )
-    Real( Kind = wp ),  Intent(   Out ) :: qqc_domain( ixdb:ixdt, iydb:iydt, izdb:izdt )
-    Type( domains_type ), Intent( In    ) :: domain
+    Use comms, Only: ExchgGrid_tag, comms_type, gsend, gwait, girecv
+    Implicit None
+
+    Integer, Intent(In) :: ixb, iyb, izb
+    Integer, Intent(In) :: ixt, iyt, izt
+    Integer, Intent(In) :: ixdb, iydb, izdb
+    Integer, Intent(In) :: ixdt, iydt, izdt
+    Real(Kind=wp), Intent(In) :: qqc_local(ixb:ixt, iyb:iyt, izb:izt)
+    Real(Kind=wp), Intent(Out) :: qqc_domain(ixdb:ixdt, iydb:iydt, izdb:izdt)
+    Type(domains_type), Intent(In) :: domain
     !    Type( ewald_type ), Intent( In    ) :: ewld
-    Type( comms_type ), Intent( InOut ) :: comm
-    Integer :: dxb, dxt, dyb, dyt, dzb, dzt                 !! Difference between upper and lower boundaries in exchange
+    Type(comms_type), Intent(InOut) :: comm
+    Integer :: dxb, dxt, dyb, dyt, dzb, dzt !! Difference between upper and lower boundaries in exchange
 
     Character(len=256) :: message
 
@@ -414,10 +413,10 @@ Contains
     dzt = izdt - izt
 
     ! Could strictly be legal?
-    if (any([dxb,dxt,dyb,dyt,dzb,dzt] < 0)) then
-      write(message,'(a)') "Error: reducing grid size in exchanged_grid"
-      call error(0,message)
-    end if
+    If (Any([dxb, dxt, dyb, dyt, dzb, dzt] < 0)) Then
+      Write (message, '(a)') "Error: reducing grid size in exchanged_grid"
+      Call error(0, message)
+    End If
 
     ! Find length of sides of the domain
 
@@ -427,9 +426,9 @@ Contains
 
     ! Copy over our local data
 
-    qqc_domain( ixb:ixt, iyb:iyt, izb:izt ) = qqc_local
+    qqc_domain(ixb:ixt, iyb:iyt, izb:izt) = qqc_local
 
-    If (any([dxb,dyb,dzb] /= 0)) Then
+    If (Any([dxb, dyb, dzb] /= 0)) Then
       ! If (delspl == 0) Then
 
       ! Note that because of the way the splines work when particles don't
@@ -440,51 +439,51 @@ Contains
 
       ! +X direction face - negative halo
 
-      Call exchange_grid_halo( domain%map(1),                     domain%map(2), &
-        ixt-dxb+1, ixt  ,         iyb, iyt,                    izb, izt, &
-        ixdb        , ixb-1,         iyb, iyt,                    izb, izt )
+      Call exchange_grid_halo(domain%map(1), domain%map(2), &
+                              ixt - dxb + 1, ixt, iyb, iyt, izb, izt, &
+                              ixdb, ixb - 1, iyb, iyt, izb, izt)
 
       ! +Y direction face (including the +X face extension) - negative halo
 
-      Call exchange_grid_halo( domain%map(3),                     domain%map(4), &
-        ixdb, ixt,                   iyt-dyb+1, iyt  ,         izb, izt, &
-        ixdb, ixt,                   iydb        , iyb-1,         izb, izt )
+      Call exchange_grid_halo(domain%map(3), domain%map(4), &
+                              ixdb, ixt, iyt - dyb + 1, iyt, izb, izt, &
+                              ixdb, ixt, iydb, iyb - 1, izb, izt)
 
       ! +Z direction face (including the +Y+X faces extensions) - negative halo
 
-      Call exchange_grid_halo( domain%map(5),                     domain%map(6), &
-        ixdb, ixt,                   iydb, iyt,                   izt-dzb+1, izt, &
-        ixdb, ixt,                   iydb, iyt,                   izdb        , izb-1 )
+      Call exchange_grid_halo(domain%map(5), domain%map(6), &
+                              ixdb, ixt, iydb, iyt, izt - dzb + 1, izt, &
+                              ixdb, ixt, iydb, iyt, izdb, izb - 1)
 
-    end If
+    End If
 
-    If (any([dxt,dyt,dzt] /= 0)) Then
+    If (Any([dxt, dyt, dzt] /= 0)) Then
 
       ! -X direction face - positive halo
 
-      Call exchange_grid_halo( domain%map(2),                     domain%map(1), &
-        ixb          , ixb+dxt-1, iyb, iyt,                    izb, izt, &
-        ixdt-dxt+1, ixdt        , iyb, iyt,                    izb, izt )
+      Call exchange_grid_halo(domain%map(2), domain%map(1), &
+                              ixb, ixb + dxt - 1, iyb, iyt, izb, izt, &
+                              ixdt - dxt + 1, ixdt, iyb, iyt, izb, izt)
 
       ! -Y direction face (including the +&-X faces extensions) - positive halo
 
-      Call exchange_grid_halo( domain%map(4),                     domain%map(3), &
-        ixdb, ixdt,                  iyb          , iyb+dyt-1, izb, izt, &
-        ixdb, ixdt,                  iydt-dyt+1, iydt        , izb, izt )
+      Call exchange_grid_halo(domain%map(4), domain%map(3), &
+                              ixdb, ixdt, iyb, iyb + dyt - 1, izb, izt, &
+                              ixdb, ixdt, iydt - dyt + 1, iydt, izb, izt)
 
       ! -Z direction face (including the +&-Y+&-X faces extensions) - positive halo
 
-      Call exchange_grid_halo( domain%map(6),                     domain%map(5), &
-        ixdb, ixdt,                  iydb, iydt,                  izb          , izb+dzt-1, &
-        ixdb, ixdt,                  iydb, iydt,                  izdt-dzt+1, izdt         )
+      Call exchange_grid_halo(domain%map(6), domain%map(5), &
+                              ixdb, ixdt, iydb, iydt, izb, izb + dzt - 1, &
+                              ixdb, ixdt, iydb, iydt, izdt - dzt + 1, izdt)
 
     End If
 
   Contains
 
-    Subroutine exchange_grid_halo(     from,       to,           &
-      xlb, xlt, ylb, ylt, zlb, zlt, &
-      xdb, xdt, ydb, ydt, zdb, zdt )
+    Subroutine exchange_grid_halo(from, to, &
+                                  xlb, xlt, ylb, ylt, zlb, zlt, &
+                                  xdb, xdt, ydb, ydt, zdb, zdt)
 
       !!-----------------------------------------------------------------------
       !!
@@ -502,18 +501,11 @@ Contains
       !!
       !!-----------------------------------------------------------------------
 
-      Integer, Intent( In    ) :: from, to
-      Integer, Intent( In    ) :: xlb, ylb, zlb
-      Integer, Intent( In    ) :: xlt, ylt, zlt
-      Integer, Intent( In    ) :: xdb, ydb, zdb
-      Integer, Intent( In    ) :: xdt, ydt, zdt
+    Integer, Intent(In   ) :: from, to, xlb, xlt, ylb, ylt, zlb, zlt, xdb, xdt, ydb, ydt, zdb, zdt
 
-      Real( Kind = wp ), Dimension( :, :, : ), Allocatable :: send_buffer
-      Real( Kind = wp ), Dimension( :, :, : ), Allocatable :: recv_buffer
-
-      Integer :: fail(1:2)
-
-      Character ( Len = 256 )  ::  message
+    Character(Len=256)                             :: message
+    Integer                                        :: fail(1:2)
+    Real(Kind=wp), Allocatable, Dimension(:, :, :) :: recv_buffer, send_buffer
 
       ! If the processor to receive FROM is actually ME it means there is
       ! only one processor along this axis (so the processor to send TO is
@@ -523,47 +515,47 @@ Contains
       ! actually copied from the high positive indices to negative ones and
       ! vice-versa.  The Else clause catches this.
 
-      If ( from /= me ) Then
+      If (from /= me) Then
 
         ! Allocate send and receive buffers (of the same size!!!)
         ! so all can be sent and received as one message!!!
 
-        fail=0
-        Allocate ( send_buffer( xlb:xlt, ylb:ylt, zlb:zlt ) , Stat = fail(1) )
-        Allocate ( recv_buffer( xdb:xdt, ydb:ydt, zdb:zdt ) , Stat = fail(2) )
+        fail = 0
+        Allocate (send_buffer(xlb:xlt, ylb:ylt, zlb:zlt), Stat=fail(1))
+        Allocate (recv_buffer(xdb:xdt, ydb:ydt, zdb:zdt), Stat=fail(2))
         If (Any(fail > 0)) Then
-          Write(message,'(a)') 'exchange_grid_halo allocation failure'
-          Call error(0,message)
+          Write (message, '(a)') 'exchange_grid_halo allocation failure'
+          Call error(0, message)
         End If
 
         ! Copy the data to be sent
 
-        send_buffer = qqc_domain( xlb:xlt, ylb:ylt, zlb:zlt )
+        send_buffer = qqc_domain(xlb:xlt, ylb:ylt, zlb:zlt)
 
         ! Exchange the data
 
-        Call girecv(comm,recv_buffer(:,:,:),from,ExchgGrid_tag)
-        Call gsend(comm,send_buffer(:,:,:),to,ExchgGrid_tag)
+        Call girecv(comm, recv_buffer(:, :, :), from, ExchgGrid_tag)
+        Call gsend(comm, send_buffer(:, :, :), to, ExchgGrid_tag)
         Call gwait(comm)
 
         ! Copy the received data into the domain halo
 
-        qqc_domain( xdb:xdt, ydb:ydt, zdb:zdt ) = recv_buffer
+        qqc_domain(xdb:xdt, ydb:ydt, zdb:zdt) = recv_buffer
 
         ! And, as my mum told me, leave things as we found them
 
-        Deallocate ( recv_buffer , Stat = fail(1) )
-        Deallocate ( send_buffer , Stat = fail(2) )
+        Deallocate (recv_buffer, Stat=fail(1))
+        Deallocate (send_buffer, Stat=fail(2))
         If (Any(fail > 0)) Then
-          Write(message,'(a)') 'exchange_grid_halo deallocation failure'
-          Call error(0,message)
+          Write (message, '(a)') 'exchange_grid_halo deallocation failure'
+          Call error(0, message)
         End If
 
       Else
 
         ! Simple on node copy - as sizes are the same as 3D shapes
 
-        qqc_domain( xdb:xdt, ydb:ydt, zdb:zdt ) = qqc_domain( xlb:xlt, ylb:ylt, zlb:zlt )
+        qqc_domain(xdb:xdt, ydb:ydt, zdb:zdt) = qqc_domain(xlb:xlt, ylb:ylt, zlb:zlt)
 
       End If
 

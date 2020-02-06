@@ -15,12 +15,12 @@ Module comms
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds,    Only: dp,&
-                      qp,&
-                      si,&
-                      sp,&
-                      wi,&
-                      wp
+  Use kinds, Only: dp, &
+    qp, &
+    si, &
+    sp, &
+    wi, &
+    wp
   Use particle, Only: corePart
 
   Use, Intrinsic :: iso_fortran_env, Only: CHARACTER_STORAGE_SIZE

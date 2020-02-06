@@ -1,44 +1,5 @@
 Module numerics
-<<<<<<< HEAD
   !------------------------ THIS IS NUMERIC_CONTAINER ---------------------!
-=======
-  Use comms,           Only: comms_type
-  Use constants,       Only: epsilon_wp,&
-                             half_minus,&
-                             rt2,&
-                             rt3,&
-                             sqrpi,&
-                             zero_plus
-  Use errors_warnings, Only: error
-  Use kinds,           Only: li,&
-                             wi,&
-                             wp
-  Use particle,        Only: corePart
-
-  Implicit None
-  Private
-
-  !> Random seed type
-  Type, Public :: seed_type
-    Private
-  
-    !> Flag indicating whether the seed has been initialised
-    Logical, Public          :: defined = .false.
-    !> The seed
-    Integer(Kind=wi), Public :: seed(1:3)
-    !> state variables for uni random number generator. In long run one wants to move to a better random number generaot
-    Logical                  :: newjob = .true.
-    Logical                  :: newjob_bm = .true.
-    Integer                  :: ir, jr
-    Real(Kind=wp)            :: c, cd, cm, u(1:97)
-  
-  Contains
-    Private
-    Procedure, Public :: init => init_seed
-  End Type seed_type
-
-  !!!!!!!!!!!!!!!!!!!!!!!! THIS IS NUMERIC_CONTAINER !!!!!!!!!!!!!!!!!!!!!
->>>>>>> origin/devel
   !
   ! Function uni - two seeded random number generator
   !
@@ -117,11 +78,20 @@ Module numerics
   ! derivatives
   !
   !------------------------------------------------------------------------!
-  Use kinds, Only : wp,wi,li
-  Use errors_warnings, Only : error, error_alloc, error_dealloc
-  Use comms, Only : comms_type
-  Use constants, Only : rt3,zero_plus,sqrpi,rt2,half_minus,epsilon_wp
-  Use particle, Only: corePart
+  Use comms,           Only: comms_type
+  Use constants,       Only: epsilon_wp,&
+                             half_minus,&
+                             rt2,&
+                             rt3,&
+                             sqrpi,&
+                             zero_plus
+  Use errors_warnings, Only: error,&
+                             error_alloc,&
+                             error_dealloc
+  Use kinds,           Only: li,&
+                             wi,&
+                             wp
+  Use particle,        Only: corePart
 
   Implicit None
   Private
@@ -133,13 +103,13 @@ Module numerics
     !> Flag indicating whether the seed has been initialised
     Logical, Public :: defined = .false.
     !> The seed
-    Integer( Kind = wi ), Public :: seed(1:3)
+    Integer(Kind=wi), Public :: seed(1:3)
 
     !> state variables for uni random number generator. In long run one wants to move to a better random number generaot
     Logical :: newjob = .true.
     Logical :: newjob_bm = .true.
-    Integer :: ir,jr
-    Real( Kind = wp ) :: c,cd,cm,u(1:97)
+    Integer :: ir, jr
+    Real(Kind=wp) :: c, cd, cm, u(1:97)
   Contains
     Private
     Procedure, Public :: init => init_seed
@@ -149,19 +119,19 @@ Module numerics
     !> Interpolation table for use with three_p_interp
     Private
 
-    Real( Kind = wp ), Dimension(:), Allocatable, Public :: table
-    Real( Kind = wp ),                            Public :: end_sample
-    Real( Kind = wp )                                    :: spacing
-    Real( Kind = wp )                                    :: recip_spacing
-    Integer,                                      Public :: nsamples
-    Logical,                                      Public :: initialised
+    Real(Kind=wp), Dimension(:), Allocatable, Public :: table
+    Real(Kind=wp), Public :: end_sample
+    Real(Kind=wp)                                    :: spacing
+    Real(Kind=wp)                                    :: recip_spacing
+    Integer, Public :: nsamples
+    Logical, Public :: initialised
   Contains
     Private
 
     Procedure, Public :: init => init_interp_table
     Procedure, Public :: calc => three_p_interp
     Final :: destroy_interp_table
-  end type interp_table
+  End Type interp_table
 
   Public :: uni
   Public :: sarurnd
@@ -235,31 +205,29 @@ Contains
     !! author    - j.wilkins september 2018
     !!
     !!-----------------------------------------------------------------------
-    Implicit None
 
-    Class( interp_table ),       Intent( InOut ) :: table_in
-    Real( Kind = wp ),           Intent( In    ) :: range
-    Real( Kind = wp ),           External        :: func
+    Class(interp_table), Intent(InOut) :: table_in
+    Real(Kind=wp),       Intent(In   ) :: range
+    Real(Kind=wp), External            :: func
 
-    Real( Kind = wp ) :: x
-    Integer :: i
-    Integer :: fail
+    Integer       :: fail, i
+    Real(Kind=wp) :: x
 
-    if (table_in%initialised) return
+    If (table_in%initialised) Return
 
-    if (table_in%nsamples < 10) call error(0,'Too few samples to generate interpolation in init_interp_table')
-    
-    allocate(table_in%table(table_in%nsamples), stat=fail)
-    if (fail > 0) call error_alloc('table_in%table','init_interp_table')
-    table_in%spacing = range/Real(table_in%nsamples-4,wp)
+    If (table_in%nsamples < 10) Call error(0, 'Too few samples to generate interpolation in init_interp_table')
+
+    Allocate (table_in%table(table_in%nsamples), stat=fail)
+    If (fail > 0) Call error_alloc('table_in%table', 'init_interp_table')
+    table_in%spacing = range / Real(table_in%nsamples - 4, wp)
     table_in%recip_spacing = 1.0_wp / table_in%spacing
 
-    Do i=1,table_in%nsamples
-      x = Real(i,wp)*table_in%spacing
+    Do i = 1, table_in%nsamples
+      x = Real(i, wp) * table_in%spacing
       table_in%table(i) = func(x)
     End Do
 
-    table_in%end_sample = table_in%table(table_in%nsamples-4)
+    table_in%end_sample = table_in%table(table_in%nsamples - 4)
     table_in%initialised = .true.
 
   End Subroutine init_interp_table
@@ -273,30 +241,35 @@ Contains
     !! author    - w.smith & i.t.todorov august 2015
     !! functionalised - j.s.wilkins august 2018
     !!----------------------------------------------------------------------!
-    Implicit None
-    Real( Kind = wp )                 :: three_p_interp
+    Class(interp_table) :: samples
+    Real(Kind=wp)       :: point, three_p_interp
 
-    Class( interp_table )             :: samples              !! Either erfc, erf, erfc_deriv, etc.
-    Real( Kind = wp )                 :: point                !! Point to evaluate
+    Integer                     :: nearest_sample_index
+    Real(Kind=wp)               :: difference
+    Real(Kind=wp), Dimension(2) :: temp
+    Real(Kind=wp), Dimension(3) :: points
 
-    Real( Kind = wp ), Dimension( 2 ) :: temp                 !! Intermediate variables
-    Real( Kind = wp ), Dimension( 3 ) :: points               !! Sample points (assumed evenly spaced)
-    Real( Kind = wp )                 :: difference           !! Difference between closest sample and exact
-    Integer                           :: nearest_sample_index !! Index of closest sample
+!! Either erfc, erf, erfc_deriv, etc.
+!! Point to evaluate
+!! Intermediate variables
+!! Sample points (assumed evenly spaced)
+!! Difference between closest sample and exact
 
-    nearest_sample_index = int(point*samples%recip_spacing)
-    if (nearest_sample_index > samples%nsamples - 2 .or. nearest_sample_index < 0) &
-      & call error(0,'Error - Interpolation beyond table limit in three_p_interp')
+!! Index of closest sample
 
-    difference  = point*samples%recip_spacing - Real(nearest_sample_index,wp)
-    points = samples%table(nearest_sample_index:nearest_sample_index+2)
+    nearest_sample_index = Int(point * samples%recip_spacing)
+    If (nearest_sample_index > samples%nsamples - 2 .or. nearest_sample_index < 0) &
+      & Call error(0, 'Error - Interpolation beyond table limit in three_p_interp')
+
+    difference = point * samples%recip_spacing - Real(nearest_sample_index, wp)
+    points = samples%table(nearest_sample_index:nearest_sample_index + 2)
 
     ! Catch minimum interp
-    if (nearest_sample_index == 0) points(1) = points(1)*point
+    If (nearest_sample_index == 0) points(1) = points(1) * point
 
-    temp(1) = points(1) + (points(2) - points(1))*difference
-    temp(2) = points(2) + (points(3) - points(2))*(difference - 1.0_wp)
-    three_p_interp = (temp(1) + (temp(2)-temp(1))*difference*0.5_wp)
+    temp(1) = points(1) + (points(2) - points(1)) * difference
+    temp(2) = points(2) + (points(3) - points(2)) * (difference - 1.0_wp)
+    three_p_interp = (temp(1) + (temp(2) - temp(1)) * difference * 0.5_wp)
 
   End Function three_p_interp
 
@@ -308,13 +281,14 @@ Contains
     !! author    - j.wilkins august 2019
     !!
     !!-----------------------------------------------------------------------
-    Type( interp_table ),       Intent( InOut ) :: table_in
+    Type(interp_table), Intent(InOut) :: table_in
+
     Integer :: fail
 
-    if (.not. table_in%initialised) return
+    If (.not. table_in%initialised) Return
 
-    deallocate(table_in%table, stat=fail)
-    if (fail > 0) call error_dealloc('table_in%table','init_interp_table')
+    Deallocate (table_in%table, stat=fail)
+    If (fail > 0) Call error_dealloc('table_in%table', 'init_interp_table')
     table_in%spacing = -1.0_wp
     table_in%recip_spacing = -1.0_wp
     table_in%nsamples = 0
@@ -1056,7 +1030,7 @@ Contains
 
   End Subroutine gauss_2
 
-  Function match(n,ind_top,list)
+  Function match(n, ind_top, list)
 
     !!----------------------------------------------------------------------!
     !!
@@ -3516,7 +3490,7 @@ Contains
 
   End Function Factorial
 
-  Pure Function true_factorial(n) result(factorial)
+  Pure Function true_factorial(n) Result(factorial)
     !!----------------------------------------------------------------------!
     !!
     !! Function to determine the factorial (n!)
@@ -3525,25 +3499,26 @@ Contains
     !! author    - j.s.wilkins november 2018
     !!
     !!----------------------------------------------------------------------!
-    use constants, only : gamma_1_2
-    implicit none
-    Real( Kind = wp ) :: factorial
-    Integer, intent( in    ) :: n
-    Integer, parameter :: maxfac = size(gamma_1_2)/2
+    Use constants, Only: gamma_1_2
+    Integer, Intent(In   ) :: n
+    Real(Kind=wp)          :: factorial
+
+    Integer, Parameter :: maxfac = Size(gamma_1_2) / 2
+
     Integer :: i
 
-    if ( n < maxfac ) then
-       factorial = gamma_1_2(2*n)
-    else
-       factorial = gamma_1_2(2*maxfac)
-       do i = maxfac, n
-          factorial = factorial*real(i,wp)
-       end do
-    end if
+    If (n < maxfac) Then
+      factorial = gamma_1_2(2 * n)
+    Else
+      factorial = gamma_1_2(2 * maxfac)
+      Do i = maxfac, n
+        factorial = factorial * Real(i, wp)
+      End Do
+    End If
 
-  end Function true_factorial
+  End Function true_factorial
 
-  Pure Function inv_true_factorial(n) result(factorial)
+  Pure Function inv_true_factorial(n) Result(factorial)
     !!----------------------------------------------------------------------!
     !!
     !! Function to determine the factorial (n!)
@@ -3552,24 +3527,25 @@ Contains
     !! author    - j.s.wilkins november 2018
     !!
     !!----------------------------------------------------------------------!
-    use constants, only : inv_gamma_1_2, gamma_1_2
-    implicit none
-    Real( Kind = wp ) :: factorial
-    Integer, intent( in    ) :: n
-    Integer, parameter :: maxfac = size(inv_gamma_1_2)/2
+    Use constants, Only: inv_gamma_1_2, gamma_1_2
+    Integer, Intent(In   ) :: n
+    Real(Kind=wp)          :: factorial
+
+    Integer, Parameter :: maxfac = Size(inv_gamma_1_2) / 2
+
     Integer :: i
 
-    if ( n < maxfac ) then
-       factorial = inv_gamma_1_2(2*n)
-    else
-       factorial = gamma_1_2(2*maxfac)
-       do i = maxfac, n
-          factorial = factorial*real(i,wp)
-       end do
-       factorial = 1.0_wp/factorial
-    end if
+    If (n < maxfac) Then
+      factorial = inv_gamma_1_2(2 * n)
+    Else
+      factorial = gamma_1_2(2 * maxfac)
+      Do i = maxfac, n
+        factorial = factorial * Real(i, wp)
+      End Do
+      factorial = 1.0_wp / factorial
+    End If
 
-  end Function inv_true_factorial
+  End Function inv_true_factorial
 
   Subroutine factor(n, facs)
 
@@ -3664,25 +3640,20 @@ Contains
     !! based on  - erfcgen
     !!
     !!-----------------------------------------------------------------------
-    implicit none
-    Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
-    Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
-    Real( Kind = wp ), Parameter :: a3 =  1.421413741_wp
-    Real( Kind = wp ), Parameter :: a4 = -1.453152027_wp
-    Real( Kind = wp ), Parameter :: a5 =  1.061405429_wp
-    Real( Kind = wp ), Parameter :: pp =  0.3275911_wp
+    Real(kind=wp), Intent(In   ) :: x
+    Real(kind=wp)                :: erfc
 
-    real( kind = wp ), intent ( in    ) :: x
-    real( kind = wp )                   :: erfc
+    Real(Kind=wp), Parameter :: a1 = 0.254829592_wp, a2 = -0.284496736_wp, a3 = 1.421413741_wp, &
+                                a4 = -1.453152027_wp, a5 = 1.061405429_wp, pp = 0.3275911_wp
 
-    real( kind = wp ) :: tt
+    Real(kind=wp) :: tt
 
-    tt = 1.0_wp/(1.0_wp + pp*x)
-    erfc = tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp(-(x**2))
+    tt = 1.0_wp / (1.0_wp + pp * x)
+    erfc = tt * (a1 + tt * (a2 + tt * (a3 + tt * (a4 + tt * a5)))) * Exp(-(x**2))
 
-  end function calc_erfc
+  End Function calc_erfc
 
-  Pure Function calc_erfc_deriv(x) result(d_erfc)
+  Pure Function calc_erfc_deriv(x) Result(d_erfc)
     !!-----------------------------------------------------------------------
     !!
     !! dl_poly_4 routine for calculating a point on the complementary error function derivative
@@ -3691,18 +3662,15 @@ Contains
     !! based on  - erfcgen
     !!
     !!-----------------------------------------------------------------------
-    use constants, only : rsqrpi
+    Use constants, Only: rsqrpi
+    Real(kind=wp), Intent(In   ) :: x
+    Real(kind=wp)                :: d_erfc
 
-    implicit none
-
-    real( kind = wp ), intent ( in    ) :: x
-    real( kind = wp )                   :: d_erfc
-
-    d_erfc = 2.0_wp*exp(-(x**2))*rsqrpi
+    d_erfc = 2.0_wp * Exp(-(x**2)) * rsqrpi
 
   End Function calc_erfc_deriv
 
-  Pure Function calc_erf(x) result(erf)
+  Pure Function calc_erf(x) Result(erf)
     !!-----------------------------------------------------------------------
     !!
     !! dl_poly_4 routine for calculating a point on the error function
@@ -3711,27 +3679,21 @@ Contains
     !! based on  - erfcgen
     !!
     !!-----------------------------------------------------------------------
-    use constants, only : sqrpi
+    Use constants, Only: sqrpi
+    Real(kind=wp), Intent(In   ) :: x
+    Real(kind=wp)                :: erf
 
-    implicit none
-    Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
-    Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
-    Real( Kind = wp ), Parameter :: a3 =  1.421413741_wp
-    Real( Kind = wp ), Parameter :: a4 = -1.453152027_wp
-    Real( Kind = wp ), Parameter :: a5 =  1.061405429_wp
-    Real( Kind = wp ), Parameter :: pp =  0.3275911_wp
+    Real(Kind=wp), Parameter :: a1 = 0.254829592_wp, a2 = -0.284496736_wp, a3 = 1.421413741_wp, &
+                                a4 = -1.453152027_wp, a5 = 1.061405429_wp, pp = 0.3275911_wp
 
-    real( kind = wp ), intent ( in    ) :: x
-    real( kind = wp )                   :: erf
+    Real(kind=wp) :: tt
 
-    real( kind = wp ) :: tt
-
-    tt = 1.0_wp/(1.0_wp + pp*x)
-    erf = (1.0_wp - tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*Exp(-(x**2)))
+    tt = 1.0_wp / (1.0_wp + pp * x)
+    erf = (1.0_wp - tt * (a1 + tt * (a2 + tt * (a3 + tt * (a4 + tt * a5)))) * Exp(-(x**2)))
 
   End Function calc_erf
 
-  Function calc_erf_deriv(x) result(d_erf)
+  Function calc_erf_deriv(x) Result(d_erf)
     !!-----------------------------------------------------------------------
     !!
     !! dl_poly_4 routine for calculating the derivative of the error function
@@ -3740,64 +3702,65 @@ Contains
     !! based on  - erfcgen
     !!
     !!-----------------------------------------------------------------------
-    use constants, only : rsqrpi
+    Use constants, Only: rsqrpi
+    Real(kind=wp), Intent(In   ) :: x
+    Real(kind=wp)                :: d_erf
 
-    implicit none
-
-    real( kind = wp ), intent ( in    ) :: x
-    real( kind = wp )                   :: d_erf
-
-    d_erf = 2.0_wp*exp(-(x**2))*rsqrpi
+    d_erf = 2.0_wp * Exp(-(x**2)) * rsqrpi
 
   End Function calc_erf_deriv
 
-  function calc_gamma_1_2(x) result(gam)
-    use constants, only : gamma_1_2
-    Integer, Intent( In ) :: x
-    Real( wp ) :: gam
-    Integer :: top
-    Integer :: i
-    !> Number of pre-calculated Gamma in constants
-    Integer, parameter :: maxgam = size(gamma_1_2)
+  Function calc_gamma_1_2(x) Result(gam)
+    Use constants, Only: gamma_1_2
+    Integer, Intent(In   ) :: x
+    Real(wp)               :: gam
 
-    if ( x < 1 )then
-      call error(0,'Invalid gamma')
-    else if ( x <= maxgam) then
+    Integer, Parameter :: maxgam = Size(gamma_1_2)
+
+    Integer :: i, top
+
+!> Number of pre-calculated Gamma in constants
+
+    If (x < 1) Then
+      Call error(0, 'Invalid gamma')
+    Else If (x <= maxgam) Then
       gam = gamma_1_2(x)
-    else
-      top = maxgam - mod(x,2)
+    Else
+      top = maxgam - Mod(x, 2)
       gam = gamma_1_2(top)
-      do i = top, x - 2, 2
-        gam = gam * real(i,wp) * 0.5_wp
-      end do
-    end if
+      Do i = top, x - 2, 2
+        gam = gam * Real(i, wp) * 0.5_wp
+      End Do
+    End If
 
-  end function calc_gamma_1_2
+  End Function calc_gamma_1_2
 
-  function calc_inv_gamma_1_2(x) result(gam)
-    use constants, only : inv_gamma_1_2
-    Integer, Intent( In ) :: x
-    Real( wp ) :: gam
-    Integer :: top
-    Integer :: i
-    !> Number of pre-calculated Gamma in constants
-    Integer, parameter :: maxgam = size(inv_gamma_1_2)
+  Function calc_inv_gamma_1_2(x) Result(gam)
+    Use constants, Only: inv_gamma_1_2
+    Integer, Intent(In   ) :: x
+    Real(wp)               :: gam
 
-    if ( x < 1 )then
-      call error(0,'Invalid gamma')
-    else if ( x <= maxgam  ) then
+    Integer, Parameter :: maxgam = Size(inv_gamma_1_2)
+
+    Integer :: i, top
+
+!> Number of pre-calculated Gamma in constants
+
+    If (x < 1) Then
+      Call error(0, 'Invalid gamma')
+    Else If (x <= maxgam) Then
       gam = inv_gamma_1_2(x)
-    else
-      top = maxgam - mod(x,2)
+    Else
+      top = maxgam - Mod(x, 2)
       gam = inv_gamma_1_2(top)
-      do i = top, x - 2, 2
-        gam = 2.0_wp * gam / real(i,wp)
-      end do
-    end if
+      Do i = top, x - 2, 2
+        gam = 2.0_wp * gam / Real(i, wp)
+      End Do
+    End If
 
-  end function calc_inv_gamma_1_2
+  End Function calc_inv_gamma_1_2
 
-  function calc_exp_int(x) result (ei)
+  Function calc_exp_int(x) Result(ei)
     !!-----------------------------------------------------------------------
     !!
     !! Routine for calculating the exponential integral
@@ -3809,114 +3772,117 @@ Contains
     !! Journal of Graphics, GPU, and Game Tools, 15:3, 183-198
     !! DOI: 10.1080/2151237X.2011.617177
     !!-----------------------------------------------------------------------
-    Real ( kind = wp ), intent ( in    ) :: x
-    Real ( kind = wp )                   :: ei
+    Real(kind=wp), Intent(in) :: x
+    Real(kind=wp)                   :: ei
 
-    Real ( kind = wp ), parameter :: e_m_gamma = 0.57721566490153286_wp
-    Real ( kind = wp ), parameter :: tolerance = 1.0e-8_wp
-    Real ( kind = wp ) :: zero = 0.0_wp
-    integer,            parameter :: max_iter = 100
+    Real(kind=wp), Parameter :: e_m_gamma = 0.57721566490153286_wp
+    Real(kind=wp), Parameter :: tolerance = 1.0e-8_wp
+    Real(kind=wp) :: zero = 0.0_wp
+    Integer, Parameter :: max_iter = 100
 
     ! Constant determined by exp(-x)/x * (1 + 1/x) = huge
-    if ( abs(x) > 701.0_wp ) then
-      ei = exp(x)/x
+    If (Abs(x) > 701.0_wp) Then
+      ei = Exp(x) / x
 
-    else if ( abs(x) < zero_plus ) then
-      ei = -log(zero)
+    Else If (Abs(x) < zero_plus) Then
+      ei = -Log(zero)
 
-    else if ( abs(x) > 2.0_wp - 1.035*log(tolerance) ) then
+    Else If (Abs(x) > 2.0_wp - 1.035 * Log(tolerance)) Then
       ei = ei_asym_ser(x)
 
-    else if ( abs(x) > 1.0_wp .and. x < 0 ) then
+    Else If (Abs(x) > 1.0_wp .and. x < 0) Then
       ei = ei_cont_frac(x)
 
-    else if ( x > 0 ) then
+    Else If (x > 0) Then
       ei = ei_pow_ser(x)
 
-    else
-      call error(0,'Unable to solve exponential integral')
-    end if
+    Else
+      Call error(0, 'Unable to solve exponential integral')
+    End If
 
-  contains
+  Contains
 
-    function ei_cont_frac_for(x) result (ei)
-      real ( kind = wp ), intent( in    ) :: x
-      real ( kind = wp ) :: ei, old
-      real ( kind = wp ) :: a,b,c,d
-      integer :: i
+    Function ei_cont_frac_for(x) Result(ei)
+    Real(kind=wp), Intent(In   ) :: x
+    Real(kind=wp)                :: ei
+
+    Integer       :: i
+    Real(kind=wp) :: a, b, c, d, old
 
       c = 0.0_wp
-      d = 1.0_wp / (1.0_wp - x )
-      ei= d*(-exp(x))
+      d = 1.0_wp / (1.0_wp - x)
+      ei = d * (-Exp(x))
 
-      do i = 1, max_iter
+      Do i = 1, max_iter
         old = ei
-        a = real(2*i,wp) + 1.0_wp - x
-        b = real(i**2,wp)
-        c = 1.0_wp / ( a - b*c )
-        d = 1.0_wp / ( a - b*d )
-        ei = ei * d/c
-        if ( abs(ei - old) < abs(tolerance*ei) ) exit
-      end do
+        a = Real(2 * i, wp) + 1.0_wp - x
+        b = Real(i**2, wp)
+        c = 1.0_wp / (a - b * c)
+        d = 1.0_wp / (a - b * d)
+        ei = ei * d / c
+        If (Abs(ei - old) < Abs(tolerance * ei)) Exit
+      End Do
 
-    end function ei_cont_frac_for
+    End Function ei_cont_frac_for
 
-    function ei_cont_frac(x) result (ei)
+    Function ei_cont_frac(x) Result(ei)
 
-      real ( kind = wp ) :: ei
-      real ( kind = wp ), intent( in    ) :: x
-      integer :: k
+    Real(kind=wp), Intent(In   ) :: x
+    Real(kind=wp)                :: ei
+
+    Integer :: k
 
       ei = 0.0_wp
-      do k = 1, max_iter
-        ei = - k**2 / ( 2.0_wp*k +1.0_wp -x + ei )
-      end do
+      Do k = 1, max_iter
+        ei = -k**2 / (2.0_wp * k + 1.0_wp - x + ei)
+      End Do
 
-      ei = - exp(x) / (1.0_wp - x + ei )
+      ei = -Exp(x) / (1.0_wp - x + ei)
 
-    end function ei_cont_frac
+    End Function ei_cont_frac
 
-    function ei_pow_ser(x) result (ei)
+    Function ei_pow_ser(x) Result(ei)
 
-      real ( kind = wp ) :: ei, old
-      real ( kind = wp ), intent( in    ) :: x
-      real ( kind = wp ) :: k
-      real ( kind = wp ) :: tmp
-      integer :: i
+    Real(kind=wp), Intent(In   ) :: x
+    Real(kind=wp)                :: ei
 
-      ei = e_m_gamma + log(x)
+    Integer       :: i
+    Real(kind=wp) :: k, old, tmp
+
+      ei = e_m_gamma + Log(x)
       tmp = 1.0_wp
-      do i = 1, max_iter
-        k = 1.0_wp/real(i,wp)
+      Do i = 1, max_iter
+        k = 1.0_wp / Real(i, wp)
         tmp = tmp * x * k**2
         old = ei
         ei = ei + tmp
-        if ( ei - old < tolerance ) exit
-      end do
+        If (ei - old < tolerance) Exit
+      End Do
 
-    end function ei_pow_ser
+    End Function ei_pow_ser
 
-    function ei_asym_ser(x) result (ei)
-      real ( kind = wp ) :: ei, old
-      real ( kind = wp ), intent( in    ) :: x
-      real ( kind = wp ) :: tmp
-      integer :: i
+    Function ei_asym_ser(x) Result(ei)
+    Real(kind=wp), Intent(In   ) :: x
+    Real(kind=wp)                :: ei
+
+    Integer       :: i
+    Real(kind=wp) :: old, tmp
 
       ei = 0.0_wp
-      tmp = exp(x)/x
-      do i = 1, floor(x) + 1
+      tmp = Exp(x) / x
+      Do i = 1, Floor(x) + 1
         old = ei
         ei = ei + tmp
-        if ( ei - old < tolerance ) exit
-        tmp = tmp * real(i,wp)/x
-      end do
+        If (ei - old < tolerance) Exit
+        tmp = tmp * Real(i, wp) / x
+      End Do
 
-    end function ei_asym_ser
+    End Function ei_asym_ser
 
-  end function calc_exp_int
+  End Function calc_exp_int
 
-  Pure Function equal_real_wp(a,b) Result(equal)
-    Real(Kind=wp), Intent(In) :: a,b
+  Pure Function equal_real_wp(a, b) Result(equal)
+    Real(Kind=wp), Intent(In) :: a, b
     Logical :: equal
 
     equal = Abs(a - b) < epsilon_wp

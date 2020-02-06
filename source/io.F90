@@ -26,9 +26,10 @@ Module io
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
   Use comms,           Only: comms_type,&
+                             gsync,&
                              wp_mpi
+  Use constants,       Only: prsunt
   Use errors_warnings, Only: error
   Use kinds,           Only: li,&
                              wp
@@ -144,7 +145,7 @@ Module io
 
   End Type file_data
   Type, Public :: io_type
-    
+
     ! The record size
     Integer          :: rec_size = recsz
     ! The record length for FORTRAN write
@@ -5195,6 +5196,130 @@ Contains
     Call netcdf_compiled()
 
   End Subroutine io_nc_compiled
+
+  Subroutine write_per_part_contribs(config, comm, energies, stresses, nstep) !, forces
+    !!----------------------------------------------------------------------!
+    !!
+    !! Write out per-particle contributions to energy, force, stress, etc
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins august 2018
+    !!
+    !!----------------------------------------------------------------------!
+    Type(configuration_type),        Intent(In   ) :: config
+    Type(comms_type),                Intent(InOut) :: comm
+    Real(Kind=wp), Dimension(1:),    Intent(In   ) :: energies
+    Real(Kind=wp), Dimension(:, 1:), Intent(In   ) :: stresses
+    Integer,                         Intent(In   ) :: nstep
+
+    Integer, Parameter :: record_size = 73
+
+    Character                                :: lf
+    Character(len=40)                        :: filename
+    Character(len=record_size)               :: record
+    Character, Dimension(record_size, 10)    :: buffer
+    Integer                                  :: batsz, energy_force_handle, i, ierr, io_write, jj
+    Integer(Kind=mpi_offset_kind)            :: rec_mpi_io
+    Real(Kind=wp), Allocatable, Dimension(:) :: dummy
+    Type(io_type)                            :: my_io
+
+!! Atom details
+!! Communicator
+!! Per-particle energies
+! Real( Kind = wp ), Dimension(:,1:),   Intent ( In    )  :: forces    !!     ""       forces
+!!     ""       stresses
+!! Steps since calculation start
+!! Use our own IO job for now because passing through will be hell
+!! Don't like this, but quick cheat?
+!! default record size (apparently)
+!! File handles
+!! Write state
+
+    Call gsync(comm)
+
+    ! Force MPIIO write for now
+    io_write = 0
+    ! Call io_get_parameters( user_method_write      = io_write )
+    Call io_get_parameters(my_io, user_buffer_size_write=batsz, user_line_feed=lf)
+
+    ! Write current time-step to character string
+    Allocate (dummy(config%natms), stat=ierr)
+    If (ierr .ne. 0) Call error_alloc('dummy', 'write_per_part_contribs')
+    dummy = 0.0_wp
+
+    Write (filename, '("PPCONT",("_",i0))') nstep
+
+    Call io_init(my_io, record_size)
+
+    rec_mpi_io = Int(0, mpi_offset_Kind)
+    jj = 0
+    If (comm%idnode == 0) Then
+
+      Call io_set_parameters(my_io, user_comm=mpi_comm_self)
+      Call io_delete(my_io, filename, comm) ! sort existence issues
+      Call io_open(my_io, io_write, mpi_comm_self, Trim(filename), mpi_mode_wronly + mpi_mode_create, energy_force_handle)
+
+      jj = jj + 1
+      Write (record, Fmt='(a72,a1)') "Energy and force contributions on a per-particle basis", lf
+      buffer(:, jj) = [(record(i:i), i=1, record_size)]
+      Write (record, Fmt='(a72,a1)') config%cfgname(1:72), lf
+      buffer(:, jj) = [(record(i:i), i=1, record_size)]
+      jj = jj + 1
+      Write (record, Fmt='(3i10,42X,a1)') config%imcon, config%megatm, nstep, lf
+      buffer(:, jj) = [(record(i:i), i=1, record_size)]
+
+      If (config%imcon > 0) Then
+        Do i = 0, 2
+          jj = jj + 1
+          Write (record, Fmt='(3f20.10,a12,a1)') &
+            config%cell(1 + i * 3), config%cell(2 + i * 3), config%cell(3 + i * 3), Repeat(' ', 12), lf
+          buffer(:, jj) = [(record(i:i), i=1, record_size)]
+        End Do
+      End If
+
+      Call io_write_batch(my_io, energy_force_handle, rec_mpi_io, jj, buffer)
+
+      Call io_close(my_io, energy_force_handle)
+
+    End If
+
+    Call gsync(comm)
+
+    Call io_set_parameters(my_io, user_comm=comm%comm)
+    Call io_open(my_io, io_write, comm%comm, Trim(filename), mpi_mode_wronly, energy_force_handle) ! Io sorted mpiio, per-particle contrib
+
+    rec_mpi_io = Int(jj, mpi_offset_Kind)
+    ! Only write E&F (r/v in write_sorted...) hence 1
+    ! Need to skip 0th element (accumulator/total)
+    Call io_write_sorted_file(my_io, energy_force_handle, 2, io_history, rec_mpi_io, config%natms, &
+      config%ltg, config%atmnam, dummy, dummy, energies(1:config%natms) / engunit, &
+      & stresses(1, 1:config%natms) * prsunt, stresses(2, 1:config%natms) * prsunt, stresses(3, 1:config%natms) * prsunt, &
+      & stresses(4, 1:config%natms) * prsunt, stresses(5, 1:config%natms) * prsunt, stresses(6, 1:config%natms) * prsunt, &
+      & stresses(7, 1:config%natms) * prsunt, stresses(8, 1:config%natms) * prsunt, stresses(9, 1:config%natms) * prsunt, ierr)
+    ! forces(1,1:config%natms), forces(2,1:config%natms), forces(3,1:config%natms), &
+
+    Select Case (ierr)
+    Case (0)
+      Continue
+    Case (io_base_comm_not_set)
+      Call error(1050)
+    Case (io_allocation_error)
+      Call error(1053)
+    Case (io_unknown_write_option)
+      Call error(1056)
+    Case (io_unknown_write_level)
+      Call error(1059)
+    End Select
+    Call io_close(my_io, energy_force_handle)
+
+    Call gsync(comm)
+
+    Call io_finalize(my_io)
+
+    Deallocate (dummy, stat=ierr)
+    If (ierr > 0) Call error_dealloc('dummy', 'write_per_part_contribs')
+
+  End Subroutine write_per_part_contribs
 
 End Module io
 

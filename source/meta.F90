@@ -338,7 +338,7 @@ Contains
     Call angle%init(config%mxatdm, sites%mxtmls)
     Call dihedral%init(config%mxatdm, sites%mxtmls)
     Call inversion%init(config%mxatms, sites%mxtmls)
-    Call mpoles%init(sites%max_site, neigh%max_exclude, config%mxatdm, ewld%bspline, config%mxatms)
+    Call mpoles%init(sites%max_site, neigh%max_exclude, config%mxatdm, ewld%bspline%num_splines, config%mxatms)
 
     ! ALLOCATE INTER-LIKE INTERACTION ARRAYS
     Call vdws%init()

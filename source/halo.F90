@@ -158,9 +158,9 @@ Contains
     ! used in the halo transport in NEGATIVE DIRECTIONS ONLY!!!
 
     If (electro_key == ELECTROSTATIC_EWALD) Then
-      ecwx=Real(ewld%bspline%num_spline_pad,wp)/Real(ewld%kspace%k_vec_dim(1),wp)
-      ecwy=Real(ewld%bspline%num_spline_pad,wp)/Real(ewld%kspace%k_vec_dim(2),wp)
-      ecwz=Real(ewld%bspline%num_spline_pad,wp)/Real(ewld%kspace%k_vec_dim(3),wp)
+      ecwx = Real(ewld%bspline%num_spline_pad, wp) / Real(ewld%kspace%k_vec_dim(1), wp)
+      ecwy = Real(ewld%bspline%num_spline_pad, wp) / Real(ewld%kspace%k_vec_dim(2), wp)
+      ecwz = Real(ewld%bspline%num_spline_pad, wp) / Real(ewld%kspace%k_vec_dim(3), wp)
 
       ! I.e. take the smaller width in reduced space!!!
 
@@ -182,12 +182,12 @@ Contains
     ! Distance from the + edge of this domain with a possible
     ! extension strip for the one linked cell per domain scenario
 
-    cwx=Nearest( (-0.5_wp-cwx)+Real(domain%idx+1,wp)*domain%nx_recip , -1.0_wp)- &
-      & zero_plus-Merge( cwx*1.0e-10_wp , 0.0_wp , nlx == 1 )
-    cwy=Nearest( (-0.5_wp-cwy)+Real(domain%idy+1,wp)*domain%ny_recip , -1.0_wp)- &
-      & zero_plus-Merge( cwy*1.0e-10_wp , 0.0_wp , nly == 1 )
-    cwz=Nearest( (-0.5_wp-cwz)+Real(domain%idz+1,wp)*domain%nz_recip , -1.0_wp)- &
-      & zero_plus-Merge( cwz*1.0e-10_wp , 0.0_wp , nlz == 1 )
+    cwx = Nearest((-0.5_wp - cwx) + Real(domain%idx + 1, wp) * domain%nx_recip, -1.0_wp) - &
+      & zero_plus - Merge(cwx * 1.0e-10_wp, 0.0_wp, nlx == 1)
+    cwy = Nearest((-0.5_wp - cwy) + Real(domain%idy + 1, wp) * domain%ny_recip, -1.0_wp) - &
+      & zero_plus - Merge(cwy * 1.0e-10_wp, 0.0_wp, nly == 1)
+    cwz = Nearest((-0.5_wp - cwz) + Real(domain%idz + 1, wp) * domain%nz_recip, -1.0_wp) - &
+      & zero_plus - Merge(cwz * 1.0e-10_wp, 0.0_wp, nlz == 1)
 
     ! Get the inverse cell matrix
 

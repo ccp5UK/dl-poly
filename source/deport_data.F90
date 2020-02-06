@@ -21,6 +21,7 @@ Module deport_data
   Use dihedrals,        Only: dihedrals_type
   Use domains,          Only: domains_type
   Use errors_warnings,  Only: error,&
+                              error_alloc,&
                               warning
   Use ewald,            Only: ewald_type
   Use flow_control,     Only: flow_type
@@ -101,12 +102,12 @@ Contains
 
     Character(Len=256)                       :: message
     Integer                                  :: fail(1:3), i, iatm, iblock, ii, imove, ix, iy, iz, &
-                                                j, jangle, jatm, jbonds, jconst, jdihed, jdnode, &
-                                                jinver, jj, jmove, jpmf, jrigid, jshels, jteths, &
-                                                jxyz, k, kangle, katm, kbonds, kconst, kdihed, &
-                                                kdnode, keep, kinver, kk, kmove, kpmf, krigid, &
-                                                kshels, kteths, kx, ky, kz, l, latm, ll, matm, &
-                                                natm, newatm, jcrd
+                                                j, jangle, jatm, jbonds, jconst, jcrd, jdihed, &
+                                                jdnode, jinver, jj, jmove, jpmf, jrigid, jshels, &
+                                                jteths, jxyz, k, kangle, katm, kbonds, kconst, &
+                                                kdihed, kdnode, keep, kinver, kk, kmove, kpmf, &
+                                                krigid, kshels, kteths, kx, ky, kz, l, latm, ll, &
+                                                matm, natm, newatm
     Integer, Allocatable, Dimension(:)       :: i1pmf, i2pmf, ind_off, ind_on, lrgd
     Logical                                  :: check, lex, ley, lez, lsx, lsy, lsz, lwrap, safe, &
                                                 safe1, stay
@@ -1648,11 +1649,11 @@ Contains
     !!           - i.scivetti march-october 2018
     !!
     !!----------------------------------------------------------------------!
-    Integer,            Intent( In    ) :: mdir
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( kim_type ), Intent( InOut ) :: kim_data
-    Type( configuration_type ), Intent( InOut ) :: config
-    Type( comms_type ), Intent( InOut ) :: comm
+    Integer,                  Intent(In   ) :: mdir
+    Type(domains_type),       Intent(In   ) :: domain
+    Type(configuration_type), Intent(InOut) :: config
+    Type(kim_type),           Intent(InOut) :: kim_data
+    Type(comms_type),         Intent(InOut) :: comm
 
     Character(Len=256)                       :: message
     Integer                                  :: fail, i, iadd, iblock, imove, itmp, ix, iy, iz, j, &
@@ -1668,7 +1669,7 @@ Contains
     fail = 0
     limit = iadd * domain%mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
     Allocate (buffer(1:limit), Stat=fail)
-    If (fail > 0) call error_alloc('buffer', 'export_atomic_data')
+    If (fail > 0) Call error_alloc('buffer', 'export_atomic_data')
 
     ! Set buffer limit (half for outgoing data - half for incoming)
 

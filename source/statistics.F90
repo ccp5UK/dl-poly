@@ -37,6 +37,8 @@ Module statistics
   Use currents,        Only: current_type
   Use domains,         Only: domains_type
   Use errors_warnings, Only: error,&
+                             error_alloc,&
+                             error_dealloc,&
                              info,&
                              warning
   Use filename,        Only: FILE_STATS,&
@@ -145,10 +147,10 @@ Module statistics
     Real(Kind=wp), Allocatable :: zumval0(:), ravval0(:), stkval0(:, :)
 
     !> Store for per-particle energy data
-    Real( Kind = wp ), Allocatable :: pp_energy(:)
+    Real(Kind=wp), Allocatable :: pp_energy(:)
 
     !> Store for per-particle stress data
-    Real( Kind = wp ), Allocatable :: pp_stress(:,:)
+    Real(Kind=wp), Allocatable :: pp_stress(:, :)
 
     !> Whether per-particle information is needed
     Logical :: require_pp = .false.
@@ -181,10 +183,10 @@ Contains
     mxnstk = stats%mxnstk
     mxstak = stats%mxstak
 
-    Allocate (stats%xin(1:mxatdm),stats%yin(1:mxatdm),stats%zin(1:mxatdm),                           Stat = fail(1))
-    Allocate (stats%xto(1:mxatdm),stats%yto(1:mxatdm),stats%zto(1:mxatdm),stats%rsd(1:mxatdm),             Stat = fail(2))
-    Allocate (stats%stpval(0:mxnstk),stats%stpvl0(0:mxnstk),stats%sumval(0:mxnstk),stats%ssqval(0:mxnstk), Stat = fail(3))
-    Allocate (stats%zumval(0:mxnstk),stats%ravval(0:mxnstk),stats%stkval(1:mxstak,0:mxnstk),         Stat = fail(4))
+    Allocate (stats%xin(1:mxatdm), stats%yin(1:mxatdm), stats%zin(1:mxatdm), Stat=fail(1))
+    Allocate (stats%xto(1:mxatdm), stats%yto(1:mxatdm), stats%zto(1:mxatdm), stats%rsd(1:mxatdm), Stat=fail(2))
+    Allocate (stats%stpval(0:mxnstk), stats%stpvl0(0:mxnstk), stats%sumval(0:mxnstk), stats%ssqval(0:mxnstk), Stat=fail(3))
+    Allocate (stats%zumval(0:mxnstk), stats%ravval(0:mxnstk), stats%stkval(1:mxstak, 0:mxnstk), Stat=fail(4))
     If (Any(fail > 0)) Call error_alloc("allocate_statistics_arrays", "statistics")
 
     stats%xin = 0.0_wp; stats%yin = 0.0_wp; stats%zin = 0.0_wp
@@ -196,39 +198,40 @@ Contains
   End Subroutine allocate_statistics_arrays
 
   Subroutine allocate_per_particle_arrays(stats, natms)
-    Class( stats_type ), Intent( InOut ) :: stats
-    Integer, Intent( In ) :: natms
+    Class(stats_type), Intent(InOut) :: stats
+    Integer,           Intent(In   ) :: natms
 
     Integer :: fail
 
-    if (.not. Allocated( stats%pp_energy )) then
-      Allocate (stats%pp_energy(natms), stat = fail)
-      if (fail > 0) Call error_alloc("stats%pp_energy", "statistics")
-    end if
+    If (.not. Allocated(stats%pp_energy)) Then
+      Allocate (stats%pp_energy(natms), stat=fail)
+      If (fail > 0) Call error_alloc("stats%pp_energy", "statistics")
+    End If
 
-    if (.not. Allocated( stats%pp_stress )) then
-      Allocate (stats%pp_stress(9, natms), stat = fail)
-      if (fail > 0) Call error_alloc("stats%pp_stress", "statistics")
-    end if
+    If (.not. Allocated(stats%pp_stress)) Then
+      Allocate (stats%pp_stress(9, natms), stat=fail)
+      If (fail > 0) Call error_alloc("stats%pp_stress", "statistics")
+    End If
 
     stats%pp_energy = 0.0_wp
     stats%pp_stress = 0.0_wp
-    stats%collect_pp = .True.
+    stats%collect_pp = .true.
 
   End Subroutine allocate_per_particle_arrays
 
   Subroutine deallocate_per_particle_arrays(stats)
-    Class( stats_type ), Intent( InOut ) :: stats
+    Class(stats_type), Intent(InOut) :: stats
+
     Integer :: fail
 
-    Deallocate (stats%pp_energy, stat = fail)
-    if (fail > 0) Call error_dealloc("stats%pp_energy", "statistics")
-    Deallocate (stats%pp_stress, stat = fail)
-    if (fail > 0) Call error_dealloc("stats%pp_stress", "statistics")
+    Deallocate (stats%pp_energy, stat=fail)
+    If (fail > 0) Call error_dealloc("stats%pp_energy", "statistics")
+    Deallocate (stats%pp_stress, stat=fail)
+    If (fail > 0) Call error_dealloc("stats%pp_stress", "statistics")
 
-    stats%collect_pp = .False.
+    stats%collect_pp = .false.
 
-  end Subroutine deallocate_per_particle_arrays
+  End Subroutine deallocate_per_particle_arrays
 
   Subroutine allocate_statistics_connect(stats, mxatdm)
     Class(stats_type), Intent(InOut) :: stats
@@ -579,13 +582,13 @@ Contains
           stats%yto(i) = stats%yto(i) + config%vyy(i) * tstep
           stats%zto(i) = stats%zto(i) + config%vzz(i) * tstep
         End Do
-      Else            ! HISTORY is replayed
-        Allocate (xxt(1:config%mxatms),yyt(1:config%mxatms),zzt(1:config%mxatms), Stat=fail)
+      Else ! HISTORY is replayed
+        Allocate (xxt(1:config%mxatms), yyt(1:config%mxatms), zzt(1:config%mxatms), Stat=fail)
         If (fail > 0) Call error_alloc("atomic positions", "statistics_collect")
-        Do i=1,config%natms
-          xxt(i)=config%parts(i)%xxx
-          yyt(i)=config%parts(i)%yyy
-          zzt(i)=config%parts(i)%zzz
+        Do i = 1, config%natms
+          xxt(i) = config%parts(i)%xxx
+          yyt(i) = config%parts(i)%yyy
+          zzt(i) = config%parts(i)%zzz
         End Do
         Call pbcshfrc(config%imcon, config%cell, config%natms, xxt, yyt, zzt)
         Call pbcshfrc(config%imcon, stats%clin, config%natms, stats%xin, stats%yin, stats%zin)
@@ -594,14 +597,14 @@ Contains
           stats%yin(i) = yyt(i) - stats%yin(i)
           stats%zin(i) = zzt(i) - stats%zin(i)
         End Do
-        Deallocate (xxt,yyt,zzt, Stat=fail)
+        Deallocate (xxt, yyt, zzt, Stat=fail)
         If (fail > 0) Call error_dealloc("atomic positions", "statistics_collect")
 
-        Call pbcshfrl(config%imcon,config%cell,config%natms,stats%xin,stats%yin,stats%zin)
-        Do i=1,config%natms
-          stats%xto(i)=stats%xto(i)+stats%xin(i)
-          stats%yto(i)=stats%yto(i)+stats%yin(i)
-          stats%zto(i)=stats%zto(i)+stats%zin(i)
+        Call pbcshfrl(config%imcon, config%cell, config%natms, stats%xin, stats%yin, stats%zin)
+        Do i = 1, config%natms
+          stats%xto(i) = stats%xto(i) + stats%xin(i)
+          stats%yto(i) = stats%yto(i) + stats%yin(i)
+          stats%zto(i) = stats%zto(i) + stats%zin(i)
         End Do
       End If
 
@@ -717,7 +720,7 @@ Contains
 
     ! No totals for timestep zero
 
-    If (nstep /= 0) then
+    If (nstep /= 0) Then
 
       ! current stack value
 
@@ -1942,177 +1945,43 @@ Contains
 
   End Subroutine statistics_result
 
-  Subroutine write_per_part_contribs(config, comm, energies, stresses, nstep) !, forces
-    !!----------------------------------------------------------------------!
-    !!
-    !! Write out per-particle contributions to energy, force, stress, etc
-    !!
-    !! copyright - daresbury laboratory
-    !! author    - j.s.wilkins august 2018
-    !!
-    !!----------------------------------------------------------------------!
-#ifdef SERIAL
-    Use mpi_api,       only : mpi_offset_Kind, mpi_mode_wronly, mpi_info_null, mpi_mode_create, mpi_comm_self
-#else
-    Use mpi,       only : mpi_offset_Kind, mpi_mode_wronly, mpi_info_null, mpi_mode_create, mpi_comm_self
-#endif
-    Use io, only : io_type, io_get_parameters, io_set_parameters, io_init, io_open, io_close, &
-      & io_finalize, io_write_sorted_file, io_base_comm_not_set, io_allocation_error, &
-      & io_unknown_write_option, io_unknown_write_level, io_write_sorted_mpiio, io_delete, io_write_batch
-    Use io, only : io_histord, io_restart, io_history
-    Use comms, only : gsync, gsum
-    Use constants, Only : prsunt
-
-    Implicit None
-    Type( configuration_type ),           Intent ( In    )  :: config    !! Atom details
-    Type( comms_type ),                   Intent ( InOut )  :: comm      !! Communicator
-    Real( Kind = wp ), Dimension(1:),     Intent ( In    )  :: energies  !! Per-particle energies
-    ! Real( Kind = wp ), Dimension(:,1:),   Intent ( In    )  :: forces    !!     ""       forces
-    Real( Kind = wp ), Dimension(:,1:), Intent ( In    )  :: stresses  !!     ""       stresses
-    Integer,                              Intent ( In    )  :: nstep     !! Steps since calculation start
-
-
-    Type( io_type )  :: my_io                              !! Use our own IO job for now because passing through will be hell
-
-    Real( Kind = wp ), Dimension(:), allocatable :: dummy !! Don't like this, but quick cheat?
-
-    Integer, Parameter                                     :: record_size = 73 !! default record size (apparently)
-    Integer( Kind = mpi_offset_Kind )                      :: rec_mpi_io
-    Integer                                                :: energy_force_handle !! File handles
-    Integer                                                :: io_write !! Write state
-    Integer                                                :: batsz
-    character(len=record_size)                             :: record
-    character, Dimension(record_size,10)                   :: buffer
-    character                                              :: lf
-    character( len = 40 )                                  :: filename
-    Integer                                                :: i, jj
-    Integer                                                :: ierr
-
-    call gsync(comm)
-
-    ! Force MPIIO write for now
-    io_write = 0
-    ! Call io_get_parameters( user_method_write      = io_write )
-    Call io_get_parameters( my_io, user_buffer_size_write = batsz, user_line_feed = lf )
-
-    ! Write current time-step to character string
-    allocate(dummy(config%natms), stat=ierr)
-    if (ierr .ne. 0) call error_alloc('dummy','write_per_part_contribs')
-    dummy = 0.0_wp
-
-    write(filename,'("PPCONT",("_",i0))') nstep
-
-    call io_init( my_io, record_size )
-
-    rec_mpi_io = int(0,mpi_offset_Kind)
-    jj=0
-    if (comm%idnode == 0) then
-
-      call io_set_parameters( my_io, user_comm = mpi_comm_self )
-      call io_delete( my_io, filename, comm ) ! sort existence issues
-      call io_open( my_io, io_write, mpi_comm_self, trim(filename), mpi_mode_wronly + mpi_mode_create, energy_force_handle )
-
-      jj=jj+1
-      Write(record, Fmt='(a72,a1)') "Energy and force contributions on a per-particle basis",lf
-      buffer(:,jj) = [(record(i:i),i=1,record_size)]
-      Write(record, Fmt='(a72,a1)') config%cfgname(1:72),lf
-      buffer(:,jj) = [(record(i:i),i=1,record_size)]
-      jj=jj+1
-      Write(record, Fmt='(3i10,42X,a1)') config%imcon,config%megatm,nstep,lf
-      buffer(:,jj) = [(record(i:i),i=1,record_size)]
-
-      If (config%imcon > 0) Then
-        Do i = 0, 2
-          jj=jj+1
-          Write(record, Fmt='(3f20.10,a12,a1)') &
-            config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
-          buffer(:,jj) = [(record(i:i),i=1,record_size)]
-        End Do
-      End If
-
-      call io_write_batch( my_io, energy_force_handle, rec_mpi_io, jj, buffer )
-
-      Call io_close( my_io, energy_force_handle )
-
-    end if
-
-    call gsync(comm)
-
-    call io_set_parameters( my_io, user_comm = comm%comm )
-    call io_open( my_io, io_write, comm%comm, trim(filename), mpi_mode_wronly, energy_force_handle ) ! Io sorted mpiio, per-particle contrib
-
-    rec_mpi_io = int(jj,mpi_offset_Kind)
-    ! Only write E&F (r/v in write_sorted...) hence 1
-    ! Need to skip 0th element (accumulator/total)
-    call io_write_sorted_file( my_io, energy_force_handle, 2, io_history, rec_mpi_io, config%natms,      &
-      config%ltg, config%atmnam, dummy, dummy, energies(1:config%natms)/engunit, &
-      & stresses(1,1:config%natms) * prsunt, stresses(2,1:config%natms) * prsunt, stresses(3,1:config%natms) * prsunt, &
-      & stresses(4,1:config%natms) * prsunt, stresses(5,1:config%natms) * prsunt, stresses(6,1:config%natms) * prsunt, &
-      & stresses(7,1:config%natms) * prsunt, stresses(8,1:config%natms) * prsunt, stresses(9,1:config%natms) * prsunt, ierr)
-      ! forces(1,1:config%natms), forces(2,1:config%natms), forces(3,1:config%natms), &
-
-    select case( ierr )
-    case ( 0 )
-      continue
-    case( io_base_comm_not_set )
-      call error( 1050 )
-    case( io_allocation_error )
-      call error( 1053 )
-    case( io_unknown_write_option )
-      call error( 1056 )
-    case( io_unknown_write_level )
-      call error( 1059 )
-    end select
-    call io_close( my_io, energy_force_handle )
-
-    call gsync(comm)
-
-    call io_finalize(my_io)
-
-    deallocate(dummy, stat=ierr)
-    if ( ierr > 0 ) call error_dealloc('dummy','write_per_part_contribs')
-
-  end subroutine write_per_part_contribs
-
   Pure Function calculate_stress(x, f)
-    Implicit None
 
-    Real( Kind = wp ), dimension( 3 ), Intent( In    ) :: x
-    Real( Kind = wp ), dimension( 3 ), Intent( In    ) :: f
-    Real( Kind = wp ), dimension( 9 ) :: calculate_stress
+    Real(Kind=wp), Dimension(3), Intent(In   ) :: x, f
+    Real(Kind=wp), Dimension(9)                :: calculate_stress
 
-    calculate_stress(1:9:3) = x*f(1)
-    calculate_stress(2:9:3) = x*f(2)
-    calculate_stress(3:9:3) = x*f(3)
+    calculate_stress(1:9:3) = x * f(1)
+    calculate_stress(2:9:3) = x * f(2)
+    calculate_stress(3:9:3) = x * f(3)
 
   End Function calculate_stress
 
-  Function calculate_heat_flux(stats, config, comm) result(heat_flux)
-    Use comms, only : gsum
-    
-    Type( stats_type ), Intent( In    ) :: stats
-    Type( configuration_type ), Intent( In    ) :: config
-    Type( comms_type ), Intent( InOut) :: comm
-    Real( Kind = wp ), Dimension( 3 ) :: heat_flux
+  Function calculate_heat_flux(stats, config, comm) Result(heat_flux)
+    Use comms, Only: gsum
+    Type(stats_type),         Intent(In   ) :: stats
+    Type(configuration_type), Intent(In   ) :: config
+    Type(comms_type),         Intent(InOut) :: comm
+    Real(Kind=wp), Dimension(3)             :: heat_flux
 
-    Real( Kind = wp ), Dimension( 3 ) :: e_v !! Per-particle energy * velocity
-    Real( Kind = wp ), Dimension( 3 ) :: S_v !! Per-particle stress * velocity
-    Real( Kind = wp ), Dimension( 3 ) :: velocity
-    Integer :: iatm
+    Integer                     :: iatm
+    Real(Kind=wp), Dimension(3) :: e_v, S_v, velocity
+
+!! Per-particle energy * velocity
+!! Per-particle stress * velocity
 
     e_v = 0.0_wp
     S_v = 0.0_wp
 
-    do iatm = 1, config%natms
+    Do iatm = 1, config%natms
       velocity = [config%vxx(iatm), config%vyy(iatm), config%vzz(iatm)]
       !      Σ    (        P              +                                  K                           ) *     V
-      e_v = e_v + ( stats%pp_energy(iatm) + 0.5_wp*config%weight(iatm) * dot_product(velocity, velocity) ) * velocity
-      S_v = S_v + matmul(reshape(stats%pp_stress(:, iatm), [3,3]), velocity)
-    end do
+      e_v = e_v + (stats%pp_energy(iatm) + 0.5_wp * config%weight(iatm) * Dot_product(velocity, velocity)) * velocity
+      S_v = S_v + Matmul(Reshape(stats%pp_stress(:, iatm), [3, 3]), velocity)
+    End Do
 
-    call gsum(comm, e_v)
-    call gsum(comm, S_v)
-    
+    Call gsum(comm, e_v)
+    Call gsum(comm, S_v)
+
     heat_flux = (e_v + S_v) / (1000.0_wp * engunit * config%volm)
 
   End Function calculate_heat_flux
