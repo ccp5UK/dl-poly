@@ -31,7 +31,7 @@ Module constants
   !!
   !!------------------------------------------------------------------------!
 
-  Use kinds, Only : wp
+  Use kinds, Only: wp
 
   Implicit None
 
@@ -152,20 +152,30 @@ Module constants
   Integer, Parameter :: npdfdt = 28, &
     npdgdt = 29
 
-  !> vaf file channel number
-
   Integer, Parameter :: nvafdt = 30
-
-  !> multipoles file channel number
+  ! multipoles file channel number
 
   Integer, Parameter :: nmpldt = 31
 
+  !> vaf file channel number
+
+  ! ICOORD channel number
+  Integer, Parameter :: nicrdt = 32
+
+  ! CCORD channel number
+  Integer, Parameter :: nccrdt = 33
+
+  ! ADF channel number
+  Integer, Parameter :: nchadf = 34
+
   !> +0.0 in working precision
-  Real( Kind = wp ), Parameter :: zero_plus = Tiny(1.0_wp)
+  Real(Kind=wp), Parameter     :: zero_plus = Tiny(1.0_wp)
   !> Nearest number to 0.5, greater than 0.5, in working precision
-  Real( Kind = wp ), Parameter :: half_plus = Nearest(0.5_wp,+1.0_wp)
+  Real(Kind=wp), Parameter     :: half_plus = Nearest(0.5_wp, +1.0_wp)
   !> Nearest number to 0.5, less than 0.5, in working precision
-  Real( Kind = wp ), Parameter :: half_minus = Nearest(0.5_wp,-1.0_wp)
+  Real(Kind=wp), Parameter     :: half_minus = Nearest(0.5_wp, -1.0_wp)
   !> Smallest difference between floats of kind wp
-  Real( Kind = wp), Parameter :: epsilon_wp = Epsilon(epsilon_wp)
+  Real(Kind=wp), Parameter     :: epsilon_wp = Epsilon(epsilon_wp)
+  !> complex zero
+  Real(Kind=wp), Parameter     :: czero = Cmplx(0.0_wp, 0.0_wp, wp)
 End Module constants

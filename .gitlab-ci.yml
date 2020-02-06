@@ -44,12 +44,26 @@ build-mpi-plumed:
   script:
     - sh utils/build-mpi-plumed.sh
 
+build-mpi-plumed-internal:
+  stage: build
+  tags: 
+    - gcc
+  script:
+    - sh utils/build-mpi-plumed-internal.sh
+
 build-mpi-kim:
   stage: build
   tags: 
     - gcc
   script:
     - sh utils/build-mpi-kim.sh
+
+build-mpi-kim-internal:
+  stage: build
+  tags: 
+    - gcc
+  script:
+    - sh utils/build-mpi-kim-internal.sh
 
 build-mpi-all:
   stage: build

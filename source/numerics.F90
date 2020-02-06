@@ -1,5 +1,44 @@
 Module numerics
+<<<<<<< HEAD
   !------------------------ THIS IS NUMERIC_CONTAINER ---------------------!
+=======
+  Use comms,           Only: comms_type
+  Use constants,       Only: epsilon_wp,&
+                             half_minus,&
+                             rt2,&
+                             rt3,&
+                             sqrpi,&
+                             zero_plus
+  Use errors_warnings, Only: error
+  Use kinds,           Only: li,&
+                             wi,&
+                             wp
+  Use particle,        Only: corePart
+
+  Implicit None
+  Private
+
+  !> Random seed type
+  Type, Public :: seed_type
+    Private
+  
+    !> Flag indicating whether the seed has been initialised
+    Logical, Public          :: defined = .false.
+    !> The seed
+    Integer(Kind=wi), Public :: seed(1:3)
+    !> state variables for uni random number generator. In long run one wants to move to a better random number generaot
+    Logical                  :: newjob = .true.
+    Logical                  :: newjob_bm = .true.
+    Integer                  :: ir, jr
+    Real(Kind=wp)            :: c, cd, cm, u(1:97)
+  
+  Contains
+    Private
+    Procedure, Public :: init => init_seed
+  End Type seed_type
+
+  !!!!!!!!!!!!!!!!!!!!!!!! THIS IS NUMERIC_CONTAINER !!!!!!!!!!!!!!!!!!!!!
+>>>>>>> origin/devel
   !
   ! Function uni - two seeded random number generator
   !
@@ -183,7 +222,7 @@ Module numerics
     Module Procedure nequal_real_wp
   End Interface nequal
 
-  Public :: equal,nequal
+  Public :: equal, nequal
 
 Contains
 
@@ -285,14 +324,14 @@ Contains
 
   !> Initialise a seed
   Subroutine init_seed(T, seed)
-  Class(seed_type) :: T
-    Integer( Kind = wi ), Intent(In) :: seed(1:3)
+    Class(seed_type)                :: T
+    Integer(Kind=wi), Intent(In   ) :: seed(1:3)
 
     T%defined = .true.
     T%seed(1:3) = seed(1:3)
   End Subroutine init_seed
 
-  Function uni(seed,comm)
+  Function uni(seed, comm)
 
     !!----------------------------------------------------------------------!
     !!
@@ -335,12 +374,12 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Type(seed_type), Intent(InOut) :: seed
-    Type(comms_type), Intent( In ) :: comm
-    Real( Kind = wp )       :: uni
+    Type(seed_type),  Intent(InOut) :: seed
+    Type(comms_type), Intent(In   ) :: comm
+    Real(Kind=wp)                   :: uni
 
-    Integer                 :: i,ii,ij,j,jj,k,kl,l,m
-    Real( Kind = wp )       :: s,t
+    Integer       :: i, ii, ij, j, jj, k, kl, l, m
+    Real(Kind=wp) :: s, t
 
     ! initialise parameters u,c,cd,cm
 
@@ -351,78 +390,77 @@ Contains
 
       If (seed%defined) Then
 
-        seed%defined=.false.
+        seed%defined = .false.
 
         ! First random number seed must be between 0 and 31328
         ! Second seed must have a value between 0 and 30081
 
-        ij=Mod(Abs(seed%seed(1)+comm%idnode),31328)
-        i = Mod(ij/177,177) + 2;
-        j = Mod(ij,177)     + 2;
-
-        kl=Mod(Abs(seed%seed(2)+comm%idnode),30081)
-        k = Mod(kl/169,178) + 1
-        l = Mod(kl,169)
+        ij = Mod(Abs(seed%seed(1) + comm%idnode), 31328)
+        i = Mod(ij / 177, 177) + 2; 
+        j = Mod(ij, 177) + 2; 
+        kl = Mod(Abs(seed%seed(2) + comm%idnode), 30081)
+        k = Mod(kl / 169, 178) + 1
+        l = Mod(kl, 169)
 
       Else
 
         ! initial values of i,j,k must be in range 1 to 178 (not all 1)
         ! initial value of l must be in range 0 to 168
 
-        i = Mod(comm%idnode,166) + 12
-        j = Mod(comm%idnode,144) + 34
-        k = Mod(comm%idnode,122) + 56
-        l = Mod(comm%idnode,90)  + 78
+        i = Mod(comm%idnode, 166) + 12
+        j = Mod(comm%idnode, 144) + 34
+        k = Mod(comm%idnode, 122) + 56
+        l = Mod(comm%idnode, 90) + 78
 
       End If
 
       seed%ir = 97
       seed%jr = 33
 
-      Do ii=1,97
+      Do ii = 1, 97
 
         s = 0.0_wp
         t = 0.5_wp
 
-        Do jj=1,24
+        Do jj = 1, 24
 
-          m = Mod(Mod(i*j,179)*k,179)
+          m = Mod(Mod(i * j, 179) * k, 179)
           i = j
           j = k
           k = m
-          l = Mod(53*l+1,169)
-          If (Mod(l*m,64) >= 32) s = s+t
-          t = 0.5_wp*t
+          l = Mod(53 * l + 1, 169)
+          If (Mod(l * m, 64) >= 32) s = s + t
+          t = 0.5_wp * t
 
         End Do
 
-        seed%u(ii)=s
+        seed%u(ii) = s
 
       End Do
 
-      seed%c  =   362436.0_wp/16777216.0_wp
-      seed%cd =  7654321.0_wp/16777216.0_wp
-      seed%cm = 16777213.0_wp/16777216.0_wp
+      seed%c = 362436.0_wp / 16777216.0_wp
+      seed%cd = 7654321.0_wp / 16777216.0_wp
+      seed%cm = 16777213.0_wp / 16777216.0_wp
 
     End If
 
     ! calculate random number
 
-    uni=seed%u(seed%ir)-seed%u(seed%jr)
+    uni = seed%u(seed%ir) - seed%u(seed%jr)
     If (uni < 0.0_wp) uni = uni + 1.0_wp
 
-    seed%u(seed%ir)=uni
+    seed%u(seed%ir) = uni
 
-    seed%ir=seed%ir-1
+    seed%ir = seed%ir - 1
     If (seed%ir == 0) seed%ir = 97
 
-    seed%jr=seed%jr-1
+    seed%jr = seed%jr - 1
     If (seed%jr == 0) seed%jr = 97
 
-    seed%c = seed%c-seed%cd
-    If (seed%c < 0.0_wp) seed%c = seed%c+seed%cm
+    seed%c = seed%c - seed%cd
+    If (seed%c < 0.0_wp) seed%c = seed%c + seed%cm
 
-    uni = uni-seed%c
+    uni = uni - seed%c
     If (uni < 0.0_wp) uni = uni + 1.0_wp
 
   End Function uni
@@ -448,36 +486,33 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Real( Kind = wp )        :: sarurnd
-
     Type(seed_type), Intent(InOut) :: seed
-    Integer, Intent( In    ) :: seeda,  seedb,  seedc
+    Integer,         Intent(In   ) :: seeda, seedb, seedc
+    Real(Kind=wp)                  :: sarurnd
 
-    Integer( Kind = li ) :: seed1,  seed2,  seed3, &
-      state, wstate, v, u32, itmp
-    Real( Kind = wp )    :: statepart1, statepart2, tmp
+    Integer(Kind=li), Parameter :: two32 = 2_li**32
+    Real(Kind=wp), Parameter    :: rtwo32 = (2.0_wp)**(-32), two32r = 2.0_wp**32
 
-    Integer( Kind = li ), Parameter :: two32  = 2_li**32
-    Real( Kind = wp ),    Parameter :: two32r = 2.0_wp**32, &
-      rtwo32 = (2.0_wp)**(-32)
+    Integer(Kind=li) :: itmp, seed1, seed2, seed3, state, u32, v, wstate
+    Real(Kind=wp)    :: statepart1, statepart2, tmp
 
     ! Apply possible shifting - usually (0,0,0)
 
-    If (.not.seed%defined) Then
-      seed1 = Int(seeda,Kind=li)
-      seed2 = Int(seedb,Kind=li)
-      seed3 = Int(seedc,Kind=li)
+    If (.not. seed%defined) Then
+      seed1 = Int(seeda, Kind=li)
+      seed2 = Int(seedb, Kind=li)
+      seed3 = Int(seedc, Kind=li)
     Else
-      seed1 = Int(seeda,Kind=li) + Int(seed%seed(1),Kind=li)
-      seed2 = Int(seedb,Kind=li) + Int(seed%seed(2),Kind=li)
-      seed3 = Int(seedc,Kind=li) + Int(seed%seed(3),Kind=li)
+      seed1 = Int(seeda, Kind=li) + Int(seed%seed(1), Kind=li)
+      seed2 = Int(seedb, Kind=li) + Int(seed%seed(2), Kind=li)
+      seed3 = Int(seedc, Kind=li) + Int(seed%seed(3), Kind=li)
     End If
 
     ! Wrap up
 
-    seed1 = Mod(seed1, two32) ; If (seed1 < 0) seed1 = seed1 + two32
-    seed2 = Mod(seed2, two32) ; If (seed2 < 0) seed2 = seed2 + two32
-    seed3 = Mod(seed3, two32) ; If (seed3 < 0) seed3 = seed3 + two32
+    seed1 = Mod(seed1, two32); If (seed1 < 0) seed1 = seed1 + two32
+    seed2 = Mod(seed2, two32); If (seed2 < 0) seed2 = seed2 + two32
+    seed3 = Mod(seed3, two32); If (seed3 < 0) seed3 = seed3 + two32
 
     ! apply premixing to seeds
 
@@ -488,7 +523,7 @@ Contains
 
     ! seed2 += (seed1>>4)^(seed3>>15);
 
-    itmp  = Ieor(Ishft(seed1, -4_li), Ishft(seed3, -15_li))
+    itmp = Ieor(Ishft(seed1, -4_li), Ishft(seed3, -15_li))
     seed2 = seed2 + itmp
     seed2 = Mod(seed2, two32)
 
@@ -499,39 +534,39 @@ Contains
 
     ! seed3 ^= 0xA5366B4D*((seed2>>11) ^ (seed1<<1));
 
-    itmp  = Ieor(Ishft(seed2, -11_li), Ishft(seed1, 1_li))
-    tmp   = 2771807053.0_wp * Real(itmp, Kind=wp)
-    itmp  = Int(Mod(tmp, two32r), Kind=li)
+    itmp = Ieor(Ishft(seed2, -11_li), Ishft(seed1, 1_li))
+    tmp = 2771807053.0_wp * Real(itmp, Kind=wp)
+    itmp = Int(Mod(tmp, two32r), Kind=li)
     seed3 = Ieor(seed3, itmp)
     seed3 = Mod(seed3, two32)
 
     ! seed2 += 0x72BE1579*((seed1<<4) ^ (seed3>>16));
 
-    itmp  = Ieor(Ishft(seed1, 4_li), Ishft(seed3, -16_li))
-    tmp   = 1925059961.0_wp * Real(itmp, Kind=wp)
-    itmp  = Int(Mod(tmp, two32r), Kind=li)
+    itmp = Ieor(Ishft(seed1, 4_li), Ishft(seed3, -16_li))
+    tmp = 1925059961.0_wp * Real(itmp, Kind=wp)
+    itmp = Int(Mod(tmp, two32r), Kind=li)
     seed2 = seed2 + itmp
     seed2 = Mod(seed2, two32)
 
     ! seed1 ^= 0X3F38A6ED*((seed3>>5) ^ (((signed int)seed2)>>22));
 
-    itmp  = Ieor(Ishft(seed3, -5_li), Ishft(Int(Int(seed2), Kind=li), -22_li))
-    tmp   = 1060677357.0_wp * Real(itmp, Kind=wp)
-    itmp  = Int(Mod(tmp, two32r), Kind=li)
+    itmp = Ieor(Ishft(seed3, -5_li), Ishft(Int(Int(seed2), Kind=li), -22_li))
+    tmp = 1060677357.0_wp * Real(itmp, Kind=wp)
+    itmp = Int(Mod(tmp, two32r), Kind=li)
     If (itmp < 0) itmp = itmp + two32
     seed1 = Ieor(seed1, itmp)
     seed1 = Mod(seed1, two32)
 
     ! seed2 += seed1*seed3;
 
-    tmp   = Real(seed1, Kind=wp) * Real(seed3, Kind=wp)
-    itmp  = Int(Mod(tmp, two32r), Kind=li)
+    tmp = Real(seed1, Kind=wp) * Real(seed3, Kind=wp)
+    itmp = Int(Mod(tmp, two32r), Kind=li)
     seed2 = seed2 + itmp
     seed2 = Mod(seed2, two32)
 
     ! seed1 += seed3 ^ (seed2>>2);
 
-    seed1 = seed1 + Ieor(seed3, Ishft (seed2, -2_li))
+    seed1 = seed1 + Ieor(seed3, Ishft(seed2, -2_li))
     seed1 = Mod(seed1, two32)
 
     ! seed2 ^= ((signed int)seed2)>>17;
@@ -543,21 +578,21 @@ Contains
 
     ! state = 0x79dedea3*(seed1^(((signed int)seed1)>>14));
 
-    itmp  = Ieor(seed1, Ishft(Int(Int(seed1), Kind=li), -14_li))
-    tmp   = 2044649123.0_wp * Real(itmp, Kind=wp)
+    itmp = Ieor(seed1, Ishft(Int(Int(seed1), Kind=li), -14_li))
+    tmp = 2044649123.0_wp * Real(itmp, Kind=wp)
     state = Int(Mod(tmp, two32r), Kind=li)
     If (state < 0) state = state + two32
 
     ! wstate = (state + seed2) ^ (((signed int)state)>>8);
 
-    wstate = Ieor((state+seed2), Ishft(Int(Int(state), Kind=li), -8_li))
-    wstate = Mod(wstate, two32) ; If (wstate < 0) wstate = wstate + two32
+    wstate = Ieor((state + seed2), Ishft(Int(Int(state), Kind=li), -8_li))
+    wstate = Mod(wstate, two32); If (wstate < 0) wstate = wstate + two32
 
     ! state = state + (wstate*(wstate^0xdddf97f5));
 
-    itmp  = Ieor(wstate, 3722418165_li)
-    tmp   = Real(wstate, Kind=wp) * Real(itmp, Kind=wp)
-    itmp  = Int(Mod(tmp, two32r), Kind=li)
+    itmp = Ieor(wstate, 3722418165_li)
+    tmp = Real(wstate, Kind=wp) * Real(itmp, Kind=wp)
+    itmp = Int(Mod(tmp, two32r), Kind=li)
     state = state + itmp
     state = Mod(state, two32)
 
@@ -569,15 +604,15 @@ Contains
     ! advance LCG state by 1
     ! state = 0x4beb5d59*state + 0x2600e1f7; // LCG
 
-    tmp   = 1273716057.0_wp * Real(state, Kind=wp)
-    itmp  = Int(Mod(tmp, two32r), Kind=li)
+    tmp = 1273716057.0_wp * Real(state, Kind=wp)
+    itmp = Int(Mod(tmp, two32r), Kind=li)
     state = itmp + 637592055_li
     state = Mod(state, two32)
 
     ! advance Weyl state by 1, for oWeylOffset=0x8009d14b & oWeylPeriod=0xda879add
     ! wstate = wstate + oWeylOffset + ((((signed int)wstate)>>31)&oWeylPeriod); // OWS
 
-    wstate = wstate + 2148127051_li + Iand(Ishft(Int(Int(wstate),Kind=li), -31_li), 3666320093_li)
+    wstate = wstate + 2148127051_li + Iand(Ishft(Int(Int(wstate), Kind=li), -31_li), 3666320093_li)
     wstate = Mod(wstate, two32)
 
     ! calculate 32-bit pseudo-random number
@@ -590,14 +625,14 @@ Contains
     ! u32 = (v^(v>>20))*0x6957f5a7;
 
     itmp = Ieor(v, Ishft(v, -20_li))
-    tmp  = Real(itmp, Kind=wp) * 1767372199.0_wp
-    u32  = Int(Mod(tmp, two32r), Kind=li)
+    tmp = Real(itmp, Kind=wp) * 1767372199.0_wp
+    u32 = Int(Mod(tmp, two32r), Kind=li)
 
     ! convert to real (double-precision) number between 0 and 1
 
     ! statep1 = ((signed int)u32)*TWO_N32+(0.5+0.5*TWO_N32);
 
-    statepart1 = Real(Int(Int(u32),Kind=li), Kind=wp) * rtwo32 + (0.5_wp+0.5_wp*rtwo32)
+    statepart1 = Real(Int(Int(u32), Kind=li), Kind=wp) * rtwo32 + (0.5_wp + 0.5_wp * rtwo32)
 
     ! statep2 = state*(TWO_N32*TWO_N32);
 
@@ -609,7 +644,7 @@ Contains
 
   End Function sarurnd
 
-  Subroutine box_mueller_saru1(seed,i,j,gauss1)
+  Subroutine box_mueller_saru1(seed, i, j, gauss1)
 
     !!----------------------------------------------------------------------!
     !!
@@ -630,34 +665,34 @@ Contains
     !!----------------------------------------------------------------------!
 
     Type(seed_type), Intent(InOut) :: seed
-    Integer,           Intent( In    ) :: i,j
-    Real( Kind = wp ), Intent(   Out ) :: gauss1
+    Integer,         Intent(In   ) :: i, j
+    Real(Kind=wp),   Intent(  Out) :: gauss1
 
-    Integer           :: k
-    Real( Kind = wp ) :: ran0,ran1,ran2
+    Integer       :: k
+    Real(Kind=wp) :: ran0, ran1, ran2
 
     ! Initialise counter
 
-    k=0
+    k = 0
 
     ! generate uniform random numbers on [-1, 1)
 
-    ran0=1.0_wp
+    ran0 = 1.0_wp
     Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-      ran1=2.0_wp*sarurnd(seed,i,j,k  )-1.0_wp
-      ran2=2.0_wp*sarurnd(seed,i,j,k+1)-1.0_wp
-      ran0=ran1**2+ran2**2
-      k=k+2
+      ran1 = 2.0_wp * sarurnd(seed, i, j, k) - 1.0_wp
+      ran2 = 2.0_wp * sarurnd(seed, i, j, k + 1) - 1.0_wp
+      ran0 = ran1**2 + ran2**2
+      k = k + 2
     End Do
 
     ! calculate gaussian random numbers 1 & 2
 
-    ran0=Sqrt(-2.0_wp*Log(ran0)/ran0)
-    gauss1=ran0*ran1
+    ran0 = Sqrt(-2.0_wp * Log(ran0) / ran0)
+    gauss1 = ran0 * ran1
 
   End Subroutine box_mueller_saru1
 
-  Subroutine box_mueller_saru2(seed,i,j,n,gauss1,l_str)
+  Subroutine box_mueller_saru2(seed, i, j, n, gauss1, l_str)
 
     !!----------------------------------------------------------------------!
     !!
@@ -678,46 +713,46 @@ Contains
     !!----------------------------------------------------------------------!
 
     Type(seed_type), Intent(InOut) :: seed
-    Logical,           Intent( In    ) :: l_str
-    Integer,           Intent( In    ) :: i,j,n
-    Real( Kind = wp ), Intent(   Out ) :: gauss1
+    Integer,         Intent(In   ) :: i, j, n
+    Real(Kind=wp),   Intent(  Out) :: gauss1
+    Logical,         Intent(In   ) :: l_str
 
-    Integer           :: k
-    Real( Kind = wp ) :: ran0,ran1,ran2
+    Integer       :: k
+    Real(Kind=wp) :: ran0, ran1, ran2
 
     ! Initialise counter
 
-    k=n
+    k = n
 
     ! Avoid overflow due to Box_Mueller rejection rate of sampling = (1-p/4) = 0.214
 
-    If (Huge(1)-k <= 50) k=-Huge(1)+49
+    If (Huge(1) - k <= 50) k = -Huge(1) + 49
 
     ! CLT approximation
 
-    If (.not.l_str) Then
-      ran0 = rt3*(2.0_wp*sarurnd(seed,i,j,k)-1.0_wp)
+    If (.not. l_str) Then
+      ran0 = rt3 * (2.0_wp * sarurnd(seed, i, j, k) - 1.0_wp)
       Return
     End If
 
     ! generate uniform random numbers on [-1, 1)
 
-    ran0=1.0_wp
+    ran0 = 1.0_wp
     Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-      ran1=2.0_wp*sarurnd(seed,i,j,k  )-1.0_wp
-      ran2=2.0_wp*sarurnd(seed,i,j,k+1)-1.0_wp
-      ran0=ran1**2+ran2**2
-      k=k+2
+      ran1 = 2.0_wp * sarurnd(seed, i, j, k) - 1.0_wp
+      ran2 = 2.0_wp * sarurnd(seed, i, j, k + 1) - 1.0_wp
+      ran0 = ran1**2 + ran2**2
+      k = k + 2
     End Do
 
     ! calculate gaussian random numbers 1 & 2
 
-    ran0=Sqrt(-2.0_wp*Log(ran0)/ran0)
-    gauss1=ran0*ran1
+    ran0 = Sqrt(-2.0_wp * Log(ran0) / ran0)
+    gauss1 = ran0 * ran1
 
   End Subroutine box_mueller_saru2
 
-  Subroutine box_mueller_saru3(seed,i,j,gauss1,gauss2,gauss3)
+  Subroutine box_mueller_saru3(seed, i, j, gauss1, gauss2, gauss3)
 
     !!----------------------------------------------------------------------!
     !!
@@ -738,50 +773,50 @@ Contains
     !!----------------------------------------------------------------------!
 
     Type(seed_type), Intent(InOut) :: seed
-    Integer,           Intent( In    ) :: i,j
-    Real( Kind = wp ), Intent(   Out ) :: gauss1,gauss2,gauss3
+    Integer,         Intent(In   ) :: i, j
+    Real(Kind=wp),   Intent(  Out) :: gauss1, gauss2, gauss3
 
-    Integer           :: k
-    Real( Kind = wp ) :: ran0,ran1,ran2
+    Integer       :: k
+    Real(Kind=wp) :: ran0, ran1, ran2
 
     ! Initialise counter
 
-    k=0
+    k = 0
 
     ! generate uniform random numbers on [-1, 1)
 
-    ran0=1.0_wp
+    ran0 = 1.0_wp
     Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-      ran1=2.0_wp*sarurnd(seed,i,j,k  )-1.0_wp
-      ran2=2.0_wp*sarurnd(seed,i,j,k+1)-1.0_wp
-      ran0=ran1**2+ran2**2
-      k=k+2
+      ran1 = 2.0_wp * sarurnd(seed, i, j, k) - 1.0_wp
+      ran2 = 2.0_wp * sarurnd(seed, i, j, k + 1) - 1.0_wp
+      ran0 = ran1**2 + ran2**2
+      k = k + 2
     End Do
 
     ! calculate gaussian random numbers 1 & 2
 
-    ran0=Sqrt(-2.0_wp*Log(ran0)/ran0)
-    gauss1=ran0*ran1
-    gauss2=ran0*ran2
+    ran0 = Sqrt(-2.0_wp * Log(ran0) / ran0)
+    gauss1 = ran0 * ran1
+    gauss2 = ran0 * ran2
 
     ! generate uniform random numbers on [-1, 1)
 
-    ran0=1.0_wp
+    ran0 = 1.0_wp
     Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-      ran1=2.0_wp*sarurnd(seed,i,j,k  )-1.0_wp
-      ran2=2.0_wp*sarurnd(seed,i,j,k+1)-1.0_wp
-      ran0=ran1**2+ran2**2
-      k=k+2
+      ran1 = 2.0_wp * sarurnd(seed, i, j, k) - 1.0_wp
+      ran2 = 2.0_wp * sarurnd(seed, i, j, k + 1) - 1.0_wp
+      ran0 = ran1**2 + ran2**2
+      k = k + 2
     End Do
 
     ! calculate gaussian random number 3 & 4
 
-    ran0=Sqrt(-2.0_wp*Log(ran0)/ran0)
-    gauss3=ran0*ran1
+    ran0 = Sqrt(-2.0_wp * Log(ran0) / ran0)
+    gauss3 = ran0 * ran1
 
   End Subroutine box_mueller_saru3
 
-  Subroutine box_mueller_saru6(seed,i,j,gauss)
+  Subroutine box_mueller_saru6(seed, i, j, gauss)
 
     !!----------------------------------------------------------------------!
     !!
@@ -802,66 +837,66 @@ Contains
     !!----------------------------------------------------------------------!
 
     Type(seed_type), Intent(InOut) :: seed
-    Integer,           Intent( In    ) :: i,j
-    Real( Kind = wp ), Intent(   Out ) :: gauss(6)
+    Integer,         Intent(In   ) :: i, j
+    Real(Kind=wp),   Intent(  Out) :: gauss(6)
 
-    Integer           :: k
-    Real( Kind = wp ) :: ran0,ran1,ran2
+    Integer       :: k
+    Real(Kind=wp) :: ran0, ran1, ran2
 
     ! Initialise counter
 
-    k=0
+    k = 0
 
     ! generate uniform random numbers on [-1, 1)
 
-    ran0=1.0_wp
+    ran0 = 1.0_wp
     Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-      ran1=2.0_wp*sarurnd(seed,i,j,k  )-1.0_wp
-      ran2=2.0_wp*sarurnd(seed,i,j,k+1)-1.0_wp
-      ran0=ran1**2+ran2**2
-      k=k+2
+      ran1 = 2.0_wp * sarurnd(seed, i, j, k) - 1.0_wp
+      ran2 = 2.0_wp * sarurnd(seed, i, j, k + 1) - 1.0_wp
+      ran0 = ran1**2 + ran2**2
+      k = k + 2
     End Do
 
     ! calculate gaussian random numbers 1 & 2
 
-    ran0=Sqrt(-2.0_wp*Log(ran0)/ran0)
-    gauss(1)=ran0*ran1
-    gauss(2)=ran0*ran2
+    ran0 = Sqrt(-2.0_wp * Log(ran0) / ran0)
+    gauss(1) = ran0 * ran1
+    gauss(2) = ran0 * ran2
 
     ! generate uniform random numbers on [-1, 1)
 
-    ran0=1.0_wp
+    ran0 = 1.0_wp
     Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-      ran1=2.0_wp*sarurnd(seed,i,j,k  )-1.0_wp
-      ran2=2.0_wp*sarurnd(seed,i,j,k+1)-1.0_wp
-      ran0=ran1**2+ran2**2
-      k=k+2
+      ran1 = 2.0_wp * sarurnd(seed, i, j, k) - 1.0_wp
+      ran2 = 2.0_wp * sarurnd(seed, i, j, k + 1) - 1.0_wp
+      ran0 = ran1**2 + ran2**2
+      k = k + 2
     End Do
 
     ! calculate gaussian random number 3 & 4
 
-    ran0=Sqrt(-2.0_wp*Log(ran0)/ran0)
-    gauss(3)=ran0*ran1
-    gauss(4)=ran0*ran2
+    ran0 = Sqrt(-2.0_wp * Log(ran0) / ran0)
+    gauss(3) = ran0 * ran1
+    gauss(4) = ran0 * ran2
 
     ! generate uniform random numbers on [-1, 1)
 
-    ran0=1.0_wp
+    ran0 = 1.0_wp
     Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-      ran1=2.0_wp*sarurnd(seed,i,j,k  )-1.0_wp
-      ran2=2.0_wp*sarurnd(seed,i,j,k+1)-1.0_wp
-      ran0=ran1**2+ran2**2
-      k=k+2
+      ran1 = 2.0_wp * sarurnd(seed, i, j, k) - 1.0_wp
+      ran2 = 2.0_wp * sarurnd(seed, i, j, k + 1) - 1.0_wp
+      ran0 = ran1**2 + ran2**2
+      k = k + 2
     End Do
 
     ! calculate gaussian random number 5 & 6
-    ran0=Sqrt(-2.0_wp*Log(ran0)/ran0)
-    gauss(5)=ran0*ran1
-    gauss(6)=ran0*ran2
+    ran0 = Sqrt(-2.0_wp * Log(ran0) / ran0)
+    gauss(5) = ran0 * ran1
+    gauss(6) = ran0 * ran2
 
   End Subroutine box_mueller_saru6
 
-  Subroutine box_mueller_uni(seed,gauss1,gauss2,comm)
+  Subroutine box_mueller_uni(seed, gauss1, gauss2, comm)
 
     !!----------------------------------------------------------------------!
     !!
@@ -885,37 +920,37 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Type(seed_type), Intent(InOut) :: seed
-    Real( Kind = wp ), Intent(   Out ) :: gauss1,gauss2
-    Type(comms_type), Intent( In )  :: comm
+    Type(seed_type),  Intent(InOut) :: seed
+    Real(Kind=wp),    Intent(  Out) :: gauss1, gauss2
+    Type(comms_type), Intent(In   ) :: comm
 
-    Real( Kind = wp ) :: ran0,ran1,ran2
+    Real(Kind=wp) :: ran0, ran1, ran2
 
     ! make sure uni is initialised
 
     If (seed%newjob_bm) Then
       seed%newjob_bm = .false.
-      ran0=uni(seed,comm)
+      ran0 = uni(seed, comm)
     End If
 
     ! generate uniform random numbers on [-1, 1)
 
-    ran0=1.0_wp
+    ran0 = 1.0_wp
     Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-      ran1=2.0_wp*uni(seed,comm)-1.0_wp
-      ran2=2.0_wp*uni(seed,comm)-1.0_wp
-      ran0=ran1**2+ran2**2
+      ran1 = 2.0_wp * uni(seed, comm) - 1.0_wp
+      ran2 = 2.0_wp * uni(seed, comm) - 1.0_wp
+      ran0 = ran1**2 + ran2**2
     End Do
 
     ! calculate gaussian random numbers
 
-    ran0=Sqrt(-2.0_wp*Log(ran0)/ran0)
-    gauss1=ran0*ran1
-    gauss2=ran0*ran2
+    ran0 = Sqrt(-2.0_wp * Log(ran0) / ran0)
+    gauss1 = ran0 * ran1
+    gauss2 = ran0 * ran2
 
   End Subroutine box_mueller_uni
 
-  Subroutine gauss_1(seed,natms,vxx,vyy,vzz,comm)
+  Subroutine gauss_1(seed, natms, vxx, vyy, vzz, comm)
 
     !!----------------------------------------------------------------------!
     !!
@@ -938,50 +973,46 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
+    Type(seed_type),               Intent(InOut) :: seed
+    Integer,                       Intent(In   ) :: natms
+    Real(Kind=wp), Dimension(1:*), Intent(  Out) :: vxx, vyy, vzz
+    Type(comms_type),              Intent(In   ) :: comm
 
-    Real( Kind = wp ), Parameter :: a1 = 3.949846138_wp
-    Real( Kind = wp ), Parameter :: a3 = 0.252408784_wp
-    Real( Kind = wp ), Parameter :: a5 = 0.076542912_wp
-    Real( Kind = wp ), Parameter :: a7 = 0.008355968_wp
-    Real( Kind = wp ), Parameter :: a9 = 0.029899776_wp
+    Real(Kind=wp), Parameter :: a1 = 3.949846138_wp, a3 = 0.252408784_wp, a5 = 0.076542912_wp, &
+                                a7 = 0.008355968_wp, a9 = 0.029899776_wp
 
-    Type(seed_type), Intent(InOut) :: seed
-    Integer,                             Intent( In    ) :: natms
-    Real( Kind = wp ), Dimension( 1:* ), Intent(   Out ) :: vxx,vyy,vzz
-    Type( comms_type ),                  Intent( In    ) :: comm
+    Integer       :: i, j
+    Real(Kind=wp) :: rr2, rrr
 
-    Integer           :: i,j
-    Real( Kind = wp ) :: rrr,rr2
-
-    Do i=1,natms
-      rrr=0.0_wp
-      Do j=1,12
-        rrr=rrr+uni(seed,comm)
+    Do i = 1, natms
+      rrr = 0.0_wp
+      Do j = 1, 12
+        rrr = rrr + uni(seed, comm)
       End Do
-      rrr=(rrr-6.0_wp)/4.0_wp
-      rr2=rrr*rrr
-      vxx(i)=rrr*(a1+rr2*(a3+rr2*(a5+rr2*(a7+rr2*a9))))
+      rrr = (rrr - 6.0_wp) / 4.0_wp
+      rr2 = rrr * rrr
+      vxx(i) = rrr * (a1 + rr2 * (a3 + rr2 * (a5 + rr2 * (a7 + rr2 * a9))))
 
-      rrr=0.0_wp
-      Do j=1,12
-        rrr=rrr+uni(seed,comm)
+      rrr = 0.0_wp
+      Do j = 1, 12
+        rrr = rrr + uni(seed, comm)
       End Do
-      rrr=(rrr-6.0_wp)/4.0_wp
-      rr2=rrr*rrr
-      vyy(i)=rrr*(a1+rr2*(a3+rr2*(a5+rr2*(a7+rr2*a9))))
+      rrr = (rrr - 6.0_wp) / 4.0_wp
+      rr2 = rrr * rrr
+      vyy(i) = rrr * (a1 + rr2 * (a3 + rr2 * (a5 + rr2 * (a7 + rr2 * a9))))
 
-      rrr=0.0_wp
-      Do j=1,12
-        rrr=rrr+uni(seed,comm)
+      rrr = 0.0_wp
+      Do j = 1, 12
+        rrr = rrr + uni(seed, comm)
       End Do
-      rrr=(rrr-6.0_wp)/4.0_wp
-      rr2=rrr*rrr
-      vzz(i)=rrr*(a1+rr2*(a3+rr2*(a5+rr2*(a7+rr2*a9))))
+      rrr = (rrr - 6.0_wp) / 4.0_wp
+      rr2 = rrr * rrr
+      vzz(i) = rrr * (a1 + rr2 * (a3 + rr2 * (a5 + rr2 * (a7 + rr2 * a9))))
     End Do
 
   End Subroutine gauss_1
 
-  Subroutine gauss_2(seed,natms,vxx,vyy,vzz,comm)
+  Subroutine gauss_2(seed, natms, vxx, vyy, vzz, comm)
 
     !!----------------------------------------------------------------------!
     !!
@@ -999,28 +1030,28 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Type(seed_type), Intent(InOut) :: seed
-    Integer,                             Intent( In    ) :: natms
-    Real( Kind = wp ), Dimension( 1:* ), Intent(   Out ) :: vxx,vyy,vzz
-    Type(comms_type), Intent ( InOut )                   :: comm
+    Type(seed_type),               Intent(InOut) :: seed
+    Integer,                       Intent(In   ) :: natms
+    Real(Kind=wp), Dimension(1:*), Intent(  Out) :: vxx, vyy, vzz
+    Type(comms_type),              Intent(InOut) :: comm
 
-    Integer           :: i,j
-    Real( Kind = wp ) :: gauss1,gauss2
+    Integer       :: i, j
+    Real(Kind=wp) :: gauss1, gauss2
 
-    Do i=1,(natms+1)/2
-      j=natms+1-i
+    Do i = 1, (natms + 1) / 2
+      j = natms + 1 - i
 
-      Call box_mueller_uni(seed,gauss1,gauss2,comm)
-      vxx(i)=gauss1
-      vxx(j)=gauss2
+      Call box_mueller_uni(seed, gauss1, gauss2, comm)
+      vxx(i) = gauss1
+      vxx(j) = gauss2
 
-      Call box_mueller_uni(seed,gauss1,gauss2,comm)
-      vyy(i)=gauss1
-      vyy(j)=gauss2
+      Call box_mueller_uni(seed, gauss1, gauss2, comm)
+      vyy(i) = gauss1
+      vyy(j) = gauss2
 
-      Call box_mueller_uni(seed,gauss1,gauss2,comm)
-      vzz(i)=gauss1
-      vzz(j)=gauss2
+      Call box_mueller_uni(seed, gauss1, gauss2, comm)
+      vzz(i) = gauss1
+      vzz(j) = gauss2
     End Do
 
   End Subroutine gauss_2
@@ -1043,17 +1074,15 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Logical :: match
+    Integer, Intent(In   ) :: n, ind_top, list(1:*)
+    Logical                :: match
 
-    Integer, Intent( In    ) :: n,ind_top,list(1:*)
+    Character(Len=256) :: message
+    Integer            :: ind_now, ind_old
 
-    Integer :: ind_old,ind_now
-
-    Character ( Len = 256 )  :: message
-
-    If (n < 1)Then
-      write(message,'(a)') 'Wrong value of n has entered in Function match, called when defining ltg arrays in link_cells'
-      Call error(0,message)
+    If (n < 1) Then
+      Write (message, '(a)') 'Wrong value of n has entered in Function match, called when defining ltg arrays in link_cells'
+      Call error(0, message)
     End If
 
     match = .false.
@@ -1064,22 +1093,22 @@ Contains
     ind_now = 1
 
     Do
-      If      (n == list(ind_now)) Then
-        match=.true.
+      If (n == list(ind_now)) Then
+        match = .true.
         Return
-      Else If (n >  list(ind_now)) Then
+      Else If (n > list(ind_now)) Then
         If (ind_old == ind_top) Return
         ind_old = ind_now
-        ind_now = (ind_old+ind_top+1)/2
-      Else If (n <  list(ind_now)) Then
-        ind_now = (ind_old+ind_now)/2
+        ind_now = (ind_old + ind_top + 1) / 2
+      Else If (n < list(ind_now)) Then
+        ind_now = (ind_old + ind_now) / 2
         If (ind_now == ind_old) Return
       End If
     End Do
 
   End Function match
 
-  Subroutine shellsort(n,list)
+  Subroutine shellsort(n, list)
 
     !!----------------------------------------------------------------------!
     !!
@@ -1096,11 +1125,11 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Integer,                   Intent( In    ) :: n
-    Integer, Dimension( 1:* ), Intent( InOut ) :: list
+    Integer,                 Intent(In   ) :: n
+    Integer, Dimension(1:*), Intent(InOut) :: list
 
+    Integer :: i, index, nl, value
     Logical :: go
-    Integer :: nl,index,value,i
 
     ! set up sort
 
@@ -1108,7 +1137,7 @@ Contains
 
       ! number of lists
 
-      nl = n/2
+      nl = n / 2
 
       ! iterate shell sort until there is a list
 
@@ -1116,7 +1145,7 @@ Contains
 
         ! for all lists from next-to-ground-level up to their end
 
-        Do i=nl+1,n
+        Do i = nl + 1, n
 
           value = list(i)
           index = i
@@ -1125,11 +1154,11 @@ Contains
 
           go = .true.
           Do While (index > nl .and. go)
-            go = (list(index-nl) > value)
+            go = (list(index - nl) > value)
 
             If (go) Then
-              list(index) = list(index-nl)
-              index = index-nl
+              list(index) = list(index - nl)
+              index = index - nl
             End If
           End Do
 
@@ -1141,7 +1170,7 @@ Contains
 
         ! Decrease the number of lists
 
-        nl = nl/2
+        nl = nl / 2
 
       End Do
 
@@ -1149,7 +1178,7 @@ Contains
 
   End Subroutine shellsort
 
-  Subroutine shellsort2(n,rank,list)
+  Subroutine shellsort2(n, rank, list)
 
     !!----------------------------------------------------------------------!
     !!
@@ -1166,11 +1195,11 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Integer,                   Intent( In    ) :: n
-    Integer, Dimension( 1:* ), Intent( InOut ) :: list,rank
+    Integer,                 Intent(In   ) :: n
+    Integer, Dimension(1:*), Intent(InOut) :: rank, list
 
+    Integer :: i, index, nl, rang, value
     Logical :: go
-    Integer :: nl,index,value,i,rang
 
     ! set up sort
 
@@ -1178,7 +1207,7 @@ Contains
 
       ! number of lists
 
-      nl = n/2
+      nl = n / 2
 
       ! iterate shell sort until there is a list
 
@@ -1186,22 +1215,22 @@ Contains
 
         ! for all lists from next-to-ground-level up to their end
 
-        Do i=nl+1,n
+        Do i = nl + 1, n
 
           value = list(i)
-          rang  = rank(i)
+          rang = rank(i)
           index = i
 
           ! Antibubble down between levels of the same list
 
           go = .true.
           Do While (index > nl .and. go)
-            go = (list(index-nl) > value)
+            go = (list(index - nl) > value)
 
             If (go) Then
-              list(index) = list(index-nl)
-              rank(index) = rank(index-nl)
-              index = index-nl
+              list(index) = list(index - nl)
+              rank(index) = rank(index - nl)
+              index = index - nl
             End If
           End Do
 
@@ -1214,7 +1243,7 @@ Contains
 
         ! Decrease the number of lists
 
-        nl = nl/2
+        nl = nl / 2
 
       End Do
 
@@ -1222,7 +1251,7 @@ Contains
 
   End Subroutine shellsort2
 
-  Function local_index(global_index,search_limit,rank,list)
+  Function local_index(global_index, search_limit, rank, list)
 
     !!----------------------------------------------------------------------!
     !!
@@ -1245,12 +1274,11 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Integer                                    :: local_index
+    Integer,                 Intent(In   ) :: global_index, search_limit
+    Integer, Dimension(1:*), Intent(In   ) :: rank, list
+    Integer                                :: local_index
 
-    Integer,                   Intent( In    ) :: global_index,search_limit
-    Integer, Dimension( 1:* ), Intent( In    ) :: rank,list
-
-    Integer :: point,lower_bound,upper_bound,down
+    Integer :: down, lower_bound, point, upper_bound
 
     ! Initialise
 
@@ -1258,13 +1286,13 @@ Contains
 
     ! Limits for the search
 
-    lower_bound=1
-    upper_bound=search_limit
+    lower_bound = 1
+    upper_bound = search_limit
 
     ! Get smart, check for exceptions (whether it's a false pass)
     ! and check for a match on bounds
 
-    If      (global_index <= 0) Then
+    If (global_index <= 0) Then
 
       local_index = 0
 
@@ -1293,9 +1321,9 @@ Contains
 
     ! Carry on then
 
-    Do While (upper_bound-lower_bound > 1)
+    Do While (upper_bound - lower_bound > 1)
 
-      point=(lower_bound+upper_bound)/2
+      point = (lower_bound + upper_bound) / 2
 
       If (global_index < list(point)) Then
 
@@ -1307,7 +1335,7 @@ Contains
 
       Else
 
-        down=point
+        down = point
 
         Do While (global_index == list(down))
 
@@ -1324,7 +1352,7 @@ Contains
 
   End Function local_index
 
-  Subroutine dcell(aaa,bbb)
+  Subroutine dcell(aaa, bbb)
 
     !!----------------------------------------------------------------------!
     !!
@@ -1351,86 +1379,86 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Real( Kind = wp ), Dimension( 1:9 ),  Intent( In    ) :: aaa
-    Real( Kind = wp ), Dimension( 1:10 ), Intent(   Out ) :: bbb
+    Real(Kind=wp), Dimension(1:9),  Intent(In   ) :: aaa
+    Real(Kind=wp), Dimension(1:10), Intent(  Out) :: bbb
 
-    Real( Kind = wp ) :: axb1,axb2,axb3,bxc1,bxc2,bxc3,cxa1,cxa2,cxa3, &
-      x(1:3),y(1:3),z(1:3),d(1:3)
+    Real(Kind=wp) :: axb1, axb2, axb3, bxc1, bxc2, bxc3, cxa1, cxa2, cxa3, d(1:3), x(1:3), y(1:3), &
+                     z(1:3)
 
     ! calculate lengths of cell vectors
 
-    bbb(1)=Sqrt(aaa(1)**2+aaa(2)**2+aaa(3)**2)
-    bbb(2)=Sqrt(aaa(4)**2+aaa(5)**2+aaa(6)**2)
-    bbb(3)=Sqrt(aaa(7)**2+aaa(8)**2+aaa(9)**2)
+    bbb(1) = Sqrt(aaa(1)**2 + aaa(2)**2 + aaa(3)**2)
+    bbb(2) = Sqrt(aaa(4)**2 + aaa(5)**2 + aaa(6)**2)
+    bbb(3) = Sqrt(aaa(7)**2 + aaa(8)**2 + aaa(9)**2)
 
     ! calculate cosines of cell angles
 
-    bbb(4)=(aaa(1)*aaa(4)+aaa(2)*aaa(5)+aaa(3)*aaa(6))/(bbb(1)*bbb(2))
-    bbb(5)=(aaa(1)*aaa(7)+aaa(2)*aaa(8)+aaa(3)*aaa(9))/(bbb(1)*bbb(3))
-    bbb(6)=(aaa(4)*aaa(7)+aaa(5)*aaa(8)+aaa(6)*aaa(9))/(bbb(2)*bbb(3))
+    bbb(4) = (aaa(1) * aaa(4) + aaa(2) * aaa(5) + aaa(3) * aaa(6)) / (bbb(1) * bbb(2))
+    bbb(5) = (aaa(1) * aaa(7) + aaa(2) * aaa(8) + aaa(3) * aaa(9)) / (bbb(1) * bbb(3))
+    bbb(6) = (aaa(4) * aaa(7) + aaa(5) * aaa(8) + aaa(6) * aaa(9)) / (bbb(2) * bbb(3))
 
     ! calculate vector products of cell vectors
 
-    axb1=aaa(2)*aaa(6)-aaa(3)*aaa(5)
-    axb2=aaa(3)*aaa(4)-aaa(1)*aaa(6)
-    axb3=aaa(1)*aaa(5)-aaa(2)*aaa(4)
+    axb1 = aaa(2) * aaa(6) - aaa(3) * aaa(5)
+    axb2 = aaa(3) * aaa(4) - aaa(1) * aaa(6)
+    axb3 = aaa(1) * aaa(5) - aaa(2) * aaa(4)
 
-    bxc1=aaa(5)*aaa(9)-aaa(6)*aaa(8)
-    bxc2=aaa(6)*aaa(7)-aaa(4)*aaa(9)
-    bxc3=aaa(4)*aaa(8)-aaa(5)*aaa(7)
+    bxc1 = aaa(5) * aaa(9) - aaa(6) * aaa(8)
+    bxc2 = aaa(6) * aaa(7) - aaa(4) * aaa(9)
+    bxc3 = aaa(4) * aaa(8) - aaa(5) * aaa(7)
 
-    cxa1=aaa(8)*aaa(3)-aaa(9)*aaa(2)
-    cxa2=aaa(9)*aaa(1)-aaa(7)*aaa(3)
-    cxa3=aaa(7)*aaa(2)-aaa(8)*aaa(1)
+    cxa1 = aaa(8) * aaa(3) - aaa(9) * aaa(2)
+    cxa2 = aaa(9) * aaa(1) - aaa(7) * aaa(3)
+    cxa3 = aaa(7) * aaa(2) - aaa(8) * aaa(1)
 
     ! calculate volume of cell
 
-    bbb(10)=Abs(aaa(1)*bxc1+aaa(2)*bxc2+aaa(3)*bxc3)
+    bbb(10) = Abs(aaa(1) * bxc1 + aaa(2) * bxc2 + aaa(3) * bxc3)
 
     ! calculate cell perpendicular widths
 
-    d(1)=bbb(10)/Sqrt(bxc1*bxc1+bxc2*bxc2+bxc3*bxc3)
-    d(2)=bbb(10)/Sqrt(cxa1*cxa1+cxa2*cxa2+cxa3*cxa3)
-    d(3)=bbb(10)/Sqrt(axb1*axb1+axb2*axb2+axb3*axb3)
+    d(1) = bbb(10) / Sqrt(bxc1 * bxc1 + bxc2 * bxc2 + bxc3 * bxc3)
+    d(2) = bbb(10) / Sqrt(cxa1 * cxa1 + cxa2 * cxa2 + cxa3 * cxa3)
+    d(3) = bbb(10) / Sqrt(axb1 * axb1 + axb2 * axb2 + axb3 * axb3)
 
-    x(1)=Abs(aaa(1))/bbb(1) ; y(1)=Abs(aaa(2))/bbb(1) ; z(1)=Abs(aaa(3))/bbb(1)
-    x(2)=Abs(aaa(4))/bbb(2) ; y(2)=Abs(aaa(5))/bbb(2) ; z(2)=Abs(aaa(6))/bbb(2)
-    x(3)=Abs(aaa(7))/bbb(3) ; y(3)=Abs(aaa(8))/bbb(3) ; z(3)=Abs(aaa(9))/bbb(3)
+    x(1) = Abs(aaa(1)) / bbb(1); y(1) = Abs(aaa(2)) / bbb(1); z(1) = Abs(aaa(3)) / bbb(1)
+    x(2) = Abs(aaa(4)) / bbb(2); y(2) = Abs(aaa(5)) / bbb(2); z(2) = Abs(aaa(6)) / bbb(2)
+    x(3) = Abs(aaa(7)) / bbb(3); y(3) = Abs(aaa(8)) / bbb(3); z(3) = Abs(aaa(9)) / bbb(3)
 
     ! distribute widths
 
-    If      (x(1) >= x(2) .and. x(1) >= x(3)) Then
-      bbb(7)=d(1)
+    If (x(1) >= x(2) .and. x(1) >= x(3)) Then
+      bbb(7) = d(1)
       If (y(2) >= y(3)) Then
-        bbb(8)=d(2)
-        bbb(9)=d(3)
+        bbb(8) = d(2)
+        bbb(9) = d(3)
       Else
-        bbb(8)=d(3)
-        bbb(9)=d(2)
+        bbb(8) = d(3)
+        bbb(9) = d(2)
       End If
     Else If (x(2) >= x(1) .and. x(2) >= x(3)) Then
-      bbb(7)=d(2)
+      bbb(7) = d(2)
       If (y(1) >= y(3)) Then
-        bbb(8)=d(1)
-        bbb(9)=d(3)
+        bbb(8) = d(1)
+        bbb(9) = d(3)
       Else
-        bbb(8)=d(3)
-        bbb(9)=d(1)
+        bbb(8) = d(3)
+        bbb(9) = d(1)
       End If
     Else
-      bbb(7)=d(3)
+      bbb(7) = d(3)
       If (y(1) >= y(2)) Then
-        bbb(8)=d(1)
-        bbb(9)=d(2)
+        bbb(8) = d(1)
+        bbb(9) = d(2)
       Else
-        bbb(8)=d(2)
-        bbb(9)=d(1)
+        bbb(8) = d(2)
+        bbb(9) = d(1)
       End If
     End If
 
   End Subroutine dcell
 
-  Subroutine invert(a,b,d)
+  Subroutine invert(a, b, d)
 
     !!----------------------------------------------------------------------!
     !!
@@ -1453,45 +1481,45 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Real( Kind = wp ), Dimension( 1:9 ), Intent( In    ) :: a
-    Real( Kind = wp ), Dimension( 1:9 ), Intent(   Out ) :: b
-    Real( Kind = wp ),                   Intent(   Out ) :: d
+    Real(Kind=wp), Dimension(1:9), Intent(In   ) :: a
+    Real(Kind=wp), Dimension(1:9), Intent(  Out) :: b
+    Real(Kind=wp),                 Intent(  Out) :: d
 
-    Real( Kind = wp ) :: r
+    Real(Kind=wp) :: r
 
     ! calculate adjoint matrix
 
-    b(1)=a(5)*a(9)-a(6)*a(8)
-    b(2)=a(3)*a(8)-a(2)*a(9)
-    b(3)=a(2)*a(6)-a(3)*a(5)
-    b(4)=a(6)*a(7)-a(4)*a(9)
-    b(5)=a(1)*a(9)-a(3)*a(7)
-    b(6)=a(3)*a(4)-a(1)*a(6)
-    b(7)=a(4)*a(8)-a(5)*a(7)
-    b(8)=a(2)*a(7)-a(1)*a(8)
-    b(9)=a(1)*a(5)-a(2)*a(4)
+    b(1) = a(5) * a(9) - a(6) * a(8)
+    b(2) = a(3) * a(8) - a(2) * a(9)
+    b(3) = a(2) * a(6) - a(3) * a(5)
+    b(4) = a(6) * a(7) - a(4) * a(9)
+    b(5) = a(1) * a(9) - a(3) * a(7)
+    b(6) = a(3) * a(4) - a(1) * a(6)
+    b(7) = a(4) * a(8) - a(5) * a(7)
+    b(8) = a(2) * a(7) - a(1) * a(8)
+    b(9) = a(1) * a(5) - a(2) * a(4)
 
     ! calculate determinant
 
-    d=a(1)*b(1)+a(4)*b(2)+a(7)*b(3)
-    r=0.0_wp
-    If (Abs(d) > 0.0_wp) r=1.0_wp/d
+    d = a(1) * b(1) + a(4) * b(2) + a(7) * b(3)
+    r = 0.0_wp
+    If (Abs(d) > 0.0_wp) r = 1.0_wp / d
 
     ! complete inverse matrix
 
-    b(1)=r*b(1)
-    b(2)=r*b(2)
-    b(3)=r*b(3)
-    b(4)=r*b(4)
-    b(5)=r*b(5)
-    b(6)=r*b(6)
-    b(7)=r*b(7)
-    b(8)=r*b(8)
-    b(9)=r*b(9)
+    b(1) = r * b(1)
+    b(2) = r * b(2)
+    b(3) = r * b(3)
+    b(4) = r * b(4)
+    b(5) = r * b(5)
+    b(6) = r * b(6)
+    b(7) = r * b(7)
+    b(8) = r * b(8)
+    b(9) = r * b(9)
 
   End Subroutine invert
 
-  Subroutine images(imcon,cell,pairs,xxx,yyy,zzz)
+  Subroutine images(imcon, cell, pairs, xxx, yyy, zzz)
 
     !!----------------------------------------------------------------------!
     !!
@@ -1523,77 +1551,77 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Integer,                              Intent( In    ) :: imcon,pairs
-    Real( Kind = wp ), Dimension( 1:9 ),  Intent( In    ) :: cell
-    Real( Kind = wp ), Dimension( 1:* ),  Intent( InOut ) :: xxx,yyy,zzz
+    Integer,                       Intent(In   ) :: imcon
+    Real(Kind=wp), Dimension(1:9), Intent(In   ) :: cell
+    Integer,                       Intent(In   ) :: pairs
+    Real(Kind=wp), Dimension(1:*), Intent(InOut) :: xxx, yyy, zzz
 
-    Integer           :: i
-    Real( Kind = wp ) :: aaa,bbb,ccc,ddd,det,rcell(1:9), &
-      xss,yss,zss
+    Integer       :: i
+    Real(Kind=wp) :: aaa, bbb, ccc, ddd, det, rcell(1:9), xss, yss, zss
 
     If (imcon == 1) Then
 
       ! standard cubic boundary conditions
 
-      aaa=1.0_wp/cell(1)
+      aaa = 1.0_wp / cell(1)
 
-      Do i=1,pairs
-        xxx(i)=xxx(i)-cell(1)*Anint(aaa*xxx(i))
-        yyy(i)=yyy(i)-cell(1)*Anint(aaa*yyy(i))
-        zzz(i)=zzz(i)-cell(1)*Anint(aaa*zzz(i))
+      Do i = 1, pairs
+        xxx(i) = xxx(i) - cell(1) * Anint(aaa * xxx(i))
+        yyy(i) = yyy(i) - cell(1) * Anint(aaa * yyy(i))
+        zzz(i) = zzz(i) - cell(1) * Anint(aaa * zzz(i))
       End Do
 
     Else If (imcon == 2 .or. imcon == 0) Then
 
       ! rectangular (slab) boundary conditions
 
-      aaa=1.0_wp/cell(1)
-      bbb=1.0_wp/cell(5)
-      ccc=1.0_wp/cell(9)
+      aaa = 1.0_wp / cell(1)
+      bbb = 1.0_wp / cell(5)
+      ccc = 1.0_wp / cell(9)
 
-      Do i=1,pairs
-        xxx(i)=xxx(i)-cell(1)*Anint(aaa*xxx(i))
-        yyy(i)=yyy(i)-cell(5)*Anint(bbb*yyy(i))
-        zzz(i)=zzz(i)-cell(9)*Anint(ccc*zzz(i))
+      Do i = 1, pairs
+        xxx(i) = xxx(i) - cell(1) * Anint(aaa * xxx(i))
+        yyy(i) = yyy(i) - cell(5) * Anint(bbb * yyy(i))
+        zzz(i) = zzz(i) - cell(9) * Anint(ccc * zzz(i))
       End Do
 
     Else If (imcon == 3) Then
 
       ! parallelepiped boundary conditions
 
-      Call invert(cell,rcell,det)
+      Call invert(cell, rcell, det)
 
-      Do i=1,pairs
-        xss=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
-        yss=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
-        zss=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
+      Do i = 1, pairs
+        xss = rcell(1) * xxx(i) + rcell(4) * yyy(i) + rcell(7) * zzz(i)
+        yss = rcell(2) * xxx(i) + rcell(5) * yyy(i) + rcell(8) * zzz(i)
+        zss = rcell(3) * xxx(i) + rcell(6) * yyy(i) + rcell(9) * zzz(i)
 
-        xss=xss-Anint(xss)
-        yss=yss-Anint(yss)
-        zss=zss-Anint(zss)
+        xss = xss - Anint(xss)
+        yss = yss - Anint(yss)
+        zss = zss - Anint(zss)
 
-        xxx(i)=cell(1)*xss+cell(4)*yss+cell(7)*zss
-        yyy(i)=cell(2)*xss+cell(5)*yss+cell(8)*zss
-        zzz(i)=cell(3)*xss+cell(6)*yss+cell(9)*zss
+        xxx(i) = cell(1) * xss + cell(4) * yss + cell(7) * zss
+        yyy(i) = cell(2) * xss + cell(5) * yss + cell(8) * zss
+        zzz(i) = cell(3) * xss + cell(6) * yss + cell(9) * zss
       End Do
 
     Else If (imcon == 4) Then
 
       ! truncated octahedral boundary conditions
 
-      If (.not.(Abs(cell(1)-cell(5)) < 1.0e-6_wp .and. Abs(cell(5)-cell(9)) < 1.0e-6_wp)) Call error(130)
+      If (.not. (Abs(cell(1) - cell(5)) < 1.0e-6_wp .and. Abs(cell(5) - cell(9)) < 1.0e-6_wp)) Call error(130)
 
-      aaa=1.0_wp/cell(1)
+      aaa = 1.0_wp / cell(1)
 
-      Do i=1,pairs
-        xxx(i)=xxx(i)-cell(1)*Anint(aaa*xxx(i))
-        yyy(i)=yyy(i)-cell(1)*Anint(aaa*yyy(i))
-        zzz(i)=zzz(i)-cell(1)*Anint(aaa*zzz(i))
+      Do i = 1, pairs
+        xxx(i) = xxx(i) - cell(1) * Anint(aaa * xxx(i))
+        yyy(i) = yyy(i) - cell(1) * Anint(aaa * yyy(i))
+        zzz(i) = zzz(i) - cell(1) * Anint(aaa * zzz(i))
 
-        If ((Abs(xxx(i))+Abs(yyy(i))+Abs(zzz(i))) >= 0.75_wp*cell(1)) Then
-          xxx(i)=xxx(i)-0.5_wp*Sign(cell(1),xxx(i))
-          yyy(i)=yyy(i)-0.5_wp*Sign(cell(1),yyy(i))
-          zzz(i)=zzz(i)-0.5_wp*Sign(cell(1),zzz(i))
+        If ((Abs(xxx(i)) + Abs(yyy(i)) + Abs(zzz(i))) >= 0.75_wp * cell(1)) Then
+          xxx(i) = xxx(i) - 0.5_wp * Sign(cell(1), xxx(i))
+          yyy(i) = yyy(i) - 0.5_wp * Sign(cell(1), yyy(i))
+          zzz(i) = zzz(i) - 0.5_wp * Sign(cell(1), zzz(i))
         End If
       End Do
 
@@ -1601,20 +1629,20 @@ Contains
 
       ! rhombic Dodecahedral boundary conditions
 
-      If (.not.(Abs(cell(1)-cell(5)) < 1.0e-6_wp .and. Abs(cell(9)-cell(1)*rt2) < 1.0e-6_wp)) Call error(140)
+      If (.not. (Abs(cell(1) - cell(5)) < 1.0e-6_wp .and. Abs(cell(9) - cell(1) * rt2) < 1.0e-6_wp)) Call error(140)
 
-      aaa=1.0_wp/cell(1)
-      bbb=1.0_wp/cell(9)
+      aaa = 1.0_wp / cell(1)
+      bbb = 1.0_wp / cell(9)
 
-      Do i=1,pairs
-        xxx(i)=xxx(i)-cell(1)*Anint(aaa*xxx(i))
-        yyy(i)=yyy(i)-cell(1)*Anint(aaa*yyy(i))
-        zzz(i)=zzz(i)-cell(9)*Anint(bbb*zzz(i))
+      Do i = 1, pairs
+        xxx(i) = xxx(i) - cell(1) * Anint(aaa * xxx(i))
+        yyy(i) = yyy(i) - cell(1) * Anint(aaa * yyy(i))
+        zzz(i) = zzz(i) - cell(9) * Anint(bbb * zzz(i))
 
-        If ((Abs(xxx(i))+Abs(yyy(i))+Abs(rt2*zzz(i))) >= cell(1)) Then
-          xxx(i)=xxx(i)-0.5_wp*Sign(cell(1),xxx(i))
-          yyy(i)=yyy(i)-0.5_wp*Sign(cell(1),yyy(i))
-          zzz(i)=zzz(i)-0.5_wp*Sign(cell(9),zzz(i))
+        If ((Abs(xxx(i)) + Abs(yyy(i)) + Abs(rt2 * zzz(i))) >= cell(1)) Then
+          xxx(i) = xxx(i) - 0.5_wp * Sign(cell(1), xxx(i))
+          yyy(i) = yyy(i) - 0.5_wp * Sign(cell(1), yyy(i))
+          zzz(i) = zzz(i) - 0.5_wp * Sign(cell(9), zzz(i))
         End If
       End Do
 
@@ -1622,46 +1650,46 @@ Contains
 
       ! x-y boundary conditions
 
-      det=cell(1)*cell(5)-cell(2)*cell(4)
+      det = cell(1) * cell(5) - cell(2) * cell(4)
 
       If (Abs(det) < 1.0e-6_wp) Call error(120)
 
-      det=1.0_wp/det
+      det = 1.0_wp / det
 
-      rcell(1) =  det*cell(5)
-      rcell(2) = -det*cell(2)
-      rcell(4) = -det*cell(4)
-      rcell(5) =  det*cell(1)
+      rcell(1) = det * cell(5)
+      rcell(2) = -det * cell(2)
+      rcell(4) = -det * cell(4)
+      rcell(5) = det * cell(1)
 
-      Do i=1,pairs
-        xss=rcell(1)*xxx(i)+rcell(4)*yyy(i)
-        yss=rcell(2)*xxx(i)+rcell(5)*yyy(i)
+      Do i = 1, pairs
+        xss = rcell(1) * xxx(i) + rcell(4) * yyy(i)
+        yss = rcell(2) * xxx(i) + rcell(5) * yyy(i)
 
-        xss=xss-Anint(xss)
-        yss=yss-Anint(yss)
+        xss = xss - Anint(xss)
+        yss = yss - Anint(yss)
 
-        xxx(i)=cell(1)*xss+cell(4)*yss
-        yyy(i)=cell(2)*xss+cell(5)*yss
+        xxx(i) = cell(1) * xss + cell(4) * yss
+        yyy(i) = cell(2) * xss + cell(5) * yss
       End Do
 
     Else If (imcon == 7) Then
 
       ! hexagonal prism boundary conditions
 
-      If (Abs(cell(1)-rt3*cell(5)) > 1.0e-6_wp) Call error(135)
+      If (Abs(cell(1) - rt3 * cell(5)) > 1.0e-6_wp) Call error(135)
 
-      aaa=cell(1)/(rt3*2.0_wp)
-      bbb=cell(1)/rt3
-      ccc=rt3/cell(1)
-      ddd=1.0_wp/cell(9)
+      aaa = cell(1) / (rt3 * 2.0_wp)
+      bbb = cell(1) / rt3
+      ccc = rt3 / cell(1)
+      ddd = 1.0_wp / cell(9)
 
-      Do i=1,pairs
-        yyy(i)=yyy(i)-bbb*Anint(ccc*yyy(i))
-        zzz(i)=zzz(i)-cell(9)*Anint(ddd*zzz(i))
+      Do i = 1, pairs
+        yyy(i) = yyy(i) - bbb * Anint(ccc * yyy(i))
+        zzz(i) = zzz(i) - cell(9) * Anint(ddd * zzz(i))
 
-        If ((Abs(yyy(i))+Abs(rt3*xxx(i))) >= bbb) Then
-          xxx(i)=xxx(i)-rt3*Sign(aaa,xxx(i))
-          yyy(i)=yyy(i)-Sign(aaa,yyy(i))
+        If ((Abs(yyy(i)) + Abs(rt3 * xxx(i))) >= bbb) Then
+          xxx(i) = xxx(i) - rt3 * Sign(aaa, xxx(i))
+          yyy(i) = yyy(i) - Sign(aaa, yyy(i))
         End If
       End Do
 
@@ -1669,7 +1697,7 @@ Contains
 
   End Subroutine images
 
-  Subroutine images_s(imcon,cell,xxx,yyy,zzz)
+  Subroutine images_s(imcon, cell, xxx, yyy, zzz)
 
     !!----------------------------------------------------------------------!
     !!
@@ -1702,137 +1730,136 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Integer,                              Intent( In    ) :: imcon
-    Real( Kind = wp ), Dimension( 1:9 ),  Intent( In    ) :: cell
-    Real( Kind = wp ),                    Intent( InOut ) :: xxx,yyy,zzz
+    Integer,                       Intent(In   ) :: imcon
+    Real(Kind=wp), Dimension(1:9), Intent(In   ) :: cell
+    Real(Kind=wp),                 Intent(InOut) :: xxx, yyy, zzz
 
-    Real( Kind = wp ) :: aaa,bbb,ccc,ddd,det,rcell(1:9), &
-      xss,yss,zss
+    Real(Kind=wp) :: aaa, bbb, ccc, ddd, det, rcell(1:9), xss, yss, zss
 
     If (imcon == 1) Then
 
       ! standard cubic boundary conditions
 
-      aaa=1.0_wp/cell(1)
+      aaa = 1.0_wp / cell(1)
 
-      xxx=xxx-cell(1)*Anint(aaa*xxx)
-      yyy=yyy-cell(1)*Anint(aaa*yyy)
-      zzz=zzz-cell(1)*Anint(aaa*zzz)
+      xxx = xxx - cell(1) * Anint(aaa * xxx)
+      yyy = yyy - cell(1) * Anint(aaa * yyy)
+      zzz = zzz - cell(1) * Anint(aaa * zzz)
 
     Else If (imcon == 2 .or. imcon == 0) Then ! no PBC box wrapping exception
 
       ! rectangular (slab) boundary conditions
 
-      aaa=1.0_wp/cell(1)
-      bbb=1.0_wp/cell(5)
-      ccc=1.0_wp/cell(9)
-      xxx=xxx-cell(1)*Anint(aaa*xxx)
-      yyy=yyy-cell(5)*Anint(bbb*yyy)
-      zzz=zzz-cell(9)*Anint(ccc*zzz)
+      aaa = 1.0_wp / cell(1)
+      bbb = 1.0_wp / cell(5)
+      ccc = 1.0_wp / cell(9)
+      xxx = xxx - cell(1) * Anint(aaa * xxx)
+      yyy = yyy - cell(5) * Anint(bbb * yyy)
+      zzz = zzz - cell(9) * Anint(ccc * zzz)
 
     Else If (imcon == 3) Then
 
       ! parallelepiped boundary conditions
 
-      Call invert(cell,rcell,det)
+      Call invert(cell, rcell, det)
 
-      xss=rcell(1)*xxx+rcell(4)*yyy+rcell(7)*zzz
-      yss=rcell(2)*xxx+rcell(5)*yyy+rcell(8)*zzz
-      zss=rcell(3)*xxx+rcell(6)*yyy+rcell(9)*zzz
+      xss = rcell(1) * xxx + rcell(4) * yyy + rcell(7) * zzz
+      yss = rcell(2) * xxx + rcell(5) * yyy + rcell(8) * zzz
+      zss = rcell(3) * xxx + rcell(6) * yyy + rcell(9) * zzz
 
-      xss=xss-Anint(xss)
-      yss=yss-Anint(yss)
-      zss=zss-Anint(zss)
+      xss = xss - Anint(xss)
+      yss = yss - Anint(yss)
+      zss = zss - Anint(zss)
 
-      xxx=cell(1)*xss+cell(4)*yss+cell(7)*zss
-      yyy=cell(2)*xss+cell(5)*yss+cell(8)*zss
-      zzz=cell(3)*xss+cell(6)*yss+cell(9)*zss
+      xxx = cell(1) * xss + cell(4) * yss + cell(7) * zss
+      yyy = cell(2) * xss + cell(5) * yss + cell(8) * zss
+      zzz = cell(3) * xss + cell(6) * yss + cell(9) * zss
 
     Else If (imcon == 4) Then
 
       ! truncated octahedral boundary conditions
 
-      If (.not.(Abs(cell(1)-cell(5)) < 1.0e-6_wp .and. Abs(cell(5)-cell(9)) < 1.0e-6_wp)) Call error(130)
+      If (.not. (Abs(cell(1) - cell(5)) < 1.0e-6_wp .and. Abs(cell(5) - cell(9)) < 1.0e-6_wp)) Call error(130)
 
-      aaa=1.0_wp/cell(1)
+      aaa = 1.0_wp / cell(1)
 
-      xxx=xxx-cell(1)*Anint(aaa*xxx)
-      yyy=yyy-cell(1)*Anint(aaa*yyy)
-      zzz=zzz-cell(1)*Anint(aaa*zzz)
+      xxx = xxx - cell(1) * Anint(aaa * xxx)
+      yyy = yyy - cell(1) * Anint(aaa * yyy)
+      zzz = zzz - cell(1) * Anint(aaa * zzz)
 
-      If ((Abs(xxx)+Abs(yyy)+Abs(zzz)) >= 0.75_wp*cell(1)) Then
-        xxx=xxx-0.5_wp*Sign(cell(1),xxx)
-        yyy=yyy-0.5_wp*Sign(cell(1),yyy)
-        zzz=zzz-0.5_wp*Sign(cell(1),zzz)
+      If ((Abs(xxx) + Abs(yyy) + Abs(zzz)) >= 0.75_wp * cell(1)) Then
+        xxx = xxx - 0.5_wp * Sign(cell(1), xxx)
+        yyy = yyy - 0.5_wp * Sign(cell(1), yyy)
+        zzz = zzz - 0.5_wp * Sign(cell(1), zzz)
       End If
 
     Else If (imcon == 5) Then
 
       ! rhombic Dodecahedral boundary conditions
 
-      If (.not.(Abs(cell(1)-cell(5)) < 1.0e-6_wp .and. Abs(cell(9)-cell(1)*rt2) < 1.0e-6_wp)) Call error(140)
+      If (.not. (Abs(cell(1) - cell(5)) < 1.0e-6_wp .and. Abs(cell(9) - cell(1) * rt2) < 1.0e-6_wp)) Call error(140)
 
-      aaa=1.0_wp/cell(1)
-      bbb=1.0_wp/cell(9)
+      aaa = 1.0_wp / cell(1)
+      bbb = 1.0_wp / cell(9)
 
-      xxx=xxx-cell(1)*Anint(aaa*xxx)
-      yyy=yyy-cell(1)*Anint(aaa*yyy)
-      zzz=zzz-cell(9)*Anint(bbb*zzz)
+      xxx = xxx - cell(1) * Anint(aaa * xxx)
+      yyy = yyy - cell(1) * Anint(aaa * yyy)
+      zzz = zzz - cell(9) * Anint(bbb * zzz)
 
-      If ((Abs(xxx)+Abs(yyy)+Abs(rt2*zzz)) >= cell(1)) Then
-        xxx=xxx-0.5_wp*Sign(cell(1),xxx)
-        yyy=yyy-0.5_wp*Sign(cell(1),yyy)
-        zzz=zzz-0.5_wp*Sign(cell(9),zzz)
+      If ((Abs(xxx) + Abs(yyy) + Abs(rt2 * zzz)) >= cell(1)) Then
+        xxx = xxx - 0.5_wp * Sign(cell(1), xxx)
+        yyy = yyy - 0.5_wp * Sign(cell(1), yyy)
+        zzz = zzz - 0.5_wp * Sign(cell(9), zzz)
       End If
 
     Else If (imcon == 6) Then
 
       ! x-y boundary conditions
 
-      det=cell(1)*cell(5)-cell(2)*cell(4)
+      det = cell(1) * cell(5) - cell(2) * cell(4)
 
       If (Abs(det) < 1.0e-6_wp) Call error(120)
 
-      det=1.0_wp/det
+      det = 1.0_wp / det
 
-      rcell(1) =  det*cell(5)
-      rcell(2) = -det*cell(2)
-      rcell(4) = -det*cell(4)
-      rcell(5) =  det*cell(1)
+      rcell(1) = det * cell(5)
+      rcell(2) = -det * cell(2)
+      rcell(4) = -det * cell(4)
+      rcell(5) = det * cell(1)
 
-      xss=rcell(1)*xxx+rcell(4)*yyy
-      yss=rcell(2)*xxx+rcell(5)*yyy
+      xss = rcell(1) * xxx + rcell(4) * yyy
+      yss = rcell(2) * xxx + rcell(5) * yyy
 
-      xss=xss-Anint(xss)
-      yss=yss-Anint(yss)
+      xss = xss - Anint(xss)
+      yss = yss - Anint(yss)
 
-      xxx=cell(1)*xss+cell(4)*yss
-      yyy=cell(2)*xss+cell(5)*yss
+      xxx = cell(1) * xss + cell(4) * yss
+      yyy = cell(2) * xss + cell(5) * yss
 
     Else If (imcon == 7) Then
 
       ! hexagonal prism boundary conditions
 
-      If (Abs(cell(1)-rt3*cell(5)) > 1.0e-6_wp) Call error(135)
+      If (Abs(cell(1) - rt3 * cell(5)) > 1.0e-6_wp) Call error(135)
 
-      aaa=cell(1)/(rt3*2.0_wp)
-      bbb=cell(1)/rt3
-      ccc=rt3/cell(1)
-      ddd=1.0_wp/cell(9)
+      aaa = cell(1) / (rt3 * 2.0_wp)
+      bbb = cell(1) / rt3
+      ccc = rt3 / cell(1)
+      ddd = 1.0_wp / cell(9)
 
-      yyy=yyy-bbb*Anint(ccc*yyy)
-      zzz=zzz-cell(9)*Anint(ddd*zzz)
+      yyy = yyy - bbb * Anint(ccc * yyy)
+      zzz = zzz - cell(9) * Anint(ddd * zzz)
 
-      If ((Abs(yyy)+Abs(rt3*xxx)) >= bbb) Then
-        xxx=xxx-rt3*Sign(aaa,xxx)
-        yyy=yyy-Sign(aaa,yyy)
+      If ((Abs(yyy) + Abs(rt3 * xxx)) >= bbb) Then
+        xxx = xxx - rt3 * Sign(aaa, xxx)
+        yyy = yyy - Sign(aaa, yyy)
       End If
 
     End If
 
   End Subroutine images_s
 
-  Subroutine pbcshift_parts(imcon,cell,natms,parts)
+  Subroutine pbcshift_parts(imcon, cell, natms, parts)
 
     !!----------------------------------------------------------------------!
     !!
@@ -1862,114 +1889,113 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
+    Integer,                        Intent(In   ) :: imcon
+    Real(Kind=wp), Dimension(1:9),  Intent(In   ) :: cell
+    Integer,                        Intent(In   ) :: natms
+    Type(corePart), Dimension(1:*), Intent(InOut) :: parts
 
-    Integer,                              Intent( In    ) :: imcon,natms
-    Real( Kind = wp ), Dimension( 1:9 ),  Intent( In    ) :: cell
-    Type( corePart ),  Dimension( 1:* ),  Intent( InOut ) :: parts
-
-    Integer           :: i
-    Real( Kind = wp ) :: aaa,bbb,ccc,ddd,det,rcell(1:9), &
-      xss,yss,zss
+    Integer       :: i
+    Real(Kind=wp) :: aaa, bbb, ccc, ddd, det, rcell(1:9), xss, yss, zss
 
     If (imcon == 1) Then
 
       ! standard cubic boundary conditions
 
-      aaa=1.0_wp/cell(1)
+      aaa = 1.0_wp / cell(1)
 
-      Do i=1,natms
-        xss=aaa*parts(i)%xxx
-        yss=aaa*parts(i)%yyy
-        zss=aaa*parts(i)%zzz
+      Do i = 1, natms
+        xss = aaa * parts(i)%xxx
+        yss = aaa * parts(i)%yyy
+        zss = aaa * parts(i)%zzz
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        parts(i)%xxx=cell(1)*xss
-        parts(i)%yyy=cell(1)*yss
-        parts(i)%zzz=cell(1)*zss
+        parts(i)%xxx = cell(1) * xss
+        parts(i)%yyy = cell(1) * yss
+        parts(i)%zzz = cell(1) * zss
       End Do
 
     Else If (imcon == 2 .or. imcon == 0) Then ! no PBC box wrapping exception
 
       ! rectangular boundary conditions
 
-      aaa=1.0_wp/cell(1)
-      bbb=1.0_wp/cell(5)
-      ccc=1.0_wp/cell(9)
+      aaa = 1.0_wp / cell(1)
+      bbb = 1.0_wp / cell(5)
+      ccc = 1.0_wp / cell(9)
 
-      Do i=1,natms
-        xss=aaa*parts(i)%xxx
-        yss=bbb*parts(i)%yyy
-        zss=ccc*parts(i)%zzz
+      Do i = 1, natms
+        xss = aaa * parts(i)%xxx
+        yss = bbb * parts(i)%yyy
+        zss = ccc * parts(i)%zzz
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        parts(i)%xxx=cell(1)*xss
-        parts(i)%yyy=cell(5)*yss
-        parts(i)%zzz=cell(9)*zss
+        parts(i)%xxx = cell(1) * xss
+        parts(i)%yyy = cell(5) * yss
+        parts(i)%zzz = cell(9) * zss
       End Do
 
     Else If (imcon == 3) Then
 
       ! parallelepiped boundary conditions
 
-      Call invert(cell,rcell,det)
+      Call invert(cell, rcell, det)
 
-      Do i=1,natms
-        xss=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz
-        yss=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz
-        zss=rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz
+      Do i = 1, natms
+        xss = rcell(1) * parts(i)%xxx + rcell(4) * parts(i)%yyy + rcell(7) * parts(i)%zzz
+        yss = rcell(2) * parts(i)%xxx + rcell(5) * parts(i)%yyy + rcell(8) * parts(i)%zzz
+        zss = rcell(3) * parts(i)%xxx + rcell(6) * parts(i)%yyy + rcell(9) * parts(i)%zzz
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        parts(i)%xxx=cell(1)*xss+cell(4)*yss+cell(7)*zss
-        parts(i)%yyy=cell(2)*xss+cell(5)*yss+cell(8)*zss
-        parts(i)%zzz=cell(3)*xss+cell(6)*yss+cell(9)*zss
+        parts(i)%xxx = cell(1) * xss + cell(4) * yss + cell(7) * zss
+        parts(i)%yyy = cell(2) * xss + cell(5) * yss + cell(8) * zss
+        parts(i)%zzz = cell(3) * xss + cell(6) * yss + cell(9) * zss
       End Do
 
     Else If (imcon == 4) Then
 
       ! truncated octahedral boundary conditions
 
-      If (.not.(Abs(cell(1)-cell(5)) < 1.0e-6_wp .and. Abs(cell(5)-cell(9)) < 1.0e-6_wp)) Call error(130)
+      If (.not. (Abs(cell(1) - cell(5)) < 1.0e-6_wp .and. Abs(cell(5) - cell(9)) < 1.0e-6_wp)) Call error(130)
 
-      aaa=1.0_wp/cell(1)
+      aaa = 1.0_wp / cell(1)
 
-      Do i=1,natms
-        xss=aaa*parts(i)%xxx
-        yss=aaa*parts(i)%yyy
-        zss=aaa*parts(i)%zzz
+      Do i = 1, natms
+        xss = aaa * parts(i)%xxx
+        yss = aaa * parts(i)%yyy
+        zss = aaa * parts(i)%zzz
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        parts(i)%xxx=cell(1)*xss
-        parts(i)%yyy=cell(1)*yss
-        parts(i)%zzz=cell(1)*zss
+        parts(i)%xxx = cell(1) * xss
+        parts(i)%yyy = cell(1) * yss
+        parts(i)%zzz = cell(1) * zss
 
-        If ((Abs(parts(i)%xxx)+Abs(parts(i)%yyy)+Abs(parts(i)%zzz)) >= 0.75_wp*cell(1)) Then
-          parts(i)%xxx=parts(i)%xxx-0.5_wp*Sign(cell(1),parts(i)%xxx)
-          parts(i)%yyy=parts(i)%yyy-0.5_wp*Sign(cell(1),parts(i)%yyy)
-          parts(i)%zzz=parts(i)%zzz-0.5_wp*Sign(cell(1),parts(i)%zzz)
+        If ((Abs(parts(i)%xxx) + Abs(parts(i)%yyy) + Abs(parts(i)%zzz)) >= 0.75_wp * cell(1)) Then
+          parts(i)%xxx = parts(i)%xxx - 0.5_wp * Sign(cell(1), parts(i)%xxx)
+          parts(i)%yyy = parts(i)%yyy - 0.5_wp * Sign(cell(1), parts(i)%yyy)
+          parts(i)%zzz = parts(i)%zzz - 0.5_wp * Sign(cell(1), parts(i)%zzz)
 
-          xss=aaa*parts(i)%xxx
-          yss=aaa*parts(i)%yyy
-          zss=aaa*parts(i)%zzz
+          xss = aaa * parts(i)%xxx
+          yss = aaa * parts(i)%yyy
+          zss = aaa * parts(i)%zzz
 
-          xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-          yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-          zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+          xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+          yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+          zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-          parts(i)%xxx=cell(1)*xss
-          parts(i)%yyy=cell(1)*yss
-          parts(i)%zzz=cell(1)*zss
+          parts(i)%xxx = cell(1) * xss
+          parts(i)%yyy = cell(1) * yss
+          parts(i)%zzz = cell(1) * zss
         End If
       End Do
 
@@ -1977,40 +2003,40 @@ Contains
 
       ! rhombic Dodecahedral boundary conditions
 
-      If (.not.(Abs(cell(1)-cell(5)) < 1.0e-6_wp .and. Abs(cell(9)-cell(1)*rt2) < 1.0e-6_wp)) Call error(140)
+      If (.not. (Abs(cell(1) - cell(5)) < 1.0e-6_wp .and. Abs(cell(9) - cell(1) * rt2) < 1.0e-6_wp)) Call error(140)
 
-      aaa=1.0_wp/cell(1)
-      bbb=1.0_wp/cell(9)
+      aaa = 1.0_wp / cell(1)
+      bbb = 1.0_wp / cell(9)
 
-      Do i=1,natms
-        xss=aaa*parts(i)%xxx
-        yss=aaa*parts(i)%yyy
-        zss=bbb*parts(i)%zzz
+      Do i = 1, natms
+        xss = aaa * parts(i)%xxx
+        yss = aaa * parts(i)%yyy
+        zss = bbb * parts(i)%zzz
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        parts(i)%xxx=cell(1)*xss
-        parts(i)%yyy=cell(1)*yss
-        parts(i)%zzz=cell(9)*zss
+        parts(i)%xxx = cell(1) * xss
+        parts(i)%yyy = cell(1) * yss
+        parts(i)%zzz = cell(9) * zss
 
-        If ((Abs(parts(i)%xxx)+Abs(parts(i)%yyy)+Abs(rt2*parts(i)%zzz)) >= cell(1)) Then
-          parts(i)%xxx=parts(i)%xxx-0.5_wp*Sign(cell(1),parts(i)%xxx)
-          parts(i)%yyy=parts(i)%yyy-0.5_wp*Sign(cell(1),parts(i)%yyy)
-          parts(i)%zzz=parts(i)%zzz-0.5_wp*Sign(cell(9),parts(i)%zzz)
+        If ((Abs(parts(i)%xxx) + Abs(parts(i)%yyy) + Abs(rt2 * parts(i)%zzz)) >= cell(1)) Then
+          parts(i)%xxx = parts(i)%xxx - 0.5_wp * Sign(cell(1), parts(i)%xxx)
+          parts(i)%yyy = parts(i)%yyy - 0.5_wp * Sign(cell(1), parts(i)%yyy)
+          parts(i)%zzz = parts(i)%zzz - 0.5_wp * Sign(cell(9), parts(i)%zzz)
 
-          xss=aaa*parts(i)%xxx
-          yss=aaa*parts(i)%yyy
-          zss=bbb*parts(i)%zzz
+          xss = aaa * parts(i)%xxx
+          yss = aaa * parts(i)%yyy
+          zss = bbb * parts(i)%zzz
 
-          xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-          yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-          zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+          xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+          yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+          zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-          parts(i)%xxx=cell(1)*xss
-          parts(i)%yyy=cell(1)*yss
-          parts(i)%zzz=cell(9)*zss
+          parts(i)%xxx = cell(1) * xss
+          parts(i)%yyy = cell(1) * yss
+          parts(i)%zzz = cell(9) * zss
         End If
       End Do
 
@@ -2018,55 +2044,55 @@ Contains
 
       ! x-y boundary conditions (SLAB)
 
-      det=cell(1)*cell(5)-cell(2)*cell(4)
+      det = cell(1) * cell(5) - cell(2) * cell(4)
 
       If (Abs(det) < 1.0e-6_wp) Call error(120)
 
-      det=1.0_wp/det
+      det = 1.0_wp / det
 
-      rcell(1) =  det*cell(5)
-      rcell(2) = -det*cell(2)
-      rcell(4) = -det*cell(4)
-      rcell(5) =  det*cell(1)
+      rcell(1) = det * cell(5)
+      rcell(2) = -det * cell(2)
+      rcell(4) = -det * cell(4)
+      rcell(5) = det * cell(1)
 
-      Do i=1,natms
-        xss=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy
-        yss=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy
+      Do i = 1, natms
+        xss = rcell(1) * parts(i)%xxx + rcell(4) * parts(i)%yyy
+        yss = rcell(2) * parts(i)%xxx + rcell(5) * parts(i)%yyy
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
 
-        parts(i)%xxx=cell(1)*xss+cell(4)*yss
-        parts(i)%yyy=cell(2)*xss+cell(5)*yss
+        parts(i)%xxx = cell(1) * xss + cell(4) * yss
+        parts(i)%yyy = cell(2) * xss + cell(5) * yss
       End Do
 
     Else If (imcon == 7) Then
 
       ! hexagonal prism boundary conditions
 
-      If (Abs(cell(1)-rt3*cell(5)) > 1.0e-6_wp) Call error(135)
+      If (Abs(cell(1) - rt3 * cell(5)) > 1.0e-6_wp) Call error(135)
 
-      aaa=cell(1)/(rt3*2.0_wp)
-      bbb=cell(1)/rt3
-      ccc=rt3/cell(1)
-      ddd=1.0_wp/cell(9)
+      aaa = cell(1) / (rt3 * 2.0_wp)
+      bbb = cell(1) / rt3
+      ccc = rt3 / cell(1)
+      ddd = 1.0_wp / cell(9)
 
-      Do i=1,natms
-        zss=ddd*parts(i)%zzz
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
-        parts(i)%zzz=cell(9)*zss
+      Do i = 1, natms
+        zss = ddd * parts(i)%zzz
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
+        parts(i)%zzz = cell(9) * zss
 
-        yss=ccc*parts(i)%yyy
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        parts(i)%yyy=bbb*yss
+        yss = ccc * parts(i)%yyy
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        parts(i)%yyy = bbb * yss
 
-        If ((Abs(parts(i)%yyy)+Abs(rt3*parts(i)%xxx)) >= bbb) Then
-          parts(i)%xxx=parts(i)%xxx-rt3*Sign(aaa,parts(i)%xxx)
-          parts(i)%yyy=parts(i)%yyy-Sign(aaa,parts(i)%yyy)
+        If ((Abs(parts(i)%yyy) + Abs(rt3 * parts(i)%xxx)) >= bbb) Then
+          parts(i)%xxx = parts(i)%xxx - rt3 * Sign(aaa, parts(i)%xxx)
+          parts(i)%yyy = parts(i)%yyy - Sign(aaa, parts(i)%yyy)
 
-          yss=ccc*parts(i)%yyy
-          yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-          parts(i)%yyy=bbb*yss
+          yss = ccc * parts(i)%yyy
+          yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+          parts(i)%yyy = bbb * yss
         End If
       End Do
 
@@ -2074,7 +2100,7 @@ Contains
 
   End Subroutine pbcshift_parts
 
-  Subroutine pbcshift_arrays(imcon,cell,natms,xxx,yyy,zzz)
+  Subroutine pbcshift_arrays(imcon, cell, natms, xxx, yyy, zzz)
 
     !!----------------------------------------------------------------------!
     !!
@@ -2104,114 +2130,113 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
+    Integer,                       Intent(In   ) :: imcon
+    Real(Kind=wp), Dimension(1:9), Intent(In   ) :: cell
+    Integer,                       Intent(In   ) :: natms
+    Real(Kind=wp), Dimension(1:*), Intent(InOut) :: xxx, yyy, zzz
 
-    Integer,                              Intent( In    ) :: imcon,natms
-    Real( Kind = wp ), Dimension( 1:9 ),  Intent( In    ) :: cell
-    Real( Kind = wp ), Dimension( 1:* ),  Intent( InOut ) :: xxx,yyy,zzz
-
-    Integer           :: i
-    Real( Kind = wp ) :: aaa,bbb,ccc,ddd,det,rcell(1:9), &
-      xss,yss,zss
+    Integer       :: i
+    Real(Kind=wp) :: aaa, bbb, ccc, ddd, det, rcell(1:9), xss, yss, zss
 
     If (imcon == 1) Then
 
       ! standard cubic boundary conditions
 
-      aaa=1.0_wp/cell(1)
+      aaa = 1.0_wp / cell(1)
 
-      Do i=1,natms
-        xss=aaa*xxx(i)
-        yss=aaa*yyy(i)
-        zss=aaa*zzz(i)
+      Do i = 1, natms
+        xss = aaa * xxx(i)
+        yss = aaa * yyy(i)
+        zss = aaa * zzz(i)
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        xxx(i)=cell(1)*xss
-        yyy(i)=cell(1)*yss
-        zzz(i)=cell(1)*zss
+        xxx(i) = cell(1) * xss
+        yyy(i) = cell(1) * yss
+        zzz(i) = cell(1) * zss
       End Do
 
     Else If (imcon == 2 .or. imcon == 0) Then ! no PBC box wrapping exception
 
       ! rectangular boundary conditions
 
-      aaa=1.0_wp/cell(1)
-      bbb=1.0_wp/cell(5)
-      ccc=1.0_wp/cell(9)
+      aaa = 1.0_wp / cell(1)
+      bbb = 1.0_wp / cell(5)
+      ccc = 1.0_wp / cell(9)
 
-      Do i=1,natms
-        xss=aaa*xxx(i)
-        yss=bbb*yyy(i)
-        zss=ccc*zzz(i)
+      Do i = 1, natms
+        xss = aaa * xxx(i)
+        yss = bbb * yyy(i)
+        zss = ccc * zzz(i)
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        xxx(i)=cell(1)*xss
-        yyy(i)=cell(5)*yss
-        zzz(i)=cell(9)*zss
+        xxx(i) = cell(1) * xss
+        yyy(i) = cell(5) * yss
+        zzz(i) = cell(9) * zss
       End Do
 
     Else If (imcon == 3) Then
 
       ! parallelepiped boundary conditions
 
-      Call invert(cell,rcell,det)
+      Call invert(cell, rcell, det)
 
-      Do i=1,natms
-        xss=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
-        yss=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
-        zss=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
+      Do i = 1, natms
+        xss = rcell(1) * xxx(i) + rcell(4) * yyy(i) + rcell(7) * zzz(i)
+        yss = rcell(2) * xxx(i) + rcell(5) * yyy(i) + rcell(8) * zzz(i)
+        zss = rcell(3) * xxx(i) + rcell(6) * yyy(i) + rcell(9) * zzz(i)
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        xxx(i)=cell(1)*xss+cell(4)*yss+cell(7)*zss
-        yyy(i)=cell(2)*xss+cell(5)*yss+cell(8)*zss
-        zzz(i)=cell(3)*xss+cell(6)*yss+cell(9)*zss
+        xxx(i) = cell(1) * xss + cell(4) * yss + cell(7) * zss
+        yyy(i) = cell(2) * xss + cell(5) * yss + cell(8) * zss
+        zzz(i) = cell(3) * xss + cell(6) * yss + cell(9) * zss
       End Do
 
     Else If (imcon == 4) Then
 
       ! truncated octahedral boundary conditions
 
-      If (.not.(Abs(cell(1)-cell(5)) < 1.0e-6_wp .and. Abs(cell(5)-cell(9)) < 1.0e-6_wp)) Call error(130)
+      If (.not. (Abs(cell(1) - cell(5)) < 1.0e-6_wp .and. Abs(cell(5) - cell(9)) < 1.0e-6_wp)) Call error(130)
 
-      aaa=1.0_wp/cell(1)
+      aaa = 1.0_wp / cell(1)
 
-      Do i=1,natms
-        xss=aaa*xxx(i)
-        yss=aaa*yyy(i)
-        zss=aaa*zzz(i)
+      Do i = 1, natms
+        xss = aaa * xxx(i)
+        yss = aaa * yyy(i)
+        zss = aaa * zzz(i)
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        xxx(i)=cell(1)*xss
-        yyy(i)=cell(1)*yss
-        zzz(i)=cell(1)*zss
+        xxx(i) = cell(1) * xss
+        yyy(i) = cell(1) * yss
+        zzz(i) = cell(1) * zss
 
-        If ((Abs(xxx(i))+Abs(yyy(i))+Abs(zzz(i))) >= 0.75_wp*cell(1)) Then
-          xxx(i)=xxx(i)-0.5_wp*Sign(cell(1),xxx(i))
-          yyy(i)=yyy(i)-0.5_wp*Sign(cell(1),yyy(i))
-          zzz(i)=zzz(i)-0.5_wp*Sign(cell(1),zzz(i))
+        If ((Abs(xxx(i)) + Abs(yyy(i)) + Abs(zzz(i))) >= 0.75_wp * cell(1)) Then
+          xxx(i) = xxx(i) - 0.5_wp * Sign(cell(1), xxx(i))
+          yyy(i) = yyy(i) - 0.5_wp * Sign(cell(1), yyy(i))
+          zzz(i) = zzz(i) - 0.5_wp * Sign(cell(1), zzz(i))
 
-          xss=aaa*xxx(i)
-          yss=aaa*yyy(i)
-          zss=aaa*zzz(i)
+          xss = aaa * xxx(i)
+          yss = aaa * yyy(i)
+          zss = aaa * zzz(i)
 
-          xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-          yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-          zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+          xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+          yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+          zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-          xxx(i)=cell(1)*xss
-          yyy(i)=cell(1)*yss
-          zzz(i)=cell(1)*zss
+          xxx(i) = cell(1) * xss
+          yyy(i) = cell(1) * yss
+          zzz(i) = cell(1) * zss
         End If
       End Do
 
@@ -2219,40 +2244,40 @@ Contains
 
       ! rhombic Dodecahedral boundary conditions
 
-      If (.not.(Abs(cell(1)-cell(5)) < 1.0e-6_wp .and. Abs(cell(9)-cell(1)*rt2) < 1.0e-6_wp)) Call error(140)
+      If (.not. (Abs(cell(1) - cell(5)) < 1.0e-6_wp .and. Abs(cell(9) - cell(1) * rt2) < 1.0e-6_wp)) Call error(140)
 
-      aaa=1.0_wp/cell(1)
-      bbb=1.0_wp/cell(9)
+      aaa = 1.0_wp / cell(1)
+      bbb = 1.0_wp / cell(9)
 
-      Do i=1,natms
-        xss=aaa*xxx(i)
-        yss=aaa*yyy(i)
-        zss=bbb*zzz(i)
+      Do i = 1, natms
+        xss = aaa * xxx(i)
+        yss = aaa * yyy(i)
+        zss = bbb * zzz(i)
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        xxx(i)=cell(1)*xss
-        yyy(i)=cell(1)*yss
-        zzz(i)=cell(9)*zss
+        xxx(i) = cell(1) * xss
+        yyy(i) = cell(1) * yss
+        zzz(i) = cell(9) * zss
 
-        If ((Abs(xxx(i))+Abs(yyy(i))+Abs(rt2*zzz(i))) >= cell(1)) Then
-          xxx(i)=xxx(i)-0.5_wp*Sign(cell(1),xxx(i))
-          yyy(i)=yyy(i)-0.5_wp*Sign(cell(1),yyy(i))
-          zzz(i)=zzz(i)-0.5_wp*Sign(cell(9),zzz(i))
+        If ((Abs(xxx(i)) + Abs(yyy(i)) + Abs(rt2 * zzz(i))) >= cell(1)) Then
+          xxx(i) = xxx(i) - 0.5_wp * Sign(cell(1), xxx(i))
+          yyy(i) = yyy(i) - 0.5_wp * Sign(cell(1), yyy(i))
+          zzz(i) = zzz(i) - 0.5_wp * Sign(cell(9), zzz(i))
 
-          xss=aaa*xxx(i)
-          yss=aaa*yyy(i)
-          zss=bbb*zzz(i)
+          xss = aaa * xxx(i)
+          yss = aaa * yyy(i)
+          zss = bbb * zzz(i)
 
-          xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-          yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-          zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+          xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+          yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+          zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-          xxx(i)=cell(1)*xss
-          yyy(i)=cell(1)*yss
-          zzz(i)=cell(9)*zss
+          xxx(i) = cell(1) * xss
+          yyy(i) = cell(1) * yss
+          zzz(i) = cell(9) * zss
         End If
       End Do
 
@@ -2260,55 +2285,55 @@ Contains
 
       ! x-y boundary conditions (SLAB)
 
-      det=cell(1)*cell(5)-cell(2)*cell(4)
+      det = cell(1) * cell(5) - cell(2) * cell(4)
 
       If (Abs(det) < 1.0e-6_wp) Call error(120)
 
-      det=1.0_wp/det
+      det = 1.0_wp / det
 
-      rcell(1) =  det*cell(5)
-      rcell(2) = -det*cell(2)
-      rcell(4) = -det*cell(4)
-      rcell(5) =  det*cell(1)
+      rcell(1) = det * cell(5)
+      rcell(2) = -det * cell(2)
+      rcell(4) = -det * cell(4)
+      rcell(5) = det * cell(1)
 
-      Do i=1,natms
-        xss=rcell(1)*xxx(i)+rcell(4)*yyy(i)
-        yss=rcell(2)*xxx(i)+rcell(5)*yyy(i)
+      Do i = 1, natms
+        xss = rcell(1) * xxx(i) + rcell(4) * yyy(i)
+        yss = rcell(2) * xxx(i) + rcell(5) * yyy(i)
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
 
-        xxx(i)=cell(1)*xss+cell(4)*yss
-        yyy(i)=cell(2)*xss+cell(5)*yss
+        xxx(i) = cell(1) * xss + cell(4) * yss
+        yyy(i) = cell(2) * xss + cell(5) * yss
       End Do
 
     Else If (imcon == 7) Then
 
       ! hexagonal prism boundary conditions
 
-      If (Abs(cell(1)-rt3*cell(5)) > 1.0e-6_wp) Call error(135)
+      If (Abs(cell(1) - rt3 * cell(5)) > 1.0e-6_wp) Call error(135)
 
-      aaa=cell(1)/(rt3*2.0_wp)
-      bbb=cell(1)/rt3
-      ccc=rt3/cell(1)
-      ddd=1.0_wp/cell(9)
+      aaa = cell(1) / (rt3 * 2.0_wp)
+      bbb = cell(1) / rt3
+      ccc = rt3 / cell(1)
+      ddd = 1.0_wp / cell(9)
 
-      Do i=1,natms
-        zss=ddd*zzz(i)
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
-        zzz(i)=cell(9)*zss
+      Do i = 1, natms
+        zss = ddd * zzz(i)
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
+        zzz(i) = cell(9) * zss
 
-        yss=ccc*yyy(i)
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        yyy(i)=bbb*yss
+        yss = ccc * yyy(i)
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        yyy(i) = bbb * yss
 
-        If ((Abs(yyy(i))+Abs(rt3*xxx(i))) >= bbb) Then
-          xxx(i)=xxx(i)-rt3*Sign(aaa,xxx(i))
-          yyy(i)=yyy(i)-Sign(aaa,yyy(i))
+        If ((Abs(yyy(i)) + Abs(rt3 * xxx(i))) >= bbb) Then
+          xxx(i) = xxx(i) - rt3 * Sign(aaa, xxx(i))
+          yyy(i) = yyy(i) - Sign(aaa, yyy(i))
 
-          yss=ccc*yyy(i)
-          yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-          yyy(i)=bbb*yss
+          yss = ccc * yyy(i)
+          yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+          yyy(i) = bbb * yss
         End If
       End Do
 
@@ -2316,7 +2341,7 @@ Contains
 
   End Subroutine pbcshift_arrays
 
-  Subroutine pbcshfrc_parts(imcon,cell,natms,parts)
+  Subroutine pbcshfrc_parts(imcon, cell, natms, parts)
 
     !!----------------------------------------------------------------------!
     !!
@@ -2346,117 +2371,117 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Integer,                              Intent( In    ) :: imcon,natms
-    Real( Kind = wp ), Dimension( 1:9 ),  Intent( In    ) :: cell
-    Type( corePart ) , Dimension( 1:* ),  Intent( InOut ) :: parts
+    Integer,                        Intent(In   ) :: imcon
+    Real(Kind=wp), Dimension(1:9),  Intent(In   ) :: cell
+    Integer,                        Intent(In   ) :: natms
+    Type(corePart), Dimension(1:*), Intent(InOut) :: parts
 
-    Integer           :: i
-    Real( Kind = wp ) :: aaa,bbb,ccc,ddd,det,rcell(1:9), &
-      xss,yss,zss
+    Integer       :: i
+    Real(Kind=wp) :: aaa, bbb, ccc, ddd, det, rcell(1:9), xss, yss, zss
 
     If (imcon == 1) Then
 
       ! standard cubic boundary conditions
 
-      aaa=1.0_wp/cell(1)
+      aaa = 1.0_wp / cell(1)
 
-      Do i=1,natms
-        xss=aaa*parts(i)%xxx
-        yss=aaa*parts(i)%yyy
-        zss=aaa*parts(i)%zzz
+      Do i = 1, natms
+        xss = aaa * parts(i)%xxx
+        yss = aaa * parts(i)%yyy
+        zss = aaa * parts(i)%zzz
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        parts(i)%xxx=xss
-        parts(i)%yyy=yss
-        parts(i)%zzz=zss
+        parts(i)%xxx = xss
+        parts(i)%yyy = yss
+        parts(i)%zzz = zss
       End Do
 
     Else If (imcon == 2 .or. imcon == 0) Then ! no PBC box wrapping exception
 
       ! rectangular boundary conditions
 
-      aaa=1.0_wp/cell(1)
-      bbb=1.0_wp/cell(5)
-      ccc=1.0_wp/cell(9)
+      aaa = 1.0_wp / cell(1)
+      bbb = 1.0_wp / cell(5)
+      ccc = 1.0_wp / cell(9)
 
-      Do i=1,natms
-        xss=aaa*parts(i)%xxx
-        yss=bbb*parts(i)%yyy
-        zss=ccc*parts(i)%zzz
+      Do i = 1, natms
+        xss = aaa * parts(i)%xxx
+        yss = bbb * parts(i)%yyy
+        zss = ccc * parts(i)%zzz
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        parts(i)%xxx=xss
-        parts(i)%yyy=yss
-        parts(i)%zzz=zss
+        parts(i)%xxx = xss
+        parts(i)%yyy = yss
+        parts(i)%zzz = zss
       End Do
 
     Else If (imcon == 3) Then
 
       ! parallelepiped boundary conditions
 
-      Call invert(cell,rcell,det)
+      Call invert(cell, rcell, det)
 
-      Do i=1,natms
-        xss=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz
-        yss=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz
-        zss=rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz
+      Do i = 1, natms
+        xss = rcell(1) * parts(i)%xxx + rcell(4) * parts(i)%yyy + rcell(7) * parts(i)%zzz
+        yss = rcell(2) * parts(i)%xxx + rcell(5) * parts(i)%yyy + rcell(8) * parts(i)%zzz
+        zss = rcell(3) * parts(i)%xxx + rcell(6) * parts(i)%yyy + rcell(9) * parts(i)%zzz
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        parts(i)%xxx=xss
-        parts(i)%yyy=yss
-        parts(i)%zzz=zss
+        parts(i)%xxx = xss
+        parts(i)%yyy = yss
+        parts(i)%zzz = zss
       End Do
 
     Else If (imcon == 4) Then
 
       ! truncated octahedral boundary conditions
 
-      If (.not.(Abs(cell(1)-cell(5)) < 1.0e-6_wp .and. Abs(cell(5)-cell(9)) < 1.0e-6_wp)) Call error(130)
+      If (.not. (Abs(cell(1) - cell(5)) < 1.0e-6_wp .and. Abs(cell(5) - cell(9)) < 1.0e-6_wp)) Call error(130)
 
-      aaa=1.0_wp/cell(1)
+      aaa = 1.0_wp / cell(1)
 
-      Do i=1,natms
-        xss=aaa*parts(i)%xxx
-        yss=aaa*parts(i)%yyy
-        zss=aaa*parts(i)%zzz
+      Do i = 1, natms
+        xss = aaa * parts(i)%xxx
+        yss = aaa * parts(i)%yyy
+        zss = aaa * parts(i)%zzz
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        parts(i)%xxx=cell(1)*xss
-        parts(i)%yyy=cell(1)*yss
-        parts(i)%zzz=cell(1)*zss
+        parts(i)%xxx = cell(1) * xss
+        parts(i)%yyy = cell(1) * yss
+        parts(i)%zzz = cell(1) * zss
 
-        If ((Abs(parts(i)%xxx)+Abs(parts(i)%yyy)+Abs(parts(i)%zzz)) >= 0.75_wp*cell(1)) Then
-          parts(i)%xxx=parts(i)%xxx-0.5_wp*Sign(cell(1),parts(i)%xxx)
-          parts(i)%yyy=parts(i)%yyy-0.5_wp*Sign(cell(1),parts(i)%yyy)
-          parts(i)%zzz=parts(i)%zzz-0.5_wp*Sign(cell(1),parts(i)%zzz)
+        If ((Abs(parts(i)%xxx) + Abs(parts(i)%yyy) + Abs(parts(i)%zzz)) >= 0.75_wp * cell(1)) Then
+          parts(i)%xxx = parts(i)%xxx - 0.5_wp * Sign(cell(1), parts(i)%xxx)
+          parts(i)%yyy = parts(i)%yyy - 0.5_wp * Sign(cell(1), parts(i)%yyy)
+          parts(i)%zzz = parts(i)%zzz - 0.5_wp * Sign(cell(1), parts(i)%zzz)
 
-          xss=aaa*parts(i)%xxx
-          yss=aaa*parts(i)%yyy
-          zss=aaa*parts(i)%zzz
+          xss = aaa * parts(i)%xxx
+          yss = aaa * parts(i)%yyy
+          zss = aaa * parts(i)%zzz
 
-          xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-          yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-          zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+          xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+          yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+          zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-          parts(i)%xxx=xss
-          parts(i)%yyy=yss
-          parts(i)%zzz=zss
+          parts(i)%xxx = xss
+          parts(i)%yyy = yss
+          parts(i)%zzz = zss
         Else
-          parts(i)%xxx=xss/cell(1)
-          parts(i)%yyy=yss/cell(1)
-          parts(i)%zzz=zss/cell(1)
+          parts(i)%xxx = xss / cell(1)
+          parts(i)%yyy = yss / cell(1)
+          parts(i)%zzz = zss / cell(1)
         End If
       End Do
 
@@ -2464,44 +2489,44 @@ Contains
 
       ! rhombic Dodecahedral boundary conditions
 
-      If (.not.(Abs(cell(1)-cell(5)) < 1.0e-6_wp .and. Abs(cell(9)-cell(1)*rt2) < 1.0e-6_wp)) Call error(140)
+      If (.not. (Abs(cell(1) - cell(5)) < 1.0e-6_wp .and. Abs(cell(9) - cell(1) * rt2) < 1.0e-6_wp)) Call error(140)
 
-      aaa=1.0_wp/cell(1)
-      bbb=1.0_wp/cell(9)
+      aaa = 1.0_wp / cell(1)
+      bbb = 1.0_wp / cell(9)
 
-      Do i=1,natms
-        xss=aaa*parts(i)%xxx
-        yss=aaa*parts(i)%yyy
-        zss=bbb*parts(i)%zzz
+      Do i = 1, natms
+        xss = aaa * parts(i)%xxx
+        yss = aaa * parts(i)%yyy
+        zss = bbb * parts(i)%zzz
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        parts(i)%xxx=cell(1)*xss
-        parts(i)%yyy=cell(1)*yss
-        parts(i)%zzz=cell(9)*zss
+        parts(i)%xxx = cell(1) * xss
+        parts(i)%yyy = cell(1) * yss
+        parts(i)%zzz = cell(9) * zss
 
-        If ((Abs(parts(i)%xxx)+Abs(parts(i)%yyy)+Abs(rt2*parts(i)%zzz)) >= cell(1)) Then
-          parts(i)%xxx=parts(i)%xxx-0.5_wp*Sign(cell(1),parts(i)%xxx)
-          parts(i)%yyy=parts(i)%yyy-0.5_wp*Sign(cell(1),parts(i)%yyy)
-          parts(i)%zzz=parts(i)%zzz-0.5_wp*Sign(cell(9),parts(i)%zzz)
+        If ((Abs(parts(i)%xxx) + Abs(parts(i)%yyy) + Abs(rt2 * parts(i)%zzz)) >= cell(1)) Then
+          parts(i)%xxx = parts(i)%xxx - 0.5_wp * Sign(cell(1), parts(i)%xxx)
+          parts(i)%yyy = parts(i)%yyy - 0.5_wp * Sign(cell(1), parts(i)%yyy)
+          parts(i)%zzz = parts(i)%zzz - 0.5_wp * Sign(cell(9), parts(i)%zzz)
 
-          xss=aaa*parts(i)%xxx
-          yss=aaa*parts(i)%yyy
-          zss=bbb*parts(i)%zzz
+          xss = aaa * parts(i)%xxx
+          yss = aaa * parts(i)%yyy
+          zss = bbb * parts(i)%zzz
 
-          xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-          yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-          zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+          xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+          yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+          zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-          parts(i)%xxx=xss
-          parts(i)%yyy=yss
-          parts(i)%zzz=zss
+          parts(i)%xxx = xss
+          parts(i)%yyy = yss
+          parts(i)%zzz = zss
         Else
-          parts(i)%xxx=xss/cell(1)
-          parts(i)%yyy=yss/cell(1)
-          parts(i)%zzz=zss/cell(9)
+          parts(i)%xxx = xss / cell(1)
+          parts(i)%yyy = yss / cell(1)
+          parts(i)%zzz = zss / cell(9)
         End If
       End Do
 
@@ -2509,59 +2534,59 @@ Contains
 
       ! x-y boundary conditions (SLAB)
 
-      det=cell(1)*cell(5)-cell(2)*cell(4)
+      det = cell(1) * cell(5) - cell(2) * cell(4)
 
       If (Abs(det) < 1.0e-6_wp) Call error(120)
 
-      det=1.0_wp/det
+      det = 1.0_wp / det
 
-      rcell(1) =  det*cell(5)
-      rcell(2) = -det*cell(2)
-      rcell(4) = -det*cell(4)
-      rcell(5) =  det*cell(1)
+      rcell(1) = det * cell(5)
+      rcell(2) = -det * cell(2)
+      rcell(4) = -det * cell(4)
+      rcell(5) = det * cell(1)
 
-      Do i=1,natms
-        xss=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy
-        yss=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy
+      Do i = 1, natms
+        xss = rcell(1) * parts(i)%xxx + rcell(4) * parts(i)%yyy
+        yss = rcell(2) * parts(i)%xxx + rcell(5) * parts(i)%yyy
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
 
-        parts(i)%xxx=xss
-        parts(i)%yyy=yss
+        parts(i)%xxx = xss
+        parts(i)%yyy = yss
       End Do ! note zzz remains in real space
 
     Else If (imcon == 7) Then
 
       ! hexagonal prism boundary conditions
 
-      If (Abs(cell(1)-rt3*cell(5)) > 1.0e-6_wp) Call error(135)
+      If (Abs(cell(1) - rt3 * cell(5)) > 1.0e-6_wp) Call error(135)
 
-      aaa=cell(1)/(rt3*2.0_wp)
-      bbb=cell(1)/rt3
-      ccc=rt3/cell(1)
-      ddd=1.0_wp/cell(9)
+      aaa = cell(1) / (rt3 * 2.0_wp)
+      bbb = cell(1) / rt3
+      ccc = rt3 / cell(1)
+      ddd = 1.0_wp / cell(9)
 
-      Do i=1,natms
-        zss=ddd*parts(i)%zzz
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
-        parts(i)%zzz=zss
+      Do i = 1, natms
+        zss = ddd * parts(i)%zzz
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
+        parts(i)%zzz = zss
 
-        yss=ccc*parts(i)%yyy
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        parts(i)%yyy=bbb*yss
+        yss = ccc * parts(i)%yyy
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        parts(i)%yyy = bbb * yss
 
-        If ((Abs(parts(i)%yyy)+Abs(rt3*parts(i)%xxx)) >= bbb) Then
-          parts(i)%xxx=parts(i)%xxx-rt3*Sign(aaa,parts(i)%xxx)
-          parts(i)%xxx=parts(i)%xxx/aaa
-          parts(i)%yyy=parts(i)%yyy-Sign(aaa,parts(i)%yyy)
+        If ((Abs(parts(i)%yyy) + Abs(rt3 * parts(i)%xxx)) >= bbb) Then
+          parts(i)%xxx = parts(i)%xxx - rt3 * Sign(aaa, parts(i)%xxx)
+          parts(i)%xxx = parts(i)%xxx / aaa
+          parts(i)%yyy = parts(i)%yyy - Sign(aaa, parts(i)%yyy)
 
-          yss=ccc*parts(i)%yyy
-          yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-          parts(i)%yyy=yss
+          yss = ccc * parts(i)%yyy
+          yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+          parts(i)%yyy = yss
         Else
-          parts(i)%xxx=parts(i)%xxx/aaa
-          parts(i)%yyy=parts(i)%yyy/bbb
+          parts(i)%xxx = parts(i)%xxx / aaa
+          parts(i)%yyy = parts(i)%yyy / bbb
         End If
       End Do
 
@@ -2569,7 +2594,7 @@ Contains
 
   End Subroutine pbcshfrc_parts
 
-  Subroutine pbcshfrc_arrays(imcon,cell,natms,xxx,yyy,zzz)
+  Subroutine pbcshfrc_arrays(imcon, cell, natms, xxx, yyy, zzz)
 
     !!----------------------------------------------------------------------!
     !!
@@ -2599,117 +2624,117 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Integer,                              Intent( In    ) :: imcon,natms
-    Real( Kind = wp ), Dimension( 1:9 ),  Intent( In    ) :: cell
-    Real( Kind = wp ), Dimension( 1:* ),  Intent( InOut ) :: xxx,yyy,zzz
+    Integer,                       Intent(In   ) :: imcon
+    Real(Kind=wp), Dimension(1:9), Intent(In   ) :: cell
+    Integer,                       Intent(In   ) :: natms
+    Real(Kind=wp), Dimension(1:*), Intent(InOut) :: xxx, yyy, zzz
 
-    Integer           :: i
-    Real( Kind = wp ) :: aaa,bbb,ccc,ddd,det,rcell(1:9), &
-      xss,yss,zss
+    Integer       :: i
+    Real(Kind=wp) :: aaa, bbb, ccc, ddd, det, rcell(1:9), xss, yss, zss
 
     If (imcon == 1) Then
 
       ! standard cubic boundary conditions
 
-      aaa=1.0_wp/cell(1)
+      aaa = 1.0_wp / cell(1)
 
-      Do i=1,natms
-        xss=aaa*xxx(i)
-        yss=aaa*yyy(i)
-        zss=aaa*zzz(i)
+      Do i = 1, natms
+        xss = aaa * xxx(i)
+        yss = aaa * yyy(i)
+        zss = aaa * zzz(i)
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        xxx(i)=xss
-        yyy(i)=yss
-        zzz(i)=zss
+        xxx(i) = xss
+        yyy(i) = yss
+        zzz(i) = zss
       End Do
 
     Else If (imcon == 2 .or. imcon == 0) Then ! no PBC box wrapping exception
 
       ! rectangular boundary conditions
 
-      aaa=1.0_wp/cell(1)
-      bbb=1.0_wp/cell(5)
-      ccc=1.0_wp/cell(9)
+      aaa = 1.0_wp / cell(1)
+      bbb = 1.0_wp / cell(5)
+      ccc = 1.0_wp / cell(9)
 
-      Do i=1,natms
-        xss=aaa*xxx(i)
-        yss=bbb*yyy(i)
-        zss=ccc*zzz(i)
+      Do i = 1, natms
+        xss = aaa * xxx(i)
+        yss = bbb * yyy(i)
+        zss = ccc * zzz(i)
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        xxx(i)=xss
-        yyy(i)=yss
-        zzz(i)=zss
+        xxx(i) = xss
+        yyy(i) = yss
+        zzz(i) = zss
       End Do
 
     Else If (imcon == 3) Then
 
       ! parallelepiped boundary conditions
 
-      Call invert(cell,rcell,det)
+      Call invert(cell, rcell, det)
 
-      Do i=1,natms
-        xss=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
-        yss=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
-        zss=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
+      Do i = 1, natms
+        xss = rcell(1) * xxx(i) + rcell(4) * yyy(i) + rcell(7) * zzz(i)
+        yss = rcell(2) * xxx(i) + rcell(5) * yyy(i) + rcell(8) * zzz(i)
+        zss = rcell(3) * xxx(i) + rcell(6) * yyy(i) + rcell(9) * zzz(i)
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        xxx(i)=xss
-        yyy(i)=yss
-        zzz(i)=zss
+        xxx(i) = xss
+        yyy(i) = yss
+        zzz(i) = zss
       End Do
 
     Else If (imcon == 4) Then
 
       ! truncated octahedral boundary conditions
 
-      If (.not.(Abs(cell(1)-cell(5)) < 1.0e-6_wp .and. Abs(cell(5)-cell(9)) < 1.0e-6_wp)) Call error(130)
+      If (.not. (Abs(cell(1) - cell(5)) < 1.0e-6_wp .and. Abs(cell(5) - cell(9)) < 1.0e-6_wp)) Call error(130)
 
-      aaa=1.0_wp/cell(1)
+      aaa = 1.0_wp / cell(1)
 
-      Do i=1,natms
-        xss=aaa*xxx(i)
-        yss=aaa*yyy(i)
-        zss=aaa*zzz(i)
+      Do i = 1, natms
+        xss = aaa * xxx(i)
+        yss = aaa * yyy(i)
+        zss = aaa * zzz(i)
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        xxx(i)=cell(1)*xss
-        yyy(i)=cell(1)*yss
-        zzz(i)=cell(1)*zss
+        xxx(i) = cell(1) * xss
+        yyy(i) = cell(1) * yss
+        zzz(i) = cell(1) * zss
 
-        If ((Abs(xxx(i))+Abs(yyy(i))+Abs(zzz(i))) >= 0.75_wp*cell(1)) Then
-          xxx(i)=xxx(i)-0.5_wp*Sign(cell(1),xxx(i))
-          yyy(i)=yyy(i)-0.5_wp*Sign(cell(1),yyy(i))
-          zzz(i)=zzz(i)-0.5_wp*Sign(cell(1),zzz(i))
+        If ((Abs(xxx(i)) + Abs(yyy(i)) + Abs(zzz(i))) >= 0.75_wp * cell(1)) Then
+          xxx(i) = xxx(i) - 0.5_wp * Sign(cell(1), xxx(i))
+          yyy(i) = yyy(i) - 0.5_wp * Sign(cell(1), yyy(i))
+          zzz(i) = zzz(i) - 0.5_wp * Sign(cell(1), zzz(i))
 
-          xss=aaa*xxx(i)
-          yss=aaa*yyy(i)
-          zss=aaa*zzz(i)
+          xss = aaa * xxx(i)
+          yss = aaa * yyy(i)
+          zss = aaa * zzz(i)
 
-          xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-          yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-          zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+          xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+          yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+          zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-          xxx(i)=xss
-          yyy(i)=yss
-          zzz(i)=zss
+          xxx(i) = xss
+          yyy(i) = yss
+          zzz(i) = zss
         Else
-          xxx(i)=xss/cell(1)
-          yyy(i)=yss/cell(1)
-          zzz(i)=zss/cell(1)
+          xxx(i) = xss / cell(1)
+          yyy(i) = yss / cell(1)
+          zzz(i) = zss / cell(1)
         End If
       End Do
 
@@ -2717,44 +2742,44 @@ Contains
 
       ! rhombic Dodecahedral boundary conditions
 
-      If (.not.(Abs(cell(1)-cell(5)) < 1.0e-6_wp .and. Abs(cell(9)-cell(1)*rt2) < 1.0e-6_wp)) Call error(140)
+      If (.not. (Abs(cell(1) - cell(5)) < 1.0e-6_wp .and. Abs(cell(9) - cell(1) * rt2) < 1.0e-6_wp)) Call error(140)
 
-      aaa=1.0_wp/cell(1)
-      bbb=1.0_wp/cell(9)
+      aaa = 1.0_wp / cell(1)
+      bbb = 1.0_wp / cell(9)
 
-      Do i=1,natms
-        xss=aaa*xxx(i)
-        yss=aaa*yyy(i)
-        zss=bbb*zzz(i)
+      Do i = 1, natms
+        xss = aaa * xxx(i)
+        yss = aaa * yyy(i)
+        zss = bbb * zzz(i)
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        xxx(i)=cell(1)*xss
-        yyy(i)=cell(1)*yss
-        zzz(i)=cell(9)*zss
+        xxx(i) = cell(1) * xss
+        yyy(i) = cell(1) * yss
+        zzz(i) = cell(9) * zss
 
-        If ((Abs(xxx(i))+Abs(yyy(i))+Abs(rt2*zzz(i))) >= cell(1)) Then
-          xxx(i)=xxx(i)-0.5_wp*Sign(cell(1),xxx(i))
-          yyy(i)=yyy(i)-0.5_wp*Sign(cell(1),yyy(i))
-          zzz(i)=zzz(i)-0.5_wp*Sign(cell(9),zzz(i))
+        If ((Abs(xxx(i)) + Abs(yyy(i)) + Abs(rt2 * zzz(i))) >= cell(1)) Then
+          xxx(i) = xxx(i) - 0.5_wp * Sign(cell(1), xxx(i))
+          yyy(i) = yyy(i) - 0.5_wp * Sign(cell(1), yyy(i))
+          zzz(i) = zzz(i) - 0.5_wp * Sign(cell(9), zzz(i))
 
-          xss=aaa*xxx(i)
-          yss=aaa*yyy(i)
-          zss=bbb*zzz(i)
+          xss = aaa * xxx(i)
+          yss = aaa * yyy(i)
+          zss = bbb * zzz(i)
 
-          xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-          yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-          zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+          xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+          yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+          zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-          xxx(i)=xss
-          yyy(i)=yss
-          zzz(i)=zss
+          xxx(i) = xss
+          yyy(i) = yss
+          zzz(i) = zss
         Else
-          xxx(i)=xss/cell(1)
-          yyy(i)=yss/cell(1)
-          zzz(i)=zss/cell(9)
+          xxx(i) = xss / cell(1)
+          yyy(i) = yss / cell(1)
+          zzz(i) = zss / cell(9)
         End If
       End Do
 
@@ -2762,59 +2787,59 @@ Contains
 
       ! x-y boundary conditions (SLAB)
 
-      det=cell(1)*cell(5)-cell(2)*cell(4)
+      det = cell(1) * cell(5) - cell(2) * cell(4)
 
       If (Abs(det) < 1.0e-6_wp) Call error(120)
 
-      det=1.0_wp/det
+      det = 1.0_wp / det
 
-      rcell(1) =  det*cell(5)
-      rcell(2) = -det*cell(2)
-      rcell(4) = -det*cell(4)
-      rcell(5) =  det*cell(1)
+      rcell(1) = det * cell(5)
+      rcell(2) = -det * cell(2)
+      rcell(4) = -det * cell(4)
+      rcell(5) = det * cell(1)
 
-      Do i=1,natms
-        xss=rcell(1)*xxx(i)+rcell(4)*yyy(i)
-        yss=rcell(2)*xxx(i)+rcell(5)*yyy(i)
+      Do i = 1, natms
+        xss = rcell(1) * xxx(i) + rcell(4) * yyy(i)
+        yss = rcell(2) * xxx(i) + rcell(5) * yyy(i)
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
 
-        xxx(i)=xss
-        yyy(i)=yss
+        xxx(i) = xss
+        yyy(i) = yss
       End Do ! note zzz remains in real space
 
     Else If (imcon == 7) Then
 
       ! hexagonal prism boundary conditions
 
-      If (Abs(cell(1)-rt3*cell(5)) > 1.0e-6_wp) Call error(135)
+      If (Abs(cell(1) - rt3 * cell(5)) > 1.0e-6_wp) Call error(135)
 
-      aaa=cell(1)/(rt3*2.0_wp)
-      bbb=cell(1)/rt3
-      ccc=rt3/cell(1)
-      ddd=1.0_wp/cell(9)
+      aaa = cell(1) / (rt3 * 2.0_wp)
+      bbb = cell(1) / rt3
+      ccc = rt3 / cell(1)
+      ddd = 1.0_wp / cell(9)
 
-      Do i=1,natms
-        zss=ddd*zzz(i)
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
-        zzz(i)=zss
+      Do i = 1, natms
+        zss = ddd * zzz(i)
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
+        zzz(i) = zss
 
-        yss=ccc*yyy(i)
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        yyy(i)=bbb*yss
+        yss = ccc * yyy(i)
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        yyy(i) = bbb * yss
 
-        If ((Abs(yyy(i))+Abs(rt3*xxx(i))) >= bbb) Then
-          xxx(i)=xxx(i)-rt3*Sign(aaa,xxx(i))
-          xxx(i)=xxx(i)/aaa
-          yyy(i)=yyy(i)-Sign(aaa,yyy(i))
+        If ((Abs(yyy(i)) + Abs(rt3 * xxx(i))) >= bbb) Then
+          xxx(i) = xxx(i) - rt3 * Sign(aaa, xxx(i))
+          xxx(i) = xxx(i) / aaa
+          yyy(i) = yyy(i) - Sign(aaa, yyy(i))
 
-          yss=ccc*yyy(i)
-          yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-          yyy(i)=yss
+          yss = ccc * yyy(i)
+          yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+          yyy(i) = yss
         Else
-          xxx(i)=xxx(i)/aaa
-          yyy(i)=yyy(i)/bbb
+          xxx(i) = xxx(i) / aaa
+          yyy(i) = yyy(i) / bbb
         End If
       End Do
 
@@ -2822,7 +2847,7 @@ Contains
 
   End Subroutine pbcshfrc_arrays
 
-  Subroutine pbcshfrl_parts(imcon,cell,natms,parts)
+  Subroutine pbcshfrl_parts(imcon, cell, natms, parts)
 
     !!----------------------------------------------------------------------!
     !!
@@ -2852,105 +2877,105 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Integer,                              Intent( In    ) :: imcon,natms
-    Real( Kind = wp ), Dimension( 1:9 ),  Intent( In    ) :: cell
-    Type( corePart ) , Dimension( 1:* ),  Intent( InOut ) :: parts
+    Integer,                        Intent(In   ) :: imcon
+    Real(Kind=wp), Dimension(1:9),  Intent(In   ) :: cell
+    Integer,                        Intent(In   ) :: natms
+    Type(corePart), Dimension(1:*), Intent(InOut) :: parts
 
-    Integer           :: i
-    Real( Kind = wp ) :: aaa,bbb,ccc,ddd, &
-      xss,yss,zss
+    Integer       :: i
+    Real(Kind=wp) :: aaa, bbb, ccc, ddd, xss, yss, zss
 
     If (imcon == 1) Then
 
       ! standard cubic boundary conditions
 
-      Do i=1,natms
-        xss=parts(i)%xxx
-        yss=parts(i)%yyy
-        zss=parts(i)%zzz
+      Do i = 1, natms
+        xss = parts(i)%xxx
+        yss = parts(i)%yyy
+        zss = parts(i)%zzz
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        parts(i)%xxx=cell(1)*xss
-        parts(i)%yyy=cell(1)*yss
-        parts(i)%zzz=cell(1)*zss
+        parts(i)%xxx = cell(1) * xss
+        parts(i)%yyy = cell(1) * yss
+        parts(i)%zzz = cell(1) * zss
       End Do
 
     Else If (imcon == 2 .or. imcon == 0) Then ! no PBC box wrapping exception
 
       ! rectangular boundary conditions
 
-      Do i=1,natms
-        xss=parts(i)%xxx
-        yss=parts(i)%yyy
-        zss=parts(i)%zzz
+      Do i = 1, natms
+        xss = parts(i)%xxx
+        yss = parts(i)%yyy
+        zss = parts(i)%zzz
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        parts(i)%xxx=cell(1)*xss
-        parts(i)%yyy=cell(5)*yss
-        parts(i)%zzz=cell(9)*zss
+        parts(i)%xxx = cell(1) * xss
+        parts(i)%yyy = cell(5) * yss
+        parts(i)%zzz = cell(9) * zss
       End Do
 
     Else If (imcon == 3) Then
 
       ! parallelepiped boundary conditions
 
-      Do i=1,natms
-        xss=parts(i)%xxx
-        yss=parts(i)%yyy
-        zss=parts(i)%zzz
+      Do i = 1, natms
+        xss = parts(i)%xxx
+        yss = parts(i)%yyy
+        zss = parts(i)%zzz
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        parts(i)%xxx=cell(1)*xss+cell(4)*yss+cell(7)*zss
-        parts(i)%yyy=cell(2)*xss+cell(5)*yss+cell(8)*zss
-        parts(i)%zzz=cell(3)*xss+cell(6)*yss+cell(9)*zss
+        parts(i)%xxx = cell(1) * xss + cell(4) * yss + cell(7) * zss
+        parts(i)%yyy = cell(2) * xss + cell(5) * yss + cell(8) * zss
+        parts(i)%zzz = cell(3) * xss + cell(6) * yss + cell(9) * zss
       End Do
 
     Else If (imcon == 4) Then
 
       ! truncated octahedral boundary conditions
 
-      If (.not.(Abs(cell(1)-cell(5)) < 1.0e-6_wp .and. Abs(cell(5)-cell(9)) < 1.0e-6_wp)) Call error(130)
+      If (.not. (Abs(cell(1) - cell(5)) < 1.0e-6_wp .and. Abs(cell(5) - cell(9)) < 1.0e-6_wp)) Call error(130)
 
-      aaa=1.0_wp/cell(1)
+      aaa = 1.0_wp / cell(1)
 
-      Do i=1,natms
-        xss=parts(i)%xxx
-        yss=parts(i)%yyy
-        zss=parts(i)%zzz
+      Do i = 1, natms
+        xss = parts(i)%xxx
+        yss = parts(i)%yyy
+        zss = parts(i)%zzz
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        parts(i)%xxx=cell(1)*xss
-        parts(i)%yyy=cell(1)*yss
-        parts(i)%zzz=cell(1)*zss
+        parts(i)%xxx = cell(1) * xss
+        parts(i)%yyy = cell(1) * yss
+        parts(i)%zzz = cell(1) * zss
 
-        If ((Abs(parts(i)%xxx)+Abs(parts(i)%yyy)+Abs(parts(i)%zzz)) >= 0.75_wp*cell(1)) Then
-          parts(i)%xxx=parts(i)%xxx-0.5_wp*Sign(cell(1),parts(i)%xxx)
-          parts(i)%yyy=parts(i)%yyy-0.5_wp*Sign(cell(1),parts(i)%yyy)
-          parts(i)%zzz=parts(i)%zzz-0.5_wp*Sign(cell(1),parts(i)%zzz)
+        If ((Abs(parts(i)%xxx) + Abs(parts(i)%yyy) + Abs(parts(i)%zzz)) >= 0.75_wp * cell(1)) Then
+          parts(i)%xxx = parts(i)%xxx - 0.5_wp * Sign(cell(1), parts(i)%xxx)
+          parts(i)%yyy = parts(i)%yyy - 0.5_wp * Sign(cell(1), parts(i)%yyy)
+          parts(i)%zzz = parts(i)%zzz - 0.5_wp * Sign(cell(1), parts(i)%zzz)
 
-          xss=aaa*parts(i)%xxx
-          yss=aaa*parts(i)%yyy
-          zss=aaa*parts(i)%zzz
+          xss = aaa * parts(i)%xxx
+          yss = aaa * parts(i)%yyy
+          zss = aaa * parts(i)%zzz
 
-          xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-          yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-          zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+          xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+          yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+          zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-          parts(i)%xxx=cell(1)*xss
-          parts(i)%yyy=cell(1)*yss
-          parts(i)%zzz=cell(1)*zss
+          parts(i)%xxx = cell(1) * xss
+          parts(i)%yyy = cell(1) * yss
+          parts(i)%zzz = cell(1) * zss
         End If
       End Do
 
@@ -2958,40 +2983,40 @@ Contains
 
       ! rhombic Dodecahedral boundary conditions
 
-      If (.not.(Abs(cell(1)-cell(5)) < 1.0e-6_wp .and. Abs(cell(9)-cell(1)*rt2) < 1.0e-6_wp)) Call error(140)
+      If (.not. (Abs(cell(1) - cell(5)) < 1.0e-6_wp .and. Abs(cell(9) - cell(1) * rt2) < 1.0e-6_wp)) Call error(140)
 
-      aaa=1.0_wp/cell(1)
-      bbb=1.0_wp/cell(9)
+      aaa = 1.0_wp / cell(1)
+      bbb = 1.0_wp / cell(9)
 
-      Do i=1,natms
-        xss=parts(i)%xxx
-        yss=parts(i)%yyy
-        zss=parts(i)%zzz
+      Do i = 1, natms
+        xss = parts(i)%xxx
+        yss = parts(i)%yyy
+        zss = parts(i)%zzz
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        parts(i)%xxx=cell(1)*xss
-        parts(i)%yyy=cell(1)*yss
-        parts(i)%zzz=cell(9)*zss
+        parts(i)%xxx = cell(1) * xss
+        parts(i)%yyy = cell(1) * yss
+        parts(i)%zzz = cell(9) * zss
 
-        If ((Abs(parts(i)%xxx)+Abs(parts(i)%yyy)+Abs(rt2*parts(i)%zzz)) >= cell(1)) Then
-          parts(i)%xxx=parts(i)%xxx-0.5_wp*Sign(cell(1),parts(i)%xxx)
-          parts(i)%yyy=parts(i)%yyy-0.5_wp*Sign(cell(1),parts(i)%yyy)
-          parts(i)%zzz=parts(i)%zzz-0.5_wp*Sign(cell(9),parts(i)%zzz)
+        If ((Abs(parts(i)%xxx) + Abs(parts(i)%yyy) + Abs(rt2 * parts(i)%zzz)) >= cell(1)) Then
+          parts(i)%xxx = parts(i)%xxx - 0.5_wp * Sign(cell(1), parts(i)%xxx)
+          parts(i)%yyy = parts(i)%yyy - 0.5_wp * Sign(cell(1), parts(i)%yyy)
+          parts(i)%zzz = parts(i)%zzz - 0.5_wp * Sign(cell(9), parts(i)%zzz)
 
-          xss=aaa*parts(i)%xxx
-          yss=aaa*parts(i)%yyy
-          zss=bbb*parts(i)%zzz
+          xss = aaa * parts(i)%xxx
+          yss = aaa * parts(i)%yyy
+          zss = bbb * parts(i)%zzz
 
-          xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-          yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-          zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+          xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+          yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+          zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-          parts(i)%xxx=cell(1)*xss
-          parts(i)%yyy=cell(1)*yss
-          parts(i)%zzz=cell(9)*zss
+          parts(i)%xxx = cell(1) * xss
+          parts(i)%yyy = cell(1) * yss
+          parts(i)%zzz = cell(9) * zss
         End If
       End Do
 
@@ -2999,45 +3024,45 @@ Contains
 
       ! x-y boundary conditions (SLAB)
 
-      Do i=1,natms
-        xss=parts(i)%xxx
-        yss=parts(i)%yyy
+      Do i = 1, natms
+        xss = parts(i)%xxx
+        yss = parts(i)%yyy
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
 
-        parts(i)%xxx=cell(1)*xss+cell(4)*yss
-        parts(i)%yyy=cell(2)*xss+cell(5)*yss
+        parts(i)%xxx = cell(1) * xss + cell(4) * yss
+        parts(i)%yyy = cell(2) * xss + cell(5) * yss
       End Do ! note zzz remains unchanged
 
     Else If (imcon == 7) Then
 
       ! hexagonal prism boundary conditions
 
-      If (Abs(cell(1)-rt3*cell(5)) > 1.0e-6_wp) Call error(135)
+      If (Abs(cell(1) - rt3 * cell(5)) > 1.0e-6_wp) Call error(135)
 
-      aaa=cell(1)/(rt3*2.0_wp)
-      bbb=cell(1)/rt3
-      ccc=rt3/cell(1)
-      ddd=1.0_wp/cell(9)
+      aaa = cell(1) / (rt3 * 2.0_wp)
+      bbb = cell(1) / rt3
+      ccc = rt3 / cell(1)
+      ddd = 1.0_wp / cell(9)
 
-      Do i=1,natms
-        zss=parts(i)%zzz
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
-        parts(i)%zzz=cell(9)*zss
+      Do i = 1, natms
+        zss = parts(i)%zzz
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
+        parts(i)%zzz = cell(9) * zss
 
-        yss=parts(i)%yyy
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        parts(i)%yyy=bbb*yss
-        parts(i)%xxx=aaa*parts(i)%xxx
+        yss = parts(i)%yyy
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        parts(i)%yyy = bbb * yss
+        parts(i)%xxx = aaa * parts(i)%xxx
 
-        If ((Abs(parts(i)%yyy)+Abs(rt3*parts(i)%xxx)) >= bbb) Then
-          parts(i)%xxx=parts(i)%xxx-rt3*Sign(aaa,parts(i)%xxx)
-          parts(i)%yyy=parts(i)%yyy-Sign(aaa,parts(i)%yyy)
+        If ((Abs(parts(i)%yyy) + Abs(rt3 * parts(i)%xxx)) >= bbb) Then
+          parts(i)%xxx = parts(i)%xxx - rt3 * Sign(aaa, parts(i)%xxx)
+          parts(i)%yyy = parts(i)%yyy - Sign(aaa, parts(i)%yyy)
 
-          yss=ccc*parts(i)%yyy
-          yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-          parts(i)%yyy=bbb*yss
+          yss = ccc * parts(i)%yyy
+          yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+          parts(i)%yyy = bbb * yss
         End If
       End Do
 
@@ -3045,7 +3070,7 @@ Contains
 
   End Subroutine pbcshfrl_parts
 
-  Subroutine pbcshfrl_arrays(imcon,cell,natms,xxx,yyy,zzz)
+  Subroutine pbcshfrl_arrays(imcon, cell, natms, xxx, yyy, zzz)
 
     !!----------------------------------------------------------------------!
     !!
@@ -3075,105 +3100,105 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Integer,                              Intent( In    ) :: imcon,natms
-    Real( Kind = wp ), Dimension( 1:9 ),  Intent( In    ) :: cell
-    Real( Kind = wp ), Dimension( 1:* ),  Intent( InOut ) :: xxx,yyy,zzz
+    Integer,                       Intent(In   ) :: imcon
+    Real(Kind=wp), Dimension(1:9), Intent(In   ) :: cell
+    Integer,                       Intent(In   ) :: natms
+    Real(Kind=wp), Dimension(1:*), Intent(InOut) :: xxx, yyy, zzz
 
-    Integer           :: i
-    Real( Kind = wp ) :: aaa,bbb,ccc,ddd, &
-      xss,yss,zss
+    Integer       :: i
+    Real(Kind=wp) :: aaa, bbb, ccc, ddd, xss, yss, zss
 
     If (imcon == 1) Then
 
       ! standard cubic boundary conditions
 
-      Do i=1,natms
-        xss=xxx(i)
-        yss=yyy(i)
-        zss=zzz(i)
+      Do i = 1, natms
+        xss = xxx(i)
+        yss = yyy(i)
+        zss = zzz(i)
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        xxx(i)=cell(1)*xss
-        yyy(i)=cell(1)*yss
-        zzz(i)=cell(1)*zss
+        xxx(i) = cell(1) * xss
+        yyy(i) = cell(1) * yss
+        zzz(i) = cell(1) * zss
       End Do
 
     Else If (imcon == 2 .or. imcon == 0) Then ! no PBC box wrapping exception
 
       ! rectangular boundary conditions
 
-      Do i=1,natms
-        xss=xxx(i)
-        yss=yyy(i)
-        zss=zzz(i)
+      Do i = 1, natms
+        xss = xxx(i)
+        yss = yyy(i)
+        zss = zzz(i)
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        xxx(i)=cell(1)*xss
-        yyy(i)=cell(5)*yss
-        zzz(i)=cell(9)*zss
+        xxx(i) = cell(1) * xss
+        yyy(i) = cell(5) * yss
+        zzz(i) = cell(9) * zss
       End Do
 
     Else If (imcon == 3) Then
 
       ! parallelepiped boundary conditions
 
-      Do i=1,natms
-        xss=xxx(i)
-        yss=yyy(i)
-        zss=zzz(i)
+      Do i = 1, natms
+        xss = xxx(i)
+        yss = yyy(i)
+        zss = zzz(i)
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        xxx(i)=cell(1)*xss+cell(4)*yss+cell(7)*zss
-        yyy(i)=cell(2)*xss+cell(5)*yss+cell(8)*zss
-        zzz(i)=cell(3)*xss+cell(6)*yss+cell(9)*zss
+        xxx(i) = cell(1) * xss + cell(4) * yss + cell(7) * zss
+        yyy(i) = cell(2) * xss + cell(5) * yss + cell(8) * zss
+        zzz(i) = cell(3) * xss + cell(6) * yss + cell(9) * zss
       End Do
 
     Else If (imcon == 4) Then
 
       ! truncated octahedral boundary conditions
 
-      If (.not.(Abs(cell(1)-cell(5)) < 1.0e-6_wp .and. Abs(cell(5)-cell(9)) < 1.0e-6_wp)) Call error(130)
+      If (.not. (Abs(cell(1) - cell(5)) < 1.0e-6_wp .and. Abs(cell(5) - cell(9)) < 1.0e-6_wp)) Call error(130)
 
-      aaa=1.0_wp/cell(1)
+      aaa = 1.0_wp / cell(1)
 
-      Do i=1,natms
-        xss=xxx(i)
-        yss=yyy(i)
-        zss=zzz(i)
+      Do i = 1, natms
+        xss = xxx(i)
+        yss = yyy(i)
+        zss = zzz(i)
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        xxx(i)=cell(1)*xss
-        yyy(i)=cell(1)*yss
-        zzz(i)=cell(1)*zss
+        xxx(i) = cell(1) * xss
+        yyy(i) = cell(1) * yss
+        zzz(i) = cell(1) * zss
 
-        If ((Abs(xxx(i))+Abs(yyy(i))+Abs(zzz(i))) >= 0.75_wp*cell(1)) Then
-          xxx(i)=xxx(i)-0.5_wp*Sign(cell(1),xxx(i))
-          yyy(i)=yyy(i)-0.5_wp*Sign(cell(1),yyy(i))
-          zzz(i)=zzz(i)-0.5_wp*Sign(cell(1),zzz(i))
+        If ((Abs(xxx(i)) + Abs(yyy(i)) + Abs(zzz(i))) >= 0.75_wp * cell(1)) Then
+          xxx(i) = xxx(i) - 0.5_wp * Sign(cell(1), xxx(i))
+          yyy(i) = yyy(i) - 0.5_wp * Sign(cell(1), yyy(i))
+          zzz(i) = zzz(i) - 0.5_wp * Sign(cell(1), zzz(i))
 
-          xss=aaa*xxx(i)
-          yss=aaa*yyy(i)
-          zss=aaa*zzz(i)
+          xss = aaa * xxx(i)
+          yss = aaa * yyy(i)
+          zss = aaa * zzz(i)
 
-          xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-          yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-          zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+          xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+          yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+          zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-          xxx(i)=cell(1)*xss
-          yyy(i)=cell(1)*yss
-          zzz(i)=cell(1)*zss
+          xxx(i) = cell(1) * xss
+          yyy(i) = cell(1) * yss
+          zzz(i) = cell(1) * zss
         End If
       End Do
 
@@ -3181,40 +3206,40 @@ Contains
 
       ! rhombic Dodecahedral boundary conditions
 
-      If (.not.(Abs(cell(1)-cell(5)) < 1.0e-6_wp .and. Abs(cell(9)-cell(1)*rt2) < 1.0e-6_wp)) Call error(140)
+      If (.not. (Abs(cell(1) - cell(5)) < 1.0e-6_wp .and. Abs(cell(9) - cell(1) * rt2) < 1.0e-6_wp)) Call error(140)
 
-      aaa=1.0_wp/cell(1)
-      bbb=1.0_wp/cell(9)
+      aaa = 1.0_wp / cell(1)
+      bbb = 1.0_wp / cell(9)
 
-      Do i=1,natms
-        xss=xxx(i)
-        yss=yyy(i)
-        zss=zzz(i)
+      Do i = 1, natms
+        xss = xxx(i)
+        yss = yyy(i)
+        zss = zzz(i)
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-        xxx(i)=cell(1)*xss
-        yyy(i)=cell(1)*yss
-        zzz(i)=cell(9)*zss
+        xxx(i) = cell(1) * xss
+        yyy(i) = cell(1) * yss
+        zzz(i) = cell(9) * zss
 
-        If ((Abs(xxx(i))+Abs(yyy(i))+Abs(rt2*zzz(i))) >= cell(1)) Then
-          xxx(i)=xxx(i)-0.5_wp*Sign(cell(1),xxx(i))
-          yyy(i)=yyy(i)-0.5_wp*Sign(cell(1),yyy(i))
-          zzz(i)=zzz(i)-0.5_wp*Sign(cell(9),zzz(i))
+        If ((Abs(xxx(i)) + Abs(yyy(i)) + Abs(rt2 * zzz(i))) >= cell(1)) Then
+          xxx(i) = xxx(i) - 0.5_wp * Sign(cell(1), xxx(i))
+          yyy(i) = yyy(i) - 0.5_wp * Sign(cell(1), yyy(i))
+          zzz(i) = zzz(i) - 0.5_wp * Sign(cell(9), zzz(i))
 
-          xss=aaa*xxx(i)
-          yss=aaa*yyy(i)
-          zss=bbb*zzz(i)
+          xss = aaa * xxx(i)
+          yss = aaa * yyy(i)
+          zss = bbb * zzz(i)
 
-          xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-          yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-          zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+          xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+          yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+          zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
 
-          xxx(i)=cell(1)*xss
-          yyy(i)=cell(1)*yss
-          zzz(i)=cell(9)*zss
+          xxx(i) = cell(1) * xss
+          yyy(i) = cell(1) * yss
+          zzz(i) = cell(9) * zss
         End If
       End Do
 
@@ -3222,45 +3247,45 @@ Contains
 
       ! x-y boundary conditions (SLAB)
 
-      Do i=1,natms
-        xss=xxx(i)
-        yss=yyy(i)
+      Do i = 1, natms
+        xss = xxx(i)
+        yss = yyy(i)
 
-        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        xss = xss - Anint(xss); If (xss >= half_minus) xss = -xss
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
 
-        xxx(i)=cell(1)*xss+cell(4)*yss
-        yyy(i)=cell(2)*xss+cell(5)*yss
+        xxx(i) = cell(1) * xss + cell(4) * yss
+        yyy(i) = cell(2) * xss + cell(5) * yss
       End Do ! note zzz remains unchanged
 
     Else If (imcon == 7) Then
 
       ! hexagonal prism boundary conditions
 
-      If (Abs(cell(1)-rt3*cell(5)) > 1.0e-6_wp) Call error(135)
+      If (Abs(cell(1) - rt3 * cell(5)) > 1.0e-6_wp) Call error(135)
 
-      aaa=cell(1)/(rt3*2.0_wp)
-      bbb=cell(1)/rt3
-      ccc=rt3/cell(1)
-      ddd=1.0_wp/cell(9)
+      aaa = cell(1) / (rt3 * 2.0_wp)
+      bbb = cell(1) / rt3
+      ccc = rt3 / cell(1)
+      ddd = 1.0_wp / cell(9)
 
-      Do i=1,natms
-        zss=zzz(i)
-        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
-        zzz(i)=cell(9)*zss
+      Do i = 1, natms
+        zss = zzz(i)
+        zss = zss - Anint(zss); If (zss >= half_minus) zss = -zss
+        zzz(i) = cell(9) * zss
 
-        yss=yyy(i)
-        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-        yyy(i)=bbb*yss
-        xxx(i)=aaa*xxx(i)
+        yss = yyy(i)
+        yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+        yyy(i) = bbb * yss
+        xxx(i) = aaa * xxx(i)
 
-        If ((Abs(yyy(i))+Abs(rt3*xxx(i))) >= bbb) Then
-          xxx(i)=xxx(i)-rt3*Sign(aaa,xxx(i))
-          yyy(i)=yyy(i)-Sign(aaa,yyy(i))
+        If ((Abs(yyy(i)) + Abs(rt3 * xxx(i))) >= bbb) Then
+          xxx(i) = xxx(i) - rt3 * Sign(aaa, xxx(i))
+          yyy(i) = yyy(i) - Sign(aaa, yyy(i))
 
-          yss=ccc*yyy(i)
-          yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
-          yyy(i)=bbb*yss
+          yss = ccc * yyy(i)
+          yss = yss - Anint(yss); If (yss >= half_minus) yss = -yss
+          yyy(i) = bbb * yss
         End If
       End Do
 
@@ -3268,7 +3293,7 @@ Contains
 
   End Subroutine pbcshfrl_arrays
 
-  Subroutine jacobi(n,aaa,vvv)
+  Subroutine jacobi(n, aaa, vvv)
 
     !!----------------------------------------------------------------------!
     !!
@@ -3299,32 +3324,33 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Integer,                                    Intent( In    ) :: n
-    Real( Kind = wp ), Dimension ( 1:n , 1:n ), Intent( InOut ) :: aaa,vvv
+    Integer,                            Intent(In   ) :: n
+    Real(Kind=wp), Dimension(1:n, 1:n), Intent(InOut) :: aaa, vvv
 
-    Real( Kind = wp ), Parameter :: rho = 1.0e-20_wp
-    Logical           :: pass
-    Integer           :: i,j,k ! ,l
-    Real( Kind = wp ) :: scale,test,                      &
-      v_d_hor,v_d_off,v_d_ver,v_d_mid, &
-      omg,s_s,s,c_c,c,s_c,tmp
+    Real(Kind=wp), Parameter :: rho = 1.0e-20_wp
+
+    Integer       :: i, j, k
+    Logical       :: pass
+    Real(Kind=wp) :: c, c_c, omg, s, s_c, s_s, scale, test, tmp, v_d_hor, v_d_mid, v_d_off, v_d_ver
+
+! ,l
 
     !  l=0 ! Iteration counter
 
     ! Rescale (lower triangle) matrix for optimal accuracy
     ! by the largest by magnitude diagonal element
 
-    scale=0.0_wp
-    Do i=1,n
-      If (Abs(aaa(i,i)) > scale) scale=Abs(aaa(i,i))
+    scale = 0.0_wp
+    Do i = 1, n
+      If (Abs(aaa(i, i)) > scale) scale = Abs(aaa(i, i))
     End Do
     If (scale <= zero_plus) Then
-      vvv=aaa
+      vvv = aaa
       Return ! Accept & Return zero matrices
     Else
-      Do i=1,n
-        Do j=1,i
-          aaa(j,i)=aaa(j,i)/scale
+      Do i = 1, n
+        Do j = 1, i
+          aaa(j, i) = aaa(j, i) / scale
         End Do
       End Do
     End If
@@ -3332,19 +3358,19 @@ Contains
     ! Set initial value of moving tolerance
     ! Sum of all off-diagonal elements (strictly lower triangle)
 
-    test=0.0_wp
-    Do i=2,n
-      Do j=1,i-1
-        test=test+aaa(j,i)**2
+    test = 0.0_wp
+    Do i = 2, n
+      Do j = 1, i - 1
+        test = test + aaa(j, i)**2
       End Do
     End Do
-    test=Sqrt(2.0_wp*test)
+    test = Sqrt(2.0_wp * test)
 
     ! Initialise eigenvectors
 
-    vvv=0.0_wp
-    Do i=1,n
-      vvv(i,i)=1.0_wp
+    vvv = 0.0_wp
+    Do i = 1, n
+      vvv(i, i) = 1.0_wp
     End Do
 
     ! Accept & Return already diagonalised matrices
@@ -3355,62 +3381,62 @@ Contains
     ! Recycle until absolute tolerance satisfied
 
     Do While (test > rho)
-      test=test/Real(n,wp)
-      If (test < rho) test=rho
+      test = test / Real(n, wp)
+      If (test < rho) test = rho
 
       ! Jacobi diagonalisation
 
-      pass=.true.
+      pass = .true.
 
       ! Recycle until moving tolerance satisfied
 
       Do While (pass)
-        pass=.false.
+        pass = .false.
 
         ! Loop around the strictly lower triangle matrix
 
-        Do i=2,n
-          Do j=1,i-1
-            If (Abs(aaa(j,i)) >= test) Then
+        Do i = 2, n
+          Do j = 1, i - 1
+            If (Abs(aaa(j, i)) >= test) Then
               !                 l=l+1
-              pass=.true.
+              pass = .true.
 
-              v_d_hor=aaa(i,i)
-              v_d_ver=aaa(j,j)
-              v_d_off=aaa(j,i)
-              v_d_mid=0.5_wp*(v_d_ver-v_d_hor)
+              v_d_hor = aaa(i, i)
+              v_d_ver = aaa(j, j)
+              v_d_off = aaa(j, i)
+              v_d_mid = 0.5_wp * (v_d_ver - v_d_hor)
               If (Abs(v_d_mid) < rho) Then
-                omg=-1.0_wp
+                omg = -1.0_wp
               Else
-                omg=-v_d_off/Sqrt(v_d_off**2+v_d_mid**2)
-                If (v_d_mid < 0.0_wp) omg=-omg
+                omg = -v_d_off / Sqrt(v_d_off**2 + v_d_mid**2)
+                If (v_d_mid < 0.0_wp) omg = -omg
               End If
-              s=omg/Sqrt(2.0_wp*(1.0_wp+Sqrt(1.0_wp-omg**2)))
-              s_s=s*s ; c_c=1.0_wp-s_s ; c=Sqrt(c_c) ; s_c=s*c
+              s = omg / Sqrt(2.0_wp * (1.0_wp + Sqrt(1.0_wp - omg**2)))
+              s_s = s * s; c_c = 1.0_wp - s_s; c = Sqrt(c_c); s_c = s * c
 
-              Do k=1,n
-                If      (k <= j) Then
-                  tmp     =aaa(k,j)*c-aaa(k,i)*s
-                  aaa(k,i)=aaa(k,j)*s+aaa(k,i)*c
-                  aaa(k,j)=tmp
-                Else If (k >  i) Then
-                  tmp     =aaa(j,k)*c-aaa(i,k)*s
-                  aaa(i,k)=aaa(j,k)*s+aaa(i,k)*c
-                  aaa(j,k)=tmp
+              Do k = 1, n
+                If (k <= j) Then
+                  tmp = aaa(k, j) * c - aaa(k, i) * s
+                  aaa(k, i) = aaa(k, j) * s + aaa(k, i) * c
+                  aaa(k, j) = tmp
+                Else If (k > i) Then
+                  tmp = aaa(j, k) * c - aaa(i, k) * s
+                  aaa(i, k) = aaa(j, k) * s + aaa(i, k) * c
+                  aaa(j, k) = tmp
                 Else
-                  tmp     =aaa(j,k)*c-aaa(k,i)*s
-                  aaa(k,i)=aaa(j,k)*s+aaa(k,i)*c
-                  aaa(j,k)=tmp
+                  tmp = aaa(j, k) * c - aaa(k, i) * s
+                  aaa(k, i) = aaa(j, k) * s + aaa(k, i) * c
+                  aaa(j, k) = tmp
                 End If
 
-                tmp     =vvv(k,j)*c-vvv(k,i)*s
-                vvv(k,i)=vvv(k,j)*s+vvv(k,i)*c
-                vvv(k,j)=tmp
+                tmp = vvv(k, j) * c - vvv(k, i) * s
+                vvv(k, i) = vvv(k, j) * s + vvv(k, i) * c
+                vvv(k, j) = tmp
               End Do
 
-              aaa(i,i)=v_d_hor*c_c+v_d_ver*s_s+2.0_wp*v_d_off*s_c
-              aaa(j,j)=v_d_hor*s_s+v_d_ver*c_c-2.0_wp*v_d_off*s_c
-              aaa(j,i)=(v_d_ver-v_d_hor)*s_c+v_d_off*(c_c-s_s)
+              aaa(i, i) = v_d_hor * c_c + v_d_ver * s_s + 2.0_wp * v_d_off * s_c
+              aaa(j, j) = v_d_hor * s_s + v_d_ver * c_c - 2.0_wp * v_d_off * s_c
+              aaa(j, i) = (v_d_ver - v_d_hor) * s_c + v_d_off * (c_c - s_s)
             End If
           End Do
         End Do
@@ -3419,15 +3445,15 @@ Contains
 
     ! Rescale back the lower triangle matrix
 
-    Do i=1,n
-      Do j=1,i
-        aaa(j,i)=aaa(j,i)*scale
+    Do i = 1, n
+      Do j = 1, i
+        aaa(j, i) = aaa(j, i) * scale
       End Do
     End Do
 
   End Subroutine jacobi
 
-  Subroutine mat_mul(aaa,bbb,ccc)
+  Subroutine mat_mul(aaa, bbb, ccc)
 
     !!----------------------------------------------------------------------!
     !!
@@ -3445,21 +3471,20 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
+    Real(Kind=wp), Intent(In   ) :: aaa(1:9), bbb(1:9)
+    Real(Kind=wp), Intent(  Out) :: ccc(1:9)
 
-    Real( Kind = wp ), Intent( In    ) :: aaa(1:9),bbb(1:9)
-    Real( Kind = wp ), Intent(   Out ) :: ccc(1:9)
+    ccc(1) = aaa(1) * bbb(1) + aaa(4) * bbb(2) + aaa(7) * bbb(3)
+    ccc(2) = aaa(2) * bbb(1) + aaa(5) * bbb(2) + aaa(8) * bbb(3)
+    ccc(3) = aaa(3) * bbb(1) + aaa(6) * bbb(2) + aaa(9) * bbb(3)
 
-    ccc(1)=aaa(1)*bbb(1)+aaa(4)*bbb(2)+aaa(7)*bbb(3)
-    ccc(2)=aaa(2)*bbb(1)+aaa(5)*bbb(2)+aaa(8)*bbb(3)
-    ccc(3)=aaa(3)*bbb(1)+aaa(6)*bbb(2)+aaa(9)*bbb(3)
+    ccc(4) = aaa(1) * bbb(4) + aaa(4) * bbb(5) + aaa(7) * bbb(6)
+    ccc(5) = aaa(2) * bbb(4) + aaa(5) * bbb(5) + aaa(8) * bbb(6)
+    ccc(6) = aaa(3) * bbb(4) + aaa(6) * bbb(5) + aaa(9) * bbb(6)
 
-    ccc(4)=aaa(1)*bbb(4)+aaa(4)*bbb(5)+aaa(7)*bbb(6)
-    ccc(5)=aaa(2)*bbb(4)+aaa(5)*bbb(5)+aaa(8)*bbb(6)
-    ccc(6)=aaa(3)*bbb(4)+aaa(6)*bbb(5)+aaa(9)*bbb(6)
-
-    ccc(7)=aaa(1)*bbb(7)+aaa(4)*bbb(8)+aaa(7)*bbb(9)
-    ccc(8)=aaa(2)*bbb(7)+aaa(5)*bbb(8)+aaa(8)*bbb(9)
-    ccc(9)=aaa(3)*bbb(7)+aaa(6)*bbb(8)+aaa(9)*bbb(9)
+    ccc(7) = aaa(1) * bbb(7) + aaa(4) * bbb(8) + aaa(7) * bbb(9)
+    ccc(8) = aaa(2) * bbb(7) + aaa(5) * bbb(8) + aaa(8) * bbb(9)
+    ccc(9) = aaa(3) * bbb(7) + aaa(6) * bbb(8) + aaa(9) * bbb(9)
 
   End Subroutine mat_mul
 
@@ -3479,14 +3504,14 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Real( Kind = wp ) :: Factorial
-    Integer, Intent( In    ) :: n
+    Integer, Intent(In   ) :: n
+    Real(Kind=wp)          :: Factorial
 
     Integer :: i
 
     Factorial = 0.0_wp
     Do i = 2, n
-      Factorial = Factorial + Log(Real(i,Kind=wp))
+      Factorial = Factorial + Log(Real(i, Kind=wp))
     End Do
 
   End Function Factorial
@@ -3546,7 +3571,7 @@ Contains
 
   end Function inv_true_factorial
 
-  Subroutine factor( n, facs )
+  Subroutine factor(n, facs)
 
     !!----------------------------------------------------------------------!
     !!
@@ -3562,33 +3587,31 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Integer                , Intent( In    ) :: n
-    Integer, Dimension( : ), Intent(   Out ) :: facs
+    Integer,               Intent(In   ) :: n
+    Integer, Dimension(:), Intent(  Out) :: facs
 
-    Integer :: left
-    Integer :: p
-    Integer :: i
+    Integer :: i, left, p
 
     facs = 0
 
     left = n
-    Do i = 1, Size( facs ) - 1
-      p = get_nth_prime( i )
+    Do i = 1, Size(facs) - 1
+      p = get_nth_prime(i)
 
-      If ( p <= 0 ) Exit
+      If (p <= 0) Exit
 
-      Do While ( p * ( left / p ) == left )
+      Do While (p * (left / p) == left)
         left = left / p
 
-        facs( i ) = facs( i ) + 1
+        facs(i) = facs(i) + 1
       End Do
     End Do
 
-    facs( Size( facs ) ) = left
+    facs(Size(facs)) = left
 
   End Subroutine factor
 
-  Function get_nth_prime( n )
+  Function get_nth_prime(n)
 
     !!----------------------------------------------------------------------!
     !!
@@ -3604,31 +3627,28 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Integer                  :: get_nth_prime
+    Integer, Intent(In   ) :: n
+    Integer                :: get_nth_prime
 
-    Integer, Intent( In    ) :: n
+    Integer, Dimension(1:170), Parameter :: primes = (/2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, &
+                                            41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101&
+                                            , 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157&
+                                            , 163, 167, 173, 179, 181, 191, 193, 197, 199, 211, 223&
+                                            , 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277&
+                                            , 281, 283, 293, 307, 311, 313, 317, 331, 337, 347, 349&
+                                            , 353, 359, 367, 373, 379, 383, 389, 397, 401, 409, 419&
+                                            , 421, 431, 433, 439, 443, 449, 457, 461, 463, 467, 479&
+                                            , 487, 491, 499, 503, 509, 521, 523, 541, 547, 557, 563&
+                                            , 569, 571, 577, 587, 593, 599, 601, 607, 613, 617, 619&
+                                            , 631, 641, 643, 647, 653, 659, 661, 673, 677, 683, 691&
+                                            , 701, 709, 719, 727, 733, 739, 743, 751, 757, 761, 769&
+                                            , 773, 787, 797, 809, 811, 821, 823, 827, 829, 839, 853&
+                                            , 857, 859, 863, 877, 881, 883, 887, 907, 911, 919, 929&
+                                            , 937, 941, 947, 953, 967, 971, 977, 983, 991, 997, &
+                                            1009, 1013/)
 
-    Integer, Dimension( 1:170 ), Parameter :: primes = (/                             &
-      2,      3,      5,      7,     11,     13,     17,     19,     23,     29, &
-      31,     37,     41,     43,     47,     53,     59,     61,     67,     71, &
-      73,     79,     83,     89,     97,    101,    103,    107,    109,    113, &
-      127,    131,    137,    139,    149,    151,    157,    163,    167,    173, &
-      179,    181,    191,    193,    197,    199,    211,    223,    227,    229, &
-      233,    239,    241,    251,    257,    263,    269,    271,    277,    281, &
-      283,    293,    307,    311,    313,    317,    331,    337,    347,    349, &
-      353,    359,    367,    373,    379,    383,    389,    397,    401,    409, &
-      419,    421,    431,    433,    439,    443,    449,    457,    461,    463, &
-      467,    479,    487,    491,    499,    503,    509,    521,    523,    541, &
-      547,    557,    563,    569,    571,    577,    587,    593,    599,    601, &
-      607,    613,    617,    619,    631,    641,    643,    647,    653,    659, &
-      661,    673,    677,    683,    691,    701,    709,    719,    727,    733, &
-      739,    743,    751,    757,    761,    769,    773,    787,    797,    809, &
-      811,    821,    823,    827,    829,    839,    853,    857,    859,    863, &
-      877,    881,    883,    887,    907,    911,    919,    929,    937,    941, &
-      947,    953,    967,    971,    977,    983,    991,    997,   1009,   1013 /)
-
-    If ( n <= Size( primes ) ) Then
-      get_nth_prime = primes( n )
+    If (n <= Size(primes)) Then
+      get_nth_prime = primes(n)
     Else
       get_nth_prime = -1
     End If
@@ -3899,14 +3919,14 @@ Contains
     Real(Kind=wp), Intent(In) :: a,b
     Logical :: equal
 
-    equal = Abs(a-b) < epsilon_wp
+    equal = Abs(a - b) < epsilon_wp
   End Function equal_real_wp
 
-  Pure Function nequal_real_wp(a,b) Result(nequal)
-    Real(Kind=wp), Intent(In) :: a,b
-    Logical :: nequal
+  Pure Function nequal_real_wp(a, b) Result(nequal)
+    Real(Kind=wp), Intent(In   ) :: a, b
+    Logical                      :: nequal
 
-    nequal = .not. equal_real_wp(a,b)
+    nequal = .not. equal_real_wp(a, b)
   End Function nequal_real_wp
 
 End Module numerics

@@ -16,10 +16,13 @@ Module domains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp,wi
-  Use comms, Only : comms_type, gsync
-  Use errors_warnings, Only : error
-  Use numerics, Only : factor, get_nth_prime
+  Use comms,           Only: comms_type,&
+                             gsync
+  Use errors_warnings, Only: error
+  Use kinds,           Only: wi,&
+                             wp
+  Use numerics,        Only: factor,&
+                             get_nth_prime
 
   Implicit None
 
@@ -31,33 +34,33 @@ Module domains
 
   Type, Public :: domains_type
     Private
-    !> Dimensions of the 3D processor/domain grid
-    Integer( Kind = wi ), Public :: nx,ny,nz
-    !> Real values of the dimensions nx,ny and nz
-    Real( Kind = wp ), Public :: nx_real,ny_real,nz_real
-    !> Reciprocal values of the dimensions domain%nx,domain%ny and nrpz
-    Real( Kind = wp ), Public :: nx_recip,ny_recip,nz_recip
-    !> This domain's coordinates on the grid
-    Integer( Kind = wi ), Public :: idx,idy,idz
 
+    !> Dimensions of the 3D processor/domain grid
+    Integer(Kind=wi), Public :: nx, ny, nz
+    !> Real values of the dimensions nx,ny and nz
+    Real(Kind=wp), Public    :: nx_real, ny_real, nz_real
+    !> Reciprocal values of the dimensions domain%nx,domain%ny and nrpz
+    Real(Kind=wp), Public    :: nx_recip, ny_recip, nz_recip
+    !> This domain's coordinates on the grid
+    Integer(Kind=wi), Public :: idx, idy, idz
     !> Neighbourhood coordinates domain%map of the grid
-    Integer( Kind = wi ), Dimension(1:26), Public :: map
+    Integer(Kind=wi), Public :: map(1:26)
     !> Unique neighbour domain list
     !>
     !> - 0 if neighbour is uniqye
     !> - 1 if neighbour is repeated
-    Integer( Kind = wi ), Dimension(1:26), Public :: map_unique
+    Integer(Kind=wi), Public :: map_unique(1:26)
     !> Number of neighbours (0 when serial, 26 otherwise). Used as the dimension
     !> of some shared unit arrays
-    Integer( Kind = wi ), Public :: neighbours
-    Integer( Kind = wi ), Public :: mxbfdp,mxbfxp,mxbfsh
+    Integer(Kind=wi), Public :: neighbours
+    Integer(Kind=wi), Public :: mxbfdp, mxbfxp, mxbfsh
   End Type domains_type
 
   Public :: map_domains,idcube, exchange_grid
 
 Contains
 
-  Subroutine map_domains(imcon,wx,wy,wz,domain,comm)
+  Subroutine map_domains(imcon, wx, wy, wz, domain, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -74,27 +77,26 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    ) :: imcon
-    Real( Kind = wp ), Intent( In    ) :: wx,wy,wz ! MD config%cell Cartesian widths
-    Type( domains_type ), Intent( InOut ) :: domain
-    Type(comms_type),  Intent( InOut ) :: comm
+    Integer,            Intent(In   ) :: imcon
+    Real(Kind=wp),      Intent(In   ) :: wx, wy, wz
+    Type(domains_type), Intent(InOut) :: domain
+    Type(comms_type),   Intent(InOut) :: comm
 
-    Integer                            :: i,j, jdx,jdy,jdz
-    !> Limits on the (x,y,z) sizes of the processor grid
-    Integer                            :: limx,limy,limz
-    !> processor factorisations of and factorised grid vectors over the x and y
-    !> sides of the Cartesian rectangular parallelepiped approximating the MD config%cell
-    Integer                            :: nfacsx, nfacsy
-    Integer, Dimension( 1:max_factor ) :: pfacsx, pfacsy
-    !> Target grid product and running value of the (y,z) processor grid product
-    Integer                            :: P,Pyz
-    !> Running values of the (x,y,z) sizes of the processor producing P and Pyz
-    Integer                            :: nx,ny,nz
-    !> Running values of the (x,y,z) sizes of the grid config%cell volume and surface
-    !> Minimum surface
-    Real( Kind = wp )                  :: dx,dy,dz,S,min_S
-    !> Search tolerance
-    Real( Kind = wp ), Parameter       :: tol = 1.0e-6_wp
+    Real(Kind=wp), Parameter :: tol = 1.0e-6_wp
+
+    Integer                          :: i, j, jdx, jdy, jdz, limx, limy, limz, nfacsx, nfacsy, nx, &
+                                        ny, nz, P, Pyz
+    Integer, Dimension(1:max_factor) :: pfacsx, pfacsy
+    Real(Kind=wp)                    :: dx, dy, dz, min_S, S
+
+!> Limits on the (x,y,z) sizes of the processor grid
+!> processor factorisations of and factorised grid vectors over the x and y
+!> sides of the Cartesian rectangular parallelepiped approximating the MD config%cell
+!> Target grid product and running value of the (y,z) processor grid product
+!> Running values of the (x,y,z) sizes of the processor producing P and Pyz
+!> Running values of the (x,y,z) sizes of the grid config%cell volume and surface
+!> Minimum surface
+!> Search tolerance
 
     ! DD SEARCH
     If (comm%mxnode == 1) Then
@@ -104,74 +106,74 @@ Contains
     Else ! mxnode > 1
 
       ! Impose imcon driven limits on decomposition
-      limx = Merge( Huge( 1 ), 2, imcon /= 0 )
-      limy = Merge( Huge( 1 ), 2, imcon /= 0 )
-      limz = Merge( Huge( 1 ), 2, imcon /= 0 .and. imcon /= 6 )
+      limx = Merge(Huge(1), 2, imcon /= 0)
+      limy = Merge(Huge(1), 2, imcon /= 0)
+      limz = Merge(Huge(1), 2, imcon /= 0 .and. imcon /= 6)
 
       ! Minimum surface (the largest possible) and decomposition (none)
-      min_S = Huge( 1.0_wp )
+      min_S = Huge(1.0_wp)
       domain%nx = -1
       domain%ny = -1
       domain%nz = -1
 
       P = comm%mxnode
-      Call factor( P, pfacsx )
-      nfacsx = get_n_factors( pfacsx )
+      Call factor(P, pfacsx)
+      nfacsx = get_n_factors(pfacsx)
       Do i = 1, nfacsx
-        nx = get_nth_factor( pfacsx, i )
-        If ( nx > limx ) Cycle
-        dx = wx / Real(nx,wp)
+        nx = get_nth_factor(pfacsx, i)
+        If (nx > limx) Cycle
+        dx = wx / Real(nx, wp)
 
         Pyz = P / nx
-        Call factor( Pyz, pfacsy )
-        nfacsy = get_n_factors( pfacsy )
+        Call factor(Pyz, pfacsy)
+        nfacsy = get_n_factors(pfacsy)
         Do j = 1, nfacsy
-          ny = get_nth_factor( pfacsy, j )
-          If ( ny > limy ) Cycle
-          dy = wy / Real(ny,wp)
+          ny = get_nth_factor(pfacsy, j)
+          If (ny > limy) Cycle
+          dy = wy / Real(ny, wp)
 
           nz = Pyz / ny
-          If ( nz > limz ) Cycle
-          dz = wz / Real(nz,wp)
+          If (nz > limz) Cycle
+          dz = wz / Real(nz, wp)
 
-          S = 2.0_wp * ( dx*dy + dy*dz + dz*dx )
+          S = 2.0_wp * (dx * dy + dy * dz + dz * dx)
 
-          If      ( min_S - S         > tol ) Then
+          If (min_S - S > tol) Then
 
             ! Qualifier
             min_S = S
-            domain%nx  = nx
-            domain%ny  = ny
-            domain%nz  = nz
+            domain%nx = nx
+            domain%ny = ny
+            domain%nz = nz
 
-          Else If ( Abs( min_S - S ) < tol ) Then
+          Else If (Abs(min_S - S) < tol) Then
 
             ! For degenerate cases choose case where have least procs down any dimension (it should help FFT)
-            If ( Max( nx, ny, nz ) < Max( domain%nx, domain%ny, domain%nz ) ) Then
+            If (Max(nx, ny, nz) < Max(domain%nx, domain%ny, domain%nz)) Then
 
               min_S = S
-              domain%nx  = nx
-              domain%ny  = ny
-              domain%nz  = nz
+              domain%nx = nx
+              domain%ny = ny
+              domain%nz = nz
 
-            Else If ( Max( nx, ny, nz ) == Max( domain%nx, domain%ny, domain%nz ) ) Then
+            Else If (Max(nx, ny, nz) == Max(domain%nx, domain%ny, domain%nz)) Then
 
               ! The the new case has the same number of procs
-              If ( nx < domain%nx ) Then
+              If (nx < domain%nx) Then
 
                 ! Choose first the case which has the least down x
                 min_S = S
-                domain%nx  = nx
-                domain%ny  = ny
-                domain%nz  = nz
+                domain%nx = nx
+                domain%ny = ny
+                domain%nz = nz
 
-              Else If ( nx == domain%nx .and. ny < domain%ny ) Then
+              Else If (nx == domain%nx .and. ny < domain%ny) Then
 
                 ! If max the same AND x the same choose it if y is less
                 min_S = S
-                domain%nx  = nx
-                domain%ny  = ny
-                domain%nz  = nz
+                domain%nx = nx
+                domain%ny = ny
+                domain%nz = nz
 
               End If
             End If
@@ -180,33 +182,33 @@ Contains
       End Do
 
       Call gsync(comm)
-      If ( domain%nx == - 1 .or. domain%ny == -1 .or. domain%nz == -1 ) Call error(520)
+      If (domain%nx == -1 .or. domain%ny == -1 .or. domain%nz == -1) Call error(520)
 
     End If
 
     ! DD MAPPING
-    domain%map=0
-    domain%map_unique=0
+    domain%map = 0
+    domain%map_unique = 0
 
-    domain%nx_real = Real(domain%nx,wp) ; domain%nx_recip = 1.0_wp/domain%nx_real
-    domain%ny_real = Real(domain%ny,wp) ; domain%ny_recip = 1.0_wp/domain%ny_real
-    domain%nz_real = Real(domain%nz,wp) ; domain%nz_recip = 1.0_wp/domain%nz_real
+    domain%nx_real = Real(domain%nx, wp); domain%nx_recip = 1.0_wp / domain%nx_real
+    domain%ny_real = Real(domain%ny, wp); domain%ny_recip = 1.0_wp / domain%ny_real
+    domain%nz_real = Real(domain%nz, wp); domain%nz_recip = 1.0_wp / domain%nz_real
 
     ! construct domain%map of neighbouring nodes and domains
-    domain%idz=comm%idnode/(domain%nx*domain%ny)
-    domain%idy=comm%idnode/domain%nx-domain%idz*domain%ny
-    domain%idx=Mod(comm%idnode,domain%nx)
+    domain%idz = comm%idnode / (domain%nx * domain%ny)
+    domain%idy = comm%idnode / domain%nx - domain%idz * domain%ny
+    domain%idx = Mod(comm%idnode, domain%nx)
 
-    jdz=domain%nz+domain%idz
-    jdy=domain%ny+domain%idy
-    jdx=domain%nx+domain%idx
+    jdz = domain%nz + domain%idz
+    jdy = domain%ny + domain%idy
+    jdx = domain%nx + domain%idx
 
-    domain%map(1)=idcube(Mod(jdx-1,domain%nx),domain%idy,domain%idz,domain)
-    domain%map(2)=idcube(Mod(domain%idx+1,domain%nx),domain%idy,domain%idz,domain)
-    domain%map(3)=idcube(domain%idx,Mod(jdy-1,domain%ny),domain%idz,domain)
-    domain%map(4)=idcube(domain%idx,Mod(domain%idy+1,domain%ny),domain%idz,domain)
-    domain%map(5)=idcube(domain%idx,domain%idy,Mod(jdz-1,domain%nz),domain)
-    domain%map(6)=idcube(domain%idx,domain%idy,Mod(domain%idz+1,domain%nz),domain)
+    domain%map(1) = idcube(Mod(jdx - 1, domain%nx), domain%idy, domain%idz, domain)
+    domain%map(2) = idcube(Mod(domain%idx + 1, domain%nx), domain%idy, domain%idz, domain)
+    domain%map(3) = idcube(domain%idx, Mod(jdy - 1, domain%ny), domain%idz, domain)
+    domain%map(4) = idcube(domain%idx, Mod(domain%idy + 1, domain%ny), domain%idz, domain)
+    domain%map(5) = idcube(domain%idx, domain%idy, Mod(jdz - 1, domain%nz), domain)
+    domain%map(6) = idcube(domain%idx, domain%idy, Mod(domain%idz + 1, domain%nz), domain)
 
     !domain%map(1) points to the node number that is in -x direction to me (idnode)
     !domain%map(2) points to the node number that is in +x direction to me (idnode)
@@ -215,30 +217,30 @@ Contains
     !domain%map(5) points to the node number that is in -z direction to me (idnode)
     !domain%map(6) points to the node number that is in +z direction to me (idnode)
 
-    domain%map(7)=idcube(Mod(jdx-1,domain%nx),Mod(domain%idy+1,domain%ny),domain%idz,domain)
-    domain%map(8)=idcube(Mod(domain%idx+1,domain%nx),Mod(jdy-1,domain%ny),domain%idz,domain)
-    domain%map(9)=idcube(Mod(jdx-1,domain%nx),Mod(jdy-1,domain%ny),domain%idz,domain)
-    domain%map(10)=idcube(Mod(domain%idx+1,domain%nx),Mod(domain%idy+1,domain%ny),domain%idz,domain)
+    domain%map(7) = idcube(Mod(jdx - 1, domain%nx), Mod(domain%idy + 1, domain%ny), domain%idz, domain)
+    domain%map(8) = idcube(Mod(domain%idx + 1, domain%nx), Mod(jdy - 1, domain%ny), domain%idz, domain)
+    domain%map(9) = idcube(Mod(jdx - 1, domain%nx), Mod(jdy - 1, domain%ny), domain%idz, domain)
+    domain%map(10) = idcube(Mod(domain%idx + 1, domain%nx), Mod(domain%idy + 1, domain%ny), domain%idz, domain)
 
-    domain%map(11)=idcube(Mod(jdx-1,domain%nx),domain%idy,Mod(domain%idz+1,domain%nz),domain)
-    domain%map(12)=idcube(Mod(domain%idx+1,domain%nx),domain%idy,Mod(jdz-1,domain%nz),domain)
-    domain%map(13)=idcube(Mod(jdx-1,domain%nx),domain%idy,Mod(jdz-1,domain%nz),domain)
-    domain%map(14)=idcube(Mod(domain%idx+1,domain%nx),domain%idy,Mod(domain%idz+1,domain%nz),domain)
+    domain%map(11) = idcube(Mod(jdx - 1, domain%nx), domain%idy, Mod(domain%idz + 1, domain%nz), domain)
+    domain%map(12) = idcube(Mod(domain%idx + 1, domain%nx), domain%idy, Mod(jdz - 1, domain%nz), domain)
+    domain%map(13) = idcube(Mod(jdx - 1, domain%nx), domain%idy, Mod(jdz - 1, domain%nz), domain)
+    domain%map(14) = idcube(Mod(domain%idx + 1, domain%nx), domain%idy, Mod(domain%idz + 1, domain%nz), domain)
 
-    domain%map(15)=idcube(domain%idx,Mod(jdy-1,domain%ny),Mod(domain%idz+1,domain%nz),domain)
-    domain%map(16)=idcube(domain%idx,Mod(domain%idy+1,domain%ny),Mod(jdz-1,domain%nz),domain)
-    domain%map(17)=idcube(domain%idx,Mod(jdy-1,domain%ny),Mod(jdz-1,domain%nz),domain)
-    domain%map(18)=idcube(domain%idx,Mod(domain%idy+1,domain%ny),Mod(domain%idz+1,domain%nz),domain)
+    domain%map(15) = idcube(domain%idx, Mod(jdy - 1, domain%ny), Mod(domain%idz + 1, domain%nz), domain)
+    domain%map(16) = idcube(domain%idx, Mod(domain%idy + 1, domain%ny), Mod(jdz - 1, domain%nz), domain)
+    domain%map(17) = idcube(domain%idx, Mod(jdy - 1, domain%ny), Mod(jdz - 1, domain%nz), domain)
+    domain%map(18) = idcube(domain%idx, Mod(domain%idy + 1, domain%ny), Mod(domain%idz + 1, domain%nz), domain)
 
-    domain%map(19)=idcube(Mod(jdx-1,domain%nx),Mod(jdy-1,domain%ny),Mod(jdz-1,domain%nz),domain)
-    domain%map(20)=idcube(Mod(domain%idx+1,domain%nx),Mod(domain%idy+1,domain%ny),Mod(domain%idz+1,domain%nz),domain)
-    domain%map(21)=idcube(Mod(jdx-1,domain%nx),Mod(jdy-1,domain%ny),Mod(domain%idz+1,domain%nz),domain)
-    domain%map(22)=idcube(Mod(domain%idx+1,domain%nx),Mod(domain%idy+1,domain%ny),Mod(jdz-1,domain%nz),domain)
+    domain%map(19) = idcube(Mod(jdx - 1, domain%nx), Mod(jdy - 1, domain%ny), Mod(jdz - 1, domain%nz), domain)
+    domain%map(20) = idcube(Mod(domain%idx + 1, domain%nx), Mod(domain%idy + 1, domain%ny), Mod(domain%idz + 1, domain%nz), domain)
+    domain%map(21) = idcube(Mod(jdx - 1, domain%nx), Mod(jdy - 1, domain%ny), Mod(domain%idz + 1, domain%nz), domain)
+    domain%map(22) = idcube(Mod(domain%idx + 1, domain%nx), Mod(domain%idy + 1, domain%ny), Mod(jdz - 1, domain%nz), domain)
 
-    domain%map(23)=idcube(Mod(jdx-1,domain%nx),Mod(domain%idy+1,domain%ny),Mod(jdz-1,domain%nz),domain)
-    domain%map(24)=idcube(Mod(domain%idx+1,domain%nx),Mod(jdy-1,domain%ny),Mod(domain%idz+1,domain%nz),domain)
-    domain%map(25)=idcube(Mod(jdx-1,domain%nx),Mod(domain%idy+1,domain%ny),Mod(domain%idz+1,domain%nz),domain)
-    domain%map(26)=idcube(Mod(domain%idx+1,domain%nx),Mod(jdy-1,domain%ny),Mod(jdz-1,domain%nz),domain)
+    domain%map(23) = idcube(Mod(jdx - 1, domain%nx), Mod(domain%idy + 1, domain%ny), Mod(jdz - 1, domain%nz), domain)
+    domain%map(24) = idcube(Mod(domain%idx + 1, domain%nx), Mod(jdy - 1, domain%ny), Mod(domain%idz + 1, domain%nz), domain)
+    domain%map(25) = idcube(Mod(jdx - 1, domain%nx), Mod(domain%idy + 1, domain%ny), Mod(domain%idz + 1, domain%nz), domain)
+    domain%map(26) = idcube(Mod(domain%idx + 1, domain%nx), Mod(jdy - 1, domain%ny), Mod(jdz - 1, domain%nz), domain)
 
     ! Determine which processors appear more than once
     ! (domain%map_unique(the first unique node)=0 if repeated then =1)
@@ -246,101 +248,94 @@ Contains
     ! the remainder is images of idnode
     !
     ! NEEDED FOR CATCHING SELF-HALOING
-    Do i=1,26
-      If (comm%idnode == domain%map(i)) domain%map_unique(i)=1
-      Do j=i+1,26
-        If (domain%map(i) == domain%map(j)) domain%map_unique(j)=1
+    Do i = 1, 26
+      If (comm%idnode == domain%map(i)) domain%map_unique(i) = 1
+      Do j = i + 1, 26
+        If (domain%map(i) == domain%map(j)) domain%map_unique(j) = 1
       End Do
     End Do
-
-  Contains
-
-    Function get_n_factors( factors ) Result( nfacs )
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !
-      ! dl_poly_4 function to return the total number of
-      ! possible integer factorisations
-      !
-      ! copyright - daresbury laboratory
-      ! author    - i.j.bush august 2010
-      ! refactoring:
-      !           - a.m.elena march-october 2018
-      !           - j.madge march-october 2018
-      !           - a.b.g.chalk march-october 2018
-      !           - i.scivetti march-october 2018
-      !
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      Integer                                  :: nfacs
-
-      Integer, Dimension( : ), Intent( In    ) :: factors
-
-      nfacs = Product( factors( 1:Size( factors ) - 1 ) + 1 )
-
-      If ( factors( Size( factors ) ) /= 1 ) nfacs = nfacs * 2
-    End function get_n_factors
-
-    Function get_nth_factor( factors, n )
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !
-      ! dl_poly_4 function to return the n-th factoriser from the list of
-      ! all possible integer factorisers
-      !
-      ! copyright - daresbury laboratory
-      ! author    - i.j.bush august 2010
-      ! refactoring:
-      !           - a.m.elena march-october 2018
-      !           - j.madge march-october 2018
-      !           - a.b.g.chalk march-october 2018
-      !           - i.scivetti march-october 2018
-      !
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      Integer                                  :: get_nth_factor
-
-      Integer, Dimension( : ), Intent( In    ) :: factors
-      Integer                , Intent( In    ) :: n
-
-      Integer, Dimension( 1:Size( factors ) ) :: fac_counts
-
-      Integer :: nfacs, nt
-      Integer :: dim_prod
-      Integer :: i
-
-      nfacs = get_n_factors( factors )
-      If ( n > nfacs ) Then
-        get_nth_factor = -1
-      Else
-        If ( factors( Size( factors ) ) /= 1 .and. n > nfacs / 2 ) Then
-          nt = n - nfacs / 2
-        Else
-          nt = n
-        End If
-        nt = nt - 1
-
-        dim_prod = Product( factors( 1:Size( factors ) - 2 ) + 1 )
-        Do i = Size( factors ) - 1, 2, -1
-          fac_counts( i ) = nt / dim_prod
-          nt = nt - fac_counts( i ) * dim_prod
-          dim_prod = dim_prod / ( factors( i - 1 ) + 1 )
-        End Do
-        fac_counts( 1 ) = nt
-
-        get_nth_factor = 1
-        Do i = 1, Size( factors ) - 1
-          get_nth_factor = get_nth_factor * ( get_nth_prime( i ) ** fac_counts( i ) )
-        End Do
-
-        If ( factors( Size( factors ) ) /= 1 .and. n > nfacs / 2 ) Then
-          get_nth_factor = get_nth_factor * factors( Size( factors ) )
-        End If
-      End If
-    End Function get_nth_factor
   End Subroutine map_domains
 
-  Function idcube(i,j,k,domain) Result(id)
+  Function get_n_factors(factors) Result(nfacs)
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 function to return the total number of
+    ! possible integer factorisations
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.j.bush august 2010
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Integer, Dimension(:), Intent(In   ) :: factors
+    Integer                              :: nfacs
+
+    nfacs = Product(factors(1:Size(factors) - 1) + 1)
+
+    If (factors(Size(factors)) /= 1) nfacs = nfacs * 2
+  End Function get_n_factors
+
+  Function get_nth_factor(factors, n)
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 function to return the n-th factoriser from the list of
+    ! all possible integer factorisers
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.j.bush august 2010
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Integer, Dimension(:), Intent(In   ) :: factors
+    Integer,               Intent(In   ) :: n
+    Integer                              :: get_nth_factor
+
+    Integer                             :: dim_prod, i, nfacs, nt
+    Integer, Dimension(1:Size(factors)) :: fac_counts
+
+    nfacs = get_n_factors(factors)
+    If (n > nfacs) Then
+      get_nth_factor = -1
+    Else
+      If (factors(Size(factors)) /= 1 .and. n > nfacs / 2) Then
+        nt = n - nfacs / 2
+      Else
+        nt = n
+      End If
+      nt = nt - 1
+
+      dim_prod = Product(factors(1:Size(factors) - 2) + 1)
+      Do i = Size(factors) - 1, 2, -1
+        fac_counts(i) = nt / dim_prod
+        nt = nt - fac_counts(i) * dim_prod
+        dim_prod = dim_prod / (factors(i - 1) + 1)
+      End Do
+      fac_counts(1) = nt
+
+      get_nth_factor = 1
+      Do i = 1, Size(factors) - 1
+        get_nth_factor = get_nth_factor * (get_nth_prime(i)**fac_counts(i))
+      End Do
+
+      If (factors(Size(factors)) /= 1 .and. n > nfacs / 2) Then
+        get_nth_factor = get_nth_factor * factors(Size(factors))
+      End If
+    End If
+  End Function get_nth_factor
+
+  Function idcube(i, j, k, domain) Result(id)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 hypercube mapping function
@@ -355,11 +350,11 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer, Intent( In    ) :: i,j,k
-    Type( domains_type ), Intent( In    ) :: domain
-    Integer :: id
+    Integer,            Intent(In   ) :: i, j, k
+    Type(domains_type), Intent(In   ) :: domain
+    Integer                           :: id
 
-    id = i + domain%nx * ( j + domain%ny * k )
+    id = i + domain%nx * (j + domain%ny * k)
   End Function idcube
 
 

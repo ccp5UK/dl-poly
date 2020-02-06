@@ -87,7 +87,7 @@ def Indentation(element, level = 0):
 # *****************************************
 #             Main program
 # *****************************************
-	
+  
 parser = OptionParser()
 parser.add_option("-f","--file",dest="testinput",help="File with test suite definitions")
 parser.add_option("-p","--protocol",dest="protocol",help="Write test protocol to disk",action="store_true")
