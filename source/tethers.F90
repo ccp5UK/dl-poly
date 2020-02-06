@@ -28,6 +28,8 @@ Module tethers
   !> Type containing tethers data
   Type, Public :: tethers_type
     Private
+    !> total number of tether types
+    Integer( Kind =  wi ), Public :: megteth
     !> Number of types of tether
     Integer( Kind =  wi ), Public :: ntteth = 0
     Integer( Kind =  wi ), Public :: mxtteth,mxteth,mxftet,mxpteth

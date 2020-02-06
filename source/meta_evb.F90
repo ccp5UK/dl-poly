@@ -153,7 +153,7 @@ Contains
       impa(1),dfcts(1,:),bond,angle,dihedral,inversion,tether, &
       threebody,zdensity,cons,neigh,pmfs,sites, &
       core_shells,vdws,tersoffs,fourbody,rdf,netcdf(1), &
-      minim,mpoles,ext_field(1),rigid,electro,domain,flow(1), &
+      minim,mpoles,ext_field,rigid,electro,domain,flow(1), &
       seed(1),traj(1),kim_data,config,ios(1),ttms,rsdsc,files(1,:), &
       control_filename)
 
@@ -208,7 +208,7 @@ Contains
     Type( netcdf_param ), Intent(InOut) :: netcdf
     Type( minimise_type ), Intent(InOut) :: minim(:)
     Type( mpole_type ), Intent(InOut) :: mpoles(:)
-    Type( external_field_type ), Intent(InOut) :: ext_field
+    Type( external_field_type ), Intent(InOut) :: ext_field(:)
     Type( rigid_bodies_type ), Intent(InOut) :: rigid(:)
     Type( electrostatic_type ), Intent(InOut) :: electro(:)
     Type( domains_type ), Intent(InOut) :: domain(:)
@@ -277,7 +277,7 @@ Contains
         sites(ff),ttms(ff),ios,core_shells(ff),cons(ff),pmfs(ff),stats(ff), &
         thermo(ff),green(ff),devel,msd_data(ff),met(ff),pois(ff),bond(ff),angle(ff),dihedral(ff),inversion(ff), &
         tether(ff),threebody(ff),zdensity(ff),neigh(ff),vdws(ff),tersoffs(ff),fourbody(ff),rdf(ff),mpoles(ff), & 
-        ext_field,rigid(ff),electro(ff),domain(ff),config(ff),ewld(ff),kim_data(ff),files,flow,comm,ff)
+        ext_field(ff),rigid(ff),electro(ff),domain(ff),config(ff),ewld(ff),kim_data(ff),files,flow,comm,ff)
       ! Print set_bound details once
       If(ff .Eq. 1)Then
         flow%newjob_set_bounds = .False.
@@ -333,10 +333,11 @@ Contains
       Call kim_setup(kim_data(ff),config(ff)%mxatms,config(ff)%mxatdm,config(ff)%megatm,& 
         neigh(ff)%max_list,domain(ff)%mxbfxp,comm%mxnode)
 
+      ! External field
+      Call ext_field(ff)%init()
+
     End Do
     
-      Call ext_field%init()
-
       ! READ SIMULATION CONTROL PARAMETERS
     Do ff=1,flow%NUM_FF
       Call read_control(lfce,impa,ttms(ff),dfcts,rigid(ff),rsdsc(ff),core_shells(ff),cons(ff),pmfs(ff), &
@@ -356,7 +357,7 @@ Contains
       Call info("*** DETAILS OF INTERACTIONS FOR FIELD "//trim(message)//" ***",.true.)
       Call read_field(neigh(ff)%cutoff,core_shells(ff),pmfs(ff),cons(ff),thermo(ff),met(ff),bond(ff),angle(ff), &
         dihedral(ff),inversion(ff),tether(ff),threebody(ff),sites(ff),vdws(ff),tersoffs(ff),fourbody(ff),rdf(ff), &
-        mpoles(ff),ext_field,rigid(ff),electro(ff),config(ff),kim_data(ff),files,flow,comm,ff)
+        mpoles(ff),ext_field(ff),rigid(ff),electro(ff),config(ff),kim_data(ff),files,flow,comm,ff)
   
       ! If computing rdf errors, we need to initialise the arrays.
       If(rdf(ff)%l_errors_jack .or. rdf(ff)%l_errors_block) then
@@ -577,13 +578,13 @@ Contains
         If (lfce) Then
           Call w_replay_historf(config(1),ios,rsdsc(1),flow,core_shells(1),cons(1),pmfs(1),stats(1),       &
             thermo(1),plume(1),msd_data(1),bond(1),angle(1),dihedral(1),inversion(1),zdensity(1),neigh(1), &
-            sites(1),vdws(1),tersoffs(1),fourbody(1),rdf(1),netcdf,minim(1),mpoles(1),ext_field,rigid(1),  &
+            sites(1),vdws(1),tersoffs(1),fourbody(1),rdf(1),netcdf,minim(1),mpoles(1),ext_field(1),rigid(1),  &
             electro(1),domain(1),seed,traj,kim_data(1),files,dfcts,tmr,tether(1),threebody(1),             &
             pois(1),green(1),ewld(1),devel,met(1),comm)
         Else
           Call w_replay_history(config(1),ios,rsdsc(1),flow,core_shells(1),cons(1),pmfs(1),stats(1),       &
             thermo(1),msd_data(1),met(1),pois(1),bond(1),angle(1),dihedral(1),inversion(1),zdensity(1),    &  
-            neigh(1),sites(1),vdws(1),rdf(1),netcdf,minim(1),mpoles(1),ext_field,rigid(1),electro(1),      &
+            neigh(1),sites(1),vdws(1),rdf(1),netcdf,minim(1),mpoles(1),ext_field(1),rigid(1),electro(1),      &
             domain(1),seed,traj,kim_data(1),dfcts,files,tmr,tether(1),green(1),ewld(1),devel,comm)   
         EndIf
       Else

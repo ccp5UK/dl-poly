@@ -135,8 +135,8 @@ Module drivers
   Use msd, Only : msd_type,msd_write
 
   ! EVB MODULE
-  Use evb, Only : evb_type, evb_pes, read_evb, evb_merge_stochastic, &
-                                     evb_setzero, evb_population   , &
+  Use evb, Only : evb_type, evb_pes, read_evb_settings, evb_merge_stochastic , &
+                                     evb_setzero, evb_population, evb_prevent, &
                                      evb_check_topology, evb_check_configs
 
   Implicit None
@@ -515,7 +515,7 @@ Contains
     Type( netcdf_param ), Intent( In    ) :: netcdf
     Type( minimise_type ), Intent( InOut ) :: minim(:)
     Type( mpole_type ), Intent( InOut ) :: mpoles(:)
-    Type( external_field_type ), Intent( InOut ) :: ext_field
+    Type( external_field_type ), Intent( InOut ) :: ext_field(:)
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid(:)
     Type( electrostatic_type ), Intent( InOut ) :: electro(:)
     Type( domains_type ), Intent( In    ) :: domain(:)
@@ -705,9 +705,9 @@ Contains
     ! Apply external field
 
     Do ff=1,flow%NUM_FF
-      If (ext_field%key /= FIELD_NULL) Then
+      If (ext_field(1)%key /= FIELD_NULL) Then
         Call external_field_apply(flow%time,flow%equilibration,flow%equil_steps,flow%step,cshell(ff),stat(ff),rdf(ff), &
-                                ext_field,rigid(ff),domain(ff),cnfig(ff),comm)
+                                ext_field(ff),rigid(ff),domain(ff),cnfig(ff),comm)
       End If
     End Do 
 
@@ -2003,7 +2003,7 @@ Contains
     Type( rdf_type ), Intent( InOut ) :: rdf(:)
     Type( netcdf_param ), Intent( In    ) :: netcdf
     Type( mpole_type ), Intent( InOut ) :: mpoles(:)
-    Type( external_field_type ), Intent( InOut ) :: ext_field
+    Type( external_field_type ), Intent( InOut ) :: ext_field(:)
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid(:)
     Type( domains_type ), Intent( In    ) :: domain(:)
     Type( seed_type ), Intent( InOut ) :: seed
@@ -2040,19 +2040,18 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!  W_AT_START_VV_EVB INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
     If(flow%NUM_FF>1)Then
-      ! Call evb_prevent
-
       ! Check consistency between config files
       Call evb_check_configs(cnfig,flow,comm)
-      ! Check consistency in the topology between different FFs
-      Call evb_check_topology(cnfig, cons, cshell, sites, flow,rigid,comm)
-
+      ! Check consistency in the topology specification between different FFs
+      Call evb_check_topology(cnfig, cons, cshell, tether, sites, flow, rigid, comm)
       ! Allocate EVB variables
       Call evbff%init(flow%NUM_FF)
+      ! Check the feasibility of EVB simulations 
+      Call evb_prevent(evbff, flow, sites, ext_field, tersoffs, met, threebody, fourbody)
       ! Read EVB settings 
-      Call read_evb(evbff,flow,files,comm)
+      Call read_evb_settings(evbff,flow,files,comm)
     End If
-
+    
     ! Calculate kinetic tensor and energy at restart
     Do ff=1,flow%NUM_FF
       If (rigid(ff)%total > 0) Then
@@ -2091,8 +2090,7 @@ Contains
       End If
 
     End Do
-
-
+ 
     !!!!!!!!!!!!!!!!!!!!!!!  W_AT_START_VV_EVB INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -2177,6 +2175,7 @@ Contains
         Call evb_population(evbff,flow,files,comm)
       End If      
 
+
       ! DO THAT ONLY IF 0<flow%step<=flow%run_steps AND THIS IS AN OLD JOB (flow%newjob=.false.)
 
       If (flow%step > 0 .and. flow%step <= flow%run_steps .and. (.not.flow%newjob)) Then
@@ -2205,12 +2204,12 @@ Contains
           fregauss=.True.       
 
         If(thermo(1)%l_stochastic_boundaries .or. fregauss)Then
-          Call w_kinetic_options(flow,cnfig(1),cshell(1),cons(1),pmf(1),stat(1),sites(1),ext_field,domain(1), &
+          Call w_kinetic_options(flow,cnfig(1),cshell(1),cons(1),pmf(1),stat(1),sites(1),ext_field(1),domain(1), &
                                  seed,rigid(1),thermo(1),comm)
           Call evb_merge_stochastic(flow,cnfig,stat,rigid,thermo,cshell,cons,pmf)                
         Else        
         Do ff=1,flow%NUM_FF
-         Call w_kinetic_options(flow,cnfig(ff),cshell(ff),cons(ff),pmf(ff),stat(ff),sites(ff),ext_field,domain(ff), &
+         Call w_kinetic_options(flow,cnfig(ff),cshell(ff),cons(ff),pmf(ff),stat(ff),sites(ff),ext_field(ff),domain(ff), &
                                  seed,rigid(ff),thermo(ff),comm)
         End Do
         End If 
@@ -2253,7 +2252,6 @@ Contains
       Do ff=1,flow%NUM_FF 
         If (cnfig(ff)%levcfg == 1) cnfig(ff)%levcfg=2
       End Do
-
 
     End Do
 

@@ -7,10 +7,9 @@ Module evb
 !>  
 
   Use kinds, Only : wp,wi
-  Use comms, Only : comms_type, gsync, gbcast
   Use particle, Only : corePart
 
-  Use comms,      Only : comms_type,gcheck,grecv, gsend, WriteConf_tag 
+  Use comms,      Only : comms_type,gcheck,grecv, gsend, gsum, WriteConf_tag 
 
   Use errors_warnings, Only : error, info
   Use flow_control, Only : flow_type, RESTART_KEY_OLD
@@ -27,15 +26,29 @@ Module evb
   Use constraints, Only : constraints_type
   Use pmf, only : pmf_type
   Use core_shell, Only : core_shell_type
+  Use tethers, Only : tethers_type
+
+  Use metal     , Only : metal_type
+  Use tersoff   , Only : tersoff_type,tersoff_forces
+  Use four_body , Only : four_body_type
+  Use three_body, Only : threebody_type
+  Use external_field, Only : external_field_type, FIELD_ELECTRIC, FIELD_MAGNETIC 
 
   Use filename, Only : file_type, FILE_SETEVB, FILE_POPEVB 
 
   Use site, Only : site_type
 
+
   Implicit None
   Private
 
   Type, Public ::  evb_type
+!> Type of EVB simulation (standard or multi-component)
+   Integer( Kind = wi )           ::  typsim
+!> Number of atoms of the reactive molecular unit 
+   Integer( Kind = wi ), Allocatable  ::  numat(:)
+!> Number of molecules that make the EVB site (depend on the FF)
+   Integer( Kind = wi ), Allocatable  ::  FFmol(:)
 !> Flag for activating printing of EVB population    
    Logical                        :: population = .false.
 !> Flag for opening EVB population file     
@@ -66,7 +79,7 @@ Module evb
 !> The functional form for the off-diagonal elements for the EVB matrix (coupling terms) is
 !> matrix(i,j)=ac(i,j)*exp[-bc(i,j)*(matrix(i,i)-matrix(j,j))^2]=matrix(j,i)
 !> Thus, a(i,j)=a(j,i) and b(i,j)=b(j,i)
-   Integer                             :: maxfitparam=7        !  maximum number of fitting parameters
+   Integer                             :: maxfitparam=4        !  maximum number of fitting parameters
    Real( Kind = wp )     , Allocatable :: couplparam(:,:,:)    !  Array with coupling parameters
    Real( Kind = wp )     , Allocatable :: grad_coupl(:,:)      !  Array with coupling parameters
    Character( Len = 5  ) , Allocatable :: typcoupl(:,:)
@@ -77,11 +90,10 @@ Module evb
   Contains
     Private
     Procedure, Public :: init => allocate_evb_arrays
-!>    Final :: deallocate_evb_arrays
+    Final             :: cleanup
   End Type evb_type
 
-  Public :: read_evb
-  Public :: evb_pes, evb_setzero
+  Public :: read_evb_settings, evb_pes, evb_setzero, evb_prevent
   Public :: evb_check_configs, evb_merge_stochastic, evb_population, evb_check_topology
 
 Contains
@@ -91,8 +103,7 @@ Contains
   Class(evb_type), Intent(InOut) :: evb
   Integer( Kind = wi ), Intent (In ) :: nff
   
-  Integer :: fail(1:16)
-
+  Integer :: fail(1:18)
 
   Allocate (evb%eshift(1:nff)            ,  Stat=fail(1))
   Allocate (evb%ene_matrix(nff,nff)      ,  Stat=fail(2))
@@ -110,16 +121,15 @@ Contains
   Allocate (evb%couplparam(nff,nff,evb%maxfitparam)  ,  Stat=fail(14))
   Allocate (evb%typcoupl(nff,nff)                    ,  Stat=fail(15))
   Allocate (evb%grad_coupl(nff,nff)      ,  Stat=fail(16))
+  Allocate (evb%FFmol(nff)               ,  Stat=fail(17))
+  Allocate (evb%numat(nff)               ,  Stat=fail(18))
 
   If ( Any(fail /= 0 )) Call error(1025)
  
-!> Initialise coupling terms and energy shifts
-  evb%couplparam= 0.0_wp
-  evb%eshift=0.0_wp
 
   End Subroutine allocate_evb_arrays
 
-  Subroutine read_evb(evb, flow, files,comm) 
+  Subroutine read_evb_settings(evb, flow, files,comm) 
 !> !>!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
 !> Read EVB settings and parameters from CONTROL
 !> !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -134,6 +144,7 @@ Contains
 
   Integer                :: ncoupl, icoupl
   Integer                :: i, j, k, kparam, ieshift
+  Logical                :: FFmolflag 
 
   Logical, allocatable   :: couplflag(:,:) 
   Logical, allocatable   :: eshiftflag(:) 
@@ -148,6 +159,12 @@ Contains
   couplflag=.False.
   eshiftflag=.False.
 
+  FFmolflag=.False.
+
+  !Initialise coupling terms and energy shifts
+  evb%couplparam= 0.0_wp
+  evb%eshift=0.0_wp
+
   ! Set the total number of coupling elements for later check
   ncoupl=0
   Do i=1,(flow%NUM_FF-1) 
@@ -161,7 +178,8 @@ Contains
   ! Set safe flag
   safe=.true.
 
-  ! Open the simulation input file
+  ! Open the file with EVB settings
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   If (comm%idnode == 0) Inquire(File=files(FILE_SETEVB)%filename, Exist=safe)
      Call gcheck(comm,safe,"enforce")
@@ -181,12 +199,25 @@ Contains
       If (.not.safe) Exit
       Call lower_case(record)
       Call get_word(record,word)
-
+      
       If (word(1:1) == '#' .or. word(1:3) == '   ') Then
 
 !> Read setting to print EVB population
       Else If (word(1:6) == 'evbpop') Then
         evb%population = .True.
+
+!> For each FFs, read the amount of EVB units (molecules) that form the reactive site 
+      Else If (word(1:8) == 'evbffmol') Then
+        FFmolflag=.True.
+       ! print*, comm%idnode, FFmolflag 
+        Do k=1, flow%NUM_FF         
+          Call get_word(record,word)
+          If (word(1:2) == '  ') Then
+            Call error(1094)
+          Else
+            evb%FFmol(k)= Nint(word_2_real(word))
+          End If
+        End Do
 
 !> Read all coupling elements
 
@@ -247,17 +278,6 @@ Contains
             End If
           End Do
         Else If (evb%typcoupl(i,j) == 'gauss') Then
-          kparam=4      
-          Do k=1, kparam        
-            Call get_word(record,word)
-            If (word(1:2) == '  ') Then
-              Call error(1096)
-            Else
-              evb%couplparam(i,j,k)= word_2_real(word)
-              evb%couplparam(j,i,k)= evb%couplparam(i,j,k)
-            End If
-          End Do
-        Else If (evb%typcoupl(i,j) == 'gdump') Then
           kparam=evb%maxfitparam
           Do k=1, kparam        
             Call get_word(record,word)
@@ -323,6 +343,8 @@ Contains
 
   If(icoupl  /= ncoupl)      Call error(1100)
   If(ieshift /= flow%NUM_FF) Call error(1101)
+  If(.Not. FFmolflag)        Call error(1114) 
+
 
   Deallocate(eshiftflag, couplflag)
 
@@ -351,13 +373,13 @@ Contains
   Call info(messages,3,.true.) 
   Write(messages(1),'(1x,a)') '1) Coupling terms between Force Fields.'
   Write(messages(2),'(1x,a)') 'The adopted functional form for the coupling between fields i and j (C_{ij})' 
-  Write(messages(3),'(1x,a)') 'can be of three types: constant (const), Gaussian (gauss) or Gauss-dumping (gdump)'
+  Write(messages(3),'(1x,a)') 'can be of two types: constant (const) or Gaussian (gauss)'
   Write(messages(4),'(1x,a)') 'See manual for details on the functional forms'
   Write(messages(5),'(1x,a)') 'Details for coupling terms are summarised in the following table:'
   Call info(messages,5,.true.)
   Write(messages(1),'(1x,a)')               '______________________________________________________________________'
   Write(messages(2),'(1x,a,5x,a,5x,a)')           'Force Field pair' , 'Type' , 'Parameters ('//trim(evbunit)//')'
-  Write(messages(3),'(5x,a,5x,a,10x,a,7(15x,a))')             'i','j', '    '  , 'A1', 'A2','A3','A4', 'A5', 'A6','A7'
+  Write(messages(3),'(5x,a,5x,a,10x,a,4(15x,a))')             'i','j', '    '  , 'A1', 'A2','A3','A4'
   Write(messages(4),'(1x,a)')               '______________________________________________________________________'
   Call info(messages,4,.true.)
   Do i=1,flow%NUM_FF
@@ -367,9 +389,6 @@ Contains
        Call info(message,.true.)
      ElseIf(evb%typcoupl(i,j)=='gauss')Then
        Write(message,'(2(4x,i2),10x,a,10x,4(E12.5,5x))') i , j, evb%typcoupl(i,j), (evb%couplparam(i,j,k),k=1,4)
-       Call info(message,.true.)
-     ElseIf(evb%typcoupl(i,j)=='gdump')Then
-       Write(message,'(2(4x,i2),10x,a,10x,7(E12.5,5x))') i , j, evb%typcoupl(i,j), (evb%couplparam(i,j,k),k=1,7)
        Call info(message,.true.)
      End If  
    End Do
@@ -398,7 +417,7 @@ Contains
   evb%eshift     = engunit*evb%eshift
   evb%couplparam = engunit*evb%couplparam  
 
-  End Subroutine read_evb
+  End Subroutine read_evb_settings
           
 
 
@@ -438,7 +457,7 @@ Contains
       End If        
          write(string2,'(i2)') m+1
       ! In case an inconsistency has been found, complain and abort       
-      Write(messages(1),'(a)')  ' Problems: Value for levcfg differs between between'
+      Write(messages(1),'(a)')  ' PROBLEMS: Value for levcfg differs between between'
       Write(messages(2),'(4a)') ' CONFIG'//adjustl(trim(string1)), ' and ','CONFIG'//adjustl(trim(string2)), ' files!'     
       Call info(messages,2,.true.)
       Call error(1106) 
@@ -448,11 +467,11 @@ Contains
   ! Comparison between different CONFIG files: check number of atoms
   ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!, 
   Do m = 1, flow%NUM_FF-1
-    If(config(m)%mxatdm /= config(m+1)%mxatdm)Then
+    If(config(m)%natms /= config(m+1)%natms)Then
       Write(messages(1),'(a,2i2,a)')  ' Different number of atoms in CONFIG files for FFs', m, ' and ', m+1
       Call info(messages,1,.true.)
       Call error(1108)
-    EndIf        
+    End If        
   End Do  
 
   ! Comparison between different CONFIG files: check simulation cell 
@@ -477,7 +496,7 @@ Contains
          End If        
          write(string2,'(i2)') m+1
          ! In case an inconsistency has been found, complain and abort       
-         Write(messages(1),'(a,2i2,a)')  ' Problems: Component (', i, j,') of the simulation cell differs between'
+         Write(messages(1),'(a,2i2,a)')  ' PROBLEMS: Component (', i, j,') of the simulation cell differs between'
          Write(messages(2),'(4a)')       ' CONFIG'//adjustl(trim(string1)), ' and ','CONFIG'//adjustl(trim(string2)), ' files!'     
          Call info(messages,2,.true.)
          Call error(1105) 
@@ -532,7 +551,7 @@ Contains
        End If
        If(.Not. carry)Then
          ! In case an inconsistency has been found, complain and abort       
-         Write(messages(1),'(a,i2,7a)')  ' Problems: Process', jdnode, ' found that the ', coord, '-coordinate for one'
+         Write(messages(1),'(a,i2,7a)')  ' PROBLEMS: Process', jdnode, ' found that the ', coord, '-coordinate for one'
          Write(messages(2),'(3a)')      ' of the ions differs between ', 'CONFIG'//adjustl(trim(string1)), ' and '   
          Write(messages(3),'(2a)')      ' CONFIG'//adjustl(trim(string2)),'. This EVB simulation cannot continue.'     
          Call info(messages,3,.true.)
@@ -553,82 +572,88 @@ Contains
   End Subroutine evb_check_configs
 
 
-!> !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!> Check consistency in the topology for all the FIELD  files, (frozen atoms, rigid bonds, bond constraints, etc) 
-!> !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!> !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!> Check consistency in the topology for all the FIELD  files, (frozen atoms, rigid bonds, bond constraints and tether sites) 
+!> !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Subroutine evb_check_topology(config,cons,cshell,sites,flow,rigid,comm)
+  Subroutine evb_check_topology(config,cons,cshell,tether,sites,flow,rigid,comm)
 
   Type( configuration_type ), Intent( In    ) :: config(:)
   Type( constraints_type )  , Intent( In    ) :: cons(:)
   Type( core_shell_type )   , Intent( In    ) :: cshell(:)
+  Type( tethers_type)       , Intent( InOut ) :: tether(:)
   Type( site_type )         , Intent( In    ) :: sites(:)
   Type( flow_type )         , Intent( In    ) :: flow
   Type( rigid_bodies_type)  , Intent( In    ) :: rigid(:)        
   Type( comms_type)         , Intent( InOut ) :: comm
 
-  Integer                :: m, i, j, l, jdnode
+  Integer                :: m, i, j, l, k
   Integer                :: mol1, mol2   
 
-  Character( Len = 256 ) :: messages(4)
+  Character( Len = 256 ) :: labelint 
 
   Logical                :: loopi, loopj
-  Logical                :: consmiss, consdist, conserror
-  Logical                :: cshlmiss, cshldist, cshlerror
+  Logical                :: sitemiss, siteparam
 
-  Integer                :: st1(2)
-  Integer                :: st2(2)
+  Integer                :: st1num(2), st2num(2)
+  Character( Len =  8  ) :: st1lab(2), st2lab(2)
   Integer                :: mol(2)
+  Integer                :: list(2)
 
-  Real( Kind = wp )      :: dcons1, dcons2
-  Real( Kind = wp )      :: kshl1, kshl2
+  Real( Kind = wp )      :: param(2) 
+   
+
 
   Call info(' ',.true.)
-  Call info(' EVB check for consistency in the topology for all the FIELD files (rigid bodies, & 
-           &bond constraints, frozen atoms, etc)',.true.) 
+  Call info(' EVB check for consistency in the topology for all the FIELD files (rigid bodies,& 
+            & bond constraints, frozen atoms and tether sites)',.true.) 
   Call info(' ',.true.)
 
   !Initilization of vectors
   mol=0
-  st1=0
-  st2=0
-
-  ! Check consistency in the number of rigid bodies
-  ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  Do m = 1, flow%NUM_FF-1
-    If(rigid(m)%total /= rigid(m+1)%total)Then
-      Write(messages(1),'(a,i2,a,i2)')  ' Problems! Different number of Rigid Bodies for FFs', m, ' and ', m+1
-      Call info(messages,1,.true.)
-      Call error(1108)
-    EndIf        
-  End Do  
-
+  st1num=0
+  st2num=0
   
+  ! Initialise flags
+  sitemiss=.False.
+  siteparam=.False.
+
   ! Check consistency in the frozen nature of ions 
   ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  Do i = 1 , config(1)%natms
-    Do m = 1, flow%NUM_FF-1
+
+ 
+  Do m = 1, flow%NUM_FF-1
+    loopi=.True.
+    i=1
+    Do While ( i <= config(m)%natms .And. loopi)
       If(config(m)%lfrzn(i) /= config(m+1)%lfrzn(i))Then
-        Write(messages(1),'(a)')          ' Problems!' 
-        Write(messages(2),'(a)')          ' Ions change from frozen to free (or vice versa)' 
-        Write(messages(3),'(a,i2,a,i2)')  ' between FFs ', m, ' and ', m+1
-        Call info(messages,2,.true.)
-        Call error(1109)
+        list(1)  =config(m)%ltg(i)
+        st1lab(1)=config(m)%atmnam(i)
+        Call obtain_sites_from_list(1,m,sites,list,st1num,mol1)
+        mol(1)=mol1   
+        list(1)  =config(m+1)%ltg(i)
+        st2lab(1)=config(m+1)%atmnam(i)
+        Call obtain_sites_from_list(1,m+1,sites,list,st2num,mol2)
+        mol(2)=mol2   
+        siteparam=.True.
+        loopi=.False.
       End If
+      i=i+1
     End Do
+        labelint='Frozen'
+        Call evb_print_field_error(labelint, 1109, m, comm, sitemiss, siteparam, st1num, st2num, st1lab, st2lab, mol)
   End Do
 
   ! Check consistency in the definition of bond constraints 
   ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ 
+
   ! First, check that the number of bonds constraints is the same
 
   Do m = 1, flow%NUM_FF-1
     If( cons(m)%megcon /= cons(m+1)%megcon )Then
-      Write(messages(1),'(a,i2)')       ' Problems! Number bond constraints in FIELD file', m
-      Write(messages(2),'(a,i2)')       ' **DIFFERS** from the number of constraints set in FIELD file ', m+1
-      Write(messages(3),'(a)')          ' Please revise the settings of constraints in the FIELD files'
-      Call info(messages,3,.true.)
-      Call error(1110)
+      labelint='Total numer of bond-constraints'
+      Call evb_print_field_error(labelint, 1110, m)
     End If  
   End Do
 
@@ -636,9 +661,6 @@ Contains
   ! Perform the checking only if the number of bond contraints is different from zero 
   If(cons(1)%megcon /= 0)Then
 
-    consmiss=.False.
-    consdist=.False.
-    conserror=.False.
   
     Do m = 1, flow%NUM_FF-1
       loopi=.True.
@@ -650,14 +672,20 @@ Contains
               If((cons(m)%listcon(1,i) == cons(m+1)%listcon(1,j)) .or. (cons(m)%listcon(1,i) == cons(m+1)%listcon(2,j)) )Then
                 If((cons(m)%listcon(2,i) == cons(m+1)%listcon(1,j)) .or. (cons(m)%listcon(2,i) == cons(m+1)%listcon(2,j)) )Then
                   loopj=.False.
-                  dcons1=cons(m)%prmcon(cons(m)%listcon(0,i))
-                  dcons2=cons(m+1)%prmcon(cons(m+1)%listcon(0,j))
-                  If(abs(dcons1-dcons2) .gt. epsilon(dcons1))Then
+                  param(1)=cons(m)%prmcon(cons(m)%listcon(0,i))
+                  param(2)=cons(m+1)%prmcon(cons(m+1)%listcon(0,j))
+                  If(abs(param(1)-param(2)) .gt. epsilon(param(1)))Then
                     loopi=.False.
-                    consdist =.True. 
-                    Call obtain_sites_from_constraints(i,m  ,sites,cons,st1,mol1)
-                    Call obtain_sites_from_constraints(j,m+1,sites,cons,st2,mol2)
+                    siteparam =.True.
+                    Do k=1,2
+                     list(k)=cons(m)%listcon(k,i)
+                    End Do
+                    Call obtain_sites_from_list(2,m,sites,list,st1num,mol1)
                     mol(1)=mol1
+                    Do k=1,2
+                     list(k)=cons(m+1)%listcon(k,j)
+                    End Do
+                    Call obtain_sites_from_list(2,m+1,sites,list,st2num,mol2)
                     mol(2)=mol2
                   End If  
                 End If  
@@ -667,76 +695,35 @@ Contains
   
           If(loopj)Then
             loopi=.False.
-            consmiss=.True.
-            Call obtain_sites_from_constraints(i,m,sites,cons,st1,mol1)
+            sitemiss=.True.
+            Do k=1,2
+             list(k)=cons(m)%listcon(k,i)
+            End Do
+            Call obtain_sites_from_list(2,m,sites,list,st1num,mol1)
             mol(1)=mol1
           End If        
   
           i=i+1
       End Do
-  
-      If(comm%idnode == 0)Then
-  
-        Do jdnode=0,comm%mxnode-1
-          If(jdnode>0)Then
-            Call grecv(comm,consmiss,jdnode,WriteConf_tag)
-            Call grecv(comm,consdist,jdnode,WriteConf_tag)
-            Call grecv(comm,st1,jdnode,WriteConf_tag)
-            Call grecv(comm,st2,jdnode,WriteConf_tag)
-            Call grecv(comm,mol,jdnode,WriteConf_tag)
-          End If
-  
-          If(consmiss) Then
-            Write(messages(1),'(a)')                     ' Problems! '
-            Write(messages(2),'(a,i4,a,i4,a,i2,a,i2,a)') ' Bond constraint between atomic sites', st1(1), ' and ' , st1(2), &
-                                                           ' of molecule type ', mol(1), ' (set in  FF ', m, ')'
-            Write(messages(3),'(a,i2,a)')                ' could not find its equivalent in FF ', m+1, '.' 
-            Write(messages(4),'(a)')                     ' Please revise the settings of constraints in the FIELD files' 
-            Call info(messages,4,.True.)
-            conserror=.True.
-  
-          Else If(consdist) Then
-            
-            Write(messages(1),'(a)')                     ' Problems! '
-            Write(messages(2),'(a,i6,a,i6,a,i2,a,i2,a)') ' Constraint distance between atomic site       ', st1(1), & 
-                                                           ' and ' , st1(2) ,' of molecule type ', mol(1),        & 
-                                                           ' (set in FF ', m,')'
-            Write(messages(3),'(a,i6,a,i6,a,i2,a,i2,a)') ' **DIFFERS** from the distance between atomic sites',     & 
-                                                             st2(1), ' and ', st2(2),           &
-                                                           ' of molecule type ', mol(2), ' (set in FF ', m+1,')'
-            Write(messages(4),'(a)')                     ' Please revise the settings of constraints in the FIELD files.' 
-            Call info(messages,4,.True.)
-  
-            conserror=.True.
-          End If
-          If(conserror)Then
-            Call error(1110)
-          End if  
-        End Do
-      Else  
-        Call gsend(comm,consmiss,0,WriteConf_tag)     
-        Call gsend(comm,consdist,0,WriteConf_tag)     
-        Call gsend(comm,st1,0,WriteConf_tag)     
-        Call gsend(comm,st2,0,WriteConf_tag)     
-        Call gsend(comm,mol,0,WriteConf_tag)     
-      End If 
+
+       labelint='Bond-constraints'
+       Call evb_print_field_error(labelint, 1110, m, comm, sitemiss, siteparam, st1num, st2num, st1lab, st2lab, mol) 
   
     End Do
 
   End If
 
+
   ! Check consistency in the definition of core-shell units 
   ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
   ! First, check that the number of core-shell units is the same for all FIELD files
 
   Do m = 1, flow%NUM_FF-1
     If( cshell(m)%megshl /= cshell(m+1)%megshl )Then
-      Write(messages(1),'(a,i2)')       ' Problems! Total number of core-shell units in FIELD file', m
-      Write(messages(2),'(a,i2)')       ' **DIFFERS** from the number of core-shell units in FIELD file ', m+1
-      Write(messages(3),'(a)')          ' Please revise the settings core-shell in the FIELD files'
-      Call info(messages,3,.true.)
-      Call error(1111)
+      labelint='Total numer of core-shell units'
+      Call evb_print_field_error(labelint, 1111, m)
     End If  
   End Do
 
@@ -745,10 +732,6 @@ Contains
 
   If(cshell(1)%megshl /= 0)Then
 
-    cshlmiss=.False.
-    cshldist=.False.
-    cshlerror=.False.
-  
     Do m = 1, flow%NUM_FF-1
       loopi=.True.
       i=1
@@ -760,14 +743,20 @@ Contains
             If((cshell(m)%listshl(2,i) == cshell(m+1)%listshl(1,j)) .or. (cshell(m)%listshl(2,i) == cshell(m+1)%listshl(2,j)) )Then
               loopj=.False.
               Do l=1,2
-                kshl1=cshell(m)%prmshl(l,cshell(m)%listshl(0,i))
-                kshl2=cshell(m+1)%prmshl(l,cshell(m+1)%listshl(0,j))
-                If(abs(kshl1-kshl2) .gt. epsilon(kshl1))Then
+                param(1)=cshell(m)%prmshl(l,cshell(m)%listshl(0,i))
+                param(2)=cshell(m+1)%prmshl(l,cshell(m+1)%listshl(0,j))
+                If(abs(param(1)-param(2)) .gt. epsilon(param(1)))Then
                   loopi=.False.
-                  cshldist =.True. 
-                  Call obtain_sites_from_coreshell(i,m  ,sites,cshell,st1,mol1)
-                  Call obtain_sites_from_coreshell(j,m+1,sites,cshell,st2,mol2)
+                  siteparam =.True. 
+                  Do k=1,2
+                    list(k)=cshell(m)%listshl(k,i)
+                  End Do
+                  Call obtain_sites_from_list(2,m,sites,list,st1num,mol1)
                   mol(1)=mol1
+                  Do k=1,2
+                    list(k)=cshell(m+1)%listshl(k,j)
+                  End Do
+                  Call obtain_sites_from_list(2,m+1,sites,list,st2num,mol2)
                   mol(2)=mol2
                 End If
               End Do
@@ -778,93 +767,240 @@ Contains
   
         If(loopj)Then
           loopi=.False.
-          cshlmiss=.True.
-          Call obtain_sites_from_coreshell(i,m,sites,cshell,st1,mol1)
+          sitemiss=.True.
+          Do k=1,2
+            list(k)=cshell(m)%listshl(k,i)
+          End Do
+          Call obtain_sites_from_list(2,m,sites,list,st1num,mol1)
           mol(1)=mol1
          End If        
       i=i+1
     End Do
-  
-      If(comm%idnode == 0)Then
-  
-        Do jdnode=0,comm%mxnode-1
-          If(jdnode>0)Then
-            Call grecv(comm,cshlmiss,jdnode,WriteConf_tag)
-            Call grecv(comm,cshldist,jdnode,WriteConf_tag)
-            Call grecv(comm,st1,jdnode,WriteConf_tag)
-            Call grecv(comm,st2,jdnode,WriteConf_tag)
-            Call grecv(comm,mol,jdnode,WriteConf_tag)
-          End If
-  
-          If(cshlmiss) Then
-            Write(messages(1),'(a)')                     ' Problems! '
-            Write(messages(2),'(a,i4,a,i4,a,i2,a,i2,a)') ' Core-Shell unit between atomic sites', st1(1), ' and ' , st1(2), &
-                                                         ' of molecule type ', mol(1), ' (set in  FF ', m, ')'
-            Write(messages(3),'(a,i2,a)')                ' could not find its equivalent in FF ', m+1, '.' 
-            Write(messages(4),'(a)')                     ' Please check the existence of these units in the FIELD files' 
-            Call info(messages,4,.True.)
-            cshlerror=.True.
-  
-          Else If(cshldist) Then
-            
-            Write(messages(1),'(a)')                     ' Problems! '
-            Write(messages(2),'(a,i6,a,i6,a,i2,a,i2,a)') ' Core-Shell unit specification between atomic site ', st1(1), & 
-                                                         ' and ' , st1(2) ,' of molecule type ', mol(1),        & 
-                                                         ' (set in FF ', m,') **DIFFERS** from'
-            Write(messages(3),'(a,i6,a,i6,a,i2,a,i2,a)') ' the core-shell especification between atomic sites', & 
-                                                           st2(1), ' and ', st2(2),           &
-                                                         ' of molecule type ', mol(2), ' (set in FF ', m+1,')'
-            Write(messages(4),'(a)')                     ' Please revise the force constants for these units in the FIELD files' 
-            Call info(messages,4,.True.)
-  
-            cshlerror=.True.
-          End If
-          If(cshlerror)Then
-            Call error(1111)
-          End if  
-        End Do
-      Else  
-        Call gsend(comm,cshlmiss,0,WriteConf_tag)     
-        Call gsend(comm,cshldist,0,WriteConf_tag)     
-        Call gsend(comm,st1,0,WriteConf_tag)     
-        Call gsend(comm,st2,0,WriteConf_tag)     
-        Call gsend(comm,mol,0,WriteConf_tag)     
-      End If 
+
+      labelint='Core-shell'
+      Call evb_print_field_error(labelint, 1111, m, comm, sitemiss, siteparam, st1num, st2num, st1lab, st2lab, mol) 
   
     End Do
 
   End If
 
 
+  ! Check consistency in the definition of tether potentials 
+  ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+
+  ! Compute the total number of tethered sites
+  Do m = 1, flow%NUM_FF
+    tether(m)%megteth=tether(m)%ntteth
+   Call gsum(comm, tether(m)%megteth)
+  End Do
+
+  Do m = 1, flow%NUM_FF-1
+    If( tether(m)%megteth /= tether(m+1)%megteth )Then
+      labelint='Total numer of tether units'
+      Call evb_print_field_error(labelint, 1112, m)
+    End If  
+  End Do
+
+  ! Second, check that core-shell specification does not change beetween files
+  ! Perform the checking only if the number of core-shell units is different from zero 
+
+  If(tether(1)%megteth /= 0)Then
+    
+    Do m = 1, flow%NUM_FF-1
+      loopi=.True.
+      i=1
+      Do While (i <= tether(m)%ntteth .And. loopi)
+        loopj=.True.
+        j=1
+        Do While (j <= tether(m+1)%ntteth .And. loopj)
+          If((tether(m)%listtet(1,i) == tether(m+1)%listtet(1,j)))Then
+            loopj=.False.
+            If(tether(m)%keytet(tether(m)%listtet(0,i)) /= tether(m+1)%keytet(tether(m+1)%listtet(0,j)))Then
+              loopi=.False.
+              siteparam=.True.      
+            End If 
+            Do l=1,tether(m)%mxpteth  
+              param(1)= tether(m)%prmtet(l,tether(m)%listtet(0,i))
+              param(2)= tether(m+1)%prmtet(l,tether(m+1)%listtet(0,j))
+              If(abs(param(1)-param(2)) .gt. epsilon(param(1)))Then
+                loopi=.False.
+                siteparam =.True. 
+                list(1)=tether(m)%listtet(1,i)
+                Call obtain_sites_from_list(1,m,sites,list,st1num,mol1)
+                mol(1)=mol1
+                list(1)=tether(m+1)%listtet(1,j)
+                Call obtain_sites_from_list(2,m+1,sites,list,st2num,mol2)
+                mol(2)=mol2
+              End If
+            End Do
+          End If
+          j=j+1
+        End do
+  
+        If(loopj)Then
+          loopi=.False.
+          sitemiss=.True.
+          list(1)=tether(m)%listtet(1,i)
+          Call obtain_sites_from_list(1,m,sites,list,st1num,mol1)
+          mol(1)=mol1
+        End If        
+      i=i+1
+    End Do
+
+      labelint='Tether'
+      Call evb_print_field_error(labelint, 1112, m, comm, sitemiss, siteparam, st1num, st2num, st1lab, st2lab, mol) 
+  
+    End Do
+
+  End If
+
+  ! Check consistency in the number of rigid bodies
+  ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Do m = 1, flow%NUM_FF-1
+     If(rigid(m)%total /= rigid(m+1)%total)Then
+       labelint='Total numer of rigid body units'
+       Call evb_print_field_error(labelint, 1113, m)
+     End If        
+   End Do  
+
+  ! Print and exit 
   Call info(' Check Passed!',.true.) 
   Call info(' ',.true.)
 
   End Subroutine evb_check_topology
 
-  Subroutine obtain_sites_from_constraints(ind,field,sites,cons,st,mol) 
-!> !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!> Subroutine to compute the atomic sites of a molecule type
-!> !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Subroutine evb_print_field_error(string, errnum, field, comm, sitemiss, siteparam, st1num, st2num, st1lab, st2lab, mol)
+
+  Character( Len = 256 ), Intent( In    )           :: string
+  Integer               , Intent( In    )           :: errnum 
+  Integer               , Intent( In    )           :: field 
+  Type( comms_type)     , Intent( InOut ), Optional :: comm
+  Logical               , Intent( InOut ), Optional :: sitemiss 
+  Logical               , Intent( InOut ), Optional :: siteparam
+  Integer               , Intent( InOut ), Optional :: st1num(:) 
+  Integer               , Intent( InOut ), Optional :: st2num(:) 
+  Character( Len = 8 )  , Intent( InOut ), Optional :: st1lab(:) 
+  Character( Len = 8 )  , Intent( InOut ), Optional :: st2lab(:) 
+  Integer               , Intent( InOut ), Optional :: mol(:) 
+
+  Character( Len = 256 ) :: messages(4)
+  Integer                :: jdnode, option
+  Logical                :: siterror
+
+  siterror = .False. 
+  Write(messages(1),'(a)')           ' PROBLEMS! '
+  Write(messages(4),'(3a)')          ' ACTION: chek settings for ' , trim(string), ' in FIELD files'
+
+  If(present(comm))Then
+
+    If(string(1:6)=='Tether')Then
+      option=0
+    Else If(string(1:6)=='Frozen')Then  
+      option=1
+    Else
+      option=2        
+    End If        
+
+    If(comm%idnode == 0)Then
+      Do jdnode=0,comm%mxnode-1
+        If(jdnode>0)Then
+          Call grecv(comm, sitemiss  , jdnode, WriteConf_tag)
+          Call grecv(comm, siteparam , jdnode, WriteConf_tag)
+          Call grecv(comm, st1num    , jdnode, WriteConf_tag)
+          Call grecv(comm, st2num    , jdnode, WriteConf_tag)
+          Call grecv(comm, st1lab    , jdnode, WriteConf_tag)
+          Call grecv(comm, st2lab    , jdnode, WriteConf_tag)
+          Call grecv(comm, mol       , jdnode, WriteConf_tag)
+        End If
+    
+        
+        If(sitemiss) Then
+          If(option==0)Then
+            Write(messages(2),'(1x,2a,i4,a,i4,a,i2,a,i2,a)') trim(string),' unit for atomic site', st1num(1), &
+                                                             ' of molecule type ', mol(1), ' (set in  FF ', field, ')'
+          Else If(option == 2)Then
+            Write(messages(2),'(1x,2a,i4,a,i4,a,i2,a,i2,a)') trim(string),' unit between atomic sites', st1num(1), ' and ',&
+                                                             st1num(2), ' of molecule type ', mol(1), ' (set in  FF ', field, ')'
+          End If                                         
+          Write(messages(3),'(a,i2,a)')                      ' could not find its equivalent in FF ', field+1, '.' 
+          siterror=.True.
+    
+        Else If(siteparam) Then
+          If(option == 0)Then
+            Write(messages(2),'(1x,2a,i4,a,i2,a,i2,a)')      trim(string),' unit specification for atomic site ', st1num(1), & 
+                                                             ' of molecule type ', mol(1),        & 
+                                                             ' (set in FF ', field,') **DIFFERS** from'
+            Write(messages(3),'(a,i4,a,i2,a,i2,a)')          ' the especification for atomic site', & 
+                                                             st2num(1), ' of molecule type ', mol(2), ' (set in FF ', field+1,')'
+          ElseIf(option == 1)Then
+            Write(messages(2),'(1x,2a,a,a,i2,a,i2,a)')       trim(string),' unit specification for atomic site ', trim(st1lab(1)), & 
+                                                             ' of molecule type ', mol(1),        & 
+                                                             ' (set in FF ', field,') **DIFFERS** from'
+            Write(messages(3),'(a,a,a,i2,a,i2,a)')           ' the especification for atomic site ', trim(st2lab(1)),&
+                                                             ' of molecule type ', mol(2), ' (set in FF ', field+1,')'
+          Else If(option == 2)Then
+            Write(messages(2),'(1x,2a,i6,a,i6,a,i2,a,i2,a)') trim(string),' unit specification between atomic sites ', st1num(1), & 
+                                                             ' and ' , st1num(2) ,' of molecule type ', mol(1),        & 
+                                                             ' (set in FF ', field,') **DIFFERS** from'
+            Write(messages(3),'(3a,i6,a,i6,a,i2,a,i2,a)')    ' the ', trim(string), ' especification between atomic sites', & 
+                                                             st2num(1), ' and ', st2num(2),           &
+                                                             ' of molecule type ', mol(2), ' (set in FF ', field+1,')'
+          End If                                        
+          siterror=.True.
+        End If
+        If(siterror)Then
+          Call info(messages,4,.True.)
+          Call error(errnum)
+        End if  
+      End Do
+    Else  
+      Call gsend(comm, sitemiss , 0, WriteConf_tag)     
+      Call gsend(comm, siteparam, 0, WriteConf_tag)     
+      Call gsend(comm, st1num   , 0, WriteConf_tag)     
+      Call gsend(comm, st2num   , 0, WriteConf_tag)     
+      Call gsend(comm, st1lab   , 0, WriteConf_tag)
+      Call gsend(comm, st2lab   , 0, WriteConf_tag)
+      Call gsend(comm, mol      , 0, WriteConf_tag)     
+    End If 
+
+  Else
+
+    Write(messages(2),'(1x,2a,i2)')    trim(string), ' set in FIELD file', field
+    Write(messages(3),'(a,i2)')        ' **DIFFERS** from the number of sites in FIELD file '    , field+1
+    Call info(messages,4,.true.)
+    Call error(errnum)
+
+  End If  
+
+
+  End Subroutine evb_print_field_error
+
+  Subroutine obtain_sites_from_list(dimlist,field,sites,list,st,mol) 
+!> !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!> Subroutine to compute the atomic sites of a molecule type given the number assigned to the atom
+!> !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    
    
-   Integer, Intent( In    )                    :: ind   
+   Integer, Intent( In    )                    :: dimlist  
    Integer, Intent( In    )                    :: field   
    Type( site_type )         , Intent( In    ) :: sites(:)
-   Type( constraints_type ), Intent( In    )   :: cons(:)
-   Integer, Intent(   Out )                    :: st(2) 
+   Integer, Intent( In    )                    :: list(:)
+   Integer, Intent(   Out )                    :: st(:) 
    Integer, Intent(   Out )                    :: mol   
 
    Integer :: i, j, k
-   Integer :: atcons, nsite
+   Integer :: atnum, nsite
    Integer :: num, den       
 
    Logical :: flag
 
 
-   Do i=1,2
+   Do i=1,dimlist
      flag=.True.
-     atcons=cons(field)%listcon(i,ind)
+     atnum=list(i)
 
      Do k=sites(field)%ntype_mol-1,1,-1
       If(flag)Then
@@ -872,8 +1008,8 @@ Contains
         Do j=k,1,-1
           nsite=nsite+sites(field)%num_mols(j)*sites(field)%num_site(j)
         End Do
-        If(nsite < atcons)Then
-          num=atcons-nsite
+        If(nsite < atnum)Then
+          num=atnum-nsite
           den=sites(field)%num_site(k+1)
           st(i) = mod(num,den)
           If(st(i)==0)Then
@@ -886,7 +1022,7 @@ Contains
      End Do
 
      If(flag)Then
-       num=atcons
+       num=atnum
        den=sites(field)%num_site(1)      
        st(i)=mod(num,den)
        If(st(i)==0)Then
@@ -897,76 +1033,109 @@ Contains
 
    End Do
 
-   End subroutine  obtain_sites_from_constraints
+   End subroutine  obtain_sites_from_list
 
-  Subroutine obtain_sites_from_coreshell(ind,field,sites,cshell,st,mol) 
-!> !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!> Subroutine to compute the atomic sites of a molecule type
-!> !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   
-   
-   Integer, Intent( In    )                    :: ind   
-   Integer, Intent( In    )                    :: field   
-   Type( site_type )         , Intent( In    ) :: sites(:)
-   Type( core_shell_type )   , Intent( In    ) :: cshell(:)
-   Integer, Intent(   Out )                    :: st(2) 
-   Integer, Intent(   Out )                    :: mol   
+   Subroutine evb_prevent(evb, flow, sites, ext_field, tersoff, met, threebody, fourbody)
+!> !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!> Check for correctness of settings 
+!> !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   Integer :: i, j, k
-   Integer :: atshell, nsite
-   Integer :: num, den       
-
-   Logical :: flag
+  Type(evb_type)             , Intent( InOut ) :: evb
+  Type( flow_type )          , Intent( In    ) :: flow
+  Type( site_type )          , Intent( In    ) :: sites(:)
+  Type( external_field_type ), Intent( InOut ) :: ext_field(:)
+  Type( tersoff_type)        , Intent( InOut ) :: tersoff(:)
+  Type( metal_type )         , Intent( InOut ) :: met(:)
+  Type( threebody_type )     , Intent( InOut ) :: threebody(:)
+  Type( four_body_type )     , Intent( InOut ) :: fourbody(:)
 
 
-   Do i=1,2
-     flag=.True.
-     atshell=cshell(field)%listshl(i,ind)
+  Integer :: i, m
+  Character( Len = 256 ) :: labelint 
 
-     Do k=sites(field)%ntype_mol-1,1,-1
-      If(flag)Then
-        nsite=0
-        Do j=k,1,-1
-          nsite=nsite+sites(field)%num_mols(j)*sites(field)%num_site(j)
-        End Do
-        If(nsite < atshell)Then
-          num=atshell-nsite
-          den=sites(field)%num_site(k+1)
-          st(i) = mod(num,den)
-          If(st(i)==0)Then
-            st(i)=sites(field)%num_site(k+1)
-          End If        
-          mol=k+1
-          flag=.False.
-        End If  
-       End If
-     End Do
 
-     If(flag)Then
-       num=atshell
-       den=sites(field)%num_site(1)      
-       st(i)=mod(num,den)
-       If(st(i)==0)Then
-         st(i)=sites(field)%num_site(1)
-       End If
-       mol=1     
-     End If        
+  !This value needs to be read/set from CONTROL
+  evb%typsim=0 
 
+
+  ! For standard EVB (evb%tysim=0), only one reactive EVB site is allowed. 
+  ! Such a reactive site can be well composed of one or many fragments, depending on the chemical state 
+  If(evb%typsim == 0)Then
+
+    Do m=1, flow%NUM_FF  
+      Do i=1, evb%FFmol(m)
+       If(sites(m)%num_mols(i) /= 1 )Then
+         call error(1115)      
+       End If        
+      End Do
+    End Do
+
+  ! Kill the run for standard EVB with external electric or magnetic fields
+    Do m=1, flow%NUM_FF
+      If (ext_field(m)%key == FIELD_ELECTRIC .Or. ext_field(m)%key == FIELD_MAGNETIC ) Then
+        Call error(1117)
+      End If        
+    End Do
+
+  End If        
+
+  ! Calculate the total number of atoms being part of the EVB reactive site(s)
+  evb%numat=0
+  Do m=1, flow%NUM_FF  
+    Do i=1, evb%FFmol(m)
+      evb%numat(m)=evb%numat(m)+sites(m)%num_mols(i)*sites(m)%num_site(i)
+    End Do
+  End Do
+
+  ! Check if the number of EVB atoms is the same for all FFs
+  labelint='Total number of EVB atoms'
+  Do m=1, flow%NUM_FF-1  
+    If(evb%numat(m) /= evb%numat(m+1))Then
+      Call evb_print_field_error(labelint, 1116, m)
+    End If        
+  End Do
+
+
+  ! Check if there are metallic interactions. If so, kill the job 
+   Do m=1, flow%NUM_FF-1
+     If(met(m)%max_metal /= 0)Then
+       Call error(1118)
+     End If
+   End Do
+  
+  ! Check if Tersoff interactions are set. If so, kill the job 
+   Do m=1, flow%NUM_FF-1
+     If(tersoff(m)%max_ter /= 0)Then
+       Call error(1119)
+     End If
    End Do
 
-   End subroutine  obtain_sites_from_coreshell
+  ! Check for three-body potentials. If found, kill the job 
+   Do m=1, flow%NUM_FF-1
+     If(threebody(m)%mxtbp /= 0)Then
+       Call error(1120)
+     End If
+   End Do
 
- 
-   Subroutine evb_pes(evb,flow,config,stat)
+  ! Check for four-body potentials. If found, kill the job 
+   Do m=1, flow%NUM_FF-1
+     If(fourbody(m)%max_four_body /= 0)Then
+       Call error(1120)
+     End If
+   End Do
+
+  End Subroutine evb_prevent      
+
+
+  Subroutine evb_pes(evb,flow,config,stat)
 !> !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !> Compute EVB energy, forces and stress tensor
 !> !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  
   Type(evb_type), Intent(InOut) :: evb
+  Type( flow_type ), Intent(In   ) :: flow
   Type( configuration_type ), Intent(InOut) :: config(:)
   Type(stats_type), Intent(InOut) :: stat(:)
-  Type( flow_type ), Intent(In   ) :: flow
-
 
 
 !> Compute EVB Energy 
@@ -985,7 +1154,6 @@ Contains
 !> ------------------
   Call evb_stress(evb,flow,config,stat)
 
-!#endif 
 
   End Subroutine evb_pes
 
@@ -1052,8 +1220,6 @@ Contains
     evb%ene_matrix(m,k) = A(1)
   Else If (evb%typcoupl(m,k)=='gauss')Then
     evb%ene_matrix(m,k) =  A(1)*exp(-((ediff-A(2))/A(3))**2)+A(4)
-  Else If (evb%typcoupl(m,k)=='gdump')Then
-    evb%ene_matrix(m,k) = A(1)*exp(-((ediff-A(2))/A(3))**2)*(1.0d0+tanh((ediff+A(4))/A(5)))*(1.0d0+tanh((-ediff+A(6))/A(7)))      
   End If        
 
 
@@ -1068,7 +1234,6 @@ Contains
 
   Real( Kind = wp )                :: ediff
   Real( Kind = wp )                :: A(evb%maxfitparam)
-  Real( Kind = wp )                :: t1, t2, t3, grad_t1, grad_t2, grad_t3
 
   evb%grad_coupl=0.0d0
 
@@ -1083,14 +1248,6 @@ Contains
         evb%grad_coupl(m,k) = 0.0d0 
       Else If (evb%typcoupl(m,k)=='gauss')Then
         evb%grad_coupl(m,k) = -2.0* (A(1)/A(3)**2)*(ediff-A(2))*exp(-((ediff-A(2))/A(3))**2)
-      Else If (evb%typcoupl(m,k)=='gdump')Then
-        t1  = (A(1)*exp(-((ediff-A(2))/A(3))**2))
-        t2  = (1.0d0+tanh(( ediff+A(4))/A(5)))
-        t3  = (1.0d0+tanh((-ediff+A(6))/A(7)))
-        grad_t1= -2.0* (A(1)/A(3)**2)*(ediff-A(2))*exp(-((ediff-A(2))/A(3))**2)
-        grad_t2= 1.0/A(5)/(cosh(( ediff+A(4))/A(5)))**2
-        grad_t3=-1.0/A(7)/(cosh((-ediff+A(6))/A(7)))**2 
-        evb%grad_coupl(m,k) = grad_t1*t2*t3+t1*grad_t2*t3+t1*t2*grad_t3
       End If       
 
     End Do
@@ -1331,7 +1488,6 @@ Contains
   End subroutine evb_population
 
 
-
 !> This subroutine sets to zero most of the decomposed terms of the virial and energy
 !> By construction, it is not possible to decompose the EVB virial for the different 
 !> types of interactions (bond, angle, dihedral, etc). We thus opt to set them to zero
@@ -1414,5 +1570,76 @@ Contains
   End Do 
 
   End subroutine evb_merge_stochastic
+
+  !Deallocate site_type arrays
+  Subroutine cleanup(T)
+  Type( evb_type ) :: T
+
+  If (Allocated(T%eshift)) Then
+    Deallocate(T%eshift)
+  End If
+
+  If (Allocated(T%ene_matrix)) Then
+    Deallocate(T%ene_matrix)
+  End If
+
+  If (Allocated(T%psi)) Then
+    Deallocate(T%psi)
+  End If
+
+  If (Allocated(T%ifail)) Then
+          Deallocate(T%ifail)
+  End If
+
+  If (Allocated(T%iwork)) Then
+    Deallocate(T%iwork)
+  End If
+
+  If (Allocated(T%eneFF)) Then
+    Deallocate(T%eneFF)
+  End If
+
+  If (Allocated(T%force_matrix)) Then
+    Deallocate(T%force_matrix)
+  End If
+
+  If (Allocated(T%force)) Then
+    Deallocate(T%force)
+  End If
+
+  If (Allocated(T%dE_dh)) Then
+    Deallocate(T%dE_dh)
+  End If
+
+  If (Allocated(T%stress)) Then
+    Deallocate(T%stress)
+  End If
+
+  If (Allocated(T%stress_matrix)) Then
+    Deallocate(T%stress_matrix)
+  End If
+
+  If (Allocated(T%couplparam)) Then
+    Deallocate(T%couplparam)
+  End If
+
+  If (Allocated(T%typcoupl)) Then
+    Deallocate(T%typcoupl)
+  End If
+
+  If (Allocated(T%grad_coupl)) Then
+    Deallocate(T%grad_coupl)
+  End If
+
+  If (Allocated(T%FFmol)) Then
+    Deallocate(T%FFmol)
+  End If
+
+  If (Allocated(T%numat)) Then
+    Deallocate(T%numat)
+  End If
+
+  End Subroutine cleanup        
+
 
 End Module evb        

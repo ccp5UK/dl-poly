@@ -2196,8 +2196,15 @@ Contains
         Write(ounit,'(/,1x,a)') 'error - File SETEVB (settings for EVB coupling terms) not found'
 
       Else If (kode == 1093) Then
-        Write(ounit,'(/,1x,a)') 'error - In file SETEVB, incomplete line after one of the "evbcoupl" keys. &
-                                &See specification for the correct syntax in manual'
+        Write(ounit,'(/,1x,a)') 'error - In file SETEVB, incomplete line after one of the "evbcoupl" keys.'
+        Write(ounit,'(/,1x,a)') 'NFFs intergers are needed, where NFFs is the number of FFs to be coupled,'
+        Write(ounit,'(/,1x,a)') 'specified after the tag evb in the CONTROL file.'
+        Write(ounit,'(/,1x,a)') 'Each integer sets the number of types of molecular units that define the EVB site for each FF.'  
+        Write(ounit,'(/,1x,a)') 'See specification for the correct syntax in manual'
+
+      Else If (kode == 1094) Then
+        Write(ounit,'(/,1x,a)') 'error - In file SETEVB, incomplete line after the "evbFFmol" key. &
+                                &See manual for correct syntax'
 
       Else If (kode == 1095) Then
         Write(ounit,'(/,1x,a)') 'error - In file SETEVB multiple definition of "evbcoupl" for the same pair of &
@@ -2206,11 +2213,10 @@ Contains
 
       Else If (kode == 1096) Then
         Write(ounit,'(/,1x,a)') 'error - Wrong input data for coupling parameters in file SETEVB. The correct format is: ' 
-        Write(ounit,'(/,1x,a)') '        "evbcoupl"       i       j       type      list with coupling-parameters'
-        Write(ounit,'(/,1x,a)') '        where i and j are the fields to be couplped' 
-        Write(ounit,'(/,1x,a)') '        If type=const, 1 coupling-parameter is needed'
-        Write(ounit,'(/,1x,a)') '        If type=gauss, 3 coupling-parameters are needed'
-        Write(ounit,'(/,1x,a)') '        If type=gdump, 7 coupling-parameters are needed'
+        Write(ounit,'(1x,a)') '        "evbcoupl"       i       j       type      list with coupling-parameters'
+        Write(ounit,'(1x,a)') '        where i and j are the fields to be couplped' 
+        Write(ounit,'(1x,a)') '        If type=const, 1 coupling-parameter is needed'
+        Write(ounit,'(1x,a)') '        If type=gauss, 4 coupling-parameters are needed'
        
 
       Else If (kode == 1097) Then
@@ -2218,8 +2224,8 @@ Contains
                                 &See specification for the correct syntax in manual'
 
       Else If (kode == 1098) Then
-        Write(ounit,'(/,1x,a)') 'error - In file SETEVB, wrong field index for adding the energy shift after  &
-                                &one of the "evbshift" keys. Index should be between 1 and the total number of fields' 
+        Write(ounit,'(/,1x,a)') 'error - In file SETEVB, wrong field index for adding the energy shift after&
+                               & one of the "evbshift" keys. Index should be between 1 and the total number of fields' 
 
       Else If (kode == 1099) Then
         Write(ounit,'(/,1x,a)') 'error - In file SETEVB multiple definition of "evbshift" for the same force field'
@@ -2234,12 +2240,12 @@ Contains
         Write(ounit,'(/,1x,a)') 'error - unknown directive found in SETEVB file'
 
       Else If (kode == 1103) Then
-        Write(ounit,'(/,1x,a)') 'error - Units for the FIELDS fiels are different. Please set both files to &
-                                &have the same units.'
+        Write(ounit,'(/,1x,a)') 'error - Units for the FIELDS fiels are different. Please set both files to&
+                               & have the same units.'
 
       Else If (kode == 1104) Then
-        Write(ounit,'(/,1x,a)') 'error - Ionic coordinates differ between different CONFIGs files. & 
-                                &Ionic coordinates should be the same for all the CONFIG files.'
+        Write(ounit,'(/,1x,a)') 'error - Ionic coordinates differ between different CONFIGs files.& 
+                               & Ionic coordinates should be the same for all the CONFIG files.'
 
       Else If (kode == 1105) Then
         Write(ounit,'(/,1x,a)') 'error - Simulation cell differ between different CONFIGs files.'  
@@ -2254,13 +2260,42 @@ Contains
         Write(ounit,'(/,1x,a)') 'error - CONFIG files have different number of atoms'   
 
       Else If (kode == 1109) Then
-        Write(ounit,'(/,1x,a)') 'error - Inconsistency in the specification of frozen/free ions between different FIELD files.'   
+        Write(ounit,'(/,1x,a)') 'error - Inconsistency in the specification of frozen/free stite between different FIELD files.'   
 
       Else If (kode == 1110) Then
         Write(ounit,'(/,1x,a)') 'error - Inconsistency in the specification of bond constraints between different FIELD files.'   
 
       Else If (kode == 1111) Then
         Write(ounit,'(/,1x,a)') 'error - Inconsistency in the specification of core-shell units between different FIELD files.'   
+
+      Else If (kode == 1112) Then
+        Write(ounit,'(/,1x,a)') 'error - Inconsistency in the specification of tether potentials between different FIELD files.'   
+
+      Else If (kode == 1113) Then
+        Write(ounit,'(/,1x,a)') 'error - Inconsistency in the specification of rigid-bodies between different FIELD files.'   
+
+      Else If (kode == 1114) Then
+        Write(ounit,'(/,1x,a)') 'error - Flag evbFFmol not found in the SETEVB file'   
+
+      Else If (kode == 1115) Then
+        Write(ounit,'(/,1x,a)') 'error - For standard EVB simulations, the number of molecules (NUMMOLS tag in FIELD files) for the'
+        Write(ounit,'(1x,a)') 'first evbFFmol types of molecular units that define the EVB site'
+        Write(ounit,'(1x,a)') '(evbFFmol values as set in the SETEVB file) should be equal to 1.'  
+
+      Else If (kode == 1116) Then
+        Write(ounit,'(/,1x,a)') 'error - Number of atoms for the EVB units is not the same for all FIELD files'
+
+      Else If (kode == 1117) Then
+        Write(ounit,'(/,1x,a)') 'error - Standard EVB formalism is not valid for external Electric or Magnetic fields'
+
+      Else If (kode == 1118) Then
+        Write(ounit,'(/,1x,a)') 'error - EVB  simulations with metallic interactions are currently not implemented'
+
+      Else If (kode == 1119) Then
+        Write(ounit,'(/,1x,a)') 'error - EVB  simulations with Tersoff interactions are currently not implemented'
+ 
+      Else If (kode == 1120) Then
+        Write(ounit,'(/,1x,a)') 'error - EVB  simulations with three and four body potentials are currently not implemented'
 
       Else
          Write(ounit,'(/,1x,a)') 'error - unnamed error found'
