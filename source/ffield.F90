@@ -635,6 +635,9 @@ Contains
                 ! test for frozen core-shell unit and print unit
 
                 If (flow%print_topology) Then
+                  If ((isite1 > cshell%numshl(itmols)) .Or.  (isite2 > cshell%numshl(itmols))) Then
+                    Call error(0,"Index of shell is out of range")
+                  End If
                   If (sites%freeze_site(isite1) * sites%freeze_site(isite2) /= 0) Then
                     Write (message, '(2x,3i10,2f15.6,1x,a8)') &
                       ishls, cshell%lstshl(1, nshels), cshell%lstshl(2, nshels), &
