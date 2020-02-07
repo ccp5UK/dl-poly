@@ -598,7 +598,7 @@ Contains
     End If
 
   End Subroutine MPI_BCAST_rwp_v
-  
+
   Subroutine MPI_BCAST_rwp_m(aaa,n,MPI_WP,idnode,MPI_COMM_WORLD,ierr)
 
     Integer,           Intent( In    ) :: MPI_WP,idnode,MPI_COMM_WORLD
@@ -718,7 +718,7 @@ Contains
     bbb(1:n)=aaa(1:n)
 
   End Subroutine MPI_ALLREDUCE_rwp_v
-  
+
   Subroutine MPI_ALLREDUCE_cwp_v(aaa,bbb,n,MPI_WP,MPI,MPI_COMM_WORLD,ierr)
 
     Integer,              Intent( In    ) :: MPI_WP,MPI,MPI_COMM_WORLD
@@ -733,7 +733,7 @@ Contains
       Stop
     End If
     bbb(1:n)=aaa(1:n)
-  
+
   End Subroutine MPI_ALLREDUCE_cwp_v
 
 

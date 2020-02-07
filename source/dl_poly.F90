@@ -40,61 +40,63 @@ Program dl_poly
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use angles,               Only: angles_type
-  Use angular_distribution, Only: adf_type
-  Use bonds,                Only: bonds_type
-  Use comms,                Only: comms_type,&
-                                  exit_comms,&
-                                  gsync,&
-                                  init_comms
-  Use configuration,        Only: configuration_type
-  Use constraints,          Only: constraints_type
-  Use coord,                Only: coord_type
-  Use core_shell,           Only: core_shell_type
-  Use defects,              Only: defects_type
-  Use development,          Only: development_type
-  Use dihedrals,            Only: dihedrals_type
-  Use domains,              Only: domains_type
-  Use electrostatic,        Only: electrostatic_type
-  Use errors_warnings,      Only: init_error_system
-  Use ewald,                Only: ewald_type
-  Use external_field,       Only: external_field_type
-  Use filename,             Only: file_type
-  Use flow_control,         Only: EVB,&
-                                  FFS,&
-                                  MD,&
-                                  flow_type
-  Use four_body,            Only: four_body_type
-  Use greenkubo,            Only: greenkubo_type
-  Use impacts,              Only: impact_type
-  Use inversions,           Only: inversions_type
-  Use io,                   Only: io_type
-  Use kim,                  Only: kim_type
-  Use meta,                 Only: molecular_dynamics
-  Use metal,                Only: metal_type
-  Use minimise,             Only: minimise_type
-  Use mpole,                Only: mpole_type
-  Use msd,                  Only: msd_type
-  Use neighbours,           Only: neighbours_type
-  Use netcdf_wrap,          Only: netcdf_param
-  Use numerics,             Only: seed_type
-  Use plumed,               Only: plumed_type
-  Use pmf,                  Only: pmf_type
-  Use poisson,              Only: poisson_type
-  Use rdfs,                 Only: rdf_type
-  Use rigid_bodies,         Only: rigid_bodies_type
-  Use rsds,                 Only: rsd_type
-  Use site,                 Only: site_type
-  Use statistics,           Only: stats_type
-  Use tersoff,              Only: tersoff_type
-  Use tethers,              Only: tethers_type
-  Use thermostat,           Only: thermostat_type
-  Use three_body,           Only: threebody_type
-  Use timer,                Only: timer_type
-  Use trajectory,           Only: trajectory_type
-  Use ttm,                  Only: ttm_type
-  Use vdw,                  Only: vdw_type
-  Use z_density,            Only: z_density_type
+  Use angles,                             Only: angles_type
+  Use angular_distribution,               Only: adf_type
+  Use bonds,                              Only: bonds_type
+  Use comms,                              Only: comms_type,&
+                                                exit_comms,&
+                                                gbcast,&
+                                                gsync,&
+                                                init_comms
+  Use configuration,                      Only: configuration_type
+  Use constraints,                        Only: constraints_type
+  Use coord,                              Only: coord_type
+  Use core_shell,                         Only: core_shell_type
+  Use defects,                            Only: defects_type
+  Use development,                        Only: development_type
+  Use dihedrals,                          Only: dihedrals_type
+  Use domains,                            Only: domains_type
+  Use electrostatic,                      Only: electrostatic_type
+  Use errors_warnings,                    Only: init_error_system
+  Use ewald,                              Only: ewald_type
+  Use external_field,                     Only: external_field_type
+  Use filename,                           Only: file_type
+  Use flow_control,                       Only: EVB,&
+                                                FFS,&
+                                                MD,&
+                                                flow_type
+  Use four_body,                          Only: four_body_type
+  Use greenkubo,                          Only: greenkubo_type
+  Use impacts,                            Only: impact_type
+  Use inversions,                         Only: inversions_type
+  Use io,                                 Only: io_type
+  Use, Intrinsic :: iso_fortran_env,      Only: eu => error_unit
+  Use kim,                                Only: kim_type
+  Use meta,                               Only: molecular_dynamics
+  Use metal,                              Only: metal_type
+  Use minimise,                           Only: minimise_type
+  Use mpole,                              Only: mpole_type
+  Use msd,                                Only: msd_type
+  Use neighbours,                         Only: neighbours_type
+  Use netcdf_wrap,                        Only: netcdf_param
+  Use numerics,                           Only: seed_type
+  Use plumed,                             Only: plumed_type
+  Use pmf,                                Only: pmf_type
+  Use poisson,                            Only: poisson_type
+  Use rdfs,                               Only: rdf_type
+  Use rigid_bodies,                       Only: rigid_bodies_type
+  Use rsds,                               Only: rsd_type
+  Use site,                               Only: site_type
+  Use statistics,                         Only: stats_type
+  Use tersoff,                            Only: tersoff_type
+  Use tethers,                            Only: tethers_type
+  Use thermostat,                         Only: thermostat_type
+  Use three_body,                         Only: threebody_type
+  Use timer,                              Only: timer_type
+  Use trajectory,                         Only: trajectory_type
+  Use ttm,                                Only: ttm_type
+  Use vdw,                                Only: vdw_type
+  Use z_density,                          Only: z_density_type
 
   Implicit None
 
@@ -142,13 +144,16 @@ Program dl_poly
   Type(configuration_type), Allocatable  :: config(:)
   Type(io_type), Allocatable             :: ios(:)
   Type(ttm_type), Allocatable            :: ttms(:)
-  Type(rsd_type), Allocatable, Target    :: rsdsc(:)
+  Type(rsd_type), Allocatable            :: rsdsc(:)
   Type(file_type), Allocatable           :: files(:, :)
-  Type(coord_type), Allocatable :: crd(:)
-  Type(adf_type), Allocatable :: adf(:)
+  Type(coord_type), Allocatable          :: crd(:)
+  Type(adf_type), Allocatable            :: adf(:)
 
   ! Local Variables
-  Character(len=1024) :: control_filename
+  Character(len=1024) :: control_filename = '', arg
+  Character(len=1024) :: output_filename = ''
+  Logical             :: finish
+  Integer             :: i
 
   ! SET UP COMMUNICATIONS & CLOCKING
 
@@ -157,12 +162,42 @@ Program dl_poly
   !dlp_world(0)%ou=nrite
   !Call init_error_system(nrite,dlp_world(0))
   Call gsync(dlp_world(0))
+
   If (dlp_world(0)%idnode == 0) Then
-    If (command_argument_count() == 1) Then
-      Call get_command_argument(1, control_filename)
+    If (command_argument_count() > 0) Then
+      i = 0
+      finish = .false.
+      Do
+        i = i + 1
+        Call get_command_argument(i, arg)
+        Select Case (Trim (arg))
+        Case ('-h')
+          Call get_command_argument(0, arg)
+          Write (eu, '(a)') "Usage: "//Trim(arg)//" -c CONTROL_FILENAME -o OUTPUT_FILENAME"
+          Write (eu, '(a)') "Each of -c or -o options are optional"
+          Write (eu, '(a)') "use -h to see this help"
+          finish = .true.
+          Exit
+        Case ('-c')
+          i = i + 1
+          Call get_command_argument(i, control_filename)
+        Case ('-o')
+          i = i + 1
+          Call get_command_argument(i, output_filename)
+        Case default
+          Write (eu, *) "No idea what you want, try -h "
+          finish = .true.
+          Exit
+        End Select
+        If (i == command_argument_count()) Exit
+      End Do
     End If
   End If
-
+  Call gbcast(dlp_world(0), finish, 0)
+  If (finish) Then
+    Call exit_comms(dlp_world)
+    Stop 0
+  End If
   ! temporary stuff this will need to be abstracted
   Allocate (flow(1))
   flow(1)%simulation_method = MD
@@ -172,7 +207,7 @@ Program dl_poly
                             green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, inversion, tether, &
                             threebody, zdensity, cons, neigh, pmfs, sites, core_shells, vdws, tersoffs, fourbody, &
                             rdf, netcdf, minim, mpoles, ext_field, rigid, electro, domain, flow, seed, traj, &
-                            kim_data, config, ios, ttms, rsdsc, files, control_filename, crd, adf)
+                            kim_data, config, ios, ttms, rsdsc, files, output_filename, control_filename, crd, adf)
   Else If (flow(1)%simulation_method == EVB) Then
     Write (0, *) "simulation type: EVB"
   Else If (flow(1)%simulation_method == FFS) Then

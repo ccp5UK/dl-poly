@@ -158,6 +158,7 @@ Module comms
     Module Procedure gbcast_real
     Module Procedure gbcast_real_scalar
     Module Procedure gbcast_char
+    Module Procedure gbcast_logical_scalar
   End Interface !gbcast
 
   Interface gsend
@@ -1052,6 +1053,26 @@ Contains
     Call MPI_BCAST(vec(n_l:n_u), n_s, MPI_INTEGER, root, comm%comm, comm%ierr)
 
   End Subroutine gbcast_integer
+
+  Subroutine gbcast_logical_scalar(comm, s, root)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 broadcast an integer array subroutine
+    !
+    ! copyright - daresbury laboratory
+    ! author    - a.m.elena february 2020
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Type(comms_type), Intent(InOut) :: comm
+    Logical,          Intent(InOut) :: s
+    Integer,          Intent(In   ) :: root
+
+    If (comm%mxnode == 1) Return
+
+    Call MPI_BCAST(s, 1, MPI_LOGICAL, root, comm%comm, comm%ierr)
+
+  End Subroutine gbcast_logical_scalar
+
 
   Subroutine gbcast_integer_scalar(comm, s, root)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
