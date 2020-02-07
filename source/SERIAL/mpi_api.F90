@@ -26,6 +26,9 @@ Module mpi_api
 
   Include 'mpif.h' !  Include 'mpiof.h' ! Needed for ScaliMPI
 
+  ! MPI thread level support
+  Integer, Parameter   :: MPI_THREAD_FUNNELED = 0
+  
   ! MPI address kind
 
   Integer, Parameter   :: MPI_ADDRESS_KIND = li
@@ -52,7 +55,8 @@ Module mpi_api
   Integer,                           Dimension(1:mpi_io_max), Save :: mpi_io_fh      = 0
   Integer( Kind = MPI_OFFSET_KIND ), Dimension(1:mpi_io_max), Save :: mpi_io_disp    = 0_MPI_OFFSET_KIND
   Character( Len =  6 ),             Dimension(1:mpi_io_max), Save :: mpi_io_datarep = ' '
-  Public :: MPI_INIT, MPI_FINALIZE, MPI_ABORT, MPI_COMM_RANK,    &
+  Public :: MPI_INIT, MPI_INIT_THREAD, MPI_FINALIZE,     &
+    MPI_ABORT, MPI_COMM_RANK,                            &
     MPI_COMM_SIZE, MPI_COMM_DUP, MPI_COMM_SPLIT,         &
     MPI_COMM_FREE, MPI_BARRIER, MPI_WAIT, MPI_WAITALL,   &
     MPI_WTIME, MPI_BCAST, MPI_ALLREDUCE,MPI_GATHERV,     &
@@ -307,6 +311,17 @@ Contains
   End Subroutine MPI_INIT
 
 
+  Subroutine MPI_INIT_THREAD(required_threading, provided_threading, ierr)
+
+    Integer, Intent( In )  :: required_threading
+    Integer, Intent( Out ) :: provided_threading, ierr
+
+    provided_threading = 0
+    ierr = 0
+    
+  End Subroutine MPI_INIT_THREAD
+
+  
   Subroutine MPI_FINALIZE(ierr)
 
     Integer, Intent(   Out ) :: ierr
