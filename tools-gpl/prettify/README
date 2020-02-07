@@ -1,0 +1,4 @@
+This prettify script is based on:
+- fprettify: an auto-formatter for modern fortran source code (https://github.com/pseewald/fprettify)
+- prettify_cp2k: cp2k specific formatting directives
+- prettify_cp2k: modified to be in line with dl_poly_4.10 and above

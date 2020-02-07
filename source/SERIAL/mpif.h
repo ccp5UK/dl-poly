@@ -19,6 +19,7 @@
 ! MPI_REAL8 is apparently not in the strict MPI2 standard
 ! It is just an optional data type in the FORTRAN Bindings
   Integer, Parameter :: MPI_DOUBLE_PRECISION = 1
+  Integer, Parameter :: MPI_DOUBLE_COMPLEX   = 1
   Integer, Parameter :: MPI_REAL16           = 1
 
 ! OPERANDS

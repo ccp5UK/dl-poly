@@ -15,87 +15,108 @@ Module statistics
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp,wi,li
-  Use constants, Only : zero_plus,&
-    prsunt,tenunt,boltz,engunit,eu_ev,eu_kcpm,&
-    eu_kjpm,pi
-
-  Use comms,   Only : comms_type,gsum,Spread_tag,gtime,gmax,gsend, &
-    gwait,girecv,gcheck
-  Use site, Only : site_type
-  Use configuration,  Only : configuration_type
-  Use domains,    Only : domains_type
-  Use z_density,   Only : z_density_type,z_density_collect
-  Use errors_warnings, Only : error,warning,info
-  Use numerics,    Only : dcell,invert,shellsort,shellsort2,pbcshfrc,pbcshfrl
-  Use thermostat, Only : thermostat_type,CONSTRAINT_NONE,CONSTRAINT_SURFACE_TENSION, &
-    CONSTRAINT_SEMI_ORTHORHOMBIC
-  Use filename, Only : file_type, FILE_STATS
-  Use flow_control, Only : RESTART_KEY_OLD
+  Use comms,           Only: Spread_tag,&
+                             comms_type,&
+                             gcheck,&
+                             girecv,&
+                             gmax,&
+                             gsend,&
+                             gsum,&
+                             gtime,&
+                             gwait
+  Use configuration,   Only: configuration_type
+  Use constants,       Only: boltz,&
+                             engunit,&
+                             eu_ev,&
+                             eu_kcpm,&
+                             eu_kjpm,&
+                             pi,&
+                             prsunt,&
+                             tenunt,&
+                             zero_plus
+  Use currents,        Only: current_type
+  Use domains,         Only: domains_type
+  Use errors_warnings, Only: error,&
+                             info,&
+                             warning
+  Use filename,        Only: FILE_STATS,&
+                             file_type
+  Use flow_control,    Only: RESTART_KEY_OLD
+  Use kinds,           Only: li,&
+                             wi,&
+                             wp
+  Use numerics,        Only: dcell,&
+                             invert,&
+                             pbcshfrc,&
+                             pbcshfrl,&
+                             pbcshift,&
+                             shellsort,&
+                             shellsort2
+  Use site,            Only: site_type
+  Use thermostat,      Only: CONSTRAINT_NONE,&
+                             CONSTRAINT_SEMI_ORTHORHOMBIC,&
+                             CONSTRAINT_SURFACE_TENSION,&
+                             thermostat_type
+  Use z_density,       Only: z_density_collect,&
+                             z_density_type
 
   Implicit None
   Type, Public :: stats_type
 
-    Integer( Kind = wi )           :: numacc = 0 , &
-      natms0 = 0
-    Integer( Kind = wi )           :: mxnstk,mxstak,intsta
-    Logical                        :: statis_file_open = .false.
-    Logical                        :: newjob = .true.
-    Logical                        :: lpana
-
-    Real( Kind = wp )              :: consv = 0.0_wp,shlke = 0.0_wp,engke = 0.0_wp,&
-      engrot = 0.0_wp,engcpe = 0.0_wp,engsrp = 0.0_wp,&
-      engter  = 0.0_wp,engtbp = 0.0_wp,engfbp = 0.0_wp,&
-      engshl = 0.0_wp,engtet = 0.0_wp,engbnd = 0.0_wp,&
-      engang = 0.0_wp,engdih = 0.0_wp,enginv = 0.0_wp,&
-      engfld = 0.0_wp,engcon = 0.0_wp,engpmf = 0.0_wp
-
-    Real( Kind = wp )              :: stptmp = 0.0_wp,stpprs = 0.0_wp,stpvol = 0.0_wp,&
-      stpcfg = 0.0_wp,stpeng = 0.0_wp,stpeth = 0.0_wp,&
-      stpvir = 0.0_wp
-
-    Real( Kind = wp )              :: virtot = 0.0_wp,vircom = 0.0_wp,vircpe = 0.0_wp,&
-      virsrp = 0.0_wp,virshl = 0.0_wp,virter = 0.0_wp,&
-      virtbp = 0.0_wp,virfbp = 0.0_wp,vircon = 0.0_wp,&
-      virpmf = 0.0_wp,virtet = 0.0_wp,virbnd = 0.0_wp,&
-      virang = 0.0_wp,virdih = 0.0_wp,virinv = 0.0_wp,&
-      virfld = 0.0_wp,virdpd = 0.0_wp
-
-    Real( Kind = wp )              :: strtot(1:9) = 0.0_wp,strkin(1:9) = 0.0_wp,strknf(1:9) = 0.0_wp,&
-      strknt(1:9) = 0.0_wp,strcom(1:9) = 0.0_wp,strcon(1:9) = 0.0_wp,&
-      strpmf(1:9) = 0.0_wp, stress(1:9) = 0.0_wp,strdpd(1:9) = 0.0_wp
-
-    Real( Kind = wp )              :: clin(1:9) = 0.0_wp
+    Integer(Kind=wi)           :: numacc = 0, &
+                                  natms0 = 0
+    Integer(Kind=wi)           :: mxnstk, mxstak, intsta
+    Logical                    :: statis_file_open = .false.
+    Logical                    :: newjob = .true.
+    Logical                    :: lpana
+    Real(Kind=wp)              :: consv = 0.0_wp, shlke = 0.0_wp, engke = 0.0_wp, &
+                                  engrot = 0.0_wp, engcpe = 0.0_wp, engsrp = 0.0_wp, &
+                                  engter = 0.0_wp, engtbp = 0.0_wp, engfbp = 0.0_wp, &
+                                  engshl = 0.0_wp, engtet = 0.0_wp, engbnd = 0.0_wp, &
+                                  engang = 0.0_wp, engdih = 0.0_wp, enginv = 0.0_wp, &
+                                  engfld = 0.0_wp, engcon = 0.0_wp, engpmf = 0.0_wp
+    Real(Kind=wp)              :: stptmp = 0.0_wp, stpprs = 0.0_wp, stpvol = 0.0_wp, &
+                                  stpcfg = 0.0_wp, stpeng = 0.0_wp, stpeth = 0.0_wp, &
+                                  stpvir = 0.0_wp
+    Real(Kind=wp)              :: virtot = 0.0_wp, vircom = 0.0_wp, vircpe = 0.0_wp, &
+                                  virsrp = 0.0_wp, virshl = 0.0_wp, virter = 0.0_wp, &
+                                  virtbp = 0.0_wp, virfbp = 0.0_wp, vircon = 0.0_wp, &
+                                  virpmf = 0.0_wp, virtet = 0.0_wp, virbnd = 0.0_wp, &
+                                  virang = 0.0_wp, virdih = 0.0_wp, virinv = 0.0_wp, &
+                                  virfld = 0.0_wp, virdpd = 0.0_wp
+    Real(Kind=wp)              :: strtot(1:9) = 0.0_wp, strkin(1:9) = 0.0_wp, strknf(1:9) = 0.0_wp, &
+                                  strknt(1:9) = 0.0_wp, strcom(1:9) = 0.0_wp, strcon(1:9) = 0.0_wp, &
+                                  strpmf(1:9) = 0.0_wp, stress(1:9) = 0.0_wp, strdpd(1:9) = 0.0_wp
+    Real(Kind=wp)              :: clin(1:9) = 0.0_wp
     ! constraints accumulators
-    Real( Kind = wp ),              Public :: passcnq(1:5) = (/ & ! QUENCHING per call
-      0.0_wp         ,  & ! cycles counter
-      0.0_wp         ,  & ! access counter
-      0.0_wp         ,  & ! average cycles
-      999999999.0_wp ,  & ! minimum cycles : ~Huge(1)
-      0.0_wp /)           ! maximum cycles
-    Real( Kind = wp ),              Public :: passcon(1:5,1:2,1:2) = Reshape( (/ & ! dim::1-shake, dim:1:-per-call
-      0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::1-shake, dim:2:-per-tst
-      0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:1:-per-call
-      0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:2:-per-tst
-      0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp /) , (/5,2,2/) )
-
-    Real( Kind = wp ),              Public :: passpmq(1:5) = (/ & ! QUENCHING per call
-      0.0_wp         ,  & ! cycles counter
-      0.0_wp         ,  & ! access counter
-      0.0_wp         ,  & ! average cycles
-      999999999.0_wp ,  & ! minimum cycles : ~Huge(1)
-      0.0_wp /)           ! maximum cycles
-    Real( Kind = wp ),              Public :: passpmf(1:5,1:2,1:2) = Reshape( (/ & ! dim::1-shake, dim:1:-per-call
-      0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::1-shake, dim:2:-per-tst
-      0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:1:-per-call
-      0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:2:-per-tst
-      0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp /) , (/5,2,2/) )
-    Real( Kind = wp ),              Public :: passshl(1:5) = (/ &
-      0.0_wp         ,  & ! cycles counter
-      0.0_wp         ,  & ! access counter
-      0.0_wp         ,  & ! average cycles
-      999999999.0_wp ,  & ! minimum cycles : ~Huge(1)
-      0.0_wp /)           ! maximum cycles
+    Real(Kind=wp), Public      :: passcnq(1:5) = (/ & ! QUENCHING per call
+                                  0.0_wp, & ! cycles counter
+                                  0.0_wp, & ! access counter
+                                  0.0_wp, & ! average cycles
+                                  999999999.0_wp, & ! minimum cycles : ~Huge(1)
+                                  0.0_wp/) ! maximum cycles
+    Real(Kind=wp), Public      :: passcon(1:5, 1:2, 1:2) = Reshape((/ & ! dim::1-shake, dim:1:-per-call
+                                                                   0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp, & ! dim::1-shake, dim:2:-per-tst
+                                                                   0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp, & ! dim::2-rattle, dim:1:-per-call
+                                                                   0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp, & ! dim::2-rattle, dim:2:-per-tst
+                                                                   0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp/), (/5, 2, 2/))
+    Real(Kind=wp), Public      :: passpmq(1:5) = (/ & ! QUENCHING per call
+                                  0.0_wp, & ! cycles counter
+                                  0.0_wp, & ! access counter
+                                  0.0_wp, & ! average cycles
+                                  999999999.0_wp, & ! minimum cycles : ~Huge(1)
+                                  0.0_wp/) ! maximum cycles
+    Real(Kind=wp), Public      :: passpmf(1:5, 1:2, 1:2) = Reshape((/ & ! dim::1-shake, dim:1:-per-call
+                                                                   0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp, & ! dim::1-shake, dim:2:-per-tst
+                                                                   0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp, & ! dim::2-rattle, dim:1:-per-call
+                                                                   0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp, & ! dim::2-rattle, dim:2:-per-tst
+                                                                   0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp/), (/5, 2, 2/))
+    Real(Kind=wp), Public      :: passshl(1:5) = (/ &
+                                  0.0_wp, & ! cycles counter
+                                  0.0_wp, & ! access counter
+                                  0.0_wp, & ! average cycles
+                                  999999999.0_wp, & ! minimum cycles : ~Huge(1)
+                                  0.0_wp/) ! maximum cycles
     !> Skips, elements are as follows
     !>
     !> - 1 skips counter
@@ -103,30 +124,25 @@ Module statistics
     !> - 3 average skips
     !> - 4 minimum skips ~Huge(1)
     !> - 5 maximum skips
-    Real( Kind = wp ), Public :: neighskip(1:5) = [0.0_wp,0.0_wp,0.0_wp, &
-      999999999.0_wp,0.0_wp]
-    Real( Kind = wp ), Public :: passmin(1:5) = [ &
-      0.0_wp         , & ! cycles counter
-      0.0_wp         , & ! access counter
-      0.0_wp         , & ! average cycles
-      999999999.0_wp , & ! minimum cycles : ~Huge(1)
-      0.0_wp ]           ! maximum cycles
-
-
-    Real( Kind = wp ), Allocatable :: xin(:),yin(:),zin(:)
-    Real( Kind = wp ), Allocatable :: xto(:),yto(:),zto(:),rsd(:)
-
-    Real( Kind = wp ), Allocatable :: stpval(:),stpvl0(:),sumval(:),ssqval(:)
-    Real( Kind = wp ), Allocatable :: zumval(:),ravval(:),stkval(:,:)
-
-    Integer,           Allocatable :: found(:), found0(:)
-    Integer,           Allocatable :: lsi0(:),lsa0(:),lsa00(:),ltg0(:)
-
-    Real( Kind = wp ), Allocatable :: xin0(:),yin0(:),zin0(:)
-    Real( Kind = wp ), Allocatable :: xto0(:),yto0(:),zto0(:)
-
-    Real( Kind = wp ), Allocatable :: stpval0(:),stpvl00(:),sumval0(:),ssqval0(:)
-    Real( Kind = wp ), Allocatable :: zumval0(:),ravval0(:),stkval0(:,:)
+    Real(Kind=wp), Public      :: neighskip(1:5) = [0.0_wp, 0.0_wp, 0.0_wp, &
+                                                    999999999.0_wp, 0.0_wp]
+    Real(Kind=wp), Public      :: passmin(1:5) = [ &
+                                  0.0_wp, & ! cycles counter
+                                  0.0_wp, & ! access counter
+                                  0.0_wp, & ! average cycles
+                                  999999999.0_wp, & ! minimum cycles : ~Huge(1)
+                                  0.0_wp] ! maximum cycles
+    Type(current_type)         :: cur
+    Real(Kind=wp), Allocatable :: xin(:), yin(:), zin(:)
+    Real(Kind=wp), Allocatable :: xto(:), yto(:), zto(:), rsd(:)
+    Real(Kind=wp), Allocatable :: stpval(:), stpvl0(:), sumval(:), ssqval(:)
+    Real(Kind=wp), Allocatable :: zumval(:), ravval(:), stkval(:, :)
+    Integer, Allocatable       :: found(:), found0(:)
+    Integer, Allocatable       :: lsi0(:), lsa0(:), lsa00(:), ltg0(:)
+    Real(Kind=wp), Allocatable :: xin0(:), yin0(:), zin0(:)
+    Real(Kind=wp), Allocatable :: xto0(:), yto0(:), zto0(:)
+    Real(Kind=wp), Allocatable :: stpval0(:), stpvl00(:), sumval0(:), ssqval0(:)
+    Real(Kind=wp), Allocatable :: zumval0(:), ravval0(:), stkval0(:, :)
 
   Contains
     Private
@@ -134,193 +150,193 @@ Module statistics
     Procedure, Public :: init => allocate_statistics_arrays
     Procedure, Public :: init_connect => allocate_statistics_connect
     Procedure, Public :: clean_connect => deallocate_statistics_connect
-    Final :: cleanup
+    Final             :: cleanup
   End Type
 
 Contains
 
-  Subroutine allocate_statistics_arrays(stats,mxatdm)
-    Class( stats_type ), Intent( InOut ) ::  stats
-    Integer, Intent( In ) ::           mxatdm
+  Subroutine allocate_statistics_arrays(stats, mxatdm)
+    Class(stats_type), Intent(InOut) :: stats
+    Integer,           Intent(In   ) :: mxatdm
 
-    Integer, Dimension( 1:4 ) :: fail
-    Integer ::  mxnstk ,mxstak
+    Integer                 :: mxnstk, mxstak
+    Integer, Dimension(1:4) :: fail
 
     fail = 0
 
     mxnstk = stats%mxnstk
     mxstak = stats%mxstak
 
-    Allocate (stats%xin(1:mxatdm),stats%yin(1:mxatdm),stats%zin(1:mxatdm),                           Stat = fail(1))
-    Allocate (stats%xto(1:mxatdm),stats%yto(1:mxatdm),stats%zto(1:mxatdm),stats%rsd(1:mxatdm),             Stat = fail(2))
-    Allocate (stats%stpval(0:mxnstk),stats%stpvl0(0:mxnstk),stats%sumval(0:mxnstk),stats%ssqval(0:mxnstk), Stat = fail(3))
-    Allocate (stats%zumval(0:mxnstk),stats%ravval(0:mxnstk),stats%stkval(1:mxstak,0:mxnstk),         Stat = fail(4))
+    Allocate (stats%xin(1:mxatdm), stats%yin(1:mxatdm), stats%zin(1:mxatdm), Stat=fail(1))
+    Allocate (stats%xto(1:mxatdm), stats%yto(1:mxatdm), stats%zto(1:mxatdm), stats%rsd(1:mxatdm), Stat=fail(2))
+    Allocate (stats%stpval(0:mxnstk), stats%stpvl0(0:mxnstk), stats%sumval(0:mxnstk), stats%ssqval(0:mxnstk), Stat=fail(3))
+    Allocate (stats%zumval(0:mxnstk), stats%ravval(0:mxnstk), stats%stkval(1:mxstak, 0:mxnstk), Stat=fail(4))
     If (Any(fail > 0)) Call error(1016)
 
-    stats%xin = 0.0_wp ; stats%yin = 0.0_wp ; stats%zin = 0.0_wp
-    stats%xto = 0.0_wp ; stats%yto = 0.0_wp ; stats%zto = 0.0_wp ; stats%rsd = 0.0_wp
+    stats%xin = 0.0_wp; stats%yin = 0.0_wp; stats%zin = 0.0_wp
+    stats%xto = 0.0_wp; stats%yto = 0.0_wp; stats%zto = 0.0_wp; stats%rsd = 0.0_wp
 
-    stats%stpval = 0.0_wp ; stats%stpvl0 = 0.0_wp ; stats%sumval = 0.0_wp ; stats%ssqval = 0.0_wp
-    stats%zumval = 0.0_wp ; stats%ravval = 0.0_wp ; stats%stkval = 0.0_wp
+    stats%stpval = 0.0_wp; stats%stpvl0 = 0.0_wp; stats%sumval = 0.0_wp; stats%ssqval = 0.0_wp
+    stats%zumval = 0.0_wp; stats%ravval = 0.0_wp; stats%stkval = 0.0_wp
 
   End Subroutine allocate_statistics_arrays
 
-  Subroutine allocate_statistics_connect(stats,mxatdm)
-    Class( stats_type ), Intent( InOut ) ::  stats
-    Integer, Intent( InOut ) ::           mxatdm
+  Subroutine allocate_statistics_connect(stats, mxatdm)
+    Class(stats_type), Intent(InOut) :: stats
+    Integer,           Intent(InOut) :: mxatdm
 
-    Integer, Dimension( 1:6 ) :: fail
-    Integer :: mxstak
+    Integer                 :: mxstak
+    Integer, Dimension(1:6) :: fail
 
-    mxstak=stats%mxstak
+    mxstak = stats%mxstak
     fail = 0
 
-    Allocate (stats%found(1:mxatdm),stats%found0(1:mxatdm),                                                Stat = fail(1))
-    Allocate (stats%lsi0(1:mxatdm),stats%lsa0(1:mxatdm),stats%ltg0(1:mxatdm),                                    Stat = fail(2))
-    Allocate (stats%xin0(1:mxatdm),stats%yin0(1:mxatdm),stats%zin0(1:mxatdm),                                    Stat = fail(3))
-    Allocate (stats%xto0(1:mxatdm),stats%yto0(1:mxatdm),stats%zto0(1:mxatdm),                                    Stat = fail(4))
-    Allocate (stats%stpval0(1:2*mxatdm),stats%stpvl00(1:2*mxatdm),stats%sumval0(1:2*mxatdm),stats%ssqval0(1:2*mxatdm), &
-      Stat = fail(5))
-    Allocate (stats%zumval0(1:2*mxatdm),stats%ravval0(1:2*mxatdm),stats%stkval0(1:mxstak,1:2*mxatdm),            Stat = fail(6))
+    Allocate (stats%found(1:mxatdm), stats%found0(1:mxatdm), Stat=fail(1))
+    Allocate (stats%lsi0(1:mxatdm), stats%lsa0(1:mxatdm), stats%ltg0(1:mxatdm), Stat=fail(2))
+    Allocate (stats%xin0(1:mxatdm), stats%yin0(1:mxatdm), stats%zin0(1:mxatdm), Stat=fail(3))
+    Allocate (stats%xto0(1:mxatdm), stats%yto0(1:mxatdm), stats%zto0(1:mxatdm), Stat=fail(4))
+    Allocate (stats%stpval0(1:2 * mxatdm), stats%stpvl00(1:2 * mxatdm), stats%sumval0(1:2 * mxatdm), stats%ssqval0(1:2 * mxatdm), &
+              Stat=fail(5))
+    Allocate (stats%zumval0(1:2 * mxatdm), stats%ravval0(1:2 * mxatdm), stats%stkval0(1:mxstak, 1:2 * mxatdm), Stat=fail(6))
 
     If (Any(fail > 0)) Call error(1060)
 
   End Subroutine allocate_statistics_connect
 
   Subroutine deallocate_statistics_connect(stats)
-    Class( stats_type ), Intent( InOut ) ::  stats
+    Class(stats_type), Intent(InOut) :: stats
 
-    Integer, Dimension( 1:6 ) :: fail
+    Integer, Dimension(1:6) :: fail
 
     fail = 0
 
-    Deallocate (stats%found,stats%found0,                    Stat = fail(1))
-    Deallocate (stats%lsi0,stats%lsa0,stats%ltg0,                  Stat = fail(2))
-    Deallocate (stats%xin0,stats%yin0,stats%zin0,                  Stat = fail(3))
-    Deallocate (stats%xto0,stats%yto0,stats%zto0,                  Stat = fail(4))
-    Deallocate (stats%stpval0,stats%stpvl00,stats%sumval0,stats%ssqval0, Stat = fail(5))
-    Deallocate (stats%zumval0,stats%ravval0,stats%stkval0,         Stat = fail(6))
+    Deallocate (stats%found, stats%found0, Stat=fail(1))
+    Deallocate (stats%lsi0, stats%lsa0, stats%ltg0, Stat=fail(2))
+    Deallocate (stats%xin0, stats%yin0, stats%zin0, Stat=fail(3))
+    Deallocate (stats%xto0, stats%yto0, stats%zto0, Stat=fail(4))
+    Deallocate (stats%stpval0, stats%stpvl00, stats%sumval0, stats%ssqval0, Stat=fail(5))
+    Deallocate (stats%zumval0, stats%ravval0, stats%stkval0, Stat=fail(6))
 
     If (Any(fail > 0)) Call error(1061)
 
   End Subroutine deallocate_statistics_connect
 
   Subroutine cleanup(stats)
-    Type( stats_type ), Intent(InOut) :: stats
+    Type(stats_type), Intent(InOut) :: stats
 
     If (Allocated(stats%xin)) Then
-      Deallocate(stats%xin)
+      Deallocate (stats%xin)
     End If
     If (Allocated(stats%yin)) Then
-      Deallocate(stats%yin)
+      Deallocate (stats%yin)
     End If
     If (Allocated(stats%zin)) Then
-      Deallocate(stats%zin)
+      Deallocate (stats%zin)
     End If
 
     If (Allocated(stats%xto)) Then
-      Deallocate(stats%xto)
+      Deallocate (stats%xto)
     End If
     If (Allocated(stats%yto)) Then
-      Deallocate(stats%yto)
+      Deallocate (stats%yto)
     End If
     If (Allocated(stats%zto)) Then
-      Deallocate(stats%zto)
+      Deallocate (stats%zto)
     End If
     If (Allocated(stats%rsd)) Then
-      Deallocate(stats%rsd)
+      Deallocate (stats%rsd)
     End If
 
     If (Allocated(stats%stpval)) Then
-      Deallocate(stats%stpval)
+      Deallocate (stats%stpval)
     End If
     If (Allocated(stats%stpvl0)) Then
-      Deallocate(stats%stpvl0)
+      Deallocate (stats%stpvl0)
     End If
     If (Allocated(stats%sumval)) Then
-      Deallocate(stats%sumval)
+      Deallocate (stats%sumval)
     End If
     If (Allocated(stats%ssqval)) Then
-      Deallocate(stats%ssqval)
+      Deallocate (stats%ssqval)
     End If
 
     If (Allocated(stats%zumval)) Then
-      Deallocate(stats%zumval)
+      Deallocate (stats%zumval)
     End If
     If (Allocated(stats%ravval)) Then
-      Deallocate(stats%ravval)
+      Deallocate (stats%ravval)
     End If
     If (Allocated(stats%stkval)) Then
-      Deallocate(stats%stkval)
+      Deallocate (stats%stkval)
     End If
 
     If (Allocated(stats%found)) Then
-      Deallocate(stats%found)
+      Deallocate (stats%found)
     End If
     If (Allocated(stats%found0)) Then
-      Deallocate(stats%found0)
+      Deallocate (stats%found0)
     End If
 
     If (Allocated(stats%lsi0)) Then
-      Deallocate(stats%lsi0)
+      Deallocate (stats%lsi0)
     End If
     If (Allocated(stats%lsa0)) Then
-      Deallocate(stats%lsa0)
+      Deallocate (stats%lsa0)
     End If
     If (Allocated(stats%lsa00)) Then
-      Deallocate(stats%lsa00)
+      Deallocate (stats%lsa00)
     End If
     If (Allocated(stats%ltg0)) Then
-      Deallocate(stats%ltg0)
+      Deallocate (stats%ltg0)
     End If
 
     If (Allocated(stats%xin0)) Then
-      Deallocate(stats%xin0)
+      Deallocate (stats%xin0)
     End If
     If (Allocated(stats%yin0)) Then
-      Deallocate(stats%yin0)
+      Deallocate (stats%yin0)
     End If
     If (Allocated(stats%zin0)) Then
-      Deallocate(stats%zin0)
+      Deallocate (stats%zin0)
     End If
 
     If (Allocated(stats%xto0)) Then
-      Deallocate(stats%xto0)
+      Deallocate (stats%xto0)
     End If
     If (Allocated(stats%yto0)) Then
-      Deallocate(stats%yto0)
+      Deallocate (stats%yto0)
     End If
     If (Allocated(stats%zto0)) Then
-      Deallocate(stats%zto0)
+      Deallocate (stats%zto0)
     End If
 
     If (Allocated(stats%stpval0)) Then
-      Deallocate(stats%stpval0)
+      Deallocate (stats%stpval0)
     End If
     If (Allocated(stats%stpvl00)) Then
-      Deallocate(stats%stpvl00)
+      Deallocate (stats%stpvl00)
     End If
     If (Allocated(stats%sumval0)) Then
-      Deallocate(stats%sumval0)
+      Deallocate (stats%sumval0)
     End If
     If (Allocated(stats%ssqval0)) Then
-      Deallocate(stats%ssqval0)
+      Deallocate (stats%ssqval0)
     End If
 
     If (Allocated(stats%zumval0)) Then
-      Deallocate(stats%zumval0)
+      Deallocate (stats%zumval0)
     End If
     If (Allocated(stats%ravval0)) Then
-      Deallocate(stats%ravval0)
+      Deallocate (stats%ravval0)
     End If
     If (Allocated(stats%stkval0)) Then
-      Deallocate(stats%stkval0)
+      Deallocate (stats%stkval0)
     End If
   End Subroutine cleanup
 
-  Subroutine statistics_collect(config,lsim,leql,nsteql,lmsd,keyres,degfre,degshl, &
-      degrot,nstep,tstep,time,tmst,mxatdm,max_grid_rdf,stats,thermo,zdensity, &
-      sites,files,comm)
+  Subroutine statistics_collect(config, lsim, leql, nsteql, lmsd, keyres, degfre, degshl, &
+                                degrot, nstep, tstep, time, tmst, mxatdm, max_grid_rdf, stats, thermo, zdensity, &
+                                sites, files, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -336,40 +352,39 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    ! contrib   - i.t.todorov july 2019 - RSD as the true displacement
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Logical,           Intent( In    ) :: lsim,leql,lmsd
-    Integer,           Intent( In    ) :: nsteql,keyres,nstep
-    Integer(Kind=li),  Intent( In    ) :: degfre,degshl,degrot
-    Real( Kind = wp ), Intent( In    ) :: tstep,time
-    Real( Kind = wp ), Intent( InOut ) :: tmst
-    Integer( Kind = wi), Intent( In    ) :: mxatdm
-    Integer( Kind = wi ), Intent( In    ) :: max_grid_rdf
-    Type( stats_type ), Intent( InOut ) :: stats
-    Type( thermostat_type ), Intent( In    ) :: thermo
-    Type( z_density_type ), Intent( InOut ) :: zdensity
-    Type( site_type ), Intent( In    ) :: sites
-    Type( configuration_type ), Intent( InOut ) :: config
-    Type( file_type ), Intent( InOut ) :: files(:)
-    Type( comms_type ), Intent( InOut ) :: comm
+    Type(configuration_type), Intent(InOut) :: config
+    Logical,                  Intent(In   ) :: lsim, leql
+    Integer,                  Intent(In   ) :: nsteql
+    Logical,                  Intent(In   ) :: lmsd
+    Integer,                  Intent(In   ) :: keyres
+    Integer(Kind=li),         Intent(In   ) :: degfre, degshl, degrot
+    Integer,                  Intent(In   ) :: nstep
+    Real(Kind=wp),            Intent(In   ) :: tstep, time
+    Real(Kind=wp),            Intent(InOut) :: tmst
+    Integer(Kind=wi),         Intent(In   ) :: mxatdm, max_grid_rdf
+    Type(stats_type),         Intent(InOut) :: stats
+    Type(thermostat_type),    Intent(In   ) :: thermo
+    Type(z_density_type),     Intent(InOut) :: zdensity
+    Type(site_type),          Intent(In   ) :: sites
+    Type(file_type),          Intent(InOut) :: files(:)
+    Type(comms_type),         Intent(InOut) :: comm
 
+    Character(Len=256)         :: message
+    Integer                    :: fail, i, iadd, j, k, kstak
+    Logical                    :: l_tmp
+    Real(Kind=wp)              :: celprp(1:10), h_z, sclnv1, sclnv2, stpcns, stpipv, stprot, &
+                                  stpshl, zistk
+    Real(Kind=wp), Allocatable :: amsd(:), xxt(:), yyt(:), zzt(:)
 
-    Logical                 :: l_tmp
-    Integer                 :: fail,i,j,k,iadd,kstak
-    Real( Kind = wp )       :: stpcns,stpshl,stprot,stpipv,celprp(1:10), &
-      zistk,sclnv1,sclnv2,h_z
-
-    Real( Kind = wp ), Allocatable :: amsd(:)
-    Real( Kind = wp ), Allocatable :: xxt(:),yyt(:),zzt(:)
-    Character( Len = 256 ) :: message
-
-
-    fail=0
+    fail = 0
     Allocate (amsd(1:sites%mxatyp), Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'statistics_collect allocation failure'
-      Call error(0,message)
+      Write (message, '(a)') 'statistics_collect allocation failure'
+      Call error(0, message)
     End If
 
     ! open statistics file and put header
@@ -379,27 +394,27 @@ Contains
 
       ! If the keyres = RESTART_KEY_OLD is the file old (does it exist)?
 
-      l_tmp=.false.
-      If (keyres == RESTART_KEY_OLD) Inquire(File=files(FILE_STATS)%filename, Exist=l_tmp)
+      l_tmp = .false.
+      If (keyres == RESTART_KEY_OLD) Inquire (File=files(FILE_STATS)%filename, Exist=l_tmp)
 
-      If (.not.l_tmp) Then
-        Open(Newunit=files(FILE_STATS)%unit_no, File=files(FILE_STATS)%filename, Status='replace')
+      If (.not. l_tmp) Then
+        Open (Newunit=files(FILE_STATS)%unit_no, File=files(FILE_STATS)%filename, Status='replace')
         stats%statis_file_open = .true.
 
-        Write(files(FILE_STATS)%unit_no,'(a)') config%cfgname
+        Write (files(FILE_STATS)%unit_no, '(a)') config%cfgname
 
-        If      (Abs(engunit - eu_ev)   <= zero_plus) Then
-          Write(files(FILE_STATS)%unit_no,'(1x,a)') 'ENERGY UNITS = electron Volts'
+        If (Abs(engunit - eu_ev) <= zero_plus) Then
+          Write (files(FILE_STATS)%unit_no, '(1x,a)') 'ENERGY UNITS = electron Volts'
         Else If (Abs(engunit - eu_kcpm) <= zero_plus) Then
-          Write(files(FILE_STATS)%unit_no,'(1x,a)') 'ENERGY UNITS = kcal/mol'
+          Write (files(FILE_STATS)%unit_no, '(1x,a)') 'ENERGY UNITS = kcal/mol'
         Else If (Abs(engunit - eu_kjpm) <= zero_plus) Then
-          Write(files(FILE_STATS)%unit_no,'(1x,a)') 'ENERGY UNITS = kjoule/mol'
-        Else If (Abs(engunit - 1.0_wp)  <= zero_plus) Then
-          Write(files(FILE_STATS)%unit_no,'(1x,a)') 'ENERGY UNITS = DL_POLY Internal UNITS (10 J/mol)'
-        Else If (Abs(engunit - boltz)   <= zero_plus) Then
-          Write(files(FILE_STATS)%unit_no,'(1x,a)') 'ENERGY UNITS = Kelvin/Boltzmann'
+          Write (files(FILE_STATS)%unit_no, '(1x,a)') 'ENERGY UNITS = kjoule/mol'
+        Else If (Abs(engunit - 1.0_wp) <= zero_plus) Then
+          Write (files(FILE_STATS)%unit_no, '(1x,a)') 'ENERGY UNITS = DL_POLY Internal UNITS (10 J/mol)'
+        Else If (Abs(engunit - boltz) <= zero_plus) Then
+          Write (files(FILE_STATS)%unit_no, '(1x,a)') 'ENERGY UNITS = Kelvin/Boltzmann'
         Else ! once in a blue moon
-          Write(files(FILE_STATS)%unit_no,'(1x,a)') 'ENERGY UNITS = DPD (Unknown)'
+          Write (files(FILE_STATS)%unit_no, '(1x,a)') 'ENERGY UNITS = DPD (Unknown)'
         End If
 
       End If
@@ -410,8 +425,8 @@ Contains
     ! configurational energy
 
     stats%stpcfg = stats%engcpe + stats%engsrp + stats%engter + stats%engtbp + stats%engfbp + &
-      stats%engfld + stats%engshl +                            &
-      stats%engtet + stats%engbnd + stats%engang + stats%engdih + stats%enginv
+                   stats%engfld + stats%engshl + &
+                   stats%engtet + stats%engbnd + stats%engang + stats%engdih + stats%enginv
 
     ! system energy
 
@@ -423,23 +438,23 @@ Contains
 
     ! rotational temperature
 
-    stprot = 2.0_wp*(stats%engrot) / (boltz*Max(1.0_wp,Real(degrot,wp)))
+    stprot = 2.0_wp * (stats%engrot) / (boltz * Max(1.0_wp, Real(degrot, wp)))
 
     ! core-shell units temperature
 
-    stpshl = 2.0_wp*(stats%shlke) / (boltz*Max(1.0_wp,Real(degshl,wp)))
+    stpshl = 2.0_wp * (stats%shlke) / (boltz * Max(1.0_wp, Real(degshl, wp)))
 
     ! system temperature
 
-    stats%stptmp = 2.0_wp*(stats%engke+stats%engrot) / (boltz*Real(degfre,wp))
+    stats%stptmp = 2.0_wp * (stats%engke + stats%engrot) / (boltz * Real(degfre, wp))
 
     ! system virial
     ! Note: originally, purely angle dependent interactions have zero virial!!!
     ! So, stats%virfbp, stats%virinv and stats%virdih are allegedly always zero!  virdih has an exception!
 
     stats%stpvir = stats%vircpe + stats%virsrp + stats%virter + stats%virtbp + stats%virfbp + &
-      stats%virfld + stats%virshl + stats%vircon + stats%virpmf + stats%vircom + &
-      stats%virtet + stats%virbnd + stats%virang + stats%virdih + stats%virinv + stats%virdpd
+                   stats%virfld + stats%virshl + stats%vircon + stats%virpmf + stats%vircom + &
+                   stats%virtet + stats%virbnd + stats%virang + stats%virdih + stats%virinv + stats%virdpd
 
     ! system volume
 
@@ -447,64 +462,64 @@ Contains
 
     ! system pressure
 
-    stats%stpprs = (2.0_wp*stats%engke-stats%stpvir) / (3.0_wp*stats%stpvol)
+    stats%stpprs = (2.0_wp * stats%engke - stats%stpvir) / (3.0_wp * stats%stpvol)
 
     ! system PV
 
-    stpipv = stats%stpprs*stats%stpvol
+    stpipv = stats%stpprs * stats%stpvol
 
     ! system enthalpy
 
-    If (thermo%variable_cell) Then             ! P_target*V_instantaneous
-      stats%stpeth = stats%stpeng + thermo%press*stats%stpvol
-    Else                               ! for thermo%variable_cell=.false. V_instantaneous=V_target
-      stats%stpeth = stats%stpeng + stpipv        ! and there is only P_instantaneous
+    If (thermo%variable_cell) Then ! P_target*V_instantaneous
+      stats%stpeth = stats%stpeng + thermo%press * stats%stpvol
+    Else ! for thermo%variable_cell=.false. V_instantaneous=V_target
+      stats%stpeth = stats%stpeng + stpipv ! and there is only P_instantaneous
     End If
 
-    Call dcell(config%cell,celprp)
+    Call dcell(config%cell, celprp)
 
     ! store current values in statistics array
 
-    stats%stpval(0) =stats%consv/engunit
-    stats%stpval(1) =stpcns/engunit
-    stats%stpval(2) =stats%stptmp
-    stats%stpval(3) =stats%stpcfg/engunit
-    stats%stpval(4) =(stats%engsrp+stats%engter)/engunit
-    stats%stpval(5) =stats%engcpe/engunit
-    stats%stpval(6) =stats%engbnd/engunit
-    stats%stpval(7) =(stats%engang+stats%engtbp)/engunit
-    stats%stpval(8) =(stats%engdih+stats%enginv+stats%engfbp)/engunit
-    stats%stpval(9) =stats%engtet/engunit
-    stats%stpval(10)=stats%stpeth/engunit
-    stats%stpval(11)=stprot
-    stats%stpval(12)=stats%stpvir/engunit
-    stats%stpval(13)=(stats%virsrp+stats%virter)/engunit
-    stats%stpval(14)=stats%vircpe/engunit
-    stats%stpval(15)=stats%virbnd/engunit
-    stats%stpval(16)=(stats%virtbp+stats%virang)/engunit
-    stats%stpval(17)=stats%vircon/engunit
-    stats%stpval(18)=stats%virtet/engunit
-    stats%stpval(19)=stats%stpvol
-    stats%stpval(20)=stpshl
-    stats%stpval(21)=stats%engshl/engunit
-    stats%stpval(22)=stats%virshl/engunit
-    stats%stpval(23)=Acos(celprp(6))*180.0_wp/pi
-    stats%stpval(24)=Acos(celprp(5))*180.0_wp/pi
-    stats%stpval(25)=Acos(celprp(4))*180.0_wp/pi
-    stats%stpval(26)=stats%virpmf/engunit
-    stats%stpval(27)=stats%stpprs*prsunt
+    stats%stpval(0) = stats%consv / engunit
+    stats%stpval(1) = stpcns / engunit
+    stats%stpval(2) = stats%stptmp
+    stats%stpval(3) = stats%stpcfg / engunit
+    stats%stpval(4) = (stats%engsrp + stats%engter) / engunit
+    stats%stpval(5) = stats%engcpe / engunit
+    stats%stpval(6) = stats%engbnd / engunit
+    stats%stpval(7) = (stats%engang + stats%engtbp) / engunit
+    stats%stpval(8) = (stats%engdih + stats%enginv + stats%engfbp) / engunit
+    stats%stpval(9) = stats%engtet / engunit
+    stats%stpval(10) = stats%stpeth / engunit
+    stats%stpval(11) = stprot
+    stats%stpval(12) = stats%stpvir / engunit
+    stats%stpval(13) = (stats%virsrp + stats%virter) / engunit
+    stats%stpval(14) = stats%vircpe / engunit
+    stats%stpval(15) = stats%virbnd / engunit
+    stats%stpval(16) = (stats%virtbp + stats%virang) / engunit
+    stats%stpval(17) = stats%vircon / engunit
+    stats%stpval(18) = stats%virtet / engunit
+    stats%stpval(19) = stats%stpvol
+    stats%stpval(20) = stpshl
+    stats%stpval(21) = stats%engshl / engunit
+    stats%stpval(22) = stats%virshl / engunit
+    stats%stpval(23) = Acos(celprp(6)) * 180.0_wp / pi
+    stats%stpval(24) = Acos(celprp(5)) * 180.0_wp / pi
+    stats%stpval(25) = Acos(celprp(4)) * 180.0_wp / pi
+    stats%stpval(26) = stats%virpmf / engunit
+    stats%stpval(27) = stats%stpprs * prsunt
 
     iadd = 27
 
     ! iadd = iadd + 1 ! for the stpval(0)!!! Thus to account for in printing
 
     ! mean squared displacements per species, dependent on
-    ! particle displacements from initial positions (at t=0)
+    ! particle mean square displacements from initial positions (at t=0)
 
     amsd = 0.0_wp ! initialise
 
-    If (nstep == nsteql+1) Then ! re-initialise
-      Do i=1,config%natms
+    If (nstep == nsteql + 1) Then ! re-initialise
+      Do i = 1, config%natms
         stats%xto(i) = 0.0_wp
         stats%yto(i) = 0.0_wp
         stats%zto(i) = 0.0_wp
@@ -512,74 +527,99 @@ Contains
     End If
 
     If (nstep > 0) Then
-      If (lsim)  Then ! real dynamics is happening
-        Do i=1,config%natms
-          stats%xto(i)=stats%xto(i)+config%vxx(i)*tstep
-          stats%yto(i)=stats%yto(i)+config%vyy(i)*tstep
-          stats%zto(i)=stats%zto(i)+config%vzz(i)*tstep
+      If (lsim) Then ! real dynamics is happening
+        Do i = 1, config%natms
+          stats%xto(i) = stats%xto(i) + config%vxx(i) * tstep
+          stats%yto(i) = stats%yto(i) + config%vyy(i) * tstep
+          stats%zto(i) = stats%zto(i) + config%vzz(i) * tstep
         End Do
-      Else            ! HISTORY is replayed
-        Allocate (xxt(1:config%mxatms),yyt(1:config%mxatms),zzt(1:config%mxatms), Stat=fail)
+      Else ! HISTORY is replayed
+        Allocate (xxt(1:config%mxatms), yyt(1:config%mxatms), zzt(1:config%mxatms), Stat=fail)
         If (fail > 0) Then
-          Write(message,'(a)') 'statistics_collect allocation failure 1'
-          Call error(0,message)
+          Write (message, '(a)') 'statistics_collect allocation failure 1'
+          Call error(0, message)
         End If
-        Do i=1,config%natms
-          xxt(i)=config%parts(i)%xxx
-          yyt(i)=config%parts(i)%yyy
-          zzt(i)=config%parts(i)%zzz
+        Do i = 1, config%natms
+          xxt(i) = config%parts(i)%xxx
+          yyt(i) = config%parts(i)%yyy
+          zzt(i) = config%parts(i)%zzz
         End Do
-        Call pbcshfrc(config%imcon,config%cell,config%natms,xxt,yyt,zzt)
-        Call pbcshfrc(config%imcon,stats%clin,config%natms,stats%xin,stats%yin,stats%zin)
-        Do i=1,config%natms
-          stats%xin(i)=xxt(i)-stats%xin(i)
-          stats%yin(i)=yyt(i)-stats%yin(i)
-          stats%zin(i)=zzt(i)-stats%zin(i)
+        Call pbcshfrc(config%imcon, config%cell, config%natms, xxt, yyt, zzt)
+        Call pbcshfrc(config%imcon, stats%clin, config%natms, stats%xin, stats%yin, stats%zin)
+        Do i = 1, config%natms
+          stats%xin(i) = xxt(i) - stats%xin(i)
+          stats%yin(i) = yyt(i) - stats%yin(i)
+          stats%zin(i) = zzt(i) - stats%zin(i)
         End Do
-        Deallocate (xxt,yyt,zzt, Stat=fail)
+        Deallocate (xxt, yyt, zzt, Stat=fail)
         If (fail > 0) Then
-          Write(message,'(a)') 'statistics_collect deallocation failure 1'
-          Call error(0,message)
+          Write (message, '(a)') 'statistics_collect deallocation failure 1'
+          Call error(0, message)
         End If
-        Call pbcshfrl(config%imcon,config%cell,config%natms,stats%xin,stats%yin,stats%zin)
-        Do i=1,config%natms
-          stats%xto(i)=stats%xto(i)+stats%xin(i)
-          stats%yto(i)=stats%yto(i)+stats%yin(i)
-          stats%zto(i)=stats%zto(i)+stats%zin(i)
+        Call pbcshfrl(config%imcon, config%cell, config%natms, stats%xin, stats%yin, stats%zin)
+        Do i = 1, config%natms
+          stats%xto(i) = stats%xto(i) + stats%xin(i)
+          stats%yto(i) = stats%yto(i) + stats%yin(i)
+          stats%zto(i) = stats%zto(i) + stats%zin(i)
         End Do
       End If
 
-      Do i=1,config%natms
-        stats%rsd(i)=Sqrt(stats%xto(i)**2+stats%yto(i)**2+stats%zto(i)**2)
+      Do i = 1, config%natms
+        stats%rsd(i) = Sqrt(stats%xto(i)**2 + stats%yto(i)**2 + stats%zto(i)**2)
 
-        k=config%ltype(i)
-        amsd(k)=amsd(k)+stats%rsd(i)**2
+        k = config%ltype(i)
+        amsd(k) = amsd(k) + stats%rsd(i)**2
       End Do
-      Call gsum(comm,amsd(1:sites%ntype_atom))
+      Call gsum(comm, amsd(1:sites%ntype_atom))
     End If
 
     If (lmsd) Then
-      Do i=1,config%natms
-        j=2*i
-        stats%stpval(iadd+j-1)=stats%rsd(i)**2
-        stats%stpval(iadd+j  )=config%vxx(i)**2+config%vyy(i)**2+config%vzz(i)**2
+      Do i = 1, config%natms
+        j = 2 * i
+        stats%stpval(iadd + j - 1) = stats%rsd(i)**2
+        stats%stpval(iadd + j) = config%vxx(i)**2 + config%vyy(i)**2 + config%vzz(i)**2
       End Do
-      iadd = iadd + 2*mxatdm
+      iadd = iadd + 2 * mxatdm
+    End If
+! Calculate true displacements from original position in RSD,
+! rather than keep the RMSD=Sqrt(MSD)
+
+    Allocate (xxt(1:config%mxatms), yyt(1:config%mxatms), zzt(1:config%mxatms), Stat=fail)
+    If (fail > 0) Then
+      Write (message, '(a)') 'statistics_collect allocation failure 2'
+      Call error(0, message)
+    End If
+    Do i = 1, config%natms
+      xxt(i) = config%parts(i)%xxx - stats%xin(i)
+      yyt(i) = config%parts(i)%yyy - stats%yin(i)
+      zzt(i) = config%parts(i)%zzz - stats%zin(i)
+    End Do
+    Call pbcshift(config%imcon, config%cell, config%natms, xxt, yyt, zzt)
+    Do i = 1, config%natms
+      stats%rsd(i) = xxt(i)**2 + yyt(i)**2 + zzt(i)**2
+    End Do
+    Do i = 1, config%natms
+      stats%rsd(i) = Sqrt(stats%rsd(i))
+    End Do
+    Deallocate (xxt, yyt, zzt, Stat=fail)
+    If (fail > 0) Then
+      Write (message, '(a)') 'statistics_collect deallocation failure 2'
+      Call error(0, message)
     End If
 
-    Do k=1,sites%ntype_atom
+    Do k = 1, sites%ntype_atom
       If (sites%num_type_nf(k) > zero_plus) Then
-        stats%stpval(iadd+k)=amsd(k)/sites%num_type_nf(k)
+        stats%stpval(iadd + k) = amsd(k) / sites%num_type_nf(k)
       Else
-        stats%stpval(iadd+k)=0.0_wp
+        stats%stpval(iadd + k) = 0.0_wp
       End If
     End Do
     iadd = iadd + sites%ntype_atom
 
     ! pressure tensor (derived for the stress tensor)
 
-    Do i=1,9
-      stats%stpval(iadd+i)=stats%strtot(i)*prsunt/stats%stpvol
+    Do i = 1, 9
+      stats%stpval(iadd + i) = stats%strtot(i) * prsunt / stats%stpvol
     End Do
     iadd = iadd + 9
 
@@ -587,26 +627,26 @@ Contains
 
       ! cell parameters
 
-      Do i=1,9
-        stats%stpval(iadd+i)=config%cell(i)
+      Do i = 1, 9
+        stats%stpval(iadd + i) = config%cell(i)
       End Do
       iadd = iadd + 9
 
       ! instantaneous PV
 
-      stats%stpval(iadd+1)=stpipv/engunit
+      stats%stpval(iadd + 1) = stpipv / engunit
       iadd = iadd + 1
 
       If (thermo%iso /= CONSTRAINT_NONE) Then
-        h_z=celprp(9)
+        h_z = celprp(9)
 
-        stats%stpval(iadd+1)=h_z
-        stats%stpval(iadd+2)=stats%stpvol/h_z
+        stats%stpval(iadd + 1) = h_z
+        stats%stpval(iadd + 2) = stats%stpvol / h_z
         iadd = iadd + 2
 
-        If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION,CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
-          stats%stpval(iadd+1)= -h_z*(stats%strtot(1)-(thermo%press+thermo%stress(1)))*tenunt
-          stats%stpval(iadd+2)= -h_z*(stats%strtot(5)-(thermo%press+thermo%stress(5)))*tenunt
+        If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
+          stats%stpval(iadd + 1) = -h_z * (stats%strtot(1) - (thermo%press + thermo%stress(1))) * tenunt
+          stats%stpval(iadd + 2) = -h_z * (stats%strtot(5) - (thermo%press + thermo%stress(5))) * tenunt
           iadd = iadd + 2
         End If
       End If
@@ -614,18 +654,18 @@ Contains
 
     ! write statistics file
 
-    If (comm%idnode == 0 .and. Mod(nstep,stats%intsta) == 0) Then
+    If (comm%idnode == 0 .and. Mod(nstep, stats%intsta) == 0) Then
       If (.not. stats%statis_file_open) Then
-        Open(Newunit=files(FILE_STATS)%unit_no, File=files(FILE_STATS)%filename, Position='append')
+        Open (Newunit=files(FILE_STATS)%unit_no, File=files(FILE_STATS)%filename, Position='append')
         stats%statis_file_open = .true.
       End If
 
       If (lmsd) Then
-        Write(files(FILE_STATS)%unit_no,'(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &
-          nstep,time,iadd+1-2*mxatdm,stats%stpval(1:  27),stats%stpval(0),stats%stpval(28+2*mxatdm:iadd)
+        Write (files(FILE_STATS)%unit_no, '(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &
+          nstep, time, iadd + 1 - 2 * mxatdm, stats%stpval(1:27), stats%stpval(0), stats%stpval(28 + 2 * mxatdm:iadd)
       Else
-        Write(files(FILE_STATS)%unit_no,'(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &
-          nstep,time,iadd+1,         stats%stpval(1:  27),stats%stpval(0),stats%stpval(28         :iadd)
+        Write (files(FILE_STATS)%unit_no, '(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &
+          nstep, time, iadd + 1, stats%stpval(1:27), stats%stpval(0), stats%stpval(28:iadd)
       End If
 
     End If
@@ -640,75 +680,74 @@ Contains
 
     ! current stack value
 
-    kstak=Mod(nstep-1,stats%mxstak)+1
+    kstak = Mod(nstep - 1, stats%mxstak) + 1
 
     ! subtract old stack value from the stack average
 
     If (nstep > stats%mxstak) Then
-      Do i=0,stats%mxnstk
-        stats%zumval(i)=stats%zumval(i)-stats%stkval(kstak,i)
+      Do i = 0, stats%mxnstk
+        stats%zumval(i) = stats%zumval(i) - stats%stkval(kstak, i)
       End Do
     End If
 
     ! store quantities in stack and update the stack average
 
-    Do i=0,stats%mxnstk
-      stats%stkval(kstak,i)=stats%stpval(i)
-      stats%zumval(i)=stats%zumval(i)+stats%stpval(i)
+    Do i = 0, stats%mxnstk
+      stats%stkval(kstak, i) = stats%stpval(i)
+      stats%zumval(i) = stats%zumval(i) + stats%stpval(i)
     End Do
 
     ! calculate rolling averages
 
-    zistk=Real(Min(stats%mxstak,nstep),wp)
+    zistk = Real(Min(stats%mxstak, nstep), wp)
 
-    Do i=0,stats%mxnstk
-      stats%ravval(i)=stats%zumval(i)/zistk
+    Do i = 0, stats%mxnstk
+      stats%ravval(i) = stats%zumval(i) / zistk
     End Do
 
     ! accumulate totals over steps
 
-    If ((.not.leql) .or. nstep > nsteql) Then
-      stats%numacc=stats%numacc+1
-      sclnv2=1.0_wp/Real(stats%numacc,wp)
-      sclnv1=Real(stats%numacc-1,wp)/Real(stats%numacc,wp)
+    If ((.not. leql) .or. nstep > nsteql) Then
+      stats%numacc = stats%numacc + 1
+      sclnv2 = 1.0_wp / Real(stats%numacc, wp)
+      sclnv1 = Real(stats%numacc - 1, wp) / Real(stats%numacc, wp)
 
       ! average squared sum and sum (keep in this order!!!)
 
-      If (nstep == nsteql+1 .or. ((.not.leql) .and. nstep == 1)) stats%stpvl0=stats%stpval
-      stats%stpval=stats%stpval-stats%stpvl0
-      Do i=0,stats%mxnstk
-        stats%ssqval(i)=sclnv1*(stats%ssqval(i)+sclnv2*(stats%stpval(i)-stats%sumval(i))**2)
+      If (nstep == nsteql + 1 .or. ((.not. leql) .and. nstep == 1)) stats%stpvl0 = stats%stpval
+      stats%stpval = stats%stpval - stats%stpvl0
+      Do i = 0, stats%mxnstk
+        stats%ssqval(i) = sclnv1 * (stats%ssqval(i) + sclnv2 * (stats%stpval(i) - stats%sumval(i))**2)
 
         !stats%sumval has to be shifted back tostats%sumval+stpvl0 in statistics_result
         ! when averaging is printed since stpval is only shifted back and forth
         ! which does not affect the fluctuations Sqrtstats%ssqval) only their accuracy
 
-        stats%sumval(i)=sclnv1*stats%sumval(i)+sclnv2*stats%stpval(i)
+        stats%sumval(i) = sclnv1 * stats%sumval(i) + sclnv2 * stats%stpval(i)
       End Do
-      stats%stpval=stats%stpval+stats%stpvl0
+      stats%stpval = stats%stpval + stats%stpvl0
     End If
 
-    10  Continue
+    10 Continue
 
     ! z-density collection
 
-    If ( zdensity%l_collect .and. ((.not.leql) .or. nstep >= nsteql) .and. &
-      Mod(nstep,zdensity%frequency) == 0 ) Call z_density_collect(max_grid_rdf,zdensity,config)
+    If (zdensity%l_collect .and. ((.not. leql) .or. nstep >= nsteql) .and. &
+        Mod(nstep, zdensity%frequency) == 0) Call z_density_collect(max_grid_rdf, zdensity, config)
 
     ! Catch time of starting statistical averages
 
-    If (((.not.leql) .or. nstep == nsteql) .and. tmst < tstep) tmst=time
+    If (((.not. leql) .or. nstep == nsteql) .and. tmst < tstep) tmst = time
 
     Deallocate (amsd, Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'statistics_collect deallocation failure'
-      Call error(0,message)
+      Write (message, '(a)') 'statistics_collect deallocation failure'
+      Call error(0, message)
     End If
 
   End Subroutine statistics_collect
 
-
-  Subroutine statistics_connect_frames(config,megatm,mxatdm,lmsd,stats,domain,comm)
+  Subroutine statistics_connect_frames(config, megatm, mxatdm, lmsd, stats, domain, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -726,48 +765,47 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Integer(Kind=wi), Intent(In) :: megatm
+    Integer(Kind=wi), Intent(In) :: mxatdm
+    Logical, Intent(In) :: lmsd
+    Type(stats_type), Intent(InOut) :: stats
+    Type(domains_type), Intent(In) :: domain
+    Type(configuration_type), Intent(InOut) :: config
+    Type(comms_type), Intent(InOut) :: comm
 
-    Integer( Kind = wi ), Intent ( In    ) :: megatm
-    Integer( Kind = wi ), Intent ( In    ) :: mxatdm
-    Logical,            Intent( In    ) :: lmsd
-    Type( stats_type ), Intent( InOut ) :: stats
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( configuration_type ), Intent( InOut ) :: config
-    Type( comms_type ), Intent( InOut ) :: comm
+    Integer :: icyc, nres
+    Character(Len=256) :: message
 
-    Integer :: icyc,nres
-    Character( Len = 256 ) :: message
+    stats%found = 0; icyc = 0; nres = 1
+    Do While (icyc <= Max(domain%nx, domain%ny, domain%nz) / 2 .and. nres > 0)
+      Call match_compress_spread_sort(-1, mxatdm, stats%lsa00) ! -x direction spread
+      Call match_compress_spread_sort(1, mxatdm, stats%lsa00) ! +x direction spread
 
-    stats%found = 0 ; icyc = 0 ; nres = 1
-    Do While (icyc <= Max(domain%nx,domain%ny,domain%nz)/2 .and. nres > 0)
-      Call match_compress_spread_sort(-1,mxatdm,stats%lsa00) ! -x direction spread
-      Call match_compress_spread_sort( 1,mxatdm,stats%lsa00) ! +x direction spread
+      Call match_compress_spread_sort(-2, mxatdm, stats%lsa00) ! -y direction spread
+      Call match_compress_spread_sort(2, mxatdm, stats%lsa00) ! +y direction spread
 
-      Call match_compress_spread_sort(-2,mxatdm,stats%lsa00) ! -y direction spread
-      Call match_compress_spread_sort( 2,mxatdm,stats%lsa00) ! +y direction spread
+      Call match_compress_spread_sort(-3, mxatdm, stats%lsa00) ! -z direction spread
+      Call match_compress_spread_sort(3, mxatdm, stats%lsa00) ! +z direction spread
 
-      Call match_compress_spread_sort(-3,mxatdm,stats%lsa00) ! -z direction spread
-      Call match_compress_spread_sort( 3,mxatdm,stats%lsa00) ! +z direction spread
+      Call match_compress_spread_sort(0, mxatdm, stats%lsa00) ! no spreading
 
-      Call match_compress_spread_sort( 0,mxatdm,stats%lsa00) ! no spreading
-
-      nres=stats%natms0
-      Call gsum(comm,nres)
+      nres = stats%natms0
+      Call gsum(comm, nres)
       If (nres > 0) Then
-        nres=Merge(0,Sum(stats%found(1:config%natms)),config%natms > 0)
-        Call gsum(comm,nres)
+        nres = Merge(0, Sum(stats%found(1:config%natms)), config%natms > 0)
+        Call gsum(comm, nres)
         If (nres /= megatm) icyc = icyc + 1
       End If
     End Do
 
     If (nres > 0) Then
-      Write(message,'(a)') ' particles dynamics properties will be corrupted'
-      Call warning(message,.true.)
+      Write (message, '(a)') ' particles dynamics properties will be corrupted'
+      Call warning(message, .true.)
     End If
 
   Contains
 
-    Subroutine match_compress_spread_sort(mdir,mxatdm,lsa00)
+    Subroutine match_compress_spread_sort(mdir, mxatdm, lsa00)
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !
@@ -783,29 +821,27 @@ Contains
       !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Integer(Kind=wi),              Intent(In   ) :: mdir, mxatdm
+    Integer(Kind=wi), Allocatable, Intent(InOut) :: lsa00(:)
 
-      Integer( Kind = wi ), Intent( In    ) :: mdir ! +/-1,+/-2,+/-3,0 is the direction of spread
-      Integer( Kind = wi ), Intent( In    ) :: mxatdm
+    Integer(Kind=wi) :: fail, i, i0, j, j0, kk
 
-      Integer( Kind = wi ) :: fail,i,i0,j,j0,kk
-
-      Integer( Kind = wi ), Allocatable,Intent(InOut) :: lsa00(:)
-
+! +/-1,+/-2,+/-3,0 is the direction of spread
 
       ! Search for matches
 
       stats%found0 = 0
       If (stats%natms0 > 0) Then
         i0 = 1
-        Do i=1,config%natms
+        Do i = 1, config%natms
           Do While (i0 <= stats%natms0)
-            If      (config%lsa(i) <  stats%lsa0(i0)) Then
+            If (config%lsa(i) < stats%lsa0(i0)) Then
               Exit
             Else If (config%lsa(i) == stats%lsa0(i0)) Then
               If (stats%found(config%lsi(i)) > 0) Then ! ghost arrival
-                stats%found0(stats%lsi0(i0)) = 1     ! erase at compression
-              Else                        ! new arrival to claim
-                stats%found(config%lsi(i)) = 1 ; stats%found0(stats%lsi0(i0)) = 1
+                stats%found0(stats%lsi0(i0)) = 1 ! erase at compression
+              Else ! new arrival to claim
+                stats%found(config%lsi(i)) = 1; stats%found0(stats%lsi0(i0)) = 1
 
                 stats%xin(config%lsi(i)) = stats%xin0(stats%lsi0(i0))
                 stats%yin(config%lsi(i)) = stats%yin0(stats%lsi0(i0))
@@ -816,51 +852,51 @@ Contains
                 stats%zto(config%lsi(i)) = stats%zto0(stats%lsi0(i0))
 
                 If (lmsd) Then
-                  j =27+2*config%lsi(i)
-                  j0=2*stats%lsi0(i0)
-                  stats%stpvl0(j-1)=stats%stpvl00(j0-1)
-                  stats%stpvl0(j  )=stats%stpvl00(j0  )
-                  stats%stpval(j-1)=stats%stpval0(j0-1)
-                  stats%stpval(j  )=stats%stpval0(j0  )
-                  stats%zumval(j-1)=stats%zumval0(j0-1)
-                  stats%zumval(j  )=stats%zumval0(j0  )
-                  stats%ravval(j-1)=stats%ravval0(j0-1)
-                  stats%ravval(j  )=stats%ravval0(j0  )
-                  stats%ssqval(j-1)=stats%ssqval0(j0-1)
-                  stats%ssqval(j  )=stats%ssqval0(j0  )
-                  stats%sumval(j-1)=stats%sumval0(j0-1)
-                  stats%sumval(j  )=stats%sumval0(j0  )
-                  Do kk=1,stats%mxstak
-                    stats%stkval(kk,j-1)=stats%stkval0(kk,j0-1)
-                    stats%stkval(kk,j  )=stats%stkval0(kk,j0  )
+                  j = 27 + 2 * config%lsi(i)
+                  j0 = 2 * stats%lsi0(i0)
+                  stats%stpvl0(j - 1) = stats%stpvl00(j0 - 1)
+                  stats%stpvl0(j) = stats%stpvl00(j0)
+                  stats%stpval(j - 1) = stats%stpval0(j0 - 1)
+                  stats%stpval(j) = stats%stpval0(j0)
+                  stats%zumval(j - 1) = stats%zumval0(j0 - 1)
+                  stats%zumval(j) = stats%zumval0(j0)
+                  stats%ravval(j - 1) = stats%ravval0(j0 - 1)
+                  stats%ravval(j) = stats%ravval0(j0)
+                  stats%ssqval(j - 1) = stats%ssqval0(j0 - 1)
+                  stats%ssqval(j) = stats%ssqval0(j0)
+                  stats%sumval(j - 1) = stats%sumval0(j0 - 1)
+                  stats%sumval(j) = stats%sumval0(j0)
+                  Do kk = 1, stats%mxstak
+                    stats%stkval(kk, j - 1) = stats%stkval0(kk, j0 - 1)
+                    stats%stkval(kk, j) = stats%stkval0(kk, j0)
                   End Do
                 End If
               End If
             End If
-            i0 = i0 + 1                    ! move along
+            i0 = i0 + 1 ! move along
           End Do
         End Do
       End If
 
       ! Invalidate lazies and deallocate at last use
 
-      If (mdir ==  0) Then
+      If (mdir == 0) Then
         i = 1
-        Do i0=1,stats%natms0
+        Do i0 = 1, stats%natms0
           Do While (lsa00(i) /= 0 .and. i < mxatdm)
-            If      (stats%lsa0(i0) <  lsa00(i)) Then
+            If (stats%lsa0(i0) < lsa00(i)) Then
               Exit
             Else If (stats%lsa0(i0) == lsa00(i)) Then
-              stats%found0(stats%lsi0(i0)) = 1        ! erase at compression
+              stats%found0(stats%lsi0(i0)) = 1 ! erase at compression
             End If
-            i = i + 1                      ! move along
+            i = i + 1 ! move along
           End Do
         End Do
 
-        Deallocate (lsa00, Stat = fail)
+        Deallocate (lsa00, Stat=fail)
         If (fail > 0) Then
-          Write(message,'(a)') 'match_compress_spread_sort deallocation failure'
-          Call error(0,message)
+          Write (message, '(a)') 'match_compress_spread_sort deallocation failure'
+          Call error(0, message)
         End If
       End If
 
@@ -868,47 +904,47 @@ Contains
 
       i0 = 1
       Do While (i0 <= stats%natms0 .and. stats%natms0 > 0)
-        If (stats%found0(i0) == 0) Then          ! Not claimed
-          If (config%ixyz(i0) == 0) Then         ! pass along
-            If      (mdir == -1) Then    ! -x to do
-              config%ixyz(i0) = 333            ! all since b4 0
-            Else If (mdir ==  1) Then    !  x to do
-              config%ixyz(i0) = 331            ! not back to -1
-            Else If (mdir == -2) Then    ! -y to do
-              config%ixyz(i0) = 332            ! not back to  1
-            Else If (mdir ==  2) Then    !  y to do
-              config%ixyz(i0) = 313            ! not back to -2
-            Else If (mdir == -3) Then    ! -z to do
-              config%ixyz(i0) = 323            ! not back to  2
-            Else If (mdir ==  3) Then    !  z to do
-              config%ixyz(i0) = 133            ! not back to -3
-            Else If (mdir ==  0) Then    ! end of cycle to do
-              config%ixyz(i0) = 233            ! not back to  3
-            Else                         ! abort
+        If (stats%found0(i0) == 0) Then ! Not claimed
+          If (config%ixyz(i0) == 0) Then ! pass along
+            If (mdir == -1) Then ! -x to do
+              config%ixyz(i0) = 333 ! all since b4 0
+            Else If (mdir == 1) Then !  x to do
+              config%ixyz(i0) = 331 ! not back to -1
+            Else If (mdir == -2) Then ! -y to do
+              config%ixyz(i0) = 332 ! not back to  1
+            Else If (mdir == 2) Then !  y to do
+              config%ixyz(i0) = 313 ! not back to -2
+            Else If (mdir == -3) Then ! -z to do
+              config%ixyz(i0) = 323 ! not back to  2
+            Else If (mdir == 3) Then !  z to do
+              config%ixyz(i0) = 133 ! not back to -3
+            Else If (mdir == 0) Then ! end of cycle to do
+              config%ixyz(i0) = 233 ! not back to  3
+            Else ! abort
               Call error(160)
             End If
           End If
 
-          i0 = i0 + 1                     ! Increase lower bound marker
-        Else                               ! claimed, to erase entry
-          If (stats%found0(stats%natms0) == 0) Then   ! try to refill with the last unclaimed entry
+          i0 = i0 + 1 ! Increase lower bound marker
+        Else ! claimed, to erase entry
+          If (stats%found0(stats%natms0) == 0) Then ! try to refill with the last unclaimed entry
             config%ixyz(i0) = config%ixyz(stats%natms0)
-            If (config%ixyz(i0) == 0) Then      ! pass along
-              If      (mdir == -1) Then ! -x to do
-                config%ixyz(i0) = 333         ! all since b4 0
-              Else If (mdir ==  1) Then !  x to do
-                config%ixyz(i0) = 331         ! not back to -1
+            If (config%ixyz(i0) == 0) Then ! pass along
+              If (mdir == -1) Then ! -x to do
+                config%ixyz(i0) = 333 ! all since b4 0
+              Else If (mdir == 1) Then !  x to do
+                config%ixyz(i0) = 331 ! not back to -1
               Else If (mdir == -2) Then ! -y to do
-                config%ixyz(i0) = 332         ! not back to  1
-              Else If (mdir ==  2) Then !  y to do
-                config%ixyz(i0) = 313         ! not back to -2
+                config%ixyz(i0) = 332 ! not back to  1
+              Else If (mdir == 2) Then !  y to do
+                config%ixyz(i0) = 313 ! not back to -2
               Else If (mdir == -3) Then ! -z to do
-                config%ixyz(i0) = 323         ! not back to  2
-              Else If (mdir ==  3) Then !  z to do
-                config%ixyz(i0) = 133         ! not back to -3
-              Else If (mdir ==  0) Then ! end of cycle to do
-                config%ixyz(i0) = 233         ! not back to  3
-              Else                      ! abort
+                config%ixyz(i0) = 323 ! not back to  2
+              Else If (mdir == 3) Then !  z to do
+                config%ixyz(i0) = 133 ! not back to -3
+              Else If (mdir == 0) Then ! end of cycle to do
+                config%ixyz(i0) = 233 ! not back to  3
+              Else ! abort
                 Call error(160)
               End If
             End If
@@ -923,27 +959,27 @@ Contains
             stats%zto0(i0) = stats%zto0(stats%natms0)
 
             If (lmsd) Then
-              j =2*i0
-              j0=2*stats%natms0
-              stats%stpvl00(j-1)=stats%stpvl00(j0-1)
-              stats%stpvl00(j  )=stats%stpvl00(j0  )
-              stats%stpval0(j-1)=stats%stpval0(j0-1)
-              stats%stpval0(j  )=stats%stpval0(j0  )
-              stats%zumval0(j-1)=stats%zumval0(j0-1)
-              stats%zumval0(j  )=stats%zumval0(j0  )
-              stats%ravval0(j-1)=stats%ravval0(j0-1)
-              stats%ravval0(j  )=stats%ravval0(j0  )
-              stats%ssqval0(j-1)=stats%ssqval0(j0-1)
-              stats%ssqval0(j  )=stats%ssqval0(j0  )
-              stats%sumval0(j-1)=stats%sumval0(j0-1)
-              stats%sumval0(j  )=stats%sumval0(j0  )
-              Do kk=1,stats%mxstak
-                stats%stkval0(kk,j-1)=stats%stkval0(kk,j0-1)
-                stats%stkval0(kk,j  )=stats%stkval0(kk,j0  )
+              j = 2 * i0
+              j0 = 2 * stats%natms0
+              stats%stpvl00(j - 1) = stats%stpvl00(j0 - 1)
+              stats%stpvl00(j) = stats%stpvl00(j0)
+              stats%stpval0(j - 1) = stats%stpval0(j0 - 1)
+              stats%stpval0(j) = stats%stpval0(j0)
+              stats%zumval0(j - 1) = stats%zumval0(j0 - 1)
+              stats%zumval0(j) = stats%zumval0(j0)
+              stats%ravval0(j - 1) = stats%ravval0(j0 - 1)
+              stats%ravval0(j) = stats%ravval0(j0)
+              stats%ssqval0(j - 1) = stats%ssqval0(j0 - 1)
+              stats%ssqval0(j) = stats%ssqval0(j0)
+              stats%sumval0(j - 1) = stats%sumval0(j0 - 1)
+              stats%sumval0(j) = stats%sumval0(j0)
+              Do kk = 1, stats%mxstak
+                stats%stkval0(kk, j - 1) = stats%stkval0(kk, j0 - 1)
+                stats%stkval0(kk, j) = stats%stkval0(kk, j0)
               End Do
             End If
 
-            i0 = i0 + 1                  ! increase lower bound marker if entry is refilled
+            i0 = i0 + 1 ! increase lower bound marker if entry is refilled
           End If
 
           !! Erase upper holdings in either case
@@ -978,7 +1014,7 @@ Contains
           !               stats%stkval0(kk,j0  )=0.0_wp
           !             End Do
           !          End If
-          stats%natms0 = stats%natms0 - 1             ! Decrease upper bound marker
+          stats%natms0 = stats%natms0 - 1 ! Decrease upper bound marker
         End If
       End Do
 
@@ -987,41 +1023,41 @@ Contains
 
       If (mdir == -1) Then
         fail = 0
-        Allocate (lsa00(1:mxatdm), Stat = fail)
+        Allocate (lsa00(1:mxatdm), Stat=fail)
         If (fail > 0) Then
-          Write(message,'(a)') 'match_compress_spread_sort allocation failure'
-          Call error(0,message)
+          Write (message, '(a)') 'match_compress_spread_sort allocation failure'
+          Call error(0, message)
         End If
-        lsa00=0
+        lsa00 = 0
 
-        i=0
-        Do i0=1,stats%natms0
+        i = 0
+        Do i0 = 1, stats%natms0
           If (config%ixyz(i0) == 333) Then
-            i=i+1
-            lsa00(i)=stats%ltg0(i0)
+            i = i + 1
+            lsa00(i) = stats%ltg0(i0)
           End If
         End Do
-        Call shellsort(i,lsa00)
+        Call shellsort(i, lsa00)
       End If
 
       ! Spread atom data in the mdir direction
 
-      If (mdir /= 0) Call statistics_connect_spread(config,mdir,mxatdm,lmsd,stats,domain,comm)
+      If (mdir /= 0) Call statistics_connect_spread(config, mdir, mxatdm, lmsd, stats, domain, comm)
 
       ! Sort past frame remainder of global atom indices
 
       !    lsi0=0 ; lsa0=0
-      Do i0=1,stats%natms0
-        stats%lsi0(i0)=i0
-        stats%lsa0(i0)=stats%ltg0(i0)
+      Do i0 = 1, stats%natms0
+        stats%lsi0(i0) = i0
+        stats%lsa0(i0) = stats%ltg0(i0)
       End Do
-      Call shellsort2(stats%natms0,stats%lsi0,stats%lsa0)
+      Call shellsort2(stats%natms0, stats%lsi0, stats%lsa0)
 
     End Subroutine match_compress_spread_sort
 
   End Subroutine statistics_connect_frames
 
-  Subroutine statistics_connect_set(config,rcut,mxatdm,lmsd,stats,domain,comm)
+  Subroutine statistics_connect_set(config, rcut, mxatdm, lmsd, stats, domain, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1039,86 +1075,85 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Real(Kind=wp), Intent(In) :: rcut
+    Integer(Kind=wi), Intent(In) :: mxatdm
+    Logical, Intent(In) :: lmsd
+    Type(stats_type), Intent(InOut) :: stats
+    Type(domains_type), Intent(In) :: domain
+    Type(configuration_type), Intent(InOut) :: config
+    Type(comms_type), Intent(InOut) :: comm
 
-    Real( Kind = wp ), Intent( In    ) :: rcut
-    Integer( Kind = wi), Intent( In   ) :: mxatdm
-    Logical,            Intent( In    ) :: lmsd
-    Type( stats_type ), Intent( InOut ) :: stats
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( configuration_type ), Intent( InOut ) :: config
-    Type( comms_type ), Intent( InOut ) :: comm
+    Real(Kind=wp) :: cut
 
-    Real( Kind = wp ) :: cut
-
-    Integer           :: nlx,nly,nlz,i,i0,kk
-    Real( Kind = wp ) :: det,celprp(1:10),rcell(1:9),x,y,z, &
-      xdc,ydc,zdc,cwx,cwy,cwz,ecwx,ecwy,ecwz
+    Integer           :: nlx, nly, nlz, i, i0, kk
+    Real(Kind=wp) :: det, celprp(1:10), rcell(1:9), x, y, z, &
+                     xdc, ydc, zdc, cwx, cwy, cwz, ecwx, ecwy, ecwz
 
     If (comm%mxnode > 1) Then
 
       ! Define cut
 
-      cut=rcut+1.0e-6_wp
+      cut = rcut + 1.0e-6_wp
 
-      Call dcell(config%cell,celprp)
-      Call invert(config%cell,rcell,det)
+      Call dcell(config%cell, celprp)
+      Call invert(config%cell, rcell, det)
 
       ! calculate link cell dimensions per node
 
-      nlx=Int(celprp(7)/(cut*domain%nx_real))
-      nly=Int(celprp(8)/(cut*domain%ny_real))
-      nlz=Int(celprp(9)/(cut*domain%nz_real))
+      nlx = Int(celprp(7) / (cut * domain%nx_real))
+      nly = Int(celprp(8) / (cut * domain%ny_real))
+      nlz = Int(celprp(9) / (cut * domain%nz_real))
 
       ! Get the total number of link-cells in MD cell per direction
 
-      xdc=Real(nlx*domain%nx,wp)
-      ydc=Real(nly*domain%ny,wp)
-      zdc=Real(nlz*domain%nz,wp)
+      xdc = Real(nlx * domain%nx, wp)
+      ydc = Real(nly * domain%ny, wp)
+      zdc = Real(nlz * domain%nz, wp)
 
       ! link-cell widths in reduced space
 
-      cwx=1.0_wp/xdc
-      cwy=1.0_wp/ydc
-      cwz=1.0_wp/zdc
+      cwx = 1.0_wp / xdc
+      cwy = 1.0_wp / ydc
+      cwz = 1.0_wp / zdc
 
       ! Distance from the - edge of this domain
 
-      ecwx=Nearest( (-0.5_wp+cwx)+Real(domain%idx,wp)*domain%nx_recip , +1.0_wp)+zero_plus
-      ecwy=Nearest( (-0.5_wp+cwy)+Real(domain%idy,wp)*domain%ny_recip , +1.0_wp)+zero_plus
-      ecwz=Nearest( (-0.5_wp+cwz)+Real(domain%idz,wp)*domain%nz_recip , +1.0_wp)+zero_plus
+      ecwx = Nearest((-0.5_wp + cwx) + Real(domain%idx, wp) * domain%nx_recip, +1.0_wp) + zero_plus
+      ecwy = Nearest((-0.5_wp + cwy) + Real(domain%idy, wp) * domain%ny_recip, +1.0_wp) + zero_plus
+      ecwz = Nearest((-0.5_wp + cwz) + Real(domain%idz, wp) * domain%nz_recip, +1.0_wp) + zero_plus
 
       ! Distance from the + edge of this domain with a possible
       ! extension strip for the one linked cell per domain scenario
 
-      cwx=Nearest( (-0.5_wp-cwx)+Real(domain%idx+1,wp)*domain%nx_recip , -1.0_wp)- &
-        zero_plus-Merge( cwx*1.0e-10_wp , 0.0_wp , nlx == 1 )
-      cwy=Nearest( (-0.5_wp-cwy)+Real(domain%idy+1,wp)*domain%ny_recip , -1.0_wp)- &
-        zero_plus-Merge( cwy*1.0e-10_wp , 0.0_wp , nly == 1 )
-      cwz=Nearest( (-0.5_wp-cwz)+Real(domain%idz+1,wp)*domain%nz_recip , -1.0_wp)- &
-        zero_plus-Merge( cwz*1.0e-10_wp , 0.0_wp , nlz == 1 )
+      cwx = Nearest((-0.5_wp - cwx) + Real(domain%idx + 1, wp) * domain%nx_recip, -1.0_wp) - &
+            zero_plus - Merge(cwx * 1.0e-10_wp, 0.0_wp, nlx == 1)
+      cwy = Nearest((-0.5_wp - cwy) + Real(domain%idy + 1, wp) * domain%ny_recip, -1.0_wp) - &
+            zero_plus - Merge(cwy * 1.0e-10_wp, 0.0_wp, nly == 1)
+      cwz = Nearest((-0.5_wp - cwz) + Real(domain%idz + 1, wp) * domain%nz_recip, -1.0_wp) - &
+            zero_plus - Merge(cwz * 1.0e-10_wp, 0.0_wp, nlz == 1)
 
-      config%ixyz(1:mxatdm)=0 ! Initialise move (former halo) indicator
-      Do i=1,config%natms
-        x=rcell(1)*config%parts(i)%xxx+rcell(4)*config%parts(i)%yyy+rcell(7)*config%parts(i)%zzz
-        y=rcell(2)*config%parts(i)%xxx+rcell(5)*config%parts(i)%yyy+rcell(8)*config%parts(i)%zzz
-        z=rcell(3)*config%parts(i)%xxx+rcell(6)*config%parts(i)%yyy+rcell(9)*config%parts(i)%zzz
+      config%ixyz(1:mxatdm) = 0 ! Initialise move (former halo) indicator
+      Do i = 1, config%natms
+        x = rcell(1) * config%parts(i)%xxx + rcell(4) * config%parts(i)%yyy + rcell(7) * config%parts(i)%zzz
+        y = rcell(2) * config%parts(i)%xxx + rcell(5) * config%parts(i)%yyy + rcell(8) * config%parts(i)%zzz
+        z = rcell(3) * config%parts(i)%xxx + rcell(6) * config%parts(i)%yyy + rcell(9) * config%parts(i)%zzz
 
-        If (x <= ecwx) config%ixyz(i)=config%ixyz(i)+1
-        If (x >=  cwx) config%ixyz(i)=config%ixyz(i)+2
+        If (x <= ecwx) config%ixyz(i) = config%ixyz(i) + 1
+        If (x >= cwx) config%ixyz(i) = config%ixyz(i) + 2
 
-        If (y <= ecwy) config%ixyz(i)=config%ixyz(i)+10
-        If (y >=  cwy) config%ixyz(i)=config%ixyz(i)+20
+        If (y <= ecwy) config%ixyz(i) = config%ixyz(i) + 10
+        If (y >= cwy) config%ixyz(i) = config%ixyz(i) + 20
 
-        If (z <= ecwz) config%ixyz(i)=config%ixyz(i)+100
-        If (z >=  cwz) config%ixyz(i)=config%ixyz(i)+200
+        If (z <= ecwz) config%ixyz(i) = config%ixyz(i) + 100
+        If (z >= cwz) config%ixyz(i) = config%ixyz(i) + 200
       End Do
 
-      config%lsi=0;config%lsa=0 ! This is a must, unfortunately
-      Do i=1,config%natms
-        config%lsi(i)=i
-        config%lsa(i)=config%ltg(i)
+      config%lsi = 0; config%lsa = 0 ! This is a must, unfortunately
+      Do i = 1, config%natms
+        config%lsi(i) = i
+        config%lsa(i) = config%ltg(i)
       End Do
-      Call shellsort2(config%natms,config%lsi,config%lsa)
+      Call shellsort2(config%natms, config%lsi, config%lsa)
 
       stats%natms0 = config%natms
       stats%ltg0(1:stats%natms0) = config%ltg(1:stats%natms0) !;stats%ltg0(stats%natms0+1: ) = 0
@@ -1129,27 +1164,27 @@ Contains
       stats%yin0(1:stats%natms0) = stats%yin(1:stats%natms0) !; stats%yin0(stats%natms0+1: ) = 0 ; stats%yin = 0.0_wp
       stats%zin0(1:stats%natms0) = stats%zin(1:stats%natms0) !; stats%zin0(stats%natms0+1: ) = 0 ; stats%zin = 0.0_wp
 
-      stats%xto0(1:stats%natms0) =stats%xto(1:stats%natms0) !;stats%xto0(stats%natms0+1: ) = 0
-      stats%yto0(1:stats%natms0) =stats%yto(1:stats%natms0) !;stats%yto0(stats%natms0+1: ) = 0
-      stats%zto0(1:stats%natms0) =stats%zto(1:stats%natms0) !;stats%zto0(stats%natms0+1: ) = 0
+      stats%xto0(1:stats%natms0) = stats%xto(1:stats%natms0) !;stats%xto0(stats%natms0+1: ) = 0
+      stats%yto0(1:stats%natms0) = stats%yto(1:stats%natms0) !;stats%yto0(stats%natms0+1: ) = 0
+      stats%zto0(1:stats%natms0) = stats%zto(1:stats%natms0) !;stats%zto0(stats%natms0+1: ) = 0
 
       If (lmsd) Then
-        i0=2*stats%natms0
-        stats%stpvl00(1:i0)=stats%stpvl0(28:27+i0) !;stats%stpvl00(i0+1: )=0.0_wp
-        stats%stpval0(1:i0)=stats%stpval(28:27+i0) !;stats%stpval0(i0+1: )=0.0_wp
-        stats%zumval0(1:i0)=stats%zumval(28:27+i0) !;stats%zumval0(i0+1: )=0.0_wp
-        stats%ravval0(1:i0)=stats%ravval(28:27+i0) !;stats%ravval0(i0+1: )=0.0_wp
-        stats%ssqval0(1:i0)=stats%ssqval(28:27+i0) !;stats%ssqval0(i0+1: )=0.0_wp
-        stats%sumval0(1:i0)=stats%sumval(28:27+i0) !;stats%sumval0(i0+1: )=0.0_wp
-        Do kk=1,stats%mxstak
-          stats%stkval0(kk,1:i0)=stats%stkval(kk,1:i0) !;stats%stkval0(kk,i0+1: )=0.0_wp
+        i0 = 2 * stats%natms0
+        stats%stpvl00(1:i0) = stats%stpvl0(28:27 + i0) !;stats%stpvl00(i0+1: )=0.0_wp
+        stats%stpval0(1:i0) = stats%stpval(28:27 + i0) !;stats%stpval0(i0+1: )=0.0_wp
+        stats%zumval0(1:i0) = stats%zumval(28:27 + i0) !;stats%zumval0(i0+1: )=0.0_wp
+        stats%ravval0(1:i0) = stats%ravval(28:27 + i0) !;stats%ravval0(i0+1: )=0.0_wp
+        stats%ssqval0(1:i0) = stats%ssqval(28:27 + i0) !;stats%ssqval0(i0+1: )=0.0_wp
+        stats%sumval0(1:i0) = stats%sumval(28:27 + i0) !;stats%sumval0(i0+1: )=0.0_wp
+        Do kk = 1, stats%mxstak
+          stats%stkval0(kk, 1:i0) = stats%stkval(kk, 1:i0) !;stats%stkval0(kk,i0+1: )=0.0_wp
         End Do
       End If
     End If
 
   End Subroutine statistics_connect_set
 
-  Subroutine statistics_connect_spread(config,mdir,mxatdm,lmsd,stats,domain,comm)
+  Subroutine statistics_connect_spread(config, mdir, mxatdm, lmsd, stats, domain, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1168,35 +1203,32 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Type(configuration_type), Intent(InOut) :: config
+    Integer(Kind=wi),         Intent(In   ) :: mdir, mxatdm
+    Logical,                  Intent(In   ) :: lmsd
+    Type(stats_type),         Intent(InOut) :: stats
+    Type(domains_type),       Intent(In   ) :: domain
+    Type(comms_type),         Intent(InOut) :: comm
 
-
-    Integer( Kind = wi ), Intent( In    ) :: mdir
-    Integer( Kind = wi ), Intent( In    ) :: mxatdm
-    Logical,            Intent( In    ) :: lmsd
-    Type( stats_type ), Intent( InOut ) :: stats
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( comms_type ), Intent( InOut ) :: comm
-    Type( configuration_type ), Intent( InOut ) :: config
-    Logical           :: safe,stay,move
-    Integer           :: fail,iblock,jdnode,kdnode,   &
-      imove,jmove,kmove,keep,send, &
-      i,j,l,jj,kk,jxyz,kxyz,       &
-      ix,iy,iz,kx,ky,kz,newatm
-    Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
-    Character( Len = 256 ) :: message
+    Character(Len=256)                       :: message
+    Integer                                  :: fail, i, iblock, imove, ix, iy, iz, j, jdnode, jj, &
+                                                jmove, jxyz, kdnode, keep, kk, kmove, kx, kxyz, &
+                                                ky, kz, l, newatm, send
+    Logical                                  :: move, safe, stay
+    Real(Kind=wp), Allocatable, Dimension(:) :: buffer
 
     If (comm%mxnode == 1) Return
 
-    fail=0
+    fail = 0
     Allocate (buffer(1:config%mxbfss), Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'statistics_connect_spread allocation failure'
-      Call error(0,message)
+      Write (message, '(a)') 'statistics_connect_spread allocation failure'
+      Call error(0, message)
     End If
 
     ! Set buffer limit (half for outgoing data - half for incoming)
 
-    iblock=config%mxbfss/2
+    iblock = config%mxbfss / 2
 
     ! DIRECTION SETTINGS INITIALISATION
 
@@ -1207,46 +1239,46 @@ Contains
     ! kxyz - corrected halo reduction factor particles haloing both +&- sides
     ! jdnode - destination (send to), kdnode - source (receive from)
 
-    kx = 0 ; ky = 0 ; kz = 0
-    If      (mdir == -1) Then ! Direction -x
-      kx  = 1
-      jxyz= 1
-      kxyz= Merge(3,jxyz,domain%nx <= 2)
+    kx = 0; ky = 0; kz = 0
+    If (mdir == -1) Then ! Direction -x
+      kx = 1
+      jxyz = 1
+      kxyz = Merge(3, jxyz, domain%nx <= 2)
 
       jdnode = domain%map(1)
       kdnode = domain%map(2)
-    Else If (mdir ==  1) Then ! Direction +x
-      kx  = 1
-      jxyz= 2
-      kxyz= Merge(3,jxyz,domain%nx <= 2)
+    Else If (mdir == 1) Then ! Direction +x
+      kx = 1
+      jxyz = 2
+      kxyz = Merge(3, jxyz, domain%nx <= 2)
 
       jdnode = domain%map(2)
       kdnode = domain%map(1)
     Else If (mdir == -2) Then ! Direction -y
-      ky  = 1
-      jxyz= 10
-      kxyz= Merge(30,jxyz,domain%ny <= 2)
+      ky = 1
+      jxyz = 10
+      kxyz = Merge(30, jxyz, domain%ny <= 2)
 
       jdnode = domain%map(3)
       kdnode = domain%map(4)
-    Else If (mdir ==  2) Then ! Direction +y
-      ky  = 1
-      jxyz= 20
-      kxyz= Merge(30,jxyz,domain%ny <= 2)
+    Else If (mdir == 2) Then ! Direction +y
+      ky = 1
+      jxyz = 20
+      kxyz = Merge(30, jxyz, domain%ny <= 2)
 
       jdnode = domain%map(4)
       kdnode = domain%map(3)
     Else If (mdir == -3) Then ! Direction -z
-      kz  = 1
-      jxyz= 100
-      kxyz= Merge(300,jxyz,domain%nz <= 2)
+      kz = 1
+      jxyz = 100
+      kxyz = Merge(300, jxyz, domain%nz <= 2)
 
       jdnode = domain%map(5)
       kdnode = domain%map(6)
-    Else If (mdir ==  3) Then ! Direction +z
-      kz  = 1
-      jxyz= 200
-      kxyz= Merge(300,jxyz,domain%nz <= 2)
+    Else If (mdir == 3) Then ! Direction +z
+      kz = 1
+      jxyz = 200
+      kxyz = Merge(300, jxyz, domain%nz <= 2)
 
       jdnode = domain%map(6)
       kdnode = domain%map(5)
@@ -1259,139 +1291,139 @@ Contains
     ! particles to get transferred, imove and jmove are the lengths of
     ! the buffers
 
-    imove=1
-    jmove=1
+    imove = 1
+    jmove = 1
 
     ! Initialise how many particles are to be kept and sent
 
-    keep=0
-    send=0
+    keep = 0
+    send = 0
 
     ! Initialise array overflow flags
 
-    safe=.true.
+    safe = .true.
 
     ! LOOP OVER ALL PREVIOUS FRAME'S PARTICLES ON THIS NODE
 
-    Do i=1,stats%natms0
+    Do i = 1, stats%natms0
 
       ! particle designated directions
 
-      ix=Mod(config%ixyz(i),10)           ! [0,1,2,3]
-      iy=Mod(config%ixyz(i)-ix,100)       ! [0,10,20,30]
-      iz=Mod(config%ixyz(i)-(ix+iy),1000) ! [0,100,200,300]
+      ix = Mod(config%ixyz(i), 10) ! [0,1,2,3]
+      iy = Mod(config%ixyz(i) - ix, 100) ! [0,10,20,30]
+      iz = Mod(config%ixyz(i) - (ix + iy), 1000) ! [0,100,200,300]
 
       ! Filter the move index for the selected direction
 
-      j=ix*kx+iy*ky+iz*kz
+      j = ix * kx + iy * ky + iz * kz
 
       ! If the particle is scheduled to be sent in the selected
       ! direction then indicate it in move
 
-      move=.false.
-      If (j == jxyz .or. (j > jxyz .and. Mod(j,3) == 0)) Then
-        move=(comm%idnode /= jdnode) ! but don't move it if back to itself
+      move = .false.
+      If (j == jxyz .or. (j > jxyz .and. Mod(j, 3) == 0)) Then
+        move = (comm%idnode /= jdnode) ! but don't move it if back to itself
 
         ! reduce particle move index (ixyz) using the corrected halo reduction
         ! factor when the particle is sent to both +&- sides
 
-        config%ixyz(i)=config%ixyz(i)-Merge(kxyz,jxyz,j /= jxyz)
+        config%ixyz(i) = config%ixyz(i) - Merge(kxyz, jxyz, j /= jxyz)
       End If
       stay = (config%ixyz(i) /= 0) ! decide on keeping it when to be sent elsewhere
 
       If (stay) Then ! keep it
-        keep=keep+1
+        keep = keep + 1
 
         ! retain config indexing and move indexing arrays
 
-        stats%ltg0(keep)=stats%ltg0(i)
-        config%ixyz(keep)=config%ixyz(i)
+        stats%ltg0(keep) = stats%ltg0(i)
+        config%ixyz(keep) = config%ixyz(i)
 
         ! retain initial positions
 
-        stats%xin0(keep)=stats%xin0(i)
-        stats%yin0(keep)=stats%yin0(i)
-        stats%zin0(keep)=stats%zin0(i)
+        stats%xin0(keep) = stats%xin0(i)
+        stats%yin0(keep) = stats%yin0(i)
+        stats%zin0(keep) = stats%zin0(i)
 
         ! retain final displacements
 
-        stats%xto0(keep)=stats%xto0(i)
-        stats%yto0(keep)=stats%yto0(i)
-        stats%zto0(keep)=stats%zto0(i)
+        stats%xto0(keep) = stats%xto0(i)
+        stats%yto0(keep) = stats%yto0(i)
+        stats%zto0(keep) = stats%zto0(i)
 
         If (lmsd) Then
-          jj=2*i
-          j =2*keep
-          stats%stpvl00(j-1)=stats%stpvl00(jj-1)
-          stats%stpvl00(j  )=stats%stpvl00(jj  )
-          stats%stpval0(j-1)=stats%stpval0(jj-1)
-          stats%stpval0(j  )=stats%stpval0(jj  )
-          stats%zumval0(j-1)=stats%zumval0(jj-1)
-          stats%zumval0(j  )=stats%zumval0(jj  )
-          stats%ravval0(j-1)=stats%ravval0(jj-1)
-          stats%ravval0(j  )=stats%ravval0(jj  )
-          stats%ssqval0(j-1)=stats%ssqval0(jj-1)
-          stats%ssqval0(j  )=stats%ssqval0(jj  )
-          stats%sumval0(j-1)=stats%sumval0(jj-1)
-          stats%sumval0(j  )=stats%sumval0(jj  )
-          Do kk=1,stats%mxstak
-            stats%stkval0(kk,j-1)=stats%stkval0(kk,jj-1)
-            stats%stkval0(kk,j  )=stats%stkval0(kk,jj  )
+          jj = 2 * i
+          j = 2 * keep
+          stats%stpvl00(j - 1) = stats%stpvl00(jj - 1)
+          stats%stpvl00(j) = stats%stpvl00(jj)
+          stats%stpval0(j - 1) = stats%stpval0(jj - 1)
+          stats%stpval0(j) = stats%stpval0(jj)
+          stats%zumval0(j - 1) = stats%zumval0(jj - 1)
+          stats%zumval0(j) = stats%zumval0(jj)
+          stats%ravval0(j - 1) = stats%ravval0(jj - 1)
+          stats%ravval0(j) = stats%ravval0(jj)
+          stats%ssqval0(j - 1) = stats%ssqval0(jj - 1)
+          stats%ssqval0(j) = stats%ssqval0(jj)
+          stats%sumval0(j - 1) = stats%sumval0(jj - 1)
+          stats%sumval0(j) = stats%sumval0(jj)
+          Do kk = 1, stats%mxstak
+            stats%stkval0(kk, j - 1) = stats%stkval0(kk, jj - 1)
+            stats%stkval0(kk, j) = stats%stkval0(kk, jj)
           End Do
         End If
       End If
 
       If (move) Then ! copy it
-        send=send+1
-        If (imove+8 <= iblock) Then ! If safe to proceed
+        send = send + 1
+        If (imove + 8 <= iblock) Then ! If safe to proceed
 
           ! pack config indexing and move indexing arrays
 
-          buffer(imove+1)=Real(stats%ltg0(i),wp)
-          buffer(imove+2)=Real(config%ixyz(i),wp)
+          buffer(imove + 1) = Real(stats%ltg0(i), wp)
+          buffer(imove + 2) = Real(config%ixyz(i), wp)
 
           ! pack initial positions
 
-          buffer(imove+3)=stats%xin0(i)
-          buffer(imove+4)=stats%yin0(i)
-          buffer(imove+5)=stats%zin0(i)
+          buffer(imove + 3) = stats%xin0(i)
+          buffer(imove + 4) = stats%yin0(i)
+          buffer(imove + 5) = stats%zin0(i)
 
           ! pack final displacements
 
-          buffer(imove+6)=stats%xto0(i)
-          buffer(imove+7)=stats%yto0(i)
-          buffer(imove+8)=stats%zto0(i)
+          buffer(imove + 6) = stats%xto0(i)
+          buffer(imove + 7) = stats%yto0(i)
+          buffer(imove + 8) = stats%zto0(i)
         Else
-          safe=.false.
+          safe = .false.
         End If
-        imove=imove+8
+        imove = imove + 8
 
         ! pack MSD arrays
 
         If (lmsd) Then
-          If (imove+2*(6+stats%mxstak) <= iblock) Then
-            jj=2*i
-            buffer(imove+ 1)=stats%stpvl00(jj-1)
-            buffer(imove+ 2)=stats%stpvl00(jj  )
-            buffer(imove+ 3)=stats%stpval0(jj-1)
-            buffer(imove+ 4)=stats%stpval0(jj  )
-            buffer(imove+ 5)=stats%zumval0(jj-1)
-            buffer(imove+ 6)=stats%zumval0(jj  )
-            buffer(imove+ 7)=stats%ravval0(jj-1)
-            buffer(imove+ 8)=stats%ravval0(jj  )
-            buffer(imove+ 9)=stats%ssqval0(jj-1)
-            buffer(imove+10)=stats%ssqval0(jj  )
-            buffer(imove+11)=stats%sumval0(jj-1)
-            buffer(imove+12)=stats%sumval0(jj  )
-            Do kk=1,stats%mxstak
-              l=12+2*kk
-              buffer(imove+l-1)=stats%stkval0(kk,jj-1)
-              buffer(imove+l  )=stats%stkval0(kk,jj  )
+          If (imove + 2 * (6 + stats%mxstak) <= iblock) Then
+            jj = 2 * i
+            buffer(imove + 1) = stats%stpvl00(jj - 1)
+            buffer(imove + 2) = stats%stpvl00(jj)
+            buffer(imove + 3) = stats%stpval0(jj - 1)
+            buffer(imove + 4) = stats%stpval0(jj)
+            buffer(imove + 5) = stats%zumval0(jj - 1)
+            buffer(imove + 6) = stats%zumval0(jj)
+            buffer(imove + 7) = stats%ravval0(jj - 1)
+            buffer(imove + 8) = stats%ravval0(jj)
+            buffer(imove + 9) = stats%ssqval0(jj - 1)
+            buffer(imove + 10) = stats%ssqval0(jj)
+            buffer(imove + 11) = stats%sumval0(jj - 1)
+            buffer(imove + 12) = stats%sumval0(jj)
+            Do kk = 1, stats%mxstak
+              l = 12 + 2 * kk
+              buffer(imove + l - 1) = stats%stkval0(kk, jj - 1)
+              buffer(imove + l) = stats%stkval0(kk, jj)
             End Do
           Else
-            safe=.false.
+            safe = .false.
           End If
-          imove=imove+2*(6+stats%mxstak)
+          imove = imove + 2 * (6 + stats%mxstak)
         End If
       End If
 
@@ -1399,122 +1431,122 @@ Contains
 
     ! Check for array bound overflow (have arrays coped with outgoing data)
 
-    Call gcheck(comm,safe)
-    If (.not.safe) Call error(163)
+    Call gcheck(comm, safe)
+    If (.not. safe) Call error(163)
 
     ! record of number of atoms for transfer
 
-    buffer(1)=Real(send,wp)
+    buffer(1) = Real(send, wp)
 
     ! exchange information on buffer sizes
 
-    Call girecv(comm,jmove,kdnode,Spread_tag)
-    Call gsend(comm,imove,jdnode,Spread_tag)
+    Call girecv(comm, jmove, kdnode, Spread_tag)
+    Call gsend(comm, imove, jdnode, Spread_tag)
     Call gwait(comm)
 
     ! exchange buffers between nodes (this is a MUST)
 
-    Call girecv(comm,buffer(iblock+1:iblock+jmove),kdnode,Spread_tag)
-    Call gsend(comm,buffer(1:imove),jdnode,Spread_tag)
+    Call girecv(comm, buffer(iblock + 1:iblock + jmove), kdnode, Spread_tag)
+    Call gsend(comm, buffer(1:imove), jdnode, Spread_tag)
     Call gwait(comm)
 
     ! check arrays can cope with incoming atom numbers
 
-    kmove=iblock+1
-    jmove=Nint(buffer(kmove))
+    kmove = iblock + 1
+    jmove = Nint(buffer(kmove))
 
     ! Test for overloading and collect how many are to really be accepted
 
-    imove=0
-    Do i=1,jmove
-      l=Nint(buffer(kmove+1))
-      If (All(stats%ltg0(1:stats%natms0) /= l)) imove=imove+1
-      kmove=kmove+8
-      If (lmsd) kmove=kmove+2*(6+stats%mxstak)
+    imove = 0
+    Do i = 1, jmove
+      l = Nint(buffer(kmove + 1))
+      If (All(stats%ltg0(1:stats%natms0) /= l)) imove = imove + 1
+      kmove = kmove + 8
+      If (lmsd) kmove = kmove + 2 * (6 + stats%mxstak)
     End Do
 
-    stats%natms0=keep+imove
+    stats%natms0 = keep + imove
 
     ! Check for array bound overflow (can arrays cope with incoming data)
 
-    safe=(stats%natms0 <= mxatdm)
-    Call gcheck(comm,safe)
-    If (.not.safe) Call error(164)
+    safe = (stats%natms0 <= mxatdm)
+    Call gcheck(comm, safe)
+    If (.not. safe) Call error(164)
 
     ! load transferred data
 
-    kmove=iblock+1 ! restore kmove
-    newatm=keep    ! restore newatm
-    Do i=1,jmove
+    kmove = iblock + 1 ! restore kmove
+    newatm = keep ! restore newatm
+    Do i = 1, jmove
       If (imove /= jmove) Then
-        l=Nint(buffer(kmove+1))
+        l = Nint(buffer(kmove + 1))
         If (Any(stats%ltg0(1:keep) == l)) Then
-          kmove=kmove+8
-          If (lmsd) kmove=kmove+2*(6+stats%mxstak)
+          kmove = kmove + 8
+          If (lmsd) kmove = kmove + 2 * (6 + stats%mxstak)
           Cycle
         End If
       End If
 
-      newatm=newatm+1
+      newatm = newatm + 1
 
       ! unpack config indexing, site and move indexing arrays
 
-      stats%ltg0(newatm)=Nint(buffer(kmove+1))
-      config%ixyz(newatm)=Nint(buffer(kmove+2))
+      stats%ltg0(newatm) = Nint(buffer(kmove + 1))
+      config%ixyz(newatm) = Nint(buffer(kmove + 2))
 
       ! unpack initial positions arrays
 
-      stats%xin0(newatm)=buffer(kmove+3)
-      stats%yin0(newatm)=buffer(kmove+4)
-      stats%zin0(newatm)=buffer(kmove+5)
+      stats%xin0(newatm) = buffer(kmove + 3)
+      stats%yin0(newatm) = buffer(kmove + 4)
+      stats%zin0(newatm) = buffer(kmove + 5)
 
       ! unpack initial positions arrays
 
-      stats%xto0(newatm)=buffer(kmove+6)
-      stats%yto0(newatm)=buffer(kmove+7)
-      stats%zto0(newatm)=buffer(kmove+8)
+      stats%xto0(newatm) = buffer(kmove + 6)
+      stats%yto0(newatm) = buffer(kmove + 7)
+      stats%zto0(newatm) = buffer(kmove + 8)
 
-      kmove=kmove+8
+      kmove = kmove + 8
 
       ! unpack MSD arrays
 
       If (lmsd) Then
-        jj=2*newatm
-        stats%stpvl00(jj-1)=buffer(kmove+1 )
-        stats%stpvl00(jj  )=buffer(kmove+2 )
-        stats%stpval0(jj-1)=buffer(kmove+3 )
-        stats%stpval0(jj  )=buffer(kmove+4 )
-        stats%zumval0(jj-1)=buffer(kmove+5 )
-        stats%zumval0(jj  )=buffer(kmove+6 )
-        stats%ravval0(jj-1)=buffer(kmove+7 )
-        stats%ravval0(jj  )=buffer(kmove+8 )
-        stats%ssqval0(jj-1)=buffer(kmove+9 )
-        stats%ssqval0(jj  )=buffer(kmove+10)
-        stats%sumval0(jj-1)=buffer(kmove+11)
-        stats%sumval0(jj  )=buffer(kmove+12)
-        Do kk=1,stats%mxstak
-          l=12+2*kk
-          stats%stkval0(kk,jj-1)=buffer(kmove+l-1)
-          stats%stkval0(kk,jj  )=buffer(kmove+l  )
+        jj = 2 * newatm
+        stats%stpvl00(jj - 1) = buffer(kmove + 1)
+        stats%stpvl00(jj) = buffer(kmove + 2)
+        stats%stpval0(jj - 1) = buffer(kmove + 3)
+        stats%stpval0(jj) = buffer(kmove + 4)
+        stats%zumval0(jj - 1) = buffer(kmove + 5)
+        stats%zumval0(jj) = buffer(kmove + 6)
+        stats%ravval0(jj - 1) = buffer(kmove + 7)
+        stats%ravval0(jj) = buffer(kmove + 8)
+        stats%ssqval0(jj - 1) = buffer(kmove + 9)
+        stats%ssqval0(jj) = buffer(kmove + 10)
+        stats%sumval0(jj - 1) = buffer(kmove + 11)
+        stats%sumval0(jj) = buffer(kmove + 12)
+        Do kk = 1, stats%mxstak
+          l = 12 + 2 * kk
+          stats%stkval0(kk, jj - 1) = buffer(kmove + l - 1)
+          stats%stkval0(kk, jj) = buffer(kmove + l)
         End Do
 
-        kmove=kmove+2*(6+stats%mxstak)
+        kmove = kmove + 2 * (6 + stats%mxstak)
       End If
     End Do
 
     Deallocate (buffer, Stat=fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'statistics_connect_spread deallocation failure'
-      Call error(0,message)
+      Write (message, '(a)') 'statistics_connect_spread deallocation failure'
+      Call error(0, message)
     End If
 
   End Subroutine statistics_connect_spread
 
-  Subroutine statistics_result                                    &
-      (config,minim,lmsd, &
-      nstrun,keyshl,megcon,megpmf,              &
-      nstep,time,tmst, &
-      mxatdm,neigh_uncond_update,stats,thermo,sites,comm)
+  Subroutine statistics_result &
+    (config, minim, lmsd, &
+     nstrun, keyshl, megcon, megpmf, &
+     nstep, time, tmst, &
+     mxatdm, neigh_uncond_update, stats, thermo, sites, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1532,102 +1564,101 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Logical,           Intent( In    ) :: minim,lmsd
-    Integer( Kind = wi ),    Intent( In    ) :: nstrun,keyshl,megcon,megpmf,nstep
-    Real( Kind = wp ), Intent( In    ) :: time,tmst
-    Integer( Kind = wi ),    Intent( In    ) :: mxatdm
-    Logical, Intent( InOut ) :: neigh_uncond_update
-    Type( configuration_type ), Intent( InOut ) :: config
-    Type( stats_type ), Intent( InOut ) :: stats
-    Type( thermostat_type ), Intent( In    ) :: thermo
-    Type( site_type ), Intent( In    ) :: sites
-    Type( comms_type ), Intent( InOut ) :: comm
+    Type(configuration_type), Intent(InOut) :: config
+    Logical,                  Intent(In   ) :: minim, lmsd
+    Integer(Kind=wi),         Intent(In   ) :: nstrun, keyshl, megcon, megpmf, nstep
+    Real(Kind=wp),            Intent(In   ) :: time, tmst
+    Integer(Kind=wi),         Intent(In   ) :: mxatdm
+    Logical,                  Intent(InOut) :: neigh_uncond_update
+    Type(stats_type),         Intent(InOut) :: stats
+    Type(thermostat_type),    Intent(In   ) :: thermo
+    Type(site_type),          Intent(In   ) :: sites
+    Type(comms_type),         Intent(InOut) :: comm
 
-    Logical           :: check
-    Integer           :: i,iadd
-    Real( Kind = wp ) :: avvol,dc,srmsd,timelp,tmp,h_z,tx,ty
-    Character( Len = 256 ) :: message
-    Character( Len = 256 ), Dimension(5) :: messages
-    Integer :: mxnstk
+    Character(Len=256)               :: message
+    Character(Len=256), Dimension(5) :: messages
+    Integer                          :: i, iadd, mxnstk
+    Logical                          :: check
+    Real(Kind=wp)                    :: avvol, dc, h_z, srmsd, timelp, tmp, tx, ty
 
     mxnstk = stats%mxnstk
 
-    Call info('',.true.)
+    Call info('', .true.)
 
     ! VNL skipping statistics
 
     If (neigh_uncond_update .and. nstep > 0) Then
 
-      Write(message,'(a,f7.2,2(a,i4))') &
-        'VNL skipping run statistics - skips per timestep: average ',stats%neighskip(3), &
-        ' minimum ',Nint(Merge(stats%neighskip(4),stats%neighskip(5),stats%neighskip(4)<stats%neighskip(5))), &
-        ' maximum ',Nint(stats%neighskip(5))
-      Call info(message,.true.)
+      Write (message, '(a,f7.2,2(a,i4))') &
+        'VNL skipping run statistics - skips per timestep: average ', stats%neighskip(3), &
+        ' minimum ', Nint(Merge(stats%neighskip(4), stats%neighskip(5), stats%neighskip(4) < stats%neighskip(5))), &
+        ' maximum ', Nint(stats%neighskip(5))
+      Call info(message, .true.)
     End If
 
     ! minimisation convergence statistics
 
     If (minim) Then
-      Write(message,'(a,f7.2,2(a,i4))') &
-        'minimisation run statistics - cycles per call: average ',stats%passmin(3), &
-        ' minimum ',Nint(stats%passmin(4)),' maximum ',Nint(stats%passmin(5))
-      Call info(message,.true.)
+      Write (message, '(a,f7.2,2(a,i4))') &
+        'minimisation run statistics - cycles per call: average ', stats%passmin(3), &
+        ' minimum ', Nint(stats%passmin(4)), ' maximum ', Nint(stats%passmin(5))
+      Call info(message, .true.)
     End If
 
     ! shell relaxation convergence statistics
 
     If (keyshl == 2) Then
-      Write(message,'(a,f7.2,2(a,i4))') &
-        'hell relaxation run statistics - cycles per timestep: average ',stats%passshl(3), &
-        ' minimum ',Nint(stats%passshl(4)),' maximum ',Nint(stats%passshl(5))
-      Call info(message,.true.)
+      Write (message, '(a,f7.2,2(a,i4))') &
+        'hell relaxation run statistics - cycles per timestep: average ', stats%passshl(3), &
+        ' minimum ', Nint(stats%passshl(4)), ' maximum ', Nint(stats%passshl(5))
+      Call info(message, .true.)
     End If
 
     ! bond constraints iterative cycles statistics
 
     If (megcon > 0) Then
-      Call gmax(comm,stats%passcon(3:5,1,1)) ; Call gmax(comm,stats%passcon(3:5,2,1))
-      If (stats%passcon(3,1,1) > 0.0_wp) Then
-        Write(message,'(2(a,f5.2),4(a,i3))') &
+      Call gmax(comm, stats%passcon(3:5, 1, 1)); Call gmax(comm, stats%passcon(3:5, 2, 1))
+      If (stats%passcon(3, 1, 1) > 0.0_wp) Then
+        Write (message, '(2(a,f5.2),4(a,i3))') &
           'constraints shake  run statistics - cycles per call/timestep: average ', &
-          stats%passcon(3,1,1),' / ',stats%passcon(3,2,1), &
-          ' minimum ',Nint(stats%passcon(4,1,1)),' / ',Nint(stats%passcon(4,2,1)), &
-          ' maximum ',Nint(stats%passcon(5,1,1)),' / ',Nint(stats%passcon(5,2,1))
-        Call info(message,.true.)
+          stats%passcon(3, 1, 1), ' / ', stats%passcon(3, 2, 1), &
+          ' minimum ', Nint(stats%passcon(4, 1, 1)), ' / ', Nint(stats%passcon(4, 2, 1)), &
+          ' maximum ', Nint(stats%passcon(5, 1, 1)), ' / ', Nint(stats%passcon(5, 2, 1))
+        Call info(message, .true.)
       End If
 
-      Call gmax(comm,stats%passcon(3:5,1,2)) ; Call gmax(comm,stats%passcon(3:5,2,2))
-      If (stats%passcon(3,1,2) > 0.0_wp) Then
-        Write(message,'(2(a,f5.2),4(a,i3))') &
+      Call gmax(comm, stats%passcon(3:5, 1, 2)); Call gmax(comm, stats%passcon(3:5, 2, 2))
+      If (stats%passcon(3, 1, 2) > 0.0_wp) Then
+        Write (message, '(2(a,f5.2),4(a,i3))') &
           'constraints rattle  run statistics - cycles per call/timestep: average ', &
-          stats%passcon(3,1,1),' / ',stats%passcon(3,2,1), &
-          ' minimum ',Nint(stats%passcon(4,1,2)),' / ',Nint(stats%passcon(4,2,2)), &
-          ' maximum ',Nint(stats%passcon(5,1,2)),' / ',Nint(stats%passcon(5,2,2))
-        Call info(message,.true.)
+          stats%passcon(3, 1, 1), ' / ', stats%passcon(3, 2, 1), &
+          ' minimum ', Nint(stats%passcon(4, 1, 2)), ' / ', Nint(stats%passcon(4, 2, 2)), &
+          ' maximum ', Nint(stats%passcon(5, 1, 2)), ' / ', Nint(stats%passcon(5, 2, 2))
+        Call info(message, .true.)
       End If
     End If
 
     ! PMF constraints iterative cycles statistics
 
     If (megpmf > 0) Then
-      Call gmax(comm,stats%passpmf(3:5,1,1)) ; Call gmax(comm,stats%passpmf(3:5,2,1))
-      If (stats%passpmf(3,1,1) > 0.0_wp) Then
-        Write(message,'(2(a,f5.2),4(a,i3))') &
+      Call gmax(comm, stats%passpmf(3:5, 1, 1)); Call gmax(comm, stats%passpmf(3:5, 2, 1))
+      If (stats%passpmf(3, 1, 1) > 0.0_wp) Then
+        Write (message, '(2(a,f5.2),4(a,i3))') &
           'PMFs shake  run statistics - cycles per call/timestep: average ', &
-          stats%passpmf(3,1,1),' / ',stats%passpmf(3,2,1), &
-          ' minimum ',Nint(stats%passpmf(4,1,1)),' / ',Nint(stats%passpmf(4,2,1)), &
-          ' maximum ',Nint(stats%passpmf(5,1,1)),' / ',Nint(stats%passpmf(5,2,1))
-        Call info(message,.true.)
-      EndIf
+          stats%passpmf(3, 1, 1), ' / ', stats%passpmf(3, 2, 1), &
+          ' minimum ', Nint(stats%passpmf(4, 1, 1)), ' / ', Nint(stats%passpmf(4, 2, 1)), &
+          ' maximum ', Nint(stats%passpmf(5, 1, 1)), ' / ', Nint(stats%passpmf(5, 2, 1))
+        Call info(message, .true.)
+      Endif
 
-      Call gmax(comm,stats%passpmf(3:5,1,2)) ; Call gmax(comm,stats%passpmf(3:5,2,2))
-      If (stats%passpmf(3,1,2) > 0.0_wp) Then
-        Write(message,'(2(a,f5.2),4(a,i3))') &
+      Call gmax(comm, stats%passpmf(3:5, 1, 2)); Call gmax(comm, stats%passpmf(3:5, 2, 2))
+      If (stats%passpmf(3, 1, 2) > 0.0_wp) Then
+        Write (message, '(2(a,f5.2),4(a,i3))') &
           'PMFs rattle  run statistics - cycles per call/timestep: average ', &
-          stats%passpmf(3,1,2),' / ',stats%passpmf(3,2,2), &
-          ' minimum ',Nint(stats%passpmf(4,1,2)),' / ',Nint(stats%passpmf(4,2,2)), &
-          ' maximum ',Nint(stats%passpmf(5,1,2)),' / ',Nint(stats%passpmf(5,2,2))
-        Call info(message,.true.)
+          stats%passpmf(3, 1, 2), ' / ', stats%passpmf(3, 2, 2), &
+          ' minimum ', Nint(stats%passpmf(4, 1, 2)), ' / ', Nint(stats%passpmf(4, 2, 2)), &
+          ' maximum ', Nint(stats%passpmf(5, 1, 2)), ' / ', Nint(stats%passpmf(5, 2, 2))
+        Call info(message, .true.)
       End If
     End If
 
@@ -1638,22 +1669,21 @@ Contains
     ! Get simulation time for averages
 
     If (stats%numacc == 0) Then
-      tmp=0.0_wp
+      tmp = 0.0_wp
     Else
-      tmp=time-tmst
+      tmp = time - tmst
     End If
 
     ! Report termination
 
-
     If ((nstep == 0 .and. nstrun == 0) .or. stats%numacc == 0) Then
-      Write(message,'(a)') 'dry run terminated'
+      Write (message, '(a)') 'dry run terminated'
     Else
-      Write(message,'(2(a,i9,a,f10.3),a)') 'run terminated after ',nstep, &
-        ' steps (',time,' ps), final averages calculated over',stats%numacc, &
-        ' steps (',tmp,' ps)'
+      Write (message, '(2(a,i9,a,f10.3),a)') 'run terminated after ', nstep, &
+        ' steps (', time, ' ps), final averages calculated over', stats%numacc, &
+        ' steps (', tmp, ' ps)'
     End If
-    Call info(message,.true.)
+    Call info(message, .true.)
 
     ! safe average volume and cell
 
@@ -1663,19 +1693,20 @@ Contains
     ! Print pressure tensor and jump to possible RDF and Z-Density
 
     If (nstep == 0 .and. nstrun == 0) Then
-      iadd = 27+2*Merge(mxatdm,0,lmsd)+sites%ntype_atom
+      iadd = 27 + 2 * Merge(mxatdm, 0, lmsd) + sites%ntype_atom
 
       If (comm%idnode == 0) Then
-        Write(message,'(a)') 'pressure tensor  (katms):'
-        Call info(message,.true.)
+        Write (message, '(a)') 'pressure tensor  (katms):'
+        Call info(message, .true.)
 
-        Do i=iadd,iadd+6,3
-          Write(message,'(2x,1p,3e12.4)') stats%stpval(i+1:i+3)
-          Call info(message,.true.)
+        Do i = iadd, iadd + 6, 3
+          Write (message, '(2x,1p,3e12.4)') stats%stpval(i + 1:i + 3)
+          Call info(message, .true.)
         End Do
 
-        Write(message,'(2x,a,1p,e12.4)') 'trace/3  ', (stats%stpval(iadd+1)+stats%stpval(iadd+5)+stats%stpval(iadd+9))/3.0_wp
-        Call info(message,.true.)
+        Write (message, '(2x,a,1p,e12.4)') 'trace/3  ', (stats%stpval(iadd + 1) + &
+                                                         stats%stpval(iadd + 5) + stats%stpval(iadd + 9)) / 3.0_wp
+        Call info(message, .true.)
       End If
 
       Go To 10
@@ -1685,155 +1716,155 @@ Contains
     If (stats%numacc /= 0) Then
       ! shift back statistical averages as from statistics_collect
 
-      Do i=0,stats%mxnstk
-        stats%sumval(i)=stats%sumval(i)+stats%stpvl0(i)
+      Do i = 0, stats%mxnstk
+        stats%sumval(i) = stats%sumval(i) + stats%stpvl0(i)
       End Do
 
       ! calculate final fluctuations
 
-      Do i=0,stats%mxnstk
-        stats%ssqval(i)=Sqrt(stats%ssqval(i))
+      Do i = 0, stats%mxnstk
+        stats%ssqval(i) = Sqrt(stats%ssqval(i))
       End Do
 
       ! average volume
 
-      avvol =stats%sumval(19)
+      avvol = stats%sumval(19)
 
       ! final averages and fluctuations
-      Write(messages(1),'(a)') Repeat('-',130)
-      Write(messages(2),'(9x,a4,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
-        'step','eng_tot','temp_tot','eng_cfg','eng_src','eng_cou','eng_bnd','eng_ang','eng_dih','eng_tet'
-      Write(messages(3),'(5x,a8,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
-        'time(ps)',' eng_pv','temp_rot','vir_cfg','vir_src','vir_cou','vir_bnd','vir_ang','vir_con','vir_tet'
-      Write(messages(4), '(5x,a8,5x,a7,4x,a8,5x,a7,5x,a7,7x,a5,8x,a4,7x,a5,5x,a7,7x,a5)') &
-        'cpu  (s)','volume','temp_shl','eng_shl','vir_shl','alpha','beta','gamma','vir_pmf','press'
-      Write(messages(5),'(a)') Repeat('-',130)
-      Call info(messages,5,.true.)
+      Write (messages(1), '(a)') Repeat('-', 130)
+      Write (messages(2), '(9x,a4,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
+        'step', 'eng_tot', 'temp_tot', 'eng_cfg', 'eng_src', 'eng_cou', 'eng_bnd', 'eng_ang', 'eng_dih', 'eng_tet'
+      Write (messages(3), '(5x,a8,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
+        'time(ps)', ' eng_pv', 'temp_rot', 'vir_cfg', 'vir_src', 'vir_cou', 'vir_bnd', 'vir_ang', 'vir_con', 'vir_tet'
+      Write (messages(4), '(5x,a8,5x,a7,4x,a8,5x,a7,5x,a7,7x,a5,8x,a4,7x,a5,5x,a7,7x,a5)') &
+        'cpu  (s)', 'volume', 'temp_shl', 'eng_shl', 'vir_shl', 'alpha', 'beta', 'gamma', 'vir_pmf', 'press'
+      Write (messages(5), '(a)') Repeat('-', 130)
+      Call info(messages, 5, .true.)
 
-      Write(messages(1),'(i13,1p,9e12.4)')stats%numacc,stats%sumval(1:9)
-      Write(messages(2),'(f13.5,1p,9e12.4)')tmp,stats%sumval(10:18)
-      Write(messages(3),'(0p,f13.3,1p,9e12.4)') timelp,stats%sumval(19:27)
-      Write(messages(4),'(a)')''
-      Call info(messages,4,.true.)
+      Write (messages(1), '(i13,1p,9e12.4)') stats%numacc, stats%sumval(1:9)
+      Write (messages(2), '(f13.5,1p,9e12.4)') tmp, stats%sumval(10:18)
+      Write (messages(3), '(0p,f13.3,1p,9e12.4)') timelp, stats%sumval(19:27)
+      Write (messages(4), '(a)') ''
+      Call info(messages, 4, .true.)
 
-      Write(messages(1),'(6x,a8,1p,9e12.4)') ' r.m.s. ',stats%ssqval(1:9)
-      Write(messages(2),'(6x,a8,1p,9e12.4)') 'fluctu- ',stats%ssqval(10:18)
-      Write(messages(3),'(6x,a8,1p,9e12.4)') 'ations  ',stats%ssqval(19:27)
-      Write(messages(4),'(a)') Repeat('-',130)
-      Call info(messages,4,.true.)
+      Write (messages(1), '(6x,a8,1p,9e12.4)') ' r.m.s. ', stats%ssqval(1:9)
+      Write (messages(2), '(6x,a8,1p,9e12.4)') 'fluctu- ', stats%ssqval(10:18)
+      Write (messages(3), '(6x,a8,1p,9e12.4)') 'ations  ', stats%ssqval(19:27)
+      Write (messages(4), '(a)') Repeat('-', 130)
+      Call info(messages, 4, .true.)
 
       ! Some extra information - conserved quantity=extended ensemble energy
 
-      Write(message,"(a,1p,e12.4,5x,a,1p,e12.4)") &
-        "Extended energy:       ",stats%sumval(0),     &
-        " r.m.s. fluctuations:  ",stats%ssqval(0)
-      Call info(message,.true.)
+      Write (message, "(a,1p,e12.4,5x,a,1p,e12.4)") &
+        "Extended energy:       ", stats%sumval(0), &
+        " r.m.s. fluctuations:  ", stats%ssqval(0)
+      Call info(message, .true.)
 
       ! Some extra information - <P*V> term - only matters for NP/sT ensembles
 
       If (thermo%variable_cell) Then
-        Write(message,"(a,1p,e12.4,5x,a,1p,e12.4)")           &
-          "<P*V> term:            ",stats%sumval(37+sites%ntype_atom+2*Merge(mxatdm,0,lmsd)), &
-          " r.m.s. fluctuations:  ",stats%ssqval(37+sites%ntype_atom+2*Merge(mxatdm,0,lmsd))
-        Call info(message,.true.)
+        Write (message, "(a,1p,e12.4,5x,a,1p,e12.4)") &
+          "<P*V> term:            ", stats%sumval(37 + sites%ntype_atom + 2 * Merge(mxatdm, 0, lmsd)), &
+          " r.m.s. fluctuations:  ", stats%ssqval(37 + sites%ntype_atom + 2 * Merge(mxatdm, 0, lmsd))
+        Call info(message, .true.)
       End If
 
-      Write(messages(1),"(130('-'))")
-      Write(messages(2),'(a)')''
-      Call info(messages,2,.true.)
+      Write (messages(1), "(130('-'))")
+      Write (messages(2), '(a)') ''
+      Call info(messages, 2, .true.)
 
       ! Move at the end of the default 27 quantities
 
       iadd = 27
 
-      If (lmsd) iadd = iadd+2*mxatdm
+      If (lmsd) iadd = iadd + 2 * mxatdm
 
       ! Write out estimated diffusion coefficients
 
-      Write(messages(1),'(a)') 'Approximate 3D Diffusion Coefficients and square root of MSDs:'
-      Write(messages(2),'(6x,a4,2x,a19,6x,a15)') 'atom','DC (10^-9 m^2 s^-1)','Sqrt[MSD] (Ang)'
-      Call info(messages,2,.true.)
+      Write (messages(1), '(a)') 'Approximate 3D Diffusion Coefficients and square root of MSDs:'
+      Write (messages(2), '(6x,a4,2x,a19,6x,a15)') 'atom', 'DC (10^-9 m^2 s^-1)', 'Sqrt[MSD] (Ang)'
+      Call info(messages, 2, .true.)
 
-      Do i=1,sites%ntype_atom
+      Do i = 1, sites%ntype_atom
         If (sites%num_type_nf(i) > zero_plus) Then
-          dc = 10.0_wp * (stats%ravval(iadd+i)-stats%sumval(iadd+i)) / &
-            (3.0_wp*Real(stats%numacc-Min(stats%mxstak,stats%numacc-1),wp)*thermo%tstep)
+          dc = 10.0_wp * (stats%ravval(iadd + i) - stats%sumval(iadd + i)) / &
+               (3.0_wp * Real(stats%numacc - Min(stats%mxstak, stats%numacc - 1), wp) * thermo%tstep)
           If (dc < 1.0e-10_wp) dc = 0.0_wp
 
-          srmsd = Sqrt(stats%ravval(iadd+i))
-          Write(message,'(2x,a8,1p,2(8x,e13.4))') sites%unique_atom(i),dc,srmsd
+          srmsd = Sqrt(stats%ravval(iadd + i))
+          Write (message, '(2x,a8,1p,2(8x,e13.4))') sites%unique_atom(i), dc, srmsd
         Else
-          Write(message,'(2x,a8,1p,2(8x,e13.4))') sites%unique_atom(i),0.0_wp,0.0_wp
+          Write (message, '(2x,a8,1p,2(8x,e13.4))') sites%unique_atom(i), 0.0_wp, 0.0_wp
         End If
-        Call info(message,.true.)
+        Call info(message, .true.)
       End Do
-      Call info('',.true.)
+      Call info('', .true.)
 
-      iadd = iadd+sites%ntype_atom
+      iadd = iadd + sites%ntype_atom
 
       ! print out average pressure tensor
 
       If (comm%idnode == 0) Then
-        Write(messages(1),'(a)') 'Pressure tensor:'
-        Write(messages(2),'(6x,a32,5x,17x,a19)') 'Average pressure tensor  (katms)','r.m.s. fluctuations'
-        Call info(messages,2,.true.)
+        Write (messages(1), '(a)') 'Pressure tensor:'
+        Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (katms)', 'r.m.s. fluctuations'
+        Call info(messages, 2, .true.)
 
-        Do i=iadd,iadd+6,3
-          Write(message,'(2x,1p,3e12.4,5x,3e12.4)')stats%sumval(i+1:i+3),stats%ssqval(i+1:i+3)
-          Call info(message,.true.)
+        Do i = iadd, iadd + 6, 3
+          Write (message, '(2x,1p,3e12.4,5x,3e12.4)') stats%sumval(i + 1:i + 3), stats%ssqval(i + 1:i + 3)
+          Call info(message, .true.)
         End Do
 
-        Write(message,'(2x,a,1p,e12.4)') 'trace/3  ', (stats%sumval(iadd+1)+stats%sumval(iadd+5)+stats%sumval(iadd+9))/3.0_wp
-        Call info(message,.true.)
-        Call info('',.true.)
+        Write (message, '(2x,a,1p,e12.4)') 'trace/3  ', (stats%sumval(iadd + 1) + &
+                                                         stats%sumval(iadd + 5) + stats%sumval(iadd + 9)) / 3.0_wp
+        Call info(message, .true.)
+        Call info('', .true.)
       End If
 
-      iadd = iadd+9
+      iadd = iadd + 9
 
       ! Write out mean cell vectors for npt/nst
 
       If (thermo%variable_cell) Then
 
         If (comm%idnode == 0) Then
-          Write(message,'(a32,33x,a19)') 'Average cell vectors     (Angs) ','r.m.s. fluctuations'
-          Call info(message,.true.)
+          Write (message, '(a32,33x,a19)') 'Average cell vectors     (Angs) ', 'r.m.s. fluctuations'
+          Call info(message, .true.)
 
-
-          Do i=iadd,iadd+6,3
-            Write(message,'(3f20.10,5x,1p,3e12.4)')stats%sumval(i+1:i+3),stats%ssqval(i+1:i+3)
-            Call info(message,.true.)
+          Do i = iadd, iadd + 6, 3
+            Write (message, '(3f20.10,5x,1p,3e12.4)') stats%sumval(i + 1:i + 3), stats%ssqval(i + 1:i + 3)
+            Call info(message, .true.)
           End Do
         End If
 
-        iadd = iadd+9
+        iadd = iadd + 9
 
         ! PV term used above
 
-        iadd = iadd+1
+        iadd = iadd + 1
 
         If (thermo%iso /= CONSTRAINT_NONE) Then
-          h_z=stats%sumval(iadd+1)
+          h_z = stats%sumval(iadd + 1)
 
-          Write(message,"('Average surface area, fluctuations & mean estimate (Angs^2)')")
-          Call info(message,.true.)
-          Write(message,'(1p,3e12.4)')stats%sumval(iadd+2),stats%ssqval(iadd+2),avvol/h_z
-          Call info(message,.true.)
+          Write (message, "('Average surface area, fluctuations & mean estimate (Angs^2)')")
+          Call info(message, .true.)
+          Write (message, '(1p,3e12.4)') stats%sumval(iadd + 2), stats%ssqval(iadd + 2), avvol / h_z
+          Call info(message, .true.)
 
-          iadd = iadd+2
+          iadd = iadd + 2
 
-          If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION,CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
-            tx= -h_z * (stats%sumval(iadd-9-8-2)/prsunt - (thermo%press+thermo%stress(1)) ) * tenunt
-            ty= -h_z * (stats%sumval(iadd-9-7-2)/prsunt - (thermo%press+thermo%stress(5)) ) * tenunt
-            Write(message,"('Average surface tension, fluctuations & mean estimate in x (dyn/cm)')")
-            Call info(message,.true.)
-            Write(message,'(1p,3e12.4)')stats%sumval(iadd+1),stats%ssqval(iadd+1),tx
-            Call info(message,.true.)
-            Write(message,"('Average surface tension, fluctuations & mean estimate in y (dyn/cm)')")
-            Call info(message,.true.)
-            Write(message,'(1p,3e12.4)')stats%sumval(iadd+2),stats%ssqval(iadd+2),ty
-            Call info(message,.true.)
+          If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
+            tx = -h_z * (stats%sumval(iadd - 9 - 8 - 2) / prsunt - (thermo%press + thermo%stress(1))) * tenunt
+            ty = -h_z * (stats%sumval(iadd - 9 - 7 - 2) / prsunt - (thermo%press + thermo%stress(5))) * tenunt
+            Write (message, "('Average surface tension, fluctuations & mean estimate in x (dyn/cm)')")
+            Call info(message, .true.)
+            Write (message, '(1p,3e12.4)') stats%sumval(iadd + 1), stats%ssqval(iadd + 1), tx
+            Call info(message, .true.)
+            Write (message, "('Average surface tension, fluctuations & mean estimate in y (dyn/cm)')")
+            Call info(message, .true.)
+            Write (message, '(1p,3e12.4)') stats%sumval(iadd + 2), stats%ssqval(iadd + 2), ty
+            Call info(message, .true.)
 
-            iadd = iadd+2
+            iadd = iadd + 2
           End If
         End If
 
@@ -1842,34 +1873,34 @@ Contains
       ! Write out remaining registers
 
       check = .false.
-      Do i=iadd+1,stats%mxnstk
-        If (Abs(stats%sumval(i)) > zero_plus .or. Abs(stats%ssqval(i)) > zero_plus) check=.true.
+      Do i = iadd + 1, stats%mxnstk
+        If (Abs(stats%sumval(i)) > zero_plus .or. Abs(stats%ssqval(i)) > zero_plus) check = .true.
       End Do
 
       If (check) Then
-        Write(messages(1),"('Remaining non-zero statistics registers:')")
-        Write(messages(2),"(4x,'Register',7x,'Average value',8x,'r.m.s. fluc.')")
-        Call info(messages,2,.true.)
+        Write (messages(1), "('Remaining non-zero statistics registers:')")
+        Write (messages(2), "(4x,'Register',7x,'Average value',8x,'r.m.s. fluc.')")
+        Call info(messages, 2, .true.)
       End If
 
       If (comm%idnode == 0) Then
-        Do i=iadd+1,mxnstk
+        Do i = iadd + 1, mxnstk
           If (Abs(stats%sumval(i)) > zero_plus .or. Abs(stats%ssqval(i)) > zero_plus) Then
-            Write(message,'(2x,i10,2f20.10)') i,stats%sumval(i),stats%ssqval(i)
-            Call info(message,.true.)
+            Write (message, '(2x,i10,2f20.10)') i, stats%sumval(i), stats%ssqval(i)
+            Call info(message, .true.)
           End If
         End Do
       End If
 
     End If
-    10  Continue
+    10 Continue
 
     ! print final time check
 
     Call gtime(timelp)
 
-    Write(message,'("time elapsed since job start: ", f12.3, " sec")') timelp
-    Call info(message,.true.)
+    Write (message, '("time elapsed since job start: ", f12.3, " sec")') timelp
+    Call info(message, .true.)
 
   End Subroutine statistics_result
 End Module statistics

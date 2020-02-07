@@ -17,15 +17,15 @@ Module development
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
+  Use kinds,           Only: wp
+  Use parse,           Only: get_line, get_word, lower_case, clean_string
+  Use filename,        Only: file_type, FILE_CONTROL
+  Use errors_warnings, Only: info
 #ifdef OLDMPI
-  Use comms, Only : mpi_ver,mpi_subver, comms_type,gcheck
+  Use comms,           Only: mpi_ver, mpi_subver, comms_type, gcheck
 #else
-  Use comms, Only : mpi_ver,mpi_subver,lib_version,comms_type,gcheck
+  Use comms,           Only: mpi_ver, mpi_subver, lib_version, comms_type, gcheck
 #endif
-  Use parse, Only : get_line,get_word,lower_case,clean_string
-  Use filename, Only : file_type,FILE_CONTROL
-  Use errors_warnings, Only : info
 
   Implicit None
 
@@ -42,46 +42,41 @@ Module development
     Private
 
     !> OUTPUT redirection to the default output (screen)
-    Logical, Public :: l_scr  = .false.
+    Logical, Public       :: l_scr = .false.
     !> avoid global safety checks (no elegant parallel failures)
-    Logical, Public :: l_fast = .false.
+    Logical, Public       :: l_fast = .false.
     !> OUTPUT inclusion of an extra last line with E_tot
-    Logical, Public :: l_eng  = .false.
+    Logical, Public       :: l_eng = .false.
     !> REVIVE writing in ASCII (default is binary)
-    Logical, Public :: l_rout = .false.
+    Logical, Public       :: l_rout = .false.
     !> REVOLD reading in ASCII (default is binary)
-    Logical, Public :: l_rin  = .false.
+    Logical, Public       :: l_rin = .false.
     !> translate CONFIG along a vector to CFGORG
-    Logical, Public :: l_org  = .false.
+    Logical, Public       :: l_org = .false.
     !> CONFIG rescaling to CFGSCL after reading with termination
-    Logical, Public :: l_scl  = .false.
+    Logical, Public       :: l_scl = .false.
     !> HISTORY generation after reading with termination
-    Logical, Public :: l_his  = .false.
+    Logical, Public       :: l_his = .false.
     !> termination flag
-    Logical, Public :: l_trm  = .false.
+    Logical, Public       :: l_trm = .false.
     !> detailed timing
-    Logical         :: l_tim  = .false.
+    Logical               :: l_tim = .false.
     !> no production of REVCON & REVIVE
-    Logical, Public :: l_tor  = .false.
+    Logical, Public       :: l_tor = .false.
     !> check on minimum separation distance between VNL pairs at re/start
-    Logical, Public :: l_dis  = .false.
-
-
+    Logical, Public       :: l_dis = .false.
     !> CFGORG levcfg
-    Integer, Public           :: lvcforg = -1
+    Integer, Public       :: lvcforg = -1
     !> reorigin vector
-    Real( Kind = wp ), Public :: xorg = 0.0_wp, yorg = 0.0_wp, zorg = 0.0_wp
-
+    Real(Kind=wp), Public :: xorg = 0.0_wp, yorg = 0.0_wp, zorg = 0.0_wp
     !> CFGSCL levcfg
-    Integer, Public           :: lvcfscl = -1
+    Integer, Public       :: lvcfscl = -1
     !> CFGSCL lattice parameters
-    Real( Kind = wp ), Public :: cels(1:9) = 0.0_wp
-
+    Real(Kind=wp), Public :: cels(1:9) = 0.0_wp
     !> l_dis default check condition
-    Real( Kind = wp ), Public :: r_dis = 0.5_wp
-
+    Real(Kind=wp), Public :: r_dis = 0.5_wp
     !> Devel start time
-    Real( Kind = wp ), Public :: t_zero
+    Real(Kind=wp), Public :: t_zero
 
     !> Unit testing
     Logical, Public :: run_unit_tests = .false.
@@ -94,7 +89,7 @@ Module development
 
 Contains
 
-  Subroutine scan_development(devel,files,comm)
+  Subroutine scan_development(devel, files, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -111,58 +106,59 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( development_type ), Intent( InOut ) :: devel
-    Type( file_type ), Intent( InOut ) :: files(:)
-    Type( comms_type ), Intent( InOut ) :: comm
-    Logical                :: carry,safe
-    Character( Len = 200 ) :: record
-    Character( Len = 40  ) :: word
+    Type(development_type), Intent(InOut) :: devel
+    Type(file_type),        Intent(InOut) :: files(:)
+    Type(comms_type),       Intent(InOut) :: comm
+
+    Character(Len=200) :: record
+    Character(Len=40)  :: word
+    Logical            :: carry, safe
 
     ! Set safe flag
 
-    safe=.true.
+    safe = .true.
 
     ! Open the simulation input file
 
-    If (comm%idnode == 0) Inquire(File=files(FILE_CONTROL)%filename, Exist=safe)
-    Call gcheck(comm,safe,"enforce")
-    If (.not.safe) Then
+    If (comm%idnode == 0) Inquire (File=files(FILE_CONTROL)%filename, Exist=safe)
+    Call gcheck(comm, safe, "enforce")
+    If (.not. safe) Then
       Return
     Else
       If (comm%idnode == 0) Then
-        Open(Newunit=files(FILE_CONTROL)%unit_no, File=files(FILE_CONTROL)%filename, Status='old')
+        Open (Newunit=files(FILE_CONTROL)%unit_no, File=files(FILE_CONTROL)%filename, Status='old')
       End If
     End If
 
-    Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
+    Call get_line(safe, files(FILE_CONTROL)%unit_no, record, comm)
     If (safe) Then
 
       carry = .true.
       Do While (carry)
 
-        Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
-        If (.not.safe) Exit
+        Call get_line(safe, files(FILE_CONTROL)%unit_no, record, comm)
+        If (.not. safe) Exit
 
         Call lower_case(record)
-        Call get_word(record,word)
+        Call get_word(record, word)
 
         ! read DEVELOPMENT option: OUTPUT to screen
 
-        If      (word(1:5) == 'l_scr') Then
+        If (word(1:5) == 'l_scr') Then
           devel%l_scr = .true.
 !          Call info('%%% OUTPUT redirected to the default output (screen) !!! %%%',.true.)
         Else If (word(1:6) == 'l_fast') Then
-          devel%l_fast=.true.
-          Call info('%%% speed up by avoiding global safety checks !!! %%%',.true.)
+          devel%l_fast = .true.
+          Call info('%%% speed up by avoiding global safety checks !!! %%%', .true.)
         Else If (word(1:5) == 'l_tim') Then
-          devel%l_tim=.true.
+          devel%l_tim = .true.
         Else If (word(1:6) == 'finish') Then
-          carry=.false.
+          carry = .false.
         End If
 
       End Do
     End If
-    If (comm%idnode == 0) Call files(FILE_CONTROL)%close()
+    If (comm%idnode == 0) Call files(FILE_CONTROL)%close ()
 
   End Subroutine scan_development
 
@@ -208,88 +204,85 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Character(Len=10) :: time
+    Character(Len=47) :: aux
+    Character(Len=5)  :: zone
+    Character(Len=66) :: message
+    Character(Len=8)  :: date
+    Integer           :: i, value(1:8)
 
-    Character( Len =  8 ) :: date
-    Character( Len = 10 ) :: time
-    Character( Len =  5 ) :: zone
-    Integer               :: value(1:8)
-
-    Character( Len = 47 ) :: aux
-    Character( Len = 66 ) :: message
-    Integer               :: i
-
-    Call info('',.true.)
-    Call info(Repeat("*",66),.true.)
-    If (Len_Trim( __DATE__//"  @  "//__TIME__) > 47) Then
-      Write(aux,'(a47)') __DATE__//"  @  "//__TIME__
+    Call info('', .true.)
+    Call info(Repeat("*", 66), .true.)
+    If (Len_trim(__DATE__//"  @  "//__TIME__) > 47) Then
+      Write (aux, '(a47)') __DATE__//"  @  "//__TIME__
     Else
-      Write(aux,*) __DATE__//"  @  "//__TIME__
+      Write (aux, *) __DATE__//"  @  "//__TIME__
     End If
     Call clean_string(aux)
-    Write(message,'(a4,1x,a9,1x,a46,1x,a4)') "****", "birthday:", aux, "****"
-    Call info(message,.true.)
+    Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", "birthday:", aux, "****"
+    Call info(message, .true.)
 
-    If (Len_Trim(__HOSTNAME__) > 47) Then
-      Write(aux,'(a47)') __HOSTNAME__
+    If (Len_trim(__HOSTNAME__) > 47) Then
+      Write (aux, '(a47)') __HOSTNAME__
     Else
-      Write(aux,*) __HOSTNAME__
+      Write (aux, *) __HOSTNAME__
     End If
     Call clean_string(aux)
-    Write(message,'(a4,1x,a9,1x,a46,1x,a4)') "****", " machine:", aux, "****"
-    Call info(message,.true.)
+    Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", " machine:", aux, "****"
+    Call info(message, .true.)
 
-    If (Len_Trim(__BUILDER__) > 47) Then
-      Write(aux,'(a47)') __BUILDER__
+    If (Len_trim(__BUILDER__) > 47) Then
+      Write (aux, '(a47)') __BUILDER__
     Else
-      Write(aux,*) __BUILDER__
+      Write (aux, *) __BUILDER__
     End If
     Call clean_string(aux)
-    Write(message,'(a4,1x,a9,1x,a46,1x,a4)') "****", " builder:", aux, "****"
-    Call info(message,.true.)
+    Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", " builder:", aux, "****"
+    Call info(message, .true.)
 
-    If      (mpi_ver == 0) Then
-      If (Len_Trim(__COMPILER__//" v"//__VERSION__//" (serial build)") > 47) Then
-        Write(aux,'(a47)') __COMPILER__//" v"//__VERSION__//" (serial build)"
+    If (mpi_ver == 0) Then
+      If (Len_trim(__COMPILER__//" v"//__VERSION__//" (serial build)") > 47) Then
+        Write (aux, '(a47)') __COMPILER__//" v"//__VERSION__//" (serial build)"
       Else
-        Write(aux,*) __COMPILER__//" v"//__VERSION__//" (serial build)"
+        Write (aux, *) __COMPILER__//" v"//__VERSION__//" (serial build)"
       End If
-    Else If (mpi_ver >  0) Then
-      If (Len_Trim(__COMPILER__//" v"//__VERSION__) > 47) Then
-        Write(aux,'(a47)') __COMPILER__//" v"//__VERSION__
+    Else If (mpi_ver > 0) Then
+      If (Len_trim(__COMPILER__//" v"//__VERSION__) > 47) Then
+        Write (aux, '(a47)') __COMPILER__//" v"//__VERSION__
       Else
-        Write(aux,*) __COMPILER__//" v"//__VERSION__
+        Write (aux, *) __COMPILER__//" v"//__VERSION__
       End If
     End If
     Call clean_string(aux)
-    Write(message,'(a4,1x,a9,1x,a46,1x,a4)') "****", "compiler:", aux, "****"
-    Call info(message,.true.)
+    Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", "compiler:", aux, "****"
+    Call info(message, .true.)
 
     If (mpi_ver > 0) Then
-      Write(aux,'(a1,i0,a1,i0)') "v",mpi_ver,".",mpi_subver
-      Write(message,'(a4,1x,a9,1x,a46,1x,a4)') "****", "     MPI:", aux, "****"
-      Call info(message,.true.)
+      Write (aux, '(a1,i0,a1,i0)') "v", mpi_ver, ".", mpi_subver
+      Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", "     MPI:", aux, "****"
+      Call info(message, .true.)
 #ifndef OLDMPI
       Call clean_string(lib_version)
-      Do i=1,Len_Trim(lib_version),46
-        aux=lib_version(i:Min(i+45,Len_Trim(lib_version)))
-        Write(message,'(a4,1x,a9,1x,a46,1x,a4)') "****", "MPI libs:", aux, "****"
-        Call info(message,.true.)
+      Do i = 1, Len_trim(lib_version), 46
+        aux = lib_version(i:Min(i + 45, Len_trim(lib_version)))
+        Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", "MPI libs:", aux, "****"
+        Call info(message, .true.)
       End Do
 #endif
     Else If (mpi_ver < 0) Then
-      Write(aux,*) "MPI Library too old.  Please update!!!"
-      Write(message,'(a4,1x,a9,1x,a46,1x,a4)') "****", "MPI libs:", aux, "****"
-      Call info(message,.true.)
+      Write (aux, *) "MPI Library too old.  Please update!!!"
+      Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", "MPI libs:", aux, "****"
+      Call info(message, .true.)
     End If
 
-    Call date_and_time(date,time,zone,value)
-    Write(aux,*) date(1:4),"-",date(5:6),"-",date(7:8),"  @  ",   &
-      time(1:2),":",time(3:4),":",time(5:10),"  (GMT", &
-      zone(1:3),":",zone(4:5),")"
-    Write(message,'(a4,1x,a9,a47,1x,a4)') "****", "executed:", aux, "****"
-    Call info(message,.true.)
-    Call info(Repeat("*",66),.true.)
-    Call info('',.true.)
+    Call Date_and_time(date, time, zone, value)
+    Write (aux, *) date(1:4), "-", date(5:6), "-", date(7:8), "  @  ", &
+      time(1:2), ":", time(3:4), ":", time(5:10), "  (GMT", &
+      zone(1:3), ":", zone(4:5), ")"
+    Write (message, '(a4,1x,a9,a47,1x,a4)') "****", "executed:", aux, "****"
+    Call info(message, .true.)
+    Call info(Repeat("*", 66), .true.)
+    Call info('', .true.)
 
   End Subroutine build_info
 

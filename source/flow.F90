@@ -1,5 +1,7 @@
 Module flow_control
-  Use kinds, Only : wi,wp
+  Use kinds, Only: wi,&
+                   wp
+
   Implicit None
 
   Private
@@ -25,58 +27,45 @@ Module flow_control
   !> Type containing program flow data
   Type, Public :: flow_type
     Private
-    !> Check if is first time we call build_book_intra
-    Logical, Public :: newjob_build_book = .true.
-    Logical, Public :: oldjob_shared_units = .false.
 
+    !> Check if is first time we call build_book_intra
+    Logical, Public          :: newjob_build_book = .true.
+    Logical, Public          :: oldjob_shared_units = .false.
     ! STDOUT printing control
     !> Number of print events before starting a new 'page'
-    Integer(Kind=wi) :: npage = 8
+    Integer(Kind=wi)         :: npage = 8
     !> Current number of print events
     Integer(Kind=wi), Public :: lines = 0
-
     !> Check if first call of md_vv or calculate_forces
-    Logical, Public :: newjob = .true.
-
+    Logical, Public          :: newjob = .true.
     !> Strict mode
-    Logical, Public :: strict
+    Logical, Public          :: strict
     !> Topology printing switch
-    Logical, Public :: print_topology
-
+    Logical, Public          :: print_topology
     !> Force capping switch
-    Logical, Public :: force_cap
-
+    Logical, Public          :: force_cap
     !> Equilibration state flag
-    Logical, Public :: equilibration
-
+    Logical, Public          :: equilibration
     !> Full simulation (_i.e._ not replay) flag
-    Logical, Public :: simulation
-
+    Logical, Public          :: simulation
     !> Book keeping flag
-    Logical, Public :: book
-
+    Logical, Public          :: book
     !> Excluded interactions flag
-    Logical, Public :: exclusions
-
+    Logical, Public          :: exclusions
     !> Restart key
     Integer(Kind=wi), Public :: restart_key
-
     !> Current simulation step
     Integer(kind=wi), Public :: step
     !> Current simulation time (step * timestep)
-    Real(Kind=wp), Public :: time
+    Real(Kind=wp), Public    :: time
     !> Starting time, non-zero if job is restarted
-    Real(Kind=wp), Public :: start_time
-
-
+    Real(Kind=wp), Public    :: start_time
     !> Number of production steps
     Integer(Kind=wi), Public :: run_steps
     !> Number of equilibration steps
     Integer(Kind=wi), Public :: equil_steps
-
     !> Data printing interval (in steps)
     Integer(Kind=wi), Public :: freq_output
-
     !> Bond distribution calculation period (in steps)
     Integer(Kind=wi), Public :: freq_bond
     !> Angle distribution calculation period (in steps)
@@ -85,14 +74,12 @@ Module flow_control
     Integer(Kind=wi), Public :: freq_dihedral
     !> Inversion distribution calculation period (in steps)
     Integer(Kind=wi), Public :: freq_inversion
-
     !> Restart files creation period (in steps
     Integer(Kind=wi), Public :: freq_restart
-
     !> Reset padding flag
-    Logical, Public :: reset_padding
+    Logical, Public          :: reset_padding
     !> Type of Simulation we perform
-    Integer, Public :: simulation_method = MD
+    Integer, Public          :: simulation_method = MD
 
     !> Driver type
     Integer(Kind=wi), Public :: driver_type
@@ -104,15 +91,15 @@ Module flow_control
 
 Contains
 
-  Pure Function flow_type_new_page(T) result(new_page)
-  Class(flow_type), Intent(In) :: T
-    Logical :: new_page
+  Pure Function flow_type_new_page(T) Result(new_page)
+    Class(flow_type), Intent(In   ) :: T
+    Logical                         :: new_page
 
-    new_page = Mod(T%lines,T%npage) == 0
+    new_page = Mod(T%lines, T%npage) == 0
   End Function flow_type_new_page
 
   Subroutine flow_type_line_printed(T)
-  Class(flow_type), Intent(InOut) :: T
+    Class(flow_type), Intent(InOut) :: T
 
     T%lines = T%lines + 1
   End Subroutine flow_type_line_printed
