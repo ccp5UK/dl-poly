@@ -2074,11 +2074,12 @@ Contains
     ! author    - j.madge april 2018, A.Buccheri June 2019 
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    Type(comms_type), Intent(InOut) :: comm
+    Type(comms_type),     Intent( InOut ) :: comm
     Character( Len = * ), Intent( In    ) :: send_buf(:)
     Integer,              Intent( In    ) :: send_counts(:)
+    Integer,              Intent( In    ) :: disps(:)
     Character( Len = * ), Intent(   Out ) :: recv_buf(:)
-    Integer,          Intent(In   ) :: root
+    Integer,              Intent( In    ) :: root
 
     Integer               :: send_len, recv_len, send_size, recv_size
     Character( Len = 100 ):: error_message 
