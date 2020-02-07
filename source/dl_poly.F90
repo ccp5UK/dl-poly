@@ -163,10 +163,10 @@ Program dl_poly
   !Call init_error_system(nrite,dlp_world(0))
   Call gsync(dlp_world(0))
 
+  finish = .false.
   If (dlp_world(0)%idnode == 0) Then
     If (command_argument_count() > 0) Then
       i = 0
-      finish = .false.
       Do
         i = i + 1
         Call get_command_argument(i, arg)
