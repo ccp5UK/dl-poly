@@ -250,7 +250,8 @@ Contains
     Allocate(config2%parts(config2%natms))
 
     !Distribute position(3,megatm) into config2%parts(:)%fxx, etc
-    Allocate(coords(3, config2%megatm), source=position)
+    Allocate(coords(3, config2%megatm))
+    coords(1:3,1:config2%megatm) = position(1:3,1:n_atoms)
     Call distribute_forces(comm, mpi, coords, config2)
 
     
