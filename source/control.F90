@@ -5300,14 +5300,12 @@ Contains
             Call io_set_parameters(io, user_error_check=l_tmp)
           End If
 
-        Else If ((word(1:6) == 'output') .or. (word(1:6) == 'config') .or. &
-                 (word(1:5) == 'field') .or. (word(1:7) == 'statis') .or. (word(1:7) == 'history') &
+        Else If ((word(1:6) == 'config') .or. &
+                 (word(1:5) == 'field') .or. (word(1:6) == 'statis') .or. (word(1:7) == 'history') &
                  .or. (word(1:7) == 'historf') .or. (word(1:6) == 'revive') .or. &
                  (word(1:6) == 'revcon') .or. (word(1:6) == 'revold')) Then
 
-          If (word(1:6) == 'output') Then
-            Call info('OUTPUT file is '//files(FILE_OUTPUT)%filename, .true.)
-          Else If (word(1:6) == 'config') Then
+          If (word(1:6) == 'config') Then
             Call info('CONFIG file is '//files(FILE_CONFIG)%filename, .true.)
           Else If (word(1:5) == 'field') Then
             Call info('FIELD file is '//files(FILE_FIELD)%filename, .true.)
