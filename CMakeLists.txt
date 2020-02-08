@@ -97,7 +97,7 @@ if(WITH_KIM)
       BINARY_DIR int-kim-api/kim-api-build
       SOURCE_DIR int-kim-api/kim-api
       CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}  -DBUILD_SHARED_LIBS=off -DCMAKE_BUILD_TYPE=Release
-    )
+      )
 
     set(KIM_INC ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/kim-api/mod)
     set(KIM_LIB ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
@@ -132,7 +132,7 @@ if(WITH_PLUMED)
       PREFIX int-plumed-api
       CONFIGURE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/int-plumed-api/plumed-api/configure --prefix=${CMAKE_INSTALL_PREFIX}
       SOURCE_DIR int-plumed-api/plumed-api
-    )
+      )
     set(PLUMED_LIB ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
     set(LIBS ${LIBS} plumed)
     message(STATUS "Build with PLUMED support")

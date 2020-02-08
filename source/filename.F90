@@ -3,10 +3,11 @@ Module filename
 !>
 !> Copyright - Daresbury Laboratory
 !
-!> Author - J. Madge    September 2018
-!> contrib - a.m.elena  October   2018 - use standard integer for units
+!> Author - J. Madge September 2018
+!> contrib - a.m.elena October 2018 - use standard integer for units
 !> contrib - i.Scivetti Aug       2018 - addition of extra files for EVB calculations 
-  Use kinds, only : wi
+  Use kinds, Only: wi
+
   Implicit None
 
   Private
@@ -14,14 +15,16 @@ Module filename
   !> File data
   Type, Public :: file_type
     Private
+
     !> Filename
     Character(Len=1024), Public :: filename
     !> Fortran unit number, set with newunit=T%unit_no
-    Integer, Public :: unit_no = -2
+    Integer, Public             :: unit_no = -2
+
   Contains
     Procedure, Public :: init => file_type_init
     Procedure, Public :: rename => file_type_init
-    Procedure, Public :: close => close_file
+    Procedure, Public :: Close => close_file
   End Type file_type
 
   ! Core file location keys
@@ -55,9 +58,12 @@ Module filename
   Integer, Parameter, Public :: FILE_SETEVB = 14
   !> POPEVB file
   Integer, Parameter, Public :: FILE_POPEVB = 15
-
+  !> CURRENT file
+  Integer, Parameter, Public :: FILE_CURRENT = 16
+  !> KPOOINTS file
+  Integer, Parameter, Public :: FILE_KPOINTS = 17
   !> Size of filename array
-  Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 15
+  Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 17
 
   Public :: default_filenames
 
@@ -65,8 +71,8 @@ Contains
 
   !> Initialise a file
   Subroutine file_type_init(T, filename)
-    Class(file_type) :: T
-    Character(Len=*), Intent(In) :: filename
+    Class(file_type)                :: T
+    Character(Len=*), Intent(In   ) :: filename
 
     T%filename = Trim(filename)
   End Subroutine file_type_init
@@ -75,10 +81,10 @@ Contains
   Subroutine default_filenames(filenames)
     Type(file_type) :: filenames(FILENAME_SIZE)
 
-    !> Default file names array
     Character(Len=1024), Dimension(FILENAME_SIZE) :: default_names
+    Integer(Kind=wi)                              :: file_no
 
-    Integer(Kind=wi) :: file_no
+!> Default file names array
 
     ! Populate default names array
     default_names(FILE_CONTROL)  = "CONTROL"
@@ -96,6 +102,8 @@ Contains
     default_names(FILE_CONFIG_2) = "CONFIG2"
     default_names(FILE_SETEVB)   = "SETEVB"
     default_names(FILE_POPEVB)   = "POPEVB"
+    default_names(FILE_CURRENT) = "CURRENTS"
+    default_names(FILE_KPOINTS) = "KPOINTS"
 
     ! Set default filenames
     Do file_no = 1, FILENAME_SIZE
@@ -103,14 +111,15 @@ Contains
     End Do
   End Subroutine default_filenames
 
-  !> close a unit and restore it default value 
+  !> close a unit and restore it default value
   Subroutine close_file(T)
     Class(file_type) :: T
+
     Logical :: is_open
 
-    Inquire(T%unit_no,opened=is_open)
+    Inquire (T%unit_no, opened=is_open)
     If (is_open) Then
-      Close(T%unit_no)
+      Close (T%unit_no)
       T%unit_no = -2
     End If
   End Subroutine close_file

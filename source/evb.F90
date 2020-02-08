@@ -199,7 +199,7 @@ Contains
       If (.not.safe) Exit
       Call lower_case(record)
       Call get_word(record,word)
-      
+
       If (word(1:1) == '#' .or. word(1:3) == '   ') Then
 
 !> Read setting to print EVB population
@@ -209,7 +209,6 @@ Contains
 !> For each FFs, read the amount of EVB units (molecules) that form the reactive site 
       Else If (word(1:8) == 'evbffmol') Then
         FFmolflag=.True.
-       ! print*, comm%idnode, FFmolflag 
         Do k=1, flow%NUM_FF         
           Call get_word(record,word)
           If (word(1:2) == '  ') Then
@@ -218,7 +217,6 @@ Contains
             evb%FFmol(k)= Nint(word_2_real(word))
           End If
         End Do
-
 !> Read all coupling elements
 
       Else If(word(1:8) == 'evbcoupl') Then

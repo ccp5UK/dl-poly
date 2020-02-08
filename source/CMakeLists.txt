@@ -1,6 +1,10 @@
 include_directories("${CMAKE_BINARY_DIR}/source")
 
 set(dlpoly_SRCS
+  angular_distribution.F90	
+  coord.F90
+  kpoints.F90
+  currents.F90
   meta.F90
   build_book.F90
   build_chrm.F90

@@ -5,6 +5,8 @@ Module md_evb
 !>
 !> Author  - i.scivetti  September 2019 
   Use, Intrinsic :: iso_fortran_env, Only : error_unit
+  Use angular_distribution,               Only: adf_type
+  Use coord,                              Only: coord_type
   Use kinds, Only : wi,wp
   Use comms, Only : comms_type, init_comms, exit_comms, gsync, gtime,gsum
   Use development, Only : development_type,scan_development,build_info
@@ -39,7 +41,7 @@ Module md_evb
   Use statistics, Only : stats_type,statistics_result
   Use greenkubo, Only : greenkubo_type
   Use msd, Only : msd_type
-  Use drivers, Only : w_md_vv_evb, w_replay_historf,w_replay_history
+  Use drivers, Only : md_vv_evb, replay_historf, replay_history
   Use errors_warnings, Only : init_error_system,info, warning, error
   Use ewald, Only : ewald_type
   Use impacts, Only : impact_type
@@ -73,7 +75,7 @@ Module md_evb
                        FILE_STATS,FILENAME_SIZE
   Use flow_control, Only : flow_type
   Use kinetics, Only : cap_forces
-  Use meta, Only: print_initial_configuration, print_final_configuration, print_citations, print_banner, &
+  Use meta, Only: print_citations, print_banner, &
                   allocate_types_uniform, deallocate_types_uniform 
 
   Implicit None
@@ -88,7 +90,7 @@ Contains
     green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
     tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
     fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow, &
-    seed,traj,kim_data,config,ios,ttms,rsdsc,files,control_filename)
+    seed,traj,kim_data,config,ios,ttms,rsdsc,files,control_filename, crd, adf)
 
     Type(comms_type), Intent(InOut) :: dlp_world(0:)
     Type(thermostat_type), Allocatable, Intent(InOut) :: thermo(:)
@@ -135,6 +137,8 @@ Contains
     Type( ttm_type), Allocatable, Intent(InOut) :: ttms(:)
     Type( rsd_type ), Allocatable, Target, Intent(InOut) :: rsdsc(:)
     Type( file_type ), Allocatable, Intent(InOut) :: files(:,:)
+    Type(coord_type), Allocatable,          Intent(InOut) :: crd(:)
+    Type(adf_type), Allocatable,            Intent(InOut) :: adf(:)
 
     Type(comms_type) :: comm
     Character( Len = 1024 ) :: control_filename
@@ -144,7 +148,7 @@ Contains
       green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
       tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
       fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain, &
-      seed,traj,kim_data,config,ios,ttms,rsdsc,files)
+      seed,traj,kim_data,config,ios,ttms,rsdsc,files, crd, adf)
 
     comm=dlp_world(0) ! this shall vanish asap w_ are proper things
 
@@ -155,13 +159,13 @@ Contains
       core_shells,vdws,tersoffs,fourbody,rdf,netcdf(1), &
       minim,mpoles,ext_field,rigid,electro,domain,flow(1), &
       seed(1),traj(1),kim_data,config,ios(1),ttms,rsdsc,files(1,:), &
-      control_filename)
+      control_filename,crd,adf)
 
     Call deallocate_types_uniform(thermo,ewld,tmr,devel,stats, &
       green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
       tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
       fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain, &
-      seed,traj,kim_data,config,ios,ttms,rsdsc,files)
+      seed,traj,kim_data,config,ios,ttms,rsdsc,files, crd, adf)
 
   End Subroutine evb_molecular_dynamics
   !> EVB MD driver
@@ -174,7 +178,7 @@ Contains
     stats,green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral, &
     inversion,tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells, &
     vdws,tersoffs,fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro, &
-    domain,flow,seed,traj,kim_data,config,ios,ttms,rsdsc,files,control_filename)
+    domain,flow,seed,traj,kim_data,config,ios,ttms,rsdsc,files,control_filename, crd, adf)
 
     Type(comms_type), Intent(InOut) :: dlp_world(0:),comm
     Type(thermostat_type), Intent(InOut) :: thermo(:)
@@ -222,6 +226,8 @@ Contains
     Type( rsd_type ), Target, Intent(InOut) :: rsdsc(:)
     Type( file_type ), Intent(InOut) :: files(:)
     character( len = 1024 ), Intent(In) :: control_filename
+    Type(coord_type), Intent(InOut) :: crd(:)
+    Type(adf_type),   Intent(InOut) :: adf(:)
 
     character( len = 256 ) :: message
 
@@ -278,10 +284,6 @@ Contains
         thermo(ff),green(ff),devel,msd_data(ff),met(ff),pois(ff),bond(ff),angle(ff),dihedral(ff),inversion(ff), &
         tether(ff),threebody(ff),zdensity(ff),neigh(ff),vdws(ff),tersoffs(ff),fourbody(ff),rdf(ff),mpoles(ff), & 
         ext_field(ff),rigid(ff),electro(ff),domain(ff),config(ff),ewld(ff),kim_data(ff),files,flow,comm,ff)
-      ! Print set_bound details once
-      If(ff .Eq. 1)Then
-        flow%newjob_set_bounds = .False.
-      End If  
     End Do
 
     Call info('',.true.)
@@ -291,7 +293,7 @@ Contains
     ! Now the loop is over the number of force fields to be coupled. Variable flow%NUM_FF was read from CONTROL
     Do ff=1,flow%NUM_FF
       ! ALLOCATE SITE & CONFIG
-      Call sites(ff)%init(sites(ff)%mxtmls,sites(ff)%mxatyp)
+      Call sites(ff)%init()
       Call config(ff)%init()
       Call neigh(ff)%init_list(config(ff)%mxatdm)
 
@@ -343,12 +345,9 @@ Contains
       Call read_control(lfce,impa,ttms(ff),dfcts,rigid(ff),rsdsc(ff),core_shells(ff),cons(ff),pmfs(ff), &
         stats(ff),thermo(ff),green(ff),devel,plume(ff),msd_data(ff),met(ff),pois(ff),bond(ff),angle(ff),dihedral(ff), &
         inversion(ff),zdensity(ff),neigh(ff),vdws(ff),rdf(ff),minim(ff),mpoles(ff),electro(ff),ewld(ff), &
-        seed,traj,files,tmr,config(ff),flow,comm)
-      If(ff == 1)Then
-        flow%newjob_read_control = .False.
-      End If
+        seed,traj,files,tmr,config(ff),flow, crd(ff), adf(ff),comm,ff)
     End Do  
- 
+
 
     ! READ SIMULATION FORCE FIELD
     Do ff=1,flow%NUM_FF
@@ -357,7 +356,7 @@ Contains
       Call info("*** DETAILS OF INTERACTIONS FOR FIELD "//trim(message)//" ***",.true.)
       Call read_field(neigh(ff)%cutoff,core_shells(ff),pmfs(ff),cons(ff),thermo(ff),met(ff),bond(ff),angle(ff), &
         dihedral(ff),inversion(ff),tether(ff),threebody(ff),sites(ff),vdws(ff),tersoffs(ff),fourbody(ff),rdf(ff), &
-        mpoles(ff),ext_field(ff),rigid(ff),electro(ff),config(ff),kim_data(ff),files,flow,comm,ff)
+        mpoles(ff),ext_field(ff),rigid(ff),electro(ff),config(ff),kim_data(ff),files,flow, crd(ff),comm,ff)
   
       ! If computing rdf errors, we need to initialise the arrays.
       If(rdf(ff)%l_errors_jack .or. rdf(ff)%l_errors_block) then
@@ -541,9 +540,6 @@ Contains
   
     End Do
 
-    ! Print out sample of initial configuration on node zero
-    Call print_initial_configuration(config(1))
-
     ! Indicate nodes mapped on vacuum (no particles)
     vacuum = 0
     If (config(1)%natms == 0) Then
@@ -568,21 +564,21 @@ Contains
     ! IS's note to reviewer: For the time being we only pass one field. Once we are all happy with the structuring
     ! we proceed to change w_md_vv --> w_md_vv_evb, etc
     If (flow%simulation) Then
-      Call w_md_vv_evb(config,ttms,ios,rsdsc(1),flow,core_shells,cons,pmfs,stats,thermo, &
+      Call md_vv_evb(config,ttms,ios,rsdsc(1),flow,core_shells,cons,pmfs,stats,thermo, &
         plume,pois,bond,angle,dihedral,inversion,zdensity(1),neigh,sites,fourbody,rdf, &
         netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,files,tmr,minim, &
         impa,green,ewld,electro,dfcts,msd_data,tersoffs,tether,threebody,vdws, &
-        devel,met,comm)
+        devel,met, crd, adf, comm)
     Else
       If(flow%NUM_FF==1)Then      
         If (lfce) Then
-          Call w_replay_historf(config(1),ios,rsdsc(1),flow,core_shells(1),cons(1),pmfs(1),stats(1),       &
+          Call replay_historf(config(1),ios,rsdsc(1),flow,core_shells(1),cons(1),pmfs(1),stats(1),       &
             thermo(1),plume(1),msd_data(1),bond(1),angle(1),dihedral(1),inversion(1),zdensity(1),neigh(1), &
             sites(1),vdws(1),tersoffs(1),fourbody(1),rdf(1),netcdf,minim(1),mpoles(1),ext_field(1),rigid(1),  &
             electro(1),domain(1),seed,traj,kim_data(1),files,dfcts,tmr,tether(1),threebody(1),             &
-            pois(1),green(1),ewld(1),devel,met(1),comm)
+            pois(1),green(1),ewld(1),devel,met(1), crd(1), adf(1), comm)
         Else
-          Call w_replay_history(config(1),ios,rsdsc(1),flow,core_shells(1),cons(1),pmfs(1),stats(1),       &
+          Call replay_history(config(1),ios,rsdsc(1),flow,core_shells(1),cons(1),pmfs(1),stats(1),       &
             thermo(1),msd_data(1),met(1),pois(1),bond(1),angle(1),dihedral(1),inversion(1),zdensity(1),    &  
             neigh(1),sites(1),vdws(1),rdf(1),netcdf,minim(1),mpoles(1),ext_field(1),rigid(1),electro(1),      &
             domain(1),seed,traj,kim_data(1),dfcts,files,tmr,tether(1),green(1),ewld(1),devel,comm)   
@@ -604,9 +600,6 @@ Contains
     Write(message,'(3(a,f12.3),a)') 'run terminating... elapsed  cpu time: ', &
       tmr%elapsed , ' sec, job time: ', tmr%job, ' sec, close time: ', tmr%clear_screen, ' sec'
     Call info(message,.true.)
-
-    ! Print out sample of final configuration on node zero
-    Call print_final_configuration(config(1))
 
     ! Two-temperature model simulations: calculate final ionic temperatures and
     !print statistics to files (final)

@@ -13,13 +13,18 @@ Module parse
   !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  Use kinds, Only : wp
-  Use comms, Only : comms_type,gsync,gbcast,gcheck
-  Use errors_warnings, Only : error,warning
+  Use comms,           Only: comms_type,&
+                             gbcast,&
+                             gcheck,&
+                             gsync
+  Use errors_warnings, Only: error,&
+                             warning
+  Use kinds,           Only: wp
+
   Implicit None
 
   Public :: tabs_2_blanks, nls_2_blanks, strip_blanks, get_word, &
-    clean_string, lower_case, get_line, word_2_real
+            clean_string, lower_case, get_line, word_2_real
 
 Contains
 
@@ -39,11 +44,11 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Character( Len = * ), Intent( InOut ) :: record
+    Character(Len=*), Intent(InOut) :: record
 
     Integer :: i
 
-    Do i=1,Len_Trim(record)
+    Do i = 1, Len_trim(record)
       If (record(i:i) == Achar(9)) record(i:i) = ' '
     End Do
 
@@ -66,13 +71,13 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Character( Len = * ), Intent( InOut ) :: record
+    Character(Len=*), Intent(InOut) :: record
 
     Integer :: i
 
-    Do i=1,Len_Trim(record)
-      If ( record(i:i) == Achar(10) .or. &
-        record(i:i) == Achar(13) ) record(i:i) = ' '
+    Do i = 1, Len_trim(record)
+      If (record(i:i) == Achar(10) .or. &
+          record(i:i) == Achar(13)) record(i:i) = ' '
     End Do
 
   End Subroutine nls_2_blanks_old
@@ -94,21 +99,21 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Character( Len = * ), Intent( InOut ) :: record
+    Character(Len=*), Intent(InOut) :: record
 
-    Integer :: i,j,k
+    Integer :: i, j, k
 
-    i=Len_Trim(record)
-    j=Index(record(1:i),New_line("a"))
-    k=Len(New_line("a"))
+    i = Len_trim(record)
+    j = Index(record(1:i), New_line("a"))
+    k = Len(New_line("a"))
     Do While (j > 0)
       If (j == i) Then
-        record=record(1:j-k)
-        j=0 !Exit
+        record = record(1:j - k)
+        j = 0 !Exit
       Else
-        record=record(1:j-k) // record(j+1:i)
-        i=i-k
-        j=Index(record(1:i),New_line("a")) ! nearly impossible to have a second one
+        record = record(1:j - k)//record(j + 1:i)
+        i = i - k
+        j = Index(record(1:i), New_line("a")) ! nearly impossible to have a second one
       End If
     End Do
 
@@ -130,13 +135,13 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Character( Len = * ), Intent( InOut ) :: record
+    Character(Len=*), Intent(InOut) :: record
 
     record = Adjustl(record)
 
   End Subroutine strip_blanks
 
-  Subroutine get_word(record,word)
+  Subroutine get_word(record, word)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -155,11 +160,11 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Character( Len = * ), Intent( InOut ) :: record
-    Character( Len = * ), Intent(   Out ) :: word
+    Character(Len=*), Intent(InOut) :: record
+    Character(Len=*), Intent(  Out) :: word
 
+    Integer :: rec_ind, rec_len, word_ind, word_len
     Logical :: transfer
-    Integer :: rec_len,word_len,rec_ind,word_ind
 
     ! Strip blanks in record
 
@@ -167,15 +172,15 @@ Contains
 
     ! Get record and word lengths
 
-    rec_len  = Len_Trim(record)
+    rec_len = Len_trim(record)
     word_len = Len(word)
 
     ! Initialise counters and word, and keep-transferring boolean
 
-    rec_ind  = 0
+    rec_ind = 0
     word_ind = 0
 
-    word     = ' '
+    word = ' '
 
     transfer = .true.
 
@@ -238,14 +243,14 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Character( Len = * ), Intent( InOut ) :: record
+    Character(Len=*), Intent(InOut) :: record
 
-    Character( Len = 10000 ) :: record1
-    Character( Len = 200   ) :: word
+    Character(Len=10000) :: record1
+    Character(Len=200)   :: word
 
     ! assign
 
-    record1 = record(1:Len_Trim(record))
+    record1 = record(1:Len_trim(record))
 
     ! clean
 
@@ -256,21 +261,21 @@ Contains
     ! compress for fun
 
     record = ' '
-    Do While (Len_Trim(record1) > 0)
+    Do While (Len_trim(record1) > 0)
 
       ! read word
 
       word(1:1) = ' '
       Do While (word(1:1) == ' ')
-        Call get_word(record1,word)
+        Call get_word(record1, word)
       End Do
 
       ! add cleanly
 
-      If (Len_Trim(record) > 0) Then
-        record = record(1:Len_Trim(record)) // ' ' // word(1:Len_Trim(word))
+      If (Len_trim(record) > 0) Then
+        record = record(1:Len_trim(record))//' '//word(1:Len_trim(word))
       Else
-        record = word(1:Len_Trim(word))
+        record = word(1:Len_trim(word))
       End If
     End Do
 
@@ -293,11 +298,11 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Character( Len = * ), Intent( InOut ) :: record
+    Character(Len=*), Intent(InOut) :: record
 
     Integer :: i
 
-    Do i=1,Len(record)
+    Do i = 1, Len(record)
       If (record(i:i) == 'A') Then
         record(i:i) = 'a'
       Else If (record(i:i) == 'B') Then
@@ -389,14 +394,14 @@ Contains
   !
   !      If (ierr /= 0 ) Then
   !        safe = .false.
-  !      End If 
-  !    End If 
+  !      End If
+  !    End If
   !
   !    Call gcheck(comm,safe)
   !
   !    If ( .not. safe) Then
   !      Call tabs_2_blanks(record)
-  !      Return 
+  !      Return
   !    End If
   !
   !    If (comm%mxnode > 1) Then
@@ -425,7 +430,7 @@ Contains
   !
   !  End Subroutine get_line
 
-  Subroutine get_line(safe,ifile,record,comm)
+  Subroutine get_line(safe, ifile, record, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -442,18 +447,18 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Logical,              Intent(   Out ) :: safe
-    Integer, Intent( In    ) :: ifile
-    Character( Len = * ), Intent(   Out ) :: record
-    Type(comms_type),     Intent( InOut ) :: comm
+    Logical,          Intent(  Out) :: safe
+    Integer,          Intent(In   ) :: ifile
+    Character(Len=*), Intent(  Out) :: record
+    Type(comms_type), Intent(InOut) :: comm
 
-    Integer                              :: i,fail,rec_len
-    Integer, Dimension( : ), Allocatable :: line
+    Integer                            :: fail, i, rec_len
+    Integer, Allocatable, Dimension(:) :: line
 
     rec_len = Len(record)
 
     fail = 0
-    Allocate (line(1:rec_len), Stat = fail)
+    Allocate (line(1:rec_len), Stat=fail)
     If (fail > 0) Call error(1011)
 
     record = ' '
@@ -463,37 +468,37 @@ Contains
 
     If (comm%idnode == 0) Then
 
-      Read(Unit=ifile, Fmt='(a)', End=100) record
+      Read (Unit=ifile, Fmt='(a)', End=100) record
 
       If (comm%mxnode > 1) Then
-        Do i=1,rec_len
+        Do i = 1, rec_len
           line(i) = Ichar(record(i:i))
         End Do
 
-        Call gcheck(comm,safe)
+        Call gcheck(comm, safe)
 
         !Call MPI_BCAST(line(1:rec_len), rec_len, MPI_INTEGER, 0, dlp_comm_world, ierr)
-        Call gbcast(comm,line,0)
+        Call gbcast(comm, line, 0)
       End If
 
       Go To 200
 
-      100    safe = .false.
+      100 safe = .false.
 
-      Call gcheck(comm,safe)
-      If (.not.safe) Go To 200
+      Call gcheck(comm, safe)
+      If (.not. safe) Go To 200
 
     Else
 
-      Call gcheck(comm,safe)
-      If (.not.safe) Go To 200
+      Call gcheck(comm, safe)
+      If (.not. safe) Go To 200
 
       line = 0
 
       !Call MPI_BCAST(line(1:rec_len), rec_len, MPI_INTEGER, 0, dlp_comm_world, ierr)
-      Call gbcast(comm,line,0)
+      Call gbcast(comm, line, 0)
 
-      Do i=1,rec_len
+      Do i = 1, rec_len
         record(i:i) = Char(line(i))
       End Do
 
@@ -503,14 +508,12 @@ Contains
 
     Call tabs_2_blanks(record)
 
-    Deallocate (line, Stat = fail)
+    Deallocate (line, Stat=fail)
     If (fail > 0) Call error(1012)
 
   End Subroutine get_line
 
-
-
-  Function word_2_real(word,def,report)
+  Function word_2_real(word, def, report)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -534,26 +537,24 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Character(Len=*),        Intent(In   ) :: word
+    Real(Kind=wp), Optional, Intent(In   ) :: def
+    Logical, Optional,       Intent(In   ) :: report
+    Real(Kind=wp)                          :: word_2_real
 
-    Real( Kind = wp )                               :: word_2_real
+    Character(Len=256) :: message
+    Character(Len=40)  :: forma
+    Integer            :: slash_position, word_end
+    Logical            :: l_report
+    Real(Kind=wp)      :: denominator
 
-    Character( Len = * ), Intent( In    )           :: word
-    Real( Kind = wp ),    Intent( In    ), Optional :: def
-    Logical,              Intent( In    ), Optional :: report
-
-    Character( Len = 40 ) :: forma
-    Logical               :: l_report
-    Integer               :: word_end,slash_position
-    Real( Kind = wp )     :: denominator
-    Character( Len = 256 ) :: message
-
-    l_report = .true. 
+    l_report = .true.
     If (Present(report)) l_report = report
 
     denominator = 1.0_wp
 
-    word_end = Len_Trim(word)
-    slash_position = Index(word,'/')
+    word_end = Len_trim(word)
+    slash_position = Index(word, '/')
 
     If (word_end /= 0) Then
       If (slash_position == 1 .or. slash_position == word_end) Go To 30
@@ -568,31 +569,31 @@ Contains
 
     If (slash_position > 0) Then
       forma = ' '
-      Write(forma,'(a,i0,a)') '(f', word_end - slash_position,'.0)'
-      Read(word(slash_position + 1:word_end), forma, Err=30) denominator
+      Write (forma, '(a,i0,a)') '(f', word_end - slash_position, '.0)'
+      Read (word(slash_position + 1:word_end), forma, Err=30) denominator
       word_end = slash_position - 1
     End If
 
     forma = ' '
-    Write(forma,'(a,i0,a)') '(f',word_end,'.0)'
-    Read(word(1:word_end), forma, Err=30) word_2_real
+    Write (forma, '(a,i0,a)') '(f', word_end, '.0)'
+    Read (word(1:word_end), forma, Err=30) word_2_real
     word_2_real = word_2_real / denominator
 
     Return
 
-    30  Continue
+    30 Continue
     If (Present(def)) Then
       word_2_real = def
       If (l_report) Then
-        Write(message,'(3a,g20.10,a)') &
+        Write (message, '(3a,g20.10,a)') &
           "word_2_real defaulted word # ", word(1:word_end), " # to number # ", def, " #"
-        Call warning(message,.true.)
+        Call warning(message, .true.)
       End If
     Else
       word_2_real = 0.0_wp
-      Write(message,'(3a)') &
+      Write (message, '(3a)') &
         "word_2_real expected to read a number but found # ", word(1:word_end), " #"
-      Call error(1,message,.true.)
+      Call error(1, message, .true.)
     End If
 
   End Function word_2_real
@@ -615,35 +616,32 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp )      :: truncate_real
+    Real(Kind=wp), Intent(In   ) :: r
+    Real(Kind=wp)                :: truncate_real
 
-    Real( Kind = wp ), Intent( In    ) :: r
+    Character(Len=100) :: word
+    Character(Len=40)  :: forma
+    Integer            :: e_position, i, k, word_end
 
-    Character( Len = 40  ):: forma  
-    Integer               :: k     
-
-    Character( Len = 100 ) :: word
-    Integer                :: e_position,word_end,i
-
-    k = 64/4 - 1! Bit_Size(0.0_wp)/4 - 1
-    Write(forma ,'("(0p,e",i0,".",i0,")")') k+10,k
+    k = 64 / 4 - 1 ! Bit_Size(0.0_wp)/4 - 1
+    Write (forma, '("(0p,e",i0,".",i0,")")') k + 10, k
 
     word = ' '
-    Write(word,forma) r
+    Write (word, forma) r
     Call lower_case(word)
-    word_end = Len_Trim(word)
+    word_end = Len_trim(word)
     e_position = 0
-    e_position = Index(word,'e')
-    Do i=e_position-3,word_end
-      If (i+3 <= word_end) Then
-        word(i:i)=word(i+3:i+3)
+    e_position = Index(word, 'e')
+    Do i = e_position - 3, word_end
+      If (i + 3 <= word_end) Then
+        word(i:i) = word(i + 3:i + 3)
       Else
-        word(i:i)=' '
+        word(i:i) = ' '
       End If
     End Do
 
     Call strip_blanks(word)
-    truncate_real=word_2_real(word)
+    truncate_real = word_2_real(word)
 
   End Function truncate_real
 
