@@ -20,8 +20,9 @@ Module mpi_api
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp, li,si
-  Use particle, Only: corePart
+  Use kinds,    Only : wp, li,si
+  Use asserts,  Only : assert
+  Use particle, Only : corePart
   Implicit None
 
   Include 'mpif.h' !  Include 'mpiof.h' ! Needed for ScaliMPI
@@ -134,6 +135,12 @@ Module mpi_api
     Module Procedure MPI_ALLGATHER_cwp_v
   End Interface !MPI_ALLGATHER
 
+  Interface MPI_ALLGATHERV
+    Module Procedure MPI_ALLGATHER_chr_vv  
+    Module Procedure MPI_ALLGATHER_rwp_vv  
+    Module Procedure MPI_ALLGATHER_rwp_mm  
+  End Interface MPI_ALLGATHERV !MPI_ALLGATHERV
+  
   Interface MPI_ALLTOALL
     Module Procedure MPI_ALLTOALL_log11
     Module Procedure MPI_ALLTOALL_log22
@@ -281,6 +288,7 @@ Module mpi_api
     Module Procedure MPI_SCATTERV_rwp_vv
     Module Procedure MPI_SCATTERV_rwp_mm
     Module Procedure MPI_SCATTERV_cwp_vv
+    Module Procedure MPI_SCATTERV_chr_vv
     Module Procedure MPI_SCATTERV_cwp_mm
   End Interface !MPI_SCATTERV
 
@@ -1354,7 +1362,70 @@ Contains
 
   End Subroutine MPI_ALLGATHER_cwp_v
 
+  Subroutine MPI_ALLGATHER_chr_vv(send_buf,  send_size,          MPI_CHARACTER_send, &       
+                                  recv_buf,  recv_counts, disps, MPI_CHARACTER_recv, & 
+                                  MPI_COMM_WORLD, ierr)
 
+    Character( Len = * ), Intent( In    ) :: send_buf(:)
+    Integer,              Intent( In    ) :: send_size, MPI_CHARACTER_send, MPI_CHARACTER_recv, MPI_COMM_WORLD
+    Integer,              Intent( In    ) :: recv_counts(:), disps(:)
+    Character( Len = * ), Intent( InOut ) :: recv_buf(:)
+    Integer,              Intent(   Out ) :: ierr
+    
+    Call assert(Sum(recv_counts) == Size(recv_buf), &
+         message="Sum of send buffer sizes in receive_counts does not equal total size of receive buffer")
+    Call assert(MPI_CHARACTER_send == MPI_CHARACTER_recv, &
+         message="MPI_CHARACTER_send /= MPI_CHARACTER_recv")
+    Call assert(Len(send_buf(1)) == Len(recv_buf(1)), &
+         message='Character length of send and receive buffers differ')
+    Call assert(Size(send_buf) == Size(recv_buf), message="Send and receive sizes differ")
+    
+    recv_buf = send_buf
+    
+  End Subroutine MPI_ALLGATHER_chr_vv
+
+  Subroutine MPI_ALLGATHER_rwp_vv(send_buf,  send_size,          MPI_REAL_WP_send, &
+                                  recv_buf,  recv_counts, disps, MPI_REAL_WP_recv, &
+                                  MPI_COMM_WORLD, ierr)
+
+    Real( Kind = wp ), Intent( In    ) :: send_buf(:)
+    Integer,           Intent( In    ) :: send_size, MPI_REAL_WP_send, MPI_REAL_WP_recv, MPI_COMM_WORLD
+    Integer,           Intent( In    ) :: recv_counts(:), disps(:)
+    Real( Kind = wp ), Intent( InOut ) :: recv_buf(:)
+    Integer,           Intent(   Out ) :: ierr
+    
+    Call assert(Sum(recv_counts) == Size(recv_buf), &
+         message="Sum of send buffer sizes in receiv _counts does not equal total size of receive buffer")
+    Call assert(MPI_REAL_WP_send == MPI_REAL_WP_recv, message="MPI_REAL_WP_send /= MPI_REAL_WP_recv")
+    Call assert(Size(send_buf) == Size(recv_buf), message="Send and receive sizes differ")
+    
+    recv_buf = send_buf
+
+  End Subroutine MPI_ALLGATHER_rwp_vv
+
+  Subroutine mpi_allgather_rwp_mm(send_buf, send_size,          MPI_REAL_WP_send, &
+                                  recv_buf, recv_counts, disps, MPI_REAL_WP_recv, &
+                                  MPI_COMM_WORLD, ierr)
+
+    Real( Kind = wp ),  Intent( In    ) :: send_buf(:,:)
+    Integer,            Intent( In    ) :: send_size, MPI_REAL_WP_send, MPI_REAL_WP_recv, MPI_COMM_WORLD
+    Integer,            Intent( In    ) :: recv_counts(:), disps(:)
+    Real( Kind = wp ),  Intent( InOut ) :: recv_buf(:,:)
+    Integer,            Intent(   Out ) :: ierr
+
+    Call assert(Sum(recv_counts) == Size(recv_buf), &
+         message="Sum of send buffer sizes in receive counts does not equal total size of receive buffer")
+    Call assert(MPI_REAL_WP_send == MPI_REAL_WP_recv, &
+         message="MPI_REAL_WP_send /= MPI_REAL_WP_recv")
+    Call assert(Size(send_buf, Dim = 1) == Size(recv_buf, Dim = 1), &
+         message="Dimension 1 of send and receive arrays differ")
+    Call assert(Size(send_buf, Dim = 2) == Size(recv_buf, Dim = 2), &
+         message="Dimension 2 of send and receive arrays differ")
+    
+    recv_buf = send_buf
+      
+  End Subroutine mpi_allgather_rwp_mm
+     
   Subroutine MPI_ALLTOALL_log11(aaa,s_a,MPI_LOGICALa,bbb,s_b,MPI_LOGICALb,MPI_COMM_WORLD,ierr)
 
     Integer, Intent( In    ) :: MPI_LOGICALa,MPI_LOGICALb,MPI_COMM_WORLD
@@ -3592,6 +3663,28 @@ Contains
     irecv(l_irecv:l_irecv+ircnt-1) = isend(l_isend:l_isend+ircnt-1)
 
   End Subroutine MPI_SCATTERV_cwp_vv
+
+  Subroutine MPI_SCATTERV_chr_vv(send_buf, send_counts, disps, MPI_CHARACTER_send, &
+                                 recv_buf, recv_size,          MPI_CHARACTER_recv, &
+                                 root, MPI_COMM_WORLD, ierr)
+
+    Character( Len = * ), Intent( In    ) :: send_buf(:)
+    Integer,              Intent( In    ) :: send_counts(:), disps(:)
+    Integer,              Intent( In    ) :: MPI_CHARACTER_send,  MPI_CHARACTER_recv, root, recv_size
+    Character( Len = * ), Intent( InOut ) :: recv_buf(:)
+
+    Call assert(MPI_CHARACTER_send == MPI_CHARACTER_recv, &
+         message="MPI_CHARACTER_send /= MPI_CHARACTER_recv")
+    Call assert(Size(send_buf) == Size(recv_buf), message="Send and receive sizes differ")
+    Call assert(Len(send_buf(1)) == Len(recv_buf(1)), &
+         message='Character length of send and receive buffers differ')
+    Call assert(Sum(send_counts) ==  Size(recv_buf), &
+         message="Sum of counts to send /= size of receive buffer")
+    
+    recv_buf = send_buf
+
+  End Subroutine MPI_SCATTERV_chr_vv
+  
   Subroutine MPI_SCATTERV_cwp_mm(isend,iscnt,idisp,MPI_WPa,irecv,ircnt,MPI_WPb,idnode,MPI_COMM_WORLD,ierr)
 
     Integer, Intent( In    ) :: MPI_WPa,MPI_WPb,MPI_COMM_WORLD
@@ -3627,7 +3720,6 @@ Contains
     irecv(l1_irecv:u1_irecv,l2_irecv:l2_irecv+k-1) = isend(l1_isend:u1_isend,l2_isend:l2_isend+k-1)
 
   End Subroutine MPI_SCATTERV_cwp_mm
-
 
   Subroutine MPI_TYPE_GET_EXTENT(size_in,mpi_type_out1,mpi_type_out2,ierr)
 
