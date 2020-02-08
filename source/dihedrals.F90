@@ -470,7 +470,7 @@ Contains
           'Theta(degrees)  P_dih(Theta)  Sum_P_dih(Theta)   @   dTheta_bin = ', delth * rad2dgr
         Call info(messages, 3, .true.)
         If (comm%idnode == 0) Then
-          Write (npdfdt, '(/,a,4(a8,1x),2(i10,1x))') '# type, index, instances: ', &
+          Write (npdfdt, '(a,4(a8,1x),2(i10,1x))') '# type, index, instances: ', &
             unique_atom(dihedral%typ(1, i)), unique_atom(dihedral%typ(2, i)), &
             unique_atom(dihedral%typ(3, i)), &
             unique_atom(dihedral%typ(4, i)), j, dihedral%typ(0, i)
@@ -564,11 +564,11 @@ Contains
         j = j + 1
 
         If (comm%idnode == 0) Then
-          Write (npdgdt, '(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
+          Write (npdgdt, '(a,4(a8,1x),2(i10,1x),a)') '# ', &
             unique_atom(dihedral%typ(1, i)), unique_atom(dihedral%typ(2, i)), &
             unique_atom(dihedral%typ(3, i)), &
             unique_atom(dihedral%typ(4, i)), j, dihedral%typ(0, i), ' (type, index, instances)'
-          Write (npdfdt, '(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
+          Write (npdfdt, '(a,4(a8,1x),2(i10,1x),a)') '# ', &
             unique_atom(dihedral%typ(1, i)), unique_atom(dihedral%typ(2, i)), &
             unique_atom(dihedral%typ(3, i)), &
             unique_atom(dihedral%typ(4, i)), j, dihedral%typ(0, i), ' (type, index, instances)'
