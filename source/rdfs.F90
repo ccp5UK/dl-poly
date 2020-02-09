@@ -394,8 +394,8 @@ Contains
 
           If (kk > 0 .and. kk <= rdf%n_pairs) Then
             If (comm%idnode == 0) Then
-              Write (npdgdt, '(/,a2,2a8)') '# ', sites%unique_atom(ia), sites%unique_atom(ib)
-              Write (npdfdt, '(/,a2,2a8)') '# ', sites%unique_atom(ia), sites%unique_atom(ib)
+              Write (npdgdt, '(a2,2a8)') '# ', sites%unique_atom(ia), sites%unique_atom(ib)
+              Write (npdfdt, '(a2,2a8)') '# ', sites%unique_atom(ia), sites%unique_atom(ib)
             End If
 
             ! Smoothen and get derivatives

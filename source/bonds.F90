@@ -314,7 +314,7 @@ Contains
         Write (messages(2), '(a,f8.5)') 'r(Angstroms)  P_bond(r)  Sum_P_bond(r)   @   dr_bin = ', delr
         Call info(messages, 2, .true.)
         If (comm%idnode == 0) Then
-          Write (npdfdt, '(/,a,2(a8,1x),2(i10,1x))') '# type, index, instances: ', &
+          Write (npdfdt, '(a,2(a8,1x),2(i10,1x))') '# type, index, instances: ', &
             unique_atom(bond%typ(1, i)), unique_atom(bond%typ(2, i)), j, bond%typ(0, i)
         End If
 
@@ -406,10 +406,10 @@ Contains
         j = j + 1
 
         If (comm%idnode == 0) Then
-          Write (npdgdt, '(/,a,2(a8,1x),2(i10,1x),a)') '# ', &
+          Write (npdgdt, '(a,2(a8,1x),2(i10,1x),a)') '# ', &
             unique_atom(bond%typ(1, i)), unique_atom(bond%typ(2, i)), j, bond%typ(0, i), &
             ' (type, index, instances)'
-          Write (npdfdt, '(/,a,2(a8,1x),2(i10,1x),a)') '# ', &
+          Write (npdfdt, '(a,2(a8,1x),2(i10,1x),a)') '# ', &
             unique_atom(bond%typ(1, i)), unique_atom(bond%typ(2, i)), j, bond%typ(0, i), &
             ' (type, index, instances)'
         End If

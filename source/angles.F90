@@ -324,7 +324,7 @@ Contains
         Call info(message, .true.)
 
         If (comm%idnode == 0) Then
-          Write (npdfdt, '(/,a,3(a8,1x),2(i10,1x))') '# type, index, instances: ', &
+          Write (npdfdt, '(a,3(a8,1x),2(i10,1x))') '# type, index, instances: ', &
             unique_atom(angle%typ(1, i)), unique_atom(angle%typ(2, i)), &
             unique_atom(angle%typ(3, i)), j, angle%typ(0, i)
         End If
@@ -423,11 +423,11 @@ Contains
         j = j + 1
 
         If (comm%idnode == 0) Then
-          Write (npdgdt, '(/,a,3(a8,1x),2(i10,1x),a)') '# ', &
+          Write (npdgdt, '(a,3(a8,1x),2(i10,1x),a)') '# ', &
             unique_atom(angle%typ(1, i)), unique_atom(angle%typ(2, i)), &
             unique_atom(angle%typ(3, i)), j, angle%typ(0, i), &
             ' (type, index, instances)'
-          Write (npdfdt, '(/,a,3(a8,1x),2(i10,1x),a)') '# ', &
+          Write (npdfdt, '(a,3(a8,1x),2(i10,1x),a)') '# ', &
             unique_atom(angle%typ(1, i)), unique_atom(angle%typ(2, i)), &
             unique_atom(angle%typ(3, i)), j, angle%typ(0, i), &
             ' (type, index, instances)'
