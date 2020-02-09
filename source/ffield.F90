@@ -639,6 +639,10 @@ Contains
                 cshell%lstshl(1, nshels) = iatm1
                 cshell%lstshl(2, nshels) = iatm2
 
+                If ((iatm1 > sites%num_site(itmols)) .Or.  (iatm2 > sites%num_site(itmols))) Then
+                  Call error(0,"Index of shell is out of range")
+                End If
+
                 Call get_word(record, word)
                 cshell%prmshl(1, nshels) = word_2_real(word)
 
