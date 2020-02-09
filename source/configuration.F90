@@ -121,6 +121,7 @@ Module configuration
     Procedure, Public :: chvom
     Procedure, Public :: init => allocate_config_arrays
     Procedure, Public :: init_read => allocate_config_arrays_read
+    Final             :: deallocate_config_arrays
 
   End Type configuration_type
 
@@ -356,6 +357,28 @@ Contains
     If (Any(stat /= 0)) Call error(1025)
 
   End Subroutine allocate_config_arrays
+
+  Subroutine deallocate_config_arrays(T)
+    Type(configuration_type) :: T
+
+    If (Allocated(T%atmnam)) Deallocate(T%atmnam)
+    If (Allocated(T%lsi)) Deallocate(T%lsi)
+    If (Allocated(T%lsa)) Deallocate(T%lsa)
+    If (Allocated(T%ltg)) Deallocate(T%ltg)
+    If (Allocated(T%parts)) Deallocate(T%parts)
+    If (Allocated(T%vxx)) Deallocate(T%vxx)
+    If (Allocated(T%vyy)) Deallocate(T%vyy)
+    If (Allocated(T%vzz)) Deallocate(T%vzz)
+    If (Allocated(T%lsite)) Deallocate(T%lsite)
+    If (Allocated(T%ltype)) Deallocate(T%ltype)
+    If (Allocated(T%lfrzn)) Deallocate(T%lfrzn)
+    If (Allocated(T%lfree)) Deallocate(T%lfree)
+    If (Allocated(T%ixyz)) Deallocate(T%ixyz)
+    If (Allocated(T%lstfre)) Deallocate(T%lstfre)
+    If (Allocated(T%weight)) Deallocate(T%weight)
+
+  End Subroutine deallocate_config_arrays
+
 
   Subroutine check_config(config, electro_key, thermo, sites, flow, comm)
 
