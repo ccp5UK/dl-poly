@@ -395,34 +395,6 @@ Contains
 
   End Subroutine init_comms
 
-  !TODO(Alex) Call this when initialising MPI with threading support 
-  !> @brief Check threading support offered by MPI 
-  !!
-  !! If the level of threading support offered by a given flavour of MPI
-  !! is not sufficient for DFTB+ to run, the routine will stop the code
-  !! Based on mpifx lib > mpifx_init.F90
-  !!
-  !! @param[in,optional]  in_providedThreading   Threading support integer 
-  !
-  Subroutine check_threading_support(in_providedThreading)
-    Integer, Intent(in), Optional :: in_providedThreading
-    Integer, Parameter  :: requiredThreading=MPI_THREAD_FUNNELED
-    Integer             :: providedThreading,ierr
-
-    If(.not. Present(in_providedThreading)) Then
-       Call mpi_query_thread(providedThreading,ierr)
-    Else
-       providedThreading = in_providedThreading
-    Endif
-    
-!!$    If( providedThreading < requiredThreading) Then
-!!$       If(IO)then
-!!$          !TODO(Alex) 'Add error message and have DL_POLY throw
-!!$       Endif
-!!$    Endif
-    
-  End Subroutine check_threading_support
-
   
   Subroutine exit_comms(comm)
 
