@@ -287,7 +287,7 @@ Contains
     ! and maximum number of neighbouring domains/nodes in 3D DD (3^3 - 1)
 
     If (comm%mxnode > 1) Then
-      config%mxlshp = Max((2 * cshell%mxshl) / 2, (2 * cons%mxcons) / 2, (rigid%max_list * rigid%max_rigid) / 2)
+      config%mxlshp = Max(cshell%mxshl, cons%mxcons, (rigid%max_list * rigid%max_rigid) / 2)
       domain%neighbours = 26
     Else ! nothing is to be shared on one node
       config%mxlshp = 0

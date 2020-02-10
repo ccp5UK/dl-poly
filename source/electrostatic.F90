@@ -1,4 +1,4 @@
-!> Module for electrostatic data and routines, common between Ewald and 
+!> Module for electrostatic data and routines, common between Ewald and
 !> non-Ewald methods
 !>
 !> Copyright - Daresbury Laboratory
@@ -114,7 +114,7 @@ Module electrostatic
     Integer,           Public :: context
     Logical,           Public :: newjob_fspme= .true.
     Real( Kind = wp ), Public :: kmaxa_lr,kmaxb_lr,kmaxc_lr
-    !> multipole electrostatics 
+    !> multipole electrostatics
     Logical,           Public :: newjob_mpoles = .true.
     Real( Kind = wp ), Public :: drewd_mpoles,rdrewd_mpoles
     Real( Kind = wp ), Dimension( : ), Allocatable, Public :: erc_mpoles,fer_mpoles
@@ -177,77 +177,77 @@ Module electrostatic
     Private
     Final ::cleanup
   End Type electrostatic_type
-Contains 
+Contains
   Subroutine cleanup(T)
     Type(electrostatic_type) :: T
 
-    If (Allocated(T%erc_fscp)) Then 
+    If (Allocated(T%erc_fscp)) Then
       Deallocate(T%erc_fscp)
     End If
-    If (Allocated(T%fer_fscp)) Then 
+    If (Allocated(T%fer_fscp)) Then
       Deallocate(T%fer_fscp)
     End If
-    If (Allocated(T%erc_rfp)) Then 
+    If (Allocated(T%erc_rfp)) Then
       Deallocate(T%erc_rfp)
     End If
-    If (Allocated(T%fer_rfp)) Then 
+    If (Allocated(T%fer_rfp)) Then
       Deallocate(T%fer_rfp)
     End If
-    If (Allocated(T%erc_mfscp)) Then 
+    If (Allocated(T%erc_mfscp)) Then
       Deallocate(T%erc_mfscp)
     End If
-    If (Allocated(T%fer_mfscp)) Then 
+    If (Allocated(T%fer_mfscp)) Then
       Deallocate(T%fer_mfscp)
     End If
-    If (Allocated(T%erc_mrfp)) Then 
+    If (Allocated(T%erc_mrfp)) Then
       Deallocate(T%erc_mrfp)
     End If
-    If (Allocated(T%fer_mrfp)) Then 
+    If (Allocated(T%fer_mrfp)) Then
       Deallocate(T%fer_mrfp)
     End If
-    If (Allocated(T%erc_spole)) Then 
+    If (Allocated(T%erc_spole)) Then
       Deallocate(T%erc_spole)
     End If
-    If (Allocated(T%fer_spole)) Then 
+    If (Allocated(T%fer_spole)) Then
       Deallocate(T%fer_spole)
     End If
-    If (Allocated(T%bscx)) Then 
+    If (Allocated(T%bscx)) Then
       Deallocate(T%bscx)
     End If
-    If (Allocated(T%bscy)) Then 
+    If (Allocated(T%bscy)) Then
       Deallocate(T%bscy)
     End If
-    If (Allocated(T%bscz)) Then 
+    If (Allocated(T%bscz)) Then
       Deallocate(T%bscz)
     End If
-    If (Allocated(T%index_x)) Then 
+    If (Allocated(T%index_x)) Then
       Deallocate(T%index_x)
     End If
-    If (Allocated(T%index_y)) Then 
+    If (Allocated(T%index_y)) Then
       Deallocate(T%index_y)
     End If
-    If (Allocated(T%index_z)) Then 
+    If (Allocated(T%index_z)) Then
       Deallocate(T%index_z)
     End If
-    If (Allocated(T%qqq_local)) Then 
+    If (Allocated(T%qqq_local)) Then
       Deallocate(T%qqq_local)
     End If
-    If (Allocated(T%qqc_local)) Then 
+    If (Allocated(T%qqc_local)) Then
       Deallocate(T%qqc_local)
     End If
-    If (Allocated(T%pfft_work)) Then 
+    If (Allocated(T%pfft_work)) Then
       Deallocate(T%pfft_work)
     End If
-    If (Allocated(T%erc_mpoles)) Then 
+    If (Allocated(T%erc_mpoles)) Then
       Deallocate(T%erc_mpoles)
     End If
-    If (Allocated(T%fer_mpoles)) Then 
+    If (Allocated(T%fer_mpoles)) Then
       Deallocate(T%fer_mpoles)
     End If
-    If (Allocated(T%erc_mpolesd)) Then 
+    If (Allocated(T%erc_mpolesd)) Then
       Deallocate(T%erc_mpolesd)
     End If
-    If (Allocated(T%fer_mpolesd)) Then 
+    If (Allocated(T%fer_mpolesd)) Then
       Deallocate(T%fer_mpolesd)
     End If
 

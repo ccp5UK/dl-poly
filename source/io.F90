@@ -144,7 +144,7 @@ Module io
 
   End Type file_data
   Type, Public :: io_type
-    
+
     ! The record size
     Integer          :: rec_size = recsz
     ! The record length for FORTRAN write
