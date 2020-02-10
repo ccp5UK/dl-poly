@@ -23,7 +23,12 @@ Module test_configuration
        coordinate_buffer_type, unpack_gathered_coordinates, gather_atomic_names,&
        distribute_forces
   Use asserts, Only : assert
-  Use mpi, Only : MPI_COMM_WORLD, mpi_comm_rank, mpi_barrier
+#ifdef SERIAL
+  Use mpi_api
+#else
+  Use mpi, Only : MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size
+#endif
+  
   Implicit None
 
   Private
