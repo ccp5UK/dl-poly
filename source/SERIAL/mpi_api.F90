@@ -288,7 +288,6 @@ Module mpi_api
     Module Procedure MPI_SCATTERV_rwp_vv
     Module Procedure MPI_SCATTERV_rwp_mm
     Module Procedure MPI_SCATTERV_cwp_vv
-    Module Procedure MPI_SCATTERV_chr_vv
     Module Procedure MPI_SCATTERV_cwp_mm
   End Interface !MPI_SCATTERV
 
@@ -1380,6 +1379,7 @@ Contains
          message='Character length of send and receive buffers differ')
     Call assert(Size(send_buf) == Size(recv_buf), message="Send and receive sizes differ")
     
+    ierr = 0
     recv_buf = send_buf
     
   End Subroutine MPI_ALLGATHER_chr_vv
@@ -1398,7 +1398,8 @@ Contains
          message="Sum of send buffer sizes in receiv _counts does not equal total size of receive buffer")
     Call assert(MPI_REAL_WP_send == MPI_REAL_WP_recv, message="MPI_REAL_WP_send /= MPI_REAL_WP_recv")
     Call assert(Size(send_buf) == Size(recv_buf), message="Send and receive sizes differ")
-    
+
+    ierr = 0
     recv_buf = send_buf
 
   End Subroutine MPI_ALLGATHER_rwp_vv
@@ -1421,7 +1422,8 @@ Contains
          message="Dimension 1 of send and receive arrays differ")
     Call assert(Size(send_buf, Dim = 2) == Size(recv_buf, Dim = 2), &
          message="Dimension 2 of send and receive arrays differ")
-    
+
+    ierr = 0
     recv_buf = send_buf
       
   End Subroutine mpi_allgather_rwp_mm
@@ -3664,27 +3666,7 @@ Contains
 
   End Subroutine MPI_SCATTERV_cwp_vv
 
-  Subroutine MPI_SCATTERV_chr_vv(send_buf, send_counts, disps, MPI_CHARACTER_send, &
-                                 recv_buf, recv_size,          MPI_CHARACTER_recv, &
-                                 root, MPI_COMM_WORLD, ierr)
-
-    Character( Len = * ), Intent( In    ) :: send_buf(:)
-    Integer,              Intent( In    ) :: send_counts(:), disps(:)
-    Integer,              Intent( In    ) :: MPI_CHARACTER_send,  MPI_CHARACTER_recv, root, recv_size
-    Character( Len = * ), Intent( InOut ) :: recv_buf(:)
-
-    Call assert(MPI_CHARACTER_send == MPI_CHARACTER_recv, &
-         message="MPI_CHARACTER_send /= MPI_CHARACTER_recv")
-    Call assert(Size(send_buf) == Size(recv_buf), message="Send and receive sizes differ")
-    Call assert(Len(send_buf(1)) == Len(recv_buf(1)), &
-         message='Character length of send and receive buffers differ')
-    Call assert(Sum(send_counts) ==  Size(recv_buf), &
-         message="Sum of counts to send /= size of receive buffer")
-    
-    recv_buf = send_buf
-
-  End Subroutine MPI_SCATTERV_chr_vv
-  
+ 
   Subroutine MPI_SCATTERV_cwp_mm(isend,iscnt,idisp,MPI_WPa,irecv,ircnt,MPI_WPb,idnode,MPI_COMM_WORLD,ierr)
 
     Integer, Intent( In    ) :: MPI_WPa,MPI_WPb,MPI_COMM_WORLD
