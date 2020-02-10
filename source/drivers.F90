@@ -236,7 +236,7 @@ Contains
   Subroutine calculate_forces(cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &
                               inversion, tether, threebody, neigh, sites, vdws, tersoffs, fourbody, rdf, netcdf, &
                               minim, mpoles, ext_field, rigid, electro, domain, kim_data, msd_data, tmr, files, &
-                              green, devel, ewld, met, seed, thermo, crd, adf, comm)
+                              green, devel, ewld, met, seed, thermo, crd, comm)
 
     Type(configuration_type),  Intent(InOut) :: cnfig
     Type(flow_type),           Intent(InOut) :: flow
@@ -277,7 +277,6 @@ Contains
     Type(seed_type),           Intent(InOut) :: seed
     Type(thermostat_type),     Intent(InOut) :: thermo
     Type(coord_type),          Intent(InOut) :: crd
-    Type(adf_type),            Intent(InOut) :: adf
     Type(comms_type),          Intent(InOut) :: comm
 
     Integer          :: i
@@ -1579,14 +1578,14 @@ Contains
                             inversion, tether, threebody, neigh, sites, vdws, tersoffs, fourbody, rdf, netcdf, &
                             minim, mpoles, ext_field, rigid, electro, domain, kim_data, &
                             msd_data, tmr, files, green, devel, ewld, &
-                            met, seed, thermo, crd, adf, comm)
+                            met, seed, thermo, crd, comm)
 
       ! Calculate physical quantities, collect statistics and report at t=0
 
       If (flow%step == 0) Then
         Call crd%init_coordlist(neigh%max_list, cnfig%mxatms)
         Call init_coord_list(cnfig, neigh, crd, sites, flow, comm)
-        Call checkcoord(cnfig, neigh, crd, sites, flow, stat, impa, comm)
+        Call checkcoord(cnfig, crd, sites, flow, stat, comm)
         Call adf_calculate(cnfig, sites, flow, crd, adf, comm)
         Call statistics_report(cnfig, cshell, cons, pmf, stat, msd_data, zdensity, &
                                sites, rdf, domain, flow, files, thermo, tmr, green, minim, comm)
@@ -1635,7 +1634,7 @@ Contains
                              netcdf, cnfig, files, comm)
         End If
         Call init_coord_list(cnfig, neigh, crd, sites, flow, comm)
-        Call checkcoord(cnfig, neigh, crd, sites, flow, stat, impa, comm)
+        Call checkcoord(cnfig, crd, sites, flow, stat, comm)
         Call adf_calculate(cnfig, sites, flow, crd, adf, comm)
       End If ! DO THAT ONLY IF 0<flow%step<=flow%run_steps AND THIS IS AN OLD JOB (flow%newjob=.false.)
 
@@ -2096,7 +2095,7 @@ Contains
                             msd_data, bond, angle, dihedral, inversion, zdensity, neigh, sites, vdws, tersoffs, &
                             fourbody, rdf, netcdf, minim, mpoles, ext_field, rigid, electro, domain, seed, traj, &
                             kim_data, files, dfcts, tmr, tether, threebody, pois, green, ewld, devel, met, &
-                            crd, adf, comm)
+                            crd, comm)
 
     Type(configuration_type),  Intent(InOut) :: cnfig
     Type(io_type),             Intent(InOut) :: io
@@ -2141,7 +2140,6 @@ Contains
     Type(development_type),    Intent(InOut) :: devel
     Type(metal_type),          Intent(InOut) :: met
     Type(coord_type),          Intent(InOut) :: crd
-    Type(adf_type),            Intent(InOut) :: adf
     Type(comms_type),          Intent(InOut) :: comm
 
     Character(Len=10)  :: c_out
@@ -2283,7 +2281,7 @@ Contains
           Call calculate_forces(cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &
                                 inversion, tether, threebody, neigh, sites, vdws, tersoffs, fourbody, rdf, &
                                 netcdf, minim, mpoles, ext_field, rigid, electro, domain, kim_data, msd_data, tmr, files, &
-                                green, devel, ewld, met, seed, thermo, crd, adf, comm)
+                                green, devel, ewld, met, seed, thermo, crd, comm)
 
           ! Evaluate kinetics if available
 
