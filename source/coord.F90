@@ -13,7 +13,6 @@ Module coord
                              nicrdt
   Use errors_warnings, Only: error
   Use flow_control,    Only: flow_type
-  Use impacts,         Only: impact_type
   Use kinds,           Only: wp
   Use neighbours,      Only: neighbours_type
   Use site,            Only: site_type
@@ -104,7 +103,7 @@ Contains
     Integer                          :: en, i, ii, j, jj, k, kk, m, mcoord, ncb, ncoord, nmax
     Integer, Allocatable             :: buff(:), coordbuff(:), dbuff(:), ltypeAB(:, :)
     Logical                          :: itsopen
-    Real                             :: rab, rcut
+    Real(kind=wp)                    :: rab, rcut
 
 !ncb size coordbuff
 
@@ -390,14 +389,12 @@ Contains
 
   End Subroutine init_coord_list
 
-  Subroutine checkcoord(config, neigh, crd, sites, flow, stats, impa, comm)
+  Subroutine checkcoord(config, crd, sites, flow, stats, comm)
     Type(configuration_type), Intent(In   ) :: config
-    Type(neighbours_type),    Intent(In   ) :: neigh
     Type(coord_type),         Intent(InOut) :: crd
     Type(site_type),          Intent(In   ) :: sites
     Type(flow_type),          Intent(In   ) :: flow
     Type(stats_type),         Intent(InOUT) :: stats
-    Type(impact_type),        Intent(In   ) :: impa
     Type(comms_type),         Intent(InOut) :: comm
 
     Character(len=80)              :: aux
@@ -405,7 +402,7 @@ Contains
     Integer                        :: defectcnt, defn, i, ii, j, k, totdefectcnt
     Integer, Allocatable           :: buff(:)
     Logical                        :: coordchange, coordfound, thisopen
-    Real                           :: rdis
+    Real(kind=wp)                  :: rdis
 
     If (.not. crd%coordon) Return
     If (crd%ncoordpairs == 0) Return

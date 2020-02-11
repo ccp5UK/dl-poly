@@ -137,7 +137,9 @@ Contains
                                 green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, inversion, &
                                 tether, threebody, zdensity, cons, neigh, pmfs, sites, core_shells, vdws, tersoffs, &
                                 fourbody, rdf, netcdf, minim, mpoles, ext_field, rigid, electro, domain, flow, &
-                                seed, traj, kim_data, config, ios, ttms, rsdsc, files, control_filename, crd, adf)
+                                seed, traj, kim_data, config, ios, ttms, rsdsc, files, control_filename, &
+                                output_filename, crd, adf)
+
 
     Type(comms_type),                       Intent(InOut) :: dlp_world(0:)
     Type(thermostat_type), Allocatable,     Intent(InOut) :: thermo(:)
@@ -184,7 +186,8 @@ Contains
     Type(ttm_type), Allocatable,            Intent(InOut) :: ttms(:)
     Type(rsd_type), Allocatable, Target,    Intent(InOut) :: rsdsc(:)
     Type(file_type), Allocatable,           Intent(InOut) :: files(:, :)
-    Character(Len=1024)                                   :: control_filename
+    Character(len=1024),       Intent(In   ) :: control_filename
+    Character(len=1024),       Intent(In   ) :: output_filename
     Type(coord_type), Allocatable,          Intent(InOut) :: crd(:)
     Type(adf_type), Allocatable,            Intent(InOut) :: adf(:)
 
@@ -208,7 +211,7 @@ Contains
                                    core_shells(1), vdws(1), tersoffs(1), fourbody(1), rdf(1), netcdf(1), &
                                    minim(1), mpoles(1), ext_field(1), rigid(1), electro(1), domain(1), flow(1), &
                                    seed(1), traj(1), kim_data(1), config(1), ios(1), ttms(1), rsdsc(1), files(1, :), &
-                                   control_filename, crd(1), adf(1))
+                                   output_filename, control_filename, crd(1), adf(1))
     Call deallocate_types_uniform(thermo, ewld, tmr, devel, stats, &
                                   green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, inversion, &
                                   tether, threebody, zdensity, cons, neigh, pmfs, sites, core_shells, vdws, tersoffs, &
@@ -222,7 +225,7 @@ Contains
                                        inversion, tether, threebody, zdensity, cons, neigh, pmfs, sites, core_shells, &
                                        vdws, tersoffs, fourbody, rdf, netcdf, minim, mpoles, ext_field, rigid, electro, &
                                        domain, flow, seed, traj, kim_data, config, ios, ttms, rsdsc, files, control_filename, &
-                                       crd, adf)
+                                       output_filename, crd, adf)
 
     Type(comms_type),          Intent(InOut) :: dlp_world(0:), comm
     Type(thermostat_type),     Intent(InOut) :: thermo
@@ -270,6 +273,7 @@ Contains
     Type(rsd_type), Target,    Intent(InOut) :: rsdsc
     Type(file_type),           Intent(InOut) :: files(FILENAME_SIZE)
     Character(len=1024),       Intent(In   ) :: control_filename
+    Character(len=1024),       Intent(In   ) :: output_filename
     Type(coord_type),          Intent(InOut) :: crd
     Type(adf_type),            Intent(InOut) :: adf
 
@@ -282,8 +286,11 @@ Contains
     ! Set default file names
     Call default_filenames(files)
     ! Rename control file if argument was passed
-    If (command_argument_count() == 1) Then
+    If (Len_Trim(control_filename) > 0 ) Then
       Call files(FILE_CONTROL)%rename(control_filename)
+    End If
+    If (Len_Trim(output_filename) > 0 ) Then
+      Call files(FILE_OUTPUT)%rename(output_filename)
     End If
 
     Call scan_development(devel, files, comm)
@@ -571,7 +578,7 @@ Contains
                             thermo, plume, msd_data, bond, angle, dihedral, inversion, zdensity, neigh, &
                             sites, vdws, tersoffs, fourbody, rdf, netcdf, minim, mpoles, ext_field, rigid, &
                             electro, domain, seed, traj, kim_data, files, dfcts, tmr, tether, threebody, &
-                            pois, green, ewld, devel, met, crd, adf, comm)
+                            pois, green, ewld, devel, met, crd, comm)
       Else
         Call replay_history(config, ios, rsdsc, flow, core_shells, cons, pmfs, stats, &
                             thermo, msd_data, met, pois, bond, angle, dihedral, inversion, zdensity, neigh, &

@@ -89,7 +89,7 @@ Module metal
     ! Many-body perturbation potential error function and derivative arrays
     Real(Kind=wp), Allocatable, Dimension(:), Public       :: merf, mfer
     Logical                                                :: newjob = .true.
-  
+
   Contains
     Private
 
