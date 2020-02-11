@@ -1663,10 +1663,10 @@ Contains
 
       End If
       If (crd%coordon) Then
-        crd%icoordlist(0, newatm) = buffer(kmove + 1)
+        crd%icoordlist(0, newatm) = nint(buffer(kmove + 1))
         kmove = kmove + 1
         Do jcrd = 1, crd%icoordlist(0, newatm)
-          crd%icoordlist(jcrd, newatm) = buffer(kmove + 1)
+          crd%icoordlist(jcrd, newatm) = nint(buffer(kmove + 1))
           kmove = kmove + 1
         End Do
       Endif

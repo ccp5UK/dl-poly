@@ -42,14 +42,14 @@ Contains
     Integer              :: i, ii, iii, j, jj, k, kk, nab, numbins
     Integer, Allocatable :: adfbuff(:)
     Logical              :: itsopen
-    Real                 :: costheta, temptheta
+    Real(kind=wp)        :: costheta, temptheta
 
     If (.not. adf%adfon) Return
     If (.not. crd%coordon) Return
     If (Mod(flow%step, adf%interval) /= 0) Return
     Open (Unit=nchadf, File='ADFDAT', Form='formatted')
     If (flow%step == 0) Then
-      numbins = 180.0 / adf%prec
+      numbins = Int(180.0_wp / adf%prec)
       Allocate (adf%astat(-1:numbins, 1:2 * crd%ncoordpairs))
     Endif
     adf%astat(:, :) = 0
@@ -59,7 +59,7 @@ Contains
       adf%astat(-1, (2 * i)) = crd%ltype(i, 2)
       adf%astat(0, (2 * i)) = crd%ltype(i, 1)
     Enddo
-    numbins = 180.0 / adf%prec
+    numbins = Int(180.0_wp / adf%prec)
     Do i = 1, config%natms
       adf%rij(:) = 0.0_wp
       adf%rjk = 0.0_wp
