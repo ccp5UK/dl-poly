@@ -146,7 +146,7 @@ endif()
 
 if(WITH_DFTBP)
   set_property(TARGET dlpoly APPEND PROPERTY
-    COMPILE_DEFINITIONS "WITH_DFTBP")
+    COMPILE_DEFINITIONS "DFTBP")
   if (INTERNAL_DFTBP)
      add_dependencies(dlpoly int-dftbp)
      target_include_directories(dlpoly PUBLIC  ${DFTBP_INC})

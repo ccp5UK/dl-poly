@@ -10,10 +10,17 @@ Module drivers
   Use comms,                Only: comms_type,&
                                   gmax,&
                                   gsum,&
-                                  gtime
+                                  gtime,&
+                                  root_id, gsync
   Use configuration,        Only: check_config,&
                                   configuration_type,&
-                                  freeze_atoms
+                                  freeze_atoms,&
+                                  coordinate_buffer_type,&
+                                  len_atmnam,&
+                                  gather_coordinates,&
+                                  gather_atomic_names,&
+                                  distribute_forces,&
+                                  gather_forces
   Use constants,            Only: boltz
   Use constraints,          Only: constraints_quench,&
                                   constraints_type
@@ -34,10 +41,11 @@ Module drivers
   Use deport_data,          Only: mpoles_rotmat_set_halo,&
                                   relocate_particles
   Use development,          Only: development_type
-#ifdef WITH_DFTBP
-  Use dftbp_library,        Only: run_dftbplus,&
+#ifdef DFTBP
+  Use dftb_library,         Only: run_dftbplus,&
                                   dftb_geometry_type,&
-                                  convert_unit
+                                  convert_unit, &
+                                  output_dftb_forces
 #endif
   Use dihedrals,            Only: dihedrals_forces,&
                                   dihedrals_type
@@ -188,7 +196,8 @@ Module drivers
   Public :: md_vv
   Public :: replay_historf
   Public :: replay_history
-
+  Public :: calculate_dftb_forces
+  
 Contains
 
   Subroutine impact_option(levcfg, nstep, nsteql, rigid, cshell, stats, impa, config, comm)
@@ -538,16 +547,16 @@ Contains
   !! For a given set of atomic coordinates, forces are computed using
   !! the density-functional tight-binding code, DFTB+ v19.2
   !! 
-  !! @param[in]    comm     Object containing MPI communicator
-  !! @param[in]    flow     Object containing MD step/time data 
-  !! @param[inout] config   Object containing configuration data
-  !!                        Returns updated forces in config 
+  !! @param[inout] comm      Object containing MPI communicator
+  !! @param[in]    flow      Object containing MD step/time data 
+  !! @param[inout] config    Object containing configuration data
+  !!                         Returns updated forces in config
   !   
   Subroutine calculate_dftb_forces(comm, flow, config)
     Type(comms_type),         Intent( InOut ) :: comm
     Type(flow_type),          Intent( In    ) :: flow 
     Type(configuration_type), Intent( InOut ) :: config
-
+    
 #ifdef DFTBP   
     !> Gathered coordinates and mpi index arrays
     Type(coordinate_buffer_type)             :: gathered
@@ -556,47 +565,53 @@ Contains
     !> DFTB+ geometry object
     Type(dftb_geometry_type),    Save        :: geo
     !> DFTB+ forces
-    Real(wp),                    Allocatable :: forces(:,:)
-    
+    Real(wp), Save,              Allocatable :: forces(:,:)
+    !> DFTB+ atomic Mulliken charges 
+    Real(wp), Save,              Allocatable :: atomic_charges(:)
     !>DFTB+ requires all geometry data on every process
     Logical, Parameter :: to_master_only = .false.
     !> Unit conversion factor 
-    Real(wp)           :: unit_factor
+    Real(wp), Save     :: unit_factor
 
+    !NOTE: In principal, only need to init/finalise
+    !when atoms move to different processes
     !Gather atomic coordinates and names (excluding halo atoms)
-    Call gathered%initialise(comm, config%megatm*3)     
+    Call gathered%initialise(comm, config%megatm*3)        
     Call gather_coordinates(comm, config, to_master_only, gathered)
-    Allocate(atmnam(config%megatm))
+    If(.not. Allocated(atmnam)) Allocate(atmnam(config%megatm))
     Call gather_atomic_names(comm, config, to_master_only, atmnam)
 
-    If(flow%step == 0) Then
-       !Total number of species conserved, hence assign once 
+    !Number of atoms and species types conserved, hence assign once 
+    If(flow%step == flow%initial_md_step) Then
        Call geo%initialise(config, atmnam)
        Allocate(forces(3,config%megatm))
+       Allocate(atomic_charges(config%megatm))
+       unit_factor = convert_unit('DFTB+','DLPOLY','force')
     Endif
 
     Call geo%set_geometry(comm, config, gathered, atmnam)
-    Call run_dftbplus(comm, flow, geo, forces)
+    !Call print_DFTB_geometry_data(geo, flow%step)
+    Call run_dftbplus(comm, flow, geo, forces, atomic_charges)
+    !TODO(Alex) Consider doing this over unit conversion after assignment to config 
+    !forces(:,:) = forces(:,:) * unit_factor
+    
     !MPI index arrays same for forces as for coordinates
     Call distribute_forces(comm, gathered%mpi, forces, config)
-
-    unit_factor = convert_unit('DFTB+','DLPOLY','force')
     config%parts(:)%fxx = config%parts(:)%fxx * unit_factor 
     config%parts(:)%fyy = config%parts(:)%fyy * unit_factor
     config%parts(:)%fzz = config%parts(:)%fzz * unit_factor 
     
-    !Note: Only need to tear down when atomic distribution changes
-    !but do this for now 
     Call gathered%finalise()
 
     If(flow%step == flow%run_steps) Then
        Call geo%finalise()
+       Deallocate(forces)
+       Deallocate(atomic_charges)
     Endif
 
 #endif
   End Subroutine calculate_dftb_forces
-
-
+   
   Subroutine refresh_mappings(cnfig, flow, cshell, cons, pmf, stat, msd_data, bond, angle, &
                               dihedral, inversion, tether, neigh, sites, mpoles, rigid, domain, &
                               kim_data, ewld, green, minim, thermo, &
@@ -1653,6 +1668,10 @@ Contains
                               met, seed, thermo, crd, comm)
       Else If (flow%simulation_method == DFTB) Then
          Call calculate_dftb_forces(comm, flow, cnfig)
+         !Output forces for app test
+         If(devel%app_test%dftb_library) Then
+            Call output_dftb_forces(comm, flow, cnfig)
+         Endif
       Endif
 
       ! Calculate physical quantities, collect statistics and report at t=0

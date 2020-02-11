@@ -80,6 +80,8 @@ Module flow_control
     Logical, Public          :: reset_padding
     !> Type of Simulation we perform
     Integer, Public          :: simulation_method = MD
+    !> MD step that DL_POLY starts at
+    Integer, Public          :: initial_md_step = 0
 
   Contains
     Procedure, Public :: new_page => flow_type_new_page

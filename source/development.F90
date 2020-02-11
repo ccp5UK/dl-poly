@@ -20,7 +20,7 @@ Module development
   Use kinds,           Only: wp
   Use parse,           Only: get_line, get_word, lower_case, clean_string
   Use filename,        Only: file_type, FILE_CONTROL
-  Use errors_warnings, Only: info
+  Use errors_warnings, Only: info, error
 #ifdef OLDMPI
   Use comms,           Only: mpi_ver, mpi_subver, comms_type, gcheck
 #else
@@ -31,11 +31,15 @@ Module development
 
   Private
 
-  !> Logicals indicating whether unit tests should be run for 
+  !> Logicals indicating whether tests should be run for 
   !> corresponding module. Add as required
-  Type, Public :: unit_testing_type
+  Type, Public :: testing_type
      Logical :: configuration
-  End Type unit_testing_type
+     Logical :: dftb_library
+   Contains
+     Procedure :: all => set_all_tests_true
+     !Procedure :: set => set_tests
+  End Type testing_type
   
   !> Type containing development module variables
   Type, Public :: development_type
@@ -80,8 +84,10 @@ Module development
 
     !> Unit testing
     Logical, Public :: run_unit_tests = .false.
-    Type(unit_testing_type), Public :: unit_test
-
+    Type(testing_type), Public :: unit_test
+    !> App testing
+    Logical, Public :: run_app_tests = .false.
+    Type(testing_type), Public :: app_test
  End Type development_type
  
   Public :: scan_development
@@ -286,4 +292,38 @@ Contains
 
   End Subroutine build_info
 
+
+  Subroutine set_all_tests_true(this)
+    Class(testing_type), Intent(inout) :: this
+    this%configuration = .true.
+    this%dftb_library = .true.
+  End Subroutine set_all_tests_true
+
+  
+!!$  Subroutine set_tests(this,string) 
+!!$    Class(testing_type), Intent(InOut) :: this
+!!$    Character(len=*),    Intent(In   ) :: string
+!!$    !> Position in ASCII table 
+!!$    Integer, Parameter :: equals_sign = 61
+!!$
+!!$    write(*,*) 'Found equals', Index(string, Achar(equals_sign))
+!!$    
+!!$    If(Index(string, 'all') > 0) Then
+!!$       Call this%all
+!!$ 
+!!$    Elseif(Index(string, Achar(equals_sign)) > 0) Then
+!!$       If(Index(string, 'configuration') > 0) Then
+!!$          this%configuration = .true.
+!!$       Endif
+!!$       If(Index(string, 'dftb_library') > 0) Then
+!!$          this%dftb_library = .true.
+!!$       Endif
+!!$
+!!$    Else
+!!$       Call error(0, message='Command for unit or app test is erroneous', &
+!!$             master_only=.true.)
+!!$    Endif
+!!$  End Subroutine set_tests
+  
+  
 End Module development

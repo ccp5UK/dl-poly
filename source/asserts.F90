@@ -39,11 +39,11 @@ Contains
       If (Present(message)) Then
         Write (error_unit, '(/,1x,a)') Trim(Adjustl(message))
       End If
-#ifdef SERIAL
-      Stop error_code_logical
-#else
-      Call MPI_ABORT(MPI_COMM_WORLD, error_code_logical, ierr)
-#endif
+!!$#ifdef SERIAL
+!!$      Stop error_code_logical
+!!$#else
+!!$      Call MPI_ABORT(MPI_COMM_WORLD, error_code_logical, ierr)
+!!$#endif
     End If
 
 #endif
