@@ -516,17 +516,23 @@ Contains
     If (ttms%l_ttm) Then
       Call ttm_table_read(ttms, comm)
       Call ttm_system_init(flow%step, flow%equil_steps, flow%restart_key, 'DUMP_E', flow%time, thermo%temp, domain, ttms, comm)
+      Call time_elapsed(tmr)
     End If
 
     ! Frozen atoms option
     Call freeze_atoms(config)
 
     ! Cap forces in equilibration mode
-    If (flow%step <= flow%equil_steps .and. flow%force_cap) Call cap_forces(thermo%temp, config, comm)
+    If (flow%step <= flow%equil_steps .and. flow%force_cap) Then
+      Call cap_forces(thermo%temp, config, comm)
+      Call time_elapsed(tmr)
+    End If
 
     ! PLUMED initialisation or information message
-    If (plume%l_plumed) Call plumed_init(config%megatm, thermo%tstep, thermo%temp, plume, comm)
-
+    If (plume%l_plumed) Then
+      Call plumed_init(config%megatm, thermo%tstep, thermo%temp, plume, comm)
+      Call time_elapsed(tmr)
+    End If
     ! Indicate nodes mapped on vacuum (no particles)
     vacuum = 0
     If (config%natms == 0) Then
@@ -539,7 +545,6 @@ Contains
     End If
 
     ! start-up time when forces are not recalculated
-    Call time_elapsed(tmr)
 
 #ifdef CHRONO
     Call start_timer(tmr, 'Main Calc')
