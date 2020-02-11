@@ -37,9 +37,6 @@ Module drivers
   Use dihedrals,            Only: dihedrals_forces,&
                                   dihedrals_type
   Use domains,              Only: domains_type
-  Use configuration, Only : configuration_type,check_config, freeze_atoms, &
-       coordinate_buffer_type,len_atmnam, gather_coordinates,gather_atomic_names,&
-       distribute_forces
   Use dpd,                  Only: dpd_thermostat
   Use electrostatic,        Only: ELECTROSTATIC_NULL,&
                                   electrostatic_type
@@ -57,7 +54,8 @@ Module drivers
                                   file_type
   Use flow_control,         Only: RESTART_KEY_CLEAN,&
                                   RESTART_KEY_OLD,&
-                                  flow_type
+                                  flow_type,&
+                                  DFTB
   Use four_body,            Only: four_body_forces,&
                                   four_body_type
   Use greenkubo,            Only: greenkubo_type,&
@@ -525,7 +523,7 @@ Contains
                                rigid%map_shared, SHARED_UNIT_UPDATE_FORCES, domain, comm)
     End If
 
-  !!!!!!!!!!!!!!!!!!  W_CALCULATE_FORCES INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!  W_CALCULATE_FORCES INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
   End Subroutine calculate_forces
 
@@ -1577,14 +1575,12 @@ Contains
 
       ! Evaluate forces
 
-      If(flow%driver_type == 0) Then
-      Call calculate_forces(cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &
-                            inversion, tether, threebody, neigh, sites, vdws, tersoffs, fourbody, rdf, netcdf, &
-                            minim, mpoles, ext_field, rigid, electro, domain, kim_data, &
-                            msd_data, tmr, files, green, devel, ewld, &
-                            met, seed, thermo, crd, comm)
-      !Else If(flow%driver_type == DFTB) Then
-      !   Call w_calculate_dftb_forces(comm, flow, cnfig)
+      If (flow%simulation_method /= DFTB) Then
+        Call calculate_forces(cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &
+                              inversion, tether, threebody, neigh, sites, vdws, tersoffs, fourbody, rdf, netcdf, &
+                              minim, mpoles, ext_field, rigid, electro, domain, kim_data, &
+                              msd_data, tmr, files, green, devel, ewld, &
+                              met, seed, thermo, crd, comm)
       Endif
 
       ! Calculate physical quantities, collect statistics and report at t=0

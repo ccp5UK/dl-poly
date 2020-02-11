@@ -15,13 +15,13 @@ Module configuration
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use asserts, Only : assert
-    Use comms,           Only: &
-                             WriteConf_tag, comm_self, comms_type, gallgather, gallreduce, &
-                             galltoall, galltoallv, gbcast, gcheck, gmax, gmin, grecv, gscatter, &
+  Use asserts,         Only: assert
+  Use comms,           Only: &
+                             WriteConf_tag, comm_self, comms_type, gallgather, gallgatherv, &
+                             gallreduce, galltoall, galltoallv, gatherv_scatterv_index_arrays, &
+                             gbcast, gcheck, ggatherv, gmax, gmin, grecv, gscatter, &
                              gscatter_columns, gscatterv, gsend, gsum, gsync, mode_create, &
-                             mode_rdonly, mode_wronly, offset_kind, op_land, gallgatherv, ggatherv, &
-                             mpi_distribution_type, gatherv_scatterv_index_arrays
+                             mode_rdonly, mode_wronly, mpi_distribution_type, offset_kind, op_land
   Use constants,       Only: half_minus,&
                              zero_plus
   Use development,     Only: development_type
@@ -73,7 +73,7 @@ Module configuration
   Private
 
   Integer, Public, Parameter ::  len_atmnam = 8
-  
+
   Type, Public :: configuration_type
 
     Character(Len=72)             :: cfgname = ' ', &
@@ -86,7 +86,7 @@ Module configuration
     Real(Kind=wp)                 :: cell(1:9) = 0.0_wp, &
                                      volm = 0.0_wp, &
                                      sumchg = 0.0_wp
-    Character( Len = len_atmnam), Allocatable       :: atmnam(:)
+    Character(Len=len_atmnam), Allocatable       :: atmnam(:)
     Integer, Allocatable          :: lsite(:), ltype(:)
     Integer, Allocatable          :: lfrzn(:), lfree(:)
     Integer, Allocatable          :: lsi(:), lsa(:), ltg(:)
@@ -131,21 +131,21 @@ Module configuration
 
   !> Coordinates of all atoms in the system, stored in packed form,
   !> with mpi index arrays to allow unpacking
-  ! 
+  !
   Type, Public :: coordinate_buffer_type
-     ! Atomic positions from all processes stored in a packed form
-     Real(wp), Public, Allocatable :: coords(:)
-     ! MPI indexing required to unpack coordinates stored in packed form
-     Type(mpi_distribution_type), Public :: mpi
-     ! Atomic names/species
-     ! Uses different MPI indexing to coords, hence maybe makes sense
-     ! not to include in this type
-     !Character(Len=len_atmnam), Public, Allocatable :: atmnam(:)
-   contains
-     Procedure, Public :: initialise => initialise_coordinate_buffer_type
-     Procedure, Public :: finalise   => finalise_coordinate_buffer_type
+    ! Atomic positions from all processes stored in a packed form
+    Real(wp), Public, Allocatable :: coords(:)
+    ! MPI indexing required to unpack coordinates stored in packed form
+    Type(mpi_distribution_type), Public :: mpi
+    ! Atomic names/species
+    ! Uses different MPI indexing to coords, hence maybe makes sense
+    ! not to include in this type
+    !Character(Len=len_atmnam), Public, Allocatable :: atmnam(:)
+  Contains
+    Procedure, Public :: initialise => initialise_coordinate_buffer_type
+    Procedure, Public :: finalise => finalise_coordinate_buffer_type
   End Type coordinate_buffer_type
-  
+
   Interface reallocate
     Module Procedure reallocate_chr_v
     Module Procedure reallocate_int_v
@@ -385,24 +385,23 @@ Contains
   Subroutine deallocate_config_arrays(T)
     Type(configuration_type) :: T
 
-    If (Allocated(T%atmnam)) Deallocate(T%atmnam)
-    If (Allocated(T%lsi)) Deallocate(T%lsi)
-    If (Allocated(T%lsa)) Deallocate(T%lsa)
-    If (Allocated(T%ltg)) Deallocate(T%ltg)
-    If (Allocated(T%parts)) Deallocate(T%parts)
-    If (Allocated(T%vxx)) Deallocate(T%vxx)
-    If (Allocated(T%vyy)) Deallocate(T%vyy)
-    If (Allocated(T%vzz)) Deallocate(T%vzz)
-    If (Allocated(T%lsite)) Deallocate(T%lsite)
-    If (Allocated(T%ltype)) Deallocate(T%ltype)
-    If (Allocated(T%lfrzn)) Deallocate(T%lfrzn)
-    If (Allocated(T%lfree)) Deallocate(T%lfree)
-    If (Allocated(T%ixyz)) Deallocate(T%ixyz)
-    If (Allocated(T%lstfre)) Deallocate(T%lstfre)
-    If (Allocated(T%weight)) Deallocate(T%weight)
+    If (Allocated(T%atmnam)) Deallocate (T%atmnam)
+    If (Allocated(T%lsi)) Deallocate (T%lsi)
+    If (Allocated(T%lsa)) Deallocate (T%lsa)
+    If (Allocated(T%ltg)) Deallocate (T%ltg)
+    If (Allocated(T%parts)) Deallocate (T%parts)
+    If (Allocated(T%vxx)) Deallocate (T%vxx)
+    If (Allocated(T%vyy)) Deallocate (T%vyy)
+    If (Allocated(T%vzz)) Deallocate (T%vzz)
+    If (Allocated(T%lsite)) Deallocate (T%lsite)
+    If (Allocated(T%ltype)) Deallocate (T%ltype)
+    If (Allocated(T%lfrzn)) Deallocate (T%lfrzn)
+    If (Allocated(T%lfree)) Deallocate (T%lfree)
+    If (Allocated(T%ixyz)) Deallocate (T%ixyz)
+    If (Allocated(T%lstfre)) Deallocate (T%lstfre)
+    If (Allocated(T%weight)) Deallocate (T%weight)
 
   End Subroutine deallocate_config_arrays
-
 
   Subroutine check_config(config, electro_key, thermo, sites, flow, comm)
 
@@ -3402,30 +3401,29 @@ Contains
 
   End Subroutine origin_config
 
-  
   !> @brief Initialise coordinate_buffer_type
   !!
   !! @param[in]  comm          Object containing MPI communicator
-  !! @param[in]  size_coords   Size of 1D packed buffer  
+  !! @param[in]  size_coords   Size of 1D packed buffer
   !
   Subroutine initialise_coordinate_buffer_type(this, comm, megatm)
     Class(coordinate_buffer_type), Intent(InOut) :: this
-    Type(comms_type), Intent(In) :: comm
-    Integer, Intent(In) :: megatm
-    Allocate(this%coords(megatm * 3))
+    Type(comms_type),              Intent(In   ) :: comm
+    Integer,                       Intent(In   ) :: megatm
+
+    Allocate (this%coords(megatm * 3))
     !Allocate(this%atmnam(megatm))
     Call this%mpi%init(comm)
   End Subroutine initialise_coordinate_buffer_type
 
-  
-  !> @brief Deallocate coordinate_buffer_type 
+  !> @brief Deallocate coordinate_buffer_type
   Subroutine finalise_coordinate_buffer_type(this)
     Class(coordinate_buffer_type), Intent(InOut) :: this
-    Deallocate(this%coords)
+
+    Deallocate (this%coords)
     !Deallocate(this%atmnam)
     Call this%mpi%finalise()
   End Subroutine finalise_coordinate_buffer_type
-
 
   !> @brief Gather atomic coordinates from each process into a packed,
   !!  1D array and broadcast
@@ -3437,57 +3435,56 @@ Contains
   !!                                 and mpi index arrays for unpacking
   !
   Subroutine gather_coordinates(comm, config, to_master_only, gathered)
-    Type(comms_type),              Intent(InOut) :: comm
-    Type(configuration_type),      Intent( In ) :: config
-    Logical,                       Intent( In ) :: to_master_only 
-    Type(coordinate_buffer_type),  Intent(InOut) :: gathered
+    Type(comms_type),             Intent(InOut) :: comm
+    Type(configuration_type),     Intent(In   ) :: config
+    Logical,                      Intent(In   ) :: to_master_only
+    Type(coordinate_buffer_type), Intent(InOut) :: gathered
 
-    Integer               :: i,i2,i3
-    Real(wp), Allocatable :: coords(:)
-    Character(Len=5)      :: str1,str2
     Character(Len=100)    :: error_message
+    Character(Len=5)      :: str1, str2
+    Integer               :: i, i2, i3
+    Real(wp), Allocatable :: coords(:)
 
     Call assert(Allocated(gathered%coords), &
-         'Packed coordinate array not allocated prior to gathering coordinates')    
-    Call assert(Size(gathered%coords) == config%megatm*3, &
-         'Packed coordinate array does not contain megatm*3 elements' )
+                'Packed coordinate array not allocated prior to gathering coordinates')
+    Call assert(Size(gathered%coords) == config%megatm * 3, &
+                'Packed coordinate array does not contain megatm*3 elements')
 
     !Create local 1D array to contain x,y & z components of each local set of atoms
-    Allocate(coords(config%natms*3))
+    Allocate (coords(config%natms * 3))
     coords = 0._wp
 
-    Do i =1, config%natms
-       i2=   config%natms +i
-       i3=(2*config%natms)+i
-       coords(i)  = config%parts(i)%xxx
-       coords(i2) = config%parts(i)%yyy
-       coords(i3) = config%parts(i)%zzz
+    Do i = 1, config%natms
+      i2 = config%natms + i
+      i3 = (2 * config%natms) + i
+      coords(i) = config%parts(i)%xxx
+      coords(i2) = config%parts(i)%yyy
+      coords(i3) = config%parts(i)%zzz
     End Do
-    
-    !Generate record_size and displacement arrays required by gatherv 
-    Call gatherv_scatterv_index_arrays(comm, Size(coords),  &
-         gathered%mpi%counts, gathered%mpi%displ)
-   
+
+    !Generate record_size and displacement arrays required by gatherv
+    Call gatherv_scatterv_index_arrays(comm, Size(coords), &
+                                       gathered%mpi%counts, gathered%mpi%displ)
+
     !Check total number of atoms in system
-    Write(str1, '(I5)') Int(Sum(gathered%mpi%counts)/3)
-    Write(str2, '(I5)') config%megatm
-    error_message =  'Disagreement in total number of atoms found from summing all &
-         elements of MPI record size vs megatm: '//str1//','//str2   
-    Call assert(Int(Sum(gathered%mpi%counts)/3) == config%megatm, error_message)
-    
-    If(to_master_only) Then
-       !Gather coords from each process into gathered%coords on master
-       Call ggatherv(comm, coords, gathered%mpi%counts, &
-            gathered%mpi%displ, gathered%coords)
+    Write (str1, '(I5)') Int(Sum(gathered%mpi%counts) / 3)
+    Write (str2, '(I5)') config%megatm
+    error_message = 'Disagreement in total number of atoms found from summing all'// &
+                    'elements of MPI record size vs megatm: '//str1//','//str2
+    Call assert(Int(Sum(gathered%mpi%counts) / 3) == config%megatm, error_message)
+
+    If (to_master_only) Then
+      !Gather coords from each process into gathered%coords on master
+      Call ggatherv(comm, coords, gathered%mpi%counts, &
+                    gathered%mpi%displ, gathered%coords)
     Else
-       !Gather coords from each process into gathered%coords on all processes
-       Call gallgatherv(comm, coords, gathered%mpi%counts, &
-            gathered%mpi%displ, gathered%coords)
+      !Gather coords from each process into gathered%coords on all processes
+      Call gallgatherv(comm, coords, gathered%mpi%counts, &
+                       gathered%mpi%displ, gathered%coords)
     Endif
-    
+
   End Subroutine gather_coordinates
 
-  
   !! @brief Unpack \p gathered%coords into 2D array
   !!
   !! Could be a member function of coordinate_buffer_type
@@ -3496,37 +3493,36 @@ Contains
   !! @param[in]  config           Object containing configuration data
   !! @param[in]  gathered         Object containing packed coordinates
   !!                              and mpi index arrays for unpacking
-  !! @param[inout] coords         Unpacked atomic coordinates 
+  !! @param[inout] coords         Unpacked atomic coordinates
   !
   Subroutine unpack_gathered_coordinates(comm, config, gathered, coords)
-    Type(comms_type),              Intent( In ) :: comm
-    Type(configuration_type),      Intent( In ) :: config
-    Type(coordinate_buffer_type),  Intent( In ) :: gathered
-    Real(wp), Allocatable,         Intent(InOut) :: coords(:,:)
+    Type(comms_type),             Intent(In   ) :: comm
+    Type(configuration_type),     Intent(In   ) :: config
+    Type(coordinate_buffer_type), Intent(In   ) :: gathered
+    Real(wp), Allocatable,        Intent(InOut) :: coords(:, :)
 
-    Integer :: cnt, ip, natms_local, ia, ix,iy,iz
-    
+    Integer :: cnt, ia, ip, ix, iy, iz, natms_local
+
     Call assert(Allocated(coords), "coords not allocated")
-    Call assert(Size(coords,1) == 3, "Dim 1 of coords /= 3")
-    Call assert(Size(coords,2) == config%megatm, "Size(coords,2) /= config%megatm")
+    Call assert(Size(coords, 1) == 3, "Dim 1 of coords /= 3")
+    Call assert(Size(coords, 2) == config%megatm, "Size(coords,2) /= config%megatm")
 
-    cnt=0
-    Do ip=1,comm%mxnode
-       natms_local=int(gathered%mpi%counts(ip)/3)
-       Do ia=1,natms_local
-          !Composite index cnt == ia+int(MPI_buffer%displ(ip)/3)
-          cnt=cnt+1
-          !mpi process offset + xyz offset + local_index
-          ix = gathered%mpi%displ(ip) +                  ia
-          iy = gathered%mpi%displ(ip) + natms_local   +  ia
-          iz = gathered%mpi%displ(ip) + natms_local*2 +  ia
-          coords(1:3,cnt)=(/gathered%coords(ix),gathered%coords(iy),gathered%coords(iz)/) 
-       End Do
+    cnt = 0
+    Do ip = 1, comm%mxnode
+      natms_local = Int(gathered%mpi%counts(ip) / 3)
+      Do ia = 1, natms_local
+        !Composite index cnt == ia+int(MPI_buffer%displ(ip)/3)
+        cnt = cnt + 1
+        !mpi process offset + xyz offset + local_index
+        ix = gathered%mpi%displ(ip) + ia
+        iy = gathered%mpi%displ(ip) + natms_local + ia
+        iz = gathered%mpi%displ(ip) + natms_local * 2 + ia
+        coords(1:3, cnt) = (/gathered%coords(ix), gathered%coords(iy), gathered%coords(iz)/)
+      End Do
     End Do
-       
+
   End Subroutine unpack_gathered_coordinates
 
-  
   !> @brief Gather atom names from each process into one array and
   !!  broadcast
   !!
@@ -3539,30 +3535,27 @@ Contains
   !! @param[inout]  atmnam           Gathered atomic names
   !
   Subroutine gather_atomic_names(comm, config, to_master_only, atmnam)
-    Type(comms_type),          Intent(InOut) :: comm
-    Type(configuration_type),  Intent(In)    :: config
-    Logical,                   Intent(In)    :: to_master_only
+    Type(comms_type),                       Intent(InOut) :: comm
+    Type(configuration_type),               Intent(In   ) :: config
+    Logical,                                Intent(In   ) :: to_master_only
     Character(Len=len_atmnam), Allocatable, Intent(InOut) :: atmnam(:)
-    
-    Integer :: i
-    Character(Len=len_atmnam), Allocatable :: atmnam_local(:)
-    Integer,                   Allocatable :: rec_size(:), displ(:)
 
-    Call assert(Allocated(atmnam),&
-         'Gathered atmnam not allocated prior to calling gather_atomic_names')
+    Integer, Allocatable :: displ(:), rec_size(:)
+
+    Call assert(Allocated(atmnam), &
+                'Gathered atmnam not allocated prior to calling gather_atomic_names')
     Call assert(Size(atmnam) == config%megatm, &
-         'Gathered atmnam array does not contain natoms elements' )
+                'Gathered atmnam array does not contain natoms elements')
 
     !Different to mpi arrays for gathered%coords
-    Allocate(rec_size(comm%mxnode),displ(comm%mxnode))
+    Allocate (rec_size(comm%mxnode), displ(comm%mxnode))
     rec_size = 0
-    displ    = 0
+    displ = 0
     Call gatherv_scatterv_index_arrays(comm, config%natms, rec_size, displ)
     atmnam = ''
-    Call gallgatherv(comm, config%atmnam, rec_size, displ, atmnam) 
-     
+    Call gallgatherv(comm, config%atmnam, rec_size, displ, atmnam)
+
   End Subroutine gather_atomic_names
-  
 
   !> @brief Distribute forces from array of shape(3,megatm) to
   !! config, without using MPI
@@ -3580,31 +3573,31 @@ Contains
   !!
   !! @param[inout]  config      DLPOLY object containing local config data
   !!                            Returned with updated forces
-  !  
+  !
   Subroutine distribute_forces(comm, mpi_index, forces, config)
-    Type(comms_type),              Intent(InOut) :: comm
-    Type(mpi_distribution_type),   Intent(In)    :: mpi_index
-    Real(wp),         Allocatable, Intent(In)    :: forces(:,:)
-    Type(configuration_type),      Intent(InOut) :: config
+    Type(comms_type),            Intent(InOut) :: comm
+    Type(mpi_distribution_type), Intent(In   ) :: mpi_index
+    Real(wp), Allocatable,       Intent(In   ) :: forces(:, :)
+    Type(configuration_type),    Intent(InOut) :: config
 
-    Integer   :: natms, process_id, offset, ia_local, ia
-    
-    !Zero DLPOLY forces from prior MD step 
-    natms=config%natms
+    Integer :: ia, ia_local, natms, offset, process_id
+
+    !Zero DLPOLY forces from prior MD step
+    natms = config%natms
     config%parts(1:natms)%fxx = 0._wp
     config%parts(1:natms)%fyy = 0._wp
     config%parts(1:natms)%fzz = 0._wp
 
     process_id = comm%idnode
-    offset = int(mpi_index%displ(process_id+1)/3)
+    offset = Int(mpi_index%displ(process_id + 1) / 3)
 
-    Do ia_local=1,natms
-       ia = offset + ia_local
-       config%parts(ia_local)%fxx = forces(1,ia)
-       config%parts(ia_local)%fyy = forces(2,ia)
-       config%parts(ia_local)%fzz = forces(3,ia)
+    Do ia_local = 1, natms
+      ia = offset + ia_local
+      config%parts(ia_local)%fxx = forces(1, ia)
+      config%parts(ia_local)%fyy = forces(2, ia)
+      config%parts(ia_local)%fzz = forces(3, ia)
     End Do
-    
+
   End Subroutine distribute_forces
-  
+
 End Module configuration

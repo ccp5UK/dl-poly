@@ -43,7 +43,8 @@ Module control
                                   RESTART_KEY_OLD,&
                                   RESTART_KEY_SCALE,&
                                   flow_type, &
-                                  DFTB
+                                  DFTB, &
+                                  MD
   Use greenkubo,            Only: greenkubo_type
   Use impacts,              Only: impact_type
   Use inversions,           Only: inversions_type
@@ -530,8 +531,8 @@ Contains
     flow%freq_restart = 1000
 
     ! default driver type
-    
-    flow%driver_type = 0 
+
+    flow%simulation_method = MD
 
     ! default value for the particle density per link cell limit
     ! below which subcelling (decreasing link-cell dimensions) stops
@@ -549,7 +550,7 @@ Contains
     rcut1 = 0.0_wp
     rpad1 = 0.0_wp
     rvdw1 = 0.0_wp
-    
+
     ! open the simulation control file
 
     If (comm%idnode == 0) Open (Newunit=files(FILE_CONTROL)%unit_no, File=files(FILE_CONTROL)%filename, Status='old')
@@ -674,9 +675,9 @@ Contains
         Call info(message, .true.)
       Else If(word(1:9) == 'unit_test') Then
          devel%run_unit_tests = .true.
-         !TODO(Alex) Would like keyword options: 'all' or list of modules [configuration, comms]  
+         !TODO(Alex) Would like keyword options: 'all' or list of modules [configuration, comms]
          devel%unit_test%configuration = .true.
-        
+
         ! read VDW options
 
       Else If (word(1:3) == 'vdw') Then
@@ -4346,12 +4347,12 @@ Contains
 
           ttm%redistribute = .true.
 
-      ! dftb_driver  
-      Else If (word(1:6) == 'dftb_d') Then
+      ! dftb_driver
+      Else If (word(1:11) == 'dftb_driver') Then
 
-         !Use DFTB+ as the force calculator instead of classical force fields 
-         flow%driver_type = DFTB
-         
+         !Use DFTB+ as the force calculator instead of classical force fields
+         flow%simulation_method = DFTB
+
         End If
 
         ! read finish
