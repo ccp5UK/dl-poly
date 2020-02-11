@@ -554,6 +554,7 @@ Contains
 
        if(comm%idnode == root_id) Write(*,*) 'Unit tests completed'
        Call exit_comms(dlp_world)
+       Stop 0
     Endif
 
     ! Now you can run fast, boy
