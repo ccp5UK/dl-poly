@@ -34,6 +34,11 @@ Module drivers
   Use deport_data,          Only: mpoles_rotmat_set_halo,&
                                   relocate_particles
   Use development,          Only: development_type
+#ifdef WITH_DFTBP
+  Use dftbp_library,        Only: run_dftbplus,&
+                                  dftb_geometry_type,&
+                                  convert_unit
+#endif
   Use dihedrals,            Only: dihedrals_forces,&
                                   dihedrals_type
   Use domains,              Only: domains_type
@@ -526,6 +531,71 @@ Contains
     !!!!!!!!!!!!!!!!!!  W_CALCULATE_FORCES INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
   End Subroutine calculate_forces
+
+  
+  !> @brief Compute forces using DFTB+ v18.2
+  !!
+  !! For a given set of atomic coordinates, forces are computed using
+  !! the density-functional tight-binding code, DFTB+ v19.2
+  !! 
+  !! @param[in]    comm     Object containing MPI communicator
+  !! @param[in]    flow     Object containing MD step/time data 
+  !! @param[inout] config   Object containing configuration data
+  !!                        Returns updated forces in config 
+  !   
+  Subroutine calculate_dftb_forces(comm, flow, config)
+    Type(comms_type),         Intent( InOut ) :: comm
+    Type(flow_type),          Intent( In    ) :: flow 
+    Type(configuration_type), Intent( InOut ) :: config
+
+#ifdef DFTBP   
+    !> Gathered coordinates and mpi index arrays
+    Type(coordinate_buffer_type)             :: gathered
+    !> Gathered atom names
+    Character(len=len_atmnam),   Allocatable :: atmnam(:)
+    !> DFTB+ geometry object
+    Type(dftb_geometry_type),    Save        :: geo
+    !> DFTB+ forces
+    Real(wp),                    Allocatable :: forces(:,:)
+    
+    !>DFTB+ requires all geometry data on every process
+    Logical, Parameter :: to_master_only = .false.
+    !> Unit conversion factor 
+    Real(wp)           :: unit_factor
+
+    !Gather atomic coordinates and names (excluding halo atoms)
+    Call gathered%initialise(comm, config%megatm*3)     
+    Call gather_coordinates(comm, config, to_master_only, gathered)
+    Allocate(atmnam(config%megatm))
+    Call gather_atomic_names(comm, config, to_master_only, atmnam)
+
+    If(flow%step == 0) Then
+       !Total number of species conserved, hence assign once 
+       Call geo%initialise(config, atmnam)
+       Allocate(forces(3,config%megatm))
+    Endif
+
+    Call geo%set_geometry(comm, config, gathered, atmnam)
+    Call run_dftbplus(comm, flow, geo, forces)
+    !MPI index arrays same for forces as for coordinates
+    Call distribute_forces(comm, gathered%mpi, forces, config)
+
+    unit_factor = convert_unit('DFTB+','DLPOLY','force')
+    config%parts(:)%fxx = config%parts(:)%fxx * unit_factor 
+    config%parts(:)%fyy = config%parts(:)%fyy * unit_factor
+    config%parts(:)%fzz = config%parts(:)%fzz * unit_factor 
+    
+    !Note: Only need to tear down when atomic distribution changes
+    !but do this for now 
+    Call gathered%finalise()
+
+    If(flow%step == flow%run_steps) Then
+       Call geo%finalise()
+    Endif
+
+#endif
+  End Subroutine calculate_dftb_forces
+
 
   Subroutine refresh_mappings(cnfig, flow, cshell, cons, pmf, stat, msd_data, bond, angle, &
                               dihedral, inversion, tether, neigh, sites, mpoles, rigid, domain, &
@@ -1581,6 +1651,8 @@ Contains
                               minim, mpoles, ext_field, rigid, electro, domain, kim_data, &
                               msd_data, tmr, files, green, devel, ewld, &
                               met, seed, thermo, crd, comm)
+      Else If (flow%simulation_method == DFTB) Then
+         Call calculate_dftb_forces(comm, flow, cnfig)
       Endif
 
       ! Calculate physical quantities, collect statistics and report at t=0

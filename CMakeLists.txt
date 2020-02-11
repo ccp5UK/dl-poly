@@ -146,6 +146,53 @@ else()
   message(STATUS "Build without extra timing support")
 endif()
 
+if(WITH_DFTBP)
+
+  if(INTERNAL_DFTBP)
+    include(ExternalProject)
+    ExternalProject_Add(int-dftbp
+      GIT_REPOSITORY https://Alex_Buccheri@bitbucket.org/Alex_Buccheri/dftb_v18_lib.git
+      GIT_SHALLOW true
+      GIT_TAG origin/lib
+      GIT_PROGRESS true
+      PREFIX int-dftbp-api
+      SOURCE_DIR int-dftbp-api/dftbp-api
+      BINARY_DIR int-dftbp-api/build-api
+      CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_Fortran_COMPILER=${MPI_Fortran_COMPILER} -DLIB_CHOICE="GCC"
+    )
+
+    set(DFTBP_INC ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
+    set(DFTBP_LIB ${CMAKE_INSTALL_PREFIX}/lib)
+    link_directories(${DFTBP_LIB})
+    set(LIBS ${LIBS} dftb)
+    message(STATUS "Build with OpenKIM support")
+    message(STATUS "Building OpenKIM for you")
+  else()
+    find_package(DFTBP REQUIRED)
+    message(STATUS "Build with DFTB+ support")
+    include_directories(${DFTBP_INCLUDE_DIRS})
+    set(LIBS ${LIBS} ${DFTBP_LIBRARY})
+    message(STATUS "using DFTB+ library ${DFTBP_LIBRARY}")
+    message(STATUS "using DFTB+ include ${DFTBP_INCLUDE_DIRS}")
+  endif()
+
+  if(${SCALAPACK} STREQUAL "GCC")
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(SCALAPACK REQUIRED scalapack>=2.0.2)
+    link_directories(${SCALAPACK_LIBRARY_DIRS})
+    set(LIBS ${LIBS} ${SCALAPACK_LIBRARIES})
+    pkg_check_modules(OPENBLAS REQUIRED openblas>=0.3.0)
+    link_directories(${OPENBLAS_LIBRARY_DIRS})
+    set(LIBS ${LIBS} ${OPENBLAS_LIBRARIES})
+  elseif(${SCALAPACK} STREQUAL "MKL")
+    link_directories($ENV{MKLROOT}/lib/intel64)
+    set(LIBS ${LIBS} "mkl_scalapack_lp64;mkl_blacs_intelmpi_lp64;mkl_intel_lp64;mkl_intel_thread;mkl_core;iomp5")
+  endif()
+
+else()
+    message(STATUS "Build without DFTB+ support")
+endif()
+
 if(WITH_ASSERT)
   message(STATUS "Build with asserts")
 else()
