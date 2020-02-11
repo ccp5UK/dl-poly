@@ -549,13 +549,13 @@ Contains
           if(comm%idnode == root_id) Then
              Write(*,*) 'Running unit tests for configuration module'
           Endif
-          Call run_configuration_tests()
+          Call run_configuration_tests(comm%mxnode)
        End If
-       
-       if(comm%idnode == root_id) Write(*,*) 'Unit tests completed' 
+
+       if(comm%idnode == root_id) Write(*,*) 'Unit tests completed'
        Call exit_comms(dlp_world)
     Endif
-  
+
     ! Now you can run fast, boy
     If (devel%l_fast) Call gsync(comm, devel%l_fast)
 

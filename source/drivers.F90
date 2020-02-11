@@ -1587,7 +1587,7 @@ Contains
       !Else If(flow%driver_type == DFTB) Then
       !   Call w_calculate_dftb_forces(comm, flow, cnfig)
       Endif
-         
+
       ! Calculate physical quantities, collect statistics and report at t=0
 
       If (flow%step == 0) Then

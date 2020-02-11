@@ -29,7 +29,7 @@ Module mpi_api
 
   ! MPI thread level support
   Integer, Parameter   :: MPI_THREAD_FUNNELED = 0
-  
+
   ! MPI address kind
 
   Integer, Parameter   :: MPI_ADDRESS_KIND = li
@@ -136,11 +136,11 @@ Module mpi_api
   End Interface !MPI_ALLGATHER
 
   Interface MPI_ALLGATHERV
-    Module Procedure MPI_ALLGATHER_chr_vv  
-    Module Procedure MPI_ALLGATHER_rwp_vv  
-    Module Procedure MPI_ALLGATHER_rwp_mm  
+    Module Procedure MPI_ALLGATHER_chr_vv
+    Module Procedure MPI_ALLGATHER_rwp_vv
+    Module Procedure MPI_ALLGATHER_rwp_mm
   End Interface MPI_ALLGATHERV !MPI_ALLGATHERV
-  
+
   Interface MPI_ALLTOALL
     Module Procedure MPI_ALLTOALL_log11
     Module Procedure MPI_ALLTOALL_log22
@@ -325,10 +325,10 @@ Contains
 
     provided_threading = 0
     ierr = 0
-    
+
   End Subroutine MPI_INIT_THREAD
 
-  
+
   Subroutine MPI_FINALIZE(ierr)
 
     Integer, Intent(   Out ) :: ierr
@@ -620,7 +620,7 @@ Contains
     End If
 
   End Subroutine MPI_BCAST_rwp_v
-  
+
   Subroutine MPI_BCAST_rwp_m(aaa,n,MPI_WP,idnode,MPI_COMM_WORLD,ierr)
 
     Integer,           Intent( In    ) :: MPI_WP,idnode,MPI_COMM_WORLD
@@ -740,7 +740,7 @@ Contains
     bbb(1:n)=aaa(1:n)
 
   End Subroutine MPI_ALLREDUCE_rwp_v
-  
+
   Subroutine MPI_ALLREDUCE_cwp_v(aaa,bbb,n,MPI_WP,MPI,MPI_COMM_WORLD,ierr)
 
     Integer,              Intent( In    ) :: MPI_WP,MPI,MPI_COMM_WORLD
@@ -755,7 +755,7 @@ Contains
       Stop
     End If
     bbb(1:n)=aaa(1:n)
-  
+
   End Subroutine MPI_ALLREDUCE_cwp_v
 
 
@@ -1361,8 +1361,8 @@ Contains
 
   End Subroutine MPI_ALLGATHER_cwp_v
 
-  Subroutine MPI_ALLGATHER_chr_vv(send_buf,  send_size,          MPI_CHARACTER_send, &       
-                                  recv_buf,  recv_counts, disps, MPI_CHARACTER_recv, & 
+  Subroutine MPI_ALLGATHER_chr_vv(send_buf,  send_size,          MPI_CHARACTER_send, &
+                                  recv_buf,  recv_counts, disps, MPI_CHARACTER_recv, &
                                   MPI_COMM_WORLD, ierr)
 
     Character( Len = * ), Intent( In    ) :: send_buf(:)
@@ -1370,7 +1370,7 @@ Contains
     Integer,              Intent( In    ) :: recv_counts(:), disps(:)
     Character( Len = * ), Intent( InOut ) :: recv_buf(:)
     Integer,              Intent(   Out ) :: ierr
-    
+
     Call assert(Sum(recv_counts) == Size(recv_buf), &
          message="Sum of send buffer sizes in receive_counts does not equal total size of receive buffer")
     Call assert(MPI_CHARACTER_send == MPI_CHARACTER_recv, &
@@ -1378,10 +1378,10 @@ Contains
     Call assert(Len(send_buf(1)) == Len(recv_buf(1)), &
          message='Character length of send and receive buffers differ')
     Call assert(Size(send_buf) == Size(recv_buf), message="Send and receive sizes differ")
-    
+
     ierr = 0
     recv_buf = send_buf
-    
+
   End Subroutine MPI_ALLGATHER_chr_vv
 
   Subroutine MPI_ALLGATHER_rwp_vv(send_buf,  send_size,          MPI_REAL_WP_send, &
@@ -1393,7 +1393,7 @@ Contains
     Integer,           Intent( In    ) :: recv_counts(:), disps(:)
     Real( Kind = wp ), Intent( InOut ) :: recv_buf(:)
     Integer,           Intent(   Out ) :: ierr
-    
+
     Call assert(Sum(recv_counts) == Size(recv_buf), &
          message="Sum of send buffer sizes in receiv _counts does not equal total size of receive buffer")
     Call assert(MPI_REAL_WP_send == MPI_REAL_WP_recv, message="MPI_REAL_WP_send /= MPI_REAL_WP_recv")
@@ -1425,9 +1425,9 @@ Contains
 
     ierr = 0
     recv_buf = send_buf
-      
+
   End Subroutine mpi_allgather_rwp_mm
-     
+
   Subroutine MPI_ALLTOALL_log11(aaa,s_a,MPI_LOGICALa,bbb,s_b,MPI_LOGICALb,MPI_COMM_WORLD,ierr)
 
     Integer, Intent( In    ) :: MPI_LOGICALa,MPI_LOGICALb,MPI_COMM_WORLD
@@ -3666,7 +3666,7 @@ Contains
 
   End Subroutine MPI_SCATTERV_cwp_vv
 
- 
+
   Subroutine MPI_SCATTERV_cwp_mm(isend,iscnt,idisp,MPI_WPa,irecv,ircnt,MPI_WPb,idnode,MPI_COMM_WORLD,ierr)
 
     Integer, Intent( In    ) :: MPI_WPa,MPI_WPb,MPI_COMM_WORLD

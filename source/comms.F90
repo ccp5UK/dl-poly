@@ -40,7 +40,7 @@ Module comms
   Integer, Save :: wp_mpi = 0
 
   Integer, Public, Parameter  :: root_id = 0
-  
+
   Integer, Public :: mpi_ver = -1, &
                      mpi_subver = -1
 
@@ -116,7 +116,7 @@ Module comms
     Integer :: part_array_type_forces
   End Type
 
-  !> @brief Type containing mpi distribution information for a 1D or 2D array 
+  !> @brief Type containing mpi distribution information for a 1D or 2D array
   !!
   !! Holds index arrays required by all/gatherv and all/scatterv mpi routines
   !!
@@ -135,9 +135,9 @@ Module comms
      Integer, Public, Allocatable :: displ(:)
    Contains
      Procedure :: init => mpi_distribution_init
-     Procedure :: finalise => mpi_distribution_finalise 
+     Procedure :: finalise => mpi_distribution_finalise
   End Type mpi_distribution_type
-  
+
   Public :: init_comms, exit_comms, abort_comms, &
             gsync, gwait, gcheck, gsum, gmax, gtime, gsend, grecv, girecv, &
             gscatter, gscatterv, gscatter_columns, ggatherv, gallgather, galltoall, &
@@ -246,7 +246,7 @@ Module comms
      Module Procedure ggatherv_real
      Module Procedure ggatherv_real_2d
   End Interface ggatherv
-  
+
   Interface gallgather
     Module Procedure gallgather_integer_vector_to_vector
     Module Procedure gallgather_integer_scalar_to_vector
@@ -254,8 +254,8 @@ Module comms
 
   Interface gallgatherv
      Module Procedure gallgatherv_character
-     Module Procedure gallgatherv_real_1d 
-     Module Procedure gallgatherv_real_2d 
+     Module Procedure gallgatherv_real_1d
+     Module Procedure gallgatherv_real_2d
   End Interface gallgatherv
 
   Interface galltoall
@@ -395,7 +395,7 @@ Contains
 
   End Subroutine init_comms
 
-  
+
   Subroutine exit_comms(comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1990,21 +1990,21 @@ Contains
   End Subroutine gscatterv_real
 
   Subroutine gscatterv_real_2d(comm, send_buf, send_counts, disps, recv_buf, root)
-    !> @brief Scatter the columns of a real two dimensional array  
+    !> @brief Scatter the columns of a real two dimensional array
     !! Equivalent operation to gscatter_columns, but send_counts and disps
-    !! consistent with a single (composite), contiguous index. 
+    !! consistent with a single (composite), contiguous index.
     !!
     !! dl_poly_4 Scatter columns from send buffer on root, to each task.
-    !! Each task can receive a unique number of columns. 
+    !! Each task can receive a unique number of columns.
     !! This implimentation relies on arrays being column major as defined in the
     !! Fortran standard.
     !!
     !! send_counts and disps can be generated using 'gatherv_scatterv_index_arrays'
     !!
     !! @param[in]     comm             Object containing MPI settings and comms
-    !! @param[in]     send_buf         Send buffer array, defined on root  
+    !! @param[in]     send_buf         Send buffer array, defined on root
     !! @param[inout]  send_counts      Holds size of send buffer for each process
-    !! @param[inout]  disps            Holds start index of send buffer for 
+    !! @param[inout]  disps            Holds start index of send buffer for
     !!                                 receive buffer (single, contiguous index)
     !! @param[out]    recv_buf         Local receive buffer array. Each receive
     !!                                 buffer must have the same number of rows,
@@ -2013,14 +2013,14 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - A. Buccheri June 2019
     !
-    
+
     Type( comms_type ), Intent( InOut ) :: comm
     Real( Kind = wp ),  Intent( In    ) :: send_buf(:,:)
     Integer,            Intent( In    ) :: send_counts(:)
     Integer,            Intent( In    ) :: disps(:)
     Real( Kind = wp),   Intent( Out   ) :: recv_buf(:,:)
     Integer,            Intent( In    ) :: root
-    Character( Len = 100)               :: error_message 
+    Character( Len = 100)               :: error_message
 
     error_message = 'gscatterv: Sum of buffer sizes in send_counts &
          does not equal total size of send_buffer.'
@@ -2029,9 +2029,9 @@ Contains
     error_message = 'gscatterv: Number of rows differs between send and &
          receive buffers. Data will not be correctly ordered.'
     Call assert(Size(send_buf, Dim = 1) == Size(recv_buf, Dim = 1), error_message)
-       
+
     Call MPI_SCATTERV(send_buf, send_counts, disps, wp_mpi, &
-                      recv_buf, Size(recv_buf),     wp_mpi, & 
+                      recv_buf, Size(recv_buf),     wp_mpi, &
                       root,     comm%comm, comm%ierr)
 
   End Subroutine gscatterv_real_2d
@@ -2043,7 +2043,7 @@ Contains
     ! node
     !
     ! copyright - daresbury laboratory
-    ! author    - j.madge april 2018, A.Buccheri June 2019 
+    ! author    - j.madge april 2018, A.Buccheri June 2019
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     Type(comms_type),     Intent( InOut ) :: comm
@@ -2054,7 +2054,7 @@ Contains
     Integer,              Intent( In    ) :: root
 
     Integer               :: send_len, recv_len, send_size, recv_size
-    Character( Len = 100 ):: error_message 
+    Character( Len = 100 ):: error_message
 
     send_len  = Len(send_buf(1))
     send_size = Size(send_buf, Dim = 1)
@@ -2066,14 +2066,14 @@ Contains
 
     error_message = 'gscatterv: Sum of counts to send exceeds the size of send buffer.'
     Call assert(Sum(send_counts) <= send_size, error_message)
-  
+
     Call MPI_SCATTERV(send_buf, send_counts*send_len, disps*send_len, MPI_CHARACTER, &
                       recv_buf, recv_len*recv_size,                   MPI_CHARACTER, &
                       root, comm%comm, comm%ierr)
-    
+
   End Subroutine gscatterv_character
-  
- 
+
+
   Subroutine gscatter_columns_real(comm, sendbuf, scounts, disps, recvbuf, root)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2107,14 +2107,14 @@ Contains
 
   Subroutine ggatherv_real(comm, send_buf, recv_counts, disps, recv_buf, recv_process)
     !> @brief Gather send buffer from each task and broadcast the combined data
-    !! to single process 
+    !! to single process
     !!
     !! dl_poly_4 Gather data of type real(wp), stored in send buffers of
     !! variable size into a receive buffer, and broadcast to specified process
     !! If no process is specified, data is gathered on root_id
     !!
     !! @param[in]     comm             Object containing MPI settings and comms
-    !! @param[in]     send_buf         Local send buffer array 
+    !! @param[in]     send_buf         Local send buffer array
     !! @param[inout]  recv_counts      Holds size of send buffer of each process
     !! @param[inout]  disps            Holds offset of send buffer w.r.t. index in
     !!                                 receive buffer (single, contiguous index)
@@ -2122,9 +2122,9 @@ Contains
     !! @param[in]     recv_process     Optional. Process id for received data
     !!
     !! copyright - daresbury laboratory
-    !! author    - A. Buccheri Jan 2020 
+    !! author    - A. Buccheri Jan 2020
     !
-    
+
     Type( comms_type ), Intent( InOut ) :: comm
     Real( Kind = wp ),  Intent( In    ) :: send_buf(:)
     Integer,            Intent( In    ) :: recv_counts(:)
@@ -2132,33 +2132,33 @@ Contains
     Real( Kind = wp),   Intent( Out   ) :: recv_buf(:)
     Integer, Optional,  Intent( In    ) :: recv_process
 
-    Integer :: process_id 
-    Character( Len = 100 )              :: error_message 
+    Integer :: process_id
+    Character( Len = 100 )              :: error_message
 
     error_message = 'ggatherv: Sum of send_buffer sizes in receive_counts &
          does not equal total size of receive_buffer.'
     Call assert(Sum(recv_counts) == Size(recv_buf), error_message)
-    
+
     If(Present(recv_process)) Then
        process_id = recv_process
     Else
        process_id = root_id
     Endif
-    
+
     Call MPI_GATHERV(send_buf,   Size(send_buf),     wp_mpi, &
                      recv_buf,   recv_counts, disps, wp_mpi, &
                      process_id, comm%comm, comm%ierr)
- 
+
   End Subroutine ggatherv_real
 
-  
+
   Subroutine ggatherv_real_2d(comm, send_buf, recv_counts, disps, recv_buf, recv_process)
     !> @brief Gather send buffer from each task and broadcast the combined data
     !! to single process
     !!
     !! dl_poly_4 Gather data of type real, stored in 2D send buffers of size(n,m),
     !! into a receive buffer and broadcasts to a specified process.
-    !! If a process is not specified, master is chosen. 
+    !! If a process is not specified, master is chosen.
     !! Exploits column-major storage of fortran arrays. For ordering to be
     !! correct in recv_buf, n must be fixed for all send_buf, but m can vary.
     !!
@@ -2174,9 +2174,9 @@ Contains
     !! @param[in]     recv_process     Optional. Process id for received data
     !!
     !! copyright - daresbury laboratory
-    !! author    - A. Buccheri Jan 2020 
+    !! author    - A. Buccheri Jan 2020
     !
-    
+
     Type( comms_type ), Intent( InOut ) :: comm
     Real( Kind = wp ),  Intent( In    ) :: send_buf(:,:)
     Integer,            Intent( In    ) :: recv_counts(:)
@@ -2185,26 +2185,26 @@ Contains
     Integer, Optional,  Intent( In    ) :: recv_process
 
     Integer :: process_id
-    Character( Len = 100 ) :: error_message 
+    Character( Len = 100 ) :: error_message
 
     error_message = 'ggatherv: Sum of send_buffer sizes in receive_counts &
          does not equal total size of receive_buffer.'
     Call assert(Sum(recv_counts) == Size(recv_buf), error_message)
-    
+
     error_message = 'ggatherv: Number of rows differs between send and &
          receive buffers. Data will not be correctly ordered.'
-    Call assert(Size(send_buf, Dim = 1) == Size(recv_buf, Dim = 1), error_message) 
-    
+    Call assert(Size(send_buf, Dim = 1) == Size(recv_buf, Dim = 1), error_message)
+
     If(Present(recv_process)) Then
        process_id = recv_process
     Else
        process_id = root_id
     Endif
-    
+
     Call MPI_GATHERV(send_buf,   Size(send_buf),     wp_mpi, &
                      recv_buf,   recv_counts, disps, wp_mpi, &
                      process_id, comm%comm, comm%ierr)
-    
+
   End Subroutine ggatherv_real_2d
 
 
@@ -2254,31 +2254,31 @@ Contains
   End Subroutine gallgather_integer_scalar_to_vector
 
  Subroutine gallgatherv_character(comm, send_buf, recv_counts, disps, recv_buf)
-    !> @brief Gather data from each task and broadcast the combined data to all tasks. 
+    !> @brief Gather data from each task and broadcast the combined data to all tasks.
     !!
     !! dl_poly_4 Gather data of type character, stored in send buffers of variable
-    !! size (fixed length), into a receive buffer, and broadcast to all tasks. 
+    !! size (fixed length), into a receive buffer, and broadcast to all tasks.
     !!
     !! @param[in]     comm             Object containing MPI settings and comms
     !! @param[in]     send_buf         Local send buffer array.
-    !!                                 Fixed character length but variable size. 
+    !!                                 Fixed character length but variable size.
     !! @param[inout]  recv_counts      Holds size of send buffer of each process
     !! @param[inout]  disps            Holds offset of send buffer w.r.t. index in
     !!                                 receive buffer (single, contiguous index)
     !! @param[out]    recv_buf         Global receive buffer array
     !!
     !! copyright - daresbury laboratory
-    !! author    - A. Buccheri June 2019 
+    !! author    - A. Buccheri June 2019
     !
     Type( comms_type ),   Intent( InOut ) :: comm
     Character( Len = * ), Intent( In    ) :: send_buf(:)
     Integer,              Intent( In    ) :: recv_counts(:)
     Integer,              Intent( In    ) :: disps(:)
     Character( Len = * ), Intent( Out   ) :: recv_buf(:)
-    
+
     Integer               :: send_len, recv_len, send_size, recv_size
-    Character( Len = 100) :: error_message 
-    
+    Character( Len = 100) :: error_message
+
     send_len  = Len(send_buf(1))
     send_size = Size(send_buf, Dim = 1)
     recv_len  = Len(recv_buf(1))
@@ -2290,41 +2290,41 @@ Contains
     error_message = 'gallgatherv: Sum of counts to receive exceeds the size of receive buffer.'
     Call assert(Sum(recv_counts) <= recv_size, error_message)
 
-    Call MPI_ALLGATHERV(send_buf,  send_size*send_len,                   MPI_CHARACTER, &       
-                        recv_buf,  recv_counts*recv_len, disps*recv_len, MPI_CHARACTER, & 
+    Call MPI_ALLGATHERV(send_buf,  send_size*send_len,                   MPI_CHARACTER, &
+                        recv_buf,  recv_counts*recv_len, disps*recv_len, MPI_CHARACTER, &
                         comm%comm, comm%ierr )
-     
+
   End Subroutine gallgatherv_character
 
     Subroutine gallgatherv_real_1d(comm, send_buf, recv_counts, disps, recv_buf)
     !> @brief Gather send buffer from each task and broadcast the combined data
-    !! to all tasks. 
+    !! to all tasks.
     !!
     !! dl_poly_4 Gather data of type real(wp), stored in send buffers of
-    !! variable size into a receive buffer, and broadcast to all tasks. 
+    !! variable size into a receive buffer, and broadcast to all tasks.
     !!
     !! @param[in]     comm             Object containing MPI settings and comms
-    !! @param[in]     send_buf         Local send buffer array 
+    !! @param[in]     send_buf         Local send buffer array
     !! @param[inout]  recv_counts      Holds size of send buffer of each process
     !! @param[inout]  disps            Holds offset of send buffer w.r.t. index in
     !!                                 receive buffer (single, contiguous index)
     !! @param[out]    recv_buf         Global receive buffer array
     !!
     !! copyright - daresbury laboratory
-    !! author    - A. Buccheri June 2019 
+    !! author    - A. Buccheri June 2019
     !
-    
+
     Type( comms_type ), Intent( InOut ) :: comm
     Real( Kind = wp ),  Intent( In    ) :: send_buf(:)
     Integer,            Intent( In    ) :: recv_counts(:)
     Integer,            Intent( In    ) :: disps(:)
     Real( Kind = wp),   Intent( Out   ) :: recv_buf(:)
-    Character( Len = 100 )              :: error_message 
+    Character( Len = 100 )              :: error_message
 
     error_message = 'gallgatherv: Sum of send_buffer sizes in receive_counts &
          does not equal total size of receive_buffer.'
     Call assert(Sum(recv_counts) == Size(recv_buf), error_message)
-      
+
     Call MPI_ALLGATHERV(send_buf,  Size(send_buf),     wp_mpi, &
                         recv_buf,  recv_counts, disps, wp_mpi, &
                         comm%comm, comm%ierr )
@@ -2334,10 +2334,10 @@ Contains
 
   Subroutine gallgatherv_real_2d(comm, send_buf, recv_counts, disps, recv_buf)
     !> @brief Gather send buffer from each task and broadcast the combined data
-    !! to all tasks. 
+    !! to all tasks.
     !!
     !! dl_poly_4 Gather data of type real, stored in 2D send buffers of size(n,m),
-    !! into a receive buffer and broadcast to all tasks. 
+    !! into a receive buffer and broadcast to all tasks.
     !! Exploits column-major storage of fortran arrays. For ordering to be
     !! correct in recv_buf, n must be fixed for all send_buf, but m can vary.
     !!
@@ -2353,30 +2353,30 @@ Contains
     !! @param[out]    recv_buf         Global receive buffer array
     !!
     !! copyright - daresbury laboratory
-    !! author    - A. Buccheri June 2019 
+    !! author    - A. Buccheri June 2019
     !
-    
+
     Type( comms_type ), Intent( InOut ) :: comm
     Real( Kind = wp ),  Intent( In    ) :: send_buf(:,:)
     Integer,            Intent( In    ) :: recv_counts(:)
     Integer,            Intent( In    ) :: disps(:)
     Real( Kind = wp),   Intent( Out   ) :: recv_buf(:,:)
-    Character( Len = 100 )              :: error_message 
+    Character( Len = 100 )              :: error_message
 
     error_message = 'gallgatherv: Sum of send_buffer sizes in receive_counts &
          does not equal total size of receive_buffer.'
     Call assert(Sum(recv_counts) == Size(recv_buf), error_message)
-    
+
     error_message = 'gallgatherv: Number of rows differs between send and &
          receive buffers. Data will not be correctly ordered.'
-    Call assert(Size(send_buf, Dim = 1) == Size(recv_buf, Dim = 1), error_message) 
-      
+    Call assert(Size(send_buf, Dim = 1) == Size(recv_buf, Dim = 1), error_message)
+
     Call MPI_ALLGATHERV(send_buf,  Size(send_buf),     wp_mpi, &
                         recv_buf,  recv_counts, disps, wp_mpi, &
                         comm%comm, comm%ierr )
-    
+
   End Subroutine gallgatherv_real_2d
-  
+
   Subroutine galltoall_integer(comm, sendbuf, scount, recvbuf)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2484,10 +2484,10 @@ Contains
 
     error_message = 'gallreduce: Size of send buffer /= size of receive buffer'
     Call assert(Size(send_buf) == Size(recv_buf), error_message)
-     
+
     Call MPI_ALLREDUCE(send_buf, recv_buf, size(send_buf), MPI_INTEGER, operation, &
                        comm%comm,comm%ierr)
-    
+
   End Subroutine gallreduce_integer_vector
 
   Subroutine gallreduce_real_vector(comm, send_buf, recv_buf, operation)
@@ -2506,16 +2506,16 @@ Contains
     Real(wp),           Intent(   Out ) :: recv_buf(:)
     Integer,            Intent( In    ) :: operation
     Character( Len = 100 )              :: error_message
-    
+
     error_message = 'gallreduce: Size of send buffer /= size of receive buffer'
     Call assert(Size(send_buf) == Size(recv_buf), error_message)
- 
+
     Call MPI_ALLREDUCE(send_buf, recv_buf, size(send_buf), wp_mpi, operation, &
                        comm%comm,comm%ierr)
-    
+
   End Subroutine gallreduce_real_vector
 
-  
+
   Subroutine mpi_distribution_init(this, comms)
     Type(comms_type),             Intent(In)    :: comms
     Class(mpi_distribution_type), Intent(InOut) :: this
@@ -2524,9 +2524,9 @@ Contains
     Allocate(this%displ( comms%mxnode ))
     this%counts = 0
     this%displ  = 0
-    
+
   End Subroutine mpi_distribution_init
-  
+
   Subroutine mpi_distribution_finalise(this)
     Class(mpi_distribution_type), Intent(InOut) :: this
     If(Allocated(this%counts)) Deallocate(this%counts)
@@ -2537,7 +2537,7 @@ Contains
   !> @brief Fill counts and displ index arrays required by mpi all/gatherv & all/scatterv
   !!
   !! @param[in]     comm        Object holding MPI settings and comms
-  !! @param[in]     N           Size of local array 
+  !! @param[in]     N           Size of local array
   !! @param[inout]  counts      1D integer array, size numprocs
   !!                            Holds size of local array on each process
   !! @param[inout]  displ       1D integer array, size numprocs
@@ -2548,15 +2548,15 @@ Contains
     !---------------
     !Declarations
     !---------------
-    !Suboutine Arguments 
+    !Suboutine Arguments
     Type( comms_type ),   Intent( InOut ) :: comm
-    Integer,              Intent( In    ) :: N   
+    Integer,              Intent( In    ) :: N
     Integer, Allocatable, Intent( InOut ) :: displ(:),counts(:)
 
     !Local data
     Integer, Allocatable :: counts_local(:)
     Integer              :: rank,numprocs,i
-    
+
     !---------------
     !Main Routine
     !---------------
@@ -2565,17 +2565,17 @@ Contains
 
     Call assert(Allocated(counts), 'gatherv_scatterv_index_arrays: counts not allocated')
     Call assert(Allocated(displ), 'gatherv_scatterv_index_arrays: displ not allocated')
-    
+
     !Fill counts
-    Allocate(counts_local(numprocs))   
+    Allocate(counts_local(numprocs))
     counts_local=0
     counts_local(rank+1)=N
-    
+
     !Add element count from each process into global array
     counts=0
     Call gallreduce(comm, counts_local, counts, op_sum)
-   
-    !Fill displ 
+
+    !Fill displ
     displ=0
     Do i=2,numprocs
        displ(i)=displ(i-1)+counts(i-1)
@@ -2587,20 +2587,20 @@ Contains
   !> Based on an old (2011) version of Quantum Espresso subroutine
   !!
   !! @param[in]    comm          Object holding MPI settings and comms
-  !! @param[in]    n             Range of loop (assuming starts at 1) 
+  !! @param[in]    n             Range of loop (assuming starts at 1)
   !! !param[out]   istart/istop  Start/stop indices for loop
   !
   subroutine distribute_loop(comm, n, istart, istop)
     Type(comms_type), Intent(In) :: comm
-    !> Quantity to distribute 
+    !> Quantity to distribute
     Integer, Intent(In)  ::   n
-    !> Returned loop limits 
+    !> Returned loop limits
     Integer, Intent(Out) ::  istart,istop
     Integer              ::  nl,nlr
 
     !Distribute iq loop
     if(comm%mxnode > 1) then
-       !how many steps done locally     
+       !how many steps done locally
        nl = n/comm%mxnode
        ! remainder
        nlr = n - nl*comm%mxnode
@@ -2619,6 +2619,6 @@ Contains
     endif
 
   end subroutine distribute_loop
- 
-  
+
+
 End Module comms
