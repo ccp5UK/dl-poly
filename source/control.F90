@@ -42,7 +42,9 @@ Module control
                                   RESTART_KEY_NOSCALE,&
                                   RESTART_KEY_OLD,&
                                   RESTART_KEY_SCALE,&
-                                  flow_type
+                                  flow_type, &
+                                  DFTB, &
+                                  MD
   Use greenkubo,            Only: greenkubo_type
   Use impacts,              Only: impact_type
   Use inversions,           Only: inversions_type
@@ -528,6 +530,10 @@ Contains
 
     flow%freq_restart = 1000
 
+    ! default driver type
+
+    flow%simulation_method = MD
+
     ! default value for the particle density per link cell limit
     ! below which subcelling (decreasing link-cell dimensions) stops
 
@@ -667,6 +673,10 @@ Contains
         Call info('%%% Turn on the check on minimum separation distance between VNL pairs at re/start !!! %%%', .true.)
         Write (message, '(a,1p,e12.4)') '%%% separation criterion (Angstroms) %%%', devel%r_dis
         Call info(message, .true.)
+      Else If(word(1:9) == 'unit_test') Then
+         devel%run_unit_tests = .true.
+         !TODO(Alex) Would like keyword options: 'all' or list of modules [configuration, comms]
+         devel%unit_test%configuration = .true.
 
         ! read VDW options
 
@@ -4336,6 +4346,12 @@ Contains
           ! x- and y-directions
 
           ttm%redistribute = .true.
+
+      ! dftb_driver
+      Else If (word(1:11) == 'dftb_driver') Then
+
+         !Use DFTB+ as the force calculator instead of classical force fields
+         flow%simulation_method = DFTB
 
         End If
 

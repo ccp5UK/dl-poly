@@ -54,7 +54,8 @@ Module drivers
                                   file_type
   Use flow_control,         Only: RESTART_KEY_CLEAN,&
                                   RESTART_KEY_OLD,&
-                                  flow_type
+                                  flow_type,&
+                                  DFTB
   Use four_body,            Only: four_body_forces,&
                                   four_body_type
   Use greenkubo,            Only: greenkubo_type,&
@@ -1574,11 +1575,13 @@ Contains
 
       ! Evaluate forces
 
-      Call calculate_forces(cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &
-                            inversion, tether, threebody, neigh, sites, vdws, tersoffs, fourbody, rdf, netcdf, &
-                            minim, mpoles, ext_field, rigid, electro, domain, kim_data, &
-                            msd_data, tmr, files, green, devel, ewld, &
-                            met, seed, thermo, crd, comm)
+      If (flow%simulation_method /= DFTB) Then
+        Call calculate_forces(cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &
+                              inversion, tether, threebody, neigh, sites, vdws, tersoffs, fourbody, rdf, netcdf, &
+                              minim, mpoles, ext_field, rigid, electro, domain, kim_data, &
+                              msd_data, tmr, files, green, devel, ewld, &
+                              met, seed, thermo, crd, comm)
+      Endif
 
       ! Calculate physical quantities, collect statistics and report at t=0
 

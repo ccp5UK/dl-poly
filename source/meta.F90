@@ -17,7 +17,9 @@ Module meta
   Use comms,                              Only: comms_type,&
                                                 gsum,&
                                                 gsync,&
-                                                gtime
+                                                gtime, &
+                                                exit_comms,&
+                                                root_id
   Use configuration,                      Only: check_config,&
                                                 configuration_type,&
                                                 freeze_atoms,&
@@ -120,6 +122,8 @@ Module meta
                                                 printLatticeStatsToFile
   Use vdw,                                Only: vdw_type
   Use z_density,                          Only: z_density_type
+  Use test_configuration, Only : run_configuration_tests
+
 
   Implicit None
   Private
@@ -544,6 +548,21 @@ Contains
 #ifdef CHRONO
     Call start_timer(tmr, 'Main Calc')
 #endif
+
+    ! Unit testing (in the absence of a unit testing framework)
+    If (devel%run_unit_tests) Then
+
+       If (devel%unit_test%configuration) Then
+          if(comm%idnode == root_id) Then
+             Write(*,*) 'Running unit tests for configuration module'
+          Endif
+          Call run_configuration_tests(comm%mxnode)
+       End If
+
+       if(comm%idnode == root_id) Write(*,*) 'Unit tests completed'
+       Call exit_comms(dlp_world)
+       Stop 0
+    Endif
 
     ! Now you can run fast, boy
     If (devel%l_fast) Call gsync(comm, devel%l_fast)

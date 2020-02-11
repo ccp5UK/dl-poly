@@ -13,13 +13,14 @@ Module parse
   !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  Use comms,           Only: comms_type,&
-                             gbcast,&
-                             gcheck,&
-                             gsync
-  Use errors_warnings, Only: error,&
-                             warning
-  Use kinds,           Only: wp
+  Use comms,                         Only: comms_type,&
+                                           gbcast,&
+                                           gcheck,&
+                                           gsync
+  Use errors_warnings,               Only: error,&
+                                           warning
+  Use, Intrinsic :: iso_fortran_env, Only: IOSTAT_END
+  Use kinds,                         Only: wp
 
   Implicit None
 
@@ -513,6 +514,39 @@ Contains
 
   End Subroutine get_line
 
+  !> @brief Get number of lines in file
+  !!
+  !! copyright - daresbury laboratory
+  !! author    - a. buccheri 2019
+  !!
+  !! @param[in]  fname   Name of file
+  !! @param[out] nlines  Number of lines in file
+  !
+  Function number_of_lines(fname) Result(nlines)
+
+    Character(Len=*), Intent(In   ) :: fname
+    Integer                         :: nlines
+
+    Character(Len=50) :: error_message
+    Integer           :: ios, u
+
+    nlines = 0
+    Open (newunit=u, file=Trim(Adjustl(fname)), &
+          form='formatted', status='old', iostat=ios)
+
+    If (ios /= 0) Then
+      error_message = 'Error openning: '//Trim(Adjustl(fname))
+      Call error(0, message=error_message, master_only=.true.)
+    End If
+
+    Do
+      Read (u, *, iostat=ios)
+      If (ios == IOSTAT_END) Exit
+      nlines = nlines + 1
+    End Do
+
+    Close (u)
+  End Function number_of_lines
   Function word_2_real(word, def, report)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

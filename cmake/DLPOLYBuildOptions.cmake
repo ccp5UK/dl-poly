@@ -12,6 +12,7 @@ option(WITH_FORCHECK "Build with forcheck for code" OFF)
 option(DOCS_DOXYGEN "Doxygen Documentation" OFF)
 option(DOCS_FORD "Ford Documentation" OFF)
 option(BUILD_SHARED_LIBS "Build with shared libraries" OFF)
+option(WITH_ASSERT "Build with asserts" OFF)
 
 set(MPI_NPROCS 8 CACHE STRING "number of MPI processes to be used for code coverage and tests")
 cmake_host_system_information(RESULT AH QUERY FQDN)
