@@ -20,7 +20,7 @@ Module bounds
   Use domains,         Only: domains_type,&
                              map_domains
   Use electrostatic,   Only: electrostatic_type,&
-                             ELECTROSTATIC_NULL
+                             ELECTROSTATIC_EWALD
   Use errors_warnings, Only: error,&
                              info,&
                              warning
@@ -1003,7 +1003,7 @@ Contains
     ! must be redefined by the config%mxatdm based desnity
 
     If (.not. electro%no_elec) Then
-      If (electro%key /= ELECTROSTATIC_NULL) Then
+      If (electro%key == ELECTROSTATIC_EWALD) Then
         xhi = Max(1.0_wp, Real(ewld%bspline1, wp) / (Real(ewld%fft_dim_a, wp) / Real(domain%nx, wp) / Real(ilx, wp))) + 1.0_wp
         yhi = Max(1.0_wp, Real(ewld%bspline1, wp) / (Real(ewld%fft_dim_b, wp) / Real(domain%ny, wp) / Real(ily, wp))) + 1.0_wp
         zhi = Max(1.0_wp, Real(ewld%bspline1, wp) / (Real(ewld%fft_dim_c, wp) / Real(domain%nz, wp) / Real(ilz, wp))) + 1.0_wp
