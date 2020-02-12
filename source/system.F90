@@ -1700,7 +1700,7 @@ Contains
     Call info(message, .true.)
 
     If (comm%idnode == 0) Then
-      Open (Newunit=files(FILE_FIELD)%unit_no, File='FIELD', Status='old')
+      Open (Newunit=files(FILE_FIELD)%unit_no, File=files(FILE_FIELD)%filename, Status='old')
       Open (Newunit=files(FILE_CONFIG)%unit_no, File=ffld(1:Len_trim(ffld)), Status='replace')
       Write (message, '(2a)') '*** Expanding FIELD in file ', ffld(1:Len_trim(ffld))
       Call info(message, .true.)
