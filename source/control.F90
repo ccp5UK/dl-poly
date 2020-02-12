@@ -4046,6 +4046,8 @@ Contains
 
       Else If (word(1:5) == 'ewald' .or. word(1:4) == 'spme') Then
 
+        electro%key = ELECTROSTATIC_EWALD
+
         Call get_word(record, word)
 
         If (word(1:5) == 'evalu') Then
@@ -4065,22 +4067,27 @@ Contains
       Else If (word(1:5) == 'poiss' .or. word(1:5) == 'psolv') Then
 
         lelec = .true.
+        electro%key = ELECTROSTATIC_POISSON
 
       Else If (word(1:6) == 'distan') Then
 
         lelec = .true.
+        electro%key = ELECTROSTATIC_DDDP
 
       Else If (word(1:4) == 'coul') Then
 
         lelec = .true.
+        electro%key = ELECTROSTATIC_COULOMB
 
       Else If (word(1:5) == 'shift') Then
 
         lelec = .true.
+        electro%key = ELECTROSTATIC_COULOMB_FORCE_SHIFT
 
       Else If (word(1:8) == 'reaction') Then
 
         lelec = .true.
+        electro%key = ELECTROSTATIC_COULOMB_REACTION_FIELD
 
         ! read "no vdw", "no elec" and "no str" options
 
