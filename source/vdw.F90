@@ -160,6 +160,7 @@ Module vdw
     Procedure, Public :: init => allocate_vdw_arrays
     Procedure, Public :: init_table => allocate_vdw_table_arrays
     Procedure, Public :: init_direct => allocate_vdw_direct_fs_arrays
+    Procedure, Public ::  print => dump_vdws
     Final             :: cleanup
   End Type vdw_type
 
@@ -1680,6 +1681,31 @@ Contains
     Call error(24)
 
   End Subroutine vdw_table_read
+
+  Subroutine dump_vdws(T,comm)
+    Class(vdw_type)  :: T
+      Type(comms_type), Intent(In) :: comm
+
+    integer :: i, j,u
+    Real(Kind = wp ) :: r,dlrpot
+    character(len=100) :: filename
+
+    If (comm%idnode ==  0 ) Then
+
+
+    dlrpot = T%cutoff / Real(T%max_grid - 4, wp)
+    Do i = 1, T%n_vdw
+        write(filename,'(a,i0,a)')"vdw_",i,".dat"
+        Open(Newunit=u,File=Trim(filename),Action="write",Status='unknown')
+        Do j = 1, T%max_grid
+          r = Real(j, wp) * dlrpot
+          Write(u,*)r, T%tab_potential(j, i)/engunit, T%tab_force(j, i)/engunit
+        End Do
+        Close(u)
+    End Do
+  End If
+
+  End Subroutine dump_vdws
 
   Subroutine vdw_generate(vdws)
 

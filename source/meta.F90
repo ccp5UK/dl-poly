@@ -47,7 +47,8 @@ Module meta
                                                 electrostatic_type
   Use errors_warnings,                    Only: info,&
                                                 init_error_system,&
-                                                warning
+                                                warning,&
+                                                error
   Use ewald,                              Only: ewald_type
   Use external_field,                     Only: external_field_type
   Use ffield,                             Only: read_field,&
@@ -399,6 +400,16 @@ Contains
     Call info('', .true.)
     Call info("*** all reading and connectivity checks DONE ***", .true.)
     Call time_elapsed(tmr)
+    If (flow%l_vdw) Then
+       If (vdws%l_direct) Then
+         Call error(0,"Error l_vdw does not work with vdw direct, remove vdw direct")
+       Else
+       Call vdws%print(comm)
+       Call info("Dumped vdw interaction tables!",.true.)
+       Call exit_comms(dlp_world)
+       Stop 0
+     End If
+    End If
 
 #ifdef CHRONO
     Call stop_timer(tmr, 'Initialisation')

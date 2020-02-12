@@ -2969,6 +2969,10 @@ Contains
 
         Go To 2000
 
+      Else If (word(1:5) == 'l_vdw') Then
+
+        flow%l_vdw = .True.
+
       Else If (word(1:6) == 'plumed') Then
 
         If (lplumed) Then
