@@ -134,8 +134,8 @@ Contains
       Call error(0, message)
     End If
 
-    If (thermo%newjob) Then
-      thermo%newjob = .false.
+    If (thermo%newjob_0) Then
+      thermo%newjob_0 = .false.
 
       ! store initial values of volume, long range corrections and density
 
@@ -605,8 +605,8 @@ Contains
       Call error(0, message)
     End If
 
-    If (thermo%newjob) Then
-      thermo%newjob = .false.
+    If (thermo%newjob_1) Then
+      thermo%newjob_1 = .false.
 
       ! store initial values of volume, long range corrections and density
 
@@ -1479,8 +1479,8 @@ Contains
 
     ! Initialise thermo%factor and 1/Nf for Nose-Hoover ensembles
 
-    If (thermo%newjob_nst_scl) Then
-      thermo%newjob_nst_scl = .false.
+    If (thermo%newjob_nst_scl_0) Then
+      thermo%newjob_nst_scl_0 = .false.
 
       thermo%factor = 0.0_wp
       thermo%rf = 0.0_wp
@@ -1668,8 +1668,8 @@ Contains
 
     ! Initialise thermo%factor and 1/Nf for Nose-Hoover ensembles
 
-    If (thermo%newjob_nst_scl) Then
-      thermo%newjob_nst_scl = .false.
+    If (thermo%newjob_nst_scl_1) Then
+      thermo%newjob_nst_scl_1 = .false.
 
       thermo%factor = 0.0_wp
       thermo%rf = 0.0_wp
