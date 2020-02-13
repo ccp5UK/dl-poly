@@ -137,8 +137,8 @@ Contains
     qstep = 0.5_wp * hstep
     rstep = 1.0_wp / tstep
 
-    If (thermo%newjob) Then
-      thermo%newjob = .false.
+    If (thermo%newjob_0) Then
+      thermo%newjob_0 = .false.
 
       ! store initial values of volume, long range corrections and density
 
@@ -631,8 +631,8 @@ Contains
     qstep = 0.5_wp * hstep
     rstep = 1.0_wp / tstep
 
-    If (thermo%newjob) Then
-      thermo%newjob = .false.
+    If (thermo%newjob_1) Then
+      thermo%newjob_1 = .false.
 
       ! store initial values of volume, long range corrections and density
 
