@@ -956,7 +956,8 @@ Contains
       Write (banner(2), fmt1) '****     M.A. Seaton, I.T. Todorov, K. Nordlund, M.T. Dove &  ****'
       Write (banner(3), fmt1) '****     K. Trachenko                                         ****'
       Write (banner(4), fmt1) '****     J. Phys.: Condens. Matter, 24, 085401 (2014),        ****'
-      Call info(banner, 4, .true.)
+      Write (banner(5), fmt1) '****     https://doi.org/10.1088/0953-8984/26/8/085401        ****'
+      Call info(banner, 5, .true.)
     End If
     Call info(Repeat("*", 66), .true.)
   End Subroutine print_citations
