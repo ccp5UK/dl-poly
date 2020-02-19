@@ -2687,21 +2687,61 @@ three-body\index{potential!three-body} and {\bf fbp} -
 four-body\index{potential!four-body}.  Each of these types is
 specified by a specific {\bf keyword} as described bellow.
 
-When \D is cross-compiled with an openKIM functionality (see
-Section~\ref{kim}) it is possible to specify a complete model of
-inter-molecular interactions, {\bf kim}, by calling the openKIM
+When \D is cross-compiled with an OpenKIM functionality (see
+Section~\ref{kim}), it is possible to specify a complete model of
+inter-molecular interactions, by calling the OpenKIM
 model name provided it available in your local KIM library.
+Two {\bf keyword}s are employed when using OpenKIM IMs, one to
+select the IM and perform necessary initialisation ({\bf kim\_init}), and
+the other ({\bf kim\_interactions}) to define a mapping between
+atom types in \D to the available species in the OpenKIM IM.
 
 \begin{enumerate}
 
-\item {\bf kim {\em model\_name}} \\
-where {\em model\_name} is the openKIM model identifier.
+\item {\bf kim\_init {\em model\_name}} \\
+where the {\em model\_name} is the OpenKIM model identifier,
+it uses the information retrieved from the OpenKIM repository to
+initialise and activate OpenKIM IMs for use in the \D.
+
+\item {\bf kim\_interactions {\em site\_names}} \\
+where {\em site\_names} defines a list of unique atomic names.
+It defines a mapping between atom types in \D to the available
+species in the OpenKIM IM. For example, consider an OpenKIM IM
+that supports Si and C species. If the \D simulation has four atoms,
+where the first three are Si, and the fourth is C, the {\em kim\_interactions}
+would be used as:
+\begin{tabbing}
+	X\=XXXXXXXXXXX \=XX \=\kill
+	\> kim\_interactions    \> Si   \> C
+\end{tabbing}
+
+ The Si and C arguments map the  \D atom types to the Si and C species as
+ defined within KIM PM.
+
+In addition to the usual \D error messages, the KIM library itself may generate
+errors, which should be printed to the screen. In this case, it is also useful to
+check the {\em kim.log} file for additional error information. The file
+{\em kim.log} should be generated in the same directory where \D is running.
 
 {\bf Note} that although a KIM model fully describes a model
-system it is still possible to specify further, complementing
-intra- and inter-molecular interactions in the FIELD!  This
+system, it is still possible to specify further, complementing
+intra- and inter-molecular interactions in the FIELD! This
 is a viable option only when the model system is extended
-beyond what the specific KIM model is intended to describes.
+beyond what the specific KIM model is intended to describe.
+
+By default, all the species in the \D system should match to
+the available species in the OpenKIM IM.
+
+{\bf Note} that there is an {\bf experimental feature}, implemented in
+the \D, where one can use a KIM IM in a hybrid style. In this case,
+one can create a system where part of species are interacting using a
+KIM IM (e.g., a machine learning model in KIM), and the rest of the species
+are interacting with the internal \D intra- and inter-molecular
+interactions provided in the FIELD. While this new feature provides
+great flexibility, it is not fully compliant with the KIM API interface
+standard. Thus using this feature some of the KIM IMs might fail
+with the error message {\em unexpected species code detected } or
+{\em unknown species detected}.
 
 \item {\bf vdw {\em n}} \\
 where {\em n} is the number of pair potentials to be entered.  It
