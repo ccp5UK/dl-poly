@@ -69,6 +69,7 @@ Contains
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov august 2016
     ! contrib   - g.khara & m.a.seaton february 2017
+    ! contrib   - m.a.seaton february 2020
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -85,7 +86,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(seed_type), Intent(InOut) :: seed
     Integer           :: i, ia, ja, ka, ijk
-    Real(Kind=wp) :: scale, tmp
+    Real(Kind=wp) :: scale, tmp, xxt, yyt, zzt
 
     If (Present(ttm)) Then
       If (ttm%l_ttm .and. nstep > ttm%nstepcpl) Then
@@ -101,9 +102,12 @@ Contains
           Do i = 1, config%natms
             If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp .and. cshell%legshl(0, i) >= 0) Then
               Call box_mueller_saru3(seed, config%ltg(i), nstep, fxr(i), fyr(i), fzr(i))
-              ia = Floor((config%parts(i)%xxx + ttm%zerocell(1)) / ttm%delx) + 1
-              ja = Floor((config%parts(i)%yyy + ttm%zerocell(2)) / ttm%dely) + 1
-              ka = Floor((config%parts(i)%zzz + ttm%zerocell(3)) / ttm%delz) + 1
+              xxt = config%parts(i)%xxx
+              yyt = config%parts(i)%yyy
+              zzt = config%parts(i)%zzz
+              ia = Floor(xxt*ttm%grcell(1)+yyt*ttm%grcell(4)+zzt*ttm%grcell(7)+ttm%zerocell(1)) + 1
+              ja = Floor(xxt*ttm%grcell(2)+yyt*ttm%grcell(5)+zzt*ttm%grcell(8)+ttm%zerocell(2)) + 1
+              ka = Floor(xxt*ttm%grcell(3)+yyt*ttm%grcell(6)+zzt*ttm%grcell(9)+ttm%zerocell(3)) + 1
               ijk = 1 + ia + (ttm%ntcell(1) + 2) * (ja + (ttm%ntcell(2) + 2) * ka)
               tmp = scale * Sqrt(ttm%eltemp(ijk, 0, 0, 0) * config%weight(i))
 
@@ -124,9 +128,12 @@ Contains
           Do i = 1, config%natms
             If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp .and. cshell%legshl(0, i) >= 0) Then
               Call box_mueller_saru3(seed, config%ltg(i), nstep, fxr(i), fyr(i), fzr(i))
-              ia = Floor((config%parts(i)%xxx + ttm%zerocell(1)) / ttm%delx) + 1
-              ja = Floor((config%parts(i)%yyy + ttm%zerocell(2)) / ttm%dely) + 1
-              ka = Floor((config%parts(i)%zzz + ttm%zerocell(3)) / ttm%delz) + 1
+              xxt = config%parts(i)%xxx
+              yyt = config%parts(i)%yyy
+              zzt = config%parts(i)%zzz
+              ia = Floor(xxt*ttm%grcell(1)+yyt*ttm%grcell(4)+zzt*ttm%grcell(7)+ttm%zerocell(1)) + 1
+              ja = Floor(xxt*ttm%grcell(2)+yyt*ttm%grcell(5)+zzt*ttm%grcell(8)+ttm%zerocell(2)) + 1
+              ka = Floor(xxt*ttm%grcell(3)+yyt*ttm%grcell(6)+zzt*ttm%grcell(9)+ttm%zerocell(3)) + 1
               ijk = 1 + ia + (ttm%ntcell(1) + 2) * (ja + (ttm%ntcell(2) + 2) * ka)
               tmp = scale * Sqrt(Gep(ttm%eltemp(ijk, 0, 0, 0), ttm) * ttm%eltemp(ijk, 0, 0, 0) * config%weight(i))
 
