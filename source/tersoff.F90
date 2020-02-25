@@ -65,6 +65,11 @@ Module tersoff
     Integer(Kind=wi), Public              :: max_param
     !> Maximum number of grid points
     Integer(Kind=wi), Public              :: max_grid
+    !> Label for Tersoff units 
+    Character(Len=8), Allocatable, Public :: labunit(:,:) 
+    !> Label for Tersoff pair 
+    Character(Len=8), Allocatable, Public :: labpair(:,:) 
+
   Contains
     Private
 
@@ -81,22 +86,25 @@ Contains
     Integer(Kind=wi), Intent(In   ) :: max_site
 
     Integer(Kind=wi)      :: nprter
-    Integer, Dimension(8) :: fail
+    Integer               :: fail(10)
 
     nprter = (T%max_ter * (T%max_ter + 1)) / 2
 
     fail = 0
 
     Allocate (T%lfr(1:Merge(max_site, 0, T%max_ter > 0)), stat=fail(1))
-    Allocate (T%list(1:T%max_ter), stat=fail(2))
-    Allocate (T%ltp(1:T%max_ter), stat=fail(3))
-    Allocate (T%param(1:T%max_param, 1:T%max_ter), stat=fail(4))
+    Allocate (T%list(1:T%max_ter),                        stat=fail(2))
+    Allocate (T%ltp(1:T%max_ter),                         stat=fail(3))
+    Allocate (T%param(1:T%max_param, 1:T%max_ter),        stat=fail(4))
     If (T%key_pot == 1) Then
-      Allocate (T%param2(1:nprter, 1:2), stat=fail(5))
+      Allocate (T%param2(1:nprter, 1:2),                  stat=fail(5))
     End If
-    Allocate (T%vmbp(0:T%max_grid, 1:nprter, 1:3), stat=fail(6))
-    Allocate (T%gmbp(0:T%max_grid, 1:nprter, 1:3), stat=fail(7))
-    Allocate (T%cut(1:nprter), stat=fail(8))
+    Allocate (T%vmbp(0:T%max_grid, 1:nprter, 1:3),        stat=fail(6))
+    Allocate (T%gmbp(0:T%max_grid, 1:nprter, 1:3),        stat=fail(7))
+    Allocate (T%cut(1:nprter),                            stat=fail(8))
+    Allocate (T%labunit(1:2,T%max_ter),                   stat=fail(9))
+    Allocate (T%labpair(1:2,1:nprter),                    stat=fail(10))  
+
 
     If (Any(fail > 0)) Call error(1027)
 
@@ -1065,5 +1073,15 @@ Contains
     If (Allocated(T%cut)) Then
       Deallocate (T%cut)
     End If
+
+    If (Allocated(T%labunit)) Then
+      Deallocate (T%labunit)
+    End If
+
+    If (Allocated(T%labpair)) Then
+      Deallocate (T%labpair)
+    End If
+
   End Subroutine cleanup
+
 End Module tersoff

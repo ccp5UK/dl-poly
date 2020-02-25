@@ -89,7 +89,10 @@ Module metal
     ! Many-body perturbation potential error function and derivative arrays
     Real(Kind=wp), Allocatable, Dimension(:), Public       :: merf, mfer
     Logical                                                :: newjob = .true.
-  
+    
+    Character(Len=8), Allocatable, Public                  :: labunit(:,:)
+    
+
   Contains
     Private
 
@@ -107,7 +110,7 @@ Contains
     Class(metal_type)               :: met
     Integer(Kind=wi), Intent(In   ) :: mxatms, mxatyp
 
-    Integer, Dimension(1:7) :: fail
+    Integer, Dimension(1:8) :: fail
 
     If (met%tab == 3 .or. met%tab == 4) met%l_2b = .true.
 
@@ -123,6 +126,9 @@ Contains
     End If
     Allocate (met%elrc(0:mxatyp), stat=fail(6))
     Allocate (met%vlrc(0:mxatyp), stat=fail(7))
+    ! Labeling for pair of metal atoms 
+    Allocate (met%labunit(1:3, 1:met%max_metal), stat=fail(8)) 
+
 
     If (Any(fail > 0)) Call error(1023)
 
@@ -3232,8 +3238,15 @@ Contains
     If (Allocated(met%merf)) Then
       Deallocate (met%merf)
     End If
+
     If (Allocated(met%mfer)) Then
       Deallocate (met%mfer)
     End If
+
+    If (Allocated(met%labunit)) Then
+      Deallocate (met%labunit)
+    End If
+
+
   End Subroutine cleanup
 End Module metal

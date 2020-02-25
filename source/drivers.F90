@@ -59,9 +59,12 @@ Module drivers
                                   evb_merge_stochastic, &
                                   evb_setzero,&
                                   evb_population,&
-                                  evb_prevent,& 
-                                  evb_check_topology,&
-                                  evb_check_configs
+                                  evb_check_external,&
+                                  evb_check_intermolecular,& 
+                                  evb_check_intramolecular,& 
+                                  evb_check_constraints,&
+                                  evb_check_configs, &
+                                  evb_check_intrinsic
   Use ewald,                Only: ewald_type
   Use external_field,       Only: FIELD_NULL,&
                                   external_field_apply,&
@@ -596,7 +599,7 @@ Contains
     Type(adf_type),            Intent(InOut) :: adf(:)
     Type(comms_type)    ,      Intent(InOut) :: comm
  
-    Integer          :: i, ff, imin100
+    Integer          :: i, ff
     Integer(Kind=wi) :: switch
     Logical          :: ltmp
 
@@ -621,8 +624,6 @@ Contains
 
 
     100  Continue ! Only used when relaxed is false
-
-    imin100=0 
  
     ! Initialise force arrays and possible torques for multipolar electrostatics, 
     ! stress tensor (these are all additive in the force subroutines) and torques
@@ -825,17 +826,10 @@ Contains
             Call refresh_mappings(cnfig(ff), flow, cshell(ff), cons(ff), pmf(ff), stat(ff), msd_data(ff), bond(ff), angle(ff), &
                                   dihedral(ff), inversion(ff), tether(ff), neigh(ff), sites(ff), mpoles(ff), rigid(ff), &
                                   domain(ff), kim_data(ff), ewld(ff), green(ff), minim(ff), thermo(ff), electro(ff), crd(ff), comm)
-            imin100 = imin100 + 1
+            If(ff == flow%NUM_FF) Go To 100 
          End If
       End If
     End Do
-
-    ! IS: This is an awful patch to circunvent the goto 100, which was set after the previous refresh_mappings
-    If(imin100 > 0 .and. imin100 < flow%NUM_FF)Then
-       stop     
-    Else If(imin100==flow%NUM_FF)Then 
-       Go To 100
-    End If        
 
     ! Get RB COM stress and virial at restart only - also available at w_at_start_vv for cnfig%levcfg==2
     If (flow%newjob) Then
@@ -871,11 +865,18 @@ Contains
                        stat(1)%virinv + stat(1)%virfld
     EndIf      
 
-    !> For EVB it is not possible to have a decomposition of the energy and virial 
-    !> into separate contributions for each type of interaction (e.g. angles, bonds, dihedrals, etc). 
+    !> If coupling terms are non-zero functions, it is not possible wihtin the EVB framework 
+    !> to have a decomposition of the energy and virial into separate contributions 
+    !> for each type of interaction (e.g. angles, bonds, dihedrals, etc). 
     !> For this reason, we set all these components to zero in the subroutine ebv_setzero. 
+    !>
+    !> The user might want to set no coupling terms between the force fields by choosing zero functions 
+    !> (setting 'const' with A0=0 in the SETEVB file for all pairs followed by the flag evbcoupl).
+    !> Only in this case the energy/virial decomposition is possible and evb_setzero is not called
     If(flow%NUM_FF > 1)Then
-      Call evb_setzero(flow,stat)
+      If(.Not. evbff%no_coupling)Then      
+        Call evb_setzero(flow,stat)
+      End If
     End If
 
 
@@ -2113,16 +2114,23 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!  W_AT_START_VV_EVB INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
     If(flow%NUM_FF>1)Then
-      ! Check consistency between config files
-      Call evb_check_configs(cnfig, flow, comm)
-      ! Check consistency in the topology specification between different FFs
-      Call evb_check_topology(cnfig, cons, cshell, tether, sites, flow, rigid, comm)
       ! Allocate EVB variables
       Call evbff%init(flow%NUM_FF)
       ! Read EVB settings 
-      Call read_evb_settings(evbff, flow, files, comm)
-      ! Check the feasibility of EVB simulations 
-      ! Call evb_prevent(evbff, flow, sites, ext_field, tersoffs, met, threebody, fourbody)
+      Call read_evb_settings(evbff, flow, sites, files, comm)
+      ! Check consistency of intra-molecular interactions between different force fiels
+      ! for atoms that are not part of the EVB site  
+      Call evb_check_intramolecular(evbff, flow, sites, bond, angle, dihedral, inversion)
+      ! Check consistency of inter-molecular interactions 
+      Call evb_check_intermolecular(evbff, flow, sites, tersoffs, met, threebody, fourbody)
+      ! Check external fields
+      Call evb_check_external(evbff, flow, ext_field)
+      ! Check consistency between config files
+      Call evb_check_configs(cnfig, flow, comm)
+      ! Check consistency in the constraint specification between different FFs
+      Call evb_check_constraints(cnfig, cons, cshell, tether, sites, flow, rigid, comm)
+      ! Check consistency of intrinsic properties for sites 
+      Call evb_check_intrinsic(evbff,sites,cnfig,flow,comm)
     End If
     
     ! Calculate kinetic tensor and energy at restart
@@ -2219,14 +2227,15 @@ Contains
                             thermo(ff), sites(ff), vdws(ff), rigid(ff), domain(ff), seed,tmr, neigh(ff), comm)
 
         ! Refresh mappings
-          Call refresh_mappings(cnfig(ff), flow, cshell(ff), cons(ff), pmf(ff), stat(ff), msd_data(ff), bond(ff), angle(ff), &
-                                dihedral(ff), inversion(ff), tether(ff), neigh(ff), sites(ff), mpoles(ff), rigid(ff), &
-                                domain(ff), kim_data(ff), ewld(ff), green(ff), minim(ff), thermo(ff), electro(ff), crd(ff), comm)        
+          Call refresh_mappings(cnfig(ff), flow, cshell(ff), cons(ff), pmf(ff), stat(ff), msd_data(ff), bond(ff), &
+                                angle(ff), dihedral(ff), inversion(ff), tether(ff), neigh(ff), sites(ff), mpoles(ff),&
+                                rigid(ff), domain(ff), kim_data(ff), ewld(ff), green(ff), minim(ff), thermo(ff), &
+                                electro(ff), crd(ff), comm)        
         EndDo
 
       End If ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
 
-        Call calculate_forces_evb(evbff, cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &                   
+        Call calculate_forces_evb(evbff, cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &
                                   inversion, tether, threebody,neigh, sites, vdws, tersoffs, fourbody, rdf, netcdf, &
                                   minim, mpoles, ext_field, rigid, electro, domain, kim_data, msd_data, tmr, &
                                   files, green, devel, ewld, met, seed, thermo, crd, adf, comm)
@@ -2279,7 +2288,10 @@ Contains
         If(thermo(1)%l_stochastic_boundaries .or. fregauss)Then
           Call kinetic_options(flow, cnfig(1), cshell(1), cons(1), pmf(1), stat(1), sites(1), ext_field(1), domain(1), &
                                seed, rigid(1), thermo(1), comm)
-          Call evb_merge_stochastic(flow, cnfig, stat, rigid, thermo, cshell, cons, pmf)                
+
+          If(flow%NUM_FF>1)Then
+             Call evb_merge_stochastic(flow, cnfig, stat, rigid, thermo, cshell, cons, pmf) 
+          End If
         Else        
           Do ff=1,flow%NUM_FF
            Call kinetic_options(flow, cnfig(ff), cshell(ff), cons(ff), pmf(ff), stat(ff), sites(ff), ext_field(ff), domain(ff), &

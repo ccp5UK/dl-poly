@@ -389,6 +389,9 @@ Contains
           Call error(5)
         End If
 
+        sites%ffunit=engunit
+
+
         ! multipolar electrostatics control option
 
       Else If (word(1:5) == 'multi') Then
@@ -528,7 +531,7 @@ Contains
                 End Do
 
                 atom1 = word(1:8)
-
+                 
                 Call get_word(record, word)
                 weight = Abs(word_2_real(word))
 
@@ -4215,12 +4218,18 @@ Contains
           End Do
 
           atom1 = word(1:8)
+
           Call get_word(record, word)
           atom2 = word(1:8)
 
           Call get_word(record, word)
           Call lower_case(word)
           keyword = word(1:4)
+
+          met%labunit(1,itpmet)=atom1
+          met%labunit(2,itpmet)=atom2
+          met%labunit(3,itpmet)=keyword
+
 
           If (keyword(1:3) == 'eam') Then
             keypot = 0 ! met%tab=1 set in scan_field
@@ -4397,10 +4406,13 @@ Contains
           End Do
 
           atom0 = word(1:8)
+          tersoffs%labunit(1,itpter)=atom0  
 
           Call get_word(record, word)
           Call lower_case(word)
           keyword = word(1:4)
+
+          tersoffs%labunit(2,itpter)=keyword  
 
           If (keyword == 'ters') Then
             keypot = 1
@@ -4582,6 +4594,11 @@ Contains
             ka2 = Min(tersoffs%list(katom1), tersoffs%list(katom2))
 
             keyter = (ka1 * (ka1 - 1)) / 2 + ka2
+          
+            !Label for Tersoff pair interaction
+
+            tersoffs%labpair(1,icross)=atom1  
+            tersoffs%labpair(2,icross)=atom2  
 
             tersoffs%param2(keyter, 1) = parpot(1)
             tersoffs%param2(keyter, 2) = parpot(2)
@@ -4597,9 +4614,10 @@ Contains
         ! read in the three-body potential energy parameters
 
       Else If (word(1:3) == 'tbp') Then
+        ! Initialise parameters to zero
+        threebody%prmtbp = 0.0_wp
 
         Call get_word(record, word)
-        threebody%ntptbp = Nint(word_2_real(word))
 
         Write (message, '(a,i10)') 'number of specified three-body potentials ', threebody%ntptbp
         Call info(message, .true.)
@@ -4640,6 +4658,12 @@ Contains
           Call get_word(record, word)
           Call lower_case(word)
           keyword = word(1:4)
+
+          threebody%labunit(1,itptbp)=atom1
+          threebody%labunit(2,itptbp)=atom0
+          threebody%labunit(3,itptbp)=atom2
+          threebody%labunit(4,itptbp)=keyword
+
 
           If (keyword == 'harm') Then
             keypot = 1
@@ -5469,6 +5493,7 @@ Contains
         fftag=FILE_FIELD
     Endif
 
+
 ! Max number of different atom types
 ! Average maximum number of intra-like bonds per atom
 
@@ -6122,6 +6147,7 @@ Contains
         If (met%max_metal > 0) Then
           met%max_metal = Max(met%max_metal, (site%mxatyp * (site%mxatyp + 1)) / 2)
 
+
           If (met%tab == 0) Then
             met%max_med = met%max_metal
           Else If (met%tab == 1) Then
@@ -6181,6 +6207,7 @@ Contains
         Call get_word(record, word)
         tersoffs%max_ter = Nint(word_2_real(word))
 
+
         Do itpter = 1, tersoffs%max_ter
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
@@ -6189,7 +6216,7 @@ Contains
             Call lower_case(record)
             Call get_word(record, word)
           End Do
-
+            
           Call get_word(record, word)
           If (word(1:4) == 'ters') Then
             tersoffs%key_pot = 1
@@ -6235,6 +6262,7 @@ Contains
       Else If (word(1:3) == 'tbp') Then
 
         Call get_word(record, word)
+        threebody%ntptbp = Nint(word_2_real(word))
         threebody%mxtbp = Nint(word_2_real(word))
 
         Do itptbp = 1, threebody%mxtbp
@@ -6381,7 +6409,10 @@ Contains
     ! FIELD file does not exist
 
     20 Continue
-    Call error(122)
+
+    write(message,'(1x,3a)') 'error - ', trim(files(fftag)%filename), ' file not found'
+    Call info(message, .True.)
+    Call error(0)
     Return
 
     30 Continue

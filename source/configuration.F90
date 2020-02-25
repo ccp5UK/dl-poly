@@ -2074,6 +2074,7 @@ Contains
     Integer( Kind = wi ),       Intent( In   ), Optional :: ff
 
     Character(Len=200)        :: record
+    Character(Len=256)        :: message
     Character(Len=40)         :: fname, word
     Integer                   :: fh, i, io_read, j, recsz, totatm
     Integer(Kind=offset_kind) :: top_skip
@@ -2118,7 +2119,11 @@ Contains
 
     If (comm%idnode == 0) Inquire (File=fname, Exist=safe)
     Call gcheck(comm, safe)
-    If (.not. safe) Call error(124)
+    If (.not. safe) Then
+      write(message, '(1x,3a)') 'error - ', trim(fname), ' files not found'    
+      Call info(message,.True.)   
+      Call error(0)
+    End If  
 
     ! Define/Detect the FAST reading status
 

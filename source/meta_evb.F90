@@ -26,8 +26,7 @@ Module md_evb
                                                 scale_config, &
                                                 write_config
   Use constants,                          Only: DLP_RELEASE,&
-                                                DLP_VERSION,&
-                                                engunit
+                                                DLP_VERSION
   Use constraints,                        Only: constraints_type
   Use control,                            Only: read_control,&
                                                 scan_control_io,&
@@ -291,8 +290,6 @@ Contains
     Integer( Kind = wi ) :: vacuum, ff, frevc
     Logical :: lfce
 
-    Real( Kind = wp )      :: evbunit
-
     Call gtime(tmr%elapsed) ! Initialise wall clock time
 
     ! Set default file names
@@ -329,6 +326,14 @@ Contains
     Call build_info()
 
     Call scan_control_io(ios,netcdf,files,comm)
+
+    ! Print error message in case there was an error when reading the settings from evb from CONTROL
+    If(flow%evbfail)Then
+      Write(message,'(a)') 'error - No (or wrong) specificaton for the number of fields to be coupled via EVB &
+                           &following the keyword "evb" in CONTROL. Value MUST an integer larger than 1'      
+      call error(0,message)
+    End If
+
 
     ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
     ! (setup and domains)
@@ -409,9 +414,11 @@ Contains
     
     ! READ SIMULATION FORCE FIELD
     Do ff = 1, flow%NUM_FF
-      write(message,'(i0)') ff
-      Call info(" ",.true.)
-      Call info("*** DETAILS OF INTERACTIONS FOR FIELD "//trim(message)//" ***",.true.)
+      If(flow%NUM_FF > 1) Then
+        write(message,'(i0)') ff
+        Call info(" ",.true.)
+        Call info("*** DETAILS OF INTERACTIONS FOR FIELD "//trim(message)//" ***",.true.)
+      End If
       Call read_field(neigh(ff)%cutoff, core_shells(ff), pmfs(ff), cons(ff), thermo(ff), met(ff), bond(ff), angle(ff), &
         dihedral(ff), inversion(ff), tether(ff), threebody(ff), sites(ff), vdws(ff), tersoffs(ff), fourbody(ff),rdf(ff), &
         mpoles(ff), ext_field(ff), rigid(ff), electro(ff), config(ff), kim_data(ff), files, flow, crd(ff), comm, ff)
@@ -424,14 +431,6 @@ Contains
       ! CHECK MD CONFIGURATION
       Call check_config(config(ff),electro(ff)%key,thermo(ff),sites(ff),flow,comm)
   
-      ! Check if the Units of FIELD files is the same for all.
-      If (ff == 1) Then
-        evbunit=engunit
-      Else 
-        If(Abs(evbunit-engunit) >= epsilon(evbunit)) Then 
-          Call error(1103) 
-        End If        
-      End If        
     End Do
 
     Call info('',.true.)
@@ -492,8 +491,10 @@ Contains
           netcdf, rigid(ff), config(ff), files, comm, ff)
       End If
 
-      write(message,'(i0)') ff
-      Call info("*** LONG RANGE INFORMATION FOR FIELD "//trim(message)//" ***",.true.)
+      If(flow%NUM_FF > 1) Then
+        write(message,'(i0)') ff
+        Call info("*** LONG RANGE INFORMATION FOR FIELD "//trim(message)//" ***",.true.)
+      End If
     ! READ REVOLD (thermodynamic and structural data from restart file)
       Call system_init(neigh(ff)%cutoff, flow%restart_key, flow%time, flow%start_time, flow%step, &
         stats(ff), devel, green(ff), thermo(ff), met(ff), bond(ff), angle(ff), dihedral(ff), inversion(ff), &
@@ -512,8 +513,10 @@ Contains
     ! For any intra-like interaction, construct book keeping arrays and
     ! exclusion arrays for overlapped two-body inter-like interactions
     Do ff = 1, flow%NUM_FF
-      write(message,'(i0)') ff
-      Call info("*** TOPOLOGY FOR FIELD "//trim(message)//" ***",.true.) 
+      If(flow%NUM_FF > 1) Then
+        write(message,'(i0)') ff
+        Call info("*** TOPOLOGY FOR FIELD "//trim(message)//" ***",.true.) 
+      End If  
       If (flow%book) Then
         Call build_book_intra(flow%strict, flow%print_topology, flow%simulation, & 
           flow,core_shells(ff), cons(ff), pmfs(ff), bond(ff), angle(ff), dihedral(ff), inversion(ff), tether(ff), &
@@ -560,8 +563,10 @@ Contains
     Call time_elapsed(tmr)
 
     Do ff = 1, flow%NUM_FF
-      write(message,'(i0)') ff
-      Call info("*** DETAILS OF NEIGHBOUR LIST FOR FIELD "//trim(message)//" ***",.true.) 
+      If(flow%NUM_FF > 1) Then
+        write(message,'(i0)') ff
+        Call info("*** DETAILS OF NEIGHBOUR LIST FOR FIELD "//trim(message)//" ***",.true.) 
+      End If  
       ! set and halo rotational matrices and their infinitesimal rotations
       If (mpoles(ff)%max_mpoles > 0) Then
         Call mpoles_rotmat_set_halo(mpoles(ff),domain(ff),config(ff),comm)

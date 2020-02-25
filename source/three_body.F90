@@ -44,6 +44,9 @@ Module three_body
     Logical, Allocatable          :: lfrtbp(:)
     Integer(Kind=wi), Allocatable :: lsttbp(:), ltptbp(:)
     Real(Kind=wp), Allocatable    :: prmtbp(:, :), rcttbp(:)
+
+    Character(Len=8), Allocatable, Public  :: labunit(:,:) 
+
   Contains
     Private
 
@@ -59,15 +62,16 @@ Contains
     Class(threebody_type), Intent(InOut) :: T
     Integer(Kind=wi),      Intent(In   ) :: max_site
 
-    Integer :: fail(5)
+    Integer :: fail(6)
 
     fail = 0
 
     Allocate (T%lfrtbp(1:Merge(max_site, 0, T%mxtbp > 0)), Stat=fail(1))
-    Allocate (T%lsttbp(1:T%mxtbp), Stat=fail(2))
-    Allocate (T%ltptbp(1:T%mxtbp), Stat=fail(3))
-    Allocate (T%prmtbp(1:T%mxptbp, 1:T%mxtbp), Stat=fail(4))
-    Allocate (T%rcttbp(1:T%mxtbp), Stat=fail(5))
+    Allocate (T%lsttbp(1:T%mxtbp),                         Stat=fail(2))
+    Allocate (T%ltptbp(1:T%mxtbp),                         Stat=fail(3))
+    Allocate (T%prmtbp(1:T%mxptbp, 1:T%mxtbp),             Stat=fail(4))
+    Allocate (T%rcttbp(1:T%mxtbp),                         Stat=fail(5))
+    Allocate (T%labunit(1:4,1:T%ntptbp),                   Stat=fail(6))
 
     If (Any(fail > 0)) Call error(1024)
 
@@ -81,15 +85,16 @@ Contains
   Subroutine deallocate_three_body_arrays(T)
     Type(threebody_type), Intent(InOut) :: T
 
-    Integer :: fail(5)
+    Integer :: fail(6)
 
     fail = 0
 
-    Deallocate (T%lfrtbp, Stat=fail(1))
-    Deallocate (T%lsttbp, Stat=fail(2))
-    Deallocate (T%ltptbp, Stat=fail(3))
-    Deallocate (T%prmtbp, Stat=fail(4))
-    Deallocate (T%rcttbp, Stat=fail(5))
+    Deallocate (T%lfrtbp,  Stat=fail(1))
+    Deallocate (T%lsttbp,  Stat=fail(2))
+    Deallocate (T%ltptbp,  Stat=fail(3))
+    Deallocate (T%prmtbp,  Stat=fail(4))
+    Deallocate (T%rcttbp,  Stat=fail(5))
+    Deallocate (T%labunit, Stat=fail(6))
 
     If (Any(fail > 0)) Call error(1024)
 
