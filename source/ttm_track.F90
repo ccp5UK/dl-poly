@@ -9,6 +9,7 @@ Module ttm_track
   ! authors   - s.l.daraszewicz & m.a.seaton july 2012
   ! contrib   - g.khara may 2016
   ! contrib   - m.a.seaton february 2017
+  ! contrib   - m.a.seaton january 2020
   ! refactoring:
   !           - a.m.elena march-october 2018
   !           - j.madge march-october 2018
@@ -74,7 +75,7 @@ Contains
     Type(comms_type), Intent(InOut) :: comm
 
     Character(Len=14)       :: number
-    Character(Len=256)      :: message
+    Character(Len=256)      :: messages(2)
     Integer                 :: i, ijk, j, k
     Integer, Dimension(1:3) :: fail = 0
     Logical                 :: deposit
@@ -250,16 +251,18 @@ Contains
 
       If (currenttime < 1.0_wp) Then
         Write (number, '(f14.3)') currenttime * 1000.0_wp
-        Write (message, '(a,es12.5,3a)') &
+        Write (messages(1), '(a,es12.5,3a)') &
           'electronic energy deposition of ', lat_I_sum, &
           ' eV completed successfully after ', Trim(Adjustl(number)), ' fs'
       Else
         Write (number, '(f14.6)') currenttime
-        Write (message, '(a,es12.5,3a)') &
+        Write (messages(1), '(a,es12.5,3a)') &
           'electronic energy deposition of ', lat_I_sum, &
           ' eV completed successfully after ', Trim(Adjustl(number)), ' ps'
       End If
-      Call info(message, .true.)
+      Write (messages(2), '(a)') Repeat('-', 130)
+
+      Call info(messages, 2, .true.)
 
       ! switch off tracking and deallocate arrays
 
@@ -305,7 +308,7 @@ Contains
     Integer, Allocatable                   :: buf5(:), ijkatm(:), nat(:)
     Integer, Dimension(8)                  :: req
     Integer, Dimension(MPI_STATUS_SIZE, 8) :: stat
-    Real(Kind=wp)                          :: crho, gsadd, tmp, velsq, vx, vy, vz
+    Real(Kind=wp)                          :: crho, gsadd, tmp, velsq, vx, vy, vz, xxt, yyt, zzt
     Real(Kind=wp), Allocatable             :: buf1(:), buf2(:), buf3(:), buf4(:)
 
     ! allocate and zero arrays
@@ -339,9 +342,12 @@ Contains
 
     If (comm%mxnode > 1) Then
       Do i = 1, config%natms
-        ia = Floor((config%parts(i)%xxx + ttm%zerocell(1)) / ttm%delx) + 1
-        ja = Floor((config%parts(i)%yyy + ttm%zerocell(2)) / ttm%dely) + 1
-        ka = Floor((config%parts(i)%zzz + ttm%zerocell(3)) / ttm%delz) + 1
+        xxt = config%parts(i)%xxx
+        yyt = config%parts(i)%yyy
+        zzt = config%parts(i)%zzz
+        ia = Floor(xxt*ttm%grcell(1)+yyt*ttm%grcell(4)+zzt*ttm%grcell(7)+ttm%zerocell(1)) + 1
+        ja = Floor(xxt*ttm%grcell(2)+yyt*ttm%grcell(5)+zzt*ttm%grcell(8)+ttm%zerocell(2)) + 1
+        ka = Floor(xxt*ttm%grcell(3)+yyt*ttm%grcell(6)+zzt*ttm%grcell(9)+ttm%zerocell(3)) + 1
 
         ijk = 1 + ia + (ttm%ntcell(1) + 2) * (ja + (ttm%ntcell(2) + 2) * ka)
         ijkatm(i) = ijk
@@ -533,9 +539,12 @@ Contains
       ! serial version: automatically corrects voxel to be within range for
       ! boundary halo/VNL-drifted particles
       Do i = 1, config%natms
-        ia = Modulo(Floor((config%parts(i)%xxx + ttm%zerocell(1)) / ttm%delx), ttm%ntsys(1)) + 1
-        ja = Modulo(Floor((config%parts(i)%yyy + ttm%zerocell(2)) / ttm%dely), ttm%ntsys(2)) + 1
-        ka = Modulo(Floor((config%parts(i)%zzz + ttm%zerocell(3)) / ttm%delz), ttm%ntsys(3)) + 1
+        xxt = config%parts(i)%xxx
+        yyt = config%parts(i)%yyy
+        zzt = config%parts(i)%zzz
+        ia = Modulo(Floor(xxt*ttm%grcell(1)+yyt*ttm%grcell(4)+zzt*ttm%grcell(7)+ttm%zerocell(1)), ttm%ntsys(1)) + 1
+        ja = Modulo(Floor(xxt*ttm%grcell(2)+yyt*ttm%grcell(5)+zzt*ttm%grcell(8)+ttm%zerocell(2)), ttm%ntsys(2)) + 1
+        ka = Modulo(Floor(xxt*ttm%grcell(3)+yyt*ttm%grcell(6)+zzt*ttm%grcell(9)+ttm%zerocell(3)), ttm%ntsys(3)) + 1
         ijk = 1 + ia + (ttm%ntcell(1) + 2) * (ja + (ttm%ntcell(2) + 2) * ka)
         ijkatm(i) = ijk
         tmp = config%weight(i)
@@ -869,6 +878,7 @@ Contains
     ! author    - s.l.darazewicz & m.a.seaton july 2012
     ! contrib -   g.khara may 2016
     ! contrib -   g.khara, s.t.murphy & m.a.seaton september 2017
+    ! contrib -   m.a.seaton february 2020
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -885,12 +895,18 @@ Contains
     Type(comms_type),      Intent(InOut) :: comm
 
     Character(Len=256)         :: messages(6)
-    Integer                    :: fail, i, ii, ijk, j, jj, k, kk, redtstep, redtstepmx
+    Integer                    :: fail, i, ii, ijk, j, jj, k, kk, redtstep, redtstepmx, &
+                                  ixp, ixm, iyp, iym, izp, izm, ixpiyp, ixpiym, ixmiyp, ixmiym, &
+                                  ixpizp, ixpizm, ixmizp, ixmizm, iypizp, iypizm, iymizp, iymizm
     Logical                    :: debug1 = .false., safe
-    Real(Kind=wp)              :: actsite, actxm, actxp, actym, actyp, actzm, actzp, alploc, &
-                                  del2av, delx2, dely2, delz2, eltempKe, eltempmax, eltempmaxKe, &
-                                  eltempmean, eltempmin, eltempminKe, fomAx, fomAy, fomAz, &
-                                  fopttstep, maxtstep, mintstep, opttstep, temp
+    Real(Kind=wp)              :: actsite, actxm, actxp, actym, actyp, actzm, actzp, &
+                                  actxpyp, actxpym, actxmyp, actxmym, actxpzp, actxpzm, &
+                                  actxmzp, actxmzm, actypzp, actypzm, actymzp, actymzm, alploc, &
+                                  del2av, delx2, dely2, delz2, delxy, delxz, delyz, &
+                                  eltempKe, eltempmax, eltempmaxKe, eltempmean, eltempmin, eltempminKe, &
+                                  fomAx, fomAy, fomAz, fomAxy, fomAxz, fomAyz, &
+                                  fopttstep, maxtstep, mintstep, opttstep, temp, &
+                                  d2tdu2, d2tdv2, d2tdw2, d2tdudv, d2tdudw, d2tdvdw
     Real(Kind=wp), Allocatable :: eltemp1(:, :, :, :)
 
 ! Debugging flag
@@ -919,9 +935,12 @@ Contains
 
     ! determine maximum/minimum spacings and electronic temperatures
 
-    delx2 = ttm%delx * ttm%delx
-    dely2 = ttm%dely * ttm%dely
-    delz2 = ttm%delz * ttm%delz
+    delx2 = ttm%delu * ttm%delu
+    dely2 = ttm%delv * ttm%delv
+    delz2 = ttm%delw * ttm%delw
+    delxy = ttm%delu * ttm%delv
+    delxz = ttm%delu * ttm%delw
+    delyz = ttm%delv * ttm%delw
     del2av = (delx2 * dely2 * delz2) / (dely2 * delz2 + delx2 * delz2 + delx2 * dely2)
     Call eltemp_max(eltempmax, ttm, comm)
     Call eltemp_min(eltempmin, ttm, comm)
@@ -972,6 +991,9 @@ Contains
     fomAx = tstep / (delx2 * Real(redtstepmx, Kind=wp))
     fomAy = tstep / (dely2 * Real(redtstepmx, Kind=wp))
     fomAz = tstep / (delz2 * Real(redtstepmx, Kind=wp))
+    fomAxy = 0.25_wp * tstep / (delxy * Real(redtstepmx, Kind=wp))
+    fomAxz = 0.25_wp * tstep / (delxz * Real(redtstepmx, Kind=wp))
+    fomAyz = 0.25_wp * tstep / (delyz * Real(redtstepmx, Kind=wp))
 
     ! write information to OUTPUT
 
@@ -1071,22 +1093,65 @@ Contains
                     Do j = 1, ttm%ntcell(2)
                       Do i = 1, ttm%ntcell(1)
                         ijk = 1 + i + (ttm%ntcell(1) + 2) * (j + (ttm%ntcell(2) + 2) * k)
+                        ixm = ijk - 1
+                        ixp = ijk + 1
+                        iym = ijk - (ttm%ntcell(1) + 2)
+                        iyp = ijk + (ttm%ntcell(1) + 2)
+                        izm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2)
+                        izp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2)
+                        ixpiyp = ijk + ttm%ntcell(1) + 3
+                        ixpiym = ijk - ttm%ntcell(1) - 1
+                        ixmiyp = ijk + ttm%ntcell(1) + 1
+                        ixmiym = ijk - ttm%ntcell(1) - 3
+                        ixpizp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) + 1
+                        ixpizm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) + 1
+                        ixmizp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) - 1
+                        ixmizm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) - 1
+                        iypizp = ijk + (ttm%ntcell(1) + 2) * (1 + (ttm%ntcell(2) + 2))
+                        iypizm = ijk + (ttm%ntcell(1) + 2) * (1 - (ttm%ntcell(2) + 2))
+                        iymizp = ijk - (ttm%ntcell(1) + 2) * (1 - (ttm%ntcell(2) + 2))
+                        iymizm = ijk - (ttm%ntcell(1) + 2) * (1 + (ttm%ntcell(2) + 2))
                         actsite = ttm%act_ele_cell(ijk, ii, jj, kk)
-                        actxm = actsite * ttm%act_ele_cell(ijk - 1, ii, jj, kk)
-                        actxp = actsite * ttm%act_ele_cell(ijk + 1, ii, jj, kk)
-                        actym = actsite * ttm%act_ele_cell(ijk - (ttm%ntcell(1) + 2), ii, jj, kk)
-                        actyp = actsite * ttm%act_ele_cell(ijk + (ttm%ntcell(1) + 2), ii, jj, kk)
-                        actzm = actsite * ttm%act_ele_cell(ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2), ii, jj, kk)
-                        actzp = actsite * ttm%act_ele_cell(ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2), ii, jj, kk)
+                        actxm = actsite * ttm%act_ele_cell(ixm, ii, jj, kk)
+                        actxp = actsite * ttm%act_ele_cell(ixp, ii, jj, kk)
+                        actym = actsite * ttm%act_ele_cell(iym, ii, jj, kk)
+                        actyp = actsite * ttm%act_ele_cell(iyp, ii, jj, kk)
+                        actzm = actsite * ttm%act_ele_cell(izm, ii, jj, kk)
+                        actzp = actsite * ttm%act_ele_cell(izp, ii, jj, kk)
+                        actxpyp = actsite * ttm%act_ele_cell(ixpiyp, ii, jj, kk)
+                        actxpym = actsite * ttm%act_ele_cell(ixpiym, ii, jj, kk)
+                        actxmyp = actsite * ttm%act_ele_cell(ixmiyp, ii, jj, kk)
+                        actxmym = actsite * ttm%act_ele_cell(ixmiym, ii, jj, kk)
+                        actxpzp = actsite * ttm%act_ele_cell(ixpizp, ii, jj, kk)
+                        actxpzm = actsite * ttm%act_ele_cell(ixpizm, ii, jj, kk)
+                        actxmzp = actsite * ttm%act_ele_cell(ixmizp, ii, jj, kk)
+                        actxmzm = actsite * ttm%act_ele_cell(ixmizm, ii, jj, kk)
+                        actypzp = actsite * ttm%act_ele_cell(iypizp, ii, jj, kk)
+                        actypzm = actsite * ttm%act_ele_cell(iypizm, ii, jj, kk)
+                        actymzp = actsite * ttm%act_ele_cell(iymizp, ii, jj, kk)
+                        actymzm = actsite * ttm%act_ele_cell(iymizm, ii, jj, kk)
                         alploc = alp(ttm%eltemp(ijk, ii, jj, kk), ttm)
-                        eltemp1(ijk, ii, jj, kk) = ttm%eltemp(ijk, ii, jj, kk) + &
-                                        fomAx * actxm * alploc * (ttm%eltemp(ijk - 1, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-                                        fomAx * actxp * alploc * (ttm%eltemp(ijk + 1, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-                      fomAy * actym * alploc * (ttm%eltemp(ijk - (ttm%ntcell(1) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-                      fomAy * actyp * alploc * (ttm%eltemp(ijk + (ttm%ntcell(1) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-                               fomAz * actzm * alploc * (ttm%eltemp(ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2), ii, jj, kk) - &
-                                                                             ttm%eltemp(ijk, ii, jj, kk)) + &
-    fomAz * actzp * alploc * (ttm%eltemp(ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk))
+                        d2tdu2 = fomAx * alploc * (actxm * (ttm%eltemp(ixm, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
+                                                   actxp * (ttm%eltemp(ixp, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)))
+                        d2tdv2 = fomAy * alploc * (actym * (ttm%eltemp(iym, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
+                                                   actyp * (ttm%eltemp(iyp, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)))
+                        d2tdw2 = fomAz * alploc * (actzm * (ttm%eltemp(izm, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
+                                                   actzp * (ttm%eltemp(izp, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)))
+                        d2tdudv = fomAxy * alploc * (actxpyp * ttm%eltemp(ixpiyp, ii, jj, kk) - &
+                                                     actxpym * ttm%eltemp(ixpiym, ii, jj, kk) - &
+                                                     actxmyp * ttm%eltemp(ixmiyp, ii, jj, kk) + &
+                                                     actxmym * ttm%eltemp(ixmiym, ii, jj, kk))
+                        d2tdudw = fomAxz * alploc * (actxpzp * ttm%eltemp(ixpizp, ii, jj, kk) - &
+                                                     actxpzm * ttm%eltemp(ixpizm, ii, jj, kk) - &
+                                                     actxmzp * ttm%eltemp(ixmizp, ii, jj, kk) + &
+                                                     actxmzm * ttm%eltemp(ixmizm, ii, jj, kk))
+                        d2tdvdw = fomAyz * alploc * (actypzp * ttm%eltemp(iypizp, ii, jj, kk) - &
+                                                     actypzm * ttm%eltemp(iypizm, ii, jj, kk) - &
+                                                     actymzp * ttm%eltemp(iymizp, ii, jj, kk) + &
+                                                     actymzm * ttm%eltemp(iymizm, ii, jj, kk))
+                        eltemp1(ijk, ii, jj, kk) = ttm%eltemp(ijk, ii, jj, kk) + ttm%tdiffw(1) * d2tdu2  + ttm%tdiffw(2) * d2tdv2 &
+                                                                               + ttm%tdiffw(3) * d2tdw2  + ttm%tdiffw(4) * d2tdudv &
+                                                                               + ttm%tdiffw(5) * d2tdudw + ttm%tdiffw(6) * d2tdvdw
                       End Do
                     End Do
                   End Do
@@ -1096,14 +1161,40 @@ Contains
                     Do j = 1, ttm%ntcell(2)
                       Do i = 1, ttm%ntcell(1)
                         ijk = 1 + i + (ttm%ntcell(1) + 2) * (j + (ttm%ntcell(2) + 2) * k)
+                        ixm = ijk - 1
+                        ixp = ijk + 1
+                        iym = ijk - (ttm%ntcell(1) + 2)
+                        iyp = ijk + (ttm%ntcell(1) + 2)
+                        izm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2)
+                        izp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2)
+                        ixpiyp = ijk + ttm%ntcell(1) + 3
+                        ixpiym = ijk - ttm%ntcell(1) - 1
+                        ixmiyp = ijk + ttm%ntcell(1) + 1
+                        ixmiym = ijk - ttm%ntcell(1) - 3
+                        ixpizp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) + 1
+                        ixpizm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) + 1
+                        ixmizp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) - 1
+                        ixmizm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) - 1
+                        iypizp = ijk + (ttm%ntcell(1) + 2) * (1 + (ttm%ntcell(2) + 2))
+                        iypizm = ijk + (ttm%ntcell(1) + 2) * (1 - (ttm%ntcell(2) + 2))
+                        iymizp = ijk - (ttm%ntcell(1) + 2) * (1 - (ttm%ntcell(2) + 2))
+                        iymizm = ijk - (ttm%ntcell(1) + 2) * (1 + (ttm%ntcell(2) + 2))
                         alploc = alp(ttm%eltemp(ijk, ii, jj, kk), ttm)
-                        eltemp1(ijk, ii, jj, kk) = ttm%eltemp(ijk, ii, jj, kk) + &
-                                                fomAx * alploc * (ttm%eltemp(ijk - 1, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-                                                fomAx * alploc * (ttm%eltemp(ijk + 1, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-                              fomAy * alploc * (ttm%eltemp(ijk - (ttm%ntcell(1) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-                              fomAy * alploc * (ttm%eltemp(ijk + (ttm%ntcell(1) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-        fomAz * alploc * (ttm%eltemp(ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-            fomAz * alploc * (ttm%eltemp(ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk))
+                        d2tdu2 = fomAx * alploc * (ttm%eltemp(ixm, ii, jj, kk) + ttm%eltemp(ixp, ii, jj, kk) - &
+                                                                        2.0_wp * ttm%eltemp(ijk, ii, jj, kk))
+                        d2tdv2 = fomAy * alploc * (ttm%eltemp(iym, ii, jj, kk) + ttm%eltemp(iyp, ii, jj, kk) - &
+                                                                        2.0_wp * ttm%eltemp(ijk, ii, jj, kk))
+                        d2tdw2 = fomAz * alploc * (ttm%eltemp(izm, ii, jj, kk) + ttm%eltemp(izp, ii, jj, kk) - &
+                                                                        2.0_wp * ttm%eltemp(ijk, ii, jj, kk))
+                        d2tdudv = fomAxy * alploc * (ttm%eltemp(ixpiyp, ii, jj, kk) - ttm%eltemp(ixpiym, ii, jj, kk) - &
+                                                     ttm%eltemp(ixmiyp, ii, jj, kk) + ttm%eltemp(ixmiym, ii, jj, kk))
+                        d2tdudw = fomAxz * alploc * (ttm%eltemp(ixpizp, ii, jj, kk) - ttm%eltemp(ixpizm, ii, jj, kk) - &
+                                                     ttm%eltemp(ixmizp, ii, jj, kk) + ttm%eltemp(ixmizm, ii, jj, kk))
+                        d2tdvdw = fomAyz * alploc * (ttm%eltemp(iypizp, ii, jj, kk) - ttm%eltemp(iypizm, ii, jj, kk) - &
+                                                     ttm%eltemp(iymizp, ii, jj, kk) + ttm%eltemp(iymizm, ii, jj, kk))
+                        eltemp1(ijk, ii, jj, kk) = ttm%eltemp(ijk, ii, jj, kk) + ttm%tdiffw(1) * d2tdu2  + ttm%tdiffw(2) * d2tdv2 &
+                                                                               + ttm%tdiffw(3) * d2tdw2  + ttm%tdiffw(4) * d2tdudv &
+                                                                               + ttm%tdiffw(5) * d2tdudw + ttm%tdiffw(6) * d2tdvdw
                       End Do
                     End Do
                   End Do
@@ -1121,14 +1212,40 @@ Contains
                   Do j = 1, ttm%ntcell(2)
                     Do i = 1, ttm%ntcell(1)
                       ijk = 1 + i + (ttm%ntcell(1) + 2) * (j + (ttm%ntcell(2) + 2) * k)
+                      ixm = ijk - 1
+                      ixp = ijk + 1
+                      iym = ijk - (ttm%ntcell(1) + 2)
+                      iyp = ijk + (ttm%ntcell(1) + 2)
+                      izm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2)
+                      izp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2)
+                      ixpiyp = ijk + ttm%ntcell(1) + 3
+                      ixpiym = ijk - ttm%ntcell(1) - 1
+                      ixmiyp = ijk + ttm%ntcell(1) + 1
+                      ixmiym = ijk - ttm%ntcell(1) - 3
+                      ixpizp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) + 1
+                      ixpizm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) + 1
+                      ixmizp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) - 1
+                      ixmizm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) - 1
+                      iypizp = ijk + (ttm%ntcell(1) + 2) * (1 + (ttm%ntcell(2) + 2))
+                      iypizm = ijk + (ttm%ntcell(1) + 2) * (1 - (ttm%ntcell(2) + 2))
+                      iymizp = ijk - (ttm%ntcell(1) + 2) * (1 - (ttm%ntcell(2) + 2))
+                      iymizm = ijk - (ttm%ntcell(1) + 2) * (1 + (ttm%ntcell(2) + 2))
                       alploc = alp(ttm%eltemp(ijk, ii, jj, kk), ttm)
-                      eltemp1(ijk, ii, jj, kk) = ttm%eltemp(ijk, ii, jj, kk) + &
-                                                fomAx * alploc * (ttm%eltemp(ijk - 1, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-                                                fomAx * alploc * (ttm%eltemp(ijk + 1, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-                              fomAy * alploc * (ttm%eltemp(ijk - (ttm%ntcell(1) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-                              fomAy * alploc * (ttm%eltemp(ijk + (ttm%ntcell(1) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-        fomAz * alploc * (ttm%eltemp(ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-            fomAz * alploc * (ttm%eltemp(ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk))
+                      d2tdu2 = fomAx * alploc * (ttm%eltemp(ixm, ii, jj, kk) + ttm%eltemp(ixp, ii, jj, kk) - &
+                                                                      2.0_wp * ttm%eltemp(ijk, ii, jj, kk))
+                      d2tdv2 = fomAy * alploc * (ttm%eltemp(iym, ii, jj, kk) + ttm%eltemp(iyp, ii, jj, kk) - &
+                                                                      2.0_wp * ttm%eltemp(ijk, ii, jj, kk))
+                      d2tdw2 = fomAz * alploc * (ttm%eltemp(izm, ii, jj, kk) + ttm%eltemp(izp, ii, jj, kk) - &
+                                                                      2.0_wp * ttm%eltemp(ijk, ii, jj, kk))
+                      d2tdudv = fomAxy * alploc * (ttm%eltemp(ixpiyp, ii, jj, kk) - ttm%eltemp(ixpiym, ii, jj, kk) - &
+                                                   ttm%eltemp(ixmiyp, ii, jj, kk) + ttm%eltemp(ixmiym, ii, jj, kk))
+                      d2tdudw = fomAxz * alploc * (ttm%eltemp(ixpizp, ii, jj, kk) - ttm%eltemp(ixpizm, ii, jj, kk) - &
+                                                   ttm%eltemp(ixmizp, ii, jj, kk) + ttm%eltemp(ixmizm, ii, jj, kk))
+                      d2tdvdw = fomAyz * alploc * (ttm%eltemp(iypizp, ii, jj, kk) - ttm%eltemp(iypizm, ii, jj, kk) - &
+                                                   ttm%eltemp(iymizp, ii, jj, kk) + ttm%eltemp(iymizm, ii, jj, kk))
+                      eltemp1(ijk, ii, jj, kk) = ttm%eltemp(ijk, ii, jj, kk) + ttm%tdiffw(1) * d2tdu2  + ttm%tdiffw(2) * d2tdv2 &
+                                                                             + ttm%tdiffw(3) * d2tdw2  + ttm%tdiffw(4) * d2tdudv &
+                                                                             + ttm%tdiffw(5) * d2tdudw + ttm%tdiffw(6) * d2tdvdw
                     End Do
                   End Do
                 End Do
@@ -1155,30 +1272,76 @@ Contains
                     Do j = 1, ttm%ntcell(2)
                       Do i = 1, ttm%ntcell(1)
                         ijk = 1 + i + (ttm%ntcell(1) + 2) * (j + (ttm%ntcell(2) + 2) * k)
-                        actsite = ttm%act_ele_cell(ijk, ii, jj, kk)
-                        actxm = actsite * ttm%act_ele_cell(ijk - 1, ii, jj, kk)
-                        actxp = actsite * ttm%act_ele_cell(ijk + 1, ii, jj, kk)
-                        actym = actsite * ttm%act_ele_cell(ijk - (ttm%ntcell(1) + 2), ii, jj, kk)
-                        actyp = actsite * ttm%act_ele_cell(ijk + (ttm%ntcell(1) + 2), ii, jj, kk)
-                        actzm = actsite * ttm%act_ele_cell(ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2), ii, jj, kk)
-                        actzp = actsite * ttm%act_ele_cell(ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2), ii, jj, kk)
-                        eltemp1(ijk, ii, jj, kk) = ttm%eltemp(ijk, ii, jj, kk) + &
-                        fomAx * actxm * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ijk - 1, ii, jj, kk)), temp, ttm) * &
-                          (ttm%eltemp(ijk - 1, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm) + &
-                        fomAx * actxp * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ijk + 1, ii, jj, kk)), temp, ttm) * &
-                          (ttm%eltemp(ijk + 1, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm) + &
-      fomAy * actym * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ijk - (ttm%ntcell(1) + 2), ii, jj, kk)), temp, ttm) * &
-        (ttm%eltemp(ijk - (ttm%ntcell(1) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm) + &
-      fomAy * actyp * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ijk + (ttm%ntcell(1) + 2), ii, jj, kk)), temp, ttm) * &
-        (ttm%eltemp(ijk + (ttm%ntcell(1) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm) + &
-                                fomAz * actzm * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ijk - (ttm%ntcell(1) + 2) * &
-                                                                                   (ttm%ntcell(2) + 2), ii, jj, kk)), temp, ttm) * &
-                         (ttm%eltemp(ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) / &
-                                                   Ce(ttm%eltemp(ijk, ii, jj, kk), ttm) + &
-                                fomAz * actzp * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ijk + (ttm%ntcell(1) + 2) * &
-                                                                                   (ttm%ntcell(2) + 2), ii, jj, kk)), temp, ttm) * &
-                         (ttm%eltemp(ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) / &
-                                                   Ce(ttm%eltemp(ijk, ii, jj, kk), ttm)
+                        ixm = ijk - 1
+                        ixp = ijk + 1
+                        iym = ijk - (ttm%ntcell(1) + 2)
+                        iyp = ijk + (ttm%ntcell(1) + 2)
+                        izm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2)
+                        izp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2)
+                        ixpiyp = ijk + ttm%ntcell(1) + 3
+                        ixpiym = ijk - ttm%ntcell(1) - 1
+                        ixmiyp = ijk + ttm%ntcell(1) + 1
+                        ixmiym = ijk - ttm%ntcell(1) - 3
+                        ixpizp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) + 1
+                        ixpizm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) + 1
+                        ixmizp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) - 1
+                        ixmizm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) - 1
+                        iypizp = ijk + (ttm%ntcell(1) + 2) * (1 + (ttm%ntcell(2) + 2))
+                        iypizm = ijk + (ttm%ntcell(1) + 2) * (1 - (ttm%ntcell(2) + 2))
+                        iymizp = ijk - (ttm%ntcell(1) + 2) * (1 - (ttm%ntcell(2) + 2))
+                        iymizm = ijk - (ttm%ntcell(1) + 2) * (1 + (ttm%ntcell(2) + 2))
+                        actsite = ttm%act_ele_cell(ijk, ii, jj, kk) / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm)
+                        actxm = actsite * ttm%act_ele_cell(ixm, ii, jj, kk) * &
+                                          KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixm, ii, jj, kk)), temp, ttm)
+                        actxp = actsite * ttm%act_ele_cell(ixp, ii, jj, kk) * &
+                                          KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixp, ii, jj, kk)), temp, ttm)
+                        actym = actsite * ttm%act_ele_cell(iym, ii, jj, kk) * &
+                                          KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(iym, ii, jj, kk)), temp, ttm)
+                        actyp = actsite * ttm%act_ele_cell(iyp, ii, jj, kk) * &
+                                          KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(iyp, ii, jj, kk)), temp, ttm)
+                        actzm = actsite * ttm%act_ele_cell(izm, ii, jj, kk) * &
+                                          KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(izm, ii, jj, kk)), temp, ttm)
+                        actzp = actsite * ttm%act_ele_cell(izp, ii, jj, kk) * &
+                                          KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(izp, ii, jj, kk)), temp, ttm)
+                        actxpyp = actsite * ttm%act_ele_cell(ixpiyp, ii, jj, kk) * &
+                                          KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixpiyp, ii, jj, kk)), temp, ttm)
+                        actxpym = actsite * ttm%act_ele_cell(ixpiym, ii, jj, kk) * &
+                                          KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixpiym, ii, jj, kk)), temp, ttm)
+                        actxmyp = actsite * ttm%act_ele_cell(ixmiyp, ii, jj, kk) * &
+                                          KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixmiyp, ii, jj, kk)), temp, ttm)
+                        actxmym = actsite * ttm%act_ele_cell(ixmiym, ii, jj, kk) * &
+                                          KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixmiym, ii, jj, kk)), temp, ttm)
+                        actxpzp = actsite * ttm%act_ele_cell(ixpizp, ii, jj, kk) * &
+                                          KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixpizp, ii, jj, kk)), temp, ttm)
+                        actxpzm = actsite * ttm%act_ele_cell(ixpizm, ii, jj, kk) * &
+                                          KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixpizm, ii, jj, kk)), temp, ttm)
+                        actxmzp = actsite * ttm%act_ele_cell(ixmizp, ii, jj, kk) * &
+                                          KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixmizp, ii, jj, kk)), temp, ttm)
+                        actxmzm = actsite * ttm%act_ele_cell(ixmizm, ii, jj, kk) * &
+                                          KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixmizm, ii, jj, kk)), temp, ttm)
+                        actypzp = actsite * ttm%act_ele_cell(iypizp, ii, jj, kk) * &
+                                          KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(iypizp, ii, jj, kk)), temp, ttm)
+                        actypzm = actsite * ttm%act_ele_cell(iypizm, ii, jj, kk) * &
+                                          KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(iypizm, ii, jj, kk)), temp, ttm)
+                        actymzp = actsite * ttm%act_ele_cell(iymizp, ii, jj, kk) * &
+                                          KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(iymizp, ii, jj, kk)), temp, ttm)
+                        actymzm = actsite * ttm%act_ele_cell(iymizm, ii, jj, kk) * &
+                                          KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(iymizm, ii, jj, kk)), temp, ttm)
+                        d2tdu2 = fomAx * (actxm * (ttm%eltemp(ixm, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
+                                          actxp * (ttm%eltemp(ixp, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)))
+                        d2tdv2 = fomAy * (actym * (ttm%eltemp(iym, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
+                                          actyp * (ttm%eltemp(iyp, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)))
+                        d2tdw2 = fomAz * (actzm * (ttm%eltemp(izm, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
+                                          actzp * (ttm%eltemp(izp, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)))
+                        d2tdudv = fomAxy * (actxpyp * ttm%eltemp(ixpiyp, ii, jj, kk) - actxpym * ttm%eltemp(ixpiym, ii, jj, kk) - &
+                                            actxmyp * ttm%eltemp(ixmiyp, ii, jj, kk) + actxmym * ttm%eltemp(ixmiym, ii, jj, kk))
+                        d2tdudw = fomAxz * (actxpzp * ttm%eltemp(ixpizp, ii, jj, kk) - actxpzm * ttm%eltemp(ixpizm, ii, jj, kk) - &
+                                            actxmzp * ttm%eltemp(ixmizp, ii, jj, kk) + actxmzm * ttm%eltemp(ixmizm, ii, jj, kk))
+                        d2tdvdw = fomAyz * (actypzp * ttm%eltemp(iypizp, ii, jj, kk) - actypzm * ttm%eltemp(iypizm, ii, jj, kk) - &
+                                            actymzp * ttm%eltemp(iymizp, ii, jj, kk) + actymzm * ttm%eltemp(iymizm, ii, jj, kk))
+                        eltemp1(ijk, ii, jj, kk) = ttm%eltemp(ijk, ii, jj, kk) + ttm%tdiffw(1) * d2tdu2  + ttm%tdiffw(2) * d2tdv2 &
+                                                                               + ttm%tdiffw(3) * d2tdw2  + ttm%tdiffw(4) * d2tdudv &
+                                                                               + ttm%tdiffw(5) * d2tdudw + ttm%tdiffw(6) * d2tdvdw
                       End Do
                     End Do
                   End Do
@@ -1188,23 +1351,58 @@ Contains
                     Do j = 1, ttm%ntcell(2)
                       Do i = 1, ttm%ntcell(1)
                         ijk = 1 + i + (ttm%ntcell(1) + 2) * (j + (ttm%ntcell(2) + 2) * k)
-                        eltemp1(ijk, ii, jj, kk) = ttm%eltemp(ijk, ii, jj, kk) + &
-                                fomAx * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ijk - 1, ii, jj, kk)), temp, ttm) * &
-                          (ttm%eltemp(ijk - 1, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm) + &
-                                fomAx * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ijk + 1, ii, jj, kk)), temp, ttm) * &
-                          (ttm%eltemp(ijk + 1, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm) + &
-              fomAy * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ijk - (ttm%ntcell(1) + 2), ii, jj, kk)), temp, ttm) * &
-        (ttm%eltemp(ijk - (ttm%ntcell(1) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm) + &
-              fomAy * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ijk + (ttm%ntcell(1) + 2), ii, jj, kk)), temp, ttm) * &
-        (ttm%eltemp(ijk + (ttm%ntcell(1) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm) + &
-                                        fomAz * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ijk - (ttm%ntcell(1) + 2) * &
-                                                                                   (ttm%ntcell(2) + 2), ii, jj, kk)), temp, ttm) * &
-                         (ttm%eltemp(ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) / &
-                                                   Ce(ttm%eltemp(ijk, ii, jj, kk), ttm) + &
-                                        fomAz * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ijk + (ttm%ntcell(1) + 2) * &
-                                                                                   (ttm%ntcell(2) + 2), ii, jj, kk)), temp, ttm) * &
-                         (ttm%eltemp(ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) / &
-                                                   Ce(ttm%eltemp(ijk, ii, jj, kk), ttm)
+                        ixm = ijk - 1
+                        ixp = ijk + 1
+                        iym = ijk - (ttm%ntcell(1) + 2)
+                        iyp = ijk + (ttm%ntcell(1) + 2)
+                        izm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2)
+                        izp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2)
+                        ixpiyp = ijk + ttm%ntcell(1) + 3
+                        ixpiym = ijk - ttm%ntcell(1) - 1
+                        ixmiyp = ijk + ttm%ntcell(1) + 1
+                        ixmiym = ijk - ttm%ntcell(1) - 3
+                        ixpizp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) + 1
+                        ixpizm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) + 1
+                        ixmizp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) - 1
+                        ixmizm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) - 1
+                        iypizp = ijk + (ttm%ntcell(1) + 2) * (1 + (ttm%ntcell(2) + 2))
+                        iypizm = ijk + (ttm%ntcell(1) + 2) * (1 - (ttm%ntcell(2) + 2))
+                        iymizp = ijk - (ttm%ntcell(1) + 2) * (1 - (ttm%ntcell(2) + 2))
+                        iymizm = ijk - (ttm%ntcell(1) + 2) * (1 + (ttm%ntcell(2) + 2))
+                        actsite = 1.0_wp / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm)
+                        actxm = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixm, ii, jj, kk)), temp, ttm)
+                        actxp = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixp, ii, jj, kk)), temp, ttm)
+                        actym = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(iym, ii, jj, kk)), temp, ttm)
+                        actyp = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(iyp, ii, jj, kk)), temp, ttm)
+                        actzm = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(izm, ii, jj, kk)), temp, ttm)
+                        actzp = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(izp, ii, jj, kk)), temp, ttm)
+                        actxpyp = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixpiyp, ii, jj, kk)), temp, ttm)
+                        actxpym = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixpiym, ii, jj, kk)), temp, ttm)
+                        actxmyp = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixmiyp, ii, jj, kk)), temp, ttm)
+                        actxmym = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixmiym, ii, jj, kk)), temp, ttm)
+                        actxpzp = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixpizp, ii, jj, kk)), temp, ttm)
+                        actxpzm = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixpizm, ii, jj, kk)), temp, ttm)
+                        actxmzp = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixmizp, ii, jj, kk)), temp, ttm)
+                        actxmzm = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixmizm, ii, jj, kk)), temp, ttm)
+                        actypzp = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(iypizp, ii, jj, kk)), temp, ttm)
+                        actypzm = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(iypizm, ii, jj, kk)), temp, ttm)
+                        actymzp = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(iymizp, ii, jj, kk)), temp, ttm)
+                        actymzm = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(iymizm, ii, jj, kk)), temp, ttm)
+                        d2tdu2 = fomAx * (actxm * (ttm%eltemp(ixm, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
+                                          actxp * (ttm%eltemp(ixp, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)))
+                        d2tdv2 = fomAy * (actym * (ttm%eltemp(iym, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
+                                          actyp * (ttm%eltemp(iyp, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)))
+                        d2tdw2 = fomAz * (actzm * (ttm%eltemp(izm, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
+                                          actzp * (ttm%eltemp(izp, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)))
+                        d2tdudv = fomAxy * (actxpyp * ttm%eltemp(ixpiyp, ii, jj, kk) - actxpym * ttm%eltemp(ixpiym, ii, jj, kk) - &
+                                            actxmyp * ttm%eltemp(ixmiyp, ii, jj, kk) + actxmym * ttm%eltemp(ixmiym, ii, jj, kk))
+                        d2tdudw = fomAxz * (actxpzp * ttm%eltemp(ixpizp, ii, jj, kk) - actxpzm * ttm%eltemp(ixpizm, ii, jj, kk) - &
+                                            actxmzp * ttm%eltemp(ixmizp, ii, jj, kk) + actxmzm * ttm%eltemp(ixmizm, ii, jj, kk))
+                        d2tdvdw = fomAyz * (actypzp * ttm%eltemp(iypizp, ii, jj, kk) - actypzm * ttm%eltemp(iypizm, ii, jj, kk) - &
+                                            actymzp * ttm%eltemp(iymizp, ii, jj, kk) + actymzm * ttm%eltemp(iymizm, ii, jj, kk))
+                        eltemp1(ijk, ii, jj, kk) = ttm%eltemp(ijk, ii, jj, kk) + ttm%tdiffw(1) * d2tdu2  + ttm%tdiffw(2) * d2tdv2 &
+                                                                               + ttm%tdiffw(3) * d2tdw2  + ttm%tdiffw(4) * d2tdudv &
+                                                                               + ttm%tdiffw(5) * d2tdudw + ttm%tdiffw(6) * d2tdvdw
                       End Do
                     End Do
                   End Do
@@ -1223,23 +1421,58 @@ Contains
                   Do j = 1, ttm%ntcell(2)
                     Do i = 1, ttm%ntcell(1)
                       ijk = 1 + i + (ttm%ntcell(1) + 2) * (j + (ttm%ntcell(2) + 2) * k)
-                      eltemp1(ijk, ii, jj, kk) = ttm%eltemp(ijk, ii, jj, kk) + &
-                                fomAx * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ijk - 1, ii, jj, kk)), temp, ttm) * &
-                          (ttm%eltemp(ijk - 1, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm) + &
-                                fomAx * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ijk + 1, ii, jj, kk)), temp, ttm) * &
-                          (ttm%eltemp(ijk + 1, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm) + &
-              fomAy * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ijk - (ttm%ntcell(1) + 2), ii, jj, kk)), temp, ttm) * &
-        (ttm%eltemp(ijk - (ttm%ntcell(1) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm) + &
-              fomAy * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ijk + (ttm%ntcell(1) + 2), ii, jj, kk)), temp, ttm) * &
-        (ttm%eltemp(ijk + (ttm%ntcell(1) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm) + &
-                                        fomAz * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ijk - (ttm%ntcell(1) + 2) * &
-                                                                                   (ttm%ntcell(2) + 2), ii, jj, kk)), temp, ttm) * &
-                         (ttm%eltemp(ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) / &
-                                                 Ce(ttm%eltemp(ijk, ii, jj, kk), ttm) + fomAz * &
-                                                KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ijk + (ttm%ntcell(1) + 2) * &
-                                                                                   (ttm%ntcell(2) + 2), ii, jj, kk)), temp, ttm) * &
-                                                 (ttm%eltemp(ijk + (ttm%ntcell(1) + 2) * &
-                              (ttm%ntcell(2) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm)
+                      ixm = ijk - 1
+                      ixp = ijk + 1
+                      iym = ijk - (ttm%ntcell(1) + 2)
+                      iyp = ijk + (ttm%ntcell(1) + 2)
+                      izm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2)
+                      izp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2)
+                      ixpiyp = ijk + ttm%ntcell(1) + 3
+                      ixpiym = ijk - ttm%ntcell(1) - 1
+                      ixmiyp = ijk + ttm%ntcell(1) + 1
+                      ixmiym = ijk - ttm%ntcell(1) - 3
+                      ixpizp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) + 1
+                      ixpizm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) + 1
+                      ixmizp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) - 1
+                      ixmizm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) - 1
+                      iypizp = ijk + (ttm%ntcell(1) + 2) * (1 + (ttm%ntcell(2) + 2))
+                      iypizm = ijk + (ttm%ntcell(1) + 2) * (1 - (ttm%ntcell(2) + 2))
+                      iymizp = ijk - (ttm%ntcell(1) + 2) * (1 - (ttm%ntcell(2) + 2))
+                      iymizm = ijk - (ttm%ntcell(1) + 2) * (1 + (ttm%ntcell(2) + 2))
+                      actsite = 1.0_wp / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm)
+                      actxm = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixm, ii, jj, kk)), temp, ttm)
+                      actxp = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixp, ii, jj, kk)), temp, ttm)
+                      actym = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(iym, ii, jj, kk)), temp, ttm)
+                      actyp = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(iyp, ii, jj, kk)), temp, ttm)
+                      actzm = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(izm, ii, jj, kk)), temp, ttm)
+                      actzp = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(izp, ii, jj, kk)), temp, ttm)
+                      actxpyp = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixpiyp, ii, jj, kk)), temp, ttm)
+                      actxpym = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixpiym, ii, jj, kk)), temp, ttm)
+                      actxmyp = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixmiyp, ii, jj, kk)), temp, ttm)
+                      actxmym = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixmiym, ii, jj, kk)), temp, ttm)
+                      actxpzp = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixpizp, ii, jj, kk)), temp, ttm)
+                      actxpzm = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixpizm, ii, jj, kk)), temp, ttm)
+                      actxmzp = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixmizp, ii, jj, kk)), temp, ttm)
+                      actxmzm = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(ixmizm, ii, jj, kk)), temp, ttm)
+                      actypzp = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(iypizp, ii, jj, kk)), temp, ttm)
+                      actypzm = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(iypizm, ii, jj, kk)), temp, ttm)
+                      actymzp = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(iymizp, ii, jj, kk)), temp, ttm)
+                      actymzm = actsite * KeD(0.5_wp * (ttm%eltemp(ijk, ii, jj, kk) + ttm%eltemp(iymizm, ii, jj, kk)), temp, ttm)
+                      d2tdu2 = fomAx * (actxm * (ttm%eltemp(ixm, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
+                                        actxp * (ttm%eltemp(ixp, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)))
+                      d2tdv2 = fomAy * (actym * (ttm%eltemp(iym, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
+                                        actyp * (ttm%eltemp(iyp, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)))
+                      d2tdw2 = fomAz * (actzm * (ttm%eltemp(izm, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
+                                        actzp * (ttm%eltemp(izp, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)))
+                      d2tdudv = fomAxy * (actxpyp * ttm%eltemp(ixpiyp, ii, jj, kk) - actxpym * ttm%eltemp(ixpiym, ii, jj, kk) - &
+                                          actxmyp * ttm%eltemp(ixmiyp, ii, jj, kk) + actxmym * ttm%eltemp(ixmiym, ii, jj, kk))
+                      d2tdudw = fomAxz * (actxpzp * ttm%eltemp(ixpizp, ii, jj, kk) - actxpzm * ttm%eltemp(ixpizm, ii, jj, kk) - &
+                                          actxmzp * ttm%eltemp(ixmizp, ii, jj, kk) + actxmzm * ttm%eltemp(ixmizm, ii, jj, kk))
+                      d2tdvdw = fomAyz * (actypzp * ttm%eltemp(iypizp, ii, jj, kk) - actypzm * ttm%eltemp(iypizm, ii, jj, kk) - &
+                                          actymzp * ttm%eltemp(iymizp, ii, jj, kk) + actymzm * ttm%eltemp(iymizm, ii, jj, kk))
+                      eltemp1(ijk, ii, jj, kk) = ttm%eltemp(ijk, ii, jj, kk) + ttm%tdiffw(1) * d2tdu2  + ttm%tdiffw(2) * d2tdv2 &
+                                                                             + ttm%tdiffw(3) * d2tdw2  + ttm%tdiffw(4) * d2tdudv &
+                                                                             + ttm%tdiffw(5) * d2tdudw + ttm%tdiffw(6) * d2tdvdw
                     End Do
                   End Do
                 End Do
@@ -1266,24 +1499,66 @@ Contains
                     Do j = 1, ttm%ntcell(2)
                       Do i = 1, ttm%ntcell(1)
                         ijk = 1 + i + (ttm%ntcell(1) + 2) * (j + (ttm%ntcell(2) + 2) * k)
+                        ixm = ijk - 1
+                        ixp = ijk + 1
+                        iym = ijk - (ttm%ntcell(1) + 2)
+                        iyp = ijk + (ttm%ntcell(1) + 2)
+                        izm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2)
+                        izp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2)
+                        ixpiyp = ijk + ttm%ntcell(1) + 3
+                        ixpiym = ijk - ttm%ntcell(1) - 1
+                        ixmiyp = ijk + ttm%ntcell(1) + 1
+                        ixmiym = ijk - ttm%ntcell(1) - 3
+                        ixpizp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) + 1
+                        ixpizm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) + 1
+                        ixmizp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) - 1
+                        ixmizm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) - 1
+                        iypizp = ijk + (ttm%ntcell(1) + 2) * (1 + (ttm%ntcell(2) + 2))
+                        iypizm = ijk + (ttm%ntcell(1) + 2) * (1 - (ttm%ntcell(2) + 2))
+                        iymizp = ijk - (ttm%ntcell(1) + 2) * (1 - (ttm%ntcell(2) + 2))
+                        iymizm = ijk - (ttm%ntcell(1) + 2) * (1 + (ttm%ntcell(2) + 2))
                         actsite = ttm%act_ele_cell(ijk, ii, jj, kk)
-                        actxm = actsite * ttm%act_ele_cell(ijk - 1, ii, jj, kk)
-                        actxp = actsite * ttm%act_ele_cell(ijk + 1, ii, jj, kk)
-                        actym = actsite * ttm%act_ele_cell(ijk - (ttm%ntcell(1) + 2), ii, jj, kk)
-                        actyp = actsite * ttm%act_ele_cell(ijk + (ttm%ntcell(1) + 2), ii, jj, kk)
-                        actzm = actsite * ttm%act_ele_cell(ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2), ii, jj, kk)
-                        actzp = actsite * ttm%act_ele_cell(ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2), ii, jj, kk)
+                        actxm = actsite * ttm%act_ele_cell(ixm, ii, jj, kk)
+                        actxp = actsite * ttm%act_ele_cell(ixp, ii, jj, kk)
+                        actym = actsite * ttm%act_ele_cell(iym, ii, jj, kk)
+                        actyp = actsite * ttm%act_ele_cell(iyp, ii, jj, kk)
+                        actzm = actsite * ttm%act_ele_cell(izm, ii, jj, kk)
+                        actzp = actsite * ttm%act_ele_cell(izp, ii, jj, kk)
+                        actxpyp = actsite * ttm%act_ele_cell(ixpiyp, ii, jj, kk)
+                        actxpym = actsite * ttm%act_ele_cell(ixpiym, ii, jj, kk)
+                        actxmyp = actsite * ttm%act_ele_cell(ixmiyp, ii, jj, kk)
+                        actxmym = actsite * ttm%act_ele_cell(ixmiym, ii, jj, kk)
+                        actxpzp = actsite * ttm%act_ele_cell(ixpizp, ii, jj, kk)
+                        actxpzm = actsite * ttm%act_ele_cell(ixpizm, ii, jj, kk)
+                        actxmzp = actsite * ttm%act_ele_cell(ixmizp, ii, jj, kk)
+                        actxmzm = actsite * ttm%act_ele_cell(ixmizm, ii, jj, kk)
+                        actypzp = actsite * ttm%act_ele_cell(iypizp, ii, jj, kk)
+                        actypzm = actsite * ttm%act_ele_cell(iypizm, ii, jj, kk)
+                        actymzp = actsite * ttm%act_ele_cell(iymizp, ii, jj, kk)
+                        actymzm = actsite * ttm%act_ele_cell(iymizm, ii, jj, kk)
                         eltempKe = Merge(ttm%tempion(ijk), temp, (ii == 0 .and. jj == 0 .and. kk == 0))
                         alploc = Ke(eltempKe, ttm) / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm)
-                        eltemp1(ijk, ii, jj, kk) = ttm%eltemp(ijk, ii, jj, kk) + &
-                                        fomAx * actxm * alploc * (ttm%eltemp(ijk - 1, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-                                        fomAx * actxp * alploc * (ttm%eltemp(ijk + 1, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-                      fomAy * actym * alploc * (ttm%eltemp(ijk - (ttm%ntcell(1) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-                      fomAy * actyp * alploc * (ttm%eltemp(ijk + (ttm%ntcell(1) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-                                                   fomAz * actzm * alploc * (ttm%eltemp(ijk - (ttm%ntcell(1) + 2) * &
-                                                                 (ttm%ntcell(2) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-                                                   fomAz * actzp * alploc * (ttm%eltemp(ijk + (ttm%ntcell(1) + 2) * &
-                                                                     (ttm%ntcell(2) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk))
+                        d2tdu2 = fomAx * alploc * (actxm * (ttm%eltemp(ixm, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
+                                                   actxp * (ttm%eltemp(ixp, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)))
+                        d2tdv2 = fomAy * alploc * (actym * (ttm%eltemp(iym, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
+                                                   actyp * (ttm%eltemp(iyp, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)))
+                        d2tdw2 = fomAz * alploc * (actzm * (ttm%eltemp(izm, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
+                                                   actzp * (ttm%eltemp(izp, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)))
+                        d2tdudv = fomAxy * alploc * (actxpyp * ttm%eltemp(ixpiyp, ii, jj, kk) - &
+                                                     actxpym * ttm%eltemp(ixpiym, ii, jj, kk) - &
+                                                     actxmyp * ttm%eltemp(ixmiyp, ii, jj, kk) + &
+                                                     actxmym * ttm%eltemp(ixmiym, ii, jj, kk))
+                        d2tdudw = fomAxz * alploc * (actxpzp * ttm%eltemp(ixpizp, ii, jj, kk) - &
+                                                     actxpzm * ttm%eltemp(ixpizm, ii, jj, kk) - &
+                                                     actxmzp * ttm%eltemp(ixmizp, ii, jj, kk) + &
+                                                     actxmzm * ttm%eltemp(ixmizm, ii, jj, kk))
+                        d2tdvdw = fomAyz * alploc * (actypzp * ttm%eltemp(iypizp, ii, jj, kk) - &
+                                                     actypzm * ttm%eltemp(iypizm, ii, jj, kk) - &
+                                                     actymzp * ttm%eltemp(iymizp, ii, jj, kk) + &
+                                                     actymzm * ttm%eltemp(iymizm, ii, jj, kk))
+                        eltemp1(ijk, ii, jj, kk) = ttm%eltemp(ijk, ii, jj, kk) + ttm%tdiffw(1) * d2tdu2  + ttm%tdiffw(2) * d2tdv2 &
+                                                                               + ttm%tdiffw(3) * d2tdw2  + ttm%tdiffw(4) * d2tdudv &
+                                                                               + ttm%tdiffw(5) * d2tdudw + ttm%tdiffw(6) * d2tdvdw
                       End Do
                     End Do
                   End Do
@@ -1293,16 +1568,42 @@ Contains
                     Do j = 1, ttm%ntcell(2)
                       Do i = 1, ttm%ntcell(1)
                         ijk = 1 + i + (ttm%ntcell(1) + 2) * (j + (ttm%ntcell(2) + 2) * k)
+                        ixm = ijk - 1
+                        ixp = ijk + 1
+                        iym = ijk - (ttm%ntcell(1) + 2)
+                        iyp = ijk + (ttm%ntcell(1) + 2)
+                        izm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2)
+                        izp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2)
+                        ixpiyp = ijk + ttm%ntcell(1) + 3
+                        ixpiym = ijk - ttm%ntcell(1) - 1
+                        ixmiyp = ijk + ttm%ntcell(1) + 1
+                        ixmiym = ijk - ttm%ntcell(1) - 3
+                        ixpizp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) + 1
+                        ixpizm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) + 1
+                        ixmizp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) - 1
+                        ixmizm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) - 1
+                        iypizp = ijk + (ttm%ntcell(1) + 2) * (1 + (ttm%ntcell(2) + 2))
+                        iypizm = ijk + (ttm%ntcell(1) + 2) * (1 - (ttm%ntcell(2) + 2))
+                        iymizp = ijk - (ttm%ntcell(1) + 2) * (1 - (ttm%ntcell(2) + 2))
+                        iymizm = ijk - (ttm%ntcell(1) + 2) * (1 + (ttm%ntcell(2) + 2))
                         ! note that temperature for thermal conductivity is always system
                         ! temperature for electronic cells away from ionic cells
                         alploc = Ke(temp, ttm) / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm)
-                        eltemp1(ijk, ii, jj, kk) = ttm%eltemp(ijk, ii, jj, kk) + &
-                                                fomAx * alploc * (ttm%eltemp(ijk - 1, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-                                                fomAx * alploc * (ttm%eltemp(ijk + 1, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-                              fomAy * alploc * (ttm%eltemp(ijk - (ttm%ntcell(1) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-                              fomAy * alploc * (ttm%eltemp(ijk + (ttm%ntcell(1) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-        fomAz * alploc * (ttm%eltemp(ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-            fomAz * alploc * (ttm%eltemp(ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk))
+                        d2tdu2 = fomAx * alploc * (ttm%eltemp(ixm, ii, jj, kk) + ttm%eltemp(ixp, ii, jj, kk) - &
+                                                                        2.0_wp * ttm%eltemp(ijk, ii, jj, kk))
+                        d2tdv2 = fomAy * alploc * (ttm%eltemp(iym, ii, jj, kk) + ttm%eltemp(iyp, ii, jj, kk) - &
+                                                                        2.0_wp * ttm%eltemp(ijk, ii, jj, kk))
+                        d2tdw2 = fomAz * alploc * (ttm%eltemp(izm, ii, jj, kk) + ttm%eltemp(izp, ii, jj, kk) - &
+                                                                        2.0_wp * ttm%eltemp(ijk, ii, jj, kk))
+                        d2tdudv = fomAxy * alploc * (ttm%eltemp(ixpiyp, ii, jj, kk) - ttm%eltemp(ixpiym, ii, jj, kk) - &
+                                                     ttm%eltemp(ixmiyp, ii, jj, kk) + ttm%eltemp(ixmiym, ii, jj, kk))
+                        d2tdudw = fomAxz * alploc * (ttm%eltemp(ixpizp, ii, jj, kk) - ttm%eltemp(ixpizm, ii, jj, kk) - &
+                                                     ttm%eltemp(ixmizp, ii, jj, kk) + ttm%eltemp(ixmizm, ii, jj, kk))
+                        d2tdvdw = fomAyz * alploc * (ttm%eltemp(iypizp, ii, jj, kk) - ttm%eltemp(iypizm, ii, jj, kk) - &
+                                                     ttm%eltemp(iymizp, ii, jj, kk) + ttm%eltemp(iymizm, ii, jj, kk))
+                        eltemp1(ijk, ii, jj, kk) = ttm%eltemp(ijk, ii, jj, kk) + ttm%tdiffw(1) * d2tdu2  + ttm%tdiffw(2) * d2tdv2 &
+                                                                               + ttm%tdiffw(3) * d2tdw2  + ttm%tdiffw(4) * d2tdudv &
+                                                                               + ttm%tdiffw(5) * d2tdudw + ttm%tdiffw(6) * d2tdvdw
                       End Do
                     End Do
                   End Do
@@ -1320,20 +1621,41 @@ Contains
                   Do j = 1, ttm%ntcell(2)
                     Do i = 1, ttm%ntcell(1)
                       ijk = 1 + i + (ttm%ntcell(1) + 2) * (j + (ttm%ntcell(2) + 2) * k)
+                      ixm = ijk - 1
+                      ixp = ijk + 1
+                      iym = ijk - (ttm%ntcell(1) + 2)
+                      iyp = ijk + (ttm%ntcell(1) + 2)
+                      izm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2)
+                      izp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2)
+                      ixpiyp = ijk + ttm%ntcell(1) + 3
+                      ixpiym = ijk - ttm%ntcell(1) - 1
+                      ixmiyp = ijk + ttm%ntcell(1) + 1
+                      ixmiym = ijk - ttm%ntcell(1) - 3
+                      ixpizp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) + 1
+                      ixpizm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) + 1
+                      ixmizp = ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) - 1
+                      ixmizm = ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) - 1
+                      iypizp = ijk + (ttm%ntcell(1) + 2) * (1 + (ttm%ntcell(2) + 2))
+                      iypizm = ijk + (ttm%ntcell(1) + 2) * (1 - (ttm%ntcell(2) + 2))
+                      iymizp = ijk - (ttm%ntcell(1) + 2) * (1 - (ttm%ntcell(2) + 2))
+                      iymizm = ijk - (ttm%ntcell(1) + 2) * (1 + (ttm%ntcell(2) + 2))
                       eltempKe = Merge(ttm%tempion(ijk), temp, (ii == 0 .and. jj == 0 .and. kk == 0))
-                      eltemp1(ijk, ii, jj, kk) = ttm%eltemp(ijk, ii, jj, kk) + &
-                                                 fomAx * Ke(eltempKe, ttm) / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm) * &
-                                                 (ttm%eltemp(ijk - 1, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-                                                 fomAx * Ke(eltempKe, ttm) / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm) * &
-                                                 (ttm%eltemp(ijk + 1, ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-                                                 fomAy * Ke(eltempKe, ttm) / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm) * &
-                                               (ttm%eltemp(ijk - (ttm%ntcell(1) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-                                                 fomAy * Ke(eltempKe, ttm) / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm) * &
-                                               (ttm%eltemp(ijk + (ttm%ntcell(1) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-                                                 fomAz * Ke(eltempKe, ttm) / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm) * &
-                         (ttm%eltemp(ijk - (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk)) + &
-                                                 fomAz * Ke(eltempKe, ttm) / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm) * &
-                             (ttm%eltemp(ijk + (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2), ii, jj, kk) - ttm%eltemp(ijk, ii, jj, kk))
+                      alploc = Ke(eltempKe, ttm) / Ce(ttm%eltemp(ijk, ii, jj, kk), ttm)
+                      d2tdu2 = fomAx * alploc * (ttm%eltemp(ixm, ii, jj, kk) + ttm%eltemp(ixp, ii, jj, kk) - &
+                                                                      2.0_wp * ttm%eltemp(ijk, ii, jj, kk))
+                      d2tdv2 = fomAy * alploc * (ttm%eltemp(iym, ii, jj, kk) + ttm%eltemp(iyp, ii, jj, kk) - &
+                                                                      2.0_wp * ttm%eltemp(ijk, ii, jj, kk))
+                      d2tdw2 = fomAz * alploc * (ttm%eltemp(izm, ii, jj, kk) + ttm%eltemp(izp, ii, jj, kk) - &
+                                                                      2.0_wp * ttm%eltemp(ijk, ii, jj, kk))
+                      d2tdudv = fomAxy * alploc * (ttm%eltemp(ixpiyp, ii, jj, kk) - ttm%eltemp(ixpiym, ii, jj, kk) - &
+                                                   ttm%eltemp(ixmiyp, ii, jj, kk) + ttm%eltemp(ixmiym, ii, jj, kk))
+                      d2tdudw = fomAxz * alploc * (ttm%eltemp(ixpizp, ii, jj, kk) - ttm%eltemp(ixpizm, ii, jj, kk) - &
+                                                   ttm%eltemp(ixmizp, ii, jj, kk) + ttm%eltemp(ixmizm, ii, jj, kk))
+                      d2tdvdw = fomAyz * alploc * (ttm%eltemp(iypizp, ii, jj, kk) - ttm%eltemp(iypizm, ii, jj, kk) - &
+                                                   ttm%eltemp(iymizp, ii, jj, kk) + ttm%eltemp(iymizm, ii, jj, kk))
+                      eltemp1(ijk, ii, jj, kk) = ttm%eltemp(ijk, ii, jj, kk) + ttm%tdiffw(1) * d2tdu2  + ttm%tdiffw(2) * d2tdv2 &
+                                                                             + ttm%tdiffw(3) * d2tdw2  + ttm%tdiffw(4) * d2tdudv &
+                                                                             + ttm%tdiffw(5) * d2tdudw + ttm%tdiffw(6) * d2tdvdw
                     End Do
                   End Do
                 End Do
@@ -1353,22 +1675,19 @@ Contains
               Do i = 1, ttm%ntcell(1)
                 ijk = 1 + i + (ttm%ntcell(1) + 2) * (j + (ttm%ntcell(2) + 2) * k)
                 If (ttm%act_ele_cell(ijk, 0, 0, 0) > zero_plus) Then
+                  alploc = tstep * ttm%rvolume / (Ce(ttm%eltemp(ijk, 0, 0, 0), ttm) * Real(redtstepmx, Kind=wp))
                   ! e-s coupling term
-                  eltemp1(ijk, 0, 0, 0) = eltemp1(ijk, 0, 0, 0) + tstep * ttm%rvolume / (Ce(ttm%eltemp(ijk, 0, 0, 0), ttm) * &
-                                                                                       Real(redtstepmx, Kind=wp)) * ttm%asource(ijk)
+                  eltemp1(ijk, 0, 0, 0) = eltemp1(ijk, 0, 0, 0) + alploc * ttm%asource(ijk)
                   ! e-p coupling term: only use if electronic temperature
                   ! exceeds ionic temperature
                   If (ttm%l_epcp .and. ttm%eltemp(ijk, 0, 0, 0) > ttm%tempion(ijk)) Then
                     Select Case (ttm%gvar)
                     Case (0, 1)
-                      eltemp1(ijk, 0, 0, 0) = eltemp1(ijk, 0, 0, 0) - &
-                                           tstep * ttm%rvolume / (Ce(ttm%eltemp(ijk, 0, 0, 0), ttm) * Real(redtstepmx, Kind=wp)) * &
-                                              ttm%gsource(ijk) * (ttm%eltemp(ijk, 0, 0, 0) - ttm%tempion(ijk))
+                      eltemp1(ijk, 0, 0, 0) = eltemp1(ijk, 0, 0, 0) - alploc * ttm%gsource(ijk) * &
+                                                                      (ttm%eltemp(ijk, 0, 0, 0) - ttm%tempion(ijk))
                     Case (2)
-                      eltemp1(ijk, 0, 0, 0) = eltemp1(ijk, 0, 0, 0) - &
-                                           tstep * ttm%rvolume / (Ce(ttm%eltemp(ijk, 0, 0, 0), ttm) * Real(redtstepmx, Kind=wp)) * &
-                                              ttm%gsource(ijk) * (ttm%eltemp(ijk, 0, 0, 0) - ttm%tempion(ijk)) * &
-                                              Gep(ttm%eltemp(ijk, 0, 0, 0), ttm)
+                      eltemp1(ijk, 0, 0, 0) = eltemp1(ijk, 0, 0, 0) - alploc * ttm%gsource(ijk) * &
+                                 Gep(ttm%eltemp(ijk, 0, 0, 0), ttm) * (ttm%eltemp(ijk, 0, 0, 0) - ttm%tempion(ijk))
                     End Select
                   End If
                 End If
@@ -1383,21 +1702,18 @@ Contains
               Do i = 1, ttm%ntcell(1)
                 ijk = 1 + i + (ttm%ntcell(1) + 2) * (j + (ttm%ntcell(2) + 2) * k)
                 If (ttm%act_ele_cell(ijk, 0, 0, 0) > zero_plus) Then
+                  alploc = tstep * ttm%rvolume / (Ce(ttm%eltemp(ijk, 0, 0, 0), ttm) * Real(redtstepmx, Kind=wp))
                   ! e-s coupling term
-                  eltemp1(ijk, 0, 0, 0) = eltemp1(ijk, 0, 0, 0) + tstep * ttm%rvolume / (Ce(ttm%eltemp(ijk, 0, 0, 0), ttm) * &
-                                                                                       Real(redtstepmx, Kind=wp)) * ttm%asource(ijk)
+                  eltemp1(ijk, 0, 0, 0) = eltemp1(ijk, 0, 0, 0) + alploc * ttm%asource(ijk)
                   ! e-p coupling term
                   If (ttm%l_epcp) Then
                     Select Case (ttm%gvar)
                     Case (0, 1)
-                      eltemp1(ijk, 0, 0, 0) = eltemp1(ijk, 0, 0, 0) - &
-                        tstep * ttm%rvolume / (Ce(ttm%eltemp(ijk, 0, 0, 0), ttm) * Real(redtstepmx, Kind=wp)) * ttm%gsource(ijk) * &
-                                              (ttm%eltemp(ijk, 0, 0, 0) - ttm%tempion(ijk))
+                      eltemp1(ijk, 0, 0, 0) = eltemp1(ijk, 0, 0, 0) - alploc * ttm%gsource(ijk) * &
+                                                                      (ttm%eltemp(ijk, 0, 0, 0) - ttm%tempion(ijk))
                     Case (2)
-                      eltemp1(ijk, 0, 0, 0) = eltemp1(ijk, 0, 0, 0) - &
-                        tstep * ttm%rvolume / (Ce(ttm%eltemp(ijk, 0, 0, 0), ttm) * Real(redtstepmx, Kind=wp)) * ttm%gsource(ijk) * &
-                                              (ttm%eltemp(ijk, 0, 0, 0) - ttm%tempion(ijk)) * &
-                                              Gep(ttm%eltemp(ijk, 0, 0, 0), ttm)
+                      eltemp1(ijk, 0, 0, 0) = eltemp1(ijk, 0, 0, 0) - alploc * ttm%gsource(ijk) * &
+                                 Gep(ttm%eltemp(ijk, 0, 0, 0), ttm) * (ttm%eltemp(ijk, 0, 0, 0) - ttm%tempion(ijk))
                     End Select
                   End If
                 End If

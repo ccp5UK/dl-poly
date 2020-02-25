@@ -8,6 +8,7 @@ Module ttm
   ! authors   - s.l.daraszewicz & m.a.seaton may 2012
   ! contrib   - g.khara may 2016
   ! contrib   - m.a.seaton september 2017
+  ! contrib   - m.a.seaton february 2020
   ! refactoring:
   !           - a.m.elena march-october 2018
   !           - j.madge march-october 2018
@@ -45,6 +46,8 @@ Module ttm
   Use parse,           Only: get_line,&
                              get_word,&
                              word_2_real
+  Use numerics,        Only: invert
+
 #ifdef SERIAL
   Use mpi_api
 #else
@@ -70,8 +73,8 @@ Module ttm
     Integer :: tmpmsgx, tmpmsgy, tmpmsgz
     Integer :: nummsgx, nummsgy, nummsgz
 
-    Real(Kind=wp) :: delx, dely, delz, volume, rvolume
-    Real(Kind=wp) :: zerocell(3)
+    Real(Kind=wp) :: delx, dely, delz, delu, delv, delw, volume, rvolume
+    Real(Kind=wp) :: zerocell(3), grcell(9)
     Integer :: numcell
     Integer :: ttmbc(6), ttmbcmap(6)
 
@@ -94,6 +97,7 @@ Module ttm
     Real(Kind=wp) :: cellrho, rcellrho, sysrho
     Real(Kind=wp) :: fluence, pdepth
     Real(Kind=wp) :: epthreshold = 1.1_wp
+    Real(Kind=wp) :: tdiffw(6)
 
     Real(Kind=wp), Allocatable, Dimension(:, :, :) :: lat_U, lat_B, lat_I
     Real(Kind=wp) :: norm
@@ -119,7 +123,8 @@ Contains
                                       i, ierr, numbc, numbcmap, oneslicex, oneslicey, oneslicez
     Integer(Kind=MPI_ADDRESS_KIND) :: bxlth, bylth, dbleth, inleth, lb1, lb2, xlth, ylth
     Integer, Dimension(1:7)        :: fail
-    Real(Kind=wp)                  :: finish, start
+    Real(Kind=wp)                  :: finish, start, rcell(1:9), det, lx, ly, lz, lxx, lyy, lzz
+    Real(Kind=wp)                  :: lxlxx, lylyy, lzlzz
 
     fail = 0
 
@@ -137,6 +142,55 @@ Contains
 
     If (ttm%l_ttm) Then
 
+      ! Calculate grid inversion parameters for ion temperature
+      ! determination
+
+      Call invert(config%cell, rcell, det)
+
+      ttm%grcell(1) = rcell(1) * Real(ttm%ntsys(1), wp)
+      ttm%grcell(4) = rcell(4) * Real(ttm%ntsys(1), wp)
+      ttm%grcell(7) = rcell(7) * Real(ttm%ntsys(1), wp)
+      ttm%grcell(2) = rcell(2) * Real(ttm%ntsys(2), wp)
+      ttm%grcell(5) = rcell(5) * Real(ttm%ntsys(2), wp)
+      ttm%grcell(8) = rcell(8) * Real(ttm%ntsys(2), wp)
+      ttm%grcell(3) = rcell(3) * Real(ttm%ntsys(3), wp)
+      ttm%grcell(6) = rcell(6) * Real(ttm%ntsys(3), wp)
+      ttm%grcell(9) = rcell(9) * Real(ttm%ntsys(3), wp)
+
+      ! Work out weighting coefficients for thermal diffusion equation
+      ! (mainly needed for parallelepiped systems)
+
+      If (config%imcon==3) Then
+        lxx = config%cell(1)*config%cell(1) + config%cell(2)*config%cell(2) + config%cell(3)*config%cell(3)
+        lyy = config%cell(4)*config%cell(4) + config%cell(5)*config%cell(5) + config%cell(6)*config%cell(6)
+        lzz = config%cell(7)*config%cell(7) + config%cell(8)*config%cell(8) + config%cell(9)*config%cell(9)
+        lx = Sqrt(lxx)
+        ly = Sqrt(lyy)
+        lz = Sqrt(lzz)
+        lxlxx = lxx/config%cell(1)/config%cell(1)
+        lylyy = lyy/config%cell(5)/config%cell(5)
+        lzlzz = lzz/config%cell(9)/config%cell(9)
+        ttm%tdiffw(1) = lxlxx + lylyy * config%cell(2)*config%cell(2)/lxx + lzlzz * config%cell(3)*config%cell(3)/lxx
+        ttm%tdiffw(2) = lylyy + lxlxx * config%cell(4)*config%cell(4)/lyy + lzlzz * config%cell(6)*config%cell(6)/lyy
+        ttm%tdiffw(3) = lzlzz + lxlxx * config%cell(7)*config%cell(7)/lzz + lylyy * config%cell(8)*config%cell(8)/lzz
+        ttm%tdiffw(4) = lzlzz * config%cell(3)*config%cell(6)/lx/ly - lxlxx * config%cell(4)/ly - lylyy * config%cell(2)/lx
+        ttm%tdiffw(5) = lylyy * config%cell(2)*config%cell(8)/lx/lz - lxlxx * config%cell(7)/lz - lzlzz * config%cell(3)/lx
+        ttm%tdiffw(6) = lxlxx * config%cell(4)*config%cell(7)/ly/lz - lylyy * config%cell(8)/lz - lzlzz * config%cell(6)/ly
+        ttm%delu = (ttm%delx*config%cell(1) + ttm%dely*config%cell(2) + ttm%delz*config%cell(3))/lx
+        ttm%delv = (ttm%delx*config%cell(4) + ttm%dely*config%cell(5) + ttm%delz*config%cell(6))/ly
+        ttm%delw = (ttm%delx*config%cell(7) + ttm%dely*config%cell(8) + ttm%delz*config%cell(9))/lz
+      Else
+        ttm%tdiffw(1) = 1.0_wp
+        ttm%tdiffw(2) = 1.0_wp
+        ttm%tdiffw(3) = 1.0_wp
+        ttm%tdiffw(4) = 0.0_wp
+        ttm%tdiffw(5) = 0.0_wp
+        ttm%tdiffw(6) = 0.0_wp
+        ttm%delu = ttm%delx
+        ttm%delv = ttm%dely
+        ttm%delw = ttm%delz
+      End If
+
       ! Determine number of ion temperature ttm%cells for domain and
       ! offsets for ion temperature determination
 
@@ -144,19 +198,19 @@ Contains
       finish = config%cell(1) * Real(domain%idx + 1, wp) * domain%nx_recip
       ttm%ntcell(1) = Ceiling(finish / ttm%delx) - Ceiling(start / ttm%delx)
       ttm%ntcelloff(1) = Ceiling(start / ttm%delx)
-      ttm%zerocell(1) = 0.5_wp * config%cell(1) - ttm%delx * Real(Ceiling(start / ttm%delx), wp)
+      ttm%zerocell(1) = 0.5_wp * Real(ttm%ntsys(1), wp) - Real(Ceiling(start / ttm%delx), wp)
 
       start = config%cell(5) * Real(domain%idy, wp) * domain%ny_recip
       finish = config%cell(5) * Real(domain%idy + 1, wp) * domain%ny_recip
       ttm%ntcell(2) = Ceiling(finish / ttm%dely) - Ceiling(start / ttm%dely)
       ttm%ntcelloff(2) = Ceiling(start / ttm%dely)
-      ttm%zerocell(2) = 0.5_wp * config%cell(5) - ttm%dely * Real(Ceiling(start / ttm%dely), wp)
+      ttm%zerocell(2) = 0.5_wp * Real(ttm%ntsys(2), wp) - Real(Ceiling(start / ttm%dely), wp)
 
       start = config%cell(9) * Real(domain%idz, wp) * domain%nz_recip
       finish = config%cell(9) * Real(domain%idz + 1, wp) * domain%nz_recip
       ttm%ntcell(3) = Ceiling(finish / ttm%delz) - Ceiling(start / ttm%delz)
       ttm%ntcelloff(3) = Ceiling(start / ttm%delz)
-      ttm%zerocell(3) = 0.5_wp * config%cell(9) - ttm%delz * Real(Ceiling(start / ttm%delz), wp)
+      ttm%zerocell(3) = 0.5_wp * Real(ttm%ntsys(3), wp) - Real(Ceiling(start / ttm%delz), wp)
 
       ttm%numcell = (ttm%ntcell(1) + 2) * (ttm%ntcell(2) + 2) * (ttm%ntcell(3) + 2)
 
@@ -750,7 +804,7 @@ Contains
     Type(comms_type), Intent(InOut) :: comm
 
     Character(Len=14)       :: number
-    Character(Len=256)      :: message
+    Character(Len=256)      :: messages(2)
     Integer, Dimension(1:3) :: fail
 
     fail = 0
@@ -807,11 +861,10 @@ Contains
     ! report start of energy deposition
 
     Write (number, '(f14.5)') ttm%depostart
-    Write (message, "(6x,a,a,a)") &
+    Write (messages(1), "(a,a,a)") &
       'electronic energy deposition starting at time = ', Trim(Adjustl(number)), ' ps'
-    Call info(message, .true.)
-    Write (message, "(1x,130('-'))")
-    Call info(message, .true.)
+    Write (messages(2), "(130('-'))")
+    Call info(messages, 2, .true.)
 
   End Subroutine depoinit
 

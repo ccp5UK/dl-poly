@@ -120,8 +120,8 @@ Contains
       Call error(0, message)
     End If
 
-    If (thermo%newjob) Then
-      thermo%newjob = .false.
+    If (thermo%newjob_0) Then
+      thermo%newjob_0 = .false.
 
       ! store initial values of volume, long range corrections and density
 
@@ -534,8 +534,8 @@ Contains
       Call error(0, message)
     End If
 
-    If (thermo%newjob) Then
-      thermo%newjob = .false.
+    If (thermo%newjob_1) Then
+      thermo%newjob_1 = .false.
 
       ! store initial values of volume, long range corrections and density
 
@@ -1333,8 +1333,8 @@ Contains
     Integer       :: i
     Real(Kind=wp) :: hstep, qstep, scale
 
-    If (thermo%newjob_npt_scl) Then
-      thermo%newjob_npt_scl = .false.
+    If (thermo%newjob_npt_scl_0) Then
+      thermo%newjob_npt_scl_0 = .false.
 
       thermo%factor = 0.0_wp
       If (sw == 1) thermo%factor = 3.0_wp / Real(degfre, wp)
@@ -1422,8 +1422,8 @@ Contains
     Integer       :: i, irgd, j
     Real(Kind=wp) :: hstep, qstep, scale
 
-    If (thermo%newjob_npt_scl) Then
-      thermo%newjob_npt_scl = .false.
+    If (thermo%newjob_npt_scl_1) Then
+      thermo%newjob_npt_scl_1 = .false.
 
       thermo%factor = 0.0_wp
       If (sw == 1) thermo%factor = 3.0_wp / Real(degfre - degrot, wp)

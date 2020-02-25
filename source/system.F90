@@ -1729,7 +1729,7 @@ Contains
 
     If (comm%idnode == 0) Then
 
-      Open (Newunit=files(fftag)%unit_no, File='FIELD', Status='old')
+      Open (Newunit=files(fftag)%unit_no, File=files(fftag)%filename, Status='old')
       Open (Newunit=files(conftag)%unit_no, File=ffld(1:Len_trim(ffld)), Status='replace')
       Write (message, '(2a)') '*** Expanding FIELD in file ', ffld(1:Len_trim(ffld))
       Call info(message, .true.)

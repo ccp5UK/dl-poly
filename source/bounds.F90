@@ -20,7 +20,7 @@ Module bounds
   Use domains,         Only: domains_type,&
                              map_domains
   Use electrostatic,   Only: electrostatic_type,&
-                             ELECTROSTATIC_NULL
+                             ELECTROSTATIC_EWALD
   Use errors_warnings, Only: error,&
                              info,&
                              warning
@@ -295,7 +295,7 @@ Contains
     ! and maximum number of neighbouring domains/nodes in 3D DD (3^3 - 1)
 
     If (comm%mxnode > 1) Then
-      config%mxlshp = Max((2 * cshell%mxshl) / 2, (2 * cons%mxcons) / 2, (rigid%max_list * rigid%max_rigid) / 2)
+      config%mxlshp = Max(cshell%mxshl, cons%mxcons, (rigid%max_list * rigid%max_rigid) / 2)
       domain%neighbours = 26
     Else ! nothing is to be shared on one node
       config%mxlshp = 0
@@ -1014,7 +1014,7 @@ Contains
     ! must be redefined by the config%mxatdm based desnity
 
     If (.not. electro%no_elec) Then
-      If (electro%key /= ELECTROSTATIC_NULL) Then
+      If (electro%key == ELECTROSTATIC_EWALD) Then
         xhi = Max(1.0_wp, Real(ewld%bspline1, wp) / (Real(ewld%fft_dim_a, wp) / Real(domain%nx, wp) / Real(ilx, wp))) + 1.0_wp
         yhi = Max(1.0_wp, Real(ewld%bspline1, wp) / (Real(ewld%fft_dim_b, wp) / Real(domain%ny, wp) / Real(ily, wp))) + 1.0_wp
         zhi = Max(1.0_wp, Real(ewld%bspline1, wp) / (Real(ewld%fft_dim_c, wp) / Real(domain%nz, wp) / Real(ilz, wp))) + 1.0_wp

@@ -67,7 +67,9 @@ Module control
                                   RESTART_KEY_NOSCALE,&
                                   RESTART_KEY_OLD,&
                                   RESTART_KEY_SCALE,&
-                                  flow_type
+                                  flow_type, &
+                                  DFTB, &
+                                  MD
   Use greenkubo,            Only: greenkubo_type
   Use impacts,              Only: impact_type
   Use inversions,           Only: inversions_type
@@ -562,6 +564,10 @@ Contains
 
     flow%freq_restart = 1000
 
+    ! default driver type
+
+    flow%simulation_method = MD
+
     ! default value for the particle density per link cell limit
     ! below which subcelling (decreasing link-cell dimensions) stops
 
@@ -704,6 +710,10 @@ Contains
                         '%%% Turn on the check on minimum separation distance between VNL pairs at re/start !!! %%%', .true.)
         Write (message, '(a,1p,e12.4)') '%%% separation criterion (Angstroms) %%%', devel%r_dis
         If(fftag == 1) Call info(message, .true.)
+      Else If(word(1:9) == 'unit_test') Then
+         devel%run_unit_tests = .true.
+         !TODO(Alex) Would like keyword options: 'all' or list of modules [configuration, comms]
+         devel%unit_test%configuration = .true.
 
         ! read VDW options
 
@@ -3012,6 +3022,10 @@ Contains
 
         Go To 2000
 
+      Else If (word(1:5) == 'l_vdw') Then
+
+        flow%l_vdw = .True.
+
       Else If (word(1:6) == 'plumed') Then
 
         If (lplumed) Then
@@ -4101,6 +4115,8 @@ Contains
 
       Else If (word(1:5) == 'ewald' .or. word(1:4) == 'spme') Then
 
+        electro%key = ELECTROSTATIC_EWALD
+
         Call get_word(record, word)
 
         If (word(1:5) == 'evalu') Then
@@ -4120,22 +4136,27 @@ Contains
       Else If (word(1:5) == 'poiss' .or. word(1:5) == 'psolv') Then
 
         lelec = .true.
+        electro%key = ELECTROSTATIC_POISSON
 
       Else If (word(1:6) == 'distan') Then
 
         lelec = .true.
+        electro%key = ELECTROSTATIC_DDDP
 
       Else If (word(1:4) == 'coul') Then
 
         lelec = .true.
+        electro%key = ELECTROSTATIC_COULOMB
 
       Else If (word(1:5) == 'shift') Then
 
         lelec = .true.
+        electro%key = ELECTROSTATIC_COULOMB_FORCE_SHIFT
 
       Else If (word(1:8) == 'reaction') Then
 
         lelec = .true.
+        electro%key = ELECTROSTATIC_COULOMB_REACTION_FIELD
 
         ! read "no vdw", "no elec" and "no str" options
 
@@ -4401,6 +4422,12 @@ Contains
           ! x- and y-directions
 
           ttm%redistribute = .true.
+
+      ! dftb_driver
+      Else If (word(1:11) == 'dftb_driver') Then
+
+         !Use DFTB+ as the force calculator instead of classical force fields
+         flow%simulation_method = DFTB
 
         End If
 

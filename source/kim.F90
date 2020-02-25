@@ -11,12 +11,12 @@ Module kim
 !> by R. S. Elliot
   Use, Intrinsic :: iso_c_binding,  Only: c_double,&
                                           c_int,&
-                                          c_char,& 
+                                          c_char,&
                                           c_ptr,&
-                                          c_null_ptr,& 
-                                          c_funloc,& 
-                                          c_loc,& 
-                                          c_f_pointer,& 
+                                          c_null_ptr,&
+                                          c_funloc,&
+                                          c_loc,&
+                                          c_f_pointer,&
                                           c_signed_char
   Use comms,                        Only: Export_tag,&
                                           comms_type,&

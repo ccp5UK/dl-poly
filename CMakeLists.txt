@@ -154,6 +154,13 @@ if(WITH_EXTRATIME)
 else()
   message(STATUS "Build without extra timing support")
 endif()
+
+if(WITH_ASSERT)
+  message(STATUS "Build with asserts")
+else()
+    message(STATUS "Asserts excluded")
+endif()
+
 ######################
 
 ###documentation

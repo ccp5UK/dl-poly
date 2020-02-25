@@ -43,6 +43,8 @@ Module flow_control
   Integer(Kind=wi), Parameter, Public :: EmpVB = 2
   !> Simulation type keys: FFS
   Integer(Kind=wi), Parameter, Public :: FFS = 3
+  !> Simulation type keys: DFTB+
+  Integer(Kind=wi), Parameter, Public :: DFTB = 4
 
   !> Type containing program flow data
   Type, Public :: flow_type
@@ -106,7 +108,7 @@ Module flow_control
     !> Flags to kill EVB if reading "evb" settings failed
     Logical,            Public :: evbfail = .False.
 
-
+    Logical, Public          :: l_vdw = .False.
   Contains
     Procedure, Public :: new_page => flow_type_new_page
     Procedure, Public :: line_printed => flow_type_line_printed
