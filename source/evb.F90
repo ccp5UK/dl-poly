@@ -125,21 +125,72 @@ Module evb
     Final             :: cleanup
   End Type evb_type
 
-  Public :: evb_check_configs
-  Public :: evb_merge_stochastic
-  Public :: evb_population
-  Public :: evb_check_constraints
   Public :: read_evb_settings  
-  Public :: evb_pes
-  Public :: evb_setzero
+  Public :: evb_check_configs
+  Public :: evb_check_constraints
   Public :: evb_check_intramolecular 
   Public :: evb_check_intermolecular
   Public :: evb_check_external
   Public :: evb_check_intrinsic
-
+  Public :: evb_pes
+  Public :: evb_population
+  Public :: evb_setzero
+  Public :: evb_merge_stochastic
 Contains
-         
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! EVB subroutines have been divided in five different categories
+!
+! 1) Allocation/Deallocation of EVB related variables
+!    - allocate_evb_arrays
+!    - cleanup
+!
+! 2) Reading EVB settings from file
+!    - read_evb_settings
+!
+! 3) Checking consistency/correctness for the initial configurations,
+!    intrinsic properties and force-field parameters
+!    - evb_check_intrinsic
+!    - evb_intrinsic_error
+!    - evb_check_configs
+!    - evb_check_constraints
+!    - evb_constraint_error
+!    - evb_check_intermolecular
+!    - evb_intermolecular_error
+!    - evb_check_intramolecular
+!    - evb_intramolecular_number_error
+!    - evb_check_external
+!
+! 4) Computation of EVB energy, ionic forces and stress tensor (and virial)
+!    - evb_pes
+!    - evb_energy
+!    - evb_energy_couplings
+!    - evb_force
+!    - evb_stress
+!    - evb_population
+!    - evb_setzero
+!
+! 5) Stochastic dynamics
+!    - evb_merge_stochastic
+!
+! The purpose of each subroutine is described below
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   Subroutine allocate_evb_arrays(evb,num_ff)
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine to allocate EVB related variables 
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.scivetti march-october 2019
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
     Class(evb_type), Intent(InOut)     :: evb
     Integer(Kind = wi), Intent (In   ) :: num_ff
     
@@ -173,6 +224,88 @@ Contains
     End If
   
   End Subroutine allocate_evb_arrays
+
+  Subroutine cleanup(T)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine to De-allocate EVB related variables 
+    ! allocated in allocate_evb_array
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.scivetti march-october 2019
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type(evb_type) :: T
+
+    If (Allocated(T%eshift)) Then
+      Deallocate(T%eshift)
+    End If
+    If (Allocated(T%ene_matrix)) Then
+      Deallocate(T%ene_matrix)
+    End If
+    If (Allocated(T%psi)) Then
+      Deallocate(T%psi)
+    End If
+    If (Allocated(T%eigval)) Then
+      Deallocate(T%eigval)
+    End If
+    If (Allocated(T%ifail)) Then
+      Deallocate(T%ifail)
+    End If
+    If (Allocated(T%iwork)) Then
+      Deallocate(T%iwork)
+    End If
+    If (Allocated(T%work)) Then
+      Deallocate(T%work)
+    End If
+    If (Allocated(T%eneFF)) Then
+      Deallocate(T%eneFF)
+    End If
+    If (Allocated(T%force_matrix)) Then
+      Deallocate(T%force_matrix)
+    End If
+    If (Allocated(T%force)) Then
+      Deallocate(T%force)
+    End If
+    If (Allocated(T%dE_dh)) Then
+      Deallocate(T%dE_dh)
+    End If
+    If (Allocated(T%stress)) Then
+      Deallocate(T%stress)
+    End If
+    If (Allocated(T%stress_matrix)) Then
+      Deallocate(T%stress_matrix)
+    End If
+    If (Allocated(T%couplparam)) Then
+      Deallocate(T%couplparam)
+    End If
+    If (Allocated(T%typcoupl)) Then
+      Deallocate(T%typcoupl)
+    End If
+    If (Allocated(T%grad_coupl)) Then
+      Deallocate(T%grad_coupl)
+    End If
+    If (Allocated(T%FFunits)) Then
+      Deallocate(T%FFunits)
+    End If
+    If (Allocated(T%num_at)) Then
+      Deallocate(T%num_at)
+    End If
+    If (Allocated(T%num_bond)) Then
+      Deallocate(T%num_bond)
+    End If
+    If (Allocated(T%num_angle)) Then
+      Deallocate(T%num_angle)
+    End If
+    If (Allocated(T%num_dihedral)) Then
+      Deallocate(T%num_dihedral)
+    End If
+    If (Allocated(T%num_inversion)) Then
+      Deallocate(T%num_inversion)
+    End If
+
+  End Subroutine cleanup        
 
 
   Subroutine read_evb_settings(evb, flow, sites, files, comm) 
@@ -2953,101 +3086,5 @@ Contains
     End Do 
 
   End subroutine evb_merge_stochastic
-
-  Subroutine cleanup(T)
-  !Deallocate site_type arrays
-
-    Type(evb_type) :: T
-
-    If (Allocated(T%eshift)) Then
-      Deallocate(T%eshift)
-    End If
-  
-    If (Allocated(T%ene_matrix)) Then
-      Deallocate(T%ene_matrix)
-    End If
-  
-    If (Allocated(T%psi)) Then
-      Deallocate(T%psi)
-    End If
-  
-    If (Allocated(T%eigval)) Then
-      Deallocate(T%eigval)
-    End If
-
-    If (Allocated(T%ifail)) Then
-            Deallocate(T%ifail)
-    End If
-  
-    If (Allocated(T%iwork)) Then
-      Deallocate(T%iwork)
-    End If
-  
-    If (Allocated(T%work)) Then
-      Deallocate(T%work)
-    End If
-
-    If (Allocated(T%eneFF)) Then
-      Deallocate(T%eneFF)
-    End If
-  
-    If (Allocated(T%force_matrix)) Then
-      Deallocate(T%force_matrix)
-    End If
-  
-    If (Allocated(T%force)) Then
-      Deallocate(T%force)
-    End If
-  
-    If (Allocated(T%dE_dh)) Then
-      Deallocate(T%dE_dh)
-    End If
-  
-    If (Allocated(T%stress)) Then
-      Deallocate(T%stress)
-    End If
-  
-    If (Allocated(T%stress_matrix)) Then
-      Deallocate(T%stress_matrix)
-    End If
-  
-    If (Allocated(T%couplparam)) Then
-      Deallocate(T%couplparam)
-    End If
-  
-    If (Allocated(T%typcoupl)) Then
-      Deallocate(T%typcoupl)
-    End If
-  
-    If (Allocated(T%grad_coupl)) Then
-      Deallocate(T%grad_coupl)
-    End If
-  
-    If (Allocated(T%FFunits)) Then
-      Deallocate(T%FFunits)
-    End If
-  
-    If (Allocated(T%num_at)) Then
-      Deallocate(T%num_at)
-    End If
-
-    If (Allocated(T%num_bond)) Then
-      Deallocate(T%num_bond)
-    End If
-
-    If (Allocated(T%num_angle)) Then
-      Deallocate(T%num_angle)
-    End If
-    
-    If (Allocated(T%num_dihedral)) Then
-      Deallocate(T%num_dihedral)
-    End If
-
-    If (Allocated(T%num_inversion)) Then
-      Deallocate(T%num_inversion)
-    End If
-
-  End Subroutine cleanup        
-
 
 End Module evb        

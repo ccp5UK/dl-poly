@@ -99,9 +99,9 @@ Contains
       ! Random forces cycle - thermostat-thermo%system decoupling
       ! Recalculate the following for NPT and NST integration
 
-      If (thermo%variable_cell .or. thermo%newjob) Then
-        If (thermo%newjob) Then
-          thermo%newjob = .false.
+      If (thermo%variable_cell .or. thermo%newjob_sb) Then
+        If (thermo%newjob_sb) Then
+          thermo%newjob_sb = .false.
 
           Allocate (thermo%qn(1:config%mxatms), thermo%tpn(0:comm%mxnode - 1), Stat=fail(1))
           Allocate (thermo%qs(0:2, 1:cshell%mxshl), thermo%tps(0:comm%mxnode - 1), Stat=fail(2))
@@ -124,13 +124,13 @@ Contains
 
         ecwx = Nearest(-half_minus + cwx, +1.0_wp) + zero_plus
         ecwy = Nearest(-half_minus + cwy, +1.0_wp) + zero_plus
-        ecwy = Nearest(-half_minus + cwz, +1.0_wp) + zero_plus
+        ecwz = Nearest(-half_minus + cwz, +1.0_wp) + zero_plus
 
 ! Distance from the + edge of the MD cell
 
         cwx = Nearest(half_minus - cwx, -1.0_wp) - zero_plus
         cwy = Nearest(half_minus - cwy, -1.0_wp) - zero_plus
-        cwy = Nearest(half_minus - cwz, -1.0_wp) - zero_plus
+        cwz = Nearest(half_minus - cwz, -1.0_wp) - zero_plus
       End If
 
       ! qualify non-shell, non-frozen free particles (n) for a random kick

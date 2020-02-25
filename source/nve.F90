@@ -90,8 +90,8 @@ Contains
       Call error(0, message)
     End If
 
-    If (thermo%newjob) Then
-      thermo%newjob = .false.
+    If (thermo%newjob_0) Then
+      thermo%newjob_0 = .false.
 
       ! set number of constraint+pmf shake iterations
 
@@ -314,8 +314,8 @@ Contains
       Call error(0, message)
     End If
 
-    If (thermo%newjob) Then
-      thermo%newjob = .false.
+    If (thermo%newjob_1) Then
+      thermo%newjob_1 = .false.
 
       ! set number of constraint+pmf shake iterations
 

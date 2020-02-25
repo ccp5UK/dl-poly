@@ -473,6 +473,7 @@ Contains
           sites%mol_name(itmols) = word(1:Len_trim(word) + 1)//record
 
           Write (message, '(a,13x,a40)') 'name of species:', sites%mol_name(itmols)
+          Call info(message, .true.)
 
           ! stop processing if energy unit has not been specified
 

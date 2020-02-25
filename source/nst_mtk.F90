@@ -127,8 +127,8 @@ Contains
       Call error(0, message)
     End If
 
-    If (thermo%newjob) Then
-      thermo%newjob = .false.
+    If (thermo%newjob_0) Then
+      thermo%newjob_0 = .false.
 
       ! store initial values of volume, long range corrections and density
 
@@ -579,10 +579,8 @@ Contains
       Call error(0, message)
     End If
 
-    !If (newjob) Then
-    !   newjob = .false.
-    If (thermo%newjob) Then
-      thermo%newjob = .false.
+    If (thermo%newjob_1) Then
+      thermo%newjob_1 = .false.
 
       ! store initial values of volume, long range corrections and density
 

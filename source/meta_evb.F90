@@ -638,7 +638,7 @@ Contains
             thermo(1), plume(1), msd_data(1), bond(1), angle(1), dihedral(1), inversion(1), zdensity(1), neigh(1), &
             sites(1), vdws(1), tersoffs(1), fourbody(1), rdf(1), netcdf, minim(1), mpoles(1), ext_field(1), rigid(1), &
             electro(1), domain(1), seed, traj, kim_data(1), files, dfcts, tmr, tether(1), threebody(1), &
-            pois(1), green(1), ewld(1), devel, met(1), crd(1), adf(1), comm)
+            pois(1), green(1), ewld(1), devel, met(1), crd(1), comm)
         Else
           Call replay_history(config(1), ios, rsdsc(1), flow,core_shells(1), cons(1), pmfs(1), stats(1), &
             thermo(1), msd_data(1), met(1), pois(1), bond(1), angle(1), dihedral(1), inversion(1), zdensity(1), &  
