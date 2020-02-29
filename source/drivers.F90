@@ -3,8 +3,8 @@ Module drivers
 !>
 !> Copyright - Daresbury Laboratory
 !
-!> Author  - J. Madge    September 2018
-!> EVB     - i.scivetti  October   2019
+!> Author   - J. Madge    September 2018
+!> contrib  - i.scivetti  October   2019
 !>
 
   Use angles,               Only: angles_forces,&
@@ -383,7 +383,6 @@ Contains
       ltmp = (bond%bin_pdf > 0 .and. &
               ((.not. flow%equilibration) .or. flow%step >= flow%equil_steps) .and. &
               Mod(flow%step, flow%freq_bond) == 0)
-
       switch = 1 + Merge(1, 0, ltmp)
       Call bonds_forces(switch, stat%engbnd, stat%virbnd, stat%stress, neigh%cutoff, &
                         stat%engcpe, stat%vircpe, bond, mpoles, electro, cnfig, comm)
@@ -554,7 +553,7 @@ Contains
    Subroutine calculate_forces_evb(evbff, cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral,&
                                    inversion, tether, threebody, neigh, sites, vdws, tersoffs, fourbody, rdf, netcdf, &
                                    minim, mpoles, ext_field, rigid, electro, domain, kim_data, msd_data, tmr, files,&
-                                   green, devel, ewld, met, seed, thermo, crd, adf, comm)
+                                   green, devel, ewld, met, seed, thermo, crd, comm)
 
     Type(evb_type),            Intent(InOut) :: evbff
     Type(configuration_type),  Intent(InOut) :: cnfig(:)
@@ -596,12 +595,14 @@ Contains
     Type(seed_type),           Intent(InOut) :: seed
     Type(thermostat_type),     Intent(InOut) :: thermo(:)
     Type(coord_type),          Intent(InOut) :: crd(:)
-    Type(adf_type),            Intent(InOut) :: adf(:)
     Type(comms_type)    ,      Intent(InOut) :: comm
  
     Integer          :: i, ff
     Integer(Kind=wi) :: switch
     Logical          :: ltmp
+
+    Integer          :: jatm, aj, j
+
 
     !!!!!!!!!!!!!!!!!!  W_CALCULATE_FORCES INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
@@ -656,6 +657,7 @@ Contains
       End If
     End Do  
     
+
     Do ff = 1, flow%NUM_FF
 
       ! Calculate tersoff forces
@@ -2049,14 +2051,21 @@ Contains
 
   End Subroutine md_vv
 
-!!!!!!!!!!!!!
-! MD with EVB
-!!!!!!!!!!!!!
   Subroutine md_vv_evb(cnfig,ttm,io,rsdc,flow,cshell,cons,pmf,stat,thermo,plume, &
-      pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
-      netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,files,tmr,&
-      minim,impa,green,ewld,electro,dfcts,&
-      msd_data,tersoffs,tether,threebody,vdws,devel,met, crd, adf, comm)
+                       pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
+                       netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,files,tmr,&
+                       minim,impa,green,ewld,electro,dfcts,&
+                       msd_data,tersoffs,tether,threebody,vdws,devel,met, crd, adf, comm)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine to drive a MD simulation with EVB. This subroutine
+    ! is the EVB version of md_vv adapted to considering one and multiple
+    ! force-fields. This subroutine should replace vv_md upon merging EVB changes.  
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.scivetti December 2019
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type(configuration_type),  Intent(InOut) :: cnfig(:)
     Type(ttm_type ),           Intent(InOut) :: ttm(:)
@@ -2100,11 +2109,11 @@ Contains
     Type(tethers_type),        Intent(InOut) :: tether(:)
     Type(threebody_type ),     Intent(InOut) :: threebody(:) 
     Type(vdw_type ),           Intent(InOut) :: vdws(:)
-    Type(comms_type )    ,     Intent(InOut) :: comm
     Type(development_type ),   Intent(InOut) :: devel
     Type(metal_type ),         Intent(InOut) :: met(:) 
     Type(coord_type),          Intent(InOut) :: crd(:)
     Type(adf_type),            Intent(InOut) :: adf(:)
+    Type(comms_type )    ,     Intent(InOut) :: comm
 
     Type( evb_type )     :: evbff
  
@@ -2124,21 +2133,36 @@ Contains
       Call evbff%init(flow%NUM_FF)
       ! Read EVB settings 
       Call read_evb_settings(evbff, flow, sites, files, comm)
+ 
+      Call info('Start EVB checking for the consistency of:',.True.) 
+
       ! Check consistency of intra-molecular interactions between different force fiels
       ! for atoms that are not part of the EVB site  
       Call evb_check_intramolecular(evbff, flow, sites, bond, angle, dihedral, inversion)
+
       ! Check consistency of inter-molecular interactions 
       Call evb_check_intermolecular(evbff, flow, sites, tersoffs, met, threebody, fourbody)
+
       ! Check external fields
       Call evb_check_external(evbff, flow, ext_field)
+
       ! Check consistency between config files
       Call evb_check_configs(cnfig, flow, comm)
+
       ! Check consistency in the constraint specification between different FFs
       Call evb_check_constraints(cnfig, cons, cshell, tether, sites, flow, rigid, comm)
+
       ! Check consistency of intrinsic properties for sites 
       Call evb_check_intrinsic(evbff,sites,cnfig,flow,comm)
-    End If
+
+      Call info(' ',.True.)
+      Call info('EVB checking was successful !',.True.) 
+      Call info(' ',.True.)
+ 
+   End If
+
     
+
     ! Calculate kinetic tensor and energy at restart
     Do ff = 1, flow%NUM_FF
 
@@ -2244,7 +2268,7 @@ Contains
         Call calculate_forces_evb(evbff, cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &
                                   inversion, tether, threebody,neigh, sites, vdws, tersoffs, fourbody, rdf, netcdf, &
                                   minim, mpoles, ext_field, rigid, electro, domain, kim_data, msd_data, tmr, &
-                                  files, green, devel, ewld, met, seed, thermo, crd, adf, comm)
+                                  files, green, devel, ewld, met, seed, thermo, crd, comm)
 
       ! Calculate physical quantities, collect statistics and report at t=0
       If (flow%step == 0) Then

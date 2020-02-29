@@ -32,38 +32,44 @@ Module filename
   Integer, Parameter, Public :: FILE_CONTROL = 1
   !> OUTPUT file
   Integer, Parameter, Public :: FILE_OUTPUT = 2
-  !> CONFIG file
-  Integer, Parameter, Public :: FILE_CONFIG = 3
-  !> FIELD file
-  Integer, Parameter, Public :: FILE_FIELD = 4
   !> STATS file
-  Integer, Parameter, Public :: FILE_STATS = 5
+  Integer, Parameter, Public :: FILE_STATS = 3
   !> HISTORY file
-  Integer, Parameter, Public :: FILE_HISTORY = 6
+  Integer, Parameter, Public :: FILE_HISTORY = 4
   !> HISTORF file
-  Integer, Parameter, Public :: FILE_HISTORF = 7
+  Integer, Parameter, Public :: FILE_HISTORF = 5
   !> REVIVE file
-  Integer, Parameter, Public :: FILE_REVIVE = 8
+  Integer, Parameter, Public :: FILE_REVIVE = 6
   !> REVOLD file
-  Integer, Parameter, Public :: FILE_REVOLD = 9
-  !> REVCON file
-  Integer, Parameter, Public :: FILE_REVCON = 10
-  !> FIELD2 file
-  Integer, Parameter, Public :: FILE_FIELD_2=  11
-  !> CONFIG2 file
-  Integer, Parameter, Public :: FILE_CONFIG_2 = 12
-  !> REVCON2 file
-  Integer, Parameter, Public :: FILE_REVCON_2 = 13
+  Integer, Parameter, Public :: FILE_REVOLD = 7
   !> SETEVB file
-  Integer, Parameter, Public :: FILE_SETEVB = 14
+  Integer, Parameter, Public :: FILE_SETEVB = 9 
   !> POPEVB file
-  Integer, Parameter, Public :: FILE_POPEVB = 15
+  Integer, Parameter, Public :: FILE_POPEVB = 10
   !> CURRENT file
-  Integer, Parameter, Public :: FILE_CURRENT = 16
-  !> KPOOINTS file
-  Integer, Parameter, Public :: FILE_KPOINTS = 17
+  Integer, Parameter, Public :: FILE_CURRENT = 11
+  !> KPOINTS file
+  Integer, Parameter, Public :: FILE_KPOINTS = 12
+  !> CONFIG file
+  Integer, Parameter, Public :: FILE_CONFIG = 13
+  !> FIELD file
+  Integer, Parameter, Public :: FILE_FIELD =  14
+  !> REVCON file
+  Integer, Parameter, Public :: FILE_REVCON = 15
+  !> FIELD2 file
+  Integer, Parameter, Public :: FILE_FIELD_2=  16
+  !> CONFIG2 file
+  Integer, Parameter, Public :: FILE_CONFIG_2 = 17
+  !> REVCON2 file
+  Integer, Parameter, Public :: FILE_REVCON_2 = 18
+  !> FIELD3 file
+  Integer, Parameter, Public :: FILE_FIELD_3 =  19
+  !> CONFIG3 file
+  Integer, Parameter, Public :: FILE_CONFIG_3 = 20
+  !> REVCON3 file
+  Integer, Parameter, Public :: FILE_REVCON_3 = 21
   !> Size of filename array
-  Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 17
+  Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 21
 
   Public :: default_filenames
 
@@ -89,21 +95,24 @@ Contains
     ! Populate default names array
     default_names(FILE_CONTROL)  = "CONTROL"
     default_names(FILE_OUTPUT)   = "OUTPUT"
-    default_names(FILE_CONFIG)   = "CONFIG"
-    default_names(FILE_FIELD)    = "FIELD"
     default_names(FILE_STATS)    = "STATIS"
     default_names(FILE_HISTORY)  = "HISTORY"
     default_names(FILE_HISTORF)  = "HISTORF"
     default_names(FILE_REVIVE)   = "REVIVE"
     default_names(FILE_REVOLD)   = "REVOLD"
-    default_names(FILE_REVCON)   = "REVCON"
-    default_names(FILE_REVCON_2) = "REVCON2"
-    default_names(FILE_FIELD_2)  = "FIELD2"
-    default_names(FILE_CONFIG_2) = "CONFIG2"
     default_names(FILE_SETEVB)   = "SETEVB"
     default_names(FILE_POPEVB)   = "POPEVB"
-    default_names(FILE_CURRENT) = "CURRENTS"
-    default_names(FILE_KPOINTS) = "KPOINTS"
+    default_names(FILE_CURRENT)  = "CURRENTS"
+    default_names(FILE_KPOINTS)  = "KPOINTS"
+    default_names(FILE_CONFIG)   = "CONFIG"
+    default_names(FILE_FIELD)    = "FIELD"
+    default_names(FILE_REVCON)   = "REVCON"
+    default_names(FILE_FIELD_2)  = "FIELD2"
+    default_names(FILE_CONFIG_2) = "CONFIG2"
+    default_names(FILE_REVCON_2) = "REVCON2"
+    default_names(FILE_FIELD_3)  = "FIELD3"
+    default_names(FILE_CONFIG_3) = "CONFIG3"
+    default_names(FILE_REVCON_3) = "REVCON3"
 
     ! Set default filenames
     Do file_no = 1, FILENAME_SIZE

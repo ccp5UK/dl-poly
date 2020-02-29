@@ -1,11 +1,12 @@
-Module md_evb 
+Module meta_evb 
 !> meta-simulation routines
 !>
 !> Copyright - Daresbury Laboratory
 !>
 !> Author - J. Madge October 2018
-!> contrib - a.m.elena march 2019 updated deallocate uniform routine
-!> contrib - i. scivetti 2020 EVB
+!> contrib - a.m.elena march 2019   updated deallocate uniform routine
+!> contrib - i. scivetti march 2020 modidfiction for EVB
+
   Use analysis,                           Only: analysis_result
   Use angles,                             Only: angles_type
   Use angular_distribution,               Only: adf_type
@@ -18,7 +19,9 @@ Module md_evb
   Use comms,                              Only: comms_type,&
                                                 gsum,&
                                                 gsync,&
-                                                gtime
+                                                gtime,&
+                                                exit_comms,&
+                                                root_id 
   Use configuration,                      Only: check_config,&
                                                 configuration_type,&
                                                 freeze_atoms,&
@@ -61,6 +64,7 @@ Module md_evb
                                                 FILE_OUTPUT,&
                                                 FILE_REVCON,&
                                                 FILE_REVCON_2,& 
+                                                FILE_REVCON_3,& 
                                                 FILE_STATS,&
                                                 default_filenames,&
                                                 file_type
@@ -106,6 +110,7 @@ Module md_evb
                                                 system_revive
   Use temperature,                        Only: set_temperature
   Use tersoff,                            Only: tersoff_type
+  Use test_configuration,                 Only: run_configuration_tests
   Use tethers,                            Only: tethers_type
   Use thermostat,                         Only: thermostat_type
   Use three_body,                         Only: threebody_type
@@ -249,46 +254,46 @@ Contains
     Type(impact_type),           Intent(InOut) :: impa
     Type(defects_type),          Intent(InOut) :: dfcts(:)
     Type(bonds_type),            Intent(InOut) :: bond(:)
-    Type( angles_type ),         Intent(InOut) :: angle(:)
-    Type( dihedrals_type ),      Intent(InOut) :: dihedral(:)
-    Type( inversions_type ),     Intent(InOut) :: inversion(:)
-    Type( tethers_type ),        Intent(InOut) :: tether(:)
-    Type( threebody_type ),      Intent(InOut) :: threebody(:)
-    Type( z_density_type ),      Intent(InOut) :: zdensity(:)
-    Type( constraints_type ),    Intent(InOut) :: cons(:)
-    Type( neighbours_type ),     Intent(InOut) :: neigh(:)
-    Type( pmf_type ),            Intent(InOut) :: pmfs(:)
-    Type( site_type ),           Intent(InOut) :: sites(:)
-    Type( core_shell_type ),     Intent(InOut) :: core_shells(:)
-    Type( vdw_type ),            Intent(InOut) :: vdws(:)
-    Type( tersoff_type ),        Intent(InOut) :: tersoffs(:)
-    Type( four_body_type ),      Intent(InOut) :: fourbody(:)
-    Type( rdf_type ),            Intent(InOut) :: rdf(:)
-    Type( netcdf_param ),        Intent(InOut) :: netcdf
-    Type( minimise_type ),       Intent(InOut) :: minim(:)
-    Type( mpole_type ),          Intent(InOut) :: mpoles(:)
-    Type( external_field_type ), Intent(InOut) :: ext_field(:)
-    Type( rigid_bodies_type ),   Intent(InOut) :: rigid(:)
-    Type( electrostatic_type ),  Intent(InOut) :: electro(:)
-    Type( domains_type ),        Intent(InOut) :: domain(:)
-    Type( flow_type ),           Intent(InOut) :: flow
-    Type( seed_type ),           Intent(InOut) :: seed
-    Type( trajectory_type ),     Intent(InOut) :: traj
-    Type( kim_type ), Target,    Intent(InOut) :: kim_data(:)
-    Type( configuration_type ),  Intent(InOut) :: config(:)
-    Type( io_type),              Intent(InOut) :: ios
-    Type( ttm_type),             Intent(InOut) :: ttms(:)
-    Type( rsd_type ), Target,    Intent(InOut) :: rsdsc(:)
-    Type( file_type ),           Intent(InOut) :: files(:)
-    Character( len = 1024 ),     Intent(In   ) :: output_filename
-    Character( len = 1024 ),     Intent(In   ) :: control_filename
+    Type(angles_type ),          Intent(InOut) :: angle(:)
+    Type(dihedrals_type ),       Intent(InOut) :: dihedral(:)
+    Type(inversions_type ),      Intent(InOut) :: inversion(:)
+    Type(tethers_type ),         Intent(InOut) :: tether(:)
+    Type(threebody_type ),       Intent(InOut) :: threebody(:)
+    Type(z_density_type ),       Intent(InOut) :: zdensity(:)
+    Type(constraints_type ),     Intent(InOut) :: cons(:)
+    Type(neighbours_type ),      Intent(InOut) :: neigh(:)
+    Type(pmf_type ),             Intent(InOut) :: pmfs(:)
+    Type(site_type ),            Intent(InOut) :: sites(:)
+    Type(core_shell_type ),      Intent(InOut) :: core_shells(:)
+    Type(vdw_type ),             Intent(InOut) :: vdws(:)
+    Type(tersoff_type ),         Intent(InOut) :: tersoffs(:)
+    Type(four_body_type ),       Intent(InOut) :: fourbody(:)
+    Type(rdf_type ),             Intent(InOut) :: rdf(:)
+    Type(netcdf_param ),         Intent(InOut) :: netcdf
+    Type(minimise_type ),        Intent(InOut) :: minim(:)
+    Type(mpole_type ),           Intent(InOut) :: mpoles(:)
+    Type(external_field_type ),  Intent(InOut) :: ext_field(:)
+    Type(rigid_bodies_type ),    Intent(InOut) :: rigid(:)
+    Type(electrostatic_type ),   Intent(InOut) :: electro(:)
+    Type(domains_type ),         Intent(InOut) :: domain(:)
+    Type(flow_type ),            Intent(InOut) :: flow
+    Type(seed_type ),            Intent(InOut) :: seed
+    Type(trajectory_type ),      Intent(InOut) :: traj
+    Type(kim_type ), Target,     Intent(InOut) :: kim_data(:)
+    Type(configuration_type ),   Intent(InOut) :: config(:)
+    Type(io_type),               Intent(InOut) :: ios
+    Type(ttm_type),              Intent(InOut) :: ttms(:)
+    Type(rsd_type ), Target,     Intent(InOut) :: rsdsc(:)
+    Type(file_type ),            Intent(InOut) :: files(:)
+    Character(Len= 1024),        Intent(In   ) :: output_filename
+    Character(Len= 1024),        Intent(In   ) :: control_filename
     Type(coord_type),            Intent(InOut) :: crd(:)
     Type(adf_type),              Intent(InOut) :: adf(:)
 
-    character( len = 256 ) :: message
-
-    Integer( Kind = wi ) :: vacuum, ff, frevc
-    Logical :: lfce
+    Character(Len=256 ) :: message
+    Integer(Kind=wi)    :: vacuum
+    Integer(Kind=wi)    :: ff, frevc
+    Logical             :: lfce
 
     Call gtime(tmr%elapsed) ! Initialise wall clock time
 
@@ -327,13 +332,12 @@ Contains
 
     Call scan_control_io(ios,netcdf,files,comm)
 
-    ! Print error message in case there was an error when reading the settings from evb from CONTROL
+    ! Print error message in case there was an error when reading settings evb from CONTROL via read_simtype
     If(flow%evbfail)Then
-      Write(message,'(a)') 'error - No (or wrong) specificaton for the number of fields to be coupled via EVB &
-                           &following the keyword "evb" in CONTROL. Value MUST an integer larger than 1'      
+      Write(message,'(a)') 'error - Either no or wrong specificaton following the keyword "evb" in CONTROL &
+                           &for the number of fields to be coupled via. Value MUST an integer larger than 1'      
       call error(0,message)
     End If
-
 
     ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
     ! (setup and domains)
@@ -349,7 +353,7 @@ Contains
     Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
     Call time_elapsed(tmr)
 
-    ! Now the loop is over the number of force fields to be coupled. Variable flow%NUM_FF was read from CONTROL
+    ! Now the loop is over the number of force fields to be coupled. Variable flow%NUM_FF was assigned in read_simtype 
     Do ff=1,flow%NUM_FF
       ! ALLOCATE SITE & CONFIG
       Call sites(ff)%init()
@@ -539,10 +543,10 @@ Contains
           Call build_excl_intra(electro(ff)%lecx, core_shells(ff), cons(ff), bond(ff), angle(ff), dihedral(ff), &
             inversion(ff), neigh(ff), rigid(ff), config(ff), comm)
         End If
-
       Else
         Call report_topology(config(ff)%megatm, config(ff)%megfrz, config(ff)%atmfre, config(ff)%atmfrz, core_shells(ff), & 
-          cons(ff), pmfs(ff), bond(ff), angle(ff), dihedral(ff), inversion(ff), tether(ff), sites(ff), rigid(ff))
+                             cons(ff), pmfs(ff), bond(ff), angle(ff), dihedral(ff), inversion(ff), tether(ff), sites(ff), &
+                             rigid(ff))
 
         ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
         If (flow%simulation) Then
@@ -622,6 +626,21 @@ Contains
   call start_timer(tmr,'Main Calc')
 #endif
 
+    ! Unit testing (in the absence of a unit testing framework)
+    If (devel%run_unit_tests) Then
+
+      If (devel%unit_test%configuration) Then
+        If(comm%idnode == root_id) Then
+          Write(*,*) 'Running unit tests for configuration module'
+        Endif
+        Call run_configuration_tests(comm%mxnode)
+      End If
+
+      If(comm%idnode == root_id) Write(*,*) 'Unit tests completed'
+      Call exit_comms(dlp_world)
+      Stop 0
+    Endif
+
     ! Now you can run fast, boy
     If (devel%l_fast) Call gsync(comm, devel%l_fast)
 
@@ -646,7 +665,8 @@ Contains
             domain(1), seed, traj, kim_data(1), dfcts, files, tmr, tether(1), green(1), ewld(1), devel, comm)   
         EndIf
       Else
-        Call error(1107)
+        Write(message,'(1x,a)') 'error - replay option is not implemented for the EVB method.'       
+        Call error(0,message)
       End If  
     End If
 
@@ -679,8 +699,10 @@ Contains
       Do ff = 1, flow%NUM_FF
         If(ff == 1)Then
           frevc = FILE_REVCON
-        Else
+        Else If(ff == 2)Then 
           frevc = FILE_REVCON_2
+        Else If(ff == 3)Then 
+          frevc = FILE_REVCON_3
         End If      
         Call write_config(config(ff), files(frevc), 2, flow%step, thermo(ff)%tstep, ios, flow%time, netcdf, comm)
       End Do
@@ -744,4 +766,4 @@ Contains
 
   End Subroutine evb_molecular_dynamics_driver
 
-End Module md_evb
+End Module meta_evb

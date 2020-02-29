@@ -102,6 +102,7 @@ Module meta
                                                 system_revive
   Use temperature,                        Only: set_temperature
   Use tersoff,                            Only: tersoff_type
+  Use test_configuration,                 Only: run_configuration_tests
   Use tethers,                            Only: tethers_type
   Use thermostat,                         Only: thermostat_type
   Use three_body,                         Only: threebody_type
@@ -126,7 +127,6 @@ Module meta
                                                 printLatticeStatsToFile
   Use vdw,                                Only: vdw_type
   Use z_density,                          Only: z_density_type
-  Use test_configuration, Only : run_configuration_tests
 
 
   Implicit None
@@ -277,8 +277,8 @@ Contains
     Type(ttm_type),            Intent(InOut) :: ttms
     Type(rsd_type), Target,    Intent(InOut) :: rsdsc
     Type(file_type),           Intent(InOut) :: files(FILENAME_SIZE)
-    Character(len=1024),       Intent(In   ) :: control_filename
-    Character(len=1024),       Intent(In   ) :: output_filename
+    Character(Len=1024),       Intent(In   ) :: control_filename
+    Character(Len=1024),       Intent(In   ) :: output_filename
     Type(coord_type),          Intent(InOut) :: crd
     Type(adf_type),            Intent(InOut) :: adf
 
@@ -689,6 +689,7 @@ Contains
     ! Close output channel
 
     If (.not. devel%l_scr) Call files(FILE_OUTPUT)%close ()
+
   End Subroutine molecular_dynamics_driver
 
   !> Allocate all types uniformly, _i.e._ N of every type

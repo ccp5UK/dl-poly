@@ -50,6 +50,7 @@ Module ffield
   ! RDF MODULE
   Use filename,        Only: FILE_FIELD,&
                              FILE_FIELD_2,&
+                             FILE_FIELD_3,&
                              file_type
   Use flow_control,    Only: flow_type
   Use four_body,       Only: four_body_type
@@ -224,6 +225,8 @@ Contains
         fftag=FILE_FIELD
       ElseIf( ff ==2 )Then
         fftag=FILE_FIELD_2
+      ElseIf( ff ==3 )Then
+        fftag=FILE_FIELD_3 
       EndIf         
     Else 
       fftag=FILE_FIELD
@@ -5489,6 +5492,8 @@ Contains
         fftag=FILE_FIELD
       ElseIf( ff ==2 )Then
         fftag=FILE_FIELD_2
+      ElseIf( ff ==3 )Then
+        fftag=FILE_FIELD_3 
       EndIf
     Else
         fftag=FILE_FIELD

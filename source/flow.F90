@@ -138,7 +138,7 @@ Contains
     !
     ! dl_poly_4 subroutine to read option evb from CONTROL file. If present,
     ! the number of fields to be coupled is assigned to flow%NUM_FF. If there 
-    ! is an error in the specification for this option or the CONTROL file is 
+    ! is an error in the specification for this option evb or the CONTROL file is 
     ! not found, variables are temporarily assigned and DL_POLY will print an 
     ! error message and abort later once OUTPUT file has been opened
     !

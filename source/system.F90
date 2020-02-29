@@ -26,9 +26,10 @@ Module system
                              warning
   Use filename,        Only: FILE_CONFIG,&
                              FILE_CONFIG_2,&
+                             FILE_CONFIG_3,&
                              FILE_FIELD,&
                              FILE_FIELD_2,&
-                             FILE_REVCON,&
+                             FILE_FIELD_3,&
                              FILE_REVIVE,&
                              FILE_REVOLD,&
                              file_type
@@ -733,6 +734,9 @@ Contains
       ElseIf( ff ==2 )Then
         conftag=FILE_CONFIG_2
         fftag=FILE_FIELD_2
+      ElseIf( ff ==3 )Then
+        conftag=FILE_CONFIG_3
+        fftag=FILE_FIELD_3
       EndIf
     Else
       conftag=FILE_CONFIG

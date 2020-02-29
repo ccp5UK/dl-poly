@@ -33,6 +33,7 @@ Module configuration
                              warning
   Use filename,        Only: FILE_CONFIG,&
                              FILE_CONFIG_2,&
+                             FILE_CONFIG_3,&
                              file_type
   Use flow_control,    Only: RESTART_KEY_CLEAN,&
                              flow_type
@@ -853,6 +854,8 @@ Contains
         conftag=FILE_CONFIG
       ElseIf( ff ==2 )Then
         conftag=FILE_CONFIG_2
+      ElseIf( ff ==3 )Then
+        conftag=FILE_CONFIG_3
       EndIf
     Else
       conftag=FILE_CONFIG
@@ -1505,6 +1508,8 @@ Contains
         conftag=FILE_CONFIG
       ElseIf( ff ==2 )Then
         conftag=FILE_CONFIG_2
+      ElseIf( ff ==3 )Then
+        conftag=FILE_CONFIG_3
       EndIf
     Else
       conftag=FILE_CONFIG
@@ -2134,6 +2139,8 @@ Contains
         conftag=FILE_CONFIG
       ElseIf( ff ==2 )Then
         conftag=FILE_CONFIG_2
+      ElseIf( ff ==3 )Then
+        conftag=FILE_CONFIG_3
       EndIf
     Else
       conftag=FILE_CONFIG
