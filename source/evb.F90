@@ -67,7 +67,7 @@ Module evb
   Use thermostat,               Only: thermostat_type
 
   Use three_body,               Only: threebody_type
-
+  Use vdw,                      Only: vdw_type
 
   Implicit None
   Private
@@ -75,6 +75,8 @@ Module evb
   Type, Public ::  evb_type
 !> Type of EVB simulation: standard (0) or multi-component (1). It is set to standard by default
   Integer(Kind = wi)              :: typsim = 0
+!> Number of sites of the EVB reactive unit 
+  Integer(Kind = wi), Allocatable :: num_site(:)
 !> Number of atoms of the EVB reactive unit 
   Integer(Kind = wi), Allocatable :: num_at(:)
 !> Number of molecules that make the EVB site (this might depend on the FF)
@@ -132,10 +134,11 @@ Module evb
   Public :: evb_check_intermolecular
   Public :: evb_check_external
   Public :: evb_check_intrinsic
+  Public :: evb_check_vdw
+  Public :: evb_merge_stochastic
   Public :: evb_pes
   Public :: evb_population
   Public :: evb_setzero
-  Public :: evb_merge_stochastic
 Contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -153,6 +156,7 @@ Contains
 ! 3) Checking consistency/correctness for the initial configurations,
 !    intrinsic properties and force-field parameters
 !    - evb_check_intrinsic
+!    - evb_check_vdw
 !    - evb_intrinsic_error
 !    - evb_check_configs
 !    - evb_check_constraints
@@ -194,7 +198,7 @@ Contains
     Class(evb_type), Intent(InOut)     :: evb
     Integer(Kind = wi), Intent (In   ) :: num_ff
     
-    Integer :: fail(1:22)
+    Integer :: fail(1:23)
   
     Allocate(evb%eshift(1:num_ff),             Stat=fail(1))
     Allocate(evb%ene_matrix(num_ff,num_ff),    Stat=fail(2))
@@ -214,10 +218,11 @@ Contains
     Allocate(evb%grad_coupl(num_ff,num_ff),    Stat=fail(16))
     Allocate(evb%FFunits(num_ff),                Stat=fail(17))
     Allocate(evb%num_at(num_ff),               Stat=fail(18))
-    Allocate(evb%num_bond(num_ff),             Stat=fail(19))
-    Allocate(evb%num_angle(num_ff),            Stat=fail(20))
-    Allocate(evb%num_dihedral(num_ff),         Stat=fail(21))
-    Allocate(evb%num_inversion(num_ff),        Stat=fail(22))
+    Allocate(evb%num_site(num_ff),             Stat=fail(19))
+    Allocate(evb%num_bond(num_ff),             Stat=fail(20))
+    Allocate(evb%num_angle(num_ff),            Stat=fail(21))
+    Allocate(evb%num_dihedral(num_ff),         Stat=fail(22))
+    Allocate(evb%num_inversion(num_ff),        Stat=fail(23))
   
     If (Any(fail /= 0 ))Then
       Call error(0,' error - allocation failure in evb -> allocate_evb_arrays')
@@ -307,17 +312,6 @@ Contains
 
   End Subroutine cleanup        
 
-
-!    do ff= 1, flow%NUM_FF 
-!      Do j=1,2
-!        Do i=1, neigh(ff)%list(0, j)
-!          jatm = neigh(ff)%list(i, j)
-!          aj = cnfig(ff)%ltype(jatm)
-!          print*, ff, j, jatm, aj, cnfig(ff)%ltype(j)
-!        End do
-!      End Do
-!      print*, ' '
-!    endDo
 
   Subroutine read_evb_settings(evb, flow, sites, files, comm) 
 
@@ -609,9 +603,9 @@ Contains
       Do m=1, flow%NUM_FF  
         Do i=1, evb%FFunits(m)
          If(sites(m)%num_mols(i) /= 1 )Then
-           write(messages(1),'(1x,a)') 'error - For standard EVB simulations, only a single EVB reactive site is allowed'
-           write(messages(2),'(1x,a)') 'Thus, NUMMOL MUST be equal to 1 for the first evbFFunits types of molecular'
-           write(messages(3),'(1x,a)') 'units/fragments that define the EVB site (evbFFunits is set in the SETEVB file)'
+           Write(messages(1),'(1x,a)') 'error - For standard EVB simulations, only a single EVB reactive site is allowed'
+           Write(messages(2),'(1x,a)') 'Thus, NUMMOL MUST be equal to 1 for the first evbFFunits types of molecular'
+           Write(messages(3),'(1x,a)') 'units/fragments that define the EVB site (evbFFunits is set in the SETEVB file)'
            Call info(messages,3,.True.)
            Call error(0)
          End If        
@@ -629,13 +623,23 @@ Contains
       End Do
     End Do
   
+    ! Initialise the number of sites that belong to the EVB site 
+    evb%num_site    = 0
+  
+    ! Calculate the total sites being part of the EVB reactive site(s)
+    Do m=1, flow%NUM_FF  
+      Do i=1, evb%FFunits(m)
+        evb%num_site(m)=evb%num_site(m)+sites(m)%num_site(i)
+      End Do
+    End Do
+
     ! Check if the number of EVB atoms is the same for all FFs
     Do m=1, flow%NUM_FF-1  
       If(evb%num_at(m) /= evb%num_at(m+1))Then
-        write(messages(1),'(1x,2(a,i2))') 'error - The total number of EVB atoms differ between FF', m, ' and FF ', m+1
-        write(messages(2),'(1x,a)')       'This means that the number of EVB atoms is different for different FIELD files'
-        write(messages(3),'(1x,a)')       'ACTION: check the number of EVB atoms, as well as the settings for evbFFunits '
-        write(messages(4),'(1x,a)')       'in SETEVB and the structure of molecular units in the FIELD files'
+        Write(messages(1),'(1x,2(a,i2))') 'error - The total number of EVB atoms differ between FF', m, ' and FF ', m+1
+        Write(messages(2),'(1x,a)')       'This means that the number of EVB atoms is different for different FIELD files'
+        Write(messages(3),'(1x,a)')       'ACTION: check the number of EVB atoms, as well as the settings for evbFFunits '
+        Write(messages(4),'(1x,a)')       'in SETEVB and the structure of molecular units in the FIELD files'
         Call info(messages,4,.True.)
         Call error(0)
       End If        
@@ -938,11 +942,11 @@ Contains
     Do m = 1, flow%NUM_FF-1 
       If(config(m)%imcon /= config(m+1)%imcon)then
         If(m == 1) Then       
-          write(string1,'(a1)') ' ' 
+          Write(string1,'(a1)') ' ' 
         Else
-          write(string1,'(i2)') m      
+          Write(string1,'(i2)') m      
         End If        
-        write(string2,'(i2)') m+1
+        Write(string2,'(i2)') m+1
         ! In case an inconsistency has been found, complain and abort       
         Write(message,'(1x,5a)')  'error - Value for imcon *DIFFERS* between ', &
                                   'CONFIG'//adjustl(trim(string1)), ' and ','CONFIG'//adjustl(trim(string2)), ' files'     
@@ -976,11 +980,11 @@ Contains
         Do m = 1, flow%NUM_FF-1 
           If(abs(cell(m,i,j)-cell(m+1,i,j))>= epsilon(cell(m,i,j)))then
            If(m == 1) Then       
-             write(string1,'(a1)') ' ' 
+             Write(string1,'(a1)') ' ' 
            Else
-             write(string1,'(i2)') m      
+             Write(string1,'(i2)') m      
            End If        
-           write(string2,'(i2)') m+1
+           Write(string2,'(i2)') m+1
            ! In case an inconsistency has been found, complain and abort       
            Write(messages(1),'(1x,a,2i2,a)') 'error - Component (', i, j,') of the simulation cell differs between'
            Write(messages(2),'(1x,4a)')      'CONFIG'//adjustl(trim(string1)), ' and ','CONFIG'//adjustl(trim(string2)), ' files'     
@@ -1018,11 +1022,11 @@ Contains
            If(coord /= coord0)Then
              carry=.False.      
              If(m == 1) Then
-               write(string1,'(a1)') ' '
+               Write(string1,'(a1)') ' '
              Else
-               write(string1,'(i2)') m      
+               Write(string1,'(i2)') m      
              End If
-             write(string2,'(i2)') m+1 
+             Write(string2,'(i2)') m+1 
            End If        
          End If
        End Do
@@ -1651,6 +1655,189 @@ Contains
 
   End Subroutine evb_constraint_error
 
+  Subroutine evb_check_vdw(evb, flow, sites, vdws)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine to check consistency in the definition of vdW
+    ! interactions between FIELDS files. Check is carried out for vdW that
+    ! include only atoms belonging to the non-reactive part of the system
+    !
+    ! copyright - daresbury laboratory
+    ! copyright - daresbury laboratory
+    ! author    - i.scivetti January 2020
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type(evb_type),         Intent(InOut) :: evb
+    Type(flow_type),        Intent(In   ) :: flow
+    Type(site_type),        Intent(In   ) :: sites(:)
+    Type(vdw_type),         Intent(InOut) :: vdws(:)
+  
+  
+    Integer               :: m, m2, k, i, j, l
+    Integer               :: icvdw0, icvdw
+    Integer               :: n_vdw_max
+
+
+    Logical               :: lnovdw, vdwerror
+    Logical               :: loopi, loopj
+
+    Logical, Allocatable  :: vdw_noEVB(:,:)
+
+    Character(Len = 256)  :: labelint 
+   
+    Character(Len = 8)    :: stlab(2)
+   
+    Real(Kind = wp)       :: param(2) 
+   
+    Character(Len = 256)  :: messages(3)
+   
+    ! Initialize values
+    n_vdw_max = 0
+
+    ! Initialise counters
+    icvdw0=0 
+
+    ! Initialise flags
+    lnovdw=.False.
+    vdwerror=.False.
+  
+    Call info(' ',.True.)
+    Call info(' vdW interactions for the non-reactive part of the system...', .True.)
+ 
+    ! Check to see if there are vdW interactions specified in each FIELD file.
+    ! In case there are no vdw Interactions in any of the FIELD files, icvdw 
+    ! will be zero and this subroutine will not perform any comparison
+    Do m=1,flow%NUM_FF
+      If(vdws(m)%n_vdw == 0)Then
+       icvdw0=icvdw0+1       
+      Else
+        If(vdws(m)%n_vdw > n_vdw_max)Then
+          n_vdw_max=vdws(m)%n_vdw        
+        End If
+       End If 
+    End Do
+
+    If(icvdw0 == flow%NUM_FF)Then
+     lnovdw=.True.
+    Else
+     ! Allocate logical array to indicate which of all vdW interactions include pair 
+     ! of atoms outside the reactive region.
+     Allocate(vdw_noEVB(flow%NUM_FF,n_vdw_max))
+     vdw_noEVB=.False.
+    End If        
+
+    ! Perform the checking only if lnovdw is False 
+    If(.Not. lnovdw)Then
+
+      ! Identify those vdW interaction for which involved atoms are NOT part of the EVB region  
+      Do m = 1, flow%NUM_FF
+        Do k = 1, vdws(m)%n_vdw
+          icvdw=0
+          Do j =1, 2
+            i= evb%num_site(m)+1
+            loopi=.True.
+            Do While (i <= sites(m)%max_site .And. loopi)
+              If(vdws(m)%labpair(j,k) == sites(m)%site_name(i))Then
+                loopi=.False.
+                icvdw=icvdw+1      
+              End If
+            i=i+1        
+            End Do
+          End Do
+          ! If the two sites of vdws(m)%labpair(:,k) are part of the non-EVB region, set the element of
+          ! vdw_noEVB to .true.
+          If(icvdw==2)Then  
+            vdw_noEVB(m,k) = .True.
+          End If  
+        End Do
+      End Do
+
+
+      ! Check consistency of the vdW interactions only between the elements of the non-EVB part
+      ! for all fields
+      Do m = 1, flow%NUM_FF
+
+        If(m==flow%NUM_FF)Then
+          m2=1
+        Else 
+          m2=m+1       
+        End If  
+
+        loopi=.True.
+        i=1
+
+        Do While (i <= vdws(m)%n_vdw .And. loopi)
+          If(vdw_noEVB(m,i))Then
+            loopj=.True.
+            j=1
+            Do While (j <= vdws(m2)%n_vdw  .And. loopj)
+              If(vdw_noEVB(m2,j))Then
+                If((vdws(m)%labpair(1,i) == vdws(m2)%labpair(1,j)) .Or. (vdws(m)%labpair(1,i) == vdws(m2)%labpair(2,j)) )Then
+                  If((vdws(m)%labpair(2,i) == vdws(m2)%labpair(1,j)) .Or. (vdws(m)%labpair(2,i) == vdws(m2)%labpair(2,j)))Then
+                    loopj=.False.
+                    Do l=1,2
+                       stlab(l) =  vdws(m)%labpair(l,i)
+                    End Do  
+                    If(vdws(m)%ltp(i) /= vdws(m2)%ltp(j))Then
+                      vdwerror=.True.      
+                      loopi = .False. 
+                      labelint= 'key'
+                    Else        
+                      Do k=1, vdws(m)%max_param
+                         param(1)= vdws(m)%param(k,i)
+                         param(2)=vdws(m2)%param(k,j)
+                         If(abs(param(1)-param(2)) .gt. epsilon(param(1)))Then
+                           vdwerror=.True.      
+                           loopi=.False.
+                           labelint='parameters'
+                         End If
+                      End Do
+                    End If
+                  End If
+                End If
+              End If
+              j=j+1
+            End do
+        
+            If(loopj)Then
+              vdwerror=.True.      
+              loopi=.False.
+              labelint= 'missed'
+              Do l=1,2
+                stlab(l) = vdws(m)%labpair(l,i)
+              End Do
+            End If
+
+          End If
+          i=i+1
+        End Do
+
+        If(vdwerror)Then
+          Write(messages(1), '(1x,5a,i2)') 'error - vdW interaction between sites ', trim(stlab(1)), ' and ', trim(stlab(2)),&
+                                           ' in FF ', m       
+          If(labelint(1:6)=='missed')Then
+            Write(messages(2), '(1x,a,i2)')  'has not been found in FF', m2
+          Else
+            Write(messages(2), '(1x,4a,i2)') 'has a different setting for the ', trim(labelint), ' with respect to the same ', &
+                                             'interaction in FF ', m2
+          End If  
+          Write(messages(3),'(1x,a)')     'ACTION: chek consistency of settings in vdw interactions for sites that are not &
+                                          &part of the reactive region'
+          Call info(messages, 3, .True.)
+          Call error(0)
+        End If
+
+      End Do
+
+      If (Allocated(vdw_noEVB)) Then
+        Deallocate(vdw_noEVB)
+      End If
+
+    End If
+
+  End Subroutine evb_check_vdw
+
 
   Subroutine evb_check_intermolecular(evb, flow, sites, tersoff, met, threebody, fourbody)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1732,7 +1919,7 @@ Contains
           Do j= 1, met(m)%n_potentials 
             Do k = 1, 2
               If( trim(sites(m)%site_name(i)) == trim(met(m)%labunit(k,j)) )Then
-                write(messages(1),'(1x,3a,i2,a)') 'error - Site ', trim(sites(m)%site_name(i)),  &
+                Write(messages(1),'(1x,3a,i2,a)') 'error - Site ', trim(sites(m)%site_name(i)),  &
                                                   ' belongs to the EVB site in FF ', m,            &
                                                   ' and MUST NOT be part of metallic interactions'    
                 Call error(0, messages(1))
@@ -1814,7 +2001,7 @@ Contains
         Do i=1,evb%num_at(m)
           Do j= 1, tersoff(m)%n_potential 
               If( trim(sites(m)%site_name(i)) == trim(tersoff(m)%labunit(1,j)) )Then
-                write(messages(1),'(1x,3a,i2,a)') 'PROBLEMS: Site ', trim(sites(m)%site_name(i)),  &
+                Write(messages(1),'(1x,3a,i2,a)') 'PROBLEMS: Site ', trim(sites(m)%site_name(i)),  &
                                                   ' belongs to the EVB site in FF ', m,            &
                                                   ' and MUST NOT be part of Tersoff interactions'    
                 Call error(0, messages(1))
@@ -1939,7 +2126,7 @@ Contains
           Do j= 1, threebody(m)%ntptbp
             Do k = 1, 3
               If( trim(sites(m)%site_name(i)) == trim(threebody(m)%labunit(k,j)) )Then
-                write(messages(1),'(1x,3a,i2,a)') 'PROBLEMS: Site ', trim(sites(m)%site_name(i)),  &
+                Write(messages(1),'(1x,3a,i2,a)') 'PROBLEMS: Site ', trim(sites(m)%site_name(i)),  &
                                                   ' belongs to the EVB site in FF ', m,            &
                                                   ' and MUST NOT be part of TBP interactions'    
                 Call error(0, messages(1))
@@ -2364,24 +2551,24 @@ Contains
 
         Call obtain_molecule_from_intra(i, numxmol, ntype_mol, mol)
 
-        write(messages(1), '(1x,a)' )        'error -'
-        write(messages(2), * )                trim(labelint),' interaction between atoms', (list1(k,i), k = 1, listdim) 
-        write(messages(3),'(1x,a,2(i2,a))')  'is defined in FF ', field, & 
+        Write(messages(1), '(1x,a)' )        'error -'
+        Write(messages(2), * )                trim(labelint),' interaction between atoms', (list1(k,i), k = 1, listdim) 
+        Write(messages(3),'(1x,a,2(i2,a))')  'is defined in FF ', field, & 
                                              ' for molecular unit', mol, ' (see the corresponding FIELD file).' 
 
         If(lparam)Then
-          write(messages(4),'(1x,a)')        'Parameters for this unit *DO NOT* agree with the values set'
+          Write(messages(4),'(1x,a)')        'Parameters for this unit *DO NOT* agree with the values set'
         End If                      
         If(lkey)Then
-          write(messages(4),'(1x,a)')        'Key-type of interaction for this unit *DIFFERS* from the type specified'
+          Write(messages(4),'(1x,a)')        'Key-type of interaction for this unit *DIFFERS* from the type specified'
         End If                      
         If(llist)Then
-          write(messages(4),'(1x,a)')        'This interaction unit CANNOT be found '
+          Write(messages(4),'(1x,a)')        'This interaction unit CANNOT be found '
         End If                      
 
-        write(messages(5),'(1x,a,i2,3a)')    'in FF', field+1, '. ACTION: find unit and verify it is equally defined for ', &
+        Write(messages(5),'(1x,a,i2,3a)')    'in FF', field+1, '. ACTION: find unit and verify it is equally defined for ', &
                                              'all FIELD files, as settings for ', trim(labelint)
-        write(messages(6),'(1x,a)')          'interactions for the non-reactive part of the system must be the same for all FFs'
+        Write(messages(6),'(1x,a)')          'interactions for the non-reactive part of the system must be the same for all FFs'
         Call info(messages,6,.True.)
         call error(0)
       End If
@@ -2455,13 +2642,13 @@ Contains
     
     Character(Len = 256) :: messages(5)
   
-    write(messages(1),'(1x,3a)')        'error - The total number of intramolecular ', trim(labelint),&
+    Write(messages(1),'(1x,3a)')        'error - The total number of intramolecular ', trim(labelint),&
                                         ' interactions between atoms that' 
-    write(messages(2),'(1x,a,i2,a,i2)') 'are NOT part of the EVB reactive fragment **DIFFERS** between FF ',&
+    Write(messages(2),'(1x,a,i2,a,i2)') 'are NOT part of the EVB reactive fragment **DIFFERS** between FF ',&
                                          field, ' and FF ', field+1 
-    write(messages(3),'(1x,3a)')        'ACTION: check settings for ', trim(labelint), ' interactions and make sure' 
-    write(messages(4),'(1x,a)')         'they are equally defined in all FIELD files.'
-    write(messages(5),'(1x,a)')         'Settings for the non-reactive part of the system MUST be the same for all FIELD files'
+    Write(messages(3),'(1x,3a)')        'ACTION: check settings for ', trim(labelint), ' interactions and make sure' 
+    Write(messages(4),'(1x,a)')         'they are equally defined in all FIELD files.'
+    Write(messages(5),'(1x,a)')         'Settings for the non-reactive part of the system MUST be the same for all FIELD files'
     Call info(messages,5,.True.)
     Call error(0)
 
@@ -2602,16 +2789,16 @@ Contains
     !Check that diagonalization was successful
     If(evbinfo /= 0)Then
       If(evbinfo < 0)Then
-        write(messages(1),'(1x,a,i2,2a)')  'error - EVB diagonalization failed as the', evbinfo, '-th argument ',&
+        Write(messages(1),'(1x,a,i2,2a)')  'error - EVB diagonalization failed as the', evbinfo, '-th argument ',&
                                            'has and illegal value.'   
       Else If(evbinfo > 0)Then
-        write(messages(1),'(1x,a,i2,2a)')  'error - EVB diagonalization failed as eigenvector ', evbinfo, ' failed ',&
+        Write(messages(1),'(1x,a,i2,2a)')  'error - EVB diagonalization failed as eigenvector ', evbinfo, ' failed ',&
                                            'to converge'   
       End If
 
-      write(messages(3),'(1x,a)')          'ACTION 1: check for incorrect input parameters for coupling terms in SETEVB'
-      write(messages(4),'(1x,a)')          'ACTION 2: check for incorrect input parameters in FIELD and CONFIG files. It'
-      write(messages(5),'(1x,a)')          'might be helful to run standard MD simulations for each FFs separately'
+      Write(messages(3),'(1x,a)')          'ACTION 1: check for incorrect input parameters for coupling terms in SETEVB'
+      Write(messages(4),'(1x,a)')          'ACTION 2: check for incorrect input parameters in FIELD and CONFIG files. It'
+      Write(messages(5),'(1x,a)')          'might be helful to run standard MD simulations for each FFs separately'
 
       Call info(messages,5,.True.)
       Call error(0)
@@ -2656,10 +2843,10 @@ Contains
       If(elimit < 700.0_wp)Then     ! Here we use the sensible limit of 700 for the argument to compute exp()
         evb%ene_matrix(m,k) =  A(1)*exp(-((ediff-A(2))/A(3))**2)+A(4)
       Else
-        write(messages(1),'(1x,a)')          'error - Argument for the exponential term of the gauss coupling'
-        write(messages(2),'(1x,2(a,i2),a)')  'between FFs', m, ' and ', k, ' is beyond the range of computation'  
-        write(messages(3),'(1x,a)')          '(-700.0 < argument < 700.0). Either one energy term has diverged or'
-        write(messages(4),'(1x,a)')          'there is a problem with the input parameters set in SETEVB.'
+        Write(messages(1),'(1x,a)')          'error - Argument for the exponential term of the gauss coupling'
+        Write(messages(2),'(1x,2(a,i2),a)')  'between FFs', m, ' and ', k, ' is beyond the range of computation'  
+        Write(messages(3),'(1x,a)')          '(-700.0 < argument < 700.0). Either one energy term has diverged or'
+        Write(messages(4),'(1x,a)')          'there is a problem with the input parameters set in SETEVB.'
         Call info(messages, 4, .True.)
         Call error(0)
       End If  
@@ -2704,10 +2891,10 @@ Contains
             If(elimit < 700.0_wp)Then     ! Here we use the sensible limit of 700 for the argument to compute exp()
               evb%grad_coupl(m,k) = -2.0_wp * (A(1)/A(3)**2)*(ediff-A(2))*exp(-((ediff-A(2))/A(3))**2)
             Else
-              write(messages(1),'(1x,a)')          'error - Argument for the exponential term of the gauss coupling'
-              write(messages(2),'(1x,2(a,i2),a)')  'between FFs', m, ' and ', k, ' is beyond the range of computation'  
-              write(messages(3),'(1x,a)')          '(-700.0 < argument < 700.0). Either one energy term has diverged or'
-              write(messages(4),'(1x,a)')          'there is a problem with the input parameters set in SETEVB.'
+              Write(messages(1),'(1x,a)')          'error - Argument for the exponential term of the gauss coupling'
+              Write(messages(2),'(1x,2(a,i2),a)')  'between FFs', m, ' and ', k, ' is beyond the range of computation'  
+              Write(messages(3),'(1x,a)')          '(-700.0 < argument < 700.0). Either one energy term has diverged or'
+              Write(messages(4),'(1x,a)')          'there is a problem with the input parameters set in SETEVB.'
               Call info(messages, 4, .True.)
               Call error(0)
             End If
@@ -2959,7 +3146,7 @@ Contains
   
       If (.not.l_tmp) Then
         Open(Newunit=files(FILE_POPEVB)%unit_no,File=files(FILE_POPEVB)%filename, Status='Replace')
-        write(files(FILE_POPEVB)%unit_no,'(a,17x,a)') '# Time (ps)','Weights of each FFs in the total EVB state (FF 1, 2, etc)'
+        Write(files(FILE_POPEVB)%unit_no,'(a,17x,a)') '# Time (ps)','Weights of each FFs in the total EVB state (FF 1, 2, etc)'
       Else
         Open(Newunit=files(FILE_POPEVB)%unit_no,File=files(FILE_POPEVB)%filename, Position='append')      
       End If  
@@ -2969,7 +3156,7 @@ Contains
     ! Only print after equilibration
     If(flow%step>flow%equil_steps+1)Then
        If (comm%idnode == 0)Then
-          write(files(FILE_POPEVB)%unit_no,*) flow%time, (evb%psi(ff,1)**2, ff=1,flow%NUM_FF) 
+          Write(files(FILE_POPEVB)%unit_no,*) flow%time, (evb%psi(ff,1)**2, ff=1,flow%NUM_FF) 
        End If
     End If
 

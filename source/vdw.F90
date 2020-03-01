@@ -127,6 +127,8 @@ Module vdw
     Integer(Kind=wi), Public              :: mixing = MIX_NULL
     Integer(Kind=wi), Allocatable, Public :: list(:)
     Integer(Kind=wi), Allocatable, Public :: ltp(:)
+    !> VdW label for pair
+    Character(Len=8), Allocatable, Public :: labpair(:, :)
     !> VdW parameters
     Real(Kind=wp), Allocatable, Public    :: param(:, :)
     !> VdW cut off
@@ -171,7 +173,7 @@ Contains
   Subroutine allocate_vdw_arrays(T)
     Class(vdw_type) :: T
 
-    Integer, Dimension(1:4) :: fail
+    Integer, Dimension(1:5) :: fail
 
     fail = 0
 
@@ -179,6 +181,7 @@ Contains
     Allocate (T%ltp(1:T%max_vdw), Stat=fail(2))
     Allocate (T%param(1:T%max_param, 1:T%max_vdw), Stat=fail(3))
     Allocate (T%sigeps(1:2, 1:T%max_vdw), Stat=fail(4))
+    Allocate (T%labpair(1:2, 1:T%max_vdw), Stat=fail(5))
 
     If (Any(fail > 0)) Call error(1022)
 
@@ -187,6 +190,7 @@ Contains
 
     T%param = 0.0_wp
     T%sigeps = 0.0_wp
+
   End Subroutine allocate_vdw_arrays
 
   Subroutine allocate_vdw_table_arrays(T)
@@ -3159,6 +3163,10 @@ Contains
 
     If (Allocated(T%param)) Then
       Deallocate (T%param)
+    End If
+
+    If (Allocated(T%labpair)) Then
+      Deallocate (T%labpair)
     End If
 
     If (Allocated(T%sigeps)) Then

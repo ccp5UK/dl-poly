@@ -64,7 +64,8 @@ Module drivers
                                   evb_check_intramolecular,& 
                                   evb_check_constraints,&
                                   evb_check_configs, &
-                                  evb_check_intrinsic
+                                  evb_check_intrinsic, &
+                                  evb_check_vdw
   Use ewald,                Only: ewald_type
   Use external_field,       Only: FIELD_NULL,&
                                   external_field_apply,&
@@ -601,7 +602,6 @@ Contains
     Integer(Kind=wi) :: switch
     Logical          :: ltmp
 
-    Integer          :: jatm, aj, j
 
 
     !!!!!!!!!!!!!!!!!!  W_CALCULATE_FORCES INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
@@ -657,7 +657,7 @@ Contains
       End If
     End Do  
     
-
+    ! Computation of the intermolecular interactions for each field (metal interactions are computed in two_body
     Do ff = 1, flow%NUM_FF
 
       ! Calculate tersoff forces
@@ -678,6 +678,7 @@ Contains
     Call start_timer(tmr, 'Bonded Forces')
 #endif
     
+    ! Computation of intramolecular interactions    
     Do ff = 1, flow%NUM_FF
     
       ! Calculate shell model forces
@@ -741,6 +742,7 @@ Contains
     Call stop_timer(tmr,'Bonded Forces')
 #endif
     
+    ! Computation of electrostatics, vdW and metal interactions    
     Do ff=1,flow%NUM_FF
       ! Calculate pair-like forces (metal,vdws,electrostatic) and add lrc
       If (.not.(met(ff)%max_metal == 0 .and. electro(ff)%key == ELECTROSTATIC_NULL .and. &
@@ -2154,6 +2156,9 @@ Contains
 
       ! Check consistency of intrinsic properties for sites 
       Call evb_check_intrinsic(evbff,sites,cnfig,flow,comm)
+
+      ! Check consistency of intrinsic properties for sites 
+      Call evb_check_vdw(evbff,flow, sites, vdws)
 
       Call info(' ',.True.)
       Call info('EVB checking was successful !',.True.) 

@@ -3755,6 +3755,9 @@ Contains
           vdws%list(keyvdw) = itpvdw
           vdws%ltp(itpvdw) = keypot
 
+          vdws%labpair(1,itpvdw)=atom1
+          vdws%labpair(2,itpvdw)=atom2
+
           Do i = 1, vdws%max_param
             vdws%param(i, itpvdw) = parpot(i)
           End Do
