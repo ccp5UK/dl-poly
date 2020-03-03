@@ -76,6 +76,7 @@ Contains
     ! grid sizes, paddings, iterations, etc. as specified in setup
     !
     ! copyright - daresbury laboratory
+    !
     ! author    - i.t.todorov december 2016
     ! contrib   - i.j.bush february 2014
     ! contrib   - m.a.seaton june 2014 (VAF)
@@ -98,6 +99,8 @@ Contains
     ! contrib   - i.t.todorov november 2019 (changing fdens choosing to handle imbalance better)
     ! contrib   - i.t.todorov november 2019 (increasing bond%max_bonds, angle%max_angles, amending domain%mxbfxp)
     ! contrib   - a.m.elena january 2020 avoid division by zero when shited couloumb is used
+    ! contrib   - i.t.todorov january 2020 (25% increasing mxatms cut down estimates and bsplines if on it)
+    !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type(site_type),           Intent(InOut) :: site
@@ -401,19 +404,19 @@ Contains
     If ((.not. l_n_r) .or. lzdn) Then
       If (((.not. l_n_r) .and. rdf%max_rdf == 0) .and. (vdws%max_vdw > 0 .or. met%max_metal > 0)) &
         rdf%max_rdf = Max(vdws%max_vdw, met%max_metal) ! (vdws,met) == rdf scanning
-      rdf%max_grid = Nint(neigh%cutoff / rdf%rbin)
+      rdf%max_grid  = Nint(neigh%cutoff / rdf%rbin)
     Else
-      rdf%max_grid = 0 ! RDF and Z-density function MUST NOT get called!!!
+      rdf%max_grid  = 0 ! RDF and Z-density function MUST NOT get called!!!
     End If
 
     ! RDFs particulars for USR (umbrella sampling restraints)
 
     If (l_usr) Then
-      rdf%cutoff_usr = 0.45_wp * config%width ! 10% reduced half-width (0.45_wp)
+      rdf%cutoff_usr   = 0.45_wp * config%width ! 10% reduced half-width (0.45_wp)
       rdf%max_grid_usr = Nint(rdf%cutoff_usr / rdf%rbin) ! allows for up to ~75% system ttm%volume shrinkage
-      rdf%cutoff_usr = Real(rdf%max_grid_usr, wp) * rdf%rbin ! round up and beautify for Andrey Brukhno's sake
+      rdf%cutoff_usr   = Real(rdf%max_grid_usr, wp) * rdf%rbin ! round up and beautify for Andrey Brukhno's sake
     Else
-      rdf%cutoff_usr = 0.0_wp
+      rdf%cutoff_usr   = 0.0_wp
       rdf%max_grid_usr = 0 ! decider on calling USR RDF
     End If
 
@@ -485,7 +488,7 @@ Contains
     ! maximum number of tersoff potentials (tersoffs%max_ter = tersoffs%max_ter) and parameters
 
     If (tersoffs%max_ter > 0) Then
-      If (tersoffs%key_pot == 1) Then
+      If      (tersoffs%key_pot == 1) Then
         tersoffs%max_param = 11
       Else If (tersoffs%key_pot == 2) Then
         tersoffs%max_param = 16
@@ -499,13 +502,13 @@ Contains
 
     If (threebody%mxtbp > 0) Then
       threebody%mx2tbp = (site%mxatyp * (site%mxatyp + 1)) / 2
-      threebody%mxtbp = threebody%mx2tbp * site%mxatyp
+      threebody%mxtbp  = threebody%mx2tbp * site%mxatyp
       If (rctbp < 1.0e-6_wp) rctbp = 0.5_wp * neigh%cutoff
 
       threebody%mxptbp = 5
     Else
       threebody%mx2tbp = 0
-      threebody%mxtbp = 0
+      threebody%mxtbp  = 0
 
       threebody%mxptbp = 0
     End If
@@ -513,16 +516,16 @@ Contains
     ! maximum number of four-body potentials and parameters
 
     If (fourbody%max_four_body > 0) Then
-      fourbody%mx3fbp = (site%mxatyp * (site%mxatyp + 1) * (site%mxatyp + 2)) / 6
+      fourbody%mx3fbp        = (site%mxatyp * (site%mxatyp + 1) * (site%mxatyp + 2)) / 6
       fourbody%max_four_body = fourbody%mx3fbp * site%mxatyp
       If (rcfbp < 1.0e-6_wp) rcfbp = 0.5_wp * neigh%cutoff
 
-      fourbody%max_param = 3
+      fourbody%max_param     = 3
     Else
-      fourbody%mx3fbp = 0
+      fourbody%mx3fbp        = 0
       fourbody%max_four_body = 0
 
-      fourbody%max_param = 0
+      fourbody%max_param     = 0
     End If
 
     ! maximum number of external field parameters
@@ -551,13 +554,13 @@ Contains
       ! in x- and y-directions based on number in z-direction
       ! and system size
 
-      ttm%delz = config%cell(9) / Real(ttm%ntsys(3), wp)
+      ttm%delz     = config%cell(9) / Real(ttm%ntsys(3), wp)
       ttm%ntsys(1) = Nint(config%cell(1) / ttm%delz)
       ttm%ntsys(2) = Nint(config%cell(5) / ttm%delz)
-      ttm%delx = config%cell(1) / Real(ttm%ntsys(1), wp)
-      ttm%dely = config%cell(5) / Real(ttm%ntsys(2), wp)
-      ttm%volume = ttm%delx * ttm%dely * ttm%delz
-      ttm%rvolume = 1.0_wp / ttm%volume
+      ttm%delx     = config%cell(1) / Real(ttm%ntsys(1), wp)
+      ttm%dely     = config%cell(5) / Real(ttm%ntsys(2), wp)
+      ttm%volume   = ttm%delx * ttm%dely * ttm%delz
+      ttm%rvolume  = 1.0_wp / ttm%volume
 
       ! Check number of electronic temperature cells is
       ! >= to number of ionic temperature cells
@@ -607,10 +610,10 @@ Contains
 
     5 Continue
 
-    m6 = 0.05_wp ! (Angstroms) is the limiting padding distance we bother with for CVNL
+    m6 = 0.05_wp  ! (Angstroms) is the limiting padding distance we bother with for CVNL
     m7 = 0.005_wp ! is the limiting fraction of cutoff (0.5%) we bother with for neigh%padding
-    m8 = 0.02_wp ! 2% neigh%padding auto-push (may double)
-    m9 = 0.95_wp ! (95%) giving 5% slack
+    m8 = 0.02_wp  ! 2% neigh%padding auto-push (may double)
+    m9 = 0.95_wp  ! (95%) giving 5% slack
 
     If (neigh%padding > zero_plus) Then
 
@@ -687,26 +690,26 @@ Contains
     Write (message, '(a,3i6)') "link-cell decomposition 1 (x,y,z): ", ilx, ily, ilz
     Call info(message, .true.)
 
-    tol = Min(m6, m7 * neigh%cutoff) ! tolerance
-    test = m8 * Merge(1.0_wp, 2.0_wp, ewld%bspline > 0) ! 2% (w/ SPME/PS) or 4% (w/o SPME/PS)
-    cut = Min(config%width / 2.0_wp, domain%nx_recip * celprp(7), & ! domain size
-              domain%ny_recip * celprp(8), &
-              domain%nz_recip * celprp(9)) - 1.0e-6_wp
+    tol  = Min(m6, m7 * neigh%cutoff)                                ! tolerance
+    test = m8 * Merge(1.0_wp, 2.0_wp, ewld%bspline > 0)              ! 2% (w/ SPME/PS) or 4% (w/o SPME/PS)
+    cut  = Min(config%width / 2.0_wp, domain%nx_recip * celprp(7), & ! domain size
+                                      domain%ny_recip * celprp(8), &
+                                      domain%nz_recip * celprp(9)) - 1.0e-6_wp
     ! remove delta r (1.0e-6_wp the smallest distance we care about)
 
     If (ilx * ily * ilz == 0) Then
       If (devel%l_trm) Then ! we are prepared to exit gracefully(-:
-        neigh%cutoff = cut ! - neigh%padding (was zeroed in scan_control)
+        neigh%cutoff = cut  ! - neigh%padding (was zeroed in scan_control)
         Write (message, '(a)') "real space cutoff reset has occurred, early run termination is due"
         Call warning(message, .true.)
         Go To 10
       Else
         If (cut < neigh%cutoff) Then
-          Write (message, '(1x,2(a,f0.3),a)') 'user specified or autogenerated padding: ', neigh%padding, &
-            ' , DD+LC suggested maximum value: ', 0.0_wp, ' Angstrom'
+          Write (message, '(/,1x,2(a,f0.3),a)') 'user specified or autogenerated padding: ', neigh%padding, &
+                                                ' , DD+LC suggested maximum value: ', 0.0_wp, ' Angstrom'
           Call info(message, .true.)
-          Write (message, '(1x,2(a,f0.3),a)') 'user specified cutoff: ', neigh%cutoff, &
-            ' , DD+LC suggested maximum cutoff: ', cut, ' Angstrom'
+          Write (message, '(/,1x,2(a,f0.3),a)') 'user specified cutoff: ', neigh%cutoff, &
+                                                ' , DD+LC suggested maximum cutoff: ', cut, ' Angstrom'
           Write (message, '(a)') 'neigh%cutoff <= Min(domain config%width) < neigh%cutoff_extended = neigh%cutoff + neigh%padding'
           Call warning(message, .true.)
           Call error(307)
@@ -718,8 +721,8 @@ Contains
             If (neigh%padding < tol) neigh%padding = 0.0_wp ! Don't bother
             Go To 10
           Else
-            Write (message, '(1x,2(a,f0.3),a)') 'user specified padding: ', neigh%padding, &
-              ' , DD+LC suggested maximum value: ', 0.95_wp * (cut - neigh%cutoff), ' Angstrom'
+            Write (message, '(/,1x,2(a,f0.3),a)') 'user specified padding: ', neigh%padding, &
+                                                  ' , DD+LC suggested maximum value: ', 0.95_wp * (cut - neigh%cutoff), ' Angstrom'
             Call info(message, .true.)
             Write (message, '(a)') 'neigh%cutoff <= Min(domain config%width) < neigh%cutoff_extended = neigh%cutoff + neigh%padding'
             Call warning(message, .true.)
@@ -798,7 +801,7 @@ Contains
     ! total link-cells per node/domain is ncells = (ilx+4)*(ily+4)*(ilz+4)
     ! magnify the effect of densvar on neigh%max_cell for different conf%imcon scenarios
 
-    If (config%imcon == 0) Then
+    If      (config%imcon == 0) Then
       neigh%max_cell = Nint((fdvar**4) * Real((ilx + 4) * (ily + 4) * (ilz + 4), wp))
     Else If (config%imcon == 6 .or. config%imc_n == 6) Then
       neigh%max_cell = Nint((fdvar**3) * Real((ilx + 4) * (ily + 4) * (ilz + 4), wp))
@@ -878,7 +881,7 @@ Contains
                 Go To 10
               Else
                 Write (message, '(2(a,f0.3),a)') 'user specified or autogenerated padding: ', neigh%padding, &
-                  ' , SPME suggested maximum value: ', padding1, ' Angstrom'
+                                                 ' , SPME suggested maximum value: ', padding1, ' Angstrom'
                 Call info(message, .true.)
               End If
             End If
@@ -892,7 +895,7 @@ Contains
               End If
             End If
             Write (message, '(2(a,f0.3),a)') 'user specified or autogenerated padding: ', neigh%padding, &
-              ' , SPME suggested maximum value: ', padding1, ' Angstrom'
+                                             ' , SPME suggested maximum value: ', padding1, ' Angstrom'
             Call info(message, .true.)
           End If
 
@@ -905,9 +908,9 @@ Contains
 
           Write (messages(1), '(a,4(i0,a))') &
             'SPME driven limit on largest possible decomposition:', &
-            (ewld%fft_dim_a / ewld%bspline1) * (ewld%fft_dim_b / ewld%bspline1) * (ewld%fft_dim_c / ewld%bspline1), &
-            ' nodes/domains (', ewld%fft_dim_a / ewld%bspline1, ',', ewld%fft_dim_b / ewld%bspline1, ',', &
-            ewld%fft_dim_c / ewld%bspline1, &
+            (ewld%fft_dim_a / ewld%bspline1) * (ewld%fft_dim_b / ewld%bspline1) * (ewld%fft_dim_c / ewld%bspline1),   &
+            ' nodes/domains (',                                                                                       &
+            ewld%fft_dim_a / ewld%bspline1, ',', ewld%fft_dim_b / ewld%bspline1, ',', ewld%fft_dim_c / ewld%bspline1, &
             ') for currently specified cutoff (with padding) & Ewald precision (sum parameters)'
           Write (messages(2), '(a,f0.2,a)') &
             'SPME suggested factor to decrease currently specified cutoff (with padding) by: ', &
@@ -941,14 +944,14 @@ Contains
     If ((comm%mxnode == 1 .or. Min(ilx, ily, ilz) < 3) .or. &
         (config%imcon == 0 .or. config%imcon == 6 .or. config%imc_n == 6) .or. &
         (dens / dens0 <= 0.5_wp) .or. (fdvar > 10.0_wp)) Then
-      fdens = dens0 ! for all possibly bad cases resort to max density
+      fdens = dens0                                    ! for all possibly bad cases resort to max density
     Else
       fdens = fdvar * (0.5_wp * dens0 + 0.5_wp * dens) ! mix 50:50 and push
     End If
 
     ! Get reasonable to set fdens limit - all particles in one link-cell
 
-    tol = Real(megatm, wp) / (Real(ilx * ily * ilz, wp) * Real(comm%mxnode, wp))
+    tol   = Real(megatm, wp) / (Real(ilx * ily * ilz, wp) * Real(comm%mxnode, wp))
     fdens = Min(fdens, tol)
 
     ! density variation affects the link-cell arrays' dimension
@@ -974,21 +977,22 @@ Contains
 
     test = fdens * vcell * 1.25_wp
 
-    ! set dimension of working coordinate arrays using geometrical DD/LC reasoning * fdvar
+    ! set dimension of working coordinate arrays using geometrical DD/LC reasoning * fdvar + 25% extra tolerance
 
     config%mxatms = Max(1, Nint(test * Real((ilx + 3) * (ily + 3) * (ilz + 3), wp))) ! Overestimate & then bound down
     If (comm%mxnode == 1 .or. config%imcon == 0) Then ! ilx >= 2 && ily >= 2 && ilz >= 2
       ! maximum of 8 fold increase in of surface thickness (domain+halo) to volume (domain only) as per geometric reasoning
-      config%mxatms = Nint(Min(Real(config%mxatms, wp), 12.0_wp * fdvar * Real(megatm, wp)))
+      config%mxatms = Nint(Min(Real(config%mxatms, wp), 1.25_wp * fdvar * 8.0_wp * Real(megatm, wp)))
     Else If (config%imcon == 6 .or. config%imc_n == 6) Then ! comm%mxnode >= 4 .or. (ilx >= 2 && ily >= 2)
       ! maximum of 7 fold increase in of surface thickness (domain+halo) to volume (domain only) as per geometric reasoning
-      config%mxatms = Nint(Min(Real(config%mxatms, wp), 7.0_wp * fdvar * Real(megatm, wp)))
+      config%mxatms = Nint(Min(Real(config%mxatms, wp), 1.25_wp * fdvar * 7.0_wp * Real(megatm, wp)))
     Else If (ilx * ily * ilz < 2) Then ! comm%mxnode >= 8
       ! maximum of 7 fold increase in of surface thickness (domain+halo) to volume (domain only) as per geometric reasoning
-      config%mxatms = Nint(Min(Real(config%mxatms, wp), 7.0_wp * fdvar * Real(megatm, wp)))
+      config%mxatms = Nint(Min(Real(config%mxatms, wp), 1.25_wp * fdvar * 7.0_wp * Real(megatm, wp)))
     Else
       ! maximum of 8 fold increase in of surface thickness (domain+halo) to volume (domain only) as per geometric reasoning
-      config%mxatms = Min(Max(1, Nint(test * Real((ilx + 2) * (ily + 2) * (ilz + 2), wp))), Nint(8.0_wp * Real(megatm, wp)))
+      config%mxatms = Min(Max(1, Nint(test * Real((ilx + 2) * (ily + 2) * (ilz + 2), wp))), &
+                      Nint(1.25_wp * 8.0_wp * Real(megatm, wp)))
     End If
     test = Min(test, Real(config%mxatms, wp) / Real((ilx + 2) * (ily + 2) * (ilz + 2), wp))
 
@@ -1000,10 +1004,10 @@ Contains
     ! .hi is the extra requirement to the normal one LC width halo required per direction
     ! with the limiting case of 1 LC per domain sending all/itself to all its neighbours .hi=2
     ! accounted for by the default halo (the product xhi*yhi*zhi<=8); beyond that config% mxatms
-    ! must be redefined by the config%mxatdm based desnity
+    ! must be redefined by the config%mxatdm based density
 
     If (.not. electro%no_elec) Then
-      If (electro%key == ELECTROSTATIC_EWALD) Then
+      If (ewld%bspline > 0) Then
         xhi = Max(1.0_wp, Real(ewld%bspline1, wp) / (Real(ewld%fft_dim_a, wp) / Real(domain%nx, wp) / Real(ilx, wp))) + 1.0_wp
         yhi = Max(1.0_wp, Real(ewld%bspline1, wp) / (Real(ewld%fft_dim_b, wp) / Real(domain%ny, wp) / Real(ily, wp))) + 1.0_wp
         zhi = Max(1.0_wp, Real(ewld%bspline1, wp) / (Real(ewld%fft_dim_c, wp) / Real(domain%nz, wp) / Real(ilz, wp))) + 1.0_wp
@@ -1049,14 +1053,15 @@ Contains
     ! pass the full LC contents or 0.5*neigh%padding/neigh%cutoff_extended fraction of it (doubled for safety)
 
     dens = dens0 * Merge(neigh%padding / neigh%cutoff_extended, 1.0_wp, neigh%padding > 0.0_wp)
-    !&<
-    domain%mxbfdp = Merge(2, 0, comm%mxnode > 1) * Nint(Real( &
-                                    config%mxatdm * (18 + 12 + Merge(3, 0, neigh%unconditional_update) + (neigh%max_exclude + 1) + &
-     Merge(neigh%max_exclude + 1 + Merge(neigh%max_exclude + 1, 0, mpoles%key == POLARISATION_CHARMM), 0, mpoles%max_mpoles > 0) + &
-                                                              Merge(2 * (6 + stats%mxstak), 0, msd_data%l_msd)) + 3 * green%samp + &
-           4 * cshell%mxshl + 4 * cons%mxcons + (Sum(pmf%mxtpmf(1:2) + 3)) * pmf%mxpmf + (rigid%max_list + 13) * rigid%max_rigid + &
-     3 * tether%mxteth + 4 * bond%max_bonds + 5 * angle%max_angles + 8 * dihedral%max_angles + 6 * inversion%max_angles, wp) * dens)
-    !&>
+    domain%mxbfdp = Merge(2, 0, comm%mxnode > 1) * Nint(Real(                                                                   &
+      config%mxatdm * (18 + 12 + Merge(3, 0, neigh%unconditional_update) + (neigh%max_exclude + 1)                            + &
+      Merge(neigh%max_exclude + 1                                                                                             + &
+            Merge(neigh%max_exclude + 1, 0, mpoles%key == POLARISATION_CHARMM), 0, mpoles%max_mpoles > 0)                     + &
+      Merge(2 * (6 + stats%mxstak), 0, msd_data%l_msd)) + 3 * green%samp +                                                      &
+      4 * cshell%mxshl + 4 * cons%mxcons + (Sum(pmf%mxtpmf(1:2) + 3)) * pmf%mxpmf + (rigid%max_list + 13) * rigid%max_rigid   + &
+      3 * tether%mxteth + 4 * bond%max_bonds + 5 * angle%max_angles + 8 * dihedral%max_angles + 6 * inversion%max_angles, wp) * &
+      dens)
+
     ! statistics connect deporting, total per atom per direction
 
     config%mxbfss = Merge(2, 0, comm%mxnode > 1) * &
@@ -1073,11 +1078,11 @@ Contains
 
     ! largest principal buffer
 
-    config%mxbuff = Max(domain%mxbfdp, 35 * domain%mxbfxp, 4 * domain%mxbfsh, &
+    config%mxbuff = Max(domain%mxbfdp, 35 * domain%mxbfxp, 4 * domain%mxbfsh,                                                &
                         2 * (ewld%fft_dim_a / domain%nx) * (ewld%fft_dim_b / domain%ny) * (ewld%fft_dim_c / domain%nz) + 10, &
-                        stats%mxnstk * stats%mxstak, mxgrid, rdf%max_grid, &
-                        rigid%max_list * Max(rigid%max_rigid, rigid%max_type), &
-                        rigid%max_type * (4 + 3 * rigid%max_list), 10000)
+                        stats%mxnstk * stats%mxstak, mxgrid, rdf%max_grid,                                                   &
+                        rigid%max_list * Max(rigid%max_rigid, rigid%max_type), rigid%max_type * (4 + 3 * rigid%max_list), 10000)
+
     ! reset (increase) link-cell maximum (neigh%max_cell)
     ! if tersoff or three- or four-body potentials exist
 
@@ -1096,7 +1101,7 @@ Contains
 
       If (ilx < 3 .or. ily < 3 .or. ilz < 3) Call error(305)
 
-      If (config%imcon == 0) Then
+      If      (config%imcon == 0) Then
         neigh%max_cell = Max(neigh%max_cell, Nint((fdvar**4) * Real((ilx + 5) * (ily + 5) * (ilz + 5), wp)))
       Else If (config%imcon == 6 .or. config%imc_n == 6) Then
         neigh%max_cell = Max(neigh%max_cell, Nint((fdvar**3) * Real((ilx + 5) * (ily + 5) * (ilz + 5), wp)))
