@@ -411,19 +411,24 @@ Contains
                            mpoles, electro, domain, tmr, kim_data, cnfig, comm)
     End If
 
+    ! Configurational energy
+    stat%stpcfg = stat%engcpe + stat%engsrp + stat%engter + stat%engtbp + stat%engfbp + &
+                  stat%engshl + stat%engtet + stat%engbnd + stat%engang + stat%engdih + stat%enginv
+
     ! Apply external field
 
     If (ext_field%key /= FIELD_NULL) Then
       Call external_field_apply(flow%time, flow%equilibration, flow%equil_steps, flow%step, cshell, stat, rdf, &
                                 ext_field, rigid, domain, cnfig, comm)
+
+      ! Add external energy contribution
+      stat%stpcfg = stat%stpcfg + stat%engfld  
     End If
+
 
     ! Apply PLUMED driven dynamics
 
     If (plume%l_plumed) Then
-      stat%stpcfg = stat%engcpe + stat%engsrp + stat%engter + stat%engtbp + stat%engfbp + &
-                    stat%engshl + stat%engtet + stat%engfld + &
-                    stat%engbnd + stat%engang + stat%engdih + stat%enginv
       Call plumed_apply(cnfig, flow%run_steps, flow%step, stat, plume, comm)
     End If
     ! Apply pseudo thermostat - force cycle (0)
@@ -444,9 +449,6 @@ Contains
     ! Minimisation option and Relaxed shell model optimisation
 
     If (flow%simulation .and. (minim%minimise .or. cshell%keyshl == SHELL_RELAXED)) Then
-      stat%stpcfg = stat%engcpe + stat%engsrp + stat%engter + stat%engtbp + stat%engfbp + &
-                    stat%engshl + stat%engtet + stat%engfld + &
-                    stat%engbnd + stat%engang + stat%engdih + stat%enginv
 
       If (cshell%keyshl == SHELL_RELAXED) Then
         Call core_shell_relax(flow%strict, rdf%l_collect, &

@@ -422,13 +422,8 @@ Contains
 
     ! instantaneous properties of system
 
-    ! configurational energy
-
-    stats%stpcfg = stats%engcpe + stats%engsrp + stats%engter + stats%engtbp + stats%engfbp + &
-                   stats%engfld + stats%engshl + &
-                   stats%engtet + stats%engbnd + stats%engang + stats%engdih + stats%enginv
-
     ! system energy
+    ! Configurational stats%stpcfg energy has been defined in subroutine calculate_forces within drivers.F90
 
     stats%stpeng = stats%stpcfg + stats%engke + stats%engrot
 
@@ -448,13 +443,9 @@ Contains
 
     stats%stptmp = 2.0_wp * (stats%engke + stats%engrot) / (boltz * Real(degfre, wp))
 
-    ! system virial
-    ! Note: originally, purely angle dependent interactions have zero virial!!!
-    ! So, stats%virfbp, stats%virinv and stats%virdih are allegedly always zero!  virdih has an exception!
-
-    stats%stpvir = stats%vircpe + stats%virsrp + stats%virter + stats%virtbp + stats%virfbp + &
-                   stats%virfld + stats%virshl + stats%vircon + stats%virpmf + stats%vircom + &
-                   stats%virtet + stats%virbnd + stats%virang + stats%virdih + stats%virinv + stats%virdpd
+    ! system virial, stats%virtot has been computed in calculate_forces
+    
+    stats%stpvir= stats%virtot + stats%vircon + stats%virpmf + stats%vircom + stats%virdpd 
 
     ! system volume
 

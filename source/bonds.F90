@@ -823,6 +823,11 @@ Contains
 
           omega = 0.0_wp
           gamma = 0.0_wp
+          ! We need to initialise fx, fy and fz in case one of the involved charges (or both) is zero, 
+          ! which would lead to chgprd = 0 and omission of the intra subroutines
+          fx = 0.0_wp
+          fy = 0.0_wp
+          fz = 0.0_wp
 
           ! scaled charge product times dielectric constants
 
