@@ -1,6 +1,62 @@
 Release notes for DL_POLY_4
 ===========================
 
+Version 4.09.4: March 2020
+-----------------------------
+
++ Improvements, updates, etc.
+  + mxatms default increase and safety bounding to integer's limit
++ Bug-fixes:
+  + fixing coulombic bond initialisation bug
+  + fixing a bug in the z-dimension calculations in pseudo boundary thermostat
+  + fixing rdf blocksize initial value in rdf_module
+  + fixing the first frame coordinates extra size requirements for RB dynamics
+
+Version 4.09.3: November 2019
+-----------------------------
+
++ Improvements, updates, etc.
+  + improved set-up of arrays’ limits in set\_bounds, allowing for better estimates and much safer runs without resorting to using 'densvar' in an iterative manner:
+    + simplified estimates of mxatms' initial guess, local and domain particle densities in read\_config
+    + improved mxatms estimate for charged systems, in which SPME Ewald b-splines require positions and charges of particles situated beyond the traditional, one link-cell width halo layer
+    + improved accounting for different scenarios of domain distribution geometries and density imbalance
+    + improved accounting of buffer space demand for export, deport and shared units routines
+    + increased demand for mxbond and mxangl to account for link cell per domain scenario
+  + improved 'l\_trm' option - more persistent to allow for OUTPUT report beyond the scan stage even for ill-defined system input (scan\_control, set\_bounds).
+  + improved set-up, feedback interaction with SPME gridding and user advice for the 'rpad' ('delr') option and its automated application for conditional updates of the Verlet Neighbour List (set\_bounds).
+  + improved 'pseudo' thermostats target temperature setting - removing 3 DoF for centre of mass motion.  Changes in VV/pseudo\_vv and LFV/pseudo\_lfv.
+  + improved reporting global index of mismatched particles due to bad mapping between CONFIG and FIELD
++ Bug-fixes:
+  + displacements of particles (RSD) in RSDDAT and HISTORY are now calculated as the instantaneous displacements with respect to the initial configuration rather than the square root of the cumulative, mean square displacement (MSD).  The RSD array is redefined in statistics\_collect.
+  + 'pseudo' thermostats boundary region definition and placement corrected in VV/pseudo\_vv and LFV/pseudo\_lfv.
+  + reading l\_dis optional user defined distance for catching overlapping particles
+  + a memory leak in link\_cell\_pairs
+  + adding first neighbours haloing to the self-haloing as a recalculation condition for RBs particles during integration
+
+Version 4.09.2: February 2019
+-----------------------------
+
++ Improvements, updates, etc.
+  + mxatms set-up is amended to run safely small cases on small processor counts
+  + n-m potential powers are now relaxed to real numbers, previously restricted to integer ones
+  + pyChemShell interface is updated
+  + interface to neural network potentials via patch for the aenet library - http://ann.atomistic.net/download/ by Alexander Urban and Artrith Nongnuch
++ Bug-fixes:
+  + 'zero k fire' option: reading and reporting application frequency correctly
+  + a single domain per direction with a single link-cell in the same direction is now prevented
+
+Version 4.09.1: November 2018
+-----------------------------
+
++ Improvements, updates, etc.
+  + zbnd external field default +/-1 for f constant is now imposed
+  + tersoff\_forces force constant exception catch (possible division by zero)
+  + additions to CITATION.cff
+  + pyChemShell interface facilitation via dl\_poly\_interface & setup\_module change to nrite
++ Bug-fixes:
+  + Makefile\_*SRL* fixes
+  + multipolar B-splines generation in spme\_container
+
 Version 4.09: September 2018
 ----------------------------
 

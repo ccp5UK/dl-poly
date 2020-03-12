@@ -13,6 +13,7 @@ Module bonds
   !           - j.madge march-october 2018
   !           - a.b.g.chalk march-october 2018
   !           - i.scivetti march-october 2018
+  ! amended   - i.t.todorov & i.scivetti march 2020 (coulombic bond init bug)
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -852,6 +853,12 @@ Contains
               engc12 = engc12 + omega
               virc12 = virc12 + viracc
             End If
+
+            ! clear all but keep the forces
+
+            omega=0.0_wp
+            gamma=0.0_wp
+            viracc=0.0_wp
           End If
 
         Else If (keyb == BOND_FENE) Then
@@ -990,9 +997,6 @@ Contains
         engc12 = buffer(3)
         virc12 = buffer(4)
       End If
-
-      engbnd = engbnd - engc12
-      virbnd = virbnd - virc12
 
       engcpe = engcpe + engc12
       vircpe = vircpe + virc12
