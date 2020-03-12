@@ -437,17 +437,19 @@ Contains
                            mpoles, electro, domain, tmr, kim_data, cnfig, comm)
     End If
 
+    ! Configurational energy
+    stat%stpcfg = stat%engcpe + stat%engsrp + stat%engter + stat%engtbp + stat%engfbp + &
+                  stat%engshl + stat%engtet + stat%engbnd + stat%engang + stat%engdih + stat%enginv
+
     ! Apply external field
 
     If (ext_field%key /= FIELD_NULL) Then
       Call external_field_apply(flow%time, flow%equilibration, flow%equil_steps, flow%step, cshell, stat, rdf, &
                                 ext_field, rigid, domain, cnfig, comm)
-    End If
 
-    ! Configurational energy
-      stat%stpcfg =stat%engcpe + stat%engsrp + stat%engter + stat%engtbp + stat%engfbp + &
-                   stat%engshl + stat%engtet + stat%engfld +                   &
-                   stat%engbnd + stat%engang + stat%engdih + stat%enginv
+      ! Add external energy contribution
+      stat%stpcfg = stat%stpcfg + stat%engfld  
+    End If
 
     ! Apply PLUMED driven dynamics
 
@@ -555,6 +557,15 @@ Contains
                                    inversion, tether, threebody, neigh, sites, vdws, tersoffs, fourbody, rdf, netcdf, &
                                    minim, mpoles, ext_field, rigid, electro, domain, kim_data, msd_data, tmr, files,&
                                    green, devel, ewld, met, seed, thermo, crd, comm)
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   ! dl_poly_4 subroutine to calculate energies, forces, stress and virials for a given ionic configuration
+   ! This subroutine is an extension of calculate_forces when two or more FFs are coupled via EVB. Nevertheless,
+   ! it can be well used for a single FF.
+   !
+   ! copyright - daresbury laboratory
+   ! author    - i.scivetti January 2020
+   !    
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type(evb_type),            Intent(InOut) :: evbff
     Type(configuration_type),  Intent(InOut) :: cnfig(:)
@@ -602,9 +613,6 @@ Contains
     Integer(Kind=wi) :: switch
     Logical          :: ltmp
 
-
-
-    !!!!!!!!!!!!!!!!!!  W_CALCULATE_FORCES INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
     ! for new simulations when using the relaxed shell model
     ! set shells on top of their cores preventatively
@@ -754,34 +762,34 @@ Contains
       End If
     End Do
 
-! Gather info    
+    ! Gather info for stress   
     Do ff=1,flow%NUM_FF
       Call gsum(comm, stat(ff)%stress)
     End do
 
-    ! Configurational energy
+    ! Compute configurational energy
     Do ff=1,flow%NUM_FF
-      stat(ff)%stpcfg = stat(ff)%engcpe + stat(ff)%engsrp + stat(ff)%engter + stat(ff)%engtbp +  &
-                        stat(ff)%engfbp + stat(ff)%engshl + stat(ff)%engtet + stat(ff)%engfld +  &
-                        stat(ff)%engbnd + stat(ff)%engang + stat(ff)%engdih + stat(ff)%enginv
+      stat(ff)%stpcfg = stat(ff)%engcpe + stat(ff)%engsrp + stat(ff)%engter + stat(ff)%engtbp + stat(ff)%engfbp + &
+                        stat(ff)%engshl + stat(ff)%engtet + stat(ff)%engbnd + stat(ff)%engang + stat(ff)%engdih + &
+                        stat(ff)%enginv
     End Do
 
-! Compute EVB energy, forces and stress tensor     
+    ! Compute EVB energy, forces and stress tensor only if number of FFs > 1    
     If(flow%NUM_FF > 1)Then
       Call evb_pes(evbff,flow,cnfig,stat) 
     End If  
 
     ! Apply external field
-
+    ! For standard EVB we prevent such a calculation in evb_check_external
     Do ff=1,flow%NUM_FF
       If (ext_field(1)%key /= FIELD_NULL) Then
         Call external_field_apply(flow%time, flow%equilibration, flow%equil_steps, flow%step, cshell(ff), stat(ff), rdf(ff), &
                                   ext_field(ff), rigid(ff), domain(ff), cnfig(ff), comm)
+        stat(ff)%stpcfg = stat(ff)%stpcfg + stat(ff)%engfld
       End If
     End Do 
 
     Do ff=1,flow%NUM_FF
-
     ! Apply PLUMED driven dynamics
       If (plume(ff)%l_plumed) Then
          Call plumed_apply(cnfig(ff), flow%run_steps, flow%step, stat(ff), plume(ff), comm)
@@ -795,11 +803,9 @@ Contains
       If (flow%step <= flow%equil_steps .and. flow%force_cap) Call cap_forces(thermo(ff)%temp, cnfig(ff), comm)
      ! Frozen atoms option
      Call freeze_atoms(cnfig(ff))
-
     End Do
 
     ! Minimisation option and Relaxed shell model optimisation
-
     Do ff = 1, flow%NUM_FF
       If (flow%simulation .and. (minim(ff)%minimise .or. cshell(ff)%keyshl == SHELL_RELAXED)) Then
         If (cshell(ff)%keyshl == SHELL_RELAXED) Then
@@ -855,28 +861,28 @@ Contains
       End Do
     End If
 
-    ! Total virial (excluding constraint, PMF and RB COM virials for npt routines)
-    ! Total stress (excluding constraint, PMF, RB COM and kinetic stress for npt routines)
-    !
-    ! NOTE(1):  virsrp already includes vdws%vlrc and vlrcm(0) and so
-    !           does the stress diagonal elements (by minus a third),
-    !           engsrp includes vdws%elrc and elrcm(0)
-    !
-    ! NOTE(2):  virfbp, virinv and virdih are allegedly always zero
     If(flow%NUM_FF == 1)Then
+      ! Total virial (excluding constraint, PMF and RB COM virials for npt routines)
+      ! Total stress (excluding constraint, PMF, RB COM and kinetic stress for npt routines)
+      !
+      ! NOTE(1):  virsrp already includes vdws%vlrc and vlrcm(0) and so
+      !           does the stress diagonal elements (by minus a third),
+      !           engsrp includes vdws%elrc and elrcm(0)
+      !
+      ! NOTE(2):  virfbp, virinv and virdih are allegedly always zero
       stat(1)%virtot = stat(1)%vircpe + stat(1)%virsrp + stat(1)%virter + stat(1)%virtbp + stat(1)%virfbp + &
                        stat(1)%virshl + stat(1)%virtet + stat(1)%virbnd + stat(1)%virang + stat(1)%virdih + &
                        stat(1)%virinv + stat(1)%virfld
     EndIf      
 
-    !> If coupling terms are non-zero functions, it is not possible wihtin the EVB framework 
-    !> to have a decomposition of the energy and virial into separate contributions 
-    !> for each type of interaction (e.g. angles, bonds, dihedrals, etc). 
-    !> For this reason, we set all these components to zero in the subroutine ebv_setzero. 
-    !>
-    !> The user might want to set no coupling terms between the force fields by choosing zero functions 
-    !> (setting 'const' with A0=0 in the SETEVB file for all pairs followed by the flag evbcoupl).
-    !> Only in this case the energy/virial decomposition is possible and evb_setzero is not called
+    ! If coupling terms are non-zero functions, it is not possible wihtin the EVB framework 
+    ! to have a decomposition of the energy and virial into separate contributions 
+    ! for each type of interaction (e.g. angles, bonds, dihedrals, etc). 
+    ! For this reason, we set all these components to zero in the subroutine ebv_setzero. 
+    !
+    ! The user might want to set no coupling terms between the force fields by choosing zero functions 
+    ! (setting 'const' equal to zero in the SETEVB file).
+    ! Only in this case the energy/virial decomposition is possible and evb_setzero is not called
     If(flow%NUM_FF > 1)Then
       If(.Not. evbff%no_coupling)Then      
         Call evb_setzero(flow,stat)
@@ -892,8 +898,6 @@ Contains
       End If
     End Do
  
-!    !!!!!!!!!!!!!!!!!!  W_CALCULATE_FORCES INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
-!
   End Subroutine calculate_forces_evb
 
 
@@ -2124,7 +2128,6 @@ Contains
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV_EVB INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
-
     ! Calculate physical quantities at restart
     ! Calculate kinetic tensor and energy
 
@@ -2152,7 +2155,7 @@ Contains
       Call evb_check_configs(cnfig, flow, comm)
 
       ! Check consistency in the constraint specification between different FFs
-      Call evb_check_constraints(cnfig, cons, cshell, tether, sites, flow, rigid, comm)
+      Call evb_check_constraints(evbff, cnfig, cons, cshell, tether, sites, flow, rigid, comm)
 
       ! Check consistency of intrinsic properties for sites 
       Call evb_check_intrinsic(evbff,sites,cnfig,flow,comm)
@@ -2165,7 +2168,6 @@ Contains
       Call info(' ',.True.)
  
    End If
-
     
 
     ! Calculate kinetic tensor and energy at restart

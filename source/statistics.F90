@@ -456,11 +456,9 @@ Contains
 
     stats%stptmp = 2.0_wp * (stats%engke + stats%engrot) / (boltz * Real(degfre, wp))
 
-    ! system virial
-    ! Note: originally, purely angle dependent interactions have zero virial!!!
-    ! So, stats%virfbp, stats%virinv and stats%virdih are allegedly always zero!  virdih has an exception!
+    ! system virial, stats%virtot has been computed in calculate_forces
 
-     stats%stpvir= stats%virtot + stats%vircon + stats%virpmf + stats%vircom 
+    stats%stpvir= stats%virtot + stats%vircon + stats%virpmf + stats%vircom + stats%virdpd 
    
     ! system volume
 
