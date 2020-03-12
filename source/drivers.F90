@@ -451,6 +451,7 @@ Contains
       stat%stpcfg = stat%stpcfg + stat%engfld  
     End If
 
+
     ! Apply PLUMED driven dynamics
 
     If (plume%l_plumed) Then
@@ -474,6 +475,7 @@ Contains
     ! Minimisation option and Relaxed shell model optimisation
 
     If (flow%simulation .and. (minim%minimise .or. cshell%keyshl == SHELL_RELAXED)) Then
+
       If (cshell%keyshl == SHELL_RELAXED) Then
         Call core_shell_relax(flow%strict, rdf%l_collect, &
                               stat%stpcfg, cshell, stat, domain, cnfig, files, comm)

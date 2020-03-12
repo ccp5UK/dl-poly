@@ -432,11 +432,12 @@ Contains
 
     ! instantaneous properties of system
 
-    ! configurational energy has been defined in subroutine w_calculateorces within drivers.F90
+    ! system energy
+    ! Configurational energy has been defined in subroutine w_calculateorces within drivers.F90
     ! In the case of EVB calculations, the configurational energy is recomputed via diagonalisation 
     ! of the EVB matrix (subroutine evb.F90)
 
-    ! system energy
+    ! Configurational stats%stpcfg energy has been defined in subroutine calculate_forces within drivers.F90
 
     stats%stpeng = stats%stpcfg + stats%engke + stats%engrot
 
@@ -457,7 +458,7 @@ Contains
     stats%stptmp = 2.0_wp * (stats%engke + stats%engrot) / (boltz * Real(degfre, wp))
 
     ! system virial, stats%virtot has been computed in calculate_forces
-
+   
     stats%stpvir= stats%virtot + stats%vircon + stats%virpmf + stats%vircom + stats%virdpd 
    
     ! system volume

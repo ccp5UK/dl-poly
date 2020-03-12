@@ -4965,22 +4965,24 @@ Contains
           If (nkim > sites%ntype_atom) Call error(14)
 
           If (nkim < sites%ntype_atom) Then
-            Call warning('The number of species in kim interactions'// &
-                         '< number of species in the simulation', .true.)
-            Write (message, '(3a)') 'KIM in a hybrid style. It enables '// &
-              'the use of DL_POLY interactions and KIM interactions '// &
-              'in one simulation, where only part of species in the '// &
-              'simulation are counted in KIM interactions', new_line('a'), &
-              'This is an experimental feature, implemented in DL_POLY '// &
-              'and is not compliant with the KIM-API standard. (See '// &
-              'the DL_POLY manual for more information)'
-            Call warning(message, .true.)
-          End If
+            If (nkim == 0) Then
+              Write (message, '(a, 1x, a)') new_line('a'), &
+                'read_field, Illegal `kim_interactions` keyword'
+              Call error(0, message)
+            End If
 
-          If (nkim == 0) Then
-            Write (message, '(a, 1x, a)') new_line('a'), &
-              'read_field, Illegal `kim_interactions` keyword'
-            Call error(0, message)
+            Call warning('The number of species in kim interactions '// &
+                         '< number of species in the simulation', .true.)
+            Write (messages(1), '(3a)') '*** This is KIM in a hybrid '// &
+              'style. It enables the use of DL_POLY interactions and '// &
+              'KIM  interactions', new_line('a'), '*** in one '// &
+              'simulation, where only part of species in the simulation '// &
+              'are counted in KIM interactions.'
+            Write (messages(2), '(3a)') '*** This is an experimental '// &
+              'feature, implemented in DL_POLY and is not compliant '// &
+              'with the KIM-API', new_line('a'), '*** standard. (See '// &
+              'the DL_POLY manual for more information)'
+            Call info(messages, 2, .true.)
           End If
 
           ! Extra check to make sure all the species in kim_interactions
