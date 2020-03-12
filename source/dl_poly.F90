@@ -29,9 +29,12 @@ Program dl_poly
   ! dl_poly_4 is based on dl_poly_3 by i.t.todorov & w.smith.
   !
   ! copyright - daresbury laboratory
-  ! authors   - i.t.todorov & w.smith march 2016
-  ! contrib   - i.j.bush, h.a.boateng, m.a.seaton, a.m.elena,
-  !             s.l.daraszewicz, g.khara, a.brukhno, a.b.g.chalk
+  ! authors   - i.t.todorov & w.smith april 2020
+  ! contrib   - i.j.bush, h.a.boateng, m.a.seaton,
+  !             a.brukhno, a.m.elena, r.davidchak,
+  !             s.l.daraszewicz, g.khara, s.t.murphy,
+  !             a.b.g.chalk, i.scivetti
+  !
   ! refactoring:
   !           - a.m.elena march-october 2018
   !           - j.madge march-october 2018
@@ -224,4 +227,5 @@ Program dl_poly
   ! Create wrappers for the MD cycle in VV, and replay history
   Deallocate (flow)
   Deallocate (dlp_world)
+
 End Program dl_poly
