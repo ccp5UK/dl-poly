@@ -1451,7 +1451,7 @@ Contains
         End Do
 
         If (katom1 == 0 .or. katom2 == 0) Then
-          Write (message, '(a,i0,a,i0,a)') '****', atom1, '***', atom2, '**** entry in TABLE'
+          Write (message, '(a,a,a,a,a)') '****', atom1, '***', atom2, '**** entry in TABLE'
           Call error(81, message, .true.)
         End If
 
