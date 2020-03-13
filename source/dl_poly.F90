@@ -214,25 +214,25 @@ Program dl_poly
   ! Select metasimulation method
   ! IS: The following two subroutines should be merged into a single one. We separate them
   ! for the time being though.
-!  If (flow(1)%simulation_method == MD) Then
-!    Call molecular_dynamics(dlp_world, thermo, ewld, tmr, devel, stats, &
-!                            green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, inversion, tether, &
-!                            threebody, zdensity, cons, neigh, pmfs, sites, core_shells, vdws, tersoffs, fourbody, &
-!                            rdf, netcdf, minim, mpoles, ext_field, rigid, electro, domain, flow, seed, traj, &
-!                            kim_data, config, ios, ttms, rsdsc, files, output_filename, control_filename, crd, adf)
-!
-!  Else If (flow(1)%simulation_method == EmpVB) Then
-!    Write (0, *) "simulation type: EVB"
-    Call evb_molecular_dynamics(dlp_world, thermo, ewld, tmr, devel, stats, &
-                             green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, inversion, tether, &
-                             threebody, zdensity, cons, neigh, pmfs, sites, core_shells, vdws, tersoffs, fourbody, &
-                             rdf, netcdf, minim, mpoles, ext_field, rigid, electro, domain, flow, seed, traj, &
-                             kim_data, config, ios, ttms, rsdsc, files, output_filename, control_filename, crd, adf)
-!    Else If (flow(1)%simulation_method == FFS) Then 
-!      write(0,*) "simulation type: FFS" 
-!    Else
-!      Write (0, *) "Unknown simulation type"
-!  End If
+  If (flow(1)%simulation_method == MD) Then
+    Call molecular_dynamics(dlp_world, thermo, ewld, tmr, devel, stats, &
+                            green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, inversion, tether, &
+                            threebody, zdensity, cons, neigh, pmfs, sites, core_shells, vdws, tersoffs, fourbody, &
+                            rdf, netcdf, minim, mpoles, ext_field, rigid, electro, domain, flow, seed, traj, &
+                            kim_data, config, ios, ttms, rsdsc, files, output_filename, control_filename, crd, adf)
+
+  Else If (flow(1)%simulation_method == EmpVB) Then
+    Write (0, *) "simulation type: EVB"
+   Call evb_molecular_dynamics(dlp_world, thermo, ewld, tmr, devel, stats, &
+                            green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, inversion, tether, &
+                            threebody, zdensity, cons, neigh, pmfs, sites, core_shells, vdws, tersoffs, fourbody, &
+                            rdf, netcdf, minim, mpoles, ext_field, rigid, electro, domain, flow, seed, traj, &
+                            kim_data, config, ios, ttms, rsdsc, files, output_filename, control_filename, crd, adf)
+    Else If (flow(1)%simulation_method == FFS) Then 
+      write(0,*) "simulation type: FFS" 
+    Else
+      Write (0, *) "Unknown simulation type"
+  End If
 
   ! Terminate job
 

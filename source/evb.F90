@@ -1702,8 +1702,8 @@ Contains
     ! 
     ! - the number for a given type of constraint is different between FIELD files 
     !   (no optional variable present when subroutine is called)
-    ! - the constraint unit has been defined in one FIELD but not found in other (via input sitemiss=.True.)
-    ! - the spefication for the constraint unit changes between FIELD files (via input siteparam=.True.)
+    ! - the constraint unit is defined in one FIELD but not found in other (via input sitemiss=.True.)
+    ! - the specification for the constraint unit changes between FIELD files (via input siteparam=.True.)
     ! - a rigid unit has been found in the EVB region (via siteevb=.True.) 
     !
     ! Error messages depend on the constraint, which is identified via the input string 
@@ -1794,7 +1794,7 @@ Contains
               Write(message2,'(3x,2(a,i3),a)')              'of type-of-molecule ', mol(1), ' (set in  FF ', field, ')'
               messages(2) = trim(message1)//trim(message2)
               Write(messages(3),'(1x,a,i2,a)')              'could either not find its equivalent in FF ', field+1, ' or the &
-                                                            &spefication ordering for units is not consistent between these FFs' 
+                                                            &specification ordering for units is not consistent between these FFs' 
 
             End If                                         
 
@@ -1868,7 +1868,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine to check consistency in the definition of vdW
-    ! interactions between FIELDS files. Check is carried out for pairs of vdW 
+    ! interactions between FIELD files. Check is carried out for pairs of vdW 
     ! interactions that ONLY include atoms belonging to the non-reactive part of the system.
     ! In fact, the vdW interactions between atoms of the non-reactive site should remain the 
     ! independently of the chemical state. 
@@ -2062,7 +2062,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine to check consistency in the definition of intermolecular
-    ! interactions between FIELDS files. Check is carried out for:
+    ! interactions between FIELD files. Check is carried out for:
     !
     ! - Tersoff potentials
     ! - metallic potentials
@@ -2499,8 +2499,8 @@ Contains
     ! error message and abort if either
     ! 
     ! - the number for a type of intermolecular interactions is different between FIELD files 
-    ! - the interaction unit has been defined in one FIELD but not found in other (sitemiss=.True.)
-    ! - the spefication for the intermolecular interation unit changes between FIELD files (siteparam=.True.)
+    ! - the interaction unit is defined in one FIELD but not found in other (sitemiss=.True.)
+    ! - the specification for the intermolecular interation unit changes between FIELD files (siteparam=.True.)
     !  
     ! The format of the output error message depends on the intermolecular interactions 
     ! 
@@ -2603,7 +2603,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine to check consistency in the definition of intramolecular
-    ! interactions between FIELDS files ONLY between atoms of the non-reactive part of the system.
+    ! interactions between FIELD files ONLY between atoms of the non-reactive part of the system.
     ! In fact, functional forms and parameters for intramolecular interactions SHOULD NOT change
     ! between atoms of the non-reacitve part of the system.
     !
@@ -2801,10 +2801,10 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine (auxiliary to evb_check_intramolecular) to compare intramolecular
-    ! interactions between FIELDS and print an error message (and abort) if either:
+    ! interactions between FIELD files and print an error message (and abort) if either:
     ! 
-    ! - the interaction unit has been defined in one FIELD but not found in other
-    ! - the spefication for the intermolecular interation unit changes between FIELD files 
+    ! - the interaction unit is defined in one FIELD but not found in other
+    ! - the specification for the intermolecular interation unit changes between FIELD files 
     !
     ! copyright - daresbury laboratory
     ! author    - i.scivetti December 2019
@@ -3037,7 +3037,7 @@ Contains
           ediff = evb%eneFF(m)-evb%eneFF(k)
           If(evb%typcoupl(m,k)=='const')Then
             evb%coupl(m,k) = A(1)
-            evb%grad_coupl(m,k) = 0.0d0 
+            evb%grad_coupl(m,k) = 0.0_wp
           Else If (evb%typcoupl(m,k)=='gauss')Then
             earg=Abs((ediff-A(2))/A(3))
             If(earg < evb%elimit)Then     ! Here we use the sensible limit of 700 for the argument to compute exp()

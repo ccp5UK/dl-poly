@@ -2282,10 +2282,12 @@ Contains
       ! Calculate physical quantities, collect statistics and report at t=0
       If (flow%step == 0) Then
         Do ff = 1, flow%NUM_FF
-          Call crd(ff)%init_coordlist(neigh(ff)%max_list, cnfig(ff)%mxatms)
-          Call init_coord_list(cnfig(ff), neigh(ff), crd(ff), sites(ff), flow, comm)
-          Call checkcoord(cnfig(ff), crd(ff), sites(ff), flow, stat(ff), comm)
-          Call adf_calculate(cnfig(ff), sites(ff), flow, crd(ff), adf(ff), comm)
+          If(ff == 1)Then
+            Call crd(ff)%init_coordlist(neigh(ff)%max_list, cnfig(ff)%mxatms)
+            Call init_coord_list(cnfig(ff), neigh(ff), crd(ff), sites(ff), flow, comm)
+            Call checkcoord(cnfig(ff), crd(ff), sites(ff), flow, stat(ff), comm)
+            Call adf_calculate(cnfig(ff), sites(ff), flow, crd(ff), adf(ff), comm)
+          End If
           Call statistics_report(cnfig(ff), ttm(ff),cshell(ff), cons(ff), pmf(ff), stat(ff), msd_data(ff), zdensity, &
                                  sites(ff), rdf(ff), domain(ff), flow,files, thermo(ff), tmr, green(ff), minim(ff), comm, ff)
         EndDo
@@ -2360,9 +2362,11 @@ Contains
         End If
         
         Do ff = 1, flow%NUM_FF
-          Call init_coord_list(cnfig(ff), neigh(ff), crd(ff), sites(ff), flow, comm)
-          Call checkcoord(cnfig(ff), crd(ff), sites(ff), flow, stat(ff), comm)
-          Call adf_calculate(cnfig(ff), sites(ff), flow, crd(ff), adf(ff), comm)
+          If(ff == 1)Then
+            Call init_coord_list(cnfig(ff), neigh(ff), crd(ff), sites(ff), flow, comm)
+            Call checkcoord(cnfig(ff), crd(ff), sites(ff), flow, stat(ff), comm)
+            Call adf_calculate(cnfig(ff), sites(ff), flow, crd(ff), adf(ff), comm)
+          End If
         End Do
         
 
