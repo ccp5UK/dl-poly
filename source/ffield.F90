@@ -623,6 +623,10 @@ Contains
                 cshell%lstshl(1, nshels) = iatm1
                 cshell%lstshl(2, nshels) = iatm2
 
+                If ((iatm1 > sites%num_site(itmols)) .Or.  (iatm2 > sites%num_site(itmols))) Then
+                  Call error(0,"Index of shell is out of range")
+                End If
+
                 Call get_word(record, word)
                 cshell%prmshl(1, nshels) = word_2_real(word)
 
@@ -635,9 +639,6 @@ Contains
                 ! test for frozen core-shell unit and print unit
 
                 If (flow%print_topology) Then
-                  If ((isite1 > cshell%numshl(itmols)) .or. (isite2 > cshell%numshl(itmols))) Then
-                    Call error(0, "Index of shell is out of range")
-                  End If
                   If (sites%freeze_site(isite1) * sites%freeze_site(isite2) /= 0) Then
                     Write (message, '(2x,3i10,2f15.6,1x,a8)') &
                       ishls, cshell%lstshl(1, nshels), cshell%lstshl(2, nshels), &
@@ -744,6 +745,10 @@ Contains
                 Call get_word(record, word)
                 iatm2 = Nint(word_2_real(word))
 
+                If ((iatm1 > sites%num_site(itmols)) .Or. (iatm2 > sites%num_site(itmols))) Then
+                  Call error(0,"wrong index for atom in constraint")
+                End If
+
                 cons%lstcon(1, nconst) = iatm1
                 cons%lstcon(2, nconst) = iatm2
 
@@ -752,6 +757,7 @@ Contains
 
                 isite1 = nsite - sites%num_site(itmols) + iatm1
                 isite2 = nsite - sites%num_site(itmols) + iatm2
+
 
                 ! number of completely frozen constraints
 
