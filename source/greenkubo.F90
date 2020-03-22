@@ -115,6 +115,7 @@ Contains
     ! copyright - daresbury laboratory
     ! author    - m.a.seaton june 2014
     ! amended   - i.t.todorov july 2014
+    ! amended   - m.a.seaton march 2020
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -146,25 +147,13 @@ Contains
 
     If (green%t_start < 0) green%t_start = Merge(nsteql, nstep, leql)
 
-    ! set reference velocities only for first sampling passes
-
-    If (nstep <= green%t_start + (green%samp - 1) * green%freq) Then
-      Do j = 1, green%samp
-        If (nstep == (green%t_start + (j - 1) * green%freq)) Then
-          green%vxi(1:config%natms, j) = config%vxx(1:config%natms)
-          green%vyi(1:config%natms, j) = config%vyy(1:config%natms)
-          green%vzi(1:config%natms, j) = config%vzz(1:config%natms)
-        End If
-      End Do
-    End If
-
     ! advance time green%step, calculate green%vaf contribution for each sample
 
     Do j = 1, green%samp
       green%step(j) = green%step(j) + 1
       k = green%step(j)
 
-      If (k >= 0 .and. k <= green%binsize) Then
+      If (k > 0 .and. k <= green%binsize) Then
         vafcoll = 0.0_wp
         Do i = 1, config%natms
           If (config%lfrzn(i) == 0) Then
@@ -179,6 +168,9 @@ Contains
 
         green%vafdata(k, j * (mxatyp + 1)) = time
       End If
+
+      ! get velocity autocorrelation function at end of time span for sample
+      ! and reset green%step for next sample
 
       If (k == green%binsize) Then
         green%vafcount = green%vafcount + 1.0_wp
@@ -205,14 +197,13 @@ Contains
             green%vaf(0:green%binsize, l) = green%vafdata(0:green%binsize, (j - 1) * (mxatyp + 1) + l)
           End Do
         End If
+        green%step(j) = Min (0, green%binsize-green%freq)
       End If
 
-      ! reset counter and reference velocities and get green%vaf
-      ! at end of time span or at start of sample
+      ! reset reference velocities and calculate first VAF value
+      ! at start of sample
 
-      If (k == green%binsize .or. (green%freq > green%binsize .and. k == green%freq)) Then
-        green%step(j) = 0
-
+      If (green%step(j)==0) Then
         green%vxi(1:config%natms, j) = config%vxx(1:config%natms)
         green%vyi(1:config%natms, j) = config%vyy(1:config%natms)
         green%vzi(1:config%natms, j) = config%vzz(1:config%natms)
