@@ -463,6 +463,7 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    ! amended   - i.t.todorov november 2019 (RBs unsafe haloing)
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -571,7 +572,7 @@ Contains
 
       ! thermo%unsafe positioning due to possibly locally shared RBs
 
-      thermo%unsafe = (Any(domain%map == comm%idnode))
+      thermo%unsafe = Any(domain%map_unique > 0)
     End If
 
     ! set matms
