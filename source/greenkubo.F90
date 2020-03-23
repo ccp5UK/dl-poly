@@ -147,6 +147,10 @@ Contains
 
     If (green%t_start < 0) green%t_start = Merge(nsteql, nstep, leql)
 
+    ! check if due to start collecting data
+
+    If (nstep < green%t_start) Return
+
     ! advance time green%step, calculate green%vaf contribution for each sample
 
     Do j = 1, green%samp
