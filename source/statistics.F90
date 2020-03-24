@@ -249,9 +249,6 @@ Contains
     Class(stats_type), Intent(InOut) :: stats
     Integer,           Intent(InOut) :: mxatdm
 
-    Class( stats_type ), Intent( InOut ) ::  stats
-    Integer,             Intent( InOut ) ::  mxatdm
-
     Integer :: mxstak,fail(1:6)
 
     mxstak=stats%mxstak
