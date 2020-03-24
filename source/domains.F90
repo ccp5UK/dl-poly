@@ -39,7 +39,7 @@ Module domains
     Integer(Kind=wi), Public :: nx, ny, nz
     !> Real values of the dimensions nx,ny and nz
     Real(Kind=wp), Public    :: nx_real, ny_real, nz_real
-    !> Reciprocal values of the dimensions domain%nx,domain%ny and nrpz
+    !> Reciprocal values of the dimensions domain%nx,domain%ny and domain%nz
     Real(Kind=wp), Public    :: nx_recip, ny_recip, nz_recip
     !> This domain's coordinates on the grid
     Integer(Kind=wi), Public :: idx, idy, idz
@@ -47,7 +47,7 @@ Module domains
     Integer(Kind=wi), Public :: map(1:26)
     !> Unique neighbour domain list
     !>
-    !> - 0 if neighbour is uniqye
+    !> - 0 if neighbour is unique
     !> - 1 if neighbour is repeated
     Integer(Kind=wi), Public :: map_unique(1:26)
     !> Number of neighbours (0 when serial, 26 otherwise). Used as the dimension
@@ -158,7 +158,7 @@ Contains
 
             Else If (Max(nx, ny, nz) == Max(domain%nx, domain%ny, domain%nz)) Then
 
-              ! The the new case has the same number of procs
+              ! The new case has the same number of procs
               If (nx < domain%nx) Then
 
                 ! Choose first the case which has the least down x
@@ -254,6 +254,7 @@ Contains
         If (domain%map(i) == domain%map(j)) domain%map_unique(j) = 1
       End Do
     End Do
+
   End Subroutine map_domains
 
   Function get_n_factors(factors) Result(nfacs)

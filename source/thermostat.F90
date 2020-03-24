@@ -111,9 +111,14 @@ Module thermostat
     Logical, Public                    :: l_zero
     !> Zero temperature regaussing frequency
     Integer, Public                    :: freq_zero
-    Logical, Public                    :: newjob = .true.
-    Logical, Public                    :: newjob_nst_scl = .true.
-    Logical, Public                    :: newjob_npt_scl = .true.
+    Logical, Public                    :: newjob_0 = .true.
+    Logical, Public                    :: newjob_1 = .true.
+    Logical, Public                    :: newjob_2 = .true.
+    Logical, Public                    :: newjob_sb = .true.
+    Logical, Public                    :: newjob_nst_scl_0 = .true.
+    Logical, Public                    :: newjob_nst_scl_1 = .true.
+    Logical, Public                    :: newjob_npt_scl_0 = .true.
+    Logical, Public                    :: newjob_npt_scl_1 = .true.
     Integer, Public                    :: mxiter, mxkit, kit
     Logical, Public                    :: unsafe = .false.
     Real(Kind=wp), Public              :: volm0, elrc0, virlrc0, h_z, cell0(1:9)

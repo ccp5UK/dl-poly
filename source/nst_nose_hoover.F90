@@ -134,8 +134,8 @@ Contains
       Call error(0, message)
     End If
 
-    If (thermo%newjob) Then
-      thermo%newjob = .false.
+    If (thermo%newjob_0) Then
+      thermo%newjob_0 = .false.
 
       ! store initial values of volume, long range corrections and density
 
@@ -527,6 +527,7 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    ! amended   - i.t.todorov november 2019 (RBs unsafe haloing)
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -605,8 +606,8 @@ Contains
       Call error(0, message)
     End If
 
-    If (thermo%newjob) Then
-      thermo%newjob = .false.
+    If (thermo%newjob_1) Then
+      thermo%newjob_1 = .false.
 
       ! store initial values of volume, long range corrections and density
 
@@ -669,7 +670,7 @@ Contains
 
       ! thermo%unsafe positioning due to possibly locally shared RBs
 
-      thermo%unsafe = (Any(domain%map == comm%idnode))
+      thermo%unsafe = Any(domain%map_unique > 0)
     End If
 
     ! set matms
@@ -1479,8 +1480,8 @@ Contains
 
     ! Initialise thermo%factor and 1/Nf for Nose-Hoover ensembles
 
-    If (thermo%newjob_nst_scl) Then
-      thermo%newjob_nst_scl = .false.
+    If (thermo%newjob_nst_scl_0) Then
+      thermo%newjob_nst_scl_0 = .false.
 
       thermo%factor = 0.0_wp
       thermo%rf = 0.0_wp
@@ -1668,8 +1669,8 @@ Contains
 
     ! Initialise thermo%factor and 1/Nf for Nose-Hoover ensembles
 
-    If (thermo%newjob_nst_scl) Then
-      thermo%newjob_nst_scl = .false.
+    If (thermo%newjob_nst_scl_1) Then
+      thermo%newjob_nst_scl_1 = .false.
 
       thermo%factor = 0.0_wp
       thermo%rf = 0.0_wp

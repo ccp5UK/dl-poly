@@ -17,7 +17,9 @@ Module meta
   Use comms,                              Only: comms_type,&
                                                 gsum,&
                                                 gsync,&
-                                                gtime
+                                                gtime, &
+                                                exit_comms,&
+                                                root_id
   Use configuration,                      Only: check_config,&
                                                 configuration_type,&
                                                 freeze_atoms,&
@@ -45,7 +47,8 @@ Module meta
                                                 electrostatic_type
   Use errors_warnings,                    Only: info,&
                                                 init_error_system,&
-                                                warning
+                                                warning,&
+                                                error
   Use ewald,                              Only: ewald_type
   Use external_field,                     Only: external_field_type
   Use ffield,                             Only: read_field,&
@@ -120,6 +123,8 @@ Module meta
                                                 printLatticeStatsToFile
   Use vdw,                                Only: vdw_type
   Use z_density,                          Only: z_density_type
+  Use test_configuration, Only : run_configuration_tests
+
 
   Implicit None
   Private
@@ -133,7 +138,9 @@ Contains
                                 green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, inversion, &
                                 tether, threebody, zdensity, cons, neigh, pmfs, sites, core_shells, vdws, tersoffs, &
                                 fourbody, rdf, netcdf, minim, mpoles, ext_field, rigid, electro, domain, flow, &
-                                seed, traj, kim_data, config, ios, ttms, rsdsc, files, control_filename, crd, adf)
+                                seed, traj, kim_data, config, ios, ttms, rsdsc, files, control_filename, &
+                                output_filename, crd, adf)
+
 
     Type(comms_type),                       Intent(InOut) :: dlp_world(0:)
     Type(thermostat_type), Allocatable,     Intent(InOut) :: thermo(:)
@@ -180,7 +187,8 @@ Contains
     Type(ttm_type), Allocatable,            Intent(InOut) :: ttms(:)
     Type(rsd_type), Allocatable, Target,    Intent(InOut) :: rsdsc(:)
     Type(file_type), Allocatable,           Intent(InOut) :: files(:, :)
-    Character(Len=1024)                                   :: control_filename
+    Character(len=1024),       Intent(In   ) :: control_filename
+    Character(len=1024),       Intent(In   ) :: output_filename
     Type(coord_type), Allocatable,          Intent(InOut) :: crd(:)
     Type(adf_type), Allocatable,            Intent(InOut) :: adf(:)
 
@@ -204,7 +212,7 @@ Contains
                                    core_shells(1), vdws(1), tersoffs(1), fourbody(1), rdf(1), netcdf(1), &
                                    minim(1), mpoles(1), ext_field(1), rigid(1), electro(1), domain(1), flow(1), &
                                    seed(1), traj(1), kim_data(1), config(1), ios(1), ttms(1), rsdsc(1), files(1, :), &
-                                   control_filename, crd(1), adf(1))
+                                   output_filename, control_filename, crd(1), adf(1))
     Call deallocate_types_uniform(thermo, ewld, tmr, devel, stats, &
                                   green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, inversion, &
                                   tether, threebody, zdensity, cons, neigh, pmfs, sites, core_shells, vdws, tersoffs, &
@@ -218,7 +226,7 @@ Contains
                                        inversion, tether, threebody, zdensity, cons, neigh, pmfs, sites, core_shells, &
                                        vdws, tersoffs, fourbody, rdf, netcdf, minim, mpoles, ext_field, rigid, electro, &
                                        domain, flow, seed, traj, kim_data, config, ios, ttms, rsdsc, files, control_filename, &
-                                       crd, adf)
+                                       output_filename, crd, adf)
 
     Type(comms_type),          Intent(InOut) :: dlp_world(0:), comm
     Type(thermostat_type),     Intent(InOut) :: thermo
@@ -266,6 +274,7 @@ Contains
     Type(rsd_type), Target,    Intent(InOut) :: rsdsc
     Type(file_type),           Intent(InOut) :: files(FILENAME_SIZE)
     Character(len=1024),       Intent(In   ) :: control_filename
+    Character(len=1024),       Intent(In   ) :: output_filename
     Type(coord_type),          Intent(InOut) :: crd
     Type(adf_type),            Intent(InOut) :: adf
 
@@ -278,8 +287,11 @@ Contains
     ! Set default file names
     Call default_filenames(files)
     ! Rename control file if argument was passed
-    If (command_argument_count() == 1) Then
+    If (Len_Trim(control_filename) > 0 ) Then
       Call files(FILE_CONTROL)%rename(control_filename)
+    End If
+    If (Len_Trim(output_filename) > 0 ) Then
+      Call files(FILE_OUTPUT)%rename(output_filename)
     End If
 
     Call scan_development(devel, files, comm)
@@ -351,7 +363,7 @@ Contains
     ! ALLOCATE RDF, Z-DENSITY, STATISTICS & GREEN-KUBO ARRAYS
     Call rdf%init()
     Call zdensity%init(rdf%max_grid, sites%mxatyp)
-    Call stats%init(config%mxatms)
+    Call stats%init(rigid%max_rigid, config%mxatms, config%mxatdm)
     Call green%init(config%mxatms, sites%mxatyp)
 
     ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
@@ -388,6 +400,16 @@ Contains
     Call info('', .true.)
     Call info("*** all reading and connectivity checks DONE ***", .true.)
     Call time_elapsed(tmr)
+    If (flow%l_vdw) Then
+       If (vdws%l_direct) Then
+         Call error(0,"Error l_vdw does not work with vdw direct, remove vdw direct")
+       Else
+       Call vdws%print(comm)
+       Call info("Dumped vdw interaction tables!",.true.)
+       Call exit_comms(dlp_world)
+       Stop 0
+     End If
+    End If
 
 #ifdef CHRONO
     Call stop_timer(tmr, 'Initialisation')
@@ -509,17 +531,23 @@ Contains
     If (ttms%l_ttm) Then
       Call ttm_table_read(ttms, comm)
       Call ttm_system_init(flow%step, flow%equil_steps, flow%restart_key, 'DUMP_E', flow%time, thermo%temp, domain, ttms, comm)
+      Call time_elapsed(tmr)
     End If
 
     ! Frozen atoms option
     Call freeze_atoms(config)
 
     ! Cap forces in equilibration mode
-    If (flow%step <= flow%equil_steps .and. flow%force_cap) Call cap_forces(thermo%temp, config, comm)
+    If (flow%step <= flow%equil_steps .and. flow%force_cap) Then
+      Call cap_forces(thermo%temp, config, comm)
+      Call time_elapsed(tmr)
+    End If
 
     ! PLUMED initialisation or information message
-    If (plume%l_plumed) Call plumed_init(config%megatm, thermo%tstep, thermo%temp, plume, comm)
-
+    If (plume%l_plumed) Then
+      Call plumed_init(config%megatm, thermo%tstep, thermo%temp, plume, comm)
+      Call time_elapsed(tmr)
+    End If
     ! Indicate nodes mapped on vacuum (no particles)
     vacuum = 0
     If (config%natms == 0) Then
@@ -532,11 +560,25 @@ Contains
     End If
 
     ! start-up time when forces are not recalculated
-    Call time_elapsed(tmr)
 
 #ifdef CHRONO
     Call start_timer(tmr, 'Main Calc')
 #endif
+
+    ! Unit testing (in the absence of a unit testing framework)
+    If (devel%run_unit_tests) Then
+
+       If (devel%unit_test%configuration) Then
+          if(comm%idnode == root_id) Then
+             Write(*,*) 'Running unit tests for configuration module'
+          Endif
+          Call run_configuration_tests(comm%mxnode)
+       End If
+
+       if(comm%idnode == root_id) Write(*,*) 'Unit tests completed'
+       Call exit_comms(dlp_world)
+       Stop 0
+    Endif
 
     ! Now you can run fast, boy
     If (devel%l_fast) Call gsync(comm, devel%l_fast)
@@ -553,7 +595,7 @@ Contains
                             thermo, plume, msd_data, bond, angle, dihedral, inversion, zdensity, neigh, &
                             sites, vdws, tersoffs, fourbody, rdf, netcdf, minim, mpoles, ext_field, rigid, &
                             electro, domain, seed, traj, kim_data, files, dfcts, tmr, tether, threebody, &
-                            pois, green, ewld, devel, met, crd, adf, comm)
+                            pois, green, ewld, devel, met, crd, comm)
       Else
         Call replay_history(config, ios, rsdsc, flow, core_shells, cons, pmfs, stats, &
                             thermo, msd_data, met, pois, bond, angle, dihedral, inversion, zdensity, neigh, &
@@ -914,7 +956,8 @@ Contains
       Write (banner(2), fmt1) '****     M.A. Seaton, I.T. Todorov, K. Nordlund, M.T. Dove &  ****'
       Write (banner(3), fmt1) '****     K. Trachenko                                         ****'
       Write (banner(4), fmt1) '****     J. Phys.: Condens. Matter, 24, 085401 (2014),        ****'
-      Call info(banner, 4, .true.)
+      Write (banner(5), fmt1) '****     https://doi.org/10.1088/0953-8984/26/8/085401        ****'
+      Call info(banner, 5, .true.)
     End If
     Call info(Repeat("*", 66), .true.)
   End Subroutine print_citations

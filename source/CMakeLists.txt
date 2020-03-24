@@ -1,7 +1,8 @@
 include_directories("${CMAKE_BINARY_DIR}/source")
 
 set(dlpoly_SRCS
-  angular_distribution.F90	
+  asserts.F90
+  angular_distribution.F90
   coord.F90
   kpoints.F90
   currents.F90
@@ -102,6 +103,7 @@ set(dlpoly_SRCS
   npt_nose_hoover.F90
   npt_langevin.F90
   npt_mtk.F90
+  unit_tests/test_configuration.F90
   )
 if(BUILDER)
   set_property(SOURCE development.F90 APPEND PROPERTY

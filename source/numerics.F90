@@ -370,8 +370,8 @@ Contains
         ! Second seed must have a value between 0 and 30081
 
         ij = Mod(Abs(seed%seed(1) + comm%idnode), 31328)
-        i = Mod(ij / 177, 177) + 2; 
-        j = Mod(ij, 177) + 2; 
+        i = Mod(ij / 177, 177) + 2;
+        j = Mod(ij, 177) + 2;
         kl = Mod(Abs(seed%seed(2) + comm%idnode), 30081)
         k = Mod(kl / 169, 178) + 1
         l = Mod(kl, 169)

@@ -2186,7 +2186,7 @@ Contains
 
       Else
 
-        Write (ounit, '(/,1x,a)') 'error - unnamed error found'
+        Write (ounit, '(/,1x,a)') 'error - see message above'
 
       End If
 

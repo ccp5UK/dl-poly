@@ -13,6 +13,7 @@ Module bonds
   !           - j.madge march-october 2018
   !           - a.b.g.chalk march-october 2018
   !           - i.scivetti march-october 2018
+  ! amended   - i.t.todorov & i.scivetti march 2020 (coulombic bond init bug)
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -314,7 +315,7 @@ Contains
         Write (messages(2), '(a,f8.5)') 'r(Angstroms)  P_bond(r)  Sum_P_bond(r)   @   dr_bin = ', delr
         Call info(messages, 2, .true.)
         If (comm%idnode == 0) Then
-          Write (npdfdt, '(/,a,2(a8,1x),2(i10,1x))') '# type, index, instances: ', &
+          Write (npdfdt, '(a,2(a8,1x),2(i10,1x))') '# type, index, instances: ', &
             unique_atom(bond%typ(1, i)), unique_atom(bond%typ(2, i)), j, bond%typ(0, i)
         End If
 
@@ -406,10 +407,10 @@ Contains
         j = j + 1
 
         If (comm%idnode == 0) Then
-          Write (npdgdt, '(/,a,2(a8,1x),2(i10,1x),a)') '# ', &
+          Write (npdgdt, '(a,2(a8,1x),2(i10,1x),a)') '# ', &
             unique_atom(bond%typ(1, i)), unique_atom(bond%typ(2, i)), j, bond%typ(0, i), &
             ' (type, index, instances)'
-          Write (npdfdt, '(/,a,2(a8,1x),2(i10,1x),a)') '# ', &
+          Write (npdfdt, '(a,2(a8,1x),2(i10,1x),a)') '# ', &
             unique_atom(bond%typ(1, i)), unique_atom(bond%typ(2, i)), j, bond%typ(0, i), &
             ' (type, index, instances)'
         End If
@@ -823,6 +824,11 @@ Contains
 
           omega = 0.0_wp
           gamma = 0.0_wp
+          ! We need to initialise fx, fy and fz in case one of the involved charges (or both) is zero, 
+          ! which would lead to chgprd = 0 and omission of the intra subroutines
+          fx = 0.0_wp
+          fy = 0.0_wp
+          fz = 0.0_wp
 
           ! scaled charge product times dielectric constants
 
@@ -847,6 +853,12 @@ Contains
               engc12 = engc12 + omega
               virc12 = virc12 + viracc
             End If
+
+            ! clear all but keep the forces
+
+            omega=0.0_wp
+            gamma=0.0_wp
+            viracc=0.0_wp
           End If
 
         Else If (keyb == BOND_FENE) Then
@@ -985,9 +997,6 @@ Contains
         engc12 = buffer(3)
         virc12 = buffer(4)
       End If
-
-      engbnd = engbnd - engc12
-      virbnd = virbnd - virc12
 
       engcpe = engcpe + engc12
       vircpe = vircpe + virc12
