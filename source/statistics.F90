@@ -765,20 +765,20 @@ Contains
         ! average squared sum and sum (keep in this order!!!)
 
         If (nstep == nsteql + 1 .or. ((.not. leql) .and. nstep == 1)) stats%stpvl0 = stats%stpval
-        stats%stpval = stats%stpval - stats%stpvl0
-        Do i = 0, stats%mxnstk
-          stats%ssqval(i) = sclnv1 * (stats%ssqval(i) + sclnv2 * (stats%stpval(i) - stats%sumval(i))**2)
+           stats%stpval = stats%stpval - stats%stpvl0
+           Do i = 0, stats%mxnstk
+              stats%ssqval(i) = sclnv1 * (stats%ssqval(i) + sclnv2 * (stats%stpval(i) - stats%sumval(i))**2)
 
-          !stats%sumval has to be shifted back tostats%sumval+stpvl0 in statistics_result
-          ! when averaging is printed since stpval is only shifted back and forth
-          ! which does not affect the fluctuations Sqrtstats%ssqval) only their accuracy
-
-        ! stats%sumval has to be shifted back to stats%sumval+stats%stpvl0 in statistics_result
-        ! when averaging is printed since stats%stpval is only shifted back and forth
-        ! which does not affect the fluctuations Sqrt(stats%ssqval) only their accuracy
-
-    End If
-
+              !stats%sumval has to be shifted back tostats%sumval+stpvl0 in statistics_result
+              ! when averaging is printed since stpval is only shifted back and forth
+              ! which does not affect the fluctuations Sqrtstats%ssqval) only their accuracy
+  
+              stats%sumval(i) = sclnv1 * stats%sumval(i) + sclnv2 * stats%stpval(i)
+           End Do
+           stats%stpval = stats%stpval + stats%stpvl0
+         End If
+       End if
+       
     ! z-density collection
 
     If (zdensity%l_collect .and. ((.not. leql) .or. nstep >= nsteql) .and. &
