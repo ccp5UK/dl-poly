@@ -2293,11 +2293,6 @@ Contains
         EndDo
       End If
 
-      ! Evaluate and write EVB population 
-      If(flow%NUM_FF > 1 .and. evbff%population)then
-        Call evb_population(evbff, flow, files, comm)
-      End If      
-
 
       ! DO THAT ONLY IF 0<flow%step<=flow%run_steps AND THIS IS AN OLD JOB (flow%newjob=.false.)
 
@@ -2339,6 +2334,11 @@ Contains
                                 seed, rigid(ff), thermo(ff), comm)
           End Do
         End If 
+
+        ! Evaluate and write EVB population 
+         If(flow%NUM_FF > 1 .and. evbff%population)then
+          Call evb_population(evbff, flow, files, comm)
+         End If      
 
         ! Update total flow%time of simulation
         flow%time = flow%time + thermo(1)%tstep

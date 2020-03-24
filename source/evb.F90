@@ -3039,7 +3039,7 @@ Contains
             evb%coupl(m,k) = A(1)
             evb%grad_coupl(m,k) = 0.0_wp
           Else If (evb%typcoupl(m,k)=='gauss')Then
-            earg=Abs((ediff-A(2))/A(3))
+            earg=Abs((ediff-A(2))/A(3))**2
             If(earg < evb%elimit)Then     ! Here we use the sensible limit of 700 for the argument to compute exp()
               evb%coupl(m,k) = A(1)*exp(-((ediff-A(2))/A(3))**2)+A(4)
               evb%grad_coupl(m,k) = -2.0_wp * (A(1)/A(3)**2)*(ediff-A(2))*exp(-((ediff-A(2))/A(3))**2)
@@ -3444,7 +3444,7 @@ Contains
     ! Only print after equilibration
     If(flow%step>flow%equil_steps+1)Then
        If (comm%idnode == 0)Then
-          Write(files(FILE_POPEVB)%unit_no,*) flow%time, (evb%psi(ff,1)**2, ff=1,flow%NUM_FF) 
+         Write(files(FILE_POPEVB)%unit_no,*) flow%time, (evb%psi(ff,1)**2, ff=1,flow%NUM_FF)    
        End If
     End If
 
