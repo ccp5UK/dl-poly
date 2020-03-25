@@ -31,7 +31,7 @@ Module nvt_langevin
                              adjust_timestep,&
                              thermostat_type
   Use timer,           Only: timer_type
-  Use ttm,             Only: eltemp_max,&
+  Use ttm,             Only: eltemp_max,eltemp_min,&
                              ttm_type
   Use ttm_utils,       Only: Gep,&
                              calcchies
@@ -113,8 +113,8 @@ Contains
       Call error(0, message)
     End If
 
-    If (thermo%newjob) Then
-      thermo%newjob = .false.
+    If (thermo%newjob_0) Then
+      thermo%newjob_0 = .false.
 
       ! set number of constraint+pmf shake iterations
       If (cons%megcon > 0 .or. pmf%megpmf > 0) thermo%mxkit = 1
@@ -375,6 +375,7 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    ! amended   - i.t.todorov november 2019 (RBs unsafe haloing)
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -445,8 +446,8 @@ Contains
       Call error(0, message)
     End If
 
-    If (thermo%newjob) Then
-      thermo%newjob = .false.
+    If (thermo%newjob_1) Then
+      thermo%newjob_1 = .false.
 
       ! set number of constraint+pmf shake iterations
 
@@ -455,7 +456,7 @@ Contains
 
       ! thermo%unsafe positioning due to possibly locally shared RBs
 
-      thermo%unsafe = (Any(domain%map == comm%idnode))
+      thermo%unsafe = Any(domain%map_unique > 0)
     End If
 
     ! set matms
@@ -1186,6 +1187,7 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! authors   - i.t.todorov & m.a.seaton june 2017
+    ! contrib   - m.a.seaton february 2020
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -1215,7 +1217,7 @@ Contains
     Integer                    :: fail(1:9), i, ia, ijk, ja, ka
     Logical                    :: lrand, lvel, safe
     Logical, Allocatable       :: lstitr(:)
-    Real(Kind=wp)              :: chi, eltempmax, hstep, rstep, scl1, scl1a, scl1b, scr1, scr1a, &
+    Real(Kind=wp)              :: chi, eltempmax, eltempmin, hstep, rstep, scl1, scl1a, scl1b, scr1, scr1a, &
                                   scr1b, scv1, scv1a, scv1b, t0, t0a, t0b, t1, t1a, t1b, t2, t2a, &
                                   t2b, tmp, velsq, vom(1:3)
     Real(Kind=wp), Allocatable :: fxl(:), fxr(:), fxt(:), fyl(:), fyr(:), fyt(:), fzl(:), fzr(:), &
@@ -1237,8 +1239,8 @@ Contains
       Call error(0, message)
     End If
 
-    If (thermo%newjob) Then
-      thermo%newjob = .false.
+    If (thermo%newjob_2) Then
+      thermo%newjob_2 = .false.
 
       ! set number of constraint+pmf shake iterations
       If (cons%megcon > 0 .or. pmf%megpmf > 0) thermo%mxkit = 1
@@ -1327,15 +1329,18 @@ Contains
       End If
 
       ! Create primitive scalers and adjust/increase timestep if need be
-      ! when Cholesky factorisation is compromised
+      ! when Cholesky factorisation is compromised (using minimum possible
+      ! value of friction factor to give largest timestep)
 
       Select Case (ttm%gvar)
       Case (0, 1)
-        chi = Max(thermo%chi_ep, thermo%chi_ep + thermo%chi_es)
+        chi = Min(thermo%chi_ep, thermo%chi_ep + thermo%chi_es)
       Case (2)
         Call eltemp_max(eltempmax, ttm, comm)
-        chi = Gep(eltempmax, ttm)
-        chi = Max(chi, chi + thermo%chi_es)
+        Call eltemp_min(eltempmin, ttm, comm)
+        chi = Gep(eltempmin, ttm)
+        chi = Min(chi, Gep(eltempmax, ttm))
+        chi = Min(chi, chi + thermo%chi_es)
       End Select
       t0 = Exp(-chi * tstep)
       t1 = (1.0_wp - t0) / (chi)
@@ -1409,9 +1414,9 @@ Contains
             If (config%weight(i) > 1.0e-6_wp) Then
               ! check for active config%cell and electronic temperature is
               ! higher than ionic tmeperature: if not, switch off thermostat
-              ia = Floor((config%parts(i)%xxx + ttm%zerocell(1)) / ttm%delx) + 1
-              ja = Floor((config%parts(i)%yyy + ttm%zerocell(2)) / ttm%dely) + 1
-              ka = Floor((config%parts(i)%zzz + ttm%zerocell(3)) / ttm%delz) + 1
+              ia = Floor(xxt(i)*ttm%grcell(1)+yyt(i)*ttm%grcell(4)+zzt(i)*ttm%grcell(7)+ttm%zerocell(1)) + 1
+              ja = Floor(xxt(i)*ttm%grcell(2)+yyt(i)*ttm%grcell(5)+zzt(i)*ttm%grcell(8)+ttm%zerocell(2)) + 1
+              ka = Floor(xxt(i)*ttm%grcell(3)+yyt(i)*ttm%grcell(6)+zzt(i)*ttm%grcell(9)+ttm%zerocell(3)) + 1
               ijk = 1 + ia + (ttm%ntcell(1) + 2) * (ja + (ttm%ntcell(2) + 2) * ka)
               If (ttm%act_ele_cell(ijk, 0, 0, 0) > zero_plus .and. ttm%eltemp(ijk, 0, 0, 0) > ttm%tempion(ijk)) Then
                 Select Case (ttm%gvar)
@@ -1477,9 +1482,9 @@ Contains
             lvel = (velsq > thermo%vel_es2 .and. thermo%chi_es > zero_plus)
             If (config%weight(i) > 1.0e-6_wp) Then
               ! check for active config%cell: if not, switch off thermostat
-              ia = Floor((config%parts(i)%xxx + ttm%zerocell(1)) / ttm%delx) + 1
-              ja = Floor((config%parts(i)%yyy + ttm%zerocell(2)) / ttm%dely) + 1
-              ka = Floor((config%parts(i)%zzz + ttm%zerocell(3)) / ttm%delz) + 1
+              ia = Floor(xxt(i)*ttm%grcell(1)+yyt(i)*ttm%grcell(4)+zzt(i)*ttm%grcell(7)+ttm%zerocell(1)) + 1
+              ja = Floor(xxt(i)*ttm%grcell(2)+yyt(i)*ttm%grcell(5)+zzt(i)*ttm%grcell(8)+ttm%zerocell(2)) + 1
+              ka = Floor(xxt(i)*ttm%grcell(3)+yyt(i)*ttm%grcell(6)+zzt(i)*ttm%grcell(9)+ttm%zerocell(3)) + 1
               ijk = 1 + ia + (ttm%ntcell(1) + 2) * (ja + (ttm%ntcell(2) + 2) * ka)
               If (ttm%act_ele_cell(ijk, 0, 0, 0) > zero_plus) Then
                 Select Case (ttm%gvar)

@@ -2380,7 +2380,7 @@
     </testcase>
     <testcase name="TEST29">
       <path archive="Yes">TEST29</path>
-      <description>TEST 29 -  ttm 1</description>
+      <description>TEST 29 -  Iron with tabulated EAM (metal) Potential (54,000 atoms), Two-Temperature Model, Cascade</description>
       <eng_tot iteration="0">-3.858045E+05</eng_tot>
         <temp_tot iteration="0">3.009300E+02</temp_tot>
         <eng_cfg iteration="0">-3.879050E+05</eng_cfg>
@@ -2492,7 +2492,7 @@
     </testcase>
     <testcase name="TEST30">
       <path archive="Yes">TEST30</path>
-      <description>TEST 30 -   ttm 2</description>
+      <description>TEST 30 -   Silicon with original Tersoff (T3) Potential (200,000 atoms), Two-Temperature Model, Swift heavy ion irradiation</description>
         <eng_tot iteration="0">-9.103196E+05</eng_tot>
         <temp_tot iteration="0">3.000000E+02</temp_tot>
         <eng_cfg iteration="0">-9.180752E+05</eng_cfg>
@@ -2577,7 +2577,7 @@
     </testcase>
     <testcase name="TEST31">
       <path archive="Yes">TEST31</path>
-      <description>TEST 31 -  ttm 3</description>
+      <description>TEST 31 -  Tungsten with extended Finnis-Sinclair Potential (722,672 atoms), Two-Temperature Model, laser-induced relaxation of thin film</description>
         <eng_tot iteration="0">-6.372334E+06</eng_tot>
         <temp_tot iteration="0">2.998294E+02</temp_tot>
         <eng_cfg iteration="0">-6.400342E+06</eng_cfg>

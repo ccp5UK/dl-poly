@@ -425,19 +425,24 @@ Contains
                            mpoles, electro, domain, tmr, kim_data, cnfig, comm)
     End If
 
+    ! Configurational energy
+    stat%stpcfg = stat%engcpe + stat%engsrp + stat%engter + stat%engtbp + stat%engfbp + &
+                  stat%engshl + stat%engtet + stat%engbnd + stat%engang + stat%engdih + stat%enginv
+
     ! Apply external field
 
     If (ext_field%key /= FIELD_NULL) Then
       Call external_field_apply(flow%time, flow%equilibration, flow%equil_steps, flow%step, cshell, stat, rdf, &
                                 ext_field, rigid, domain, cnfig, comm)
+
+      ! Add external energy contribution
+      stat%stpcfg = stat%stpcfg + stat%engfld  
     End If
+
 
     ! Apply PLUMED driven dynamics
 
     If (plume%l_plumed) Then
-      stat%stpcfg = stat%engcpe + stat%engsrp + stat%engter + stat%engtbp + stat%engfbp + &
-                    stat%engshl + stat%engtet + stat%engfld + &
-                    stat%engbnd + stat%engang + stat%engdih + stat%enginv
       Call plumed_apply(cnfig, flow%run_steps, flow%step, stat, plume, comm)
     End If
     ! Apply pseudo thermostat - force cycle (0)
@@ -458,9 +463,6 @@ Contains
     ! Minimisation option and Relaxed shell model optimisation
 
     If (flow%simulation .and. (minim%minimise .or. cshell%keyshl == SHELL_RELAXED)) Then
-      stat%stpcfg = stat%engcpe + stat%engsrp + stat%engter + stat%engtbp + stat%engfbp + &
-                    stat%engshl + stat%engtet + stat%engfld + &
-                    stat%engbnd + stat%engang + stat%engdih + stat%enginv
 
       If (cshell%keyshl == SHELL_RELAXED) Then
         Call core_shell_relax(flow%strict, rdf%l_collect, &
@@ -1236,10 +1238,11 @@ Contains
 
   End Subroutine kinetic_options
 
-  Subroutine statistics_report(cnfig, cshell, cons, pmf, stat, msd_data, zdensity, &
+  Subroutine statistics_report(cnfig, ttm, cshell, cons, pmf, stat, msd_data, zdensity, &
                                sites, rdf, domain, flow, files, thermo, tmr, green, minim, comm)
 
     Type(configuration_type), Intent(InOut) :: cnfig
+    Type(ttm_type),           Intent(InOut) :: ttm
     Type(core_shell_type),    Intent(InOut) :: cshell
     Type(constraints_type),   Intent(InOut) :: cons
     Type(pmf_type),           Intent(InOut) :: pmf
@@ -1305,6 +1308,9 @@ Contains
           'cpu  (s)', 'volume', 'temp_shl', 'eng_shl', 'vir_shl', 'alpha', 'beta', 'gamma', 'vir_pmf', 'press'
         Write (messages(5), '(a)') Repeat('-', 130)
         Call info(messages, 5, .true.)
+      Else If (ttm%l_ttm) Then
+        Write (messages(1), '(a)') Repeat('-', 130)
+        Call info(messages, 1, .true.)
       End If
 
       Write (messages(1), '(i13,1p,9e12.4)') flow%step, stat%stpval(1:9)
@@ -1681,7 +1687,7 @@ Contains
         Call init_coord_list(cnfig, neigh, crd, sites, flow, comm)
         Call checkcoord(cnfig, crd, sites, flow, stat, comm)
         Call adf_calculate(cnfig, sites, flow, crd, adf, comm)
-        Call statistics_report(cnfig, cshell, cons, pmf, stat, msd_data, zdensity, &
+        Call statistics_report(cnfig, ttm, cshell, cons, pmf, stat, msd_data, zdensity, &
                                sites, rdf, domain, flow, files, thermo, tmr, green, minim, comm)
       End If
 
@@ -1712,7 +1718,7 @@ Contains
 
         ! Calculate physical quantities, collect statistics and report regularly
 
-        Call statistics_report(cnfig, cshell, cons, pmf, stat, msd_data, zdensity, &
+        Call statistics_report(cnfig, ttm, cshell, cons, pmf, stat, msd_data, zdensity, &
                                sites, rdf, domain, flow, files, thermo, tmr, green, minim, comm)
 
         ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
