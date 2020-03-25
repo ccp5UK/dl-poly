@@ -130,8 +130,8 @@ Contains
     qstep = 0.5_wp * hstep
     rstep = 1.0_wp / tstep
 
-    If (thermo%newjob) Then
-      thermo%newjob = .false.
+    If (thermo%newjob_0) Then
+      thermo%newjob_0 = .false.
 
       ! store initial values of volume, long range corrections and density
 
@@ -510,7 +510,7 @@ Contains
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
+    ! amended   - i.t.todorov november 2019 (RBs unsafe haloing)
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -592,8 +592,8 @@ Contains
     qstep = 0.5_wp * hstep
     rstep = 1.0_wp / tstep
 
-    If (thermo%newjob) Then
-      thermo%newjob = .false.
+    If (thermo%newjob_1) Then
+      thermo%newjob_1 = .false.
 
       ! store initial values of volume, long range corrections and density
 
@@ -627,7 +627,7 @@ Contains
 
       ! thermo%unsafe positioning due to possibly locally shared RBs
 
-      thermo%unsafe = (Any(domain%map == comm%idnode))
+      thermo%unsafe = Any(domain%map_unique > 0)
 
       ! Langevin forces for particles are now generated in w_calculate_forces
       ! Generate Langevin pseudo-tensor force for barostat piston

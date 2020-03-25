@@ -44,7 +44,6 @@ Module development
   !> Type containing development module variables
   Type, Public :: development_type
     Private
-
     !> OUTPUT redirection to the default output (screen)
     Logical, Public       :: l_scr = .false.
     !> avoid global safety checks (no elegant parallel failures)
@@ -89,7 +88,7 @@ Module development
     Logical, Public :: run_app_tests = .false.
     Type(testing_type), Public :: app_test
  End Type development_type
- 
+
   Public :: scan_development
   Public :: build_info
 
@@ -246,13 +245,7 @@ Contains
     Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", " builder:", aux, "****"
     Call info(message, .true.)
 
-    If (mpi_ver == 0) Then
-      If (Len_trim(__COMPILER__//" v"//__VERSION__//" (serial build)") > 47) Then
-        Write (aux, '(a47)') __COMPILER__//" v"//__VERSION__//" (serial build)"
-      Else
-        Write (aux, *) __COMPILER__//" v"//__VERSION__//" (serial build)"
-      End If
-    Else If (mpi_ver > 0) Then
+    If (mpi_ver > 0) Then
       If (Len_trim(__COMPILER__//" v"//__VERSION__) > 47) Then
         Write (aux, '(a47)') __COMPILER__//" v"//__VERSION__
       Else
