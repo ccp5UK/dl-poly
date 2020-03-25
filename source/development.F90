@@ -291,32 +291,5 @@ Contains
     this%configuration = .true.
     this%dftb_library = .true.
   End Subroutine set_all_tests_true
-
-  
-!!$  Subroutine set_tests(this,string) 
-!!$    Class(testing_type), Intent(InOut) :: this
-!!$    Character(len=*),    Intent(In   ) :: string
-!!$    !> Position in ASCII table 
-!!$    Integer, Parameter :: equals_sign = 61
-!!$
-!!$    write(*,*) 'Found equals', Index(string, Achar(equals_sign))
-!!$    
-!!$    If(Index(string, 'all') > 0) Then
-!!$       Call this%all
-!!$ 
-!!$    Elseif(Index(string, Achar(equals_sign)) > 0) Then
-!!$       If(Index(string, 'configuration') > 0) Then
-!!$          this%configuration = .true.
-!!$       Endif
-!!$       If(Index(string, 'dftb_library') > 0) Then
-!!$          this%dftb_library = .true.
-!!$       Endif
-!!$
-!!$    Else
-!!$       Call error(0, message='Command for unit or app test is erroneous', &
-!!$             master_only=.true.)
-!!$    Endif
-!!$  End Subroutine set_tests
-  
   
 End Module development
