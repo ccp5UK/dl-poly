@@ -1,0 +1,22 @@
+title dmimcl rigid
+units atomic
+temperature 400 K
+pressure 1 atm
+cutoff               9 Ang
+cutoff_vdw           8 Ang
+ewald_precision      1.0E-06 eV
+quaternion_tolerance  1.0E-05
+timestep     2 fs
+timestep_variable ON
+ensemble_contrain npt
+ensemble_integrator berendsen
+ensemble_temperature_coupling 0.1
+ensemble_stress_coupling 2.0
+steps 20
+equilibration   20 ps
+restart_noscale ON
+scale   10
+print_frequency 10 ps
+stats_calculate 10 ps
+job_time 1 hr
+close_time 20 s

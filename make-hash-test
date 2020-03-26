@@ -1,0 +1,3 @@
+#!/bin/sh
+
+mpif90 -o test-hash source/kinds.F90 source/comms.F90 source/errors_warnings.F90 source/hash.F90 test_hash.f90
