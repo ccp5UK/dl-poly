@@ -1,8 +1,8 @@
 Module hash
 
-  use errors_warnings, only : error, error_alloc, error_dealloc
+  Use errors_warnings, only : error, error_alloc, error_dealloc
 
-  Integer, Parameter :: STR_LEN = 40
+  Integer, Parameter :: STR_LEN = 256
   Character(Len=*), Parameter :: BAD_VAL = "VAL_NOT_IN_KEYS"
 
   Type, Public :: control_parameter
@@ -17,59 +17,64 @@ Module hash
 
     Private
     Type(control_parameter), dimension(:), allocatable :: table_data
-    Character(Len=STR_LEN), dimension(:) :: keys
+    Character(Len=STR_LEN), dimension(:), allocatable :: key_names
     Integer :: used_keys = -1
     Integer :: size = -1
 
   Contains
 
     Private
-    Procedure, Public :: init => allocate_hash_table
-    Procedure, Public :: set => set_hash_value
-    Procedure, Public :: get => get_hash_value
-    Procedure, Public :: hash => hash_value
+    Procedure, Public, Pass :: init => allocate_hash_table
+    Procedure, Public, Pass :: set => set_hash_value
+    Procedure, Public, Pass :: get => get_hash_value
+    Procedure, Public, Pass :: hash => hash_value
+    Procedure, Public, Pass :: keys => print_keys
+    Procedure, Public, Pass :: vals => print_vals
+    Procedure, Public, Pass :: keyvals => print_keyvals
     Final :: cleanup
 
   End Type parameters_hash_table
 
-  Subroutine cleanup(self)
-    Type(parameters_hash_table), Intent( InOut ) :: self
+Contains
+
+  Subroutine cleanup(table)
+    Type(parameters_hash_table), Intent( InOut ) :: table
     Integer :: ierr
 
-    deallocate(self%table_data, stat=ierr)
+    deallocate(table%table_data, stat=ierr)
     If (ierr /= 0) call error_dealloc("hash%table_data", "cleanup hash table")
-    deallocate(self%keys, stat=ierr)
-    If (ierr /= 0) call error_dealloc("hash%keys", "cleanup hash table")
-    self%size = -1
-    self%used_keys = -1
+    deallocate(table%key_names, stat=ierr)
+    If (ierr /= 0) call error_dealloc("hash%key_names", "cleanup hash table")
+    table%size = -1
+    table%used_keys = -1
 
   End Subroutine cleanup
 
-  Subroutine allocate_hash_table(self, size)
-    Type(parameters_hash_table), Intent( InOut ) :: self
+  Subroutine allocate_hash_table(table, size)
+    Class(parameters_hash_table), Intent( InOut ) :: table
     Integer, Intent( In    ) :: size
     Integer :: ierr
 
-    self%size = size
-    self%used_keys = 0
-    Allocate(self%table_data(size), stat=ierr)
+    table%size = size
+    table%used_keys = 0
+    Allocate(table%table_data(size), stat=ierr)
     If (ierr /= 0) call error_alloc("hash%table_data", "allocate_hash_table")
-    Allocate(self%keys(size), stat=ierr)
-    If (ierr /= 0) call error_alloc("hash%keys", "allocate_hash_table")
+    Allocate(table%key_names(size), stat=ierr)
+    If (ierr /= 0) call error_alloc("hash%key_names", "allocate_hash_table")
 
     do i = 1, size
-      self%table_data(i) = control_parameter(BAD_VAL, "0", "None")
+      table%table_data(i) = control_parameter(BAD_VAL, "0", "None")
     end do
 
   End Subroutine allocate_hash_table
 
   Function hash_value(table, input) result(output)
-    Type(parameters_hash_table) :: table
+    Class(parameters_hash_table) :: table
     Character(Len=*), Intent( In    ) :: input
     Integer :: output
 
-    if (input == BAD_VAL) call error("Cannot hash value: "//BAD_VAL, 0)
-
+    if (input == BAD_VAL) call error(0, "Cannot hash value: "//BAD_VAL)
+    output = 0
     do i = 1, len_trim(input)
       output = output + ichar(input(i:i))
     end do
@@ -78,7 +83,7 @@ Module hash
   End Function hash_value
 
   Function get_hash_value(table, input) result(output)
-    Type(parameters_hash_table), Intent( In     ) :: table
+    Class(parameters_hash_table), Intent( In     ) :: table
     Character(Len=*), Intent( In    ) :: input
     Integer :: location
     Type(control_parameter) :: output
@@ -87,7 +92,7 @@ Module hash
 
     output = table%table_data(location)
     ! Handle open addressing
-    do while output%name /= input
+    do while (output%name /= input)
       if (output%name == BAD_VAL) then
         exit
       end if
@@ -97,12 +102,57 @@ Module hash
 
   End Function get_hash_value
 
-  Subroutine set_hash_value(table, key, value)
-    Type(parameters_hash_table), Intent( InOut ) :: table
+  Subroutine set_hash_value(table, key, input)
+    Class(parameters_hash_table), Intent( InOut ) :: table
     Character(Len=*), Intent( In    ) :: key
-    Type(control_parameter), Intent( In    ) :: value
+    Type(control_parameter), Intent( In    ) :: input
+    Type(control_parameter) :: output
+
+    location = table%hash(key)
+
+    output = table%table_data(location)
+    ! Handle open addressing
+    do while (output%name /= BAD_VAL)
+      location = mod(location + 1, table%size)
+      output = table%table_data(location)
+    end do
+
+    table%table_data(location) = input
+    table%used_keys = table%used_keys + 1
+    table%key_names(table%used_keys) = key
 
   End Subroutine set_hash_value
+
+  Subroutine print_keys(table)
+    Class(parameters_hash_table), Intent( In    ) :: table
+
+    do i = 1, table%used_keys
+       print*, table%key_names(i)
+    end do
+
+  End Subroutine print_keys
+
+  Subroutine print_vals(table)
+    Class(parameters_hash_table), Intent( In    ) :: table
+    Type(control_parameter) :: val
+
+    do i = 1, table%used_keys
+       val = table%get(table%key_names(i))
+       print*, val%val, val%unit
+    end do
+
+  End Subroutine print_vals
+
+  Subroutine print_keyvals(table)
+    Class(parameters_hash_table), Intent( In    ) :: table
+    Type(control_parameter) :: val
+
+    do i = 1, table%used_keys
+       val = table%get(table%key_names(i))
+       print('(A,1X,A,1X,A)'), trim(val%name), trim(val%val), trim(val%unit)
+    end do
+
+  End Subroutine print_keyvals
 
 
 End Module hash
