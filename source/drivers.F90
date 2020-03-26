@@ -425,7 +425,7 @@ Contains
                                 ext_field, rigid, domain, cnfig, comm)
 
       ! Add external energy contribution
-      stat%stpcfg = stat%stpcfg + stat%engfld  
+      stat%stpcfg = stat%stpcfg + stat%engfld
     End If
 
 
@@ -1566,7 +1566,7 @@ Contains
       Call calculate_forces(cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &
                             inversion, tether, threebody, neigh, sites, vdws, tersoffs, fourbody, rdf, netcdf, &
                             minim, mpoles, ext_field, rigid, electro, domain, kim_data, msd_data, tmr, files, green, &
-                            devel, ewld, met, seed, thermo, crd, adf, comm)
+                            devel, ewld, met, seed, thermo, crd, comm)
 
       ! If system has written per-particle data
       If (stat%collect_pp .and. flow%step - flow%equil_steps >= 0) Then
