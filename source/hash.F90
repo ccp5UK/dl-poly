@@ -1,12 +1,21 @@
 Module hash
 
+  !!-----------------------------------------------------------------------
+  !!
+  !! Module containing hash table routines for reading control input
+  !! Hash table is a fixed-size hash table with open addressing
+  !!
+  !! copyright - daresbury laboratory
+  !! author    - j.wilkins march 2020
+  !!-----------------------------------------------------------------------
+
   Use errors_warnings, only : error, error_alloc, error_dealloc
 
   Integer, Parameter :: STR_LEN = 256
   Character(Len=*), Parameter :: BAD_VAL = "VAL_NOT_IN_KEYS"
 
   Type, Public :: control_parameter
-
+     !! Type containing breakdown of control parameter
     Character(Len=STR_LEN) :: name
     Character(Len=STR_LEN) :: val
     Character(Len=STR_LEN) :: unit
@@ -14,7 +23,7 @@ Module hash
   End Type control_parameter
 
   Type, Public :: parameters_hash_table
-
+     !! Type containing hash table of parameters
     Private
     Type(control_parameter), dimension(:), allocatable :: table_data
     Character(Len=STR_LEN), dimension(:), allocatable :: key_names
@@ -38,6 +47,13 @@ Module hash
 Contains
 
   Subroutine cleanup(table)
+    !!-----------------------------------------------------------------------
+    !!
+    !! dl_poly_4 subroutine for deallocation of hash table
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins march 2020
+    !!-----------------------------------------------------------------------
     Type(parameters_hash_table), Intent( InOut ) :: table
     Integer :: ierr
 
@@ -51,8 +67,19 @@ Contains
   End Subroutine cleanup
 
   Subroutine allocate_hash_table(table, size)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Subroutine for allocation and initialisation of hash table
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins march 2020
+    !!-----------------------------------------------------------------------
+
     Class(parameters_hash_table), Intent( InOut ) :: table
+
+    !> Number of buckets to allocate
     Integer, Intent( In    ) :: size
+
     Integer :: ierr
 
     table%size = size
@@ -69,6 +96,13 @@ Contains
   End Subroutine allocate_hash_table
 
   Function hash_value(table, input) result(output)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Function to hash string using simple sum(ord(input))%max_hash
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins march 2020
+    !!-----------------------------------------------------------------------
     Class(parameters_hash_table) :: table
     Character(Len=*), Intent( In    ) :: input
     Integer :: output
@@ -83,6 +117,13 @@ Contains
   End Function hash_value
 
   Function get_hash_value(table, input) result(output)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Retrieve stored value from hash table
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins march 2020
+    !!-----------------------------------------------------------------------
     Class(parameters_hash_table), Intent( In     ) :: table
     Character(Len=*), Intent( In    ) :: input
     Integer :: location
@@ -103,6 +144,13 @@ Contains
   End Function get_hash_value
 
   Subroutine set_hash_value(table, key, input)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Set table at key to input
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins march 2020
+    !!-----------------------------------------------------------------------
     Class(parameters_hash_table), Intent( InOut ) :: table
     Character(Len=*), Intent( In    ) :: key
     Type(control_parameter), Intent( In    ) :: input
@@ -124,6 +172,13 @@ Contains
   End Subroutine set_hash_value
 
   Subroutine print_keys(table)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Print all keys in table
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins march 2020
+    !!-----------------------------------------------------------------------
     Class(parameters_hash_table), Intent( In    ) :: table
 
     do i = 1, table%used_keys
@@ -133,6 +188,13 @@ Contains
   End Subroutine print_keys
 
   Subroutine print_vals(table)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Print all values in table
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins march 2020
+    !!-----------------------------------------------------------------------
     Class(parameters_hash_table), Intent( In    ) :: table
     Type(control_parameter) :: val
 
@@ -144,6 +206,13 @@ Contains
   End Subroutine print_vals
 
   Subroutine print_keyvals(table)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Print keys and values in table
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins march 2020
+    !!-----------------------------------------------------------------------
     Class(parameters_hash_table), Intent( In    ) :: table
     Type(control_parameter) :: val
 
