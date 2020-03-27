@@ -29,6 +29,8 @@ Module hash
     Character(Len=STR_LEN), dimension(:), allocatable :: key_names
     Integer :: used_keys = -1
     Integer :: size = -1
+    !> Values in hash table can be overwritten: Default = False
+    Logical :: can_overwrite = .false.
 
   Contains
 
@@ -66,7 +68,7 @@ Contains
 
   End Subroutine cleanup
 
-  Subroutine allocate_hash_table(table, size)
+  Subroutine allocate_hash_table(table, size, can_overwrite)
     !!-----------------------------------------------------------------------
     !!
     !! Subroutine for allocation and initialisation of hash table
@@ -79,8 +81,13 @@ Contains
 
     !> Number of buckets to allocate
     Integer, Intent( In    ) :: size
+    Logical, Optional :: can_overwrite
 
     Integer :: ierr
+
+    if (present(can_overwrite)) then
+       table%can_overwrite = can_overwrite
+    end if
 
     table%size = size
     table%used_keys = 0
@@ -159,8 +166,14 @@ Contains
     location = table%hash(key)
 
     output = table%table_data(location)
+    if (.not. table%can_overwrite .and. trim(output%name) == trim(key)) &
+       call error(0, 'Cannot overwrite key '//trim(key)//' in hash table')
+
     ! Handle open addressing
     do while (output%name /= BAD_VAL)
+       if (.not. table%can_overwrite .and. trim(output%name) == trim(key)) &
+          call error(0, 'Cannot overwrite key '//trim(key)//' in hash table')
+
       location = mod(location + 1, table%size)
       output = table%table_data(location)
     end do
@@ -182,7 +195,7 @@ Contains
     Class(parameters_hash_table), Intent( In    ) :: table
 
     do i = 1, table%used_keys
-       print*, table%key_names(i)
+       print('(A)'), table%key_names(i)
     end do
 
   End Subroutine print_keys
@@ -200,7 +213,7 @@ Contains
 
     do i = 1, table%used_keys
        val = table%get(table%key_names(i))
-       print*, val%val, val%unit
+       print('(2(A,1X))'), val%val, val%unit
     end do
 
   End Subroutine print_vals
@@ -218,7 +231,7 @@ Contains
 
     do i = 1, table%used_keys
        val = table%get(table%key_names(i))
-       print('(A,1X,A,1X,A)'), trim(val%name), trim(val%val), trim(val%unit)
+       print('(3(A,1X))'), trim(val%name), trim(val%val), trim(val%unit)
     end do
 
   End Subroutine print_keyvals
