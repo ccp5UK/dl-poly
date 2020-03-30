@@ -37,6 +37,8 @@ Module hash
      Procedure, Public, Pass :: init => allocate_hash_table
      Procedure, Public, Pass :: set => set_hash_value
      Procedure, Public, Pass :: get => get_hash_value
+     Procedure, Public, Pass :: get_val => get_param_val
+     Procedure, Public, Pass :: get_unit => get_param_unit
      Procedure, Public, Pass :: hash => hash_value
      Procedure, Public, Pass :: keys => print_keys
      Procedure, Public, Pass :: vals => print_vals
@@ -136,7 +138,7 @@ Contains
 
   End Function hash_value
 
-  Function get_hash_value(table, input) result(output)
+  Function get_hash_value(table, input, default) result(output)
     !!-----------------------------------------------------------------------
     !!
     !! Retrieve stored value from hash table
@@ -147,6 +149,7 @@ Contains
     Class(parameters_hash_table), Intent( In     ) :: table
     Character(Len=*), Intent( In    ) :: input
     Integer :: location
+    Type(control_parameter), Intent( In     ) :: default
     Type(control_parameter) :: output
 
     if (.not. table%allocated) call error(0, 'Attempting to get from unallocated table')
@@ -163,7 +166,89 @@ Contains
        output = table%table_data(location)
     end do
 
+    if (present(default) .and. output%key == BAD_VAL) then
+       output = default
+    end if
+
   End Function get_hash_value
+
+  Function get_param_val(table, key, default) result(output)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Get the parameter value of the key
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins march 2020
+    !!-----------------------------------------------------------------------
+    Class(parameters_hash_table), Intent( In     ) :: table
+    Character(Len=*), Intent( In    ) :: input
+    Integer :: location
+    Type(control_parameter) :: param
+    Character(Len=MAX_LEN), Intent( In     ) :: default
+    Character(Len=MAX_LEN) :: output
+
+    if (.not. table%allocated) call error(0, 'Attempting to get from unallocated table')
+
+    location = table%hash(input)
+
+    param = table%table_data(location)
+    ! Handle open addressing
+    do while (param%key /= input)
+       if (param%key == BAD_VAL) then
+          exit
+       end if
+       location = mod(location + 1, table%size)
+       param = table%table_data(location)
+    end do
+
+    if (present(default) .and. param%key == BAD_VAL) then
+       output = default
+    else if (param%key == BAD_VAL) then
+       call error(0, 'Key '//input//' not found in hash')
+    else
+       output = param%val
+    end if
+
+  end Function get_param_val
+
+  Function get_param_unit(table, key, default) result(output)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Get the parameter value of the key
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins march 2020
+    !!-----------------------------------------------------------------------
+    Class(parameters_hash_table), Intent( In     ) :: table
+    Character(Len=*), Intent( In    ) :: input
+    Integer :: location
+    Type(control_parameter) :: param
+    Character(Len=MAX_LEN), Intent( In     ) :: default
+    Character(Len=MAX_LEN) :: output
+
+    if (.not. table%allocated) call error(0, 'Attempting to get from unallocated table')
+
+    location = table%hash(input)
+
+    param = table%table_data(location)
+    ! Handle open addressing
+    do while (param%key /= input)
+       if (param%key == BAD_VAL) then
+          exit
+       end if
+       location = mod(location + 1, table%size)
+       param = table%table_data(location)
+    end do
+
+    if (present(default) .and. param%key == BAD_VAL) then
+       output = default
+    else if (param%key == BAD_VAL) then
+       call error(0, 'Key '//input//' not found in hash')
+    else
+       output = param%unit
+    end if
+
+  end Function get_param_unit
 
   Subroutine set_hash_value(table, key, input)
     !!-----------------------------------------------------------------------
@@ -339,6 +424,17 @@ Contains
     end if
 
   End Subroutine expand_table
+
+  Function print_control_param(param) Result(outstring)
+    Type(control_parameter), Intent( In    ) :: param
+    Character(Len=:), Allocatable :: outstring
+    Integer :: total_len
+
+    total_len = len_trim(param%key) + len_trim(param%val) + len_trim(param%units) + 3
+    allocate(outstring(total_len))
+    write(outstring, '(3(A,X))') trim(param%key), trim(param%val), trim(param%units)
+
+  end Function print_control_param
 
 
 End Module hash

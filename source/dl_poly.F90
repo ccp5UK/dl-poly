@@ -158,6 +158,7 @@ Program dl_poly
   ! Local Variables
   Character(len=1024) :: control_filename = '', arg
   Character(len=1024) :: output_filename = ''
+  Logical             :: new_control
   Logical             :: finish
   Integer             :: i
 
@@ -169,6 +170,7 @@ Program dl_poly
   !Call init_error_system(nrite,dlp_world(0))
   Call gsync(dlp_world(0))
 
+  new_control = .false.
   finish = .false.
   If (dlp_world(0)%idnode == 0) Then
     If (command_argument_count() > 0) Then
@@ -190,6 +192,8 @@ Program dl_poly
         Case ('-o')
           i = i + 1
           Call get_command_argument(i, output_filename)
+       Case ('-n')
+          new_control = .true.
         Case default
           Write (eu, *) "No idea what you want, try -h "
           finish = .true.
@@ -221,7 +225,7 @@ Program dl_poly
                             green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, inversion, tether, &
                             threebody, zdensity, cons, neigh, pmfs, sites, core_shells, vdws, tersoffs, fourbody, &
                             rdf, netcdf, minim, mpoles, ext_field, rigid, electro, domain, flow, seed, traj, &
-                            kim_data, config, ios, ttms, rsdsc, files, output_filename, control_filename, crd, adf)
+                            kim_data, config, ios, ttms, rsdsc, files, output_filename, control_filename, crd, adf, new_control)
   Else If (flow(1)%simulation_method == FFS) Then
      write(0,*) "simulation type: FFS"
   Else

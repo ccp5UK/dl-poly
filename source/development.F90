@@ -69,6 +69,10 @@ Module development
     Logical, Public       :: l_tor = .false.
     !> check on minimum separation distance between VNL pairs at re/start
     Logical, Public       :: l_dis = .false.
+
+    !> See whether the new control file format should be used
+    Logical, Public        :: new_control = .false.
+
     !> CFGORG levcfg
     Integer, Public       :: lvcforg = -1
     !> reorigin vector

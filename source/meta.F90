@@ -201,6 +201,8 @@ Contains
 
     Type(comms_type) :: comm
 
+    Logical, Intent(In) :: new_control
+
     ! Allocate type arrays
     Call allocate_types_uniform(flow(1)%NUM_FF, thermo, ewld,tmr, devel, stats, &
                                 green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, inversion, &
