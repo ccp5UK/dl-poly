@@ -923,7 +923,7 @@ Contains
 
   End Subroutine tersoff_forces
 
-  Subroutine tersoff_generate(tersoffs)
+  Subroutine tersoff_generate(ntype_atom, tersoffs)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -941,12 +941,14 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    ! amended   - i.t.todorov march 2020 - fixing tersoff type selection
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Integer(Kind=wi),   Intent(In   ) :: ntype_atom
     Type(tersoff_type), Intent(InOut) :: tersoffs
 
-    Integer       :: i, ipt, jpt, katom1, katom2, kpt
+    Integer       :: i, katom1, katom2, ipt, jpt, kpt, iter, jter
     Real(Kind=wp) :: arg, att, baij, bbij, dlrpot, rep, rij, rrr, saij, sbij, sij
 
     ! define grid resolution for potential arrays
@@ -955,14 +957,16 @@ Contains
 
     ! construct arrays for all types of tersoff potential
 
-    Do katom1 = 1, tersoffs%n_potential
+    Do katom1 = 1, ntype_atom
       Do katom2 = 1, katom1
+        ipt = tersoffs%list(katom1)
+        jpt = tersoffs%list(katom2)
 
-        If (tersoffs%ltp(katom1) * tersoffs%ltp(katom2) /= 0) Then
-
-          ipt = tersoffs%list(katom1)
-          jpt = tersoffs%list(katom2)
+        If (ipt * jpt /= 0) Then
           kpt = (Max(ipt, jpt) * (Max(ipt, jpt) - 1)) / 2 + Min(ipt, jpt)
+
+          iter=tersoffs%ltp(jpt)
+          jter=tersoffs%ltp(jpt)
 
           ! define tersoff parameters
 
@@ -970,8 +974,8 @@ Contains
           saij = 0.5_wp * (tersoffs%param(2, ipt) + tersoffs%param(2, jpt))
           bbij = Sqrt(tersoffs%param(3, ipt) * tersoffs%param(3, jpt))
           sbij = 0.5_wp * (tersoffs%param(4, ipt) + tersoffs%param(4, jpt))
-          rij = Sqrt(tersoffs%param(5, ipt) * tersoffs%param(5, jpt))
-          sij = Sqrt(tersoffs%param(6, ipt) * tersoffs%param(6, jpt))
+          rij =  Sqrt(tersoffs%param(5, ipt) * tersoffs%param(5, jpt))
+          sij =  Sqrt(tersoffs%param(6, ipt) * tersoffs%param(6, jpt))
 
           ! store potential cutoff
 
@@ -989,12 +993,12 @@ Contains
               If (rrr <= sij) Then
                 arg = pi * (rrr - rij) / (sij - rij)
 
-                If (tersoffs%ltp(katom1) * tersoffs%ltp(katom2) == 1) Then
+                If (iter * jter == 1) Then
 
                   tersoffs%vmbp(i, kpt, 1) = 0.5_wp * (1.0_wp + Cos(arg))
                   tersoffs%gmbp(i, kpt, 1) = 0.5_wp * pi * rrr * Sin(arg) / (sij - rij)
 
-                Else If (tersoffs%ltp(katom1) * tersoffs%ltp(katom2) == 4) Then
+                Else If (iter * jter == 4) Then
 
                   ! Murty's correction to screening function (tersoffs%vmbp)
                   ! M.V.R. Murty, H.A. Atwater, Phys. Rev. B 51 (1995) 4889-4993
@@ -1026,9 +1030,7 @@ Contains
             tersoffs%vmbp(i, kpt, 3) = att * tersoffs%vmbp(i, kpt, 1)
             tersoffs%gmbp(i, kpt, 3) = att * (tersoffs%gmbp(i, kpt, 1) + sbij * rrr * tersoffs%vmbp(i, kpt, 1))
           End Do
-
         End If
-
       End Do
     End Do
 
