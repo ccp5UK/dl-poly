@@ -23,6 +23,10 @@
 
 \newcommand{\UnderscoreCommands}{\do\index}
 
+\usepackage{multirow}
+\usepackage{longtable}
+\usepackage{dsfont}
+
 % Layout settings
 \usepackage[portrait]{geometry}
 \setlength{\hoffset}{-10mm} \setlength{\voffset}{-12mm}
@@ -408,6 +412,17 @@ This chapter describes the two-temperature model functionality available in \D.
 \newpage
 
 \input ttm.tex
+
+\chapter{Extenting DL\_POLY\_4 to reactive systems: the Empirical Valence Bond method}
+\label{evb}
+{\bf Author}: Dr. Ivan Scivetti\\
+\vskip 12ex
+\section*{Scope of Chapter}
+This chapter presents the theoretical fundamentals of the Empirical Valence Bond (EVB) method and its implementation into the DL\_POLY\_4 code. This new feature allows to perform molecular dynamics simulations of reactive processes via the use of standard (non-reactive) force-fields. 
+\setcounter{equation}{0}
+\newpage
+
+\input evb.tex
 
 \chapter{Construction and Execution}
 \label{conex}

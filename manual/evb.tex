@@ -1,0 +1,514 @@
+\section{Framework and motivation}
+A key component of DL\_POLY\_4 is the Force Field (FF) to model the interactions between atoms. As already described in previous chapters, such atomic interactions are often modelled by relatively simple functional forms with parameters either fitted to experimental data or derived from quantum mechanical calculations. In most of the classical FFs available, functional forms and fitted parameters remain unchanged during the course of the molecular dynamics (MD) simulation. Indeed, this is the type of FFs that DL\_POLY\_4 can handle. In reactive processes, however, the nature of the interactions inevitable changes due to the formation of new chemical species. For this reason, standard FFs (thence DL\_POLY\_4) are not suitable to simulate chemical reactions. We shall refer to such force fields as non-reactive.\\
+An alternative to simulate chemical reactions is offered by the so called Reactive FFs (herein RFFs) \cite{vanduin2001,farah2012,senftle2016,yun2017,islam2016,liang2013}. In contrast to standard FFs where interactions are modelled for a particular state with a given topology and chemistry, RFFs are designed to model the interatomic interactions valid for multiple states that are chemically different. The task of designing RFFs, however, is very challenging and requires a high level of expertise \cite{liang2013} to tackle a multi-dimensional problem, where the modelled interactions are often expressed by complicated functional forms with many strongly coupled parameters that are optimised via the use of sophisticated tools \cite{pahari2012,larsson2013,li2013,jaramillo2014,larentzos2015,rice2015,dittner2015}. Even though RFFs have evolved considerably in the last years \cite{farah2012,shin2012}, a general parametrization is not yet available and, instead, parameters have to be tuned to specific chemical systems and environments.\\
+Within this framework and to the purpose of extending the applicability of DL\_POLY\_4 to simulate reactive processes, the Empirical Valence Bond (EVB) method \cite{warshel1980,hartke2015,duarte2017} offers an appealing alternative for computational implementation and development. In contrast to facing the challenges of building RFFs, the EVB method defines a suitable matrix using computed quantities of the participating chemical states, where each state is modelled by a non-reactive FF. Via the definition of appropriate coupling terms and matrix diagonalization at each time step, it is possible to obtain potential energy landscapes that account for the change of chemistry when the system evolves between the participating states.\\
+The fundamentals of the EVB method developed over the years are presented in a convenient notation in the following sections. In section \ref{sec:evb-stress}, a novel method to compute the stress tensor is proposed, which extends the applicability of EVB to NPT ensembles for the first time. Computational implementation of the EVB method is described in depth in section \ref{sec:implement}. Finally, section \ref{sec:users} provides further information to users on how to prepare the settings for EVB simulations.   
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{The EVB method}\label{sec:evb}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+In this section we introduce the fundamentals of the EVB formalism in a convenient notation before presenting the extension of EVB to NPT ensembles in section \ref{sec:evb-stress}. Let us assume an atomic system composed of $N_{J}$ ions with positions described by the set  of vectors $\{\bf R\}$. The non-reactive force field (FF) for the chemical state $(m)$ is described by the configurational energy, here referred to as $E_{c}^{(m)}(\{\bf R\})$, and the set of corresponding ionic forces $\vec{F}_{J}^{(m)}(\{\bf R\})$, where the index $J$ runs over the total number of ions. From Eqn. (\ref{eq:decomp-ene}), the configurational energy function, $E_{c}^{(m)}(\{ {\bf R} \})$, is written as follows 
+\begin{eqnarray}\label{eq:ene-decomp}
+E_{c}^{(m)}(\{ {\bf R} \})&=& [ U^{(m)}_{shell}+U^{(m)}_{teth}+U^{(m)}_{bond}+U^{(m)}_{ang}+U^{(m)}_{dih}+ \nonumber \\
+                                   &+& U^{(m)}_{inv}+U^{(m)}_{3body}+U^{(m)}_{4body}+U^{(m)}_{ters}+ \nonumber \\
+                                   &+& U^{(m)}_{metal}+ U^{(m)}_{vdw}+ U^{(m)}_{coul}] (\{ {\bf R} \})
+\end{eqnarray}
+where $U^{(m)}_{shell}$, $U^{(m)}_{teth}$, $U^{(m)}_{bond}$, $U^{(m)}_{ang}$, $U^{(m)}_{dih}$, $U^{(m)}_{inv}$, $U^{(m)}_{3body}$, $U^{(m)}_{4body}$, $U^{(m)}_{ters}$, $U^{(m)}_{metal}$, $U^{(m)}_{vdw}$ and , $U^{(m)}_{coul}$ are the interactions representing ion-core-shell polarization, tethered particles, chemical bonds, valence angles, dihedrals, inversion angles, three-body, four-body, Tersoff, metallic, van der Waals and coulombic contributions, respectively. In this decomposition, we have ommited the presence of external fields $U_{ext}$ such as electric or magnetic. Following Eqn. (\ref{eq:ene-decomp}), the ionic forces can be expressed using an analogous decomposition. In the current notation, we shall use indexes $m$ and $k$ for the chemical states (and FFs), $I$ and $J$ for atoms and Greek letters for Cartesian coordinates. Indexes in parenthesis are used to emphasize the particular chemical state.\\
+Due to the nature of three-body, four-body, Tersoff and metallic, such interactions are not suitable to describe reactive sites but the interaction with the surrounding atomic environment.\\
+In the EVB method, the $N_F$ force fields are coupled through the Hamiltonian $\hat{H}_{\text{EVB}}$, whose matrix representation $H_{\text{EVB}} \in \mathcal{R}^{N_F \times N_F}$ has the following components
+\begin{equation}\label{eq:evbmatrix}
+H^{mk}_{\text{EVB}}(\{\bf{R}\})=\begin{cases} E_{c}^{(m)}(\{{\bf R}\})               \,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,  m=k   \\
+                                                                   C_{mk}(\epsilon_{mk})                     \,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,   m \ne k 
+                                              \end{cases}
+\end{equation}
+where each diagonal element corresponds to the configurational energy $E_{c}^{(m)}(\{ {\bf R} \})$ of the non-reactive FF that models the interactions as if the system was in the chemical state $(m)$, whereas the off-diagonal terms C$_{mk}$ are the couplings between states $m$ and $k$. For convenience in the notation, we shall omit the dependence on the set of ionic coordinates $\{{\bf R}\}$ hereinafter. Even though there are different possible choices for the coupling terms, in the above definition we have set each coupling term $C_{mk}$ to depend on $\epsilon_{mk}=E_{c}^{(m)}-E_{c}^{(k)}=-[E_{c}^{(k)}-E_{c}^{(m)}]=-\epsilon_{km}$, where $\epsilon_{mk}$ defines a general possible reaction coordinates for the system \cite{hartke2015,duarte2017,mones2009,warshel1991}. Since the $C_{mk}$ terms are real, the $H_{\text{EVB}}$ matrix is Hermitian only if $C_{mk}=C_{km}$, and this condition must be imposed for the off-diagonal elements. Diagonalization of $H_{\text{EVB}}$ leads to $N_F$ possible eigenvalues $\{\lambda_1,...,\lambda_{N_{F}}\}$ with
+\begin{equation}\label{eq:Heig}
+ H_{\text{EVB}}\Psi_{\lambda_m}=\lambda_m \Psi_{\lambda_m}, \,\,\,\,\,\,\,\,\, m=1,...,N_F.
+\end{equation}
+The EVB energy, $E_{\text{EVB}}$, is defined as the lowest eigenvalue
+\begin{equation}\label{eq:Eevb}
+ E_{\text{EVB}}=min(\lambda_1,...,\lambda_{N_F})
+\end{equation}
+with the corresponding normalised EVB eigenvector
+\begin{equation}\label{eq:Psi-evb-norm}
+ \Psi_{\text{EVB}}=\Psi_{min(\lambda_1,...,\lambda_{N_F})}.
+\end{equation}
+and
+\begin{equation}\label{eq:EevbPsi}
+ E_{\text{EVB}}=\big\langle \Psi_{\text{EVB}}\big|\hat{H}_{\text{EVB}}\big| \Psi_{\text{EVB}}\big \rangle.
+\end{equation}
+Since the eigenvector $\Psi_{\text{EVB}}$ is real and normalised we have
+\begin{equation}\label{eq:evbPsinorm}
+\sum_{k=1}^{N_F} \big|\Psi^{(k)}_{\text{EVB}}\big|^{2}=1
+\end{equation}
+from which we can interpret $|\Psi^{(k)}_{\text{EVB}}\big|^{2}$ as the fraction of the chemical state $(k)$ being part of the EVB state. The eigenvector $\Psi_{\text{EVB}}$ can also be represented as a column vector $\in \mathcal{R}^{N_F \times 1}$ where  $\Psi^{(k)}_{\text{EVB}}$ is the element of the $k$-row. Thus, Eqn. (\ref{eq:EevbPsi}) is expressed as a matrix multiplication
+\begin{equation}\label{eq:EevbPsimat}
+E_{\text{EVB}}=\sum_{m,k=1}^{N_F} \tilde{\Psi}^{(m)}_{\text{EVB}} H^{mk}_{\text{EVB}}\Psi^{(k)}_{\text{EVB}}
+\end{equation}
+where $\tilde{\Psi}_{\text{EVB}}$ is the transpose of ${\Psi}_{\text{EVB}}$. At this point it is interesting to investigate if $E_{\text{EVB}}$ can be decomposed in different contribution, simularly to Eqn. (\ref{eq:ene-decomp}). To this purpose we express the diagonal terms of $H^{mk}_{\text{EVB}}$ as a sum of the individual contributions 
+\begin{equation}\label{eq:evbmatrix-dec}
+H^{mk}_{\text{EVB}}=\begin{cases} \sum_{\text{\tiny{type}}} U_{\text{\tiny{type}}}^{(m)}              \,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,  m=k   \\
+                                                                     C_{mk}(\epsilon_{mk})                     \,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,   m \ne k 
+                                              \end{cases}
+\end{equation}
+where the index $\text{type}$ runs over all type of possible interactions (bonds, angles, coulombic, etc). In contrast, $C_{mk}(\epsilon_{mk})$ cannot be decomposed in terms of the individual contributions $U_{\text{\tiny{type}}}^{(m)}$. Consequently, matrix  $H_{\text{EVB}}$ cannot be decomposed for each type of interaction. One might consider the particular case of constant coupling terms $C_{mk}(\epsilon_{mk})=\mathcal{C}_{mk}$, $\forall m,k=1,\cdots, N_F$, with $m\ne k$ to check if a separation into individual terms is possible. For the sake of simplicity, let us consider the case of two FFs with $\mathcal{C}_{12}=\mathcal{C}_{21}$. Without loss of generality, we can write $\mathcal{C}_{12}$ as a sum of a set of constants 
+\begin{equation}\label{eq:const-dec}
+\mathcal{C}_{12}=\sum_{\text{\tiny{type}}} \mathcal{C}^{\text{\tiny{type}}}_{12}    
+\end{equation}
+and 
+\begin{equation}\label{eq:evbmatrix-dec-2x2}
+H_{\text{EVB}}=\sum_{\text{\tiny{type}}} H_{EVB}^{\text{\tiny{type}}},\,\,\,\, \text{with} \,\,\,\, H_{EVB}^{\text{\tiny{type}}}=\begin{pmatrix} U_{\text{\tiny{type}}}^{(1)}               & \mathcal{C}^{\text{\tiny{type}}}_{12} \\
+                                                                                                                                                                             \mathcal{C}^{\text{\tiny{type}}}_{12} &  U_{\text{\tiny{type}}}^{(2)}\end{pmatrix} 
+\end{equation}
+Using the computed EVB eigenvector, $\Psi_{\text{EVB}}$, from diagonalization of the $H_{\text{EVB}}$ matrix (Eqn. \ref{eq:EevbPsi}) we have
+\begin{eqnarray}\label{eq:evb_ene-dec-2x2}
+E_{\text{EVB}}&=&\sum_{\text{\tiny{type}}} E_{EVB}^{\text{\tiny{type}}}, \,\,\,\,\text{where}\nonumber\\ 
+E_{EVB}^{\text{\tiny{type}}}&=&\big\langle \Psi_{\text{EVB}}\big|\hat{H}_{EVB}^{\text{\tiny{type}}}\big| \Psi_{\text{EVB}}\big \rangle 
+\end{eqnarray}
+which, in principle, offers a possible way to decompose the EVB energy in terms of individual types of interactions. However, such a decomposition is not unequivocally defined, as there are infinite ways of writing the sum for $\mathcal{C}_{12}$ in Eqn. (\ref{eq:const-dec}). This demonstrates that an EVB energy decomposition in individual terms as in Eqn. (\ref{eq:ene-decomp}) is not well defined.  In fact, only $E_{\text{EVB}}$ is well defined. Within this framework and to the purpose of the implementation, we arbitrarely set each component of configurational EVB energy to zero.\\
+The resulting EVB force over the ion $J$,  $\vec{F}_{J}^{\text{EVB}}$, follows from the Hellman-Feynman theorem \cite{feynman1939}
+\begin{eqnarray}\label{eq:Fevb}
+&&\vec{F}_{J}^{\text{EVB}}=-\nabla_{\vec{R}_J}E_{\text{EVB}}=-\big\langle \Psi_{\text{EVB}}\big| \nabla_{\vec{R}_J} \hat{H}_{\text{EVB}} \big| \Psi_{\text{EVB}}\big \rangle \nonumber \\
+&&= \sum_{\alpha=x,yz} F_{J\alpha}^{\text{EVB}} \,\, \check{\alpha}
+\end{eqnarray}
+where $\check{\alpha}$ corresponds to each of the orthonormal cartesian vectors and 
+\begin{equation}\label{eq:Fevb2}
+F_{J\alpha}^{\text{EVB}}=-\big\langle \Psi_{\text{EVB}}\big| \frac{\partial \hat{H}_{\text{EVB}}}{\partial_{R_{J\alpha}}}\big| \Psi_{\text{EVB}}\big \rangle.
+\end{equation}
+From Eqn. (\ref{eq:evbmatrix}) the matrix components of the operator 
+$\frac{\partial \hat{H}_{\text{EVB}}}{\partial_{R_{J\alpha}}}$ are given as follows
+\begin{eqnarray}\label{eq:gradevb}
+\frac{\partial H^{mk}_{\text{EVB}}}{\partial R_{J\alpha}}
+=\begin{cases}
+  \frac{\partial E_{c}^{(m)}}{\partial R_{J\alpha}}=-F^{(m)}_{J\alpha} \,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,  m=k  \\
+\\
+\\
+  \frac{d C_{mk}}{\partial R_{J\alpha}}=\frac{d C_{mk}(\epsilon_{mk})}{d\epsilon_{mk}}\frac{\partial \epsilon_{mk}}{\partial R_{J\alpha}}\\
+\\
+                                                      =\frac{d C_{mk}(\epsilon_{mk})}{d\epsilon_{mk}} \left[\frac{\partial E_{c}^{(m)}}{\partial J\alpha}-\frac{\partial E_{c}^{(k)}}{\partial J\alpha}\right]\\
+\\
+                                                      =C^{\prime}_{mk}[F^{(k)}_{J\alpha}-F^{(m)}_{J\alpha}] \,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,        m \ne k
+\end{cases} 
+\end{eqnarray}
+where $C^{\prime}_{mk}=\frac{d C_{mk}(\epsilon_{mk})}{d\epsilon_{mk}}$ and  $F^{(k,m)}_{J\alpha}$ is the $\alpha$ component of the total configurational force over ion $J$ in the chemical state $(k,m)$. Similarly to Eqn. (\ref{eq:EevbPsimat}), Eqn. (\ref{eq:Fevb2}) can be expressed as a matrix multiplication
+\begin{equation}\label{eq:FevbPsimat}
+F_{J\alpha}^{\text{EVB}}=-\sum_{m,k=1}^{N_F} \tilde{\Psi}^{(m)}_{\text{EVB}} \left(\frac{\partial H^{mk}_{\text{EVB}}}{\partial R_{J\alpha}}\right) \Psi^{(k)}_{\text{EVB}}.
+\end{equation}	
+
+The above equations define the standard EVB force field (EVB-FF). Even though the EVB formalism was first developed to compute molecular systems, EVB is also applicable to extended systems, customarly modelled using the supercell approximation and periodic boundary conditions (PBCs). Nevertheless, MD simulations with the EVB method (MD-EVB) have only been conducted for the NVT ensemble, to the best of our knowledge, as there is no evidence of a previously reported method to compute the EVB stress tensor. In fact, the standard protocol is to consider only one of the possible chemical states of the reactive system (preferably the lowest free energy state) together with the surrouding enviroment (generally water molecules) and carry out a standard NPT simulation without EVB \cite{kakali2017}. The converged volume is then fixed and the MD-EVB simulation is performed using the NVT ensemble. Even though this procedure appears to be a sensible strategy given the rather high compresibility of water solutions at standard concentrations, its validity to approximate the NPT ensemble has never been corroborated to date. In the next section, we propose a new method to compute the EVB stress tensor within the EVB formalism, which allows to extend the applicability of MD-EVB to NPT ensembles and evaluate the validity of the standard NVT protocol for the first time.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{The EVB stress tensor}\label{sec:evb-stress}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The key requirement for a NPT simulation with the EVB method is to being able to compute the EVB stress tensor $\sigma^{\text{EVB}}$.  Similarly to the energy and ionic forces, the configurational stress tensor for a force field $m$, ${\bf \sigma}^{c(m)}$, can be decomposed in a general expression equivalent to Eqn. (\ref{eq:ene-decomp}), and each contribution computed separately using well-known functional forms \cite{smith87-c}. For $bonded$ interactions, for example, the $\alpha\beta$ contribution to the stress tensor from ion $J$ due to the bonded interactions with the surrounding ions in the chemical state (m), here defined as $\sigma_{J,\alpha\beta}^{\text{\tiny{bond}(m)}}$, follows from Eqn. (\ref{bonds})
+\begin{equation}\label{eq:stressbond}
+\sigma_{J,\alpha\beta}^{\text{\tiny{bond}}(m)}=\sum_{I}{R}_{JI,\alpha}\,\,{f}^{\text{\tiny{bond}}(m)}_{IJ,\beta}
+\end{equation}
+
+where ${R}_{JI,\alpha}$ is the $\alpha$ component of the vector separation $\vec{R}_{JI}=\vec{R}_J-\vec{R}_I$ between ions $I$ and $J$, and $\vec{f}^{\text{\tiny{ bond}}(m)}_{IJ}$ the bond force over ion $J$ from its bonded interaction with ion $I$. In Eqn. (\ref{eq:stressbond}) the sum runs over all ions $I$ interactig with ion $J$ via bonds. Analogously, we could in principle propose the following expression for the $\alpha\beta$ component of the EVB stress tensor resulting from the bonded part of the EVB interactions
+\begin{equation}\label{eq:stressbondEVB}
+\sigma_{J,\alpha\beta}^{\text{EVB}}={R}_{JI,\alpha}\,\,{f}^{\text{EVB}}_{IJ,\beta}.
+\end{equation}
+
+In the present case of bonded interactions, the evaluation of Eqn. (\ref{eq:stressbondEVB}) requires of each individual EVB-bonded force over ion $J$ from interaction with ions $I$, given by $\vec{f}^{\text{ EVB}}_{IJ}$. Nevertheless, the EVB force given in Eqn. (\ref{eq:Fevb2}) represents the total force, $\vec{F}_{J}^{\text{ EVB}}$, resulting from the interaction of ion $J$ with the neighbouring ions. As far as we can discern, each individual contribution to the force $\vec{f}^{\text{ EVB}}_{IJ}$ cannot be computed from the EVB formalism presented in last section and, consequently, the evaluation of the stress tensor via Eqn. (\ref{eq:stressbondEVB}) is not possible. The same reasoning applies to other type of interactions. This limitation percludes the computation of the stress tensor within the EVB formalism via standard formulae and, consequently, MD simulations using the NPT ensemble. Surprisingly, this inherent limitation of the EVB method has not been previously discussed in the literature, to the best of our knowledge.\\
+To circumvent this problem, we propose to use the well-known relation between the configurational energy and the configurational stress tensor \cite{essmann1995}
+\begin{equation}\label{eq:stress-def1}
+\frac{\partial E^{(k)}_{c}}{\partial h_{\alpha\beta}}=-V\sum_{\gamma=x,y,z}\sigma_{\alpha\gamma}^{c(k)}h^{-1}_{\beta\gamma}
+\end{equation}
+where $h$ is the set of supercell lattice vectors with volume $V$=det($h$). Multiplying to the left by $h_{\nu\beta}$ and summing over $\beta$ we obtain the inverse relation to Eqn. (\ref{eq:stress-def1})
+\begin{equation}\label{eq:stress-def2}
+\sigma_{\alpha\beta}^{c(k)}=-\frac{1}{V}\sum_{\gamma=x,y,z}h_{\beta\gamma}\frac{\partial E^{(k)}_{c}}{\partial h_{\alpha\gamma}}
+\end{equation}
+which can be used to define the EVB stress tensor as follows
+\begin{equation}\label{eq:stress-def3}
+\sigma_{\alpha\beta}^{\text{EVB}}=-\frac{1}{V}\sum_{\gamma=x,y,z}h_{\beta\gamma}\frac{\partial E_{\text{EVB}}}{\partial h_{\alpha\gamma}}.
+\end{equation}
+Similar to the definition of the EVB force, we evaluate $\partial E_{\text{EVB}}/\partial h_{\alpha\gamma}$ using the Eqn. (\ref{eq:EevbPsi}) and the Hellman-Feynman theorem \cite{feynman1939} 
+\begin{equation}\label{eq:stress-EVB}
+\frac{\partial E_{\text{EVB}}}{\partial h_{\alpha\beta}}=\big\langle \Psi_{\text{EVB}}\big| \frac{\partial \hat{H}_{\text{EVB}}}{\partial h_{\alpha\beta}}\big| \Psi_{\text{EVB}}\big \rangle.
+\end{equation}
+The matrix components of the operator $\frac{\partial \hat{H}_{\text{EVB}}}{\partial_{h_{\alpha\beta}}}$ follow from the definition of the EVB matrix (\ref{eq:evbmatrix}) and the use of relation (\ref{eq:stress-def1})
+\begin{eqnarray}\label{eq:stress-EVB-mat}
+&&\frac{\partial H^{mk}_{\text{EVB}}}{\partial h_{\alpha\beta}} \\
+&&=\begin{cases}
+  \frac{\partial E_{c}^{(m)}}{\partial h_{\alpha\beta}}=-V\sum_{\gamma}\sigma_{\alpha\gamma}^{c(m)}h^{-1}_{\beta\gamma} \,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,  m=k  \\
+\\
+\frac{d C_{mk}}{\partial h_{\alpha\beta}}= \frac{d C_{mk}(\epsilon_{mk})}{d \epsilon_{mk}}\frac{\partial \epsilon_{mk}}{\partial h_{\alpha\beta}}\\
+= \frac{d C_{mk}(\epsilon_{mk})}{d\epsilon_{mk}}\left[\frac{\partial E_{c}^{(m)}}{\partial h_{\alpha\beta}}-\frac{\partial E_{c}^{(k)}}{\partial h_{\alpha\beta}} \right]\
+\\
+=-VC^{\prime}_{mk}\sum_{\gamma}[\sigma_{\alpha\gamma}^{c(m)}-\sigma_{\alpha\gamma}^{c(k)}] h^{-1}_{\beta\gamma}  \,\,\,\,\,\,\,\,   m \ne k. \\
+\end{cases} \nonumber 
+\end{eqnarray}
+Finally, the EVB stress tensor of Eqn. (\ref{eq:stress-def3}) can be expressed as a matrix multiplication
+\begin{equation}\label{eq:stress-EVB-ab}
+\sigma_{\alpha\beta}^{\text{EVB}}=-\frac{1}{V}\sum_{\gamma=x,y,z}h_{\beta\gamma}\sum_{m,k=1}^{N_F} \tilde{\Psi}^{(m)}_{\text{EVB}} \left(\frac{\partial H^{mk}_{\text{EVB}}}{\partial h_{\alpha\beta}}\right) \Psi^{(k)}_{\text{EVB}}.
+\end{equation}
+These expressions provide an alternative to compute the stress tensor $\sigma^{\text{EVB}}$ from the configurational stress tensors, $\sigma_{\alpha\gamma}^{c(k)}$. It is importat to remark that this new scheme to compute $\sigma^{\text{EVB}}$ can only be derived if one uses functional forms for coupling terms $C_{mk}$ that depend on the energy differences $\epsilon_{mk}$, for which one can evaluate $\frac{\partial E_{c}^{(m)}}{\partial h_{\alpha\beta}}-\frac{\partial E_{c}^{(m)}}{\partial h_{\alpha\beta}}$ and use relation (\ref{eq:stress-def1}) with the computed configurational stress tensor for each chemical state. In contrast, if the choice was to use coupling terms that do not depend on $\epsilon_{mk}$ but other degrees of freedom such as spatial coordinates (see Refs. \cite{chang1990,truhlar2000,schlegel2006,sonnenberg2007,sonnenberg2009}), the authors cannot discern a clear logic to derive an expression for $\sigma^{\text{EVB}}$, which might explain the fact there is no evidence of any previous reported method to compute the stress tensor using EVB. \\
+So far we have presented an alternative to compute the stress tensor $\sigma_{\alpha\beta}^{\text{EVB}}$ but have not discussed the total virial $\mathcal{V}_{\text{EVB}}$. Similarly to the stress tensor, the inability to compute individual contibutions of the force within the EVB method prevents the evaluation of the virial using the standard formulae, and the usual decomposition of the virial depending of the type of interaction under consideration. Within the presented formalism, we compute the virial $\mathcal{V}_{\text{EVB}}$ from $\sigma_{\alpha\beta}^{\text{EVB}}$ as follows
+\begin{equation}\label{eq:virial-total}
+\mathcal{V}_{\text{EVB}}=-\sum_{\alpha=x,y,z} \sigma_{\alpha\alpha}^{\text{EVB}}.
+\end{equation}
+In contrat to the EVB energy, it is possible to decomposed the virial into different type of interactions. This can be demonstrated by decomposing $\sigma_{\alpha\gamma}^{c(m)}$ in Eqn. (\ref{eq:stress-EVB-mat}) into the different contributions of the stress tensor, namely $\sigma_{\alpha\gamma}^{c(m)}=\sum_{\text{\tiny{type}}} \sigma_{\alpha\gamma}^{\text{\tiny{type}}(m)}$, to obtain
+\begin{eqnarray}\label{eq:stress-EVB-mat-dec}
+&&\frac{\partial H^{mk}_{\text{EVB}}}{\partial h_{\alpha\beta}}=\sum_{\text{\tiny{type}}} \frac{\partial H^{mk}_{\text{\tiny{type}}}}{\partial h_{\alpha\beta}} \,\,\,\,\,\,\,\,\ \text{where}\\
+&&\frac{\partial H^{mk}_{\text{\tiny{type}}}}{\partial h_{\alpha\beta}}=\begin{cases}
+-V\sum_{\gamma}\sigma_{\alpha\gamma}^{\text{\tiny{type}}(m)}h^{-1}_{\beta\gamma} \,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,  m=k  \\
+\\
+-VC^{\prime}_{mk}\sum_{\gamma}[\sigma_{\alpha\gamma}^{\text{\tiny{type}}(m)}-\sigma_{\alpha\gamma}^{\text{\tiny{type}}(k)}] h^{-1}_{\beta\gamma}  \,\,\,\,\,\,\,\,   m \ne k \\
+\end{cases} \nonumber 
+\end{eqnarray}
+from which, similarly to Eqn. (\ref{eq:stress-EVB-ab}), we have  
+\begin{equation}\label{eq:stress-type-ab2}
+\sigma_{\alpha\beta}^{\text{\tiny{type}}}=-\frac{1}{V}\sum_{\gamma=x,y,z}h_{\beta\gamma}\sum_{m,k=1}^{N_F} \tilde{\Psi}^{(m)}_{\text{EVB}} \left(\frac{\partial H^{mk}_{\text{\tiny{type}}}}{\partial h_{\alpha\beta}}\right) \Psi^{(k)}_{\text{EVB}}
+\end{equation}
+and
+\begin{equation}\label{eq:stress-type-ab1}
+\sigma_{\alpha\beta}^{\text{EVB}}=\sum_{\text{\tiny{type}}}\sigma_{\alpha\beta}^{\text{\tiny{type}}}
+\end{equation}
+with the following decomposition for the virial
+\begin{equation}\label{eq:virial-decomp}
+\mathcal{V}_{\text{EVB}}=\sum_{\text{\tiny{type}}}\mathcal{V}^{\text{\tiny{type}}}_{\text{EVB}}= -\sum_{\text{\tiny{type}}}\sum_{\alpha=x,y,z} \sigma_{\alpha\alpha}^{\text{\tiny{type}}}.
+\end{equation}
+Even though it might be useful to have a virial decomposition for EVB, implementing the require changes within the code would entail a considerable effort and it will be irrelevant to the dynamics. In fact, the only relevant and fundamental quantity is the total virial, calculated from the EVB stress tensor from Eqn (\ref{eq:virial-total}). Based on this fact, all terms of the virial decomposition were arbitrarily set to zero.\\
+The total stress tensor, $\sigma^{T}$, is given by the following general expression
+\begin{equation}\label{eq:stress-total}
+\sigma^{T}=\sigma^{\text{kin}}+\sigma^{\text{EVB}}+\sigma^{\text{RB}}+\sigma^{\text{bc}}
+\end{equation}
+where $\sigma^{\text{kin}}$, $\sigma^{\text{RB}}$ and $\sigma^{\text{bc}}$ are the contibutions to the stress tensor from the kinetic energy, rigid bodies (RBs) and bond constraints, respectively. The EVB method only accounts for the configurational interactions, as described. The kinetic stress tensor is computed as usual from the instantaneous velocities of the ions. For a rigid body ion, the only possible interactions are intermolecular non-bonded interactions (such as coulombic and van der Waals interactions) with other neighbouring ions that are not part of the same rigid body. Following the computation of the EVB forces via Eqn. (\ref{eq:Fevb2}), the contribution to the stress from the rigid bodies follows from Ref. \cite{smith87-c} and \cite{essmann1995}, analogously to Eq. (\ref{eq:rb-stress})
+\begin{equation}\label{eq:stress-total}
+\sigma_{\alpha\beta}^{\text{RB}}=\sum_{\mathcal{B}=1}^{N_{\text{RB}}}\sum_{I=1}^{\eta_{\mathcal{B}}} {F}_{I_{\mathcal{B}},\alpha}^{\text{EVB}} d_{I_{\mathcal{B}},\beta}	
+\end{equation}
+where $\vec{F}^{\text{EVB}}_{I_{\mathcal{B}}}$ is the total EVB force over atom $I$ of rigid body $\mathcal{B}$ and $\vec{d}_{I_{\mathcal{B}}}$ the vector distance from atom $I_{\mathcal{B}}$ to the centre of mass of the rigid body $\mathcal{B}$. In the above expression, index $\mathcal{B}$ runs over all the rigid bodies. Each rigid body is composed of $\eta_{\mathcal{B}}$ ions. Since, by definition, the topology of rigid bodies remain unaltered during the simulation, the use of RBs within in the present framework is meaningful only to model the environment interacting with a single reactive site. A common example is the use of rigid water molecules to model a solution.\\
+Contributions to the stress tensor from bond constraints, $\sigma_{\alpha\beta}^{\text{bc}}$, are obtained using the RATTLE algorithm \cite{andersen-83a} during the course of the simulation. This algorithm is independent of the EVB formalism, but corrects for the computed EVB forces over the constrained ions. Finally, frozen ions do not contributed to the stress tensor and are not considered in the formalism. It is important to remark that the topology defined via the setting of RBs, frozen atoms and bond contraints must be the consistent for all the coupled force fields, as they impose well defined conditions for the dynamics. For example, if a group of atoms form a rigid body, they must remain a rigid body independently of chemical state under consideration. 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Coupling terms and energy shifts}\label{sec:coupling}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The main advantage of the EVB method lies in the large availability of standard non-reactive FFs libraries, in contrast to the complexity of building system-specific reactive force fields. Nevertheless, the quality of EVB in the description of reactive processes depends on the choice for the coupling terms $C_{mk}$, particularly to reproduce accurate interactions at the intermediate region between chemical states $m$ and $k$ where the change of chemistry occurs. 
+Besides the simple choice of C$_{mk}$ equal to a constant, several more sophisticated EVB coupling recipes have been proposed. For example, Chang and Miller \cite{chang1990} have applied a generalized Gaussian function, without any fitting but using an additional frequency calculation at the transition state. This approach was later extended in a series of papers by Sonnenberg and Schlegel \cite{schlegel2006,sonnenberg2007,sonnenberg2009}, who modelled the coupling term with a distributed Gaussian basis. On the other hand, Truhlar and coworkers \cite{truhlar2000} proposed to generate the coupling term via a Shepard interpolation between additional reference data points.\\ 
+Despite of their proven success, all these proposed recipes for the coupling terms use complex internal (spatial) coordinates to describe the reaction. For the implementation of the EVB method in DL\_POLY\_4, we have used functional forms $C_{mk}$ that depend on energy differences $\epsilon_{mk}=E^{(m)}_{c}-E^{(k)}_{c}$ (also referred to as {\it energy gaps}), as these not only represent a generalised reaction coordinate \cite{duarte2017,warshel1991,hartke2015,mones2009} but also allow to compute the stress tensor as described in Sec. \ref{sec:evb-stress}. Note that the choice of a $C_{mk}$ to be a constant, even trivial, complies with this requirement. Based on the work of B. Hartke et. al. \cite{hartke2015}, we have chosen the following functional form for the coupling terms 
+\begin{equation}\label{eq:coupl}
+C_{mk}(\epsilon_{mk})=\mathcal{A}_{1,mk} \, \, e^{-\left( \frac{\epsilon_{mk}-\mathcal{A}_{2,mk}} {\mathcal{A}_{3,mk}}  \right)^2 }+\mathcal{A}_{4,mk}
+\end{equation}
+which can be set to a constant if $\mathcal{A}_{1,mk}$=0. To determine the coefficients for this coupling term, it is necessary to consider a trajectory that links the reference gometries for states $m$ and $k$. A convenient trayectory is the minimum energy path (MPE) at zero-temperature, $\zeta_{mk}$, obtained either via Density Functional Theory (DFT) or quantum chemistry (QC) methods to reproduce the chemistry of breaking and forming bonds. The corresponding energy profile for this trajectory, $\tilde{E}_{\zeta_{mk}}$, is used as a reference, in the sense one aims $E_{EVB}$ to be equal to  $\tilde{E}_{\zeta_{mk}}$ along $\zeta_{mk}$. If we consider another state $l$, for example, it is expected that along $\zeta_{mk}$  values for $E^{(l)}_{c}$ will be exceedingly large in comparison with $E^{(m)}_{c}$ and $E^{(k)}_{c}$ ($|\epsilon_{lk}|\gg 1$ and $|\epsilon_{lm}|\gg 1$), from which $C_{ml}(\epsilon_{ml})\approx  \mathcal{A}_{4,ml}$ and $C_{kl}(\epsilon_{kl}) \approx \mathcal{A}_{4,kl}$. One can initially set $\mathcal{A}_{4,kl}=\mathcal{A}_{4,ml}=0$ for all $l\ne m, k$ and the coupling term $C_{ml}$ is computed as follows
+\begin{equation}\label{eq:coupl2}
+C^{2}_{mk}(\epsilon_{mk})=\left[ \tilde{E}_{\zeta_{mk}}-E^{(m)}_{c,\zeta_{mk}} \right] \left[ \tilde{E}_{\zeta_{mk}}-E^{(k)}_{c,\zeta_{mk}} \right]
+\end{equation}
+where $E^{(m)}_{c,\zeta_{mk}}$ and $E^{(k)}_{c,\zeta_{mk}}$ are the conformational energies for states $m$ and $k$ along $\zeta_{mk}$, while $\epsilon_{mk}$ is in turn a implicit function of $\zeta_{mk}$
+\begin{equation}\label{eq:coupl3}
+\epsilon_{mk}(\zeta_{mk})=E^{(m)}_{c,\zeta_{mk}}-E^{(k)}_{c,\zeta_{mk}}.
+\end{equation}
+To find the parameters for the coupling $C_{mk}$, one has to plot the values obtained from Eqn. (\ref{eq:coupl2}) as a function of $\epsilon_{mk}$ and fit the parameters using the functional form of Eqn. (\ref{eq:coupl}). This procedure should be enough if there were only 2-FFs to be coupled via EVB. For more than two fields, however, we have assumed $\mathcal{A}_{4,ln}=0$ for $l\ne n \ne m,k$. Thus, in order to fit the parameters for the rest of the coupling terms of the EVB matrix, one should consider all the possible remaining MEPs between the states. For the pair $l,p$, for example, one can proceed in a similar way by setting all $\mathcal{A}_{4}$ elements to zero, but this time $C_{mk}$ will not be necessarily zero. Depending on the number of coupled FFs, different but more complicated expressions like Eqn. (\ref{eq:coupl2}) can be derived. Details are beyond the scope of this chapter.\\
+Ideally, non-reactive FFs should be sufficiently accurate for configurations far from the reference geometry for which they were designed. In this way one could dismiss the coefficients $\mathcal{A}_{4}$ in Eqn. (\ref{eq:coupl}) and compute all the coupling terms independently as described using Eqn. (\ref{eq:coupl2}). A promising strategy to improve the accuracy of available potentials from DFT calculations has been proposed by S. Grimme and collaborators \cite{grimme2014,grimme2017}.\\
+Finally, depending on the non-reactive FF and the result from a DFT/QC simulation, one may want to shift  $E^{(m)}_{c}$ by $\Delta E^{(m)}_{shift}$. This is particularly convenient to correct the relative energy between the involved chemical states. We have implemented this possibility as input parameters in the SETEVB file (see Sec. \ref{sec:setevb}).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Implementation}\label{sec:implement}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The EVB method described in section \ref{sec:evb} and its extension for the computation of the stress tensor (section \ref{sec:evb-stress}) were implemented within the DL\_POLY\_4 code. Details of the computational implementation and the structure of the SETEVB file are presented in the following sections.
+
+\subsection{Energy, forces, stress and coupling terms}
+To simplify the operation of building the matrix elements for the computation of energies, forces and stress, we compute the coupling terms and store them in matrix $\mathds{C}$, whose components are
+\begin{equation}\label{eq:coulp-matrix}
+\mathds{C}^{mk}=\begin{cases} 0 \,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,  m=k   \\
+                                               C_{mk}(\epsilon_{mk})   \,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,   m \ne k.
+                                              \end{cases}
+\end{equation}
+Similarly, matrix $\partial\mathds{C}$ is composed of the gradient of the coupling terms with the following components
+\begin{equation}\label{eq:grad-coulp-matrix}
+\partial\mathds{C}^{mk}=\begin{cases} 0 \,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,  m=k   \\
+                                                        \frac{dC_{mk}}{d\epsilon_{mk}}=C^{\prime}_{mk}(\epsilon_{mk})   \,\,\,\,\,\,\,\,\,\,\,\,\,   m \ne k.
+                                     \end{cases}
+\end{equation}
+With these definitions, the component of the EVB matrix (\ref{eq:evbmatrix}) are computed by adding each conformational energy $E_{c}^{(m)}$ to the diagonal terms of Eqn. (\ref{eq:coulp-matrix}). Similarly, the matrix elements of Eqn. (\ref{eq:gradevb}) are coded in the following form
+ \begin{eqnarray}\label{eq:grad-force-comp}
+\frac{\partial H^{mk}_{\text{EVB}}}{\partial R_{J\alpha}}
+=\begin{cases}
+  -F^{(m)}_{J\alpha} \,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,  m=k  \\
+\\
+   \partial\mathds{C}^{mk} [F^{(k)}_{J\alpha}-F^{(m)}_{J\alpha}]  \,\,\,\,\,\,\,            m \ne k.
+\end{cases} 
+\end{eqnarray}
+Finally, to compute the matrix elements of Eqn. (\ref{eq:stress-EVB-mat}) we have used
+\begin{equation}\label{eq:grad-stress-comp}
+-\frac{1}{V}\frac{\partial H^{mk}_{\text{EVB}}}{\partial h_{\alpha\beta}}=\begin{cases}
+\sum_{\gamma}\sigma_{\alpha\gamma}^{c(m)}h^{-1}_{\beta\gamma} \,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,  m=k  \\
+\\
+\partial\mathds{C}^{mk}\sum_{\gamma}[\sigma_{\alpha\gamma}^{c(m)}-\sigma_{\alpha\gamma}^{c(k)}] h^{-1}_{\beta\gamma}  \,\,\,\,\,\,\,\,   m \ne k \\
+\end{cases} 
+\end{equation}    
+To keep record of the chosen functional forms for the coupling terms, we use a character type matrix $\mathds{T}$ with no-diagonal terms but the following non-diagonal components 
+\begin{equation}\label{eq:coulp-type}
+\mathds{T}^{mk}= type \,\,\,\,\, (= const\,\,\,\text{or}\,\,\,gauss)  \,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,   m \ne k
+\end{equation}
+with $\mathds{T}^{mk}=\mathds{T}^{km}$. Settings $const$ or $gauss$ depend on the user's choice of constant or Gaussian type of coupling, respectively, as discussed in Section \ref{sec:coupling}. User must indicate the choice of functional form through file SETEVB (see Section \ref{sec:setevb}). \\  
+Finally, the parameters for the chosen functional forms of the coupling terms are stored in matrix $\mathds{A}$ with no-diagonal terms but the following non-diagonal 4D-array elements  
+\begin{equation}\label{eq:coulp-param}
+\mathds{A}^{mk}=  (\mathcal{A}^{\text{\tiny{type}}}_{1,mk},\mathcal{A}^{\text{\tiny{type}}}_{2,mk},\mathcal{A}^{\text{\tiny{type}}}_{3,mk},\mathcal{A}^{\text{\tiny{type}}}_{4,mk}) \,\,\,\,\,\,\,\,\,   m \ne k
+\end{equation}
+where the superscritp "type" is either $const$ or $gauss$ and $\mathds{A}^{mk}=\mathds{A}^{km}$. As already discussed, if type=$const$ and only one parameter is needed.
+
+\subsection{General description}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+In its original format, DL\_POLY\_4 reads the initial spatial configuration for the ions (CONFIG file), where each ion is labelled according to its specification in the FIELD file. Information of the control variables for the MD run are set in the CONTROL file.\\
+In general terms, modifications for the EVB implementation required:\\
+\\
+$\bullet$ reading the new option $evb$ from CONTROL file. This activates the execution of the EVB part of DL\_POLY\_4. The number of FFs (\textbf{N}$_F$) considered is specified after this option $evb$\\
+$\bullet$ allocating arrays for each FFs and execution of meta subroutines\\
+$\bullet$ reading initial ionic spatial configurations from files CONFIG, CONFIG\textbf{2}, ..., CONFIG\textbf{N}$_F$\\
+$\bullet$ reading force field specification from files FIELD, FIELD\textbf{2}, ..., FIELD\textbf{N}$_F$\\
+$\bullet$ reading EVB settings from SETEVB file\\
+$\bullet$ checking consistency of specification between all force fields and initial inonic coordinates, including any possible constraint such as rigid bodies.\\
+$\bullet$ preventing the execution if there are MD or FF options that are not consistent with a EVB simulation.  
+$\bullet$ computing energy, forces and stress tensor/virial for each FF\\ 
+$\bullet$ computing EVB energy, EVB ionic forces, and EVB stress tensor/virial using the results from the computed FFs\\
+$\bullet$ printing of files REVCON, REVCON\textbf{2}, ..., REVCON\textbf{N}$_F$ once the calculation is finished. This allows for restart simulations.\\ 
+
+\subsection{The EVB module}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The EVB module contains a new variable type $evb\_type$ with all the required fields for EVB simulations. This module also contains subroutines to i) read EVB settings from the SETEVB file, ii) check consistency between all force fields and initial ionic coordinates (including any possible constraint such as rigid bodies, bond constraints, tether and frozen atoms), iii) prevent the execution if there are MD or FF options that are not consistent with an EVB simulation, iv) compute EVB energy, EVB ionic forces, and EVB stress tensor/virial using the results from the separate force fields, v) account for stochastic corrections, vii) set to zero each term of energy and virial decomposition, viii) allocation/deallocation of arrays corresponding to variable type evb\_type.\\
+A detailed description of the evb module is provided in the following table.
+\begin{center}
+\label{table:EVBcoding}
+\begin{longtable*}[t]{p{0.15\textwidth}|p{0.85\textwidth}}
+Variable/\newline subroutine                               &  Description\\
+\hline
+\multicolumn{2}{p{1.0\textwidth}}{\textbf{Variable type} $evb\_type$ \textbf{(evb.F90)}. It contains all the required variables for EVB simulations, described as follows:}  \\
+\hline
+\\
+{\bf typsim} & Type of EVB simulation. Set standard EVB ( = 0) by default. The plan is to allow for Free-Energy-Perturbation (=1) and Multi-component EVB (=2). \\
+{\bf num\_site} &  Number of sites that correspond to the EVB reactive unit (field dependent).\\
+{\bf num\_at} & Number of atoms of the EVB reactive unit . \\
+{\bf typemols} & Number of types-of-molecules of the FIELD file that describe the EVB site (FF dependent) \\
+\\
+{\bf maxparam} & maximum number of parameters used for the functional forms of coupling terms, set to 4. This setting is indeed the number of parameters required for the Gauss type of coupling of Eqn. (\ref{eq:coupl}). \\
+{\bf typcoupl}        & Matrix with the type of functional form (const or gauss) for coupling terms. See Eqn. (\ref{eq:coulp-type})  \\
+{\bf coupl\_param} & Matrix with fitted parameters $\mathds{A}_{mk}$ for the functional forms for the computations of the coupling terms. See Eqn. (\ref{eq:coulp-param})\\
+
+{\bf eshift} &  Energy shift for force fields, convenient to model asymmetries in the potential energy surface (PES)\\
+
+{\bf eneFF} & Energy for each force field, including any potential shift (working array to build ene\_matrix)\\
+
+{\bf  ene\_matrix} & EVB Energy matrix of Eqn. (\ref{eq:evbmatrix})\\
+
+{\bf   work,\newline ifail, iwork} & Working arrays for diagonalization\\
+
+{\bf   eigval} & EVB eigenvalues\\
+
+{\bf  psi} & EVB eigenvectors\\
+
+{\bf elimit} & Limit for the maximum absolute value of the argument to compute exp(). It is set to 700.0 in subroutine $read\_evb\_settings$. This is needed to identify any possible numerical inestability in the computation of the FF energies prior to computing a Gaussian coupling term, without overflowing machine's precision. \\	
+
+{\bf coupl} &       Matrix for coupling terms. See Eqn. (\ref{eq:coulp-matrix})\\
+
+{\bf grad\_coupl} &      Matrix for the gradient of coupling terms. See Eqn. (\ref{eq:grad-coulp-matrix})\\
+
+{\bf  force\_matrix} & EVB Force matrix. See Eqn. (\ref{eq:grad-force-comp})\\
+
+{\bf force} & EVB ionic force (working array)\\
+
+{\bf  stress\_matrix} & Matrix for computation of the EVB stress (working array). \\
+
+{\bf  dE\_dh } & Matrix with the derivative of the EVB energy with respect to each component of the lattice vectors. See Eqn. (\ref{eq:grad-stress-comp})\\
+
+{\bf  stress} & EVB stress tensor \\
+
+{\bf  num\_bond} & Number of bond interactions corresponding only to the EVB site\\
+{\bf  num\_angle} & Number of angle interactions corresponding only to the EVB site\\
+{\bf  num\_dihedral} & Number of dihedral interactions corresponding only to the EVB site\\
+{\bf  num\_inversion} & Number of inversion interactions corresponding only to the EVB site\\
+
+{\bf  no\_coupling} & Flag for zero coupling, set to $.False.$ by default. Only in the particular case where all coupling terms are set to $const=0$, this flag is set to $.True.$ and energy and virial decomposition for the lowest FF energy is printed.\\
+{\bf population} & Flag to activate the printing of EVB population. Set to $.False.$ by default.\\
+{\bf population\_file\_\newline open} &  Flag for opening EVB population file. Set to $.False.$ by default.\\
+{\bf newjob} & Flag for new EVB job. Set to $.True.$ by default.\\
+\hline
+\multicolumn{2}{p{1.0\textwidth}}{ }\\ 
+\multicolumn{2}{p{1.0\textwidth}}{\textbf{Subroutines (evb.F90)}} \\
+ 
+\hline 
+$allocate\_evb\_$ $arrays$ & allocates arrays of variable type $evb\_type$.  \\
+\hline 
+$cleanup$ & deallocates of all those elements allocated by $allocate\_evb\_arrays$ \\
+\hline 
+$read\_evb\_settings$ &  reads setting and parameter for EVB simulations
+ from the SETEVB file. Few checks are also performed to verify
+ the correctness of the input values. If any inconsistency is found,
+ execution is aborted with an error message. Coupling parameters
+ and energy shifts are printed to OUTPUT
+\\
+\hline 
+$evb\_check\_$ $intrinsic$ & checks consistency in the intrinsic properties for
+each atom specified in the FIELD files. Since atomic labels and charges for the EVB part
+might change between different FFs (different chemistry), intrisic checking is set as follows:\newline
+$\bullet$ labels and charges are checked to be the same only for all atoms of the non-EVB part\newline
+$\bullet$ masses are checked to be the same for {\bf all atoms} in the system (EVB and non-EVB), as there is mass conservation despite of the reactive process\\
+\hline 
+$evb\_intrinsic\_$ $error$ & subroutine auxiliary to $evb\_check\_intrinsic$ to print an
+error message and abort if there was an inconsitency found. Communication is needed to detect for errors in all processors.\\
+\hline 
+$evb\_check\_$ $configs$ & checks all CONFIG files (one CONFIG file per FF) have the same:\newline
+$\bullet$ number of atoms\newline
+$\bullet$ coordinates\newline
+$\bullet$ cell dimensions\newline
+$\bullet$ symmetry (image convention)\\
+\hline 
+$evb\_check\_$ $constraints$ & checks consistency in the definition of constraints
+between atoms (constraints are defined in each FIELD file).
+Check is carried out over frozen atoms, rigid bond constraint, rigid bodies,
+core shells and tether sites.\newline
+Whatever constraints one defines, they MUST NOT differ between FIELD files.
+In other words, a group of atoms cannot be a rigid body for one FIELD
+and a flexible molecule for another FIELD. The same logic applies to other
+constraints. Even though the EVB could be computed independently, different
+contraint settings will lead to a dynamics that depends on the field, which
+is conceptually wrong.\newline
+To check consistency between all FFs, the process starts by comparing FF1 and FF2,
+continues with FF2 with FF3, FF3 with FF4,....., and FF($N_F$-1) with FF($N_F$).\\
+\hline
+$obtain\_sites\_$ $from\_list$ &  subroutine (auxiliary to $evb\_check\_constraints$ and $evb\_check\_intrinsic$)
+to obtain the atomic the site and corresponding type-of-molecule given the index assigned to the atom via the input list.
+ \\
+\hline
+$evb\_constraint$ $\_error$ & subroutine auxiliary to evb\_check\_constraints to print constraints related errors if either:\newline
+$\bullet$ the total number for a given type of constraint is different between FIELD files (when no optional variable is present)\newline
+$\bullet$ the constraint is defined in one FIELD but not found in the other\newline
+$\bullet$ the specification for the constraint unit changes between FIELD files\newline
+$\bullet$ a rigid unit is found in the EVB region.\newline
+Error messages depend on the constraint, which is identified via the input string. Communication is needed to detect error in all processors.\\
+\hline
+$evb\_check\_vdw$ & checks consistency in the definition of vdW
+interactions between FIELD files. Check is carried out for pairs of vdW
+interactions that ONLY include atoms of the non-reactive part of the system. Such
+vdW interactions should remain the same independently of the chemical state.
+To check consistency between all FFs, the process starts by comparing FF1 and FF2,
+continues with FF2 with FF3, FF3 with FF4,....., and FF($N_F$) with FF1.\\
+\hline 
+$evb\_check\_$ $intermolecular$ & checks consistency in the definition of intermolecular
+interactions between FIELD files. Check is carried out for:\newline
+$\bullet$ Tersoff potentials\newline
+$\bullet$ metallic potentials\newline
+$\bullet$ three-body potentials (TBPs)\newline
+$\bullet$ four-body potentials (FBPs).\newline
+
+Since EVB is designed to describe reactions (bond breaking and formation)
+the above interactions are only meaningful for the non-reactive part of the system. Thus,
+this subroutine first check that NONE of the EVB atoms interact via in ANY of these types of
+intermolecular interactions.\newline
+For example, EVB could be used to model the bond breaking/formation of a molecule
+supported by a metallic substrate. Metallic interactions will ONLY manifest when
+considering the interactions between atoms of the substrate, whereas molecule and surface
+interact via vdW/coulombic forces.\newline
+To check consistency between all FFs, the process starts by comparing FF1 and FF2,
+continues with FF2 with FF3, FF3 with FF4,....., and FF($N_F$-1) with FF($N_F$).\newline
+For the case of four-body interactions, it is convenient for now to prevent EVB runs,
+mainly because four-body interactions were never tested to date (Feb 2020).\\
+\hline 
+$evb\_$ $intermolecular\_$ $error$ & subroutine auxiliary to $evb\_check\_intermolecular$ to print an
+error message and abort if either:\newline
+$\bullet$ the total number for a given type of intermolecular interactions is different between FIELD files\newline
+$\bullet$ the interaction unit is defined in one FIELD file but not found in the others\newline
+$\bullet$ the specification for the intermolecular interation unit changes between FIELD files\newline
+The format of the output error message depends on the intermolecular interactions\\
+\hline 
+$evb\_check\_$ $intramolecular$ & checks consistency in the definition of intramolecular
+ interactions between FIELD files only between atoms of the non-reactive part of the system.
+ In fact, functional forms and parameters for intramolecular interactions must not change
+ between atoms of the non-reactive part of the system.\newline
+ Check is carried out for bond, angle, dihedral and inversion potentials.\\
+\hline 
+$evb\_$ $intramolecular\_$ $number\_error$ & subroutine auxiliary to $evb\_check\_intramolecular$ to print
+an error message and abort the execution if the number of intramolecular
+interactions (of a given type) for the non-reactive part of the system
+is not preserved for all FIELD files\\
+\hline 
+$compare\_$ $intramolecular$ &
+subroutine (auxiliary to $evb\_check\_intramolecular$) to compare intramolecular
+ interactions between FIELD and print an error message (and abort) if either:\newline
+$\bullet$ the interaction unit is defined in one FIELD file but not found in the other files\newline
+$\bullet$ the specification for the intermolecular interation unit changes between FIELD files\\
+\hline 
+$obtain\_molecule\_$ $from\_intra$ & subroutine (auxiliary to $compare\_intramolecular$) to obtain the
+type-of-molecule given the index of an intramolecular interaction\\
+\hline 
+$evb\_check\_$ $external$ &  aborts the execution of a standard EVB runs
+ if either electric of magnetic fields are present.
+\\
+\hline 
+$evb\_pes$ & calls for the computation of:\newline
+$\bullet$ EVB coupling terms and their derivatives\newline
+$\bullet$ EVB energy\newline
+$\bullet$ EVB forces\newline
+$\bullet$ EVB stress tensor\\
+\hline 
+$evb\_couplings$ &
+computes:\newline
+$\bullet$ matrix of coupling terms, as described in Eqn. (\ref{eq:coulp-matrix})\newline
+$\bullet$ matrix with the derivatives of coupling terms, as described in Eqn. (\ref{eq:grad-coulp-matrix})\\
+\hline
+$evb\_couplings\_$ $error$ & prints an error message and abort if any of the Gaussian
+coupling terms exhibit numerical instabilities\\
+\hline 
+$evb\_energy$ & computes the EVB energy. Steps:\newline
+$\bullet$ buildig the EVB matrix of Eqn. (\ref{eq:evbmatrix}). Shifted conformational energies for each FF are set in the diagonal elements; off diagonal terms are computed via suroutine $evb\_couplings$\newline
+$\bullet$ Diagonalization of the EVB matrix via the BLAS subroutine dsyevx\newline
+$\bullet$ Check if diagonalization was successful. \\
+\hline
+$evb\_diag\_error$ & prints an error message and abort if the diagonalization was unsuccessful \\
+\hline 
+$evb\_force$ & computes the EVB force over each ion of the system. Steps:\newline
+$\bullet$ build force matrix of Eqn. (\ref{eq:grad-force-comp}) for each ion and coordinate\newline
+$\bullet$ compute evb force via Eqn. (\ref{eq:FevbPsimat}) \newline
+$\bullet$ copy EVB force to configurational forces\\
+\hline 
+$evb\_stress$ &  computes for the EVB stress tensor and EVB configurational virial. Steps:\newline
+$\bullet$ build matrix $\frac{dE}{dh}$ of Eqn. (\ref{eq:grad-stress-comp})\newline
+$\bullet$ compute stress tensor via Eqn. (\ref{eq:stress-type-ab2}).\newline
+$\bullet$ compute the total EVB virial\newline
+$\bullet$ copy EVB stress tensor and virial to configurational stress and virial, respectively.\newline
+It is important to remark that the volume $V$ does not appear when coding the equations for stress. This is because matrix elements of Eqn. (\ref{eq:stress-EVB-mat}) have the volume in the numerator, whereas the matrix multiplication to compute Eqn. (\ref{eq:stress-EVB-ab}) is divided by the volume.\newline
+In principle, it is possible to have an EVB decomposition of the virial into separate
+contributions for various type of interactions (e.g. angles, bonds, dihedrals,
+ coulombic, etc). However, it was decided not to compute these contributions
+ as their implementation would entail a significant amount of changes to the code, and
+ it would be completely irrelevant to describing the dynamics. Instead, the total
+ configurational virial is computed using the trace of the EVB stress tensor
+\\
+\hline 
+$evb\_population$ & computes the population of EVB states via $\big|\Psi^{(k)}_{\text{EVB}}\big|^{2}$. Results are written in file POPEVB after equilibration, only if the flag evbpop is present in the SETEVB file\\
+\hline 
+$evb\_setzero$ & sets to zero all the decomposed terms of the conformational virial and energy.\\
+\hline 
+$evb\_merge\_$ $stochastic$ &  copies various variable type from the FF1
+ to the rest of the force fields. This copy is needed only when using the following features:\newline
+$\bullet$ the regauss option for equilibration\newline
+$\bullet$ the pseudo thermostat for highly non-equilibrium dynamics.\\
+\end{longtable*}
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Useful information for setting EVB calculations}\label{sec:evb-users}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+From the users point of view, setting input files and parameters for the EVB simulation of $N_F$ coupled FFs in DL\_POLY\_4 requires of:\newline
+$\bullet$ $N_F$ CONFIG files with the same ionic coordinates but different labelling for those atoms that belong to the EVB-site. Each CONFIG file must be consistent its FIELD file.\newline
+$\bullet$ $N_F$ FIELD files with the interaction parameters to describe each of the coupled chemical states.\newline
+$\bullet$  the CONTROL file with the option $evb\,\,\,\, N_F$\newline 
+$\bullet$ the SETEVB file (see Sec. \ref{sec:setevb}).\\
+
+To avoid problems, users are advised to check consistency between CONFIG and FIELD files for each of the chemical states separately, as for a standard DL\_POLY\_4 run. It is important to remark that the numbering used for the ions should be same of all CONFIG files and all CONFIG files must have the same number of atoms. For example, ion 1 with label A in CONFIG (labelling consistent with FIELD file) should be also ion 1 in CONFIG2, although it might have a different label B, depending on the labelling assigned in FIELD2.\\
+The definition of constraints should be kept consistent between FIELD files. For example, if a bond-constraint is set in the FIELD file for atoms $X$and $Y$, this bond-constraint should also be defined for the other FIELD files. Similarly with ridig-bodies, tethers, core-shells and frozen atoms. This requirement is crucial to ensure correctness in the dynamics of the system as forces over constrained atoms must be corrected to comply with the constraint.\\ 
+For EVB simulations of a reactive site interacting with a non-reactive environment (non-EVB ions), it is also importat to make sure that the specifiction for labels, mass and charges for all non-EVB ions is the same for all FIELD files. Likewise, all intermolecular (Tersoff, metallic, three-body, four-body), intramolecular (bond, angle, dihedral and inversion) and vdW interactions between these non-EVB ions must be the same for all FIELD files. If any of these requirements is not fulfilled, DL\_POLY\_4 aborts the execution and print an error message that (hopefully) will guide the user to identify and fix the inconsistency. \\ 
+Particular care must be taken for the definition of the $N_F$ values of $evbtypemols$ in the SETEVB file. As described in table \ref{table:setevb}, these values indicate how many of the first defined type-of-molecules for each FIELD files are used to describe the EVB reactive site. To further clarify on this statement, let us consider a EVB reactive unit interacting with non-reactive water molecules. Such a reactive unit is described by two-coupled FFs. In the chemical state 1, the reactive site is a single fragment described by the first type-of-molecule in the FIELD file, while the second type-of-molecule describes each of the surrounding water molecules. In the chemical state 2, the reactive site is composed of two molecular fragments, described by the first two type-of-molecules in the FIELD2 file, while now the third type-of-molecule describes the surrounding water. Consequently, {\it Molecular types} must be 2 and 3 for files FIELD and FIELD2, respectively, and the specification for the SETEVB must be: $evbtypemols\,\,\,\,  1\,\,\,\,  2$.\\
+Finally, the new EVB implementation offers the possibility to restart the simulation, as $N_F$ REVCON files are written. Analogous to the standard restart calculation, the user must copy the REVIVE file to REVOLD, while each REVCON file must be copied to the corresponding CONFIG file. To restart, the user must add the word $restart$ in CONTROL file.\\
+\\
+Additional points for further consideraton:\\
+$\bullet$ all FIELD files must have the same units\\
+$\bullet$ Replay calculations are not allowed for EVB\\
+$\bullet$ Simulations with four-body interactions are prevented\\
+$\bullet$ external electric and magnetic fields are not possible within the EVB formalism\\
+
+
+
+
