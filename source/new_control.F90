@@ -47,21 +47,26 @@ Module new_control
     Call lower_case(curr_val)
 
     Select Case(Trim(curr_val%val))
-    case ( 'mpiio' )
+    Case ( 'mpiio' )
        io_read = IO_READ_MPIIO
        Call info('I/O read method: parallel by using MPI-I/O',.true.)
+
     Case ( 'direct' )
        io_read = IO_READ_DIRECT
        Call info('I/O read method: parallel by using direct access',.true.)
+
     Case ( 'netcdf' )
        io_read = IO_READ_NETCDF
        Call info('I/O read method: parallel by using netCDF',.true.)
+
     Case ( 'master' )
        io_read = IO_READ_MASTER
        Call info('I/O read method: serial by using a single master process',.true.)
+
     Case Default
        Call info('io_read_method '//curr_val//' unrecognised option.',.true.)
        Call error(3)
+
     End Select
 
     Call io_set_parameters(io, user_method_read = io_read)
@@ -169,7 +174,8 @@ Module new_control
 
     Case Default
        Call error(0, 'Negative read buffer size not valid, min = 1')
-    end Select
+
+    End Select
 
     ! Get parallel read error checking
 
@@ -231,7 +237,7 @@ Module new_control
           Call error(3)
        End Select
 
-    Else If ( word( 1:6 ) == 'master' ) Then
+    Case ( 'master' ) Then
 
        if (ltmp) then
           io_write = IO_WRITE_SORTED_MASTER
@@ -240,19 +246,24 @@ Module new_control
        end if
 
        Call info('I/O write method: serial by using a single master process',.true.)
-    Else
+    Case Default
        Call info('io_write_method '//curr_val//' unrecognised option.',.true.)
        Call error(3)
-    End If
+
+    End Select
+
 
     Select Case (io_write)
     Case(IO_WRITE_SORTED_MASTER, IO_WRITE_SORTED_NETCDF, IO_WRITE_SORTED_MPIIO, IO_WRITE_SORTED_DIRECT)
        Call info('I/O write type: data sorting on',.true.)
+
     Case(IO_WRITE_UNSORTED_MASTER, IO_WRITE_UNSORTED_MPIIO, IO_WRITE_UNSORTED_DIRECT)
        Call info('I/O write type: data sorting off',.true.)
+
     Case Default
        Call info('io_write_method '//curr_val//' unrecognised option.',.true.)
        Call error(3)
+
     End Select
 
     ! the write method and type are now ready to set
@@ -273,6 +284,7 @@ Module new_control
           End Do
           Write(message,'(a,i10)') 'I/O writers (assumed) ',itmp
           Call info(message,.true.)
+
        Case(1:comm%mxnode)
           Do While ( Mod( comm%mxnode, itmp ) /= 0 )
              itmp = itmp - 1
@@ -373,25 +385,24 @@ Module new_control
        Call io_set_parameters(io, user_error_check = l_tmp )
     End If
 
-    curr_val = params%get_val('output', '')
+    curr_val = params%get_val('io_output', '')
     if (curr_val /= '') Call info('OUTPUT file is '//files(FILE_OUTPUT)%filename,.true.)
-    curr_val = params%get_val('config', '')
+    curr_val = params%get_val('io_config', '')
     if (curr_val /= '') Call info('CONFIG file is '//files(FILE_CONFIG)%filename,.true.)
-    curr_val = params%get_val('field', '')
+    curr_val = params%get_val('io_field', '')
     if (curr_val /= '') Call info('FIELD file is '//files(FILE_FIELD)%filename,.true.)
-    curr_val = params%get_val('statis', '')
+    curr_val = params%get_val('io_statis', '')
     if (curr_val /= '') Call info('STATIS file is '//files(FILE_STATS)%filename,.true.)
-    curr_val = params%get_val('history', '')
+    curr_val = params%get_val('io_history', '')
     if (curr_val /= '') Call info('HISTORY file is '//files(FILE_HISTORY)%filename,.true.)
-    curr_val = params%get_val('historf', '')
+    curr_val = params%get_val('io_historf', '')
     if (curr_val /= '') Call info('HISTORF file is '//files(FILE_HISTORF)%filename,.true.)
-    curr_val = params%get_val('revive', '')
+    curr_val = params%get_val('io_revive', '')
     if (curr_val /= '') Call info('REVIVE file is '//files(FILE_REVIVE)%filename,.true.)
-    curr_val = params%get_val('revcon', '')
+    curr_val = params%get_val('io_revcon', '')
     if (curr_val /= '') Call info('REVCON file is '//files(FILE_REVCON)%filename,.true.)
-    curr_val = params%get_val('revold', '')
+    curr_val = params%get_val('io_revold', '')
     if (curr_val /= '') Call info('REVOLD file is '//files(FILE_REVOLD)%filename,.true.)
-
 
   End Subroutine setup_file_io
 
