@@ -19,6 +19,8 @@ Module hash
      Character(Len=STR_LEN) :: key
      Character(Len=STR_LEN) :: val
      Character(Len=STR_LEN) :: unit
+     Character(Len=STR_LEN) :: description
+     Character(Len=STR_LEN) :: default
   End Type control_parameter
 
   Type, Public :: parameters_hash_table
