@@ -5092,21 +5092,21 @@ Contains
 
           ! get read method
 
-          Call info('', .true.)
+          Call info('', .true., level=3)
           word1 = ' '; word1 = word
           Call get_word(record, word)
           If (word(1:5) == 'mpiio') Then
             io_read = IO_READ_MPIIO
-            Call info('I/O read method: parallel by using MPI-I/O', .true.)
+            Call info('I/O read method: parallel by using MPI-I/O', .true., level=2)
           Else If (word(1:6) == 'direct') Then
             io_read = IO_READ_DIRECT
-            Call info('I/O read method: parallel by using direct access', .true.)
+            Call info('I/O read method: parallel by using direct access', .true., level=2)
           Else If (word(1:6) == 'netcdf') Then
             io_read = IO_READ_NETCDF
-            Call info('I/O read method: parallel by using netCDF', .true.)
+            Call info('I/O read method: parallel by using netCDF', .true., level=2)
           Else If (word(1:6) == 'master') Then
             io_read = IO_READ_MASTER
-            Call info('I/O read method: serial by using a single master process', .true.)
+            Call info('I/O read method: serial by using a single master process', .true., level=2)
           Else
             Call strip_blanks(record)
             Write (message, '(4a)') 'io ', word1(1:Len_trim(word1) + 1), word(1:Len_trim(word) + 1), record
@@ -5134,7 +5134,7 @@ Contains
                 itmp = itmp - 1
               End Do
               Write (message, '(a,i10)') 'I/O readers (assumed) ', itmp
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
             Else
               If (itmp > comm%mxnode) Then
                 tmp = Min(Real(comm%mxnode, wp), 2.0_wp * Real(comm%mxnode, wp)**0.5_wp)
@@ -5143,13 +5143,13 @@ Contains
                   itmp = itmp - 1
                 End Do
                 Write (message, '(a,i10)') 'I/O readers (enforced) ', itmp
-                Call info(message, .true.)
+                Call info(message, .true., level=3)
               Else
                 Do While (Mod(comm%mxnode, itmp) /= 0)
                   itmp = itmp - 1
                 End Do
                 Write (message, '(a,i10)') 'I/O readers set to ', itmp
-                Call info(message, .true.)
+                Call info(message, .true., level=3)
               End If
             End If
 
@@ -5166,21 +5166,21 @@ Contains
             If (itmp == 0) Then
               Call io_get_parameters(io, user_batch_size_read=itmp)
               Write (message, '(a,i10)') 'I/O read batch size (assumed) ', itmp
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
             Else
               itmp = Min(itmp, MAX_BATCH_SIZE)
               Call io_set_parameters(io, user_batch_size_read=itmp)
               Write (message, '(a,i10)') 'I/O read batch size set to ', itmp
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
             End If
           Else If (io_read == IO_READ_MASTER) Then
             Write (message, '(a,i10)') 'I/O readers (enforced) ', 1
-            Call info(message, .true.)
+            Call info(message, .true., level=3)
           Else
             tmp = Min(Real(comm%mxnode, wp), 2.0_wp * Real(comm%mxnode, wp)**0.5_wp)
             itmp = 2**Int(Nearest(Log(tmp) / Log(2.0_wp), +1.0_wp))
             Write (message, '(a,i10)') 'I/O readers (enforced) ', itmp
-            Call info(message, .true.)
+            Call info(message, .true., level=3)
             ! the number of readers is now ready to set
             Call io_set_parameters(io, user_n_io_procs_read=itmp)
           End If
@@ -5194,12 +5194,12 @@ Contains
           If (itmp == 0) Then
             Call io_get_parameters(io, user_buffer_size_read=itmp)
             Write (message, '(a,i10)') 'I/O read buffer size (assumed) ', itmp
-            Call info(message, .true.)
+            Call info(message, .true., level=3)
           Else
             itmp = Min(Max(itmp, 100), Min(itmp, MAX_BUFFER_SIZE))
             Call io_set_parameters(io, user_buffer_size_read=itmp)
             Write (message, '(a,i10)') 'I/O read buffer size set to ', itmp
-            Call info(message, .true.)
+            Call info(message, .true., level=3)
           End If
 
           ! switch error checking flag for reading
@@ -5233,7 +5233,7 @@ Contains
 
           ! get write method
 
-          Call info('', .true.)
+          Call info('', .true., level=3)
           If (word(1:5) == 'mpiio') Then
             io_write = IO_WRITE_SORTED_MPIIO
             Call info('I/O write method: parallel by using MPI-I/O', .true.)
@@ -5287,7 +5287,7 @@ Contains
               record1 = ' '
               record1 = word(1:Len_trim(word) + 1)//record ! back up
               record = record1
-              Call info('I/O write type: data sorting on (assumed)', .true.)
+              Call info('I/O write type: data sorting on (assumed)', .true., level=3)
             End If
           End If
 
@@ -5311,7 +5311,7 @@ Contains
                 itmp = itmp - 1
               End Do
               Write (message, '(a,i10)') 'I/O writers (assumed) ', itmp
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
             Else
               If (itmp > comm%mxnode) Then
                 tmp = Min(Real(comm%mxnode, wp), 8.0_wp * Real(comm%mxnode, wp)**0.5_wp)
@@ -5320,13 +5320,13 @@ Contains
                   itmp = itmp - 1
                 End Do
                 Write (message, '(a,i10)') 'I/O writers (enforced) ', itmp
-                Call info(message, .true.)
+                Call info(message, .true., level=3)
               Else
                 Do While (Mod(comm%mxnode, itmp) /= 0)
                   itmp = itmp - 1
                 End Do
                 Write (message, '(a,i10)') 'I/O writers set to ', itmp
-                Call info(message, .true.)
+                Call info(message, .true., level=3)
               End If
             End If
 
@@ -5343,21 +5343,21 @@ Contains
             If (itmp == 0) Then
               Call io_get_parameters(io, user_batch_size_write=itmp)
               Write (message, '(a,i10)') 'I/O write batch size (assumed) ', itmp
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
             Else
               itmp = Min(itmp, MAX_BATCH_SIZE)
               Call io_set_parameters(io, user_batch_size_write=itmp)
               Write (message, '(a,i10)') 'I/O write batch size set to ', itmp
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
             End If
           Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. io_write == IO_WRITE_SORTED_MASTER) Then
             Write (message, '(a,i10)') 'I/O writers (enforced) ', 1
-            Call info(message, .true.)
+            Call info(message, .true., level=3)
           Else
             tmp = Min(Real(comm%mxnode, wp), 8.0_wp * Real(comm%mxnode, wp)**0.5_wp)
             itmp = 2**Int(Nearest(Log(tmp) / Log(2.0_wp), +1.0_wp))
             Write (message, '(a,i10)') 'I/O writers (enforced) ', itmp
-            Call info(message, .true.)
+            Call info(message, .true., level=3)
             ! the number of writers is now ready to set
             Call io_set_parameters(io, user_n_io_procs_write=itmp)
           End If
@@ -5371,12 +5371,12 @@ Contains
           If (itmp == 0) Then
             Call io_get_parameters(io, user_buffer_size_write=itmp)
             Write (message, '(a,i10)') 'I/O write buffer size (assumed) ', itmp
-            Call info(message, .true.)
+            Call info(message, .true., level=3)
           Else
             itmp = Min(Max(itmp, 100), Min(itmp, MAX_BUFFER_SIZE))
             Call io_set_parameters(io, user_buffer_size_write=itmp)
             Write (message, '(a,i10)') 'I/O write buffer size set to ', itmp
-            Call info(message, .true.)
+            Call info(message, .true., level=3)
           End If
 
           ! switch error checking flag for writing
@@ -5441,8 +5441,8 @@ Contains
       ! read method
 
       Call io_set_parameters(io, user_method_read=IO_READ_MPIIO); io_read = IO_READ_MPIIO
-      Call info('', .true.)
-      Call info('I/O read method: parallel by using MPI-I/O (assumed)', .true.)
+      Call info('', .true., level=2)
+      Call info('I/O read method: parallel by using MPI-I/O (assumed)', .true., level=2)
 
       ! number of readers
 
@@ -5453,25 +5453,25 @@ Contains
       End Do
       Call io_set_parameters(io, user_n_io_procs_read=itmp)
       Write (message, '(a,i10)') 'I/O readers (assumed) ', itmp
-      Call info(message, .true.)
+      Call info(message, .true., level=3)
 
       ! read batch size
 
       Call io_get_parameters(io, user_batch_size_read=itmp)
       Write (message, '(a,i10)') 'I/O read batch size (assumed) ', itmp
-      Call info(message, .true.)
+      Call info(message, .true., level=3)
 
       ! read buffer size
 
       Call io_get_parameters(io, user_buffer_size_read=itmp)
       Write (message, '(a,i10)') 'I/O read buffer size (assumed) ', itmp
-      Call info(message, .true.)
+      Call info(message, .true., level=3)
 
       ! error checking flag for reading
 
       If (io_read /= IO_READ_MASTER) Then
         Call io_set_parameters(io, user_error_check=.false.)
-        Call info('I/O parallel read error checking off (assumed)', .true.)
+        Call info('I/O parallel read error checking off (assumed)', .true., level=3)
       End If
 
     End If
@@ -5481,12 +5481,12 @@ Contains
       ! write method
 
       Call io_set_parameters(io, user_method_write=IO_WRITE_SORTED_MPIIO); io_write = IO_WRITE_SORTED_MPIIO
-      Call info('', .true.)
-      Call info('I/O write method: parallel by using MPI-I/O (assumed)', .true.)
+      Call info('', .true., level=3)
+      Call info('I/O write method: parallel by using MPI-I/O (assumed)', .true., level=2)
 
       ! write type
 
-      Call info('I/O write type: data sorting on (assumed)', .true.)
+      Call info('I/O write type: data sorting on (assumed)', .true., level=3)
 
       ! number of writers
 
@@ -5497,25 +5497,25 @@ Contains
       End Do
       Call io_set_parameters(io, user_n_io_procs_write=itmp)
       Write (message, '(a,i10)') 'I/O writers (assumed) ', itmp
-      Call info(message, .true.)
+      Call info(message, .true., level=3)
 
       ! batch size
 
       Call io_get_parameters(io, user_batch_size_write=itmp)
       Write (message, '(a,i10)') 'I/O write batch size (assumed) ', itmp
-      Call info(message, .true.)
+      Call info(message, .true., level=3)
 
       ! write buffer size
 
       Call io_get_parameters(io, user_buffer_size_write=itmp)
       Write (message, '(a,i10)') 'I/O write buffer size (assumed) ', itmp
-      Call info(message, .true.)
+      Call info(message, .true., level=3)
 
       ! error checking flag for writing
 
       If (io_write /= IO_WRITE_UNSORTED_MASTER .and. io_write /= IO_WRITE_SORTED_MASTER) Then
         Call io_set_parameters(io, user_error_check=.false.)
-        Call info('I/O parallel write error checking off (assumed)', .true.)
+        Call info('I/O parallel write error checking off (assumed)', .true., level=3)
       End If
 
     End If

@@ -126,7 +126,7 @@ Contains
     Write (banner(13), '(a)') "***|     /,=='-,                 ''= )  |"
     Write (banner(14), '(a)') "***|   ;==`-,                           |"
     Write (banner(15), '(a)') "***--------------------------------------"
-    Call info(banner, 15, .true.)
+    Call info(banner, 15, .true., level=-1)
 
     Write (messages(1), '(a)') "*** Activating PLUMED Extension. ***"
     Write (messages(2), '(a)') "*** Using PLUMED input file: "//Trim(plume%input)
@@ -137,7 +137,7 @@ Contains
     Write (messages(7), '(a,es15.6)') "*** Using PLUMED length conversion factor: ", plumed_lengthUnits
     Write (messages(8), '(a,es15.6)') "*** Using PLUMED time conversion factor: ", plumed_timeUnits
     Write (messages(9), '(a,i0)') "*** Using PLUMED restart (0: no, 1: yes): ", plume%restart
-    Call info(messages, 9, .true.)
+    Call info(messages, 9, .true., level=2)
 #else
     Call plumed_message()
 #endif
