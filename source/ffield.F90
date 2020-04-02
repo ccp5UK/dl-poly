@@ -148,6 +148,7 @@ Contains
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
     ! contrib   - a.m.elena march 2019 (remove error 145)
+    ! amended   - i.t.todorov march 2020 tersoff_generate call dependence added
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -4517,7 +4518,7 @@ Contains
 
         ! generate tersoff interpolation arrays
 
-        If (tersoffs%n_potential > 0) Call tersoff_generate(tersoffs)
+        If (tersoffs%n_potential > 0) Call tersoff_generate(sites%ntype_atom, tersoffs)
 
         ! start processing cross atom potential parameters
 
