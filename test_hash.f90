@@ -3,8 +3,8 @@ program test_hash
   Use hash
   Implicit None
 
-  Type( parameters_hash_table ) :: table
-  Type( control_parameter ) :: param
+  Type( hash_table ) :: table
+  Type( control_parameter ) :: param, param2
   Character(Len=256) :: input, key, val, units
 
   open(unit=50, file="test_new_control")
@@ -21,14 +21,15 @@ program test_hash
         call get_word(input, val)
         if (trim(input) /= '') call get_word(input, units)
      end if
-     param = control_parameter(key, val, units)
+     param = control_parameter(key, val, units, 'Hello', '')
      print*, table%hash(key)
      call table%set(key, param)
   end do
 
 99 continue
   call table%keyvals
-  print*, table%get('ewald_precision')
+  Call table%get('ewald_precision', param2)
+  print*, param2
 1000 continue
 
 contains

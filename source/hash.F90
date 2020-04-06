@@ -1,5 +1,4 @@
 Module hash
-
   !!-----------------------------------------------------------------------
   !!
   !! Module containing hash table routines for reading control input
@@ -8,11 +7,22 @@ Module hash
   !! copyright - daresbury laboratory
   !! author    - j.wilkins march 2020
   !!-----------------------------------------------------------------------
-  Use errors_warnings, only : error, error_alloc, error_dealloc
+  Use errors_warnings, only : error_alloc, error_dealloc, error
+  Use kinds, only : wp
   Implicit None
 
   Integer, Parameter :: STR_LEN = 256
   Character(Len=*), Parameter :: BAD_VAL = "VAL_NOT_IN_KEYS"
+
+  Type, Public :: container
+     !! Generic data container
+     Private
+     Class( * ), Allocatable, Private :: data
+   Contains
+     Generic, Public :: Assignment( = ) => set, get
+     Procedure,            Private :: set => set_container
+     Procedure, Pass( C ), Private :: get => get_container
+  End type container
 
   Type, Public :: control_parameter
      !! Type containing breakdown of control parameter
@@ -23,11 +33,13 @@ Module hash
      Character(Len=STR_LEN) :: default
   End Type control_parameter
 
-  Type, Public :: parameters_hash_table
+  Type, Public :: hash_table
      !! Type containing hash table of parameters
      Private
-     Type(control_parameter), dimension(:), allocatable :: table_data
+     Type(container), dimension(:), allocatable :: table_data
+     Character(Len=STR_LEN), dimension(:), allocatable :: table_keys
      Character(Len=STR_LEN), dimension(:), allocatable :: key_names
+     Integer :: collisions = 0
      Integer :: used_keys = -1
      Integer :: size = -1
      !> Values in hash table can be overwritten: Default = False
@@ -38,22 +50,51 @@ Module hash
      Private
      Procedure, Public, Pass :: init => allocate_hash_table
      Procedure, Public, Pass :: set => set_hash_value
-     Procedure, Public, Pass :: get => get_hash_value
-     Procedure, Public, Pass :: get_val => get_param_val
-     Procedure, Public, Pass :: get_unit => get_param_unit
+     Generic  , Public  :: get => get_int, get_double, get_param
      Procedure, Public, Pass :: hash => hash_value
      Procedure, Public, Pass :: keys => print_keys
-     Procedure, Public, Pass :: vals => print_vals
      Procedure, Public, Pass :: keyvals => print_keyvals
      Procedure, Public, Pass(table_to) :: fill => fill_from_table
      Procedure, Public, Pass :: copy => copy_table
      Procedure, Public, Pass :: resize => resize_table
      Procedure, Public, Pass :: expand => expand_table
+     Procedure, Private :: get_int, get_double, get_param
+     Procedure, Private :: get_cont => get_hash_value
+     Procedure, Private, Pass :: get_loc => get_loc
      Final :: cleanup
 
-  End Type parameters_hash_table
+  End Type hash_table
+
+  Interface resolve
+     Module Procedure int_to_int
+     Module Procedure double_to_double
+     Module Procedure param_to_param
+  End Interface resolve
 
 Contains
+
+  Subroutine set_container( C, stuff )
+
+    Implicit None
+
+    Class( container ), Intent( InOut ) :: C
+    Class( *         ), Intent( In    ) :: stuff
+
+    C%data = stuff
+
+  End Subroutine set_container
+
+  Subroutine get_container( stuff, C )
+
+    Implicit None
+
+    Class( container ),              Intent( In    ) :: C
+    Class( *         ), Allocatable, Intent(   Out ) :: stuff
+
+    stuff = C%data
+
+  End Subroutine get_container
+
 
   Subroutine cleanup(table)
     !!-----------------------------------------------------------------------
@@ -63,7 +104,7 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - j.wilkins march 2020
     !!-----------------------------------------------------------------------
-    Type(parameters_hash_table), Intent( InOut ) :: table
+    Type(hash_table), Intent( InOut ) :: table
     Integer :: ierr
 
     if (allocated(table%table_data)) then
@@ -76,8 +117,14 @@ Contains
        If (ierr /= 0) call error_dealloc("hash%key_names", "cleanup hash table")
     end if
 
+    if (allocated(table%table_keys)) then
+       Deallocate(table%table_keys, stat=ierr)
+       If (ierr /= 0) call error_dealloc("hash%table_keys", "cleanup hash table")
+    end if
+
     table%size = -1
     table%used_keys = -1
+    table%collisions = -1
     table%allocated = .false.
 
   End Subroutine cleanup
@@ -91,13 +138,11 @@ Contains
     !! author    - j.wilkins march 2020
     !!-----------------------------------------------------------------------
 
-    Class(parameters_hash_table), Intent( InOut ) :: table
+    Class(hash_table), Intent( InOut ) :: table
 
     !> Number of buckets to allocate
     Integer, Intent( In    ) :: size
     Logical, Optional :: can_overwrite
-    Integer :: i
-
     Integer :: ierr
 
     if (present(can_overwrite)) then
@@ -110,10 +155,11 @@ Contains
     If (ierr /= 0) call error_alloc("hash%table_data", "allocate_hash_table")
     Allocate(table%key_names(size), stat=ierr)
     If (ierr /= 0) call error_alloc("hash%key_names", "allocate_hash_table")
+    Allocate(table%table_keys(size), stat=ierr)
+    If (ierr /= 0) call error_alloc("hash%table_keys", "allocate_hash_table")
 
-    do i = 1, size
-       table%table_data(i) = control_parameter(BAD_VAL, "0", "None")
-    end do
+    table%table_keys(:) = BAD_VAL
+    table%collisions = 0
     table%allocated = .true.
 
   End Subroutine allocate_hash_table
@@ -126,7 +172,7 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - j.wilkins march 2020
     !!-----------------------------------------------------------------------
-    Class(parameters_hash_table) :: table
+    Class(hash_table) :: table
     Character(Len=*), Intent( In    ) :: input
     Integer :: output
     Integer :: i
@@ -140,6 +186,35 @@ Contains
 
   End Function hash_value
 
+  Function get_loc(table, input) result(location)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Find location of input or bad_val if not found
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins march 2020
+    !!-----------------------------------------------------------------------
+    Class(hash_table) :: table
+    Character(Len=*), Intent(In) :: input
+    Integer :: location
+    Character(Len=STR_LEN) :: key
+
+
+    location = table%hash(input)
+
+    key = table%table_keys(location)
+    ! Handle open addressing
+    do while (trim(key) /= trim(input))
+       if (key == BAD_VAL) then
+          exit
+       end if
+       table%collisions = table%collisions + 1
+       location = mod(location + 1, table%size)
+       key = table%table_keys(location)
+    end do
+
+  End Function get_loc
+
   Function get_hash_value(table, input, default) result(output)
     !!-----------------------------------------------------------------------
     !!
@@ -148,109 +223,26 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - j.wilkins march 2020
     !!-----------------------------------------------------------------------
-    Class(parameters_hash_table), Intent( In     ) :: table
+    Class(hash_table), Intent( In     ) :: table
     Character(Len=*), Intent( In    ) :: input
     Integer :: location
-    Type(control_parameter), Intent( In     ) :: default
-    Type(control_parameter) :: output
+    Class(*), Intent( In     ), Optional :: default
+    Class(*), Allocatable :: output
 
     if (.not. table%allocated) call error(0, 'Attempting to get from unallocated table')
 
-    location = table%hash(input)
+    location = table%get_loc(input)
 
     output = table%table_data(location)
-    ! Handle open addressing
-    do while (output%key /= input)
-       if (output%key == BAD_VAL) then
-          exit
+    if (table%table_keys(location) == BAD_VAL) then
+       if (present(default)) then
+          output = default
+       else
+          call error(0, 'No data pertaining to key '//input//' in table')
        end if
-       location = mod(location + 1, table%size)
-       output = table%table_data(location)
-    end do
-
-    if (present(default) .and. output%key == BAD_VAL) then
-       output = default
     end if
 
   End Function get_hash_value
-
-  Function get_param_val(table, key, default) result(output)
-    !!-----------------------------------------------------------------------
-    !!
-    !! Get the parameter value of the key
-    !!
-    !! copyright - daresbury laboratory
-    !! author    - j.wilkins march 2020
-    !!-----------------------------------------------------------------------
-    Class(parameters_hash_table), Intent( In     ) :: table
-    Character(Len=*), Intent( In    ) :: input
-    Integer :: location
-    Type(control_parameter) :: param
-    Character(Len=MAX_LEN), Intent( In     ) :: default
-    Character(Len=MAX_LEN) :: output
-
-    if (.not. table%allocated) call error(0, 'Attempting to get from unallocated table')
-
-    location = table%hash(input)
-
-    param = table%table_data(location)
-    ! Handle open addressing
-    do while (param%key /= input)
-       if (param%key == BAD_VAL) then
-          exit
-       end if
-       location = mod(location + 1, table%size)
-       param = table%table_data(location)
-    end do
-
-    if (present(default) .and. param%key == BAD_VAL) then
-       output = default
-    else if (param%key == BAD_VAL) then
-       call error(0, 'Key '//input//' not found in hash')
-    else
-       output = param%val
-    end if
-
-  end Function get_param_val
-
-  Function get_param_unit(table, key, default) result(output)
-    !!-----------------------------------------------------------------------
-    !!
-    !! Get the parameter value of the key
-    !!
-    !! copyright - daresbury laboratory
-    !! author    - j.wilkins march 2020
-    !!-----------------------------------------------------------------------
-    Class(parameters_hash_table), Intent( In     ) :: table
-    Character(Len=*), Intent( In    ) :: input
-    Integer :: location
-    Type(control_parameter) :: param
-    Character(Len=MAX_LEN), Intent( In     ) :: default
-    Character(Len=MAX_LEN) :: output
-
-    if (.not. table%allocated) call error(0, 'Attempting to get from unallocated table')
-
-    location = table%hash(input)
-
-    param = table%table_data(location)
-    ! Handle open addressing
-    do while (param%key /= input)
-       if (param%key == BAD_VAL) then
-          exit
-       end if
-       location = mod(location + 1, table%size)
-       param = table%table_data(location)
-    end do
-
-    if (present(default) .and. param%key == BAD_VAL) then
-       output = default
-    else if (param%key == BAD_VAL) then
-       call error(0, 'Key '//input//' not found in hash')
-    else
-       output = param%unit
-    end if
-
-  end Function get_param_unit
 
   Subroutine set_hash_value(table, key, input)
     !!-----------------------------------------------------------------------
@@ -260,30 +252,20 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - j.wilkins march 2020
     !!-----------------------------------------------------------------------
-    Class(parameters_hash_table), Intent( InOut ) :: table
+    Class(hash_table), Intent( InOut ) :: table
     Character(Len=*), Intent( In    ) :: key
-    Type(control_parameter), Intent( In    ) :: input
-    Type(control_parameter) :: output
+    Class(*), Intent( In    ) :: input
     Integer :: location
 
     if (.not. table%allocated) call error(0, 'Attempting to set unallocated table')
 
-    location = table%hash(key)
-
-    output = table%table_data(location)
-    if (.not. table%can_overwrite .and. trim(output%key) == trim(key)) &
-         call error(0, 'Cannot overwrite key '//trim(key)//' in hash table')
-
-    ! Handle open addressing
-    do while (output%key /= BAD_VAL)
-       if (.not. table%can_overwrite .and. trim(output%key) == trim(key)) &
-            call error(0, 'Cannot overwrite key '//trim(key)//' in hash table')
-
-       location = mod(location + 1, table%size)
-       output = table%table_data(location)
-    end do
+    location = table%get_loc(key)
+    if (.not. table%can_overwrite .and. table%table_keys(location) /= BAD_VAL) then
+       call error(0, 'Cannot overwrite key '//key)
+    end if
 
     table%table_data(location) = input
+    table%table_keys(location) = key
     table%used_keys = table%used_keys + 1
     table%key_names(table%used_keys) = key
 
@@ -297,7 +279,7 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - j.wilkins march 2020
     !!-----------------------------------------------------------------------
-    Class(parameters_hash_table), Intent( In    ) :: table
+    Class(hash_table), Intent( In    ) :: table
     Integer :: i
 
     do i = 1, table%used_keys
@@ -305,25 +287,6 @@ Contains
     end do
 
   End Subroutine print_keys
-
-  Subroutine print_vals(table)
-    !!-----------------------------------------------------------------------
-    !!
-    !! Print all values in table
-    !!
-    !! copyright - daresbury laboratory
-    !! author    - j.wilkins march 2020
-    !!-----------------------------------------------------------------------
-    Class(parameters_hash_table), Intent( In    ) :: table
-    Type(control_parameter) :: val
-    Integer :: i
-
-    do i = 1, table%used_keys
-       val = table%get(table%key_names(i))
-       print('(2(A,1X))'), val%val, val%unit
-    end do
-
-  End Subroutine print_vals
 
   Subroutine print_keyvals(table)
     !!-----------------------------------------------------------------------
@@ -333,13 +296,13 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - j.wilkins march 2020
     !!-----------------------------------------------------------------------
-    Class(parameters_hash_table), Intent( In    ) :: table
-    Type(control_parameter) :: val
+    Class(hash_table), Intent( In    ) :: table
+    Type(container) :: val
     Integer :: i
 
     do i = 1, table%used_keys
-       val = table%get(table%key_names(i))
-       print('(3(A,1X))'), trim(val%key), trim(val%val), trim(val%unit)
+       val = table%get_cont(table%key_names(i))
+!       print*, val
     end do
 
   End Subroutine print_keyvals
@@ -352,14 +315,14 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - j.wilkins march 2020
     !!-----------------------------------------------------------------------
-    Class(parameters_hash_table), Intent( In    ) :: table_from
-    Class(parameters_hash_table), Intent( InOut ) :: table_to
-    Type(control_parameter) :: val
+    Class(hash_table), Intent( In    ) :: table_from
+    Class(hash_table), Intent( InOut ) :: table_to
+    Integer :: location
     Integer :: i
 
     do i = 1, table_from%used_keys
-       val = table_from%get(table_from%key_names(i))
-       call table_to%set(val%key, val)
+       location = table_from%get_loc(table_from%key_names(i))
+       call table_to%set(table_from%table_keys(location), table_from%table_data(location))
     end do
 
   End Subroutine fill_from_table
@@ -372,7 +335,7 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - j.wilkins march 2020
     !!-----------------------------------------------------------------------
-    Class(parameters_hash_table), Intent( InOut ) :: table
+    Class(hash_table), Intent( InOut ) :: table
     Integer, Optional, Intent( In    ) :: new_size
     Integer :: table_size
 
@@ -395,8 +358,8 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - j.wilkins march 2020
     !!-----------------------------------------------------------------------
-    Class(parameters_hash_table), Intent( In    ) :: table_from
-    Class(parameters_hash_table), Intent( InOut ) :: table_to
+    Class(hash_table), Intent( In    ) :: table_from
+    Class(hash_table), Intent( InOut ) :: table_to
 
     call table_to%resize(table_from%size)
     call table_to%fill(table_from)
@@ -411,8 +374,8 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - j.wilkins march 2020
     !!-----------------------------------------------------------------------
-    Class(parameters_hash_table), Intent( InOut ) :: table
-    Class(parameters_hash_table), Pointer :: table_temp
+    Class(hash_table), Intent( InOut ) :: table
+    Class(hash_table), Pointer :: table_temp
     Integer, Intent( In    ) :: new_size
 
     if (new_size > table%size) then
@@ -427,16 +390,102 @@ Contains
 
   End Subroutine expand_table
 
-  Function print_control_param(param) Result(outstring)
-    Type(control_parameter), Intent( In    ) :: param
-    Character(Len=:), Allocatable :: outstring
-    Integer :: total_len
+  Subroutine get_int( table, key, val, default )
 
-    total_len = len_trim(param%key) + len_trim(param%val) + len_trim(param%units) + 3
-    allocate(outstring(total_len))
-    write(outstring, '(3(A,X))') trim(param%key), trim(param%val), trim(param%units)
+    Implicit None
 
-  end Function print_control_param
+    Class( hash_table ), Intent( InOut ) :: table
+    Character(Len=*), Intent( In    ) :: key
+    Integer               , Intent(   Out ) :: val
+    Integer, Intent( In    ), Optional :: default
+    Class( * ), Allocatable :: stuff
 
+    stuff = table%get_cont(key, default)
 
-End Module hash
+    Call resolve( val, stuff )
+
+  End Subroutine get_int
+
+  Subroutine get_double( table, key, val, default )
+
+    Implicit None
+
+    Class( hash_table ), Intent( InOut ) :: table
+    Character(Len=*), Intent( In    ) :: key
+    Real(kind=wp), Intent( In    ), Optional :: default
+    Real(kind=wp)               , Intent(   Out ) :: val
+    Class( * ), Allocatable :: stuff
+
+    stuff = table%get_cont(key, default)
+
+    Call resolve( val, stuff )
+
+  End Subroutine get_double
+
+  Subroutine get_param( table, key, val, default )
+
+    Implicit None
+
+    Class( hash_table ), Intent( InOut ) :: table
+    Character(Len=*), Intent( In    ) :: key
+    Type(control_parameter), Intent(   Out ) :: val
+    Type(control_parameter), Intent( In    ), Optional :: default
+    Class( * ), Allocatable :: stuff
+
+    stuff = table%get_cont(key, default)
+
+    Call resolve( val, stuff )
+
+  End Subroutine get_param
+
+  Subroutine int_to_int( a, b )
+
+    Implicit None
+
+    Integer   , Intent(   Out ) :: a
+    Class( * ), Intent( In    ) :: b
+
+    Select Type( b )
+    Type is ( Integer )
+       a = b
+    Class Default
+       Call error(0, 'Trying to get integer from a not integer')
+       Stop
+    End Select
+
+  End Subroutine int_to_int
+
+  Subroutine double_to_double( a, b )
+
+    Implicit None
+
+    Real( wp ), Intent(   Out ) :: a
+    Class( * ), Intent( In    ) :: b
+
+    Select Type( b )
+    Type is ( Real( wp ) )
+       a = b
+    Class Default
+       Call error(0, 'Trying to get double from a not double')
+       Stop
+    End Select
+
+  End Subroutine double_to_double
+
+  Subroutine param_to_param( a, b )
+
+    Implicit None
+
+    Type(control_parameter), Intent(   Out ) :: a
+    Class( * ), Intent( In    ) :: b
+
+    Select Type( b )
+    Type is ( control_parameter )
+       a = b
+    Class Default
+       Call error(0, 'Trying to get param from a not param')
+       Stop
+    End Select
+
+  End Subroutine param_to_param
+end Module hash
