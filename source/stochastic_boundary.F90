@@ -59,7 +59,8 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
-    ! contrib   - i.t.todorov july 2019 (pseudo boundary & -3 DoF)
+    ! amended   - i.t.todorov july 2019 (pseudo boundary & -3 DoF)
+    ! amended   - i.t.todorov july 2019 (moving cw. & ecw. in thermostat and s. back here)
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -78,9 +79,9 @@ Contains
 
     Character(Len=256)         :: message
     Integer                    :: fail(1:3), i, i1, i2, irgd, j, jrgd, k, krgd, lrgd, matms, rgdtyp
-    Real(Kind=wp)              :: buffer(1:4), celprp(1:10), cwx, cwy, cwz, ecwx, ecwy, ecwz, fmx, &
-                                  fmy, fmz, mxdr, odott, rot(1:9), scale, tkin, tmp, tqx, tqy, &
-                                  tqz, trot, trx, try, trz, vdotf, vom(1:3), vpx, vpy, vpz, &
+    Real(Kind=wp)              :: buffer(1:4), celprp(1:10), sx, sy, sz, fmx, fmy, fmz, mxdr, &
+                                  odott, rot(1:9), scale, tkin, tmp, tqx, tqy, tqz, trot, &
+                                  trx, try, trz, vdotf, vom(1:3), vpx, vpy, vpz, &
                                   x(1:1), y(1:1), z(1:1)
     Real(Kind=wp), Allocatable :: ggx(:), ggy(:), ggz(:), rgdfxx(:), rgdfyy(:), rgdfzz(:), &
                                   rgdtxx(:), rgdtyy(:), rgdtzz(:), xxt(:), yyt(:), zzt(:)
@@ -114,23 +115,24 @@ Contains
 
         Call invert(config%cell, thermo%rcell, celprp(10))
         Call dcell(config%cell, celprp)
+
 ! pseudo layer width in reduced space
 
-        cwx = thermo%width_pseudo / celprp(7)
-        cwy = thermo%width_pseudo / celprp(8)
-        cwz = thermo%width_pseudo / celprp(9)
+        thermo%cwx = thermo%width_pseudo / celprp(7)
+        thermo%cwy = thermo%width_pseudo / celprp(8)
+        thermo%cwz = thermo%width_pseudo / celprp(9)
 
 ! Distance from the - edge of the MD cell
 
-        ecwx = Nearest(-half_minus + cwx, +1.0_wp) + zero_plus
-        ecwy = Nearest(-half_minus + cwy, +1.0_wp) + zero_plus
-        ecwz = Nearest(-half_minus + cwz, +1.0_wp) + zero_plus
+        thermo%ecwx = Nearest(-half_minus + thermo%cwx, +1.0_wp) + zero_plus
+        thermo%ecwy = Nearest(-half_minus + thermo%cwy, +1.0_wp) + zero_plus
+        thermo%ecwz = Nearest(-half_minus + thermo%cwz, +1.0_wp) + zero_plus
 
 ! Distance from the + edge of the MD cell
 
-        cwx = Nearest(half_minus - cwx, -1.0_wp) - zero_plus
-        cwy = Nearest(half_minus - cwy, -1.0_wp) - zero_plus
-        cwz = Nearest(half_minus - cwz, -1.0_wp) - zero_plus
+        thermo%cwx = Nearest(half_minus - thermo%cwx, -1.0_wp) - zero_plus
+        thermo%cwy = Nearest(half_minus - thermo%cwy, -1.0_wp) - zero_plus
+        thermo%cwz = Nearest(half_minus - thermo%cwz, -1.0_wp) - zero_plus
       End If
 
       ! qualify non-shell, non-frozen free particles (n) for a random kick
@@ -147,20 +149,20 @@ Contains
       Do i = 1, config%natms
 
 ! For all particles on this domain qualify if they fall in the boundary layer
-        thermo%sx = thermo%rcell(1) * config%parts(i)%xxx + thermo%rcell(4) * config%parts(i)%yyy + &
+        sx = thermo%rcell(1) * config%parts(i)%xxx + thermo%rcell(4) * config%parts(i)%yyy + &
                     thermo%rcell(7) * config%parts(i)%zzz
-        thermo%sx = Abs(thermo%sx - Anint(thermo%sx))
-        thermo%sy = thermo%rcell(2) * config%parts(i)%xxx + thermo%rcell(5) * config%parts(i)%yyy + &
+        sx = Abs(sx - Anint(sx))
+        sy = thermo%rcell(2) * config%parts(i)%xxx + thermo%rcell(5) * config%parts(i)%yyy + &
                     thermo%rcell(8) * config%parts(i)%zzz
-        thermo%sy = Abs(thermo%sy - Anint(thermo%sy))
-        thermo%sz = thermo%rcell(3) * config%parts(i)%xxx + thermo%rcell(6) * config%parts(i)%yyy + &
+        sy = Abs(sy - Anint(sy))
+        sz = thermo%rcell(3) * config%parts(i)%xxx + thermo%rcell(6) * config%parts(i)%yyy + &
                     thermo%rcell(9) * config%parts(i)%zzz
-        thermo%sz = Abs(thermo%sz - Anint(thermo%sz))
+        sz = Abs(sz - Anint(sz))
 
         If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp .and. cshell%legshl(0, i) >= 0) Then
-          If ((thermo%sx <= ecwx .or. thermo%sx >= cwx) .or. &
-              (thermo%sy <= ecwy .or. thermo%sy >= cwy) .or. &
-              (thermo%sz <= ecwz .or. thermo%sz >= cwz)) Then
+          If ((sx <= thermo%ecwx .or. sx >= thermo%cwx) .or. &
+              (sy <= thermo%ecwy .or. sy >= thermo%cwy) .or. &
+              (sz <= thermo%ecwz .or. sz >= thermo%cwz)) Then
             j = j + 1
             thermo%qn(i) = 1
           End If
