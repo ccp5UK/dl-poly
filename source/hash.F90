@@ -6,6 +6,7 @@ Module hash
   !!
   !! copyright - daresbury laboratory
   !! author    - j.wilkins march 2020
+  !! contributions - i.j.bush april 2020
   !!-----------------------------------------------------------------------
   Use errors_warnings, only : error_alloc, error_dealloc, error
   Use hashables, only : control_parameter, unit_data, resolve
