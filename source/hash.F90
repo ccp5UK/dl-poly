@@ -8,8 +8,11 @@ Module hash
   !! author    - j.wilkins march 2020
   !!-----------------------------------------------------------------------
   Use errors_warnings, only : error_alloc, error_dealloc, error
+  Use hashables, only : control_parameter, unit_data, resolve
   Use kinds, only : wp
   Implicit None
+
+  Private
 
   Integer, Parameter :: STR_LEN = 256
   Character(Len=*), Parameter :: BAD_VAL = "VAL_NOT_IN_KEYS"
@@ -23,15 +26,6 @@ Module hash
      Procedure,            Private :: set => set_container
      Procedure, Pass( C ), Private :: get => get_container
   End type container
-
-  Type, Public :: control_parameter
-     !! Type containing breakdown of control parameter
-     Character(Len=STR_LEN) :: key
-     Character(Len=STR_LEN) :: val
-     Character(Len=STR_LEN) :: unit
-     Character(Len=STR_LEN) :: description
-     Character(Len=STR_LEN) :: default
-  End Type control_parameter
 
   Type, Public :: hash_table
      !! Type containing hash table of parameters
@@ -50,30 +44,30 @@ Module hash
      Private
      Procedure, Public, Pass :: init => allocate_hash_table
      Procedure, Public, Pass :: set => set_hash_value
-     Generic  , Public  :: get => get_int, get_double, get_param
+     Generic  , Public  :: get => get_int, get_double, get_param, get_unit
      Procedure, Public, Pass :: hash => hash_value
      Procedure, Public, Pass :: keys => print_keys
-     Procedure, Public, Pass :: keyvals => print_keyvals
      Procedure, Public, Pass(table_to) :: fill => fill_from_table
      Procedure, Public, Pass :: copy => copy_table
      Procedure, Public, Pass :: resize => resize_table
      Procedure, Public, Pass :: expand => expand_table
-     Procedure, Private :: get_int, get_double, get_param
+     Procedure, Private :: get_int, get_double, get_param, get_unit
      Procedure, Private :: get_cont => get_hash_value
      Procedure, Private, Pass :: get_loc => get_loc
      Final :: cleanup
 
   End Type hash_table
 
-  Interface resolve
-     Module Procedure int_to_int
-     Module Procedure double_to_double
-     Module Procedure param_to_param
-  End Interface resolve
-
 Contains
 
   Subroutine set_container( C, stuff )
+    !!-----------------------------------------------------------------------
+    !!
+    !! dl_poly_4 subroutine for setting generic data container
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.j.bush april 2020
+    !!-----------------------------------------------------------------------
 
     Implicit None
 
@@ -85,6 +79,13 @@ Contains
   End Subroutine set_container
 
   Subroutine get_container( stuff, C )
+    !!-----------------------------------------------------------------------
+    !!
+    !! dl_poly_4 subroutine for getting generic data container
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.j.bush april 2020
+    !!-----------------------------------------------------------------------
 
     Implicit None
 
@@ -94,7 +95,6 @@ Contains
     stuff = C%data
 
   End Subroutine get_container
-
 
   Subroutine cleanup(table)
     !!-----------------------------------------------------------------------
@@ -129,7 +129,7 @@ Contains
 
   End Subroutine cleanup
 
-  Subroutine allocate_hash_table(table, size, can_overwrite)
+  Subroutine allocate_hash_table(table, nbuckets, can_overwrite)
     !!-----------------------------------------------------------------------
     !!
     !! Subroutine for allocation and initialisation of hash table
@@ -141,7 +141,7 @@ Contains
     Class(hash_table), Intent( InOut ) :: table
 
     !> Number of buckets to allocate
-    Integer, Intent( In    ) :: size
+    Integer, Intent( In    ) :: nbuckets
     Logical, Optional :: can_overwrite
     Integer :: ierr
 
@@ -149,13 +149,13 @@ Contains
        table%can_overwrite = can_overwrite
     end if
 
-    table%size = size
+    table%size = nbuckets
     table%used_keys = 0
-    Allocate(table%table_data(size), stat=ierr)
+    Allocate(table%table_data(nbuckets), stat=ierr)
     If (ierr /= 0) call error_alloc("hash%table_data", "allocate_hash_table")
-    Allocate(table%key_names(size), stat=ierr)
+    Allocate(table%key_names(nbuckets), stat=ierr)
     If (ierr /= 0) call error_alloc("hash%key_names", "allocate_hash_table")
-    Allocate(table%table_keys(size), stat=ierr)
+    Allocate(table%table_keys(nbuckets), stat=ierr)
     If (ierr /= 0) call error_alloc("hash%table_keys", "allocate_hash_table")
 
     table%table_keys(:) = BAD_VAL
@@ -186,7 +186,7 @@ Contains
 
   End Function hash_value
 
-  Function get_loc(table, input) result(location)
+  Function get_loc(table, input, must_find) result(location)
     !!-----------------------------------------------------------------------
     !!
     !! Find location of input or bad_val if not found
@@ -196,6 +196,7 @@ Contains
     !!-----------------------------------------------------------------------
     Class(hash_table) :: table
     Character(Len=*), Intent(In) :: input
+    Logical, Intent(In), Optional :: must_find
     Integer :: location
     Character(Len=STR_LEN) :: key
 
@@ -212,6 +213,10 @@ Contains
        location = mod(location + 1, table%size)
        key = table%table_keys(location)
     end do
+
+    if (present(must_find)) then
+       if (must_find .and. key == BAD_VAL) call error(0, 'Key '//input//' not found in table')
+    end if
 
   End Function get_loc
 
@@ -287,25 +292,6 @@ Contains
     end do
 
   End Subroutine print_keys
-
-  Subroutine print_keyvals(table)
-    !!-----------------------------------------------------------------------
-    !!
-    !! Print keys and values in table
-    !!
-    !! copyright - daresbury laboratory
-    !! author    - j.wilkins march 2020
-    !!-----------------------------------------------------------------------
-    Class(hash_table), Intent( In    ) :: table
-    Type(container) :: val
-    Integer :: i
-
-    do i = 1, table%used_keys
-       val = table%get_cont(table%key_names(i))
-!       print*, val
-    end do
-
-  End Subroutine print_keyvals
 
   Subroutine fill_from_table(table_from, table_to)
     !!-----------------------------------------------------------------------
@@ -438,54 +424,20 @@ Contains
 
   End Subroutine get_param
 
-  Subroutine int_to_int( a, b )
+  Subroutine get_unit( table, key, val, default )
 
     Implicit None
 
-    Integer   , Intent(   Out ) :: a
-    Class( * ), Intent( In    ) :: b
+    Class( hash_table ), Intent( InOut ) :: table
+    Character(Len=*), Intent( In    ) :: key
+    Type(unit_data), Intent(   Out ) :: val
+    Type(unit_data), Intent( In    ), Optional :: default
+    Class( * ), Allocatable :: stuff
 
-    Select Type( b )
-    Type is ( Integer )
-       a = b
-    Class Default
-       Call error(0, 'Trying to get integer from a not integer')
-       Stop
-    End Select
+    stuff = table%get_cont(key, default)
 
-  End Subroutine int_to_int
+    Call resolve( val, stuff )
 
-  Subroutine double_to_double( a, b )
+  End Subroutine get_unit
 
-    Implicit None
-
-    Real( wp ), Intent(   Out ) :: a
-    Class( * ), Intent( In    ) :: b
-
-    Select Type( b )
-    Type is ( Real( wp ) )
-       a = b
-    Class Default
-       Call error(0, 'Trying to get double from a not double')
-       Stop
-    End Select
-
-  End Subroutine double_to_double
-
-  Subroutine param_to_param( a, b )
-
-    Implicit None
-
-    Type(control_parameter), Intent(   Out ) :: a
-    Class( * ), Intent( In    ) :: b
-
-    Select Type( b )
-    Type is ( control_parameter )
-       a = b
-    Class Default
-       Call error(0, 'Trying to get param from a not param')
-       Stop
-    End Select
-
-  End Subroutine param_to_param
 end Module hash

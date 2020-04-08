@@ -1,3 +1,3 @@
 #!/bin/sh
 rm *.mod
-mpif90 -Wall -Wextra -std=f2008 -Wall -Wextra -pedantic -o test-hash source/kinds.F90 source/particle.F90 source/comms.F90 source/errors_warnings.F90 source/hash.F90 test_hash.f90
+mpif90 -Wall -Wextra -std=f2008 -Wall -Wextra -pedantic -o test-hash source/kinds.F90 source/constants.F90 source/particle.F90 source/comms.F90 source/errors_warnings.F90 source/hashables.F90 source/hash.F90 source/units.F90 test_hash.f90

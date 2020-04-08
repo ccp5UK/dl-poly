@@ -1,11 +1,16 @@
 program test_hash
 
   Use hash
+  Use units
+  Use hashables, only : control_parameter, unit_data
+  Use kinds, only : wp
   Implicit None
 
   Type( hash_table ) :: table
   Type( control_parameter ) :: param, param2
   Character(Len=256) :: input, key, val, units
+  Type( unit_data ) :: test
+  Real( kind = wp ) :: unit_test
 
   open(unit=50, file="test_new_control")
 
@@ -27,10 +32,13 @@ program test_hash
   end do
 
 99 continue
-  call table%keyvals
   Call table%get('ewald_precision', param2)
   print*, param2
 1000 continue
+
+  call initialise_units()
+  unit_test = convert_units(1.0_wp, 'internal_e', 'j/mol')
+  print*, unit_test
 
 contains
 
