@@ -49,8 +49,8 @@ contains
     Class(unit_data), Intent( in ) :: a, b
 
     unit_mult = unit_data( &
-         name = a%name//" "//b%name, &
-         abbrev = a%abbrev//b%abbrev, &
+         name = trim(a%name)//" "//b%name, &
+         abbrev = trim(a%abbrev)//b%abbrev, &
          conversion_to_internal = a%conversion_to_internal*b%conversion_to_internal, &
          dims = a%dims + b%dims &
          )
@@ -60,8 +60,8 @@ contains
     Class(unit_data), Intent( in ) :: a, b
 
     unit_div = unit_data( &
-         name = a%name//" per "//b%name, &
-         abbrev = a%abbrev//"/"//b%abbrev, &
+         name = trim(a%name)//" per "//b%name, &
+         abbrev = trim(a%abbrev)//"/"//b%abbrev, &
          conversion_to_internal = a%conversion_to_internal/b%conversion_to_internal, &
          dims = a%dims - b%dims &
          )
@@ -75,8 +75,8 @@ contains
     write(b_str, "(i0.1)") b
 
     unit_pow = unit_data( &
-         name = a%name//"^"//trim(b_str), &
-         abbrev = a%abbrev//"^"//trim(b_str), &
+         name = trim(a%name)//"^"//trim(b_str), &
+         abbrev = trim(a%abbrev)//"^"//trim(b_str), &
          conversion_to_internal = a%conversion_to_internal**b, &
          dims = a%dims*b &
     )

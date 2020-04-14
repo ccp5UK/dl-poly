@@ -36,19 +36,19 @@ contains
     Real(kind=wp), Parameter :: electron_charge = 1.6021766208e-19_wp ! C
     Real(kind=wp), Parameter :: avogadro = 6.022140857e23_wp
 
-    Real(kind=wp), Parameter :: metre = 1e10_wp
+    Real(kind=wp), Parameter :: metre = 1e-10_wp
     Real(kind=wp), Parameter :: bohr = 0.52916_wp
 
-    Real(kind=wp), Parameter :: joulepmol = 0.1_wp
-    Real(kind=wp), Parameter :: caloriepmol = 0.41842_wp
+    Real(kind=wp), Parameter :: joulepmol = 10.0_wp
+    Real(kind=wp), Parameter :: caloriepmol = 1.0_wp / (4.1842_wp/joulepmol)
     Real(kind=wp), Parameter :: ev = 0.00010364272224984791_wp
     Real(kind=wp), Parameter :: hartree = ev*27.211396641308_wp
 
     Real(kind=wp), Parameter :: kilogram = 6.022e26_wp
 
-    Real(kind=wp), Parameter :: second = 1e12_wp
+    Real(kind=wp), Parameter :: second = 1e-12_wp
 
-    Real(kind=wp), Parameter :: atmosphere = 0.006101929957459297_wp
+    Real(kind=wp), Parameter :: atmosphere = 163.882576
     Real(kind=wp), Parameter :: pascal = 6.02213665167516e-8_wp
 
     Real(kind=wp), Parameter :: newton = kilogram*metre/second**2
@@ -93,7 +93,7 @@ contains
     ! Energy
 
     call units_table%set("internal_e", &
-         & init_unit(abbrev="internal_e", name="10 J/mol", mass=1, length=2, time=-2, to_internal=1.0_wp))
+         & init_unit(abbrev="internal_e", name="10 J/mol", mass=1, length=2, time=-2, mol=-1, to_internal=1.0_wp))
     call units_table%set("j", init_unit(abbrev="J", name="Joule", mass=1, length=2, time=-2, to_internal=joulepmol*avogadro))
     call units_table%set("cal", &
          & init_unit(abbrev="Cal", name="Calorie", mass=1, length=2, time=-2, to_internal=caloriepmol*avogadro))
@@ -124,8 +124,8 @@ contains
 
     ! Voltage
 
-    call units_table%set("v", &
-         & init_unit(abbrev="V", name="Volt", mass=1, length=2, time=-3, current=-1, to_internal=1.0_wp))
+    call units_table%set("v", init_unit(abbrev="V", name="Volt", mass=1, length=2, time=-3, current=-1, &
+         & to_internal=1.0_wp/(electron_charge*second)))
 
     ! Mols
 
@@ -149,7 +149,6 @@ contains
     from_unit = parse_unit_string(from)
     to_unit = parse_unit_string(to)
     output = from_unit / to_unit
-    print*, output%dims
     if (any(output%dims /= 0)) call error(0, 'Cannot convert between '//from//' & '//to//' different dimensions')
     res = val / output%conversion_to_internal
 
@@ -161,26 +160,25 @@ contains
     Type(unit_data), intent(out) :: factor
     Character(len=*), Parameter :: prefix_symbol = "YZEPTGMk dcmunpfazy"
     Type(unit_data), Dimension(19), Parameter :: prefix = [ &
-         & unit_data(name="Yotta", abbrev="Y", conversion_to_internal=1e24_wp), &
-         & unit_data(name="Zetta", abbrev="Z", conversion_to_internal=1e21_wp), &
-         & unit_data(name="Exa",   abbrev="E", conversion_to_internal=1e18_wp), &
-         & unit_data(name="Peta",  abbrev="P", conversion_to_internal=1e15_wp), &
-         & unit_data(name="Tera",  abbrev="T", conversion_to_internal=1e12_wp), &
-         & unit_data(name="Giga",  abbrev="G", conversion_to_internal=1e9_wp), &
-         & unit_data(name="Mega",  abbrev="M", conversion_to_internal=1e6_wp), &
-         & unit_data(name="Kilo",  abbrev="k", conversion_to_internal=1e3_wp), &
+         & unit_data(name="Yotta", abbrev="Y", conversion_to_internal=1e-24_wp), &
+         & unit_data(name="Zetta", abbrev="Z", conversion_to_internal=1e-21_wp), &
+         & unit_data(name="Exa",   abbrev="E", conversion_to_internal=1e-18_wp), &
+         & unit_data(name="Peta",  abbrev="P", conversion_to_internal=1e-15_wp), &
+         & unit_data(name="Tera",  abbrev="T", conversion_to_internal=1e-12_wp), &
+         & unit_data(name="Giga",  abbrev="G", conversion_to_internal=1e-9_wp), &
+         & unit_data(name="Mega",  abbrev="M", conversion_to_internal=1e-6_wp), &
+         & unit_data(name="Kilo",  abbrev="k", conversion_to_internal=1e-3_wp), &
          & null_unit, &
-         & unit_data(name="Deci",  abbrev="d", conversion_to_internal=1e-1_wp), &
-         & unit_data(name="Centi", abbrev="c", conversion_to_internal=1e-2_wp), &
-         & unit_data(name="Milli", abbrev="m", conversion_to_internal=1e-3_wp), &
-         & unit_data(name="Micro", abbrev="u", conversion_to_internal=1e-6_wp), &
-         & unit_data(name="Nano",  abbrev="n", conversion_to_internal=1e-9_wp), &
-         & unit_data(name="Pico",  abbrev="p", conversion_to_internal=1e-12_wp), &
-         & unit_data(name="Femto", abbrev="f", conversion_to_internal=1e-15_wp), &
-         & unit_data(name="Atto",  abbrev="a", conversion_to_internal=1e-18_wp), &
-         & unit_data(name="Zepto", abbrev="z", conversion_to_internal=1e-21_wp), &
-         & unit_data(name="Yocto",abbrev="y", conversion_to_internal=1e-24_wp)]
-
+         & unit_data(name="Deci",  abbrev="d", conversion_to_internal=1e1_wp), &
+         & unit_data(name="Centi", abbrev="c", conversion_to_internal=1e2_wp), &
+         & unit_data(name="Milli", abbrev="m", conversion_to_internal=1e3_wp), &
+         & unit_data(name="Micro", abbrev="u", conversion_to_internal=1e6_wp), &
+         & unit_data(name="Nano",  abbrev="n", conversion_to_internal=1e9_wp), &
+         & unit_data(name="Pico",  abbrev="p", conversion_to_internal=1e12_wp), &
+         & unit_data(name="Femto", abbrev="f", conversion_to_internal=1e15_wp), &
+         & unit_data(name="Atto",  abbrev="a", conversion_to_internal=1e18_wp), &
+         & unit_data(name="Zepto", abbrev="z", conversion_to_internal=1e21_wp), &
+         & unit_data(name="Yocto", abbrev="y", conversion_to_internal=1e24_wp)]
 
     factor = null_unit
     if (.not. units_table%in(string(2:))) then
@@ -277,7 +275,6 @@ contains
        output(i) = string(j:k-1)
        j = k
     end do
-    print*, output
   end Subroutine decompose_unit_string
 
 end Module units

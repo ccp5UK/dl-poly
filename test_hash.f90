@@ -33,10 +33,13 @@ program test_hash
 99 continue
 
   call initialise_units()
-  unit_test = convert_units(1.0_wp, 'ns', 'ps')
+  unit_test = convert_units(1.0_wp, 'internal_t', 's')
   print*, unit_test
 
-  unit_test = convert_units(1.0_wp, 'Mpa', 'internal_p')
+  unit_test = convert_units(1.0_wp, 'katm', 'internal_p')
+  print*, unit_test
+
+  unit_test = convert_units(1.0_wp, 'kcal', 'j')
   print*, unit_test
 
 contains
