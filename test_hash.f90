@@ -36,7 +36,8 @@ program test_hash
   unit_test = convert_units(1.0_wp, 'ns', 'ps')
   print*, unit_test
 
-  print*, convert_units(1.0_wp, 'katm', 'MPa')
+  unit_test = convert_units(1.0_wp, 'Mpa', 'internal_p')
+  print*, unit_test
 
 contains
 
