@@ -55,6 +55,7 @@ Module hash
      Procedure, Private :: get_int, get_double, get_param, get_unit
      Procedure, Private :: get_cont => get_hash_value
      Procedure, Private, Pass :: get_loc => get_loc
+     Procedure, Public, Pass :: in => contains_value
      Final :: cleanup
 
   End Type hash_table
@@ -220,6 +221,26 @@ Contains
     end if
 
   End Function get_loc
+
+  Function contains_value(table, input) result(output)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Retrieve stored value from hash table
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins march 2020
+    !!-----------------------------------------------------------------------
+    Class(hash_table), Intent( In     ) :: table
+    Character(Len=*), Intent( In    ) :: input
+    Integer :: location
+    Logical :: output
+
+    if (.not. table%allocated) call error(0, 'Attempting to get from unallocated table')
+
+    location = table%get_loc(input)
+    output = table%table_keys(location) == input
+
+  End Function contains_value
 
   Function get_hash_value(table, input, default) result(output)
     !!-----------------------------------------------------------------------

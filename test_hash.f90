@@ -27,18 +27,16 @@ program test_hash
         if (trim(input) /= '') call get_word(input, units)
      end if
      param = control_parameter(key, val, units, 'Hello', '')
-     print*, table%hash(key)
      call table%set(key, param)
   end do
 
 99 continue
-  Call table%get('ewald_precision', param2)
-  print*, param2
-1000 continue
 
   call initialise_units()
-  unit_test = convert_units(1.0_wp, 'internal_e', 'j/mol')
+  unit_test = convert_units(1.0_wp, 'ns', 'ps')
   print*, unit_test
+
+  print*, convert_units(1.0_wp, 'katm', 'MPa')
 
 contains
 

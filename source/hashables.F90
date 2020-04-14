@@ -9,10 +9,10 @@ Module hashables
 
   Type, Public :: unit_data
      !! Type containing data corresponding to units
-     Integer, Dimension(7) :: dims = [0, 0, 0, 0, 0, 0, 0] ! mass length time temp mol current luminosity
      Character(Len=STR_LEN) :: name
      Character(Len=STR_LEN) :: abbrev
      Real(Kind=wp) :: conversion_to_internal
+     Integer, Dimension(7) :: dims = [0, 0, 0, 0, 0, 0, 0] ! mass length time temp mol current luminosity
    contains
      Generic, Public :: Operator(*) => unit_mult
      Generic, Public :: Operator(/) => unit_div
@@ -38,7 +38,10 @@ Module hashables
      Module Procedure resolve_unit
   End Interface resolve
 
+  Type(unit_data), Public, Parameter :: null_unit = unit_data('', '', 1.0_wp)
+
   Public :: resolve
+  Public :: init_unit
 
 contains
 
