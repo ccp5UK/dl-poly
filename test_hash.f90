@@ -9,6 +9,7 @@ program test_hash
   Type( hash_table ) :: table
   Type( control_parameter ) :: param, param2
   Character(Len=256) :: input, key, val, units
+  Character(Len=256) :: unitA, unitB
   Type( unit_data ) :: test
   Real( kind = wp ) :: unit_test
 
@@ -33,14 +34,22 @@ program test_hash
 99 continue
 
   call initialise_units()
-  unit_test = convert_units(1.0_wp, 'internal_t', 's')
+  unit_test = convert_units(1.0_wp, 'e.V', 'J')
   print*, unit_test
 
-  unit_test = convert_units(1.0_wp, 'katm', 'internal_p')
+  unit_test = convert_units(1.0_wp, 'm/s', 'internal_v')
   print*, unit_test
 
-  unit_test = convert_units(1.0_wp, 'kcal', 'j')
+  unit_test = convert_units(1.0_wp, 'atm', 'Gpa')
   print*, unit_test
+
+  do
+     read(*, '(A)') unitA
+     read(*, '(A)') unitB
+     unit_test = convert_units(1.0_wp, trim(unitA), trim(unitB))
+     print*, unit_test
+  end do
+
 
 contains
 

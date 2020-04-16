@@ -7,6 +7,8 @@ Module hashables
   Private
   Integer, Parameter :: STR_LEN = 256
 
+  Integer, Parameter, Public :: DATA_INT=1, DATA_FLOAT=2, DATA_STRING=3, DATA_BOOL=4, DATA_OPTION=5, DATA_VECTOR3=6, DATA_VECTOR6=7
+
   Type, Public :: unit_data
      !! Type containing data corresponding to units
      Character(Len=STR_LEN) :: name
@@ -24,11 +26,20 @@ Module hashables
 
   Type, Public :: control_parameter
      !! Type containing breakdown of control parameter
-     Character(Len=STR_LEN) :: key
-     Character(Len=STR_LEN) :: val
-     Character(Len=STR_LEN) :: unit_type
-     Character(Len=STR_LEN) :: description
-     Character(Len=STR_LEN) :: default
+     !> Internal key name
+     Character(Len=30) :: key = ""
+     !> Long name to be printed on high print_level
+     Character(Len=STR_LEN) :: name = ""
+     !> Current value -- Initialise to default
+     Character(Len=STR_LEN) :: val = ""
+     !> User specified units
+     Character(Len=STR_LEN) :: units = ""
+     !> Units to be converted to internally
+     Character(Len=STR_LEN) :: internal_units = ""
+     !> Information to be printed with help
+     Character(Len=STR_LEN) :: description = ""
+     !> Control parameter data type (int, float, vector3, vector6, string, bool, option)
+     Character(Len=10) :: data_type = 0
   End Type control_parameter
 
   Interface resolve
@@ -118,7 +129,6 @@ contains
     end if
 
   end Function init_unit
-
 
   Subroutine resolve_int( a, b )
 

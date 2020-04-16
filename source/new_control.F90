@@ -1,7 +1,8 @@
 Module new_control
 
   Use comms, only: comms_type
-  Use hash, only: parameters_hash_table, control_parameter, MAX_LEN
+  Use hash, only: parameters_hash_table, control_parameter, STR_LEN, &
+       & DATA_INT, DATA_FLOAT, DATA_STRING, DATA_BOOL, DATA_OPTION, DATA_VECTOR3, DATA_VECTOR6
   Use parse, only: get_word, get_line, lower_case
   Use filename, Only : file_type,FILE_CONTROL,FILE_OUTPUT,FILE_CONFIG,FILE_FIELD, &
        FILE_STATS,FILE_HISTORY,FILE_HISTORF,FILE_REVIVE,FILE_REVCON, &
@@ -429,6 +430,1189 @@ Module new_control
 
   End Function parse_bool
 
+  Subroutine initialise_control(params)
+    Type( parameters_hash_table ), intent(   Out ) :: params
+
+    Call table%init(256)
+
+    table%set('', control_parameter( &
+         key = '', &
+         name = '', &
+         val = '', &
+         units = '', &
+         internal_units = '', &
+         description = '', &
+         multiline = .false., &
+         bool = .false., &
+         string = .false.))
+
+    table%set('title', control_parameter( &
+         key = 'title', &
+         name = '', &
+         val = '', &
+         description = "Run title", &
+         data_type = DATA_STRING))
+
+    table%set('output_energy', control_parameter( &
+         key = 'output_energy', &
+         name= 'Output Final Energy', &
+         val = 'OFF', &
+         data_type = DATA_BOOL, &
+         description = "Output final energy e_tot in output file"))
+
+    table%set('write_ascii_revive', control_parameter( &
+         key = 'write_ascii_revive', &
+         name = 'Write plain-text REVIVE', &
+         val = 'OFF', &
+         data_type = DATA_BOOL, &
+         description = "Write REVIVE as a human-readable (ASCII) file"))
+
+    table%set('read_ascii_revold', control_parameter( &
+         key = 'read_ascii_revold', &
+         name = 'Read plain-text REVOLD', &
+         val = 'OFF', &
+         data_type = DATA_BOOL, &
+         description = "Read human-readable (ASCII) REVOLD file"))
+
+    table%set('initial_minimum_separation', control_parameter( &
+         key = 'initial_minimum_separation', &
+         name = 'Initial minimum separation', &
+         val = '-1.0', &
+         units = 'internal_l', &
+         internal_units = 'internal_l', &
+         data_type = DATA_FLOAT, &
+         description = 'Turn on the check on minimum separation distance between VNL pairs at re/start'))
+
+    table%set('metal_direct', control_parameter( &
+         key = 'metal_direct', &
+         name = 'Direct metallic force calculation', &
+         val = 'OFF', &
+         description = "Enable direct (non-tabulated) calculation of metallic forces", &
+         data_type = DATA_BOOL))
+
+    table%set("metal_sqrtrho", control_parameter( &
+         key = "metal_sqrtrho", &
+         name = "SqrtRho metallic interpolation", &
+         val = "OFF", &
+         description = "Enable metal sqrtrho interpolation option for EAM embeding function in TABEAM", &
+         data_type = DATA_BOOL))
+
+    table%set("slab", control_parameter( &
+         key = "slab", &
+         name = "Slab", &
+         val = "OFF", &
+         description = "Enable slab mechanics", &
+         data_type = DATA_BOOL))
+
+    table%set("io_read_method", control_parameter( &
+         key = "io_read_method", &
+         name = "I/O read method", &
+         val = "mpiio", &
+         description = "Set I/O read method, possible read methods: "//&
+         "mpiio, direct, netcdf, master", &
+         data_type = DATA_OPTION))
+
+    table%set("io_read_readers", control_parameter( &
+         key = "io_read_readers", &
+         name = "Num parallel I/O readers", &
+         val = "0", &
+         units = "(Automatic)", &
+         description = "Set number of parallel I/O readers", &
+         data_type = DATA_INT))
+
+    table%set("io_read_batch_size", control_parameter( &
+         key = "io_read_batch_size", &
+         name = "I/O reader batch size", &
+         val = "0", &
+         units = "(Automatic)", &
+         description = "Set I/O reader batch size", &
+         data_type = DATA_INT))
+
+    table%set("io_read_buffer_size", control_parameter( &
+         key = "io_read_buffer_size", &
+         name = "I/O reader buffer size", &
+         val = "0", &
+         units = "(Automatic)", &
+         description = "Set I/O reader buffer size", &
+         data_type = DATA_INT))
+
+
+    table%set("io_write_method", control_parameter( &
+         key = "io_write_method", &
+         name = "I/O write method", &
+         val = "mpiio", &
+         description = "Set I/O write method, possible write methods: "//&
+         "mpiio, direct, netcdf, master", &
+         data_type = DATA_OPTION))
+
+    table%set("io_write_writers", control_parameter( &
+         key = "io_write_writers", &
+         name = "Num parallel I/O writers", &
+         val = "0", &
+         units = "(Automatic)", &
+         description = "Set number of parallel I/O writers", &
+         data_type = DATA_INT))
+
+    table%set("io_write_batch_size", control_parameter( &
+         key = "io_write_batch_size", &
+         name = "I/O writer batch size", &
+         val = "0", &
+         units = "(Automatic)", &
+         description = "Set I/O writer batch size", &
+         data_type = DATA_INT))
+
+    table%set("io_write_buffer_size", control_parameter( &
+         key = "io_write_buffer_size", &
+         name = "I/O writer buffer size", &
+         val = "0", &
+         units = "(Automatic)", &
+         description = "Set I/O writer buffer size", &
+         data_type = DATA_INT))
+
+
+    table%set("io_write_sorted", control_parameter( &
+         key = "io_write_sorted", &
+         name = "I/O sorted writing", &
+         val = "ON", &
+         description = "Enable sorted output for atomic data", &
+         data_type = DATA_BOOL))
+
+    table%set("io_file_output", control_parameter( &
+         key = "io_file_output", &
+         name = "Output filepath", &
+         val = "SCREEN", &
+         description = "Set output filepath, special options: SCREEN, NONE"
+         data_type = DATA_STRING))
+
+    table%set("io_file_config", control_parameter( &
+         key = "io_file_config", &
+         name = "Config filepath", &
+         val = "CONFIG", &
+         description = "Set input configuration filepath", &
+         data_type = DATA_STRING))
+
+    table%set("io_file_field", control_parameter( &
+         key = "io_file_field", &
+         name = "Field filepath", &
+         val = "FIELD", &
+         description = "Set input field filepath", &
+         data_type = DATA_STRING))
+
+    table%set("io_file_statis", control_parameter( &
+         key = "io_file_statis", &
+         name = "Statistics filepath", &
+         val = "STATIS", &
+         description = "Set output statistics filepath, special options: NONE", &
+         data_type = DATA_STRING))
+
+    table%set("io_file_history", control_parameter( &
+         key = "io_file_history", &
+         name = "History filepath", &
+         val = "HISTORY", &
+         description = "Set output history filepath, special options: NONE", &
+         data_type = DATA_STRING))
+
+    table%set("io_file_historf", control_parameter( &
+         key = "io_file_historf", &
+         name = "Historf filepath", &
+         val = "HISTORF", &
+         description = "Set output historf filepath, special options: NONE", &
+         data_type = DATA_STRING))
+
+    table%set("io_file_revive", control_parameter( &
+         key = "io_file_revive", &
+         name = "Revive filepath", &
+         val = "REVIVE", &
+         description = "Set output revive filepath, special options: NONE", &
+         data_type = DATA_STRING))
+
+    table%set("io_file_revold", control_parameter( &
+         key = "io_file_revold", &
+         name = "Revold filepath", &
+         val = "REVOLD", &
+         description = "Set output revold filepath, special options: NONE", &
+         data_type = DATA_STRING))
+
+
+    table%set("io_file_revcon", control_parameter( &
+         key = "io_file_revcon", &
+         name = "Revcon filepath", &
+         val = "REVCON", &
+         description = "Set output revcon filepath, special options: NONE", &
+         data_type = DATA_STRING))
+
+    table%set("impact_part_index", control_parameter( &
+         key = "impact_part_index", &
+         name = "Impact particle index", &
+         val = "0", &
+         description = "Set particle index for impact simulations", &
+         data_type = DATA_INT))
+
+    table%set("impact_time", control_parameter( &
+         key = "impact_time", &
+         name = "Impact time", &
+         val = "0.0", &
+         units = "internal_t", &
+         internal_units = "steps", &
+         description = "Set time for impact in impact simulations", &
+         data_type = DATA_FLOAT))
+
+    table%set("impact_energy", control_parameter( &
+         key = "impact_energy", &
+         name = "Impact energy", &
+         val = "0.0", &
+         units = "ke.V", &
+         internal_units = "ke.V", &
+         description = "Set impact energy for impact simulations", &
+         data_type = DATA_FLOAT))
+
+    table%set("impact_direction", control_parameter( &
+         key = "impact_direction", &
+         name = "Impact direction", &
+         val = "[1.0 1.0 1.0]", &
+         units = "", &
+         internal_units = "", &
+         description = "Direction vector for impact simulations", &
+         data_type = DATA_VECTOR3))
+
+    table%set("random_seed", control_parameter( &
+         key = "random_seed", &
+         name = "Random seed", &
+         val = "[1 2 3]", &
+         description = "Set random seed", &
+         data_type = DATA_VECTOR3))
+
+    table%set("temperature", control_parameter( &
+         key = "temperature", &
+         name = "Initial/Target temperature", &
+         val = "0.0", &
+         units = "K", &
+         internal_units = "K", &
+         description = "Set the initial temperature or target temperature (for thermostats)", &
+         data_type = DATA_FLOAT))
+
+    table%set("reset_temperature_interval", control_parameter( &
+         key = "reset_temperature_interval", &
+         name = "Reset temperature time", &
+         val = "0", &
+         units = "steps", &
+         internal_units = "steps", &
+         description = "Interval between temperature zeroing during equilibration for minimisation", &
+         data_type = DATA_FLOAT))
+
+    table%set("pressure_tensor", control_parameter( &
+         key = "pressure_tensor", &
+         name = "Pressure tensor", &
+         val = "[0.0 0.0 0.0 0.0 0.0 0.0]", &
+         units = "internal_p", &
+         internal_units = "internal_p", &
+         description = "Set the target pressure tensor for NsT calculations", &
+         data_type = DATA_VECTOR6))
+
+    table%set("pressure_hydrostatic", control_parameter( &
+         key = "pressure_hydrostatic", &
+         name = "Hydrostatic pressure", &
+         val = "0.0", &
+         units = "katm", &
+         internal_units = "internal_p", &
+         description = "Set the target hydrostatic pressure (1/3Tr[P]) for NPT calculations", &
+         data_type = DATA_FLOAT))
+
+    table%set("pressure_perpendicular", control_parameter( &
+         key = "pressure_perpendicular", &
+         name = "Perpendicular pressure", &
+         val = "0.0", &
+         units = "katm", &
+         internal_units = "internal_p", &
+         description = "Set the target pressure as x, y, z perpendicular to cell faces for NPT calculations", &
+         data_type = DATA_VECTOR3))
+
+    table%set("restart", control_parameter( &
+         key = "restart", &
+         name = "Restart", &
+         val = "OFF", &
+         description = "Set restart settings, possible options: Off, Continue, Rescale, Noscale", &
+         data_type = DATA_OPTION))
+
+    table%set("timestep", control_parameter( &
+         key = "timestep", &
+         name = "Timestep", &
+         val = "0.0", &
+         units = "internal_t", &
+         internal_units = "internal_t", &
+         description = "Set calculation timestep or initial timestep for variable timestep calculations", &
+         data_type = DATA_FLOAT))
+
+    table%set("variable_timestep", control_parameter( &
+         key = "variable_timestep", &
+         name = "Variable timestep", &
+         val = "OFF", &
+         description = "Enable variable timestep", &
+         data_type = DATA_BOOL))
+
+    table%set("variable_timestep_min_dist", control_parameter( &
+         key = "variable_timestep_min_dist", &
+         name = "Variable timestep minimum distance", &
+         val = "0.03", &
+         units = "internal_l", &
+         internal_units = "internal_l", &
+         description = "Set minimum permissible distance for variable timestep", &
+         data_type = DATA_FLOAT))
+
+    table%set("variable_timestep_max_dist", control_parameter( &
+         key = "variable_timestep_max_dist", &
+         name = "Variable timestep maximum distance", &
+         val = "0.1", &
+         units = "internal_l", &
+         internal_units = "internal_l", &
+         description = "Set maximum permissible distance for variable timestep", &
+         data_type = DATA_FLOAT))
+
+    table%set("variable_timestep_max_delta", control_parameter( &
+         key = "variable_timestep_max_delta", &
+         name = "Variable timestep max delta", &
+         val = "0.0", &
+         units = "internal_t", &
+         internal_units = "internal_t", &
+         description = "Set maximum timestep delta for variable timestep", &
+         data_type = DATA_FLOAT))
+
+    table%set("run_time", control_parameter( &
+         key = "run_time", &
+         name = "Calculation run length", &
+         val = "0", &
+         units = "steps", &
+         internal_units = "steps", &
+         description = "Set calculation run length", &
+         data_type = DATA_FLOAT))
+
+    table%set("equilibration_time", control_parameter( &
+         key = "equilibration_time", &
+         name = "Equilibration run length", &
+         val = "0", &
+         units = "steps", &
+         internal_units = "steps", &
+         description = "Set equilibration run length", &
+         data_type = DATA_FLOAT))
+
+    table%set("record_equilibration", control_parameter( &
+         key = "record_equilibration", &
+         name = "Record equilibration", &
+         val = "OFF", &
+         description = "Include equilibration in outputs", &
+         data_type = DATA_BOOL))
+
+    table%set("pseudo_thermostat_method", control_parameter( &
+         key = "pseudo_thermostat_method", &
+         name = "Pseudo thermostat method", &
+         val = "Langevin-Direct", &
+         description = "Set pseudo thermostat method, possible options: Langevin-Direct, Langevin, Gauss, Direct", &
+         data_type = DATA_OPTION))
+
+    table%set("pseudo_thermostat_width", control_parameter( &
+         key = "pseudo_thermostat_width", &
+         name = "Pseudo thermostat width", &
+         val = "2.0", &
+         units = "ang", &
+         internal_units = "internal_l", &
+         description = "Set the width of thermostatted boundaries for pseudo thermostats", &
+         data_type = DATA_FLOAT))
+
+    table%set("pseudo_thermostat_temperature", control_parameter( &
+         key = "pseudo_thermostat_temperature", &
+         name = "Pseudo thermostat temperature", &
+         val = "1.0", &
+         units = "K", &
+         internal_units = "K", &
+         description = "Set the temperature of the pseudo thermostat", , &
+         data_type = DATA_FLOAT))
+
+    table%set("regauss_frequency", control_parameter( &
+         key = "regauss_frequency", &
+         name = "Regauss frequency", &
+         val = "0", &
+         units = "steps", &
+         internal_units = "steps", &
+         description = "Set the frequency of temperature regaussing", &
+         data_type = DATA_FLOAT))
+
+    table%set("rescale_frequency", control_parameter( &
+         key = "rescale_frequency", &
+         name = "Rescale frequency", &
+         val = "0", &
+         units = "steps", &
+         internal_units = "steps", &
+         description = "Set the frequency of temperature rescaling", &
+         data_type = DATA_FLOAT))
+
+    table%set("polarisation_model", control_parameter( &
+         key = "polarisation_model", &
+         name = "Polarisation model", &
+         val = "CHARMM", &
+         description = "Enable polarisation, options: CHARMM", &
+         data_type = DATA_OPTION))
+
+    table%set("polarisation_thole", control_parameter( &
+         key = "polarisation", &
+         name = "Polarisation", &
+         val = "1.3", &
+         description = "Set global atomic damping factor", &
+         data_type = DATA_FLOAT))
+
+    table%set("ensemble", control_parameter( &
+         key = "ensemble", &
+         name = "Ensemble constraints", &
+         val = "NVE", &
+         description = "Set ensemble constraints, options: NVE, NVT, NPT, NST, NPnAT, NPng³", &
+         data_type = DATA_OPTION))
+
+    table%set("ensemble_method", control_parameter( &
+         key = "ensemble_method", &
+         name = "Ensemble method", &
+         val = "", &
+         description = "Set ensemble method, options "// &
+         "NVT: Evans, Langevin, Andersen, Berendsen, Hoover, gentle, ttm, dpd. "// &
+         "NP|ST: Langevin, Berendsen, Hoover, MTK.", &
+         data_type = DATA_OPTION))
+
+    table%set("ensemble_thermostat_coupling", control_parameter( &
+         key = "ensemble_thermostat_coupling", &
+         name = "Thermostat coupling", &
+         val = "0.0", &
+         units = "ps", &
+         internal_units = "ps", &
+         description = "Set thermostat relaxation/decorrelation times (inverse units for langevin)", &
+         data_type = DATA_FLOAT))
+
+    table%set("ensemble_barostat_coupling", control_parameter( &
+         key = "ensemble_barostat_coupling", &
+         name = "Barostat coupling", &
+         val = "0.0", &
+         units = "ps", &
+         internal_units = "ps", &
+         description = "Set barostat relaxation/decorrelation times (inverse units for langevin)", &
+         data_type = DATA_FLOAT))
+
+    table%set("ensemble_semi_isotropic", control_parameter( &
+         key = "ensemble_semi_isotropic", &
+         name = "Ensemble semi-isotropic constraint", &
+         val = "OFF", &
+         description = "Enable semi-isotropic barostat constraints", &
+         data_type = DATA_BOOL))
+
+    table%set("ensemble_orthorhombic", control_parameter( &
+         key = "ensemble_orthorhombic", &
+         name = "Ensemble orthorhombic constraint", &
+         val = "OFF", &
+         description = "Enable orthorhombic barostat constraints", &
+         data_type = DATA_BOOL))
+
+    table%set("ensemble_tension", control_parameter( &
+         key = "ensemble_tension", &
+         name = "Constrained surface tension", &
+         val = "0.0", &
+         units = "N/m", &
+         internal_units = "internal_f/internal_l", &
+         description = "Set tension in NPngT calctulation", &
+         data_type = DATA_FLOAT))
+
+    table%set("density_variance", control_parameter( &
+         key = "density_variance", &
+         name = "Expected density variance", &
+         val = "1.0", &
+         units = "%", &
+         internal_units = "%", &
+         description = "Set expected density variance for determining maximum array sizes", &
+         data_type = DATA_FLOAT))
+
+    table%set("cutoff", control_parameter( &
+         key = "cutoff", &
+         name = "Real-space global cutoff", &
+         val = "0.0", &
+         units = "internal_l", &
+         internal_units = "internal_l", &
+         description = "Set the global cutoff for real-speace potentials", &
+         data_type = DATA_FLOAT))
+
+    table%set("padding", control_parameter( &
+         key = "padding", &
+         name = "Set VNL padding", &
+         val = "0.0", &
+         units = "internal_l", &
+         internal_units = "internal_l", &
+         description = "Set padding for sizing of Verlet neighbour lists", &
+         data_type = DATA_FLOAT))
+
+    table%set("vdw_cutoff", control_parameter( &
+         key = "vdw_cutoff", &
+         name = "VdW cutoff", &
+         val = "0.0", &
+         units = "internal_l", &
+         internal_units = "internal_l", &
+         description = "Set cut-off for Van der Waal's potentials", &
+         data_type = DATA_FLOAT))
+
+    table%set('vdw_direct', control_parameter( &
+         key = 'vdw_direct', &
+         name = 'Direct VdW calculation', &
+         val = 'OFF', &
+         description = "Enable direct (non-tabulated) calculation of Van der Waals' forces", &
+         data_type = DATA_BOOL))
+
+    table%set('vdw_mix_method', control_parameter( &
+         key = 'vdw_mix_method', &
+         name = 'VdW mixing method', &
+         val = '', &
+         description = "Enable VdW mixing, possible mixing schemes: "// &
+         "Lorentz-Berthelot, Fender-Hasley/Halsey, Hogervorst, Waldman-Hagler, Tang-Toennies, Functional", &
+         data_type = DATA_OPTION))
+
+    table%set('vdw_force_shift', control_parameter( &
+         key = 'vdw_force_shift', &
+         name = 'VdW force shifting', &
+         val = 'OFF', &
+         description = "Enable force shift corrections to Van der Waals' forces", &
+         data_type = DATA_BOOL))
+
+    table%set("vdw_ewald", control_parameter( &
+         key = "vdw_ewald", &
+         name = "Ewald VdW", &
+         val = "OFF", &
+         description = "Enable calculation of Van der Waals' forces through Ewald methods", &
+         data_type = DATA_BOOL))
+
+    table%set("print_per_particle_contrib", control_parameter( &
+         key = "print_per_particle_contrib", &
+         name = "Per-particle contributions", &
+         val = "OFF", &
+         description = "Calculate and print per-particle contributions to energy, force and stress to file every stats step", &
+         data_type = DATA_BOOL))
+
+    table%set("ewald_precision", control_parameter( &
+         key = "ewald_precision", &
+         name = "Ewald precision", &
+         val = "1.0e-6", &
+         description = "Set Ewald parameters to calculate within given precision for Ewald calculations", &
+         data_type = DATA_FLOAT))
+
+    table%set("ewald_alpha", control_parameter( &
+         key = "ewald_alpha", &
+         name = "Ewald alpha", &
+         val = "0.0", &
+         units = "1/Ang", &
+         internal_units = "1/internal_l", &
+         description = "Set real-recip changeover location for Ewald calculations", &
+         data_type = DATA_FLOAT))
+
+    table%set("ewald_kvec", control_parameter( &
+         key = "ewald_kvec", &
+         name = "Ewald k-vector samples", &
+         val = "[0 0 0]", &
+         units = "", &
+         internal_units = "", &
+         description = "Set number of k-space samples for Ewald calculations", &
+         data_type = DATA_VECTOR3))
+
+    table%set("ewald_kvec_spacing", control_parameter( &
+         key = "ewald_kvec_spacing", &
+         name = "Ewald k-vector spacing", &
+         val = "0.0", &
+         units = "1/ang", &
+         internal_units = "1/internal_l", &
+         description = "Calculate k-vector samples for an even sampling of given spacing in Ewald calculations", &
+         data_type = DATA_FLOAT))
+
+    table%set("ewald_nsplines", control_parameter( &
+         key = "ewald_nsplines", &
+         name = "Number of B-Splines", &
+         val = "12", &
+         description = "Set number of B-Splines for Ewald SPME calculations"))
+
+    table%set("coul_method", control_parameter( &
+         key = "coul_method", &
+         name = "Electrostatics method", &
+         val = "ewald", &
+         description = "Set method for electrostatics method, options: ewald, dddp, pairwise, reaction_field, force_shifted", &
+         data_type = DATA_OPTION))
+
+    table%set("coul_damping", control_parameter( &
+         key = "coul_damping", &
+         name = "Electrostatics Fennell damping", &
+         val = "0.0", &
+         units = "1/Ang", &
+         internal_units = "1/internal_l", &
+         description = "Calculate electrostatics using Fennell damping (Ewald-like) with given alpha", &
+         data_type = DATA_FLOAT))
+
+    table%set("coul_precision", control_parameter( &
+         key = "coul_precision", &
+         name = "Electrostatics Fennell precision", &
+         val = "0.0", &
+         description = "Calculate electrostatics using Fennell damping (Ewald-like) with given precision", &
+         data_type = DATA_FLOAT))
+
+    table%set("coul_dielectric_constant", control_parameter( &
+         key = "coul_dielectric_constant", &
+         name = "Dielectric Constant", &
+         val = "1.0", &
+         description = "Set dielectric constant relative to vacuum", &
+         data_type = DATA_FLOAT))
+
+    table%set("coul_extended_exclusion", control_parameter( &
+         key = "coul_extended_exclusion", &
+         name = "Extended Exclusion", &
+         val = "OFF", &
+         units = "", &
+         internal_units = "", &
+         description = "Enable extended coulombic exclusion affecting intra-molecular interactions", &
+         data_type = DATA_BOOL))
+
+    table%set("equilibration_force_cap", control_parameter( &
+         key = "equilibration_force_cap", &
+         name = "Equilibration force cap", &
+         val = "0.0", &
+         units = "N", &
+         internal_units = "internal_f", &
+         description = "Set force cap clamping maximum force during equilibration", &
+         data_type = DATA_FLOAT))
+
+    table%set("disable_vdw", control_parameter( &
+         key = "disable_vdw", &
+         name = "No VdW", &
+         val = "OFF", &
+         description = "Disable Van der Waals' calculation", &
+         data_type = DATA_BOOL))
+
+    table%set("disable_electrostatics", control_parameter( &
+         key = "disable_electrostatics", &
+         name = "No Electrostatics", &
+         val = "OFF", &
+         description = "Disable electrostatics calculation", &
+         data_type = DATA_BOOL))
+
+    table%set("ignore_config_indices", control_parameter( &
+         key = "ignore_config_indices", &
+         name = "Ignore Config Indices", &
+         val = "OFF", &
+         description = "Ignore indices as defined in CONFIG and use read order instead", &
+         data_type = DATA_BOOL))
+(?)
+    table%set("unsafe", control_parameter( &
+         key = "unsafe", &
+         name = "Disable strict", &
+         val = "OFF", &
+         description = "Ignore strict checks such as; "// &
+         "good system cutoff, particle âindex contiguity, disable non-error warnings, minimisation information", &
+         data_type = DATA_BOOL))
+(?)
+    table%set("print_topology_info", control_parameter( &
+         key = "print_topology_info", &
+         name = "Print topology information ", &
+         val = "ON", &
+         description = "Print topology information in output file", &
+         data_type = DATA_BOOL))
+(?)
+    table%set("vaf_averaging", control_parameter( &
+         key = "vaf_averaging", &
+         name = "VAF Time Averaging", &
+         val = "ON", &
+         description = "ignore time-averaging of VAF, report all calculated VAF to VAFDAT files and final profile to OUTPUT", &
+         data_type = DATA_BOOL))
+
+    table%set("fixed_com", control_parameter( &
+         key = "fixed_com", &
+         name = "Fix centre of mass", &
+         val = "ON", &
+         description = "Remove net centre of mass momentum", &
+         data_type = DATA_BOOL))
+
+!     table%set("disable_linked_cell", control_parameter( &
+!          key = "disable_linked_cell", &
+!          name = "", &
+!          val = "", &
+!          units = "", &
+!          internal_units = "", &
+!          description = "", &
+!          data_type = DATA_))
+
+    table%set("rlx_cgm_step", control_parameter( &
+         key = "rlx_cgm_step", &
+         name = "Relaxed shell CGM step", &
+         val = "0", &
+         units = "", &
+         internal_units = "", &
+         description = "Set CGM stepping for relaxed shell model", &
+         data_type = DATA_INT))
+
+    table%set("rlx_tol", control_parameter( &
+         key = "rlx_tol", &
+         name = "Relaxed shell force tolerance", &
+         val = "1", &
+         units = "internal_f", &
+         internal_units = "internal_f", &
+         description = "Set force tolerance for relaxed shell model", &
+         data_type = DATA_FLOAT))
+
+    table%set("shake_max_iter", control_parameter( &
+         key = "shake_max_iter", &
+         name = "Max SHAKE/RATTLE iterations", &
+         val = "250", &
+         description = "Set maximum number of SHAKE/RATTLE iterations", &
+         data_type = DATA_INT))
+
+    table%set("shake_tol", control_parameter( &
+         key = "shake_tol", &
+         name = "SHAKE/RATTLE tolerance", &
+         val = "1e-6", &
+         units = "", &
+         internal_units = "", &
+         description = "Set accepted SHAKE/RATTLE tolerance", &
+         data_type = DATA_FLOAT))
+
+    table%set("quaternion_max_iter", control_parameter( &
+         key = "quaternion_max_iter", &
+         name = "Max Leapfrog Verlet FIQA iterations", &
+         val = "100", &
+         description = "Set max iterations for FIQA in Leapfrog Verlet", &
+         data_type = DATA_INT))
+
+    table%set("quaternion_tol", control_parameter( &
+         key = "quaternion_tol", &
+         name = "FIQA tolerance", &
+         val = "1e-8", &
+         units = "", &
+         internal_units = "", &
+         description = "Set accepted FIQA tolerance in Leapfrog Verlet", &
+         data_type = DATA_FLOAT))
+
+    table%set("ttm_num_ion_cells", control_parameter( &
+         key = "ttm_num_ion_cells", &
+         name = "Number of TTM ionic cells", &
+         val = "10", &
+         description = "Set number of coarse-grained ion temperature cells (CIT)", &
+         data_type = DATA_INT))
+
+    table%set("ttm_num_elec_cells", control_parameter( &
+         key = "ttm_num_elec_cells", &
+         name = "Number of TTM electronic cells", &
+         val = "[20 20 20]", &
+         description = "Set number of coarse-grained electronic temperature cells (CET)", &
+         data_type = DATA_VECTOR3))
+
+    table%set("ttm_metal", control_parameter( &
+         key = "ttm_metal", &
+         name = "TTM Metallic", &
+         val = "OFF", &
+         description = "Specifies parameters for metallic system are required for two-temperature model, i.e. thermal conductivity", &
+         data_type = DATA_BOOL))
+
+    table%set("ttm_heat_cap_model", control_parameter( &
+         key = "ttm_heat_cap_model", &
+         name = "TTM Heat Capacity model", &
+         val = "", &
+         description = "Sets model for specific heat capacity in TTM, options: const, linear, tabulated, tanh", &
+         data_type = DATA_OPTION))
+
+    table%set("ttm_heat_cap", control_parameter( &
+         key = "ttm_heat_cap", &
+         name = "TTM Heat Capacity", &
+         val = "0.0", &
+         units = "internal_e/internal_m/K", &
+         internal_units = "internal_e/internal_m/K", &
+         description = "Sets constant, scale or maximum heat capcity in TTM", &
+         data_type = DATA_FLOAT))
+
+    table%set("ttm_fermi_temp", control_parameter( &
+         key = "ttm_fermi_temp", &
+         name = "TTM Fermi temperature", &
+         val = "0.0", &
+         units = "1/K", &
+         internal_units = "1/K", &
+         description = "Set Fermi temperature in TTM", &
+         data_type = DATA_FLOAT))
+
+    ! table%set("ttm_temp_gradient", control_parameter( &
+    !      key = "ttm_temp_gradient", &
+    !      name = "", &
+    !      val = "", &
+    !      units = "", &
+    !      internal_units = "", &
+    !      description = "", &
+    !      data_type = DATA_))
+
+    table%set("ttm_elec_cond_model", control_parameter( &
+         key = "ttm_elec_cond_model", &
+         name = "TTM Electonic conductivity model", &
+         val = "", &
+         description = "Set electronic conductivity model in TTM, options: Infinite, constant, drude, tabulated", &
+         data_type = DATA_OPTION))
+
+    table%set("ttm_elec_cond", control_parameter( &
+         key = "ttm_elec_cond", &
+         name = "TTM Electronic conductivity", &
+         val = "0.0", &
+         units = "J/s/m/K", &
+         internal_units = "J/s/m/K", &
+         description = "Set electronic conductivity in TTM ", &
+         data_type = DATA_FLOAT))
+
+    table%set("ttm_diff_model", control_parameter( &
+         key = "ttm_diff_model", &
+         name = "TTM Diffusion model", &
+         val = "", &
+         description = "Set diffusion model in TTM, options: constant, recip, tabulated", &
+         data_type = DATA_OPTION))
+
+    table%set("ttm_diff", control_parameter( &
+         key = "ttm_diff", &
+         name = "TTM Thermal diffusivity", &
+         val = "0.0", &
+         units = "", &
+         internal_units = "", &
+         description = "", &
+         data_type = DATA_FLOAT))
+
+    table%set("ttm_dens_model", control_parameter( &
+         key = "ttm_dens_model", &
+         name = "TTM Density model", &
+         val = "", &
+         description = "Set density model in TTM, options are: constant, dynamic", &
+         data_type = DATA_OPTION))
+
+    table%set("ttm_dens", control_parameter( &
+         key = "ttm_dens", &
+         name = "TTM Density", &
+         val = "0.0", &
+         units = "1/ang^3", &
+         internal_units = "1/internal_l^3", &
+         description = "Set constant density in TTM", &
+         data_type = DATA_FLOAT))
+
+    table%set("ttm_min_atoms", control_parameter( &
+         key = "ttm_min_atoms", &
+         name = "TTM minimum atoms", &
+         val = "0", &
+         description = "Minimum number of atoms needed per ionic temperature cell", &
+         data_type = DATA_INT))
+
+    table%set("ttm_stopping_power", control_parameter( &
+         key = "ttm_stopping_power", &
+         name = "TTM Electron stopping power", &
+         val = "0.0", &
+         units = "e.V/nm", &
+         internal_units = "internal_e/internal_l", &
+         description = "Electronic stopping power of projectile entering electronic system ", &
+         data_type = DATA_FLOAT))
+
+    table%set("ttm_spatial_dist", control_parameter( &
+         key = "ttm_spatial_dist", &
+         name = "TTM Spatial deposition distribution", &
+         val = "", &
+         description = "Set the spatial distribution of TTM, options: flat, gaussian, laser", &
+         data_type = DATA_OPTION))
+
+    table%set("ttm_spatial_sigma", control_parameter( &
+         key = "ttm_spatial_sigma", &
+         name = "TTM Spatial sigma", &
+         val = "1.0", &
+         units = "nm", &
+         internal_units = "nm", &
+         description = "Set the sigma for spatial distributions of TTM", &
+         data_type = DATA_FLOAT))
+
+    table%set("ttm_spatial_cutoff", control_parameter( &
+         key = "ttm_spatial_cutoff", &
+         name = "TTM Spatial cutoff", &
+         val = "5.0", &
+         units = "nm", &
+         internal_units = "nm", &
+         description = "Set the cutoff for spatial distributions of TTM", &
+         data_type = DATA_FLOAT))
+
+    table%set("ttm_absorbed_e", control_parameter( &
+         key = "ttm_absorbed_e", &
+         name = "TTM laser absorbed energy", &
+         val = "0.0", &
+         units = "mJ/cm^2", &
+         internal_units = "mJ/cm^2", &
+         description = "Initial energy deposition into electronic system by laser for TTM", &
+         data_type = DATA_FLOAT))
+
+    table%set("ttm_penetration_depth", control_parameter( &
+         key = "ttm_penetration_depth", &
+         name = "TTM laser penetration depth", &
+         val = "0.0", &
+         units = "nm", &
+         internal_units = "nm", &
+         description = "Set laser penetration depth for TTM", &
+         data_type = DATA_FLOAT))
+
+    table%set("ttm_deposition_type", control_parameter( &
+         key = "ttm_deposition_type", &
+         name = "TTM Deposition type", &
+         val = "zdep", &
+         description = "Set laser deposition type. options: zdep", &
+         data_type = DATA_OPTION))
+
+    table%set("ttm_temporal_dist", control_parameter( &
+         key = "ttm_temporal_dist", &
+         name = "TTM Temporal distribution", &
+         val = "", &
+         description = "Set temporal distribution for TTM, options: gaussian, exponential, delta, square", &
+         data_type = DATA_OPTION))
+
+    table%set("ttm_temporal_duration", control_parameter( &
+         key = "ttm_temporal_duration", &
+         name = "TTM Duration", &
+         val = "0.001", &
+         units = "ps", &
+         internal_units = "ps", &
+         description = "Set duration of energy deposition for TTM (gaussian, exponential, square)", &
+         data_type = DATA_FLOAT))
+
+    table%set("ttm_temporal_cutoff", control_parameter( &
+         key = "ttm_temporal_cutoff", &
+         name = "TTM Time Cutoff", &
+         val = "5.0", &
+         units = "ps", &
+         internal_units = "ps", &
+         description = "Set temporal cutoff for TTM (gaussian, exponential)", &
+         data_type = DATA_FLOAT))
+
+    table%set("ttm_variable_ep", control_parameter( &
+         key = "ttm_variable_ep", &
+         name = "TTM Variable electron-phonon coupling", &
+         val = "", &
+         description = "Set electron-phonon coupling for TTM, options: homo, hetero", &
+         data_type = DATA_OPTION))
+
+    table%set("ttm_boundary_condition", control_parameter( &
+         key = "ttm_boundary_condition", &
+         name = "TTM Boundary conditions", &
+         val = "", &
+         description = "Set boundary conditions for TTM, options: periodic, dirichlet, neumann, robin", &
+         data_type = DATA_OPTION))
+
+    table%set("ttm_boundary_xy", control_parameter( &
+         key = "ttm_boundary_xy", &
+         name = "TTM Neumann Boundary in Z", &
+         val = "OFF", &
+         description = "Fix Neumann (zero-flux) boundary in Z", &
+         data_type = DATA_BOOL))
+
+    table%set("ttm_boundary_heat_flux", control_parameter( &
+         key = "ttm_boundary_heat_flux", &
+         name = "TTM Heat flux", &
+         val = "96", &
+         units = "%", &
+         internal_units = ""
+         description = "Set boundary heat flux in Robin boundaries for TTM", &
+         data_type = DATA_BOOL)
+
+    table%set("ttm_time_offset", control_parameter( &
+         key = "ttm_time_offset", &
+         name = "TTM time offset", &
+         val = "0.0", &
+         units = "ps", &
+         internal_units = "ps", &
+         description = "Set initial electronic-ionic coupling via thermostat for TTM", &
+         data_type = DATA_FLOAT))
+
+    table%set("ttm_oneway", control_parameter( &
+         key = "ttm_oneway", &
+         name = "TTM oneway", &
+         val = "OFF", &
+         description = "Enable one-way electron-phonon coupling when electronic temperature is greater than ionic temperature", &
+         data_type = DATA_BOOL))
+
+    table%set("ttm_statis_frequency", control_parameter( &
+         key = "ttm_statis_frequency", &
+         name = "Frequency of TTM statis output", &
+         val = "0", &
+         units = "steps", &
+         internal_units = "steps", &
+         description = "Frequency of write to TTM PEAK_E and PEAK_I", &
+         data_type = DATA_FLOAT))
+
+    table%set("ttm_traj_frequency", control_parameter( &
+         key = "ttm_traj_frequency", &
+         name = "Frequency of TTM trajectory output", &
+         val = "0", &
+         units = "steps", &
+         internal_units = "steps", &
+         description = "Frequency of write to TTM LATS_E and LATS_I", &
+         data_type = DATA_FLOAT))
+
+    table%set("ttm_com_correction", control_parameter( &
+         key = "ttm_com_correction", &
+         name = "TTM CoM correction", &
+         val = "Full", &
+         description = "Apply inhomogeneous Langevin thermostat to selected directions in TTM, options: full, zdir, off", &
+         data_type = DATA_OPTION))
+
+    table%set("ttm_redistribute", control_parameter( &
+         key = "ttm_redistribute", &
+         name = "", &
+         val = "", &
+         description = "Redistribute electronic energy in newly-deactivated temperature cells to nearest active neighbours", &
+         data_type = DATA_BOOL))
+
+    table%set("msd_start", control_parameter( &
+         key = "mst_start", &
+         name = "MSD Start calculating", &
+         val = "0", &
+         units = "steps", &
+         internal_units = "steps", &
+         description = "Start timestep for dumping MSD configurations", &
+         data_type = DATA_FLOAT))
+
+
+    table%set("msd_interval", control_parameter( &
+         key = "mst_interval", &
+         name = "MSD calculation interval", &
+         val = "1", &
+         units = "steps", &
+         internal_units = "steps", &
+         description = "Interval between dumping MSD configurations", &
+         data_type = DATA_FLOAT))
+
+    table%set("analyse_all", control_parameter( &
+         key = "analyse_all", &
+         name = "Analyse all", &
+         val = "OFF", &
+         description = "Enable analysis for all bonds, angles, dihedrals and inversions", &
+         data_type = DATA_BOOL))
+
+    table%set("analyse_bonds", control_parameter( &
+         key = "analyse_bonds", &
+         name = "Analyse bonds", &
+         val = "OFF", &
+         description = "Enable analysis for all bonds", &
+         data_type = DATA_BOOL))
+
+    table%set("analyse_angles", control_parameter( &
+         key = "analyse_angles", &
+         name = "Analyse angles", &
+         val = "OFF", &
+         description = "Enable analysis for all angles", &
+         data_type = DATA_BOOL))
+
+    table%set("analyse_dihedrals", control_parameter( &
+         key = "analyse_dihedrals", &
+         name = "Analyse dihedrals", &
+         val = "OFF", &
+         description = "Enable analysis for all dihedrals", &
+         data_type = DATA_BOOL))
+
+    table%set("analyse_inversions", control_parameter( &
+         key = "analyse_inversions", &
+         name = "Analyse inversions", &
+         val = "OFF", &
+         description = "Enable analysis inversions", &
+         data_type = DATA_BOOL))
+
+    table%set("analyse_frequency", control_parameter( &
+         key = "analyse_frequency", &
+         name = "Analysis frequency", &
+         val = "1", &
+         units = "steps", &
+         internal_units = "steps", &
+         description = "Set frequency of analysis data", &
+         data_type = DATA_FLOAT))
+
+    table%set("analyse_num_bins", control_parameter( &
+         key = "analyse_num_bins", &
+         name = "Analysis number of bins", &
+         val = "0", &
+         description = "Set number of bins to be used in bonding analysis", &
+         data_type = DATA_INT))
+
+    table%set("analyse_max_dist", control_parameter( &
+         key = "analyse_max_dist", &
+         name = "Max analyse distance", &
+         val = "2.0", &
+         units = "ang", &
+         internal_units = "internal_l", &
+         description = "Set cutoff for bonds analysis", &
+         data_type = DATA_FLOAT))
+
+    table%set("rdf_frequency", control_parameter( &
+         key = "rdf_frequency", &
+         name = "RDF Sampling Frequency", &
+         val = "0", &
+         units = "steps", &
+         internal_units = "steps", &
+         description = "Set frequency of RDF sampling", &
+         data_type = DATA_FLOAT))
+
+    table%set("rdf_binsize", control_parameter( &
+         key = "rdf_binsize", &
+         name = "RDF number of bins", &
+         val = "0", &
+         description = "Set number of bins to be used in RDF analysis", &
+         data_type = DATA_INT))
+
+    table%set("zden_frequency", control_parameter( &
+         key = "zden_frequency", &
+         name = "ZDen Sampling Frequency", &
+         val = "0", &
+         units = "steps", &
+         internal_units = "steps", &
+         description = "Set frequency of ZDen sampling", &
+         data_type = DATA_FLOAT))
+
+    table%set("zden_binsize", control_parameter( &
+         key = "zden_binsize", &
+         name = "ZDen number of bins", &
+         val = "0", &
+         description = "Set number of bins to be used in ZDen analysis", &
+         data_type = DATA_INT))
+
+    table%set("vaf_frequency", control_parameter( &
+         key = "vaf_frequency", &
+         name = "VAF Sampling Frequency", &
+         val = "0", &
+         units = "steps", &
+         internal_units = "steps", &
+         description = "Set frequency of VAF sampling", &
+         data_type = DATA_FLOAT))
+
+    table%set("vaf_binsize", control_parameter( &
+         key = "vaf_binsize", &
+         name = "VAF number of bins", &
+         val = "0", &
+         description = "Set number of bins to be used in VAF analysis", &
+         data_type = DATA_INT))
+
+    table%set("print_frequency", control_parameter( &
+         key = "print_frequency", &
+         name = "Results Print Frequency", &
+         val = "0", &
+         units = "steps", &
+         internal_units = "steps", &
+         description = "Set frequency of results sampling", &
+         data_type = DATA_FLOAT))
+
+    table%set("stack_size", control_parameter( &
+         key = "stack_size", &
+         name = "Rolling average stack size", &
+         val = "0", &
+         description = "Set rolling average stack to n timesteps", &
+         data_type = DATA_INT))
+
+    table%set("stats_frequency", control_parameter( &
+         key = "stats_frequency", &
+         name = "Stats Print Frequency", &
+         val = "0", &
+         units = "steps", &
+         internal_units = "steps", &
+         description = "Set frequency of stats sampling", &
+         data_type = DATA_FLOAT))
+
+
+end Subroutine initialise_control
+
+
   Subroutine parse_file(file, params)
 
     Type( parameters_hash_table ), intent(   Out ) :: params
@@ -437,7 +1621,7 @@ Module new_control
     Character(Len=MAX_LEN) :: input, key, val, units
     Logical :: line_read
 
-    call table%init(256)
+    Call initialise_control(params)
 
     do
        key = ''; val = ''; units = ''
@@ -445,6 +1629,7 @@ Module new_control
        if (.not. line_read) exit
        call get_word(input, key)
        Call lower_case(key)
+       Call params%get(key, param)
        ! Special case for title -- Read as one val
        if (trim(key) == 'title') then
           val = adjustl(input)
@@ -456,10 +1641,9 @@ Module new_control
        call table%set(key, param)
     end do
 
-    call table%keyvals
-
   end Subroutine parse_file
 
+  Subroutine get_new_word(input, val)
 
 
 End Module new_control

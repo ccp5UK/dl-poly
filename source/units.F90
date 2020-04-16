@@ -147,7 +147,7 @@ contains
 
     ! Unitless
 
-    call units_table%set("%", init_unit(abbrev="%", name="%", to_internal=0.01_wp))
+    call units_table%set("%", init_unit(abbrev="%", name="%", to_internal=100.0_wp))
     call units_table%set("", init_unit(abbrev="", name="", to_internal=1.0_wp))
 
   End Subroutine initialise_units
@@ -213,7 +213,7 @@ contains
     Character(Len=*), Intent ( in ) :: string
     Character(Len=256) :: curr_parse
     Character(Len=256), Dimension(:), Allocatable :: parsed
-    Character(Len=*), Parameter :: number = "1234567890"
+    Character(Len=*), Parameter :: number = "1234567890-+"
     Type(unit_data) :: factor
     Integer :: i
     Integer :: n
@@ -270,7 +270,7 @@ contains
   Subroutine decompose_unit_string(string, output)
     Character(Len=256), Dimension(:), Allocatable :: output
     Character(Len=*), Intent( In ) :: string
-    Character(Len=*), Parameter :: alphabet = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_'"//'"'
+    Character(Len=*), Parameter :: alphabet = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_%'"//'"'
     Character(Len=*), Parameter :: punc = "./^"
     Integer :: nParts
     Integer :: i, j, k
