@@ -33,12 +33,13 @@ contains
     !! author - j.wilkins march 2020
     !!-----------------------------------------------------------------------
     Real(kind=wp), Parameter :: planck_internal = 6.350780668_wp
-    Real(kind=wp), Parameter :: electron_charge = 1.6021766208e-19_wp ! C
-    Real(kind=wp), Parameter :: coulomb = electron_charge
+    Real(kind=wp), Parameter :: electron_charge = 1.0_wp
+    Real(kind=wp), Parameter :: coulomb = 6.241509125883258e+18_wp
     Real(kind=wp), Parameter :: avogadro = 6.022140857e23_wp
 
     Real(kind=wp), Parameter :: metre = 1e-10_wp
     Real(kind=wp), Parameter :: bohr = 1.8897875878751229_wp
+    Real(kind=wp), Parameter :: inch = metre/2.54e-2_wp
 
     Real(kind=wp), Parameter :: joulepmol = 10.0_wp
     Real(kind=wp), Parameter :: caloriepmol = 1.0_wp / (4.1842_wp/joulepmol)
@@ -49,6 +50,7 @@ contains
     Real(kind=wp), Parameter :: pound = 3.6608612486140225e-27_wp
 
     Real(kind=wp), Parameter :: second = 1e-12_wp
+    Real(kind=wp), Parameter :: aut = 41341.373335182114_wp
 
     Real(kind=wp), Parameter :: atmosphere = 163.882576
     Real(kind=wp), Parameter :: pascal = 16605402.0_wp
@@ -65,7 +67,7 @@ contains
     call units_table%set("hr", init_unit(abbrev="hr", name="Hour", time=1, to_internal=second/3600.0_wp))
     call units_table%set("min", init_unit(abbrev="min", name="Minute", time=1, to_internal=second/60.0_wp))
     call units_table%set("s", init_unit(abbrev="s", name="Second", time=1, to_internal=second))
-    call units_table%set("aut", init_unit(abbrev="aut", name="Atomic Time Unit", time=1, to_internal=41341.373335182114_wp))
+    call units_table%set("aut", init_unit(abbrev="aut", name="Atomic Time Unit", time=1, to_internal=aut))
 
     ! Length
 
@@ -73,8 +75,8 @@ contains
     call units_table%set("ang", init_unit(abbrev="ang", name="Angstrom", length=1, to_internal=1e10_wp*metre))
     call units_table%set("bohr", init_unit(abbrev="bohr", name="Bohr", length=1, to_internal=bohr))
     call units_table%set("m", init_unit(abbrev="m", name="Metre", length=1, to_internal=metre))
-    call units_table%set('in', init_unit(abbrev="in", name="Inch", length=1, to_internal=metre/2.54e-2_wp))
-    call units_table%set("ft", init_unit(abbrev="ft", name="Foot", length=1, to_internal=metre/0.30479999999999996_wp))
+    call units_table%set('in', init_unit(abbrev="in", name="Inch", length=1, to_internal=inch))
+    call units_table%set("ft", init_unit(abbrev="ft", name="Foot", length=1, to_internal=inch/12.0_wp))
 
     ! Mass
 
@@ -90,9 +92,9 @@ contains
     call units_table%set("internal_q", &
          & init_unit(abbrev="internal_q", name="Elementary charge", current=1, time=1, to_internal=1.0_wp))
     call units_table%set("q_e", &
-         & init_unit(abbrev="q_e", name="Elementary charge", current=1, time=1, to_internal=1.0_wp))
+         & init_unit(abbrev="q_e", name="Elementary charge", current=1, time=1, to_internal=electron_charge))
     call units_table%set("e", &
-         & init_unit(abbrev="e", name="Elementary charge", current=1, time=1, to_internal=1.0_wp))
+         & init_unit(abbrev="e", name="Elementary charge", current=1, time=1, to_internal=electron_charge))
     call units_table%set("c", &
          & init_unit(abbrev="C", name="Coulomb", current=1, time=1, to_internal=coulomb))
 
@@ -129,7 +131,7 @@ contains
     call units_table%set("internal_v", &
          & init_unit(abbrev="ang/ps", name="Angstrom per picosecond", length=1, time=-1, to_internal=1.0_wp))
     call units_table%set("auv", &
-         & init_unit(abbrev="aut", name="Atomic Velocity Unit", length=1, time=-1, to_internal=1.2799768302560889E-5_wp))
+         & init_unit(abbrev="aut", name="Atomic Velocity Unit", length=1, time=-1, to_internal=bohr/aut))
 
     ! Acceleration
 
@@ -152,7 +154,7 @@ contains
 
   End Subroutine initialise_units
 
-  Function convert_units(val, from, to) result(res)
+  Elemental Function convert_units(val, from, to) result(res)
     Real(kind=wp), Intent(in) :: val
     Real(kind=wp) :: res
     Character(Len=*) :: from, to
@@ -200,9 +202,11 @@ contains
     call lower_case(tmp)
     if (.not. units_table%in(tmp)) then
        i = index(prefix_symbol, string(2:2))
-       if (i < 1 .or. .not. units_table%in(string(3:))) call error(0, "Unit not found "//string(2:))
-       factor = prefix(i)
-       string = string(1:1) // string(3:)
+       tmp = string(3:)
+       call lower_case(tmp)
+       if (i < 1 .or. .not. units_table%in(tmp)) call error("Unit not found "//string(2:))
+        factor = prefix(i)
+        string = string(1:1) // string(3:)
     end if
 
   end Subroutine handle_decimal_prefix
