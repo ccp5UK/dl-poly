@@ -126,7 +126,7 @@ contains
     Select Case (io_read)
     Case (IO_READ_MPIIO, IO_READ_DIRECT, IO_READ_NETCDF)
        ! Need to calculate number of readers
-       call params%retreive('io_read_readers', itmp)
+       call params%retrieve('io_read_readers', itmp)
 
        Select Case (itmp)
        Case(0)
@@ -163,7 +163,7 @@ contains
        ! 1 <= batch <= MAX_BATCH_SIZE, default 2000000
        ! Note zero or negative values indicate use the default
 
-       call params%retreive('io_read_batch_size', itmp)
+       call params%retrieve('io_read_batch_size', itmp)
 
        Select Case (itmp)
        Case(0)
@@ -198,7 +198,7 @@ contains
 
     ! Get read buffer size
 
-    call params%retreive('io_read_buffer_size', itmp)
+    call params%retrieve('io_read_buffer_size', itmp)
 
     Select Case(itmp)
     Case(0)
@@ -229,7 +229,7 @@ contains
     ! Get parallel read error checking
 
     if (io_read /= IO_READ_MASTER) then
-       call param%retreive('io_read_error_check', ltmp)
+       call param%retrieve('io_read_error_check', ltmp)
 
        If (.not. ltmp) Then
           Call info('I/O parallel read error checking off',.true.)
@@ -241,8 +241,8 @@ contains
 
     ! Get write settings
 
-    call params%retreive('io_write_method', curr_option)
-    call params%retreive('io_write_sorted', ltmp)
+    call params%retrieve('io_write_method', curr_option)
+    call params%retrieve('io_write_sorted', ltmp)
 
     Select Case (Trim(curr_val))
     Case ( 'mpiio' )
@@ -265,7 +265,7 @@ contains
     Case ( 'netcdf' )
        io_write = IO_WRITE_SORTED_NETCDF
 
-       call current_params%retreive('io_read_netcdf_format', curr_option)
+       call current_params%retrieve('io_read_netcdf_format', curr_option)
 
        Select Case (Trim(curr_val))
        Case('amber', '32bit', '32-bit')
@@ -319,7 +319,7 @@ contains
 
     Select Case (io_write)
     Case ( IO_WRITE_SORTED_NETCDF, IO_WRITE_SORTED_MPIIO, IO_WRITE_SORTED_DIRECT )
-       call params%retreive('io_write_writers', itmp)
+       call params%retrieve('io_write_writers', itmp)
 
        Select Case( itmp )
        Case(0)
@@ -356,7 +356,7 @@ contains
 
        Call io_set_parameters(io, user_n_io_procs_write = itmp )
 
-       call params%retreive('io_write_batch_size', itmp)
+       call params%retrieve('io_write_batch_size', itmp)
 
        Select Case (itmp)
        Case(0)
@@ -389,7 +389,7 @@ contains
 
     End Select
 
-    call params%retreive('io_write_buffer_size', itmp)
+    call params%retrieve('io_write_buffer_size', itmp)
 
     Select Case(itmp)
     Case(0)
@@ -419,7 +419,7 @@ contains
     ! switch error checking flag for writing
 
     If (io_write /= IO_WRITE_UNSORTED_MASTER .and. io_write /= IO_WRITE_SORTED_MASTER) Then
-       call params%retreive('io_write_error_check', ltmp)
+       call params%retrieve('io_write_error_check', ltmp)
        If (.not. ltmp) Then
           Call info('I/O parallel read error checking off',.true.)
        Else
@@ -428,23 +428,23 @@ contains
        Call io_set_parameters(io, user_error_check = l_tmp )
     End If
 
-    call params%retreive('io_file_output', curr_val)
+    call params%retrieve('io_file_output', curr_val)
     if (trim(curr_val) /= '') Call info('OUTPUT file is '//files(FILE_OUTPUT)%filename,.true.)
-    call params%retreive('io_file_config', curr_val)
+    call params%retrieve('io_file_config', curr_val)
     if (trim(curr_val) /= '') Call info('CONFIG file is '//files(FILE_CONFIG)%filename,.true.)
-    call params%retreive('io_file_field', curr_val)
+    call params%retrieve('io_file_field', curr_val)
     if (trim(curr_val) /= '') Call info('FIELD file is '//files(FILE_FIELD)%filename,.true.)
-    call params%retreive('io_file_statis', curr_val)
+    call params%retrieve('io_file_statis', curr_val)
     if (trim(curr_val) /= '') Call info('STATIS file is '//files(FILE_STATS)%filename,.true.)
-    call params%retreive('io_file_history', curr_val)
+    call params%retrieve('io_file_history', curr_val)
     if (trim(curr_val) /= '') Call info('HISTORY file is '//files(FILE_HISTORY)%filename,.true.)
-    call params%retreive('io_file_historf', curr_val)
+    call params%retrieve('io_file_historf', curr_val)
     if (trim(curr_val) /= '') Call info('HISTORF file is '//files(FILE_HISTORF)%filename,.true.)
-    call params%retreive('io_file_revive', curr_val)
+    call params%retrieve('io_file_revive', curr_val)
     if (trim(curr_val) /= '') Call info('REVIVE file is '//files(FILE_REVIVE)%filename,.true.)
-    call params%retreive('io_file_revcon', curr_val)
+    call params%retrieve('io_file_revcon', curr_val)
     if (trim(curr_val) /= '') Call info('REVCON file is '//files(FILE_REVCON)%filename,.true.)
-    call params%retreive('io_file_revold', curr_val)
+    call params%retrieve('io_file_revold', curr_val)
     if (trim(curr_val) /= '') Call info('REVOLD file is '//files(FILE_REVOLD)%filename,.true.)
 
   End Subroutine setup_file_io
@@ -473,15 +473,15 @@ contains
     Type( parameters_hash_table ), intent( In    ) :: table
     Type( file_type ), Intent( InOut ) :: files(:)
 
-    Call params%retreive('io_file_output', files(FILE_OUTPUT)%filename)
-    Call params%retreive('io_file_config', files(FILE_CONFIG)%filename)
-    Call params%retreive('io_file_field',  files(FILE_FIELD)%filename)
-    Call params%retreive('io_file_stats',  files(FILE_STATS)%filename)
-    Call params%retreive('io_file_history',files(FILE_HISTORY)%filename)
-    Call params%retreive('io_file_historf',files(FILE_HISTORF)%filename)
-    Call params%retreive('io_file_revive', files(FILE_REVIVE)%filename)
-    Call params%retreive('io_file_revcon', files(FILE_REVCON)%filename)
-    Call params%retreive('io_file_revold', files(FILE_REVOLD)%filename)
+    Call params%retrieve('io_file_output', files(FILE_OUTPUT)%filename)
+    Call params%retrieve('io_file_config', files(FILE_CONFIG)%filename)
+    Call params%retrieve('io_file_field',  files(FILE_FIELD)%filename)
+    Call params%retrieve('io_file_stats',  files(FILE_STATS)%filename)
+    Call params%retrieve('io_file_history',files(FILE_HISTORY)%filename)
+    Call params%retrieve('io_file_historf',files(FILE_HISTORF)%filename)
+    Call params%retrieve('io_file_revive', files(FILE_REVIVE)%filename)
+    Call params%retrieve('io_file_revcon', files(FILE_REVCON)%filename)
+    Call params%retrieve('io_file_revold', files(FILE_REVOLD)%filename)
 
   end Subroutine scan_new_control_output
 
