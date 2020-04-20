@@ -23,33 +23,82 @@ Module new_control
        IO_WRITE_SORTED_DIRECT,   &
        IO_WRITE_SORTED_NETCDF,   &
        IO_WRITE_SORTED_MASTER
+  Use units, only : convert_units, set_timestep
+  Implicit None
+
+  Integer, Parameter, Public :: DATA_INT=1, DATA_FLOAT=2, DATA_STRING=3, DATA_BOOL=4, DATA_OPTION=5, DATA_VECTOR3=6, DATA_VECTOR6=7
+
+  Type, Private, Extends(hash_table) :: parameters_hash_table
+   contains
+     Generic, Public  :: get => get_int, get_double, get_complex, get_param
+     Procedure, Private :: get_param
+     Generic, Public  :: retrieve => retrieve_option_or_string, retrieve_float, retrieve_vector3, retrieve_vector6, retrieve_int
+     Procedure, Pass(table), Private :: retrieve_option_or_string, retrieve_float, retrieve_vector3, retrieve_vector6, retrieve_int
+  end type parameters_hash_table
+
+
+  Type, Public :: control_parameter
+     !! Type containing breakdown of control parameter
+     !> Internal key name
+     Character(Len=30) :: key = ""
+     !> Long name to be printed on high print_level
+     Character(Len=STR_LEN) :: name = ""
+     !> Current value -- Initialise to default
+     Character(Len=STR_LEN) :: val = ""
+     !> User specified units
+     Character(Len=STR_LEN) :: units = ""
+     !> Units to be converted to internally
+     Character(Len=STR_LEN) :: internal_units = ""
+     !> Information to be printed with help
+     Character(Len=STR_LEN) :: description = ""
+     !> Control parameter data type (int, float, vector3, vector6, string, bool, option)
+     Character(Len=10) :: data_type = 0
+     !> Is value set
+     Logical :: set = .false.
+  End Type control_parameter
+
+contains
 
   Subroutine read_new_control(file, params, comm)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Set read in a new_style control file
+    !!
+    !! copyright - daresbury laboratory
+    !! author - j.wilkins april 2020
+    !!-----------------------------------------------------------------------
     Type( parameters_hash_table ), intent(   Out ) :: params
     Type( file_type ), Intent( InOut ) :: control_file
     Type( comms_type ), Intent( InOut ) :: comm
 
     Call initialise_control(params)
     Call parse_file(control_file%unit_no, params, comm)
+    table%can_overwrite = .false.
 
   end Subroutine read_new_control
 
   Subroutine setup_file_io(params, io, netcdf, files, comm)
-    Type( params ), Intent( In    ) :: params
+    !!-----------------------------------------------------------------------
+    !!
+    !! Read in the io parameters
+    !!
+    !! copyright - daresbury laboratory
+    !! author - j.wilkins april 2020
+    !!-----------------------------------------------------------------------
+    Type( parameters_hash_table ), Intent( In    ) :: params
     Type( io_type ), Intent( InOut ) :: io
     Type( netcdf_param ), Intent( InOut ) :: netcdf
     Type( file_type ), Dimension(:), Intent( InOut ) :: files
     Type( comms_type ), Intent( InOut ) :: comm
-    Character(Len=MAX_LEN) :: curr_val, curr_unit
     Type( control_parameter ) :: curr_param
+    Character(Len=256) :: curr_option
     Integer :: io_read, io_write
     Integer :: itmp
     Logical :: ltmp
 
-    curr_val = params%get_val('io_read_method', default = 'mpiio')
-    Call lower_case(curr_val)
+    call params%retrieve('io_read_method', curr_option)
 
-    Select Case(Trim(curr_val%val))
+    Select Case(Trim(curr_option))
     Case ( 'mpiio' )
        io_read = IO_READ_MPIIO
        Call info('I/O read method: parallel by using MPI-I/O',.true.)
@@ -67,7 +116,7 @@ Module new_control
        Call info('I/O read method: serial by using a single master process',.true.)
 
     Case Default
-       Call info('io_read_method '//curr_val//' unrecognised option.',.true.)
+       Call info('io_read_method '//curr_option//' unrecognised option.',.true.)
        Call error(3)
 
     End Select
@@ -77,8 +126,7 @@ Module new_control
     Select Case (io_read)
     Case (IO_READ_MPIIO, IO_READ_DIRECT, IO_READ_NETCDF)
        ! Need to calculate number of readers
-       curr_val = params%get_val('io_readers', '0')
-       itmp = parse_int(curr_val)
+       call params%retreive('io_read_readers', itmp)
 
        Select Case (itmp)
        Case(0)
@@ -115,8 +163,7 @@ Module new_control
        ! 1 <= batch <= MAX_BATCH_SIZE, default 2000000
        ! Note zero or negative values indicate use the default
 
-       curr_val = params%get_val('io_read_batch_size', '0')
-       itmp = parse_int(curr_val)
+       call params%retreive('io_read_batch_size', itmp)
 
        Select Case (itmp)
        Case(0)
@@ -151,8 +198,7 @@ Module new_control
 
     ! Get read buffer size
 
-    curr_val = params%get_val('io_read_buffer_size', '0')
-    itmp = parse_int(curr_val)
+    call params%retreive('io_read_buffer_size', itmp)
 
     Select Case(itmp)
     Case(0)
@@ -183,8 +229,8 @@ Module new_control
     ! Get parallel read error checking
 
     if (io_read /= IO_READ_MASTER) then
-       curr_val = params%get_val('io_read_error_check', 'N')
-       ltmp = parse_bool(curr_val)
+       call param%retreive('io_read_error_check', ltmp)
+
        If (.not. ltmp) Then
           Call info('I/O parallel read error checking off',.true.)
        Else
@@ -195,9 +241,8 @@ Module new_control
 
     ! Get write settings
 
-    curr_val = params%get_val('io_write_method', default = 'mpiio')
-    Call lower_case(curr_val)
-    ltmp = parse_bool(params%get_val('io_write_sorted', default = 'ON'))
+    call params%retreive('io_write_method', curr_option)
+    call params%retreive('io_write_sorted', ltmp)
 
     Select Case (Trim(curr_val))
     Case ( 'mpiio' )
@@ -220,8 +265,7 @@ Module new_control
     Case ( 'netcdf' )
        io_write = IO_WRITE_SORTED_NETCDF
 
-       curr_val = params%get_val('io_write_netcdf_format', '64bit')
-       Call lower_case(curr_val)
+       call current_params%retreive('io_read_netcdf_format', curr_option)
 
        Select Case (Trim(curr_val))
        Case('amber', '32bit', '32-bit')
@@ -275,8 +319,7 @@ Module new_control
 
     Select Case (io_write)
     Case ( IO_WRITE_SORTED_NETCDF, IO_WRITE_SORTED_MPIIO, IO_WRITE_SORTED_DIRECT )
-       curr_val = params%get_val('io_writers', default = '0')
-       itmp = parse_int(curr_val)
+       call params%retreive('io_write_writers', itmp)
 
        Select Case( itmp )
        Case(0)
@@ -313,8 +356,7 @@ Module new_control
 
        Call io_set_parameters(io, user_n_io_procs_write = itmp )
 
-       curr_val = params%get_val('io_write_batch_size', default = '0')
-       itmp = parse_int(curr_val)
+       call params%retreive('io_write_batch_size', itmp)
 
        Select Case (itmp)
        Case(0)
@@ -347,8 +389,7 @@ Module new_control
 
     End Select
 
-    curr_val = params%get_val('io_write_buffer_size', default = '0')
-    itmp = parse_int(curr_val)
+    call params%retreive('io_write_buffer_size', itmp)
 
     Select Case(itmp)
     Case(0)
@@ -378,8 +419,7 @@ Module new_control
     ! switch error checking flag for writing
 
     If (io_write /= IO_WRITE_UNSORTED_MASTER .and. io_write /= IO_WRITE_SORTED_MASTER) Then
-       curr_val = params%get_val('io_write_error_check', 'N')
-       ltmp = parse_bool(curr_val)
+       call params%retreive('io_write_error_check', ltmp)
        If (.not. ltmp) Then
           Call info('I/O parallel read error checking off',.true.)
        Else
@@ -388,31 +428,415 @@ Module new_control
        Call io_set_parameters(io, user_error_check = l_tmp )
     End If
 
-    curr_val = params%get_val('io_output', '')
-    if (curr_val /= '') Call info('OUTPUT file is '//files(FILE_OUTPUT)%filename,.true.)
-    curr_val = params%get_val('io_config', '')
-    if (curr_val /= '') Call info('CONFIG file is '//files(FILE_CONFIG)%filename,.true.)
-    curr_val = params%get_val('io_field', '')
-    if (curr_val /= '') Call info('FIELD file is '//files(FILE_FIELD)%filename,.true.)
-    curr_val = params%get_val('io_statis', '')
-    if (curr_val /= '') Call info('STATIS file is '//files(FILE_STATS)%filename,.true.)
-    curr_val = params%get_val('io_history', '')
-    if (curr_val /= '') Call info('HISTORY file is '//files(FILE_HISTORY)%filename,.true.)
-    curr_val = params%get_val('io_historf', '')
-    if (curr_val /= '') Call info('HISTORF file is '//files(FILE_HISTORF)%filename,.true.)
-    curr_val = params%get_val('io_revive', '')
-    if (curr_val /= '') Call info('REVIVE file is '//files(FILE_REVIVE)%filename,.true.)
-    curr_val = params%get_val('io_revcon', '')
-    if (curr_val /= '') Call info('REVCON file is '//files(FILE_REVCON)%filename,.true.)
-    curr_val = params%get_val('io_revold', '')
-    if (curr_val /= '') Call info('REVOLD file is '//files(FILE_REVOLD)%filename,.true.)
+    call params%retreive('io_file_output', curr_val)
+    if (trim(curr_val) /= '') Call info('OUTPUT file is '//files(FILE_OUTPUT)%filename,.true.)
+    call params%retreive('io_file_config', curr_val)
+    if (trim(curr_val) /= '') Call info('CONFIG file is '//files(FILE_CONFIG)%filename,.true.)
+    call params%retreive('io_file_field', curr_val)
+    if (trim(curr_val) /= '') Call info('FIELD file is '//files(FILE_FIELD)%filename,.true.)
+    call params%retreive('io_file_statis', curr_val)
+    if (trim(curr_val) /= '') Call info('STATIS file is '//files(FILE_STATS)%filename,.true.)
+    call params%retreive('io_file_history', curr_val)
+    if (trim(curr_val) /= '') Call info('HISTORY file is '//files(FILE_HISTORY)%filename,.true.)
+    call params%retreive('io_file_historf', curr_val)
+    if (trim(curr_val) /= '') Call info('HISTORF file is '//files(FILE_HISTORF)%filename,.true.)
+    call params%retreive('io_file_revive', curr_val)
+    if (trim(curr_val) /= '') Call info('REVIVE file is '//files(FILE_REVIVE)%filename,.true.)
+    call params%retreive('io_file_revcon', curr_val)
+    if (trim(curr_val) /= '') Call info('REVCON file is '//files(FILE_REVCON)%filename,.true.)
+    call params%retreive('io_file_revold', curr_val)
+    if (trim(curr_val) /= '') Call info('REVOLD file is '//files(FILE_REVOLD)%filename,.true.)
 
   End Subroutine setup_file_io
 
+  Subroutine scan_new_control_pre(params, image_convention, density_variance)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Scan control for use in set_bounds
+    !!
+    !! copyright - daresbury laboratory
+    !! author - j.wilkins april 2020
+    !!-----------------------------------------------------------------------
+    Type( parameters_hash_table ), intent( In    ) :: params
+    Integer, Intent( InOut ) :: image_convention
+    Real(kind=wp), Intent(   Out) :: permitted_density_variation
+    Logical :: ltmp
+
+    call params%retrieve('slab', ltmp)
+    call params%retrieve('density_variance', density_variance)
+
+    if (ltmp) image_convention = 6
+
+  end Subroutine scan_new_control_pre
+
+  Subroutine scan_new_control_output(params, files)
+    Type( parameters_hash_table ), intent( In    ) :: table
+    Type( file_type ), Intent( InOut ) :: files(:)
+
+    Call params%retreive('io_file_output', files(FILE_OUTPUT)%filename)
+    Call params%retreive('io_file_config', files(FILE_CONFIG)%filename)
+    Call params%retreive('io_file_field',  files(FILE_FIELD)%filename)
+    Call params%retreive('io_file_stats',  files(FILE_STATS)%filename)
+    Call params%retreive('io_file_history',files(FILE_HISTORY)%filename)
+    Call params%retreive('io_file_historf',files(FILE_HISTORF)%filename)
+    Call params%retreive('io_file_revive', files(FILE_REVIVE)%filename)
+    Call params%retreive('io_file_revcon', files(FILE_REVCON)%filename)
+    Call params%retreive('io_file_revold', files(FILE_REVOLD)%filename)
+
+  end Subroutine scan_new_control_output
+
+  Subroutine scan_new_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
+    l_n_r,lzdn,l_ind,nstfce,ttm,cshell,stats,thermo,green,devel,msd_data,met, &
+    pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf,mpoles, &
+    electro,ewld,kim_data,files,flow,comm)
+
+    Type( ttm_type ), Intent( InOut ) :: ttm
+    Logical,           Intent(   Out ) :: l_n_r,lzdn,l_ind
+    Integer,           Intent( In    ) :: max_rigid,imcon
+    Integer,           Intent( InOut ) :: imc_n
+    Integer,           Intent(   Out ) :: mxgana,nstfce
+    Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
+    Real( Kind = wp ), Intent( InOut ) :: cell(1:9)
+    Type( core_shell_type ), Intent (   In  )   :: cshell
+    Type( stats_type ), Intent( InOut ) :: stats
+    Type( thermostat_type ), Intent( InOut ) :: thermo
+    Type( development_type ), Intent( InOut ) :: devel
+    Type( greenkubo_type ), Intent( InOut ) :: green
+    Type( msd_type ), Intent( InOut ) :: msd_data
+    Type( metal_type ), Intent( InOut ) :: met
+    Type( poisson_type ), Intent( InOut ) :: pois
+    Type( bonds_type ), Intent( InOut ) :: bond
+    Type( angles_type ), Intent( InOut ) :: angle
+    Type( dihedrals_type ), Intent( InOut ) :: dihedral
+    Type( inversions_type ), Intent( InOut ) :: inversion
+    Type( z_density_type ), Intent( InOut ) :: zdensity
+    Type( neighbours_type ), Intent( InOut ) :: neigh
+    Type( vdw_type ), Intent( InOut ) :: vdws
+    Type( tersoff_type ), Intent( In    )  :: tersoffs
+    Type( rdf_type ), Intent( InOut ) :: rdf
+    Type( mpole_type ), Intent( InOut ) :: mpoles
+    Type( electrostatic_type ), Intent( InOut ) :: electro
+    Type( ewald_type ), Intent( InOut ) :: ewld
+    Type( kim_type), Intent( InOut ) :: kim_data
+    Type( file_type ), Intent( InOut ) :: files(:)
+    Type( flow_type ), Intent( InOut ) :: flow
+    Type( comms_type ), Intent( InOut ) :: comm
+
+    Character(Len=50) :: option
+    Logical :: ltmp
+    Logical :: la_ana,la_bnd,la_ang,la_dih,la_inv, &
+         lrcut,lrvdw,lrmet,lelec,lvdw,lmet,l_n_m,lter,l_exp
+
+    call params%retrieve('cutoff', neigh%cutoff)
+    lrcut = neigh%cutoff > zero_plus
+
+    call param%retrieve('padding', neigh%padding)
+    if (neigh%padding < 0.0_wp) neigh%padding = 0.0_wp
+    flow%reset_padding = .true.
+
+    call param%retrieve('vdw_cutoff', vdws%cutoff)
+    lrvdw = vdws%cutoff > zero_plus
+
+    call param%retrieve('rdf_binsize', rdf%rbin)
+    rdf%rbin = abs(rdf%rbin)
+
+    call param%retrieve('zden_binsize', zdensity%bin_width)
+    zdensity%bin_width = abs(zdensity%bin_width)
+
+    call param%retrieve('ensemble', option, required = .true.)
+
+    select case(trim(option))
+    case ('nve', 'pmf')
+       thermo%ensemble = NVE
+       Call info('Ensemble : NVE (Microcanonical)',.true.)
+
+    case ('nvt')
+
+       call param%retrieve('ensemble_method', option, required = .true.)
+
+       select case(trim(option))
+       case ('evans')
+          thermo%ensemble = ENS_NVT_EVANS
+
+          Call info('Ensemble : NVT Evans (Isokinetic)',.true.)
+          Call info('Gaussian temperature constraints in use',.true.)
+
+       case ('langevin')
+
+          thermo%ensemble = ENS_NVT_LANGEVIN
+
+          Call param%retrieve('ensemble_thermostat_friction', thermo%chi)
+
+          Call info('Ensemble : NVT Langevin (Stochastic Dynamics)',.true.)
+          Write(message,'(a,1p,e12.4)') 'thermostat friction (ps^-1)', thermo%chi
+          Call info(message,.true.)
+
+       case ('andersen')
+
+          thermo%ensemble = ENS_NVT_ANDERSON
+
+          Call param%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+          Call param%retrieve('ensemble_thermostat_softness', theremo%soft)
+
+          Write(messages(1),'(a)') 'Ensemble : NVT Andersen'
+          Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+          Write(messages(3),'(a,1p,e12.4)') 'softness (dimensionless)',thermo%soft
+          if (thermo%soft > 1) call error(0, 'Andersen softness greater than 1 '//message)
+
+          Call info(messages,3,.true.)
+
+       case ('berendsen')
+
+          thermo%ensemble = ENS_NVT_BERENDSEN
+
+          Call param%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+
+          Call info('Ensemble : NVT Berendsen',.true.)
+          Write(message,'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+          Call info(message,.true.)
+
+       Case ('hoover', 'nose', 'nose-hoover')
+
+          thermo%ensemble = ENS_NVT_NOSE_HOOVER
+
+          Call param%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+
+          Call info('Ensemble : NVT Nose-Hoover',.true.)
+          Write(message,'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+          Call info(message,.true.)
+
+       Case ('gentle', 'gst')
+
+          thermo%ensemble = ENS_NVT_GENTLE
+
+          Call param%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+          Call param%retrieve('ensemble_thermostat_friction', thermo%gama)
+
+          Write(messages(1),'(a)') 'Ensemble : NVT gentle stochastic thermostat'
+          Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+          Write(messages(3),'(a,1p,e12.4)') 'friction on thermostat  (ps^-1) ',thermo%gama
+          Call info(messages,3,.true.)
+
+       Case ('ttm')
+
+
+          ! I hate TTM parameters. I refuse (maybe later)
+
+       Case ('dpd')
+          thermo%ensemble = ENS_NVE
+
+          Call info('Ensemble : NVT dpd (Dissipative Particle Dynamics)',.true.)
+
+          call params%retrieve('ensemble_dpd_order', option)
+          select case (trim(option))
+          case ('first', '1')
+             thermo%key_dpd = DPD_FIRST_ORDER
+             Call info("Ensemble type : Shardlow's first order splitting (S1)",.true.)
+          case ('second', '2')
+             thermo%key_dpd = DPD_SECOND_ORDER
+             Call info("Ensemble type : Shardlow's first order splitting (S2)",.true.)
+          case default
+             call error(0, 'Unrecognised option for ensemble_dpd_order '//trim(option))
+          end select
+
+
+          call params%retrieve('ensemble_dpd_drag', thermo%gamdpd(0))
+
+          If (thermo%gamdpd(0) > zero_plus) Then
+             Write(message,'(a,1p,e12.4)') 'drag coefficient (Dalton/ps) ', thermo%gamdpd(0)
+             Call info(message,.true.)
+          End If
+
+       case default
+          call error(0, 'Unrecognised option for nvt ensemble_method '//trim(option))
+       end select
+
+    case ('npt')
+
+       thermo%variable_cell = .true.
+
+       call params%retrieve('ensemble_method', option)
+       select case (trim(option))
+       case ('langevin')
+
+          thermo%ensemble = ENS_NPT_LANGEVIN
+          thermo%l_langevin = .true.
+
+          call params%retrieve('ensemble_thermostat_friction', thermo%chi)
+          call params%retrieve('ensemble_barostat_friction', thermo%tai)
+
+          Write(messages(1),'(a)') 'Ensemble : NPT isotropic Langevin (Stochastic Dynamics)'
+          Write(messages(2),'(a,1p,e12.4)') 'thermostat friction (ps^-1)',thermo%chi
+          Write(messages(3),'(a,1p,e12.4)') 'barostat friction (ps^-1)',thermo%tai
+          Call info(messages,3,.true.)
+
+       case ('berendsen')
+
+          thermo%ensemble = ENS_NPT_BERENDSEN
+
+          call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+          call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
+
+          Write(messages(1),'(a)') 'Ensemble : NPT isotropic Berendsen'
+          Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+          Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
+          Call info(messages,3,.true.)
+
+       case ('hoover', 'nose', 'nose-hoover')
+
+
+          thermo%ensemble = ENS_NPT_NOSE_HOOVER
+
+          call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+          call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
+
+          Write(messages(1),'(a)') 'Ensemble : NPT isotropic Nose-Hoover (Melchionna)'
+          Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+          Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
+          Call info(messages,3,.true.)
+
+       case ('mtk')
+
+          thermo%ensemble = ENS_NPT_MTK
+
+          call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+          call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
+
+          Write(messages(1),'(a)') 'Ensemble : NPT isotropic Martyna-Tuckerman-Klein'
+          Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+          Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
+          Call info(messages,3,.true.)
+
+       case default
+          call error(0, 'Unrecognised option for npt ensemble_method '//trim(option))
+       end select
+
+    case ('nst')
+
+       thermo%variable_cell = .true.
+       thermo%anisotropic_pressure = .true.
+
+       call params%retrieve('ensemble_method', option)
+       select case (trim(option))
+       case ('langevin')
+
+          thermo%ensemble = ENS_NPT_LANGEVIN_ANISO
+          thermo%l_langevin = .true.
+
+          call params%retrieve('ensemble_thermostat_friction', thermo%chi)
+          call params%retrieve('ensemble_barostat_friction', thermo%tai)
+
+          Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Langevin (Stochastic Dynamics)'
+          Write(messages(2),'(a,1p,e12.4)') 'thermostat friction (ps^-1)',thermo%chi
+          Write(messages(3),'(a,1p,e12.4)') 'barostat friction (ps^-1)',thermo%tai
+          Call info(messages,3,.true.)
+
+       case ('berendsen')
+
+          thermo%ensemble = ENS_NPT_BERENDSEN_ANISO
+
+          call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+          call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
+
+          Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Berendsen'
+          Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+          Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
+          Call info(messages,3,.true.)
+
+       case ('hoover', 'nose', 'nose-hoover')
+
+          thermo%ensemble = ENS_NPT_NOSE_HOOVER_ANISO
+
+          call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+          call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
+
+          Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Nose-Hoover (Melchionna)'
+          Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+          Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
+          Call info(messages,3,.true.)
+
+       Case ('mtk')
+
+          thermo%ensemble = ENS_NPT_MTK_ANISO
+
+          call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+          call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
+
+          Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Martyna-Tuckerman-Klein'
+          Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+          Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
+          Call info(messages,3,.true.)
+
+       case default
+          call error(0, 'Unrecognised option for nst ensemble_method '//trim(option))
+       end select
+
+       ! Semi isotropic ensembles
+
+       call params%retrieve('ensemble_semi_isotropic', option)
+       select case (trim(option))
+       case ('OFF')
+          continue
+       case ('area')
+          thermo%iso = CONSTRAINT_SURFACE_AREA
+          Call info('semi-isotropic barostat : constant normal pressure (Pn) &',.true.)
+          Call info('       (N-Pn-A-T)       : constant surface area (A)',.true.)
+       case ('tens')
+
+          thermo%iso = CONSTRAINT_SURFACE_TENSION
+
+          call params%retrieve('ensemble_tension', thermo%tension, required=.true.)
+
+          Write(messages(1),'(a)') 'semi-isotropic barostat : constant normal pressure (Pn) &'
+          Write(messages(2),'(a)') '     (N-Pn-gamma-T)     : constant surface tension (gamma)'
+          Write(messages(3),'(a,1p,e11.4)') 'sumulation surface tension (dyn/cm)', thermo%tension
+          Call info(messages,3,.true.)
+          thermo%tension=thermo%tension/tenunt
+
+          call params%retrieve('ensemble_semi_orthorhombie', ltmp)
+          if (ltmp) then
+             thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
+             Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
+          end if
+
+       case ('ortho', 'orthorhombic')
+
+          thermo%iso = CONSTRAINT_SURFACE_TENSION
+          Call info('semi-isotropic barostat : orthorhombic MD cell constraints',.true.)
+          call params%retrieve('ensemble_semi_orthorhombie', ltmp)
+          if (ltmp) then
+             thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
+             Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
+          end if
+       case default
+          call error(0, 'Unrecognised option for ensemble '//trim(option))
+       end select
+       If (Any(thermo%iso == [CONSTRAINT_SURFACE_AREA,CONSTRAINT_SURFACE_TENSION])) Then
+          Call warning('semi-isotropic ensembles are only correct for infinite' &
+               //'interfaces placed perpendicularly to the z axis',.true.)
+       End If
+
+    case default
+       call error(0, 'Unrecognised option for ensemble '//trim(option))
+    end select
+
+
+  end Subroutine scan_new_control
+
+
+
   Subroutine initialise_control(table)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Initialise all control parameters to their default
+    !!
+    !! copyright - daresbury laboratory
+    !! author - j.wilkins april 2020
+    !!-----------------------------------------------------------------------
     Type( parameters_hash_table ), intent(   Out ) :: table
 
     call table%init(256)
+    table%can_overwrite = .true.
 
     call table%set('title', control_parameter( &
          key = 'title', &
@@ -504,6 +928,13 @@ Module new_control
          description = "Set I/O reader buffer size", &
          data_type = DATA_INT))
 
+    call table%set("io_read_error_check", control_parameter( &
+         key = "io_read_error_check", &
+         name = "I/O error check on read", &
+         vall = "OFF", &
+         description = "Enable extended error checking on read", &
+         data_type = DATA_BOOL))
+
     call table%set("io_write_method", control_parameter( &
          key = "io_write_method", &
          name = "I/O write method", &
@@ -542,6 +973,20 @@ Module new_control
          val = "ON", &
          description = "Enable sorted output for atomic data", &
          data_type = DATA_BOOL))
+
+    call table%set("io_write_error_check", control_parameter( &
+         key = "io_write_error_check", &
+         name = "I/O error check on write", &
+         vall = "OFF", &
+         description = "Enable extended error checking on write", &
+         data_type = DATA_BOOL))
+
+    call table%set("io_write_netcdf_format", control_parameter( &
+         key = "io_write_netcdf_format", &
+         name = "Netcdf Format", &
+         val = "64bit", &
+         description = "Set netcdf write format, options: 'amber', '32bit', '32-bit', '64-bit', '64bit'", &
+         data_type = DATA_OPTION))
 
     call table%set("io_file_output", control_parameter( &
          key = "io_file_output", &
@@ -828,7 +1273,7 @@ Module new_control
          key = "ensemble", &
          name = "Ensemble constraints", &
          val = "NVE", &
-         description = "Set ensemble constraints, options: NVE, NVT, NPT, NST, NPnAT, NPng³", &
+         description = "Set ensemble constraints, options: NVE, PMF, NVT, NPT, NST, NPnAT, NPng³", &
          data_type = DATA_OPTION))
 
     call table%set("ensemble_method", control_parameter( &
@@ -836,7 +1281,7 @@ Module new_control
          name = "Ensemble method", &
          val = "", &
          description = "Set ensemble method, options "// &
-         "NVT: Evans, Langevin, Andersen, Berendsen, Hoover, gentle, ttm, dpd. "// &
+         "NVT: Evans, Langevin, Andersen, Berendsen, Hoover, gentle, ttm, dpds1, dpds2. "// &
          "NP|ST: Langevin, Berendsen, Hoover, MTK.", &
          data_type = DATA_OPTION))
 
@@ -846,7 +1291,41 @@ Module new_control
          val = "0.0", &
          units = "ps", &
          internal_units = "ps", &
-         description = "Set thermostat relaxation/decorrelation times (inverse units for langevin)", &
+         description = "Set thermostat relaxation/decorrelation times (use ensemble_thermostat_friction for langevin)", &
+         data_type = DATA_FLOAT))
+
+    call table%set("ensemble_dpd_order", control_parameter( &
+         key = "ensemble_dpd_order", &
+         name = "Ensemble DPD order", &
+         val = "", &
+         description = "Set dpd method, options: first, second", &
+         data_type = DATA_OPTION))
+
+    call table%set("ensemble_dpd_drag", control_parameter( &
+         key = "ensemble_dpd_drag", &
+         name = "Ensemble DPD drag coefficient", &
+         val = "0.0", &
+         units = "Da/ps", &
+         internal_units = "Da/ps", &
+         description = "Set DPD drag coefficient", &
+         data_type = DATA_FLOAT))
+
+    call table%set("ensemble_thermostat_friction", control_parameter( &
+         key = "ensemble_thermostat_friction", &
+         name = "Thermostat Friction", &
+         val = "0.0", &
+         units = "ps^-1", &
+         internal_units = "ps^-1", &
+         description = "Set thermostat friction for langevin and gentle stochastic thermostats", &
+         data_type = DATA_FLOAT))
+
+    call table%set("ensemble_thermostat_softness", control_parameter( &
+         key = "ensemble_thermostat_softness", &
+         name = "Ensemble thermostat softness", &
+         val = "0.0", &
+         units = "", &
+         internal_units = "", &
+         description = "Set thermostat softness for Andersen thermostat", &
          data_type = DATA_FLOAT))
 
     call table%set("ensemble_barostat_coupling", control_parameter( &
@@ -855,21 +1334,30 @@ Module new_control
          val = "0.0", &
          units = "ps", &
          internal_units = "ps", &
-         description = "Set barostat relaxation/decorrelation times (inverse units for langevin)", &
+         description = "Set barostat relaxation/decorrelation times (use ensemble_barostat_friction for langevin)", &
+         data_type = DATA_FLOAT))
+
+    call table%set("ensemble_barostat_friction", control_parameter( &
+         key = "ensemble_barostat_friction", &
+         name = "Barostat Friction", &
+         val = "0.0", &
+         units = "ps^-1", &
+         internal_units = "ps^-1", &
+         description = "Set barostat friction", &
          data_type = DATA_FLOAT))
 
     call table%set("ensemble_semi_isotropic", control_parameter( &
          key = "ensemble_semi_isotropic", &
          name = "Ensemble semi-isotropic constraint", &
          val = "OFF", &
-         description = "Enable semi-isotropic barostat constraints", &
+         description = "Enable semi-isotropic barostat constraints, options: area, tension, orthorhombic", &
          data_type = DATA_BOOL))
 
-    call table%set("ensemble_orthorhombic", control_parameter( &
-         key = "ensemble_orthorhombic", &
-         name = "Ensemble orthorhombic constraint", &
+    call table%set("ensemble_semi_orthorhombic", control_parameter( &
+         key = "ensemble_semi_orthorhombic", &
+         name = "Ensemble semi-orthorhombic constraint", &
          val = "OFF", &
-         description = "Enable orthorhombic barostat constraints", &
+         description = "Enable semi-orthorhombic barostat constraints", &
          data_type = DATA_BOOL))
 
     call table%set("ensemble_tension", control_parameter( &
@@ -877,7 +1365,7 @@ Module new_control
          name = "Constrained surface tension", &
          val = "0.0", &
          units = "N/m", &
-         internal_units = "internal_f/internal_l", &
+         internal_units = "dyn/cm", &
          description = "Set tension in NPngT calctulation", &
          data_type = DATA_FLOAT))
 
@@ -1553,6 +2041,13 @@ Module new_control
   end Subroutine initialise_control
 
   Subroutine parse_file(ifile, params, comm)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Read a control file filling the params table
+    !!
+    !! copyright - daresbury laboratory
+    !! author - j.wilkins april 2020
+    !!-----------------------------------------------------------------------
 
     Type( parameters_hash_table ), intent(   Out ) :: params
     Type( control_parameter ) :: param
@@ -1569,7 +2064,9 @@ Module new_control
        call get_word(input, key)
        Call lower_case(key)
        Call params%get(key, param)
+       if (param%set) call error(0, 'Param '//key//' already set')
        Call read_control_param(input, param, file, comm)
+       param%set = .true.
        call table%set(key, param)
     end do
 
@@ -1580,7 +2077,7 @@ Module new_control
     Integer, Intent( In    ) :: ifile
     Type( comms_type ), Intent ( InOut ) :: comm
     Character(Len=*), Intent( InOut ) :: input
-    Character(Len=STR_LEN) :: val, unit, junk
+    Character(Len=STR_LEN) :: tmp, val, unit, junk
     Integer :: test_int, i
     Real(kind=wp) :: test_real
     Integer :: ierr
@@ -1596,45 +2093,83 @@ Module new_control
        param%val = val
        call get_word(input, unit)
        param%units = unit
-    case (DATA_VECTOR3. DATA_VECTOR6)
-       call get_word(input, val)
-       if (val(1:1) /= '[') call error(0, 'Expected vector in key '//trim(param%key)//' received '//trim(input))
-       test_int = 1
-       ! Skip [ on read
-       if (trim(val(2:)) /= '') then
-          test_real = word_2_real(val(2:))
-          param%val = trim(val(2:))
-       end if
-
-       do
-          call get_word(input, val)
-          ! Handle multiline
-          do while(trim(input) == '')
-             call get_line(line_read, ifile, input, comm)
-             if (.not. line_read) call error(0, 'End of file while parsing '//trim(param%key))
-          end do
-
-          i = index(val, ']')
-          if (i > 1) then ! Val]
-             test_real = word_2_real(val(1:i-1))
-             param%val = trim(param%val) // " " // val(1:i-1)
-             exit
-          else if (i == 1) then ! Independent ]
-             exit
-          else
-             test_real = word_2_real(val)
-             param%val = trim(param%val) // " " // val
-          end if
-
-       end do
-
-       ! Handle multiline
-       do while(trim(input) == '')
+    case (DATA_VECTOR3, DATA_VECTOR6)
+       ! Handle Multiline
+       i = index(input, '&')
+       tmp = ''
+       do while (i > 0)
+          tmp = trim(tmp) // input(:i-1)
+          if (trim(input(i+1:) /= '')) call error(0, 'Unexpected junk '//trim(input)//' after key '//trim(param%key))
           call get_line(line_read, ifile, input, comm)
-          if (.not. line_read) call error(0, 'End of file while parsing '//trim(param%key))
+          i = index(input, '&')
        end do
+       tmp = adjustl(trim(tmp) // input)
+
+       if (tmp(1:1) /= '[') call error(0, '')
+       i = index(tmp, ']', back=.true.)
+       tmp = tmp(:i)
+       input = tmp(i+1:)
+
+       test_int = 0
+       do i = 1, len_trim(tmp)
+          if (tmp(i:i) == '[') then
+             test_int = test_int + 1
+             tmp(i:i) = ' '
+          else if (tmp(i:i) == ']') then
+             test_int = test_int - 1
+             tmp(i:i) = ' '
+          end if
+       end do
+       if (test_int /= 0) call error(0, 'Unmatched brackets in input '//trim(tmp))
+
+       do while (trim(tmp) /= '')
+          call get_word(tmp, val)
+          ! Check all valid reals
+          test_real = word_2_real(val)
+          test%val = trim(test%val)//' '//val
+       end do
+
        call get_word(input, unit)
        param%units = unit
+
+       ! call get_word(input, val)
+       ! if (val(1:1) /= '[') call error(0, 'Expected vector in key '//trim(param%key)//' received '//trim(input))
+       ! test_int = 1
+       ! ! Skip [ on read
+       ! if (trim(val(2:)) /= '') then
+       !    test_real = word_2_real(val(2:))
+       !    param%val = trim(val(2:))
+       ! end if
+
+       ! do
+       !    call get_word(input, val)
+       !    ! Handle multiline
+       !    do while(trim(input) == '')
+       !       call get_line(line_read, ifile, input, comm)
+       !       if (.not. line_read) call error(0, 'End of file while parsing '//trim(param%key))
+       !    end do
+
+       !    i = index(val, ']')
+       !    if (i > 1) then ! Val]
+       !       test_real = word_2_real(val(1:i-1))
+       !       param%val = trim(param%val) // ' ' // val(1:i-1)
+       !       test_int = test_int - 1
+       !    else if (i == 1) then ! Independent ]
+       !       test_int = test_int - 1
+       !    else
+       !       test_real = word_2_real(val)
+       !       param%val = trim(param%val) // ' ' // val
+       !    end if
+       !    if (test_int == 0) exit
+       ! end do
+
+       ! ! Handle multiline
+       ! do while(trim(input) == '')
+       !    call get_line(line_read, ifile, input, comm)
+       !    if (.not. line_read) call error(0, 'End of file while parsing '//trim(param%key))
+       ! end do
+       ! call get_word(input, unit)
+       ! param%units = unit
 
     case (DATA_OPTION, DATA_BOOL)
        call lower_case(val)
@@ -1649,39 +2184,158 @@ Module new_control
 
   End Subroutine read_control_param
 
-  Function parse_vector3(input)
-    Character(Len=*), Value :: input
+  Subroutine retrieve_option_or_string(table, key, output, required)
+    Type( parameters_hash_table ) :: table
+    Character(Len=*), Intent( In    ) :: key
+    Type( control_parameter ) :: param
+    Logical, Intent( In    ), Optional :: required
+    Character(Len=STR_LEN), Intent( Out    ) :: output
+
+    call table%get(key, param)
+    if (present(required)) then
+       if (required .and. .not. param%set) call error(0, 'Necessary parameter '//trim(key)//' not set')
+    end if
+    output = param%val
+
+  end Subroutine retrieve_option_or_string
+
+  Subroutine retrieve_float(table, key, output, required)
+    Type( parameters_hash_table ) :: table
+    Character(Len=*), Intent( In    ) :: key
     Character(Len=STR_LEN) :: parse
-    Real(kind=wp), dimension(3) :: parse_vector3
+    Type( control_parameter ) :: param
+    Logical, Intent( In    ), Optional :: required
+    Character(Len=STR_LEN), Intent( Out    ) :: output
+
+    call table%get(key, param)
+    if (present(required)) then
+       if (required .and. .not. param%set) call error(0, 'Necessary parameter '//trim(key)//' not set')
+    end if
+    val = param%val
+    call get_word(val, parse)
+    output = word_2_real(parse)
+    output = convert_units(output, param%units, param%internal_units)
+
+  End Subroutine retrieve_float
+
+  Subroutine retrieve_vector3(table, key, output, required)
+    Type( parameters_hash_table ) :: table
+    Character(Len=*), Intent( In    ) :: key
+    Character(Len=STR_LEN) :: parse
+    Type( control_parameter ) :: param
+    Logical, Intent( In    ), Optional :: required
+    Real(kind=wp), dimension(3), Intent( Out    ) :: output
 
     Integer :: i
 
+    call table%get(key, param)
+    if (present(required)) then
+       if (required .and. .not. param%set) call error(0, 'Necessary parameter '//trim(key)//' not set')
+    end if
+    val = param%val
+
     do i = 1, 3
-       call get_word(input, parse)
-       parse_vector3(i) = word_2_real(parse)
+       call get_word(val, parse)
+       if (trim(parse) == "") exit
+       output(i) = word_2_real(parse)
+       output(i) = convert_units(output(i), param%units, param%internal_units)
+    end do
+    if (i /= 3) call error(0, "Bad length vector 3")
+
+  End Subroutine retrieve_vector3
+
+  Subroutine retrieve_vector6(table, key, output, required)
+    Type( parameters_hash_table ) :: table
+    Character(Len=*), Intent( In    ) :: key
+    Character(Len=STR_LEN) :: parse
+    Type( control_parameter ) :: param
+    Real(kind=wp), dimension(9) :: tmp
+    Logical, Intent( In    ), Optional :: required
+    Real(kind=wp), dimension(6), Intent( Out    ) :: output
+
+    Integer :: i
+
+    call table%get(key, param)
+    if (present(required)) then
+       if (required .and. .not. param%set) call error(0, 'Necessary parameter '//trim(key)//' not set')
+    end if
+    val = param%val
+
+    do i = 1, 9
+       call get_word(val, parse)
+       if (trim(parse) == "") exit
+       tmp(i) = word_2_real(parse)
+       tmp(i) = convert_units(tmp(i), param%units, param%internal_units)
     end do
 
-  End Function parse_vector3
+    select case(i)
+    case(7)
+       output = tmp(1:6)
+    case(9)
+       output = [tmp(1), tmp(5), tmp(9), tmp(2), tmp(3), tmp(4)]
+    case default
+       call error(0, "Bad length vector 6")
+    end select
 
-  Function parse_int(input)
-    Character(Len=*), Intent( In    ) :: input
-    Integer :: parse_int
 
-    read(input, '(i0)') parse_int
+  End Subroutine retrieve_vector6
 
-  End Function parse_int
+  Subroutine retrieve_int(table, key, output, required)
+    Type( parameters_hash_table ) :: table
+    Character(Len=*), Intent( In    ) :: key
+    Character(Len=STR_LEN) :: parse
+    Type( control_parameter ) :: param
+    Logical, Intent( In    ), Optional :: required
+    Integer, Intent(   Out ) :: output
 
-  Function parse_bool(input)
-    Character(Len=*), Intent( In    ) :: input
-    Logical :: parse_bool
+    call table%get(key, param)
+    if (present(required)) then
+       if (required .and. .not. param%set) call error(0, 'Necessary parameter '//trim(key)//' not set')
+    end if
+    read(param%val, '(i0)') output
 
-    Select Case(trim(input))
+  End Subroutine retrieve_int
+
+  Subroutine retrieve_bool(table, key, output, required)
+    Type( parameters_hash_table ) :: table
+    Character(Len=*), Intent( In    ) :: key
+    Character(Len=STR_LEN) :: parse
+    Type( control_parameter ) :: param
+    Logical, Intent( In    ), Optional :: required
+    Logical, Intent(   Out ) :: output
+
+
+
+    call table%get(key, param)
+    if (present(required)) then
+       if (required .and. .not. param%set) call error(0, 'Necessary parameter '//trim(key)//' not set')
+    end if
+
+    Select Case(trim(param%val))
     Case('on', 'y')
-       parse_bool = .true.
+       output = .true.
     Case Default
-       parse_bool = .false.
+       output = .false.
     end Select
 
-  End Function parse_bool
+  End Subroutine retrieve_bool
+
+  Subroutine get_param( table, key, val, default )
+    Class( parameters_hash_table ), Intent( InOut ) :: table
+    Character(Len=*), Intent( In    ) :: key
+    Type(control_parameter), Intent(   Out ) :: val
+    Type(control_parameter), Intent( In    ), Optional :: default
+    Class( * ), Allocatable :: stuff
+
+    stuff = table%get_cont(key, default)
+
+    Select Type( stuff )
+    Type is ( control_param )
+       val = stuff
+    Class Default
+       Call error('Trying to get control_param from a not control_param')
+    End Select
+
+  End Subroutine get_param
 
 End Module new_control

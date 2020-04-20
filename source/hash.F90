@@ -9,7 +9,6 @@ Module hash
   !! contributions - i.j.bush april 2020
   !!-----------------------------------------------------------------------
   Use errors_warnings, only : error_alloc, error_dealloc, error
-  Use hashables, only : control_parameter, unit_data, resolve
   Use kinds, only : wp
   Implicit None
 
@@ -45,15 +44,15 @@ Module hash
      Private
      Procedure, Public, Pass :: init => allocate_hash_table
      Procedure, Public, Pass :: set => set_hash_value
-     Generic  , Public  :: get => get_int, get_double, get_param, get_unit
+     Generic  , Public  :: get => get_int, get_double, get_complex
      Procedure, Public, Pass :: hash => hash_value
      Procedure, Public, Pass :: keys => print_keys
      Procedure, Public, Pass(table_to) :: fill => fill_from_table
      Procedure, Public, Pass :: copy => copy_table
      Procedure, Public, Pass :: resize => resize_table
      Procedure, Public, Pass :: expand => expand_table
-     Procedure, Private :: get_int, get_double, get_param, get_unit
-     Procedure, Private :: get_cont => get_hash_value
+     Procedure, Private :: get_int, get_double, get_complex
+     Procedure, Public :: get_cont => get_hash_value
      Procedure, Private, Pass :: get_loc => get_loc
      Procedure, Public, Pass :: in => contains_value
      Final :: cleanup
@@ -399,6 +398,12 @@ Contains
   End Subroutine expand_table
 
   Subroutine get_int( table, key, val, default )
+    !!-----------------------------------------------------------------------
+    !!
+    !! get integer type from hash table
+    !!
+    !! author    - i.j.bush april 2020
+    !!-----------------------------------------------------------------------
 
     Implicit None
 
@@ -410,11 +415,22 @@ Contains
 
     stuff = table%get_cont(key, default)
 
-    Call resolve( val, stuff )
+    Select Type( stuff )
+    Type is ( Integer )
+       val = stuff
+    Class Default
+       Call error('Trying to get integer from a not integer')
+    End Select
 
   End Subroutine get_int
 
   Subroutine get_double( table, key, val, default )
+    !!-----------------------------------------------------------------------
+    !!
+    !! get double type from hash table
+    !!
+    !! author    - i.j.bush april 2020
+    !!-----------------------------------------------------------------------
 
     Implicit None
 
@@ -426,40 +442,40 @@ Contains
 
     stuff = table%get_cont(key, default)
 
-    Call resolve( val, stuff )
+    Select Type( stuff )
+    Type is ( Real( wp ) )
+       val = stuff
+    Class Default
+       Call error('Trying to get real from a not real')
+    End Select
 
   End Subroutine get_double
 
-  Subroutine get_param( table, key, val, default )
+  Subroutine get_complex( table, key, val, default )
+    !!-----------------------------------------------------------------------
+    !!
+    !! get complex type from hash table
+    !!
+    !! author    - i.j.bush april 2020
+    !!-----------------------------------------------------------------------
 
     Implicit None
 
     Class( hash_table ), Intent( InOut ) :: table
     Character(Len=*), Intent( In    ) :: key
-    Type(control_parameter), Intent(   Out ) :: val
-    Type(control_parameter), Intent( In    ), Optional :: default
+    Complex(kind=wp)               , Intent(   Out ) :: val
+    Complex(kind=wp), Intent( In    ), Optional :: default
     Class( * ), Allocatable :: stuff
 
     stuff = table%get_cont(key, default)
 
-    Call resolve( val, stuff )
+    Select Type( stuff )
+    Type is ( Complex( wp ) )
+       val = stuff
+    Class Default
+       Call error('Trying to get complex from a not complex')
+    End Select
 
-  End Subroutine get_param
-
-  Subroutine get_unit( table, key, val, default )
-
-    Implicit None
-
-    Class( hash_table ), Intent( InOut ) :: table
-    Character(Len=*), Intent( In    ) :: key
-    Type(unit_data), Intent(   Out ) :: val
-    Type(unit_data), Intent( In    ), Optional :: default
-    Class( * ), Allocatable :: stuff
-
-    stuff = table%get_cont(key, default)
-
-    Call resolve( val, stuff )
-
-  End Subroutine get_unit
+  End Subroutine get_complex
 
 end Module hash

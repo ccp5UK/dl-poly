@@ -4,7 +4,7 @@ Module units
   !! Module to handle unit conversion in dlpoly
   !!
   !! copyright - daresbury laboratory
-  !! author - j.wilkins march 2020
+  !! author - j.wilkins april 2020
   !!-----------------------------------------------------------------------
 
   Use kinds, only : wp
@@ -17,20 +17,42 @@ Module units
 
   Private
 
-  type(hash_table), Private, save :: units_table
+  Type, Private, Extends(hash_table) :: units_hash_table
+   contains
+     Generic  , Public  :: get => get_int, get_double, get_complex, get_unit
+     Procedure, Private :: get_unit
+  end type units_hash_table
+
+  Type, Private :: unit_data
+     !! Type containing data corresponding to units
+     Character(Len=STR_LEN) :: name
+     Character(Len=STR_LEN) :: abbrev
+     Real(Kind=dp) :: conversion_to_si
+     Integer, Dimension(7) :: dims = [0, 0, 0, 0, 0, 0, 0] ! mass length time temp mol current luminosity
+   contains
+     Generic, Public :: Operator(*) => unit_mult
+     Generic, Public :: Operator(/) => unit_div
+     Generic, Public :: Operator(**) => unit_pow
+     Procedure, Pass, Private :: unit_mult, unit_div, unit_pow
+     Procedure, Nopass :: init => init_unit
+  end type unit_data
+
+  Type(unit_data), Private, Parameter :: null_unit = unit_data('', '', 1.0_dp)
+  type(units_hash_table), Private, save :: units_table
 
   Public :: initialise_units
   Public :: convert_units
+  Public :: set_timestep
 
 contains
 
   Subroutine initialise_units()
     !!-----------------------------------------------------------------------
     !!
-    !! Module to handle unit conversion in dlpoly
+    !! Initialise units table with all units
     !!
     !! copyright - daresbury laboratory
-    !! author - j.wilkins march 2020
+    !! author - j.wilkins april 2020
     !!-----------------------------------------------------------------------
     Real(kind=wp), Parameter :: planck_internal = 6.350780668_wp
     Real(kind=wp), Parameter :: electron_charge = 1.0_wp
@@ -44,7 +66,7 @@ contains
     Real(kind=wp), Parameter :: joulepmol = 10.0_wp
     Real(kind=wp), Parameter :: caloriepmol = 1.0_wp / (4.1842_wp/joulepmol)
 
-    Real(kind=wp), Parameter :: hartree = 354.5768322068828 !(/ (* 0.00010364272224984791 27.211396641308))
+    Real(kind=wp), Parameter :: hartree = 354.5768322068828_wp
 
     Real(kind=wp), Parameter :: kilogram = 1.660577881102624e-27_wp
     Real(kind=wp), Parameter :: pound = 3.6608612486140225e-27_wp
@@ -52,12 +74,12 @@ contains
     Real(kind=wp), Parameter :: second = 1e-12_wp
     Real(kind=wp), Parameter :: aut = 41341.373335182114_wp
 
-    Real(kind=wp), Parameter :: atmosphere = 163.882576
+    Real(kind=wp), Parameter :: atmosphere = 163.882576_wp
     Real(kind=wp), Parameter :: pascal = 16605402.0_wp
 
     Real(kind=wp), Parameter :: newton = kilogram*metre/second**2
 
-    Real(kind=wp), Parameter :: gravity = metre/second**2/9.81
+    Real(kind=wp), Parameter :: gravity = metre/second**2/9.81_wp
 
     call units_table%init(100)
 
@@ -154,7 +176,14 @@ contains
 
   End Subroutine initialise_units
 
-  Elemental Function convert_units(val, from, to) result(res)
+  Function convert_units(val, from, to) result(res)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Convert val amount of unit "from" into unit "to"
+    !!
+    !! copyright - daresbury laboratory
+    !! author - j.wilkins april 2020
+    !!-----------------------------------------------------------------------
     Real(kind=wp), Intent(in) :: val
     Real(kind=wp) :: res
     Character(Len=*) :: from, to
@@ -165,12 +194,98 @@ contains
     from_unit = parse_unit_string(from)
     to_unit = parse_unit_string(to)
     output = from_unit / to_unit
-    if (any(output%dims /= 0)) call error(0, 'Cannot convert between '//from//' & '//to//' different dimensions')
+    if (any(output%dims /= 0)) call error(0, 'Cannot convert between '//trim(from)//' & '//trim(to)//' different dimensions')
     res = val / output%conversion_to_internal
 
   end Function convert_units
 
+  Function init_unit(name, abbrev, to_internal, mass, length, time, temp, mol, current, luminosity)
+    Type(unit_data) :: init_unit
+    Character(Len = *), Intent( In    ) :: name, abbrev
+    Real(Kind = wp), Intent( In    ) :: to_internal
+    Integer, Optional, Intent( In    ) :: mass, length, time, temp, mol, current, luminosity
+
+    init_unit = unit_data(name=name, abbrev=abbrev, conversion_to_internal=to_internal)
+    if (present(mass)) then
+       init_unit%dims(1) = mass
+    end if
+
+    if (present(length)) then
+       init_unit%dims(2) = length
+    end if
+
+    if (present(time)) then
+       init_unit%dims(3) = time
+    end if
+
+    if (present(temp)) then
+       init_unit%dims(4) = temp
+    end if
+
+    if (present(mol)) then
+       init_unit%dims(5) = mol
+    end if
+
+    if (present(current)) then
+       init_unit%dims(6) = current
+    end if
+
+    if (present(luminosity)) then
+       init_unit%dims(7) = luminosity
+    end if
+
+  end Function init_unit
+
+  Function unit_mult(a, b)
+    Type(unit_data) :: unit_mult
+    Class(unit_data), Intent( in ) :: a, b
+
+    unit_mult = unit_data( &
+         name = trim(a%name)//" "//b%name, &
+         abbrev = trim(a%abbrev)//b%abbrev, &
+         conversion_to_internal = a%conversion_to_internal*b%conversion_to_internal, &
+         dims = a%dims + b%dims &
+         )
+  end Function unit_mult
+
+  Function unit_div(a, b)
+    Type(unit_data) :: unit_div
+    Class(unit_data), Intent( in ) :: a, b
+
+    unit_div = unit_data( &
+         name = trim(a%name)//" per "//b%name, &
+         abbrev = trim(a%abbrev)//"/"//b%abbrev, &
+         conversion_to_internal = a%conversion_to_internal/b%conversion_to_internal, &
+         dims = a%dims - b%dims &
+         )
+  end Function unit_div
+
+  Function unit_pow(a, b)
+    Type(unit_data) :: unit_pow
+    Class(unit_data), Intent( in ) :: a
+    Integer, Intent( in ) :: b
+    Character(Len=8) :: b_str
+
+    write(b_str, "(i0.1)") b
+
+    unit_pow = unit_data( &
+         name = trim(a%name)//"^"//trim(b_str), &
+         abbrev = trim(a%abbrev)//"^"//trim(b_str), &
+         conversion_to_internal = a%conversion_to_internal**b, &
+         dims = a%dims*b &
+    )
+
+  end Function unit_pow
+
   Subroutine handle_decimal_prefix(string, factor)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Handle SI Decimal prefixes in units
+    !! (NB removes the prefix from string)
+    !!
+    !! copyright - daresbury laboratory
+    !! author - j.wilkins april 2020
+    !!-----------------------------------------------------------------------
     Character(len=*), Intent(inout) :: string
     Integer :: i
     Type(unit_data), intent(out) :: factor
@@ -212,6 +327,13 @@ contains
   end Subroutine handle_decimal_prefix
 
   Function parse_unit_string(string) result(output)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Convert a unit string into its to_internal representation
+    !!
+    !! copyright - daresbury laboratory
+    !! author - j.wilkins april 2020
+    !!-----------------------------------------------------------------------
     Type( unit_data ) :: output
     Type( unit_data ) :: tmp_unit
     Character(Len=*), Intent ( in ) :: string
@@ -272,6 +394,13 @@ contains
   end Function parse_unit_string
 
   Subroutine decompose_unit_string(string, output)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Split unit string into components separated by product, quotient or exponent
+    !!
+    !! copyright - daresbury laboratory
+    !! author - j.wilkins april 2020
+    !!-----------------------------------------------------------------------
     Character(Len=256), Dimension(:), Allocatable :: output
     Character(Len=*), Intent( In ) :: string
     Character(Len=*), Parameter :: alphabet = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_%'"//'"'
@@ -300,5 +429,46 @@ contains
        j = k
     end do
   end Subroutine decompose_unit_string
+
+  Subroutine set_timestep(val)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Set timestep unit (must be done post-initialisation)
+    !!
+    !! copyright - daresbury laboratory
+    !! author - j.wilkins april 2020
+    !!-----------------------------------------------------------------------
+    Real(kind=wp), Intent( In    ) :: val
+
+    call units_table%set("steps", init_unit(abbrev="steps", name="Timestep", time=1, to_internal=val))
+
+  end Subroutine set_timestep
+
+  Subroutine get_unit( table, key, val, default )
+    !!-----------------------------------------------------------------------
+    !!
+    !! get unit type from hash table
+    !!
+    !! author    - i.j.bush april 2020
+    !!-----------------------------------------------------------------------
+
+    Implicit None
+
+    Class( units_hash_table ), Intent( InOut ) :: table
+    Character(Len=*), Intent( In    ) :: key
+    type(unit_data)            , Intent(   Out ) :: val
+    type(unit_data), Intent( In    ), Optional :: default
+    Class( * ), Allocatable :: stuff
+
+    stuff = table%get_cont(key, default)
+
+    Select Type( stuff )
+    Type is ( unit_data )
+       val = stuff
+    Class Default
+       Call error('Trying to get unit from a not unit')
+    End Select
+
+  End Subroutine get_unit
 
 end Module units
