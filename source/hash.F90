@@ -15,6 +15,7 @@ Module hash
   Private
 
   Integer, Parameter :: STR_LEN = 256
+  Integer, Parameter :: MAX_KEY = 50
   Character(Len=*), Parameter :: BAD_VAL = "VAL_NOT_IN_KEYS"
 
   Type, Public :: container
@@ -31,10 +32,10 @@ Module hash
      !! Type containing hash table of parameters
      Private
      Type(container), dimension(:), allocatable :: table_data
-     Character(Len=STR_LEN), dimension(:), allocatable :: table_keys
-     Character(Len=STR_LEN), dimension(:), allocatable :: key_names
-     Integer :: collisions = 0
-     Integer :: used_keys = -1
+     Character(Len=MAX_KEY), dimension(:), allocatable :: table_keys
+     Character(Len=MAX_KEY), dimension(:), allocatable :: key_names
+     Integer, Public :: collisions = 0
+     Integer, Public :: used_keys = -1
      Integer :: size = -1
      !> Values in hash table can be overwritten: Default = False
      Logical :: can_overwrite = .false.
@@ -46,7 +47,7 @@ Module hash
      Procedure, Public, Pass :: set => set_hash_value
      Generic  , Public  :: get => get_int, get_double, get_complex
      Procedure, Public, Pass :: hash => hash_value
-     Procedure, Public, Pass :: keys => print_keys
+     Procedure, Public, Pass :: print_keys, get_keys
      Procedure, Public, Pass(table_to) :: fill => fill_from_table
      Procedure, Public, Pass :: copy => copy_table
      Procedure, Public, Pass :: resize => resize_table
@@ -55,9 +56,12 @@ Module hash
      Procedure, Public :: get_cont => get_hash_value
      Procedure, Private, Pass :: get_loc => get_loc
      Procedure, Public, Pass :: in => contains_value
+     Procedure, Public, Pass :: fix => fix_table
      Final :: cleanup
 
   End Type hash_table
+
+  Public :: MAX_KEY, STR_LEN
 
 Contains
 
@@ -199,7 +203,7 @@ Contains
     Character(Len=*), Intent(In) :: input
     Logical, Intent(In), Optional :: must_find
     Integer :: location
-    Character(Len=STR_LEN) :: key
+    Character(Len=MAX_KEY) :: key
 
 
     location = table%hash(input)
@@ -296,6 +300,18 @@ Contains
     table%key_names(table%used_keys) = key
 
   End Subroutine set_hash_value
+
+  Subroutine get_keys(table, keys)
+    Class(hash_table), Intent( In    ) :: table
+    Character(Len=MAX_KEY), Dimension(:), Allocatable :: keys
+    Integer :: i
+
+    if (allocated(keys)) then
+       deallocate(keys)
+    end if
+    allocate(keys, source=table%key_names)
+
+  End Subroutine get_keys
 
   Subroutine print_keys(table)
     !!-----------------------------------------------------------------------
@@ -407,7 +423,7 @@ Contains
 
     Implicit None
 
-    Class( hash_table ), Intent( InOut ) :: table
+    Class( hash_table ), Intent( In    ) :: table
     Character(Len=*), Intent( In    ) :: key
     Integer               , Intent(   Out ) :: val
     Integer, Intent( In    ), Optional :: default
@@ -419,7 +435,7 @@ Contains
     Type is ( Integer )
        val = stuff
     Class Default
-       Call error('Trying to get integer from a not integer')
+       Call error(0, 'Trying to get integer from a not integer')
     End Select
 
   End Subroutine get_int
@@ -434,7 +450,7 @@ Contains
 
     Implicit None
 
-    Class( hash_table ), Intent( InOut ) :: table
+    Class( hash_table ), Intent( In    ) :: table
     Character(Len=*), Intent( In    ) :: key
     Real(kind=wp), Intent( In    ), Optional :: default
     Real(kind=wp)               , Intent(   Out ) :: val
@@ -446,7 +462,7 @@ Contains
     Type is ( Real( wp ) )
        val = stuff
     Class Default
-       Call error('Trying to get real from a not real')
+       Call error(0, 'Trying to get real from a not real')
     End Select
 
   End Subroutine get_double
@@ -461,7 +477,7 @@ Contains
 
     Implicit None
 
-    Class( hash_table ), Intent( InOut ) :: table
+    Class( hash_table ), Intent( In    ) :: table
     Character(Len=*), Intent( In    ) :: key
     Complex(kind=wp)               , Intent(   Out ) :: val
     Complex(kind=wp), Intent( In    ), Optional :: default
@@ -473,9 +489,16 @@ Contains
     Type is ( Complex( wp ) )
        val = stuff
     Class Default
-       Call error('Trying to get complex from a not complex')
+       Call error(0, 'Trying to get complex from a not complex')
     End Select
 
   End Subroutine get_complex
+
+  Subroutine fix_table(table)
+    Class( hash_table ), Intent( InOut ) :: table
+
+    table%can_overwrite = .false.
+  end Subroutine fix_table
+
 
 end Module hash

@@ -9,8 +9,7 @@ Module units
 
   Use kinds, only : wp
   Use constants, only : boltz
-  Use hashables, only : unit_data, null_unit, init_unit
-  Use hash, only: hash_table
+  Use hash, only: hash_table, MAX_KEY, STR_LEN
   Use errors_warnings, only : error, error_alloc, error_dealloc
   Use parse, only : lower_case
   Implicit None
@@ -26,8 +25,8 @@ Module units
   Type, Private :: unit_data
      !! Type containing data corresponding to units
      Character(Len=STR_LEN) :: name
-     Character(Len=STR_LEN) :: abbrev
-     Real(Kind=dp) :: conversion_to_si
+     Character(Len=MAX_KEY) :: abbrev
+     Real(Kind=wp) :: conversion_to_internal
      Integer, Dimension(7) :: dims = [0, 0, 0, 0, 0, 0, 0] ! mass length time temp mol current luminosity
    contains
      Generic, Public :: Operator(*) => unit_mult
@@ -37,7 +36,7 @@ Module units
      Procedure, Nopass :: init => init_unit
   end type unit_data
 
-  Type(unit_data), Private, Parameter :: null_unit = unit_data('', '', 1.0_dp)
+  Type(unit_data), Private, Parameter :: null_unit = unit_data('', '', 1.0_wp)
   type(units_hash_table), Private, save :: units_table
 
   Public :: initialise_units
@@ -319,7 +318,7 @@ contains
        i = index(prefix_symbol, string(2:2))
        tmp = string(3:)
        call lower_case(tmp)
-       if (i < 1 .or. .not. units_table%in(tmp)) call error("Unit not found "//string(2:))
+       if (i < 1 .or. .not. units_table%in(tmp)) call error(0, "Unit not found "//string(2:))
         factor = prefix(i)
         string = string(1:1) // string(3:)
     end if
@@ -466,7 +465,7 @@ contains
     Type is ( unit_data )
        val = stuff
     Class Default
-       Call error('Trying to get unit from a not unit')
+       Call error(0, 'Trying to get unit from a not unit')
     End Select
 
   End Subroutine get_unit

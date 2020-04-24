@@ -36,6 +36,8 @@ Module greenkubo
   Type, Public :: greenkubo_type
     Private
 
+    !> VAF calculate
+    Logical, Public          :: l_collect
     !> VAF printing switch
     Logical, Public          :: l_print
     !> VAF time averaging switch

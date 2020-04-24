@@ -225,7 +225,9 @@ Program dl_poly
                             green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, inversion, tether, &
                             threebody, zdensity, cons, neigh, pmfs, sites, core_shells, vdws, tersoffs, fourbody, &
                             rdf, netcdf, minim, mpoles, ext_field, rigid, electro, domain, flow, seed, traj, &
-                            kim_data, config, ios, ttms, rsdsc, files, output_filename, control_filename, crd, adf, new_control)
+                            kim_data, config, ios, ttms, rsdsc, files, output_filename, control_filename, crd, adf)
+  Else If (flow(1)%simulation_method == EVB) Then
+    Write (0, *) "simulation type: EVB"
   Else If (flow(1)%simulation_method == FFS) Then
      write(0,*) "simulation type: FFS"
   Else
