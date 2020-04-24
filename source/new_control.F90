@@ -189,6 +189,9 @@ Module new_control
   Public :: control_help_all, control_help_single
   Public :: read_new_control
   Public :: initialise_control
+  Public :: print_set
+
+  Public :: parse_file
 
 contains
 
@@ -210,12 +213,26 @@ contains
 
     call params%get_keys(keys)
 
-    do i = 1, size(keys)
+    do i = 1, params%used_keys
        call params%get(keys(i), param)
        call write_control_param_help(param, 0)
     end do
 
   End Subroutine control_help_all
+
+  Subroutine print_set(params)
+    Class( parameters_hash_table ), intent( In ) :: params
+    Type (control_parameter) :: param
+    Character(Len=MAX_KEY), Dimension(:), Allocatable :: keys
+    Integer :: i
+
+    call params%get_keys(keys)
+    do i = 1, params%used_keys
+       call params%get(keys(i), param)
+       if (param%set) print*, param
+    end do
+
+  end Subroutine print_set
 
   Subroutine write_control_param_help(param, unit)
     Type (control_parameter), Intent(In) :: param
@@ -245,9 +262,38 @@ contains
     Character (Len=*), Intent(In) :: iotype
     Integer, Intent(In), Dimension(:) :: v_list
     Integer, Intent(Out) :: iostat
+    Real(Kind=wp) :: rtmp, rtmp3(3), rtmp6(6)
+    Integer :: itmp
     Character (Len=*), Intent(Inout) :: iomsg
 
-    write(unit, fmt='(3(A,1X))') trim(param%key), trim(param%val), trim(param%units)
+    select case (param%data_type)
+    case(DATA_FLOAT)
+       read(param%val, *) rtmp
+       rtmp = convert_units(rtmp, param%units, param%internal_units)
+       write(unit, '(3(A,1X), "-> ", g12.6e2, 1X, A)') trim(param%key), trim(param%val), &
+            & trim(param%units), rtmp, trim(param%internal_units)
+    case(DATA_INT)
+       read(param%val, *) itmp
+       write(unit, '(3(A,1X), "-> ", i0, 1X, A)') trim(param%key), trim(param%val), &
+            & trim(param%units), rtmp, trim(param%internal_units)
+    case(DATA_VECTOR3)
+       read(param%val, *) rtmp3
+       do itmp = 1,3
+          rtmp3(itmp) = convert_units(rtmp3(itmp), param%units, param%internal_units)
+       end do
+       write(unit, '(3(A,1X), "-> [", 3(g12.6e2,1X), "]", 1X, A)') trim(param%key), trim(param%val), &
+            & trim(param%units), rtmp, trim(param%internal_units)
+    case(DATA_VECTOR6)
+       read(param%val, *) rtmp6
+       do itmp = 1,6
+          rtmp6(itmp) = convert_units(rtmp6(itmp), param%units, param%internal_units)
+       end do
+
+       write(unit, '(3(A,1X), "-> [", 6(g15.3e2,1X), "]", 1X, A)') trim(param%key), trim(param%val), &
+            & trim(param%units), rtmp, trim(param%internal_units)
+    case default
+       write(unit, fmt='(3(A,1X))') trim(param%key), trim(param%val), trim(param%units)
+    end select
 
   end Subroutine write_control_param
 
@@ -1722,14 +1768,14 @@ contains
          description = "Set calculation timestep or initial timestep for variable timestep calculations", &
          data_type = DATA_FLOAT))
 
-    call table%set("variable_timestep", control_parameter( &
-         key = "variable_timestep", &
+    call table%set("timestep_variable", control_parameter( &
+         key = "timestep_variable", &
          name = "Variable timestep", &
          val = "off", &
          description = "Enable variable timestep", &
          data_type = DATA_BOOL))
 
-    call table%set("variable_timestep_min_dist", control_parameter( &
+    call table%set("timestep_variable_min_dist", control_parameter( &
          key = "variable_timestep_min_dist", &
          name = "Variable timestep minimum distance", &
          val = "0.03", &
@@ -1738,7 +1784,7 @@ contains
          description = "Set minimum permissible distance for variable timestep", &
          data_type = DATA_FLOAT))
 
-    call table%set("variable_timestep_max_dist", control_parameter( &
+    call table%set("timestep_variable_max_dist", control_parameter( &
          key = "variable_timestep_max_dist", &
          name = "Variable timestep maximum distance", &
          val = "0.1", &
@@ -1747,7 +1793,7 @@ contains
          description = "Set maximum permissible distance for variable timestep", &
          data_type = DATA_FLOAT))
 
-    call table%set("variable_timestep_max_delta", control_parameter( &
+    call table%set("timestep_variable_max_delta", control_parameter( &
          key = "variable_timestep_max_delta", &
          name = "Variable timestep max delta", &
          val = "0.0", &
@@ -1756,8 +1802,8 @@ contains
          description = "Set maximum timestep delta for variable timestep", &
          data_type = DATA_FLOAT))
 
-    call table%set("run_time", control_parameter( &
-         key = "run_time", &
+    call table%set("time_run", control_parameter( &
+         key = "time_run", &
          name = "Calculation run length", &
          val = "0", &
          units = "steps", &
@@ -1765,13 +1811,31 @@ contains
          description = "Set calculation run length", &
          data_type = DATA_FLOAT))
 
-    call table%set("equilibration_time", control_parameter( &
-         key = "equilibration_time", &
+    call table%set("time_equilibration", control_parameter( &
+         key = "time_equilibration", &
          name = "Equilibration run length", &
          val = "0", &
          units = "steps", &
          internal_units = "steps", &
          description = "Set equilibration run length", &
+         data_type = DATA_FLOAT))
+
+    call table%set("time_job", control_parameter( &
+         key = "time_job", &
+         name = "Calculation job length", &
+         val = "-1", &
+         units = "hr", &
+         internal_units = "s", &
+         description = "Set total job time before attempted safe closure", &
+         data_type = DATA_FLOAT))
+
+    call table%set("time_close", control_parameter( &
+         key = "time_close", &
+         name = "Calculation close length", &
+         val = "1", &
+         units = "min", &
+         internal_units = "s", &
+         description = "Estimated closure time for finite-time jobs", &
          data_type = DATA_FLOAT))
 
     call table%set("record_equilibration", control_parameter( &
@@ -2718,7 +2782,7 @@ contains
     !! author - j.wilkins april 2020
     !!-----------------------------------------------------------------------
 
-    Type( parameters_hash_table ), intent(   Out ) :: params
+    Type( parameters_hash_table ), intent( InOut ) :: params
     Type( control_parameter ) :: param
     Type( comms_type ), Intent ( InOut ) :: comm
     Integer, Intent( In    ) :: ifile
@@ -2734,8 +2798,9 @@ contains
        ! Skip comments and blanks
        if (key(1:1) == "#" .or. key(1:1) == "!" .or. key(1:1) == " ") cycle
        Call lower_case(key)
+       if (.not. params%in(key)) call error(0, 'Unrecognised key '//trim(key))
        Call params%get(key, param)
-       if (param%set) call error(0, 'Param '//key//' already set')
+       if (param%set) call error(0, 'Param '//trim(key)//' already set')
        Call read_control_param(input, param, ifile, comm)
        param%set = .true.
        call params%set(key, param)
@@ -2845,10 +2910,13 @@ contains
        ! param%units = unit
 
     case (DATA_OPTION, DATA_BOOL)
+       call get_word(input, val)
        call lower_case(val)
        param%val = val
+       input = ""
     case (DATA_STRING)
-       param%val = val
+       param%val = adjustl(input)
+       input = ""
     case Default
        call error(0, 'Unknown data type while parsing '//trim(param%key))
     end select

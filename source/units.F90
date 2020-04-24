@@ -439,7 +439,7 @@ contains
     !!-----------------------------------------------------------------------
     Real(kind=wp), Intent( In    ) :: val
 
-    call units_table%set("steps", init_unit(abbrev="steps", name="Timestep", time=1, to_internal=val))
+    call units_table%set("steps", init_unit(abbrev="steps", name="Timestep", time=1, to_internal=1.0_wp/val))
 
   end Subroutine set_timestep
 

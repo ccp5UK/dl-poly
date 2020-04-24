@@ -1,22 +1,27 @@
 title dmimcl rigid
-units atomic
+# units atomic
+io_file_history Here
 temperature 400 K
-pressure 1 atm
+pressure_hydrostatic 1 atm
 cutoff               9 Ang
-cutoff_vdw           8 Ang
-ewald_precision      1.0E-06 eV
-quaternion_tolerance  1.0E-05
+vdw_cutoff           8 Ang
+ewald_precision      1.0E-06
+quaternion_tol  1.0E-05
+
+ensemble npt
+ensemble_method berendsen
+ensemble_thermostat_coupling 0.1 ps
+ensemble_barostat_coupling 2.0 ps
+
 timestep     2 fs
 timestep_variable ON
-ensemble_contrain npt
-ensemble_integrator berendsen
-ensemble_temperature_coupling 0.1
-ensemble_stress_coupling 2.0
-steps 20
-equilibration   20 ps
-restart_noscale ON
-scale   10
+time_run 20 steps
+time_equilibration   20 ps
+time_job 1 hr
+time_close 20 s
+
+restart noscale
+rescale_frequency   10 steps
+
 print_frequency 10 ps
-stats_calculate 10 ps
-job_time 1 hr
-close_time 20 s
+stats_frequency 10 ps

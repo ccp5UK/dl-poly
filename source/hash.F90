@@ -37,8 +37,8 @@ Module hash
      Integer, Public :: collisions = 0
      Integer, Public :: used_keys = -1
      Integer :: size = -1
-     !> Values in hash table can be overwritten: Default = False
-     Logical :: can_overwrite = .false.
+     !> Values in hash table can be overwritten: Default = True; Set with table%fix
+     Logical :: can_overwrite = .true.
      Logical :: allocated = .false.
    Contains
 
@@ -294,10 +294,12 @@ Contains
        call error(0, 'Cannot overwrite key '//key)
     end if
 
+    if (.not. table%in(key)) then
+       table%used_keys = table%used_keys + 1
+       table%key_names(table%used_keys) = key
+    end if
     table%table_data(location) = input
     table%table_keys(location) = key
-    table%used_keys = table%used_keys + 1
-    table%key_names(table%used_keys) = key
 
   End Subroutine set_hash_value
 
