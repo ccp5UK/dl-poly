@@ -34,6 +34,7 @@ Module new_control
      Procedure, Private :: get_param
      Generic, Public  :: retrieve => retrieve_option_or_string, retrieve_float, retrieve_vector3, retrieve_vector6, retrieve_int
      Procedure, Pass(table), Private :: retrieve_option_or_string, retrieve_float, retrieve_vector3, retrieve_vector6, retrieve_int
+     Generic, Pass, Public :: is_set, is_all_set
   end type parameters_hash_table
 
 
@@ -98,7 +99,7 @@ contains
 
     call params%retrieve('io_read_method', curr_option)
 
-    Select Case(Trim(curr_option))
+    Select Case(curr_option)
     Case ( 'mpiio' )
        io_read = IO_READ_MPIIO
        Call info('I/O read method: parallel by using MPI-I/O',.true.)
@@ -244,7 +245,7 @@ contains
     call params%retrieve('io_write_method', curr_option)
     call params%retrieve('io_write_sorted', ltmp)
 
-    Select Case (Trim(curr_val))
+    Select Case (curr_val)
     Case ( 'mpiio' )
        if (ltmp) then
           io_write = IO_WRITE_SORTED_MPIIO
@@ -267,7 +268,7 @@ contains
 
        call current_params%retrieve('io_read_netcdf_format', curr_option)
 
-       Select Case (Trim(curr_val))
+       Select Case (curr_val)
        Case('amber', '32bit', '32-bit')
           ! Use 32-bit quantities in output for real numbers
           Call info('I/O write method: parallel by using netCDF in the amber-like/32-bit format',.true.)
@@ -429,23 +430,23 @@ contains
     End If
 
     call params%retrieve('io_file_output', curr_val)
-    if (trim(curr_val) /= '') Call info('OUTPUT file is '//files(FILE_OUTPUT)%filename,.true.)
+    if (curr_val /= '') Call info('OUTPUT file is '//files(FILE_OUTPUT)%filename,.true.)
     call params%retrieve('io_file_config', curr_val)
-    if (trim(curr_val) /= '') Call info('CONFIG file is '//files(FILE_CONFIG)%filename,.true.)
+    if (curr_val /= '') Call info('CONFIG file is '//files(FILE_CONFIG)%filename,.true.)
     call params%retrieve('io_file_field', curr_val)
-    if (trim(curr_val) /= '') Call info('FIELD file is '//files(FILE_FIELD)%filename,.true.)
+    if (curr_val /= '') Call info('FIELD file is '//files(FILE_FIELD)%filename,.true.)
     call params%retrieve('io_file_statis', curr_val)
-    if (trim(curr_val) /= '') Call info('STATIS file is '//files(FILE_STATS)%filename,.true.)
+    if (curr_val /= '') Call info('STATIS file is '//files(FILE_STATS)%filename,.true.)
     call params%retrieve('io_file_history', curr_val)
-    if (trim(curr_val) /= '') Call info('HISTORY file is '//files(FILE_HISTORY)%filename,.true.)
+    if (curr_val /= '') Call info('HISTORY file is '//files(FILE_HISTORY)%filename,.true.)
     call params%retrieve('io_file_historf', curr_val)
-    if (trim(curr_val) /= '') Call info('HISTORF file is '//files(FILE_HISTORF)%filename,.true.)
+    if (curr_val /= '') Call info('HISTORF file is '//files(FILE_HISTORF)%filename,.true.)
     call params%retrieve('io_file_revive', curr_val)
-    if (trim(curr_val) /= '') Call info('REVIVE file is '//files(FILE_REVIVE)%filename,.true.)
+    if (curr_val /= '') Call info('REVIVE file is '//files(FILE_REVIVE)%filename,.true.)
     call params%retrieve('io_file_revcon', curr_val)
-    if (trim(curr_val) /= '') Call info('REVCON file is '//files(FILE_REVCON)%filename,.true.)
+    if (curr_val /= '') Call info('REVCON file is '//files(FILE_REVCON)%filename,.true.)
     call params%retrieve('io_file_revold', curr_val)
-    if (trim(curr_val) /= '') Call info('REVOLD file is '//files(FILE_REVOLD)%filename,.true.)
+    if (curr_val /= '') Call info('REVOLD file is '//files(FILE_REVOLD)%filename,.true.)
 
   End Subroutine setup_file_io
 
@@ -453,6 +454,7 @@ contains
     !!-----------------------------------------------------------------------
     !!
     !! Scan control for use in set_bounds
+    !! This function is stupid.
     !!
     !! copyright - daresbury laboratory
     !! author - j.wilkins april 2020
@@ -470,7 +472,7 @@ contains
   end Subroutine scan_new_control_pre
 
   Subroutine scan_new_control_output(params, files)
-    Type( parameters_hash_table ), intent( In    ) :: table
+    Type( parameters_hash_table ), intent( In    ) :: params
     Type( file_type ), Intent( InOut ) :: files(:)
 
     Call params%retrieve('io_file_output', files(FILE_OUTPUT)%filename)
@@ -485,76 +487,22 @@ contains
 
   end Subroutine scan_new_control_output
 
-  Subroutine scan_new_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
-    l_n_r,lzdn,l_ind,nstfce,ttm,cshell,stats,thermo,green,devel,msd_data,met, &
-    pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf,mpoles, &
-    electro,ewld,kim_data,files,flow,comm)
-
-    Type( ttm_type ), Intent( InOut ) :: ttm
-    Logical,           Intent(   Out ) :: l_n_r,lzdn,l_ind
-    Integer,           Intent( In    ) :: max_rigid,imcon
-    Integer,           Intent( InOut ) :: imc_n
-    Integer,           Intent(   Out ) :: mxgana,nstfce
-    Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
-    Real( Kind = wp ), Intent( InOut ) :: cell(1:9)
-    Type( core_shell_type ), Intent (   In  )   :: cshell
-    Type( stats_type ), Intent( InOut ) :: stats
+  Subroutine read_ensemble(params, thermo)
+    Type( parameters_hash_table ), intent( In    ) :: params
     Type( thermostat_type ), Intent( InOut ) :: thermo
-    Type( development_type ), Intent( InOut ) :: devel
-    Type( greenkubo_type ), Intent( InOut ) :: green
-    Type( msd_type ), Intent( InOut ) :: msd_data
-    Type( metal_type ), Intent( InOut ) :: met
-    Type( poisson_type ), Intent( InOut ) :: pois
-    Type( bonds_type ), Intent( InOut ) :: bond
-    Type( angles_type ), Intent( InOut ) :: angle
-    Type( dihedrals_type ), Intent( InOut ) :: dihedral
-    Type( inversions_type ), Intent( InOut ) :: inversion
-    Type( z_density_type ), Intent( InOut ) :: zdensity
-    Type( neighbours_type ), Intent( InOut ) :: neigh
-    Type( vdw_type ), Intent( InOut ) :: vdws
-    Type( tersoff_type ), Intent( In    )  :: tersoffs
-    Type( rdf_type ), Intent( InOut ) :: rdf
-    Type( mpole_type ), Intent( InOut ) :: mpoles
-    Type( electrostatic_type ), Intent( InOut ) :: electro
-    Type( ewald_type ), Intent( InOut ) :: ewld
-    Type( kim_type), Intent( InOut ) :: kim_data
-    Type( file_type ), Intent( InOut ) :: files(:)
-    Type( flow_type ), Intent( InOut ) :: flow
-    Type( comms_type ), Intent( InOut ) :: comm
 
-    Character(Len=50) :: option
-    Logical :: ltmp
-    Logical :: la_ana,la_bnd,la_ang,la_dih,la_inv, &
-         lrcut,lrvdw,lrmet,lelec,lvdw,lmet,l_n_m,lter,l_exp
+    call params%retrieve('ensemble', option, required = .true.)
 
-    call params%retrieve('cutoff', neigh%cutoff)
-    lrcut = neigh%cutoff > zero_plus
-
-    call param%retrieve('padding', neigh%padding)
-    if (neigh%padding < 0.0_wp) neigh%padding = 0.0_wp
-    flow%reset_padding = .true.
-
-    call param%retrieve('vdw_cutoff', vdws%cutoff)
-    lrvdw = vdws%cutoff > zero_plus
-
-    call param%retrieve('rdf_binsize', rdf%rbin)
-    rdf%rbin = abs(rdf%rbin)
-
-    call param%retrieve('zden_binsize', zdensity%bin_width)
-    zdensity%bin_width = abs(zdensity%bin_width)
-
-    call param%retrieve('ensemble', option, required = .true.)
-
-    select case(trim(option))
+    select case(option)
     case ('nve', 'pmf')
        thermo%ensemble = NVE
        Call info('Ensemble : NVE (Microcanonical)',.true.)
 
     case ('nvt')
 
-       call param%retrieve('ensemble_method', option, required = .true.)
+       call params%retrieve('ensemble_method', option, required = .true.)
 
-       select case(trim(option))
+       select case(option)
        case ('evans')
           thermo%ensemble = ENS_NVT_EVANS
 
@@ -565,7 +513,7 @@ contains
 
           thermo%ensemble = ENS_NVT_LANGEVIN
 
-          Call param%retrieve('ensemble_thermostat_friction', thermo%chi)
+          Call params%retrieve('ensemble_thermostat_friction', thermo%chi)
 
           Call info('Ensemble : NVT Langevin (Stochastic Dynamics)',.true.)
           Write(message,'(a,1p,e12.4)') 'thermostat friction (ps^-1)', thermo%chi
@@ -575,8 +523,8 @@ contains
 
           thermo%ensemble = ENS_NVT_ANDERSON
 
-          Call param%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
-          Call param%retrieve('ensemble_thermostat_softness', theremo%soft)
+          Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+          Call params%retrieve('ensemble_thermostat_softness', theremo%soft)
 
           Write(messages(1),'(a)') 'Ensemble : NVT Andersen'
           Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
@@ -589,7 +537,7 @@ contains
 
           thermo%ensemble = ENS_NVT_BERENDSEN
 
-          Call param%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+          Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
 
           Call info('Ensemble : NVT Berendsen',.true.)
           Write(message,'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
@@ -599,7 +547,7 @@ contains
 
           thermo%ensemble = ENS_NVT_NOSE_HOOVER
 
-          Call param%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+          Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
 
           Call info('Ensemble : NVT Nose-Hoover',.true.)
           Write(message,'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
@@ -609,8 +557,8 @@ contains
 
           thermo%ensemble = ENS_NVT_GENTLE
 
-          Call param%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
-          Call param%retrieve('ensemble_thermostat_friction', thermo%gama)
+          Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+          Call params%retrieve('ensemble_thermostat_friction', thermo%gama)
 
           Write(messages(1),'(a)') 'Ensemble : NVT gentle stochastic thermostat'
           Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
@@ -628,7 +576,7 @@ contains
           Call info('Ensemble : NVT dpd (Dissipative Particle Dynamics)',.true.)
 
           call params%retrieve('ensemble_dpd_order', option)
-          select case (trim(option))
+          select case (option)
           case ('first', '1')
              thermo%key_dpd = DPD_FIRST_ORDER
              Call info("Ensemble type : Shardlow's first order splitting (S1)",.true.)
@@ -656,7 +604,7 @@ contains
        thermo%variable_cell = .true.
 
        call params%retrieve('ensemble_method', option)
-       select case (trim(option))
+       select case (option)
        case ('langevin')
 
           thermo%ensemble = ENS_NPT_LANGEVIN
@@ -717,7 +665,7 @@ contains
        thermo%anisotropic_pressure = .true.
 
        call params%retrieve('ensemble_method', option)
-       select case (trim(option))
+       select case (option)
        case ('langevin')
 
           thermo%ensemble = ENS_NPT_LANGEVIN_ANISO
@@ -774,8 +722,8 @@ contains
        ! Semi isotropic ensembles
 
        call params%retrieve('ensemble_semi_isotropic', option)
-       select case (trim(option))
-       case ('OFF')
+       select case (option)
+       case ('off')
           continue
        case ('area')
           thermo%iso = CONSTRAINT_SURFACE_AREA
@@ -820,10 +768,444 @@ contains
        call error(0, 'Unrecognised option for ensemble '//trim(option))
     end select
 
+  end Subroutine read_ensemble
+
+  Subroutine read_structure_analysis(params, msd, rdf, vaf, zden)
+
+    Type( parameters_hash_table ), intent( In    ) :: params
+    Type( msd_type ), Intent( InOut ) :: msd
+    Type( greenkubo_type ), Intent( InOut ) :: vaf
+    Type( rdf_type ), Intent( InOut ) :: rdf
+    Type( z_density_type ), Intent( InOut ) :: zden
+
+    ! VAF
+    call params%retrieve('vaf_calculate', vaf%l_collect)
+
+    if (vaf%l_collect) then
+       call params%retrieve('vaf_frequency', rtmp)
+       call params%retrieve('vaf_binsize', vaf%binsize)
+       call params%retrieve('vaf_print', vaf%l_print)
+
+       vaf%freq = nint(rtmp)
+       If (vaf%freq <= 0) vaf%freq=50
+       If (vaf%binsize <= 0) vaf%binsize=Merge(2*vaf%freq,100,vaf%freq >= 100)
+
+       vaf%samp = Ceiling(Real(vaf%binsize,wp)/Real(vaf%freq,wp))
+
+    else if (any([params%is_set('vaf_frequency'), params%is_set('vaf_binsize'), params%is_set('vaf_print')]) then
+       Call warning('vaf_print, vaf_frequency or vaf_binsize found without vaf_calculate')
+    end if
+
+    ! RDF
+    call params%retrieve('rdf_calculate', rdf%l_collect)
+
+    if (rdf%l_collect) then
+       call params%retrieve('rdf_error_analysis', option)
+
+       select case (option)
+       case ('jack')
+          rdf%l_errors_jack = .TRUE.
+       case ('block')
+          rdf%l_errors_block = .TRUE.
+       case ('off')
+          continue
+       case default
+          call error(0, 'Unrecognised option for rdf_error_analysis '//trim(option))
+       end select
+
+       if (rdf%l_errors_jack .or. rdf%l_errors_block) &
+            & call params%retrieve('rdf_error_analysis_blocks', rdf%num_blocks)
+
+       call params%retrieve('rdf_frequency', rtmp)
+       call params%retrieve('rdf_binsize', rdf%binsize)
+       call params%retrieve('rdf_print', rdf%l_print)
+
+       rdf%freq = nint(rtmp)
+
+    else if (any([params%is_set('rdf_frequency'), params%is_set('rdf_binsize'), params%is_set('rdf_print')]) then
+       Call warning('rdf_print, rdf_frequency or rdf_binsize found without rdf_calculate')
+    end if
+
+    ! ZDen
+
+    call params%retrieve('zden_calculate', zden%l_collect)
+
+    if (zden%l_collect) then
+
+       call params%retrieve('zden_frequency', rtmp)
+       call params%retrieve('zden_binsize', zden%binsize)
+       call params%retrieve('zden_print', zden%l_print)
+
+       zden%frequency = nint(rtmp)
+
+    else if (any([params%is_set('zden_frequency'), params%is_set('zden_binsize'), params%is_set('zden_print')]) then
+       Call warning('zden_print, zden_frequency or zden_binsize found without zden_calculate')
+    end if
+
+
+  end Subroutine read_structure_analysis
+
+
+  Subroutine scan_new_control(params, rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
+    l_n_r,lzdn,l_ind,nstfce,ttm,cshell,stats,thermo,green,devel,msd_data,met, &
+    pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf,mpoles, &
+    electro,ewld,kim_data,files,flow)
+
+    Type( parameters_hash_table ), intent( In    ) :: params
+    Type( ttm_type ), Intent( InOut ) :: ttm
+    Logical,           Intent(   Out ) :: l_n_r,lzdn,l_ind
+    Integer,           Intent( In    ) :: max_rigid,imcon
+    Integer,           Intent( InOut ) :: imc_n
+    Integer,           Intent(   Out ) :: mxgana,nstfce
+    Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
+    Real( Kind = wp ), Intent( InOut ) :: cell(1:9)
+    Type( core_shell_type ), Intent (   In  )   :: cshell
+    Type( stats_type ), Intent( InOut ) :: stats
+    Type( thermostat_type ), Intent( InOut ) :: thermo
+    Type( development_type ), Intent( InOut ) :: devel
+    Type( greenkubo_type ), Intent( InOut ) :: green
+    Type( msd_type ), Intent( InOut ) :: msd_data
+    Type( metal_type ), Intent( InOut ) :: met
+    Type( poisson_type ), Intent( InOut ) :: pois
+    Type( bonds_type ), Intent( InOut ) :: bond
+    Type( angles_type ), Intent( InOut ) :: angle
+    Type( dihedrals_type ), Intent( InOut ) :: dihedral
+    Type( inversions_type ), Intent( InOut ) :: inversion
+    Type( z_density_type ), Intent( InOut ) :: zdensity
+    Type( neighbours_type ), Intent( InOut ) :: neigh
+    Type( vdw_type ), Intent( InOut ) :: vdws
+    Type( tersoff_type ), Intent( In    )  :: tersoffs
+    Type( rdf_type ), Intent( InOut ) :: rdf
+    Type( mpole_type ), Intent( InOut ) :: mpoles
+    Type( electrostatic_type ), Intent( InOut ) :: electro
+    Type( ewald_type ), Intent( InOut ) :: ewld
+    Type( kim_type), Intent( InOut ) :: kim_data
+    Type( file_type ), Intent( InOut ) :: files(:)
+    Type( flow_type ), Intent( InOut ) :: flow
+
+    Real( kind = wp ), Parameter :: minimum_rcut = 1.0_wp, &
+         minimum_bin_size = 0.05_wp, &
+         minimum_bond_anal_length = 2.5_wp
+
+    Character(Len=50) :: option
+    Real(Kind=wp) :: rtmp
+    Logical :: ltmp
+    Logical :: la_ana,la_bnd,la_ang,la_dih,la_inv, &
+         lelec,lvdw,l_n_m,lter,l_exp
+
+    call params%retrieve('timestep', thermo%tstep, required=.true.)
+    call set_timestep(thermo%tstep)
+
+    call params%retrieve('slab', ltmp)
+    if (ltmp .and. imcon /= 0 .and. imcon /= 6) imc_n = 6
+
+    call params%retrieve('cutoff', neigh%cutoff)
+    if (neigh%cutoff < minimum_rcut) then
+       neigh%cutoff = minimum_rcut
+       call warning('neighbour cutoff less than minimum_cutoff (1.0 Ang), setting to minimum_cutoff', .true.)
+    end if
+
+    call params%retrieve('padding', neigh%padding)
+    if (neigh%padding < zero_plus) then
+       neigh%padding = 0.0_wp
+       call warning('Bad padding value, reset to 0.0', .true.)
+    end if
+
+    flow%reset_padding = .true.
+
+    call table%retrieve('vdw_method', option)
+    vdws%no_vdw = option == 'off' .or. vdws%max_vdw <= 0
+
+    call params%retrieve('vdw_cutoff', vdws%cutoff)
+    if (vdws%cutoff < minimum_rcut) then
+       vdws%cutoff = neigh%cutoff
+       call warning('vdw_cutoff less than global cutoff, setting to global cutoff', .true.)
+    end if
+    if (met%max_metal > 0 .and. met%rcut < 1.0e-6_wp) then
+       met%rcut=Max(neigh%cutoff,vdws%cutoff)
+       call warning('metal_cutoff not set, setting to max of global cutoff and vdw cutoff', .true.)
+       lrmet = .true.
+    end if
+
+
+    call params%retrieve('ensemble_dpd_order', option)
+    select case (option)
+    case ('first', '1')
+       thermo%key_dpd = DPD_FIRST_ORDER
+    case ('second', '2')
+       thermo%key_dpd = DPD_SECOND_ORDER
+    case default
+       call error(0, 'Unrecognised option for ensemble_dpd_order '//trim(option))
+    end select
+
+    call params%retrieve('run_time', rtmp)
+    nstrun = Nint(rtmp)
+
+    call params%retrieve('stack_size', stats%mxstak)
+
+    call params%retrieve('msd_calculate', msd_data%l_msd)
+
+    ! Velocity autocorrelation function
+
+    call params%retrieve('vaf_calculate', green%l_collect)
+
+    if (green%l_collect) then
+       call params%retrieve('vaf_frequency', rtmp)
+       call params%retrieve('vaf_binsize', green%binsize)
+       call params%retrieve('vaf_print', green%l_print)
+
+       green%freq = nint(rtmp)
+       If (green%freq <= 0) green%freq=50
+       If (green%binsize <= 0) green%binsize=Merge(2*green%freq,100,green%freq >= 100)
+
+       green%samp = Ceiling(Real(green%binsize,wp)/Real(green%freq,wp))
+
+    else if (params%is_any_set(['vaf_frequency', 'vaf_binsize', 'vaf_print']) then
+       Call warning('vaf_print, vaf_frequency or vaf_binsize found without vaf_calculate')
+    end if
+
+    call params%retrieve('zden_calculate', lzdn)
+
+    call params%retrieve('rdf_calculate', rdf%l_collect)
+
+    if (table%is_set('polarisation_model')) then
+       call params%retrieve('polarisation_model', option)
+       select case (option)
+       case ('charmm')
+          if (cshell%mxshl > 0) mpoles%key = POLARISATION_CHARMM
+       case ('default')
+          mopoles%key = POLARISATION_DEFAULT
+       case default
+          call error(0, 'Unrecognised option for polarisation_model '//trim(option))
+       end select
+    end if
+
+    call table%retrieve('coul_method', option)
+    lelec = option /= 'off'
+    electro%no_elec = option == 'off'
+    ! reinitialise multipolar electrostatics indicators
+
+    If (electro%no_elec) Then
+      mpoles%max_mpoles = 0
+      mpoles%max_order = 0
+      mpoles%key = POLARISATION_DEFAULT
+    End If
+
+    ! Set ewald params
+    if (option == "ewald") then
+
+       ewld%active = .true.
+       cut = neigh%cutoff + 1e-6_wp
+
+       if (imcon == 0) then
+          cell(1) = Max(2.0_wp*xhi+cut,3.0_wp*cut,cell(1))
+          cell(5) = Max(2.0_wp*yhi+cut,3.0_wp*cut,cell(5))
+          cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
+
+          cell(2) = 0.0_wp
+          cell(3) = 0.0_wp
+          cell(4) = 0.0_wp
+          cell(6) = 0.0_wp
+          cell(7) = 0.0_wp
+          cell(8) = 0.0_wp
+       else if (imcon == 6) then
+          cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
+       End If
+
+       call params%retrieve('ewald_nsplines', ewld%bspline%num_splines)
+       Call dcell(cell,celprp)
+
+       if (params%is_set(['ewald_precision', 'ewald_alpha'])) then
+
+          call error(0, 'Cannot specify both precision and manual ewald parameters')
+
+       else if (params%is_set('ewald_alpha')) then
+
+          call params%retrieve('ewald_alpha', ewld%alpha)
+          if (params%is_set(['ewald_kvec', 'ewald_kvec_spacing'])) then
+
+             call error(0, 'Cannot specify both explicit k-vec grid and k-vec spacing')
+          else if (params%is_set('ewald_kvec')) then
+
+             call params%retrieve('ewald_kvec', ewld%kspace%k_vec_dim_cont)
+          else
+
+             call params%retrieve('ewald_kvec_spacing', rtmp)
+             ewld%kspace%k_vec_dim_cont = Nint(rtmp / celprp(7:9))
+          end if
+
+          ! Sanity check for ill defined ewald sum parameters 1/8*2*2*2 == 1
+          tol=ewld%alpha*real(product(ewld%kspace%k_vec_dim_cont), wp)
+          If (Int(tol) < 1) Call error(9)
+
+       else
+
+          call params%retreive('ewald_precision', eps0)
+
+          tol = Sqrt(Abs(Log(eps0*neigh%cutoff)))
+          ewld%alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
+          tol1 = Sqrt(-Log(eps0*neigh%cutoff*(2.0_wp*tol*ewld%alpha)**2))
+
+          fac = 1.0_wp
+          If (imcon == 4 .or. imcon == 5 .or. imcon == 7) fac = 2.0_wp**(1.0_wp/3.0_wp)
+
+          ewld%kspace%k_vec_dim_cont = 2*Nint(0.25_wp + fac*celprp(7:9)*ewld%alpha*tol1/pi)
+
+       end if
+
+
+    end if
+
+
+    call table%retrieve('ignore_config_indices', l_ind)
+    if (l_ind) Call info('no index (reading in CONFIG) option on',.true.)
+
+    call table%retrieve('unsafe', flow%strict)
+
+    call table%retrieve('analyse_bonds', la_bnd)
+    call table%retrieve('analyse_angles', la_ang)
+    call table%retrieve('analyse_dihedrals', la_dih)
+    call table%retrieve('analyse_inversions', la_inv)
+    call table%retrieve('analyse_all', ltmp)
+    if (ltmp) then
+       la_bnd = .true.
+       la_ang = .true.
+       la_dih = .true.
+       la_inv = .true.
+    end if
+
+    call table%retrieve('analyse_max_dist', bond%rcut)
+    if (bond%rcut < minimum_bond_anal_length) then
+       bond%rcut = minimum_bond_anal_length
+       call warning('vdw_cutoff less than global cutoff, setting to global cutoff', .true.)
+    end if
+
+    ! Set global
+    call table%retrieve('analyse_num_bins', bond%bin_pdf)
+    angle%bin_adf = bond%bin_pdf
+    dihedral%bin_adf = bond%bin_pdf
+    inversion%bin_adf = bond%bin_pdf
+
+    if (table%is_set('analyse_num_bins_bonds') call table%retrieve('analyse_num_bins_bonds', bond%bin_pdf)
+    if (table%is_set('analyse_num_bins_angles') call table%retrieve('analyse_num_bins_angles', angle%bin_adf)
+    if (table%is_set('analyse_num_bins_dihedrals') call table%retrieve('analyse_num_bins_dihedrals', dihedral%bin_adf)
+    if (table%is_set('analyse_num_bins_inversions') call table%retrieve('analyse_num_bins_inversions', inversion%bin_adf)
+
+    if (thermo%ensemble == ENS_NVT_LANGEVIN_INHOMO) then
+       ttm%l_ttm = .true.
+
+       call table%retrieve('ttm_num_ion_cells', ttm%ntsys(3))
+       call table%retrieve('ttm_num_elec_cells', ttm%eltsys)
+       call table%retrieve('ttm_metal', ttm%ismetal)
+
+       call table%retrieve('ttm_heat_cap_model', option)
+       select case (option)
+       case ('constant')
+          ttm%cetype = 0
+       case ('tanh')
+          ttm%cetype = 1
+       case ('linear')
+          ttm%cetype = 2
+       case ('tabulated')
+          ttm%cetype = 3
+       case default
+          call error(0, 'Unrecognised option for ttm_heat_cap_model '//trim(option))
+       end select
+
+       if (ttm%ismetal) then
+          ttm%detype = 0
+
+          call table%retrieve('ttm_elec_cond_model', option, required=.true.)
+          select case (option)
+          case ('infinite')
+             ttm%ketype = 0
+          case ('constant')
+             ttm%ketype = 1
+          case ('drude')
+             ttm%ketype = 2
+          case ('tabulated')
+             ttm%ketype = 3
+          case default
+             call error(0, 'Unrecognised option for ttm_elec_cond_model '//trim(option))
+          end select
+       else
+          ttm%ketype = 0
+
+          call table%retrieve('ttm_diff_model', option, required=.true.)
+          select case (option)
+          case ('constant')
+             ttm%ketype = 1
+          case ('recip', 'reciprocal')
+             ttm%ketype = 2
+          case ('tabulated')
+             ttm%ketype = 3
+          case default
+             call error(0, 'Unrecognised option for ttm_diff_model '//trim(option))
+          end select
+
+       end if
+
+       call table%retrieve('ttm_variable_ep', option, required=.true.)
+       select case (option)
+       case ('homo')
+          ttm%gvar = 1
+       case ('hetero')
+          ttm%gvar = 2
+       case default
+          call error(0, 'Unrecognised option for ttm_variable_ep '//trim(option))
+       end select
+
+       call table%retrieve('ttm_com_correction', option)
+       select case (option)
+       case ('full')
+          ttm%ttmthvel = .true.
+          ttm%ttmthvelz = .false.
+       case ('zdir')
+          ttm%ttmthvel = .true.
+          ttm%ttmthvelz = .true.
+       case ('off')
+          ttm%ttmthvel = .false.
+          ttm%ttmthvelz = .false.
+       case default
+          call error(0, 'Unrecognised option for ttm_com_correction '//trim(option))
+       end select
+
+       call table%retrieve('ttm_redistribute', ttm%redistribute)
+
+    end if
+
+
+    neigh%cutoff=Max(neigh%cutoff,vdws%cutoff,met%rcut,kim_data%cutoff,bond%rcut, 2.0_wp*rcter+1.0e-6_wp)
+    ! If KIM model requires
+    If (kim_data%padding_neighbours_required) Then
+      If (neigh%cutoff < kim_data%influence_distance) Then
+        neigh%cutoff = kim_data%influence_distance
+      End If
+    End If
+
+
+    ! Reset vdws%cutoff, met%rcut and neigh%cutoff when only tersoff potentials are opted for
+    If (tersoffs%max_ter > 0 .and. electro%no_elec .and. vdws%no_vdw .and. mets%max_metal <= 0 .and. .not. rdf%l_collect) Then
+       vdws%cutoff=0.0_wp
+       met%rcut=0.0_wp
+       If (.not.flow%strict) Then
+          If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdws%cutoff
+             neigh%cutoff=2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp
+          Else
+             neigh%cutoff=Max(neigh%cutoff,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
+          End If
+       End If
+    End If
+
+    ! no SPME electrostatics is specified but neigh%cutoff is still needed for
+    ! domain decompositioning and link-celling
+    ! It is needed for the rest of the types of electrostatic
+    If (.not. ewld%active .and. .not. lrcut .and. lelec) Call error(382)
+
+    ! Set cutoff^2 now that cutoff won't change
+    neigh%cutoff_2 = neigh%cutoff**2
 
   end Subroutine scan_new_control
-
-
 
   Subroutine initialise_control(table)
     !!-----------------------------------------------------------------------
@@ -848,21 +1230,21 @@ contains
     call table%set('output_energy', control_parameter( &
          key = 'output_energy', &
          name= 'Output Final Energy', &
-         val = 'OFF', &
+         val = 'off', &
          data_type = DATA_BOOL, &
          description = "Output final energy e_tot in output file"))
 
     call table%set('write_ascii_revive', control_parameter( &
          key = 'write_ascii_revive', &
          name = 'Write plain-text REVIVE', &
-         val = 'OFF', &
+         val = 'off', &
          data_type = DATA_BOOL, &
          description = "Write REVIVE as a human-readable (ASCII) file"))
 
     call table%set('read_ascii_revold', control_parameter( &
          key = 'read_ascii_revold', &
          name = 'Read plain-text REVOLD', &
-         val = 'OFF', &
+         val = 'off', &
          data_type = DATA_BOOL, &
          description = "Read human-readable (ASCII) REVOLD file"))
 
@@ -878,22 +1260,15 @@ contains
     call table%set('metal_direct', control_parameter( &
          key = 'metal_direct', &
          name = 'Direct metallic force calculation', &
-         val = 'OFF', &
+         val = 'off', &
          description = "Enable direct (non-tabulated) calculation of metallic forces", &
          data_type = DATA_BOOL))
 
     call table%set("metal_sqrtrho", control_parameter( &
          key = "metal_sqrtrho", &
          name = "SqrtRho metallic interpolation", &
-         val = "OFF", &
+         val = "off", &
          description = "Enable metal sqrtrho interpolation option for EAM embeding function in TABEAM", &
-         data_type = DATA_BOOL))
-
-    call table%set("slab", control_parameter( &
-         key = "slab", &
-         name = "Slab", &
-         val = "OFF", &
-         description = "Enable slab mechanics", &
          data_type = DATA_BOOL))
 
     call table%set("io_read_method", control_parameter( &
@@ -931,7 +1306,7 @@ contains
     call table%set("io_read_error_check", control_parameter( &
          key = "io_read_error_check", &
          name = "I/O error check on read", &
-         vall = "OFF", &
+         vall = "off", &
          description = "Enable extended error checking on read", &
          data_type = DATA_BOOL))
 
@@ -977,7 +1352,7 @@ contains
     call table%set("io_write_error_check", control_parameter( &
          key = "io_write_error_check", &
          name = "I/O error check on write", &
-         vall = "OFF", &
+         vall = "off", &
          description = "Enable extended error checking on write", &
          data_type = DATA_BOOL))
 
@@ -1140,7 +1515,7 @@ contains
     call table%set("restart", control_parameter( &
          key = "restart", &
          name = "Restart", &
-         val = "OFF", &
+         val = "off", &
          description = "Set restart settings, possible options: Off, Continue, Rescale, Noscale", &
          data_type = DATA_OPTION))
 
@@ -1156,7 +1531,7 @@ contains
     call table%set("variable_timestep", control_parameter( &
          key = "variable_timestep", &
          name = "Variable timestep", &
-         val = "OFF", &
+         val = "off", &
          description = "Enable variable timestep", &
          data_type = DATA_BOOL))
 
@@ -1208,7 +1583,7 @@ contains
     call table%set("record_equilibration", control_parameter( &
          key = "record_equilibration", &
          name = "Record equilibration", &
-         val = "OFF", &
+         val = "off", &
          description = "Include equilibration in outputs", &
          data_type = DATA_BOOL))
 
@@ -1258,8 +1633,8 @@ contains
     call table%set("polarisation_model", control_parameter( &
          key = "polarisation_model", &
          name = "Polarisation model", &
-         val = "CHARMM", &
-         description = "Enable polarisation, options: CHARMM", &
+         val = "default", &
+         description = "Enable polarisation, options: CHARMM, default", &
          data_type = DATA_OPTION))
 
     call table%set("polarisation_thole", control_parameter( &
@@ -1273,7 +1648,7 @@ contains
          key = "ensemble", &
          name = "Ensemble constraints", &
          val = "NVE", &
-         description = "Set ensemble constraints, options: NVE, PMF, NVT, NPT, NST, NPnAT, NPng³", &
+         description = "Set ensemble constraints, options: NVE, PMF, NVT, NPT, NST, NPnAT, NPng³",&
          data_type = DATA_OPTION))
 
     call table%set("ensemble_method", control_parameter( &
@@ -1349,14 +1724,14 @@ contains
     call table%set("ensemble_semi_isotropic", control_parameter( &
          key = "ensemble_semi_isotropic", &
          name = "Ensemble semi-isotropic constraint", &
-         val = "OFF", &
+         val = "off", &
          description = "Enable semi-isotropic barostat constraints, options: area, tension, orthorhombic", &
          data_type = DATA_BOOL))
 
     call table%set("ensemble_semi_orthorhombic", control_parameter( &
          key = "ensemble_semi_orthorhombic", &
          name = "Ensemble semi-orthorhombic constraint", &
-         val = "OFF", &
+         val = "off", &
          description = "Enable semi-orthorhombic barostat constraints", &
          data_type = DATA_BOOL))
 
@@ -1423,14 +1798,14 @@ contains
     call table%set('vdw_force_shift', control_parameter( &
          key = 'vdw_force_shift', &
          name = 'VdW force shifting', &
-         val = 'OFF', &
+         val = 'off', &
          description = "Enable force shift corrections to Van der Waals' forces", &
          data_type = DATA_BOOL))
 
     call table%set("print_per_particle_contrib", control_parameter( &
          key = "print_per_particle_contrib", &
          name = "Per-particle contributions", &
-         val = "OFF", &
+         val = "off", &
          description = "Calculate and print per-particle contributions to energy, force and stress to file every stats step", &
          data_type = DATA_BOOL))
 
@@ -1507,7 +1882,7 @@ contains
     call table%set("coul_extended_exclusion", control_parameter( &
          key = "coul_extended_exclusion", &
          name = "Extended Exclusion", &
-         val = "OFF", &
+         val = "off", &
          description = "Enable extended coulombic exclusion affecting intra-molecular interactions", &
          data_type = DATA_BOOL))
 
@@ -1523,14 +1898,14 @@ contains
     call table%set("ignore_config_indices", control_parameter( &
          key = "ignore_config_indices", &
          name = "Ignore Config Indices", &
-         val = "OFF", &
+         val = "off", &
          description = "Ignore indices as defined in CONFIG and use read order instead", &
          data_type = DATA_BOOL))
 
     call table%set("unsafe", control_parameter( &
          key = "unsafe", &
          name = "Disable strict", &
-         val = "OFF", &
+         val = "off", &
          description = "Ignore strict checks such as; "// &
          "good system cutoff, particle âindex contiguity, disable non-error warnings, minimisation information", &
          data_type = DATA_BOOL))
@@ -1625,14 +2000,14 @@ contains
     call table%set("ttm_num_elec_cells", control_parameter( &
          key = "ttm_num_elec_cells", &
          name = "Number of TTM electronic cells", &
-         val = "20 20 20", &
+         val = "50 50 50", &
          description = "Set number of coarse-grained electronic temperature cells (CET)", &
          data_type = DATA_VECTOR3))
 
     call table%set("ttm_metal", control_parameter( &
          key = "ttm_metal", &
          name = "TTM Metallic", &
-         val = "OFF", &
+         val = "off", &
          description = "Specifies parameters for metallic system are required for two-temperature model, i.e. thermal conductivity", &
          data_type = DATA_BOOL))
 
@@ -1826,7 +2201,7 @@ contains
     call table%set("ttm_boundary_xy", control_parameter( &
          key = "ttm_boundary_xy", &
          name = "TTM Neumann Boundary in Z", &
-         val = "OFF", &
+         val = "off", &
          description = "Fix Neumann (zero-flux) boundary in Z", &
          data_type = DATA_BOOL))
 
@@ -1851,7 +2226,7 @@ contains
     call table%set("ttm_oneway", control_parameter( &
          key = "ttm_oneway", &
          name = "TTM oneway", &
-         val = "OFF", &
+         val = "off", &
          description = "Enable one-way electron-phonon coupling when electronic temperature is greater than ionic temperature", &
          data_type = DATA_BOOL))
 
@@ -1876,7 +2251,7 @@ contains
     call table%set("ttm_com_correction", control_parameter( &
          key = "ttm_com_correction", &
          name = "TTM CoM correction", &
-         val = "Full", &
+         val = "full", &
          description = "Apply inhomogeneous Langevin thermostat to selected directions in TTM, options: full, zdir, off", &
          data_type = DATA_OPTION))
 
@@ -1887,56 +2262,38 @@ contains
          description = "Redistribute electronic energy in newly-deactivated temperature cells to nearest active neighbours", &
          data_type = DATA_BOOL))
 
-    call table%set("msd_start", control_parameter( &
-         key = "mst_start", &
-         name = "MSD Start calculating", &
-         val = "0", &
-         units = "steps", &
-         internal_units = "steps", &
-         description = "Start timestep for dumping MSD configurations", &
-         data_type = DATA_FLOAT))
-
-    call table%set("msd_interval", control_parameter( &
-         key = "mst_interval", &
-         name = "MSD calculation interval", &
-         val = "1", &
-         units = "steps", &
-         internal_units = "steps", &
-         description = "Interval between dumping MSD configurations", &
-         data_type = DATA_FLOAT))
-
     call table%set("analyse_all", control_parameter( &
          key = "analyse_all", &
          name = "Analyse all", &
-         val = "OFF", &
+         val = "off", &
          description = "Enable analysis for all bonds, angles, dihedrals and inversions", &
          data_type = DATA_BOOL))
 
     call table%set("analyse_bonds", control_parameter( &
          key = "analyse_bonds", &
          name = "Analyse bonds", &
-         val = "OFF", &
+         val = "off", &
          description = "Enable analysis for all bonds", &
          data_type = DATA_BOOL))
 
     call table%set("analyse_angles", control_parameter( &
          key = "analyse_angles", &
          name = "Analyse angles", &
-         val = "OFF", &
+         val = "off", &
          description = "Enable analysis for all angles", &
          data_type = DATA_BOOL))
 
     call table%set("analyse_dihedrals", control_parameter( &
          key = "analyse_dihedrals", &
          name = "Analyse dihedrals", &
-         val = "OFF", &
+         val = "off", &
          description = "Enable analysis for all dihedrals", &
          data_type = DATA_BOOL))
 
     call table%set("analyse_inversions", control_parameter( &
          key = "analyse_inversions", &
          name = "Analyse inversions", &
-         val = "OFF", &
+         val = "off", &
          description = "Enable analysis inversions", &
          data_type = DATA_BOOL))
 
@@ -1952,8 +2309,36 @@ contains
     call table%set("analyse_num_bins", control_parameter( &
          key = "analyse_num_bins", &
          name = "Analysis number of bins", &
-         val = "0", &
+         val = "-1", &
          description = "Set number of bins to be used in bonding analysis", &
+         data_type = DATA_INT))
+
+    call table%set("analyse_num_bins_bonds", control_parameter( &
+         key = "analyse_num_bins_bonds", &
+         name = "Analysis number of bins for bonds", &
+         val = "0", &
+         description = "Set number of bins to be used in bond analysis", &
+         data_type = DATA_INT))
+
+    call table%set("analyse_num_bins_angles", control_parameter( &
+         key = "analyse_num_bins_angles", &
+         name = "Analysis number of bins for angles", &
+         val = "0", &
+         description = "Set number of bins to be used in angle analysis", &
+         data_type = DATA_INT))
+
+    call table%set("analyse_num_bins_dihedrals", control_parameter( &
+         key = "analyse_num_bins_dihedrals", &
+         name = "Analysis number of bins for dihedrals", &
+         val = "0", &
+         description = "Set number of bins to be used in dihedral analysis", &
+         data_type = DATA_INT))
+
+    call table%set("analyse_num_bins_inversions", control_parameter( &
+         key = "analyse_num_bins_inversions", &
+         name = "Analysis number of bins for inversions", &
+         val = "0", &
+         description = "Set number of bins to be used in inversion analysis", &
          data_type = DATA_INT))
 
     call table%set("analyse_max_dist", control_parameter( &
@@ -1965,10 +2350,56 @@ contains
          description = "Set cutoff for bonds analysis", &
          data_type = DATA_FLOAT))
 
+    call table%set("msd_calculate", control_parameter( &
+         key = "msd", &
+         name = "MSD calculating", &
+         val = "off", &
+         description = "Enable calculation of MSD", &
+         data_type = DATA_BOOL))
+
+    call table%set("msd_print", control_parameter( &
+         key = "msd", &
+         name = "MSD printing", &
+         val = "off", &
+         description = "Enable printing of MSD", &
+         data_type = DATA_BOOL))
+
+    call table%set("msd_start", control_parameter( &
+         key = "msd_start", &
+         name = "MSD Start calculating", &
+         val = "0", &
+         units = "steps", &
+         internal_units = "steps", &
+         description = "Start timestep for dumping MSD configurations", &
+         data_type = DATA_FLOAT))
+
+    call table%set("msd_interval", control_parameter( &
+         key = "msd_interval", &
+         name = "MSD calculation interval", &
+         val = "1", &
+         units = "steps", &
+         internal_units = "steps", &
+         description = "Interval between dumping MSD configurations", &
+         data_type = DATA_FLOAT))
+
+    call table%set("rdf_calculate", control_parameter( &
+         key = "rdf_calculate", &
+         name = "RDF calculating", &
+         val = "off", &
+         description = "Enable calculation of RDF", &
+         data_type = DATA_BOOL))
+
+    call table%set("rdf_print", control_parameter( &
+         key = "rdf_print", &
+         name = "RDF printing", &
+         val = "off", &
+         description = "Enable printing of RDF", &
+         data_type = DATA_BOOL))
+
     call table%set("rdf_frequency", control_parameter( &
          key = "rdf_frequency", &
          name = "RDF Sampling Frequency", &
-         val = "0", &
+         val = "1", &
          units = "steps", &
          internal_units = "steps", &
          description = "Set frequency of RDF sampling", &
@@ -1981,10 +2412,38 @@ contains
          description = "Set number of bins to be used in RDF analysis", &
          data_type = DATA_INT))
 
+    call table%set("rdf_error_analysis", control_parameter( &
+         key = "rdf_error_analysis", &
+         name = "RDF Error Analysis", &
+         val = "off", &
+         description = "Enable RDF error analysis, options: Off, Jack, Block", &
+         data_type = DATA_OPTION))
+
+    call table%set("rdf_error_analysis_blocks", control_parameter( &
+         key = "rdf_error_analysis_blocks", &
+         name = "Num RDF Error Analysis blocks", &
+         val = "1", &
+         description = "Set number of RDF error analysis blocks", &
+         data_type = DATA_INT))
+
+    call table%set("zden_calculate", control_parameter( &
+         key = "zden_calculate", &
+         name = "Zden calculating", &
+         val = "off", &
+         description = "Enable calculation of Zden", &
+         data_type = DATA_BOOL))
+
+    call table%set("zden_print", control_parameter( &
+         key = "zden_print", &
+         name = "Zden printing", &
+         val = "off", &
+         description = "Enable printing of Zden", &
+         data_type = DATA_BOOL))
+
     call table%set("zden_frequency", control_parameter( &
          key = "zden_frequency", &
          name = "ZDen Sampling Frequency", &
-         val = "0", &
+         val = "1", &
          units = "steps", &
          internal_units = "steps", &
          description = "Set frequency of ZDen sampling", &
@@ -1997,10 +2456,24 @@ contains
          description = "Set number of bins to be used in ZDen analysis", &
          data_type = DATA_INT))
 
+    call table%set("vaf_calculate", control_parameter( &
+         key = "vaf_calculate", &
+         name = "VAF calculating", &
+         val = "off", &
+         description = "Enable calculation of VAF", &
+         data_type = DATA_BOOL))
+
+    call table%set("vaf_print", control_parameter( &
+         key = "vaf_print", &
+         name = "VAF printing", &
+         val = "off", &
+         description = "Enable printing of VAF", &
+         data_type = DATA_BOOL))
+
     call table%set("vaf_frequency", control_parameter( &
          key = "vaf_frequency", &
          name = "VAF Sampling Frequency", &
-         val = "0", &
+         val = "1", &
          units = "steps", &
          internal_units = "steps", &
          description = "Set frequency of VAF sampling", &
@@ -2062,6 +2535,8 @@ contains
        Call get_line(line_read,ifile,input,comm)
        if (.not. line_read) exit
        call get_word(input, key)
+       ! Skip comments and blanks
+       if (key(1:1) == "#" .or. key(1:1) == "!" .or. key(1:1) == " ") cycle
        Call lower_case(key)
        Call params%get(key, param)
        if (param%set) call error(0, 'Param '//key//' already set')
@@ -2099,7 +2574,7 @@ contains
        tmp = ''
        do while (i > 0)
           tmp = trim(tmp) // input(:i-1)
-          if (trim(input(i+1:) /= '')) call error(0, 'Unexpected junk '//trim(input)//' after key '//trim(param%key))
+          if (input(i+1:) /= '') call error(0, 'Unexpected junk '//trim(input)//' after key '//trim(param%key))
           call get_line(line_read, ifile, input, comm)
           i = index(input, '&')
        end do
@@ -2122,7 +2597,7 @@ contains
        end do
        if (test_int /= 0) call error(0, 'Unmatched brackets in input '//trim(tmp))
 
-       do while (trim(tmp) /= '')
+       do while (tmp /= '')
           call get_word(tmp, val)
           ! Check all valid reals
           test_real = word_2_real(val)
@@ -2236,7 +2711,7 @@ contains
 
     do i = 1, 3
        call get_word(val, parse)
-       if (trim(parse) == "") exit
+       if (parse == "") exit
        output(i) = word_2_real(parse)
        output(i) = convert_units(output(i), param%units, param%internal_units)
     end do
@@ -2263,7 +2738,7 @@ contains
 
     do i = 1, 9
        call get_word(val, parse)
-       if (trim(parse) == "") exit
+       if (parse == "") exit
        tmp(i) = word_2_real(parse)
        tmp(i) = convert_units(tmp(i), param%units, param%internal_units)
     end do
@@ -2277,7 +2752,6 @@ contains
        call error(0, "Bad length vector 6")
     end select
 
-
   End Subroutine retrieve_vector6
 
   Subroutine retrieve_int(table, key, output, required)
@@ -2285,6 +2759,7 @@ contains
     Character(Len=*), Intent( In    ) :: key
     Character(Len=STR_LEN) :: parse
     Type( control_parameter ) :: param
+    Real( kind = wp ) :: rtmp
     Logical, Intent( In    ), Optional :: required
     Integer, Intent(   Out ) :: output
 
@@ -2292,7 +2767,16 @@ contains
     if (present(required)) then
        if (required .and. .not. param%set) call error(0, 'Necessary parameter '//trim(key)//' not set')
     end if
-    read(param%val, '(i0)') output
+
+    select case (param%data_type)
+    case (DATA_INT)
+       read(param%val, '(i0)') output
+    case (DATA_FLOAT)
+       if (param%internal_units /= 'steps') &
+            call error(0, 'Tried to parse physical value to int')
+       call table%retrieve(key, rtmp)
+       output = nint(rtmp)
+    end select
 
   End Subroutine retrieve_int
 
@@ -2304,14 +2788,12 @@ contains
     Logical, Intent( In    ), Optional :: required
     Logical, Intent(   Out ) :: output
 
-
-
     call table%get(key, param)
     if (present(required)) then
        if (required .and. .not. param%set) call error(0, 'Necessary parameter '//trim(key)//' not set')
     end if
 
-    Select Case(trim(param%val))
+    Select Case(param%val)
     Case('on', 'y')
        output = .true.
     Case Default
@@ -2337,5 +2819,45 @@ contains
     End Select
 
   End Subroutine get_param
+
+  Function is_set(table, key)
+    Class( parameters_hash_table ), Intent( InOut ) :: table
+    Character(Len=*), Intent( In    ) :: key
+    Logical :: is_set
+    Type( control_parameter ) :: param
+
+    table%get(key, param)
+    is_set = param%set
+
+  end Function is_set
+
+  Function is_all_set(table, key)
+    Class( parameters_hash_table ), Intent( InOut ) :: table
+    Character(Len=*), dimension(:), Intent( In    ) :: key
+    Logical :: is_set
+    Type( control_parameter ) :: param
+
+    is_set = .true.
+    do i = 1, len(key)
+       table%get(key(i), param)
+       is_set = is_set .and. param%set
+    end do
+
+  end Function is_all_set
+
+  Function is_any_set(table, key)
+    Class( parameters_hash_table ), Intent( InOut ) :: table
+    Character(Len=*), dimension(:), Intent( In    ) :: key
+    Logical :: is_set
+    Type( control_parameter ) :: param
+
+    is_set = .false.
+    do i = 1, len(key)
+       table%get(key(i), param)
+       is_set = is_set .or. param%set
+    end do
+
+  end Function is_any_set
+
 
 End Module new_control
