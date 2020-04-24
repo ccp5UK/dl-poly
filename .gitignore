@@ -1,5 +1,5 @@
 # Ignore test files
-data/*.tar.gz
+data/*.tar.xz
 
 # Prerequisites
 *.d
