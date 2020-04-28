@@ -11,13 +11,11 @@ program test_control
 
 
   call initialise_units()
-  ts = convert_units(1.0_8, 'fs', 's')
-  print*, ts
   open(newunit=test, file='test_new_control')
   call initialise_control(params)
   call read_new_control(test, params, comm)
   call params%retrieve('timestep', ts)
   call set_timestep(ts)
-  call print_set(params)
+  call params%help()
 
 end program test_control
