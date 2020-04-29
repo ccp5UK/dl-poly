@@ -1,7 +1,8 @@
 program test_control
 
   use comms, only : comms_type
-  use new_control, only : parameters_hash_table, initialise_control, print_set, read_new_control => parse_file
+  use new_control, only : initialise_control, read_new_control => parse_file
+  use control_parameter_module, only : parameters_hash_table, print_set
   use units, only : initialise_units, set_timestep, convert_units
 
   type( parameters_hash_table ) :: params

@@ -188,5 +188,5 @@ target_link_libraries(${target_name} dlpoly ${LIBS} ${BLAS_LIBRARIES})
 install(TARGETS ${target_name} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 INSTALL_SUBLIB(dlpoly)
 
-add_executable(test-control test_control.f90 new_control.F90 hash.F90 units.F90)
+add_executable(test-control test_control.f90 new_control_old_style.F90 control_parameter.F90 new_control.F90 hash.F90 units.F90)
 target_link_libraries(test-control dlpoly ${LIBS})
