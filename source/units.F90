@@ -55,7 +55,7 @@ contains
     !!-----------------------------------------------------------------------
     Real(kind=wp), Parameter :: planck_internal = 6.350780668_wp
     Real(kind=wp), Parameter :: electron_charge = 1.0_wp
-    Real(kind=wp), Parameter :: coulomb = 6.241509125883258e+18_wp
+    Real(kind=wp), Parameter :: coulomb = 1.602176634e-19_wp
     Real(kind=wp), Parameter :: avogadro = 6.022140857e23_wp
 
     Real(kind=wp), Parameter :: metre = 1e-10_wp
@@ -65,7 +65,7 @@ contains
     Real(kind=wp), Parameter :: joulepmol = 10.0_wp
     Real(kind=wp), Parameter :: caloriepmol = 1.0_wp / (4.1842_wp/joulepmol)
 
-    Real(kind=wp), Parameter :: hartree = 354.5768322068828_wp
+    Real(kind=wp), Parameter :: hartree = 2.2937104486906e+18_wp
 
     Real(kind=wp), Parameter :: kilogram = 1.660577881102624e-27_wp
     Real(kind=wp), Parameter :: pound = 3.6608612486140225e-27_wp
@@ -126,10 +126,17 @@ contains
     call units_table%set("j", init_unit(abbrev="J", name="Joule", mass=1, length=2, time=-2, to_internal=joulepmol*avogadro))
     call units_table%set("cal", &
          & init_unit(abbrev="Cal", name="Calorie", mass=1, length=2, time=-2, to_internal=caloriepmol*avogadro))
-    call units_table%set("ha", init_unit(abbrev="Ha", name="Hartree", mass=1, length=2, time=-2, to_internal=hartree))
-    call units_table%set("e_h", init_unit(abbrev="Ha", name="Hartree", mass=1, length=2, time=-2, to_internal=hartree))
-    call units_table%set("ry", init_unit(abbrev="Ry", name="Rydberg", mass=1, length=2, time=-2, to_internal=2.0_wp*hartree))
-    call units_table%set("k", init_unit(abbrev="K", name="Kelvin", mass=1, length=2, time=-2, to_internal=boltz))
+    call units_table%set("ha", init_unit(abbrev="Ha", name="Hartree", &
+         & mass=1, length=2, time=-2, to_internal=hartree*avogadro))
+    call units_table%set("e_h", init_unit(abbrev="Ha", name="Hartree", &
+         & mass=1, length=2, time=-2, to_internal=hartree*avogadro))
+    call units_table%set("ry", init_unit(abbrev="Ry", name="Rydberg", &
+         & mass=1, length=2, time=-2, to_internal=2.0_wp*hartree*avogadro))
+
+    ! Temperature
+
+    call units_table%set("k", init_unit(abbrev="K", name="Kelvin", temp=1, to_internal=boltz))
+
 
     ! Pressure
 
@@ -154,10 +161,12 @@ contains
     call units_table%set("auv", &
          & init_unit(abbrev="aut", name="Atomic Velocity Unit", length=1, time=-1, to_internal=bohr/aut))
 
-    ! Acceleration
+    ! Constants
 
     call units_table%set("grav", &
          & init_unit(abbrev="g_e", name="9.81 m/s^2", length=1, time=-2, to_internal=gravity))
+    call units_table%set("k_b", &
+         & init_unit(abbrev="k_B", name="Boltzmann constant", length=2, mass=1, time=-2, temp=-1, to_internal=boltz))
 
     ! Voltage
 
@@ -186,6 +195,8 @@ contains
     Real(kind=wp), Intent(in) :: val
     Real(kind=wp) :: res
     Character(Len=*) :: from, to
+    Integer :: i
+    Character, Dimension(7), parameter :: dims = ['M','L','T','t','m','C','l'] ! mass length time temp mol current luminosity
     Type( unit_data ) :: from_unit, to_unit
     Type( unit_data ) :: output
 
@@ -193,7 +204,20 @@ contains
     from_unit = parse_unit_string(from)
     to_unit = parse_unit_string(to)
     output = from_unit / to_unit
-    if (any(output%dims /= 0)) call error(0, 'Cannot convert between '//trim(from)//' & '//trim(to)//' different dimensions')
+
+    if (any(output%dims /= 0)) then
+       do i = 1, 7
+          if (from_unit%dims(i) /= 0) write(0, "(A2,i0,'.')", advance='No') dims(i)//"^",from_unit%dims(i)
+       end do
+       write(0,*)
+       do i = 1, 7
+          if (from_unit%dims(i) /= 0) write(0, "(A2,i0,'.')", advance='No') dims(i)//"^",to_unit%dims(i)
+       end do
+       write(0,*)
+       call error(0, 'Cannot convert between '//trim(from)//' & '//trim(to)//' different dimensions')
+
+    end if
+
     res = val / output%conversion_to_internal
 
   end Function convert_units
@@ -402,7 +426,7 @@ contains
     !!-----------------------------------------------------------------------
     Character(Len=256), Dimension(:), Allocatable :: output
     Character(Len=*), Intent( In ) :: string
-    Character(Len=*), Parameter :: alphabet = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_%'"//'"'
+    Character(Len=*), Parameter :: alphabet = "-+1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_%'"//'"'
     Character(Len=*), Parameter :: punc = "./^"
     Integer :: nParts
     Integer :: i, j, k
@@ -427,6 +451,8 @@ contains
        output(i) = string(j:k-1)
        j = k
     end do
+
+
   end Subroutine decompose_unit_string
 
   Subroutine set_timestep(val)

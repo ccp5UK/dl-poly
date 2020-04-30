@@ -147,9 +147,11 @@ Module new_control
   Public :: read_new_control
   Public :: initialise_control
 
+  ! Public for test
   Public :: parse_file
 
-  Public :: bad_option, read_ensemble
+  ! Public for old-style
+  Public :: bad_option, read_ensemble, read_structure_analysis
 
 contains
 
@@ -170,7 +172,7 @@ contains
 
   end Subroutine read_new_control
 
-  Subroutine setup_file_io(params, io, netcdf, files, comm)
+  Subroutine read_io(params, io, netcdf, files, comm)
     !!-----------------------------------------------------------------------
     !!
     !! Read in the io parameters
@@ -199,19 +201,15 @@ contains
     Select Case(curr_option)
     Case ( 'mpiio' )
        io_read = IO_READ_MPIIO
-       Call info('I/O read method: parallel by using MPI-I/O',.true.)
 
     Case ( 'direct' )
        io_read = IO_READ_DIRECT
-       Call info('I/O read method: parallel by using direct access',.true.)
 
     Case ( 'netcdf' )
        io_read = IO_READ_NETCDF
-       Call info('I/O read method: parallel by using netCDF',.true.)
 
     Case ( 'master' )
        io_read = IO_READ_MASTER
-       Call info('I/O read method: serial by using a single master process',.true.)
 
     Case Default
        Call bad_option('io_read_method', curr_option)
@@ -231,22 +229,16 @@ contains
           Do While ( Mod( comm%mxnode, itmp ) /= 0 )
              itmp = itmp - 1
           End Do
-          Write(message,'(a,i10)') 'I/O readers (assumed) ',itmp
-          Call info(message,.true.)
        else if (itmp < comm%mxnode) then
           Do While ( Mod( comm%mxnode, itmp ) /= 0 )
              itmp = itmp - 1
           End Do
-          Write(message,'(a,i10)') 'I/O readers set to ',itmp
-          Call info(message,.true.)
        else if (itmp > comm%mxnode) then
           rtmp = Min( Real(comm%mxnode,wp), 2.0_wp*Real(comm%mxnode,wp)**0.5_wp )
           itmp = 2**Int(Nearest( Log(rtmp)/Log(2.0_wp) , +1.0_wp ))
           Do While ( Mod( comm%mxnode, itmp ) /= 0 )
              itmp = itmp - 1
           End Do
-          Write(message,'(a,i10)') 'I/O readers (enforced) ',itmp
-          Call info(message,.true.)
        else
           Call error(0, 'Cannot have negative number of I/O readers')
        end If
@@ -265,14 +257,10 @@ contains
        Select Case (itmp)
        Case(0)
           Call io_get_parameters(io, user_batch_size_read = itmp )
-          Write(message,'(a,i10)') 'I/O read batch size (assumed) ', itmp
-          Call info(message,.true.)
 
        Case(1:)
           itmp = Min( itmp, MAX_BATCH_SIZE )
           Call io_set_parameters(io, user_batch_size_read = itmp )
-          Write(message,'(a,i10)') 'I/O read batch size set to ', itmp
-          Call info(message,.true.)
 
        Case Default
           Call error(0, 'Cannot have negative I/O read batch size')
@@ -286,8 +274,6 @@ contains
     Case Default
        rtmp = Min( Real(comm%mxnode,wp), 2.0_wp*Real(comm%mxnode,wp)**0.5_wp )
        itmp = 2**Int(Nearest( Log(rtmp)/Log(2.0_wp) , +1.0_wp ))
-       Write(message,'(a,i10)') 'I/O readers (enforced) ', itmp
-       Call info(message,.true.)
        ! the number of readers is now ready to set
        Call io_set_parameters(io, user_n_io_procs_read = itmp )
 
@@ -300,23 +286,15 @@ contains
     Select Case(itmp)
     Case(0)
        Call io_get_parameters(io, user_buffer_size_read = itmp )
-       Write(message,'(a,i10)') 'I/O read buffer size (assumed) ',itmp
-       Call info(message,.true.)
 
     Case(1:99)
        Call io_set_parameters(io, user_buffer_size_read = 100 )
-       Write(message,'(a,i10)') 'I/O read buffer size set to ',100
-       Call info(message,.true.)
 
     Case(100:MAX_BUFFER_SIZE)
        Call io_set_parameters(io, user_buffer_size_read = itmp )
-       Write(message,'(a,i10)') 'I/O read buffer size set to ',itmp
-       Call info(message,.true.)
 
     Case(MAX_BUFFER_SIZE+1:)
        Call io_set_parameters(io, user_buffer_size_read = MAX_BUFFER_SIZE )
-       Write(message,'(a,i10)') 'I/O read buffer size set to ', MAX_BUFFER_SIZE
-       Call info(message,.true.)
 
     Case Default
        Call error(0, 'Negative read buffer size not valid, min = 1')
@@ -327,13 +305,8 @@ contains
 
     if (io_read /= IO_READ_MASTER) then
        call params%retrieve('io_read_error_check', ltmp)
-
-       If (.not. ltmp) Then
-          Call info('I/O parallel read error checking off',.true.)
-       Else
-          Call info('I/O parallel read error checking on',.true.)
-       End If
        Call io_set_parameters(io, user_error_check = ltmp )
+
     End If
 
     ! Get write settings
@@ -348,7 +321,6 @@ contains
        else
           io_write = IO_WRITE_UNSORTED_MPIIO
        end if
-       Call info('I/O write method: parallel by using MPI-I/O',.true.)
 
     Case ( 'direct' )
        if (ltmp) then
@@ -356,8 +328,6 @@ contains
        else
           io_write = IO_WRITE_UNSORTED_DIRECT
        end if
-       Call info('I/O write method: parallel by using direct access',.true.)
-       Call warning('in parallel this I/O write method has portability issues',.true.)
 
     Case ( 'netcdf' )
        io_write = IO_WRITE_SORTED_NETCDF
@@ -367,14 +337,11 @@ contains
        Select Case (curr_option)
        Case('amber', '32bit', '32-bit')
           ! Use 32-bit quantities in output for real numbers
-          Call info('I/O write method: parallel by using netCDF in the amber-like/32-bit format',.true.)
           Call io_nc_set_real_precision( sp, netcdf, itmp )
        Case('64-bit', '64bit')
           ! Use 64-bit quantities in output for real numbers
-          Call info('I/O write method: parallel by using netCDF in 64-bit format',.true.)
           Call io_nc_set_real_precision( dp, netcdf, itmp )
        Case Default
-          Call info('io_write_netcdf_format '//curr_option//' unrecognised option.',.true.)
           Call error(3)
        End Select
 
@@ -386,24 +353,11 @@ contains
           io_write = IO_WRITE_UNSORTED_MASTER
        end if
 
-       Call info('I/O write method: serial by using a single master process',.true.)
     Case Default
        call bad_option('io_write_method', curr_option)
 
     End Select
 
-
-    Select Case (io_write)
-    Case(IO_WRITE_SORTED_MASTER, IO_WRITE_SORTED_NETCDF, IO_WRITE_SORTED_MPIIO, IO_WRITE_SORTED_DIRECT)
-       Call info('I/O write type: data sorting on',.true.)
-
-    Case(IO_WRITE_UNSORTED_MASTER, IO_WRITE_UNSORTED_MPIIO, IO_WRITE_UNSORTED_DIRECT)
-       Call info('I/O write type: data sorting off',.true.)
-
-    Case Default
-       call bad_option('io_write_method', curr_option)
-
-    End Select
 
     ! the write method and type are now ready to set
 
@@ -419,15 +373,11 @@ contains
           Do While ( Mod( comm%mxnode, itmp ) /= 0 )
              itmp = itmp - 1
           End Do
-          Write(message,'(a,i10)') 'I/O writers (assumed) ',itmp
-          Call info(message,.true.)
 
        else if (itmp < comm%mxnode) then
           Do While ( Mod( comm%mxnode, itmp ) /= 0 )
              itmp = itmp - 1
           End Do
-          Write(message,'(a,i10)') 'I/O writers set to ',itmp
-          Call info(message,.true.)
 
        else if (itmp > comm%mxnode) then
           rtmp = Min( Real(comm%mxnode,wp), 8.0_wp*Real(comm%mxnode,wp)**0.5_wp )
@@ -435,8 +385,6 @@ contains
           Do While ( Mod( comm%mxnode, itmp ) /= 0 )
              itmp = itmp - 1
           End Do
-          Write(message,'(a,i10)') 'I/O writers (enforced) ',itmp
-          Call info(message,.true.)
 
        else
           Call error(0, 'Cannot have negative number of I/O writers')
@@ -452,14 +400,10 @@ contains
        Select Case (itmp)
        Case(0)
           Call io_get_parameters(io, user_batch_size_write = itmp )
-          Write(message,'(a,i10)') 'I/O write batch size (assumed) ', itmp
-          Call info(message,.true.)
 
        Case(1:)
           itmp = Min( itmp, MAX_BATCH_SIZE )
           Call io_set_parameters(io, user_batch_size_write = itmp )
-          Write(message,'(a,i10)') 'I/O write batch size set to ', itmp
-          Call info(message,.true.)
 
        Case Default
           Call error(0, 'Cannot have negative I/O write batch size')
@@ -467,14 +411,11 @@ contains
        end Select
 
     Case (IO_WRITE_UNSORTED_MASTER, IO_WRITE_SORTED_MASTER)
-       Write(message,'(a,i10)') 'I/O writers (enforced) ',1
-       Call info(message,.true.)
+       Continue
 
     Case Default
        rtmp = Min( Real(comm%mxnode,wp), 8.0_wp*Real(comm%mxnode,wp)**0.5_wp )
        itmp = 2**Int(Nearest( Log(rtmp)/Log(2.0_wp) , +1.0_wp ))
-       Write(message,'(a,i10)') 'I/O writers (enforced) ',itmp
-       Call info(message,.true.)
        ! the number of writers is now ready to set
        Call io_set_parameters(io, user_n_io_procs_write = itmp )
 
@@ -485,23 +426,15 @@ contains
     Select Case(itmp)
     Case(0)
        Call io_get_parameters(io, user_buffer_size_write = itmp )
-       Write(message,'(a,i10)') 'I/O write buffer size (assumed) ',itmp
-       Call info(message,.true.)
 
     Case(1:99)
        Call io_set_parameters(io, user_buffer_size_write = 100 )
-       Write(message,'(a,i10)') 'I/O write buffer size set to ',100
-       Call info(message,.true.)
 
     Case(100:MAX_BUFFER_SIZE)
        Call io_set_parameters(io, user_buffer_size_write = itmp )
-       Write(message,'(a,i10)') 'I/O write buffer size set to ',itmp
-       Call info(message,.true.)
 
     Case(MAX_BUFFER_SIZE+1:)
        Call io_set_parameters(io, user_buffer_size_write = MAX_BUFFER_SIZE )
-       Write(message,'(a,i10)') 'I/O write buffer size set to ', MAX_BUFFER_SIZE
-       Call info(message,.true.)
 
     Case Default
        Call error(0, 'Negative write buffer size not valid, min = 1')
@@ -511,49 +444,35 @@ contains
 
     If (io_write /= IO_WRITE_UNSORTED_MASTER .and. io_write /= IO_WRITE_SORTED_MASTER) Then
        call params%retrieve('io_write_error_check', ltmp)
-       If (.not. ltmp) Then
-          Call info('I/O parallel read error checking off',.true.)
-       Else
-          Call info('I/O parallel read error checking on',.true.)
-       End If
        Call io_set_parameters(io, user_error_check = ltmp )
     End If
 
-    call params%retrieve('io_file_output', curr_option)
-    if (curr_option /= '') Call info('OUTPUT file is '//files(FILE_OUTPUT)%filename,.true.)
-    call params%retrieve('io_file_config', curr_option)
-    if (curr_option /= '') Call info('CONFIG file is '//files(FILE_CONFIG)%filename,.true.)
-    call params%retrieve('io_file_field', curr_option)
-    if (curr_option /= '') Call info('FIELD file is '//files(FILE_FIELD)%filename,.true.)
-    call params%retrieve('io_file_statis', curr_option)
-    if (curr_option /= '') Call info('STATIS file is '//files(FILE_STATS)%filename,.true.)
-    call params%retrieve('io_file_history', curr_option)
-    if (curr_option /= '') Call info('HISTORY file is '//files(FILE_HISTORY)%filename,.true.)
-    call params%retrieve('io_file_historf', curr_option)
-    if (curr_option /= '') Call info('HISTORF file is '//files(FILE_HISTORF)%filename,.true.)
-    call params%retrieve('io_file_revive', curr_option)
-    if (curr_option /= '') Call info('REVIVE file is '//files(FILE_REVIVE)%filename,.true.)
-    call params%retrieve('io_file_revcon', curr_option)
-    if (curr_option /= '') Call info('REVCON file is '//files(FILE_REVCON)%filename,.true.)
-    call params%retrieve('io_file_revold', curr_option)
-    if (curr_option /= '') Call info('REVOLD file is '//files(FILE_REVOLD)%filename,.true.)
+    Call params%retrieve('io_file_output', files(FILE_OUTPUT)%filename)
+    Call params%retrieve('io_file_config', files(FILE_CONFIG)%filename)
+    Call params%retrieve('io_file_field',  files(FILE_FIELD)%filename)
+    Call params%retrieve('io_file_stats',  files(FILE_STATS)%filename)
+    Call params%retrieve('io_file_history',files(FILE_HISTORY)%filename)
+    Call params%retrieve('io_file_historf',files(FILE_HISTORF)%filename)
+    Call params%retrieve('io_file_revive', files(FILE_REVIVE)%filename)
+    Call params%retrieve('io_file_revcon', files(FILE_REVCON)%filename)
+    Call params%retrieve('io_file_revold', files(FILE_REVOLD)%filename)
 
-  End Subroutine setup_file_io
+  End Subroutine read_io
 
-  Subroutine read_ensemble(params, thermo)
+  Subroutine read_ensemble(params, thermo, ttm)
     Type( parameters_hash_table ), intent( In    ) :: params
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Character(Len=STR_LEN) :: message
     Character(Len=STR_LEN) :: option
     Character(Len=STR_LEN), dimension(4) :: messages
+    Logical, Intent( In    ) :: ttm
     Logical :: ltmp
 
     call params%retrieve('ensemble', option, required = .true.)
-
+    if (ttm .and. option /= 'ttm') call error(0, 'TTM requested, ensemble not ttm')
     select case(option)
     case ('nve', 'pmf')
        thermo%ensemble = ENS_NVE
-       Call info('Ensemble : NVE (Microcanonical)',.true.)
 
     case ('nvt')
 
@@ -563,18 +482,11 @@ contains
        case ('evans')
           thermo%ensemble = ENS_NVT_EVANS
 
-          Call info('Ensemble : NVT Evans (Isokinetic)',.true.)
-          Call info('Gaussian temperature constraints in use',.true.)
-
        case ('langevin')
 
           thermo%ensemble = ENS_NVT_LANGEVIN
 
-          Call params%retrieve('ensemble_thermostat_friction', thermo%chi)
-
-          Call info('Ensemble : NVT Langevin (Stochastic Dynamics)',.true.)
-          Write(message,'(a,1p,e12.4)') 'thermostat friction (ps^-1)', thermo%chi
-          Call info(message,.true.)
+          Call params%retrieve('ensemble_thermostat_friction', thermo%chi, .true.)
 
        case ('andersen')
 
@@ -583,32 +495,17 @@ contains
           Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
           Call params%retrieve('ensemble_thermostat_softness', thermo%soft)
 
-          Write(messages(1),'(a)') 'Ensemble : NVT Andersen'
-          Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
-          Write(messages(3),'(a,1p,e12.4)') 'softness (dimensionless)',thermo%soft
-          if (thermo%soft > 1) call error(0, 'Andersen softness greater than 1 '//message)
-
-          Call info(messages,3,.true.)
-
        case ('berendsen')
 
           thermo%ensemble = ENS_NVT_BERENDSEN
 
           Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
 
-          Call info('Ensemble : NVT Berendsen',.true.)
-          Write(message,'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
-          Call info(message,.true.)
-
        Case ('hoover', 'nose', 'nose-hoover')
 
           thermo%ensemble = ENS_NVT_NOSE_HOOVER
 
           Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
-
-          Call info('Ensemble : NVT Nose-Hoover',.true.)
-          Write(message,'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
-          Call info(message,.true.)
 
        Case ('gentle', 'gst')
 
@@ -617,24 +514,14 @@ contains
           Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
           Call params%retrieve('ensemble_thermostat_friction', thermo%gama)
 
-          Write(messages(1),'(a)') 'Ensemble : NVT gentle stochastic thermostat'
-          Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
-          Write(messages(3),'(a,1p,e12.4)') 'friction on thermostat  (ps^-1) ',thermo%gama
-          Call info(messages,3,.true.)
-
        Case ('ttm')
 
           thermo%ensemble = ENS_NVT_LANGEVIN_INHOMO
 
           Call params%retrieve('ttm_e-phonon_friction', thermo%chi_ep)
-          Call params%retrieve('ttm_e-stopping_friction', thermo%chi_es)
+          Call params%retrieve('ttm_e-stopping_friction', thermo%chi_es, .true.)
           Call params%retrieve('ttm_e-stopping_velocity', thermo%vel_es2)
-
-          Write (messages(1), '(a)') 'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)'
-          Write (messages(2), '(a,1p,e12.4)') 'e-phonon friction (ps^-1) ', thermo%chi_ep
-          Write (messages(3), '(a,1p,e12.4)') 'e-stopping friction (ps^-1) ', thermo%chi_es
-          Write (messages(4), '(a,1p,e12.4)') 'e-stopping velocity (A ps^-1) ', thermo%vel_es2
-          Call info(messages, 4, .true.)
+          thermo%vel_es2 = thermo%vel_es2 * thermo%vel_es2 ! square of cutoff velocity for inhomogeneous Langevin thermostat and ttm
 
        Case ('dpd')
           thermo%ensemble = ENS_NVE
@@ -645,22 +532,14 @@ contains
           select case (option)
           case ('first', '1')
              thermo%key_dpd = DPD_FIRST_ORDER
-             Call info("Ensemble type : Shardlow's first order splitting (S1)",.true.)
           case ('second', '2')
              thermo%key_dpd = DPD_SECOND_ORDER
-             Call info("Ensemble type : Shardlow's first order splitting (S2)",.true.)
           case default
              call bad_option('ensemble_dpd_order', option)
-
           end select
 
 
           call params%retrieve('ensemble_dpd_drag', thermo%gamdpd(0))
-
-          If (thermo%gamdpd(0) > zero_plus) Then
-             Write(message,'(a,1p,e12.4)') 'drag coefficient (Dalton/ps) ', thermo%gamdpd(0)
-             Call info(message,.true.)
-          End If
 
        case default
           call bad_option('NVT ensemble_method', option)
@@ -677,13 +556,8 @@ contains
           thermo%ensemble = ENS_NPT_LANGEVIN
           thermo%l_langevin = .true.
 
-          call params%retrieve('ensemble_thermostat_friction', thermo%chi)
-          call params%retrieve('ensemble_barostat_friction', thermo%tai)
-
-          Write(messages(1),'(a)') 'Ensemble : NPT isotropic Langevin (Stochastic Dynamics)'
-          Write(messages(2),'(a,1p,e12.4)') 'thermostat friction (ps^-1)',thermo%chi
-          Write(messages(3),'(a,1p,e12.4)') 'barostat friction (ps^-1)',thermo%tai
-          Call info(messages,3,.true.)
+          call params%retrieve('ensemble_thermostat_friction', thermo%chi, .true.)
+          call params%retrieve('ensemble_barostat_friction', thermo%tai, .true.)
 
        case ('berendsen')
 
@@ -691,11 +565,6 @@ contains
 
           call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
           call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
-
-          Write(messages(1),'(a)') 'Ensemble : NPT isotropic Berendsen'
-          Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
-          Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
-          Call info(messages,3,.true.)
 
        case ('hoover', 'nose', 'nose-hoover')
 
@@ -705,22 +574,12 @@ contains
           call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
           call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
 
-          Write(messages(1),'(a)') 'Ensemble : NPT isotropic Nose-Hoover (Melchionna)'
-          Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
-          Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
-          Call info(messages,3,.true.)
-
        case ('mtk')
 
           thermo%ensemble = ENS_NPT_MTK
 
           call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
           call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
-
-          Write(messages(1),'(a)') 'Ensemble : NPT isotropic Martyna-Tuckerman-Klein'
-          Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
-          Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
-          Call info(messages,3,.true.)
 
        case default
           call bad_option('NPT ensemble_method', option)
@@ -738,13 +597,8 @@ contains
           thermo%ensemble = ENS_NPT_LANGEVIN_ANISO
           thermo%l_langevin = .true.
 
-          call params%retrieve('ensemble_thermostat_friction', thermo%chi)
-          call params%retrieve('ensemble_barostat_friction', thermo%tai)
-
-          Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Langevin (Stochastic Dynamics)'
-          Write(messages(2),'(a,1p,e12.4)') 'thermostat friction (ps^-1)',thermo%chi
-          Write(messages(3),'(a,1p,e12.4)') 'barostat friction (ps^-1)',thermo%tai
-          Call info(messages,3,.true.)
+          call params%retrieve('ensemble_thermostat_friction', thermo%chi, .true.)
+          call params%retrieve('ensemble_barostat_friction', thermo%tai, .true.)
 
        case ('berendsen')
 
@@ -753,22 +607,12 @@ contains
           call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
           call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
 
-          Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Berendsen'
-          Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
-          Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
-          Call info(messages,3,.true.)
-
        case ('hoover', 'nose', 'nose-hoover')
 
           thermo%ensemble = ENS_NPT_NOSE_HOOVER_ANISO
 
           call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
           call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
-
-          Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Nose-Hoover (Melchionna)'
-          Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
-          Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
-          Call info(messages,3,.true.)
 
        Case ('mtk')
 
@@ -777,11 +621,6 @@ contains
           call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
           call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
 
-          Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Martyna-Tuckerman-Klein'
-          Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
-          Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
-          Call info(messages,3,.true.)
-
        case default
           call bad_option('NST ensemble method', option)
        end select
@@ -789,39 +628,30 @@ contains
        ! Semi isotropic ensembles
 
        call params%retrieve('ensemble_semi_isotropic', option)
+       call params%retrieve('ensemble_semi_orthorhombie', ltmp)
+
        select case (option)
        case ('off')
           continue
        case ('area')
           thermo%iso = CONSTRAINT_SURFACE_AREA
-          Call info('semi-isotropic barostat : constant normal pressure (Pn) &',.true.)
-          Call info('       (N-Pn-A-T)       : constant surface area (A)',.true.)
        case ('tens')
 
           thermo%iso = CONSTRAINT_SURFACE_TENSION
 
           call params%retrieve('ensemble_tension', thermo%tension, required=.true.)
 
-          Write(messages(1),'(a)') 'semi-isotropic barostat : constant normal pressure (Pn) &'
-          Write(messages(2),'(a)') '     (N-Pn-gamma-T)     : constant surface tension (gamma)'
-          Write(messages(3),'(a,1p,e11.4)') 'sumulation surface tension (dyn/cm)', thermo%tension
-          Call info(messages,3,.true.)
           thermo%tension=thermo%tension/tenunt
 
-          call params%retrieve('ensemble_semi_orthorhombic', ltmp)
           if (ltmp) then
              thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
-             Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
           end if
 
        case ('ortho', 'orthorhombic')
 
           thermo%iso = CONSTRAINT_SURFACE_TENSION
-          Call info('semi-isotropic barostat : orthorhombic MD cell constraints',.true.)
-          call params%retrieve('ensemble_semi_orthorhombie', ltmp)
           if (ltmp) then
              thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
-             Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
           end if
        case default
           call bad_option('ensemble_semi_isotropic', option)
@@ -837,27 +667,42 @@ contains
 
   end Subroutine read_ensemble
 
-  Subroutine read_structure_analysis(params, msd, rdf, vaf, zden)
+  Subroutine read_structure_analysis(params, msd_data, rdf, vaf, zden, adf, coords, traj, defect, displacement)
 
     Type( parameters_hash_table ), intent( In    ) :: params
-    Type( msd_type ), Intent( InOut ) :: msd
+    Type( msd_type ), Intent( InOut ) :: msd_data
     Type( greenkubo_type ), Intent( InOut ) :: vaf
     Type( rdf_type ), Intent( InOut ) :: rdf
     Type( z_density_type ), Intent( InOut ) :: zden
-    Real(kind=wp) :: rtmp
+    Type( adf_type ), Intent( InOut ) :: adf
+    Type( coord_type ), intent( InOut ) :: coords
+    Type( trajectory_type ), Intent( InOut ) :: traj
+    Type( defects_type ), Intent( InOut ), Dimension(:) :: defect
+    Type( rsd_type ), Intent( InOut ) :: displacement
+
     Character(Len=STR_LEN) :: option
+    Logical :: ltmp
+
+    ! MSD
+    call params%retrieve('msd_calculate', msd_data%l_msd)
+
+    if (msd_data%l_msd) then
+       call params%retrieve('msd_start', msd_data%start)
+       call params%retrieve('msd_frequency', msd_data%freq)
+    else if (params%is_any_set([Character(13) :: 'msd_frequency', 'msd_start'])) then
+       Call warning('msd_start or msd_frequency found without msd_calculate')
+
+    end if
 
     ! VAF
     call params%retrieve('vaf_calculate', vaf%l_collect)
 
     if (vaf%l_collect) then
-       call params%retrieve('vaf_frequency', rtmp)
-       call params%retrieve('vaf_binsize', vaf%binsize)
-       call params%retrieve('vaf_print', vaf%l_print)
-
-       vaf%freq = nint(rtmp)
+       call params%retrieve('vaf_frequency', vaf%freq)
        If (vaf%freq <= 0) vaf%freq=50
+       call params%retrieve('vaf_binsize', vaf%binsize)
        If (vaf%binsize <= 0) vaf%binsize=Merge(2*vaf%freq,100,vaf%freq >= 100)
+       call params%retrieve('vaf_print', vaf%l_print)
 
        vaf%samp = Ceiling(Real(vaf%binsize,wp)/Real(vaf%freq,wp))
 
@@ -885,11 +730,9 @@ contains
        if (rdf%l_errors_jack .or. rdf%l_errors_block) &
             & call params%retrieve('rdf_error_analysis_blocks', rdf%num_blocks)
 
-       call params%retrieve('rdf_frequency', rtmp)
+       call params%retrieve('rdf_frequency', rdf%freq)
        call params%retrieve('rdf_binsize', rdf%rbin)
        call params%retrieve('rdf_print', rdf%l_print)
-
-       rdf%freq = nint(rtmp)
 
     else if (params%is_any_set([Character(13) :: 'rdf_frequency', 'rdf_binsize', 'rdf_print'])) then
        Call warning('rdf_print, rdf_frequency or rdf_binsize found without rdf_calculate')
@@ -901,18 +744,324 @@ contains
 
     if (zden%l_collect) then
 
-       call params%retrieve('zden_frequency', rtmp)
+       call params%retrieve('zden_frequency', zden%frequency)
        call params%retrieve('zden_binsize', zden%bin_width)
        call params%retrieve('zden_print', zden%l_print)
-
-       zden%frequency = nint(rtmp)
 
     else if (params%is_any_set([Character(13) :: 'zden_frequency', 'zden_binsize', 'zden_print'])) then
        Call warning('zden_print, zden_frequency or zden_binsize found without zden_calculate')
     end if
 
+    ! ADF
+
+    call params%retrieve('adf_calculate', adf%adfon)
+
+    if (adf%adfon) then
+
+       call params%retrieve('adf_frequency', adf%interval)
+       call params%retrieve('adf_precision', adf%prec)
+
+    else if (params%is_any_set([Character(13) :: 'adf_frequency', 'adf_precision'])) then
+       Call warning('adf_frequency or adf_precision found without adf_calculate')
+    end if
+
+    ! Coord
+
+    call params%retrieve('coord_calculate', coords%coordon)
+
+    if (coords%coordon) then
+       call params%retrieve('coord_start', coords%coordstart)
+       call params%retrieve('coord_interval', coords%coordinterval)
+       call params%retrieve('coord_ops', coords%coordops)
+
+    else if (params%is_any_set([Character(14) :: 'coord_start', 'coord_interval', 'coord_ops'])) then
+       Call warning('coord_start, coord_interval or coord_ops found without coord_calculate')
+    end if
+
+    ! Trajectory
+
+    call params%retrieve('traj_calculate', traj%ltraj)
+
+    if (traj%ltraj) then
+       call params%retrieve('traj_start', traj%start)
+       call params%retrieve('traj_interval', traj%freq)
+       call params%retrieve('traj_key', option)
+
+       select case (option)
+       case ('pos')
+          traj%key = 0
+       case ('pos-vel')
+          traj%key = 1
+       case ('pos-vel-force')
+          traj%key = 2
+       case ('compressed')
+          traj%key = 3
+       case default
+          call bad_option('traj_key', option)
+       end select
+
+       ! Need to dealias
+       call traj%init((traj%key), (traj%freq), (traj%start))
+
+    else if (params%is_any_set([Character(13) :: 'traj_start', 'traj_interval', 'traj_key'])) then
+       Call warning('traj_start, traj_interval or traj_key found without traj_calculate')
+    end if
+
+    call params%retrieve('defects_calculate', defect(1)%ldef)
+
+    if (defect(1)%ldef) then
+
+       call params%retrieve('defects_start', defect%nsdef)
+       call params%retrieve('defects_interval', defect%isdef)
+       call params%retrieve('defects_distance', defect%rdef)
+       ! if (defects%rdef < )
+
+       defect(1)%newjob = .true.
+       ! Name REFERENCE and DEFECTS files
+       defect(1)%reffile = 'REFERENCE'
+       defect(1)%deffile = 'DEFECTS'
+
+       call params%retrieve('defects_backup', ltmp)
+       if (ltmp) then
+          defect(2)%ldef = .true.
+          defect(2)%nsdef = defect(1)%nsdef
+          defect(2)%isdef = defect(1)%isdef
+          defect(2)%rdef =  defect(1)%rdef
+          defect(2)%newjob = .true.
+          defect(2)%reffile = 'REFERENCE1'
+          defect(2)%deffile = 'DEFECTS1'
+       end if
+
+    else if (params%is_any_set([Character(16) :: 'defects_start', 'defects_interval', 'defects_distance'])) then
+       Call warning('defects_start, defects_interval or defects_distance found without defects_calculate')
+    end if
+
+    call params%retrieve('displacements_calculate', displacement%lrsd)
+
+    if (displacement%lrsd) then
+
+       call params%retrieve('displacements_start', displacement%nsrsd)
+       call params%retrieve('displacements_interval', displacement%isrsd)
+       call params%retrieve('displacements_distance', displacement%rrsd)
+       if (displacement%rrsd < 0.15_wp) then
+          displacement%rrsd = 0.15_wp
+          call warning('Displacement_distance too small, reset to 0.15 ang')
+       end if
+
+
+    else if (params%is_any_set([Character(22) :: 'displacements_start', 'displacements_interval', 'displacements_distance'])) then
+       Call warning('displacements_start, displacements_interval or displacements_distance found without displacements_calculate')
+    end if
+
 
   end Subroutine read_structure_analysis
+
+  Subroutine read_ttm(params, ttm)
+    Type( parameters_hash_table ), Intent( In    ) :: params
+    Type(ttm_type),           Intent(InOut) :: ttm
+    Character(Len=STR_LEN) :: option
+    Logical :: ltmp
+
+    ttm%l_ttm = .true.
+
+    call params%retrieve('ttm_num_ion_cells', ttm%ntsys(3))
+    call params%retrieve('ttm_num_elec_cells', ttm%eltsys)
+    call params%retrieve('ttm_metal', ttm%ismetal)
+
+    call params%retrieve('ttm_heat_cap_model', option)
+    select case (option)
+    case ('constant')
+       ttm%cetype = 0
+       call params%retrieve('ttm_heat_cap', ttm%ce0)
+    case ('tanh')
+       ttm%cetype = 1
+       call params%retrieve('ttm_heat_cap', ttm%sh_A)
+       call params%retrieve('ttm_temp_term', ttm%sh_B)
+    case ('linear')
+       ttm%cetype = 2
+       call params%retrieve('ttm_heat_cap', ttm%Cemax)
+       call params%retrieve('ttm_fermi_temp', ttm%Tfermi)
+    case ('tabulated')
+       ttm%cetype = 3
+    case default
+       call bad_option('ttm_heat_cap_model', option)
+    end select
+
+    if (ttm%ismetal) then
+       ttm%detype = 0
+
+      call params%retrieve('ttm_elec_cond_model', option, required=.true.)
+       select case (option)
+       case ('infinite')
+          ttm%ketype = 0
+       case ('constant')
+          ttm%ketype = 1
+          call params%retrieve('ttm_elec_cond', ttm%ka0)
+       case ('drude')
+          ttm%ketype = 2
+          call params%retrieve('ttm_elec_cond', ttm%ka0)
+       case ('tabulated')
+          ttm%ketype = 3
+       case default
+          call bad_option('ttm_elec_cond_model', option)
+       end select
+    else
+       ttm%ketype = 0
+
+       call params%retrieve('ttm_diff_model', option, required=.true.)
+       select case (option)
+       case ('constant')
+          ttm%detype = 1
+          call params%retrieve('ttm_diff', ttm%diff0)
+       case ('recip', 'reciprocal')
+          ttm%detype = 2
+       case ('tabulated')
+          ttm%detype = 3
+          call params%retrieve('ttm_diff', ttm%diff0)
+          call params%retrieve('ttm_fermi_temp', ttm%Tfermi)
+       case default
+          call bad_option('ttm_diff_model', option)
+       end select
+
+    end if
+
+    call params%retrieve('ttm_variable_ep', option, required=.true.)
+    select case (option)
+    case ('homo')
+       ttm%gvar = 1
+    case ('hetero')
+       ttm%gvar = 2
+    case default
+       call bad_option('ttm_variable_ep', option)
+    end select
+
+    call params%retrieve('ttm_com_correction', option)
+    select case (option)
+    case ('full')
+       ttm%ttmthvel = .true.
+       ttm%ttmthvelz = .false.
+    case ('zdir')
+       ttm%ttmthvel = .true.
+       ttm%ttmthvelz = .true.
+    case ('off')
+       ttm%ttmthvel = .false.
+       ttm%ttmthvelz = .false.
+    case default
+       call bad_option('ttm_com_correction', option)
+    end select
+
+    call params%retrieve('ttm_redistribute', ttm%redistribute)
+
+
+    call params%retrieve('ttm_dens_model', option)
+    select case (option)
+    case ('constant')
+       ttm%ttmdyndens = .false.
+       call params%retrieve('ttm_dens', ttm%cellrho, .true.)
+
+    case ('dynamic')
+       ttm%ttmdyndens = .true.
+
+    case default
+       call bad_option('ttm_dens_model', option)
+    end select
+
+    call params%retrieve('ttm_min_atoms', ttm%amin)
+    ttm%amin = Max(ttm%amin, 1) ! minimum number of atoms for ttm ionic temperature cell
+
+    call params%retrieve('ttm_stopping_power', ttm%dedx)
+
+    call params%retrieve('ttm_spatial_dist', option)
+    select case (option)
+    case ('gaussian')
+       ttm%sdepoType = 1
+       call params%retrieve('ttm_spatial_sigma', ttm%sig)
+       call params%retrieve('ttm_spatial_cutoff', ttm%sigmax)
+
+    case ('flat')
+       ttm%sdepoType = 2
+
+    case ('laser')
+       call params%retrieve('ttm_laser_type', option)
+       call params%retrieve('ttm_fluence', ttm%fluence)
+       call params%retrieve('ttm_penetration_depth', ttm%pdepth)
+
+       select case (option)
+       case ('flat')
+          ttm%sdepoType = 2
+
+       case ('exponential')
+          ttm%sdepoType = 3
+
+       case default
+          call bad_option('ttm_laser_type', option)
+       end select
+
+    case default
+       call bad_option('ttm_spatial_dist', option)
+    end select
+
+    call params%retrieve('ttm_temporal_dist', option)
+    select case (option)
+    case ('gaussian')
+       ttm%tdepotype = 1
+       call params%retrieve('ttm_temporal_duration', ttm%tdepo)
+       call params%retrieve('ttm_temporal_cutoff', ttm%tcdepo)
+
+    case ('exponential')
+       ttm%tdepotype = 2
+       call params%retrieve('ttm_temporal_duration', ttm%tdepo)
+       call params%retrieve('ttm_temporal_cutoff', ttm%tcdepo)
+
+    case ('delta')
+       ttm%tdepotype = 3
+
+    case ('square')
+       ttm%tdepotype = 4
+       call params%retrieve('ttm_temporal_duration', ttm%tdepo)
+       If (ttm%tdepo <= zero_plus) Then
+          ttm%tdepoType = 3
+       End If
+
+    case default
+       call bad_option('ttm_temporal_dist', option)
+    end select
+
+    call params%retrieve('ttm_boundary_condition', option)
+    call params%retrieve('ttm_boundary_xy', ltmp)
+    select case (option)
+    case ('periodic')
+       ttm%bctypee = 1
+
+    case ('dirichlet')
+       if (ltmp) then
+          ttm%bcTypeE = 4
+       else
+          ttm%bcTypeE = 2
+       end if
+
+    case ('neumann')
+       ttm%bcTypeE = 3
+    case ('robin')
+
+       call params%retrieve('ttm_boundary_heat_flux', ttm%fluxout)
+
+       if (ltmp) then
+          ttm%bcTypeE = 6
+       else
+          ttm%bcTypeE = 5
+       end if
+
+    case default
+       call bad_option('ttm_boundary_condition', option)
+    end select
+
+    call params%retrieve('ttm_time_offset', ttm%ttmoffset)
+    call params%retrieve('ttm_oneway', ttm%oneway)
+    call params%retrieve('ttm_stats_frequency', ttm%ttmstats)
+    call params%retrieve('ttm_traj_frequency', ttm%ttmtraj)
+
+  end Subroutine read_ttm
 
   Subroutine initialise_control(table)
     !!-----------------------------------------------------------------------
@@ -950,6 +1099,22 @@ contains
            description = "Set expected density variance for determining maximum array sizes", &
            data_type = DATA_FLOAT))
 
+      call table%set("data_dump_frequency", control_parameter( &
+           key = "data_dump_frequency", &
+           name = "Data dumping", &
+           val = "1000", &
+           units = "steps", &
+           internal_units = "steps", &
+           description = "Set data dumping frequency", &
+           data_type = DATA_FLOAT))
+
+      call table%set("subcell_threshold", control_parameter( &
+           key = "subcell_threshold", &
+           name = "Subcelling threshold density", &
+           val = "50.0", &
+           description = "Set subcelling threshold density", &
+           data_type = DATA_FLOAT))
+
       run_times: block
         call table%set("time_run", control_parameter( &
              key = "time_run", &
@@ -972,7 +1137,7 @@ contains
         call table%set("time_job", control_parameter( &
              key = "time_job", &
              name = "Calculation job length", &
-             val = "-1", &
+             val = "-1.0", &
              units = "hr", &
              internal_units = "s", &
              description = "Set total job time before attempted safe closure", &
@@ -981,7 +1146,7 @@ contains
         call table%set("time_close", control_parameter( &
              key = "time_close", &
              name = "Calculation close length", &
-             val = "1", &
+             val = "-1.0", &
              units = "min", &
              internal_units = "s", &
              description = "Estimated closure time for finite-time jobs", &
@@ -989,7 +1154,6 @@ contains
       end block run_times
 
       statistics: block
-
         call table%set("stats_frequency", control_parameter( &
              key = "stats_frequency", &
              name = "Stats Print Frequency", &
@@ -1003,8 +1167,10 @@ contains
              key = "stack_size", &
              name = "Rolling average stack size", &
              val = "0", &
+             units = "steps", &
+             internal_units = "steps", &
              description = "Set rolling average stack to n timesteps", &
-             data_type = DATA_INT))
+             data_type = DATA_FLOAT))
 
         call table%set("record_equilibration", control_parameter( &
              key = "record_equilibration", &
@@ -1049,6 +1215,13 @@ contains
                description = "Enable analysis for all dihedrals", &
                data_type = DATA_BOOL))
 
+          call table%set("analyse_inversions", control_parameter( &
+               key = "analyse_inversions", &
+               name = "Analyse inversions", &
+               val = "off", &
+               description = "Enable analysis inversions", &
+               data_type = DATA_BOOL))
+
           call table%set("analyse_frequency", control_parameter( &
                key = "analyse_frequency", &
                name = "Analysis frequency", &
@@ -1058,12 +1231,42 @@ contains
                description = "Set frequency of analysis data", &
                data_type = DATA_FLOAT))
 
-          call table%set("analyse_inversions", control_parameter( &
-               key = "analyse_inversions", &
-               name = "Analyse inversions", &
-               val = "off", &
-               description = "Enable analysis inversions", &
-               data_type = DATA_BOOL))
+          call table%set("analyse_frequency_bonds", control_parameter( &
+               key = "analyse_frequency_bonds", &
+               name = "Analysis frequency for bonds", &
+               val = "1", &
+               units = "steps", &
+               internal_units = "steps", &
+               description = "Set frequency of bonds data analysis", &
+               data_type = DATA_FLOAT))
+
+          call table%set("analyse_frequency_angles", control_parameter( &
+               key = "analyse_frequency_angles", &
+               name = "Analysis frequency for angles", &
+               val = "1", &
+               units = "steps", &
+               internal_units = "steps", &
+               description = "Set frequency of angles data analysis", &
+               data_type = DATA_FLOAT))
+
+          call table%set("analyse_frequency_dihedrals", control_parameter( &
+               key = "analyse_frequency_dihedrals", &
+               name = "Analysis frequency for dihedrals", &
+               val = "1", &
+               units = "steps", &
+               internal_units = "steps", &
+               description = "Set frequency of dihedrals data analysis", &
+               data_type = DATA_FLOAT))
+
+
+          call table%set("analyse_frequency_inversions", control_parameter( &
+               key = "analyse_frequency_inversions", &
+               name = "Analysis frequency for inversions", &
+               val = "1", &
+               units = "steps", &
+               internal_units = "steps", &
+               description = "Set frequency of inversions data analysis", &
+               data_type = DATA_FLOAT))
 
           call table%set("analyse_max_dist", control_parameter( &
                key = "analyse_max_dist", &
@@ -1143,6 +1346,187 @@ contains
                description = "Interval between dumping MSD configurations", &
                data_type = DATA_FLOAT))
         end block msd
+
+        traj: block
+          call table%set("traj_calculate", control_parameter( &
+               key = "traj_calculate", &
+               name = "Trajectory calculating", &
+               val = "off", &
+               description = "Enable calculation of trajectory", &
+               data_type = DATA_BOOL))
+
+          call table%set("traj_key", control_parameter( &
+               key = "traj_key", &
+               name = "Trajectory key ", &
+               val = "pos", &
+               description = "Set trajectory output, options: pos, pos-vel, pos-vel-force, compressed", &
+               data_type = DATA_OPTION))
+
+          call table%set("traj_start", control_parameter( &
+               key = "traj_start", &
+               name = "trajectory Start calculating", &
+               val = "0", &
+               units = "steps", &
+               internal_units = "steps", &
+               description = "Start timestep for dumping trajectory configurations", &
+               data_type = DATA_FLOAT))
+
+          call table%set("traj_interval", control_parameter( &
+               key = "traj_interval", &
+               name = "trajectory calculation interval", &
+               val = "1", &
+               units = "steps", &
+               internal_units = "steps", &
+               description = "Interval between dumping trajectory configurations", &
+               data_type = DATA_FLOAT))
+        end block traj
+
+        defects: block
+          call table%set("defects_calculate", control_parameter( &
+               key = "defects_calculate", &
+               name = "Defects calculating", &
+               val = "off", &
+               description = "Enable calculation of defects", &
+               data_type = DATA_BOOL))
+
+          call table%set("defects_start", control_parameter( &
+               key = "defects_start", &
+               name = "Defects Start calculating", &
+               val = "0", &
+               units = "steps", &
+               internal_units = "steps", &
+               description = "Start timestep for dumping defects configurations", &
+               data_type = DATA_FLOAT))
+
+          call table%set("defects_interval", control_parameter( &
+               key = "defects_interval", &
+               name = "Defects calculation interval", &
+               val = "1", &
+               units = "steps", &
+               internal_units = "steps", &
+               description = "Interval between dumping defects configurations", &
+               data_type = DATA_FLOAT))
+
+          call table%set("defects_distance", control_parameter( &
+               key = "defects_distance", &
+               name = "Defects distance condition ", &
+               val = "0.75", &
+               units = "ang", &
+               internal_units = "internal_l", &
+               description = "Set defects condition", &
+               data_type = DATA_FLOAT))
+
+          call table%set("defects_backup", control_parameter( &
+               key = "defects_backup", &
+               name = "Defects backup ", &
+               val = "off", &
+               description = "Enable defects backup", &
+               data_type = DATA_BOOL))
+
+        end block defects
+
+        displacements: block
+          call table%set("defects_calculate", control_parameter( &
+               key = "defects_calculate", &
+               name = "Defects calculating", &
+               val = "off", &
+               description = "Enable calculation of defects", &
+               data_type = DATA_BOOL))
+
+          call table%set("defects_start", control_parameter( &
+               key = "defects_start", &
+               name = "Defects Start calculating", &
+               val = "0", &
+               units = "steps", &
+               internal_units = "steps", &
+               description = "Start timestep for dumping defects configurations", &
+               data_type = DATA_FLOAT))
+
+          call table%set("defects_interval", control_parameter( &
+               key = "defects_interval", &
+               name = "Defects calculation interval", &
+               val = "1", &
+               units = "steps", &
+               internal_units = "steps", &
+               description = "Interval between dumping defects configurations", &
+               data_type = DATA_FLOAT))
+
+          call table%set("defects_distance", control_parameter( &
+               key = "defects_distance", &
+               name = "Defects distance condition ", &
+               val = "0.75", &
+               units = "ang", &
+               internal_units = "internal_l", &
+               description = "Set defects condition", &
+               data_type = DATA_FLOAT))
+
+          call table%set("defects_backup", control_parameter( &
+               key = "defects_backup", &
+               name = "Defects backup ", &
+               val = "off", &
+               description = "Enable defects backup", &
+               data_type = DATA_BOOL))
+
+        end block displacements
+
+        coord: block
+          call table%set("coord_calculate", control_parameter( &
+               key = "coord_calculate", &
+               name = "Coordination calculating", &
+               val = "off", &
+               description = "Enable calculation of Coordination", &
+               data_type = DATA_BOOL))
+
+          call table%set("coord_ops", control_parameter( &
+               key = "coord_ops", &
+               name = "Coord ops", &
+               val = "0", &
+               description = "Set Coordops", &
+               data_type = DATA_INT))
+
+          call table%set("coord_start", control_parameter( &
+               key = "coord_start", &
+               name = "Coordination Start calculating", &
+               val = "0", &
+               units = "steps", &
+               internal_units = "steps", &
+               description = "Start timestep for dumping Coordination configurations", &
+               data_type = DATA_FLOAT))
+
+          call table%set("coord_interval", control_parameter( &
+               key = "coord_interval", &
+               name = "Coordination calculation interval", &
+               val = "100", &
+               units = "steps", &
+               internal_units = "steps", &
+               description = "Interval between dumping Coordination configurations", &
+               data_type = DATA_FLOAT))
+        end block coord
+
+        adf: block
+          call table%set("adf_calculate", control_parameter( &
+               key = "adf_calculate", &
+               name = "ADF calculating", &
+               val = "off", &
+               description = "Enable calculation of Adf", &
+               data_type = DATA_BOOL))
+
+          call table%set("adf_frequency", control_parameter( &
+               key = "adf_frequency", &
+               name = "ADF Sampling Frequency", &
+               val = "100", &
+               units = "steps", &
+               internal_units = "steps", &
+               description = "Set frequency of Adf sampling", &
+               data_type = DATA_FLOAT))
+
+          call table%set("adf_precision", control_parameter( &
+               key = "adf_precision", &
+               name = "ADF Precision", &
+               val = "0.0", &
+               description = "Set precision in Adf analysis", &
+               data_type = DATA_FLOAT))
+        end block adf
 
         rdf: block
           call table%set("rdf_calculate", control_parameter( &
@@ -1282,6 +1666,93 @@ contains
            internal_units = "steps", &
            description = "Set frequency of results sampling", &
            data_type = DATA_FLOAT))
+
+      units: block
+        call table%set("io_units_scheme", control_parameter( &
+             key = "io_units_scheme", &
+             name = "I/O units scheme", &
+             val = "internal", &
+             description = "Set I/O units scheme, options: internal, si, atomic", &
+             data_type = DATA_OPTION))
+
+        call table%set("io_units_length", control_parameter( &
+             key = "io_units_length", &
+             name = "I/O units length", &
+             val = "internal_l", &
+             description = "Set I/O units for length", &
+             data_type = DATA_OPTION))
+
+        call table%set("io_units_time", control_parameter( &
+             key = "io_units_time", &
+             name = "I/O units time", &
+             val = "internal_t", &
+             description = "Set I/O units for time", &
+             data_type = DATA_OPTION))
+
+        call table%set("io_units_mass", control_parameter( &
+             key = "io_units_mass", &
+             name = "I/O units mass", &
+             val = "internal_m", &
+             description = "Set I/O units for mass", &
+             data_type = DATA_OPTION))
+
+        call table%set("io_units_charge", control_parameter( &
+             key = "io_units_charge", &
+             name = "I/O units charge", &
+             val = "internal_q", &
+             description = "Set I/O units for charge", &
+             data_type = DATA_OPTION))
+
+        call table%set("io_units_energy", control_parameter( &
+             key = "io_units_energy", &
+             name = "I/O units energy", &
+             val = "internal_e", &
+             description = "Set I/O units for energy", &
+             data_type = DATA_OPTION))
+
+        call table%set("io_units_pressure", control_parameter( &
+             key = "io_units_pressure", &
+             name = "I/O units pressure", &
+             val = "internal_p", &
+             description = "Set I/O units for pressure", &
+             data_type = DATA_OPTION))
+
+        call table%set("io_units_force", control_parameter( &
+             key = "io_units_force", &
+             name = "I/O units force", &
+             val = "internal_l", &
+             description = "Set I/O units for force", &
+             data_type = DATA_OPTION))
+
+        call table%set("io_units_velocity", control_parameter( &
+             key = "io_units_velocity", &
+             name = "I/O units velocity", &
+             val = "internal_l", &
+             description = "Set I/O units for velocity", &
+             data_type = DATA_OPTION))
+
+        call table%set("io_units_power", control_parameter( &
+             key = "io_units_power", &
+             name = "I/O units power", &
+             val = "internal_e/internal_t", &
+             description = "Set I/O units for power", &
+             data_type = DATA_OPTION))
+
+        call table%set("io_units_surface_tension", control_parameter( &
+             key = "io_units_surface_tension", &
+             name = "I/O units surface tension", &
+             val = "internal_f/internal_l", &
+             description = "Set I/O units for surface tension", &
+             data_type = DATA_OPTION))
+
+        call table%set("io_units_emf", control_parameter( &
+             key = "io_units_emf", &
+             name = "I/O units emf", &
+             val = "internal_e/internal_q", &
+             description = "Set I/O units for electromotive force", &
+             data_type = DATA_OPTION))
+
+      end block units
 
       io_read: block
         call table%set("io_read_method", control_parameter( &
@@ -1488,12 +1959,21 @@ contains
            description = "Disable unnecessary printing, levels: 0 - silent, 1 - quiet, 2 - standard, 3 - full", &
            data_type = DATA_INT))
 
-      call table%set("timer_level", control_parameter( &
-           key = "timer_level", &
-           name = "Timer level", &
+      call table%set("time_depth", control_parameter( &
+           key = "time_depth", &
+           name = "Timer print level", &
            val = "4", &
-           description = "Do not display timers beyond so much depth", &
+           description = "Do not display timers beyond so this depth", &
            data_type = DATA_INT))
+
+      call table%set("time_per_mpi", control_parameter( &
+           key = "timer_per_mpi", &
+           name = "Per Process timing", &
+           val = "off", &
+           description = "Time each MPI process individually", &
+           data_type = DATA_BOOL))
+
+
 
     end block io
 
@@ -1520,7 +2000,7 @@ contains
              key = "variable_timestep_min_dist", &
              name = "Variable timestep minimum distance", &
              val = "0.03", &
-             units = "internal_l", &
+             units = "ang", &
              internal_units = "internal_l", &
              description = "Set minimum permissible distance for variable timestep", &
              data_type = DATA_FLOAT))
@@ -1529,7 +2009,7 @@ contains
              key = "variable_timestep_max_dist", &
              name = "Variable timestep maximum distance", &
              val = "0.1", &
-             units = "internal_l", &
+             units = "ang", &
              internal_units = "internal_l", &
              description = "Set maximum permissible distance for variable timestep", &
              data_type = DATA_FLOAT))
@@ -2084,8 +2564,8 @@ contains
              key = "shake_tolerance", &
              name = "SHAKE/RATTLE tolerance", &
              val = "1e-6", &
-             units = "", &
-             internal_units = "", &
+             units = "ang", &
+             internal_units = "internal_l", &
              description = "Set accepted SHAKE/RATTLE tolerance", &
              data_type = DATA_FLOAT))
 
@@ -2188,7 +2668,7 @@ contains
       call table%set("equilibration_force_cap", control_parameter( &
            key = "equilibration_force_cap", &
            name = "Equilibration force cap", &
-           val = "0.0", &
+           val = "1000.0", &
            units = "N", &
            internal_units = "internal_f", &
            description = "Set force cap clamping maximum force during equilibration", &
@@ -2388,6 +2868,45 @@ contains
 
     end block forcefields
 
+    plumed: block
+      call table%set("plumed", control_parameter( &
+           key = "plumed", &
+           name = "Enable Plumed", &
+           val = "off", &
+           description = "Enabled plumed dynamics", &
+           data_type = DATA_BOOL))
+
+      call table%set("plumed_input", control_parameter( &
+           key = "plumed_input", &
+           name = "Plumed input", &
+           val = "", &
+           description = "Set plumed input file", &
+           data_type = DATA_STRING))
+
+      call table%set("plumed_log", control_parameter( &
+           key = "plumed_log", &
+           name = "Plumed log", &
+           val = "", &
+           description = "Set plumed log file", &
+           data_type = DATA_STRING))
+
+      call table%set("plumed_precision", control_parameter( &
+           key = "plumed_precision", &
+           name = "Plumed precision", &
+           val = "1.0", &
+           description = "Set plumed precision", &
+           data_type = DATA_FLOAT))
+
+      call table%set("plumed_restart", control_parameter( &
+           key = "plumed_restart", &
+           name = "Is Plumed restart", &
+           val = "on", &
+           description = "Restart plumed dynamics", &
+           data_type = DATA_BOOL))
+
+    end block plumed
+
+
     call table%set("unsafe", control_parameter( &
          key = "unsafe", &
          name = "Disable strict", &
@@ -2395,15 +2914,6 @@ contains
          description = "Ignore strict checks such as; "// &
          "good system cutoff, particle âindex contiguity, disable non-error warnings, minimisation information", &
          data_type = DATA_BOOL))
-
-    !     call table%set("disable_linked_cell", control_parameter( &
-    !          key = "disable_linked_cell", &
-    !          name = "", &
-    !          val = "", &
-    !          units = "", &
-    !          internal_units = "", &
-    !          description = "", &
-    !          data_type = DATA_))
 
   end Subroutine initialise_control
 

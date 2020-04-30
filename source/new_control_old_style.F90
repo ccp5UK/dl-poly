@@ -139,7 +139,7 @@ module new_control_old_style
   Use units, only : convert_units, set_timestep
   Use control_parameter_module, only : parameters_hash_table, control_parameter, &
        DATA_INT, DATA_FLOAT, DATA_STRING, DATA_BOOL, DATA_OPTION, DATA_VECTOR3, DATA_VECTOR6
-  Use new_control, only : bad_option, read_ensemble
+  Use new_control, only : bad_option, read_ensemble, read_structure_analysis
   Implicit None
 
 
@@ -165,6 +165,376 @@ contains
     if (ltmp) image_convention = 6
 
   end Subroutine scan_new_control_pre_old
+
+  Subroutine setup_file_io(params, io, netcdf, files, comm)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Read in the io parameters
+    !!
+    !! copyright - daresbury laboratory
+    !! author - j.wilkins april 2020
+    !!-----------------------------------------------------------------------
+    Type( parameters_hash_table ), Intent( In    ) :: params
+    Type( io_type ), Intent( InOut ) :: io
+    Type( netcdf_param ), Intent( InOut ) :: netcdf
+    Type( file_type ), Dimension(:), Intent( InOut ) :: files
+    Type( comms_type ), Intent( InOut ) :: comm
+    Type( control_parameter ) :: curr_param
+    Character(Len=STR_LEN) :: curr_option
+    Character(Len=STR_LEN) :: message
+
+    Integer, Parameter :: MAX_BATCH_SIZE = 10000000, MAX_BUFFER_SIZE = 100000
+
+    Integer :: io_read, io_write
+    Real(kind=wp) :: rtmp
+    Integer :: itmp
+    Logical :: ltmp
+
+    call params%retrieve('io_read_method', curr_option)
+
+    Select Case(curr_option)
+    Case ( 'mpiio' )
+       io_read = IO_READ_MPIIO
+       Call info('I/O read method: parallel by using MPI-I/O',.true.)
+
+    Case ( 'direct' )
+       io_read = IO_READ_DIRECT
+       Call info('I/O read method: parallel by using direct access',.true.)
+
+    Case ( 'netcdf' )
+       io_read = IO_READ_NETCDF
+       Call info('I/O read method: parallel by using netCDF',.true.)
+
+    Case ( 'master' )
+       io_read = IO_READ_MASTER
+       Call info('I/O read method: serial by using a single master process',.true.)
+
+    Case Default
+       Call bad_option('io_read_method', curr_option)
+
+    End Select
+
+    Call io_set_parameters(io, user_method_read = io_read)
+
+    Select Case (io_read)
+    Case (IO_READ_MPIIO, IO_READ_DIRECT, IO_READ_NETCDF)
+       ! Need to calculate number of readers
+       call params%retrieve('io_read_readers', itmp)
+
+       If (itmp == 0) then
+          rtmp = Min( Real(comm%mxnode,wp), 2.0_wp*Real(comm%mxnode,wp)**0.5_wp )
+          itmp = 2**Int(Nearest( Log(rtmp)/Log(2.0_wp) , +1.0_wp ))
+          Do While ( Mod( comm%mxnode, itmp ) /= 0 )
+             itmp = itmp - 1
+          End Do
+          Write(message,'(a,i10)') 'I/O readers (assumed) ',itmp
+          Call info(message,.true.)
+       else if (itmp < comm%mxnode) then
+          Do While ( Mod( comm%mxnode, itmp ) /= 0 )
+             itmp = itmp - 1
+          End Do
+          Write(message,'(a,i10)') 'I/O readers set to ',itmp
+          Call info(message,.true.)
+       else if (itmp > comm%mxnode) then
+          rtmp = Min( Real(comm%mxnode,wp), 2.0_wp*Real(comm%mxnode,wp)**0.5_wp )
+          itmp = 2**Int(Nearest( Log(rtmp)/Log(2.0_wp) , +1.0_wp ))
+          Do While ( Mod( comm%mxnode, itmp ) /= 0 )
+             itmp = itmp - 1
+          End Do
+          Write(message,'(a,i10)') 'I/O readers (enforced) ',itmp
+          Call info(message,.true.)
+       else
+          Call error(0, 'Cannot have negative number of I/O readers')
+       end If
+
+
+       ! the number of readers is now ready to set
+
+       Call io_set_parameters(io, user_n_io_procs_read = itmp)
+
+       ! Sort read batch size
+       ! 1 <= batch <= MAX_BATCH_SIZE, default 2000000
+       ! Note zero or negative values indicate use the default
+
+       call params%retrieve('io_read_batch_size', itmp)
+
+       Select Case (itmp)
+       Case(0)
+          Call io_get_parameters(io, user_batch_size_read = itmp )
+          Write(message,'(a,i10)') 'I/O read batch size (assumed) ', itmp
+          Call info(message,.true.)
+
+       Case(1:)
+          itmp = Min( itmp, MAX_BATCH_SIZE )
+          Call io_set_parameters(io, user_batch_size_read = itmp )
+          Write(message,'(a,i10)') 'I/O read batch size set to ', itmp
+          Call info(message,.true.)
+
+       Case Default
+          Call error(0, 'Cannot have negative I/O read batch size')
+
+       End Select
+
+    Case(IO_READ_MASTER)
+       Write(message,'(a,i10)') 'I/O readers (enforced) ', 1
+       Call info(message,.true.)
+
+    Case Default
+       rtmp = Min( Real(comm%mxnode,wp), 2.0_wp*Real(comm%mxnode,wp)**0.5_wp )
+       itmp = 2**Int(Nearest( Log(rtmp)/Log(2.0_wp) , +1.0_wp ))
+       Write(message,'(a,i10)') 'I/O readers (enforced) ', itmp
+       Call info(message,.true.)
+       ! the number of readers is now ready to set
+       Call io_set_parameters(io, user_n_io_procs_read = itmp )
+
+    end Select
+
+    ! Get read buffer size
+
+    call params%retrieve('io_read_buffer_size', itmp)
+
+    Select Case(itmp)
+    Case(0)
+       Call io_get_parameters(io, user_buffer_size_read = itmp )
+       Write(message,'(a,i10)') 'I/O read buffer size (assumed) ',itmp
+       Call info(message,.true.)
+
+    Case(1:99)
+       Call io_set_parameters(io, user_buffer_size_read = 100 )
+       Write(message,'(a,i10)') 'I/O read buffer size set to ',100
+       Call info(message,.true.)
+
+    Case(100:MAX_BUFFER_SIZE)
+       Call io_set_parameters(io, user_buffer_size_read = itmp )
+       Write(message,'(a,i10)') 'I/O read buffer size set to ',itmp
+       Call info(message,.true.)
+
+    Case(MAX_BUFFER_SIZE+1:)
+       Call io_set_parameters(io, user_buffer_size_read = MAX_BUFFER_SIZE )
+       Write(message,'(a,i10)') 'I/O read buffer size set to ', MAX_BUFFER_SIZE
+       Call info(message,.true.)
+
+    Case Default
+       Call error(0, 'Negative read buffer size not valid, min = 1')
+
+    End Select
+
+    ! Get parallel read error checking
+
+    if (io_read /= IO_READ_MASTER) then
+       call params%retrieve('io_read_error_check', ltmp)
+
+       If (.not. ltmp) Then
+          Call info('I/O parallel read error checking off',.true.)
+       Else
+          Call info('I/O parallel read error checking on',.true.)
+       End If
+       Call io_set_parameters(io, user_error_check = ltmp )
+    End If
+
+    ! Get write settings
+
+    call params%retrieve('io_write_method', curr_option)
+    call params%retrieve('io_write_sorted', ltmp)
+
+    Select Case (curr_option)
+    Case ( 'mpiio' )
+       if (ltmp) then
+          io_write = IO_WRITE_SORTED_MPIIO
+       else
+          io_write = IO_WRITE_UNSORTED_MPIIO
+       end if
+       Call info('I/O write method: parallel by using MPI-I/O',.true.)
+
+    Case ( 'direct' )
+       if (ltmp) then
+          io_write = IO_WRITE_SORTED_DIRECT
+       else
+          io_write = IO_WRITE_UNSORTED_DIRECT
+       end if
+       Call info('I/O write method: parallel by using direct access',.true.)
+       Call warning('in parallel this I/O write method has portability issues',.true.)
+
+    Case ( 'netcdf' )
+       io_write = IO_WRITE_SORTED_NETCDF
+
+       call params%retrieve('io_read_netcdf_format', curr_option)
+
+       Select Case (curr_option)
+       Case('amber', '32bit', '32-bit')
+          ! Use 32-bit quantities in output for real numbers
+          Call info('I/O write method: parallel by using netCDF in the amber-like/32-bit format',.true.)
+          Call io_nc_set_real_precision( sp, netcdf, itmp )
+       Case('64-bit', '64bit')
+          ! Use 64-bit quantities in output for real numbers
+          Call info('I/O write method: parallel by using netCDF in 64-bit format',.true.)
+          Call io_nc_set_real_precision( dp, netcdf, itmp )
+       Case Default
+          Call info('io_write_netcdf_format '//curr_option//' unrecognised option.',.true.)
+          Call error(3)
+       End Select
+
+    Case ( 'master' )
+
+       if (ltmp) then
+          io_write = IO_WRITE_SORTED_MASTER
+       else
+          io_write = IO_WRITE_UNSORTED_MASTER
+       end if
+
+       Call info('I/O write method: serial by using a single master process',.true.)
+    Case Default
+       call bad_option('io_write_method', curr_option)
+
+    End Select
+
+
+    Select Case (io_write)
+    Case(IO_WRITE_SORTED_MASTER, IO_WRITE_SORTED_NETCDF, IO_WRITE_SORTED_MPIIO, IO_WRITE_SORTED_DIRECT)
+       Call info('I/O write type: data sorting on',.true.)
+
+    Case(IO_WRITE_UNSORTED_MASTER, IO_WRITE_UNSORTED_MPIIO, IO_WRITE_UNSORTED_DIRECT)
+       Call info('I/O write type: data sorting off',.true.)
+
+    Case Default
+       call bad_option('io_write_method', curr_option)
+
+    End Select
+
+    ! the write method and type are now ready to set
+
+    Call io_set_parameters(io, user_method_write = io_write )
+
+    Select Case (io_write)
+    Case ( IO_WRITE_SORTED_NETCDF, IO_WRITE_SORTED_MPIIO, IO_WRITE_SORTED_DIRECT )
+       call params%retrieve('io_write_writers', itmp)
+
+       if (itmp == 0) then
+          rtmp = Min( Real(comm%mxnode,wp), 8.0_wp*Real(comm%mxnode,wp)**0.5_wp )
+          itmp = 2**Int(Nearest( Log(rtmp)/Log(2.0_wp) , +1.0_wp ))
+          Do While ( Mod( comm%mxnode, itmp ) /= 0 )
+             itmp = itmp - 1
+          End Do
+          Write(message,'(a,i10)') 'I/O writers (assumed) ',itmp
+          Call info(message,.true.)
+
+       else if (itmp < comm%mxnode) then
+          Do While ( Mod( comm%mxnode, itmp ) /= 0 )
+             itmp = itmp - 1
+          End Do
+          Write(message,'(a,i10)') 'I/O writers set to ',itmp
+          Call info(message,.true.)
+
+       else if (itmp > comm%mxnode) then
+          rtmp = Min( Real(comm%mxnode,wp), 8.0_wp*Real(comm%mxnode,wp)**0.5_wp )
+          itmp = 2**Int(Nearest( Log(rtmp)/Log(2.0_wp) , +1.0_wp ))
+          Do While ( Mod( comm%mxnode, itmp ) /= 0 )
+             itmp = itmp - 1
+          End Do
+          Write(message,'(a,i10)') 'I/O writers (enforced) ',itmp
+          Call info(message,.true.)
+
+       else
+          Call error(0, 'Cannot have negative number of I/O writers')
+
+       End if
+
+       ! the number of writers is now ready to set
+
+       Call io_set_parameters(io, user_n_io_procs_write = itmp )
+
+       call params%retrieve('io_write_batch_size', itmp)
+
+       Select Case (itmp)
+       Case(0)
+          Call io_get_parameters(io, user_batch_size_write = itmp )
+          Write(message,'(a,i10)') 'I/O write batch size (assumed) ', itmp
+          Call info(message,.true.)
+
+       Case(1:)
+          itmp = Min( itmp, MAX_BATCH_SIZE )
+          Call io_set_parameters(io, user_batch_size_write = itmp )
+          Write(message,'(a,i10)') 'I/O write batch size set to ', itmp
+          Call info(message,.true.)
+
+       Case Default
+          Call error(0, 'Cannot have negative I/O write batch size')
+
+       end Select
+
+    Case (IO_WRITE_UNSORTED_MASTER, IO_WRITE_SORTED_MASTER)
+       Write(message,'(a,i10)') 'I/O writers (enforced) ',1
+       Call info(message,.true.)
+
+    Case Default
+       rtmp = Min( Real(comm%mxnode,wp), 8.0_wp*Real(comm%mxnode,wp)**0.5_wp )
+       itmp = 2**Int(Nearest( Log(rtmp)/Log(2.0_wp) , +1.0_wp ))
+       Write(message,'(a,i10)') 'I/O writers (enforced) ',itmp
+       Call info(message,.true.)
+       ! the number of writers is now ready to set
+       Call io_set_parameters(io, user_n_io_procs_write = itmp )
+
+    End Select
+
+    call params%retrieve('io_write_buffer_size', itmp)
+
+    Select Case(itmp)
+    Case(0)
+       Call io_get_parameters(io, user_buffer_size_write = itmp )
+       Write(message,'(a,i10)') 'I/O write buffer size (assumed) ',itmp
+       Call info(message,.true.)
+
+    Case(1:99)
+       Call io_set_parameters(io, user_buffer_size_write = 100 )
+       Write(message,'(a,i10)') 'I/O write buffer size set to ',100
+       Call info(message,.true.)
+
+    Case(100:MAX_BUFFER_SIZE)
+       Call io_set_parameters(io, user_buffer_size_write = itmp )
+       Write(message,'(a,i10)') 'I/O write buffer size set to ',itmp
+       Call info(message,.true.)
+
+    Case(MAX_BUFFER_SIZE+1:)
+       Call io_set_parameters(io, user_buffer_size_write = MAX_BUFFER_SIZE )
+       Write(message,'(a,i10)') 'I/O write buffer size set to ', MAX_BUFFER_SIZE
+       Call info(message,.true.)
+
+    Case Default
+       Call error(0, 'Negative write buffer size not valid, min = 1')
+    end Select
+
+    ! switch error checking flag for writing
+
+    If (io_write /= IO_WRITE_UNSORTED_MASTER .and. io_write /= IO_WRITE_SORTED_MASTER) Then
+       call params%retrieve('io_write_error_check', ltmp)
+       If (.not. ltmp) Then
+          Call info('I/O parallel read error checking off',.true.)
+       Else
+          Call info('I/O parallel read error checking on',.true.)
+       End If
+       Call io_set_parameters(io, user_error_check = ltmp )
+    End If
+
+    call params%retrieve('io_file_output', curr_option)
+    if (curr_option /= '') Call info('OUTPUT file is '//files(FILE_OUTPUT)%filename,.true.)
+    call params%retrieve('io_file_config', curr_option)
+    if (curr_option /= '') Call info('CONFIG file is '//files(FILE_CONFIG)%filename,.true.)
+    call params%retrieve('io_file_field', curr_option)
+    if (curr_option /= '') Call info('FIELD file is '//files(FILE_FIELD)%filename,.true.)
+    call params%retrieve('io_file_statis', curr_option)
+    if (curr_option /= '') Call info('STATIS file is '//files(FILE_STATS)%filename,.true.)
+    call params%retrieve('io_file_history', curr_option)
+    if (curr_option /= '') Call info('HISTORY file is '//files(FILE_HISTORY)%filename,.true.)
+    call params%retrieve('io_file_historf', curr_option)
+    if (curr_option /= '') Call info('HISTORF file is '//files(FILE_HISTORF)%filename,.true.)
+    call params%retrieve('io_file_revive', curr_option)
+    if (curr_option /= '') Call info('REVIVE file is '//files(FILE_REVIVE)%filename,.true.)
+    call params%retrieve('io_file_revcon', curr_option)
+    if (curr_option /= '') Call info('REVCON file is '//files(FILE_REVCON)%filename,.true.)
+    call params%retrieve('io_file_revold', curr_option)
+    if (curr_option /= '') Call info('REVOLD file is '//files(FILE_REVOLD)%filename,.true.)
+
+  End Subroutine setup_file_io
 
   Subroutine scan_new_control_output_old(params, files)
     Type( parameters_hash_table ), intent( In    ) :: params
@@ -263,8 +633,7 @@ contains
     case ('direct')
        vdws%l_direct = .true.
     case ('off')
-       ! Handled in scan_new_control
-       continue
+      Call info('vdw potential terms switched off', .true.)
     case ('ewald')
        ! Add when merged
        !  ewld%vdw = .true.
@@ -361,14 +730,22 @@ contains
        Call info(message, .true.)
     end if
 
+    call read_ensemble(params, thermo, ttm%l_ttm)
+    If (thermo%l_langevin) Call langevin_allocate_arrays(thermo, config%mxatms)
+
     call params%retrieve('temperature', thermo%temp)
     Write (message, '(a,1p,e12.4)') 'simulation temperature (K)  ', thermo%temp
 
     call params%retrieve('reset_temperature_interval', thermo%freq_zero)
     thermo%l_zero = thermo%freq_zero > 0
+    If (thermo%freq_zero == 0) thermo%freq_zero = flow%equil_steps + 1
 
-    if (params%num_set([Character(20) :: 'pressure_tensor', 'pressure_hydrostatic', 'pressure_perpendicular']) > 1) &
-         & call error(0, 'Multiple pressure specifications')
+    if (params%num_set([Character(20) :: 'pressure_tensor', 'pressure_hydrostatic', 'pressure_perpendicular']) > 1) then
+       call error(0, 'Multiple pressure specifications')
+    else if (params%num_set([Character(20) :: 'pressure_tensor', 'pressure_hydrostatic', 'pressure_perpendicular']) == 0) then
+       call error(0, 'No pressure specification')
+    end if
+
     if (params%is_set('pressure_tensor')) then
        call params%retrieve('pressure_tensor', vtmp)
        thermo%stress(1) = vtmp(1)
@@ -380,12 +757,18 @@ contains
        thermo%stress(7) = vtmp(5)
        thermo%stress(6) = vtmp(6)
        thermo%stress(8) = vtmp(6)
+
     else if (params%is_set('pressure_perpendicular')) then
        call params%retrieve('pressure_perpendicular', vtmp(1:3))
        thermo%stress(1:9:4) = vtmp(1:3)
     else
        call params%retrieve('pressure_hydrostatic', rtmp)
        thermo%stress(1:9:4) = rtmp
+    end if
+
+    if (.not. thermo%anisotropic_pressure) then
+       thermo%press = sum(thermo%stress(1:9:4)) / 3.0_wp
+       thermo%stress = 0.0_wp
     end if
 
     call params%retrieve('currents_calculate', stats%cur%on)
@@ -506,6 +889,7 @@ contains
 
        Call info(messages, 5, .true.)
     end if
+    If (minim%freq == 0) minim%freq = flow%equil_steps + 1
 
     call params%retrieve('regauss_frequency', thermo%freq_tgaus)
     if (thermo%freq_tgaus > 0) then
@@ -513,14 +897,17 @@ contains
        Write (message, '(a,i10)') 'temperature regaussing interval ', thermo%freq_tgaus
        Call info(message, .true.)
     end if
+    If (thermo%freq_tgaus == 0) thermo%freq_tgaus = flow%equil_steps + 1
 
     call params%retrieve('rescale_frequency', thermo%freq_tscale)
+
     if (thermo%freq_tscale > 0) then
        thermo%l_tscale = .true.
        Call info('temperature scaling on (during equilibration)', .true.)
        Write (message, '(a,i10)') 'temperature scaling interval (steps)', thermo%freq_tscale
        Call info(message, .true.)
     end if
+    If (thermo%freq_tscale == 0) thermo%freq_tscale = flow%equil_steps + 1
 
     call params%retrieve('polarisation_model', option)
     select case (option)
@@ -540,9 +927,6 @@ contains
        call bad_option('polarisation_model', option)
     end select
 
-    call read_ensemble(params, thermo)
-    If (thermo%l_langevin) Call langevin_allocate_arrays(thermo, config%mxatms)
-
     call params%retrieve('density_variance', rtmp)
     Write (message, '(a,1p,e12.4)') 'density variation allowance (%) ', rtmp
     Call info(message, .true.)
@@ -552,7 +936,8 @@ contains
 
     select case (option)
     case ('off')
-       continue
+       electro%key = ELECTROSTATIC_NULL
+       Call info('Electrostatics switched off!!!', .true.)
     case ('ewald')
        electro%key = ELECTROSTATIC_EWALD
 
@@ -620,12 +1005,17 @@ contains
 
     ! If it's been forcibly set by polarisation_model
     if (.not. electro%lecx) call params%retrieve('coul_extended_exclusion', electro%lecx)
+    If (electro%key /= ELECTROSTATIC_NULL) Then
+      If (electro%lecx) Then
+        Call info('Extended Coulombic eXclusion : YES', .true.)
+      Else
+        Call info('Extended Coulombic eXclusion : NO', .true.)
+      End If
+    End If
 
-    if (electro%lecx) Call info('Extended Coulombic eXclusion opted for', .true.)
-
-    call params%retrieve('equilibration_force_cap', config%fmax)
-    if (config%fmax > zero_plus) then
+    if (params%is_set('equilibration_force_cap')) then
        flow%force_cap = .true.
+       call params%retrieve('equilibration_force_cap', config%fmax)
        Write (messages(1), '(a)') 'force capping on (during equilibration)'
        Write (messages(2), '(a,1p,e12.4)') 'force capping limit (kT/Angs)', config%fmax
        Call info(messages, 2, .true.)
@@ -671,6 +1061,11 @@ contains
 
     call params%retrieve('shake_max_iter', cons%max_iter_shake)
     call params%retrieve('shake_tolerance', cons%tolerance)
+    If (cons%mxcons > 0 .or. pmf%mxpmf > 0) Then
+      Write (messages(1), '(a,i10)') 'iterations for shake/rattle ', cons%max_iter_shake
+      Write (messages(2), '(a,1p,e12.4)') 'tolerance for shake/rattle (Angs) ', cons%tolerance
+      Call info(messages, 2, .true.)
+    End If
 
     ttm_block: if (ttm%l_ttm) then
 
@@ -771,8 +1166,21 @@ contains
        case ('constant')
           ttm%ttmdyndens = .false.
           call params%retrieve('ttm_dens', ttm%cellrho, .true.)
+
           Write (message, '(a,f10.4)') 'user-specified atomic density (A^-3) ', ttm%cellrho
           Call info(message, .true.)
+
+          If (ttm%cellrho <= zero_plus) Then
+             call error(0, 'Bad ttm_dens (<= 0)')
+          Else If (ttm%cellrho > zero_plus) Then
+             ttm%rcellrho = 1.0_wp / ttm%cellrho
+          Else
+             ttm%rcellrho = 0.0_wp
+          End If
+
+          ttm%epc_to_chi = 1.0e-12_wp * ttm%Jm3K_to_kBA3 / 3.0_wp
+          If (.not. ttm%ttmdyndens) ttm%epc_to_chi = ttm%epc_to_chi * ttm%rcellrho
+          ttm%epc_to_chi = convert_units(ttm%rcellrho / 3.0_wp, 'pJ.m^-3.K', 'k_B/internal_l^3')
 
        case ('dynamic')
           ttm%ttmdyndens = .true.
@@ -964,7 +1372,252 @@ contains
 
     end if ttm_block
 
+    ! Others set in scan
+    call params%retrieve('analyse_frequency', itmp)
+    call params%retrieve('analyse_frequency_bonds', flow%freq_bond)
+    flow%freq_bond = max(1, itmp, flow%freq_bond)
 
+    call params%retrieve('analyse_frequency_angles', flow%freq_angle)
+    flow%freq_angle = max(1, itmp, flow%freq_angle)
+    call params%retrieve('analyse_frequency_dihedrals', flow%freq_dihedral)
+    flow%freq_dihedral = max(1, itmp, flow%freq_dihedral)
+    call params%retrieve('analyse_frequency_inversions', flow%freq_inversion)
+    flow%freq_inversion = max(1, itmp, flow%freq_inversion)
+
+    call read_structure_analysis(params, msd_data, rdf, green, zdensity, adf, crd, traj, dfcts, rsdc)
+
+    If (rdf%l_collect .or. rdf%l_print) Then
+      If (rdf%l_collect) Then
+        Write (messages(1), '(a)') 'rdf collection requested:'
+        Write (messages(2), '(2x,a,i10)') 'rdf collection interval ', rdf%freq
+        Write (messages(3), '(2x,a,1p,e12.4)') 'rdf binsize (Angstroms) ', rdf%rbin
+        Call info(messages, 3, .true.)
+      Else
+        Call info('no rdf collection requested', .true.)
+      End If
+
+      If (rdf%l_print) Then
+        Call info('rdf printing requested', .true.)
+      Else
+        If (stats%lpana) Then
+          Call info('rdf printing triggered due to a PDA printing request', .true.)
+          rdf%l_print = stats%lpana
+        Else
+          Call info('no rdf printing requested', .true.)
+        End If
+      End If
+
+      If (rdf%max_rdf == 0) Then
+        Call info('no rdf pairs specified in FIELD', .true.)
+      Else
+        Call info('rdf pairs specified in FIELD', .true.)
+      End If
+
+      If ((.not. rdf%l_collect) .or. rdf%max_rdf == 0) Then
+        Call info('rdf routines not to be activated', .true.)
+        rdf%l_collect = .false.
+        rdf%l_print = .false.
+      End If
+    End If
+
+    If (zdensity%l_collect .or. zdensity%l_print) Then
+      If (zdensity%l_collect) Then
+        Write (messages(1), '(a)') 'z-density profiles requested:'
+        Write (messages(2), '(2x,a,i10)') 'z-density collection interval ', zdensity%frequency
+        Write (messages(3), '(2x,a,1p,e12.4)') 'z-density binsize (Angstroms) ', rdf%rbin
+        Call info(messages, 3, .true.)
+      Else
+        Call info('no z-density profiles requested', .true.)
+      End If
+
+      If (zdensity%l_print) Then
+        Call info('z-density printing requested', .true.)
+      Else
+        Call info('no z-density printing requested', .true.)
+      End If
+
+      If (.not. zdensity%l_collect) Then
+        Call info('z-density routines not to be activated', .true.)
+        zdensity%l_print = .false.
+      End If
+    End If
+
+    If (green%samp > 0 .or. green%l_print) Then
+      If (green%samp > 0) Then
+        Write (messages(1), '(a)') 'vaf profiles requested:'
+        Write (messages(2), '(2x,a,i10)') 'vaf collection interval ', green%freq
+        Write (messages(3), '(2x,a,i10)') 'vaf binsize  ', green%binsize
+        Call info(messages, 3, .true.)
+      Else
+        Call info('no vaf collection requested', .true.)
+      End If
+
+      If (green%l_print) Then
+        Call info('vaf printing requested', .true.)
+      Else
+        Call info('no vaf printing requested', .true.)
+      End If
+
+      If (green%l_average) Then
+        Call info('time-averaged vaf profile', .true.)
+      Else
+        Call info('instantaneous vaf profiles', .true.)
+      End If
+    End If
+
+    if (msd_data%l_msd) then
+       Write (messages(1), '(a)') 'MSDTMP file option on'
+       Write (messages(2), '(2x,a,i10)') 'MSDTMP file start ', msd_data%start
+       Write (messages(3), '(2x,a,i10)') 'MSDTMP file interval ', msd_data%freq
+       Call info(messages, 3, .true.)
+    end if
+
+    if (traj%ltraj) then
+       Write (messages(1), '(a)') 'trajectory file option on'
+       Write (messages(2), '(2x,a,i10)') 'trajectory file start ', traj%start
+       Write (messages(3), '(2x,a,i10)') 'trajectory file interval ', traj%freq
+       Write (messages(4), '(2x,a,i10)') 'trajectory file info key ', traj%key
+       Call info(messages, 4, .true.)
+    end if
+
+    if (dfcts(1)%ldef) then
+       Write (messages(1), '(a)') 'defects file option on'
+       Write (messages(2), '(2x,a,i10)') 'defects file start ', dfcts(1)%nsdef
+       Write (messages(3), '(2x,a,i10)') 'defects file interval ', dfcts(1)%isdef
+       Write (messages(4), '(2x,a,1p,e12.4)') 'defects distance condition (Angs) ', dfcts(1)%rdef
+       Call info(messages, 4, .true.)
+       if (dfcts(2)%ldef) Call info('defects1 file option on', .true.)
+    end if
+
+    if (rsdc%lrsd) then
+       Write (messages(1), '(a)') 'displacements file option on'
+       Write (messages(2), '(2x,a,i10)') 'DISPDAT file start ', rsdc%nsrsd
+       Write (messages(3), '(2x,a,i10)') 'DISPDAT file interval ', rsdc%isrsd
+       Write (messages(4), '(2x,a,1p,e12.4)') 'DISPDAT distance condition (Angs) ', rsdc%rrsd
+       Call info(messages, 4, .true.)
+     end if
+
+    if (params%is_set('stack_size')) then
+        Write (message, '(a,i10)') 'data stacking interval (steps) ', stats%mxstak
+        Call info(message, .true.)
+     end if
+
+     call params%retrieve('print_frequency', flow%freq_output)
+     if (flow%freq_output > 0) then
+        Write (message, '(a,i10)') 'data printing interval (steps) ', stats%intsta
+        Call info(message, .true.)
+     end if
+
+     call params%retrieve('stats_frequency', stats%intsta)
+     if (stats%intsta > 0) then
+        Write (message, '(a,i10)') 'statistics file interval ', stats%intsta
+        Call info(message, .true.)
+     end if
+
+     call params%retrieve('time_depth', tmr%max_depth)
+     call params%retrieve('time_per_mpi', tmr%proc_detail)
+
+     call params%retrieve('data_dump_frequency', flow%freq_restart)
+     Write (messages(1), '(a,i10)') 'data dumping interval (steps) ', flow%freq_restart
+
+     call params%retrieve('subcell_threshold', neigh%pdplnc)
+     neigh%pdplnc = Max(neigh%pdplnc, 1.0_wp) ! disallow any less than 1
+
+
+     call params%retrieve('time_job', tmr%job, .true.)
+     if (tmr%job < 0.0_wp) tmr%job = Huge(1.0_wp)
+     Write (messages(3), '(a,1p,e12.4)') 'allocated job run time (s) ', tmr%job
+
+     call params%retrieve('time_close', tmr%clear_screen)
+     if (tmr%clear_screen < 0.0_wp) tmr%clear_screen = 0.01_wp * tmr%job
+     Write (messages(4), '(a,1p,e12.4)') 'allocated job close time (s) ', tmr%clear_screen
+     Call info(messages, 4, .true.)
+
+     call params%retrieve('plumed', plume%l_plumed)
+
+     if (plume%l_plumed) then
+        call params%retrieve('plumed_input', option)
+        plume%input = option
+        call params%retrieve('plumed_log', option)
+        plume%logfile = option
+        call params%retrieve('plumed_precision', plume%prec)
+        call params%retrieve('plumed_restart', ltmp)
+
+        if (ltmp) then
+           plume%restart = 1
+        else
+           plume%restart = 0
+        end if
+     end if
+
+
+    If (flow%restart_key == RESTART_KEY_CLEAN) Then
+      Call info('clean start requested', .true.)
+    Else If (config%levcfg == 0) Then
+      Call warning(200, 0.0_wp, 0.0_wp, 0.0_wp)
+      flow%restart_key = RESTART_KEY_CLEAN
+    End If
+
+    If (thermo%lvar) Then
+
+      If (thermo%key_dpd /= DPD_NULL) Then
+        thermo%lvar = .false.
+        Call warning('variable timestep unavalable in DPD themostats', .true.)
+        Write (message, '(a,1p,e12.4)') 'fixed simulation timestep (ps) ', thermo%tstep
+        Call info(message, .true.)
+      Else
+        If (thermo%mxdis >= 2.5_wp * thermo%mndis .and. thermo%mndis > 0.0_wp) Then
+          Write (messages(1), '(a,1p,e12.4)') 'variable simulation timestep (ps) ', thermo%tstep
+          Write (messages(2), '(a)') 'controls for variable timestep:'
+          Write (messages(3), '(2x,a,1p,e12.4)') 'minimum distance Dmin (Angs) ', thermo%mndis
+          Write (messages(4), '(2x,a,1p,e12.4)') 'maximum distance Dmax (Angs) ', thermo%mxdis
+          Call info(messages, 4, .true.)
+
+          If (thermo%mxstp > zero_plus) Then
+            Write (message, '(a,1p,e12.4)') 'timestep ceiling mxstp (ps) ', thermo%mxstp
+            Call info(message, .true.)
+            thermo%tstep = Min(thermo%tstep, thermo%mxstp)
+          Else
+            thermo%mxstp = Huge(1.0_wp)
+          End If
+        Else
+          Call warning(140, thermo%mndis, thermo%mxdis, 0.0_wp)
+          Call error(518)
+        End If
+      End If
+
+    Else If (.not. thermo%lvar) Then
+      Write (message, '(a,1p,e12.4)') 'fixed simulation timestep (ps) ', thermo%tstep
+      Call info(message, .true.)
+    End If
+
+    If (config%l_vom .and. ttm%l_ttm) Then
+      Call info('no vom option off - COM momentum removal will be used', .true.)
+      Call warning('this may lead to incorrect dynamic behaviour for' &
+                   //'two-temperature model: COM momentum removal recommended', .true.)
+    End If
+
+    If (.not. flow%simulation) Then
+      If (lfce) Then
+        Write (messages(1), '(a)') '*** HISTORF will be replayed with full force recalculation ***'
+        Write (messages(2), '(a)') '*** There is no actual dynamics/integration!!!             ***'
+        Call info(messages, 2, .true.)
+      Else
+        Write (messages(1), '(a)') '*** HISTORY will be replayed (no actual simulation) ***'
+        Write (messages(2), '(a)') '*** with structural properties will be recalculated ***'
+        Call info(messages, 2, .true.)
+        ! abort if there's no structural property to recalculate
+        If (.not. (rdf%l_collect .or. zdensity%l_collect .or. dfcts(1)%ldef .or. &
+                   msd_data%l_msd .or. rsdc%lrsd .or. (config%mxgana > 0))) Then
+          Call error(580)
+        End If
+      End If
+
+      If (flow%restart_key /= RESTART_KEY_CLEAN) Then
+        flow%restart_key = RESTART_KEY_CLEAN ! Force clean restart
+        Call info('clean start enforced', .true.)
+      End If
+    End If
 
 
   end Subroutine read_new_control_old
