@@ -37,8 +37,32 @@ program test_units
   unit_test = convert_units(1.0_wp, 'atm', 'Gpa')
   print*, "atm -> GPa", unit_test
 
-  print*, 1.0e-12_wp * 1.0e-7_wp / (boltz * tenunt) / 3.0_wp
-  unit_test = convert_units(1.0_wp / 3.0_wp, 'J.m^-3.K^-1', 'k_B/internal_l^3')
+  unit_test = convert_units(1.0_wp, 'N/m^2', 'Pa')
+  print*, "N/m^2 -> Pa", unit_test
+
+  unit_test = convert_units(1.0_wp, 'grav', 'm/s^2')
+  print*, "g -> m/s^2", unit_test
+
+  unit_test = convert_units(1.0_wp, 'J', 'kg.m^2/s^2')
+  print*, 'J -> kgm^2/s^2', unit_test
+
+  unit_test = convert_units(1.0_wp, 'J', 'W.s')
+  print*, 'J -> Ws', unit_test
+
+  unit_test = convert_units(1.0_wp, 'J', 'N.m')
+  print*, 'J -> Nm', unit_test
+
+  unit_test = convert_units(1.0_wp, 'lb', 'kg')
+  print*, 'lb -> kg', unit_test
+
+  unit_test = convert_units(1.0_wp, 'ft', 'in')
+  print*, 'ft -> "', unit_test
+
+  unit_test = convert_units(1.0_wp, 'k_B', 'm^2.kg.s^-2/K')
+  print*, 'K_B in J/K', unit_test
+
+  print*, 1.0e-7_wp / (boltz * tenunt)
+  unit_test = convert_units(1.0_wp, 'J.m^-3.K^-1', 'k_B/internal_l^3')
   print*, unit_test
 
 end program test_units

@@ -55,58 +55,61 @@ contains
     !!-----------------------------------------------------------------------
     Real(kind=wp), Parameter :: planck_internal = 6.350780668_wp
     Real(kind=wp), Parameter :: electron_charge = 1.0_wp
-    Real(kind=wp), Parameter :: coulomb = 1.602176634e-19_wp
+    Real(kind=wp), Parameter :: coulomb = 6.241509074460763e+18_wp
     Real(kind=wp), Parameter :: avogadro = 6.022140857e23_wp
 
-    Real(kind=wp), Parameter :: metre = 1e-10_wp
-    Real(kind=wp), Parameter :: bohr = 1.8897875878751229_wp
-    Real(kind=wp), Parameter :: inch = metre/2.54e-2_wp
+    Real(kind=wp), Parameter :: metre = 1e10_wp
+    Real(kind=wp), Parameter :: angstrom = 1.0_wp
+    Real(kind=wp), Parameter :: bohr = 0.52918_wp*angstrom
+    Real(kind=wp), Parameter :: inch = 2.54e-2_wp*metre
 
-    Real(kind=wp), Parameter :: joulepmol = 10.0_wp
-    Real(kind=wp), Parameter :: caloriepmol = 1.0_wp / (4.1842_wp/joulepmol)
+    Real(kind=wp), Parameter :: joulepmol = 0.1_wp, joule = joulepmol*avogadro
+    Real(kind=wp), Parameter :: calorie = 4.1842_wp*joule
 
-    Real(kind=wp), Parameter :: hartree = 2.2937104486906e+18_wp
+    Real(kind=wp), Parameter :: hartree = 4.359744722e-18_wp*joule
 
-    Real(kind=wp), Parameter :: kilogram = 1.660577881102624e-27_wp
-    Real(kind=wp), Parameter :: pound = 3.6608612486140225e-27_wp
+    Real(kind=wp), Parameter :: kilogram = 6.0229552894949e+26_wp
+    Real(kind=wp), Parameter :: electron_mass = 9.1093837015e-31_wp*kilogram
+    Real(kind=wp), Parameter :: pound = 0.45359237_wp*kilogram
 
-    Real(kind=wp), Parameter :: second = 1e-12_wp
-    Real(kind=wp), Parameter :: aut = 41341.373335182114_wp
+    Real(kind=wp), Parameter :: second = 1e12_wp
+    Real(kind=wp), Parameter :: aut = 2.4188843265857e-17_wp*second
 
-    Real(kind=wp), Parameter :: atmosphere = 163.882576_wp
-    Real(kind=wp), Parameter :: pascal = 16605402.0_wp
+    Real(kind=wp), Parameter :: atmosphere = 1.0_wp / 163.882576_wp
 
     Real(kind=wp), Parameter :: newton = kilogram*metre/second**2
+    Real(kind=wp), Parameter :: pascal = newton/metre**2
 
-    Real(kind=wp), Parameter :: gravity = metre/second**2/9.81_wp
+    Real(kind=wp), Parameter :: gravity = 9.81_wp*metre/second**2
 
     call units_table%init(100)
 
     ! Time
 
     call units_table%set("internal_t", init_unit(abbrev="internal_t", name="Picosecond", time=1, to_internal=1.0_wp))
-    call units_table%set("hr", init_unit(abbrev="hr", name="Hour", time=1, to_internal=second/3600.0_wp))
-    call units_table%set("min", init_unit(abbrev="min", name="Minute", time=1, to_internal=second/60.0_wp))
+    call units_table%set("hr", init_unit(abbrev="hr", name="Hour", time=1, to_internal=3600.0_wp*second))
+    call units_table%set("min", init_unit(abbrev="min", name="Minute", time=1, to_internal=60*second))
     call units_table%set("s", init_unit(abbrev="s", name="Second", time=1, to_internal=second))
     call units_table%set("aut", init_unit(abbrev="aut", name="Atomic Time Unit", time=1, to_internal=aut))
 
     ! Length
 
     call units_table%set("internal_l", init_unit(abbrev="internal_l", name="Angstrom", length=1, to_internal=1.0_wp))
-    call units_table%set("ang", init_unit(abbrev="ang", name="Angstrom", length=1, to_internal=1e10_wp*metre))
+    call units_table%set("ang", init_unit(abbrev="ang", name="Angstrom", length=1, to_internal=angstrom))
     call units_table%set("bohr", init_unit(abbrev="bohr", name="Bohr", length=1, to_internal=bohr))
     call units_table%set("m", init_unit(abbrev="m", name="Metre", length=1, to_internal=metre))
     call units_table%set('in', init_unit(abbrev="in", name="Inch", length=1, to_internal=inch))
-    call units_table%set("ft", init_unit(abbrev="ft", name="Foot", length=1, to_internal=inch/12.0_wp))
+    call units_table%set("ft", init_unit(abbrev="ft", name="Foot", length=1, to_internal=12.0_wp*inch))
 
     ! Mass
 
     call units_table%set("internal_m", init_unit(abbrev="internal_m", name="Atomic Mass Unit", mass=1, to_internal=1.0_wp))
     call units_table%set("da", init_unit(abbrev="Da", name="Atomic Mass Unit", mass=1, to_internal=1.0_wp))
     call units_table%set("amu", init_unit(abbrev="amu", name="Atomic Mass Unit", mass=1, to_internal=1.0_wp))
-    call units_table%set("g", init_unit(abbrev="g", name="Gram", mass=1, to_internal=1e3*kilogram))
+    call units_table%set("m_e", init_unit(abbrev="m_e", name="Electron mass", mass=1, to_internal=electron_mass))
+    call units_table%set("g", init_unit(abbrev="g", name="Gram", mass=1, to_internal=1.0e-3_wp*kilogram))
     call units_table%set("lb", init_unit(abbrev="lb", name="Pound", mass=1, to_internal=pound))
-    call units_table%set("oz", init_unit(abbrev="oz", name="Ounce", mass=1, to_internal=pound*16.0_wp))
+    call units_table%set("oz", init_unit(abbrev="oz", name="Ounce", mass=1, to_internal=pound/16.0_wp))
 
     ! Charge
 
@@ -123,20 +126,19 @@ contains
 
     call units_table%set("internal_e", &
          & init_unit(abbrev="internal_e", name="10 J/mol", mass=1, length=2, time=-2, mol=-1, to_internal=1.0_wp))
-    call units_table%set("j", init_unit(abbrev="J", name="Joule", mass=1, length=2, time=-2, to_internal=joulepmol*avogadro))
+    call units_table%set("j", init_unit(abbrev="J", name="Joule", mass=1, length=2, time=-2, to_internal=joule))
     call units_table%set("cal", &
-         & init_unit(abbrev="Cal", name="Calorie", mass=1, length=2, time=-2, to_internal=caloriepmol*avogadro))
+         & init_unit(abbrev="Cal", name="Calorie", mass=1, length=2, time=-2, to_internal=calorie))
     call units_table%set("ha", init_unit(abbrev="Ha", name="Hartree", &
-         & mass=1, length=2, time=-2, to_internal=hartree*avogadro))
+         & mass=1, length=2, time=-2, to_internal=hartree))
     call units_table%set("e_h", init_unit(abbrev="Ha", name="Hartree", &
-         & mass=1, length=2, time=-2, to_internal=hartree*avogadro))
+         & mass=1, length=2, time=-2, to_internal=hartree))
     call units_table%set("ry", init_unit(abbrev="Ry", name="Rydberg", &
-         & mass=1, length=2, time=-2, to_internal=2.0_wp*hartree*avogadro))
+         & mass=1, length=2, time=-2, to_internal=0.5_wp*hartree))
 
     ! Temperature
 
-    call units_table%set("k", init_unit(abbrev="K", name="Kelvin", temp=1, to_internal=boltz))
-
+    call units_table%set("k", init_unit(abbrev="K", name="Kelvin", temp=1, to_internal=1.0_wp))
 
     ! Pressure
 
@@ -152,7 +154,7 @@ contains
     call units_table%set("n", &
          & init_unit(abbrev="N", name="Newton", mass=1, length=1, time=-2, to_internal=newton))
     call units_table%set("dyn", &
-         & init_unit(abbrev="dyn", name="Dyne", mass=1, length=1, time=-2, to_internal=1e5_wp*newton))
+         & init_unit(abbrev="dyn", name="Dyne", mass=1, length=1, time=-2, to_internal=1e-5_wp*newton))
 
     ! Velocity
 
@@ -168,10 +170,14 @@ contains
     call units_table%set("k_b", &
          & init_unit(abbrev="k_B", name="Boltzmann constant", length=2, mass=1, time=-2, temp=-1, to_internal=boltz))
 
+    ! Power
+
+    call units_table%set("w", init_unit(abbrev="W", name="Watt", mass=1, length=2, time=-3, to_internal=joule/second))
+
     ! Voltage
 
     call units_table%set("v", init_unit(abbrev="V", name="Volt", mass=1, length=2, time=-3, current=-1, &
-         & to_internal=joulepmol*avogadro/(coulomb)))
+         & to_internal=joule/coulomb))
 
     ! Mols
 
@@ -203,7 +209,7 @@ contains
     output = output%init("", "", 1.0_wp)
     from_unit = parse_unit_string(from)
     to_unit = parse_unit_string(to)
-    output = from_unit / to_unit
+    output = to_unit / from_unit
 
     if (any(output%dims /= 0)) then
        do i = 1, 7
@@ -215,7 +221,6 @@ contains
        end do
        write(0,*)
        call error(0, 'Cannot convert between '//trim(from)//' & '//trim(to)//' different dimensions')
-
     end if
 
     res = val / output%conversion_to_internal
@@ -315,25 +320,25 @@ contains
     Character(Len=256) :: tmp
     Character(len=*), Parameter :: prefix_symbol = "YZEPTGMk dcmunpfazy"
     Type(unit_data), Dimension(19), Parameter :: prefix = [ &
-         & unit_data(name="Yotta", abbrev="Y", conversion_to_internal=1e-24_wp), &
-         & unit_data(name="Zetta", abbrev="Z", conversion_to_internal=1e-21_wp), &
-         & unit_data(name="Exa",   abbrev="E", conversion_to_internal=1e-18_wp), &
-         & unit_data(name="Peta",  abbrev="P", conversion_to_internal=1e-15_wp), &
-         & unit_data(name="Tera",  abbrev="T", conversion_to_internal=1e-12_wp), &
-         & unit_data(name="Giga",  abbrev="G", conversion_to_internal=1e-9_wp), &
-         & unit_data(name="Mega",  abbrev="M", conversion_to_internal=1e-6_wp), &
-         & unit_data(name="Kilo",  abbrev="k", conversion_to_internal=1e-3_wp), &
+         & unit_data(name="Yotta", abbrev="Y", conversion_to_internal=1e24_wp), &
+         & unit_data(name="Zetta", abbrev="Z", conversion_to_internal=1e21_wp), &
+         & unit_data(name="Exa",   abbrev="E", conversion_to_internal=1e18_wp), &
+         & unit_data(name="Peta",  abbrev="P", conversion_to_internal=1e15_wp), &
+         & unit_data(name="Tera",  abbrev="T", conversion_to_internal=1e12_wp), &
+         & unit_data(name="Giga",  abbrev="G", conversion_to_internal=1e9_wp), &
+         & unit_data(name="Mega",  abbrev="M", conversion_to_internal=1e6_wp), &
+         & unit_data(name="Kilo",  abbrev="k", conversion_to_internal=1e3_wp), &
          & null_unit, &
-         & unit_data(name="Deci",  abbrev="d", conversion_to_internal=1e1_wp), &
-         & unit_data(name="Centi", abbrev="c", conversion_to_internal=1e2_wp), &
-         & unit_data(name="Milli", abbrev="m", conversion_to_internal=1e3_wp), &
-         & unit_data(name="Micro", abbrev="u", conversion_to_internal=1e6_wp), &
-         & unit_data(name="Nano",  abbrev="n", conversion_to_internal=1e9_wp), &
-         & unit_data(name="Pico",  abbrev="p", conversion_to_internal=1e12_wp), &
-         & unit_data(name="Femto", abbrev="f", conversion_to_internal=1e15_wp), &
-         & unit_data(name="Atto",  abbrev="a", conversion_to_internal=1e18_wp), &
-         & unit_data(name="Zepto", abbrev="z", conversion_to_internal=1e21_wp), &
-         & unit_data(name="Yocto", abbrev="y", conversion_to_internal=1e24_wp)]
+         & unit_data(name="Deci",  abbrev="d", conversion_to_internal=1e-1_wp), &
+         & unit_data(name="Centi", abbrev="c", conversion_to_internal=1e-2_wp), &
+         & unit_data(name="Milli", abbrev="m", conversion_to_internal=1e-3_wp), &
+         & unit_data(name="Micro", abbrev="u", conversion_to_internal=1e-6_wp), &
+         & unit_data(name="Nano",  abbrev="n", conversion_to_internal=1e-9_wp), &
+         & unit_data(name="Pico",  abbrev="p", conversion_to_internal=1e-12_wp), &
+         & unit_data(name="Femto", abbrev="f", conversion_to_internal=1e-15_wp), &
+         & unit_data(name="Atto",  abbrev="a", conversion_to_internal=1e-18_wp), &
+         & unit_data(name="Zepto", abbrev="z", conversion_to_internal=1e-21_wp), &
+         & unit_data(name="Yocto", abbrev="y", conversion_to_internal=1e-24_wp)]
 
     factor = null_unit
     tmp = string(2:)
