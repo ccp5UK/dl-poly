@@ -1083,14 +1083,44 @@ contains
           Call info('electronic subsystem represents non-metal: thermal diffusivity required', .true.)
        end if
 
+       call params%retrieve('ttm_dens_model', option)
+       select case (option)
+       case ('constant')
+          ttm%ttmdyndens = .false.
+          call params%retrieve('ttm_dens', ttm%cellrho, .true.)
+
+          Write (message, '(a,f10.4)') 'user-specified atomic density (A^-3) ', ttm%cellrho
+          Call info(message, .true.)
+
+          If (ttm%cellrho <= zero_plus) Then
+             ttm%cellrho = ttm%sysrho
+             call error(0, 'Bad ttm_dens (<= 0)')
+          Else If (ttm%cellrho > zero_plus) Then
+             ttm%rcellrho = 1.0_wp / ttm%cellrho
+          Else
+             ttm%rcellrho = 0.0_wp
+          End If
+
+          ttm%epc_to_chi = convert_units(1.0e-12_wp * ttm%rcellrho / 3.0_wp, 'J.m^-3.K^-1', 'k_B/internal_l^3')
+
+       case ('dynamic')
+          ttm%ttmdyndens = .true.
+          ttm%CeType = ttm%CeType + 4
+          ttm%epc_to_chi = convert_units(1.0e-12_wp / 3.0_wp, 'J.m^-3.K^-1', 'k_B/internal_l^3')
+          Call info('dynamic calculations of average atomic density in active ionic cells', .true.)
+
+       case default
+          call bad_option('ttm_dens_model', option)
+       end select
+
        select case (ttm%cetype)
-       case (0) !Constant
+       case (0, 4) !Constant
           call params%retrieve('ttm_heat_cap', ttm%ce0)
           Call info('electronic specific heat capacity set to constant value', .true.)
           Write (message, '(a,1p,e12.4)') 'electronic s.h.c. (kB/atom) ', ttm%Ce0
           Call info(message, .true.)
 
-       case (1) !tanh
+       case (1, 5) !tanh
           call params%retrieve('ttm_heat_cap', ttm%sh_A)
           call params%retrieve('ttm_temp_term', ttm%sh_B)
 
@@ -1099,7 +1129,11 @@ contains
           Write (messages(3), '(a,1p,e12.4)') 'temperature term B (K^-1) ', ttm%sh_B
           Call info(messages, 3, .true.)
 
-       case (2) !linear
+          If (ttm%sh_A <= zero_plus .or. ttm%sh_B <= zero_plus) &
+               Call error(0, 'Electronic specific heat not fully specified')
+          ttm%sh_B = ttm%sh_B * 1.0e-4_wp
+
+       case (2, 6) !linear
           call params%retrieve('ttm_heat_cap', ttm%Cemax)
           call params%retrieve('ttm_fermi_temp', ttm%Tfermi)
 
@@ -1107,10 +1141,18 @@ contains
           Write (messages(2), '(a,1p,e12.4)') 'max. electronic s.h.c. (kB/atom) ', ttm%Cemax
           Write (messages(3), '(a,1p,e12.4)') 'Fermi temperature (K)', ttm%Tfermi
           Call info(messages, 3, .true.)
+
+          If (ttm%Tfermi <= zero_plus .or. ttm%Cemax <= zero_plus) &
+               Call error(0, 'Electronic specific heat not fully specified')
        case (3) !tabulated
           Call info('electronic volumetric heat capacity given as tabulated function of temperature', .true.)
 
        end select
+
+       If (ttm%cetype < 4) then
+          ttm%sh_A = ttm%sh_A * ttm%cellrho
+          ttm%Cemax = ttm%Cemax * ttm%cellrho
+       end If
 
        select case (ttm%ketype)
        case (0) ! Infinite
@@ -1119,14 +1161,22 @@ contains
        case (1) ! Constant
           call params%retrieve('ttm_elec_cond', ttm%ka0)
           Write (messages(1), '(a)') 'electronic thermal conductivity set to constant value'
-          Write (messages(2), '(a,1p,e12.4)') 'electronic t.c. (W m^-1 K^-1) ', ttm%Ka0
+          Write (messages(2), '(a,1p,e12.4)') 'electronic t.c. (W m^-1 K^-1) ', &
+               convert_units(ttm%Ka0, 'k_b/ps/A', 'W/m/K')
           Call info(messages, 2, .true.)
+
+          If (ttm%ka0 <= zero_plus) &
+               Call error(0, 'Electronic thermal conductivity not fully specified')
 
        case (2) ! Drude
           call params%retrieve('ttm_elec_cond', ttm%ka0)
           Write (messages(1), '(a)') 'electronic thermal conductivity set to drude model'
-          Write (messages(2), '(a,1p,e12.4)') 't.c. at system thermo%temp. (W m^-1 K^-1) ', ttm%Ka0
+          Write (messages(2), '(a,1p,e12.4)') 't.c. at system thermo%temp. (W m^-1 K^-1) ', &
+               convert_units(ttm%Ka0, 'k_b/ps/A', 'W/m/K')
           Call info(messages, 2, .true.)
+
+          If (ttm%ka0 <= zero_plus) &
+               Call error(0, 'Electronic thermal conductivity not fully specified')
 
        case (3) ! Tabulated
           Write (messages(1), '(a)') 'electronic thermal conductivity given as tabulated function of temperature:'
@@ -1142,8 +1192,11 @@ contains
        case (1) ! Constant
           call params%retrieve('ttm_diff', ttm%diff0)
           Write (messages(1), '(a)') 'electronic thermal diffusivity set to constant value'
-          Write (messages(2), '(a,1p,e12.4)') 'electronic t.d. (m^2 s^-1) ', ttm%Diff0
+          Write (messages(2), '(a,1p,e12.4)') 'electronic t.d. (m^2 s^-1) ', convert_units(ttm%diff0, 'ang^2/ps', 'm^2/s')
           Call info(messages, 2, .true.)
+
+          if (ttm%diff0 <= zero_plus) &
+               Call error(0, 'Thermoal diffusivity of non-metal not specified')
 
        case (2) ! Recip
 
@@ -1151,9 +1204,12 @@ contains
           call params%retrieve('ttm_fermi_temp', ttm%Tfermi)
 
           Write (messages(1), '(a)') 'electronic thermal diffusivity set to reciprocal function up to Fermi temperature'
-          Write (messages(2), '(a,1p,e12.4)') 'datum electronic t.d. (m^2 s^-1) ', ttm%Diff0
+          Write (messages(2), '(a,1p,e12.4)') 'datum electronic t.d. (m^2 s^-1) ', convert_units(ttm%diff0, 'ang^2/ps', 'm^2/s')
           Write (messages(3), '(a,1p,e12.4)') 'Fermi temperature (K) ', ttm%Tfermi
           Call info(messages, 3, .true.)
+
+          ! Scaled by system temperature
+          ttm%diff0 = thermo%temp*ttm%diff0
 
        case (3) ! Tabulated
 
@@ -1161,34 +1217,6 @@ contains
 
        end select
 
-       call params%retrieve('ttm_dens_model', option)
-       select case (option)
-       case ('constant')
-          ttm%ttmdyndens = .false.
-          call params%retrieve('ttm_dens', ttm%cellrho, .true.)
-
-          Write (message, '(a,f10.4)') 'user-specified atomic density (A^-3) ', ttm%cellrho
-          Call info(message, .true.)
-
-          If (ttm%cellrho <= zero_plus) Then
-             call error(0, 'Bad ttm_dens (<= 0)')
-          Else If (ttm%cellrho > zero_plus) Then
-             ttm%rcellrho = 1.0_wp / ttm%cellrho
-          Else
-             ttm%rcellrho = 0.0_wp
-          End If
-
-          ttm%epc_to_chi = 1.0e-12_wp * ttm%Jm3K_to_kBA3 / 3.0_wp
-          If (.not. ttm%ttmdyndens) ttm%epc_to_chi = ttm%epc_to_chi * ttm%rcellrho
-          ttm%epc_to_chi = convert_units(ttm%rcellrho / 3.0_wp, 'pJ.m^-3.K', 'k_B/internal_l^3')
-
-       case ('dynamic')
-          ttm%ttmdyndens = .true.
-          Call info('dynamic calculations of average atomic density in active ionic cells', .true.)
-
-       case default
-          call bad_option('ttm_dens_model', option)
-       end select
 
        call params%retrieve('ttm_min_atoms', ttm%amin)
        Write (message, '(a,1p,i8)') 'min. atom no. for ionic cells ', ttm%amin
@@ -1202,7 +1230,7 @@ contains
        End If
 
        call params%retrieve('ttm_stopping_power', ttm%dedx)
-       Write (message, '(a,1p,e12.4)') 'elec. stopping power (eV/nm) ', ttm%dEdX
+       Write (message, '(a,1p,e12.4)') 'elec. stopping power (eV/nm) ', convert_units(ttm%dedx, 'e.V/ang', 'e.V/nm')
        Call info(message, .true.)
 
        call params%retrieve('ttm_spatial_dist', option)
@@ -1212,8 +1240,8 @@ contains
           call params%retrieve('ttm_spatial_sigma', ttm%sig)
           call params%retrieve('ttm_spatial_cutoff', ttm%sigmax)
           Write (messages(1), '(a)') 'initial gaussian spatial energy deposition in electronic system'
-          Write (messages(2), '(a,1p,e12.4)') 'thermo%ttm%sigma of distribution (nm) ', ttm%sig
-          Write (messages(3), '(a,1p,e12.4)') 'distribution cutoff (nm) ', ttm%sigmax * ttm%sig
+          Write (messages(2), '(a,1p,e12.4)') 'thermo%ttm%sigma of distribution (nm) ', convert_units(ttm%sig, 'ang', 'nm')
+          Write (messages(3), '(a,1p,e12.4)') 'distribution cutoff (nm) ', convert_units(ttm%sigmax * ttm%sig, 'ang', 'nm')
           Call info(messages, 3, .true.)
 
        case ('flat')
@@ -1231,8 +1259,8 @@ contains
              Write (messages(1), '(a)') 'initial homogeneous (flat) spatial ' &
                   //'energy deposition in electronic system due to laser'
              Write (messages(2), '(a,1p,e12.4)') &
-                  'absorbed ttm%fluence (mJ cm^-2) ', ttm%fluence
-             Write (messages(3), '(a,1p,e12.4)') 'penetration depth (nm) ', ttm%pdepth
+                  'absorbed ttm%fluence (mJ cm^-2) ', convert_units(ttm%fluence, 'e.V/ang^2', 'mJ/cm^2')
+             Write (messages(3), '(a,1p,e12.4)') 'penetration depth (nm) ', convert_units(ttm%pdepth, 'ang', 'nm')
 
           case ('exponential')
              ttm%sdepoType = 3
@@ -1240,11 +1268,12 @@ contains
              Write (messages(1), '(a)') 'initial xy-homogeneous, z-exponential ' &
                   //'decaying spatial energy deposition in electronic system due to laser'
              Write (messages(2), '(a,1p,e12.4)') &
-                  'absorbed ttm%fluence at surface (mJ cm^-2) ', ttm%fluence
-             Write (messages(3), '(a,1p,e12.4)') 'penetration depth (nm) ', ttm%pdepth
+                  'absorbed ttm%fluence at surface (mJ cm^-2) ', convert_units(ttm%fluence, 'e.V/ang^2', 'mJ/cm^2')
+             Write (messages(3), '(a,1p,e12.4)') 'penetration depth (nm) ', convert_units(ttm%pdepth, 'ang', 'nm')
           case default
              call bad_option('ttm_laser_type', option)
           end select
+
 
        case default
           call bad_option('ttm_spatial_dist', option)
@@ -1707,7 +1736,6 @@ contains
        met%rcut=Max(neigh%cutoff,vdws%cutoff)
        call warning('metal_cutoff not set, setting to max of global cutoff and vdw cutoff', .true.)
     end if
-
 
     call params%retrieve('ensemble_dpd_order', option)
     select case (option)

@@ -22,6 +22,12 @@ Module units
      Procedure, Private :: get_unit
   end type units_hash_table
 
+  Type, Public :: units_scheme
+     !! Basic encapsulation of output units scheme
+     Character(Len=STR_LEN), Public :: length, time, mass, charge, energy, &
+          pressure, force, velocity, power, surf_ten, emf
+  End Type units_scheme
+
   Type, Private :: unit_data
      !! Type containing data corresponding to units
      Character(Len=STR_LEN) :: name
@@ -36,14 +42,43 @@ Module units
      Procedure, Nopass :: init => init_unit
   end type unit_data
 
+  Type(units_scheme), Public, Parameter :: internal_units = units_scheme( &
+       length = 'internal_l', &
+       time = 'internal_t', &
+       mass = 'internal_m', &
+       charge = 'internal_q', &
+       energy = 'internal_e', &
+       pressure = 'internal_p', &
+       force = 'internal_f', &
+       velocity = 'internal_v', &
+       power = 'internal_e/internal_t', &
+       surf = 'internal_f/internal_l', &
+       emf = 'internal_e/internal_q')
+  Type(units_scheme), Protected, Save :: out_units = internal_units
+
   Type(unit_data), Private, Parameter :: null_unit = unit_data('', '', 1.0_wp)
-  type(units_hash_table), Private, save :: units_table
+  Type(units_hash_table), Private, save :: units_table
 
   Public :: initialise_units
   Public :: convert_units
   Public :: set_timestep
+  Public :: set_out_units
 
 contains
+
+  Subroutine set_out_units(scheme)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Set an output units scheme
+    !!
+    !! copyright - daresbury laboratory
+    !! author - j.wilkins april 2020
+    !!-----------------------------------------------------------------------
+    Type(units_scheme), Intent( In    ) :: scheme
+
+    out_units = scheme
+
+  end Subroutine set_out_units
 
   Subroutine initialise_units()
     !!-----------------------------------------------------------------------

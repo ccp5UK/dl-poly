@@ -138,8 +138,8 @@ Module new_control
   Use units, only : convert_units, set_timestep
   Use control_parameter_module, only : control_parameter, parameters_hash_table, &
        DATA_INT, DATA_FLOAT, DATA_STRING, DATA_BOOL, DATA_OPTION, DATA_VECTOR3, DATA_VECTOR6
-  Implicit None
 
+  Implicit None
 
   !> Max number of params, increase to reduce hash collisions
   Integer, Parameter :: PARAMS_TABLE_SIZE = 500
@@ -151,7 +151,7 @@ Module new_control
   Public :: parse_file
 
   ! Public for old-style
-  Public :: bad_option, read_ensemble, read_structure_analysis
+  Public :: bad_option, read_ensemble, read_structure_analysis, read_units
 
 contains
 
@@ -667,6 +667,78 @@ contains
 
   end Subroutine read_ensemble
 
+  Subroutine read_bond_analysis(params, analysis)
+    Type( parameters_hash_table ), intent(   Out ) :: params
+    Type( flow_type ), Intent( InOut ) :: flow
+    Type( bonds_type ), Intent( InOut ) :: bond
+    Type( angles_type ), Intent( InOut ) :: angle
+    Type( dihedrals_type ), Intent( InOut ) :: dihedral
+    Type( inversions_type ), Intent( InOut ) :: inversion
+
+    Real( kind = wp ) :: rtmp
+    Integer :: itmp
+    Logical :: l_bond, l_angle, l_dihedral, l_inversion, ltmp
+
+    Real( kind = wp ), Parameter :: minimum_bond_anal_length = 2.5_wp
+
+    call params%retrieve('analyse_bonds', l_bond)
+    call params%retrieve('analyse_angles', l_angle)
+    call params%retrieve('analyse_dihedrals', l_dihedral)
+    call params%retrieve('analyse_inversions', l_inversion)
+    call params%retrieve('analyse_all', ltmp)
+    if (ltmp) then
+       l_bond = .true.
+       l_angle = .true.
+       l_dihedral = .true.
+       l_inversion = .true.
+    end if
+
+    ! Set global
+    call params%retrieve('analyse_num_bins', rtmp)
+    call params%retrieve('analyse_frequency', itmp)
+
+    if (l_bond) then
+       call params%retrieve('analyse_max_dist', bond%rcut)
+       if (bond%rcut < minimum_bond_anal_length) then
+          bond%rcut = minimum_bond_anal_length
+          call warning('vdw_cutoff less than global cutoff, setting to global cutoff', .true.)
+       end if
+
+       bond%bin_pdf = rtmp
+       if (params%is_set('analyse_num_bins_bonds')) &
+            call params%retrieve('analyse_num_bins_bonds', bond%bin_pdf)
+
+       call params%retrieve('analyse_frequency_bonds', flow%freq_bond)
+       flow%freq_bond = max(1, itmp, flow%freq_bond)
+    end if
+
+    if (l_angle) then
+       angle%bin_adf = rtmp
+       if (params%is_set('analyse_num_bins_angles')) &
+            call params%retrieve('analyse_num_bins_angles', angle%bin_adf)
+       call params%retrieve('analyse_frequency_angles', flow%freq_angle)
+       flow%freq_angle = max(1, itmp, flow%freq_angle)
+    end if
+
+    if (l_dihedral) then
+       dihedral%bin_adf = rtmp
+       if (params%is_set('analyse_num_bins_dihedrals')) &
+            call params%retrieve('analyse_num_bins_dihedrals', dihedral%bin_adf)
+       call params%retrieve('analyse_frequency_dihedrals', flow%freq_dihedral)
+       flow%freq_dihedral = max(1, itmp, flow%freq_dihedral)
+    end if
+
+    if (l_inversion) then
+       inversion%bin_adf = rtmp
+       if (params%is_set('analyse_num_bins_inversions')) &
+            call params%retrieve('analyse_num_bins_inversions', inversion%bin_adf)
+
+       call params%retrieve('analyse_frequency_inversions', flow%freq_inversion)
+       flow%freq_inversion = max(1, itmp, flow%freq_inversion)
+    end if
+
+  End Subroutine read_bond_analysis
+
   Subroutine read_structure_analysis(params, msd_data, rdf, vaf, zden, adf, coords, traj, defect, displacement)
 
     Type( parameters_hash_table ), intent( In    ) :: params
@@ -691,7 +763,6 @@ contains
        call params%retrieve('msd_frequency', msd_data%freq)
     else if (params%is_any_set([Character(13) :: 'msd_frequency', 'msd_start'])) then
        Call warning('msd_start or msd_frequency found without msd_calculate')
-
     end if
 
     ! VAF
@@ -858,7 +929,7 @@ contains
 
   Subroutine read_ttm(params, ttm)
     Type( parameters_hash_table ), Intent( In    ) :: params
-    Type(ttm_type),           Intent(InOut) :: ttm
+    Type(ttm_type),           Intent(   Out ) :: ttm
     Character(Len=STR_LEN) :: option
     Logical :: ltmp
 
@@ -867,6 +938,7 @@ contains
     call params%retrieve('ttm_num_ion_cells', ttm%ntsys(3))
     call params%retrieve('ttm_num_elec_cells', ttm%eltsys)
     call params%retrieve('ttm_metal', ttm%ismetal)
+    call params%retrieve('ttm_dens_model', option)
 
     call params%retrieve('ttm_heat_cap_model', option)
     select case (option)
@@ -877,29 +949,61 @@ contains
        ttm%cetype = 1
        call params%retrieve('ttm_heat_cap', ttm%sh_A)
        call params%retrieve('ttm_temp_term', ttm%sh_B)
+
+       If (ttm%sh_A <= zero_plus .or. ttm%sh_B <= zero_plus) &
+            Call error(0, 'Electronic specific heat not fully specified')
     case ('linear')
        ttm%cetype = 2
        call params%retrieve('ttm_heat_cap', ttm%Cemax)
        call params%retrieve('ttm_fermi_temp', ttm%Tfermi)
+
+       If (ttm%Tfermi <= zero_plus .or. ttm%Cemax <= zero_plus) &
+            Call error(0, 'Electronic specific heat not fully specified')
     case ('tabulated')
        ttm%cetype = 3
     case default
        call bad_option('ttm_heat_cap_model', option)
     end select
 
+    select case (option)
+    case ('constant')
+       ttm%ttmdyndens = .false.
+       call params%retrieve('ttm_dens', ttm%cellrho, .true.)
+       If (ttm%cellrho <= zero_plus) call error(0, 'Bad ttm_dens (<= 0)')
+       ttm%rcellrho = 1.0_wp / ttm%cellrho
+
+       ! Rescale
+       ttm%sh_A = ttm%sh_A * ttm%cellrho
+       ttm%Cemax = ttm%Cemax * ttm%cellrho
+       ttm%epc_to_chi = convert_units(1.0e-12_wp * ttm%rcellrho / 3.0_wp, 'J.m^-3.K^-1', 'k_B/internal_l^3')
+
+    case ('dynamic')
+       ttm%ttmdyndens = .true.
+       ttm%CeType = ttm%CeType + 4
+       ttm%epc_to_chi = convert_units(1.0e-12_wp / 3.0_wp, 'J.m^-3.K^-1', 'k_B/internal_l^3')
+
+    case default
+       call bad_option('ttm_dens_model', option)
+    end select
+
     if (ttm%ismetal) then
        ttm%detype = 0
 
-      call params%retrieve('ttm_elec_cond_model', option, required=.true.)
+       call params%retrieve('ttm_elec_cond_model', option, required=.true.)
        select case (option)
        case ('infinite')
           ttm%ketype = 0
        case ('constant')
           ttm%ketype = 1
           call params%retrieve('ttm_elec_cond', ttm%ka0)
+          If (ttm%ka0 <= zero_plus) &
+               Call error(0, 'Electronic thermal conductivity not fully specified')
        case ('drude')
           ttm%ketype = 2
           call params%retrieve('ttm_elec_cond', ttm%ka0)
+
+          If (ttm%ka0 <= zero_plus) &
+               Call error(0, 'Electronic thermal conductivity not fully specified')
        case ('tabulated')
           ttm%ketype = 3
        case default
@@ -913,12 +1017,16 @@ contains
        case ('constant')
           ttm%detype = 1
           call params%retrieve('ttm_diff', ttm%diff0)
+          if (ttm%diff0 <= zero_plus) &
+               Call error(0, 'Thermoal diffusivity of non-metal not specified')
        case ('recip', 'reciprocal')
           ttm%detype = 2
-       case ('tabulated')
-          ttm%detype = 3
           call params%retrieve('ttm_diff', ttm%diff0)
           call params%retrieve('ttm_fermi_temp', ttm%Tfermi)
+          if (ttm%diff0 <= zero_plus .or. ttm%Tfermi <= zero_plus) &
+               Call error(0, 'Thermoal diffusivity of non-metal not specified')
+       case ('tabulated')
+          ttm%detype = 3
        case default
           call bad_option('ttm_diff_model', option)
        end select
@@ -952,19 +1060,6 @@ contains
 
     call params%retrieve('ttm_redistribute', ttm%redistribute)
 
-
-    call params%retrieve('ttm_dens_model', option)
-    select case (option)
-    case ('constant')
-       ttm%ttmdyndens = .false.
-       call params%retrieve('ttm_dens', ttm%cellrho, .true.)
-
-    case ('dynamic')
-       ttm%ttmdyndens = .true.
-
-    case default
-       call bad_option('ttm_dens_model', option)
-    end select
 
     call params%retrieve('ttm_min_atoms', ttm%amin)
     ttm%amin = Max(ttm%amin, 1) ! minimum number of atoms for ttm ionic temperature cell
@@ -1062,6 +1157,266 @@ contains
     call params%retrieve('ttm_traj_frequency', ttm%ttmtraj)
 
   end Subroutine read_ttm
+
+  Subroutine read_units(params, out_units)
+    Type( parameters_hash_table ), intent( In    ) :: params
+    Type( output_units ) :: out_units
+    Character(Len=MAX_STR) :: option
+
+    call params%retrieve("io_units_scheme", option)
+
+    select case (option)
+    case ('internal')
+       out_units = internal_units
+
+    case ('si')
+       length   = 'm'
+       time     = 's'
+       mass     = 'kg'
+       charge   = 'C'
+       energy   = 'J'
+       pressure = 'Pa'
+       force    = 'N'
+       velocity = 'm/s'
+       power    = 'W'
+       surf     = 'N/m'
+       emf      = 'V'
+
+    case ('atomic')
+       length   = 'ang'
+       time     = 'ps'
+       mass     = 'amu'
+       charge   = 'q_e'
+       energy   = 'e.V'
+       pressure = 'GPa'
+       force    = 'e.V/ang'
+       velocity = 'ang/ps'
+       power    = 'e.V/ps'
+       surf     = 'e.V/ang^2'
+       emf      = 'e.V/q_e'
+
+    case ('hartree')
+       length   = 'bohr'
+       time     = 'aut'
+       mass     = 'm_e'
+       charge   = 'q_e'
+       energy   = 'Ha'
+       pressure = 'Ha/bohr^3'
+       force    = 'Ha/bohr'
+       velocity = 'auv'
+       power    = 'Ha/aut'
+       surf     = 'Ha/bohr^2'
+       emf      = 'Ha/q_e'
+
+    end select
+
+    if params%is_set("io_units_length") &
+         call params%retrieve("io_units_length", out_units%length)
+    if params%is_set("io_units_time") &
+         call params%retrieve("io_units_time", out_units%time)
+    if params%is_set("io_units_mass") &
+         call params%retrieve("io_units_mass", out_units%mass)
+    if params%is_set("io_units_charge") &
+         call params%retrieve("io_units_charge", out_units%charge)
+    if params%is_set("io_units_energy") &
+         call params%retrieve("io_units_energy", out_units%energy)
+    if params%is_set("io_units_pressure") &
+         call params%retrieve("io_units_pressure", out_units%pressure)
+    if params%is_set("io_units_force") &
+         call params%retrieve("io_units_force", out_units%force)
+    if params%is_set("io_units_velocity") &
+         call params%retrieve("io_units_velocity", out_units%velocity)
+    if params%is_set("io_units_power") &
+         call params%retrieve("io_units_power", out_units%power)
+    if params%is_set("io_units_surface_tension") &
+         call params%retrieve("io_units_surface_tension", out_units%surf_ten)
+    if params%is_set("io_units_emf") &
+         call params%retrieve("io_units_emf", out_units%emf)
+
+    ! Check units validity
+    convert_units(1.0_wp, out_units%length, internal_units%length)
+    convert_units(1.0_wp, out_units%time, internal_units%time)
+    convert_units(1.0_wp, out_units%mass, internal_units%mass)
+    convert_units(1.0_wp, out_units%charge, internal_units%charge)
+    convert_units(1.0_wp, out_units%energy, internal_units%energy)
+    convert_units(1.0_wp, out_units%pressure, internal_units%pressure)
+    convert_units(1.0_wp, out_units%force, internal_units%force)
+    convert_units(1.0_wp, out_units%velocity, internal_units%velocity)
+    convert_units(1.0_wp, out_units%power, internal_units%power)
+    convert_units(1.0_wp, out_units%surf_ten, internal_units%surf_ten)
+    convert_units(1.0_wp, out_units%emf, internal_units%emf)
+
+    call set_out_units(out_units)
+
+  end Subroutine read_units
+
+  Subroutine read_forcefield(params, neigh, electro, vdws, met)
+
+    call params%retrieve('polarisation_model', option)
+    select case (option)
+    case ('charmm')
+       if (cshell%mxshl > 0 .and. mpoles%max_mpoles > 0) mpoles%key = POLARISATION_CHARMM
+       if (mpoles%max_mpoles == 0 .or. cshell%mxshl == 0) &
+            call error(0, 'CHARMM polarisation selected with no mpoles or shells')
+
+       electro%lecx = .true.
+       call params%retrieve('polarisation_thole', mpoles%thole)
+
+    case ('default')
+       mpoles%key = POLARISATION_DEFAULT
+    case default
+       call bad_option('polarisation_model', option)
+    end select
+
+    call params%retrieve('cutoff', neigh%cutoff)
+    if (neigh%cutoff < minimum_rcut) then
+       neigh%cutoff = minimum_rcut
+       call warning('neighbour cutoff less than minimum_cutoff (1.0 Ang), setting to minimum_cutoff', .true.)
+    end if
+
+    call params%retrieve('padding', neigh%padding)
+    if (neigh%padding < zero_plus) then
+       neigh%padding = 0.0_wp
+       call warning('Bad padding value, reset to 0.0', .true.)
+    end if
+
+    flow%reset_padding = .true.
+
+    call params%retrieve('vdw_method', option)
+    vdws%no_vdw = option == 'off' .or. vdws%max_vdw <= 0
+
+    call params%retrieve('vdw_cutoff', vdws%cutoff)
+    if (vdws%cutoff < minimum_rcut) then
+       vdws%cutoff = neigh%cutoff
+       call warning('vdw_cutoff less than global cutoff, setting to global cutoff', .true.)
+    end if
+    if (met%max_metal > 0 .and. met%rcut < 1.0e-6_wp) then
+       met%rcut=Max(neigh%cutoff,vdws%cutoff)
+       call warning('metal_cutoff not set, setting to max of global cutoff and vdw cutoff', .true.)
+    end if
+
+    call params%retrieve('coul_method', option)
+    lelec = option /= 'off'
+    select case (option)
+    case ('off')
+       electro%no_elec = .true.
+    ! reinitialise multipolar electrostatics indicators
+       mpoles%max_mpoles = 0
+       mpoles%max_order = 0
+       mpoles%key = POLARISATION_DEFAULT
+       electro%key = ELECTROSTATIC_NULL
+    case ('ewald')
+       electro%key = ELECTROSTATIC_EWALD
+
+       !! Remember to reset after merge
+
+       ! ewld%active = .true.
+       ! cut = neigh%cutoff + 1e-6_wp
+
+       ! if (imcon == 0) then
+       !    cell(1) = Max(2.0_wp*xhi+cut,3.0_wp*cut,cell(1))
+       !    cell(5) = Max(2.0_wp*yhi+cut,3.0_wp*cut,cell(5))
+       !    cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
+
+       !    cell(2) = 0.0_wp
+       !    cell(3) = 0.0_wp
+       !    cell(4) = 0.0_wp
+       !    cell(6) = 0.0_wp
+       !    cell(7) = 0.0_wp
+       !    cell(8) = 0.0_wp
+       ! else if (imcon == 6) then
+       !    cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
+       ! End If
+
+       ! call params%retrieve('ewald_nsplines', ewld%bspline%num_splines)
+       ! Call dcell(cell,celprp)
+
+       ! if (params%is_set(['ewald_precision', 'ewald_alpha'])) then
+
+       !    call error(0, 'Cannot specify both precision and manual ewald parameters')
+
+       ! else if (params%is_set('ewald_alpha')) then
+
+       !    call params%retrieve('ewald_alpha', ewld%alpha)
+       !    if (params%is_set(['ewald_kvec', 'ewald_kvec_spacing'])) then
+
+       !       call error(0, 'Cannot specify both explicit k-vec grid and k-vec spacing')
+       !    else if (params%is_set('ewald_kvec')) then
+
+       !       call params%retrieve('ewald_kvec', ewld%kspace%k_vec_dim_cont)
+       !    else
+
+       !       call params%retrieve('ewald_kvec_spacing', rtmp)
+       !       ewld%kspace%k_vec_dim_cont = Nint(rtmp / celprp(7:9))
+       !    end if
+
+       !    ! Sanity check for ill defined ewald sum parameters 1/8*2*2*2 == 1
+       !    tol=ewld%alpha*real(product(ewld%kspace%k_vec_dim_cont), wp)
+       !    If (Int(tol) < 1) Call error(9)
+
+       ! else
+
+       !    call params%retreive('ewald_precision', eps0)
+
+       !    tol = Sqrt(Abs(Log(eps0*neigh%cutoff)))
+       !    ewld%alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
+       !    tol1 = Sqrt(-Log(eps0*neigh%cutoff*(2.0_wp*tol*ewld%alpha)**2))
+
+       !    fac = 1.0_wp
+       !    If (imcon == 4 .or. imcon == 5 .or. imcon == 7) fac = 2.0_wp**(1.0_wp/3.0_wp)
+
+       !    ewld%kspace%k_vec_dim_cont = 2*Nint(0.25_wp + fac*celprp(7:9)*ewld%alpha*tol1/pi)
+
+       ! end if
+
+    case ('dddp')
+       electro%key = ELECTROSTATIC_DDDP
+
+    case ('pairwise')
+
+       electro%key = ELECTROSTATIC_COULOMB
+
+    case ('force_shifted')
+
+       electro%key = ELECTROSTATIC_COULOMB_FORCE_SHIFT
+
+    case ('reaction_field')
+
+       electro%key = ELECTROSTATIC_COULOMB_REACTION_FIELD
+
+    case default
+
+       call bad_option('coul_method', option)
+
+    end select
+
+    if (params%is_set([Character(14) :: 'coul_damping', 'coul_precision'])) then
+       call error(0, 'Both damping and precision set')
+
+    else if (params%is_set('coul_damping')) then
+       call params%retrieve('coul_damping', electro%alpha)
+
+    else if (params%is_set('coul_precision')) then
+       call params%retrieve('coul_precision', rtmp)
+       rtmp = Max(Min(rtmp, 0.5_wp), 1.0e-20_wp)
+       tol = Sqrt(Abs(Log(rtmp * neigh%cutoff)))
+       electro%alpha = Sqrt(Abs(Log(rtmp * neigh%cutoff * tol))) / neigh%cutoff
+
+    end if
+
+    If (electro%alpha > zero_plus) Then
+       Call info('Fennell damping applied', .true.)
+       If (neigh%cutoff < 12.0_wp) Call warning(7, neigh%cutoff, 12.0_wp, 0.0_wp)
+    End If
+
+    ! If it's been forcibly set by polarisation_model
+    if (.not. electro%lecx) call params%retrieve('coul_extended_exclusion', electro%lecx)
+
+    neigh%cutoff=Max(neigh%cutoff,vdws%cutoff,met%rcut,kim_data%cutoff,bond%rcut, 2.0_wp*rcter+1.0e-6_wp)
+
+
+  end Subroutine read_forcefield
+
 
   Subroutine initialise_control(table)
     !!-----------------------------------------------------------------------
@@ -1720,14 +2075,14 @@ contains
         call table%set("io_units_force", control_parameter( &
              key = "io_units_force", &
              name = "I/O units force", &
-             val = "internal_l", &
+             val = "internal_f", &
              description = "Set I/O units for force", &
              data_type = DATA_OPTION))
 
         call table%set("io_units_velocity", control_parameter( &
              key = "io_units_velocity", &
              name = "I/O units velocity", &
-             val = "internal_l", &
+             val = "internal_v", &
              description = "Set I/O units for velocity", &
              data_type = DATA_OPTION))
 
@@ -1972,8 +2327,6 @@ contains
            val = "off", &
            description = "Time each MPI process individually", &
            data_type = DATA_BOOL))
-
-
 
     end block io
 
@@ -2298,7 +2651,7 @@ contains
              name = "TTM Electronic conductivity", &
              val = "0.0", &
              units = "W/m/K", &
-             internal_units = "W/m/K", &
+             internal_units = "k_b/ps/A", &
              description = "Set electronic conductivity in TTM ", &
              data_type = DATA_FLOAT))
 
@@ -2314,7 +2667,7 @@ contains
              name = "TTM Thermal diffusivity", &
              val = "0.0", &
              units = "m^2/s", &
-             internal_units = "m^2/s", &
+             internal_units = "ang^2/ps", &
              description = "Set TTM thermal diffusivity", &
              data_type = DATA_FLOAT))
 
@@ -2346,7 +2699,7 @@ contains
              name = "TTM Electron stopping power", &
              val = "0.0", &
              units = "e.V/nm", &
-             internal_units = "e.V/nm", &
+             internal_units = "e.V/ang", &
              description = "Electronic stopping power of projectile entering electronic system ", &
              data_type = DATA_FLOAT))
 
@@ -2362,7 +2715,7 @@ contains
              name = "TTM Spatial sigma", &
              val = "1.0", &
              units = "nm", &
-             internal_units = "nm", &
+             internal_units = "internal_l", &
              description = "Set the sigma for spatial distributions of TTM", &
              data_type = DATA_FLOAT))
 
@@ -2380,7 +2733,7 @@ contains
              name = "TTM laser absorbed energy", &
              val = "0.0", &
              units = "mJ/cm^2", &
-             internal_units = "mJ/cm^2", &
+             internal_units = "e.V/ang^2", &
              description = "Initial energy deposition into electronic system by laser for TTM", &
              data_type = DATA_FLOAT))
 
@@ -2389,7 +2742,7 @@ contains
              name = "TTM laser penetration depth", &
              val = "0.0", &
              units = "nm", &
-             internal_units = "nm", &
+             internal_units = "ang", &
              description = "Set laser penetration depth for TTM", &
              data_type = DATA_FLOAT))
 
@@ -2586,41 +2939,6 @@ contains
              data_type = DATA_FLOAT))
       end block integrator_tolerances
 
-      minimisation: block
-        call table%set("minimisation_criterion", control_parameter( &
-             key = "minimisation_criterion", &
-             name = "Minimisation criterion", &
-             val = "off", &
-             description = "Set minimisation criterion, options: off, force, energy, distance", &
-             data_type = DATA_OPTION))
-
-        call table%set("minimisation_tolerance", control_parameter( &
-             key = "minimisation_tolerance", &
-             name = "Minimisation tolerance", &
-             val = "0.0", &
-             description = "Set minimisation tolerance, units: determined by criterion", &
-             data_type = DATA_FLOAT))
-
-        call table%set("minimisation_step_length", control_parameter( &
-             key = "minimisation_step_length", &
-             name = "Minimisation step length", &
-             val = "-1.0", &
-             units = "ang", &
-             internal_units = "internal_l", &
-             description = "Set minimisation tolerance, units: unknown", &
-             data_type = DATA_FLOAT))
-
-        call table%set("minimisation_frequency", control_parameter( &
-             key = "minimisation_step_length", &
-             name = "Minimisation step length", &
-             val = "0", &
-             units = "steps", &
-             internal_units = "steps", &
-             description = "Set minimisation frequency", &
-             data_type = DATA_FLOAT))
-
-      end block minimisation
-
       call table%set("dftb", control_parameter( &
            key = "dftb", &
            name = "Enable DFTB", &
@@ -2673,6 +2991,42 @@ contains
            internal_units = "internal_f", &
            description = "Set force cap clamping maximum force during equilibration", &
            data_type = DATA_FLOAT))
+
+      minimisation: block
+        call table%set("minimisation_criterion", control_parameter( &
+             key = "minimisation_criterion", &
+             name = "Minimisation criterion", &
+             val = "off", &
+             description = "Set minimisation criterion, options: off, force, energy, distance", &
+             data_type = DATA_OPTION))
+
+        call table%set("minimisation_tolerance", control_parameter( &
+             key = "minimisation_tolerance", &
+             name = "Minimisation tolerance", &
+             val = "0.0", &
+             description = "Set minimisation tolerance, units: determined by criterion", &
+             data_type = DATA_FLOAT))
+
+        call table%set("minimisation_step_length", control_parameter( &
+             key = "minimisation_step_length", &
+             name = "Minimisation step length", &
+             val = "-1.0", &
+             units = "ang", &
+             internal_units = "internal_l", &
+             description = "Set minimisation tolerance, units: unknown", &
+             data_type = DATA_FLOAT))
+
+        call table%set("minimisation_frequency", control_parameter( &
+             key = "minimisation_step_length", &
+             name = "Minimisation step length", &
+             val = "0", &
+             units = "steps", &
+             internal_units = "steps", &
+             description = "Set minimisation frequency", &
+             data_type = DATA_FLOAT))
+
+      end block minimisation
+
     end block equilibration_properties
 
     initialisation_parameters: block
@@ -2905,7 +3259,6 @@ contains
            data_type = DATA_BOOL))
 
     end block plumed
-
 
     call table%set("unsafe", control_parameter( &
          key = "unsafe", &
