@@ -2477,7 +2477,7 @@ Contains
     Real(Kind=wp)               :: a, alpha, b, beta, c, d, e0, eng, eps, fix, fiy, fiz, fx, fy, &
                                    fz, gamma, gk, gk1, gk2, kk, mr, nr, ppp, r0, r0rm, r0rn, r_6, &
                                    r_rrr, r_rrv, r_rsq, r_rvdw, rc, rho, ri, rm, rrr, rscl, rsq, &
-                                   sig, sor6, t, t1, t2, t3, vk, vk1, vk2, z1, z2
+                                   sig, sor6, t, t1, t2, t3, vk, vk1, vk2, z1, z2, lr(3), lf(3)
     Real(Kind=wp), Dimension(9) :: stress_temp, stress_temp_comp
 
     ! define grid resolution for potential arrays and interpolation spacing
@@ -3113,14 +3113,17 @@ Contains
           virvdw = virvdw - gamma * rsq
 
           ! add stress tensor
+          lr = [xxt(mm), yyt(mm), zzt(mm)]
+          lf = [fx, fy, fz]
 
-          stress_temp_comp = calculate_stress([xxt(mm), yyt(mm), zzt(mm)], [fx, fy, fz])
+          stress_temp_comp = calculate_stress(lr, lf)
           stress_temp = stress_temp + stress_temp_comp
-
         End If
 
         If (stats%collect_pp) Then
-          stress_temp_comp = calculate_stress([xxt(mm), yyt(mm), zzt(mm)], [fx, fy, fz])
+          lr = [xxt(mm), yyt(mm), zzt(mm)]
+          lf = [fx, fy, fz]
+          stress_temp_comp = calculate_stress(lr, lf)
           stats%pp_energy(iatm) = stats%pp_energy(iatm) + eng * 0.5_wp
           stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
           If (jatm <= config%natms) Then

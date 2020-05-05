@@ -1939,14 +1939,14 @@ Contains
 
   End Subroutine statistics_result
 
-  Pure Function calculate_stress(x, f)
+  Pure Function calculate_stress(r, f)
 
-    Real(Kind=wp), Dimension(3), Intent(In   ) :: x, f
+    Real(Kind=wp), Dimension(3), Intent(In   ) :: r, f
     Real(Kind=wp), Dimension(9)                :: calculate_stress
 
-    calculate_stress(1:9:3) = x * f(1)
-    calculate_stress(2:9:3) = x * f(2)
-    calculate_stress(3:9:3) = x * f(3)
+    calculate_stress(1:9:3) = r * f(1)
+    calculate_stress(2:9:3) = r * f(2)
+    calculate_stress(3:9:3) = r * f(3)
 
   End Function calculate_stress
 
