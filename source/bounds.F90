@@ -67,6 +67,11 @@ Module bounds
   Use vdw,             Only: vdw_type
   Use z_density,       Only: z_density_type
 
+  !Hack
+  Use control_parameter_module, Only : parameters_hash_table
+  Use control,         Only: use_new_control
+  Use new_control_old_style, Only : scan_new_control_pre_old, scan_new_control_old
+
   Implicit None
 
   Private
@@ -75,7 +80,7 @@ Module bounds
 
 Contains
 
-  Subroutine set_bounds(site, ttm, io, cshell, cons, pmf, stats, thermo, green, devel, &
+  Subroutine set_bounds(params, site, ttm, io, cshell, cons, pmf, stats, thermo, green, devel, &
                         msd_data, met, pois, bond, angle, dihedral, inversion, tether, threebody, zdensity, &
                         neigh, vdws, tersoffs, fourbody, rdf, mpoles, ext_field, rigid, electro, domain, &
                         config, ewld, kim_data, files, flow, comm, ff)
@@ -114,6 +119,7 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Type( parameters_hash_table ), intent( In    ) :: params
     Type(site_type),           Intent(InOut) :: site
     Type(ttm_type),            Intent(InOut) :: ttm
     Type(io_type),             Intent(InOut) :: io
@@ -177,7 +183,12 @@ Contains
 
     ! Get imc_r & set config%dvar
 
-    Call scan_control_pre(config%imc_n, config%dvar, files, comm)
+    if (use_new_control) then
+       Call scan_new_control_pre_old(params, config%imc_n, config%dvar)
+    else
+       Call scan_control_pre(config%imc_n, config%dvar, files, comm)
+    end if
+
 
     ! scan CONFIG file data
 
@@ -192,11 +203,19 @@ Contains
 
     ! scan CONTROL file data
 
-    Call scan_control(tersoffs%cutoff, rigid%max_rigid, config%imcon, config%imc_n, config%cell, &
-                      xhi, yhi, zhi, config%mxgana, config%l_ind, electro%nstfce, &
-                      ttm, cshell, stats, thermo, green, devel, msd_data, met, pois, bond, angle, dihedral, &
-                      inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, electro, ewld, kim_data, &
-                      files, flow, comm)
+    if (use_new_control) then
+       Call scan_new_control_old(params, &
+            rcter, rigid%max_rigid, config%imcon, config%imc_n, config%cell, &
+            xhi, yhi, zhi, config%mxgana, l_n_r, lzdn, config%l_ind, electro%nstfce, &
+            ttm, cshell, stats, thermo, green, msd_data, met, pois, bond, angle, dihedral, &
+            inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, electro, ewld, kim_data, flow)
+    else
+      Call scan_control(tersoffs%cutoff, rigid%max_rigid, config%imcon, config%imc_n, config%cell, &
+           xhi, yhi, zhi, config%mxgana, config%l_ind, electro%nstfce, &
+           ttm, cshell, stats, thermo, green, devel, msd_data, met, pois, bond, angle, dihedral, &
+           inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, electro, ewld, kim_data, &
+           files, flow, comm)
+    end if
 
     ! check integrity of cell vectors: for cubic cell
 

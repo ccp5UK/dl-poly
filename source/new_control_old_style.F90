@@ -117,9 +117,6 @@ module new_control_old_style
   Use comms, only: comms_type
   Use hash, only: MAX_KEY, STR_LEN
   Use parse, only: get_word, get_line, lower_case
-  Use filename, Only : file_type,FILE_CONTROL,FILE_OUTPUT,FILE_CONFIG,FILE_FIELD, &
-       FILE_STATS,FILE_HISTORY,FILE_HISTORF,FILE_REVIVE,FILE_REVCON, &
-       FILE_REVOLD
   Use errors_warnings, only: error, info, warning, error_alloc, error_dealloc
   Use io,     Only : io_set_parameters,io_type,        &
        io_get_parameters,        &
@@ -142,6 +139,12 @@ module new_control_old_style
   Use new_control, only : bad_option, read_ensemble, read_structure_analysis
   Implicit None
 
+  Private
+  Public :: setup_file_io
+  Public :: scan_new_control_pre_old
+  Public :: scan_new_control_output_old
+  Public :: scan_new_control_old
+  Public :: read_new_control_old
 
 contains
 
@@ -538,12 +541,12 @@ contains
 
   Subroutine scan_new_control_output_old(params, files)
     Type( parameters_hash_table ), intent( In    ) :: params
-    Type( file_type ), Intent( InOut ), Dimension(:) :: files(:)
+    Type( file_type ), Intent( InOut ), Dimension(:) :: files
 
     Call params%retrieve('io_file_output', files(FILE_OUTPUT)%filename)
     Call params%retrieve('io_file_config', files(FILE_CONFIG)%filename)
     Call params%retrieve('io_file_field',  files(FILE_FIELD)%filename)
-    Call params%retrieve('io_file_stats',  files(FILE_STATS)%filename)
+    Call params%retrieve('io_file_statis',  files(FILE_STATS)%filename)
     Call params%retrieve('io_file_history',files(FILE_HISTORY)%filename)
     Call params%retrieve('io_file_historf',files(FILE_HISTORF)%filename)
     Call params%retrieve('io_file_revive', files(FILE_REVIVE)%filename)
@@ -606,6 +609,7 @@ contains
 
     Logical :: limp, lforc
     Character(Len=256) :: message, messages(9)
+    Character(Len=80) :: banner(9)
 
     Character(Len=STR_LEN) :: option
     Type(control_parameter) :: param
@@ -613,6 +617,19 @@ contains
     Real(kind=wp) :: rtmp, tol
     Integer :: itmp
     Logical :: ltmp
+
+    call params%retrieve('title', option)
+    config%sysname = option(1:72)
+    Write (banner(1), '(a)') ''
+    Write (banner(2), '(a)') Repeat('*', 80)
+    Write (banner(3), '(a4,a72,a4)') '*** ', 'title:'//Repeat(' ', 66), ' ***'
+    Write (banner(4), '(a4,a72,a4)') '*** ', config%sysname, ' ***'
+    Write (banner(5), '(a)') Repeat('*', 80)
+    Write (banner(6), '(a)') ''
+    Call info(banner, 6, .true.)
+
+    Call info('simulation control parameters', .true.)
+
 
     call params%retrieve('output_energy', devel%l_eng)
     call params%retrieve('io_write_ascii_revive', devel%l_rout)
@@ -641,7 +658,17 @@ contains
        call bad_option('vdw_method', option)
     end select
 
-    call params%retrieve('vdw_mixing_method', option)
+    call params%retrieve('nfold', vtmp(1:3))
+    config%l_exp = any(nint(vtmp(1:3)) > 1)
+    if (config%l_exp) then
+       config%nx = nint(vtmp(1))
+       config%ny = nint(vtmp(2))
+       config%nz = nint(vtmp(3))
+       Write (message, '(a,9x,3i5)') 'system expansion opted', config%nx, config%ny, config%nz
+       Call info(message, .true.)
+     end if
+
+    call params%retrieve('vdw_mix_method', option)
     if (option /= 'off') then
 
        Call info('vdw cross terms mixing opted (for undefined mixed potentials)', .true.)
@@ -723,8 +750,8 @@ contains
        Call info(messages, 5, .true.)
     end if
 
-    if (params%is_set('seed')) then
-       call params%retrieve('seed', vtmp(1:3))
+    if (params%is_set('random_seed')) then
+       call params%retrieve('random_seed', vtmp(1:3))
        call seed%init(nint(vtmp(1:3)))
        Write (message, '(a,3i5)') 'radomisation seeds supplied: ', seed%seed(1:3)
        Call info(message, .true.)
@@ -735,15 +762,16 @@ contains
 
     call params%retrieve('temperature', thermo%temp)
     Write (message, '(a,1p,e12.4)') 'simulation temperature (K)  ', thermo%temp
+    call info(message, .true.)
 
     call params%retrieve('reset_temperature_interval', thermo%freq_zero)
     thermo%l_zero = thermo%freq_zero > 0
     If (thermo%freq_zero == 0) thermo%freq_zero = flow%equil_steps + 1
 
-    if (params%num_set([Character(20) :: 'pressure_tensor', 'pressure_hydrostatic', 'pressure_perpendicular']) > 1) then
+    if (params%num_set([Character(22) :: 'pressure_tensor', 'pressure_hydrostatic', 'pressure_perpendicular']) > 1) then
        call error(0, 'Multiple pressure specifications')
-    else if (params%num_set([Character(20) :: 'pressure_tensor', 'pressure_hydrostatic', 'pressure_perpendicular']) == 0) then
-       call error(0, 'No pressure specification')
+    ! else if (params%num_set([Character(22) :: 'pressure_tensor', 'pressure_hydrostatic', 'pressure_perpendicular']) == 0) then
+    !    call error(0, 'No pressure specification')
     end if
 
     if (params%is_set('pressure_tensor')) then
@@ -765,6 +793,12 @@ contains
        call params%retrieve('pressure_hydrostatic', rtmp)
        thermo%stress(1:9:4) = rtmp
     end if
+
+    Call info('simulation pressure tensor (katms):', .true.)
+    Write (messages(1), '(3f20.10)') (convert_units(thermo%stress(itmp), 'internal_p', 'katm'), itmp = 1,3)
+    Write (messages(2), '(3f20.10)') (convert_units(thermo%stress(itmp), 'internal_p', 'katm'), itmp = 4,6)
+    Write (messages(3), '(3f20.10)') (convert_units(thermo%stress(itmp), 'internal_p', 'katm'), itmp = 7,9)
+    Call info(messages, 3, .true.)
 
     if (.not. thermo%anisotropic_pressure) then
        thermo%press = sum(thermo%stress(1:9:4)) / 3.0_wp
@@ -799,7 +833,12 @@ contains
     call params%retrieve('timestep_variable_max_delta', thermo%mxstp)
 
     call params%retrieve('time_run', flow%run_steps, .true.)
+    Write (message, '(a,i10)') 'selected number of timesteps ', flow%run_steps
+    if (flow%run_steps > 0) Call info(message, .true.)
+
     call params%retrieve('time_equilibration', flow%equil_steps)
+    Write (message, '(a,i10)') 'equilibration period (steps) ', flow%equil_steps
+    if (flow%equil_steps > 0) Call info(message, .true.)
 
     call params%retrieve('record_equilibration', ltmp)
     flow%equilibration = .not. ltmp
@@ -998,7 +1037,7 @@ contains
 
     end if
 
-    If (electro%alpha > zero_plus) Then
+    If (electro%key /= ELECTROSTATIC_EWALD .and. electro%alpha > zero_plus) Then
        Call info('Fennell damping applied', .true.)
        If (neigh%cutoff < 12.0_wp) Call warning(7, neigh%cutoff, 12.0_wp, 0.0_wp)
     End If
@@ -1415,15 +1454,11 @@ contains
 
     call read_structure_analysis(params, msd_data, rdf, green, zdensity, adf, crd, traj, dfcts, rsdc)
 
-    If (rdf%l_collect .or. rdf%l_print) Then
-      If (rdf%l_collect) Then
+    If (rdf%l_collect) Then
         Write (messages(1), '(a)') 'rdf collection requested:'
         Write (messages(2), '(2x,a,i10)') 'rdf collection interval ', rdf%freq
         Write (messages(3), '(2x,a,1p,e12.4)') 'rdf binsize (Angstroms) ', rdf%rbin
         Call info(messages, 3, .true.)
-      Else
-        Call info('no rdf collection requested', .true.)
-      End If
 
       If (rdf%l_print) Then
         Call info('rdf printing requested', .true.)
@@ -1449,17 +1484,13 @@ contains
       End If
     End If
 
-    If (zdensity%l_collect .or. zdensity%l_print) Then
-      If (zdensity%l_collect) Then
-        Write (messages(1), '(a)') 'z-density profiles requested:'
-        Write (messages(2), '(2x,a,i10)') 'z-density collection interval ', zdensity%frequency
-        Write (messages(3), '(2x,a,1p,e12.4)') 'z-density binsize (Angstroms) ', rdf%rbin
-        Call info(messages, 3, .true.)
-      Else
-        Call info('no z-density profiles requested', .true.)
-      End If
+    If (zdensity%l_collect) Then
+       Write (messages(1), '(a)') 'z-density profiles requested:'
+       Write (messages(2), '(2x,a,i10)') 'z-density collection interval ', zdensity%frequency
+       Write (messages(3), '(2x,a,1p,e12.4)') 'z-density binsize (Angstroms) ', rdf%rbin
+       Call info(messages, 3, .true.)
 
-      If (zdensity%l_print) Then
+       If (zdensity%l_print) Then
         Call info('z-density printing requested', .true.)
       Else
         Call info('no z-density printing requested', .true.)
@@ -1471,15 +1502,11 @@ contains
       End If
     End If
 
-    If (green%samp > 0 .or. green%l_print) Then
-      If (green%samp > 0) Then
-        Write (messages(1), '(a)') 'vaf profiles requested:'
-        Write (messages(2), '(2x,a,i10)') 'vaf collection interval ', green%freq
-        Write (messages(3), '(2x,a,i10)') 'vaf binsize  ', green%binsize
-        Call info(messages, 3, .true.)
-      Else
-        Call info('no vaf collection requested', .true.)
-      End If
+    If (green%samp > 0) Then
+       Write (messages(1), '(a)') 'vaf profiles requested:'
+       Write (messages(2), '(2x,a,i10)') 'vaf collection interval ', green%freq
+       Write (messages(3), '(2x,a,i10)') 'vaf binsize  ', green%binsize
+       Call info(messages, 3, .true.)
 
       If (green%l_print) Then
         Call info('vaf printing requested', .true.)
@@ -1533,7 +1560,7 @@ contains
 
      call params%retrieve('print_frequency', flow%freq_output)
      if (flow%freq_output > 0) then
-        Write (message, '(a,i10)') 'data printing interval (steps) ', stats%intsta
+        Write (message, '(a,i10)') 'data printing interval (steps) ', flow%freq_output
         Call info(message, .true.)
      end if
 
@@ -1553,22 +1580,34 @@ contains
      neigh%pdplnc = Max(neigh%pdplnc, 1.0_wp) ! disallow any less than 1
 
 
-     call params%retrieve('time_job', tmr%job, .true.)
-     if (tmr%job < 0.0_wp) tmr%job = Huge(1.0_wp)
-     Write (messages(3), '(a,1p,e12.4)') 'allocated job run time (s) ', tmr%job
+     call params%retrieve('time_job', tmr%job)
+     if (tmr%job < 0.0_wp) then
+        tmr%job = Huge(1.0_wp)
+        Write (messages(3), '(a)') 'Unlimited job time'
+     else
+        Write (messages(3), '(a,1p,e12.4)') 'allocated job run time (s) ', tmr%job
+     end if
 
      call params%retrieve('time_close', tmr%clear_screen)
-     if (tmr%clear_screen < 0.0_wp) tmr%clear_screen = 0.01_wp * tmr%job
-     Write (messages(4), '(a,1p,e12.4)') 'allocated job close time (s) ', tmr%clear_screen
-     Call info(messages, 4, .true.)
+     if (tmr%clear_screen < 0.0_wp) then
+        tmr%clear_screen = 0.01_wp * tmr%job
+        if (tmr%job < Huge(1.0_wp) - 1.0_wp) then
+           Write (messages(4), '(a,1p,e12.4)') 'allocated job close time (s) ', tmr%clear_screen
+        else
+           Write (messages(4), '(a,1p,e12.4)') 'Unlimited job close time'
+        end if
+     else
+        Write (messages(4), '(a,1p,e12.4)') 'allocated job close time (s) ', tmr%clear_screen
+        Call info(messages, 4, .true.)
+     end if
 
      call params%retrieve('plumed', plume%l_plumed)
 
      if (plume%l_plumed) then
         call params%retrieve('plumed_input', option)
-        plume%input = option
+        plume%input = option(1:125)
         call params%retrieve('plumed_log', option)
-        plume%logfile = option
+        plume%logfile = option(1:125)
         call params%retrieve('plumed_precision', plume%prec)
         call params%retrieve('plumed_restart', ltmp)
 
@@ -1648,13 +1687,12 @@ contains
       End If
     End If
 
-
   end Subroutine read_new_control_old
 
   Subroutine scan_new_control_old(params, rcter, max_rigid, imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
-       l_n_r,lzdn,l_ind,nstfce,ttm,cshell,stats,thermo,green,devel,msd_data,met, &
+       l_n_r,lzdn,l_ind,nstfce,ttm,cshell,stats,thermo,green,msd_data,met, &
        pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf,mpoles, &
-       electro,ewld,kim_data,files,flow)
+       electro,ewld,kim_data,flow)
     !!-----------------------------------------------------------------------
     !!
     !! Scan the contents of control file -- DEPRECATED
@@ -1674,7 +1712,6 @@ contains
     Type( core_shell_type ), Intent (   In  )   :: cshell
     Type( stats_type ), Intent( InOut ) :: stats
     Type( thermostat_type ), Intent( InOut ) :: thermo
-    Type( development_type ), Intent( InOut ) :: devel
     Type( greenkubo_type ), Intent( InOut ) :: green
     Type( msd_type ), Intent( InOut ) :: msd_data
     Type( metal_type ), Intent( InOut ) :: met
@@ -1692,20 +1729,19 @@ contains
     Type( electrostatic_type ), Intent( InOut ) :: electro
     Type( ewald_type ), Intent( InOut ) :: ewld
     Type( kim_type), Intent( InOut ) :: kim_data
-    Type( file_type ), Intent( InOut ) :: files(:)
     Type( flow_type ), Intent( InOut ) :: flow
 
     Real( kind = wp ), Parameter :: minimum_rcut = 1.0_wp, &
          minimum_bin_size = 0.05_wp, &
          minimum_bond_anal_length = 2.5_wp
 
-    Character(Len=STR_LEN), dimension(3) :: messages
-    Character(Len=STR_LEN) :: message
+    Real(kind=wp), dimension(3) :: vtmp
+    Real(kind=wp), dimension(10) :: celprp
+    Real(kind=wp) :: cut, eps0, fac, tol, tol1
     Character(Len=STR_LEN) :: option
     Real(Kind=wp) :: rtmp
     Logical :: ltmp
-    Logical :: la_ana,la_bnd,la_ang,la_dih,la_inv, &
-         lelec,lvdw,l_n_m,lter,l_exp
+    Logical :: la_bnd,la_ang,la_dih,la_inv,lelec
 
     call params%retrieve('timestep', thermo%tstep, required=.true.)
     call set_timestep(thermo%tstep)
@@ -1717,7 +1753,7 @@ contains
     end if
 
     call params%retrieve('padding', neigh%padding)
-    if (neigh%padding < zero_plus) then
+    if (neigh%padding < 0.0_wp) then
        neigh%padding = 0.0_wp
        call warning('Bad padding value, reset to 0.0', .true.)
     end if
@@ -1739,6 +1775,8 @@ contains
 
     call params%retrieve('ensemble_dpd_order', option)
     select case (option)
+    case ('off')
+       continue
     case ('first', '1')
        thermo%key_dpd = DPD_FIRST_ORDER
     case ('second', '2')
@@ -1773,6 +1811,15 @@ contains
     call params%retrieve('zden_calculate', lzdn)
 
     call params%retrieve('rdf_calculate', rdf%l_collect)
+    l_n_r = .not. rdf%l_collect
+
+    call params%retrieve('rdf_binsize', rdf%rbin)
+    call params%retrieve('zden_binsize', zdensity%bin_width)
+    if (rdf%rbin < zero_plus) then
+       rdf%rbin = minimum_bin_size
+       Call warning('RDF too small, resetting to default (0.05)', .true.)
+    End If
+
 
     if (params%is_set('polarisation_model')) then
        call params%retrieve('polarisation_model', option)
@@ -1799,6 +1846,73 @@ contains
 
     ! Set ewald params
     if (option == "ewald") then
+
+       !! Old method
+       call params%retrieve('ewald_nsplines', ewld%bspline)
+       Call dcell(cell,celprp)
+
+       cut = neigh%cutoff + 1e-6_wp
+
+       if (imcon == 0) then
+          cell(1) = Max(2.0_wp*xhi+cut,3.0_wp*cut,cell(1))
+          cell(5) = Max(2.0_wp*yhi+cut,3.0_wp*cut,cell(5))
+          cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
+
+          cell(2) = 0.0_wp
+          cell(3) = 0.0_wp
+          cell(4) = 0.0_wp
+          cell(6) = 0.0_wp
+          cell(7) = 0.0_wp
+          cell(8) = 0.0_wp
+       else if (imcon == 6) then
+          cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
+       End If
+
+       if (params%is_set([Character(15) :: 'ewald_precision', 'ewald_alpha'])) then
+
+          call error(0, 'Cannot specify both precision and manual ewald parameters')
+
+       else if (params%is_set('ewald_alpha')) then
+
+          call params%retrieve('ewald_alpha', electro%alpha)
+          if (params%is_set([Character(18) :: 'ewald_kvec', 'ewald_kvec_spacing'])) then
+
+             call error(0, 'Cannot specify both explicit k-vec grid and k-vec spacing')
+          else if (params%is_set('ewald_kvec')) then
+
+             call params%retrieve('ewald_kvec', vtmp(1:3))
+             ewld%fft_dim_a1 = Nint(vtmp(1))
+             ewld%fft_dim_b1 = Nint(vtmp(2))
+             ewld%fft_dim_c1 = Nint(vtmp(3))
+          else
+
+             call params%retrieve('ewald_kvec_spacing', rtmp)
+             ewld%fft_dim_a1 = Nint(rtmp / celprp(7))
+             ewld%fft_dim_b1 = Nint(rtmp / celprp(8))
+             ewld%fft_dim_c1 = Nint(rtmp / celprp(9))
+          end if
+
+          ! Sanity check for ill defined ewald sum parameters 1/8*2*2*2 == 1
+          tol=electro%alpha*real(ewld%fft_dim_a1 * ewld%fft_dim_b1 * ewld%fft_dim_c1, wp)
+
+          If (Int(tol) < 1) Call error(9)
+
+       else
+
+          call params%retrieve('ewald_precision', eps0)
+
+          tol = Sqrt(Abs(Log(eps0*neigh%cutoff)))
+          electro%alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
+          tol1 = Sqrt(-Log(eps0*neigh%cutoff*(2.0_wp*tol*electro%alpha)**2))
+
+          fac = 1.0_wp
+          If (imcon == 4 .or. imcon == 5 .or. imcon == 7) fac = 2.0_wp**(1.0_wp/3.0_wp)
+
+          ewld%fft_dim_a1 = 2 * Nint(0.25_wp + fac * celprp(7) * electro%alpha * tol1 / pi)
+          ewld%fft_dim_b1 = 2 * Nint(0.25_wp + fac * celprp(8) * electro%alpha * tol1 / pi)
+          ewld%fft_dim_c1 = 2 * Nint(0.25_wp + fac * celprp(9) * electro%alpha * tol1 / pi)
+
+       end if
 
        !! Remember to reset after merge
 
@@ -1861,14 +1975,12 @@ contains
 
        ! end if
 
-
     end if
-
 
     call params%retrieve('ignore_config_indices', l_ind)
     if (l_ind) Call info('no index (reading in CONFIG) option on',.true.)
 
-    call params%retrieve('unsafe', flow%strict)
+    call params%retrieve('strict_checks', flow%strict)
 
     call params%retrieve('analyse_bonds', la_bnd)
     call params%retrieve('analyse_angles', la_ang)
@@ -1898,6 +2010,7 @@ contains
     if (params%is_set('analyse_num_bins_angles')) call params%retrieve('analyse_num_bins_angles', angle%bin_adf)
     if (params%is_set('analyse_num_bins_dihedrals')) call params%retrieve('analyse_num_bins_dihedrals', dihedral%bin_adf)
     if (params%is_set('analyse_num_bins_inversions')) call params%retrieve('analyse_num_bins_inversions', inversion%bin_adf)
+
 
     if (thermo%ensemble == ENS_NVT_LANGEVIN_INHOMO) then
        ttm%l_ttm = .true.

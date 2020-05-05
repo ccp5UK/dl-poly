@@ -135,7 +135,7 @@ Module new_control
        IO_WRITE_SORTED_DIRECT,   &
        IO_WRITE_SORTED_NETCDF,   &
        IO_WRITE_SORTED_MASTER
-  Use units, only : convert_units, set_timestep
+  Use units, only : convert_units, set_timestep, units_scheme, internal_units, set_out_units
   Use control_parameter_module, only : control_parameter, parameters_hash_table, &
        DATA_INT, DATA_FLOAT, DATA_STRING, DATA_BOOL, DATA_OPTION, DATA_VECTOR3, DATA_VECTOR6
 
@@ -168,7 +168,11 @@ contains
     Type( comms_type ), Intent( InOut ) :: comm
 
     Call initialise_control(params)
+    open(newunit=control_file%unit_no, file=control_file%filename, status='old', action='read')
     Call parse_file(control_file%unit_no, params, comm)
+    call control_file%close()
+    ! flow%reset_padding = .true.
+    ! neigh%cutoff=Max(neigh%cutoff,vdws%cutoff,met%rcut,kim_data%cutoff,bond%rcut, 2.0_wp*rcter+1.0e-6_wp)
 
   end Subroutine read_new_control
 
@@ -185,7 +189,6 @@ contains
     Type( netcdf_param ), Intent( InOut ) :: netcdf
     Type( file_type ), Dimension(:), Intent( InOut ) :: files
     Type( comms_type ), Intent( InOut ) :: comm
-    Type( control_parameter ) :: curr_param
     Character(Len=STR_LEN) :: curr_option
     Character(Len=STR_LEN) :: message
 
@@ -462,9 +465,7 @@ contains
   Subroutine read_ensemble(params, thermo, ttm)
     Type( parameters_hash_table ), intent( In    ) :: params
     Type( thermostat_type ), Intent( InOut ) :: thermo
-    Character(Len=STR_LEN) :: message
     Character(Len=STR_LEN) :: option
-    Character(Len=STR_LEN), dimension(4) :: messages
     Logical, Intent( In    ) :: ttm
     Logical :: ltmp
 
@@ -667,7 +668,7 @@ contains
 
   end Subroutine read_ensemble
 
-  Subroutine read_bond_analysis(params, analysis)
+  Subroutine read_bond_analysis(params, flow, bond, angle, dihedral, inversion)
     Type( parameters_hash_table ), intent(   Out ) :: params
     Type( flow_type ), Intent( InOut ) :: flow
     Type( bonds_type ), Intent( InOut ) :: bond
@@ -675,8 +676,7 @@ contains
     Type( dihedrals_type ), Intent( InOut ) :: dihedral
     Type( inversions_type ), Intent( InOut ) :: inversion
 
-    Real( kind = wp ) :: rtmp
-    Integer :: itmp
+    Integer :: itmp, itmp2
     Logical :: l_bond, l_angle, l_dihedral, l_inversion, ltmp
 
     Real( kind = wp ), Parameter :: minimum_bond_anal_length = 2.5_wp
@@ -694,8 +694,8 @@ contains
     end if
 
     ! Set global
-    call params%retrieve('analyse_num_bins', rtmp)
     call params%retrieve('analyse_frequency', itmp)
+    call params%retrieve('analyse_num_bins', itmp2)
 
     if (l_bond) then
        call params%retrieve('analyse_max_dist', bond%rcut)
@@ -704,7 +704,7 @@ contains
           call warning('vdw_cutoff less than global cutoff, setting to global cutoff', .true.)
        end if
 
-       bond%bin_pdf = rtmp
+       bond%bin_pdf = itmp2
        if (params%is_set('analyse_num_bins_bonds')) &
             call params%retrieve('analyse_num_bins_bonds', bond%bin_pdf)
 
@@ -713,7 +713,7 @@ contains
     end if
 
     if (l_angle) then
-       angle%bin_adf = rtmp
+       angle%bin_adf = itmp2
        if (params%is_set('analyse_num_bins_angles')) &
             call params%retrieve('analyse_num_bins_angles', angle%bin_adf)
        call params%retrieve('analyse_frequency_angles', flow%freq_angle)
@@ -721,7 +721,7 @@ contains
     end if
 
     if (l_dihedral) then
-       dihedral%bin_adf = rtmp
+       dihedral%bin_adf = itmp2
        if (params%is_set('analyse_num_bins_dihedrals')) &
             call params%retrieve('analyse_num_bins_dihedrals', dihedral%bin_adf)
        call params%retrieve('analyse_frequency_dihedrals', flow%freq_dihedral)
@@ -729,7 +729,7 @@ contains
     end if
 
     if (l_inversion) then
-       inversion%bin_adf = rtmp
+       inversion%bin_adf = itmp2
        if (params%is_set('analyse_num_bins_inversions')) &
             call params%retrieve('analyse_num_bins_inversions', inversion%bin_adf)
 
@@ -819,7 +819,7 @@ contains
        call params%retrieve('zden_binsize', zden%bin_width)
        call params%retrieve('zden_print', zden%l_print)
 
-    else if (params%is_any_set([Character(13) :: 'zden_frequency', 'zden_binsize', 'zden_print'])) then
+    else if (params%is_any_set([Character(14) :: 'zden_frequency', 'zden_binsize', 'zden_print'])) then
        Call warning('zden_print, zden_frequency or zden_binsize found without zden_calculate')
     end if
 
@@ -1160,8 +1160,9 @@ contains
 
   Subroutine read_units(params, out_units)
     Type( parameters_hash_table ), intent( In    ) :: params
-    Type( output_units ) :: out_units
-    Character(Len=MAX_STR) :: option
+    Type( units_scheme ) :: out_units
+    Character(Len=STR_LEN) :: option
+    Real(kind = wp) :: test
 
     call params%retrieve("io_units_scheme", option)
 
@@ -1170,87 +1171,105 @@ contains
        out_units = internal_units
 
     case ('si')
-       length   = 'm'
-       time     = 's'
-       mass     = 'kg'
-       charge   = 'C'
-       energy   = 'J'
-       pressure = 'Pa'
-       force    = 'N'
-       velocity = 'm/s'
-       power    = 'W'
-       surf     = 'N/m'
-       emf      = 'V'
+       out_units%length   = 'm'
+       out_units%time     = 's'
+       out_units%mass     = 'kg'
+       out_units%charge   = 'C'
+       out_units%energy   = 'J'
+       out_units%pressure = 'Pa'
+       out_units%force    = 'N'
+       out_units%velocity = 'm/s'
+       out_units%power    = 'W'
+       out_units%surf_ten = 'N/m'
+       out_units%emf      = 'V'
 
     case ('atomic')
-       length   = 'ang'
-       time     = 'ps'
-       mass     = 'amu'
-       charge   = 'q_e'
-       energy   = 'e.V'
-       pressure = 'GPa'
-       force    = 'e.V/ang'
-       velocity = 'ang/ps'
-       power    = 'e.V/ps'
-       surf     = 'e.V/ang^2'
-       emf      = 'e.V/q_e'
+       out_units%length   = 'ang'
+       out_units%time     = 'ps'
+       out_units%mass     = 'amu'
+       out_units%charge   = 'q_e'
+       out_units%energy   = 'e.V'
+       out_units%pressure = 'GPa'
+       out_units%force    = 'e.V/ang'
+       out_units%velocity = 'ang/ps'
+       out_units%power    = 'e.V/ps'
+       out_units%surf_ten = 'e.V/ang^2'
+       out_units%emf      = 'e.V/q_e'
 
     case ('hartree')
-       length   = 'bohr'
-       time     = 'aut'
-       mass     = 'm_e'
-       charge   = 'q_e'
-       energy   = 'Ha'
-       pressure = 'Ha/bohr^3'
-       force    = 'Ha/bohr'
-       velocity = 'auv'
-       power    = 'Ha/aut'
-       surf     = 'Ha/bohr^2'
-       emf      = 'Ha/q_e'
+       out_units%length   = 'bohr'
+       out_units%time     = 'aut'
+       out_units%mass     = 'm_e'
+       out_units%charge   = 'q_e'
+       out_units%energy   = 'Ha'
+       out_units%pressure = 'Ha/bohr^3'
+       out_units%force    = 'Ha/bohr'
+       out_units%velocity = 'auv'
+       out_units%power    = 'Ha/aut'
+       out_units%surf_ten = 'Ha/bohr^2'
+       out_units%emf      = 'Ha/q_e'
 
     end select
 
-    if params%is_set("io_units_length") &
+    if (params%is_set("io_units_length")) &
          call params%retrieve("io_units_length", out_units%length)
-    if params%is_set("io_units_time") &
+    if (params%is_set("io_units_time")) &
          call params%retrieve("io_units_time", out_units%time)
-    if params%is_set("io_units_mass") &
+    if (params%is_set("io_units_mass")) &
          call params%retrieve("io_units_mass", out_units%mass)
-    if params%is_set("io_units_charge") &
+    if (params%is_set("io_units_charge")) &
          call params%retrieve("io_units_charge", out_units%charge)
-    if params%is_set("io_units_energy") &
+    if (params%is_set("io_units_energy")) &
          call params%retrieve("io_units_energy", out_units%energy)
-    if params%is_set("io_units_pressure") &
+    if (params%is_set("io_units_pressure")) &
          call params%retrieve("io_units_pressure", out_units%pressure)
-    if params%is_set("io_units_force") &
+    if (params%is_set("io_units_force")) &
          call params%retrieve("io_units_force", out_units%force)
-    if params%is_set("io_units_velocity") &
+    if (params%is_set("io_units_velocity")) &
          call params%retrieve("io_units_velocity", out_units%velocity)
-    if params%is_set("io_units_power") &
+    if (params%is_set("io_units_power")) &
          call params%retrieve("io_units_power", out_units%power)
-    if params%is_set("io_units_surface_tension") &
+    if (params%is_set("io_units_surface_tension")) &
          call params%retrieve("io_units_surface_tension", out_units%surf_ten)
-    if params%is_set("io_units_emf") &
+    if (params%is_set("io_units_emf")) &
          call params%retrieve("io_units_emf", out_units%emf)
 
     ! Check units validity
-    convert_units(1.0_wp, out_units%length, internal_units%length)
-    convert_units(1.0_wp, out_units%time, internal_units%time)
-    convert_units(1.0_wp, out_units%mass, internal_units%mass)
-    convert_units(1.0_wp, out_units%charge, internal_units%charge)
-    convert_units(1.0_wp, out_units%energy, internal_units%energy)
-    convert_units(1.0_wp, out_units%pressure, internal_units%pressure)
-    convert_units(1.0_wp, out_units%force, internal_units%force)
-    convert_units(1.0_wp, out_units%velocity, internal_units%velocity)
-    convert_units(1.0_wp, out_units%power, internal_units%power)
-    convert_units(1.0_wp, out_units%surf_ten, internal_units%surf_ten)
-    convert_units(1.0_wp, out_units%emf, internal_units%emf)
+    test = convert_units(1.0_wp, out_units%length, internal_units%length)
+    test = convert_units(1.0_wp, out_units%time, internal_units%time)
+    test = convert_units(1.0_wp, out_units%mass, internal_units%mass)
+    test = convert_units(1.0_wp, out_units%charge, internal_units%charge)
+    test = convert_units(1.0_wp, out_units%energy, internal_units%energy)
+    test = convert_units(1.0_wp, out_units%pressure, internal_units%pressure)
+    test = convert_units(1.0_wp, out_units%force, internal_units%force)
+    test = convert_units(1.0_wp, out_units%velocity, internal_units%velocity)
+    test = convert_units(1.0_wp, out_units%power, internal_units%power)
+    test = convert_units(1.0_wp, out_units%surf_ten, internal_units%surf_ten)
+    test = convert_units(1.0_wp, out_units%emf, internal_units%emf)
 
     call set_out_units(out_units)
 
   end Subroutine read_units
 
-  Subroutine read_forcefield(params, neigh, electro, vdws, met)
+  Subroutine read_forcefield(params, neigh, electro, vdws, met, mpoles, cshell)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Read forcefield
+    !!
+    !! copyright - daresbury laboratory
+    !! author - j.wilkins april 2020
+    !!-----------------------------------------------------------------------
+    Type(parameters_hash_table), Intent(In   ) :: params
+    Type(neighbours_type),       Intent(InOut) :: neigh
+    Type(metal_type),            Intent(InOut) :: met
+    Type(mpole_type),            Intent(InOut) :: mpoles
+    Type(vdw_type),              Intent(InOut) :: vdws
+    Type(electrostatic_type),    Intent(InOut) :: electro
+    Type(core_shell_type),       Intent(InOut) :: cshell
+
+    Character(Len=STR_LEN) :: option
+    Real(kind=wp) :: rtmp, tol
+    Real(kind=wp), Parameter :: minimum_rcut = 1.0_wp
 
     call params%retrieve('polarisation_model', option)
     select case (option)
@@ -1280,10 +1299,21 @@ contains
        call warning('Bad padding value, reset to 0.0', .true.)
     end if
 
-    flow%reset_padding = .true.
-
     call params%retrieve('vdw_method', option)
-    vdws%no_vdw = option == 'off' .or. vdws%max_vdw <= 0
+    select case(option)
+    case ('tabulated')
+       continue
+    case ('direct')
+       vdws%l_direct = .true.
+    case ('off')
+       vdws%no_vdw = .true.
+    case ('ewald')
+       ! Add when merged
+       !  ewld%vdw = .true.
+    case default
+       call bad_option('vdw_method', option)
+    end select
+    if (vdws%max_vdw <= 0) vdws%no_vdw = .true.
 
     call params%retrieve('vdw_cutoff', vdws%cutoff)
     if (vdws%cutoff < minimum_rcut) then
@@ -1296,11 +1326,11 @@ contains
     end if
 
     call params%retrieve('coul_method', option)
-    lelec = option /= 'off'
+
     select case (option)
     case ('off')
        electro%no_elec = .true.
-    ! reinitialise multipolar electrostatics indicators
+       ! reinitialise multipolar electrostatics indicators
        mpoles%max_mpoles = 0
        mpoles%max_order = 0
        mpoles%key = POLARISATION_DEFAULT
@@ -1412,11 +1442,7 @@ contains
     ! If it's been forcibly set by polarisation_model
     if (.not. electro%lecx) call params%retrieve('coul_extended_exclusion', electro%lecx)
 
-    neigh%cutoff=Max(neigh%cutoff,vdws%cutoff,met%rcut,kim_data%cutoff,bond%rcut, 2.0_wp*rcter+1.0e-6_wp)
-
-
-  end Subroutine read_forcefield
-
+  End Subroutine read_forcefield
 
   Subroutine initialise_control(table)
     !!-----------------------------------------------------------------------
@@ -1429,6 +1455,14 @@ contains
     Type( parameters_hash_table ), intent(   Out ) :: table
 
     call table%init(PARAMS_TABLE_SIZE)
+
+    call table%set('slab', control_parameter( &
+         key = 'slab', &
+         name = 'Slab', &
+         val = 'off', &
+         description = "EEEEEEEK", &
+         data_type = DATA_BOOL))
+
 
     run_properties: block
       call table%set('title', control_parameter( &
@@ -1692,8 +1726,8 @@ contains
                description = "Start timestep for dumping MSD configurations", &
                data_type = DATA_FLOAT))
 
-          call table%set("msd_interval", control_parameter( &
-               key = "msd_interval", &
+          call table%set("msd_frequency", control_parameter( &
+               key = "msd_frequency", &
                name = "MSD calculation interval", &
                val = "1", &
                units = "steps", &
@@ -1781,46 +1815,39 @@ contains
         end block defects
 
         displacements: block
-          call table%set("defects_calculate", control_parameter( &
-               key = "defects_calculate", &
-               name = "Defects calculating", &
+          call table%set("displacements_calculate", control_parameter( &
+               key = "displacements_calculate", &
+               name = "Displacements calculating", &
                val = "off", &
-               description = "Enable calculation of defects", &
+               description = "Enable calculation of displacements", &
                data_type = DATA_BOOL))
 
-          call table%set("defects_start", control_parameter( &
-               key = "defects_start", &
-               name = "Defects Start calculating", &
+          call table%set("displacements_start", control_parameter( &
+               key = "displacements_start", &
+               name = "Displacements Start calculating", &
                val = "0", &
                units = "steps", &
                internal_units = "steps", &
-               description = "Start timestep for dumping defects configurations", &
+               description = "Start timestep for dumping displacements configurations", &
                data_type = DATA_FLOAT))
 
-          call table%set("defects_interval", control_parameter( &
-               key = "defects_interval", &
-               name = "Defects calculation interval", &
+          call table%set("displacements_interval", control_parameter( &
+               key = "displacements_interval", &
+               name = "Displacements calculation interval", &
                val = "1", &
                units = "steps", &
                internal_units = "steps", &
-               description = "Interval between dumping defects configurations", &
+               description = "Interval between dumping displacements configurations", &
                data_type = DATA_FLOAT))
 
-          call table%set("defects_distance", control_parameter( &
-               key = "defects_distance", &
-               name = "Defects distance condition ", &
+          call table%set("displacements_distance", control_parameter( &
+               key = "displacements_distance", &
+               name = "Displacements distance condition ", &
                val = "0.75", &
                units = "ang", &
                internal_units = "internal_l", &
-               description = "Set defects condition", &
+               description = "Set displacements condition", &
                data_type = DATA_FLOAT))
-
-          call table%set("defects_backup", control_parameter( &
-               key = "defects_backup", &
-               name = "Defects backup ", &
-               val = "off", &
-               description = "Enable defects backup", &
-               data_type = DATA_BOOL))
 
         end block displacements
 
@@ -1894,7 +1921,7 @@ contains
           call table%set("rdf_print", control_parameter( &
                key = "rdf_print", &
                name = "RDF printing", &
-               val = "off", &
+               val = "on", &
                description = "Enable printing of RDF", &
                data_type = DATA_BOOL))
 
@@ -1910,9 +1937,9 @@ contains
           call table%set("rdf_binsize", control_parameter( &
                key = "rdf_binsize", &
                name = "RDF number of bins", &
-               val = "0", &
+               val = "0.05", &
                description = "Set number of bins to be used in RDF analysis", &
-               data_type = DATA_INT))
+               data_type = DATA_FLOAT))
 
           call table%set("rdf_error_analysis", control_parameter( &
                key = "rdf_error_analysis", &
@@ -1940,7 +1967,7 @@ contains
           call table%set("zden_print", control_parameter( &
                key = "zden_print", &
                name = "Zden printing", &
-               val = "off", &
+               val = "on", &
                description = "Enable printing of Zden", &
                data_type = DATA_BOOL))
 
@@ -1956,9 +1983,9 @@ contains
           call table%set("zden_binsize", control_parameter( &
                key = "zden_binsize", &
                name = "ZDen number of bins", &
-               val = "0", &
+               val = "0.05", &
                description = "Set number of bins to be used in ZDen analysis", &
-               data_type = DATA_INT))
+               data_type = DATA_FLOAT))
         end block zden
 
         vaf: block
@@ -1972,7 +1999,7 @@ contains
           call table%set("vaf_print", control_parameter( &
                key = "vaf_print", &
                name = "VAF printing", &
-               val = "off", &
+               val = "on", &
                description = "Enable printing of VAF", &
                data_type = DATA_BOOL))
 
@@ -2406,8 +2433,8 @@ contains
         call table%set("ensemble_dpd_order", control_parameter( &
              key = "ensemble_dpd_order", &
              name = "Ensemble DPD order", &
-             val = "", &
-             description = "Set dpd method, options: first, second", &
+             val = "off", &
+             description = "Set dpd method, options: off, first, second", &
              data_type = DATA_OPTION))
 
         call table%set("ensemble_dpd_drag", control_parameter( &
@@ -2484,7 +2511,7 @@ contains
              key = "pressure_tensor", &
              name = "Pressure tensor", &
              val = "0.0 0.0 0.0 0.0 0.0 0.0", &
-             units = "internal_p", &
+             units = "katm", &
              internal_units = "internal_p", &
              description = "Set the target pressure tensor for NsT calculations", &
              data_type = DATA_VECTOR6))
@@ -3045,6 +3072,15 @@ contains
            val = "clean", &
            description = "Set restart settings, possible options: Clean, Continue, Rescale, Noscale", &
            data_type = DATA_OPTION))
+
+      call table%set("nfold", control_parameter( &
+           key = "nfold", &
+           name = "N Fold", &
+           val = "1 1 1", &
+           description = "Expand cell before running", &
+           data_type = DATA_VECTOR3))
+
+
     end block initialisation_parameters
 
     forcefields: block
@@ -3260,13 +3296,24 @@ contains
 
     end block plumed
 
-    call table%set("unsafe", control_parameter( &
-         key = "unsafe", &
-         name = "Disable strict", &
-         val = "off", &
-         description = "Ignore strict checks such as; "// &
-         "good system cutoff, particle âindex contiguity, disable non-error warnings, minimisation information", &
-         data_type = DATA_BOOL))
+    miscellaneous: block
+
+      call table%set("strict_checks", control_parameter( &
+           key = "strict_checks", &
+           name = "Disable strict", &
+           val = "on", &
+           description = "Ignore strict checks such as; "// &
+           "good system cutoff, particle âindex contiguity, disable non-error warnings, minimisation information", &
+           data_type = DATA_BOOL))
+
+      call table%set("unit_test", control_parameter( &
+           key = "unit_test", &
+           name = "Run unit tests", &
+           val = "off", &
+           description = "Do not perform a DLPOLY run, instead run unit tests", &
+           data_type = DATA_BOOL))
+
+    end block miscellaneous
 
   end Subroutine initialise_control
 
@@ -3291,9 +3338,11 @@ contains
        key = ''; val = ''; units = ''
        Call get_line(line_read,ifile,input,comm)
        if (.not. line_read) exit
+       ! Trim comments
+       if (scan(input, "#!") > 0) input = input(:scan(input, "#!")-1)
        call get_word(input, key)
-       ! Skip comments and blanks
-       if (key(1:1) == "#" .or. key(1:1) == "!" .or. key(1:1) == " ") cycle
+       ! Skip blanks
+       if (key == "") cycle
        Call lower_case(key)
        if (.not. params%in(key)) call error(0, 'Unrecognised key '//trim(key))
        Call params%get(key, param)
@@ -3311,11 +3360,11 @@ contains
     Integer, Intent( In    ) :: ifile
     Type( comms_type ), Intent ( InOut ) :: comm
     Character(Len=*), Intent( InOut ) :: input
-    Character(Len=STR_LEN) :: tmp, val, unit, junk
+    Character(Len=STR_LEN) :: tmp, val
+    Character(Len=MAX_KEY) :: unit
     Logical :: line_read
     Integer :: test_int, i
     Real(kind=wp) :: test_real
-    Integer :: ierr
 
     select case (param%data_type)
     case (DATA_INT)
@@ -3408,6 +3457,7 @@ contains
 
     case (DATA_OPTION, DATA_BOOL)
        call get_word(input, val)
+       if (val == "") call error(0, 'Missing option for '//trim(param%key))
        call lower_case(val)
        param%val = val
        input = ""
@@ -3418,17 +3468,16 @@ contains
        call error(0, 'Unknown data type while parsing '//trim(param%key))
     end select
 
-    if (trim(input) /= '') call error(0, "Unexpected junk "//trim(input)//" after key "//trim(param%key))
+    if (input /= '') call error(0, "Unexpected junk "//trim(input)//" after key "//trim(param%key))
 
   End Subroutine read_control_param
 
-  Subroutine bad_option(case, option)
-    Character(Len=*), Intent(In) :: case, option
+  Subroutine bad_option(key, option)
+    Character(Len=*), Intent(In) :: key, option
 
-    Call info(trim(case)//' '//trim(option)//' unrecognised option.',.true.)
+    Call info('Unrecognised option '//trim(option)//' for key '//trim(key),.true.)
     Call error(3)
 
   end Subroutine bad_option
-
 
 End Module new_control

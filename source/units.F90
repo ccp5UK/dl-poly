@@ -52,7 +52,7 @@ Module units
        force = 'internal_f', &
        velocity = 'internal_v', &
        power = 'internal_e/internal_t', &
-       surf = 'internal_f/internal_l', &
+       surf_ten = 'internal_f/internal_l', &
        emf = 'internal_e/internal_q')
   Type(units_scheme), Protected, Save :: out_units = internal_units
 

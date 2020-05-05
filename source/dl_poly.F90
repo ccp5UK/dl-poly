@@ -104,9 +104,17 @@ Program dl_poly
   Use vdw,                                Only: vdw_type
   Use z_density,                          Only: z_density_type
 
+  Use units,                              Only: initialise_units
+
+  ! HACK
+  Use new_control,                        Only: initialise_control
+  Use control_parameter_module,           Only: parameters_hash_table
+  Use control,                            Only: use_new_control
+
   Implicit None
 
   ! all your simulation variables
+  Type(parameters_hash_table)            :: params
   Type(comms_type), Allocatable          :: dlp_world(:)
   Type(thermostat_type), Allocatable     :: thermo(:)
   Type(ewald_type), Allocatable          :: ewld(:)
@@ -158,7 +166,6 @@ Program dl_poly
   ! Local Variables
   Character(len=1024) :: control_filename = '', arg
   Character(len=1024) :: output_filename = ''
-  Logical             :: new_control
   Logical             :: finish
   Integer             :: i
 
@@ -170,7 +177,14 @@ Program dl_poly
   !Call init_error_system(nrite,dlp_world(0))
   Call gsync(dlp_world(0))
 
-  new_control = .false.
+  ! temporary stuff this will need to be abstracted
+  Allocate (flow(1))
+  flow(1)%simulation_method = MD
+
+  ! Assume we're running
+  flow(1)%simulation = .true.
+  ! Assume we're using old format
+  use_new_control = .false.
   finish = .false.
   If (dlp_world(0)%idnode == 0) Then
     If (command_argument_count() > 0) Then
@@ -184,6 +198,14 @@ Program dl_poly
           Write (eu, '(a)') "Usage: "//Trim(arg)//" -c CONTROL_FILENAME -o OUTPUT_FILENAME"
           Write (eu, '(a)') "Each of -c or -o options are optional"
           Write (eu, '(a)') "use -h to see this help"
+          Write (eu, '(a)') "use --help to search help"
+          finish = .true.
+          Exit
+       Case ('--help')
+          i = i + 1
+          Call get_command_argument(i, control_filename)
+          Call initialise_control(params)
+          Call params%help(control_filename)
           finish = .true.
           Exit
         Case ('-c')
@@ -192,8 +214,10 @@ Program dl_poly
         Case ('-o')
           i = i + 1
           Call get_command_argument(i, output_filename)
-       Case ('-n')
-          new_control = .true.
+       Case ('-n', '--new-control')
+          use_new_control = .true.
+       Case ('--replay', '-r')
+          flow%simulation = .false.
         Case default
           Write (eu, *) "No idea what you want, try -h "
           finish = .true.
@@ -209,6 +233,8 @@ Program dl_poly
     Call exit_comms(dlp_world)
     Stop 0
   End If
+
+  call initialise_units()
 
   ! IS: This has to be abstracted or defined to be of dimension 1 in module flow.
   Allocate(flow(1))

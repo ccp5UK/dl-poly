@@ -159,6 +159,7 @@ Module control
 
   Private
 
+  Logical, Save, Public :: use_new_control
   Public :: read_control
   Public :: scan_control_output
   Public :: scan_control_io

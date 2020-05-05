@@ -187,7 +187,7 @@ Contains
     do i = 1, len_trim(input)
        output = output + ichar(input(i:i))
     end do
-    output = mod(output, table%size)
+    output = mod(output, table%size) + 1
 
   End Function hash_value
 
@@ -263,12 +263,13 @@ Contains
 
     location = table%get_loc(input)
 
-    output = table%table_data(location)
-    if (table%table_keys(location) == BAD_VAL) then
+    if (table%table_keys(location) == input) then
+       output = table%table_data(location)
+    else
        if (present(default)) then
           output = default
        else
-          call error(0, 'No data pertaining to key '//input//' in table')
+          call error(0, 'No data pertaining to key '//trim(input)//' in table')
        end if
     end if
 
@@ -306,7 +307,6 @@ Contains
   Subroutine get_keys(table, keys)
     Class(hash_table), Intent( In    ) :: table
     Character(Len=MAX_KEY), Dimension(:), Allocatable :: keys
-    Integer :: i
 
     if (allocated(keys)) then
        deallocate(keys)

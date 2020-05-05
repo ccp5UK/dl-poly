@@ -107,6 +107,13 @@ set(dlpoly_SRCS
   npt_langevin.F90
   npt_mtk.F90
   unit_tests/test_configuration.F90
+
+  control_parameter.F90
+  new_control.F90
+  new_control_old_style.F90
+  hash.F90
+  units.F90
+
   )
 if(BUILDER)
   set_property(SOURCE development.F90 APPEND PROPERTY
@@ -189,6 +196,7 @@ install(TARGETS ${target_name} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 INSTALL_SUBLIB(dlpoly)
 
 add_executable(test-control unit_tests/test_control.f90 new_control_old_style.F90 control_parameter.F90 new_control.F90 hash.F90 units.F90)
+target_compile_options(test-control PUBLIC -cpp)
 add_executable(test-units unit_tests/test_units.f90 units.F90 hash.F90)
 target_link_libraries(test-units dlpoly ${LIBS})
 target_link_libraries(test-control dlpoly ${LIBS})

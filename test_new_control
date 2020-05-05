@@ -1,6 +1,7 @@
 title dmimcl rigid
 # units atomic
 io_file_history Here
+
 temperature 400 K
 pressure_hydrostatic 1 atm
 cutoff               9 Ang
@@ -15,6 +16,7 @@ ensemble_barostat_coupling 2.0 ps
 
 timestep     2 fs
 timestep_variable ON
+
 time_run 20 steps
 time_equilibration   20 ps
 time_job 1 hr

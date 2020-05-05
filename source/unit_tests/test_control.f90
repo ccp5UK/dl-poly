@@ -8,15 +8,17 @@ program test_control
   type( parameters_hash_table ) :: params
   type(comms_type) :: comm
   Real(kind=8) :: ts
+  Character(Len = 50) :: line
   Integer :: test
 
-
   call initialise_units()
-  open(newunit=test, file='test_new_control')
+  open(newunit=test, file='test_new_control', status='old', action='read')
   call initialise_control(params)
   call read_new_control(test, params, comm)
+
   call params%retrieve('timestep', ts)
   call set_timestep(ts)
-  call params%help()
+  call print_set(params)
+!  call params%help()
 
 end program test_control

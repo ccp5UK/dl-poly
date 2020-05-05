@@ -37,9 +37,9 @@ module control_parameter_module
      !> Current value -- Initialise to default
      Character(Len=STR_LEN) :: val = ""
      !> User specified units
-     Character(Len=30) :: units = ""
+     Character(Len=MAX_KEY) :: units = ""
      !> Units to be converted to internally
-     Character(Len=30) :: internal_units = ""
+     Character(Len=MAX_KEY) :: internal_units = ""
      !> Information to be printed with help
      Character(Len=STR_LEN) :: description = ""
      !> Control parameter data type (int, float, vector3, vector6, string, bool, option)
@@ -252,10 +252,10 @@ contains
     end if
     val = param%val
 
-    do i = 1, 4
+    do i = 1, 9
        call get_word(val, parse)
        if (parse == "") exit
-       tmp(i) = word_2_real(parse)
+       tmp(i) = nint(word_2_real(parse))
     end do
 
     select case(param%data_type)
@@ -283,7 +283,6 @@ contains
   Subroutine retrieve_int(table, key, output, required)
     Class( parameters_hash_table ) :: table
     Character(Len=*), Intent( In    ) :: key
-    Character(Len=STR_LEN) :: parse
     Type( control_parameter ) :: param
     Real( kind = wp ) :: rtmp
     Logical, Intent( In    ), Optional :: required
@@ -309,7 +308,6 @@ contains
   Subroutine retrieve_bool(table, key, output, required)
     Class( parameters_hash_table ) :: table
     Character(Len=*), Intent( In    ) :: key
-    Character(Len=STR_LEN) :: parse
     Type( control_parameter ) :: param
     Logical, Intent( In    ), Optional :: required
     Logical, Intent(   Out ) :: output

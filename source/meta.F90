@@ -134,8 +134,21 @@ Module meta
   Use vdw,                                Only: vdw_type
   Use z_density,                          Only: z_density_type
 
+  ! HACK
+  Use control_parameter_module, Only : parameters_hash_table
+  Use control,                            Only: use_new_control
+  Use new_control, Only : read_new_control
+  Use new_control_old_style, Only : setup_file_io, scan_new_control_output_old, &
+       read_new_control_old
+
   Implicit None
   Private
+
+! #if WIN32
+!              Character(Len=*), Parameter :: null_unit = 'NUL'
+! #elif UNIX
+              Character(Len=*), Parameter :: null_unit = '/dev/null'
+! #endif
 
   Public :: molecular_dynamics
 
@@ -228,68 +241,70 @@ Contains
   End Subroutine molecular_dynamics
 
   Subroutine molecular_dynamics_driver(dlp_world, comm, thermo, ewld, tmr, devel, &
-                                           stats, green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, &
-                                           inversion, tether, threebody, zdensity, cons, neigh, pmfs, sites, core_shells, &
-                                           vdws, tersoffs, fourbody, rdf, netcdf, minim, mpoles, ext_field, rigid, electro, &
-                                           domain, flow,seed, traj, kim_data, config, ios, ttms, rsdsc, files, control_filename, &
-                                           output_filename, crd, adf)
+                                       stats, green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, &
+                                       inversion, tether, threebody, zdensity, cons, neigh, pmfs, sites, core_shells, &
+                                       vdws, tersoffs, fourbody, rdf, netcdf, minim, mpoles, ext_field, rigid, electro, &
+                                       domain, flow, seed, traj, kim_data, config, ios, ttms, rsdsc, files, control_filename, &
+                                       output_filename, crd, adf)
 
-    Type(comms_type),            Intent(InOut) :: dlp_world(0:),comm
-    Type(thermostat_type),       Intent(InOut) :: thermo(:)
-    Type(ewald_type),            Intent(InOut) :: ewld(:)
-    Type(timer_type),            Intent(InOut) :: tmr
-    Type(development_type),      Intent(InOut) :: devel
-    Type(stats_type),            Intent(InOut) :: stats(:)
-    Type(greenkubo_type),        Intent(InOut) :: green(:)
-    Type(plumed_type),           Intent(InOut) :: plume(:)
-    Type(msd_type),              Intent(InOut) :: msd_data(:)
-    Type(metal_type),            Intent(InOut) :: met(:)
-    Type(poisson_type),          Intent(InOut) :: pois(:)
-    Type(impact_type),           Intent(InOut) :: impa
-    Type(defects_type),          Intent(InOut) :: dfcts(:)
-    Type(bonds_type),            Intent(InOut) :: bond(:)
-    Type(angles_type ),          Intent(InOut) :: angle(:)
-    Type(dihedrals_type ),       Intent(InOut) :: dihedral(:)
-    Type(inversions_type ),      Intent(InOut) :: inversion(:)
-    Type(tethers_type ),         Intent(InOut) :: tether(:)
-    Type(threebody_type ),       Intent(InOut) :: threebody(:)
-    Type(z_density_type ),       Intent(InOut) :: zdensity(:)
-    Type(constraints_type ),     Intent(InOut) :: cons(:)
-    Type(neighbours_type ),      Intent(InOut) :: neigh(:)
-    Type(pmf_type ),             Intent(InOut) :: pmfs(:)
-    Type(site_type ),            Intent(InOut) :: sites(:)
-    Type(core_shell_type ),      Intent(InOut) :: core_shells(:)
-    Type(vdw_type ),             Intent(InOut) :: vdws(:)
-    Type(tersoff_type ),         Intent(InOut) :: tersoffs(:)
-    Type(four_body_type ),       Intent(InOut) :: fourbody(:)
-    Type(rdf_type ),             Intent(InOut) :: rdf(:)
-    Type(netcdf_param ),         Intent(InOut) :: netcdf
-    Type(minimise_type ),        Intent(InOut) :: minim(:)
-    Type(mpole_type ),           Intent(InOut) :: mpoles(:)
-    Type(external_field_type ),  Intent(InOut) :: ext_field(:)
-    Type(rigid_bodies_type ),    Intent(InOut) :: rigid(:)
-    Type(electrostatic_type ),   Intent(InOut) :: electro(:)
-    Type(domains_type ),         Intent(InOut) :: domain(:)
-    Type(flow_type ),            Intent(InOut) :: flow
-    Type(seed_type ),            Intent(InOut) :: seed
-    Type(trajectory_type ),      Intent(InOut) :: traj
-    Type(kim_type ), Target,     Intent(InOut) :: kim_data(:)
-    Type(configuration_type ),   Intent(InOut) :: config(:)
-    Type(io_type),               Intent(InOut) :: ios
-    Type(ttm_type),              Intent(InOut) :: ttms(:)
-    Type(rsd_type ), Target,     Intent(InOut) :: rsdsc(:)
-    Type(file_type ),            Intent(InOut) :: files(:)
-    Character(Len= 1024),        Intent(In   ) :: output_filename
-    Character(Len= 1024),        Intent(In   ) :: control_filename
-    Type(coord_type),            Intent(InOut) :: crd(:)
-    Type(adf_type),              Intent(InOut) :: adf(:)
+    Type(comms_type),          Intent(InOut) :: dlp_world(0:), comm
+    Type(thermostat_type),     Intent(InOut) :: thermo
+    Type(ewald_type),          Intent(InOut) :: ewld
+    Type(timer_type),          Intent(InOut) :: tmr
+    Type(development_type),    Intent(InOut) :: devel
+    Type(stats_type),          Intent(InOut) :: stats
+    Type(greenkubo_type),      Intent(InOut) :: green
+    Type(plumed_type),         Intent(InOut) :: plume
+    Type(msd_type),            Intent(InOut) :: msd_data
+    Type(metal_type),          Intent(InOut) :: met
+    Type(poisson_type),        Intent(InOut) :: pois
+    Type(impact_type),         Intent(InOut) :: impa
+    Type(defects_type),        Intent(InOut) :: dfcts(2)
+    Type(bonds_type),          Intent(InOut) :: bond
+    Type(angles_type),         Intent(InOut) :: angle
+    Type(dihedrals_type),      Intent(InOut) :: dihedral
+    Type(inversions_type),     Intent(InOut) :: inversion
+    Type(tethers_type),        Intent(InOut) :: tether
+    Type(threebody_type),      Intent(InOut) :: threebody
+    Type(z_density_type),      Intent(InOut) :: zdensity
+    Type(constraints_type),    Intent(InOut) :: cons
+    Type(neighbours_type),     Intent(InOut) :: neigh
+    Type(pmf_type),            Intent(InOut) :: pmfs
+    Type(site_type),           Intent(InOut) :: sites
+    Type(core_shell_type),     Intent(InOut) :: core_shells
+    Type(vdw_type),            Intent(InOut) :: vdws
+    Type(tersoff_type),        Intent(InOut) :: tersoffs
+    Type(four_body_type),      Intent(InOut) :: fourbody
+    Type(rdf_type),            Intent(InOut) :: rdf
+    Type(netcdf_param),        Intent(InOut) :: netcdf
+    Type(minimise_type),       Intent(InOut) :: minim
+    Type(mpole_type),          Intent(InOut) :: mpoles
+    Type(external_field_type), Intent(InOut) :: ext_field
+    Type(rigid_bodies_type),   Intent(InOut) :: rigid
+    Type(electrostatic_type),  Intent(InOut) :: electro
+    Type(domains_type),        Intent(InOut) :: domain
+    Type(flow_type),           Intent(InOut) :: flow
+    Type(seed_type),           Intent(InOut) :: seed
+    Type(trajectory_type),     Intent(InOut) :: traj
+    Type(kim_type), Target,    Intent(InOut) :: kim_data
+    Type(configuration_type),  Intent(InOut) :: config
+    Type(io_type),             Intent(InOut) :: ios
+    Type(ttm_type),            Intent(InOut) :: ttms
+    Type(rsd_type), Target,    Intent(InOut) :: rsdsc
+    Type(file_type),           Intent(InOut) :: files(FILENAME_SIZE)
+    Character(len=1024),       Intent(In   ) :: control_filename
+    Character(len=1024),       Intent(In   ) :: output_filename
+    Type(coord_type),          Intent(InOut) :: crd
+    Type(adf_type),            Intent(InOut) :: adf
 
-    Character(Len=256 ) :: message
-    Integer(Kind=wi)    :: vacuum
+    Type( parameters_hash_table ) :: params
+    Integer :: i
     Integer(Kind=wi)    :: ff, frevc
     Integer             :: old_print_level
-    Logical             :: lfce
-    Real(wp)            :: s
+    Character(len=256) :: message
+    Integer(Kind=wi)   :: vacuum
+    Logical            :: lfce
+    Real(wp)           :: s
 
     Call gtime(tmr%elapsed) ! Initialise wall clock time
 
@@ -297,22 +312,51 @@ Contains
     Call default_filenames(files)
     ! Rename control file if argument was passed
     If (Len_Trim(control_filename) > 0 ) Then
-      Call files(FILE_CONTROL)%rename(control_filename)
+       Call files(FILE_CONTROL)%rename(control_filename)
     End If
     If (Len_Trim(output_filename) > 0 ) Then
-      Call files(FILE_OUTPUT)%rename(output_filename)
+       Call files(FILE_OUTPUT)%rename(output_filename)
     End If
 
-    Call scan_development(devel, files, comm)
-    old_print_level = get_print_level()
-    ! Open output file, or direct output unit to stderr
-    If (.not. devel%l_scr) Then
-      Open (Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Status='replace')
-    Else
-      files(FILE_OUTPUT)%unit_no = error_unit
-    End If
-    dlp_world(0)%ou = files(FILE_OUTPUT)%unit_no
-    Call init_error_system(files(FILE_OUTPUT)%unit_no, dlp_world(0))
+    if (.not. use_new_control) then
+       Call scan_development(devel, files, comm)
+       ! Open output file, or direct output unit to stderr
+       If (.not. devel%l_scr) Then
+          Open (Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Status='replace')
+       Else
+          files(FILE_OUTPUT)%unit_no = error_unit
+       End If
+       dlp_world(0)%ou = files(FILE_OUTPUT)%unit_no
+       Call init_error_system(files(FILE_OUTPUT)%unit_no, dlp_world(0))
+
+
+       ! OPEN MAIN OUTPUT CHANNEL & PRINT HEADER AND MACHINE RESOURCES
+       Call scan_control_output(files, comm)
+
+       Call print_banner(dlp_world)
+
+       Call build_info()
+
+       Call scan_control_io(ios, netcdf, files, comm)
+    else
+       call read_new_control(files(FILE_CONTROL), params, comm)
+       call scan_new_control_output_old(params, files)
+
+       do i = 1, FILENAME_SIZE
+          if (files(i)%filename == "SCREEN") then
+             files(i)%unit_no = error_unit
+          else if (files(i)%filename == "NONE") then
+             files(i)%filename = null_unit
+          end if
+       end do
+       dlp_world(0)%ou = files(FILE_OUTPUT)%unit_no
+       Call init_error_system(files(FILE_OUTPUT)%unit_no, dlp_world(0))
+       Call print_banner(dlp_world)
+
+       Call build_info()
+
+       Call setup_file_io(params, ios, netcdf, files, comm)
+    end if
 
 #ifdef CHRONO
     ! Start main timer
@@ -320,43 +364,16 @@ Contains
     Call start_timer(tmr,'Initialisation')
 #endif
 
-    ! OPEN MAIN OUTPUT CHANNEL & PRINT HEADER AND MACHINE RESOURCES
-    Call scan_control_output(files,comm)
-
-    Call print_banner(dlp_world)
-
-    Call build_info()
-
-    Call scan_control_io(ios,netcdf,files,comm)
-
-    ! Print error message in case there was an error when reading settings evb from CONTROL via read_simtype
-    If(flow%evbfail)Then
-      Write(message,'(a)') 'error - Either no or wrong specificaton following the keyword "evb" in CONTROL &
-                           &for the number of fields to be coupled via. Value MUST an integer larger than 1'
-      call error(0,message)
-    End If
-
-
     ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
     ! (setup and domains)
-    Call set_bounds ( &
-         sites(1), ttms(1), ios, core_shells(1), cons(1), pmfs(1), stats(1), &
-         thermo(1), green(1), devel, msd_data(1), met(1), pois(1), bond(1), angle(1), dihedral(1), inversion(1), &
-         tether(1), threebody(1), zdensity(1), neigh(1), vdws(1), tersoffs(1), fourbody(1), rdf(1), mpoles(1), &
-         ext_field(1), rigid(1), electro(1), domain(1), config(1), ewld(1), kim_data(1), files, flow, comm, 1)
+    Call set_bounds(params, &
+      sites, ttms, ios, core_shells, cons, pmfs, stats, &
+      thermo, green, devel, msd_data, met, pois, bond, angle, dihedral, inversion, &
+      tether, threebody, zdensity, neigh, vdws, tersoffs, fourbody, rdf, mpoles, ext_field, &
+      rigid, electro, domain, config, ewld, kim_data, files, flow, comm)
 
-    Call set_print_level(0)
-    Do ff = 2, flow%NUM_FF
-      Call set_bounds ( &
-        sites(ff), ttms(ff), ios, core_shells(ff), cons(ff), pmfs(ff), stats(ff), &
-        thermo(ff), green(ff), devel, msd_data(ff), met(ff), pois(ff), bond(ff), angle(ff), dihedral(ff), inversion(ff), &
-        tether(ff), threebody(ff), zdensity(ff), neigh(ff), vdws(ff), tersoffs(ff), fourbody(ff), rdf(ff), mpoles(ff), &
-        ext_field(ff), rigid(ff), electro(ff), domain(ff), config(ff), ewld(ff), kim_data(ff), files, flow, comm, ff)
-    End Do
-    Call set_print_level(old_print_level)
-
-    Call info('',.true.)
-    Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
+    Call info('', .true.)
+    Call info("*** pre-scanning stage (set_bounds) DONE ***", .true.)
     Call time_elapsed(tmr)
 
     If(flow%NUM_FF>1)Then
@@ -415,10 +432,18 @@ Contains
     End Do
 
     ! READ SIMULATION CONTROL PARAMETERS
-    Call read_control(lfce, impa, ttms(1), dfcts, rigid(1), rsdsc(1), core_shells(1), cons(1), pmfs(1), &
-         stats(1), thermo(1), green(1), devel, plume(1), msd_data(1), met(1), pois(1), bond(1), angle(1), dihedral(1), &
-         inversion(1), zdensity(1), neigh(1), vdws(1), rdf(1), minim(1), mpoles(1), electro(1), ewld(1), &
-         seed, traj, files, tmr, config(1), flow, crd(1), adf(1), comm)
+    if (use_new_control) then
+       Call read_new_control_old(params, &
+            lfce(1), impa(1), ttms(1), dfcts(1), rigid(1), rsdsc(1), core_shells(1), cons(1), pmfs(1), &
+            stats(1), thermo(1), green(1), devel(1), plume(1), msd_data(1), met(1), pois(1), bond(1), angle(1), dihedral(1), &
+            inversion(1), zdensity(1), neigh(1), vdws(1), rdf(1), minim(1), mpoles(1), electro(1), ewld(1), &
+            seed(1), traj(1), files(1), tmr(1), config(1), flow(1), crd(1), adf(1), comm)
+     else
+       Call read_control(lfce, impa, ttms(1), dfcts, rigid(1), rsdsc(1), core_shells(1), cons(1), pmfs(1), &
+            stats(1), thermo(1), green(1), devel, plume(1), msd_data(1), met(1), pois(1), bond(1), angle(1), dihedral(1), &
+            inversion(1), zdensity(1), neigh(1), vdws(1), rdf(1), minim(1), mpoles(1), electro(1), ewld(1), &
+            seed, traj, files, tmr, config(1), flow, crd(1), adf(1), comm)
+     end if
 
     call set_print_level(0)
     Do ff = 2, flow%NUM_FF
