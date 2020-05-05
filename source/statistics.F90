@@ -171,19 +171,25 @@ Module statistics
 
 Contains
 
-  Subroutine allocate_statistics_arrays(stats, mxatdm)
+  Subroutine allocate_statistics_arrays(stats,mxrgd,mxatms,mxatdm)
     Class(stats_type), Intent(InOut) :: stats
-    Integer,           Intent(In   ) :: mxatdm
+    Integer,           Intent(In   ) :: mxatdm,mxrgd,mxatms
 
-    Integer                 :: mxnstk, mxstak
+    Integer                 :: mxnstk, mxstak, nxatms
     Integer, Dimension(1:4) :: fail
 
     fail = 0
 
+    If (mxrgd > 0) Then
+       nxatms=mxatms
+    Else
+       nxatms=mxatdm
+    End If
+
     mxnstk = stats%mxnstk
     mxstak = stats%mxstak
 
-    Allocate (stats%xin(1:mxatdm), stats%yin(1:mxatdm), stats%zin(1:mxatdm), Stat=fail(1))
+    Allocate (stats%xin(1:nxatms), stats%yin(1:nxatms), stats%zin(1:nxatms), Stat=fail(1))
     Allocate (stats%xto(1:mxatdm), stats%yto(1:mxatdm), stats%zto(1:mxatdm), stats%rsd(1:mxatdm), Stat=fail(2))
     Allocate (stats%stpval(0:mxnstk), stats%stpvl0(0:mxnstk), stats%sumval(0:mxnstk), stats%ssqval(0:mxnstk), Stat=fail(3))
     Allocate (stats%zumval(0:mxnstk), stats%ravval(0:mxnstk), stats%stkval(1:mxstak, 0:mxnstk), Stat=fail(4))
