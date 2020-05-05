@@ -2043,12 +2043,12 @@ Contains
     Integer,            Intent( In    ) :: root
     Character( Len = 100)               :: error_message
 
-    error_message = 'gscatterv: Sum of buffer sizes in send_counts &
-         does not equal total size of send_buffer.'
+    error_message = 'gscatterv: Sum of buffer sizes in send_counts '//  &
+         'does not equal total size of send_buffer.'
     Call assert(Sum(send_counts) == Size(send_buf), error_message)
 
-    error_message = 'gscatterv: Number of rows differs between send and &
-         receive buffers. Data will not be correctly ordered.'
+    error_message = 'gscatterv: Number of rows differs between send and '// &
+         'receive buffers. Data will not be correctly ordered.'
     Call assert(Size(send_buf, Dim = 1) == Size(recv_buf, Dim = 1), error_message)
 
     Call MPI_SCATTERV(send_buf, send_counts, disps, wp_mpi, &
@@ -2156,8 +2156,8 @@ Contains
     Integer :: process_id
     Character( Len = 100 )              :: error_message
 
-    error_message = 'ggatherv: Sum of send_buffer sizes in receive_counts &
-         does not equal total size of receive_buffer.'
+    error_message = 'ggatherv: Sum of send_buffer sizes in receive_counts '//&
+         'does not equal total size of receive_buffer.'
     Call assert(Sum(recv_counts) == Size(recv_buf), error_message)
 
     If(Present(recv_process)) Then
@@ -2208,12 +2208,12 @@ Contains
     Integer :: process_id
     Character( Len = 100 ) :: error_message
 
-    error_message = 'ggatherv: Sum of send_buffer sizes in receive_counts &
-         does not equal total size of receive_buffer.'
+    error_message = 'ggatherv: Sum of send_buffer sizes in receive_counts '//&
+         'does not equal total size of receive_buffer.'
     Call assert(Sum(recv_counts) == Size(recv_buf), error_message)
 
-    error_message = 'ggatherv: Number of rows differs between send and &
-         receive buffers. Data will not be correctly ordered.'
+    error_message = 'ggatherv: Number of rows differs between send and '//&
+         'receive buffers. Data will not be correctly ordered.'
     Call assert(Size(send_buf, Dim = 1) == Size(recv_buf, Dim = 1), error_message)
 
     If(Present(recv_process)) Then
@@ -2342,8 +2342,8 @@ Contains
     Real( Kind = wp),   Intent( Out   ) :: recv_buf(:)
     Character( Len = 100 )              :: error_message
 
-    error_message = 'gallgatherv: Sum of send_buffer sizes in receive_counts &
-         does not equal total size of receive_buffer.'
+    error_message = 'gallgatherv: Sum of send_buffer sizes in receive_counts '//&
+         'does not equal total size of receive_buffer.'
     Call assert(Sum(recv_counts) == Size(recv_buf), error_message)
 
     Call MPI_ALLGATHERV(send_buf,  Size(send_buf),     wp_mpi, &
@@ -2384,12 +2384,12 @@ Contains
     Real( Kind = wp),   Intent( Out   ) :: recv_buf(:,:)
     Character( Len = 100 )              :: error_message
 
-    error_message = 'gallgatherv: Sum of send_buffer sizes in receive_counts &
-         does not equal total size of receive_buffer.'
+    error_message = 'gallgatherv: Sum of send_buffer sizes in receive_counts '//&
+         'does not equal total size of receive_buffer.'
     Call assert(Sum(recv_counts) == Size(recv_buf), error_message)
 
-    error_message = 'gallgatherv: Number of rows differs between send and &
-         receive buffers. Data will not be correctly ordered.'
+    error_message = 'gallgatherv: Number of rows differs between send and '//&
+         'receive buffers. Data will not be correctly ordered.'
     Call assert(Size(send_buf, Dim = 1) == Size(recv_buf, Dim = 1), error_message)
 
     Call MPI_ALLGATHERV(send_buf,  Size(send_buf),     wp_mpi, &

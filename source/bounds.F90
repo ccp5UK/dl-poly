@@ -545,7 +545,7 @@ Contains
     Call info(' ', .true.)
     Write (message, '(a,3(i6,1x))') 'node/domain decomposition (x,y,z): ', &
       domain%nx, domain%ny, domain%nz
-    Call info(message, .true.)
+    Call info(message, .true., level=2)
 
     ! TTM matters
     padding2 = 0.0_wp
@@ -631,7 +631,7 @@ Contains
       Write (message, '(a,i6,a,3(i0,a))') &
         'pure cutoff driven limit on largest possible decomposition:', qlx * qly * qlz, &
         ' nodes/domains (', qlx, ',', qly, ',', qlz, ')'
-      Call info(message, .true.)
+      Call info(message, .true., level=3)
 
       qlx = Max(1, qlx / 2)
       qly = Max(1, qly / 2)
@@ -640,7 +640,7 @@ Contains
       Write (message, '(a,i6,a,3(i0,a))') &
         'pure cutoff driven limit on largest balanced decomposition:', qlx * qly * qlz, &
         ' nodes/domains (', qlx, ',', qly, ',', qlz, ')'
-      Call info(message, .true.)
+      Call info(message, .true., level=3)
 
     Else
 
@@ -669,7 +669,7 @@ Contains
     Write (message, '(a,i6,a,3(i0,a))') &
       'cutoffs driven limit on largest possible decomposition:', qlx * qly * qlz, &
       ' nodes/domains (', qlx, ',', qly, ',', qlz, ')'
-    Call info(message, .true.)
+    Call info(message, .true., level=3)
 
     qlx = Max(1, qlx / 2)
     qly = Max(1, qly / 2)
@@ -678,7 +678,7 @@ Contains
     Write (message, '(a,i6,a,3(i0,a))') &
       'cutoffs driven limit on largest balanced decomposition:', qlx * qly * qlz, &
       ' nodes/domains (', qlx, ',', qly, ',', qlz, ')'
-    Call info(message, .true.)
+    Call info(message, .true., level=3)
 
     ! calculate link cell dimensions per node
 
@@ -689,7 +689,7 @@ Contains
     ! print link cell algorithm and check for violations or...
 
     Write (message, '(a,3i6)') "link-cell decomposition 1 (x,y,z): ", ilx, ily, ilz
-    Call info(message, .true.)
+    Call info(message, .true., level=3)
 
     tol = Min(0.05_wp, 0.005_wp * neigh%cutoff) ! tolerance
     If (ewld%active) Then ! 2% (w/ SPME) or 4% (w/ PS)
@@ -1112,8 +1112,8 @@ Contains
       ily = Int(domain%ny_recip * celprp(8) / cut)
       ilz = Int(domain%nz_recip * celprp(9) / cut)
 
-      Write (message, '(a,3i6)') "link-ccell decomposition 2 (x,y,z): ", ilx, ily, ilz
-      Call info(message, .true.)
+      Write (message, '(a,3i6)') "link-cell decomposition 2 (x,y,z): ", ilx, ily, ilz
+      Call info(message, .true., level=3)
 
       If (ilx < 3 .or. ily < 3 .or. ilz < 3) Call error(305)
 
@@ -1125,6 +1125,10 @@ Contains
         neigh%max_cell = Max(neigh%max_cell, Nint((fdvar**2) * Real((ilx + 5) * (ily + 5) * (ilz + 5), wp)))
       End If
     End If
+
+    Write (message, '(a,3i6)') "Final link-cell decomposition (x,y,z): ", ilx, ily, ilz
+    Call info(message, .true., level=1)
+
   End Subroutine set_bounds
 
 End Module bounds

@@ -59,14 +59,12 @@ their own _fork_, creating commits and changing the code as they see fit.
 The _devel_ repository may be cloned as follows,
 
 ```sh
-git clone ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git dl-poly-devel
+git clone git@gitlab.stfc.ac.uk:dl-poly/dl-poly.git dl-poly-devel
 ```
-(use ssh rather than https due to self signed key issues)
-
 A _fork_ is created using the web UI. It may then be cloned for a user called 'username' as follows,
 
 ```sh
-git clone ssh://gitlab@ccforge.dl.ac.uk:1980/username/dl-poly.git dl-poly-fork
+git clone git@gitlab.stfc.ac.uk:username/dl-poly.git dl-poly-fork
 ```
 
 ### Branch, fix, merge model:
@@ -80,14 +78,14 @@ Create a new branch for the issue on the dashboard of your fork, we will assume
 the branch is called 'issueXYZ'. Clone the branch,
 
 ```sh
-$ git clone -b issueXYZ --single-branch ssh://gitlab@ccforge.dl.ac.uk:1980/username/dl-poly.git dl-poly-issueXYZ
+$ git clone -b issueXYZ --single-branch git@gitlab.stfc.ac.uk:username/dl-poly.git dl-poly-issueXYZ
 ```
 
 Alternatively you can create the branch in the cli using
 
 ```sh
 # clone the repository, if you already have a local repository this is not nessecary
-$ git clone ssh://gitlab@ccforge.dl.ac.uk:1980/username/dl-poly.git dl-poly-issueXYZ
+$ git clone git@gitlab.stfc.ac.uk:username/dl-poly.git dl-poly-issueXYZ
 $ pushd dl-poly-issueXYZ
 # create and checkout a new branch (this is equivilent to git branch followed by git checkout)
 $ git checkout -b issueXYZ
@@ -137,7 +135,7 @@ routine,
 
 ```sh
 # add devel as a remote if you have not already
-$ git remote add devel ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git
+$ git remote add devel git@gitlab.stfc.ac.uk:dl-poly/dl-poly.git
 # get the changes to devel since you started working on your issue
 $ git fetch devel
 # merge these changes into your branch (assuming you want to merge into the master branch on devel)
@@ -152,7 +150,7 @@ branch on top of _devel/master_ however be sure you understand the differences b
 
 ```sh
 # add devel as a remote if you have not already
-$ git remote add devel ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git
+$ git remote add devel git@gitlab.stfc.ac.uk:dl-poly/dl-poly.git
 # get the changes to devel since you started working on your issue
 $ git fetch devel
 # merge these changes into your branch (assuming you want to merge into the master branch on devel)
@@ -172,10 +170,10 @@ requests.
 
 ```sh
 # clone your fork
-$ git clone ssh://gitlab@ccforge.dl.ac.uk:1980/username/dl-poly.git dl-poly-fork
+$ git clone git@gitlab.stfc.ac.uk:username/dl-poly.git dl-poly-fork
 pushd dl-poly-fork
 # add a remote for devel
-$ git remote add devel ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git
+$ git remote add devel git@gitlab.stfc.ac.uk:dl-poly/dl-poly.git
 ```
 
 These commands need to be done only once. `git remote -v` shall show you
@@ -183,10 +181,10 @@ the origin and project fetch and push links
 
 ```sh
 $ git remote -v
-origin  ssh://gitlab@ccforge.dl.ac.uk:1980/username/dl-poly.git (fetch)
-origin  ssh://gitlab@ccforge.dl.ac.uk:1980/username/dl-poly.git (push)
-devel ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git (fetch)
-devel ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git (push)
+origin  git@gitlab.stfc.ac.uk:username/dl-poly.git (fetch)
+origin  git@gitlab.stfc.ac.uk:username/dl-poly.git (push)
+devel git@gitlab.stfc.ac.uk:dl-poly/dl-poly.git (fetch)
+devel git@gitlab.stfc.ac.uk:dl-poly/dl-poly.git (push)
 ```
 
 When you need to sync your _fork_ with _devel_, do the following,

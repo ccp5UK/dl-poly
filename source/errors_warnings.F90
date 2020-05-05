@@ -25,6 +25,7 @@ Module errors_warnings
   Private
 
   Type(comms_type), Save :: eworld
+  Integer, Save :: print_level = 2
   Integer, Save :: ounit
 
   Public :: warning
@@ -32,6 +33,7 @@ Module errors_warnings
   Public :: info
   Public :: init_error_system
   Public :: error_alloc, error_dealloc
+  Public :: set_print_level
 
   Interface warning
     Module Procedure warning_special
@@ -702,13 +704,23 @@ Contains
 
   End Subroutine warning_general
 
-  Subroutine info_ml(message, n, master_only)
+  Subroutine info_ml(message, n, master_only, level)
     Character(Len=*),  Intent(In   ) :: message(:)
     Integer,           Intent(In   ) :: n
     Logical, Optional, Intent(In   ) :: master_only
+    Integer, Optional :: level
+    Integer :: print_check
 
     Integer :: i
     Logical :: zeroOnly
+
+
+    print_check = 1
+    if (present(level)) then
+       print_check = level
+    end if
+
+    if (print_check > print_level) return
 
     zeroOnly = .false.
     If (Present(master_only)) zeroOnly = master_only
@@ -726,11 +738,19 @@ Contains
     End If
   End Subroutine info_ml
 
-  Subroutine info_sl(message, master_only)
+  Subroutine info_sl(message, master_only, level)
     Character(Len=*),  Intent(In   ) :: message
     Logical, Optional, Intent(In   ) :: master_only
-
+    Integer, Optional :: level
+    Integer :: print_check
     Logical :: zeroOnly
+
+    print_check = 1
+    if (present(level)) then
+       print_check = level
+    end if
+
+    if (print_check > print_level) return
 
     zeroOnly = .false.
     If (Present(master_only)) zeroOnly = master_only
@@ -744,6 +764,14 @@ Contains
     End If
 
   End Subroutine info_sl
+
+  Subroutine set_print_level(level)
+    Integer, Intent(In   ) :: level
+
+    print_level = level
+
+  End Subroutine set_print_level
+
 
   Subroutine error(kode, message, master_only)
 

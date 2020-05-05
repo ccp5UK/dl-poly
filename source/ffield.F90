@@ -148,6 +148,7 @@ Contains
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
     ! contrib   - a.m.elena march 2019 (remove error 145)
+    ! amended   - i.t.todorov march 2020 tersoff_generate call dependence added
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -325,8 +326,8 @@ Contains
     If (comm%idnode == 0) Then
       Open (Newunit=files(FILE_FIELD)%unit_no, File=files(FILE_FIELD)%filename, Status='old')
     End If
-    Call info(' ', .true.)
-    Call info('system specification', .true.)
+    Call info(' ', .true., level=2)
+    Call info('system specification', .true., level=3)
     If (.not. flow%print_topology) Then
       Call info('detailed topology opted out', .true.)
     End If
@@ -354,20 +355,20 @@ Contains
         Call get_word(record, word); Call lower_case(word)
         If (word(1:2) == 'ev') Then
           engunit = eu_ev
-          Call info('energy units = eV', .true.)
+          Call info('energy units = eV', .true., level=3)
         Else If (word(1:4) == 'kcal') Then
           engunit = eu_kcpm
-          Call info('energy units = kcal/mol', .true.)
+          Call info('energy units = kcal/mol', .true., level=3)
         Else If (word(1:2) == 'kj') Then
           engunit = eu_kjpm
-          Call info('energy units = kJ/mol', .true.)
+          Call info('energy units = kJ/mol', .true., level=3)
         Else If (word(1:8) == 'internal') Then
-          Call info('energy units = dl_poly internal units (10 J/mol)', .true.)
+          Call info('energy units = dl_poly internal units (10 J/mol)', .true., level=3)
         Else If (word(1:1) == 'k') Then
           engunit = boltz
-          Call info('energy units = Kelvin/Boltzmann', .true.)
+          Call info('energy units = Kelvin/Boltzmann', .true., level=3)
         Else If (word(1:1) == ' ') Then
-          Call info('energy units = dl_poly internal units (10 J/mol)', .true.)
+          Call info('energy units = dl_poly internal units (10 J/mol)', .true., level=3)
         Else
           Call info(word(1:Len_trim(word)), .true.)
           Call error(5)
@@ -389,7 +390,7 @@ Contains
           Call warning("supplied multipolar expansion order reduced to the maximum allowed - 4", .true.)
         End If
 
-        Call info("MPOLES file scheduled for reading after reading all intramolecular topology in FIELD", .true.)
+        Call info("MPOLES file scheduled for reading after reading all intramolecular topology in FIELD", .true., level=3)
 
         If (mpoles%max_mpoles == 0) Then
           Call info('MPOLES file scheduling abandoned due to the "no elec" option in CONTROL', .true.)
@@ -418,7 +419,7 @@ Contains
         sites%ntype_mol = Nint(word_2_real(word))
 
         Write (message, '(a,6x,i10)') 'number of molecular types', sites%ntype_mol
-        Call info(message, .true.)
+        Call info(message, .true., level=3)
 
         If (sites%ntype_mol > sites%mxtmls) Then
           Call error(10)
@@ -440,7 +441,7 @@ Contains
           l_bnd = .true.; l_ang = .true.; l_dih = .true.; l_inv = .true.
 
           Write (message, '(a,9x,i10)') 'molecular species type', itmols
-          Call info(message, .true.)
+          Call info(message, .true., level=3)
 
           ! name of molecular species
 
@@ -454,7 +455,7 @@ Contains
           sites%mol_name(itmols) = word(1:Len_trim(word) + 1)//record
 
           Write (message, '(a,13x,a40)') 'name of species:', sites%mol_name(itmols)
-          Call info(message, .true.)
+          Call info(message, .true., level=3)
 
           ! stop processing if energy unit has not been specified
 
@@ -489,12 +490,12 @@ Contains
               sites%num_site(itmols) = Nint(word_2_real(word))
 
               Write (message, '(a,10x,i10)') 'number of atoms/sites', sites%num_site(itmols)
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
 
               Write (messages(1), '(a)') 'atomic characteristics:'
               Write (messages(2), '(8x,a4,4x,a4,13x,a4,9x,a6,6x,a6,6x,a6)') &
                 'site', 'name', 'mass', 'charge', 'repeat', 'freeze'
-              Call info(messages, 2, .true.)
+              Call info(messages, 2, .true., level=3)
 
               ! for every molecule of this type get site and atom description
 
@@ -536,7 +537,7 @@ Contains
 
                 Write (message, '(2x,i10,4x,a8,2f15.6,2i10)') &
                   ksite + 1, atom1, weight, charge, nrept, ifrz
-                Call info(message, .true.)
+                Call info(message, .true., level=3)
 
                 Do irept = 1, nrept
                   ksite = ksite + 1
@@ -596,12 +597,12 @@ Contains
               cshell%numshl(itmols) = cshell%numshl(itmols) + ntmp
 
               Write (message, '(a,5x,i10)') 'number of core-shell units', ntmp
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
               If (flow%print_topology) Then
-                Call info('core-shell details:', .true.)
+                Call info('core-shell details:', .true., level=3)
                 Write (message, '(8x,a4,5x,a5,5x,a5,5x,a10)') &
                   'unit', 'index', 'index', 'parameters'
-                Call info(message, .true.)
+                Call info(message, .true., level=3)
               End If
 
               Do ishls = 1, cshell%numshl(itmols)
@@ -649,7 +650,7 @@ Contains
                       ishls, cshell%lstshl(1, nshels), cshell%lstshl(2, nshels), &
                       cshell%prmshl(1, nshels), cshell%prmshl(2, nshels)
                   End If
-                  Call info(message, .true.)
+                  Call info(message, .true., level=3)
                 End If
 
                 ! catch unidentified entry
@@ -721,12 +722,12 @@ Contains
               cons%numcon(itmols) = cons%numcon(itmols) + ntmp
 
               Write (message, '(a,5x,i10)') 'number of bond constraints', ntmp
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
               If (flow%print_topology) Then
-                Call info('constraint bond details:', .true.)
+                Call info('constraint bond details:', .true., level=3)
                 Write (message, '(7x,a5,5x,a5,5x,a5,5x,a10)') &
                   'unit', 'index', 'index', 'bondlength'
-                Call info(message, .true.)
+                Call info(message, .true., level=3)
               End If
 
               Do icnst = 1, cons%numcon(itmols)
@@ -795,7 +796,7 @@ Contains
                       icnst, cons%lstcon(1, nconst), cons%lstcon(2, nconst), &
                       cons%prmcon(nconst)
                   End If
-                  Call info(message, .true.)
+                  Call info(message, .true., level=3)
                 End If
 
                 ! catch unidentified entry
@@ -847,9 +848,9 @@ Contains
               Call get_word(record, word)
               pmf%prmpmf = word_2_real(word)
 
-              Call info('PMF constraint details', .true.)
+              Call info('PMF constraint details', .true., level=3)
               Write (message, '(a,5x,f15.6)') 'bondlength:', pmf%prmpmf
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
 
               If (pmf%prmpmf > config%width / 2.0_wp) Call error(480)
 
@@ -872,7 +873,7 @@ Contains
                 If (pmf%mxtpmf(ipmf) == 0) Then
                   Call strip_blanks(record)
                   Write (message, '(2a)') word(1:Len_trim(word) + 1), record
-                  Call info(message, .true.)
+                  Call info(message, .true., level=3)
                   Call error(500)
                 End If
 
@@ -931,7 +932,7 @@ Contains
               If (flow%print_topology) Then
                 Write (message, '(8x,a4,5x,a5,8x,a6)') &
                   'unit', 'index', 'weight'
-                Call info(message, .true.)
+                Call info(message, .true., level=3)
 
                 Do ipmf = 1, 2
                   Do jpmf = 1, pmf%mxtpmf(ipmf)
@@ -943,9 +944,9 @@ Contains
                       Write (message, '(2x,2i10,f15.6)') &
                         ipmf, pmf%lstpmf(jpmf, ipmf), pmf%pmfwgt(jpmf, ipmf)
                     End If
-                    Call info(message, .true.)
+                    Call info(message, .true., level=3)
                   End Do
-                  If (ipmf == 1) Call info(' ', .true.)
+                  If (ipmf == 1) Call info(' ', .true., level=3)
                 End Do
               End If
 
@@ -1025,12 +1026,12 @@ Contains
               rigid%num(itmols) = rigid%num(itmols) + ntmp
 
               Write (message, '(a,9x,i10)') 'number of rigid bodies', ntmp
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
               If (flow%print_topology) Then
-                Call info('rigid body details:', .true.)
+                Call info('rigid body details:', .true., level=3)
                 Write (message, '(8x,a4,6x,a4,12x,a7)') &
                   'unit', 'size', 'indices'
-                Call info(message, .true.)
+                Call info(message, .true., level=3)
               End If
 
               Do irgd = 1, rigid%num(itmols)
@@ -1099,11 +1100,11 @@ Contains
                   Else
                     Write (message, '(2x,i10)') irgd
                   End If
-                  Call info(message, .true.)
+                  Call info(message, .true., level=3)
 
                   Do iter = 1, nrigid
                     Write (message, rfmt) rigid%lst(0:lrgd, iter)
-                    Call info(message, .true.)
+                    Call info(message, .true., level=3)
                   End Do
 
                   ! test for weightless RB
@@ -1161,12 +1162,12 @@ Contains
               tether%numteth(itmols) = tether%numteth(itmols) + ntmp
 
               Write (message, '(a,7x,i10)') 'number of tethered sites', ntmp
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
               If (flow%print_topology) Then
-                Call info('tethered site details:', .true.)
+                Call info('tethered site details:', .true., level=3)
                 Write (message, '(8x,a4,5x,a3,6x,a4,5x,a10)') &
                   'unit', 'key', 'site', 'parameters'
-                Call info(message, .true.)
+                Call info(message, .true., level=3)
               End If
 
               Do iteth = 1, tether%numteth(itmols)
@@ -1193,7 +1194,7 @@ Contains
                   tether%keytet(nteth) = 3
                 Else
 
-                  Call info(keyword, .true.)
+                  Call info(keyword, .true., level=3)
                   Call error(450)
 
                 End If
@@ -1224,7 +1225,7 @@ Contains
                     Write (rfmt, '(a,i0,a)') '(2x,i10,a8,i10,2x,', tether%mxpteth, 'f15.6)'
                     Write (message, rfmt) iteth, keyword, tether%lsttet(nteth), tether%prmtet(1:tether%mxpteth, nteth)
                   End If
-                  Call info(message, .true.)
+                  Call info(message, .true., level=3)
                 End If
 
                 ! catch unidentified entry
@@ -1269,12 +1270,12 @@ Contains
               bond%num(itmols) = bond%num(itmols) + ntmp
 
               Write (message, '(a,i10)') 'number of chemical bonds ', ntmp
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
               If (flow%print_topology) Then
-                Call info('chemical bond details:', .true.)
+                Call info('chemical bond details:', .true., level=3)
                 Write (message, '(8x,a4,5x,a3,5x,a5,5x,a5,5x,a10)') &
                   'unit', 'key', 'index', 'index', 'parameters'
-                Call info(message, .true.)
+                Call info(message, .true., level=3)
               End If
 
               Do ibond = 1, bond%num(itmols)
@@ -1392,12 +1393,12 @@ Contains
                       Write (rfmt, '(a,i0,a)') '(2x,i10,a8,2i10,', bond%max_param, 'f15.6,2x,a8)'
                       Write (message, rfmt) ibond, keyword, bond%lst(1, nbonds), &
                         bond%lst(2, nbonds), bond%param(1:bond%max_param, nbonds), '*frozen*'
-                      Call info(message, .true.)
+                      Call info(message, .true., level=3)
                     Else
                       Write (rfmt, '(a,i0,a)') '(2x,i10,a8,2i10,', bond%max_param, 'f15.6)'
                       Write (message, rfmt) ibond, keyword, bond%lst(1, nbonds), &
                         bond%lst(2, nbonds), bond%param(1:bond%max_param, nbonds)
-                      Call info(message, .true.)
+                      Call info(message, .true., level=3)
                     End If
                   End If
 
@@ -1457,12 +1458,12 @@ Contains
                       Write (message, '(2x,i10,a8,2i10,2x,a9,2x,a8)') &
                         ibond, keyword, bond%lst(1, nbonds), bond%lst(2, nbonds), &
                         "tabulated", '*frozen*'
-                      Call info(message, .true.)
+                      Call info(message, .true., level=3)
                     Else
                       Write (message, '(2x,i10,a8,2i10,2x,a9)') &
                         ibond, keyword, bond%lst(1, nbonds), bond%lst(2, nbonds), &
                         "tabulated"
-                      Call info(message, .true.)
+                      Call info(message, .true., level=3)
                     End If
                   End If
 
@@ -1511,12 +1512,12 @@ Contains
               angle%num(itmols) = angle%num(itmols) + ntmp
 
               Write (message, '(a,i10)') 'number of bond angles ', ntmp
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
               If (flow%print_topology) Then
                 Write (messages(1), '(a)') 'bond angle details:'
                 Write (messages(2), '(8x,a4,5x,a3,3(5x,a5),8x,a7,8x,a5)') &
                   'unit', 'key', 'index', 'index', 'index', 'f-const', 'angle'
-                Call info(messages, 2, .true.)
+                Call info(messages, 2, .true., level=3)
               End If
 
               Do iang = 1, angle%num(itmols)
@@ -1660,7 +1661,7 @@ Contains
                       Write (rfmt, '(a,i0,a)') '(2x,i10,a8,3i10,', angle%max_param, 'f15.6)'
                       Write (message, rfmt) iang, keyword, angle%lst(1:3, nangle), angle%param(1:angle%max_param, nangle)
                     End If
-                    Call info(message, .true.)
+                    Call info(message, .true., level=3)
                   End If
 
                   ! convert energies to internal units
@@ -1725,7 +1726,7 @@ Contains
                       Write (message, '(2x,i10,a8,3i10,2x,a9)') &
                         iang, keyword, angle%lst(1:3, nangle), 'tabulated'
                     End If
-                    Call info(message, .true.)
+                    Call info(message, .true., level=3)
                   End If
 
                 End If
@@ -1777,14 +1778,14 @@ Contains
               dihedral%num(itmols) = dihedral%num(itmols) + ntmp
 
               Write (message, '(a,i10)') 'number of dihedral angles ', ntmp
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
 
               If (flow%print_topology) Then
                 Write (messages(1), '(a)') 'dihedral angle details:'
                 Write (messages(2), '(8x,a4,5x,a3,4(5x,a5),8x,a7,10x,a5,11x,a4,7x,a8,8x,a7)') &
                   'unit', 'key', 'index', 'index', 'index', 'index', 'f-const', &
                   'angle', 'trig', '1-4 elec', '1-4 vdw'
-                Call info(messages, 2, .true.)
+                Call info(messages, 2, .true., level=3)
               End If
 
               Do idih = 1, dihedral%num(itmols)
@@ -1898,7 +1899,7 @@ Contains
                       Write (message, rfmt) idih, keyword, dihedral%lst(1:4, ndihed), &
                         dihedral%param(1:dihedral%max_param, ndihed)
                     End If
-                    Call info(message, .true.)
+                    Call info(message, .true., level=3)
                   End If
 
                   ! convert energies to internal units and angles to radians
@@ -1980,7 +1981,7 @@ Contains
                       Write (message, '(2x,i10,a8,4i10,2x,a9)') &
                         idih, keyword, dihedral%lst(1:4, ndihed), 'tabulated'
                     End If
-                    Call info(message, .true.)
+                    Call info(message, .true., level=3)
                   End If
 
                 End If
@@ -2041,13 +2042,13 @@ Contains
               inversion%num(itmols) = inversion%num(itmols) + ntmp
 
               Write (message, '(a,i10)') 'number of inversion angles ', ntmp
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
               If (flow%print_topology) Then
                 Write (messages(1), '(a)') 'inversion angle details:'
                 Write (messages(2), '(8x,a4,5x,a3,4(5x,a5),7x,a7,8x,a5,8x,a6)') &
                   'unit', 'key', 'index', 'index', 'index', 'index', 'f-const', &
                   'angle', 'factor'
-                Call info(messages, 2, .true.)
+                Call info(messages, 2, .true., level=3)
               End If
 
               Do iinv = 1, inversion%num(itmols)
@@ -2144,7 +2145,7 @@ Contains
                       Write (message, rfmt) iinv, keyword, inversion%lst(1:4, ninver), &
                         inversion%param(1:inversion%max_param, ninver)
                     End If
-                    Call info(message, .true.)
+                    Call info(message, .true., level=3)
                   End If
 
                   ! convert energies to internal units and angles to radians
@@ -2235,7 +2236,7 @@ Contains
                       Write (message, '(2x,i10,a8,4i10,2x,a9)') &
                         iinv, keyword, inversion%lst(1:4, ninver), 'tabulated'
                     End If
-                    Call info(message, .true.)
+                    Call info(message, .true., level=3)
                   End If
 
                 End If
@@ -2329,7 +2330,7 @@ Contains
 
         Write (messages(1), '(a,i10)') 'total number of molecules ', Sum(sites%num_mols(1:sites%ntype_mol))
         Write (messages(2), '(a,i10)') 'total number of sites ', nsite
-        Call info(messages, 2, .true.)
+        Call info(messages, 2, .true., level=3)
 
         ! Deal with intarmolecular potential tables:
         ! read & generate intramolecular potential & virial arrays
@@ -2913,11 +2914,11 @@ Contains
         If (cshell%megshl > 0) Then
           If (.not. lshl_one) Then
             cshell%keyshl = SHELL_ADIABATIC
-            Call info('adiabatic shell model in operation', .true.)
+            Call info('adiabatic shell model in operation', .true., level=2)
           Else
             If (lshl_all) Then
               cshell%keyshl = SHELL_RELAXED
-              Call info('relaxed shell model in operation', .true.)
+              Call info('relaxed shell model in operation', .true., level=2)
             Else
               Call error(476)
             End If
@@ -3121,7 +3122,7 @@ Contains
           If (comm%idnode == 0) Call warning(4, config%sumchg, 0.0_wp, 0.0_wp)
           If (flow%strict) Then
             electro%key = ELECTROSTATIC_NULL
-            Call info('Electrostatics switched off!!!', .true.)
+            Call info('Electrostatics switched off!!!', .true., level=2)
           End If
         End If
 
@@ -3409,10 +3410,10 @@ Contains
         rdf%n_pairs = Nint(word_2_real(word))
 
         Write (message, '(a,i10)') 'number of specified rdf look up pairs ', rdf%n_pairs
-        Call info(message, .true.)
+        Call info(message, .true., level=2)
         If (flow%print_topology) Then
           Write (message, '(8x,a4,2(2x,a6))') 'pair', 'atom 1', 'atom 2'
-          Call info(message, .true.)
+          Call info(message, .true., level=3)
         End If
 
         If (rdf%n_pairs > rdf%max_rdf) Call error(107)
@@ -3432,7 +3433,7 @@ Contains
 
           If (flow%print_topology) Then
             Write (message, "(2x,i10,2a8)") itprdf, atom1, atom2
-            Call info(message, .true.)
+            Call info(message, .true., level=3)
           End If
 
           katom1 = 0
@@ -3564,11 +3565,11 @@ Contains
         Call get_word(record, word)
 
         Write (message, '(a,i10)') 'number of specified vdw potentials ', vdws%n_vdw
-        Call info(message, .true.)
+        Call info(message, .true., level=3)
         If (flow%print_topology) Then
           Write (message, '(8x,a4,5x,a6,2x,a6,5x,a3,7x,a10)') &
             'pair', 'atom 1', 'atom 2', 'key', 'parameters'
-          Call info(message, .true.)
+          Call info(message, .true., level=3)
         End If
 
         If (vdws%n_vdw > vdws%max_vdw) Call error(80)
@@ -3648,13 +3649,13 @@ Contains
               If (flow%print_topology) Then
                 Write (message, '(2x,i10,5x,2a8,8x,f20.6,1x,a9)') &
                   itpvdw, atom1, atom2, parpot(1), 'tabulated'
-                Call info(message, .true.)
+                Call info(message, .true., level=3)
               End If
             Else
               If (flow%print_topology) Then
                 Write (message, '(2x,i10,5x,2a8,1x,a9)') &
                   itpvdw, atom1, atom2, 'tabulated'
-                Call info(message, .true.)
+                Call info(message, .true., level=3)
               End If
             End If
           Else
@@ -3666,7 +3667,7 @@ Contains
             If (flow%print_topology) Then
               Write (rfmt, '(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,', itmp, 'f15.6)'
               Write (message, rfmt) itpvdw, atom1, atom2, keyword, parpot(1:itmp)
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
             End If
 
             ! convert energies to internal unit
@@ -4172,11 +4173,11 @@ Contains
         met%n_potentials = Nint(word_2_real(word))
 
         Write (message, '(a,i10)') 'number of specified metal potentials ', met%n_potentials
-        Call info(message, .true.)
+        Call info(message, .true., level=3)
         If (flow%print_topology) Then
           Write (message, '(8x,a4,5x,a6,2x,a6,5x,a3,5x,a10)') &
             'pair', 'atom 1', 'atom 2', 'key', 'parameters'
-          Call info(message, .true.)
+          Call info(message, .true., level=3)
         End If
 
         If (met%n_potentials > met%max_metal) Call error(71)
@@ -4253,7 +4254,7 @@ Contains
             If (flow%print_topology) Then
               Write (rfmt, '(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,', met%max_param, 'f15.6)'
               Write (message, rfmt) itpmet, atom1, atom2, keyword, parpot(1:met%max_param)
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
             End If
           End If
 
@@ -4355,11 +4356,11 @@ Contains
         tersoffs%n_potential = Nint(word_2_real(word))
 
         Write (message, '(a,i10)') 'number of specified tersoff potentials ', tersoffs%n_potential
-        Call info(message, .true.)
+        Call info(message, .true., level=3)
         If (flow%print_topology) Then
           Write (message, '(6x,a6,5x,a5,7x,a3,5x,a10)') &
             'number', 'atom', 'key', 'parameters'
-          Call info(message, .true.)
+          Call info(message, .true., level=3)
         End If
 
         If (tersoffs%n_potential > tersoffs%max_ter) Call error(72)
@@ -4429,7 +4430,7 @@ Contains
               Write (messages(1), '(2x,i10,5x,a8,3x,a4,1x,5(1p,e13.4))') &
                 itpter, atom0, keyword, parpot(1:5)
               Write (messages(2), '(33x,6(1p,e13.4))') parpot(6:11)
-              Call info(messages, 2, .true.)
+              Call info(messages, 2, .true., level=3)
             End If
 
           Else If (keypot == 2) Then
@@ -4467,7 +4468,7 @@ Contains
               Write (messages(2), '(33x,6(1p,e13.4))') parpot(6:11)
               Write (rfmt, '(a,i0,a)') '(33x,', tersoffs%max_param - 11, '(1p,e13.4))'
               Write (messages(3), rfmt) parpot(12:tersoffs%max_param)
-              Call info(messages, 3, .true.)
+              Call info(messages, 3, .true., level=3)
             End If
           End If
 
@@ -4517,18 +4518,18 @@ Contains
 
         ! generate tersoff interpolation arrays
 
-        If (tersoffs%n_potential > 0) Call tersoff_generate(tersoffs)
+        If (tersoffs%n_potential > 0) Call tersoff_generate(sites%ntype_atom, tersoffs)
 
         ! start processing cross atom potential parameters
 
         If (keypot == 1) Then
 
           Write (message, '(a,i10)') 'number of tersoff cross terms ', (tersoffs%n_potential * (tersoffs%n_potential + 1)) / 2
-          Call info(message, .true.)
+          Call info(message, .true., level=3)
           If (flow%print_topology) Then
             Write (message, '(8x,a4,5x,a6,2x,a6,5x,a10)') &
               'pair', 'atom 1', 'atom 2', 'paramters'
-            Call info(message, .true.)
+            Call info(message, .true., level=3)
           End If
 
           Do icross = 1, (tersoffs%n_potential * (tersoffs%n_potential + 1)) / 2
@@ -4570,7 +4571,7 @@ Contains
             If (flow%print_topology) Then
               Write (message, '(2x,i10,5x,2a8,1x,2f15.6)') &
                 icross, atom1, atom2, parpot(1:2)
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
             End If
           End Do
         End If
@@ -4583,11 +4584,11 @@ Contains
         threebody%ntptbp = Nint(word_2_real(word))
 
         Write (message, '(a,i10)') 'number of specified three-body potentials ', threebody%ntptbp
-        Call info(message, .true.)
+        Call info(message, .true., level=3)
         If (flow%print_topology) Then
           Write (message, '(5x,a7,5x,a6,2(2x,a6),5x,a3,5x,a10)') &
             'triplet', 'atom 1', 'atom 2', 'atom 3', 'key', 'parameters'
-          Call info(message, .true.)
+          Call info(message, .true., level=3)
         End If
 
         If (threebody%ntptbp > threebody%mxtbp) Call error(83)
@@ -4653,7 +4654,7 @@ Contains
           If (flow%print_topology) Then
             Write (rfmt, '(a,i0,a)') '(2x,i10,5x,3a8,3x,a4,1x,', threebody%mxptbp, 'f15.6)'
             Write (message, rfmt) itptbp, atom1, atom0, atom2, keyword, parpot(1:threebody%mxptbp)
-            Call info(message, .true.)
+            Call info(message, .true., level=3)
           End If
 
           katom0 = 0
@@ -4722,11 +4723,11 @@ Contains
         fourbody%n_potential = Nint(word_2_real(word))
 
         Write (message, '(a,i10)') 'number of specified four-body potentials ', fourbody%n_potential
-        Call info(message, .true.)
+        Call info(message, .true., level=3)
         If (flow%print_topology) Then
           Write (message, '(5x,a7,5x,a6,3(2x,a6),5x,a3,5x,a10)') &
             'quartet', 'atom 1', 'atom 2', 'atom 3', 'atom 4', 'key', 'parameters'
-          Call info(message, .true.)
+          Call info(message, .true., level=3)
         End If
 
         If (fourbody%n_potential > fourbody%max_four_body) Call error(89)
@@ -4785,7 +4786,7 @@ Contains
           If (flow%print_topology) Then
             Write (rfmt, '(a,i0,a)') '(2x,i10,3x,4a8,3x,a4,2x,', fourbody%max_param, 'f15.6)'
             Write (message, rfmt) itpfbp, atom0, atom1, atom2, atom3, keyword, parpot(1:fourbody%max_param)
-            Call info(message, .true.)
+            Call info(message, .true., level=3)
           End If
 
           katom0 = 0
@@ -5032,12 +5033,12 @@ Contains
         End Do
 
         Write (message, '(2a)') 'external field key ', keyword
-        Call info(message, .true.)
+        Call info(message, .true., level=3)
         If (flow%print_topology) Then
           Write (messages(1), '(2x,a)') 'parameters'
           Write (rfmt, '(a,i0,a)') '(2x,', ext_field%max_param, 'f15.6)'
           Write (messages(2), rfmt) ext_field%param(1:ext_field%max_param)
-          Call info(messages, 2, .true.)
+          Call info(messages, 2, .true., level=3)
         End If
 
         ! convert to internal units
@@ -5363,7 +5364,7 @@ Contains
     Write (banner(17), fmt2) '||  dihedral angle units   | ', dihedral%total, '  |  F  ', mgfrdh, '     ||'
     Write (banner(18), fmt2) '||  inversion angle units  | ', inversion%total, '  |  F  ', mgfrin, '     ||'
     Write (banner(19), fmt1) '\\'//Repeat('=', 62)//'//'
-    Call info(banner, 19, .true.)
+    Call info(banner, 19, .true., level=2)
   End Subroutine report_topology
 
   Subroutine scan_field(megatm, site, max_exclude, mtshl, &
