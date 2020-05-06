@@ -147,9 +147,10 @@ Module new_control
   Integer, Parameter :: PARAMS_TABLE_SIZE = 500
 
   Public :: read_new_control
-  Public :: initialise_control
+  Public :: try_parse
 
   ! Public for test
+  Public :: initialise_control
   Public :: parse_file
 
   ! Public for old-style
@@ -158,7 +159,7 @@ Module new_control
 
 contains
 
-  Subroutine read_new_control(control_file, params, comm)
+  Subroutine read_new_control(control_file, params, comm, can_parse)
     !!-----------------------------------------------------------------------
     !!
     !! Set read in a new_style control file
@@ -169,9 +170,15 @@ contains
     Type( parameters_hash_table ), intent(   Out ) :: params
     Type( file_type ), Intent( InOut ) :: control_file
     Type( comms_type ), Intent( InOut ) :: comm
+    Logical, Intent(   Out) :: can_parse
 
     Call initialise_control(params)
     open(newunit=control_file%unit_no, file=control_file%filename, status='old', action='read')
+    can_parse = try_parse(control_file%unit_no, params, comm)
+
+    ! Possibly old style
+    if (.not. can_parse) return
+
     Call parse_file(control_file%unit_no, params, comm)
     call control_file%close()
     ! flow%reset_padding = .true.
@@ -3491,6 +3498,38 @@ contains
     end block miscellaneous
 
   end Subroutine initialise_control
+
+  Function try_parse(ifile, params, comm) result(can_parse)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Attempt to detect if a control file is new or old style
+    !! Only based on first keyword (usually title)
+    !!
+    !! copyright - daresbury laboratory
+    !! author - j.wilkins may 2020
+    !!-----------------------------------------------------------------------
+    Type( parameters_hash_table ), intent( In    ) :: params
+    Type( comms_type ), Intent ( InOut ) :: comm
+    Integer, Intent( In    ) :: ifile
+    Logical :: line_read
+    Logical :: can_parse
+    Character(Len=STR_LEN) :: input, key, val, units
+
+    do
+       key = ''; val = ''; units = ''
+       Call get_line(line_read,ifile,input,comm)
+       if (.not. line_read) exit
+       ! Trim comments
+       if (scan(input, "#!") > 0) input = input(:scan(input, "#!")-1)
+       call get_word(input, key)
+       ! Skip blanks
+       if (key == "") cycle
+       Call lower_case(key)
+       can_parse = params%in(key)
+       exit
+    end do
+
+  end Function try_parse
 
   Subroutine parse_file(ifile, params, comm)
     !!-----------------------------------------------------------------------
