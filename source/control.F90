@@ -587,7 +587,6 @@ Contains
       If (word(1:1) == '#' .or. word(1:1) == ' ') Then
       Else If (word(1:5) == 'l_scr') Then
       Else If (word(1:6) == 'l_fast') Then
-      Else If (word(1:5) == 'l_tim') Then
       Else If (word(1:5) == 'l_eng') Then
         devel%l_eng = .true.
         Call info('%%% OUTPUT contains an extra last line with E_tot !!! %%%', .true.)
