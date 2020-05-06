@@ -141,6 +141,8 @@ Module new_control
 
   Implicit None
 
+  Private
+
   !> Max number of params, increase to reduce hash collisions
   Integer, Parameter :: PARAMS_TABLE_SIZE = 500
 
@@ -151,7 +153,8 @@ Module new_control
   Public :: parse_file
 
   ! Public for old-style
-  Public :: bad_option, read_ensemble, read_structure_analysis, read_units
+  Public :: bad_option, read_ensemble, read_structure_analysis, read_units, read_bond_analysis
+  Public :: write_ensemble
 
 contains
 
@@ -669,7 +672,7 @@ contains
   end Subroutine read_ensemble
 
   Subroutine read_bond_analysis(params, flow, bond, angle, dihedral, inversion)
-    Type( parameters_hash_table ), intent(   Out ) :: params
+    Type( parameters_hash_table ), intent( In    ) :: params
     Type( flow_type ), Intent( InOut ) :: flow
     Type( bonds_type ), Intent( InOut ) :: bond
     Type( angles_type ), Intent( InOut ) :: angle
@@ -923,7 +926,6 @@ contains
     else if (params%is_any_set([Character(22) :: 'displacements_start', 'displacements_interval', 'displacements_distance'])) then
        Call warning('displacements_start, displacements_interval or displacements_distance found without displacements_calculate')
     end if
-
 
   end Subroutine read_structure_analysis
 
@@ -1443,6 +1445,179 @@ contains
     if (.not. electro%lecx) call params%retrieve('coul_extended_exclusion', electro%lecx)
 
   End Subroutine read_forcefield
+
+  Subroutine write_ensemble(thermo)
+    Type( thermostat_type ), Intent( InOut ) :: thermo
+    Character(Len=STR_LEN) :: message
+    Character(Len=STR_LEN), dimension(4) :: messages
+
+    Write(messages(1), *) ""
+    Write(messages(2), '(a)') "Thermostat details:"
+    Call info(messages, 2, .true.)
+
+    select case(thermo%ensemble)
+    case (ENS_NVE)
+       Select Case (thermo%key_dpd)
+       case (DPD_NULL)
+          Call info('Ensemble : NVE (Microcanonical)',.true.)
+       Case(DPD_FIRST_ORDER)
+
+          Call info('Ensemble : NVT dpd (Dissipative Particle Dynamics)',.true.)
+          Call info("Ensemble type : Shardlow's first order splitting (S1)",.true.)
+
+       Case (DPD_SECOND_ORDER)
+
+          Call info('Ensemble : NVT dpd (Dissipative Particle Dynamics)',.true.)
+          Call info("Ensemble type : Shardlow's first order splitting (S2)",.true.)
+       end select
+
+       If (thermo%gamdpd(0) > zero_plus) Then
+          Write(message,'(a,1p,e12.4)') 'drag coefficient (Dalton/ps) ', thermo%gamdpd(0)
+          Call info(message,.true.)
+       End If
+
+    case (ENS_NVT_EVANS)
+
+       Call info('Ensemble : NVT Evans (Isokinetic)',.true.)
+       Call info('Gaussian temperature constraints in use',.true.)
+
+    case (ENS_NVT_LANGEVIN)
+
+       Call info('Ensemble : NVT Langevin (Stochastic Dynamics)',.true.)
+       Write(message,'(a,1p,e12.4)') 'thermostat friction (ps^-1)', thermo%chi
+       Call info(message,.true.)
+
+    case (ENS_NVT_ANDERSON)
+
+       Write(messages(1),'(a)') 'Ensemble : NVT Andersen'
+       Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+       Write(messages(3),'(a,1p,e12.4)') 'softness (dimensionless)',thermo%soft
+       if (thermo%soft > 1) call error(0, 'Andersen softness greater than 1 '//message)
+
+       Call info(messages,3,.true.)
+
+    case (ENS_NVT_BERENDSEN)
+
+       Call info('Ensemble : NVT Berendsen',.true.)
+       Write(message,'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+       Call info(message,.true.)
+       Call warning('If you plan to use the Berendsen thermostat, please read https://doi.org/10.1021/acs.jctc.8b00446', .true.)
+
+    case (ENS_NVT_NOSE_HOOVER)
+
+       Call info('Ensemble : NVT Nose-Hoover',.true.)
+       Write(message,'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+       Call info(message,.true.)
+
+    Case (ENS_NVT_GENTLE)
+
+       Write(messages(1),'(a)') 'Ensemble : NVT gentle stochastic thermostat'
+       Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+       Write(messages(3),'(a,1p,e12.4)') 'friction on thermostat  (ps^-1) ',thermo%gama
+       Call info(messages,3,.true.)
+
+    Case (ENS_NVT_LANGEVIN_INHOMO)
+
+
+       Write (messages(1), '(a)') 'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)'
+       Write (messages(2), '(a,1p,e12.4)') 'e-phonon friction (ps^-1) ', thermo%chi_ep
+       Write (messages(3), '(a,1p,e12.4)') 'e-stopping friction (ps^-1) ', thermo%chi_es
+       Write (messages(4), '(a,1p,e12.4)') 'e-stopping velocity (A ps^-1) ', thermo%vel_es2
+       Call info(messages, 4, .true.)
+
+
+    Case (ENS_NPT_LANGEVIN)
+
+
+       Write(messages(1),'(a)') 'Ensemble : NPT isotropic Langevin (Stochastic Dynamics)'
+       Write(messages(2),'(a,1p,e12.4)') 'thermostat friction (ps^-1)',thermo%chi
+       Write(messages(3),'(a,1p,e12.4)') 'barostat friction (ps^-1)',thermo%tai
+       Call info(messages,3,.true.)
+
+    Case (ENS_NPT_BERENDSEN)
+
+
+       Write(messages(1),'(a)') 'Ensemble : NPT isotropic Berendsen'
+       Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+       Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
+       Call info(messages,3,.true.)
+
+    Case (ENS_NPT_NOSE_HOOVER)
+
+
+       Write(messages(1),'(a)') 'Ensemble : NPT isotropic Nose-Hoover (Melchionna)'
+       Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+       Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
+       Call info(messages,3,.true.)
+
+    Case (ENS_NPT_MTK)
+
+
+       Write(messages(1),'(a)') 'Ensemble : NPT isotropic Martyna-Tuckerman-Klein'
+       Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+       Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
+       Call info(messages,3,.true.)
+
+
+    Case (ENS_NPT_LANGEVIN_ANISO)
+
+       Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Langevin (Stochastic Dynamics)'
+       Write(messages(2),'(a,1p,e12.4)') 'thermostat friction (ps^-1)',thermo%chi
+       Write(messages(3),'(a,1p,e12.4)') 'barostat friction (ps^-1)',thermo%tai
+       Call info(messages,3,.true.)
+
+    Case (ENS_NPT_BERENDSEN_ANISO)
+
+       Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Berendsen'
+       Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+       Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
+       Call info(messages,3,.true.)
+
+    Case (ENS_NPT_NOSE_HOOVER_ANISO)
+
+       Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Nose-Hoover (Melchionna)'
+       Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+       Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
+       Call info(messages,3,.true.)
+
+    Case (ENS_NPT_MTK_ANISO)
+
+       Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Martyna-Tuckerman-Klein'
+       Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+       Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
+       Call info(messages,3,.true.)
+
+    end select
+
+    ! Semi isotropic ensembles
+
+    select case (thermo%iso)
+    case (CONSTRAINT_NONE)
+       continue
+    case (CONSTRAINT_SURFACE_AREA)
+       Call info('semi-isotropic barostat : constant normal pressure (Pn) &',.true.)
+       Call info('       (N-Pn-A-T)       : constant surface area (A)',.true.)
+    case (CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC)
+
+       if (thermo%tension > 0.0_wp) then
+          Write(messages(1),'(a)') 'semi-isotropic barostat : constant normal pressure (Pn) &'
+          Write(messages(2),'(a)') '     (N-Pn-gamma-T)     : constant surface tension (gamma)'
+          Write(messages(3),'(a,1p,e11.4)') &
+               'sumulation surface tension (dyn/cm)', convert_units(thermo%tension, 'internal_f/internal_l', 'dyn/cm')
+          Call info(messages,3,.true.)
+       else
+          Call info('semi-isotropic barostat : orthorhombic MD cell constraints',.true.)
+       end if
+
+       if (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) then
+          Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
+       end if
+
+    end select
+
+    Call info('', .true.)
+
+  end Subroutine write_ensemble
 
   Subroutine initialise_control(table)
     !!-----------------------------------------------------------------------
@@ -2221,7 +2396,7 @@ contains
         call table%set("io_write_sorted", control_parameter( &
              key = "io_write_sorted", &
              name = "I/O sorted writing", &
-             val = "ON", &
+             val = "on", &
              description = "Enable sorted output for atomic data", &
              data_type = DATA_BOOL))
 
@@ -2330,7 +2505,7 @@ contains
       call table%set("print_topology_info", control_parameter( &
            key = "print_topology_info", &
            name = "Print topology information ", &
-           val = "ON", &
+           val = "off", &
            description = "Print topology information in output file", &
            data_type = DATA_BOOL))
 
@@ -2949,21 +3124,21 @@ contains
              description = "Set accepted SHAKE/RATTLE tolerance", &
              data_type = DATA_FLOAT))
 
-        call table%set("quaternion_max_iter", control_parameter( &
-             key = "quaternion_max_iter", &
-             name = "Max Leapfrog Verlet FIQA iterations", &
-             val = "100", &
-             description = "Set max iterations for FIQA in Leapfrog Verlet", &
-             data_type = DATA_INT))
+        ! call table%set("quaternion_max_iter", control_parameter( &
+        !      key = "quaternion_max_iter", &
+        !      name = "Max Leapfrog Verlet FIQA iterations", &
+        !      val = "100", &
+        !      description = "Set max iterations for FIQA in Leapfrog Verlet", &
+        !      data_type = DATA_INT))
 
-        call table%set("quaternion_tol", control_parameter( &
-             key = "quaternion_tol", &
-             name = "FIQA tolerance", &
-             val = "1e-8", &
-             units = "", &
-             internal_units = "", &
-             description = "Set accepted FIQA tolerance in Leapfrog Verlet", &
-             data_type = DATA_FLOAT))
+        ! call table%set("quaternion_tol", control_parameter( &
+        !      key = "quaternion_tol", &
+        !      name = "FIQA tolerance", &
+        !      val = "1e-8", &
+        !      units = "", &
+        !      internal_units = "", &
+        !      description = "Set accepted FIQA tolerance in Leapfrog Verlet", &
+        !      data_type = DATA_FLOAT))
       end block integrator_tolerances
 
       call table%set("dftb", control_parameter( &

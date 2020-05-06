@@ -428,7 +428,6 @@ contains
           case ("/")
              output = output / tmp_unit
           case default
-             print*, curr_parse(1:1)
              call error(0, "Cannot parse unit string"//string)
           end select
           parsed(i) = "."

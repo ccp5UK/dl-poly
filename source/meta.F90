@@ -349,6 +349,8 @@ Contains
              files(i)%filename = null_unit
           end if
        end do
+       if (files(FILE_OUTPUT)%unit_no /= error_unit) &
+            Open (Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Status='replace')
        dlp_world(0)%ou = files(FILE_OUTPUT)%unit_no
        Call init_error_system(files(FILE_OUTPUT)%unit_no, dlp_world(0))
        Call print_banner(dlp_world)
@@ -371,6 +373,7 @@ Contains
       thermo, green, devel, msd_data, met, pois, bond, angle, dihedral, inversion, &
       tether, threebody, zdensity, neigh, vdws, tersoffs, fourbody, rdf, mpoles, ext_field, &
       rigid, electro, domain, config, ewld, kim_data, files, flow, comm)
+
 
     Call info('', .true.)
     Call info("*** pre-scanning stage (set_bounds) DONE ***", .true.)

@@ -136,7 +136,8 @@ module new_control_old_style
   Use units, only : convert_units, set_timestep
   Use control_parameter_module, only : parameters_hash_table, control_parameter, &
        DATA_INT, DATA_FLOAT, DATA_STRING, DATA_BOOL, DATA_OPTION, DATA_VECTOR3, DATA_VECTOR6
-  Use new_control, only : bad_option, read_ensemble, read_structure_analysis
+  Use new_control, only : bad_option, read_ensemble, read_structure_analysis, &
+       read_bond_analysis, write_ensemble
   Implicit None
 
   Private
@@ -182,7 +183,6 @@ contains
     Type( netcdf_param ), Intent( InOut ) :: netcdf
     Type( file_type ), Dimension(:), Intent( InOut ) :: files
     Type( comms_type ), Intent( InOut ) :: comm
-    Type( control_parameter ) :: curr_param
     Character(Len=STR_LEN) :: curr_option
     Character(Len=STR_LEN) :: message
 
@@ -558,7 +558,7 @@ contains
   Subroutine read_new_control_old(params, lfce, impa, ttm, dfcts, rigid, &
        rsdc, cshell, cons, pmf, stats, thermo, green, devel, plume, msd_data, met, &
        pois, bond, angle, dihedral, inversion, zdensity, neigh, vdws, &
-       rdf, minim, mpoles, electro, ewld, seed, traj, files, tmr, config, flow, crd, adf, comm)
+       rdf, minim, mpoles, electro, ewld, seed, traj, files, tmr, config, flow, crd, adf)
     !!-----------------------------------------------------------------------
     !!
     !! Read remaining contents of control file -- DEPRECATED
@@ -605,7 +605,6 @@ contains
     Type(flow_type),          Intent(InOut) :: flow
     Type(coord_type),         Intent(InOut) :: crd
     Type(adf_type),           Intent(InOut) :: adf
-    Type(comms_type),         Intent(InOut) :: comm
 
     Logical :: limp, lforc
     Character(Len=256) :: message, messages(9)
@@ -657,6 +656,14 @@ contains
     case default
        call bad_option('vdw_method', option)
     end select
+
+    Write (message, '(a,1p,e12.4)') 'real space cutoff (Angs) ', neigh%cutoff
+    Call info(message, .true.)
+    Write (message, '(a,1p,e12.4)') 'cutoff padding (Angs) ', neigh%padding
+    Call info(message, .true.)
+
+    Write (message, '(a,1p,e12.4)') 'vdw cutoff (Angs) ', vdws%cutoff
+    call info(message, .true.)
 
     call params%retrieve('nfold', vtmp(1:3))
     config%l_exp = any(nint(vtmp(1:3)) > 1)
@@ -758,6 +765,7 @@ contains
     end if
 
     call read_ensemble(params, thermo, ttm%l_ttm)
+    call write_ensemble(thermo)
     If (thermo%l_langevin) Call langevin_allocate_arrays(thermo, config%mxatms)
 
     call params%retrieve('temperature', thermo%temp)
@@ -828,9 +836,38 @@ contains
 
     call params%retrieve('timestep', thermo%tstep, .true.)
     call params%retrieve('timestep_variable', thermo%lvar)
-    call params%retrieve('timestep_variable_min_dist', thermo%mndis)
-    call params%retrieve('timestep_variable_max_dist', thermo%mxdis)
-    call params%retrieve('timestep_variable_max_delta', thermo%mxstp)
+
+    If (thermo%key_dpd == DPD_NULL .and. thermo%lvar) then
+        thermo%lvar = .false.
+        Call warning('variable timestep unavalable in DPD themostats', .true.)
+        Write (message, '(a,1p,e12.4)') 'fixed simulation timestep (ps) ', thermo%tstep
+        Call info(message, .true.)
+    Else If (thermo%lvar) Then
+       call params%retrieve('timestep_variable_min_dist', thermo%mndis)
+       call params%retrieve('timestep_variable_max_dist', thermo%mxdis)
+       call params%retrieve('timestep_variable_max_delta', thermo%mxstp)
+
+       Write (messages(1), '(a,1p,e12.4)') 'variable simulation timestep (ps) ', thermo%tstep
+       Write (messages(2), '(a)') 'controls for variable timestep:'
+       Write (messages(3), '(2x,a,1p,e12.4)') 'minimum distance Dmin (Angs) ', thermo%mndis
+       Write (messages(4), '(2x,a,1p,e12.4)') 'maximum distance Dmax (Angs) ', thermo%mxdis
+       Call info(messages, 4, .true.)
+
+       If (thermo%mxstp > zero_plus) Then
+          Write (message, '(a,1p,e12.4)') 'timestep ceiling mxstp (ps) ', thermo%mxstp
+          Call info(message, .true.)
+          thermo%tstep = Min(thermo%tstep, thermo%mxstp)
+       Else
+          thermo%mxstp = Huge(1.0_wp)
+       End If
+       If (thermo%mxdis < 2.5_wp * thermo%mndis .or. thermo%mndis <= 0.0_wp) Then
+          Call warning(140, thermo%mndis, thermo%mxdis, 0.0_wp)
+          Call error(518)
+       End If
+    Else
+      Write (message, '(a,1p,e12.4)') 'fixed simulation timestep (ps) ', thermo%tstep
+      Call info(message, .true.)
+    End If
 
     call params%retrieve('time_run', flow%run_steps, .true.)
     Write (message, '(a,i10)') 'selected number of timesteps ', flow%run_steps
@@ -980,6 +1017,8 @@ contains
     case ('ewald')
        electro%key = ELECTROSTATIC_EWALD
 
+       Call info('Electrostatics : Smooth Particle Mesh Ewald', .true.)
+
        if (params%is_set('ewald_precision')) then
           call params%retrieve('ewald_precision', rtmp)
           Write (message, '(a,1p,e12.4)') 'Ewald sum precision ', rtmp
@@ -988,9 +1027,14 @@ contains
 
        Write (messages(1), '(a,1p,e12.4)') 'Ewald convergence parameter (A^-1) ', electro%alpha
        Write (messages(2), '(a,3i5)') 'Ewald kmax1 kmax2 kmax3   (x2) ', ewld%fft_dim_a1, ewld%fft_dim_b1, ewld%fft_dim_c1
-       Write (messages(3), '(a,3i5)') 'DaFT adjusted kmax values (x2) ', ewld%fft_dim_a, ewld%fft_dim_b, ewld%fft_dim_c
-       Write (messages(4), '(a,1p,i5)') 'B-spline interpolation order ', ewld%bspline
-       Call info(messages, 4, .true.)
+       If (ewld%fft_dim_a /= ewld%fft_dim_a1 .or. ewld%fft_dim_b /= ewld%fft_dim_b1 .or. ewld%fft_dim_c /= ewld%fft_dim_c1) Then
+          Write (messages(3), '(a,3i5)') 'DaFT adjusted kmax values (x2) ', ewld%fft_dim_a, ewld%fft_dim_b, ewld%fft_dim_c
+          Write (messages(4), '(a,1p,i5)') 'B-spline interpolation order ', ewld%bspline
+          Call info(messages, 4, .true.)
+       Else
+          Write (messages(3), '(a,1p,i5)') 'B-spline interpolation order ', ewld%bspline
+          Call info(messages, 3, .true.)
+       end If
 
     case ('dddp')
        electro%key = ELECTROSTATIC_DDDP
@@ -1016,6 +1060,8 @@ contains
        call bad_option('coul_method', option)
 
     end select
+
+    call params%retrieve('coul_dielectric_constant', electro%eps)
 
     if (params%is_set([Character(14) :: 'coul_damping', 'coul_precision'])) then
        call error(0, 'Both damping and precision set')
@@ -1087,16 +1133,19 @@ contains
             //'and a manifestation of the "flying ice-cube" effect', .true.)
     end if
 
-    call params%retrieve('rlx_tol', cshell%rlx_tol(1))
-    if (cshell%rlx_tol(1) < 1.0_wp) call error(0, 'Relaxed shell CGM tolerance < 1.0')
-    Write (message, '(a,1p,e12.4)') 'relaxed shell model CGM tolerance ', cshell%rlx_tol(1)
-    Call info(message, .true.)
+    if (cshell%mxshl > 0) then
+       call params%retrieve('rlx_tol', cshell%rlx_tol(1))
+       call params%retrieve('rlx_cgm_step', cshell%rlx_tol(2))
+       if (cshell%rlx_tol(1) < 1.0_wp) call error(0, 'Relaxed shell CGM tolerance < 1.0')
 
-    call params%retrieve('rlx_cgm_step', cshell%rlx_tol(2))
-    If (cshell%rlx_tol(2) > zero_plus) Then
-       Write (message, '(a,1p,e12.4)') 'relaxed shell model CGM step ', cshell%rlx_tol(2)
+
+       Write (message, '(a,1p,e12.4)') 'relaxed shell model CGM tolerance ', cshell%rlx_tol(1)
        Call info(message, .true.)
-    End If
+       if (cshell%rlx_tol(2) > 0.0_wp) then
+          Write (message, '(a,1p,e12.4)') 'relaxed shell model CGM step ', cshell%rlx_tol(2)
+          Call info(message, .true.)
+       end if
+    end if
 
     call params%retrieve('shake_max_iter', cons%max_iter_shake)
     call params%retrieve('shake_tolerance', cons%tolerance)
@@ -1578,6 +1627,7 @@ contains
 
      call params%retrieve('subcell_threshold', neigh%pdplnc)
      neigh%pdplnc = Max(neigh%pdplnc, 1.0_wp) ! disallow any less than 1
+     Write (messages(2), '(a,1p,e12.4)') 'subcelling threshold density ', neigh%pdplnc
 
 
      call params%retrieve('time_job', tmr%job)
@@ -1598,8 +1648,8 @@ contains
         end if
      else
         Write (messages(4), '(a,1p,e12.4)') 'allocated job close time (s) ', tmr%clear_screen
-        Call info(messages, 4, .true.)
      end if
+     Call info(messages, 4, .true.)
 
      call params%retrieve('plumed', plume%l_plumed)
 
@@ -1624,39 +1674,6 @@ contains
     Else If (config%levcfg == 0) Then
       Call warning(200, 0.0_wp, 0.0_wp, 0.0_wp)
       flow%restart_key = RESTART_KEY_CLEAN
-    End If
-
-    If (thermo%lvar) Then
-
-      If (thermo%key_dpd /= DPD_NULL) Then
-        thermo%lvar = .false.
-        Call warning('variable timestep unavalable in DPD themostats', .true.)
-        Write (message, '(a,1p,e12.4)') 'fixed simulation timestep (ps) ', thermo%tstep
-        Call info(message, .true.)
-      Else
-        If (thermo%mxdis >= 2.5_wp * thermo%mndis .and. thermo%mndis > 0.0_wp) Then
-          Write (messages(1), '(a,1p,e12.4)') 'variable simulation timestep (ps) ', thermo%tstep
-          Write (messages(2), '(a)') 'controls for variable timestep:'
-          Write (messages(3), '(2x,a,1p,e12.4)') 'minimum distance Dmin (Angs) ', thermo%mndis
-          Write (messages(4), '(2x,a,1p,e12.4)') 'maximum distance Dmax (Angs) ', thermo%mxdis
-          Call info(messages, 4, .true.)
-
-          If (thermo%mxstp > zero_plus) Then
-            Write (message, '(a,1p,e12.4)') 'timestep ceiling mxstp (ps) ', thermo%mxstp
-            Call info(message, .true.)
-            thermo%tstep = Min(thermo%tstep, thermo%mxstp)
-          Else
-            thermo%mxstp = Huge(1.0_wp)
-          End If
-        Else
-          Call warning(140, thermo%mndis, thermo%mxdis, 0.0_wp)
-          Call error(518)
-        End If
-      End If
-
-    Else If (.not. thermo%lvar) Then
-      Write (message, '(a,1p,e12.4)') 'fixed simulation timestep (ps) ', thermo%tstep
-      Call info(message, .true.)
     End If
 
     If (config%l_vom .and. ttm%l_ttm) Then
@@ -1743,6 +1760,8 @@ contains
     Logical :: ltmp
     Logical :: la_bnd,la_ang,la_dih,la_inv,lelec
 
+    nstfce = -1
+
     call params%retrieve('timestep', thermo%tstep, required=.true.)
     call set_timestep(thermo%tstep)
 
@@ -1758,7 +1777,7 @@ contains
        call warning('Bad padding value, reset to 0.0', .true.)
     end if
 
-    flow%reset_padding = .true.
+    flow%reset_padding = params%is_set('padding')
 
     call params%retrieve('vdw_method', option)
     vdws%no_vdw = option == 'off' .or. vdws%max_vdw <= 0
@@ -1776,7 +1795,7 @@ contains
     call params%retrieve('ensemble_dpd_order', option)
     select case (option)
     case ('off')
-       continue
+       thermo%key_dpd = DPD_NULL
     case ('first', '1')
        thermo%key_dpd = DPD_FIRST_ORDER
     case ('second', '2')
@@ -1982,34 +2001,40 @@ contains
 
     call params%retrieve('strict_checks', flow%strict)
 
-    call params%retrieve('analyse_bonds', la_bnd)
-    call params%retrieve('analyse_angles', la_ang)
-    call params%retrieve('analyse_dihedrals', la_dih)
-    call params%retrieve('analyse_inversions', la_inv)
-    call params%retrieve('analyse_all', ltmp)
-    if (ltmp) then
-       la_bnd = .true.
-       la_ang = .true.
-       la_dih = .true.
-       la_inv = .true.
-    end if
+    call read_bond_analysis(params, flow, bond, angle, dihedral, inversion)
 
-    call params%retrieve('analyse_max_dist', bond%rcut)
-    if (bond%rcut < minimum_bond_anal_length) then
-       bond%rcut = minimum_bond_anal_length
-       call warning('vdw_cutoff less than global cutoff, setting to global cutoff', .true.)
-    end if
+    ! call params%retrieve('analyse_bonds', la_bnd)
+    ! call params%retrieve('analyse_angles', la_ang)
+    ! call params%retrieve('analyse_dihedrals', la_dih)
+    ! call params%retrieve('analyse_inversions', la_inv)
+    ! call params%retrieve('analyse_all', ltmp)
+    ! if (ltmp) then
+    !    la_bnd = .true.
+    !    la_ang = .true.
+    !    la_dih = .true.
+    !    la_inv = .true.
+    ! end if
 
-    ! Set global
-    call params%retrieve('analyse_num_bins', bond%bin_pdf)
-    angle%bin_adf = bond%bin_pdf
-    dihedral%bin_adf = bond%bin_pdf
-    inversion%bin_adf = bond%bin_pdf
+    ! if (la_bnd) then
+    !    call params%retrieve('analyse_max_dist', bond%rcut)
+    !    if (bond%rcut < minimum_bond_anal_length) then
+    !       bond%rcut = minimum_bond_anal_length
+    !       write(message, '(A, f5.2, A, f5.2)') 'Bond rcut (',bond%rcut,') less than minimum cutoff ('&
+    !            , minimum_bond_anal_length, ') setting to global cutoff'
+    !       call warning(message, .true.)
+    !    end if
+    ! end if
 
-    if (params%is_set('analyse_num_bins_bonds')) call params%retrieve('analyse_num_bins_bonds', bond%bin_pdf)
-    if (params%is_set('analyse_num_bins_angles')) call params%retrieve('analyse_num_bins_angles', angle%bin_adf)
-    if (params%is_set('analyse_num_bins_dihedrals')) call params%retrieve('analyse_num_bins_dihedrals', dihedral%bin_adf)
-    if (params%is_set('analyse_num_bins_inversions')) call params%retrieve('analyse_num_bins_inversions', inversion%bin_adf)
+    ! ! Set global
+    ! call params%retrieve('analyse_num_bins', bond%bin_pdf)
+    ! angle%bin_adf = bond%bin_pdf
+    ! dihedral%bin_adf = bond%bin_pdf
+    ! inversion%bin_adf = bond%bin_pdf
+
+    ! if (params%is_set('analyse_num_bins_bonds')) call params%retrieve('analyse_num_bins_bonds', bond%bin_pdf)
+    ! if (params%is_set('analyse_num_bins_angles')) call params%retrieve('analyse_num_bins_angles', angle%bin_adf)
+    ! if (params%is_set('analyse_num_bins_dihedrals')) call params%retrieve('analyse_num_bins_dihedrals', dihedral%bin_adf)
+    ! if (params%is_set('analyse_num_bins_inversions')) call params%retrieve('analyse_num_bins_inversions', inversion%bin_adf)
 
 
     if (thermo%ensemble == ENS_NVT_LANGEVIN_INHOMO) then
