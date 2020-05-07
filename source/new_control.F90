@@ -3364,7 +3364,7 @@ contains
           call table%set("ewald_nsplines", control_parameter( &
                key = "ewald_nsplines", &
                name = "Number of B-Splines", &
-               val = "12", &
+               val = "8", &
                description = "Set number of B-Splines for Ewald SPME calculations", &
                data_type = DATA_INT))
         end block ewald

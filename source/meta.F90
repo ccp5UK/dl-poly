@@ -144,11 +144,11 @@ Module meta
   Implicit None
   Private
 
-! #if WIN32
-!              Character(Len=*), Parameter :: null_unit = 'NUL'
-! #elif UNIX
-              Character(Len=*), Parameter :: null_unit = '/dev/null'
-! #endif
+#if WIN32
+  Character(Len=*), Parameter :: null_unit = 'NUL'
+#elif UNIX
+  Character(Len=*), Parameter :: null_unit = '/dev/null'
+#endif
 
   Public :: molecular_dynamics
 
@@ -300,8 +300,6 @@ Contains
     Type( parameters_hash_table )            :: params
     Logical :: can_parse
 
-    ! Set default file names
-    Call default_filenames(files)
     ! Rename control file if argument was passed
     If (Len_Trim(control_filename) > 0 ) Then
        Call files(FILE_CONTROL)%rename(control_filename)
@@ -313,8 +311,11 @@ Contains
     if (.not. can_parse) then
        call files(FILE_CONTROL)%close()
        devel%new_control = .false.
-       call warning('Control file '//trim(files(FILE_CONTROL)%filename)//' is in old style', .true.)
-       call warning('Please update, as this will be deprecated in future releases', .true.)
+
+       !! Enable when new becomes standard
+       ! call warning('Control file '//trim(files(FILE_CONTROL)%filename)//' is in old style', .true.)
+       ! call warning('Please update, as this will be deprecated in future releases', .true.)
+
        call molecular_dynamics_initialise_old(dlp_world, comm, thermo, ewld, tmr, devel, &
        stats, green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, &
        inversion, tether, threebody, zdensity, cons, neigh, pmfs, sites, core_shells, &
@@ -337,6 +338,7 @@ Contains
          Open (Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Status='replace')
     dlp_world(0)%ou = files(FILE_OUTPUT)%unit_no
     Call init_error_system(files(FILE_OUTPUT)%unit_no, dlp_world(0))
+
 #ifdef CHRONO
     ! Start main timer
     Call init_timer_system(tmr, files(FILE_OUTPUT)%unit_no, dlp_world(0))
