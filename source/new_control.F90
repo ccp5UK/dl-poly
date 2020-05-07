@@ -1638,14 +1638,6 @@ contains
 
     call table%init(PARAMS_TABLE_SIZE)
 
-    call table%set('slab', control_parameter( &
-         key = 'slab', &
-         name = 'Slab', &
-         val = 'off', &
-         description = "EEEEEEEK", &
-         data_type = DATA_BOOL))
-
-
     run_properties: block
       call table%set('title', control_parameter( &
            key = 'title', &

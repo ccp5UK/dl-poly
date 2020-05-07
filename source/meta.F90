@@ -298,6 +298,7 @@ Contains
     Character(len=1024),       Intent(In   ) :: output_filename
 
     Type( parameters_hash_table )            :: params
+    Integer :: i
     Logical :: can_parse
 
     ! Rename control file if argument was passed
@@ -325,7 +326,7 @@ Contains
        return
     end if
 
-    call read_io(params, io, netcdf, files, comm)
+    call read_io(params, ios, netcdf, files, comm)
 
     do i = 1, FILENAME_SIZE
        if (files(i)%filename == "SCREEN") then

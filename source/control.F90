@@ -3799,8 +3799,8 @@ Contains
     End If
   End Subroutine read_control
 
-  Subroutine scan_control(rcter, max_rigid, imcon, imc_n, cell, xhi, yhi, zhi, mxgana, &
-                          l_ind, nstfce, ttm, cshell, stats, thermo, green, devel, msd_data, met, &
+  Subroutine scan_control(rcter, max_rigid, imcon, cell, xhi, yhi, zhi, mxgana, &
+                          l_n_r, lzdn, l_ind, nstfce, ttm, cshell, stats, thermo, green, devel, msd_data, met, &
                           pois, bond, angle, dihedral, inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, &
                           electro, ewld, kim_data, files, flow, comm)
 
@@ -3827,7 +3827,6 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     Real(Kind=wp),            Intent(In   ) :: rcter
     Integer,                  Intent(In   ) :: max_rigid, imcon
-    Integer,                  Intent(InOut) :: imc_n
     Real(Kind=wp),            Intent(InOut) :: cell(1:9)
     Real(Kind=wp),            Intent(In   ) :: xhi, yhi, zhi
     Integer,                  Intent(  Out) :: mxgana
@@ -3888,10 +3887,6 @@ Contains
     ! replay history option (real dynamics = no replay)
 
     flow%simulation = .true. ! don't replay history
-
-    ! slab option default
-
-    imc_n = imcon
 
     ! default switches for intramolecular analysis grids
 
@@ -4013,12 +4008,6 @@ Contains
       Else If (word(1:5) == 'l_trm') Then
 
         devel%l_trm = .true.
-
-        ! read slab option (limiting DD slicing in z direction to 2)
-
-      Else If (word(1:4) == 'slab') Then
-
-        If (imcon /= 0 .and. imcon /= 6) imc_n = 6
 
         ! read real space cut off
 
@@ -4642,9 +4631,6 @@ Contains
               tol1 = Sqrt(-Log(eps0 * neigh%cutoff * (2.0_wp * tol * ewld%alpha)**2))
 
               fac = 1.0_wp
-              If (imcon == IMCON_TRUNC_OCTO .or. &
-                  imcon == IMCON_RHOMBIC_DODEC .or. &
-                  imcon == IMCON_HEXAGONAL) fac = 2.0_wp**(1.0_wp / 3.0_wp)
 
               ewld%kspace%k_vec_dim_cont = 2 * Nint(0.25_wp + fac * celprp(7:9) * ewld%alpha * tol1 / pi)
 
@@ -4961,11 +4947,11 @@ Contains
 
   End Subroutine scan_control
 
-  Subroutine scan_control_pre(imc_n, dvar, files, comm)
+  Subroutine scan_control_pre(dvar, files, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
-    ! dl_poly_4 subroutine for scanning the imc_n & dvar options in the
+    ! dl_poly_4 subroutine for scanning the dvar option in the
     ! control file
     !
     ! copyright - daresbury laboratory
@@ -4979,7 +4965,6 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,          Intent(InOut) :: imc_n
     Real(Kind=wp),    Intent(  Out) :: dvar
     Type(file_type),  Intent(InOut) :: files(:)
     Type(comms_type), Intent(InOut) :: comm
@@ -5025,15 +5010,6 @@ Contains
         Call get_word(record, word)
         dvar = Abs(word_2_real(word))
         dvar = 1.0_wp + Abs(dvar) / 100.0_wp
-
-        ! read slab option
-        ! limiting DD slicing in z direction to 2 for load balancing purposes
-        ! this is really a pre-scan in order to get the MD box dimensions
-        ! from scan_config before the option is read again in scan_control
-
-      Else If (word(1:4) == 'slab') Then
-
-        imc_n = 6
 
         ! io options
 

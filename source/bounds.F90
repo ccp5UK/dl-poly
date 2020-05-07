@@ -183,10 +183,10 @@ Contains
 
     ! Get imc_r & set config%dvar
 
-    if (use_new_control) then
-       Call scan_new_control_pre_old(params, config%imc_n, config%dvar)
+    if (devel%new_control) then
+       call params%retrieve('density_variance', config%dvar)
     else
-       Call scan_control_pre(config%imc_n, config%dvar, files, comm)
+       Call scan_control_pre(config%dvar, files, comm)
     end if
 
 
@@ -203,18 +203,18 @@ Contains
 
     ! scan CONTROL file data
 
-    if (use_new_control) then
-       Call scan_new_control_old(params, &
-            rcter, rigid%max_rigid, config%imcon, config%imc_n, config%cell, &
-            xhi, yhi, zhi, config%mxgana, l_n_r, lzdn, config%l_ind, electro%nstfce, &
-            ttm, cshell, stats, thermo, green, msd_data, met, pois, bond, angle, dihedral, &
-            inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, electro, ewld, kim_data, flow)
+    if (devel%new_control) then
+    !    Call scan_new_control_old(params, &
+    !         rcter, rigid%max_rigid, config%imcon, config%imc_n, config%cell, &
+    !         xhi, yhi, zhi, config%mxgana, l_n_r, lzdn, config%l_ind, electro%nstfce, &
+    !         ttm, cshell, stats, thermo, green, msd_data, met, pois, bond, angle, dihedral, &
+    !         inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, electro, ewld, kim_data, flow)
     else
-      Call scan_control(tersoffs%cutoff, rigid%max_rigid, config%imcon, config%imc_n, config%cell, &
-           xhi, yhi, zhi, config%mxgana, config%l_ind, electro%nstfce, &
-           ttm, cshell, stats, thermo, green, devel, msd_data, met, pois, bond, angle, dihedral, &
-           inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, electro, ewld, kim_data, &
-           files, flow, comm)
+       Call scan_control(rcter, rigid%max_rigid, config%imcon, config%cell, &
+            xhi, yhi, zhi, config%mxgana, l_n_r, lzdn, config%l_ind, electro%nstfce, &
+            ttm, cshell, stats, thermo, green, devel, msd_data, met, pois, bond, angle, dihedral, &
+            inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, electro, ewld, kim_data, &
+            files, flow, comm)
     end if
 
     ! check integrity of cell vectors: for cubic cell
