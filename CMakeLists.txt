@@ -27,7 +27,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake" "${CMAKE_
 include(DLPOLYBuildOptions)
 include(DLPOLYBuildFunctions)
 include(GNUInstallDirs)
-include(debug)
+include(flags)
 if(COMMAND cmake_policy)
   #  cmake_policy(SET CMP0004 OLD)
 endif(COMMAND cmake_policy)
