@@ -1561,30 +1561,6 @@ Contains
         Call stat%allocate_per_particle_arrays(cnfig%natms)
       End If
 
-      ! Evaluate forces
-
-      Call calculate_forces(cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &
-                            inversion, tether, threebody, neigh, sites, vdws, tersoffs, fourbody, rdf, netcdf, &
-                            minim, mpoles, ext_field, rigid, electro, domain, kim_data, msd_data, tmr, files, green, &
-                            devel, ewld, met, seed, thermo, crd, comm)
-
-      ! If system has written per-particle data
-      If (stat%collect_pp .and. flow%step - flow%equil_steps >= 0) Then
-        heat_flux = calculate_heat_flux(stat, cnfig, comm)
-
-        If (flow%heat_flux .and. comm%idnode == 0) Then
-          Open (Newunit=heat_flux_unit, File='HEATFLUX', Position='append')
-          Write (heat_flux_unit, '(I8.1, 1X, 5(G19.12, 1X))') flow%step, stat%stptmp, cnfig%volm, heat_flux
-          Close (heat_flux_unit)
-        End If
-
-        If (flow%write_per_particle) Then
-          Call write_per_part_contribs(cnfig, comm, stat%pp_energy, stat%pp_stress, flow%step)
-        End If
-
-        Call stat%deallocate_per_particle_arrays()
-      End If
-
       If (flow%step >= 0 .and. flow%step < flow%run_steps .and. cnfig%levcfg == 2) Then
 
         ! Increase step counter
@@ -1623,6 +1599,23 @@ Contains
                               msd_data, tmr, files, green, devel, ewld, &
                               met, seed, thermo, crd, comm)
       Endif
+
+      ! If system has written per-particle data
+      If (stat%collect_pp .and. flow%step - flow%equil_steps >= 0) Then
+        heat_flux = calculate_heat_flux(stat, cnfig, comm)
+
+        If (flow%heat_flux .and. comm%idnode == 0) Then
+          Open (Newunit=heat_flux_unit, File='HEATFLUX', Position='append')
+          Write (heat_flux_unit, '(I8.1, 1X, 5(G19.12, 1X))') flow%step, stat%stptmp, cnfig%volm, heat_flux
+          Close (heat_flux_unit)
+        End If
+
+        If (flow%write_per_particle) Then
+          Call write_per_part_contribs(cnfig, comm, stat%pp_energy, stat%pp_stress, flow%step)
+        End If
+
+        Call stat%deallocate_per_particle_arrays()
+      End If
 
       ! Calculate physical quantities, collect statistics and report at t=0
 
