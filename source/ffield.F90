@@ -99,7 +99,7 @@ Module ffield
                              thermostat_type
   Use three_body,      Only: threebody_type
   Use vdw,             Only: &
-                             MIX_FENDER_HASLEY, MIX_FUNCTIONAL, MIX_HALGREN, MIX_HOGERVORST, &
+                             MIX_FENDER_HALSEY, MIX_FUNCTIONAL, MIX_HALGREN, MIX_HOGERVORST, &
                              MIX_LORENTZ_BERTHELOT, MIX_NULL, MIX_TANG_TOENNIES, &
                              MIX_WALDMAN_HAGLER, VDW_126_MDF, VDW_12_6, VDW_AMOEBA, &
                              VDW_BORN_HUGGINS_MEYER, VDW_BUCKINGHAM, VDW_BUCKINGHAM_MDF, VDW_DPD, &
@@ -4011,7 +4011,7 @@ Contains
                         If (thermo%key_dpd /= DPD_NULL) &
                           thermo%gamdpd(ksite) = Sqrt(thermo%gamdpd(isite) * thermo%gamdpd(jsite))
 
-                      Else If (vdws%mixing == MIX_FENDER_HASLEY) Then
+                      Else If (vdws%mixing == MIX_FENDER_HALSEY) Then
 
                         ! Fender-Halsey : e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2
 

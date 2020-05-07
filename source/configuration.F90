@@ -2679,7 +2679,7 @@ Contains
 
       Call io_set_parameters(io, user_comm=comm%comm)
       Call io_init(io, recsz)
-      Call io_delete(io, cfile%filename, comm)
+!      Call io_delete(io, cfile%filename, comm)
       Call io_open(io, io_write, comm%comm, cfile%filename, mode_wronly, fh)
 
       ! Start of file (updated)
