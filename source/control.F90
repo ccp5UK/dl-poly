@@ -3800,7 +3800,7 @@ Contains
   End Subroutine read_control
 
   Subroutine scan_control(rcter, max_rigid, imcon, cell, xhi, yhi, zhi, mxgana, &
-                          l_n_r, lzdn, l_ind, nstfce, ttm, cshell, stats, thermo, green, devel, msd_data, met, &
+                          no_rdf, calc_zdensity, read_indices, nstfce, ttm, cshell, stats, thermo, green, devel, msd_data, met, &
                           pois, bond, angle, dihedral, inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, &
                           electro, ewld, kim_data, files, flow, comm)
 
@@ -3865,7 +3865,7 @@ Contains
     Character(Len=40)  :: akey, word, word1
     Character(Len=256) :: message
     Integer            :: bspline_local, i, itmp, nstrun
-    Logical            :: carry, l_exp, l_n_m, la_ana, la_ang, la_bnd, la_dih, la_inv, lelec, &
+    Logical            :: carry, l_exp, no_metal, la_ana, la_ang, la_bnd, la_dih, la_inv, lelec, &
                           lmet, lrcut, lrmet, lrvdw, lter, lvdw, safe
     Real(Kind=wp)      :: celprp(1:10), cut, eps0, fac, tol, tol1
 
@@ -3878,7 +3878,7 @@ Contains
 
     ! default reading indices options
 
-    l_ind = .true.
+    read_indices = .true.
 
     ! strict flag
 
@@ -3912,7 +3912,7 @@ Contains
     lrvdw = .false. ! Even though it vdws%cutoff may have been read from TABLE
 
     lmet = (met%max_metal > 0)
-    l_n_m = .not. lmet
+    no_metal = .not. lmet
     lrmet = (met%rcut > 1.0e-6_wp)
 
     lter = (tersoffs%max_ter > 0)
@@ -4210,7 +4210,7 @@ Contains
 
         Else If (word(1:3) == 'ind') Then
 
-          l_ind = .false.
+          read_indices = .false.
           Call info('no index (reading in CONFIG) option on', .true.)
 
         Else If (word(1:3) == 'str') Then
@@ -4791,7 +4791,7 @@ Contains
 
           ! Reset vdws%cutoff, met%rcut and neigh%cutoff when only tersoff potentials are opted for
 
-          If (lter .and. electro%no_elec .and. vdws%no_vdw .and. l_n_m .and. .not. rdf%l_collect) Then
+          If (lter .and. electro%no_elec .and. vdws%no_vdw .and. no_metal .and. .not. rdf%l_collect) Then
             vdws%cutoff = 0.0_wp
             met%rcut = 0.0_wp
             If (.not. flow%strict) Then
@@ -4838,7 +4838,7 @@ Contains
           ! Reset vdws%cutoff and met%rcut when only tersoff potentials are opted for and
           ! possibly reset neigh%cutoff to 2.0_wp*rcter+1.0e-6_wp (leaving room for failure)
 
-          If (lter .and. electro%no_elec .and. vdws%no_vdw .and. l_n_m .and. .not. rdf%l_collect .and. &
+          If (lter .and. electro%no_elec .and. vdws%no_vdw .and. no_metal .and. .not. rdf%l_collect .and. &
               kim_data%active) Then
             vdws%cutoff = 0.0_wp
             met%rcut = 0.0_wp

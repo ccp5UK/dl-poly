@@ -26,7 +26,8 @@ Module new_control
        electrostatic_type
   Use errors_warnings,      Only: error,&
        info,&
-       warning
+       warning,&
+       set_print_level
   Use ewald,                Only: ewald_type
   Use filename,             Only: FILE_CONFIG,&
        FILE_CONTROL,&
@@ -146,15 +147,19 @@ Module new_control
   !> Max number of params, increase to reduce hash collisions
   Integer, Parameter :: PARAMS_TABLE_SIZE = 500
 
-  Public :: read_new_control
-  Public :: try_parse
-
-  ! Public for test
   Public :: initialise_control
-  Public :: parse_file
+  Public :: read_new_control
+  Public :: read_io
+  Public :: read_ttm
+  Public :: read_ensemble
+  Public :: read_forcefield
+  Public :: read_devel
+  Public :: read_structure_analysis
+  Public :: read_units
+  Public :: read_bond_analysis
 
   ! Public for old-style
-  Public :: bad_option, read_ensemble, read_structure_analysis, read_units, read_bond_analysis
+  Public :: bad_option
   Public :: write_ensemble
 
 contains
@@ -177,14 +182,26 @@ contains
     can_parse = try_parse(control_file%unit_no, params, comm)
 
     ! Possibly old style
-    if (.not. can_parse) return
+    if (.not. can_parse) then
+       call control_file%close()
+       return
+    end if
 
     Call parse_file(control_file%unit_no, params, comm)
     call control_file%close()
-    ! flow%reset_padding = .true.
-    ! neigh%cutoff=Max(neigh%cutoff,vdws%cutoff,met%rcut,kim_data%cutoff,bond%rcut, 2.0_wp*rcter+1.0e-6_wp)
 
   end Subroutine read_new_control
+
+  Subroutine read_devel(params, devel)
+    Type( parameters_hash_table ), Intent( In    ) :: params
+    Type( development_type ), Intent( InOut ) :: devel
+    Integer :: print_level
+
+    Call params%retrieve('print_level', print_level)
+    Call set_print_level(print_level)
+    Call params%retrieve('unsafe_comms', devel%l_fast)
+
+  end Subroutine read_devel
 
   Subroutine read_io(params, io, netcdf, files, comm)
     !!-----------------------------------------------------------------------
@@ -472,15 +489,15 @@ contains
 
   End Subroutine read_io
 
-  Subroutine read_ensemble(params, thermo, ttm)
+  Subroutine read_ensemble(params, thermo, ttm_active)
     Type( parameters_hash_table ), intent( In    ) :: params
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Character(Len=STR_LEN) :: option
-    Logical, Intent( In    ) :: ttm
+    Logical, Intent( In    ) :: ttm_active
     Logical :: ltmp
 
     call params%retrieve('ensemble', option, required = .true.)
-    if (ttm .and. option /= 'ttm') call error(0, 'TTM requested, ensemble not ttm')
+    if (ttm_active .and. option /= 'ttm') call error(0, 'TTM requested, ensemble not ttm')
     select case(option)
     case ('nve', 'pmf')
        thermo%ensemble = ENS_NVE
@@ -1167,7 +1184,7 @@ contains
 
   end Subroutine read_ttm
 
-  Subroutine read_units(params, out_units)
+  Subroutine read_units(params)
     Type( parameters_hash_table ), intent( In    ) :: params
     Type( units_scheme ) :: out_units
     Character(Len=STR_LEN) :: option
@@ -1368,6 +1385,7 @@ contains
        ! End If
 
        ! call params%retrieve('ewald_nsplines', ewld%bspline%num_splines)
+       ! If (ewld%bspline%num_splines < 3) call error(0, 'Too few bsplines (<3)')
        ! Call dcell(cell,celprp)
 
        ! if (params%is_set(['ewald_precision', 'ewald_alpha'])) then
@@ -3357,7 +3375,7 @@ contains
                key = "ewald_nsplines", &
                name = "Number of B-Splines", &
                val = "8", &
-               description = "Set number of B-Splines for Ewald SPME calculations", &
+               description = "Set number of B-Splines for Ewald SPME calculations, min=3", &
                data_type = DATA_INT))
         end block ewald
 
@@ -3479,6 +3497,14 @@ contains
            description = "Ignore strict checks such as; "// &
            "good system cutoff, particle âindex contiguity, disable non-error warnings, minimisation information", &
            data_type = DATA_BOOL))
+
+      call table%set("unsafe_comms", control_parameter( &
+           key = "unsafe_comms", &
+           name = "Disable parallel safety", &
+           val = "on", &
+           description = "Ignore parallel safety on checks", &
+           data_type = DATA_BOOL))
+
 
       call table%set("unit_test", control_parameter( &
            key = "unit_test", &

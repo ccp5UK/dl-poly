@@ -134,10 +134,13 @@ Module meta
   Use vdw,                                Only: vdw_type
   Use z_density,                          Only: z_density_type
 
+  Use new_control, Only : read_new_control, read_io, read_ttm, read_devel, read_ensemble, &
+       read_bond_analysis, read_structure_analysis, read_units, read_forcefield
+
+
   ! HACK
   Use control_parameter_module, Only : parameters_hash_table
   Use control,                            Only: use_new_control
-  Use new_control, Only : read_new_control, try_parse
   Use new_control_old_style, Only : setup_file_io, scan_new_control_output_old, &
        read_new_control_old
 
@@ -304,13 +307,14 @@ Contains
     ! Rename control file if argument was passed
     If (Len_Trim(control_filename) > 0 ) Then
        Call files(FILE_CONTROL)%rename(control_filename)
+    Else
+       Call files(FILE_CONTROL)%rename('CONTROL')
     End If
 
     call read_new_control(files(FILE_CONTROL), params, comm, can_parse)
 
     ! Cannot read as new style
     if (.not. can_parse) then
-       call files(FILE_CONTROL)%close()
        devel%new_control = .false.
 
        !! Enable when new becomes standard
@@ -326,7 +330,13 @@ Contains
        return
     end if
 
+#ifdef CHRONO
+    Call stop_timer(tmr, 'Initialisation')
+#endif
+
+    ! Setup io immediately
     call read_io(params, ios, netcdf, files, comm)
+    call read_devel(params, devel)
 
     do i = 1, FILENAME_SIZE
        if (files(i)%filename == "SCREEN") then
@@ -346,6 +356,49 @@ Contains
     Call start_timer(tmr, 'Initialisation')
 #endif
 
+    call read_ttm(params, ttms)
+    call read_ensemble(params, thermo, ttms%l_ttm)
+    call read_bond_analysis(params, flow, bond, angle, dihedral, inversion)
+    call read_structure_analysis(params, msd_data, rdf, green, zdensity, adf, crd, traj, dfcts, rsdsc)
+    call read_units(params)
+    call read_forcefield(params, neigh, electro, vdws, met, mpoles, core_shells)
+
+    Call set_bounds(params, &
+      sites, ttms, ios, core_shells, cons, pmfs, stats, &
+      thermo, green, devel, msd_data, met, pois, bond, angle, dihedral, inversion, &
+      tether, threebody, zdensity, neigh, vdws, tersoffs, fourbody, rdf, mpoles, ext_field, &
+      rigid, electro, domain, config, ewld, kim_data, files, flow, comm)
+
+    Call molecular_dynamics_allocate(sites, config, neigh, thermo, vdws, core_shells, cons, pmfs, &
+         rigid, tether, bond, angle, dihedral, inversion, mpoles, met, tersoffs, threebody, fourbody, &
+         ext_field, rdf, zdensity, stats, green, ttms, domain, ewld, kim_data, comm)
+
+    Call read_control(lfce, impa, ttms, dfcts, rigid, rsdsc, core_shells, cons, pmfs, &
+         stats, thermo, green, devel, plume, msd_data, met, pois, bond, angle, dihedral, &
+         inversion, zdensity, neigh, vdws, rdf, minim, mpoles, electro, ewld, &
+         seed, traj, files, tmr, config, flow, crd, adf, comm)
+
+    If (stats%cur%on) Then
+      Call config%k%init(files(FILE_KPOINTS)%filename, comm)
+      Call stats%cur%init(config%k%n, 200, files(FILE_CURRENT), comm)
+    End If
+
+    ! READ SIMULATION FORCE FIELD
+    Call read_field(neigh%cutoff, core_shells, pmfs, cons, thermo, met, bond, angle, &
+                    dihedral, inversion, tether, threebody, sites, vdws, tersoffs, fourbody, rdf, &
+                    mpoles, ext_field, rigid, electro, config, kim_data, files, flow, crd, comm)
+
+    ! If computing rdf errors, we need to initialise the arrays.
+    If (rdf%l_errors_jack .or. rdf%l_errors_block) Then
+      Call rdf%init_block(flow%run_steps, sites%ntype_atom)
+    End If
+
+    ! CHECK MD CONFIGURATION
+    Call check_config(config, electro%key, thermo, sites, flow, comm)
+
+#ifdef CHRONO
+    Call stop_timer(tmr, 'Initialisation')
+#endif
     stop 0
 
   end Subroutine molecular_dynamics_initialise
@@ -467,47 +520,9 @@ Contains
     Call info("*** pre-scanning stage (set_bounds) DONE ***", .true.)
     Call time_elapsed(tmr)
 
-    ! ALLOCATE SITE & CONFIG
-    Call sites%init()
-    Call config%init()
-
-    Call neigh%init_list(config%mxatdm)
-
-    ! ALLOCATE DPD ARRAYS
-    Call thermo%init_dpd(vdws%max_vdw)
-
-    ! ALLOCATE INTRA-LIKE INTERACTION ARRAYS
-    Call core_shells%init(config%mxatdm, sites%mxtmls, config%mxlshp, domain%neighbours)
-    Call cons%init(sites%mxtmls, config%mxatdm, config%mxlshp, domain%neighbours)
-    Call pmfs%init(sites%mxtmls, config%mxatdm)
-    Call rigid%init(config%mxlshp, sites%mxtmls, config%mxatdm, domain%neighbours)
-    Call tether%init(sites%mxtmls, config%mxatdm)
-    Call bond%init(config%mxatdm, sites%mxtmls)
-    Call angle%init(config%mxatdm, sites%mxtmls)
-    Call dihedral%init(config%mxatdm, sites%mxtmls)
-    Call inversion%init(config%mxatms, sites%mxtmls)
-    Call mpoles%init(sites%max_site, neigh%max_exclude, config%mxatdm, ewld%bspline, config%mxatms)
-
-    ! ALLOCATE INTER-LIKE INTERACTION ARRAYS
-    Call vdws%init()
-    Call met%init(config%mxatms, sites%mxatyp)
-    Call tersoffs%init(sites%max_site)
-    Call threebody%init(sites%max_site)
-    Call fourbody%init(sites%max_site)
-    Call ext_field%init()
-
-    ! ALLOCATE RDF, Z-DENSITY, STATISTICS & GREEN-KUBO ARRAYS
-    Call rdf%init()
-    Call zdensity%init(rdf%max_grid, sites%mxatyp)
-    Call stats%init(rigid%max_rigid, config%mxatms, config%mxatdm)
-    Call green%init(config%mxatms, sites%mxatyp)
-
-    ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
-    Call allocate_ttm_arrays(ttms, domain, config, comm)
-    Call ttm_table_scan(config%mxbuff, ttms, comm)
-
-    ! Setup KIM
-    Call kim_setup(kim_data, config%mxatms, config%mxatdm, config%megatm, neigh%max_list, domain%mxbfxp, comm%mxnode)
+    Call molecular_dynamics_allocate(sites, config, neigh, thermo, vdws, core_shells, cons, pmfs, &
+         rigid, tether, bond, angle, dihedral, inversion, mpoles, met, tersoffs, threebody, fourbody, &
+         ext_field, rdf, zdensity, stats, green, ttms, domain, ewld, kim_data, comm)
 
     Call read_new_control_old(params, &
          lfce, impa, ttms, dfcts, rigid, rsdsc, core_shells, cons, pmfs, &
@@ -652,55 +667,11 @@ Contains
       Call print_evb_banner(flow%NUM_FF)
     End If
 
-    ! Now the loop is over the number of force fields to be coupled. Variable flow%NUM_FF was assigned in read_simtype
     Do ff=1,flow%NUM_FF
-      ! ALLOCATE SITE & CONFIG
-      Call sites(ff)%init()
-      Call config(ff)%init()
-
-      Call neigh(ff)%init_list(config(ff)%mxatdm)
-
-      ! ALLOCATE DPD ARRAYS
-      Call thermo(ff)%init_dpd(vdws(ff)%max_vdw)
-
-      ! ALLOCATE INTRA-LIKE INTERACTION ARRAYS
-      Call core_shells(ff)%init(config(ff)%mxatdm, sites(ff)%mxtmls, config(ff)%mxlshp, domain(ff)%neighbours)
-      Call cons(ff)%init(sites(ff)%mxtmls, config(ff)%mxatdm, config(ff)%mxlshp, domain(ff)%neighbours)
-      Call pmfs(ff)%init(sites(ff)%mxtmls, config(ff)%mxatdm)
-      Call rigid(ff)%init(config(ff)%mxlshp, sites(ff)%mxtmls, config(ff)%mxatdm, domain(ff)%neighbours)
-      Call tether(ff)%init(sites(ff)%mxtmls, config(ff)%mxatdm)
-      Call bond(ff)%init(config(ff)%mxatdm, sites(ff)%mxtmls)
-      Call angle(ff)%init(config(ff)%mxatdm, sites(ff)%mxtmls)
-      Call dihedral(ff)%init(config(ff)%mxatdm, sites(ff)%mxtmls)
-      Call inversion(ff)%init(config(ff)%mxatms, sites(ff)%mxtmls)
-      Call mpoles(ff)%init(sites(ff)%max_site, neigh(ff)%max_exclude, config(ff)%mxatdm, &
-                          & ewld(ff)%bspline%num_splines, config(ff)%mxatms)
-
-      ! ALLOCATE INTER-LIKE INTERACTION ARRAYS
-      Call vdws(ff)%init()
-      Call met(ff)%init(config(ff)%mxatms, sites(ff)%mxatyp)
-      Call tersoffs(ff)%init(sites(ff)%max_site)
-      Call threebody(ff)%init(sites(ff)%max_site)
-      Call fourbody(ff)%init(sites(ff)%max_site)
-
-      ! ALLOCATE RDF, Z-DENSITY, STATISTICS & GREEN-KUBO ARRAYS
-      Call rdf(ff)%init()
-      Call zdensity(ff)%init(sites(ff)%mxatyp)
-      Call stats(ff)%init(rigid(ff)%max_rigid, config(ff)%mxatms, config(ff)%mxatms)
-      Call green(ff)%init(config(ff)%mxatms, sites(ff)%mxatyp)
-
-      ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
-      Call allocate_ttm_arrays(ttms(ff),domain(ff),config(ff),comm)
-      Call ttm_table_scan(config(ff)%mxbuff,ttms(ff),comm)
-
-      ! Setup KIM
-      Call kim_setup(kim_data(ff), config(ff)%mxatms, config(ff)%mxatdm, config(ff)%megatm,&
-        neigh(ff)%max_list, domain(ff)%mxbfxp, comm%mxnode)
-
-      ! External field
-      Call ext_field(ff)%init()
-
-    End Do
+      Call molecular_dynamics_allocate(sites(ff), config(ff), neigh(ff), thermo(ff), vdws(ff), core_shells(ff), cons(ff), pmfs(ff), &
+           rigid(ff), tether(ff), bond(ff), angle(ff), dihedral(ff), inversion(ff), mpoles(ff), met(ff), tersoffs(ff), threebody(ff), fourbody(ff), &
+           ext_field(ff), rdf(ff), zdensity(ff), stats(ff), green(ff), ttms(ff), domain(ff), ewld(ff), kim_data(ff), comm)
+    end Do
 
     ! READ SIMULATION CONTROL PARAMETERS
     Call read_control(lfce, impa, ttms(1), dfcts, rigid(1), rsdsc(1), core_shells(1), cons(1), pmfs(1), &
@@ -710,10 +681,10 @@ Contains
 
     call set_print_level(0)
     Do ff = 2, flow%NUM_FF
-      Call read_control(lfce, impa, ttms(ff), dfcts, rigid(ff), rsdsc(ff), core_shells(ff), cons(ff), pmfs(ff), &
-        stats(ff), thermo(ff), green(ff), devel, plume(ff), msd_data(ff), met(ff), pois(ff), bond(ff), angle(ff), dihedral(ff), &
-        inversion(ff), zdensity(ff), neigh(ff), vdws(ff), rdf(ff), minim(ff), mpoles(ff), electro(ff), ewld(ff), &
-        seed, traj, files, tmr, config(ff), flow, crd(ff), adf(ff), comm)
+      Call read_control(lfce(ff), impa(ff), ttms(ff), dfcts(ff), rigid(ff), rsdsc(ff), core_shells(ff), cons(ff), pmfs(ff), &
+           stats(ff), thermo(ff), green(ff), devel(ff), plume(ff), msd_data(ff), met(ff), pois(ff), bond(ff), angle(ff), dihedral(ff), &
+           inversion(ff), zdensity(ff), neigh(ff), vdws(ff), rdf(ff), minim(ff), mpoles(ff), electro(ff), ewld(ff), &
+           seed(ff), traj(ff), files(ff), tmr(ff), config(ff), flow(ff), crd(ff), adf(ff), comm)
     End Do
     call set_print_level(old_print_level)
 
@@ -742,12 +713,90 @@ Contains
 
       ! CHECK MD CONFIGURATION
       Call check_config(config(ff),electro(ff)%key,thermo(ff),sites(ff),flow,comm)
+    End Do
 
 #ifdef CHRONO
     Call stop_timer(tmr, 'Initialisation')
 #endif
 
   end Subroutine molecular_dynamics_initialise_old
+
+  Subroutine molecular_dynamics_allocate(sites, config, neigh, thermo, vdws, core_shells, cons, pmfs, &
+       & rigid, tether, bond, angle, dihedral, inversion, mpoles, met, tersoffs, threebody, fourbody, &
+       & ext_field, rdf, zdensity, stats, green, ttms, domain, ewld, kim_data, comm)
+    Type(comms_type),          Intent(InOut) :: comm
+    Type(ewald_type),          Intent(InOut) :: ewld
+    Type(thermostat_type),     Intent(InOut) :: thermo
+    Type(stats_type),          Intent(InOut) :: stats
+    Type(greenkubo_type),      Intent(InOut) :: green
+    Type(metal_type),          Intent(InOut) :: met
+    Type(bonds_type),          Intent(InOut) :: bond
+    Type(angles_type),         Intent(InOut) :: angle
+    Type(dihedrals_type),      Intent(InOut) :: dihedral
+    Type(inversions_type),     Intent(InOut) :: inversion
+    Type(tethers_type),        Intent(InOut) :: tether
+    Type(threebody_type),      Intent(InOut) :: threebody
+    Type(z_density_type),      Intent(InOut) :: zdensity
+    Type(constraints_type),    Intent(InOut) :: cons
+    Type(neighbours_type),     Intent(InOut) :: neigh
+    Type(pmf_type),            Intent(InOut) :: pmfs
+    Type(site_type),           Intent(InOut) :: sites
+    Type(core_shell_type),     Intent(InOut) :: core_shells
+    Type(vdw_type),            Intent(InOut) :: vdws
+    Type(tersoff_type),        Intent(InOut) :: tersoffs
+    Type(four_body_type),      Intent(InOut) :: fourbody
+    Type(rdf_type),            Intent(InOut) :: rdf
+    Type(mpole_type),          Intent(InOut) :: mpoles
+    Type(external_field_type), Intent(InOut) :: ext_field
+    Type(rigid_bodies_type),   Intent(InOut) :: rigid
+    Type(domains_type),        Intent(InOut) :: domain
+    Type(kim_type), Target,    Intent(InOut) :: kim_data
+    Type(configuration_type),  Intent(InOut) :: config
+    Type(ttm_type),            Intent(InOut) :: ttms
+
+        ! ALLOCATE SITE & CONFIG
+    Call sites%init()
+    Call config%init()
+
+    Call neigh%init_list(config%mxatdm)
+
+    ! ALLOCATE DPD ARRAYS
+    Call thermo%init_dpd(vdws%max_vdw)
+
+    ! ALLOCATE INTRA-LIKE INTERACTION ARRAYS
+    Call core_shells%init(config%mxatdm, sites%mxtmls, config%mxlshp, domain%neighbours)
+    Call cons%init(sites%mxtmls, config%mxatdm, config%mxlshp, domain%neighbours)
+    Call pmfs%init(sites%mxtmls, config%mxatdm)
+    Call rigid%init(config%mxlshp, sites%mxtmls, config%mxatdm, domain%neighbours)
+    Call tether%init(sites%mxtmls, config%mxatdm)
+    Call bond%init(config%mxatdm, sites%mxtmls)
+    Call angle%init(config%mxatdm, sites%mxtmls)
+    Call dihedral%init(config%mxatdm, sites%mxtmls)
+    Call inversion%init(config%mxatms, sites%mxtmls)
+    Call mpoles%init(sites%max_site, neigh%max_exclude, config%mxatdm, ewld%bspline%num_splines, config%mxatms)
+
+    ! ALLOCATE INTER-LIKE INTERACTION ARRAYS
+    Call vdws%init()
+    Call met%init(config%mxatms, sites%mxatyp)
+    Call tersoffs%init(sites%max_site)
+    Call threebody%init(sites%max_site)
+    Call fourbody%init(sites%max_site)
+    Call ext_field%init()
+
+    ! ALLOCATE RDF, Z-DENSITY, STATISTICS & GREEN-KUBO ARRAYS
+    Call rdf%init()
+    Call zdensity%init(sites%mxatyp)
+    Call stats%init(rigid%max_rigid, config%mxatms, config%mxatdm)
+    Call green%init(config%mxatms, sites%mxatyp)
+
+    ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
+    Call allocate_ttm_arrays(ttms, domain, config, comm)
+    Call ttm_table_scan(config%mxbuff, ttms, comm)
+
+    ! Setup KIM
+    Call kim_setup(kim_data, config%mxatms, config%mxatdm, config%megatm, neigh%max_list, domain%mxbfxp, comm%mxnode)
+
+  end Subroutine molecular_dynamics_allocate
 
   !> Simple MD driver
   Subroutine molecular_dynamics_driver(dlp_world, comm, thermo, ewld, tmr, devel, &
