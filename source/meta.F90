@@ -920,13 +920,6 @@ Contains
 
     Character(Len=66) :: banner(14)
 
-    Call info('', .true.)
-    Write (banner(1), fmt1) Repeat("*", 66)
-    Write (banner(2), fmt1) "****  Please do cite `J. Mater. Chem.', 16, 1911-1918 (2006)  ****"
-    Write (banner(3), fmt1) "****  when publishing research data obtained using DL_POLY_4  ****"
-    Write (banner(4), fmt1) Repeat("*", 66)
-    Call info(banner, 4, .true., level=-1)
-
     ! Ask for reference in publications
 
     Call info('', .true.)

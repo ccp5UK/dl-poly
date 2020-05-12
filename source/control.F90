@@ -103,7 +103,7 @@ Module control
   Use timer,                Only: timer_type
   Use trajectory,           Only: trajectory_type
   Use ttm,                  Only: ttm_type
-  Use vdw,                  Only: MIX_FENDER_HASLEY,&
+  Use vdw,                  Only: MIX_FENDER_HALSEY,&
                                   MIX_FUNCTIONAL,&
                                   MIX_HALGREN,&
                                   MIX_HOGERVORST,&
@@ -588,7 +588,6 @@ Contains
       If (word(1:1) == '#' .or. word(1:1) == ' ') Then
       Else If (word(1:5) == 'l_scr') Then
       Else If (word(1:6) == 'l_fast') Then
-      Else If (word(1:5) == 'l_tim') Then
       Else If (word(1:5) == 'l_eng') Then
         devel%l_eng = .true.
         Call info('%%% OUTPUT contains an extra last line with E_tot !!! %%%', .true.)
@@ -670,6 +669,7 @@ Contains
         Call info('%%% Terminate gracefully before initialisation !!! %%%', .true.)
       Else If (word(1:5) == 'l_dis') Then
         devel%l_dis = .true.
+        Call get_word(record, word)
         devel%r_dis = Min(devel%r_dis, word_2_real(word, 0.1_wp))
         Call info('%%% Turn on the check on minimum separation distance between VNL pairs at re/start !!! %%%', .true.)
         Write (message, '(a,1p,e12.4)') '%%% separation criterion (Angstroms) %%%', devel%r_dis
@@ -712,7 +712,7 @@ Contains
             vdws%mixing = MIX_LORENTZ_BERTHELOT
             Call info('type of mixing selected - Lorentz-Berthelot :: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2', .true.)
           Else If (word2(1:4) == 'fend') Then
-            vdws%mixing = MIX_FENDER_HASLEY
+            vdws%mixing = MIX_FENDER_HALSEY
             Call info('type of mixing selected - Fender-Halsey :: e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2', .true.)
           Else If (word2(1:4) == 'hoge') Then
             vdws%mixing = MIX_HOGERVORST
@@ -884,7 +884,7 @@ Contains
 
         If (l_0) Then
           If (comm%idnode == 0) &
-            Call info('fire option on - actual temperature will reset to 10 Kelvin if no target tempreature is specified', .true.)
+            Call info('fire option on - actual temperature will reset to 10 Kelvin if no target temperature is specified', .true.)
         Else
           ltemp = .true.
           thermo%temp = 10.0_wp
@@ -1161,8 +1161,8 @@ Contains
       Else If (word(1:6) == 'regaus') Then
 
         Call get_word(record, word)
-        If (word(1:5) == 'every' .or. word(1:4) == 'thermo%temp') Call get_word(record, word)
-        If (word(1:5) == 'every' .or. word(1:4) == 'thermo%temp') Call get_word(record, word)
+        If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record, word)
+        If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record, word)
         thermo%freq_tgaus = Max(1, Abs(Nint(word_2_real(word, 0.0_wp))))
 
         thermo%l_tgaus = .true.
@@ -1174,8 +1174,8 @@ Contains
       Else If (word(1:5) == 'scale') Then
 
         Call get_word(record, word)
-        If (word(1:5) == 'every' .or. word(1:4) == 'thermo%temp') Call get_word(record, word)
-        If (word(1:5) == 'every' .or. word(1:4) == 'thermo%temp') Call get_word(record, word)
+        If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record, word)
+        If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record, word)
         thermo%freq_tscale = Max(1, Abs(Nint(word_2_real(word, 0.0_wp))))
 
         thermo%l_tscale = .true.
@@ -1207,7 +1207,7 @@ Contains
             Call warning('scheme deselected due to switched off electrostatics', .true.)
           End If
           If (cshell%mxshl == 0) Then
-            Call warning('scheme disabled due to lack of core-shell defined interatcions', .true.)
+            Call warning('scheme disabled due to lack of core-shell defined interactions', .true.)
           End If
 
           If (mpoles%max_mpoles == 0 .or. cshell%mxshl == 0) Then
@@ -2214,7 +2214,7 @@ Contains
           ttm%sh_B = word_2_real(word)
           Write (messages(1), '(a)') 'electronic specific heat capacity set to hyperbolic tangent function'
           Write (messages(2), '(a,1p,e12.4)') 'constant term A (kB/atom) ', ttm%sh_A
-          Write (messages(3), '(a,1p,e12.4)') 'emperature term B (K^-1) ', ttm%sh_B
+          Write (messages(3), '(a,1p,e12.4)') 'temperature term B (K^-1) ', ttm%sh_B
           Call info(messages, 3, .true.)
 
         Else If (word1(1:5) == 'celin') Then
@@ -2261,7 +2261,7 @@ Contains
           Call get_word(record, word)
           ttm%Ka0 = word_2_real(word)
           Write (messages(1), '(a)') 'electronic thermal conductivity set to drude model'
-          Write (messages(2), '(a,1p,e12.4)') 't.c. at system thermo%temp. (W m^-1 K^-1) ', ttm%Ka0
+          Write (messages(2), '(a,1p,e12.4)') 't.c. at system temp. (W m^-1 K^-1) ', ttm%Ka0
           Call info(messages, 2, .true.)
 
         Else If (word1(1:5) == 'ketab') Then
@@ -2323,7 +2323,7 @@ Contains
           ttm%ttmdyndens = .true.
           Call info('dynamic calculations of average atomic density in active ionic cells', .true.)
 
-        Else If (word1(1:4) == 'ttm%amin') Then
+        Else If (word1(1:4) == 'amin') Then
 
           ! minimum number of atoms needed per ionic temperature cell
           ! to give definable ionic temperature (default = 1): smaller
@@ -2355,7 +2355,7 @@ Contains
           Write (message, '(a,1p,e12.4)') 'elec. stopping power (eV/nm) ', ttm%dEdX
           Call info(message, .true.)
 
-        Else If (word1(1:6) == 'sgauss' .or. word1(1:5) == 'thermo%ttm%sigma') Then
+        Else If (word1(1:6) == 'sgauss' .or. word1(1:5) == 'sigma') Then
 
           ! gaussian spatial distribution for initial energy deposition into
           ! electronic system
@@ -2366,7 +2366,7 @@ Contains
           Call get_word(record, word)
           ttm%sigmax = word_2_real(word)
           Write (messages(1), '(a)') 'initial gaussian spatial energy deposition in electronic system'
-          Write (messages(2), '(a,1p,e12.4)') 'thermo%ttm%sigma of distribution (nm) ', ttm%sig
+          Write (messages(2), '(a,1p,e12.4)') 'sigma of distribution (nm) ', ttm%sig
           Write (messages(3), '(a,1p,e12.4)') 'distribution cutoff (nm) ', ttm%sigmax * ttm%sig
           Call info(messages, 3, .true.)
 
@@ -2418,7 +2418,7 @@ Contains
           Call get_word(record, word)
           ttm%tcdepo = word_2_real(word)
           Write (messages(1), '(a)') 'gaussian temporal energy deposition in electronic system'
-          Write (messages(2), '(a,1p,e12.4)') 'thermo%ttm%sigma of distribution (ps) ', ttm%tdepo
+          Write (messages(2), '(a,1p,e12.4)') 'sigma of distribution (ps) ', ttm%tdepo
           Write (messages(3), '(a,1p,e12.4)') 'distribution cutoff (ps) ', 2.0_wp * ttm%tcdepo * ttm%tdepo
           Call info(messages, 3, .true.)
 
@@ -2533,7 +2533,7 @@ Contains
           Write (message, '(a,1p,e12.4)') 'electron-ion coupling offset (ps) ', ttm%ttmoffset
           Call info(message, .true.)
 
-        Else If (word1(1:6) == 'ttm%oneway') Then
+        Else If (word1(1:6) == 'oneway') Then
 
           ! one-way electron-phonon coupling in thermostat and thermal
           ! diffusion: only apply when electronic temperature exceeds

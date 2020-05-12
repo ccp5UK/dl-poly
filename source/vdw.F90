@@ -91,8 +91,8 @@ Module vdw
   Integer(Kind=wi), Parameter, Public :: MIX_NULL = 0
   !> Lorentz-Berthelot: $e_{ij}=(e_i*e_j)^{1/2} \quad s_{ij}=(s_i+s_j)/2$
   Integer(Kind=wi), Parameter, Public :: MIX_LORENTZ_BERTHELOT = 1
-  !> Fender-Hasley: $e_{ij}=(2*e_i*e_j)/(e_i+e_j) \quad s_{ij}=(s_i+s_j)/2$
-  Integer(Kind=wi), Parameter, Public :: MIX_FENDER_HASLEY = 2
+  !> Fender-Halsey: $e_{ij}=(2*e_i*e_j)/(e_i+e_j) \quad s_{ij}=(s_i+s_j)/2$
+  Integer(Kind=wi), Parameter, Public :: MIX_FENDER_HALSEY = 2
   !> Hogervorst Good-Hope: $e_{ij}=(e_i*e_j)^{1/2} \quad s_{ij}=(s_i*s_j)^{1/2}$
   Integer(Kind=wi), Parameter, Public :: MIX_HOGERVORST = 3
   !> Halgren HHG: $e_{ij}=(4*e_i*e_j)/(e_i^{1/2}+e_j^{1/2})^2 \quad s_{ij}=(s_i^3+s_j^3)/(s_i^2+s_j^2)$
