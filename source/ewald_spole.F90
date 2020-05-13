@@ -1437,6 +1437,7 @@ Contains
             potential_component = (0.0_wp, 0.0_wp)
           End If
 
+          if (potential_component /= potential_component) call error(0, 'Bad pot comp')
           potential_grid(j_local, k_local, l_local) = potential_component
 
         End Do
@@ -1482,7 +1483,7 @@ Contains
     Integer, Save                                        :: mxspl2_old = -1
     Real(Kind=wp)                                        :: atom_coeffs, energy_total
     Real(Kind=wp), Allocatable, Dimension(:, :, :), Save :: extended_potential_grid
-    Real(Kind=wp), Dimension(1:3)                        :: energy_temp
+    Real(Kind=wp), Dimension(1:2)                        :: energy_temp
     Real(Kind=wp), Dimension(3)                          :: curr_force_temp, force_total, &
                                                             recip_kmax
     Real(Kind=wp), Dimension(3, 1:3)                     :: force_temp
@@ -1532,7 +1533,7 @@ Contains
     Call exchange_grid( &
       & ewld%kspace%domain_indices(1, 1), ewld%kspace%domain_indices(1, 2), &
       & ewld%kspace%domain_indices(2, 1), ewld%kspace%domain_indices(2, 2), &
-      & ewld%kspace%domain_indices(3, 1), ewld%kspace%domain_indices(3, 2), Real(potential_grid, wp), &
+      & ewld%kspace%domain_indices(3, 1), ewld%kspace%domain_indices(3, 2), potential_grid, &
       & extended_domain(1, 1), extended_domain(2, 1), extended_domain(3, 1), &
       & extended_domain(1, 2), extended_domain(2, 2), extended_domain(3, 2), extended_potential_grid, domain, comm)
 
@@ -1565,7 +1566,7 @@ Contains
       Do l = 1, ewld%bspline%num_splines
         ll = recip_indices(3, i) + 1 - ewld%bspline%num_splines + l
 
-        energy_temp(3) = atom_coeffs * bspline_d0_z(l)
+        energy_temp(2) = atom_coeffs * bspline_d0_z(l)
 
         force_temp(1, 3) = atom_coeffs * bspline_d0_z(l)
         force_temp(2, 3) = atom_coeffs * bspline_d0_z(l)
@@ -1574,7 +1575,7 @@ Contains
         Do k = 1, ewld%bspline%num_splines
           kk = recip_indices(2, i) + 1 - ewld%bspline%num_splines + k
 
-          energy_temp(2) = energy_temp(3) * bspline_d0_y(k)
+          energy_temp(1) = energy_temp(2) * bspline_d0_y(k)
 
           force_temp(1, 2) = force_temp(1, 3) * bspline_d0_y(k)
           force_temp(2, 2) = force_temp(2, 3) * bspline_d1_y(k)
@@ -1586,12 +1587,12 @@ Contains
             force_temp(1, 1) = force_temp(1, 2) * bspline_d1_x(j) * extended_potential_grid(jj, kk, ll) * recip_kmax(1)
             force_temp(2, 1) = force_temp(2, 2) * bspline_d0_x(j) * extended_potential_grid(jj, kk, ll) * recip_kmax(2)
             force_temp(3, 1) = force_temp(3, 2) * bspline_d0_x(j) * extended_potential_grid(jj, kk, ll) * recip_kmax(3)
-
+            
             ! Sum force contributions
             force_total = force_total - force_temp(:, 1)
             curr_force_temp = curr_force_temp + force_temp(:, 1)
             ! energy_total now holds omega_j * 2piV
-            energy_total = energy_total + energy_temp(2) * bspline_d0_x(j) * extended_potential_grid(jj, kk, ll)
+            energy_total = energy_total + energy_temp(1) * bspline_d0_x(j) * extended_potential_grid(jj, kk, ll)
 
           End Do
         End Do
@@ -1692,7 +1693,7 @@ Contains
     Call exchange_grid( &
       & ewld%kspace%domain_indices(1, 1), ewld%kspace%domain_indices(1, 2), &
       & ewld%kspace%domain_indices(2, 1), ewld%kspace%domain_indices(2, 2), &
-      & ewld%kspace%domain_indices(3, 1), ewld%kspace%domain_indices(3, 2), Real(stress_grid, wp), &
+      & ewld%kspace%domain_indices(3, 1), ewld%kspace%domain_indices(3, 2), stress_grid, &
       & extended_domain(1, 1), extended_domain(2, 1), extended_domain(3, 1), &
       & extended_domain(1, 2), extended_domain(2, 2), extended_domain(3, 2), extended_stress_grid, domain, comm)
 
