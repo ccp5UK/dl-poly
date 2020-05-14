@@ -1473,7 +1473,7 @@ Contains
     Real(Kind=wp), Dimension(:),          Intent(In   ) :: coeffs
     Real(Kind=wp), Dimension(9),          Intent(In   ) :: recip_cell
     Integer, Dimension(:, :),             Intent(In   ) :: recip_indices
-    Complex(Kind=wp), Dimension(:, :, :), Intent(In   ) :: potential_grid
+    Complex(Kind=wp), Allocatable, Dimension(:, :, :), Intent(In   ) :: potential_grid
     Logical,                              Intent(In   ) :: per_part_step
     Real(Kind=wp), Dimension(0:),         Intent(  Out) :: energies
     Real(Kind=wp), Dimension(:, :),       Intent(  Out) :: forces
@@ -1531,12 +1531,8 @@ Contains
       If (fail /= 0) Call error_alloc('extended_potential_grid', 'spme_calc_force_energy')
     End If
 
-    Call exchange_grid( &
-      & ewld%kspace%domain_indices(1, 1), ewld%kspace%domain_indices(1, 2), &
-      & ewld%kspace%domain_indices(2, 1), ewld%kspace%domain_indices(2, 2), &
-      & ewld%kspace%domain_indices(3, 1), ewld%kspace%domain_indices(3, 2), potential_grid, &
-      & extended_domain(1, 1), extended_domain(2, 1), extended_domain(3, 1), &
-      & extended_domain(1, 2), extended_domain(2, 2), extended_domain(3, 2), extended_potential_grid, domain, comm)
+    Call exchange_grid(potential_grid, ewld%kspace%domain_indices(:,1), ewld%kspace%domain_indices(:,2), &
+      & extended_potential_grid, extended_domain(:,1), extended_domain(:,2), domain, comm)
 
     If (Any(Minval(recip_indices(:, 1:config%natms), dim=2) + 2 - ewld%bspline%num_splines < extended_domain(:, 1)) .or. &
         Any(Maxval(recip_indices(:, 1:config%natms), dim=2) + 1 > extended_domain(:, 2))) Then
@@ -1691,12 +1687,8 @@ Contains
       If (fail /= 0) Call error_alloc('extended_stress_grid', 'spme_calc_stress')
     End If
 
-    Call exchange_grid( &
-      & ewld%kspace%domain_indices(1, 1), ewld%kspace%domain_indices(1, 2), &
-      & ewld%kspace%domain_indices(2, 1), ewld%kspace%domain_indices(2, 2), &
-      & ewld%kspace%domain_indices(3, 1), ewld%kspace%domain_indices(3, 2), stress_grid, &
-      & extended_domain(1, 1), extended_domain(2, 1), extended_domain(3, 1), &
-      & extended_domain(1, 2), extended_domain(2, 2), extended_domain(3, 2), extended_stress_grid, domain, comm)
+    Call exchange_grid(stress_grid, ewld%kspace%domain_indices(:,1), ewld%kspace%domain_indices(:,2), &
+      & extended_stress_grid, extended_domain(:,1), extended_domain(:,2), domain, comm)
 
     ! Zero accumulator
     stress_out(:, 0) = 0.0_wp

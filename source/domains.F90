@@ -358,9 +358,7 @@ Contains
     id = i + domain%nx * (j + domain%ny * k)
   End Function idcube
 
-  Subroutine exchange_grid(ixb, ixt, iyb, iyt, izb, izt, qqc_local, &
-                           ixdb, iydb, izdb, ixdt, iydt, izdt, qqc_domain, &
-                           domain, comm)
+  Subroutine exchange_grid(qqc_local, local_lb, local_ub, qqc_domain, domain_lb, domain_ub, domain, comm)
 
     !!-----------------------------------------------------------------------
     !!
@@ -383,15 +381,12 @@ Contains
     Use comms, Only: ExchgGrid_tag, comms_type, gsend, gwait, girecv
     Implicit None
 
-    Integer, Intent(In) :: ixb, iyb, izb
-    Integer, Intent(In) :: ixt, iyt, izt
-    Integer, Intent(In) :: ixdb, iydb, izdb
-    Integer, Intent(In) :: ixdt, iydt, izdt
-    Complex(Kind=wp), Intent(In) :: qqc_local(ixb:ixt, iyb:iyt, izb:izt)
-    Real(Kind=wp), Intent(Out) :: qqc_domain(ixdb:ixdt, iydb:iydt, izdb:izdt)
+    Integer, Dimension(3), Intent(In) :: local_lb, local_ub, domain_lb, domain_ub
+    Complex(Kind=wp), Intent(In) :: qqc_local(local_lb(1):local_ub(1),local_lb(2):local_ub(2),local_lb(3):local_ub(3))
+    Real(Kind=wp), Intent(Out) :: qqc_domain(domain_lb(1):domain_ub(1),domain_lb(2):domain_ub(2),domain_lb(3):domain_ub(3))
+    Integer, Dimension(3) :: offset_lb, offset_ub
     Type(domains_type), Intent(In) :: domain
     Type(comms_type), Intent(InOut) :: comm
-    Integer :: dxb, dxt, dyb, dyt, dzb, dzt !! Difference between upper and lower boundaries in exchange
 
     Character(len=256) :: message
 
@@ -401,26 +396,21 @@ Contains
 
     me = comm%idnode
 
-    ! Remove implicit dependence on mxspl
-    dxb = ixb - ixdb - 1
-    dxt = ixdt - ixt - 1
-    dyb = iyb - iydb - 1
-    dyt = iydt - iyt - 1
-    dzb = izb - izdb - 1
-    dzt = izdt - izt - 1
+    ! Offset -1 => no change
+    offset_lb = local_lb - domain_lb - 1
+    offset_ub = domain_ub - local_ub - 1
 
-    
     ! Could strictly be legal?
-    If (Any([dxb, dxt, dyb, dyt, dzb, dzt] < 0)) Then
+    If (Any(offset_lb < -1) .or. Any(offset_ub < -1)) Then
       Write (message, '(a)') "Error: reducing grid size in exchanged_grid"
       Call error(0, message)
     End If
 
     ! Copy over our local data
 
-    qqc_domain(ixb:ixt, iyb:iyt, izb:izt) = Real(qqc_local, wp)
+    qqc_domain(local_lb(1):local_ub(1), local_lb(2):local_ub(2), local_lb(3):local_ub(3)) = Real(qqc_local, wp)
 
-    If (Any([dxb, dyb, dzb] >= 0)) Then
+    If (Any(offset_lb >= 0)) Then
 
       ! Note that because of the way the splines work when particles don't
       ! blur off domains (ewld%bspline1==ewld%bspline), i.e. no conditional VNL updates,
@@ -431,41 +421,41 @@ Contains
       ! +X direction face - negative halo
 
       Call exchange_grid_halo(domain%map(1), domain%map(2), &
-                              ixt - dxb, ixt       , iyb, iyt, izb, izt, &
-                              ixdb     , ixdb + dxb, iyb, iyt, izb, izt)
+                              local_ub(1) - offset_lb(1), local_ub(1), local_lb(2), local_ub(2), local_lb(3), local_ub(3), &
+                              domain_lb(1), domain_lb(1) + offset_lb(1), local_lb(2), local_ub(2), local_lb(3), local_ub(3))
 
       ! +Y direction face (including the +X face extension) - negative halo
 
       Call exchange_grid_halo(domain%map(3), domain%map(4), &
-                              ixdb, ixt, iyt - dyb, iyt       , izb, izt, &
-                              ixdb, ixt, iydb     , iydb + dyb, izb, izt)
+                              domain_lb(1), local_ub(1), local_ub(2) - offset_lb(2), local_ub(2), local_lb(3), local_ub(3), &
+                              domain_lb(1), local_ub(1), domain_lb(2), domain_lb(2) + offset_lb(2), local_lb(3), local_ub(3))
 
       ! +Z direction face (including the +Y+X faces extensions) - negative halo
 
       Call exchange_grid_halo(domain%map(5), domain%map(6), &
-                              ixdb, ixt, iydb, iyt, izt - dzb, izt, &
-                              ixdb, ixt, iydb, iyt, izdb     , izdb + dzb)
+                              domain_lb(1), local_ub(1), domain_lb(2), local_ub(2), local_ub(3) - offset_lb(3), local_ub(3), &
+                              domain_lb(1), local_ub(1), domain_lb(2), local_ub(2), domain_lb(3), domain_lb(3) + offset_lb(3))
 
     End If
 
-    If (Any([dxt, dyt, dzt] >= 0)) Then
+    If (Any(offset_ub >= 0)) Then
 
       ! -X direction face - positive halo
       Call exchange_grid_halo(domain%map(2), domain%map(1), &
-                              ixb       , ixb + dxt, iydb, iyt, izdb, izt, &
-                              ixdt - dxt, ixdt     , iydb, iyt, izdb, izt)
+                              local_lb(1), local_lb(1) + offset_ub(1), domain_lb(2), local_ub(2), domain_lb(3), local_ub(3), &
+                              domain_ub(1) - offset_ub(1), domain_ub(1), domain_lb(2), local_ub(2), domain_lb(3), local_ub(3))
 
       ! -Y direction face (including the +&-X faces extensions) - positive halo
 
       Call exchange_grid_halo(domain%map(4), domain%map(3), &
-                              ixdb, ixdt, iyb       , iyb + dyt, izdb, izt, &
-                              ixdb, ixdt, iydt - dyt, iydt     , izdb, izt)
+                              domain_lb(1), domain_ub(1), local_lb(2), local_lb(2) + offset_ub(2), domain_lb(3), local_ub(3), &
+                              domain_lb(1), domain_ub(1), domain_ub(2) - offset_ub(2), domain_ub(2), domain_lb(3), local_ub(3))
 
       ! -Z direction face (including the +&-Y+&-X faces extensions) - positive halo
 
       Call exchange_grid_halo(domain%map(6), domain%map(5), &
-                              ixdb, ixdt, iydb, iydt, izb       , izb + dzt, &
-                              ixdb, ixdt, iydb, iydt, izdt - dzt, izdt)
+                              domain_lb(1), domain_ub(1), domain_lb(2), domain_ub(2), local_lb(3), local_lb(3) + offset_ub(3), &
+                              domain_lb(1), domain_ub(1), domain_lb(2), domain_ub(2), domain_ub(3) - offset_ub(3), domain_ub(3))
 
     End If
 
