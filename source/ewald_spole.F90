@@ -1220,7 +1220,7 @@ Contains
     bspline_in%num_deriv = 2
     Allocate (bspline_in%derivs(3, 0:bspline_in%num_deriv, 1:bspline_in%num_splines, 1:max_atoms), stat=fail(1))
     If (fail(1) > 0) Call error_alloc('bspline_in%derivs', 'ewald_spme_init')
-
+    
     ! calculate the global b-spline coefficients
     Call bspline_coeffs_gen(kspace_in, bspline_in)
 

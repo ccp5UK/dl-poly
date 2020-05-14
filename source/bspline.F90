@@ -68,15 +68,40 @@ Contains
     Integer                                     :: fail, i, j, k, n
     Real(Kind=wp), Allocatable, Dimension(:)    :: cspline
 
-!    Integer, save                                                               :: nsplines_old = -1
-
     ! Nothing to do
     If (bspline%coeffs_initialised) Return
 
+    ! Setup constants for bspline_splines_gen
+
+    If (Allocated(real_no) .and. Allocated(inv_no)) Then
+      Deallocate (real_no, inv_no, Stat=fail)
+      If (fail /= 0) Call error_alloc('real_no and inv_no', 'bspline_splines_gen')
+    End If
+    Allocate (real_no(1:bspline%num_splines), inv_no(1:bspline%num_splines), Stat=fail)
+    If (fail /= 0) Call error_alloc('real_no and inv_no', 'bspline_splines_gen')
+
+    Do i = 1, bspline%num_splines
+      real_no(i) = Real(i, wp)
+      inv_no(i) = 1.0_wp / real_no(i)
+    End Do
+
+    If (Allocated(ncombk)) Then
+      Deallocate (ncombk, stat=fail)
+      If (fail /= 0) Call error_dealloc('ncombk', 'bspline_coeffs_gen')
+    End If
+    Allocate (ncombk(bspline%num_splines, 0:bspline%num_splines), stat=fail)
+    If (fail /= 0) Call error_alloc('ncombk', 'bspline_coeffs_gen')
+
+    ncombk = 0.0_wp
+    Do n = 1, bspline%num_splines ! If we change spline number, need to recompute coeffs anyway
+      Do k = 0, n
+        ncombk(n, k) = Product([(real_no(i), i=n - k + 1, n)]) * Product([(inv_no(i), i=1, Max(1, k))])
+      End Do
+    End Do
+
     ! Perform validity checks in routine which is only called once!
     If (bspline%num_splines < 2 .or. bspline%num_deriv < 0) Then
-      Write (message, '(a)') 'Error: illegal spline order in bspline_coeffs'
-      Call error(0, message)
+      Call error(0, 'Error: illegal spline order in bspline_coeffs')
     End If
 
     If (bspline%num_deriv > bspline%num_splines - 2) Then ! Can't return this many
@@ -86,12 +111,13 @@ Contains
     End If
 
     Allocate (ww1(1:kspace%k_vec_dim(1)), ww2(1:kspace%k_vec_dim(2)), ww3(1:kspace%k_vec_dim(3)), stat=fail)
-    If (fail > 0) Call error_alloc('ww arrays', 'bspline_coeffs_gen')
+    If (fail /= 0) Call error_alloc('ww arrays', 'bspline_coeffs_gen')
 
     Allocate (bspline%coefficients(3, kspace%k_vec_max), stat=fail)
-    If (fail > 0) Call error_alloc('bspline coefficients', 'bspline_coeffs_gen')
+    If (fail /= 0) Call error_alloc('bspline coefficients', 'bspline_coeffs_gen')
+    bspline%coefficients = 0.0_wp
     Allocate (bspline%norm2(3, kspace%k_vec_max), stat=fail)
-    If (fail > 0) Call error_alloc('bspline norms', 'bspline_coeffs_gen')
+    If (fail /= 0) Call error_alloc('bspline norms', 'bspline_coeffs_gen')
 
     ! initialise the complex exponential arrays
 
@@ -100,17 +126,15 @@ Contains
     ! allocate the helper array
 
     Allocate (cspline(1:bspline%num_splines), stat=fail)
-    If (fail > 0) Call error_alloc('cspline array', 'bspline_coeffs_gen')
+    If (fail /= 0) Call error_alloc('cspline array', 'bspline_coeffs_gen')
 
     ! calculate B-splines at knots
-    cspline(1) = 0.0_wp
+    cspline = 0.0_wp
     cspline(2) = 1.0_wp
 
     Do k = 3, bspline%num_splines
-      cspline(k) = 0.0_wp
-
       Do j = k, 2, -1
-        cspline(j) = (Real(j - 1, wp) * cspline(j) + Real(k - j + 1, wp) * cspline(j - 1)) / Real(k - 1, wp)
+        cspline(j) = (real_no(j - 1) * cspline(j) + real_no(k - j + 1) * cspline(j - 1)) * inv_no(k - 1)
       End Do
     End Do
 
@@ -147,41 +171,14 @@ Contains
     End Do
 
     ! Calculate magnitude of bspline coefficients
+
     bspline%norm2 = Real(bspline%coefficients * Conjg(bspline%coefficients), wp)
 
     Deallocate (cspline, stat=fail)
-    If (fail > 0) Call error_dealloc('cspline arrays', 'bspline_coeffs_gen')
+    If (fail /= 0) Call error_dealloc('cspline arrays', 'bspline_coeffs_gen')
     Deallocate (ww1, ww2, ww3, stat=fail)
-    If (fail > 0) Call error_dealloc('ww arrays', 'bspline_coeffs_gen')
+    If (fail /= 0) Call error_dealloc('ww arrays', 'bspline_coeffs_gen')
 
-    ! Setup constants for bspline_splines_gen
-
-    ! if (bspline%num_splines > nsplines_old) then
-    If (Allocated(real_no) .and. Allocated(inv_no)) Then
-      Deallocate (real_no, inv_no, Stat=fail)
-      If (fail > 0) Call error_alloc('real_no and inv_no', 'bspline_splines_gen')
-    End If
-    Allocate (real_no(1:bspline%num_splines), inv_no(1:bspline%num_splines), Stat=fail)
-    If (fail > 0) Call error_alloc('real_no and inv_no', 'bspline_splines_gen')
-
-    Do i = 1, bspline%num_splines
-      real_no(i) = Real(i, wp)
-      inv_no(i) = 1.0_wp / real_no(i)
-    End Do
-
-    If (Allocated(ncombk)) Then
-      Deallocate (ncombk, stat=fail)
-      If (fail > 0) Call error_dealloc('ncombk', 'bspline_coeffs_gen')
-    End If
-    Allocate (ncombk(bspline%num_splines, 0:bspline%num_splines), stat=fail)
-    If (fail > 0) Call error_alloc('ncombk', 'bspline_coeffs_gen')
-
-    ncombk = 0.0_wp
-    Do n = 1, bspline%num_splines ! If we change spline number, need to recompute coeffs anyway
-      Do k = 0, n
-        ncombk(n, k) = Product([(real_no(i), i=n - k + 1, n)]) * Product([(inv_no(i), i=1, Max(1, k))])
-      End Do
-    End Do
     bspline%derivs_initialised = .false.
     ! end if
 
@@ -200,7 +197,6 @@ Contains
     !! amended   - i.t.todorov april 2015
     !! reordered - j.s.wilkins november 2018
     !!-----------------------------------------------------------------------
-
     Integer,                                Intent(In   ) :: num_atoms
     Real(Kind=wp), Dimension(3, num_atoms), Intent(In   ) :: recip_coords
     Type(bspline_type),                     Intent(InOut) :: bspline
@@ -221,8 +217,11 @@ Contains
     ! Perform validity checks in routine which is only called once -- bspline_coeffs_gen !
 
     s = bspline%num_splines
-    ! construct B-splines
 
+    ! construct B-splines
+    ! Zero initial array -- Avoid hassle
+    bspline%derivs = 0.0_wp
+    
     ! Reversed order of array for memory access efficiency
     Do i = 1, num_atoms
 
@@ -239,7 +238,6 @@ Contains
 
       Do k = s - 2, bspline%num_deriv + 1, -1 ! 3,bspline%num_splines-bspline%num_deriv ! Order of B-spline
 
-        bspline%derivs(:, 0, k, i) = 0.0_wp
         k_r = real_no(s - k + 1)
         km1_rr = inv_no(s - k)
 
@@ -262,13 +260,11 @@ Contains
       Do l = bspline%num_deriv, 1, -1
 
         k = l
-        bspline%derivs(:, 0, k, i) = 0.0_wp
         k_r = real_no(s - k + 1)
         km1_rr = inv_no(s - k)
 
         Do j = 1, s - 1 !bspline%num_splines,2,-1
 
-          bspline%derivs(:, l, j, i) = 0.0_wp
           ! Derivatives of B-splines with order nospl at k-1 points
           sgn = 1.0_wp
           Do n = 0, Min(l, s - j)
