@@ -402,12 +402,12 @@ Contains
     me = comm%idnode
 
     ! Remove implicit dependence on mxspl
-    dxb = ixb - ixdb
-    dxt = ixdt - ixt
-    dyb = iyb - iydb
-    dyt = iydt - iyt
-    dzb = izb - izdb
-    dzt = izdt - izt
+    dxb = ixb - ixdb - 1
+    dxt = ixdt - ixt - 1
+    dyb = iyb - iydb - 1
+    dyt = iydt - iyt - 1
+    dzb = izb - izdb - 1
+    dzt = izdt - izt - 1
 
     
     ! Could strictly be legal?
@@ -420,7 +420,7 @@ Contains
 
     qqc_domain(ixb:ixt, iyb:iyt, izb:izt) = Real(qqc_local, wp)
 
-    If (Any([dxb, dyb, dzb] /= 0)) Then
+    If (Any([dxb, dyb, dzb] >= 0)) Then
 
       ! Note that because of the way the splines work when particles don't
       ! blur off domains (ewld%bspline1==ewld%bspline), i.e. no conditional VNL updates,
@@ -431,42 +431,41 @@ Contains
       ! +X direction face - negative halo
 
       Call exchange_grid_halo(domain%map(1), domain%map(2), &
-                              ixt - dxb + 1, ixt, iyb, iyt, izb, izt, &
-                              ixdb, ixb - 1, iyb, iyt, izb, izt)
+                              ixt - dxb, ixt       , iyb, iyt, izb, izt, &
+                              ixdb     , ixdb + dxb, iyb, iyt, izb, izt)
 
       ! +Y direction face (including the +X face extension) - negative halo
 
       Call exchange_grid_halo(domain%map(3), domain%map(4), &
-                              ixdb, ixt, iyt - dyb + 1, iyt, izb, izt, &
-                              ixdb, ixt, iydb, iyb - 1, izb, izt)
+                              ixdb, ixt, iyt - dyb, iyt       , izb, izt, &
+                              ixdb, ixt, iydb     , iydb + dyb, izb, izt)
 
       ! +Z direction face (including the +Y+X faces extensions) - negative halo
 
       Call exchange_grid_halo(domain%map(5), domain%map(6), &
-                              ixdb, ixt, iydb, iyt, izt - dzb + 1, izt, &
-                              ixdb, ixt, iydb, iyt, izdb, izb - 1)
+                              ixdb, ixt, iydb, iyt, izt - dzb, izt, &
+                              ixdb, ixt, iydb, iyt, izdb     , izdb + dzb)
 
     End If
 
-    If (Any([dxt, dyt, dzt] /= 0)) Then
+    If (Any([dxt, dyt, dzt] >= 0)) Then
 
       ! -X direction face - positive halo
-
       Call exchange_grid_halo(domain%map(2), domain%map(1), &
-                              ixb, ixb + dxt - 1, iyb, iyt, izb, izt, &
-                              ixdt - dxt + 1, ixdt, iyb, iyt, izb, izt)
+                              ixb       , ixb + dxt, iydb, iyt, izdb, izt, &
+                              ixdt - dxt, ixdt     , iydb, iyt, izdb, izt)
 
       ! -Y direction face (including the +&-X faces extensions) - positive halo
 
       Call exchange_grid_halo(domain%map(4), domain%map(3), &
-                              ixdb, ixdt, iyb, iyb + dyt - 1, izb, izt, &
-                              ixdb, ixdt, iydt - dyt + 1, iydt, izb, izt)
+                              ixdb, ixdt, iyb       , iyb + dyt, izdb, izt, &
+                              ixdb, ixdt, iydt - dyt, iydt     , izdb, izt)
 
       ! -Z direction face (including the +&-Y+&-X faces extensions) - positive halo
 
       Call exchange_grid_halo(domain%map(6), domain%map(5), &
-                              ixdb, ixdt, iydb, iydt, izb, izb + dzt - 1, &
-                              ixdb, ixdt, iydb, iydt, izdt - dzt + 1, izdt)
+                              ixdb, ixdt, iydb, iydt, izb       , izb + dzt, &
+                              ixdb, ixdt, iydb, iydt, izdt - dzt, izdt)
 
     End If
 
@@ -480,10 +479,10 @@ Contains
       !!
       !! dl_poly_4 subroutine for exchanging grid data post DaFT
       !!
-      !! Receives data from a processor FROM and sticks it in
-      !!                                QQC( XDB:XDT, YDB:YDT, ZDB:ZDT )
       !! Sends data to a processor      TO from
       !!                                QQC( XLB:XLT, YLB:YLT, ZLB:ZLT )
+      !! Receives data from a processor FROM and sticks it in
+      !!                                QQC( XDB:XDT, YDB:YDT, ZDB:ZDT )
       !!
       !! Note: Amount of data sent M-U-S-T be the same as that received!!!
       !!
