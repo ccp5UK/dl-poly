@@ -18,7 +18,7 @@ Module domains
 
   Use comms,           Only: comms_type,&
                              gsync
-  Use errors_warnings, Only: error
+  Use errors_warnings, Only: error, error_alloc, error_dealloc
   Use kinds,           Only: wi,&
                              wp
   Use numerics,        Only: factor,&
@@ -390,16 +390,12 @@ Contains
     Complex(Kind=wp), Intent(In) :: qqc_local(ixb:ixt, iyb:iyt, izb:izt)
     Real(Kind=wp), Intent(Out) :: qqc_domain(ixdb:ixdt, iydb:iydt, izdb:izdt)
     Type(domains_type), Intent(In) :: domain
-    !    Type( ewald_type ), Intent( In    ) :: ewld
     Type(comms_type), Intent(InOut) :: comm
     Integer :: dxb, dxt, dyb, dyt, dzb, dzt !! Difference between upper and lower boundaries in exchange
 
     Character(len=256) :: message
 
-    ! Integer :: lx, ly, lz, delspl
     Integer :: me
-
-    ! delspl=ewld%bspline2-ewld%bspline
 
     ! What's my name?
 
@@ -413,24 +409,18 @@ Contains
     dzb = izb - izdb
     dzt = izdt - izt
 
+    
     ! Could strictly be legal?
     If (Any([dxb, dxt, dyb, dyt, dzb, dzt] < 0)) Then
       Write (message, '(a)') "Error: reducing grid size in exchanged_grid"
       Call error(0, message)
     End If
 
-    ! Find length of sides of the domain
-
-    ! lx = ixt - ixb + 1
-    ! ly = iyt - iyb + 1
-    ! lz = izt - izb + 1
-
     ! Copy over our local data
 
     qqc_domain(ixb:ixt, iyb:iyt, izb:izt) = Real(qqc_local, wp)
 
     If (Any([dxb, dyb, dzb] /= 0)) Then
-      ! If (delspl == 0) Then
 
       ! Note that because of the way the splines work when particles don't
       ! blur off domains (ewld%bspline1==ewld%bspline), i.e. no conditional VNL updates,
@@ -524,11 +514,7 @@ Contains
         fail = 0
         Allocate (send_buffer(xlb:xlt, ylb:ylt, zlb:zlt), Stat=fail(1))
         Allocate (recv_buffer(xdb:xdt, ydb:ydt, zdb:zdt), Stat=fail(2))
-
-        If (Any(fail > 0)) Then
-          Write (message, '(a)') 'exchange_grid_halo allocation failure'
-          Call error(0, message)
-        End If
+        If (Any(fail > 0)) Call error_alloc('buffers', 'exchange_grid_halo')
 
         ! Copy the data to be sent
 
@@ -548,10 +534,7 @@ Contains
 
         Deallocate (recv_buffer, Stat=fail(1))
         Deallocate (send_buffer, Stat=fail(2))
-        If (Any(fail > 0)) Then
-          Write (message, '(a)') 'exchange_grid_halo deallocation failure'
-          Call error(0, message)
-        End If
+        If (Any(fail > 0)) Call error_dealloc('buffers', 'exchange_grid_halo')
 
       Else
 
