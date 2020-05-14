@@ -709,6 +709,7 @@ Contains
         pos_j = [x_pos(m), y_pos(m), z_pos(m)]
 
         mod_r_ij = dr_j(m)
+        mod_r_ij_2 = mod_r_ij**2
 
         ! calculate forces
 
@@ -733,6 +734,7 @@ Contains
           inv_mod_r_ij = 1.0_wp / mod_r_ij
           mod_r_ij_2 = mod_r_ij**2
 
+          inv_mod_r_ij = 1.0_wp / mod_r_ij
           erfr = atom_coeffs_ij * calc_erf(dr_alpha) * inv_mod_r_ij
           erf_gamma = (atom_coeffs_ij * ewld%alpha * calc_erf_deriv(dr_alpha) - erfr) * inv_mod_r_ij**2
 
