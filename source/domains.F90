@@ -387,7 +387,7 @@ Contains
     Integer, Intent(In) :: ixt, iyt, izt
     Integer, Intent(In) :: ixdb, iydb, izdb
     Integer, Intent(In) :: ixdt, iydt, izdt
-    Real(Kind=wp), Intent(In) :: qqc_local(ixb:ixt, iyb:iyt, izb:izt)
+    Complex(Kind=wp), Intent(In) :: qqc_local(ixb:ixt, iyb:iyt, izb:izt)
     Real(Kind=wp), Intent(Out) :: qqc_domain(ixdb:ixdt, iydb:iydt, izdb:izdt)
     Type(domains_type), Intent(In) :: domain
     !    Type( ewald_type ), Intent( In    ) :: ewld
@@ -427,7 +427,7 @@ Contains
 
     ! Copy over our local data
 
-    qqc_domain(ixb:ixt, iyb:iyt, izb:izt) = qqc_local
+    qqc_domain(ixb:ixt, iyb:iyt, izb:izt) = Real(qqc_local, wp)
 
     If (Any([dxb, dyb, dzb] /= 0)) Then
       ! If (delspl == 0) Then

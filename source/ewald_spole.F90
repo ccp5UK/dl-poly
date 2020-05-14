@@ -356,7 +356,7 @@ Contains
 
   End Subroutine ewald_real_forces_gen
 
-  Subroutine ewald_spme_forces(ewld, spme_datum, electro, domain, config, comm, coeffs, nstep, stats, &
+  Subroutine ewald_spme_forces(ewld, spme_datum, electro, domain, config, comm, coeffs, stats, &
     & engcpe_rc, vircpe_rc, tmr)
     !!----------------------------------------------------------------------!
     !!
@@ -381,7 +381,6 @@ Contains
     Type(configuration_type),    Intent(inout) :: config
     Type(comms_type),            Intent(inout) :: comm
     Real(kind=wp), Dimension(:), Intent(In   ) :: coeffs
-    Integer,                     Intent(In   ) :: nstep
     Type(stats_type),            Intent(inout) :: stats
     Real(kind=wp),               Intent(  Out) :: engcpe_rc, vircpe_rc
     Type(timer_type),            Intent(InOut) :: tmr
@@ -643,10 +642,11 @@ Contains
     Real(Kind=wp),                              Intent(  Out) :: engcpe_ex, vircpe_ex
     Real(Kind=wp), Dimension(1:9),              Intent(InOut) :: stress
 
-    Real(Kind=wp), Parameter :: a1 = 0.254829592_wp, a2 = -0.284496736_wp, a3 = 1.421413741_wp, &
-                                a4 = -1.453152027_wp, a5 = 1.061405429_wp, pp = 0.3275911_wp, &
-                                r10 = 0.1_wp, r216 = 1.0_wp / 216.0_wp, r42 = 1.0_wp / 42.0_wp, &
-                                rr3 = 1.0_wp / 3.0_wp
+    Real(Kind=wp), Parameter :: r10 = 0.1_wp, r216 = 1.0_wp / 216.0_wp, r42 = 1.0_wp / 42.0_wp, &
+         rr3 = 1.0_wp / 3.0_wp! , &
+         ! a1 = 0.254829592_wp, a2 = -0.284496736_wp, a3 = 1.421413741_wp, &
+         ! a4 = -1.453152027_wp, a5 = 1.061405429_wp, pp = 0.3275911_wp
+
 
     Integer                     :: global_id_i, jatm, limit, m
     Real(Kind=wp)               :: atom_coeffs_i, atom_coeffs_ij, atom_coeffs_j, dr_alpha, &
@@ -709,8 +709,6 @@ Contains
         pos_j = [x_pos(m), y_pos(m), z_pos(m)]
 
         mod_r_ij = dr_j(m)
-        inv_mod_r_ij = 1.0_wp / mod_r_ij
-        mod_r_ij_2 = mod_r_ij**2
 
         ! calculate forces
 
@@ -732,6 +730,8 @@ Contains
         Else
 
           ! distant particles - traditional
+          inv_mod_r_ij = 1.0_wp / mod_r_ij
+          mod_r_ij_2 = mod_r_ij**2
 
           erfr = atom_coeffs_ij * calc_erf(dr_alpha) * inv_mod_r_ij
           erf_gamma = (atom_coeffs_ij * ewld%alpha * calc_erf_deriv(dr_alpha) - erfr) * inv_mod_r_ij**2
@@ -1325,7 +1325,7 @@ Contains
     !!----------------------------------------------------------------------!
 
     Use comms, Only: gsum
-    Use constants, Only: twopi, pi
+    Use constants, Only: pi
     Use parallel_fft, Only: pfft
     Type(ewald_type),                      Intent(In   ) :: ewld
     Real(Kind=wp), Dimension(9),           Intent(In   ) :: recip_cell
@@ -1461,7 +1461,6 @@ Contains
     !!
     !!----------------------------------------------------------------------!
     Use comms, Only: gsum
-    Use constants, Only: twopi
     Use domains, Only: exchange_grid
     Type(ewald_type),                     Intent(In   ) :: ewld
     Type(electrostatic_type),             Intent(In   ) :: electro
@@ -1519,20 +1518,20 @@ Contains
 
       If (Allocated(extended_potential_grid)) Then
         Deallocate (extended_potential_grid, stat=fail)
-        If (fail > 0) Call error_dealloc('extended_potential_grid', 'spme_calc_force_energy')
+        If (fail /= 0) Call error_dealloc('extended_potential_grid', 'spme_calc_force_energy')
       End If
 
       Allocate (extended_potential_grid( &
         & extended_domain(1, 1):extended_domain(1, 2), &
         & extended_domain(2, 1):extended_domain(2, 2), &
         & extended_domain(3, 1):extended_domain(3, 2)), stat=fail)
-      If (fail > 0) Call error_alloc('extended_potential_grid', 'spme_calc_force_energy')
+      If (fail /= 0) Call error_alloc('extended_potential_grid', 'spme_calc_force_energy')
     End If
 
     Call exchange_grid( &
       & ewld%kspace%domain_indices(1, 1), ewld%kspace%domain_indices(1, 2), &
       & ewld%kspace%domain_indices(2, 1), ewld%kspace%domain_indices(2, 2), &
-      & ewld%kspace%domain_indices(3, 1), ewld%kspace%domain_indices(3, 2), Real(potential_grid, wp), &
+      & ewld%kspace%domain_indices(3, 1), ewld%kspace%domain_indices(3, 2), potential_grid, &
       & extended_domain(1, 1), extended_domain(2, 1), extended_domain(3, 1), &
       & extended_domain(1, 2), extended_domain(2, 2), extended_domain(3, 2), extended_potential_grid, domain, comm)
 
@@ -1627,7 +1626,7 @@ Contains
     !!
     !!----------------------------------------------------------------------!
     Use comms, Only: gsum
-    Use constants, Only: twopi, pi
+    Use constants, Only: twopi
     Use domains, Only: exchange_grid
     Type(ewald_type),                     Intent(In   ) :: ewld
     Type(electrostatic_type),             Intent(In   ) :: electro
@@ -1680,13 +1679,13 @@ Contains
 
       If (Allocated(extended_stress_grid)) Then
         Deallocate (extended_stress_grid, stat=fail)
-        If (fail > 0) Call error_dealloc('extended_stress_grid', 'spme_calc_stress')
+        If (fail /= 0) Call error_dealloc('extended_stress_grid', 'spme_calc_stress')
       End If
       Allocate (extended_stress_grid( &
         & extended_domain(1, 1):extended_domain(1, 2), &
         & extended_domain(2, 1):extended_domain(2, 2), &
         & extended_domain(3, 1):extended_domain(3, 2)), stat=fail)
-      If (fail > 0) Call error_alloc('extended_stress_grid', 'spme_calc_stress')
+      If (fail /= 0) Call error_alloc('extended_stress_grid', 'spme_calc_stress')
     End If
 
     Call exchange_grid( &

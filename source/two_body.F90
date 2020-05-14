@@ -289,7 +289,7 @@ Contains
     If (electro%key == ELECTROSTATIC_EWALD) Then
 
       Call ewald_spme_forces(ewld, ewld%spme_data(0), electro, domain, config, comm, &
-        & coul_coeffs, nstep, stats, engcpe_rc, vircpe_rc, tmr)
+        & coul_coeffs, stats, engcpe_rc, vircpe_rc, tmr)
 
     End If
 
@@ -300,7 +300,7 @@ Contains
       Do ipot = 1, ewld%num_pots
 
         Call ewald_spme_forces(ewld, ewld%spme_data(ipot), electro, domain, config, comm, &
-          & vdw_coeffs(:, ipot), nstep, stats, engacc, viracc, tmr)
+          & vdw_coeffs(:, ipot), stats, engacc, viracc, tmr)
 
         engvdw_rc = engvdw_rc + engacc
         virvdw_rc = virvdw_rc + viracc
