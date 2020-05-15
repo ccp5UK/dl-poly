@@ -205,12 +205,12 @@ Contains
 
     if (devel%new_control) then
     !    Call scan_new_control_old(params, &
-    !         rcter, rigid%max_rigid, config%imcon, config%imc_n, config%cell, &
+    !         tersoffs%cutoff, rigid%max_rigid, config%imcon, config%imc_n, config%cell, &
     !         xhi, yhi, zhi, config%mxgana, l_n_r, lzdn, config%l_ind, electro%nstfce, &
     !         ttm, cshell, stats, thermo, green, msd_data, met, pois, bond, angle, dihedral, &
     !         inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, electro, ewld, kim_data, flow)
     else
-       Call scan_control(rcter, rigid%max_rigid, config%imcon, config%cell, &
+       Call scan_control(rigid%max_rigid, config%imcon, config%cell, &
             xhi, yhi, zhi, config%mxgana, l_n_r, lzdn, config%l_ind, electro%nstfce, &
             ttm, cshell, stats, thermo, green, devel, msd_data, met, pois, bond, angle, dihedral, &
             inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, electro, ewld, kim_data, &

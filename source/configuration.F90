@@ -85,7 +85,6 @@ Module configuration
     Character(Len=72)             :: cfgname = ' ', &
                                      sysname = ' '
     Integer                       :: imcon = -1, &
-                                     imc_n = -1, &
                                      natms = 0, &
                                      nlast = 0, &
                                      nfree = 0
@@ -905,7 +904,7 @@ Contains
     ! Amend volume of density cell if cluster, slab or bulk slab
     ! cell dimensional properties overwritten but not needed anyway
 
-    If (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB .or. config%imc_n == 6) Then
+    If (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB) Then
       celh = config%cell
 
       If (config%imcon == IMCON_NOPBC) Then
@@ -1852,7 +1851,7 @@ Contains
             End If
           End Do
 
-          ! If only detecting box dimensions for imcon == IMCON_NOPBC or 6 or imc_n == 6
+          ! If only detecting box dimensions for imcon == IMCON_NOPBC
 
         Else
 
@@ -1974,7 +1973,7 @@ Contains
 
     End Do
 
-    ! If only detecting box dimensions for imcon == IMCON_NOPBC or 6 or imc_n == 6
+    ! If only detecting box dimensions for imcon == IMCON_NOPBC or IMCON_SLAB
 
     If (l_xtr) Then
       Call gmax(comm, xhi)
@@ -2326,7 +2325,7 @@ Contains
     yhi = 0.0_wp
     zhi = 0.0_wp
 
-    If (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB .or. config%imc_n == 6) Then
+    If (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB) Then
 
       ! If MASTER read
 

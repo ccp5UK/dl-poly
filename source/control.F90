@@ -3799,7 +3799,7 @@ Contains
     End If
   End Subroutine read_control
 
-  Subroutine scan_control(rcter, max_rigid, imcon, cell, xhi, yhi, zhi, mxgana, &
+  Subroutine scan_control(max_rigid, imcon, cell, xhi, yhi, zhi, mxgana, &
                           no_rdf, calc_zdensity, read_indices, nstfce, ttm, cshell, stats, thermo, green, devel, msd_data, met, &
                           pois, bond, angle, dihedral, inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, &
                           electro, ewld, kim_data, files, flow, comm)
@@ -3825,7 +3825,6 @@ Contains
     ! contrib   - i.t.todorov april 2019 l_trm reading and setting
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    Real(Kind=wp),            Intent(In   ) :: rcter
     Integer,                  Intent(In   ) :: max_rigid, imcon
     Real(Kind=wp),            Intent(InOut) :: cell(1:9)
     Real(Kind=wp),            Intent(In   ) :: xhi, yhi, zhi
@@ -4527,9 +4526,10 @@ Contains
     ! Sort neigh%cutoff as the maximum of all valid cutoffs
 
     neigh%cutoff = Max(neigh%cutoff, vdws%cutoff, met%rcut, kim_data%cutoff, bond%rcut, &
-                       2.0_wp * rcter + 1.0e-6_wp)
+                       2.0_wp * tersoffs%cutoff + 1.0e-6_wp)
     Call warning( &
-      'DD cutoff check: neigh%cutoff = Max(neigh%cutoff,vdws%cutoff,met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp', &
+         'DD cutoff check: neigh%cutoff = '// &
+         'Max(neigh%cutoff,vdws%cutoff,met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*tersoffs%cutoff+1.0e-6_wp', &
       .true.)
     Call warning(40, neigh%cutoff, 0.0_wp, 0.0_wp)
     ! If KIM model requires
@@ -4796,9 +4796,9 @@ Contains
             met%rcut = 0.0_wp
             If (.not. flow%strict) Then
               If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdws%cutoff
-                neigh%cutoff = 2.0_wp * Max(bond%rcut, rcter) + 1.0e-6_wp
+                neigh%cutoff = 2.0_wp * Max(bond%rcut, tersoffs%cutoff) + 1.0e-6_wp
               Else
-                neigh%cutoff = Max(neigh%cutoff, 2.0_wp * Max(bond%rcut, rcter) + 1.0e-6_wp)
+                neigh%cutoff = Max(neigh%cutoff, 2.0_wp * Max(bond%rcut, tersoffs%cutoff) + 1.0e-6_wp)
               End If
             End If
           End If
@@ -4820,23 +4820,23 @@ Contains
             lrcut = .true.
             If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdws%cutoff
               neigh%cutoff = Max(vdws%cutoff, met%rcut, kim_data%cutoff, bond%rcut, &
-                                 2.0_wp * rcter + 1.0e-6_wp)
-              Call warning('DD cutoff check: cutoff = Max(vdws%cutoff,'// &
-                           'met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp', &
+                                 2.0_wp * tersoffs%cutoff + 1.0e-6_wp)
+              Call warning('DD cutoff check: neigh%cutoff = Max(vdws%cutoff,'// &
+                           'met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*tersoffs%cutoff+1.0e-6_wp', &
                            .true.)
               Call warning(40, neigh%cutoff, 0.0_wp, 0.0_wp)
             Else
               neigh%cutoff = Max(neigh%cutoff, vdws%cutoff, met%rcut, &
-                                 kim_data%cutoff, bond%rcut, 2.0_wp * rcter + 1.0e-6_wp)
+                                 kim_data%cutoff, bond%rcut, 2.0_wp * tersoffs%cutoff + 1.0e-6_wp)
               Call warning('DD cutoff check: neigh%cutoff = Max(neigh%cutoff,vdws%cutoff,'// &
-                           'met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp', &
+                           'met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*tersoffs%cutoff+1.0e-6_wp', &
                            .true.)
               Call warning(40, neigh%cutoff, 0.0_wp, 0.0_wp)
             End If
           End If
 
           ! Reset vdws%cutoff and met%rcut when only tersoff potentials are opted for and
-          ! possibly reset neigh%cutoff to 2.0_wp*rcter+1.0e-6_wp (leaving room for failure)
+          ! possibly reset neigh%cutoff to 2.0_wp*tersoffs%cutoff+1.0e-6_wp (leaving room for failure)
 
           If (lter .and. electro%no_elec .and. vdws%no_vdw .and. no_metal .and. .not. rdf%l_collect .and. &
               kim_data%active) Then
@@ -4845,14 +4845,14 @@ Contains
             If (.not. flow%strict) Then
               lrcut = .true.
               If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdws%cutoff
-                neigh%cutoff = Max(bond%rcut, 2.0_wp * rcter + 1.0e-6_wp)
+                neigh%cutoff = Max(bond%rcut, 2.0_wp * tersoffs%cutoff + 1.0e-6_wp)
                 Call warning('DD cutoff check: neigh%cutoff = Max('// &
-                             'bond%rcut,2.0_wp*rcter+1.0e-6_wp', .true.)
+                             'bond%rcut,2.0_wp*tersoffs%cutoff+1.0e-6_wp', .true.)
                 Call warning(40, neigh%cutoff, 0.0_wp, 0.0_wp)
               Else
-                neigh%cutoff = Max(neigh%cutoff, bond%rcut, 2.0_wp * rcter + 1.0e-6_wp)
+                neigh%cutoff = Max(neigh%cutoff, bond%rcut, 2.0_wp * tersoffs%cutoff + 1.0e-6_wp)
                 Call warning('DD cutoff check: neigh%cutoff = Max(neigh%cutoff'// &
-                             'bond%rcut,2.0_wp*rcter+1.0e-6_wp', .true.)
+                             'bond%rcut,2.0_wp*tersoffs%cutoff+1.0e-6_wp', .true.)
                 Call warning(40, neigh%cutoff, 0.0_wp, 0.0_wp)
               End If
             End If

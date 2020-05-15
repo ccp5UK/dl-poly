@@ -1385,7 +1385,6 @@ contains
        ! End If
 
        ! call params%retrieve('ewald_nsplines', ewld%bspline%num_splines)
-       ! If (ewld%bspline%num_splines < 3) call error(0, 'Too few bsplines (<3)')
        ! Call dcell(cell,celprp)
 
        ! if (params%is_set(['ewald_precision', 'ewald_alpha'])) then
@@ -1420,7 +1419,6 @@ contains
        !    tol1 = Sqrt(-Log(eps0*neigh%cutoff*(2.0_wp*tol*ewld%alpha)**2))
 
        !    fac = 1.0_wp
-       !    If (imcon == 4 .or. imcon == 5 .or. imcon == 7) fac = 2.0_wp**(1.0_wp/3.0_wp)
 
        !    ewld%kspace%k_vec_dim_cont = 2*Nint(0.25_wp + fac*celprp(7:9)*ewld%alpha*tol1/pi)
 

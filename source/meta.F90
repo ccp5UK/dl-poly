@@ -373,11 +373,6 @@ Contains
          rigid, tether, bond, angle, dihedral, inversion, mpoles, met, tersoffs, threebody, fourbody, &
          ext_field, rdf, zdensity, stats, green, ttms, domain, ewld, kim_data, comm)
 
-    Call read_control(lfce, impa, ttms, dfcts, rigid, rsdsc, core_shells, cons, pmfs, &
-         stats, thermo, green, devel, plume, msd_data, met, pois, bond, angle, dihedral, &
-         inversion, zdensity, neigh, vdws, rdf, minim, mpoles, electro, ewld, &
-         seed, traj, files, tmr, config, flow, crd, adf, comm)
-
     If (stats%cur%on) Then
       Call config%k%init(files(FILE_KPOINTS)%filename, comm)
       Call stats%cur%init(config%k%n, 200, files(FILE_CURRENT), comm)
