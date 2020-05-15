@@ -17,7 +17,9 @@ Module errors_warnings
                                            comms_type
   Use, Intrinsic :: iso_fortran_env, Only: error_unit,&
                                            input_unit,&
-                                           output_unit
+                                           output_unit,&
+                                           iostat_end,&
+                                           iostat_eor
   Use kinds,                         Only: wp
 
   Implicit None
@@ -33,6 +35,7 @@ Module errors_warnings
   Public :: info
   Public :: init_error_system
   Public :: error_alloc, error_dealloc
+  Public :: error_read
   Public :: set_print_level
 
   Interface warning
@@ -2267,6 +2270,45 @@ Contains
     Call abort_comms(eworld, 1002)
 
   End Subroutine error_dealloc
+
+  Subroutine error_read(ierr, routine, break_eor, break_end)
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for checking if a read was successful
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins october 2018
+    !!
+    !!----------------------------------------------------------------------!
+    Integer, Intent(In) :: ierr
+    Character(Len=*) :: routine
+    Logical, Optional, Intent(Out) :: break_eor
+    Logical, Optional, Intent(Out) :: break_end
+
+    if (present(break_eor)) then
+       break_eor = .false.
+    end if
+    if (present(break_end)) then
+       break_end = .false.
+    end if
+
+    If (ierr == IOSTAT_END) then
+       if (present(break_end)) then
+          break_end = .true.
+       else
+          Call error(0, 'Unexpected end of file in '//trim(routine))
+       end if
+    Else if (ierr == IOSTAT_EOR) then
+       if (present(break_eor)) then
+          break_eor = .true.
+       else
+          Call error(0, 'Unexpected end of record in '//trim(routine))
+       end if
+    else if (ierr /= 0) then
+       Call error(0, 'Unknown error in read in '//trim(routine))
+    end If
+
+  end Subroutine error_read
 
   !> Close all open file units
   Subroutine close_unit(i)
