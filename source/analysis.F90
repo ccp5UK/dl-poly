@@ -111,7 +111,7 @@ Contains
 
     ! calculate and print z-density profile
     If (zdensity%l_collect .and. zdensity%l_print .and. zdensity%n_samples > 0) Then
-      Call z_density_compute(config, rdf%max_grid, zdensity, sites, comm)
+      Call z_density_compute(config, zdensity, sites, comm)
     End If
 
     ! calculate and print velocity autocorrelation function

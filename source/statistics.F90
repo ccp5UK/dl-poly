@@ -347,7 +347,7 @@ Contains
   End Subroutine cleanup
 
   Subroutine statistics_collect(config, lsim, leql, nsteql, lmsd, keyres, degfre, degshl, &
-                                degrot, nstep, tstep, time, tmst, mxatdm, max_grid_rdf, stats, thermo, zdensity, &
+                                degrot, nstep, tstep, time, tmst, mxatdm, stats, thermo, zdensity, &
                                 sites, files, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -377,7 +377,7 @@ Contains
     Integer,                  Intent(In   ) :: nstep
     Real(Kind=wp),            Intent(In   ) :: tstep, time
     Real(Kind=wp),            Intent(InOut) :: tmst
-    Integer(Kind=wi),         Intent(In   ) :: mxatdm, max_grid_rdf
+    Integer(Kind=wi),         Intent(In   ) :: mxatdm
     Type(stats_type),         Intent(InOut) :: stats
     Type(thermostat_type),    Intent(In   ) :: thermo
     Type(z_density_type),     Intent(InOut) :: zdensity
@@ -458,8 +458,8 @@ Contains
     stats%stptmp = 2.0_wp * (stats%engke + stats%engrot) / (boltz * Real(degfre, wp))
 
     ! system virial, stats%virtot has been computed in calculate_forces
-    
-    stats%stpvir= stats%virtot + stats%vircon + stats%virpmf + stats%vircom + stats%virdpd 
+
+    stats%stpvir= stats%virtot + stats%vircon + stats%virpmf + stats%vircom + stats%virdpd
 
     ! system volume
 
@@ -682,64 +682,64 @@ Contains
 
     ! No totals for timestep zero
 
-    If (nstep == 0) Go To 10
+    If (nstep > 0) then
 
-    ! current stack value
+       ! current stack value
 
-    kstak = Mod(nstep - 1, stats%mxstak) + 1
+       kstak = Mod(nstep - 1, stats%mxstak) + 1
 
-    ! subtract old stack value from the stack average
+       ! subtract old stack value from the stack average
 
-    If (nstep > stats%mxstak) Then
-      Do i = 0, stats%mxnstk
-        stats%zumval(i) = stats%zumval(i) - stats%stkval(kstak, i)
-      End Do
+       If (nstep > stats%mxstak) Then
+          Do i = 0, stats%mxnstk
+             stats%zumval(i) = stats%zumval(i) - stats%stkval(kstak, i)
+          End Do
+       End If
+
+       ! store quantities in stack and update the stack average
+
+       Do i = 0, stats%mxnstk
+          stats%stkval(kstak, i) = stats%stpval(i)
+          stats%zumval(i) = stats%zumval(i) + stats%stpval(i)
+       End Do
+
+       ! calculate rolling averages
+
+       zistk = Real(Min(stats%mxstak, nstep), wp)
+
+       Do i = 0, stats%mxnstk
+          stats%ravval(i) = stats%zumval(i) / zistk
+       End Do
+
+       ! accumulate totals over steps
+
+       If ((.not. leql) .or. nstep > nsteql) Then
+          stats%numacc = stats%numacc + 1
+          sclnv2 = 1.0_wp / Real(stats%numacc, wp)
+          sclnv1 = Real(stats%numacc - 1, wp) / Real(stats%numacc, wp)
+
+          ! average squared sum and sum (keep in this order!!!)
+
+          If (nstep == nsteql + 1 .or. ((.not. leql) .and. nstep == 1)) stats%stpvl0 = stats%stpval
+          stats%stpval = stats%stpval - stats%stpvl0
+          Do i = 0, stats%mxnstk
+             stats%ssqval(i) = sclnv1 * (stats%ssqval(i) + sclnv2 * (stats%stpval(i) - stats%sumval(i))**2)
+
+             ! stats%sumval has to be shifted back to stats%sumval+stats%stpvl0 in statistics_result
+             ! when averaging is printed since stats%stpval is only shifted back and forth
+             ! which does not affect the fluctuations Sqrt(stats%ssqval) only their accuracy
+
+             stats%sumval(i) = sclnv1 * stats%sumval(i) + sclnv2 * stats%stpval(i)
+          End Do
+          stats%stpval = stats%stpval + stats%stpvl0
+       End If
     End If
 
-    ! store quantities in stack and update the stack average
-
-    Do i = 0, stats%mxnstk
-      stats%stkval(kstak, i) = stats%stpval(i)
-      stats%zumval(i) = stats%zumval(i) + stats%stpval(i)
-    End Do
-
-    ! calculate rolling averages
-
-    zistk = Real(Min(stats%mxstak, nstep), wp)
-
-    Do i = 0, stats%mxnstk
-      stats%ravval(i) = stats%zumval(i) / zistk
-    End Do
-
-    ! accumulate totals over steps
-
-    If ((.not. leql) .or. nstep > nsteql) Then
-      stats%numacc = stats%numacc + 1
-      sclnv2 = 1.0_wp / Real(stats%numacc, wp)
-      sclnv1 = Real(stats%numacc - 1, wp) / Real(stats%numacc, wp)
-
-      ! average squared sum and sum (keep in this order!!!)
-
-      If (nstep == nsteql + 1 .or. ((.not. leql) .and. nstep == 1)) stats%stpvl0 = stats%stpval
-      stats%stpval = stats%stpval - stats%stpvl0
-      Do i = 0, stats%mxnstk
-        stats%ssqval(i) = sclnv1 * (stats%ssqval(i) + sclnv2 * (stats%stpval(i) - stats%sumval(i))**2)
-
-        ! stats%sumval has to be shifted back to stats%sumval+stats%stpvl0 in statistics_result
-        ! when averaging is printed since stats%stpval is only shifted back and forth
-        ! which does not affect the fluctuations Sqrt(stats%ssqval) only their accuracy
-
-        stats%sumval(i) = sclnv1 * stats%sumval(i) + sclnv2 * stats%stpval(i)
-      End Do
-      stats%stpval = stats%stpval + stats%stpvl0
-    End If
-
-    10 Continue
 
     ! z-density collection
 
     If (zdensity%l_collect .and. ((.not. leql) .or. nstep >= nsteql) .and. &
-        Mod(nstep, zdensity%frequency) == 0) Call z_density_collect(max_grid_rdf, zdensity, config)
+        Mod(nstep, zdensity%frequency) == 0) Call z_density_collect(zdensity, config)
 
     ! Catch time of starting statistical averages
 
@@ -1714,7 +1714,11 @@ Contains
         Call info(message, .true.)
       End If
 
-      Go To 10
+      Call gtime(timelp)
+
+      Write (message, '("time elapsed since job start: ", f12.3, " sec")') timelp
+      Call info(message, .true.)
+      return
     End If
 
     ! If still running in the pure equilibration regime - NO AVERAGES
@@ -1899,7 +1903,6 @@ Contains
       End If
 
     End If
-    10 Continue
 
     ! print final time check
 
