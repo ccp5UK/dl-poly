@@ -92,7 +92,9 @@ Module ffield
   ! Fuchs correction of charge non-neutral systems
   ! Global_To_Local variables
   Use tersoff,         Only: tersoff_generate,&
-                             tersoff_type
+                             tersoff_type,&
+                             TERS_TERSOFF,&
+                             TERS_KIHS
   Use tethers,         Only: tethers_type
   Use thermostat,      Only: DPD_NULL,&
                              ENS_NVE,&
@@ -6231,9 +6233,9 @@ Contains
             
           Call get_word(record, word)
           If (word(1:4) == 'ters') Then
-            tersoffs%key_pot = 1
+            tersoffs%key_pot = TERS_TERSOFF
           Else If (word(1:4) == 'kihs') Then
-            tersoffs%key_pot = 2
+            tersoffs%key_pot = TERS_KIHS
           End If
 
           word(1:1) = '#'
@@ -6246,7 +6248,7 @@ Contains
           rct = word_2_real(word)
           rcter = Max(rcter, rct)
 
-          If (tersoffs%key_pot == 2) Then
+          If (tersoffs%key_pot == TERS_KIHS) Then
             word(1:1) = '#'
             Do While (word(1:1) == '#' .or. word(1:1) == ' ')
               Call get_line(safe, files(fftag)%unit_no, record, comm)
@@ -6257,7 +6259,7 @@ Contains
         End Do
 
         If (tersoffs%max_ter > 0) Then
-          If (tersoffs%key_pot == 1) Then
+          If (tersoffs%key_pot == TERS_TERSOFF) Then
             Do itpter = 1, (tersoffs%max_ter * (tersoffs%max_ter + 1)) / 2
               word(1:1) = '#'
               Do While (word(1:1) == '#' .or. word(1:1) == ' ')
