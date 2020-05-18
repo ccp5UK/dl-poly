@@ -8,7 +8,7 @@ Module units
   !!-----------------------------------------------------------------------
 
   Use kinds, only : wp
-  Use constants, only : boltz
+  Use constants, only : pi, boltz
   Use hash, only: hash_table, MAX_KEY, STR_LEN
   Use errors_warnings, only : error, error_alloc, error_dealloc
   Use parse, only : lower_case
@@ -33,7 +33,7 @@ Module units
      Character(Len=STR_LEN) :: name
      Character(Len=MAX_KEY) :: abbrev
      Real(Kind=wp) :: conversion_to_internal
-     Integer, Dimension(7) :: dims = [0, 0, 0, 0, 0, 0, 0] ! mass length time temp mol current luminosity
+     Integer, Dimension(8) :: dims = [0, 0, 0, 0, 0, 0, 0, 0] ! mass length time temp mol current luminosity angle
    contains
      Generic, Public :: Operator(*) => unit_mult
      Generic, Public :: Operator(/) => unit_div
@@ -116,6 +116,9 @@ contains
     Real(kind=wp), Parameter :: pascal = newton/metre**2
 
     Real(kind=wp), Parameter :: gravity = 9.81_wp*metre/second**2
+
+    Real(kind=wp), Parameter :: degree = pi / 180.0_wp
+    Real(kind=wp), Parameter :: gradian = pi / 200.0_wp
 
     call units_table%init(100)
 
@@ -218,6 +221,12 @@ contains
 
     call units_table%set("mol", init_unit(abbrev="mol", name="Mole", mol=1, to_internal=avogadro))
 
+    ! Angles
+
+    call units_table%set("rad", init_unit(abbrev="rad", name="Radian", angle=1, to_internal=1.0_wp))
+    call units_table%set("deg", init_unit(abbrev="deg", name="Degree", angle=1, to_internal=degree))
+    call units_table%set("grad", init_unit(abbrev="grad", name="Gradian", angle=1, to_internal=gradian))
+
     ! Unitless
 
     call units_table%set("%", init_unit(abbrev="%", name="%", to_internal=100.0_wp))
@@ -262,11 +271,11 @@ contains
 
   end Function convert_units
 
-  Function init_unit(name, abbrev, to_internal, mass, length, time, temp, mol, current, luminosity)
+  Function init_unit(name, abbrev, to_internal, mass, length, time, temp, mol, current, luminosity, angle)
     Type(unit_data) :: init_unit
     Character(Len = *), Intent( In    ) :: name, abbrev
     Real(Kind = wp), Intent( In    ) :: to_internal
-    Integer, Optional, Intent( In    ) :: mass, length, time, temp, mol, current, luminosity
+    Integer, Optional, Intent( In    ) :: mass, length, time, temp, mol, current, luminosity, angle
 
     init_unit = unit_data(name=name, abbrev=abbrev, conversion_to_internal=to_internal)
     if (present(mass)) then
@@ -295,6 +304,10 @@ contains
 
     if (present(luminosity)) then
        init_unit%dims(7) = luminosity
+    end if
+
+    if (present(angle)) then
+       init_unit%dims(8) = angle
     end if
 
   end Function init_unit

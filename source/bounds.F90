@@ -265,7 +265,7 @@ Contains
 
     ! config%dvar function
 
-    fdvar = config%dvar**1.7_wp ! 1.7_wp arbitrary power factor magnifying densvar effect
+    fdvar = config%dvar!**1.7_wp ! 1.7_wp arbitrary power factor magnifying densvar effect
 
     ! config%dvar push of dihedral%max_legend and neigh%max_exclude ranges as the usual suspects
 
@@ -667,6 +667,8 @@ Contains
       rdf%cutoff_usr = 0.0_wp
       rdf%max_grid_usr = 0 ! decider on calling USR RDF
     End If
+
+    ! grids setting and overrides
 
     ! the number 1004 is minimum default TABLE's gridding - 1000 (equidistant) values
     ! with 2 extra ones on each side (for derivatives) totals.
