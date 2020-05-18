@@ -49,7 +49,9 @@ Module bounds
   Use rigid_bodies,    Only: rigid_bodies_type
   Use site,            Only: site_type
   Use statistics,      Only: stats_type
-  Use tersoff,         Only: tersoff_type
+  Use tersoff,         Only: tersoff_type,&
+                             TERS_TERSOFF,&
+                             TERS_KIHS
   Use tethers,         Only: tethers_type
   Use thermostat,      Only: thermostat_type
   Use three_body,      Only: threebody_type
@@ -489,9 +491,9 @@ Contains
     ! maximum number of tersoff potentials (tersoffs%max_ter = tersoffs%max_ter) and parameters
 
     If (tersoffs%max_ter > 0) Then
-      If      (tersoffs%key_pot == 1) Then
+      If      (tersoffs%key_pot == TERS_TERSOFF) Then
         tersoffs%max_param = 11
-      Else If (tersoffs%key_pot == 2) Then
+      Else If (tersoffs%key_pot == TERS_KIHS) Then
         tersoffs%max_param = 16
       End If
     Else
