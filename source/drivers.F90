@@ -448,7 +448,7 @@ Contains
                                 ext_field, rigid, domain, cnfig, comm)
 
       ! Add external energy contribution
-      stat%stpcfg = stat%stpcfg + stat%engfld  
+      stat%stpcfg = stat%stpcfg + stat%engfld
     End If
 
 
@@ -1584,7 +1584,7 @@ Contains
        flow%restart_key, &
        cnfig%degfre, cnfig%degshl, cnfig%degrot, &
        flow%step, thermo%tstep, flow%time, flow%start_time, &
-       cnfig%mxatdm, rdf%max_grid, stat, thermo, zdensity, sites, files, comm, ff)
+       cnfig%mxatdm, stat, thermo, zdensity, sites, files, comm, ff)
 
     ! VV forces evaluation report for 0th or weird restart
 
@@ -2703,7 +2703,7 @@ Contains
              flow%restart_key, &
              cnfig%degfre, cnfig%degshl, cnfig%degrot, &
              nstph, tsths, flow%time, tmsh, &
-             cnfig%mxatdm, rdf%max_grid, stat, thermo, &
+             cnfig%mxatdm, stat, thermo, &
              zdensity, sites, files, comm)
 
           ! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
@@ -3081,7 +3081,7 @@ Contains
              flow%restart_key, &
              cnfig%degfre, cnfig%degshl, cnfig%degrot, &
              nstph, tsths, flow%time, tmsh, &
-             cnfig%mxatdm, rdf%max_grid, stat, thermo, &
+             cnfig%mxatdm, stat, thermo, &
              zdensity, sites, files, comm)
 
           ! line-printer output

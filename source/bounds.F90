@@ -412,7 +412,13 @@ Contains
     ! maximum number of rdf potentials (rdf%max_rdf = rdf%max_rdf)
     ! rdf%max_grid - maximum dimension of rdf%rdf and z-density arrays
 
-    If ((.not. l_n_r) .or. lzdn) Then
+    if (lzdn) then
+       zdensity%max_grid = Nint(neigh%cutoff / zdensity%bin_width)
+    else
+       zdensity%max_grid = 0
+    end if
+
+    If ((.not. l_n_r)) Then
       If (((.not. l_n_r) .and. rdf%max_rdf == 0) .and. (vdws%max_vdw > 0 .or. met%max_metal > 0)) &
         rdf%max_rdf = Max(vdws%max_vdw, met%max_metal) ! (vdws,met) == rdf scanning
       rdf%max_grid  = Nint(neigh%cutoff / rdf%rbin)
@@ -435,7 +441,8 @@ Contains
     ! with 2 extra ones on each side (for derivatives) totals.
     ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
-    mxgrid = Max(config%mxgana, vdws%max_grid, met%maxgrid, rdf%max_grid, rdf%max_grid_usr, 1004, Nint(neigh%cutoff / delr_max) + 4)
+    mxgrid = Max(config%mxgana, vdws%max_grid, met%maxgrid, zdensity%max_grid, &
+         & rdf%max_grid, rdf%max_grid_usr, 1004, Nint(neigh%cutoff / delr_max) + 4)
 
     ! grids setting and overrides
 
@@ -1106,7 +1113,7 @@ Contains
 
     config%mxbuff = Max(domain%mxbfdp, 35 * domain%mxbfxp, 4 * domain%mxbfsh,                                                &
                         2 * (ewld%fft_dim_a / domain%nx) * (ewld%fft_dim_b / domain%ny) * (ewld%fft_dim_c / domain%nz) + 10, &
-                        stats%mxnstk * stats%mxstak, mxgrid, rdf%max_grid,                                                   &
+                        stats%mxnstk * stats%mxstak, mxgrid, rdf%max_grid, zdensity%max_grid,                                &
                         rigid%max_list * Max(rigid%max_rigid, rigid%max_type), rigid%max_type * (4 + 3 * rigid%max_list), 10000)
 
     ! reset (increase) link-cell maximum (neigh%max_cell)

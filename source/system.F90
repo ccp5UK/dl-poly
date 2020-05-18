@@ -127,7 +127,8 @@ Contains
 
     If (devel%l_rin) Then
       i = 64 / 4 - 1 ! Bit_Size(0.0_wp)/4 - 1
-      j = Max(stats%mxstak * stats%mxnstk, rdf%max_grid * rdf%max_rdf, rdf%max_grid_usr, config%mxgana * config%mxtana)
+      j = Max(stats%mxstak * stats%mxnstk, rdf%max_grid * rdf%max_rdf, zdensity%max_grid, rdf%max_grid_usr, &
+           & config%mxgana * config%mxtana)
 
       Write (forma, 10) j / 4 + 1, i + 9, i
       10 Format('(1p,', i0, '(/,4e', i0, '.', i0, 'E3))')
@@ -1969,7 +1970,7 @@ Contains
 
         ! maximum zdensity%density that can be summed in each step
 
-        nsum = config%mxbuff / rdf%max_grid
+        nsum = config%mxbuff / zdensity%max_grid
         If (nsum == 0) Call error(200)
 
         Do i = 1, sites%mxatyp, nsum
