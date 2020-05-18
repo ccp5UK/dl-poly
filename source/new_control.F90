@@ -104,7 +104,7 @@ Module new_control
   Use timer,                Only: timer_type
   Use trajectory,           Only: trajectory_type
   Use ttm,                  Only: ttm_type
-  Use vdw,                  Only: MIX_FENDER_HASLEY,&
+  Use vdw,                  Only: MIX_FENDER_HALSEY,&
        MIX_FUNCTIONAL,&
        MIX_HALGREN,&
        MIX_HOGERVORST,&
@@ -695,14 +695,14 @@ contains
 
   end Subroutine read_ensemble
 
-  Subroutine read_bond_analysis(params, flow, bond, angle, dihedral, inversion)
+  Subroutine read_bond_analysis(params, flow, bond, angle, dihedral, inversion, max_grid_analysis)
     Type( parameters_hash_table ), intent( In    ) :: params
     Type( flow_type ), Intent( InOut ) :: flow
     Type( bonds_type ), Intent( InOut ) :: bond
     Type( angles_type ), Intent( InOut ) :: angle
     Type( dihedrals_type ), Intent( InOut ) :: dihedral
     Type( inversions_type ), Intent( InOut ) :: inversion
-
+    Integer, Intent(   Out ) :: max_grid_analysis
     Integer :: itmp, itmp2
     Logical :: l_bond, l_angle, l_dihedral, l_inversion, ltmp
 
@@ -762,6 +762,10 @@ contains
 
        call params%retrieve('analyse_frequency_inversions', flow%freq_inversion)
        flow%freq_inversion = max(1, itmp, flow%freq_inversion)
+    end if
+
+    if (any([l_bond, l_angle, l_dihedral, l_inversion])) then
+       max_grid_analysis = Max(bond%bin_pdf, angle%bin_adf, dihedral%bin_adf, inversion%bin_adf)
     end if
 
   End Subroutine read_bond_analysis
@@ -945,8 +949,6 @@ contains
           displacement%rrsd = 0.15_wp
           call warning('Displacement_distance too small, reset to 0.15 ang')
        end if
-
-
     else if (params%is_any_set([Character(22) :: 'displacements_start', 'displacements_interval', 'displacements_distance'])) then
        Call warning('displacements_start, displacements_interval or displacements_distance found without displacements_calculate')
     end if
@@ -3434,7 +3436,7 @@ contains
              name = 'VdW mixing method', &
              val = 'off', &
              description = "Enable VdW mixing, possible mixing schemes: Off, "// &
-             "Lorentz-Berthelot, Fender-Hasley/Halsey, Hogervorst, Waldman-Hagler, Tang-Toennies, Functional", &
+             "Lorentz-Berthelot, Fender-Hasley, Hogervorst, Waldman-Hagler, Tang-Toennies, Functional", &
              data_type = DATA_OPTION))
 
         call table%set('vdw_force_shift', control_parameter( &

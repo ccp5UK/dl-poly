@@ -358,7 +358,7 @@ Contains
 
     call read_ttm(params, ttms)
     call read_ensemble(params, thermo, ttms%l_ttm)
-    call read_bond_analysis(params, flow, bond, angle, dihedral, inversion)
+    call read_bond_analysis(params, flow, bond, angle, dihedral, inversion, config%mxgana)
     call read_structure_analysis(params, msd_data, rdf, green, zdensity, adf, crd, traj, dfcts, rsdsc)
     call read_units(params)
     call read_forcefield(params, neigh, electro, vdws, met, mpoles, core_shells)

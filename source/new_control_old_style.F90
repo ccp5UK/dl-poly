@@ -104,7 +104,7 @@ module new_control_old_style
   Use timer,                Only: timer_type
   Use trajectory,           Only: trajectory_type
   Use ttm,                  Only: ttm_type
-  Use vdw,                  Only: MIX_FENDER_HASLEY,&
+  Use vdw,                  Only: MIX_FENDER_HALSEY,&
        MIX_FUNCTIONAL,&
        MIX_HALGREN,&
        MIX_HOGERVORST,&
@@ -690,8 +690,8 @@ contains
           vdws%mixing = MIX_LORENTZ_BERTHELOT
           Call info('type of mixing selected - Lorentz-Berthelot :: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2', .true.)
 
-       case ('fender-hasley')
-          vdws%mixing = MIX_FENDER_HASLEY
+       case ('fender-halsey')
+          vdws%mixing = MIX_FENDER_HALSEY
           Call info('type of mixing selected - Fender-Halsey :: e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2', .true.)
 
        case ('hogervorst')
@@ -2001,41 +2001,7 @@ contains
 
     call params%retrieve('strict_checks', flow%strict)
 
-    call read_bond_analysis(params, flow, bond, angle, dihedral, inversion)
-
-    ! call params%retrieve('analyse_bonds', la_bnd)
-    ! call params%retrieve('analyse_angles', la_ang)
-    ! call params%retrieve('analyse_dihedrals', la_dih)
-    ! call params%retrieve('analyse_inversions', la_inv)
-    ! call params%retrieve('analyse_all', ltmp)
-    ! if (ltmp) then
-    !    la_bnd = .true.
-    !    la_ang = .true.
-    !    la_dih = .true.
-    !    la_inv = .true.
-    ! end if
-
-    ! if (la_bnd) then
-    !    call params%retrieve('analyse_max_dist', bond%rcut)
-    !    if (bond%rcut < minimum_bond_anal_length) then
-    !       bond%rcut = minimum_bond_anal_length
-    !       write(message, '(A, f5.2, A, f5.2)') 'Bond rcut (',bond%rcut,') less than minimum cutoff ('&
-    !            , minimum_bond_anal_length, ') setting to global cutoff'
-    !       call warning(message, .true.)
-    !    end if
-    ! end if
-
-    ! ! Set global
-    ! call params%retrieve('analyse_num_bins', bond%bin_pdf)
-    ! angle%bin_adf = bond%bin_pdf
-    ! dihedral%bin_adf = bond%bin_pdf
-    ! inversion%bin_adf = bond%bin_pdf
-
-    ! if (params%is_set('analyse_num_bins_bonds')) call params%retrieve('analyse_num_bins_bonds', bond%bin_pdf)
-    ! if (params%is_set('analyse_num_bins_angles')) call params%retrieve('analyse_num_bins_angles', angle%bin_adf)
-    ! if (params%is_set('analyse_num_bins_dihedrals')) call params%retrieve('analyse_num_bins_dihedrals', dihedral%bin_adf)
-    ! if (params%is_set('analyse_num_bins_inversions')) call params%retrieve('analyse_num_bins_inversions', inversion%bin_adf)
-
+    call read_bond_analysis(params, flow, bond, angle, dihedral, inversion, mxgana)
 
     if (thermo%ensemble == ENS_NVT_LANGEVIN_INHOMO) then
        ttm%l_ttm = .true.
