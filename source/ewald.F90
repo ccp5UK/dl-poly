@@ -38,6 +38,9 @@ Module ewald
     !> Ewald is performing polynomial VdW parts
     Logical, Public :: vdw = .false.
 
+    !> Ewald real-space to be calculated direct not via tabulation
+    Logical, Public :: direct = .false.
+
     !> FFT and KSpace info container
     Type( kspace_type ), Public :: kspace
 

@@ -123,7 +123,7 @@ Module numerics
     Real(Kind=wp), Public :: end_sample
     Real(Kind=wp)                                    :: spacing
     Real(Kind=wp)                                    :: recip_spacing
-    Integer, Public :: nsamples
+    Integer, Public :: nsamples = -1
     Logical, Public :: initialised
   Contains
     Private

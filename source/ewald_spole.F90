@@ -48,7 +48,7 @@ Module ewald_spole
 
   Private
 
-  Public ::  ewald_real_forces_coul, ewald_real_forces_gen
+  Public ::  ewald_real_forces_coul_tab, ewald_real_forces_coul, ewald_real_forces_gen
   Public ::  ewald_spme_forces
   Public ::  ewald_excl_forces, ewald_frzn_forces
 
@@ -60,6 +60,149 @@ Module ewald_spole
   Complex(Kind=wp), Dimension(:, :, :), Allocatable :: pfft_work
 
 Contains
+
+  Subroutine ewald_real_forces_coul_tab(electro, alpha, spme_datum, neigh, config, stats, iatm, x_pos, y_pos, z_pos, mod_dr_ij, &
+    & engcpe_rl, vircpe_rl)
+
+    !!-----------------------------------------------------------------------
+    !!
+    !! dl_poly_4 subroutine for calculating coulombic energy and force terms
+    !! in a periodic system using tabulated erfs for ewald's method
+    !!
+    !! note: Real space terms
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - w.smith august 1998
+    !! amended   - i.t.todorov april 2015
+    !! amended   - j. wilkins september 2018
+    !!
+    !!-----------------------------------------------------------------------
+    Type(electrostatic_type),                   Intent(In   ) :: electro
+    Real(Kind=wp),                              Intent(In   ) :: alpha
+    Type(spme_component),                       Intent(In   ) :: spme_datum
+    Type(neighbours_type),                      Intent(In   ) :: neigh
+    Type(configuration_type),                   Intent(InOut) :: config
+    Type(stats_type),                           Intent(InOut) :: stats
+    Integer,                                    Intent(In   ) :: iatm
+    Real(Kind=wp), Dimension(1:neigh%max_list), Intent(In   ) :: x_pos, y_pos, z_pos, mod_dr_ij
+    Real(Kind=wp),                              Intent(  Out) :: engcpe_rl, vircpe_rl
+
+    Integer                     :: global_id_i, global_id_j, jatm, m
+    Real(Kind=wp)               :: alpha_r, atom_coeffs_i, e_comp, erf_gamma, &
+                                   mod_r_ij, prefac
+    Real(Kind=wp), Dimension(9) :: stress_temp, stress_temp_comp
+    Real(Kind=wp), Dimension(3) :: force_temp, force_temp_comp, pos_j
+
+!! Current atom
+!! Atoms positions (neighbours, not global) and inter-particle separations
+!! Energy and virial for the Real component
+!! Type containing stress and per-particle info
+!! Atom storage of coeffs !!Dimension(size(coeffs,1))
+!! Tempeorary stress tensor
+!! Temporary force vectors
+!! Position of ion j
+!! g_p & d/dr[g_p]
+!! Q*g_p
+!! Coeffs*inv_mod_r_ij**n
+!! Inter-particle distances
+
+    ! initialise accumulators
+
+    engcpe_rl = 0.0_wp
+    vircpe_rl = 0.0_wp
+    stress_temp = 0.0_wp
+    force_temp = 0.0_wp
+
+    ! global identity of iatm
+
+    global_id_i = config%ltg(iatm)
+
+    atom_coeffs_i = config%parts(iatm)%chge * spme_datum%scaling
+
+    ! ignore interaction if the coeffs or scaling are zero
+    If (Abs(atom_coeffs_i) < zero_plus) Return
+
+    ! start of primary loop for forces evaluation
+
+    Do m = 1, neigh%list(0, iatm)
+
+      ! atomic index and charge
+
+      jatm = neigh%list(m, iatm)
+      global_id_j = config%ltg(jatm)
+
+      ! interatomic distance
+      mod_r_ij = mod_dr_ij(m)
+      prefac = config%parts(jatm)%chge
+
+      ! interaction validity and truncation of potential
+      If (Abs(prefac) > zero_plus .and. mod_r_ij < neigh%cutoff) Then
+
+        pos_j = [x_pos(m), y_pos(m), z_pos(m)]
+        alpha_r = mod_r_ij * alpha
+
+        ! Complete prefactor
+        prefac = atom_coeffs_i * prefac
+
+
+        erf_gamma = prefac * electro%erfc_deriv%calc(alpha_r)
+
+        ! calculate forces ( dU * r/||r|| )
+
+        force_temp_comp = erf_gamma * pos_j
+        force_temp = force_temp + force_temp_comp
+
+        If (jatm <= config%natms .or. global_id_i < global_id_j) Then
+          If (jatm <= config%natms) Then
+
+            config%parts(jatm)%fxx = config%parts(jatm)%fxx - force_temp_comp(1)
+            config%parts(jatm)%fyy = config%parts(jatm)%fyy - force_temp_comp(2)
+            config%parts(jatm)%fzz = config%parts(jatm)%fzz - force_temp_comp(3)
+
+          End If
+
+          ! calculate components of G
+          e_comp = prefac * electro%erfc%calc(alpha_r)
+
+          ! calculate interaction energy
+          engcpe_rl = engcpe_rl + e_comp
+
+          ! calculate virial ( F.r )
+
+          vircpe_rl = vircpe_rl - erf_gamma * mod_r_ij**2
+
+          ! calculate stress tensor
+          stress_temp_comp = calculate_stress(pos_j, force_temp_comp)
+          stress_temp = stress_temp + stress_temp_comp
+
+        End If
+
+        If (stats%collect_pp) Then
+          stress_temp_comp = calculate_stress(pos_j, force_temp_comp)
+          stats%pp_energy(iatm) = stats%pp_energy(iatm) + e_comp * 0.5_wp
+          stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
+          If (jatm <= config%natms) Then
+            stats%pp_energy(jatm) = stats%pp_energy(jatm) + e_comp * 0.5_wp
+            stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
+          End If
+        End If
+
+      End If
+
+    End Do
+
+    ! load back forces
+
+    config%parts(iatm)%fxx = config%parts(iatm)%fxx + force_temp(1)
+    config%parts(iatm)%fyy = config%parts(iatm)%fyy + force_temp(2)
+    config%parts(iatm)%fzz = config%parts(iatm)%fzz + force_temp(3)
+
+    ! complete stress tensor
+
+    stats%stress = stats%stress + stress_temp
+
+  End Subroutine ewald_real_forces_coul_tab
+
 
   Subroutine ewald_real_forces_coul(electro, alpha, spme_datum, neigh, config, stats, iatm, x_pos, y_pos, z_pos, mod_dr_ij, &
     & engcpe_rl, vircpe_rl)
@@ -1220,7 +1363,7 @@ Contains
     bspline_in%num_deriv = 2
     Allocate (bspline_in%derivs(3, 0:bspline_in%num_deriv, 1:bspline_in%num_splines, 1:max_atoms), stat=fail(1))
     If (fail(1) > 0) Call error_alloc('bspline_in%derivs', 'ewald_spme_init')
-    
+
     ! calculate the global b-spline coefficients
     Call bspline_coeffs_gen(kspace_in, bspline_in)
 
@@ -1439,7 +1582,6 @@ Contains
             potential_component = (0.0_wp, 0.0_wp)
           End If
 
-          if (potential_component /= potential_component) call error(0, 'Bad pot comp')
           potential_grid(j_local, k_local, l_local) = potential_component
 
         End Do
@@ -1584,7 +1726,7 @@ Contains
             force_temp(1, 1) = force_temp(1, 2) * bspline_d1_x(j) * extended_potential_grid(jj, kk, ll) * recip_kmax(1)
             force_temp(2, 1) = force_temp(2, 2) * bspline_d0_x(j) * extended_potential_grid(jj, kk, ll) * recip_kmax(2)
             force_temp(3, 1) = force_temp(3, 2) * bspline_d0_x(j) * extended_potential_grid(jj, kk, ll) * recip_kmax(3)
-            
+
             ! Sum force contributions
             force_total = force_total - force_temp(:, 1)
             curr_force_temp = curr_force_temp + force_temp(:, 1)

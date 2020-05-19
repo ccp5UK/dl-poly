@@ -32,6 +32,7 @@ Module two_body
                              ewald_vdw_init
   Use ewald_spole,     Only: ewald_excl_forces,&
                              ewald_real_forces_coul,&
+                             ewald_real_forces_coul_tab,&
                              ewald_real_forces_gen,&
                              ewald_spme_forces
   Use kim,             Only: kim_energy_and_forces,&
@@ -160,8 +161,12 @@ Contains
       If (fail > 0) Call error_alloc('coul_coeffs', 'two_body_forces')
       coul_coeffs = config%parts(:)%chge
 
-      Call electro%erfc%init(ewld%alpha * neigh%cutoff, calc_erfc)
-      Call electro%erfc_deriv%init(ewld%alpha * neigh%cutoff, calc_erfc_deriv)
+      if (ewld%direct) then
+         Call electro%erfcgen(neigh%cutoff, ewld%alpha)
+      else
+         Call electro%erfc%init(ewld%alpha * neigh%cutoff, calc_erfc)
+         Call electro%erfc_deriv%init(ewld%alpha * neigh%cutoff, calc_erfc_deriv)
+      end if
 
       If (newjob) Then
 
@@ -390,8 +395,15 @@ Contains
         !-------------------
         If (mpoles%max_mpoles > 0) Then
         If (electro%key == ELECTROSTATIC_EWALD) Then
-          Call ewald_real_forces_coul(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
-            & i, xxt, yyt, zzt, rrt, engacc, viracc)
+
+           if (ewld%direct) then
+              Call ewald_real_forces_coul(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
+                   & i, xxt, yyt, zzt, rrt, engacc, viracc)
+           else
+              Call ewald_real_forces_coul_tab(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
+                   & i, xxt, yyt, zzt, rrt, engacc, viracc)
+           end if
+
           engcpe_rl = engcpe_rl + engacc
           vircpe_rl = vircpe_rl + viracc
 

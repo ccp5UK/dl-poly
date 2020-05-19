@@ -446,8 +446,8 @@ Contains
     inversion%bin_tab = Merge(inversion%bin_tab, Min(inversion%bin_tab, Nint(180.0_wp / delth_max) + 4), inversion%bin_tab < 0)
 
     ! maximum number of grid points for electrostatics
-    Call electro%init_erf_tables(Merge(-1, Max(1004, Nint(neigh%cutoff / delr_max) + 4), &
-      & electro%no_elec .and. .not. ewld%vdw))
+    if (.not. ewld%direct .and. .not. electro%no_elec) &
+         Call electro%init_erf_tables(Max(1004, Nint(neigh%cutoff / delr_max) + 4))
 
     ! maximum number of grid points for vdw interactions - overwritten
 
