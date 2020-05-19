@@ -393,7 +393,7 @@ Contains
   End Subroutine cleanup
 
   Subroutine statistics_collect(config, lsim, leql, nsteql, lmsd, keyres, degfre, degshl, &
-                                degrot, nstep, tstep, time, tmst, mxatdm, max_grid_rdf, stats, thermo, zdensity, &
+                                degrot, nstep, tstep, time, tmst, mxatdm, stats, thermo, zdensity, &
                                 sites, files, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -423,7 +423,7 @@ Contains
     Integer,                  Intent(In   ) :: nstep
     Real(Kind=wp),            Intent(In   ) :: tstep, time
     Real(Kind=wp),            Intent(InOut) :: tmst
-    Integer(Kind=wi),         Intent(In   ) :: mxatdm, max_grid_rdf
+    Integer(Kind=wi),         Intent(In   ) :: mxatdm
     Type(stats_type),         Intent(InOut) :: stats
     Type(thermostat_type),    Intent(In   ) :: thermo
     Type(z_density_type),     Intent(InOut) :: zdensity
@@ -776,7 +776,7 @@ Contains
     ! z-density collection
 
     If (zdensity%l_collect .and. ((.not. leql) .or. nstep >= nsteql) .and. &
-        Mod(nstep, zdensity%frequency) == 0) Call z_density_collect(max_grid_rdf, zdensity, config)
+        Mod(nstep, zdensity%frequency) == 0) Call z_density_collect(zdensity, config)
 
     ! Catch time of starting statistical averages
 
@@ -1749,7 +1749,11 @@ Contains
         Call info(message, .true.)
       End If
 
-      Go To 10
+      Call gtime(timelp)
+
+      Write (message, '("time elapsed since job start: ", f12.3, " sec")') timelp
+      Call info(message, .true.)
+      return
     End If
 
     ! If still running in the pure equilibration regime - NO AVERAGES
@@ -1934,7 +1938,6 @@ Contains
       End If
 
     End If
-    10 Continue
 
     ! print final time check
 

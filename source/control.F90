@@ -3849,6 +3849,7 @@ Contains
     neigh%padding = 0.0_wp
 
     rdf%rbin = rbin_def
+    zdensity%bin_width = rbin_def
 
     ! Frequency of the SPME k-space evaluation
 

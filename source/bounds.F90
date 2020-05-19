@@ -49,7 +49,9 @@ Module bounds
   Use rigid_bodies,    Only: rigid_bodies_type
   Use site,            Only: site_type
   Use statistics,      Only: stats_type
-  Use tersoff,         Only: tersoff_type
+  Use tersoff,         Only: tersoff_type,&
+                             TERS_TERSOFF,&
+                             TERS_KIHS
   Use tethers,         Only: tethers_type
   Use thermostat,      Only: thermostat_type
   Use three_body,      Only: threebody_type
@@ -402,7 +404,13 @@ Contains
     ! maximum number of rdf potentials (rdf%max_rdf = rdf%max_rdf)
     ! rdf%max_grid - maximum dimension of rdf%rdf and z-density arrays
 
-    If ((.not. l_n_r) .or. lzdn) Then
+    if (lzdn) then
+       zdensity%max_grid = Nint(neigh%cutoff / zdensity%bin_width)
+    else
+       zdensity%max_grid = 0
+    end if
+
+    If ((.not. l_n_r)) Then
       If (((.not. l_n_r) .and. rdf%max_rdf == 0) .and. (vdws%max_vdw > 0 .or. met%max_metal > 0)) &
         rdf%max_rdf = Max(vdws%max_vdw, met%max_metal) ! (vdws,met) == rdf scanning
       rdf%max_grid  = Nint(neigh%cutoff / rdf%rbin)
@@ -425,7 +433,8 @@ Contains
     ! with 2 extra ones on each side (for derivatives) totals.
     ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
-    mxgrid = Max(config%mxgana, vdws%max_grid, met%maxgrid, rdf%max_grid, rdf%max_grid_usr, 1004, Nint(neigh%cutoff / delr_max) + 4)
+    mxgrid = Max(config%mxgana, vdws%max_grid, met%maxgrid, zdensity%max_grid, &
+         & rdf%max_grid, rdf%max_grid_usr, 1004, Nint(neigh%cutoff / delr_max) + 4)
 
     ! grids setting and overrides
 
@@ -489,9 +498,9 @@ Contains
     ! maximum number of tersoff potentials (tersoffs%max_ter = tersoffs%max_ter) and parameters
 
     If (tersoffs%max_ter > 0) Then
-      If      (tersoffs%key_pot == 1) Then
+      If      (tersoffs%key_pot == TERS_TERSOFF) Then
         tersoffs%max_param = 11
-      Else If (tersoffs%key_pot == 2) Then
+      Else If (tersoffs%key_pot == TERS_KIHS) Then
         tersoffs%max_param = 16
       End If
     Else
