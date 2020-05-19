@@ -692,15 +692,14 @@ Contains
     Call info(message, .true., level=3)
 
     tol = Min(0.05_wp, 0.005_wp * neigh%cutoff) ! tolerance
-    If (ewld%active) Then ! 2% (w/ SPME) or 4% (w/ PS)
+    If (ewld%active .or. pois%active) Then ! 2% (w/ SPME) or 4% (w/ PS)
       test = 0.02_wp
-    Else If (pois%active) Then
-      test = 0.04_wp
     Else
-      test = 0.0_wp
+      test = 0.04_wp
     End If
 
-    cut = Min(domain%nx_recip * celprp(7), domain%ny_recip * celprp(8), domain%nz_recip * celprp(9)) - 1.0e-6_wp ! domain size
+    cut = Min(config%width / 2.0_wp, domain%nx_recip * celprp(7), domain%ny_recip * celprp(8), domain%nz_recip * celprp(9)) - &
+         1.0e-6_wp ! domain size
 
     If (ilx * ily * ilz == 0) Then
       If (devel%l_trm) Then ! we are prepared to exit gracefully(-:
