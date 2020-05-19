@@ -561,8 +561,9 @@ Contains
 
           If (electro%key == ELECTROSTATIC_EWALD) Then ! Ewald corrections
 
-            Call ewald_excl_forces(ewld, ewld%spme_data(0), neigh, electro, config, coul_coeffs, &
-                                   i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress)
+              Call ewald_excl_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, ewld, ewld%spme_data(0), config)
+            ! Call ewald_excl_forces(ewld, ewld%spme_data(0), neigh, electro, config, coul_coeffs, &
+            !                        i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress)
 
             engcpe_ex = engcpe_ex + engacc
             vircpe_ex = vircpe_ex + viracc
