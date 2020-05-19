@@ -362,7 +362,7 @@ Contains
 
     ! ALLOCATE RDF, Z-DENSITY, STATISTICS & GREEN-KUBO ARRAYS
     Call rdf%init()
-    Call zdensity%init(rdf%max_grid, sites%mxatyp)
+    Call zdensity%init(sites%mxatyp)
     Call stats%init(rigid%max_rigid, config%mxatms, config%mxatdm)
     Call green%init(config%mxatms, sites%mxatyp)
 
