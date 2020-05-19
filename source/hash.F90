@@ -177,8 +177,8 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - j.wilkins march 2020
     !!-----------------------------------------------------------------------
-    Class(hash_table) :: table
-    Character(Len=*), Intent( In    ) :: input
+    Class(hash_table), Intent( In    ) :: table
+    Character(Len=*),  Intent( In    ) :: input
     Integer :: output
     Integer :: i
 
