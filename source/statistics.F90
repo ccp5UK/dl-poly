@@ -63,6 +63,9 @@ Module statistics
                              z_density_type
 
   Implicit None
+
+  Private
+
   Type, Public :: stats_type
 
     Integer(Kind=wi)           :: numacc = 0, &
@@ -164,11 +167,19 @@ Module statistics
     Procedure, Public :: init => allocate_statistics_arrays
     Procedure, Public :: init_connect => allocate_statistics_connect
     Procedure, Public :: clean_connect => deallocate_statistics_connect
+    Procedure, Public :: update_stress
     Procedure, Public, Pass :: allocate_per_particle_arrays
     Procedure, Public, Pass :: deallocate_per_particle_arrays
     Final :: cleanup
   End Type
 
+  Public :: calculate_stress
+  Public :: calculate_heat_flux
+  Public :: statistics_collect
+  Public :: statistics_connect_frames
+  Public :: statistics_connect_set
+  Public :: write_per_part_contribs
+  Public :: statistics_result
 Contains
 
   Subroutine allocate_statistics_arrays(stats,mxrgd,mxatms,mxatdm)
@@ -1958,6 +1969,22 @@ Contains
     calculate_stress(3:9:3) = r * f(3)
 
   End Function calculate_stress
+
+  Subroutine update_stress(t,s)
+    Class(stats_type) :: t
+      real(kind=wp), intent(in) :: s(9)
+
+    t%stress(1) = t%stress(1) + s(1)
+    t%stress(2) = t%stress(2) + s(2)
+    t%stress(3) = t%stress(3) + s(3)
+    t%stress(4) = t%stress(4) + s(2)
+    t%stress(5) = t%stress(5) + s(4)
+    t%stress(6) = t%stress(6) + s(5)
+    t%stress(7) = t%stress(7) + s(3)
+    t%stress(8) = t%stress(8) + s(5)
+    t%stress(9) = t%stress(9) + s(6)
+
+  End Subroutine update_stress
 
   Function calculate_heat_flux(stats, config, comm) Result(heat_flux)
     Use comms, Only: gsum
