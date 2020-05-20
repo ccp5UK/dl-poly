@@ -137,7 +137,9 @@ Contains
 
 ! Array to remap charge/disp to 2D array
 
+#ifdef CHRONO
     Call start_timer(tmr, 'Two-Body Init')
+#endif
 
     safe = .true.
     fail = 0
