@@ -170,18 +170,6 @@ Module vdw
 
 Contains
 
-  subroutine calculate_strss(s,r,f)
-    real(kind=wp), intent(in) :: r(3),f(3)
-    real(kind=wp),intent(inout) :: s(9)
-
-          s(1) = s(1) + r(1) * f(1)
-          s(2) = s(2) + r(1) * f(2)
-          s(3) = s(3) + r(1) * f(3)
-          s(4) = s(4) + r(2) * f(2)
-          s(5) = s(5) + r(2) * f(3)
-          s(6) = s(6) + r(3) * f(3)
-
-    end subroutine calculate_strss
 
   Subroutine allocate_vdw_arrays(T)
     Class(vdw_type) :: T
@@ -2453,6 +2441,7 @@ Contains
 
   End Subroutine vdw_generate
 
+
   Subroutine vdw_forces(iatm, xxt, yyt, zzt, rrt, engvdw, virvdw, stats, neigh, vdws, config)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3126,16 +3115,12 @@ Contains
           virvdw = virvdw - gamma * rsq
           ! add stress tensor
 
-          !stress_temp(1) = stress_temp(1) + xxt(mm) * fx
-          !stress_temp(2) = stress_temp(2) + xxt(mm) * fy
-          !stress_temp(3) = stress_temp(3) + xxt(mm) * fz
-          !stress_temp(4) = stress_temp(4) + yyt(mm) * fy
-          !stress_temp(5) = stress_temp(5) + yyt(mm) * fz
-          !stress_temp(6) = stress_temp(6) + zzt(mm) * fz
-
-          lr = [xxt(mm), yyt(mm), zzt(mm)]
-          lf = [fx, fy, fz]
-          call calculate_strss(stress_temp,lr,lf)
+          stress_temp(1) = stress_temp(1) + xxt(mm) * fx
+          stress_temp(2) = stress_temp(2) + xxt(mm) * fy
+          stress_temp(3) = stress_temp(3) + xxt(mm) * fz
+          stress_temp(4) = stress_temp(4) + yyt(mm) * fy
+          stress_temp(5) = stress_temp(5) + yyt(mm) * fz
+          stress_temp(6) = stress_temp(6) + zzt(mm) * fz
         End If
 
         If (stats%collect_pp) Then
@@ -3161,16 +3146,15 @@ Contains
     config%parts(iatm)%fzz = fiz
 
     ! complete stress tensor
-    call stats%update_stress(stress_temp)
-    !stats%stress(1) = stats%stress(1) + stress_temp(1)
-    !stats%stress(2) = stats%stress(2) + stress_temp(2)
-    !stats%stress(3) = stats%stress(3) + stress_temp(3)
-    !stats%stress(4) = stats%stress(4) + stress_temp(2)
-    !stats%stress(5) = stats%stress(5) + stress_temp(4)
-    !stats%stress(6) = stats%stress(6) + stress_temp(5)
-    !stats%stress(7) = stats%stress(7) + stress_temp(3)
-    !stats%stress(8) = stats%stress(8) + stress_temp(5)
-    !stats%stress(9) = stats%stress(9) + stress_temp(6)
+    stats%stress(1) = stats%stress(1) + stress_temp(1)
+    stats%stress(2) = stats%stress(2) + stress_temp(2)
+    stats%stress(3) = stats%stress(3) + stress_temp(3)
+    stats%stress(4) = stats%stress(4) + stress_temp(2)
+    stats%stress(5) = stats%stress(5) + stress_temp(4)
+    stats%stress(6) = stats%stress(6) + stress_temp(5)
+    stats%stress(7) = stats%stress(7) + stress_temp(3)
+    stats%stress(8) = stats%stress(8) + stress_temp(5)
+    stats%stress(9) = stats%stress(9) + stress_temp(6)
 
   End Subroutine vdw_forces
 
