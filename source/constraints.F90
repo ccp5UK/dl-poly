@@ -584,7 +584,7 @@ Contains
 
   End Subroutine constraints_tags
 
-  Subroutine constraints_rattle(tstep, lfst, lcol, config, stat, cons, domain, tmr, comm)
+  Subroutine constraints_rattle(tstep, lfst, lcol, config, stat, cons, domain, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -610,7 +610,6 @@ Contains
     Type(stats_type), Intent(InOut) :: stat
     Type(constraints_type), Intent(InOut) :: cons
     Type(domains_type), Intent(In) :: domain
-    Type(timer_type), Intent(InOut) :: tmr
     Type(comms_type), Intent(InOut) :: comm
 
     Logical                :: safe
@@ -620,9 +619,6 @@ Contains
 
     Real(Kind=wp), Dimension(:), Allocatable :: vxt, vyt, vzt
 
-#ifdef CHRONO
-    Call start_timer(tmr, 'Rattle Constraints')
-#endif
     fail = 0
     Allocate (vxt(1:config%mxatms), vyt(1:config%mxatms), vzt(1:config%mxatms), Stat=fail)
     If (fail > 0) Then
@@ -775,13 +771,10 @@ Contains
       Write (message, '(a)') 'constraints_rattle deallocation failure'
       Call error(0, message)
     End If
-#ifdef CHRONO
-    Call stop_timer(tmr, 'Rattle Constraints')
-#endif
 
   End Subroutine constraints_rattle
 
-  Subroutine constraints_shake_vv(tstep, config, str, vir, stat, cons, domain, tmr, comm)
+  Subroutine constraints_shake_vv(tstep, config, str, vir, stat, cons, domain, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -807,7 +800,6 @@ Contains
     Type(constraints_type), Intent(InOut) :: cons
     Type(stats_type), Intent(InOut) :: stat
     Type(domains_type), Intent(In) :: domain
-    Type(timer_type), Intent(InOut) :: tmr
     Type(comms_type), Intent(InOut) :: comm
 
     Logical           :: safe
@@ -818,9 +810,7 @@ Contains
     Real(Kind=wp), Dimension(:), Allocatable :: dxt, dyt, dzt, dt2, esig
 
     Character(Len=256) :: message
-#ifdef CHRONO
-    Call start_timer(tmr, 'SHAKE Constraints')
-#endif
+
     fail = 0
     Allocate (xxt(1:config%mxatms), yyt(1:config%mxatms), zzt(1:config%mxatms), Stat=fail(1))
     Allocate (dxt(1:cons%mxcons), dyt(1:cons%mxcons), dzt(1:cons%mxcons), dt2(1:cons%mxcons), esig(1:cons%mxcons), Stat=fail(2))
@@ -1037,9 +1027,6 @@ Contains
       Call error(0, message)
     End If
 
-#ifdef CHRONO
-    Call stop_timer(tmr, 'SHAKE Constraints')
-#endif
   End Subroutine constraints_shake_vv
 
   Subroutine apply_rattle(tstep, kit, pmf, cons, stat, domain, tmr, config, comm)
@@ -1057,12 +1044,16 @@ Contains
     Integer :: i
     Logical :: lcol, lfst
 
+#ifdef CHRONO
+    Call start_timer(tmr, 'Rattle Constraints')
+#endif
+
     Do i = 1, kit
       lfst = (i == 1)
       lcol = (i == kit)
 
       If (cons%megcon > 0) Then
-        Call constraints_rattle(tstep, lfst, lcol, config, stat, cons, domain, tmr, comm)
+        Call constraints_rattle(tstep, lfst, lcol, config, stat, cons, domain, comm)
       End If
 
       If (pmf%megpmf > 0) Then
@@ -1070,6 +1061,11 @@ Contains
                         config, stat, pmf, comm)
       End If
     End Do
+
+#ifdef CHRONO
+    Call stop_timer(tmr, 'Rattle Constraints')
+#endif
+
   End Subroutine apply_rattle
 
   Subroutine apply_shake(tstep, oxt, oyt, ozt, lstitr, stat, pmf, cons, &
@@ -1091,6 +1087,9 @@ Contains
     Logical          :: safe
     Real(Kind=wp)    :: hstep, rstep, str(1:9), tmp, vir, xt, yt, zt
 
+#ifdef CHRONO
+    Call start_timer(tmr, 'SHAKE Constraints')
+#endif
 ! constraint virial and stress tensor
 
     hstep = 0.5_wp * tstep
@@ -1120,7 +1119,7 @@ Contains
 
         ! apply constraint correction: stat%vircon,stat%strcon - constraint virial,stress
 
-        Call constraints_shake_vv(tstep, config, str, vir, stat, cons, domain, tmr, comm)
+        Call constraints_shake_vv(tstep, config, str, vir, stat, cons, domain, comm)
 
         ! constraint virial and stress tensor
 
@@ -1193,5 +1192,10 @@ Contains
         config%parts(i)%fzz = config%parts(i)%fzz + zt
       End If
     End Do
+
+#ifdef CHRONO
+    Call stop_timer(tmr, 'SHAKE Constraints')
+#endif
+
   End Subroutine apply_shake
 End Module constraints
