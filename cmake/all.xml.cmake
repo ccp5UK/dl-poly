@@ -1698,7 +1698,7 @@
         <vir_pmf iteration="20">0.000000E+00</vir_pmf>
         <press iteration="20">5.911777E+01</press>
     </testcase>
-    <testcase name="TEST19">
+        <testcase name="TEST19">
       <path archive="Yes">TEST19</path>
       <description>TEST19 -  SPC IceVII Water with RBs (34,992 ions)</description>
         <eng_tot iteration="0">-8.048346E+04</eng_tot>
