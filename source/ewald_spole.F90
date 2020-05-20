@@ -1557,7 +1557,7 @@ Contains
 
     fail = 0
 
-    Call setup_kspace(kspace_in, domain, (kspace_in%k_vec_dim))
+    Call setup_kspace(kspace_in, domain, (kspace_in%k_vec_dim), comm)
 
 !!! begin cardinal b-splines set-up
 
@@ -1572,23 +1572,12 @@ Contains
 
 !!! begin daft set-up
 
-    ! set up the parallel fft and useful related quantities
-
-    Call initialize_fft(3, kspace_in%k_vec_dim, &
-                        [domain%nx, domain%ny, domain%nz], [domain%idx, domain%idy, domain%idz], &
-                        [kspace_in%block_x, kspace_in%block_y, kspace_in%block_z], &
-                        comm%comm, kspace_in%context)
-
-    Call pfft_indices(kspace_in%k_vec_dim(1), kspace_in%block_x, domain%idx, domain%nx, kspace_in%index_x)
-    Call pfft_indices(kspace_in%k_vec_dim(2), kspace_in%block_y, domain%idy, domain%ny, kspace_in%index_y)
-    Call pfft_indices(kspace_in%k_vec_dim(3), kspace_in%block_z, domain%idz, domain%nz, kspace_in%index_z)
-
     ! workspace arrays for DaFT
 
-    Allocate (charge_grid(1:kspace_in%block_x, 1:kspace_in%block_y, 1:kspace_in%block_z), stat=fail(1))
-    Allocate (potential_grid(1:kspace_in%block_x, 1:kspace_in%block_y, 1:kspace_in%block_z), stat=fail(2))
-    Allocate (stress_grid(1:kspace_in%block_x, 1:kspace_in%block_y, 1:kspace_in%block_z), stat=fail(3))
-    Allocate (pfft_work(1:kspace_in%block_x, 1:kspace_in%block_y, 1:kspace_in%block_z), stat=fail(4))
+    Allocate (charge_grid   (1:kspace_in%block_fac(1), 1:kspace_in%block_fac(2), 1:kspace_in%block_fac(3)), stat=fail(1))
+    Allocate (potential_grid(1:kspace_in%block_fac(1), 1:kspace_in%block_fac(2), 1:kspace_in%block_fac(3)), stat=fail(2))
+    Allocate (stress_grid   (1:kspace_in%block_fac(1), 1:kspace_in%block_fac(2), 1:kspace_in%block_fac(3)), stat=fail(3))
+    Allocate (pfft_work     (1:kspace_in%block_fac(1), 1:kspace_in%block_fac(2), 1:kspace_in%block_fac(3)), stat=fail(4))
     If (Any(fail > 0)) Call error_alloc('SPME DaFT workspace arrays', 'ewald_spme_init')
 
 !!! end daft set-up
@@ -1728,8 +1717,8 @@ Contains
     ! calculate convolution of charge array with gaussian function
     ! daft version - only loop over the local stuff
 
-    Do l_local = 1, ewld%kspace%block_z
-      l = ewld%kspace%index_z(l_local)
+    Do l_local = 1, ewld%kspace%block_fac(3)
+      l = ewld%kspace%index(3, l_local)
 
       ll = l - 1
       If (2 * ll > ewld%kspace%k_vec_dim(3)) ll = ll - ewld%kspace%k_vec_dim(3)
@@ -1737,8 +1726,8 @@ Contains
       recip_pos(:, 3) = Real(ll, wp) * recip_cell(3:9:3)
       bb3 = ewld%bspline%norm2(3, l)
 
-      Do k_local = 1, ewld%kspace%block_y
-        k = ewld%kspace%index_y(k_local)
+      Do k_local = 1, ewld%kspace%block_fac(2)
+        k = ewld%kspace%index(2, k_local)
 
         kk = k - 1
         If (2 * kk > ewld%kspace%k_vec_dim(2)) kk = kk - ewld%kspace%k_vec_dim(2)
@@ -1746,8 +1735,8 @@ Contains
         recip_pos(:, 2) = recip_pos(:, 3) + Real(kk, wp) * recip_cell(2:9:3)
         bb2 = bb3 * ewld%bspline%norm2(2, k)
 
-        Do j_local = 1, ewld%kspace%block_x
-          j = ewld%kspace%index_x(j_local)
+        Do j_local = 1, ewld%kspace%block_fac(1)
+          j = ewld%kspace%index(1, j_local)
 
           jj = j - 1
           If (2 * jj > ewld%kspace%k_vec_dim(1)) jj = jj - ewld%kspace%k_vec_dim(1)
