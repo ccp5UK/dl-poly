@@ -100,26 +100,26 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,                  Intent(In   ) :: ensemble
-    Logical,                  Intent(In   ) :: lbook
-    Integer,                  Intent(In   ) :: megfrz
-    Logical,                  Intent(In   ) :: leql
-    Integer,                  Intent(In   ) :: nsteql, nstep
-    Type(stats_type),         Intent(InOut) :: stats
-    Type(ewald_type),         Intent(InOut) :: ewld
-    Type(metal_type),         Intent(InOut) :: met
-    Type(poisson_type),       Intent(InOut) :: pois
-    Type(neighbours_type),    Intent(InOut) :: neigh
-    Type(site_type),          Intent(In   ) :: sites
-    Type(vdw_type),           Intent(InOut) :: vdws
-    Type(rdf_type),           Intent(InOut) :: rdf
-    Type(mpole_type),         Intent(InOut) :: mpoles
+    Integer, Intent(In) :: ensemble
+    Logical, Intent(In) :: lbook
+    Integer, Intent(In) :: megfrz
+    Logical, Intent(In) :: leql
+    Integer, Intent(In) :: nsteql, nstep
+    Type(stats_type), Intent(InOut) :: stats
+    Type(ewald_type), Intent(InOut) :: ewld
+    Type(metal_type), Intent(InOut) :: met
+    Type(poisson_type), Intent(InOut) :: pois
+    Type(neighbours_type), Intent(InOut) :: neigh
+    Type(site_type), Intent(In) :: sites
+    Type(vdw_type), Intent(InOut) :: vdws
+    Type(rdf_type), Intent(InOut) :: rdf
+    Type(mpole_type), Intent(InOut) :: mpoles
     Type(electrostatic_type), Intent(InOut) :: electro
-    Type(domains_type),       Intent(In   ) :: domain
-    Type(timer_type),         Intent(InOut) :: tmr
-    Type(kim_type),           Intent(InOut) :: kim_data
+    Type(domains_type), Intent(In) :: domain
+    Type(timer_type), Intent(InOut) :: tmr
+    Type(kim_type), Intent(InOut) :: kim_data
     Type(configuration_type), Intent(InOut) :: config
-    Type(comms_type),         Intent(InOut) :: comm
+    Type(comms_type), Intent(InOut) :: comm
 
     Integer                                     :: fail, i, ipot, j, k, limit
     Integer, Allocatable, Dimension(:), Save    :: reduced_VdW
@@ -163,12 +163,12 @@ Contains
       If (fail > 0) Call error_alloc('coul_coeffs', 'two_body_forces')
       coul_coeffs = config%parts(:)%chge
 
-      if (ewld%direct) then
-         Call electro%erfcgen(neigh%cutoff, ewld%alpha)
-      else
-         Call electro%erfc%init(ewld%alpha * neigh%cutoff, calc_erfc)
-         Call electro%erfc_deriv%init(ewld%alpha * neigh%cutoff, calc_erfc_deriv)
-      end if
+      If (ewld%direct) Then
+        Call electro%erfcgen(neigh%cutoff, ewld%alpha)
+      Else
+        Call electro%erfc%init(ewld%alpha * neigh%cutoff, calc_erfc)
+        Call electro%erfc_deriv%init(ewld%alpha * neigh%cutoff, calc_erfc_deriv)
+      End If
 
       If (newjob) Then
 
@@ -395,108 +395,113 @@ Contains
         !-------------------
         ! COULOMBIC CONTRIBUTIONS
         !-------------------
-        If (mpoles%max_mpoles > 0) Then
-        If (electro%key == ELECTROSTATIC_EWALD) Then
+        If (.not. electro%no_elec) then
+          If (mpoles%max_mpoles > 0) Then
 
-           if (ewld%direct) then
+            Select Case (electro%key)
+            Case (ELECTROSTATIC_EWALD)
+
+              If (ewld%direct) Then
+                Call ewald_real_forces_coul(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
+                     & i, xxt, yyt, zzt, rrt, engacc, viracc)
+              Else
+                Call ewald_real_forces_coul_tab(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
+                     & i, xxt, yyt, zzt, rrt, engacc, viracc)
+              End If
+
+              engcpe_rl = engcpe_rl + engacc
+              vircpe_rl = vircpe_rl + viracc
+
+            Case (ELECTROSTATIC_DDDP)
+
+              ! distance dependant dielectric potential
+
+              Call coul_dddp_mforces(i, electro%eps, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, mpoles, config)
+
+              engcpe_rl = engcpe_rl + engacc
+              vircpe_rl = vircpe_rl + viracc
+
+            Case (ELECTROSTATIC_COULOMB)
+
+              ! coulombic 1/r potential with no truncation or damping
+
+              Call coul_cp_mforces(i, electro%eps, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, mpoles, config)
+
+              engcpe_rl = engcpe_rl + engacc
+              vircpe_rl = vircpe_rl + viracc
+
+            Case(ELECTROSTATIC_COULOMB_FORCE_SHIFT)
+
+              ! force-shifted coulomb potentials
+
+              Call coul_fscp_mforces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, mpoles, electro, config)
+
+              engcpe_rl = engcpe_rl + engacc
+              vircpe_rl = vircpe_rl + viracc
+
+            Case (ELECTROSTATIC_COULOMB_REACTION_FIELD)
+
+              ! reaction field potential
+
+              Call coul_rfp_mforces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, mpoles, electro, config)
+
+              engcpe_rl = engcpe_rl + engacc
+              vircpe_rl = vircpe_rl + viracc
+
+            End Select
+
+          Else
+
+            Select Case (electro%key)
+            Case (ELECTROSTATIC_EWALD)
+
+              ! calculate coulombic forces, Ewald sum - real space contribution
+
               Call ewald_real_forces_coul(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
                    & i, xxt, yyt, zzt, rrt, engacc, viracc)
-           else
-              Call ewald_real_forces_coul_tab(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
-                   & i, xxt, yyt, zzt, rrt, engacc, viracc)
-           end if
 
-          engcpe_rl = engcpe_rl + engacc
-          vircpe_rl = vircpe_rl + viracc
+              engcpe_rl = engcpe_rl + engacc
+              vircpe_rl = vircpe_rl + viracc
 
-        Else If (electro%key == ELECTROSTATIC_DDDP) Then
+            Case (ELECTROSTATIC_DDDP)
 
-          ! distance dependant dielectric potential
+              ! distance dependant dielectric potential
 
-          Call coul_dddp_mforces(i, electro%eps, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, mpoles, config)
+              Call coul_dddp_forces(i, electro%eps, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, config)
 
-          engcpe_rl = engcpe_rl + engacc
-          vircpe_rl = vircpe_rl + viracc
+              engcpe_rl = engcpe_rl + engacc
+              vircpe_rl = vircpe_rl + viracc
 
-        Else If (electro%key == ELECTROSTATIC_COULOMB) Then
+            Case (ELECTROSTATIC_COULOMB)
 
-          ! coulombic 1/r potential with no truncation or damping
+              ! coulombic 1/r potential with no truncation or damping
 
-          Call coul_cp_mforces(i, electro%eps, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, mpoles, config)
+              Call coul_cp_forces(i, electro%eps, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, config)
 
-          engcpe_rl = engcpe_rl + engacc
-          vircpe_rl = vircpe_rl + viracc
+              engcpe_rl = engcpe_rl + engacc
+              vircpe_rl = vircpe_rl + viracc
 
-        Else If (electro%key == ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then
+            Case (ELECTROSTATIC_COULOMB_FORCE_SHIFT)
 
-          ! force-shifted coulomb potentials
+              ! force-shifted coulomb potentials
 
-          Call coul_fscp_mforces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, mpoles, electro, config)
+              Call coul_fscp_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, electro, config)
 
-          engcpe_rl = engcpe_rl + engacc
-          vircpe_rl = vircpe_rl + viracc
+              engcpe_rl = engcpe_rl + engacc
+              vircpe_rl = vircpe_rl + viracc
 
-        Else If (electro%key == ELECTROSTATIC_COULOMB_REACTION_FIELD) Then
+            Case (ELECTROSTATIC_COULOMB_REACTION_FIELD)
 
-          ! reaction field potential
+              ! reaction field potential
 
-          Call coul_rfp_mforces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, mpoles, electro, config)
+              Call coul_rfp_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, electro, config)
 
-          engcpe_rl = engcpe_rl + engacc
-          vircpe_rl = vircpe_rl + viracc
+              engcpe_rl = engcpe_rl + engacc
+              vircpe_rl = vircpe_rl + viracc
 
-        End If
+            End Select
 
-        Else
-
-        If (electro%key == ELECTROSTATIC_EWALD) Then
-
-          ! calculate coulombic forces, Ewald sum - real space contribution
-
-          Call ewald_real_forces_coul(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
-            & i, xxt, yyt, zzt, rrt, engacc, viracc)
-
-          engcpe_rl = engcpe_rl + engacc
-          vircpe_rl = vircpe_rl + viracc
-
-        Else If (electro%key == ELECTROSTATIC_DDDP) Then
-
-          ! distance dependant dielectric potential
-
-          Call coul_dddp_forces(i, electro%eps, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, config)
-
-          engcpe_rl = engcpe_rl + engacc
-          vircpe_rl = vircpe_rl + viracc
-
-        Else If (electro%key == ELECTROSTATIC_COULOMB) Then
-
-          ! coulombic 1/r potential with no truncation or damping
-
-          Call coul_cp_forces(i, electro%eps, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, config)
-
-          engcpe_rl = engcpe_rl + engacc
-          vircpe_rl = vircpe_rl + viracc
-
-        Else If (electro%key == ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then
-
-          ! force-shifted coulomb potentials
-
-          Call coul_fscp_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, electro, config)
-
-          engcpe_rl = engcpe_rl + engacc
-          vircpe_rl = vircpe_rl + viracc
-
-        Else If (electro%key == ELECTROSTATIC_COULOMB_REACTION_FIELD) Then
-
-          ! reaction field potential
-
-          Call coul_rfp_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, electro, config)
-
-          engcpe_rl = engcpe_rl + engacc
-          vircpe_rl = vircpe_rl + viracc
-
-        End If
-
+          End If
         End If
 
         ! accumulate radial distribution functions
@@ -563,7 +568,7 @@ Contains
 
           If (electro%key == ELECTROSTATIC_EWALD) Then ! Ewald corrections
 
-              Call ewald_excl_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, ewld, ewld%spme_data(0), config)
+            Call ewald_excl_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, ewld, ewld%spme_data(0), config)
             ! Call ewald_excl_forces(ewld, ewld%spme_data(0), neigh, electro, config, coul_coeffs, &
             !                        i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress)
 
