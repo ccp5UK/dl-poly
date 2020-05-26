@@ -37,6 +37,8 @@ Module ewald
 
     !> Ewald is performing polynomial VdW parts
     Logical, Public :: vdw = .false.
+    !> VdW sets
+    Integer, Allocatable, Dimension(:), Public :: reduced_VdW
 
     !> Ewald real-space to be calculated direct not via tabulation
     Logical, Public :: direct = .false.
@@ -61,7 +63,7 @@ Module ewald
 
 contains
 
-  subroutine ewald_vdw_count(ewld, vdws, reduced_vdw)
+  subroutine ewald_vdw_count(ewld, vdws)
     use vdw, only : vdw_type, VDW_NULL, VDW_TAB, VDW_12_6, VDW_LENNARD_JONES, VDW_N_M, &
       VDW_BUCKINGHAM, VDW_BORN_HUGGINS_MEYER, VDW_HYDROGEN_BOND, &
       VDW_N_M_SHIFT, VDW_MORSE, VDW_WCA, VDW_DPD, VDW_AMOEBA, &
@@ -69,7 +71,6 @@ contains
       VDW_ZBL_SWITCH_MORSE, VDW_ZBL_SWITCH_BUCKINGHAM
     type( ewald_type ) :: ewld
     type( vdw_type ), intent( in    ) :: vdws
-    Integer, dimension(:), allocatable, intent(   out ) :: reduced_VdW
     integer :: keypot
     integer :: ivdw, ipot
 
@@ -83,7 +84,7 @@ contains
 
       ! Need to remove duplicates of the same pot for mapping to linear array
       do ipot = 1, ewld%num_pots
-        if (keypot == reduced_VdW(ipot)) cycle countloop
+        if (keypot == ewld%reduced_vdw(ipot)) cycle countloop
       end do
 
       select case (keypot)
@@ -97,8 +98,8 @@ contains
     end do countloop
 
 
-    allocate(reduced_vdw(ewld%num_pots), stat=fail)
-    if (fail>0) call error_alloc('reduced_vdw','two_body_forces')
+    allocate(ewld%reduced_vdw(ewld%num_pots), stat=fail)
+    if (fail>0) call error_alloc('ewld%reduced_vdw','two_body_forces')
 
     ! Reset counter for assignment
     ewld%num_pots = 0
@@ -109,27 +110,27 @@ contains
 
       ! Need to remove duplicates of the same pot for mapping to linear array
       do ipot = 1, ewld%num_pots
-        if (keypot == reduced_VdW(ipot)) cycle vdwloop
+        if (keypot == ewld%reduced_vdw(ipot)) cycle vdwloop
       end do
 
       select case (keypot)
       case (VDW_12_6, VDW_LENNARD_JONES) ! 6-12
-        reduced_VdW(ewld%num_pots+1:ewld%num_pots+2) = keypot
+        ewld%reduced_vdw(ewld%num_pots+1:ewld%num_pots+2) = keypot
         ewld%num_pots = ewld%num_pots + 2
       case (VDW_N_M,VDW_N_M_SHIFT) ! N-M
-        reduced_VdW(ewld%num_pots+1:ewld%num_pots+2) = keypot
+        ewld%reduced_vdw(ewld%num_pots+1:ewld%num_pots+2) = keypot
         ewld%num_pots = ewld%num_pots + 2
       case (VDW_BORN_HUGGINS_MEYER) ! 6-8
-        reduced_VdW(ewld%num_pots+1:ewld%num_pots+2) = keypot
+        ewld%reduced_vdw(ewld%num_pots+1:ewld%num_pots+2) = keypot
         ewld%num_pots = ewld%num_pots + 2
       case (VDW_HYDROGEN_BOND) ! 12-10
-        reduced_VdW(ewld%num_pots+1:ewld%num_pots+2) = keypot
+        ewld%reduced_vdw(ewld%num_pots+1:ewld%num_pots+2) = keypot
         ewld%num_pots = ewld%num_pots + 2
       case (VDW_MORSE_12) ! 12
-        reduced_VdW(ewld%num_pots+1:ewld%num_pots+1) = keypot
+        ewld%reduced_vdw(ewld%num_pots+1:ewld%num_pots+1) = keypot
         ewld%num_pots = ewld%num_pots + 1
       case (VDW_BUCKINGHAM) ! 6
-        reduced_VdW(ewld%num_pots+1:ewld%num_pots+1) = keypot
+        ewld%reduced_vdw(ewld%num_pots+1:ewld%num_pots+1) = keypot
         ewld%num_pots = ewld%num_pots + 1
       case default
         call error(0,'Ewald VdW potential requested but not possible')
@@ -141,7 +142,7 @@ contains
 
   end subroutine ewald_vdw_count
 
-  subroutine ewald_vdw_init(ewld, vdws, reduced_vdw)
+  subroutine ewald_vdw_init(ewld, vdws)
 
     use vdw, only : vdw_type, VDW_NULL, VDW_TAB, VDW_12_6, VDW_LENNARD_JONES, VDW_N_M, &
       VDW_BUCKINGHAM, VDW_BORN_HUGGINS_MEYER, VDW_HYDROGEN_BOND, &
@@ -155,12 +156,11 @@ contains
     Integer :: keypot
     Integer :: ipot
     Logical :: skip
-    Integer, dimension(:), intent( in    ) :: reduced_VdW
 
     skip = .false.
 
     do ipot = 1, ewld%num_pots
-      keypot = reduced_VdW(ipot)
+      keypot = ewld%reduced_vdw(ipot)
 
       if ( skip ) then
         skip = .false.
@@ -210,7 +210,7 @@ contains
 
   end subroutine ewald_vdw_init
 
-  subroutine ewald_vdw_coeffs(config, vdws, ewld, reduced_vdw, vdw_coeffs )
+  subroutine ewald_vdw_coeffs(config, vdws, ewld, vdw_coeffs )
 
     use vdw, only : vdw_type, VDW_NULL, VDW_TAB, VDW_12_6, VDW_LENNARD_JONES, VDW_N_M, &
       VDW_BUCKINGHAM, VDW_BORN_HUGGINS_MEYER, VDW_HYDROGEN_BOND, &
@@ -222,7 +222,6 @@ contains
     type ( configuration_type ), intent ( in    ) :: config
     type ( ewald_type ),    intent ( inout ) :: ewld
     type ( vdw_type ),           intent ( in    ) :: vdws
-    integer, dimension( : ), intent ( in    ) :: reduced_vdw
     real ( kind = wp ), dimension( :,: ), allocatable, intent (   out ) :: vdw_coeffs
 
     integer :: keypot
@@ -246,7 +245,7 @@ contains
 
       ! Look up pot
       do ipot = 1, ewld%num_pots
-        if ( keypot == reduced_vdw(ipot) ) exit
+        if ( keypot == ewld%reduced_vdw(ipot) ) exit
       end do
       if ( ipot > ewld%num_pots ) call error(0,'Error in potentials mapping')
 

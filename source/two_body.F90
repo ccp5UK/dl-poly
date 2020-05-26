@@ -122,7 +122,6 @@ Contains
     Type(comms_type), Intent(InOut) :: comm
 
     Integer                                     :: fail, i, ipot, j, k, limit
-    Integer, Allocatable, Dimension(:), Save    :: reduced_VdW
     Logical                                     :: l_do_outer_loop, l_do_rdf, safe
     Logical, Save                               :: newjob = .true.
     Real(Kind=wp)                               :: buffer(0:19), engacc, engcpe_ch, engcpe_ex, &
@@ -175,7 +174,7 @@ Contains
         ewld%num_pots = 0
 
         ! Set number of pots
-        If (ewld%vdw) Call ewald_vdw_count(ewld, vdws, reduced_VdW)
+        If (ewld%vdw) Call ewald_vdw_count(ewld, vdws)
 
         If (electro%key == ELECTROSTATIC_EWALD) Then
           Allocate (ewld%spme_data(0:ewld%num_pots), stat=fail)
@@ -196,8 +195,8 @@ Contains
         End If
 
         If (ewld%vdw) Then
-          Call ewald_vdw_init(ewld, vdws, reduced_VdW)
-          Call ewald_vdw_coeffs(config, vdws, ewld, reduced_vdw, vdw_coeffs)
+          Call ewald_vdw_init(ewld, vdws)
+          Call ewald_vdw_coeffs(config, vdws, ewld, vdw_coeffs)
 
           Do ipot = 1, ewld%num_pots
             Call spme_self_interaction(ewld%alpha, config%natms, vdw_coeffs(:, ipot), comm, ewld%spme_data(ipot))
@@ -213,7 +212,7 @@ Contains
 
       End If
 
-      If (ewld%vdw) Call ewald_vdw_coeffs(config, vdws, ewld, reduced_vdw, vdw_coeffs)
+      If (ewld%vdw) Call ewald_vdw_coeffs(config, vdws, ewld, vdw_coeffs)
 
     End If
 
