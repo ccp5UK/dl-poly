@@ -628,7 +628,7 @@ Contains
 
          Call refresh_mappings(cnfig(ff), flow,cshell(ff), cons(ff), pmf(ff), stat(ff), msd_data(ff), bond(ff), angle(ff), &
           dihedral(ff),inversion(ff),tether(ff),neigh(ff),sites(ff),mpoles(ff),rigid(ff),domain(ff),kim_data(ff), &
-          ewld(ff),green(ff),minim(ff),thermo(ff),electro(ff), crd(ff), comm)
+          ewld(ff),green(ff),minim(ff),thermo(ff),electro(ff), crd(ff), comm, tmr)
        End If
 
      End Do
@@ -837,7 +837,8 @@ Contains
          If (.not.(cshell(ff)%relaxed .and. minim(ff)%relaxed)) Then
             Call refresh_mappings(cnfig(ff), flow, cshell(ff), cons(ff), pmf(ff), stat(ff), msd_data(ff), bond(ff), angle(ff), &
                                   dihedral(ff), inversion(ff), tether(ff), neigh(ff), sites(ff), mpoles(ff), rigid(ff), &
-                                  domain(ff), kim_data(ff), ewld(ff), green(ff), minim(ff), thermo(ff), electro(ff), crd(ff), comm)
+                                  domain(ff), kim_data(ff), ewld(ff), green(ff), minim(ff), thermo(ff), electro(ff), crd(ff), & 
+                                  comm, tmr)
             If(ff == flow%NUM_FF) Go To 100 
          End If
       End If
@@ -2276,7 +2277,7 @@ Contains
           Call refresh_mappings(cnfig(ff), flow, cshell(ff), cons(ff), pmf(ff), stat(ff), msd_data(ff), bond(ff), &
                                 angle(ff), dihedral(ff), inversion(ff), tether(ff), neigh(ff), sites(ff), mpoles(ff),&
                                 rigid(ff), domain(ff), kim_data(ff), ewld(ff), green(ff), minim(ff), thermo(ff), &
-                                electro(ff), crd(ff), comm)        
+                                electro(ff), crd(ff), comm, tmr)        
         EndDo
 
       End If ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
