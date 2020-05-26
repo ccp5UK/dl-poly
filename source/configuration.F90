@@ -161,6 +161,17 @@ Module configuration
     Module Procedure getcom_arrays
   End Interface getcom
 
+  Integer, Public, Parameter :: IMCON_NOPBC = 0
+  Integer, Public, Parameter :: IMCON_CUBIC = 1
+  Integer, Public, Parameter :: IMCON_ORTHORHOMBIC = 2
+  Integer, Public, Parameter :: IMCON_PARALLELOPIPED = 3
+  Integer, Public, Parameter :: IMCON_SLAB = 6
+  ! REMOVED -- DL_POLY 2 ONLY
+  Integer, Public, Parameter :: IMCON_TRUNC_OCTO = 4
+  Integer, Public, Parameter :: IMCON_RHOMBIC_DODEC = 5
+  Integer, Public, Parameter :: IMCON_HEXAGONAL = 7
+
+
   Public :: reallocate
   Public :: check_config
   Public :: read_config, read_config_parallel
@@ -458,7 +469,7 @@ Contains
 
     ! Check things for non-periodic systems
 
-    If (config%imcon == 0 .or. config%imcon == 6) Then
+    If (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB) Then
       If (electro_key == ELECTROSTATIC_EWALD) Then
         Call warning(220, 0.0_wp, 0.0_wp, 0.0_wp)
       Else If (electro_key /= ELECTROSTATIC_NULL) Then
@@ -474,21 +485,21 @@ Contains
 
     If (thermo%anisotropic_pressure) Then
       If (thermo%iso == CONSTRAINT_NONE) Then
-        If (config%imcon == 1 .or. config%imcon == 2) Then
+        If (config%imcon == IMCON_CUBIC .or. config%imcon == IMCON_ORTHORHOMBIC) Then
           Call warning(110, Real(config%imcon, wp), 3.0_wp, 0.0_wp)
-          config%imcon = 3
+          config%imcon = IMCON_PARALLELOPIPED
         End If
       Else ! thermo%iso > 0
-        If (config%imcon == 1) Then
+        If (config%imcon == IMCON_CUBIC) Then
           Call warning(110, Real(config%imcon, wp), 3.0_wp, 0.0_wp)
-          config%imcon = 2
+          config%imcon = IMCON_ORTHORHOMBIC
         End If
       End If
     End If
 
     ! Check image condition for pseudo
 
-    If (thermo%l_stochastic_boundaries .and. (config%imcon == 0 .or. config%imcon == 6)) Call error(540)
+    If (thermo%l_stochastic_boundaries .and. (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB)) Call error(540)
 
     Call invert(config%cell, rcell, det)
 
@@ -843,7 +854,9 @@ Contains
 
     ! image conditions not compliant with DD and link-cell
 
-    If (config%imcon == 4 .or. config%imcon == 5 .or. config%imcon == 7) Call error(300)
+    If (config%imcon == IMCON_TRUNC_OCTO .or. &
+        config%imcon == IMCON_RHOMBIC_DODEC .or. &
+        config%imcon == IMCON_HEXAGONAL) Call error(300)
 
     ! Real space cutoff shortened by 50% but not < 1 Angstrom
     !(or ==rcut_def in scan_control)
@@ -870,14 +883,14 @@ Contains
     ! Amend volume of density cell if cluster, slab or bulk slab
     ! cell dimensional properties overwritten but not needed anyway
 
-    If (config%imcon == 0 .or. config%imcon == 6 .or. config%imc_n == 6) Then
+    If (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB .or. config%imc_n == 6) Then
       celh = config%cell
 
-      If (config%imcon == 0) Then
+      If (config%imcon == IMCON_NOPBC) Then
         celh(1) = Max(1.0_wp, xhi)
         celh(5) = Max(1.0_wp, yhi)
         celh(9) = Max(1.0_wp, zhi)
-      Else If (config%imcon == 6) Then
+      Else If (config%imcon == IMCON_SLAB) Then
         celh(9) = Max(1.0_wp, zhi)
       End If
 
@@ -1212,7 +1225,7 @@ Contains
       ! top_skip is header size
 
       If (io_read /= IO_READ_NETCDF) Then
-        If (config%imcon == 0) Then
+        If (config%imcon == IMCON_NOPBC) Then
           top_skip = Int(2, offset_kind)
         Else
           top_skip = Int(5, offset_kind)
@@ -1796,7 +1809,7 @@ Contains
             End If
           End Do
 
-          ! If only detecting box dimensions for imcon == 0 or 6 or imc_n == 6
+          ! If only detecting box dimensions for imcon == IMCON_NOPBC or 6 or imc_n == 6
 
         Else
 
@@ -1918,7 +1931,7 @@ Contains
 
     End Do
 
-    ! If only detecting box dimensions for imcon == 0 or 6 or imc_n == 6
+    ! If only detecting box dimensions for imcon == IMCON_NOPBC or 6 or imc_n == 6
 
     If (l_xtr) Then
       Call gmax(comm, xhi)
@@ -2252,7 +2265,7 @@ Contains
     yhi = 0.0_wp
     zhi = 0.0_wp
 
-    If (config%imcon == 0 .or. config%imcon == 6 .or. config%imc_n == 6) Then
+    If (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB .or. config%imc_n == 6) Then
 
       ! If MASTER read
 
@@ -2335,7 +2348,7 @@ Contains
         ! top_skip is header size
 
         If (io_read /= IO_READ_NETCDF) Then
-          If (config%imcon == 0) Then
+          If (config%imcon == IMCON_NOPBC) Then
             top_skip = Int(2, offset_kind)
           Else
             top_skip = Int(5, offset_kind)

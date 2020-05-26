@@ -2,7 +2,15 @@ Module temperature
   Use comms,           Only: comms_type,&
                              gsum
   Use configuration,   Only: configuration_type,&
-                             getcom
+                             getcom,&
+                             IMCON_NOPBC,&
+                             IMCON_CUBIC,&
+                             IMCON_ORTHORHOMBIC,&
+                             IMCON_PARALLELOPIPED,&
+                             IMCON_SLAB,&
+                             IMCON_TRUNC_OCTO,&
+                             IMCON_RHOMBIC_DODEC,&
+                             IMCON_HEXAGONAL
   Use constants,       Only: boltz,&
                              zero_plus
   Use constraints,     Only: constraints_quench,&
@@ -120,7 +128,7 @@ Contains
     ! (non-periodic systems only)
 
     non = Int(0, li)
-    If (config%imcon == 0) non = Int(3, li)
+    If (config%imcon == IMCON_NOPBC) non = Int(3, li)
 
     ! lost to shells
 
@@ -877,7 +885,7 @@ Contains
 
     ! zero angular momentum about centre of mass - non-periodic system
 
-    If (config%imcon == 0) Then
+    If (config%imcon == IMCON_NOPBC) Then
       fail = 0
       Allocate (buffer(1:12), Stat=fail)
       If (fail > 0) Then

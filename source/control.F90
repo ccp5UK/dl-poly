@@ -4,7 +4,15 @@ Module control
   Use bonds,                Only: bonds_type
   Use comms,                Only: comms_type,&
                                   gcheck
-  Use configuration,        Only: configuration_type
+  Use configuration,        Only: configuration_type,&
+                                  IMCON_NOPBC,&
+                                  IMCON_CUBIC,&
+                                  IMCON_ORTHORHOMBIC,&
+                                  IMCON_PARALLELOPIPED,&
+                                  IMCON_SLAB,&
+                                  IMCON_TRUNC_OCTO,&
+                                  IMCON_RHOMBIC_DODEC,&
+                                  IMCON_HEXAGONAL
   Use constants,            Only: pi,&
                                   prsunt,&
                                   tenunt,&
@@ -4501,7 +4509,7 @@ Contains
 
           ! fix cell vectors for image conditions with discontinuities
 
-          If (imcon == 0) Then
+          If (imcon == IMCON_NOPBC) Then
 
             cell(1) = Max(2.0_wp * xhi + cut, 3.0_wp * cut, cell(1))
             cell(5) = Max(2.0_wp * yhi + cut, 3.0_wp * cut, cell(5))
@@ -4514,7 +4522,7 @@ Contains
             cell(7) = 0.0_wp
             cell(8) = 0.0_wp
 
-          Else If (imcon == 6) Then
+          Else If (imcon == IMCON_SLAB) Then
 
             cell(9) = Max(2.0_wp * zhi + cut, 3.0_wp * cut, cell(9))
 
@@ -4538,7 +4546,9 @@ Contains
               tol1 = Sqrt(-Log(eps0 * neigh%cutoff * (2.0_wp * tol * electro%alpha)**2))
 
               fac = 1.0_wp
-              If (imcon == 4 .or. imcon == 5 .or. imcon == 7) fac = 2.0_wp**(1.0_wp / 3.0_wp)
+              If (imcon == IMCON_TRUNC_OCTO .or. &
+                  imcon == IMCON_RHOMBIC_DODEC .or. &
+                  imcon == IMCON_HEXAGONAL) fac = 2.0_wp**(1.0_wp / 3.0_wp)
 
               ewld%fft_dim_a1 = 2 * Nint(0.25_wp + fac * celprp(7) * electro%alpha * tol1 / pi)
               ewld%fft_dim_b1 = 2 * Nint(0.25_wp + fac * celprp(8) * electro%alpha * tol1 / pi)
@@ -4770,7 +4780,7 @@ Contains
 
           ! fix cell vectors for image conditions with discontinuities
 
-          If (imcon == 0) Then
+          If (imcon == IMCON_NOPBC) Then
 
             cell(1) = Max(2.0_wp * xhi + cut, 3.0_wp * cut, cell(1))
             cell(5) = Max(2.0_wp * yhi + cut, 3.0_wp * cut, cell(5))
@@ -4783,7 +4793,7 @@ Contains
             cell(7) = 0.0_wp
             cell(8) = 0.0_wp
 
-          Else If (imcon == 6) Then
+          Else If (imcon == IMCON_SLAB) Then
 
             cell(9) = Max(2.0_wp * zhi + cut, 3.0_wp * cut, cell(9))
 

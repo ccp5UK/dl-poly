@@ -1,4 +1,5 @@
 Module numerics
+
   Use comms,           Only: comms_type
   Use constants,       Only: epsilon_wp,&
                              half_minus,&
@@ -33,6 +34,18 @@ Module numerics
     Private
     Procedure, Public :: init => init_seed
   End Type seed_type
+
+  ! Private copies to avoid inheritence loop
+  Integer, Parameter :: IMCON_NOPBC = 0
+  Integer, Parameter :: IMCON_CUBIC = 1
+  Integer, Parameter :: IMCON_ORTHORHOMBIC = 2
+  Integer, Parameter :: IMCON_PARALLELOPIPED = 3
+  Integer, Parameter :: IMCON_SLAB = 6
+  ! REMOVED -- DL_POLY 2 ONLY
+  Integer, Parameter :: IMCON_TRUNC_OCTO = 4
+  Integer, Parameter :: IMCON_RHOMBIC_DODEC = 5
+  Integer, Parameter :: IMCON_HEXAGONAL = 7
+
 
   !!!!!!!!!!!!!!!!!!!!!!!! THIS IS NUMERIC_CONTAINER !!!!!!!!!!!!!!!!!!!!!
   !
@@ -1448,7 +1461,7 @@ Contains
     Integer       :: i
     Real(Kind=wp) :: aaa, bbb, ccc, ddd, det, rcell(1:9), xss, yss, zss
 
-    If (imcon == 1) Then
+    If (imcon == IMCON_CUBIC) Then
 
       ! standard cubic boundary conditions
 
@@ -1460,7 +1473,7 @@ Contains
         zzz(i) = zzz(i) - cell(1) * Anint(aaa * zzz(i))
       End Do
 
-    Else If (imcon == 2 .or. imcon == 0) Then
+    Else If (imcon == IMCON_ORTHORHOMBIC .or. imcon == IMCON_NOPBC) Then
 
       ! rectangular (slab) boundary conditions
 
@@ -1474,7 +1487,7 @@ Contains
         zzz(i) = zzz(i) - cell(9) * Anint(ccc * zzz(i))
       End Do
 
-    Else If (imcon == 3) Then
+    Else If (imcon == IMCON_PARALLELOPIPED) Then
 
       ! parallelepiped boundary conditions
 
@@ -1494,7 +1507,7 @@ Contains
         zzz(i) = cell(3) * xss + cell(6) * yss + cell(9) * zss
       End Do
 
-    Else If (imcon == 4) Then
+    Else If (imcon == IMCON_TRUNC_OCTO) Then
 
       ! truncated octahedral boundary conditions
 
@@ -1514,7 +1527,7 @@ Contains
         End If
       End Do
 
-    Else If (imcon == 5) Then
+    Else If (imcon == IMCON_RHOMBIC_DODEC) Then
 
       ! rhombic Dodecahedral boundary conditions
 
@@ -1535,7 +1548,7 @@ Contains
         End If
       End Do
 
-    Else If (imcon == 6) Then
+    Else If (imcon == IMCON_SLAB) Then
 
       ! x-y boundary conditions
 
@@ -1561,7 +1574,7 @@ Contains
         yyy(i) = cell(2) * xss + cell(5) * yss
       End Do
 
-    Else If (imcon == 7) Then
+    Else If (imcon == IMCON_HEXAGONAL) Then
 
       ! hexagonal prism boundary conditions
 
@@ -1625,7 +1638,7 @@ Contains
 
     Real(Kind=wp) :: aaa, bbb, ccc, ddd, det, rcell(1:9), xss, yss, zss
 
-    If (imcon == 1) Then
+    If (imcon == IMCON_CUBIC) Then
 
       ! standard cubic boundary conditions
 
@@ -1635,7 +1648,7 @@ Contains
       yyy = yyy - cell(1) * Anint(aaa * yyy)
       zzz = zzz - cell(1) * Anint(aaa * zzz)
 
-    Else If (imcon == 2 .or. imcon == 0) Then ! no PBC box wrapping exception
+    Else If (imcon == IMCON_ORTHORHOMBIC .or. imcon == IMCON_NOPBC) Then ! no PBC box wrapping exception
 
       ! rectangular (slab) boundary conditions
 
@@ -1646,7 +1659,7 @@ Contains
       yyy = yyy - cell(5) * Anint(bbb * yyy)
       zzz = zzz - cell(9) * Anint(ccc * zzz)
 
-    Else If (imcon == 3) Then
+    Else If (imcon == IMCON_PARALLELOPIPED) Then
 
       ! parallelepiped boundary conditions
 
@@ -1664,7 +1677,7 @@ Contains
       yyy = cell(2) * xss + cell(5) * yss + cell(8) * zss
       zzz = cell(3) * xss + cell(6) * yss + cell(9) * zss
 
-    Else If (imcon == 4) Then
+    Else If (imcon == IMCON_TRUNC_OCTO) Then
 
       ! truncated octahedral boundary conditions
 
@@ -1682,7 +1695,7 @@ Contains
         zzz = zzz - 0.5_wp * Sign(cell(1), zzz)
       End If
 
-    Else If (imcon == 5) Then
+    Else If (imcon == IMCON_RHOMBIC_DODEC) Then
 
       ! rhombic Dodecahedral boundary conditions
 
@@ -1701,7 +1714,7 @@ Contains
         zzz = zzz - 0.5_wp * Sign(cell(9), zzz)
       End If
 
-    Else If (imcon == 6) Then
+    Else If (imcon == IMCON_SLAB) Then
 
       ! x-y boundary conditions
 
@@ -1725,7 +1738,7 @@ Contains
       xxx = cell(1) * xss + cell(4) * yss
       yyy = cell(2) * xss + cell(5) * yss
 
-    Else If (imcon == 7) Then
+    Else If (imcon == IMCON_HEXAGONAL) Then
 
       ! hexagonal prism boundary conditions
 
@@ -1786,7 +1799,7 @@ Contains
     Integer       :: i
     Real(Kind=wp) :: aaa, bbb, ccc, ddd, det, rcell(1:9), xss, yss, zss
 
-    If (imcon == 1) Then
+    If (imcon == IMCON_CUBIC) Then
 
       ! standard cubic boundary conditions
 
@@ -1806,7 +1819,7 @@ Contains
         parts(i)%zzz = cell(1) * zss
       End Do
 
-    Else If (imcon == 2 .or. imcon == 0) Then ! no PBC box wrapping exception
+    Else If (imcon == IMCON_ORTHORHOMBIC .or. imcon == IMCON_NOPBC) Then ! no PBC box wrapping exception
 
       ! rectangular boundary conditions
 
@@ -1828,7 +1841,7 @@ Contains
         parts(i)%zzz = cell(9) * zss
       End Do
 
-    Else If (imcon == 3) Then
+    Else If (imcon == IMCON_PARALLELOPIPED) Then
 
       ! parallelepiped boundary conditions
 
@@ -1848,7 +1861,7 @@ Contains
         parts(i)%zzz = cell(3) * xss + cell(6) * yss + cell(9) * zss
       End Do
 
-    Else If (imcon == 4) Then
+    Else If (imcon == IMCON_TRUNC_OCTO) Then
 
       ! truncated octahedral boundary conditions
 
@@ -1888,7 +1901,7 @@ Contains
         End If
       End Do
 
-    Else If (imcon == 5) Then
+    Else If (imcon == IMCON_RHOMBIC_DODEC) Then
 
       ! rhombic Dodecahedral boundary conditions
 
@@ -1929,7 +1942,7 @@ Contains
         End If
       End Do
 
-    Else If (imcon == 6) Then
+    Else If (imcon == IMCON_SLAB) Then
 
       ! x-y boundary conditions (SLAB)
 
@@ -1955,7 +1968,7 @@ Contains
         parts(i)%yyy = cell(2) * xss + cell(5) * yss
       End Do
 
-    Else If (imcon == 7) Then
+    Else If (imcon == IMCON_HEXAGONAL) Then
 
       ! hexagonal prism boundary conditions
 
@@ -2027,7 +2040,7 @@ Contains
     Integer       :: i
     Real(Kind=wp) :: aaa, bbb, ccc, ddd, det, rcell(1:9), xss, yss, zss
 
-    If (imcon == 1) Then
+    If (imcon == IMCON_CUBIC) Then
 
       ! standard cubic boundary conditions
 
@@ -2047,7 +2060,7 @@ Contains
         zzz(i) = cell(1) * zss
       End Do
 
-    Else If (imcon == 2 .or. imcon == 0) Then ! no PBC box wrapping exception
+    Else If (imcon == IMCON_ORTHORHOMBIC .or. imcon == IMCON_NOPBC) Then ! no PBC box wrapping exception
 
       ! rectangular boundary conditions
 
@@ -2069,7 +2082,7 @@ Contains
         zzz(i) = cell(9) * zss
       End Do
 
-    Else If (imcon == 3) Then
+    Else If (imcon == IMCON_PARALLELOPIPED) Then
 
       ! parallelepiped boundary conditions
 
@@ -2089,7 +2102,7 @@ Contains
         zzz(i) = cell(3) * xss + cell(6) * yss + cell(9) * zss
       End Do
 
-    Else If (imcon == 4) Then
+    Else If (imcon == IMCON_TRUNC_OCTO) Then
 
       ! truncated octahedral boundary conditions
 
@@ -2129,7 +2142,7 @@ Contains
         End If
       End Do
 
-    Else If (imcon == 5) Then
+    Else If (imcon == IMCON_RHOMBIC_DODEC) Then
 
       ! rhombic Dodecahedral boundary conditions
 
@@ -2170,7 +2183,7 @@ Contains
         End If
       End Do
 
-    Else If (imcon == 6) Then
+    Else If (imcon == IMCON_SLAB) Then
 
       ! x-y boundary conditions (SLAB)
 
@@ -2196,7 +2209,7 @@ Contains
         yyy(i) = cell(2) * xss + cell(5) * yss
       End Do
 
-    Else If (imcon == 7) Then
+    Else If (imcon == IMCON_HEXAGONAL) Then
 
       ! hexagonal prism boundary conditions
 
@@ -2268,7 +2281,7 @@ Contains
     Integer       :: i
     Real(Kind=wp) :: aaa, bbb, ccc, ddd, det, rcell(1:9), xss, yss, zss
 
-    If (imcon == 1) Then
+    If (imcon == IMCON_CUBIC) Then
 
       ! standard cubic boundary conditions
 
@@ -2288,7 +2301,7 @@ Contains
         parts(i)%zzz = zss
       End Do
 
-    Else If (imcon == 2 .or. imcon == 0) Then ! no PBC box wrapping exception
+    Else If (imcon == IMCON_ORTHORHOMBIC .or. imcon == IMCON_NOPBC) Then ! no PBC box wrapping exception
 
       ! rectangular boundary conditions
 
@@ -2310,7 +2323,7 @@ Contains
         parts(i)%zzz = zss
       End Do
 
-    Else If (imcon == 3) Then
+    Else If (imcon == IMCON_PARALLELOPIPED) Then
 
       ! parallelepiped boundary conditions
 
@@ -2330,7 +2343,7 @@ Contains
         parts(i)%zzz = zss
       End Do
 
-    Else If (imcon == 4) Then
+    Else If (imcon == IMCON_TRUNC_OCTO) Then
 
       ! truncated octahedral boundary conditions
 
@@ -2374,7 +2387,7 @@ Contains
         End If
       End Do
 
-    Else If (imcon == 5) Then
+    Else If (imcon == IMCON_RHOMBIC_DODEC) Then
 
       ! rhombic Dodecahedral boundary conditions
 
@@ -2419,7 +2432,7 @@ Contains
         End If
       End Do
 
-    Else If (imcon == 6) Then
+    Else If (imcon == IMCON_SLAB) Then
 
       ! x-y boundary conditions (SLAB)
 
@@ -2445,7 +2458,7 @@ Contains
         parts(i)%yyy = yss
       End Do ! note zzz remains in real space
 
-    Else If (imcon == 7) Then
+    Else If (imcon == IMCON_HEXAGONAL) Then
 
       ! hexagonal prism boundary conditions
 
@@ -2521,7 +2534,7 @@ Contains
     Integer       :: i
     Real(Kind=wp) :: aaa, bbb, ccc, ddd, det, rcell(1:9), xss, yss, zss
 
-    If (imcon == 1) Then
+    If (imcon == IMCON_CUBIC) Then
 
       ! standard cubic boundary conditions
 
@@ -2541,7 +2554,7 @@ Contains
         zzz(i) = zss
       End Do
 
-    Else If (imcon == 2 .or. imcon == 0) Then ! no PBC box wrapping exception
+    Else If (imcon == IMCON_ORTHORHOMBIC .or. imcon == IMCON_NOPBC) Then ! no PBC box wrapping exception
 
       ! rectangular boundary conditions
 
@@ -2563,7 +2576,7 @@ Contains
         zzz(i) = zss
       End Do
 
-    Else If (imcon == 3) Then
+    Else If (imcon == IMCON_PARALLELOPIPED) Then
 
       ! parallelepiped boundary conditions
 
@@ -2583,7 +2596,7 @@ Contains
         zzz(i) = zss
       End Do
 
-    Else If (imcon == 4) Then
+    Else If (imcon == IMCON_TRUNC_OCTO) Then
 
       ! truncated octahedral boundary conditions
 
@@ -2627,7 +2640,7 @@ Contains
         End If
       End Do
 
-    Else If (imcon == 5) Then
+    Else If (imcon == IMCON_RHOMBIC_DODEC) Then
 
       ! rhombic Dodecahedral boundary conditions
 
@@ -2672,7 +2685,7 @@ Contains
         End If
       End Do
 
-    Else If (imcon == 6) Then
+    Else If (imcon == IMCON_SLAB) Then
 
       ! x-y boundary conditions (SLAB)
 
@@ -2698,7 +2711,7 @@ Contains
         yyy(i) = yss
       End Do ! note zzz remains in real space
 
-    Else If (imcon == 7) Then
+    Else If (imcon == IMCON_HEXAGONAL) Then
 
       ! hexagonal prism boundary conditions
 
@@ -2774,7 +2787,7 @@ Contains
     Integer       :: i
     Real(Kind=wp) :: aaa, bbb, ccc, ddd, xss, yss, zss
 
-    If (imcon == 1) Then
+    If (imcon == IMCON_CUBIC) Then
 
       ! standard cubic boundary conditions
 
@@ -2792,7 +2805,7 @@ Contains
         parts(i)%zzz = cell(1) * zss
       End Do
 
-    Else If (imcon == 2 .or. imcon == 0) Then ! no PBC box wrapping exception
+    Else If (imcon == IMCON_ORTHORHOMBIC .or. imcon == IMCON_NOPBC) Then ! no PBC box wrapping exception
 
       ! rectangular boundary conditions
 
@@ -2810,7 +2823,7 @@ Contains
         parts(i)%zzz = cell(9) * zss
       End Do
 
-    Else If (imcon == 3) Then
+    Else If (imcon == IMCON_PARALLELOPIPED) Then
 
       ! parallelepiped boundary conditions
 
@@ -2828,7 +2841,7 @@ Contains
         parts(i)%zzz = cell(3) * xss + cell(6) * yss + cell(9) * zss
       End Do
 
-    Else If (imcon == 4) Then
+    Else If (imcon == IMCON_TRUNC_OCTO) Then
 
       ! truncated octahedral boundary conditions
 
@@ -2868,7 +2881,7 @@ Contains
         End If
       End Do
 
-    Else If (imcon == 5) Then
+    Else If (imcon == IMCON_RHOMBIC_DODEC) Then
 
       ! rhombic Dodecahedral boundary conditions
 
@@ -2909,7 +2922,7 @@ Contains
         End If
       End Do
 
-    Else If (imcon == 6) Then
+    Else If (imcon == IMCON_SLAB) Then
 
       ! x-y boundary conditions (SLAB)
 
@@ -2924,7 +2937,7 @@ Contains
         parts(i)%yyy = cell(2) * xss + cell(5) * yss
       End Do ! note zzz remains unchanged
 
-    Else If (imcon == 7) Then
+    Else If (imcon == IMCON_HEXAGONAL) Then
 
       ! hexagonal prism boundary conditions
 
@@ -2997,7 +3010,7 @@ Contains
     Integer       :: i
     Real(Kind=wp) :: aaa, bbb, ccc, ddd, xss, yss, zss
 
-    If (imcon == 1) Then
+    If (imcon == IMCON_CUBIC) Then
 
       ! standard cubic boundary conditions
 
@@ -3015,7 +3028,7 @@ Contains
         zzz(i) = cell(1) * zss
       End Do
 
-    Else If (imcon == 2 .or. imcon == 0) Then ! no PBC box wrapping exception
+    Else If (imcon == IMCON_ORTHORHOMBIC .or. imcon == IMCON_NOPBC) Then ! no PBC box wrapping exception
 
       ! rectangular boundary conditions
 
@@ -3033,7 +3046,7 @@ Contains
         zzz(i) = cell(9) * zss
       End Do
 
-    Else If (imcon == 3) Then
+    Else If (imcon == IMCON_PARALLELOPIPED) Then
 
       ! parallelepiped boundary conditions
 
@@ -3051,7 +3064,7 @@ Contains
         zzz(i) = cell(3) * xss + cell(6) * yss + cell(9) * zss
       End Do
 
-    Else If (imcon == 4) Then
+    Else If (imcon == IMCON_TRUNC_OCTO) Then
 
       ! truncated octahedral boundary conditions
 
@@ -3091,7 +3104,7 @@ Contains
         End If
       End Do
 
-    Else If (imcon == 5) Then
+    Else If (imcon == IMCON_RHOMBIC_DODEC) Then
 
       ! rhombic Dodecahedral boundary conditions
 
@@ -3132,7 +3145,7 @@ Contains
         End If
       End Do
 
-    Else If (imcon == 6) Then
+    Else If (imcon == IMCON_SLAB) Then
 
       ! x-y boundary conditions (SLAB)
 
@@ -3147,7 +3160,7 @@ Contains
         yyy(i) = cell(2) * xss + cell(5) * yss
       End Do ! note zzz remains unchanged
 
-    Else If (imcon == 7) Then
+    Else If (imcon == IMCON_HEXAGONAL) Then
 
       ! hexagonal prism boundary conditions
 
