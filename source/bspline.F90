@@ -15,6 +15,7 @@ Module bspline
                              wp
   Use kspace,          Only: kspace_type
 
+  Implicit None
   Private
 
   Public :: bspline_coeffs_gen, bspline_splines_gen
@@ -200,10 +201,10 @@ Contains
     Integer,                                Intent(In   ) :: num_atoms
     Real(Kind=wp), Dimension(3, num_atoms), Intent(In   ) :: recip_coords
     Type(bspline_type),                     Intent(InOut) :: bspline
-
     Integer                     :: i, j, k, l, n, s
     Real(Kind=wp)               :: jm1_r, k_r, km1_rr, sgn
     Real(Kind=wp), Dimension(3) :: current_bspline_centre, current_bspline_point
+    Real(Kind=wp), Dimension(3, 1:bspline%num_splines) :: current_deriv, current_first_deriv
 
 !! Number of atoms to fill
 !! Coordinates of charge centres in reciprocal cell
@@ -221,7 +222,7 @@ Contains
     ! construct B-splines
     ! Zero initial array -- Avoid hassle
     bspline%derivs = 0.0_wp
-    
+
     ! Reversed order of array for memory access efficiency
     Do i = 1, num_atoms
 
@@ -240,17 +241,20 @@ Contains
 
         k_r = real_no(s - k + 1)
         km1_rr = inv_no(s - k)
-
+        current_deriv(:,:) = bspline%derivs(:, 0, :, i)
         Do j = k, s - 1 ! Compute order k B-spline at points {k,k-1,...,1}
 
           jm1_r = real_no(s - j)
           current_bspline_point(:) = current_bspline_centre(:) + jm1_r
 
-          bspline%derivs(:, 0, j, i) = (current_bspline_point(:) * bspline%derivs(:, 0, j, i) &
-            & + (k_r - current_bspline_point(:)) * bspline%derivs(:, 0, j + 1, i)) * km1_rr
+          current_deriv(:, j) = (current_bspline_point(:) * current_deriv(:, j) + &
+               (k_r - current_bspline_point(:)) * current_deriv(:, j + 1)) * km1_rr
+          ! bspline%derivs(:, 0, j, i) = (current_bspline_point(:) * bspline%derivs(:, 0, j, i) &
+          !   & + (k_r - current_bspline_point(:)) * bspline%derivs(:, 0, j + 1, i)) * km1_rr
 
         End Do
 
+        bspline%derivs(:, 0, k:s-1, i) = current_deriv(:, k:s-1)
         bspline%derivs(:, 0, s, i) = bspline%derivs(:, 0, s, i) * current_bspline_centre(:) * km1_rr
       End Do
 
@@ -262,24 +266,28 @@ Contains
         k = l
         k_r = real_no(s - k + 1)
         km1_rr = inv_no(s - k)
+        current_deriv(:,:) = bspline%derivs(:, 0, :, i)
+        current_first_deriv(:,:) = bspline%derivs(:, l, :, i)
 
         Do j = 1, s - 1 !bspline%num_splines,2,-1
 
           ! Derivatives of B-splines with order nospl at k-1 points
           sgn = 1.0_wp
           Do n = 0, Min(l, s - j)
-            bspline%derivs(:, l, j, i) = bspline%derivs(:, l, j, i) + sgn * ncombk(l, n) * bspline%derivs(:, 0, j + n, i)
+            current_first_deriv(:, j) = current_first_deriv(:, j) + sgn * ncombk(l, n) * current_deriv(:, j + n)
             sgn = -sgn
           End Do
 
           ! Generate current point at a lag behind derivs
           jm1_r = real_no(s - j)
           current_bspline_point(:) = current_bspline_centre(:) + jm1_r
-          bspline%derivs(:, 0, j, i) = (current_bspline_point(:) * bspline%derivs(:, 0, j, i) &
-            & + (k_r - current_bspline_point(:)) * bspline%derivs(:, 0, j + 1, i)) * km1_rr
+          current_deriv(:, j) = (current_bspline_point(:) * current_deriv(:, j) &
+            & + (k_r - current_bspline_point(:)) * current_deriv(:, j + 1)) * km1_rr
 
         End Do
 
+        bspline%derivs(:, 0, 1:s-1, i) = current_deriv(:, 1:s-1)
+        bspline%derivs(:, l, 1:s-1, i) = current_first_deriv(:, 1:s-1)
         bspline%derivs(:, l, s, i) = bspline%derivs(:, 0, s, i)
 
         bspline%derivs(:, 0, s, i) = bspline%derivs(:, 0, s, i) * current_bspline_centre(:) * km1_rr

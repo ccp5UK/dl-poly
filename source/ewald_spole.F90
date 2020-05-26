@@ -147,10 +147,10 @@ Contains
         ! Complete prefactor
         prefac = atom_coeffs_i * prefac
 
-        nearest_sample_index = Int(alpha_r * electro%erfc_deriv%recip_spacing)
-        difference = alpha_r * electro%erfc_deriv%recip_spacing - Real(nearest_sample_index, wp)
+        nearest_sample_index = Int(mod_r_ij * electro%erfc_deriv%recip_spacing)
+        difference = mod_r_ij * electro%erfc_deriv%recip_spacing - Real(nearest_sample_index, wp)
         points = electro%erfc_deriv%table(nearest_sample_index:nearest_sample_index + 2)
-        if (nearest_sample_index == 0) points(1) = points(1) * alpha_r
+        if (nearest_sample_index == 0) points(1) = points(1) * mod_r_ij
         temp(1) = points(1) + (points(2) - points(1)) * difference
         temp(2) = points(2) + (points(3) - points(2)) * (difference - 1.0_wp)
         erf_gamma = prefac * (temp(1) + (temp(2) - temp(1)) * difference * 0.5_wp)
@@ -171,10 +171,10 @@ Contains
           End If
 
           ! calculate components of G
-          nearest_sample_index = Int(alpha_r * electro%erfc%recip_spacing)
-          difference = alpha_r * electro%erfc%recip_spacing - Real(nearest_sample_index, wp)
+          nearest_sample_index = Int(mod_r_ij * electro%erfc%recip_spacing)
+          difference = mod_r_ij * electro%erfc%recip_spacing - Real(nearest_sample_index, wp)
           points = electro%erfc%table(nearest_sample_index:nearest_sample_index + 2)
-          if (nearest_sample_index == 0) points(1) = points(1) * alpha_r
+          if (nearest_sample_index == 0) points(1) = points(1) * mod_r_ij
           temp(1) = points(1) + (points(2) - points(1)) * difference
           temp(2) = points(2) + (points(3) - points(2)) * (difference - 1.0_wp)
           erf_gamma = prefac * (temp(1) + (temp(2) - temp(1)) * difference * 0.5_wp)
