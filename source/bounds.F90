@@ -4,7 +4,16 @@ Module bounds
   Use comms,           Only: comms_type
   Use configuration,   Only: configuration_type,&
                              read_config,&
-                             scan_config
+                             scan_config,&
+                             IMCON_NOPBC,&
+                             IMCON_CUBIC,&
+                             IMCON_ORTHORHOMBIC,&
+                             IMCON_PARALLELOPIPED,&
+                             IMCON_SLAB,&
+                             IMCON_TRUNC_OCTO,&
+                             IMCON_RHOMBIC_DODEC,&
+                             IMCON_HEXAGONAL
+
   Use constants,       Only: delr_max,&
                              delth_max,&
                              pi,&
@@ -171,7 +180,9 @@ Contains
     ! halt execution for unsupported image conditions in DD
     ! checks for some inherited from DL_POLY_2 are though kept
 
-    If (config%imcon == 4 .or. config%imcon == 5 .or. config%imcon == 7) Call error(514)
+    If (config%imcon == IMCON_TRUNC_OCTO .or. &
+        config%imcon == IMCON_RHOMBIC_DODEC .or. &
+        config%imcon == IMCON_HEXAGONAL) Call error(514)
 
     ! scan CONTROL file data
 
@@ -184,7 +195,7 @@ Contains
     ! check integrity of cell vectors: for cubic, TO and RD cases
     ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
 
-    If (config%imcon == 1 .or. config%imcon == 4 .or. config%imcon == 5) Then
+    If (config%imcon == IMCON_CUBIC .or. config%imcon == IMCON_TRUNC_OCTO .or. config%imcon == IMCON_RHOMBIC_DODEC) Then
 
       ats = (Abs(config%cell(1)) + Abs(config%cell(5))) / 2.0_wp
       test = 1.0e-10_wp * ats ! 1.0e-10_wp tolerance in primitive cell type specification of dimensions
@@ -194,7 +205,7 @@ Contains
       If (Abs(config%cell(5) - ats) > test) Then
         Call error(410)
       End If
-      If (config%imcon == 5) Then
+      If (config%imcon == IMCON_RHOMBIC_DODEC) Then
         If (Abs(config%cell(9) - ats * rt2) > test) Then
           Call error(410)
         End If
@@ -207,7 +218,7 @@ Contains
 
     ! check integrity of hexagonal prism cell vectors
 
-    If (config%imcon == 7) Then
+    If (config%imcon == IMCON_HEXAGONAL) Then
       ! 1.0e-10_wp Angstrom tolerance in primitive cell type specification of dimensions
       If (Abs(config%cell(1) - rt3 * config%cell(5)) > 1.0e-10_wp) Then
         Call error(410)
@@ -233,14 +244,16 @@ Contains
 
     config%volm = celprp(10)
 
-    If (config%imcon == 4 .or. config%imcon == 5 .or. config%imcon == 7) config%volm = 0.5_wp * config%volm
+    If (config%imcon == IMCON_TRUNC_OCTO .or. &
+        config%imcon == IMCON_RHOMBIC_DODEC .or. &
+        config%imcon == IMCON_HEXAGONAL) config%volm = 0.5_wp * config%volm
 
     ! check value of cutoff and reset if necessary
 
     If (config%imcon > 0) Then
-      If (config%imcon == 4) config%width = rt3 * config%cell(1) / 2.0_wp
-      If (config%imcon == 5) config%width = config%cell(1)
-      If (config%imcon == 6) config%width = Min(celprp(7), celprp(8))
+      If (config%imcon == IMCON_TRUNC_OCTO) config%width = rt3 * config%cell(1) / 2.0_wp
+      If (config%imcon == IMCON_RHOMBIC_DODEC) config%width = config%cell(1)
+      If (config%imcon == IMCON_SLAB) config%width = Min(celprp(7), celprp(8))
 
       ! halt program if potential cutoff exceeds the minimum half-cell config%width
 
@@ -814,9 +827,9 @@ Contains
     ! total link-cells per node/domain is ncells = (ilx+4)*(ily+4)*(ilz+4)
     ! magnify the effect of densvar on neigh%max_cell for different conf%imcon scenarios
 
-    If      (config%imcon == 0) Then
+    If      (config%imcon == IMCON_NOPBC) Then
       neigh%max_cell = Nint((fdvar**4) * Real((ilx + 4) * (ily + 4) * (ilz + 4), wp))
-    Else If (config%imcon == 6 .or. config%imc_n == 6) Then
+    Else If (config%imcon == IMCON_SLAB .or. config%imc_n == IMCON_SLAB) Then
       neigh%max_cell = Nint((fdvar**3) * Real((ilx + 4) * (ily + 4) * (ilz + 4), wp))
     Else
       neigh%max_cell = Nint((fdvar**2) * Real((ilx + 4) * (ily + 4) * (ilz + 4), wp))
@@ -934,7 +947,7 @@ Contains
     ! Create f(fdvar,dens0,dens) function of density push, maximum 'local' density, maximum domains' density
 
     If ((comm%mxnode == 1 .or. Min(ilx, ily, ilz) < 3) .or. &
-        (config%imcon == 0 .or. config%imcon == 6 .or. config%imc_n == 6) .or. &
+        (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB .or. config%imc_n == IMCON_SLAB) .or. &
         (dens / dens0 <= 0.5_wp) .or. (fdvar > 10.0_wp)) Then
       fdens = dens0                                    ! for all possibly bad cases resort to max density
     Else
@@ -974,11 +987,11 @@ Contains
 
     tmp = test * Real((ilx + 3) * (ily + 3) * (ilz + 3) , wp) ; tmp = Merge(tmp , Real(Huge(1) , wp) , tmp < Real(Huge(1) , wp))
     config%mxatms = Max(1 , Nint(tmp)) ! Overestimate & then bound down
-    If (comm%mxnode == 1 .or. config%imcon == 0) Then ! ilx >= 2 && ily >= 2 && ilz >= 2
+    If (comm%mxnode == 1 .or. config%imcon == IMCON_NOPBC) Then ! ilx >= 2 && ily >= 2 && ilz >= 2
       ! maximum of 8 fold increase in of surface thickness (domain+halo) to volume (domain only) as per geometric reasoning
       tmp = 1.25_wp * fdvar * 8.0_wp * Real(megatm , wp) ; tmp = Merge(tmp , Real(Huge(1) , wp) , tmp < Real(Huge(1) , wp))
       config%mxatms = Min(config%mxatms , Nint(tmp))
-    Else If (config%imcon == 6 .or. config%imc_n == 6) Then ! comm%mxnode >= 4 .or. (ilx >= 2 && ily >= 2)
+    Else If (config%imcon == IMCON_SLAB .or. config%imc_n == IMCON_SLAB) Then ! comm%mxnode >= 4 .or. (ilx >= 2 && ily >= 2)
       ! maximum of 7 fold increase in of surface thickness (domain+halo) to volume (domain only) as per geometric reasoning
       tmp = 1.25_wp * fdvar * 7.0_wp * Real(megatm , wp) ; tmp = Merge(tmp , Real(Huge(1) , wp) , tmp < Real(Huge(1) , wp))
       config%mxatms = Min(config%mxatms , Nint(tmp))
@@ -1125,9 +1138,9 @@ Contains
 
       If (ilx < 3 .or. ily < 3 .or. ilz < 3) Call error(305)
 
-      If      (config%imcon == 0) Then
+      If      (config%imcon == IMCON_NOPBC) Then
         neigh%max_cell = Max(neigh%max_cell, Nint((fdvar**4) * Real((ilx + 5) * (ily + 5) * (ilz + 5), wp)))
-      Else If (config%imcon == 6 .or. config%imc_n == 6) Then
+      Else If (config%imcon == IMCON_SLAB .or. config%imc_n == IMCON_SLAB) Then
         neigh%max_cell = Max(neigh%max_cell, Nint((fdvar**3) * Real((ilx + 5) * (ily + 5) * (ilz + 5), wp)))
       Else
         neigh%max_cell = Max(neigh%max_cell, Nint((fdvar**2) * Real((ilx + 5) * (ily + 5) * (ilz + 5), wp)))

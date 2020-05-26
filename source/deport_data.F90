@@ -12,7 +12,15 @@ Module deport_data
                               gsend,&
                               gsum,&
                               gwait
-  Use configuration,    Only: configuration_type
+  Use configuration,    Only: configuration_type,&
+                             IMCON_NOPBC,&
+                             IMCON_CUBIC,&
+                             IMCON_ORTHORHOMBIC,&
+                             IMCON_PARALLELOPIPED,&
+                             IMCON_SLAB,&
+                             IMCON_TRUNC_OCTO,&
+                             IMCON_RHOMBIC_DODEC,&
+                             IMCON_HEXAGONAL
   Use constants,        Only: half_minus,&
                               half_plus
   Use constraints,      Only: constraints_type
@@ -2533,7 +2541,7 @@ Contains
 
     ! rescale mock cell vectors for non-periodic system
 
-    If (config%imcon == 0 .or. config%imcon == 6) Then
+    If (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB) Then
 
       ! find maximum x,y,z positions
 
@@ -2547,7 +2555,7 @@ Contains
 
       Call gmax(comm, big)
 
-      If (config%imcon == 0) Then
+      If (config%imcon == IMCON_NOPBC) Then
 
         config%cell(1) = Max(2.0_wp * big(1) + cut, 3.0_wp * cut, config%cell(1))
         config%cell(5) = Max(2.0_wp * big(2) + cut, 3.0_wp * cut, config%cell(5))
@@ -2560,7 +2568,7 @@ Contains
         config%cell(7) = 0.0_wp
         config%cell(8) = 0.0_wp
 
-      Else If (config%imcon == 6) Then
+      Else If (config%imcon == IMCON_SLAB) Then
 
         config%cell(9) = Max(2.0_wp * big(3) + cut, 3.0_wp * cut, config%cell(9))
 

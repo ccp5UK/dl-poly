@@ -6,7 +6,6 @@ Module poisson
                              gsum,&
                              gtime,&
                              gwait
-  Use configuration,   Only: configuration_type
   Use constants,       Only: fourpi,&
                              half_minus,&
                              r4pie0,&
@@ -21,7 +20,16 @@ Module poisson
   Use numerics,        Only: dcell,&
                              invert
   Use parallel_fft,    Only: adjust_kmax
-
+  Use configuration,   Only : configuration_type,&
+                             IMCON_NOPBC,&
+                             IMCON_CUBIC,&
+                             IMCON_ORTHORHOMBIC,&
+                             IMCON_PARALLELOPIPED,&
+                             IMCON_SLAB,&
+                             IMCON_TRUNC_OCTO,&
+                             IMCON_RHOMBIC_DODEC,&
+                             IMCON_HEXAGONAL
+  Use ewald,           Only : ewald_type
   Implicit None
 
   Private
@@ -147,6 +155,7 @@ Contains
 
     pois%lmap = domain%map
 
+<<<<<<< HEAD
     If (config%imcon == 0 .or. config%imcon == 6) Then
       If (config%imcon == 0) Then
         If (domain%idx == 0) pois%lmap(1) = -1
@@ -158,6 +167,19 @@ Contains
       Else If (config%imcon == 6) Then
         If (domain%idz == 0) pois%lmap(5) = -1
         If (domain%idz == domain%nz - 1) pois%lmap(6) = -1
+=======
+    If (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB) Then
+      If      (config%imcon == IMCON_NOPBC) Then
+        If (domain%idx == 0     ) pois%lmap(1)=-1
+        If (domain%idy == 0     ) pois%lmap(3)=-1
+        If (domain%idz == 0     ) pois%lmap(5)=-1
+        If (domain%idx == domain%nx-1) pois%lmap(2)=-1
+        If (domain%idy == domain%ny-1) pois%lmap(4)=-1
+        If (domain%idz == domain%nz-1) pois%lmap(6)=-1
+      Else If (config%imcon == IMCON_SLAB) Then
+        If (domain%idz == 0     ) pois%lmap(5)=-1
+        If (domain%idz == domain%nz-1) pois%lmap(6)=-1
+>>>>>>> devel
       End If
     End If
 

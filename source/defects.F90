@@ -19,7 +19,15 @@ Module defects
                              gbcast, gcheck, girecv, gmax, grecv, gscatter, gscatter_columns, &
                              gscatterv, gsend, gsum, gsync, gwait, mode_create, mode_rdonly, &
                              mode_wronly, offset_kind
-  Use configuration,   Only: configuration_type
+  Use configuration,   Only: configuration_type,&
+                             IMCON_NOPBC,&
+                             IMCON_CUBIC,&
+                             IMCON_ORTHORHOMBIC,&
+                             IMCON_PARALLELOPIPED,&
+                             IMCON_SLAB,&
+                             IMCON_TRUNC_OCTO,&
+                             IMCON_RHOMBIC_DODEC,&
+                             IMCON_HEXAGONAL
   Use constants,       Only: half_minus,&
                              ndefdt,&
                              nrefdt,&
@@ -482,7 +490,7 @@ Contains
         End If
         megref = config%natms
         Call gsum(comm, megref)
-        If (config%imcon == 0) Call error(552) ! Lattice parameters are a must
+        If (config%imcon == IMCON_NOPBC) Call error(552) ! Lattice parameters are a must
       End If
     End If
 
@@ -3100,4 +3108,5 @@ Contains
       Call error(0, message)
     End If
   End Subroutine defects_write
+
 End Module defects
