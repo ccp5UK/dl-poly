@@ -4,7 +4,15 @@ Module poisson
     gwait,girecv,gtime
   Use domains,         Only : domains_type
   Use constants,           Only : fourpi,r4pie0,half_minus,zero_plus
-  Use configuration,   Only : configuration_type
+  Use configuration,   Only : configuration_type,&
+                             IMCON_NOPBC,&
+                             IMCON_CUBIC,&
+                             IMCON_ORTHORHOMBIC,&
+                             IMCON_PARALLELOPIPED,&
+                             IMCON_SLAB,&
+                             IMCON_TRUNC_OCTO,&
+                             IMCON_RHOMBIC_DODEC,&
+                             IMCON_HEXAGONAL
   Use ewald,           Only : ewald_type
   Use errors_warnings, Only : error,info
   Use numerics,        Only : dcell,invert
@@ -130,15 +138,15 @@ Contains
     Character( Len = 256 ) :: message
     pois%lmap=domain%map
 
-    If (config%imcon == 0 .or. config%imcon == 6) Then
-      If      (config%imcon == 0) Then
+    If (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB) Then
+      If      (config%imcon == IMCON_NOPBC) Then
         If (domain%idx == 0     ) pois%lmap(1)=-1
         If (domain%idy == 0     ) pois%lmap(3)=-1
         If (domain%idz == 0     ) pois%lmap(5)=-1
         If (domain%idx == domain%nx-1) pois%lmap(2)=-1
         If (domain%idy == domain%ny-1) pois%lmap(4)=-1
         If (domain%idz == domain%nz-1) pois%lmap(6)=-1
-      Else If (config%imcon == 6) Then
+      Else If (config%imcon == IMCON_SLAB) Then
         If (domain%idz == 0     ) pois%lmap(5)=-1
         If (domain%idz == domain%nz-1) pois%lmap(6)=-1
       End If
