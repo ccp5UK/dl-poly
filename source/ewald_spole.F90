@@ -139,13 +139,11 @@ Contains
       If (Abs(prefac) > zero_plus .and. mod_r_ij < neigh%cutoff) Then
 
         pos_j = [x_pos(m), y_pos(m), z_pos(m)]
-        alpha_r = mod_r_ij * alpha
 
         ! Complete prefactor
         prefac = atom_coeffs_i * prefac
 
-
-        erf_gamma = prefac * electro%erfc_deriv%calc(alpha_r)
+        erf_gamma = prefac * electro%erfc_deriv%calc(mod_r_ij)
 
         ! calculate forces ( dU * r/||r|| )
 
@@ -162,7 +160,7 @@ Contains
           End If
 
           ! calculate components of G
-          e_comp = prefac * electro%erfc%calc(alpha_r)
+          e_comp = prefac * electro%erfc%calc(mod_r_ij)
 
           ! calculate interaction energy
           engcpe_rl = engcpe_rl + e_comp
@@ -236,6 +234,10 @@ Contains
                                    mod_r_ij, prefac
     Real(Kind=wp), Dimension(9) :: stress_temp, stress_temp_comp
     Real(Kind=wp), Dimension(3) :: force_temp, force_temp_comp, pos_j
+    Integer                     :: nearest_sample_index
+    Real(Kind=wp)               :: difference
+    Real(Kind=wp), Dimension(2) :: temp
+    Real(Kind=wp), Dimension(3) :: points
 
 !! Current atom
 !! Atoms positions (neighbours, not global) and inter-particle separations
@@ -290,11 +292,27 @@ Contains
         prefac = atom_coeffs_i * prefac * inv_mod_r_ij
 
         ! calculate components of G
-        e_comp = prefac * electro%erfc%calc(alpha_r) ! electro%
+        nearest_sample_index = Int(alpha_r * electro%erfc%recip_spacing)
+        difference = alpha_r * electro%erfc%recip_spacing - Real(nearest_sample_index, wp)
+        points = electro%erfc%table(nearest_sample_index:nearest_sample_index + 2)
+        if (nearest_sample_index == 0) points(1) = points(1) * alpha_r
+
+        temp(1) = points(1) + (points(2) - points(1)) * difference
+        temp(2) = points(2) + (points(3) - points(2)) * (difference - 1.0_wp)
+        e_comp = prefac * (temp(1) + (temp(2) - temp(1)) * difference * 0.5_wp)
+        ! e_comp = prefac  * electro%erfc%calc(alpha_r)
 
         ! Because function is g_p(ar)/(r^n)
         ! => -n*(g/r^(n + 1) + a(dg/dr))
-        erf_gamma = (e_comp * inv_mod_r_ij + prefac * alpha * electro%erfc_deriv%calc(alpha_r)) !2.0_wp*rsqrpi*alpha*exp(-(alpha_r**2)) )
+        ! calculate components of G
+        nearest_sample_index = Int(alpha_r * electro%erfc_deriv%recip_spacing)
+        difference = alpha_r * electro%erfc_deriv%recip_spacing - Real(nearest_sample_index, wp)
+        points = electro%erfc_deriv%table(nearest_sample_index:nearest_sample_index + 2)
+        if (nearest_sample_index == 0) points(1) = points(1) * alpha_r
+        temp(1) = points(1) + (points(2) - points(1)) * difference
+        temp(2) = points(2) + (points(3) - points(2)) * (difference - 1.0_wp)
+        erf_gamma = (e_comp * inv_mod_r_ij + prefac * alpha * (temp(1) + (temp(2) - temp(1)) * difference * 0.5_wp))
+        !erf_gamma = (e_comp * inv_mod_r_ij + prefac * alpha * electro%erfc_deriv%calc(alpha_r)) !2.0_wp*rsqrpi*alpha*exp(-(alpha_r**2)) )
 
         ! calculate forces ( dU * r/||r|| )
 
@@ -318,8 +336,14 @@ Contains
           vircpe_rl = vircpe_rl - erf_gamma * mod_r_ij
 
           ! calculate stress tensor
-          stress_temp_comp = calculate_stress(pos_j, force_temp_comp)
-          stress_temp = stress_temp + stress_temp_comp
+          stress_temp(1) = stress_temp(1) + pos_j(1) * force_temp_comp(1)
+          stress_temp(2) = stress_temp(2) + pos_j(1) * force_temp_comp(2)
+          stress_temp(3) = stress_temp(3) + pos_j(1) * force_temp_comp(3)
+          stress_temp(4) = stress_temp(4) + pos_j(2) * force_temp_comp(2)
+          stress_temp(5) = stress_temp(5) + pos_j(2) * force_temp_comp(3)
+          stress_temp(6) = stress_temp(6) + pos_j(3) * force_temp_comp(3)
+          ! stress_temp_comp = calculate_stress(pos_j, force_temp_comp)
+          ! stress_temp = stress_temp + stress_temp_comp
 
         End If
 
@@ -344,8 +368,16 @@ Contains
     config%parts(iatm)%fzz = config%parts(iatm)%fzz + force_temp(3)
 
     ! complete stress tensor
-
-    stats%stress = stats%stress + stress_temp
+    stats%stress(1) = stats%stress(1) + stress_temp(1)
+    stats%stress(2) = stats%stress(2) + stress_temp(2)
+    stats%stress(3) = stats%stress(3) + stress_temp(3)
+    stats%stress(4) = stats%stress(4) + stress_temp(2)
+    stats%stress(5) = stats%stress(5) + stress_temp(4)
+    stats%stress(6) = stats%stress(6) + stress_temp(5)
+    stats%stress(7) = stats%stress(7) + stress_temp(3)
+    stats%stress(8) = stats%stress(8) + stress_temp(5)
+    stats%stress(9) = stats%stress(9) + stress_temp(6)
+    ! stats%stress = stats%stress + stress_temp
 
   End Subroutine ewald_real_forces_coul
 

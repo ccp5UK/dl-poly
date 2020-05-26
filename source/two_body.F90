@@ -162,8 +162,7 @@ Contains
       Allocate (coul_coeffs(config%mxatms), stat=fail)
       If (fail > 0) Call error_alloc('coul_coeffs', 'two_body_forces')
       coul_coeffs = config%parts(:)%chge
-
-      If (ewld%direct) Then
+      If (.not. ewld%direct) Then
         Call electro%erfcgen(neigh%cutoff, ewld%alpha)
       Else
         Call electro%erfc%init(ewld%alpha * neigh%cutoff, calc_erfc)
@@ -457,8 +456,13 @@ Contains
 
               ! calculate coulombic forces, Ewald sum - real space contribution
 
-              Call ewald_real_forces_coul(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
-                   & i, xxt, yyt, zzt, rrt, engacc, viracc)
+              If (ewld%direct) Then
+                Call ewald_real_forces_coul(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
+                     & i, xxt, yyt, zzt, rrt, engacc, viracc)
+              Else
+                Call ewald_real_forces_coul_tab(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
+                     & i, xxt, yyt, zzt, rrt, engacc, viracc)
+              End If
 
               engcpe_rl = engcpe_rl + engacc
               vircpe_rl = vircpe_rl + viracc

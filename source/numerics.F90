@@ -117,7 +117,6 @@ Module numerics
 
   Type, Public :: interp_table
     !> Interpolation table for use with three_p_interp
-    Private
 
     Real(Kind=wp), Dimension(:), Allocatable, Public :: table
     Real(Kind=wp), Public :: end_sample
@@ -232,7 +231,7 @@ Contains
 
   End Subroutine init_interp_table
 
-  Function three_p_interp(samples, point)
+  Pure Function three_p_interp(samples, point)
     !!----------------------------------------------------------------------!
     !!
     !! dl_poly_4 routine to calculate 3 point interpolation of points
@@ -241,8 +240,9 @@ Contains
     !! author    - w.smith & i.t.todorov august 2015
     !! functionalised - j.s.wilkins august 2018
     !!----------------------------------------------------------------------!
-    Class(interp_table) :: samples
-    Real(Kind=wp)       :: point, three_p_interp
+    Class(interp_table), Intent( In    ) :: samples
+    Real(Kind=wp),       Intent( In    ) :: point
+    Real(Kind=wp)  ::three_p_interp
 
     Integer                     :: nearest_sample_index
     Real(Kind=wp)               :: difference
@@ -258,8 +258,8 @@ Contains
 !! Index of closest sample
 
     nearest_sample_index = Int(point * samples%recip_spacing)
-    If (nearest_sample_index > samples%nsamples - 2 .or. nearest_sample_index < 0) &
-      & Call error(0, 'Error - Interpolation beyond table limit in three_p_interp')
+    ! If (nearest_sample_index > samples%nsamples - 2 .or. nearest_sample_index < 0) &
+    !   & Call error(0, 'Error - Interpolation beyond table limit in three_p_interp')
 
     difference = point * samples%recip_spacing - Real(nearest_sample_index, wp)
     points = samples%table(nearest_sample_index:nearest_sample_index + 2)
