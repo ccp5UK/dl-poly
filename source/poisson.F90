@@ -155,19 +155,6 @@ Contains
 
     pois%lmap = domain%map
 
-<<<<<<< HEAD
-    If (config%imcon == 0 .or. config%imcon == 6) Then
-      If (config%imcon == 0) Then
-        If (domain%idx == 0) pois%lmap(1) = -1
-        If (domain%idy == 0) pois%lmap(3) = -1
-        If (domain%idz == 0) pois%lmap(5) = -1
-        If (domain%idx == domain%nx - 1) pois%lmap(2) = -1
-        If (domain%idy == domain%ny - 1) pois%lmap(4) = -1
-        If (domain%idz == domain%nz - 1) pois%lmap(6) = -1
-      Else If (config%imcon == 6) Then
-        If (domain%idz == 0) pois%lmap(5) = -1
-        If (domain%idz == domain%nz - 1) pois%lmap(6) = -1
-=======
     If (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB) Then
       If      (config%imcon == IMCON_NOPBC) Then
         If (domain%idx == 0     ) pois%lmap(1)=-1
@@ -179,7 +166,6 @@ Contains
       Else If (config%imcon == IMCON_SLAB) Then
         If (domain%idz == 0     ) pois%lmap(5)=-1
         If (domain%idz == domain%nz-1) pois%lmap(6)=-1
->>>>>>> devel
       End If
     End If
 
