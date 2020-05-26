@@ -177,7 +177,7 @@ Contains
           if (nearest_sample_index == 0) points(1) = points(1) * mod_r_ij
           temp(1) = points(1) + (points(2) - points(1)) * difference
           temp(2) = points(2) + (points(3) - points(2)) * (difference - 1.0_wp)
-          erf_gamma = prefac * (temp(1) + (temp(2) - temp(1)) * difference * 0.5_wp)
+          e_comp = prefac * (temp(1) + (temp(2) - temp(1)) * difference * 0.5_wp)
 
           !e_comp = prefac * electro%erfc%calc(mod_r_ij)
 
