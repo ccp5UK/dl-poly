@@ -182,7 +182,7 @@ Contains
           !e_comp = prefac * electro%erfc%calc(mod_r_ij)
 
           ! calculate interaction energy
-          engcpe_rl = engcpe_rl + erf_gamma
+          engcpe_rl = engcpe_rl + e_comp
           ! calculate virial ( F.r )
 
           vircpe_rl = vircpe_rl - erf_gamma * mod_r_ij**2
