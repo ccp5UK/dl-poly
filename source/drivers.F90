@@ -298,7 +298,7 @@ Contains
       Call refresh_mappings(cnfig, flow, cshell, cons, pmf, stat, msd_data, bond, angle, &
                             dihedral, inversion, tether, neigh, sites, mpoles, rigid, &
                             domain, kim_data, ewld, green, &
-                            minim, thermo, electro, crd, comm)
+                            minim, thermo, electro, crd, comm, tmr)
     End If
 
     100 Continue ! Only used when relaxed is false
@@ -479,7 +479,7 @@ Contains
         Call refresh_mappings(cnfig, flow, cshell, cons, pmf, stat, msd_data, bond, angle, &
                               dihedral, inversion, tether, neigh, sites, mpoles, rigid, domain, &
                               kim_data, ewld, green, minim, thermo, &
-                              electro, crd, comm)
+                              electro, crd, comm, tmr)
         Go To 100
       End If
     End If
@@ -532,7 +532,7 @@ Contains
   Subroutine refresh_mappings(cnfig, flow, cshell, cons, pmf, stat, msd_data, bond, angle, &
                               dihedral, inversion, tether, neigh, sites, mpoles, rigid, domain, &
                               kim_data, ewld, green, minim, thermo, &
-                              electro, crd, comm)
+                              electro, crd, comm, tmr)
     Type(configuration_type), Intent(InOut) :: cnfig
     Type(flow_type),          Intent(InOut) :: flow
     Type(core_shell_type),    Intent(InOut) :: cshell
@@ -558,8 +558,12 @@ Contains
     Type(electrostatic_type), Intent(InOut) :: electro
     Type(coord_type),         Intent(InOut) :: crd
     Type(comms_type),         Intent(InOut) :: comm
+    Type(timer_type),         Intent(InOut) :: tmr
 
     !!!!!!!!!!!!!!!!!!  W_REFRESH_MAPPINGS INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
+#ifdef CHRONO
+    Call start_timer(tmr, 'Refresh Mappings')
+#endif
 
     ! Scale t=0 reference positions
 
@@ -603,6 +607,9 @@ Contains
       Call mpoles_rotmat_set_halo(mpoles, domain, cnfig, comm)
     End If
 
+#ifdef CHRONO
+    Call stop_timer(tmr, 'Refresh Mappings')
+#endif
     !!!!!!!!!!!!!!!!!!  W_REFRESH_MAPPINGS INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
   End Subroutine refresh_mappings
@@ -1575,7 +1582,7 @@ Contains
 
         Call refresh_mappings(cnfig, flow, cshell, cons, pmf, stat, msd_data, bond, angle, &
                               dihedral, inversion, tether, neigh, sites, mpoles, rigid, domain, kim_data, ewld, green, minim, &
-                              thermo, electro, crd, comm)
+                              thermo, electro, crd, comm, tmr)
 
       End If ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
 
