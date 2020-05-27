@@ -80,7 +80,6 @@ Module development
     Real(Kind=wp), Public :: r_dis = 0.5_wp
     !> Devel start time
     Real(Kind=wp), Public :: t_zero
-
     !> Unit testing
     Logical, Public :: run_unit_tests = .false.
     Type(testing_type), Public :: unit_test
