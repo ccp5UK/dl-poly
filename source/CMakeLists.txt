@@ -68,6 +68,7 @@ set(dlpoly_SRCS
   kspace.F90
   spme.F90
   ewald_spole.F90
+  ewald_general.F90
 #  ewald_mpole.F90
   inversions.F90
   metal.F90

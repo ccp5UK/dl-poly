@@ -43,13 +43,18 @@ Module ewald_spole
   Use timer,           Only: start_timer,&
                              stop_timer,&
                              timer_type
-
+  Use constants,       Only: rsqrpi
+  Use ewald_general,   Only: spme_construct_potential_grid_gen,&
+                             spme_calc_stress,&
+                             spme_calc_force_energy,&
+                             spme_construct_charge_array,&
+                             stress_kernel
   Implicit None
 
   Private
 
-  Public ::  ewald_real_forces_coul_tab, ewald_real_forces_coul, ewald_real_forces_gen
-  Public ::  ewald_spme_forces
+  Public ::  ewald_real_forces_coul
+  Public ::  ewald_spme_forces_coul
   Public ::  ewald_excl_forces, ewald_frzn_forces
 
   !> Temp X,Y,Z Scaled Coords (U/mu)
@@ -61,13 +66,13 @@ Module ewald_spole
 
 Contains
 
-  Subroutine ewald_real_forces_coul_tab(electro, alpha, spme_datum, neigh, config, stats, iatm, x_pos, y_pos, z_pos, mod_dr_ij, &
+  Subroutine ewald_real_forces_coul(electro, alpha, spme_datum, neigh, config, stats, iatm, x_pos, y_pos, z_pos, mod_dr_ij, &
     & engcpe_rl, vircpe_rl)
 
     !!-----------------------------------------------------------------------
     !!
     !! dl_poly_4 subroutine for calculating coulombic energy and force terms
-    !! in a periodic system using tabulated erfs for ewald's method
+    !! in a periodic system using tabulated pots for ewald's method
     !!
     !! note: Real space terms
     !!
@@ -232,338 +237,9 @@ Contains
     stats%stress(9) = stats%stress(9) + stress_temp(6)
     ! stats%stress = stats%stress + stress_temp
 
-  End Subroutine ewald_real_forces_coul_tab
-
-  Subroutine ewald_real_forces_coul(electro, alpha, spme_datum, neigh, config, stats, iatm, x_pos, y_pos, z_pos, mod_dr_ij, &
-    & engcpe_rl, vircpe_rl)
-
-    !!-----------------------------------------------------------------------
-    !!
-    !! dl_poly_4 subroutine for calculating coulombic energy and force terms
-    !! in a periodic system using ewald's method
-    !!
-    !! note: Real space terms
-    !!
-    !! copyright - daresbury laboratory
-    !! author    - w.smith august 1998
-    !! amended   - i.t.todorov april 2015
-    !! amended   - j. wilkins september 2018
-    !!
-    !!-----------------------------------------------------------------------
-    Use constants, Only: rsqrpi
-    Type(electrostatic_type),                   Intent(In   ) :: electro
-    Real(Kind=wp),                              Intent(In   ) :: alpha
-    Type(spme_component),                       Intent(In   ) :: spme_datum
-    Type(neighbours_type),                      Intent(In   ) :: neigh
-    Type(configuration_type),                   Intent(InOut) :: config
-    Type(stats_type),                           Intent(InOut) :: stats
-    Integer,                                    Intent(In   ) :: iatm
-    Real(Kind=wp), Dimension(1:neigh%max_list), Intent(In   ) :: x_pos, y_pos, z_pos, mod_dr_ij
-    Real(Kind=wp),                              Intent(  Out) :: engcpe_rl, vircpe_rl
-
-    Integer                     :: global_id_i, global_id_j, jatm, m
-    Real(Kind=wp)               :: alpha_r, atom_coeffs_i, e_comp, erf_gamma, inv_mod_r_ij, &
-                                   mod_r_ij, prefac
-    Real(Kind=wp), Dimension(9) :: stress_temp, stress_temp_comp
-    Real(Kind=wp), Dimension(3) :: force_temp, force_temp_comp, pos_j
-    Integer                     :: nearest_sample_index
-    Real(Kind=wp)               :: difference
-    Real(Kind=wp), Dimension(2) :: temp
-    Real(Kind=wp), Dimension(3) :: points
-
-!! Current atom
-!! Atoms positions (neighbours, not global) and inter-particle separations
-!! Energy and virial for the Real component
-!! Type containing stress and per-particle info
-!! Atom storage of coeffs !!Dimension(size(coeffs,1))
-!! Tempeorary stress tensor
-!! Temporary force vectors
-!! Position of ion j
-!! g_p & d/dr[g_p]
-!! Q*g_p
-!! Coeffs*inv_mod_r_ij**n
-!! Inter-particle distances
-
-    ! initialise accumulators
-
-    engcpe_rl = 0.0_wp
-    vircpe_rl = 0.0_wp
-    stress_temp = 0.0_wp
-    force_temp = 0.0_wp
-
-    ! global identity of iatm
-
-    global_id_i = config%ltg(iatm)
-
-    atom_coeffs_i = config%parts(iatm)%chge * spme_datum%scaling
-
-    ! ignore interaction if the coeffs or scaling are zero
-    If (Abs(atom_coeffs_i) < zero_plus) Return
-
-    ! start of primary loop for forces evaluation
-
-    Do m = 1, neigh%list(0, iatm)
-
-      ! atomic index and charge
-
-      jatm = neigh%list(m, iatm)
-      global_id_j = config%ltg(jatm)
-
-      ! interatomic distance
-      mod_r_ij = mod_dr_ij(m)
-      prefac = config%parts(jatm)%chge
-
-      ! interaction validity and truncation of potential
-      If (Abs(prefac) > zero_plus .and. mod_r_ij < neigh%cutoff) Then
-
-        pos_j = [x_pos(m), y_pos(m), z_pos(m)]
-        alpha_r = mod_r_ij * alpha
-        inv_mod_r_ij = 1.0_wp / mod_r_ij
-
-        ! Complete prefactor
-        prefac = atom_coeffs_i * prefac * inv_mod_r_ij
-
-        ! calculate components of G
-        nearest_sample_index = Int(alpha_r * electro%erfc%recip_spacing)
-        difference = alpha_r * electro%erfc%recip_spacing - Real(nearest_sample_index, wp)
-        points = electro%erfc%table(nearest_sample_index:nearest_sample_index + 2)
-        if (nearest_sample_index == 0) points(1) = points(1) * alpha_r
-
-        temp(1) = points(1) + (points(2) - points(1)) * difference
-        temp(2) = points(2) + (points(3) - points(2)) * (difference - 1.0_wp)
-        e_comp = prefac * (temp(1) + (temp(2) - temp(1)) * difference * 0.5_wp)
-        ! e_comp = prefac  * electro%erfc%calc(alpha_r)
-
-        ! Because function is g_p(ar)/(r^n)
-        ! => -n*(g/r^(n + 1) + a(dg/dr))
-        ! calculate components of G
-        nearest_sample_index = Int(alpha_r * electro%erfc_deriv%recip_spacing)
-        difference = alpha_r * electro%erfc_deriv%recip_spacing - Real(nearest_sample_index, wp)
-        points = electro%erfc_deriv%table(nearest_sample_index:nearest_sample_index + 2)
-        if (nearest_sample_index == 0) points(1) = points(1) * alpha_r
-        temp(1) = points(1) + (points(2) - points(1)) * difference
-        temp(2) = points(2) + (points(3) - points(2)) * (difference - 1.0_wp)
-        erf_gamma = (e_comp * inv_mod_r_ij + prefac * alpha * (temp(1) + (temp(2) - temp(1)) * difference * 0.5_wp))
-        !erf_gamma = (e_comp * inv_mod_r_ij + prefac * alpha * electro%erfc_deriv%calc(alpha_r)) !2.0_wp*rsqrpi*alpha*exp(-(alpha_r**2)) )
-
-        ! calculate forces ( dU * r/||r|| )
-
-        force_temp_comp = erf_gamma * pos_j * inv_mod_r_ij
-        force_temp = force_temp + force_temp_comp
-
-        If (jatm <= config%natms .or. global_id_i < global_id_j) Then
-          If (jatm <= config%natms) Then
-
-            config%parts(jatm)%fxx = config%parts(jatm)%fxx - force_temp_comp(1)
-            config%parts(jatm)%fyy = config%parts(jatm)%fyy - force_temp_comp(2)
-            config%parts(jatm)%fzz = config%parts(jatm)%fzz - force_temp_comp(3)
-
-          End If
-
-          ! calculate interaction energy
-          engcpe_rl = engcpe_rl + e_comp
-
-          ! calculate virial ( F.r )
-
-          vircpe_rl = vircpe_rl - erf_gamma * mod_r_ij
-
-          ! calculate stress tensor
-          stress_temp(1) = stress_temp(1) + pos_j(1) * force_temp_comp(1)
-          stress_temp(2) = stress_temp(2) + pos_j(1) * force_temp_comp(2)
-          stress_temp(3) = stress_temp(3) + pos_j(1) * force_temp_comp(3)
-          stress_temp(4) = stress_temp(4) + pos_j(2) * force_temp_comp(2)
-          stress_temp(5) = stress_temp(5) + pos_j(2) * force_temp_comp(3)
-          stress_temp(6) = stress_temp(6) + pos_j(3) * force_temp_comp(3)
-          ! stress_temp_comp = calculate_stress(pos_j, force_temp_comp)
-          ! stress_temp = stress_temp + stress_temp_comp
-
-        End If
-
-        If (stats%collect_pp) Then
-          stress_temp_comp = calculate_stress(pos_j, force_temp_comp)
-          stats%pp_energy(iatm) = stats%pp_energy(iatm) + e_comp * 0.5_wp
-          stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
-          If (jatm <= config%natms) Then
-            stats%pp_energy(jatm) = stats%pp_energy(jatm) + e_comp * 0.5_wp
-            stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
-          End If
-        End If
-
-      End If
-
-    End Do
-
-    ! load back forces
-
-    config%parts(iatm)%fxx = config%parts(iatm)%fxx + force_temp(1)
-    config%parts(iatm)%fyy = config%parts(iatm)%fyy + force_temp(2)
-    config%parts(iatm)%fzz = config%parts(iatm)%fzz + force_temp(3)
-
-    ! complete stress tensor
-    stats%stress(1) = stats%stress(1) + stress_temp(1)
-    stats%stress(2) = stats%stress(2) + stress_temp(2)
-    stats%stress(3) = stats%stress(3) + stress_temp(3)
-    stats%stress(4) = stats%stress(4) + stress_temp(2)
-    stats%stress(5) = stats%stress(5) + stress_temp(4)
-    stats%stress(6) = stats%stress(6) + stress_temp(5)
-    stats%stress(7) = stats%stress(7) + stress_temp(3)
-    stats%stress(8) = stats%stress(8) + stress_temp(5)
-    stats%stress(9) = stats%stress(9) + stress_temp(6)
-    ! stats%stress = stats%stress + stress_temp
-
   End Subroutine ewald_real_forces_coul
 
-  Subroutine ewald_real_forces_gen(alpha, spme_datum, neigh, config, stats, coeffs, iatm, x_pos, y_pos, z_pos, mod_dr_ij, &
-    & engcpe_rl, vircpe_rl)
-
-    !!-----------------------------------------------------------------------
-    !!
-    !! dl_poly_4 subroutine for calculating coulombic energy and force terms
-    !! in a periodic system using ewald's method
-    !!
-    !! note: Real space terms
-    !!
-    !! copyright - daresbury laboratory
-    !! author    - w.smith august 1998
-    !! amended   - i.t.todorov april 2015
-    !! amended   - j. wilkins september 2018
-    !!
-    !!-----------------------------------------------------------------------
-    ! use spme, only : g_p, g_p_d
-
-    Real(Kind=wp),                              Intent(In   ) :: alpha
-    Type(spme_component),                       Intent(In   ) :: spme_datum
-    Type(neighbours_type),                      Intent(In   ) :: neigh
-    Type(configuration_type),                   Intent(InOut) :: config
-    Type(stats_type),                           Intent(InOut) :: stats
-    Real(Kind=wp), Dimension(:),                Intent(In   ) :: coeffs
-    Integer,                                    Intent(In   ) :: iatm
-    Real(Kind=wp), Dimension(1:neigh%max_list), Intent(In   ) :: x_pos, y_pos, z_pos, mod_dr_ij
-    Real(Kind=wp),                              Intent(  Out) :: engcpe_rl, vircpe_rl
-
-    Integer                     :: global_id_i, global_id_j, jatm, m
-    Real(Kind=wp)               :: alpha_r, atom_coeffs_i, e_comp, erf_gamma, g_fac, inv_mod_r_ij, &
-                                   mod_r_ij, prefac
-    Real(Kind=wp), Dimension(9) :: stress_temp, stress_temp_comp
-    Real(Kind=wp), Dimension(3) :: force_temp, force_temp_comp, pos_j
-
-!! Current atom
-!! Coulomb charges/ multipole coeffs, etc.
-!! Atoms positions (neighbours, not global) and inter-particle separations
-!! Energy and virial for the Real component
-!! Type containing stress and per-particle info
-!! Atom storage of coeffs !!Dimension(size(coeffs,1))
-!! Tempeorary stress tensor
-!! Temporary force vectors
-!! Position of ion j
-!! g_p & d/dr[g_p]
-!! Q*g_p
-!! Coeffs*inv_mod_r_ij**n
-!! Inter-particle distances
-
-    ! initialise accumulators
-
-    engcpe_rl = 0.0_wp
-    vircpe_rl = 0.0_wp
-    stress_temp = 0.0_wp
-    force_temp = 0.0_wp
-
-    ! global identity of iatm
-
-    global_id_i = config%ltg(iatm)
-
-    atom_coeffs_i = coeffs(iatm) * spme_datum%scaling
-
-    ! ignore interaction if the coeffs or scaling are zero
-    If (Abs(atom_coeffs_i) < zero_plus) Return
-
-    ! start of primary loop for forces evaluation
-
-    Do m = 1, neigh%list(0, iatm)
-
-      ! atomic index and charge
-
-      jatm = neigh%list(m, iatm)
-      global_id_j = config%ltg(jatm)
-
-      ! interatomic distance
-      mod_r_ij = mod_dr_ij(m)
-      prefac = coeffs(jatm)
-
-      ! interaction validity and truncation of potential
-      If (Abs(prefac) > zero_plus .and. mod_r_ij < neigh%cutoff) Then
-
-        pos_j = [x_pos(m), y_pos(m), z_pos(m)]
-        alpha_r = mod_r_ij * alpha
-        inv_mod_r_ij = 1.0_wp / mod_r_ij
-
-        ! Complete prefactor
-        prefac = atom_coeffs_i * prefac * inv_mod_r_ij**spme_datum%pot_order
-
-        ! calculate components of G
-        g_fac = g_p(alpha_r, spme_datum%pot_order)
-
-        e_comp = prefac * g_fac
-
-        ! Because function is g_p(ar)/(r^n)
-        ! => -n*(g/r^(n + 1) + a(dg/dr))
-        erf_gamma = prefac * (g_p_d(alpha_r, spme_datum%pot_order) * alpha + &
-          & spme_datum%pot_order * g_fac * inv_mod_r_ij)
-
-        ! calculate forces ( dU * r/||r|| )
-
-        force_temp_comp = erf_gamma * pos_j * inv_mod_r_ij
-        force_temp = force_temp + force_temp_comp
-
-        If (jatm <= config%natms .or. global_id_i < config%ltg(jatm)) Then
-          If (jatm <= config%natms) Then
-
-            config%parts(jatm)%fxx = config%parts(jatm)%fxx - force_temp_comp(1)
-            config%parts(jatm)%fyy = config%parts(jatm)%fyy - force_temp_comp(2)
-            config%parts(jatm)%fzz = config%parts(jatm)%fzz - force_temp_comp(3)
-
-          End If
-
-          ! calculate interaction energy
-          engcpe_rl = engcpe_rl + e_comp
-
-          ! calculate virial ( F.r )
-
-          vircpe_rl = vircpe_rl - erf_gamma * mod_r_ij
-
-          ! calculate stress tensor
-          stress_temp_comp = calculate_stress(pos_j, force_temp_comp)
-          stress_temp = stress_temp + stress_temp_comp
-
-        End If
-
-        If (stats%collect_pp) Then
-          stress_temp_comp = calculate_stress(pos_j, force_temp_comp)
-          stats%pp_energy(iatm) = stats%pp_energy(iatm) + e_comp * 0.5_wp
-          stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
-          If (jatm <= config%natms) Then
-            stats%pp_energy(jatm) = stats%pp_energy(jatm) + e_comp * 0.5_wp
-            stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
-          End If
-        End If
-
-      End If
-
-    End Do
-
-    ! load back forces
-
-    config%parts(iatm)%fxx = config%parts(iatm)%fxx + force_temp(1)
-    config%parts(iatm)%fyy = config%parts(iatm)%fyy + force_temp(2)
-    config%parts(iatm)%fzz = config%parts(iatm)%fzz + force_temp(3)
-
-    ! complete stress tensor
-
-    stats%stress = stats%stress + stress_temp
-
-  End Subroutine ewald_real_forces_gen
-
-  Subroutine ewald_spme_forces(ewld, spme_datum, electro, domain, config, comm, coeffs, stats, &
+  Subroutine ewald_spme_forces_coul(ewld, spme_datum, electro, domain, config, comm, coeffs, stats, &
     & engcpe_rc, vircpe_rc, tmr)
     !!----------------------------------------------------------------------!
     !!
@@ -624,7 +300,6 @@ Contains
 !! Stress
 !! Ierr
 
-    Call start_timer(tmr, 'Setup')
 
     If (Any(Abs(coeffs) > zero_plus)) Then
       Continue
@@ -676,7 +351,6 @@ Contains
 
     Call invert(config%cell, rcell, det)
     If (Abs(det) < 1.0e-6_wp) Call error(120)
-    Call stop_timer(tmr, 'Setup')
 
     ! convert cell coordinates to fractional coordinates intervalled [0,1)
     ! (bottom left corner of md cell) and stretch over kmaxs in different
@@ -693,7 +367,6 @@ Contains
     ! (1:natms) particle can enter the halo and vice versa.  so dd
     ! bounding is unsafe!!!
 
-    Call start_timer(tmr, 'Recip')
     llspl = .true.
     Do i = 1, config%nlast
       Do dim = 1, 3
@@ -720,9 +393,6 @@ Contains
 
     recip_indices = Int(recip_coords)
 
-    Call stop_timer(tmr, 'Recip')
-
-    Call start_timer(tmr, 'BSpline')
     ! check for breakage of llspl when .not.llvnl = (ewld%bspline%num_spline_pad == ewld%bspline)
 
     ewld%bspline%num_spline_padded = ewld%bspline%num_spline_pad
@@ -738,29 +408,20 @@ Contains
 
     Deallocate (recip_coords, stat=fail(1))
     If (fail(1) > 0) Call error_dealloc('recip_coords', 'ewald_spme_forces')
-    Call stop_timer(tmr, 'BSpline')
 
-    Call start_timer(tmr, 'Charge')
     Call spme_construct_charge_array(to_calc(0), ewld, to_calc(1:), recip_indices, electro, coeffs, charge_grid)
-    Call stop_timer(tmr, 'Charge')
 
     If (.not. stats%collect_pp .or. spme_datum%pot_order /= 1) Then
 
       ! If we don't need per-particle data, we can use the old method of getting the stress (cheaper)
-      Call start_timer(tmr, 'Potential')
-      Call spme_construct_potential_grid(ewld, rcell, charge_grid, spme_datum, &
-        & potential_kernel, potential_grid, s_abc(:, 0))
-      Call stop_timer(tmr, 'Potential')
-      Call start_timer(tmr, 'ForceEnergy')
+      Call spme_construct_potential_grid_coul(ewld, rcell, charge_grid, potential_grid, s_abc(:, 0))
       Call spme_calc_force_energy(ewld, electro, comm, domain, config, coeffs, &
         & rcell, recip_indices, potential_grid, stats%collect_pp, q_abc, f_abc)
-      Call stop_timer(tmr, 'ForceEnergy')
 
     Else
 
-      Call spme_construct_potential_grid(ewld, rcell, charge_grid, spme_datum, &
-        & potential_kernel, potential_grid)
-      Call spme_construct_potential_grid(ewld, rcell, charge_grid, spme_datum, &
+      Call spme_construct_potential_grid_coul(ewld, rcell, charge_grid, potential_grid)
+      Call spme_construct_potential_grid_gen(ewld, rcell, charge_grid, spme_datum, &
         & stress_kernel, stress_grid)
 
       Call spme_calc_force_energy(ewld, electro, comm, domain, config, coeffs, &
@@ -769,8 +430,6 @@ Contains
         & rcell, recip_indices, stress_grid, s_abc)
 
     End If
-
-    Call start_timer(tmr, 'Output')
 
     ! Rescale to real space
     q_abc = q_abc * scale
@@ -818,9 +477,8 @@ Contains
     Deallocate (to_calc, stat=fail(3))
     Deallocate (Q_abc, F_abc, S_abc, stat=fail(4))
     If (Any(fail > 0)) Call error_dealloc('output_arrays', 'ewald_spme_forces')
-    Call stop_timer(tmr, 'Output')
 
-  End Subroutine ewald_spme_forces
+  End Subroutine ewald_spme_forces_coul
 
   Subroutine ewald_excl_forces(iatm,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex,stress, &
       neigh,ewld,spme_datum,config)
@@ -1648,69 +1306,7 @@ Contains
 
   End Subroutine ewald_spme_init
 
-  Subroutine spme_construct_charge_array(ncalc, ewld, lookup_array, recip_indices, electro, &
-    & coeffs, charge_grid)
-
-    !!----------------------------------------------------------------------!
-    !!
-    !! dl_poly_4 routine to construct the charge array for SPME calculations
-    !!
-    !! copyright - daresbury laboratory
-    !! author    - j.s.wilkins & i.t.todorov & i.j.bush august 2018
-    !!
-    !!----------------------------------------------------------------------!
-
-    Integer,                           Intent(In   ) :: ncalc
-    Type(ewald_type),                  Intent(In   ) :: ewld
-    Integer, Dimension(:),             Intent(In   ) :: lookup_array
-    Integer, Dimension(:, :),          Intent(In   ) :: recip_indices
-    Type(electrostatic_type),          Intent(In   ) :: electro
-    Real(Kind=wp), Dimension(:),       Intent(In   ) :: coeffs
-    Real(Kind=wp), Dimension(:, :, :), Intent(  Out) :: charge_grid
-
-    Integer               :: atm, i, j, j_hi, j_lo, k, k_hi, k_lo, l, l_hi, l_lo
-    Integer, Dimension(3) :: temp
-    Real(Kind=wp)         :: atom_coeffs
-
-    charge_grid = 0.0_wp
-
-    ! construct 3d charge array
-    ! daft version - use array that holds only the local data
-
-    atom: Do atm = 1, ncalc
-
-      i = lookup_array(atm)
-      ! if a particle is charged and in the md cell or in its positive halo
-      ! (t(i) >= 0) as the b-splines are negative directionally by propagation
-
-      j_lo = Max(1, recip_indices(1, i) - ewld%kspace%domain_indices(1, 1) - ewld%bspline%num_splines + 3)
-      k_lo = Max(1, recip_indices(2, i) - ewld%kspace%domain_indices(2, 1) - ewld%bspline%num_splines + 3)
-      l_lo = Max(1, recip_indices(3, i) - ewld%kspace%domain_indices(3, 1) - ewld%bspline%num_splines + 3)
-      j_hi = Min(ewld%kspace%domain_indices(1, 2), recip_indices(1, i) + 1) - ewld%kspace%domain_indices(1, 1) + 1
-      k_hi = Min(ewld%kspace%domain_indices(2, 2), recip_indices(2, i) + 1) - ewld%kspace%domain_indices(2, 1) + 1
-      l_hi = Min(ewld%kspace%domain_indices(3, 2), recip_indices(3, i) + 1) - ewld%kspace%domain_indices(3, 1) + 1
-
-      temp = recip_indices(:, i) - ewld%bspline%num_splines - ewld%kspace%domain_indices(:, 1) + 2
-
-      atom_coeffs = coeffs(i)
-
-      Do l = l_lo, l_hi
-        Do k = k_lo, k_hi
-          Do j = j_lo, j_hi
-            charge_grid(j, k, l) = charge_grid(j, k, l) + atom_coeffs * &
-              & ewld%bspline%derivs(1, 0, j - temp(1), i) * &
-              & ewld%bspline%derivs(2, 0, k - temp(2), i) * &
-              & ewld%bspline%derivs(3, 0, l - temp(3), i)
-          End Do
-        End Do
-      End Do
-
-    End Do atom
-
-  End Subroutine spme_construct_charge_array
-
-  Subroutine spme_construct_potential_grid(ewld, recip_cell, charge_grid, spme_datum, &
-    & kernel, potential_grid, stress_contrib)
+  Subroutine spme_construct_potential_grid_coul(ewld, recip_cell, charge_grid, potential_grid, stress_contrib)
 
     !!----------------------------------------------------------------------!
     !!
@@ -1729,8 +1325,6 @@ Contains
     Type(ewald_type),                      Intent(In   ) :: ewld
     Real(Kind=wp), Dimension(9),           Intent(In   ) :: recip_cell
     Real(Kind=wp), Dimension(:, :, :),     Intent(In   ) :: charge_grid
-    Type(spme_component),                  Intent(In   ) :: spme_datum
-    Complex(Kind=wp), External                           :: kernel
     Complex(Kind=wp), Dimension(:, :, :),  Intent(  Out) :: potential_grid
     Real(Kind=wp), Dimension(9), Optional, Intent(  Out) :: stress_contrib
 
@@ -1740,6 +1334,7 @@ Contains
                                       pressure_virial, recip_conv_fac
     Real(Kind=wp), Dimension(10)   :: recip_cell_properties
     Real(Kind=wp), Dimension(3, 3) :: recip_pos, stress_temp
+    Real(Kind=wp) :: test_fac
 !! SPME contribution to the stress
 !! Reciprocal lattice vectors
 !! Core function to FT
@@ -1756,8 +1351,8 @@ Contains
 !! Contribution to the potential
 !! Virial contribution to the pressure
 
-    recip_conv_fac = 1.0_wp / ewld%alpha
-
+    recip_conv_fac = pi / ewld%alpha
+    test_fac = (1.0e-6_wp / recip_conv_fac)**2 ! f_p_fac > 1e-6
     ! set reciprocal space cutoff
 
     Call dcell(recip_cell, recip_cell_properties)
@@ -1809,25 +1404,25 @@ Contains
 
           k_vec_2 = Dot_product(recip_pos(:, 1), recip_pos(:, 1))
 
-          If (k_vec_2 <= cut_off_2) Then
+          If (k_vec_2 <= cut_off_2 .and. k_vec_2 > test_fac) Then
 
             m = Sqrt(k_vec_2)
-            f_p_fac = pi * Sqrt(k_vec_2) * recip_conv_fac
+            f_p_fac = Sqrt(k_vec_2) * recip_conv_fac
 
-            potential_component = kernel(bb1, potential_grid(j_local, k_local, l_local), &
-              & f_p_fac, ewld%alpha, spme_datum%pot_order)
+            potential_component = bb1 * potential_grid(j_local, k_local, l_local) * &
+                 & Exp(-(f_p_fac**2)) / (sqrpi * f_p_fac**2)
 
             ! By L'Hopital's rule, m=0 does not contribute to stress
             If (Present(stress_contrib) .and. k_vec_2 > 1.0e-6_wp) Then
 
-              pressure_virial = Real(stress_kernel(bb1, potential_grid(j_local, k_local, l_local), &
-                & f_p_fac, ewld%alpha, spme_datum%pot_order)  &
-                & * Conjg(potential_grid(j_local, k_local, l_local)), wp) * pi * recip_conv_fac
+              pressure_virial = Real(potential_component * &
+                   (-2.0_wp * ((1.0_wp + f_p_fac**2)/k_vec_2)) * &
+                   Conjg(potential_grid(j_local, k_local, l_local)), wp)
 
               Do alpha = 1, 3
                 Do beta = 1, 3
                   stress_temp(beta, alpha) = stress_temp(beta, alpha) + &
-                    & recip_pos(alpha, 1) * recip_pos(beta, 1) * pressure_virial
+                       & recip_pos(alpha, 1) * recip_pos(beta, 1) * pressure_virial
                 End Do
               End Do
             End If
@@ -1845,567 +1440,6 @@ Contains
 
     Call pfft(potential_grid, pfft_work, ewld%kspace%context, -1)
 
-  End Subroutine spme_construct_potential_grid
-
-  Subroutine spme_calc_force_energy(ewld, electro, comm, domain, config, coeffs, recip_cell, &
-    & recip_indices, potential_grid, per_part_step, energies, forces)
-    !!----------------------------------------------------------------------!
-    !!
-    !! dl_poly_4 routine to calculate the per-particle energy and force
-    !! contributions from the SPME Coulombic potential
-    !!
-    !! copyright - daresbury laboratory
-    !! author    - j.s.wilkins august 2018
-    !!
-    !!----------------------------------------------------------------------!
-    Use comms, Only: gsum
-    Use domains, Only: exchange_grid
-    Type(ewald_type),                     Intent(In   ) :: ewld
-    Type(electrostatic_type),             Intent(In   ) :: electro
-    Type(comms_type),                     Intent(inout) :: comm
-    Type(domains_type),                   Intent(In   ) :: domain
-    Type(configuration_type),             Intent(In   ) :: config
-    Real(Kind=wp), Dimension(:),          Intent(In   ) :: coeffs
-    Real(Kind=wp), Dimension(9),          Intent(In   ) :: recip_cell
-    Integer, Dimension(:, :),             Intent(In   ) :: recip_indices
-    Complex(Kind=wp), Allocatable, Dimension(:, :, :), Intent(In   ) :: potential_grid
-    Logical,                              Intent(In   ) :: per_part_step
-    Real(Kind=wp), Dimension(0:),         Intent(  Out) :: energies
-    Real(Kind=wp), Dimension(:, :),       Intent(  Out) :: forces
-
-    Character(Len=256)                                   :: message
-    Integer                                              :: fail, i, j, jj, k, kk, l, ll
-    Integer, Dimension(3, 2), Save                       :: extended_domain
-    Integer, Save                                        :: mxspl2_old = -1
-    Real(Kind=wp)                                        :: atom_coeffs, energy_total
-    Real(Kind=wp), Allocatable, Dimension(:, :, :), Save :: extended_potential_grid
-    Real(Kind=wp), Dimension(1:2)                        :: energy_temp
-    Real(Kind=wp), Dimension(3)                          :: curr_force_temp, force_total, &
-                                                            recip_kmax
-    Real(Kind=wp), Dimension(3, 1:3)                     :: force_temp
-    Real(Kind=wp), Dimension(3, 3)                       :: recip_cell_mat
-    Real(Kind=wp), Dimension(ewld%bspline%num_splines)   :: bspline_d0_x, bspline_d0_y, &
-                                                            bspline_d0_z, bspline_d1_x, &
-                                                            bspline_d1_y, bspline_d1_z
-
-!! List of per-particle energy contributions
-!! Per-particle forces
-!! Grid containing back FT'd potential
-!! Coefficients such as charges or potential
-!! Reciprocal lattice vectors
-!! Reciprocal grid locations of charge centres
-!! Whether to perform per-particle measurements
-!! Grid with extended halo splines
-!! Temporary energy components
-!! Total sum of atomic energy
-!! Temporary matrix used in force calculation
-!! Total sum of all forces
-!! Temporary force vec
-!! In matrix form
-!! Size of extended grid with halo splines
-
-    recip_cell_mat = Reshape(recip_cell, [3, 3])
-    recip_kmax = Matmul(recip_cell_mat, ewld%kspace%k_vec_dim_real)
-
-    ! Exchange grid
-    If (ewld%bspline%num_spline_padded .ne. mxspl2_old) Then
-      mxspl2_old = ewld%bspline%num_spline_padded
-      extended_domain(:, 1) = ewld%kspace%domain_indices(:, 1) - ewld%bspline%num_spline_padded
-      extended_domain(:, 2) = ewld%kspace%domain_indices(:, 2) + ewld%bspline%num_spline_padded &
-        & - ewld%bspline%num_splines
-
-      If (Allocated(extended_potential_grid)) Then
-        Deallocate (extended_potential_grid, stat=fail)
-        If (fail /= 0) Call error_dealloc('extended_potential_grid', 'spme_calc_force_energy')
-      End If
-
-      Allocate (extended_potential_grid( &
-        & extended_domain(1, 1):extended_domain(1, 2), &
-        & extended_domain(2, 1):extended_domain(2, 2), &
-        & extended_domain(3, 1):extended_domain(3, 2)), stat=fail)
-      If (fail /= 0) Call error_alloc('extended_potential_grid', 'spme_calc_force_energy')
-    End If
-
-    Call exchange_grid(potential_grid, ewld%kspace%domain_indices(:,1), ewld%kspace%domain_indices(:,2), &
-      & extended_potential_grid, extended_domain(:,1), extended_domain(:,2), domain, comm)
-
-    If (Any(Minval(recip_indices(:, 1:config%natms), dim=2) + 2 - ewld%bspline%num_splines < extended_domain(:, 1)) .or. &
-        Any(Maxval(recip_indices(:, 1:config%natms), dim=2) + 1 > extended_domain(:, 2))) Then
-      Write (message, '(A)') 'Atoms beyond box bounds, unstable system'
-      Call error(0, message)
-    End If
-
-    ! Zero accumulators, energies and forces
-    energies(0) = 0.0_wp
-    forces = 0.0_wp
-    force_total = 0.0_wp
-
-    ! Calculate per-particle contributions
-    atom: Do i = 1, config%natms
-
-      energy_total = 0.0_wp
-      curr_force_temp = 0.0_wp
-      atom_coeffs = coeffs(i)
-
-      bspline_d0_x = ewld%bspline%derivs(1, 0, :, i)
-      bspline_d0_y = ewld%bspline%derivs(2, 0, :, i)
-      bspline_d0_z = ewld%bspline%derivs(3, 0, :, i)
-
-      bspline_d1_x = ewld%bspline%derivs(1, 1, :, i)
-      bspline_d1_y = ewld%bspline%derivs(2, 1, :, i)
-      bspline_d1_z = ewld%bspline%derivs(3, 1, :, i)
-
-      Do l = 1, ewld%bspline%num_splines
-        ll = recip_indices(3, i) + 1 - ewld%bspline%num_splines + l
-
-        energy_temp(2) = atom_coeffs * bspline_d0_z(l)
-
-        force_temp(1, 3) = atom_coeffs * bspline_d0_z(l)
-        force_temp(2, 3) = atom_coeffs * bspline_d0_z(l)
-        force_temp(3, 3) = atom_coeffs * bspline_d1_z(l)
-
-        Do k = 1, ewld%bspline%num_splines
-          kk = recip_indices(2, i) + 1 - ewld%bspline%num_splines + k
-
-          energy_temp(1) = energy_temp(2) * bspline_d0_y(k)
-
-          force_temp(1, 2) = force_temp(1, 3) * bspline_d0_y(k)
-          force_temp(2, 2) = force_temp(2, 3) * bspline_d1_y(k)
-          force_temp(3, 2) = force_temp(3, 3) * bspline_d0_y(k)
-
-          Do j = 1, ewld%bspline%num_splines
-            jj = recip_indices(1, i) + 1 - ewld%bspline%num_splines + j
-
-            force_temp(1, 1) = force_temp(1, 2) * bspline_d1_x(j) * extended_potential_grid(jj, kk, ll) * recip_kmax(1)
-            force_temp(2, 1) = force_temp(2, 2) * bspline_d0_x(j) * extended_potential_grid(jj, kk, ll) * recip_kmax(2)
-            force_temp(3, 1) = force_temp(3, 2) * bspline_d0_x(j) * extended_potential_grid(jj, kk, ll) * recip_kmax(3)
-
-            ! Sum force contributions
-            force_total = force_total - force_temp(:, 1)
-            curr_force_temp = curr_force_temp + force_temp(:, 1)
-            ! energy_total now holds omega_j * 2piV
-            energy_total = energy_total + energy_temp(1) * bspline_d0_x(j) * extended_potential_grid(jj, kk, ll)
-
-          End Do
-        End Do
-      End Do
-
-      ! Add to total accumulators
-      energies(0) = energies(0) + energy_total
-      If (per_part_step) energies(i) = energy_total
-      forces(:, i) = forces(:, i) - curr_force_temp
-
-    End Do atom
-
-    ! Correct for CoM term
-    Call gsum(comm, force_total)
-
-    force_total = force_total / Real(config%megatm, wp)
-    ! Remove CoM
-    Do i = 1, config%natms
-      forces(:, i) = (forces(:, i) - force_total)
-    End Do
-
-  End Subroutine spme_calc_force_energy
-
-  Subroutine spme_calc_stress(ewld, electro, comm, domain, config, coeffs, &
-    & recip_cell, recip_indices, stress_grid, stress_out)
-    !!----------------------------------------------------------------------!
-    !!
-    !! dl_poly_4 routine to calculate the per-particle energy and force
-    !! contributions from the SPME Coulombic potential
-    !!
-    !! copyright - daresbury laboratory
-    !! author    - j.s.wilkins august 2018
-    !!
-    !!----------------------------------------------------------------------!
-    Use comms, Only: gsum
-    Use constants, Only: twopi
-    Use domains, Only: exchange_grid
-    Type(ewald_type),                     Intent(In   ) :: ewld
-    Type(electrostatic_type),             Intent(In   ) :: electro
-    Type(comms_type),                     Intent(inout) :: comm
-    Type(domains_type),                   Intent(In   ) :: domain
-    Type(configuration_type),             Intent(In   ) :: config
-    Real(Kind=wp), Dimension(:),          Intent(In   ) :: coeffs
-    Real(Kind=wp), Dimension(9),          Intent(In   ) :: recip_cell
-    Integer, Dimension(:, :),             Intent(In   ) :: recip_indices
-    Complex(Kind=wp), Dimension(:, :, :), Intent(In   ) :: stress_grid
-    Real(Kind=wp), Dimension(:, 0:),      Intent(  Out) :: stress_out
-
-    Integer                                              :: alpha, beta, fail, i, j, jj, k, kk, l, &
-                                                            ll
-    Integer, Dimension(3, 2), Save                       :: extended_domain
-    Integer, Save                                        :: mxspl2_old = -1
-    Real(Kind=wp)                                        :: atom_coeffs, c_fac
-    Real(Kind=wp), Allocatable, Dimension(:, :, :), Save :: extended_stress_grid
-    Real(Kind=wp), Dimension(3)                          :: recip_kmax
-    Real(Kind=wp), Dimension(3, 3)                       :: recip_cell_mat
-    Real(Kind=wp), Dimension(3, 3, 0:3)                  :: stress_temp
-    Real(Kind=wp), Dimension(ewld%bspline%num_splines)   :: bspline_d0_x, bspline_d0_y, &
-                                                            bspline_d0_z, bspline_d1_x, &
-                                                            bspline_d1_y, bspline_d1_z, &
-                                                            bspline_d2_x, bspline_d2_y, &
-                                                            bspline_d2_z
-
-!! Output stress
-!! Grid containing back FT'd stress_contrib
-!! Coefficients such as charges or potentials
-!! Reciprocal lattice vectors
-!! Reciprocal grid locations of charge centres
-!! Grid with extended halo splines
-!! Diag, off-diag
-!! In matrix form
-!! Size of extended grid with halo splines
-
-    recip_cell_mat = Reshape(recip_cell, [3, 3])
-    recip_kmax = Matmul(recip_cell_mat, ewld%kspace%k_vec_dim_real)
-
-    c_fac = 2.0_wp * twopi * ewld%alpha
-    c_fac = 1.0_wp / c_fac
-
-    ! Exchange grid
-    If (ewld%bspline%num_spline_padded .ne. mxspl2_old) Then
-      mxspl2_old = ewld%bspline%num_spline_padded
-      extended_domain(:, 1) = ewld%kspace%domain_indices(:, 1) - ewld%bspline%num_spline_padded
-      extended_domain(:, 2) = ewld%kspace%domain_indices(:, 2) + ewld%bspline%num_spline_padded &
-        & - ewld%bspline%num_splines
-
-      If (Allocated(extended_stress_grid)) Then
-        Deallocate (extended_stress_grid, stat=fail)
-        If (fail /= 0) Call error_dealloc('extended_stress_grid', 'spme_calc_stress')
-      End If
-      Allocate (extended_stress_grid( &
-        & extended_domain(1, 1):extended_domain(1, 2), &
-        & extended_domain(2, 1):extended_domain(2, 2), &
-        & extended_domain(3, 1):extended_domain(3, 2)), stat=fail)
-      If (fail /= 0) Call error_alloc('extended_stress_grid', 'spme_calc_stress')
-    End If
-
-    Call exchange_grid(stress_grid, ewld%kspace%domain_indices(:,1), ewld%kspace%domain_indices(:,2), &
-      & extended_stress_grid, extended_domain(:,1), extended_domain(:,2), domain, comm)
-
-    ! Zero accumulator
-    stress_out(:, 0) = 0.0_wp
-
-    ! Calculate per-particle contributions
-    atom: Do i = 1, config%natms
-
-      stress_temp = 0.0_wp
-      atom_coeffs = coeffs(i)
-
-      bspline_d0_x = ewld%bspline%derivs(1, 0, :, i)
-      bspline_d0_y = ewld%bspline%derivs(2, 0, :, i)
-      bspline_d0_z = ewld%bspline%derivs(3, 0, :, i)
-
-      bspline_d1_x = ewld%bspline%derivs(1, 1, :, i)
-      bspline_d1_y = ewld%bspline%derivs(2, 1, :, i)
-      bspline_d1_z = ewld%bspline%derivs(3, 1, :, i)
-
-      bspline_d2_x = ewld%bspline%derivs(1, 2, :, i)
-      bspline_d2_y = ewld%bspline%derivs(2, 2, :, i)
-      bspline_d2_z = ewld%bspline%derivs(3, 2, :, i)
-
-      Do l = 1, ewld%bspline%num_splines
-        ll = recip_indices(3, i) + 1 - ewld%bspline%num_splines + l
-
-        stress_temp(1, 1, 3) = atom_coeffs * bspline_d0_z(l)
-        stress_temp(2, 1, 3) = atom_coeffs * bspline_d0_z(l)
-        stress_temp(3, 1, 3) = atom_coeffs * bspline_d1_z(l)
-        stress_temp(2, 2, 3) = atom_coeffs * bspline_d0_z(l)
-        stress_temp(3, 2, 3) = atom_coeffs * bspline_d1_z(l)
-        stress_temp(3, 3, 3) = atom_coeffs * bspline_d2_z(l)
-
-        Do k = 1, ewld%bspline%num_splines
-          kk = recip_indices(2, i) + 1 - ewld%bspline%num_splines + k
-
-          stress_temp(1, 1, 2) = stress_temp(1, 1, 3) * bspline_d0_y(k)
-          stress_temp(2, 1, 2) = stress_temp(2, 1, 3) * bspline_d1_y(k)
-          stress_temp(3, 1, 2) = stress_temp(3, 1, 3) * bspline_d0_y(k)
-          stress_temp(2, 2, 2) = stress_temp(2, 2, 3) * bspline_d2_y(k)
-          stress_temp(3, 2, 2) = stress_temp(3, 2, 3) * bspline_d1_y(k)
-          stress_temp(3, 3, 2) = stress_temp(3, 3, 3) * bspline_d0_y(k)
-
-          Do j = 1, ewld%bspline%num_splines
-            jj = recip_indices(1, i) + 1 - ewld%bspline%num_splines + j
-
-            stress_temp(1, 1, 1) = stress_temp(1, 1, 2) * bspline_d2_x(j) * extended_stress_grid(jj, kk, ll)
-            stress_temp(2, 1, 1) = stress_temp(2, 1, 2) * bspline_d1_x(j) * extended_stress_grid(jj, kk, ll)
-            stress_temp(3, 1, 1) = stress_temp(3, 1, 2) * bspline_d1_x(j) * extended_stress_grid(jj, kk, ll)
-            stress_temp(2, 2, 1) = stress_temp(2, 2, 2) * bspline_d0_x(j) * extended_stress_grid(jj, kk, ll)
-            stress_temp(3, 2, 1) = stress_temp(3, 2, 2) * bspline_d0_x(j) * extended_stress_grid(jj, kk, ll)
-            stress_temp(3, 3, 1) = stress_temp(3, 3, 2) * bspline_d0_x(j) * extended_stress_grid(jj, kk, ll)
-
-            Do beta = 1, 3
-              Do alpha = beta, 3
-                stress_temp(alpha, beta, 0) = stress_temp(alpha, beta, 0) - &
-                  & (stress_temp(alpha, beta, 1) * recip_kmax(alpha) * recip_kmax(beta) * c_fac)
-              End Do
-            End Do
-
-          End Do
-        End Do
-      End Do
-
-      stress_temp(1, 2, 0) = stress_temp(2, 1, 0)
-      stress_temp(1, 3, 0) = stress_temp(3, 1, 0)
-      stress_temp(2, 3, 0) = stress_temp(3, 2, 0)
-
-      stress_out(:, 0) = stress_out(:, 0) + Reshape(stress_temp(:, :, 0), [9])
-      stress_out(:, i) = Reshape(stress_temp(:, :, 0), [9])
-
-    End Do atom
-  End Subroutine spme_calc_stress
-
-!!! Kernels
-
-  Function potential_kernel(B_m, pot, pi_m_over_a, conv_factor, pot_order)
-    !!----------------------------------------------------------------------!
-    !!
-    !! Kernel for calculating energy and forces for SPME method
-    !!
-    !! copyright - daresbury laboratory
-    !! author    - j.s.wilkins august 2018
-    !!
-    !!----------------------------------------------------------------------!
-    ! use spme,      only : f_p
-    Real(Kind=wp)    :: B_m
-    Complex(Kind=wp) :: pot
-    Real(Kind=wp)    :: pi_m_over_a, conv_factor
-    Integer          :: pot_order
-    Complex(Kind=wp) :: potential_kernel
-
-    potential_kernel = B_m * pot * f_p(pi_m_over_a, pot_order)
-
-  End Function potential_kernel
-
-  Function stress_kernel(B_m, pot, pi_m_over_a, conv_factor, pot_order)
-    !!----------------------------------------------------------------------!
-    !!
-    !! Kernel for calculating energy and forces for SPME method
-    !!
-    !! copyright - daresbury laboratory
-    !! author    - j.s.wilkins august 2018
-    !!
-    !!----------------------------------------------------------------------!
-    ! use spme,      only : f_p, f_p_d
-    Use constants, Only: pi
-    Real(Kind=wp)    :: B_m
-    Complex(Kind=wp) :: pot
-    Real(Kind=wp)    :: pi_m_over_a, conv_factor
-    Integer          :: pot_order
-    Complex(Kind=wp) :: stress_kernel
-
-    Real(Kind=wp) :: energy
-
-    If (pi_m_over_a > 1.0e-6) Then
-      energy = f_p(pi_m_over_a, pot_order)
-      ! (            1/m              )
-      stress_kernel = B_m * pot * f_p_d(pi_m_over_a, energy, pot_order) * pi / pi_m_over_a / conv_factor
-    Else
-      stress_kernel = (0.0_wp, 0.0_wp)
-    End If
-  End Function stress_kernel
-
-  Pure Function f_p(x, pot_order)
-    !!----------------------------------------------------------------------!
-    !!
-    !! Nth order f_p for SPME method -- assume pot_order <= 0 handled elsewhere
-    !!
-    !! copyright - daresbury laboratory
-    !! author    - j.s.wilkins november 2018
-    !! based on  - i.j.bush igf.f90 november 2018
-    !!----------------------------------------------------------------------!
-    Use constants, Only: sqrpi
-    Use numerics, Only: calc_erfc, calc_exp_int, calc_inv_gamma_1_2
-    Use spme, Only: f_1, f_2, f_4, f_6, f_12
-    Real(kind=wp), Intent(In   ) :: x
-    Integer,       Intent(In   ) :: pot_order
-    Real(kind=wp)                :: f_p
-
-    Integer       :: curr_pot_order, p_work
-    Real(kind=wp) :: base_integ, curr_xp, exp_xsq, x_2, x_fac, xp
-
-    Select Case (pot_order)
-    Case (1)
-      If (x > 1.0e-6_wp) Then
-        f_p = f_1(x)
-      Else
-        f_p = 0.0_wp
-      End If
-
-    Case (2)
-      If (x > 1.0e-6_wp) Then
-        f_p = f_2(x)
-      Else
-        f_p = 0.0_wp
-      End If
-    Case (4)
-      f_p = f_4(x)
-    Case (6)
-      f_p = f_6(x)
-    Case (12)
-      f_p = f_12(x)
-
-    Case default
-
-      x_2 = x**2
-      exp_xsq = Exp(-x_2)
-      p_work = 2 - pot_order
-
-      If (Mod(p_work, 2) == 0) Then
-        ! even integrals base is I( 0, x )
-        base_integ = 0.5_wp * sqrpi * calc_erfc(x)
-        curr_pot_order = 0
-        xp = 1.0_wp
-      Else
-        If (p_work > 0) Then
-          ! positive odd integrals base is I( 1, x )
-          base_integ = 0.5_wp * exp_xsq
-          curr_pot_order = 1
-          xp = x
-        Else
-          ! negative odd integrals, base is I( -1, x ), which is 0.5 * E1( x * x )
-          ! where e1 is the first order exponential integral
-          base_integ = -0.5_wp * calc_exp_int(-x_2)
-          curr_pot_order = -1
-          xp = 1.0_wp / x
-        End If
-      End If
-
-      f_p = base_integ
-
-      If (curr_pot_order == p_work) Then
-        If (x < 1.0e-6_wp) Then
-          f_p = 0.0_wp ! if p < 3 && x is small
-          Return
-        End If
-
-        Continue
-      Else If (curr_pot_order > p_work) Then
-        ! recurse down
-        x_fac = 1.0_wp / x_2
-        curr_xp = xp / x
-        Do curr_pot_order = curr_pot_order, p_work + 1, -2
-          ! f_p = 2.0_wp * ( f_p - 0.5_wp * x**(curr_pot_order - 1) * exp_xsq ) / real( curr_pot_order - 1, wp )
-          f_p = 2.0_wp * (f_p - 0.5_wp * curr_xp * exp_xsq) / Real(curr_pot_order - 1, wp)
-          curr_xp = curr_xp * x_fac
-        End Do
-      Else
-        ! recurse up
-        x_fac = x_2
-        curr_xp = xp * x
-        Do curr_pot_order = curr_pot_order, p_work - 1, 2
-          ! not tested !!!!! 5/11/18
-          ! f_p = 0.5_wp * x ** ( p_now + 1 ) ) * exp_xsq + 0.5_wp * ( curr_pot_order + 1 ) * f_p
-          f_p = 0.5_wp * (curr_xp * exp_xsq + Real(curr_pot_order + 1, wp) * f_p)
-          curr_xp = curr_xp * x_fac
-        End Do
-      End If
-
-      f_p = 2.0_wp * x**(pot_order - 3) * calc_inv_gamma_1_2(pot_order) * f_p
-    End Select
-
-  End Function f_p
-
-  Pure Function f_p_d(x, energy, pot_order)
-    !!----------------------------------------------------------------------!
-    !!
-    !! Derivative of the general f_p for SPME method
-    !!
-    !! copyright - daresbury laboratory
-    !! author    - j.s.wilkins august 2018
-    !!
-    !!----------------------------------------------------------------------!
-    Use constants, Only: inv_gamma_1_2
-    Real(Kind=wp), Intent(In) :: x, energy
-    Integer, Intent(In)       :: pot_order
-    Real(Kind=wp) :: f_p_d
-
-    f_p_d = (Real(pot_order - 3, wp) / x * energy) - ((2.0_wp / x) * inv_gamma_1_2(pot_order) * Exp(-(x**2)))
-
-  End Function f_p_d
-
-  Pure Function g_p(x, pot_order)
-    !!----------------------------------------------------------------------!
-    !!
-    !! General g_p for SPME method -- assume pot_order <= 0 handled elsewhere
-    !!
-    !! copyright - daresbury laboratory
-    !! author    - j.s.wilkins august 2018
-    !!
-    !!----------------------------------------------------------------------!
-    Use constants, Only: rsqrpi
-    Use numerics, Only: factorial
-    Use spme, Only: g_1, g_2, g_6, g_12
-    Real(Kind=wp), Intent(In   ) :: x
-    Integer,       Intent(In   ) :: pot_order
-    Real(Kind=wp)                :: g_p
-
-    Integer       :: i
-    Real(Kind=wp) :: den, num, x_2, x_curr
-
-    Select Case (pot_order)
-    Case (1)
-      g_p = g_1(x)
-    Case (2)
-      g_p = g_2(x)
-    Case (6)
-      g_p = g_6(x)
-    Case (12)
-      g_p = g_12(x)
-    Case default
-
-      x_2 = x**2
-
-      If (Mod(pot_order, 2) == 0) Then !Even orders
-
-        g_p = 0.0_wp
-        Do i = 0, (pot_order / 2) - 1
-          g_p = g_p + Exp(-factorial(i)) * x_2**i
-        End Do
-
-        g_p = g_p * Exp(-x_2)
-
-      Else ! Odd orders
-
-        x_curr = x
-        g_p = 0.0_wp
-        den = 1.0_wp
-        num = 1.0_wp
-
-        Do i = 1, pot_order - 1, 2
-          num = 2.0_wp * num
-          den = den / Real(i, wp)
-          g_p = g_p + x_curr * num * den
-          x_curr = x_curr * x_2
-        End Do
-        g_p = g_p * Exp(-x_2) * rsqrpi
-        g_p = g_p + calc_erfc(x)
-
-      End If
-
-      g_p = g_p
-    End Select
-
-  End Function g_p
-
-  Function g_p_d(x, pot_order)
-    !!----------------------------------------------------------------------!
-    !!
-    !! Derivative of the general g_p for SPME method
-    !!
-    !! copyright - daresbury laboratory
-    !! author    - j.s.wilkins august 2018
-    !!
-    !!----------------------------------------------------------------------!
-    Use constants, Only: inv_gamma_1_2
-    Real(Kind=wp), Intent(In   ) :: x
-    Integer,       Intent(In   ) :: pot_order
-    Real(Kind=wp)                :: g_p_d
-
-    g_p_d = 2.0_wp * inv_gamma_1_2(pot_order) * x**(pot_order - 1) * Exp(-x**2)
-
-  End Function g_p_d
+  End Subroutine spme_construct_potential_grid_coul
 
 End Module ewald_spole

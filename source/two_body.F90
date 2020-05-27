@@ -32,9 +32,9 @@ Module two_body
                              ewald_vdw_init
   Use ewald_spole,     Only: ewald_excl_forces,&
                              ewald_real_forces_coul,&
-                             ewald_real_forces_coul_tab,&
-                             ewald_real_forces_gen,&
-                             ewald_spme_forces
+                             ewald_spme_forces_coul
+  Use ewald_general,   Only: ewald_real_forces_gen,&
+                             ewald_spme_forces_gen
   Use kim,             Only: kim_energy_and_forces,&
                              kim_type
   Use kinds,           Only: wp
@@ -293,7 +293,7 @@ Contains
 
     If (electro%key == ELECTROSTATIC_EWALD) Then
 
-      Call ewald_spme_forces(ewld, ewld%spme_data(0), electro, domain, config, comm, &
+      Call ewald_spme_forces_coul(ewld, ewld%spme_data(0), electro, domain, config, comm, &
         & coul_coeffs, stats, engcpe_rc, vircpe_rc, tmr)
 
     End If
@@ -304,7 +304,7 @@ Contains
 #endif
       Do ipot = 1, ewld%num_pots
 
-        Call ewald_spme_forces(ewld, ewld%spme_data(ipot), electro, domain, config, comm, &
+        Call ewald_spme_forces_gen(ewld, ewld%spme_data(ipot), electro, domain, config, comm, &
           & vdw_coeffs(:, ipot), stats, engacc, viracc, tmr)
 
         engvdw_rc = engvdw_rc + engacc
@@ -400,10 +400,10 @@ Contains
             Case (ELECTROSTATIC_EWALD)
 
               If (ewld%direct) Then
-                Call ewald_real_forces_coul(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
-                     & i, xxt, yyt, zzt, rrt, engacc, viracc)
+                Call ewald_real_forces_gen(ewld%alpha, ewld%spme_data(ipot), neigh, config, stats, &
+                     & coul_coeffs, i, xxt, yyt, zzt, rrt, engacc, viracc)
               Else
-                Call ewald_real_forces_coul_tab(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
+                Call ewald_real_forces_coul(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
                      & i, xxt, yyt, zzt, rrt, engacc, viracc)
               End If
 
@@ -456,10 +456,10 @@ Contains
               ! calculate coulombic forces, Ewald sum - real space contribution
 
               If (ewld%direct) Then
-                Call ewald_real_forces_coul(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
-                     & i, xxt, yyt, zzt, rrt, engacc, viracc)
+                Call ewald_real_forces_gen(ewld%alpha, ewld%spme_data(ipot), neigh, config, stats, &
+                     & coul_coeffs, i, xxt, yyt, zzt, rrt, engacc, viracc)
               Else
-                Call ewald_real_forces_coul_tab(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
+                Call ewald_real_forces_coul(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
                      & i, xxt, yyt, zzt, rrt, engacc, viracc)
               End If
 

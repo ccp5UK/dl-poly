@@ -247,8 +247,6 @@ Contains
 
   End Subroutine spme_self_interaction
 
-!!! Higher order pots -- Obselete, but here for posterity
-
   Pure Function f_1(x)
     !!----------------------------------------------------------------------!
     !!
