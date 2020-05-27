@@ -361,7 +361,7 @@ Contains
 
     ! ALLOCATE RDF, Z-DENSITY, STATISTICS & GREEN-KUBO ARRAYS
     Call rdf%init()
-    Call zdensity%init(rdf%max_grid, sites%mxatyp)
+    Call zdensity%init(sites%mxatyp)
     Call stats%init(rigid%max_rigid, config%mxatms, config%mxatdm)
     Call green%init(config%mxatms, sites%mxatyp)
 
@@ -907,7 +907,7 @@ Contains
     Write (banner(12), fmt1) "*************  s.l.daraszewicz,g.khara,s.t.murphy    *************"
     Write (banner(13), fmt1) "*************  j.madge,a.b.g.chalk,i.scivetti        *************"
     Write (banner(14), fmt1) "******************************************************************"
-    Call info(banner, 14, .true.)
+    Call info(banner, 14, .true., level=-1)
   End Subroutine print_banner
 
   Subroutine print_citations(electro, mpoles, ttms)
@@ -918,13 +918,6 @@ Contains
     Character(Len=*), Parameter :: fmt1 = '(a)'
 
     Character(Len=66) :: banner(14)
-
-    Call info('', .true.)
-    Write (banner(1), fmt1) Repeat("*", 66)
-    Write (banner(2), fmt1) "****  Please do cite `J. Mater. Chem.', 16, 1911-1918 (2006)  ****"
-    Write (banner(3), fmt1) "****  when publishing research data obtained using DL_POLY_4  ****"
-    Write (banner(4), fmt1) Repeat("*", 66)
-    Call info(banner, 4, .true.)
 
     ! Ask for reference in publications
 
@@ -937,18 +930,18 @@ Contains
     Write (banner(6), fmt1) '****   - I.T. Todorov, W. Smith, K. Trachenko & M.T. Dove,    ****'
     Write (banner(7), fmt1) '****     J. Mater. Chem., 16, 1911-1918 (2006),               ****'
     Write (banner(8), fmt1) '****     https://doi.org/10.1039/B517931A                     ****'
-    Call info(banner, 8, .true.)
+    Call info(banner, 8, .true., level=-1)
     If (electro%key == ELECTROSTATIC_EWALD) Then
       Write (banner(1), fmt1) '****   - I.J. Bush, I.T. Todorov & W. Smith,                  ****'
       Write (banner(2), fmt1) '****     Comp. Phys. Commun., 175, 323-329 (2006),            ****'
       Write (banner(3), fmt1) '****     https://doi.org/10.1016/j.cpc.2006.05.001            ****'
-      Call info(banner, 3, .true.)
+      Call info(banner, 3, .true., level=-1)
     End If
     If (mpoles%max_mpoles > 0) Then
       Write (banner(1), fmt1) '****   - H.A. Boateng & I.T. Todorov,                         ****'
       Write (banner(2), fmt1) '****     J. Chem. Phys., 142, 034117 (2015),                  ****'
       Write (banner(3), fmt1) '****     https://doi.org/10.1063/1.4905952                    ****'
-      Call info(banner, 3, .true.)
+      Call info(banner, 3, .true., level=-1)
     End If
     If (ttms%l_ttm) Then
       Write (banner(1), fmt1) '****   - E. Zarkadoula, S.L. Daraszewicz, D.M. Duffy,         ****'
@@ -956,7 +949,7 @@ Contains
       Write (banner(3), fmt1) '****     K. Trachenko                                         ****'
       Write (banner(4), fmt1) '****     J. Phys.: Condens. Matter, 24, 085401 (2014),        ****'
       Write (banner(5), fmt1) '****     https://doi.org/10.1088/0953-8984/26/8/085401        ****'
-      Call info(banner, 5, .true.)
+      Call info(banner, 5, .true., level=-1)
     End If
     Call info(Repeat("*", 66), .true.)
   End Subroutine print_citations

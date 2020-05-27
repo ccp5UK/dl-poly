@@ -327,6 +327,7 @@ Contains
   !> Author    - I.T.Todorov january 2017
   !> Contrib   - I.J.Bush february 2014
   !> amended   - i.t.todorov november 2019 (nir deallocation fix, and comments)
+  !> amended   - i.t.todorov may 2020 - flickering fix fixed
 
   Subroutine link_cell_pairs(rvdw, rmet, lbook, megfrz, cshell, devel, neigh, &
                              mpoles, domain, tmr, config, comm)
@@ -660,30 +661,59 @@ Contains
             (ly0 .and. ly1) .and. &
             (lz0 .and. lz1)) Then
 
-          ! Put the closest to the halo coordinate in the halo
+          ! Put on border in the halo
 
-          x1 = Abs(x - 0.5_wp * Sign(1.0_wp, x))
-          y1 = Abs(y - 0.5_wp * Sign(1.0_wp, y))
-          z1 = Abs(z - 0.5_wp * Sign(1.0_wp, z))
-          If (x1 <= y1 .and. x1 <= z1) Then
-            If (x < 0.0_wp) Then
-              ix = nlx0e
+          x     = Abs( dispx - Real( nlx * domain%idx , wp ) )
+          x1    = Abs( dispx - Real( nlx * (domain%idx+1) , wp ) )
+          dispx = Min( x , x1 )
+          y     = Abs( dispy - Real( nly * domain%idy , wp ) )
+          y1    = Abs( dispy - Real( nly * (domain%idy+1) , wp ) )
+          dispy = Min( y , y1 )
+          z     = Abs( dispz - Real( nlz * domain%idz , wp ) )
+          z1    = Abs( dispz - Real( nlz * (domain%idz+1) , wp ) )
+          dispz = Min( z , z1 )
+
+          If      (dispx <= dispy .and. dispx <= dispz) Then
+            If (x < x1) Then
+              ix=nlx0e
             Else
-              ix = nlx1s
+              ix=nlx1s
             End If
-          Else If (y1 <= x1 .and. y1 <= z1) Then
-            If (y < 0.0_wp) Then
-              iy = nly0e
+            If (dispx == dispy) Then
+              If (y < y1) Then
+                iy=nly0e
+              Else
+                iy=nly1s
+              End If
+            End If
+            If (dispx == dispz) Then
+              If (z < z1) Then
+                iz=nlz0e
+              Else
+                iz=nlz1s
+              End If
+            End If
+          Else If (dispy <= dispx .and. dispy <= dispz) Then
+            If (y < y1) Then
+              iy=nly0e
             Else
-              iy = nly1s
+              iy=nly1s
+            End If
+            If (dispy == dispz) Then
+              If (z < z1) Then
+                iz=nlz0e
+              Else
+                iz=nlz1s
+              End If
             End If
           Else
-            If (z < 0.0_wp) Then
-              iz = nlz0e
+            If (z < z1) Then
+              iz=nlz0e
             Else
-              iz = nlz1s
+              iz=nlz1s
             End If
           End If
+
         End If
 
         ! Check for positively bound residual halo
@@ -772,11 +802,11 @@ Contains
           cell_dom(nlp3) = ic
 
           ! loop over the domain's border config%cells only - ipass==2
-          If ((ix1 >= 1 .and. ix1 <= nlp) .or. &
+          If ((ix1 >=  1 .and. ix1 <=  nlp) .or. &
               (ix2 <= -1 .and. ix2 >= -nlp) .or. &
-              (iy1 >= 1 .and. iy1 <= nlp) .or. &
+              (iy1 >=  1 .and. iy1 <=  nlp) .or. &
               (iy2 <= -1 .and. iy2 >= -nlp) .or. &
-              (iz1 >= 1 .and. iz1 <= nlp) .or. &
+              (iz1 >=  1 .and. iz1 <=  nlp) .or. &
               (iz2 <= -1 .and. iz2 >= -nlp)) Then
             nlp4 = nlp4 + 1
             cell_bor(nlp4) = ic
@@ -1337,6 +1367,7 @@ Contains
   !> Copyright - Daresbury Laboratory
   !>
   !> Author    - I.T.Todorov january 2015
+  !> amended   - i.t.todorov may 2020 - flickering fix fixed
 
   Subroutine defects_link_cells(config, cut, mxcldef, na, nl, xxt, yyt, zzt, nlx, nly, nlz, link, &
                                 lct, domain)
@@ -1350,7 +1381,7 @@ Contains
 
     Integer       :: i, icell, ix, iy, iz, jx, jy, jz, ncells
     Logical       :: lx0, lx1, ly0, ly1, lz0, lz1
-    Real(Kind=wp) :: celprp(1:10), dispx, dispy, dispz, xdc, ydc, zdc
+    Real(Kind=wp) :: celprp(1:10), dispx, dispy, dispz, xdc, ydc, zdc, x,y,z, x1,y1,z1
 
     ! Get the dimensional properties of the MD config%cell
 
@@ -1425,19 +1456,25 @@ Contains
       ! Get config%cell coordinates accordingly
 
       If (xxt(i) > -half_plus) Then
-        ix = Int(xdc * (xxt(i) + 0.5_wp)) + jx
+        dispx = xdc * (xxt(i) + 0.5_wp)
+        ix = Int(dispx) + jx
       Else
-        ix = -Int(xdc * Abs(xxt(i) + 0.5_wp)) + jx - 1
+        dispx = xdc * Abs(xxt(i) + 0.5_wp)
+        ix = -Int(dispx) + jx - 1
       End If
       If (yyt(i) > -half_plus) Then
-        iy = Int(ydc * (yyt(i) + 0.5_wp)) + jy
+        dispy = ydc * (yyt(i) + 0.5_wp)
+        iy = Int(dispy) + jy
       Else
-        iy = -Int(ydc * Abs(yyt(i) + 0.5_wp)) + jy - 1
+        dispy = ydc * Abs(yyt(i) + 0.5_wp)
+        iy = -Int(dispy) + jy - 1
       End If
       If (zzt(i) > -half_plus) Then
-        iz = Int(zdc * (zzt(i) + 0.5_wp)) + jz
+        dispz = zdc * (zzt(i) + 0.5_wp)
+        iz = Int(dispz) + jz
       Else
-        iz = -Int(zdc * Abs(zzt(i) + 0.5_wp)) + jz - 1
+        dispz = zdc * Abs(zzt(i) + 0.5_wp)
+        iz = -Int(dispz) + jz - 1
       End If
 
       ! Correction for halo particles (na+1,nl) of this domain
@@ -1452,19 +1489,56 @@ Contains
       lz1 = (iz == nlz)
       If ((lx0 .or. lx1) .and. &
           (ly0 .or. ly1) .and. &
-          (lz0 .or. lz1)) Then ! 8 corners of the domain's cube in RS
-        If (lx0) Then
-          ix = 0
-        Else If (lx1) Then
-          ix = nlx + 1
-        Else If (ly0) Then
-          iy = 0
-        Else If (ly1) Then
-          iy = nly + 1
-        Else If (lz0) Then
-          iz = 0
-        Else If (lz1) Then
-          iz = nlz + 1
+          (lz0 .or. lz1)) Then
+        x     = Abs( dispx - Real( nlx * domain%idx , wp ) )
+        x1    = Abs( dispx - Real( nlx * (domain%idx+1) , wp ) )
+        dispx = Min( x , x1 )
+        y     = Abs( dispy - Real( nly * domain%idy , wp ) )
+        y1    = Abs( dispy - Real( nly * (domain%idy+1) , wp ) )
+        dispy = Min( y , y1 )
+        z     = Abs( dispz - Real( nlz * domain%idz , wp ) )
+        z1    = Abs( dispz - Real( nlz * (domain%idz+1) , wp ) )
+        dispz = Min( z , z1 )
+
+        If      (dispx <= dispy .and. dispx <= dispz) Then
+          If (x < x1) Then
+            ix=0
+          Else
+            ix=nlx+1
+          End If
+          If (dispx == dispy) Then
+            If (y < y1) Then
+              iy=0
+            Else
+              iy=nly+1
+            End If
+          End If
+          If (dispx == dispz) Then
+            If (z < z1) Then
+              iz=0
+            Else
+              iz=nlz+1
+            End If
+          End If
+        Else If (dispy <= dispx .and. dispy <= dispz) Then
+          If (y < y1) Then
+            iy=0
+          Else
+            iy=nly+1
+          End If
+          If (dispy == dispz) Then
+            If (z < z1) Then
+              iz=0
+            Else
+              iz=nlz+1
+            End If
+          End If
+        Else
+          If (z < z1) Then
+            iz=0
+          Else
+            iz=nlz+1
+          End If
         End If
       End If
 

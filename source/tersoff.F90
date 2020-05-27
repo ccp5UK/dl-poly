@@ -72,6 +72,12 @@ Module tersoff
     Final             :: cleanup
   End Type tersoff_type
 
+
+  !> Tersoff
+  Integer(kind = wi), Parameter, Public :: TERS_TERSOFF=1
+  !> Kumagi-Izumi-Hara-Sakai
+  Integer(kind = wi), Parameter, Public :: TERS_KIHS=2
+
   Public :: tersoff_forces, tersoff_generate
 
 Contains
@@ -91,7 +97,7 @@ Contains
     Allocate (T%list(1:T%max_ter), stat=fail(2))
     Allocate (T%ltp(1:T%max_ter), stat=fail(3))
     Allocate (T%param(1:T%max_param, 1:T%max_ter), stat=fail(4))
-    If (T%key_pot == 1) Then
+    If (T%key_pot == TERS_TERSOFF) Then
       Allocate (T%param2(1:nprter, 1:2), stat=fail(5))
     End If
     Allocate (T%vmbp(0:T%max_grid, 1:nprter, 1:3), stat=fail(6))
@@ -106,7 +112,7 @@ Contains
     T%ltp = 0
 
     T%param = 0.0_wp
-    If (T%key_pot == 1) Then
+    If (T%key_pot == TERS_TERSOFF) Then
       T%param2 = 0.0_wp
     End If
     T%vmbp = 0.0_wp
@@ -213,7 +219,7 @@ Contains
     Allocate (ert(1:neigh%max_list), eat(1:neigh%max_list), grt(1:neigh%max_list), gat(1:neigh%max_list), Stat=fail(4))
     Allocate (scr(1:neigh%max_list), gcr(1:neigh%max_list), Stat=fail(5))
     Allocate (cst(1:neigh%max_list), gam(1:neigh%max_list), gvr(1:neigh%max_list), Stat=fail(6))
-    If (tersoffs%key_pot == 2) Allocate (rkj(1:neigh%max_list), wkj(1:neigh%max_list), Stat=fail(7))
+    If (tersoffs%key_pot == TERS_KIHS) Allocate (rkj(1:neigh%max_list), wkj(1:neigh%max_list), Stat=fail(7))
     If (Any(fail > 0)) Then
       Write (message, '(a)') 'tersoff_forces allocation failure'
       Call error(0, message)
@@ -585,13 +591,13 @@ Contains
 
                 ! Get parameters for iatm
 
-                If (tersoffs%key_pot == 1) Then ! TERS
+                If (tersoffs%key_pot == TERS_TERSOFF) Then ! TERS
                   bi = tersoffs%param(7, iter)
                   ei = tersoffs%param(8, iter)
                   ci = tersoffs%param(9, iter)
                   di = tersoffs%param(10, iter)
                   hi = tersoffs%param(11, iter)
-                Else If (tersoffs%key_pot == 2) Then ! KIHS
+                Else If (tersoffs%key_pot == TERS_KIHS) Then ! KIHS
                   ei = tersoffs%param(7, iter)
                   di = tersoffs%param(8, iter)
                   c1i = tersoffs%param(9, iter)
@@ -641,7 +647,7 @@ Contains
                         gam(kk) = 0.0_wp
                         gvr(kk) = 0.0_wp
                       End Do
-                      If (tersoffs%key_pot == 2) Then ! KIHS
+                      If (tersoffs%key_pot == TERS_KIHS) Then ! KIHS
                         Do kk = 1, limit
                           rkj(kk) = 0.0_wp
                           wkj(kk) = 0.0_wp
@@ -682,7 +688,7 @@ Contains
                               If (Abs(cost) > 1.0_wp) cost = Sign(1.0_wp, cost)
                               cst(kk) = cost
 
-                              If (tersoffs%key_pot == 1) Then ! TERS
+                              If (tersoffs%key_pot == TERS_TERSOFF) Then ! TERS
                                 gtheta = 1.0_wp + (ci / di)**2 - ci**2 / (di**2 + (hi - cost)**2)
                                 eterm = eterm + gtheta * tersoffs%param2(ikter, 2) * scr(kk) ! L_{ij}
                                 vterm = vterm + gtheta * tersoffs%param2(ikter, 2) * gcr(kk) * rtf(kk)
@@ -690,7 +696,7 @@ Contains
 
                                 gam(kk) = gtheta
                                 gvr(kk) = 2.0_wp * ci**2 * (hi - cost) / (di**2 + (hi - cost)**2)**2 ! d(gtheta)/sint*d(theta)
-                              Else If (tersoffs%key_pot == 2) Then ! KIHS
+                              Else If (tersoffs%key_pot == TERS_KIHS) Then ! KIHS
                                 rkj(kk) = rtf(jj) - rtf(kk)
                                 wkj(kk) = Exp(ak * rkj(kk)**bk)
 
@@ -718,7 +724,7 @@ Contains
                       ! calculate contribution to energy, virial, two-body stress and forces
                       ! (all associated with the head atom)
 
-                      If (tersoffs%key_pot == 1) Then ! TERS
+                      If (tersoffs%key_pot == TERS_TERSOFF) Then ! TERS
                         gam_ij = tersoffs%param2(iter, 1)
                         gamma = 0.0_wp
                         If (flag3) Then
@@ -729,7 +735,7 @@ Contains
                                     0.5_wp * (1.0_wp + (bi * eterm)**ei)**(-0.5_wp / ei - 1.0_wp) ! -FcFa[d/dr gamma_{ij}]/[d/dr Lij]
                           End If
                         End If
-                      Else If (tersoffs%key_pot == 2) Then ! KIHS
+                      Else If (tersoffs%key_pot == TERS_KIHS) Then ! KIHS
                         gam_ij = 1.0_wp
                         gamma = 0.0_wp
                         If (flag3) Then
@@ -801,7 +807,7 @@ Contains
 
                               ! Counteract the double counting with the 0.5_wp factor
 
-                              If (tersoffs%key_pot == 1) Then ! TERS
+                              If (tersoffs%key_pot == TERS_TERSOFF) Then ! TERS
                                 gam_dg = 0.5_wp * gamma * tersoffs%param2(ikter, 2) * scr(kk) * gvr(kk)
                                 gam_df = 0.5_wp * gamma * tersoffs%param2(ikter, 2) * gcr(kk) * gam(kk)
 
@@ -814,7 +820,7 @@ Contains
                                 fxk = gam_dg * (xtf(jj) - xtf(kk) * cost) / rtf(kk) - gam_df * xtf(kk) ! contributions to k
                                 fyk = gam_dg * (ytf(jj) - ytf(kk) * cost) / rtf(kk) - gam_df * ytf(kk)
                                 fzk = gam_dg * (ztf(jj) - ztf(kk) * cost) / rtf(kk) - gam_df * ztf(kk)
-                              Else If (tersoffs%key_pot == 2) Then ! KIHS
+                              Else If (tersoffs%key_pot == TERS_TERSOFF) Then ! KIHS
                                 gam_dg = 0.5_wp * gamma * scr(kk) * wkj(kk) * gvr(kk)
                                 gam_df = 0.5_wp * gamma * gam(kk) * wkj(kk) * gcr(kk)
                                 gam_dw = 0.5_wp * gamma * scr(kk) * gam(kk) * wkj(kk) * (ak * bk * rkj(kk)**(bk - 1.0_wp))
@@ -915,7 +921,7 @@ Contains
     Deallocate (ert, eat, grt, gat, Stat=fail(4))
     Deallocate (scr, gcr, Stat=fail(5))
     Deallocate (cst, gam, gvr, Stat=fail(6))
-    If (tersoffs%key_pot == 2) Deallocate (rkj, wkj, Stat=fail(7))
+    If (tersoffs%key_pot == TERS_KIHS) Deallocate (rkj, wkj, Stat=fail(7))
     If (Any(fail > 0)) Then
       Write (message, '(a)') 'tersoff_forces deallocation failure'
       Call error(0, message)
@@ -923,7 +929,7 @@ Contains
 
   End Subroutine tersoff_forces
 
-  Subroutine tersoff_generate(tersoffs)
+  Subroutine tersoff_generate(ntype_atom, tersoffs)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -941,12 +947,14 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    ! amended   - i.t.todorov march 2020 - fixing tersoff type selection
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Integer(Kind=wi),   Intent(In   ) :: ntype_atom
     Type(tersoff_type), Intent(InOut) :: tersoffs
 
-    Integer       :: i, ipt, jpt, katom1, katom2, kpt
+    Integer       :: i, katom1, katom2, ipt, jpt, kpt, iter, jter
     Real(Kind=wp) :: arg, att, baij, bbij, dlrpot, rep, rij, rrr, saij, sbij, sij
 
     ! define grid resolution for potential arrays
@@ -955,14 +963,16 @@ Contains
 
     ! construct arrays for all types of tersoff potential
 
-    Do katom1 = 1, tersoffs%n_potential
+    Do katom1 = 1, ntype_atom
       Do katom2 = 1, katom1
+        ipt = tersoffs%list(katom1)
+        jpt = tersoffs%list(katom2)
 
-        If (tersoffs%ltp(katom1) * tersoffs%ltp(katom2) /= 0) Then
-
-          ipt = tersoffs%list(katom1)
-          jpt = tersoffs%list(katom2)
+        If (ipt * jpt /= 0) Then
           kpt = (Max(ipt, jpt) * (Max(ipt, jpt) - 1)) / 2 + Min(ipt, jpt)
+
+          iter=tersoffs%ltp(jpt)
+          jter=tersoffs%ltp(jpt)
 
           ! define tersoff parameters
 
@@ -970,8 +980,8 @@ Contains
           saij = 0.5_wp * (tersoffs%param(2, ipt) + tersoffs%param(2, jpt))
           bbij = Sqrt(tersoffs%param(3, ipt) * tersoffs%param(3, jpt))
           sbij = 0.5_wp * (tersoffs%param(4, ipt) + tersoffs%param(4, jpt))
-          rij = Sqrt(tersoffs%param(5, ipt) * tersoffs%param(5, jpt))
-          sij = Sqrt(tersoffs%param(6, ipt) * tersoffs%param(6, jpt))
+          rij =  Sqrt(tersoffs%param(5, ipt) * tersoffs%param(5, jpt))
+          sij =  Sqrt(tersoffs%param(6, ipt) * tersoffs%param(6, jpt))
 
           ! store potential cutoff
 
@@ -989,12 +999,12 @@ Contains
               If (rrr <= sij) Then
                 arg = pi * (rrr - rij) / (sij - rij)
 
-                If (tersoffs%ltp(katom1) * tersoffs%ltp(katom2) == 1) Then
+                If (iter * jter == 1) Then
 
                   tersoffs%vmbp(i, kpt, 1) = 0.5_wp * (1.0_wp + Cos(arg))
                   tersoffs%gmbp(i, kpt, 1) = 0.5_wp * pi * rrr * Sin(arg) / (sij - rij)
 
-                Else If (tersoffs%ltp(katom1) * tersoffs%ltp(katom2) == 4) Then
+                Else If (iter * jter == 4) Then
 
                   ! Murty's correction to screening function (tersoffs%vmbp)
                   ! M.V.R. Murty, H.A. Atwater, Phys. Rev. B 51 (1995) 4889-4993
@@ -1026,9 +1036,7 @@ Contains
             tersoffs%vmbp(i, kpt, 3) = att * tersoffs%vmbp(i, kpt, 1)
             tersoffs%gmbp(i, kpt, 3) = att * (tersoffs%gmbp(i, kpt, 1) + sbij * rrr * tersoffs%vmbp(i, kpt, 1))
           End Do
-
         End If
-
       End Do
     End Do
 

@@ -3,7 +3,10 @@
 !> Copyright - Daresbury Laboratory
 !>
 !> Author - J. Madge May 2018
+!> Amended - i.t.todorov April 2020
+
 Module thermostat
+
   Use comms,           Only: comms_type,&
                              gmax
   Use errors_warnings, Only: error
@@ -125,7 +128,7 @@ Module thermostat
     Real(Kind=wp), Public              :: qmass, ceng, pmass, chip0, rf, factor, temp_lang
     Real(Kind=wp), Allocatable, Public :: dens0(:)
     Integer, Public                    :: ntp, stp, rtp
-    Real(Kind=wp), Public              :: rcell(1:9), sx, sy, sz, chit_sb = 0.0_wp
+    Real(Kind=wp), Public              :: rcell(1:9), cwx,cwy,cwz, ecwx,ecwy,ecwz, chit_sb = 0.0_wp
     ! q. index arrays and tp. sum arrays
     Integer, Allocatable, Public       :: qn(:), tpn(:)
     Integer, Allocatable, Public       :: qs(:, :), tps(:)
@@ -138,10 +141,12 @@ Module thermostat
     Real(Kind=wp), Public              :: mndis, mxdis, mxstp
 
   Contains
+
     Private
 
     Procedure, Public :: init_dpd => allocate_dpd_arrays
     Final             :: cleanup
+
   End Type thermostat_type
 
   ! Thermostat keys
@@ -178,7 +183,7 @@ Module thermostat
   Integer(Kind=wi), Parameter, Public :: ENS_NPT_BERENDSEN_ANISO = 31
   !> Isobaric isothermal ensemble anisotropic Nos-Hoover (Melchionna)
   Integer(Kind=wi), Parameter, Public :: ENS_NPT_NOSE_HOOVER_ANISO = 32
-  !> Isobaric isothermal ensemble anistropic Martyna-Tuckerman-Klein
+  !> Isobaric isothermal ensemble anisotropic Martyna-Tuckerman-Klein
   Integer(Kind=wi), Parameter, Public :: ENS_NPT_MTK_ANISO = 33
 
   ! Anisotropic barostat constraint keys
@@ -202,6 +207,7 @@ Module thermostat
 Contains
 
   Subroutine allocate_dpd_arrays(thermo, max_vdw)
+
     Class(thermostat_type)          :: thermo
     Integer(Kind=wi), Intent(In   ) :: max_vdw
 
@@ -217,9 +223,11 @@ Contains
 
     thermo%gamdpd = 0.0_wp
     thermo%sigdpd = 0.0_wp
+
   End Subroutine allocate_dpd_arrays
 
   Subroutine cleanup(thermo)
+
     Type(thermostat_type) :: thermo
 
     If (Allocated(thermo%gamdpd)) Then
@@ -249,10 +257,12 @@ Contains
     If (Allocated(thermo%tpr)) Then
       Deallocate (thermo%tpr)
     End If
+
   End Subroutine cleanup
 
   Logical Function adjust_timestep_1(tstep, hstep, rstep, mndis, mxdis, mxstp, natms, parts, &
                                      xxt, yyt, zzt, legshl, message, t, comm)
+
     ! update maximum distance a particle has travelled
     Real(Kind=wp),    Intent(InOut) :: tstep
     Real(Kind=wp),    Intent(  Out) :: hstep, rstep
@@ -323,10 +333,12 @@ Contains
 
       adjust_timestep_1 = .true.
     End If
+
   End Function adjust_timestep_1
 
   Logical Function adjust_timestep_2(tstep, hstep, rstep, qstep, mndis, mxdis, mxstp, natms, parts, &
                                      xxt, yyt, zzt, legshl, message, t, comm)
+
     ! update maximum distance a particle has travelled
     Real(Kind=wp),    Intent(InOut) :: tstep
     Real(Kind=wp),    Intent(  Out) :: hstep, rstep, qstep
@@ -402,5 +414,7 @@ Contains
 
       adjust_timestep_2 = .true.
     End If
+
   End Function adjust_timestep_2
+
 End Module thermostat

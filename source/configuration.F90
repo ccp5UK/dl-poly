@@ -30,7 +30,10 @@ Module configuration
                              ELECTROSTATIC_NULL
   Use errors_warnings, Only: error,&
                              info,&
-                             warning
+                             warning,&
+                             error_alloc,&
+                             error_dealloc,&
+                             error_read
   Use filename,        Only: FILE_CONFIG,&
                              file_type
   Use flow_control,    Only: RESTART_KEY_CLEAN,&
@@ -153,6 +156,17 @@ Module configuration
     Module Procedure getcom_parts
     Module Procedure getcom_arrays
   End Interface getcom
+
+  Integer, Public, Parameter :: IMCON_NOPBC = 0
+  Integer, Public, Parameter :: IMCON_CUBIC = 1
+  Integer, Public, Parameter :: IMCON_ORTHORHOMBIC = 2
+  Integer, Public, Parameter :: IMCON_PARALLELOPIPED = 3
+  Integer, Public, Parameter :: IMCON_SLAB = 6
+  ! REMOVED -- DL_POLY 2 ONLY
+  Integer, Public, Parameter :: IMCON_TRUNC_OCTO = 4
+  Integer, Public, Parameter :: IMCON_RHOMBIC_DODEC = 5
+  Integer, Public, Parameter :: IMCON_HEXAGONAL = 7
+
 
   Public :: reallocate
   Public :: check_config
@@ -320,7 +334,7 @@ Contains
     Allocate (config%lsi(1:config%mxatms), config%lsa(1:config%mxatms), config%ltg(1:config%mxatms), Stat=fail(2))
     Allocate (config%parts(1:config%mxatms), Stat=fail(3))
     Allocate (config%vxx(1:config%mxatms), config%vyy(1:config%mxatms), config%vzz(1:config%mxatms), Stat=fail(4))
-    If (Any(fail > 0)) Call error(1025)
+    If (Any(fail > 0)) Call error_alloc('config arrays', 'allocate_config_arrays_read')
 
     config%atmnam = ' '
     config%lsi = 0; config%lsa = 0; config%ltg = 0
@@ -352,7 +366,7 @@ Contains
     Allocate (config%lstfre(1:config%mxatdm), Stat=fail(4))
     Allocate (config%weight(1:config%mxatms), Stat=fail(5))
 
-    If (Any(fail > 0)) Call error(1025)
+    If (Any(fail > 0)) Call error_alloc('config arrays', 'allocate_config_arrays')
 
     config%lsite = 0; config%ltype = 0
     config%lfrzn = 0; config%lfree = 0
@@ -375,7 +389,7 @@ Contains
     Call reallocate(config%mxatms - Size(config%vyy), config%vyy, stat(7))
     Call reallocate(config%mxatms - Size(config%vzz), config%vzz, stat(8))
 
-    If (Any(stat /= 0)) Call error(1025)
+    If (Any(stat /= 0)) Call error_alloc('reallocation of config arrays', 'allocate_config_arrays')
 
   End Subroutine allocate_config_arrays
 
@@ -440,11 +454,8 @@ Contains
     fail = 0
     If (flow%strict) Then
       Allocate (iwrk(1:config%mxatms), Stat=fail)
-      If (fail > 0) Then
-        Write (message, '(a)') 'check_config allocation failure'
-        Call error(0, message)
-      End If
-    End If
+      If (fail > 0) call error_alloc('work array', 'check_config')
+   end If
 
     If (config%newjob_check_config) Then
       Write (message, "('configuration file name: ',10x,a)") config%cfgname
@@ -455,7 +466,7 @@ Contains
 
     ! Check things for non-periodic systems
 
-    If (config%imcon == 0 .or. config%imcon == 6) Then
+    If (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB) Then
       If (electro_key == ELECTROSTATIC_EWALD) Then
         Call warning(220, 0.0_wp, 0.0_wp, 0.0_wp)
       Else If (electro_key /= ELECTROSTATIC_NULL) Then
@@ -471,21 +482,21 @@ Contains
 
     If (thermo%anisotropic_pressure) Then
       If (thermo%iso == CONSTRAINT_NONE) Then
-        If (config%imcon == 1 .or. config%imcon == 2) Then
+        If (config%imcon == IMCON_CUBIC .or. config%imcon == IMCON_ORTHORHOMBIC) Then
           Call warning(110, Real(config%imcon, wp), 3.0_wp, 0.0_wp)
-          config%imcon = 3
+          config%imcon = IMCON_PARALLELOPIPED
         End If
       Else ! thermo%iso > 0
-        If (config%imcon == 1) Then
+        If (config%imcon == IMCON_CUBIC) Then
           Call warning(110, Real(config%imcon, wp), 3.0_wp, 0.0_wp)
-          config%imcon = 2
+          config%imcon = IMCON_ORTHORHOMBIC
         End If
       End If
     End If
 
     ! Check image condition for pseudo
 
-    If (thermo%l_stochastic_boundaries .and. (config%imcon == 0 .or. config%imcon == 6)) Call error(540)
+    If (thermo%l_stochastic_boundaries .and. (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB)) Call error(540)
 
     Call invert(config%cell, rcell, det)
 
@@ -600,11 +611,9 @@ Contains
       If (.not. safe) Call error(28)
 
       Deallocate (iwrk, Stat=fail)
-      If (fail > 0) Then
-        Write (message, '(a)') 'check_config deallocation failure'
-        Call error(0, message)
-      End If
+      If (fail > 0) call error_dealloc('work array', 'check_config')
     End If
+
 
     ! For subsequent checks
 
@@ -652,7 +661,7 @@ Contains
       ! gather and sum locally rather than just a global sum as
       ! saves a comm.
       Allocate (all_n_loc(0:nproc - 1), Stat=fail)
-      If (fail /= 0) Go To 100
+      If (fail /= 0) call error_alloc('all_n_loc', 'all_present')
 
       ! No check on mpi error as all is pointless because
       ! of the way mpi error handlers are usually dealt with
@@ -667,7 +676,7 @@ Contains
 
       ! Work out the first index on each proc
       Allocate (loc_start(0:nproc - 1), Stat=fail)
-      If (fail /= 0) Go To 100
+      If (fail /= 0) call error_alloc('loc_start', 'all_present')
 
       loc_start(0) = 1
       Do i = 1, nproc - 1
@@ -676,7 +685,7 @@ Contains
 
       ! Array to work with local indices
       Allocate (local_ind(1:n_loc), Stat=fail)
-      If (fail /= 0) Go To 100
+      If (fail /= 0) call error_alloc('local_ind', 'all_present')
 
       local_ind = ind(1:n_loc)
 
@@ -685,7 +694,7 @@ Contains
 
       ! Work out how much data to send to each processor
       Allocate (to_send(0:nproc - 1), Stat=fail)
-      If (fail /= 0) Go To 100
+      If (fail /= 0) call error_alloc('to_send', 'all_present')
 
       to_send = 0
       where_send = 0
@@ -698,16 +707,17 @@ Contains
 
       ! How much node i sends to me is how much I recv
       Allocate (to_recv(0:nproc - 1), Stat=fail)
-      If (fail /= 0) Go To 100
+      If (fail /= 0) call error_alloc('to_recv', 'all_present')
+
 
       Call galltoall(comm, to_send(:), 1, to_recv(:))
 
       ! Work out the displacements in the sending and receiving arrays
       Allocate (displs_send(0:nproc - 1), Stat=fail)
-      If (fail /= 0) Go To 100
+      If (fail /= 0) call error_alloc('displs_send', 'all_present')
 
       Allocate (displs_recv(0:nproc - 1), Stat=fail)
-      If (fail /= 0) Go To 100
+      If (fail /= 0) call error_alloc('displs_recv', 'all_present')
 
       displs_send(0) = 0
       Do i = 1, nproc - 1
@@ -721,7 +731,7 @@ Contains
 
       ! Put the index on the proc that should own it
       Allocate (reorg_ind(1:n_loc), Stat=fail)
-      If (fail /= 0) Go To 100
+      If (fail /= 0) call error_alloc('reorg_ind', 'all_present')
 
       Call galltoallv(comm, local_ind(:), to_send(:), displs_send(:), &
                       reorg_ind(:), to_recv(:), displs_recv(:))
@@ -750,29 +760,21 @@ Contains
       Call gallreduce(comm, loc_present, all_present, op_land)
 
       Deallocate (reorg_ind, Stat=fail)
-      If (fail /= 0) Go To 100
+      If (fail /= 0) call error_dealloc('reorg_ind', 'all_present')
       Deallocate (displs_recv, Stat=fail)
-      If (fail /= 0) Go To 100
+      If (fail /= 0) call error_dealloc('displs_recv', 'all_present')
       Deallocate (displs_send, Stat=fail)
-      If (fail /= 0) Go To 100
+      If (fail /= 0) call error_dealloc('displs_send', 'all_present')
       Deallocate (to_recv, Stat=fail)
-      If (fail /= 0) Go To 100
+      If (fail /= 0) call error_dealloc('to_recv', 'all_present')
       Deallocate (to_send, Stat=fail)
-      If (fail /= 0) Go To 100
+      If (fail /= 0) call error_dealloc('to_send', 'all_present')
       Deallocate (local_ind, Stat=fail)
-      If (fail /= 0) Go To 100
+      If (fail /= 0) call error_dealloc('local_ind', 'all_present')
       Deallocate (loc_start, Stat=fail)
-      If (fail /= 0) Go To 100
+      If (fail /= 0) call error_dealloc('loc_start', 'all_present')
       Deallocate (all_n_loc, Stat=fail)
-      If (fail /= 0) Go To 100
-
-      Return
-
-      100 Continue
-      If (fail > 0) Then
-        Write (message, '(a)') 'all_inds_present allocation/deallocation failure'
-        Call error(0, message)
-      End If
+      If (fail /= 0) call error_dealloc('all_n_loc', 'all_present')
 
     End Subroutine all_inds_present
 
@@ -798,48 +800,50 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type(io_type), Intent(InOut) :: io
-    Integer, Intent(In) :: megatm, levcfg
-    Logical, Intent(In) :: l_ind, strict
-    Real(Kind=wp), Intent(In) :: rcut, dvar
-    Real(Kind=wp), Intent(InOut) :: xhi, yhi, zhi
-    Real(Kind=wp), Intent(Out) :: dens0, dens
-    Type(configuration_type), Intent(InOut) :: config
-    Type(domains_type), Intent(In) :: domain
-    Type(file_type), Intent(InOut) :: files(:)
-    Type(comms_type), Intent(InOut) :: comm
+    Type(io_type), Intent(InOut)                :: io
+    Integer, Intent(In)                         :: megatm, levcfg
+    Logical, Intent(In)                         :: l_ind, strict
+    Real(Kind=wp), Intent(In)                   :: rcut, dvar
+    Real(Kind=wp), Intent(InOut)                :: xhi, yhi, zhi
+    Real(Kind=wp), Intent(Out)                  :: dens0, dens
+    Type(configuration_type), Intent(InOut)     :: config
+    Type(domains_type), Intent(In)              :: domain
+    Type(file_type), Intent(InOut)              :: files(:)
+    Type(comms_type), Intent(InOut)             :: comm
 
-    Real(Kind=wp) :: cut
+    Real(Kind=wp)                               :: cut
 
-    Character(Len=200) :: record
-    Character(Len=40) :: word, fname
-    Logical                :: safe, l_his, l_xtr, fast
-    Integer                :: fail(1:4), i, j, idm, max_fail, min_fail, &
-                              icell, ncells, &
-                              indatm, nattot, totatm, &
-                              ipx, ipy, ipz, nlx, nly, nlz, &
-                              ix, iy, iz, jx, jy, jz
-    Real(Kind=wp)      :: celprp(1:10), rcell(1:9), celh(1:9), det, &
-                          volm, vcell, &
-                          sxx, syy, szz, xdc, ydc, zdc, &
-                          pda_max, pda_min, pda_ave, &
-                          pda_dom_max, pda_dom_min
+    Character(Len=200)                          :: record
+    Character(Len=40)                           :: word, fname
+    Logical                                     :: eor
+    Logical                                     :: safe, l_his, l_xtr, fast
+    Integer                                     :: fail(1:4), i, idm, max_fail, min_fail, &
+         icell, ncells, &
+         indatm, nattot, totatm, &
+         ipx, ipy, ipz, nlx, nly, nlz, &
+         ix, iy, iz, jx, jy, jz
+    Real(Kind=wp)                               :: celprp(1:10), rcell(1:9), celh(1:9), det, &
+         volm, vcell, &
+         sxx, syy, szz, xdc, ydc, zdc, &
+         pda_max, pda_min, pda_ave, &
+         pda_dom_max, pda_dom_min
 
     ! Some parameters and variables needed by io interfaces
 
-    Integer                       :: fh, io_read
-    Integer(Kind=offset_kind) :: top_skip
+    Integer                                     :: fh, io_read
+    Integer(Kind=offset_kind)                   :: top_skip
 
-    Real(Kind=wp), Dimension(:), Allocatable :: pda
+    Real(Kind=wp), Dimension(:), Allocatable    :: pda
 
     Character(Len=8), Dimension(:), Allocatable :: chbuf
-    Integer, Dimension(:), Allocatable :: iwrk
-    Real(Kind=wp), Dimension(:), Allocatable :: axx, ayy, azz, &
+    Integer, Dimension(:), Allocatable          :: iwrk
+    Real(Kind=wp), Dimension(:), Allocatable    :: axx, ayy, azz, &
                                                 bxx, byy, bzz, &
                                                 cxx, cyy, czz
 
-    Character(Len=256) :: message
-    Character(Len=256) :: messages(3)
+    Character(Len=256)                          :: message
+    Character(Len=256)                          :: messages(3)
+    Integer                                     :: ierr
 
     safe = .true. ! we start safe
     l_his = .false. ! no HISTORY reading
@@ -847,7 +851,9 @@ Contains
 
     ! image conditions not compliant with DD and link-cell
 
-    If (config%imcon == 4 .or. config%imcon == 5 .or. config%imcon == 7) Call error(300)
+    If (config%imcon == IMCON_TRUNC_OCTO .or. &
+        config%imcon == IMCON_RHOMBIC_DODEC .or. &
+        config%imcon == IMCON_HEXAGONAL) Call error(300)
 
     ! Real space cutoff shortened by 50% but not < 1 Angstrom
     !(or ==rcut_def in scan_control)
@@ -874,14 +880,14 @@ Contains
     ! Amend volume of density cell if cluster, slab or bulk slab
     ! cell dimensional properties overwritten but not needed anyway
 
-    If (config%imcon == 0 .or. config%imcon == 6 .or. config%imc_n == 6) Then
+    If (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB .or. config%imc_n == 6) Then
       celh = config%cell
 
-      If (config%imcon == 0) Then
+      If (config%imcon == IMCON_NOPBC) Then
         celh(1) = Max(1.0_wp, xhi)
         celh(5) = Max(1.0_wp, yhi)
         celh(9) = Max(1.0_wp, zhi)
-      Else If (config%imcon == 6) Then
+      Else If (config%imcon == IMCON_SLAB) Then
         celh(9) = Max(1.0_wp, zhi)
       End If
 
@@ -940,32 +946,24 @@ Contains
 
         ! Read the CONFIG file header (TITLE record)
 
-        i = 0 ! position counter
-        j = 0 ! IOStat return
         record = ' '
-        Do
-          i = i + 1
-          safe = .false.
-          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=j, End=10) record(i:i)
-          safe = .true.
-          If (j < 0) Go To 10
-        End Do
-        10 Continue
+        Do i = 1, recsz-1 ! Stop early because of CR
+          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=ierr) record(i:i)
+          call error_read(ierr, 'read_config', break_eor=eor)
+          if (eor) exit
+       End Do
+
         fast = (fast .and. i == recsz)
 
         ! Read configuration level and image condition (RECORD2)
 
-        i = 0 ! position counter
-        j = 0 ! IOStat return
         record = ' '
-        Do
-          i = i + 1
-          safe = .false.
-          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=j, End=20) record(i:i)
-          safe = .true.
-          If (j < 0) Go To 20
-        End Do
-        20 Continue
+        Do i = 1, recsz-1 ! Stop early because of CR
+          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=ierr) record(i:i)
+          call error_read(ierr, 'read_config', break_eor=eor)
+          if (eor) exit
+       End Do
+
         fast = (fast .and. i == recsz)
 
         ! Read particles total value
@@ -978,8 +976,6 @@ Contains
       Call gsync(comm)
       Call gcheck(comm, safe, "enforce")
       Call gcheck(comm, fast, "enforce")
-
-      If (.not. safe) Go To 50
 
       ! Close CONFIG
 
@@ -1014,10 +1010,7 @@ Contains
       Allocate (axx(1:config%mxatms), ayy(1:config%mxatms), azz(1:config%mxatms), Stat=fail(2))
       Allocate (bxx(1:config%mxatms), byy(1:config%mxatms), bzz(1:config%mxatms), Stat=fail(3))
       Allocate (cxx(1:config%mxatms), cyy(1:config%mxatms), czz(1:config%mxatms), Stat=fail(4))
-      If (Any(fail > 0)) Then
-        Write (message, '(a)') 'read_config allocation failure'
-        Call error(0, message)
-      End If
+      If (Any(fail > 0)) call error_alloc('main buffers', 'read_config')
 
       ! Initialise domain localised atom counter (configuration)
       ! and dispatched atom counter
@@ -1052,7 +1045,8 @@ Contains
 
         If (comm%idnode == 0 .and. safe) Then
           record = ' '
-          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a)', End=30) record
+          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a)', iostat=ierr) record
+          call error_read(ierr, 'read_config')
           Call tabs_2_blanks(record); Call strip_blanks(record)
           Call get_word(record, word); chbuf(indatm) = word(1:8)
           If (l_ind) Then
@@ -1067,18 +1061,14 @@ Contains
             iwrk(indatm) = nattot
           End If
 
-          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30) axx(indatm), ayy(indatm), azz(indatm)
-
+          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*, iostat=ierr) axx(indatm), ayy(indatm), azz(indatm)
+          call error_read(ierr, 'read_config')
           If (levcfg > 0) Then
-            Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30) bxx(indatm), byy(indatm), bzz(indatm)
-            If (levcfg > 1) Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30) cxx(indatm), cyy(indatm), czz(indatm)
-          End If
-          Go To 40
-
-          30 Continue
-          safe = .false. ! catch error
-
-          40 Continue
+            Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*, iostat=ierr) bxx(indatm), byy(indatm), bzz(indatm)
+            call error_read(ierr, 'read_config')
+            If (levcfg > 1) Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*, iostat=ierr) cxx(indatm), cyy(indatm), czz(indatm)
+            call error_read(ierr, 'read_config')
+           End If
         End If
 
         ! Circulate configuration data to all nodes when transmission arrays are filled up
@@ -1088,7 +1078,7 @@ Contains
           ! Check if batch was read fine
 
           Call gcheck(comm, safe)
-          If (.not. safe) Go To 50
+          If (.not. safe) Call error(0, 'Unexpected end of config')
 
           ! Ensure all atoms are in prescribed simulation cell (DD bound) and broadcast them
           !
@@ -1213,10 +1203,7 @@ Contains
       Deallocate (axx, ayy, azz, Stat=fail(2))
       Deallocate (bxx, byy, bzz, Stat=fail(3))
       Deallocate (cxx, cyy, czz, Stat=fail(4))
-      If (Any(fail > 0)) Then
-        Write (message, '(a)') 'read_config deallocation failure'
-        Call error(0, message)
-      End If
+      If (Any(fail > 0)) call error_dealloc('read buffers', 'read_config')
 
       ! If PROPER read
 
@@ -1235,7 +1222,7 @@ Contains
       ! top_skip is header size
 
       If (io_read /= IO_READ_NETCDF) Then
-        If (config%imcon == 0) Then
+        If (config%imcon == IMCON_NOPBC) Then
           top_skip = Int(2, offset_kind)
         Else
           top_skip = Int(5, offset_kind)
@@ -1322,10 +1309,7 @@ Contains
     ! Allocate and initialise particle density array
 
     Allocate (pda(1:ncells), Stat=fail(1))
-    If (fail(1) > 0) Then
-      Write (message, '(a)') 'read_config allocation failure'
-      Call error(0, message)
-    End If
+    If (fail(1) > 0) call error_alloc('particle density array', 'read_config')
     pda = 0.0_wp
 
     ! Get the total number of link-cells in MD cell per direction
@@ -1400,20 +1384,9 @@ Contains
     dens = pda_dom_max / vcell ! maximum domain density
 
     Deallocate (pda, Stat=fail(1))
-    If (fail(1) > 0) Then
-      Write (message, '(a)') 'read_config deallocation failure'
-      Call error(0, message)
-    End If
+    If (fail(1) > 0) call error_dealloc('particle density array', 'read_config')
 
     ! PARTICLE DENSITY END
-
-    Return
-
-    ! error exit for CONFIG file read
-
-    50 Continue
-    If (comm%idnode == 0) Call files(FILE_CONFIG)%close ()
-    Call error(55)
 
   End Subroutine read_config
 
@@ -1501,10 +1474,7 @@ Contains
     Allocate (first_at(0:n_read_procs_use), orig_first_at(0:n_read_procs_use), Stat=fail(1))
     Allocate (chbuf(1:batsz), iwrk(1:batsz), Stat=fail(2))
     Allocate (scatter_buffer(1:wp_vals_per_at, 1:batsz), Stat=fail(3))
-    If (Any(fail(1:3) > 0)) Then
-      Write (message, '(a)') 'read_config_parallel allocation failure 1'
-      Call error(0, message)
-    End If
+    If (Any(fail(1:3) > 0)) Call error_alloc('first_scatter_buffer', 'read_config_parallel')
 
     ! define basic quantities for the parallel ASCII reading
 
@@ -1544,18 +1514,21 @@ Contains
           Do n_ii = 1_li, n_sk / n_jj
             forma = ' '
             Write (forma, '( "(", i0, "/)" )') n_jj
-            Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
+            Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, iostat=ierr)
+            call error_read(ierr, 'read_config')
           End Do
           n_ii = Mod(n_sk, n_jj) - n_ii + 1_li
           If (n_ii > 0_li) Then
             forma = ' '
             Write (forma, '( "(", i0, "/)" )') n_ii
-            Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
+            Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, iostat=ierr)
+            call error_read(ierr, 'read_config')
           End If
         Else
           forma = ' '
           Write (forma, '( "(", i0, "/)" )') n_sk
-          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
+          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, iostat=ierr)
+          call error_read(ierr, 'read_config')
         End If
 
         recsz = 200
@@ -1581,10 +1554,7 @@ Contains
       Allocate (scatter_buffer_read(1:wp_vals_per_at, 1:batsz), Stat=fail(6))
       Allocate (chbuf_scat(1:batsz), iwrk_scat(1:batsz), Stat=fail(7))
       Allocate (n_held(0:comm%mxnode - 1), where_buff(0:comm%mxnode - 1), owner_read(1:batsz), Stat=fail(8))
-      If (Any(fail(1:8) > 0)) Then
-        Write (message, '(a)') 'read_config_parallel allocation failure 2'
-        Call error(0, message)
-      End If
+      If (Any(fail(1:8) > 0)) Call error_alloc('read buffers', 'read_config_parallel')
 
     Else
 
@@ -1595,10 +1565,7 @@ Contains
       Allocate (scatter_buffer_read(1:0, 1:0), Stat=fail(1))
       Allocate (chbuf_scat(1:0), iwrk_scat(1:0), Stat=fail(2))
       Allocate (n_held(0:-1), where_buff(0:-1), Stat=fail(3))
-      If (Any(fail(1:3) > 0)) Then
-        Write (message, '(a)') 'read_config_parallel allocation failure 3'
-        Call error(0, message)
-      End If
+      If (Any(fail(1:3) > 0)) Call error_alloc('scatter buffers', 'read_config_parallel')
 
     End If
 
@@ -1635,6 +1602,7 @@ Contains
                 Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma) rec_buff(:, 1:recs_to_read)
               Else
                 Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr)
+                call error_read(ierr, 'read_config_parallel')
                 rec_mpi_io = rec_mpi_io + Int(recs_to_read, offset_kind)
               End If
             End If
@@ -1660,7 +1628,8 @@ Contains
               iwrk_read(i) = first_at(my_read_proc_num) + i
             End If
 
-            If (levcfg == 3) Read (record, Fmt=*, End=100) axx_read(i), ayy_read(i), azz_read(i)
+            If (levcfg == 3) Read (record, Fmt=*, iostat=ierr) axx_read(i), ayy_read(i), azz_read(i)
+            call error_read(ierr, 'read_config_parallel')
 
             If (this_rec_buff == recs_to_read) Then
               this_rec_buff = 0
@@ -1681,7 +1650,8 @@ Contains
               Do j = 1, Min(Len(record), Size(rec_buff, Dim=1))
                 record(j:j) = rec_buff(j, this_rec_buff)
               End Do
-              Read (record, Fmt=*, End=100) axx_read(i), ayy_read(i), azz_read(i)
+              Read (record, Fmt=*, iostat=ierr) axx_read(i), ayy_read(i), azz_read(i)
+              call error_read(ierr, 'read_config_parallel')
               If (this_rec_buff == recs_to_read) Then
                 this_rec_buff = 0
                 If (levcfg > 0) Then
@@ -1690,6 +1660,7 @@ Contains
                     Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma) rec_buff(:, 1:recs_to_read)
                   Else
                     Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr)
+                    call error_read(ierr, 'read_config_parallel')
                     rec_mpi_io = rec_mpi_io + Int(recs_to_read, offset_kind)
                   End If
                 End If
@@ -1702,7 +1673,8 @@ Contains
                 Do j = 1, Min(Len(record), Size(rec_buff, Dim=1))
                   record(j:j) = rec_buff(j, this_rec_buff)
                 End Do
-                Read (record, Fmt=*, End=100) bxx_read(i), byy_read(i), bzz_read(i)
+                Read (record, Fmt=*, iostat=ierr) bxx_read(i), byy_read(i), bzz_read(i)
+                call error_read(ierr, 'read_config_parallel')
                 If (this_rec_buff == recs_to_read) Then
                   this_rec_buff = 0
                   If (levcfg > 1) Then
@@ -1711,6 +1683,7 @@ Contains
                       Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma) rec_buff(:, 1:recs_to_read)
                     Else
                       Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr)
+                      call error_read(ierr, 'read_config_parallel')
                       rec_mpi_io = rec_mpi_io + Int(recs_to_read, offset_kind)
                     End If
                   End If
@@ -1723,7 +1696,8 @@ Contains
                   Do j = 1, Min(Len(record), Size(rec_buff, Dim=1))
                     record(j:j) = rec_buff(j, this_rec_buff)
                   End Do
-                  Read (record, Fmt=*, End=100) cxx_read(i), cyy_read(i), czz_read(i)
+                  Read (record, Fmt=*, iostat=ierr) cxx_read(i), cyy_read(i), czz_read(i)
+                  call error_read(ierr, 'read_config_parallel')
                   If (this_rec_buff == recs_to_read) Then
                     this_rec_buff = 0
                   End If
@@ -1832,7 +1806,7 @@ Contains
             End If
           End Do
 
-          ! If only detecting box dimensions for imcon == 0 or 6 or imc_n == 6
+          ! If only detecting box dimensions for imcon == IMCON_NOPBC or 6 or imc_n == 6
 
         Else
 
@@ -1954,7 +1928,7 @@ Contains
 
     End Do
 
-    ! If only detecting box dimensions for imcon == 0 or 6 or imc_n == 6
+    ! If only detecting box dimensions for imcon == IMCON_NOPBC or 6 or imc_n == 6
 
     If (l_xtr) Then
       Call gmax(comm, xhi)
@@ -1975,20 +1949,24 @@ Contains
           Do n_ii = 1_li, n_sk / n_jj
             forma = ' '
             Write (forma, '( "(", i0, "/)" )') n_jj
-            Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
+            Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, iostat=ierr)
+            call error_read(ierr, 'read_config_parallel')
+
           End Do
           n_ii = Mod(Int(n_skip, li), n_jj)
           If (n_ii > 0_li) Then
             forma = ' '
             Write (forma, '( "(", i0, "/)" )') n_ii
-            Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
-          End If
+            Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, iostat=ierr)
+            call error_read(ierr, 'read_config_parallel')
+         End If
         Else
           forma = ' '
           Write (forma, '( "(", i0, "/)" )') n_sk
-          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
-        End If
-      End If
+          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, iostat=ierr)
+          call error_read(ierr, 'read_config_parallel')
+       End If
+    End If
 
     Else
 
@@ -2032,10 +2010,7 @@ Contains
       Deallocate (bxx_read, byy_read, bzz_read, Stat=fail(4))
       Deallocate (cxx_read, cyy_read, czz_read, Stat=fail(5))
       Deallocate (owner_read, Stat=fail(6))
-      If (Any(fail(1:6) > 0)) Then
-        Write (message, '(a)') 'read_config_parallel deallocation failure 2'
-        Call error(0, message)
-      End If
+      If (Any(fail(1:6) > 0)) call error_dealloc('read buffers', 'read_config_parallel')
     End If
 
     Deallocate (first_at, orig_first_at, Stat=fail(1))
@@ -2044,17 +2019,8 @@ Contains
     Deallocate (iwrk, iwrk_scat, Stat=fail(4))
     Deallocate (scatter_buffer_read, Stat=fail(5))
     Deallocate (scatter_buffer, Stat=fail(6))
-    If (Any(fail(1:6) > 0)) Then
-      Write (message, '(a)') 'read_config_parallel deallocation failure 1'
-      Call error(0, message)
-    End If
+    If (Any(fail(1:6) > 0)) call error_dealloc('work and scatter buffers', 'read_config_parallel')
 
-    Return
-
-    ! error exit for CONFIG file read
-
-    100 Continue
-    Call error(55)
   End Subroutine read_config_parallel
 
   Subroutine scan_config(config, megatm, dvar, levcfg, xhi, yhi, zhi, &
@@ -2089,8 +2055,10 @@ Contains
 
     Character(Len=200)        :: record
     Character(Len=40)         :: fname, word
-    Integer                   :: fh, i, io_read, j, recsz, totatm
+    Integer                   :: fh, i, io_read, recsz, totatm
+    Integer                   :: ierr
     Integer(Kind=offset_kind) :: top_skip
+    Logical                   :: eor
     Logical                   :: fast, l_his, l_ind, l_xtr, safe, strict
     Real(Kind=wp)             :: buffer(1:4), cell_vecs(1:3, 1:3), xxx, yyy, zzz
 
@@ -2150,32 +2118,24 @@ Contains
 
         ! Read the CONFIG file header (TITLE record)
 
-        i = 0 ! position counter
-        j = 0 ! IOStat return
         record = ' '
-        Do
-          i = i + 1
-          safe = .false.
-          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=j, End=10) record(i:i)
-          safe = .true.
-          If (j < 0) Go To 10
+        Do i = 1, recsz-1 ! Stop early because of CR
+          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=ierr) record(i:i)
+          call error_read(ierr, 'scan_config', break_eor=eor)
+          if (eor) exit
         End Do
-        10 Continue
+
         fast = (fast .and. i == recsz)
 
         ! Read configuration level and image condition (RECORD2)
 
-        i = 0 ! position counter
-        j = 0 ! IOStat return
         record = ' '
-        Do
-          i = i + 1
-          safe = .false.
-          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=j, End=20) record(i:i)
-          safe = .true.
-          If (j < 0) Go To 20
+        Do i = 1, recsz-1 ! Stop early because of CR
+          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=ierr) record(i:i)
+          call error_read(ierr, 'scan_config', break_eor=eor)
+          if (eor) exit
         End Do
-        20 Continue
+
         fast = (fast .and. i == recsz)
 
         ! Read particles total value
@@ -2190,7 +2150,7 @@ Contains
       Call gcheck(comm, safe, "enforce")
       Call gcheck(comm, fast, "enforce")
 
-      If (.not. safe) Go To 50
+      If (.not. safe) Call error(0, 'Unexpected end of config')
 
       ! Close CONFIG
 
@@ -2209,7 +2169,7 @@ Contains
       ! Read TITLE record (file header)
 
       Call get_line(safe, files(FILE_CONFIG)%unit_no, record, comm)
-      If (.not. safe) Go To 50
+      If (.not. safe) Call error(0, 'Unexpected end of config')
 
       Call strip_blanks(record)
       config%cfgname = Trim(record)
@@ -2217,7 +2177,7 @@ Contains
       ! Read configuration level and image condition
 
       Call get_line(safe, files(FILE_CONFIG)%unit_no, record, comm)
-      If (.not. safe) Go To 50
+      If (.not. safe) Call error(0, 'Unexpected end of config')
 
       Call get_word(record, word)
       levcfg = Nint(word_2_real(word))
@@ -2237,7 +2197,7 @@ Contains
 
       If (config%imcon /= 0) Then
         Call get_line(safe, files(FILE_CONFIG)%unit_no, record, comm)
-        If (.not. safe) Go To 50
+        If (.not. safe) Call error(0, 'Unexpected end of config')
         Call get_word(record, word)
         config%cell(1) = word_2_real(word)
         Call get_word(record, word)
@@ -2246,7 +2206,7 @@ Contains
         config%cell(3) = word_2_real(word)
 
         Call get_line(safe, files(FILE_CONFIG)%unit_no, record, comm)
-        If (.not. safe) Go To 50
+        If (.not. safe) Call error(0, 'Unexpected end of config')
         Call get_word(record, word)
         config%cell(4) = word_2_real(word)
         Call get_word(record, word)
@@ -2255,7 +2215,7 @@ Contains
         config%cell(6) = word_2_real(word)
 
         Call get_line(safe, files(FILE_CONFIG)%unit_no, record, comm)
-        If (.not. safe) Go To 50
+        If (.not. safe) Call error(0, 'Unexpected end of config')
         Call get_word(record, word)
         config%cell(7) = word_2_real(word)
         Call get_word(record, word)
@@ -2302,7 +2262,7 @@ Contains
     yhi = 0.0_wp
     zhi = 0.0_wp
 
-    If (config%imcon == 0 .or. config%imcon == 6 .or. config%imc_n == 6) Then
+    If (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB .or. config%imc_n == 6) Then
 
       ! If MASTER read
 
@@ -2327,7 +2287,7 @@ Contains
           ! Find the extreme dimensions for the system
 
           Do
-            Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=40)
+           Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=40)
             Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30) xxx, yyy, zzz
 
             If (levcfg > 0) Then
@@ -2351,7 +2311,7 @@ Contains
         Call gsync(comm)
         Call gcheck(comm, safe, "enforce")
 
-        If (.not. safe) Go To 50
+        If (.not. safe) Call error(0, 'Unexpected end of config')
 
         ! Close CONFIG
 
@@ -2385,7 +2345,7 @@ Contains
         ! top_skip is header size
 
         If (io_read /= IO_READ_NETCDF) Then
-          If (config%imcon == 0) Then
+          If (config%imcon == IMCON_NOPBC) Then
             top_skip = Int(2, offset_kind)
           Else
             top_skip = Int(5, offset_kind)
@@ -2409,14 +2369,6 @@ Contains
       End If
 
     End If
-
-    Return
-
-    ! error exit for CONFIG file read
-
-    50 Continue
-    If (comm%idnode == 0) Call files(FILE_CONFIG)%close ()
-    Call error(55)
 
   End Subroutine scan_config
 
@@ -2623,7 +2575,7 @@ Contains
 
       Call io_set_parameters(io, user_comm=comm%comm)
       Call io_init(io, recsz)
-      Call io_delete(io, cfile%filename, comm)
+!      Call io_delete(io, cfile%filename, comm)
       Call io_open(io, io_write, comm%comm, cfile%filename, mode_wronly, fh)
 
       ! Start of file (updated)
@@ -3466,7 +3418,7 @@ Contains
     Write (str1, '(I5)') Int(Sum(gathered%mpi%counts) / 3)
     Write (str2, '(I5)') config%megatm
     error_message = 'Disagreement in total number of atoms found from summing all'// &
-                    'elements of MPI record size vs megatm: '//str1//','//str2
+                    'elements of MPI record size vs megatm: '//trim(str1)//','//trim(str2)
     Call assert(Int(Sum(gathered%mpi%counts) / 3) == config%megatm, error_message)
 
     If (to_master_only) Then

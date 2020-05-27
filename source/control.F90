@@ -4,7 +4,15 @@ Module control
   Use bonds,                Only: bonds_type
   Use comms,                Only: comms_type,&
                                   gcheck
-  Use configuration,        Only: configuration_type
+  Use configuration,        Only: configuration_type,&
+                                  IMCON_NOPBC,&
+                                  IMCON_CUBIC,&
+                                  IMCON_ORTHORHOMBIC,&
+                                  IMCON_PARALLELOPIPED,&
+                                  IMCON_SLAB,&
+                                  IMCON_TRUNC_OCTO,&
+                                  IMCON_RHOMBIC_DODEC,&
+                                  IMCON_HEXAGONAL
   Use constants,            Only: pi,&
                                   prsunt,&
                                   tenunt,&
@@ -103,7 +111,7 @@ Module control
   Use timer,                Only: timer_type
   Use trajectory,           Only: trajectory_type
   Use ttm,                  Only: ttm_type
-  Use vdw,                  Only: MIX_FENDER_HASLEY,&
+  Use vdw,                  Only: MIX_FENDER_HALSEY,&
                                   MIX_FUNCTIONAL,&
                                   MIX_HALGREN,&
                                   MIX_HOGERVORST,&
@@ -589,7 +597,6 @@ Contains
       If (word(1:1) == '#' .or. word(1:1) == ' ') Then
       Else If (word(1:5) == 'l_scr') Then
       Else If (word(1:6) == 'l_fast') Then
-      Else If (word(1:5) == 'l_tim') Then
       Else If (word(1:5) == 'l_eng') Then
         devel%l_eng = .true.
         Call info('%%% OUTPUT contains an extra last line with E_tot !!! %%%', .true.)
@@ -671,6 +678,7 @@ Contains
         Call info('%%% Terminate gracefully before initialisation !!! %%%', .true.)
       Else If (word(1:5) == 'l_dis') Then
         devel%l_dis = .true.
+        Call get_word(record, word)
         devel%r_dis = Min(devel%r_dis, word_2_real(word, 0.1_wp))
         Call info('%%% Turn on the check on minimum separation distance between VNL pairs at re/start !!! %%%', .true.)
         Write (message, '(a,1p,e12.4)') '%%% separation criterion (Angstroms) %%%', devel%r_dis
@@ -712,7 +720,7 @@ Contains
             vdws%mixing = MIX_LORENTZ_BERTHELOT
             Call info('type of mixing selected - Lorentz-Berthelot :: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2', .true.)
           Else If (word2(1:4) == 'fend') Then
-            vdws%mixing = MIX_FENDER_HASLEY
+            vdws%mixing = MIX_FENDER_HALSEY
             Call info('type of mixing selected - Fender-Halsey :: e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2', .true.)
           Else If (word2(1:4) == 'hoge') Then
             vdws%mixing = MIX_HOGERVORST
@@ -884,7 +892,7 @@ Contains
 
         If (l_0) Then
           If (comm%idnode == 0) &
-            Call info('fire option on - actual temperature will reset to 10 Kelvin if no target tempreature is specified', .true.)
+            Call info('fire option on - actual temperature will reset to 10 Kelvin if no target temperature is specified', .true.)
         Else
           ltemp = .true.
           thermo%temp = 10.0_wp
@@ -1161,8 +1169,8 @@ Contains
       Else If (word(1:6) == 'regaus') Then
 
         Call get_word(record, word)
-        If (word(1:5) == 'every' .or. word(1:4) == 'thermo%temp') Call get_word(record, word)
-        If (word(1:5) == 'every' .or. word(1:4) == 'thermo%temp') Call get_word(record, word)
+        If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record, word)
+        If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record, word)
         thermo%freq_tgaus = Max(1, Abs(Nint(word_2_real(word, 0.0_wp))))
 
         thermo%l_tgaus = .true.
@@ -1174,8 +1182,8 @@ Contains
       Else If (word(1:5) == 'scale') Then
 
         Call get_word(record, word)
-        If (word(1:5) == 'every' .or. word(1:4) == 'thermo%temp') Call get_word(record, word)
-        If (word(1:5) == 'every' .or. word(1:4) == 'thermo%temp') Call get_word(record, word)
+        If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record, word)
+        If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record, word)
         thermo%freq_tscale = Max(1, Abs(Nint(word_2_real(word, 0.0_wp))))
 
         thermo%l_tscale = .true.
@@ -1207,7 +1215,7 @@ Contains
             Call warning('scheme deselected due to switched off electrostatics', .true.)
           End If
           If (cshell%mxshl == 0) Then
-            Call warning('scheme disabled due to lack of core-shell defined interatcions', .true.)
+            Call warning('scheme disabled due to lack of core-shell defined interactions', .true.)
           End If
 
           If (mpoles%max_mpoles == 0 .or. cshell%mxshl == 0) Then
@@ -2211,7 +2219,7 @@ Contains
           ttm%sh_B = word_2_real(word)
           Write (messages(1), '(a)') 'electronic specific heat capacity set to hyperbolic tangent function'
           Write (messages(2), '(a,1p,e12.4)') 'constant term A (kB/atom) ', ttm%sh_A
-          Write (messages(3), '(a,1p,e12.4)') 'emperature term B (K^-1) ', ttm%sh_B
+          Write (messages(3), '(a,1p,e12.4)') 'temperature term B (K^-1) ', ttm%sh_B
           Call info(messages, 3, .true.)
 
         Else If (word1(1:5) == 'celin') Then
@@ -2258,7 +2266,7 @@ Contains
           Call get_word(record, word)
           ttm%Ka0 = word_2_real(word)
           Write (messages(1), '(a)') 'electronic thermal conductivity set to drude model'
-          Write (messages(2), '(a,1p,e12.4)') 't.c. at system thermo%temp. (W m^-1 K^-1) ', ttm%Ka0
+          Write (messages(2), '(a,1p,e12.4)') 't.c. at system temp. (W m^-1 K^-1) ', ttm%Ka0
           Call info(messages, 2, .true.)
 
         Else If (word1(1:5) == 'ketab') Then
@@ -2320,7 +2328,7 @@ Contains
           ttm%ttmdyndens = .true.
           Call info('dynamic calculations of average atomic density in active ionic cells', .true.)
 
-        Else If (word1(1:4) == 'ttm%amin') Then
+        Else If (word1(1:4) == 'amin') Then
 
           ! minimum number of atoms needed per ionic temperature cell
           ! to give definable ionic temperature (default = 1): smaller
@@ -2352,7 +2360,7 @@ Contains
           Write (message, '(a,1p,e12.4)') 'elec. stopping power (eV/nm) ', ttm%dEdX
           Call info(message, .true.)
 
-        Else If (word1(1:6) == 'sgauss' .or. word1(1:5) == 'thermo%ttm%sigma') Then
+        Else If (word1(1:6) == 'sgauss' .or. word1(1:5) == 'sigma') Then
 
           ! gaussian spatial distribution for initial energy deposition into
           ! electronic system
@@ -2363,7 +2371,7 @@ Contains
           Call get_word(record, word)
           ttm%sigmax = word_2_real(word)
           Write (messages(1), '(a)') 'initial gaussian spatial energy deposition in electronic system'
-          Write (messages(2), '(a,1p,e12.4)') 'thermo%ttm%sigma of distribution (nm) ', ttm%sig
+          Write (messages(2), '(a,1p,e12.4)') 'sigma of distribution (nm) ', ttm%sig
           Write (messages(3), '(a,1p,e12.4)') 'distribution cutoff (nm) ', ttm%sigmax * ttm%sig
           Call info(messages, 3, .true.)
 
@@ -2415,7 +2423,7 @@ Contains
           Call get_word(record, word)
           ttm%tcdepo = word_2_real(word)
           Write (messages(1), '(a)') 'gaussian temporal energy deposition in electronic system'
-          Write (messages(2), '(a,1p,e12.4)') 'thermo%ttm%sigma of distribution (ps) ', ttm%tdepo
+          Write (messages(2), '(a,1p,e12.4)') 'sigma of distribution (ps) ', ttm%tdepo
           Write (messages(3), '(a,1p,e12.4)') 'distribution cutoff (ps) ', 2.0_wp * ttm%tcdepo * ttm%tdepo
           Call info(messages, 3, .true.)
 
@@ -2530,7 +2538,7 @@ Contains
           Write (message, '(a,1p,e12.4)') 'electron-ion coupling offset (ps) ', ttm%ttmoffset
           Call info(message, .true.)
 
-        Else If (word1(1:6) == 'ttm%oneway') Then
+        Else If (word1(1:6) == 'oneway') Then
 
           ! one-way electron-phonon coupling in thermostat and thermal
           ! diffusion: only apply when electronic temperature exceeds
@@ -3837,6 +3845,7 @@ Contains
     neigh%padding = 0.0_wp
 
     rdf%rbin = rbin_def
+    zdensity%bin_width = rbin_def
 
     ! Frequency of the SPME k-space evaluation
 
@@ -4514,7 +4523,7 @@ Contains
 
           ! fix cell vectors for image conditions with discontinuities
 
-          If (imcon == 0) Then
+          If (imcon == IMCON_NOPBC) Then
 
             cell(1) = Max(2.0_wp * xhi + cut, 3.0_wp * cut, cell(1))
             cell(5) = Max(2.0_wp * yhi + cut, 3.0_wp * cut, cell(5))
@@ -4527,7 +4536,7 @@ Contains
             cell(7) = 0.0_wp
             cell(8) = 0.0_wp
 
-          Else If (imcon == 6) Then
+          Else If (imcon == IMCON_SLAB) Then
 
             cell(9) = Max(2.0_wp * zhi + cut, 3.0_wp * cut, cell(9))
 
@@ -4551,7 +4560,9 @@ Contains
               tol1 = Sqrt(-Log(eps0 * neigh%cutoff * (2.0_wp * tol * electro%alpha)**2))
 
               fac = 1.0_wp
-              If (imcon == 4 .or. imcon == 5 .or. imcon == 7) fac = 2.0_wp**(1.0_wp / 3.0_wp)
+              If (imcon == IMCON_TRUNC_OCTO .or. &
+                  imcon == IMCON_RHOMBIC_DODEC .or. &
+                  imcon == IMCON_HEXAGONAL) fac = 2.0_wp**(1.0_wp / 3.0_wp)
 
               ewld%fft_dim_a1 = 2 * Nint(0.25_wp + fac * celprp(7) * electro%alpha * tol1 / pi)
               ewld%fft_dim_b1 = 2 * Nint(0.25_wp + fac * celprp(8) * electro%alpha * tol1 / pi)
@@ -4783,7 +4794,7 @@ Contains
 
           ! fix cell vectors for image conditions with discontinuities
 
-          If (imcon == 0) Then
+          If (imcon == IMCON_NOPBC) Then
 
             cell(1) = Max(2.0_wp * xhi + cut, 3.0_wp * cut, cell(1))
             cell(5) = Max(2.0_wp * yhi + cut, 3.0_wp * cut, cell(5))
@@ -4796,7 +4807,7 @@ Contains
             cell(7) = 0.0_wp
             cell(8) = 0.0_wp
 
-          Else If (imcon == 6) Then
+          Else If (imcon == IMCON_SLAB) Then
 
             cell(9) = Max(2.0_wp * zhi + cut, 3.0_wp * cut, cell(9))
 
@@ -5041,21 +5052,21 @@ Contains
 
           ! get read method
 
-          Call info('', .true.)
+          Call info('', .true., level=3)
           word1 = ' '; word1 = word
           Call get_word(record, word)
           If (word(1:5) == 'mpiio') Then
             io_read = IO_READ_MPIIO
-            Call info('I/O read method: parallel by using MPI-I/O', .true.)
+            Call info('I/O read method: parallel by using MPI-I/O', .true., level=2)
           Else If (word(1:6) == 'direct') Then
             io_read = IO_READ_DIRECT
-            Call info('I/O read method: parallel by using direct access', .true.)
+            Call info('I/O read method: parallel by using direct access', .true., level=2)
           Else If (word(1:6) == 'netcdf') Then
             io_read = IO_READ_NETCDF
-            Call info('I/O read method: parallel by using netCDF', .true.)
+            Call info('I/O read method: parallel by using netCDF', .true., level=2)
           Else If (word(1:6) == 'master') Then
             io_read = IO_READ_MASTER
-            Call info('I/O read method: serial by using a single master process', .true.)
+            Call info('I/O read method: serial by using a single master process', .true., level=2)
           Else
             Call strip_blanks(record)
             Write (message, '(4a)') 'io ', word1(1:Len_trim(word1) + 1), word(1:Len_trim(word) + 1), record
@@ -5083,7 +5094,7 @@ Contains
                 itmp = itmp - 1
               End Do
               Write (message, '(a,i10)') 'I/O readers (assumed) ', itmp
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
             Else
               If (itmp > comm%mxnode) Then
                 tmp = Min(Real(comm%mxnode, wp), 2.0_wp * Real(comm%mxnode, wp)**0.5_wp)
@@ -5092,13 +5103,13 @@ Contains
                   itmp = itmp - 1
                 End Do
                 Write (message, '(a,i10)') 'I/O readers (enforced) ', itmp
-                Call info(message, .true.)
+                Call info(message, .true., level=3)
               Else
                 Do While (Mod(comm%mxnode, itmp) /= 0)
                   itmp = itmp - 1
                 End Do
                 Write (message, '(a,i10)') 'I/O readers set to ', itmp
-                Call info(message, .true.)
+                Call info(message, .true., level=3)
               End If
             End If
 
@@ -5115,21 +5126,21 @@ Contains
             If (itmp == 0) Then
               Call io_get_parameters(io, user_batch_size_read=itmp)
               Write (message, '(a,i10)') 'I/O read batch size (assumed) ', itmp
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
             Else
               itmp = Min(itmp, MAX_BATCH_SIZE)
               Call io_set_parameters(io, user_batch_size_read=itmp)
               Write (message, '(a,i10)') 'I/O read batch size set to ', itmp
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
             End If
           Else If (io_read == IO_READ_MASTER) Then
             Write (message, '(a,i10)') 'I/O readers (enforced) ', 1
-            Call info(message, .true.)
+            Call info(message, .true., level=3)
           Else
             tmp = Min(Real(comm%mxnode, wp), 2.0_wp * Real(comm%mxnode, wp)**0.5_wp)
             itmp = 2**Int(Nearest(Log(tmp) / Log(2.0_wp), +1.0_wp))
             Write (message, '(a,i10)') 'I/O readers (enforced) ', itmp
-            Call info(message, .true.)
+            Call info(message, .true., level=3)
             ! the number of readers is now ready to set
             Call io_set_parameters(io, user_n_io_procs_read=itmp)
           End If
@@ -5143,12 +5154,12 @@ Contains
           If (itmp == 0) Then
             Call io_get_parameters(io, user_buffer_size_read=itmp)
             Write (message, '(a,i10)') 'I/O read buffer size (assumed) ', itmp
-            Call info(message, .true.)
+            Call info(message, .true., level=3)
           Else
             itmp = Min(Max(itmp, 100), Min(itmp, MAX_BUFFER_SIZE))
             Call io_set_parameters(io, user_buffer_size_read=itmp)
             Write (message, '(a,i10)') 'I/O read buffer size set to ', itmp
-            Call info(message, .true.)
+            Call info(message, .true., level=3)
           End If
 
           ! switch error checking flag for reading
@@ -5182,7 +5193,7 @@ Contains
 
           ! get write method
 
-          Call info('', .true.)
+          Call info('', .true., level=3)
           If (word(1:5) == 'mpiio') Then
             io_write = IO_WRITE_SORTED_MPIIO
             Call info('I/O write method: parallel by using MPI-I/O', .true.)
@@ -5236,7 +5247,7 @@ Contains
               record1 = ' '
               record1 = word(1:Len_trim(word) + 1)//record ! back up
               record = record1
-              Call info('I/O write type: data sorting on (assumed)', .true.)
+              Call info('I/O write type: data sorting on (assumed)', .true., level=3)
             End If
           End If
 
@@ -5260,7 +5271,7 @@ Contains
                 itmp = itmp - 1
               End Do
               Write (message, '(a,i10)') 'I/O writers (assumed) ', itmp
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
             Else
               If (itmp > comm%mxnode) Then
                 tmp = Min(Real(comm%mxnode, wp), 8.0_wp * Real(comm%mxnode, wp)**0.5_wp)
@@ -5269,13 +5280,13 @@ Contains
                   itmp = itmp - 1
                 End Do
                 Write (message, '(a,i10)') 'I/O writers (enforced) ', itmp
-                Call info(message, .true.)
+                Call info(message, .true., level=3)
               Else
                 Do While (Mod(comm%mxnode, itmp) /= 0)
                   itmp = itmp - 1
                 End Do
                 Write (message, '(a,i10)') 'I/O writers set to ', itmp
-                Call info(message, .true.)
+                Call info(message, .true., level=3)
               End If
             End If
 
@@ -5292,21 +5303,21 @@ Contains
             If (itmp == 0) Then
               Call io_get_parameters(io, user_batch_size_write=itmp)
               Write (message, '(a,i10)') 'I/O write batch size (assumed) ', itmp
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
             Else
               itmp = Min(itmp, MAX_BATCH_SIZE)
               Call io_set_parameters(io, user_batch_size_write=itmp)
               Write (message, '(a,i10)') 'I/O write batch size set to ', itmp
-              Call info(message, .true.)
+              Call info(message, .true., level=3)
             End If
           Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. io_write == IO_WRITE_SORTED_MASTER) Then
             Write (message, '(a,i10)') 'I/O writers (enforced) ', 1
-            Call info(message, .true.)
+            Call info(message, .true., level=3)
           Else
             tmp = Min(Real(comm%mxnode, wp), 8.0_wp * Real(comm%mxnode, wp)**0.5_wp)
             itmp = 2**Int(Nearest(Log(tmp) / Log(2.0_wp), +1.0_wp))
             Write (message, '(a,i10)') 'I/O writers (enforced) ', itmp
-            Call info(message, .true.)
+            Call info(message, .true., level=3)
             ! the number of writers is now ready to set
             Call io_set_parameters(io, user_n_io_procs_write=itmp)
           End If
@@ -5320,12 +5331,12 @@ Contains
           If (itmp == 0) Then
             Call io_get_parameters(io, user_buffer_size_write=itmp)
             Write (message, '(a,i10)') 'I/O write buffer size (assumed) ', itmp
-            Call info(message, .true.)
+            Call info(message, .true., level=3)
           Else
             itmp = Min(Max(itmp, 100), Min(itmp, MAX_BUFFER_SIZE))
             Call io_set_parameters(io, user_buffer_size_write=itmp)
             Write (message, '(a,i10)') 'I/O write buffer size set to ', itmp
-            Call info(message, .true.)
+            Call info(message, .true., level=3)
           End If
 
           ! switch error checking flag for writing
@@ -5390,8 +5401,8 @@ Contains
       ! read method
 
       Call io_set_parameters(io, user_method_read=IO_READ_MPIIO); io_read = IO_READ_MPIIO
-      Call info('', .true.)
-      Call info('I/O read method: parallel by using MPI-I/O (assumed)', .true.)
+      Call info('', .true., level=2)
+      Call info('I/O read method: parallel by using MPI-I/O (assumed)', .true., level=2)
 
       ! number of readers
 
@@ -5402,25 +5413,25 @@ Contains
       End Do
       Call io_set_parameters(io, user_n_io_procs_read=itmp)
       Write (message, '(a,i10)') 'I/O readers (assumed) ', itmp
-      Call info(message, .true.)
+      Call info(message, .true., level=3)
 
       ! read batch size
 
       Call io_get_parameters(io, user_batch_size_read=itmp)
       Write (message, '(a,i10)') 'I/O read batch size (assumed) ', itmp
-      Call info(message, .true.)
+      Call info(message, .true., level=3)
 
       ! read buffer size
 
       Call io_get_parameters(io, user_buffer_size_read=itmp)
       Write (message, '(a,i10)') 'I/O read buffer size (assumed) ', itmp
-      Call info(message, .true.)
+      Call info(message, .true., level=3)
 
       ! error checking flag for reading
 
       If (io_read /= IO_READ_MASTER) Then
         Call io_set_parameters(io, user_error_check=.false.)
-        Call info('I/O parallel read error checking off (assumed)', .true.)
+        Call info('I/O parallel read error checking off (assumed)', .true., level=3)
       End If
 
     End If
@@ -5430,12 +5441,12 @@ Contains
       ! write method
 
       Call io_set_parameters(io, user_method_write=IO_WRITE_SORTED_MPIIO); io_write = IO_WRITE_SORTED_MPIIO
-      Call info('', .true.)
-      Call info('I/O write method: parallel by using MPI-I/O (assumed)', .true.)
+      Call info('', .true., level=3)
+      Call info('I/O write method: parallel by using MPI-I/O (assumed)', .true., level=2)
 
       ! write type
 
-      Call info('I/O write type: data sorting on (assumed)', .true.)
+      Call info('I/O write type: data sorting on (assumed)', .true., level=3)
 
       ! number of writers
 
@@ -5446,25 +5457,25 @@ Contains
       End Do
       Call io_set_parameters(io, user_n_io_procs_write=itmp)
       Write (message, '(a,i10)') 'I/O writers (assumed) ', itmp
-      Call info(message, .true.)
+      Call info(message, .true., level=3)
 
       ! batch size
 
       Call io_get_parameters(io, user_batch_size_write=itmp)
       Write (message, '(a,i10)') 'I/O write batch size (assumed) ', itmp
-      Call info(message, .true.)
+      Call info(message, .true., level=3)
 
       ! write buffer size
 
       Call io_get_parameters(io, user_buffer_size_write=itmp)
       Write (message, '(a,i10)') 'I/O write buffer size (assumed) ', itmp
-      Call info(message, .true.)
+      Call info(message, .true., level=3)
 
       ! error checking flag for writing
 
       If (io_write /= IO_WRITE_UNSORTED_MASTER .and. io_write /= IO_WRITE_SORTED_MASTER) Then
         Call io_set_parameters(io, user_error_check=.false.)
-        Call info('I/O parallel write error checking off (assumed)', .true.)
+        Call info('I/O parallel write error checking off (assumed)', .true., level=3)
       End If
 
     End If

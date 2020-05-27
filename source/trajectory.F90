@@ -3,7 +3,15 @@ Module trajectory
                              Traject_tag, comm_self, comms_type, gbcast, gcheck, grecv, gsend, &
                              gsum, gsync, mode_rdonly, mode_wronly, offset_kind
   Use configuration,   Only: configuration_type,&
-                             read_config_parallel
+                             read_config_parallel,&
+                             IMCON_NOPBC,&
+                             IMCON_CUBIC,&
+                             IMCON_ORTHORHOMBIC,&
+                             IMCON_PARALLELOPIPED,&
+                             IMCON_SLAB,&
+                             IMCON_TRUNC_OCTO,&
+                             IMCON_RHOMBIC_DODEC,&
+                             IMCON_HEXAGONAL
   Use constants,       Only: half_minus
   Use domains,         Only: domains_type
   Use errors_warnings, Only: error,&
@@ -357,7 +365,9 @@ Contains
 
       ! image conditions not compliant with DD and link-cell
 
-      If (config%imcon == 4 .or. config%imcon == 5 .or. config%imcon == 7) Call error(300)
+      If (config%imcon == IMCON_TRUNC_OCTO .or. &
+          config%imcon == IMCON_RHOMBIC_DODEC .or. &
+          config%imcon == IMCON_HEXAGONAL) Call error(300)
 
       Call get_word(record, word); tstep = word_2_real(word)
       Call get_word(record, word); time = word_2_real(word)
@@ -591,7 +601,9 @@ Contains
 
       ! image conditions not compliant with DD and link-cell
 
-      If (config%imcon == 4 .or. config%imcon == 5 .or. config%imcon == 7) Call error(300)
+      If (config%imcon == IMCON_TRUNC_OCTO .or. &
+          config%imcon == IMCON_RHOMBIC_DODEC .or. &
+          config%imcon == IMCON_HEXAGONAL) Call error(300)
 
       Call get_word(record, word); tstep = word_2_real(word)
       Call get_word(record, word); time = word_2_real(word)
@@ -659,7 +671,9 @@ Contains
 
       ! image conditions not compliant with DD and link-cell
 
-      If (config%imcon == 4 .or. config%imcon == 5 .or. config%imcon == 7) Call error(300)
+      If (config%imcon == IMCON_TRUNC_OCTO .or. &
+          config%imcon == IMCON_RHOMBIC_DODEC .or. &
+          config%imcon == IMCON_HEXAGONAL) Call error(300)
 
       Call io_nc_get_var(io, 'timestep', traj%fh_read, tstep, i, 1)
       Call io_nc_get_var(io, 'step', traj%fh_read, nstep, i, 1)
@@ -735,7 +749,7 @@ Contains
     Call info('HISTORY end of file reached', .true.)
 
     If (traj%io_read == IO_READ_MASTER) Then
-      If (config%imcon == 0) Call files(FILE_HISTORY)%close ()
+      If (config%imcon == IMCON_NOPBC) Call files(FILE_HISTORY)%close ()
       Deallocate (chbuf, Stat=fail(1))
       Deallocate (iwrk, Stat=fail(2))
       Deallocate (axx, ayy, azz, Stat=fail(3))
@@ -759,7 +773,7 @@ Contains
     Call info('HISTORY data mishmash detected', .true.)
     exout = -1 ! It's an indicator of the end of reading.
     If (traj%io_read == IO_READ_MASTER) Then
-      If (config%imcon == 0) Call files(FILE_HISTORY)%close ()
+      If (config%imcon == IMCON_NOPBC) Call files(FILE_HISTORY)%close ()
       Deallocate (chbuf, Stat=fail(1))
       Deallocate (iwrk, Stat=fail(2))
       Deallocate (axx, ayy, azz, Stat=fail(3))

@@ -18,9 +18,9 @@ Module development
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds,           Only: wp
-  Use parse,           Only: get_line, get_word, lower_case, clean_string
+  Use parse,           Only: get_line, get_word, lower_case, clean_string, word_2_real
   Use filename,        Only: file_type, FILE_CONTROL
-  Use errors_warnings, Only: info, error
+  Use errors_warnings, Only: info, error , set_print_level
 #ifdef OLDMPI
   Use comms,           Only: mpi_ver, mpi_subver, comms_type, gcheck
 #else
@@ -114,7 +114,7 @@ Contains
     Type(development_type), Intent(InOut) :: devel
     Type(file_type),        Intent(InOut) :: files(:)
     Type(comms_type),       Intent(InOut) :: comm
-
+    Integer :: print_level
     Character(Len=200) :: record
     Character(Len=40)  :: word
     Logical            :: carry, safe
@@ -156,7 +156,11 @@ Contains
           devel%l_fast = .true.
           Call info('%%% speed up by avoiding global safety checks !!! %%%', .true.)
         Else If (word(1:5) == 'l_tim') Then
-          devel%l_tim = .true.
+           devel%l_tim = .true.
+        Else If (word(1:7) == 'l_print') Then
+           Call get_word(record, word)
+           print_level = nint(abs(word_2_real(word)))
+           Call set_print_level(print_level)
         Else If (word(1:6) == 'finish') Then
           carry = .false.
         End If

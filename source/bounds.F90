@@ -4,7 +4,16 @@ Module bounds
   Use comms,           Only: comms_type
   Use configuration,   Only: configuration_type,&
                              read_config,&
-                             scan_config
+                             scan_config,&
+                             IMCON_NOPBC,&
+                             IMCON_CUBIC,&
+                             IMCON_ORTHORHOMBIC,&
+                             IMCON_PARALLELOPIPED,&
+                             IMCON_SLAB,&
+                             IMCON_TRUNC_OCTO,&
+                             IMCON_RHOMBIC_DODEC,&
+                             IMCON_HEXAGONAL
+
   Use constants,       Only: delr_max,&
                              delth_max,&
                              pi,&
@@ -49,7 +58,9 @@ Module bounds
   Use rigid_bodies,    Only: rigid_bodies_type
   Use site,            Only: site_type
   Use statistics,      Only: stats_type
-  Use tersoff,         Only: tersoff_type
+  Use tersoff,         Only: tersoff_type,&
+                             TERS_TERSOFF,&
+                             TERS_KIHS
   Use tethers,         Only: tethers_type
   Use thermostat,      Only: thermostat_type
   Use three_body,      Only: threebody_type
@@ -169,7 +180,9 @@ Contains
     ! halt execution for unsupported image conditions in DD
     ! checks for some inherited from DL_POLY_2 are though kept
 
-    If (config%imcon == 4 .or. config%imcon == 5 .or. config%imcon == 7) Call error(514)
+    If (config%imcon == IMCON_TRUNC_OCTO .or. &
+        config%imcon == IMCON_RHOMBIC_DODEC .or. &
+        config%imcon == IMCON_HEXAGONAL) Call error(514)
 
     ! scan CONTROL file data
 
@@ -182,7 +195,7 @@ Contains
     ! check integrity of cell vectors: for cubic, TO and RD cases
     ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
 
-    If (config%imcon == 1 .or. config%imcon == 4 .or. config%imcon == 5) Then
+    If (config%imcon == IMCON_CUBIC .or. config%imcon == IMCON_TRUNC_OCTO .or. config%imcon == IMCON_RHOMBIC_DODEC) Then
 
       ats = (Abs(config%cell(1)) + Abs(config%cell(5))) / 2.0_wp
       test = 1.0e-10_wp * ats ! 1.0e-10_wp tolerance in primitive cell type specification of dimensions
@@ -192,7 +205,7 @@ Contains
       If (Abs(config%cell(5) - ats) > test) Then
         Call error(410)
       End If
-      If (config%imcon == 5) Then
+      If (config%imcon == IMCON_RHOMBIC_DODEC) Then
         If (Abs(config%cell(9) - ats * rt2) > test) Then
           Call error(410)
         End If
@@ -205,7 +218,7 @@ Contains
 
     ! check integrity of hexagonal prism cell vectors
 
-    If (config%imcon == 7) Then
+    If (config%imcon == IMCON_HEXAGONAL) Then
       ! 1.0e-10_wp Angstrom tolerance in primitive cell type specification of dimensions
       If (Abs(config%cell(1) - rt3 * config%cell(5)) > 1.0e-10_wp) Then
         Call error(410)
@@ -231,14 +244,16 @@ Contains
 
     config%volm = celprp(10)
 
-    If (config%imcon == 4 .or. config%imcon == 5 .or. config%imcon == 7) config%volm = 0.5_wp * config%volm
+    If (config%imcon == IMCON_TRUNC_OCTO .or. &
+        config%imcon == IMCON_RHOMBIC_DODEC .or. &
+        config%imcon == IMCON_HEXAGONAL) config%volm = 0.5_wp * config%volm
 
     ! check value of cutoff and reset if necessary
 
     If (config%imcon > 0) Then
-      If (config%imcon == 4) config%width = rt3 * config%cell(1) / 2.0_wp
-      If (config%imcon == 5) config%width = config%cell(1)
-      If (config%imcon == 6) config%width = Min(celprp(7), celprp(8))
+      If (config%imcon == IMCON_TRUNC_OCTO) config%width = rt3 * config%cell(1) / 2.0_wp
+      If (config%imcon == IMCON_RHOMBIC_DODEC) config%width = config%cell(1)
+      If (config%imcon == IMCON_SLAB) config%width = Min(celprp(7), celprp(8))
 
       ! halt program if potential cutoff exceeds the minimum half-cell config%width
 
@@ -402,7 +417,13 @@ Contains
     ! maximum number of rdf potentials (rdf%max_rdf = rdf%max_rdf)
     ! rdf%max_grid - maximum dimension of rdf%rdf and z-density arrays
 
-    If ((.not. l_n_r) .or. lzdn) Then
+    if (lzdn) then
+       zdensity%max_grid = Nint(neigh%cutoff / zdensity%bin_width)
+    else
+       zdensity%max_grid = 0
+    end if
+
+    If ((.not. l_n_r)) Then
       If (((.not. l_n_r) .and. rdf%max_rdf == 0) .and. (vdws%max_vdw > 0 .or. met%max_metal > 0)) &
         rdf%max_rdf = Max(vdws%max_vdw, met%max_metal) ! (vdws,met) == rdf scanning
       rdf%max_grid  = Nint(neigh%cutoff / rdf%rbin)
@@ -425,7 +446,8 @@ Contains
     ! with 2 extra ones on each side (for derivatives) totals.
     ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
-    mxgrid = Max(config%mxgana, vdws%max_grid, met%maxgrid, rdf%max_grid, rdf%max_grid_usr, 1004, Nint(neigh%cutoff / delr_max) + 4)
+    mxgrid = Max(config%mxgana, vdws%max_grid, met%maxgrid, zdensity%max_grid, &
+         & rdf%max_grid, rdf%max_grid_usr, 1004, Nint(neigh%cutoff / delr_max) + 4)
 
     ! grids setting and overrides
 
@@ -489,9 +511,9 @@ Contains
     ! maximum number of tersoff potentials (tersoffs%max_ter = tersoffs%max_ter) and parameters
 
     If (tersoffs%max_ter > 0) Then
-      If      (tersoffs%key_pot == 1) Then
+      If      (tersoffs%key_pot == TERS_TERSOFF) Then
         tersoffs%max_param = 11
-      Else If (tersoffs%key_pot == 2) Then
+      Else If (tersoffs%key_pot == TERS_KIHS) Then
         tersoffs%max_param = 16
       End If
     Else
@@ -545,7 +567,7 @@ Contains
     Call info(' ', .true.)
     Write (message, '(a,3(i6,1x))') 'node/domain decomposition (x,y,z): ', &
       domain%nx, domain%ny, domain%nz
-    Call info(message, .true.)
+    Call info(message, .true., level=2)
 
     ! TTM matters
     padding2 = 0.0_wp
@@ -631,7 +653,7 @@ Contains
       Write (message, '(a,i6,a,3(i0,a))') &
         'pure cutoff driven limit on largest possible decomposition:', qlx * qly * qlz, &
         ' nodes/domains (', qlx, ',', qly, ',', qlz, ')'
-      Call info(message, .true.)
+      Call info(message, .true., level=3)
 
       qlx = Max(1, qlx / 2)
       qly = Max(1, qly / 2)
@@ -640,7 +662,7 @@ Contains
       Write (message, '(a,i6,a,3(i0,a))') &
         'pure cutoff driven limit on largest balanced decomposition:', qlx * qly * qlz, &
         ' nodes/domains (', qlx, ',', qly, ',', qlz, ')'
-      Call info(message, .true.)
+      Call info(message, .true., level=3)
 
     Else
 
@@ -669,7 +691,7 @@ Contains
     Write (message, '(a,i6,a,3(i0,a))') &
       'cutoffs driven limit on largest possible decomposition:', qlx * qly * qlz, &
       ' nodes/domains (', qlx, ',', qly, ',', qlz, ')'
-    Call info(message, .true.)
+    Call info(message, .true., level=3)
 
     qlx = Max(1, qlx / 2)
     qly = Max(1, qly / 2)
@@ -678,7 +700,7 @@ Contains
     Write (message, '(a,i6,a,3(i0,a))') &
       'cutoffs driven limit on largest balanced decomposition:', qlx * qly * qlz, &
       ' nodes/domains (', qlx, ',', qly, ',', qlz, ')'
-    Call info(message, .true.)
+    Call info(message, .true., level=3)
 
     ! calculate link cell dimensions per node
 
@@ -689,7 +711,7 @@ Contains
     ! print link cell algorithm and check for violations or...
 
     Write (message, '(a,3i6)') "link-cell decomposition 1 (x,y,z): ", ilx, ily, ilz
-    Call info(message, .true.)
+    Call info(message, .true., level=3)
 
     tol  = Min(m6, m7 * neigh%cutoff)                                ! tolerance
     test = m8 * Merge(1.0_wp, 2.0_wp, ewld%bspline > 0)              ! 2% (w/ SPME/PS) or 4% (w/o SPME/PS)
@@ -802,9 +824,9 @@ Contains
     ! total link-cells per node/domain is ncells = (ilx+4)*(ily+4)*(ilz+4)
     ! magnify the effect of densvar on neigh%max_cell for different conf%imcon scenarios
 
-    If      (config%imcon == 0) Then
+    If      (config%imcon == IMCON_NOPBC) Then
       neigh%max_cell = Nint((fdvar**4) * Real((ilx + 4) * (ily + 4) * (ilz + 4), wp))
-    Else If (config%imcon == 6 .or. config%imc_n == 6) Then
+    Else If (config%imcon == IMCON_SLAB .or. config%imc_n == IMCON_SLAB) Then
       neigh%max_cell = Nint((fdvar**3) * Real((ilx + 4) * (ily + 4) * (ilz + 4), wp))
     Else
       neigh%max_cell = Nint((fdvar**2) * Real((ilx + 4) * (ily + 4) * (ilz + 4), wp))
@@ -897,7 +919,7 @@ Contains
             End If
             Write (message, '(2(a,f0.3),a)') 'user specified or autogenerated padding: ', neigh%padding, &
                                              ' , SPME suggested maximum value: ', padding1, ' Angstrom'
-            Call info(message, .true.)
+            Call info(message, .true., level=2)
           End If
 
           test = Min(Real(ewld%fft_dim_a1, wp) / Real(domain%nx, wp), &
@@ -919,7 +941,7 @@ Contains
           Write (messages(3), '(a,f0.2,a)') &
             'SPME suggested factor to increase current Ewald precision by: ', &
             (1.0_wp - tol) * 100.0_wp, ' for currently specified cutoff (with padding) & domain decomposition'
-          Call info(messages, 3, .true.)
+          Call info(messages, 3, .true., level=2)
         End If
 
         If (devel%l_trm) Then
@@ -943,7 +965,7 @@ Contains
     ! Create f(fdvar,dens0,dens) function of density push, maximum 'local' density, maximum domains' density
 
     If ((comm%mxnode == 1 .or. Min(ilx, ily, ilz) < 3) .or. &
-        (config%imcon == 0 .or. config%imcon == 6 .or. config%imc_n == 6) .or. &
+        (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB .or. config%imc_n == IMCON_SLAB) .or. &
         (dens / dens0 <= 0.5_wp) .or. (fdvar > 10.0_wp)) Then
       fdens = dens0                                    ! for all possibly bad cases resort to max density
     Else
@@ -983,11 +1005,11 @@ Contains
 
     tmp = test * Real((ilx + 3) * (ily + 3) * (ilz + 3) , wp) ; tmp = Merge(tmp , Real(Huge(1) , wp) , tmp < Real(Huge(1) , wp))
     config%mxatms = Max(1 , Nint(tmp)) ! Overestimate & then bound down
-    If (comm%mxnode == 1 .or. config%imcon == 0) Then ! ilx >= 2 && ily >= 2 && ilz >= 2
+    If (comm%mxnode == 1 .or. config%imcon == IMCON_NOPBC) Then ! ilx >= 2 && ily >= 2 && ilz >= 2
       ! maximum of 8 fold increase in of surface thickness (domain+halo) to volume (domain only) as per geometric reasoning
       tmp = 1.25_wp * fdvar * 8.0_wp * Real(megatm , wp) ; tmp = Merge(tmp , Real(Huge(1) , wp) , tmp < Real(Huge(1) , wp))
       config%mxatms = Min(config%mxatms , Nint(tmp))
-    Else If (config%imcon == 6 .or. config%imc_n == 6) Then ! comm%mxnode >= 4 .or. (ilx >= 2 && ily >= 2)
+    Else If (config%imcon == IMCON_SLAB .or. config%imc_n == IMCON_SLAB) Then ! comm%mxnode >= 4 .or. (ilx >= 2 && ily >= 2)
       ! maximum of 7 fold increase in of surface thickness (domain+halo) to volume (domain only) as per geometric reasoning
       tmp = 1.25_wp * fdvar * 7.0_wp * Real(megatm , wp) ; tmp = Merge(tmp , Real(Huge(1) , wp) , tmp < Real(Huge(1) , wp))
       config%mxatms = Min(config%mxatms , Nint(tmp))
@@ -1089,7 +1111,7 @@ Contains
 
     config%mxbuff = Max(domain%mxbfdp, 35 * domain%mxbfxp, 4 * domain%mxbfsh,                                                &
                         2 * (ewld%fft_dim_a / domain%nx) * (ewld%fft_dim_b / domain%ny) * (ewld%fft_dim_c / domain%nz) + 10, &
-                        stats%mxnstk * stats%mxstak, mxgrid, rdf%max_grid,                                                   &
+                        stats%mxnstk * stats%mxstak, mxgrid, rdf%max_grid, zdensity%max_grid,                                &
                         rigid%max_list * Max(rigid%max_rigid, rigid%max_type), rigid%max_type * (4 + 3 * rigid%max_list), 10000)
 
     ! reset (increase) link-cell maximum (neigh%max_cell)
@@ -1105,19 +1127,23 @@ Contains
       ily = Int(domain%ny_recip * celprp(8) / cut)
       ilz = Int(domain%nz_recip * celprp(9) / cut)
 
-      Write (message, '(a,3i6)') "link-ccell decomposition 2 (x,y,z): ", ilx, ily, ilz
-      Call info(message, .true.)
+      Write (message, '(a,3i6)') "link-cell decomposition 2 (x,y,z): ", ilx, ily, ilz
+      Call info(message, .true., level=3)
 
       If (ilx < 3 .or. ily < 3 .or. ilz < 3) Call error(305)
 
-      If      (config%imcon == 0) Then
+      If      (config%imcon == IMCON_NOPBC) Then
         neigh%max_cell = Max(neigh%max_cell, Nint((fdvar**4) * Real((ilx + 5) * (ily + 5) * (ilz + 5), wp)))
-      Else If (config%imcon == 6 .or. config%imc_n == 6) Then
+      Else If (config%imcon == IMCON_SLAB .or. config%imc_n == IMCON_SLAB) Then
         neigh%max_cell = Max(neigh%max_cell, Nint((fdvar**3) * Real((ilx + 5) * (ily + 5) * (ilz + 5), wp)))
       Else
         neigh%max_cell = Max(neigh%max_cell, Nint((fdvar**2) * Real((ilx + 5) * (ily + 5) * (ilz + 5), wp)))
       End If
     End If
+
+    Write (message, '(a,3i6)') "Final link-cell decomposition (x,y,z): ", ilx, ily, ilz
+    Call info(message, .true., level=1)
+
   End Subroutine set_bounds
 
 End Module bounds

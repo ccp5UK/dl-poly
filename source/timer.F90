@@ -17,6 +17,7 @@ Module timer
                    gtime,&
                    mtime,&
                    timer_tag
+  Use, Intrinsic :: iso_fortran_env, Only: eu => error_unit
   Use kinds, Only: wp
 
   Implicit None
@@ -444,7 +445,7 @@ Contains
     Type(timer_type), Intent(InOut) :: tmr
     Type(comms_type), Intent(InOut) :: comm
 
-    Character(Len=138), Allocatable, Dimension(:) :: message
+    Character(Len=256), Allocatable, Dimension(:) :: message
     Integer                                       :: ierr, proc
     Type(node), Pointer                           :: current_timer
 
@@ -490,7 +491,7 @@ Contains
     Type(timer_type),                   Intent(In   ) :: tmr
     Type(node), Target,                 Intent(In   ) :: init_node
     Integer,                            Intent(In   ) :: max_depth, proc_id
-    Character(Len=138), Dimension(-2:), Intent(  Out) :: message
+    Character(Len=*), Dimension(-2:), Intent(  Out) :: message
 
     Character(Len=7)    :: depth_symb
     Character(Len=8)    :: proc_string
@@ -498,6 +499,13 @@ Contains
     Real(Kind=wp)       :: call_av, call_max, call_min, sum_timed, total_av, total_elapsed, &
                            total_max, total_min
     Type(node), Pointer :: current_timer
+    Character(Len = 256 ) :: fline,fhead,fcontent
+
+    fline = '(1X, "+", 28("-"), 2("+", 10("-")), 7("+", 12("-")), "+")'
+    fhead = '(1X, "|", 12X, "Name", 12X, "| Process  ", "|  Calls   ", "|  Call Min  ", "|  Call Max  ",'//&
+          & '"|  Call Ave  ", "|  Tot Min   ", "|   Tot Max  ", "|   Tot Ave  ", "|      %     ", "|")'
+    fcontent = '(1X, "|", 1X, A7, 1X, A18, 1X, "|", 1X, A8, 1X, "|", 1X, I8, 1X, "|", 1X, ES10.3, 1X, "|", 1X, ES10.3, 1X,'//&
+          & '"|", 1X, ES10.3, 1X, "|", 1X, ES10.3, 1X, "|", 1X, ES10.3, 1X, "|", 1X, ES10.3, 1X, "|", 1X, ES10.3, 1X, "|")'
 
     message(:) = ''
 
@@ -518,8 +526,8 @@ Contains
     itimer = 0
 
     ! Write table open and header
-    Write (message(-2), 100)
-    Write (message(-1), 101)
+    Write (message(-2), Trim(fline))
+    Write (message(-1), Trim(fhead))
 
     Do While (depth > -1)
 
@@ -557,7 +565,7 @@ Contains
 
       call_av = total_av / current_timer%time%calls
 
-      Write (message(itimer), 102) depth_symb, current_timer%time%name, proc_string, current_timer%time%calls, &
+      Write (message(itimer), Trim(fcontent)) depth_symb, current_timer%time%name, proc_string, current_timer%time%calls, &
         & call_min, call_max, call_av,  &
         & total_min, total_max, total_av, total_av * 100.0_wp / total_elapsed
 
@@ -582,17 +590,17 @@ Contains
 
     End Do
 
-    Write (message(itimer), 102) Repeat('-', 7), "Untimed           ", proc_string, 0, &
+    Write (message(itimer), Trim(fcontent)) Repeat('-', 7), "Untimed           ", proc_string, 0, &
       & 0.0_wp, 0.0_wp, 0.0_wp, 0.0_wp, 0.0_wp, &
       & total_elapsed - sum_timed, 100.0_wp - sum_timed * 100.0_wp / total_elapsed
-    Write (message(itimer + 1), 100)
-    Write (message(itimer + 2), *) ''
+    Write (message(itimer + 1), Trim(fline))
+    Write (message(itimer + 2), '(a)') ''
 
-    100 Format(1X, "+", 28("-"), 2("+", 10("-")), 7("+", 11("-")), "+")
-    101 Format(1X, "|", 12X, "Name", 12X, "| Process  ", "|  Calls   ", "| Call Min  ", "| Call Max  ",&
-          & "| Call Ave  ", "|  Tot Min  ", "|  Tot Max  ", "|  Tot Ave  ", "|     %     ", "|")
-    102 Format(1X, "|", 1X, A7, 1X, A18, 1X, "|", 1X, A8, 1X, "|", 1X, I8, 1X, "|", 1X, F9.4, 1X, "|", 1X, F9.4, 1X,&
-          & "|", 1X, F9.4, 1X, "|", 1X, F9.4, 1X, "|", 1X, F9.4, 1X, "|", 1X, F9.4, 1X, "|", 2X, F8.4, 1X, "|")
+    !100 Format(1X, "+", 28("-"), 2("+", 10("-")), 7("+", 16("-")), "+")
+    !101 Format(1X, "|", 12X, "Name", 12X, "| Process  ", "|  Calls   ", "|   Call Min     ", "|   Call Max     ",&
+    !      & "|   Call Ave     ", "|    Tot Min     ", "|    Tot Max     ", "|    Tot Ave     ", "|       %        ", "|")
+    !102 Format(1X, "|", 1X, A7, 1X, A18, 1X, "|", 1X, A8, 1X, "|", 1X, I8, 1X, "|", 1X, ES14.7, 1X, "|", 1X, ES14.7, 1X,&
+          !& "|", 1X, ES14.7, 1X, "|", 1X, ES14.7, 1X, "|", 1X, ES14.7, 1X, "|", 1X, ES14.7, 1X, "|", 1X, ES14.7, 1X, "|")
 
   End Subroutine timer_print_tree
 
@@ -640,7 +648,7 @@ Contains
 
     current_timer => find_timer(tmr, name)
     If (to_screen) Then
-      Write (0, *) current_timer%time%name, current_timer%time%calls, current_timer%time%last
+      Write (eu, *) current_timer%time%name, current_timer%time%calls, current_timer%time%last
     Else
       Write (message, '(a,2(1X,i0))') current_timer%time%name, current_timer%time%calls, current_timer%time%last
       Call timer_write(message, tmr)
@@ -685,14 +693,14 @@ Contains
 
       If (timer_in%proc_id == 0) Then
         Do i = 1, Size(message)
-          Write (timer_in%out_unit, *) Trim(message(i))
+          Write (timer_in%out_unit, '(a)') Trim(message(i))
         End Do
       End If
 
     Else
 
       Do i = 1, Size(message)
-        Write (0, *) message(i)
+        Write (eu, '(a)') message(i)
       End Do
 
     End If
@@ -714,12 +722,12 @@ Contains
     If (Present(timer_in)) Then
 
       If (timer_in%proc_id == 0) Then
-        Write (timer_in%out_unit, *) Trim(message)
+        Write (timer_in%out_unit, '(a)') Trim(message)
       End If
 
     Else
 
-      Write (0, *) message
+      Write (eu, '(a)') message
 
     End If
 

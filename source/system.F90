@@ -7,7 +7,15 @@ Module system
                              grecv, gsend, gsum, gsync, gtime, mode_create, mode_wronly, &
                              offset_kind
   Use configuration,   Only: configuration_type,&
-                             write_config
+                             write_config,&
+                             IMCON_NOPBC,&
+                             IMCON_CUBIC,&
+                             IMCON_ORTHORHOMBIC,&
+                             IMCON_PARALLELOPIPED,&
+                             IMCON_SLAB,&
+                             IMCON_TRUNC_OCTO,&
+                             IMCON_RHOMBIC_DODEC,&
+                             IMCON_HEXAGONAL
   Use constants,       Only: engunit,&
                              nmpldt,&
                              zero_plus
@@ -118,7 +126,8 @@ Contains
 
     If (devel%l_rin) Then
       i = 64 / 4 - 1 ! Bit_Size(0.0_wp)/4 - 1
-      j = Max(stats%mxstak * stats%mxnstk, rdf%max_grid * rdf%max_rdf, rdf%max_grid_usr, config%mxgana * config%mxtana)
+      j = Max(stats%mxstak * stats%mxnstk, rdf%max_grid * rdf%max_rdf, zdensity%max_grid, rdf%max_grid_usr, &
+           & config%mxgana * config%mxtana)
 
       Write (forma, 10) j / 4 + 1, i + 9, i
       10 Format('(1p,', i0, '(/,4e', i0, '.', i0, 'E3))')
@@ -749,8 +758,8 @@ Contains
 
     ! Holt or change execution if imcon is unsupported
 
-    If (config%imcon == 0) Call error(570)
-    If (config%imcon == 6 .and. config%nz > 1) Then
+    If (config%imcon == IMCON_NOPBC) Call error(570)
+    If (config%imcon == IMCON_SLAB .and. config%nz > 1) Then
       config%nz = 1
       Call warning(350, 0.0_wp, 0.0_wp, 0.0_wp)
       Write (message, '(a,3i5)') '*** Replication dimensions (nx,ny,nz):', config%nx, config%ny, config%nz
@@ -858,8 +867,9 @@ Contains
       Call info(message, .true.)
 
       ! check if we expand a cube since not all time we end up with a cube back
-      If ((config%imcon == 1) .and. ((config%nx /= config%ny) .or. (config%nx /= config%nz) .or. (config%ny /= config%nz))) Then
-        config%imcon = 3
+      If ((config%imcon == IMCON_CUBIC) .and. &
+          ((config%nx /= config%ny) .or. (config%nx /= config%nz) .or. (config%ny /= config%nz))) Then
+        config%imcon = IMCON_PARALLELOPIPED
       End If
 
       If (io_write == IO_WRITE_UNSORTED_MPIIO .or. &
@@ -1932,7 +1942,7 @@ Contains
 
         ! maximum zdensity%density that can be summed in each step
 
-        nsum = config%mxbuff / rdf%max_grid
+        nsum = config%mxbuff / zdensity%max_grid
         If (nsum == 0) Call error(200)
 
         Do i = 1, sites%mxatyp, nsum
