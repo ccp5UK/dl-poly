@@ -93,7 +93,7 @@ Module numerics
                              wi,&
                              wp
   Use particle,        Only: corePart
-
+  Use, Intrinsic ::  ieee_arithmetic
   Implicit None
   Private
 
@@ -3473,7 +3473,7 @@ Contains
 
   End Subroutine mat_mul
 
-  Function Factorial(n)
+  Pure Function Factorial(n)
 
     !!----------------------------------------------------------------------!
     !!
@@ -3721,7 +3721,7 @@ Contains
 
   End Function calc_erf_deriv
 
-  Function calc_gamma_1_2(x) Result(gam)
+  Pure Function calc_gamma_1_2(x) Result(gam)
     Use constants, Only: gamma_1_2
     Integer, Intent(In   ) :: x
     Real(wp)               :: gam
@@ -3733,7 +3733,7 @@ Contains
 !> Number of pre-calculated Gamma in constants
 
     If (x < 1) Then
-      Call error(0, 'Invalid gamma')
+      gam = ieee_value(gam, ieee_signaling_nan)
     Else If (x <= maxgam) Then
       gam = gamma_1_2(x)
     Else
@@ -3746,7 +3746,7 @@ Contains
 
   End Function calc_gamma_1_2
 
-  Function calc_inv_gamma_1_2(x) Result(gam)
+  Pure Function calc_inv_gamma_1_2(x) Result(gam)
     Use constants, Only: inv_gamma_1_2
     Integer, Intent(In   ) :: x
     Real(wp)               :: gam
@@ -3758,7 +3758,7 @@ Contains
 !> Number of pre-calculated Gamma in constants
 
     If (x < 1) Then
-      Call error(0, 'Invalid gamma')
+      gam = ieee_value(gam, ieee_signaling_nan)
     Else If (x <= maxgam) Then
       gam = inv_gamma_1_2(x)
     Else
@@ -3771,7 +3771,7 @@ Contains
 
   End Function calc_inv_gamma_1_2
 
-  Function calc_exp_int(x) Result(ei)
+  Pure Function calc_exp_int(x) Result(ei)
     !!-----------------------------------------------------------------------
     !!
     !! Routine for calculating the exponential integral
@@ -3788,7 +3788,6 @@ Contains
 
     Real(kind=wp), Parameter :: e_m_gamma = 0.57721566490153286_wp
     Real(kind=wp), Parameter :: tolerance = 1.0e-8_wp
-    Real(kind=wp) :: zero = 0.0_wp
     Integer, Parameter :: max_iter = 100
 
     ! Constant determined by exp(-x)/x * (1 + 1/x) = huge
@@ -3796,7 +3795,7 @@ Contains
       ei = Exp(x) / x
 
     Else If (Abs(x) < zero_plus) Then
-      ei = -Log(zero)
+      ei = ieee_value(ei, ieee_positive_inf)
 
     Else If (Abs(x) > 2.0_wp - 1.035 * Log(tolerance)) Then
       ei = ei_asym_ser(x)
@@ -3806,14 +3805,11 @@ Contains
 
     Else If (x > 0) Then
       ei = ei_pow_ser(x)
-
-    Else
-      Call error(0, 'Unable to solve exponential integral')
     End If
 
   Contains
 
-    Function ei_cont_frac_for(x) Result(ei)
+    Pure Function ei_cont_frac_for(x) Result(ei)
     Real(kind=wp), Intent(In   ) :: x
     Real(kind=wp)                :: ei
 
@@ -3836,7 +3832,7 @@ Contains
 
     End Function ei_cont_frac_for
 
-    Function ei_cont_frac(x) Result(ei)
+    Pure Function ei_cont_frac(x) Result(ei)
 
     Real(kind=wp), Intent(In   ) :: x
     Real(kind=wp)                :: ei
@@ -3852,7 +3848,7 @@ Contains
 
     End Function ei_cont_frac
 
-    Function ei_pow_ser(x) Result(ei)
+    Pure Function ei_pow_ser(x) Result(ei)
 
     Real(kind=wp), Intent(In   ) :: x
     Real(kind=wp)                :: ei
@@ -3872,7 +3868,7 @@ Contains
 
     End Function ei_pow_ser
 
-    Function ei_asym_ser(x) Result(ei)
+    Pure Function ei_asym_ser(x) Result(ei)
     Real(kind=wp), Intent(In   ) :: x
     Real(kind=wp)                :: ei
 

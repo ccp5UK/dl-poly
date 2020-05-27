@@ -27,9 +27,9 @@ Module spme
 
   Public :: f_1, f_2, f_4, f_6, f_12
   Public :: g_1, g_2, g_6, g_12
-  ! Public :: f_p, g_p
-  ! Public :: f_p_d, g_p_d
-  ! Public :: f_gen, g_gen
+  Public :: f_p, g_p
+  Public :: f_p_d, g_p_d
+  Public :: f_gen, g_gen
 
   Type spme_component
 
@@ -249,7 +249,7 @@ Contains
 
 !!! Higher order pots -- Obselete, but here for posterity
 
-  Function f_1(x)
+  Pure Function f_1(x)
     !!----------------------------------------------------------------------!
     !!
     !! First order (Coulomb) f_p for SPME method
@@ -259,13 +259,14 @@ Contains
     !! pi^(-1/2)*exp(-x^2)/x^2
     !!----------------------------------------------------------------------!
     Use constants, Only: sqrpi
-    Real(Kind=wp) :: x, f_1
+    Real(Kind=wp), Intent(In) :: x
+    Real(Kind=wp) :: f_1
 
     f_1 = Exp(-(x**2)) / (sqrpi * x**2)
 
   End Function f_1
 
-  Function f_2(x)
+  Pure Function f_2(x)
     !!----------------------------------------------------------------------!
     !!
     !! Second order f_p for SPME method
@@ -275,13 +276,14 @@ Contains
     !! sqrt(pi)/4 * erfc(x)
     !!----------------------------------------------------------------------!
     Use constants, Only: sqrpi
-    Real(Kind=wp) :: x, f_2
+    Real(Kind=wp), Intent(In) :: x
+    Real(Kind=wp) :: f_2
 
     f_2 = sqrpi * calc_erfc(x) / x
 
   End Function f_2
 
-  Function f_4(x)
+  Pure Function f_4(x)
     !!----------------------------------------------------------------------!
     !!
     !! Fourth order (Dispersion) f_p for SPME method
@@ -291,7 +293,8 @@ Contains
     !! 2e^(-x^2) - 2sqrt(pi)x erfc(x)
     !!----------------------------------------------------------------------!
     Use constants, Only: sqrpi
-    Real(Kind=wp) :: x, f_4
+    Real(Kind=wp), Intent(In) :: x
+    Real(Kind=wp) :: f_4
 
     Real(Kind=wp) :: x_2
 
@@ -299,7 +302,7 @@ Contains
     f_4 = 2.0_wp * (Exp(-x_2) - sqrpi * x * calc_erfc(x))
   End Function f_4
 
-  Function f_6(x)
+  Pure Function f_6(x)
     !!----------------------------------------------------------------------!
     !!
     !! Sixth order (Dispersion) f_p for SPME method
@@ -309,7 +312,8 @@ Contains
     !! 1/3( (1-2x^2)e^(-x^2) + 2 sqrt(pi)x^3 erfc(x))
     !!----------------------------------------------------------------------!
     Use constants, Only: sqrpi
-    Real(Kind=wp) :: x, f_6
+    Real(Kind=wp), Intent(In) :: x
+    Real(Kind=wp) :: f_6
 
     Real(Kind=wp), Parameter :: third = 1.0_wp / 3.0_wp
 
@@ -320,7 +324,7 @@ Contains
 
   End Function f_6
 
-  Function f_12(x)
+  Pure Function f_12(x)
     !!----------------------------------------------------------------------!
     !!
     !! Twelfth order (LJ Repulsion) f_p for SPME method
@@ -330,7 +334,8 @@ Contains
     !! 1/(56700) * ((105 - 30 x^2 + 12 x^4 - 8 x^6 + 16 x^8 ) * exp(-x^2) - 16sqrpi x^9 erfc(x))
     !!----------------------------------------------------------------------!
     Use constants, Only: sqrpi, pi
-    Real(Kind=wp) :: x, f_12
+    Real(Kind=wp), Intent(In) :: x
+    Real(Kind=wp) :: f_12
 
     Real(Kind=wp), Parameter                 :: prefac = 1.0_wp / 56700.0_wp
     Real(Kind=wp), Dimension(0:4), Parameter :: coeffsB = (/105.0_wp, -30.0_wp, 12.0_wp, -8.0_wp, &
@@ -346,7 +351,7 @@ Contains
 
   End Function f_12
 
-  Function f_p(x, pot_order)
+  Pure Function f_p(x, pot_order)
     !!----------------------------------------------------------------------!
     !!
     !! Nth order f_p for SPME method
@@ -421,7 +426,7 @@ Contains
 
   End Function f_p
 
-  Function f_p_d(x, energy, pot_order)
+  Pure Function f_p_d(x, energy, pot_order)
     !!----------------------------------------------------------------------!
     !!
     !! Derivative of the general g_p for SPME method
@@ -431,15 +436,15 @@ Contains
     !!
     !!----------------------------------------------------------------------!
     Use constants, Only: inv_gamma_1_2
-    Real(Kind=wp) :: x, energy
-    Integer       :: pot_order
+    Real(Kind=wp), Intent(In) :: x, energy
+    Integer, Intent(In)       :: pot_order
     Real(Kind=wp) :: f_p_d
 
     f_p_d = (Real(pot_order - 3, wp) / x * energy) - ((2.0_wp / x) * inv_gamma_1_2(pot_order) * Exp(-(x**2)))
 
   End Function f_p_d
 
-  Function g_1(x)
+  Pure Function g_1(x)
     !!----------------------------------------------------------------------!
     !!
     !! First order (Coulomb) g_p for SPME method
@@ -448,13 +453,14 @@ Contains
     !! author    - j.s.wilkins august 2018
     !!
     !!----------------------------------------------------------------------!
-    Real(Kind=wp) :: x, g_1
+    Real(Kind=wp), Intent(In) :: x
+    Real(Kind=wp) :: g_1
 
     g_1 = calc_erfc(x)
 
   End Function g_1
 
-  Function g_2(x)
+  Pure Function g_2(x)
     !!----------------------------------------------------------------------!
     !!
     !! Second order g_p for SPME method
@@ -463,13 +469,14 @@ Contains
     !! author    - j.s.wilkins august 2018
     !!
     !!----------------------------------------------------------------------!
-    Real(Kind=wp) :: x, g_2
+    Real(Kind=wp), Intent(In) :: x
+    Real(Kind=wp) :: g_2
 
     g_2 = Exp(-x**2)
 
   End Function g_2
 
-  Function g_6(x)
+  Pure Function g_6(x)
     !!----------------------------------------------------------------------!
     !!
     !! Sixth order (Dispersion) g_p for SPME method
@@ -478,7 +485,8 @@ Contains
     !! author    - j.s.wilkins august 2018
     !!
     !!----------------------------------------------------------------------!
-    Real(Kind=wp) :: x, g_6
+    Real(Kind=wp), Intent(In) :: x
+    Real(Kind=wp) :: g_6
 
     Real(Kind=wp) :: ex2
 
@@ -487,7 +495,7 @@ Contains
 
   End Function g_6
 
-  Function g_12(x)
+  Pure Function g_12(x)
     !!----------------------------------------------------------------------!
     !!
     !! Twelfth order (LJ Repulsion) g_p for SPME method
@@ -496,7 +504,8 @@ Contains
     !! author    - j.s.wilkins august 2018
     !!
     !!----------------------------------------------------------------------!
-    Real(Kind=wp) :: x, g_12
+    Real(Kind=wp), Intent(In) :: x
+    Real(Kind=wp) :: g_12
 
     Integer       :: i
     Real(Kind=wp) :: x_2
@@ -508,7 +517,7 @@ Contains
 
   End Function g_12
 
-  Function g_p(x, pot_order)
+  Pure Function g_p(x, pot_order)
     !!----------------------------------------------------------------------!
     !!
     !! General g_p for SPME method
@@ -556,7 +565,7 @@ Contains
 
   End Function g_p
 
-  Function g_p_d(x, pot_order)
+  Pure Function g_p_d(x, pot_order)
     !!----------------------------------------------------------------------!
     !!
     !! Derivative of the general g_p for SPME method

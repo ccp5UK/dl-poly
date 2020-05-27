@@ -234,7 +234,6 @@ Contains
 
   End Subroutine ewald_real_forces_coul_tab
 
-
   Subroutine ewald_real_forces_coul(electro, alpha, spme_datum, neigh, config, stats, iatm, x_pos, y_pos, z_pos, mod_dr_ij, &
     & engcpe_rl, vircpe_rl)
 
@@ -1741,7 +1740,6 @@ Contains
                                       pressure_virial, recip_conv_fac
     Real(Kind=wp), Dimension(10)   :: recip_cell_properties
     Real(Kind=wp), Dimension(3, 3) :: recip_pos, stress_temp
-
 !! SPME contribution to the stress
 !! Reciprocal lattice vectors
 !! Core function to FT
@@ -2209,10 +2207,10 @@ Contains
     End If
   End Function stress_kernel
 
-  Function f_p(x, pot_order)
+  Pure Function f_p(x, pot_order)
     !!----------------------------------------------------------------------!
     !!
-    !! Nth order f_p for SPME method
+    !! Nth order f_p for SPME method -- assume pot_order <= 0 handled elsewhere
     !!
     !! copyright - daresbury laboratory
     !! author    - j.s.wilkins november 2018
@@ -2248,8 +2246,7 @@ Contains
       f_p = f_6(x)
     Case (12)
       f_p = f_12(x)
-    Case (:0)
-      Call error(0, 'Invalid pot order in f_p')
+
     Case default
 
       x_2 = x**2
@@ -2311,7 +2308,7 @@ Contains
 
   End Function f_p
 
-  Function f_p_d(x, energy, pot_order)
+  Pure Function f_p_d(x, energy, pot_order)
     !!----------------------------------------------------------------------!
     !!
     !! Derivative of the general f_p for SPME method
@@ -2321,18 +2318,18 @@ Contains
     !!
     !!----------------------------------------------------------------------!
     Use constants, Only: inv_gamma_1_2
-    Real(Kind=wp) :: x, energy
-    Integer       :: pot_order
+    Real(Kind=wp), Intent(In) :: x, energy
+    Integer, Intent(In)       :: pot_order
     Real(Kind=wp) :: f_p_d
 
     f_p_d = (Real(pot_order - 3, wp) / x * energy) - ((2.0_wp / x) * inv_gamma_1_2(pot_order) * Exp(-(x**2)))
 
   End Function f_p_d
 
-  Function g_p(x, pot_order)
+  Pure Function g_p(x, pot_order)
     !!----------------------------------------------------------------------!
     !!
-    !! General g_p for SPME method
+    !! General g_p for SPME method -- assume pot_order <= 0 handled elsewhere
     !!
     !! copyright - daresbury laboratory
     !! author    - j.s.wilkins august 2018
@@ -2357,8 +2354,6 @@ Contains
       g_p = g_6(x)
     Case (12)
       g_p = g_12(x)
-    Case (:0)
-      Call error(0, 'Invalid pot order in g_p')
     Case default
 
       x_2 = x**2
