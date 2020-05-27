@@ -1675,9 +1675,11 @@ Contains
       Else If (flow%simulation_method == DFTB) Then
          Call calculate_dftb_forces(comm, flow, cnfig)
          !Output forces for app test
+#ifdef DFTBP
          If(devel%app_test%dftb_library) Then
             Call output_dftb_forces(comm, flow, cnfig)
          Endif
+#endif
       Endif
 
       ! Calculate physical quantities, collect statistics and report at t=0
