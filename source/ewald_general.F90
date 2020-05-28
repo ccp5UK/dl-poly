@@ -50,6 +50,7 @@ Module ewald_general
 
   Public ::  ewald_real_forces_gen
   Public ::  ewald_spme_forces_gen
+  Public ::  ewald_spme_init
   Public ::  spme_calc_force_energy
   Public ::  spme_construct_charge_array
   Public ::  spme_construct_potential_grid_gen

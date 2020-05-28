@@ -48,6 +48,7 @@ Module ewald_spole
                              spme_calc_stress,&
                              spme_calc_force_energy,&
                              spme_construct_charge_array,&
+                             ewald_spme_init,&
                              stress_kernel
   Implicit None
 
@@ -411,7 +412,7 @@ Contains
 
     Call spme_construct_charge_array(to_calc(0), ewld, to_calc(1:), recip_indices, electro, coeffs, charge_grid)
 
-    If (.not. stats%collect_pp .or. spme_datum%pot_order /= 1) Then
+    If (.not. stats%collect_pp) Then
 
       ! If we don't need per-particle data, we can use the old method of getting the stress (cheaper)
       Call spme_construct_potential_grid_coul(ewld, rcell, charge_grid, potential_grid, s_abc(:, 0))
@@ -421,8 +422,7 @@ Contains
     Else
 
       Call spme_construct_potential_grid_coul(ewld, rcell, charge_grid, potential_grid)
-      Call spme_construct_potential_grid_gen(ewld, rcell, charge_grid, spme_datum, &
-        & stress_kernel, stress_grid)
+      Call spme_construct_potential_grid_gen(ewld, rcell, charge_grid, spme_datum, stress_kernel, stress_grid)
 
       Call spme_calc_force_energy(ewld, electro, comm, domain, config, coeffs, &
         & rcell, recip_indices, potential_grid, stats%collect_pp, q_abc, f_abc)
@@ -1249,62 +1249,6 @@ Contains
   End Subroutine ewald_frzn_forces
 
 !!! Internals
-
-  Subroutine ewald_spme_init(domain, max_atoms, comm, kspace_in, &
-    & bspline_in, charge_grid, potential_grid, stress_grid)
-    !!----------------------------------------------------------------------!
-    !!
-    !! dl_poly_4 routine to initialise the ewald SPME routines
-    !!
-    !! copyright - daresbury laboratory
-    !! author    - j.s.wilkins august 2018
-    !!
-    !!----------------------------------------------------------------------!
-
-    Use ewald, Only: ewald_type
-    Use bspline, Only: bspline_type, bspline_coeffs_gen
-    Use domains, Only: domains_type
-    Use parallel_fft, Only: initialize_fft, pfft_indices
-    Use comms, Only: comms_type
-    Use kspace, Only: setup_kspace
-    Type(domains_type),                                Intent(In   ) :: domain
-    Integer,                                           Intent(In   ) :: max_atoms
-    Type(comms_type),                                  Intent(In   ) :: comm
-    Type(kspace_type),                                 Intent(inout) :: kspace_in
-    Type(bspline_type),                                Intent(inout) :: bspline_in
-    Real(Kind=wp), Allocatable, Dimension(:, :, :),    Intent(  Out) :: charge_grid
-    Complex(Kind=wp), Allocatable, Dimension(:, :, :), Intent(  Out) :: potential_grid, stress_grid
-
-    Integer, Dimension(4) :: fail
-
-    fail = 0
-
-    Call setup_kspace(kspace_in, domain, (kspace_in%k_vec_dim), comm)
-
-!!! begin cardinal b-splines set-up
-
-    bspline_in%num_deriv = 2
-    Allocate (bspline_in%derivs(3, 0:bspline_in%num_deriv, 1:bspline_in%num_splines, 1:max_atoms), stat=fail(1))
-    If (fail(1) > 0) Call error_alloc('bspline_in%derivs', 'ewald_spme_init')
-
-    ! calculate the global b-spline coefficients
-    Call bspline_coeffs_gen(kspace_in, bspline_in)
-
-!!! end cardinal b-splines set-up
-
-!!! begin daft set-up
-
-    ! workspace arrays for DaFT
-
-    Allocate (charge_grid   (1:kspace_in%block_fac(1), 1:kspace_in%block_fac(2), 1:kspace_in%block_fac(3)), stat=fail(1))
-    Allocate (potential_grid(1:kspace_in%block_fac(1), 1:kspace_in%block_fac(2), 1:kspace_in%block_fac(3)), stat=fail(2))
-    Allocate (stress_grid   (1:kspace_in%block_fac(1), 1:kspace_in%block_fac(2), 1:kspace_in%block_fac(3)), stat=fail(3))
-    Allocate (pfft_work     (1:kspace_in%block_fac(1), 1:kspace_in%block_fac(2), 1:kspace_in%block_fac(3)), stat=fail(4))
-    If (Any(fail > 0)) Call error_alloc('SPME DaFT workspace arrays', 'ewald_spme_init')
-
-!!! end daft set-up
-
-  End Subroutine ewald_spme_init
 
   Subroutine spme_construct_potential_grid_coul(ewld, recip_cell, charge_grid, potential_grid, stress_contrib)
 
