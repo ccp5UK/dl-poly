@@ -204,7 +204,7 @@ Contains
     Integer                     :: i, j, k, l, n, s
     Real(Kind=wp)               :: jm1_r, k_r, km1_rr
     Real(Kind=wp), Dimension(3) :: current_bspline_centre, current_bspline_point
-    Real(Kind=wp), Dimension(3, 1:bspline%num_splines) :: current_zero_deriv, current_first_deriv
+    Real(Kind=wp), Dimension(3, size(bspline%derivs,dim=3)) :: current_zero_deriv, current_first_deriv
 
 !! Number of atoms to fill
 !! Coordinates of charge centres in reciprocal cell
