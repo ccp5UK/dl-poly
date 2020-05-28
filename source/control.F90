@@ -690,7 +690,7 @@ Contains
          Call unit_test%all()
          devel%unit_test = unit_test
 
-      Else If(word(1:9) == 'app_test') Then
+      Else If(word(1:8) == 'app_test') Then
          devel%run_app_tests = .true.
          Call app_test%all()
          devel%app_test = app_test
