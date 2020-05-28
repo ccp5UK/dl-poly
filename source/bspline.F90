@@ -268,16 +268,16 @@ Contains
 
         Do j = 1, s - 1 !bspline%num_splines,2,-1
 
-          ! Derivatives of B-splines with order nospl at k-1 points
-          ! sgn = 1.0_wp
-          ! do n = 0,Min(l,s-j)
-          !   current_first_deriv(:, j) = current_first_deriv(:, j) + sgn*ncombk(n, l) * current_zero_deriv(:, j + n)
-          !   sgn = -sgn
-          ! end do
-          Do n = 0, Min(l, s - j), 2
-            current_first_deriv(:, j) = current_first_deriv(:, j) + ncombk(n, l) * current_zero_deriv(:, j + n)
-            current_first_deriv(:, j) = current_first_deriv(:, j) - ncombk(n+1, l) * current_zero_deriv(:, j + n+1)
-          End Do
+          Derivatives of B-splines with order nospl at k-1 points
+          sgn = 1.0_wp
+          do n = 0,Min(l,s-j)
+            current_first_deriv(:, j) = current_first_deriv(:, j) + sgn*ncombk(n, l) * current_zero_deriv(:, j + n)
+            sgn = -sgn
+          end do
+          ! Do n = 0, Min(l, s - j), 2
+          !   current_first_deriv(:, j) = current_first_deriv(:, j) + ncombk(n, l) * current_zero_deriv(:, j + n)
+          !   current_first_deriv(:, j) = current_first_deriv(:, j) - ncombk(n+1, l) * current_zero_deriv(:, j + n+1)
+          ! End Do
 
           ! Generate current point at a lag behind derivs
           jm1_r = real_no(s - j)
