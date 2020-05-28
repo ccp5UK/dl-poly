@@ -161,11 +161,9 @@ Contains
       Allocate (coul_coeffs(config%mxatms), stat=fail)
       If (fail > 0) Call error_alloc('coul_coeffs', 'two_body_forces')
       coul_coeffs = config%parts(:)%chge
+
       If (.not. ewld%direct) Then
         Call electro%erfcgen(neigh%cutoff, ewld%alpha)
-      Else
-        Call electro%erfc%init(ewld%alpha * neigh%cutoff, calc_erfc)
-        Call electro%erfc_deriv%init(ewld%alpha * neigh%cutoff, calc_erfc_deriv)
       End If
 
       If (newjob) Then
@@ -400,9 +398,9 @@ Contains
             Case (ELECTROSTATIC_EWALD)
 
               If (ewld%direct) Then
-                Call ewald_real_forces_gen(ewld%alpha, ewld%spme_data(ipot), neigh, config, stats, &
+                Call ewald_real_forces_gen(ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
                      & coul_coeffs, i, xxt, yyt, zzt, rrt, engacc, viracc)
-              Else
+                Else
                 Call ewald_real_forces_coul(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
                      & i, xxt, yyt, zzt, rrt, engacc, viracc)
               End If
@@ -456,7 +454,7 @@ Contains
               ! calculate coulombic forces, Ewald sum - real space contribution
 
               If (ewld%direct) Then
-                Call ewald_real_forces_gen(ewld%alpha, ewld%spme_data(ipot), neigh, config, stats, &
+                Call ewald_real_forces_gen(ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
                      & coul_coeffs, i, xxt, yyt, zzt, rrt, engacc, viracc)
               Else
                 Call ewald_real_forces_coul(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &

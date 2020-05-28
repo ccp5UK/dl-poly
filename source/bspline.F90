@@ -187,7 +187,7 @@ Contains
 
   End Subroutine bspline_coeffs_gen
 
-  Subroutine bspline_splines_gen(num_atoms, recip_coords, bspline)
+  Pure Subroutine bspline_splines_gen(num_atoms, recip_coords, bspline)
 
     !!-----------------------------------------------------------------------
     !!
@@ -220,7 +220,7 @@ Contains
 
     ! construct B-splines
     ! Zero initial array -- Avoid hassle
-    bspline%derivs = 0.0_wp
+    ! bspline%derivs = 0.0_wp
 
     ! Reversed order of array for memory access efficiency
     Do i = 1, num_atoms
@@ -294,7 +294,7 @@ Contains
 
   End Subroutine bspline_splines_gen
 
-  Subroutine spl_cexp(ndiv1, ndiv2, ndiv3, ww1, ww2, ww3)
+  Pure Subroutine spl_cexp(ndiv1, ndiv2, ndiv3, ww1, ww2, ww3)
 
     !!-----------------------------------------------------------------------
     !!
