@@ -88,9 +88,7 @@ Module test_configuration
 Contains
 
   ! Runs all unit tests for configuration module
-  Subroutine run_configuration_tests(n_processes)
-    Integer, Intent(In   ) :: n_processes
-
+  Subroutine run_configuration_tests()
     Integer                  :: i
     Logical                  :: passed(3)
     Type(comms_type)         :: comm
@@ -169,7 +167,7 @@ Contains
     Type(coordinate_buffer_type) :: gathered
 
     !Gather coordinates in to packed array
-    Call gathered%initialise(comm, config%megatm)
+    Call gathered%initialise(comm, config%megatm*3)
     Call gather_coordinates(comm, config, to_master_only, gathered)
     Call assert(Size(gathered%coords) == config%megatm * 3, &
                 "Size(gathered&coords) /= config%megatm*3")
@@ -270,8 +268,6 @@ Contains
   Subroutine distribute_loop(comm, istart, istop)
     Type(comms_type), Intent(In   ) :: comm
     Integer,          Intent(  Out) :: istart, istop
-
-!integer, intent(in)  :: n
 
     If (comm%mxnode == 1) Then
       istart = 1

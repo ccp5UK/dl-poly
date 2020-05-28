@@ -84,6 +84,7 @@ set(dlpoly_SRCS
   electrostatic.F90
   kim.F90
   plumed.F90
+  dftb_library.F90
   netcdf.F90
   nve.F90
   nvt_anderson.F90
@@ -125,6 +126,7 @@ if(WITH_NETCDF)
   set_property(TARGET dlpoly APPEND PROPERTY
     COMPILE_DEFINITIONS "NETCDF")
 endif()
+
 if(WITH_PLUMED)
   set_property(TARGET dlpoly APPEND PROPERTY
     COMPILE_DEFINITIONS "PLUMED")
@@ -141,6 +143,21 @@ if(WITH_KIM)
   endif()
   target_include_directories(dlpoly PUBLIC  ${KIM_INC})
 endif()
+
+if(WITH_DFTBP)
+  set_property(TARGET dlpoly APPEND PROPERTY
+    COMPILE_DEFINITIONS "DFTBP")
+  if (INTERNAL_DFTBP)
+     add_dependencies(dlpoly int-dftbp)
+     target_include_directories(dlpoly PUBLIC  ${DFTBP_INC})
+  endif()
+endif()
+
+if(WITH_ASSERT)
+  set_property(TARGET dlpoly APPEND PROPERTY
+    COMPILE_DEFINITIONS "WITH_ASSERT")
+endif()
+
 ## sets the linking
 link_directories (${LIBRARY_OUTPUT_PATH})
 add_executable(${target_name} dl_poly.F90)

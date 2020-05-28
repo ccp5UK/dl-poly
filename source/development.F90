@@ -20,7 +20,7 @@ Module development
   Use kinds,           Only: wp
   Use parse,           Only: get_line, get_word, lower_case, clean_string, word_2_real
   Use filename,        Only: file_type, FILE_CONTROL
-  Use errors_warnings, Only: info, set_print_level
+  Use errors_warnings, Only: info, error , set_print_level
 #ifdef OLDMPI
   Use comms,           Only: mpi_ver, mpi_subver, comms_type, gcheck
 #else
@@ -31,16 +31,19 @@ Module development
 
   Private
 
-  !> Logicals indicating whether unit tests should be run for
+  !> Logicals indicating whether tests should be run for 
   !> corresponding module. Add as required
-  Type, Public :: unit_testing_type
+  Type, Public :: testing_type
      Logical :: configuration
-  End Type unit_testing_type
-
+     Logical :: dftb_library
+   Contains
+     Procedure :: all => set_all_tests_true
+     !Procedure :: set => set_tests
+  End Type testing_type
+  
   !> Type containing development module variables
   Type, Public :: development_type
     Private
-
     !> OUTPUT redirection to the default output (screen)
     Logical, Public       :: l_scr = .false.
     !> avoid global safety checks (no elegant parallel failures)
@@ -77,11 +80,12 @@ Module development
     Real(Kind=wp), Public :: r_dis = 0.5_wp
     !> Devel start time
     Real(Kind=wp), Public :: t_zero
-
     !> Unit testing
     Logical, Public :: run_unit_tests = .false.
-    Type(unit_testing_type), Public :: unit_test
-
+    Type(testing_type), Public :: unit_test
+    !> App testing
+    Logical, Public :: run_app_tests = .false.
+    Type(testing_type), Public :: app_test
  End Type development_type
 
   Public :: scan_development
@@ -284,4 +288,11 @@ Contains
 
   End Subroutine build_info
 
+
+  Subroutine set_all_tests_true(this)
+    Class(testing_type), Intent(inout) :: this
+    this%configuration = .true.
+    this%dftb_library = .true.
+  End Subroutine set_all_tests_true
+  
 End Module development
