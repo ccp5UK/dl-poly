@@ -102,13 +102,16 @@ Module flow_control
     !> Reset padding flag
     Logical, Public          :: reset_padding
     !> Type of Simulation we perform
-    Integer, Public :: simulation_method 
+    Integer, Public          :: simulation_method = MD
+    !> MD step that DL_POLY starts at
+    Integer, Public          :: initial_md_step = 0
     !> Define number of force-fields to be coupled
     Integer(Kind = wi), Public :: NUM_FF
     !> Flags to kill EVB if reading "evb" settings failed
     Logical,            Public :: evbfail = .False.
 
     Logical, Public          :: l_vdw = .False.
+    
   Contains
     Procedure, Public :: new_page => flow_type_new_page
     Procedure, Public :: line_printed => flow_type_line_printed
