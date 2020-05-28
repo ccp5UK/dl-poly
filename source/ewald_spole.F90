@@ -50,6 +50,7 @@ Module ewald_spole
                              spme_construct_charge_array,&
                              ewald_spme_init,&
                              stress_kernel
+
   Implicit None
 
   Private
@@ -310,7 +311,7 @@ Contains
 
     If (newjob) Then
       Call ewald_spme_init(domain, config%mxatms, comm, ewld%kspace, &
-        & ewld%bspline, charge_grid, potential_grid, stress_grid)
+        & ewld%bspline, charge_grid, potential_grid, stress_grid, pfft_work)
       newjob = .false.
     End If
 

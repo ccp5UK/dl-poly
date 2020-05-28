@@ -287,7 +287,7 @@ Contains
 
     If (newjob) Then
       Call ewald_spme_init(domain, config%mxatms, comm, ewld%kspace, &
-        & ewld%bspline, charge_grid, potential_grid, stress_grid)
+        & ewld%bspline, charge_grid, potential_grid, stress_grid, pfft_work)
       newjob = .false.
     End If
 
@@ -478,7 +478,7 @@ Contains
 !!! Internals
 
   Subroutine ewald_spme_init(domain, max_atoms, comm, kspace_in, &
-    & bspline_in, charge_grid, potential_grid, stress_grid)
+    & bspline_in, charge_grid, potential_grid, stress_grid, pfft_array)
     !!----------------------------------------------------------------------!
     !!
     !! dl_poly_4 routine to initialise the ewald SPME routines
@@ -501,6 +501,9 @@ Contains
     Type(bspline_type),                                Intent(inout) :: bspline_in
     Real(Kind=wp), Allocatable, Dimension(:, :, :),    Intent(  Out) :: charge_grid
     Complex(Kind=wp), Allocatable, Dimension(:, :, :), Intent(  Out) :: potential_grid, stress_grid
+    !> temporary workspace for parallel fft
+    Complex(Kind=wp), Dimension(:, :, :), Allocatable, Intent(  Out) :: pfft_array
+
 
     Integer, Dimension(4) :: fail
 
@@ -526,7 +529,7 @@ Contains
     Allocate (charge_grid   (1:kspace_in%block_fac(1), 1:kspace_in%block_fac(2), 1:kspace_in%block_fac(3)), stat=fail(1))
     Allocate (potential_grid(1:kspace_in%block_fac(1), 1:kspace_in%block_fac(2), 1:kspace_in%block_fac(3)), stat=fail(2))
     Allocate (stress_grid   (1:kspace_in%block_fac(1), 1:kspace_in%block_fac(2), 1:kspace_in%block_fac(3)), stat=fail(3))
-    Allocate (pfft_work     (1:kspace_in%block_fac(1), 1:kspace_in%block_fac(2), 1:kspace_in%block_fac(3)), stat=fail(4))
+    Allocate (pfft_array     (1:kspace_in%block_fac(1), 1:kspace_in%block_fac(2), 1:kspace_in%block_fac(3)), stat=fail(4))
     If (Any(fail > 0)) Call error_alloc('SPME DaFT workspace arrays', 'ewald_spme_init')
 
 !!! end daft set-up
