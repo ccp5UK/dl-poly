@@ -831,11 +831,9 @@ Contains
     ! Calculate per-particle contributions
     atom: Do i = 1, config%natms
 
-      if (abs(coeffs(i)) <= zero_plus) cycle
-      atom_coeffs = coeffs(i)
-
       energy_total = 0.0_wp
       curr_force_temp = 0.0_wp
+      atom_coeffs = coeffs(i)
 
       bspline_d0_x = ewld%bspline%derivs(1, 0, :, i)
       bspline_d0_y = ewld%bspline%derivs(2, 0, :, i)
