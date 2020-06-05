@@ -347,7 +347,7 @@ Contains
 
     ! set scaling constant
 
-    scale = pi * sqrpi * ewld%alpha**(-2) * (0.5_wp * rvolm) * spme_datum%scaling
+    scale = pi * sqrpi * ewld%alpha**(spme_datum%pot_order - 3) * (0.5_wp * rvolm) * spme_datum%scaling
 
     ! calculate reciprocal cell
 

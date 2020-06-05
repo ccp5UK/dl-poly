@@ -555,10 +555,9 @@ Contains
     Type(electrostatic_type),          Intent(In   ) :: electro
     Real(Kind=wp), Dimension(:),       Intent(In   ) :: coeffs
     Real(Kind=wp), Dimension(:, :, :), Intent(  Out) :: charge_grid
-    Integer               :: q
+
     Integer               :: atm, i, j, j_hi, j_lo, k, k_hi, k_lo, l, l_hi, l_lo
     Integer, Dimension(3) :: temp
-    Real(Kind=wp), Dimension(2) :: factor
     Real(Kind=wp)         :: atom_coeffs
 
     charge_grid = 0.0_wp
@@ -578,17 +577,18 @@ Contains
       j_hi = Min(ewld%kspace%domain_indices(1, 2), recip_indices(1, i) + 1) - ewld%kspace%domain_indices(1, 1) + 1
       k_hi = Min(ewld%kspace%domain_indices(2, 2), recip_indices(2, i) + 1) - ewld%kspace%domain_indices(2, 1) + 1
       l_hi = Min(ewld%kspace%domain_indices(3, 2), recip_indices(3, i) + 1) - ewld%kspace%domain_indices(3, 1) + 1
-      if (any([j_hi - j_lo, k_hi - k_lo, l_hi - l_lo] < 0)) cycle
 
       temp = recip_indices(:, i) - ewld%bspline%num_splines - ewld%kspace%domain_indices(:, 1) + 2
+
       atom_coeffs = coeffs(i)
 
       Do l = l_lo, l_hi
-        factor(1) = atom_coeffs * ewld%bspline%derivs(3, 0, l - temp(3), i)
         Do k = k_lo, k_hi
-          factor(2) = factor(2) * ewld%bspline%derivs(2, 0, k - temp(2), i)
           Do j = j_lo, j_hi
-            charge_grid(j, k, l) = charge_grid(j, k, l) + factor(2) * ewld%bspline%derivs(1, 0, j - temp(1), i)
+            charge_grid(j, k, l) = charge_grid(j, k, l) + atom_coeffs * &
+              & ewld%bspline%derivs(1, 0, j - temp(1), i) * &
+              & ewld%bspline%derivs(2, 0, k - temp(2), i) * &
+              & ewld%bspline%derivs(3, 0, l - temp(3), i)
           End Do
         End Do
       End Do

@@ -162,6 +162,10 @@ Contains
       If (fail > 0) Call error_alloc('coul_coeffs', 'two_body_forces')
       coul_coeffs = config%parts(:)%chge
 
+      If (.not. ewld%direct) Then
+        Call electro%erfcgen(neigh%cutoff, ewld%alpha)
+      End If
+
       If (newjob) Then
 
         ! Assume no VDW
@@ -200,10 +204,6 @@ Contains
           vdws%elrc = 0.0_wp
           vdws%vlrc = 0.0_wp
 
-        End If
-
-        If (.not. ewld%direct) Then
-          Call electro%erfcgen(neigh%cutoff, ewld%alpha)
         End If
 
         newjob = .false.
