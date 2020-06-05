@@ -422,7 +422,7 @@ Contains
 
     Else
 
-      Call spme_construct_potential_grid_coul(ewld, rcell, charge_grid, potential_grid)
+      Call spme_construct_potential_grid_coul(ewld, rcell, charge_grid, potential_grid, s_abc(:, 0))
       Call spme_construct_potential_grid_gen(ewld, rcell, charge_grid, spme_datum, stress_kernel, stress_grid)
 
       Call spme_calc_force_energy(ewld, electro, comm, domain, config, coeffs, &
@@ -1271,7 +1271,7 @@ Contains
     Real(Kind=wp), Dimension(9),           Intent(In   ) :: recip_cell
     Real(Kind=wp), Dimension(:, :, :),     Intent(In   ) :: charge_grid
     Complex(Kind=wp), Dimension(:, :, :),  Intent(  Out) :: potential_grid
-    Real(Kind=wp), Dimension(9), Optional, Intent(  Out) :: stress_contrib
+    Real(Kind=wp), Dimension(9),           Intent(  Out) :: stress_contrib
 
     Complex(Kind=wp)               :: potential_component
     Integer                        :: alpha, beta, j, j_local, jj, k, k_local, kk, l, l_local, ll
@@ -1357,20 +1357,16 @@ Contains
             potential_component = bb1 * potential_grid(j_local, k_local, l_local) * &
                  & Exp(-(f_p_fac**2)) / (sqrpi * f_p_fac**2)
 
-            ! By L'Hopital's rule, m=0 does not contribute to stress
-            If (Present(stress_contrib) .and. k_vec_2 > 1.0e-6_wp) Then
+            pressure_virial = Real(potential_component * &
+                 (-2.0_wp * ((1.0_wp + f_p_fac**2)/k_vec_2)) * &
+                 Conjg(potential_grid(j_local, k_local, l_local)), wp)
 
-              pressure_virial = Real(potential_component * &
-                   (-2.0_wp * ((1.0_wp + f_p_fac**2)/k_vec_2)) * &
-                   Conjg(potential_grid(j_local, k_local, l_local)), wp)
-
-              Do alpha = 1, 3
-                Do beta = 1, 3
-                  stress_temp(beta, alpha) = stress_temp(beta, alpha) + &
-                       & recip_pos(alpha, 1) * recip_pos(beta, 1) * pressure_virial
-                End Do
+            Do alpha = 1, 3
+              Do beta = 1, 3
+                stress_temp(beta, alpha) = stress_temp(beta, alpha) + &
+                     & recip_pos(alpha, 1) * recip_pos(beta, 1) * pressure_virial
               End Do
-            End If
+            End Do
           Else
             potential_component = (0.0_wp, 0.0_wp)
           End If
@@ -1381,7 +1377,7 @@ Contains
       End Do
     End Do
 
-    If (Present(stress_contrib)) stress_contrib = Reshape(stress_temp, [9])
+    stress_contrib = Reshape(stress_temp, [9])
 
     Call pfft(potential_grid, pfft_work, ewld%kspace%context, -1)
 

@@ -2767,7 +2767,7 @@ Contains
 
         flow%heat_flux = .true.
         stats%require_pp = .true.
-        Write (message, '(a)') 'Writing per-particle data'
+        Write (message, '(a)') 'Writing heat flux data'
 
         ! Read Per-particle write
 
