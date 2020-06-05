@@ -162,11 +162,12 @@ Contains
       If (fail > 0) Call error_alloc('coul_coeffs', 'two_body_forces')
       coul_coeffs = config%parts(:)%chge
 
-      If (.not. ewld%direct) Then
-        Call electro%erfcgen(neigh%cutoff, ewld%alpha)
-      End If
 
       If (newjob) Then
+
+        If (.not. ewld%direct) Then
+          Call electro%erfcgen(neigh%cutoff, ewld%alpha)
+        End If
 
         ! Assume no VDW
         ewld%num_pots = 0
@@ -400,7 +401,7 @@ Contains
               If (ewld%direct) Then
                 Call ewald_real_forces_gen(ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
                      & coul_coeffs, i, xxt, yyt, zzt, rrt, engacc, viracc)
-                Else
+              Else
                 Call ewald_real_forces_coul(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
                      & i, xxt, yyt, zzt, rrt, engacc, viracc)
               End If
