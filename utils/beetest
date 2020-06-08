@@ -1,4 +1,4 @@
-#!/usr/bin/env python3 
+#!/usr/bin/env python3
 # *****************************************************************************
 #   Description: a tool for running and testing output of batch jobs.
 #
@@ -60,14 +60,14 @@ def EnforceTrailingSlash(path):
     return path + '/'
   else:
     return path
-    
+
 def PrintHorizontalBar(text = ""):
   # The magic number 92 is chosen to match stdout produced by VASP
   if text == "":
     print('{0:-^92}'.format(""))
   else:
     print('{0:-^92}'.format("| " + text +" |"))
-    
+
 def Indentation(element, level = 0):
     i = "\n" + level*"    "
     if len(element):
@@ -87,7 +87,7 @@ def Indentation(element, level = 0):
 # *****************************************
 #             Main program
 # *****************************************
-  
+
 parser = OptionParser()
 parser.add_option("-f","--file",dest="testinput",help="File with test suite definitions")
 parser.add_option("-p","--protocol",dest="protocol",help="Write test protocol to disk",action="store_true")
@@ -146,7 +146,7 @@ if options.test:
           ttb=True
           continue
       if not ttb:
-        print("test "+tt+" not found in suite "+ testsuite.attrib['name']) 
+        print("test "+tt+" not found in suite "+ testsuite.attrib['name'])
         if not options.keep_going:
           print("I will stop now... consider -k option if you run a multi-suite test")
           exit(1)
@@ -171,14 +171,14 @@ for testsuite in xmltree.findall("testsuite"):
   if selected_testsuites != []:
     if testsuite.get("name").lower() not in selected_testsuites:
       continue
-      
+
   PrintHorizontalBar("Test suite: " + testsuite.attrib['name'])
-  if not outdir_specified: 
+  if not outdir_specified:
     outdir=testsuite.find("outdir")
     if outdir != None:
       outdir_specified=True
       outdir=EnforceTrailingSlash(outdir.text)
-  if options.verbose:
+  if options.verbose and False: # Cut out a lot of the verbosity
     print("Description: " + testsuite.find("description").text)
     print("Date: " + testsuite.find("date").text)
     print("Author: " + testsuite.find("author").text)
@@ -227,7 +227,7 @@ for testsuite in xmltree.findall("testsuite"):
   # Determine which executable to run
   if 'BEETEST_EXE' in os.environ:
     testexe = os.environ['BEETEST_EXE']
-    if options.verbose: 
+    if options.verbose:
       print("Using test executable %s defined in BEETEST_EXE" % (testexe))
   else:
     envexe = testsuite.find("environment/executable")
@@ -261,7 +261,7 @@ for testsuite in xmltree.findall("testsuite"):
   for testcase in testsuite.findall("testcase"):
     testcasepath = EnforceTrailingSlash(testcase.find('path').text)
     if testcase.attrib['name'] not in selected_tests and options.test:
-      continue    
+      continue
     # Check if we need to provide a specified input file to the test binary
     inputfile_specified = False
     inputfile = testcase.find('input')
@@ -275,7 +275,7 @@ for testsuite in xmltree.findall("testsuite"):
     if outputfile != None:
       outputfile_specified = True
       outputfile = outputfile.text
-    
+
     if not analyze_mode:
       if testcase.find('path').get('archive') == "Yes":
         isArchived=True
@@ -316,7 +316,7 @@ for testsuite in xmltree.findall("testsuite"):
             status = os.system("cd " + rtestcasepath + "; " + testexe + " < " + inputfile + " > " + outputfile)
           else:
             status = os.system("cd " + rtestcasepath  + "; " + testexe + " < " + inputfile)
-        else: 
+        else:
           if outputfile_specified:
             status = os.system("cd " + rtestcasepath  + "; " + testexe + " > " + outputfile)
           else:
@@ -332,7 +332,7 @@ for testsuite in xmltree.findall("testsuite"):
             (status,stdout) = subprocess.getstatusoutput("cd " + rtestcasepath + "; " + testexe + " > stdout | tee " + outputfile)
           else:
             (status,stdout) = subprocess.getstatusoutput("cd " + rtestcasepath + "; " + testexe + " > stdout")
-          
+
       if status != 0:
         print("Test ERROR: test executable exited with status %d" % (status))
         error = error + 1
@@ -345,14 +345,14 @@ for testsuite in xmltree.findall("testsuite"):
       print("Description: " + testcase.find('description').text)
       #Flush because there might be a delay while the binary is running below
       sys.stdout.flush()
-      
+
     #properties = [prop.tag for prop in testcase.getchildren()]
     properties = [prop for prop in testcase.getchildren()]
     properties = list(filterfalse(lambda x: x.tag == "path", properties))
     properties = list(filterfalse(lambda x: x.tag == "input", properties))
     properties = list(filterfalse(lambda x: x.tag == "output", properties))
     properties = list(filterfalse(lambda x: x.tag == "description", properties))
-    
+
     if options.verbose:
       PrintHorizontalBar("Analyzing " + testcase.attrib['name'])
       print("Description: " + testcase.find('description').text)
@@ -402,7 +402,7 @@ for testsuite in xmltree.findall("testsuite"):
               match = EqualToAbsolutePrecision(actual_result,expected_result, float(defined_properties[prop]["absoluteprecision"]))
           elif "relativeprecision" in defined_properties[prop]:
             if value_defined:
-              match = EqualToRelativePrecision(actual_result,expected_result,value) 
+              match = EqualToRelativePrecision(actual_result,expected_result,value)
             else:
               match = EqualToRelativePrecision(actual_result,expected_result, float(defined_properties[prop]["relativeprecision"]))
           else:
@@ -413,16 +413,16 @@ for testsuite in xmltree.findall("testsuite"):
         elif kind == 'Integer':
           actual_result = int(resultdata)
           expected_result = int(propp.text)
-          
+
           if actual_result != expected_result:
             property_passed = False
         elif kind == 'String':
           actual_result = resultdata
           expected_result = propp.text
-          
+
           if actual_result != expected_result:
             property_passed = False
-        
+
         if not property_passed:
           test_passed = False
       else:
@@ -470,21 +470,21 @@ for testsuite in xmltree.findall("testsuite"):
   else:
     status = "FAILED"
   print("Status: " + status)
-  
+
   if options.regression:
     regression = ""
     regrfile = open(options.regression, 'r')
     regrtree = ElementTree()
     regrtree.parse(regrfile)
-    
+
     if options.verbose:
       print("Doing regression testing versus the results in " + options.regression)
-    
+
     # Find the corresponding test suite with the same name as this one
     for ts in regrtree.findall("testsuite"):
       if ts.get("name") == testsuite.get("name"):
         old_ts = ts
-    
+
     old_ts_hash = dict()
     for tc in old_ts.findall("testcase"):
       old_ts_hash[tc.get("name")] = tc.get("status")
@@ -498,14 +498,14 @@ for testsuite in xmltree.findall("testsuite"):
     else:
       regression = "FAILED"
     print("Regression test: "+regression)
-      
+
     regrelem = SubElement(testsuite,"regression")
     SubElement(regrelem,"protocol").text = options.regression
     SubElement(regrelem,"status").text = regression
-    
+
   PrintHorizontalBar("End of test suite: " + testsuite.attrib['name'])
   print
-    
+
   if options.protocol:
     isotime = datetime.now().isoformat()
     hostname = subprocess.getoutput("hostname")
@@ -524,4 +524,3 @@ if options.protocol:
   print("Writing test protocol to file " + protocolname)
   Indentation(xmltree.getroot())
   xmltree.write(protocolname)
-
