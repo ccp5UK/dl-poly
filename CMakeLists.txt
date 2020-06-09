@@ -14,7 +14,7 @@ set(target_name DLPOLY.Z)
 
 #check compilers play fine
 if(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
-  if (${CMAKE_Fortran_COMPILER_VERSION} STRGREATER "5.9.9" )
+  if (${CMAKE_Fortran_COMPILER_VERSION} VERSION_GREATER "5.9.9" )
     message(STATUS "Compiler version acceptable? Yes")
   else()
     message(STATUS "Compiler version acceptable? No")
@@ -315,7 +315,7 @@ if(BUILD_TESTING)
       else()
         list(GET DL_TEST 1 ERRMSG)
         message(FATAL_ERROR "Download failed for ${arg}.tar.xz  with message: ${ERRMSG}")
-      endif()  
+      endif()
     endif()
     file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/Testing/${arg})
     file(COPY ${CMAKE_SOURCE_DIR}/data/${arg}.tar.xz
