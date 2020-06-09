@@ -212,7 +212,7 @@ Contains
                           lstrext, ltemp, safe
     Real(Kind=wp)      :: eps0, prmps(1:4), rcb_d, rcell(1:9), rcut1, rpad1, rvdw1, tmp, tol
     Type(testing_type) :: unit_test, app_test
-    
+
     ! initialise system control variables and their logical switches
 
     ! default expansion option
@@ -597,6 +597,11 @@ Contains
       If (word(1:1) == '#' .or. word(1:1) == ' ') Then
       Else If (word(1:5) == 'l_scr') Then
       Else If (word(1:6) == 'l_fast') Then
+      Else If (word(1:7) == 'l_print') Then
+        Call get_word(record, word)
+        itmp = nint(word_2_real(word))
+        write(message, '(A,i2.1)') "Print level :", itmp
+        Call info(message, .true.)
       Else If (word(1:5) == 'l_eng') Then
         devel%l_eng = .true.
         Call info('%%% OUTPUT contains an extra last line with E_tot !!! %%%', .true.)
@@ -684,7 +689,7 @@ Contains
         Write (message, '(a,1p,e12.4)') '%%% separation criterion (Angstroms) %%%', devel%r_dis
         Call info(message, .true.)
 
-        ! read unit and app tests to perform    
+        ! read unit and app tests to perform
       Else If(word(1:9) == 'unit_test') Then
          devel%run_unit_tests = .true.
          Call unit_test%all()
@@ -694,7 +699,7 @@ Contains
          devel%run_app_tests = .true.
          Call app_test%all()
          devel%app_test = app_test
-         
+
         ! read VDW options
       Else If (word(1:3) == 'vdw') Then
         Call get_word(record, word1)
@@ -2985,7 +2990,7 @@ Contains
          !Use DFTB+ as the force calculator instead of classical force fields
          flow%simulation_method = DFTB
 
-        
+
         ! close control file
 
       Else If (word(1:6) == 'finish') Then
@@ -3977,11 +3982,11 @@ Contains
 
         ! read binsize option
 
-    ! dftb_driver                                                                                                           
+    ! dftb_driver
       Else If (word(1:11) == 'dftb_driver') Then
-         !Use DFTB+ as the force calculator instead of classical force fields                             
+         !Use DFTB+ as the force calculator instead of classical force fields
          flow%simulation_method = DFTB
-        
+
       Else If (word(1:7) == 'binsize') Then
 
         Call get_word(record, word)
@@ -4388,7 +4393,7 @@ Contains
           ttm%redistribute = .true.
 
         End If
-       
+
         ! read finish
 
       Else If (word(1:6) == 'finish') Then
