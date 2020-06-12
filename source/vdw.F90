@@ -164,7 +164,7 @@ Module vdw
     Final             :: cleanup
   End Type vdw_type
 
-  Public :: vdw_forces, vdw_generate, vdw_table_read, vdw_lrc, vdw_direct_fs_generate
+  Public :: vdw_forces_tab, vdw_forces_direct, vdw_generate, vdw_table_read, vdw_lrc, vdw_direct_fs_generate
 
 Contains
 
@@ -719,14 +719,16 @@ Contains
           k = vdws%list(ivdw)
 
           keypot = vdws%ltp(k)
-          If (keypot == VDW_TAB) Then
+
+          select case (keypot)
+          Case (VDW_TAB)
 
             ! tabulated energy and pressure lrc
 
             eadd = vdws%param(1, k)
             padd = -vdws%param(2, k)
 
-          Else If (keypot == VDW_12_6) Then
+          Case (VDW_12_6)
 
             ! 12-6 potential :: u=a/r^12-b/r^6
 
@@ -737,7 +739,7 @@ Contains
             eadd = a / (9.0_wp * r**9) - b / (3.0_wp * r**3)
             padd = 12.0_wp * a / (9.0_wp * r**9) - 6.0_wp * b / (3.0_wp * r**3)
 
-          Else If (keypot == VDW_LENNARD_JONES) Then
+          Case (VDW_LENNARD_JONES)
 
             ! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-(sig/r)^6]
 
@@ -748,7 +750,7 @@ Contains
             eadd = 4.0_wp * eps * (sig**12 / (9.0_wp * r**9) - sig**6 / (3.0_wp * r**3))
             padd = 8.0_wp * eps * (6.0_wp * sig**12 / (9.0_wp * r**9) - sig**6 / (r**3))
 
-          Else If (keypot == VDW_N_M) Then
+          Case (VDW_N_M)
 
             ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(r0/r)^m]
 
@@ -758,10 +760,12 @@ Contains
             r0 = vdws%param(4, k)
             r = vdws%cutoff
 
-       eadd = e0 / (nr - mr) * (mr * r0**nr / ((nr - 3.0_wp) * r**(nr - 3.0_wp)) - nr * r0**mr / ((mr - 3.0_wp) * r**(mr - 3.0_wp)))
-       padd = e0 / (nr - mr) * nr * mr * (r0**nr / ((nr - 3.0_wp) * r**(nr - 3.0_wp)) - r0**mr / ((mr - 3.0_wp) * r**(mr - 3.0_wp)))
+            eadd = e0 / (nr - mr) * &
+                 (mr * r0**nr / ((nr - 3.0_wp) * r**(nr - 3.0_wp)) - nr * r0**mr / ((mr - 3.0_wp) * r**(mr - 3.0_wp)))
+            padd = e0 / (nr - mr) * &
+                 nr * mr * (r0**nr / ((nr - 3.0_wp) * r**(nr - 3.0_wp)) - r0**mr / ((mr - 3.0_wp) * r**(mr - 3.0_wp)))
 
-          Else If (keypot == VDW_BUCKINGHAM) Then
+          Case (VDW_BUCKINGHAM)
 
             ! Buckingham exp-6 potential :: u=a*Exp(-r/rho)-c/r^6
 
@@ -771,7 +775,7 @@ Contains
             eadd = -c / (3.0_wp * r**3)
             padd = -2.0_wp * c / (r**3)
 
-          Else If (keypot == VDW_BORN_HUGGINS_MEYER) Then
+          Case (VDW_BORN_HUGGINS_MEYER)
 
             ! Born-Huggins-Meyer exp-6-8 potential :: u=a*Exp(b*(sig-r))-c/r^6-d/r^8
 
@@ -782,7 +786,7 @@ Contains
             eadd = -c / (3.0_wp * r**3) - d / (5.0_wp * r**5)
             padd = -2.0_wp * c / (r**3) - 8.0_wp * d / (5.0_wp * r**5)
 
-          Else If (keypot == VDW_HYDROGEN_BOND) Then
+          Case (VDW_HYDROGEN_BOND)
 
             ! Hydrogen-bond 12-10 potential :: u=a/r^12-b/r^10
 
@@ -793,7 +797,7 @@ Contains
             eadd = a / (9.0_wp * r**9) - b / (7.0_wp * r**7)
             padd = 12.0_wp * a / (9.0_wp * r**9) - 10.0_wp * b / (7.0_wp * r**7)
 
-          Else If (keypot == VDW_MORSE) Then
+          Case (VDW_MORSE)
 
             ! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}
 
@@ -811,7 +815,7 @@ Contains
                      (4.0_wp * kk**3 * vdws%cutoff**3 + 6 * kk**2 * vdws%cutoff**2 + 6 * kk * vdws%cutoff + 3)
             End If
 
-          Else If (keypot == VDW_AMOEBA) Then
+          Case (VDW_AMOEBA)
 
             ! AMOEBA 14-7 :: u=eps * [1.07/((sig/r)+0.07)]^7 * [(1.12/((sig/r)^7+0.12))-2]
 
@@ -825,7 +829,7 @@ Contains
             eadd = intRadMM3(sig, a, b, eps, vdws%cutoff, e0)
             padd = -intRaddMM3(sig, a, b, eps, vdws%cutoff, e0)
 
-          Else If (keypot == VDW_LENNARD_JONES_COHESIVE) Then
+          Case (VDW_LENNARD_JONES_COHESIVE)
 
             ! Lennard-Jones cohesive potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
 
@@ -837,7 +841,7 @@ Contains
             eadd = 4.0_wp * eps * (sig**12 / (9.0_wp * r**9) - c * sig**6 / (3.0_wp * r**3))
             padd = 8.0_wp * eps * (6.0_wp * sig**12 / (9.0_wp * r**9) - c * sig**6 / (r**3))
 
-          Else If (keypot == VDW_MORSE_12) Then
+          Case (VDW_MORSE_12)
             ! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}+c/r^12
 
             e0 = vdws%param(1, k)
@@ -859,7 +863,7 @@ Contains
                                                              6 * kk**2 * vdws%cutoff**2 + 6 * kk * vdws%cutoff + 3) + 12.0_wp * s9
             End If
 
-          Else If (keypot == VDW_RYDBERG) Then
+          Case (VDW_RYDBERG)
 
             ! Rydberg potential:: u=(a+b*r)Exp(-r/c)
 
@@ -873,7 +877,7 @@ Contains
             padd = (b * vdws%cutoff**4 + (3 * b * c + a) * vdws%cutoff**3 + (9 * b * c**2 + 3 * a * c) * vdws%cutoff**2 + &
                     (18 * b * c**3 + 6 * a * c**2) * vdws%cutoff + 18 * b * c**4 + 6 * a * c**3) * t
 
-          Else If (keypot == VDW_ZBL) Then
+          Case (VDW_ZBL)
 
             ! ZBL potential:: u=Z1Z2/(40r)_{i=1}^4b_ie^{-c_i*r/a}
 
@@ -886,7 +890,7 @@ Contains
             eadd = intRadZBL(kk, a, vdws%cutoff, 1e-12_wp)
             padd = intdRadZBL(kk, a, vdws%cutoff, 1e-12_wp)
 
-          Else If (keypot == VDW_ZBL_SWITCH_MORSE) Then
+          Case (VDW_ZBL_SWITCH_MORSE)
 
             ! ZBL swithched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
 
@@ -905,7 +909,7 @@ Contains
                      (4.0_wp * kk**3 * vdws%cutoff**3 + 6 * kk**2 * vdws%cutoff**2 + 6 * kk * vdws%cutoff + 3)
             End If
 
-          Else If (keypot == VDW_ZBL_SWITCH_BUCKINGHAM) Then
+          Case (VDW_ZBL_SWITCH_BUCKINGHAM)
 
             ! ZBL swithched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
 
@@ -918,7 +922,7 @@ Contains
             eadd = (vdws%cutoff**2 + 2 * r0 * vdws%cutoff + 2 * r0**2) * t * r0 - c / (3.0_wp * vdws%cutoff**3)
          padd = (vdws%cutoff**3 + 3 * r0 * vdws%cutoff**2 + 6 * r0**2 * vdws%cutoff + 6 * r0**3) * t - 2.0_wp * c / (vdws%cutoff**3)
 
-          Else If (keypot == VDW_LJ_MDF) Then
+          Case (VDW_LJ_MDF)
 
             ! LJ tappered with MDF:: u=f(r)LJ(r)
 
@@ -928,7 +932,7 @@ Contains
             eadd = intRadMDF("mlj", a, b, 0.0_wp, c, vdws%cutoff, 1e-12_wp)
             padd = intdRadMDF("mlj", a, b, 0.0_wp, c, vdws%cutoff, 1e-12_wp)
 
-          Else If (keypot == VDW_BUCKINGHAM_MDF) Then
+          Case (VDW_BUCKINGHAM_MDF)
 
             ! Buckingham tappered with MDF:: u=f(r)Buck(r)
 
@@ -939,7 +943,7 @@ Contains
             eadd = intRadMDF("mbuc", a, b, c, r0, vdws%cutoff, 1e-12_wp)
             padd = intdRadMDF("mbuc", a, b, c, r0, vdws%cutoff, 1e-12_wp)
 
-          Else If (keypot == VDW_126_MDF) Then
+          Case (VDW_126_MDF)
 
             ! LJ tappered with MDF:: u=f(r)LJ12-6(r)
 
@@ -949,7 +953,7 @@ Contains
             eadd = intRadMDF("m126", a, b, 0.0_wp, c, vdws%cutoff, 1e-12_wp)
             padd = intdRadMDF("m126", a, b, 0.0_wp, c, vdws%cutoff, 1e-12_wp)
 
-          End If
+          End Select
 
           ! Self-interaction accounted once, interaction between different species
           ! MUST be accounted twice!!
@@ -1025,7 +1029,9 @@ Contains
     Do ivdw = 1, vdws%n_vdw
 
       keypot = vdws%ltp(ivdw)
-      If (keypot == VDW_12_6) Then
+
+      select case (keypot)
+      Case (VDW_12_6)
 
         ! 12-6 potential :: u=a/r^12-b/r^6
 
@@ -1038,7 +1044,7 @@ Contains
         vdws%bfs(ivdw) = -r_6 * (a * r_6 - b) - vdws%afs(ivdw)
         vdws%afs(ivdw) = vdws%afs(ivdw) / vdws%cutoff
 
-      Else If (keypot == VDW_LENNARD_JONES) Then
+      Case (VDW_LENNARD_JONES)
 
         ! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-(sig/r)^6]
 
@@ -1051,7 +1057,7 @@ Contains
         vdws%bfs(ivdw) = -4.0_wp * eps * sor6 * (sor6 - 1.0_wp) - vdws%afs(ivdw)
         vdws%afs(ivdw) = vdws%afs(ivdw) / vdws%cutoff
 
-      Else If (keypot == VDW_N_M) Then
+      Case (VDW_N_M)
 
         ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
 
@@ -1069,7 +1075,7 @@ Contains
         vdws%bfs(ivdw) = -e0 * (mr * r0rn - nr * r0rm) * b - vdws%afs(ivdw)
         vdws%afs(ivdw) = vdws%afs(ivdw) / vdws%cutoff
 
-      Else If (keypot == VDW_BUCKINGHAM) Then
+      Case (VDW_BUCKINGHAM)
 
         ! Buckingham exp-6 potential :: u=a*Exp(-r/rho)-c/r^6
 
@@ -1093,7 +1099,7 @@ Contains
         vdws%bfs(ivdw) = -(t1 + t2) - vdws%afs(ivdw)
         vdws%afs(ivdw) = vdws%afs(ivdw) / vdws%cutoff
 
-      Else If (keypot == VDW_BORN_HUGGINS_MEYER) Then
+      Case (VDW_BORN_HUGGINS_MEYER)
 
         ! Born-Huggins-Meyer exp-6-8 potential :: u=a*Exp(b*(sig-r))-c/r^6-d/r^8
 
@@ -1111,7 +1117,7 @@ Contains
         vdws%bfs(ivdw) = -(t1 + t2 + t3) - vdws%afs(ivdw)
         vdws%afs(ivdw) = vdws%afs(ivdw) / vdws%cutoff
 
-      Else If (keypot == VDW_HYDROGEN_BOND) Then
+      Case (VDW_HYDROGEN_BOND)
 
         ! Hydrogen-bond 12-10 potential :: u=a/r^12-b/r^10
 
@@ -1125,11 +1131,11 @@ Contains
         vdws%bfs(ivdw) = -(t1 + t2) - vdws%afs(ivdw)
         vdws%afs(ivdw) = vdws%afs(ivdw) / vdws%cutoff
 
-      Else If (keypot == VDW_N_M_SHIFT) Then
+      Case (VDW_N_M_SHIFT)
 
         ! shifted and force corrected n-m potential (w.smith) ::
 
-      Else If (keypot == VDW_MORSE) Then
+      Case (VDW_MORSE)
 
         ! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}
 
@@ -1143,7 +1149,7 @@ Contains
         vdws%bfs(ivdw) = -e0 * t1 * (t1 - 2.0_wp) - vdws%afs(ivdw)
         vdws%afs(ivdw) = vdws%afs(ivdw) / vdws%cutoff
 
-      Else If (keypot == VDW_WCA) Then
+      Case (VDW_WCA)
 
         ! Weeks-Chandler-Andersen (shifted & truncated Lenard-Jones) (i.t.todorov)
         ! :: u=4*eps*[{sig/(r-d)}^12-{sig/(r-d)}^6]-eps
@@ -1158,14 +1164,14 @@ Contains
         vdws%bfs(ivdw) = -(4.0_wp * eps * sor6 * (sor6 - 1.0_wp) + eps) - vdws%afs(ivdw)
         vdws%afs(ivdw) = vdws%afs(ivdw) / vdws%cutoff
 
-      Else If (keypot == VDW_DPD) Then ! all zeroed in vdw
+      Case (VDW_DPD) ! all zeroed in vdw
 
         ! DPD potential - Groot-Warren (standard) :: u=(1/2).a.r.(1-r/rc)^2
 
         !       vdws%afs(ivdw) = 0.0_wp !initialised in vdw
         !       vdws%bfs(ivdw) = 0.0_wp !initialised in vdw
 
-      Else If (keypot == VDW_AMOEBA) Then
+      Case (VDW_AMOEBA)
 
         ! AMOEBA 14-7 :: u=eps * [1.07/((sig/r)+0.07)]^7 * [(1.12/((sig/r)^7+0.12))-2]
 
@@ -1181,7 +1187,7 @@ Contains
         vdws%bfs(ivdw) = -t3 * ((1.12_wp / t2) - 2.0_wp) - vdws%afs(ivdw)
         vdws%afs(ivdw) = vdws%afs(ivdw) / vdws%cutoff
 
-      Else If (keypot == VDW_LENNARD_JONES_COHESIVE) Then
+      Case (VDW_LENNARD_JONES_COHESIVE)
 
         ! Lennard-Jones cohesive potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
 
@@ -1195,7 +1201,7 @@ Contains
         vdws%bfs(ivdw) = -4.0_wp * eps * sor6 * (sor6 - c) - vdws%afs(ivdw)
         vdws%afs(ivdw) = vdws%afs(ivdw) / vdws%cutoff
 
-      Else If (keypot == VDW_MORSE_12) Then
+      Case (VDW_MORSE_12)
 
         ! Morse potential with twelve term:: u=e0*{[1-Exp(-k(r-r0))]^2-1}+c/r^12
 
@@ -1211,7 +1217,7 @@ Contains
         vdws%bfs(ivdw) = -e0 * t1 * (t1 - 2.0_wp) + sor6 - vdws%afs(ivdw)
         vdws%afs(ivdw) = vdws%afs(ivdw) / vdws%cutoff
 
-      Else If (keypot == VDW_RYDBERG) Then
+      Case (VDW_RYDBERG)
 
         ! Morse potential with twelve term:: u=(a+b*r)Exp(-r/c)
 
@@ -1224,7 +1230,7 @@ Contains
         vdws%afs(ivdw) = (a + b * vdws%cutoff) * kk * t1 - b * t1
         vdws%bfs(ivdw) = -(a * c + a * vdws%cutoff + b * vdws%cutoff * vdws%cutoff) * kk * t1
 
-      Else If (keypot == VDW_ZBL) Then
+      Case (VDW_ZBL)
 
         ! ZBL potential:: u=Z1Z2/(40r)_{i=1}^4b_ie^{-c_i*r/a}
 
@@ -1238,7 +1244,7 @@ Contains
         vdws%afs(ivdw) = dz / vdws%cutoff
         vdws%bfs(ivdw) = -z - dz
 
-      Else If (keypot == VDW_ZBL_SWITCH_MORSE) Then
+      Case (VDW_ZBL_SWITCH_MORSE)
 
         ! ZBL swithched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
 
@@ -1256,7 +1262,7 @@ Contains
         vdws%afs(ivdw) = dz / vdws%cutoff
         vdws%bfs(ivdw) = -z - dz
 
-      Else If (keypot == VDW_ZBL_SWITCH_BUCKINGHAM) Then
+      Case (VDW_ZBL_SWITCH_BUCKINGHAM)
 
         ! ZBL swithched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
 
@@ -1274,7 +1280,7 @@ Contains
         vdws%afs(ivdw) = dz / vdws%cutoff
         vdws%bfs(ivdw) = -z - dz
 
-      Else If (keypot == VDW_LJ_MDF) Then
+      Case (VDW_LJ_MDF)
 
         ! LJ tappered with MDF:: u=f(r)LJ(r)
 
@@ -1286,7 +1292,7 @@ Contains
         vdws%afs(ivdw) = dz / vdws%cutoff
         vdws%bfs(ivdw) = -z - dz
 
-      Else If (keypot == VDW_BUCKINGHAM_MDF) Then
+      Case (VDW_BUCKINGHAM_MDF)
 
         ! Buckingham tappered with MDF:: u=f(r)Buck(r)
         a = vdws%param(1, ivdw)
@@ -1298,7 +1304,7 @@ Contains
         vdws%afs(ivdw) = dz / vdws%cutoff
         vdws%bfs(ivdw) = -z - dz
 
-      Else If (keypot == VDW_126_MDF) Then
+      Case (VDW_126_MDF)
 
         ! LJ tappered with MDF:: u=f(r)LJ(r)
         a = vdws%param(1, ivdw)
@@ -1308,11 +1314,11 @@ Contains
         vdws%afs(ivdw) = dz / vdws%cutoff
         vdws%bfs(ivdw) = -z - dz
 
-      Else
+      Case Default
 
         Call error(150)
 
-      End If
+      End select
 
     End Do
 
@@ -1684,7 +1690,7 @@ Contains
 
   Subroutine dump_vdws(T,comm)
     Class(vdw_type)  :: T
-      Type(comms_type), Intent(In) :: comm
+    Type(comms_type), Intent(In) :: comm
 
     integer :: i, j,u
     Real(Kind = wp ) :: r,dlrpot
@@ -1749,7 +1755,8 @@ Contains
     Do ivdw = 1, vdws%n_vdw
 
       keypot = vdws%ltp(ivdw)
-      If (keypot == VDW_12_6) Then
+      select case (keypot)
+      Case (VDW_12_6)
 
         ! 12-6 potential :: u=a/r^12-b/r^6
 
@@ -1774,7 +1781,7 @@ Contains
           End If ! else leave undetermined
         End If
 
-      Else If (keypot == VDW_LENNARD_JONES) Then
+      Case (VDW_LENNARD_JONES)
 
         ! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-(sig/r)^6]
 
@@ -1797,7 +1804,7 @@ Contains
           vdws%sigeps(2, ivdw) = eps
         End If
 
-      Else If (keypot == VDW_N_M) Then
+      Case (VDW_N_M)
 
         ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
 
@@ -1825,7 +1832,7 @@ Contains
           vdws%sigeps(2, ivdw) = e0
         End If
 
-      Else If (keypot == VDW_BUCKINGHAM) Then
+      Case (VDW_BUCKINGHAM)
 
         ! Buckingham exp-6 potential :: u=a*Exp(-r/rho)-c/r^6
 
@@ -1878,7 +1885,7 @@ Contains
         vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
         vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
 
-      Else If (keypot == VDW_BORN_HUGGINS_MEYER) Then
+      Case (VDW_BORN_HUGGINS_MEYER)
 
         ! Born-Huggins-Meyer exp-6-8 potential :: u=a*Exp(b*(sig-r))-c/r^6-d/r^8
 
@@ -1925,7 +1932,7 @@ Contains
         vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
         vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
 
-      Else If (keypot == VDW_HYDROGEN_BOND) Then
+      Case (VDW_HYDROGEN_BOND)
 
         ! Hydrogen-bond 12-10 potential :: u=a/r^12-b/r^10
 
@@ -1949,7 +1956,7 @@ Contains
         vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
         vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
 
-      Else If (keypot == VDW_N_M_SHIFT) Then
+      Case (VDW_N_M_SHIFT)
 
         ! shifted and force corrected n-m potential (w.smith) ::
 
@@ -2008,7 +2015,7 @@ Contains
         vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
         vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
 
-      Else If (keypot == VDW_MORSE) Then
+      Case (VDW_MORSE)
 
         ! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}
 
@@ -2032,7 +2039,7 @@ Contains
           vdws%sigeps(2, ivdw) = e0
         End If
 
-      Else If (keypot == VDW_WCA) Then
+      Case (VDW_WCA)
 
         ! Weeks-Chandler-Andersen (shifted & truncated Lenard-Jones) (i.t.todorov)
         ! :: u=4*eps*[{sig/(r-d)}^12-{sig/(r-d)}^6]-eps
@@ -2078,7 +2085,7 @@ Contains
         vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
         vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
 
-      Else If (keypot == VDW_DPD) Then
+      Case (VDW_DPD)
 
         ! DPD potential - Groot-Warren (standard) :: u=(1/2).a.rc.(1-r/rc)^2
 
@@ -2101,7 +2108,7 @@ Contains
         vdws%sigeps(1, ivdw) = rc
         vdws%sigeps(2, ivdw) = a
 
-      Else If (keypot == VDW_AMOEBA) Then
+      Case (VDW_AMOEBA)
 
         ! AMOEBA 14-7 :: u=eps * [1.07/((r/sig)+0.07)]^7 * [(1.12/((r/sig)^7+0.12))-2]
 
@@ -2129,7 +2136,7 @@ Contains
           vdws%sigeps(2, ivdw) = eps
         End If
 
-      Else If (keypot == VDW_LENNARD_JONES_COHESIVE) Then
+      Case (VDW_LENNARD_JONES_COHESIVE)
 
         ! Lennard-Jones cohesive potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
 
@@ -2153,7 +2160,7 @@ Contains
           vdws%sigeps(2, ivdw) = eps
         End If
 
-      Else If (keypot == VDW_MORSE_12) Then
+      Case (VDW_MORSE_12)
 
         ! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}+c/r^12
 
@@ -2179,7 +2186,7 @@ Contains
           vdws%sigeps(2, ivdw) = e0
         End If
 
-      Else If (keypot == VDW_RYDBERG) Then
+      Case (VDW_RYDBERG)
 
         ! Rydberg potential:: u=(a+b*r)Exp(-r/c)
 
@@ -2204,7 +2211,7 @@ Contains
           vdws%sigeps(2, ivdw) = 0.0_wp
         End If
 
-      Else If (keypot == VDW_ZBL) Then
+      Case (VDW_ZBL)
 
         ! ZBL potential:: u=Z1Z2/(40r)_{i=1}^4b_ie^{-c_i*r/a}
 
@@ -2232,7 +2239,7 @@ Contains
           vdws%sigeps(2, ivdw) = 0.0_wp
         End If
 
-      Else If (keypot == VDW_ZBL_SWITCH_MORSE) Then
+      Case (VDW_ZBL_SWITCH_MORSE)
 
         ! ZBL swithched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
 
@@ -2262,7 +2269,7 @@ Contains
           vdws%sigeps(2, ivdw) = 0.0_wp
         End If
 
-      Else If (keypot == VDW_ZBL_SWITCH_BUCKINGHAM) Then
+      Case (VDW_ZBL_SWITCH_BUCKINGHAM)
 
         ! ZBL swithched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
 
@@ -2292,7 +2299,7 @@ Contains
           vdws%sigeps(2, ivdw) = 0.0_wp
         End If
 
-      Else If (keypot == VDW_LJ_MDF) Then
+      Case (VDW_LJ_MDF)
 
         ! LJ tappered with MDF:: u=f(r)LJ(r)
 
@@ -2315,7 +2322,7 @@ Contains
           vdws%sigeps(2, ivdw) = eps
         End If
 
-      Else If (keypot == VDW_BUCKINGHAM_MDF) Then
+      Case (VDW_BUCKINGHAM_MDF)
 
         ! Buckingham tappered with MDF:: u=f(r)Buck(r)
 
@@ -2367,7 +2374,7 @@ Contains
         vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
         vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
 
-      Else If (keypot == VDW_126_MDF) Then
+      Case (VDW_126_MDF)
 
         ! LJ tappered with MDF:: u=f(r)LJ(r)
 
@@ -2390,11 +2397,11 @@ Contains
           vdws%sigeps(2, ivdw) = eps
         End If
 
-      Else
+      Case Default
 
         If (.not. vdws%l_tab) Call error(150)
 
-      End If
+      End select
 
       ! no shifting to shifted n-m and DPD
       If (vdws%l_force_shift .and. (keypot /= VDW_N_M_SHIFT .and. keypot /= VDW_DPD)) Then
@@ -2438,7 +2445,7 @@ Contains
 
   End Subroutine vdw_generate
 
-  Subroutine vdw_forces(iatm, xxt, yyt, zzt, rrt, engvdw, virvdw, stress, neigh, vdws, config)
+  Subroutine vdw_forces_direct(iatm, xxt, yyt, zzt, rrt, engvdw, virvdw, stress, neigh, vdws, config)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2550,504 +2557,466 @@ Contains
         eng = 0.0_wp
         gamma = 0.0_wp
 
-        If (vdws%l_direct) Then ! direct calculation
+        select case (ityp)
+        Case (VDW_12_6)
 
-          If (ityp == VDW_12_6) Then
+          ! 12-6 potential :: u=a/r^12-b/r^6
 
-            ! 12-6 potential :: u=a/r^12-b/r^6
+          a = vdws%param(1, k)
+          b = vdws%param(2, k)
 
-            a = vdws%param(1, k)
-            b = vdws%param(2, k)
+          r_6 = r_rsq**3
 
-            r_6 = r_rsq**3
+          If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+               eng = r_6 * (a * r_6 - b)
+          gamma = 6.0_wp * r_6 * (2.0_wp * a * r_6 - b) * r_rsq
 
+          If (vdws%l_force_shift) Then ! force-shifting
             If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-              eng = r_6 * (a * r_6 - b)
-            gamma = 6.0_wp * r_6 * (2.0_wp * a * r_6 - b) * r_rsq
-
-            If (vdws%l_force_shift) Then ! force-shifting
-              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-                eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-              gamma = gamma - vdws%afs(k) * r_rrr
-            End If
-
-          Else If (ityp == VDW_LENNARD_JONES) Then
-
-            ! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-(sig/r)^6]
-
-            eps = vdws%param(1, k)
-            sig = vdws%param(2, k)
-
-            sor6 = (sig**2 * r_rsq)**3
-
-            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-              eng = 4.0_wp * eps * sor6 * (sor6 - 1.0_wp)
-            gamma = 24.0_wp * eps * sor6 * (2.0_wp * sor6 - 1.0_wp) * r_rsq
-
-            If (vdws%l_force_shift) Then ! force-shifting
-              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-                eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-              gamma = gamma - vdws%afs(k) * r_rrr
-            End If
-
-          Else If (ityp == VDW_N_M) Then
-
-            ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(r0/r)^m]
-
-            e0 = vdws%param(1, k)
-            nr = vdws%param(2, k)
-            mr = vdws%param(3, k)
-            r0 = vdws%param(4, k)
-
-            a = r0 * r_rrr
-            b = 1.0_wp / (nr - mr)
-            r0rn = a**nr
-            r0rm = a**mr
-
-            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-              eng = e0 * (mr * r0rn - nr * r0rm) * b
-            gamma = e0 * mr * nr * (r0rn - r0rm) * b * r_rsq
-
-            If (vdws%l_force_shift) Then ! force-shifting
-              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-                eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-              gamma = gamma - vdws%afs(k) * r_rrr
-            End If
-
-          Else If (ityp == VDW_BUCKINGHAM) Then
-
-            ! Buckingham exp-6 potential :: u=a*Exp(-r/rho)-c/r^6
-
-            a = vdws%param(1, k)
-            rho = vdws%param(2, k)
-            c = vdws%param(3, k)
-            ! since this involves any constants shall not be tested here, probably read_field is where any sanity checks should
-            ! happen and to the GP for the rest - ame
-            If (Abs(rho) <= zero_plus) Then
-              If (Abs(a) <= zero_plus) Then
-                rho = 1.0_wp
-              Else
-                Call error(467)
-              End If
-            End If
-
-            b = rrr / rho
-            t1 = a * Exp(-b)
-            t2 = -c * r_rsq**3
-
-            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-              eng = t1 + t2
-            gamma = (t1 * b + 6.0_wp * t2) * r_rsq
-
-            If (vdws%l_force_shift) Then ! force-shifting
-              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-                eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-              gamma = gamma - vdws%afs(k) * r_rrr
-            End If
-
-          Else If (ityp == VDW_BORN_HUGGINS_MEYER) Then
-
-            ! Born-Huggins-Meyer exp-6-8 potential :: u=a*Exp(b*(sig-r))-c/r^6-d/r^8
-
-            a = vdws%param(1, k)
-            b = vdws%param(2, k)
-            sig = vdws%param(3, k)
-            c = vdws%param(4, k)
-            d = vdws%param(5, k)
-
-            t1 = a * Exp(b * (sig - rrr))
-            t2 = -c * r_rsq**3
-            t3 = -d * r_rsq**4
-
-            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-              eng = t1 + t2 + t3
-            gamma = (t1 * rrr * b + 6.0_wp * t2 + 8.0_wp * t3) * r_rsq
-
-            If (vdws%l_force_shift) Then ! force-shifting
-              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-                eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-              gamma = gamma - vdws%afs(k) * r_rrr
-            End If
-
-          Else If (ityp == VDW_HYDROGEN_BOND) Then
-
-            ! Hydrogen-bond 12-10 potential :: u=a/r^12-b/r^10
-
-            a = vdws%param(1, k)
-            b = vdws%param(2, k)
-
-            t1 = a * r_rsq**6
-            t2 = -b * r_rsq**5
-
-            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-              eng = t1 + t2
-            gamma = (12.0_wp * t1 + 10.0_wp * t2) * r_rsq
-
-            If (vdws%l_force_shift) Then ! force-shifting
-              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-                eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-              gamma = gamma - vdws%afs(k) * r_rrr
-            End If
-
-          Else If (ityp == VDW_N_M_SHIFT) Then
-
-            ! shifted and force corrected n-m potential (w.smith) ::
-
-            e0 = vdws%param(1, k)
-            n = Nint(vdws%param(2, k)); nr = Real(n, wp)
-            m = Nint(vdws%param(3, k)); mr = Real(m, wp)
-            r0 = vdws%param(4, k)
-            rc = vdws%param(5, k); If (rc < 1.0e-6_wp) rc = vdws%cutoff
-
-            If (n <= m) Call error(470)
-
-            t = Real(n - m, wp)
-
-            b = 1.0_wp / t
-            c = rc / r0; If (c < 1.0_wp) Call error(468)
-
-            beta = c * ((c**(m + 1) - 1.0_wp) / (c**(n + 1) - 1.0_wp))**b
-            alpha = -t / (mr * (beta**n) * (1.0_wp + (nr / c - nr - 1.0_wp) / c**n) &
-                          - nr * (beta**m) * (1.0_wp + (mr / c - mr - 1.0_wp) / c**m))
-            e0 = e0 * alpha
-
-            If (rrr <= rc) Then
-              a = r0 * r_rrr
-
-              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-                eng = e0 * (mr * (beta**n) * (a**n - (1.0_wp / c)**n) &
-                            - nr * (beta**m) * (a**m - (1.0_wp / c)**m) &
-                            + nr * mr * ((rrr / rc - 1.0_wp) * ((beta / c)**n - (beta / c)**m))) * b
-              gamma = e0 * Real(m * n, wp) * ((beta**n) * a**n - (beta**m) * a**m &
-                                              - rrr / rc * ((beta / c)**n - (beta / c)**m)) * b * r_rsq
-            End If
-
-          Else If (ityp == VDW_MORSE) Then
-
-            ! Morse potential :: u=e0*{[1-Exp(-kk(r-r0))]^2-1}
-
-            e0 = vdws%param(1, k)
-            r0 = vdws%param(2, k)
-            kk = vdws%param(3, k)
-
-            t1 = Exp(-kk * (rrr - r0))
-
-            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-              eng = e0 * t1 * (t1 - 2.0_wp)
-            gamma = -2.0_wp * e0 * kk * t1 * (1.0_wp - t1) * r_rrr
-
-            If (vdws%l_force_shift) Then ! force-shifting
-              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-                eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-              gamma = gamma - vdws%afs(k) * r_rrr
-            End If
-
-          Else If (ityp == VDW_WCA) Then
-
-            ! Weeks-Chandler-Andersen (shifted & truncated Lenard-Jones) (i.t.todorov)
-            ! :: u=4*eps*[{sig/(r-d)}^12-{sig/(r-d)}^6]-eps
-
-            eps = vdws%param(1, k)
-            sig = vdws%param(2, k)
-            d = vdws%param(3, k)
-
-            If (rrr < vdws%param(4, k) .or. Abs(rrr - d) < 1.0e-10_wp) Then ! Else leave them zeros
-              sor6 = (sig / (rrr - d))**6
-
-              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-                eng = 4.0_wp * eps * sor6 * (sor6 - 1.0_wp) + eps
-              gamma = 24.0_wp * eps * sor6 * (2.0_wp * sor6 - 1.0_wp) / (rrr * (rrr - d))
-
-              If (vdws%l_force_shift) Then ! force-shifting
-                If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-                  eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-                gamma = gamma - vdws%afs(k) * r_rrr
-              End If
-            End If
-
-          Else If (ityp == VDW_DPD) Then
-
-            ! DPD potential - Groot-Warren (standard) :: u=(1/2).a.r.(1-r/rc)^2
-
-            a = vdws%param(1, k)
-            rc = vdws%param(2, k)
-
-            If (rrr < rc) Then ! Else leave them zeros
-              t2 = rrr / rc
-              t1 = 0.5_wp * a * rrr * (1.0_wp - t2)
-
-              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-                eng = t1 * (1.0_wp - t2)
-              gamma = t1 * (3.0_wp * t2 - 1.0_wp) * r_rsq
-            End If
-
-          Else If (ityp == VDW_AMOEBA) Then
-
-            ! AMOEBA 14-7 :: u=eps * [1.07/((r/sig)+0.07)]^7 * [(1.12/((r/sig)^7+0.12))-2]
-
-            eps = vdws%param(1, k)
-            sig = vdws%param(2, k)
-
-            rho = rrr / sig
-            t1 = 1.0_wp / (0.07_wp + rho)
-            t2 = 1.0_wp / (0.12_wp + rho**7)
-            t3 = eps * (1.07_wp * t1)**7
-
-            t = t3 * ((1.12_wp * t2) - 2.0_wp)
-
-            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-              eng = t
-            gamma = 7.0_wp * (t1 * t + 1.12_wp * t3 * t2**2 * rho**6) * rho * r_rsq
-
-            If (vdws%l_force_shift) Then ! force-shifting
-              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-                eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-              gamma = gamma - vdws%afs(k) * r_rrr
-            End If
-
-          Else If (ityp == VDW_LENNARD_JONES_COHESIVE) Then
-
-            ! Lennard-Jones cohesive potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
-
-            eps = vdws%param(1, k)
-            sig = vdws%param(2, k)
-            c = vdws%param(3, k)
-
-            sor6 = (sig**2 * r_rsq)**3
-
-            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-              eng = 4.0_wp * eps * sor6 * (sor6 - c)
-            gamma = 24.0_wp * eps * sor6 * (2.0_wp * sor6 - c) * r_rsq
-
-            If (vdws%l_force_shift) Then ! force-shifting
-              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-                eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-              gamma = gamma - vdws%afs(k) * r_rrr
-            End If
-
-          Else If (ityp == VDW_MORSE_12) Then
-
-            ! Morse potential :: u=e0*{[1-Exp(-kk(r-r0))]^2-1}+c/r^12
-
-            e0 = vdws%param(1, k)
-            r0 = vdws%param(2, k)
-            kk = vdws%param(3, k)
-            c = vdws%param(4, k)
-
-            t1 = Exp(-kk * (rrr - r0))
-            sor6 = c * r_rsq**6
-
-            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-              eng = e0 * t1 * (t1 - 2.0_wp) + sor6
-            gamma = -2.0_wp * e0 * kk * t1 * (1.0_wp - t1) * r_rrr - 12.0_wp * sor6 * r_rrr
-
-            If (vdws%l_force_shift) Then ! force-shifting
-              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-                eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-              gamma = gamma - vdws%afs(k) * r_rrr
-            End If
-
-          Else If (ityp == VDW_RYDBERG) Then
-
-            ! Rydberg potential:: u=(a+b*r)Exp(-r/c)
-
-            a = vdws%param(1, k)
-            b = vdws%param(2, k)
-            c = vdws%param(3, k)
-
-            kk = rrr / c
-            t1 = Exp(-kk)
-
-            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-              eng = (a + b * rrr) * t1
-            gamma = kk * t1 * (a - b * c + b * rrr) * r_rsq
-
-            If (vdws%l_force_shift) Then ! force-shifting
-              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-                eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-              gamma = gamma - vdws%afs(k) * r_rrr
-            End If
-
-          Else If (ityp == VDW_ZBL) Then
-
-            ! ZBL potential:: u=Z1Z2/(40r)_{i=1}^4b_ie^{-c_i*r/a}
-
-            z1 = vdws%param(1, k)
-            z2 = vdws%param(2, k)
-
-            ! this is in fact inverse a
-            a = (z1**0.23_wp + z2**0.23_wp) / (ab * 0.88534_wp)
-            kk = z1 * z2 * r4pie0
-
-            Call zbl(rrr, kk, a, t1, gamma)
-            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-              eng = t1
-            gamma = gamma * r_rsq
-
-            If (vdws%l_force_shift) Then ! force-shifting
-              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-                eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-              gamma = gamma - vdws%afs(k) * r_rrr
-            End If
-
-          Else If (ityp == VDW_ZBL_SWITCH_MORSE) Then
-
-            ! ZBL swithched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
-
-            z1 = vdws%param(1, k)
-            z2 = vdws%param(2, k)
-            rm = vdws%param(3, k)
-            c = 1.0_wp / vdws%param(4, k)
-            e0 = vdws%param(5, k)
-            r0 = vdws%param(6, k)
-            t2 = vdws%param(7, k)
-
-            ! this is in fact inverse a
-            a = (z1**0.23_wp + z2**0.23_wp) / (ab * 0.88534_wp)
-            kk = z1 * z2 * r4pie0
-
-            Call zbls(rrr, kk, a, rm, c, e0, t2, r0, t1, gamma)
-
-            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-              eng = t1
-            gamma = gamma * r_rsq
-
-            If (vdws%l_force_shift) Then ! force-shifting
-              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-                eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-              gamma = gamma - vdws%afs(k) * r_rrr
-            End If
-
-          Else If (ityp == VDW_ZBL_SWITCH_BUCKINGHAM) Then
-
-            ! ZBL swithched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
-
-            z1 = vdws%param(1, k)
-            z2 = vdws%param(2, k)
-            rm = vdws%param(3, k)
-            c = 1.0_wp / vdws%param(4, k)
-            e0 = vdws%param(5, k)
-            r0 = vdws%param(6, k)
-            t2 = vdws%param(7, k)
-
-            ! this is in fact inverse a
-            a = (z1**0.23_wp + z2**0.23_wp) / (ab * 0.88534_wp)
-            kk = z1 * z2 * r4pie0
-
-            Call zblb(rrr, kk, a, rm, c, e0, r0, t2, t1, gamma)
-
-            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-              eng = t1
-            gamma = gamma * r_rsq
-
-            If (vdws%l_force_shift) Then ! force-shifting
-              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-                eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-              gamma = gamma - vdws%afs(k) * r_rrr
-            End If
-
-          Else If (ityp == VDW_LJ_MDF) Then
-
-            ! LJ tappered with MDF:: u=f(r)LJ(r)
-
-            eps = vdws%param(1, k)
-            sig = vdws%param(2, k)
-            ri = vdws%param(3, k)
-            !rc=vdws%cutoff
-
-            Call mlj(rrr, eps, sig, ri, vdws%cutoff, t1, gamma)
-
-            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-              eng = t1
-            gamma = gamma * r_rsq
-
-            If (vdws%l_force_shift) Then ! force-shifting
-              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-                eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-              gamma = gamma - vdws%afs(k) * r_rrr
-            End If
-
-          Else If (ityp == VDW_BUCKINGHAM_MDF) Then
-
-            ! Buckingham tappered with MDF:: u=f(r)Buck(r)
-            a = vdws%param(1, k)
-            rho = vdws%param(2, k)
-            c = vdws%param(3, k)
-            ri = vdws%param(4, k)
-
-            Call mbuck(rrr, a, rho, c, ri, vdws%cutoff, t1, gamma)
-
-            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-              eng = t1
-            gamma = gamma * r_rsq
-
-            ! by construction is zero outside vdws%cutoff so no shifting
-            If (vdws%l_force_shift) Then ! force-shifting
-              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-                eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-              gamma = gamma - vdws%afs(k) * r_rrr
-            End If
-
-          Else If (ityp == VDW_126_MDF) Then
-
-            ! LJ tappered with MDF:: u=f(r)LJ12-6(r)
-
-            a = vdws%param(1, k)
-            b = vdws%param(2, k)
-            ri = vdws%param(3, k)
-            !rc=vdws%cutoff
-
-            Call mlj126(rrr, a, b, ri, vdws%cutoff, t1, gamma)
-
-            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-              eng = t1
-            gamma = gamma * r_rsq
-
-            ! by construction is zero outside vdws%cutoff so no shifting
-            If (vdws%l_force_shift) Then ! force-shifting
-              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
-                eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-              gamma = gamma - vdws%afs(k) * r_rrr
-            End If
-
-          Else If (Abs(vdws%tab_potential(0, k)) > zero_plus) Then ! potential read from TABLE - (ityp == VDW_TAB)
-
-            l = Int(rrr * vdws%rdr)
-            ppp = rrr * vdws%rdr - Real(l, wp)
-
-            ! calculate interaction energy using 3-point interpolation
-
-            If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
-              vk = vdws%tab_potential(l, k)
-              vk1 = vdws%tab_potential(l + 1, k)
-              vk2 = vdws%tab_potential(l + 2, k)
-
-              t1 = vk + (vk1 - vk) * ppp
-              t2 = vk1 + (vk2 - vk1) * (ppp - 1.0_wp)
-
-              eng = t1 + (t2 - t1) * ppp * 0.5_wp
-              ! force-shifting
-              If (vdws%l_force_shift) Then
-                eng = eng + vdws%tab_force(vdws%max_grid - 4, k) * (rscl - 1.0_wp) - &
-                      vdws%tab_potential(vdws%max_grid - 4, k)
-              End If
-            End If
-
-            ! calculate forces using 3-point interpolation
-
-            gk = vdws%tab_force(l, k); If (l == 0) gk = gk * rrr
-            gk1 = vdws%tab_force(l + 1, k)
-            gk2 = vdws%tab_force(l + 2, k)
-
-            t1 = gk + (gk1 - gk) * ppp
-            t2 = gk1 + (gk2 - gk1) * (ppp - 1.0_wp)
-
-            gamma = (t1 + (t2 - t1) * ppp * 0.5_wp) * r_rsq
-            If (vdws%l_force_shift) gamma = gamma - vdws%tab_force(vdws%max_grid - 4, k) * r_rrv ! force-shifting
-
+                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
+            gamma = gamma - vdws%afs(k) * r_rrr
           End If
 
-        Else If (Abs(vdws%tab_potential(0, k)) > zero_plus) Then ! no direct = fully tabulated calculation
+        Case (VDW_LENNARD_JONES)
+
+          ! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-(sig/r)^6]
+
+          eps = vdws%param(1, k)
+          sig = vdws%param(2, k)
+
+          sor6 = (sig**2 * r_rsq)**3
+
+          If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+               eng = 4.0_wp * eps * sor6 * (sor6 - 1.0_wp)
+          gamma = 24.0_wp * eps * sor6 * (2.0_wp * sor6 - 1.0_wp) * r_rsq
+
+          If (vdws%l_force_shift) Then ! force-shifting
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
+            gamma = gamma - vdws%afs(k) * r_rrr
+          End If
+
+        Case (VDW_N_M)
+
+          ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(r0/r)^m]
+
+          e0 = vdws%param(1, k)
+          nr = vdws%param(2, k)
+          mr = vdws%param(3, k)
+          r0 = vdws%param(4, k)
+
+          a = r0 * r_rrr
+          b = 1.0_wp / (nr - mr)
+          r0rn = a**nr
+          r0rm = a**mr
+
+          If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+               eng = e0 * (mr * r0rn - nr * r0rm) * b
+          gamma = e0 * mr * nr * (r0rn - r0rm) * b * r_rsq
+
+          If (vdws%l_force_shift) Then ! force-shifting
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
+            gamma = gamma - vdws%afs(k) * r_rrr
+          End If
+
+        Case (VDW_BUCKINGHAM)
+
+          ! Buckingham exp-6 potential :: u=a*Exp(-r/rho)-c/r^6
+
+          a = vdws%param(1, k)
+          rho = vdws%param(2, k)
+          c = vdws%param(3, k)
+          ! since this involves any constants shall not be tested here, probably read_field is where any sanity checks should
+          ! happen and to the GP for the rest - ame
+          If (Abs(rho) <= zero_plus) Then
+            If (Abs(a) <= zero_plus) Then
+              rho = 1.0_wp
+            Else
+              Call error(467)
+            End If
+          End If
+
+          b = rrr / rho
+          t1 = a * Exp(-b)
+          t2 = -c * r_rsq**3
+
+          If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+               eng = t1 + t2
+          gamma = (t1 * b + 6.0_wp * t2) * r_rsq
+
+          If (vdws%l_force_shift) Then ! force-shifting
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
+            gamma = gamma - vdws%afs(k) * r_rrr
+          End If
+
+        Case (VDW_BORN_HUGGINS_MEYER)
+
+          ! Born-Huggins-Meyer exp-6-8 potential :: u=a*Exp(b*(sig-r))-c/r^6-d/r^8
+
+          a = vdws%param(1, k)
+          b = vdws%param(2, k)
+          sig = vdws%param(3, k)
+          c = vdws%param(4, k)
+          d = vdws%param(5, k)
+
+          t1 = a * Exp(b * (sig - rrr))
+          t2 = -c * r_rsq**3
+          t3 = -d * r_rsq**4
+
+          If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+               eng = t1 + t2 + t3
+          gamma = (t1 * rrr * b + 6.0_wp * t2 + 8.0_wp * t3) * r_rsq
+
+          If (vdws%l_force_shift) Then ! force-shifting
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
+            gamma = gamma - vdws%afs(k) * r_rrr
+          End If
+
+        Case (VDW_HYDROGEN_BOND)
+
+          ! Hydrogen-bond 12-10 potential :: u=a/r^12-b/r^10
+
+          a = vdws%param(1, k)
+          b = vdws%param(2, k)
+
+          t1 = a * r_rsq**6
+          t2 = -b * r_rsq**5
+
+          If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+               eng = t1 + t2
+          gamma = (12.0_wp * t1 + 10.0_wp * t2) * r_rsq
+
+          If (vdws%l_force_shift) Then ! force-shifting
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
+            gamma = gamma - vdws%afs(k) * r_rrr
+          End If
+
+        Case (VDW_N_M_SHIFT)
+
+          ! shifted and force corrected n-m potential (w.smith) ::
+
+          e0 = vdws%param(1, k)
+          n = Nint(vdws%param(2, k)); nr = Real(n, wp)
+          m = Nint(vdws%param(3, k)); mr = Real(m, wp)
+          r0 = vdws%param(4, k)
+          rc = vdws%param(5, k); If (rc < 1.0e-6_wp) rc = vdws%cutoff
+
+          If (n <= m) Call error(470)
+
+          t = Real(n - m, wp)
+
+          b = 1.0_wp / t
+          c = rc / r0; If (c < 1.0_wp) Call error(468)
+
+          beta = c * ((c**(m + 1) - 1.0_wp) / (c**(n + 1) - 1.0_wp))**b
+          alpha = -t / (mr * (beta**n) * (1.0_wp + (nr / c - nr - 1.0_wp) / c**n) &
+               - nr * (beta**m) * (1.0_wp + (mr / c - mr - 1.0_wp) / c**m))
+          e0 = e0 * alpha
+
+          If (rrr <= rc) Then
+            a = r0 * r_rrr
+
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+                 eng = e0 * (mr * (beta**n) * (a**n - (1.0_wp / c)**n) &
+                 - nr * (beta**m) * (a**m - (1.0_wp / c)**m) &
+                 + nr * mr * ((rrr / rc - 1.0_wp) * ((beta / c)**n - (beta / c)**m))) * b
+            gamma = e0 * Real(m * n, wp) * ((beta**n) * a**n - (beta**m) * a**m &
+                 - rrr / rc * ((beta / c)**n - (beta / c)**m)) * b * r_rsq
+          End If
+
+        Case (VDW_MORSE)
+
+          ! Morse potential :: u=e0*{[1-Exp(-kk(r-r0))]^2-1}
+
+          e0 = vdws%param(1, k)
+          r0 = vdws%param(2, k)
+          kk = vdws%param(3, k)
+
+          t1 = Exp(-kk * (rrr - r0))
+
+          If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+               eng = e0 * t1 * (t1 - 2.0_wp)
+          gamma = -2.0_wp * e0 * kk * t1 * (1.0_wp - t1) * r_rrr
+
+          If (vdws%l_force_shift) Then ! force-shifting
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
+            gamma = gamma - vdws%afs(k) * r_rrr
+          End If
+
+        Case (VDW_WCA)
+
+          ! Weeks-Chandler-Andersen (shifted & truncated Lenard-Jones) (i.t.todorov)
+          ! :: u=4*eps*[{sig/(r-d)}^12-{sig/(r-d)}^6]-eps
+
+          eps = vdws%param(1, k)
+          sig = vdws%param(2, k)
+          d = vdws%param(3, k)
+
+          If (rrr < vdws%param(4, k) .or. Abs(rrr - d) < 1.0e-10_wp) Then ! Else leave them zeros
+            sor6 = (sig / (rrr - d))**6
+
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+                 eng = 4.0_wp * eps * sor6 * (sor6 - 1.0_wp) + eps
+            gamma = 24.0_wp * eps * sor6 * (2.0_wp * sor6 - 1.0_wp) / (rrr * (rrr - d))
+
+            If (vdws%l_force_shift) Then ! force-shifting
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+                   eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
+              gamma = gamma - vdws%afs(k) * r_rrr
+            End If
+          End If
+
+        Case (VDW_DPD)
+
+          ! DPD potential - Groot-Warren (standard) :: u=(1/2).a.r.(1-r/rc)^2
+
+          a = vdws%param(1, k)
+          rc = vdws%param(2, k)
+
+          If (rrr < rc) Then ! Else leave them zeros
+            t2 = rrr / rc
+            t1 = 0.5_wp * a * rrr * (1.0_wp - t2)
+
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+                 eng = t1 * (1.0_wp - t2)
+            gamma = t1 * (3.0_wp * t2 - 1.0_wp) * r_rsq
+          End If
+
+        Case (VDW_AMOEBA)
+
+          ! AMOEBA 14-7 :: u=eps * [1.07/((r/sig)+0.07)]^7 * [(1.12/((r/sig)^7+0.12))-2]
+
+          eps = vdws%param(1, k)
+          sig = vdws%param(2, k)
+
+          rho = rrr / sig
+          t1 = 1.0_wp / (0.07_wp + rho)
+          t2 = 1.0_wp / (0.12_wp + rho**7)
+          t3 = eps * (1.07_wp * t1)**7
+
+          t = t3 * ((1.12_wp * t2) - 2.0_wp)
+
+          If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+               eng = t
+          gamma = 7.0_wp * (t1 * t + 1.12_wp * t3 * t2**2 * rho**6) * rho * r_rsq
+
+          If (vdws%l_force_shift) Then ! force-shifting
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
+            gamma = gamma - vdws%afs(k) * r_rrr
+          End If
+
+        Case (VDW_LENNARD_JONES_COHESIVE)
+
+          ! Lennard-Jones cohesive potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
+
+          eps = vdws%param(1, k)
+          sig = vdws%param(2, k)
+          c = vdws%param(3, k)
+
+          sor6 = (sig**2 * r_rsq)**3
+
+          If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+               eng = 4.0_wp * eps * sor6 * (sor6 - c)
+          gamma = 24.0_wp * eps * sor6 * (2.0_wp * sor6 - c) * r_rsq
+
+          If (vdws%l_force_shift) Then ! force-shifting
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
+            gamma = gamma - vdws%afs(k) * r_rrr
+          End If
+
+        Case (VDW_MORSE_12)
+
+          ! Morse potential :: u=e0*{[1-Exp(-kk(r-r0))]^2-1}+c/r^12
+
+          e0 = vdws%param(1, k)
+          r0 = vdws%param(2, k)
+          kk = vdws%param(3, k)
+          c = vdws%param(4, k)
+
+          t1 = Exp(-kk * (rrr - r0))
+          sor6 = c * r_rsq**6
+
+          If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+               eng = e0 * t1 * (t1 - 2.0_wp) + sor6
+          gamma = -2.0_wp * e0 * kk * t1 * (1.0_wp - t1) * r_rrr - 12.0_wp * sor6 * r_rrr
+
+          If (vdws%l_force_shift) Then ! force-shifting
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
+            gamma = gamma - vdws%afs(k) * r_rrr
+          End If
+
+        Case (VDW_RYDBERG)
+
+          ! Rydberg potential:: u=(a+b*r)Exp(-r/c)
+
+          a = vdws%param(1, k)
+          b = vdws%param(2, k)
+          c = vdws%param(3, k)
+
+          kk = rrr / c
+          t1 = Exp(-kk)
+
+          If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+               eng = (a + b * rrr) * t1
+          gamma = kk * t1 * (a - b * c + b * rrr) * r_rsq
+
+          If (vdws%l_force_shift) Then ! force-shifting
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
+            gamma = gamma - vdws%afs(k) * r_rrr
+          End If
+
+        Case (VDW_ZBL)
+
+          ! ZBL potential:: u=Z1Z2/(40r)_{i=1}^4b_ie^{-c_i*r/a}
+
+          z1 = vdws%param(1, k)
+          z2 = vdws%param(2, k)
+
+          ! this is in fact inverse a
+          a = (z1**0.23_wp + z2**0.23_wp) / (ab * 0.88534_wp)
+          kk = z1 * z2 * r4pie0
+
+          Call zbl(rrr, kk, a, t1, gamma)
+          If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+               eng = t1
+          gamma = gamma * r_rsq
+
+          If (vdws%l_force_shift) Then ! force-shifting
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
+            gamma = gamma - vdws%afs(k) * r_rrr
+          End If
+
+        Case (VDW_ZBL_SWITCH_MORSE)
+
+          ! ZBL swithched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
+
+          z1 = vdws%param(1, k)
+          z2 = vdws%param(2, k)
+          rm = vdws%param(3, k)
+          c = 1.0_wp / vdws%param(4, k)
+          e0 = vdws%param(5, k)
+          r0 = vdws%param(6, k)
+          t2 = vdws%param(7, k)
+
+          ! this is in fact inverse a
+          a = (z1**0.23_wp + z2**0.23_wp) / (ab * 0.88534_wp)
+          kk = z1 * z2 * r4pie0
+
+          Call zbls(rrr, kk, a, rm, c, e0, t2, r0, t1, gamma)
+
+          If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+               eng = t1
+          gamma = gamma * r_rsq
+
+          If (vdws%l_force_shift) Then ! force-shifting
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
+            gamma = gamma - vdws%afs(k) * r_rrr
+          End If
+
+        Case (VDW_ZBL_SWITCH_BUCKINGHAM)
+
+          ! ZBL swithched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
+
+          z1 = vdws%param(1, k)
+          z2 = vdws%param(2, k)
+          rm = vdws%param(3, k)
+          c = 1.0_wp / vdws%param(4, k)
+          e0 = vdws%param(5, k)
+          r0 = vdws%param(6, k)
+          t2 = vdws%param(7, k)
+
+          ! this is in fact inverse a
+          a = (z1**0.23_wp + z2**0.23_wp) / (ab * 0.88534_wp)
+          kk = z1 * z2 * r4pie0
+
+          Call zblb(rrr, kk, a, rm, c, e0, r0, t2, t1, gamma)
+
+          If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+               eng = t1
+          gamma = gamma * r_rsq
+
+          If (vdws%l_force_shift) Then ! force-shifting
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
+            gamma = gamma - vdws%afs(k) * r_rrr
+          End If
+
+        Case (VDW_LJ_MDF)
+
+          ! LJ tappered with MDF:: u=f(r)LJ(r)
+
+          eps = vdws%param(1, k)
+          sig = vdws%param(2, k)
+          ri = vdws%param(3, k)
+          !rc=vdws%cutoff
+
+          Call mlj(rrr, eps, sig, ri, vdws%cutoff, t1, gamma)
+
+          If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+               eng = t1
+          gamma = gamma * r_rsq
+
+          If (vdws%l_force_shift) Then ! force-shifting
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
+            gamma = gamma - vdws%afs(k) * r_rrr
+          End If
+
+        Case (VDW_BUCKINGHAM_MDF)
+
+          ! Buckingham tappered with MDF:: u=f(r)Buck(r)
+          a = vdws%param(1, k)
+          rho = vdws%param(2, k)
+          c = vdws%param(3, k)
+          ri = vdws%param(4, k)
+
+          Call mbuck(rrr, a, rho, c, ri, vdws%cutoff, t1, gamma)
+
+          If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+               eng = t1
+          gamma = gamma * r_rsq
+
+          ! by construction is zero outside vdws%cutoff so no shifting
+          If (vdws%l_force_shift) Then ! force-shifting
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
+            gamma = gamma - vdws%afs(k) * r_rrr
+          End If
+
+        Case (VDW_126_MDF)
+
+          ! LJ tappered with MDF:: u=f(r)LJ12-6(r)
+
+          a = vdws%param(1, k)
+          b = vdws%param(2, k)
+          ri = vdws%param(3, k)
+          !rc=vdws%cutoff
+
+          Call mlj126(rrr, a, b, ri, vdws%cutoff, t1, gamma)
+
+          If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+               eng = t1
+          gamma = gamma * r_rsq
+
+          ! by construction is zero outside vdws%cutoff so no shifting
+          If (vdws%l_force_shift) Then ! force-shifting
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
+            gamma = gamma - vdws%afs(k) * r_rrr
+          End If
+
+        Case (VDW_TAB) ! potential read from TABLE - (ityp == VDW_TAB)
 
           l = Int(rrr * vdws%rdr)
           ppp = rrr * vdws%rdr - Real(l, wp)
@@ -3066,7 +3035,7 @@ Contains
             ! force-shifting
             If (vdws%l_force_shift) Then
               eng = eng + vdws%tab_force(vdws%max_grid - 4, k) * (rscl - 1.0_wp) - &
-                    vdws%tab_potential(vdws%max_grid - 4, k)
+                   vdws%tab_potential(vdws%max_grid - 4, k)
             End If
           End If
 
@@ -3082,7 +3051,7 @@ Contains
           gamma = (t1 + (t2 - t1) * ppp * 0.5_wp) * r_rsq
           If (vdws%l_force_shift) gamma = gamma - vdws%tab_force(vdws%max_grid - 4, k) * r_rrv ! force-shifting
 
-        End If
+        end select
 
         ! calculate forces
 
@@ -3145,7 +3114,217 @@ Contains
     stress(8) = stress(8) + strs6
     stress(9) = stress(9) + strs9
 
-  End Subroutine vdw_forces
+  End Subroutine vdw_forces_direct
+
+  Subroutine vdw_forces_tab(iatm, xxt, yyt, zzt, rrt, engvdw, virvdw, stress, neigh, vdws, config)
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for calculating vdw energy and force terms using
+    ! verlet neighbour list
+    !
+    ! copyright - daresbury laboratory
+    ! author    - w.smith august 1998
+    ! amended   - i.t.todorov march 2016
+    ! contrib   - a.m.elena september 2016 (ljc)
+    ! contrib   - a.m.elena september 2017 (rydberg)
+    ! contrib   - a.m.elena october 2017 (zbl/zbls)
+    ! contrib   - a.m.elena december 2017 (zblb)
+    ! contrib   - a.m.elena april 2018 (mlj/mbuc)
+    ! contrib   - a.m.elena may 2018 (m126)
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Integer,                                    Intent(In   ) :: iatm
+    Type(neighbours_type),                      Intent(In   ) :: neigh
+    Real(Kind=wp), Dimension(1:9),              Intent(InOut) :: stress
+    Real(Kind=wp),                              Intent(  Out) :: virvdw, engvdw
+    Real(Kind=wp), Dimension(1:neigh%max_list), Intent(In   ) :: rrt, zzt, yyt, xxt
+    Type(vdw_type),                             Intent(InOut) :: vdws
+    Type(configuration_type),                   Intent(InOut) :: config
+
+    Integer       :: ai, aj, idi, ityp, jatm, k, key, l, m, mm, n
+    Real(kind=wp) :: t1, t2, vk, vk1, vk2, gk, gk1, gk2, ppp
+    Real(kind=wp) :: fix, fiy, fiz, fx, fy, fz, gamma, eng
+    Real(kind=wp) :: rrr, rsq, rscl, r_rvdw, r_rrv, r_rsq, r_rrr
+    Real(Kind=wp) :: strs1, strs2, strs3, strs5, strs6, strs9
+
+    ! define grid resolution for potential arrays and interpolation spacing
+
+    If (vdws%newjob) Then
+      vdws%newjob = .false.
+
+      vdws%dlrpot = vdws%cutoff / Real(vdws%max_grid - 4, wp)
+      vdws%rdr = 1.0_wp / vdws%dlrpot
+    End If
+
+    ! initialise potential energy and virial
+
+    engvdw = 0.0_wp
+    virvdw = 0.0_wp
+
+    ! initialise stress tensor accumulators
+
+    strs1 = 0.0_wp
+    strs2 = 0.0_wp
+    strs3 = 0.0_wp
+    strs5 = 0.0_wp
+    strs6 = 0.0_wp
+    strs9 = 0.0_wp
+
+    ! global identity and type of iatm
+
+    idi = config%ltg(iatm)
+    ai = config%ltype(iatm)
+
+    ! load forces
+
+    fix = config%parts(iatm)%fxx
+    fiy = config%parts(iatm)%fyy
+    fiz = config%parts(iatm)%fzz
+
+    ! start of primary loop for forces evaluation
+
+    Do mm = 1, neigh%list(0, iatm)
+
+      ! atomic and potential function indices
+
+      jatm = neigh%list(mm, iatm)
+      aj = config%ltype(jatm)
+
+      If (ai > aj) Then
+        key = ai * (ai - 1) / 2 + aj
+      Else
+        key = aj * (aj - 1) / 2 + ai
+      End If
+
+      k = vdws%list(key)
+
+      If (Abs(vdws%tab_potential(0, k)) < zero_plus) cycle
+
+      ! interatomic distance
+
+      rrr = rrt(mm)
+
+      ! validity and truncation of potential
+
+      ityp = vdws%ltp(k)
+      If (ityp /= VDW_NULL .and. rrr < vdws%cutoff) Then
+
+        ! Distance derivatives
+
+        r_rrr = 1.0_wp / rrr
+        r_rvdw = 1.0_wp / vdws%cutoff
+        rsq = rrr**2
+        r_rsq = 1.0_wp / rsq
+        r_rrv = r_rrr * r_rvdw
+        rscl = rrr * r_rvdw
+
+        ! Zero energy and force components
+
+        eng = 0.0_wp
+        gamma = 0.0_wp
+
+
+        l = Int(rrr * vdws%rdr)
+        ppp = rrr * vdws%rdr - Real(l, wp)
+
+        ! calculate forces using 3-point interpolation
+
+        gk = vdws%tab_force(l, k); If (l == 0) gk = gk * rrr
+        gk1 = vdws%tab_force(l + 1, k)
+        gk2 = vdws%tab_force(l + 2, k)
+
+        t1 = gk + (gk1 - gk) * ppp
+        t2 = gk1 + (gk2 - gk1) * (ppp - 1.0_wp)
+
+        gamma = (t1 + (t2 - t1) * ppp * 0.5_wp) * r_rsq
+        If (vdws%l_force_shift) gamma = gamma - vdws%tab_force(vdws%max_grid - 4, k) * r_rrv ! force-shifting
+
+
+        ! calculate forces
+
+        fx = gamma * xxt(mm)
+        fy = gamma * yyt(mm)
+        fz = gamma * zzt(mm)
+
+        fix = fix + fx
+        fiy = fiy + fy
+        fiz = fiz + fz
+
+        If (jatm <= config%natms) Then
+
+          config%parts(jatm)%fxx = config%parts(jatm)%fxx - fx
+          config%parts(jatm)%fyy = config%parts(jatm)%fyy - fy
+          config%parts(jatm)%fzz = config%parts(jatm)%fzz - fz
+
+        End If
+
+        If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+
+          ! calculate interaction energy using 3-point interpolation
+
+          vk = vdws%tab_potential(l, k)
+          vk1 = vdws%tab_potential(l + 1, k)
+          vk2 = vdws%tab_potential(l + 2, k)
+
+          t1 = vk + (vk1 - vk) * ppp
+          t2 = vk1 + (vk2 - vk1) * (ppp - 1.0_wp)
+
+          eng = t1 + (t2 - t1) * ppp * 0.5_wp
+          ! force-shifting
+          If (vdws%l_force_shift) Then
+            eng = eng + vdws%tab_force(vdws%max_grid - 4, k) * (rscl - 1.0_wp) - &
+                 vdws%tab_potential(vdws%max_grid - 4, k)
+          End If
+
+          ! add interaction energy
+
+          engvdw = engvdw + eng
+
+          ! add virial
+
+          virvdw = virvdw - gamma * rsq
+
+          ! add stress tensor
+
+          strs1 = strs1 + xxt(mm) * fx
+          strs2 = strs2 + xxt(mm) * fy
+          strs3 = strs3 + xxt(mm) * fz
+          strs5 = strs5 + yyt(mm) * fy
+          strs6 = strs6 + yyt(mm) * fz
+          strs9 = strs9 + zzt(mm) * fz
+
+        End If
+
+      End If
+
+    End Do
+
+    ! load back forces
+
+    config%parts(iatm)%fxx = fix
+    config%parts(iatm)%fyy = fiy
+    config%parts(iatm)%fzz = fiz
+
+    ! complete stress tensor
+
+    stress(1) = stress(1) + strs1
+    stress(2) = stress(2) + strs2
+    stress(3) = stress(3) + strs3
+    stress(4) = stress(4) + strs2
+    stress(5) = stress(5) + strs5
+    stress(6) = stress(6) + strs6
+    stress(7) = stress(7) + strs3
+    stress(8) = stress(8) + strs6
+    stress(9) = stress(9) + strs9
+
+  End Subroutine vdw_forces_tab
 
   Subroutine cleanup(T)
     Type(vdw_type) :: T
