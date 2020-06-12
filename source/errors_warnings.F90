@@ -37,6 +37,7 @@ Module errors_warnings
   Public :: error_alloc, error_dealloc
   Public :: error_read
   Public :: set_print_level
+  Public :: check_print_level
 
   Interface warning
     Module Procedure warning_special
@@ -774,6 +775,14 @@ Contains
     print_level = level
 
   End Subroutine set_print_level
+
+  Function check_print_level(level)
+    Integer, Intent(In   ) :: level
+    Logical :: check_print_level
+
+    check_print_level = print_level >= level
+
+  end Function check_print_level
 
 
   Subroutine error(kode, message, master_only)

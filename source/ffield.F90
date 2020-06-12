@@ -5370,8 +5370,8 @@ Contains
   End Subroutine report_topology
 
   Subroutine scan_field(megatm, site, max_exclude, mtshl, &
-                        mtcons, l_usr, mtrgd, mtteth, mtbond, mtangl, mtdihd, mtinv, rcter, rctbp, rcfbp, &
-                        lext, cshell, cons, pmf, met, bond, angle, dihedral, inversion, tether, threebody, &
+                        mtcons, mtrgd, mtteth, mtbond, mtangl, mtdihd, mtinv, &
+                        ext_field, cshell, cons, pmf, met, bond, angle, dihedral, inversion, tether, threebody, &
                         vdws, tersoffs, fourbody, rdf, mpoles, rigid, kim_data, files, electro, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -5394,14 +5394,12 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer                                 :: megatm
+    Integer,                  Intent(  Out) :: megatm
     Type(site_type),          Intent(InOut) :: site
     Integer(Kind=wi),         Intent(  Out) :: max_exclude, mtshl
-    Integer                                 :: mtcons
-    Logical                                 :: l_usr
-    Integer                                 :: mtrgd, mtteth, mtbond, mtangl, mtdihd, mtinv
-    Real(Kind=wp),            Intent(  Out) :: rcter, rctbp, rcfbp
-    Logical                                 :: lext
+    Integer,                  Intent(  Out) :: mtcons
+    Integer,                  Intent(  Out) :: mtrgd, mtteth, mtbond, mtangl, mtdihd, mtinv
+    Type(external_field_type),Intent(InOut) :: ext_field
     Type(core_shell_type),    Intent(InOut) :: cshell
     Type(constraints_type),   Intent(InOut) :: cons
     Type(pmf_type),           Intent(InOut) :: pmf
@@ -5526,18 +5524,16 @@ Contains
     met%maxgrid = 0
 
     tersoffs%max_ter = 0
-    rcter = 0.0_wp
+    tersoffs%cutoff = 0.0_wp
 
     threebody%mxtbp = 0
-    rctbp = 0.0_wp
+    threebody%cutoff = 0.0_wp
 
     fourbody%max_four_body = 0
-    rcfbp = 0.0_wp
+    fourbody%cutoff = 0.0_wp
 
     max_exclude = 0
 
-    lext = .false.
-    l_usr = .false.
     lkim = .false.
 
     ! Set safe flag
@@ -6173,7 +6169,7 @@ Contains
           End Do
 
           rct = word_2_real(word)
-          rcter = Max(rcter, rct)
+          tersoffs%cutoff = Max(tersoffs%cutoff, rct)
 
           If (tersoffs%key_pot == TERS_KIHS) Then
             word(1:1) = '#'
@@ -6218,7 +6214,7 @@ Contains
           End Do
 
           rct = word_2_real(word)
-          rctbp = Max(rctbp, rct)
+          threebody%cutoff = Max(threebody%cutoff, rct)
         End Do
 
       Else If (word(1:3) == 'fbp') Then
@@ -6239,7 +6235,7 @@ Contains
           End Do
 
           rct = word_2_real(word)
-          rcfbp = Max(rcfbp, rct)
+          fourbody%cutoff = Max(fourbody%cutoff, rct)
         End Do
 
       Else If (word(1:3) == 'kim') Then
@@ -6275,8 +6271,6 @@ Contains
 
       Else If (word(1:6) == 'extern') Then
 
-        lext = .true.
-
         word(1:1) = '#'
         Do While (word(1:1) == '#' .or. word(1:1) == ' ')
           Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
@@ -6284,7 +6278,37 @@ Contains
           Call get_word(record, word)
         End Do
 
-        l_usr = (word(1:4) == 'ushr')
+        Select Case (word(1:4))
+        Case ('elec')
+          ext_field%key = FIELD_ELECTRIC
+        Case ('oshr')
+          ext_field%key = FIELD_SHEAR_OSCILLATING
+        Case ('shrx')
+          ext_field%key = FIELD_SHEAR_CONTINUOUS
+        Case ('grav')
+          ext_field%key = FIELD_GRAVITATIONAL
+        Case ('magn')
+          ext_field%key = FIELD_MAGNETIC
+        Case ('sphr')
+          ext_field%key = FIELD_SPHERE
+        Case ('zbnd')
+          ext_field%key = FIELD_WALL
+        Case ('xpis')
+          ext_field%key = FIELD_WALL_PISTON
+        Case ('zres')
+          ext_field%key = FIELD_ZRES
+        Case ('zrs-')
+          ext_field%key = FIELD_ZRES_MINUS
+        Case ('zrs+')
+          ext_field%key = FIELD_ZRES_PLUS
+        Case ('osel')
+          ext_field%key = FIELD_ELECTRIC_OSCILLATING
+        Case ('ushr')
+          ext_field%key = FIELD_UMBRELLA
+        Case Default
+          Call info(word, .true.)
+          Call error(454)
+        End Select
 
       Else If (word(1:5) == 'close') Then
 

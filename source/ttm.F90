@@ -110,8 +110,82 @@ Module ttm
             eltemp_maxKe, eltemp_minKe, eltemp_mean, eltemp_sum
   Public :: ttm_system_init, ttm_system_revive, ttm_table_read, &
             ttm_table_scan, boundaryHalo, boundaryCond, depoinit
-
+  Public :: ttm_setup_bounds
 Contains
+
+  Subroutine ttm_setup_bounds(ttm, config, domain, megatm, padding_margin)
+    !-----------------------------------------------------------------------
+    !
+    ! dl_poly_4 subroutine to finalise ttm for set_bounds
+    !
+    ! copyright - daresbury laboratory
+    !
+    !-----------------------------------------------------------------------
+
+    Type(ttm_type), Intent( InOut ) :: ttm
+    Type(configuration_type), Intent( In    ) :: config
+    Type(domains_type), Intent( In    ) :: domain
+    Integer, Intent( In    ) :: megatm
+    Real(kind=wp),  Intent(   Out ) :: padding_margin
+    Real(kind=wp) :: tol, test
+    Integer :: i
+
+    padding_margin = 0.0_wp
+    ! two-temperature model: determine number of CITs
+    ! in x- and y-directions based on number in z-direction
+    ! and system size
+
+    ttm%delz     = config%cell(9) / Real(ttm%ntsys(3), wp)
+    ttm%ntsys(1) = Nint(config%cell(1) / ttm%delz)
+    ttm%ntsys(2) = Nint(config%cell(5) / ttm%delz)
+    ttm%delx     = config%cell(1) / Real(ttm%ntsys(1), wp)
+    ttm%dely     = config%cell(5) / Real(ttm%ntsys(2), wp)
+    ttm%volume   = ttm%delx * ttm%dely * ttm%delz
+    ttm%rvolume  = 1.0_wp / ttm%volume
+
+    ! Check number of electronic temperature cells is
+    ! >= to number of ionic temperature cells
+
+    If (Any(ttm%eltsys < ttm%ntsys)) Call error(670)
+
+    ! Check rpad does not go too far for determining ionic temperatures
+    tol = Min(ttm%delx, ttm%dely, ttm%delz)
+    Do i = 1, domain%nx - 1
+      test = Real(i, wp) * config%cell(1) * domain%nx_recip
+      test = test - ttm%delx * Floor(test / ttm%delx)
+      If (test > zero_plus) tol = Min(tol, test)
+    End Do
+    Do i = 1, domain%ny - 1
+      test = Real(i, wp) * config%cell(5) * domain%ny_recip
+      test = test - ttm%dely * Floor(test / ttm%dely)
+      If (test > zero_plus) tol = Min(tol, test)
+    End Do
+    Do i = 1, domain%nz - 1
+      test = Real(i, wp) * config%cell(9) * domain%nz_recip
+      test = test - ttm%delz * Floor(test / ttm%delz)
+      If (test > zero_plus) tol = Min(tol, test)
+    End Do
+    padding_margin = tol
+
+    ! If ttm%redistribute option selected, check for sufficient electronic temperature
+    ! cells to redistribute energy when ionic temperature cells are switched off:
+    ! if not available, switch off this option
+
+    If (ttm%redistribute .and. (ttm%eltsys(1) < ttm%ntsys(1) + 2 .or. &
+         ttm%eltsys(2) < ttm%ntsys(2) + 2 .or. &
+         ttm%eltsys(3) < ttm%ntsys(3) + 2)) Then
+      Call warning(500, 0.0_wp, 0.0_wp, 0.0_wp)
+      ttm%redistribute = .false.
+    End If
+
+    ! Calculate average atomic density: if not overridden by
+    ! 'ttm atomdens' directive in CONTROL file, will be used
+    ! to convert specific heat capacities to ttm%volumetric
+    ! heat capacity etc.
+
+    ttm%sysrho = Real(megatm, Kind=wp) / Product(config%cell(1:9:4))
+
+  end Subroutine ttm_setup_bounds
 
   Subroutine allocate_ttm_arrays(ttm, domain, config, comm)
     Type(ttm_type),           Intent(InOut) :: ttm
