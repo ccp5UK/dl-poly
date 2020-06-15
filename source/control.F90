@@ -3800,7 +3800,7 @@ Contains
   End Subroutine read_control
 
   Subroutine scan_control(max_rigid, imcon, cell, xhi, yhi, zhi, mxgana, &
-                          no_rdf, calc_zdensity, read_indices, nstfce, ttm, cshell, stats, thermo, green, devel, msd_data, met, &
+                          read_indices, nstfce, ttm, cshell, stats, thermo, green, devel, msd_data, met, &
                           pois, bond, angle, dihedral, inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, &
                           electro, ewld, kim_data, files, flow, comm)
 
@@ -3829,7 +3829,7 @@ Contains
     Real(Kind=wp),            Intent(InOut) :: cell(1:9)
     Real(Kind=wp),            Intent(In   ) :: xhi, yhi, zhi
     Integer,                  Intent(  Out) :: mxgana
-    Logical,                  Intent(  Out) :: l_ind
+    Logical,                  Intent(  Out) :: read_indices
     Integer,                  Intent(  Out) :: nstfce
     Type(ttm_type),           Intent(InOut) :: ttm
     Type(core_shell_type),    Intent(In   ) :: cshell

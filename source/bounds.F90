@@ -211,7 +211,7 @@ Contains
     !         inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, electro, ewld, kim_data, flow)
     else
        Call scan_control(rigid%max_rigid, config%imcon, config%cell, &
-            xhi, yhi, zhi, config%mxgana, l_n_r, lzdn, config%l_ind, electro%nstfce, &
+            xhi, yhi, zhi, config%mxgana, config%l_ind, electro%nstfce, &
             ttm, cshell, stats, thermo, green, devel, msd_data, met, pois, bond, angle, dihedral, &
             inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, electro, ewld, kim_data, &
             files, flow, comm)
@@ -286,7 +286,7 @@ Contains
     ! DD PARAMETERS - by hypercube mapping of MD cell onto machine resources
     ! Dependences: MD cell config%widths (explicit) and machine resources (implicit)
 
-    Call map_domains(config%imc_n, cell_properties(7), cell_properties(8), cell_properties(9), domain, comm)
+    Call map_domains(config%imcon, cell_properties(7), cell_properties(8), cell_properties(9), domain, comm)
 
     Call info(' ', .true.)
     Write (message, '(a,3(i6,1x))') 'node/domain decomposition (x,y,z): ', &
@@ -1148,7 +1148,7 @@ Contains
     ! Create f(fdvar,maximum_local_density,maximum_domain_density) function of density push, maximum 'local' density, maximum domains' density
 
     If ((comm%mxnode == 1 .or. Any(link_cell < 3)) .or. &
-        (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB .or. config%imc_n == IMCON_SLAB) .or. &
+        (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB) .or. &
         (maximum_local_density / maximum_domain_density <= 0.5_wp) .or. (fdvar > 10.0_wp)) Then
       fdens = maximum_domain_density ! for all possibly bad cases resort to max density
     Else
@@ -1194,8 +1194,8 @@ Contains
       ! maximum of 8 fold increase in of surface thickness (domain+halo) to volume (domain only) as per geometric reasoning
       tmp = 1.25_wp * fdvar * 8.0_wp * Real(megatm, wp)
       tmp = Min(tmp, bigint_r)
-      config%mxatms = Min(config%mxatms, Nint(tmp))
-    Else If (config%imcon == IMCON_SLAB .or. config%imc_n == IMCON_SLAB) Then ! comm%mxnode >= 4 .or. (link_cell(x) >= 2 && link_cell(y) >= 2)
+      config%mxatms = Min(config%mxatms , Nint(tmp))
+    Else If (config%imcon == IMCON_SLAB) Then ! comm%mxnode >= 4 .or. (link_cell(x) >= 2 && link_cell(y) >= 2)
       ! maximum of 7 fold increase in of surface thickness (domain+halo) to volume (domain only) as per geometric reasoning
       tmp = 1.25_wp * fdvar * 7.0_wp * Real(megatm, wp)
       tmp = Min(tmp, bigint_r)

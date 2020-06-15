@@ -1060,7 +1060,9 @@ Contains
     Do ivdw = 1, vdws%n_vdw
 
       keypot = vdws%ltp(ivdw)
-      If (keypot == VDW_12_6) Then
+
+      Select Case (keypot)
+      Case (VDW_12_6)
 
         ! 12-6 potential :: u=a/r^12-b/r^6
 
