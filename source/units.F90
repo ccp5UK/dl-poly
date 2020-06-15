@@ -10,6 +10,7 @@ Module units
   Use kinds, only : wp
   Use constants, only : pi, boltz
   Use hash, only: hash_table, MAX_KEY, STR_LEN
+  Use hash, only: get_double, get_int, get_complex
   Use errors_warnings, only : error, error_alloc, error_dealloc
   Use parse, only : lower_case
   Implicit None
@@ -18,7 +19,7 @@ Module units
 
   Type, Private, Extends(hash_table) :: units_hash_table
    contains
-     Generic  , Public  :: get => get_int, get_double, get_complex, get_unit
+     Generic  , Public  :: get => get_unit
      Procedure, Private :: get_unit
   end type units_hash_table
 

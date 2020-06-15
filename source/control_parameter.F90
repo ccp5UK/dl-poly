@@ -13,7 +13,7 @@ module control_parameter_module
   Type, Public, Extends(hash_table) :: parameters_hash_table
    contains
      !> Update get to include params
-     Generic, Public  :: get => get_int, get_double, get_complex, get_param
+     Generic, Public  :: get => get_param
      Procedure, Private :: get_param
      !> Set retrieve up to parse stored params
      Generic, Public  :: retrieve => retrieve_option_or_string, retrieve_float, &

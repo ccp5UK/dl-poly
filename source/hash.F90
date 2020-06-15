@@ -23,7 +23,7 @@ Module hash
      Private
      Class( * ), Allocatable, Private :: data
    Contains
-     Generic, Public :: Assignment( = ) => set, get
+!     Generic, Public :: Assignment( = ) => set, get
      Procedure,            Private :: set => set_container
      Procedure, Pass( C ), Private :: get => get_container
   End type container
@@ -62,7 +62,8 @@ Module hash
   End Type hash_table
 
   Public :: MAX_KEY, STR_LEN
-
+  Public :: get_int, get_double, get_complex
+  
 Contains
 
   Subroutine set_container( C, stuff )
@@ -264,7 +265,7 @@ Contains
     location = table%get_loc(input)
 
     if (table%table_keys(location) == input) then
-       output = table%table_data(location)
+      call table%table_data(location)%get(output)
     else
        if (present(default)) then
           output = default
@@ -299,7 +300,7 @@ Contains
        table%used_keys = table%used_keys + 1
        table%key_names(table%used_keys) = key
     end if
-    table%table_data(location) = input
+    call table%table_data(location)%set(input)
     table%table_keys(location) = key
 
   End Subroutine set_hash_value
