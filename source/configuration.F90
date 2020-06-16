@@ -184,7 +184,7 @@ Module configuration
   Public :: unpack_gathered_coordinates
   Public :: distribute_forces, gather_forces
   Public :: ordering_indices
-
+  Public :: setup_cell_props
 Contains
 
   Pure Subroutine chvom(T, flag)
@@ -3659,12 +3659,9 @@ Contains
     Integer :: i,j
     Character(Len=60) :: error_message
 
-    error_message = "Sizes of vectors a and b differ"
-    Call assert(Size(a) == Size(b), error_message)
-    error_message = "All elements vector a must be unique for mapping to work"
-    Call assert(.not. all_elements_unique(a), error_message)
-    error_message = "All elements vector b must be unique for mapping to work"
-    Call assert(.not. all_elements_unique(b), error_message)
+    Call assert(Size(a) == Size(b), "Sizes of vectors a and b differ")
+    Call assert(.not. all_elements_unique(a), "All elements vector a must be unique for mapping to work")
+    Call assert(.not. all_elements_unique(b), "All elements vector b must be unique for mapping to work")
 
     Allocate(b_to_a(Size(a)), a_to_b(Size(a)))
 
@@ -3702,11 +3699,11 @@ Contains
     Return
   End Function all_elements_unique
 
-  Subroutine setup_cell_props(config)
+  Subroutine setup_cell_props(config, cell_properties)
     Type(configuration_type), Intent(InOut) :: config
     Real(kind=wp) :: ats
     Real(kind=wp) :: test
-
+    Real(kind=wp), Dimension(10), Intent(Out) :: cell_properties
     ! check integrity of cell vectors: for cubic cell
 
     If (config%imcon == IMCON_CUBIC) then
@@ -3737,7 +3734,7 @@ Contains
 
     If (config%imcon == IMCON_SLAB) config%width = Min(cell_properties(7), cell_properties(8))
 
-  end Subroutine check_cell_integrity
+  end Subroutine setup_cell_props
 
 
 End Module configuration

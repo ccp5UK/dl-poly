@@ -12,10 +12,7 @@ Module meta
   Use angular_distribution,               Only: adf_type
   Use bonds,                              Only: bonds_type
   Use bounds,                             Only: set_bounds,&
-                                                setup_potential_parameters,&
-                                                setup_grids,&
-                                                setup_buffers,&
-                                                setup_vnl
+                                                set_bounds_new
   Use build_book,                         Only: build_book_intra
   Use build_chrm,                         Only: build_chrm_intra
   Use build_excl,                         Only: build_excl_intra
@@ -138,8 +135,7 @@ Module meta
   Use vdw,                                Only: vdw_type
   Use z_density,                          Only: z_density_type
 
-  Use new_control, Only : read_new_control, read_io, read_ttm, read_devel, read_ensemble, &
-       read_bond_analysis, read_structure_analysis, read_units, read_forcefield
+  Use new_control, Only : read_new_control, read_io, read_devel, read_units
 
 
   ! HACK
@@ -341,6 +337,7 @@ Contains
     ! Setup io immediately
     call read_io(params, ios, netcdf, files, comm)
     call read_devel(params, devel)
+    call read_units(params)
 
     do i = 1, FILENAME_SIZE
        if (files(i)%filename == "SCREEN") then
@@ -360,40 +357,14 @@ Contains
     Call start_timer(tmr, 'Initialisation')
 #endif
 
-    call read_ttm(params, ttms)
-    call read_ensemble(params, thermo, ttms%l_ttm)
-    call read_bond_analysis(params, flow, bond, angle, dihedral, inversion, config%mxgana)
-    call read_structure_analysis(params, msd_data, rdf, green, zdensity, adf, crd, traj, dfcts, rsdsc)
-    call read_units(params)
 
-
-    ! scan the FIELD file data
-    Call scan_field(megatm, site, neigh%max_exclude, mtshl, &
-                    mtcons, mtrgd, mtteth, mtbond, mtangl, mtdihd, mtinv, &
-                    ext_field, cshell, cons, pmf, met, bond, angle, dihedral, inversion, tether, threebody, &
-                    vdws, tersoffs, fourbody, rdf, mpoles, rigid, kim_data, files, electro, comm)
-    ! scan CONFIG file data
-    call params%retrieve('density_variance', config%dvar)
-    Call scan_config(config, megatm, config%dvar, config%levcfg, xhi, yhi, zhi, io, domain, files, comm)
-
-    ! halt execution for unsupported image conditions in DD
-    ! checks for some inherited from DL_POLY_2 are though kept
-
-    If (config%imcon == IMCON_TRUNC_OCTO .or. &
-        config%imcon == IMCON_RHOMBIC_DODEC .or. &
-        config%imcon == IMCON_HEXAGONAL) then
-      write(message, '(A,I0.1,A)') 'Imcon ',config%imcon,' no longer supported in DL_POLY_4'
-      Call error(0, message)
-    end If
-
-    call read_cutoffs
-    call read_forcefield(params, neigh, electro, vdws, met, mpoles, core_shells)
-
-    Call set_bounds(params, &
-      sites, ttms, ios, core_shells, cons, pmfs, stats, &
+    ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
+    ! (setup and domains)
+    Call set_bounds_new(params, sites, ttms, ios, core_shells, cons, pmfs, stats, &
       thermo, green, devel, msd_data, met, pois, bond, angle, dihedral, inversion, &
-      tether, threebody, zdensity, neigh, vdws, tersoffs, fourbody, rdf, mpoles, ext_field, &
-      rigid, electro, domain, config, ewld, kim_data, files, flow, comm)
+      tether, threebody, zdensity, neigh, vdws, tersoffs, fourbody, rdf, adf, crd, &
+      traj, dfcts, rsdsc, mpoles, ext_field, rigid, electro, domain, config, ewld, &
+      kim_data, files, flow, comm)
 
     Call molecular_dynamics_allocate(sites, config, neigh, thermo, vdws, core_shells, cons, pmfs, &
          rigid, tether, bond, angle, dihedral, inversion, mpoles, met, tersoffs, threebody, fourbody, &
@@ -423,157 +394,6 @@ Contains
     stop 0
 
   end Subroutine molecular_dynamics_initialise
-
-  Subroutine molecular_dynamics_initialise_new_old_style(dlp_world, comm, thermo, ewld, tmr, devel, &
-       stats, green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, &
-       inversion, tether, threebody, zdensity, cons, neigh, pmfs, sites, core_shells, &
-       vdws, tersoffs, fourbody, rdf, netcdf, minim, mpoles, ext_field, rigid, electro, &
-       domain, flow, seed, traj, kim_data, config, ios, ttms, rsdsc, files, control_filename, &
-       output_filename, crd, adf)
-    !! Temporary -- To be deleted when new read feature complete.
-    Type(comms_type),          Intent(InOut) :: dlp_world(0:), comm
-    Type(thermostat_type),     Intent(InOut) :: thermo
-    Type(ewald_type),          Intent(InOut) :: ewld
-    Type(timer_type),          Intent(InOut) :: tmr
-    Type(development_type),    Intent(InOut) :: devel
-    Type(stats_type),          Intent(InOut) :: stats
-    Type(greenkubo_type),      Intent(InOut) :: green
-    Type(plumed_type),         Intent(InOut) :: plume
-    Type(msd_type),            Intent(InOut) :: msd_data
-    Type(metal_type),          Intent(InOut) :: met
-    Type(poisson_type),        Intent(InOut) :: pois
-    Type(impact_type),         Intent(InOut) :: impa
-    Type(defects_type),        Intent(InOut) :: dfcts(2)
-    Type(bonds_type),          Intent(InOut) :: bond
-    Type(angles_type),         Intent(InOut) :: angle
-    Type(dihedrals_type),      Intent(InOut) :: dihedral
-    Type(inversions_type),     Intent(InOut) :: inversion
-    Type(tethers_type),        Intent(InOut) :: tether
-    Type(threebody_type),      Intent(InOut) :: threebody
-    Type(z_density_type),      Intent(InOut) :: zdensity
-    Type(constraints_type),    Intent(InOut) :: cons
-    Type(neighbours_type),     Intent(InOut) :: neigh
-    Type(pmf_type),            Intent(InOut) :: pmfs
-    Type(site_type),           Intent(InOut) :: sites
-    Type(core_shell_type),     Intent(InOut) :: core_shells
-    Type(vdw_type),            Intent(InOut) :: vdws
-    Type(tersoff_type),        Intent(InOut) :: tersoffs
-    Type(four_body_type),      Intent(InOut) :: fourbody
-    Type(rdf_type),            Intent(InOut) :: rdf
-    Type(netcdf_param),        Intent(InOut) :: netcdf
-    Type(minimise_type),       Intent(InOut) :: minim
-    Type(mpole_type),          Intent(InOut) :: mpoles
-    Type(external_field_type), Intent(InOut) :: ext_field
-    Type(rigid_bodies_type),   Intent(InOut) :: rigid
-    Type(electrostatic_type),  Intent(InOut) :: electro
-    Type(domains_type),        Intent(InOut) :: domain
-    Type(flow_type),           Intent(InOut) :: flow
-    Type(seed_type),           Intent(InOut) :: seed
-    Type(trajectory_type),     Intent(InOut) :: traj
-    Type(kim_type), Target,    Intent(InOut) :: kim_data
-    Type(configuration_type),  Intent(InOut) :: config
-    Type(io_type),             Intent(InOut) :: ios
-    Type(ttm_type),            Intent(InOut) :: ttms
-    Type(rsd_type), Target,    Intent(InOut) :: rsdsc
-    Type(file_type),           Intent(InOut) :: files(FILENAME_SIZE)
-    Type(coord_type),          Intent(InOut) :: crd
-    Type(adf_type),            Intent(InOut) :: adf
-    Character(len=1024),       Intent(In   ) :: control_filename
-    Character(len=1024),       Intent(In   ) :: output_filename
-    Type( parameters_hash_table )            :: params
-
-    Integer :: i
-    Integer(Kind=wi)    :: ff, frevc
-    Integer             :: old_print_level
-    Character(len=256) :: message
-    Integer(Kind=wi)   :: vacuum
-    Logical :: can_parse
-    Logical            :: lfce
-    Real(wp)           :: s
-
-    ! Set default file names
-    Call default_filenames(files)
-    ! Rename control file if argument was passed
-    If (Len_Trim(control_filename) > 0 ) Then
-       Call files(FILE_CONTROL)%rename(control_filename)
-    End If
-    If (Len_Trim(output_filename) > 0 ) Then
-       Call files(FILE_OUTPUT)%rename(output_filename)
-    End If
-
-    call read_new_control(files(FILE_CONTROL), params, comm, can_parse)
-    if (.not. can_parse) call error(0, 'Cannot read first param, perhaps old style')
-    call scan_new_control_output_old(params, files)
-
-    do i = 1, FILENAME_SIZE
-       if (files(i)%filename == "SCREEN") then
-          files(i)%unit_no = error_unit
-       else if (files(i)%filename == "NONE") then
-          files(i)%filename = null_unit
-       end if
-    end do
-    if (files(FILE_OUTPUT)%unit_no /= error_unit) &
-         Open (Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Status='replace')
-    dlp_world(0)%ou = files(FILE_OUTPUT)%unit_no
-    Call init_error_system(files(FILE_OUTPUT)%unit_no, dlp_world(0))
-    Call print_banner(dlp_world)
-
-    Call build_info()
-
-    Call setup_file_io(params, ios, netcdf, files, comm)
-
-#ifdef CHRONO
-    ! Start main timer
-    Call init_timer_system(tmr, files(FILE_OUTPUT)%unit_no, dlp_world(0))
-    Call start_timer(tmr, 'Initialisation')
-#endif
-
-    ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
-    ! (setup and domains)
-    Call set_bounds(params, &
-      sites, ttms, ios, core_shells, cons, pmfs, stats, &
-      thermo, green, devel, msd_data, met, pois, bond, angle, dihedral, inversion, &
-      tether, threebody, zdensity, neigh, vdws, tersoffs, fourbody, rdf, mpoles, ext_field, &
-      rigid, electro, domain, config, ewld, kim_data, files, flow, comm)
-
-
-    Call info('', .true.)
-    Call info("*** pre-scanning stage (set_bounds) DONE ***", .true.)
-    Call time_elapsed(tmr)
-
-    Call molecular_dynamics_allocate(sites, config, neigh, thermo, vdws, core_shells, cons, pmfs, &
-         rigid, tether, bond, angle, dihedral, inversion, mpoles, met, tersoffs, threebody, fourbody, &
-         ext_field, rdf, zdensity, stats, green, ttms, domain, ewld, kim_data, comm)
-
-    Call read_new_control_old(params, &
-         lfce, impa, ttms, dfcts, rigid, rsdsc, core_shells, cons, pmfs, &
-         stats, thermo, green, devel, plume, msd_data, met, pois, bond, angle, dihedral, &
-         inversion, zdensity, neigh, vdws, rdf, minim, mpoles, electro, ewld, &
-         seed, traj, files, tmr, config, flow, crd, adf)
-
-    If (stats%cur%on) Then
-      Call config%k%init(files(FILE_KPOINTS)%filename, comm)
-      Call stats%cur%init(config%k%n, 200, files(FILE_CURRENT), comm)
-    End If
-
-    ! READ SIMULATION FORCE FIELD
-    Call read_field(neigh%cutoff, core_shells, pmfs, cons, thermo, met, bond, angle, &
-                    dihedral, inversion, tether, threebody, sites, vdws, tersoffs, fourbody, rdf, &
-                    mpoles, ext_field, rigid, electro, config, kim_data, files, flow, crd, comm)
-
-    ! If computing rdf errors, we need to initialise the arrays.
-    If (rdf%l_errors_jack .or. rdf%l_errors_block) Then
-      Call rdf%init_block(flow%run_steps, sites%ntype_atom)
-    End If
-
-    ! CHECK MD CONFIGURATION
-    Call check_config(config, electro%key, thermo, sites, flow, comm)
-
-#ifdef CHRONO
-    Call stop_timer(tmr, 'Initialisation')
-#endif
-
-  end Subroutine molecular_dynamics_initialise_new_old_style
 
   Subroutine molecular_dynamics_initialise_old(dlp_world, comm, thermo, ewld, tmr, devel, &
        stats, green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, &
@@ -630,8 +450,6 @@ Contains
     Type(adf_type),            Intent(InOut) :: adf
     Character(len=1024),       Intent(In   ) :: control_filename
     Character(len=1024),       Intent(In   ) :: output_filename
-
-    Type( parameters_hash_table ) :: dummy
     Logical            :: lfce
 
     ! Set default file names
@@ -672,8 +490,7 @@ Contains
 
     ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
     ! (setup and domains)
-    Call set_bounds(dummy, &
-      sites, ttms, ios, core_shells, cons, pmfs, stats, &
+    Call set_bounds(sites, ttms, ios, core_shells, cons, pmfs, stats, &
       thermo, green, devel, msd_data, met, pois, bond, angle, dihedral, inversion, &
       tether, threebody, zdensity, neigh, vdws, tersoffs, fourbody, rdf, mpoles, ext_field, &
       rigid, electro, domain, config, ewld, kim_data, files, flow, comm)

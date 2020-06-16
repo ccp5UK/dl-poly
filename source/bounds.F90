@@ -1,5 +1,6 @@
 Module bounds
   Use angles,          Only: angles_type
+  Use angular_distribution, Only : adf_type
   Use bonds,           Only: bonds_type
   Use comms,           Only: comms_type
   Use configuration,   Only: IMCON_CUBIC,&
@@ -19,6 +20,7 @@ Module bounds
   Use constraints,     Only: constraints_type
   Use control,         Only: scan_control,&
                              scan_control_pre
+  Use coord,           Only: coord_type
   Use core_shell,      Only: core_shell_type
   Use development,     Only: development_type
   Use dihedrals,       Only: dihedrals_type
@@ -66,22 +68,239 @@ Module bounds
                              ttm_type
   Use vdw,             Only: vdw_type
   Use z_density,       Only: z_density_type
+  Use rsds,            Only: rsd_type
+  Use trajectory,      Only: trajectory_type
+  Use defects,         Only: defects_type
 
   !Hack
   Use control_parameter_module, Only : parameters_hash_table
   Use control,         Only: use_new_control
   Use new_control_old_style, Only : scan_new_control_pre_old, scan_new_control_old
+  Use new_control, Only:  read_ttm, &
+       read_ensemble, &
+       read_bond_analysis, &
+       read_structure_analysis, &
+       read_forcefield, &
+       read_cutoffs, &
+       read_electrostatics
 
   Implicit None
 
   Private
 
-  Public :: set_bounds
-  Public :: setup_potential_parameters, setup_grids, setup_buffers, setup_vnl
+  Public :: set_bounds, set_bounds_new
 
 Contains
 
-  Subroutine set_bounds(params, site, ttm, io, cshell, cons, pmf, stats, thermo, green, devel, &
+  Subroutine set_bounds_new(params, site, ttm, io, cshell, cons, pmf, stats, thermo, green, devel, &
+       msd_data, met, pois, bond, angle, dihedral, inversion, tether, threebody, zdensity, &
+       neigh, vdws, tersoffs, fourbody, rdf, adf, crd, traj, defect, displacement, mpoles, ext_field, &
+       rigid, electro, domain, config, ewld, kim_data, files, flow, comm)
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine to determine various limits as array bounds,
+    ! grid sizes, paddings, iterations, etc. as specified in setup,
+    ! using new control scheme
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.s.wilkins june 2020
+    ! based on  - i.t.todorov december 2016
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( parameters_hash_table ), intent( In    ) :: params
+    Type(site_type),           Intent(InOut) :: site
+    Type(ttm_type),            Intent(InOut) :: ttm
+    Type(io_type),             Intent(InOut) :: io
+    Type(core_shell_type),     Intent(InOut) :: cshell
+    Type(constraints_type),    Intent(InOut) :: cons
+    Type(pmf_type),            Intent(InOut) :: pmf
+    Type(stats_type),          Intent(InOut) :: stats
+    Type(thermostat_type),     Intent(InOut) :: thermo
+    Type(greenkubo_type),      Intent(InOut) :: green
+    Type(development_type),    Intent(InOut) :: devel
+    Type(msd_type),            Intent(InOut) :: msd_data
+    Type(metal_type),          Intent(InOut) :: met
+    Type(poisson_type),        Intent(InOut) :: pois
+    Type(bonds_type),          Intent(InOut) :: bond
+    Type(angles_type),         Intent(InOut) :: angle
+    Type(dihedrals_type),      Intent(InOut) :: dihedral
+    Type(inversions_type),     Intent(InOut) :: inversion
+    Type(tethers_type),        Intent(InOut) :: tether
+    Type(threebody_type),      Intent(InOut) :: threebody
+    Type(z_density_type),      Intent(InOut) :: zdensity
+    Type(neighbours_type),     Intent(InOut) :: neigh
+    Type(vdw_type),            Intent(InOut) :: vdws
+    Type(tersoff_type),        Intent(InOut) :: tersoffs
+    Type(four_body_type),      Intent(InOut) :: fourbody
+    Type(rdf_type),            Intent(InOut) :: rdf
+    Type(adf_type),            Intent(InOut) :: adf
+    Type(coord_type),          Intent(InOut) :: crd
+    Type(mpole_type),          Intent(InOut) :: mpoles
+    Type(external_field_type), Intent(InOut) :: ext_field
+    Type(rigid_bodies_type),   Intent(InOut) :: rigid
+    Type(electrostatic_type),  Intent(InOut) :: electro
+    Type(domains_type),        Intent(InOut) :: domain
+    Type(configuration_type),  Intent(InOut) :: config
+    Type(ewald_type),          Intent(InOut) :: ewld
+    Type(kim_type),            Intent(InOut) :: kim_data
+    Type(file_type),           Intent(InOut) :: files(:)
+    Type(flow_type),           Intent(InOut) :: flow
+    Type(comms_type),          Intent(InOut) :: comm
+    Type( trajectory_type ),   Intent(InOut) :: traj
+    Type( defects_type ),      Intent(InOut) :: defect(:)
+    Type( rsd_type ),          Intent(InOut) :: displacement
+
+    Character(Len=256) :: message
+    Integer, Dimension(3) :: link_cell
+    Integer            :: megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, &
+         mtshl, mtteth
+    Integer(Kind=wi)   :: mxgrid
+    Real(Kind=wp), Dimension(10) :: cell_properties
+    Real(Kind=wp)      :: cut, dens0, dens, padding2, xhi, yhi, zhi
+
+    ! scan the FIELD file data
+
+    Call scan_field(megatm, site, neigh%max_exclude, mtshl, &
+                    mtcons, mtrgd, mtteth, mtbond, mtangl, mtdihd, mtinv, &
+                    ext_field, cshell, cons, pmf, met, bond, angle, dihedral, inversion, tether, threebody, &
+                    vdws, tersoffs, fourbody, rdf, mpoles, rigid, kim_data, files, electro, comm)
+
+    ! Get imc_r & set config%dvar
+
+    call params%retrieve('density_variance', config%dvar)
+
+    ! scan CONFIG file data
+
+    Call scan_config(config, megatm, config%dvar, config%levcfg, xhi, yhi, zhi, io, domain, files, comm)
+
+    ! halt execution for unsupported image conditions in DD
+    ! checks for some inherited from DL_POLY_2 are though kept
+
+    If (config%imcon == IMCON_TRUNC_OCTO .or. &
+        config%imcon == IMCON_RHOMBIC_DODEC .or. &
+        config%imcon == IMCON_HEXAGONAL) then
+      write(message, '(A,I0.1,A)') 'Imcon ',config%imcon,' no longer supported in DL_POLY_4'
+      Call error(0, message)
+    end If
+
+    ! scan CONTROL file data
+
+    ! Call scan_control(rigid%max_rigid, config%imcon, config%cell, &
+    !      xhi, yhi, zhi, config%mxgana, config%l_ind, electro%nstfce, &
+    !      ttm, cshell, stats, thermo, green, devel, msd_data, met, pois, bond, angle, dihedral, &
+    !      inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, electro, ewld, kim_data, &
+    !      files, flow, comm)
+
+
+    call read_bond_analysis(params, flow, bond, angle, dihedral, inversion, config%mxgana)
+    call read_structure_analysis(params, msd_data, rdf, green, zdensity, adf, crd, traj, defect, displacement)
+    call read_forcefield(params, electro, vdws, mpoles, cshell)
+    call read_cutoffs(params, flow, neigh, vdws, met, tersoffs, kim_data, bond)
+    Call read_electrostatics(params, config, neigh, electro, ewld, xhi, yhi, zhi)
+
+    call setup_cell_props(config, cell_properties)
+
+    ! check value of cutoff and reset if necessary
+
+    If (config%imcon /= IMCON_NOPBC) Then
+      ! halt program if potential cutoff exceeds the minimum half-cell config%width
+
+      If (neigh%cutoff >= config%width / 2.0_wp) Then
+        Call warning(3, neigh%cutoff, config%width / 2.0_wp, 0.0_wp)
+        If (.not. devel%l_trm) Then
+          Call error(95)
+        End If
+      End If
+    End If
+
+    if (threebody%mxtbp > 0 .and. threebody%cutoff < 1.0e-6_wp) threebody%cutoff = 0.5_wp * neigh%cutoff
+    If (fourbody%max_four_body > 0 .and. fourbody%cutoff < 1.0e-6_wp) fourbody%cutoff = 0.5_wp * neigh%cutoff
+
+    ! config%dvar push of dihedral%max_legend and neigh%max_exclude ranges as the usual suspects
+
+    dihedral%max_legend = Nint(config%dvar * Real(dihedral%max_legend, wp))
+    neigh%max_exclude = Nint(config%dvar * Real(neigh%max_exclude, wp))
+
+    !!! INTRA-LIKE POTENTIAL PARAMETERS !!!
+
+    call setup_potential_parameters(config%dvar, comm%mxnode, config, domain, site, vdws, met, tersoffs, &
+       cshell, mtshl, cons, mtcons, rigid, mtrgd, tether, mtteth, bond, mtbond, &
+       angle, mtangl, dihedral, mtdihd, inversion, mtinv, threebody, fourbody, ext_field)
+
+    !!! GRIDDING PARAMETERS !!!
+
+    call setup_grids(config, neigh, vdws, met, tersoffs, bond, angle, dihedral, inversion, ext_field, &
+       electro, zdensity, rdf, mxgrid)
+
+    ! DD PARAMETERS - by hypercube mapping of MD cell onto machine resources
+    ! Dependences: MD cell config%widths (explicit) and machine resources (implicit)
+
+    Call map_domains(config%imcon, cell_properties(7), cell_properties(8), cell_properties(9), domain, comm)
+
+    Call info(' ', .true.)
+    Write (message, '(a,3(i6,1x))') 'node/domain decomposition (x,y,z): ', &
+         domain%nx, domain%ny, domain%nz
+    Call info(message, .true., level=2)
+
+    ! TTM matters
+    call read_ttm(params, ttm)
+    call read_ensemble(params, thermo, ttm%l_ttm)
+    padding2 = Huge(1.0_wp) ! Default to huge so fails in mins
+    If (ttm%l_ttm) Call ttm_setup_bounds(ttm, config, domain, megatm, padding2)
+
+    ! Link-cell and VNL matters
+
+    call setup_vnl(config%dvar, neigh, flow, domain, ewld, devel, config, met, vdws, electro, rdf, &
+         cell_properties, link_cell, kim_data, comm, padding2)
+
+    ! decide on MXATMS while reading CONFIG and scan particle density
+
+    Call read_config(config, megatm, config%levcfg, config%l_ind, flow%strict, neigh%cutoff, config%dvar, xhi, yhi, &
+         zhi, dens0, dens, io, domain, files, comm)
+
+    Call setup_buffers(config%dvar, dens, dens0, megatm, link_cell, mxgrid, config, domain, stats, neigh, &
+       green, site, cshell, cons, pmf, rdf, rigid, tether, bond, angle, dihedral, inversion, zdensity, ewld, mpoles, &
+       electro%no_elec, msd_data%l_msd, comm)
+
+    ! reset (increase) link-cell maximum (neigh%max_cell)
+    ! if tersoff or three- or four-body potentials exist
+
+    If (tersoffs%max_ter > 0 .or. threebody%mxtbp > 0 .or. fourbody%max_four_body > 0) Then
+      cut = neigh%cutoff + 1.0e-6_wp ! define cut,
+      If (tersoffs%max_ter > 0) cut = Min(cut, tersoffs%cutoff + 1.0e-6_wp)
+      If (threebody%mxtbp > 0) cut = Min(cut, threebody%cutoff + 1.0e-6_wp)
+      If (fourbody%max_four_body > 0) cut = Min(cut, fourbody%cutoff + 1.0e-6_wp)
+
+      link_cell(1) = Int(domain%nx_recip * cell_properties(7) / cut)
+      link_cell(2) = Int(domain%ny_recip * cell_properties(8) / cut)
+      link_cell(3) = Int(domain%nz_recip * cell_properties(9) / cut)
+
+      Write (message, '(a,3i6)') "link-cell decomposition 2 (x,y,z): ", link_cell
+      Call info(message, .true., level=3)
+
+      If (any(link_cell  < 3)) Call error(305)
+
+      If      (config%imcon == IMCON_NOPBC) Then
+        neigh%max_cell = Max(neigh%max_cell, Nint((config%dvar**4) * Real(Product(link_cell + 5), wp)))
+      Else If (config%imcon == IMCON_SLAB) Then
+        neigh%max_cell = Max(neigh%max_cell, Nint((config%dvar**3) * Real(Product(link_cell + 5), wp)))
+      Else
+        neigh%max_cell = Max(neigh%max_cell, Nint((config%dvar**2) * Real(Product(link_cell + 5), wp)))
+      End If
+    End If
+
+    If (any(link_cell < 3)) Call warning(100, 0.0_wp, 0.0_wp, 0.0_wp)
+
+    Write (message, '(a,3i6)') "Final link-cell decomposition (x,y,z): ", link_cell
+    Call info(message, .true., level=1)
+
+
+  end Subroutine set_bounds_new
+
+
+  Subroutine set_bounds(site, ttm, io, cshell, cons, pmf, stats, thermo, green, devel, &
                         msd_data, met, pois, bond, angle, dihedral, inversion, tether, threebody, zdensity, &
                         neigh, vdws, tersoffs, fourbody, rdf, mpoles, ext_field, rigid, electro, domain, &
                         config, ewld, kim_data, files, flow, comm, ff)
@@ -120,7 +339,6 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( parameters_hash_table ), intent( In    ) :: params
     Type(site_type),           Intent(InOut) :: site
     Type(ttm_type),            Intent(InOut) :: ttm
     Type(io_type),             Intent(InOut) :: io
@@ -184,12 +402,7 @@ Contains
 
     ! Get imc_r & set config%dvar
 
-    if (devel%new_control) then
-       call params%retrieve('density_variance', config%dvar)
-    else
-       Call scan_control_pre(config%dvar, files, comm)
-    end if
-
+    Call scan_control_pre(config%dvar, files, comm)
 
     ! scan CONFIG file data
 
@@ -204,19 +417,13 @@ Contains
 
     ! scan CONTROL file data
 
-    if (devel%new_control) then
-    !    Call scan_new_control_old(params, &
-    !         tersoffs%cutoff, rigid%max_rigid, config%imcon, config%imc_n, config%cell, &
-    !         xhi, yhi, zhi, config%mxgana, l_n_r, lzdn, config%l_ind, electro%nstfce, &
-    !         ttm, cshell, stats, thermo, green, msd_data, met, pois, bond, angle, dihedral, &
-    !         inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, electro, ewld, kim_data, flow)
-    else
-       Call scan_control(rigid%max_rigid, config%imcon, config%cell, &
-            xhi, yhi, zhi, config%mxgana, config%l_ind, electro%nstfce, &
-            ttm, cshell, stats, thermo, green, devel, msd_data, met, pois, bond, angle, dihedral, &
-            inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, electro, ewld, kim_data, &
-            files, flow, comm)
-    end if
+    Call scan_control(rigid%max_rigid, config%imcon, config%cell, &
+         xhi, yhi, zhi, config%mxgana, config%l_ind, electro%nstfce, &
+         ttm, cshell, stats, thermo, green, devel, msd_data, met, pois, bond, angle, dihedral, &
+         inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, electro, ewld, kim_data, &
+         files, flow, comm)
+
+    call setup_cell_props(config, cell_properties)
 
     ! check value of cutoff and reset if necessary
 
@@ -1332,23 +1539,23 @@ Contains
   End Subroutine setup_buffers
 
   Subroutine setup_vnl(fdvar, neigh, flow, domain, ewld, devel, config, met, vdws, electro, rdf, &
-                       cell_properties, link_cell, kim_data, comm, ttm_padding)
-    Type(neighbours_type), Intent(InOut) :: neigh
-    Type(flow_type), Intent(In) :: flow
-    Type(domains_type), Intent(In) :: domain
-    Type(ewald_type), Intent(InOut) :: ewld
-    Type(metal_type), Intent(In) :: met
-    Type(vdw_type), Intent(In) :: vdws
-    Type(electrostatic_type), Intent(In) :: electro
-    Type(rdf_type), Intent(In) :: rdf
-    Type(development_type), Intent(In) :: devel
-    Type(configuration_type), Intent(In) :: config
-    Type(kim_type), Intent(In) :: kim_data
-    Type(comms_type), Intent(In) :: comm
-    Integer, Dimension(3), Intent(Out) :: link_cell
-    Real(Kind=wp), Dimension(10), Intent(In) :: cell_properties
-    Real(Kind=wp), Intent(In) :: ttm_padding
-    Real(Kind=wp), Intent(In) :: fdvar
+       cell_properties, link_cell, kim_data, comm, ttm_padding)
+    Type(neighbours_type),        Intent( InOut ) :: neigh
+    Type(flow_type),              Intent( In    ) :: flow
+    Type(domains_type),           Intent( In    ) :: domain
+    Type(ewald_type),             Intent( InOut ) :: ewld
+    Type(metal_type),             Intent( In    ) :: met
+    Type(vdw_type),               Intent( In    ) :: vdws
+    Type(electrostatic_type),     Intent( In    ) :: electro
+    Type(rdf_type),               Intent( In    ) :: rdf
+    Type(development_type),       Intent( In    ) :: devel
+    Type(configuration_type),     Intent( In    ) :: config
+    Type(kim_type),               Intent( In    ) :: kim_data
+    Type(comms_type),             Intent( In    ) :: comm
+    Integer,       Dimension(3),  Intent(   Out ) :: link_cell
+    Real(Kind=wp), Dimension(10), Intent( In    ) :: cell_properties
+    Real(Kind=wp),                Intent( In    ) :: ttm_padding
+    Real(Kind=wp),                Intent( In    ) :: fdvar
 
     Real(Kind=wp), Parameter                      :: minimum_pad = 0.05 ! Ang
     Real(Kind=wp), Parameter                      :: minimum_pad_cutoff_frac = 0.005 ! 0.5%

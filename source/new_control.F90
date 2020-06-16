@@ -5,7 +5,9 @@ Module new_control
   Use bonds,                Only: bonds_type
   Use comms,                Only: comms_type,&
        gcheck
-  Use configuration,        Only: configuration_type
+  Use configuration,        Only: configuration_type,&
+                                  IMCON_NOPBC,&
+                                  IMCON_SLAB
   Use constants,            Only: pi,&
        prsunt,&
        tenunt,&
@@ -157,6 +159,8 @@ Module new_control
   Public :: read_structure_analysis
   Public :: read_units
   Public :: read_bond_analysis
+  Public :: read_cutoffs
+  Public :: read_electrostatics
 
   ! Public for old-style
   Public :: bad_option
@@ -1279,7 +1283,7 @@ contains
 
   end Subroutine read_units
 
-  Subroutine read_forcefield(params, neigh, electro, vdws, met, mpoles, cshell)
+  Subroutine read_forcefield(params, electro, vdws, mpoles, cshell)
     !!-----------------------------------------------------------------------
     !!
     !! Read forcefield
@@ -1288,16 +1292,12 @@ contains
     !! author - j.wilkins april 2020
     !!-----------------------------------------------------------------------
     Type(parameters_hash_table), Intent(In   ) :: params
-    Type(neighbours_type),       Intent(InOut) :: neigh
-    Type(metal_type),            Intent(InOut) :: met
     Type(mpole_type),            Intent(InOut) :: mpoles
     Type(vdw_type),              Intent(InOut) :: vdws
     Type(electrostatic_type),    Intent(InOut) :: electro
     Type(core_shell_type),       Intent(InOut) :: cshell
 
     Character(Len=STR_LEN) :: option
-    Real(kind=wp) :: rtmp, tol
-    Real(kind=wp), Parameter :: minimum_rcut = 1.0_wp
 
     call params%retrieve('polarisation_model', option)
     select case (option)
@@ -1330,16 +1330,6 @@ contains
        call bad_option('vdw_method', option)
     end select
     if (vdws%max_vdw <= 0) vdws%no_vdw = .true.
-
-    call params%retrieve('vdw_cutoff', vdws%cutoff)
-    if (vdws%cutoff < minimum_rcut) then
-       vdws%cutoff = neigh%cutoff
-       call warning('vdw_cutoff less than global cutoff, setting to global cutoff', .true.)
-    end if
-    if (met%max_metal > 0 .and. met%rcut < 1.0e-6_wp) then
-       met%rcut=Max(neigh%cutoff,vdws%cutoff)
-       call warning('metal_cutoff not set, setting to max of global cutoff and vdw cutoff', .true.)
-    end if
 
     call params%retrieve('coul_method', option)
 
@@ -1376,32 +1366,22 @@ contains
 
     end select
 
-    if (params%is_set([Character(14) :: 'coul_damping', 'coul_precision'])) then
-       call error(0, 'Both damping and precision set')
-
-    else if (params%is_set('coul_damping')) then
-       call params%retrieve('coul_damping', electro%alpha)
-
-    else if (params%is_set('coul_precision')) then
-       call params%retrieve('coul_precision', rtmp)
-       rtmp = Max(Min(rtmp, 0.5_wp), 1.0e-20_wp)
-       tol = Sqrt(Abs(Log(rtmp * neigh%cutoff)))
-       electro%alpha = Sqrt(Abs(Log(rtmp * neigh%cutoff * tol))) / neigh%cutoff
-
-    end if
-
-    If (electro%alpha > zero_plus) Then
-       Call info('Fennell damping applied', .true.)
-       If (neigh%cutoff < 12.0_wp) Call warning(7, neigh%cutoff, 12.0_wp, 0.0_wp)
-    End If
-
     ! If it's been forcibly set by polarisation_model
     if (.not. electro%lecx) call params%retrieve('coul_extended_exclusion', electro%lecx)
 
   End Subroutine read_forcefield
 
-  Subroutine read_cutoffs(config, neigh, vdws, met, tersoffs, kim_data, bond, ewld)
-    Type(neighbours_type), Intent(InOut) :: neigh
+  Subroutine read_cutoffs(params, flow, neigh, vdws, met, tersoffs, kim_data, bond)
+    Type(parameters_hash_table), Intent(In   ) :: params
+    Type(flow_type),             Intent(InOut) :: flow
+    Type(neighbours_type),       Intent(InOut) :: neigh
+    Type(vdw_type),              Intent(InOut) :: vdws
+    Type(metal_type),            Intent(InOut) :: met
+    Type(kim_type),              Intent(In)    :: kim_data
+    Type(bonds_type),            Intent(In)    :: bond
+    Type(tersoff_type),          Intent(In)    :: tersoffs
+
+    Real(kind=wp), Parameter :: minimum_rcut = 1.0_wp
 
     call params%retrieve('cutoff', neigh%cutoff)
     if (neigh%cutoff < minimum_rcut) then
@@ -1431,6 +1411,113 @@ contains
     neigh%cutoff = Max(neigh%cutoff, vdws%cutoff, met%rcut, kim_data%cutoff, bond%rcut, &
          2.0_wp * tersoffs%cutoff + 1.0e-6_wp, kim_data%influence_distance)
 
+  end Subroutine read_cutoffs
+
+  Subroutine read_electrostatics(params, config, neigh, electro, ewld, xhi, yhi, zhi)
+    Type(parameters_hash_table), Intent(In   ) :: params
+    Type(neighbours_type),       Intent(In   ) :: neigh
+    Type(configuration_type),    Intent(In   ) :: config
+    Type(electrostatic_type),    Intent(InOut) :: electro
+    Type(ewald_type),            Intent(InOut) :: ewld
+    Real(Kind=wp),               Intent(In   ) :: xhi, yhi, zhi
+
+    Real(Kind=wp), Dimension(9) :: cell
+    Real(Kind=wp), Dimension(10):: cell_properties
+    Real(Kind=wp), Dimension(3) :: vtmp
+    Real(Kind=wp) :: cut, tol, tol1, eps0, rtmp
+
+    if (params%is_set([Character(14) :: 'coul_damping', 'coul_precision'])) then
+      call error(0, 'Both damping and precision set')
+
+    else if (params%is_set('coul_damping')) then
+       call params%retrieve('coul_damping', electro%alpha)
+
+    else if (params%is_set('coul_precision')) then
+       call params%retrieve('coul_precision', rtmp)
+       rtmp = Max(Min(rtmp, 0.5_wp), 1.0e-20_wp)
+       tol = Sqrt(Abs(Log(rtmp * neigh%cutoff)))
+       electro%alpha = Sqrt(Abs(Log(rtmp * neigh%cutoff * tol))) / neigh%cutoff
+
+    end if
+
+    If (electro%alpha > zero_plus) Then
+       Call info('Fennell damping applied', .true.)
+       If (neigh%cutoff < 12.0_wp) Call warning(7, neigh%cutoff, 12.0_wp, 0.0_wp)
+    End If
+
+    If (electro%key == ELECTROSTATIC_EWALD) Then
+
+      cell = config%cell
+      cut = neigh%cutoff + 1e-6_wp
+
+      if (config%imcon == IMCON_NOPBC) then
+        cell(1) = Max(2.0_wp*xhi+cut,3.0_wp*cut,cell(1))
+        cell(5) = Max(2.0_wp*yhi+cut,3.0_wp*cut,cell(5))
+        cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
+
+        cell(2) = 0.0_wp
+        cell(3) = 0.0_wp
+        cell(4) = 0.0_wp
+        cell(6) = 0.0_wp
+        cell(7) = 0.0_wp
+        cell(8) = 0.0_wp
+      else if (config%imcon == IMCON_SLAB) then
+        cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
+      End If
+      Call dcell(cell,cell_properties)
+
+
+      call params%retrieve('ewald_nsplines', ewld%bspline)
+
+      if (params%is_set([Character(Len=15) :: 'ewald_precision', 'ewald_alpha'])) then
+
+        call error(0, 'Cannot specify both precision and manual ewald parameters')
+
+      else if (params%is_set('ewald_alpha')) then
+
+          call params%retrieve('ewald_alpha', electro%alpha)
+
+          if (params%is_set([Character(Len=18) :: 'ewald_kvec', 'ewald_kvec_spacing'])) then
+
+             call error(0, 'Cannot specify both explicit k-vec grid and k-vec spacing')
+          else if (params%is_set('ewald_kvec')) then
+
+            call params%retrieve('ewald_kvec', vtmp)
+
+            ewld%fft_dim_a1 = Nint(vtmp(1))
+            ewld%fft_dim_b1 = Nint(vtmp(2))
+            ewld%fft_dim_c1 = Nint(vtmp(3))
+
+          else
+
+            call params%retrieve('ewald_kvec_spacing', rtmp)
+
+            ewld%fft_dim_a1 = Nint(rtmp / cell_properties(1))
+            ewld%fft_dim_b1 = Nint(rtmp / cell_properties(2))
+            ewld%fft_dim_c1 = Nint(rtmp / cell_properties(3))
+          end if
+
+          ! Sanity check for ill defined ewald sum parameters 1/8*2*2*2 == 1
+          tol = electro%alpha * Real(ewld%fft_dim_a1, wp) * Real(ewld%fft_dim_a1, wp) * Real(ewld%fft_dim_a1, wp)
+          If (Nint(tol) < 1) Call error(9)
+
+      else
+
+        call params%retrieve('ewald_precision', eps0)
+        if (eps0 > 0.5_wp .or. eps0 < 1e-20_wp) &
+             call error(0, 'ewald_precision outside permitted range (10^-20 < ewald_precision < 0.5)')
+
+        tol = Sqrt(Abs(Log(eps0*neigh%cutoff)))
+        electro%alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
+        tol1 = Sqrt(-Log(eps0*neigh%cutoff*(2.0_wp*tol*electro%alpha)**2))
+
+        ewld%fft_dim_a1 = 2 * Nint(0.25_wp + cell_properties(7) * electro%alpha * tol1 / pi)
+        ewld%fft_dim_b1 = 2 * Nint(0.25_wp + cell_properties(8) * electro%alpha * tol1 / pi)
+        ewld%fft_dim_c1 = 2 * Nint(0.25_wp + cell_properties(9) * electro%alpha * tol1 / pi)
+
+      end if
+    End If
+
     ! if (ewld%active) then
       !! Remember to reset after merge
 
@@ -1452,7 +1539,7 @@ contains
        ! End If
 
        ! call params%retrieve('ewald_nsplines', ewld%bspline%num_splines)
-       ! Call dcell(cell,celprp)
+       ! Call dcell(cell,cell_properties)
 
        ! if (params%is_set(['ewald_precision', 'ewald_alpha'])) then
 
@@ -1470,7 +1557,7 @@ contains
        !    else
 
        !       call params%retrieve('ewald_kvec_spacing', rtmp)
-       !       ewld%kspace%k_vec_dim_cont = Nint(rtmp / celprp(7:9))
+       !       ewld%kspace%k_vec_dim_cont = Nint(rtmp / cell_properties(7:9))
        !    end if
 
        !    ! Sanity check for ill defined ewald sum parameters 1/8*2*2*2 == 1
@@ -1479,20 +1566,18 @@ contains
 
        ! else
 
-       !    call params%retreive('ewald_precision', eps0)
+       !    call params%retrieve('ewald_precision', eps0)
 
        !    tol = Sqrt(Abs(Log(eps0*neigh%cutoff)))
        !    ewld%alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
        !    tol1 = Sqrt(-Log(eps0*neigh%cutoff*(2.0_wp*tol*ewld%alpha)**2))
 
-       !    fac = 1.0_wp
-
-       !    ewld%kspace%k_vec_dim_cont = 2*Nint(0.25_wp + fac*celprp(7:9)*ewld%alpha*tol1/pi)
+       !    ewld%kspace%k_vec_dim_cont = 2*Nint(0.25_wp + cell_properties(7:9)*ewld%alpha*tol1/pi)
 
        ! end if
     ! end if
 
-  end Subroutine read_cutoffs
+  end Subroutine read_electrostatics
 
   Subroutine write_ensemble(thermo)
     Type( thermostat_type ), Intent( InOut ) :: thermo
