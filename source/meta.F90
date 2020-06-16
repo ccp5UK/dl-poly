@@ -11,7 +11,11 @@ Module meta
   Use angles,                             Only: angles_type
   Use angular_distribution,               Only: adf_type
   Use bonds,                              Only: bonds_type
-  Use bounds,                             Only: set_bounds
+  Use bounds,                             Only: set_bounds,&
+                                                setup_potential_parameters,&
+                                                setup_grids,&
+                                                setup_buffers,&
+                                                setup_vnl
   Use build_book,                         Only: build_book_intra
   Use build_chrm,                         Only: build_chrm_intra
   Use build_excl,                         Only: build_excl_intra
@@ -361,6 +365,28 @@ Contains
     call read_bond_analysis(params, flow, bond, angle, dihedral, inversion, config%mxgana)
     call read_structure_analysis(params, msd_data, rdf, green, zdensity, adf, crd, traj, dfcts, rsdsc)
     call read_units(params)
+
+
+    ! scan the FIELD file data
+    Call scan_field(megatm, site, neigh%max_exclude, mtshl, &
+                    mtcons, mtrgd, mtteth, mtbond, mtangl, mtdihd, mtinv, &
+                    ext_field, cshell, cons, pmf, met, bond, angle, dihedral, inversion, tether, threebody, &
+                    vdws, tersoffs, fourbody, rdf, mpoles, rigid, kim_data, files, electro, comm)
+    ! scan CONFIG file data
+    call params%retrieve('density_variance', config%dvar)
+    Call scan_config(config, megatm, config%dvar, config%levcfg, xhi, yhi, zhi, io, domain, files, comm)
+
+    ! halt execution for unsupported image conditions in DD
+    ! checks for some inherited from DL_POLY_2 are though kept
+
+    If (config%imcon == IMCON_TRUNC_OCTO .or. &
+        config%imcon == IMCON_RHOMBIC_DODEC .or. &
+        config%imcon == IMCON_HEXAGONAL) then
+      write(message, '(A,I0.1,A)') 'Imcon ',config%imcon,' no longer supported in DL_POLY_4'
+      Call error(0, message)
+    end If
+
+    call read_cutoffs
     call read_forcefield(params, neigh, electro, vdws, met, mpoles, core_shells)
 
     Call set_bounds(params, &

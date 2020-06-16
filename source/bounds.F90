@@ -77,6 +77,7 @@ Module bounds
   Private
 
   Public :: set_bounds
+  Public :: setup_potential_parameters, setup_grids, setup_buffers, setup_vnl
 
 Contains
 
@@ -217,39 +218,9 @@ Contains
             files, flow, comm)
     end if
 
-    ! check integrity of cell vectors: for cubic cell
-
-    If (config%imcon == IMCON_CUBIC) Then
-
-      ats = (Abs(config%cell(1)) + Abs(config%cell(5))) / 2.0_wp
-      test = 1.0e-10_wp * ats ! 1.0e-10_wp tolerance in primitive cell type specification of dimensions
-      If (Any(Abs(config%cell(1:9:4) - ats) > test)) Call error(410)
-    End If
-
-    ! check for diagonal cell matrix if appropriate: imcon=1,2
-
-    If (config%imcon /= IMCON_NOPBC .and. config%imcon /= IMCON_PARALLELOPIPED .and. config%imcon /= IMCON_SLAB) Then
-      If (Any(Abs(config%cell(2:4)) > zero_plus)) Then
-        Call error(410)
-      End If
-      If (Any(Abs(config%cell(6:8)) > zero_plus)) Then
-        Call error(410)
-      End If
-    End If
-
-    ! calculate dimensional properties of simulation cell
-    ! (for use in link-cells) and ttm%volume and define min cell config%width
-
-    Call dcell(config%cell, cell_properties)
-    config%width = Min(cell_properties(7), cell_properties(8), cell_properties(9))
-
-    config%volm = cell_properties(10)
-
     ! check value of cutoff and reset if necessary
 
-    If (config%imcon > 0) Then
-      If (config%imcon == IMCON_SLAB) config%width = Min(cell_properties(7), cell_properties(8))
-
+    If (config%imcon /= IMCON_NOPBC) Then
       ! halt program if potential cutoff exceeds the minimum half-cell config%width
 
       If (neigh%cutoff >= config%width / 2.0_wp) Then

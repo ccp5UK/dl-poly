@@ -128,7 +128,7 @@ contains
     case(DATA_FLOAT)
        read(param%val, *) rtmp
        rtmp = convert_units(rtmp, param%units, param%internal_units)
-       write(unit, '(3(A,1X), "-> ", g12.6e2, 1X, A)') trim(param%key), trim(param%val), &
+       write(unit, '(3(A,1X), "-> ", g15.6e2, 1X, A)') trim(param%key), trim(param%val), &
             & trim(param%units), rtmp, trim(param%internal_units)
     case(DATA_INT)
        read(param%val, *) itmp
@@ -139,7 +139,7 @@ contains
        do itmp = 1,3
           rtmp3(itmp) = convert_units(rtmp3(itmp), param%units, param%internal_units)
        end do
-       write(unit, '(3(A,1X), "-> [", 3(g12.6e2,1X), "]", 1X, A)') trim(param%key), trim(param%val), &
+       write(unit, '(3(A,1X), "-> [", 3(g15.6e2,1X), "]", 1X, A)') trim(param%key), trim(param%val), &
             & trim(param%units), rtmp, trim(param%internal_units)
     case(DATA_VECTOR6)
        read(param%val, *) rtmp6
@@ -147,7 +147,7 @@ contains
           rtmp6(itmp) = convert_units(rtmp6(itmp), param%units, param%internal_units)
        end do
 
-       write(unit, '(3(A,1X), "-> [", 6(g15.3e2,1X), "]", 1X, A)') trim(param%key), trim(param%val), &
+       write(unit, '(3(A,1X), "-> [", 6(g15.6e2,1X), "]", 1X, A)') trim(param%key), trim(param%val), &
             & trim(param%units), rtmp, trim(param%internal_units)
     case default
        write(unit, fmt='(3(A,1X))') trim(param%key), trim(param%val), trim(param%units)

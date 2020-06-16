@@ -1315,18 +1315,6 @@ contains
        call bad_option('polarisation_model', option)
     end select
 
-    call params%retrieve('cutoff', neigh%cutoff)
-    if (neigh%cutoff < minimum_rcut) then
-       neigh%cutoff = minimum_rcut
-       call warning('neighbour cutoff less than minimum_cutoff (1.0 Ang), setting to minimum_cutoff', .true.)
-    end if
-
-    call params%retrieve('padding', neigh%padding)
-    if (neigh%padding < zero_plus) then
-       neigh%padding = 0.0_wp
-       call warning('Bad padding value, reset to 0.0', .true.)
-    end if
-
     call params%retrieve('vdw_method', option)
     select case(option)
     case ('tabulated')
@@ -1365,66 +1353,7 @@ contains
        electro%key = ELECTROSTATIC_NULL
     case ('ewald')
        electro%key = ELECTROSTATIC_EWALD
-
-       !! Remember to reset after merge
-
        ! ewld%active = .true.
-       ! cut = neigh%cutoff + 1e-6_wp
-
-       ! if (imcon == 0) then
-       !    cell(1) = Max(2.0_wp*xhi+cut,3.0_wp*cut,cell(1))
-       !    cell(5) = Max(2.0_wp*yhi+cut,3.0_wp*cut,cell(5))
-       !    cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
-
-       !    cell(2) = 0.0_wp
-       !    cell(3) = 0.0_wp
-       !    cell(4) = 0.0_wp
-       !    cell(6) = 0.0_wp
-       !    cell(7) = 0.0_wp
-       !    cell(8) = 0.0_wp
-       ! else if (imcon == 6) then
-       !    cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
-       ! End If
-
-       ! call params%retrieve('ewald_nsplines', ewld%bspline%num_splines)
-       ! Call dcell(cell,celprp)
-
-       ! if (params%is_set(['ewald_precision', 'ewald_alpha'])) then
-
-       !    call error(0, 'Cannot specify both precision and manual ewald parameters')
-
-       ! else if (params%is_set('ewald_alpha')) then
-
-       !    call params%retrieve('ewald_alpha', ewld%alpha)
-       !    if (params%is_set(['ewald_kvec', 'ewald_kvec_spacing'])) then
-
-       !       call error(0, 'Cannot specify both explicit k-vec grid and k-vec spacing')
-       !    else if (params%is_set('ewald_kvec')) then
-
-       !       call params%retrieve('ewald_kvec', ewld%kspace%k_vec_dim_cont)
-       !    else
-
-       !       call params%retrieve('ewald_kvec_spacing', rtmp)
-       !       ewld%kspace%k_vec_dim_cont = Nint(rtmp / celprp(7:9))
-       !    end if
-
-       !    ! Sanity check for ill defined ewald sum parameters 1/8*2*2*2 == 1
-       !    tol=ewld%alpha*real(product(ewld%kspace%k_vec_dim_cont), wp)
-       !    If (Int(tol) < 1) Call error(9)
-
-       ! else
-
-       !    call params%retreive('ewald_precision', eps0)
-
-       !    tol = Sqrt(Abs(Log(eps0*neigh%cutoff)))
-       !    ewld%alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
-       !    tol1 = Sqrt(-Log(eps0*neigh%cutoff*(2.0_wp*tol*ewld%alpha)**2))
-
-       !    fac = 1.0_wp
-
-       !    ewld%kspace%k_vec_dim_cont = 2*Nint(0.25_wp + fac*celprp(7:9)*ewld%alpha*tol1/pi)
-
-       ! end if
 
     case ('dddp')
        electro%key = ELECTROSTATIC_DDDP
@@ -1470,6 +1399,100 @@ contains
     if (.not. electro%lecx) call params%retrieve('coul_extended_exclusion', electro%lecx)
 
   End Subroutine read_forcefield
+
+  Subroutine read_cutoffs(config, neigh, vdws, met, tersoffs, kim_data, bond, ewld)
+    Type(neighbours_type), Intent(InOut) :: neigh
+
+    call params%retrieve('cutoff', neigh%cutoff)
+    if (neigh%cutoff < minimum_rcut) then
+       neigh%cutoff = minimum_rcut
+       call warning('neighbour cutoff less than minimum_cutoff (1.0 Ang), setting to minimum_cutoff', .true.)
+    end if
+
+    call params%retrieve('padding', neigh%padding)
+    if (neigh%padding < 0.0_wp) then
+       neigh%padding = 0.0_wp
+       call warning('Bad padding value, reset to 0.0', .true.)
+    end if
+
+    flow%reset_padding = params%is_set('padding')
+
+    call params%retrieve('vdw_cutoff', vdws%cutoff)
+    if (vdws%cutoff < minimum_rcut) then
+       vdws%cutoff = neigh%cutoff
+       call warning('vdw_cutoff less than minimum cutoff, setting to global cutoff', .true.)
+    end if
+
+    if (met%max_metal > 0 .and. met%rcut < 1.0e-6_wp) then
+       met%rcut=Max(met%rcut, neigh%cutoff,vdws%cutoff)
+       call warning('metal_cutoff not set, setting to max of global cutoff and vdw cutoff', .true.)
+    end if
+
+    neigh%cutoff = Max(neigh%cutoff, vdws%cutoff, met%rcut, kim_data%cutoff, bond%rcut, &
+         2.0_wp * tersoffs%cutoff + 1.0e-6_wp, kim_data%influence_distance)
+
+    ! if (ewld%active) then
+      !! Remember to reset after merge
+
+       ! cut = neigh%cutoff + 1e-6_wp
+
+       ! if (imcon == IMCON_NOPBC) then
+       !    cell(1) = Max(2.0_wp*xhi+cut,3.0_wp*cut,cell(1))
+       !    cell(5) = Max(2.0_wp*yhi+cut,3.0_wp*cut,cell(5))
+       !    cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
+
+       !    cell(2) = 0.0_wp
+       !    cell(3) = 0.0_wp
+       !    cell(4) = 0.0_wp
+       !    cell(6) = 0.0_wp
+       !    cell(7) = 0.0_wp
+       !    cell(8) = 0.0_wp
+       ! else if (imcon == IMCON_SLAB) then
+       !    cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
+       ! End If
+
+       ! call params%retrieve('ewald_nsplines', ewld%bspline%num_splines)
+       ! Call dcell(cell,celprp)
+
+       ! if (params%is_set(['ewald_precision', 'ewald_alpha'])) then
+
+       !    call error(0, 'Cannot specify both precision and manual ewald parameters')
+
+       ! else if (params%is_set('ewald_alpha')) then
+
+       !    call params%retrieve('ewald_alpha', ewld%alpha)
+       !    if (params%is_set(['ewald_kvec', 'ewald_kvec_spacing'])) then
+
+       !       call error(0, 'Cannot specify both explicit k-vec grid and k-vec spacing')
+       !    else if (params%is_set('ewald_kvec')) then
+
+       !       call params%retrieve('ewald_kvec', ewld%kspace%k_vec_dim_cont)
+       !    else
+
+       !       call params%retrieve('ewald_kvec_spacing', rtmp)
+       !       ewld%kspace%k_vec_dim_cont = Nint(rtmp / celprp(7:9))
+       !    end if
+
+       !    ! Sanity check for ill defined ewald sum parameters 1/8*2*2*2 == 1
+       !    tol=ewld%alpha*real(product(ewld%kspace%k_vec_dim_cont), wp)
+       !    If (Int(tol) < 1) Call error(9)
+
+       ! else
+
+       !    call params%retreive('ewald_precision', eps0)
+
+       !    tol = Sqrt(Abs(Log(eps0*neigh%cutoff)))
+       !    ewld%alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
+       !    tol1 = Sqrt(-Log(eps0*neigh%cutoff*(2.0_wp*tol*ewld%alpha)**2))
+
+       !    fac = 1.0_wp
+
+       !    ewld%kspace%k_vec_dim_cont = 2*Nint(0.25_wp + fac*celprp(7:9)*ewld%alpha*tol1/pi)
+
+       ! end if
+    ! end if
+
+  end Subroutine read_cutoffs
 
   Subroutine write_ensemble(thermo)
     Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -3281,7 +3304,7 @@ contains
         call table%set("cutoff", control_parameter( &
              key = "cutoff", &
              name = "Real-space global cutoff", &
-             val = "0.0", &
+             val = "1.0", &
              units = "internal_l", &
              internal_units = "internal_l", &
              description = "Set the global cutoff for real-speace potentials", &

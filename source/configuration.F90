@@ -1958,7 +1958,7 @@ Contains
             Write (messages(2), '(2(a,i0))') 'but maximum & minumum numbers of atoms per domain asked for : ', &
               max_fail, ' & ', min_fail
             Write (messages(3), '(a,i0)') 'estimated densvar value for passing this stage safely is : ', &
-              Ceiling((dvar * (Real(max_fail, wp) / Real(config%mxatms, wp))**(1.0_wp / 1.7_wp) - 1.0_wp) * 100.0_wp)
+              Ceiling((dvar * (Real(max_fail, wp) / Real(config%mxatms, wp)) - 1.0_wp) * 100.0_wp)
             Call info(messages, 3, .true.)
             Call error(45)
           End If
@@ -3701,6 +3701,43 @@ Contains
 
     Return
   End Function all_elements_unique
+
+  Subroutine setup_cell_props(config)
+    Type(configuration_type), Intent(InOut) :: config
+    Real(kind=wp) :: ats
+    Real(kind=wp) :: test
+
+    ! check integrity of cell vectors: for cubic cell
+
+    If (config%imcon == IMCON_CUBIC) then
+
+      ats = (Abs(config%cell(1)) + Abs(config%cell(5))) / 2.0_wp
+      test = 1.0e-10_wp * ats ! 1.0e-10_wp tolerance in primitive cell type specification of dimensions
+      If (any(Abs(config%cell(1:9:4) - ats) > test)) Call error(410)
+    end If
+
+    ! check for diagonal cell matrix if appropriate: imcon=1,2
+
+    If (config%imcon /= IMCON_NOPBC .and. config%imcon /= IMCON_PARALLELOPIPED .and. config%imcon /= IMCON_SLAB) Then
+      If (Any(Abs(config%cell(2:4)) > zero_plus)) Then
+        Call error(0, 'Cell not consistent with image convention (non-orthogonal)')
+      End If
+      If (Any(Abs(config%cell(6:8)) > zero_plus)) Then
+        Call error(0, 'Cell not consistent with image convention (non-orthorgonal)')
+      End If
+    End If
+
+    ! calculate dimensional properties of simulation cell
+    ! (for use in link-cells) and ttm%volume and define min cell config%width
+
+    Call dcell(config%cell, cell_properties)
+    config%width = Min(cell_properties(7), cell_properties(8), cell_properties(9))
+
+    config%volm = cell_properties(10)
+
+    If (config%imcon == IMCON_SLAB) config%width = Min(cell_properties(7), cell_properties(8))
+
+  end Subroutine check_cell_integrity
 
 
 End Module configuration
