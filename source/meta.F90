@@ -336,7 +336,7 @@ Contains
 
     ! Setup io immediately
     call read_io(params, ios, netcdf, files, comm)
-    call read_devel(params, devel)
+    call read_devel(params, devel, tmr, seed)
     call read_units(params)
 
     do i = 1, FILENAME_SIZE
@@ -357,6 +357,7 @@ Contains
     Call start_timer(tmr, 'Initialisation')
 #endif
 
+    ! Need timestep for reading other parameters
 
     ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
     ! (setup and domains)

@@ -80,9 +80,7 @@ Module bounds
        read_ensemble, &
        read_bond_analysis, &
        read_structure_analysis, &
-       read_forcefield, &
-       read_cutoffs, &
-       read_electrostatics
+       read_forcefield
 
   Implicit None
 
@@ -193,14 +191,11 @@ Contains
     !      inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, electro, ewld, kim_data, &
     !      files, flow, comm)
 
-
+    call setup_cell_props(config, cell_properties)
     call read_bond_analysis(params, flow, bond, angle, dihedral, inversion, config%mxgana)
     call read_structure_analysis(params, msd_data, rdf, green, zdensity, adf, crd, traj, defect, displacement)
-    call read_forcefield(params, electro, vdws, mpoles, cshell)
-    call read_cutoffs(params, flow, neigh, vdws, met, tersoffs, kim_data, bond)
-    Call read_electrostatics(params, config, neigh, electro, ewld, xhi, yhi, zhi)
-
-    call setup_cell_props(config, cell_properties)
+    call read_forcefield(params, neigh, config, xhi, yhi, zhi, flow, vdws, electro, ewld, mpoles, cshell, met, &
+       kim_Data, bond, tersoffs)
 
     ! check value of cutoff and reset if necessary
 
