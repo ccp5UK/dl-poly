@@ -32,6 +32,16 @@ Module thermostat
   !> Second order splitting
   Integer(Kind=wi), Parameter, Public :: DPD_SECOND_ORDER = 2
 
+  ! Pseudo thermostat keys
+  !> Langevin + direct temperature scaling
+  Integer(Kind=wi), Parameter, Public :: PSEUDO_LANGEVIN_DIRECT = 0
+  !> Langevin temperature scaling
+  Integer(Kind=wi), Parameter, Public :: PSEUDO_LANGEVIN = 1
+  !> Gaussian temperature scaling
+  Integer(Kind=wi), Parameter, Public :: PSEUDO_GAUSSIAN = 2
+  !> Direct temperature scaling
+  Integer(Kind=wi), Parameter, Public :: PSEUDO_DIRECT = 3
+
   !> Type containing thermostat and barostat variables
   Type, Public :: thermostat_type
     Private
@@ -92,11 +102,6 @@ Module thermostat
     !> Pseudo thermostat switch
     Logical, Public                    :: l_stochastic_boundaries
     !> Pseudo thermostat type
-    !>
-    !> - 0 Langevin + direct temperature scaling
-    !> - 1 Langevin temperature scaling
-    !> - 2 Gaussian temperature scaling
-    !> - 3 direct temperature scaling
     Integer, Public                    :: key_pseudo
     !> Pseudo thermostat temperature
     Real(Kind=wp), Public              :: temp_pseudo

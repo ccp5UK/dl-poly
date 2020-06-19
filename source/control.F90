@@ -107,7 +107,8 @@ Module control
                                   ENS_NPT_NOSE_HOOVER, ENS_NPT_NOSE_HOOVER_ANISO, ENS_NVE, &
                                   ENS_NVT_ANDERSON, ENS_NVT_BERENDSEN, ENS_NVT_EVANS, &
                                   ENS_NVT_GENTLE, ENS_NVT_LANGEVIN, ENS_NVT_LANGEVIN_INHOMO, &
-                                  ENS_NVT_NOSE_HOOVER, thermostat_type
+                                  ENS_NVT_NOSE_HOOVER, thermostat_type, &
+                                  PSEUDO_LANGEVIN_DIRECT, PSEUDO_LANGEVIN, PSEUDO_GAUSSIAN, PSEUDO_DIRECT
   Use timer,                Only: timer_type
   Use trajectory,           Only: trajectory_type
   Use ttm,                  Only: ttm_type
@@ -286,7 +287,7 @@ Contains
     ! minimum temperature of the thermostat
 
     thermo%l_stochastic_boundaries = .false.
-    thermo%key_pseudo = 0
+    thermo%key_pseudo = PSEUDO_LANGEVIN_DIRECT
     thermo%width_pseudo = 2.0_wp
     thermo%temp_pseudo = 1.0_wp
 
@@ -1038,13 +1039,13 @@ Contains
 
         Call get_word(record, word)
         If (word(1:4) == 'lang') Then
-          thermo%key_pseudo = 1
+          thermo%key_pseudo = PSEUDO_LANGEVIN
           Call get_word(record, word)
         Else If (word(1:5) == 'gauss') Then
-          thermo%key_pseudo = 2
+          thermo%key_pseudo = PSEUDO_GAUSSIAN
           Call get_word(record, word)
         Else If (word(1:6) == 'direct') Then
-          thermo%key_pseudo = 3
+          thermo%key_pseudo = PSEUDO_DIRECT
           Call get_word(record, word)
         End If
 
@@ -1055,15 +1056,16 @@ Contains
           thermo%l_stochastic_boundaries = .true.
           If (comm%idnode == 0) Then
             Call info('pseudo thermostat attached to MD cell boundary', .true.)
-            If (thermo%key_pseudo == 0) Then
+            select case (thermo%key_pseudo)
+            Case (PSEUDO_LANGEVIN_DIRECT)
               Call info('thermostat control: Langevin + direct temperature scaling', .true.)
-            Else If (thermo%key_pseudo == 1) Then
+            Case (PSEUDO_LANGEVIN)
               Call info('thermostat control: Langevin temperature scaling', .true.)
-            Else If (thermo%key_pseudo == 2) Then
+            Case (PSEUDO_GAUSSIAN)
               Call info('thermostat control: gaussian temperature scaling', .true.)
-            Else If (thermo%key_pseudo == 3) Then
+            Case (PSEUDO_DIRECT)
               Call info('thermostat control: direct temperature scaling', .true.)
-            End If
+            End select
             Write (message, '(a,1p,e12.4)') 'thermostat thickness (Angs) ', tmp
           End If
 
