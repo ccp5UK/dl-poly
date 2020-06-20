@@ -849,8 +849,10 @@ Contains
 
     ! z-density collection
 
-    If (zdensity%l_collect .and. ((.not. leql) .or. nstep >= nsteql) .and. &
+    If (zdensity%l_collect) then
+      if (((.not. leql) .or. nstep >= nsteql) .and. &
         Mod(nstep, zdensity%frequency) == 0) Call z_density_collect(zdensity, config)
+    end If
 
     ! Catch time of starting statistical averages
 

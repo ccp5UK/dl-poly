@@ -2107,6 +2107,7 @@ Contains
     Logical                   :: eor
     Logical                   :: fast, l_his, l_ind, l_xtr, safe, strict
     Real(Kind=wp)             :: buffer(1:4), cell_vecs(1:3, 1:3), xxx, yyy, zzz
+    Character(Len=256)        :: message
     Integer( Kind = wi )      :: conftag
 
     ! Choose which CONFIG file to read
@@ -2341,7 +2342,7 @@ Contains
 
           Read (Unit=files(conftag)%unit_no, Fmt=*)
           Read (Unit=files(conftag)%unit_no, Fmt=*)
-          If (config%imcon /= 0) Then
+          If (config%imcon /= IMCON_NOPBC) Then
             Read (Unit=files(conftag)%unit_no, Fmt=*)
             Read (Unit=files(conftag)%unit_no, Fmt=*)
             Read (Unit=files(conftag)%unit_no, Fmt=*)
@@ -2432,6 +2433,16 @@ Contains
       End If
 
     End If
+
+    ! halt execution for unsupported image conditions in DD
+    ! checks for some inherited from DL_POLY_2 are though kept
+
+    If (config%imcon == IMCON_TRUNC_OCTO .or. &
+        config%imcon == IMCON_RHOMBIC_DODEC .or. &
+        config%imcon == IMCON_HEXAGONAL) then
+      write(message, '(A,I0.1,A)') 'Imcon ',config%imcon,' no longer supported in DL_POLY_4'
+      Call error(0, message)
+    end If
 
   End Subroutine scan_config
 

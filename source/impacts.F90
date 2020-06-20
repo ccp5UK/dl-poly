@@ -14,7 +14,7 @@ Module impacts
 
   Private
   Type, Public :: impact_type
-
+    Logical       :: active
     Integer       :: imd, tmd
     Real(Kind=wp) :: emd, vmx, vmy, vmz
   End Type

@@ -24,6 +24,7 @@ Module meta
                                                 exit_comms,&
                                                 root_id
   Use configuration,                      Only: check_config,&
+                                                scan_config,&
                                                 configuration_type,&
                                                 freeze_atoms,&
                                                 origin_config,&
@@ -50,15 +51,17 @@ Module meta
   Use electrostatic,                      Only: ELECTROSTATIC_EWALD,&
                                                 electrostatic_type
   Use errors_warnings,                    Only: error,&
+                                                warning,&
                                                 info,&
                                                 init_error_system,&
                                                 get_print_level,&
                                                 set_print_level,&
-                                                warning
+                                                check_print_level
   Use evb,                                Only: print_evb_banner
   Use ewald,                              Only: ewald_type
   Use external_field,                     Only: external_field_type
   Use ffield,                             Only: read_field,&
+                                                scan_field,&
                                                 report_topology
   Use filename,                           Only: FILENAME_SIZE,&
                                                 FILE_CONTROL,&
@@ -135,7 +138,18 @@ Module meta
   Use vdw,                                Only: vdw_type
   Use z_density,                          Only: z_density_type
 
-  Use new_control, Only : read_new_control, read_io, read_devel, read_units
+  Use new_control, Only : read_new_control,&
+       read_io, &
+       read_devel, &
+       read_units, &
+       read_ttm, &
+       read_ensemble, &
+       read_bond_analysis, &
+       read_structure_analysis, &
+       read_forcefield,&
+       read_run_parameters,&
+       read_system_parameters,&
+       write_parameters
 
 
   ! HACK
@@ -300,7 +314,11 @@ Contains
     Character(len=1024),       Intent(In   ) :: control_filename
     Character(len=1024),       Intent(In   ) :: output_filename
 
+    Integer            :: megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, &
+         mtshl, mtteth
+    Integer, Dimension(3) :: link_cell
     Type( parameters_hash_table )            :: params
+    Real(Kind=wp) :: xhi, yhi, zhi
     Integer :: i
     Logical :: can_parse
 
@@ -330,26 +348,30 @@ Contains
        return
     end if
 
-#ifdef CHRONO
-    Call stop_timer(tmr, 'Initialisation')
-#endif
-
     ! Setup io immediately
     call read_io(params, ios, netcdf, files, comm)
     call read_devel(params, devel, tmr, seed)
     call read_units(params)
 
+    if (output_filename /= "") files(FILE_OUTPUT)%filename = output_filename
+
     do i = 1, FILENAME_SIZE
-       if (files(i)%filename == "SCREEN") then
-          files(i)%unit_no = error_unit
-       else if (files(i)%filename == "NONE") then
-          files(i)%filename = null_unit
-       end if
+      select case (files(i)%filename)
+      case ("SCREEN")
+        files(i)%unit_no = error_unit
+      case ("NONE")
+        files(i)%filename = null_unit
+      end select
     end do
+
     if (files(FILE_OUTPUT)%unit_no /= error_unit) &
-         Open (Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Status='replace')
+         Open (Newunit=files(FILE_OUTPUT)%unit_no, File=trim(files(FILE_OUTPUT)%filename), Status='replace')
     dlp_world(0)%ou = files(FILE_OUTPUT)%unit_no
+
     Call init_error_system(files(FILE_OUTPUT)%unit_no, dlp_world(0))
+    Call print_banner(dlp_world)
+
+    if (check_print_level(2)) Call build_info()
 
 #ifdef CHRONO
     ! Start main timer
@@ -357,15 +379,43 @@ Contains
     Call start_timer(tmr, 'Initialisation')
 #endif
 
-    ! Need timestep for reading other parameters
+    ! scan the FIELD file data
+
+    Call scan_field(megatm, sites, neigh%max_exclude, mtshl, &
+                    mtcons, mtrgd, mtteth, mtbond, mtangl, mtdihd, mtinv, &
+                    ext_field, core_shells, cons, pmfs, met, bond, angle, dihedral, inversion, tether, threebody, &
+                    vdws, tersoffs, fourbody, rdf, mpoles, rigid, kim_data, files, electro, comm)
+
+    ! Get imc_r & set config%dvar
+
+    call params%retrieve('density_variance', config%dvar)
+
+    ! scan CONFIG file data
+
+    Call scan_config(config, megatm, config%dvar, config%levcfg, xhi, yhi, zhi, ios, domain, files, comm)
+
+    ! scan CONTROL file data
+
+    call read_bond_analysis(params, flow, bond, angle, dihedral, inversion, config%mxgana)
+    call read_structure_analysis(params, msd_data, rdf, green, zdensity, adf, crd, traj, dfcts, rsdsc)
+    call read_forcefield(params, neigh, config, xhi, yhi, zhi, flow, vdws, electro, ewld, mpoles, core_shells, met, &
+       kim_Data, bond, threebody, fourbody, tersoffs)
+    call read_run_parameters(params, flow, thermo, stats, config%l_ind)
+    call read_ttm(params, ttms)
+    call read_ensemble(params, thermo, ttms%l_ttm)
+    Call read_system_parameters(params, flow, config, thermo, impa, minim, plume, cons, pmfs, ttms%l_ttm)
 
     ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
     ! (setup and domains)
-    Call set_bounds_new(params, sites, ttms, ios, core_shells, cons, pmfs, stats, &
-      thermo, green, devel, msd_data, met, pois, bond, angle, dihedral, inversion, &
-      tether, threebody, zdensity, neigh, vdws, tersoffs, fourbody, rdf, adf, crd, &
-      traj, dfcts, rsdsc, mpoles, ext_field, rigid, electro, domain, config, ewld, &
-      kim_data, files, flow, comm)
+    Call set_bounds_new(sites, ttms, ios, core_shells, cons, pmfs, stats, green, devel, &
+       msd_data, met, bond, angle, dihedral, inversion, tether, threebody, zdensity, &
+       neigh, vdws, tersoffs, fourbody, rdf, mpoles, ext_field, &
+       rigid, electro, domain, config, ewld, kim_data, files, flow, comm, &
+       xhi, yhi, zhi, megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, &
+       mtshl, mtteth, link_cell)
+
+    call write_parameters(ios, netcdf, files, neigh, config, link_cell, flow, stats, thermo, ttms, mpoles, vdws, &
+       electro, core_shells, ewld, met, impa, minim, plume, cons, pmfs)
 
     Call molecular_dynamics_allocate(sites, config, neigh, thermo, vdws, core_shells, cons, pmfs, &
          rigid, tether, bond, angle, dihedral, inversion, mpoles, met, tersoffs, threebody, fourbody, &
@@ -392,7 +442,6 @@ Contains
 #ifdef CHRONO
     Call stop_timer(tmr, 'Initialisation')
 #endif
-    stop 0
 
   end Subroutine molecular_dynamics_initialise
 
@@ -479,7 +528,9 @@ Contains
 
     Call print_banner(dlp_world)
 
+#ifdef DEBUG
     Call build_info()
+#endif
 
     Call scan_control_io(ios, netcdf, files, comm)
 

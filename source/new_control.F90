@@ -6,8 +6,8 @@ Module new_control
   Use comms,                Only: comms_type,&
        gcheck
   Use configuration,        Only: configuration_type,&
-                                  IMCON_NOPBC,&
-                                  IMCON_SLAB
+       IMCON_NOPBC,&
+       IMCON_SLAB
   Use constants,            Only: pi,&
        prsunt,&
        tenunt,&
@@ -29,7 +29,8 @@ Module new_control
   Use errors_warnings,      Only: error,&
        info,&
        warning,&
-       set_print_level
+       set_print_level,&
+       check_print_level
   Use ewald,                Only: ewald_type
   Use filename,             Only: FILE_CONFIG,&
        FILE_CONTROL,&
@@ -138,6 +139,8 @@ Module new_control
        IO_WRITE_SORTED_DIRECT,   &
        IO_WRITE_SORTED_NETCDF,   &
        IO_WRITE_SORTED_MASTER
+  Use three_body,      Only: threebody_type
+  Use four_body,       Only: four_body_type
   Use units, only : convert_units, set_timestep, units_scheme, internal_units, set_out_units
   Use control_parameter_module, only : control_parameter, parameters_hash_table, &
        DATA_INT, DATA_FLOAT, DATA_STRING, DATA_BOOL, DATA_OPTION, DATA_VECTOR3, DATA_VECTOR6
@@ -159,6 +162,9 @@ Module new_control
   Public :: read_structure_analysis
   Public :: read_units
   Public :: read_bond_analysis
+  Public :: read_run_parameters
+  Public :: read_system_parameters
+  Public :: write_parameters
 
   ! Public for old-style
   Public :: bad_option
@@ -185,8 +191,8 @@ contains
 
     ! Possibly old style
     if (.not. can_parse) then
-       call control_file%close()
-       return
+      call control_file%close()
+      return
     end if
 
     Call parse_file(control_file%unit_no, params, comm)
@@ -214,17 +220,21 @@ contains
 
     call params%retrieve('time_depth', tmr%max_depth)
     call params%retrieve('time_per_mpi', tmr%proc_detail)
+
     call params%retrieve('time_job', tmr%job)
+    if (tmr%job < 0.0_wp) tmr%job = Huge(1.0_wp)
+
     call params%retrieve('time_close', tmr%clear_screen)
+    if (tmr%clear_screen < 0.0_wp) tmr%clear_screen = 0.01_wp * tmr%job
 
     if (params%is_set('random_seed')) then
-       call params%retrieve('random_seed', vtmp(1:3))
-       call seed%init(nint(vtmp(1:3)))
+      call params%retrieve('random_seed', vtmp(1:3))
+      call seed%init(nint(vtmp(1:3)))
     end if
 
   end Subroutine read_devel
 
-  Subroutine read_io(params, io, netcdf, files, comm)
+  Subroutine read_io(params, io_data, netcdf, files, comm)
     !!-----------------------------------------------------------------------
     !!
     !! Read in the io parameters
@@ -233,7 +243,7 @@ contains
     !! author - j.wilkins april 2020
     !!-----------------------------------------------------------------------
     Type( parameters_hash_table ), Intent( In    ) :: params
-    Type( io_type ), Intent( InOut ) :: io
+    Type( io_type ), Intent( InOut ) :: io_data
     Type( netcdf_param ), Intent( InOut ) :: netcdf
     Type( file_type ), Dimension(:), Intent( InOut ) :: files
     Type( comms_type ), Intent( InOut ) :: comm
@@ -251,82 +261,82 @@ contains
 
     Select Case(curr_option)
     Case ( 'mpiio' )
-       io_read = IO_READ_MPIIO
+      io_read = IO_READ_MPIIO
 
     Case ( 'direct' )
-       io_read = IO_READ_DIRECT
+      io_read = IO_READ_DIRECT
 
     Case ( 'netcdf' )
-       io_read = IO_READ_NETCDF
+      io_read = IO_READ_NETCDF
 
     Case ( 'master' )
-       io_read = IO_READ_MASTER
+      io_read = IO_READ_MASTER
 
     Case Default
-       Call bad_option('io_read_method', curr_option)
+      Call bad_option('io_read_method', curr_option)
 
     End Select
 
-    Call io_set_parameters(io, user_method_read = io_read)
+    Call io_set_parameters(io_data, user_method_read = io_read)
 
     Select Case (io_read)
     Case (IO_READ_MPIIO, IO_READ_DIRECT, IO_READ_NETCDF)
-       ! Need to calculate number of readers
-       call params%retrieve('io_read_readers', itmp)
+      ! Need to calculate number of readers
+      call params%retrieve('io_read_readers', itmp)
 
-       If (itmp == 0) then
-          rtmp = Min( Real(comm%mxnode,wp), 2.0_wp*Real(comm%mxnode,wp)**0.5_wp )
-          itmp = 2**Int(Nearest( Log(rtmp)/Log(2.0_wp) , +1.0_wp ))
-          Do While ( Mod( comm%mxnode, itmp ) /= 0 )
-             itmp = itmp - 1
-          End Do
-       else if (itmp < comm%mxnode) then
-          Do While ( Mod( comm%mxnode, itmp ) /= 0 )
-             itmp = itmp - 1
-          End Do
-       else if (itmp > comm%mxnode) then
-          rtmp = Min( Real(comm%mxnode,wp), 2.0_wp*Real(comm%mxnode,wp)**0.5_wp )
-          itmp = 2**Int(Nearest( Log(rtmp)/Log(2.0_wp) , +1.0_wp ))
-          Do While ( Mod( comm%mxnode, itmp ) /= 0 )
-             itmp = itmp - 1
-          End Do
-       else
-          Call error(0, 'Cannot have negative number of I/O readers')
-       end If
+      If (itmp == 0) then
+        rtmp = Min( Real(comm%mxnode,wp), 2.0_wp*Real(comm%mxnode,wp)**0.5_wp )
+        itmp = 2**Int(Nearest( Log(rtmp)/Log(2.0_wp) , +1.0_wp ))
+        Do While ( Mod( comm%mxnode, itmp ) /= 0 )
+          itmp = itmp - 1
+        End Do
+      else if (itmp < comm%mxnode) then
+        Do While ( Mod( comm%mxnode, itmp ) /= 0 )
+          itmp = itmp - 1
+        End Do
+      else if (itmp > comm%mxnode) then
+        rtmp = Min( Real(comm%mxnode,wp), 2.0_wp*Real(comm%mxnode,wp)**0.5_wp )
+        itmp = 2**Int(Nearest( Log(rtmp)/Log(2.0_wp) , +1.0_wp ))
+        Do While ( Mod( comm%mxnode, itmp ) /= 0 )
+          itmp = itmp - 1
+        End Do
+      else
+        Call error(0, 'Cannot have negative number of I/O readers')
+      end If
 
 
-       ! the number of readers is now ready to set
+      ! the number of readers is now ready to set
 
-       Call io_set_parameters(io, user_n_io_procs_read = itmp)
+      Call io_set_parameters(io_data, user_n_io_procs_read = itmp)
 
-       ! Sort read batch size
-       ! 1 <= batch <= MAX_BATCH_SIZE, default 2000000
-       ! Note zero or negative values indicate use the default
+      ! Sort read batch size
+      ! 1 <= batch <= MAX_BATCH_SIZE, default 2000000
+      ! Note zero or negative values indicate use the default
 
-       call params%retrieve('io_read_batch_size', itmp)
+      call params%retrieve('io_read_batch_size', itmp)
 
-       Select Case (itmp)
-       Case(0)
-          Call io_get_parameters(io, user_batch_size_read = itmp )
+      Select Case (itmp)
+      Case(0)
+        Call io_get_parameters(io_data, user_batch_size_read = itmp )
 
-       Case(1:)
-          itmp = Min( itmp, MAX_BATCH_SIZE )
-          Call io_set_parameters(io, user_batch_size_read = itmp )
+      Case(1:)
+        itmp = Min( itmp, MAX_BATCH_SIZE )
+        Call io_set_parameters(io_data, user_batch_size_read = itmp )
 
-       Case Default
-          Call error(0, 'Cannot have negative I/O read batch size')
+      Case Default
+        Call error(0, 'Cannot have negative I/O read batch size')
 
-       End Select
+      End Select
 
     Case(IO_READ_MASTER)
-       Write(message,'(a,i10)') 'I/O readers (enforced) ', 1
-       Call info(message,.true.)
+      Write(message,'(a,i10)') 'I/O readers (enforced) ', 1
+      Call info(message,.true.)
 
     Case Default
-       rtmp = Min( Real(comm%mxnode,wp), 2.0_wp*Real(comm%mxnode,wp)**0.5_wp )
-       itmp = 2**Int(Nearest( Log(rtmp)/Log(2.0_wp) , +1.0_wp ))
-       ! the number of readers is now ready to set
-       Call io_set_parameters(io, user_n_io_procs_read = itmp )
+      rtmp = Min( Real(comm%mxnode,wp), 2.0_wp*Real(comm%mxnode,wp)**0.5_wp )
+      itmp = 2**Int(Nearest( Log(rtmp)/Log(2.0_wp) , +1.0_wp ))
+      ! the number of readers is now ready to set
+      Call io_set_parameters(io_data, user_n_io_procs_read = itmp )
 
     end Select
 
@@ -336,27 +346,27 @@ contains
 
     Select Case(itmp)
     Case(0)
-       Call io_get_parameters(io, user_buffer_size_read = itmp )
+      Call io_get_parameters(io_data, user_buffer_size_read = itmp )
 
     Case(1:99)
-       Call io_set_parameters(io, user_buffer_size_read = 100 )
+      Call io_set_parameters(io_data, user_buffer_size_read = 100 )
 
     Case(100:MAX_BUFFER_SIZE)
-       Call io_set_parameters(io, user_buffer_size_read = itmp )
+      Call io_set_parameters(io_data, user_buffer_size_read = itmp )
 
     Case(MAX_BUFFER_SIZE+1:)
-       Call io_set_parameters(io, user_buffer_size_read = MAX_BUFFER_SIZE )
+      Call io_set_parameters(io_data, user_buffer_size_read = MAX_BUFFER_SIZE )
 
     Case Default
-       Call error(0, 'Negative read buffer size not valid, min = 1')
+      Call error(0, 'Negative read buffer size not valid, min = 1')
 
     End Select
 
     ! Get parallel read error checking
 
     if (io_read /= IO_READ_MASTER) then
-       call params%retrieve('io_read_error_check', ltmp)
-       Call io_set_parameters(io, user_error_check = ltmp )
+      call params%retrieve('io_read_error_check', ltmp)
+      Call io_set_parameters(io_data, user_error_check = ltmp )
 
     End If
 
@@ -367,108 +377,108 @@ contains
 
     Select Case (curr_option)
     Case ( 'mpiio' )
-       if (ltmp) then
-          io_write = IO_WRITE_SORTED_MPIIO
-       else
-          io_write = IO_WRITE_UNSORTED_MPIIO
-       end if
+      if (ltmp) then
+        io_write = IO_WRITE_SORTED_MPIIO
+      else
+        io_write = IO_WRITE_UNSORTED_MPIIO
+      end if
 
     Case ( 'direct' )
-       if (ltmp) then
-          io_write = IO_WRITE_SORTED_DIRECT
-       else
-          io_write = IO_WRITE_UNSORTED_DIRECT
-       end if
+      if (ltmp) then
+        io_write = IO_WRITE_SORTED_DIRECT
+      else
+        io_write = IO_WRITE_UNSORTED_DIRECT
+      end if
 
     Case ( 'netcdf' )
-       io_write = IO_WRITE_SORTED_NETCDF
+      io_write = IO_WRITE_SORTED_NETCDF
 
-       call params%retrieve('io_read_netcdf_format', curr_option)
+      call params%retrieve('io_read_netcdf_format', curr_option)
 
-       Select Case (curr_option)
-       Case('amber', '32bit', '32-bit')
-          ! Use 32-bit quantities in output for real numbers
-          Call io_nc_set_real_precision( sp, netcdf, itmp )
-       Case('64-bit', '64bit')
-          ! Use 64-bit quantities in output for real numbers
-          Call io_nc_set_real_precision( dp, netcdf, itmp )
-       Case Default
-          Call error(3)
-       End Select
+      Select Case (curr_option)
+      Case('amber', '32bit', '32-bit')
+        ! Use 32-bit quantities in output for real numbers
+        Call io_nc_set_real_precision( sp, netcdf, itmp )
+      Case('64-bit', '64bit')
+        ! Use 64-bit quantities in output for real numbers
+        Call io_nc_set_real_precision( dp, netcdf, itmp )
+      Case Default
+        Call error(3)
+      End Select
 
     Case ( 'master' )
 
-       if (ltmp) then
-          io_write = IO_WRITE_SORTED_MASTER
-       else
-          io_write = IO_WRITE_UNSORTED_MASTER
-       end if
+      if (ltmp) then
+        io_write = IO_WRITE_SORTED_MASTER
+      else
+        io_write = IO_WRITE_UNSORTED_MASTER
+      end if
 
     Case Default
-       call bad_option('io_write_method', curr_option)
+      call bad_option('io_write_method', curr_option)
 
     End Select
 
 
     ! the write method and type are now ready to set
 
-    Call io_set_parameters(io, user_method_write = io_write )
+    Call io_set_parameters(io_data, user_method_write = io_write )
 
     Select Case (io_write)
     Case ( IO_WRITE_SORTED_NETCDF, IO_WRITE_SORTED_MPIIO, IO_WRITE_SORTED_DIRECT )
-       call params%retrieve('io_write_writers', itmp)
+      call params%retrieve('io_write_writers', itmp)
 
-       if (itmp == 0) then
-          rtmp = Min( Real(comm%mxnode,wp), 8.0_wp*Real(comm%mxnode,wp)**0.5_wp )
-          itmp = 2**Int(Nearest( Log(rtmp)/Log(2.0_wp) , +1.0_wp ))
-          Do While ( Mod( comm%mxnode, itmp ) /= 0 )
-             itmp = itmp - 1
-          End Do
+      if (itmp == 0) then
+        rtmp = Min( Real(comm%mxnode,wp), 8.0_wp*Real(comm%mxnode,wp)**0.5_wp )
+        itmp = 2**Int(Nearest( Log(rtmp)/Log(2.0_wp) , +1.0_wp ))
+        Do While ( Mod( comm%mxnode, itmp ) /= 0 )
+          itmp = itmp - 1
+        End Do
 
-       else if (itmp < comm%mxnode) then
-          Do While ( Mod( comm%mxnode, itmp ) /= 0 )
-             itmp = itmp - 1
-          End Do
+      else if (itmp < comm%mxnode) then
+        Do While ( Mod( comm%mxnode, itmp ) /= 0 )
+          itmp = itmp - 1
+        End Do
 
-       else if (itmp > comm%mxnode) then
-          rtmp = Min( Real(comm%mxnode,wp), 8.0_wp*Real(comm%mxnode,wp)**0.5_wp )
-          itmp = 2**Int(Nearest( Log(rtmp)/Log(2.0_wp) , +1.0_wp ))
-          Do While ( Mod( comm%mxnode, itmp ) /= 0 )
-             itmp = itmp - 1
-          End Do
+      else if (itmp > comm%mxnode) then
+        rtmp = Min( Real(comm%mxnode,wp), 8.0_wp*Real(comm%mxnode,wp)**0.5_wp )
+        itmp = 2**Int(Nearest( Log(rtmp)/Log(2.0_wp) , +1.0_wp ))
+        Do While ( Mod( comm%mxnode, itmp ) /= 0 )
+          itmp = itmp - 1
+        End Do
 
-       else
-          Call error(0, 'Cannot have negative number of I/O writers')
+      else
+        Call error(0, 'Cannot have negative number of I/O writers')
 
-       End if
+      End if
 
-       ! the number of writers is now ready to set
+      ! the number of writers is now ready to set
 
-       Call io_set_parameters(io, user_n_io_procs_write = itmp )
+      Call io_set_parameters(io_data, user_n_io_procs_write = itmp )
 
-       call params%retrieve('io_write_batch_size', itmp)
+      call params%retrieve('io_write_batch_size', itmp)
 
-       Select Case (itmp)
-       Case(0)
-          Call io_get_parameters(io, user_batch_size_write = itmp )
+      Select Case (itmp)
+      Case(0)
+        Call io_get_parameters(io_data, user_batch_size_write = itmp )
 
-       Case(1:)
-          itmp = Min( itmp, MAX_BATCH_SIZE )
-          Call io_set_parameters(io, user_batch_size_write = itmp )
+      Case(1:)
+        itmp = Min( itmp, MAX_BATCH_SIZE )
+        Call io_set_parameters(io_data, user_batch_size_write = itmp )
 
-       Case Default
-          Call error(0, 'Cannot have negative I/O write batch size')
+      Case Default
+        Call error(0, 'Cannot have negative I/O write batch size')
 
-       end Select
+      end Select
 
     Case (IO_WRITE_UNSORTED_MASTER, IO_WRITE_SORTED_MASTER)
-       Continue
+      Continue
 
     Case Default
-       rtmp = Min( Real(comm%mxnode,wp), 8.0_wp*Real(comm%mxnode,wp)**0.5_wp )
-       itmp = 2**Int(Nearest( Log(rtmp)/Log(2.0_wp) , +1.0_wp ))
-       ! the number of writers is now ready to set
-       Call io_set_parameters(io, user_n_io_procs_write = itmp )
+      rtmp = Min( Real(comm%mxnode,wp), 8.0_wp*Real(comm%mxnode,wp)**0.5_wp )
+      itmp = 2**Int(Nearest( Log(rtmp)/Log(2.0_wp) , +1.0_wp ))
+      ! the number of writers is now ready to set
+      Call io_set_parameters(io_data, user_n_io_procs_write = itmp )
 
     End Select
 
@@ -476,38 +486,46 @@ contains
 
     Select Case(itmp)
     Case(0)
-       Call io_get_parameters(io, user_buffer_size_write = itmp )
+      Call io_get_parameters(io_data, user_buffer_size_write = itmp )
 
     Case(1:99)
-       Call io_set_parameters(io, user_buffer_size_write = 100 )
+      Call io_set_parameters(io_data, user_buffer_size_write = 100 )
 
     Case(100:MAX_BUFFER_SIZE)
-       Call io_set_parameters(io, user_buffer_size_write = itmp )
+      Call io_set_parameters(io_data, user_buffer_size_write = itmp )
 
     Case(MAX_BUFFER_SIZE+1:)
-       Call io_set_parameters(io, user_buffer_size_write = MAX_BUFFER_SIZE )
+      Call io_set_parameters(io_data, user_buffer_size_write = MAX_BUFFER_SIZE )
 
     Case Default
-       Call error(0, 'Negative write buffer size not valid, min = 1')
+      Call error(0, 'Negative write buffer size not valid, min = 1')
     end Select
 
     ! switch error checking flag for writing
 
     If (io_write /= IO_WRITE_UNSORTED_MASTER .and. io_write /= IO_WRITE_SORTED_MASTER) Then
-       call params%retrieve('io_write_error_check', ltmp)
-       Call io_set_parameters(io, user_error_check = ltmp )
+      call params%retrieve('io_write_error_check', ltmp)
+      Call io_set_parameters(io_data, user_error_check = ltmp )
     End If
 
-    Call params%retrieve('io_file_output', files(FILE_OUTPUT)%filename)
-    Call params%retrieve('io_file_config', files(FILE_CONFIG)%filename)
-    Call params%retrieve('io_file_field',  files(FILE_FIELD)%filename)
-    Call params%retrieve('io_file_stats',  files(FILE_STATS)%filename)
-    Call params%retrieve('io_file_history',files(FILE_HISTORY)%filename)
-    Call params%retrieve('io_file_historf',files(FILE_HISTORF)%filename)
-    Call params%retrieve('io_file_revive', files(FILE_REVIVE)%filename)
-    Call params%retrieve('io_file_revcon', files(FILE_REVCON)%filename)
-    Call params%retrieve('io_file_revold', files(FILE_REVOLD)%filename)
-
+    Call params%retrieve('io_file_output', curr_option)
+    files(FILE_OUTPUT)%filename = curr_option
+    Call params%retrieve('io_file_config', curr_option)
+    files(FILE_CONFIG)%filename = curr_option
+    Call params%retrieve('io_file_field', curr_option)
+    files(FILE_FIELD)%filename = curr_option
+    Call params%retrieve('io_file_statis', curr_option)
+    files(FILE_STATS)%filename = curr_option
+    Call params%retrieve('io_file_history', curr_option)
+    files(FILE_HISTORY)%filename = curr_option
+    Call params%retrieve('io_file_historf', curr_option)
+    files(FILE_HISTORF)%filename = curr_option
+    Call params%retrieve('io_file_revive', curr_option)
+    files(FILE_REVIVE)%filename = curr_option
+    Call params%retrieve('io_file_revcon', curr_option)
+    files(FILE_REVCON)%filename = curr_option
+    Call params%retrieve('io_file_revold', curr_option)
+    files(FILE_REVOLD)%filename = curr_option
   End Subroutine read_io
 
   Subroutine read_ensemble(params, thermo, ttm_active)
@@ -521,197 +539,196 @@ contains
     if (ttm_active .and. option /= 'ttm') call error(0, 'TTM requested, ensemble not ttm')
     select case(option)
     case ('nve', 'pmf')
-       thermo%ensemble = ENS_NVE
+      thermo%ensemble = ENS_NVE
 
     case ('nvt')
 
-       call params%retrieve('ensemble_method', option, required = .true.)
+      call params%retrieve('ensemble_method', option, required = .true.)
 
-       select case(option)
-       case ('evans')
-          thermo%ensemble = ENS_NVT_EVANS
+      select case(option)
+      case ('evans')
+        thermo%ensemble = ENS_NVT_EVANS
 
-       case ('langevin')
+      case ('langevin')
 
-          thermo%ensemble = ENS_NVT_LANGEVIN
+        thermo%ensemble = ENS_NVT_LANGEVIN
 
-          Call params%retrieve('ensemble_thermostat_friction', thermo%chi, .true.)
+        Call params%retrieve('ensemble_thermostat_friction', thermo%chi, .true.)
 
-       case ('andersen')
+      case ('andersen')
 
-          thermo%ensemble = ENS_NVT_ANDERSON
+        thermo%ensemble = ENS_NVT_ANDERSON
 
-          Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
-          Call params%retrieve('ensemble_thermostat_softness', thermo%soft)
+        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+        Call params%retrieve('ensemble_thermostat_softness', thermo%soft)
 
-       case ('berendsen')
+      case ('berendsen')
 
-          thermo%ensemble = ENS_NVT_BERENDSEN
+        thermo%ensemble = ENS_NVT_BERENDSEN
 
-          Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
 
-       Case ('hoover', 'nose', 'nose-hoover')
+      Case ('hoover', 'nose', 'nose-hoover')
 
-          thermo%ensemble = ENS_NVT_NOSE_HOOVER
+        thermo%ensemble = ENS_NVT_NOSE_HOOVER
 
-          Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
 
-       Case ('gentle', 'gst')
+      Case ('gentle', 'gst')
 
-          thermo%ensemble = ENS_NVT_GENTLE
+        thermo%ensemble = ENS_NVT_GENTLE
 
-          Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
-          Call params%retrieve('ensemble_thermostat_friction', thermo%gama)
+        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+        Call params%retrieve('ensemble_thermostat_friction', thermo%gama)
 
-       Case ('ttm')
+      Case ('ttm')
 
-          thermo%ensemble = ENS_NVT_LANGEVIN_INHOMO
+        thermo%ensemble = ENS_NVT_LANGEVIN_INHOMO
+        Call params%retrieve('ttm_e-phonon_friction', thermo%chi_ep)
+        Call params%retrieve('ttm_e-stopping_friction', thermo%chi_es, .true.)
+        Call params%retrieve('ttm_e-stopping_velocity', thermo%vel_es2)
+        thermo%vel_es2 = thermo%vel_es2 * thermo%vel_es2 ! square of cutoff velocity for inhomogeneous Langevin thermostat and ttm
 
-          Call params%retrieve('ttm_e-phonon_friction', thermo%chi_ep)
-          Call params%retrieve('ttm_e-stopping_friction', thermo%chi_es, .true.)
-          Call params%retrieve('ttm_e-stopping_velocity', thermo%vel_es2)
-          thermo%vel_es2 = thermo%vel_es2 * thermo%vel_es2 ! square of cutoff velocity for inhomogeneous Langevin thermostat and ttm
+      Case ('dpd')
+        thermo%ensemble = ENS_NVE
 
-       Case ('dpd')
-          thermo%ensemble = ENS_NVE
+        Call info('Ensemble : NVT dpd (Dissipative Particle Dynamics)',.true.)
 
-          Call info('Ensemble : NVT dpd (Dissipative Particle Dynamics)',.true.)
-
-          call params%retrieve('ensemble_dpd_order', option)
-          select case (option)
-          case ('first', '1')
-             thermo%key_dpd = DPD_FIRST_ORDER
-          case ('second', '2')
-             thermo%key_dpd = DPD_SECOND_ORDER
-          case default
-             call bad_option('ensemble_dpd_order', option)
-          end select
+        call params%retrieve('ensemble_dpd_order', option)
+        select case (option)
+        case ('first', '1')
+          thermo%key_dpd = DPD_FIRST_ORDER
+        case ('second', '2')
+          thermo%key_dpd = DPD_SECOND_ORDER
+        case default
+          call bad_option('ensemble_dpd_order', option)
+        end select
 
 
-          call params%retrieve('ensemble_dpd_drag', thermo%gamdpd(0))
+        call params%retrieve('ensemble_dpd_drag', thermo%gamdpd(0))
 
-       case default
-          call bad_option('NVT ensemble_method', option)
-       end select
+      case default
+        call bad_option('NVT ensemble_method', option)
+      end select
 
     case ('npt')
 
-       thermo%variable_cell = .true.
+      thermo%variable_cell = .true.
 
-       call params%retrieve('ensemble_method', option)
-       select case (option)
-       case ('langevin')
+      call params%retrieve('ensemble_method', option)
+      select case (option)
+      case ('langevin')
 
-          thermo%ensemble = ENS_NPT_LANGEVIN
-          thermo%l_langevin = .true.
+        thermo%ensemble = ENS_NPT_LANGEVIN
+        thermo%l_langevin = .true.
 
-          call params%retrieve('ensemble_thermostat_friction', thermo%chi, .true.)
-          call params%retrieve('ensemble_barostat_friction', thermo%tai, .true.)
+        call params%retrieve('ensemble_thermostat_friction', thermo%chi, .true.)
+        call params%retrieve('ensemble_barostat_friction', thermo%tai, .true.)
 
-       case ('berendsen')
+      case ('berendsen')
 
-          thermo%ensemble = ENS_NPT_BERENDSEN
+        thermo%ensemble = ENS_NPT_BERENDSEN
 
-          call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
-          call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
+        call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+        call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
 
-       case ('hoover', 'nose', 'nose-hoover')
+      case ('hoover', 'nose', 'nose-hoover')
 
 
-          thermo%ensemble = ENS_NPT_NOSE_HOOVER
+        thermo%ensemble = ENS_NPT_NOSE_HOOVER
 
-          call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
-          call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
+        call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+        call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
 
-       case ('mtk')
+      case ('mtk')
 
-          thermo%ensemble = ENS_NPT_MTK
+        thermo%ensemble = ENS_NPT_MTK
 
-          call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
-          call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
+        call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+        call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
 
-       case default
-          call bad_option('NPT ensemble_method', option)
-       end select
+      case default
+        call bad_option('NPT ensemble_method', option)
+      end select
 
     case ('nst')
 
-       thermo%variable_cell = .true.
-       thermo%anisotropic_pressure = .true.
+      thermo%variable_cell = .true.
+      thermo%anisotropic_pressure = .true.
 
-       call params%retrieve('ensemble_method', option)
-       select case (option)
-       case ('langevin')
+      call params%retrieve('ensemble_method', option)
+      select case (option)
+      case ('langevin')
 
-          thermo%ensemble = ENS_NPT_LANGEVIN_ANISO
-          thermo%l_langevin = .true.
+        thermo%ensemble = ENS_NPT_LANGEVIN_ANISO
+        thermo%l_langevin = .true.
 
-          call params%retrieve('ensemble_thermostat_friction', thermo%chi, .true.)
-          call params%retrieve('ensemble_barostat_friction', thermo%tai, .true.)
+        call params%retrieve('ensemble_thermostat_friction', thermo%chi, .true.)
+        call params%retrieve('ensemble_barostat_friction', thermo%tai, .true.)
 
-       case ('berendsen')
+      case ('berendsen')
 
-          thermo%ensemble = ENS_NPT_BERENDSEN_ANISO
+        thermo%ensemble = ENS_NPT_BERENDSEN_ANISO
 
-          call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
-          call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
+        call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+        call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
 
-       case ('hoover', 'nose', 'nose-hoover')
+      case ('hoover', 'nose', 'nose-hoover')
 
-          thermo%ensemble = ENS_NPT_NOSE_HOOVER_ANISO
+        thermo%ensemble = ENS_NPT_NOSE_HOOVER_ANISO
 
-          call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
-          call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
+        call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+        call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
 
-       Case ('mtk')
+      Case ('mtk')
 
-          thermo%ensemble = ENS_NPT_MTK_ANISO
+        thermo%ensemble = ENS_NPT_MTK_ANISO
 
-          call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
-          call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
+        call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+        call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
 
-       case default
-          call bad_option('NST ensemble method', option)
-       end select
+      case default
+        call bad_option('NST ensemble method', option)
+      end select
 
-       ! Semi isotropic ensembles
+      ! Semi isotropic ensembles
 
-       call params%retrieve('ensemble_semi_isotropic', option)
-       call params%retrieve('ensemble_semi_orthorhombie', ltmp)
+      call params%retrieve('ensemble_semi_isotropic', option)
+      call params%retrieve('ensemble_semi_orthorhombie', ltmp)
 
-       select case (option)
-       case ('off')
-          continue
-       case ('area')
-          thermo%iso = CONSTRAINT_SURFACE_AREA
-       case ('tens')
+      select case (option)
+      case ('off')
+        continue
+      case ('area')
+        thermo%iso = CONSTRAINT_SURFACE_AREA
+      case ('tens')
 
-          thermo%iso = CONSTRAINT_SURFACE_TENSION
+        thermo%iso = CONSTRAINT_SURFACE_TENSION
 
-          call params%retrieve('ensemble_tension', thermo%tension, required=.true.)
+        call params%retrieve('ensemble_tension', thermo%tension, required=.true.)
 
-          thermo%tension=thermo%tension/tenunt
+        thermo%tension=thermo%tension/tenunt
 
-          if (ltmp) then
-             thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
-          end if
+        if (ltmp) then
+          thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
+        end if
 
-       case ('ortho', 'orthorhombic')
+      case ('ortho', 'orthorhombic')
 
-          thermo%iso = CONSTRAINT_SURFACE_TENSION
-          if (ltmp) then
-             thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
-          end if
-       case default
-          call bad_option('ensemble_semi_isotropic', option)
-       end select
-       If (Any(thermo%iso == [CONSTRAINT_SURFACE_AREA,CONSTRAINT_SURFACE_TENSION])) Then
-          Call warning('semi-isotropic ensembles are only correct for infinite' &
-               //'interfaces placed perpendicularly to the z axis',.true.)
-       End If
+        thermo%iso = CONSTRAINT_SURFACE_TENSION
+        if (ltmp) then
+          thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
+        end if
+      case default
+        call bad_option('ensemble_semi_isotropic', option)
+      end select
+      If (Any(thermo%iso == [CONSTRAINT_SURFACE_AREA,CONSTRAINT_SURFACE_TENSION])) Then
+        Call warning('semi-isotropic ensembles are only correct for infinite' &
+             //'interfaces placed perpendicularly to the z axis',.true.)
+      End If
 
     case default
-       call bad_option('ensemble', option)
+      call bad_option('ensemble', option)
     end select
 
   end Subroutine read_ensemble
@@ -735,10 +752,10 @@ contains
     call params%retrieve('analyse_inversions', l_inversion)
     call params%retrieve('analyse_all', ltmp)
     if (ltmp) then
-       l_bond = .true.
-       l_angle = .true.
-       l_dihedral = .true.
-       l_inversion = .true.
+      l_bond = .true.
+      l_angle = .true.
+      l_dihedral = .true.
+      l_inversion = .true.
     end if
 
     ! Set global
@@ -746,47 +763,47 @@ contains
     call params%retrieve('analyse_num_bins', itmp2)
 
     if (l_bond) then
-       call params%retrieve('analyse_max_dist', bond%rcut)
-       if (bond%rcut < minimum_bond_anal_length) then
-          bond%rcut = minimum_bond_anal_length
-          call warning('vdw_cutoff less than global cutoff, setting to global cutoff', .true.)
-       end if
+      call params%retrieve('analyse_max_dist', bond%rcut)
+      if (bond%rcut < minimum_bond_anal_length) then
+        bond%rcut = minimum_bond_anal_length
+        call warning('vdw_cutoff less than global cutoff, setting to global cutoff', .true.)
+      end if
 
-       bond%bin_pdf = itmp2
-       if (params%is_set('analyse_num_bins_bonds')) &
-            call params%retrieve('analyse_num_bins_bonds', bond%bin_pdf)
+      bond%bin_pdf = itmp2
+      if (params%is_set('analyse_num_bins_bonds')) &
+           call params%retrieve('analyse_num_bins_bonds', bond%bin_pdf)
 
-       call params%retrieve('analyse_frequency_bonds', flow%freq_bond)
-       flow%freq_bond = max(1, itmp, flow%freq_bond)
+      call params%retrieve('analyse_frequency_bonds', flow%freq_bond)
+      flow%freq_bond = max(1, itmp, flow%freq_bond)
     end if
 
     if (l_angle) then
-       angle%bin_adf = itmp2
-       if (params%is_set('analyse_num_bins_angles')) &
-            call params%retrieve('analyse_num_bins_angles', angle%bin_adf)
-       call params%retrieve('analyse_frequency_angles', flow%freq_angle)
-       flow%freq_angle = max(1, itmp, flow%freq_angle)
+      angle%bin_adf = itmp2
+      if (params%is_set('analyse_num_bins_angles')) &
+           call params%retrieve('analyse_num_bins_angles', angle%bin_adf)
+      call params%retrieve('analyse_frequency_angles', flow%freq_angle)
+      flow%freq_angle = max(1, itmp, flow%freq_angle)
     end if
 
     if (l_dihedral) then
-       dihedral%bin_adf = itmp2
-       if (params%is_set('analyse_num_bins_dihedrals')) &
-            call params%retrieve('analyse_num_bins_dihedrals', dihedral%bin_adf)
-       call params%retrieve('analyse_frequency_dihedrals', flow%freq_dihedral)
-       flow%freq_dihedral = max(1, itmp, flow%freq_dihedral)
+      dihedral%bin_adf = itmp2
+      if (params%is_set('analyse_num_bins_dihedrals')) &
+           call params%retrieve('analyse_num_bins_dihedrals', dihedral%bin_adf)
+      call params%retrieve('analyse_frequency_dihedrals', flow%freq_dihedral)
+      flow%freq_dihedral = max(1, itmp, flow%freq_dihedral)
     end if
 
     if (l_inversion) then
-       inversion%bin_adf = itmp2
-       if (params%is_set('analyse_num_bins_inversions')) &
-            call params%retrieve('analyse_num_bins_inversions', inversion%bin_adf)
+      inversion%bin_adf = itmp2
+      if (params%is_set('analyse_num_bins_inversions')) &
+           call params%retrieve('analyse_num_bins_inversions', inversion%bin_adf)
 
-       call params%retrieve('analyse_frequency_inversions', flow%freq_inversion)
-       flow%freq_inversion = max(1, itmp, flow%freq_inversion)
+      call params%retrieve('analyse_frequency_inversions', flow%freq_inversion)
+      flow%freq_inversion = max(1, itmp, flow%freq_inversion)
     end if
 
     if (any([l_bond, l_angle, l_dihedral, l_inversion])) then
-       max_grid_analysis = Max(bond%bin_pdf, angle%bin_adf, dihedral%bin_adf, inversion%bin_adf)
+      max_grid_analysis = Max(bond%bin_pdf, angle%bin_adf, dihedral%bin_adf, inversion%bin_adf)
     end if
 
   End Subroutine read_bond_analysis
@@ -811,54 +828,54 @@ contains
     call params%retrieve('msd_calculate', msd_data%l_msd)
 
     if (msd_data%l_msd) then
-       call params%retrieve('msd_start', msd_data%start)
-       call params%retrieve('msd_frequency', msd_data%freq)
+      call params%retrieve('msd_start', msd_data%start)
+      call params%retrieve('msd_frequency', msd_data%freq)
     else if (params%is_any_set([Character(13) :: 'msd_frequency', 'msd_start'])) then
-       Call warning('msd_start or msd_frequency found without msd_calculate')
+      Call warning('msd_start or msd_frequency found without msd_calculate')
     end if
 
     ! VAF
     call params%retrieve('vaf_calculate', vaf%l_collect)
 
     if (vaf%l_collect) then
-       call params%retrieve('vaf_frequency', vaf%freq)
-       If (vaf%freq <= 0) vaf%freq=50
-       call params%retrieve('vaf_binsize', vaf%binsize)
-       If (vaf%binsize <= 0) vaf%binsize=Merge(2*vaf%freq,100,vaf%freq >= 100)
-       call params%retrieve('vaf_print', vaf%l_print)
+      call params%retrieve('vaf_frequency', vaf%freq)
+      If (vaf%freq <= 0) vaf%freq=50
+      call params%retrieve('vaf_binsize', vaf%binsize)
+      If (vaf%binsize <= 0) vaf%binsize=Merge(2*vaf%freq,100,vaf%freq >= 100)
+      call params%retrieve('vaf_print', vaf%l_print)
 
-       vaf%samp = Ceiling(Real(vaf%binsize,wp)/Real(vaf%freq,wp))
+      vaf%samp = Ceiling(Real(vaf%binsize,wp)/Real(vaf%freq,wp))
 
     else if (params%is_any_set([Character(13) :: 'vaf_frequency', 'vaf_binsize', 'vaf_print'])) then
-       Call warning('vaf_print, vaf_frequency or vaf_binsize found without vaf_calculate')
+      Call warning('vaf_print, vaf_frequency or vaf_binsize found without vaf_calculate')
     end if
 
     ! RDF
     call params%retrieve('rdf_calculate', rdf%l_collect)
 
     if (rdf%l_collect) then
-       call params%retrieve('rdf_error_analysis', option)
+      call params%retrieve('rdf_error_analysis', option)
 
-       select case (option)
-       case ('jack')
-          rdf%l_errors_jack = .TRUE.
-       case ('block')
-          rdf%l_errors_block = .TRUE.
-       case ('off')
-          continue
-       case default
-          call bad_option('rdf_error_analysis', option)
-       end select
+      select case (option)
+      case ('jack')
+        rdf%l_errors_jack = .TRUE.
+      case ('block')
+        rdf%l_errors_block = .TRUE.
+      case ('off')
+        continue
+      case default
+        call bad_option('rdf_error_analysis', option)
+      end select
 
-       if (rdf%l_errors_jack .or. rdf%l_errors_block) &
-            & call params%retrieve('rdf_error_analysis_blocks', rdf%num_blocks)
+      if (rdf%l_errors_jack .or. rdf%l_errors_block) &
+           & call params%retrieve('rdf_error_analysis_blocks', rdf%num_blocks)
 
-       call params%retrieve('rdf_frequency', rdf%freq)
-       call params%retrieve('rdf_binsize', rdf%rbin)
-       call params%retrieve('rdf_print', rdf%l_print)
+      call params%retrieve('rdf_frequency', rdf%freq)
+      call params%retrieve('rdf_binsize', rdf%rbin)
+      call params%retrieve('rdf_print', rdf%l_print)
 
     else if (params%is_any_set([Character(13) :: 'rdf_frequency', 'rdf_binsize', 'rdf_print'])) then
-       Call warning('rdf_print, rdf_frequency or rdf_binsize found without rdf_calculate')
+      Call warning('rdf_print, rdf_frequency or rdf_binsize found without rdf_calculate')
     end if
 
     ! ZDen
@@ -867,12 +884,12 @@ contains
 
     if (zden%l_collect) then
 
-       call params%retrieve('zden_frequency', zden%frequency)
-       call params%retrieve('zden_binsize', zden%bin_width)
-       call params%retrieve('zden_print', zden%l_print)
+      call params%retrieve('zden_frequency', zden%frequency)
+      call params%retrieve('zden_binsize', zden%bin_width)
+      call params%retrieve('zden_print', zden%l_print)
 
     else if (params%is_any_set([Character(14) :: 'zden_frequency', 'zden_binsize', 'zden_print'])) then
-       Call warning('zden_print, zden_frequency or zden_binsize found without zden_calculate')
+      Call warning('zden_print, zden_frequency or zden_binsize found without zden_calculate')
     end if
 
     ! ADF
@@ -881,11 +898,11 @@ contains
 
     if (adf%adfon) then
 
-       call params%retrieve('adf_frequency', adf%interval)
-       call params%retrieve('adf_precision', adf%prec)
+      call params%retrieve('adf_frequency', adf%interval)
+      call params%retrieve('adf_precision', adf%prec)
 
     else if (params%is_any_set([Character(13) :: 'adf_frequency', 'adf_precision'])) then
-       Call warning('adf_frequency or adf_precision found without adf_calculate')
+      Call warning('adf_frequency or adf_precision found without adf_calculate')
     end if
 
     ! Coord
@@ -893,12 +910,12 @@ contains
     call params%retrieve('coord_calculate', coords%coordon)
 
     if (coords%coordon) then
-       call params%retrieve('coord_start', coords%coordstart)
-       call params%retrieve('coord_interval', coords%coordinterval)
-       call params%retrieve('coord_ops', coords%coordops)
+      call params%retrieve('coord_start', coords%coordstart)
+      call params%retrieve('coord_interval', coords%coordinterval)
+      call params%retrieve('coord_ops', coords%coordops)
 
     else if (params%is_any_set([Character(14) :: 'coord_start', 'coord_interval', 'coord_ops'])) then
-       Call warning('coord_start, coord_interval or coord_ops found without coord_calculate')
+      Call warning('coord_start, coord_interval or coord_ops found without coord_calculate')
     end if
 
     ! Trajectory
@@ -906,72 +923,72 @@ contains
     call params%retrieve('traj_calculate', traj%ltraj)
 
     if (traj%ltraj) then
-       call params%retrieve('traj_start', traj%start)
-       call params%retrieve('traj_interval', traj%freq)
-       call params%retrieve('traj_key', option)
+      call params%retrieve('traj_start', traj%start)
+      call params%retrieve('traj_interval', traj%freq)
+      call params%retrieve('traj_key', option)
 
-       select case (option)
-       case ('pos')
-          traj%key = 0
-       case ('pos-vel')
-          traj%key = 1
-       case ('pos-vel-force')
-          traj%key = 2
-       case ('compressed')
-          traj%key = 3
-       case default
-          call bad_option('traj_key', option)
-       end select
+      select case (option)
+      case ('pos')
+        traj%key = 0
+      case ('pos-vel')
+        traj%key = 1
+      case ('pos-vel-force')
+        traj%key = 2
+      case ('compressed')
+        traj%key = 3
+      case default
+        call bad_option('traj_key', option)
+      end select
 
-       ! Need to dealias
-       call traj%init((traj%key), (traj%freq), (traj%start))
+      ! Need to dealias
+      call traj%init((traj%key), (traj%freq), (traj%start))
 
     else if (params%is_any_set([Character(13) :: 'traj_start', 'traj_interval', 'traj_key'])) then
-       Call warning('traj_start, traj_interval or traj_key found without traj_calculate')
+      Call warning('traj_start, traj_interval or traj_key found without traj_calculate')
     end if
 
     call params%retrieve('defects_calculate', defect(1)%ldef)
 
     if (defect(1)%ldef) then
 
-       call params%retrieve('defects_start', defect%nsdef)
-       call params%retrieve('defects_interval', defect%isdef)
-       call params%retrieve('defects_distance', defect%rdef)
-       ! if (defects%rdef < )
+      call params%retrieve('defects_start', defect%nsdef)
+      call params%retrieve('defects_interval', defect%isdef)
+      call params%retrieve('defects_distance', defect%rdef)
+      ! if (defects%rdef < )
 
-       defect(1)%newjob = .true.
-       ! Name REFERENCE and DEFECTS files
-       defect(1)%reffile = 'REFERENCE'
-       defect(1)%deffile = 'DEFECTS'
+      defect(1)%newjob = .true.
+      ! Name REFERENCE and DEFECTS files
+      defect(1)%reffile = 'REFERENCE'
+      defect(1)%deffile = 'DEFECTS'
 
-       call params%retrieve('defects_backup', ltmp)
-       if (ltmp) then
-          defect(2)%ldef = .true.
-          defect(2)%nsdef = defect(1)%nsdef
-          defect(2)%isdef = defect(1)%isdef
-          defect(2)%rdef =  defect(1)%rdef
-          defect(2)%newjob = .true.
-          defect(2)%reffile = 'REFERENCE1'
-          defect(2)%deffile = 'DEFECTS1'
-       end if
+      call params%retrieve('defects_backup', ltmp)
+      if (ltmp) then
+        defect(2)%ldef = .true.
+        defect(2)%nsdef = defect(1)%nsdef
+        defect(2)%isdef = defect(1)%isdef
+        defect(2)%rdef =  defect(1)%rdef
+        defect(2)%newjob = .true.
+        defect(2)%reffile = 'REFERENCE1'
+        defect(2)%deffile = 'DEFECTS1'
+      end if
 
     else if (params%is_any_set([Character(16) :: 'defects_start', 'defects_interval', 'defects_distance'])) then
-       Call warning('defects_start, defects_interval or defects_distance found without defects_calculate')
+      Call warning('defects_start, defects_interval or defects_distance found without defects_calculate')
     end if
 
     call params%retrieve('displacements_calculate', displacement%lrsd)
 
     if (displacement%lrsd) then
 
-       call params%retrieve('displacements_start', displacement%nsrsd)
-       call params%retrieve('displacements_interval', displacement%isrsd)
-       call params%retrieve('displacements_distance', displacement%rrsd)
-       if (displacement%rrsd < 0.15_wp) then
-          displacement%rrsd = 0.15_wp
-          call warning('Displacement_distance too small, reset to 0.15 ang')
-       end if
+      call params%retrieve('displacements_start', displacement%nsrsd)
+      call params%retrieve('displacements_interval', displacement%isrsd)
+      call params%retrieve('displacements_distance', displacement%rrsd)
+      if (displacement%rrsd < 0.15_wp) then
+        displacement%rrsd = 0.15_wp
+        call warning('Displacement_distance too small, reset to 0.15 ang')
+      end if
     else if (params%is_any_set([Character(22) :: 'displacements_start', 'displacements_interval', 'displacements_distance'])) then
-       Call warning('displacements_start, displacements_interval or displacements_distance found without displacements_calculate')
+      Call warning('displacements_start, displacements_interval or displacements_distance found without displacements_calculate')
     end if
 
   end Subroutine read_structure_analysis
@@ -982,7 +999,9 @@ contains
     Character(Len=STR_LEN) :: option
     Logical :: ltmp
 
-    ttm%l_ttm = .true.
+
+    call params%retrieve('ttm_calculate', ttm%l_ttm)
+    if (.not. ttm%l_ttm) return
 
     call params%retrieve('ttm_num_ion_cells', ttm%ntsys(3))
     call params%retrieve('ttm_num_elec_cells', ttm%eltsys)
@@ -992,119 +1011,119 @@ contains
     call params%retrieve('ttm_heat_cap_model', option)
     select case (option)
     case ('constant')
-       ttm%cetype = 0
-       call params%retrieve('ttm_heat_cap', ttm%ce0)
+      ttm%cetype = 0
+      call params%retrieve('ttm_heat_cap', ttm%ce0)
     case ('tanh')
-       ttm%cetype = 1
-       call params%retrieve('ttm_heat_cap', ttm%sh_A)
-       call params%retrieve('ttm_temp_term', ttm%sh_B)
+      ttm%cetype = 1
+      call params%retrieve('ttm_heat_cap', ttm%sh_A)
+      call params%retrieve('ttm_temp_term', ttm%sh_B)
 
-       If (ttm%sh_A <= zero_plus .or. ttm%sh_B <= zero_plus) &
-            Call error(0, 'Electronic specific heat not fully specified')
+      If (ttm%sh_A <= zero_plus .or. ttm%sh_B <= zero_plus) &
+           Call error(0, 'Electronic specific heat not fully specified')
     case ('linear')
-       ttm%cetype = 2
-       call params%retrieve('ttm_heat_cap', ttm%Cemax)
-       call params%retrieve('ttm_fermi_temp', ttm%Tfermi)
+      ttm%cetype = 2
+      call params%retrieve('ttm_heat_cap', ttm%Cemax)
+      call params%retrieve('ttm_fermi_temp', ttm%Tfermi)
 
-       If (ttm%Tfermi <= zero_plus .or. ttm%Cemax <= zero_plus) &
-            Call error(0, 'Electronic specific heat not fully specified')
+      If (ttm%Tfermi <= zero_plus .or. ttm%Cemax <= zero_plus) &
+           Call error(0, 'Electronic specific heat not fully specified')
     case ('tabulated')
-       ttm%cetype = 3
+      ttm%cetype = 3
     case default
-       call bad_option('ttm_heat_cap_model', option)
+      call bad_option('ttm_heat_cap_model', option)
     end select
 
     select case (option)
     case ('constant')
-       ttm%ttmdyndens = .false.
-       call params%retrieve('ttm_dens', ttm%cellrho, .true.)
-       If (ttm%cellrho <= zero_plus) call error(0, 'Bad ttm_dens (<= 0)')
-       ttm%rcellrho = 1.0_wp / ttm%cellrho
+      ttm%ttmdyndens = .false.
+      call params%retrieve('ttm_dens', ttm%cellrho, .true.)
+      If (ttm%cellrho <= zero_plus) call error(0, 'Bad ttm_dens (<= 0)')
+      ttm%rcellrho = 1.0_wp / ttm%cellrho
 
-       ! Rescale
-       ttm%sh_A = ttm%sh_A * ttm%cellrho
-       ttm%Cemax = ttm%Cemax * ttm%cellrho
-       ttm%epc_to_chi = convert_units(1.0e-12_wp * ttm%rcellrho / 3.0_wp, 'J.m^-3.K^-1', 'k_B/internal_l^3')
+      ! Rescale
+      ttm%sh_A = ttm%sh_A * ttm%cellrho
+      ttm%Cemax = ttm%Cemax * ttm%cellrho
+      ttm%epc_to_chi = convert_units(1.0e-12_wp * ttm%rcellrho / 3.0_wp, 'J.m^-3.K^-1', 'k_B/internal_l^3')
 
     case ('dynamic')
-       ttm%ttmdyndens = .true.
-       ttm%CeType = ttm%CeType + 4
-       ttm%epc_to_chi = convert_units(1.0e-12_wp / 3.0_wp, 'J.m^-3.K^-1', 'k_B/internal_l^3')
+      ttm%ttmdyndens = .true.
+      ttm%CeType = ttm%CeType + 4
+      ttm%epc_to_chi = convert_units(1.0e-12_wp / 3.0_wp, 'J.m^-3.K^-1', 'k_B/internal_l^3')
 
     case default
-       call bad_option('ttm_dens_model', option)
+      call bad_option('ttm_dens_model', option)
     end select
 
     if (ttm%ismetal) then
-       ttm%detype = 0
+      ttm%detype = 0
 
-       call params%retrieve('ttm_elec_cond_model', option, required=.true.)
-       select case (option)
-       case ('infinite')
-          ttm%ketype = 0
-       case ('constant')
-          ttm%ketype = 1
-          call params%retrieve('ttm_elec_cond', ttm%ka0)
-          If (ttm%ka0 <= zero_plus) &
-               Call error(0, 'Electronic thermal conductivity not fully specified')
-       case ('drude')
-          ttm%ketype = 2
-          call params%retrieve('ttm_elec_cond', ttm%ka0)
+      call params%retrieve('ttm_elec_cond_model', option, required=.true.)
+      select case (option)
+      case ('infinite')
+        ttm%ketype = 0
+      case ('constant')
+        ttm%ketype = 1
+        call params%retrieve('ttm_elec_cond', ttm%ka0)
+        If (ttm%ka0 <= zero_plus) &
+             Call error(0, 'Electronic thermal conductivity not fully specified')
+      case ('drude')
+        ttm%ketype = 2
+        call params%retrieve('ttm_elec_cond', ttm%ka0)
 
-          If (ttm%ka0 <= zero_plus) &
-               Call error(0, 'Electronic thermal conductivity not fully specified')
-       case ('tabulated')
-          ttm%ketype = 3
-       case default
-          call bad_option('ttm_elec_cond_model', option)
-       end select
+        If (ttm%ka0 <= zero_plus) &
+             Call error(0, 'Electronic thermal conductivity not fully specified')
+      case ('tabulated')
+        ttm%ketype = 3
+      case default
+        call bad_option('ttm_elec_cond_model', option)
+      end select
     else
-       ttm%ketype = 0
+      ttm%ketype = 0
 
-       call params%retrieve('ttm_diff_model', option, required=.true.)
-       select case (option)
-       case ('constant')
-          ttm%detype = 1
-          call params%retrieve('ttm_diff', ttm%diff0)
-          if (ttm%diff0 <= zero_plus) &
-               Call error(0, 'Thermal diffusivity of non-metal not specified')
-       case ('recip', 'reciprocal')
-          ttm%detype = 2
-          call params%retrieve('ttm_diff', ttm%diff0)
-          call params%retrieve('ttm_fermi_temp', ttm%Tfermi)
-          if (ttm%diff0 <= zero_plus .or. ttm%Tfermi <= zero_plus) &
-               Call error(0, 'Thermal diffusivity of non-metal not specified')
-       case ('tabulated')
-          ttm%detype = 3
-       case default
-          call bad_option('ttm_diff_model', option)
-       end select
+      call params%retrieve('ttm_diff_model', option, required=.true.)
+      select case (option)
+      case ('constant')
+        ttm%detype = 1
+        call params%retrieve('ttm_diff', ttm%diff0)
+        if (ttm%diff0 <= zero_plus) &
+             Call error(0, 'Thermal diffusivity of non-metal not specified')
+      case ('recip', 'reciprocal')
+        ttm%detype = 2
+        call params%retrieve('ttm_diff', ttm%diff0)
+        call params%retrieve('ttm_fermi_temp', ttm%Tfermi)
+        if (ttm%diff0 <= zero_plus .or. ttm%Tfermi <= zero_plus) &
+             Call error(0, 'Thermal diffusivity of non-metal not specified')
+      case ('tabulated')
+        ttm%detype = 3
+      case default
+        call bad_option('ttm_diff_model', option)
+      end select
 
     end if
 
     call params%retrieve('ttm_variable_ep', option, required=.true.)
     select case (option)
     case ('homo')
-       ttm%gvar = 1
+      ttm%gvar = 1
     case ('hetero')
-       ttm%gvar = 2
+      ttm%gvar = 2
     case default
-       call bad_option('ttm_variable_ep', option)
+      call bad_option('ttm_variable_ep', option)
     end select
 
     call params%retrieve('ttm_com_correction', option)
     select case (option)
     case ('full')
-       ttm%ttmthvel = .true.
-       ttm%ttmthvelz = .false.
+      ttm%ttmthvel = .true.
+      ttm%ttmthvelz = .false.
     case ('zdir')
-       ttm%ttmthvel = .true.
-       ttm%ttmthvelz = .true.
+      ttm%ttmthvel = .true.
+      ttm%ttmthvelz = .true.
     case ('off')
-       ttm%ttmthvel = .false.
-       ttm%ttmthvelz = .false.
+      ttm%ttmthvel = .false.
+      ttm%ttmthvelz = .false.
     case default
-       call bad_option('ttm_com_correction', option)
+      call bad_option('ttm_com_correction', option)
     end select
 
     call params%retrieve('ttm_redistribute', ttm%redistribute)
@@ -1118,86 +1137,86 @@ contains
     call params%retrieve('ttm_spatial_dist', option)
     select case (option)
     case ('gaussian')
-       ttm%sdepoType = 1
-       call params%retrieve('ttm_spatial_sigma', ttm%sig)
-       call params%retrieve('ttm_spatial_cutoff', ttm%sigmax)
+      ttm%sdepoType = 1
+      call params%retrieve('ttm_spatial_sigma', ttm%sig)
+      call params%retrieve('ttm_spatial_cutoff', ttm%sigmax)
 
     case ('flat')
-       ttm%sdepoType = 2
+      ttm%sdepoType = 2
 
     case ('laser')
-       call params%retrieve('ttm_laser_type', option)
-       call params%retrieve('ttm_fluence', ttm%fluence)
-       call params%retrieve('ttm_penetration_depth', ttm%pdepth)
+      call params%retrieve('ttm_laser_type', option)
+      call params%retrieve('ttm_fluence', ttm%fluence)
+      call params%retrieve('ttm_penetration_depth', ttm%pdepth)
 
-       select case (option)
-       case ('flat')
-          ttm%sdepoType = 2
+      select case (option)
+      case ('flat')
+        ttm%sdepoType = 2
 
-       case ('exponential')
-          ttm%sdepoType = 3
+      case ('exponential')
+        ttm%sdepoType = 3
 
-       case default
-          call bad_option('ttm_laser_type', option)
-       end select
+      case default
+        call bad_option('ttm_laser_type', option)
+      end select
 
     case default
-       call bad_option('ttm_spatial_dist', option)
+      call bad_option('ttm_spatial_dist', option)
     end select
 
     call params%retrieve('ttm_temporal_dist', option)
     select case (option)
     case ('gaussian')
-       ttm%tdepotype = 1
-       call params%retrieve('ttm_temporal_duration', ttm%tdepo)
-       call params%retrieve('ttm_temporal_cutoff', ttm%tcdepo)
+      ttm%tdepotype = 1
+      call params%retrieve('ttm_temporal_duration', ttm%tdepo)
+      call params%retrieve('ttm_temporal_cutoff', ttm%tcdepo)
 
     case ('exponential')
-       ttm%tdepotype = 2
-       call params%retrieve('ttm_temporal_duration', ttm%tdepo)
-       call params%retrieve('ttm_temporal_cutoff', ttm%tcdepo)
+      ttm%tdepotype = 2
+      call params%retrieve('ttm_temporal_duration', ttm%tdepo)
+      call params%retrieve('ttm_temporal_cutoff', ttm%tcdepo)
 
     case ('delta')
-       ttm%tdepotype = 3
+      ttm%tdepotype = 3
 
     case ('square')
-       ttm%tdepotype = 4
-       call params%retrieve('ttm_temporal_duration', ttm%tdepo)
-       If (ttm%tdepo <= zero_plus) Then
-          ttm%tdepoType = 3
-       End If
+      ttm%tdepotype = 4
+      call params%retrieve('ttm_temporal_duration', ttm%tdepo)
+      If (ttm%tdepo <= zero_plus) Then
+        ttm%tdepoType = 3
+      End If
 
     case default
-       call bad_option('ttm_temporal_dist', option)
+      call bad_option('ttm_temporal_dist', option)
     end select
 
     call params%retrieve('ttm_boundary_condition', option)
     call params%retrieve('ttm_boundary_xy', ltmp)
     select case (option)
     case ('periodic')
-       ttm%bctypee = 1
+      ttm%bctypee = 1
 
     case ('dirichlet')
-       if (ltmp) then
-          ttm%bcTypeE = 4
-       else
-          ttm%bcTypeE = 2
-       end if
+      if (ltmp) then
+        ttm%bcTypeE = 4
+      else
+        ttm%bcTypeE = 2
+      end if
 
     case ('neumann')
-       ttm%bcTypeE = 3
+      ttm%bcTypeE = 3
     case ('robin')
 
-       call params%retrieve('ttm_boundary_heat_flux', ttm%fluxout)
+      call params%retrieve('ttm_boundary_heat_flux', ttm%fluxout)
 
-       if (ltmp) then
-          ttm%bcTypeE = 6
-       else
-          ttm%bcTypeE = 5
-       end if
+      if (ltmp) then
+        ttm%bcTypeE = 6
+      else
+        ttm%bcTypeE = 5
+      end if
 
     case default
-       call bad_option('ttm_boundary_condition', option)
+      call bad_option('ttm_boundary_condition', option)
     end select
 
     call params%retrieve('ttm_time_offset', ttm%ttmoffset)
@@ -1217,46 +1236,46 @@ contains
 
     select case (option)
     case ('internal')
-       out_units = internal_units
+      out_units = internal_units
 
     case ('si')
-       out_units%length   = 'm'
-       out_units%time     = 's'
-       out_units%mass     = 'kg'
-       out_units%charge   = 'C'
-       out_units%energy   = 'J'
-       out_units%pressure = 'Pa'
-       out_units%force    = 'N'
-       out_units%velocity = 'm/s'
-       out_units%power    = 'W'
-       out_units%surf_ten = 'N/m'
-       out_units%emf      = 'V'
+      out_units%length   = 'm'
+      out_units%time     = 's'
+      out_units%mass     = 'kg'
+      out_units%charge   = 'C'
+      out_units%energy   = 'J'
+      out_units%pressure = 'Pa'
+      out_units%force    = 'N'
+      out_units%velocity = 'm/s'
+      out_units%power    = 'W'
+      out_units%surf_ten = 'N/m'
+      out_units%emf      = 'V'
 
     case ('atomic')
-       out_units%length   = 'ang'
-       out_units%time     = 'ps'
-       out_units%mass     = 'amu'
-       out_units%charge   = 'q_e'
-       out_units%energy   = 'e.V'
-       out_units%pressure = 'GPa'
-       out_units%force    = 'e.V/ang'
-       out_units%velocity = 'ang/ps'
-       out_units%power    = 'e.V/ps'
-       out_units%surf_ten = 'e.V/ang^2'
-       out_units%emf      = 'e.V/q_e'
+      out_units%length   = 'ang'
+      out_units%time     = 'ps'
+      out_units%mass     = 'amu'
+      out_units%charge   = 'q_e'
+      out_units%energy   = 'e.V'
+      out_units%pressure = 'GPa'
+      out_units%force    = 'e.V/ang'
+      out_units%velocity = 'ang/ps'
+      out_units%power    = 'e.V/ps'
+      out_units%surf_ten = 'e.V/ang^2'
+      out_units%emf      = 'e.V/q_e'
 
     case ('hartree')
-       out_units%length   = 'bohr'
-       out_units%time     = 'aut'
-       out_units%mass     = 'm_e'
-       out_units%charge   = 'q_e'
-       out_units%energy   = 'Ha'
-       out_units%pressure = 'Ha/bohr^3'
-       out_units%force    = 'Ha/bohr'
-       out_units%velocity = 'auv'
-       out_units%power    = 'Ha/aut'
-       out_units%surf_ten = 'Ha/bohr^2'
-       out_units%emf      = 'Ha/q_e'
+      out_units%length   = 'bohr'
+      out_units%time     = 'aut'
+      out_units%mass     = 'm_e'
+      out_units%charge   = 'q_e'
+      out_units%energy   = 'Ha'
+      out_units%pressure = 'Ha/bohr^3'
+      out_units%force    = 'Ha/bohr'
+      out_units%velocity = 'auv'
+      out_units%power    = 'Ha/aut'
+      out_units%surf_ten = 'Ha/bohr^2'
+      out_units%emf      = 'Ha/q_e'
 
     end select
 
@@ -1305,7 +1324,7 @@ contains
   end Subroutine read_units
 
   Subroutine read_forcefield(params, neigh, config, xhi, yhi, zhi, flow, vdws, electro, ewld, mpoles, cshell, met, &
-       kim_Data, bond, tersoffs)
+       kim_Data, bond, threebody, fourbody, tersoffs)
     !!-----------------------------------------------------------------------
     !!
     !! Read forcefield
@@ -1325,6 +1344,8 @@ contains
     Type(metal_type),            Intent(InOut) :: met
     Type(kim_type),              Intent(In   ) :: kim_data
     Type(bonds_type),            Intent(In   ) :: bond
+    Type(threebody_type),        Intent(InOut) :: threebody
+    Type(four_body_type),        Intent(InOut) :: fourbody
     Type(tersoff_type),          Intent(In   ) :: tersoffs
     Real(Kind=wp),               Intent(In   ) :: xhi, yhi, zhi
 
@@ -1336,162 +1357,128 @@ contains
     Real(Kind=wp) :: cut, tol, tol1, eps0, rtmp
 
     Character(Len=STR_LEN) :: option
-    Character(Len=256) :: message
 
     ! ---------------- SUBCELLING ----------------------------------------------
 
     call params%retrieve('subcell_threshold', neigh%pdplnc)
     if (neigh%pdplnc < 1.0_wp) call error(0, 'subcell_threshold less than minimum (1.0)')
-    Write (message, '(a,1p,e12.4)') 'subcelling threshold density ', neigh%pdplnc
-    call info(message, .true., 2)
-
-    ! ---------------- POLARISATION --------------------------------------------
-
-    call params%retrieve('polarisation_model', option)
-    select case (option)
-    case ('charmm')
-       if (cshell%mxshl > 0 .and. mpoles%max_mpoles > 0) mpoles%key = POLARISATION_CHARMM
-       if (mpoles%max_mpoles == 0 .or. cshell%mxshl == 0) &
-            call error(0, 'CHARMM polarisation selected with no mpoles or shells')
-
-       electro%lecx = .true.
-       call params%retrieve('polarisation_thole', mpoles%thole)
-
-    case ('default')
-       mpoles%key = POLARISATION_DEFAULT
-    case default
-       call bad_option('polarisation_model', option)
-    end select
-
-    if (cshell%mxshl > 0) then
-       call params%retrieve('rlx_tol', cshell%rlx_tol(1))
-       call params%retrieve('rlx_cgm_step', cshell%rlx_tol(2))
-       if (cshell%rlx_tol(1) < 1.0_wp) call error(0, 'Relaxed shell CGM tolerance < 1.0')
-
-
-       Write (message, '(a,1p,e12.4)') 'relaxed shell model CGM tolerance ', cshell%rlx_tol(1)
-       Call info(message, .true.)
-       if (cshell%rlx_tol(2) > 0.0_wp) then
-          Write (message, '(a,1p,e12.4)') 'relaxed shell model CGM step ', cshell%rlx_tol(2)
-          Call info(message, .true.)
-       end if
-    end if
-
 
     ! ---------------- VDW SETUP -----------------------------------------------
 
     call params%retrieve('vdw_method', option)
     select case(option)
     case ('tabulated')
-       continue
+      continue
     case ('direct')
-       vdws%l_direct = .true.
+      vdws%l_direct = .true.
     case ('off')
-       vdws%no_vdw = .true.
+      vdws%no_vdw = .true.
     case ('ewald')
-       ! Add when merged
-       !  ewld%vdw = .true.
+      ! Add when merged
+      !  ewld%vdw = .true.
     case default
-       call bad_option('vdw_method', option)
+      call bad_option('vdw_method', option)
     end select
     if (vdws%max_vdw <= 0) vdws%no_vdw = .true.
 
     call params%retrieve('vdw_mix_method', option)
     if (option /= 'off') then
 
-       Call info('vdw cross terms mixing opted (for undefined mixed potentials)', .true.)
-       Call info('mixing is limited to potentials of the same type only', .true.)
-       Call info('mixing restricted to LJ-like potentials (12-6,LJ,WCA,DPD,AMOEBA)', .true.)
+      select case (option)
+      case ('off')
+        continue
 
-       select case (option)
-       case ('off')
-          continue
+      case ('lorentz-bethelot')
+        vdws%mixing = MIX_LORENTZ_BERTHELOT
+      case ('fender-halsey')
+        vdws%mixing = MIX_FENDER_HALSEY
+      case ('hogervorst')
+        vdws%mixing = MIX_HOGERVORST
+      case ('halgren')
+        vdws%mixing = MIX_HALGREN
+      case ('waldman-hagler')
+        vdws%mixing = MIX_WALDMAN_HAGLER
+      case ('tang-tonnies')
+        vdws%mixing = MIX_TANG_TOENNIES
+      case ('functional')
+        vdws%mixing = MIX_FUNCTIONAL
+      case default
+        call bad_option('vdw_mix_method', option)
 
-       case ('lorentz-bethelot')
-          vdws%mixing = MIX_LORENTZ_BERTHELOT
-          Call info('type of mixing selected - Lorentz-Berthelot :: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2', .true.)
-
-       case ('fender-halsey')
-          vdws%mixing = MIX_FENDER_HALSEY
-          Call info('type of mixing selected - Fender-Halsey :: e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2', .true.)
-
-       case ('hogervorst')
-          vdws%mixing = MIX_HOGERVORST
-          Call info('type of mixing selected - Hogervorst (good hope) :: ' &
-               //'e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i*s_j)^(1/2)', .true.)
-
-       case ('halgren')
-          vdws%mixing = MIX_HALGREN
-          Call info('type of mixing selected - Halgren HHG :: ' &
-               //'e_ij=4*e_i*e_j/[e_i^(1/2)+e_j^(1/2)]^2 ; s_ij=(s_i^3+s_j^3)/(s_i^2+s_j^2)', .true.)
-
-       case ('waldman-hagler')
-          vdws%mixing = MIX_WALDMAN_HAGLER
-          Call info('type of mixing selected - WaldmanHagler :: ' &
-               //'e_ij=2*(e_i*e_j)^(1/2)*(s_i*s_j)^3/(s_i^6+s_j^6) ;s_ij=[(s_i^6+s_j^6)/2]^(1/6)', .true.)
-
-       case ('tang-tonnies')
-          vdws%mixing = MIX_TANG_TOENNIES
-          Call info('type of mixing selected - Tang-Toennies :: ' &
-               //' e_ij=[(e_i*s_i^6)*(e_j*s_j^6)] / {[(e_i*s_i^12)^(1/13)+(e_j*s_j^12)^(1/13)]/2}^13', .true.)
-          Call info(Repeat(' ', 43)//'s_ij={[(e_i*s_i^6)*(e_j*s_j^6)]^(1/2) / e_ij}^(1/6)', .true.)
-
-       case ('functional')
-          vdws%mixing = MIX_FUNCTIONAL
-          Call info('type of mixing selected - Functional :: ' &
-               //'e_ij=3 * (e_i*e_j)^(1/2) * (s_i*s_j)^3 / ' &
-               //'SUM_L=0^2{[(s_i^3+s_j^3)^2 / (4*(s_i*s_j)^L)]^(6/(6-2L))}', .true.)
-          Call info(Repeat(' ', 40)//'s_ij=(1/3) * SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))}', .true.)
-
-       case default
-          call bad_option('vdw_mix_method', option)
-
-       end select
+      end select
     end if
 
     call params%retrieve('vdw_force_shift', vdws%l_force_shift)
-    if (vdws%l_force_shift) Call info('vdw force-shifting option on', .true.)
 
     ! ---------------- METALS --------------------------------------------------
 
     call params%retrieve('metal_direct', met%l_direct)
-    if (met%l_direct) Call info('metal direct option on', .true.)
 
     call params%retrieve('metal_sqrtrho', met%l_emb)
-    if (met%l_emb) Call info('metal sqrtrho option on', .true.)
-
-    ! If it's been forcibly set by polarisation_model
-    if (.not. electro%lecx) call params%retrieve('coul_extended_exclusion', electro%lecx)
 
     ! ---------------- CUTOFF --------------------------------------------------
 
     call params%retrieve('cutoff', neigh%cutoff)
     if (neigh%cutoff < minimum_rcut) then
-       neigh%cutoff = minimum_rcut
-       call warning('neighbour cutoff less than minimum_cutoff (1.0 Ang), setting to minimum_cutoff', .true.)
+      neigh%cutoff = minimum_rcut
+      call warning('neighbour cutoff less than minimum_cutoff (1.0 Ang), setting to minimum_cutoff', .true.)
     end if
 
     call params%retrieve('padding', neigh%padding)
     if (neigh%padding < 0.0_wp) then
-       neigh%padding = 0.0_wp
-       call warning('Bad padding value, reset to 0.0', .true.)
+      neigh%padding = 0.0_wp
+      call warning('Bad padding value, reset to 0.0', .true.)
     end if
 
     flow%reset_padding = params%is_set('padding')
 
     call params%retrieve('vdw_cutoff', vdws%cutoff)
     if (vdws%cutoff < minimum_rcut) then
-       vdws%cutoff = neigh%cutoff
-       call warning('vdw_cutoff less than minimum cutoff, setting to global cutoff', .true.)
+      vdws%cutoff = neigh%cutoff
+      call warning('vdw_cutoff less than minimum cutoff, setting to global cutoff', .true.)
     end if
 
     if (met%max_metal > 0 .and. met%rcut < 1.0e-6_wp) then
-       met%rcut=Max(met%rcut, neigh%cutoff,vdws%cutoff)
-       call warning('metal_cutoff not set, setting to max of global cutoff and vdw cutoff', .true.)
+      met%rcut=Max(met%rcut, neigh%cutoff,vdws%cutoff)
+      call warning('metal_cutoff not set, setting to max of global cutoff and vdw cutoff', .true.)
     end if
 
     neigh%cutoff = Max(neigh%cutoff, vdws%cutoff, met%rcut, kim_data%cutoff, bond%rcut, &
          2.0_wp * tersoffs%cutoff + 1.0e-6_wp, kim_data%influence_distance)
+
+    if (threebody%mxtbp > 0 .and. threebody%cutoff < 1.0e-6_wp) then
+      call warning('three body cutoff not set, setting to half of global cutoff', .true.)
+      threebody%cutoff = 0.5_wp * neigh%cutoff
+    end if
+
+    If (fourbody%max_four_body > 0 .and. fourbody%cutoff < 1.0e-6_wp) then
+      call warning('four body cutoff not set, setting to half of global cutoff', .true.)
+      fourbody%cutoff = 0.5_wp * neigh%cutoff
+    end If
+
+    ! ---------------- POLARISATION --------------------------------------------
+
+    call params%retrieve('polarisation_model', option)
+    select case (option)
+    case ('charmm')
+      if (cshell%mxshl > 0 .and. mpoles%max_mpoles > 0) mpoles%key = POLARISATION_CHARMM
+      if (mpoles%max_mpoles == 0 .or. cshell%mxshl == 0) &
+           call error(0, 'CHARMM polarisation selected with no mpoles or shells')
+
+      electro%lecx = .true.
+      call params%retrieve('polarisation_thole', mpoles%thole)
+
+    case ('default')
+      mpoles%key = POLARISATION_DEFAULT
+    case default
+      call bad_option('polarisation_model', option)
+    end select
+
+    if (cshell%mxshl > 0) then
+      call params%retrieve('rlx_tol', cshell%rlx_tol(1))
+      call params%retrieve('rlx_cgm_step', cshell%rlx_tol(2))
+      if (cshell%rlx_tol(1) < 1.0_wp) call error(0, 'Relaxed shell CGM tolerance < 1.0')
+    end if
 
     ! ---------------- ELECTROSTATICS ------------------------------------------
 
@@ -1499,36 +1486,39 @@ contains
 
     select case (option)
     case ('off')
-       electro%no_elec = .true.
-       ! reinitialise multipolar electrostatics indicators
-       mpoles%max_mpoles = 0
-       mpoles%max_order = 0
-       mpoles%key = POLARISATION_DEFAULT
-       electro%key = ELECTROSTATIC_NULL
+      electro%no_elec = .true.
+      ! reinitialise multipolar electrostatics indicators
+      mpoles%max_mpoles = 0
+      mpoles%max_order = 0
+      mpoles%key = POLARISATION_DEFAULT
+      electro%key = ELECTROSTATIC_NULL
     case ('ewald')
-       electro%key = ELECTROSTATIC_EWALD
-       ! ewld%active = .true.
+      electro%key = ELECTROSTATIC_EWALD
+      ! ewld%active = .true.
 
     case ('dddp')
-       electro%key = ELECTROSTATIC_DDDP
+      electro%key = ELECTROSTATIC_DDDP
 
     case ('pairwise')
 
-       electro%key = ELECTROSTATIC_COULOMB
+      electro%key = ELECTROSTATIC_COULOMB
 
     case ('force_shifted')
 
-       electro%key = ELECTROSTATIC_COULOMB_FORCE_SHIFT
+      electro%key = ELECTROSTATIC_COULOMB_FORCE_SHIFT
 
     case ('reaction_field')
 
-       electro%key = ELECTROSTATIC_COULOMB_REACTION_FIELD
+      electro%key = ELECTROSTATIC_COULOMB_REACTION_FIELD
 
     case default
 
-       call bad_option('coul_method', option)
+      call bad_option('coul_method', option)
 
     end select
+
+    ! If it's been forcibly set by polarisation_model
+    if (.not. electro%lecx) call params%retrieve('coul_extended_exclusion', electro%lecx)
 
     call params%retrieve('coul_dielectric_constant', electro%eps)
 
@@ -1536,19 +1526,19 @@ contains
       call error(0, 'Both damping and precision set')
 
     else if (params%is_set('coul_damping')) then
-       call params%retrieve('coul_damping', electro%alpha)
+      call params%retrieve('coul_damping', electro%alpha)
 
     else if (params%is_set('coul_precision')) then
-       call params%retrieve('coul_precision', rtmp)
-       rtmp = Max(Min(rtmp, 0.5_wp), 1.0e-20_wp)
-       tol = Sqrt(Abs(Log(rtmp * neigh%cutoff)))
-       electro%alpha = Sqrt(Abs(Log(rtmp * neigh%cutoff * tol))) / neigh%cutoff
+      call params%retrieve('coul_precision', rtmp)
+      rtmp = Max(Min(rtmp, 0.5_wp), 1.0e-20_wp)
+      tol = Sqrt(Abs(Log(rtmp * neigh%cutoff)))
+      electro%alpha = Sqrt(Abs(Log(rtmp * neigh%cutoff * tol))) / neigh%cutoff
 
     end if
 
     If (electro%alpha > zero_plus) Then
-       Call info('Fennell damping applied', .true.)
-       If (neigh%cutoff < 12.0_wp) Call warning(7, neigh%cutoff, 12.0_wp, 0.0_wp)
+      Call info('Fennell damping applied', .true.)
+      If (neigh%cutoff < 12.0_wp) Call warning(7, neigh%cutoff, 12.0_wp, 0.0_wp)
     End If
 
     If (electro%key == ELECTROSTATIC_EWALD) Then
@@ -1580,31 +1570,31 @@ contains
 
       else if (params%is_set('ewald_alpha')) then
 
-          call params%retrieve('ewald_alpha', electro%alpha)
+        call params%retrieve('ewald_alpha', electro%alpha)
 
-          if (params%is_set([Character(Len=18) :: 'ewald_kvec', 'ewald_kvec_spacing'])) then
+        if (params%is_set([Character(Len=18) :: 'ewald_kvec', 'ewald_kvec_spacing'])) then
 
-             call error(0, 'Cannot specify both explicit k-vec grid and k-vec spacing')
-          else if (params%is_set('ewald_kvec')) then
+          call error(0, 'Cannot specify both explicit k-vec grid and k-vec spacing')
+        else if (params%is_set('ewald_kvec')) then
 
-            call params%retrieve('ewald_kvec', vtmp)
+          call params%retrieve('ewald_kvec', vtmp)
 
-            ewld%fft_dim_a1 = Nint(vtmp(1))
-            ewld%fft_dim_b1 = Nint(vtmp(2))
-            ewld%fft_dim_c1 = Nint(vtmp(3))
+          ewld%fft_dim_a1 = Nint(vtmp(1))
+          ewld%fft_dim_b1 = Nint(vtmp(2))
+          ewld%fft_dim_c1 = Nint(vtmp(3))
 
-          else
+        else
 
-            call params%retrieve('ewald_kvec_spacing', rtmp)
+          call params%retrieve('ewald_kvec_spacing', rtmp)
 
-            ewld%fft_dim_a1 = Nint(rtmp / cell_properties(1))
-            ewld%fft_dim_b1 = Nint(rtmp / cell_properties(2))
-            ewld%fft_dim_c1 = Nint(rtmp / cell_properties(3))
-          end if
+          ewld%fft_dim_a1 = Nint(rtmp / cell_properties(1))
+          ewld%fft_dim_b1 = Nint(rtmp / cell_properties(2))
+          ewld%fft_dim_c1 = Nint(rtmp / cell_properties(3))
+        end if
 
-          ! Sanity check for ill defined ewald sum parameters 1/8*2*2*2 == 1
-          tol = electro%alpha * Real(ewld%fft_dim_a1, wp) * Real(ewld%fft_dim_a1, wp) * Real(ewld%fft_dim_a1, wp)
-          If (Nint(tol) < 1) Call error(9)
+        ! Sanity check for ill defined ewald sum parameters 1/8*2*2*2 == 1
+        tol = electro%alpha * Real(ewld%fft_dim_a1, wp) * Real(ewld%fft_dim_a1, wp) * Real(ewld%fft_dim_a1, wp)
+        If (Nint(tol) < 1) Call error(9)
 
       else
 
@@ -1624,62 +1614,62 @@ contains
     End If
 
     ! if (ewld%active) then
-      !! Remember to reset after merge
+    !! Remember to reset after merge
 
-       ! cut = neigh%cutoff + 1e-6_wp
+    ! cut = neigh%cutoff + 1e-6_wp
 
-       ! if (imcon == IMCON_NOPBC) then
-       !    cell(1) = Max(2.0_wp*xhi+cut,3.0_wp*cut,cell(1))
-       !    cell(5) = Max(2.0_wp*yhi+cut,3.0_wp*cut,cell(5))
-       !    cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
+    ! if (imcon == IMCON_NOPBC) then
+    !    cell(1) = Max(2.0_wp*xhi+cut,3.0_wp*cut,cell(1))
+    !    cell(5) = Max(2.0_wp*yhi+cut,3.0_wp*cut,cell(5))
+    !    cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
 
-       !    cell(2) = 0.0_wp
-       !    cell(3) = 0.0_wp
-       !    cell(4) = 0.0_wp
-       !    cell(6) = 0.0_wp
-       !    cell(7) = 0.0_wp
-       !    cell(8) = 0.0_wp
-       ! else if (imcon == IMCON_SLAB) then
-       !    cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
-       ! End If
+    !    cell(2) = 0.0_wp
+    !    cell(3) = 0.0_wp
+    !    cell(4) = 0.0_wp
+    !    cell(6) = 0.0_wp
+    !    cell(7) = 0.0_wp
+    !    cell(8) = 0.0_wp
+    ! else if (imcon == IMCON_SLAB) then
+    !    cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
+    ! End If
 
-       ! call params%retrieve('ewald_nsplines', ewld%bspline%num_splines)
-       ! Call dcell(cell,cell_properties)
+    ! call params%retrieve('ewald_nsplines', ewld%bspline%num_splines)
+    ! Call dcell(cell,cell_properties)
 
-       ! if (params%is_set(['ewald_precision', 'ewald_alpha'])) then
+    ! if (params%is_set(['ewald_precision', 'ewald_alpha'])) then
 
-       !    call error(0, 'Cannot specify both precision and manual ewald parameters')
+    !    call error(0, 'Cannot specify both precision and manual ewald parameters')
 
-       ! else if (params%is_set('ewald_alpha')) then
+    ! else if (params%is_set('ewald_alpha')) then
 
-       !    call params%retrieve('ewald_alpha', ewld%alpha)
-       !    if (params%is_set(['ewald_kvec', 'ewald_kvec_spacing'])) then
+    !    call params%retrieve('ewald_alpha', ewld%alpha)
+    !    if (params%is_set(['ewald_kvec', 'ewald_kvec_spacing'])) then
 
-       !       call error(0, 'Cannot specify both explicit k-vec grid and k-vec spacing')
-       !    else if (params%is_set('ewald_kvec')) then
+    !       call error(0, 'Cannot specify both explicit k-vec grid and k-vec spacing')
+    !    else if (params%is_set('ewald_kvec')) then
 
-       !       call params%retrieve('ewald_kvec', ewld%kspace%k_vec_dim_cont)
-       !    else
+    !       call params%retrieve('ewald_kvec', ewld%kspace%k_vec_dim_cont)
+    !    else
 
-       !       call params%retrieve('ewald_kvec_spacing', rtmp)
-       !       ewld%kspace%k_vec_dim_cont = Nint(rtmp / cell_properties(7:9))
-       !    end if
+    !       call params%retrieve('ewald_kvec_spacing', rtmp)
+    !       ewld%kspace%k_vec_dim_cont = Nint(rtmp / cell_properties(7:9))
+    !    end if
 
-       !    ! Sanity check for ill defined ewald sum parameters 1/8*2*2*2 == 1
-       !    tol=ewld%alpha*real(product(ewld%kspace%k_vec_dim_cont), wp)
-       !    If (Int(tol) < 1) Call error(9)
+    !    ! Sanity check for ill defined ewald sum parameters 1/8*2*2*2 == 1
+    !    tol=ewld%alpha*real(product(ewld%kspace%k_vec_dim_cont), wp)
+    !    If (Int(tol) < 1) Call error(9)
 
-       ! else
+    ! else
 
-       !    call params%retrieve('ewald_precision', eps0)
+    !    call params%retrieve('ewald_precision', eps0)
 
-       !    tol = Sqrt(Abs(Log(eps0*neigh%cutoff)))
-       !    ewld%alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
-       !    tol1 = Sqrt(-Log(eps0*neigh%cutoff*(2.0_wp*tol*ewld%alpha)**2))
+    !    tol = Sqrt(Abs(Log(eps0*neigh%cutoff)))
+    !    ewld%alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
+    !    tol1 = Sqrt(-Log(eps0*neigh%cutoff*(2.0_wp*tol*ewld%alpha)**2))
 
-       !    ewld%kspace%k_vec_dim_cont = 2*Nint(0.25_wp + cell_properties(7:9)*ewld%alpha*tol1/pi)
+    !    ewld%kspace%k_vec_dim_cont = 2*Nint(0.25_wp + cell_properties(7:9)*ewld%alpha*tol1/pi)
 
-       ! end if
+    ! end if
     ! end if
 
   End Subroutine read_forcefield
@@ -1691,90 +1681,60 @@ contains
     Type(stats_type),            Intent(InOut) :: stats
     Logical,                     Intent(  Out) :: read_config_indices
 
-    Character(LEN=256), Dimension(4) :: messages
-    Character(Len=256) :: message
     Logical :: ltmp
 
     CAll params%retrieve('timestep', thermo%tstep)
     if (thermo%tstep < zero_plus) call error(0, 'Timestep too small')
     call params%retrieve('timestep_variable', thermo%lvar)
-    call params%retrieve('stack_size', stats%mxstak)
-    call params%retrieve('ignore_config_indices', read_config_indices)
-    call params%retrieve('strict_checks', flow%strict)
 
     If (thermo%key_dpd == DPD_NULL .and. thermo%lvar) then
-        thermo%lvar = .false.
-        Call warning('variable timestep unavalable in DPD themostats', .true.)
-        Write (message, '(a,1p,e12.4)') 'fixed simulation timestep (ps) ', thermo%tstep
-        Call info(message, .true.)
+      thermo%lvar = .false.
+      Call warning('variable timestep unavalable in DPD themostats', .true.)
     Else If (thermo%lvar) Then
-       call params%retrieve('timestep_variable_min_dist', thermo%mndis)
-       call params%retrieve('timestep_variable_max_dist', thermo%mxdis)
-       call params%retrieve('timestep_variable_max_delta', thermo%mxstp)
+      call params%retrieve('timestep_variable_min_dist', thermo%mndis)
+      call params%retrieve('timestep_variable_max_dist', thermo%mxdis)
+      call params%retrieve('timestep_variable_max_delta', thermo%mxstp)
 
-       Write (messages(1), '(a,1p,e12.4)') 'variable simulation timestep (ps) ', thermo%tstep
-       Write (messages(2), '(a)') 'controls for variable timestep:'
-       Write (messages(3), '(2x,a,1p,e12.4)') 'minimum distance Dmin (Angs) ', thermo%mndis
-       Write (messages(4), '(2x,a,1p,e12.4)') 'maximum distance Dmax (Angs) ', thermo%mxdis
-       Call info(messages, 4, .true.)
-
-       If (thermo%mxstp > zero_plus) Then
-          Write (message, '(a,1p,e12.4)') 'timestep ceiling mxstp (ps) ', thermo%mxstp
-          Call info(message, .true.)
-          thermo%tstep = Min(thermo%tstep, thermo%mxstp)
-       Else
-          thermo%mxstp = Huge(1.0_wp)
-       End If
-       If (thermo%mxdis < 2.5_wp * thermo%mndis .or. thermo%mndis <= 0.0_wp) Then
-          Call warning(140, thermo%mndis, thermo%mxdis, 0.0_wp)
-          Call error(518)
-       End If
-    Else
-      Write (message, '(a,1p,e12.4)') 'fixed simulation timestep (ps) ', thermo%tstep
-      Call info(message, .true.)
+      If (thermo%mxstp > zero_plus) Then
+        thermo%tstep = Min(thermo%tstep, thermo%mxstp)
+      Else
+        thermo%mxstp = Huge(1.0_wp)
+      End If
+      If (thermo%mxdis < 2.5_wp * thermo%mndis .or. thermo%mndis <= 0.0_wp) Then
+        Call warning(140, thermo%mndis, thermo%mxdis, 0.0_wp)
+        Call error(518)
+      End If
     End If
 
+    call params%retrieve('stack_size', stats%mxstak)
+
+    call params%retrieve('ignore_config_indices', read_config_indices)
+
+    call params%retrieve('strict_checks', flow%strict)
+
     call params%retrieve('time_run', flow%run_steps, .true.)
-    Write (message, '(a,i10)') 'selected number of timesteps ', flow%run_steps
-    if (flow%run_steps > 0) Call info(message, .true.)
 
     call params%retrieve('time_equilibration', flow%equil_steps)
-    Write (message, '(a,i10)') 'equilibration period (steps) ', flow%equil_steps
-    if (flow%equil_steps > 0) Call info(message, .true.)
+
+    call params%retrieve('record_equilibration', ltmp)
+    flow%equilibration = .not. ltmp
 
     call params%retrieve('data_dump_frequency', flow%freq_restart)
-    Write (messages(1), '(a,i10)') 'data dumping interval (steps) ', flow%freq_restart
 
-     call params%retrieve('record_equilibration', ltmp)
-     flow%equilibration = .not. ltmp
-    if (ltmp) Call info('equilibration included in overall averages', .true.)
+    call params%retrieve('print_frequency', flow%freq_output)
 
-     call params%retrieve('print_frequency', flow%freq_output)
-     if (flow%freq_output > 0) then
-        Write (message, '(a,i10)') 'data printing interval (steps) ', flow%freq_output
-        Call info(message, .true.)
-     end if
-
-     call params%retrieve('stats_frequency', stats%intsta)
-     if (stats%intsta > 0) then
-        Write (message, '(a,i10)') 'statistics file interval ', stats%intsta
-        Call info(message, .true.)
-     end if
+    call params%retrieve('stats_frequency', stats%intsta)
 
     call params%retrieve('print_topology_info', flow%print_topology)
-    if (.not. flow%print_topology) &
-         Call info('no topology option on (avoids printing extended FIELD topology in OUTPUT)', .true.)
 
     call params%retrieve('currents_calculate', stats%cur%on)
-    if (stats%cur%on) Call info("computing currents is on!", .true.)
 
   end Subroutine read_run_parameters
 
-  Subroutine read_system_parameters(params, flow, config, stats, thermo, impa, minim, plume, cons, pmf, ttm_active)
+  Subroutine read_system_parameters(params, flow, config, thermo, impa, minim, plume, cons, pmf, ttm_active)
     Type( parameters_hash_table ), Intent(In   ) :: params
     Type( flow_type ), Intent(InOut) :: flow
     Type( configuration_type ), Intent(InOut) :: config
-    Type( stats_type ), Intent(InOut) :: stats
     Type( thermostat_type ), Intent(InOut) :: thermo
     Type( impact_type ), Intent(InOut) :: impa
     Type( minimise_type ), Intent(InOut) :: minim
@@ -1783,62 +1743,55 @@ contains
     Type( pmf_type ), Intent(In    ) :: pmf
     Logical, Intent(In   ) :: ttm_active
 
-    Character(Len=256) :: message, messages(5)
     Character(Len=STR_LEN) :: option
     Type( control_parameter ) :: param
     Real(Kind=wp), Dimension(6) :: vtmp
     Real(Kind=wp) :: rtmp
     Logical :: ltmp
-    Integer :: itmp
+
+    Call params%retrieve('title', option)
+    config%sysname = option(1:72)
 
     ! ---------------- PHYSICAL PROPERTIES -------------------------------------
 
     call params%retrieve('temperature', thermo%temp)
-    Write (message, '(a,1p,e12.4)') 'simulation temperature (K)  ', thermo%temp
-    call info(message, .true.)
 
     if (params%num_set([Character(22) :: 'pressure_tensor', 'pressure_hydrostatic', 'pressure_perpendicular']) > 1) then
-       call error(0, 'Multiple pressure specifications')
-     ! else if (params%num_set([Character(22) :: 'pressure_tensor', 'pressure_hydrostatic', 'pressure_perpendicular']) == 0) then
-     !   call error(0, 'No pressure specification')
+      call error(0, 'Multiple pressure specifications')
+      ! else if (params%num_set([Character(22) :: 'pressure_tensor', 'pressure_hydrostatic', 'pressure_perpendicular']) == 0) then
+      !   call error(0, 'No pressure specification')
     end if
 
     if (params%is_set('pressure_tensor')) then
-       call params%retrieve('pressure_tensor', vtmp)
-       thermo%stress(1) = vtmp(1)
-       thermo%stress(5) = vtmp(2)
-       thermo%stress(9) = vtmp(3)
-       thermo%stress(2) = vtmp(4)
-       thermo%stress(4) = vtmp(4)
-       thermo%stress(3) = vtmp(5)
-       thermo%stress(7) = vtmp(5)
-       thermo%stress(6) = vtmp(6)
-       thermo%stress(8) = vtmp(6)
+      call params%retrieve('pressure_tensor', vtmp)
+      thermo%stress(1) = vtmp(1)
+      thermo%stress(5) = vtmp(2)
+      thermo%stress(9) = vtmp(3)
+      thermo%stress(2) = vtmp(4)
+      thermo%stress(4) = vtmp(4)
+      thermo%stress(3) = vtmp(5)
+      thermo%stress(7) = vtmp(5)
+      thermo%stress(6) = vtmp(6)
+      thermo%stress(8) = vtmp(6)
 
     else if (params%is_set('pressure_perpendicular')) then
-       call params%retrieve('pressure_perpendicular', vtmp(1:3))
-       thermo%stress(1:9:4) = vtmp(1:3)
+      call params%retrieve('pressure_perpendicular', vtmp(1:3))
+      thermo%stress(1:9:4) = vtmp(1:3)
     else
-       call params%retrieve('pressure_hydrostatic', rtmp)
-       thermo%stress(1:9:4) = rtmp
+      call params%retrieve('pressure_hydrostatic', rtmp)
+      thermo%stress(1:9:4) = rtmp
     end if
 
-    Call info('simulation pressure tensor (katms):', .true.)
-    Write (messages(1), '(3f20.10)') (convert_units(thermo%stress(itmp), 'internal_p', 'katm'), itmp = 1,3)
-    Write (messages(2), '(3f20.10)') (convert_units(thermo%stress(itmp), 'internal_p', 'katm'), itmp = 4,6)
-    Write (messages(3), '(3f20.10)') (convert_units(thermo%stress(itmp), 'internal_p', 'katm'), itmp = 7,9)
-    Call info(messages, 3, .true.)
-
     if (.not. thermo%anisotropic_pressure) then
-       thermo%press = sum(thermo%stress(1:9:4)) / 3.0_wp
-       thermo%stress = 0.0_wp
+      thermo%press = sum(thermo%stress(1:9:4)) / 3.0_wp
+      thermo%stress = 0.0_wp
     end if
 
     call params%retrieve('fixed_com', config%l_vom)
     if (.not. config%l_vom .and. .not. ttm_active) then
-       Call info('"no fixed_com" option auto-switched on - COM momentum removal will be abandoned', .true.)
-       Call warning('this may lead to a build up of the COM momentum ' &
-            //'and a manifestation of the "flying ice-cube" effect', .true.)
+      Call info('"no fixed_com" option auto-switched on - COM momentum removal will be abandoned', .true.)
+      Call warning('this may lead to a build up of the COM momentum ' &
+           //'and a manifestation of the "flying ice-cube" effect', .true.)
     end if
 
     ! ---------------- INITIALISATION ------------------------------------------
@@ -1846,19 +1799,15 @@ contains
     call params%retrieve('restart', option)
     select case (option)
     case ('rescale')
-       flow%restart_key = RESTART_KEY_SCALE
-       Call info('scaled restart requested (starting a new simulation)', .true.)
+      flow%restart_key = RESTART_KEY_SCALE
     case ('noscale')
-       flow%restart_key = RESTART_KEY_NOSCALE
-       Call info('unscaled restart requested (starting a new simulation)', .true.)
+      flow%restart_key = RESTART_KEY_NOSCALE
     case ('continue')
-       flow%restart_key = RESTART_KEY_OLD
-       Call info('restart requested (continuing an old simulation)', .true.)
-       Call warning('timestep from REVOLD overides specification in CONTROL', .true.)
+      flow%restart_key = RESTART_KEY_OLD
     case ('clean')
-       flow%restart_key = RESTART_KEY_CLEAN
+      flow%restart_key = RESTART_KEY_CLEAN
     case default
-       call bad_option('restart', option)
+      call bad_option('restart', option)
     end select
 
     ! ---------------- EQULIBRATION --------------------------------------------
@@ -1868,32 +1817,19 @@ contains
     If (thermo%freq_zero == 0) thermo%freq_zero = flow%equil_steps + 1
 
     call params%retrieve('regauss_frequency', thermo%freq_tgaus)
-    if (thermo%freq_tgaus > 0) then
-       thermo%l_tgaus = .true.
-       Write (message, '(a,i10)') 'temperature regaussing interval ', thermo%freq_tgaus
-       Call info(message, .true.)
-    end if
+    if (thermo%freq_tgaus > 0) thermo%l_tgaus = .true.
     If (thermo%freq_tgaus == 0) thermo%freq_tgaus = flow%equil_steps + 1
 
     call params%retrieve('rescale_frequency', thermo%freq_tscale)
-
-    if (thermo%freq_tscale > 0) then
-       thermo%l_tscale = .true.
-       Call info('temperature scaling on (during equilibration)', .true.)
-       Write (message, '(a,i10)') 'temperature scaling interval (steps)', thermo%freq_tscale
-       Call info(message, .true.)
-    end if
+    if (thermo%freq_tscale > 0) thermo%l_tscale = .true.
     If (thermo%freq_tscale == 0) thermo%freq_tscale = flow%equil_steps + 1
 
     if (params%is_set('equilibration_force_cap')) then
-       flow%force_cap = .true.
-       call params%retrieve('equilibration_force_cap', config%fmax)
-       Write (messages(1), '(a)') 'force capping on (during equilibration)'
-       Write (messages(2), '(a,1p,e12.4)') 'force capping limit (kT/Angs)', config%fmax
-       Call info(messages, 2, .true.)
+      flow%force_cap = .true.
+      call params%retrieve('equilibration_force_cap', config%fmax)
     end if
 
-     call params%retrieve('minimisation_criterion', option)
+    call params%retrieve('minimisation_criterion', option)
     minim%minimise = option /= 'off'
 
     call params%retrieve('minimisation_tolerance', minim%tolerance)
@@ -1904,41 +1840,32 @@ contains
 
     select case (option)
     case ('off')
-       continue
+      continue
     case ('force')
-       minim%key = MIN_FORCE
-       param%internal_units = "internal_f"
-       minim%tolerance = convert_units(minim%tolerance, param%units, param%internal_units)
-       If (minim%tolerance < 1.0_wp .or. minim%tolerance > 1000.0_wp) &
-            minim%tolerance = 50.0_wp
+      minim%key = MIN_FORCE
+      param%internal_units = "internal_f"
+      minim%tolerance = convert_units(minim%tolerance, param%units, param%internal_units)
+      If (minim%tolerance < 1.0_wp .or. minim%tolerance > 1000.0_wp) &
+           minim%tolerance = 50.0_wp
 
     case ('energy')
-       minim%key = MIN_ENERGY
-       param%internal_units = "internal_e"
-       minim%tolerance = convert_units(minim%tolerance, param%units, param%internal_units)
-       If (minim%tolerance < zero_plus .or. minim%tolerance > 0.01_wp) &
-            minim%tolerance = 0.005_wp
+      minim%key = MIN_ENERGY
+      param%internal_units = "internal_e"
+      minim%tolerance = convert_units(minim%tolerance, param%units, param%internal_units)
+      If (minim%tolerance < zero_plus .or. minim%tolerance > 0.01_wp) &
+           minim%tolerance = 0.005_wp
 
     case ('distance')
-       minim%key = MIN_DISTANCE
-       param%internal_units = "internal_l"
-       minim%tolerance = convert_units(minim%tolerance, param%units, param%internal_units)
-       If (minim%tolerance < 1.0e-6_wp .or. minim%tolerance > 0.1_wp) &
-            minim%tolerance = 0.005_wp
+      minim%key = MIN_DISTANCE
+      param%internal_units = "internal_l"
+      minim%tolerance = convert_units(minim%tolerance, param%units, param%internal_units)
+      If (minim%tolerance < 1.0e-6_wp .or. minim%tolerance > 0.1_wp) &
+           minim%tolerance = 0.005_wp
 
     case default
-       call bad_option('minimisation_criterion', option)
+      call bad_option('minimisation_criterion', option)
     end select
 
-    if (minim%minimise) then
-       Write (messages(1), '(a)') 'minimisation option on (during equilibration)'
-       Write (messages(2), '(a,a8)') 'minimisation criterion        ', trim(option)
-       Write (messages(3), '(a,i10)') 'minimisation frequency (steps)', minim%freq
-       Write (messages(4), '(a,1p,e12.4)') 'minimisation tolerance        ', minim%tolerance
-       Write (messages(5), '(a,1p,e12.4)') 'minimisation CGM step         ', minim%step_length
-
-       Call info(messages, 5, .true.)
-    end if
     If (minim%freq == 0) minim%freq = flow%equil_steps + 1
 
     ! ---------------- PSEUDO-THERMOSTAT ---------------------------------------
@@ -1946,49 +1873,38 @@ contains
     call params%retrieve('pseudo_thermostat_method', option)
     if (option /= 'off') then
 
-       thermo%l_stochastic_boundaries = .true.
-       Call info('pseudo thermostat attached to MD cell boundary', .true.)
+      thermo%l_stochastic_boundaries = .true.
+      Call info('pseudo thermostat attached to MD cell boundary', .true.)
 
-       select case (option)
-       case ('langevin-direct')
-          thermo%key_pseudo = 0
-          Call info('thermostat control: Langevin + direct temperature scaling', .true.)
-       case ('langevin')
-          thermo%key_pseudo = 1
-          Call info('thermostat control: Langevin temperature scaling', .true.)
-       case ('gaussian')
-          thermo%key_pseudo = 2
-          Call info('thermostat control: gaussian temperature scaling', .true.)
-       case ('direct')
-          thermo%key_pseudo = 3
-          Call info('thermostat control: direct temperature scaling', .true.)
-       case default
-          call bad_option('pseudo_thermostat_method', option)
-       end select
+      select case (option)
+      case ('langevin-direct')
+        thermo%key_pseudo = 0
+      case ('langevin')
+        thermo%key_pseudo = 1
+      case ('gaussian')
+        thermo%key_pseudo = 2
+      case ('direct')
+        thermo%key_pseudo = 3
+      case default
+        call bad_option('pseudo_thermostat_method', option)
+      end select
 
-       Call params%retrieve("pseudo_thermostat_width", thermo%width_pseudo)
-       if (thermo%width_pseudo < 2.0_wp) then
-          thermo%width_pseudo = 2.0_wp
-          Call info('thermostat thickness insufficient - reset to 2 Angs', .true.)
-       end if
-       Write (message, '(a,1p,e12.4)') 'thermostat thickness (Angs) ', thermo%width_pseudo
-       Call info(message, .true.)
+      Call params%retrieve("pseudo_thermostat_width", thermo%width_pseudo)
+      if (thermo%width_pseudo < 2.0_wp) then
+        thermo%width_pseudo = 2.0_wp
+        Call info('thermostat thickness insufficient - reset to 2 Angs', .true.)
+      end if
 
-       call params%retrieve("pseudo_thermostat_temperature", thermo%temp_pseudo)
-       thermo%temp_pseudo = max(0.0_wp, thermo%temp_pseudo)
-       Write (message, '(a,1p,e12.4)') 'thermostat temperature (K) ', thermo%temp_pseudo
-       Call info(message, .true.)
+      call params%retrieve("pseudo_thermostat_temperature", thermo%temp_pseudo)
+      thermo%temp_pseudo = max(0.0_wp, thermo%temp_pseudo)
 
     end if
 
     ! --------------- CONSTRAINTS ----------------------------------------------
 
-    call params%retrieve('shake_max_iter', cons%max_iter_shake)
-    call params%retrieve('shake_tolerance', cons%tolerance)
     If (cons%mxcons > 0 .or. pmf%mxpmf > 0) Then
-      Write (messages(1), '(a,i10)') 'iterations for shake/rattle ', cons%max_iter_shake
-      Write (messages(2), '(a,1p,e12.4)') 'tolerance for shake/rattle (Angs) ', cons%tolerance
-      Call info(messages, 2, .true.)
+      call params%retrieve('shake_max_iter', cons%max_iter_shake)
+      call params%retrieve('shake_tolerance', cons%tolerance)
     End If
 
     ! --------------- PLUMED ---------------------------------------------------
@@ -2012,23 +1928,16 @@ contains
 
     ! --------------- IMPACT ---------------------------------------------------
 
-    ltmp = params%is_any_set([Character(17) :: 'impact_part_index', 'impact_energy', 'impact_time'])
-    if (ltmp) then
-       call params%retrieve('impact_part_index', impa%imd)
-       call params%retrieve('impact_time', impa%tmd)
-       call params%retrieve('impact_energy', impa%emd)
-       call params%retrieve('impact_direction', vtmp(1:3))
-       impa%vmx = vtmp(1)
-       impa%vmy = vtmp(2)
-       impa%vmz = vtmp(3)
+    impa%active = params%is_any_set([Character(17) :: 'impact_part_index', 'impact_energy', 'impact_time'])
+    if (impa%active) then
 
-       Write (messages(1), '(a)') ''
-       Write (messages(2), '(a,i10)') 'particle (index)', impa%imd
-       Write (messages(3), '(a,i10)') 'timestep (steps)', impa%tmd
-       Write (messages(4), '(a,1p,e12.4)') 'energy   (keV)  ', impa%emd
-       Write (messages(5), '(a,1p,3e12.4)') 'v-r(x,y,z)      ', impa%vmx, impa%vmy, impa%vmz
-
-       Call info(messages, 5, .true.)
+      call params%retrieve('impact_part_index', impa%imd)
+      call params%retrieve('impact_time', impa%tmd)
+      call params%retrieve('impact_energy', impa%emd)
+      call params%retrieve('impact_direction', vtmp(1:3))
+      impa%vmx = vtmp(1)
+      impa%vmy = vtmp(2)
+      impa%vmz = vtmp(3)
     end if
 
     ! --------------- EXPANSION ------------------------------------------------
@@ -2039,165 +1948,627 @@ contains
       config%nx = nint(vtmp(1))
       config%ny = nint(vtmp(2))
       config%nz = nint(vtmp(3))
-      Write (message, '(a,9x,3i5)') 'system expansion opted', config%nx, config%ny, config%nz
-      Call info(message, .true.)
     end if
-
-
 
   end Subroutine read_system_parameters
 
-  ! Subroutine write_parameters(thermo)
+  Subroutine write_parameters(io_data, netcdf, files, neigh, config, link_cell, flow, stats, thermo, ttm, mpoles, vdws, &
+       electro, cshell, ewld, met, impa, minim, plume, cons, pmf)
+    Type(io_type),              Intent(In) :: io_data
+    Type(netcdf_param),         Intent(In) :: netcdf
+    Type(file_type),            Intent(In) :: files(:)
+    Type(neighbours_type),      Intent(In) :: neigh
+    Type(configuration_type),   Intent(In) :: config
+    Type(flow_type),            Intent(In) :: flow
+    Type(stats_type),           Intent(In) :: stats
+    Type(thermostat_type),      Intent(In) :: thermo
+    Type(ttm_type),             Intent(In) :: ttm
+    Type(mpole_type),           Intent(In) :: mpoles
+    Type(vdw_type),             Intent(In) :: vdws
+    Type(electrostatic_type),   Intent(In) :: electro
+    Type(core_shell_type),      Intent(In) :: cshell
+    Type(ewald_type),           Intent(In) :: ewld
+    Type(metal_type),           Intent(In) :: met
+    Type(plumed_type),          Intent(In) :: plume
+    Type(impact_type),          Intent(In) :: impa
+    Type(minimise_type),        Intent(In) :: minim
+    Type(constraints_type),     Intent(In) :: cons
+    Type(pmf_type),             Intent(In) :: pmf
+    Integer, Dimension(3),      Intent(In) :: link_cell
+    Character(Len=80)  :: banner(6)
 
-  !   Character(Len=STR_LEN) :: title
-  !   Character(Len=256) :: message, messages(4)
+    Write (banner(1), '(a)') ''
+    Write (banner(2), '(a)') Repeat('*', 80)
+    Write (banner(3), '(a4,a72,a4)') '*** ', 'title:'//Repeat(' ', 66), ' ***'
+    Write (banner(4), '(a4,a72,a4)') '*** ', config%sysname, ' ***'
+    Write (banner(5), '(a)') Repeat('*', 80)
+    Write (banner(6), '(a)') ''
+    Call info(banner, 6, .true.)
 
-  !   call params%retrieve('title', title)
+    if (check_print_level(1)) Call write_io(io_data, netcdf, files)
+    if (check_print_level(1)) Call write_system_parameters(flow, config, stats, thermo, impa, minim, plume, cons, pmf)
+    If (check_print_level(1)) Call write_forcefield(link_cell, neigh, vdws, electro, ewld, mpoles, cshell, met)
+    if (check_print_level(1)) Call write_ensemble(thermo)
+    if (ttm%l_ttm .and. check_print_level(1)) Call write_ttm(thermo, ttm)
 
-  !   Call write_ensemble(thermo)
+    Call info('', .true.)
 
-  ! end Subroutine write_parameters
+  end Subroutine write_parameters
+
+  Subroutine write_io(io_data, netcdf, files)
+    Type(io_type), Intent(In) :: io_data
+    Type(netcdf_param), Intent(In) :: netcdf
+    Type(file_type), Intent(In) :: files(:)
+
+    Character(len=256) :: message
+    !    Integer :: io_read, io_write, procs_write, procs_read, batch_write, batch_read
+
+    Call info('', .true.)
+    Call info('I/O Parameters: ', .true.)
+
+    select case (io_data%method_read)
+    Case (IO_READ_MPIIO)
+      Call info('  I/O read method: parallel by using MPI-I/O',.true.)
+
+    Case (IO_READ_DIRECT)
+      Call info('  I/O read method: parallel by using direct access',.true.)
+
+    Case (IO_READ_NETCDF)
+      Call info('  I/O read method: parallel by using netCDF',.true.)
+
+    Case (IO_READ_MASTER)
+      Call info('  I/O read method: serial by using a single master process',.true.)
+
+    End Select
+
+    Write(message,'(a,i0.1)') '  I/O readers set to ', io_data%n_io_procs_read
+    Call info(message,.true.)
+
+    Select Case (io_data%method_write)
+    Case (IO_READ_MPIIO, IO_READ_DIRECT, IO_READ_NETCDF)
+      Write(message,'(a,i0.1)') '  I/O read batch size (assumed) ', io_data%batch_size_read
+      Call info(message,.true., level=3)
+    end Select
+
+    Write(message,'(a,i0.1)') '  I/O read buffer size set to ', io_data%buffer_size_read
+    Call info(message,.true., level=3)
+
+    Select Case (io_data%method_write)
+    Case (IO_WRITE_SORTED_MPIIO, IO_WRITE_UNSORTED_MPIIO)
+      Call info('  I/O write method: parallel by using MPI-I/O',.true.)
+
+    Case (IO_WRITE_SORTED_DIRECT, IO_WRITE_UNSORTED_DIRECT)
+      Call info('  I/O write method: parallel by using direct access',.true.)
+      Call warning('  in parallel this I/O write method has portability issues',.true.)
+
+    Case (IO_WRITE_SORTED_NETCDF)
+#ifdef NETCDF
+      Select Case(netcdf%ncp)
+      Case( sp )
+        Call info('  I/O write method: parallel by using netCDF in the amber-like/32-bit format',.true.)
+      Case ( dp )
+        Call info('  I/O write method: parallel by using netCDF in 64-bit format',.true.)
+      end Select
+#else
+      call error(0, 'NetCDF not compiled')
+#endif
+
+    Case (IO_WRITE_SORTED_MASTER, IO_WRITE_UNSORTED_MASTER)
+      Call info('  I/O write method: serial by using a single master process',.true.)
+
+    End Select
+
+    Select Case (io_data%method_write)
+    Case(IO_WRITE_SORTED_MASTER, IO_WRITE_SORTED_NETCDF, IO_WRITE_SORTED_MPIIO, IO_WRITE_SORTED_DIRECT)
+      Call info('  I/O write type: data sorting ON',.true., level=3)
+
+    Case(IO_WRITE_UNSORTED_MASTER, IO_WRITE_UNSORTED_MPIIO, IO_WRITE_UNSORTED_DIRECT)
+      Call info('  I/O write type: data sorting OFF',.true.)
+
+    End Select
+
+    Write(message,'(a,i0.1)') '  I/O writers set to ', io_data%n_io_procs_write
+    Call info(message,.true.)
+
+    Select Case (io_data%method_write)
+    Case (IO_WRITE_SORTED_MPIIO, IO_WRITE_UNSORTED_MPIIO, IO_WRITE_SORTED_DIRECT, &
+         IO_WRITE_UNSORTED_DIRECT, IO_WRITE_SORTED_NETCDF)
+      Write(message,'(a,i10)') '  I/O write batch size (assumed) ', io_data%batch_size_write
+      Call info(message,.true., level=3)
+    end Select
+
+    Write(message,'(a,i10)') '  I/O write buffer size set to ', io_data%buffer_size_write
+    Call info(message,.true., level=3)
+
+
+    If (io_data%global_error_check) Then
+      Call info('  I/O parallel error checking ON',.true.)
+    Else
+      Call info('  I/O parallel error checking OFF',.true., level=3)
+    End If
+
+    Call info('', .true.)
+    Call info('File outputs: ',.true.)
+    if (files(FILE_OUTPUT)%filename /= "OUTPUT") Call info('  OUTPUT file is '//files(FILE_OUTPUT)%filename,.true.)
+    if (files(FILE_CONFIG)%filename /= "CONFIG") Call info('  CONFIG file is '//files(FILE_CONFIG)%filename,.true.)
+    if (files(FILE_FIELD)%filename /= "FIELD") Call info('  FIELD file is '//files(FILE_FIELD)%filename,.true.)
+    if (files(FILE_STATS)%filename /= "STATIS") Call info('  STATIS file is '//files(FILE_STATS)%filename,.true.)
+    if (files(FILE_HISTORY)%filename /= "HISTORY") Call info('  HISTORY file is '//files(FILE_HISTORY)%filename,.true.)
+    if (files(FILE_HISTORF)%filename /= "HISTORF") Call info('  HISTORF file is '//files(FILE_HISTORF)%filename,.true.)
+    if (files(FILE_REVIVE)%filename /= "REVIVE") Call info('  REVIVE file is '//files(FILE_REVIVE)%filename,.true.)
+    if (files(FILE_REVCON)%filename /= "REVCON") Call info('  REVCON file is '//files(FILE_REVCON)%filename,.true.)
+    if (files(FILE_REVOLD)%filename /= "REVOLD") Call info('  REVOLD file is '//files(FILE_REVOLD)%filename,.true.)
+
+  end Subroutine write_io
+
+  Subroutine write_system_parameters(flow, config, stats, thermo, impa, minim, plume, cons, pmf)
+    Type(flow_type),          Intent(In) :: flow
+    Type(stats_type),         Intent(In) :: stats
+    Type(configuration_type), Intent(In) :: config
+    Type(thermostat_type),    Intent(In) :: thermo
+    Type(impact_type),        Intent(In) :: impa
+    Type(minimise_type),      Intent(In) :: minim
+    Type(plumed_type),        Intent(In) :: plume
+    Type(constraints_type),   Intent(In) :: cons
+    Type(pmf_type),           Intent(In) :: pmf
+
+    Character(Len=256) :: message, messages(5)
+    Integer :: itmp
+
+    Call info('', .true.)
+    Call info("System parameters: ", .true.)
+
+    If (.not. thermo%lvar) then
+      Write (message, '(a,1p,e12.4)') '  Fixed simulation timestep (ps) ', thermo%tstep
+      Call info(message, .true.)
+    Else
+      Write (messages(1), '(a,1p,e12.4)') '  Variable simulation timestep (ps) ', thermo%tstep
+      Write (messages(2), '(a)') '  Controls for variable timestep:'
+      Write (messages(3), '(2x,a,1p,e12.4)') '  -- Minimum distance Dmin (Angs) ', thermo%mndis
+      Write (messages(4), '(2x,a,1p,e12.4)') '  -- Maximum distance Dmax (Angs) ', thermo%mxdis
+      Call info(messages, 4, .true.)
+      If (thermo%mxstp > zero_plus) Then
+        Write (message, '(a,1p,e12.4)') '  -- Timestep ceiling max step (ps) ', thermo%mxstp
+        Call info(message, .true.)
+      end If
+    end If
+
+    Write (message, '(a,i10)') '  Selected number of timesteps ', flow%run_steps
+    if (flow%run_steps > 0) Call info(message, .true.)
+
+    if (flow%equil_Steps > 0) then
+      Write (message, '(a,i10)') '  Equilibration period (steps) ', flow%equil_steps
+      Call info(message, .true.)
+
+      if (.not. flow%equilibration) Call info('  -- Equilibration included in overall averages', .true.)
+
+      if (thermo%freq_tgaus > 0) then
+        Write (message, '(a,i10)') '  -- Temperature regaussing interval ', thermo%freq_tgaus
+        Call info(message, .true.)
+      end if
+
+      if (thermo%freq_tscale > 0) then
+        Call info('  -- Temperature scaling on', .true.)
+        Write (message, '(a,i10)') '  -- Temperature scaling interval (steps)', thermo%freq_tscale
+        Call info(message, .true.)
+      end if
+
+      if (flow%force_cap) then
+        Write (messages(1), '(a)') '  -- Force capping on'
+        Write (messages(2), '(a,1p,e12.4)') '  -- Force capping limit (kT/Angs)', config%fmax
+        Call info(messages, 2, .true.)
+      end if
+
+      if (minim%minimise) then
+        Write (messages(1), '(a)') '  -- Minimisation option on'
+        Select Case(minim%key)
+        Case(MIN_FORCE)
+          Write (messages(2), '(a,a8)') '   -- Minimisation criterion        ', "Force"
+        Case(MIN_ENERGY)
+          Write (messages(2), '(a,a8)') '   -- Minimisation criterion        ', "Energy"
+        Case(MIN_DISTANCE)
+          Write (messages(2), '(a,a8)') '   -- Minimisation criterion        ', "Distance"
+        end Select
+
+        Write (messages(3), '(a,i10)') '   -- Minimisation frequency (steps)', minim%freq
+        Write (messages(4), '(a,1p,e12.4)') '   -- Minimisation tolerance        ', minim%tolerance
+        Write (messages(5), '(a,1p,e12.4)') '   -- Minimisation CGM step         ', minim%step_length
+
+        Call info(messages, 5, .true.)
+      end if
+    end if
+
+    Write (message, '(a,i10)') '  Data dumping interval (steps) ', flow%freq_restart
+    Call info(message, .true.)
+
+    if (flow%freq_output > 0) then
+      Write (message, '(a,i10)') '  Data printing interval (steps) ', flow%freq_output
+      Call info(message, .true.)
+    end if
+
+    if (stats%intsta > 0) then
+      Write (message, '(a,i10)') '  Statistics file interval ', stats%intsta
+      Call info(message, .true.)
+    end if
+
+    if (.not. flow%print_topology) &
+         Call info('  No topology option on (avoids printing extended FIELD topology in OUTPUT)', .true.)
+
+    if (stats%cur%on) Call info("  Computing currents is on!", .true.)
+
+    select case (flow%restart_key)
+    case (RESTART_KEY_SCALE)
+      Call info('  Scaled restart requested (starting a new simulation)', .true.)
+    case (RESTART_KEY_NOSCALE)
+      Call info('  Unscaled restart requested (starting a new simulation)', .true.)
+    case (RESTART_KEY_OLD)
+      Call info('  Restart requested (continuing an old simulation)', .true.)
+      Call warning('  Timestep from REVOLD overides specification in CONTROL', .true.)
+    case (RESTART_KEY_CLEAN)
+    end select
+
+    Write (message, '(a,1p,e12.4)') '  Simulation temperature (K)  ', thermo%temp
+    call info(message, .true.)
+
+    if (thermo%l_stochastic_boundaries) then
+      Call info('  Pseudo thermostat attached to MD cell boundary', .true.)
+
+      select case (thermo%key_pseudo)
+      case (0)
+        Call info('  -- Thermostat control: Langevin + direct temperature scaling', .true.)
+      case (1)
+        Call info('  -- Thermostat control: Langevin temperature scaling', .true.)
+      case (2)
+        Call info('  -- Thermostat control: gaussian temperature scaling', .true.)
+      case (3)
+        Call info('  -- Thermostat control: direct temperature scaling', .true.)
+      end select
+
+      Write (message, '(a,1p,e12.4)') '  -- Thermostat thickness (Angs) ', thermo%width_pseudo
+      Call info(message, .true.)
+      Write (message, '(a,1p,e12.4)') '  -- Thermostat temperature (K) ', thermo%temp_pseudo
+      Call info(message, .true.)
+    end if
+
+    If (.not. thermo%anisotropic_pressure) then
+      write(message, '(3A, f20.10)') '  Simulation pressure (','katms','):', convert_units(thermo%press, 'internal_p', 'katm')
+      Call info(message, .true.)
+    Else
+      write (messages(1), '(3A)') '  Simulation pressure (','katms','):'
+      Write (messages(2), '(2X, 3(f20.10))') (convert_units(thermo%stress(itmp), 'internal_p', 'katm'), itmp = 1,3)
+      Write (messages(3), '(2X, 3(f20.10))') (convert_units(thermo%stress(itmp), 'internal_p', 'katm'), itmp = 4,6)
+      Write (messages(4), '(2X, 3(f20.10))') (convert_units(thermo%stress(itmp), 'internal_p', 'katm'), itmp = 7,9)
+      Call info(messages, 4, .true.)
+    end If
+
+    If (cons%mxcons > 0 .or. pmf%mxpmf > 0) Then
+      Write (messages(1), '(a,i10)') '  Iterations for shake/rattle ', cons%max_iter_shake
+      Write (messages(2), '(a,1p,e12.4)') '  Tolerance for shake/rattle (Angs) ', cons%tolerance
+      Call info(messages, 2, .true.)
+    end If
+
+    if (config%l_exp) then
+      Write (message, '(a,9x,3i5)') '  System expansion opted', config%nx, config%ny, config%nz
+      Call info(message, .true.)
+    end if
+
+    if (impa%active) then
+      Call info('  Impact enabled', .true.)
+      Write (messages(1), '(a)') ''
+      Write (messages(2), '(a,i10)') '  -- Particle (index)', impa%imd
+      Write (messages(3), '(a,i10)') '  -- Timestep (steps)', impa%tmd
+      Write (messages(4), '(a,1p,e12.4)') '  -- Energy   (keV)  ', impa%emd
+      Write (messages(5), '(a,1p,3e12.4)') '  -- v-r(x,y,z)      ', impa%vmx, impa%vmy, impa%vmz
+
+      Call info(messages, 5, .true.)
+
+    end if
+
+  end Subroutine write_system_parameters
+
+  Subroutine write_forcefield(link_cell, neigh, vdws, electro, ewld, mpoles, cshell, met)
+    Type(neighbours_type),       Intent(In) :: neigh
+    Type(mpole_type),            Intent(In) :: mpoles
+    Type(vdw_type),              Intent(In) :: vdws
+    Type(electrostatic_type),    Intent(In) :: electro
+    Type(core_shell_type),       Intent(In) :: cshell
+    Type(ewald_type),            Intent(In) :: ewld
+    Type(metal_type),            Intent(In) :: met
+
+    Integer, Dimension(3),       Intent(In) :: link_cell
+    Character(Len=256) :: message, messages(4)
+
+    Call info('', .true.)
+    Call info('Forcefield Parameters: ', .true.)
+
+    ! ---------------- CUTOFF --------------------------------------------------
+
+    Write (message, '(a,1p,e12.4)') '  Real space cutoff (Angs) ', neigh%cutoff
+    Call info(message, .true.)
+    Write (message, '(a,1p,e12.4)') '  Cutoff padding (Angs) ', neigh%padding
+    Call info(message, .true.)
+
+    Write (message, '(a,3i6)') "  Final link-cell decomposition (x,y,z): ", link_cell
+    Call info(message, .true., level=1)
+
+    ! ---------------- SUBCELLING ----------------------------------------------
+
+    Write (message, '(a,1p,e12.4)') '  Subcelling threshold density ', neigh%pdplnc
+    call info(message, .true., 2)
+
+    ! ---------------- VDW SETUP -----------------------------------------------
+
+    if (vdws%l_direct) then
+      Call info('  VdWs - Direct Calculation', .true.)
+    else if (vdws%no_vdw) then
+      Call info('  VdWs - Disabled', .true.)
+      ! else if (ewld%vdw) then
+      !   Call info('VdWs - Ewald', .true.)
+    else
+      Call info('  VdWs - Tabulated', .true.)
+    end if
+    Write (message, '(a,1p,e12.4)') '  VdW cutoff (Angs) ', vdws%cutoff
+    call info(message, .true.)
+
+    if (vdws%mixing /= MIX_NULL) then
+      Call info('  Vdw cross terms mixing opted (for undefined mixed potentials)', .true.)
+      Call info('    mixing is limited to potentials of the same type only', .true.)
+      Call info('    mixing restricted to LJ-like potentials (12-6,LJ,WCA,DPD,AMOEBA)', .true.)
+
+      Select Case (vdws%mixing)
+      case (MIX_LORENTZ_BERTHELOT)
+        Call info('  Type of mixing selected - Lorentz-Berthelot :: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2', .true.)
+
+      case (MIX_FENDER_HALSEY)
+        Call info('  Type of mixing selected - Fender-Halsey :: e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2', .true.)
+
+      case (MIX_HOGERVORST)
+        Call info('  Type of mixing selected - Hogervorst (good hope) :: ' &
+             //'e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i*s_j)^(1/2)', .true.)
+
+      case (MIX_HALGREN)
+        Call info('  Type of mixing selected - Halgren HHG :: ' &
+             //'e_ij=4*e_i*e_j/[e_i^(1/2)+e_j^(1/2)]^2 ; s_ij=(s_i^3+s_j^3)/(s_i^2+s_j^2)', .true.)
+
+      case (MIX_WALDMAN_HAGLER)
+        Call info('  Type of mixing selected - WaldmanHagler :: ' &
+             //'e_ij=2*(e_i*e_j)^(1/2)*(s_i*s_j)^3/(s_i^6+s_j^6) ;s_ij=[(s_i^6+s_j^6)/2]^(1/6)', .true.)
+
+      case (MIX_TANG_TOENNIES)
+        Call info('  Type of mixing selected - Tang-Toennies :: ' &
+             //' e_ij=[(e_i*s_i^6)*(e_j*s_j^6)] / {[(e_i*s_i^12)^(1/13)+(e_j*s_j^12)^(1/13)]/2}^13', .true.)
+        Call info(Repeat(' ', 43)//'s_ij={[(e_i*s_i^6)*(e_j*s_j^6)]^(1/2) / e_ij}^(1/6)', .true.)
+
+      case (MIX_FUNCTIONAL)
+        Call info('  Type of mixing selected - Functional :: ' &
+             //'e_ij=3 * (e_i*e_j)^(1/2) * (s_i*s_j)^3 / ' &
+             //'SUM_L=0^2{[(s_i^3+s_j^3)^2 / (4*(s_i*s_j)^L)]^(6/(6-2L))}', .true.)
+        Call info(Repeat(' ', 40)//'s_ij=(1/3) * SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))}', .true.)
+      end Select
+    end if
+
+    if (vdws%l_force_shift) Call info('  VdW force-shifting option on', .true.)
+
+    ! ---------------- METALS --------------------------------------------------
+
+    if (met%l_direct) Call info('  Metal direct option on', .true.)
+    if (met%l_emb) Call info('  Metal sqrtrho option on', .true.)
+
+    ! ---------------- POLARISATION --------------------------------------------
+
+    if (mpoles%max_mpoles > 0) then
+      Select Case(mpoles%key)
+      Case(POLARISATION_CHARMM)
+        Call info('  Polarisation method - CHARMM')
+      Case(POLARISATION_DEFAULT)
+        Call info('  Polarisation method - Default')
+      end Select
+    end if
+
+    if (cshell%mxshl > 0) then
+      Write (message, '(a,1p,e12.4)') '  -- Relaxed shell model CGM tolerance ', cshell%rlx_tol(1)
+      Call info(message, .true.)
+      if (cshell%rlx_tol(2) > 0.0_wp) then
+        Write (message, '(a,1p,e12.4)') '  -- Relaxed shell model CGM step ', cshell%rlx_tol(2)
+        Call info(message, .true.)
+      end if
+    end if
+
+    ! ---------------- ELECTROSTATICS ------------------------------------------
+
+    Select Case (electro%key)
+    case (ELECTROSTATIC_NULL)
+      Call info('  Electrostatics : Disabled', .true.)
+    case (ELECTROSTATIC_EWALD)
+
+      Call info('  Electrostatics : Smooth Particle Mesh Ewald', .true.)
+
+      Write (messages(1), '(a,1p,e12.4)') '  -- Ewald convergence parameter (A^-1) ', electro%alpha
+      Write (messages(2), '(a,3i5)') '  -- Ewald kmax1 kmax2 kmax3   (x2) ', ewld%fft_dim_a1, ewld%fft_dim_b1, ewld%fft_dim_c1
+      If (ewld%fft_dim_a /= ewld%fft_dim_a1 .or. ewld%fft_dim_b /= ewld%fft_dim_b1 .or. ewld%fft_dim_c /= ewld%fft_dim_c1) Then
+        Write (messages(3), '(a,3i5)') '  -- DaFT adjusted kmax values (x2) ', ewld%fft_dim_a, ewld%fft_dim_b, ewld%fft_dim_c
+        Write (messages(4), '(a,1p,i5)') '  -- B-spline interpolation order ', ewld%bspline
+        Call info(messages, 4, .true.)
+      Else
+        Write (messages(3), '(a,1p,i5)') '  -- B-spline interpolation order ', ewld%bspline
+        Call info(messages, 3, .true.)
+      end If
+
+    case (ELECTROSTATIC_DDDP)
+      Call info('  Electrostatics : Distance Dependent Dielectric', .true.)
+
+    case (ELECTROSTATIC_COULOMB)
+
+      Call info('  Electrostatics : Coulombic Potential', .true.)
+
+    case (ELECTROSTATIC_COULOMB_FORCE_SHIFT)
+      Call info('  Electrostatics : Force-Shifted Coulombic Potential', .true.)
+
+    case (ELECTROSTATIC_COULOMB_REACTION_FIELD)
+      Call info('  Electrostatics : Reaction Field', .true.)
+    end select
+
+    if (electro%key /= ELECTROSTATIC_NULL) then
+      if (abs(electro%eps - 1.0_wp) > zero_plus) then
+        Write (message, '(a,1p,e12.4)') '  -- Relative dielectric constant ', electro%eps
+        Call info(message, .true.)
+      end if
+
+      !! Fix with electro merge
+      If (electro%key /= ELECTROSTATIC_EWALD .and. electro%alpha > zero_plus) Then
+        Call info('  -- Fennell damping applied', .true.)
+        Write (message, '(a,1p,e12.4)') '  -- Damping parameter (A^-1) ', electro%alpha
+        Call info(message, .true.)
+      End If
+
+      If (electro%lecx) Then
+        Call info('  -- Extended Coulombic eXclusion : YES', .true.)
+      Else
+        Call info('  -- Extended Coulombic eXclusion : NO', .true.)
+      End If
+
+    end if
+
+  end Subroutine write_forcefield
 
   Subroutine write_ensemble(thermo)
-    Type( thermostat_type ), Intent( InOut ) :: thermo
+    Type( thermostat_type ), Intent(In) :: thermo
     Character(Len=STR_LEN) :: message
     Character(Len=STR_LEN), dimension(4) :: messages
 
-    Write(messages(1), *) ""
-    Write(messages(2), '(a)') "Thermostat details:"
-    Call info(messages, 2, .true.)
+    Call info('', .true.)
+    Call info('Thermostat details:', .true.)
 
     select case(thermo%ensemble)
     case (ENS_NVE)
-       Select Case (thermo%key_dpd)
-       case (DPD_NULL)
-          Call info('Ensemble : NVE (Microcanonical)',.true.)
-       Case(DPD_FIRST_ORDER)
+      Select Case (thermo%key_dpd)
+      case (DPD_NULL)
+        Call info('  Ensemble : NVE (Microcanonical)',.true.)
+      Case(DPD_FIRST_ORDER)
 
-          Call info('Ensemble : NVT dpd (Dissipative Particle Dynamics)',.true.)
-          Call info("Ensemble type : Shardlow's first order splitting (S1)",.true.)
+        Call info('  Ensemble : NVT dpd (Dissipative Particle Dynamics)',.true.)
+        Call info("  Ensemble type : Shardlow's first order splitting (S1)",.true.)
 
-       Case (DPD_SECOND_ORDER)
+      Case (DPD_SECOND_ORDER)
 
-          Call info('Ensemble : NVT dpd (Dissipative Particle Dynamics)',.true.)
-          Call info("Ensemble type : Shardlow's first order splitting (S2)",.true.)
-       end select
+        Call info('  Ensemble : NVT dpd (Dissipative Particle Dynamics)',.true.)
+        Call info("  Ensemble type : Shardlow's first order splitting (S2)",.true.)
+      end select
 
-       If (thermo%gamdpd(0) > zero_plus) Then
-          Write(message,'(a,1p,e12.4)') 'drag coefficient (Dalton/ps) ', thermo%gamdpd(0)
-          Call info(message,.true.)
-       End If
+      If (thermo%gamdpd(0) > zero_plus) Then
+        Write(message,'(a,1p,e12.4)') '  -- Drag coefficient (Dalton/ps) ', thermo%gamdpd(0)
+        Call info(message,.true.)
+      End If
 
     case (ENS_NVT_EVANS)
 
-       Call info('Ensemble : NVT Evans (Isokinetic)',.true.)
-       Call info('Gaussian temperature constraints in use',.true.)
+      Call info('  Ensemble : NVT Evans (Isokinetic)',.true.)
+      Call info('  Gaussian temperature constraints in use',.true.)
 
     case (ENS_NVT_LANGEVIN)
 
-       Call info('Ensemble : NVT Langevin (Stochastic Dynamics)',.true.)
-       Write(message,'(a,1p,e12.4)') 'thermostat friction (ps^-1)', thermo%chi
-       Call info(message,.true.)
+      Call info('  Ensemble : NVT Langevin (Stochastic Dynamics)',.true.)
+      Write(message,'(a,1p,e12.4)') '  -- Thermostat friction (ps^-1)', thermo%chi
+      Call info(message,.true.)
 
     case (ENS_NVT_ANDERSON)
 
-       Write(messages(1),'(a)') 'Ensemble : NVT Andersen'
-       Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
-       Write(messages(3),'(a,1p,e12.4)') 'softness (dimensionless)',thermo%soft
-       if (thermo%soft > 1) call error(0, 'Andersen softness greater than 1 '//message)
+      Write(messages(1),'(a)') '  Ensemble : NVT Andersen'
+      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps) ',thermo%tau_t
+      Write(messages(3),'(a,1p,e12.4)') '  -- Softness (dimensionless)',thermo%soft
 
-       Call info(messages,3,.true.)
+      Call info(messages,3,.true.)
 
     case (ENS_NVT_BERENDSEN)
 
-       Call info('Ensemble : NVT Berendsen',.true.)
-       Write(message,'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
-       Call info(message,.true.)
-       Call warning('If you plan to use the Berendsen thermostat, please read https://doi.org/10.1021/acs.jctc.8b00446', .true.)
+      Call info('  Ensemble : NVT Berendsen',.true.)
+      Write(message,'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps) ',thermo%tau_t
+      Call info(message,.true.)
+      Call warning('If you plan to use the Berendsen thermostat, please read https://doi.org/10.1021/acs.jctc.8b00446', .true.)
 
     case (ENS_NVT_NOSE_HOOVER)
 
-       Call info('Ensemble : NVT Nose-Hoover',.true.)
-       Write(message,'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
-       Call info(message,.true.)
+      Call info('  Ensemble : NVT Nose-Hoover',.true.)
+      Write(message,'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps) ',thermo%tau_t
+      Call info(message,.true.)
 
     Case (ENS_NVT_GENTLE)
 
-       Write(messages(1),'(a)') 'Ensemble : NVT gentle stochastic thermostat'
-       Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
-       Write(messages(3),'(a,1p,e12.4)') 'friction on thermostat  (ps^-1) ',thermo%gama
-       Call info(messages,3,.true.)
+      Write(messages(1),'(a)') '  Ensemble : NVT gentle stochastic thermostat'
+      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps) ',thermo%tau_t
+      Write(messages(3),'(a,1p,e12.4)') '  -- Friction on thermostat  (ps^-1) ',thermo%gama
+      Call info(messages,3,.true.)
 
     Case (ENS_NVT_LANGEVIN_INHOMO)
 
 
-       Write (messages(1), '(a)') 'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)'
-       Write (messages(2), '(a,1p,e12.4)') 'e-phonon friction (ps^-1) ', thermo%chi_ep
-       Write (messages(3), '(a,1p,e12.4)') 'e-stopping friction (ps^-1) ', thermo%chi_es
-       Write (messages(4), '(a,1p,e12.4)') 'e-stopping velocity (A ps^-1) ', thermo%vel_es2
-       Call info(messages, 4, .true.)
+      Write (messages(1), '(a)') '  Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)'
+      Write (messages(2), '(a,1p,e12.4)') '  -- e-phonon friction (ps^-1) ', thermo%chi_ep
+      Write (messages(3), '(a,1p,e12.4)') '  -- e-stopping friction (ps^-1) ', thermo%chi_es
+      Write (messages(4), '(a,1p,e12.4)') '  -- e-stopping velocity (A ps^-1) ', thermo%vel_es2
+      Call info(messages, 4, .true.)
 
 
     Case (ENS_NPT_LANGEVIN)
 
 
-       Write(messages(1),'(a)') 'Ensemble : NPT isotropic Langevin (Stochastic Dynamics)'
-       Write(messages(2),'(a,1p,e12.4)') 'thermostat friction (ps^-1)',thermo%chi
-       Write(messages(3),'(a,1p,e12.4)') 'barostat friction (ps^-1)',thermo%tai
-       Call info(messages,3,.true.)
+      Write(messages(1),'(a)') '  Ensemble : NPT isotropic Langevin (Stochastic Dynamics)'
+      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat friction (ps^-1)',thermo%chi
+      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat friction (ps^-1)',thermo%tai
+      Call info(messages,3,.true.)
 
     Case (ENS_NPT_BERENDSEN)
 
 
-       Write(messages(1),'(a)') 'Ensemble : NPT isotropic Berendsen'
-       Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
-       Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
-       Call info(messages,3,.true.)
+      Write(messages(1),'(a)') '  Ensemble : NPT isotropic Berendsen'
+      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps) ',thermo%tau_t
+      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat relaxation time (ps) ',thermo%tau_p
+      Call info(messages,3,.true.)
 
     Case (ENS_NPT_NOSE_HOOVER)
 
 
-       Write(messages(1),'(a)') 'Ensemble : NPT isotropic Nose-Hoover (Melchionna)'
-       Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
-       Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
-       Call info(messages,3,.true.)
+      Write(messages(1),'(a)') '  Ensemble : NPT isotropic Nose-Hoover (Melchionna)'
+      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps) ',thermo%tau_t
+      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat relaxation time (ps) ',thermo%tau_p
+      Call info(messages,3,.true.)
 
     Case (ENS_NPT_MTK)
 
 
-       Write(messages(1),'(a)') 'Ensemble : NPT isotropic Martyna-Tuckerman-Klein'
-       Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
-       Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
-       Call info(messages,3,.true.)
+      Write(messages(1),'(a)') '  Ensemble : NPT isotropic Martyna-Tuckerman-Klein'
+      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps) ',thermo%tau_t
+      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat relaxation time (ps) ',thermo%tau_p
+      Call info(messages,3,.true.)
 
 
     Case (ENS_NPT_LANGEVIN_ANISO)
 
-       Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Langevin (Stochastic Dynamics)'
-       Write(messages(2),'(a,1p,e12.4)') 'thermostat friction (ps^-1)',thermo%chi
-       Write(messages(3),'(a,1p,e12.4)') 'barostat friction (ps^-1)',thermo%tai
-       Call info(messages,3,.true.)
+      Write(messages(1),'(a)') '  Ensemble : NPT anisotropic Langevin (Stochastic Dynamics)'
+      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat friction (ps^-1)',thermo%chi
+      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat friction (ps^-1)',thermo%tai
+      Call info(messages,3,.true.)
 
     Case (ENS_NPT_BERENDSEN_ANISO)
 
-       Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Berendsen'
-       Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
-       Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
-       Call info(messages,3,.true.)
+      Write(messages(1),'(a)') '  Ensemble : NPT anisotropic Berendsen'
+      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps) ',thermo%tau_t
+      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat relaxation time (ps) ',thermo%tau_p
+      Call info(messages,3,.true.)
 
     Case (ENS_NPT_NOSE_HOOVER_ANISO)
 
-       Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Nose-Hoover (Melchionna)'
-       Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
-       Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
-       Call info(messages,3,.true.)
+      Write(messages(1),'(a)') '  Ensemble : NPT anisotropic Nose-Hoover (Melchionna)'
+      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps) ',thermo%tau_t
+      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat relaxation time (ps) ',thermo%tau_p
+      Call info(messages,3,.true.)
 
     Case (ENS_NPT_MTK_ANISO)
 
-       Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Martyna-Tuckerman-Klein'
-       Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
-       Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
-       Call info(messages,3,.true.)
+      Write(messages(1),'(a)') '  Ensemble : NPT anisotropic Martyna-Tuckerman-Klein'
+      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps) ',thermo%tau_t
+      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat relaxation time (ps) ',thermo%tau_p
+      Call info(messages,3,.true.)
 
     end select
 
@@ -2205,31 +2576,269 @@ contains
 
     select case (thermo%iso)
     case (CONSTRAINT_NONE)
-       continue
+      continue
     case (CONSTRAINT_SURFACE_AREA)
-       Call info('semi-isotropic barostat : constant normal pressure (Pn) &',.true.)
-       Call info('       (N-Pn-A-T)       : constant surface area (A)',.true.)
+      Call info('  Semi-isotropic barostat : constant normal pressure (Pn) &',.true.)
+      Call info('         (N-Pn-A-T)       : constant surface area (A)',.true.)
     case (CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC)
 
-       if (thermo%tension > 0.0_wp) then
-          Write(messages(1),'(a)') 'semi-isotropic barostat : constant normal pressure (Pn) &'
-          Write(messages(2),'(a)') '     (N-Pn-gamma-T)     : constant surface tension (gamma)'
-          Write(messages(3),'(a,1p,e11.4)') &
-               'sumulation surface tension (dyn/cm)', convert_units(thermo%tension, 'internal_f/internal_l', 'dyn/cm')
-          Call info(messages,3,.true.)
-       else
-          Call info('semi-isotropic barostat : orthorhombic MD cell constraints',.true.)
-       end if
+      if (thermo%tension > 0.0_wp) then
+        Write(messages(1),'(a)') '  Semi-isotropic barostat : constant normal pressure (Pn) &'
+        Write(messages(2),'(a)') '       (N-Pn-gamma-T)     : constant surface tension (gamma)'
+        Write(messages(3),'(a,1p,e11.4)') &
+             '  -- Simulation surface tension (dyn/cm)', convert_units(thermo%tension, 'internal_f/internal_l', 'dyn/cm')
+        Call info(messages,3,.true.)
+      else
+        Call info('  Semi-isotropic barostat : orthorhombic MD cell constraints',.true.)
+      end if
 
-       if (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) then
-          Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
-       end if
+      if (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) then
+        Call info('  Semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
+      end if
 
     end select
 
-    Call info('', .true.)
-
   end Subroutine write_ensemble
+
+  Subroutine write_ttm(thermo, ttm)
+    Type(thermostat_type),      Intent(In) :: thermo
+    Type( ttm_type ), Intent(In) :: ttm
+    Character(Len=256) :: message, messages(3)
+
+    Call info('', .true.)
+    Call info('TTM Parameters: ', .true.)
+
+    Write (messages(1), '(a,3(1x,i8))') 'ionic temperature grid size (x,y,z):', ttm%ntsys(1:3)
+    Write (messages(2), '(a,3(1x,f8.4))') 'temperature grid size (x,y,z):', ttm%delx, ttm%dely, ttm%delz
+    Write (messages(3), '(a,f10.4)') 'average number of atoms/cell: ', ttm%sysrho * ttm%volume
+    Call info(messages, 3, .true.)
+    Write (message, '(a,3(1x,i8))') 'electronic temperature grid size (x,y,z):', &
+         ttm%eltsys(1:3)
+    Call info(message, .true.)
+
+    if (ttm%ismetal) then
+      Call info('electronic subsystem represents metal: thermal conductivity required', .true.)
+    else
+      Call info('electronic subsystem represents non-metal: thermal diffusivity required', .true.)
+    end if
+
+    if (ttm%ttmdyndens) then
+      Call info('dynamic calculations of average atomic density in active ionic cells', .true.)
+    else
+      Write (message, '(a,f10.4)') 'user-specified atomic density (A^-3) ', ttm%cellrho
+      Call info(message, .true.)
+    end if
+
+    select case (ttm%cetype)
+    case (0) !Constant
+      Call info('electronic specific heat capacity set to constant value', .true.)
+      Write (message, '(a,1p,e12.4)') 'electronic s.h.c. (kB/atom) ', ttm%Ce0 / ttm%cellrho
+      Call info(message, .true.)
+
+    case (4) !Constant
+      Call info('electronic specific heat capacity set to constant value', .true.)
+      Write (message, '(a,1p,e12.4)') 'electronic s.h.c. (kB/atom) ', ttm%Ce0
+      Call info(message, .true.)
+
+    case (1) !tanh
+      Write (messages(1), '(a)') 'electronic specific heat capacity set to hyperbolic tangent function'
+      Write (messages(2), '(a,1p,e12.4)') 'constant term A (kB/atom) ', ttm%sh_A / ttm%cellrho
+      Write (messages(3), '(a,1p,e12.4)') 'temperature term B (K^-1) ', ttm%sh_B * 1.0e4_wp
+      Call info(messages, 3, .true.)
+
+    case (5) !tanh
+      Write (messages(1), '(a)') 'electronic specific heat capacity set to hyperbolic tangent function'
+      Write (messages(2), '(a,1p,e12.4)') 'constant term A (kB/atom) ', ttm%sh_A
+      Write (messages(3), '(a,1p,e12.4)') 'temperature term B (K^-1) ', ttm%sh_B * 1.0e4_wp
+      Call info(messages, 3, .true.)
+
+    case (2, 6) !linear
+      Write (messages(1), '(a)') 'electronic specific heat capacity set to linear function up to Fermi temperature'
+      Write (messages(2), '(a,1p,e12.4)') 'max. electronic s.h.c. (kB/atom) ', ttm%Cemax
+      Write (messages(3), '(a,1p,e12.4)') 'Fermi temperature (K)', ttm%Tfermi
+      Call info(messages, 3, .true.)
+
+    case (3) !tabulated
+      Call info('electronic volumetric heat capacity given as tabulated function of temperature', .true.)
+
+    end select
+
+    select case (ttm%ketype)
+    case (0) ! Infinite
+      Call info('electronic thermal conductivity set to infinity', .true.)
+
+    case (1) ! Constant
+      Write (messages(1), '(a)') 'electronic thermal conductivity set to constant value'
+      Write (messages(2), '(a,1p,e12.4)') 'electronic t.c. (W m^-1 K^-1) ', &
+           convert_units(ttm%Ka0, 'k_b/ps/A', 'W/m/K')
+      Call info(messages, 2, .true.)
+
+    case (2) ! Drude
+      Write (messages(1), '(a)') 'electronic thermal conductivity set to drude model'
+      Write (messages(2), '(a,1p,e12.4)') 't.c. at system thermo%temp. (W m^-1 K^-1) ', &
+           convert_units(ttm%Ka0, 'k_b/ps/A', 'W/m/K')
+      Call info(messages, 2, .true.)
+
+    case (3) ! Tabulated
+      Write (messages(1), '(a)') 'electronic thermal conductivity given as tabulated function of temperature:'
+      Write (messages(2), '(a)') 'uses ionic or system temperature to calculate cell conductivity value'
+      Write (messages(3), '(a)') 'for thermal diffusion equation'
+      Call info(messages, 3, .true.)
+
+    end select
+
+    select case (ttm%detype)
+    case (0) ! Off
+      continue
+    case (1) ! Constant
+      Write (messages(1), '(a)') 'electronic thermal diffusivity set to constant value'
+      Write (messages(2), '(a,1p,e12.4)') 'electronic t.d. (m^2 s^-1) ', convert_units(ttm%diff0, 'ang^2/ps', 'm^2/s')
+      Call info(messages, 2, .true.)
+
+    case (2) ! Recip
+
+      Write (messages(1), '(a)') 'electronic thermal diffusivity set to reciprocal function up to Fermi temperature'
+      Write (messages(2), '(a,1p,e12.4)') 'datum electronic t.d. (m^2 s^-1) ', convert_units(ttm%diff0, 'ang^2/ps', 'm^2/s') /&
+           thermo%temp
+      Write (messages(3), '(a,1p,e12.4)') 'Fermi temperature (K) ', ttm%Tfermi
+      Call info(messages, 3, .true.)
+
+    case (3) ! Tabulated
+
+      Call info('electronic thermal diffusivity given as tabulated function of temperature', .true.)
+
+    end select
+
+
+    Write (message, '(a,1p,i8)') 'min. atom no. for ionic cells ', ttm%amin
+    Call info(message, .true.)
+
+    if (ttm%redistribute) then
+      Write (messages(1), '(a)') 'redistributing energy from deactivated electronic cells into active neighbours'
+      Write (messages(2), '(a)') '(requires at least one electronic temperature cell beyond ionic cells)'
+      Call info(messages, 2, .true.)
+    End If
+
+    Write (message, '(a,1p,e12.4)') 'elec. stopping power (eV/nm) ', convert_units(ttm%dedx, 'e.V/ang', 'e.V/nm')
+    Call info(message, .true.)
+
+    if (ttm%fluence < zero_plus) then
+      select case (ttm%sdepoType)
+      case (1)
+        Write (messages(1), '(a)') 'initial gaussian spatial energy deposition in electronic system'
+        Write (messages(2), '(a,1p,e12.4)') 'thermo%ttm%sigma of distribution (nm) ', convert_units(ttm%sig, 'ang', 'nm')
+        Write (messages(3), '(a,1p,e12.4)') 'distribution cutoff (nm) ', convert_units(ttm%sigmax * ttm%sig, 'ang', 'nm')
+        Call info(messages, 3, .true.)
+
+      case (2)
+        Call info('initial homogeneous (flat) spatial energy deposition in electronic system', .true.)
+      end select
+
+    else
+      select case (ttm%sdepoType)
+      case (2)
+        Write (messages(1), '(a)') 'initial homogeneous (flat) spatial energy deposition in electronic system due to laser'
+        Write (messages(2), '(a,1p,e12.4)') &
+             'absorbed ttm%fluence (mJ cm^-2) ', convert_units(ttm%fluence, 'e.V/ang^2', 'mJ/cm^2')
+        Write (messages(3), '(a,1p,e12.4)') 'penetration depth (nm) ', convert_units(ttm%pdepth, 'ang', 'nm')
+        Call info(messages, 3, .true.)
+
+      case (3)
+
+        Write (messages(1), '(a)') 'initial xy-homogeneous, z-exponential ' &
+             //'decaying spatial energy deposition in electronic system due to laser'
+        Write (messages(2), '(a,1p,e12.4)') &
+             'absorbed ttm%fluence at surface (mJ cm^-2) ', convert_units(ttm%fluence, 'e.V/ang^2', 'mJ/cm^2')
+        Write (messages(3), '(a,1p,e12.4)') 'penetration depth (nm) ', convert_units(ttm%pdepth, 'ang', 'nm')
+        Call info(messages, 3, .true.)
+      end select
+
+    end if
+
+    select case (ttm%tdepotype)
+    case (1)
+      Write (messages(1), '(a)') 'gaussian temporal energy deposition in electronic system'
+      Write (messages(2), '(a,1p,e12.4)') 'thermo%ttm%sigma of distribution (ps) ', ttm%tdepo
+      Write (messages(3), '(a,1p,e12.4)') 'distribution cutoff (ps) ', 2.0_wp * ttm%tcdepo * ttm%tdepo
+      Call info(messages, 3, .true.)
+
+    case (2)
+      Write (messages(1), '(a)') 'decaying exponential temporal energy deposition in electronic system'
+      Write (messages(2), '(a,1p,e12.4)') 'tau of distribution (ps) ', ttm%tdepo
+      Write (messages(3), '(a,1p,e12.4)') 'distribution cutoff (ps) ', ttm%tcdepo * ttm%tdepo
+      Call info(messages, 3, .true.)
+
+    case (3)
+      Call info('dirac delta temporal energy deposition in electronic system', .true.)
+
+    case (4)
+      Write (messages(1), '(a)') 'square pulse temporal energy deposition in electronic system'
+      Write (messages(2), '(a,1p,e12.4)') 'pulse duration (ps) ', ttm%tdepo
+      Call info(messages, 2, .true.)
+
+    end select
+
+    Select Case (ttm%gvar)
+    Case (1)
+      Write (messages(1), '(a)') 'variable electron-phonon coupling values to be applied homogeneously'
+    Case (2)
+      Write (messages(1), '(a)') 'variable electron-phonon coupling values to be applied heterogeneously'
+    End Select
+    Write (messages(2), '(a)') '(overrides value given for ensemble, required tabulated stopping'
+    Write (messages(3), '(a)') 'terms in g.dat file)'
+    Call info(messages, 3, .true.)
+
+    select case(ttm%bcTypeE)
+    case(1)
+      Call info('electronic temperature boundary conditions set as periodic', .true.)
+
+    Case (2)
+      Write (messages(1), '(a)') 'electronic temperature boundary conditions set as dirichlet:'
+      Write (messages(2), '(a)') 'setting boundaries to system temperature'
+      Call info(messages, 2, .true.)
+
+    case (3)
+      Write (messages(1), '(a)') 'electronic temperature boundary conditions set as neumann:'
+      Write (messages(2), '(a)') 'zero energy flux at boundaries'
+      Call info(messages, 2, .true.)
+
+    case (4)
+      Write (messages(1), '(a)') 'electronic temperature boundary conditions set as dirichlet (xy), neumann (z):'
+      Write (messages(2), '(a)') 'system temperature at x and y boundaries'
+      Write (messages(3), '(a)') 'zero energy flux at z boundaries'
+      Call info(messages, 3, .true.)
+
+    Case (5)
+      Write (messages(1), '(a)') 'electronic temperature boundary conditions set as robin:'
+      Write (messages(2), '(a,1p,e11.4)') 'temperature leakage at boundaries of ', ttm%fluxout
+      Call info(messages, 2, .true.)
+
+    case (6)
+      Write (messages(1), '(a)') 'electronic temperature boundary conditions set as robin (xy), neumann (z):'
+      Write (messages(2), '(a,1p,e11.4)') 'temperature leakage at x and y boundaries of ', ttm%fluxout
+      Write (messages(3), '(a)') 'zero energy flux at z boundaries'
+      Call info(messages, 3, .true.)
+
+    end select
+
+    Write (message, '(a,1p,e12.4)') 'electron-ion coupling offset (ps) ', ttm%ttmoffset
+    Call info(message, .true.)
+
+    if (ttm%oneway) Call info('one-way electron-phonon coupling option switched on', .true.)
+
+    if (ttm%ttmstats > 0) then
+      Write (messages(1), '(a)') 'ttm statistics file option on'
+      Write (messages(2), '(a,i10)') 'ttm statistics file interval ', ttm%ttmstats
+      Call info(messages, 2, .true.)
+    end if
+
+    if (ttm%ttmtraj > 0) then
+      Write (messages(1), '(a)') 'ttm trajectory (temperature profile) file option on'
+      Write (messages(2), '(a,i10)') 'ttm trajectory file interval', ttm%ttmtraj
+      Call info(messages, 2, .true.)
+    end if
+
+  End Subroutine write_ttm
 
   Subroutine initialise_control(table)
     !!-----------------------------------------------------------------------
@@ -3031,7 +3640,7 @@ contains
         call table%set("io_file_output", control_parameter( &
              key = "io_file_output", &
              name = "Output filepath", &
-             val = "SCREEN", &
+             val = "OUTPUT", &
              description = "Set output filepath, special options: SCREEN, NONE", &
              data_type = DATA_STRING))
 
@@ -3387,6 +3996,13 @@ contains
       end block impact
 
       ttm: block
+
+        call table%set("ttm_calculate", control_parameter( &
+             key = "ttm_calculate", &
+             name = "TTM Active", &
+             val = "off", &
+             description = "Enable calculation of two-temperature model", &
+             data_type = DATA_BOOL))
 
         call table%set("ttm_num_ion_cells", control_parameter( &
              key = "ttm_num_ion_cells", &
@@ -3774,7 +4390,7 @@ contains
       call table%set("regauss_frequency", control_parameter( &
            key = "regauss_frequency", &
            name = "Regauss frequency", &
-           val = "0", &
+           val = "-1", &
            units = "steps", &
            internal_units = "steps", &
            description = "Set the frequency of temperature regaussing", &
@@ -3783,7 +4399,7 @@ contains
       call table%set("rescale_frequency", control_parameter( &
            key = "rescale_frequency", &
            name = "Rescale frequency", &
-           val = "0", &
+           val = "-1", &
            units = "steps", &
            internal_units = "steps", &
            description = "Set the frequency of temperature rescaling", &
@@ -4121,18 +4737,19 @@ contains
     Character(Len=STR_LEN) :: input, key, val, units
 
     do
-       key = ''; val = ''; units = ''
-       Call get_line(line_read,ifile,input,comm)
-       if (.not. line_read) exit
-       ! Trim comments
-       if (scan(input, "#!") > 0) input = input(:scan(input, "#!")-1)
-       call get_word(input, key)
-       ! Skip blanks
-       if (key == "") cycle
-       Call lower_case(key)
-       can_parse = params%in(key)
-       exit
+      key = ''; val = ''; units = ''
+      Call get_line(line_read,ifile,input,comm)
+      if (.not. line_read) exit
+      ! Trim comments
+      if (scan(input, "#!") > 0) input = input(:scan(input, "#!")-1)
+      call get_word(input, key)
+      ! Skip blanks
+      if (key == "") cycle
+      Call lower_case(key)
+      can_parse = params%in(key)
+      exit
     end do
+    rewind(ifile)
 
   end Function try_parse
 
@@ -4154,21 +4771,21 @@ contains
     Logical :: line_read
 
     do
-       key = ''; val = ''; units = ''
-       Call get_line(line_read,ifile,input,comm)
-       if (.not. line_read) exit
-       ! Trim comments
-       if (scan(input, "#!") > 0) input = input(:scan(input, "#!")-1)
-       call get_word(input, key)
-       ! Skip blanks
-       if (key == "") cycle
-       Call lower_case(key)
-       if (.not. params%in(key)) call error(0, 'Unrecognised key '//trim(key))
-       Call params%get(key, param)
-       if (param%set) call error(0, 'Param '//trim(key)//' already set')
-       Call read_control_param(input, param, ifile, comm)
-       param%set = .true.
-       call params%set(key, param)
+      key = ''; val = ''; units = ''
+      Call get_line(line_read,ifile,input,comm)
+      if (.not. line_read) exit
+      ! Trim comments
+      if (scan(input, "#!") > 0) input = input(:scan(input, "#!")-1)
+      call get_word(input, key)
+      ! Skip blanks
+      if (key == "") cycle
+      Call lower_case(key)
+      if (.not. params%in(key)) call error(0, 'Unrecognised key '//trim(key))
+      Call params%get(key, param)
+      if (param%set) call error(0, 'Param '//trim(key)//' already set')
+      Call read_control_param(input, param, ifile, comm)
+      param%set = .true.
+      call params%set(key, param)
     end do
 
     call params%fix()
@@ -4187,104 +4804,104 @@ contains
 
     select case (param%data_type)
     case (DATA_INT)
-       call get_word(input, val)
-       test_int = nint(word_2_real(val))
-       param%val = val
+      call get_word(input, val)
+      test_int = nint(word_2_real(val))
+      param%val = val
     case (DATA_FLOAT)
-       call get_word(input, val)
-       test_real = word_2_real(val)
-       param%val = val
-       call get_word(input, unit)
-       param%units = unit
+      call get_word(input, val)
+      test_real = word_2_real(val)
+      param%val = val
+      call get_word(input, unit)
+      param%units = unit
     case (DATA_VECTOR3, DATA_VECTOR6)
-       ! Handle Multiline
-       i = index(input, '&')
-       tmp = ''
-       do while (i > 0)
-          tmp = trim(tmp) // input(:i-1)
-          if (input(i+1:) /= '') call error(0, 'Unexpected junk '//trim(input)//' after key '//trim(param%key))
-          call get_line(line_read, ifile, input, comm)
-          i = index(input, '&')
-       end do
-       tmp = adjustl(trim(tmp) // input)
+      ! Handle Multiline
+      i = index(input, '&')
+      tmp = ''
+      do while (i > 0)
+        tmp = trim(tmp) // input(:i-1)
+        if (input(i+1:) /= '') call error(0, 'Unexpected junk '//trim(input)//' after key '//trim(param%key))
+        call get_line(line_read, ifile, input, comm)
+        i = index(input, '&')
+      end do
+      tmp = adjustl(trim(tmp) // input)
 
-       if (tmp(1:1) /= '[') call error(0, '')
-       i = index(tmp, ']', back=.true.)
-       tmp = tmp(:i)
-       input = tmp(i+1:)
+      if (tmp(1:1) /= '[') call error(0, '')
+      i = index(tmp, ']', back=.true.)
+      tmp = tmp(:i)
+      input = tmp(i+1:)
 
-       test_int = 0
-       do i = 1, len_trim(tmp)
-          if (tmp(i:i) == '[') then
-             test_int = test_int + 1
-             tmp(i:i) = ' '
-          else if (tmp(i:i) == ']') then
-             test_int = test_int - 1
-             tmp(i:i) = ' '
-          end if
-       end do
-       if (test_int /= 0) call error(0, 'Unmatched brackets in input '//trim(tmp))
+      test_int = 0
+      do i = 1, len_trim(tmp)
+        if (tmp(i:i) == '[') then
+          test_int = test_int + 1
+          tmp(i:i) = ' '
+        else if (tmp(i:i) == ']') then
+          test_int = test_int - 1
+          tmp(i:i) = ' '
+        end if
+      end do
+      if (test_int /= 0) call error(0, 'Unmatched brackets in input '//trim(tmp))
 
-       do while (tmp /= '')
-          call get_word(tmp, val)
-          ! Check all valid reals
-          test_real = word_2_real(val)
-          param%val = trim(param%val)//' '//val
-       end do
+      do while (tmp /= '')
+        call get_word(tmp, val)
+        ! Check all valid reals
+        test_real = word_2_real(val)
+        param%val = trim(param%val)//' '//val
+      end do
 
-       call get_word(input, unit)
-       param%units = unit
+      call get_word(input, unit)
+      param%units = unit
 
-       ! call get_word(input, val)
-       ! if (val(1:1) /= '[') call error(0, 'Expected vector in key '//trim(param%key)//' received '//trim(input))
-       ! test_int = 1
-       ! ! Skip [ on read
-       ! if (trim(val(2:)) /= '') then
-       !    test_real = word_2_real(val(2:))
-       !    param%val = trim(val(2:))
-       ! end if
+      ! call get_word(input, val)
+      ! if (val(1:1) /= '[') call error(0, 'Expected vector in key '//trim(param%key)//' received '//trim(input))
+      ! test_int = 1
+      ! ! Skip [ on read
+      ! if (trim(val(2:)) /= '') then
+      !    test_real = word_2_real(val(2:))
+      !    param%val = trim(val(2:))
+      ! end if
 
-       ! do
-       !    call get_word(input, val)
-       !    ! Handle multiline
-       !    do while(trim(input) == '')
-       !       call get_line(line_read, ifile, input, comm)
-       !       if (.not. line_read) call error(0, 'End of file while parsing '//trim(param%key))
-       !    end do
+      ! do
+      !    call get_word(input, val)
+      !    ! Handle multiline
+      !    do while(trim(input) == '')
+      !       call get_line(line_read, ifile, input, comm)
+      !       if (.not. line_read) call error(0, 'End of file while parsing '//trim(param%key))
+      !    end do
 
-       !    i = index(val, ']')
-       !    if (i > 1) then ! Val]
-       !       test_real = word_2_real(val(1:i-1))
-       !       param%val = trim(param%val) // ' ' // val(1:i-1)
-       !       test_int = test_int - 1
-       !    else if (i == 1) then ! Independent ]
-       !       test_int = test_int - 1
-       !    else
-       !       test_real = word_2_real(val)
-       !       param%val = trim(param%val) // ' ' // val
-       !    end if
-       !    if (test_int == 0) exit
-       ! end do
+      !    i = index(val, ']')
+      !    if (i > 1) then ! Val]
+      !       test_real = word_2_real(val(1:i-1))
+      !       param%val = trim(param%val) // ' ' // val(1:i-1)
+      !       test_int = test_int - 1
+      !    else if (i == 1) then ! Independent ]
+      !       test_int = test_int - 1
+      !    else
+      !       test_real = word_2_real(val)
+      !       param%val = trim(param%val) // ' ' // val
+      !    end if
+      !    if (test_int == 0) exit
+      ! end do
 
-       ! ! Handle multiline
-       ! do while(trim(input) == '')
-       !    call get_line(line_read, ifile, input, comm)
-       !    if (.not. line_read) call error(0, 'End of file while parsing '//trim(param%key))
-       ! end do
-       ! call get_word(input, unit)
-       ! param%units = unit
+      ! ! Handle multiline
+      ! do while(trim(input) == '')
+      !    call get_line(line_read, ifile, input, comm)
+      !    if (.not. line_read) call error(0, 'End of file while parsing '//trim(param%key))
+      ! end do
+      ! call get_word(input, unit)
+      ! param%units = unit
 
     case (DATA_OPTION, DATA_BOOL)
-       call get_word(input, val)
-       if (val == "") call error(0, 'Missing option for '//trim(param%key))
-       call lower_case(val)
-       param%val = val
-       input = ""
+      call get_word(input, val)
+      if (val == "") call error(0, 'Missing option for '//trim(param%key))
+      call lower_case(val)
+      param%val = val
+      input = ""
     case (DATA_STRING)
-       param%val = adjustl(input)
-       input = ""
+      param%val = adjustl(input)
+      input = ""
     case Default
-       call error(0, 'Unknown data type while parsing '//trim(param%key))
+      call error(0, 'Unknown data type while parsing '//trim(param%key))
     end select
 
     if (input /= '') call error(0, "Unexpected junk "//trim(input)//" after key "//trim(param%key))

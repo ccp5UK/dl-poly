@@ -35,7 +35,7 @@ module control_parameter_module
      !> Long name to be printed on high print_level
      Character(Len=STR_LEN) :: name = ""
      !> Current value -- Initialise to default
-     Character(Len=STR_LEN) :: val = ""
+     Character(Len=STR_LEN) :: val = " "
      !> User specified units
      Character(Len=MAX_KEY) :: units = ""
      !> Units to be converted to internally

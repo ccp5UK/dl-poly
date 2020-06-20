@@ -2004,7 +2004,6 @@ contains
     call read_bond_analysis(params, flow, bond, angle, dihedral, inversion, mxgana)
 
     if (thermo%ensemble == ENS_NVT_LANGEVIN_INHOMO) then
-       ttm%l_ttm = .true.
 
        call params%retrieve('ttm_num_ion_cells', ttm%ntsys(3))
        call params%retrieve('ttm_num_elec_cells', ttm%eltsys)

@@ -76,11 +76,6 @@ Module bounds
   Use control_parameter_module, Only : parameters_hash_table
   Use control,         Only: use_new_control
   Use new_control_old_style, Only : scan_new_control_pre_old, scan_new_control_old
-  Use new_control, Only:  read_ttm, &
-       read_ensemble, &
-       read_bond_analysis, &
-       read_structure_analysis, &
-       read_forcefield
 
   Implicit None
 
@@ -90,10 +85,12 @@ Module bounds
 
 Contains
 
-  Subroutine set_bounds_new(params, site, ttm, io, cshell, cons, pmf, stats, thermo, green, devel, &
-       msd_data, met, pois, bond, angle, dihedral, inversion, tether, threebody, zdensity, &
-       neigh, vdws, tersoffs, fourbody, rdf, adf, crd, traj, defect, displacement, mpoles, ext_field, &
-       rigid, electro, domain, config, ewld, kim_data, files, flow, comm)
+  Subroutine set_bounds_new(site, ttm, io, cshell, cons, pmf, stats, green, devel, &
+       msd_data, met, bond, angle, dihedral, inversion, tether, threebody, zdensity, &
+       neigh, vdws, tersoffs, fourbody, rdf, mpoles, ext_field, &
+       rigid, electro, domain, config, ewld, kim_data, files, flow, comm, &
+       xhi, yhi, zhi, megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, &
+         mtshl, mtteth, link_cell)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -107,7 +104,6 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( parameters_hash_table ), intent( In    ) :: params
     Type(site_type),           Intent(InOut) :: site
     Type(ttm_type),            Intent(InOut) :: ttm
     Type(io_type),             Intent(InOut) :: io
@@ -115,12 +111,10 @@ Contains
     Type(constraints_type),    Intent(InOut) :: cons
     Type(pmf_type),            Intent(InOut) :: pmf
     Type(stats_type),          Intent(InOut) :: stats
-    Type(thermostat_type),     Intent(InOut) :: thermo
     Type(greenkubo_type),      Intent(InOut) :: green
     Type(development_type),    Intent(InOut) :: devel
     Type(msd_type),            Intent(InOut) :: msd_data
     Type(metal_type),          Intent(InOut) :: met
-    Type(poisson_type),        Intent(InOut) :: pois
     Type(bonds_type),          Intent(InOut) :: bond
     Type(angles_type),         Intent(InOut) :: angle
     Type(dihedrals_type),      Intent(InOut) :: dihedral
@@ -133,8 +127,6 @@ Contains
     Type(tersoff_type),        Intent(InOut) :: tersoffs
     Type(four_body_type),      Intent(InOut) :: fourbody
     Type(rdf_type),            Intent(InOut) :: rdf
-    Type(adf_type),            Intent(InOut) :: adf
-    Type(coord_type),          Intent(InOut) :: crd
     Type(mpole_type),          Intent(InOut) :: mpoles
     Type(external_field_type), Intent(InOut) :: ext_field
     Type(rigid_bodies_type),   Intent(InOut) :: rigid
@@ -146,56 +138,17 @@ Contains
     Type(file_type),           Intent(InOut) :: files(:)
     Type(flow_type),           Intent(InOut) :: flow
     Type(comms_type),          Intent(InOut) :: comm
-    Type( trajectory_type ),   Intent(InOut) :: traj
-    Type( defects_type ),      Intent(InOut) :: defect(:)
-    Type( rsd_type ),          Intent(InOut) :: displacement
+    Real(Kind=wp),             Intent(InOut) :: xhi, yhi, zhi
+    Integer,                   Intent(In   ) :: megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, &
+         mtshl, mtteth
+    Integer, Dimension(3),     Intent(  Out) :: link_cell
 
     Character(Len=256) :: message
-    Integer, Dimension(3) :: link_cell
-    Integer            :: megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, &
-         mtshl, mtteth
     Integer(Kind=wi)   :: mxgrid
     Real(Kind=wp), Dimension(10) :: cell_properties
-    Real(Kind=wp)      :: cut, dens0, dens, padding2, xhi, yhi, zhi
-
-    ! scan the FIELD file data
-
-    Call scan_field(megatm, site, neigh%max_exclude, mtshl, &
-                    mtcons, mtrgd, mtteth, mtbond, mtangl, mtdihd, mtinv, &
-                    ext_field, cshell, cons, pmf, met, bond, angle, dihedral, inversion, tether, threebody, &
-                    vdws, tersoffs, fourbody, rdf, mpoles, rigid, kim_data, files, electro, comm)
-
-    ! Get imc_r & set config%dvar
-
-    call params%retrieve('density_variance', config%dvar)
-
-    ! scan CONFIG file data
-
-    Call scan_config(config, megatm, config%dvar, config%levcfg, xhi, yhi, zhi, io, domain, files, comm)
-
-    ! halt execution for unsupported image conditions in DD
-    ! checks for some inherited from DL_POLY_2 are though kept
-
-    If (config%imcon == IMCON_TRUNC_OCTO .or. &
-        config%imcon == IMCON_RHOMBIC_DODEC .or. &
-        config%imcon == IMCON_HEXAGONAL) then
-      write(message, '(A,I0.1,A)') 'Imcon ',config%imcon,' no longer supported in DL_POLY_4'
-      Call error(0, message)
-    end If
-
-    ! scan CONTROL file data
-
-    ! Call scan_control(rigid%max_rigid, config%imcon, config%cell, &
-    !      xhi, yhi, zhi, config%mxgana, config%l_ind, electro%nstfce, &
-    !      ttm, cshell, stats, thermo, green, devel, msd_data, met, pois, bond, angle, dihedral, &
-    !      inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, electro, ewld, kim_data, &
-    !      files, flow, comm)
+    Real(Kind=wp)      :: cut, dens0, dens, padding2
 
     call setup_cell_props(config, cell_properties)
-    call read_bond_analysis(params, flow, bond, angle, dihedral, inversion, config%mxgana)
-    call read_structure_analysis(params, msd_data, rdf, green, zdensity, adf, crd, traj, defect, displacement)
-    call read_forcefield(params, neigh, config, xhi, yhi, zhi, flow, vdws, electro, ewld, mpoles, cshell, met, &
-       kim_Data, bond, tersoffs)
 
     ! check value of cutoff and reset if necessary
 
@@ -209,9 +162,6 @@ Contains
         End If
       End If
     End If
-
-    if (threebody%mxtbp > 0 .and. threebody%cutoff < 1.0e-6_wp) threebody%cutoff = 0.5_wp * neigh%cutoff
-    If (fourbody%max_four_body > 0 .and. fourbody%cutoff < 1.0e-6_wp) fourbody%cutoff = 0.5_wp * neigh%cutoff
 
     ! config%dvar push of dihedral%max_legend and neigh%max_exclude ranges as the usual suspects
 
@@ -240,8 +190,6 @@ Contains
     Call info(message, .true., level=2)
 
     ! TTM matters
-    call read_ttm(params, ttm)
-    call read_ensemble(params, thermo, ttm%l_ttm)
     padding2 = Huge(1.0_wp) ! Default to huge so fails in mins
     If (ttm%l_ttm) Call ttm_setup_bounds(ttm, config, domain, megatm, padding2)
 
@@ -287,10 +235,6 @@ Contains
     End If
 
     If (any(link_cell < 3)) Call warning(100, 0.0_wp, 0.0_wp, 0.0_wp)
-
-    Write (message, '(a,3i6)') "Final link-cell decomposition (x,y,z): ", link_cell
-    Call info(message, .true., level=1)
-
 
   end Subroutine set_bounds_new
 
@@ -402,13 +346,6 @@ Contains
     ! scan CONFIG file data
 
     Call scan_config(config, megatm, config%dvar, config%levcfg, xhi, yhi, zhi, io, domain, files, comm, ff)
-
-    ! halt execution for unsupported image conditions in DD
-    ! checks for some inherited from DL_POLY_2 are though kept
-
-    If (config%imcon == IMCON_TRUNC_OCTO .or. &
-        config%imcon == IMCON_RHOMBIC_DODEC .or. &
-        config%imcon == IMCON_HEXAGONAL) Call error(514)
 
     ! scan CONTROL file data
 
