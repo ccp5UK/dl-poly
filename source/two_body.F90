@@ -59,7 +59,8 @@ Module two_body
   Use timer,           Only: start_timer,&
                              stop_timer,&
                              timer_type
-  Use vdw,             Only: vdw_forces,&
+  Use vdw,             Only: vdw_forces_tab,&
+                             vdw_forces_direct,&
                              vdw_type
 
   Implicit None
@@ -274,7 +275,16 @@ Contains
         ! calculate short-range force and potential terms
 
         If (vdws%n_vdw > 0) Then
-          Call vdw_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, vdws, config)
+          If (vdws%l_direct) Then ! direct calculation
+
+            Call vdw_forces_direct(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, vdws, config)
+
+          else
+
+            Call vdw_forces_tab(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, vdws, config)
+
+          end If
+
 
           engvdw = engvdw + engacc
           virvdw = virvdw + viracc

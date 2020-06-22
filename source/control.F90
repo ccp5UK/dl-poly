@@ -132,7 +132,8 @@ Module control
                                   ENS_NPT_NOSE_HOOVER, ENS_NPT_NOSE_HOOVER_ANISO, ENS_NVE, &
                                   ENS_NVT_ANDERSON, ENS_NVT_BERENDSEN, ENS_NVT_EVANS, &
                                   ENS_NVT_GENTLE, ENS_NVT_LANGEVIN, ENS_NVT_LANGEVIN_INHOMO, &
-                                  ENS_NVT_NOSE_HOOVER, thermostat_type
+                                  ENS_NVT_NOSE_HOOVER, thermostat_type, &
+                                  PSEUDO_LANGEVIN_DIRECT, PSEUDO_LANGEVIN, PSEUDO_GAUSSIAN, PSEUDO_DIRECT
   Use timer,                Only: timer_type
   Use trajectory,           Only: trajectory_type
   Use ttm,                  Only: ttm_type
@@ -239,7 +240,7 @@ Contains
                           lstrext, ltemp, safe
     Real(Kind=wp)      :: eps0, prmps(1:4), rcb_d, rcell(1:9), rcut1, rpad1, rvdw1, tmp, tol
     Type(testing_type) :: unit_test, app_test
-    
+
     ! initialise system control variables and their logical switches
 
     If (present(ff)) then
@@ -320,7 +321,7 @@ Contains
     ! minimum temperature of the thermostat
 
     thermo%l_stochastic_boundaries = .false.
-    thermo%key_pseudo = 0
+    thermo%key_pseudo = PSEUDO_LANGEVIN_DIRECT
     thermo%width_pseudo = 2.0_wp
     thermo%temp_pseudo = 1.0_wp
 
@@ -631,6 +632,11 @@ Contains
       If (word(1:1) == '#' .or. word(1:1) == ' ') Then
       Else If (word(1:5) == 'l_scr') Then
       Else If (word(1:6) == 'l_fast') Then
+      Else If (word(1:7) == 'l_print') Then
+        Call get_word(record, word)
+        itmp = nint(word_2_real(word))
+        write(message, '(A,i2.1)') "Print level :", itmp
+        Call info(message, .true.)
       Else If (word(1:5) == 'l_eng') Then
         devel%l_eng = .true.
         If(fftag == 1) Call info('%%% OUTPUT contains an extra last line with E_tot !!! %%%', .true.)
@@ -719,9 +725,9 @@ Contains
         If(fftag == 1) Call info(&
                         '%%% Turn on the check on minimum separation distance between VNL pairs at re/start !!! %%%', .true.)
         Write (message, '(a,1p,e12.4)') '%%% separation criterion (Angstroms) %%%', devel%r_dis
-
         If(fftag == 1) Call info(message, .true.)
 
+        ! read unit and app tests to perform
       Else If(word(1:9) == 'unit_test') Then
          devel%run_unit_tests = .true.
          Call unit_test%all()
@@ -731,7 +737,7 @@ Contains
          devel%run_app_tests = .true.
          Call app_test%all()
          devel%app_test = app_test
-         
+
         ! read VDW options
       Else If (word(1:3) == 'vdw') Then
         Call get_word(record, word1)
@@ -1078,13 +1084,13 @@ Contains
 
         Call get_word(record, word)
         If (word(1:4) == 'lang') Then
-          thermo%key_pseudo = 1
+          thermo%key_pseudo = PSEUDO_LANGEVIN
           Call get_word(record, word)
         Else If (word(1:5) == 'gauss') Then
-          thermo%key_pseudo = 2
+          thermo%key_pseudo = PSEUDO_GAUSSIAN
           Call get_word(record, word)
         Else If (word(1:6) == 'direct') Then
-          thermo%key_pseudo = 3
+          thermo%key_pseudo = PSEUDO_DIRECT
           Call get_word(record, word)
         End If
 
@@ -1095,15 +1101,17 @@ Contains
           thermo%l_stochastic_boundaries = .true.
           If (comm%idnode == 0) Then
             If(fftag == 1) Call info('pseudo thermostat attached to MD cell boundary', .true.)
-            If (thermo%key_pseudo == 0) Then
+            select case (thermo%key_pseudo)
+            Case (PSEUDO_LANGEVIN_DIRECT)
               If(fftag == 1) Call info('thermostat control: Langevin + direct temperature scaling', .true.)
-            Else If (thermo%key_pseudo == 1) Then
+            Case (PSEUDO_LANGEVIN)
               If(fftag == 1) Call info('thermostat control: Langevin temperature scaling', .true.)
-            Else If (thermo%key_pseudo == 2) Then
+            Case (PSEUDO_GAUSSIAN)
               If(fftag == 1) Call info('thermostat control: gaussian temperature scaling', .true.)
-            Else If (thermo%key_pseudo == 3) Then
+            Case (PSEUDO_DIRECT)
               If(fftag == 1) Call info('thermostat control: direct temperature scaling', .true.)
-            End If
+            End select
+
             Write (message, '(a,1p,e12.4)') 'thermostat thickness (Angs) ', tmp
           End If
 
@@ -3037,7 +3045,7 @@ Contains
 
          !Use DFTB+ as the force calculator instead of classical force fields
          flow%simulation_method = DFTB
-        
+
         ! close control file
 
       Else If (word(1:6) == 'finish') Then
@@ -3772,7 +3780,7 @@ Contains
   End Subroutine read_control
 
   Subroutine scan_control(rcter, max_rigid, imcon, imc_n, cell, xhi, yhi, zhi, mxgana, &
-                          l_n_r, lzdn, l_ind, nstfce, ttm, cshell, stats, thermo, green, devel, msd_data, met, &
+                          l_ind, nstfce, ttm, cshell, stats, thermo, green, devel, msd_data, met, &
                           pois, bond, angle, dihedral, inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, &
                           electro, ewld, kim_data, files, flow, comm, ff)
 
@@ -3803,7 +3811,7 @@ Contains
     Real(Kind=wp),            Intent(InOut) :: cell(1:9)
     Real(Kind=wp),            Intent(In   ) :: xhi, yhi, zhi
     Integer,                  Intent(  Out) :: mxgana
-    Logical,                  Intent(  Out) :: l_n_r, lzdn, l_ind
+    Logical,                  Intent(  Out) :: l_ind
     Integer,                  Intent(  Out) :: nstfce
     Type(ttm_type),           Intent(InOut) :: ttm
     Type(core_shell_type),    Intent(In   ) :: cshell
@@ -3888,9 +3896,8 @@ Contains
     ! electro%no_elec is now first determined in scan_field electro%no_elec = (.false.)
 
     rdf%l_collect = (rdf%max_rdf > 0)
-    l_n_r = .not. rdf%l_collect
 
-    lzdn = .false.
+    zdensity%l_collect = .false.
 
     lvdw = (vdws%max_vdw > 0)
     vdws%no_vdw = .false.
@@ -4041,11 +4048,11 @@ Contains
 
         ! read binsize option
 
-    ! dftb_driver                                                                                                           
+    ! dftb_driver
       Else If (word(1:11) == 'dftb_driver') Then
-         !Use DFTB+ as the force calculator instead of classical force fields                             
+         !Use DFTB+ as the force calculator instead of classical force fields
          flow%simulation_method = DFTB
-        
+
       Else If (word(1:7) == 'binsize') Then
 
         Call get_word(record, word)
@@ -4277,13 +4284,12 @@ Contains
       Else If (word(1:3) == 'rdf') Then
 
         rdf%l_collect = .true.
-        l_n_r = .not. rdf%l_collect
 
         ! read z-density profile option
 
       Else If (word(1:4) == 'zden') Then
 
-        lzdn = .true.
+        zdensity%l_collect = .true.
 
         ! read two-temperature model options
 
@@ -4452,7 +4458,7 @@ Contains
           ttm%redistribute = .true.
 
         End If
-       
+
         ! read finish
 
       Else If (word(1:6) == 'finish') Then
@@ -4655,7 +4661,7 @@ Contains
 
               ! Sanity check for ill defined ewald sum parameters 1/8*2*2*2 == 1
 
-              tol = electro%alpha * Real(ewld%fft_dim_a1, wp) * Real(ewld%fft_dim_a1, wp) * Real(ewld%fft_dim_a1, wp)
+              tol = electro%alpha * Real(ewld%fft_dim_a1, wp) * Real(ewld%fft_dim_b1, wp) * Real(ewld%fft_dim_c1, wp)
               If (Nint(tol) < 1) Call error(9)
 
               ! neigh%cutoff is not needed directly for the SPME but it's needed
@@ -4781,7 +4787,7 @@ Contains
 
           ! Reset vdws%cutoff, met%rcut and neigh%cutoff when only tersoff potentials are opted for
 
-          If (lter .and. electro%no_elec .and. vdws%no_vdw .and. l_n_m .and. l_n_r) Then
+          If (lter .and. electro%no_elec .and. vdws%no_vdw .and. l_n_m .and. .not. rdf%l_collect) Then
             vdws%cutoff = 0.0_wp
             met%rcut = 0.0_wp
             If (.not. flow%strict) Then
@@ -4828,7 +4834,7 @@ Contains
           ! Reset vdws%cutoff and met%rcut when only tersoff potentials are opted for and
           ! possibly reset neigh%cutoff to 2.0_wp*rcter+1.0e-6_wp (leaving room for failure)
 
-          If (lter .and. electro%no_elec .and. vdws%no_vdw .and. l_n_m .and. l_n_r .and. &
+          If (lter .and. electro%no_elec .and. vdws%no_vdw .and. l_n_m .and. .not. rdf%l_collect .and. &
               kim_data%active) Then
             vdws%cutoff = 0.0_wp
             met%rcut = 0.0_wp
