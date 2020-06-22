@@ -4596,7 +4596,7 @@ Contains
 
               ! Sanity check for ill defined ewald sum parameters 1/8*2*2*2 == 1
 
-              tol = electro%alpha * Real(ewld%fft_dim_a1, wp) * Real(ewld%fft_dim_a1, wp) * Real(ewld%fft_dim_a1, wp)
+              tol = electro%alpha * Real(ewld%fft_dim_a1, wp) * Real(ewld%fft_dim_b1, wp) * Real(ewld%fft_dim_c1, wp)
               If (Nint(tol) < 1) Call error(9)
 
               ! neigh%cutoff is not needed directly for the SPME but it's needed
