@@ -1501,7 +1501,7 @@ contains
     call params%retrieve('analyse_frequency_inversions', flow%freq_inversion)
     flow%freq_inversion = max(1, itmp, flow%freq_inversion)
 
-    call read_structure_analysis(params, msd_data, rdf, green, zdensity, adf, crd, traj, dfcts, rsdc)
+    call read_structure_analysis(params, stats, msd_data, rdf, green, zdensity, adf, crd, traj, dfcts, rsdc)
 
     If (rdf%l_collect) Then
         Write (messages(1), '(a)') 'rdf collection requested:'

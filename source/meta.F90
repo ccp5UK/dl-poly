@@ -154,7 +154,6 @@ Module meta
 
   ! HACK
   Use control_parameter_module, Only : parameters_hash_table
-  Use control,                            Only: use_new_control
   Use new_control_old_style, Only : setup_file_io, scan_new_control_output_old, &
        read_new_control_old
 
@@ -397,7 +396,7 @@ Contains
     ! scan CONTROL file data
 
     call read_bond_analysis(params, flow, bond, angle, dihedral, inversion, config%mxgana)
-    call read_structure_analysis(params, msd_data, rdf, green, zdensity, adf, crd, traj, dfcts, rsdsc)
+    call read_structure_analysis(params, stats, msd_data, rdf, green, zdensity, adf, crd, traj, dfcts, rsdsc)
     call read_forcefield(params, neigh, config, xhi, yhi, zhi, flow, vdws, electro, ewld, mpoles, core_shells, met, &
        kim_Data, bond, threebody, fourbody, tersoffs)
     call read_run_parameters(params, flow, thermo, stats, config%l_ind)
@@ -414,8 +413,9 @@ Contains
        xhi, yhi, zhi, megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, &
        mtshl, mtteth, link_cell)
 
-    call write_parameters(ios, netcdf, files, neigh, config, link_cell, flow, stats, thermo, ttms, mpoles, vdws, &
-       electro, core_shells, ewld, met, impa, minim, plume, cons, pmfs)
+  Call write_parameters(ios, netcdf, files, neigh, config, link_cell, flow, stats, thermo, ttms, mpoles, vdws, &
+       electro, core_shells, ewld, met, impa, minim, plume, cons, pmfs, bond, angle, dihedral, inversion, &
+       msd_data, rdf, green, zdensity, adf, crd, dfcts, traj, rsdsc)
 
     Call molecular_dynamics_allocate(sites, config, neigh, thermo, vdws, core_shells, cons, pmfs, &
          rigid, tether, bond, angle, dihedral, inversion, mpoles, met, tersoffs, threebody, fourbody, &

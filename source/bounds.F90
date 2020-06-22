@@ -74,7 +74,6 @@ Module bounds
 
   !Hack
   Use control_parameter_module, Only : parameters_hash_table
-  Use control,         Only: use_new_control
   Use new_control_old_style, Only : scan_new_control_pre_old, scan_new_control_old
 
   Implicit None

@@ -108,8 +108,7 @@ Program dl_poly
 
   ! HACK
   Use new_control,                        Only: initialise_control
-  Use control_parameter_module,           Only: parameters_hash_table
-  Use control,                            Only: use_new_control
+  Use control_parameter_module,           Only: parameters_hash_table, dump_parameters
 
   Implicit None
 
@@ -166,8 +165,9 @@ Program dl_poly
   ! Local Variables
   Character(len=1024) :: control_filename = '', arg
   Character(len=1024) :: output_filename = ''
+  Character(Len=10)   :: mode
   Logical             :: finish
-  Integer             :: i
+  Integer             :: i, ifile
 
   ! SET UP COMMUNICATIONS & CLOCKING
 
@@ -184,7 +184,6 @@ Program dl_poly
   ! Assume we're running
   flow(1)%simulation = .true.
   ! Assume we're using old format
-  use_new_control = .false.
   finish = .false.
   If (dlp_world(0)%idnode == 0) Then
     If (command_argument_count() > 0) Then
@@ -192,7 +191,7 @@ Program dl_poly
       Do
         i = i + 1
         Call get_command_argument(i, arg)
-        Select Case (Trim (arg))
+        Select Case (arg)
         Case ('-h')
           Call get_command_argument(0, arg)
           Write (eu, '(a)') "Usage: "//Trim(arg)//" -c CONTROL_FILENAME -o OUTPUT_FILENAME"
@@ -201,7 +200,17 @@ Program dl_poly
           Write (eu, '(a)') "use --help to search help"
           finish = .true.
           Exit
-       Case ('--help')
+        Case ('--dump')
+          i = i + 1
+          Call get_command_argument(i, mode)
+          i = i + 1
+          Call get_command_argument(i, arg)
+          Call initialise_control(params)
+          Open(newunit = ifile, file=trim(arg))
+          Call dump_parameters(ifile, params, mode)
+          finish = .true.
+          Exit
+        Case ('--help')
           i = i + 1
           Call get_command_argument(i, control_filename)
           Call initialise_control(params)
@@ -214,8 +223,6 @@ Program dl_poly
         Case ('-o')
           i = i + 1
           Call get_command_argument(i, output_filename)
-       Case ('-n', '--new-control')
-          use_new_control = .true.
        Case ('--replay', '-r')
           flow%simulation = .false.
         Case default

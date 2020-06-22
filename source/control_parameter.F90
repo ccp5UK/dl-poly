@@ -7,8 +7,11 @@ module control_parameter_module
   Use errors_warnings, only : error
   Implicit None
 
+  Private
+
   !> Data types enumeration
-  Integer, Parameter, Public :: DATA_INT=1, DATA_FLOAT=2, DATA_STRING=3, DATA_BOOL=4, DATA_OPTION=5, DATA_VECTOR3=6, DATA_VECTOR6=7
+  Integer, Parameter, Public :: DATA_NULL=0, DATA_INT=1, DATA_FLOAT=2, DATA_STRING=3, &
+       DATA_BOOL=4, DATA_OPTION=5, DATA_VECTOR3=6, DATA_VECTOR6=7
 
   Type, Public, Extends(hash_table) :: parameters_hash_table
    contains
@@ -43,13 +46,17 @@ module control_parameter_module
      !> Information to be printed with help
      Character(Len=STR_LEN) :: description = ""
      !> Control parameter data type (int, float, vector3, vector6, string, bool, option)
-     Integer :: data_type = 0
+     Integer :: data_type = DATA_NULL
      !> Is value set
      Logical :: set = .false.
    contains
      Procedure, Private :: write_control_param
      Generic :: write(formatted) => write_control_param
   End Type control_parameter
+
+  Public :: dump_parameters
+  Public :: control_help_single, control_help_all
+  Public :: print_set
 
 contains
 
@@ -77,6 +84,104 @@ contains
     end do
 
   End Subroutine control_help_all
+
+  Subroutine dump_parameters(ifile, params, mode)
+    Integer, Intent(In) :: ifile
+    Class(parameters_hash_table), Intent(In) :: params
+    Character(Len=10), Intent(In), Value :: mode
+    Type (control_parameter) :: param
+    Character(Len=MAX_KEY), Dimension(:), Allocatable :: keys
+    Character(Len=*), Dimension(0:7), Parameter :: data_name = &
+         [Character(Len=7) :: 'NULL', 'INT', 'FLOAT', 'STRING', 'BOOL', 'OPTION', 'VECTOR3', 'VECTOR6']
+    Integer :: i
+
+    call params%get_keys(keys)
+
+    Select Case (mode)
+    Case ('latexdoc')
+      Write(ifile, '(a)') '\documentclass{article}'
+      Write(ifile, '(a)') '\usepackage[margin=1cm]{geometry}'
+      Write(ifile, '(a)') '\usepackage{longtable}'
+      Write(ifile, '(a)') '\begin{document}'
+      Write(ifile, '(a)') '\begin{longtable}{l l p{10cm}}'
+
+    Case ('latex')
+      Write(ifile, '(a)') '\begin{longtable}{l l p{10cm}}'
+    Case ('csv')
+      Continue
+    Case Default
+      Call error(0, 'Bad mode option '//trim(mode))
+    end Select
+
+    do i = 1, params%used_keys
+       call params%get(keys(i), param)
+       Select Case (mode)
+       Case ('latex', 'latexdoc')
+         ! Escape _
+         param%key = escape(param%key)
+         param%val = escape(param%val)
+         param%units = escape(param%units)
+         param%description = escape(param%description)
+
+         if (param%val == '') then
+           Write(ifile, '(2(a,1X,"&",1X), a, "\\")') &
+                trim(param%key), trim(data_name(param%data_type)), &
+                trim(param%description)
+         else if (param%units == '') then
+           Write(ifile, '(2(a,1X,"&",1X), a, 1X, "(default = ", a, ") \\")') &
+                trim(param%key), trim(data_name(param%data_type)), &
+                trim(param%description), trim(param%val)
+         else
+           Write(ifile, '(2(a,1X,"&",1X), a, 1X, "(default = ", a, 1X, "\verb#", a, "#) \\")') &
+                trim(param%key), trim(data_name(param%data_type)), &
+                trim(param%description), trim(param%val), trim(param%units)
+         end if
+       Case ('csv')
+         Write(ifile, '(5(a,";"))') &
+              trim(param%key), trim(data_name(param%data_type)), &
+              trim(param%description), trim(param%val), trim(param%units)
+       end Select
+
+    end do
+
+    Select Case (mode)
+    Case ('latexdoc')
+      Write(ifile, '(a)') '\end{longtable}'
+      Write(ifile, '(a)') '\end{document}'
+    Case ('latex')
+      Write(ifile, '(a)') '\end{longtable}'
+    Case ('csv')
+      Continue
+    end Select
+
+  contains
+
+    pure function escape(string)
+      Character(Len=*), Intent(In) :: string
+      Character(Len=len(string)) :: escape
+
+      Integer :: read_pos, write_pos
+      Character :: curr_char
+
+      write_pos = 1
+      escape = ""
+      do read_pos = 1, len_trim(string)
+        curr_char = string(read_pos:read_pos)
+        Select Case(curr_char)
+        Case("_")
+          escape(write_pos:write_pos+1) = "\"//curr_char !"
+          write_pos = write_pos + 2
+        Case Default
+          escape(write_pos:write_pos) = curr_char
+          write_pos = write_pos + 1
+        end Select
+
+      end do
+
+    end function escape
+
+  end Subroutine dump_parameters
+
 
   Subroutine print_set(params)
     Class( parameters_hash_table ), intent( In ) :: params

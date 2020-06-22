@@ -96,13 +96,13 @@ Module trajectory
 
   ! Trajectory detail level keys
   !> Coordinates only
-  Integer(Kind=wi), Parameter :: TRAJ_KEY_COORD = 1
+  Integer(Kind=wi), Parameter, Public :: TRAJ_KEY_COORD = 1
   !> Coordinates and velocities
-  Integer(Kind=wi), Parameter :: TRAJ_KEY_COORD_VEL = 2
+  Integer(Kind=wi), Parameter, Public :: TRAJ_KEY_COORD_VEL = 2
   !> Coordinates, velocities and forces
-  Integer(Kind=wi), Parameter :: TRAJ_KEY_COORD_VEL_FORCE = 3
+  Integer(Kind=wi), Parameter, Public :: TRAJ_KEY_COORD_VEL_FORCE = 3
   !> Compressed history file
-  Integer(Kind=wi), Parameter :: TRAJ_KEY_COMPRESSED = 4
+  Integer(Kind=wi), Parameter, Public :: TRAJ_KEY_COMPRESSED = 4
 
   Public :: read_history
   Public :: trajectory_write

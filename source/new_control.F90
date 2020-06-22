@@ -105,7 +105,11 @@ Module new_control
        ENS_NVT_GENTLE, ENS_NVT_LANGEVIN, ENS_NVT_LANGEVIN_INHOMO, &
        ENS_NVT_NOSE_HOOVER, thermostat_type
   Use timer,                Only: timer_type
-  Use trajectory,           Only: trajectory_type
+  Use trajectory,           Only: trajectory_type,&
+                                  TRAJ_KEY_COORD,&
+                                  TRAJ_KEY_COORD_VEL,&
+                                  TRAJ_KEY_COORD_VEL_FORCE,&
+                                  TRAJ_KEY_COMPRESSED
   Use ttm,                  Only: ttm_type
   Use vdw,                  Only: MIX_FENDER_HALSEY,&
        MIX_FUNCTIONAL,&
@@ -734,13 +738,13 @@ contains
   end Subroutine read_ensemble
 
   Subroutine read_bond_analysis(params, flow, bond, angle, dihedral, inversion, max_grid_analysis)
-    Type( parameters_hash_table ), intent( In    ) :: params
-    Type( flow_type ), Intent( InOut ) :: flow
-    Type( bonds_type ), Intent( InOut ) :: bond
-    Type( angles_type ), Intent( InOut ) :: angle
-    Type( dihedrals_type ), Intent( InOut ) :: dihedral
-    Type( inversions_type ), Intent( InOut ) :: inversion
-    Integer, Intent(   Out ) :: max_grid_analysis
+    Type(parameters_hash_table ), Intent(In   ) :: params
+    Type(flow_type),              Intent(InOut) :: flow
+    Type(bonds_type),             Intent(InOut) :: bond
+    Type(angles_type),            Intent(InOut) :: angle
+    Type(dihedrals_type),         Intent(InOut) :: dihedral
+    Type(inversions_type),        Intent(InOut) :: inversion
+    Integer,                      Intent(  Out) :: max_grid_analysis
     Integer :: itmp, itmp2
     Logical :: l_bond, l_angle, l_dihedral, l_inversion, ltmp
 
@@ -766,7 +770,7 @@ contains
       call params%retrieve('analyse_max_dist', bond%rcut)
       if (bond%rcut < minimum_bond_anal_length) then
         bond%rcut = minimum_bond_anal_length
-        call warning('vdw_cutoff less than global cutoff, setting to global cutoff', .true.)
+        call warning('Bond less than minimum length, setting to minimum (2.5 Ang)', .true.)
       end if
 
       bond%bin_pdf = itmp2
@@ -808,18 +812,19 @@ contains
 
   End Subroutine read_bond_analysis
 
-  Subroutine read_structure_analysis(params, msd_data, rdf, vaf, zden, adf, coords, traj, defect, displacement)
+  Subroutine read_structure_analysis(params, stats, msd_data, rdf, vaf, zden, adf, coords, traj, defect, displacement)
 
-    Type( parameters_hash_table ), intent( In    ) :: params
-    Type( msd_type ), Intent( InOut ) :: msd_data
-    Type( greenkubo_type ), Intent( InOut ) :: vaf
-    Type( rdf_type ), Intent( InOut ) :: rdf
-    Type( z_density_type ), Intent( InOut ) :: zden
-    Type( adf_type ), Intent( InOut ) :: adf
-    Type( coord_type ), intent( InOut ) :: coords
-    Type( trajectory_type ), Intent( InOut ) :: traj
-    Type( defects_type ), Intent( InOut ), Dimension(:) :: defect
-    Type( rsd_type ), Intent( InOut ) :: displacement
+    Type(parameters_hash_table), Intent(In   ) :: params
+    Type(stats_type),            Intent(InOut) :: stats
+    Type(msd_type),              Intent(InOut) :: msd_data
+    Type(greenkubo_type),        Intent(InOut) :: vaf
+    Type(rdf_type),              Intent(InOut) :: rdf
+    Type(z_density_type),        Intent(InOut) :: zden
+    Type(adf_type),              Intent(InOut) :: adf
+    Type(coord_type),            intent(InOut) :: coords
+    Type(trajectory_type),       Intent(InOut) :: traj
+    Type(defects_type),          Intent(InOut) :: defect(:)
+    Type(rsd_type),              Intent(InOut) :: displacement
 
     Character(Len=STR_LEN) :: option
     Logical :: ltmp
@@ -878,6 +883,12 @@ contains
       Call warning('rdf_print, rdf_frequency or rdf_binsize found without rdf_calculate')
     end if
 
+    Call params%retrieve('print_probability_distribution', stats%lpana)
+    if (stats%lpana .and. .not. rdf%l_print) then
+      Call warning('RDF printing triggered due to a PDA printing request', .true.)
+      rdf%l_print = stats%lpana
+    end if
+
     ! ZDen
 
     call params%retrieve('zden_calculate', zden%l_collect)
@@ -929,13 +940,13 @@ contains
 
       select case (option)
       case ('pos')
-        traj%key = 0
+        traj%key = TRAJ_KEY_COORD
       case ('pos-vel')
-        traj%key = 1
+        traj%key = TRAJ_KEY_COORD_VEL
       case ('pos-vel-force')
-        traj%key = 2
+        traj%key = TRAJ_KEY_COORD_VEL_FORCE
       case ('compressed')
-        traj%key = 3
+        traj%key = TRAJ_KEY_COMPRESSED
       case default
         call bad_option('traj_key', option)
       end select
@@ -1953,29 +1964,43 @@ contains
   end Subroutine read_system_parameters
 
   Subroutine write_parameters(io_data, netcdf, files, neigh, config, link_cell, flow, stats, thermo, ttm, mpoles, vdws, &
-       electro, cshell, ewld, met, impa, minim, plume, cons, pmf)
-    Type(io_type),              Intent(In) :: io_data
-    Type(netcdf_param),         Intent(In) :: netcdf
-    Type(file_type),            Intent(In) :: files(:)
-    Type(neighbours_type),      Intent(In) :: neigh
-    Type(configuration_type),   Intent(In) :: config
-    Type(flow_type),            Intent(In) :: flow
-    Type(stats_type),           Intent(In) :: stats
-    Type(thermostat_type),      Intent(In) :: thermo
-    Type(ttm_type),             Intent(In) :: ttm
-    Type(mpole_type),           Intent(In) :: mpoles
-    Type(vdw_type),             Intent(In) :: vdws
-    Type(electrostatic_type),   Intent(In) :: electro
-    Type(core_shell_type),      Intent(In) :: cshell
-    Type(ewald_type),           Intent(In) :: ewld
-    Type(metal_type),           Intent(In) :: met
-    Type(plumed_type),          Intent(In) :: plume
-    Type(impact_type),          Intent(In) :: impa
-    Type(minimise_type),        Intent(In) :: minim
-    Type(constraints_type),     Intent(In) :: cons
-    Type(pmf_type),             Intent(In) :: pmf
-    Integer, Dimension(3),      Intent(In) :: link_cell
-    Character(Len=80)  :: banner(6)
+       electro, cshell, ewld, met, impa, minim, plume, cons, pmf, bond, angle, dihedral, inversion, &
+       msd_data, rdf, vaf, zdensity, adf, coords, defect, traj, displacement)
+    Type(io_type),              Intent(In)    :: io_data
+    Type(netcdf_param),         Intent(In)    :: netcdf
+    Type(file_type),            Intent(In)    :: files(:)
+    Type(neighbours_type),      Intent(In)    :: neigh
+    Type(configuration_type),   Intent(In)    :: config
+    Type(flow_type),            Intent(In)    :: flow
+    Type(stats_type),           Intent(In)    :: stats
+    Type(thermostat_type),      Intent(In)    :: thermo
+    Type(ttm_type),             Intent(In)    :: ttm
+    Type(mpole_type),           Intent(In)    :: mpoles
+    Type(vdw_type),             Intent(In)    :: vdws
+    Type(electrostatic_type),   Intent(In)    :: electro
+    Type(core_shell_type),      Intent(In)    :: cshell
+    Type(ewald_type),           Intent(In)    :: ewld
+    Type(metal_type),           Intent(In)    :: met
+    Type(plumed_type),          Intent(In)    :: plume
+    Type(impact_type),          Intent(In)    :: impa
+    Type(minimise_type),        Intent(In)    :: minim
+    Type(constraints_type),     Intent(In)    :: cons
+    Type(pmf_type),             Intent(In)    :: pmf
+    Type(bonds_type),           Intent(In)    :: bond
+    Type(angles_type),          Intent(In)    :: angle
+    Type(dihedrals_type),       Intent(In)    :: dihedral
+    Type(inversions_type),      Intent(In)    :: inversion
+    Type(msd_type),             Intent(In)    :: msd_data
+    Type(rdf_type),             Intent(InOut) :: rdf
+    Type(greenkubo_type),       Intent(In)    :: vaf
+    Type(z_density_type),       Intent(InOut) :: zdensity
+    Type(adf_type),             Intent(In)    :: adf
+    Type(coord_type),           Intent(In)    :: coords
+    Type(trajectory_type),      Intent(In)    :: traj
+    Type(defects_type),         Intent(In)    :: defect(:)
+    Type(rsd_type),             Intent(In)    :: displacement
+    Integer, Dimension(3),      Intent(In)    :: link_cell
+    Character(Len=80)                         :: banner(6)
 
     Write (banner(1), '(a)') ''
     Write (banner(2), '(a)') Repeat('*', 80)
@@ -1990,7 +2015,9 @@ contains
     If (check_print_level(1)) Call write_forcefield(link_cell, neigh, vdws, electro, ewld, mpoles, cshell, met)
     if (check_print_level(1)) Call write_ensemble(thermo)
     if (ttm%l_ttm .and. check_print_level(1)) Call write_ttm(thermo, ttm)
-
+    if (check_print_level(1)) Call write_bond_analysis(stats, config, flow, bond, angle, dihedral, inversion)
+    if (check_print_level(1)) &
+         Call write_structure_analysis(stats, msd_data, rdf, vaf, zdensity, adf, coords, traj, defect, displacement)
     Call info('', .true.)
 
   end Subroutine write_parameters
@@ -2101,6 +2128,193 @@ contains
 
   end Subroutine write_io
 
+  Subroutine write_bond_analysis(stats, config, flow, bond, angle, dihedral, inversion)
+    Type(stats_type),         Intent(In) :: stats
+    Type(configuration_type), Intent(In) :: config
+    Type(flow_type),          Intent(In) :: flow
+    Type(bonds_type),         Intent(In) :: bond
+    Type(angles_type),        Intent(In) :: angle
+    Type(dihedrals_type),     Intent(In) :: dihedral
+    Type(inversions_type),    Intent(In) :: inversion
+
+    Character(Len=256) :: messages(4)
+
+    Call info('', .true.)
+    If (config%mxgana == 0) Then
+      Call info('No intramolecular distribution collection requested', .true., level=3)
+    Else
+      Call info('Intramolecular distribution collection requested for:', .true.)
+
+      if (flow%freq_bond > 0) then
+        Write(messages(1), '(a)') '  Bonds:'
+        Write(messages(2), '(a, i0.1)') '  -- Collect every (steps): ', flow%freq_bond
+        Write(messages(3), '(a, i0.1)') '  -- Num samples  (points): ', bond%bin_pdf
+        Write(messages(4), '(a, f8.2)') '  -- Cutoff         (Angs): ', bond%rcut
+        Call info(messages, 4, .true.)
+      end if
+
+      if (flow%freq_angle > 0) then
+        Write(messages(1), '(a)') '  Angles:'
+        Write(messages(2), '(a, i0.1)') '  -- Collect every (steps): ', flow%freq_angle
+        Write(messages(3), '(a, i0.1)') '  -- Num samples  (points): ', angle%bin_adf
+        Call info(messages, 3, .true.)
+      end if
+
+      if (flow%freq_dihedral > 0) then
+        Write(messages(1), '(a)') '  Dihedrals:'
+        Write(messages(2), '(a, i0.1)') '  -- Collect every (steps): ', flow%freq_dihedral
+        Write(messages(3), '(a, i0.1)') '  -- Num samples  (points): ', dihedral%bin_adf
+        Call info(messages, 3, .true.)
+      end if
+
+      if (flow%freq_inversion > 0) then
+        Write(messages(1), '(a)') '  Inversions:'
+        Write(messages(2), '(a, i0.1)') '  -- Collect every (steps): ', flow%freq_inversion
+        Write(messages(3), '(a, i0.1)') '  -- Num samples  (points): ', inversion%bin_adf
+        Call info(messages, 3, .true.)
+      end if
+
+    End If
+
+    If (stats%lpana) Then
+      Call info('Probability distribution analysis printing requested', .true.)
+    Else
+      Call info('No probability distribution analysis printing requested', .true., level=3)
+    End If
+
+  end Subroutine write_bond_analysis
+
+  Subroutine write_structure_analysis(stats, msd_data, rdf, vaf, zdensity, adf, coords, traj, defect, displacement)
+    Type(stats_type),         Intent(In)    :: stats
+    Type(msd_type),           Intent(In)    :: msd_data
+    Type(rdf_type),           Intent(InOut) :: rdf
+    Type(greenkubo_type),     Intent(In)    :: vaf
+    Type(z_density_type),     Intent(InOut) :: zdensity
+    Type(adf_type),           Intent(In)    :: adf
+    Type(coord_type),         Intent(In)    :: coords
+    Type(trajectory_type),    Intent(In)    :: traj
+    Type(defects_type),       Intent(In)    :: defect(:)
+    Type(rsd_type),           Intent(In)    :: displacement
+
+    Character(Len=256) :: messages(4)
+
+    Call info('', .true.)
+
+    If (rdf%l_collect) Then
+      Write(messages(1), '(a)') 'RDF collection requested:'
+      Write(messages(2), '(a, i0.1)') '  -- Collect every (steps): ', rdf%freq
+      Write(messages(3), '(a, i0.1)') '  -- Bin size       (Angs): ', rdf%rbin
+      Call info(messages, 3, .true.)
+
+      If (rdf%l_print) Then
+        Call info('  -- RDF printing requested', .true., level=3)
+      Else
+        If (stats%lpana) Then
+          Call info('  -- RDF printing triggered due to a PDA printing request', .true.)
+        Else
+          Call info('  -- No RDF printing requested', .true.)
+        End If
+      End If
+
+      If (rdf%max_rdf == 0) Then
+        Call info('  -- No RDF pairs specified in FIELD', .true., level=3)
+      Else
+        Call info('  -- RDF pairs specified in FIELD', .true.)
+      End If
+    Else
+      Call info('No RDF analysis requested', .true., level=3)
+    End If
+
+    If (zdensity%l_collect) Then
+      Write(messages(1), '(a)') 'Z-density profiles requested:'
+      Write(messages(2), '(a, i0.1)') '  -- Collect every (steps): ', zdensity%frequency
+      Write(messages(3), '(a, i0.1)') '  -- Bin size       (Angs): ', zdensity%bin_width
+      Call info(messages, 3, .true.)
+
+      If (zdensity%l_print) Then
+        Call info('  -- Z-density printing requested', .true., level=3)
+      Else
+        Call info('  -- No Z-density printing requested', .true.)
+      End If
+
+    Else
+      Call info('No Z-density analysis requested', .true., level=3)
+    End If
+
+    If (vaf%samp > 0) Then
+      Write(messages(1), '(a)') 'VAF profiles requested:'
+      Write(messages(2), '(a, i0.1)') '  -- Collect every (steps): ', vaf%freq
+      Write(messages(3), '(a, i0.1)') '  -- Bin size       (Angs): ', vaf%binsize
+      Call info(messages, 3, .true.)
+
+      If (vaf%l_print) Then
+        Call info('  -- VAF printing requested', .true., level=3)
+      Else
+        Call info('  -- No VAF printing requested', .true.)
+      End If
+
+      If (vaf%l_average) Then
+        Call info('  -- Time-averaged VAF profile', .true.)
+      Else
+        Call info('  -- Instantaneous VAF profiles', .true.)
+      End If
+
+    Else
+      Call info('No VAF analysis requested', .true., level=3)
+    End If
+
+    If (msd_data%l_msd) Then
+      Write(messages(1), '(a)') 'MSDTMP profiles requested:'
+      Write(messages(2), '(a,i0.1)') '  -- File start: ', msd_data%start
+      Write(messages(3), '(a,i0.1)') '  -- File interval: ', msd_data%freq
+      Call info(messages, 3, .true.)
+    Else
+      Call info('No MSD analysis requested', .true., level=3)
+    End If
+
+    if (traj%ltraj) then
+      Write (messages(1), '(a)') 'Trajectory recording requested:'
+      Write (messages(2), '(a,i0.1)') '  -- File start: ', traj%start
+      Write (messages(3), '(a,i0.1)') '  -- File interval: ', traj%freq
+      Select Case (traj%key)
+      Case(TRAJ_KEY_COORD)
+        Write (messages(4), '(a)') '  -- Trajectory file detail: COORD'
+      Case(TRAJ_KEY_COORD_VEL)
+        Write (messages(4), '(a)') '  -- Trajectory file detail: COORD, VEL'
+      Case(TRAJ_KEY_COORD_VEL_FORCE)
+        Write (messages(4), '(a)') '  -- Trajectory file detail: COORD, VEL, FORCE'
+      Case(TRAJ_KEY_COMPRESSED)
+        Write (messages(4), '(a)') '  -- Trajectory file detail: COMPRESSED'
+      end Select
+
+      Call info(messages, 4, .true.)
+    Else
+      Call info('No trajectory recording requested', .true., level=3)
+    end if
+
+    if (defect(1)%ldef) then
+      Write (messages(1), '(a)') 'Defects analysis requested:'
+      Write (messages(2), '(a,i0.1)') '  -- File start: ', defect(1)%nsdef
+      Write (messages(3), '(a,i0.1)') '  -- File interval: ', defect(1)%isdef
+      Write (messages(4), '(a,1p,e12.4)') '  -- Distance condition (Angs): ', defect(1)%rdef
+      Call info(messages, 4, .true.)
+      if (defect(2)%ldef) Call info('DEFECTS1 file option: ON', .true.)
+    Else
+      Call info('No defects analysis requested', .true., level=3)
+    end if
+
+    if (displacement%lrsd) then
+      Write (messages(1), '(a)') 'Displacements analysis requested:'
+      Write (messages(2), '(a,i0.1)') '  -- File start: ', displacement%nsrsd
+      Write (messages(3), '(a,i0.1)') '  -- File interval: ', displacement%isrsd
+      Write (messages(4), '(a,1p,e12.4)') '  -- Distance condition (Angs): ', displacement%rrsd
+      Call info(messages, 4, .true.)
+    Else
+      Call info('No displacements analysis requested', .true., level=3)
+    end if
+
+  End Subroutine write_structure_analysis
+
   Subroutine write_system_parameters(flow, config, stats, thermo, impa, minim, plume, cons, pmf)
     Type(flow_type),          Intent(In) :: flow
     Type(stats_type),         Intent(In) :: stats
@@ -2191,10 +2405,13 @@ contains
       Call info(message, .true.)
     end if
 
-    if (.not. flow%print_topology) &
-         Call info('  No topology option on (avoids printing extended FIELD topology in OUTPUT)', .true.)
+    if (.not. flow%print_topology) then
+      Call info('  No topology option on (avoids printing extended FIELD topology in OUTPUT)', .true., level=3)
+    else
+      Call info('  Printing extended FIELD topology in OUTPUT: ON', .true.)
+    end if
 
-    if (stats%cur%on) Call info("  Computing currents is on!", .true.)
+    if (stats%cur%on) Call info("  Computing currents: ON", .true.)
 
     select case (flow%restart_key)
     case (RESTART_KEY_SCALE)
@@ -2963,6 +3180,13 @@ contains
              description = "Calculate and print per-particle contributions to energy, force and stress to file every stats step", &
              data_type = DATA_BOOL))
 
+        call table%set("print_probability_distribution", control_parameter( &
+             key = "print_probability_distribution", &
+             name = "Print probability distribution", &
+             val = "off", &
+             description = "Calculate and print probability distribution (enforces RDF print)", &
+             data_type = DATA_BOOL))
+
         analysis_options: block
           call table%set("analyse_all", control_parameter( &
                key = "analyse_all", &
@@ -3624,7 +3848,7 @@ contains
              key = "io_write_netcdf_format", &
              name = "Netcdf Format", &
              val = "64bit", &
-             description = "Set netcdf write format, options: 'amber', '32bit', '32-bit', '64-bit', '64bit'", &
+             description = "Set netcdf write format, options: amber, 32bit, 32-bit, 64-bit, 64bit", &
              data_type = DATA_OPTION))
 
         call table%set('io_write_ascii_revive', control_parameter( &
@@ -3797,7 +4021,7 @@ contains
              key = "ensemble", &
              name = "Ensemble constraints", &
              val = "NVE", &
-             description = "Set ensemble constraints, options: NVE, PMF, NVT, NPT, NST, NPnAT, NPng³",&
+             description = "Set ensemble constraints, options: NVE, PMF, NVT, NPT, NST",&
              data_type = DATA_OPTION))
 
         call table%set("ensemble_method", control_parameter( &
@@ -4697,8 +4921,8 @@ contains
            key = "strict_checks", &
            name = "Disable strict", &
            val = "on", &
-           description = "Ignore strict checks such as; "// &
-           "good system cutoff, particle âindex contiguity, disable non-error warnings, minimisation information", &
+           description = "Ignore strict checks such as: "// &
+           "good system cutoff, particle index contiguity, disable non-error warnings, minimisation information", &
            data_type = DATA_BOOL))
 
       call table%set("unsafe_comms", control_parameter( &
