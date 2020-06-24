@@ -1230,7 +1230,7 @@ Contains
     ! consult statistic_collect for more information
 
     stats%mxnstk = 51 + site%mxatyp
-    if (msd) stats%mxnstk = stats%mxnstk + 2
+    if (msd) stats%mxnstk = stats%mxnstk + 2*config%mxatdm
 
     ! maximum dimensions of transfer buffers
 
