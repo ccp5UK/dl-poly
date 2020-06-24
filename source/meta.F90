@@ -318,7 +318,7 @@ Contains
     Integer, Dimension(3) :: link_cell
     Type( parameters_hash_table )            :: params
     Real(Kind=wp) :: xhi, yhi, zhi
-    Integer :: i
+    Integer :: i, ifile, ierr
     Logical :: can_parse
 
     ! Rename control file if argument was passed
@@ -328,6 +328,9 @@ Contains
        Call files(FILE_CONTROL)%rename('CONTROL')
     End If
 
+
+    ! Temporary error system
+    Call init_error_system(error_unit, dlp_world(0))
     call read_new_control(files(FILE_CONTROL), params, comm, can_parse)
 
     ! Cannot read as new style
@@ -369,7 +372,11 @@ Contains
 
     Call init_error_system(files(FILE_OUTPUT)%unit_no, dlp_world(0))
     Call print_banner(dlp_world)
+    Call info('', .true.)
 
+    Open(newunit = ifile, file='build.info', STATUS='REPLACE', iostat=ierr)
+    if (ierr .ne. 0) Call error(0, 'Error opening build.info')
+    Call build_info(ifile)
     if (check_print_level(2)) Call build_info()
 
 #ifdef CHRONO
@@ -388,6 +395,7 @@ Contains
     ! Get imc_r & set config%dvar
 
     call params%retrieve('density_variance', config%dvar)
+    config%dvar = 1.0_wp + config%dvar
 
     ! scan CONFIG file data
 
@@ -413,9 +421,9 @@ Contains
        xhi, yhi, zhi, megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, &
        mtshl, mtteth, link_cell)
 
-  Call write_parameters(ios, netcdf, files, neigh, config, link_cell, flow, stats, thermo, ttms, mpoles, vdws, &
-       electro, core_shells, ewld, met, impa, minim, plume, cons, pmfs, bond, angle, dihedral, inversion, &
-       msd_data, rdf, green, zdensity, adf, crd, dfcts, traj, rsdsc)
+    Call write_parameters(ios, netcdf, files, neigh, config, link_cell, flow, stats, thermo, ttms, mpoles, vdws, &
+         electro, core_shells, ewld, met, impa, minim, plume, cons, pmfs, bond, angle, dihedral, inversion, &
+         msd_data, rdf, green, zdensity, adf, crd, dfcts, traj, rsdsc)
 
     Call molecular_dynamics_allocate(sites, config, neigh, thermo, vdws, core_shells, cons, pmfs, &
          rigid, tether, bond, angle, dihedral, inversion, mpoles, met, tersoffs, threebody, fourbody, &

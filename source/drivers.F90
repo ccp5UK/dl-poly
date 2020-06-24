@@ -392,7 +392,13 @@ Contains
       ltmp = (bond%bin_pdf > 0 .and. &
               ((.not. flow%equilibration) .or. flow%step >= flow%equil_steps) .and. &
               Mod(flow%step, flow%freq_bond) == 0)
-      switch = 1 + Merge(1, 0, ltmp)
+
+      if (ltmp) then
+        switch = 2
+      else
+        switch = 1
+      end if
+
       Call bonds_forces(switch, stat%engbnd, stat%virbnd, stat%stress, neigh%cutoff, &
                         stat%engcpe, stat%vircpe, bond, mpoles, electro, cnfig, comm)
     End If

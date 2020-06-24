@@ -4,7 +4,7 @@ module control_parameter_module
   Use parse, only : word_2_real, get_word, get_line
   Use kinds, only : wp
   Use hash, only : hash_table, MAX_KEY, STR_LEN
-  Use errors_warnings, only : error
+  Use errors_warnings, only : error, warning
   Implicit None
 
   Private
@@ -282,6 +282,7 @@ contains
     Type( control_parameter ) :: param
     Logical, Intent( In    ), Optional :: required
     Real(kind=wp), Intent( Out    ) :: output
+    Logical :: stat
 
     call table%get(key, param)
     if (present(required)) then
@@ -290,7 +291,12 @@ contains
     val = param%val
     call get_word(val, parse)
     output = word_2_real(parse)
-    output = convert_units(output, param%units, param%internal_units)
+    output = convert_units(output, param%units, param%internal_units, stat)
+    if (.not. stat) then
+      call warning("When parsing "//key)
+      call error(0, 'Cannot convert between '//trim(param%units)//' & '//trim(param%internal_units)//' different dimensions')
+    end if
+
 
   End Subroutine retrieve_float
 
@@ -304,6 +310,7 @@ contains
     Real(kind=wp), dimension(:), Intent( Out    ) :: output
 
     Integer :: i
+    Logical :: stat
 
     call table%get(key, param)
     if (present(required)) then
@@ -312,10 +319,14 @@ contains
     val = param%val
 
     do i = 1, 4
-       call get_word(val, parse)
-       if (parse == "") exit
-       tmp(i) = word_2_real(parse)
-       tmp(i) = convert_units(tmp(i), param%units, param%internal_units)
+      call get_word(val, parse)
+      if (parse == "") exit
+      tmp(i) = word_2_real(parse)
+      tmp(i) = convert_units(tmp(i), param%units, param%internal_units, stat)
+      if (.not. stat) then
+        call warning("When parsing "//key)
+        call error(0, 'Cannot convert between '//trim(param%units)//' & '//trim(param%internal_units)//' different dimensions')
+      end if
     end do
 
     select case(param%data_type)
@@ -350,6 +361,7 @@ contains
     Integer, dimension(:), Intent( Out    ) :: output
 
     Integer :: i
+    Logical :: stat
 
     call table%get(key, param)
     if (present(required)) then

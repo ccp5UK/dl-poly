@@ -214,7 +214,7 @@ contains
 
     Call params%retrieve('print_level', print_level)
     Call set_print_level(print_level)
-    Call params%retrieve('unsafe_comms', devel%l_fast)
+    Call params%retrieve('safe_comms', devel%l_fast)
 
     call params%retrieve('output_energy', devel%l_eng)
     call params%retrieve('io_write_ascii_revive', devel%l_rout)
@@ -778,7 +778,6 @@ contains
            call params%retrieve('analyse_num_bins_bonds', bond%bin_pdf)
 
       call params%retrieve('analyse_frequency_bonds', flow%freq_bond)
-      flow%freq_bond = max(1, itmp, flow%freq_bond)
     end if
 
     if (l_angle) then
@@ -786,7 +785,6 @@ contains
       if (params%is_set('analyse_num_bins_angles')) &
            call params%retrieve('analyse_num_bins_angles', angle%bin_adf)
       call params%retrieve('analyse_frequency_angles', flow%freq_angle)
-      flow%freq_angle = max(1, itmp, flow%freq_angle)
     end if
 
     if (l_dihedral) then
@@ -794,7 +792,6 @@ contains
       if (params%is_set('analyse_num_bins_dihedrals')) &
            call params%retrieve('analyse_num_bins_dihedrals', dihedral%bin_adf)
       call params%retrieve('analyse_frequency_dihedrals', flow%freq_dihedral)
-      flow%freq_dihedral = max(1, itmp, flow%freq_dihedral)
     end if
 
     if (l_inversion) then
@@ -803,12 +800,16 @@ contains
            call params%retrieve('analyse_num_bins_inversions', inversion%bin_adf)
 
       call params%retrieve('analyse_frequency_inversions', flow%freq_inversion)
-      flow%freq_inversion = max(1, itmp, flow%freq_inversion)
     end if
 
     if (any([l_bond, l_angle, l_dihedral, l_inversion])) then
       max_grid_analysis = Max(bond%bin_pdf, angle%bin_adf, dihedral%bin_adf, inversion%bin_adf)
     end if
+
+    flow%freq_bond = max(1, itmp, flow%freq_bond)
+    flow%freq_angle = max(1, itmp, flow%freq_angle)
+    flow%freq_dihedral = max(1, itmp, flow%freq_dihedral)
+    flow%freq_inversion = max(1, itmp, flow%freq_inversion)
 
   End Subroutine read_bond_analysis
 
@@ -4919,17 +4920,17 @@ contains
 
       call table%set("strict_checks", control_parameter( &
            key = "strict_checks", &
-           name = "Disable strict", &
+           name = "Enable strict", &
            val = "on", &
-           description = "Ignore strict checks such as: "// &
+           description = "Enforce strict checks such as: "// &
            "good system cutoff, particle index contiguity, disable non-error warnings, minimisation information", &
            data_type = DATA_BOOL))
 
-      call table%set("unsafe_comms", control_parameter( &
-           key = "unsafe_comms", &
-           name = "Disable parallel safety", &
+      call table%set("safe_comms", control_parameter( &
+           key = "safe_comms", &
+           name = "Enable parallel safety", &
            val = "on", &
-           description = "Ignore parallel safety on checks", &
+           description = "Ensure checks of logicals are enforced in parallel", &
            data_type = DATA_BOOL))
 
 

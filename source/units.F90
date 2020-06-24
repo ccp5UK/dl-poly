@@ -235,21 +235,30 @@ contains
 
   End Subroutine initialise_units
 
-  Function convert_units(val, from, to) result(res)
+  Function convert_units(val, from, to, stat) result(res)
     !!-----------------------------------------------------------------------
     !!
     !! Convert val amount of unit "from" into unit "to"
+    !!
+    !! On failure --
+    !!
+    !! if stat present
+    !! Set output name to error, stat to true
+    !! Else
+    !! Error out
     !!
     !! copyright - daresbury laboratory
     !! author - j.wilkins april 2020
     !!-----------------------------------------------------------------------
     Real(kind=wp), Intent(in) :: val
+    Character(Len=*), Intent(In) :: from, to
+    Logical, Intent(Out), Optional :: stat
     Real(kind=wp) :: res
-    Character(Len=*) :: from, to
-    Integer :: i
     Character, Dimension(7), parameter :: dims = ['M','L','T','t','m','C','l'] ! mass length time temp mol current luminosity
+    Integer :: i
     Type( unit_data ) :: from_unit, to_unit
     Type( unit_data ) :: output
+
 
     output = output%init("", "", 1.0_wp)
     from_unit = parse_unit_string(from)
@@ -257,15 +266,24 @@ contains
     output = to_unit / from_unit
 
     if (any(output%dims /= 0)) then
-       do i = 1, 7
-          if (from_unit%dims(i) /= 0) write(0, "(A2,i0,'.')", advance='No') dims(i)//"^",from_unit%dims(i)
-       end do
-       write(0,*)
-       do i = 1, 7
-          if (from_unit%dims(i) /= 0) write(0, "(A2,i0,'.')", advance='No') dims(i)//"^",to_unit%dims(i)
-       end do
-       write(0,*)
-       call error(0, 'Cannot convert between '//trim(from)//' & '//trim(to)//' different dimensions')
+
+#ifdef debug
+      do i = 1, 7
+        if (from_unit%dims(i) /= 0) write(0, "(A2,i0,'.')", advance='No') dims(i)//"^",from_unit%dims(i)
+      end do
+      write(0,*)
+      do i = 1, 7
+        if (from_unit%dims(i) /= 0) write(0, "(A2,i0,'.')", advance='No') dims(i)//"^",to_unit%dims(i)
+      end do
+#endif
+
+      if (present(stat)) then
+        stat=.false.
+        return
+      else
+        call error(0, 'Cannot convert between '//trim(from)//' & '//trim(to)//' different dimensions')
+      end if
+
     end if
 
     res = val / output%conversion_to_internal
