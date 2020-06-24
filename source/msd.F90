@@ -91,7 +91,7 @@ Contains
     Type(configuration_type),    Intent(InOut) :: config
     Integer,                     Intent(In   ) :: keyres, megatm, nstep
     Real(Kind=wp),               Intent(In   ) :: tstep, time
-    Real(Kind=wp),               Intent(InOut) :: stpval(:)
+    Real(Kind=wp),               Intent(InOut) :: stpval(0:)
     Real(Kind=wp), Dimension(:), Intent(In   ) :: dof_site
     Type(io_type),               Intent(InOut) :: io
     Type(msd_type),              Intent(Inout) :: msd_data
