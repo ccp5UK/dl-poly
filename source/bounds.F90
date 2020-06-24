@@ -1217,7 +1217,7 @@ Contains
       End If
     End If
 
-    ! limit mxatdm as it cannot exceed mxatdm
+    ! limit mxatdm as it cannot exceed megatm
 
     config%mxatdm = Min(config%mxatdm, megatm)
 
@@ -1232,7 +1232,7 @@ Contains
     stats%mxnstk = 51 + site%mxatyp
     if (msd) stats%mxnstk = stats%mxnstk + 2*config%mxatdm
 
-    ! maximum dimensions of transfer buffers
+    ! maximum dimensions of transfer buffers)))
 
     ! deport_atomic_data & export_atomic_data (+ metal_ld_export.f90
     ! defects_reference_export & statistics_connect_deport if used)
