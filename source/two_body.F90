@@ -369,23 +369,23 @@ Contains
 
         If (vdws%n_vdw > 0) Then
 
-          If (.not. ewld%vdw) Then
+          ! If (.not. ewld%vdw) Then
 
-            Call vdw_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, vdws, config)
-            engvdw = engvdw + engacc
-            virvdw = virvdw + viracc
+           Call vdw_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, vdws, config) !, stats%collect_pp
+           engvdw = engvdw + engacc
+           virvdw = virvdw + viracc
 
-          Else
-            Do ipot = 1, ewld%num_pots
+          ! Else
+          !   Do ipot = 1, ewld%num_pots
 
-              Call ewald_real_forces_gen(ewld%alpha, ewld%spme_data(ipot), neigh, config, stats, &
-                & vdw_coeffs(:, ipot), i, xxt, yyt, zzt, rrt, engacc, viracc)
+          !     Call ewald_real_forces_gen(ewld%alpha, ewld%spme_data(ipot), neigh, config, stats, &
+          !       & vdw_coeffs(:, ipot), i, xxt, yyt, zzt, rrt, engacc, viracc)
 
-              engvdw_rl = engvdw_rl + engacc
-              virvdw_rl = virvdw_rl + viracc
+          !     engvdw_rl = engvdw_rl + engacc
+          !     virvdw_rl = virvdw_rl + viracc
 
-            End Do
-          End If
+          !   End Do
+          ! End If
 
         End If
 

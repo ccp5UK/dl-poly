@@ -36,8 +36,6 @@ Module vdw
                              get_word,&
                              word_2_real
   Use site,            Only: site_type
-  Use statistics,      Only: calculate_stress,&
-                             stats_type
 
   Implicit None
 
@@ -169,7 +167,6 @@ Module vdw
   Public :: vdw_forces, vdw_generate, vdw_table_read, vdw_lrc, vdw_direct_fs_generate
 
 Contains
-
 
   Subroutine allocate_vdw_arrays(T)
     Class(vdw_type) :: T
@@ -2441,7 +2438,7 @@ Contains
 
   End Subroutine vdw_generate
 
-  Subroutine vdw_forces(iatm, xxt, yyt, zzt, rrt, engvdw, virvdw, stats, neigh, vdws, config)
+  Subroutine vdw_forces(iatm, xxt, yyt, zzt, rrt, engvdw, virvdw, stress, neigh, vdws, config)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2467,19 +2464,17 @@ Contains
 
     Integer,                                    Intent(In   ) :: iatm
     Type(neighbours_type),                      Intent(In   ) :: neigh
-    Type(stats_type),                           Intent(InOut) :: stats
+    Real(Kind=wp), Dimension(1:9),              Intent(InOut) :: stress
     Real(Kind=wp),                              Intent(  Out) :: virvdw, engvdw
     Real(Kind=wp), Dimension(1:neigh%max_list), Intent(In   ) :: rrt, zzt, yyt, xxt
     Type(vdw_type),                             Intent(InOut) :: vdws
     Type(configuration_type),                   Intent(InOut) :: config
 
-    Integer                     :: ai, aj, global_id_i, global_id_j, ityp, jatm, k, key, l, m, mm, &
-                                   n
-    Real(Kind=wp)               :: a, alpha, b, beta, c, d, e0, eng, eps, fix, fiy, fiz, fx, fy, &
-                                   fz, gamma, gk, gk1, gk2, kk, mr, nr, ppp, r0, r0rm, r0rn, r_6, &
-                                   r_rrr, r_rrv, r_rsq, r_rvdw, rc, rho, ri, rm, rrr, rscl, rsq, &
-                                   sig, sor6, t, t1, t2, t3, vk, vk1, vk2, z1, z2, lr(3), lf(3)
-    Real(Kind=wp), Dimension(9) :: stress_temp, stress_temp_comp
+    Integer       :: ai, aj, idi, ityp, jatm, k, key, l, m, mm, n
+    Real(Kind=wp) :: a, alpha, b, beta, c, d, e0, eng, eps, fix, fiy, fiz, fx, fy, fz, gamma, gk, &
+                     gk1, gk2, kk, mr, nr, ppp, r0, r0rm, r0rn, r_6, r_rrr, r_rrv, r_rsq, r_rvdw, &
+                     rc, rho, ri, rm, rrr, rscl, rsq, sig, sor6, strs1, strs2, strs3, strs5, &
+                     strs6, strs9, t, t1, t2, t3, vk, vk1, vk2, z1, z2
 
     ! define grid resolution for potential arrays and interpolation spacing
 
@@ -2497,11 +2492,16 @@ Contains
 
     ! initialise stress tensor accumulators
 
-    stress_temp = 0.0_wp
+    strs1 = 0.0_wp
+    strs2 = 0.0_wp
+    strs3 = 0.0_wp
+    strs5 = 0.0_wp
+    strs6 = 0.0_wp
+    strs9 = 0.0_wp
 
     ! global identity and type of iatm
 
-    global_id_i = config%ltg(iatm)
+    idi = config%ltg(iatm)
     ai = config%ltype(iatm)
 
     ! load forces
@@ -2518,7 +2518,6 @@ Contains
 
       jatm = neigh%list(mm, iatm)
       aj = config%ltype(jatm)
-      global_id_j = config%ltg(jatm)
 
       If (ai > aj) Then
         key = ai * (ai - 1) / 2 + aj
@@ -2562,12 +2561,12 @@ Contains
 
             r_6 = r_rsq**3
 
-            If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng = r_6 * (a * r_6 - b)
             gamma = 6.0_wp * r_6 * (2.0_wp * a * r_6 - b) * r_rsq
 
             If (vdws%l_force_shift) Then ! force-shifting
-              If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
               gamma = gamma - vdws%afs(k) * r_rrr
             End If
@@ -2581,12 +2580,12 @@ Contains
 
             sor6 = (sig**2 * r_rsq)**3
 
-            If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng = 4.0_wp * eps * sor6 * (sor6 - 1.0_wp)
             gamma = 24.0_wp * eps * sor6 * (2.0_wp * sor6 - 1.0_wp) * r_rsq
 
             If (vdws%l_force_shift) Then ! force-shifting
-              If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
               gamma = gamma - vdws%afs(k) * r_rrr
             End If
@@ -2605,12 +2604,12 @@ Contains
             r0rn = a**nr
             r0rm = a**mr
 
-            If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng = e0 * (mr * r0rn - nr * r0rm) * b
             gamma = e0 * mr * nr * (r0rn - r0rm) * b * r_rsq
 
             If (vdws%l_force_shift) Then ! force-shifting
-              If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
               gamma = gamma - vdws%afs(k) * r_rrr
             End If
@@ -2636,12 +2635,12 @@ Contains
             t1 = a * Exp(-b)
             t2 = -c * r_rsq**3
 
-            If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng = t1 + t2
             gamma = (t1 * b + 6.0_wp * t2) * r_rsq
 
             If (vdws%l_force_shift) Then ! force-shifting
-              If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
               gamma = gamma - vdws%afs(k) * r_rrr
             End If
@@ -2660,12 +2659,12 @@ Contains
             t2 = -c * r_rsq**3
             t3 = -d * r_rsq**4
 
-            If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng = t1 + t2 + t3
             gamma = (t1 * rrr * b + 6.0_wp * t2 + 8.0_wp * t3) * r_rsq
 
             If (vdws%l_force_shift) Then ! force-shifting
-              If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
               gamma = gamma - vdws%afs(k) * r_rrr
             End If
@@ -2680,12 +2679,12 @@ Contains
             t1 = a * r_rsq**6
             t2 = -b * r_rsq**5
 
-            If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng = t1 + t2
             gamma = (12.0_wp * t1 + 10.0_wp * t2) * r_rsq
 
             If (vdws%l_force_shift) Then ! force-shifting
-              If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
               gamma = gamma - vdws%afs(k) * r_rrr
             End If
@@ -2715,7 +2714,7 @@ Contains
             If (rrr <= rc) Then
               a = r0 * r_rrr
 
-              If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                 eng = e0 * (mr * (beta**n) * (a**n - (1.0_wp / c)**n) &
                             - nr * (beta**m) * (a**m - (1.0_wp / c)**m) &
                             + nr * mr * ((rrr / rc - 1.0_wp) * ((beta / c)**n - (beta / c)**m))) * b
@@ -2733,12 +2732,12 @@ Contains
 
             t1 = Exp(-kk * (rrr - r0))
 
-            If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng = e0 * t1 * (t1 - 2.0_wp)
             gamma = -2.0_wp * e0 * kk * t1 * (1.0_wp - t1) * r_rrr
 
             If (vdws%l_force_shift) Then ! force-shifting
-              If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
               gamma = gamma - vdws%afs(k) * r_rrr
             End If
@@ -2755,12 +2754,12 @@ Contains
             If (rrr < vdws%param(4, k) .or. Abs(rrr - d) < 1.0e-10_wp) Then ! Else leave them zeros
               sor6 = (sig / (rrr - d))**6
 
-              If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                 eng = 4.0_wp * eps * sor6 * (sor6 - 1.0_wp) + eps
               gamma = 24.0_wp * eps * sor6 * (2.0_wp * sor6 - 1.0_wp) / (rrr * (rrr - d))
 
               If (vdws%l_force_shift) Then ! force-shifting
-                If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+                If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                   eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
                 gamma = gamma - vdws%afs(k) * r_rrr
               End If
@@ -2777,7 +2776,7 @@ Contains
               t2 = rrr / rc
               t1 = 0.5_wp * a * rrr * (1.0_wp - t2)
 
-              If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                 eng = t1 * (1.0_wp - t2)
               gamma = t1 * (3.0_wp * t2 - 1.0_wp) * r_rsq
             End If
@@ -2796,12 +2795,12 @@ Contains
 
             t = t3 * ((1.12_wp * t2) - 2.0_wp)
 
-            If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng = t
             gamma = 7.0_wp * (t1 * t + 1.12_wp * t3 * t2**2 * rho**6) * rho * r_rsq
 
             If (vdws%l_force_shift) Then ! force-shifting
-              If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
               gamma = gamma - vdws%afs(k) * r_rrr
             End If
@@ -2816,12 +2815,12 @@ Contains
 
             sor6 = (sig**2 * r_rsq)**3
 
-            If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng = 4.0_wp * eps * sor6 * (sor6 - c)
             gamma = 24.0_wp * eps * sor6 * (2.0_wp * sor6 - c) * r_rsq
 
             If (vdws%l_force_shift) Then ! force-shifting
-              If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
               gamma = gamma - vdws%afs(k) * r_rrr
             End If
@@ -2838,12 +2837,12 @@ Contains
             t1 = Exp(-kk * (rrr - r0))
             sor6 = c * r_rsq**6
 
-            If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng = e0 * t1 * (t1 - 2.0_wp) + sor6
             gamma = -2.0_wp * e0 * kk * t1 * (1.0_wp - t1) * r_rrr - 12.0_wp * sor6 * r_rrr
 
             If (vdws%l_force_shift) Then ! force-shifting
-              If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
               gamma = gamma - vdws%afs(k) * r_rrr
             End If
@@ -2859,12 +2858,12 @@ Contains
             kk = rrr / c
             t1 = Exp(-kk)
 
-            If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng = (a + b * rrr) * t1
             gamma = kk * t1 * (a - b * c + b * rrr) * r_rsq
 
             If (vdws%l_force_shift) Then ! force-shifting
-              If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
               gamma = gamma - vdws%afs(k) * r_rrr
             End If
@@ -2881,12 +2880,12 @@ Contains
             kk = z1 * z2 * r4pie0
 
             Call zbl(rrr, kk, a, t1, gamma)
-            If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng = t1
             gamma = gamma * r_rsq
 
             If (vdws%l_force_shift) Then ! force-shifting
-              If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
               gamma = gamma - vdws%afs(k) * r_rrr
             End If
@@ -2909,12 +2908,12 @@ Contains
 
             Call zbls(rrr, kk, a, rm, c, e0, t2, r0, t1, gamma)
 
-            If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng = t1
             gamma = gamma * r_rsq
 
             If (vdws%l_force_shift) Then ! force-shifting
-              If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
               gamma = gamma - vdws%afs(k) * r_rrr
             End If
@@ -2937,12 +2936,12 @@ Contains
 
             Call zblb(rrr, kk, a, rm, c, e0, r0, t2, t1, gamma)
 
-            If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng = t1
             gamma = gamma * r_rsq
 
             If (vdws%l_force_shift) Then ! force-shifting
-              If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
               gamma = gamma - vdws%afs(k) * r_rrr
             End If
@@ -2958,12 +2957,12 @@ Contains
 
             Call mlj(rrr, eps, sig, ri, vdws%cutoff, t1, gamma)
 
-            If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng = t1
             gamma = gamma * r_rsq
 
             If (vdws%l_force_shift) Then ! force-shifting
-              If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
               gamma = gamma - vdws%afs(k) * r_rrr
             End If
@@ -2978,13 +2977,13 @@ Contains
 
             Call mbuck(rrr, a, rho, c, ri, vdws%cutoff, t1, gamma)
 
-            If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng = t1
             gamma = gamma * r_rsq
 
             ! by construction is zero outside vdws%cutoff so no shifting
             If (vdws%l_force_shift) Then ! force-shifting
-              If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
               gamma = gamma - vdws%afs(k) * r_rrr
             End If
@@ -3000,13 +2999,13 @@ Contains
 
             Call mlj126(rrr, a, b, ri, vdws%cutoff, t1, gamma)
 
-            If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng = t1
             gamma = gamma * r_rsq
 
             ! by construction is zero outside vdws%cutoff so no shifting
             If (vdws%l_force_shift) Then ! force-shifting
-              If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) &
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
               gamma = gamma - vdws%afs(k) * r_rrr
             End If
@@ -3018,7 +3017,7 @@ Contains
 
             ! calculate interaction energy using 3-point interpolation
 
-            If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) Then
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
               vk = vdws%tab_potential(l, k)
               vk1 = vdws%tab_potential(l + 1, k)
               vk2 = vdws%tab_potential(l + 2, k)
@@ -3055,7 +3054,7 @@ Contains
 
           ! calculate interaction energy using 3-point interpolation
 
-          If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) Then
+          If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
             vk = vdws%tab_potential(l, k)
             vk1 = vdws%tab_potential(l + 1, k)
             vk2 = vdws%tab_potential(l + 2, k)
@@ -3095,7 +3094,7 @@ Contains
         fiy = fiy + fy
         fiz = fiz + fz
 
-        If (stats%collect_pp .and. jatm <= config%natms) Then
+        If (jatm <= config%natms) Then
 
           config%parts(jatm)%fxx = config%parts(jatm)%fxx - fx
           config%parts(jatm)%fyy = config%parts(jatm)%fyy - fy
@@ -3103,7 +3102,7 @@ Contains
 
         End If
 
-        If (stats%collect_pp .and. jatm <= config%natms .or. global_id_i < global_id_j) Then
+        If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
           ! add interaction energy
 
@@ -3112,26 +3111,16 @@ Contains
           ! add virial
 
           virvdw = virvdw - gamma * rsq
+
           ! add stress tensor
 
-          stress_temp(1) = stress_temp(1) + xxt(mm) * fx
-          stress_temp(2) = stress_temp(2) + xxt(mm) * fy
-          stress_temp(3) = stress_temp(3) + xxt(mm) * fz
-          stress_temp(4) = stress_temp(4) + yyt(mm) * fy
-          stress_temp(5) = stress_temp(5) + yyt(mm) * fz
-          stress_temp(6) = stress_temp(6) + zzt(mm) * fz
-        End If
+          strs1 = strs1 + xxt(mm) * fx
+          strs2 = strs2 + xxt(mm) * fy
+          strs3 = strs3 + xxt(mm) * fz
+          strs5 = strs5 + yyt(mm) * fy
+          strs6 = strs6 + yyt(mm) * fz
+          strs9 = strs9 + zzt(mm) * fz
 
-        If (stats%collect_pp) Then
-          lr = [xxt(mm), yyt(mm), zzt(mm)]
-          lf = [fx, fy, fz]
-          stress_temp_comp = calculate_stress(lr, lf)
-          stats%pp_energy(iatm) = stats%pp_energy(iatm) + eng * 0.5_wp
-          stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
-          If (jatm <= config%natms) Then
-            stats%pp_energy(jatm) = stats%pp_energy(jatm) + eng * 0.5_wp
-            stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
-          End If
         End If
 
       End If
@@ -3145,15 +3134,16 @@ Contains
     config%parts(iatm)%fzz = fiz
 
     ! complete stress tensor
-    stats%stress(1) = stats%stress(1) + stress_temp(1)
-    stats%stress(2) = stats%stress(2) + stress_temp(2)
-    stats%stress(3) = stats%stress(3) + stress_temp(3)
-    stats%stress(4) = stats%stress(4) + stress_temp(2)
-    stats%stress(5) = stats%stress(5) + stress_temp(4)
-    stats%stress(6) = stats%stress(6) + stress_temp(5)
-    stats%stress(7) = stats%stress(7) + stress_temp(3)
-    stats%stress(8) = stats%stress(8) + stress_temp(5)
-    stats%stress(9) = stats%stress(9) + stress_temp(6)
+
+    stress(1) = stress(1) + strs1
+    stress(2) = stress(2) + strs2
+    stress(3) = stress(3) + strs3
+    stress(4) = stress(4) + strs2
+    stress(5) = stress(5) + strs5
+    stress(6) = stress(6) + strs6
+    stress(7) = stress(7) + strs3
+    stress(8) = stress(8) + strs6
+    stress(9) = stress(9) + strs9
 
   End Subroutine vdw_forces
 
