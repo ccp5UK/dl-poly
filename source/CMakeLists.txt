@@ -113,13 +113,25 @@ set_property(SOURCE development.F90 APPEND PROPERTY
 if( NOT WITH_MPI)
   set(dlpoly_SERIAL_SRCS ${src_dir}/SERIAL/mpi_api.F90)
 endif()
+if(WITH_EXP)
+  set(EXP_SRCS
+    resources.F90
+    table.F90
+    psinfo.F90
+    meminfo.F90
+    )
+endif()
 
-add_library(dlpoly ${dlpoly_SRCS} ${dlpoly_SERIAL_SRCS})
+add_library(dlpoly ${dlpoly_SRCS} ${dlpoly_SERIAL_SRCS} ${EXP_SRCS})
 if( NOT WITH_MPI)
   set_property(TARGET dlpoly APPEND PROPERTY
     COMPILE_DEFINITIONS "SERIAL")
   set_property(TARGET dlpoly APPEND PROPERTY
     INCLUDE_DIR ${src_dir}/SERIAL)
+endif()
+if(WITH_EXP)
+  set_property(TARGET dlpoly APPEND PROPERTY
+    COMPILE_DEFINITIONS "EXPERIMENT")
 endif()
 
 if(WITH_NETCDF)
