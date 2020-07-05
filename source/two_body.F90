@@ -371,7 +371,7 @@ Contains
 
           ! If (.not. ewld%vdw) Then
 
-           Call vdw_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, vdws, config) !, stats%collect_pp
+           Call vdw_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, vdws, config) !
            engvdw = engvdw + engacc
            virvdw = virvdw + viracc
 
