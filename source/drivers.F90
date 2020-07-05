@@ -188,7 +188,9 @@ Module drivers
   Use two_body,             Only: two_body_forces
   Use vdw,                  Only: vdw_type
   Use z_density,            Only: z_density_type
-  ! COORD MODULE
+#ifdef EXPERIMENT
+  Use meminfo, Only : mem_picture
+#endif
 
   Implicit None
   Private
@@ -197,7 +199,7 @@ Module drivers
   Public :: replay_historf
   Public :: replay_history
   Public :: calculate_dftb_forces
-  
+
 Contains
 
   Subroutine impact_option(levcfg, nstep, nsteql, rigid, cshell, stats, impa, config, comm)
@@ -543,23 +545,23 @@ Contains
 
   End Subroutine calculate_forces
 
-  
+
   !> @brief Compute forces using DFTB+ v18.2
   !!
   !! For a given set of atomic coordinates, forces are computed using
   !! the density-functional tight-binding code, DFTB+ v19.2
-  !! 
+  !!
   !! @param[inout] comm      Object containing MPI communicator
-  !! @param[in]    flow      Object containing MD step/time data 
+  !! @param[in]    flow      Object containing MD step/time data
   !! @param[inout] config    Object containing configuration data
   !!                         Returns updated forces in config
-  !   
+  !
   Subroutine calculate_dftb_forces(comm, flow, config)
     Type(comms_type),         Intent( InOut ) :: comm
-    Type(flow_type),          Intent( In    ) :: flow 
+    Type(flow_type),          Intent( In    ) :: flow
     Type(configuration_type), Intent( InOut ) :: config
-    
-#ifdef DFTBP   
+
+#ifdef DFTBP
     !> Gathered coordinates and mpi index arrays
     Type(coordinate_buffer_type)             :: gathered
     !> Gathered atom names
@@ -568,22 +570,22 @@ Contains
     Type(dftb_geometry_type),    Save        :: geo
     !> DFTB+ forces
     Real(wp), Save,              Allocatable :: forces(:,:)
-    !> DFTB+ atomic Mulliken charges 
+    !> DFTB+ atomic Mulliken charges
     Real(wp), Save,              Allocatable :: atomic_charges(:)
     !>DFTB+ requires all geometry data on every process
     Logical, Parameter :: to_master_only = .false.
-    !> Unit conversion factor 
+    !> Unit conversion factor
     Real(wp), Save     :: unit_factor
 
     !NOTE: In principal, only need to init/finalise
     !when atoms move to different processes
     !Gather atomic coordinates and names (excluding halo atoms)
-    Call gathered%initialise(comm, config%megatm*3)        
+    Call gathered%initialise(comm, config%megatm*3)
     Call gather_coordinates(comm, config, to_master_only, gathered)
     If(.not. Allocated(atmnam)) Allocate(atmnam(config%megatm))
     Call gather_atomic_names(comm, config, to_master_only, atmnam)
 
-    !Number of atoms and species types conserved, hence assign once 
+    !Number of atoms and species types conserved, hence assign once
     If(flow%step == flow%initial_md_step) Then
        Call geo%initialise(config, atmnam)
        Allocate(forces(3,config%megatm))
@@ -594,15 +596,15 @@ Contains
     Call geo%set_geometry(comm, config, gathered, atmnam)
     !Call print_DFTB_geometry_data(geo, flow%step)
     Call run_dftbplus(comm, flow, geo, forces, atomic_charges)
-    !TODO(Alex) Consider doing this over unit conversion after assignment to config 
+    !TODO(Alex) Consider doing this over unit conversion after assignment to config
     !forces(:,:) = forces(:,:) * unit_factor
-    
+
     !MPI index arrays same for forces as for coordinates
     Call distribute_forces(comm, gathered%mpi, forces, config)
-    config%parts(:)%fxx = config%parts(:)%fxx * unit_factor 
+    config%parts(:)%fxx = config%parts(:)%fxx * unit_factor
     config%parts(:)%fyy = config%parts(:)%fyy * unit_factor
-    config%parts(:)%fzz = config%parts(:)%fzz * unit_factor 
-    
+    config%parts(:)%fzz = config%parts(:)%fzz * unit_factor
+
     Call gathered%finalise()
 
     If(flow%step == flow%run_steps) Then
@@ -613,7 +615,7 @@ Contains
 
 #endif
   End Subroutine calculate_dftb_forces
-   
+
   Subroutine refresh_mappings(cnfig, flow, cshell, cons, pmf, stat, msd_data, bond, angle, &
                               dihedral, inversion, tether, neigh, sites, mpoles, rigid, domain, &
                               kim_data, ewld, green, minim, thermo, &
@@ -1766,6 +1768,9 @@ Contains
       If (cnfig%levcfg == 1) cnfig%levcfg = 2
 
     End Do
+#ifdef EXPERIMENT
+      call mem_picture(files(FILE_OUTPUT)%unit_no, comm)
+#endif
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
