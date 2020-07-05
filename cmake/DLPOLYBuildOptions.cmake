@@ -15,6 +15,7 @@ option(DOCS_FORD "Ford Documentation" OFF)
 option(BUILD_SHARED_LIBS "Build with shared libraries" OFF)
 option(WITH_ASSERT "Build with asserts" OFF)
 option(WITH_DFTBP "Build with DFTB+ library" OFF)
+option(WITH_EXP "Build with experimental and debugs" OFF)
 
 set(SCALAPACK "GCC" CACHE STRING "just a coding for the scalapack one wants")
 set(MPI_NPROCS 8 CACHE STRING "number of MPI processes to be used for code coverage and tests")
