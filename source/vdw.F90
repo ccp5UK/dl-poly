@@ -3122,7 +3122,7 @@ Contains
           strs9 = strs9 + zzt(mm) * fz
 
         End If
-
+#ifdef A
         If (stats%collect_pp) Then
           stress_temp_comp(1) = stress_temp_comp(1) + xxt(mm) * fx
           stress_temp_comp(2) = stress_temp_comp(2) + xxt(mm) * fy
@@ -3140,7 +3140,7 @@ Contains
             stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
           End If
         End If
-
+#endif
       End If
 
     End Do
