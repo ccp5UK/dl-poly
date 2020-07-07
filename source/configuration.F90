@@ -140,10 +140,6 @@ Module configuration
     Real(wp), Public, Allocatable :: coords(:)
     ! MPI indexing required to unpack coordinates stored in packed form
     Type(mpi_distribution_type), Public :: mpi
-    ! Atomic names/species
-    ! Uses different MPI indexing to coords, hence maybe makes sense
-    ! not to include in this type
-    !Character(Len=len_atmnam), Public, Allocatable :: atmnam(:)
   Contains
     Procedure, Public :: initialise => initialise_coordinate_buffer_type
     Procedure, Public :: finalise => finalise_coordinate_buffer_type
@@ -183,7 +179,8 @@ Module configuration
   Public :: getcom, getcom_mol
   Public :: gather_coordinates, gather_atomic_names
   Public :: unpack_gathered_coordinates
-  Public :: distribute_forces
+  Public :: distribute_forces, gather_forces
+  Public :: ordering_indices
 
 Contains
 
@@ -3356,15 +3353,14 @@ Contains
   !> @brief Initialise coordinate_buffer_type
   !!
   !! @param[in]  comm          Object containing MPI communicator
-  !! @param[in]  size_coords   Size of 1D packed buffer
+  !! @param[in]  size_of       Size of 1D packed buffer
   !
-  Subroutine initialise_coordinate_buffer_type(this, comm, megatm)
+  Subroutine initialise_coordinate_buffer_type(this, comm, size_of)
     Class(coordinate_buffer_type), Intent(InOut) :: this
     Type(comms_type),              Intent(In   ) :: comm
-    Integer,                       Intent(In   ) :: megatm
+    Integer,                       Intent(In   ) :: size_of
 
-    Allocate (this%coords(megatm * 3))
-    !Allocate(this%atmnam(megatm))
+    Allocate (this%coords(size_of))
     Call this%mpi%init(comm)
   End Subroutine initialise_coordinate_buffer_type
 
@@ -3429,7 +3425,7 @@ Contains
       !Gather coords from each process into gathered%coords on master
       Call ggatherv(comm, coords, gathered%mpi%counts, &
                     gathered%mpi%displ, gathered%coords)
-    Else
+    Else     
       !Gather coords from each process into gathered%coords on all processes
       Call gallgatherv(comm, coords, gathered%mpi%counts, &
                        gathered%mpi%displ, gathered%coords)
@@ -3437,6 +3433,29 @@ Contains
 
   End Subroutine gather_coordinates
 
+
+  Subroutine gather_forces(comm, config, forces)
+    Type(comms_type),             Intent(InOut) :: comm
+    Type(configuration_type),     Intent(In   ) :: config
+    Real(wp),                     Intent(InOut) :: forces(:,:)
+
+    Integer               :: ia
+    Real(wp), Allocatable :: local_forces(:,:)
+    Type(mpi_distribution_type) :: mpi_index
+    
+    Allocate (local_forces(3, config%natms))
+    Do ia = 1, config%natms
+      local_forces(:,ia) = (/config%parts(ia)%fxx,config%parts(ia)%fyy,config%parts(ia)%fzz/)
+    End Do
+
+    Call mpi_index%init(comm)
+    Call gatherv_scatterv_index_arrays(comm, Size(local_forces), mpi_index%counts, mpi_index%displ)
+    !size(local_forces,1) must be same on all processes for this to come out correctly
+    Call gallgatherv(comm, local_forces, mpi_index%counts, mpi_index%displ, forces)
+
+  End Subroutine gather_forces
+
+  
   !! @brief Unpack \p gathered%coords into 2D array
   !!
   !! Could be a member function of coordinate_buffer_type
@@ -3493,7 +3512,7 @@ Contains
     Character(Len=len_atmnam), Allocatable, Intent(InOut) :: atmnam(:)
 
     Integer, Allocatable :: displ(:), rec_size(:)
-
+    
     Call assert(Allocated(atmnam), &
                 'Gathered atmnam not allocated prior to calling gather_atomic_names')
     Call assert(Size(atmnam) == config%megatm, &
@@ -3505,7 +3524,8 @@ Contains
     displ = 0
     Call gatherv_scatterv_index_arrays(comm, config%natms, rec_size, displ)
     atmnam = ''
-    Call gallgatherv(comm, config%atmnam, rec_size, displ, atmnam)
+    !config%atmnam contains alot of additional space
+    Call gallgatherv(comm, config%atmnam(1:config%natms), rec_size, displ, atmnam)
 
   End Subroutine gather_atomic_names
 
@@ -3552,4 +3572,67 @@ Contains
 
   End Subroutine distribute_forces
 
+  !> Creates an index vector mapping the location of unique elements in a
+  !> to b, and vice versa. 
+  !
+  ! Example Usage:
+  !  a = (/1,2,3,4,5,6,7,8,9,10/)
+  !  b = (/10,2,5,6,3,9,1,4,7,8/)
+  !  call ordering_indices(a, b, b_to_a, a_to_b)
+  !  reordered_a = a(a_to_b)
+  !  reordered_b = b(b_to_a)
+  !  equal1 = all(a == reordered_b)
+  !  equal2 = all(b == reordered_a)
+  !  write(*,*) equal1, equal2
+  !
+  Subroutine ordering_indices(a, b, b_to_a, a_to_b)
+    Integer, Intent(In)  :: a(:), b(:)
+    Integer, Allocatable, Intent(Out) :: b_to_a(:), a_to_b(:)
+    Integer :: i,j
+    Character(Len=32) :: error_message 
+
+    error_message = "Sizes of vectors a and b differ"
+    Call assert(Size(a) == Size(b), error_message)
+    error_message = "All elements vector a must be unique for mapping to work"
+    Call assert(.not. all_elements_unique(a), error_message)
+    error_message = "All elements vector b must be unique for mapping to work"
+    Call assert(.not. all_elements_unique(b), error_message)
+    
+    Allocate(b_to_a(Size(a)), a_to_b(Size(a)))
+    
+    Do i=1,Size(a)
+       Do j=1,Size(b)
+          If(a(i) == b(j)) Then
+             b_to_a(i) = j
+             a_to_b(j) = i
+             exit
+          Endif
+       Enddo
+    Enddo
+
+  End Subroutine ordering_indices
+
+  
+  !> Check if all elements of a vector are unique
+  Function all_elements_unique(input) Result(unique)
+    Integer, Intent(In)  :: input(:)
+    Integer, Allocatable :: element(:)
+    Integer :: i
+    Logical :: unique                  
+
+    unique = .True. 
+    Allocate(element(Size(input)))
+    element(1) = input(1)
+
+    Do i = 2, Size(input)
+       If(Any(element == input(i))) Then
+          unique = .False. 
+          Return  
+       Endif
+    Enddo
+
+    Return
+  End Function all_elements_unique
+
+  
 End Module configuration

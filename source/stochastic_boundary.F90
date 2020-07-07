@@ -26,7 +26,12 @@ Module stochastic_boundary
   Use shared_units,    Only: update_shared_units,&
                              update_shared_units_int
   Use statistics,      Only: stats_type
-  Use thermostat,      Only: thermostat_type
+  Use thermostat,      Only: thermostat_type,&
+                             PSEUDO_LANGEVIN_DIRECT, &
+                             PSEUDO_LANGEVIN, &
+                             PSEUDO_GAUSSIAN, &
+                             PSEUDO_DIRECT
+
 
   Implicit None
   Private
@@ -178,7 +183,9 @@ Contains
       thermo%ntp = Sum(thermo%tpn)
 
       If (thermo%ntp == 0) Return
-      If (thermo%chit_sb < 1.0e-6_wp .or. thermo%key_pseudo > 1) Return ! Avoid thermostat overheating
+      If (thermo%chit_sb < 1.0e-6_wp .or. &
+           thermo%key_pseudo == PSEUDO_GAUSSIAN .or. &
+           thermo%key_pseudo == PSEUDO_DIRECT) Return ! Avoid thermostat overheating
 
       ! Allocate random force array of length j
 
@@ -346,7 +353,8 @@ Contains
       ! Velocity scaling cycle - thermostatting.  k = local, thermo%ntp = global
       ! number of particles within thermostat layers
 
-      If (thermo%key_pseudo < 3) Then ! Apply LANGEVIN temperature scaling
+      If (thermo%key_pseudo == PSEUDO_LANGEVIN_DIRECT .or. &
+           thermo%key_pseudo == PSEUDO_LANGEVIN) Then ! Apply LANGEVIN temperature scaling
 
         ! Allocate random config%velocities array of length k
 
@@ -863,7 +871,7 @@ Contains
 
       End If
 
-      If (thermo%key_pseudo == 0 .or. thermo%key_pseudo == 3) Then ! Apply DIRECT temperature scaling
+      If (thermo%key_pseudo == PSEUDO_LANGEVIN_DIRECT .or. thermo%key_pseudo == PSEUDO_DIRECT) Then ! Apply DIRECT temperature scaling
 
         mxdr = 0.0_wp
         Do i = 1, config%natms

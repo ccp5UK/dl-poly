@@ -22,7 +22,7 @@ Module comms
     wi, &
     wp
   Use particle, Only: corePart
-  Use, Intrinsic :: iso_fortran_env, Only: CHARACTER_STORAGE_SIZE
+  Use, Intrinsic :: iso_fortran_env, Only: CHARACTER_STORAGE_SIZE, error_unit
   Use asserts,  Only : assert
 #ifdef SERIAL
   Use mpi_api
@@ -180,6 +180,7 @@ Module comms
     Module Procedure gbcast_integer_scalar
     Module Procedure gbcast_integer_scalar_16
     Module Procedure gbcast_real
+    Module Procedure gbcast_real2d
     Module Procedure gbcast_real_scalar
     Module Procedure gbcast_char
     Module Procedure gbcast_logical_scalar
@@ -1189,6 +1190,14 @@ Contains
     Call MPI_BCAST(vec(n_l:n_u), n_s, wp_mpi, root, comm%comm, comm%ierr)
   End Subroutine gbcast_real
 
+   Subroutine gbcast_real2d(comm, array, root)
+    Type(comms_type), Intent(InOut) :: comm
+    Real(Kind=wp),    Intent(InOut) :: array(:,:)
+    Integer,          Intent(In   ) :: root
+    If (comm%mxnode == 1) Return
+    Call MPI_BCAST(array, size(array), wp_mpi, root, comm%comm, comm%ierr)
+  End Subroutine gbcast_real2d
+  
   Subroutine gbcast_real_scalar(comm, s, root)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2292,7 +2301,7 @@ Contains
     !! author    - A. Buccheri June 2019
     !
     Type( comms_type ),   Intent( InOut ) :: comm
-    Character( Len = * ), Intent( In    ) :: send_buf(:)
+    Character( Len = * ), Intent( In    ), Contiguous :: send_buf(:)
     Integer,              Intent( In    ) :: recv_counts(:)
     Integer,              Intent( In    ) :: disps(:)
     Character( Len = * ), Intent( Out   ) :: recv_buf(:)
@@ -2603,43 +2612,5 @@ Contains
     End Do
 
   End Subroutine gatherv_scatterv_index_arrays
-
-  !> Distribute a a range of integers [1,n], over mpi processes
-  !> Based on an old (2011) version of Quantum Espresso subroutine
-  !!
-  !! @param[in]    comm          Object holding MPI settings and comms
-  !! @param[in]    n             Range of loop (assuming starts at 1)
-  !! !param[out]   istart/istop  Start/stop indices for loop
-  !
-  subroutine distribute_loop(comm, n, istart, istop)
-    Type(comms_type), Intent(In) :: comm
-    !> Quantity to distribute
-    Integer, Intent(In)  ::   n
-    !> Returned loop limits
-    Integer, Intent(Out) ::  istart,istop
-    Integer              ::  nl,nlr
-
-    !Distribute iq loop
-    if(comm%mxnode > 1) then
-       !how many steps done locally
-       nl = n/comm%mxnode
-       ! remainder
-       nlr = n - nl*comm%mxnode
-       !to distribute remainder add one if node number is smaller
-       !than remainder (because numprocs is based on 0)
-       if(comm%idnode < nlr) nl = nl+1
-       !starting index
-       istart = nl*comm%idnode+1
-       ! nodes with number larger than remainder have to be offset
-       if(comm%idnode > nlr) istart = istart+nlr
-       ! stopping index
-       istop = istart-1+nl
-    else
-       istart=1
-       istop=n
-    endif
-
-  end subroutine distribute_loop
-
 
 End Module comms

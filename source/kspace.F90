@@ -28,6 +28,8 @@ Module kspace
 
     !> Real K-Vector indices
     Real(Kind=wp),    Dimension(3),                 Public :: k_vec_dim_real
+    !> Real K-Vector indices
+    Real(Kind=wp),    Dimension(3),                 Public :: k_vec_dim_real_p_dom
     !> Largest K-Vector index
     Real(Kind=wp),                                  Public :: k_vec_max_real
 
@@ -42,7 +44,7 @@ Module kspace
     Integer,          Dimension(3),                 Public :: domain_n
     !> Domain location index
     Integer,          Dimension(3),                 Public :: domain_ind
-    
+
     !> Cells to operate over
     Real(Kind=wp),    Dimension(3, 2),              Public :: domain_bounds
     !> Cells to operate over
@@ -74,7 +76,7 @@ Contains
 
     kspace_in%domain_n = [domain_in%nx, domain_in%ny, domain_in%nz]
     kspace_in%domain_ind = [domain_in%idx, domain_in%idy, domain_in%idz]
-    
+
     ! Real values of kmax vectors
 
     kspace_in%k_vec_dim_real = Real(kspace_in%k_vec_dim, wp)
@@ -118,5 +120,5 @@ Contains
 
   End Subroutine setup_kspace
 
-  
+
 End Module kspace

@@ -125,7 +125,6 @@ Module meta
   Use z_density,                          Only: z_density_type
   Use test_configuration, Only : run_configuration_tests
 
-
   Implicit None
   Private
 
@@ -572,7 +571,7 @@ Contains
           if(comm%idnode == root_id) Then
              Write(*,*) 'Running unit tests for configuration module'
           Endif
-          Call run_configuration_tests(comm%mxnode)
+          Call run_configuration_tests()
        End If
 
        if(comm%idnode == root_id) Write(*,*) 'Unit tests completed'
