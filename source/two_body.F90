@@ -61,7 +61,8 @@ Module two_body
   Use timer,           Only: start_timer,&
                              stop_timer,&
                              timer_type
-  Use vdw,             Only: vdw_forces,&
+  Use vdw,             Only: vdw_forces_tab,&
+                             vdw_forces_direct,&
                              vdw_type
 
   Implicit None
@@ -368,24 +369,30 @@ Contains
         ! calculate short-range force and potential terms
 
         If (vdws%n_vdw > 0) Then
+          If (ewld%vdw) Then
+            Do ipot = 1, ewld%num_pots
 
-          ! If (.not. ewld%vdw) Then
+              Call ewald_real_forces_gen(ewld%alpha, ewld%spme_data(ipot), neigh, config, stats, &
+                   & vdw_coeffs(:, ipot), i, xxt, yyt, zzt, rrt, engacc, viracc)
 
-           Call vdw_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, vdws, config) !
-           engvdw = engvdw + engacc
-           virvdw = virvdw + viracc
+              engvdw_rl = engvdw_rl + engacc
+              virvdw_rl = virvdw_rl + viracc
 
-          ! Else
-          !   Do ipot = 1, ewld%num_pots
+            End Do
 
-          !     Call ewald_real_forces_gen(ewld%alpha, ewld%spme_data(ipot), neigh, config, stats, &
-          !       & vdw_coeffs(:, ipot), i, xxt, yyt, zzt, rrt, engacc, viracc)
+          Else If (vdws%l_direct) Then ! direct calculation
 
-          !     engvdw_rl = engvdw_rl + engacc
-          !     virvdw_rl = virvdw_rl + viracc
+            Call vdw_forces_direct(i, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, vdws, config)
+            engvdw = engvdw + engacc
+            virvdw = virvdw + viracc
 
-          !   End Do
-          ! End If
+          else
+
+            Call vdw_forces_tab(i, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, vdws, config)
+            engvdw = engvdw + engacc
+            virvdw = virvdw + viracc
+
+          end If
 
         End If
 
