@@ -665,8 +665,10 @@ Contains
 
     if (ewld%direct .or. electro%no_elec) then
       electro%erfc%nsamples = -1
+      electro%erfc_deriv%nsamples = -1
     else
       electro%erfc%nsamples = Max(1004, Nint(neigh%cutoff / delr_max) + 4)
+      electro%erfc_deriv%nsamples = Max(1004, Nint(neigh%cutoff / delr_max) + 4)
     end if
 
     ! maximum number of grid points for vdw interactions - overwritten
@@ -1447,8 +1449,8 @@ Contains
       Call adjust_kmax(ewld%kspace%k_vec_dim(2), domain%ny)
       Call adjust_kmax(ewld%kspace%k_vec_dim(3), domain%nz)
 
-      bspline_node_check = Minval(Int(ewld%kspace%k_vec_dim_real_p_dom))
-
+      bspline_node_check = Minval(Int(ewld%kspace%k_vec_dim/[domain%nx, domain%ny, domain%nz]))
+      print*, bspline_node_check
       if (bspline_node_check == ewld%bspline%num_splines) then
         call warning('LC+DD with SPME grid too small to support padding')
         neigh%padding = 0.0_wp
@@ -1456,8 +1458,8 @@ Contains
 
       else if (bspline_node_check < ewld%bspline%num_splines) then
 
-        Write (message, '(1x,2(a,3i0.1),a)') 'User SPME grid: ', ewld%kspace%k_vec_dim, &
-             ' , DD+LC minimum grid: ', (ewld%bspline%num_splines+1)*[domain%nx, domain%ny, domain%nz], ' '
+        Write (message, '(1x,2(a,3(i0.1,1x)),a)') 'User SPME grid: ', ewld%kspace%k_vec_dim(1:3), &
+             ', DD+LC minimum grid: ', (ewld%bspline%num_splines+1)*[domain%nx, domain%ny, domain%nz], ' '
         Call warning(message, .true.)
 
         tol = Real(bspline_node_check, wp) / Real(ewld%bspline%num_splines, wp)
