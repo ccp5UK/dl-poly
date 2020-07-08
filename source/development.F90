@@ -21,6 +21,7 @@ Module development
   Use parse,           Only: get_line, get_word, lower_case, clean_string, word_2_real
   Use filename,        Only: file_type, FILE_CONTROL
   Use errors_warnings, Only: info, error , set_print_level
+  Use iso_fortran_env, ONly: compiler_version
 #ifdef OLDMPI
   Use comms,           Only: mpi_ver, mpi_subver, comms_type, gcheck
 #else
@@ -31,7 +32,7 @@ Module development
 
   Private
 
-  !> Logicals indicating whether tests should be run for 
+  !> Logicals indicating whether tests should be run for
   !> corresponding module. Add as required
   Type, Public :: testing_type
      Logical :: configuration
@@ -40,7 +41,7 @@ Module development
      Procedure :: all => set_all_tests_true
      !Procedure :: set => set_tests
   End Type testing_type
-  
+
   !> Type containing development module variables
   Type, Public :: development_type
     Private
@@ -248,13 +249,7 @@ Contains
     Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", " builder:", aux, "****"
     Call info(message, .true.)
 
-    If (mpi_ver > 0) Then
-      If (Len_trim(__COMPILER__//" v"//__VERSION__) > 47) Then
-        Write (aux, '(a47)') __COMPILER__//" v"//__VERSION__
-      Else
-        Write (aux, *) __COMPILER__//" v"//__VERSION__
-      End If
-    End If
+    aux = compiler_version()
     Call clean_string(aux)
     Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", "compiler:", aux, "****"
     Call info(message, .true.)
@@ -294,5 +289,5 @@ Contains
     this%configuration = .true.
     this%dftb_library = .true.
   End Subroutine set_all_tests_true
-  
+
 End Module development
