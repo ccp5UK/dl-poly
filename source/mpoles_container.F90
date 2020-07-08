@@ -6466,7 +6466,7 @@ Contains
     Integer,                                 Intent( In   ) :: s1,s2,s3
     Real( Kind = wp ),                       Intent( In   ) :: rcell(9)
     Real( Kind = wp ), Dimension( 0:ewld%bspline%num_splines ), Intent( In   ) :: bsddx,bsddy,bsddz
-    Real( Kind = wp ), Intent( In    ) :: n_choose_k(1:,1:)
+    Real( Kind = wp ), Intent( In    ) :: n_choose_k(0:,0:)
     Type( configuration_type ),              Intent( In    ) :: config
 
     Real( Kind = wp ) :: tx,ty,tz,sx,sy,sz
