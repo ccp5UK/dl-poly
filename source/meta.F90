@@ -905,8 +905,8 @@ Contains
     Write (banner(10), fmt1) "*************  i.j.bush, h.a.boateng, r.davidchak,   *************"
     Write (banner(11), fmt1) "*************  m.a.seaton, a.v.brukhno, a.m.elena,   *************"
     Write (banner(12), fmt1) "*************  s.l.daraszewicz,g.khara,s.t.murphy    *************"
-    Write (banner(13), fmt1) "*************  j.madge,a.b.g.chalk,i.scivetti,        *************"
-    Write (banner(14), fmt1) "*************  j.wilinks                              *************"
+    Write (banner(13), fmt1) "*************  j.madge,a.b.g.chalk,i.scivetti,       *************"
+    Write (banner(14), fmt1) "*************  j.wilkins                             *************"
     Write (banner(15), fmt1) "******************************************************************"
     Call info(banner, 15, .true., level=-1)
   End Subroutine print_banner
