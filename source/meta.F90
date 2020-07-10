@@ -891,7 +891,7 @@ Contains
 
     Character(Len=*), Parameter :: fmt1 = '(a)', fmt2 = '(a25,a8,a4,a14,a15)', fmt3 = '(a,i10,a)'
 
-    Character(Len=66) :: banner(14)
+    Character(Len=66) :: banner(15)
 
     Write (banner(1), fmt1) Repeat("*", 66)
     Write (banner(2), fmt1) "*************  stfc/ccp5  program  library  package  ** D ********"
@@ -905,9 +905,10 @@ Contains
     Write (banner(10), fmt1) "*************  i.j.bush, h.a.boateng, r.davidchak,   *************"
     Write (banner(11), fmt1) "*************  m.a.seaton, a.v.brukhno, a.m.elena,   *************"
     Write (banner(12), fmt1) "*************  s.l.daraszewicz,g.khara,s.t.murphy    *************"
-    Write (banner(13), fmt1) "*************  j.madge,a.b.g.chalk,i.scivetti        *************"
-    Write (banner(14), fmt1) "******************************************************************"
-    Call info(banner, 14, .true., level=-1)
+    Write (banner(13), fmt1) "*************  j.madge,a.b.g.chalk,i.scivetti,        *************"
+    Write (banner(14), fmt1) "*************  j.wilinks                              *************"
+    Write (banner(15), fmt1) "******************************************************************"
+    Call info(banner, 15, .true., level=-1)
   End Subroutine print_banner
 
   Subroutine print_citations(electro, mpoles, ttms)
