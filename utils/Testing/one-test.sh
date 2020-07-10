@@ -1,25 +1,25 @@
 #!/usr/bin/env bash
-DLP_ROOT=/home/drFaustroll/playground/dlpoly/dl-poly-alin
+DLP_ROOT=/home/drFaustroll/playground/dlpoly/dl-poly-devel
 data="${DLP_ROOT}/data"
 genTest(){
   test=$1
   iterations="$2"
-  name=$(grep "TEST $test" README.txt | awk -F \+ '{print $2}') 
+  name=$(grep "TEST $test" $data/README.txt | cut -d "-" -f 2-) 
   echo "processing test $test - $name"
-  tar -xf $data/TEST${test}.tar.xz 
-  pushd TEST${test}
-  echo "    <testcase name=\"TEST${test}\">" >> ../$testf
-  echo "      <path archive=\"Yes\">TEST${test}</path>" >> ../$testf
+  tar -xf $data/${test}.tar.xz 
+  pushd ${test}
+  echo "    <testcase name=\"${test}\">" >> ../$testf
+  echo "      <path archive=\"Yes\">${test}</path>" >> ../$testf
   echo "      <description>TEST ${test} - ${name}</description>" >> ../$testf
   for iteration in $iterations; do
     for prop in $props; do
       val=$(${DLP_ROOT}/utils/Scripts/${prop}.py $iteration)
       echo "        <${prop} iteration=\"${iteration}\">${val}</${prop}>" >> ../$testf
-    done 
+    done
   done
-  popd
-  rm -rf TEST${test}
   echo "    </testcase>" >> $testf
+  rm -rf ${test}
+  popd
 }
 
 props=$(grep "property name" properties.xml | sed 's;<property name=";;g' | sed 's;">;;g' | xargs )
@@ -36,7 +36,7 @@ testf="one.xml"
 #echo "    <author>Alin Marin Elena</author>" >> $testf
 #echo "    <outdir>TestsOut</outdir>" >> $testf
    
-genTest $1 "0 10 20 30" 
+genTest $1 "0 10 20" 
 
 
 #echo "  </testsuite>" >> $testf

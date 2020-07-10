@@ -42,12 +42,12 @@ Module errors_warnings
   Interface warning
     Module Procedure warning_special
     Module Procedure warning_general
-  End Interface
+  End Interface warning
 
   Interface info
     Module Procedure info_sl
     Module Procedure info_ml
-  End Interface
+  End Interface info
 
 Contains
 
@@ -129,7 +129,7 @@ Contains
 
         Write (ounit, '(/,1x,a,f7.3,a,/,1x,a,/)') &
           '*** warning - DD cutoff is ', a, ' Angstroms !!! ***', &
-          '*** Fennell damping is not recommended for cutoffs shorther than 10-12 Angstroms !!! ***'
+          '*** Fennell damping is not recommended for cutoffs shorter than 10-12 Angstroms !!! ***'
 
       Else If (kode == 8) Then
 

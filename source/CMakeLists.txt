@@ -64,8 +64,12 @@ set(dlpoly_SRCS
   bonds.F90
   constraints.F90
   coul_mpole.F90
+  bspline.F90
+  kspace.F90
+  spme.F90
   ewald_spole.F90
-  ewald_mpole.F90
+  ewald_general.F90
+#  ewald_mpole.F90
   inversions.F90
   metal.F90
   poisson.F90

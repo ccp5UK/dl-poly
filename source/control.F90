@@ -13,7 +13,8 @@ Module control
                                   IMCON_TRUNC_OCTO,&
                                   IMCON_RHOMBIC_DODEC,&
                                   IMCON_HEXAGONAL
-  Use constants,            Only: pi,&
+  Use constants,            Only: epsilon_wp,&
+                                  pi,&
                                   prsunt,&
                                   tenunt,&
                                   zero_plus
@@ -283,7 +284,7 @@ Contains
 
     ! switch for pseudo thermostat (not applied), type of scaling
     ! (default 0 where 0 - Langevin+direct, 1 - Langevin, 2 - gauss, 3 - direct )
-    ! and minimum config%width of the thermostatted boundaries in Angs
+    ! and minimum width of the thermostatted boundaries in Angs
     ! minimum temperature of the thermostat
 
     thermo%l_stochastic_boundaries = .false.
@@ -711,6 +712,13 @@ Contains
 
           vdws%l_direct = .true.
           Call info('vdw direct option on', .true.)
+
+          ! Is ewald going to perform VdW stuff
+
+        Else If (word1(1:5) == 'ewald') Then
+
+          ewld%vdw = .true.
+          Call info('vdw ewald option on', .true.)
 
         Else If (word1(1:3) == 'mix') Then
 
@@ -1309,7 +1317,7 @@ Contains
             Call info('Ensemble : NVT Berendsen', .true.)
             Write (message, '(a,1p,e12.4)') 'thermostat relaxation time (ps) ', thermo%tau_t
             Call info(message, .true.)
-            Call warning('you plan to use berendsen thermostat, have a read https://doi.org/10.1021/acs.jctc.8b00446', .true.)
+            Call warning('If you plan to use the Berendsen thermostat, read https://doi.org/10.1021/acs.jctc.8b00446', .true.)
 
             If (lens) Call error(414)
             lens = .true.
@@ -1858,15 +1866,13 @@ Contains
 
           ! This is sorted in set_bounds -> scan_control
 
-          Write (messages(1), '(a,1p,e12.4)') 'Ewald convergence parameter (A^-1) ', electro%alpha
-          Write (messages(2), '(a,3i5)') 'Ewald kmax1 kmax2 kmax3   (x2) ', ewld%fft_dim_a1, ewld%fft_dim_b1, ewld%fft_dim_c1
-          If (ewld%fft_dim_a /= ewld%fft_dim_a1 .or. ewld%fft_dim_b /= ewld%fft_dim_b1 .or. ewld%fft_dim_c /= ewld%fft_dim_c1) Then
-            Write (messages(3), '(a,3i5)') 'DaFT adjusted kmax values (x2) ', ewld%fft_dim_a, ewld%fft_dim_b, ewld%fft_dim_c
-            Write (messages(4), '(a,1p,i5)') 'B-spline interpolation order ', ewld%bspline
-            Call info(messages, 4, .true.)
-          Else
-            Write (messages(3), '(a,1p,i5)') 'B-spline interpolation order ', ewld%bspline
-            Call info(messages, 3, .true.)
+          Write (messages(1), '(a,1p,e12.4)') 'Ewald convergence parameter (A^-1) ', ewld%alpha
+          Write (messages(2), '(a,3i5)') 'Ewald kmax1 kmax2 kmax3   (x2) ', ewld%kspace%k_vec_dim_cont
+          Call info(messages, 2, .true.)
+          If (Any(ewld%kspace%k_vec_dim /= ewld%kspace%k_vec_dim_cont)) Then
+            !If (ewld%fft_dim_a /= ewld%fft_dim_a1 .or. ewld%fft_dim_b /= ewld%fft_dim_b1 .or. ewld%fft_dim_c /= ewld%fft_dim_c1) Then
+            Write (messages(1), '(a,3i5)') 'DaFT adjusted kmax values (x2) ', ewld%kspace%k_vec_dim
+            Call info(messages, 1, .true.)
           End If
 
           ! Print infrequent k-space SPME evaluation
@@ -1919,8 +1925,8 @@ Contains
 
         If (word(1:4) == 'damp') Then
           Call get_word(record, word)
-          electro%alpha = Abs(word_2_real(word))
-          Write (message, '(a,1p,e12.4)') 'damping parameter (A^-1) ', electro%alpha
+          electro%damping = Abs(word_2_real(word))
+          Write (message, '(a,1p,e12.4)') 'damping parameter (A^-1) ', electro%damping
           Call info(message, .true.)
         Else If (word(1:9) == 'precision') Then
           Call get_word(record, word)
@@ -1929,11 +1935,14 @@ Contains
           Call info(message, .true.)
           eps0 = Max(Min(eps0, 0.5_wp), 1.0e-20_wp)
           tol = Sqrt(Abs(Log(eps0 * neigh%cutoff)))
-          electro%alpha = Sqrt(Abs(Log(eps0 * neigh%cutoff * tol))) / neigh%cutoff
-          Write (message, '(a,1p,e12.4)') 'damping parameter (A^-1) derived ', electro%alpha
+          electro%damping = Sqrt(Abs(Log(eps0 * neigh%cutoff * tol))) / neigh%cutoff
+
+          Write (message, '(a,1p,e12.4)') 'damping parameter (A^-1) derived ', electro%damping
           Call info(message, .true.)
         End If
-        If (electro%alpha > zero_plus) Then
+
+        electro%damp = electro%damping > zero_plus
+        If (electro%damp) Then
           Call info('Fennell damping applied', .true.)
           If (neigh%cutoff < 12.0_wp) Call warning(7, neigh%cutoff, 12.0_wp, 0.0_wp)
         End If
@@ -1953,8 +1962,8 @@ Contains
 
         If (word(1:4) == 'damp') Then
           Call get_word(record, word)
-          electro%alpha = Abs(word_2_real(word))
-          Write (message, '(a,1p,e12.4)') 'damping parameter (A^-1) ', electro%alpha
+          electro%damping = Abs(word_2_real(word))
+          Write (message, '(a,1p,e12.4)') 'damping parameter (A^-1) ', electro%damping
           Call info(message, .true.)
         Else If (word(1:9) == 'precision') Then
           Call get_word(record, word)
@@ -1963,11 +1972,13 @@ Contains
           Call info(message, .true.)
           eps0 = Max(Min(eps0, 0.5_wp), 1.0e-20_wp)
           tol = Sqrt(Abs(Log(eps0 * neigh%cutoff)))
-          electro%alpha = Sqrt(Abs(Log(eps0 * neigh%cutoff * tol))) / neigh%cutoff
-          Write (message, '(a,1p,e12.4)') 'damping parameter (A^-1) derived ', electro%alpha
+          electro%damping = Sqrt(Abs(Log(eps0 * neigh%cutoff * tol))) / neigh%cutoff
+          Write (message, '(a,1p,e12.4)') 'damping parameter (A^-1) derived ', electro%damping
           Call info(message, .true.)
         End If
-        If (electro%alpha > zero_plus) Then
+
+        electro%damp = electro%damping > zero_plus
+        If (electro%damp) Then
           Call info('Fennell damping applied', .true.)
           If (neigh%cutoff < 12.0_wp) Call warning(7, neigh%cutoff, 12.0_wp, 0.0_wp)
         End If
@@ -2011,10 +2022,10 @@ Contains
         Write (messages(4), '(a,1p,i5)') 'max # of Jacobi  iterations ', Nint(prmps(4))
         Call info(messages, 4, .true.)
 
-        If (Abs(prmps(1) - 1.0_wp / electro%alpha) > 1.0e-6_wp .or. Abs(prmps(2) - pois%eps) > 1.0e-6_wp .or. &
+        If (Abs(prmps(1) - 1.0_wp / pois%delta) > 1.0e-6_wp .or. Abs(prmps(2) - pois%eps) > 1.0e-6_wp .or. &
             Nint(prmps(3)) == 0 .or. Nint(prmps(4)) == 0) Then
           Call warning('parameters reset to safe defaults occurred', .true.)
-          Write (messages(1), '(a,1p,e12.4)') 'gridspacing parameter (A) ', 1.0_wp / electro%alpha
+          Write (messages(1), '(a,1p,e12.4)') 'gridspacing parameter (A) ', 1.0_wp / pois%delta
           Write (messages(2), '(a,1p,e12.4)') 'convergance epsilon ', pois%eps
           Write (messages(3), '(a,1p,i5)') 'max # of Psolver iterations ', pois%mxitcg
           Write (messages(4), '(a,1p,i5)') 'max # of Jacobi  iterations ', pois%mxitjb
@@ -2764,6 +2775,22 @@ Contains
         stats%intsta = Nint(word_2_real(word))
         Write (message, '(a,i10)') 'statistics file interval ', stats%intsta
         Call info(message, .true.)
+
+        ! Perform thermal flux
+
+      Else If (word(1:9) == 'heat_flux') Then
+
+        flow%heat_flux = .true.
+        stats%require_pp = .true.
+        Write (message, '(a)') 'Writing heat flux data'
+
+        ! Read Per-particle write
+
+      Else If (word(1:7) == 'dump_pp') Then
+
+        flow%write_per_particle = .true.
+        stats%require_pp = .true.
+        Write (message, '(a)') 'Writing per-particle data'
 
         ! read MSDTMP printing option
 
@@ -3857,14 +3884,6 @@ Contains
 
     nstfce = -1 ! None defined
 
-    ! Ewald/Poisson Solver sum parameters defaults
-
-    ewld%bspline = 0
-    electro%alpha = 0.0_wp
-    ewld%fft_dim_a1 = 0
-    ewld%fft_dim_b1 = 0
-    ewld%fft_dim_c1 = 0
-
     ! default number of steps and expansion option
 
     nstrun = 0
@@ -4500,8 +4519,8 @@ Contains
 
       If (word(1:1) == '#' .or. word(1:1) == ' ') Then
 
-      Else If (lelec .and. ((word(1:5) == 'ewald' .or. word(1:4) == 'spme') .or. &
-                            (word(1:5) == 'poiss' .or. word(1:5) == 'psolv'))) Then
+      Else If ((ewld%vdw .or. lelec) .and. ((word(1:5) == 'ewald' .or. word(1:4) == 'spme') .or. &
+                                            (word(1:5) == 'poiss' .or. word(1:5) == 'psolv'))) Then
 
         ! Double the kmax size if specified "ewald sum" instead of "spme sum"
 
@@ -4547,7 +4566,14 @@ Contains
 
           End If
 
-          If (itmp > 0) Then ! Ewald or SPME
+          If (itmp > 0) Then ! SPME
+
+            ewld%active = .true.
+            ! Ewald sum parameters defaults
+            ewld%alpha = 0.0_wp
+            ewld%bspline%num_splines = 0
+            ewld%kspace%k_vec_dim_cont = 0
+            ewld%kspace%k_vec_dim = 0
 
             If (word(1:9) == 'precision') Then
 
@@ -4558,20 +4584,18 @@ Contains
               eps0 = Max(Min(eps0, 0.5_wp), 1.0e-20_wp)
 
               Call get_word(record, word)
-              ewld%bspline = Abs(Nint(word_2_real(word)))
+              ewld%bspline%num_splines = Abs(Nint(word_2_real(word)))
 
               tol = Sqrt(Abs(Log(eps0 * neigh%cutoff)))
-              electro%alpha = Sqrt(Abs(Log(eps0 * neigh%cutoff * tol))) / neigh%cutoff
-              tol1 = Sqrt(-Log(eps0 * neigh%cutoff * (2.0_wp * tol * electro%alpha)**2))
+              ewld%alpha = Sqrt(Abs(Log(eps0 * neigh%cutoff * tol))) / neigh%cutoff
+              tol1 = Sqrt(-Log(eps0 * neigh%cutoff * (2.0_wp * tol * ewld%alpha)**2))
 
               fac = 1.0_wp
               If (imcon == IMCON_TRUNC_OCTO .or. &
                   imcon == IMCON_RHOMBIC_DODEC .or. &
                   imcon == IMCON_HEXAGONAL) fac = 2.0_wp**(1.0_wp / 3.0_wp)
 
-              ewld%fft_dim_a1 = 2 * Nint(0.25_wp + fac * celprp(7) * electro%alpha * tol1 / pi)
-              ewld%fft_dim_b1 = 2 * Nint(0.25_wp + fac * celprp(8) * electro%alpha * tol1 / pi)
-              ewld%fft_dim_c1 = 2 * Nint(0.25_wp + fac * celprp(9) * electro%alpha * tol1 / pi)
+              ewld%kspace%k_vec_dim_cont = 2 * Nint(0.25_wp + fac * celprp(7:9) * ewld%alpha * tol1 / pi)
 
               ! neigh%cutoff is needed directly for the SPME and it MUST exist
 
@@ -4580,23 +4604,24 @@ Contains
             Else
 
               If (word(1:3) == 'sum') Call get_word(record, word)
-              electro%alpha = Abs(word_2_real(word))
+              ewld%alpha = Abs(word_2_real(word))
 
               Call get_word(record, word)
-              ewld%fft_dim_a1 = itmp * Nint(Abs(word_2_real(word)))
+              ewld%kspace%k_vec_dim_cont(1) = itmp * Nint(Abs(word_2_real(word)))
 
               Call get_word(record, word)
-              ewld%fft_dim_b1 = itmp * Nint(Abs(word_2_real(word)))
+              ewld%kspace%k_vec_dim_cont(2) = itmp * Nint(Abs(word_2_real(word)))
 
               Call get_word(record, word)
-              ewld%fft_dim_c1 = itmp * Nint(Abs(word_2_real(word)))
+              ewld%kspace%k_vec_dim_cont(3) = itmp * Nint(Abs(word_2_real(word)))
 
               Call get_word(record, word)
-              ewld%bspline = Nint(Abs(word_2_real(word)))
+              ewld%bspline%num_splines = Nint(Abs(word_2_real(word)))
 
               ! Sanity check for ill defined ewald sum parameters 1/8*2*2*2 == 1
 
-              tol = electro%alpha * Real(ewld%fft_dim_a1, wp) * Real(ewld%fft_dim_b1, wp) * Real(ewld%fft_dim_c1, wp)
+              tol = ewld%alpha * Real(Product(ewld%kspace%k_vec_dim_cont), wp)
+              ! Real(ewld%fft_dim_a1,wp)*Real(ewld%fft_dim_a1,wp)*Real(ewld%fft_dim_a1,wp)
               If (Nint(tol) < 1) Call error(9)
 
               ! neigh%cutoff is not needed directly for the SPME but it's needed
@@ -4608,23 +4633,24 @@ Contains
             ! Get default spline order or one driven by multipolar sums if none is specified
             ! Only even order splines are allowed so pick the even=odd+1 if resulting in odd!!!
 
-            If (ewld%bspline == 0) Then
-              ewld%bspline = mxspl_def + mpoles%max_order
-              bspline_local = ewld%bspline
+            If (ewld%bspline%num_splines == 0) Then
+              ewld%bspline%num_splines = mxspl_def + mpoles%max_order
+              bspline_local = ewld%bspline%num_splines
             Else
-              ewld%bspline = Max(ewld%bspline, mxspl_min)
-              bspline_local = ewld%bspline + mpoles%max_order
+              ewld%bspline%num_splines = Max(ewld%bspline%num_splines, mxspl_min)
+              bspline_local = ewld%bspline%num_splines + mpoles%max_order
               bspline_local = 2 * Ceiling(0.5_wp * Real(bspline_local, wp))
             End If
-            ewld%bspline = 2 * Ceiling(0.5_wp * Real(ewld%bspline, wp))
-            ewld%bspline = Max(ewld%bspline, bspline_local)
+            ewld%bspline%num_splines = 2 * Ceiling(0.5_wp * Real(ewld%bspline%num_splines, wp))
+            ewld%bspline%num_splines = Max(ewld%bspline%num_splines, bspline_local)
 
           Else !If (itmp == 0) Then ! Poisson Solver
 
+            pois%active = .true.
             Do i = 1, 4
               If (word(1:5) == 'delta') Then ! spacing
                 Call get_word(record, word)
-                electro%alpha = 1.0_wp / Abs(word_2_real(word))
+                pois%delta = 1.0_wp / Abs(word_2_real(word))
               End If
 
               If (word(1:3) == 'eps') Then ! tolerance
@@ -4647,9 +4673,9 @@ Contains
 
             ! Check for undefined and ill defined parameters
 
-            !             0.1 Angs <= delta=1/electro%alpha <= Min(3 Angs,neigh%cutoff/3) - 3 grid points within a link-cell
-            If (electro%alpha > 10.0_wp) electro%alpha = 10.0_wp
-            If (electro%alpha < 1.0_wp / Min(3.0_wp, cut / 3.0_wp)) electro%alpha = 1.0_wp / Min(3.0_wp, cut / 3.0_wp)
+            ! 0.1 Angs <= delta=1/pois%delta <= Min(3 Angs,neigh%cutoff/3) - 3 grid points within a link-cell
+            If (pois%delta > 10.0_wp) pois%delta = 10.0_wp
+            If (pois%delta < 1.0_wp / Min(3.0_wp, cut / 3.0_wp)) pois%delta = 1.0_wp / Min(3.0_wp, cut / 3.0_wp)
 
             If (pois%mxitcg == 0) pois%mxitcg = 1000 ! default
             If (pois%mxitjb == 0) pois%mxitjb = 1000 ! default
@@ -4657,13 +4683,11 @@ Contains
             ! Derive grid spacing represented as a k-vector
 
             Call dcell(cell, celprp)
-            ewld%fft_dim_a1 = Nint(celprp(7) * electro%alpha)
-            ewld%fft_dim_b1 = Nint(celprp(8) * electro%alpha)
-            ewld%fft_dim_c1 = Nint(celprp(9) * electro%alpha)
+            pois%grid_dimensions = Nint(celprp(7:9) * pois%delta)
 
             ! Define stencil halo size (7) as a spline order (7/2==3)
 
-            ewld%bspline = 3
+            pois%halo_size = 3
 
           End If
 
@@ -4699,25 +4723,28 @@ Contains
         ! neigh%cutoff may be >= rcut_def but lrcut may still be .false.
         ! ewld%bspline = 0 is an indicator for no SPME or Poisson Solver electrostatics in CONTROL
 
-        If (ewld%bspline /= 0) Then ! SPME or Poisson Solver
+        If (ewld%active .or. pois%active) Then ! SPME or Poisson Solver
 
           ! (1) to Max(neigh%cutoff,Max(cell_width*ewld%bspline/kmax),ewld%bspline*delta) satisfying SPME b-splines
           ! propagation width or the Poisson Solver extra halo relation to cutoff
-          ! delta=1/electro%alpha is the grid spacing and ewld%bspline is the grid length needed for the
+          ! delta=1/ewld%alpha is the grid spacing and ewld%bspline is the grid length needed for the
           ! 3 haloed stencil of differentiation
 
           If (.not. lrcut) Then
             lrcut = .true.
 
             Call dcell(cell, celprp)
-            neigh%cutoff = Max(neigh%cutoff, Merge(Real(ewld%bspline, wp) / electro%alpha, &
-                                                   Max(celprp(7) * Real(ewld%bspline, wp) / Real(ewld%fft_dim_a1, wp), &
-                                                       celprp(8) * Real(ewld%bspline, wp) / Real(ewld%fft_dim_b1, wp), &
-                                                       celprp(9) * Real(ewld%bspline, wp) / Real(ewld%fft_dim_c1, wp)), &
-                                                   itmp == 0))
-            Call warning('DD cutoff check: rcut compliance with Ewald summation'// &
-                         'parameters (SPME/DaFT grid sizes) and MD cell widths', .true.)
-            Call warning(40, neigh%cutoff, 0.0_wp, 0.0_wp)
+            If (ewld%active) Then
+              neigh%cutoff = Max(neigh%cutoff, Maxval(&
+                & celprp(7:9) * Real(ewld%bspline%num_splines, wp) / Real(ewld%kspace%k_vec_dim_cont(1:3), wp)))
+
+            Else If (pois%active) Then
+
+              neigh%cutoff = Max(neigh%cutoff, &
+                & Maxval(celprp(7:9) * Real(pois%halo_size, wp) / Real(pois%grid_dimensions(1:3), wp)))
+
+            End If
+
           End If
 
           ! Reset vdws%cutoff, met%rcut and neigh%cutoff when only tersoff potentials are opted for
@@ -4792,6 +4819,9 @@ Contains
           ! neigh%cutoff must exist
 
           If (.not. lrcut) Call error(382)
+
+          ! Set cutoff^2 now that cutoff won't change
+          neigh%cutoff_2 = neigh%cutoff**2
 
           ! define cut
 
@@ -5412,7 +5442,7 @@ Contains
       ! number of readers
 
       tmp = Min(Real(comm%mxnode, wp), 2.0_wp * Real(comm%mxnode, wp)**0.5_wp)
-      itmp = 2**Int(Nearest(Log(tmp) / Log(2.0_wp), +1.0_wp))
+      itmp = 2**Int(Nearest(Log(tmp) / Log(2.0_wp) + epsilon_wp, +1.0_wp))
       Do While (Mod(comm%mxnode, itmp) /= 0)
         itmp = itmp - 1
       End Do
@@ -5456,7 +5486,7 @@ Contains
       ! number of writers
 
       tmp = Min(Real(comm%mxnode, wp), 8.0_wp * Real(comm%mxnode, wp)**0.5_wp)
-      itmp = 2**Int(Nearest(Log(tmp) / Log(2.0_wp), +1.0_wp))
+      itmp = 2**Int(Nearest(Log(tmp) / Log(2.0_wp) + epsilon_wp, +1.0_wp))
       Do While (Mod(comm%mxnode, itmp) /= 0)
         itmp = itmp - 1
       End Do

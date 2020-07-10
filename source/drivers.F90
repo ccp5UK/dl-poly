@@ -152,10 +152,12 @@ Module drivers
   Use shared_units,         Only: SHARED_UNIT_UPDATE_FORCES,&
                                   update_shared_units
   Use site,                 Only: site_type
-  Use statistics,           Only: statistics_collect,&
+  Use statistics,           Only: calculate_heat_flux,&
+                                  statistics_collect,&
                                   statistics_connect_frames,&
                                   statistics_connect_set,&
-                                  stats_type
+                                  stats_type,&
+                                  write_per_part_contribs
   Use stochastic_boundary,  Only: stochastic_boundary_vv
   Use system,               Only: system_revive
   Use temperature,          Only: regauss_temperature,&
@@ -414,6 +416,7 @@ Contains
       switch = 1 + Merge(1, 0, ltmp)
       Call inversions_forces(switch, stat%enginv, stat%virinv, stat%stress, inversion, cnfig, comm)
     End If
+
 #ifdef CHRONO
     Call stop_timer(tmr, 'Bonded Forces')
 #endif
@@ -658,7 +661,7 @@ Contains
 
     ! Check VNL conditioning
 
-    Call vnl_check(flow%strict, cnfig%width, neigh, stat, domain, cnfig, ewld%bspline, kim_data, comm)
+    Call vnl_check(flow%strict, cnfig%width, neigh, stat, domain, cnfig, ewld%bspline%num_splines, kim_data, comm)
 
     If (neigh%update) Then
 
@@ -1570,6 +1573,9 @@ Contains
     Type(adf_type),            Intent(InOut) :: adf
     Type(comms_type),          Intent(InOut) :: comm
 
+    Integer                     :: heat_flux_unit
+    Real(kind=wp), Dimension(3) :: heat_flux
+
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
     ! Calculate physical quantities at restart
@@ -1644,6 +1650,11 @@ Contains
 
       ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
 
+      ! If system is to write per-particle data AND write step AND not equilibration
+      If (stat%require_pp .and. Mod(flow%step, stat%intsta) == 0 .and. flow%step - flow%equil_steps >= 0) Then
+        Call stat%allocate_per_particle_arrays(cnfig%natms)
+      End If
+
       If (flow%step >= 0 .and. flow%step < flow%run_steps .and. cnfig%levcfg == 2) Then
 
         ! Increase step counter
@@ -1690,6 +1701,23 @@ Contains
          Endif
 #endif
       Endif
+
+      ! If system has written per-particle data
+      If (stat%collect_pp .and. flow%step - flow%equil_steps >= 0) Then
+        heat_flux = calculate_heat_flux(stat, cnfig, comm)
+
+        If (flow%heat_flux .and. comm%idnode == 0) Then
+          Open (Newunit=heat_flux_unit, File='HEATFLUX', Position='append')
+          Write (heat_flux_unit, '(I8.1, 1X, 5(G19.12, 1X))') flow%step, stat%stptmp, cnfig%volm, heat_flux
+          Close (heat_flux_unit)
+        End If
+
+        If (flow%write_per_particle) Then
+          Call write_per_part_contribs(cnfig, comm, stat%pp_energy, stat%pp_stress, flow%step)
+        End If
+
+        Call stat%deallocate_per_particle_arrays()
+      End If
 
       ! Calculate physical quantities, collect statistics and report at t=0
 

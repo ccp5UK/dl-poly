@@ -56,10 +56,10 @@ TEST 34 - Sodium Chloride (27,000 ions), NVT ensemble, Langevin thermostat
 TEST 35 - Sodium Chloride (27,000 ions), NVT ensemble, Andersen thermostat
 TEST 36 - Sodium Chloride (27,000 ions), NVT ensemble, Nose-Hoover thermostat
 TEST 37 - Sodium Chloride (27,000 ions), NVT ensemble, Gentle-Stochastic thermostat
-TEST 38 - Sodium Chloride (27,000 ions), NVT ensemble, DPD thermostat of first order, no drag coefficient 
-TEST 39 - Sodium Chloride (27,000 ions), NVT ensemble, DPD thermostat of first order, with drag coefficient 
-TEST 40 - Sodium Chloride (27,000 ions), NVT ensemble, DPD thermostat of second order, no drag coefficient 
-TEST 41 - Sodium Chloride (27,000 ions), NVT ensemble, DPD thermostat of second order, with drag coefficient 
+TEST 38 - Sodium Chloride (27,000 ions), NVT ensemble, DPD thermostat of first order, no drag coefficient
+TEST 39 - Sodium Chloride (27,000 ions), NVT ensemble, DPD thermostat of first order, with drag coefficient
+TEST 40 - Sodium Chloride (27,000 ions), NVT ensemble, DPD thermostat of second order, no drag coefficient
+TEST 41 - Sodium Chloride (27,000 ions), NVT ensemble, DPD thermostat of second order, with drag coefficient
 TEST 42 - Sodium Chloride (27,000 ions), NPT ensemble, Langevin thermostat-barostat
 TEST 43 - Sodium Chloride (27,000 ions), NPT ensemble, Berendsen thermostat-barostat
 TEST 44 - Sodium Chloride (27,000 ions), NPT ensemble, Nose-Hoover thermostat-barostat
@@ -68,15 +68,15 @@ TEST 46 - Sodium Chloride (27,000 ions), NsT (NPT anisotropic ensemble), Langevi
 TEST 47 - Sodium Chloride (27,000 ions), NsT (NPT anisotropic ensemble), Berendsen thermostat-barostat
 TEST 48 - Sodium Chloride (27,000 ions), NsT (NPT anisotropic ensemble), Nose-Hoover thermostat-barostat
 TEST 49 - Sodium Chloride (27,000 ions), NsT (NPT anisotropic ensemble), Martyna-Tuckerman-Klein thermostat-barostat
-TEST 50 - Wetted POPC membrane (32,107 ions), N-Pn-AT ensemble, Langevin thermostat /semi-isotropic barostat : constant normal pressure (Pn)  
+TEST 50 - Wetted POPC membrane (32,107 ions), N-Pn-AT ensemble, Langevin thermostat /semi-isotropic barostat : constant normal pressure (Pn)
 TEST 51 - Wetted POPC membrane (32,107 ions), N-Pn-AT ensemble, Berendsen thermostat/semi-isotropic barostat : constant normal pressure (Pn)
 TEST 52 - Wetted POPC membrane (32,107 ions), N-Pn-AT ensemble, Nose-Hoover thermostat/semi-isotropic barostat : constant normal pressure (Pn)
 TEST 53 - Wetted POPC membrane (32,107 ions), N-Pn-AT ensemble, Martyna-Tuckerman-Klein thermostat/semi-isotropic barostat : constant normal pressure (Pn)
-TEST 54 - Wetted POPC membrane (32,107 ions), N-Pn-gamma-T ensemble, constant surface tension (gamma), Langevin thermostat/semi-isotropic barostat : constant normal pressure (Pn) 
+TEST 54 - Wetted POPC membrane (32,107 ions), N-Pn-gamma-T ensemble, constant surface tension (gamma), Langevin thermostat/semi-isotropic barostat : constant normal pressure (Pn)
 TEST 55 - Wetted POPC membrane (32,107 ions), N-Pn-gamma-T ensemble, constant surface tension (gamma), Berendsen thermostat/semi-isotropic barostat : constant normal pressure (Pn)
 TEST 56 - Wetted POPC membrane (32,107 ions), N-Pn-gamma-T ensemble, constant surface tension (gamma), Nose-Hoover thermostat/semi-isotropic barostat : constant normal pressure (Pn)
 TEST 57 - Wetted POPC membrane (32,107 ions), N-Pn-gamma-T ensemble, constant surface tension (gamma), Martyna-Tuckerman-Klein thermostat/semi-isotropic barostat : constant normal pressure (Pn)
-TEST 58 - Wetted POPC membrane (32,107 ions), N-Pn-gamma-T ensemble, constant surface tension (gamma), Langevin thermostat/semi-isotropic barostat : constant normal pressure (Pn)/semi-orthorhombic MD cell constraints 
+TEST 58 - Wetted POPC membrane (32,107 ions), N-Pn-gamma-T ensemble, constant surface tension (gamma), Langevin thermostat/semi-isotropic barostat : constant normal pressure (Pn)/semi-orthorhombic MD cell constraints
 TEST 59 - Wetted POPC membrane (32,107 ions), N-Pn-gamma-T ensemble, constant surface tension (gamma), Berendsen thermostat/semi-isotropic barostat : constant normal pressure (Pn)/semi-orthorhombic MD cell constraints
 TEST 60 - Wetted POPC membrane (32,107 ions), N-Pn-gamma-T ensemble, constant surface tension (gamma), Nose-Hoover thermostat/semi-isotropic barostat : constant normal pressure (Pn)/semi-orthorhombic MD cell constraints
 TEST 61 - Wetted POPC membrane (32,107 ions), N-Pn-gamma-T ensemble, constant surface tension (gamma), Martyna-Tuckerman-Klein thermostat/semi-isotropic barostat : constant normal pressure (Pn)/semi-orthorhombic MD cell constraints
@@ -175,7 +175,7 @@ TEST 153 -DPPC (200 molecules) in Water (32626 molecules) Lipid Bilayer -Test fo
 TEST 154 -DPPC (200 molecules) in Water (32626 molecules) Lipid Bilayer -Test for inversions potentials of harmonic cosine (hcos) type
 TEST 155 -DPPC (200 molecules) in Water (32626 molecules) Lipid Bilayer -Test for inversions potentials of planar (plan) type
 TEST 156 -DPPC (200 molecules) in Water (32626 molecules) Lipid Bilayer -Test for inversions potentials of xpln type
-TEST 157 -Calcite bulk (4320 atoms) -Test for calcite potential  
+TEST 157 -Calcite bulk (4320 atoms) -Test for calcite potential
 TEST 158 -Sauer model sans shell + Benzene-Test for three-body potentials of harmonic (harm) type
 TEST 159 -Sauer model sans shell + Benzene-Test for three-body potentials of truncated harmonic (thrm) type
 TEST 160 -Sauer model sans shell + Benzene-Test for three-body potentials of screened harmonic (shrm) type
@@ -188,9 +188,11 @@ TEST 170 -Chain polymer with   6 units and Carboxy Head Group-Test for tether po
 TEST 171 -Chain polymer with   6 units and Carboxy Head Group-Test for tether potentials of quartic (quar) type
 
 TEST 173 - Slab of Hf-O-Pt-Zr in vacuum (55872 ions) - Test for external electric field, now in units of V/A
-TEST 174 - Ficticious gas of Potassium Chloride at 1000K (only 1372 ions) - Test for external magnetic field, now in units of Tesla 
+TEST 174 - Ficticious gas of Potassium Chloride at 1000K (only 1372 ions) - Test for external magnetic field, now in units of Tesla
 TEST 175 - Slab of Hf-O-Pt-Zr in vacuum (55872 ions) - Test for external oscillatory electric field, now in units of V/A
-TEST 176 - Amorphous silicon with tersoff potential 
+TEST 176 - Amorphous silicon with tersoff potential
 TEST 177 - Sodium Chloride (27,000 ions) - Direct calculation of vdW interactions instead of evaluation by splining over tabulated values in memory
-TEST 178 - Sodium Chloride (27,000 ions) - Use of a force-shifting procedure to vdW interactions 
-TEST 179 - Sodium Chloride (27,000 ions) - Direct calculation of vdW interactions (as in TEST177) plus use of a force-shifting procedure (as TEST178) 
+TEST 178 - Sodium Chloride (27,000 ions) - Use of a force-shifting procedure to vdW interactions
+TEST 179 - Sodium Chloride (27,000 ions) - Direct calculation of vdW interactions (as in TEST177) plus use of a force-shifting procedure (as TEST178)
+
+TEST 181 - Pseudo thermostat

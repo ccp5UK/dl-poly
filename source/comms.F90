@@ -15,12 +15,12 @@ Module comms
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds,    Only: dp,&
-                      qp,&
-                      si,&
-                      sp,&
-                      wi,&
-                      wp
+  Use kinds, Only: dp, &
+    qp, &
+    si, &
+    sp, &
+    wi, &
+    wp
   Use particle, Only: corePart
   Use, Intrinsic :: iso_fortran_env, Only: CHARACTER_STORAGE_SIZE, error_unit
   Use asserts,  Only : assert
@@ -100,20 +100,20 @@ Module comms
                                 mode_create = MPI_MODE_CREATE
 
   Type, Public :: comms_type
-    Integer :: ierr
-    Integer :: request
-    Integer :: status(1:MPI_STATUS_SIZE) = 0
-    Integer :: comm
-    Integer :: idnode = 0
-    Integer :: mxnode = 1
-    Logical :: l_fast = .false.
-    Integer :: ou
-    Integer :: part_type
-    Integer :: part_array_type
-    Integer :: part_type_positions
-    Integer :: part_array_type_positions
-    Integer :: part_type_forces
-    Integer :: part_array_type_forces
+    Integer               :: ierr
+    Integer               :: request
+    Integer               :: status(1:MPI_STATUS_SIZE) = 0
+    Integer               :: comm
+    Integer               :: idnode = -1
+    Integer               :: mxnode = -1
+    Logical               :: l_fast = .false.
+    Integer               :: ou
+    Integer               :: part_type
+    Integer               :: part_array_type
+    Integer               :: part_type_positions
+    Integer               :: part_array_type_positions
+    Integer               :: part_type_forces
+    Integer               :: part_array_type_forces
   End Type
 
   !> @brief Type containing mpi distribution information for a 1D or 2D array

@@ -28,8 +28,8 @@ Module bounds
   Use dihedrals,       Only: dihedrals_type
   Use domains,         Only: domains_type,&
                              map_domains
-  Use electrostatic,   Only: electrostatic_type,&
-                             ELECTROSTATIC_EWALD
+  Use electrostatic,   Only: ELECTROSTATIC_NULL,&
+                             electrostatic_type
   Use errors_warnings, Only: error,&
                              info,&
                              warning,&
@@ -259,7 +259,7 @@ Contains
     !!! GRIDDING PARAMETERS !!!
 
     call setup_grids(config, neigh, vdws, met, tersoffs, bond, angle, dihedral, inversion, ext_field, &
-       electro, zdensity, rdf, mxgrid)
+       electro, ewld, zdensity, rdf, mxgrid)
 
     ! DD PARAMETERS - by hypercube mapping of MD cell onto machine resources
     ! Dependences: MD cell config%widths (explicit) and machine resources (implicit)
@@ -553,7 +553,7 @@ Contains
   end Subroutine setup_potential_parameters
 
   Subroutine setup_grids(config, neigh, vdws, met, tersoffs, bond, angle, dihedral, inversion, ext_field, &
-       electro, zdensity, rdf, mxgrid)
+       electro, ewld, zdensity, rdf, mxgrid)
     !-----------------------------------------------------------------------
     !
     ! dl_poly_4 subroutine to set up grids
@@ -572,6 +572,7 @@ Contains
     Type(inversions_type),     Intent( InOut ) :: inversion
     Type(external_field_type), Intent( InOut ) :: ext_field
     Type(electrostatic_type),  Intent( InOut ) :: electro
+    Type(ewald_type),          Intent( InOut ) :: ewld
     Type(z_density_type),      Intent( InOut ) :: zdensity
     Type(rdf_type),            Intent( InOut ) :: rdf
     Integer,                   Intent(   Out ) :: mxgrid
@@ -662,10 +663,12 @@ Contains
 
     ! maximum number of grid points for electrostatics
 
-    if (electro%no_elec) then
-      electro%ewald_exclusion_grid = -1
+    if (ewld%direct .or. electro%no_elec) then
+      electro%erfc%nsamples = -1
+      electro%erfc_deriv%nsamples = -1
     else
-      electro%ewald_exclusion_grid = Max(1004, Nint(neigh%cutoff / delr_max) + 4)
+      electro%erfc%nsamples = Max(1004, Nint(neigh%cutoff / delr_max) + 4)
+      electro%erfc_deriv%nsamples = Max(1004, Nint(neigh%cutoff / delr_max) + 4)
     end if
 
     ! maximum number of grid points for vdw interactions - overwritten
@@ -696,7 +699,7 @@ Contains
 
     mxgrid = Max(config%mxgana, vdws%max_grid, met%maxgrid, zdensity%max_grid, &
          rdf%max_grid, rdf%max_grid_usr, bond%bin_tab, angle%bin_tab, dihedral%bin_tab, &
-         inversion%bin_tab, electro%ewald_exclusion_grid, vdws%max_grid, met%maxgrid, tersoffs%max_grid)
+         inversion%bin_tab, electro%erfc%nsamples, vdws%max_grid, met%maxgrid, tersoffs%max_grid)
 
   end Subroutine setup_grids
 
@@ -1101,7 +1104,7 @@ Contains
     Type(inversions_type),    Intent(In   ) :: inversion
     Type(z_density_type),     Intent(In   ) :: zdensity
     Type(rigid_bodies_type),  Intent(In   ) :: rigid
-    Type(ewald_type),         Intent(In   ) :: ewld
+    Type(ewald_type),         Intent(InOut) :: ewld
     Type(mpole_type),         Intent(In   ) :: mpoles
     Type(comms_type),         Intent(In   ) :: comm
     Logical,                  Intent(In   ) :: no_elec
@@ -1110,7 +1113,8 @@ Contains
 
     Real(Kind=wp) :: outer_surf_vol, inner_surf_vol
     Real(Kind=wp) :: vcell
-    Real(Kind=Wp) :: xhi, yhi, zhi
+    ! Real(Kind=Wp) :: xhi, yhi, zhi
+    Real(Kind=wp), Dimension(3) :: dims
     Real(Kind=wp) :: fdens, dens
     Real(Kind=wp) :: tol, test, tmp
     Real(Kind=wp), Parameter :: bigint_r = Real(Huge(1), wp)
@@ -1198,19 +1202,22 @@ Contains
     ! must be redefined by the config%mxatdm based density
 
     If (.not. no_elec) Then
-      If (ewld%bspline > 0) Then
-        xhi = Max(1.0_wp, Real(ewld%bspline1, wp) / (Real(ewld%fft_dim_a, wp) / &
-             Real(domain%nx, wp) / Real(link_cell(1), wp))) + 1.0_wp
-        yhi = Max(1.0_wp, Real(ewld%bspline1, wp) / (Real(ewld%fft_dim_b, wp) / &
-             Real(domain%ny, wp) / Real(link_cell(2), wp))) + 1.0_wp
-        zhi = Max(1.0_wp, Real(ewld%bspline1, wp) / (Real(ewld%fft_dim_c, wp) / &
-             Real(domain%nz, wp) / Real(link_cell(3), wp))) + 1.0_wp
-        If (xhi * yhi * zhi > 8.0_wp) Then
+      If (ewld%active) Then
+        ewld%kspace%k_vec_dim_real_p_dom = Real(ewld%kspace%k_vec_dim, wp) / &
+             Real([domain%nx,domain%ny,domain%nz], wp)
+        dims = Max(1.0_wp, Real(ewld%bspline%num_spline_pad, wp) / &
+             (ewld%kspace%k_vec_dim_real_p_dom / &
+             Real(link_cell, wp))) + 1.0_wp
+        ! yhi = Max(1.0_wp, Real(ewld%bspline%num_spline_pad(2), wp) / (Real(ewld%fft_dim_b, wp) / Real(domain%ny, wp) / Real(link_cell(2), wp))) + 1.0_wp
+        ! zhi = Max(1.0_wp, Real(ewld%bspline%num_spline_pad(3), wp) / (Real(ewld%fft_dim_c, wp) / Real(domain%nz, wp) / Real(link_cell(3), wp))) + 1.0_wp
+        If (Product(dims) > 8.0_wp) Then
           vcell = config%mxatdm / Real(Product(link_cell), wp)
-          xhi = xhi + Real(link_cell(1), wp)
-          yhi = yhi + Real(link_cell(2), wp)
-          zhi = zhi + Real(link_cell(3), wp)
-          tmp = vcell * (xhi * yhi * zhi)
+          dims = dims + Real(link_cell, wp)
+          ! xhi = xhi + Real(link_cell(1), wp)
+          ! yhi = yhi + Real(link_cell(2), wp)
+          ! zhi = zhi + Real(link_cell(3), wp)
+          ! tmp = vcell * (xhi * yhi * zhi)
+          tmp = vcell * Product(dims)
           tmp = Min(tmp, bigint_r)
           config%mxatms = Nint(tmp)
         End If
@@ -1316,7 +1323,7 @@ Contains
          domain%mxbfdp, &
          35 * domain%mxbfxp, &
          4 * domain%mxbfsh, &
-         2 * (ewld%fft_dim_a / domain%nx) * (ewld%fft_dim_b / domain%ny) * (ewld%fft_dim_c / domain%nz) + 10, &
+         2 * Product(Int(ewld%kspace%k_vec_dim_real_p_dom)) + 10, &
          stats%mxnstk * stats%mxstak, &
          max_grid, &
          rdf%max_grid, &
@@ -1429,38 +1436,33 @@ Contains
 
     end if
 
-    if (ewld%bspline > 0) then
+    if (ewld%active) then
       ! 2% (w/ SPME/PS)
       cutoff_pct = padding_trial_diff
 
-      ewld%fft_dim_a = ewld%fft_dim_a1
-      ewld%fft_dim_b = ewld%fft_dim_b1
-      ewld%fft_dim_c = ewld%fft_dim_c1
+      ewld%kspace%k_vec_dim = ewld%kspace%k_vec_dim_cont
+
       ! ensure (ewld%fft_dim_a,ewld%fft_dim_b,ewld%fft_dim_c) consistency between the DD
       ! processor grid (map_domains is already called) and the grid
       ! method or comment out adjustments if using ewald_spme_force~
-      Call adjust_kmax(ewld%fft_dim_a, domain%nx)
-      Call adjust_kmax(ewld%fft_dim_b, domain%ny)
-      Call adjust_kmax(ewld%fft_dim_c, domain%nz)
+      Call adjust_kmax(ewld%kspace%k_vec_dim(1), domain%nx)
+      Call adjust_kmax(ewld%kspace%k_vec_dim(2), domain%ny)
+      Call adjust_kmax(ewld%kspace%k_vec_dim(3), domain%nz)
 
-      bspline_node_check = Min(ewld%fft_dim_a / domain%nx, &
-           ewld%fft_dim_b / domain%ny, &
-           ewld%fft_dim_c / domain%nz)
-
-      if (bspline_node_check == ewld%bspline) then
+      bspline_node_check = Minval(Int(ewld%kspace%k_vec_dim/[domain%nx, domain%ny, domain%nz]))
+      print*, bspline_node_check
+      if (bspline_node_check == ewld%bspline%num_splines) then
         call warning('LC+DD with SPME grid too small to support padding')
         neigh%padding = 0.0_wp
         no_default_padding = .true.
 
-      else if (bspline_node_check < ewld%bspline) then
+      else if (bspline_node_check < ewld%bspline%num_splines) then
 
-        Write (message, '(1x,2(a,3i0.1),a)') 'User SPME grid: ', &
-             ewld%fft_dim_a, ewld%fft_dim_b, ewld%fft_dim_c, &
-             ' , DD+LC minimum grid: ', &
-             (ewld%bspline+1)*[domain%nx, domain%ny, domain%nz], ' '
+        Write (message, '(1x,2(a,3(i0.1,1x)),a)') 'User SPME grid: ', ewld%kspace%k_vec_dim(1:3), &
+             ', DD+LC minimum grid: ', (ewld%bspline%num_splines+1)*[domain%nx, domain%ny, domain%nz], ' '
         Call warning(message, .true.)
 
-        tol = Real(bspline_node_check, wp) / Real(ewld%bspline, wp)
+        tol = Real(bspline_node_check, wp) / Real(ewld%bspline%num_splines, wp)
         Write (message, '(a,f0.2,a)') &
              'SPME suggested factor to increase current Ewald precision by: ', &
              (1.0_wp - tol) * 100.0_wp, ' for currently specified cutoff (with padding) & domain decomposition'
@@ -1474,21 +1476,24 @@ Contains
           link_cell = [1, 1, 1]
           return
         else if (.not. flow%strict) then
-          ewald_padding = Round(trial_pct * neigh%cutoff * (Real(bspline_node_check, wp) / Real(ewld%bspline, wp)), 2)
+          ewald_padding = Round(trial_pct * neigh%cutoff * &
+               (Real(bspline_node_check, wp) / Real(ewld%bspline%num_splines, wp)), 2)
         else
           call error(0, 'Domain decomposition cannot support SPME grid')
         end if
       end if
 
       if (no_default_padding) then
-        ewld%bspline1 = ewld%bspline
+        ewld%bspline%num_spline_pad = ewld%bspline%num_splines
       else if (neigh%padding > zero_plus) then ! If no user-defined padding assume ~2% difference
-        ewld%bspline1 = ewld%bspline + Ceiling(cutoff_pct * Real(ewld%bspline, wp))
+        ewld%bspline%num_spline_pad = ewld%bspline%num_splines + &
+             Ceiling(cutoff_pct * Real(ewld%bspline%num_splines, wp))
       else
-        ewld%bspline1 = ewld%bspline + Ceiling((neigh%padding * Real(ewld%bspline, wp)) / neigh%cutoff)
+        ewld%bspline%num_spline_pad = ewld%bspline%num_splines + &
+             Ceiling((neigh%padding * Real(ewld%bspline%num_splines, wp)) / neigh%cutoff)
       end if
 
-      ewald_limit = Minval([Real(kind=wp) :: ewld%fft_dim_a, ewld%fft_dim_b, ewld%fft_dim_c] / Real(ewld%bspline1, wp))
+      ewald_limit = Minval(Real(ewld%kspace%k_vec_dim, wp) / ewld%bspline%num_spline_pad)
 
     else
       !4% (w/o SPME/PS)
@@ -1569,8 +1574,9 @@ Contains
                ewald_limit), 2)
           If (neigh%padding < negligible_pad) neigh%padding = 0.0_wp ! Don't bother
 
-          ewld%bspline1 = ewld%bspline + Ceiling((neigh%padding * Real(ewld%bspline, wp)) / neigh%cutoff)
-          ewald_limit = Minval([Real(kind=wp) :: ewld%fft_dim_a, ewld%fft_dim_b, ewld%fft_dim_c] / Real(ewld%bspline1, wp))
+          ewld%bspline%num_spline_pad = ewld%bspline%num_splines + &
+               Ceiling((neigh%padding * Real(ewld%bspline%num_splines, wp)) / neigh%cutoff)
+          ewald_limit = Minval(Real(ewld%kspace%k_vec_dim, wp) / ewld%bspline%num_splines)
 
           ! Define link-cell cutoff (minimum config%width)
 
@@ -1608,7 +1614,7 @@ Contains
     ! total link-cells per node/domain is ncells = (link_cell(x)+4)*(link_cell(y)+4)*(link_cell(z)+4)
     ! magnify the effect of densvar on neigh%max_cell for different conf%imcon scenarios
 
-    If      (config%imcon == IMCON_NOPBC) Then
+    If (config%imcon == IMCON_NOPBC) Then
       neigh%max_cell = Nint(fdvar**4 * Real(Product(link_cell + 4), wp))
     Else If (config%imcon == IMCON_SLAB) Then
       neigh%max_cell = Nint(fdvar**3 * Real(Product(link_cell + 4), wp))

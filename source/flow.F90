@@ -51,7 +51,14 @@ Module flow_control
     !> Book keeping flag
     Logical, Public          :: book
     !> Excluded interactions flag
-    Logical, Public          :: exclusions
+    Logical, Public :: exclusions
+
+    !> Write per-particle information
+    Logical, Public :: write_per_particle
+
+    !> Calculate heat-flux
+    Logical, Public :: heat_flux
+
     !> Restart key
     Integer(Kind=wi), Public :: restart_key
     !> Current simulation step
@@ -77,7 +84,7 @@ Module flow_control
     !> Restart files creation period (in steps
     Integer(Kind=wi), Public :: freq_restart
     !> Reset padding flag
-    Logical, Public          :: reset_padding
+    Logical, Public :: reset_padding
     !> Type of Simulation we perform
     Integer, Public          :: simulation_method = MD
     !> MD step that DL_POLY starts at

@@ -1,19 +1,19 @@
 Module coul_mpole
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-  ! dl_poly_4 module declaring configuration variables and arrays for
-  ! multipoles
-  !
-  ! copyright - daresbury laboratory
-  ! author    - h.a.boateng & i.t.todorov january 2017
-  ! refactoring:
-  !           - a.m.elena march-october 2018
-  !           - j.madge march-october 2018
-  !           - a.b.g.chalk march-october 2018
-  !           - i.scivetti march-october 2018
-  !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!------------------------------------------------------------------------!
+  !!
+  !! dl_poly_4 module declaring configuration variables and arrays for
+  !! multipoles
+  !!
+  !! copyright - daresbury laboratory
+  !! author    - h.a.boateng & i.t.todorov january 2017
+  !! refactoring:
+  !!           - a.m.elena march-october 2018
+  !!           - j.madge march-october 2018
+  !!           - a.b.g.chalk march-october 2018
+  !!           - i.scivetti march-october 2018
+  !!
+  !!------------------------------------------------------------------------!
 
   Use kinds, Only : wp
   Use constants, Only :r4pie0,zero_plus,sqrpi
@@ -22,13 +22,13 @@ Module coul_mpole
   Use mpoles_container, Only : coul_deriv, ewald_deriv, &
     explicit_fscp_rfp_loops, explicit_ewald_real_loops, &
     explicit_ewald_real_loops
-  Use numerics,         Only : erfcgen, images_s
+  Use numerics,         Only : images_s
   Use neighbours,       Only : neighbours_type
-  Use electrostatic, Only : electrostatic_type, &
+  Use electrostatic,    Only : electrostatic_type, &
     ELECTROSTATIC_EWALD,ELECTROSTATIC_DDDP, &
     ELECTROSTATIC_COULOMB,ELECTROSTATIC_COULOMB_FORCE_SHIFT, &
     ELECTROSTATIC_COULOMB_REACTION_FIELD
-  Use errors_warnings, Only : error
+  Use errors_warnings, Only : error, error_alloc, error_dealloc
 
   Implicit None
 
@@ -42,20 +42,20 @@ Contains
   Subroutine intra_mcoul(rcut,iatm,jatm,scale, &
       rrr,xdf,ydf,zdf,coul,virele,fx,fy,fz,safe,mpoles,electro,config)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for calculating bond's or 1-4 dihedral
-    ! electrostatics: adjusted by a config%weighting factor
-    !
-    ! copyright - daresbury laboratory
-    ! amended   - i.t.todorov & h.a.boateng february 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!------------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for calculating bond's or 1-4 dihedral
+    !! electrostatics: adjusted by a config%weighting factor
+    !!
+    !! copyright - daresbury laboratory
+    !! amended   - i.t.todorov & h.a.boateng february 2016
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!------------------------------------------------------------------------!
 
     Integer,           Intent( In    ) :: iatm,jatm
     Real( Kind = wp ), Intent( In    ) :: rcut,scale
@@ -88,36 +88,37 @@ Contains
     Real( Kind = wp ), Parameter :: aa5 =  1.061405429_wp
     Real( Kind = wp ), Parameter :: pp  =  0.3275911_wp
 
-    If (electro%newjob_m) Then
-      electro%newjob_m= .false.
+    Logical, save :: newjob = .true.
+
+    If (newjob) Then
+      newjob= .false.
 
       ! Check for damped force-shifted coulombic and reaction field interactions
       ! and set force and potential shifting parameters dependingly
 
-      electro% damp_m=.false.
-      If (electro%alpha > zero_plus) Then
-        electro%damp_m=.true.
+      electro%damp=electro%damping > zero_plus
+      If (electro%damp) Then
 
-        exp1= Exp(-(electro%alpha*rcut)**2)
-        tt  = 1.0_wp/(1.0_wp+pp*electro%alpha*rcut)
+        exp1= Exp(-(electro%damping*rcut)**2)
+        tt  = 1.0_wp/(1.0_wp+pp*electro%damping*rcut)
 
         erc = tt*(aa1+tt*(aa2+tt*(aa3+tt*(aa4+tt*aa5))))*exp1/rcut
-        fer = (erc + 2.0_wp*(electro%alpha/sqrpi)*exp1)/rcut**2
+        fer = (erc + 2.0_wp*(electro%damping/sqrpi)*exp1)/rcut**2
 
-        electro%aa_m  = fer*rcut
-        electro%bb_m  = -(erc + electro%aa*rcut)
+        electro%force_shift  = fer*rcut
+        electro%energy_shift  = -(erc + electro%force_shift*rcut)
       Else If (electro%key == ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then
-        electro%aa_m =  1.0_wp/rcut**2
-        electro%bb_m = -2.0_wp/rcut ! = -(1.0_wp/rcut+aa*rcut)
+        electro%force_shift =  1.0_wp/rcut**2
+        electro%energy_shift = -2.0_wp/rcut ! = -(1.0_wp/rcut+aa*rcut)
       End If
 
       ! set reaction field terms for RFC
 
       If (electro%key == ELECTROSTATIC_COULOMB_REACTION_FIELD) Then
         b0    = 2.0_wp*(electro%eps - 1.0_wp)/(2.0_wp*electro%eps + 1.0_wp)
-        electro%rfld0_m = b0/rcut**3
-        electro%rfld1_m = (1.0_wp + 0.5_wp*b0)/rcut
-        electro%rfld2_m = 0.5_wp*electro%rfld0_m
+        electro%reaction_field(0) = b0/rcut**3
+        electro%reaction_field(1) = (1.0_wp + 0.5_wp*b0)/rcut
+        electro%reaction_field(2) = 0.5_wp*electro%reaction_field(0)
       End If
     End If
 
@@ -176,7 +177,7 @@ Contains
 
     Else If (Any([ELECTROSTATIC_COULOMB_FORCE_SHIFT,ELECTROSTATIC_COULOMB_REACTION_FIELD] == electro%key)) Then
 
-      If (electro%damp_m) Then ! calculate damping contributions
+      If (electro%damp) Then ! calculate damping contributions
 
         ! compute derivatives of 'r'
 
@@ -184,26 +185,26 @@ Contains
 
         ! scale the derivatives of 'r'
 
-        a1 = electro%aa_m*a1
+        a1 = electro%force_shift*a1
 
-        exp1= Exp(-(electro%alpha*rrr)**2)
-        tt  = 1.0_wp/(1.0_wp+pp*electro%alpha*rrr)
+        exp1= Exp(-(electro%damping*rrr)**2)
+        tt  = 1.0_wp/(1.0_wp+pp*electro%damping*rrr)
 
-        fer = erc/electro%alpha
+        fer = erc/electro%damping
 
         ! compute derivatives of the ewald real space kernel
 
-        Call ewald_deriv(-2,2*mpoles%max_order+1,1,fer,electro%alpha*xdf,electro%alpha*ydf, &
-          electro%alpha*zdf,electro%alpha*rrr,mpoles%max_order,d1)
+        Call ewald_deriv(-2,2*mpoles%max_order+1,1,fer,electro%damping*xdf,electro%damping*ydf, &
+          electro%damping*zdf,electro%damping*rrr,mpoles%max_order,d1)
 
         ! scale the derivatives into the right form
 
-        d1 = 2.0_wp*electro%alpha*d1/sqrpi
+        d1 = 2.0_wp*electro%damping*d1/sqrpi
 
       End If
 
       If (electro%key ==  ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then ! force shifted coulombic
-        If (.not.electro%damp_m) Then ! pure
+        If (.not.electro%damp) Then ! pure
 
           ! compute derivatives of '1/r'
 
@@ -215,16 +216,16 @@ Contains
 
           ! scale the derivatives of 'r' and add to d1
 
-          d1 = d1 + electro%aa_m*a1
+          d1 = d1 + electro%force_shift*a1
           a1 = 0.0_wp
 
         Else                ! damped
 
-          talpha = electro%alpha
+          talpha = electro%damping
 
         End If
       Else If (electro%key == ELECTROSTATIC_COULOMB_REACTION_FIELD) Then ! reaction field
-        If (.not.electro%damp_m) Then ! pure
+        If (.not.electro%damp) Then ! pure
 
           ! compute derivatives of '1/r'
 
@@ -236,7 +237,7 @@ Contains
 
           ! scale the derivatives of 'r' and add to d1
 
-          d1 = d1 + electro%rfld2_m*a1
+          d1 = d1 + electro%reaction_field(2)*a1
           a1 = 0.0_wp
 
         Else
@@ -247,9 +248,9 @@ Contains
 
           ! scale the derivatives of 'r^2' and add to scaled derivatives of 'r'
 
-          a1 = a1 + electro%rfld2_m*b1
+          a1 = a1 + electro%reaction_field(2)*b1
 
-          talpha = electro%alpha
+          talpha = electro%damping
 
         End If
       End If
@@ -358,7 +359,7 @@ Contains
 
         ! shift potential
 
-        tmp    = electro%aa_m*rrr + electro%bb_m
+        tmp    = electro%force_shift*rrr + electro%energy_shift
         coul   = coul   + tmp*imp(1)*jmp(1)
 
         ! shift torque
@@ -379,16 +380,16 @@ Contains
 
         ! shift potential
 
-        coul   = coul   - electro%rfld1_m*imp(1)*jmp(1)
+        coul   = coul   - electro%reaction_field(1)*imp(1)*jmp(1)
 
         ! shift torque
 
-        tmpi   = -electro%rfld1_m*jmp(1)
+        tmpi   = -electro%reaction_field(1)*jmp(1)
         tix    = tix    + impx(1)*tmpi
         tiy    = tiy    + impy(1)*tmpi
         tiz    = tiz    + impz(1)*tmpi
 
-        tmpj   = -electro%rfld1_m*imp(1)
+        tmpj   = -electro%reaction_field(1)*imp(1)
         tjx    = tjx    + jmpx(1)*tmpj
         tjy    = tjy    + jmpy(1)*tmpj
         tjz    = tjz    + jmpz(1)*tmpj
@@ -421,31 +422,31 @@ Contains
   Subroutine coul_fscp_mforces(iatm,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh, &
     mpoles,electro,config)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for calculating coulombic energy and force terms
-    ! in a periodic system using multipoles assuming a force shifted
-    ! coulomb potential kernel
-    !
-    ! U is proportional to ( 1/r + aa*r  + bb ) such that dU(neigh%cutoff)/dr = 0
-    ! therefore aa = 1/(neigh%cutoff)**2 and U(neigh%cutoff) = 0 therefore bb = -2/(neigh%cutoff)
-    !
-    ! Note: FS potential can be generalised (R1) by using a damping function
-    ! as used for damping the real space coulombic interaction in the
-    ! standard Ewald summation.  This generalisation applies when electro%alpha > 0.
-    !
-    ! R1: C.J. Fennell and J.D. Gezelter J. Chem. Phys. 124, 234104 (2006)
-    !
-    ! copyright - daresbury laboratory
-    ! author    - h.a.boateng february 2016
-    ! amended   - i.t.todorov february 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!------------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for calculating coulombic energy and force terms
+    !! in a periodic system using multipoles assuming a force shifted
+    !! coulomb potential kernel
+    !!
+    !! U is proportional to ( 1/r + aa*r  + bb ) such that dU(neigh%cutoff)/dr = 0
+    !! therefore aa = 1/(neigh%cutoff)**2 and U(neigh%cutoff) = 0 therefore bb = -2/(neigh%cutoff)
+    !!
+    !! Note: FS potential can be generalised (R1) by using a damping function
+    !! as used for damping the real space coulombic interaction in the
+    !! standard Ewald summation.  This generalisation applies when electro%damping > 0.
+    !!
+    !! R1: C.J. Fennell and J.D. Gezelter J. Chem. Phys. 124, 234104 (2006)
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - h.a.boateng february 2016
+    !! amended   - i.t.todorov february 2016
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!------------------------------------------------------------------------!
 
     Integer,                                  Intent( In    ) :: iatm
     Type( neighbours_type ), Intent( In    ) :: neigh
@@ -457,12 +458,12 @@ Contains
     Type( configuration_type ),               Intent( InOut ) :: config
 
 
-    Integer           :: fail,idi,jatm,k1,k2,k3,s1,s2,s3,m,n, &
+    Integer           :: idi,jatm,k1,k2,k3,s1,s2,s3,m,n, &
       k,ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
 
     Real( Kind = wp ) :: scl,rrr,alphan,engmpl,fix,fiy,fiz,fx,fy,fz, &
       strs1,strs2,strs3,strs5,strs6,strs9,        &
-      ppp,vk0,vk1,vk2,t1,t2,kx,ky,kz,             &
+      t1,t2,kx,ky,kz,             &
       txyz,erfcr,tix,tiy,tiz,tjx,tjy,             &
       tjz,tmp,tmpi,tmpj,sx,sy,sz
 
@@ -473,49 +474,24 @@ Contains
     Real( Kind = wp ) :: impx(1:mpoles%max_mpoles),impy(1:mpoles%max_mpoles),impz(1:mpoles%max_mpoles)
     Real( Kind = wp ) :: jmpx(1:mpoles%max_mpoles),jmpy(1:mpoles%max_mpoles),jmpz(1:mpoles%max_mpoles)
 
-    Character ( Len = 256 )  ::  message
+    Logical, save :: newjob = .true.
 
-    If (electro%newjob_mfscp) Then
-      electro%newjob_mfscp = .false.
+    If (newjob) Then
+      newjob = .false.
 
-      If (electro%alpha > zero_plus) Then
-        electro%damp_mfscp = .true.
-      Else
-        electro%damp_mfscp = .false.
-      End If
+      If (electro%damp) Then
 
-      If (electro%damp_mfscp) Then
+        call electro%erfcgen(neigh%cutoff, electro%damping)
 
-        ! interpolation interval
-
-        electro%drewd_mfscp = neigh%cutoff/Real(electro%ewald_exclusion_grid-4,wp)
-
-        ! reciprocal of interpolation interval
-
-        electro%rdrewd_mfscp = 1.0_wp/electro%drewd_mfscp
-
-        fail=0
-        Allocate (electro%erc_mfscp(0:electro%ewald_exclusion_grid),electro%fer_mfscp(0:electro%ewald_exclusion_grid), Stat=fail)
-        If (fail > 0) Then
-          Write(message,'(a)') 'coul_fscp_mforces allocation failure'
-          Call error(0,message)
-        End If
-
-        ! generate error function complement tables for ewald sum
-
-        Call erfcgen(neigh%cutoff,electro%alpha,electro%ewald_exclusion_grid,electro%erc_mfscp,electro%fer_mfscp)
-
-        ! set force and potential shifting parameters (screened terms)
-
-        electro%aa_mfscp =   electro%fer_mfscp(electro%ewald_exclusion_grid-4)*neigh%cutoff
-        electro%bb_mfscp = -(electro%erc_mfscp(electro%ewald_exclusion_grid-4)+electro%aa_mfscp*neigh%cutoff)
+        electro%force_shift =   electro%erfc_deriv%end_sample * neigh%cutoff
+        electro%energy_shift = -(electro%erfc%end_sample + electro%force_shift*neigh%cutoff)
 
       Else
 
         ! set force and potential shifting parameters (screened terms)
 
-        electro%aa_mfscp =  1.0_wp/neigh%cutoff**2
-        electro%bb_mfscp = -2.0_wp/neigh%cutoff ! = -(1.0_wp/neigh%cutoff+aa*neigh%cutoff)
+        electro%force_shift =  1.0_wp/neigh%cutoff**2
+        electro%energy_shift = -2.0_wp/neigh%cutoff ! = -(1.0_wp/neigh%cutoff+aa*neigh%cutoff)
 
       End If
     End If
@@ -598,7 +574,7 @@ Contains
 
           ! compute derivatives of kernel
 
-          If (electro%damp_mfscp) Then
+          If (electro%damp) Then
 
             ! compute derivatives of 'r'
 
@@ -606,30 +582,21 @@ Contains
 
             ! scale the derivatives of 'r'
 
-            a1 = electro%aa_mfscp*a1
+            a1 = electro%force_shift*a1
 
             ! get the value of the ewald real space kernel using 3pt interpolation
 
-            k   = Int(rrr*electro%rdrewd_mfscp)
-            ppp = rrr*electro%rdrewd_mfscp - Real(k,wp)
+            ! erfcr = (t1 + (t2-t1)*ppp*0.5_wp)/electro%damping
 
-            vk0 = electro%erc_mfscp(k)
-            vk1 = electro%erc_mfscp(k+1)
-            vk2 = electro%erc_mfscp(k+2)
-
-            t1 = vk0 + (vk1 - vk0)*ppp
-            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
-
-            erfcr = (t1 + (t2-t1)*ppp*0.5_wp)/electro%alpha
-
+            erfcr = electro%erfc%calc(rrr)/electro%damping
             ! compute derivatives of the ewald real space kernel
 
-            Call ewald_deriv(-2,2*mpoles%max_order+1,1,erfcr,electro%alpha*xxt(m), &
-              electro%alpha*yyt(m),electro%alpha*zzt(m),electro%alpha*rrr,mpoles%max_order,d1)
+            Call ewald_deriv(-2,2*mpoles%max_order+1,1,erfcr,electro%damping*xxt(m), &
+              electro%damping*yyt(m),electro%damping*zzt(m),electro%damping*rrr,mpoles%max_order,d1)
 
             ! scale the derivatives into the right form
 
-            d1 = 2.0_wp*electro%alpha*d1/sqrpi
+            d1 = 2.0_wp*electro%damping*d1/sqrpi
 
             ! calculate forces
 
@@ -652,7 +619,7 @@ Contains
 
                     If (Abs(jmp(jj)) > zero_plus) Then
                       Call explicit_fscp_rfp_loops &
-                        (2*mpoles%max_order+1, k1,k2,k3, electro%alpha, d1,a1,               &
+                        (2*mpoles%max_order+1, k1,k2,k3, electro%damping, d1,a1,               &
                         imp,       impx,    impy,    impz,    tix,tiy,tiz, &
                         kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
                         engmpl,fx,fy,fz,mpoles)
@@ -700,7 +667,7 @@ Contains
                             ks1=k1+s1; ks11=ks1+1
 
                             n      = ks1+ks2+ks3
-                            alphan = electro%alpha**n
+                            alphan = electro%damping**n
 
                             ii     = mpoles%map(s1,s2,s3)
 
@@ -717,7 +684,7 @@ Contains
                             engmpl = engmpl + t1*d1(ks1,ks2,ks3) + t2*a1(ks1,ks2,ks3)
 
                             ! force
-                            t1     = t1*electro%alpha
+                            t1     = t1*electro%damping
 
                             fx     = fx     - t1*d1(ks11,ks2,ks3) + t2*a1(ks11,ks2,ks3)
                             fy     = fy     - t1*d1(ks1,ks21,ks3) + t2*a1(ks1,ks21,ks3)
@@ -904,7 +871,7 @@ Contains
 
           ! shift potential
 
-          tmp     = electro%aa_mfscp*rrr + electro%bb_mfscp
+          tmp     = electro%force_shift*rrr + electro%energy_shift
           engmpl  = engmpl + tmp*imp(1)*jmp(1)
 
           ! shift torque
@@ -991,29 +958,24 @@ Contains
   Subroutine coul_rfp_mforces(iatm,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh, &
     mpoles,electro,config)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for calculating coulombic energy and force terms
-    ! in a periodic system using multipoles assuming a reaction field
-    ! potential (corrected for the existence of a dipole moment outside neigh%cutoff)
-    !
-    ! Note: RF potential can be generalised (R1) by using a damping function
-    ! as used for damping the real space coulombic interaction in the
-    ! standard Ewald summation.  This generalisation applies when electro%alpha > 0.
-    !
-    ! R1: C.J. Fennell and J.D. Gezelter J. Chem. Phys. 124, 234104 (2006)
-    ! R2: M Neumann, J Chem Phys, 82 (12), 5663, (1985)
-    !
-    ! copyright - daresbury laboratory
-    ! author    - h.a.boateng february 2016
-    ! amended   - i.t.todorov february 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!------------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for calculating coulombic energy and force terms
+    !! in a periodic system using multipoles assuming a reaction field
+    !! potential (corrected for the existence of a dipole moment outside neigh%cutoff)
+    !!
+    !! Note: RF potential can be generalised (R1) by using a damping function
+    !! as used for damping the real space coulombic interaction in the
+    !! standard Ewald summation.  This generalisation applies when electro%damping > 0.
+    !!
+    !! R1: C.J. Fennell and J.D. Gezelter J. Chem. Phys. 124, 234104 (2006)
+    !! R2: M Neumann, J Chem Phys, 82 (12), 5663, (1985)
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - h.a.boateng february 2016
+    !! amended   - i.t.todorov february 2016
+    !!
+    !!------------------------------------------------------------------------!
 
     Integer,                                  Intent( In    ) :: iatm
     Type( neighbours_type ), Intent( In    ) :: neigh
@@ -1024,12 +986,12 @@ Contains
     Type( electrostatic_type ), Intent( InOut ) :: electro
     Type( configuration_type ),               Intent( InOut ) :: config
 
-    Integer           :: fail,idi,jatm,k1,k2,k3,s1,s2,s3,m,n, &
-      k,ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
+    Integer           :: idi,jatm,k1,k2,k3,s1,s2,s3,m,n, &
+      ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
 
     Real( Kind = wp ) :: scl,rrr,alphan,engmpl,fix,fiy,fiz,fx,fy,fz, &
       strs1,strs2,strs3,strs5,strs6,strs9,        &
-      ppp,vk0,vk1,vk2,t1,t2,kx,ky,kz,             &
+      t1,t2,kx,ky,kz,             &
       txyz,erfcr,tmp,tmpi,tmpj,tix,tiy,tiz,       &
       tjx,tjy,tjz,sx,sy,sz
 
@@ -1039,57 +1001,32 @@ Contains
     Real( Kind = wp ) :: imp(1:mpoles%max_mpoles),jmp(1:mpoles%max_mpoles)
     Real( Kind = wp ) :: impx(1:mpoles%max_mpoles),impy(1:mpoles%max_mpoles),impz(1:mpoles%max_mpoles)
     Real( Kind = wp ) :: jmpx(1:mpoles%max_mpoles),jmpy(1:mpoles%max_mpoles),jmpz(1:mpoles%max_mpoles)
+    Real( Kind = wp ) :: b0
+    Logical , save :: newjob = .true.
 
-    Character ( Len = 256 )   ::  message
-
-    If (electro%newjob_mrfp) Then
-      electro%newjob_mrfp = .false.
-
-      If (electro%alpha > zero_plus) Then
-        electro%damp_mrfp = .true.
-      Else
-        electro%damp_mrfp = .false.
-      End If
+    If (newjob) Then
+      newjob = .false.
 
       ! reaction field terms
 
-      electro%b0_mrfp    = 2.0_wp*(electro%eps - 1.0_wp)/(2.0_wp*electro%eps + 1.0_wp)
-      electro%rfld0_mrfp = electro%b0_mrfp/neigh%cutoff**3
-      electro%rfld1_mrfp = (1.0_wp + 0.5_wp*electro%b0_mrfp)/neigh%cutoff
-      electro%rfld2_mrfp = 0.5_wp*electro%rfld0_mrfp
+      b0    = 2.0_wp*(electro%eps - 1.0_wp)/(2.0_wp*electro%eps + 1.0_wp)
+      electro%reaction_field(0) = b0/neigh%cutoff**3
+      electro%reaction_field(1) = (1.0_wp + 0.5_wp*b0)/neigh%cutoff
+      electro%reaction_field(2) = 0.5_wp*electro%reaction_field(0)
 
-      If (electro%damp_mrfp) Then
+      If (electro%damp) Then
 
-        ! interpolation interval
+        call electro%erfcgen(neigh%cutoff, electro%damping)
 
-        electro%drewd_mrfp = neigh%cutoff/Real(electro%ewald_exclusion_grid-4,wp)
-
-        ! reciprocal of interpolation interval
-
-        electro%rdrewd_mrfp = 1.0_wp/electro%drewd_mrfp
-
-        fail=0
-        Allocate (electro%erc_mrfp(0:electro%ewald_exclusion_grid),electro%fer_mrfp(0:electro%ewald_exclusion_grid), Stat=fail)
-        If (fail > 0) Then
-          Write(message,'(a)') 'coul_rfp_mforces allocation failure'
-          Call error(0,message)
-        End If
-
-        ! generate error function complement tables for ewald sum
-
-        Call erfcgen(neigh%cutoff,electro%alpha,electro%ewald_exclusion_grid,electro%erc_mrfp,electro%fer_mrfp)
-
-        ! set force and potential shifting parameters (screened terms)
-
-        electro%aa_mrfp =   electro%fer_mrfp(electro%ewald_exclusion_grid-4)*neigh%cutoff
-        electro%bb_mrfp = -(electro%erc_mrfp(electro%ewald_exclusion_grid-4)+electro%aa_mrfp*neigh%cutoff)
+        electro%force_shift =   electro%erfc_deriv%end_sample * neigh%cutoff
+        electro%energy_shift = -(electro%erfc%end_sample + electro%force_shift*neigh%cutoff)
 
       Else
 
         ! set force and potential shifting parameters (screened terms)
 
-        electro%aa_mrfp =  1.0_wp/neigh%cutoff**2
-        electro%bb_mrfp = -2.0_wp/neigh%cutoff ! = -(1.0_wp/neigh%cutoff+aa*neigh%cutoff)
+        electro%force_shift =  1.0_wp/neigh%cutoff**2
+        electro%energy_shift = -2.0_wp/neigh%cutoff ! = -(1.0_wp/neigh%cutoff+aa*neigh%cutoff)
 
       End If
     End If
@@ -1170,7 +1107,7 @@ Contains
 
           ! compute derivatives of kernel
 
-          If (electro%damp_mrfp) Then
+          If (electro%damp) Then
 
             ! compute derivatives of 'r^2'
 
@@ -1178,7 +1115,7 @@ Contains
 
             ! scale the derivatives of 'r^2'
 
-            a1 = electro%rfld2_mrfp*a1
+            a1 = electro%reaction_field(2)*a1
 
             ! compute derivatives of 'r'
 
@@ -1186,30 +1123,21 @@ Contains
 
             ! scale the derivatives of 'r' and add to a1
 
-            a1 = a1 + electro%aa_mrfp*d1
+            a1 = a1 + electro%force_shift*d1
 
             ! get the value of the ewald real space kernel using 3pt interpolation
 
-            k   = Int(rrr*electro%rdrewd_mrfp)
-            ppp = rrr*electro%rdrewd_mrfp - Real(k,wp)
-
-            vk0 = electro%erc_mrfp(k)
-            vk1 = electro%erc_mrfp(k+1)
-            vk2 = electro%erc_mrfp(k+2)
-
-            t1 = vk0 + (vk1 - vk0)*ppp
-            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
-
-            erfcr = (t1 + (t2-t1)*ppp*0.5_wp)/electro%alpha
+            ! erfcr = (t1 + (t2-t1)*ppp*0.5_wp)/electro%damping
+            erfcr = electro%erfc%calc(rrr)/electro%damping
 
             ! compute derivatives of the ewald real space kernel
 
-            Call ewald_deriv(-2,2*mpoles%max_order+1,1,erfcr,electro%alpha*xxt(m), &
-              electro%alpha*yyt(m),electro%alpha*zzt(m),electro%alpha*rrr,mpoles%max_order,d1)
+            Call ewald_deriv(-2,2*mpoles%max_order+1,1,erfcr,electro%damping*xxt(m), &
+              electro%damping*yyt(m),electro%damping*zzt(m),electro%damping*rrr,mpoles%max_order,d1)
 
             ! scale the derivatives into the right form
 
-            d1 = 2.0_wp*electro%alpha*d1/sqrpi
+            d1 = 2.0_wp*electro%damping*d1/sqrpi
 
             ! calculate forces
 
@@ -1232,7 +1160,7 @@ Contains
 
                     If (Abs(jmp(jj)) > zero_plus) Then
                       Call explicit_fscp_rfp_loops &
-                        (2*mpoles%max_order+1, k1,k2,k3, electro%alpha, d1,a1,               &
+                        (2*mpoles%max_order+1, k1,k2,k3, electro%damping, d1,a1,               &
                         imp,       impx,    impy,    impz,    tix,tiy,tiz, &
                         kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
                         engmpl,fx,fy,fz,mpoles)
@@ -1280,7 +1208,7 @@ Contains
                             ks1=k1+s1; ks11=ks1+1
 
                             n      = ks1+ks2+ks3
-                            alphan = electro%alpha**n
+                            alphan = electro%damping**n
 
                             ii     = mpoles%map(s1,s2,s3)
 
@@ -1297,7 +1225,7 @@ Contains
                             engmpl = engmpl + t1*d1(ks1,ks2,ks3) + t2*a1(ks1,ks2,ks3)
 
                             ! force
-                            t1     = t1*electro%alpha
+                            t1     = t1*electro%damping
 
                             fx     = fx     - t1*d1(ks11,ks2,ks3) + t2*a1(ks11,ks2,ks3)
                             fy     = fy     - t1*d1(ks1,ks21,ks3) + t2*a1(ks1,ks21,ks3)
@@ -1342,7 +1270,7 @@ Contains
 
             ! shift potential
 
-            tmp    = electro%bb_mrfp-0.5_wp*electro%b0_mrfp/neigh%cutoff
+            tmp    = electro%energy_shift-0.5_wp*b0/neigh%cutoff
             engmpl = engmpl + tmp*imp(1)*jmp(1)
 
             ! shift torque
@@ -1369,7 +1297,7 @@ Contains
 
             ! scale the derivatives of 'r' and add to d1
 
-            d1 = d1 + electro%rfld2_mrfp*a1
+            d1 = d1 + electro%reaction_field(2)*a1
 
             ! calculate potential forces
 
@@ -1499,16 +1427,16 @@ Contains
 
             ! shift potential
 
-            engmpl = engmpl - electro%rfld1_mrfp*imp(1)*jmp(1)
+            engmpl = engmpl - electro%reaction_field(1)*imp(1)*jmp(1)
 
             ! shift torque
 
-            tmpi   = -electro%rfld1_mrfp*jmp(1)
+            tmpi   = -electro%reaction_field(1)*jmp(1)
             tix    = tix    + impx(1)*tmpi
             tiy    = tiy    + impy(1)*tmpi
             tiz    = tiz    + impz(1)*tmpi
 
-            tmpj   = -electro%rfld1_mrfp*imp(1)
+            tmpj   = -electro%reaction_field(1)*imp(1)
             tjx    = tjx    + jmpx(1)*tmpj
             tjy    = tjy    + jmpy(1)*tmpj
             tjz    = tjz    + jmpz(1)*tmpj
@@ -1585,24 +1513,24 @@ Contains
   End Subroutine coul_rfp_mforces
 
   Subroutine coul_cp_mforces &
-      (iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,mpoles,config)
+    (iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,mpoles,config)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for calculating coulombic energy and force terms
-    ! in a periodic system using multipoles with 1/r kernel with no
-    ! truncation or damping
-    !
-    ! copyright - daresbury laboratory
-    ! author    - h.a.boateng february 2016
-    ! amended   - i.t.todorov february 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!------------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for calculating coulombic energy and force terms
+    !! in a periodic system using multipoles with 1/r kernel with no
+    !! truncation or damping
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - h.a.boateng february 2016
+    !! amended   - i.t.todorov february 2016
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!------------------------------------------------------------------------!
 
     Integer,                                  Intent( In    ) :: iatm
     Real( Kind = wp ),                        Intent( In    ) :: eps
@@ -1896,24 +1824,24 @@ Contains
   End Subroutine coul_cp_mforces
 
   Subroutine coul_dddp_mforces &
-      (iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,mpoles,config)
+    (iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,mpoles,config)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for calculating coulombic energy and force terms
-    ! in a periodic system using multipoles with 1/r kernel assuming a
-    ! distance dependent dielectric 'constant'
-    !
-    ! copyright - daresbury laboratory
-    ! author    - h.a.boateng february 2016
-    ! amended   - i.t.todorov february 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!------------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for calculating coulombic energy and force terms
+    !! in a periodic system using multipoles with 1/r kernel assuming a
+    !! distance dependent dielectric 'constant'
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - h.a.boateng february 2016
+    !! amended   - i.t.todorov february 2016
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!------------------------------------------------------------------------!
 
     Integer,                                  Intent( In    ) :: iatm
     Real( Kind = wp ),                        Intent( In    ) :: eps
@@ -2208,27 +2136,27 @@ Contains
 
   Subroutine coul_chrm_forces(iatm,eps,xxt,yyt,zzt,rrt,engcpe_ch,vircpe_ch,stress,neigh,mpoles,config)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for calculating coulombic energy and force terms
-    ! for CHARMM model intra-core-shell interactions
-    !
-    ! S(r)=1-(1+u/2).exp(-u) ; u=u(r)=r_ij.(a_i+a_j)/(p_i.p_j)^(1/6)
-    !
-    ! S'(r)=(1+u).u'.exp(-u)/2 ; |r|'=r/|r|
-    !
-    ! Uchrm(r_ij) =  S(r_ij)*U(r_ij) ; F(r_ij) = -U'(r_ij)
-    ! Fchrm(r_ij) = -Uchrm'(r_ij) = S(r_ij)*F(r_ij) - S'(r_ij)*U(r_ij)
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov february 2017
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!------------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for calculating coulombic energy and force terms
+    !! for CHARMM model intra-core-shell interactions
+    !!
+    !! S(r)=1-(1+u/2).exp(-u) ; u=u(r)=r_ij.(a_i+a_j)/(p_i.p_j)^(1/6)
+    !!
+    !! S'(r)=(1+u).u'.exp(-u)/2 ; |r|'=r/|r|
+    !!
+    !! Uchrm(r_ij) =  S(r_ij)*U(r_ij) ; F(r_ij) = -U'(r_ij)
+    !! Fchrm(r_ij) = -Uchrm'(r_ij) = S(r_ij)*F(r_ij) - S'(r_ij)*U(r_ij)
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov february 2017
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!------------------------------------------------------------------------!
 
     Integer,                                  Intent( In    ) :: iatm
     Real( Kind = wp ),                        Intent( In    ) :: eps
@@ -2372,24 +2300,24 @@ Contains
 
   Subroutine d_ene_trq_mpoles(vircpe_dt,stress,mpoles,config)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for calculating the change in energy produced by
-    ! an infinitesimal rotation of multipoles
-    !
-    ! Reference : Sagui, Pedersen, Darden, J. Chem. Phys. 120, 73 (2004)
-    !             doi: 10.1063/1.1630791
-    !
-    ! copyright - daresbury laboratory
-    ! author    - h.a.boateng april 2015
-    ! amended   - i.t.todorov february 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!------------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for calculating the change in energy produced by
+    !! an infinitesimal rotation of multipoles
+    !!
+    !! Reference : Sagui, Pedersen, Darden, J. Chem. Phys. 120, 73 (2004)
+    !!             doi: 10.1063/1.1630791
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - h.a.boateng april 2015
+    !! amended   - i.t.todorov february 2016
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!------------------------------------------------------------------------!
 
 
     Real( Kind = wp ),                   Intent(   Out ) :: vircpe_dt
