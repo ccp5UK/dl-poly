@@ -343,6 +343,7 @@ if(BUILD_TESTING)
   foreach(test RANGE 173 179 1)
     do_test("TEST${test}")
   endforeach()
+  do_test("TEST181")
 
 else()
   message(STATUS "Build without testing target")
