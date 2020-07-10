@@ -29,6 +29,7 @@ Module deport_data
   Use dihedrals,        Only: dihedrals_type
   Use domains,          Only: domains_type
   Use errors_warnings,  Only: error,&
+                              error_alloc,&
                               warning
   Use ewald,            Only: ewald_type
   Use flow_control,     Only: flow_type
@@ -109,12 +110,12 @@ Contains
 
     Character(Len=256)                       :: message
     Integer                                  :: fail(1:3), i, iatm, iblock, ii, imove, ix, iy, iz, &
-                                                j, jangle, jatm, jbonds, jconst, jdihed, jdnode, &
-                                                jinver, jj, jmove, jpmf, jrigid, jshels, jteths, &
-                                                jxyz, k, kangle, katm, kbonds, kconst, kdihed, &
-                                                kdnode, keep, kinver, kk, kmove, kpmf, krigid, &
-                                                kshels, kteths, kx, ky, kz, l, latm, ll, matm, &
-                                                natm, newatm, jcrd
+                                                j, jangle, jatm, jbonds, jconst, jcrd, jdihed, &
+                                                jdnode, jinver, jj, jmove, jpmf, jrigid, jshels, &
+                                                jteths, jxyz, k, kangle, katm, kbonds, kconst, &
+                                                kdihed, kdnode, keep, kinver, kk, kmove, kpmf, &
+                                                krigid, kshels, kteths, kx, ky, kz, l, latm, ll, &
+                                                matm, natm, newatm
     Integer, Allocatable, Dimension(:)       :: i1pmf, i2pmf, ind_off, ind_on, lrgd
     Logical                                  :: check, lex, ley, lez, lsx, lsy, lsz, lwrap, safe, &
                                                 safe1, stay
@@ -343,32 +344,6 @@ Contains
             buffer(imove + 1) = minim%oxx(i)
             buffer(imove + 2) = minim%oyy(i)
             buffer(imove + 3) = minim%ozz(i)
-          Else
-            safe = .false.
-          End If
-          imove = imove + 3
-        End If
-
-        ! pack frozen-frozen k-space SPME forces arrays
-
-        If (ewld%lf_cp) Then
-          If (imove + 3 <= iblock) Then
-            buffer(imove + 1) = ewld%ffx(i)
-            buffer(imove + 2) = ewld%ffy(i)
-            buffer(imove + 3) = ewld%ffz(i)
-          Else
-            safe = .false.
-          End If
-          imove = imove + 3
-        End If
-
-        ! pack k-space SPME forces arrays
-
-        If (ewld%l_cp) Then
-          If (imove + 3 <= iblock) Then
-            buffer(imove + 1) = ewld%fcx(i)
-            buffer(imove + 2) = ewld%fcy(i)
-            buffer(imove + 3) = ewld%fcz(i)
           Else
             safe = .false.
           End If
@@ -866,18 +841,6 @@ Contains
         minim%ozz(keep) = minim%ozz(i)
       End If
 
-      If (ewld%lf_cp) Then
-        ewld%ffx(keep) = ewld%ffx(i)
-        ewld%ffy(keep) = ewld%ffy(i)
-        ewld%ffz(keep) = ewld%ffz(i)
-      End If
-
-      If (ewld%l_cp) Then
-        ewld%fcx(keep) = ewld%fcx(i)
-        ewld%fcy(keep) = ewld%fcy(i)
-        ewld%fcz(keep) = ewld%fcz(i)
-      End If
-
       If (green%samp > 0) Then
         green%vxi(keep, 1:green%samp) = green%vxi(i, 1:green%samp)
         green%vyi(keep, 1:green%samp) = green%vyi(i, 1:green%samp)
@@ -1035,26 +998,6 @@ Contains
         minim%oxx(newatm) = buffer(kmove + 1)
         minim%oyy(newatm) = buffer(kmove + 2)
         minim%ozz(newatm) = buffer(kmove + 3)
-
-        kmove = kmove + 3
-      End If
-
-      ! unpack frozen-frozen k-space SPME forces arrays
-
-      If (ewld%lf_cp) Then
-        ewld%ffx(newatm) = buffer(kmove + 1)
-        ewld%ffy(newatm) = buffer(kmove + 2)
-        ewld%ffz(newatm) = buffer(kmove + 3)
-
-        kmove = kmove + 3
-      End If
-
-      ! unpack k-space SPME forces arrays
-
-      If (ewld%l_cp) Then
-        ewld%fcx(newatm) = buffer(kmove + 1)
-        ewld%fcy(newatm) = buffer(kmove + 2)
-        ewld%fcz(newatm) = buffer(kmove + 3)
 
         kmove = kmove + 3
       End If
@@ -1699,23 +1642,21 @@ Contains
 
   Subroutine export_atomic_data(mdir, domain, config, kim_data, comm)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 routine to export atomic data in domain boundary regions
-    ! for halo formation
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov december 2016
-    ! contrib   - i.j.bush february 2016
-    ! contrib   - h.a.boateng february 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+    !!----------------------------------------------------------------------!    !!
+    !! dl_poly_4 routine to export atomic data in domain boundary regions
+    !! for halo formation
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov december 2016
+    !! contrib   - i.j.bush february 2016
+    !! contrib   - h.a.boateng february 2016
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
     Integer,                  Intent(In   ) :: mdir
     Type(domains_type),       Intent(In   ) :: domain
     Type(configuration_type), Intent(InOut) :: config
@@ -1736,10 +1677,7 @@ Contains
     fail = 0
     limit = iadd * domain%mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
     Allocate (buffer(1:limit), Stat=fail)
-    If (fail > 0) Then
-      Write (message, '(a)') 'export_atomic_data allocation failure'
-      Call error(0, message)
-    End If
+    If (fail > 0) Call error_alloc('buffer', 'export_atomic_data')
 
     ! Set buffer limit (half for outgoing data - half for incoming)
 

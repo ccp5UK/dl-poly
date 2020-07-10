@@ -26,9 +26,10 @@ Module io
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
   Use comms,           Only: comms_type,&
+                             gsync,&
                              wp_mpi
+  Use constants,       Only: prsunt
   Use errors_warnings, Only: error
   Use kinds,           Only: li,&
                              wp

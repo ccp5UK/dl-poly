@@ -373,7 +373,8 @@ Contains
       Call angle(ff)%init(config(ff)%mxatdm, sites(ff)%mxtmls)
       Call dihedral(ff)%init(config(ff)%mxatdm, sites(ff)%mxtmls)
       Call inversion(ff)%init(config(ff)%mxatms, sites(ff)%mxtmls)
-      Call mpoles(ff)%init(sites(ff)%max_site, neigh(ff)%max_exclude, config(ff)%mxatdm, ewld(ff)%bspline, config(ff)%mxatms)
+      Call mpoles(ff)%init(sites(ff)%max_site, neigh(ff)%max_exclude, config(ff)%mxatdm, &
+                          & ewld(ff)%bspline%num_splines, config(ff)%mxatms)
   
       ! ALLOCATE INTER-LIKE INTERACTION ARRAYS
       Call vdws(ff)%init()

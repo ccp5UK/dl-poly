@@ -18,7 +18,7 @@ Module domains
 
   Use comms,           Only: comms_type,&
                              gsync
-  Use errors_warnings, Only: error
+  Use errors_warnings, Only: error, error_alloc, error_dealloc
   Use kinds,           Only: wi,&
                              wp
   Use numerics,        Only: factor,&
@@ -56,7 +56,7 @@ Module domains
     Integer(Kind=wi), Public :: mxbfdp, mxbfxp, mxbfsh
   End Type domains_type
 
-  Public :: map_domains, idcube
+  Public :: map_domains, idcube, exchange_grid
 
 Contains
 
@@ -357,4 +357,184 @@ Contains
 
     id = i + domain%nx * (j + domain%ny * k)
   End Function idcube
+
+  Subroutine exchange_grid(qqc_local, local_lb, local_ub, qqc_domain, domain_lb, domain_ub, domain, comm)
+
+    !!-----------------------------------------------------------------------
+    !!
+    !! dl_poly_4 subroutine for exchanging grid data post DaFT
+    !!
+    !! Get all the data required to calculate the reciprocal space
+    !! contribution to the forces on the atoms held by this processor, and
+    !! send what is required by the other processors to them.
+    !! QQC_LOCAL( IXB:IXT, IYB:IYT, IZB:IZT ) holds all the data I have currently.
+    !! QQC_DOMAIN( IXDB:IXDT, IYDB:IYDT, IZDB:IZDT ) will hold all the data I need.
+    !! MAP tells me about my neighbouring processors (see the DOMAINS_MODULE).
+    !! MXSPL is the order of the spline.
+    !! MXSPL1 is the extended spline should the conditional VNL is at work.
+    !! MXSPL2 covers for MXSPL1 and if particles are not domain bound.
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.j.bush & i.t.todorov june 2014
+    !! modified  - j.s.wilkins       september 2018
+    !!-----------------------------------------------------------------------
+    Use comms, Only: ExchgGrid_tag, comms_type, gsend, gwait, girecv
+    Implicit None
+
+    Integer, Dimension(3), Intent(In) :: local_lb, local_ub, domain_lb, domain_ub
+    Complex(Kind=wp), Intent(In) :: qqc_local(local_lb(1):local_ub(1),local_lb(2):local_ub(2),local_lb(3):local_ub(3))
+    Real(Kind=wp), Intent(Out) :: qqc_domain(domain_lb(1):domain_ub(1),domain_lb(2):domain_ub(2),domain_lb(3):domain_ub(3))
+    Integer, Dimension(3) :: offset_lb, offset_ub
+    Type(domains_type), Intent(In) :: domain
+    Type(comms_type), Intent(InOut) :: comm
+
+    Character(len=256) :: message
+
+    Integer :: me
+
+    ! What's my name?
+
+    me = comm%idnode
+
+    ! Offset -1 => no change
+    offset_lb = local_lb - domain_lb - 1
+    offset_ub = domain_ub - local_ub - 1
+
+    ! Could strictly be legal?
+    If (Any(offset_lb < -1) .or. Any(offset_ub < -1)) Then
+      Write (message, '(a)') "Error: reducing grid size in exchanged_grid"
+      Call error(0, message)
+    End If
+
+    ! Copy over our local data
+
+    qqc_domain(local_lb(1):local_ub(1), local_lb(2):local_ub(2), local_lb(3):local_ub(3)) = Real(qqc_local, wp)
+
+    If (Any(offset_lb >= 0)) Then
+
+      ! Note that because of the way the splines work when particles don't
+      ! blur off domains (ewld%bspline1==ewld%bspline), i.e. no conditional VNL updates,
+      ! and are bound (ewld%bspline2==ewld%bspline) I only require to receive data from
+      ! processors in the negative octant relative to me, and hence only
+      ! need to send data to processors in the positive octant.
+
+      ! +X direction face - negative halo
+
+      Call exchange_grid_halo(domain%map(1), domain%map(2), &
+                              local_ub(1) - offset_lb(1), local_ub(1), local_lb(2), local_ub(2), local_lb(3), local_ub(3), &
+                              domain_lb(1), domain_lb(1) + offset_lb(1), local_lb(2), local_ub(2), local_lb(3), local_ub(3))
+
+      ! +Y direction face (including the +X face extension) - negative halo
+
+      Call exchange_grid_halo(domain%map(3), domain%map(4), &
+                              domain_lb(1), local_ub(1), local_ub(2) - offset_lb(2), local_ub(2), local_lb(3), local_ub(3), &
+                              domain_lb(1), local_ub(1), domain_lb(2), domain_lb(2) + offset_lb(2), local_lb(3), local_ub(3))
+
+      ! +Z direction face (including the +Y+X faces extensions) - negative halo
+
+      Call exchange_grid_halo(domain%map(5), domain%map(6), &
+                              domain_lb(1), local_ub(1), domain_lb(2), local_ub(2), local_ub(3) - offset_lb(3), local_ub(3), &
+                              domain_lb(1), local_ub(1), domain_lb(2), local_ub(2), domain_lb(3), domain_lb(3) + offset_lb(3))
+
+    End If
+
+    If (Any(offset_ub >= 0)) Then
+
+      ! -X direction face - positive halo
+      Call exchange_grid_halo(domain%map(2), domain%map(1), &
+                              local_lb(1), local_lb(1) + offset_ub(1), domain_lb(2), local_ub(2), domain_lb(3), local_ub(3), &
+                              domain_ub(1) - offset_ub(1), domain_ub(1), domain_lb(2), local_ub(2), domain_lb(3), local_ub(3))
+
+      ! -Y direction face (including the +&-X faces extensions) - positive halo
+
+      Call exchange_grid_halo(domain%map(4), domain%map(3), &
+                              domain_lb(1), domain_ub(1), local_lb(2), local_lb(2) + offset_ub(2), domain_lb(3), local_ub(3), &
+                              domain_lb(1), domain_ub(1), domain_ub(2) - offset_ub(2), domain_ub(2), domain_lb(3), local_ub(3))
+
+      ! -Z direction face (including the +&-Y+&-X faces extensions) - positive halo
+
+      Call exchange_grid_halo(domain%map(6), domain%map(5), &
+                              domain_lb(1), domain_ub(1), domain_lb(2), domain_ub(2), local_lb(3), local_lb(3) + offset_ub(3), &
+                              domain_lb(1), domain_ub(1), domain_lb(2), domain_ub(2), domain_ub(3) - offset_ub(3), domain_ub(3))
+
+    End If
+
+  Contains
+
+    Subroutine exchange_grid_halo(from, to, &
+                                  xlb, xlt, ylb, ylt, zlb, zlt, &
+                                  xdb, xdt, ydb, ydt, zdb, zdt)
+
+      !!-----------------------------------------------------------------------
+      !!
+      !! dl_poly_4 subroutine for exchanging grid data post DaFT
+      !!
+      !! Sends data to a processor      TO from
+      !!                                QQC( XLB:XLT, YLB:YLT, ZLB:ZLT )
+      !! Receives data from a processor FROM and sticks it in
+      !!                                QQC( XDB:XDT, YDB:YDT, ZDB:ZDT )
+      !!
+      !! Note: Amount of data sent M-U-S-T be the same as that received!!!
+      !!
+      !! copyright - daresbury laboratory
+      !! author    - i.j.bush & i.t.todorov june 2014
+      !!
+      !!-----------------------------------------------------------------------
+
+    Integer, Intent(In   ) :: from, to, xlb, xlt, ylb, ylt, zlb, zlt, xdb, xdt, ydb, ydt, zdb, zdt
+
+    Character(Len=256)                             :: message
+    Integer                                        :: fail(1:2)
+    Real(Kind=wp), Allocatable, Dimension(:, :, :) :: recv_buffer, send_buffer
+
+      ! If the processor to receive FROM is actually ME it means there is
+      ! only one processor along this axis (so the processor to send TO is
+      ! also ME) and so no message passing need be done.  However, there
+      ! is a catch.  The domain decomposed spme_forces routine expects data
+      ! that would be `seen' through the periodic boundary conditions to be
+      ! actually copied from the high positive indices to negative ones and
+      ! vice-versa.  The Else clause catches this.
+
+      If (from /= me) Then
+
+        ! Allocate send and receive buffers (of the same size!!!)
+        ! so all can be sent and received as one message!!!
+
+        fail = 0
+        Allocate (send_buffer(xlb:xlt, ylb:ylt, zlb:zlt), Stat=fail(1))
+        Allocate (recv_buffer(xdb:xdt, ydb:ydt, zdb:zdt), Stat=fail(2))
+        If (Any(fail > 0)) Call error_alloc('buffers', 'exchange_grid_halo')
+
+        ! Copy the data to be sent
+
+        send_buffer = qqc_domain(xlb:xlt, ylb:ylt, zlb:zlt)
+
+        ! Exchange the data
+
+        Call girecv(comm, recv_buffer(:, :, :), from, ExchgGrid_tag)
+        Call gsend(comm, send_buffer(:, :, :), to, ExchgGrid_tag)
+        Call gwait(comm)
+
+        ! Copy the received data into the domain halo
+
+        qqc_domain(xdb:xdt, ydb:ydt, zdb:zdt) = recv_buffer
+
+        ! And, as my mum told me, leave things as we found them
+
+        Deallocate (recv_buffer, Stat=fail(1))
+        Deallocate (send_buffer, Stat=fail(2))
+        If (Any(fail > 0)) Call error_dealloc('buffers', 'exchange_grid_halo')
+
+      Else
+
+        ! Simple on node copy - as sizes are the same as 3D shapes
+
+        qqc_domain(xdb:xdt, ydb:ydt, zdb:zdt) = qqc_domain(xlb:xlt, ylb:ylt, zlb:zlt)
+
+      End If
+
+    End Subroutine exchange_grid_halo
+
+  End Subroutine exchange_grid
+
 End Module domains

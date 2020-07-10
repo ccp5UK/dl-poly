@@ -1,53 +1,6 @@
 Module numerics
+  !------------------------ THIS IS NUMERIC_CONTAINER ---------------------!
 
-  Use comms,           Only: comms_type
-  Use constants,       Only: epsilon_wp,&
-                             half_minus,&
-                             rt2,&
-                             rt3,&
-                             sqrpi,&
-                             zero_plus
-  Use errors_warnings, Only: error
-  Use kinds,           Only: li,&
-                             wi,&
-                             wp
-  Use particle,        Only: corePart
-
-  Implicit None
-  Private
-
-  !> Random seed type
-  Type, Public :: seed_type
-    Private
-
-    !> Flag indicating whether the seed has been initialised
-    Logical, Public          :: defined = .false.
-    !> The seed
-    Integer(Kind=wi), Public :: seed(1:3)
-    !> state variables for uni random number generator. In long run one wants to move to a better random number generaot
-    Logical                  :: newjob = .true.
-    Logical                  :: newjob_bm = .true.
-    Integer                  :: ir, jr
-    Real(Kind=wp)            :: c, cd, cm, u(1:97)
-
-  Contains
-    Private
-    Procedure, Public :: init => init_seed
-  End Type seed_type
-
-  ! Private copies to avoid inheritence loop
-  Integer, Parameter :: IMCON_NOPBC = 0
-  Integer, Parameter :: IMCON_CUBIC = 1
-  Integer, Parameter :: IMCON_ORTHORHOMBIC = 2
-  Integer, Parameter :: IMCON_PARALLELOPIPED = 3
-  Integer, Parameter :: IMCON_SLAB = 6
-  ! REMOVED -- DL_POLY 2 ONLY
-  Integer, Parameter :: IMCON_TRUNC_OCTO = 4
-  Integer, Parameter :: IMCON_RHOMBIC_DODEC = 5
-  Integer, Parameter :: IMCON_HEXAGONAL = 7
-
-
-  !!!!!!!!!!!!!!!!!!!!!!!! THIS IS NUMERIC_CONTAINER !!!!!!!!!!!!!!!!!!!!!
   !
   ! Function uni - two seeded random number generator
   !
@@ -119,7 +72,77 @@ Module numerics
   ! MM3_Module - a module to calculate LTC due to AMOEBA 14-7 buffered vdw
   !              interactions
   !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! Function calc_exp_int - Calculates the exponential integral optimised for
+  ! different ranges of x
+  !
+  ! Function calc_erf[c][_deriv] - Calculates the erf(c) function and their
+  ! derivatives
+  !
+  !------------------------------------------------------------------------!
+  Use comms,           Only: comms_type
+  Use constants,       Only: epsilon_wp,&
+                             half_minus,&
+                             rt2,&
+                             rt3,&
+                             sqrpi,&
+                             zero_plus
+  Use errors_warnings, Only: error,&
+                             error_alloc,&
+                             error_dealloc
+  Use kinds,           Only: li,&
+                             wi,&
+                             wp
+  Use particle,        Only: corePart
+  Use, Intrinsic ::  ieee_arithmetic
+  Implicit None
+  Private
+
+  !> Random seed type
+  Type, Public :: seed_type
+    Private
+
+    !> Flag indicating whether the seed has been initialised
+    Logical, Public :: defined = .false.
+    !> The seed
+    Integer(Kind=wi), Public :: seed(1:3)
+
+    !> state variables for uni random number generator. In long run one wants to move to a better random number generaot
+    Logical :: newjob = .true.
+    Logical :: newjob_bm = .true.
+    Integer :: ir, jr
+    Real(Kind=wp) :: c, cd, cm, u(1:97)
+  Contains
+    Private
+    Procedure, Public :: init => init_seed
+  End Type seed_type
+
+  Type, Public :: interp_table
+    !> Interpolation table for use with three_p_interp
+
+    Real(Kind=wp), Dimension(:), Allocatable, Public :: table
+    Real(Kind=wp), Public :: end_sample
+    Real(Kind=wp)                                    :: spacing
+    Real(Kind=wp)                                    :: recip_spacing
+    Integer, Public :: nsamples = -1
+    Logical, Public :: initialised
+  Contains
+    Private
+
+    Procedure, Public :: init => init_interp_table
+    Procedure, Public :: calc => three_p_interp
+    Final :: destroy_interp_table
+  End Type interp_table
+  ! Private copies to avoid inheritence loop
+  Integer, Parameter :: IMCON_NOPBC = 0
+  Integer, Parameter :: IMCON_CUBIC = 1
+  Integer, Parameter :: IMCON_ORTHORHOMBIC = 2
+  Integer, Parameter :: IMCON_PARALLELOPIPED = 3
+  Integer, Parameter :: IMCON_SLAB = 6
+  ! REMOVED -- DL_POLY 2 ONLY
+  Integer, Parameter :: IMCON_TRUNC_OCTO = 4
+  Integer, Parameter :: IMCON_RHOMBIC_DODEC = 5
+  Integer, Parameter :: IMCON_HEXAGONAL = 7
+
   Public :: uni
   Public :: sarurnd
   Public :: match
@@ -132,7 +155,6 @@ Module numerics
   Public :: box_mueller_uni
   Public :: gauss_1
   Public :: gauss_2
-  Public :: erfcgen
   Public :: shellsort
   Public :: shellsort2
   Public :: dcell
@@ -146,6 +168,16 @@ Module numerics
   Public :: mat_mul
   Public :: factor
   Public :: get_nth_prime
+  Public :: calc_erf
+  Public :: calc_erf_deriv
+  Public :: calc_erfc
+  Public :: calc_erfc_deriv
+  Public :: calc_exp_int
+  Public :: calc_gamma_1_2
+  Public :: calc_inv_gamma_1_2
+  Public :: true_factorial
+  Public :: inv_true_factorial
+  Public :: three_p_interp
 
   Interface pbcshfrc
     Module Procedure pbcshfrc_parts
@@ -160,7 +192,7 @@ Module numerics
   Interface pbcshift
     Module Procedure pbcshift_parts
     Module Procedure pbcshift_arrays
-  End Interface
+  End Interface pbcshift
 
   Interface equal
     Module Procedure equal_real_wp
@@ -174,6 +206,107 @@ Module numerics
 
 Contains
 
+  Subroutine init_interp_table(table_in, range, func)
+    !!-----------------------------------------------------------------------
+    !!
+    !! dl_poly_4 routine for generating interpolation tables
+    !! Generates a table from 0 -> range
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins september 2018
+    !!
+    !!-----------------------------------------------------------------------
+
+    Class(interp_table), Intent(InOut) :: table_in
+    Real(Kind=wp),       Intent(In   ) :: range
+    Real(Kind=wp), External            :: func
+
+    Integer       :: fail, i
+    Real(Kind=wp) :: x
+
+    If (table_in%initialised) Return
+
+    If (table_in%nsamples < 10) Call error(0, 'Too few samples to generate interpolation in init_interp_table')
+
+    Allocate (table_in%table(table_in%nsamples), stat=fail)
+    If (fail > 0) Call error_alloc('table_in%table', 'init_interp_table')
+    table_in%spacing = range / Real(table_in%nsamples - 4, wp)
+    table_in%recip_spacing = 1.0_wp / table_in%spacing
+
+    Do i = 1, table_in%nsamples
+      x = Real(i, wp) * table_in%spacing
+      table_in%table(i) = func(x)
+    End Do
+
+    table_in%end_sample = table_in%table(table_in%nsamples - 4)
+    table_in%initialised = .true.
+
+  End Subroutine init_interp_table
+
+  Pure Function three_p_interp(samples, point)
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 routine to calculate 3 point interpolation of points
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - w.smith & i.t.todorov august 2015
+    !! functionalised - j.s.wilkins august 2018
+    !!----------------------------------------------------------------------!
+    Class(interp_table), Intent( In    ) :: samples
+    Real(Kind=wp),       Intent( In    ) :: point
+    Real(Kind=wp)  ::three_p_interp
+
+    Integer                     :: nearest_sample_index
+    Real(Kind=wp)               :: difference
+    Real(Kind=wp), Dimension(2) :: temp
+    Real(Kind=wp), Dimension(3) :: points
+
+!! Either erfc, erf, erfc_deriv, etc.
+!! Point to evaluate
+!! Intermediate variables
+!! Sample points (assumed evenly spaced)
+!! Difference between closest sample and exact
+
+!! Index of closest sample
+
+    nearest_sample_index = Int(point * samples%recip_spacing)
+    ! If (nearest_sample_index > samples%nsamples - 2 .or. nearest_sample_index < 0) &
+    !   & Call error(0, 'Error - Interpolation beyond table limit in three_p_interp')
+
+    difference = point * samples%recip_spacing - Real(nearest_sample_index, wp)
+    points = samples%table(nearest_sample_index:nearest_sample_index + 2)
+
+    ! Catch minimum interp
+    If (nearest_sample_index == 0) points(1) = points(1) * point
+
+    temp(1) = points(1) + (points(2) - points(1)) * difference
+    temp(2) = points(2) + (points(3) - points(2)) * (difference - 1.0_wp)
+    three_p_interp = (temp(1) + (temp(2) - temp(1)) * difference * 0.5_wp)
+
+  End Function three_p_interp
+
+  Subroutine destroy_interp_table(table_in)
+    !!-----------------------------------------------------------------------
+    !!
+    !! dl_poly_4 routine for destroying interpolation tables
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins august 2019
+    !!
+    !!-----------------------------------------------------------------------
+    Type(interp_table), Intent(InOut) :: table_in
+
+    Integer :: fail
+
+    If (.not. table_in%initialised) Return
+
+    Deallocate (table_in%table, stat=fail)
+    If (fail > 0) Call error_dealloc('table_in%table', 'init_interp_table')
+    table_in%spacing = -1.0_wp
+    table_in%recip_spacing = -1.0_wp
+    table_in%nsamples = 0
+    table_in%initialised = .false.
+
+  End Subroutine destroy_interp_table
+
   !> Initialise a seed
   Subroutine init_seed(T, seed)
     Class(seed_type)                :: T
@@ -185,46 +318,46 @@ Contains
 
   Function uni(seed, comm)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 random number generator based on the universal random number
-    ! generator of marsaglia, zaman and tsang.
-    !
-    ! Ref: stats. and prob. lett. 8 (1990) 35-39.)
-    !
-    ! Note: It returns in [0,1)
-    !
-    ! This random number generator originally appeared in "Toward a
-    ! Universal Random Number Generator" by George Marsaglia, Arif Zaman and
-    ! W.W. Tsang in Florida State University Report: FSU-SCRI-87-50 (1987).
-    ! It was later modified by F. James and published in "A Review of
-    ! Pseudo-random Number Generators".
-    ! THIS IS THE BEST KNOWN RANDOM NUMBER GENERATOR AVAILABLE.
-    ! It passes ALL of the tests for random number generators and has a
-    ! period of 2^144, is completely portable (gives bit identical results
-    ! on all machines with at least 24-bit mantissas in the floating point
-    ! representation).
-    ! The algorithm is a combination of a Fibonacci sequence (with lags of
-    ! 97 and 33, and operation "subtraction plus one, modulo one") and an
-    ! "arithmetic sequence" (using subtraction).
-    ! Use IJ = 1802 & KL = 9373 (idnode=0) to test the random number
-    ! generator. The subroutine RANMAR should be used to generate 20000
-    ! random numbers.  Then display the next six random numbers generated
-    ! multiplied by 4096*4096.  If the random number generator is working
-    ! properly, the random numbers should be:
-    !         6533892.0  14220222.0  7275067.0
-    !         6172232.0  8354498.0   10633180.0
-    !
-    ! copyright - daresbury laboratory
-    ! author    - w.smith july 1992
-    ! amended   - i.t.todorov april 2008
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 random number generator based on the universal random number
+    !! generator of marsaglia, zaman and tsang.
+    !!
+    !! Ref: stats. and prob. lett. 8 (1990) 35-39.)
+    !!
+    !! Note: It returns in [0,1)
+    !!
+    !! This random number generator originally appeared in "Toward a
+    !! Universal Random Number Generator" by George Marsaglia, Arif Zaman and
+    !! W.W. Tsang in Florida State University Report: FSU-SCRI-87-50 (1987).
+    !! It was later modified by F. James and published in "A Review of
+    !! Pseudo-random Number Generators".
+    !! THIS IS THE BEST KNOWN RANDOM NUMBER GENERATOR AVAILABLE.
+    !! It passes ALL of the tests for random number generators and has a
+    !! period of 2^144, is completely portable (gives bit identical results
+    !! on all machines with at least 24-bit mantissas in the floating point
+    !! representation).
+    !! The algorithm is a combination of a Fibonacci sequence (with lags of
+    !! 97 and 33, and operation "subtraction plus one, modulo one") and an
+    !! "arithmetic sequence" (using subtraction).
+    !! Use IJ = 1802 & KL = 9373 (idnode=0) to test the random number
+    !! generator. The subroutine RANMAR should be used to generate 20000
+    !! random numbers.  Then display the next six random numbers generated
+    !! multiplied by 4096*4096.  If the random number generator is working
+    !! properly, the random numbers should be:
+    !!         6533892.0  14220222.0  7275067.0
+    !!         6172232.0  8354498.0   10633180.0
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - w.smith july 1992
+    !! amended   - i.t.todorov april 2008
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Type(seed_type),  Intent(InOut) :: seed
     Type(comms_type), Intent(In   ) :: comm
@@ -319,24 +452,24 @@ Contains
 
   Function sarurnd(seed, seeda, seedb, seedc)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 routine random number generator based on the saru random
-    ! number generator of Steve Worley with three integer seeds.
-    !
-    ! Ref: Comp. Phys. Comms. 184 (2013) 1119-1128
-    !
-    ! Note: It returns in [0,1)
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov march 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 routine random number generator based on the saru random
+    !! number generator of Steve Worley with three integer seeds.
+    !!
+    !! Ref: Comp. Phys. Comms. 184 (2013) 1119-1128
+    !!
+    !! Note: It returns in [0,1)
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov march 2016
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Type(seed_type), Intent(InOut) :: seed
     Integer,         Intent(In   ) :: seeda, seedb, seedc
@@ -498,23 +631,23 @@ Contains
 
   Subroutine box_mueller_saru1(seed, i, j, gauss1)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 routine using the box-mueller method for generating a
-    ! gaussian random number of unit variance (with zero mean and standard
-    ! variation of 1).
-    !
-    ! dependent on sarurnd
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov june 2014
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 routine using the box-mueller method for generating a
+    !! gaussian random number of unit variance (with zero mean and standard
+    !! variation of 1).
+    !!
+    !! dependent on sarurnd
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov june 2014
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Type(seed_type), Intent(InOut) :: seed
     Integer,         Intent(In   ) :: i, j
@@ -546,23 +679,23 @@ Contains
 
   Subroutine box_mueller_saru2(seed, i, j, n, gauss1, l_str)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 routine for generating a gaussian random number of unit
-    ! variance (with zero mean and standard variation of 1) by using either
-    ! the box_mueller method or the simplest CLT approximation
-    !
-    ! dependent on sarurnd
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov december 2014
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 routine for generating a gaussian random number of unit
+    !! variance (with zero mean and standard variation of 1) by using either
+    !! the box_mueller method or the simplest CLT approximation
+    !!
+    !! dependent on sarurnd
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov december 2014
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Type(seed_type), Intent(InOut) :: seed
     Integer,         Intent(In   ) :: i, j, n
@@ -606,23 +739,23 @@ Contains
 
   Subroutine box_mueller_saru3(seed, i, j, gauss1, gauss2, gauss3)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 routine using the box-mueller method for generating 3
-    ! gaussian random numbers of unit variance (with zero mean and standard
-    ! variation of 1).
-    !
-    ! dependent on sarurnd
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov june 2014
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 routine using the box-mueller method for generating 3
+    !! gaussian random numbers of unit variance (with zero mean and standard
+    !! variation of 1).
+    !!
+    !! dependent on sarurnd
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov june 2014
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Type(seed_type), Intent(InOut) :: seed
     Integer,         Intent(In   ) :: i, j
@@ -670,23 +803,23 @@ Contains
 
   Subroutine box_mueller_saru6(seed, i, j, gauss)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 routine using the box-mueller method for generating 6
-    ! gaussian random numbers of unit variance (with zero mean and standard
-    ! variation of 1).
-    !
-    ! dependent on sarurnd
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov june 2014
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 routine using the box-mueller method for generating 6
+    !! gaussian random numbers of unit variance (with zero mean and standard
+    !! variation of 1).
+    !!
+    !! dependent on sarurnd
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov june 2014
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Type(seed_type), Intent(InOut) :: seed
     Integer,         Intent(In   ) :: i, j
@@ -750,27 +883,27 @@ Contains
 
   Subroutine box_mueller_uni(seed, gauss1, gauss2, comm)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 routine using the box-mueller method for generating
-    ! gaussian random numbers of unit variance (with zero mean and standard
-    ! variation of 1).  Otherwise, an approximation of the Central Limit
-    ! Theorem must be used: G = (1/A)*[Sum_i=1,N(Ri) - AN/2]*(12/N)^(1/2),
-    ! where A is the number of outcomes from the random throw Ri and N is
-    ! the number of tries.
-    !
-    ! dependent on uni
-    !
-    ! copyright - daresbury laboratory
-    ! author    - w.smith may 2008
-    ! amended   - i.t.todorov february 2014
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 routine using the box-mueller method for generating
+    !! gaussian random numbers of unit variance (with zero mean and standard
+    !! variation of 1).  Otherwise, an approximation of the Central Limit
+    !! Theorem must be used: G = (1/A)*[Sum_i=1,N(Ri) - AN/2]*(12/N)^(1/2),
+    !! where A is the number of outcomes from the random throw Ri and N is
+    !! the number of tries.
+    !!
+    !! dependent on uni
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - w.smith may 2008
+    !! amended   - i.t.todorov february 2014
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Type(seed_type),  Intent(InOut) :: seed
     Real(Kind=wp),    Intent(  Out) :: gauss1, gauss2
@@ -804,26 +937,26 @@ Contains
 
   Subroutine gauss_1(seed, natms, vxx, vyy, vzz, comm)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 routine for constructing velocity arrays with a gaussian
-    ! distribution of unit variance (zero mean), based on the method
-    ! described by Allen and Tildesley in "Computer Simulation of Liquids",
-    ! Clarendon Press 1987, P347.  It is based on an approximation of the
-    ! Central Limit Theorem : G = (1/A)*[Sum_i=1,N(Ri) - AN/2]*(12/N)^(1/2),
-    ! where A is the number of outcomes from the random throw Ri and N is
-    ! the number of tries.
-    !
-    ! copyright - daresbury laboratory
-    ! author    - w.smith july 1992
-    ! amended   - i.t.todorov july 2010
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 routine for constructing velocity arrays with a gaussian
+    !! distribution of unit variance (zero mean), based on the method
+    !! described by Allen and Tildesley in "Computer Simulation of Liquids",
+    !! Clarendon Press 1987, P347.  It is based on an approximation of the
+    !! Central Limit Theorem : G = (1/A)*[Sum_i=1,N(Ri) - AN/2]*(12/N)^(1/2),
+    !! where A is the number of outcomes from the random throw Ri and N is
+    !! the number of tries.
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - w.smith july 1992
+    !! amended   - i.t.todorov july 2010
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Type(seed_type),               Intent(InOut) :: seed
     Integer,                       Intent(In   ) :: natms
@@ -866,21 +999,21 @@ Contains
 
   Subroutine gauss_2(seed, natms, vxx, vyy, vzz, comm)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 routine for constructing velocity arrays with a gaussian
-    ! distribution of unit variance (zero mean), based on the box-mueller
-    ! method
-    !
-    ! copyright - daresbury laboratory
-    ! author    - w.smith july 2010
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 routine for constructing velocity arrays with a gaussian
+    !! distribution of unit variance (zero mean), based on the box-mueller
+    !! method
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - w.smith july 2010
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Type(seed_type),               Intent(InOut) :: seed
     Integer,                       Intent(In   ) :: natms
@@ -908,73 +1041,23 @@ Contains
 
   End Subroutine gauss_2
 
-  Subroutine erfcgen(rcut, alpha, ewald_exclusion_grid, erc, fer)
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 routine for generating interpolation tables for erfc and its
-    ! derivative - for use with Ewald sum
-    !
-    ! copyright - daresbury laboratory
-    ! author    - t.forester december 1994
-    ! amended   - i.t.todorov february 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Real(Kind=wp),                                    Intent(In   ) :: rcut, alpha
-    Integer,                                          Intent(In   ) :: ewald_exclusion_grid
-    Real(Kind=wp), Dimension(0:ewald_exclusion_grid), Intent(  Out) :: erc, fer
-
-    Real(Kind=wp), Parameter :: a1 = 0.254829592_wp, a2 = -0.284496736_wp, a3 = 1.421413741_wp, &
-                                a4 = -1.453152027_wp, a5 = 1.061405429_wp, pp = 0.3275911_wp
-
-    Integer       :: i
-    Real(Kind=wp) :: drewd, exp1, rrr, rsq, tt
-
-    ! look-up tables for real space part of ewald sum
-
-    drewd = rcut / Real(ewald_exclusion_grid - 4, wp)
-
-    Do i = 1, ewald_exclusion_grid
-      rrr = Real(i, wp) * drewd
-      rsq = rrr * rrr
-
-      tt = 1.0_wp / (1.0_wp + pp * alpha * rrr)
-      exp1 = Exp(-(alpha * rrr)**2)
-
-      erc(i) = tt * (a1 + tt * (a2 + tt * (a3 + tt * (a4 + tt * a5)))) * exp1 / rrr
-      fer(i) = (erc(i) + 2.0_wp * (alpha / sqrpi) * exp1) / rsq
-    End Do
-
-    ! extrapolation for grid point 0 at distances close to 0
-
-    erc(0) = Huge(1.0_wp)
-    fer(0) = Huge(1.0_wp + 2.0_wp * (alpha / sqrpi))
-
-  End Subroutine erfcgen
-
   Function match(n, ind_top, list)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 function to determine a match between a positive integer
-    ! 'n' and an array of positive integer 'list(1:ind_top)' sorted in
-    ! ascending order
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov october 2006
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 function to determine a match between a positive integer
+    !! 'n' and an array of positive integer 'list(1:ind_top)' sorted in
+    !! ascending order
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov october 2006
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Integer, Intent(In   ) :: n, ind_top, list(1:*)
     Logical                :: match
@@ -1012,20 +1095,20 @@ Contains
 
   Subroutine shellsort(n, list)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 shell sort routine.  Sorts an array of integers into
-    ! ascending order.
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov august 2004
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 shell sort routine.  Sorts an array of integers into
+    !! ascending order.
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov august 2004
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Integer,                 Intent(In   ) :: n
     Integer, Dimension(1:*), Intent(InOut) :: list
@@ -1082,20 +1165,20 @@ Contains
 
   Subroutine shellsort2(n, rank, list)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 shell sort routine.  Sorts an array of integers (list) into
-    ! ascending order.  The original rank of array list is kept in rank.
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov august 2004
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 shell sort routine.  Sorts an array of integers (list) into
+    !! ascending order.  The original rank of array list is kept in rank.
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov august 2004
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Integer,                 Intent(In   ) :: n
     Integer, Dimension(1:*), Intent(InOut) :: rank, list
@@ -1155,26 +1238,26 @@ Contains
 
   Function local_index(global_index, search_limit, rank, list)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 function to find the local atom number given the
-    ! global atom number.  (For use with DD codes only)
-    !
-    ! If multiple copies present it returns the lowest local atom number
-    ! If no copy is present it returns zero
-    !
-    ! rank(1,*) - array of local atom indices, ranking list
-    ! list(1,*) - array of sorted global atom indices
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov august 2004
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 function to find the local atom number given the
+    !! global atom number.  (For use with DD codes only)
+    !!
+    !! If multiple copies present it returns the lowest local atom number
+    !! If no copy is present it returns zero
+    !!
+    !! rank(1,*) - array of local atom indices, ranking list
+    !! list(1,*) - array of sorted global atom indices
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov august 2004
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Integer,                 Intent(In   ) :: global_index, search_limit
     Integer, Dimension(1:*), Intent(In   ) :: rank, list
@@ -1256,30 +1339,30 @@ Contains
 
   Subroutine dcell(aaa, bbb)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine to calculate the dimensional properties of a
-    ! simulation cell specified by the input 3x3 matrix aaa (cell vectors in
-    ! rows, the matrix is in the form of one dimensional reading
-    ! (row1,row2,row3).
-    !
-    ! The results are returned in the array bbb, with:
-    !
-    ! bbb(1 to 3) - lengths of cell vectors: a(x,y,z) , b(x,y,z) , c(x,y,z)
-    ! bbb(4 to 6) - cosines of cell angles: gamma(a,b) , beta(a,c) , alpha(b,c)
-    ! bbb(7 to 9) - perpendicular cell widths : wx(y,z) , wy(x,z) , wz(x,y)
-    ! bbb(10)     - cell volume
-    !
-    ! copyright - daresbury laboratory
-    ! author    - w.smith july 1992
-    ! amended   - i.t.todorov may 2008
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine to calculate the dimensional properties of a
+    !! simulation cell specified by the input 3x3 matrix aaa (cell vectors in
+    !! rows, the matrix is in the form of one dimensional reading
+    !! (row1,row2,row3).
+    !!
+    !! The results are returned in the array bbb, with:
+    !!
+    !! bbb(1 to 3) - lengths of cell vectors: a(x,y,z) , b(x,y,z) , c(x,y,z)
+    !! bbb(4 to 6) - cosines of cell angles: gamma(a,b) , beta(a,c) , alpha(b,c)
+    !! bbb(7 to 9) - perpendicular cell widths : wx(y,z) , wy(x,z) , wz(x,y)
+    !! bbb(10)     - cell volume
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - w.smith july 1992
+    !! amended   - i.t.todorov may 2008
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Real(Kind=wp), Dimension(1:9),  Intent(In   ) :: aaa
     Real(Kind=wp), Dimension(1:10), Intent(  Out) :: bbb
@@ -1362,26 +1445,26 @@ Contains
 
   Subroutine invert(a, b, d)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine to invert a 3x3 matrix using cofactors
-    ! matrices are in the form of one dimensional array reading
-    ! (row1,row2,row3)
-    !
-    ! a - input matrix
-    ! b - inverted matrix
-    ! d - determinant
-    !
-    ! copyright - daresbury laboratory
-    ! author    - w.smith july 1992
-    ! amended   - i.t.todorov august 2004
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine to invert a 3x3 matrix using cofactors
+    !! matrices are in the form of one dimensional array reading
+    !! (row1,row2,row3)
+    !!
+    !! a - input matrix
+    !! b - inverted matrix
+    !! d - determinant
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - w.smith july 1992
+    !! amended   - i.t.todorov august 2004
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Real(Kind=wp), Dimension(1:9), Intent(In   ) :: a
     Real(Kind=wp), Dimension(1:9), Intent(  Out) :: b
@@ -1423,35 +1506,35 @@ Contains
 
   Subroutine images(imcon, cell, pairs, xxx, yyy, zzz)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for calculating the minimum image vector of
-    ! atom pairs within a specified MD cell.  The cell matrix is in the form
-    ! of one dimensional array reading (row1,row2,row3).
-    !
-    ! Image conditions
-    !
-    ! imcon=0 no boundary conditions apply
-    ! imcon=1 standard cubic boundaries apply
-    ! imcon=2 orthorhombic boundaries apply
-    ! imcon=3 parallelepiped boundaries apply
-    ! imcon=4 truncated octahedron boundaries apply NOT AVAILABLE in DD !!!
-    ! imcon=5 rhombic dodecahedron boundaries apply NOT AVAILABLE in DD !!!
-    ! imcon=6 x-y parallelogram boundary conditions : no periodicity in z
-    ! imcon=7 hexagonal prism boundaries apply      NOT AVAILABLE in DD !!!
-    !
-    ! Note: in all cases the centre of the MD cell is at (0,0,0)
-    !
-    ! copyright - daresbury laboratory
-    ! author    - w.smith july 1992
-    ! amended   - i.t.todorov march 2015
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for calculating the minimum image vector of
+    !! atom pairs within a specified MD cell.  The cell matrix is in the form
+    !! of one dimensional array reading (row1,row2,row3).
+    !!
+    !! Image conditions
+    !!
+    !! imcon=0 no boundary conditions apply
+    !! imcon=1 standard cubic boundaries apply
+    !! imcon=2 orthorhombic boundaries apply
+    !! imcon=3 parallelepiped boundaries apply
+    !! imcon=4 truncated octahedron boundaries apply NOT AVAILABLE in DD !!!
+    !! imcon=5 rhombic dodecahedron boundaries apply NOT AVAILABLE in DD !!!
+    !! imcon=6 x-y parallelogram boundary conditions : no periodicity in z
+    !! imcon=7 hexagonal prism boundaries apply      NOT AVAILABLE in DD !!!
+    !!
+    !! Note: in all cases the centre of the MD cell is at (0,0,0)
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - w.smith july 1992
+    !! amended   - i.t.todorov march 2015
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Integer,                       Intent(In   ) :: imcon
     Real(Kind=wp), Dimension(1:9), Intent(In   ) :: cell
@@ -1601,36 +1684,36 @@ Contains
 
   Subroutine images_s(imcon, cell, xxx, yyy, zzz)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for calculating the minimum image vector of an
-    ! atom pair within a specified MD cell.  The cell matrix is in the form
-    ! of one dimensional array reading (row1,row2,row3).
-    !
-    ! Image conditions
-    !
-    ! imcon=0 no boundary conditions apply
-    ! imcon=1 standard cubic boundaries apply
-    ! imcon=2 orthorhombic boundaries apply
-    ! imcon=3 parallelepiped boundaries apply
-    ! imcon=4 truncated octahedron boundaries apply NOT AVAILABLE in DD !!!
-    ! imcon=5 rhombic dodecahedron boundaries apply NOT AVAILABLE in DD !!!
-    ! imcon=6 x-y parallelogram boundary conditions : no periodicity in z
-    ! imcon=7 hexagonal prism boundaries apply      NOT AVAILABLE in DD !!!
-    !
-    ! Note: in all cases the centre of the MD cell is at (0,0,0)
-    !
-    ! copyright - daresbury laboratory
-    ! author    - w.smith july 1992
-    ! amended   - i.t.todorov march 2015
-    ! tweaked   - h.a.boateng january 2015
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for calculating the minimum image vector of an
+    !! atom pair within a specified MD cell.  The cell matrix is in the form
+    !! of one dimensional array reading (row1,row2,row3).
+    !!
+    !! Image conditions
+    !!
+    !! imcon=0 no boundary conditions apply
+    !! imcon=1 standard cubic boundaries apply
+    !! imcon=2 orthorhombic boundaries apply
+    !! imcon=3 parallelepiped boundaries apply
+    !! imcon=4 truncated octahedron boundaries apply NOT AVAILABLE in DD !!!
+    !! imcon=5 rhombic dodecahedron boundaries apply NOT AVAILABLE in DD !!!
+    !! imcon=6 x-y parallelogram boundary conditions : no periodicity in z
+    !! imcon=7 hexagonal prism boundaries apply      NOT AVAILABLE in DD !!!
+    !!
+    !! Note: in all cases the centre of the MD cell is at (0,0,0)
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - w.smith july 1992
+    !! amended   - i.t.todorov march 2015
+    !! tweaked   - h.a.boateng january 2015
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Integer,                       Intent(In   ) :: imcon
     Real(Kind=wp), Dimension(1:9), Intent(In   ) :: cell
@@ -1763,33 +1846,33 @@ Contains
 
   Subroutine pbcshift_parts(imcon, cell, natms, parts)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for calculating the minimum image of atoms within
-    ! a specified MD cell in accordance with the domain decomposition
-    ! boundary convention for fractional coordinates: every coordinate must
-    ! be intervalled as [-0.5,+0.5)
-    !
-    ! Note: in all cases the centre of the MD cell is at (0,0,0)
-    !
-    ! imcon=0 no boundary conditions apply
-    ! imcon=1 standard cubic boundaries apply
-    ! imcon=2 orthorhombic boundaries apply
-    ! imcon=3 parallelepiped boundaries apply
-    ! imcon=4 truncated octahedron boundaries apply NOT AVAILABLE in DD !!!
-    ! imcon=5 rhombic dodecahedron boundaries apply NOT AVAILABLE in DD !!!
-    ! imcon=6 x-y parallelogram boundary conditions : no periodicity in z
-    ! imcon=7 hexagonal prism boundaries apply      NOT AVAILABLE in DD !!!
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov march 2015
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for calculating the minimum image of atoms within
+    !! a specified MD cell in accordance with the domain decomposition
+    !! boundary convention for fractional coordinates: every coordinate must
+    !! be intervalled as [-0.5,+0.5)
+    !!
+    !! Note: in all cases the centre of the MD cell is at (0,0,0)
+    !!
+    !! imcon=0 no boundary conditions apply
+    !! imcon=1 standard cubic boundaries apply
+    !! imcon=2 orthorhombic boundaries apply
+    !! imcon=3 parallelepiped boundaries apply
+    !! imcon=4 truncated octahedron boundaries apply NOT AVAILABLE in DD !!!
+    !! imcon=5 rhombic dodecahedron boundaries apply NOT AVAILABLE in DD !!!
+    !! imcon=6 x-y parallelogram boundary conditions : no periodicity in z
+    !! imcon=7 hexagonal prism boundaries apply      NOT AVAILABLE in DD !!!
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov march 2015
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Integer,                        Intent(In   ) :: imcon
     Real(Kind=wp), Dimension(1:9),  Intent(In   ) :: cell
@@ -2004,33 +2087,33 @@ Contains
 
   Subroutine pbcshift_arrays(imcon, cell, natms, xxx, yyy, zzz)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for calculating the minimum image of atoms within
-    ! a specified MD cell in accordance with the domain decomposition
-    ! boundary convention for fractional coordinates: every coordinate must
-    ! be intervalled as [-0.5,+0.5)
-    !
-    ! Note: in all cases the centre of the MD cell is at (0,0,0)
-    !
-    ! imcon=0 no boundary conditions apply
-    ! imcon=1 standard cubic boundaries apply
-    ! imcon=2 orthorhombic boundaries apply
-    ! imcon=3 parallelepiped boundaries apply
-    ! imcon=4 truncated octahedron boundaries apply NOT AVAILABLE in DD !!!
-    ! imcon=5 rhombic dodecahedron boundaries apply NOT AVAILABLE in DD !!!
-    ! imcon=6 x-y parallelogram boundary conditions : no periodicity in z
-    ! imcon=7 hexagonal prism boundaries apply      NOT AVAILABLE in DD !!!
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov march 2015
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for calculating the minimum image of atoms within
+    !! a specified MD cell in accordance with the domain decomposition
+    !! boundary convention for fractional coordinates: every coordinate must
+    !! be intervalled as [-0.5,+0.5)
+    !!
+    !! Note: in all cases the centre of the MD cell is at (0,0,0)
+    !!
+    !! imcon=0 no boundary conditions apply
+    !! imcon=1 standard cubic boundaries apply
+    !! imcon=2 orthorhombic boundaries apply
+    !! imcon=3 parallelepiped boundaries apply
+    !! imcon=4 truncated octahedron boundaries apply NOT AVAILABLE in DD !!!
+    !! imcon=5 rhombic dodecahedron boundaries apply NOT AVAILABLE in DD !!!
+    !! imcon=6 x-y parallelogram boundary conditions : no periodicity in z
+    !! imcon=7 hexagonal prism boundaries apply      NOT AVAILABLE in DD !!!
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov march 2015
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Integer,                       Intent(In   ) :: imcon
     Real(Kind=wp), Dimension(1:9), Intent(In   ) :: cell
@@ -2245,33 +2328,33 @@ Contains
 
   Subroutine pbcshfrc_parts(imcon, cell, natms, parts)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for calculating the minimum image of atoms within
-    ! a specified MD cell in accordance with the domain decomposition
-    ! boundary convention for fractional coordinates: every coordinate must
-    ! be intervalled as [-0.5,+0.5)
-    !
-    ! Note: in all cases the centre of the MD cell is at (0,0,0)
-    !
-    ! imcon=0 no boundary conditions apply
-    ! imcon=1 standard cubic boundaries apply
-    ! imcon=2 orthorhombic boundaries apply
-    ! imcon=3 parallelepiped boundaries apply
-    ! imcon=4 truncated octahedron boundaries apply NOT AVAILABLE in DD !!!
-    ! imcon=5 rhombic dodecahedron boundaries apply NOT AVAILABLE in DD !!!
-    ! imcon=6 x-y parallelogram boundary conditions : no periodicity in z
-    ! imcon=7 hexagonal prism boundaries apply      NOT AVAILABLE in DD !!!
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov february 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for calculating the minimum image of atoms within
+    !! a specified MD cell in accordance with the domain decomposition
+    !! boundary convention for fractional coordinates: every coordinate must
+    !! be intervalled as [-0.5,+0.5)
+    !!
+    !! Note: in all cases the centre of the MD cell is at (0,0,0)
+    !!
+    !! imcon=0 no boundary conditions apply
+    !! imcon=1 standard cubic boundaries apply
+    !! imcon=2 orthorhombic boundaries apply
+    !! imcon=3 parallelepiped boundaries apply
+    !! imcon=4 truncated octahedron boundaries apply NOT AVAILABLE in DD !!!
+    !! imcon=5 rhombic dodecahedron boundaries apply NOT AVAILABLE in DD !!!
+    !! imcon=6 x-y parallelogram boundary conditions : no periodicity in z
+    !! imcon=7 hexagonal prism boundaries apply      NOT AVAILABLE in DD !!!
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov february 2016
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Integer,                        Intent(In   ) :: imcon
     Real(Kind=wp), Dimension(1:9),  Intent(In   ) :: cell
@@ -2498,33 +2581,33 @@ Contains
 
   Subroutine pbcshfrc_arrays(imcon, cell, natms, xxx, yyy, zzz)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for calculating the minimum image of atoms within
-    ! a specified MD cell in accordance with the domain decomposition
-    ! boundary convention for fractional coordinates: every coordinate must
-    ! be intervalled as [-0.5,+0.5)
-    !
-    ! Note: in all cases the centre of the MD cell is at (0,0,0)
-    !
-    ! imcon=0 no boundary conditions apply
-    ! imcon=1 standard cubic boundaries apply
-    ! imcon=2 orthorhombic boundaries apply
-    ! imcon=3 parallelepiped boundaries apply
-    ! imcon=4 truncated octahedron boundaries apply NOT AVAILABLE in DD !!!
-    ! imcon=5 rhombic dodecahedron boundaries apply NOT AVAILABLE in DD !!!
-    ! imcon=6 x-y parallelogram boundary conditions : no periodicity in z
-    ! imcon=7 hexagonal prism boundaries apply      NOT AVAILABLE in DD !!!
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov february 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for calculating the minimum image of atoms within
+    !! a specified MD cell in accordance with the domain decomposition
+    !! boundary convention for fractional coordinates: every coordinate must
+    !! be intervalled as [-0.5,+0.5)
+    !!
+    !! Note: in all cases the centre of the MD cell is at (0,0,0)
+    !!
+    !! imcon=0 no boundary conditions apply
+    !! imcon=1 standard cubic boundaries apply
+    !! imcon=2 orthorhombic boundaries apply
+    !! imcon=3 parallelepiped boundaries apply
+    !! imcon=4 truncated octahedron boundaries apply NOT AVAILABLE in DD !!!
+    !! imcon=5 rhombic dodecahedron boundaries apply NOT AVAILABLE in DD !!!
+    !! imcon=6 x-y parallelogram boundary conditions : no periodicity in z
+    !! imcon=7 hexagonal prism boundaries apply      NOT AVAILABLE in DD !!!
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov february 2016
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Integer,                       Intent(In   ) :: imcon
     Real(Kind=wp), Dimension(1:9), Intent(In   ) :: cell
@@ -2751,33 +2834,33 @@ Contains
 
   Subroutine pbcshfrl_parts(imcon, cell, natms, parts)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for calculating the minimum image of atoms within
-    ! a specified MD cell in accordance with the domain decomposition
-    ! boundary convention for fractional coordinates: every coordinate must
-    ! be intervalled as [-0.5,+0.5)
-    !
-    ! Note: in all cases the centre of the MD cell is at (0,0,0)
-    !
-    ! imcon=0 no boundary conditions apply
-    ! imcon=1 standard cubic boundaries apply
-    ! imcon=2 orthorhombic boundaries apply
-    ! imcon=3 parallelepiped boundaries apply
-    ! imcon=4 truncated octahedron boundaries apply NOT AVAILABLE in DD !!!
-    ! imcon=5 rhombic dodecahedron boundaries apply NOT AVAILABLE in DD !!!
-    ! imcon=6 x-y parallelogram boundary conditions : no periodicity in z
-    ! imcon=7 hexagonal prism boundaries apply      NOT AVAILABLE in DD !!!
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov february 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for calculating the minimum image of atoms within
+    !! a specified MD cell in accordance with the domain decomposition
+    !! boundary convention for fractional coordinates: every coordinate must
+    !! be intervalled as [-0.5,+0.5)
+    !!
+    !! Note: in all cases the centre of the MD cell is at (0,0,0)
+    !!
+    !! imcon=0 no boundary conditions apply
+    !! imcon=1 standard cubic boundaries apply
+    !! imcon=2 orthorhombic boundaries apply
+    !! imcon=3 parallelepiped boundaries apply
+    !! imcon=4 truncated octahedron boundaries apply NOT AVAILABLE in DD !!!
+    !! imcon=5 rhombic dodecahedron boundaries apply NOT AVAILABLE in DD !!!
+    !! imcon=6 x-y parallelogram boundary conditions : no periodicity in z
+    !! imcon=7 hexagonal prism boundaries apply      NOT AVAILABLE in DD !!!
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov february 2016
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Integer,                        Intent(In   ) :: imcon
     Real(Kind=wp), Dimension(1:9),  Intent(In   ) :: cell
@@ -2974,33 +3057,33 @@ Contains
 
   Subroutine pbcshfrl_arrays(imcon, cell, natms, xxx, yyy, zzz)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for calculating the minimum image of atoms within
-    ! a specified MD cell in accordance with the domain decomposition
-    ! boundary convention for fractional coordinates: every coordinate must
-    ! be intervalled as [-0.5,+0.5)
-    !
-    ! Note: in all cases the centre of the MD cell is at (0,0,0)
-    !
-    ! imcon=0 no boundary conditions apply
-    ! imcon=1 standard cubic boundaries apply
-    ! imcon=2 orthorhombic boundaries apply
-    ! imcon=3 parallelepiped boundaries apply
-    ! imcon=4 truncated octahedron boundaries apply NOT AVAILABLE in DD !!!
-    ! imcon=5 rhombic dodecahedron boundaries apply NOT AVAILABLE in DD !!!
-    ! imcon=6 x-y parallelogram boundary conditions : no periodicity in z
-    ! imcon=7 hexagonal prism boundaries apply      NOT AVAILABLE in DD !!!
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov february 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for calculating the minimum image of atoms within
+    !! a specified MD cell in accordance with the domain decomposition
+    !! boundary convention for fractional coordinates: every coordinate must
+    !! be intervalled as [-0.5,+0.5)
+    !!
+    !! Note: in all cases the centre of the MD cell is at (0,0,0)
+    !!
+    !! imcon=0 no boundary conditions apply
+    !! imcon=1 standard cubic boundaries apply
+    !! imcon=2 orthorhombic boundaries apply
+    !! imcon=3 parallelepiped boundaries apply
+    !! imcon=4 truncated octahedron boundaries apply NOT AVAILABLE in DD !!!
+    !! imcon=5 rhombic dodecahedron boundaries apply NOT AVAILABLE in DD !!!
+    !! imcon=6 x-y parallelogram boundary conditions : no periodicity in z
+    !! imcon=7 hexagonal prism boundaries apply      NOT AVAILABLE in DD !!!
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov february 2016
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Integer,                       Intent(In   ) :: imcon
     Real(Kind=wp), Dimension(1:9), Intent(In   ) :: cell
@@ -3197,34 +3280,34 @@ Contains
 
   Subroutine jacobi(n, aaa, vvv)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! Diagonalisation of real square symmetric matrices by the Jacobi method:
-    ! a sequence of Jacobi rotations
-    !
-    ! Users must ensure the symmetry of the input matrix
-    !
-    ! input parameters: n   - matrix dimension
-    !                   aaa - the matrix to be diagonalised
-    !                   vvv - the (diagonalised) eigenvector matrix
-    !
-    ! Jacobi processes lower triangle only - strictly upper triangle
-    !                                        remains unchanged
-    !
-    ! Variable rho sets absolute tolerance on convergence
-    ! Variable test is a moving tolerance that diminishes on each pass
-    ! until true convergence test<rho
-    ! ZERO matrices are accepted and returned
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov july 2008
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! Diagonalisation of real square symmetric matrices by the Jacobi method:
+    !! a sequence of Jacobi rotations
+    !!
+    !! Users must ensure the symmetry of the input matrix
+    !!
+    !! input parameters: n   - matrix dimension
+    !!                   aaa - the matrix to be diagonalised
+    !!                   vvv - the (diagonalised) eigenvector matrix
+    !!
+    !! Jacobi processes lower triangle only - strictly upper triangle
+    !!                                        remains unchanged
+    !!
+    !! Variable rho sets absolute tolerance on convergence
+    !! Variable test is a moving tolerance that diminishes on each pass
+    !! until true convergence test<rho
+    !! ZERO matrices are accepted and returned
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov july 2008
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Integer,                            Intent(In   ) :: n
     Real(Kind=wp), Dimension(1:n, 1:n), Intent(InOut) :: aaa, vvv
@@ -3357,21 +3440,21 @@ Contains
 
   Subroutine mat_mul(aaa, bbb, ccc)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! matrix multiply routine: A*B=C (note order!)
-    !
-    ! Note: A, B and C are 3x3 matrices in linear arrays as used in dl_poly
-    !
-    ! copyright - daresbury laboratory
-    ! author    - w.smith april 2009
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! matrix multiply routine: A*B=C (note order!)
+    !!
+    !! Note: A, B and C are 3x3 matrices in linear arrays as used in dl_poly
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - w.smith april 2009
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Real(Kind=wp), Intent(In   ) :: aaa(1:9), bbb(1:9)
     Real(Kind=wp), Intent(  Out) :: ccc(1:9)
@@ -3390,21 +3473,21 @@ Contains
 
   End Subroutine mat_mul
 
-  Function Factorial(n)
+  Pure Function Factorial(n)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! Function to determine the logarithm of a factorial (n!)
-    !
-    ! copyright - daresbury laboratory
-    ! author    - h.a.boateng april 2014
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! Function to determine the logarithm of a factorial (n!)
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - h.a.boateng april 2014
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Integer, Intent(In   ) :: n
     Real(Kind=wp)          :: Factorial
@@ -3418,21 +3501,78 @@ Contains
 
   End Function Factorial
 
+  Pure Function true_factorial(n) Result(factorial)
+    !!----------------------------------------------------------------------!
+    !!
+    !! Function to determine the factorial (n!)
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins november 2018
+    !!
+    !!----------------------------------------------------------------------!
+    Use constants, Only: gamma_1_2
+    Integer, Intent(In   ) :: n
+    Real(Kind=wp)          :: factorial
+
+    Integer, Parameter :: maxfac = Size(gamma_1_2) / 2
+
+    Integer :: i
+
+    If (n < maxfac) Then
+      factorial = gamma_1_2(2 * n)
+    Else
+      factorial = gamma_1_2(2 * maxfac)
+      Do i = maxfac, n
+        factorial = factorial * Real(i, wp)
+      End Do
+    End If
+
+  End Function true_factorial
+
+  Pure Function inv_true_factorial(n) Result(factorial)
+    !!----------------------------------------------------------------------!
+    !!
+    !! Function to determine the factorial (n!)
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins november 2018
+    !!
+    !!----------------------------------------------------------------------!
+    Use constants, Only: inv_gamma_1_2, gamma_1_2
+    Integer, Intent(In   ) :: n
+    Real(Kind=wp)          :: factorial
+
+    Integer, Parameter :: maxfac = Size(inv_gamma_1_2) / 2
+
+    Integer :: i
+
+    If (n < maxfac) Then
+      factorial = inv_gamma_1_2(2 * n)
+    Else
+      factorial = gamma_1_2(2 * maxfac)
+      Do i = maxfac, n
+        factorial = factorial * Real(i, wp)
+      End Do
+      factorial = 1.0_wp / factorial
+    End If
+
+  End Function inv_true_factorial
+
   Subroutine factor(n, facs)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 prime factorisability decomposition function
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.j.bush august 2010
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 prime factorisability decomposition function
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.j.bush august 2010
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Integer,               Intent(In   ) :: n
     Integer, Dimension(:), Intent(  Out) :: facs
@@ -3460,19 +3600,19 @@ Contains
 
   Function get_nth_prime(n)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 return n-th prime function
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.j.bush august 2010
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 return n-th prime function
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.j.bush august 2010
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Integer, Intent(In   ) :: n
     Integer                :: get_nth_prime
@@ -3502,9 +3642,255 @@ Contains
 
   End Function get_nth_prime
 
+  Pure Function calc_erfc(x) Result(erfc)
+    !!-----------------------------------------------------------------------
+    !!
+    !! dl_poly_4 routine for calculating a point on the complementary error function
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins september 2018
+    !! based on  - erfcgen
+    !!
+    !!-----------------------------------------------------------------------
+    Real(kind=wp), Intent(In   ) :: x
+    Real(kind=wp)                :: erfc
+
+    Real(Kind=wp), Parameter :: a1 = 0.254829592_wp, a2 = -0.284496736_wp, a3 = 1.421413741_wp, &
+                                a4 = -1.453152027_wp, a5 = 1.061405429_wp, pp = 0.3275911_wp
+
+    Real(kind=wp) :: tt
+
+    tt = 1.0_wp / (1.0_wp + pp * x)
+    erfc = tt * (a1 + tt * (a2 + tt * (a3 + tt * (a4 + tt * a5)))) * Exp(-(x**2))
+
+  End Function calc_erfc
+
+  Pure Function calc_erfc_deriv(x) Result(d_erfc)
+    !!-----------------------------------------------------------------------
+    !!
+    !! dl_poly_4 routine for calculating a point on the complementary error function derivative
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins september 2018
+    !! based on  - erfcgen
+    !!
+    !!-----------------------------------------------------------------------
+    Use constants, Only: rsqrpi
+    Real(kind=wp), Intent(In   ) :: x
+    Real(kind=wp)                :: d_erfc
+
+    d_erfc = 2.0_wp * Exp(-(x**2)) * rsqrpi
+
+  End Function calc_erfc_deriv
+
+  Pure Function calc_erf(x) Result(erf)
+    !!-----------------------------------------------------------------------
+    !!
+    !! dl_poly_4 routine for calculating a point on the error function
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins september 2018
+    !! based on  - erfcgen
+    !!
+    !!-----------------------------------------------------------------------
+    Use constants, Only: sqrpi
+    Real(kind=wp), Intent(In   ) :: x
+    Real(kind=wp)                :: erf
+
+    Real(Kind=wp), Parameter :: a1 = 0.254829592_wp, a2 = -0.284496736_wp, a3 = 1.421413741_wp, &
+                                a4 = -1.453152027_wp, a5 = 1.061405429_wp, pp = 0.3275911_wp
+
+    Real(kind=wp) :: tt
+
+    tt = 1.0_wp / (1.0_wp + pp * x)
+    erf = (1.0_wp - tt * (a1 + tt * (a2 + tt * (a3 + tt * (a4 + tt * a5)))) * Exp(-(x**2)))
+
+  End Function calc_erf
+
+  Function calc_erf_deriv(x) Result(d_erf)
+    !!-----------------------------------------------------------------------
+    !!
+    !! dl_poly_4 routine for calculating the derivative of the error function
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins september 2018
+    !! based on  - erfcgen
+    !!
+    !!-----------------------------------------------------------------------
+    Use constants, Only: rsqrpi
+    Real(kind=wp), Intent(In   ) :: x
+    Real(kind=wp)                :: d_erf
+
+    d_erf = 2.0_wp * Exp(-(x**2)) * rsqrpi
+
+  End Function calc_erf_deriv
+
+  Pure Function calc_gamma_1_2(x) Result(gam)
+    Use constants, Only: gamma_1_2
+    Integer, Intent(In   ) :: x
+    Real(wp)               :: gam
+
+    Integer, Parameter :: maxgam = Size(gamma_1_2)
+
+    Integer :: i, top
+
+!> Number of pre-calculated Gamma in constants
+
+    If (x < 1) Then
+      gam = ieee_value(gam, ieee_signaling_nan)
+    Else If (x <= maxgam) Then
+      gam = gamma_1_2(x)
+    Else
+      top = maxgam - Mod(x, 2)
+      gam = gamma_1_2(top)
+      Do i = top, x - 2, 2
+        gam = gam * Real(i, wp) * 0.5_wp
+      End Do
+    End If
+
+  End Function calc_gamma_1_2
+
+  Pure Function calc_inv_gamma_1_2(x) Result(gam)
+    Use constants, Only: inv_gamma_1_2
+    Integer, Intent(In   ) :: x
+    Real(wp)               :: gam
+
+    Integer, Parameter :: maxgam = Size(inv_gamma_1_2)
+
+    Integer :: i, top
+
+!> Number of pre-calculated Gamma in constants
+
+    If (x < 1) Then
+      gam = ieee_value(gam, ieee_signaling_nan)
+    Else If (x <= maxgam) Then
+      gam = inv_gamma_1_2(x)
+    Else
+      top = maxgam - Mod(x, 2)
+      gam = inv_gamma_1_2(top)
+      Do i = top, x - 2, 2
+        gam = 2.0_wp * gam / Real(i, wp)
+      End Do
+    End If
+
+  End Function calc_inv_gamma_1_2
+
+  Pure Function calc_exp_int(x) Result(ei)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Routine for calculating the exponential integral
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins november 2018
+    !! Based on : V. Pegoraro & P. Slusallek (2011)
+    !! On the Evaluation of the Complex-Valued Exponential Integral
+    !! Journal of Graphics, GPU, and Game Tools, 15:3, 183-198
+    !! DOI: 10.1080/2151237X.2011.617177
+    !!-----------------------------------------------------------------------
+    Real(kind=wp), Intent(in) :: x
+    Real(kind=wp)                   :: ei
+
+    Real(kind=wp), Parameter :: e_m_gamma = 0.57721566490153286_wp
+    Real(kind=wp), Parameter :: tolerance = 1.0e-8_wp
+    Integer, Parameter :: max_iter = 100
+
+    ! Constant determined by exp(-x)/x * (1 + 1/x) = huge
+    If (Abs(x) > 701.0_wp) Then
+      ei = Exp(x) / x
+
+    Else If (Abs(x) < zero_plus) Then
+      ei = ieee_value(ei, ieee_positive_inf)
+
+    Else If (Abs(x) > 2.0_wp - 1.035 * Log(tolerance)) Then
+      ei = ei_asym_ser(x)
+
+    Else If (Abs(x) > 1.0_wp .and. x < 0) Then
+      ei = ei_cont_frac(x)
+
+    Else If (x > 0) Then
+      ei = ei_pow_ser(x)
+    End If
+
+  Contains
+
+    Pure Function ei_cont_frac_for(x) Result(ei)
+    Real(kind=wp), Intent(In   ) :: x
+    Real(kind=wp)                :: ei
+
+    Integer       :: i
+    Real(kind=wp) :: a, b, c, d, old
+
+      c = 0.0_wp
+      d = 1.0_wp / (1.0_wp - x)
+      ei = d * (-Exp(x))
+
+      Do i = 1, max_iter
+        old = ei
+        a = Real(2 * i, wp) + 1.0_wp - x
+        b = Real(i**2, wp)
+        c = 1.0_wp / (a - b * c)
+        d = 1.0_wp / (a - b * d)
+        ei = ei * d / c
+        If (Abs(ei - old) < Abs(tolerance * ei)) Exit
+      End Do
+
+    End Function ei_cont_frac_for
+
+    Pure Function ei_cont_frac(x) Result(ei)
+
+    Real(kind=wp), Intent(In   ) :: x
+    Real(kind=wp)                :: ei
+
+    Integer :: k
+
+      ei = 0.0_wp
+      Do k = 1, max_iter
+        ei = -k**2 / (2.0_wp * k + 1.0_wp - x + ei)
+      End Do
+
+      ei = -Exp(x) / (1.0_wp - x + ei)
+
+    End Function ei_cont_frac
+
+    Pure Function ei_pow_ser(x) Result(ei)
+
+    Real(kind=wp), Intent(In   ) :: x
+    Real(kind=wp)                :: ei
+
+    Integer       :: i
+    Real(kind=wp) :: k, old, tmp
+
+      ei = e_m_gamma + Log(x)
+      tmp = 1.0_wp
+      Do i = 1, max_iter
+        k = 1.0_wp / Real(i, wp)
+        tmp = tmp * x * k**2
+        old = ei
+        ei = ei + tmp
+        If (ei - old < tolerance) Exit
+      End Do
+
+    End Function ei_pow_ser
+
+    Pure Function ei_asym_ser(x) Result(ei)
+    Real(kind=wp), Intent(In   ) :: x
+    Real(kind=wp)                :: ei
+
+    Integer       :: i
+    Real(kind=wp) :: old, tmp
+
+      ei = 0.0_wp
+      tmp = Exp(x) / x
+      Do i = 1, Floor(x) + 1
+        old = ei
+        ei = ei + tmp
+        If (ei - old < tolerance) Exit
+        tmp = tmp * Real(i, wp) / x
+      End Do
+
+    End Function ei_asym_ser
+
+  End Function calc_exp_int
+
   Pure Function equal_real_wp(a, b) Result(equal)
-    Real(Kind=wp), Intent(In   ) :: a, b
-    Logical                      :: equal
+    Real(Kind=wp), Intent(In) :: a, b
+    Logical :: equal
 
     equal = Abs(a - b) < epsilon_wp
   End Function equal_real_wp

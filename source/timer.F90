@@ -27,65 +27,55 @@ Module timer
   Integer, Parameter :: max_depth = 6, max_name = 18
 
   Type :: node_timer
-
     !!------------------------------------------------!
     !! Timer
     !!------------------------------------------------!
     Character(Len=max_name) :: name
-    Integer                 :: id
-    Real(Kind=wp)           :: max, min, total, last
-    Real(Kind=wp)           :: start, Stop
-    Integer                 :: calls
-    Logical                 :: running = .false.
-
+    Integer           :: id
+    Real(Kind=wp) :: max, min, total, last
+    Real(Kind=wp) :: start, Stop
+    Integer           :: calls
+    Logical           :: running = .false.
   End Type node_timer
 
   Type :: call_stack
-
     !!------------------------------------------------!
     !! Call stack
     !!------------------------------------------------!
     Character(Len=max_name), Dimension(max_depth) :: name
-    Integer                                       :: depth = 0
-
+    Integer :: depth = 0
   End Type call_stack
 
   Type :: node
-
     !!------------------------------------------------!
     !! Tree node
     !!------------------------------------------------!
-    Type(node_timer)          :: time
+    Type(node_timer) :: time
     Type(timer_tree), Pointer :: tree => null()
-    Type(node), Pointer       :: child => null()
-    Type(node), Pointer       :: parent => null()
-    Type(node), Pointer       :: next_sibling => null()
-
+    Type(node), Pointer :: child => null()
+    Type(node), Pointer :: parent => null()
+    Type(node), Pointer :: next_sibling => null()
   End Type node
 
   Type :: timer_tree
-
     !!------------------------------------------------!
     !! Tree structure
     !!------------------------------------------------!
     Type(node), Pointer :: head => null()
-    Integer             :: n_timers = 0
-
+    Integer :: n_timers = 0
   End Type timer_tree
 
   Type, Public :: timer_type
-
     !!------------------------------------------------!
     !! Main timer system
     !!------------------------------------------------!
     Type(timer_tree), Pointer :: tree
-    Type(call_stack)          :: stack
-    Real(Kind=wp)             :: elapsed, job, clear_screen
-    Logical                   :: proc_detail = .false.
-    Integer                   :: max_depth = 1
-    Integer                   :: proc_id
-    Integer                   :: out_unit
-
+    Type(call_stack) :: stack
+    Real(Kind=wp) :: elapsed, job, clear_screen
+    Logical :: proc_detail = .false.
+    Integer :: max_depth = 1
+    Integer :: proc_id
+    Integer :: out_unit
   End Type timer_type
 
   Interface timer_write
@@ -700,7 +690,7 @@ Contains
     Else
 
       Do i = 1, Size(message)
-        Write (eu, '(a)') message(i)
+        Write (eu, '(a)') Trim(message(i))
       End Do
 
     End If
@@ -727,7 +717,7 @@ Contains
 
     Else
 
-      Write (eu, '(a)') message
+      Write (eu, '(a)') Trim(message)
 
     End If
 
