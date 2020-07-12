@@ -1,112 +1,110 @@
 !! Author: Alin M Elena
 !! Date: 04-07-2020
 !! License: GPL-3.0 https://opensource.org/licenses/GPL-3.0
-module table
-  use, intrinsic :: iso_fortran_env, only: li => int64,&
-                                           wp => real64,&
-                                           ou => output_unit
+Module table
+  Use, Intrinsic :: iso_fortran_env, Only: li => int64,&
+                                           ou => output_unit,&
+                                           wp => real64
 
-  implicit none
+  Implicit None
 
-  private
+  Private
 
-  interface print_row
-    module procedure print_row_i
-    module procedure print_row_ir
-  end interface
+  Interface print_row
+    Module Procedure print_row_i
+    Module Procedure print_row_ir
+  End Interface
 
-  public :: print_header
-  public :: print_row
-  public :: hline
+  Public :: print_header
+  Public :: print_row
+  Public :: hline
 
-contains
+Contains
 
-  pure character(len=250) function hline(w)
-    integer, intent(in)    :: w(:)
+  pure Character(len=250) Function hline(w)
+    Integer, Intent(In   ) :: w(:)
 
-    character(len=250) :: line
-    integer            :: i
+    Character(len=250) :: line
+    Integer            :: i
 
-    write (line, '(*(a,a),a)') ("+", repeat("-", w(i)), i=1, size(w)), "+"
+    Write (line, '(*(a,a),a)') ("+", Repeat("-", w(i)), i=1, Size(w)), "+"
     hline = line
 
-  end function hline
+  End Function hline
 
-  subroutine print_header(labels, w, uo)
-    character(len=*), intent(in)    :: labels(:)
-    integer, intent(in)             :: w(:)
-    integer, intent(in), optional    :: uo
+  Subroutine print_header(labels, w, uo)
+    Character(len=*),  Intent(In   ) :: labels(:)
+    Integer,           Intent(In   ) :: w(:)
+    Integer, Optional, Intent(In   ) :: uo
 
-    character(len=250) :: fmta, line
-    integer            :: i
-    integer :: u
+    Character(len=250) :: fmta, line
+    Integer            :: i, u
 
-    if (present(uo)) then
+    If (Present(uo)) Then
       u = uo
-    else
+    Else
       u = ou
-    endif
+    Endif
 
-    write (fmta, '(a,*(a,i0,a),a)') '(', ("a1,a", w(i), ",", i=1, size(w)), 'a1)'
+    Write (fmta, '(a,*(a,i0,a),a)') '(', ("a1,a", w(i), ",", i=1, Size(w)), 'a1)'
 
     line = hline(w)
-    write (u, '(a)') trim(line)
-    write (u, fmt=trim(fmta)) ("|", trim(labels(i)), i=1, size(labels)), "|"
-    write (u, '(a)') trim(line)
+    Write (u, '(a)') Trim(line)
+    Write (u, fmt=Trim(fmta)) ("|", Trim(labels(i)), i=1, Size(labels)), "|"
+    Write (u, '(a)') Trim(line)
 
-  end subroutine print_header
+  End Subroutine print_header
 
-  subroutine print_row_i(c0, d, w,uo)
-    character(len=*), intent(in)    :: c0
-    integer(kind=li), intent(in)    :: d(:)
-    integer, intent(in)             :: w(:)
-    integer, intent(in), optional    :: uo
+  Subroutine print_row_i(c0, d, w, uo)
+    Character(len=*),  Intent(In   ) :: c0
+    Integer(kind=li),  Intent(In   ) :: d(:)
+    Integer,           Intent(In   ) :: w(:)
+    Integer, Optional, Intent(In   ) :: uo
 
-    character(len=250) :: fmta
-    !character(len=250) :: line
-    integer            :: i
+    Character(len=250) :: fmta
+    Integer            :: i, u
 
-    integer :: u
+!character(len=250) :: line
 
-    if (present(uo)) then
+    If (Present(uo)) Then
       u = uo
-    else
+    Else
       u = ou
-    endif
+    Endif
 
-    write (fmta, '(a,*(a,i0,a),a)') '(', "a1,a", w(1), ",", ("a1,i", w(i), ",", i=2, size(w)), 'a1)'
-    write (u, fmt=trim(fmta)) "|", trim(c0), ("|", d(i), i=1, size(d)), "|"
- !   line = hline(w)
- !   write (u, '(a)') trim(line)
-  end subroutine print_row_i
+    Write (fmta, '(a,*(a,i0,a),a)') '(', "a1,a", w(1), ",", ("a1,i", w(i), ",", i=2, Size(w)), 'a1)'
+    Write (u, fmt=Trim(fmta)) "|", Trim(c0), ("|", d(i), i=1, Size(d)), "|"
+    !   line = hline(w)
+    !   write (u, '(a)') trim(line)
+  End Subroutine print_row_i
 
-  subroutine print_row_ir(c0, d, r, w,uo)
-    character(len=*), intent(in)    :: c0
-    integer(kind=li), intent(in)    :: d(:)
-    real(kind=wp), intent(in)       :: r(:)
-    integer, intent(in)             :: w(:)
-    integer, intent(in), optional    :: uo
+  Subroutine print_row_ir(c0, d, r, w, uo)
+    Character(len=*),  Intent(In   ) :: c0
+    Integer(kind=li),  Intent(In   ) :: d(:)
+    Real(kind=wp),     Intent(In   ) :: r(:)
+    Integer,           Intent(In   ) :: w(:)
+    Integer, Optional, Intent(In   ) :: uo
 
-    character(len=250) :: fmta
-    !character(len=250) :: line
-    integer            :: i
-    integer :: u
+    Character(len=250) :: fmta
+    Integer            :: i, u
 
-    if (present(uo)) then
+!character(len=250) :: line
+
+    If (Present(uo)) Then
       u = uo
-    else
+    Else
       u = ou
-    endif
+    Endif
 
-    write (fmta, '(a,*(a,i0,a),a)') '(', "a1,a", w(1), ",", &
-      ("a1,i", w(i + 1), ",", i=1, size(d)), &
-      ("a1,f", w(i), ".2,", i=size(d) + 1, size(w)), &
+    Write (fmta, '(a,*(a,i0,a),a)') '(', "a1,a", w(1), ",", &
+      ("a1,i", w(i + 1), ",", i=1, Size(d)), &
+      ("a1,f", w(i), ".2,", i=Size(d) + 1, Size(w)), &
       'a1)'
-    write (u, fmt=trim(fmta)) "|", trim(c0), &
-      ("|", d(i), i=1, size(d)), &
-      ("|", r(i), i=1, size(r)), &
+    Write (u, fmt=Trim(fmta)) "|", Trim(c0), &
+      ("|", d(i), i=1, Size(d)), &
+      ("|", r(i), i=1, Size(r)), &
       "|"
 !    line = hline(w)
 !    write (u, '(a)') trim(line)
-  end subroutine print_row_ir
-end module table
+  End Subroutine print_row_ir
+End Module table

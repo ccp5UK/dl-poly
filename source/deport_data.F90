@@ -63,7 +63,7 @@ Module deport_data
 
 Contains
 
-  Subroutine deport_atomic_data(mdir, lbook, lmsd, cshell, cons, pmf, stats, ewld, thermo, &
+  Subroutine deport_atomic_data(mdir, lbook, lmsd, cshell, cons, pmf, stats, thermo, &
                                 green, bond, angle, dihedral, inversion, tether, neigh, minim, mpoles, rigid, domain, &
                                 config, crd, comm)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -91,7 +91,6 @@ Contains
     Type(constraints_type),   Intent(InOut) :: cons
     Type(pmf_type),           Intent(InOut) :: pmf
     Type(stats_type),         Intent(InOut) :: stats
-    Type(ewald_type),         Intent(InOut) :: ewld
     Type(thermostat_type),    Intent(InOut) :: thermo
     Type(greenkubo_type),     Intent(InOut) :: green
     Type(bonds_type),         Intent(InOut) :: bond
@@ -2485,7 +2484,7 @@ Contains
   End Subroutine mpoles_rotmat_set_halo
 
   Subroutine relocate_particles(dvar, cutoff_extended, lbook, lmsd, megatm, flow, cshell, cons, &
-                                pmf, stats, ewld, thermo, green, bond, angle, dihedral, inversion, tether, &
+                                pmf, stats, thermo, green, bond, angle, dihedral, inversion, tether, &
                                 neigh, sites, minim, mpoles, rigid, domain, config, crd, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2512,7 +2511,6 @@ Contains
     Type(constraints_type),   Intent(InOut) :: cons
     Type(pmf_type),           Intent(InOut) :: pmf
     Type(stats_type),         Intent(InOut) :: stats
-    Type(ewald_type),         Intent(InOut) :: ewld
     Type(thermostat_type),    Intent(InOut) :: thermo
     Type(greenkubo_type),     Intent(InOut) :: green
     Type(bonds_type),         Intent(InOut) :: bond
@@ -2641,28 +2639,28 @@ Contains
 
       ! exchange atom data in -/+ x directions
 
-      Call deport_atomic_data(-1, lbook, lmsd, cshell, cons, pmf, stats, ewld, thermo, &
+      Call deport_atomic_data(-1, lbook, lmsd, cshell, cons, pmf, stats, thermo, &
                               green, bond, angle, dihedral, inversion, tether, neigh, minim, mpoles, rigid, &
                               domain, config, crd, comm)
-      Call deport_atomic_data(1, lbook, lmsd, cshell, cons, pmf, stats, ewld, thermo, &
+      Call deport_atomic_data(1, lbook, lmsd, cshell, cons, pmf, stats, thermo, &
                               green, bond, angle, dihedral, inversion, tether, neigh, minim, mpoles, rigid, &
                               domain, config, crd, comm)
 
       ! exchange atom data in -/+ y directions
 
-      Call deport_atomic_data(-2, lbook, lmsd, cshell, cons, pmf, stats, ewld, thermo, &
+      Call deport_atomic_data(-2, lbook, lmsd, cshell, cons, pmf, stats, thermo, &
                               green, bond, angle, dihedral, inversion, tether, neigh, minim, mpoles, rigid, &
                               domain, config, crd, comm)
-      Call deport_atomic_data(2, lbook, lmsd, cshell, cons, pmf, stats, ewld, thermo, &
+      Call deport_atomic_data(2, lbook, lmsd, cshell, cons, pmf, stats, thermo, &
                               green, bond, angle, dihedral, inversion, tether, neigh, minim, mpoles, rigid, &
                               domain, config, crd, comm)
 
       ! exchange atom data in -/+ z directions
 
-      Call deport_atomic_data(-3, lbook, lmsd, cshell, cons, pmf, stats, ewld, thermo, &
+      Call deport_atomic_data(-3, lbook, lmsd, cshell, cons, pmf, stats, thermo, &
                               green, bond, angle, dihedral, inversion, tether, neigh, minim, mpoles, rigid, &
                               domain, config, crd, comm)
-      Call deport_atomic_data(3, lbook, lmsd, cshell, cons, pmf, stats, ewld, thermo, &
+      Call deport_atomic_data(3, lbook, lmsd, cshell, cons, pmf, stats, thermo, &
                               green, bond, angle, dihedral, inversion, tether, neigh, minim, mpoles, rigid, &
                               domain, config, crd, comm)
 

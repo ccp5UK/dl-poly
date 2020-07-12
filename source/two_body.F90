@@ -195,7 +195,7 @@ Contains
         End If
 
         If (ewld%vdw) Then
-          Call ewald_vdw_init(ewld, vdws)
+          Call ewald_vdw_init(ewld)
           Call ewald_vdw_coeffs(config, vdws, ewld, vdw_coeffs)
 
           Do ipot = 1, ewld%num_pots

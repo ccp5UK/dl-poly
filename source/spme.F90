@@ -335,12 +335,15 @@ Contains
     Real(Kind=wp)                :: f_12
 
     Real(Kind=wp), Parameter                 :: prefac = 1.0_wp / 56700.0_wp
-    Real(Kind=wp), Dimension(0:4), Parameter :: coeffsB = (/105.0_wp, -30.0_wp, 12.0_wp, -8.0_wp, &
-                                                16.0_wp/) * prefac, coeffs = [105.0_wp, -30.0_wp, &
-                                                12.0_wp, -8.0_wp, 16.0_wp] * prefac
+    Real(Kind=wp), Dimension(0:4), Parameter :: coeffs = [105.0_wp, -30.0_wp, 12.0_wp, -8.0_wp, &
+                                                16.0_wp] * prefac
 
     Integer       :: i
     Real(Kind=wp) :: x_2
+
+!Real(Kind=wp), Dimension(0:4), Parameter :: coeffsB = (/105.0_wp, -30.0_wp, 12.0_wp, -8.0_wp, &
+!                                            16.0_wp/) * prefac, coeffs = [105.0_wp, -30.0_wp, &
+!                                            12.0_wp, -8.0_wp, 16.0_wp] * prefac
 
     x_2 = x**2
 
