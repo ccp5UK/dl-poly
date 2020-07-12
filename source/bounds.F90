@@ -292,7 +292,7 @@ Contains
     ! decide on MXATMS while reading CONFIG and scan particle density
 
     Call read_config(config, megatm, config%levcfg, config%l_ind, flow%strict, neigh%cutoff, config%dvar, xhi, yhi, &
-         zhi, dens0, dens, io, domain, files, comm)
+         zhi, dens0, dens, io, domain, files, comm, ff)
 
     Call setup_buffers(fdvar, dens, dens0, megatm, link_cell, mxgrid, config, domain, stats, neigh, &
        green, site, cshell, cons, pmf, rdf, rigid, tether, bond, angle, dihedral, inversion, zdensity, ewld, mpoles, &
@@ -1459,7 +1459,7 @@ Contains
       Call adjust_kmax(ewld%kspace%k_vec_dim(3), domain%nz)
 
       bspline_node_check = Minval(Int(ewld%kspace%k_vec_dim/[domain%nx, domain%ny, domain%nz]))
-      print*, bspline_node_check
+
       if (bspline_node_check == ewld%bspline%num_splines) then
         call warning('LC+DD with SPME grid too small to support padding')
         neigh%padding = 0.0_wp

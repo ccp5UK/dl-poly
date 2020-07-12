@@ -16,7 +16,8 @@ Module ewald_spole
   !!----------------------------------------------------------------------!
   Use comms,           Only: comms_type
   Use configuration,   Only: configuration_type
-  Use constants,       Only: r4pie0,&
+  Use constants,       Only: pi, &
+                             r4pie0,&
                              sqrpi,&
                              twopi,&
                              zero_plus
@@ -257,7 +258,7 @@ Contains
     !!
     !!----------------------------------------------------------------------!
     Use comms, Only: gsum, gcheck, gsync
-    Use constants, Only: twopi, pi, sqrpi, zero_plus
+!    Use constants, Only: twopi, pi, sqrpi, zero_plus
     Use bspline, Only: bspline_splines_gen
     Type(ewald_type),            Intent(inout) :: ewld
     Type(spme_component),        Intent(inout) :: spme_datum
@@ -275,7 +276,6 @@ Contains
     Integer, Allocatable, Dimension(:)                      :: to_calc
     Integer, Dimension(4)                                   :: fail
     Logical                                                 :: llspl
-    Logical, Save                                           :: newjob = .true.
     Real(kind=wp)                                           :: det, eng, rvolm, scale
     Real(kind=wp), Allocatable, Dimension(:)                :: Q_abc
     Real(kind=wp), Allocatable, Dimension(:, :)             :: F_abc, S_abc
@@ -309,10 +309,10 @@ Contains
       Return
     End If
 
-    If (newjob) Then
+    If (ewld%newjob_spme_init) Then
       Call ewald_spme_init(domain, config%mxatms, comm, ewld%kspace, &
         & ewld%bspline, charge_grid, potential_grid, stress_grid, pfft_work)
-      newjob = .false.
+      ewld%newjob_spme_init = .false.
     End If
 
     fail = 0
@@ -477,7 +477,9 @@ Contains
     ! deallocate (ewld%bspline%derivs, stat=fail(2))
     Deallocate (to_calc, stat=fail(3))
     Deallocate (Q_abc, F_abc, S_abc, stat=fail(4))
-    If (Any(fail > 0)) Call error_dealloc('output_arrays', 'ewald_spme_forces')
+    If (Any(fail > 0))Then
+      Call error_dealloc('output_arrays', 'ewald_spme_forces')
+    End If
 
   End Subroutine ewald_spme_forces_coul
 

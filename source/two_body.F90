@@ -124,7 +124,6 @@ Contains
 
     Integer                                     :: fail, i, ipot, j, k, limit
     Logical                                     :: l_do_outer_loop, l_do_rdf, safe
-    Logical, Save                               :: newjob = .true.
     Real(Kind=wp)                               :: buffer(0:19), engacc, engcpe_ch, engcpe_ex, &
                                                    engcpe_fr, engcpe_nz, engcpe_rc, engcpe_rl, &
                                                    engden, engkim, engmet, engvdw, engvdw_rc, &
@@ -158,13 +157,14 @@ Contains
     ! Coulomb
     If (ewld%vdw .and. .not. ewld%active) Call error(0, 'Ewald VdW requested but ewald not enabled')
 
+
     If (ewld%active) Then
       Allocate (coul_coeffs(config%mxatms), stat=fail)
       If (fail > 0) Call error_alloc('coul_coeffs', 'two_body_forces')
       coul_coeffs = config%parts(:)%chge
 
 
-      If (newjob) Then
+      If (ewld%newjob_two_body) Then
 
         If (.not. ewld%direct) Then
           Call electro%erfcgen(neigh%cutoff, ewld%alpha)
@@ -208,7 +208,7 @@ Contains
 
         End If
 
-        newjob = .false.
+        ewld%newjob_two_body = .false.
 
       End If
 
@@ -290,9 +290,8 @@ Contains
 #ifdef CHRONO
     Call start_timer(tmr, 'Long Range')
 #endif
-
+ 
     If (electro%key == ELECTROSTATIC_EWALD) Then
-
       Call ewald_spme_forces_coul(ewld, ewld%spme_data(0), electro, domain, config, comm, &
         & coul_coeffs, stats, engcpe_rc, vircpe_rc, tmr)
 

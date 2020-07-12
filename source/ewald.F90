@@ -49,6 +49,9 @@ Module ewald
     !> Ewald convergence parameter or Coulomb damping parameter (A^-1)
     Real( Kind = wp ), Public :: alpha
 
+    Logical, Public :: newjob_two_body=.True.
+    Logical, Public :: newjob_spme_init=.True.
+
     ! Merged types here for simplicity
     ! Ewald type containing data relevant to SPME style ewald
 
