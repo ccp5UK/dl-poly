@@ -90,7 +90,7 @@ Module flow_control
     !> MD step that DL_POLY starts at
     Integer, Public          :: initial_md_step = 0
     Logical, Public          :: l_vdw = .False.
-    
+
   Contains
     Procedure, Public :: new_page => flow_type_new_page
     Procedure, Public :: line_printed => flow_type_line_printed

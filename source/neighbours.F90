@@ -30,7 +30,8 @@ Module neighbours
   Use numerics,        Only: dcell,&
                              images,&
                              invert,&
-                             match
+                             match,&
+                             equal
   Use statistics,      Only: stats_type
   Use timer,           Only: start_timer,&
                              stop_timer,&
@@ -682,14 +683,14 @@ Contains
             Else
               ix=nlx1s
             End If
-            If (dispx == dispy) Then
+            If (equal(dispx,dispy)) Then
               If (y < y1) Then
                 iy=nly0e
               Else
                 iy=nly1s
               End If
             End If
-            If (dispx == dispz) Then
+            If (equal(dispx, dispz)) Then
               If (z < z1) Then
                 iz=nlz0e
               Else
@@ -702,7 +703,7 @@ Contains
             Else
               iy=nly1s
             End If
-            If (dispy == dispz) Then
+            If (equal(dispy, dispz)) Then
               If (z < z1) Then
                 iz=nlz0e
               Else
@@ -1509,14 +1510,14 @@ Contains
           Else
             ix=nlx+1
           End If
-          If (dispx == dispy) Then
+          If (equal(dispx, dispy)) Then
             If (y < y1) Then
               iy=0
             Else
               iy=nly+1
             End If
           End If
-          If (dispx == dispz) Then
+          If (equal(dispx, dispz)) Then
             If (z < z1) Then
               iz=0
             Else
@@ -1529,7 +1530,7 @@ Contains
           Else
             iy=nly+1
           End If
-          If (dispy == dispz) Then
+          If (equal(dispy,dispz)) Then
             If (z < z1) Then
               iz=0
             Else

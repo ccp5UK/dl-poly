@@ -1348,6 +1348,9 @@ Contains
 
       If (flow%step > 0) Then
         Call info(Repeat('-', 130), .true.)
+        Write (message, '(a,i10)') 'switching off equilibration at step ', flow%step
+        Call info(message, .true.)
+
         If (thermo%l_zero) Then
           thermo%l_zero = .false.
           Write (message, '(a,i10)') 'switching off zero Kelvin optimiser at step ', flow%step
