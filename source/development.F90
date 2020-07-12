@@ -215,7 +215,7 @@ Contains
 
     Character(Len=10) :: time
     Character(Len=47) :: aux
-    Character(Len=79) :: aux2
+    Character(Len=256) :: aux2
     Character(Len=5)  :: zone
     Character(Len=66) :: message
     Character(Len=8)  :: date
@@ -252,8 +252,11 @@ Contains
 
     aux2 = compiler_version()
     Call clean_string(aux2)
-    Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", "compiler:", aux2, "****"
-    Call info(message, .true.)
+    Do i = 1, Len_trim(aux2), 46
+      aux = aux2(i:Min(i + 45, Len_trim(aux2)))
+      Write (message, '(a4,1x,a9,1x,a,1x,a4)') "****", "compiler:", Trim(aux), "****"
+      Call info(message, .true.)
+    End Do
 
     If (mpi_ver > 0) Then
       Write (aux, '(a1,i0,a1,i0)') "v", mpi_ver, ".", mpi_subver

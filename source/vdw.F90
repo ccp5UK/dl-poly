@@ -2506,6 +2506,8 @@ Contains
     strs5 = 0.0_wp
     strs6 = 0.0_wp
     strs9 = 0.0_wp
+
+    stress_temp_comp = 0.0_wp
     ! global identity and type of iatm
 
     idi = config%ltg(iatm)
@@ -3197,6 +3199,7 @@ Contains
     strs6 = 0.0_wp
     strs9 = 0.0_wp
 
+    stress_temp_comp = 0.0_wp
     ! global identity and type of iatm
 
     idi = config%ltg(iatm)
