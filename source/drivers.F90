@@ -584,7 +584,7 @@ Contains
     !when atoms move to different processes
     !Gather atomic coordinates and names (excluding halo atoms)
     Call gathered%initialise(comm, config%megatm*3)
-    Call gather_coordinates(comm, config, to_master_only, gathered)
+    Call gather_coordinates(comm, config, gathered)
     If(.not. Allocated(atmnam)) Allocate(atmnam(config%megatm))
     Call gather_atomic_names(comm, config, to_master_only, atmnam)
 
@@ -668,7 +668,7 @@ Contains
       ! Relocate atoms to new domains and restore bonding description
 
       Call relocate_particles(cnfig%dvar, neigh%cutoff_extended, flow%book, &
-                              msd_data%l_msd, cnfig%megatm, flow, cshell, cons, pmf, stat, ewld, thermo, green, &
+                              msd_data%l_msd, cnfig%megatm, flow, cshell, cons, pmf, stat,  thermo, green, &
                               bond, angle, dihedral, inversion, tether, neigh, sites, minim, mpoles, &
                               rigid, domain, cnfig, crd, comm)
 
@@ -1251,7 +1251,7 @@ Contains
   End Subroutine kinetic_options
 
   Subroutine statistics_report(cnfig, ttm, cshell, cons, pmf, stat, msd_data, zdensity, &
-                               sites, rdf, domain, flow, files, thermo, tmr, green, minim, comm)
+                               sites, domain, flow, files, thermo, tmr, green, minim, comm)
 
     Type(configuration_type), Intent(InOut) :: cnfig
     Type(ttm_type),           Intent(InOut) :: ttm
@@ -1262,7 +1262,6 @@ Contains
     Type(msd_type),           Intent(InOut) :: msd_data
     Type(z_density_type),     Intent(InOut) :: zdensity
     Type(site_type),          Intent(InOut) :: sites
-    Type(rdf_type),           Intent(In   ) :: rdf
     Type(domains_type),       Intent(In   ) :: domain
     Type(flow_type),          Intent(InOut) :: flow
     Type(file_type),          Intent(InOut) :: files(:)
@@ -1727,7 +1726,7 @@ Contains
         Call checkcoord(cnfig, crd, sites, flow, stat, comm)
         Call adf_calculate(cnfig, sites, flow, crd, adf, comm)
         Call statistics_report(cnfig, ttm, cshell, cons, pmf, stat, msd_data, zdensity, &
-                               sites, rdf, domain, flow, files, thermo, tmr, green, minim, comm)
+                               sites, domain, flow, files, thermo, tmr, green, minim, comm)
       End If
 
       ! DO THAT ONLY IF 0<flow%step<=flow%run_steps AND THIS IS AN OLD JOB (flow%newjob=.false.)
@@ -1758,7 +1757,7 @@ Contains
         ! Calculate physical quantities, collect statistics and report regularly
 
         Call statistics_report(cnfig, ttm, cshell, cons, pmf, stat, msd_data, zdensity, &
-                               sites, rdf, domain, flow, files, thermo, tmr, green, minim, comm)
+                               sites, domain, flow, files, thermo, tmr, green, minim, comm)
 
         ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
 

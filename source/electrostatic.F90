@@ -102,8 +102,6 @@ contains
 
     Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha
 
-    Integer           :: fail
-
     if (electro%erfc%initialised .and. electro%erfc_deriv%initialised) return
 
     call electro%erfc%init(rcut, erfc_ar_over_r)

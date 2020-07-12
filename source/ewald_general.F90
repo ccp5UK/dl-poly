@@ -14,30 +14,34 @@ Module ewald_general
   !! authors   - i.t.todorov & w.smith & i.j.bush & j.s.wilkins august 2018
   !!
   !!----------------------------------------------------------------------!
-  Use comms,           Only: comms_type
+  Use bspline,         Only: bspline_coeffs_gen,&
+                             bspline_splines_gen,&
+                             bspline_type
+  Use comms,           Only: comms_type,&
+                             gcheck,&
+                             gsum
   Use configuration,   Only: configuration_type
-  Use constants,       Only: r4pie0,&
+  Use constants,       Only: pi,&
                              sqrpi,&
                              twopi,&
                              zero_plus
-  Use domains,         Only: domains_type
+  Use domains,         Only: domains_type,&
+                             exchange_grid
   Use electrostatic,   Only: electrostatic_type
   Use errors_warnings, Only: error,&
                              error_alloc,&
                              error_dealloc
   Use ewald,           Only: ewald_type
   Use kinds,           Only: wp
-  Use kspace,          Only: kspace_type
+  Use kspace,          Only: kspace_type,&
+                             setup_kspace
   Use neighbours,      Only: neighbours_type
-  Use numerics,        Only: calc_erf,&
-                             calc_erf_deriv,&
-                             calc_erfc,&
-                             dcell,&
+  Use numerics,        Only: dcell,&
                              invert
-  Use parallel_fft,    Only: initialize_fft,&
-                             pfft,&
-                             pfft_indices
-  Use spme,            Only: spme_component
+  Use parallel_fft,    Only: pfft
+  Use spme,            Only: f_p,&
+                             f_p_d,&
+                             spme_component
   Use statistics,      Only: calculate_stress,&
                              stats_type
   Use timer,           Only: start_timer,&
@@ -82,8 +86,7 @@ Contains
     !! amended   - j. wilkins september 2018
     !!
     !!-----------------------------------------------------------------------
-    use spme, only : g_p, g_p_d
-
+    Use spme, Only: g_p, g_p_d
     Real(Kind=wp),                              Intent(In   ) :: alpha
     Type(spme_component),                       Intent(In   ) :: spme_datum
     Type(neighbours_type),                      Intent(In   ) :: neigh
@@ -216,7 +219,7 @@ Contains
 
   End Subroutine ewald_real_forces_gen
 
-  Subroutine ewald_spme_forces_gen(ewld, spme_datum, electro, domain, config, comm, coeffs, stats, &
+  Subroutine ewald_spme_forces_gen(ewld, spme_datum, domain, config, comm, coeffs, stats, &
     & engcpe_rc, vircpe_rc, tmr)
     !!----------------------------------------------------------------------!
     !!
@@ -231,12 +234,8 @@ Contains
     !! re-written in per-particle formulation - j.s.wilkins august 2018
     !!
     !!----------------------------------------------------------------------!
-    Use comms, Only: gsum, gcheck, gsync
-    Use constants, Only: twopi, pi, sqrpi, zero_plus
-    Use bspline, Only: bspline_splines_gen
     Type(ewald_type),            Intent(inout) :: ewld
     Type(spme_component),        Intent(inout) :: spme_datum
-    Type(electrostatic_type),    Intent(In   ) :: electro
     Type(domains_type),          Intent(In   ) :: domain
     Type(configuration_type),    Intent(inout) :: config
     Type(comms_type),            Intent(inout) :: comm
@@ -394,7 +393,7 @@ Contains
     Call stop_timer(tmr, 'BSpline')
 
     Call start_timer(tmr, 'Charge')
-    Call spme_construct_charge_array(to_calc(0), ewld, to_calc(1:), recip_indices, electro, coeffs, charge_grid)
+    Call spme_construct_charge_array(to_calc(0), ewld, to_calc(1:), recip_indices, coeffs, charge_grid)
     Call stop_timer(tmr, 'Charge')
 
     If (.not. stats%collect_pp .or. spme_datum%pot_order /= 1) Then
@@ -405,7 +404,7 @@ Contains
         & potential_kernel, potential_grid, s_abc(:, 0))
       Call stop_timer(tmr, 'Potential')
       Call start_timer(tmr, 'ForceEnergy')
-      Call spme_calc_force_energy(ewld, electro, comm, domain, config, coeffs, &
+      Call spme_calc_force_energy(ewld, comm, domain, config, coeffs, &
         & rcell, recip_indices, potential_grid, stats%collect_pp, q_abc, f_abc)
       Call stop_timer(tmr, 'ForceEnergy')
 
@@ -416,9 +415,9 @@ Contains
       Call spme_construct_potential_grid_gen(ewld, rcell, charge_grid, spme_datum, &
         & stress_kernel, stress_grid)
 
-      Call spme_calc_force_energy(ewld, electro, comm, domain, config, coeffs, &
+      Call spme_calc_force_energy(ewld, comm, domain, config, coeffs, &
         & rcell, recip_indices, potential_grid, stats%collect_pp, q_abc, f_abc)
-      Call spme_calc_stress(ewld, electro, comm, domain, config, coeffs, &
+      Call spme_calc_stress(ewld, comm, domain, config, coeffs, &
         & rcell, recip_indices, stress_grid, s_abc)
 
     End If
@@ -488,24 +487,18 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Use ewald, Only: ewald_type
-    Use bspline, Only: bspline_type, bspline_coeffs_gen
-    Use domains, Only: domains_type
-    Use parallel_fft, Only: initialize_fft, pfft_indices
-    Use comms, Only: comms_type
-    Use kspace, Only: setup_kspace
     Type(domains_type),                                Intent(In   ) :: domain
     Integer,                                           Intent(In   ) :: max_atoms
     Type(comms_type),                                  Intent(In   ) :: comm
     Type(kspace_type),                                 Intent(inout) :: kspace_in
     Type(bspline_type),                                Intent(inout) :: bspline_in
     Real(Kind=wp), Allocatable, Dimension(:, :, :),    Intent(  Out) :: charge_grid
-    Complex(Kind=wp), Allocatable, Dimension(:, :, :), Intent(  Out) :: potential_grid, stress_grid
-    !> temporary workspace for parallel fft
-    Complex(Kind=wp), Dimension(:, :, :), Allocatable, Intent(  Out) :: pfft_array
-
+    Complex(Kind=wp), Allocatable, Dimension(:, :, :), Intent(  Out) :: potential_grid, &
+                                                                        stress_grid, pfft_array
 
     Integer, Dimension(4) :: fail
+
+!> temporary workspace for parallel fft
 
     fail = 0
 
@@ -526,17 +519,17 @@ Contains
 
     ! workspace arrays for DaFT
 
-    Allocate (charge_grid   (1:kspace_in%block_fac(1), 1:kspace_in%block_fac(2), 1:kspace_in%block_fac(3)), stat=fail(1))
+    Allocate (charge_grid(1:kspace_in%block_fac(1), 1:kspace_in%block_fac(2), 1:kspace_in%block_fac(3)), stat=fail(1))
     Allocate (potential_grid(1:kspace_in%block_fac(1), 1:kspace_in%block_fac(2), 1:kspace_in%block_fac(3)), stat=fail(2))
-    Allocate (stress_grid   (1:kspace_in%block_fac(1), 1:kspace_in%block_fac(2), 1:kspace_in%block_fac(3)), stat=fail(3))
-    Allocate (pfft_array     (1:kspace_in%block_fac(1), 1:kspace_in%block_fac(2), 1:kspace_in%block_fac(3)), stat=fail(4))
+    Allocate (stress_grid(1:kspace_in%block_fac(1), 1:kspace_in%block_fac(2), 1:kspace_in%block_fac(3)), stat=fail(3))
+    Allocate (pfft_array(1:kspace_in%block_fac(1), 1:kspace_in%block_fac(2), 1:kspace_in%block_fac(3)), stat=fail(4))
     If (Any(fail > 0)) Call error_alloc('SPME DaFT workspace arrays', 'ewald_spme_init')
 
 !!! end daft set-up
 
   End Subroutine ewald_spme_init
 
-  Subroutine spme_construct_charge_array(ncalc, ewld, lookup_array, recip_indices, electro, &
+  Subroutine spme_construct_charge_array(ncalc, ewld, lookup_array, recip_indices, &
     & coeffs, charge_grid)
 
     !!----------------------------------------------------------------------!
@@ -552,14 +545,13 @@ Contains
     Type(ewald_type),                  Intent(In   ) :: ewld
     Integer, Dimension(:),             Intent(In   ) :: lookup_array
     Integer, Dimension(:, :),          Intent(In   ) :: recip_indices
-    Type(electrostatic_type),          Intent(In   ) :: electro
     Real(Kind=wp), Dimension(:),       Intent(In   ) :: coeffs
     Real(Kind=wp), Dimension(:, :, :), Intent(  Out) :: charge_grid
 
-    Integer               :: atm, i, j, j_hi, j_lo, k, k_hi, k_lo, l, l_hi, l_lo
-    Integer, Dimension(3) :: temp
+    Integer                     :: atm, i, j, j_hi, j_lo, k, k_hi, k_lo, l, l_hi, l_lo
+    Integer, Dimension(3)       :: temp
+    Real(Kind=wp)               :: atom_coeffs
     Real(Kind=wp), Dimension(2) :: factor
-    Real(Kind=wp)         :: atom_coeffs
 
     charge_grid = 0.0_wp
 
@@ -569,7 +561,7 @@ Contains
     atom: Do atm = 1, ncalc
 
       i = lookup_array(atm)
-      if (abs(coeffs(i)) <= zero_plus) cycle
+      If (Abs(coeffs(i)) <= zero_plus) Cycle
       ! if a particle is charged and in the md cell or in its positive halo
       ! (t(i) >= 0) as the b-splines are negative directionally by propagation
 
@@ -579,7 +571,7 @@ Contains
       j_hi = Min(ewld%kspace%domain_indices(1, 2), recip_indices(1, i) + 1) - ewld%kspace%domain_indices(1, 1) + 1
       k_hi = Min(ewld%kspace%domain_indices(2, 2), recip_indices(2, i) + 1) - ewld%kspace%domain_indices(2, 1) + 1
       l_hi = Min(ewld%kspace%domain_indices(3, 2), recip_indices(3, i) + 1) - ewld%kspace%domain_indices(3, 1) + 1
-      if (any([j_hi - j_lo, k_hi - k_lo, l_hi - l_lo] < 0)) cycle
+      If (Any([j_hi - j_lo, k_hi - k_lo, l_hi - l_lo] < 0)) Cycle
       temp = recip_indices(:, i) - ewld%bspline%num_splines - ewld%kspace%domain_indices(:, 1) + 2
 
       atom_coeffs = coeffs(i)
@@ -612,9 +604,6 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Use comms, Only: gsum
-    Use constants, Only: pi
-    Use parallel_fft, Only: pfft
     Type(ewald_type),                      Intent(In   ) :: ewld
     Real(Kind=wp), Dimension(9),           Intent(In   ) :: recip_cell
     Real(Kind=wp), Dimension(:, :, :),     Intent(In   ) :: charge_grid
@@ -629,6 +618,7 @@ Contains
                                       pressure_virial, recip_conv_fac
     Real(Kind=wp), Dimension(10)   :: recip_cell_properties
     Real(Kind=wp), Dimension(3, 3) :: recip_pos, stress_temp
+
 !! SPME contribution to the stress
 !! Reciprocal lattice vectors
 !! Core function to FT
@@ -736,7 +726,7 @@ Contains
 
   End Subroutine spme_construct_potential_grid_gen
 
-  Subroutine spme_calc_force_energy(ewld, electro, comm, domain, config, coeffs, recip_cell, &
+  Subroutine spme_calc_force_energy(ewld, comm, domain, config, coeffs, recip_cell, &
     & recip_indices, potential_grid, per_part_step, energies, forces)
     !!----------------------------------------------------------------------!
     !!
@@ -747,20 +737,17 @@ Contains
     !! author    - j.s.wilkins august 2018
     !!
     !!----------------------------------------------------------------------!
-    Use comms, Only: gsum
-    Use domains, Only: exchange_grid
-    Type(ewald_type),                     Intent(In   ) :: ewld
-    Type(electrostatic_type),             Intent(In   ) :: electro
-    Type(comms_type),                     Intent(inout) :: comm
-    Type(domains_type),                   Intent(In   ) :: domain
-    Type(configuration_type),             Intent(In   ) :: config
-    Real(Kind=wp), Dimension(:),          Intent(In   ) :: coeffs
-    Real(Kind=wp), Dimension(9),          Intent(In   ) :: recip_cell
-    Integer, Dimension(:, :),             Intent(In   ) :: recip_indices
+    Type(ewald_type),                                  Intent(In   ) :: ewld
+    Type(comms_type),                                  Intent(inout) :: comm
+    Type(domains_type),                                Intent(In   ) :: domain
+    Type(configuration_type),                          Intent(In   ) :: config
+    Real(Kind=wp), Dimension(:),                       Intent(In   ) :: coeffs
+    Real(Kind=wp), Dimension(9),                       Intent(In   ) :: recip_cell
+    Integer, Dimension(:, :),                          Intent(In   ) :: recip_indices
     Complex(Kind=wp), Allocatable, Dimension(:, :, :), Intent(In   ) :: potential_grid
-    Logical,                              Intent(In   ) :: per_part_step
-    Real(Kind=wp), Dimension(0:),         Intent(  Out) :: energies
-    Real(Kind=wp), Dimension(:, :),       Intent(  Out) :: forces
+    Logical,                                           Intent(In   ) :: per_part_step
+    Real(Kind=wp), Dimension(0:),                      Intent(  Out) :: energies
+    Real(Kind=wp), Dimension(:, :),                    Intent(  Out) :: forces
 
     Character(Len=256)                                   :: message
     Integer                                              :: fail, i, j, jj, k, kk, l, ll
@@ -815,8 +802,8 @@ Contains
       If (fail /= 0) Call error_alloc('extended_potential_grid', 'spme_calc_force_energy')
     End If
 
-    Call exchange_grid(potential_grid, ewld%kspace%domain_indices(:,1), ewld%kspace%domain_indices(:,2), &
-      & extended_potential_grid, extended_domain(:,1), extended_domain(:,2), domain, comm)
+    Call exchange_grid(potential_grid, ewld%kspace%domain_indices(:, 1), ewld%kspace%domain_indices(:, 2), &
+      & extended_potential_grid, extended_domain(:, 1), extended_domain(:, 2), domain, comm)
 
     If (Any(Minval(recip_indices(:, 1:config%natms), dim=2) + 2 - ewld%bspline%num_splines < extended_domain(:, 1)) .or. &
         Any(Maxval(recip_indices(:, 1:config%natms), dim=2) + 1 > extended_domain(:, 2))) Then
@@ -832,7 +819,7 @@ Contains
     ! Calculate per-particle contributions
     atom: Do i = 1, config%natms
 
-      if (abs(coeffs(i)) <= zero_plus) cycle
+      If (Abs(coeffs(i)) <= zero_plus) Cycle
       energy_total = 0.0_wp
       curr_force_temp = 0.0_wp
       atom_coeffs = coeffs(i)
@@ -898,7 +885,7 @@ Contains
 
   End Subroutine spme_calc_force_energy
 
-  Subroutine spme_calc_stress(ewld, electro, comm, domain, config, coeffs, &
+  Subroutine spme_calc_stress(ewld, comm, domain, config, coeffs, &
     & recip_cell, recip_indices, stress_grid, stress_out)
     !!----------------------------------------------------------------------!
     !!
@@ -909,11 +896,7 @@ Contains
     !! author    - j.s.wilkins august 2018
     !!
     !!----------------------------------------------------------------------!
-    Use comms, Only: gsum
-    Use constants, Only: twopi
-    Use domains, Only: exchange_grid
     Type(ewald_type),                     Intent(In   ) :: ewld
-    Type(electrostatic_type),             Intent(In   ) :: electro
     Type(comms_type),                     Intent(inout) :: comm
     Type(domains_type),                   Intent(In   ) :: domain
     Type(configuration_type),             Intent(In   ) :: config
@@ -972,8 +955,8 @@ Contains
       If (fail /= 0) Call error_alloc('extended_stress_grid', 'spme_calc_stress')
     End If
 
-    Call exchange_grid(stress_grid, ewld%kspace%domain_indices(:,1), ewld%kspace%domain_indices(:,2), &
-      & extended_stress_grid, extended_domain(:,1), extended_domain(:,2), domain, comm)
+    Call exchange_grid(stress_grid, ewld%kspace%domain_indices(:, 1), ewld%kspace%domain_indices(:, 2), &
+      & extended_stress_grid, extended_domain(:, 1), extended_domain(:, 2), domain, comm)
 
     ! Zero accumulator
     stress_out(:, 0) = 0.0_wp
@@ -1049,7 +1032,7 @@ Contains
 
 !!! Kernels
 
-  Function potential_kernel(B_m, pot, pi_m_over_a, conv_factor, pot_order)
+  Function potential_kernel(B_m, pot, pi_m_over_a, pot_order)
     !!----------------------------------------------------------------------!
     !!
     !! Kernel for calculating energy and forces for SPME method
@@ -1058,10 +1041,10 @@ Contains
     !! author    - j.s.wilkins august 2018
     !!
     !!----------------------------------------------------------------------!
-    use spme,      only : f_p
+    Use spme, Only: f_p
     Real(Kind=wp)    :: B_m
     Complex(Kind=wp) :: pot
-    Real(Kind=wp)    :: pi_m_over_a, conv_factor
+    Real(Kind=wp)    :: pi_m_over_a
     Integer          :: pot_order
     Complex(Kind=wp) :: potential_kernel
 
@@ -1078,8 +1061,6 @@ Contains
     !! author    - j.s.wilkins august 2018
     !!
     !!----------------------------------------------------------------------!
-    use spme,      only : f_p, f_p_d
-    Use constants, Only: pi
     Real(Kind=wp)    :: B_m
     Complex(Kind=wp) :: pot
     Real(Kind=wp)    :: pi_m_over_a, conv_factor

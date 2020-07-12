@@ -483,7 +483,6 @@ Contains
 
     Integer, Intent(In   ) :: from, to, xlb, xlt, ylb, ylt, zlb, zlt, xdb, xdt, ydb, ydt, zdb, zdt
 
-    Character(Len=256)                             :: message
     Integer                                        :: fail(1:2)
     Real(Kind=wp), Allocatable, Dimension(:, :, :) :: recv_buffer, send_buffer
 

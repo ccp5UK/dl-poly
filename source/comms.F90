@@ -1197,7 +1197,7 @@ Contains
     If (comm%mxnode == 1) Return
     Call MPI_BCAST(array, size(array), wp_mpi, root, comm%comm, comm%ierr)
   End Subroutine gbcast_real2d
-  
+
   Subroutine gbcast_real_scalar(comm, s, root)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2050,7 +2050,7 @@ Contains
     Integer,            Intent( In    ) :: disps(:)
     Real( Kind = wp),   Intent( Out   ) :: recv_buf(:,:)
     Integer,            Intent( In    ) :: root
-    Character( Len = 100)               :: error_message
+    Character( Len = 120)               :: error_message
 
     error_message = 'gscatterv: Sum of buffer sizes in send_counts '//  &
          'does not equal total size of send_buffer.'
@@ -2215,7 +2215,7 @@ Contains
     Integer, Optional,  Intent( In    ) :: recv_process
 
     Integer :: process_id
-    Character( Len = 100 ) :: error_message
+    Character( Len = 120 ) :: error_message
 
     error_message = 'ggatherv: Sum of send_buffer sizes in receive_counts '//&
          'does not equal total size of receive_buffer.'
@@ -2391,7 +2391,7 @@ Contains
     Integer,            Intent( In    ) :: recv_counts(:)
     Integer,            Intent( In    ) :: disps(:)
     Real( Kind = wp),   Intent( Out   ) :: recv_buf(:,:)
-    Character( Len = 100 )              :: error_message
+    Character( Len = 150 )              :: error_message
 
     error_message = 'gallgatherv: Sum of send_buffer sizes in receive_counts '//&
          'does not equal total size of receive_buffer.'

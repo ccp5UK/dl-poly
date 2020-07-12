@@ -215,6 +215,7 @@ Contains
 
     Character(Len=10) :: time
     Character(Len=47) :: aux
+    Character(Len=79) :: aux2
     Character(Len=5)  :: zone
     Character(Len=66) :: message
     Character(Len=8)  :: date
@@ -249,9 +250,9 @@ Contains
     Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", " builder:", aux, "****"
     Call info(message, .true.)
 
-    aux = compiler_version()
-    Call clean_string(aux)
-    Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", "compiler:", aux, "****"
+    aux2 = compiler_version()
+    Call clean_string(aux2)
+    Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", "compiler:", aux2, "****"
     Call info(message, .true.)
 
     If (mpi_ver > 0) Then

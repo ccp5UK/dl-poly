@@ -3168,7 +3168,7 @@ Contains
     Type(configuration_type),                   Intent(InOut) :: config
 
     Real(Kind=wp), Dimension(9) :: stress_temp_comp
-    Integer       :: ai, aj, idi, ityp, jatm, k, key, l, m, mm, n
+    Integer       :: ai, aj, idi, ityp, jatm, k, key, l, mm
     Real(kind=wp) :: t1, t2, vk, vk1, vk2, gk, gk1, gk2, ppp
     Real(kind=wp) :: fix, fiy, fiz, fx, fy, fz, gamma, eng
     Real(kind=wp) :: rrr, rsq, rscl, r_rvdw, r_rrv, r_rsq, r_rrr
@@ -3321,7 +3321,6 @@ Contains
           strs9 = strs9 + zzt(mm) * fz
 
         End If
-#ifdef A
         If (stats%collect_pp) Then
           stress_temp_comp(1) = stress_temp_comp(1) + xxt(mm) * fx
           stress_temp_comp(2) = stress_temp_comp(2) + xxt(mm) * fy
@@ -3339,7 +3338,6 @@ Contains
             stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
           End If
         End If
-#endif
       End If
 
     End Do
