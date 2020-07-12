@@ -219,7 +219,7 @@ Contains
 
   End Subroutine ewald_real_forces_gen
 
-  Subroutine ewald_spme_forces_gen(ewld, spme_datum, electro, domain, config, comm, coeffs, stats, &
+  Subroutine ewald_spme_forces_gen(ewld, spme_datum, domain, config, comm, coeffs, stats, &
     & engcpe_rc, vircpe_rc, tmr)
     !!----------------------------------------------------------------------!
     !!
@@ -236,7 +236,6 @@ Contains
     !!----------------------------------------------------------------------!
     Type(ewald_type),            Intent(inout) :: ewld
     Type(spme_component),        Intent(inout) :: spme_datum
-    Type(electrostatic_type),    Intent(In   ) :: electro
     Type(domains_type),          Intent(In   ) :: domain
     Type(configuration_type),    Intent(inout) :: config
     Type(comms_type),            Intent(inout) :: comm
@@ -394,7 +393,7 @@ Contains
     Call stop_timer(tmr, 'BSpline')
 
     Call start_timer(tmr, 'Charge')
-    Call spme_construct_charge_array(to_calc(0), ewld, to_calc(1:), recip_indices, electro, coeffs, charge_grid)
+    Call spme_construct_charge_array(to_calc(0), ewld, to_calc(1:), recip_indices, coeffs, charge_grid)
     Call stop_timer(tmr, 'Charge')
 
     If (.not. stats%collect_pp .or. spme_datum%pot_order /= 1) Then
@@ -405,7 +404,7 @@ Contains
         & potential_kernel, potential_grid, s_abc(:, 0))
       Call stop_timer(tmr, 'Potential')
       Call start_timer(tmr, 'ForceEnergy')
-      Call spme_calc_force_energy(ewld, electro, comm, domain, config, coeffs, &
+      Call spme_calc_force_energy(ewld, comm, domain, config, coeffs, &
         & rcell, recip_indices, potential_grid, stats%collect_pp, q_abc, f_abc)
       Call stop_timer(tmr, 'ForceEnergy')
 
@@ -416,9 +415,9 @@ Contains
       Call spme_construct_potential_grid_gen(ewld, rcell, charge_grid, spme_datum, &
         & stress_kernel, stress_grid)
 
-      Call spme_calc_force_energy(ewld, electro, comm, domain, config, coeffs, &
+      Call spme_calc_force_energy(ewld, comm, domain, config, coeffs, &
         & rcell, recip_indices, potential_grid, stats%collect_pp, q_abc, f_abc)
-      Call spme_calc_stress(ewld, electro, comm, domain, config, coeffs, &
+      Call spme_calc_stress(ewld, comm, domain, config, coeffs, &
         & rcell, recip_indices, stress_grid, s_abc)
 
     End If
@@ -530,7 +529,7 @@ Contains
 
   End Subroutine ewald_spme_init
 
-  Subroutine spme_construct_charge_array(ncalc, ewld, lookup_array, recip_indices, electro, &
+  Subroutine spme_construct_charge_array(ncalc, ewld, lookup_array, recip_indices, &
     & coeffs, charge_grid)
 
     !!----------------------------------------------------------------------!
@@ -546,7 +545,6 @@ Contains
     Type(ewald_type),                  Intent(In   ) :: ewld
     Integer, Dimension(:),             Intent(In   ) :: lookup_array
     Integer, Dimension(:, :),          Intent(In   ) :: recip_indices
-    Type(electrostatic_type),          Intent(In   ) :: electro
     Real(Kind=wp), Dimension(:),       Intent(In   ) :: coeffs
     Real(Kind=wp), Dimension(:, :, :), Intent(  Out) :: charge_grid
 
@@ -728,7 +726,7 @@ Contains
 
   End Subroutine spme_construct_potential_grid_gen
 
-  Subroutine spme_calc_force_energy(ewld, electro, comm, domain, config, coeffs, recip_cell, &
+  Subroutine spme_calc_force_energy(ewld, comm, domain, config, coeffs, recip_cell, &
     & recip_indices, potential_grid, per_part_step, energies, forces)
     !!----------------------------------------------------------------------!
     !!
@@ -740,7 +738,6 @@ Contains
     !!
     !!----------------------------------------------------------------------!
     Type(ewald_type),                                  Intent(In   ) :: ewld
-    Type(electrostatic_type),                          Intent(In   ) :: electro
     Type(comms_type),                                  Intent(inout) :: comm
     Type(domains_type),                                Intent(In   ) :: domain
     Type(configuration_type),                          Intent(In   ) :: config
@@ -888,7 +885,7 @@ Contains
 
   End Subroutine spme_calc_force_energy
 
-  Subroutine spme_calc_stress(ewld, electro, comm, domain, config, coeffs, &
+  Subroutine spme_calc_stress(ewld, comm, domain, config, coeffs, &
     & recip_cell, recip_indices, stress_grid, stress_out)
     !!----------------------------------------------------------------------!
     !!
@@ -900,7 +897,6 @@ Contains
     !!
     !!----------------------------------------------------------------------!
     Type(ewald_type),                     Intent(In   ) :: ewld
-    Type(electrostatic_type),             Intent(In   ) :: electro
     Type(comms_type),                     Intent(inout) :: comm
     Type(domains_type),                   Intent(In   ) :: domain
     Type(configuration_type),             Intent(In   ) :: config
@@ -1036,7 +1032,7 @@ Contains
 
 !!! Kernels
 
-  Function potential_kernel(B_m, pot, pi_m_over_a, conv_factor, pot_order)
+  Function potential_kernel(B_m, pot, pi_m_over_a, pot_order)
     !!----------------------------------------------------------------------!
     !!
     !! Kernel for calculating energy and forces for SPME method
@@ -1048,7 +1044,7 @@ Contains
     Use spme, Only: f_p
     Real(Kind=wp)    :: B_m
     Complex(Kind=wp) :: pot
-    Real(Kind=wp)    :: pi_m_over_a, conv_factor
+    Real(Kind=wp)    :: pi_m_over_a
     Integer          :: pot_order
     Complex(Kind=wp) :: potential_kernel
 

@@ -62,7 +62,7 @@ Module ewald_spole
 
 Contains
 
-  Subroutine ewald_real_forces_coul(electro, alpha, spme_datum, neigh, config, stats, iatm, x_pos, y_pos, z_pos, mod_dr_ij, &
+  Subroutine ewald_real_forces_coul(electro, spme_datum, neigh, config, stats, iatm, x_pos, y_pos, z_pos, mod_dr_ij, &
     & engcpe_rl, vircpe_rl)
 
     !!-----------------------------------------------------------------------
@@ -79,7 +79,6 @@ Contains
     !!
     !!-----------------------------------------------------------------------
     Type(electrostatic_type),                   Intent(In   ) :: electro
-    Real(Kind=wp),                              Intent(In   ) :: alpha
     Type(spme_component),                       Intent(In   ) :: spme_datum
     Type(neighbours_type),                      Intent(In   ) :: neigh
     Type(configuration_type),                   Intent(InOut) :: config
@@ -231,8 +230,8 @@ Contains
 
   End Subroutine ewald_real_forces_coul
 
-  Subroutine ewald_spme_forces_coul(ewld, spme_datum, electro, domain, config, comm, coeffs, stats, &
-    & engcpe_rc, vircpe_rc, tmr)
+  Subroutine ewald_spme_forces_coul(ewld, spme_datum, domain, config, comm, coeffs, stats, &
+    & engcpe_rc, vircpe_rc)
     !!----------------------------------------------------------------------!
     !!
     !! dl_poly_4 subroutine for calculating coulombic energy and force terms
@@ -248,14 +247,12 @@ Contains
     !!----------------------------------------------------------------------!
     Type(ewald_type),            Intent(inout) :: ewld
     Type(spme_component),        Intent(inout) :: spme_datum
-    Type(electrostatic_type),    Intent(In   ) :: electro
     Type(domains_type),          Intent(In   ) :: domain
     Type(configuration_type),    Intent(inout) :: config
     Type(comms_type),            Intent(inout) :: comm
     Real(kind=wp), Dimension(:), Intent(In   ) :: coeffs
     Type(stats_type),            Intent(inout) :: stats
     Real(kind=wp),               Intent(  Out) :: engcpe_rc, vircpe_rc
-    Type(timer_type),            Intent(InOut) :: tmr
 
     Complex(kind=wp), Allocatable, Dimension(:, :, :), Save :: potential_grid, stress_grid
     Integer                                                 :: dim, i
@@ -397,13 +394,13 @@ Contains
     Deallocate (recip_coords, stat=fail(1))
     If (fail(1) > 0) Call error_dealloc('recip_coords', 'ewald_spme_forces')
 
-    Call spme_construct_charge_array(to_calc(0), ewld, to_calc(1:), recip_indices, electro, coeffs, charge_grid)
+    Call spme_construct_charge_array(to_calc(0), ewld, to_calc(1:), recip_indices, coeffs, charge_grid)
 
     If (.not. stats%collect_pp) Then
 
       ! If we don't need per-particle data, we can use the old method of getting the stress (cheaper)
       Call spme_construct_potential_grid_coul(ewld, rcell, charge_grid, potential_grid, s_abc(:, 0))
-      Call spme_calc_force_energy(ewld, electro, comm, domain, config, coeffs, &
+      Call spme_calc_force_energy(ewld, comm, domain, config, coeffs, &
         & rcell, recip_indices, potential_grid, stats%collect_pp, q_abc, f_abc)
 
     Else
@@ -411,9 +408,9 @@ Contains
       Call spme_construct_potential_grid_coul(ewld, rcell, charge_grid, potential_grid, s_abc(:, 0))
       Call spme_construct_potential_grid_gen(ewld, rcell, charge_grid, spme_datum, stress_kernel, stress_grid)
 
-      Call spme_calc_force_energy(ewld, electro, comm, domain, config, coeffs, &
+      Call spme_calc_force_energy(ewld, comm, domain, config, coeffs, &
         & rcell, recip_indices, potential_grid, stats%collect_pp, q_abc, f_abc)
-      Call spme_calc_stress(ewld, electro, comm, domain, config, coeffs, &
+      Call spme_calc_stress(ewld, comm, domain, config, coeffs, &
         & rcell, recip_indices, stress_grid, s_abc)
 
     End If
