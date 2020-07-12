@@ -22,8 +22,13 @@ Module statistics
                              gmax,&
                              gsend,&
                              gsum,&
+                             gsync,&
                              gtime,&
-                             gwait
+                             gwait,&
+                             offset_kind,&
+                             comm_self,&
+                             mode_create,&
+                             mode_wronly
   Use configuration,   Only: configuration_type
   Use constants,       Only: boltz,&
                              engunit,&
@@ -44,6 +49,10 @@ Module statistics
   Use filename,        Only: FILE_STATS,&
                              file_type
   Use flow_control,    Only: RESTART_KEY_OLD
+  Use io,              Only: io_allocation_error, io_base_comm_not_set, io_close, io_delete, &
+                             io_finalize, io_get_parameters, io_history, io_init, io_open, &
+                             io_set_parameters, io_type, io_unknown_write_level, &
+                             io_unknown_write_option, io_write_batch, io_write_sorted_file
   Use kinds,           Only: li,&
                              wi,&
                              wp
@@ -74,7 +83,7 @@ Module statistics
     Logical                    :: statis_file_open = .false.
     Logical                    :: newjob = .true.
     Logical                    :: lpana
-    Real(Kind=wp)              :: consv  = 0.0_wp, shlke  = 0.0_wp, engke = 0.0_wp,  &
+    Real(Kind=wp)              :: consv = 0.0_wp, shlke = 0.0_wp, engke = 0.0_wp, &
                                   engrot = 0.0_wp, engcpe = 0.0_wp, engsrp = 0.0_wp, &
                                   engter = 0.0_wp, engtbp = 0.0_wp, engfbp = 0.0_wp, &
                                   engshl = 0.0_wp, engtet = 0.0_wp, engbnd = 0.0_wp, &
@@ -182,9 +191,9 @@ Module statistics
   Public :: statistics_result
 Contains
 
-  Subroutine allocate_statistics_arrays(stats,mxrgd,mxatms,mxatdm)
+  Subroutine allocate_statistics_arrays(stats, mxrgd, mxatms, mxatdm)
     Class(stats_type), Intent(InOut) :: stats
-    Integer,           Intent(In   ) :: mxatdm,mxrgd,mxatms
+    Integer,           Intent(In   ) :: mxrgd, mxatms, mxatdm
 
     Integer                 :: mxnstk, mxstak, nxatms
     Integer, Dimension(1:4) :: fail
@@ -192,9 +201,9 @@ Contains
     fail = 0
 
     If (mxrgd > 0) Then
-       nxatms=mxatms
+      nxatms = mxatms
     Else
-       nxatms=mxatdm
+      nxatms = mxatdm
     End If
 
     mxnstk = stats%mxnstk
@@ -447,9 +456,7 @@ Contains
     Logical                    :: l_tmp
     Real(Kind=wp)              :: celprp(1:10), h_z, sclnv1, sclnv2, stpcns, stpipv, stprot, &
                                   stpshl, zistk
-
-    Real(Kind=wp), Allocatable :: amsd(:)
-    Real(Kind=wp), Allocatable :: xxt(:), yyt(:), zzt(:)
+    Real(Kind=wp), Allocatable :: amsd(:), xxt(:), yyt(:), zzt(:)
 
     fail = 0
     Allocate (amsd(1:sites%mxatyp), Stat=fail)
@@ -513,7 +520,7 @@ Contains
 
     ! system virial, stats%virtot has been computed in calculate_forces
 
-    stats%stpvir= stats%virtot + stats%vircon + stats%virpmf + stats%vircom + stats%virdpd
+    stats%stpvir = stats%virtot + stats%vircon + stats%virpmf + stats%vircom + stats%virdpd
 
     ! system volume
 
@@ -539,16 +546,16 @@ Contains
 
     ! store current values in statistics array
 
-    stats%stpval(0)  = stats%consv / engunit
-    stats%stpval(1)  = stpcns / engunit
-    stats%stpval(2)  = stats%stptmp
-    stats%stpval(3)  = stats%stpcfg / engunit
-    stats%stpval(4)  = (stats%engsrp + stats%engter) / engunit
-    stats%stpval(5)  = stats%engcpe / engunit
-    stats%stpval(6)  = stats%engbnd / engunit
-    stats%stpval(7)  = (stats%engang + stats%engtbp) / engunit
-    stats%stpval(8)  = (stats%engdih + stats%enginv + stats%engfbp) / engunit
-    stats%stpval(9)  = stats%engtet / engunit
+    stats%stpval(0) = stats%consv / engunit
+    stats%stpval(1) = stpcns / engunit
+    stats%stpval(2) = stats%stptmp
+    stats%stpval(3) = stats%stpcfg / engunit
+    stats%stpval(4) = (stats%engsrp + stats%engter) / engunit
+    stats%stpval(5) = stats%engcpe / engunit
+    stats%stpval(6) = stats%engbnd / engunit
+    stats%stpval(7) = (stats%engang + stats%engtbp) / engunit
+    stats%stpval(8) = (stats%engdih + stats%enginv + stats%engfbp) / engunit
+    stats%stpval(9) = stats%engtet / engunit
     stats%stpval(10) = stats%stpeth / engunit
     stats%stpval(11) = stprot
     stats%stpval(12) = stats%stpvir / engunit
@@ -592,7 +599,7 @@ Contains
           stats%yto(i) = stats%yto(i) + config%vyy(i) * tstep
           stats%zto(i) = stats%zto(i) + config%vzz(i) * tstep
         End Do
-      Else           ! HISTORY is replayed
+      Else ! HISTORY is replayed
         Allocate (xxt(1:config%mxatms), yyt(1:config%mxatms), zzt(1:config%mxatms), Stat=fail)
         If (fail > 0) Call error_alloc("atomic positions", "statistics_collect")
         Do i = 1, config%natms
@@ -720,7 +727,7 @@ Contains
           nstep, time, iadd + 1 - 2 * mxatdm, stats%stpval(1:27), stats%stpval(0), stats%stpval(28 + 2 * mxatdm:iadd)
       Else
         Write (files(FILE_STATS)%unit_no, '(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &
-          nstep, time, iadd + 1,              stats%stpval(1:27), stats%stpval(0), stats%stpval(28             :iadd)
+          nstep, time, iadd + 1, stats%stpval(1:27), stats%stpval(0), stats%stpval(28:iadd)
       End If
 
     End If
@@ -770,19 +777,19 @@ Contains
         ! average squared sum and sum (keep in this order!!!)
 
         If (nstep == nsteql + 1 .or. ((.not. leql) .and. nstep == 1)) stats%stpvl0 = stats%stpval
-           stats%stpval = stats%stpval - stats%stpvl0
-           Do i = 0, stats%mxnstk
-              stats%ssqval(i) = sclnv1 * (stats%ssqval(i) + sclnv2 * (stats%stpval(i) - stats%sumval(i))**2)
+        stats%stpval = stats%stpval - stats%stpvl0
+        Do i = 0, stats%mxnstk
+          stats%ssqval(i) = sclnv1 * (stats%ssqval(i) + sclnv2 * (stats%stpval(i) - stats%sumval(i))**2)
 
-              !stats%sumval has to be shifted back tostats%sumval+stpvl0 in statistics_result
-              ! when averaging is printed since stpval is only shifted back and forth
-              ! which does not affect the fluctuations Sqrtstats%ssqval) only their accuracy
+          !stats%sumval has to be shifted back tostats%sumval+stpvl0 in statistics_result
+          ! when averaging is printed since stpval is only shifted back and forth
+          ! which does not affect the fluctuations Sqrtstats%ssqval) only their accuracy
 
-              stats%sumval(i) = sclnv1 * stats%sumval(i) + sclnv2 * stats%stpval(i)
-           End Do
-           stats%stpval = stats%stpval + stats%stpvl0
-         End If
-       End if
+          stats%sumval(i) = sclnv1 * stats%sumval(i) + sclnv2 * stats%stpval(i)
+        End Do
+        stats%stpval = stats%stpval + stats%stpvl0
+      End If
+    End If
 
     ! z-density collection
 
@@ -816,35 +823,35 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer( Kind = wi ),       Intent ( In    ) :: megatm
-    Integer( Kind = wi ),       Intent ( In    ) :: mxatdm
-    Logical,                    Intent( In    ) :: lmsd
-    Type( stats_type ),         Intent( InOut ) :: stats
-    Type( domains_type ),       Intent( In    ) :: domain
-    Type( configuration_type ), Intent( InOut ) :: config
-    Type( comms_type ),         Intent( InOut ) :: comm
+    Integer(Kind=wi), Intent(In) :: megatm
+    Integer(Kind=wi), Intent(In) :: mxatdm
+    Logical, Intent(In) :: lmsd
+    Type(stats_type), Intent(InOut) :: stats
+    Type(domains_type), Intent(In) :: domain
+    Type(configuration_type), Intent(InOut) :: config
+    Type(comms_type), Intent(InOut) :: comm
 
-    Integer :: icyc,nres
-    Character( Len = 256 ) :: message
+    Integer :: icyc, nres
+    Character(Len=256) :: message
 
-    stats%found = 0 ; icyc = 0 ; nres = 1
-    Do While (icyc <= Max(domain%nx,domain%ny,domain%nz)/2 .and. nres > 0)
-      Call match_compress_spread_sort(-1,mxatdm,stats%lsa00) ! -x direction spread
-      Call match_compress_spread_sort( 1,mxatdm,stats%lsa00) ! +x direction spread
+    stats%found = 0; icyc = 0; nres = 1
+    Do While (icyc <= Max(domain%nx, domain%ny, domain%nz) / 2 .and. nres > 0)
+      Call match_compress_spread_sort(-1, mxatdm, stats%lsa00) ! -x direction spread
+      Call match_compress_spread_sort(1, mxatdm, stats%lsa00) ! +x direction spread
 
-      Call match_compress_spread_sort(-2,mxatdm,stats%lsa00) ! -y direction spread
-      Call match_compress_spread_sort( 2,mxatdm,stats%lsa00) ! +y direction spread
+      Call match_compress_spread_sort(-2, mxatdm, stats%lsa00) ! -y direction spread
+      Call match_compress_spread_sort(2, mxatdm, stats%lsa00) ! +y direction spread
 
-      Call match_compress_spread_sort(-3,mxatdm,stats%lsa00) ! -z direction spread
-      Call match_compress_spread_sort( 3,mxatdm,stats%lsa00) ! +z direction spread
+      Call match_compress_spread_sort(-3, mxatdm, stats%lsa00) ! -z direction spread
+      Call match_compress_spread_sort(3, mxatdm, stats%lsa00) ! +z direction spread
 
-      Call match_compress_spread_sort( 0,mxatdm,stats%lsa00) ! no spreading
+      Call match_compress_spread_sort(0, mxatdm, stats%lsa00) ! no spreading
 
-      nres=stats%natms0
-      Call gsum(comm,nres)
+      nres = stats%natms0
+      Call gsum(comm, nres)
       If (nres > 0) Then
-        nres=Merge(0,Sum(stats%found(1:config%natms)),config%natms > 0)
-        Call gsum(comm,nres)
+        nres = Merge(0, Sum(stats%found(1:config%natms)), config%natms > 0)
+        Call gsum(comm, nres)
         If (nres /= megatm) icyc = icyc + 1
       End If
     End Do
@@ -1754,7 +1761,6 @@ Contains
           Call info(message, .true.)
         End Do
 
-
         Write (message, '(2x,a,1p,e12.4)') 'trace/3  ', (stats%stpval(iadd + 1) + &
                                                          stats%stpval(iadd + 5) + stats%stpval(iadd + 9)) / 3.0_wp
         Call info(message, .true.)
@@ -1764,7 +1770,7 @@ Contains
 
       Write (message, '("time elapsed since job start: ", f12.3, " sec")') timelp
       Call info(message, .true.)
-      return
+      Return
     End If
 
     ! If still running in the pure equilibration regime - NO AVERAGES
@@ -1869,7 +1875,6 @@ Contains
           Call info(message, .true.)
         End Do
 
-
         Write (message, '(2x,a,1p,e12.4)') 'trace/3  ', (stats%sumval(iadd + 1) + &
                                                          stats%sumval(iadd + 5) + stats%sumval(iadd + 9)) / 3.0_wp
         Call info(message, .true.)
@@ -1970,9 +1975,9 @@ Contains
 
   End Function calculate_stress
 
-  Subroutine update_stress(t,s)
-    Class(stats_type) :: t
-      real(kind=wp), intent(in) :: s(9)
+  Subroutine update_stress(t, s)
+    Class(stats_type)            :: t
+    Real(kind=wp), Intent(In   ) :: s(9)
 
     t%stress(1) = t%stress(1) + s(1)
     t%stress(2) = t%stress(2) + s(2)
@@ -2025,127 +2030,119 @@ Contains
     !! author    - j.s.wilkins august 2018
     !!
     !!----------------------------------------------------------------------!
-#ifdef SERIAL
-    Use mpi_api,       only : mpi_offset_Kind, mpi_mode_wronly, mpi_info_null, mpi_mode_create, mpi_comm_self
-#else
-    Use mpi,       only : mpi_offset_Kind, mpi_mode_wronly, mpi_info_null, mpi_mode_create, mpi_comm_self
-#endif
-    Use io, only : io_type, io_get_parameters, io_set_parameters, io_init, io_open, io_close, &
-      & io_finalize, io_write_sorted_file, io_base_comm_not_set, io_allocation_error, &
-      & io_unknown_write_option, io_unknown_write_level, io_write_sorted_mpiio, io_delete, io_write_batch
-    Use io, only : io_histord, io_restart, io_history
-    Use comms, only : gsync, gsum
-    Use constants, Only : prsunt
+    Type(configuration_type),        Intent(In   ) :: config
+    Type(comms_type),                Intent(InOut) :: comm
+    Real(Kind=wp), Dimension(1:),    Intent(In   ) :: energies
+    Real(Kind=wp), Dimension(:, 1:), Intent(In   ) :: stresses
+    Integer,                         Intent(In   ) :: nstep
 
-    Implicit None
-    Type( configuration_type ),           Intent ( In    )  :: config    !! Atom details
-    Type( comms_type ),                   Intent ( InOut )  :: comm      !! Communicator
-    Real( Kind = wp ), Dimension(1:),     Intent ( In    )  :: energies  !! Per-particle energies
-    ! Real( Kind = wp ), Dimension(:,1:),   Intent ( In    )  :: forces    !!     ""       forces
-    Real( Kind = wp ), Dimension(:,1:), Intent ( In    )  :: stresses  !!     ""       stresses
-    Integer,                              Intent ( In    )  :: nstep     !! Steps since calculation start
+    Integer, Parameter :: record_size = 73
 
+    Character                                :: lf
+    Character(len=40)                        :: filename
+    Character(len=record_size)               :: record
+    Character, Dimension(record_size, 10)    :: buffer
+    Integer                                  :: batsz, energy_force_handle, i, ierr, io_write, jj
+    Integer(Kind=offset_Kind)            :: rec_mpi_io
+    Real(Kind=wp), Allocatable, Dimension(:) :: dummy
+    Type(io_type)                            :: my_io
 
-    Type( io_type )  :: my_io                              !! Use our own IO job for now because passing through will be hell
+!! Atom details
+!! Communicator
+!! Per-particle energies
+! Real( Kind = wp ), Dimension(:,1:),   Intent ( In    )  :: forces    !!     ""       forces
+!!     ""       stresses
+!! Steps since calculation start
+!! Use our own IO job for now because passing through will be hell
+!! Don't like this, but quick cheat?
+!! default record size (apparently)
+!! File handles
+!! Write state
 
-    Real( Kind = wp ), Dimension(:), allocatable :: dummy !! Don't like this, but quick cheat?
-
-    Integer, Parameter                                     :: record_size = 73 !! default record size (apparently)
-    Integer( Kind = mpi_offset_Kind )                      :: rec_mpi_io
-    Integer                                                :: energy_force_handle !! File handles
-    Integer                                                :: io_write !! Write state
-    Integer                                                :: batsz
-    character(len=record_size)                             :: record
-    character, Dimension(record_size,10)                   :: buffer
-    character                                              :: lf
-    character( len = 40 )                                  :: filename
-    Integer                                                :: i, jj
-    Integer                                                :: ierr
-
-    call gsync(comm)
+    Call gsync(comm)
 
     ! Force MPIIO write for now
     io_write = 0
     ! Call io_get_parameters( user_method_write      = io_write )
-    Call io_get_parameters( my_io, user_buffer_size_write = batsz, user_line_feed = lf )
+    Call io_get_parameters(my_io, user_buffer_size_write=batsz, user_line_feed=lf)
 
     ! Write current time-step to character string
-    allocate(dummy(config%natms), stat=ierr)
-    if (ierr .ne. 0) call error_alloc('dummy','write_per_part_contribs')
+    Allocate (dummy(config%natms), stat=ierr)
+    If (ierr .ne. 0) Call error_alloc('dummy', 'write_per_part_contribs')
     dummy = 0.0_wp
 
-    write(filename,'("PPCONT",("_",i0))') nstep
+    Write (filename, '("PPCONT",("_",i0))') nstep
 
-    call io_init( my_io, record_size )
+    Call io_init(my_io, record_size)
 
-    rec_mpi_io = int(0,mpi_offset_Kind)
-    jj=0
-    if (comm%idnode == 0) then
+    rec_mpi_io = Int(0, offset_Kind)
+    jj = 0
+    If (comm%idnode == 0) Then
 
-      call io_set_parameters( my_io, user_comm = mpi_comm_self )
-      call io_delete( my_io, filename, comm ) ! sort existence issues
-      call io_open( my_io, io_write, mpi_comm_self, trim(filename), mpi_mode_wronly + mpi_mode_create, energy_force_handle )
+      Call io_set_parameters(my_io, user_comm=comm_self)
+      Call io_delete(my_io, filename, comm) ! sort existence issues
+      Call io_open(my_io, io_write, comm_self, Trim(filename), mode_wronly + mode_create, energy_force_handle)
 
-      jj=jj+1
-      Write(record, Fmt='(a72,a1)') "Energy and force contributions on a per-particle basis",lf
-      buffer(:,jj) = [(record(i:i),i=1,record_size)]
-      Write(record, Fmt='(a72,a1)') config%cfgname(1:72),lf
-      buffer(:,jj) = [(record(i:i),i=1,record_size)]
-      jj=jj+1
-      Write(record, Fmt='(3i10,42X,a1)') config%imcon,config%megatm,nstep,lf
-      buffer(:,jj) = [(record(i:i),i=1,record_size)]
+      jj = jj + 1
+      Write (record, Fmt='(a72,a1)') "Energy and force contributions on a per-particle basis", lf
+      buffer(:, jj) = [(record(i:i), i=1, record_size)]
+      Write (record, Fmt='(a72,a1)') config%cfgname(1:72), lf
+      buffer(:, jj) = [(record(i:i), i=1, record_size)]
+      jj = jj + 1
+      Write (record, Fmt='(3i10,42X,a1)') config%imcon, config%megatm, nstep, lf
+      buffer(:, jj) = [(record(i:i), i=1, record_size)]
 
       If (config%imcon > 0) Then
         Do i = 0, 2
-          jj=jj+1
-          Write(record, Fmt='(3f20.10,a12,a1)') &
-            config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
-          buffer(:,jj) = [(record(i:i),i=1,record_size)]
+          jj = jj + 1
+          Write (record, Fmt='(3f20.10,a12,a1)') &
+            config%cell(1 + i * 3), config%cell(2 + i * 3), config%cell(3 + i * 3), Repeat(' ', 12), lf
+          buffer(:, jj) = [(record(i:i), i=1, record_size)]
         End Do
       End If
 
-      call io_write_batch( my_io, energy_force_handle, rec_mpi_io, jj, buffer )
+      Call io_write_batch(my_io, energy_force_handle, rec_mpi_io, jj, buffer)
 
-      Call io_close( my_io, energy_force_handle )
+      Call io_close(my_io, energy_force_handle)
 
-    end if
+    End If
 
-    call gsync(comm)
+    Call gsync(comm)
 
-    call io_set_parameters( my_io, user_comm = comm%comm )
-    call io_open( my_io, io_write, comm%comm, trim(filename), mpi_mode_wronly, energy_force_handle ) ! Io sorted mpiio, per-particle contrib
+    Call io_set_parameters(my_io, user_comm=comm%comm)
+    Call io_open(my_io, io_write, comm%comm, Trim(filename), mode_wronly, energy_force_handle) ! Io sorted mpiio, per-particle contrib
 
-    rec_mpi_io = int(jj,mpi_offset_Kind)
+    rec_mpi_io = Int(jj, offset_Kind)
     ! Only write E&F (r/v in write_sorted...) hence 1
     ! Need to skip 0th element (accumulator/total)
-    call io_write_sorted_file( my_io, energy_force_handle, 2, io_history, rec_mpi_io, config%natms,      &
-      config%ltg, config%atmnam, dummy, dummy, energies(1:config%natms)/engunit, &
-      & stresses(1,1:config%natms) * prsunt, stresses(2,1:config%natms) * prsunt, stresses(3,1:config%natms) * prsunt, &
-      & stresses(4,1:config%natms) * prsunt, stresses(5,1:config%natms) * prsunt, stresses(6,1:config%natms) * prsunt, &
-      & stresses(7,1:config%natms) * prsunt, stresses(8,1:config%natms) * prsunt, stresses(9,1:config%natms) * prsunt, ierr)
-      ! forces(1,1:config%natms), forces(2,1:config%natms), forces(3,1:config%natms), &
+    Call io_write_sorted_file(my_io, energy_force_handle, 2, io_history, rec_mpi_io, config%natms, &
+      config%ltg, config%atmnam, dummy, dummy, energies(1:config%natms) / engunit, &
+      & stresses(1, 1:config%natms) * prsunt, stresses(2, 1:config%natms) * prsunt, stresses(3, 1:config%natms) * prsunt, &
+      & stresses(4, 1:config%natms) * prsunt, stresses(5, 1:config%natms) * prsunt, stresses(6, 1:config%natms) * prsunt, &
+      & stresses(7, 1:config%natms) * prsunt, stresses(8, 1:config%natms) * prsunt, stresses(9, 1:config%natms) * prsunt, ierr)
+    ! forces(1,1:config%natms), forces(2,1:config%natms), forces(3,1:config%natms), &
 
-    select case( ierr )
-    case ( 0 )
-      continue
-    case( io_base_comm_not_set )
-      call error( 1050 )
-    case( io_allocation_error )
-      call error( 1053 )
-    case( io_unknown_write_option )
-      call error( 1056 )
-    case( io_unknown_write_level )
-      call error( 1059 )
-    end select
-    call io_close( my_io, energy_force_handle )
+    Select Case (ierr)
+    Case (0)
+      Continue
+    Case (io_base_comm_not_set)
+      Call error(1050)
+    Case (io_allocation_error)
+      Call error(1053)
+    Case (io_unknown_write_option)
+      Call error(1056)
+    Case (io_unknown_write_level)
+      Call error(1059)
+    End Select
+    Call io_close(my_io, energy_force_handle)
 
-    call gsync(comm)
+    Call gsync(comm)
 
-    call io_finalize(my_io)
+    Call io_finalize(my_io)
 
-    deallocate(dummy, stat=ierr)
-    if ( ierr > 0 ) call error_dealloc('dummy','write_per_part_contribs')
+    Deallocate (dummy, stat=ierr)
+    If (ierr > 0) Call error_dealloc('dummy', 'write_per_part_contribs')
 
-  end subroutine write_per_part_contribs
+  End Subroutine write_per_part_contribs
 
 End Module statistics
