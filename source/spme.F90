@@ -9,8 +9,15 @@ Module spme
   !! author    - j.s.wilkins october 2018
   !!
   !!----------------------------------------------------------------------!
+  Use comms,           Only: comms_type,&
+                             gsum
+  Use constants,       Only: inv_gamma_1_2,&
+                             pi,&
+                             rsqrpi,&
+                             sqrpi
   Use errors_warnings, Only: error
   Use kinds,           Only: wp
+  Use mpole,           Only: mpole_type
   Use numerics,        Only: calc_erfc,&
                              calc_exp_int,&
                              calc_inv_gamma_1_2,&
@@ -56,18 +63,18 @@ Module spme
     Logical :: si_initialised = .false.
   End Type spme_component
 
-  abstract Interface
+  Abstract Interface
     Function f_gen(x)
-      Use kinds, Only: wp
-    Real(kind=wp) :: x, f_gen
+      Import ::  wp
+      Real(kind=wp) :: x, f_gen
 
     End Function f_gen
   End Interface
 
-  abstract Interface
+  Abstract Interface
     Function g_gen(x)
-      Use kinds, Only: wp
-    Real(kind=wp) :: x, g_gen
+      Import ::  wp
+      Real(kind=wp) :: x, g_gen
 
     End Function g_gen
   End Interface
@@ -176,9 +183,6 @@ Contains
     !! author    - j.s.wilkins august 2018
     !!
     !!----------------------------------------------------------------------!
-    Use mpole, Only: mpole_type
-    Use constants, Only: sqrpi, rsqrpi, rt2, inv_gamma_1_2
-    Use comms, Only: gsum, comms_type
     Real(Kind=wp),               Intent(In   ) :: alpha
     Integer,                     Intent(In   ) :: num_atoms
     Real(Kind=wp), Dimension(:), Intent(In   ) :: coeffs
@@ -256,9 +260,8 @@ Contains
     !! author    - j.s.wilkins august 2018
     !! pi^(-1/2)*exp(-x^2)/x^2
     !!----------------------------------------------------------------------!
-    Use constants, Only: sqrpi
-    Real(Kind=wp), Intent(In) :: x
-    Real(Kind=wp) :: f_1
+    Real(Kind=wp), Intent(In   ) :: x
+    Real(Kind=wp)                :: f_1
 
     f_1 = Exp(-(x**2)) / (sqrpi * x**2)
 
@@ -273,9 +276,8 @@ Contains
     !! author    - j.s.wilkins august 2018
     !! sqrt(pi)/4 * erfc(x)
     !!----------------------------------------------------------------------!
-    Use constants, Only: sqrpi
-    Real(Kind=wp), Intent(In) :: x
-    Real(Kind=wp) :: f_2
+    Real(Kind=wp), Intent(In   ) :: x
+    Real(Kind=wp)                :: f_2
 
     f_2 = sqrpi * calc_erfc(x) / x
 
@@ -290,9 +292,8 @@ Contains
     !! author    - j.s.wilkins august 2018
     !! 2e^(-x^2) - 2sqrt(pi)x erfc(x)
     !!----------------------------------------------------------------------!
-    Use constants, Only: sqrpi
-    Real(Kind=wp), Intent(In) :: x
-    Real(Kind=wp) :: f_4
+    Real(Kind=wp), Intent(In   ) :: x
+    Real(Kind=wp)                :: f_4
 
     Real(Kind=wp) :: x_2
 
@@ -309,9 +310,8 @@ Contains
     !! author    - j.s.wilkins august 2018
     !! 1/3( (1-2x^2)e^(-x^2) + 2 sqrt(pi)x^3 erfc(x))
     !!----------------------------------------------------------------------!
-    Use constants, Only: sqrpi
-    Real(Kind=wp), Intent(In) :: x
-    Real(Kind=wp) :: f_6
+    Real(Kind=wp), Intent(In   ) :: x
+    Real(Kind=wp)                :: f_6
 
     Real(Kind=wp), Parameter :: third = 1.0_wp / 3.0_wp
 
@@ -331,9 +331,8 @@ Contains
     !! author    - j.s.wilkins august 2018
     !! 1/(56700) * ((105 - 30 x^2 + 12 x^4 - 8 x^6 + 16 x^8 ) * exp(-x^2) - 16sqrpi x^9 erfc(x))
     !!----------------------------------------------------------------------!
-    Use constants, Only: sqrpi, pi
-    Real(Kind=wp), Intent(In) :: x
-    Real(Kind=wp) :: f_12
+    Real(Kind=wp), Intent(In   ) :: x
+    Real(Kind=wp)                :: f_12
 
     Real(Kind=wp), Parameter                 :: prefac = 1.0_wp / 56700.0_wp
     Real(Kind=wp), Dimension(0:4), Parameter :: coeffsB = (/105.0_wp, -30.0_wp, 12.0_wp, -8.0_wp, &
@@ -358,7 +357,6 @@ Contains
     !! author    - j.s.wilkins november 2018
     !! based on  - i.j.bush igf.f90 november 2018
     !!----------------------------------------------------------------------!
-    Use constants, Only: sqrpi
     Real(kind=wp), Intent(In   ) :: x
     Integer,       Intent(In   ) :: pot_order
     Real(kind=wp)                :: f_p
@@ -433,10 +431,9 @@ Contains
     !! author    - j.s.wilkins august 2018
     !!
     !!----------------------------------------------------------------------!
-    Use constants, Only: inv_gamma_1_2
-    Real(Kind=wp), Intent(In) :: x, energy
-    Integer, Intent(In)       :: pot_order
-    Real(Kind=wp) :: f_p_d
+    Real(Kind=wp), Intent(In   ) :: x, energy
+    Integer,       Intent(In   ) :: pot_order
+    Real(Kind=wp)                :: f_p_d
 
     f_p_d = (Real(pot_order - 3, wp) / x * energy) - ((2.0_wp / x) * inv_gamma_1_2(pot_order) * Exp(-(x**2)))
 
@@ -451,8 +448,8 @@ Contains
     !! author    - j.s.wilkins august 2018
     !!
     !!----------------------------------------------------------------------!
-    Real(Kind=wp), Intent(In) :: x
-    Real(Kind=wp) :: g_1
+    Real(Kind=wp), Intent(In   ) :: x
+    Real(Kind=wp)                :: g_1
 
     g_1 = calc_erfc(x)
 
@@ -467,8 +464,8 @@ Contains
     !! author    - j.s.wilkins august 2018
     !!
     !!----------------------------------------------------------------------!
-    Real(Kind=wp), Intent(In) :: x
-    Real(Kind=wp) :: g_2
+    Real(Kind=wp), Intent(In   ) :: x
+    Real(Kind=wp)                :: g_2
 
     g_2 = Exp(-x**2)
 
@@ -483,8 +480,8 @@ Contains
     !! author    - j.s.wilkins august 2018
     !!
     !!----------------------------------------------------------------------!
-    Real(Kind=wp), Intent(In) :: x
-    Real(Kind=wp) :: g_6
+    Real(Kind=wp), Intent(In   ) :: x
+    Real(Kind=wp)                :: g_6
 
     Real(Kind=wp) :: ex2
 
@@ -502,8 +499,8 @@ Contains
     !! author    - j.s.wilkins august 2018
     !!
     !!----------------------------------------------------------------------!
-    Real(Kind=wp), Intent(In) :: x
-    Real(Kind=wp) :: g_12
+    Real(Kind=wp), Intent(In   ) :: x
+    Real(Kind=wp)                :: g_12
 
     Integer       :: i
     Real(Kind=wp) :: x_2
@@ -524,7 +521,6 @@ Contains
     !! author    - j.s.wilkins august 2018
     !!
     !!----------------------------------------------------------------------!
-    Use constants, Only: rsqrpi
     Real(Kind=wp), Intent(In   ) :: x
     Integer,       Intent(In   ) :: pot_order
     Real(Kind=wp)                :: g_p
@@ -572,7 +568,6 @@ Contains
     !! author    - j.s.wilkins august 2018
     !!
     !!----------------------------------------------------------------------!
-    Use constants, Only: inv_gamma_1_2
     Real(Kind=wp), Intent(In   ) :: x
     Integer,       Intent(In   ) :: pot_order
     Real(Kind=wp)                :: g_p_d

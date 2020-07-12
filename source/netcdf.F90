@@ -1083,8 +1083,8 @@ Contains
 
   Subroutine check( status )
     Integer, Intent( In    ) :: status
-    Character( Len = 256 ) :: message
 #ifdef NETCDF
+    Character( Len = 256 ) :: message
     If ( status /= nf90_noerr ) Then
       Write( message, '( a )' ) 'NETCDF error: '//Trim( nf90_strerror( status ) )
       Call error(0,message,.true.)

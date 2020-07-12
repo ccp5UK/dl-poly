@@ -191,13 +191,11 @@ Contains
     Type(configuration_type), Intent(In   ) :: config
     Logical                                 :: passed
 
-    Logical, Parameter :: to_master_only = .false.
-
     Character(Len=len_atmnam), Allocatable :: atmnam(:)
 
     Allocate (atmnam(config%megatm))
     !Local subset of atmnam in config
-    Call gather_atomic_names(comm, config, to_master_only, atmnam)
+    Call gather_atomic_names(comm, config, atmnam)
 
     passed = All(atmnam == species)
     If (.not. passed) Then

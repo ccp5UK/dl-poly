@@ -584,7 +584,7 @@ Contains
     !when atoms move to different processes
     !Gather atomic coordinates and names (excluding halo atoms)
     Call gathered%initialise(comm, config%megatm*3)
-    Call gather_coordinates(comm, config, to_master_only, gathered)
+    Call gather_coordinates(comm, config, gathered)
     If(.not. Allocated(atmnam)) Allocate(atmnam(config%megatm))
     Call gather_atomic_names(comm, config, to_master_only, atmnam)
 

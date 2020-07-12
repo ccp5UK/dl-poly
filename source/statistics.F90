@@ -15,20 +15,9 @@ Module statistics
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use comms,           Only: Spread_tag,&
-                             comms_type,&
-                             gcheck,&
-                             girecv,&
-                             gmax,&
-                             gsend,&
-                             gsum,&
-                             gsync,&
-                             gtime,&
-                             gwait,&
-                             offset_kind,&
-                             comm_self,&
-                             mode_create,&
-                             mode_wronly
+  Use comms,           Only: &
+                             Spread_tag, comm_self, comms_type, gcheck, girecv, gmax, gsend, gsum, &
+                             gsync, gtime, gwait, mode_create, mode_wronly, offset_kind
   Use configuration,   Only: configuration_type
   Use constants,       Only: boltz,&
                              engunit,&
@@ -49,7 +38,8 @@ Module statistics
   Use filename,        Only: FILE_STATS,&
                              file_type
   Use flow_control,    Only: RESTART_KEY_OLD
-  Use io,              Only: io_allocation_error, io_base_comm_not_set, io_close, io_delete, &
+  Use io,              Only: &
+                             io_allocation_error, io_base_comm_not_set, io_close, io_delete, &
                              io_finalize, io_get_parameters, io_history, io_init, io_open, &
                              io_set_parameters, io_type, io_unknown_write_level, &
                              io_unknown_write_option, io_write_batch, io_write_sorted_file
@@ -2043,7 +2033,7 @@ Contains
     Character(len=record_size)               :: record
     Character, Dimension(record_size, 10)    :: buffer
     Integer                                  :: batsz, energy_force_handle, i, ierr, io_write, jj
-    Integer(Kind=offset_Kind)            :: rec_mpi_io
+    Integer(Kind=offset_Kind)                :: rec_mpi_io
     Real(Kind=wp), Allocatable, Dimension(:) :: dummy
     Type(io_type)                            :: my_io
 
