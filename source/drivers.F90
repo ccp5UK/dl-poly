@@ -1705,7 +1705,7 @@ Contains
       Endif
 
       ! If system has written per-particle data
-      If (stat%collect_pp .and. flow%step - flow%equil_steps >= 0) Then
+      If (stat%collect_pp .and. flow%step > flow%equil_steps) Then
         heat_flux = calculate_heat_flux(stat, cnfig, comm)
 
         If (flow%heat_flux .and. comm%idnode == 0) Then
