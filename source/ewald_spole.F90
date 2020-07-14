@@ -157,7 +157,7 @@ Contains
         force_temp_comp = erf_gamma * pos_j
         force_temp = force_temp + force_temp_comp
 
-        If (jatm <= config%natms .or. global_id_i < global_id_j) Then
+        If (jatm <= config%natms .or. global_id_i < global_id_j .or. stats%collect_pp) Then
           If (jatm <= config%natms) Then
 
             config%parts(jatm)%fxx = config%parts(jatm)%fxx - force_temp_comp(1)
@@ -175,6 +175,9 @@ Contains
           temp(2) = points(2) + (points(3) - points(2)) * (difference - 1.0_wp)
           e_comp = prefac * (temp(1) + (temp(2) - temp(1)) * difference * 0.5_wp)
 
+        end If
+
+        If (jatm <= config%natms .or. global_id_i < global_id_j) Then
           !e_comp = prefac * electro%erfc%calc(mod_r_ij)
 
           ! calculate interaction energy
