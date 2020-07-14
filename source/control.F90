@@ -2786,7 +2786,7 @@ Contains
 
         ! Read Per-particle write
 
-      Else If (word(1:7) == 'dump_pp') Then
+      Else If (word(1:7) == 'pp_dump') Then
 
         flow%write_per_particle = .true.
         stats%require_pp = .true.
