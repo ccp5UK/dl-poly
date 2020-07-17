@@ -2059,7 +2059,7 @@ Contains
     ! Write current time-step to character string
     Allocate (dummy(config%natms), stat=ierr)
     If (ierr .ne. 0) Call error_alloc('dummy', 'write_per_part_contribs')
-    dummy = 0.0_wp
+    dummy = engunit
 
     Write (filename, '("PPCONT",("_",i0))') nstep
 
@@ -2106,7 +2106,7 @@ Contains
     ! Only write E&F (r/v in write_sorted...) hence 1
     ! Need to skip 0th element (accumulator/total)
     Call io_write_sorted_file(my_io, energy_force_handle, 2, io_history, rec_mpi_io, config%natms, &
-      config%ltg, config%atmnam, dummy, dummy, energies(1:config%natms) / engunit, &
+      config%ltg, config%atmnam, dummy, config%weight(1:config%natms), energies(1:config%natms) / engunit, &
       & stresses(1, 1:config%natms) * prsunt, stresses(2, 1:config%natms) * prsunt, stresses(3, 1:config%natms) * prsunt, &
       & stresses(4, 1:config%natms) * prsunt, stresses(5, 1:config%natms) * prsunt, stresses(6, 1:config%natms) * prsunt, &
       & stresses(7, 1:config%natms) * prsunt, stresses(8, 1:config%natms) * prsunt, stresses(9, 1:config%natms) * prsunt, ierr)
