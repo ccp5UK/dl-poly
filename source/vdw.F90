@@ -3288,7 +3288,7 @@ Contains
 
         End If
 
-        If (jatm <= config%natms .or. idi < config%ltg(jatm) .or. stats%collect_pp) Then
+        If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
           ! calculate interaction energy using 3-point interpolation
 

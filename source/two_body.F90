@@ -227,10 +227,9 @@ Contains
     engmet = 0.0_wp
     virmet = 0.0_wp
 
-    engvdw = 0.0_wp
-    virvdw = 0.0_wp
     engvdw_rc = 0.0_wp
     virvdw_rc = 0.0_wp
+
     engvdw_rl = 0.0_wp
     virvdw_rl = 0.0_wp
 
