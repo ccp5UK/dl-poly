@@ -1651,12 +1651,6 @@ Contains
       End If
 
       ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
-
-      ! If system is to write per-particle data AND write step AND not equilibration
-      If (stat%require_pp .and. Mod(flow%step, stat%intsta) == 0 .and. flow%step - flow%equil_steps >= 0) Then
-        Call stat%allocate_per_particle_arrays(cnfig%natms)
-      End If
-
       If (flow%step >= 0 .and. flow%step < flow%run_steps .and. cnfig%levcfg == 2) Then
 
         ! Increase step counter
@@ -1686,6 +1680,11 @@ Contains
 
       End If ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
 
+      ! If system is to write per-particle data AND write step AND not equilibration
+      If (stat%require_pp .and. Mod(flow%step, stat%intsta) == 0 .and. flow%step >= flow%equil_steps) Then
+        Call stat%allocate_per_particle_arrays(cnfig%natms)
+      End If
+
       ! Evaluate forces
 
       If (flow%simulation_method /= DFTB) Then
@@ -1705,7 +1704,7 @@ Contains
       Endif
 
       ! If system has written per-particle data
-      If (stat%collect_pp .and. flow%step > flow%equil_steps) Then
+      If (stat%collect_pp) Then
         heat_flux = calculate_heat_flux(stat, cnfig, comm)
 
         If (flow%heat_flux .and. comm%idnode == 0) Then
