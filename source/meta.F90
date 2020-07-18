@@ -455,6 +455,9 @@ Contains
     If (config%l_exp) Then
       Call system_expand(flow%strict, neigh%cutoff, ios, core_shells, &
                          cons, bond, angle, dihedral, inversion, sites, netcdf, rigid, config, files, comm)
+       Call info("System expanded",.true.)
+       Call exit_comms(dlp_world)
+       Stop 0
     End If
 
     ! READ REVOLD (thermodynamic and structural data from restart file)

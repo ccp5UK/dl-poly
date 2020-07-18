@@ -1829,7 +1829,6 @@ Contains
 
       Write (message, '(a,f12.3,a)') 'time elapsed since job start: ', t, ' sec'
       Call info(message, .true.)
-      Call info('*** Simulation continues as scheduled...')
     End If
     Call gsync(comm)
 
