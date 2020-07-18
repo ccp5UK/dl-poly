@@ -4387,9 +4387,9 @@ Contains
           keyword = word(1:4)
 
           If (keyword == 'ters') Then
-            keypot = 1
+            keypot = TERS_TERSOFF
           Else If (keyword == 'kihs') Then
-            keypot = 2
+            keypot = TERS_KIHS
           Else
             Call info(keyword, .true.)
             Call error(432)
@@ -4416,7 +4416,7 @@ Contains
           parpot(6) = Abs(word_2_real(word)) ! S_i
           Call get_word(record, word)
 
-          If (keypot == 1) Then
+          If (keypot == TERS_TERSOFF) Then
 
             parpot(7) = word_2_real(word) ! beta_i
             Call get_word(record, word)
@@ -4435,7 +4435,7 @@ Contains
               Call info(messages, 2, .true., level=3)
             End If
 
-          Else If (keypot == 2) Then
+          Else If (keypot == TERS_KIHS) Then
 
             parpot(7) = word_2_real(word) ! eta_i
             Call get_word(record, word)
@@ -4524,7 +4524,7 @@ Contains
 
         ! start processing cross atom potential parameters
 
-        If (keypot == 1) Then
+        If (keypot == TERS_TERSOFF) Then
 
           Write (message, '(a,i10)') 'number of tersoff cross terms ', (tersoffs%n_potential * (tersoffs%n_potential + 1)) / 2
           Call info(message, .true., level=3)
