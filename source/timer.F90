@@ -7,18 +7,18 @@ Module timer
   !! author    - j.s.wilkins february 2019
   !!
   !!------------------------------------------------!
-  Use comms, Only: comms_type,&
-                   gmax,&
-                   gmin,&
-                   grecv,&
-                   gsend,&
-                   gsum,&
-                   gsync,&
-                   gtime,&
-                   mtime,&
-                   timer_tag
+  Use comms,                         Only: comms_type,&
+                                           gmax,&
+                                           gmin,&
+                                           grecv,&
+                                           gsend,&
+                                           gsum,&
+                                           gsync,&
+                                           gtime,&
+                                           mtime,&
+                                           timer_tag
   Use, Intrinsic :: iso_fortran_env, Only: eu => error_unit
-  Use kinds, Only: wp
+  Use kinds,                         Only: wp
 
   Implicit None
 
@@ -31,51 +31,55 @@ Module timer
     !! Timer
     !!------------------------------------------------!
     Character(Len=max_name) :: name
-    Integer           :: id
-    Real(Kind=wp) :: max, min, total, last
-    Real(Kind=wp) :: start, Stop
-    Integer           :: calls
-    Logical           :: running = .false.
+    Integer                 :: id
+    Real(Kind=wp)           :: max, min, total, last
+    Real(Kind=wp)           :: start, Stop
+    Integer                 :: calls
+    Logical                 :: running = .false.
   End Type node_timer
 
   Type :: call_stack
     !!------------------------------------------------!
     !! Call stack
     !!------------------------------------------------!
+
     Character(Len=max_name), Dimension(max_depth) :: name
-    Integer :: depth = 0
+    Integer                                       :: depth = 0
   End Type call_stack
 
   Type :: node
     !!------------------------------------------------!
     !! Tree node
     !!------------------------------------------------!
-    Type(node_timer) :: time
+
+    Type(node_timer)          :: time
     Type(timer_tree), Pointer :: tree => null()
-    Type(node), Pointer :: child => null()
-    Type(node), Pointer :: parent => null()
-    Type(node), Pointer :: next_sibling => null()
+    Type(node), Pointer       :: child => null()
+    Type(node), Pointer       :: parent => null()
+    Type(node), Pointer       :: next_sibling => null()
   End Type node
 
   Type :: timer_tree
     !!------------------------------------------------!
     !! Tree structure
     !!------------------------------------------------!
+
     Type(node), Pointer :: head => null()
-    Integer :: n_timers = 0
+    Integer             :: n_timers = 0
   End Type timer_tree
 
   Type, Public :: timer_type
     !!------------------------------------------------!
     !! Main timer system
     !!------------------------------------------------!
+
     Type(timer_tree), Pointer :: tree
-    Type(call_stack) :: stack
-    Real(Kind=wp) :: elapsed, job, clear_screen
-    Logical :: proc_detail = .false.
-    Integer :: max_depth = 1
-    Integer :: proc_id
-    Integer :: out_unit
+    Type(call_stack)          :: stack
+    Real(Kind=wp)             :: elapsed, job, clear_screen
+    Logical                   :: proc_detail = .false.
+    Integer                   :: max_depth = 1
+    Integer                   :: proc_id
+    Integer                   :: out_unit
   End Type timer_type
 
   Interface timer_write
@@ -477,19 +481,19 @@ Contains
     !! author    - j.s.wilkins february 2019
     !!
     !!------------------------------------------------!
-    Type(comms_type),                   Intent(InOut) :: comm
-    Type(timer_type),                   Intent(In   ) :: tmr
-    Type(node), Target,                 Intent(In   ) :: init_node
-    Integer,                            Intent(In   ) :: max_depth, proc_id
+    Type(comms_type),                 Intent(InOut) :: comm
+    Type(timer_type),                 Intent(In   ) :: tmr
+    Type(node), Target,               Intent(In   ) :: init_node
+    Integer,                          Intent(In   ) :: max_depth, proc_id
     Character(Len=*), Dimension(-2:), Intent(  Out) :: message
 
+    Character(Len=256)  :: fcontent, fhead, fline
     Character(Len=7)    :: depth_symb
     Character(Len=8)    :: proc_string
     Integer             :: depth, itimer, write_node
     Real(Kind=wp)       :: call_av, call_max, call_min, sum_timed, total_av, total_elapsed, &
                            total_max, total_min
     Type(node), Pointer :: current_timer
-    Character(Len = 256 ) :: fline,fhead,fcontent
 
     fline = '(1X, "+", 28("-"), 2("+", 10("-")), 7("+", 12("-")), "+")'
     fhead = '(1X, "|", 12X, "Name", 12X, "| Process  ", "|  Calls   ", "|  Call Min  ", "|  Call Max  ",'//&
@@ -590,7 +594,7 @@ Contains
     !101 Format(1X, "|", 12X, "Name", 12X, "| Process  ", "|  Calls   ", "|   Call Min     ", "|   Call Max     ",&
     !      & "|   Call Ave     ", "|    Tot Min     ", "|    Tot Max     ", "|    Tot Ave     ", "|       %        ", "|")
     !102 Format(1X, "|", 1X, A7, 1X, A18, 1X, "|", 1X, A8, 1X, "|", 1X, I8, 1X, "|", 1X, ES14.7, 1X, "|", 1X, ES14.7, 1X,&
-          !& "|", 1X, ES14.7, 1X, "|", 1X, ES14.7, 1X, "|", 1X, ES14.7, 1X, "|", 1X, ES14.7, 1X, "|", 1X, ES14.7, 1X, "|")
+    !& "|", 1X, ES14.7, 1X, "|", 1X, ES14.7, 1X, "|", 1X, ES14.7, 1X, "|", 1X, ES14.7, 1X, "|", 1X, ES14.7, 1X, "|")
 
   End Subroutine timer_print_tree
 

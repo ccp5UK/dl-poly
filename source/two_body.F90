@@ -195,7 +195,7 @@ Contains
         End If
 
         If (ewld%vdw) Then
-          Call ewald_vdw_init(ewld, vdws)
+          Call ewald_vdw_init(ewld)
           Call ewald_vdw_coeffs(config, vdws, ewld, vdw_coeffs)
 
           Do ipot = 1, ewld%num_pots
@@ -227,10 +227,9 @@ Contains
     engmet = 0.0_wp
     virmet = 0.0_wp
 
-    engvdw = 0.0_wp
-    virvdw = 0.0_wp
     engvdw_rc = 0.0_wp
     virvdw_rc = 0.0_wp
+
     engvdw_rl = 0.0_wp
     virvdw_rl = 0.0_wp
 
@@ -292,8 +291,8 @@ Contains
 #endif
  
     If (electro%key == ELECTROSTATIC_EWALD) Then
-      Call ewald_spme_forces_coul(ewld, ewld%spme_data(0), electro, domain, config, comm, &
-        & coul_coeffs, stats, engcpe_rc, vircpe_rc, tmr)
+      Call ewald_spme_forces_coul(ewld, ewld%spme_data(0), domain, config, comm, &
+        & coul_coeffs, stats, engcpe_rc, vircpe_rc)
 
     End If
 
@@ -303,7 +302,7 @@ Contains
 #endif
       Do ipot = 1, ewld%num_pots
 
-        Call ewald_spme_forces_gen(ewld, ewld%spme_data(ipot), electro, domain, config, comm, &
+        Call ewald_spme_forces_gen(ewld, ewld%spme_data(ipot), domain, config, comm, &
           & vdw_coeffs(:, ipot), stats, engacc, viracc, tmr)
 
         engvdw_rc = engvdw_rc + engacc
@@ -408,7 +407,7 @@ Contains
                 Call ewald_real_forces_gen(ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
                      & coul_coeffs, i, xxt, yyt, zzt, rrt, engacc, viracc)
               Else
-                Call ewald_real_forces_coul(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
+                Call ewald_real_forces_coul(electro, ewld%spme_data(0), neigh, config, stats, &
                      & i, xxt, yyt, zzt, rrt, engacc, viracc)
               End If
 
@@ -464,7 +463,7 @@ Contains
                 Call ewald_real_forces_gen(ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
                      & coul_coeffs, i, xxt, yyt, zzt, rrt, engacc, viracc)
               Else
-                Call ewald_real_forces_coul(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
+                Call ewald_real_forces_coul(electro, ewld%spme_data(0), neigh, config, stats, &
                      & i, xxt, yyt, zzt, rrt, engacc, viracc)
               End If
 

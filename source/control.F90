@@ -2835,7 +2835,7 @@ Contains
 
         ! Read Per-particle write
 
-      Else If (word(1:7) == 'dump_pp') Then
+      Else If (word(1:7) == 'pp_dump') Then
 
         flow%write_per_particle = .true.
         stats%require_pp = .true.
@@ -4844,7 +4844,7 @@ Contains
             If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdws%cutoff
               neigh%cutoff = Max(vdws%cutoff, met%rcut, kim_data%cutoff, bond%rcut, &
                                  2.0_wp * rcter + 1.0e-6_wp)
-              If(fftag == 1) Call warning('DD cutoff check: neigh%cutoff = Max(vdws%cutoff,'// &
+              If(fftag == 1) Call warning('DD cutoff check: cutoff = Max(vdws%cutoff,'// &
                            'met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp', &
                            .true.)
               If(fftag == 1) Call warning(40, neigh%cutoff, 0.0_wp, 0.0_wp)

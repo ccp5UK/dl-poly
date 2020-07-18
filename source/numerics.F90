@@ -79,21 +79,26 @@ Module numerics
   ! derivatives
   !
   !------------------------------------------------------------------------!
-  Use comms,           Only: comms_type
-  Use constants,       Only: epsilon_wp,&
-                             half_minus,&
-                             rt2,&
-                             rt3,&
-                             sqrpi,&
-                             zero_plus
-  Use errors_warnings, Only: error,&
-                             error_alloc,&
-                             error_dealloc
-  Use kinds,           Only: li,&
-                             wi,&
-                             wp
-  Use particle,        Only: corePart
-  Use, Intrinsic ::  ieee_arithmetic
+  Use comms,                         Only: comms_type
+  Use constants,                     Only: epsilon_wp,&
+                                           gamma_1_2,&
+                                           half_minus,&
+                                           inv_gamma_1_2,&
+                                           rsqrpi,&
+                                           rt2,&
+                                           rt3,&
+                                           zero_plus
+  Use errors_warnings,               Only: error,&
+                                           error_alloc,&
+                                           error_dealloc
+  Use, Intrinsic :: ieee_arithmetic, Only: ieee_positive_inf,&
+                                           ieee_signaling_nan,&
+                                           ieee_value
+  Use kinds,                         Only: li,&
+                                           wi,&
+                                           wp
+  Use particle,                      Only: corePart
+
   Implicit None
   Private
 
@@ -251,9 +256,9 @@ Contains
     !! author    - w.smith & i.t.todorov august 2015
     !! functionalised - j.s.wilkins august 2018
     !!----------------------------------------------------------------------!
-    Class(interp_table), Intent( In    ) :: samples
-    Real(Kind=wp),       Intent( In    ) :: point
-    Real(Kind=wp)  ::three_p_interp
+    Class(interp_table), Intent(In   ) :: samples
+    Real(Kind=wp),       Intent(In   ) :: point
+    Real(Kind=wp)                      :: three_p_interp
 
     Integer                     :: nearest_sample_index
     Real(Kind=wp)               :: difference
@@ -3510,7 +3515,6 @@ Contains
     !! author    - j.s.wilkins november 2018
     !!
     !!----------------------------------------------------------------------!
-    Use constants, Only: gamma_1_2
     Integer, Intent(In   ) :: n
     Real(Kind=wp)          :: factorial
 
@@ -3538,7 +3542,6 @@ Contains
     !! author    - j.s.wilkins november 2018
     !!
     !!----------------------------------------------------------------------!
-    Use constants, Only: inv_gamma_1_2, gamma_1_2
     Integer, Intent(In   ) :: n
     Real(Kind=wp)          :: factorial
 
@@ -3673,7 +3676,6 @@ Contains
     !! based on  - erfcgen
     !!
     !!-----------------------------------------------------------------------
-    Use constants, Only: rsqrpi
     Real(kind=wp), Intent(In   ) :: x
     Real(kind=wp)                :: d_erfc
 
@@ -3690,7 +3692,6 @@ Contains
     !! based on  - erfcgen
     !!
     !!-----------------------------------------------------------------------
-    Use constants, Only: sqrpi
     Real(kind=wp), Intent(In   ) :: x
     Real(kind=wp)                :: erf
 
@@ -3713,7 +3714,6 @@ Contains
     !! based on  - erfcgen
     !!
     !!-----------------------------------------------------------------------
-    Use constants, Only: rsqrpi
     Real(kind=wp), Intent(In   ) :: x
     Real(kind=wp)                :: d_erf
 
@@ -3722,7 +3722,6 @@ Contains
   End Function calc_erf_deriv
 
   Pure Function calc_gamma_1_2(x) Result(gam)
-    Use constants, Only: gamma_1_2
     Integer, Intent(In   ) :: x
     Real(wp)               :: gam
 
@@ -3747,7 +3746,6 @@ Contains
   End Function calc_gamma_1_2
 
   Pure Function calc_inv_gamma_1_2(x) Result(gam)
-    Use constants, Only: inv_gamma_1_2
     Integer, Intent(In   ) :: x
     Real(wp)               :: gam
 

@@ -8,11 +8,14 @@ Module kspace
   !! author    - j.s.wilkins october 2018
   !!
   !!----------------------------------------------------------------------!
-  Use errors_warnings
+  Use comms,           Only: comms_type
+  Use domains,         Only: domains_type
+  Use errors_warnings, Only: error_alloc
   Use kinds,           Only: wi,&
                              wp
-  Use parallel_fft,    Only: initialize_fft, pfft_indices
-  Use comms, Only : comms_type
+  Use parallel_fft,    Only: initialize_fft,&
+                             pfft_indices
+
   Implicit None
 
   Private
@@ -22,33 +25,33 @@ Module kspace
     Private
 
     !> SPME kspace    dimensions
-    Integer(Kind=wi), Dimension(3),                 Public :: k_vec_dim, k_vec_dim_cont
+    Integer(Kind=wi), Dimension(3), Public :: k_vec_dim, k_vec_dim_cont
     !> Largest Integer K-Vector Index
-    Integer(Kind=wi),                               Public :: k_vec_max
+    Integer(Kind=wi), Public :: k_vec_max
 
     !> Real K-Vector indices
-    Real(Kind=wp),    Dimension(3),                 Public :: k_vec_dim_real
+    Real(Kind=wp), Dimension(3), Public :: k_vec_dim_real
     !> Real K-Vector indices
-    Real(Kind=wp),    Dimension(3),                 Public :: k_vec_dim_real_p_dom
+    Real(Kind=wp), Dimension(3), Public :: k_vec_dim_real_p_dom
     !> Largest K-Vector index
-    Real(Kind=wp),                                  Public :: k_vec_max_real
+    Real(Kind=wp), Public :: k_vec_max_real
 
     !> blocking factors for splines and fft
-    Integer,          Dimension(3),                 Public :: block_fac
+    Integer, Dimension(3), Public :: block_fac
     !> indexing arrays for x, y & z as used in parallel fft
-    Integer,          Dimension(:, :), Allocatable, Public :: index
+    Integer, Dimension(:, :), Allocatable, Public :: index
     !> context for parallel fft
-    Integer,                                        Public :: context
+    Integer, Public :: context
 
     !> Domain num cells
-    Integer,          Dimension(3),                 Public :: domain_n
+    Integer, Dimension(3), Public :: domain_n
     !> Domain location index
-    Integer,          Dimension(3),                 Public :: domain_ind
+    Integer, Dimension(3), Public :: domain_ind
 
     !> Cells to operate over
-    Real(Kind=wp),    Dimension(3, 2),              Public :: domain_bounds
+    Real(Kind=wp), Dimension(3, 2), Public :: domain_bounds
     !> Cells to operate over
-    Integer,          Dimension(3, 2),              Public :: domain_indices
+    Integer, Dimension(3, 2), Public :: domain_indices
 
   End Type kspace_type
 
@@ -64,13 +67,12 @@ Contains
     !! author    - j.s.wilkins february 2019
     !!
     !!----------------------------------------------------------------------!
-    Use domains, Only: domains_type
     Type(kspace_type),     Intent(inout) :: kspace_in
     Type(domains_type),    Intent(In   ) :: domain_in
     Integer, Dimension(3), Intent(In   ) :: kpoint_grid
     Type(comms_type),      Intent(In   ) :: comm
-    Integer :: max_block
-    Integer :: fail
+
+    Integer :: fail, max_block
 
     kspace_in%k_vec_dim = kpoint_grid
 
@@ -101,7 +103,7 @@ Contains
     kspace_in%block_fac = kspace_in%k_vec_dim / kspace_in%domain_n
 
     ! set up the indexing arrays for each Dimension (NOT deallocated manually)
-    max_block = maxval(kspace_in%block_fac)
+    max_block = Maxval(kspace_in%block_fac)
     Allocate (kspace_in%index(3, 1:max_block), Stat=fail)
     If (fail > 0) Call error_alloc('kspace index array', 'setup_kspace')
     kspace_in%index = 0
@@ -112,13 +114,12 @@ Contains
       & comm%comm, kspace_in%context)
 
     Call pfft_indices(kspace_in%k_vec_dim(1), kspace_in%block_fac(1), kspace_in%domain_ind(1), &
-      kspace_in%domain_n(1), kspace_in%index(1,1:kspace_in%block_fac(1)))
+                      kspace_in%domain_n(1), kspace_in%index(1, 1:kspace_in%block_fac(1)))
     Call pfft_indices(kspace_in%k_vec_dim(2), kspace_in%block_fac(2), kspace_in%domain_ind(2), &
-      kspace_in%domain_n(2), kspace_in%index(2,1:kspace_in%block_fac(2)))
+                      kspace_in%domain_n(2), kspace_in%index(2, 1:kspace_in%block_fac(2)))
     Call pfft_indices(kspace_in%k_vec_dim(3), kspace_in%block_fac(3), kspace_in%domain_ind(3), &
-      kspace_in%domain_n(3), kspace_in%index(3,1:kspace_in%block_fac(3)))
+                      kspace_in%domain_n(3), kspace_in%index(3, 1:kspace_in%block_fac(3)))
 
   End Subroutine setup_kspace
-
 
 End Module kspace

@@ -2,7 +2,7 @@ Module mpole
   Use kinds, Only : wp,wi
   Use constants, Only : zero_plus,nmpldt
   Use site, Only : site_type
-  Use parse,      Only : word_2_real, get_line, get_word, lower_case, strip_blanks 
+  Use parse,      Only : word_2_real, get_line, get_word, lower_case, strip_blanks
   Use comms, Only : comms_type
   Use numerics, Only : factorial
   Use errors_warnings, Only : error,warning,info
@@ -28,16 +28,16 @@ Module mpole
   Integer( Kind = wi ), Parameter, Public :: POLARISATION_CHARMM = 1
 
 
-  Integer,           Dimension(3,35),    Parameter       :: mpole_derivs  = reshape([& !! Mpole derivs in mpole_module order
-    & [0,0,0], &
-    & [1,0,0], [0,1,0], [0,0,1], &
-    & [2,0,0], [1,1,0], [1,0,1], [0,2,0], [0,1,1], [0,0,2], &
-    & [3,0,0], [2,1,0], [2,0,1], [1,2,0], [1,1,1], [1,0,2], [0,3,0], [0,2,1], [0,1,2], [0,0,3], &
-    & [4,0,0], [3,1,0], [3,0,1], [2,2,0], [2,1,1], [2,0,2], [1,3,0], [1,2,1], [1,1,2], [1,0,3], &
-    & [0,4,0], [0,3,1], [0,2,2], [0,1,3], [0,0,4]&
-    & ], [3, 35])
-  Integer,           Dimension(0:4),     Parameter       :: nmpole_derivs = [1,3,6,10,15]
-  
+!  Integer,           Dimension(3,35),    Parameter       :: mpole_derivs  = reshape([& !! Mpole derivs in mpole_module order
+!    & [0,0,0], &
+!    & [1,0,0], [0,1,0], [0,0,1], &
+!    & [2,0,0], [1,1,0], [1,0,1], [0,2,0], [0,1,1], [0,0,2], &
+!    & [3,0,0], [2,1,0], [2,0,1], [1,2,0], [1,1,1], [1,0,2], [0,3,0], [0,2,1], [0,1,2], [0,0,3], &
+!    & [4,0,0], [3,1,0], [3,0,1], [2,2,0], [2,1,1], [2,0,2], [1,3,0], [1,2,1], [1,1,2], [1,0,3], &
+!    & [0,4,0], [0,3,1], [0,2,2], [0,1,3], [0,0,4]&
+!    & ], [3, 35])
+!  Integer,           Dimension(0:4),     Parameter       :: nmpole_derivs = [1,3,6,10,15]
+
   !> Type containing multipole data
   Type, Public :: mpole_type
     Private
@@ -100,7 +100,7 @@ Module mpole
     Integer, Dimension(3,1,0:0), Public :: mpole_derivs = reshape([0,0,0],[3,1,1])
 
     Integer, Public :: num_mpoles = 0
-    
+
     !> Maximum number of multipoles
     Integer( Kind = wi ), Public :: max_mpoles
     !> Maximum multipolar order

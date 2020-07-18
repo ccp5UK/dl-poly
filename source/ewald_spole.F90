@@ -14,12 +14,14 @@ Module ewald_spole
   !! authors   - i.t.todorov & w.smith & i.j.bush & j.s.wilkins august 2018
   !!
   !!----------------------------------------------------------------------!
-  Use comms,           Only: comms_type
+  Use bspline,         Only: bspline_splines_gen
+  Use comms,           Only: comms_type,&
+                             gcheck,&
+                             gsum
   Use configuration,   Only: configuration_type
-  Use constants,       Only: pi, &
+  Use constants,       Only: pi,&
                              r4pie0,&
                              sqrpi,&
-                             twopi,&
                              zero_plus
   Use domains,         Only: domains_type
   Use electrostatic,   Only: electrostatic_type
@@ -27,30 +29,21 @@ Module ewald_spole
                              error_alloc,&
                              error_dealloc
   Use ewald,           Only: ewald_type
+  Use ewald_general,   Only: ewald_spme_init,&
+                             spme_calc_force_energy,&
+                             spme_calc_stress,&
+                             spme_construct_charge_array,&
+                             spme_construct_potential_grid_gen,&
+                             stress_kernel
   Use kinds,           Only: wp
-  Use kspace,          Only: kspace_type
   Use neighbours,      Only: neighbours_type
-  Use numerics,        Only: calc_erf,&
-                             calc_erf_deriv,&
-                             calc_erfc,&
-                             dcell,&
+  Use numerics,        Only: dcell,&
                              invert
-  Use parallel_fft,    Only: initialize_fft,&
-                             pfft,&
-                             pfft_indices
+  Use parallel_fft,    Only: pfft
   Use spme,            Only: spme_component
   Use statistics,      Only: calculate_stress,&
                              stats_type
-  Use timer,           Only: start_timer,&
-                             stop_timer,&
-                             timer_type
-  Use constants,       Only: rsqrpi
-  Use ewald_general,   Only: spme_construct_potential_grid_gen,&
-                             spme_calc_stress,&
-                             spme_calc_force_energy,&
-                             spme_construct_charge_array,&
-                             ewald_spme_init,&
-                             stress_kernel
+  Use timer,           Only: timer_type
 
   Implicit None
 
@@ -69,7 +62,7 @@ Module ewald_spole
 
 Contains
 
-  Subroutine ewald_real_forces_coul(electro, alpha, spme_datum, neigh, config, stats, iatm, x_pos, y_pos, z_pos, mod_dr_ij, &
+  Subroutine ewald_real_forces_coul(electro, spme_datum, neigh, config, stats, iatm, x_pos, y_pos, z_pos, mod_dr_ij, &
     & engcpe_rl, vircpe_rl)
 
     !!-----------------------------------------------------------------------
@@ -86,7 +79,6 @@ Contains
     !!
     !!-----------------------------------------------------------------------
     Type(electrostatic_type),                   Intent(In   ) :: electro
-    Real(Kind=wp),                              Intent(In   ) :: alpha
     Type(spme_component),                       Intent(In   ) :: spme_datum
     Type(neighbours_type),                      Intent(In   ) :: neigh
     Type(configuration_type),                   Intent(InOut) :: config
@@ -95,15 +87,11 @@ Contains
     Real(Kind=wp), Dimension(1:neigh%max_list), Intent(In   ) :: x_pos, y_pos, z_pos, mod_dr_ij
     Real(Kind=wp),                              Intent(  Out) :: engcpe_rl, vircpe_rl
 
-    Integer                     :: global_id_i, global_id_j, jatm, m
-    Real(Kind=wp)               :: alpha_r, atom_coeffs_i, e_comp, erf_gamma, &
-                                   mod_r_ij, prefac
+    Integer                     :: global_id_i, global_id_j, jatm, m, nearest_sample_index
+    Real(Kind=wp)               :: atom_coeffs_i, difference, e_comp, erf_gamma, mod_r_ij, prefac
     Real(Kind=wp), Dimension(9) :: stress_temp, stress_temp_comp
-    Real(Kind=wp), Dimension(3) :: force_temp, force_temp_comp, pos_j
-    Integer                     :: nearest_sample_index
-    Real(Kind=wp)               :: difference
+    Real(Kind=wp), Dimension(3) :: force_temp, force_temp_comp, points, pos_j
     Real(Kind=wp), Dimension(2) :: temp
-    Real(Kind=wp), Dimension(3) :: points
 
 !! Current atom
 !! Atoms positions (neighbours, not global) and inter-particle separations
@@ -158,7 +146,7 @@ Contains
         nearest_sample_index = Int(mod_r_ij * electro%erfc_deriv%recip_spacing)
         difference = mod_r_ij * electro%erfc_deriv%recip_spacing - Real(nearest_sample_index, wp)
         points = electro%erfc_deriv%table(nearest_sample_index:nearest_sample_index + 2)
-        if (nearest_sample_index == 0) points(1) = points(1) * mod_r_ij
+        If (nearest_sample_index == 0) points(1) = points(1) * mod_r_ij
         temp(1) = points(1) + (points(2) - points(1)) * difference
         temp(2) = points(2) + (points(3) - points(2)) * (difference - 1.0_wp)
         erf_gamma = prefac * (temp(1) + (temp(2) - temp(1)) * difference * 0.5_wp)
@@ -169,7 +157,7 @@ Contains
         force_temp_comp = erf_gamma * pos_j
         force_temp = force_temp + force_temp_comp
 
-        If (jatm <= config%natms .or. global_id_i < global_id_j) Then
+        If (jatm <= config%natms .or. global_id_i < global_id_j .or. stats%collect_pp) Then
           If (jatm <= config%natms) Then
 
             config%parts(jatm)%fxx = config%parts(jatm)%fxx - force_temp_comp(1)
@@ -182,11 +170,14 @@ Contains
           nearest_sample_index = Int(mod_r_ij * electro%erfc%recip_spacing)
           difference = mod_r_ij * electro%erfc%recip_spacing - Real(nearest_sample_index, wp)
           points = electro%erfc%table(nearest_sample_index:nearest_sample_index + 2)
-          if (nearest_sample_index == 0) points(1) = points(1) * mod_r_ij
+          If (nearest_sample_index == 0) points(1) = points(1) * mod_r_ij
           temp(1) = points(1) + (points(2) - points(1)) * difference
           temp(2) = points(2) + (points(3) - points(2)) * (difference - 1.0_wp)
           e_comp = prefac * (temp(1) + (temp(2) - temp(1)) * difference * 0.5_wp)
 
+        end If
+
+        If (jatm <= config%natms .or. global_id_i < global_id_j) Then
           !e_comp = prefac * electro%erfc%calc(mod_r_ij)
 
           ! calculate interaction energy
@@ -242,8 +233,8 @@ Contains
 
   End Subroutine ewald_real_forces_coul
 
-  Subroutine ewald_spme_forces_coul(ewld, spme_datum, electro, domain, config, comm, coeffs, stats, &
-    & engcpe_rc, vircpe_rc, tmr)
+  Subroutine ewald_spme_forces_coul(ewld, spme_datum, domain, config, comm, coeffs, stats, &
+    & engcpe_rc, vircpe_rc)
     !!----------------------------------------------------------------------!
     !!
     !! dl_poly_4 subroutine for calculating coulombic energy and force terms
@@ -257,19 +248,14 @@ Contains
     !! re-written in per-particle formulation - j.s.wilkins august 2018
     !!
     !!----------------------------------------------------------------------!
-    Use comms, Only: gsum, gcheck, gsync
-!    Use constants, Only: twopi, pi, sqrpi, zero_plus
-    Use bspline, Only: bspline_splines_gen
     Type(ewald_type),            Intent(inout) :: ewld
     Type(spme_component),        Intent(inout) :: spme_datum
-    Type(electrostatic_type),    Intent(In   ) :: electro
     Type(domains_type),          Intent(In   ) :: domain
     Type(configuration_type),    Intent(inout) :: config
     Type(comms_type),            Intent(inout) :: comm
     Real(kind=wp), Dimension(:), Intent(In   ) :: coeffs
     Type(stats_type),            Intent(inout) :: stats
     Real(kind=wp),               Intent(  Out) :: engcpe_rc, vircpe_rc
-    Type(timer_type),            Intent(InOut) :: tmr
 
     Complex(kind=wp), Allocatable, Dimension(:, :, :), Save :: potential_grid, stress_grid
     Integer                                                 :: dim, i
@@ -301,7 +287,6 @@ Contains
 !! Forces
 !! Stress
 !! Ierr
-
 
     If (Any(Abs(coeffs) > zero_plus)) Then
       Continue
@@ -411,13 +396,13 @@ Contains
     Deallocate (recip_coords, stat=fail(1))
     If (fail(1) > 0) Call error_dealloc('recip_coords', 'ewald_spme_forces')
 
-    Call spme_construct_charge_array(to_calc(0), ewld, to_calc(1:), recip_indices, electro, coeffs, charge_grid)
+    Call spme_construct_charge_array(to_calc(0), ewld, to_calc(1:), recip_indices, coeffs, charge_grid)
 
     If (.not. stats%collect_pp) Then
 
       ! If we don't need per-particle data, we can use the old method of getting the stress (cheaper)
       Call spme_construct_potential_grid_coul(ewld, rcell, charge_grid, potential_grid, s_abc(:, 0))
-      Call spme_calc_force_energy(ewld, electro, comm, domain, config, coeffs, &
+      Call spme_calc_force_energy(ewld, comm, domain, config, coeffs, &
         & rcell, recip_indices, potential_grid, stats%collect_pp, q_abc, f_abc)
 
     Else
@@ -425,9 +410,9 @@ Contains
       Call spme_construct_potential_grid_coul(ewld, rcell, charge_grid, potential_grid, s_abc(:, 0))
       Call spme_construct_potential_grid_gen(ewld, rcell, charge_grid, spme_datum, stress_kernel, stress_grid)
 
-      Call spme_calc_force_energy(ewld, electro, comm, domain, config, coeffs, &
+      Call spme_calc_force_energy(ewld, comm, domain, config, coeffs, &
         & rcell, recip_indices, potential_grid, stats%collect_pp, q_abc, f_abc)
-      Call spme_calc_stress(ewld, electro, comm, domain, config, coeffs, &
+      Call spme_calc_stress(ewld, comm, domain, config, coeffs, &
         & rcell, recip_indices, stress_grid, s_abc)
 
     End If
@@ -483,8 +468,8 @@ Contains
 
   End Subroutine ewald_spme_forces_coul
 
-  Subroutine ewald_excl_forces(iatm,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex,stress, &
-      neigh,ewld,spme_datum,config)
+  Subroutine ewald_excl_forces(iatm, xxt, yyt, zzt, rrt, engcpe_ex, vircpe_ex, stress, &
+                               neigh, ewld, spme_datum, config)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -504,49 +489,41 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,                                  Intent( In    ) :: iatm
-    Type( neighbours_type ), Intent( In    ) :: neigh
-    Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
-    Real( Kind = wp ),                        Intent(   Out ) :: engcpe_ex,vircpe_ex
-    Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
-    Type( spme_component ),                   Intent( In    ) :: spme_datum
-    Type( ewald_type ),                       Intent( In    ) :: ewld
-    Type( configuration_type ),               Intent( InOut ) :: config
+    Integer,                                    Intent(In   ) :: iatm
+    Type(neighbours_type),                      Intent(In   ) :: neigh
+    Real(Kind=wp), Dimension(1:9),              Intent(InOut) :: stress
+    Real(Kind=wp),                              Intent(  Out) :: vircpe_ex, engcpe_ex
+    Real(Kind=wp), Dimension(1:neigh%max_list), Intent(In   ) :: rrt, zzt, yyt, xxt
+    Type(ewald_type),                           Intent(In   ) :: ewld
+    Type(spme_component),                       Intent(In   ) :: spme_datum
+    Type(configuration_type),                   Intent(InOut) :: config
 
-    Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
-    Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
-    Real( Kind = wp ), Parameter :: a3 =  1.421413741_wp
-    Real( Kind = wp ), Parameter :: a4 = -1.453152027_wp
-    Real( Kind = wp ), Parameter :: a5 =  1.061405429_wp
-    Real( Kind = wp ), Parameter :: pp =  0.3275911_wp
-    Real( Kind = wp ), Parameter :: rr3  = 1.0_wp/3.0_wp
-    Real( Kind = wp ), Parameter :: r10  = 0.1_wp
-    Real( Kind = wp ), Parameter :: r42  = 1.0_wp/42.0_wp
-    Real( Kind = wp ), Parameter :: r216 = 1.0_wp/216.0_wp
+    Real(Kind=wp), Parameter :: a1 = 0.254829592_wp, a2 = -0.284496736_wp, a3 = 1.421413741_wp, &
+                                a4 = -1.453152027_wp, a5 = 1.061405429_wp, pp = 0.3275911_wp, &
+                                r10 = 0.1_wp, r216 = 1.0_wp / 216.0_wp, r42 = 1.0_wp / 42.0_wp, &
+                                rr3 = 1.0_wp / 3.0_wp
 
-    Integer           :: limit,idi,jatm,m
-    Real( Kind = wp ) :: chgea,chgprd,rsq,rrr,alpr,alpr2, &
-      erfr,egamma,exp1,tt,             &
-      fix,fiy,fiz,fx,fy,fz,            &
-      strs1,strs2,strs3,strs5,strs6,strs9
+    Integer       :: idi, jatm, limit, m
+    Real(Kind=wp) :: alpr, alpr2, chgea, chgprd, egamma, erfr, exp1, fix, fiy, fiz, fx, fy, fz, &
+                     rrr, rsq, strs1, strs2, strs3, strs5, strs6, strs9, tt
 
     ! initialise potential energy and virial
 
-    engcpe_ex=0.0_wp
-    vircpe_ex=0.0_wp
+    engcpe_ex = 0.0_wp
+    vircpe_ex = 0.0_wp
 
     ! initialise stress tensor accumulators
 
-    strs1=0.0_wp
-    strs2=0.0_wp
-    strs3=0.0_wp
-    strs5=0.0_wp
-    strs6=0.0_wp
-    strs9=0.0_wp
+    strs1 = 0.0_wp
+    strs2 = 0.0_wp
+    strs3 = 0.0_wp
+    strs5 = 0.0_wp
+    strs6 = 0.0_wp
+    strs9 = 0.0_wp
 
     ! global identity of iatm
 
-    idi=config%ltg(iatm)
+    idi = config%ltg(iatm)
 
     ! ignore interaction if the charge is zero
 
@@ -554,30 +531,30 @@ Contains
 
     If (Abs(chgea) > zero_plus) Then
 
-      chgea = chgea*spme_datum%scaling
+      chgea = chgea * spme_datum%scaling
 
       ! load forces
 
-      fix=config%parts(iatm)%fxx
-      fiy=config%parts(iatm)%fyy
-      fiz=config%parts(iatm)%fzz
+      fix = config%parts(iatm)%fxx
+      fiy = config%parts(iatm)%fyy
+      fiz = config%parts(iatm)%fzz
 
       ! Get neigh%list limit
 
-      limit=neigh%list(-1,iatm)-neigh%list(0,iatm)
+      limit = neigh%list(-1, iatm) - neigh%list(0, iatm)
 
       ! start of primary loop for forces evaluation
 
-      Do m=1,limit
+      Do m = 1, limit
 
         ! atomic index and charge
 
-        jatm=neigh%list(neigh%list(0,iatm)+m,iatm)
-        chgprd=config%parts(jatm)%chge
+        jatm = neigh%list(neigh%list(0, iatm) + m, iatm)
+        chgprd = config%parts(jatm)%chge
 
         ! interatomic distance
 
-        rrr=rrt(m)
+        rrr = rrt(m)
 
         ! interaction validity and truncation of potential
 
@@ -585,16 +562,16 @@ Contains
 
           ! charge product
 
-          chgprd=chgprd*chgea
+          chgprd = chgprd * chgea
 
           ! Squared distance
 
-          rsq=rrr**2
+          rsq = rrr**2
 
           ! calculate forces
 
-          alpr =rrr*ewld%alpha
-          alpr2=alpr*alpr
+          alpr = rrr * ewld%alpha
+          alpr2 = alpr * alpr
 
           ! calculate error function and derivative
 
@@ -602,41 +579,41 @@ Contains
 
             ! close particles (core-shell units) - small distances limit
 
-            erfr=2.0_wp*chgprd*(ewld%alpha/sqrpi) * &
-              (1.0_wp+alpr2*(-rr3+alpr2*(r10+alpr2*(-r42+alpr2*r216))))
+            erfr = 2.0_wp * chgprd * (ewld%alpha / sqrpi) * &
+                   (1.0_wp + alpr2 * (-rr3 + alpr2 * (r10 + alpr2 * (-r42 + alpr2 * r216))))
 
-            egamma=-4.0_wp*chgprd*(ewld%alpha**3/sqrpi) * &
-              (rr3+alpr2*(-2.0_wp*r10+alpr2*(3.0_wp*r42-4.0_wp*alpr2*r216)))
+            egamma = -4.0_wp * chgprd * (ewld%alpha**3 / sqrpi) * &
+                     (rr3 + alpr2 * (-2.0_wp * r10 + alpr2 * (3.0_wp * r42 - 4.0_wp * alpr2 * r216)))
 
           Else
 
             ! distant particles - traditional
 
-            exp1=Exp(-(ewld%alpha*rrr)**2)
-            tt  =1.0_wp/(1.0_wp+pp*ewld%alpha*rrr)
+            exp1 = Exp(-(ewld%alpha * rrr)**2)
+            tt = 1.0_wp / (1.0_wp + pp * ewld%alpha * rrr)
 
-            erfr=chgprd * &
-              (1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/rrr
+            erfr = chgprd * &
+                   (1.0_wp - tt * (a1 + tt * (a2 + tt * (a3 + tt * (a4 + tt * a5)))) * exp1) / rrr
 
-            egamma=-(erfr-2.0_wp*chgprd*(ewld%alpha/sqrpi)*exp1)/rsq
+            egamma = -(erfr - 2.0_wp * chgprd * (ewld%alpha / sqrpi) * exp1) / rsq
 
           End If
 
           ! calculate forces
 
-          fx = egamma*xxt(m)
-          fy = egamma*yyt(m)
-          fz = egamma*zzt(m)
+          fx = egamma * xxt(m)
+          fy = egamma * yyt(m)
+          fz = egamma * zzt(m)
 
-          fix=fix+fx
-          fiy=fiy+fy
-          fiz=fiz+fz
+          fix = fix + fx
+          fiy = fiy + fy
+          fiz = fiz + fz
 
           If (jatm <= config%natms) Then
 
-            config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
-            config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
-            config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
+            config%parts(jatm)%fxx = config%parts(jatm)%fxx - fx
+            config%parts(jatm)%fyy = config%parts(jatm)%fyy - fy
+            config%parts(jatm)%fzz = config%parts(jatm)%fzz - fz
 
           End If
 
@@ -645,16 +622,16 @@ Contains
             ! add potential energy and virial
 
             engcpe_ex = engcpe_ex - erfr
-            vircpe_ex = vircpe_ex - egamma*rsq
+            vircpe_ex = vircpe_ex - egamma * rsq
 
             ! add stress tensor
 
-            strs1 = strs1 + xxt(m)*fx
-            strs2 = strs2 + xxt(m)*fy
-            strs3 = strs3 + xxt(m)*fz
-            strs5 = strs5 + yyt(m)*fy
-            strs6 = strs6 + yyt(m)*fz
-            strs9 = strs9 + zzt(m)*fz
+            strs1 = strs1 + xxt(m) * fx
+            strs2 = strs2 + xxt(m) * fy
+            strs3 = strs3 + xxt(m) * fz
+            strs5 = strs5 + yyt(m) * fy
+            strs6 = strs6 + yyt(m) * fz
+            strs9 = strs9 + zzt(m) * fz
 
           End If
 
@@ -664,9 +641,9 @@ Contains
 
       ! load back forces
 
-      config%parts(iatm)%fxx=fix
-      config%parts(iatm)%fyy=fiy
-      config%parts(iatm)%fzz=fiz
+      config%parts(iatm)%fxx = fix
+      config%parts(iatm)%fyy = fiy
+      config%parts(iatm)%fzz = fiz
 
       ! complete stress tensor
 
@@ -715,7 +692,6 @@ Contains
   !        rr3 = 1.0_wp / 3.0_wp! , &
   !        ! a1 = 0.254829592_wp, a2 = -0.284496736_wp, a3 = 1.421413741_wp, &
   !        ! a4 = -1.453152027_wp, a5 = 1.061405429_wp, pp = 0.3275911_wp
-
 
   !   Integer                     :: global_id_i, jatm, limit, m
   !   Real(Kind=wp)               :: atom_coeffs_i, atom_coeffs_ij, atom_coeffs_j, dr_alpha, &
@@ -871,7 +847,6 @@ Contains
     !! author    - i.t.todorov december 2015
     !!
     !!-----------------------------------------------------------------------
-    Use comms, Only: gsum
     Real(Kind=wp),                 Intent(  Out) :: engcpe_fr, vircpe_fr
     Real(Kind=wp), Dimension(1:9), Intent(InOut) :: stress
     Type(ewald_type),              Intent(InOut) :: ewld
@@ -881,14 +856,14 @@ Contains
     Type(comms_type),              Intent(InOut) :: comm
 
     Real(Kind=wp), Parameter :: a1 = 0.254829592_wp, a2 = -0.284496736_wp, a3 = 1.421413741_wp, &
-         a4 = -1.453152027_wp, a5 = 1.061405429_wp, pp = 0.3275911_wp
+                                a4 = -1.453152027_wp, a5 = 1.061405429_wp, pp = 0.3275911_wp
 
     Character(Len=256)                       :: message
     Integer                                  :: fail, global_id_i, i, ii, j, jj, k, limit, nzfr
     Integer, Allocatable, Dimension(:)       :: l_ind, nz_fr
     Real(Kind=wp)                            :: atom_coeffs_ij, det, erf_gamma, erfr, exp1, &
-         mod_r_ij, mod_r_ij_2, rcell(1:9), scl, tt, xrr, &
-         xss, yrr, yss, zrr, zss
+                                                mod_r_ij, mod_r_ij_2, rcell(1:9), scl, tt, xrr, &
+                                                xss, yrr, yss, zrr, zss
     Real(Kind=wp), Allocatable, Dimension(:) :: cfr, dr_j, x_pos, xfr, y_pos, yfr, z_pos, zfr
     Real(Kind=wp), Dimension(3)              :: force_temp_comp
     Real(Kind=wp), Dimension(9)              :: stress_temp
@@ -913,10 +888,10 @@ Contains
 
     l_ind = 0; nz_fr = 0
     Do i = 1, config%natms
-       If (config%lfrzn(i) > 0 .and. Abs(config%parts(i)%chge) > zero_plus) Then
-          nz_fr(comm%idnode + 1) = nz_fr(comm%idnode + 1) + 1
-          l_ind(nz_fr(comm%idnode + 1)) = i
-       End If
+      If (config%lfrzn(i) > 0 .and. Abs(config%parts(i)%chge) > zero_plus) Then
+        nz_fr(comm%idnode + 1) = nz_fr(comm%idnode + 1) + 1
+        l_ind(nz_fr(comm%idnode + 1)) = i
+      End If
     End Do
     Call gsum(comm, nz_fr)
     nz_fr(0) = Sum(nz_fr(0:comm%idnode)) ! Offset
@@ -925,310 +900,310 @@ Contains
     nzfr = Sum(nz_fr(1:comm%mxnode)) ! Total
     If (nzfr <= 10 * config%mxatms) Then
 
-       Allocate (cfr(1:nzfr), xfr(1:nzfr), yfr(1:nzfr), zfr(1:nzfr), Stat=fail)
-       If (fail > 0) Then
-          Write (message, '(a,i0)') 'ewald_frzn_forces allocation failure 1'
-          Call error(0, message)
-       End If
+      Allocate (cfr(1:nzfr), xfr(1:nzfr), yfr(1:nzfr), zfr(1:nzfr), Stat=fail)
+      If (fail > 0) Then
+        Write (message, '(a,i0)') 'ewald_frzn_forces allocation failure 1'
+        Call error(0, message)
+      End If
 
-       cfr = 0.0_wp
-       xfr = 0.0_wp
-       yfr = 0.0_wp
-       zfr = 0.0_wp
-       Do i = 1, nz_fr(comm%idnode + 1)
-          ii = nz_fr(0) + i
+      cfr = 0.0_wp
+      xfr = 0.0_wp
+      yfr = 0.0_wp
+      zfr = 0.0_wp
+      Do i = 1, nz_fr(comm%idnode + 1)
+        ii = nz_fr(0) + i
 
-          cfr(ii) = config%parts(l_ind(i))%chge
-          xfr(ii) = config%parts(l_ind(i))%xxx
-          yfr(ii) = config%parts(l_ind(i))%yyy
-          zfr(ii) = config%parts(l_ind(i))%zzz
-       End Do
-       Call gsum(comm, cfr)
-       Call gsum(comm, xfr)
-       Call gsum(comm, yfr)
-       Call gsum(comm, zfr)
+        cfr(ii) = config%parts(l_ind(i))%chge
+        xfr(ii) = config%parts(l_ind(i))%xxx
+        yfr(ii) = config%parts(l_ind(i))%yyy
+        zfr(ii) = config%parts(l_ind(i))%zzz
+      End Do
+      Call gsum(comm, cfr)
+      Call gsum(comm, xfr)
+      Call gsum(comm, yfr)
+      Call gsum(comm, zfr)
 
-       Do i = 1, nz_fr(comm%idnode + 1)
-          ii = nz_fr(0) + i
+      Do i = 1, nz_fr(comm%idnode + 1)
+        ii = nz_fr(0) + i
 
-          Do jj = 1, nz_fr(0) ! -, on nodes<comm%idnode
-             xrr = xfr(ii) - xfr(jj)
-             yrr = yfr(ii) - yfr(jj)
-             zrr = zfr(ii) - zfr(jj)
+        Do jj = 1, nz_fr(0) ! -, on nodes<comm%idnode
+          xrr = xfr(ii) - xfr(jj)
+          yrr = yfr(ii) - yfr(jj)
+          zrr = zfr(ii) - zfr(jj)
 
-             xss = (rcell(1) * xrr + rcell(4) * yrr + rcell(7) * zrr)
-             yss = (rcell(2) * xrr + rcell(5) * yrr + rcell(8) * zrr)
-             zss = (rcell(3) * xrr + rcell(6) * yrr + rcell(9) * zrr)
+          xss = (rcell(1) * xrr + rcell(4) * yrr + rcell(7) * zrr)
+          yss = (rcell(2) * xrr + rcell(5) * yrr + rcell(8) * zrr)
+          zss = (rcell(3) * xrr + rcell(6) * yrr + rcell(9) * zrr)
 
-             xss = xss - Anint(xss)
-             yss = yss - Anint(yss)
-             zss = zss - Anint(zss)
+          xss = xss - Anint(xss)
+          yss = yss - Anint(yss)
+          zss = zss - Anint(zss)
 
-             xrr = (config%cell(1) * xss + config%cell(4) * yss + config%cell(7) * zss)
-             yrr = (config%cell(2) * xss + config%cell(5) * yss + config%cell(8) * zss)
-             zrr = (config%cell(3) * xss + config%cell(6) * yss + config%cell(9) * zss)
+          xrr = (config%cell(1) * xss + config%cell(4) * yss + config%cell(7) * zss)
+          yrr = (config%cell(2) * xss + config%cell(5) * yss + config%cell(8) * zss)
+          zrr = (config%cell(3) * xss + config%cell(6) * yss + config%cell(9) * zss)
 
-             ! calculate interatomic distance
+          ! calculate interatomic distance
 
-             mod_r_ij_2 = xrr**2 + yrr**2 + zrr**2
+          mod_r_ij_2 = xrr**2 + yrr**2 + zrr**2
 
-             mod_r_ij = Sqrt(mod_r_ij_2)
-             atom_coeffs_ij = cfr(ii) * cfr(jj) * scl
+          mod_r_ij = Sqrt(mod_r_ij_2)
+          atom_coeffs_ij = cfr(ii) * cfr(jj) * scl
 
-             ! calculate error function and derivative
+          ! calculate error function and derivative
 
-             exp1 = Exp(-(ewld%alpha * mod_r_ij)**2)
-             tt = 1.0_wp / (1.0_wp + pp * ewld%alpha * mod_r_ij)
+          exp1 = Exp(-(ewld%alpha * mod_r_ij)**2)
+          tt = 1.0_wp / (1.0_wp + pp * ewld%alpha * mod_r_ij)
 
-             erfr = atom_coeffs_ij * &
-                  (1.0_wp - tt * (a1 + tt * (a2 + tt * (a3 + tt * (a4 + tt * a5)))) * exp1) / mod_r_ij
+          erfr = atom_coeffs_ij * &
+                 (1.0_wp - tt * (a1 + tt * (a2 + tt * (a3 + tt * (a4 + tt * a5)))) * exp1) / mod_r_ij
 
-             erf_gamma = -(erfr - 2.0_wp * atom_coeffs_ij * (ewld%alpha / sqrpi) * exp1) / mod_r_ij_2
+          erf_gamma = -(erfr - 2.0_wp * atom_coeffs_ij * (ewld%alpha / sqrpi) * exp1) / mod_r_ij_2
 
-             force_temp_comp(1) = erf_gamma * xrr
-             force_temp_comp(2) = erf_gamma * yrr
-             force_temp_comp(3) = erf_gamma * zrr
+          force_temp_comp(1) = erf_gamma * xrr
+          force_temp_comp(2) = erf_gamma * yrr
+          force_temp_comp(3) = erf_gamma * zrr
 
-             ! calculate forces
+          ! calculate forces
 
-             config%parts(l_ind(i))%fxx = config%parts(l_ind(i))%fxx - force_temp_comp(1)
-             config%parts(l_ind(i))%fyy = config%parts(l_ind(i))%fyy - force_temp_comp(2)
-             config%parts(l_ind(i))%fzz = config%parts(l_ind(i))%fzz - force_temp_comp(3)
+          config%parts(l_ind(i))%fxx = config%parts(l_ind(i))%fxx - force_temp_comp(1)
+          config%parts(l_ind(i))%fyy = config%parts(l_ind(i))%fyy - force_temp_comp(2)
+          config%parts(l_ind(i))%fzz = config%parts(l_ind(i))%fzz - force_temp_comp(3)
 
-          End Do
+        End Do
 
-          Do j = i + 1, nz_fr(comm%idnode + 1) ! =, node=comm%idnode (OVERLAP but no SELF)!
-             jj = nz_fr(0) + j
+        Do j = i + 1, nz_fr(comm%idnode + 1) ! =, node=comm%idnode (OVERLAP but no SELF)!
+          jj = nz_fr(0) + j
 
-             xrr = xfr(ii) - xfr(jj)
-             yrr = yfr(ii) - yfr(jj)
-             zrr = zfr(ii) - zfr(jj)
+          xrr = xfr(ii) - xfr(jj)
+          yrr = yfr(ii) - yfr(jj)
+          zrr = zfr(ii) - zfr(jj)
 
-             xss = (rcell(1) * xrr + rcell(4) * yrr + rcell(7) * zrr)
-             yss = (rcell(2) * xrr + rcell(5) * yrr + rcell(8) * zrr)
-             zss = (rcell(3) * xrr + rcell(6) * yrr + rcell(9) * zrr)
+          xss = (rcell(1) * xrr + rcell(4) * yrr + rcell(7) * zrr)
+          yss = (rcell(2) * xrr + rcell(5) * yrr + rcell(8) * zrr)
+          zss = (rcell(3) * xrr + rcell(6) * yrr + rcell(9) * zrr)
 
-             xss = xss - Anint(xss)
-             yss = yss - Anint(yss)
-             zss = zss - Anint(zss)
+          xss = xss - Anint(xss)
+          yss = yss - Anint(yss)
+          zss = zss - Anint(zss)
 
-             xrr = (config%cell(1) * xss + config%cell(4) * yss + config%cell(7) * zss)
-             yrr = (config%cell(2) * xss + config%cell(5) * yss + config%cell(8) * zss)
-             zrr = (config%cell(3) * xss + config%cell(6) * yss + config%cell(9) * zss)
+          xrr = (config%cell(1) * xss + config%cell(4) * yss + config%cell(7) * zss)
+          yrr = (config%cell(2) * xss + config%cell(5) * yss + config%cell(8) * zss)
+          zrr = (config%cell(3) * xss + config%cell(6) * yss + config%cell(9) * zss)
 
-             ! calculate interatomic distance
+          ! calculate interatomic distance
 
-             mod_r_ij_2 = xrr**2 + yrr**2 + zrr**2
+          mod_r_ij_2 = xrr**2 + yrr**2 + zrr**2
 
-             mod_r_ij = Sqrt(mod_r_ij_2)
-             atom_coeffs_ij = cfr(ii) * cfr(jj) * scl
+          mod_r_ij = Sqrt(mod_r_ij_2)
+          atom_coeffs_ij = cfr(ii) * cfr(jj) * scl
 
-             ! calculate error function and derivative
+          ! calculate error function and derivative
 
-             exp1 = Exp(-(ewld%alpha * mod_r_ij)**2)
-             tt = 1.0_wp / (1.0_wp + pp * ewld%alpha * mod_r_ij)
+          exp1 = Exp(-(ewld%alpha * mod_r_ij)**2)
+          tt = 1.0_wp / (1.0_wp + pp * ewld%alpha * mod_r_ij)
 
-             erfr = atom_coeffs_ij * &
-                  (1.0_wp - tt * (a1 + tt * (a2 + tt * (a3 + tt * (a4 + tt * a5)))) * exp1) / mod_r_ij
+          erfr = atom_coeffs_ij * &
+                 (1.0_wp - tt * (a1 + tt * (a2 + tt * (a3 + tt * (a4 + tt * a5)))) * exp1) / mod_r_ij
 
-             erf_gamma = -(erfr - 2.0_wp * atom_coeffs_ij * (ewld%alpha / sqrpi) * exp1) / mod_r_ij_2
+          erf_gamma = -(erfr - 2.0_wp * atom_coeffs_ij * (ewld%alpha / sqrpi) * exp1) / mod_r_ij_2
 
-             force_temp_comp(1) = erf_gamma * xrr
-             force_temp_comp(2) = erf_gamma * yrr
-             force_temp_comp(3) = erf_gamma * zrr
+          force_temp_comp(1) = erf_gamma * xrr
+          force_temp_comp(2) = erf_gamma * yrr
+          force_temp_comp(3) = erf_gamma * zrr
 
-             ! calculate forces
+          ! calculate forces
 
-             config%parts(l_ind(i))%fxx = config%parts(l_ind(i))%fxx - force_temp_comp(1)
-             config%parts(l_ind(i))%fyy = config%parts(l_ind(i))%fyy - force_temp_comp(2)
-             config%parts(l_ind(i))%fzz = config%parts(l_ind(i))%fzz - force_temp_comp(3)
+          config%parts(l_ind(i))%fxx = config%parts(l_ind(i))%fxx - force_temp_comp(1)
+          config%parts(l_ind(i))%fyy = config%parts(l_ind(i))%fyy - force_temp_comp(2)
+          config%parts(l_ind(i))%fzz = config%parts(l_ind(i))%fzz - force_temp_comp(3)
 
-             config%parts(l_ind(j))%fxx = config%parts(l_ind(j))%fxx + force_temp_comp(1)
-             config%parts(l_ind(j))%fyy = config%parts(l_ind(j))%fyy + force_temp_comp(2)
-             config%parts(l_ind(j))%fzz = config%parts(l_ind(j))%fzz + force_temp_comp(3)
+          config%parts(l_ind(j))%fxx = config%parts(l_ind(j))%fxx + force_temp_comp(1)
+          config%parts(l_ind(j))%fyy = config%parts(l_ind(j))%fyy + force_temp_comp(2)
+          config%parts(l_ind(j))%fzz = config%parts(l_ind(j))%fzz + force_temp_comp(3)
 
-             ! calculate potential energy and virial
+          ! calculate potential energy and virial
 
-             engcpe_fr = engcpe_fr - erfr
-             vircpe_fr = vircpe_fr - erf_gamma * mod_r_ij_2
+          engcpe_fr = engcpe_fr - erfr
+          vircpe_fr = vircpe_fr - erf_gamma * mod_r_ij_2
 
-             ! calculate stress tensor
+          ! calculate stress tensor
 
-             stress_temp(1) = stress_temp(1) + xrr * force_temp_comp(1)
-             stress_temp(2) = stress_temp(2) + xrr * force_temp_comp(2)
-             stress_temp(3) = stress_temp(3) + xrr * force_temp_comp(3)
-             stress_temp(5) = stress_temp(5) + yrr * force_temp_comp(2)
-             stress_temp(6) = stress_temp(6) + yrr * force_temp_comp(3)
-             stress_temp(9) = stress_temp(9) + zrr * force_temp_comp(3)
-          End Do
+          stress_temp(1) = stress_temp(1) + xrr * force_temp_comp(1)
+          stress_temp(2) = stress_temp(2) + xrr * force_temp_comp(2)
+          stress_temp(3) = stress_temp(3) + xrr * force_temp_comp(3)
+          stress_temp(5) = stress_temp(5) + yrr * force_temp_comp(2)
+          stress_temp(6) = stress_temp(6) + yrr * force_temp_comp(3)
+          stress_temp(9) = stress_temp(9) + zrr * force_temp_comp(3)
+        End Do
 
-          Do jj = nz_fr(0) + nz_fr(comm%idnode + 1) + 1, nzfr ! +, on nodes>comm%idnode
-             xrr = xfr(ii) - xfr(jj)
-             yrr = yfr(ii) - yfr(jj)
-             zrr = zfr(ii) - zfr(jj)
+        Do jj = nz_fr(0) + nz_fr(comm%idnode + 1) + 1, nzfr ! +, on nodes>comm%idnode
+          xrr = xfr(ii) - xfr(jj)
+          yrr = yfr(ii) - yfr(jj)
+          zrr = zfr(ii) - zfr(jj)
 
-             xss = (rcell(1) * xrr + rcell(4) * yrr + rcell(7) * zrr)
-             yss = (rcell(2) * xrr + rcell(5) * yrr + rcell(8) * zrr)
-             zss = (rcell(3) * xrr + rcell(6) * yrr + rcell(9) * zrr)
+          xss = (rcell(1) * xrr + rcell(4) * yrr + rcell(7) * zrr)
+          yss = (rcell(2) * xrr + rcell(5) * yrr + rcell(8) * zrr)
+          zss = (rcell(3) * xrr + rcell(6) * yrr + rcell(9) * zrr)
 
-             xss = xss - Anint(xss)
-             yss = yss - Anint(yss)
-             zss = zss - Anint(zss)
+          xss = xss - Anint(xss)
+          yss = yss - Anint(yss)
+          zss = zss - Anint(zss)
 
-             xrr = (config%cell(1) * xss + config%cell(4) * yss + config%cell(7) * zss)
-             yrr = (config%cell(2) * xss + config%cell(5) * yss + config%cell(8) * zss)
-             zrr = (config%cell(3) * xss + config%cell(6) * yss + config%cell(9) * zss)
+          xrr = (config%cell(1) * xss + config%cell(4) * yss + config%cell(7) * zss)
+          yrr = (config%cell(2) * xss + config%cell(5) * yss + config%cell(8) * zss)
+          zrr = (config%cell(3) * xss + config%cell(6) * yss + config%cell(9) * zss)
 
-             ! calculate interatomic distance
+          ! calculate interatomic distance
 
-             mod_r_ij_2 = xrr**2 + yrr**2 + zrr**2
+          mod_r_ij_2 = xrr**2 + yrr**2 + zrr**2
 
-             mod_r_ij = Sqrt(mod_r_ij_2)
-             atom_coeffs_ij = cfr(ii) * cfr(jj) * scl
+          mod_r_ij = Sqrt(mod_r_ij_2)
+          atom_coeffs_ij = cfr(ii) * cfr(jj) * scl
 
-             ! calculate error function and derivative
+          ! calculate error function and derivative
 
-             exp1 = Exp(-(ewld%alpha * mod_r_ij)**2)
-             tt = 1.0_wp / (1.0_wp + pp * ewld%alpha * mod_r_ij)
+          exp1 = Exp(-(ewld%alpha * mod_r_ij)**2)
+          tt = 1.0_wp / (1.0_wp + pp * ewld%alpha * mod_r_ij)
 
-             erfr = atom_coeffs_ij * &
-                  (1.0_wp - tt * (a1 + tt * (a2 + tt * (a3 + tt * (a4 + tt * a5)))) * exp1) / mod_r_ij
+          erfr = atom_coeffs_ij * &
+                 (1.0_wp - tt * (a1 + tt * (a2 + tt * (a3 + tt * (a4 + tt * a5)))) * exp1) / mod_r_ij
 
-             erf_gamma = -(erfr - 2.0_wp * atom_coeffs_ij * (ewld%alpha / sqrpi) * exp1) / mod_r_ij_2
+          erf_gamma = -(erfr - 2.0_wp * atom_coeffs_ij * (ewld%alpha / sqrpi) * exp1) / mod_r_ij_2
 
-             force_temp_comp(1) = erf_gamma * xrr
-             force_temp_comp(2) = erf_gamma * yrr
-             force_temp_comp(3) = erf_gamma * zrr
+          force_temp_comp(1) = erf_gamma * xrr
+          force_temp_comp(2) = erf_gamma * yrr
+          force_temp_comp(3) = erf_gamma * zrr
 
-             ! calculate forces
+          ! calculate forces
 
-             config%parts(l_ind(i))%fxx = config%parts(l_ind(i))%fxx - force_temp_comp(1)
-             config%parts(l_ind(i))%fyy = config%parts(l_ind(i))%fyy - force_temp_comp(2)
-             config%parts(l_ind(i))%fzz = config%parts(l_ind(i))%fzz - force_temp_comp(3)
+          config%parts(l_ind(i))%fxx = config%parts(l_ind(i))%fxx - force_temp_comp(1)
+          config%parts(l_ind(i))%fyy = config%parts(l_ind(i))%fyy - force_temp_comp(2)
+          config%parts(l_ind(i))%fzz = config%parts(l_ind(i))%fzz - force_temp_comp(3)
 
-             ! calculate potential energy and virial
+          ! calculate potential energy and virial
 
-             engcpe_fr = engcpe_fr - erfr
-             vircpe_fr = vircpe_fr - erf_gamma * mod_r_ij_2
+          engcpe_fr = engcpe_fr - erfr
+          vircpe_fr = vircpe_fr - erf_gamma * mod_r_ij_2
 
-             ! calculate stress tensor
+          ! calculate stress tensor
 
-             stress_temp(1) = stress_temp(1) + xrr * force_temp_comp(1)
-             stress_temp(2) = stress_temp(2) + xrr * force_temp_comp(2)
-             stress_temp(3) = stress_temp(3) + xrr * force_temp_comp(3)
-             stress_temp(5) = stress_temp(5) + yrr * force_temp_comp(2)
-             stress_temp(6) = stress_temp(6) + yrr * force_temp_comp(3)
-             stress_temp(9) = stress_temp(9) + zrr * force_temp_comp(3)
-          End Do
-       End Do
+          stress_temp(1) = stress_temp(1) + xrr * force_temp_comp(1)
+          stress_temp(2) = stress_temp(2) + xrr * force_temp_comp(2)
+          stress_temp(3) = stress_temp(3) + xrr * force_temp_comp(3)
+          stress_temp(5) = stress_temp(5) + yrr * force_temp_comp(2)
+          stress_temp(6) = stress_temp(6) + yrr * force_temp_comp(3)
+          stress_temp(9) = stress_temp(9) + zrr * force_temp_comp(3)
+        End Do
+      End Do
 
-       Deallocate (cfr, xfr, yfr, zfr, Stat=fail)
-       If (fail > 0) Then
-          Write (message, '(a)') 'ewald_frzn_forces deallocation failure 1'
-          Call error(0, message)
-       End If
+      Deallocate (cfr, xfr, yfr, zfr, Stat=fail)
+      If (fail > 0) Then
+        Write (message, '(a)') 'ewald_frzn_forces deallocation failure 1'
+        Call error(0, message)
+      End If
 
     Else
 
-       ! We resort to approximating N*(N-1)/2 interactions
-       ! with the short-range one from the two body linked config%cell neigh%list
+      ! We resort to approximating N*(N-1)/2 interactions
+      ! with the short-range one from the two body linked config%cell neigh%list
 
-       Allocate (x_pos(1:neigh%max_list), y_pos(1:neigh%max_list), z_pos(1:neigh%max_list), dr_j(1:neigh%max_list), Stat=fail)
-       If (fail > 0) Then
-          Write (message, '(a)') 'ewald_frzn_forces allocation failure 2'
-          Call error(0, message)
-       End If
+      Allocate (x_pos(1:neigh%max_list), y_pos(1:neigh%max_list), z_pos(1:neigh%max_list), dr_j(1:neigh%max_list), Stat=fail)
+      If (fail > 0) Then
+        Write (message, '(a)') 'ewald_frzn_forces allocation failure 2'
+        Call error(0, message)
+      End If
 
-       Do ii = 1, nz_fr(comm%idnode + 1)
-          i = l_ind(nz_fr(comm%idnode + 1))
-          global_id_i = config%ltg(ii)
+      Do ii = 1, nz_fr(comm%idnode + 1)
+        i = l_ind(nz_fr(comm%idnode + 1))
+        global_id_i = config%ltg(ii)
 
-          ! Get neigh%list limit
+        ! Get neigh%list limit
 
-          limit = neigh%list(-2, i) - neigh%list(-1, i)
-          If (limit > 0) Then
+        limit = neigh%list(-2, i) - neigh%list(-1, i)
+        If (limit > 0) Then
 
-             ! calculate interatomic distances
+          ! calculate interatomic distances
 
-             Do k = 1, limit
-                j = neigh%list(neigh%list(-1, i) + k, i)
+          Do k = 1, limit
+            j = neigh%list(neigh%list(-1, i) + k, i)
 
-                x_pos(k) = config%parts(i)%xxx - config%parts(j)%xxx
-                y_pos(k) = config%parts(i)%yyy - config%parts(j)%yyy
-                z_pos(k) = config%parts(i)%zzz - config%parts(j)%zzz
-             End Do
+            x_pos(k) = config%parts(i)%xxx - config%parts(j)%xxx
+            y_pos(k) = config%parts(i)%yyy - config%parts(j)%yyy
+            z_pos(k) = config%parts(i)%zzz - config%parts(j)%zzz
+          End Do
 
-             ! periodic boundary conditions not needed by LC construction
-             !
-             !           Call images(config%imcon,config%cell,limit,x_pos,y_pos,z_pos)
+          ! periodic boundary conditions not needed by LC construction
+          !
+          !           Call images(config%imcon,config%cell,limit,x_pos,y_pos,z_pos)
 
-             ! square of distances
+          ! square of distances
 
-             Do k = 1, limit
-                dr_j(k) = Sqrt(x_pos(k)**2 + y_pos(k)**2 + z_pos(k)**2)
-             End Do
+          Do k = 1, limit
+            dr_j(k) = Sqrt(x_pos(k)**2 + y_pos(k)**2 + z_pos(k)**2)
+          End Do
 
-             Do k = 1, limit
-                j = neigh%list(neigh%list(-1, i) + k, i)
+          Do k = 1, limit
+            j = neigh%list(neigh%list(-1, i) + k, i)
 
-                mod_r_ij = dr_j(k)
-                If (Abs(config%parts(j)%chge) > zero_plus .and. mod_r_ij < neigh%cutoff) Then
-                   atom_coeffs_ij = config%parts(i)%chge * config%parts(j)%chge * scl
-                   mod_r_ij_2 = mod_r_ij**2
+            mod_r_ij = dr_j(k)
+            If (Abs(config%parts(j)%chge) > zero_plus .and. mod_r_ij < neigh%cutoff) Then
+              atom_coeffs_ij = config%parts(i)%chge * config%parts(j)%chge * scl
+              mod_r_ij_2 = mod_r_ij**2
 
-                   ! calculate error function and derivative
+              ! calculate error function and derivative
 
-                   exp1 = Exp(-(ewld%alpha * mod_r_ij)**2)
-                   tt = 1.0_wp / (1.0_wp + pp * ewld%alpha * mod_r_ij)
+              exp1 = Exp(-(ewld%alpha * mod_r_ij)**2)
+              tt = 1.0_wp / (1.0_wp + pp * ewld%alpha * mod_r_ij)
 
-                   erfr = atom_coeffs_ij * &
-                        (1.0_wp - tt * (a1 + tt * (a2 + tt * (a3 + tt * (a4 + tt * a5)))) * exp1) / mod_r_ij
+              erfr = atom_coeffs_ij * &
+                     (1.0_wp - tt * (a1 + tt * (a2 + tt * (a3 + tt * (a4 + tt * a5)))) * exp1) / mod_r_ij
 
-                   erf_gamma = -(erfr - 2.0_wp * atom_coeffs_ij * (ewld%alpha / sqrpi) * exp1) / mod_r_ij_2
+              erf_gamma = -(erfr - 2.0_wp * atom_coeffs_ij * (ewld%alpha / sqrpi) * exp1) / mod_r_ij_2
 
-                   force_temp_comp(1) = erf_gamma * x_pos(k)
-                   force_temp_comp(2) = erf_gamma * y_pos(k)
-                   force_temp_comp(3) = erf_gamma * z_pos(k)
+              force_temp_comp(1) = erf_gamma * x_pos(k)
+              force_temp_comp(2) = erf_gamma * y_pos(k)
+              force_temp_comp(3) = erf_gamma * z_pos(k)
 
-                   ! calculate forces
+              ! calculate forces
 
-                   config%parts(i)%fxx = config%parts(i)%fxx - force_temp_comp(1)
-                   config%parts(i)%fyy = config%parts(i)%fyy - force_temp_comp(2)
-                   config%parts(i)%fzz = config%parts(i)%fzz - force_temp_comp(3)
+              config%parts(i)%fxx = config%parts(i)%fxx - force_temp_comp(1)
+              config%parts(i)%fyy = config%parts(i)%fyy - force_temp_comp(2)
+              config%parts(i)%fzz = config%parts(i)%fzz - force_temp_comp(3)
 
-                   If (j <= config%natms) Then
+              If (j <= config%natms) Then
 
-                      config%parts(j)%fxx = config%parts(j)%fxx + force_temp_comp(1)
-                      config%parts(j)%fyy = config%parts(j)%fyy + force_temp_comp(2)
-                      config%parts(j)%fzz = config%parts(j)%fzz + force_temp_comp(3)
+                config%parts(j)%fxx = config%parts(j)%fxx + force_temp_comp(1)
+                config%parts(j)%fyy = config%parts(j)%fyy + force_temp_comp(2)
+                config%parts(j)%fzz = config%parts(j)%fzz + force_temp_comp(3)
 
-                   End If
+              End If
 
-                   If (j <= config%natms .or. global_id_i < config%ltg(j)) Then
+              If (j <= config%natms .or. global_id_i < config%ltg(j)) Then
 
-                      ! calculate potential energy and virial
+                ! calculate potential energy and virial
 
-                      engcpe_fr = engcpe_fr - erfr
-                      vircpe_fr = vircpe_fr - erf_gamma * mod_r_ij_2
+                engcpe_fr = engcpe_fr - erfr
+                vircpe_fr = vircpe_fr - erf_gamma * mod_r_ij_2
 
-                      ! calculate stress tensor
+                ! calculate stress tensor
 
-                      stress_temp(1) = stress_temp(1) + x_pos(k) * force_temp_comp(1)
-                      stress_temp(2) = stress_temp(2) + x_pos(k) * force_temp_comp(2)
-                      stress_temp(3) = stress_temp(3) + x_pos(k) * force_temp_comp(3)
-                      stress_temp(5) = stress_temp(5) + y_pos(k) * force_temp_comp(2)
-                      stress_temp(6) = stress_temp(6) + y_pos(k) * force_temp_comp(3)
-                      stress_temp(9) = stress_temp(9) + z_pos(k) * force_temp_comp(3)
+                stress_temp(1) = stress_temp(1) + x_pos(k) * force_temp_comp(1)
+                stress_temp(2) = stress_temp(2) + x_pos(k) * force_temp_comp(2)
+                stress_temp(3) = stress_temp(3) + x_pos(k) * force_temp_comp(3)
+                stress_temp(5) = stress_temp(5) + y_pos(k) * force_temp_comp(2)
+                stress_temp(6) = stress_temp(6) + y_pos(k) * force_temp_comp(3)
+                stress_temp(9) = stress_temp(9) + z_pos(k) * force_temp_comp(3)
 
-                   End If
-                End If
-             End Do
+              End If
+            End If
+          End Do
 
-          End If
-       End Do
+        End If
+      End Do
 
-       Deallocate (x_pos, y_pos, z_pos, dr_j, Stat=fail)
-       If (fail > 0) Call error_dealloc('position arrays', 'ewald_frzn_forces')
+      Deallocate (x_pos, y_pos, z_pos, dr_j, Stat=fail)
+      If (fail > 0) Call error_dealloc('position arrays', 'ewald_frzn_forces')
 
     End If
 
@@ -1246,8 +1221,8 @@ Contains
 
     Deallocate (l_ind, nz_fr, Stat=fail)
     If (fail > 0) Then
-       Write (message, '(a)') 'ewald_frzn_forces deallocation failure'
-       Call error(0, message)
+      Write (message, '(a)') 'ewald_frzn_forces deallocation failure'
+      Call error(0, message)
     End If
   End Subroutine ewald_frzn_forces
 
@@ -1266,22 +1241,19 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Use comms, Only: gsum
-    Use constants, Only: pi
-    Use parallel_fft, Only: pfft
-    Type(ewald_type),                      Intent(In   ) :: ewld
-    Real(Kind=wp), Dimension(9),           Intent(In   ) :: recip_cell
-    Real(Kind=wp), Dimension(:, :, :),     Intent(In   ) :: charge_grid
-    Complex(Kind=wp), Dimension(:, :, :),  Intent(  Out) :: potential_grid
-    Real(Kind=wp), Dimension(9),           Intent(  Out) :: stress_contrib
+    Type(ewald_type),                     Intent(In   ) :: ewld
+    Real(Kind=wp), Dimension(9),          Intent(In   ) :: recip_cell
+    Real(Kind=wp), Dimension(:, :, :),    Intent(In   ) :: charge_grid
+    Complex(Kind=wp), Dimension(:, :, :), Intent(  Out) :: potential_grid
+    Real(Kind=wp), Dimension(9),          Intent(  Out) :: stress_contrib
 
     Complex(Kind=wp)               :: potential_component
     Integer                        :: alpha, beta, j, j_local, jj, k, k_local, kk, l, l_local, ll
     Real(Kind=wp)                  :: bb1, bb2, bb3, cut_off, cut_off_2, f_p_fac, k_vec_2, m, &
-                                      pressure_virial, recip_conv_fac
+                                      pressure_virial, recip_conv_fac, test_fac
     Real(Kind=wp), Dimension(10)   :: recip_cell_properties
     Real(Kind=wp), Dimension(3, 3) :: recip_pos, stress_temp
-    Real(Kind=wp) :: test_fac
+
 !! SPME contribution to the stress
 !! Reciprocal lattice vectors
 !! Core function to FT
@@ -1362,8 +1334,8 @@ Contains
             ! By L'Hopital's rule, m=0 does not contribute to stress
 
             pressure_virial = Real(potential_component * &
-                 (-2.0_wp * ((1.0_wp + f_p_fac**2)/k_vec_2)) * &
-                 Conjg(potential_grid(j_local, k_local, l_local)), wp)
+                                   (-2.0_wp * ((1.0_wp + f_p_fac**2) / k_vec_2)) * &
+                                   Conjg(potential_grid(j_local, k_local, l_local)), wp)
 
             Do alpha = 1, 3
               Do beta = 1, 3

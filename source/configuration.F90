@@ -844,7 +844,6 @@ Contains
                                                 bxx, byy, bzz, &
                                                 cxx, cyy, czz
 
-    Character(Len=256)                          :: message
     Character(Len=256)                          :: messages(3)
     Integer                                     :: ierr
  
@@ -1449,7 +1448,7 @@ Contains
 
     Character(Len=1), Allocatable, Dimension(:, :) :: rec_buff
     Character(Len=200)                             :: record
-    Character(Len=256)                             :: message, messages(3)
+    Character(Len=256)                             :: messages(3)
     Character(Len=40)                              :: forma, word
     Character(Len=8), Allocatable, Dimension(:)    :: chbuf, chbuf_read, chbuf_scat
     Integer                                        :: ats_per_proc, batsz, Count(1:3), fail(1:8), &
@@ -3482,7 +3481,7 @@ Contains
       !Gather coords from each process into gathered%coords on master
       Call ggatherv(comm, coords, gathered%mpi%counts, &
                     gathered%mpi%displ, gathered%coords)
-    Else     
+    Else
       !Gather coords from each process into gathered%coords on all processes
       Call gallgatherv(comm, coords, gathered%mpi%counts, &
                        gathered%mpi%displ, gathered%coords)
@@ -3499,7 +3498,7 @@ Contains
     Integer               :: ia
     Real(wp), Allocatable :: local_forces(:,:)
     Type(mpi_distribution_type) :: mpi_index
-    
+
     Allocate (local_forces(3, config%natms))
     Do ia = 1, config%natms
       local_forces(:,ia) = (/config%parts(ia)%fxx,config%parts(ia)%fyy,config%parts(ia)%fzz/)
@@ -3512,7 +3511,7 @@ Contains
 
   End Subroutine gather_forces
 
-  
+
   !! @brief Unpack \p gathered%coords into 2D array
   !!
   !! Could be a member function of coordinate_buffer_type
@@ -3559,17 +3558,15 @@ Contains
   !!
   !! @param[inout]  comm             Object containing MPI communicator
   !! @param[in]     config           Object containing configuration data
-  !! @param[in]     to_master_only   Logic, broadcast to master only
   !! @param[inout]  atmnam           Gathered atomic names
   !
-  Subroutine gather_atomic_names(comm, config, to_master_only, atmnam)
+  Subroutine gather_atomic_names(comm, config, atmnam)
     Type(comms_type),                       Intent(InOut) :: comm
     Type(configuration_type),               Intent(In   ) :: config
-    Logical,                                Intent(In   ) :: to_master_only
     Character(Len=len_atmnam), Allocatable, Intent(InOut) :: atmnam(:)
 
     Integer, Allocatable :: displ(:), rec_size(:)
-    
+
     Call assert(Allocated(atmnam), &
                 'Gathered atmnam not allocated prior to calling gather_atomic_names')
     Call assert(Size(atmnam) == config%megatm, &
@@ -3630,7 +3627,7 @@ Contains
   End Subroutine distribute_forces
 
   !> Creates an index vector mapping the location of unique elements in a
-  !> to b, and vice versa. 
+  !> to b, and vice versa.
   !
   ! Example Usage:
   !  a = (/1,2,3,4,5,6,7,8,9,10/)
@@ -3646,7 +3643,7 @@ Contains
     Integer, Intent(In)  :: a(:), b(:)
     Integer, Allocatable, Intent(Out) :: b_to_a(:), a_to_b(:)
     Integer :: i,j
-    Character(Len=32) :: error_message 
+    Character(Len=60) :: error_message
 
     error_message = "Sizes of vectors a and b differ"
     Call assert(Size(a) == Size(b), error_message)
@@ -3654,9 +3651,9 @@ Contains
     Call assert(.not. all_elements_unique(a), error_message)
     error_message = "All elements vector b must be unique for mapping to work"
     Call assert(.not. all_elements_unique(b), error_message)
-    
+
     Allocate(b_to_a(Size(a)), a_to_b(Size(a)))
-    
+
     Do i=1,Size(a)
        Do j=1,Size(b)
           If(a(i) == b(j)) Then
@@ -3669,27 +3666,27 @@ Contains
 
   End Subroutine ordering_indices
 
-  
+
   !> Check if all elements of a vector are unique
   Function all_elements_unique(input) Result(unique)
     Integer, Intent(In)  :: input(:)
     Integer, Allocatable :: element(:)
     Integer :: i
-    Logical :: unique                  
+    Logical :: unique
 
-    unique = .True. 
+    unique = .True.
     Allocate(element(Size(input)))
     element(1) = input(1)
 
     Do i = 2, Size(input)
        If(Any(element == input(i))) Then
-          unique = .False. 
-          Return  
+          unique = .False.
+          Return
        Endif
     Enddo
 
     Return
   End Function all_elements_unique
 
-  
+
 End Module configuration

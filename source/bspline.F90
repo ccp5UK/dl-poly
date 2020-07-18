@@ -8,6 +8,7 @@ Module bspline
   !! author    - j.s.wilkins october 2018
   !!
   !!----------------------------------------------------------------------!
+  Use constants,       Only: twopi
   Use errors_warnings, Only: error,&
                              error_alloc,&
                              error_dealloc
@@ -201,11 +202,14 @@ Contains
     Integer,                                Intent(In   ) :: num_atoms
     Real(Kind=wp), Dimension(3, num_atoms), Intent(In   ) :: recip_coords
     Type(bspline_type),                     Intent(InOut) :: bspline
-    Integer                     :: i, j, k, l, n, s
-    Real(Kind=wp)               :: jm1_r, k_r, km1_rr
-    Real(Kind=wp), Dimension(3) :: current_bspline_centre, current_bspline_point
-    ! Size one larger to avoid overrun (optimising loop)
-    Real(Kind=wp), Dimension(3, 1:bspline%num_splines+1) :: current_zero_deriv, current_first_deriv
+
+    Integer                                              :: i, j, k, l, n, s
+    Real(Kind=wp)                                        :: jm1_r, k_r, km1_rr
+    Real(Kind=wp), Dimension(3)                          :: current_bspline_centre, &
+                                                            current_bspline_point
+    Real(Kind=wp), Dimension(3, 1:bspline%num_splines+1) :: current_first_deriv, current_zero_deriv
+
+! Size one larger to avoid overrun (optimising loop)
 
 !! Number of atoms to fill
 !! Coordinates of charge centres in reciprocal cell
@@ -248,7 +252,7 @@ Contains
           current_bspline_point(:) = current_bspline_centre(:) + jm1_r
 
           current_zero_deriv(:, j) = (current_bspline_point(:) * current_zero_deriv(:, j) + &
-               (k_r - current_bspline_point(:)) * current_zero_deriv(:, j + 1)) * km1_rr
+                                      (k_r - current_bspline_point(:)) * current_zero_deriv(:, j + 1)) * km1_rr
           ! bspline%derivs(:, 0, j, i) = (current_bspline_point(:) * bspline%derivs(:, 0, j, i) &
           !   & + (k_r - current_bspline_point(:)) * bspline%derivs(:, 0, j + 1, i)) * km1_rr
 
@@ -264,7 +268,7 @@ Contains
 
         k_r = real_no(s - l + 1)
         km1_rr = inv_no(s - l)
-        current_first_deriv(:,:) = 0.0_wp
+        current_first_deriv(:, :) = 0.0_wp
 
         Do j = 1, s - 1 !bspline%num_splines,2,-1
 
@@ -276,7 +280,7 @@ Contains
           ! end do
           Do n = 0, Min(l, s - j), 2
             current_first_deriv(:, j) = current_first_deriv(:, j) + ncombk(n, l) * current_zero_deriv(:, j + n)
-            current_first_deriv(:, j) = current_first_deriv(:, j) - ncombk(n+1, l) * current_zero_deriv(:, j + n+1)
+            current_first_deriv(:, j) = current_first_deriv(:, j) - ncombk(n + 1, l) * current_zero_deriv(:, j + n + 1)
           End Do
 
           ! Generate current point at a lag behind derivs
@@ -287,7 +291,7 @@ Contains
 
         End Do
 
-        bspline%derivs(:, l, 1:s-1, i) = current_first_deriv(:, 1:s-1)
+        bspline%derivs(:, l, 1:s - 1, i) = current_first_deriv(:, 1:s - 1)
         bspline%derivs(:, l, s, i) = current_zero_deriv(:, s)
 
         current_zero_deriv(:, s) = current_zero_deriv(:, s) * current_bspline_centre(:) * km1_rr
@@ -311,7 +315,6 @@ Contains
     !! amended   - i.t.todorov october 2006
     !!
     !!-----------------------------------------------------------------------
-    Use constants, Only: twopi
     Integer,          Intent(In   ) :: ndiv1, ndiv2, ndiv3
     Complex(Kind=wp), Intent(  Out) :: ww1(1:ndiv1), ww2(1:ndiv2), ww3(1:ndiv3)
 

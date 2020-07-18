@@ -958,7 +958,7 @@ Contains
     !when atoms move to different processes
     !Gather atomic coordinates and names (excluding halo atoms)
     Call gathered%initialise(comm, config%megatm*3)
-    Call gather_coordinates(comm, config, to_master_only, gathered)
+    Call gather_coordinates(comm, config, gathered)
     If(.not. Allocated(atmnam)) Allocate(atmnam(config%megatm))
     Call gather_atomic_names(comm, config, to_master_only, atmnam)
 
@@ -1042,7 +1042,7 @@ Contains
       ! Relocate atoms to new domains and restore bonding description
 
       Call relocate_particles(cnfig%dvar, neigh%cutoff_extended, flow%book, &
-                              msd_data%l_msd, cnfig%megatm, flow, cshell, cons, pmf, stat, ewld, thermo, green, &
+                              msd_data%l_msd, cnfig%megatm, flow, cshell, cons, pmf, stat,  thermo, green, &
                               bond, angle, dihedral, inversion, tether, neigh, sites, minim, mpoles, &
                               rigid, domain, cnfig, crd, comm)
 
@@ -1625,7 +1625,7 @@ Contains
   End Subroutine kinetic_options
 
   Subroutine statistics_report(cnfig, ttm, cshell, cons, pmf, stat, msd_data, zdensity, &
-                               sites, rdf, domain, flow, files, thermo, tmr, green, minim, comm, ff)
+                               sites, domain, flow, files, thermo, tmr, green, minim, comm, ff)
 
     Type(configuration_type), Intent(InOut) :: cnfig
     Type(ttm_type),           Intent(InOut) :: ttm
@@ -1636,7 +1636,6 @@ Contains
     Type(msd_type),           Intent(InOut) :: msd_data
     Type(z_density_type),     Intent(InOut) :: zdensity
     Type(site_type),          Intent(InOut) :: sites
-    Type(rdf_type),           Intent(In   ) :: rdf
     Type(domains_type),       Intent(In   ) :: domain
     Type(flow_type),          Intent(InOut) :: flow
     Type(file_type),          Intent(InOut) :: files(:)
@@ -1737,6 +1736,9 @@ Contains
 
       If (flow%step > 0) Then
         Call info(Repeat('-', 130), .true.)
+        Write (message, '(a,i10)') 'switching off equilibration at step ', flow%step
+        Call info(message, .true.)
+
         If (thermo%l_zero) Then
           thermo%l_zero = .false.
           Write (message, '(a,i10)') 'switching off zero Kelvin optimiser at step ', flow%step
@@ -2037,12 +2039,6 @@ Contains
       End If
 
       ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
-
-      ! If system is to write per-particle data AND write step AND not equilibration
-      If (stat%require_pp .and. Mod(flow%step, stat%intsta) == 0 .and. flow%step - flow%equil_steps >= 0) Then
-        Call stat%allocate_per_particle_arrays(cnfig%natms)
-      End If
-
       If (flow%step >= 0 .and. flow%step < flow%run_steps .and. cnfig%levcfg == 2) Then
 
         ! Increase step counter
@@ -2072,6 +2068,11 @@ Contains
 
       End If ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
 
+      ! If system is to write per-particle data AND write step AND not equilibration
+      If (stat%require_pp .and. Mod(flow%step, stat%intsta) == 0 .and. flow%step >= flow%equil_steps) Then
+        Call stat%allocate_per_particle_arrays(cnfig%natms)
+      End If
+
       ! Evaluate forces
 
       If (flow%simulation_method /= DFTB) Then
@@ -2091,7 +2092,7 @@ Contains
       Endif
 
       ! If system has written per-particle data
-      If (stat%collect_pp .and. flow%step - flow%equil_steps >= 0) Then
+      If (stat%collect_pp) Then
         heat_flux = calculate_heat_flux(stat, cnfig, comm)
 
         If (flow%heat_flux .and. comm%idnode == 0) Then
@@ -2115,7 +2116,7 @@ Contains
         Call checkcoord(cnfig, crd, sites, flow, stat, comm) 
         Call adf_calculate(cnfig, sites, flow, crd, adf, comm)
         Call statistics_report(cnfig, ttm, cshell, cons, pmf, stat, msd_data, zdensity, &
-                               sites, rdf, domain, flow, files, thermo, tmr, green, minim, comm)
+                               sites, domain, flow, files, thermo, tmr, green, minim, comm)
       End If
 
       ! DO THAT ONLY IF 0<flow%step<=flow%run_steps AND THIS IS AN OLD JOB (flow%newjob=.false.)
@@ -2146,7 +2147,7 @@ Contains
         ! Calculate physical quantities, collect statistics and report regularly
 
         Call statistics_report(cnfig, ttm, cshell, cons, pmf, stat, msd_data, zdensity, &
-                               sites, rdf, domain, flow, files, thermo, tmr, green, minim, comm)
+                               sites, domain, flow, files, thermo, tmr, green, minim, comm)
 
         ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
 
@@ -2422,7 +2423,7 @@ Contains
             Call adf_calculate(cnfig(ff), sites(ff), flow, crd(ff), adf(ff), comm)
           End If
           Call statistics_report(cnfig(ff), ttm(ff),cshell(ff), cons(ff), pmf(ff), stat(ff), msd_data(ff), zdensity, &
-                                 sites(ff), rdf(ff), domain(ff), flow,files, thermo(ff), tmr, green(ff), minim(ff), comm, ff)
+                                 sites(ff), domain(ff), flow,files, thermo(ff), tmr, green(ff), minim(ff), comm, ff)
         EndDo
       End If
 
@@ -2479,7 +2480,7 @@ Contains
         ! Calculate physical quantities, collect statistics and report regularly
         Do ff = 1, flow%NUM_FF
           Call statistics_report(cnfig(ff), ttm(ff), cshell(ff), cons(ff), pmf(ff), stat(ff), msd_data(ff), zdensity, &
-                                 sites(ff), rdf(ff), domain(ff), flow, files, thermo(ff), tmr, green(ff), minim(ff), comm, ff)
+                                 sites(ff), domain(ff), flow, files, thermo(ff), tmr, green(ff), minim(ff), comm, ff)
         End Do
 
         ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT

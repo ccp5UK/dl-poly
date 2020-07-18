@@ -118,7 +118,7 @@ Module flow_control
     Logical,            Public :: evbfail = .False.
 
     Logical, Public          :: l_vdw = .False.
-    
+
   Contains
     Procedure, Public :: new_page => flow_type_new_page
     Procedure, Public :: line_printed => flow_type_line_printed

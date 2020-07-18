@@ -284,6 +284,7 @@ Contains
     Character(len=256) :: message
     Integer(Kind=wi)   :: vacuum
     Logical            :: lfce
+    Real(wp)           :: s
 
     Call gtime(tmr%elapsed) ! Initialise wall clock time
 
@@ -564,6 +565,7 @@ Contains
 
     ! start-up time when forces are not recalculated
 
+    s = tmr%elapsed
 #ifdef CHRONO
     Call start_timer(tmr, 'Main Calc')
 #endif
@@ -616,8 +618,9 @@ Contains
     If (stats%statis_file_open) Call files(FILE_STATS)%close ()
 
     ! Report termination of the MD simulation
-    Write (message, '(3(a,f12.3),a)') 'run terminating... elapsed  cpu time: ', &
-      tmr%elapsed, ' sec, job time: ', tmr%job, ' sec, close time: ', tmr%clear_screen, ' sec'
+    s = tmr%elapsed - s
+    Write (message, '(2(a,g0.3),a)') 'Loop run terminating... elapsed  cpu time: ', &
+      s , ' s per time step: ', s / (flow%step + 1)
     Call info(message, .true.)
 
     ! Two-temperature model simulations: calculate final ionic temperatures and
