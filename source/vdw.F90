@@ -83,6 +83,7 @@ Module vdw
   Integer(Kind=wi), Parameter, Public :: VDW_LJ_MDF = 18
   Integer(Kind=wi), Parameter, Public :: VDW_BUCKINGHAM_MDF = 19
   Integer(Kind=wi), Parameter, Public :: VDW_126_MDF = 20
+  Integer(Kind=wi), Parameter, Public :: VDW_LJF = 21
 
   ! Mixing rule parameters
   !> Null
@@ -427,6 +428,26 @@ Contains
     End If
 
   End Subroutine MDF
+
+  Pure Subroutine ljf(r2,ea,sig2,rc2,e,v)
+    Real(wp), Intent(In   ) :: r2, ea, sig2, rc2
+    Real(wp), Intent(  Out) :: e, v
+
+    Real(wp) :: ir, rct, st,x
+    If (r2 > rc2) Then
+      e = 0.0_wp
+      v = 0.0_wp
+    Else
+      ir = 1.0_wp/r2
+      st = sig2*ir
+      rct = rc2*ir
+      x = ea * (rct - 1.0_wp)**2
+      e = x * (st - 1.0_wp)
+      v = 4.0_wp * ea * rct * (rct - 1.0_wp)*(st - 1.0_wp) &
+        + 2.0_wp * x * st
+    End If
+
+  End Subroutine ljf
 
   Pure Subroutine mlj(r, eps, sig, ri, rc, e, v)
     Real(wp), Intent(In   ) :: r, eps, sig, ri, rc
@@ -957,6 +978,9 @@ Contains
             eadd = intRadMDF("m126", a, b, 0.0_wp, c, vdws%cutoff, 1e-12_wp)
             padd = intdRadMDF("m126", a, b, 0.0_wp, c, vdws%cutoff, 1e-12_wp)
 
+          Case (VDW_LJF)
+            eadd = 0.0_wp
+            padd = 0.0_wp
           End Select
 
           ! Self-interaction accounted once, interaction between different species
@@ -1317,6 +1341,8 @@ Contains
         Call mlj126(vdws%cutoff, A, B, ri, vdws%cutoff, z, dz)
         vdws%afs(ivdw) = dz / vdws%cutoff
         vdws%bfs(ivdw) = -z - dz
+
+      Case (VDW_LJF)
 
       Case Default
 
@@ -2400,6 +2426,26 @@ Contains
           vdws%sigeps(1, ivdw) = sig
           vdws%sigeps(2, ivdw) = eps
         End If
+      Case (VDW_LJF)
+
+        ! LJ Frenkel U(r) = \eps*\alpha*((\sigma/r)**2-1)*((rc/r)**2-1)**2
+        a = vdws%param(1, ivdw)
+        b = vdws%param(2, ivdw)
+        ri = vdws%param(3, ivdw)
+
+        Do i = 1, vdws%max_grid
+          r = Real(i, wp) * dlrpot
+
+          Call ljf(r*r, A, B, ri,  phi, dphi)
+
+          vdws%tab_potential(i, ivdw) = phi
+          vdws%tab_force(i, ivdw) = dphi
+        End Do
+        vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
+        vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
+
+        vdws%sigeps(1, ivdw) = sig
+        vdws%sigeps(2, ivdw) = eps
 
       Case Default
 
@@ -2594,7 +2640,7 @@ Contains
 
           If (jatm <= config%natms .or. idi < config%ltg(jatm) .or. stats%collect_pp) &
                eng = 4.0_wp * eps * sor6 * (sor6 - 1.0_wp)
-          gamma = 24.0_wp * eps * sor6 * (2.0_wp * sor6 - 1.0_wp) * r_rsq
+          gamma = 48.0_wp * eps * sor6 * (sor6 - 0.5_wp) * r_rsq
 
           If (vdws%l_force_shift) Then ! force-shifting
             If (jatm <= config%natms .or. idi < config%ltg(jatm) .or. stats%collect_pp) &
@@ -3016,11 +3062,19 @@ Contains
           gamma = gamma * r_rsq
 
           ! by construction is zero outside vdws%cutoff so no shifting
-          If (vdws%l_force_shift) Then ! force-shifting
-            If (jatm <= config%natms .or. idi < config%ltg(jatm) .or. stats%collect_pp) &
-                 eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-            gamma = gamma - vdws%afs(k) * r_rrr
-          End If
+
+        Case(VDW_LJF)
+
+          a = vdws%param(1, k)
+          b = vdws%param(2, k)
+          ri = vdws%param(3, k)
+
+          Call ljf(rsq, a, b, ri, t1, gamma)
+          If (jatm <= config%natms .or. idi < config%ltg(jatm) .or. stats%collect_pp) &
+               eng = t1
+          gamma = gamma * r_rsq
+
+          ! by construction is zero outside vdws%cutoff so no shifting
 
         Case (VDW_TAB)
 

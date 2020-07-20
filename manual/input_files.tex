@@ -939,7 +939,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> default output channel (screen, interactive) \\
 \>                                              \> \\
 \> {\bf l\_tor}                                 \> abandon the production of REVIVE and REVCON \\
-\>                                              \> between all Verlet neighbour list pairs at re/start\\
+\>                                              \> between all Verlet neighbour list pairs at re/start \\
 \> {\bf l\_vdw}                                 \> dumps to file all tabled vdw interactions in the order \\
 \>                                              \> they appear in the field file \\
 \>                                              \> \\
@@ -2791,6 +2791,9 @@ $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - \left( \frac{\s
            &                           &            &          &          &                               & \\
 {\bf ljc}  & LJ cohesive \cite{barrat-99a} & $\epsilon$ & $\sigma$ & $c$  &                               &
 $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - c~\left( \frac{\sigma}{r}\right)^{6} \right]$ \\
+           &                           &            &          &          &                               & \\
+{\bf ljf}  & LJ Frenkel \cite{wang2019} & $\epsilon$ & $\sigma$ & $r_c$  &                               &
+  see Eq. \ref{eq:ljf} \\
            &                           &            &          &          &                               & \\
 {\bf nm}   & n-m \cite{mie-03a,clarke-86a} & $E_{o}$ & $n$     & $m$      & $r_{0}$                       &
 $U(r) = \frac{E_{o}}{(n-m)} \left[ m \left( \frac{r_{o}}{r} \right)^{n}

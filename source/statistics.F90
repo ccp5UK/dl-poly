@@ -2050,6 +2050,7 @@ Contains
     Integer(Kind=offset_Kind)                :: rec_mpi_io
     Real(Kind=wp), Allocatable, Dimension(:) :: dummy
     Type(io_type)                            :: my_io
+    Real(Kind=wp)                            :: velocity(3)
 
 !! Atom details
 !! Communicator
@@ -2112,6 +2113,11 @@ Contains
     End If
 
     Call gsync(comm)
+
+    Do i = 1 , config%natms
+      velocity = [config%vxx(i), config%vyy(i), config%vzz(i)]
+      dummy(i) = 0.5_wp * config%weight(i) * Dot_product(velocity, velocity) /engunit
+    End Do
 
     Call io_set_parameters(my_io, user_comm=comm%comm)
     Call io_open(my_io, io_write, comm%comm, Trim(filename), mode_wronly, energy_force_handle) ! Io sorted mpiio, per-particle contrib

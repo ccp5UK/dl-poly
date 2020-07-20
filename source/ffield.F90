@@ -108,7 +108,7 @@ Module ffield
                              VDW_HYDROGEN_BOND, VDW_LENNARD_JONES, VDW_LENNARD_JONES_COHESIVE, &
                              VDW_LJ_MDF, VDW_MORSE, VDW_MORSE_12, VDW_NULL, VDW_N_M, &
                              VDW_N_M_SHIFT, VDW_RYDBERG, VDW_TAB, VDW_WCA, VDW_ZBL, &
-                             VDW_ZBL_SWITCH_BUCKINGHAM, VDW_ZBL_SWITCH_MORSE, &
+                             VDW_ZBL_SWITCH_BUCKINGHAM, VDW_ZBL_SWITCH_MORSE, VDW_LJF, &
                              vdw_direct_fs_generate, vdw_generate, vdw_table_read, vdw_type
 
   Implicit None
@@ -154,6 +154,7 @@ Contains
     ! contrib   - a.m.elena march 2019 (remove error 145)
     ! contrib   - i.scivetti may 2019 (EVB implementation)
     ! amended   - i.t.todorov march 2020 tersoff_generate call dependence added
+    ! contrib   - a.m.elena july 2020 (ljf)
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -3665,6 +3666,8 @@ Contains
             keypot = VDW_BUCKINGHAM_MDF
           Else If (keyword == 'm126') Then
             keypot = VDW_126_MDF
+          Else If (keyword == 'ljf') Then
+            keypot = VDW_LJF
           Else
             Call info(keyword, .true.)
             Call error(452)
@@ -3702,38 +3705,50 @@ Contains
 
             parpot(1) = parpot(1) * engunit
 
-            If (keypot == VDW_12_6) Then
+            Select Case(keypot)
+            Case(VDW_12_6)
               parpot(2) = parpot(2) * engunit
-            Else If (keypot == VDW_BUCKINGHAM) Then
+            Case(VDW_BUCKINGHAM)
               parpot(3) = parpot(3) * engunit
-            Else If (keypot == VDW_BORN_HUGGINS_MEYER) Then
+            Case(VDW_BORN_HUGGINS_MEYER)
               parpot(4) = parpot(4) * engunit
               parpot(5) = parpot(5) * engunit
-            Else If (keypot == VDW_HYDROGEN_BOND) Then
+            Case(VDW_HYDROGEN_BOND)
               parpot(2) = parpot(2) * engunit
-            Else If (keypot == VDW_WCA) Then
+            Case(VDW_WCA)
               parpot(2) = Abs(parpot(2))
               If (parpot(3) > parpot(2) / 2.0_wp) &
                 parpot(3) = Sign(1.0_wp, parpot(3)) * parpot(2) / 2.0_wp
               parpot(4) = 2.0_wp**(1.0_wp / 6.0_wp) * parpot(2) + parpot(3)
-            Else If (keypot == VDW_MORSE_12) Then
+            Case(VDW_MORSE_12)
               parpot(4) = parpot(4) * engunit
-            Else If (keypot == VDW_RYDBERG) Then
+            Case(VDW_RYDBERG)
               parpot(2) = parpot(2) * engunit
-            Else If (keypot == VDW_ZBL) Then
+            Case(VDW_ZBL)
               parpot(1) = parpot(1) / engunit
-            Else If (keypot == VDW_ZBL_SWITCH_MORSE) Then
+            Case(VDW_ZBL_SWITCH_MORSE)
               parpot(1) = parpot(1) / engunit
               parpot(5) = parpot(5) * engunit
-            Else If (keypot == VDW_ZBL_SWITCH_BUCKINGHAM) Then
+            Case(VDW_ZBL_SWITCH_BUCKINGHAM)
               parpot(1) = parpot(1) / engunit
               parpot(5) = parpot(5) * engunit
               parpot(7) = parpot(7) * engunit
-            Else If (keypot == VDW_BUCKINGHAM_MDF) Then
+            Case(VDW_BUCKINGHAM_MDF)
               parpot(3) = parpot(3) * engunit
-            Else If (keypot == VDW_126_MDF) Then
+            Case(VDW_126_MDF)
               parpot(2) = parpot(2) * engunit
-            End If
+            Case(VDW_LJF)
+              Block
+                Real(kind=wp) :: x,rc,s,a
+                s = parpot(2)
+                rc = parpot(3)
+                x = (rc/s)**2
+                a = 0.25_wp * x*(3.0_wp/(x-1.0_wp))**3
+                parpot(1) = parpot(1) * a
+                parpot(2) = parpot(2)**2
+                parpot(3) = parpot(3)**2
+              End Block
+            End Select
           End If
 
           katom1 = 0
@@ -3766,47 +3781,51 @@ Contains
           End Do
 
           If (thermo%key_dpd /= DPD_NULL) Then ! store possible specification of DPD's gamma_ij
-            If (keypot == VDW_TAB) Then
+            Select Case(keypot)
+            Case(VDW_TAB)
               thermo%gamdpd(keyvdw) = Abs(parpot(1))
-            Else If (keypot == VDW_12_6) Then
+            Case(VDW_12_6)
               thermo%gamdpd(keyvdw) = Abs(parpot(3))
-            Else If (keypot == VDW_LENNARD_JONES) Then
+            Case( VDW_LENNARD_JONES)
               thermo%gamdpd(keyvdw) = Abs(parpot(3))
-            Else If (keypot == VDW_N_M) Then
+            Case(VDW_N_M)
               thermo%gamdpd(keyvdw) = Abs(parpot(5))
-            Else If (keypot == VDW_BUCKINGHAM) Then
+            Case(VDW_BUCKINGHAM)
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
-            Else If (keypot == VDW_BORN_HUGGINS_MEYER) Then
+            Case(VDW_BORN_HUGGINS_MEYER)
               thermo%gamdpd(keyvdw) = Abs(parpot(6))
-            Else If (keypot == VDW_HYDROGEN_BOND) Then
+            Case(VDW_HYDROGEN_BOND)
               thermo%gamdpd(keyvdw) = Abs(parpot(3))
-            Else If (keypot == VDW_N_M_SHIFT) Then
+            Case(VDW_N_M_SHIFT)
               thermo%gamdpd(keyvdw) = Abs(parpot(6))
-            Else If (keypot == VDW_MORSE) Then
+            Case(VDW_MORSE)
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
-            Else If (keypot == VDW_WCA) Then
+            Case(VDW_WCA)
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
-            Else If (keypot == VDW_DPD) Then
+            Case(VDW_DPD)
               thermo%gamdpd(keyvdw) = Abs(parpot(3))
-            Else If (keypot == VDW_AMOEBA) Then
+            Case(VDW_AMOEBA)
               thermo%gamdpd(keyvdw) = Abs(parpot(3))
-            Else If (keypot == VDW_LENNARD_JONES_COHESIVE) Then
+            Case(VDW_LENNARD_JONES_COHESIVE)
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
-            Else If (keypot == VDW_MORSE_12) Then
+            Case(VDW_MORSE_12)
               thermo%gamdpd(keyvdw) = Abs(parpot(5))
-            Else If (keypot == VDW_RYDBERG) Then
+            Case(VDW_RYDBERG)
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
-            Else If (keypot == VDW_ZBL) Then
+            Case(VDW_ZBL)
               thermo%gamdpd(keyvdw) = Abs(parpot(5))
-            Else If (keypot == VDW_ZBL_SWITCH_MORSE) Then
+            Case(VDW_ZBL_SWITCH_MORSE)
               thermo%gamdpd(keyvdw) = Abs(parpot(8))
-            Else If (keypot == VDW_ZBL_SWITCH_BUCKINGHAM) Then
+            Case(VDW_ZBL_SWITCH_BUCKINGHAM)
               thermo%gamdpd(keyvdw) = Abs(parpot(8))
-            Else If (keypot == VDW_LJ_MDF) Then
+            Case(VDW_LJ_MDF)
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
-            Else If (keypot == VDW_BUCKINGHAM_MDF) Then
+            Case(VDW_BUCKINGHAM_MDF)
               thermo%gamdpd(keyvdw) = Abs(parpot(5))
-            End If
+            Case(VDW_LJF)
+              thermo%gamdpd(keyvdw) = Abs(parpot(4))
+            End Select
+
             If (thermo%gamdpd(0) > zero_plus) thermo%gamdpd(keyvdw) = thermo%gamdpd(0) ! override
           End If
         End Do

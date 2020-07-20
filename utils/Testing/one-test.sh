@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-DLP_ROOT=/home/drFaustroll/playground/dlpoly/dl-poly-devel
+DLP_ROOT=/home/drFaustroll/playground/dlpoly/dl-poly-alin
 data="${DLP_ROOT}/data"
 genTest(){
   test=$1
   iterations="$2"
-  name=$(grep "TEST $test" $data/README.txt | cut -d "-" -f 2-) 
+  name=$(grep "${test/TEST/TEST } " $DLP_ROOT/data/README.txt | cut -d "-" -f 2-) 
   echo "processing test $test - $name"
   tar -xf $data/${test}.tar.xz 
   pushd ${test}
@@ -17,7 +17,7 @@ genTest(){
       echo "        <${prop} iteration=\"${iteration}\">${val}</${prop}>" >> ../$testf
     done
   done
-  echo "    </testcase>" >> $testf
+  echo "    </testcase>" >> ../$testf
   rm -rf ${test}
   popd
 }

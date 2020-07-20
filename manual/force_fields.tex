@@ -1084,6 +1084,21 @@ U(r_{ij}) = 4\epsilon\left[\left
 This potential has an extra constant to tune the attractive part of the
 potential serving to describe the different cohesiveness between different
 fluids and surfaces in engineering flows models.
+\item Lennard Jones, generalised by Frenkel et al. \cite{wang2019}: ({\bf ljf})
+  \begin{equation}
+     U(r_{ij}) = \left\{
+\begin{array}{lr}
+\varepsilon_{AB}\alpha_{AB}\left[ \left(\frac{\sigma_{AB}}{r_{ij}}\right)^2 -1\right]\left[ \left(\frac{r_{AB}^c}{r_{ij}}\right)^2 -1\right]^2 & r \leq r_{AB}^c \\
+0 & r >  r_{AB}^c \\
+\end{array}
+\right.
+  \label{eq:ljf}
+  \end{equation}
+    with
+\begin{equation}
+    \alpha_{AB} = \frac{1}{4}\left(\frac{r_{AB}^c}{\sigma_{AB}}\right)^2\left( \frac{3}{\left(\frac{r_{AB}^c}{\sigma_{AB}}\right)^2-1}\right)^3
+\end{equation}
+
 \item n-m potential (aka Mie) \cite{mie-03a,clarke-86a}:  ({\bf nm})
 \begin{equation}
 U(r_{ij}) = \frac{E_{o}}{(n-m)}\left[m\left
