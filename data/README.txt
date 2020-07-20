@@ -196,3 +196,4 @@ TEST 178 - Sodium Chloride (27,000 ions) - Use of a force-shifting procedure to 
 TEST 179 - Sodium Chloride (27,000 ions) - Direct calculation of vdW interactions (as in TEST177) plus use of a force-shifting procedure (as TEST178)
 
 TEST 181 - Pseudo thermostat
+TEST 182 - LJ liquid with generalised lj potential ala Frenkel
