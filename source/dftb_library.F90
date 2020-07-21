@@ -83,29 +83,39 @@ Contains
   
   !> @brief Perform a DFTB calculation with DFTB+ 19.2
   !!
-  !! @param[inout] comm     Object containing MPI communicator       
-  !! @param[in]    flow     Object containing MD step/time data     
-  !! @param[inout] geo      Object containing all geometry data
-  !! @param[inout] forces   Forces (in units of Ha/B)
-  !! @param[inout] atomic_charges Atomic charges 
+  !! @param[inout] comm            Object containing MPI communicator       
+  !! @param[in]    flow            Object containing MD step/time data     
+  !! @param[inout] geo             Object containing all geometry data
+  !! @param[inout] forces          Forces (in units of Ha/B)
+  !! @param[inout] atomic_charges  Atomic charges
+  !! @param[in] run_app_test       Logical indicating whether or not dftb+ app
+  !!                               test is running 
   !
-  Subroutine run_dftbplus(comm, flow, geo, forces, atomic_charges)
+  Subroutine run_dftbplus(comm, flow, geo, forces, atomic_charges, run_app_test)
 
-    Type(comms_type), Intent( InOut ) :: comm
-    Type(flow_type),  Intent( In ) :: flow
-    Type(dftb_geometry_type), Intent( In) :: geo
-    Real(wp), Allocatable, Intent(InOut)  :: forces(:,:), atomic_charges(:)
-
+    Type(comms_type),         Intent( InOut ) :: comm
+    Type(flow_type),          Intent( In    ) :: flow
+    Type(dftb_geometry_type), Intent( In    ) :: geo
+    Real(wp), Allocatable,    Intent( InOut ) :: forces(:,:), atomic_charges(:)
+    Logical,  Optional,       Intent( In    ) :: run_app_test
+    
     Type(TDftbPlus), Save :: dftb
     Type(TDftbPlusInput)  :: hsd_tree
     Real(wp) :: merminEnergy
     Integer, Allocatable, Save :: prior_species(:)
-
+    Logical :: always_set_species_and_dependents
+    
     Call assert(Allocated(forces), &
          message = 'Forces must be allocated upon calling run_dftbplus')
     Call assert(Allocated(atomic_charges), &
          message = 'Atomic charges must be allocated upon calling run_dftbplus')
 
+    If (Present(run_app_test)) Then
+       always_set_species_and_dependents = run_app_test
+    Else
+       always_set_species_and_dependents = .false.
+    Endif
+    
     If(comm%idnode == root_id) Then
        Write(*,*) 'On MD step: ', flow%step
     Endif
@@ -123,7 +133,8 @@ Contains
 
     Call dftb%setGeometry(geo%coords, geo%lattice)
 
-    If(Any(prior_species /= geo%species)) Then
+    If(Any(prior_species /= geo%species) .or. &
+       always_set_species_and_dependents) Then
        !write(*,*) 'Resetting Species and Dependents got called on MD step:',flow%step
        prior_species = geo%species
        Call dftb%setSpeciesAndDependents(geo%speciesNames, geo%species)

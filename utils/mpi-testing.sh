@@ -2,6 +2,7 @@
 
 module load gnu openmpi/3.1.1 netcdf-fortran/4.4.4  pnetcdf/4.6.1
 module load plumed/gnu
+module load scalapack/2.0.2 dftb+/gcc/19.2
 module load openblas
 
 folder="build-mpi-testing"

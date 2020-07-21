@@ -932,35 +932,37 @@ Contains
   !! @param[in]    flow      Object containing MD step/time data
   !! @param[inout] config    Object containing configuration data
   !!                         Returns updated forces in config
+  !! @param[in]    devel     Object containing developement data 
   !
-  Subroutine calculate_dftb_forces(comm, flow, config)
+  Subroutine calculate_dftb_forces(comm, flow, config, devel)
     Type(comms_type),         Intent( InOut ) :: comm
     Type(flow_type),          Intent( In    ) :: flow
     Type(configuration_type), Intent( InOut ) :: config
+    Type(development_type),   Intent( In    ) :: devel
 
 #ifdef DFTBP
     !> Gathered coordinates and mpi index arrays
-    Type(coordinate_buffer_type)             :: gathered
+    Type(coordinate_buffer_type) :: gathered
     !> Gathered atom names
-    Character(len=len_atmnam),   Allocatable :: atmnam(:)
+    Character(len=len_atmnam), Allocatable :: atmnam(:)
     !> DFTB+ geometry object
-    Type(dftb_geometry_type),    Save        :: geo
+    Type(dftb_geometry_type) :: geo
     !> DFTB+ forces
-    Real(wp), Save,              Allocatable :: forces(:,:)
+    Real(wp), Allocatable :: forces(:,:)
     !> DFTB+ atomic Mulliken charges
-    Real(wp), Save,              Allocatable :: atomic_charges(:)
+    Real(wp), Allocatable :: atomic_charges(:)
     !>DFTB+ requires all geometry data on every process
     Logical, Parameter :: to_master_only = .false.
     !> Unit conversion factor
-    Real(wp), Save     :: unit_factor
+    Real(wp) :: unit_factor
 
-    !NOTE: In principal, only need to init/finalise
+    !NOTE: In principle, only need to init/finalise
     !when atoms move to different processes
     !Gather atomic coordinates and names (excluding halo atoms)
     Call gathered%initialise(comm, config%megatm*3)
-    Call gather_coordinates(comm, config, gathered)
+    Call gather_coordinates(comm, config, to_master_only, gathered)
     If(.not. Allocated(atmnam)) Allocate(atmnam(config%megatm))
-    Call gather_atomic_names(comm, config, to_master_only, atmnam)
+    Call gather_atomic_names(comm, config, atmnam)
 
     !Number of atoms and species types conserved, hence assign once
     If(flow%step == flow%initial_md_step) Then
@@ -971,8 +973,14 @@ Contains
     Endif
 
     Call geo%set_geometry(comm, config, gathered, atmnam)
-    !Call print_DFTB_geometry_data(geo, flow%step)
-    Call run_dftbplus(comm, flow, geo, forces, atomic_charges)
+    If (devel%app_test%dftb_library) Then
+       !Call print_DFTB_geometry_data(geo, flow%step)
+       Call run_dftbplus(comm, flow, geo, forces, atomic_charges, &
+                         run_app_test = devel%app_test%dftb_library)
+    Else
+       Call run_dftbplus(comm, flow, geo, forces, atomic_charges)
+    Endif
+       
     !TODO(Alex) Consider doing this over unit conversion after assignment to config
     !forces(:,:) = forces(:,:) * unit_factor
 
@@ -2082,13 +2090,14 @@ Contains
                               msd_data, tmr, files, green, devel, ewld, &
                               met, seed, thermo, crd, comm)
       Else If (flow%simulation_method == DFTB) Then
-         Call calculate_dftb_forces(comm, flow, cnfig)
+         Call calculate_dftb_forces(comm, flow, cnfig, devel)
          !Output forces for app test
-#ifdef DFTBP
-         If(devel%app_test%dftb_library) Then
-            Call output_dftb_forces(comm, flow, cnfig)
-         Endif
-#endif
+         !TODO(Alex) Remove this in favour of STATIS 
+!!$#ifdef DFTBP
+!!$         If(devel%app_test%dftb_library) Then
+!!$            Call output_dftb_forces(comm, flow, cnfig)
+!!$         Endif
+!!$#endif
       Endif
 
       ! If system has written per-particle data

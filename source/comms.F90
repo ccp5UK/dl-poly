@@ -304,13 +304,15 @@ Contains
     Integer, Parameter :: requiredThreading=MPI_THREAD_FUNNELED
     Integer, Parameter :: errorcode = 0
     Integer            :: providedThreading
+    Integer            :: idnode 
 
-    Call MPI_INIT_THREAD(requiredThreading, providedThreading,comm%ierr)
+    Call MPI_INIT_THREAD(requiredThreading, providedThreading, comm%ierr)
     If( providedThreading < requiredThreading )Then
-       if(comm%idnode == root_id)then
+       Call MPI_COMM_RANK(MPI_COMM_WORLD, idnode, comm%ierr)
+       if(idnode == root_id)then
           Write(error_unit,'(1x,a,I1,a,I1)') 'error - MPI library threading support, ',&
                providedThreading,', is less than that required by DFTB+ v18.2, ',requiredThreading
-          Call MPI_ABORT(MPI_COMM_WORLD,errorcode,comm%ierr)
+          Call MPI_ABORT(MPI_COMM_WORLD, errorcode, comm%ierr)
        End if
     End If
 #else
