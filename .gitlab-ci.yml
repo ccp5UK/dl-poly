@@ -72,12 +72,26 @@ build-mpi-all:
   script:
     - sh utils/build-mpi-all.sh
 
+build-gcc-dftbp:
+  stage: build
+  tags: 
+    - gcc
+  script:
+    - sh utils/build-mpi-gnu-dftbp.sh
+
 build-intel:
   stage: build
   tags: 
     - intel
   script:
     - sh utils/build-intel.sh
+
+      #build-intel-dftbp:
+      #  stage: build
+      #  tags: 
+      #    - intel
+      #  script:
+      #    - sh utils/build-intel-dftbp.sh
 
 #build-manual:
 #  stage: manual
