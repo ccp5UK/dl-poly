@@ -836,8 +836,8 @@ written in the format ``(1p,5e14.6)''.  The number of array
 elements required (determined by the parameter {\tt mxnstk} in the
 {\sc setup\_module} file) is
 \begin{eqnarray}
-{\tt mxnstk} & \ge & 28 + {\tt ntpatm}~(\rm number~of~unique~atomic~sites) ~+ \nonumber \\
-             &     & 9~(\rm stress~tensor~elements) ~+ \nonumber \\
+{\tt mxnstk} & \ge & 28 + 9~(\rm stress~tensor~elements) ~+ \nonumber \\
+             &     & {\tt ntpatm}~(\rm number~of~unique~atomic~sites) ~+ \nonumber \\
              &     & 10~(\rm if~constant~pressure~simulation~requested) ~+ \nonumber \\
              &     & 2~(\rm if~iso~>~0~requested) + 2~(\rm if~iso~>~1~requested) ~+ \nonumber \\
              &     & 2*mxatdm~(\rm if~msdtmp~option~is~used) \nonumber
@@ -890,11 +890,6 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt virpmf} \> real    \> PMF constraint virial \\
 \> {\tt press}  \> real    \> pressure, ${\cal P}$ \\
 \> {\tt consv}  \> real    \> extended DoF energy, $E_{consv}$ \\
-{\bf the next {\tt ntpatm} entries} \\
-\> {\tt amsd(1)} \> real   \> mean squared displacement of first atom types \\
-\> {\tt amsd(2)} \> real   \> mean squared displacement of second atom types \\
-\> {\tt ...} \> ... \> ... \\
-\> {\tt amsd(ntpatm)} \> real \> mean squared displacement of last atom types \\
 {\bf the next 9 entries for the stress tensor in pressure units} \\
 \> {\tt stress(1)} \> real \> xx component of stress tensor \\
 \> {\tt stress(2)} \> real \> xy component of stress tensor \\
@@ -902,6 +897,11 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt stress(4)} \> real \> yx component of stress tensor \\
 \> {\tt ...} \> real \> ... \\
 \> {\tt stress(9)} \> real \> zz component of stress tensor \\
+{\bf the next {\tt ntpatm} entries} \\
+\> {\tt amsd(1)} \> real   \> mean squared displacement of first atom types \\
+\> {\tt amsd(2)} \> real   \> mean squared displacement of second atom types \\
+\> {\tt ...} \> ... \> ... \\
+\> {\tt amsd(ntpatm)} \> real \> mean squared displacement of last atom types \\
 {\bf the next 10 entries - {\em if} a NPT or N$\mat{\sigma}$T simulation is undertaken} \\
 \> {\tt cell(1)} \> real   \> x component of $a$ cell vector \\
 \> {\tt cell(2)} \> real   \> y component of $a$ cell vector \\

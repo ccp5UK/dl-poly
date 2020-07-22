@@ -318,9 +318,9 @@ Contains
       Do i = 1, config%natms
         k = 2 * i
 
-        If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(27 + k) / (boltz * 3.0_wp)
+        If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(36 + k) / (boltz * 3.0_wp)
 
-   Write (record, Fmt='(a8,i10,1p,2e13.4,a8,a1)') config%atmnam(i), config%ltg(i), Sqrt(stpval(27 + k - 1)), tmp, Repeat(' ', 8), lf
+   Write (record, Fmt='(a8,i10,1p,2e13.4,a8,a1)') config%atmnam(i), config%ltg(i), Sqrt(stpval(36 + k - 1)), tmp, Repeat(' ', 8), lf
         jj = jj + 1
         Do k = 1, recsz
           chbat(k, jj) = record(k:k)
@@ -371,9 +371,9 @@ Contains
           iwrk(i) = config%ltg(i)
           chbuf(i) = config%atmnam(i)
 
-          ddd(i) = Sqrt(stpval(27 + k - 1))
+          ddd(i) = Sqrt(stpval(36 + k - 1))
 
-          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(27 + k) / (boltz * 3.0_wp)
+          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(36 + k) / (boltz * 3.0_wp)
           eee(i) = tmp
         End Do
 
@@ -422,9 +422,9 @@ Contains
         Do i = 1, config%natms
           k = 2 * i
 
-          ddd(i) = Sqrt(stpval(27 + k - 1))
+          ddd(i) = Sqrt(stpval(36 + k - 1))
 
-          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(27 + k) / (boltz * 3.0_wp)
+          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(36 + k) / (boltz * 3.0_wp)
           eee(i) = tmp
         End Do
 
@@ -494,9 +494,9 @@ Contains
       Do i = 1, config%natms
         k = 2 * i
 
-        ddd(i) = Sqrt(stpval(27 + k - 1))
+        ddd(i) = Sqrt(stpval(36 + k - 1))
 
-        If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(27 + k) / (boltz * 3.0_wp)
+        If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(36 + k) / (boltz * 3.0_wp)
         eee(i) = tmp
       End Do
 
@@ -561,9 +561,9 @@ Contains
           iwrk(i) = config%ltg(i)
           chbuf(i) = config%atmnam(i)
 
-          ddd(i) = Sqrt(stpval(27 + k - 1))
+          ddd(i) = Sqrt(stpval(36 + k - 1))
 
-          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(27 + k) / (boltz * 3.0_wp)
+          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(36 + k) / (boltz * 3.0_wp)
           eee(i) = tmp
         End Do
 
@@ -601,9 +601,9 @@ Contains
         Do i = 1, config%natms
           k = 2 * i
 
-          ddd(i) = Sqrt(stpval(27 + k - 1))
+          ddd(i) = Sqrt(stpval(36 + k - 1))
 
-          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(27 + k) / (boltz * 3.0_wp)
+          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(36 + k) / (boltz * 3.0_wp)
           eee(i) = tmp
         End Do
 

@@ -558,7 +558,7 @@ Contains
   !! @param[in]    flow      Object containing MD step/time data
   !! @param[inout] config    Object containing configuration data
   !!                         Returns updated forces in config
-  !! @param[in]    devel     Object containing developement data 
+  !! @param[in]    devel     Object containing developement data
   !
   Subroutine calculate_dftb_forces(comm, flow, config, devel)
     Type(comms_type),         Intent( InOut ) :: comm
@@ -606,7 +606,7 @@ Contains
     Else
        Call run_dftbplus(comm, flow, geo, forces, atomic_charges)
     Endif
-       
+
     !TODO(Alex) Consider doing this over unit conversion after assignment to config
     !forces(:,:) = forces(:,:) * unit_factor
 
@@ -1704,7 +1704,7 @@ Contains
       Else If (flow%simulation_method == DFTB) Then
          Call calculate_dftb_forces(comm, flow, cnfig, devel)
          !Output forces for app test
-         !TODO(Alex) Remove this in favour of STATIS 
+         !TODO(Alex) Remove this in favour of STATIS
 !!$#ifdef DFTBP
 !!$         If(devel%app_test%dftb_library) Then
 !!$            Call output_dftb_forces(comm, flow, cnfig)

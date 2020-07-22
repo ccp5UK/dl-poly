@@ -568,6 +568,12 @@ Contains
     iadd = 27
 
     ! iadd = iadd + 1 ! for the stpval(0)!!! Thus to account for in printing
+    ! pressure tensor (derived for the stress tensor)
+
+    Do i = 1, 9
+      stats%stpval(iadd + i) = stats%strtot(i) * prsunt / stats%stpvol
+    End Do
+    iadd = iadd + 9
 
     ! mean squared displacements per species, dependent on
     ! particle displacements from initial positions (at t=0)
@@ -668,13 +674,6 @@ Contains
     End Do
     iadd = iadd + sites%ntype_atom
 
-    ! pressure tensor (derived for the stress tensor)
-
-    Do i = 1, 9
-      stats%stpval(iadd + i) = stats%strtot(i) * prsunt / stats%stpvol
-    End Do
-    iadd = iadd + 9
-
     If (thermo%variable_cell) Then
 
       ! cell parameters
@@ -713,10 +712,11 @@ Contains
       End If
 
       If (lmsd) Then
-        Write (files(FILE_STATS)%unit_no, '(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &
-          nstep, time, iadd + 1 - 2 * mxatdm, stats%stpval(1:27), stats%stpval(0), stats%stpval(28 + 2 * mxatdm:iadd)
+        Write (files(FILE_STATS)%unit_no, '(i10,1p,e14.6,0p,i10,/, (1p,5e14.6))') &
+          nstep, time, iadd + 1 - 2 * mxatdm, stats%stpval(1:27), stats%stpval(0), stats%stpval(28:36), &
+          stats%stpval(37 + 2 * mxatdm:iadd)
       Else
-        Write (files(FILE_STATS)%unit_no, '(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &
+        Write (files(FILE_STATS)%unit_no, '(i10,1p,e14.6,0p,i10,/, (1p,5e14.6))') &
           nstep, time, iadd + 1, stats%stpval(1:27), stats%stpval(0), stats%stpval(28:iadd)
       End If
 
@@ -900,7 +900,7 @@ Contains
                 stats%zto(config%lsi(i)) = stats%zto0(stats%lsi0(i0))
 
                 If (lmsd) Then
-                  j = 27 + 2 * config%lsi(i)
+                  j = 36 + 2 * config%lsi(i)
                   j0 = 2 * stats%lsi0(i0)
                   stats%stpvl0(j - 1) = stats%stpvl00(j0 - 1)
                   stats%stpvl0(j) = stats%stpvl00(j0)
@@ -1218,12 +1218,12 @@ Contains
 
       If (lmsd) Then
         i0 = 2 * stats%natms0
-        stats%stpvl00(1:i0) = stats%stpvl0(28:27 + i0) !;stats%stpvl00(i0+1: )=0.0_wp
-        stats%stpval0(1:i0) = stats%stpval(28:27 + i0) !;stats%stpval0(i0+1: )=0.0_wp
-        stats%zumval0(1:i0) = stats%zumval(28:27 + i0) !;stats%zumval0(i0+1: )=0.0_wp
-        stats%ravval0(1:i0) = stats%ravval(28:27 + i0) !;stats%ravval0(i0+1: )=0.0_wp
-        stats%ssqval0(1:i0) = stats%ssqval(28:27 + i0) !;stats%ssqval0(i0+1: )=0.0_wp
-        stats%sumval0(1:i0) = stats%sumval(28:27 + i0) !;stats%sumval0(i0+1: )=0.0_wp
+        stats%stpvl00(1:i0) = stats%stpvl0(37:36 + i0) !;stats%stpvl00(i0+1: )=0.0_wp
+        stats%stpval0(1:i0) = stats%stpval(37:36 + i0) !;stats%stpval0(i0+1: )=0.0_wp
+        stats%zumval0(1:i0) = stats%zumval(37:36 + i0) !;stats%zumval0(i0+1: )=0.0_wp
+        stats%ravval0(1:i0) = stats%ravval(37:36 + i0) !;stats%ravval0(i0+1: )=0.0_wp
+        stats%ssqval0(1:i0) = stats%ssqval(37:36 + i0) !;stats%ssqval0(i0+1: )=0.0_wp
+        stats%sumval0(1:i0) = stats%sumval(37:36 + i0) !;stats%sumval0(i0+1: )=0.0_wp
         Do kk = 1, stats%mxstak
           stats%stkval0(kk, 1:i0) = stats%stkval(kk, 1:i0) !;stats%stkval0(kk,i0+1: )=0.0_wp
         End Do
@@ -1740,7 +1740,8 @@ Contains
     ! Print pressure tensor and jump to possible RDF and Z-Density
 
     If (nstep == 0 .and. nstrun == 0) Then
-      iadd = 27 + 2 * Merge(mxatdm, 0, lmsd) + sites%ntype_atom
+      !iadd = 27 + 2 * Merge(mxatdm, 0, lmsd) + sites%ntype_atom
+      iadd = 27
 
       If (comm%idnode == 0) Then
         Write (message, '(a)') 'pressure tensor  (katms):'
@@ -1828,6 +1829,26 @@ Contains
 
       iadd = 27
 
+      ! print out average pressure tensor
+
+      If (comm%idnode == 0) Then
+        Write (messages(1), '(a)') 'Pressure tensor:'
+        Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (katms)', 'r.m.s. fluctuations'
+        Call info(messages, 2, .true.)
+
+        Do i = iadd, iadd + 6, 3
+          Write (message, '(2x,1p,3e12.4,5x,3e12.4)') stats%sumval(i + 1:i + 3), stats%ssqval(i + 1:i + 3)
+          Call info(message, .true.)
+        End Do
+
+        Write (message, '(2x,a,1p,e12.4)') 'trace/3  ', (stats%sumval(iadd + 1) + &
+                                                         stats%sumval(iadd + 5) + stats%sumval(iadd + 9)) / 3.0_wp
+        Call info(message, .true.)
+        Call info('', .true.)
+      End If
+
+      iadd = iadd + 9
+
       If (lmsd) iadd = iadd + 2 * mxatdm
 
       ! Write out estimated diffusion coefficients
@@ -1852,26 +1873,6 @@ Contains
       Call info('', .true.)
 
       iadd = iadd + sites%ntype_atom
-
-      ! print out average pressure tensor
-
-      If (comm%idnode == 0) Then
-        Write (messages(1), '(a)') 'Pressure tensor:'
-        Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (katms)', 'r.m.s. fluctuations'
-        Call info(messages, 2, .true.)
-
-        Do i = iadd, iadd + 6, 3
-          Write (message, '(2x,1p,3e12.4,5x,3e12.4)') stats%sumval(i + 1:i + 3), stats%ssqval(i + 1:i + 3)
-          Call info(message, .true.)
-        End Do
-
-        Write (message, '(2x,a,1p,e12.4)') 'trace/3  ', (stats%sumval(iadd + 1) + &
-                                                         stats%sumval(iadd + 5) + stats%sumval(iadd + 9)) / 3.0_wp
-        Call info(message, .true.)
-        Call info('', .true.)
-      End If
-
-      iadd = iadd + 9
 
       ! Write out mean cell vectors for npt/nst
 
@@ -1904,8 +1905,8 @@ Contains
           iadd = iadd + 2
 
           If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
-            tx = -h_z * (stats%sumval(iadd - 9 - 8 - 2) / prsunt - (thermo%press + thermo%stress(1))) * tenunt
-            ty = -h_z * (stats%sumval(iadd - 9 - 7 - 2) / prsunt - (thermo%press + thermo%stress(5))) * tenunt
+            tx = -h_z * (stats%sumval(29) / prsunt - (thermo%press + thermo%stress(1))) * tenunt
+            ty = -h_z * (stats%sumval(30) / prsunt - (thermo%press + thermo%stress(5))) * tenunt
             Write (message, "('Average surface tension, fluctuations & mean estimate in x (dyn/cm)')")
             Call info(message, .true.)
             Write (message, '(1p,3e12.4)') stats%sumval(iadd + 1), stats%ssqval(iadd + 1), tx

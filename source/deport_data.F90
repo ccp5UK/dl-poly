@@ -369,7 +369,7 @@ Contains
 
         If (lmsd) Then
           If (imove + 2 * (6 + stats%mxstak) <= iblock) Then
-            jj = 27 + 2 * i
+            jj = 36 + 2 * i
             buffer(imove + 1) = stats%stpvl0(jj - 1)
             buffer(imove + 2) = stats%stpvl0(jj)
             buffer(imove + 3) = stats%stpval(jj - 1)
@@ -847,8 +847,8 @@ Contains
       End If
 
       If (lmsd) Then
-        jj = 27 + 2 * i
-        j = 27 + 2 * keep
+        jj = 36 + 2 * i
+        j = 36 + 2 * keep
         stats%stpvl0(j - 1) = stats%stpvl0(jj - 1)
         stats%stpvl0(j) = stats%stpvl0(jj)
         stats%stpval(j - 1) = stats%stpval(jj - 1)
@@ -1016,7 +1016,7 @@ Contains
       ! unpack MSD arrays
 
       If (lmsd) Then
-        jj = 27 + 2 * newatm
+        jj = 36 + 2 * newatm
         stats%stpvl0(jj - 1) = buffer(kmove + 1)
         stats%stpvl0(jj) = buffer(kmove + 2)
         stats%stpval(jj - 1) = buffer(kmove + 3)
