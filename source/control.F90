@@ -4,15 +4,12 @@ Module control
   Use bonds,                Only: bonds_type
   Use comms,                Only: comms_type,&
                                   gcheck
-  Use configuration,        Only: configuration_type,&
+  Use configuration,        Only: IMCON_HEXAGONAL,&
                                   IMCON_NOPBC,&
-                                  IMCON_CUBIC,&
-                                  IMCON_ORTHORHOMBIC,&
-                                  IMCON_PARALLELOPIPED,&
+                                  IMCON_RHOMBIC_DODEC,&
                                   IMCON_SLAB,&
                                   IMCON_TRUNC_OCTO,&
-                                  IMCON_RHOMBIC_DODEC,&
-                                  IMCON_HEXAGONAL
+                                  configuration_type
   Use constants,            Only: epsilon_wp,&
                                   pi,&
                                   prsunt,&
@@ -48,13 +45,13 @@ Module control
                                   FILE_REVOLD,&
                                   FILE_STATS,&
                                   file_type
-  Use flow_control,         Only: RESTART_KEY_CLEAN,&
+  Use flow_control,         Only: DFTB,&
+                                  MD,&
+                                  RESTART_KEY_CLEAN,&
                                   RESTART_KEY_NOSCALE,&
                                   RESTART_KEY_OLD,&
                                   RESTART_KEY_SCALE,&
-                                  flow_type, &
-                                  DFTB, &
-                                  MD
+                                  flow_type
   Use greenkubo,            Only: greenkubo_type
   Use impacts,              Only: impact_type
   Use inversions,           Only: inversions_type
@@ -108,8 +105,8 @@ Module control
                                   ENS_NPT_NOSE_HOOVER, ENS_NPT_NOSE_HOOVER_ANISO, ENS_NVE, &
                                   ENS_NVT_ANDERSON, ENS_NVT_BERENDSEN, ENS_NVT_EVANS, &
                                   ENS_NVT_GENTLE, ENS_NVT_LANGEVIN, ENS_NVT_LANGEVIN_INHOMO, &
-                                  ENS_NVT_NOSE_HOOVER, thermostat_type, &
-                                  PSEUDO_LANGEVIN_DIRECT, PSEUDO_LANGEVIN, PSEUDO_GAUSSIAN, PSEUDO_DIRECT
+                                  ENS_NVT_NOSE_HOOVER, PSEUDO_DIRECT, PSEUDO_GAUSSIAN, &
+                                  PSEUDO_LANGEVIN, PSEUDO_LANGEVIN_DIRECT, thermostat_type
   Use timer,                Only: timer_type
   Use trajectory,           Only: trajectory_type
   Use ttm,                  Only: ttm_type
@@ -213,7 +210,7 @@ Contains
     Logical            :: l_0, l_timcls, l_timjob, lens, lforc, limp, lplumed, lpres, lstep, &
                           lstrext, ltemp, safe
     Real(Kind=wp)      :: eps0, prmps(1:4), rcb_d, rcell(1:9), rcut1, rpad1, rvdw1, tmp, tol
-    Type(testing_type) :: unit_test, app_test
+    Type(testing_type) :: app_test, unit_test
 
     ! initialise system control variables and their logical switches
 
@@ -601,8 +598,8 @@ Contains
       Else If (word(1:6) == 'l_fast') Then
       Else If (word(1:7) == 'l_print') Then
         Call get_word(record, word)
-        itmp = nint(word_2_real(word))
-        write(message, '(A,i2.1)') "Print level :", itmp
+        itmp = Nint(word_2_real(word))
+        Write (message, '(A,i2.1)') "Print level :", itmp
         Call info(message, .true.)
       Else If (word(1:5) == 'l_eng') Then
         devel%l_eng = .true.
@@ -692,15 +689,15 @@ Contains
         Call info(message, .true.)
 
         ! read unit and app tests to perform
-      Else If(word(1:9) == 'unit_test') Then
-         devel%run_unit_tests = .true.
-         Call unit_test%all()
-         devel%unit_test = unit_test
+      Else If (word(1:9) == 'unit_test') Then
+        devel%run_unit_tests = .true.
+        Call unit_test%all()
+        devel%unit_test = unit_test
 
-      Else If(word(1:8) == 'app_test') Then
-         devel%run_app_tests = .true.
-         Call app_test%all()
-         devel%app_test = app_test
+      Else If (word(1:8) == 'app_test') Then
+        devel%run_app_tests = .true.
+        Call app_test%all()
+        devel%app_test = app_test
 
         ! read VDW options
       Else If (word(1:3) == 'vdw') Then
@@ -1064,7 +1061,7 @@ Contains
           thermo%l_stochastic_boundaries = .true.
           If (comm%idnode == 0) Then
             Call info('pseudo thermostat attached to MD cell boundary', .true.)
-            select case (thermo%key_pseudo)
+            Select Case (thermo%key_pseudo)
             Case (PSEUDO_LANGEVIN_DIRECT)
               Call info('thermostat control: Langevin + direct temperature scaling', .true.)
             Case (PSEUDO_LANGEVIN)
@@ -1073,7 +1070,7 @@ Contains
               Call info('thermostat control: gaussian temperature scaling', .true.)
             Case (PSEUDO_DIRECT)
               Call info('thermostat control: direct temperature scaling', .true.)
-            End select
+            End Select
             Write (message, '(a,1p,e12.4)') 'thermostat thickness (Angs) ', tmp
           End If
 
@@ -3013,12 +3010,11 @@ Contains
 
         End If
 
-      ! dftb_driver
+        ! dftb_driver
       Else If (word(1:11) == 'dftb_driver') Then
 
-         !Use DFTB+ as the force calculator instead of classical force fields
-         flow%simulation_method = DFTB
-
+        !Use DFTB+ as the force calculator instead of classical force fields
+        flow%simulation_method = DFTB
 
         ! close control file
 
@@ -3028,7 +3024,7 @@ Contains
 
       Else If (word(1:5) == 'l_vdw') Then
 
-        flow%l_vdw = .True.
+        flow%l_vdw = .true.
 
       Else If (word(1:6) == 'plumed') Then
 
@@ -3663,90 +3659,90 @@ Contains
     ! Two-temperature model: calculate atomic density (if not
     ! already specified and electron-phonon friction
     ! conversion factor (to calculate thermo%chi_ep from G_ep values)
+    If (ttm%l_ttm) Then
+      If (ttm%cellrho <= zero_plus) ttm%cellrho = ttm%sysrho
+      If (ttm%cellrho > zero_plus) Then
+        ttm%rcellrho = 1.0_wp / ttm%cellrho
+      Else
+        ttm%rcellrho = 0.0_wp
+      End If
 
-    If (ttm%cellrho <= zero_plus) ttm%cellrho = ttm%sysrho
-    If (ttm%cellrho > zero_plus) Then
-      ttm%rcellrho = 1.0_wp / ttm%cellrho
-    Else
-      ttm%rcellrho = 0.0_wp
+      ttm%epc_to_chi = 1.0e-12_wp * ttm%Jm3K_to_kBA3 / 3.0_wp
+      If (.not. ttm%ttmdyndens) ttm%epc_to_chi = ttm%epc_to_chi * ttm%rcellrho
+
+      ! Check sufficient parameters are specified for TTM electronic specific
+      ! heats, thermal conductivity/diffusivity, energy loss and laser deposition
+
+      If (ttm%ttmdyndens) ttm%CeType = ttm%CeType + 4
+      Select Case (ttm%CeType)
+      Case (0)
+        ! constant electronic specific heat: will convert from kB/atom to kB/A^3
+        ! by multiplication of atomic density
+        ttm%Ce0 = ttm%Ce0 * ttm%cellrho
+      Case (1)
+        ! hyperbolic tangent electronic specific heat: multiplier will be converted
+        ! from kB/atom to kB/A^3, temperature term (K^-1) is now scaled by 10^-4
+        If (Abs(ttm%sh_A) <= zero_plus .or. Abs(ttm%sh_B) <= zero_plus) Call error(681)
+        ttm%sh_A = ttm%sh_A * ttm%cellrho
+        ttm%sh_B = ttm%sh_B * 1.0e-4_wp
+      Case (2)
+        ! linear electronic specific heat to Fermi temperature: maximum
+        ! value will be converted from kB/atom to kB/A^3
+        If (Abs(ttm%Tfermi) <= zero_plus .or. Abs(ttm%Cemax) <= zero_plus) Call error(681)
+        ttm%Cemax = ttm%Cemax * ttm%cellrho
+      Case (4)
+        ! constant electronic specific heat: will convert from kB/atom to kB/A^3
+        ! by multiplication of atomic density
+      Case (5)
+        ! hyperbolic tangent electronic specific heat: multiplier will be converted
+        ! from kB/atom to kB/A^3, temperature term (K^-1) is now scaled by 10^-4
+        If (Abs(ttm%sh_A) <= zero_plus .or. Abs(ttm%sh_B) <= zero_plus) Call error(681)
+        ttm%sh_B = ttm%sh_B * 1.0e-4_wp
+      Case (6)
+        ! linear electronic specific heat to Fermi temperature: maximum
+        ! value will be converted from kB/atom to kB/A^3
+        If (Abs(ttm%Tfermi) <= zero_plus .or. Abs(ttm%Cemax) <= zero_plus) Call error(681)
+      End Select
+
+      Select Case (ttm%KeType)
+        ! constant and Drude thermal conductivity: convert from W m^-1 K^-1
+        ! to kB ps^-1 A^-1
+      Case (1, 2)
+        If (ttm%isMetal .and. Abs(ttm%Ka0) <= zero_plus) Call error(682)
+        ttm%Ka0 = ttm%Ka0 * ttm%JKms_to_kBAps
+      End Select
+
+      Select Case (ttm%DeType)
+      Case (1)
+        ! constant thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
+        If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus) Call error(683)
+        ttm%Diff0 = ttm%Diff0 * 1.0e8_wp
+      Case (2)
+        ! reciprocal thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
+        ! and ttm%Diff0 scaled with system temperature
+        If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus .or. Abs(ttm%Tfermi) <= zero_plus) Call error(683)
+        ttm%Diff0 = ttm%Diff0 * thermo%temp * 1.0e8_wp
+      End Select
+
+      ! strict flag
+
+      ! spatial deposition (gaussian) standard deviation: convert from nm to A
+      ttm%sig = ttm%sig * 10.0_wp
+
+      ! penetration depth: convert from nm to A
+      If ((ttm%sdepoType == 2 .and. Abs(ttm%dEdX) <= zero_plus .and. Abs(ttm%pdepth - 1.0_wp) <= zero_plus) .or. &
+          (ttm%sdepoType == 3 .and. Abs(ttm%pdepth - 1.0_wp) <= zero_plus)) &
+        Call warning(510, 0.0_wp, 0.0_wp, 0.0_wp)
+      ttm%pdepth = 10.0_wp * ttm%pdepth
+
+      ! electronic stopping power: convert from eV/nm to eV/A
+      ! ttm%fluence: convert from mJ cm^-2 to eV A^-2
+      If (ttm%sdepoType > 0 .and. ttm%sdepoType < 3 .and. (Abs(ttm%dEdx) <= zero_plus .or. Abs(ttm%fluence) < zero_plus)) &
+        Call warning(515, 0.0_wp, 0.0_wp, 0.0_wp)
+
+      ttm%fluence = ttm%fluence * ttm%mJcm2_to_eVA2
+      ttm%dEdX = 0.1_wp * ttm%dEdX
     End If
-
-    ttm%epc_to_chi = 1.0e-12_wp * ttm%Jm3K_to_kBA3 / 3.0_wp
-    If (.not. ttm%ttmdyndens) ttm%epc_to_chi = ttm%epc_to_chi * ttm%rcellrho
-
-    ! Check sufficient parameters are specified for TTM electronic specific
-    ! heats, thermal conductivity/diffusivity, energy loss and laser deposition
-
-    If (ttm%ttmdyndens) ttm%CeType = ttm%CeType + 4
-    Select Case (ttm%CeType)
-    Case (0)
-      ! constant electronic specific heat: will convert from kB/atom to kB/A^3
-      ! by multiplication of atomic density
-      ttm%Ce0 = ttm%Ce0 * ttm%cellrho
-    Case (1)
-      ! hyperbolic tangent electronic specific heat: multiplier will be converted
-      ! from kB/atom to kB/A^3, temperature term (K^-1) is now scaled by 10^-4
-      If (Abs(ttm%sh_A) <= zero_plus .or. Abs(ttm%sh_B) <= zero_plus) Call error(681)
-      ttm%sh_A = ttm%sh_A * ttm%cellrho
-      ttm%sh_B = ttm%sh_B * 1.0e-4_wp
-    Case (2)
-      ! linear electronic specific heat to Fermi temperature: maximum
-      ! value will be converted from kB/atom to kB/A^3
-      If (Abs(ttm%Tfermi) <= zero_plus .or. Abs(ttm%Cemax) <= zero_plus) Call error(681)
-      ttm%Cemax = ttm%Cemax * ttm%cellrho
-    Case (4)
-      ! constant electronic specific heat: will convert from kB/atom to kB/A^3
-      ! by multiplication of atomic density
-    Case (5)
-      ! hyperbolic tangent electronic specific heat: multiplier will be converted
-      ! from kB/atom to kB/A^3, temperature term (K^-1) is now scaled by 10^-4
-      If (Abs(ttm%sh_A) <= zero_plus .or. Abs(ttm%sh_B) <= zero_plus) Call error(681)
-      ttm%sh_B = ttm%sh_B * 1.0e-4_wp
-    Case (6)
-      ! linear electronic specific heat to Fermi temperature: maximum
-      ! value will be converted from kB/atom to kB/A^3
-      If (Abs(ttm%Tfermi) <= zero_plus .or. Abs(ttm%Cemax) <= zero_plus) Call error(681)
-    End Select
-
-    Select Case (ttm%KeType)
-      ! constant and Drude thermal conductivity: convert from W m^-1 K^-1
-      ! to kB ps^-1 A^-1
-    Case (1, 2)
-      If (ttm%isMetal .and. Abs(ttm%Ka0) <= zero_plus) Call error(682)
-      ttm%Ka0 = ttm%Ka0 * ttm%JKms_to_kBAps
-    End Select
-
-    Select Case (ttm%DeType)
-    Case (1)
-      ! constant thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
-      If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus) Call error(683)
-      ttm%Diff0 = ttm%Diff0 * 1.0e8_wp
-    Case (2)
-      ! reciprocal thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
-      ! and ttm%Diff0 scaled with system temperature
-      If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus .or. Abs(ttm%Tfermi) <= zero_plus) Call error(683)
-      ttm%Diff0 = ttm%Diff0 * thermo%temp * 1.0e8_wp
-    End Select
-
-    ! strict flag
-
-    ! spatial deposition (gaussian) standard deviation: convert from nm to A
-    ttm%sig = ttm%sig * 10.0_wp
-
-    ! penetration depth: convert from nm to A
-    If ((ttm%sdepoType == 2 .and. Abs(ttm%dEdX) <= zero_plus .and. Abs(ttm%pdepth - 1.0_wp) <= zero_plus) .or. &
-        (ttm%sdepoType == 3 .and. Abs(ttm%pdepth - 1.0_wp) <= zero_plus)) &
-      Call warning(510, 0.0_wp, 0.0_wp, 0.0_wp)
-    ttm%pdepth = 10.0_wp * ttm%pdepth
-
-    ! electronic stopping power: convert from eV/nm to eV/A
-    ! ttm%fluence: convert from mJ cm^-2 to eV A^-2
-    If (ttm%sdepoType > 0 .and. ttm%sdepoType < 3 .and. (Abs(ttm%dEdx) <= zero_plus .or. Abs(ttm%fluence) < zero_plus)) &
-      Call warning(515, 0.0_wp, 0.0_wp, 0.0_wp)
-
-    ttm%fluence = ttm%fluence * ttm%mJcm2_to_eVA2
-    ttm%dEdX = 0.1_wp * ttm%dEdX
-
   End Subroutine read_control
 
   Subroutine scan_control(rcter, max_rigid, imcon, imc_n, cell, xhi, yhi, zhi, mxgana, &
@@ -4002,10 +3998,10 @@ Contains
 
         ! read binsize option
 
-    ! dftb_driver
+        ! dftb_driver
       Else If (word(1:11) == 'dftb_driver') Then
-         !Use DFTB+ as the force calculator instead of classical force fields
-         flow%simulation_method = DFTB
+        !Use DFTB+ as the force calculator instead of classical force fields
+        flow%simulation_method = DFTB
 
       Else If (word(1:7) == 'binsize') Then
 
