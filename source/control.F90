@@ -2742,6 +2742,12 @@ Contains
         Write (message, '(a)') "# statis printed in yaml format"
         Call info(message, .true.)
 
+      Else If (word(1:7) == 'yml_rdf') Then
+        rdf%is_yaml = .True.
+
+        Write (message, '(a)') "# RDFDAT printed in yaml format"
+        Call info(message, .true.)
+
       Else If (word(1:5) == 'print') Then
 
         Call get_word(record, word)

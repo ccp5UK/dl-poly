@@ -74,6 +74,7 @@ Module rdfs
     Logical                               :: tmp_rdf_sync = .false.
     Logical, Public                       :: l_errors_block = .false.
     Logical, Public                       :: l_errors_jack = .false.
+    Logical, Public                       :: is_yaml = .false.
     !> Maximum number of RDF pairs
     Integer(Kind=wi), Public              :: max_rdf
     !> Maximum number of RDF grid points
@@ -231,17 +232,32 @@ Contains
 
     Character(Len=256)         :: message, messages(2)
     Integer                    :: fail, i, ia, ib, ig, kk, ll, ngrid
-    Logical                    :: zero
+    !Logical                    :: zero
     Real(Kind=wp)              :: coef, delr, dfed, dfed0, dfed1, dfed2, dgrid, dvol, factor1, &
                                   fed, fed0, fed1, fed2, gofr, gofr1, kT2engo, pdfzero, rdlr, rrr, &
-                                  sum, sum1, t1, t2, tmp
-    Real(Kind=wp), Allocatable :: dstdrdf(:, :), pmf(:), vir(:)
+                                  sum, t1, t2, tmp
+    Real(Kind=wp), Allocatable :: dstdrdf(:, :), pmf(:), vir(:), g(:), n(:), x(:)
 
     If (lpana) Then
       fail = 0
       Allocate (dstdrdf(0:rdf%max_grid, 1:rdf%n_pairs), pmf(0:rdf%max_grid + 2), vir(0:rdf%max_grid + 2), Stat=fail)
       If (fail > 0) Then
         Write (message, '(a)') 'rdf_compute - allocation failure'
+        Call error(0, message)
+      End If
+    End If
+
+    fail = 0
+    Allocate( x(1:rdf%max_grid),Stat=fail )
+    If (fail > 0) Then
+      Write (message, '(a)') 'rdf_compute - x allocation failure'
+      Call error(0, message)
+    End If
+    If (rdf%is_yaml) Then
+      fail = 0
+      Allocate (g(1:rdf%max_grid), n(1:rdf%max_grid), Stat=fail)
+      If (fail > 0) Then
+        Write (message, '(a)') 'rdf_compute - g,n allocation failure'
         Call error(0, message)
       End If
     End If
@@ -254,22 +270,36 @@ Contains
 
     delr = rcut / Real(rdf%max_grid, wp)
     rdlr = 1.0_wp / delr
+    Do i = 1, rdf%max_grid
+      x(i) = (Real(i, wp) - 0.5_wp) * delr
+    End Do
 
     ! resampling grid and grid interval for rdf%rdf tables
 
     ngrid = Max(Nint(rcut / delr_max), rdf%max_grid)
     dgrid = rcut / Real(ngrid, wp)
 
-    Write (messages(1), '(a)') 'radial distribution functions:'
-    Write (messages(2), '(2x,a,i8,a)') 'calculated using ', rdf%n_configs, ' configurations'
+    Write (messages(1), '(a)') '# radial distribution functions:'
+    Write (messages(2), '(a,i8,a)') '# calculated using ', rdf%n_configs, ' configurations'
     Call info(messages, 2, .true.)
 
     ! open RDF file and Write headers
 
     If (comm%idnode == 0) Then
       Open (Unit=nrdfdt, File='RDFDAT', Status='replace')
-      Write (nrdfdt, '(a)') config%cfgname
-      Write (nrdfdt, '(2i10)') rdf%n_pairs, rdf%max_grid
+      If (rdf%is_yaml) Then
+        Write (nrdfdt,'(a)') "%YAML 1.2"
+        Write (nrdfdt,'(a)') "---"
+        Write (nrdfdt, '(a,a)') "title: ", Trim(config%cfgname)
+        Write (nrdfdt, '(a,i0)') "npairs: ", rdf%n_pairs
+        Write (nrdfdt, '(a,i0)') "ngrid: ", rdf%max_grid
+        write (nrdfdt,'(a,*(g16.8,","))',advance="no") "grid: ", x(1:rdf%max_grid-1)
+        write (nrdfdt,'(g16.8,a)')x(rdf%max_grid)," ]"
+        Write (nrdfdt, '(a)')"rdfs: "
+      Else
+        Write (nrdfdt, '(a)') config%cfgname
+        Write (nrdfdt, '(2i10)') rdf%n_pairs, rdf%max_grid
+      EndIf
     End If
 
     ! the lower bound to nullify the nearly-zero histogram (PDF) values
@@ -289,11 +319,15 @@ Contains
         ! only for valid interactions specified for a look up
 
         If (kk > 0 .and. kk <= rdf%n_pairs) Then
-          Write (messages(1), '(2x,a,2(1x,a8))') 'g(r): ', sites%unique_atom(ia), sites%unique_atom(ib)
-          Write (messages(2), '(8x,a1,6x,a4,9x,a4)') 'r', 'g(r)', 'n(r)'
-          Call info(messages, 2, .true.)
+          !Write (messages(1), '(2x,a,2(1x,a8))') 'g(r): ', sites%unique_atom(ia), sites%unique_atom(ib)
+          !Write (messages(2), '(8x,a1,6x,a4,9x,a4)') 'r', 'g(r)', 'n(r)'
+          !Call info(messages, 2, .true.)
           If (comm%idnode == 0) Then
-            Write (nrdfdt, '(2a8)') sites%unique_atom(ia), sites%unique_atom(ib)
+            If (rdf%is_yaml) Then
+              Write (nrdfdt, '(2x,a,a8,",",a8,a)') "- name: [ ",sites%unique_atom(ia), sites%unique_atom(ib)," ]"
+            Else
+              Write (nrdfdt, '(2a8)') sites%unique_atom(ia), sites%unique_atom(ib)
+            End If
           End If
 
           ! global sum of data on all nodes
@@ -311,14 +345,14 @@ Contains
 
           ! loop over distances
 
-          zero = .true.
+          !zero = .true.
           Do i = 1, rdf%max_grid
-            If (zero .and. i < (rdf%max_grid - 3)) zero = (rdf%rdf(i + 2, kk) <= 0.0_wp)
+            !If (zero .and. i < (rdf%max_grid - 3)) zero = (rdf%rdf(i + 2, kk) <= 0.0_wp)
 
             gofr = rdf%rdf(i, kk) / factor1
             sum = sum + gofr * sites%dens(ib)
 
-            rrr = (Real(i, wp) - 0.5_wp) * delr
+            rrr = x(i)
             dvol = fourpi * delr * (rrr**2 + delr**2 / 12.0_wp)
             gofr = gofr / dvol
 
@@ -330,20 +364,25 @@ Contains
               gofr1 = gofr
             End If
 
-            If (sum < pdfzero) Then
-              sum1 = 0.0_wp
-            Else
-              sum1 = sum
-            End If
+            !If (sum < pdfzero) Then
+            !  sum1 = 0.0_wp
+            !Else
+            !  sum1 = sum
+            !End If
 
             ! print out information
 
-            If (.not. zero) Then
-              Write (message, '(f10.4,1p,2e14.6)') rrr, gofr1, sum1
-              Call info(message, .true.)
-            End If
+            !If (.not. zero) Then
+            !  Write (message, '(f10.4,1p,2e14.6)') rrr, gofr1, sum1
+            !  Call info(message, .true.)
+            !End If
             If (comm%idnode == 0) Then
-              Write (nrdfdt, "(1p,2e14.6)") rrr, gofr
+              If (rdf%is_yaml) Then
+                g(i) = gofr
+                n(i) = sum
+              Else
+                Write (nrdfdt, "(1p,3e14.6)") rrr, gofr, sum
+              End If
             End If
 
             ! We use the non-normalised tail-truncated RDF version,
@@ -357,8 +396,20 @@ Contains
           If (lpana) dstdrdf(:, kk) = 0.0_wp ! RDFs density
         End If
 
+        If (rdf%is_yaml .and. comm%idnode == 0) Then
+          write(nrdfdt,'(4x,a,*(g16.8,","))',advance="no") "gofr: ", g(1:rdf%max_grid-1)
+          write(nrdfdt,'(g16.8,a)')g(rdf%max_grid)," ]"
+          write(nrdfdt,'(4x,a,*(g16.8,","))',advance="no") "nofr: ", n(1:rdf%max_grid-1)
+          write(nrdfdt,'(g16.8,a)')n(rdf%max_grid)," ]"
+        End If
+
       End Do
     End Do
+
+    If (rdf%is_yaml) Then
+      Deallocate(g,n)
+    End If
+    Deallocate(x)
 
     If (comm%idnode == 0) Close (Unit=nrdfdt)
 
