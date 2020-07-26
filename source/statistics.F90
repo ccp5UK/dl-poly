@@ -71,6 +71,7 @@ Module statistics
                                   natms0 = 0
     Integer(Kind=wi)           :: mxnstk, mxstak, intsta
     Logical                    :: statis_file_open = .false.
+    Logical                    :: file_yaml = .false.
     Logical                    :: newjob = .true.
     Logical                    :: lpana
     Real(Kind=wp)              :: consv = 0.0_wp, shlke = 0.0_wp, engke = 0.0_wp, &
@@ -447,6 +448,7 @@ Contains
     Real(Kind=wp)              :: celprp(1:10), h_z, sclnv1, sclnv2, stpcns, stpipv, stprot, &
                                   stpshl, zistk
     Real(Kind=wp), Allocatable :: amsd(:), xxt(:), yyt(:), zzt(:)
+    Character(Len=100)         :: sunits, fmtt
 
     fail = 0
     Allocate (amsd(1:sites%mxatyp), Stat=fail)
@@ -466,22 +468,59 @@ Contains
         Open (Newunit=files(FILE_STATS)%unit_no, File=files(FILE_STATS)%filename, Status='replace')
         stats%statis_file_open = .true.
 
-        Write (files(FILE_STATS)%unit_no, '(a)') config%cfgname
+        If (stats%file_yaml) Then
+          Write(files(FILE_STATS)%unit_no,'(a)') "%YAML 1.2"
+          Write(files(FILE_STATS)%unit_no,'(a)') "---"
+        End If
+        Write (files(FILE_STATS)%unit_no, '(a,a)') "title: ", config%cfgname
 
         If (Abs(engunit - eu_ev) <= zero_plus) Then
-          Write (files(FILE_STATS)%unit_no, '(1x,a)') 'ENERGY UNITS = electron Volts'
+          sunits = "electron Volts"
         Else If (Abs(engunit - eu_kcpm) <= zero_plus) Then
-          Write (files(FILE_STATS)%unit_no, '(1x,a)') 'ENERGY UNITS = kcal/mol'
+          sunits = "kcal/mol"
         Else If (Abs(engunit - eu_kjpm) <= zero_plus) Then
-          Write (files(FILE_STATS)%unit_no, '(1x,a)') 'ENERGY UNITS = kjoule/mol'
+          sunits = "kjoule/mol"
         Else If (Abs(engunit - 1.0_wp) <= zero_plus) Then
-          Write (files(FILE_STATS)%unit_no, '(1x,a)') 'ENERGY UNITS = DL_POLY Internal UNITS (10 J/mol)'
+          sunits = "DL_POLY Internal UNITS (10 J/mol)"
         Else If (Abs(engunit - boltz) <= zero_plus) Then
-          Write (files(FILE_STATS)%unit_no, '(1x,a)') 'ENERGY UNITS = Kelvin/Boltzmann'
+          sunits = "Kelvin/Boltzmann"
         Else ! once in a blue moon
-          Write (files(FILE_STATS)%unit_no, '(1x,a)') 'ENERGY UNITS = DPD (Unknown)'
+          sunits = "DPD (Unknown)"
         End If
+        Write(files(FILE_STATS)%unit_no,'(a,a)') "energy unitS: ",Trim(sunits)
+        If (stats%file_yaml) Then
+          Write(files(FILE_STATS)%unit_no,'(a,a)') "labels: "
+          Write(files(FILE_STATS)%unit_no,'(2x,a4,*(a,", "))',advance="no") "- [ ",&
+            'step','time','Total Extended System Energy','System Temperature',&
+            'Configurational Energy','Short Range Potential Energy','Electrostatic Energy',&
+            'Chemical Bond Energy','Valence Angle And 3-Body Potential Energy',&
+            'Dihedral Inversion And 4-Body Potential Energy',&
+            'Tethering Energy', 'Enthalpy (Total Energy + Pv)','Rotational Temperature','Total Virial',&
+            'Short-Range Virial','Electrostatic Virial','Bond Virial','Valence Angle And 3-Body Virial',&
+            'Constraint Bond Virial','Tethering Virial','Volume', 'Core-Shell Temperature',&
+            'Core-Shell Potential Energy','Core-Shell Virial','Md Cell Angle Α',&
+            'Md Cell Angle Β','Md Cell Angle Gamma','Pmf Constraint Virial','Pressure',&
+            'External Degree Of Freedom','stress xx','stress xy','stress xz','stress yx',&
+            'stress yy','stress yz','stress zx', 'stress zy','stress zz'
+            Do i=1,sites%ntype_atom - 1
+              Write(files(FILE_STATS)%unit_no,'(a)',advance="no")"amsd "//sites%unique_atom(i)//", "
+            End Do
+            Write(files(FILE_STATS)%unit_no,'(a)',advance="no")"amsd "//sites%unique_atom(sites%ntype_atom)
+            If (thermo%variable_cell) Then
+                Write(files(FILE_STATS)%unit_no,'(", ",*(a,", "))',advance="no") "cell A1", "cell A2", "cell A3", &
+                  "cell B1", "cell B2", "cell B3", "cell C1", "cell C2", "cell C3"
+                Write(files(FILE_STATS)%unit_no,'(a)',advance="no") "pV"
 
+                If (thermo%iso /= CONSTRAINT_NONE) Then
+                  Write(files(FILE_STATS)%unit_no,'(a)',advance="no") ",h_z, A_z"
+                  If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
+                    Write(files(FILE_STATS)%unit_no,'(a)',advance="no") ",gamma_x, gamma_y"
+                  End If
+                End If
+            End If
+          Write(files(FILE_STATS)%unit_no,'(a2)') " ]"
+          Write(files(FILE_STATS)%unit_no,'(a,a)') "timesteps: "
+        End If
       End If
     End If
 
@@ -712,12 +751,25 @@ Contains
       End If
 
       If (lmsd) Then
-        Write (files(FILE_STATS)%unit_no, '(i10,1p,e14.6,0p,i10,/, (1p,5e14.6))') &
-          nstep, time, iadd + 1 - 2 * mxatdm, stats%stpval(1:27), stats%stpval(0), stats%stpval(28:36), &
-          stats%stpval(37 + 2 * mxatdm:iadd)
+        If (stats%file_yaml) Then
+          Write(fmtt,'(a,i0,a)')'(2x,a4,i0,",",',iadd + 1 - 2 * mxatdm,'(g16.8,","),g16.8,a2)'
+          Write(files(FILE_STATS)%unit_no,fmt=Trim(fmtt))"- [ ",nstep, time, &
+            stats%stpval(1:27), stats%stpval(0), stats%stpval(28:36), &
+            stats%stpval(37 + 2 * mxatdm:iadd), ' ]'
+        Else
+          Write (files(FILE_STATS)%unit_no, '(i10,1p,e14.6,0p,i10,/, (1p,5e14.6))') &
+            nstep, time, iadd + 1 - 2 * mxatdm, stats%stpval(1:27), stats%stpval(0), stats%stpval(28:36), &
+            stats%stpval(37 + 2 * mxatdm:iadd)
+        End If
       Else
-        Write (files(FILE_STATS)%unit_no, '(i10,1p,e14.6,0p,i10,/, (1p,5e14.6))') &
-          nstep, time, iadd + 1, stats%stpval(1:27), stats%stpval(0), stats%stpval(28:iadd)
+        If (stats%file_yaml) Then
+          Write(fmtt,'(a,i0,a)')'(2x,a4,i0,",",',iadd+1,'(g16.8,","),g16.8,a2)'
+          Write(files(FILE_STATS)%unit_no,fmt=Trim(fmtt))"- [ ",nstep, time, &
+            stats%stpval(1:27), stats%stpval(0), stats%stpval(28:iadd), ' ]'
+        Else
+          Write (files(FILE_STATS)%unit_no, '(i10,1p,e14.6,0p,i10,/, (1p,5e14.6))') &
+            nstep, time, iadd + 1, stats%stpval(1:27), stats%stpval(0), stats%stpval(28:iadd)
+        End If
       End If
 
     End If
