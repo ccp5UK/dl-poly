@@ -463,6 +463,7 @@ Contains
 
     stats%lpana = .false.
     stats%cur%on = .false.
+    stats%file_yaml = .false.
     ! default switch for calculation of rdfs, default number of steps
     ! when to be collected and default switch for printing them
 
@@ -2734,6 +2735,18 @@ Contains
         !        nsttcond = Max(Abs(Nint(word_2_real(word))),1)
 
         ! read print options
+
+      Else If (word(1:10) == 'yml_statis') Then
+        stats%file_yaml = .True.
+
+        Write (message, '(a)') "# statis printed in yaml format"
+        Call info(message, .true.)
+
+      Else If (word(1:7) == 'yml_rdf') Then
+        rdf%is_yaml = .True.
+
+        Write (message, '(a)') "# RDFDAT printed in yaml format"
+        Call info(message, .true.)
 
       Else If (word(1:5) == 'print') Then
 

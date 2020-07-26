@@ -531,15 +531,14 @@ have been requested (by selecting directives {\bf rdf} and {\bf
 print rdf} in the CONTROL file) radial distribution functions are
 printed out.  This is written from the subroutine {\sc
 rdf\_compute}.  First the number of time-steps used for the
-collection of the histograms is stated.  Then each pre-requested
-function is given in turn.  For each function a header line states
+collection of the histograms is stated.
+
+For each function a header line states
 the atom types (`a' and `b') represented by the function.  Then
-$r,~g(r)$ and $n(r)$ are given in tabular form.  Output is given
-from 2 entries before the first non-zero entry in the $g(r)$
-histogram.  $n(r)$ is the average number of atoms of type `b' within
-a sphere of radius $r$ around an atom of type `a'.
-Note that a readable version of these data is provided by the
-RDFDAT file (below).
+$r, g(r)$ and $n(r)$ are given in tabular form. $n(r)$ is the average
+number of atoms of type `b' within a sphere of radius $r$ around
+an atom of type `a'. Note that a readable version of these data is
+provided by the RDFDAT file (below).
 
 \subsubsection{Umbrella Sampling Restraint RDF}
 
@@ -651,7 +650,8 @@ X\=XXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXX\=\kill
 \> {\tt atname 2} \> a8   \> second atom name \\
 {\bf following records} ({\em mxgrdf} records) \\
 \> {\tt radius}   \> real \> interatomic distance (\AA) \\
-\> {\tt g(r)}     \> real \> RDF at given radius
+\> {\tt g(r)}     \> real \> RDF at given radius \\
+\> {\tt n(r)}     \> real \> RDF at given radius \\
 \end{tabbing}
 
 {\bf Note 1.} The RDFDAT file is optional and appears when the
