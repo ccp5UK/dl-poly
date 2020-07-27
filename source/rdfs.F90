@@ -293,7 +293,7 @@ Contains
         Write (nrdfdt, '(a,a)') "title: ", Trim(config%cfgname)
         Write (nrdfdt, '(a,i0)') "npairs: ", rdf%n_pairs
         Write (nrdfdt, '(a,i0)') "ngrid: ", rdf%max_grid
-        write (nrdfdt,'(a,*(g16.8,","))',advance="no") "grid: ", x(1:rdf%max_grid-1)
+        write (nrdfdt,'(a,*(g16.8,","))',advance="no") "grid: [ ", x(1:rdf%max_grid-1)
         write (nrdfdt,'(g16.8,a)')x(rdf%max_grid)," ]"
         Write (nrdfdt, '(a)')"rdfs: "
       Else
@@ -397,9 +397,9 @@ Contains
         End If
 
         If (rdf%is_yaml .and. comm%idnode == 0) Then
-          write(nrdfdt,'(4x,a,*(g16.8,","))',advance="no") "gofr: ", g(1:rdf%max_grid-1)
+          write(nrdfdt,'(4x,a,*(g16.8,","))',advance="no") "gofr: [ ", g(1:rdf%max_grid-1)
           write(nrdfdt,'(g16.8,a)')g(rdf%max_grid)," ]"
-          write(nrdfdt,'(4x,a,*(g16.8,","))',advance="no") "nofr: ", n(1:rdf%max_grid-1)
+          write(nrdfdt,'(4x,a,*(g16.8,","))',advance="no") "nofr: [ ", n(1:rdf%max_grid-1)
           write(nrdfdt,'(g16.8,a)')n(rdf%max_grid)," ]"
         End If
 
