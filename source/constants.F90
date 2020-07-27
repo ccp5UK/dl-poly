@@ -121,10 +121,6 @@ Module constants
 
   ! I/O CHANNELS :: STERR = 0 , STINP = 5 , STOUT = 6 , STERR+STOUT = *
 
-  !> tabulated potential file channel
-
-  Integer, Parameter :: ntable = 13
-
   !> reference file input channel
 
   Integer, Parameter :: nrefdt = 14

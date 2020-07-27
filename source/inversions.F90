@@ -26,12 +26,13 @@ Module inversions
                              engunit,&
                              npdfdt,&
                              npdgdt,&
-                             ntable,&
                              pi,&
                              zero_plus
   Use errors_warnings, Only: error,&
                              info,&
                              warning
+  Use filename,        Only: FILE_TABINV, &
+                             file_type
   Use kinds,           Only: wi,&
                              wp
   Use numerics,        Only: images,&
@@ -1258,7 +1259,7 @@ Contains
 
   End Subroutine inversions_forces
 
-  Subroutine inversions_table_read(invr_name, inversion, sites, comm)
+  Subroutine inversions_table_read(invr_name, inversion, sites, files, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1278,6 +1279,7 @@ Contains
     Type(inversions_type), Intent(InOut) :: inversion
     Character(Len=32),     Intent(In   ) :: invr_name(1:inversion%max_types)
     Type(site_type),       Intent(In   ) :: sites
+    Type(file_type),       Intent(InOut) :: files(:)
     Type(comms_type),      Intent(InOut) :: comm
 
     Character(Len=200)         :: record
@@ -1286,14 +1288,17 @@ Contains
     Character(Len=40)          :: word
     Character(Len=8)           :: atom1, atom2, atom3, atom4
     Integer                    :: fail(1:2), i, itinv, jtinv, jtpatm, katom1, katom2, katom3, &
-                                  katom4, l, ngrid, rtinv
+                                  katom4, l, ngrid, ntable, rtinv
     Integer, Allocatable       :: read_type(:)
     Logical                    :: remake, safe
     Real(Kind=wp)              :: bufp0, bufv0, delpot, dgr2rad, dlrpot, ppp, rad2dgr, rdr, rrr, &
                                   rrr0, t1, t2, vk, vk1, vk2
     Real(Kind=wp), Allocatable :: bufpot(:), bufvir(:)
 
-    If (comm%idnode == 0) Open (Unit=ntable, File='TABINV')
+    If (comm%idnode == 0) Then
+      Open (Newunit=files(FILE_TABINV)%unit_no, File=files(FILE_TABINV)%filename)
+      ntable = files(FILE_TABINV)%unit_no
+    End If
 
     ! skip header record
 
@@ -1604,9 +1609,7 @@ Contains
         inversion%tab_force(inversion%bin_tab - 4, jtinv)
     End Do
 
-    If (comm%idnode == 0) Then
-      Close (Unit=ntable)
-    End If
+    If (comm%idnode == 0) Call files(FILE_TABINV)%close ()
     Call info('potential tables read from TABINV file', .true.)
 
     ! Break if not safe
@@ -1627,7 +1630,7 @@ Contains
 
     100 Continue
 
-    If (comm%idnode == 0) Close (Unit=ntable)
+    If (comm%idnode == 0) Call files(FILE_TABINV)%close ()
     Call error(24)
 
   End Subroutine inversions_table_read

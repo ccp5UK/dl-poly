@@ -29,7 +29,6 @@ Module ttm
   Use configuration,   Only: configuration_type
   Use constants,       Only: boltz,&
                              eu_ev,&
-                             ntable,&
                              pi,&
                              rt2,&
                              sqrpi,&
@@ -969,7 +968,7 @@ Contains
     Character(Len=200) :: record
     Character(Len=256) :: message
     Character(Len=40)  :: word
-    Integer            :: i, ii, ijk, iounit = 225, ipos(3), ix, iy, iz, jj, kk, nstp, nxx, nyy, &
+    Integer            :: i, ii, ijk, iounit, ipos(3), ix, iy, iz, jj, kk, nstp, nxx, nyy, &
                           nzz
     Logical            :: l_tmp = .true., safe
     Real(Kind=wp)      :: eltmp, lat_max, lat_min, lat_sum, tme
@@ -984,7 +983,7 @@ Contains
 
     If (l_tmp .and. keyres == ttm%keyres0) Then
 
-      If (comm%idnode == 0) Open (Unit=iounit, File=dumpfile)
+      If (comm%idnode == 0) Open (Newunit=iounit, File=Trim(dumpfile))
       Call get_line(safe, iounit, record, comm); If (.not. safe) Goto 100
       Call get_word(record, word); nxx = Nint(word_2_real(word, 0.0_wp))
       Call get_word(record, word); nyy = Nint(word_2_real(word, 0.0_wp))
@@ -1092,7 +1091,7 @@ Contains
     Type(ttm_type),   Intent(InOut) :: ttm
     Type(comms_type), Intent(InOut) :: comm
 
-    Integer :: i, id, ii, ijk, imax, imin, iounit = 117, ix, iy, iz, j, jj, jmax, jmin, k, kk, &
+    Integer :: i, id, ii, ijk, imax, imin, iounit, ix, iy, iz, j, jj, jmax, jmin, k, kk, &
                kmax, kmin
     Logical :: lrange
 
@@ -1100,7 +1099,7 @@ Contains
       If (Mod(nstep, freq) == 0 .or. nstep == nstrun) Then
 
         If (comm%idnode == 0) Then
-          Open (Unit=iounit, File=dumpfile, Status='replace')
+          Open (Newunit=iounit, File=Trim(dumpfile), Status='replace')
           Write (iounit, '(3i8)') ttm%eltsys(1), ttm%eltsys(2), ttm%eltsys(3)
           Write (iounit, '(i12,3(2x,es24.15))') nstep, time, ttm%depostart, ttm%depoend
           Close (iounit)
@@ -1109,7 +1108,7 @@ Contains
 
         Do id = 0, comm%mxnode - 1
           If (comm%idnode == id) Then
-            Open (Unit=iounit, File=dumpfile, Status='old', Position='append')
+            Open (Newunit=iounit, File=dumpfile, Status='old', Position='append')
             Do kk = -ttm%eltcell(3), ttm%eltcell(3)
               If (ttm%eltcell(3) > 0 .and. kk == -ttm%eltcell(3) .and. ttm%ttmbcmap(5) >= 0) Then
                 kmin = ttm%ttmbc(5)
@@ -1193,7 +1192,7 @@ Contains
     Character(Len=200) :: record
     Character(Len=256) :: message
     Character(Len=40)  :: word
-    Integer            :: i
+    Integer            :: i, ntable
     Logical            :: safe
     Real(Kind=wp)      :: vk1, vk2
 
@@ -1201,7 +1200,7 @@ Contains
 
     If (ttm%KeType == 3) Then
 
-      If (comm%idnode == 0) Open (Unit=ntable, File='Ke.dat', Status='old')
+      If (comm%idnode == 0) Open (Newunit=ntable, File='Ke.dat', Status='old')
 
       i = 0
       Do While (i < ttm%kel)
@@ -1244,7 +1243,7 @@ Contains
 
     If (ttm%CeType == 3 .or. ttm%CeType == 7) Then
 
-      If (comm%idnode == 0) Open (Unit=ntable, File='Ce.dat', Status='old')
+      If (comm%idnode == 0) Open (Newunit=ntable, File='Ce.dat', Status='old')
 
       i = 0
       Do While (i < ttm%cel)
@@ -1290,7 +1289,7 @@ Contains
 
     If (ttm%DeType == 3) Then
 
-      If (comm%idnode == 0) Open (Unit=ntable, File='De.dat', Status='old')
+      If (comm%idnode == 0) Open (Newunit=ntable, File='De.dat', Status='old')
 
       i = 0
       Do While (i < ttm%del)
@@ -1332,7 +1331,7 @@ Contains
 
     If (ttm%gvar > 0) Then
 
-      If (comm%idnode == 0) Open (Unit=ntable, File='g.dat', Status='old')
+      If (comm%idnode == 0) Open (Newunit=ntable, File='g.dat', Status='old')
 
       i = 0
       Do While (i < ttm%gel)
@@ -1413,7 +1412,7 @@ Contains
     Character(Len=200)                       :: record
     Character(Len=256)                       :: message
     Character(Len=40)                        :: word
-    Integer                                  :: fail
+    Integer                                  :: fail, ntable
     Logical                                  :: lexist, safe
     Real(Kind=wp)                            :: vk1, vk2
     Real(Kind=wp), Allocatable, Dimension(:) :: buffer
@@ -1437,7 +1436,7 @@ Contains
         If (.not. lexist) Then
           Go To 100
         Else
-          If (comm%idnode == 0) Open (Unit=ntable, File='Ke.dat', Status='old')
+          If (comm%idnode == 0) Open (Newunit=ntable, File='Ke.dat', Status='old')
         End If
 
         ! determine number of lines of data to read
@@ -1488,7 +1487,7 @@ Contains
         If (.not. lexist) Then
           Go To 200
         Else
-          If (comm%idnode == 0) Open (Unit=ntable, File='Ce.dat', Status='old')
+          If (comm%idnode == 0) Open (Newunit=ntable, File='Ce.dat', Status='old')
         End If
 
         ! determine number of lines of data to read
@@ -1539,7 +1538,7 @@ Contains
         If (.not. lexist) Then
           Go To 300
         Else
-          If (comm%idnode == 0) Open (Unit=ntable, File='De.dat', Status='old')
+          If (comm%idnode == 0) Open (Newunit=ntable, File='De.dat', Status='old')
         End If
 
         ! determine number of lines of data to read
@@ -1590,7 +1589,7 @@ Contains
         If (.not. lexist) Then
           Go To 400
         Else
-          If (comm%idnode == 0) Open (Unit=ntable, File='g.dat', Status='old')
+          If (comm%idnode == 0) Open (Newunit=ntable, File='g.dat', Status='old')
         End If
 
         ! determine number of lines of data to read

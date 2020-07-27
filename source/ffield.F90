@@ -19,8 +19,8 @@ Module ffield
   Use configuration,   Only: configuration_type
   ! INTERACTION MODULES
   Use constants,       Only: &
-                             VA_to_dl, boltz, engunit, eu_ev, eu_kcpm, eu_kjpm, nmpldt, ntable, &
-                             pi, prsunt, r4pie0, tesla_to_dl, zero_plus
+                             VA_to_dl, boltz, engunit, eu_ev, eu_kcpm, eu_kjpm, nmpldt, pi, &
+                             prsunt, r4pie0, tesla_to_dl, zero_plus
   Use constraints,     Only: constraints_type
   Use coord,           Only: coord_type
   Use core_shell,      Only: SHELL_ADIABATIC,&
@@ -47,8 +47,13 @@ Module ffield
                              FIELD_MAGNETIC, FIELD_SHEAR_CONTINUOUS, FIELD_SHEAR_OSCILLATING, &
                              FIELD_SPHERE, FIELD_UMBRELLA, FIELD_WALL, FIELD_WALL_PISTON, &
                              FIELD_ZRES, FIELD_ZRES_MINUS, FIELD_ZRES_PLUS, external_field_type
-  ! RDF MODULE
   Use filename,        Only: FILE_FIELD,&
+                             FILE_TABANG,&
+                             FILE_TABBND,&
+                             FILE_TABDIH,&
+                             FILE_TABEAM,&
+                             FILE_TABINV,&
+                             FILE_TABVDW,&
                              file_type
   Use flow_control,    Only: flow_type
   Use four_body,       Only: four_body_type
@@ -89,10 +94,10 @@ Module ffield
   ! CONFIG MODULE
   ! Fuchs correction of charge non-neutral systems
   ! Global_To_Local variables
-  Use tersoff,         Only: tersoff_generate,&
-                             tersoff_type,&
+  Use tersoff,         Only: TERS_KIHS,&
                              TERS_TERSOFF,&
-                             TERS_KIHS
+                             tersoff_generate,&
+                             tersoff_type
   Use tethers,         Only: tethers_type
   Use thermostat,      Only: DPD_NULL,&
                              ENS_NVE,&
@@ -104,9 +109,9 @@ Module ffield
                              MIX_WALDMAN_HAGLER, VDW_126_MDF, VDW_12_6, VDW_AMOEBA, &
                              VDW_BORN_HUGGINS_MEYER, VDW_BUCKINGHAM, VDW_BUCKINGHAM_MDF, VDW_DPD, &
                              VDW_HYDROGEN_BOND, VDW_LENNARD_JONES, VDW_LENNARD_JONES_COHESIVE, &
-                             VDW_LJ_MDF, VDW_MORSE, VDW_MORSE_12, VDW_NULL, VDW_N_M, &
+                             VDW_LJF, VDW_LJ_MDF, VDW_MORSE, VDW_MORSE_12, VDW_NULL, VDW_N_M, &
                              VDW_N_M_SHIFT, VDW_RYDBERG, VDW_TAB, VDW_WCA, VDW_ZBL, &
-                             VDW_ZBL_SWITCH_BUCKINGHAM, VDW_ZBL_SWITCH_MORSE, VDW_LJF, &
+                             VDW_ZBL_SWITCH_BUCKINGHAM, VDW_ZBL_SWITCH_MORSE, &
                              vdw_direct_fs_generate, vdw_generate, vdw_table_read, vdw_type
 
   Implicit None
@@ -628,8 +633,8 @@ Contains
                 cshell%lstshl(1, nshels) = iatm1
                 cshell%lstshl(2, nshels) = iatm2
 
-                If ((iatm1 > sites%num_site(itmols)) .Or.  (iatm2 > sites%num_site(itmols))) Then
-                  Call error(0,"Index of shell is out of range")
+                If ((iatm1 > sites%num_site(itmols)) .or. (iatm2 > sites%num_site(itmols))) Then
+                  Call error(0, "Index of shell is out of range")
                 End If
 
                 Call get_word(record, word)
@@ -750,8 +755,8 @@ Contains
                 Call get_word(record, word)
                 iatm2 = Nint(word_2_real(word))
 
-                If ((iatm1 > sites%num_site(itmols)) .Or. (iatm2 > sites%num_site(itmols))) Then
-                  Call error(0,"wrong index for atom in constraint")
+                If ((iatm1 > sites%num_site(itmols)) .or. (iatm2 > sites%num_site(itmols))) Then
+                  Call error(0, "wrong index for atom in constraint")
                 End If
 
                 cons%lstcon(1, nconst) = iatm1
@@ -762,7 +767,6 @@ Contains
 
                 isite1 = nsite - sites%num_site(itmols) + iatm1
                 isite2 = nsite - sites%num_site(itmols) + iatm2
-
 
                 ! number of completely frozen constraints
 
@@ -2338,10 +2342,10 @@ Contains
         ! Deal with intarmolecular potential tables:
         ! read & generate intramolecular potential & virial arrays
 
-        If (bond%l_tab) Call bonds_table_read(bond_name, bond, sites, comm)
-        If (angle%l_tab) Call angles_table_read(angl_name, angle, sites, comm)
-        If (dihedral%l_tab) Call dihedrals_table_read(dihd_name, dihedral, sites, comm)
-        If (inversion%l_tab) Call inversions_table_read(invr_name, inversion, sites, comm)
+        If (bond%l_tab) Call bonds_table_read(bond_name, bond, sites, files, comm)
+        If (angle%l_tab) Call angles_table_read(angl_name, angle, sites, files, comm)
+        If (dihedral%l_tab) Call dihedrals_table_read(dihd_name, dihedral, sites, files, comm)
+        If (inversion%l_tab) Call inversions_table_read(invr_name, inversion, sites, files, comm)
 
         ! If some intramolecular PDFs analysis is opted for
 
@@ -3679,45 +3683,45 @@ Contains
 
             parpot(1) = parpot(1) * engunit
 
-            Select Case(keypot)
-            Case(VDW_12_6)
+            Select Case (keypot)
+            Case (VDW_12_6)
               parpot(2) = parpot(2) * engunit
-            Case(VDW_BUCKINGHAM)
+            Case (VDW_BUCKINGHAM)
               parpot(3) = parpot(3) * engunit
-            Case(VDW_BORN_HUGGINS_MEYER)
+            Case (VDW_BORN_HUGGINS_MEYER)
               parpot(4) = parpot(4) * engunit
               parpot(5) = parpot(5) * engunit
-            Case(VDW_HYDROGEN_BOND)
+            Case (VDW_HYDROGEN_BOND)
               parpot(2) = parpot(2) * engunit
-            Case(VDW_WCA)
+            Case (VDW_WCA)
               parpot(2) = Abs(parpot(2))
               If (parpot(3) > parpot(2) / 2.0_wp) &
                 parpot(3) = Sign(1.0_wp, parpot(3)) * parpot(2) / 2.0_wp
               parpot(4) = 2.0_wp**(1.0_wp / 6.0_wp) * parpot(2) + parpot(3)
-            Case(VDW_MORSE_12)
+            Case (VDW_MORSE_12)
               parpot(4) = parpot(4) * engunit
-            Case(VDW_RYDBERG)
+            Case (VDW_RYDBERG)
               parpot(2) = parpot(2) * engunit
-            Case(VDW_ZBL)
+            Case (VDW_ZBL)
               parpot(1) = parpot(1) / engunit
-            Case(VDW_ZBL_SWITCH_MORSE)
+            Case (VDW_ZBL_SWITCH_MORSE)
               parpot(1) = parpot(1) / engunit
               parpot(5) = parpot(5) * engunit
-            Case(VDW_ZBL_SWITCH_BUCKINGHAM)
+            Case (VDW_ZBL_SWITCH_BUCKINGHAM)
               parpot(1) = parpot(1) / engunit
               parpot(5) = parpot(5) * engunit
               parpot(7) = parpot(7) * engunit
-            Case(VDW_BUCKINGHAM_MDF)
+            Case (VDW_BUCKINGHAM_MDF)
               parpot(3) = parpot(3) * engunit
-            Case(VDW_126_MDF)
+            Case (VDW_126_MDF)
               parpot(2) = parpot(2) * engunit
-            Case(VDW_LJF)
+            Case (VDW_LJF)
               Block
-                Real(kind=wp) :: x,rc,s,a
+                Real(kind=wp) :: x, rc, s, a
                 s = parpot(2)
                 rc = parpot(3)
-                x = (rc/s)**2
-                a = 0.25_wp * x*(3.0_wp/(x-1.0_wp))**3
+                x = (rc / s)**2
+                a = 0.25_wp * x * (3.0_wp / (x - 1.0_wp))**3
                 parpot(1) = parpot(1) * a
                 parpot(2) = parpot(2)**2
                 parpot(3) = parpot(3)**2
@@ -3752,48 +3756,48 @@ Contains
           End Do
 
           If (thermo%key_dpd /= DPD_NULL) Then ! store possible specification of DPD's gamma_ij
-            Select Case(keypot)
-            Case(VDW_TAB)
+            Select Case (keypot)
+            Case (VDW_TAB)
               thermo%gamdpd(keyvdw) = Abs(parpot(1))
-            Case(VDW_12_6)
+            Case (VDW_12_6)
               thermo%gamdpd(keyvdw) = Abs(parpot(3))
-            Case( VDW_LENNARD_JONES)
+            Case (VDW_LENNARD_JONES)
               thermo%gamdpd(keyvdw) = Abs(parpot(3))
-            Case(VDW_N_M)
+            Case (VDW_N_M)
               thermo%gamdpd(keyvdw) = Abs(parpot(5))
-            Case(VDW_BUCKINGHAM)
+            Case (VDW_BUCKINGHAM)
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
-            Case(VDW_BORN_HUGGINS_MEYER)
+            Case (VDW_BORN_HUGGINS_MEYER)
               thermo%gamdpd(keyvdw) = Abs(parpot(6))
-            Case(VDW_HYDROGEN_BOND)
+            Case (VDW_HYDROGEN_BOND)
               thermo%gamdpd(keyvdw) = Abs(parpot(3))
-            Case(VDW_N_M_SHIFT)
+            Case (VDW_N_M_SHIFT)
               thermo%gamdpd(keyvdw) = Abs(parpot(6))
-            Case(VDW_MORSE)
+            Case (VDW_MORSE)
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
-            Case(VDW_WCA)
+            Case (VDW_WCA)
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
-            Case(VDW_DPD)
+            Case (VDW_DPD)
               thermo%gamdpd(keyvdw) = Abs(parpot(3))
-            Case(VDW_AMOEBA)
+            Case (VDW_AMOEBA)
               thermo%gamdpd(keyvdw) = Abs(parpot(3))
-            Case(VDW_LENNARD_JONES_COHESIVE)
+            Case (VDW_LENNARD_JONES_COHESIVE)
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
-            Case(VDW_MORSE_12)
+            Case (VDW_MORSE_12)
               thermo%gamdpd(keyvdw) = Abs(parpot(5))
-            Case(VDW_RYDBERG)
+            Case (VDW_RYDBERG)
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
-            Case(VDW_ZBL)
+            Case (VDW_ZBL)
               thermo%gamdpd(keyvdw) = Abs(parpot(5))
-            Case(VDW_ZBL_SWITCH_MORSE)
+            Case (VDW_ZBL_SWITCH_MORSE)
               thermo%gamdpd(keyvdw) = Abs(parpot(8))
-            Case(VDW_ZBL_SWITCH_BUCKINGHAM)
+            Case (VDW_ZBL_SWITCH_BUCKINGHAM)
               thermo%gamdpd(keyvdw) = Abs(parpot(8))
-            Case(VDW_LJ_MDF)
+            Case (VDW_LJ_MDF)
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
-            Case(VDW_BUCKINGHAM_MDF)
+            Case (VDW_BUCKINGHAM_MDF)
               thermo%gamdpd(keyvdw) = Abs(parpot(5))
-            Case(VDW_LJF)
+            Case (VDW_LJF)
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
             End Select
 
@@ -4177,7 +4181,7 @@ Contains
 
           If (.not. vdws%no_vdw) Then
             If ((.not. vdws%l_direct) .or. vdws%l_tab) Call vdw_generate(vdws)
-            If (vdws%l_tab) Call vdw_table_read(vdws, sites, comm)
+            If (vdws%l_tab) Call vdw_table_read(vdws, sites, files, comm)
             If (vdws%l_direct .and. (Any(vdws%ltp(1:vdws%n_vdw) /= VDW_NULL) &
                                      .or. Any(vdws%ltp(1:vdws%n_vdw) /= VDW_TAB))) Then
               Call vdw_direct_fs_generate(vdws)
@@ -4361,7 +4365,7 @@ Contains
           If (.not. met%l_direct) Then
             Call met%init_table(sites%mxatyp)
             If (met%tab > 0) Then ! keypot == 0
-              Call metal_table_read(flow%print_topology, met, sites, comm)
+              Call metal_table_read(flow%print_topology, met, sites, files, comm)
             Else ! If (met%tab == 0) Then
               Call metal_generate(sites%ntype_atom, met)
             End If
@@ -5413,32 +5417,32 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,                  Intent(  Out) :: megatm
-    Type(site_type),          Intent(InOut) :: site
-    Integer(Kind=wi),         Intent(  Out) :: max_exclude, mtshl
-    Integer,                  Intent(  Out) :: mtcons
-    Integer,                  Intent(  Out) :: mtrgd, mtteth, mtbond, mtangl, mtdihd, mtinv
-    Type(external_field_type),Intent(InOut) :: ext_field
-    Type(core_shell_type),    Intent(InOut) :: cshell
-    Type(constraints_type),   Intent(InOut) :: cons
-    Type(pmf_type),           Intent(InOut) :: pmf
-    Type(metal_type),         Intent(InOut) :: met
-    Type(bonds_type),         Intent(InOut) :: bond
-    Type(angles_type),        Intent(InOut) :: angle
-    Type(dihedrals_type),     Intent(InOut) :: dihedral
-    Type(inversions_type),    Intent(InOut) :: inversion
-    Type(tethers_type),       Intent(InOut) :: tether
-    Type(threebody_type),     Intent(InOut) :: threebody
-    Type(vdw_type),           Intent(InOut) :: vdws
-    Type(tersoff_type),       Intent(InOut) :: tersoffs
-    Type(four_body_type),     Intent(InOut) :: fourbody
-    Type(rdf_type),           Intent(InOut) :: rdf
-    Type(mpole_type),         Intent(InOut) :: mpoles
-    Type(rigid_bodies_type),  Intent(InOut) :: rigid
-    Type(kim_type),           Intent(InOut) :: kim_data
-    Type(file_type),          Intent(InOut) :: files(:)
-    Type(electrostatic_type), Intent(InOut) :: electro
-    Type(comms_type),         Intent(InOut) :: comm
+    Integer,                   Intent(  Out) :: megatm
+    Type(site_type),           Intent(InOut) :: site
+    Integer(Kind=wi),          Intent(  Out) :: max_exclude, mtshl
+    Integer,                   Intent(  Out) :: mtcons, mtrgd, mtteth, mtbond, mtangl, mtdihd, &
+                                                mtinv
+    Type(external_field_type), Intent(InOut) :: ext_field
+    Type(core_shell_type),     Intent(InOut) :: cshell
+    Type(constraints_type),    Intent(InOut) :: cons
+    Type(pmf_type),            Intent(InOut) :: pmf
+    Type(metal_type),          Intent(InOut) :: met
+    Type(bonds_type),          Intent(InOut) :: bond
+    Type(angles_type),         Intent(InOut) :: angle
+    Type(dihedrals_type),      Intent(InOut) :: dihedral
+    Type(inversions_type),     Intent(InOut) :: inversion
+    Type(tethers_type),        Intent(InOut) :: tether
+    Type(threebody_type),      Intent(InOut) :: threebody
+    Type(vdw_type),            Intent(InOut) :: vdws
+    Type(tersoff_type),        Intent(InOut) :: tersoffs
+    Type(four_body_type),      Intent(InOut) :: fourbody
+    Type(rdf_type),            Intent(InOut) :: rdf
+    Type(mpole_type),          Intent(InOut) :: mpoles
+    Type(rigid_bodies_type),   Intent(InOut) :: rigid
+    Type(kim_type),            Intent(InOut) :: kim_data
+    Type(file_type),           Intent(InOut) :: files(:)
+    Type(electrostatic_type),  Intent(InOut) :: electro
+    Type(comms_type),          Intent(InOut) :: comm
 
     Integer, Parameter :: mmk = 1000, mxb = 6
 
@@ -5820,13 +5824,22 @@ Contains
               End Do
 
               If (bond%l_tab) Then
-                If (comm%idnode == 0) Open (Unit=ntable, File='TABBND')
+                If (comm%idnode == 0) Then
+                  Open (Newunit=files(FILE_TABBND)%unit_no, File=files(FILE_TABBND)%filename)
+                End If
 
-                Call get_line(safe, ntable, record, comm)
-                If (.not. safe) Go To 40
+                Call get_line(safe, files(FILE_TABBND)%unit_no, record, comm)
 
-                Call get_line(safe, ntable, record, comm)
-                If (.not. safe) Go To 40
+                If (.not. safe) Then
+                  If (comm%idnode == 0) Call files(FILE_TABBND)%close ()
+                  Call error(24)
+                End If
+
+                Call get_line(safe, files(FILE_TABBND)%unit_no, record, comm)
+                If (.not. safe) Then
+                  If (comm%idnode == 0) Call files(FILE_TABBND)%close ()
+                  Call error(24)
+                End If
 
                 i = Index(record, '#') ! replace hash as it may occur in
                 If (i > 0) record(i:i) = ' ' ! TABBND if it's in .xvg format
@@ -5838,7 +5851,7 @@ Contains
                 k = Nint(word_2_real(word))
                 bond%bin_tab = Max(bond%bin_tab, k + 4)
 
-                If (comm%idnode == 0) Close (Unit=ntable)
+                If (comm%idnode == 0) Call files(FILE_TABBND)%close ()
               End If
 
             Else If (word(1:6) == 'angles') Then
@@ -5864,13 +5877,21 @@ Contains
               End Do
 
               If (angle%l_tab) Then
-                If (comm%idnode == 0) Open (Unit=ntable, File='TABANG')
+                If (comm%idnode == 0) Then
+                  Open (Newunit=files(FILE_TABANG)%unit_no, File=files(FILE_TABANG)%filename)
+                End If
 
-                Call get_line(safe, ntable, record, comm)
-                If (.not. safe) Go To 40
+                Call get_line(safe, files(FILE_TABANG)%unit_no, record, comm)
+                If (.not. safe) Then
+                  If (comm%idnode == 0) Call files(FILE_TABANG)%close ()
+                  Call error(24)
+                End If
 
-                Call get_line(safe, ntable, record, comm)
-                If (.not. safe) Go To 40
+                Call get_line(safe, files(FILE_TABANG)%unit_no, record, comm)
+                If (.not. safe) Then
+                  If (comm%idnode == 0) Call files(FILE_TABANG)%close ()
+                  Call error(24)
+                End If
 
                 i = Index(record, '#') ! replace hash as it may occur in
                 If (i > 0) record(i:i) = ' ' ! TABANG if it's in .xvg format
@@ -5879,7 +5900,7 @@ Contains
                 k = Nint(word_2_real(word))
                 angle%bin_tab = Max(angle%bin_tab, k + 4)
 
-                If (comm%idnode == 0) Close (Unit=ntable)
+                If (comm%idnode == 0) Call files(FILE_TABANG)%close ()
               End If
 
             Else If (word(1:6) == 'dihedr') Then
@@ -5905,13 +5926,21 @@ Contains
               End Do
 
               If (dihedral%l_tab) Then
-                If (comm%idnode == 0) Open (Unit=ntable, File='TABDIH')
+                If (comm%idnode == 0) Then
+                  Open (Newunit=files(FILE_TABDIH)%unit_no, File=files(FILE_TABDIH)%filename)
+                End If
 
-                Call get_line(safe, ntable, record, comm)
-                If (.not. safe) Go To 40
+                Call get_line(safe, files(FILE_TABDIH)%unit_no, record, comm)
+                If (.not. safe) Then
+                  If (comm%idnode == 0) Call files(FILE_TABDIH)%close ()
+                  Call error(24)
+                End If
 
-                Call get_line(safe, ntable, record, comm)
-                If (.not. safe) Go To 40
+                Call get_line(safe, files(FILE_TABDIH)%unit_no, record, comm)
+                If (.not. safe) Then
+                  If (comm%idnode == 0) Call files(FILE_TABDIH)%close ()
+                  Call error(24)
+                End If
 
                 i = Index(record, '#') ! replace hash as it may occur in
                 If (i > 0) record(i:i) = ' ' ! TABDIH if it's in .xvg format
@@ -5920,7 +5949,7 @@ Contains
                 k = Nint(word_2_real(word)) ! from -180 to 180)
                 dihedral%bin_tab = Max(dihedral%bin_tab, k + 4)
 
-                If (comm%idnode == 0) Close (Unit=ntable)
+                If (comm%idnode == 0) Call files(FILE_TABDIH)%close ()
               End If
 
             Else If (word(1:6) == 'invers') Then
@@ -5946,13 +5975,21 @@ Contains
               End Do
 
               If (inversion%l_tab) Then
-                If (comm%idnode == 0) Open (Unit=ntable, File='TABINV')
+                If (comm%idnode == 0) Then
+                  Open (Newunit=files(FILE_TABINV)%unit_no, File=files(FILE_TABINV)%filename)
+                End If
 
-                Call get_line(safe, ntable, record, comm)
-                If (.not. safe) Go To 40
+                Call get_line(safe, files(FILE_TABINV)%unit_no, record, comm)
+                If (.not. safe) Then
+                  If (comm%idnode == 0) Call files(FILE_TABINV)%close ()
+                  Call error(24)
+                End If
 
-                Call get_line(safe, ntable, record, comm)
-                If (.not. safe) Go To 40
+                Call get_line(safe, files(FILE_TABINV)%unit_no, record, comm)
+                If (.not. safe) Then
+                  If (comm%idnode == 0) Call files(FILE_TABINV)%close ()
+                  Call error(24)
+                End If
 
                 i = Index(record, '#') ! replace hash as it may occur in
                 If (i > 0) record(i:i) = ' ' ! TABINV if it's in .xvg format
@@ -5961,7 +5998,7 @@ Contains
                 k = Nint(word_2_real(word))
                 inversion%bin_tab = Max(inversion%bin_tab, k + 4)
 
-                If (comm%idnode == 0) Close (Unit=ntable)
+                If (comm%idnode == 0) Call files(FILE_TABINV)%close ()
               End If
 
             Else If (word(1:6) == 'finish') Then
@@ -6039,13 +6076,21 @@ Contains
           vdws%max_vdw = Max(vdws%max_vdw, (site%mxatyp * (site%mxatyp + 1)) / 2)
 
           If (vdws%l_tab) Then
-            If (comm%idnode == 0) Open (Unit=ntable, File='TABLE')
+            If (comm%idnode == 0) Then
+              Open (Newunit=files(FILE_TABVDW)%unit_no, File=files(FILE_TABVDW)%filename)
+            End If
 
-            Call get_line(safe, ntable, record, comm)
-            If (.not. safe) Go To 40
+            Call get_line(safe, files(FILE_TABVDW)%unit_no, record, comm)
+            If (.not. safe) Then
+              If (comm%idnode == 0) Call files(FILE_TABVDW)%close ()
+              Call error(24)
+            End If
 
-            Call get_line(safe, ntable, record, comm)
-            If (.not. safe) Go To 40
+            Call get_line(safe, files(FILE_TABVDW)%unit_no, record, comm)
+            If (.not. safe) Then
+              If (comm%idnode == 0) Call files(FILE_TABVDW)%close ()
+              Call error(24)
+            End If
             Call get_word(record, word)
 
             Call get_word(record, word)
@@ -6055,7 +6100,7 @@ Contains
             k = Nint(word_2_real(word))
             vdws%max_grid = Max(vdws%max_grid, k)
 
-            If (comm%idnode == 0) Close (Unit=ntable)
+            If (comm%idnode == 0) Call files(FILE_TABVDW)%close ()
           End If
         End If
 
@@ -6120,17 +6165,28 @@ Contains
           End If
 
           If (met%tab > 0) Then
-            If (comm%idnode == 0) Open (Unit=ntable, File='TABEAM')
+            If (comm%idnode == 0) Then
+              Open (Newunit=files(FILE_TABEAM)%unit_no, File=files(FILE_TABEAM)%filename)
+            End If
 
-            Call get_line(safe, ntable, record, comm)
-            If (.not. safe) Go To 40
-            Call get_line(safe, ntable, record, comm)
-            If (.not. safe) Go To 40
+            Call get_line(safe, files(FILE_TABEAM)%unit_no, record, comm)
+            If (.not. safe) Then
+              If (comm%idnode == 0) Call files(FILE_TABEAM)%close ()
+              Call error(24)
+            End If
+            Call get_line(safe, files(FILE_TABEAM)%unit_no, record, comm)
+            If (.not. safe) Then
+              If (comm%idnode == 0) Call files(FILE_TABEAM)%close ()
+              Call error(24)
+            End If
             Call get_word(record, word)
 
             Do i = 1, Nint(word_2_real(word))
-              Call get_line(safe, ntable, record, comm)
-              If (.not. safe) Go To 40
+              Call get_line(safe, files(FILE_TABEAM)%unit_no, record, comm)
+              If (.not. safe) Then
+                If (comm%idnode == 0) Call files(FILE_TABEAM)%close ()
+                Call error(24)
+              End If
               Call get_word(record, word)
               Call lower_case(word)
               j = 0 ! assume met%rcut is specified
@@ -6150,12 +6206,15 @@ Contains
               If (j == 0) met%rcut = Max(met%rcut, word_2_real(word))
 
               Do j = 1, (k + 3) / 4
-                Call get_line(safe, ntable, record, comm)
-                If (.not. safe) Go To 40
+                Call get_line(safe, files(FILE_TABEAM)%unit_no, record, comm)
+                If (.not. safe) Then
+                  If (comm%idnode == 0) Call files(FILE_TABEAM)%close ()
+                  Call error(24)
+                End If
               End Do
             End Do
 
-            If (comm%idnode == 0) Close (Unit=ntable)
+            If (comm%idnode == 0) Call files(FILE_TABEAM)%close ()
           End If
         End If
 
@@ -6297,7 +6356,7 @@ Contains
           Call get_word(record, word)
         End Do
 
-        Select Case (word(1:4))
+        Select Case (word (1:4))
         Case ('elec')
           ext_field%key = FIELD_ELECTRIC
         Case ('oshr')
@@ -6399,11 +6458,6 @@ Contains
     30 Continue
     If (comm%idnode == 0) Call files(FILE_FIELD)%close ()
     Call error(52)
-    Return
-
-    40 Continue
-    If (comm%idnode == 0) Close (Unit=ntable)
-    Call error(24)
 
   End Subroutine scan_field
 
