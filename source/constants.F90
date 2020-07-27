@@ -133,10 +133,6 @@ Module constants
 
   Integer, Parameter :: ndefdt = 24
 
-  !> rdf%rdf file channel number
-
-  Integer, Parameter :: nrdfdt = 25
-
   !> z-density file channel number
 
   Integer, Parameter :: nzdndt = 26

@@ -44,6 +44,8 @@ Module control
                                   FILE_REVIVE,&
                                   FILE_REVOLD,&
                                   FILE_STATS,&
+                                  FILE_RDF,&
+                                  FILE_MSD,&
                                   file_type
   Use flow_control,         Only: DFTB,&
                                   MD,&
@@ -5399,7 +5401,8 @@ Contains
         Else If ((word(1:6) == 'config') .or. &
                  (word(1:5) == 'field') .or. (word(1:6) == 'statis') .or. (word(1:7) == 'history') &
                  .or. (word(1:7) == 'historf') .or. (word(1:6) == 'revive') .or. &
-                 (word(1:6) == 'revcon') .or. (word(1:6) == 'revold')) Then
+                 (word(1:6) == 'revcon') .or. (word(1:6) == 'revold') .or. &
+                 (word(1:3) == 'rdf') .or. (word(1:3) == 'msd')) Then
 
           If (word(1:6) == 'config') Then
             Call info('CONFIG file is '//files(FILE_CONFIG)%filename, .true.)
@@ -5417,6 +5420,10 @@ Contains
             Call info('REVCON file is '//files(FILE_REVCON)%filename, .true.)
           Else If (word(1:6) == 'revold') Then
             Call info('REVOLD file is '//files(FILE_REVOLD)%filename, .true.)
+          Else If (word(1:3) == 'rdf') Then
+            Call info('RDFDAT file is '//files(FILE_RDF)%filename, .true.)
+          Else If (word(1:3) == 'msd') Then
+            Call info('MSDTMP file is '//files(FILE_MSD)%filename, .true.)
           End If
           ! close control file
 
@@ -5625,6 +5632,12 @@ Contains
 
         Else If (word1(1:6) == 'revold') Then
           Call get_word(rec_case_sensitive, files(FILE_REVOLD)%filename)
+
+        Else If (word1(1:3) == 'rdf') Then
+          Call get_word(rec_case_sensitive, files(FILE_RDF)%filename)
+
+        Else If (word1(1:3) == 'msd') Then
+          Call get_word(rec_case_sensitive, files(FILE_MSD)%filename)
         End If
         ! read finish
 

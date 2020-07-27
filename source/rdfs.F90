@@ -25,10 +25,11 @@ Module rdfs
                              fourpi,&
                              npdfdt,&
                              npdgdt,&
-                             nrdfdt,&
                              zero_plus
   Use errors_warnings, Only: error,&
                              info
+  Use filename,        Only: FILE_RDF,&
+                             file_type
   Use kinds,           Only: wi,&
                              wp
   Use neighbours,      Only: neighbours_type
@@ -205,7 +206,7 @@ Contains
 
   End Subroutine rdf_collect
 
-  Subroutine rdf_compute(lpana, rcut, temp, sites, rdf, config, comm)
+  Subroutine rdf_compute(lpana, rcut, temp, sites, rdf, config, files, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -228,10 +229,11 @@ Contains
     Type(site_type),          Intent(In   ) :: sites
     Type(rdf_type),           Intent(InOut) :: rdf
     Type(configuration_type), Intent(InOut) :: config
+    Type(file_type),          Intent(InOut) :: files(:)
     Type(comms_type),         Intent(InOut) :: comm
 
     Character(Len=256)         :: message, messages(2)
-    Integer                    :: fail, i, ia, ib, ig, kk, ll, ngrid
+    Integer                    :: fail, i, ia, ib, ig, kk, ll, ngrid, nrdfdt
     !Logical                    :: zero
     Real(Kind=wp)              :: coef, delr, dfed, dfed0, dfed1, dfed2, dgrid, dvol, factor1, &
                                   fed, fed0, fed1, fed2, gofr, gofr1, kT2engo, pdfzero, rdlr, rrr, &
@@ -286,7 +288,8 @@ Contains
     ! open RDF file and Write headers
 
     If (comm%idnode == 0) Then
-      Open (Unit=nrdfdt, File='RDFDAT', Status='replace')
+      Open (Newunit=files(FILE_RDF)%unit_no, File=files(FILE_RDF)%filename, Status='replace')
+      nrdfdt = files(FILE_RDF)%unit_no
       If (rdf%is_yaml) Then
         Write (nrdfdt,'(a)') "%YAML 1.2"
         Write (nrdfdt,'(a)') "---"
@@ -411,7 +414,7 @@ Contains
     End If
     Deallocate(x)
 
-    If (comm%idnode == 0) Close (Unit=nrdfdt)
+    If (comm%idnode == 0) Close (Unit=files(FILE_RDF)%unit_no)
 
     ! Only when PDF analysis is requested
 
@@ -628,16 +631,17 @@ Contains
 
   End Subroutine calculate_block
 
-  Subroutine calculate_errors(temp, rcut, sites, rdf, config, comm)
+  Subroutine calculate_errors(temp, rcut, sites, rdf, config, files, comm)
 
     Real(Kind=wp),            Intent(In   ) :: temp, rcut
     Type(site_type),          Intent(In   ) :: sites
     Type(rdf_type),           Intent(InOut) :: rdf
     Type(configuration_type), Intent(InOut) :: config
+    Type(file_type),          Intent(InOut) :: files(:)
     Type(comms_type),         Intent(InOut) :: comm
 
     Character(Len=256)                             :: messages(2)
-    Integer                                        :: i, ierr(2), j, k, kk, l, nr_blocks
+    Integer                                        :: i, ierr(2), j, k, kk, l, nr_blocks, nrdfdt
     Real(Kind=wp)                                  :: delr, i_nr_blocks, test1
     Real(kind=wp), Allocatable, Dimension(:, :, :) :: averages, errors
 
@@ -699,7 +703,8 @@ Contains
 
     !output errors
     If (comm%idnode == 0) Then
-      Open (Unit=nrdfdt, File='RDFDAT', Status='replace')
+      Open (Newunit=files(FILE_RDF)%unit_no, File=files(FILE_RDF)%filename, Status='replace')
+      nrdfdt = files(FILE_RDF)%unit_no
       Write (nrdfdt, '(a)') config%cfgname
       Write (nrdfdt, '(2i10)') rdf%n_pairs, rdf%max_grid
 
@@ -719,7 +724,7 @@ Contains
           End If
         End Do
       End Do
-      Close (Unit=nrdfdt)
+      Close (Unit=files(FILE_RDF)%unit_no)
     End If
     Deallocate (averages, stat=ierr(1))
     Deallocate (errors, stat=ierr(2))
@@ -729,16 +734,17 @@ Contains
     End If
   End Subroutine calculate_errors
 
-  Subroutine calculate_errors_jackknife(temp, rcut, sites, rdf, config, comm)
+  Subroutine calculate_errors_jackknife(temp, rcut, sites, rdf, config, files, comm)
 
     Real(Kind=wp),            Intent(In   ) :: temp, rcut
     Type(site_type),          Intent(In   ) :: sites
     Type(rdf_type),           Intent(InOut) :: rdf
     Type(configuration_type), Intent(InOut) :: config
+    Type(file_type),          Intent(InOut) :: files(:)
     Type(comms_type),         Intent(InOut) :: comm
 
     Character(Len=256)                             :: messages(2)
-    Integer                                        :: i, ierr(2), j, k, kk, l, nr_blocks
+    Integer                                        :: i, ierr(2), j, k, kk, l, nr_blocks, nrdfdt
     Real(Kind=wp)                                  :: delr, i_nr_blocks, test1
     Real(Kind=wp), Allocatable, Dimension(:, :, :) :: averages, errors
 
@@ -823,7 +829,8 @@ Contains
 
     !output errors
     If (comm%idnode == 0) Then
-      Open (Unit=nrdfdt, File='RDFDAT', Status='replace')
+      Open (Newunit=files(FILE_RDF)%unit_no, File=files(FILE_RDF)%filename, Status='replace')
+      nrdfdt = files(FILE_RDF)%unit_no
       Write (nrdfdt, '(a)') config%cfgname
       Write (nrdfdt, '(2i10)') rdf%n_pairs, rdf%max_grid
 
@@ -843,7 +850,7 @@ Contains
           End If
         End Do
       End Do
-      Close (Unit=nrdfdt)
+      Close (Unit=files(FILE_RDF)%unit_no)
     End If
     Deallocate (averages, stat=ierr(1))
     Deallocate (errors, stat=ierr(2))
@@ -1048,7 +1055,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Integer       :: i
+    Integer       :: i, nrdfdt
     Real(Kind=wp) :: delr, dvol, factor1, gofr, rdlr, rrr, sum0, sum1
 
     ! grid interval for rdf%rdf tables

@@ -49,11 +49,15 @@ Module filename
   Integer, Parameter, Public :: FILE_REVCON = 10
   !> CURRENT file
   Integer, Parameter, Public :: FILE_CURRENT = 11
-  !> KPOOINTS file
+  !> KPOINTS file
   Integer, Parameter, Public :: FILE_KPOINTS = 12
+  !> RDF file
+  Integer, Parameter, Public :: FILE_RDF = 13
+  !> MSD file
+  Integer, Parameter, Public :: FILE_MSD = 14
 
   !> Size of filename array
-  Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 12
+  Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 14
 
   Public :: default_filenames
 
@@ -89,6 +93,8 @@ Contains
     default_names(FILE_REVCON) = "REVCON"
     default_names(FILE_CURRENT) = "CURRENTS"
     default_names(FILE_KPOINTS) = "KPOINTS"
+    default_names(FILE_RDF) = "RDFDAT"
+    default_names(FILE_MSD) = "MSDTMP"
 
     ! Set default filenames
     Do file_no = 1, FILENAME_SIZE

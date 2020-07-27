@@ -10,6 +10,7 @@ Module analysis
   Use constants,     Only: zero_plus
   Use dihedrals,     Only: dihedrals_compute,&
                            dihedrals_type
+  Use filename,      Only: file_type
   Use greenkubo,     Only: greenkubo_type,&
                            vaf_compute
   Use inversions,    Only: inversions_compute,&
@@ -39,7 +40,7 @@ Contains
   Subroutine analysis_result( &
     rcut, thermo, &
     bond, angle, dihedral, inversion, stats, &
-    green, zdensity, sites, rdf, config, comm)
+    green, zdensity, sites, rdf, config, files, comm)
 
     !> Cut off
     Real(Kind=wp),            Intent(In   ) :: rcut
@@ -54,6 +55,7 @@ Contains
     Type(site_type),          Intent(InOut) :: sites
     Type(rdf_type),           Intent(InOut) :: rdf
     Type(configuration_type), Intent(InOut) :: config
+    Type(file_type),          Intent(InOut) :: files(:)
     Type(comms_type),         Intent(InOut) :: comm
 
     Integer(Kind=wi) :: i
@@ -99,13 +101,13 @@ Contains
     ! Calculate and print radial distribution functions
     ! If block average errors, output that, else if jackknife errors output those, else just RDF.
     If (rdf%l_collect .and. rdf%l_print .and. rdf%n_configs > 0 .and. rdf%l_errors_block) Then
-      Call calculate_errors(temp, rcut, sites, rdf, config, comm)
+      Call calculate_errors(temp, rcut, sites, rdf, config, files, comm)
     End If
     If (rdf%l_collect .and. rdf%l_print .and. rdf%n_configs > 0 .and. rdf%l_errors_jack .and. .not. rdf%l_errors_block) Then
-      Call calculate_errors_jackknife(temp, rcut, sites, rdf, config, comm)
+      Call calculate_errors_jackknife(temp, rcut, sites, rdf, config, files, comm)
     End If
     If (rdf%l_collect .and. rdf%l_print .and. rdf%n_configs > 0 .and. .not. (rdf%l_errors_block .or. rdf%l_errors_jack)) Then
-      Call rdf_compute(stats%lpana, rcut, temp, sites, rdf, config, comm)
+      Call rdf_compute(stats%lpana, rcut, temp, sites, rdf, config, files, comm)
     End If
     If (rdf%n_configs_usr > 0) Call usr_compute(rdf, config, comm)
 
