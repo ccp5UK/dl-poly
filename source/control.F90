@@ -46,6 +46,12 @@ Module control
                                   FILE_STATS,&
                                   FILE_RDF,&
                                   FILE_MSD,&
+                                  FILE_TABBND,&
+                                  FILE_TABANG,&
+                                  FILE_TABDIH,&
+                                  FILE_TABINV,&
+                                  FILE_TABVDW,&
+                                  FILE_TABEAM,&
                                   file_type
   Use flow_control,         Only: DFTB,&
                                   MD,&
@@ -5402,7 +5408,10 @@ Contains
                  (word(1:5) == 'field') .or. (word(1:6) == 'statis') .or. (word(1:7) == 'history') &
                  .or. (word(1:7) == 'historf') .or. (word(1:6) == 'revive') .or. &
                  (word(1:6) == 'revcon') .or. (word(1:6) == 'revold') .or. &
-                 (word(1:3) == 'rdf') .or. (word(1:3) == 'msd')) Then
+                 (word(1:3) == 'rdf') .or. (word(1:3) == 'msd') .or. &
+                 (word(1:6) == 'tabbnd') .or. (word(1:6) == 'tabang') .or. &
+                 (word(1:6) == 'tabdih') .or. (word(1:6) == 'tabinv') .or. &
+                 (word(1:3) == 'vdw') .or. (word(1:3) == 'eam')) Then
 
           If (word(1:6) == 'config') Then
             Call info('CONFIG file is '//files(FILE_CONFIG)%filename, .true.)
@@ -5424,6 +5433,18 @@ Contains
             Call info('RDFDAT file is '//files(FILE_RDF)%filename, .true.)
           Else If (word(1:3) == 'msd') Then
             Call info('MSDTMP file is '//files(FILE_MSD)%filename, .true.)
+          Else If (word(1:6) == 'tabbnd') Then
+            Call info('TABBND file is '//files(FILE_TABBND)%filename, .true.)
+          Else If (word(1:6) == 'tabang') Then
+            Call info('TABANG file is '//files(FILE_TABANG)%filename, .true.)
+          Else If (word(1:6) == 'tabdih') Then
+            Call info('TABDIH file is '//files(FILE_TABDIH)%filename, .true.)
+          Else If (word(1:6) == 'tabinv') Then
+            Call info('TABINV file is '//files(FILE_TABINV)%filename, .true.)
+          Else If (word(1:6) == 'tabvdw') Then
+            Call info('TABLE file is '//files(FILE_TABVDW)%filename, .true.)
+          Else If (word(1:6) == 'tabeam') Then
+            Call info('TABEAM file is '//files(FILE_TABEAM)%filename, .true.)
           End If
           ! close control file
 
@@ -5638,6 +5659,24 @@ Contains
 
         Else If (word1(1:3) == 'msd') Then
           Call get_word(rec_case_sensitive, files(FILE_MSD)%filename)
+
+        Else If (word1(1:6) == 'tabbnd') Then
+          Call get_word(rec_case_sensitive, files(FILE_TABBND)%filename)
+
+        Else If (word1(1:6) == 'tabang') Then
+          Call get_word(rec_case_sensitive, files(FILE_TABANG)%filename)
+
+        Else If (word1(1:6) == 'tabdih') Then
+          Call get_word(rec_case_sensitive, files(FILE_TABDIH)%filename)
+
+        Else If (word1(1:6) == 'tabinv') Then
+          Call get_word(rec_case_sensitive, files(FILE_TABINV)%filename)
+
+        Else If (word1(1:6) == 'tabvdw') Then
+          Call get_word(rec_case_sensitive, files(FILE_TABVDW)%filename)
+
+        Else If (word1(1:6) == 'tabeam') Then
+          Call get_word(rec_case_sensitive, files(FILE_TABEAM)%filename)
         End If
         ! read finish
 

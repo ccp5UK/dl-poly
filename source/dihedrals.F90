@@ -28,7 +28,6 @@ Module dihedrals
                              engunit,&
                              npdfdt,&
                              npdgdt,&
-                             ntable,&
                              pi,&
                              r4pie0,&
                              rtwopi,&
@@ -41,6 +40,8 @@ Module dihedrals
   Use errors_warnings, Only: error,&
                              info,&
                              warning
+  Use filename,        Only: FILE_TABDIH, &
+                             file_type
   Use kinds,           Only: wi,&
                              wp
   Use mpole,           Only: mpole_type
@@ -1772,7 +1773,7 @@ Contains
 
   End Subroutine dihedrals_forces
 
-  Subroutine dihedrals_table_read(dihd_name, dihedral, sites, comm)
+  Subroutine dihedrals_table_read(dihd_name, dihedral, sites, files, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1793,6 +1794,7 @@ Contains
     Type(dihedrals_type), Intent(InOut) :: dihedral
     Character(Len=32),    Intent(In   ) :: dihd_name(1:dihedral%max_types)
     Type(site_type),      Intent(In   ) :: sites
+    Type(file_type),      Intent(InOut) :: files(:)
     Type(comms_type),     Intent(InOut) :: comm
 
     Character(Len=200)         :: record
@@ -1801,14 +1803,17 @@ Contains
     Character(Len=40)          :: word
     Character(Len=8)           :: atom1, atom2, atom3, atom4
     Integer                    :: fail(1:2), i, itdih, jtdih, jtpatm, katom1, katom2, katom3, &
-                                  katom4, l, ngrid, rtdih
+                                  katom4, l, ngrid, ntable, rtdih
     Integer, Allocatable       :: read_type(:)
     Logical                    :: remake, safe, zero
     Real(Kind=wp)              :: bufp0, bufv0, delpot, dgr2rad, dlrpot, ppp, rad2dgr, rdr, rrr, &
                                   rrr0, t1, t2, vk, vk1, vk2
     Real(Kind=wp), Allocatable :: bufpot(:), bufvir(:)
 
-    If (comm%idnode == 0) Open (Unit=ntable, File='TABDIH')
+    If (comm%idnode == 0) Then
+      Open (Newunit=files(FILE_TABDIH)%unit_no, File=files(FILE_TABDIH)%filename)
+      ntable = files(FILE_TABDIH)%unit_no
+    End If
 
     ! skip header record
 
@@ -2099,9 +2104,7 @@ Contains
       End If
     End Do
 
-    If (comm%idnode == 0) Then
-      Close (Unit=ntable)
-    End If
+    If (comm%idnode == 0) Call files(FILE_TABDIH)%close ()
     Call info('', .true.)
     Call info('potential tables read from TABDIH file', .true.)
 
@@ -2123,7 +2126,7 @@ Contains
 
     100 Continue
 
-    If (comm%idnode == 0) Close (Unit=ntable)
+    If (comm%idnode == 0) Call files(FILE_TABDIH)%close ()
     Call error(24)
 
   End Subroutine dihedrals_table_read

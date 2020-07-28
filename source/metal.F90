@@ -26,7 +26,6 @@ Module metal
   Use configuration,   Only: configuration_type
   Use constants,       Only: engunit,&
                              fourpi,&
-                             ntable,&
                              sqrpi,&
                              twopi,&
                              zero_plus
@@ -34,6 +33,8 @@ Module metal
   Use errors_warnings, Only: error,&
                              info,&
                              warning
+  Use filename,        Only: FILE_TABEAM, &
+                             file_type
   Use kinds,           Only: wi,&
                              wp
   Use neighbours,      Only: neighbours_type
@@ -1438,7 +1439,7 @@ Contains
     End If
   End Subroutine metal_lrc
 
-  Subroutine metal_table_read(l_top, met, sites, comm)
+  Subroutine metal_table_read(l_top, met, sites, files, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1461,6 +1462,7 @@ Contains
     Logical,          Intent(In   ) :: l_top
     Type(metal_type), Intent(InOut) :: met
     Type(site_type),  Intent(In   ) :: sites
+    Type(file_type),  Intent(InOut) :: files(:)
     Type(comms_type), Intent(InOut) :: comm
 
     Character(Len=200)                       :: record
@@ -1470,7 +1472,7 @@ Contains
     Character(Len=8)                         :: atom1, atom2
     Integer                                  :: cd, cds, ce, ces, cp, fail(1:2), i, ipot, j, &
                                                 jtpatm, k0, katom1, katom2, keymet, ktype, ngrid, &
-                                                numpot
+                                                numpot, ntable
     Integer, Allocatable, Dimension(:)       :: cdens, cdnss, cembds, cembed, cpair
     Logical                                  :: safe
     Real(Kind=wp)                            :: finish, start
@@ -1511,7 +1513,10 @@ Contains
       cembds = 0; ces = 0
     End If
 
-    If (comm%idnode == 0) Open (Unit=ntable, File='TABEAM')
+    If (comm%idnode == 0) Then
+      Open (Newunit=files(FILE_TABEAM)%unit_no, File=files(FILE_TABEAM)%filename)
+      ntable = files(FILE_TABEAM)%unit_no
+    End If
 
     ! skip header record
 
@@ -1843,7 +1848,7 @@ Contains
 
     End Do
 
-    If (comm%idnode == 0) Close (Unit=ntable)
+    If (comm%idnode == 0) Call files(FILE_TABEAM)%close ()
     If (l_top) Then
       Write (message, '(a)') 'potential tables read from TABEAM file'
       Call info(message, .true.)
@@ -1866,7 +1871,7 @@ Contains
 
     100 Continue
 
-    If (comm%idnode == 0) Close (Unit=ntable)
+    If (comm%idnode == 0) Call files(FILE_TABEAM)%close ()
     Call error(24)
 
   End Subroutine metal_table_read

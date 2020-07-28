@@ -20,7 +20,6 @@ Module vdw
   Use configuration,   Only: configuration_type
   Use constants,       Only: delr_max,&
                              engunit,&
-                             ntable,&
                              prsunt,&
                              r4pie0,&
                              twopi,&
@@ -30,6 +29,8 @@ Module vdw
                              warning
   Use kinds,           Only: wi,&
                              wp
+  Use filename,        Only: FILE_TABVDW, &
+                             file_type
   Use neighbours,      Only: neighbours_type
   Use numerics,        Only: nequal
   Use parse,           Only: get_line,&
@@ -1350,7 +1351,7 @@ Contains
 
   End Subroutine vdw_direct_fs_generate
 
-  Subroutine vdw_table_read(vdws, sites, comm)
+  Subroutine vdw_table_read(vdws, sites, files, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1371,6 +1372,7 @@ Contains
 
     Type(vdw_type),   Intent(InOut) :: vdws
     Type(site_type),  Intent(In   ) :: sites
+    Type(file_type),  Intent(InOut) :: files(:)
     Type(comms_type), Intent(InOut) :: comm
 
     Character(Len=200)                       :: record
@@ -1378,13 +1380,16 @@ Contains
     Character(Len=40)                        :: word
     Character(Len=8)                         :: atom1, atom2
     Integer                                  :: fail, i, ivdw, j, jtpatm, katom1, katom2, keyvdw, &
-                                                l, ngrid
+                                                l, ngrid, ntable
     Logical                                  :: remake, safe
     Real(Kind=wp)                            :: cutpot, delpot, dlrpot, ppp, rdr, rrr, t, t1, t2, &
                                                 vk, vk1, vk2
     Real(Kind=wp), Allocatable, Dimension(:) :: buffer
 
-    If (comm%idnode == 0) Open (Unit=ntable, File='TABLE')
+    If (comm%idnode == 0) Then
+      Open (Newunit=files(FILE_TABVDW)%unit_no, File=files(FILE_TABVDW)%filename)
+      ntable = files(FILE_TABVDW)%unit_no
+    End If
 
     ! skip header record
 
@@ -1622,9 +1627,7 @@ Contains
     End Do
 
     Call info('potential tables read from TABLE file', .true.)
-    If (comm%idnode == 0) Then
-      Close (Unit=ntable)
-    End If
+    If (comm%idnode == 0) Call files(FILE_TABVDW)%close ()
 
     ! convert to internal units
 
@@ -1709,7 +1712,7 @@ Contains
 
     100 Continue
 
-    If (comm%idnode == 0) Close (Unit=ntable)
+    If (comm%idnode == 0) Call files(FILE_TABVDW)%close ()
     Call error(24)
 
   End Subroutine vdw_table_read

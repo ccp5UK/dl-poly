@@ -55,9 +55,21 @@ Module filename
   Integer, Parameter, Public :: FILE_RDF = 13
   !> MSD file
   Integer, Parameter, Public :: FILE_MSD = 14
+  !> TABBND file
+  Integer, Parameter, Public :: FILE_TABBND = 15
+  !> TABANG file
+  Integer, Parameter, Public :: FILE_TABANG = 16
+  !> TABDIH file
+  Integer, Parameter, Public :: FILE_TABDIH = 17
+  !> TABINV file
+  Integer, Parameter, Public :: FILE_TABINV = 18
+  !> TABVDW file
+  Integer, Parameter, Public :: FILE_TABVDW = 19
+  !> TABEAM file
+  Integer, Parameter, Public :: FILE_TABEAM = 20
 
   !> Size of filename array
-  Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 14
+  Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 20
 
   Public :: default_filenames
 
@@ -95,6 +107,12 @@ Contains
     default_names(FILE_KPOINTS) = "KPOINTS"
     default_names(FILE_RDF) = "RDFDAT"
     default_names(FILE_MSD) = "MSDTMP"
+    default_names(FILE_TABBND) = "TABBND"
+    default_names(FILE_TABANG) = "TABANG"
+    default_names(FILE_TABDIH) = "TABDIH"
+    default_names(FILE_TABINV) = "TABINV"
+    default_names(FILE_TABVDW) = "TABLE"
+    default_names(FILE_TABEAM) = "TABEAM"
 
     ! Set default filenames
     Do file_no = 1, FILENAME_SIZE

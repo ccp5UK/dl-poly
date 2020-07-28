@@ -27,7 +27,6 @@ Module angles
                              engunit,&
                              npdfdt,&
                              npdgdt,&
-                             ntable,&
                              pi,&
                              twopi,&
                              zero_plus
@@ -36,6 +35,8 @@ Module angles
                              warning
   Use kinds,           Only: wi,&
                              wp
+  Use filename,        Only: FILE_TABANG, &
+                             file_type
   Use numerics,        Only: images,&
                              local_index
   Use parse,           Only: get_line,&
@@ -1153,7 +1154,7 @@ Contains
 
   End Subroutine angles_forces
 
-  Subroutine angles_table_read(angl_name, angle, sites, comm)
+  Subroutine angles_table_read(angl_name, angle, sites, files, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1173,6 +1174,7 @@ Contains
     Type(angles_type), Intent(InOut) :: angle
     Character(Len=24), Intent(In   ) :: angl_name(1:angle%max_types)
     Type(site_type),   Intent(In   ) :: sites
+    Type(file_type),   Intent(InOut) :: files(:)
     Type(comms_type),  Intent(InOut) :: comm
 
     Character(Len=200)         :: record
@@ -1181,19 +1183,21 @@ Contains
     Character(Len=40)          :: word
     Character(Len=8)           :: atom1, atom2, atom3
     Integer                    :: fail(1:2), i, itang, jtang, jtpatm, katom1, katom2, katom3, l, &
-                                  ngrid, rtang
+                                  ngrid, rtang, ntable
     Integer, Allocatable       :: read_type(:)
     Logical                    :: remake, safe
     Real(Kind=wp)              :: bufp0, bufv0, delpot, dgr2rad, dlrpot, ppp, rad2dgr, rdr, rrr, &
                                   rrr0, t1, t2, vk, vk1, vk2
     Real(Kind=wp), Allocatable :: bufpot(:), bufvir(:)
 
-    If (comm%idnode == 0) Open (Unit=ntable, File='TABANG')
-
+    If (comm%idnode == 0) Then
+      Open (Newunit=files(FILE_TABANG)%unit_no, File=files(FILE_TABANG)%filename)
+      ntable = files(FILE_TABANG)%unit_no
+    End If
     ! skip header record
 
     Call get_line(safe, ntable, record, comm)
-    If (.not. safe) Go To 100
+    If (.not. safe) Call error(24)
 
     ! read mesh resolution not needed for angle dependent
     ! potentials/forces as delpot=180/ngrid running from 0 to 180
@@ -1476,9 +1480,7 @@ Contains
         2.0_wp * angle%tab_force(angle%bin_tab - 3, jtang) - angle%tab_force(angle%bin_tab - 4, jtang)
     End Do
 
-    If (comm%idnode == 0) Then
-      Close (Unit=ntable)
-    End If
+    If (comm%idnode == 0) Call files(FILE_TABANG)%close ()
     Call info('', .true.)
     Call info('potential tables read from TABANG file', .true.)
 
@@ -1500,7 +1502,7 @@ Contains
 
     100 Continue
 
-    If (comm%idnode == 0) Close (Unit=ntable)
+    If (comm%idnode == 0) Call files(FILE_TABANG)%close ()
     Call error(24)
 
   End Subroutine angles_table_read
