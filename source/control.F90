@@ -14,7 +14,8 @@ Module control
                                   pi,&
                                   prsunt,&
                                   tenunt,&
-                                  zero_plus
+                                  zero_plus,&
+                                  MAX_BSPLINE
   Use constraints,          Only: constraints_type
   Use coord,                Only: coord_type
   Use core_shell,           Only: core_shell_type
@@ -3831,6 +3832,7 @@ Contains
 
     Character(Len=200) :: record
     Character(Len=40)  :: akey, word, word1
+    Character(Len=256) :: message
     Integer            :: bspline_local, i, itmp, nstrun
     Logical            :: carry, l_exp, l_n_m, la_ana, la_ang, la_bnd, la_dih, la_inv, lelec, &
                           lmet, lrcut, lrmet, lrvdw, lter, lvdw, safe
@@ -4660,6 +4662,11 @@ Contains
             End If
             ewld%bspline%num_splines = 2 * Ceiling(0.5_wp * Real(ewld%bspline%num_splines, wp))
             ewld%bspline%num_splines = Max(ewld%bspline%num_splines, bspline_local)
+
+            If (ewld%bspline%num_splines > MAX_BSPLINE) Then
+               Write(message, '(a,i0,a)')"Number of bsplines bigger than ", MAX_BSPLINE, "! increase it and recompile!"
+               Call error(0, message)
+            End If
 
           Else !If (itmp == 0) Then ! Poisson Solver
 

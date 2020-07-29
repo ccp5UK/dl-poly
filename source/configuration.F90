@@ -96,9 +96,7 @@ Module configuration
     Integer, Allocatable          :: ixyz(:)
     Integer, Allocatable          :: lstfre(:)
     Real(Kind=wp), Allocatable    :: weight(:) !,chge(:)
-    !  Real( Kind = wp ),    Allocatable, Save :: xxx(:),yyy(:),zzz(:)
     Real(Kind=wp), Allocatable    :: vxx(:), vyy(:), vzz(:)
-    !  Real( Kind = wp ),    Allocatable, Save :: fxx(:),fyy(:),fzz(:)
     Type(corePart), Allocatable   :: parts(:)
     Logical                       :: newjob_check_config = .true.
     Logical                       :: newjob_totmas = .true.
