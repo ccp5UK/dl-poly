@@ -8,7 +8,10 @@ Module bspline
   !! author    - j.s.wilkins october 2018
   !!
   !!----------------------------------------------------------------------!
-  Use constants,       Only: twopi
+  Use constants,       Only: twopi,&
+                             MAX_BSPLINE,&
+                             real_no,&
+                             inv_no
   Use errors_warnings, Only: error,&
                              error_alloc,&
                              error_dealloc
@@ -23,28 +26,28 @@ Module bspline
 
   !! JW952
   ! Attach to Ewald type?
-  Type, Public :: bspline_type
+  Type, Public                                                :: bspline_type
     !> Number of required derivatives
-    Integer(Kind=wi), Public :: num_deriv
+    Integer(Kind=wi), Public                                  :: num_deriv
     !> SPME FFT B-spline order
-    Integer(Kind=wi), Public :: num_splines
+    Integer(Kind=wi), Public                                  :: num_splines
     !> SPME FFT B-spline order when padding radius > 0
-    Integer(Kind=wi), Public :: num_spline_pad
+    Integer(Kind=wi), Public                                  :: num_spline_pad
     !> And another one
-    Integer(Kind=wi), Public :: num_spline_padded
+    Integer(Kind=wi), Public                                  :: num_spline_padded
     !> B-spline coefficients
-    Complex(Kind=wp), Dimension(:, :), Allocatable, Public :: coefficients
+    Complex(Kind=wp), Dimension(:, :), Allocatable, Public    :: coefficients
     !> Precalculated bb*
-    Real(Kind=wp), Dimension(:, :), Allocatable, Public :: norm2
+    Real(Kind=wp), Dimension(:, :), Allocatable, Public       :: norm2
     !> Spline derivative
     Real(Kind=wp), Dimension(:, :, :, :), Allocatable, Public :: derivs
-
     !> Is this bspline initialised correctly
-    Logical :: derivs_initialised = .false., coeffs_initialised = .false.
+    Logical                                                   :: derivs_initialised = .false., coeffs_initialised = .false.
+    ! this is silly since is constant we shall have one, unfortunately fortran compilers
+    ! fail at this time to do it properly
+    Real(Kind=wp), Dimension(0:MAX_BSPLINE, 1:MAX_BSPLINE)    :: ncombk !! Combinations
   End Type bspline_type
 
-  Real(Kind=wp), Dimension(:, :), Save, Allocatable                                                 :: ncombk !! Combinations
-  Real(Kind=wp), Dimension(:), Save, Allocatable                                                   :: real_no, inv_no !! Real variants to avoid type-casting
 
 Contains
 !!! Bspline Routines
@@ -73,31 +76,11 @@ Contains
     ! Nothing to do
     If (bspline%coeffs_initialised) Return
 
-    ! Setup constants for bspline_splines_gen
-
-    If (Allocated(real_no) .and. Allocated(inv_no)) Then
-      Deallocate (real_no, inv_no, Stat=fail)
-      If (fail /= 0) Call error_alloc('real_no and inv_no', 'bspline_splines_gen')
-    End If
-    Allocate (real_no(1:bspline%num_splines), inv_no(1:bspline%num_splines), Stat=fail)
-    If (fail /= 0) Call error_alloc('real_no and inv_no', 'bspline_splines_gen')
-
-    Do i = 1, bspline%num_splines
-      real_no(i) = Real(i, wp)
-      inv_no(i) = 1.0_wp / real_no(i)
-    End Do
-
-    If (Allocated(ncombk)) Then
-      Deallocate (ncombk, stat=fail)
-      If (fail /= 0) Call error_dealloc('ncombk', 'bspline_coeffs_gen')
-    End If
-    Allocate (ncombk(0:bspline%num_splines, bspline%num_splines), stat=fail)
-    If (fail /= 0) Call error_alloc('ncombk', 'bspline_coeffs_gen')
-
-    ncombk = 0.0_wp
-    Do n = 1, bspline%num_splines ! If we change spline number, need to recompute coeffs anyway
+    bspline%ncombk = 0.0_wp
+    Do n = 1, bspline%num_splines
       Do k = 0, n
-        ncombk(k, n) = Product([(real_no(i), i=n - k + 1, n)]) * Product([(inv_no(i), i=1, Max(1, k))])
+        bspline%ncombk(k, n) = Product([(real_no(i), i=n - k + 1, n)]) * &
+        Product([(inv_no(i), i=1, Max(1, k))])
       End Do
     End Do
 
@@ -279,8 +262,8 @@ Contains
           !   sgn = -sgn
           ! end do
           Do n = 0, Min(l, s - j), 2
-            current_first_deriv(:, j) = current_first_deriv(:, j) + ncombk(n, l) * current_zero_deriv(:, j + n)
-            current_first_deriv(:, j) = current_first_deriv(:, j) - ncombk(n + 1, l) * current_zero_deriv(:, j + n + 1)
+            current_first_deriv(:, j) = current_first_deriv(:, j) + bspline%ncombk(n, l) * current_zero_deriv(:, j + n)
+            current_first_deriv(:, j) = current_first_deriv(:, j) - bspline%ncombk(n + 1, l) * current_zero_deriv(:, j + n + 1)
           End Do
 
           ! Generate current point at a lag behind derivs

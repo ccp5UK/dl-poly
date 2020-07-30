@@ -53,13 +53,6 @@ Module ewald_spole
   Public ::  ewald_spme_forces_coul
   Public ::  ewald_excl_forces, ewald_frzn_forces
 
-  !> Temp X,Y,Z Scaled Coords (U/mu)
-  Real(kind=wp), Dimension(:, :), Allocatable       :: recip_coords
-  !> Indices to avoid type conversion
-  Integer, Dimension(:, :), Allocatable       :: recip_indices
-  !> temporary workspace for parallel fft
-  Complex(Kind=wp), Dimension(:, :, :), Allocatable :: pfft_work
-
 Contains
 
   Subroutine ewald_real_forces_coul(electro, spme_datum, neigh, config, stats, iatm, x_pos, y_pos, z_pos, mod_dr_ij, &
@@ -257,16 +250,13 @@ Contains
     Type(stats_type),            Intent(inout) :: stats
     Real(kind=wp),               Intent(  Out) :: engcpe_rc, vircpe_rc
 
-    Complex(kind=wp), Allocatable, Dimension(:, :, :), Save :: potential_grid, stress_grid
     Integer                                                 :: dim, i
     Integer, Allocatable, Dimension(:)                      :: to_calc
     Integer, Dimension(4)                                   :: fail
     Logical                                                 :: llspl
-    Logical, Save                                           :: newjob = .true.
     Real(kind=wp)                                           :: det, eng, rvolm, scale
     Real(kind=wp), Allocatable, Dimension(:)                :: Q_abc
     Real(kind=wp), Allocatable, Dimension(:, :)             :: F_abc, S_abc
-    Real(kind=wp), Allocatable, Dimension(:, :, :), Save    :: charge_grid
     Real(kind=wp), Dimension(9)                             :: rcell, stress_temp
 
 ! Inputs and Outputs
@@ -295,15 +285,15 @@ Contains
       Return
     End If
 
-    If (newjob) Then
+    If (ewld%newjob_spme) Then
       Call ewald_spme_init(domain, config%mxatms, comm, ewld%kspace, &
-        & ewld%bspline, charge_grid, potential_grid, stress_grid, pfft_work)
-      newjob = .false.
+        & ewld%bspline)
+      ewld%newjob_spme = .false.
     End If
 
     fail = 0
-    Allocate (recip_coords(3, config%nlast), stat=fail(1))
-    Allocate (recip_indices(3, config%nlast), stat=fail(2))
+    Allocate (ewld%kspace%recip_coords(3, config%nlast), stat=fail(1))
+    Allocate (ewld%kspace%recip_indices(3, config%nlast), stat=fail(2))
     Allocate (to_calc(0:config%nlast), stat=fail(3))
 
     ! If not per-particle only need global sum, else need everything
@@ -358,7 +348,7 @@ Contains
     llspl = .true.
     Do i = 1, config%nlast
       Do dim = 1, 3
-        recip_coords(dim, i) = ewld%kspace%k_vec_dim_real(dim) * ( &
+        ewld%kspace%recip_coords(dim, i) = ewld%kspace%k_vec_dim_real(dim) * ( &
           & rcell(dim) * config%parts(i)%xxx + &
           & rcell(dim + 3) * config%parts(i)%yyy + &
           & rcell(dim + 6) * config%parts(i)%zzz + 0.5_wp)
@@ -368,18 +358,18 @@ Contains
 
       If (ewld%bspline%num_spline_pad == ewld%bspline%num_splines .and. i <= config%natms) &
         & llspl = llspl .and. ( &
-        & All(recip_coords(:, i) > ewld%kspace%domain_bounds(:, 1)) .and. &
-        & All(recip_coords(:, i) < ewld%kspace%domain_bounds(:, 2)))
+        & All(ewld%kspace%recip_coords(:, i) > ewld%kspace%domain_bounds(:, 1)) .and. &
+        & All(ewld%kspace%recip_coords(:, i) < ewld%kspace%domain_bounds(:, 2)))
 
       ! detect if a particle is charged and in the md cell or in its positive halo
       ! (coords(i) >= -zero_plus) as the b-splines are negative directionally by propagation
-      If (All(recip_coords(:, i) >= -zero_plus) .and. Abs(coeffs(i)) > zero_plus) Then
+      If (All(ewld%kspace%recip_coords(:, i) >= -zero_plus) .and. Abs(coeffs(i)) > zero_plus) Then
         to_calc(0) = to_calc(0) + 1
         to_calc(to_calc(0)) = i
       End If
     End Do
 
-    recip_indices = Int(recip_coords)
+    ewld%kspace%recip_indices = Int(ewld%kspace%recip_coords)
 
     ! check for breakage of llspl when .not.llvnl = (ewld%bspline%num_spline_pad == ewld%bspline)
 
@@ -392,29 +382,30 @@ Contains
 
     ! construct b-splines for atoms
 
-    Call bspline_splines_gen(config%nlast, recip_coords, ewld%bspline)
+    Call bspline_splines_gen(config%nlast, ewld%kspace%recip_coords, ewld%bspline)
 
-    Deallocate (recip_coords, stat=fail(1))
+    Deallocate (ewld%kspace%recip_coords, stat=fail(1))
     If (fail(1) > 0) Call error_dealloc('recip_coords', 'ewald_spme_forces')
 
-    Call spme_construct_charge_array(to_calc(0), ewld, to_calc(1:), recip_indices, coeffs, charge_grid)
+    Call spme_construct_charge_array(to_calc(0), ewld, to_calc(1:), ewld%kspace%recip_indices, coeffs, ewld%kspace%charge_grid)
 
     If (.not. stats%collect_pp) Then
 
       ! If we don't need per-particle data, we can use the old method of getting the stress (cheaper)
-      Call spme_construct_potential_grid_coul(ewld, rcell, charge_grid, potential_grid, s_abc(:, 0))
+      Call spme_construct_potential_grid_coul(ewld, rcell, ewld%kspace%charge_grid, ewld%kspace%potential_grid, s_abc(:, 0))
       Call spme_calc_force_energy(ewld, comm, domain, config, coeffs, &
-        & rcell, recip_indices, potential_grid, stats%collect_pp, q_abc, f_abc)
+        & rcell, ewld%kspace%recip_indices, ewld%kspace%potential_grid, stats%collect_pp, q_abc, f_abc)
 
     Else
 
-      Call spme_construct_potential_grid_coul(ewld, rcell, charge_grid, potential_grid, s_abc(:, 0))
-      Call spme_construct_potential_grid_gen(ewld, rcell, charge_grid, spme_datum, stress_kernel, stress_grid)
+      Call spme_construct_potential_grid_coul(ewld, rcell, ewld%kspace%charge_grid, ewld%kspace%potential_grid, s_abc(:, 0))
+      Call spme_construct_potential_grid_gen(ewld, rcell, ewld%kspace%charge_grid, &
+        spme_datum, stress_kernel, ewld%kspace%stress_grid)
 
       Call spme_calc_force_energy(ewld, comm, domain, config, coeffs, &
-        & rcell, recip_indices, potential_grid, stats%collect_pp, q_abc, f_abc)
+        & rcell, ewld%kspace%recip_indices, ewld%kspace%potential_grid, stats%collect_pp, q_abc, f_abc)
       Call spme_calc_stress(ewld, comm, domain, config, coeffs, &
-        & rcell, recip_indices, stress_grid, s_abc)
+        & rcell, ewld%kspace%recip_indices, ewld%kspace%stress_grid, s_abc)
 
     End If
 
@@ -459,7 +450,7 @@ Contains
       stats%pp_stress = stats%pp_stress + S_abc(:, 1:)
     End If
 
-    Deallocate (recip_indices, stat=fail(1))
+    Deallocate (ewld%kspace%recip_indices, stat=fail(1))
     ! deallocate (ewld%bspline%derivs, stat=fail(2))
     Deallocate (to_calc, stat=fail(3))
     Deallocate (Q_abc, F_abc, S_abc, stat=fail(4))
@@ -1240,7 +1231,7 @@ Contains
     !!
     !!----------------------------------------------------------------------!
 
-    Type(ewald_type),                     Intent(In   ) :: ewld
+    Type(ewald_type),                     Intent(InOut) :: ewld
     Real(Kind=wp), Dimension(9),          Intent(In   ) :: recip_cell
     Real(Kind=wp), Dimension(:, :, :),    Intent(In   ) :: charge_grid
     Complex(Kind=wp), Dimension(:, :, :), Intent(  Out) :: potential_grid
@@ -1284,7 +1275,7 @@ Contains
 
     ! calculate inverse 3d fft of charge array (in place)
 
-    Call pfft(potential_grid, pfft_work, ewld%kspace%context, 1)
+    Call pfft(ewld%kspace%potential_grid, ewld%kspace%pfft_work, ewld%kspace%context, 1)
 
     ! initialise temporary stress tensor
 
@@ -1354,7 +1345,7 @@ Contains
 
     stress_contrib = Reshape(stress_temp, [9])
 
-    Call pfft(potential_grid, pfft_work, ewld%kspace%context, -1)
+    Call pfft(potential_grid, ewld%kspace%pfft_work, ewld%kspace%context, -1)
 
   End Subroutine spme_construct_potential_grid_coul
 

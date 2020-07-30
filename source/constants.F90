@@ -157,6 +157,14 @@ Module constants
   !> ADF channel number
   Integer, Parameter :: nchadf = 34
 
+  !> maximum number of  bsplines to be used for spme
+  Integer, Parameter :: MAX_BSPLINE = 20
+
+  Integer, Private :: i
+  Real(Kind=wp), Dimension(1:MAX_BSPLINE), Parameter :: &
+          real_no = [(Real(i,wp), i = 1,MAX_BSPLINE)], &
+          inv_no = [(1.0_wp / Real(i, wp), i = 1, MAX_BSPLINE)]  !! Real variants to avoid type-casting
+
   !> +0.0 in working precision
   Real(Kind=wp), Parameter     :: zero_plus = Tiny(1.0_wp)
   !> Nearest number to 0.5, greater than 0.5, in working precision

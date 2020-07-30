@@ -63,6 +63,11 @@ Module ewald
 
     !> Number of potentials to handle
     Integer, Public :: num_pots = 0
+    !>
+    Logical, Public :: newjob_erf = .true.
+    Logical, Public :: newjob_spme = .true.
+    Logical, Public :: newjob_spme_gen = .true.
+
     !> SPME function container
     Type(spme_component), Dimension(:), Allocatable, Public :: spme_data
     !> Bspline container
