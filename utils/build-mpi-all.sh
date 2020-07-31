@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-module load gnu openmpi/3.1.1 netcdf-fortran/4.4.4  pnetcdf/4.6.1
+module load gnu/7 openmpi/3.1.6 netcdf-fortran/4.5.2  netcdf/4.7.3
 module load plumed/gnu
-module load kim/gcc/2.1.3
+module load kim/gcc
 module load openblas
 
 mkdir build-mpi-all

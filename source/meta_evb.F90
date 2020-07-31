@@ -735,7 +735,8 @@ Contains
 
     ! Final anlysis
     Call analysis_result(neigh(1)%cutoff, thermo(1), &
-      bond(1), angle(1), dihedral(1), inversion(1), stats(1), green(1), zdensity(1), sites(1), rdf(1), config(1), comm)
+                         bond(1), angle(1), dihedral(1), inversion(1), stats(1), green(1), &
+                         zdensity(1), sites(1), rdf(1), config(1), files, comm)
 
     ! PLUMED finalisation
     If (plume(1)%l_plumed) Call plumed_finalize()

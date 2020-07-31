@@ -25,33 +25,37 @@ Module kspace
     Private
 
     !> SPME kspace    dimensions
-    Integer(Kind=wi), Dimension(3), Public :: k_vec_dim, k_vec_dim_cont
+    Integer(Kind=wi), Dimension(3), Public                    :: k_vec_dim, k_vec_dim_cont
     !> Largest Integer K-Vector Index
-    Integer(Kind=wi), Public :: k_vec_max
-
+    Integer(Kind=wi), Public                                  :: k_vec_max
     !> Real K-Vector indices
-    Real(Kind=wp), Dimension(3), Public :: k_vec_dim_real
+    Real(Kind=wp), Dimension(3), Public                       :: k_vec_dim_real
     !> Real K-Vector indices
-    Real(Kind=wp), Dimension(3), Public :: k_vec_dim_real_p_dom
+    Real(Kind=wp), Dimension(3), Public                       :: k_vec_dim_real_p_dom
     !> Largest K-Vector index
-    Real(Kind=wp), Public :: k_vec_max_real
-
+    Real(Kind=wp), Public                                     :: k_vec_max_real
     !> blocking factors for splines and fft
-    Integer, Dimension(3), Public :: block_fac
+    Integer, Dimension(3), Public                             :: block_fac
     !> indexing arrays for x, y & z as used in parallel fft
-    Integer, Dimension(:, :), Allocatable, Public :: index
+    Integer, Dimension(:, :), Allocatable, Public             :: index
     !> context for parallel fft
-    Integer, Public :: context
-
+    Integer, Public                                           :: context
     !> Domain num cells
-    Integer, Dimension(3), Public :: domain_n
+    Integer, Dimension(3), Public                             :: domain_n
     !> Domain location index
-    Integer, Dimension(3), Public :: domain_ind
-
+    Integer, Dimension(3), Public                             :: domain_ind
     !> Cells to operate over
-    Real(Kind=wp), Dimension(3, 2), Public :: domain_bounds
+    Real(Kind=wp), Dimension(3, 2), Public                    :: domain_bounds
     !> Cells to operate over
-    Integer, Dimension(3, 2), Public :: domain_indices
+    Integer, Dimension(3, 2), Public                          :: domain_indices
+    !> Temp X,Y,Z Scaled Coords (U/mu)
+    Real(kind=wp), Dimension(:, :), Allocatable, Public       :: recip_coords
+    !> Indices to avoid type conversion
+    Integer, Dimension(:, :), Allocatable, Public             :: recip_indices
+    !> temporary workspace for parallel fft
+    Complex(Kind=wp), Allocatable, Dimension(:, :, :), Public :: pfft_work
+    Complex(kind=wp), Allocatable, Dimension(:, :, :), Public :: potential_grid, stress_grid
+    Real(kind=wp), Allocatable, Dimension(:, :, :), Public    :: charge_grid
 
   End Type kspace_type
 

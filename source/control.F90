@@ -29,20 +29,18 @@ Module control
   Use bonds,                Only: bonds_type
   Use comms,                Only: comms_type,&
                                   gcheck
-  Use configuration,        Only: configuration_type,&
+  Use configuration,        Only: IMCON_HEXAGONAL,&
                                   IMCON_NOPBC,&
-                                  IMCON_CUBIC,&
-                                  IMCON_ORTHORHOMBIC,&
-                                  IMCON_PARALLELOPIPED,&
+                                  IMCON_RHOMBIC_DODEC,&
                                   IMCON_SLAB,&
                                   IMCON_TRUNC_OCTO,&
-                                  IMCON_RHOMBIC_DODEC,&
-                                  IMCON_HEXAGONAL
+                                  configuration_type
   Use constants,            Only: epsilon_wp,&
                                   pi,&
                                   prsunt,&
                                   tenunt,&
-                                  zero_plus
+                                  zero_plus,&
+                                  MAX_BSPLINE
   Use constraints,          Only: constraints_type
   Use coord,                Only: coord_type
   Use core_shell,           Only: core_shell_type
@@ -72,14 +70,22 @@ Module control
                                   FILE_REVIVE,&
                                   FILE_REVOLD,&
                                   FILE_STATS,&
+                                  FILE_RDF,&
+                                  FILE_MSD,&
+                                  FILE_TABBND,&
+                                  FILE_TABANG,&
+                                  FILE_TABDIH,&
+                                  FILE_TABINV,&
+                                  FILE_TABVDW,&
+                                  FILE_TABEAM,&
                                   file_type
-  Use flow_control,         Only: RESTART_KEY_CLEAN,&
+  Use flow_control,         Only: DFTB,&
+                                  MD,&
+                                  RESTART_KEY_CLEAN,&
                                   RESTART_KEY_NOSCALE,&
                                   RESTART_KEY_OLD,&
                                   RESTART_KEY_SCALE,&
-                                  flow_type, &
-                                  DFTB, &
-                                  MD
+                                  flow_type
   Use greenkubo,            Only: greenkubo_type
   Use impacts,              Only: impact_type
   Use inversions,           Only: inversions_type
@@ -133,8 +139,8 @@ Module control
                                   ENS_NPT_NOSE_HOOVER, ENS_NPT_NOSE_HOOVER_ANISO, ENS_NVE, &
                                   ENS_NVT_ANDERSON, ENS_NVT_BERENDSEN, ENS_NVT_EVANS, &
                                   ENS_NVT_GENTLE, ENS_NVT_LANGEVIN, ENS_NVT_LANGEVIN_INHOMO, &
-                                  ENS_NVT_NOSE_HOOVER, thermostat_type, &
-                                  PSEUDO_LANGEVIN_DIRECT, PSEUDO_LANGEVIN, PSEUDO_GAUSSIAN, PSEUDO_DIRECT
+                                  ENS_NVT_NOSE_HOOVER, PSEUDO_DIRECT, PSEUDO_GAUSSIAN, &
+                                  PSEUDO_LANGEVIN, PSEUDO_LANGEVIN_DIRECT, thermostat_type
   Use timer,                Only: timer_type
   Use trajectory,           Only: trajectory_type
   Use ttm,                  Only: ttm_type
@@ -240,7 +246,7 @@ Contains
     Logical            :: l_0, l_timcls, l_timjob, lens, lforc, limp, lplumed, lpres, lstep, &
                           lstrext, ltemp, safe
     Real(Kind=wp)      :: eps0, prmps(1:4), rcb_d, rcell(1:9), rcut1, rpad1, rvdw1, tmp, tol
-    Type(testing_type) :: unit_test, app_test
+    Type(testing_type) :: app_test, unit_test
 
     ! initialise system control variables and their logical switches
 
@@ -500,6 +506,7 @@ Contains
 
     stats%lpana = .false.
     stats%cur%on = .false.
+    stats%file_yaml = .false.
     ! default switch for calculation of rdfs, default number of steps
     ! when to be collected and default switch for printing them
 
@@ -635,8 +642,8 @@ Contains
       Else If (word(1:6) == 'l_fast') Then
       Else If (word(1:7) == 'l_print') Then
         Call get_word(record, word)
-        itmp = nint(word_2_real(word))
-        write(message, '(A,i2.1)') "Print level :", itmp
+        itmp = Nint(word_2_real(word))
+        Write (message, '(A,i2.1)') "Print level :", itmp
         Call info(message, .true.)
       Else If (word(1:5) == 'l_eng') Then
         devel%l_eng = .true.
@@ -729,15 +736,15 @@ Contains
         If(fftag == 1) Call info(message, .true.)
 
         ! read unit and app tests to perform
-      Else If(word(1:9) == 'unit_test') Then
-         devel%run_unit_tests = .true.
-         Call unit_test%all()
-         devel%unit_test = unit_test
+      Else If (word(1:9) == 'unit_test') Then
+        devel%run_unit_tests = .true.
+        Call unit_test%all()
+        devel%unit_test = unit_test
 
-      Else If(word(1:8) == 'app_test') Then
-         devel%run_app_tests = .true.
-         Call app_test%all()
-         devel%app_test = app_test
+      Else If (word(1:8) == 'app_test') Then
+        devel%run_app_tests = .true.
+        Call app_test%all()
+        devel%app_test = app_test
 
         ! read VDW options
       Else If (word(1:3) == 'vdw') Then
@@ -1109,7 +1116,7 @@ Contains
           thermo%l_stochastic_boundaries = .true.
           If (comm%idnode == 0) Then
             If(fftag == 1) Call info('pseudo thermostat attached to MD cell boundary', .true.)
-            select case (thermo%key_pseudo)
+            Select Case (thermo%key_pseudo)
             Case (PSEUDO_LANGEVIN_DIRECT)
               If(fftag == 1) Call info('thermostat control: Langevin + direct temperature scaling', .true.)
             Case (PSEUDO_LANGEVIN)
@@ -1118,8 +1125,7 @@ Contains
               If(fftag == 1) Call info('thermostat control: gaussian temperature scaling', .true.)
             Case (PSEUDO_DIRECT)
               If(fftag == 1) Call info('thermostat control: direct temperature scaling', .true.)
-            End select
-
+            End Select
             Write (message, '(a,1p,e12.4)') 'thermostat thickness (Angs) ', tmp
           End If
 
@@ -2787,6 +2793,18 @@ Contains
 
         ! read print options
 
+      Else If (word(1:10) == 'yml_statis') Then
+        stats%file_yaml = .True.
+
+        Write (message, '(a)') "# statis printed in yaml format"
+        Call info(message, .true.)
+
+      Else If (word(1:7) == 'yml_rdf') Then
+        rdf%is_yaml = .True.
+
+        Write (message, '(a)') "# RDFDAT printed in yaml format"
+        Call info(message, .true.)
+
       Else If (word(1:5) == 'print') Then
 
         Call get_word(record, word)
@@ -3062,16 +3080,15 @@ Contains
 
         End If
 
-      ! EVB settings, this flag has been already read by read_simtype.  
-
-      Else If (word(1:3) == 'evb') Then 
-      ! here do nothing
-
       ! dftb_driver
       Else If (word(1:11) == 'dftb_driver') Then
 
          !Use DFTB+ as the force calculator instead of classical force fields
          flow%simulation_method = DFTB
+
+      Else If (word(1:3) == 'evb') Then 
+         ! EVB settings, this flag has been already read by read_simtype.  
+         ! here do nothing
 
         ! close control file
 
@@ -3081,7 +3098,7 @@ Contains
 
       Else If (word(1:5) == 'l_vdw') Then
 
-        flow%l_vdw = .True.
+        flow%l_vdw = .true.
 
       Else If (word(1:6) == 'plumed') Then
 
@@ -3720,90 +3737,90 @@ Contains
     ! Two-temperature model: calculate atomic density (if not
     ! already specified and electron-phonon friction
     ! conversion factor (to calculate thermo%chi_ep from G_ep values)
+    If (ttm%l_ttm) Then
+      If (ttm%cellrho <= zero_plus) ttm%cellrho = ttm%sysrho
+      If (ttm%cellrho > zero_plus) Then
+        ttm%rcellrho = 1.0_wp / ttm%cellrho
+      Else
+        ttm%rcellrho = 0.0_wp
+      End If
 
-    If (ttm%cellrho <= zero_plus) ttm%cellrho = ttm%sysrho
-    If (ttm%cellrho > zero_plus) Then
-      ttm%rcellrho = 1.0_wp / ttm%cellrho
-    Else
-      ttm%rcellrho = 0.0_wp
+      ttm%epc_to_chi = 1.0e-12_wp * ttm%Jm3K_to_kBA3 / 3.0_wp
+      If (.not. ttm%ttmdyndens) ttm%epc_to_chi = ttm%epc_to_chi * ttm%rcellrho
+
+      ! Check sufficient parameters are specified for TTM electronic specific
+      ! heats, thermal conductivity/diffusivity, energy loss and laser deposition
+
+      If (ttm%ttmdyndens) ttm%CeType = ttm%CeType + 4
+      Select Case (ttm%CeType)
+      Case (0)
+        ! constant electronic specific heat: will convert from kB/atom to kB/A^3
+        ! by multiplication of atomic density
+        ttm%Ce0 = ttm%Ce0 * ttm%cellrho
+      Case (1)
+        ! hyperbolic tangent electronic specific heat: multiplier will be converted
+        ! from kB/atom to kB/A^3, temperature term (K^-1) is now scaled by 10^-4
+        If (Abs(ttm%sh_A) <= zero_plus .or. Abs(ttm%sh_B) <= zero_plus) Call error(681)
+        ttm%sh_A = ttm%sh_A * ttm%cellrho
+        ttm%sh_B = ttm%sh_B * 1.0e-4_wp
+      Case (2)
+        ! linear electronic specific heat to Fermi temperature: maximum
+        ! value will be converted from kB/atom to kB/A^3
+        If (Abs(ttm%Tfermi) <= zero_plus .or. Abs(ttm%Cemax) <= zero_plus) Call error(681)
+        ttm%Cemax = ttm%Cemax * ttm%cellrho
+      Case (4)
+        ! constant electronic specific heat: will convert from kB/atom to kB/A^3
+        ! by multiplication of atomic density
+      Case (5)
+        ! hyperbolic tangent electronic specific heat: multiplier will be converted
+        ! from kB/atom to kB/A^3, temperature term (K^-1) is now scaled by 10^-4
+        If (Abs(ttm%sh_A) <= zero_plus .or. Abs(ttm%sh_B) <= zero_plus) Call error(681)
+        ttm%sh_B = ttm%sh_B * 1.0e-4_wp
+      Case (6)
+        ! linear electronic specific heat to Fermi temperature: maximum
+        ! value will be converted from kB/atom to kB/A^3
+        If (Abs(ttm%Tfermi) <= zero_plus .or. Abs(ttm%Cemax) <= zero_plus) Call error(681)
+      End Select
+
+      Select Case (ttm%KeType)
+        ! constant and Drude thermal conductivity: convert from W m^-1 K^-1
+        ! to kB ps^-1 A^-1
+      Case (1, 2)
+        If (ttm%isMetal .and. Abs(ttm%Ka0) <= zero_plus) Call error(682)
+        ttm%Ka0 = ttm%Ka0 * ttm%JKms_to_kBAps
+      End Select
+
+      Select Case (ttm%DeType)
+      Case (1)
+        ! constant thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
+        If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus) Call error(683)
+        ttm%Diff0 = ttm%Diff0 * 1.0e8_wp
+      Case (2)
+        ! reciprocal thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
+        ! and ttm%Diff0 scaled with system temperature
+        If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus .or. Abs(ttm%Tfermi) <= zero_plus) Call error(683)
+        ttm%Diff0 = ttm%Diff0 * thermo%temp * 1.0e8_wp
+      End Select
+
+      ! strict flag
+
+      ! spatial deposition (gaussian) standard deviation: convert from nm to A
+      ttm%sig = ttm%sig * 10.0_wp
+
+      ! penetration depth: convert from nm to A
+      If ((ttm%sdepoType == 2 .and. Abs(ttm%dEdX) <= zero_plus .and. Abs(ttm%pdepth - 1.0_wp) <= zero_plus) .or. &
+          (ttm%sdepoType == 3 .and. Abs(ttm%pdepth - 1.0_wp) <= zero_plus)) &
+        Call warning(510, 0.0_wp, 0.0_wp, 0.0_wp)
+      ttm%pdepth = 10.0_wp * ttm%pdepth
+
+      ! electronic stopping power: convert from eV/nm to eV/A
+      ! ttm%fluence: convert from mJ cm^-2 to eV A^-2
+      If (ttm%sdepoType > 0 .and. ttm%sdepoType < 3 .and. (Abs(ttm%dEdx) <= zero_plus .or. Abs(ttm%fluence) < zero_plus)) &
+        Call warning(515, 0.0_wp, 0.0_wp, 0.0_wp)
+
+      ttm%fluence = ttm%fluence * ttm%mJcm2_to_eVA2
+      ttm%dEdX = 0.1_wp * ttm%dEdX
     End If
-
-    ttm%epc_to_chi = 1.0e-12_wp * ttm%Jm3K_to_kBA3 / 3.0_wp
-    If (.not. ttm%ttmdyndens) ttm%epc_to_chi = ttm%epc_to_chi * ttm%rcellrho
-
-    ! Check sufficient parameters are specified for TTM electronic specific
-    ! heats, thermal conductivity/diffusivity, energy loss and laser deposition
-
-    If (ttm%ttmdyndens) ttm%CeType = ttm%CeType + 4
-    Select Case (ttm%CeType)
-    Case (0)
-      ! constant electronic specific heat: will convert from kB/atom to kB/A^3
-      ! by multiplication of atomic density
-      ttm%Ce0 = ttm%Ce0 * ttm%cellrho
-    Case (1)
-      ! hyperbolic tangent electronic specific heat: multiplier will be converted
-      ! from kB/atom to kB/A^3, temperature term (K^-1) is now scaled by 10^-4
-      If (Abs(ttm%sh_A) <= zero_plus .or. Abs(ttm%sh_B) <= zero_plus) Call error(681)
-      ttm%sh_A = ttm%sh_A * ttm%cellrho
-      ttm%sh_B = ttm%sh_B * 1.0e-4_wp
-    Case (2)
-      ! linear electronic specific heat to Fermi temperature: maximum
-      ! value will be converted from kB/atom to kB/A^3
-      If (Abs(ttm%Tfermi) <= zero_plus .or. Abs(ttm%Cemax) <= zero_plus) Call error(681)
-      ttm%Cemax = ttm%Cemax * ttm%cellrho
-    Case (4)
-      ! constant electronic specific heat: will convert from kB/atom to kB/A^3
-      ! by multiplication of atomic density
-    Case (5)
-      ! hyperbolic tangent electronic specific heat: multiplier will be converted
-      ! from kB/atom to kB/A^3, temperature term (K^-1) is now scaled by 10^-4
-      If (Abs(ttm%sh_A) <= zero_plus .or. Abs(ttm%sh_B) <= zero_plus) Call error(681)
-      ttm%sh_B = ttm%sh_B * 1.0e-4_wp
-    Case (6)
-      ! linear electronic specific heat to Fermi temperature: maximum
-      ! value will be converted from kB/atom to kB/A^3
-      If (Abs(ttm%Tfermi) <= zero_plus .or. Abs(ttm%Cemax) <= zero_plus) Call error(681)
-    End Select
-
-    Select Case (ttm%KeType)
-      ! constant and Drude thermal conductivity: convert from W m^-1 K^-1
-      ! to kB ps^-1 A^-1
-    Case (1, 2)
-      If (ttm%isMetal .and. Abs(ttm%Ka0) <= zero_plus) Call error(682)
-      ttm%Ka0 = ttm%Ka0 * ttm%JKms_to_kBAps
-    End Select
-
-    Select Case (ttm%DeType)
-    Case (1)
-      ! constant thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
-      If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus) Call error(683)
-      ttm%Diff0 = ttm%Diff0 * 1.0e8_wp
-    Case (2)
-      ! reciprocal thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
-      ! and ttm%Diff0 scaled with system temperature
-      If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus .or. Abs(ttm%Tfermi) <= zero_plus) Call error(683)
-      ttm%Diff0 = ttm%Diff0 * thermo%temp * 1.0e8_wp
-    End Select
-
-    ! strict flag
-
-    ! spatial deposition (gaussian) standard deviation: convert from nm to A
-    ttm%sig = ttm%sig * 10.0_wp
-
-    ! penetration depth: convert from nm to A
-    If ((ttm%sdepoType == 2 .and. Abs(ttm%dEdX) <= zero_plus .and. Abs(ttm%pdepth - 1.0_wp) <= zero_plus) .or. &
-        (ttm%sdepoType == 3 .and. Abs(ttm%pdepth - 1.0_wp) <= zero_plus)) &
-      Call warning(510, 0.0_wp, 0.0_wp, 0.0_wp)
-    ttm%pdepth = 10.0_wp * ttm%pdepth
-
-    ! electronic stopping power: convert from eV/nm to eV/A
-    ! ttm%fluence: convert from mJ cm^-2 to eV A^-2
-    If (ttm%sdepoType > 0 .and. ttm%sdepoType < 3 .and. (Abs(ttm%dEdx) <= zero_plus .or. Abs(ttm%fluence) < zero_plus)) &
-      Call warning(515, 0.0_wp, 0.0_wp, 0.0_wp)
-
-    ttm%fluence = ttm%fluence * ttm%mJcm2_to_eVA2
-    ttm%dEdX = 0.1_wp * ttm%dEdX
-
   End Subroutine read_control
 
   Subroutine scan_control(rcter, max_rigid, imcon, imc_n, cell, xhi, yhi, zhi, mxgana, &
@@ -3872,6 +3889,7 @@ Contains
 
     Character(Len=200) :: record
     Character(Len=40)  :: akey, word, word1
+    Character(Len=256) :: message
     Integer            :: bspline_local, i, itmp, nstrun
     Integer            :: fftag
     Logical            :: carry, l_exp, l_n_m, la_ana, la_ang, la_bnd, la_dih, la_inv, lelec, &
@@ -4067,10 +4085,10 @@ Contains
 
         ! read binsize option
 
-    ! dftb_driver
+        ! dftb_driver
       Else If (word(1:11) == 'dftb_driver') Then
-         !Use DFTB+ as the force calculator instead of classical force fields
-         flow%simulation_method = DFTB
+        !Use DFTB+ as the force calculator instead of classical force fields
+        flow%simulation_method = DFTB
 
       Else If (word(1:7) == 'binsize') Then
 
@@ -4708,6 +4726,11 @@ Contains
             End If
             ewld%bspline%num_splines = 2 * Ceiling(0.5_wp * Real(ewld%bspline%num_splines, wp))
             ewld%bspline%num_splines = Max(ewld%bspline%num_splines, bspline_local)
+
+            If (ewld%bspline%num_splines > MAX_BSPLINE) Then
+               Write(message, '(a,i0,a)')"Number of bsplines bigger than ", MAX_BSPLINE, "! increase it and recompile!"
+               Call error(0, message)
+            End If
 
           Else !If (itmp == 0) Then ! Poisson Solver
 
@@ -5455,7 +5478,11 @@ Contains
         Else If ((word(1:6) == 'config') .or. &
                  (word(1:5) == 'field') .or. (word(1:6) == 'statis') .or. (word(1:7) == 'history') &
                  .or. (word(1:7) == 'historf') .or. (word(1:6) == 'revive') .or. &
-                 (word(1:6) == 'revcon') .or. (word(1:6) == 'revold')) Then
+                 (word(1:6) == 'revcon') .or. (word(1:6) == 'revold') .or. &
+                 (word(1:3) == 'rdf') .or. (word(1:3) == 'msd') .or. &
+                 (word(1:6) == 'tabbnd') .or. (word(1:6) == 'tabang') .or. &
+                 (word(1:6) == 'tabdih') .or. (word(1:6) == 'tabinv') .or. &
+                 (word(1:3) == 'vdw') .or. (word(1:3) == 'eam')) Then
 
           If (word(1:6) == 'config') Then
             Call info('CONFIG file is '//files(FILE_CONFIG)%filename, .true.)
@@ -5473,6 +5500,22 @@ Contains
             Call info('REVCON file is '//files(FILE_REVCON)%filename, .true.)
           Else If (word(1:6) == 'revold') Then
             Call info('REVOLD file is '//files(FILE_REVOLD)%filename, .true.)
+          Else If (word(1:3) == 'rdf') Then
+            Call info('RDFDAT file is '//files(FILE_RDF)%filename, .true.)
+          Else If (word(1:3) == 'msd') Then
+            Call info('MSDTMP file is '//files(FILE_MSD)%filename, .true.)
+          Else If (word(1:6) == 'tabbnd') Then
+            Call info('TABBND file is '//files(FILE_TABBND)%filename, .true.)
+          Else If (word(1:6) == 'tabang') Then
+            Call info('TABANG file is '//files(FILE_TABANG)%filename, .true.)
+          Else If (word(1:6) == 'tabdih') Then
+            Call info('TABDIH file is '//files(FILE_TABDIH)%filename, .true.)
+          Else If (word(1:6) == 'tabinv') Then
+            Call info('TABINV file is '//files(FILE_TABINV)%filename, .true.)
+          Else If (word(1:6) == 'tabvdw') Then
+            Call info('TABLE file is '//files(FILE_TABVDW)%filename, .true.)
+          Else If (word(1:6) == 'tabeam') Then
+            Call info('TABEAM file is '//files(FILE_TABEAM)%filename, .true.)
           End If
           ! close control file
 
@@ -5681,6 +5724,30 @@ Contains
 
         Else If (word1(1:6) == 'revold') Then
           Call get_word(rec_case_sensitive, files(FILE_REVOLD)%filename)
+
+        Else If (word1(1:3) == 'rdf') Then
+          Call get_word(rec_case_sensitive, files(FILE_RDF)%filename)
+
+        Else If (word1(1:3) == 'msd') Then
+          Call get_word(rec_case_sensitive, files(FILE_MSD)%filename)
+
+        Else If (word1(1:6) == 'tabbnd') Then
+          Call get_word(rec_case_sensitive, files(FILE_TABBND)%filename)
+
+        Else If (word1(1:6) == 'tabang') Then
+          Call get_word(rec_case_sensitive, files(FILE_TABANG)%filename)
+
+        Else If (word1(1:6) == 'tabdih') Then
+          Call get_word(rec_case_sensitive, files(FILE_TABDIH)%filename)
+
+        Else If (word1(1:6) == 'tabinv') Then
+          Call get_word(rec_case_sensitive, files(FILE_TABINV)%filename)
+
+        Else If (word1(1:6) == 'tabvdw') Then
+          Call get_word(rec_case_sensitive, files(FILE_TABVDW)%filename)
+
+        Else If (word1(1:6) == 'tabeam') Then
+          Call get_word(rec_case_sensitive, files(FILE_TABEAM)%filename)
         End If
         ! read finish
 

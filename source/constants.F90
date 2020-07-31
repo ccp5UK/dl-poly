@@ -121,10 +121,6 @@ Module constants
 
   ! I/O CHANNELS :: STERR = 0 , STINP = 5 , STOUT = 6 , STERR+STOUT = *
 
-  !> tabulated potential file channel
-
-  Integer, Parameter :: ntable = 13
-
   !> reference file input channel
 
   Integer, Parameter :: nrefdt = 14
@@ -132,10 +128,6 @@ Module constants
   !> defect file output channel
 
   Integer, Parameter :: ndefdt = 24
-
-  !> rdf%rdf file channel number
-
-  Integer, Parameter :: nrdfdt = 25
 
   !> z-density file channel number
 
@@ -164,6 +156,14 @@ Module constants
 
   !> ADF channel number
   Integer, Parameter :: nchadf = 34
+
+  !> maximum number of  bsplines to be used for spme
+  Integer, Parameter :: MAX_BSPLINE = 20
+
+  Integer, Private :: i
+  Real(Kind=wp), Dimension(1:MAX_BSPLINE), Parameter :: &
+          real_no = [(Real(i,wp), i = 1,MAX_BSPLINE)], &
+          inv_no = [(1.0_wp / Real(i, wp), i = 1, MAX_BSPLINE)]  !! Real variants to avoid type-casting
 
   !> +0.0 in working precision
   Real(Kind=wp), Parameter     :: zero_plus = Tiny(1.0_wp)

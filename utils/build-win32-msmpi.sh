@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 module purge
-module load msmpi/7.1
+module load gnu/7 msmpi/7.1
 rm -rf build-win32-msmpi
 mkdir -p build-win32-msmpi
 pushd build-win32-msmpi

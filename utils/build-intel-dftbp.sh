@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-module load intel/2019.0 dftb+/intel/19.2 
+module load intel/2020a dftb+/intel/19.2 
 build="build-mpi-intel-dftb"
 rm -rf $build
 mkdir -p $build

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-module load intel 
+module load intel/2020a
 module load gnu openblas
 mkdir -p build-mpi-intel
 pushd build-mpi-intel

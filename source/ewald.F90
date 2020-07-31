@@ -58,14 +58,16 @@ Module ewald
     !> Ewald convergence parameter or Coulomb damping parameter (A^-1)
     Real(Kind=wp), Public :: alpha
 
-    Logical, Public :: newjob_two_body=.True.
-    Logical, Public :: newjob_spme_init=.True.
-
     ! Merged types here for simplicity
     ! Ewald type containing data relevant to SPME style ewald
 
     !> Number of potentials to handle
     Integer, Public :: num_pots = 0
+    !>
+    Logical, Public :: newjob_erf = .true.
+    Logical, Public :: newjob_spme = .true.
+    Logical, Public :: newjob_spme_gen = .true.
+
     !> SPME function container
     Type(spme_component), Dimension(:), Allocatable, Public :: spme_data
     !> Bspline container

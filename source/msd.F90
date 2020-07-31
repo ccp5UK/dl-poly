@@ -28,7 +28,7 @@ Module msd
   Use constants,       Only: boltz,&
                              zero_plus
   Use errors_warnings, Only: error
-  Use filename,        Only: FILE_HISTORY,&
+  Use filename,        Only: FILE_MSD, &
                              file_type
   Use flow_control,    Only: RESTART_KEY_OLD
   Use io,              Only: &
@@ -134,7 +134,7 @@ Contains
 
       ! name convention
 
-      msd_data%fname = 'MSDTMP'
+      msd_data%fname = files(FILE_MSD)%filename
 
       ! If keyres = RESTART_KEY_OLD, is MSDTMP old (does it exist) and
       ! how many frames and records are in there
@@ -153,11 +153,11 @@ Contains
       If (.not. lexist) Then
 
         If (comm%idnode == 0) Then
-          Open (Newunit=files(FILE_HISTORY)%unit_no, File=msd_data%fname, &
+          Open (Newunit=files(FILE_MSD)%unit_no, File=msd_data%fname, &
                 Form='formatted', Access='direct', Status='replace', Recl=recsz)
-          Write (Unit=files(FILE_HISTORY)%unit_no, Fmt='(a52,a1)', Rec=Int(1, li)) config%cfgname(1:52), lf
-          Write (Unit=files(FILE_HISTORY)%unit_no, Fmt='(i10,2i21,a1)', Rec=Int(2, li)) megatm, msd_data%frm, msd_data%rec, lf
-          Call files(FILE_HISTORY)%close ()
+          Write (Unit=files(FILE_MSD)%unit_no, Fmt='(a52,a1)', Rec=Int(1, li)) config%cfgname(1:52), lf
+          Write (Unit=files(FILE_MSD)%unit_no, Fmt='(i10,2i21,a1)', Rec=Int(2, li)) megatm, msd_data%frm, msd_data%rec, lf
+          Call files(FILE_MSD)%close ()
         End If
         msd_data%rec = Int(2, li)
         msd_data%frm = Int(0, li)
@@ -169,7 +169,7 @@ Contains
         safe = .true.
         If (comm%idnode == 0) Then
 
-          Open (Newunit=files(FILE_HISTORY)%unit_no, File=msd_data%fname, Form='formatted')
+          Open (Newunit=files(FILE_MSD)%unit_no, File=msd_data%fname, Form='formatted')
 
           Do
 
@@ -179,10 +179,10 @@ Contains
 
             If (msd_data%fast) Then
 
-              Read (Unit=files(FILE_HISTORY)%unit_no, Fmt=*, End=10) ! title record
+              Read (Unit=files(FILE_MSD)%unit_no, Fmt=*, End=10) ! title record
               msd_data%rec = msd_data%rec + Int(1, li)
               record = ' '
-              Read (Unit=files(FILE_HISTORY)%unit_no, Fmt='(a)', End=10) record ! bookkeeping record
+              Read (Unit=files(FILE_MSD)%unit_no, Fmt='(a)', End=10) record ! bookkeeping record
               Call tabs_2_blanks(record)
               msd_data%rec = msd_data%rec + Int(1, li)
 
@@ -207,7 +207,7 @@ Contains
 
             Else
 
-              Read (Unit=files(FILE_HISTORY)%unit_no, Fmt='(a)', End=20) record ! timestep record
+              Read (Unit=files(FILE_MSD)%unit_no, Fmt='(a)', End=20) record ! timestep record
               Call tabs_2_blanks(record)
               msd_data%rec = msd_data%rec + Int(1, li)
 
@@ -216,7 +216,7 @@ Contains
 
               word = ' '
               Write (word, '( "(", i0, "( / ) )" )') jj - 1
-              Read (Unit=files(FILE_HISTORY)%unit_no, Fmt=word, End=20)
+              Read (Unit=files(FILE_MSD)%unit_no, Fmt=word, End=20)
               msd_data%rec = msd_data%rec + Int(jj, li)
               msd_data%frm = msd_data%frm + Int(1, li)
 
@@ -225,7 +225,7 @@ Contains
           End Do
 
           20 Continue
-          Call files(FILE_HISTORY)%close ()
+          Call files(FILE_MSD)%close ()
 
         End If
 
@@ -318,9 +318,9 @@ Contains
       Do i = 1, config%natms
         k = 2 * i
 
-        If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(27 + k) / (boltz * 3.0_wp)
+        If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(36 + k) / (boltz * 3.0_wp)
 
-   Write (record, Fmt='(a8,i10,1p,2e13.4,a8,a1)') config%atmnam(i), config%ltg(i), Sqrt(stpval(27 + k - 1)), tmp, Repeat(' ', 8), lf
+   Write (record, Fmt='(a8,i10,1p,2e13.4,a8,a1)') config%atmnam(i), config%ltg(i), Sqrt(stpval(36 + k - 1)), tmp, Repeat(' ', 8), lf
         jj = jj + 1
         Do k = 1, recsz
           chbat(k, jj) = record(k:k)
@@ -360,10 +360,11 @@ Contains
 
       If (comm%idnode == 0) Then
 
-        Open (Newunit=files(FILE_HISTORY)%unit_no, File=msd_data%fname, Form='formatted', Access='direct', Recl=recsz)
+        Open (Newunit=files(FILE_MSD)%unit_no, File=msd_data%fname, Form='formatted', Access='direct', Recl=recsz)
 
         msd_data%rec = msd_data%rec + Int(1, li)
-    Write (Unit=files(FILE_HISTORY)%unit_no, Fmt='(a8,2i10,2f12.6,a1)', Rec=msd_data%rec) 'timestep', nstep, megatm, tstep, time, lf
+        Write (Unit=files(FILE_MSD)%unit_no, Fmt='(a8,2i10,2f12.6,a1)', Rec=msd_data%rec) 'timestep', nstep, &
+            megatm, tstep, time, lf
 
         Do i = 1, config%natms
           k = 2 * i
@@ -371,9 +372,9 @@ Contains
           iwrk(i) = config%ltg(i)
           chbuf(i) = config%atmnam(i)
 
-          ddd(i) = Sqrt(stpval(27 + k - 1))
+          ddd(i) = Sqrt(stpval(36 + k - 1))
 
-          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(27 + k) / (boltz * 3.0_wp)
+          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(36 + k) / (boltz * 3.0_wp)
           eee(i) = tmp
         End Do
 
@@ -404,7 +405,7 @@ Contains
             ! Dump batch and update start of file
 
             If (jj >= batsz .or. i == jatms) Then
-              Write (Unit=files(FILE_HISTORY)%unit_no, Fmt='(53a)', Rec=msd_data%rec + Int(1, li)) (chbat(:, k), k=1, jj)
+              Write (Unit=files(FILE_MSD)%unit_no, Fmt='(53a)', Rec=msd_data%rec + Int(1, li)) (chbat(:, k), k=1, jj)
               msd_data%rec = msd_data%rec + Int(jj, li)
               jj = 0
             End If
@@ -413,18 +414,18 @@ Contains
 
         ! Update main header
 
-        Write (Unit=files(FILE_HISTORY)%unit_no, Fmt='(i10,2i21,a1)', Rec=Int(2, li)) megatm, msd_data%frm, msd_data%rec, lf
+        Write (Unit=files(FILE_MSD)%unit_no, Fmt='(i10,2i21,a1)', Rec=Int(2, li)) megatm, msd_data%frm, msd_data%rec, lf
 
-        Call files(FILE_HISTORY)%close ()
+        Call files(FILE_MSD)%close ()
 
       Else
 
         Do i = 1, config%natms
           k = 2 * i
 
-          ddd(i) = Sqrt(stpval(27 + k - 1))
+          ddd(i) = Sqrt(stpval(36 + k - 1))
 
-          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(27 + k) / (boltz * 3.0_wp)
+          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(36 + k) / (boltz * 3.0_wp)
           eee(i) = tmp
         End Do
 
@@ -494,9 +495,9 @@ Contains
       Do i = 1, config%natms
         k = 2 * i
 
-        ddd(i) = Sqrt(stpval(27 + k - 1))
+        ddd(i) = Sqrt(stpval(36 + k - 1))
 
-        If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(27 + k) / (boltz * 3.0_wp)
+        If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(36 + k) / (boltz * 3.0_wp)
         eee(i) = tmp
       End Do
 
@@ -550,10 +551,11 @@ Contains
 
       If (comm%idnode == 0) Then
 
-        Open (Newunit=files(FILE_HISTORY)%unit_no, File='fname', Form='formatted', Access='direct', Recl=recsz)
+        Open (Newunit=files(FILE_MSD)%unit_no, File='fname', Form='formatted', Access='direct', Recl=recsz)
 
         msd_data%rec = msd_data%rec + Int(1, li)
-    Write (Unit=files(FILE_HISTORY)%unit_no, Fmt='(a8,2i10,2f12.6,a1)', Rec=msd_data%rec) 'timestep', nstep, megatm, tstep, time, lf
+        Write (Unit=files(FILE_MSD)%unit_no, Fmt='(a8,2i10,2f12.6,a1)', Rec=msd_data%rec) 'timestep', nstep, &
+               megatm, tstep, time, lf
 
         Do i = 1, config%natms
           k = 2 * i
@@ -561,9 +563,9 @@ Contains
           iwrk(i) = config%ltg(i)
           chbuf(i) = config%atmnam(i)
 
-          ddd(i) = Sqrt(stpval(27 + k - 1))
+          ddd(i) = Sqrt(stpval(36 + k - 1))
 
-          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(27 + k) / (boltz * 3.0_wp)
+          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(36 + k) / (boltz * 3.0_wp)
           eee(i) = tmp
         End Do
 
@@ -584,7 +586,7 @@ Contains
           End If
 
           Do i = 1, jatms
-            Write (Unit=files(FILE_HISTORY)%unit_no, Fmt='(a8,i10,1p,2e13.4,a8,a1)', Rec=msd_data%rec + Int(iwrk(i), li)) &
+            Write (Unit=files(FILE_MSD)%unit_no, Fmt='(a8,i10,1p,2e13.4,a8,a1)', Rec=msd_data%rec + Int(iwrk(i), li)) &
               chbuf(i), iwrk(i), ddd(i), eee(i), Repeat(' ', 8), lf
           End Do
         End Do
@@ -592,18 +594,18 @@ Contains
         ! Update and save offset pointer
 
         msd_data%rec = msd_data%rec + Int(megatm, li)
-        Write (Unit=files(FILE_HISTORY)%unit_no, Fmt='(i10,2i21,a1)', Rec=Int(2, li)) megatm, msd_data%frm, msd_data%rec, lf
+        Write (Unit=files(FILE_MSD)%unit_no, Fmt='(i10,2i21,a1)', Rec=Int(2, li)) megatm, msd_data%frm, msd_data%rec, lf
 
-        Call files(FILE_HISTORY)%close ()
+        Call files(FILE_MSD)%close ()
 
       Else
 
         Do i = 1, config%natms
           k = 2 * i
 
-          ddd(i) = Sqrt(stpval(27 + k - 1))
+          ddd(i) = Sqrt(stpval(36 + k - 1))
 
-          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(27 + k) / (boltz * 3.0_wp)
+          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(36 + k) / (boltz * 3.0_wp)
           eee(i) = tmp
         End Do
 

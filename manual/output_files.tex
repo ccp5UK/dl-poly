@@ -531,15 +531,14 @@ have been requested (by selecting directives {\bf rdf} and {\bf
 print rdf} in the CONTROL file) radial distribution functions are
 printed out.  This is written from the subroutine {\sc
 rdf\_compute}.  First the number of time-steps used for the
-collection of the histograms is stated.  Then each pre-requested
-function is given in turn.  For each function a header line states
+collection of the histograms is stated.
+
+For each function a header line states
 the atom types (`a' and `b') represented by the function.  Then
-$r,~g(r)$ and $n(r)$ are given in tabular form.  Output is given
-from 2 entries before the first non-zero entry in the $g(r)$
-histogram.  $n(r)$ is the average number of atoms of type `b' within
-a sphere of radius $r$ around an atom of type `a'.
-Note that a readable version of these data is provided by the
-RDFDAT file (below).
+$r, g(r)$ and $n(r)$ are given in tabular form. $n(r)$ is the average
+number of atoms of type `b' within a sphere of radius $r$ around
+an atom of type `a'. Note that a readable version of these data is
+provided by the RDFDAT file (below).
 
 \subsubsection{Umbrella Sampling Restraint RDF}
 
@@ -651,7 +650,8 @@ X\=XXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXX\=\kill
 \> {\tt atname 2} \> a8   \> second atom name \\
 {\bf following records} ({\em mxgrdf} records) \\
 \> {\tt radius}   \> real \> interatomic distance (\AA) \\
-\> {\tt g(r)}     \> real \> RDF at given radius
+\> {\tt g(r)}     \> real \> RDF at given radius \\
+\> {\tt n(r)}     \> real \> RDF at given radius \\
 \end{tabbing}
 
 {\bf Note 1.} The RDFDAT file is optional and appears when the
@@ -836,8 +836,8 @@ written in the format ``(1p,5e14.6)''.  The number of array
 elements required (determined by the parameter {\tt mxnstk} in the
 {\sc setup\_module} file) is
 \begin{eqnarray}
-{\tt mxnstk} & \ge & 28 + {\tt ntpatm}~(\rm number~of~unique~atomic~sites) ~+ \nonumber \\
-             &     & 9~(\rm stress~tensor~elements) ~+ \nonumber \\
+{\tt mxnstk} & \ge & 28 + 9~(\rm stress~tensor~elements) ~+ \nonumber \\
+             &     & {\tt ntpatm}~(\rm number~of~unique~atomic~sites) ~+ \nonumber \\
              &     & 10~(\rm if~constant~pressure~simulation~requested) ~+ \nonumber \\
              &     & 2~(\rm if~iso~>~0~requested) + 2~(\rm if~iso~>~1~requested) ~+ \nonumber \\
              &     & 2*mxatdm~(\rm if~msdtmp~option~is~used) \nonumber
@@ -890,11 +890,6 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt virpmf} \> real    \> PMF constraint virial \\
 \> {\tt press}  \> real    \> pressure, ${\cal P}$ \\
 \> {\tt consv}  \> real    \> extended DoF energy, $E_{consv}$ \\
-{\bf the next {\tt ntpatm} entries} \\
-\> {\tt amsd(1)} \> real   \> mean squared displacement of first atom types \\
-\> {\tt amsd(2)} \> real   \> mean squared displacement of second atom types \\
-\> {\tt ...} \> ... \> ... \\
-\> {\tt amsd(ntpatm)} \> real \> mean squared displacement of last atom types \\
 {\bf the next 9 entries for the stress tensor in pressure units} \\
 \> {\tt stress(1)} \> real \> xx component of stress tensor \\
 \> {\tt stress(2)} \> real \> xy component of stress tensor \\
@@ -902,6 +897,11 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt stress(4)} \> real \> yx component of stress tensor \\
 \> {\tt ...} \> real \> ... \\
 \> {\tt stress(9)} \> real \> zz component of stress tensor \\
+{\bf the next {\tt ntpatm} entries} \\
+\> {\tt amsd(1)} \> real   \> mean squared displacement of first atom types \\
+\> {\tt amsd(2)} \> real   \> mean squared displacement of second atom types \\
+\> {\tt ...} \> ... \> ... \\
+\> {\tt amsd(ntpatm)} \> real \> mean squared displacement of last atom types \\
 {\bf the next 10 entries - {\em if} a NPT or N$\mat{\sigma}$T simulation is undertaken} \\
 \> {\tt cell(1)} \> real   \> x component of $a$ cell vector \\
 \> {\tt cell(2)} \> real   \> y component of $a$ cell vector \\
@@ -910,10 +910,10 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt ...} \> real \> ... \\
 \> {\tt cell(9)} \> real   \> z component of $c$ cell vector \\
 \> {\tt stpipv} \> real    \> pressure, ${\cal P} \cdot {\cal V}$ \\
-{\bf the next 2 entries - {\em if} a NPT or NP$_{n}$AT simulation is undertaken} \\
+{\bf the next 2 entries - {\em if} NP$_{n}$AT simulation is undertaken with iso > 0} \\
 \> {\tt h\_z}   \> real    \> MD cell height $h_{z}$ to normal surface ${\cal A}\perp{z}$ \\
 \> {\tt A$\perp${z}} \> real \> MD cell normal surface ${\cal A}\perp{z}={\cal V}/h_{z}$ \\
-{\bf the next 2 entries - {\em if} a NPT or N$\gamma_{n}$AT simulation is undertaken} \\
+{\bf the next 2 entries - {\em if} a N$\gamma_{n}$AT simulation is undertaken with iso > 1} \\
 \> {\tt gamma\_x} \> real \> surface tension $\gamma_{n_{x}}$ on normal surface ${\cal A}\perp{z}$ \\
 \> {\tt gamma\_y} \> real \> surface tension $\gamma_{n_{y}}$ on normal surface ${\cal A}\perp{z}$
 \end{tabbing}

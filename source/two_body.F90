@@ -101,26 +101,26 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer, Intent(In) :: ensemble
-    Logical, Intent(In) :: lbook
-    Integer, Intent(In) :: megfrz
-    Logical, Intent(In) :: leql
-    Integer, Intent(In) :: nsteql, nstep
-    Type(stats_type), Intent(InOut) :: stats
-    Type(ewald_type), Intent(InOut) :: ewld
-    Type(metal_type), Intent(InOut) :: met
-    Type(poisson_type), Intent(InOut) :: pois
-    Type(neighbours_type), Intent(InOut) :: neigh
-    Type(site_type), Intent(In) :: sites
-    Type(vdw_type), Intent(InOut) :: vdws
-    Type(rdf_type), Intent(InOut) :: rdf
-    Type(mpole_type), Intent(InOut) :: mpoles
+    Integer,                  Intent(In)    :: ensemble
+    Logical,                  Intent(In)    :: lbook
+    Integer,                  Intent(In)    :: megfrz
+    Logical,                  Intent(In)    :: leql
+    Integer,                  Intent(In)    :: nsteql, nstep
+    Type(stats_type),         Intent(InOut) :: stats
+    Type(ewald_type),         Intent(InOut) :: ewld
+    Type(metal_type),         Intent(InOut) :: met
+    Type(poisson_type),       Intent(InOut) :: pois
+    Type(neighbours_type),    Intent(InOut) :: neigh
+    Type(site_type),          Intent(In)    :: sites
+    Type(vdw_type),           Intent(InOut) :: vdws
+    Type(rdf_type),           Intent(InOut) :: rdf
+    Type(mpole_type),         Intent(InOut) :: mpoles
     Type(electrostatic_type), Intent(InOut) :: electro
-    Type(domains_type), Intent(In) :: domain
-    Type(timer_type), Intent(InOut) :: tmr
-    Type(kim_type), Intent(InOut) :: kim_data
+    Type(domains_type),       Intent(In)    :: domain
+    Type(timer_type),         Intent(InOut) :: tmr
+    Type(kim_type),           Intent(InOut) :: kim_data
     Type(configuration_type), Intent(InOut) :: config
-    Type(comms_type), Intent(InOut) :: comm
+    Type(comms_type),         Intent(InOut) :: comm
 
     Integer                                     :: fail, i, ipot, j, k, limit
     Logical                                     :: l_do_outer_loop, l_do_rdf, safe
@@ -164,7 +164,7 @@ Contains
       coul_coeffs = config%parts(:)%chge
 
 
-      If (ewld%newjob_two_body) Then
+      If (ewld%newjob_erf) Then
 
         If (.not. ewld%direct) Then
           Call electro%erfcgen(neigh%cutoff, ewld%alpha)
@@ -208,7 +208,7 @@ Contains
 
         End If
 
-        ewld%newjob_two_body = .false.
+        ewld%newjob_erf = .false.
 
       End If
 

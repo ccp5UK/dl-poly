@@ -29,7 +29,6 @@ Module bonds
                              fourpi,&
                              npdfdt,&
                              npdgdt,&
-                             ntable,&
                              r4pie0,&
                              zero_plus
   Use coul_mpole,      Only: intra_mcoul
@@ -41,6 +40,8 @@ Module bonds
                              warning
   Use kinds,           Only: wi,&
                              wp
+  Use filename,        Only: FILE_TABBND, &
+                             file_type
   Use mpole,           Only: mpole_type
   Use numerics,        Only: images,&
                              local_index
@@ -824,7 +825,7 @@ Contains
 
           omega = 0.0_wp
           gamma = 0.0_wp
-          ! We need to initialise fx, fy and fz in case one of the involved charges (or both) is zero, 
+          ! We need to initialise fx, fy and fz in case one of the involved charges (or both) is zero,
           ! which would lead to chgprd = 0 and omission of the intra subroutines
           fx = 0.0_wp
           fy = 0.0_wp
@@ -1031,7 +1032,7 @@ Contains
 
   End Subroutine bonds_forces
 
-  Subroutine bonds_table_read(bond_name, bond, sites, comm)
+  Subroutine bonds_table_read(bond_name, bond, sites, files, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1051,6 +1052,7 @@ Contains
     Type(bonds_type),  Intent(InOut) :: bond
     Character(Len=16), Intent(In   ) :: bond_name(1:bond%max_types)
     Type(site_type),   Intent(In   ) :: sites
+    Type(file_type),   Intent(InOut) :: files(:)
     Type(comms_type),  Intent(InOut) :: comm
 
     Character(Len=16)          :: idbond
@@ -1059,14 +1061,17 @@ Contains
     Character(Len=40)          :: word
     Character(Len=8)           :: atom1, atom2
     Integer                    :: fail(1:2), i, itbnd, jtbnd, jtpatm, katom1, katom2, l, ngrid, &
-                                  rtbnd
+                                  rtbnd, ntable
     Integer, Allocatable       :: read_type(:)
     Logical                    :: remake, safe
     Real(Kind=wp)              :: bufp0, bufv0, cutpot, delpot, dlrpot, ppp, rdr, rrr, rrr0, t1, &
                                   t2, vk, vk1, vk2
     Real(Kind=wp), Allocatable :: bufpot(:), bufvir(:)
 
-    If (comm%idnode == 0) Open (Unit=ntable, File='TABBND')
+    If (comm%idnode == 0) Then
+      Open (Newunit=files(FILE_TABBND)%unit_no, File=files(FILE_TABBND)%filename)
+      ntable = files(FILE_TABBND)%unit_no
+    End If
 
     ! skip header record
 
@@ -1353,9 +1358,7 @@ Contains
         2.0_wp * bond%tab_force(bond%bin_tab - 3, jtbnd) - bond%tab_force(bond%bin_tab - 4, jtbnd)
     End Do
 
-    If (comm%idnode == 0) Then
-      Close (Unit=ntable)
-    End If
+    If (comm%idnode == 0) Call files(FILE_TABBND)%close ()
     Call info('', .true.)
     Call info('potential tables read from TABBND file')
 
@@ -1377,7 +1380,7 @@ Contains
 
     100 Continue
 
-    If (comm%idnode == 0) Close (Unit=ntable)
+    If (comm%idnode == 0) Call files(FILE_TABBND)%close ()
     Call error(24)
 
   End Subroutine bonds_table_read
