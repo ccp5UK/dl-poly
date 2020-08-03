@@ -10,7 +10,8 @@ Module kspace
   !!----------------------------------------------------------------------!
   Use comms,           Only: comms_type
   Use domains,         Only: domains_type
-  Use errors_warnings, Only: error_alloc
+  Use errors_warnings, Only: error_alloc,&
+                             error_dealloc
   Use kinds,           Only: wi,&
                              wp
   Use parallel_fft,    Only: initialize_fft,&
@@ -57,9 +58,27 @@ Module kspace
     Complex(kind=wp), Allocatable, Dimension(:, :, :), Public :: potential_grid, stress_grid
     Real(kind=wp), Allocatable, Dimension(:, :, :), Public    :: charge_grid
 
+  Contains
+
+    Final :: deallocate_kspace_type
+
   End Type kspace_type
 
 Contains
+
+  Subroutine deallocate_kspace_type(kspace_in)
+    Type(kspace_type) :: kspace_in
+    Integer, Dimension(4) :: fail
+
+    fail = 0
+    If (Allocated(kspace_in%pfft_work)) Deallocate(kspace_in%pfft_work, stat=fail(1))
+    If (Allocated(kspace_in%potential_grid)) Deallocate(kspace_in%potential_grid, stat=fail(2))
+    If (Allocated(kspace_in%charge_grid)) Deallocate(kspace_in%charge_grid, stat=fail(3))
+    If (Allocated(kspace_in%stress_grid)) Deallocate(kspace_in%stress_grid, stat=fail(4))
+
+    If (Any(fail /= 0)) call error_dealloc('kspace_in', 'deallocate_kspace_type')
+
+  End Subroutine deallocate_kspace_type
 
   Subroutine setup_kspace(kspace_in, domain_in, kpoint_grid, comm)
     !!----------------------------------------------------------------------!
