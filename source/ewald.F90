@@ -13,7 +13,8 @@ Module ewald
   Use bspline,         Only: bspline_type
   Use configuration,   Only: configuration_type
   Use errors_warnings, Only: error,&
-                             error_alloc
+                             error_alloc,&
+                             error_dealloc
   Use kinds,           Only: wp
   Use kspace,          Only: kspace_type
   Use spme,            Only: init_spme_data,&
@@ -73,9 +74,25 @@ Module ewald
     !> Bspline container
     Type(bspline_type), Public :: bspline
 
+  Contains
+
+    Final :: deallocate_ewald_type
+
   End Type ewald_type
 
 Contains
+
+  Subroutine deallocate_ewald_type(ewld)
+    Type(ewald_type) :: ewld
+    Integer, Dimension(2) :: fail
+
+    fail = 0
+    If (Allocated(ewld%reduced_VdW)) Deallocate(ewld%reduced_VdW, stat=fail(1))
+    If (Allocated(ewld%spme_data)) Deallocate(ewld%spme_data, stat=fail(2))
+
+    If (Any(fail /= 0)) call error_dealloc('ewald_type', 'deallocate_ewald_type')
+
+  End Subroutine deallocate_ewald_type
 
   Subroutine ewald_vdw_count(ewld, vdws)
     Type(ewald_type)              :: ewld

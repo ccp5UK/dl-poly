@@ -66,6 +66,7 @@ Module timer
 
     Type(node), Pointer :: head => null()
     Integer             :: n_timers = 0
+
   End Type timer_tree
 
   Type, Public :: timer_type
@@ -80,6 +81,10 @@ Module timer
     Integer                   :: max_depth = 1
     Integer                   :: proc_id
     Integer                   :: out_unit
+
+  contains
+    Final :: deallocate_timer_type
+
   End Type timer_type
 
   Interface timer_write
@@ -99,6 +104,26 @@ Module timer
   Public :: time_elapsed
 
 Contains
+
+  Subroutine deallocate_timer_type(tmr)
+    Type(timer_type) :: tmr
+    Type(node), Pointer :: current, next
+
+    current => tmr%tree%head
+
+    do while(associated(current%parent))
+      if (associated(current%child)) then
+        next => current%child
+      else if (associated(current%next_sibling)) then
+        next => current%next_sibling
+      else
+        next => current%parent
+        deallocate(current)
+      end if
+      current => next
+    end do
+
+  end Subroutine deallocate_timer_type
 
   Subroutine dump_call_stack(stack)
     !!------------------------------------------------!
