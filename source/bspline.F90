@@ -46,10 +46,28 @@ Module bspline
     ! this is silly since is constant we shall have one, unfortunately fortran compilers
     ! fail at this time to do it properly
     Real(Kind=wp), Dimension(0:MAX_BSPLINE, 1:MAX_BSPLINE)    :: ncombk !! Combinations
+
+  contains
+    Final :: deallocate_bspline_type
+
   End Type bspline_type
 
 
 Contains
+
+  Subroutine deallocate_bspline_type(bspline)
+    Type(bspline_type) :: bspline
+    Integer, Dimension(3) :: fail
+
+    fail = 0
+    If (Allocated(bspline%coefficients)) Deallocate(bspline%coefficients, stat=fail(1))
+    If (Allocated(bspline%norm2)) Deallocate(bspline%norm2, stat=fail(2))
+    If (Allocated(bspline%derivs)) Deallocate(bspline%derivs, stat=fail(3))
+
+    If (Any(fail /= 0)) call error_dealloc('bspline_type', 'deallocate_bspline_type')
+
+  end Subroutine deallocate_bspline_type
+
 !!! Bspline Routines
 
   Subroutine bspline_coeffs_gen(kspace, bspline)
