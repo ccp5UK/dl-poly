@@ -56,6 +56,7 @@ Module timer
     Type(timer_tree), Pointer :: tree => null()
     Type(node), Pointer       :: child => null()
     Type(node), Pointer       :: parent => null()
+    Type(node), Pointer       :: prev_sibling => null()
     Type(node), Pointer       :: next_sibling => null()
   End Type node
 
@@ -109,7 +110,7 @@ Contains
     Type(timer_type) :: tmr
     Type(node), Pointer :: current, next
 
-    current => tmr%tree%head
+    current => tmr%tree%head%child
 
     do while(associated(current%parent))
       if (associated(current%child)) then
@@ -117,11 +118,21 @@ Contains
       else if (associated(current%next_sibling)) then
         next => current%next_sibling
       else
-        next => current%parent
+        if (associated(current%prev_sibling)) then
+          next => current%prev_sibling
+          nullify(current%prev_sibling%next_sibling)
+        else
+          next => current%parent
+          nullify(current%parent%child)
+        end if
+
         deallocate(current)
       end if
       current => next
     end do
+
+    deallocate(tmr%tree%head)
+    deallocate(tmr%tree)
 
   end Subroutine deallocate_timer_type
 
@@ -294,13 +305,14 @@ Contains
     !!
     !!------------------------------------------------!
     Character(len=*) :: name
-    Type(node)       :: sibling
+    Type(node), Target  :: sibling
 
     Type(node), Pointer :: child
 
     Allocate (sibling%next_sibling)
     child => sibling%next_sibling
     child%parent => sibling%parent
+    child%prev_sibling => sibling
 
     sibling%next_sibling%tree => sibling%tree
     sibling%tree%n_timers = sibling%tree%n_timers + 1
@@ -494,6 +506,8 @@ Contains
       End Do
     End If
 
+    call deallocate_timer_type(tmr)
+
   End Subroutine timer_report
 
   Subroutine timer_print_tree(comm, tmr, init_node, max_depth, proc_id, message)
@@ -614,12 +628,6 @@ Contains
       & total_elapsed - sum_timed, 100.0_wp - sum_timed * 100.0_wp / total_elapsed
     Write (message(itimer + 1), Trim(fline))
     Write (message(itimer + 2), '(a)') ''
-
-    !100 Format(1X, "+", 28("-"), 2("+", 10("-")), 7("+", 16("-")), "+")
-    !101 Format(1X, "|", 12X, "Name", 12X, "| Process  ", "|  Calls   ", "|   Call Min     ", "|   Call Max     ",&
-    !      & "|   Call Ave     ", "|    Tot Min     ", "|    Tot Max     ", "|    Tot Ave     ", "|       %        ", "|")
-    !102 Format(1X, "|", 1X, A7, 1X, A18, 1X, "|", 1X, A8, 1X, "|", 1X, I8, 1X, "|", 1X, ES14.7, 1X, "|", 1X, ES14.7, 1X,&
-    !& "|", 1X, ES14.7, 1X, "|", 1X, ES14.7, 1X, "|", 1X, ES14.7, 1X, "|", 1X, ES14.7, 1X, "|", 1X, ES14.7, 1X, "|")
 
   End Subroutine timer_print_tree
 
