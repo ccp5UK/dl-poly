@@ -5482,7 +5482,7 @@ Contains
                  (word(1:3) == 'rdf') .or. (word(1:3) == 'msd') .or. &
                  (word(1:6) == 'tabbnd') .or. (word(1:6) == 'tabang') .or. &
                  (word(1:6) == 'tabdih') .or. (word(1:6) == 'tabinv') .or. &
-                 (word(1:3) == 'vdw') .or. (word(1:3) == 'eam')) Then
+                 (word(1:6) == 'tabvdw') .or. (word(1:6) == 'tabeam')) Then
 
           If (word(1:6) == 'config') Then
             Call info('CONFIG file is '//files(FILE_CONFIG)%filename, .true.)
@@ -5698,10 +5698,7 @@ Contains
 
         Call get_word(record, word1)
         Call get_word(rec_case_sensitive, wordo)
-        If (word1(1:6) == 'output') Then
-          Call get_word(rec_case_sensitive, files(FILE_OUTPUT)%filename)
-
-        Else If (word1(1:6) == 'config') Then
+        If (word1(1:6) == 'config') Then
           Call get_word(rec_case_sensitive, files(FILE_CONFIG)%filename)
 
         Else If (word1(1:5) == 'field') Then
