@@ -304,7 +304,7 @@ Contains
     Integer, Parameter :: requiredThreading=MPI_THREAD_FUNNELED
     Integer, Parameter :: errorcode = 0
     Integer            :: providedThreading
-    Integer            :: idnode 
+    Integer            :: idnode
 
     Call MPI_INIT_THREAD(requiredThreading, providedThreading, comm%ierr)
     If( providedThreading < requiredThreading )Then

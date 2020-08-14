@@ -49,6 +49,9 @@ Module two_body
                              calc_erfc_deriv
   Use poisson,         Only: poisson_forces,&
                              poisson_type
+#ifdef HALF_HALO
+  Use halo,            Only: refresh_halo_forces
+#endif /* HALF_HALO */
   Use rdfs,            Only: rdf_collect,&
                              rdf_excl_collect,&
                              rdf_frzn_collect,&
@@ -343,6 +346,7 @@ Contains
           xxt(k) = config%parts(i)%xxx - config%parts(j)%xxx
           yyt(k) = config%parts(i)%yyy - config%parts(j)%yyy
           zzt(k) = config%parts(i)%zzz - config%parts(j)%zzz
+          rrt(k) = Sqrt(xxt(k)*xxt(k)+yyt(k)*yyt(k)+zzt(k)*zzt(k))
         End Do
 
         ! periodic boundary conditions not needed by LC construction
@@ -351,9 +355,10 @@ Contains
 
         ! distances, thanks to Alin Elena (one too many changes)
 
-        Do k = 1, limit
-          rrt(k) = Sqrt(xxt(k)**2 + yyt(k)**2 + zzt(k)**2)
-        End Do
+         ! it works slightly faster inside the single loop above
+!        Do k = 1, limit
+!          rrt(k) = Sqrt(xxt(k)**2 + yyt(k)**2 + zzt(k)**2)
+!        End Do
 
         ! calculate metal forces and potential
 
@@ -597,6 +602,10 @@ Contains
         End If
       End Do
     End If
+
+#ifdef HALF_HALO
+    Call refresh_halo_forces(domain, config, mpoles, stats, comm)
+#endif /* HALF_HALO */
 
     ! counter for rdf%rdf statistics outside loop structures
     ! and frozen-frozen rdf%rdf completeness

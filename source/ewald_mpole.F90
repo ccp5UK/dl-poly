@@ -291,7 +291,9 @@ Contains
           fiy=fiy+fy
           fiz=fiz+fz
 
+#ifndef HALF_HALO
           If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
 
             config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
             config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
@@ -301,9 +303,13 @@ Contains
             mpoles%torque_y(jatm)=mpoles%torque_y(jatm)+tjy
             mpoles%torque_z(jatm)=mpoles%torque_z(jatm)+tjz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
+#ifndef HALF_HALO
           If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+#endif /* HALF_HALO */
 
             ! accumulate potential energy
 
@@ -322,7 +328,9 @@ Contains
             strs6 = strs6 + yyt(m)*fz
             strs9 = strs9 + zzt(m)*fz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
         End If
 
@@ -960,7 +968,9 @@ Contains
           fiy=fiy+fy
           fiz=fiz+fz
 
+#ifndef HALF_HALO
           If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
 
             config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
             config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
@@ -970,9 +980,13 @@ Contains
             mpoles%torque_y(jatm)=mpoles%torque_y(jatm)+tjy
             mpoles%torque_z(jatm)=mpoles%torque_z(jatm)+tjz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
+#ifndef HALF_HALO
           If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+#endif /* HALF_HALO */
 
             ! accumulate potential energy
 
@@ -991,7 +1005,9 @@ Contains
             strs6 = strs6 + yyt(m)*fz
             strs9 = strs9 + zzt(m)*fz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
         End If
 
@@ -4640,7 +4656,9 @@ Contains
           fiy=fiy-fy
           fiz=fiz-fz
 
+#ifndef HALF_HALO
           If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
 
             config%parts(jatm)%fxx=config%parts(jatm)%fxx+fx
             config%parts(jatm)%fyy=config%parts(jatm)%fyy+fy
@@ -4650,9 +4668,13 @@ Contains
             mpoles%torque_y(jatm)=mpoles%torque_y(jatm)-tjy
             mpoles%torque_z(jatm)=mpoles%torque_z(jatm)-tjz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
+#ifndef HALF_HALO
           If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+#endif /* HALF_HALO */
 
             ! accumulate potential energy
 
@@ -4671,7 +4693,9 @@ Contains
             strs6 = strs6 - yyt(m)*fz
             strs9 = strs9 - zzt(m)*fz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
         End If
 
@@ -5299,7 +5323,9 @@ Contains
           fiy=fiy-fy
           fiz=fiz-fz
 
+#ifndef HALF_HALO
           If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
 
             config%parts(jatm)%fxx=config%parts(jatm)%fxx+fx
             config%parts(jatm)%fyy=config%parts(jatm)%fyy+fy
@@ -5309,9 +5335,13 @@ Contains
             mpoles%torque_y(jatm)=mpoles%torque_y(jatm)-tjy
             mpoles%torque_z(jatm)=mpoles%torque_z(jatm)-tjz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
+#ifndef HALF_HALO
           If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+#endif /* HALF_HALO */
 
             ! accumulate potential energy
 
@@ -5330,7 +5360,9 @@ Contains
             strs6 = strs6 - yyt(m)*fz
             strs9 = strs9 - zzt(m)*fz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
         End If
 
@@ -6411,7 +6443,9 @@ Contains
                 ewld%fcz(i)=ewld%fcz(i)-fz
               End If
 
+#ifndef HALF_HALO
               If (j <= config%natms) Then
+#endif /* HALF_HALO */
 
                 config%parts(j)%fxx=config%parts(j)%fxx+fx
                 config%parts(j)%fyy=config%parts(j)%fyy+fy
@@ -6437,9 +6471,13 @@ Contains
                   ewld%fcz(j)=ewld%fcz(j)+fz
                 End If
 
+#ifndef HALF_HALO
               End If
+#endif /* HALF_HALO */
 
+#ifndef HALF_HALO
               If (j <= config%natms .or. idi < config%ltg(j)) Then
+#endif /* HALF_HALO */
 
                 ! calculate potential energy and virial
 
@@ -6455,7 +6493,9 @@ Contains
                 strs6 = strs6 + yyt(k)*fz
                 strs9 = strs9 + zzt(k)*fz
 
+#ifndef HALF_HALO
               End If
+#endif /* HALF_HALO */
 
             End If
           End Do

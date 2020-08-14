@@ -2116,10 +2116,14 @@ Contains
       Do ff = 1, flow%NUM_FF
       ! If system is to write per-particle data AND write step AND not equilibration
         If (stat(ff)%require_pp .and. Mod(flow%step, stat(ff)%intsta) == 0 .and. flow%step >= flow%equil_steps) Then
+#ifndef HALF_HALO
           Call stat(ff)%allocate_per_particle_arrays(cnfig(ff)%natms)
+#else /* HALF_HALO */
+          Call stat(ff)%allocate_per_particle_arrays(cnfig(ff)%mxatms)
+#endif /* HALF_HALO */
         End If
       End Do 
-        
+
       ! Evaluate forces
 
       If (flow%simulation_method /= DFTB) Then

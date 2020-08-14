@@ -166,14 +166,18 @@ Contains
         force_temp_comp = erf_gamma * pos_j * inv_mod_r_ij
         force_temp = force_temp + force_temp_comp
 
+#ifndef HALF_HALO
         If (jatm <= config%natms .or. global_id_i < config%ltg(jatm)) Then
           If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
 
             config%parts(jatm)%fxx = config%parts(jatm)%fxx - force_temp_comp(1)
             config%parts(jatm)%fyy = config%parts(jatm)%fyy - force_temp_comp(2)
             config%parts(jatm)%fzz = config%parts(jatm)%fzz - force_temp_comp(3)
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
           ! calculate interaction energy
           engcpe_rl = engcpe_rl + e_comp
@@ -186,16 +190,22 @@ Contains
           stress_temp_comp = calculate_stress(pos_j, force_temp_comp)
           stress_temp = stress_temp + stress_temp_comp
 
+#ifndef HALF_HALO
         End If
+#endif /* HALF_HALO */
 
         If (stats%collect_pp) Then
           stress_temp_comp = calculate_stress(pos_j, force_temp_comp)
           stats%pp_energy(iatm) = stats%pp_energy(iatm) + e_comp * 0.5_wp
           stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
+#ifndef HALF_HALO
           If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
             stats%pp_energy(jatm) = stats%pp_energy(jatm) + e_comp * 0.5_wp
             stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
         End If
 
       End If

@@ -12,6 +12,7 @@ Module metal
   !           - j.madge march-october 2018
   !           - a.b.g.chalk march-october 2018
   !           - i.scivetti march-october 2018
+  ! amended   - a.v.brukhno march-may 2020 - 'half-halo' VNL
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -43,6 +44,10 @@ Module metal
                              lower_case,&
                              word_2_real
   Use site,            Only: site_type
+
+#ifdef HALF_HALO
+  Use numerics,        Only: local_index
+#endif /* HALF_HALO */
 
   Implicit None
 
@@ -327,7 +332,9 @@ Contains
               gamma1 = -rrr * (2.0_wp * (cc0 + cc1 * rrr + cc2 * rrr**2) * &
                                (rrr - ccc) + (cc1 + 2.0_wp * cc2 * rrr) * (rrr - ccc)**2)
 
+#ifndef HALF_HALO
               If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+#endif /* HALF_HALO */
                 eng = (cc0 + cc1 * rrr + cc2 * rrr**2) * (rrr - ccc)**2
             End If
 
@@ -365,7 +372,9 @@ Contains
               gamma1 = -rrr * (2.0_wp * (cc0 + cc1 * rrr + cc2 * rrr**2 + cc3 * rrr**3 + cc4 * rrr**4) * (rrr - ccc) + &
                                (cc1 + 2.0_wp * cc2 * rrr + 3.0_wp * cc3 * rrr**2 + 4.0_wp * cc4 * rrr**3) * (rrr - ccc)**2)
 
+#ifndef HALF_HALO
               If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+#endif /* HALF_HALO */
                 eng = (cc0 + cc1 * rrr + cc2 * rrr**2 + cc3 * rrr**3 + cc4 * rrr**4) * (rrr - ccc)**2
             End If
 
@@ -394,7 +403,9 @@ Contains
             ! calculate pair forces and energies
 
             gamma1 = nnnr * eps * (sig / rrr)**nnn
+#ifndef HALF_HALO
             If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+#endif /* HALF_HALO */
               eng = gamma1 / nnnr
 
             ! calculate density contributions
@@ -424,7 +435,9 @@ Contains
             ! calculate pair forces and energies
 
             gamma1 = 2.0_wp * aaa * Exp(-ppp * cut1) * ppp * cut2
+#ifndef HALF_HALO
             If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+#endif /* HALF_HALO */
               eng = gamma1 / (ppp * cut2)
 
             ! calculate density contributions
@@ -514,15 +527,21 @@ Contains
           fiy = fiy + fy
           fiz = fiz + fz
 
+#ifndef HALF_HALO
           If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
 
             config%parts(jatm)%fxx = config%parts(jatm)%fxx - fx
             config%parts(jatm)%fyy = config%parts(jatm)%fyy - fy
             config%parts(jatm)%fzz = config%parts(jatm)%fzz - fz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
+#ifndef HALF_HALO
           If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+#endif /* HALF_HALO */
 
             ! add interaction energy
 
@@ -541,7 +560,9 @@ Contains
             strs6 = strs6 + yyt(m) * fz
             strs9 = strs9 + zzt(m) * fz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
         Else ! tabulated calculation
 
@@ -586,7 +607,11 @@ Contains
 
               ! calculate interaction energy using 3-point interpolation
 
+#ifndef HALF_HALO
               If ((jatm <= config%natms .or. idi < config%ltg(jatm)) .and. keypot /= 5) Then
+#else /* HALF_HALO */
+              If (keypot /= 5) Then
+#endif /* HALF_HALO */
 
                 vk0 = met%vmet(l - 1, k0, 1)
                 vk1 = met%vmet(l, k0, 1)
@@ -804,15 +829,21 @@ Contains
           fiy = fiy + fy
           fiz = fiz + fz
 
+#ifndef HALF_HALO
           If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
 
             config%parts(jatm)%fxx = config%parts(jatm)%fxx - fx
             config%parts(jatm)%fyy = config%parts(jatm)%fyy - fy
             config%parts(jatm)%fzz = config%parts(jatm)%fzz - fz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
+#ifndef HALF_HALO
           If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+#endif /* HALF_HALO */
 
             ! add interaction energy using 3-point interpolation
 
@@ -831,7 +862,9 @@ Contains
             strs6 = strs6 + yyt(m) * fz
             strs9 = strs9 + zzt(m) * fz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
         End If
 
@@ -877,6 +910,7 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    ! amended   - a.v.brukhno march-may 2020 - 'half-halo' VNL
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -951,6 +985,11 @@ Contains
         Call metal_ld_collect_fst(i, rrt, safe, met, neigh, config)
       End If
     End Do
+
+#ifdef HALF_HALO
+    ! share the densities collected in the halo with the parent domains
+    Call refresh_halo_metal_densities(domain, config, met, comm)
+#endif /* HALF_HALO */
 
     Deallocate (xxt, yyt, zzt, rrt, Stat=fail)
     If (fail > 0) Then
@@ -2257,7 +2296,11 @@ Contains
           End If
 
           met%rho(iatm) = met%rho(iatm) + density
+#ifndef HALF_HALO
           If (ki == kj .and. jatm <= config%natms) met%rho(jatm) = met%rho(jatm) + density
+#else /* HALF_HALO */
+          If (ki == kj) met%rho(jatm) = met%rho(jatm) + density
+#endif /* HALF_HALO */
 
         End If
       End If
@@ -2265,7 +2308,11 @@ Contains
       ! second metal atom density and validity and truncation of potential
 
       If (Abs(met%dmet(1, ki, 1)) > zero_plus .and. Nint(met%dmet(1, ki, 1)) > 5) Then
+#ifndef HALF_HALO
         If (ki /= kj .and. jatm <= config%natms) Then
+#else /* HALF_HALO */
+        If (ki /= kj) Then
+#endif /* HALF_HALO */
           If (rrr <= met%dmet(3, ki, 1)) Then
 
             ! interpolation parameters
@@ -2353,7 +2400,11 @@ Contains
               End If
 
               met%rhs(iatm) = met%rhs(iatm) + density
+#ifndef HALF_HALO
               If (jatm <= config%natms) met%rhs(jatm) = met%rhs(jatm) + density
+#else /* HALF_HALO */
+              met%rhs(jatm) = met%rhs(jatm) + density
+#endif /* HALF_HALO */
 
             End If
           End If
@@ -2397,7 +2448,11 @@ Contains
               End If
 
               met%rhs(iatm) = met%rhs(iatm) + density
+#ifndef HALF_HALO
               If (ki == kj .and. jatm <= config%natms) met%rhs(jatm) = met%rhs(jatm) + density
+#else /* HALF_HALO */
+              If (ki == kj) & met%rhs(jatm) = met%rhs(jatm) + density
+#endif /* HALF_HALO */
 
             End If
           End If
@@ -2405,7 +2460,11 @@ Contains
           ! second metal atom density and validity and truncation of potential
 
           If (Abs(met%dmes(1, ki, 1)) > zero_plus .and. Nint(met%dmes(1, ki, 1)) > 5) Then
+#ifndef HALF_HALO
             If (ki /= kj .and. jatm <= config%natms) Then
+#else /* HALF_HALO */
+            If (ki /= kj ) Then
+#endif /* HALF_HALO */
               If (rrr <= met%dmes(3, ki, 1)) Then
 
                 ! interpolation parameters
@@ -2656,6 +2715,7 @@ Contains
 
           End If
 
+#ifndef HALF_HALO
           If (ai > aj) Then
             met%rho(iatm) = met%rho(iatm) + density * t1
             If (jatm <= config%natms) met%rho(jatm) = met%rho(jatm) + density * t2
@@ -2663,6 +2723,15 @@ Contains
             met%rho(iatm) = met%rho(iatm) + density * t2
             If (jatm <= config%natms) met%rho(jatm) = met%rho(jatm) + density * t1
           End If
+#else /* HALF_HALO */
+          If (ai > aj) Then
+            met%rho(iatm) = met%rho(iatm) + density * t1
+            met%rho(jatm) = met%rho(jatm) + density * t2
+          Else
+            met%rho(iatm) = met%rho(iatm) + density * t2
+            met%rho(jatm) = met%rho(jatm) + density * t1
+          End If
+#endif /* HALF_HALO */
 
         Else ! tabulated calculation
 
@@ -2699,6 +2768,7 @@ Contains
               density = t2 + 0.5_wp * (t2 - t1) * (ppp - 1.0_wp)
             End If
 
+#ifndef HALF_HALO
             If (ai > aj) Then
               met%rho(iatm) = met%rho(iatm) + density * met%dmet(1, k0, 2)
               If (jatm <= config%natms) met%rho(jatm) = met%rho(jatm) + density * met%dmet(2, k0, 2)
@@ -2706,6 +2776,15 @@ Contains
               met%rho(iatm) = met%rho(iatm) + density * met%dmet(2, k0, 2)
               If (jatm <= config%natms) met%rho(jatm) = met%rho(jatm) + density * met%dmet(1, k0, 2)
             End If
+#else /* HALF_HALO */
+            If (ai > aj) Then
+              met%rho(iatm) = met%rho(iatm) + density * met%dmet(1, k0, 2)
+              met%rho(jatm) = met%rho(jatm) + density * met%dmet(2, k0, 2)
+            Else
+              met%rho(iatm) = met%rho(iatm) + density * met%dmet(2, k0, 2)
+              met%rho(jatm) = met%rho(jatm) + density * met%dmet(1, k0, 2)
+            End If
+#endif /* HALF_HALO */
 
           End If
 
@@ -2822,6 +2901,7 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    ! amended   - i.t.todorov may 2020 - simplification for ixyz0
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -3071,6 +3151,7 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    ! amended   - i.t.todorov & a.v.brukhno may 2020 - simplification for ixyz0
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -3118,11 +3199,244 @@ Contains
     If (.not. safe) Call error(96)
 
     Deallocate (ixyz0, Stat=fail)
-    If (fail > 0) Then
-      Write (message, '(a)') 'metal_ld_set_halo deallocation failure'
-      Call error(0, message)
-    End If
   End Subroutine metal_ld_set_halo
+
+#ifdef HALF_HALO
+  Subroutine export_metal_densities(mdir, domain, config, met, comm)
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 routine to export metal densities in domain boundary regions
+    ! for halo refresh
+    !
+    ! copyright - daresbury laboratory
+    ! author    - a.v.brukhno may 2020 - helper routine for 'half-halo' VNL
+    !             to be called from metal_ld_compute(...) after metal_ld_collect_*[eam/fst](...)
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Integer,                    Intent( In    ) :: mdir
+    Type( domains_type ),       Intent( In    ) :: domain
+    Type( configuration_type ), Intent( In    ) :: config
+    Type( metal_type ),         Intent( InOut ) :: met
+    Type( comms_type ),         Intent( InOut ) :: comm
+
+#ifdef CHECKS
+    Character ( Len = 256 )  :: message
+#endif
+    Logical           :: lrhs, safe
+    Integer           :: fail,iadd,limit,iblock,npdirB,npdirE,mlast,i,j, &
+                         jdnode,kdnode,imove,jmove,itmp
+
+    Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
+
+    ! Number of transported quantities per particle
+
+    lrhs = met%l_2b
+
+    If ( lrhs ) Then
+      iadd = 3
+    Else
+      iadd = 2
+    End If
+
+    fail=0
+    limit=iadd*domain%mxbfxp
+    Allocate (buffer(1:limit), Stat=fail)
+#ifdef CHECKS
+    If (fail > 0) Then
+      Write(message,'(a)') 'export_metal_densities allocation failure for buffer'
+      Call error(0,message)
+    End If
+#endif /* CHECKS */
+
+    ! Set buffer limit (half for outgoing data - half for incoming)
+
+    iblock=limit/Merge(2,1,comm%mxnode > 1)
+
+    ! DIRECTION SETTINGS INITIALISATION
+
+    ! define the neighbouring domains as sending and receiving with respect to the direction (mdir)
+    ! jdnode - destination (send to), kdnode - source (receive from)
+
+    npdirB = 0
+    npdirE = 0
+
+    If      (mdir == -1) Then ! Direction -/+x, y0, z0
+      jdnode = domain%map(1) ! -x
+      kdnode = domain%map(2) ! +x
+
+      npdirB = config%ixyzM(1)+1
+      npdirE = config%ixyzM(2)
+    Else If (mdir ==  1) Then ! Direction +/-x, y0, z0
+      jdnode = domain%map(2) ! +x
+      kdnode = domain%map(1) ! -x
+
+      npdirB = config%ixyzM(0)+1
+      npdirE = config%ixyzM(1)
+    Else If (mdir == -2) Then ! Direction x0, -/+y, z0
+      jdnode = domain%map(3) ! -y
+      kdnode = domain%map(4) ! +y
+
+      npdirB = config%ixyzM(3)+1
+      npdirE = config%ixyzM(4)
+    Else If (mdir ==  2) Then ! Direction x0, +/-y, z0
+      jdnode = domain%map(4) ! +y
+      kdnode = domain%map(3) ! -y
+
+      npdirB = config%ixyzM(2)+1
+      npdirE = config%ixyzM(3)
+    Else If (mdir == -3) Then ! Direction x0, y0, -/+z
+      jdnode = domain%map(5) ! -z
+      kdnode = domain%map(6) ! +z
+
+      npdirB = config%ixyzM(5)+1
+      npdirE = config%ixyzM(6)
+    Else If (mdir ==  3) Then ! Direction x0, y0, +z
+      jdnode = domain%map(6) ! +z
+      kdnode = domain%map(5) ! -z
+
+      npdirB = config%ixyzM(4)+1
+      npdirE = config%ixyzM(5)
+    Else
+      Call error(46)
+    End If
+
+    ! Initialise counters for length of sending and receiving buffers
+    ! imove and jmove are the actual number of particles to get haloed
+
+    imove=0
+    jmove=0
+
+    ! Initialise array overflow flags
+
+    safe=.true.
+
+    ! LOOP OVER ALL PARTICLES ON THIS NODE
+
+    If (imove+iadd*(npdirE-npdirB) <= iblock) Then
+      If (lrhs) Then
+        Do i=npdirB,npdirE
+            buffer(imove+1) = Real(config%ltg(i),wp)
+            buffer(imove+2) = met%rho(i)
+            buffer(imove+3) = met%rhs(i)
+
+            imove=imove+iadd
+        End Do
+      Else
+        Do i=npdirB,npdirE
+            buffer(imove+1) = Real(config%ltg(i),wp)
+            buffer(imove+2) = met%rho(i)
+
+            imove=imove+iadd
+        End Do
+      End If
+    Else
+      safe=.false.
+    End If
+
+    ! Check for array bound overflow (have arrays coped with outgoing data)
+
+!#ifdef CHECKS
+    Call gcheck(comm,safe)
+    If (.not.safe) Then
+      itmp=Merge(2,1,comm%mxnode > 1)*imove
+      Call gmax(comm,itmp)
+      Call warning(150,Real(itmp,wp),Real(limit,wp),0.0_wp)
+      Call error(54)
+    End If
+!#endif
+
+    ! exchange information on buffer sizes
+
+    If (comm%mxnode > 1) Then
+      Call girecv(comm,jmove,kdnode,MetLdExp_tag-1)
+      Call gsend(comm,imove,jdnode,MetLdExp_tag-1)
+      Call gwait(comm)
+    Else
+      jmove=imove
+    End If
+
+    ! exchange buffers between nodes (this is a MUST)
+
+    If (comm%mxnode > 1) Then
+      If (jmove > 0) Then
+        Call girecv(comm,buffer(iblock+1:iblock+jmove),kdnode,MetLdExp_tag)
+      End If
+      If (imove > 0 ) Then
+        Call gsend(comm,buffer(1:imove),jdnode,MetLdExp_tag)
+      End If
+      If (jmove > 0) Call gwait(comm)
+    End If
+
+    ! load transferred data
+
+    j=Merge(iblock,0,comm%mxnode > 1)
+
+    If (lrhs) Then
+      Do i=1, jmove/iadd
+        mlast = local_index(Int(buffer(j+1)),config%nlast,config%lsi,config%lsa)
+
+       !If ( mlast <= config%natms ) Then
+        met%rho(mlast) = met%rho(mlast) + buffer(j+2)
+        met%rhs(mlast) = met%rhs(mlast) + buffer(j+3)
+       !End If
+
+        j = j + iadd
+      End Do
+    Else
+      Do i=1, jmove/iadd
+        mlast = local_index(Int(buffer(j+1)),config%nlast,config%lsi,config%lsa)
+
+       !If ( mlast <= config%natms ) Then
+        met%rho(mlast) = met%rho(mlast) + buffer(j+2)
+       !End If
+
+        j = j + iadd
+      End Do
+    End If
+
+    Deallocate (buffer, Stat=fail)
+#ifdef CHECKS
+    If (fail > 0) Then
+      Write(message,'(a)') 'export_metal_densities deallocation failure for buffer'
+      Call error(0,message)
+    End If
+#endif
+
+  End Subroutine export_metal_densities
+
+  Subroutine refresh_halo_metal_densities(domain,config,met,comm)
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 routine to refresh the parent domain forces that are calculated
+    ! in the halos of neighbouring domains/nodes
+    !
+    ! Note: all depends on the ixyz halo array set in set_halo, this assumes
+    !       that (i) met%rcut=rcut! as well as (ii) all the error checks in there
+    !
+    ! copyright - daresbury laboratory
+    ! author    - a.v.brukhno march 2020 - helper routine for 'half-halo' VNL
+    !             to be called from two_body_forces before 'If (l_do_rdf) Then'
+    !             i.e. after all the relevant pairwise force routines using VNL
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( domains_type ),       Intent( In    ) :: domain
+    Type( configuration_type ), Intent( In    ) :: config
+    Type( metal_type ),         Intent( InOut ) :: met
+    Type( comms_type ),         Intent( InOut ) :: comm
+
+    Call export_metal_densities( 3,domain,config,met,comm) ! x-, y0, z0
+!    Call export_metal_densities(-3,domain,config,met,comm) ! x+, y0, z0
+    Call export_metal_densities( 2,domain,config,met,comm) ! x-, y0, z0
+    Call export_metal_densities(-2,domain,config,met,comm) ! x+, y0, z0
+    Call export_metal_densities( 1,domain,config,met,comm) ! x-, y0, z0
+    Call export_metal_densities(-1,domain,config,met,comm) ! x+, y0, z0
+
+  End Subroutine refresh_halo_metal_densities
+#endif
 
   Subroutine erfgen_met(alpha, beta, met)
 
