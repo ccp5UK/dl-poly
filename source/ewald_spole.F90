@@ -150,14 +150,18 @@ Contains
         force_temp_comp = erf_gamma * pos_j
         force_temp = force_temp + force_temp_comp
 
+#ifndef HALF_HALO
         If (jatm <= config%natms .or. global_id_i < global_id_j .or. stats%collect_pp) Then
           If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
 
             config%parts(jatm)%fxx = config%parts(jatm)%fxx - force_temp_comp(1)
             config%parts(jatm)%fyy = config%parts(jatm)%fyy - force_temp_comp(2)
             config%parts(jatm)%fzz = config%parts(jatm)%fzz - force_temp_comp(3)
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
           ! calculate components of G
           nearest_sample_index = Int(mod_r_ij * electro%erfc%recip_spacing)
@@ -168,9 +172,13 @@ Contains
           temp(2) = points(2) + (points(3) - points(2)) * (difference - 1.0_wp)
           e_comp = prefac * (temp(1) + (temp(2) - temp(1)) * difference * 0.5_wp)
 
-        end If
+#ifndef HALF_HALO
+        End If
+#endif /* HALF_HALO */
 
+#ifndef HALF_HALO
         If (jatm <= config%natms .or. global_id_i < global_id_j) Then
+#endif /* HALF_HALO */
           !e_comp = prefac * electro%erfc%calc(mod_r_ij)
 
           ! calculate interaction energy
@@ -189,16 +197,22 @@ Contains
           ! stress_temp_comp = calculate_stress(pos_j, force_temp_comp)
           ! stress_temp = stress_temp + stress_temp_comp
 
+#ifndef HALF_HALO
         End If
+#endif /* HALF_HALO */
 
         If (stats%collect_pp) Then
           stress_temp_comp = calculate_stress(pos_j, force_temp_comp)
           stats%pp_energy(iatm) = stats%pp_energy(iatm) + e_comp * 0.5_wp
           stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
+#ifndef HALF_HALO
           If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
             stats%pp_energy(jatm) = stats%pp_energy(jatm) + e_comp * 0.5_wp
             stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
         End If
 
       End If
@@ -599,15 +613,21 @@ Contains
           fiy = fiy + fy
           fiz = fiz + fz
 
+#ifndef HALF_HALO
           If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
 
             config%parts(jatm)%fxx = config%parts(jatm)%fxx - fx
             config%parts(jatm)%fyy = config%parts(jatm)%fyy - fy
             config%parts(jatm)%fzz = config%parts(jatm)%fzz - fz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
+#ifndef HALF_HALO
           If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+#endif /* HALF_HALO */
 
             ! add potential energy and virial
 
@@ -623,7 +643,9 @@ Contains
             strs6 = strs6 + yyt(m) * fz
             strs9 = strs9 + zzt(m) * fz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
         End If
 
@@ -1161,15 +1183,21 @@ Contains
               config%parts(i)%fyy = config%parts(i)%fyy - force_temp_comp(2)
               config%parts(i)%fzz = config%parts(i)%fzz - force_temp_comp(3)
 
+#ifndef HALF_HALO
               If (j <= config%natms) Then
+#endif /* HALF_HALO */
 
                 config%parts(j)%fxx = config%parts(j)%fxx + force_temp_comp(1)
                 config%parts(j)%fyy = config%parts(j)%fyy + force_temp_comp(2)
                 config%parts(j)%fzz = config%parts(j)%fzz + force_temp_comp(3)
 
+#ifndef HALF_HALO
               End If
+#endif /* HALF_HALO */
 
+#ifndef HALF_HALO
               If (j <= config%natms .or. global_id_i < config%ltg(j)) Then
+#endif /* HALF_HALO */
 
                 ! calculate potential energy and virial
 
@@ -1185,7 +1213,9 @@ Contains
                 stress_temp(6) = stress_temp(6) + y_pos(k) * force_temp_comp(3)
                 stress_temp(9) = stress_temp(9) + z_pos(k) * force_temp_comp(3)
 
+#ifndef HALF_HALO
               End If
+#endif /* HALF_HALO */
             End If
           End Do
 

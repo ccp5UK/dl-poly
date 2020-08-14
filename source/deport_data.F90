@@ -43,10 +43,18 @@ Module deport_data
   Use mpoles_container, Only: rotate_mpoles,&
                               rotate_mpoles_d
   Use neighbours,       Only: neighbours_type
+#ifndef HALF_HALO
   Use numerics,         Only: dcell,&
                               invert,&
                               pbcshift,&
                               shellsort2
+#else /* HALF_HALO */
+  Use numerics,         Only: dcell,&
+                              invert,&
+                              pbcshift,&
+                              shellsort2,&
+                              local_index
+#endif /* HALF_HALO */
   Use pmf,              Only: pmf_type,&
                               pmf_units_set
   Use rigid_bodies,     Only: rigid_bodies_type
@@ -59,7 +67,11 @@ Module deport_data
 
   Implicit None
 
-  Public :: deport_atomic_data, export_atomic_data
+#ifndef HALF_HALO
+  Public :: deport_atomic_data, export_atomic_data, export_atomic_positions
+#else /* HALF_HALO */
+  Public :: deport_atomic_data, export_atomic_data, export_atomic_positions, export_atomic_forces
+#endif /* HALF_HALO */
 
 Contains
 
@@ -801,7 +813,12 @@ Contains
     k = ind_on(0)
     l = ind_off(0)
     Do ii = 1, l
-      keep = ind_off(ii); If (keep > ind_on(k)) Exit ! Thanks to Alin Elena
+      keep = ind_off(ii)
+#ifndef HALF_HALO
+      If (keep > ind_on(k)) Exit ! Thanks to Alin Elena
+#else /* HALF_HALO */
+      If (keep > ind_on(k) .or. k < ii ) Exit ! Thanks to Andrey Brukhno (bug fix!)
+#endif /* HALF_HALO */
       i = ind_on(k - ii + 1)
 
       config%parts(keep)%xxx = config%parts(i)%xxx
@@ -1649,6 +1666,7 @@ Contains
     !! author    - i.t.todorov december 2016
     !! contrib   - i.j.bush february 2016
     !! contrib   - h.a.boateng february 2016
+    !! contrib   - a.v.brukhno may 2020 - 'half-halo' VNL
     !! refactoring:
     !!           - a.m.elena march-october 2018
     !!           - j.madge march-october 2018
@@ -1876,9 +1894,13 @@ Contains
       If (jmove > 0) Call gwait(comm)
     End If
 
+    !KIM style communication indicators for force/stress completion
+    i = Merge(2 * mdir, -2 * mdir - 1, mdir > 0)
+#ifdef HALF_HALO
+    config%ixyzM(i)= config%nlast + jmove / iadd
+#endif /* HALF_HALO */
     ! openKIM halo indicators
     If (kim_data%active) Then
-      i = Merge(2 * mdir, -2 * mdir - 1, mdir > 0)
       Call kim_data%kcomms%set(i, imove / iadd, config%nlast + 1, config%nlast + jmove / iadd)
     End If
 
@@ -1913,6 +1935,355 @@ Contains
     End If
 
   End Subroutine export_atomic_data
+
+#ifdef HALF_HALO
+  Subroutine export_atomic_forces(mdir, domain, config, mpoles, stats, comm)
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 routine to export atomic forces in domain boundary regions
+    ! for halo refresh
+    !
+    ! copyright - daresbury laboratory
+    ! author    - a.v.brukhno may 2020 - helper routine for 'half-halo' VNL
+    !             to be called from refresh_halo_forces (halo.F90) <- two_body_forces (two_body.F90)
+    ! contrib   - m.a.seaton august 2020
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Integer,                  Intent(In   ) :: mdir
+    Type(domains_type),       Intent(In   ) :: domain
+    Type(configuration_type), Intent(InOut) :: config
+    Type(mpole_type),         Intent(InOut) :: mpoles
+    Type(stats_type),         Intent(InOut) :: stats
+    Type(comms_type),         Intent(InOut) :: comm
+
+#ifdef CHECKS
+    Character ( Len = 256 )  :: message
+#endif
+    Logical           :: with_mpoles,safe,with_pp
+    Integer           :: fail,iadd,limit,iblock,npdirB,npdirE,mlast,i,j, &
+                         jdnode,kdnode,imove,jmove,itmp
+
+    Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
+
+    with_mpoles = (mpoles%max_mpoles > 0)
+    with_pp = stats%collect_pp
+
+    ! Number of transported quantities per particle
+
+    If (with_mpoles) Then
+      iadd=7
+    Else
+      iadd=4
+    End If
+
+    If (with_pp) iadd = iadd + 10
+
+    fail=0
+    limit=iadd*domain%mxbfxp
+    Allocate (buffer(1:limit), Stat=fail)
+#ifdef CHECKS
+    If (fail > 0) Then
+      Write(message,'(a)') 'export_atomic_forces allocation failure for buffer'
+      Call error(0,message)
+    End If
+#endif
+
+    ! Set buffer limit (half for outgoing data - half for incoming)
+
+    iblock=limit/Merge(2,1,comm%mxnode > 1)
+
+    ! DIRECTION SETTINGS INITIALISATION
+
+    ! define the neighbouring domains as sending and receiving with respect to the direction (mdir)
+    ! jdnode - destination (send to), kdnode - source (receive from)
+    ! in this case call the routine with 'positive' directions earlier than 'negative' ones: mdir = 3(,-3),2,-2,1,-1
+
+    If (mdir == -1) Then ! Direction -x
+      jdnode = domain%map(1)
+      kdnode = domain%map(2)
+
+      npdirB = config%ixyzM(1)+1
+      npdirE = config%ixyzM(2)
+    Else If (mdir == 1) Then ! Direction +x
+      jdnode = domain%map(2)
+      kdnode = domain%map(1)
+
+      npdirB = config%ixyzM(0)+1
+      npdirE = config%ixyzM(1)
+    Else If (mdir == -2) Then ! Direction -y
+      jdnode = domain%map(3)
+      kdnode = domain%map(4)
+
+      npdirB = config%ixyzM(3)+1
+      npdirE = config%ixyzM(4)
+    Else If (mdir == 2) Then ! Direction +y
+      jdnode = domain%map(4)
+      kdnode = domain%map(3)
+
+      npdirB = config%ixyzM(2)+1
+      npdirE = config%ixyzM(3)
+    Else If (mdir == -3) Then ! Direction -z
+      jdnode = domain%map(5)
+      kdnode = domain%map(6)
+
+      npdirB = config%ixyzM(5)+1
+      npdirE = config%ixyzM(6)
+    Else If (mdir == 3) Then ! Direction +z
+      jdnode = domain%map(6)
+      kdnode = domain%map(5)
+
+      npdirB = config%ixyzM(4)+1
+      npdirE = config%ixyzM(5)
+    Else
+      Call error(46)
+    End If
+
+    ! Initialise counters for length of sending and receiving buffers
+    ! imove and jmove are the actual number of particles to get haloed
+
+    imove=0
+    jmove=0
+
+    ! Initialise array overflow flags
+
+    safe=.true.
+
+    ! LOOP OVER ALL PARTICLES ON THIS NODE
+
+    If (imove+iadd*(npdirE-npdirB) <= iblock) Then
+
+      If ( with_mpoles ) Then
+
+        If ( with_pp ) Then
+
+          Do i=npdirB,npdirE
+
+              buffer(imove+1) = Real(config%ltg(i),wp)
+              buffer(imove+2) = config%parts(i)%fxx
+              buffer(imove+3) = config%parts(i)%fyy
+              buffer(imove+4) = config%parts(i)%fzz
+              buffer(imove+5) = mpoles%torque_x(i)
+              buffer(imove+6) = mpoles%torque_y(i)
+              buffer(imove+7) = mpoles%torque_z(i)
+              buffer(imove+8) = stats%pp_energy(i)
+              buffer(imove+9) = stats%pp_stress(1,i)
+              buffer(imove+10) = stats%pp_stress(2,i)
+              buffer(imove+11) = stats%pp_stress(3,i)
+              buffer(imove+12) = stats%pp_stress(4,i)
+              buffer(imove+13) = stats%pp_stress(5,i)
+              buffer(imove+14) = stats%pp_stress(6,i)
+              buffer(imove+15) = stats%pp_stress(7,i)
+              buffer(imove+16) = stats%pp_stress(8,i)
+              buffer(imove+17) = stats%pp_stress(9,i)
+
+              imove=imove+iadd
+
+          End Do
+
+        Else
+
+          Do i=npdirB,npdirE
+
+              buffer(imove+1) = Real(config%ltg(i),wp)
+              buffer(imove+2) = config%parts(i)%fxx
+              buffer(imove+3) = config%parts(i)%fyy
+              buffer(imove+4) = config%parts(i)%fzz
+              buffer(imove+5) = mpoles%torque_x(i)
+              buffer(imove+6) = mpoles%torque_y(i)
+              buffer(imove+7) = mpoles%torque_z(i)
+
+              imove=imove+iadd
+
+          End Do
+
+        End If
+
+      Else
+
+        If ( with_pp ) Then
+
+          Do i=npdirB,npdirE
+
+              buffer(imove+1)=Real(config%ltg(i),wp)
+              buffer(imove+2)=config%parts(i)%fxx
+              buffer(imove+3)=config%parts(i)%fyy
+              buffer(imove+4)=config%parts(i)%fzz
+              buffer(imove+5) = stats%pp_energy(i)
+              buffer(imove+6) = stats%pp_stress(1,i)
+              buffer(imove+7) = stats%pp_stress(2,i)
+              buffer(imove+8) = stats%pp_stress(3,i)
+              buffer(imove+9) = stats%pp_stress(4,i)
+              buffer(imove+10) = stats%pp_stress(5,i)
+              buffer(imove+11) = stats%pp_stress(6,i)
+              buffer(imove+12) = stats%pp_stress(7,i)
+              buffer(imove+13) = stats%pp_stress(8,i)
+              buffer(imove+14) = stats%pp_stress(9,i)
+
+              imove=imove+iadd
+
+          End Do
+
+        Else
+
+          Do i=npdirB,npdirE
+
+              buffer(imove+1)=Real(config%ltg(i),wp)
+              buffer(imove+2)=config%parts(i)%fxx
+              buffer(imove+3)=config%parts(i)%fyy
+              buffer(imove+4)=config%parts(i)%fzz
+
+              imove=imove+iadd
+
+          End Do
+
+        End if
+
+      End If
+
+    Else
+      safe=.false.
+    End If
+
+    ! Check for array bound overflow (have arrays coped with outgoing data)
+
+#ifdef CHECKS
+    Call gcheck(comm,safe)
+    If (.not.safe) Then
+      itmp=Merge(2,1,comm%mxnode > 1)*imove
+      Call gmax(comm,itmp)
+      Call warning(150,Real(itmp,wp),Real(limit,wp),0.0_wp)
+      Call error(54)
+    End If
+#endif
+
+    ! exchange information on buffer sizes
+
+    If (comm%mxnode > 1) Then
+      Call girecv(comm,jmove,kdnode,Export_tag-1)
+      Call gsend(comm,imove,jdnode,Export_tag-1)
+      Call gwait(comm)
+    Else
+      jmove=imove
+    End If
+
+    ! exchange buffers between nodes (this is a MUST)
+
+    If (comm%mxnode > 1) Then
+      If (jmove > 0) Then
+        Call girecv(comm,buffer(iblock+1:iblock+jmove),kdnode,Export_tag)
+      End If
+      If (imove > 0 ) Then
+        Call gsend(comm,buffer(1:imove),jdnode,Export_tag)
+      End If
+      If (jmove > 0) Call gwait(comm)
+    End If
+
+    ! load transferred data
+
+    j=Merge(iblock,0,comm%mxnode > 1)
+
+    If ( with_mpoles ) Then
+
+      If ( with_pp ) Then
+
+        Do i=1, jmove/iadd
+          mlast = local_index(Nint(buffer(j+1)),config%nlast,config%lsi,config%lsa)
+
+          config%parts(mlast)%fxx = config%parts(mlast)%fxx + buffer(j+2)
+          config%parts(mlast)%fyy = config%parts(mlast)%fyy + buffer(j+3)
+          config%parts(mlast)%fzz = config%parts(mlast)%fzz + buffer(j+4)
+
+          mpoles%torque_x(mlast) = mpoles%torque_x(mlast) + buffer(j+5)
+          mpoles%torque_y(mlast) = mpoles%torque_y(mlast) + buffer(j+6)
+          mpoles%torque_z(mlast) = mpoles%torque_z(mlast) + buffer(j+7)
+
+          stats%pp_energy(mlast) = stats%pp_energy(mlast) + buffer(j+8)
+
+          stats%pp_stress(1,mlast) = stats%pp_stress(1,mlast) + buffer(j+9)
+          stats%pp_stress(2,mlast) = stats%pp_stress(2,mlast) + buffer(j+10)
+          stats%pp_stress(3,mlast) = stats%pp_stress(3,mlast) + buffer(j+11)
+          stats%pp_stress(4,mlast) = stats%pp_stress(4,mlast) + buffer(j+12)
+          stats%pp_stress(5,mlast) = stats%pp_stress(5,mlast) + buffer(j+13)
+          stats%pp_stress(6,mlast) = stats%pp_stress(6,mlast) + buffer(j+14)
+          stats%pp_stress(7,mlast) = stats%pp_stress(7,mlast) + buffer(j+15)
+          stats%pp_stress(8,mlast) = stats%pp_stress(8,mlast) + buffer(j+16)
+          stats%pp_stress(9,mlast) = stats%pp_stress(9,mlast) + buffer(j+17)
+
+          j = j + iadd
+        End Do
+
+      Else
+
+        Do i=1, jmove/iadd
+          mlast = local_index(Nint(buffer(j+1)),config%nlast,config%lsi,config%lsa)
+
+          config%parts(mlast)%fxx = config%parts(mlast)%fxx + buffer(j+2)
+          config%parts(mlast)%fyy = config%parts(mlast)%fyy + buffer(j+3)
+          config%parts(mlast)%fzz = config%parts(mlast)%fzz + buffer(j+4)
+
+          mpoles%torque_x(mlast) = mpoles%torque_x(mlast) + buffer(j+5)
+          mpoles%torque_y(mlast) = mpoles%torque_y(mlast) + buffer(j+6)
+          mpoles%torque_z(mlast) = mpoles%torque_z(mlast) + buffer(j+7)
+
+          j = j + iadd
+        End Do
+
+      End If
+
+    Else
+
+      If ( with_pp ) Then
+
+        Do i=1, jmove/iadd
+          mlast = local_index(Nint(buffer(j+1)),config%nlast,config%lsi,config%lsa)
+
+          config%parts(mlast)%fxx = config%parts(mlast)%fxx + buffer(j+2)
+          config%parts(mlast)%fyy = config%parts(mlast)%fyy + buffer(j+3)
+          config%parts(mlast)%fzz = config%parts(mlast)%fzz + buffer(j+4)
+
+          stats%pp_energy(mlast) = stats%pp_energy(mlast) + buffer(j+5)
+
+          stats%pp_stress(1,mlast) = stats%pp_stress(1,mlast) + buffer(j+6)
+          stats%pp_stress(2,mlast) = stats%pp_stress(2,mlast) + buffer(j+7)
+          stats%pp_stress(3,mlast) = stats%pp_stress(3,mlast) + buffer(j+8)
+          stats%pp_stress(4,mlast) = stats%pp_stress(4,mlast) + buffer(j+9)
+          stats%pp_stress(5,mlast) = stats%pp_stress(5,mlast) + buffer(j+10)
+          stats%pp_stress(6,mlast) = stats%pp_stress(6,mlast) + buffer(j+11)
+          stats%pp_stress(7,mlast) = stats%pp_stress(7,mlast) + buffer(j+12)
+          stats%pp_stress(8,mlast) = stats%pp_stress(8,mlast) + buffer(j+13)
+          stats%pp_stress(9,mlast) = stats%pp_stress(9,mlast) + buffer(j+14)
+
+          j = j + iadd
+        End Do
+
+      Else
+
+        Do i=1, jmove/iadd
+          mlast = local_index(Nint(buffer(j+1)),config%nlast,config%lsi,config%lsa)
+
+          config%parts(mlast)%fxx = config%parts(mlast)%fxx + buffer(j+2)
+          config%parts(mlast)%fyy = config%parts(mlast)%fyy + buffer(j+3)
+          config%parts(mlast)%fzz = config%parts(mlast)%fzz + buffer(j+4)
+
+          j = j + iadd
+        End Do
+
+      End If
+
+    End If
+
+    Deallocate (buffer, Stat=fail)
+#ifdef CHECKS
+    If (fail > 0) Then
+      Write(message,'(a)') 'export_atomic_forces deallocation failure for buffer'
+      Call error(0,message)
+    End If
+#endif
+
+  End Subroutine export_atomic_forces
+#endif /* HALF_HALO */
 
   Subroutine export_atomic_positions(mdir, mlast, ixyz0, domain, config, kim_data, comm)
 

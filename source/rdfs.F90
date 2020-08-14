@@ -183,7 +183,9 @@ Contains
       jatm = neigh%list(m, iatm)
       aj = config%ltype(jatm)
 
+#ifndef HALF_HALO
       If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+#endif /* HALF_HALO */
         ! rdf%rdf function indices
         keyrdf = (Max(ai, aj) * (Max(ai, aj) - 1)) / 2 + Min(ai, aj)
         kk = rdf%list(keyrdf)
@@ -200,7 +202,9 @@ Contains
             End If
           End If
         End If
+#ifndef HALF_HALO
       End If
+#endif /* HALF_HALO */
 
     End Do
 
@@ -905,7 +909,9 @@ Contains
       ! atomic and type indices
       jatm = neigh%list(neigh%list(0, iatm) + m, iatm)
       aj = config%ltype(jatm)
+#ifndef HALF_HALO
       If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+#endif /* HALF_HALO */
         ! rdf%rdf function indices
         keyrdf = (Max(ai, aj) * (Max(ai, aj) - 1)) / 2 + Min(ai, aj)
         kk = rdf%list(keyrdf)
@@ -922,7 +928,9 @@ Contains
             End If
           End If
         End If
+#ifndef HALF_HALO
       End If
+#endif /* HALF_HALO */
 
     End Do
 
@@ -973,7 +981,9 @@ Contains
       jatm = neigh%list(neigh%list(-1, iatm) + m, iatm)
       aj = config%ltype(jatm)
 
+#ifndef HALF_HALO
       If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+#endif /* HALF_HALO */
         ! rdf%rdf function indices
         keyrdf = (Max(ai, aj) * (Max(ai, aj) - 1)) / 2 + Min(ai, aj)
         kk = rdf%list(keyrdf)
@@ -990,7 +1000,9 @@ Contains
             End If
           End If
         End If
+#ifndef HALF_HALO
       End If
+#endif /* HALF_HALO */
 
     End Do
 

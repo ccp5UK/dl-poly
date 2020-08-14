@@ -175,4 +175,7 @@ Module constants
   Real(Kind=wp), Parameter     :: epsilon_wp = Epsilon(epsilon_wp)
   !> complex zero
   Real(Kind=wp), Parameter     :: czero = Cmplx(0.0_wp, 0.0_wp, wp)
+  !> smallest distance we care about for link cells
+  Real(Kind=wp), Parameter     :: smalldr = 1.0e-6_wp
+
 End Module constants

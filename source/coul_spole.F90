@@ -268,15 +268,21 @@ Contains
           fiy=fiy+fy
           fiz=fiz+fz
 
+#ifndef HALF_HALO
           If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
 
             config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
             config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
             config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
+#ifndef HALF_HALO
           If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+#endif /* HALF_HALO */
 
             ! calculate potential energy and virial
 
@@ -300,16 +306,22 @@ Contains
             stress_temp = stress_temp + stress_temp_comp
 
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
           If (stats%collect_pp) Then
             stress_temp_comp = calculate_stress( [xxt(m), yyt(m), zzt(m)], [fx,fy,fz] )
             stats%pp_energy(iatm) = stats%pp_energy(iatm) + coul * 0.5_wp
             stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
+#ifndef HALF_HALO
             If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
               stats%pp_energy(jatm) = stats%pp_energy(jatm) + coul * 0.5_wp
               stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
+#ifndef HALF_HALO
             End If
+#endif /* HALF_HALO */
           End If
           
         End If
@@ -466,15 +478,21 @@ Contains
           fiy=fiy+fy
           fiz=fiz+fz
 
+#ifndef HALF_HALO
           If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
 
             config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
             config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
             config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
+#ifndef HALF_HALO
           If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+#endif /* HALF_HALO */
 
             ! calculate potential energy and virial
 
@@ -499,16 +517,22 @@ Contains
             stress_temp_comp = calculate_stress( [xxt(m), yyt(m), zzt(m)], [fx,fy,fz] )
             stress_temp = stress_temp + stress_temp_comp
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
           If (stats%collect_pp) Then
             stress_temp_comp = calculate_stress( [xxt(m), yyt(m), zzt(m)], [fx,fy,fz] )
             stats%pp_energy(iatm) = stats%pp_energy(iatm) + coul * 0.5_wp
             stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
+#ifndef HALF_HALO
             If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
               stats%pp_energy(jatm) = stats%pp_energy(jatm) + coul * 0.5_wp
               stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
+#ifndef HALF_HALO
             End If
+#endif /* HALF_HALO */
           End If
 
         End If
@@ -621,15 +645,21 @@ Contains
           fiy=fiy+fy
           fiz=fiz+fz
 
+#ifndef HALF_HALO
           If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
 
             config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
             config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
             config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
+#ifndef HALF_HALO
           If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+#endif /* HALF_HALO */
 
             ! calculate potential energy
 
@@ -642,16 +672,22 @@ Contains
             stress_temp_comp = calculate_stress( [xxt(m), yyt(m), zzt(m)], [fx,fy,fz] )
             stress_temp = stress_temp + stress_temp_comp
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
           If (stats%collect_pp) Then
             stress_temp_comp = calculate_stress( [xxt(m), yyt(m), zzt(m)], [fx,fy,fz] )
             stats%pp_energy(iatm) = stats%pp_energy(iatm) + coul * 0.5_wp
             stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
+#ifndef HALF_HALO
             If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
               stats%pp_energy(jatm) = stats%pp_energy(jatm) + coul * 0.5_wp
               stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
+#ifndef HALF_HALO
             End If
+#endif /* HALF_HALO */
           End If
 
         End If
@@ -773,15 +809,21 @@ Contains
           fiy=fiy+fy
           fiz=fiz+fz
 
+#ifndef HALF_HALO
           If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
 
             config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
             config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
             config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
+#ifndef HALF_HALO
           If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+#endif /* HALF_HALO */
 
             ! calculate potential energy
 
@@ -792,16 +834,22 @@ Contains
             stress_temp_comp = calculate_stress( [xxt(m), yyt(m), zzt(m)], [fx,fy,fz] )
             stress_temp = stress_temp + stress_temp_comp
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
           If (stats%collect_pp) Then
             stress_temp_comp = calculate_stress( [xxt(m), yyt(m), zzt(m)], [fx,fy,fz] )
             stats%pp_energy(iatm) = stats%pp_energy(iatm) + coul * 0.5_wp
             stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
+#ifndef HALF_HALO
             If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
               stats%pp_energy(jatm) = stats%pp_energy(jatm) + coul * 0.5_wp
               stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
+#ifndef HALF_HALO
             End If
+#endif /* HALF_HALO */
           End If
 
         End If

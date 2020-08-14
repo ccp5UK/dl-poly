@@ -94,6 +94,9 @@ Module configuration
     Integer, Allocatable          :: lfrzn(:), lfree(:)
     Integer, Allocatable          :: lsi(:), lsa(:), ltg(:)
     Integer, Allocatable          :: ixyz(:)
+#ifdef HALF_HALO
+    Integer, Allocatable          :: ixyzM(:)
+#endif /* HALF_HALO */
     Integer, Allocatable          :: lstfre(:)
     Real(Kind=wp), Allocatable    :: weight(:) !,chge(:)
     Real(Kind=wp), Allocatable    :: vxx(:), vyy(:), vzz(:)
@@ -360,7 +363,11 @@ Contains
 
     Allocate (config%lsite(1:config%mxatms), config%ltype(1:config%mxatms), Stat=fail(1))
     Allocate (config%lfrzn(1:config%mxatms), config%lfree(1:config%mxatms), Stat=fail(2))
+#ifdef HALF_HALO
+    Allocate (config%ixyz(1:config%mxatms), config%ixyzM(0:6), Stat=fail(3))
+#else
     Allocate (config%ixyz(1:config%mxatms), Stat=fail(3))
+#endif
     Allocate (config%lstfre(1:config%mxatdm), Stat=fail(4))
     Allocate (config%weight(1:config%mxatms), Stat=fail(5))
 
@@ -368,9 +375,11 @@ Contains
 
     config%lsite = 0; config%ltype = 0
     config%lfrzn = 0; config%lfree = 0
-
     config%ixyz = 0
     config%lstfre = 0
+#ifdef HALF_HALO
+    config%ixyzM = 0
+#endif /* HALF_HALO */
 
     config%weight = 0.0_wp
 

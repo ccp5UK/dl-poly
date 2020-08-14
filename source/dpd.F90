@@ -39,6 +39,9 @@ Module dpd
                              VV_FIRST_STAGE,&
                              VV_SECOND_STAGE,&
                              thermostat_type
+#ifdef HALF_HALO
+  Use numerics,        Only: local_index
+#endif /* HALF_HALO */
 
   Implicit None
 
@@ -65,6 +68,7 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    ! contrib   - i.t.todorov may 2020 - 'half-halo' VNL
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -240,15 +244,21 @@ Contains
           fiy = fiy + fy
           fiz = fiz + fz
 
+#ifndef HALF_HALO
           If (j <= config%natms) Then
+#endif /* HALF_HALO */
 
             fdpdx(j) = fdpdx(j) - fx
             fdpdy(j) = fdpdy(j) - fy
             fdpdz(j) = fdpdz(j) - fz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
+#ifndef HALF_HALO
           If (j <= config%natms .or. idi < idj) Then
+#endif /* HALF_HALO */
 
             ! add virial
 
@@ -263,7 +273,9 @@ Contains
             strs6 = strs6 + yyt(k) * fz
             strs9 = strs9 + zzt(k) * fz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
         End If
 
@@ -289,6 +301,12 @@ Contains
 
     End Do
 
+#ifdef HALF_HALO
+    ! Share the dpd forces collected in the halo with the parent domains
+
+    Call refresh_halo_dpd_forces(domain, config, config%mxatms, fdpdx, fdpdy, fdpdz, comm)
+
+#endif /* HALF_HALO */
     ! Update velocities or add to conservative forces
 
     Do i = 1, config%natms
@@ -420,15 +438,21 @@ Contains
           fiy = fiy + fy
           fiz = fiz + fz
 
+#ifndef HALF_HALO
           If (j <= config%natms) Then
+#endif /* HALF_HALO */
 
             fdpdx(j) = fdpdx(j) - fx
             fdpdy(j) = fdpdy(j) - fy
             fdpdz(j) = fdpdz(j) - fz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
+#ifndef HALF_HALO
           If (j <= config%natms .or. idi < idj) Then
+#endif /* HALF_HALO */
 
             ! add virial
 
@@ -443,7 +467,9 @@ Contains
             strs6 = strs6 + yyt(k) * fz
             strs9 = strs9 + zzt(k) * fz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
         End If
 
@@ -469,6 +495,12 @@ Contains
 
     End Do
 
+#ifdef HALF_HALO
+    ! Share the dpd forces collected in the halo with the parent domains
+
+    Call refresh_halo_dpd_forces(domain, config, config%mxatms, fdpdx, fdpdy, fdpdz, comm)
+
+#endif /* HALF_HALO */
     ! Update velocities
 
     Do i = 1, config%natms
@@ -520,6 +552,7 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    ! amended   - i.t.todorov may 2020 - simplification for ixyz0
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -747,6 +780,7 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    ! amended   - i.t.todorov may 2020 - simplification for ixyz0
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -793,10 +827,231 @@ Contains
     If (.not. safe) Call error(96)
 
     Deallocate (ixyz0, Stat=fail)
+  End Subroutine dpd_v_set_halo
+
+#ifdef HALF_HALO
+  Subroutine refresh_halo_dpd_forces(domain, config, mxatms, fxx, fyy, fzz, comm)
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 routine to refresh the parent domain forces that are calculated
+    ! in the halos of neighbouring domains/nodes
+    !
+    ! Note: all depends on the ixyz halo array set in set_halo
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.t.todorov mat 2020 - helper routine for 'half-halo' VNL
+    !             to be called from two_body_forces before 'If (l_do_rdf) Then'
+    !             i.e. after all the relevant pairwise force routines using VNL
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( domains_type ),       Intent( In    ) :: domain
+    Type( configuration_type ), Intent( In    ) :: config
+    Type( comms_type ),         Intent( InOut ) :: comm
+    Integer,                    Intent( In    ) :: mxatms
+    Real( Kind = wp ),          Intent( InOut ) :: fxx(1:mxatms), fyy(1:mxatms), fzz(1:mxatms)
+
+    ! if one defines npdirB and npdirE indices like in export_atomic_forces,
+    ! then one should use 'positive' directions earlier than 'negative' ones
+    ! i.e the reverse order of the normal coordinate communications in export_atomic_data
+
+    Call export_dpd_forces( 3, domain, config, mxatms, fxx, fyy, fzz, comm) ! x0, y0, z+
+    !Call export_atomic_forces(-3, domain, config, mxatms, fxx, fyy, fzz, comm) ! x0, y0, z+ ! one can skip this with 'half-halo' VNL
+    Call export_dpd_forces( 2, domain, config, mxatms, fxx, fyy, fzz, comm) ! x0, y+, z0
+    Call export_dpd_forces(-2, domain, config, mxatms, fxx, fyy, fzz, comm) ! x0, y+, z0
+    Call export_dpd_forces( 1, domain, config, mxatms, fxx, fyy, fzz, comm) ! x-, y0, z0
+    Call export_dpd_forces(-1, domain, config, mxatms, fxx, fyy, fzz, comm) ! x+, y0, z0
+
+  End Subroutine refresh_halo_dpd_forces
+
+  Subroutine export_dpd_forces(mdir, domain, config, mxatms, fxx, fyy, fzz, comm)
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 routine to export dpd forces in domain boundary regions
+    ! for halo refresh
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.t.todorov may 2020 (helper routine for irreducable VNL)
+    !             called from refresh_halo_forces (halo.F90) <- two_body_forces (two_body.F90)
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Integer,                      Intent( In    ) :: mdir
+    Type( domains_type ),         Intent( In    ) :: domain
+    Type( configuration_type ),   Intent( In    ) :: config
+    Type( comms_type ),           Intent( InOut ) :: comm
+    Integer,                      Intent( In    ) :: mxatms
+    Real( Kind = wp ),            Intent( InOut ) :: fxx(1:mxatms), fyy(1:mxatms), fzz(1:mxatms)
+
+#ifdef CHECKS
+    Character ( Len = 256 )  :: message
+#endif
+    Logical           :: safe
+    Integer           :: fail,iadd,limit,iblock,npdirB,npdirE,mlast,i,j, &
+                         jdnode,kdnode,imove,jmove
+
+    Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
+
+    ! Number of transported quantities per particle
+
+    iadd = 4
+
+    fail=0
+    limit=iadd*domain%mxbfxp
+    Allocate (buffer(1:limit), Stat=fail)
+#ifdef CHECKS
     If (fail > 0) Then
-      Write (message, '(a)') 'dpd_v_set_halo deallocation failure'
-      Call error(0, message)
+      Write(message,'(a)') 'export_dpd_forces allocation failure for buffer'
+      Call error(0,message)
+    End If
+#endif
+
+    ! Set buffer limit (half for outgoing data - half for incoming)
+
+    iblock=limit/Merge(2,1,comm%mxnode > 1)
+
+    ! DIRECTION SETTINGS INITIALISATION
+
+    ! define the neighbouring domains as sending and receiving with respect to the direction (mdir)
+    ! jdnode - destination (send to), kdnode - source (receive from)
+    ! in this case call the routine with 'positive' directions earlier than 'negative' ones: mdir = 3(,-3),2,-2,1,-1
+
+    If (mdir == -1) Then ! Direction -x
+      jdnode = domain%map(1)
+      kdnode = domain%map(2)
+
+      npdirB = config%ixyzM(1)+1
+      npdirE = config%ixyzM(2)
+    Else If (mdir == 1) Then ! Direction +x
+      jdnode = domain%map(2)
+      kdnode = domain%map(1)
+
+      npdirB = config%ixyzM(0)+1
+      npdirE = config%ixyzM(1)
+    Else If (mdir == -2) Then ! Direction -y
+      jdnode = domain%map(3)
+      kdnode = domain%map(4)
+
+      npdirB = config%ixyzM(3)+1
+      npdirE = config%ixyzM(4)
+    Else If (mdir == 2) Then ! Direction +y
+      jdnode = domain%map(4)
+      kdnode = domain%map(3)
+
+      npdirB = config%ixyzM(2)+1
+      npdirE = config%ixyzM(3)
+    Else If (mdir == -3) Then ! Direction -z
+      jdnode = domain%map(5)
+      kdnode = domain%map(6)
+
+      npdirB = config%ixyzM(5)+1
+      npdirE = config%ixyzM(6)
+    Else If (mdir == 3) Then ! Direction +z
+      jdnode = domain%map(6)
+      kdnode = domain%map(5)
+
+      npdirB = config%ixyzM(4)+1
+      npdirE = config%ixyzM(5)
+    Else
+      Call error(46)
     End If
 
-  End Subroutine dpd_v_set_halo
+    ! Initialise counters for length of sending and receiving buffers
+    ! imove and jmove are the actual number of particles to get haloed
+
+    imove=0
+    jmove=0
+
+    ! Initialise array overflow flags
+
+    safe=.true.
+
+    ! LOOP OVER ALL PARTICLES ON THIS NODE
+
+    ! Initialise counters for length of sending and receiving buffers
+    ! imove and jmove are the actual number of particles to get haloed
+
+    imove=0
+    jmove=0
+
+    ! Initialise array overflow flags
+
+    safe=.true.
+
+    ! LOOP OVER ALL PARTICLES ON THIS NODE
+
+    If (imove+iadd*(npdirE-npdirB) <= iblock) Then
+      Do i=npdirB,npdirE
+        buffer(imove+1) = Real(config%ltg(i),wp)
+        buffer(imove+2) = fxx(i)
+        buffer(imove+3) = fyy(i)
+        buffer(imove+4) = fzz(i)
+
+        imove=imove+iadd
+      End Do
+    Else
+      safe=.false.
+    End If
+
+    ! Check for array bound overflow (have arrays coped with outgoing data)
+
+#ifdef CHECKS
+    Call gcheck(comm,safe)
+    If (.not.safe) Then
+      itmp=Merge(2,1,comm%mxnode > 1)*imove
+      Call gmax(comm,itmp)
+      Call warning(150,Real(itmp,wp),Real(limit,wp),0.0_wp)
+      Call error(54)
+    End If
+#endif
+
+    ! exchange information on buffer sizes
+
+    If (comm%mxnode > 1) Then
+      Call girecv(comm,jmove,kdnode,DpdVExp_tag-1)
+      Call gsend(comm,imove,jdnode,DpdVExp_tag-1)
+      Call gwait(comm)
+    Else
+      jmove=imove
+    End If
+
+    ! exchange buffers between nodes (this is a MUST)
+
+    If (comm%mxnode > 1) Then
+      If (jmove > 0) Then
+        Call girecv(comm,buffer(iblock+1:iblock+jmove),kdnode,DpdVExp_tag-1)
+      End If
+      If (imove > 0 ) Then
+        Call gsend(comm,buffer(1:imove),jdnode,DpdVExp_tag-1)
+      End If
+      If (jmove > 0) Call gwait(comm)
+    End If
+
+    ! load transferred data
+
+    j=Merge(iblock,0,comm%mxnode > 1)
+
+    Do i=1, jmove/iadd
+      mlast = local_index(Int(buffer(j+1)),config%nlast,config%lsi,config%lsa)
+
+      fxx(mlast) = fxx(mlast) + buffer(j+2)
+      fyy(mlast) = fyy(mlast) + buffer(j+3)
+      fzz(mlast) = fzz(mlast) + buffer(j+4)
+
+      j = j + iadd
+    End Do
+
+    Deallocate (buffer, Stat=fail)
+#ifdef CHECKS
+    If (fail > 0) Then
+      Write(message,'(a)') 'export_dpd_forces deallocation failure for buffer'
+      Call error(0,message)
+    End If
+#endif
+
+  End Subroutine export_dpd_forces
+#endif
+
 End Module dpd

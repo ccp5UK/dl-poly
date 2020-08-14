@@ -4,8 +4,14 @@ Module halo
                              gcheck
   Use configuration,   Only: configuration_type
   Use constants,       Only: zero_plus
+#ifndef HALF_HALO
   Use deport_data,     Only: export_atomic_data,&
                              export_atomic_positions
+#else
+  Use deport_data,     Only: export_atomic_data,&
+                             export_atomic_forces,&
+                             export_atomic_positions
+#endif /* HALF_HALO */
   Use domains,         Only: domains_type
   Use electrostatic,   Only: ELECTROSTATIC_EWALD
   Use errors_warnings, Only: error
@@ -19,12 +25,18 @@ Module halo
                              invert,&
                              shellsort2
   Use site,            Only: site_type
+#ifdef HALF_HALO
+  Use statistics,      Only: stats_type
+#endif /* HALF_HALO */
 
   Implicit None
 
   Private
 
   Public :: refresh_halo_positions
+#ifdef HALF_HALO
+  Public :: refresh_halo_forces
+#endif /* HALF_HALO */
   Public :: set_halo_particles
 
 Contains
@@ -36,7 +48,7 @@ Contains
     ! dl_poly_4 routine to refresh the halo positioning data between
     ! neighbouring domains/nodes when VNL is skipped
     !
-    ! Note: all depends on the ixyz halo array set in set_halo, this assumes
+    ! Note: all depends on the ixyz halo array set in set_halo - this assumes
     !       that (i) met%rcut=rcut! as well as (ii) all the error checks in there
     !
     ! copyright - daresbury laboratory
@@ -96,6 +108,44 @@ Contains
       Call error(0, message)
     End If
   End Subroutine refresh_halo_positions
+
+#ifdef HALF_HALO
+  Subroutine refresh_halo_forces(domain, config, mpoles, stats, comm)
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 routine to refresh the parent domain forces that are calculated 
+    ! in the halos of neighbouring domains/nodes
+    !
+    ! Note: all depends on the ixyz halo array set in set_halo
+    !
+    ! copyright - daresbury laboratory
+    ! author    - a.v.brukhno march 2020 - helper routine for 'half-halo' VNL
+    !             to be called from two_body_forces before 'If (l_do_rdf) Then'
+    !             i.e. after all the relevant pairwise force routines using VNL
+    ! contrib   - m.a.seaton august 2020
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( domains_type ),         Intent( In    ) :: domain
+    Type( configuration_type ) ,  Intent( InOut ) :: config
+    Type( mpole_type ),           Intent( InOut ) :: mpoles
+    Type( stats_type ),           Intent( InOut ) :: stats
+    Type( comms_type ),           Intent( InOut ) :: comm
+
+    ! if one defines npdirB and npdirE indices like in export_atomic_forces,
+    ! then one should use 'positive' directions earlier than 'negative' ones
+    ! i.e. the reverse order of the normal coordinate communications in export_atomic_data
+
+    Call export_atomic_forces( 3, domain, config, mpoles, stats, comm) ! x0, y0, z+
+    !Call export_atomic_forces(-3, domain, config, mpoles, stats, comm) ! x0, y0, z+ ! one can skip this with 'half-halo' VNL
+    Call export_atomic_forces( 2, domain, config, mpoles, stats, comm) ! x0, y+, z0
+    Call export_atomic_forces(-2, domain, config, mpoles, stats, comm) ! x0, y-, z0
+    Call export_atomic_forces( 1, domain, config, mpoles, stats, comm) ! x-, y0, z0
+    Call export_atomic_forces(-1, domain, config, mpoles, stats, comm) ! x+, y0, z0
+
+  End Subroutine refresh_halo_forces
+#endif /* HALF_HALO */
 
   Subroutine set_halo_particles(electro_key, neigh, sites, mpoles, domain, config, ewld, kim_data, comm)
 
@@ -199,6 +249,9 @@ Contains
 
     config%nlast = config%natms ! No halo exists yet
     config%ixyz(1:config%nlast) = 0 ! Initialise halo indicator
+#ifdef HALF_HALO
+    config%ixyzM(0) = config%natms ! Halo markers start
+#endif /* HALF_HALO */
     Do i = 1, config%nlast
       x = rcell(1) * config%parts(i)%xxx + rcell(4) * config%parts(i)%yyy + rcell(7) * config%parts(i)%zzz
       y = rcell(2) * config%parts(i)%xxx + rcell(5) * config%parts(i)%yyy + rcell(8) * config%parts(i)%zzz

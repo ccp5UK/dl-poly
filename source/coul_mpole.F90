@@ -879,7 +879,9 @@ Contains
           fiy = fiy + fy
           fiz = fiz + fz
 
+#ifndef HALF_HALO
           If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
 
             config%parts(jatm)%fxx = config%parts(jatm)%fxx - fx
             config%parts(jatm)%fyy = config%parts(jatm)%fyy - fy
@@ -889,9 +891,13 @@ Contains
             mpoles%torque_y(jatm) = mpoles%torque_y(jatm) + tjy
             mpoles%torque_z(jatm) = mpoles%torque_z(jatm) + tjz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
+#ifndef HALF_HALO
           If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+#endif /* HALF_HALO */
 
             ! accumulate potential energy
 
@@ -910,7 +916,9 @@ Contains
             strs6 = strs6 + yyt(m) * fz
             strs9 = strs9 + zzt(m) * fz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
         End If
 
@@ -1431,7 +1439,9 @@ Contains
           fiy = fiy + fy
           fiz = fiz + fz
 
+#ifndef HALF_HALO
           If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
 
             config%parts(jatm)%fxx = config%parts(jatm)%fxx - fx
             config%parts(jatm)%fyy = config%parts(jatm)%fyy - fy
@@ -1441,9 +1451,13 @@ Contains
             mpoles%torque_y(jatm) = mpoles%torque_y(jatm) + tjy
             mpoles%torque_z(jatm) = mpoles%torque_z(jatm) + tjz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
+#ifndef HALF_HALO
           If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+#endif /* HALF_HALO */
 
             ! accumulate potential energy
 
@@ -1462,7 +1476,9 @@ Contains
             strs6 = strs6 + yyt(m) * fz
             strs9 = strs9 + zzt(m) * fz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
         End If
 
@@ -1738,7 +1754,9 @@ Contains
           fiy = fiy + fy
           fiz = fiz + fz
 
+#ifndef HALF_HALO
           If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
 
             config%parts(jatm)%fxx = config%parts(jatm)%fxx - fx
             config%parts(jatm)%fyy = config%parts(jatm)%fyy - fy
@@ -1748,9 +1766,13 @@ Contains
             mpoles%torque_y(jatm) = mpoles%torque_y(jatm) + tjy
             mpoles%torque_z(jatm) = mpoles%torque_z(jatm) + tjz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
+#ifndef HALF_HALO
           If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+#endif /* HALF_HALO */
 
             ! accumulate potential energy
 
@@ -1765,7 +1787,9 @@ Contains
             strs6 = strs6 + yyt(m) * fz
             strs9 = strs9 + zzt(m) * fz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
         End If
 
@@ -2045,7 +2069,9 @@ Contains
           fiy = fiy + fy
           fiz = fiz + fz
 
+#ifndef HALF_HALO
           If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
 
             config%parts(jatm)%fxx = config%parts(jatm)%fxx - fx
             config%parts(jatm)%fyy = config%parts(jatm)%fyy - fy
@@ -2055,9 +2081,13 @@ Contains
             mpoles%torque_y(jatm) = mpoles%torque_y(jatm) + tjy
             mpoles%torque_z(jatm) = mpoles%torque_z(jatm) + tjz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
+#ifndef HALF_HALO
           If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+#endif /* HALF_HALO */
 
             ! accumulate potential energy
 
@@ -2072,7 +2102,9 @@ Contains
             strs6 = strs6 + yyt(m) * fz
             strs9 = strs9 + zzt(m) * fz
 
+#ifndef HALF_HALO
           End If
+#endif /* HALF_HALO */
 
         End If
 
@@ -2222,15 +2254,21 @@ Contains
       fiy = fiy + fy
       fiz = fiz + fz
 
+#ifndef HALF_HALO
       If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
 
         config%parts(jatm)%fxx = config%parts(jatm)%fxx - fx
         config%parts(jatm)%fyy = config%parts(jatm)%fyy - fy
         config%parts(jatm)%fzz = config%parts(jatm)%fzz - fz
 
+#ifndef HALF_HALO
       End If
+#endif /* HALF_HALO */
 
+#ifndef HALF_HALO
       If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+#endif /* HALF_HALO */
 
         ! calculate potential energy and virial
 
@@ -2246,7 +2284,9 @@ Contains
         strs6 = strs6 + yyt(m) * fz
         strs9 = strs9 + zzt(m) * fz
 
+#ifndef HALF_HALO
       End If
+#endif /* HALF_HALO */
 
     End Do
 
@@ -2442,15 +2482,21 @@ Contains
             fiy = fiy + fy
             fiz = fiz + fz
 
+#ifndef HALF_HALO
             If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
 
               config%parts(jatm)%fxx = config%parts(jatm)%fxx - fx
               config%parts(jatm)%fyy = config%parts(jatm)%fyy - fy
               config%parts(jatm)%fzz = config%parts(jatm)%fzz - fz
 
+#ifndef HALF_HALO
             End If
+#endif /* HALF_HALO */
 
+#ifndef HALF_HALO
             If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+#endif /* HALF_HALO */
 
               ! calculate virial
 
@@ -2468,7 +2514,9 @@ Contains
               strs8 = strs8 + zdf * fy
               strs9 = strs9 + zdf * fz
 
+#ifndef HALF_HALO
             End If
+#endif /* HALF_HALO */
 
           End If
 
