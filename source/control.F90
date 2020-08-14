@@ -80,7 +80,7 @@ Module control
                                   FILE_TABEAM,&
                                   file_type
   Use flow_control,         Only: DFTB,&
-                                  MD,&
+                                  MD_STD,&
                                   RESTART_KEY_CLEAN,&
                                   RESTART_KEY_NOSCALE,&
                                   RESTART_KEY_OLD,&
@@ -585,7 +585,7 @@ Contains
 
     ! default driver type
 
-    flow%simulation_method = MD
+    flow%simulation_method = MD_STD 
 
     ! default value for the particle density per link cell limit
     ! below which subcelling (decreasing link-cell dimensions) stops

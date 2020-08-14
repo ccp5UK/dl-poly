@@ -155,7 +155,9 @@ End Type evb_type
   Public :: evb_merge_stochastic
   Public :: evb_pes
   Public :: evb_population
+  Public :: evb_prevent
   Public :: evb_setzero
+  Public :: print_evb_banner
 Contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -179,6 +181,7 @@ Contains
 !    - evb_check_intermolecular
 !    - evb_check_intramolecular
 !    - evb_check_external
+!    - evb_prevent
 !
 !    with all the auxiliary subroutines (see bellow)
 !
@@ -770,7 +773,7 @@ Contains
   
     ! If There is no coupling defined, e.i. all type of coupling are constants and equal to zero
     ! set the flag evb%no_coupling = .True. and this avoids the execution of evb_setzero in 
-    ! calculate_forces_evb (drivers.F90)
+    ! calculate_forces (drivers.F90)
     icoupl=0
   
     Do i = 1, flow%NUM_FF
@@ -791,6 +794,57 @@ Contains
 
   End Subroutine read_evb_settings
           
+
+  Subroutine evb_prevent(lplumed, lkim, lttm, thermo_dpd) 
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine that aborts the execution of a standard EVB runs 
+    ! if the following are activated 
+    ! - plumed 
+    ! - kim
+    ! - dpd
+    ! - ttm
+    !  
+    ! copyright - daresbury laboratory
+    ! author    - i.scivetti August 2020
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Logical,     Intent(In   ) :: lplumed
+    Logical,     Intent(In   ) :: lkim
+    Logical,     Intent(In   ) :: lttm
+    Integer,     Intent(In   ) :: thermo_dpd
+
+    Logical              :: flag
+    Character(Len = 256) :: appex, base
+    Character(Len = 256) :: message 
+ 
+    flag=.False.
+    base = 'error - Standard EVB formalism is not valid for '
+
+
+    If(lplumed)Then
+      flag=.True.
+      appex='Plumed'
+    Else If(lkim)Then
+      flag=.True.
+      appex='KIM'
+    Else If(lttm)Then
+      flag=.True.
+      appex='TTM'
+   Else If(thermo_dpd/=0)Then
+      flag=.True.
+      appex='DPD'
+   End If 
+
+    If(flag)Then
+      Call info(' ', .True.)       
+      Write(message, '(1x,a,1x,2a)') Trim(base), Trim(appex), ' simulations. Please reconsider the settings'
+      Call error(0,message)
+    End If
+
+  End Subroutine evb_prevent
+
 
   Subroutine evb_check_intrinsic(evb, sites, config, flow, comm)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3444,7 +3498,8 @@ Contains
     ! Only print after equilibration
     If(flow%step>flow%equil_steps+1)Then
        If (comm%idnode == 0)Then
-         Write(files(FILE_POPEVB)%unit_no,*) flow%time, (evb%psi(ff,1)**2, ff=1,flow%NUM_FF)    
+         ! The specified writing format below allows to write a variable number of FFs       
+         Write(files(FILE_POPEVB)%unit_no,'(*(e16.6))') flow%time, (evb%psi(ff,1)**2, ff=1,flow%NUM_FF)    
        End If
     End If
 
@@ -3546,6 +3601,23 @@ Contains
     End Do
 
   End Subroutine evb_merge_stochastic
+
+  Subroutine print_evb_banner(ffnum)
+    Integer,          Intent(In   ) :: ffnum       
+
+    Character(Len=*), Parameter :: fmt1 = '(a)', fmt2  = '(a,i2)'
+
+    Character(Len=256) :: banner(7)
+
+    Write (banner(1), fmt1)  '*******************************************************************'
+    Write (banner(2), fmt1)  '*******************************************************************'
+    Write (banner(3), fmt1)  ' Simulation with the Empirical Valence Bond (EVB) method        '
+    Write (banner(4), fmt1)  '  ' 
+    Write (banner(5), fmt2)  ' Number of Force-Fields (FF) to be coupled ', ffnum
+    Write (banner(6), fmt1)  '*******************************************************************'
+    Write (banner(7), fmt1)  '*******************************************************************'
+    Call info(banner, 7, .true., level=-1)
+  End Subroutine print_evb_banner
 
 End module evb
 

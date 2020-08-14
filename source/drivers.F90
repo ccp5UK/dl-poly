@@ -1,12 +1,4 @@
 Module drivers
-!> Module for driving DL-POLY simulations 
-!>
-!> Copyright - Daresbury Laboratory
-!
-!> Author   - J. Madge    September 2018
-!> contrib  - i.scivetti  October   2019
-!>
-
   Use angles,               Only: angles_forces,&
                                   angles_type
   Use angular_distribution, Only: adf_calculate,&
@@ -32,11 +24,9 @@ Module drivers
   Use constants,            Only: boltz
   Use constraints,          Only: constraints_quench,&
                                   constraints_type
-  ! COORD MODULE
   Use coord,                Only: checkcoord,&
                                   coord_type,&
                                   init_coord_list
-  ! ADF MODULE
   Use core_shell,           Only: SHELL_ADIABATIC,&
                                   SHELL_RELAXED,&
                                   core_shell_forces,&
@@ -65,7 +55,6 @@ Module drivers
   Use errors_warnings,      Only: error,&
                                   info,&
                                   warning
-  ! EVB MODULE
   Use evb,                 Only : evb_type,&
                                   evb_pes,&
                                   read_evb_settings,&
@@ -78,7 +67,8 @@ Module drivers
                                   evb_check_constraints,&
                                   evb_check_configs, &
                                   evb_check_intrinsic, &
-                                  evb_check_vdw
+                                  evb_check_vdw, &
+                                  evb_prevent 
   Use ewald,                Only: ewald_type
   Use external_field,       Only: FIELD_NULL,&
                                   external_field_apply,&
@@ -223,7 +213,6 @@ Module drivers
   Private
 
   Public :: md_vv
-  Public :: md_vv_evb
   Public :: replay_historf
   Public :: replay_history
   Public :: calculate_dftb_forces
@@ -278,7 +267,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!  W_IMPACT_OPTION INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
   End Subroutine impact_option
 
-  Subroutine calculate_forces(cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &
+  Subroutine calculate_forces_for_historf(cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &
                               inversion, tether, threebody, neigh, sites, vdws, tersoffs, fourbody, rdf, netcdf, &
                               minim, mpoles, ext_field, rigid, electro, domain, kim_data, msd_data, tmr, files, &
                               green, devel, ewld, met, seed, thermo, crd, comm)
@@ -572,19 +561,21 @@ Contains
 
     !!!!!!!!!!!!!!!!!!  W_CALCULATE_FORCES INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
-  End Subroutine calculate_forces
+  End Subroutine calculate_forces_for_historf
 
-   Subroutine calculate_forces_evb(evbff, cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral,&
+
+
+  Subroutine calculate_forces_evb(evbff, cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral,&
                                    inversion, tether, threebody, neigh, sites, vdws, tersoffs, fourbody, rdf, netcdf, &
                                    minim, mpoles, ext_field, rigid, electro, domain, kim_data, msd_data, tmr, files,&
                                    green, devel, ewld, met, seed, thermo, crd, comm)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! dl_poly_4 subroutine to calculate energies, forces, stress and virials for a given ionic configuration
-   ! This subroutine is an extension of calculate_forces when two or more FFs are coupled via EVB. Nevertheless,
-   ! it can be well used for a single FF.
+   ! This subroutine is an extension of of the former subroutine calculate_forces that allows coupling up to 
+   ! three FFs are coupled via EVB, and it also works for a single FF
    !
    ! copyright - daresbury laboratory
-   ! author    - i.scivetti January 2020
+   ! contribution - i.scivetti January 2020
    !    
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -663,9 +654,7 @@ Contains
         cnfig(ff)%parts(i)%fyy = 0.0_wp
         cnfig(ff)%parts(i)%fzz = 0.0_wp
       End Do
-     
       stat(ff)%stress = 0.0_wp
-
       If (mpoles(ff)%max_mpoles > 0) Then
         mpoles(ff)%torque_x=0.0_wp ; mpoles(ff)%torque_y=0.0_wp ; mpoles(ff)%torque_z=0.0_wp
       End If
@@ -686,9 +675,7 @@ Contains
       End If
     End Do  
     
-    ! Computation of the intermolecular interactions for each field (metal interactions are computed in two_body
     Do ff = 1, flow%NUM_FF
-
       ! Calculate tersoff forces
 
       If (tersoffs(ff)%n_potential > 0) Call tersoff_forces(tersoffs(ff), stat(ff), neigh(ff), domain(ff), cnfig(ff), comm)
@@ -1917,292 +1904,7 @@ Contains
 
   End Subroutine refresh_output
 
-  Subroutine md_vv(cnfig, ttm, io, rsdc, flow, cshell, cons, pmf, stat, thermo, plume, &
-                   pois, bond, angle, dihedral, inversion, zdensity, neigh, sites, fourbody, rdf, &
-                   netcdf, mpoles, ext_field, rigid, domain, seed, traj, kim_data, files, tmr, &
-                   minim, impa, green, ewld, electro, dfcts, &
-                   msd_data, tersoffs, tether, threebody, vdws, devel, met, crd, adf, comm)
-
-    Type(configuration_type),  Intent(InOut) :: cnfig
-    Type(ttm_type),            Intent(InOut) :: ttm
-    Type(io_type),             Intent(InOut) :: io
-    Type(rsd_type),            Intent(InOut) :: rsdc
-    Type(flow_type),           Intent(InOut) :: flow
-    Type(core_shell_type),     Intent(InOut) :: cshell
-    Type(constraints_type),    Intent(InOut) :: cons
-    Type(pmf_type),            Intent(InOut) :: pmf
-    Type(stats_type),          Intent(InOut) :: stat
-    Type(thermostat_type),     Intent(InOut) :: thermo
-    Type(plumed_type),         Intent(InOut) :: plume
-    Type(poisson_type),        Intent(InOut) :: pois
-    Type(bonds_type),          Intent(InOut) :: bond
-    Type(angles_type),         Intent(InOut) :: angle
-    Type(dihedrals_type),      Intent(InOut) :: dihedral
-    Type(inversions_type),     Intent(InOut) :: inversion
-    Type(z_density_type),      Intent(InOut) :: zdensity
-    Type(neighbours_type),     Intent(InOut) :: neigh
-    Type(site_type),           Intent(InOut) :: sites
-    Type(four_body_type),      Intent(InOut) :: fourbody
-    Type(rdf_type),            Intent(InOut) :: rdf
-    Type(netcdf_param),        Intent(In   ) :: netcdf
-    Type(mpole_type),          Intent(InOut) :: mpoles
-    Type(external_field_type), Intent(InOut) :: ext_field
-    Type(rigid_bodies_type),   Intent(InOut) :: rigid
-    Type(domains_type),        Intent(In   ) :: domain
-    Type(seed_type),           Intent(InOut) :: seed
-    Type(trajectory_type),     Intent(InOut) :: traj
-    Type(kim_type),            Intent(InOut) :: kim_data
-    Type(file_type),           Intent(InOut) :: files(:)
-    Type(timer_type),          Intent(InOut) :: tmr
-    Type(minimise_type),       Intent(InOut) :: minim
-    Type(impact_type),         Intent(InOut) :: impa
-    Type(greenkubo_type),      Intent(InOut) :: green
-    Type(ewald_type),          Intent(InOut) :: ewld
-    Type(electrostatic_type),  Intent(InOut) :: electro
-    Type(defects_type),        Intent(InOut) :: dfcts(:)
-    Type(msd_type),            Intent(InOut) :: msd_data
-    Type(tersoff_type),        Intent(InOut) :: tersoffs
-    Type(tethers_type),        Intent(InOut) :: tether
-    Type(threebody_type),      Intent(InOut) :: threebody
-    Type(vdw_type),            Intent(InOut) :: vdws
-    Type(development_type),    Intent(InOut) :: devel
-    Type(metal_type),          Intent(InOut) :: met
-    Type(coord_type),          Intent(InOut) :: crd
-    Type(adf_type),            Intent(InOut) :: adf
-    Type(comms_type),          Intent(InOut) :: comm
-
-    Integer                     :: heat_flux_unit
-    Real(kind=wp), Dimension(3) :: heat_flux
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
-
-    ! Calculate physical quantities at restart
-    ! Calculate kinetic tensor and energy
-
-    !!!!!!!!!!!!!!!!!!!!!!!  W_AT_START_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
-
-    ! Calculate kinetic tensor and energy at restart
-
-    If (rigid%total > 0) Then
-      Call kinstresf(stat%strknf, cnfig, comm)
-      Call kinstrest(rigid, stat%strknt, comm)
-
-      stat%strkin = stat%strknf + stat%strknt
-    Else
-      Call kinstress(stat%strkin, cnfig, comm)
-    End If
-    stat%engke = 0.5_wp * (stat%strkin(1) + stat%strkin(5) + stat%strkin(9))
-
-    ! If cnfig%levcfg=2 and RBs are present, update forces on shared ones
-    ! and get RB COM stress and virial at restart.  If cnfig%levcfg<2
-    ! forces are calculated at (re)start
-
-    If (cnfig%levcfg == 2) Then
-      If (rigid%total > 0) Then
-        If (rigid%share) Then
-          Call update_shared_units(cnfig, rigid%list_shared, rigid%map_shared, SHARED_UNIT_UPDATE_FORCES, domain, comm)
-        End If
-
-        If (thermo%l_langevin) Then
-          Call langevin_forces(flow%step, thermo%temp, thermo%tstep, thermo%chi, thermo%fxl, &
-                               thermo%fyl, thermo%fzl, cshell, cnfig, seed)
-          If (rigid%share) Then
-            Call update_shared_units(cnfig, rigid%list_shared, rigid%map_shared, &
-                                     thermo%fxl, thermo%fyl, thermo%fzl, domain, comm)
-          End If
-          Call rigid_bodies_stress(stat%strcom, cnfig, rigid, comm, thermo%fxl, thermo%fyl, thermo%fzl)
-        Else
-          Call rigid_bodies_stress(stat%strcom, rigid, cnfig, comm)
-        End If
-
-        stat%vircom = -(stat%strcom(1) + stat%strcom(5) + stat%strcom(9))
-      End If
-    End If
-
-    !!!!!!!!!!!!!!!!!!!!!!!  W_AT_START_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
-
-    ! START OF MOLECULAR DYNAMICS CALCULATIONS
-
-    Do While ((flow%step < flow%run_steps .or. (flow%step == flow%run_steps .and. flow%newjob)) .and. &
-              (tmr%job - tmr%elapsed) > tmr%clear_screen)
-
-      ! Apply impact
-
-      Call impact_option(cnfig%levcfg, flow%step, flow%equil_steps, rigid, cshell, stat, impa, cnfig, comm)
-
-      ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT if needed immediately after restart
-      ! cnfig%levcfg == 2 avoids application twice when forces are calculated at (re)start
-
-      If (flow%newjob) Then
-        If (cnfig%levcfg == 2) Then
-          flow%newjob = .false.
-
-          If (flow%restart_key /= RESTART_KEY_OLD) Then
-            Call write_options(cnfig, io, rsdc, cshell, stat, sites, netcdf, domain, traj, files, dfcts, &
-                               flow, thermo, msd_data, green, neigh, comm)
-          End If
-
-          If (flow%step == 0 .and. flow%step == flow%run_steps) Go To 1000
-        End If
-      End If
-
-      ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
-      If (flow%step >= 0 .and. flow%step < flow%run_steps .and. cnfig%levcfg == 2) Then
-
-        ! Increase step counter
-
-        flow%step = flow%step + 1
-
-        ! zero Kelvin structure optimisation
-
-        If (thermo%l_zero .and. flow%step <= flow%equil_steps .and. Mod(flow%step - flow%equil_steps, thermo%freq_zero) == 0) Then
-          Call zero_k_optimise(stat, rigid, cnfig, comm)
-        End If
-
-        ! Switch on electron-phonon coupling only after flow%time offset
-
-        ttm%l_epcp = (flow%time >= ttm%ttmoffset)
-
-        ! Integrate equations of motion - velocity verlet first stage
-
-        Call integrate_vv(VV_FIRST_STAGE, flow, cnfig, ttm, cshell, cons, pmf, stat, &
-                          thermo, sites, vdws, rigid, domain, seed, tmr, neigh, comm)
-
-        ! Refresh mappings
-
-        Call refresh_mappings(cnfig, flow, cshell, cons, pmf, stat, msd_data, bond, angle, &
-                              dihedral, inversion, tether, neigh, sites, mpoles, rigid, domain, kim_data, ewld, green, minim, &
-                              thermo, electro, crd, comm, tmr)
-
-      End If ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
-
-      ! If system is to write per-particle data AND write step AND not equilibration
-      If (stat%require_pp .and. Mod(flow%step, stat%intsta) == 0 .and. flow%step >= flow%equil_steps) Then
-        Call stat%allocate_per_particle_arrays(cnfig%natms)
-      End If
-
-      ! Evaluate forces
-
-      If (flow%simulation_method /= DFTB) Then
-        Call calculate_forces(cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &
-                              inversion, tether, threebody, neigh, sites, vdws, tersoffs, fourbody, rdf, netcdf, &
-                              minim, mpoles, ext_field, rigid, electro, domain, kim_data, &
-                              msd_data, tmr, files, green, devel, ewld, &
-                              met, seed, thermo, crd, comm)
-      Else If (flow%simulation_method == DFTB) Then
-         Call calculate_dftb_forces(comm, flow, cnfig, devel)
-         !Output forces for app test
-         !TODO(Alex) Remove this in favour of STATIS
-!!$#ifdef DFTBP
-!!$         If(devel%app_test%dftb_library) Then
-!!$            Call output_dftb_forces(comm, flow, cnfig)
-!!$         Endif
-!!$#endif
-      Endif
-
-      ! If system has written per-particle data
-      If (stat%collect_pp) Then
-        heat_flux = calculate_heat_flux(stat, cnfig, comm)
-
-        If (flow%heat_flux .and. comm%idnode == 0) Then
-          Open (Newunit=heat_flux_unit, File='HEATFLUX', Position='append')
-          Write (heat_flux_unit, '(I8.1, 1X, 5(G19.12, 1X))') flow%step, stat%stptmp, cnfig%volm, heat_flux
-          Close (heat_flux_unit)
-        End If
-
-        If (flow%write_per_particle) Then
-          Call write_per_part_contribs(cnfig, comm, stat%pp_energy, stat%pp_stress, flow%step)
-        End If
-
-        Call stat%deallocate_per_particle_arrays()
-      End If
-
-      ! Calculate physical quantities, collect statistics and report at t=0
-
-      If (flow%step == 0) Then
-        Call crd%init_coordlist(neigh%max_list, cnfig%mxatms)
-        Call init_coord_list(cnfig, neigh, crd, sites, flow, comm)
-        Call checkcoord(cnfig, crd, sites, flow, stat, comm) 
-        Call adf_calculate(cnfig, sites, flow, crd, adf, comm)
-        Call statistics_report(cnfig, ttm, cshell, cons, pmf, stat, msd_data, zdensity, &
-                               sites, domain, flow, files, thermo, tmr, green, minim, comm)
-      End If
-
-      ! DO THAT ONLY IF 0<flow%step<=flow%run_steps AND THIS IS AN OLD JOB (flow%newjob=.false.)
-
-      If (flow%step > 0 .and. flow%step <= flow%run_steps .and. (.not. flow%newjob)) Then
-
-        ! Evolve electronic temperature for two-temperature model
-
-        If (ttm%l_ttm) Then
-          Call ttm_ion_temperature(ttm, thermo, domain, cnfig, comm)
-          Call ttm_thermal_diffusion(thermo%tstep, flow%time, flow%step, flow%equil_steps, flow%freq_output, flow%freq_restart, &
-                                     flow%run_steps, ttm, thermo, domain, comm)
-        End If
-
-        ! Integrate equations of motion - velocity verlet second stage
-
-        Call integrate_vv(VV_SECOND_STAGE, flow, cnfig, ttm, cshell, cons, pmf, stat, &
-                          thermo, sites, vdws, rigid, domain, seed, tmr, neigh, comm)
-
-        ! Apply kinetic options
-
-        Call kinetic_options(flow, cnfig, cshell, cons, pmf, stat, sites, ext_field, domain, seed, rigid, thermo, comm)
-
-        ! Update total flow%time of simulation
-
-        flow%time = flow%time + thermo%tstep
-
-        ! Calculate physical quantities, collect statistics and report regularly
-
-        Call statistics_report(cnfig, ttm, cshell, cons, pmf, stat, msd_data, zdensity, &
-                               sites, domain, flow, files, thermo, tmr, green, minim, comm)
-
-        ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
-
-        Call write_options(cnfig, io, rsdc, cshell, stat, sites, netcdf, domain, traj, files, dfcts, &
-                           flow, thermo, msd_data, green, neigh, comm)
-
-        ! Save restart data in event of system crash
-
-        If (Mod(flow%step, flow%freq_restart) == 0 .and. flow%step /= flow%run_steps .and. (.not. devel%l_tor)) Then
-          Call system_revive(neigh%cutoff, flow%step, flow%time, sites, io, flow%start_time, &
-                             stat, devel, green, thermo, bond, angle, dihedral, inversion, zdensity, rdf, &
-                             netcdf, cnfig, files, comm)
-        End If
-        Call init_coord_list(cnfig, neigh, crd, sites, flow, comm)
-        Call checkcoord(cnfig, crd, sites, flow, stat, comm)
-        Call adf_calculate(cnfig, sites, flow, crd, adf, comm)
-      End If ! DO THAT ONLY IF 0<flow%step<=flow%run_steps AND THIS IS AN OLD JOB (flow%newjob=.false.)
-
-      1000 Continue ! Escape forces evaluation at t=0 when flow%step=flow%run_steps=0 and flow%newjob=.false.
-
-      ! Refresh output
-
-      !calls coordination after intial step
-!       call crd%init_coordlist(neigh%max_list,cnfig%mxatms)
-!      Call init_coord_list(cnfig,neigh,crd,sites,flow,comm)
-
-      Call refresh_output(files, flow, tmr, comm)
-
-      ! Complete flow%time check
-
-      Call gtime(tmr%elapsed)
-
-      ! Change cnfig%levcfg appropriately
-
-      If (cnfig%levcfg == 1) cnfig%levcfg = 2
-
-    End Do
-#ifdef EXPERIMENT
-      call mem_picture(files(FILE_OUTPUT)%unit_no, comm)
-#endif
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
-
-  End Subroutine md_vv
-
-  Subroutine md_vv_evb(cnfig,ttm,io,rsdc,flow,cshell,cons,pmf,stat,thermo,plume, &
+  Subroutine md_vv(cnfig,ttm,io,rsdc,flow,cshell,cons,pmf,stat,thermo,plume, &
                        pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
                        netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,files,tmr,&
                        minim,impa,green,ewld,electro,dfcts,&
@@ -2266,11 +1968,14 @@ Contains
     Type(adf_type),            Intent(InOut) :: adf(:)
     Type(comms_type )    ,     Intent(InOut) :: comm
 
-    Type( evb_type )     :: evbff
- 
-    Integer( Kind = wi ) :: ff
-    Logical              :: fregauss
+    Type( evb_type )            :: evbff
+    Integer( Kind = wi )        :: ff
+    Logical                     :: fregauss
 
+    Integer                     :: heat_flux_unit
+    Real(kind=wp), Dimension(3) :: heat_flux
+    
+    
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV_EVB INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
     ! Calculate physical quantities at restart
@@ -2279,42 +1984,33 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!  W_AT_START_VV_EVB INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
     If(flow%NUM_FF>1)Then
+      ! Prevent EVB simulation if there are nonsense settings
+      Call evb_prevent(plume(1)%l_plumed, kim_data(1)%active, ttm(1)%l_ttm, thermo(1)%key_dpd)
       ! Allocate EVB variables
       Call evbff%init(flow%NUM_FF)
       ! Read EVB settings 
       Call read_evb_settings(evbff, flow, sites, files, comm)
- 
       Call info('Start EVB checking for the consistency of:',.True.) 
-
       ! Check consistency of intra-molecular interactions between different force fiels
       ! for atoms that are not part of the EVB site  
       Call evb_check_intramolecular(evbff, flow, sites, bond, angle, dihedral, inversion)
-
       ! Check consistency of inter-molecular interactions 
       Call evb_check_intermolecular(evbff, flow, sites, tersoffs, met, threebody, fourbody)
-
       ! Check external fields
       Call evb_check_external(evbff, flow, ext_field)
-
       ! Check consistency between config files
       Call evb_check_configs(cnfig, flow, comm)
-
       ! Check consistency in the constraint specification between different FFs
       Call evb_check_constraints(evbff, cnfig, cons, cshell, tether, sites, flow, rigid, comm)
-
       ! Check consistency of intrinsic properties for sites 
       Call evb_check_intrinsic(evbff,sites,cnfig,flow,comm)
-
       ! Check consistency of intrinsic properties for sites 
       Call evb_check_vdw(evbff,flow, sites, vdws)
-
       Call info(' ',.True.)
       Call info('EVB checking was successful !',.True.) 
       Call info(' ',.True.)
- 
    End If
     
-
     ! Calculate kinetic tensor and energy at restart
     Do ff = 1, flow%NUM_FF
 
@@ -2417,11 +2113,52 @@ Contains
 
       End If ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
 
+      Do ff = 1, flow%NUM_FF
+      ! If system is to write per-particle data AND write step AND not equilibration
+        If (stat(ff)%require_pp .and. Mod(flow%step, stat(ff)%intsta) == 0 .and. flow%step >= flow%equil_steps) Then
+          Call stat(ff)%allocate_per_particle_arrays(cnfig(ff)%natms)
+        End If
+      End Do 
+        
+      ! Evaluate forces
+
+      If (flow%simulation_method /= DFTB) Then
         Call calculate_forces_evb(evbff, cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &
                                   inversion, tether, threebody,neigh, sites, vdws, tersoffs, fourbody, rdf, netcdf, &
                                   minim, mpoles, ext_field, rigid, electro, domain, kim_data, msd_data, tmr, &
                                   files, green, devel, ewld, met, seed, thermo, crd, comm)
+      Else If (flow%simulation_method == DFTB) Then
+         Call calculate_dftb_forces(comm, flow, cnfig(1), devel)
+         !Output forces for app test
+         !TODO(Alex) Remove this in favour of STATIS
+!!$#ifdef DFTBP
+!!$         If(devel%app_test%dftb_library) Then
+!!$            Call output_dftb_forces(comm, flow, cnfig)
+!!$         Endif
+!!$#endif
+      Endif        
 
+     ! If system has written per-particle data
+      Do ff = 1, flow%NUM_FF
+         If (stat(ff)%collect_pp) Then
+          heat_flux = calculate_heat_flux(stat(ff), cnfig(ff), comm)
+
+          If (flow%heat_flux .and. comm%idnode == 0) Then
+            If(ff==1)Then      
+              Open (Newunit=heat_flux_unit, File='HEATFLUX', Position='append')
+              Write (heat_flux_unit, '(I8.1, 1X, 5(G19.12, 1X))') flow%step, stat(ff)%stptmp, cnfig(ff)%volm, heat_flux
+              Close (heat_flux_unit)
+            End If 
+          End If
+
+          If (flow%write_per_particle) Then
+            Call write_per_part_contribs(cnfig(ff), comm, stat(ff)%pp_energy, stat(ff)%pp_stress, flow%step)
+          End If
+
+          Call stat(ff)%deallocate_per_particle_arrays()
+        End If
+      End Do
+      
       ! Calculate physical quantities, collect statistics and report at t=0
       If (flow%step == 0) Then
         Do ff = 1, flow%NUM_FF
@@ -2538,9 +2275,12 @@ Contains
       End If  
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV_EVB INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
+#ifdef EXPERIMENT
+      call mem_picture(files(FILE_OUTPUT)%unit_no, comm)
+#endif
 
 
-  End Subroutine md_vv_evb
+  End Subroutine md_vv
 
   Subroutine replay_history(cnfig, io, rsdc, flow, cshell, cons, pmf, stat, thermo, msd_data, &
                             met, pois, bond, angle, dihedral, inversion, zdensity, neigh, sites, vdws, rdf, &
@@ -3158,10 +2898,10 @@ Contains
 
           ! Evaluate forces, flow%newjob must always be true for vircom evaluation
 
-          Call calculate_forces(cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &
-                                inversion, tether, threebody, neigh, sites, vdws, tersoffs, fourbody, rdf, &
-                                netcdf, minim, mpoles, ext_field, rigid, electro, domain, kim_data, msd_data, tmr, files, &
-                                green, devel, ewld, met, seed, thermo, crd, comm)
+          Call calculate_forces_for_historf(cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &
+                                          inversion, tether, threebody, neigh, sites, vdws, tersoffs, fourbody, rdf, &
+                                          netcdf, minim, mpoles, ext_field, rigid, electro, domain, kim_data, msd_data, &
+                                          tmr, files, green, devel, ewld, met, seed, thermo, crd, comm)
 
           ! Evaluate kinetics if available
 

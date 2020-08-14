@@ -37,8 +37,8 @@ Module flow_control
   Integer(Kind=wi), Parameter, Public :: RESTART_KEY_SCALE = 2
   !> Unscaled restart
   Integer(Kind=wi), Parameter, Public :: RESTART_KEY_NOSCALE = 3
-  !> Simulation type keys: STD
-  Integer(Kind=wi), Parameter, Public :: MD = 1
+  !> Simulation type keys: MD_STD
+  Integer(Kind=wi), Parameter, Public :: MD_STD = 1
   !> Simulation type keys: EVB
   Integer(Kind=wi), Parameter, Public :: EmpVB = 2
   !> Simulation type keys: FFS
@@ -109,7 +109,7 @@ Module flow_control
     !> Reset padding flag
     Logical, Public :: reset_padding
     !> Type of Simulation we perform
-    Integer, Public          :: simulation_method = MD
+    Integer, Public          :: simulation_method = MD_STD
     !> MD step that DL_POLY starts at
     Integer, Public          :: initial_md_step = 0
     !> Define number of force-fields to be coupled
@@ -177,7 +177,7 @@ Contains
       ! If CONTROL file is not found, set the following variables and return.
       ! DL_POLY will later abort by printing an error message
       ! At this stage we cannot stop the execution because OUTPUT has not been opened yet
-      flow%simulation_method=MD
+      flow%simulation_method=MD_STD
       flow%NUM_FF = 1 
       Return
     Else
@@ -216,7 +216,7 @@ Contains
   
       If(stdtype)Then
       ! Set standard option
-        flow%simulation_method=MD
+        flow%simulation_method= MD_STD
         flow%NUM_FF = 1 
       End If         
   
