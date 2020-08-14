@@ -14,6 +14,7 @@ Module mpi_api
   ! contrib   - m.a.seaton june 2017
   ! refactoring:
   !           - a.m.elena march-october 2018
+
   !           - j.madge march-october 2018
   !           - a.b.g.chalk march-october 2018
   !           - i.scivetti march-october 2018
@@ -21,14 +22,13 @@ Module mpi_api
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use asserts,  Only: assert
-  Use kinds,    Only: li,&
-                      si,&
+  Use kinds,    Only: li, qp,&
+                      ni, dp,&
+                      si, sp,&
                       wp
   Use particle, Only: corePart
 
   Implicit None
-
-  Include 'mpif.h' !  Include 'mpiof.h' ! Needed for ScaliMPI
 
   ! MPI thread level support
   Integer, Parameter   :: MPI_THREAD_FUNNELED = 0
@@ -41,14 +41,44 @@ Module mpi_api
   ! MPI-I/O kind = high-precision integer 'kinds, only : wp' module
 
   Integer, Parameter   :: MPI_OFFSET_KIND = li
+  Integer, Parameter   :: MPI_INTEGER = ni
+  Integer, Parameter   :: MPI_REAL = sp
+  Integer, Parameter   :: MPI_DOUBLE_PRECISION = dp
+  Integer, Parameter   :: MPI_DOUBLE_COMPLEX = 2*dp
+  Integer, Parameter   :: MPI_REAL16 = qp
+  Integer, Parameter   :: MPI_LOGICAL = ni
+  Integer, Parameter   :: MPI_CHARACTER = 1
+  Integer, Parameter   :: MPI_UNDEFINED = -1
 
   ! MPI-I/O info
 
-  Integer, Save        :: MPI_INFO_NULL = 0
+  Integer                  :: MPI_INFO_NULL = 0
+  Integer, Parameter       :: MPI_COMM_NULL = 0
+  Integer, Parameter       :: MPI_COMM_SElF = 0
+  Integer, Parameter       :: MPI_COMM_WORLD = 0
 
   ! MPI-I/O bookkeeping
 
+  Integer, Parameter        :: MPI_STATUS_SIZE                                   = 0
+  Integer, Parameter        :: MPI_MAX_PROCESSOR_NAME                            = 100
+  Integer, Parameter        :: MPI_MAX_LIBRARY_VERSION_STRING                    = 100
   Integer, Parameter                                               :: mpi_io_max = 64
+  Integer, Parameter        :: MPI_MODE_RDONLY          =     10,&
+                               MPI_MODE_WRONLY          =     20,&
+                               MPI_MODE_CREATE          =      1
+  ! MPI operations
+  Integer, Parameter, Public :: MPI_SUM = 0, &
+                                MPI_MAX = 0, &
+                                MPI_MIN = 0, &
+                                MPI_PROD = 0, &
+                                MPI_LAND = 0, &
+                                MPI_BAND = 0, &
+                                MPI_LOR = 0, &
+                                MPI_BOR = 0, &
+                                MPI_LXOR = 0, &
+                                MPI_BXOR = 0, &
+                                MPI_MAXLOC = 0, &
+                                MPI_MINLOC = 0
   Integer, Save :: mpi_io_cnt = 1
   Integer, Dimension(1:mpi_io_max), Save :: mpi_io_rec_len = 0
   Integer, Dimension(1:mpi_io_max), Save :: mpi_io_etype = 0
