@@ -1,6 +1,39 @@
 Release notes for DL_POLY_4
 ===========================
 
+Version 4.10.0: August 2020
+---------------------------
+
++ Improvements, updates, new features:
+  + totally refactores DL_POLY_4, using OOP principles and modern software engineering
+  + new SPME to allow per particle calculations for various quantities as stress and energy, see pp_dump
+  + new IO systems, almost all the usual files now can be customised
+  + a new method to compute neighbour lists that can offer non-neglijable speedups for certain soft-matter systems, use
+    -DWITH_HALF_HALO to activate
+  + set bouunds is totally rewritten allowing clearer understanding of how various buffer sizes are computed
+  + statis file structure changed, amsd and stress are swapped in the arrays now
+  + yaml formats for statis and rdf, see yml_statis and yml_rdf keywords in control
+  + new timing reporting in OUPUT
+  + n(r) is not printed in RDFDAT rather that OUTPUT files
+  + OUTPUT is cleaned up, with verbosity level  option added, see l_print
+  + automatic regression testing is extented from 28 tests to 169
+  + unit testing infrastructure added
+  + openkim 2.0 api support
+  + plumed and openkim now are installed by default for the user
+  + easybuild templates available for easy deployment on hpc clusters
+  + angular distribution function added for on the fly calculations
+  + on the fly coordination calculation for radiation damage simulations
+  + current calculations
+  + new potentials available, ZBL, calcite Raitieri tappered, Generalised Lennard Jones by Frenkel, etc...
+
++ BUg fixes:
+
+  + fix array bounds in tersoff potential
+  + boundaries in stochastic thermostat work correctly now
+  + TTM fixes for cell shape and integrator stability
+  + fix for core-shell infrequent bug
+
+
 Version 4.09.4: March 2020
 -----------------------------
 
@@ -62,7 +95,7 @@ Version 4.09: September 2018
 
 + New features, functionality, (re)implementations, etc.
   + new VDW potentials
-    + modified morse 
+    + modified morse
     + Ziegler-Biersack-Littmark, ZBL, ZBL mixed with Morse and Buckingham
     + Mei-Devenport-Fernando taper for Lennard-Jones, 12-6 and Buckingham
     + Rydberg
