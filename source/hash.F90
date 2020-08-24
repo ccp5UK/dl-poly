@@ -413,9 +413,11 @@ Contains
     Class(hash_table), Intent( InOut ) :: table
     Class(hash_table), Pointer :: table_temp
     Integer, Intent( In    ) :: new_size
+    Integer :: ierr
 
     if (new_size > table%size) then
-       allocate(table_temp)
+       allocate(table_temp, stat=ierr)
+       if (ierr.ne.0) call error_alloc('table_temp', 'expand_table')
        call table_temp%copy(table)
        call table%resize(new_size)
        call table%fill(table_temp)
