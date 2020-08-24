@@ -297,7 +297,6 @@ contains
       call error(0, 'Cannot convert between '//trim(param%units)//' & '//trim(param%internal_units)//' different dimensions')
     end if
 
-
   End Subroutine retrieve_float
 
   Subroutine retrieve_vector_real(table, key, output, required)
@@ -448,9 +447,9 @@ contains
     Character(Len=*), Intent( In    ) :: key
     Type(control_parameter), Intent(   Out ) :: val
     Type(control_parameter), Intent( In    ), Optional :: default
-    Class( * ), Allocatable :: stuff
+    Class( * ), Pointer :: stuff
 
-    stuff = table%get_cont(key, default)
+    call table%get_cont(key, default, stuff)
 
     Select Type( stuff )
     Type is ( control_parameter )
@@ -458,6 +457,8 @@ contains
     Class Default
        Call error(0, 'Trying to get control_param from a not control_param')
     End Select
+    deallocate(stuff)
+    nullify(stuff)
 
   End Subroutine get_param
 

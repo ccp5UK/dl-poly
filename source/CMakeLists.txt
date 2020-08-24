@@ -110,7 +110,6 @@ set(dlpoly_SRCS
 
   control_parameter.F90
   new_control.F90
-  new_control_old_style.F90
   hash.F90
   units.F90
 

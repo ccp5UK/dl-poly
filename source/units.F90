@@ -259,6 +259,9 @@ contains
     Type( unit_data ) :: from_unit, to_unit
     Type( unit_data ) :: output
 
+    if (present(stat)) then
+      stat = .true.
+    end if
 
     output = output%init("", "", 1.0_wp)
     from_unit = parse_unit_string(from)
@@ -554,9 +557,9 @@ contains
     Character(Len=*), Intent( In    ) :: key
     type(unit_data)            , Intent(   Out ) :: val
     type(unit_data), Intent( In    ), Optional :: default
-    Class( * ), Allocatable :: stuff
+    Class( * ), Pointer :: stuff
 
-    stuff = table%get_cont(key, default)
+    call table%get_cont(key, default, stuff)
 
     Select Type( stuff )
     Type is ( unit_data )
@@ -564,6 +567,8 @@ contains
     Class Default
        Call error(0, 'Trying to get unit from a not unit')
     End Select
+    deallocate(stuff)
+    nullify(stuff)
 
   End Subroutine get_unit
 

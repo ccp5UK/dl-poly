@@ -21,7 +21,7 @@ Module hash
   Type, Public :: container
      !! Generic data container
      Private
-     Class( * ), Allocatable, Private :: data
+     Class( * ), Pointer, Private :: data => Null()
    Contains
 !     Generic, Public :: Assignment( = ) => set, get
      Procedure,            Private :: set => set_container
@@ -63,7 +63,7 @@ Module hash
 
   Public :: MAX_KEY, STR_LEN
   Public :: get_int, get_double, get_complex
-  
+
 Contains
 
   Subroutine set_container( C, stuff )
@@ -80,7 +80,8 @@ Contains
     Class( container ), Intent( InOut ) :: C
     Class( *         ), Intent( In    ) :: stuff
 
-    C%data = stuff
+    if (associated(C%data)) Deallocate(C%data)
+    Allocate(C%data, source=stuff)
 
   End Subroutine set_container
 
@@ -96,9 +97,9 @@ Contains
     Implicit None
 
     Class( container ),              Intent( In    ) :: C
-    Class( *         ), Allocatable, Intent(   Out ) :: stuff
+    Class( *         ), Pointer, Intent(   Out ) :: stuff
 
-    stuff = C%data
+    Allocate(stuff, source=C%data)
 
   End Subroutine get_container
 
@@ -112,6 +113,15 @@ Contains
     !!-----------------------------------------------------------------------
     Type(hash_table), Intent( InOut ) :: table
     Integer :: ierr
+    Integer :: i
+
+    do i = 1, table%size
+      if (table%table_keys(i) /= BAD_VAL) then
+        Deallocate(table%table_data(i)%data, stat=ierr)
+        Nullify(table%table_data(i)%data)
+        If (ierr /= 0) call error_dealloc("hash%table_data element", "cleanup hash table")
+      end if
+    end do
 
     if (allocated(table%table_data)) then
        Deallocate(table%table_data, stat=ierr)
@@ -246,7 +256,7 @@ Contains
 
   End Function contains_value
 
-  Function get_hash_value(table, input, default) result(output)
+  Subroutine get_hash_value(table, input, default, output)
     !!-----------------------------------------------------------------------
     !!
     !! Retrieve stored value from hash table
@@ -257,8 +267,8 @@ Contains
     Class(hash_table), Intent( In     ) :: table
     Character(Len=*), Intent( In    ) :: input
     Integer :: location
-    Class(*), Intent( In     ), Optional :: default
-    Class(*), Allocatable :: output
+    Class(*), Intent( In    ), Optional :: default
+    Class(*), Intent(   Out ), Pointer :: output
 
     if (.not. table%allocated) call error(0, 'Attempting to get from unallocated table')
 
@@ -267,14 +277,14 @@ Contains
     if (table%table_keys(location) == input) then
       call table%table_data(location)%get(output)
     else
-       if (present(default)) then
-          output = default
-       else
-          call error(0, 'No data pertaining to key '//trim(input)//' in table')
-       end if
+      if (present(default)) then
+        Allocate(output, source = default)
+      else
+        call error(0, 'No data pertaining to key '//trim(input)//' in table')
+      end if
     end if
 
-  End Function get_hash_value
+  End Subroutine get_hash_value
 
   Subroutine set_hash_value(table, key, input)
     !!-----------------------------------------------------------------------
@@ -430,16 +440,19 @@ Contains
     Character(Len=*), Intent( In    ) :: key
     Integer               , Intent(   Out ) :: val
     Integer, Intent( In    ), Optional :: default
-    Class( * ), Allocatable :: stuff
+    Class( * ), Pointer :: stuff
 
-    stuff = table%get_cont(key, default)
+    call table%get_cont(key, default, stuff)
 
     Select Type( stuff )
     Type is ( Integer )
-       val = stuff
+      val = stuff
     Class Default
        Call error(0, 'Trying to get integer from a not integer')
     End Select
+
+    deallocate(stuff)
+    nullify(stuff)
 
   End Subroutine get_int
 
@@ -457,16 +470,19 @@ Contains
     Character(Len=*), Intent( In    ) :: key
     Real(kind=wp), Intent( In    ), Optional :: default
     Real(kind=wp)               , Intent(   Out ) :: val
-    Class( * ), Allocatable :: stuff
+    Class( * ), Pointer :: stuff
 
-    stuff = table%get_cont(key, default)
+    call table%get_cont(key, default, stuff)
 
     Select Type( stuff )
     Type is ( Real( wp ) )
-       val = stuff
+      val = stuff
     Class Default
        Call error(0, 'Trying to get real from a not real')
     End Select
+
+    deallocate(stuff)
+    nullify(stuff)
 
   End Subroutine get_double
 
@@ -484,18 +500,21 @@ Contains
     Character(Len=*), Intent( In    ) :: key
     Complex(kind=wp)               , Intent(   Out ) :: val
     Complex(kind=wp), Intent( In    ), Optional :: default
-    Class( * ), Allocatable :: stuff
+    Class( * ), Pointer :: stuff
 
-    stuff = table%get_cont(key, default)
+    call table%get_cont(key, default, stuff)
 
     Select Type( stuff )
     Type is ( Complex( wp ) )
-       val = stuff
+      val = stuff
     Class Default
        Call error(0, 'Trying to get complex from a not complex')
     End Select
 
+    deallocate(stuff)
+    nullify(stuff)
   End Subroutine get_complex
+
 
   Subroutine fix_table(table)
     Class( hash_table ), Intent( InOut ) :: table

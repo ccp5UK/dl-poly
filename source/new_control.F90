@@ -1456,7 +1456,7 @@ contains
     end if
 
     neigh%cutoff = Max(neigh%cutoff, vdws%cutoff, met%rcut, kim_data%cutoff, bond%rcut, &
-         2.0_wp * tersoffs%cutoff + 1.0e-6_wp, kim_data%influence_distance)
+         2.0_wp * tersoffs%cutoff + 1.0e-6_wp)
 
     if (threebody%mxtbp > 0 .and. threebody%cutoff < 1.0e-6_wp) then
       call warning('three body cutoff not set, setting to half of global cutoff', .true.)
@@ -1506,7 +1506,7 @@ contains
       electro%key = ELECTROSTATIC_NULL
     case ('ewald')
       electro%key = ELECTROSTATIC_EWALD
-      ! ewld%active = .true.
+      ewld%active = .true.
 
     case ('dddp')
       electro%key = ELECTROSTATIC_DDDP
@@ -1538,22 +1538,94 @@ contains
       call error(0, 'Both damping and precision set')
 
     else if (params%is_set('coul_damping')) then
-      call params%retrieve('coul_damping', electro%alpha)
+      call params%retrieve('coul_damping', electro%damping)
 
     else if (params%is_set('coul_precision')) then
       call params%retrieve('coul_precision', rtmp)
       rtmp = Max(Min(rtmp, 0.5_wp), 1.0e-20_wp)
       tol = Sqrt(Abs(Log(rtmp * neigh%cutoff)))
-      electro%alpha = Sqrt(Abs(Log(rtmp * neigh%cutoff * tol))) / neigh%cutoff
+      electro%damping = Sqrt(Abs(Log(rtmp * neigh%cutoff * tol))) / neigh%cutoff
 
     end if
 
-    If (electro%alpha > zero_plus) Then
+    If (electro%damping > zero_plus) Then
       Call info('Fennell damping applied', .true.)
       If (neigh%cutoff < 12.0_wp) Call warning(7, neigh%cutoff, 12.0_wp, 0.0_wp)
     End If
 
-    If (electro%key == ELECTROSTATIC_EWALD) Then
+    ! If (electro%key == ELECTROSTATIC_EWALD) Then
+
+    !   cell = config%cell
+    !   cut = neigh%cutoff + 1e-6_wp
+
+    !   if (config%imcon == IMCON_NOPBC) then
+    !     cell(1) = Max(2.0_wp*xhi+cut,3.0_wp*cut,cell(1))
+    !     cell(5) = Max(2.0_wp*yhi+cut,3.0_wp*cut,cell(5))
+    !     cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
+
+    !     cell(2) = 0.0_wp
+    !     cell(3) = 0.0_wp
+    !     cell(4) = 0.0_wp
+    !     cell(6) = 0.0_wp
+    !     cell(7) = 0.0_wp
+    !     cell(8) = 0.0_wp
+    !   else if (config%imcon == IMCON_SLAB) then
+    !     cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
+    !   End If
+    !   Call dcell(cell,cell_properties)
+
+    !   call params%retrieve('ewald_nsplines', ewld%bspline)
+
+    !   if (params%is_set([Character(Len=15) :: 'ewald_precision', 'ewald_alpha'])) then
+
+    !     call error(0, 'Cannot specify both precision and manual ewald parameters')
+
+    !   else if (params%is_set('ewald_alpha')) then
+
+    !     call params%retrieve('ewald_alpha', electro%alpha)
+
+    !     if (params%is_set([Character(Len=18) :: 'ewald_kvec', 'ewald_kvec_spacing'])) then
+
+    !       call error(0, 'Cannot specify both explicit k-vec grid and k-vec spacing')
+    !     else if (params%is_set('ewald_kvec')) then
+
+    !       call params%retrieve('ewald_kvec', vtmp)
+
+    !       ewld%fft_dim_a1 = Nint(vtmp(1))
+    !       ewld%fft_dim_b1 = Nint(vtmp(2))
+    !       ewld%fft_dim_c1 = Nint(vtmp(3))
+
+    !     else
+
+    !       call params%retrieve('ewald_kvec_spacing', rtmp)
+
+    !       ewld%fft_dim_a1 = Nint(rtmp / cell_properties(1))
+    !       ewld%fft_dim_b1 = Nint(rtmp / cell_properties(2))
+    !       ewld%fft_dim_c1 = Nint(rtmp / cell_properties(3))
+    !     end if
+
+    !     ! Sanity check for ill defined ewald sum parameters 1/8*2*2*2 == 1
+    !     tol = electro%alpha * Real(ewld%fft_dim_a1, wp) * Real(ewld%fft_dim_a1, wp) * Real(ewld%fft_dim_a1, wp)
+    !     If (Nint(tol) < 1) Call error(9)
+
+    !   else
+
+    !     call params%retrieve('ewald_precision', eps0)
+    !     if (eps0 > 0.5_wp .or. eps0 < 1e-20_wp) &
+    !          call error(0, 'ewald_precision outside permitted range (10^-20 < ewald_precision < 0.5)')
+
+    !     tol = Sqrt(Abs(Log(eps0*neigh%cutoff)))
+    !     electro%alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
+    !     tol1 = Sqrt(-Log(eps0*neigh%cutoff*(2.0_wp*tol*electro%alpha)**2))
+
+    !     ewld%fft_dim_a1 = 2 * Nint(0.25_wp + cell_properties(7) * electro%alpha * tol1 / pi)
+    !     ewld%fft_dim_b1 = 2 * Nint(0.25_wp + cell_properties(8) * electro%alpha * tol1 / pi)
+    !     ewld%fft_dim_c1 = 2 * Nint(0.25_wp + cell_properties(9) * electro%alpha * tol1 / pi)
+
+    !   end if
+    ! End If
+
+    if (ewld%active) then
 
       cell = config%cell
       cut = neigh%cutoff + 1e-6_wp
@@ -1572,117 +1644,45 @@ contains
       else if (config%imcon == IMCON_SLAB) then
         cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
       End If
+
+      call params%retrieve('ewald_nsplines', ewld%bspline%num_splines)
       Call dcell(cell,cell_properties)
 
-      call params%retrieve('ewald_nsplines', ewld%bspline)
-
-      if (params%is_set([Character(Len=15) :: 'ewald_precision', 'ewald_alpha'])) then
+      if (params%is_set([Character(15) :: 'ewald_precision', 'ewald_alpha'])) then
 
         call error(0, 'Cannot specify both precision and manual ewald parameters')
 
       else if (params%is_set('ewald_alpha')) then
 
-        call params%retrieve('ewald_alpha', electro%alpha)
-
-        if (params%is_set([Character(Len=18) :: 'ewald_kvec', 'ewald_kvec_spacing'])) then
+        call params%retrieve('ewald_alpha', ewld%alpha)
+        if (params%is_set([character(18) :: 'ewald_kvec', 'ewald_kvec_spacing'])) then
 
           call error(0, 'Cannot specify both explicit k-vec grid and k-vec spacing')
         else if (params%is_set('ewald_kvec')) then
 
-          call params%retrieve('ewald_kvec', vtmp)
-
-          ewld%fft_dim_a1 = Nint(vtmp(1))
-          ewld%fft_dim_b1 = Nint(vtmp(2))
-          ewld%fft_dim_c1 = Nint(vtmp(3))
-
+          call params%retrieve('ewald_kvec', ewld%kspace%k_vec_dim_cont)
         else
 
           call params%retrieve('ewald_kvec_spacing', rtmp)
-
-          ewld%fft_dim_a1 = Nint(rtmp / cell_properties(1))
-          ewld%fft_dim_b1 = Nint(rtmp / cell_properties(2))
-          ewld%fft_dim_c1 = Nint(rtmp / cell_properties(3))
+          ewld%kspace%k_vec_dim_cont = Nint(rtmp / cell_properties(7:9))
         end if
 
         ! Sanity check for ill defined ewald sum parameters 1/8*2*2*2 == 1
-        tol = electro%alpha * Real(ewld%fft_dim_a1, wp) * Real(ewld%fft_dim_a1, wp) * Real(ewld%fft_dim_a1, wp)
-        If (Nint(tol) < 1) Call error(9)
+        tol=ewld%alpha*real(product(ewld%kspace%k_vec_dim_cont), wp)
+        If (Int(tol) < 1) Call error(9)
 
       else
 
         call params%retrieve('ewald_precision', eps0)
-        if (eps0 > 0.5_wp .or. eps0 < 1e-20_wp) &
-             call error(0, 'ewald_precision outside permitted range (10^-20 < ewald_precision < 0.5)')
 
         tol = Sqrt(Abs(Log(eps0*neigh%cutoff)))
-        electro%alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
-        tol1 = Sqrt(-Log(eps0*neigh%cutoff*(2.0_wp*tol*electro%alpha)**2))
+        ewld%alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
+        tol1 = Sqrt(-Log(eps0*neigh%cutoff*(2.0_wp*tol*ewld%alpha)**2))
 
-        ewld%fft_dim_a1 = 2 * Nint(0.25_wp + cell_properties(7) * electro%alpha * tol1 / pi)
-        ewld%fft_dim_b1 = 2 * Nint(0.25_wp + cell_properties(8) * electro%alpha * tol1 / pi)
-        ewld%fft_dim_c1 = 2 * Nint(0.25_wp + cell_properties(9) * electro%alpha * tol1 / pi)
+        ewld%kspace%k_vec_dim_cont = 2*Nint(0.25_wp + cell_properties(7:9)*ewld%alpha*tol1/pi)
 
       end if
-    End If
-
-    ! if (ewld%active) then
-    !! Remember to reset after merge
-
-    ! cut = neigh%cutoff + 1e-6_wp
-
-    ! if (imcon == IMCON_NOPBC) then
-    !    cell(1) = Max(2.0_wp*xhi+cut,3.0_wp*cut,cell(1))
-    !    cell(5) = Max(2.0_wp*yhi+cut,3.0_wp*cut,cell(5))
-    !    cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
-
-    !    cell(2) = 0.0_wp
-    !    cell(3) = 0.0_wp
-    !    cell(4) = 0.0_wp
-    !    cell(6) = 0.0_wp
-    !    cell(7) = 0.0_wp
-    !    cell(8) = 0.0_wp
-    ! else if (imcon == IMCON_SLAB) then
-    !    cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
-    ! End If
-
-    ! call params%retrieve('ewald_nsplines', ewld%bspline%num_splines)
-    ! Call dcell(cell,cell_properties)
-
-    ! if (params%is_set(['ewald_precision', 'ewald_alpha'])) then
-
-    !    call error(0, 'Cannot specify both precision and manual ewald parameters')
-
-    ! else if (params%is_set('ewald_alpha')) then
-
-    !    call params%retrieve('ewald_alpha', ewld%alpha)
-    !    if (params%is_set(['ewald_kvec', 'ewald_kvec_spacing'])) then
-
-    !       call error(0, 'Cannot specify both explicit k-vec grid and k-vec spacing')
-    !    else if (params%is_set('ewald_kvec')) then
-
-    !       call params%retrieve('ewald_kvec', ewld%kspace%k_vec_dim_cont)
-    !    else
-
-    !       call params%retrieve('ewald_kvec_spacing', rtmp)
-    !       ewld%kspace%k_vec_dim_cont = Nint(rtmp / cell_properties(7:9))
-    !    end if
-
-    !    ! Sanity check for ill defined ewald sum parameters 1/8*2*2*2 == 1
-    !    tol=ewld%alpha*real(product(ewld%kspace%k_vec_dim_cont), wp)
-    !    If (Int(tol) < 1) Call error(9)
-
-    ! else
-
-    !    call params%retrieve('ewald_precision', eps0)
-
-    !    tol = Sqrt(Abs(Log(eps0*neigh%cutoff)))
-    !    ewld%alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
-    !    tol1 = Sqrt(-Log(eps0*neigh%cutoff*(2.0_wp*tol*ewld%alpha)**2))
-
-    !    ewld%kspace%k_vec_dim_cont = 2*Nint(0.25_wp + cell_properties(7:9)*ewld%alpha*tol1/pi)
-
-    ! end if
-    ! end if
+    end if
 
   End Subroutine read_forcefield
 
@@ -2601,14 +2601,14 @@ contains
 
       Call info('  Electrostatics : Smooth Particle Mesh Ewald', .true.)
 
-      Write (messages(1), '(a,1p,e12.4)') '  -- Ewald convergence parameter (A^-1) ', electro%alpha
-      Write (messages(2), '(a,3i5)') '  -- Ewald kmax1 kmax2 kmax3   (x2) ', ewld%fft_dim_a1, ewld%fft_dim_b1, ewld%fft_dim_c1
-      If (ewld%fft_dim_a /= ewld%fft_dim_a1 .or. ewld%fft_dim_b /= ewld%fft_dim_b1 .or. ewld%fft_dim_c /= ewld%fft_dim_c1) Then
-        Write (messages(3), '(a,3i5)') '  -- DaFT adjusted kmax values (x2) ', ewld%fft_dim_a, ewld%fft_dim_b, ewld%fft_dim_c
-        Write (messages(4), '(a,1p,i5)') '  -- B-spline interpolation order ', ewld%bspline
+      Write (messages(1), '(a,1p,e12.4)') '  -- Ewald convergence parameter (A^-1) ', ewld%alpha
+      Write (messages(2), '(a,3i5)') '  -- Ewald kmax1 kmax2 kmax3   (x2) ', ewld%kspace%k_vec_dim_cont
+      if (any(ewld%kspace%k_vec_dim /= ewld%kspace%k_vec_dim_cont)) then
+        Write (messages(3), '(a,3i5)') '  -- DaFT adjusted kmax values (x2) ', ewld%kspace%k_vec_dim
+        Write (messages(4), '(a,1p,i5)') '  -- B-spline interpolation order ', ewld%bspline%num_splines
         Call info(messages, 4, .true.)
       Else
-        Write (messages(3), '(a,1p,i5)') '  -- B-spline interpolation order ', ewld%bspline
+        Write (messages(3), '(a,1p,i5)') '  -- B-spline interpolation order ', ewld%bspline%num_splines
         Call info(messages, 3, .true.)
       end If
 
@@ -2633,9 +2633,9 @@ contains
       end if
 
       !! Fix with electro merge
-      If (electro%key /= ELECTROSTATIC_EWALD .and. electro%alpha > zero_plus) Then
+      If (electro%key /= ELECTROSTATIC_EWALD .and. electro%damping > zero_plus) Then
         Call info('  -- Fennell damping applied', .true.)
-        Write (message, '(a,1p,e12.4)') '  -- Damping parameter (A^-1) ', electro%alpha
+        Write (message, '(a,1p,e12.4)') '  -- Damping parameter (A^-1) ', electro%damping
         Call info(message, .true.)
       End If
 

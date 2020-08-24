@@ -154,8 +154,6 @@ Module meta
 
   ! HACK
   Use control_parameter_module, Only : parameters_hash_table
-  Use new_control_old_style, Only : setup_file_io, scan_new_control_output_old, &
-       read_new_control_old
 
   Implicit None
   Private
@@ -754,6 +752,7 @@ Contains
     Type(coord_type),          Intent(InOut) :: crd
     Type(adf_type),            Intent(InOut) :: adf
 
+    Real(kind=wp)      :: s
     Character(len=256) :: message
     Integer(Kind=wi)   :: vacuum
     Logical            :: lfce

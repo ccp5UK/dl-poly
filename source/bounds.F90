@@ -12,7 +12,8 @@ Module bounds
                              IMCON_TRUNC_OCTO,&
                              configuration_type,&
                              read_config,&
-                             scan_config
+                             scan_config,&
+                             setup_cell_props
   Use constants,       Only: delr_max,&
                              delth_max,&
                              pi,&
@@ -74,7 +75,6 @@ Module bounds
 
   !Hack
   Use control_parameter_module, Only : parameters_hash_table
-  Use new_control_old_style, Only : scan_new_control_pre_old, scan_new_control_old
 
   Implicit None
 
@@ -156,6 +156,7 @@ Contains
 
       If (neigh%cutoff >= config%width / 2.0_wp) Then
         Call warning(3, neigh%cutoff, config%width / 2.0_wp, 0.0_wp)
+
         If (.not. devel%l_trm) Then
           Call error(95)
         End If
@@ -176,7 +177,7 @@ Contains
     !!! GRIDDING PARAMETERS !!!
 
     call setup_grids(config, neigh, vdws, met, tersoffs, bond, angle, dihedral, inversion, ext_field, &
-       electro, zdensity, rdf, mxgrid)
+       electro, ewld, zdensity, rdf, mxgrid)
 
     ! DD PARAMETERS - by hypercube mapping of MD cell onto machine resources
     ! Dependences: MD cell config%widths (explicit) and machine resources (implicit)
