@@ -3859,8 +3859,8 @@ Contains
             If (vdws%mixing /= MIX_NULL) Then
 
               If (flow%print_topology .or. thermo%key_dpd /= DPD_NULL) Then
-                If (thermo%key_dpd /= DPD_NULL) Then
-                  Call info('vdw potential mixing under testing...', .true.)
+                If (thermo%key_dpd == DPD_NULL) Then
+                  Call info('vdw potential mixing under testing... internal units', .true.)
                 Else
                   Call info('dpd potential mixing under testing...', .true.)
                 End If
@@ -3879,9 +3879,10 @@ Contains
                     If (vdws%list(jsite) <= vdws%n_vdw) Then ! if it exists
                       ja = vdws%ltp(vdws%list(jsite))
                       If (ia == ja .and. & ! only if of the same type
-                          (ia == 1 .or. ia == 2 .or. & ! and the type is allowed mixing
-                           ia == 9 .or. ia == 10 .or. & ! LJ, 12-6, WCA, DPD, 14-7, LJC
-                           ia == 11 .or. ia == 12)) Then
+                          (ia == VDW_LENNARD_JONES .or. ia == VDW_12_6 .or. & ! and the type is allowed mixing
+                           ia == VDW_LENNARD_JONES_COHESIVE .or. ia == VDW_WCA .or. & ! LJ, 12-6, WCA, DPD, 14-7, LJC
+                           ia == VDW_DPD .or. ia == VDW_AMOEBA .or. &
+                           ia == VDW_LJ_MDF .or. ia == VDW_126_MDF)) Then
                         ksite = isite + j - i
                         If (vdws%list(ksite) > vdws%n_vdw) Then ! if it does not exist - no overriding
                           nsite = nsite + 1
@@ -3926,7 +3927,7 @@ Contains
               If (nsite > 0) Then
 
                 If (flow%print_topology .or. thermo%key_dpd /= DPD_NULL) Then
-                  If (thermo%key_dpd /= DPD_NULL) Then
+                  If (thermo%key_dpd == DPD_NULL) Then
                     Call info('vdw potential mixing underway...', .true.)
                   Else
                     Call info('dpd potential mixing underway...', .true.)
@@ -3975,7 +3976,6 @@ Contains
                         If (keypot == VDW_LENNARD_JONES_COHESIVE) keyword = 'ljc '
                         If (keypot == VDW_LJ_MDF) keyword = 'mlj '
                         If (keypot == VDW_126_MDF) keyword = 'm126'
-
                         eps(1) = vdws%param(1, ia)
                         sig(1) = vdws%param(2, ia)
 
@@ -4126,7 +4126,8 @@ Contains
                         vdws%param(1, vdws%n_vdw) = 4.0_wp * eps(0) * (sig(0)**12)
                         vdws%param(2, vdws%n_vdw) = 4.0_wp * eps(0) * (sig(0)**6)
                       Else If (keypot == VDW_LENNARD_JONES .or. keypot == VDW_DPD .or. &
-                               keypot == VDW_AMOEBA .or. keypot == VDW_LENNARD_JONES_COHESIVE) Then ! LJ, DPD, 14-7, LJC
+                               keypot == VDW_AMOEBA .or. keypot == VDW_LENNARD_JONES_COHESIVE .or. &
+                               keypot == VDW_LJ_MDF .or. keypot == VDW_126_MDF) Then ! LJ, DPD, 14-7, LJC
                         vdws%param(1, vdws%n_vdw) = eps(0)
                         vdws%param(2, vdws%n_vdw) = sig(0)
                       Else If (keypot == VDW_WCA) Then ! WCA
@@ -4139,11 +4140,11 @@ Contains
                         If (thermo%key_dpd /= DPD_NULL) Then
                           Write (rfmt, '(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,', vdws%max_param + 1, 'f20.6)'
                           Write (message, rfmt) vdws%n_vdw, sites%unique_atom(i), &
-                            sites%unique_atom(j), keyword, parpot(1:vdws%max_param + 1)
+                            sites%unique_atom(j), keyword, vdws%param(1:vdws%max_param + 1, vdws%n_vdw)
                         Else
                           Write (rfmt, '(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,', vdws%max_param, 'f20.6)'
                           Write (message, rfmt) vdws%n_vdw, sites%unique_atom(i), &
-                            sites%unique_atom(j), keyword, parpot(1:vdws%max_param)
+                            sites%unique_atom(j), keyword, vdws%param(1:vdws%max_param, vdws%n_vdw)
                         End If
                         Call info(message, .true.)
                       End If
