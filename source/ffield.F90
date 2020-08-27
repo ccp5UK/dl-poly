@@ -41,7 +41,10 @@ Module ffield
                              electrostatic_type
   Use errors_warnings, Only: error,&
                              info,&
-                             warning
+                             warning,&
+                             check_print_level,&
+                             error_alloc,&
+                             error_dealloc
   Use external_field,  Only: &
                              FIELD_ELECTRIC, FIELD_ELECTRIC_OSCILLATING, FIELD_GRAVITATIONAL, &
                              FIELD_MAGNETIC, FIELD_SHEAR_CONTINUOUS, FIELD_SHEAR_OSCILLATING, &
@@ -190,6 +193,7 @@ Contains
     Type(coord_type),          Intent(InOut) :: crd
     Type(comms_type),          Intent(InOut) :: comm
 
+    Logical, Dimension(7)          :: warning_triggered ! 410, 420, 430, 440, 450, 296, 305
     Character(Len=100)             :: rfmt
     Character(Len=16)              :: idbond
     Character(Len=16), Allocatable :: bond_name(:)
@@ -221,6 +225,8 @@ Contains
                                       k_crsh, k_crsh_p, k_crsh_s, p_core, p_core_p, p_core_s, &
                                       parpot(1:30), pmf_tmp(1:2), q_core, q_core_p, q_core_s, &
                                       q_shel, q_shel_p, q_shel_s, sig(0:2), tmp, weight
+
+    warning_triggered = .false.
 
     ! Initialise number of unique atom and shell types and of different types of molecules
     sites%ntype_atom = 0
@@ -261,10 +267,7 @@ Contains
     If (angle%l_tab .or. angle%bin_adf > 0) Allocate (angl_name(1:angle%max_types), Stat=fail(2))
     If (dihedral%l_tab .or. dihedral%bin_adf > 0) Allocate (dihd_name(1:dihedral%max_types), Stat=fail(3))
     If (inversion%l_tab .or. inversion%bin_adf > 0) Allocate (invr_name(1:inversion%max_types), Stat=fail(4))
-    If (Any(fail > 0)) Then
-      Write (message, '(a)') 'read_field allocation failure'
-      Call error(0, message)
-    End If
+    If (Any(fail > 0)) Call error_alloc('names list', 'read_field')
 
     ! Initialise number of selected unique intramolecular TPs
     ! and corresponding identity arrays
@@ -1256,7 +1259,10 @@ Contains
                   js(1) = tether%lsttet(j)
 
                   If (js(1) == is(1)) Then
-                    If (flow%strict .and. flow%print_topology) Call warning(410, Real(i, wp), Real(j, wp), 0.0_wp)
+
+                    If (flow%strict .and. flow%print_topology) &
+                         Call warning(410, Real(i, wp), Real(j, wp), 0.0_wp, warning_triggered(1))
+
                     If (is(0) == js(0)) Call error(620)
                   End If
                 End Do
@@ -1498,7 +1504,9 @@ Contains
                   js(2) = Max(bond%lst(1, j), bond%lst(2, j))
 
                   If (js(1) == is(1) .and. js(2) == is(2)) Then
-                    If (flow%strict .and. flow%print_topology) Call warning(420, Real(i, wp), Real(j, wp), 0.0_wp)
+                    If (flow%strict .and. flow%print_topology) &
+                         Call warning(420, Real(i, wp), Real(j, wp), 0.0_wp, warning_triggered(2))
+
                     If (is(0) == js(0)) Call error(620)
                   End If
                 End Do
@@ -1763,7 +1771,9 @@ Contains
 
                   If (js(1) == is(1) .and. js(2) == is(2) .and. &
                       js(3) == is(3)) Then
-                    If (flow%strict .and. flow%print_topology) Call warning(430, Real(i, wp), Real(j, wp), 0.0_wp)
+                    If (flow%strict .and. flow%print_topology) &
+                        Call warning(430, Real(i, wp), Real(j, wp), 0.0_wp, warning_triggered(3))
+
                     If (is(0) == js(0)) Call error(620)
                   End If
                 End Do
@@ -2027,8 +2037,10 @@ Contains
                        js(3) == is(3) .and. js(4) == is(4)) .or. &
                       (js(1) == is(4) .and. js(2) == is(3) .and. &
                        js(3) == is(2) .and. js(4) == is(1))) Then
-                    If (flow%strict .and. flow%print_topology) Call warning(440, Real(i, wp), Real(j, wp), 0.0_wp)
-                    !                          If (is(0) == js(0)) Call error(620)
+                    If (flow%strict .and. flow%print_topology) &
+                         Call warning(440, Real(i, wp), Real(j, wp), 0.0_wp, warning_triggered(4))
+
+                    ! If (is(0) == js(0)) Call error(620)
                   End If
                 End Do
               End Do
@@ -2282,7 +2294,9 @@ Contains
 
                   If (js(1) == is(1) .and. js(2) == is(2) .and. &
                       js(3) == is(3) .and. js(4) == is(4)) Then
-                    If (flow%strict .and. flow%print_topology) Call warning(450, Real(i, wp), Real(j, wp), 0.0_wp)
+                    If (flow%strict .and. flow%print_topology) &
+                         Call warning(450, Real(i, wp), Real(j, wp), 0.0_wp, warning_triggered(5))
+
                     If (is(0) == js(0)) Call error(620)
                   End If
                 End Do
@@ -2903,10 +2917,7 @@ Contains
         If (angle%l_tab .or. angle%bin_adf > 0) Deallocate (angl_name, Stat=fail(2))
         If (dihedral%l_tab .or. dihedral%bin_adf > 0) Deallocate (dihd_name, Stat=fail(3))
         If (inversion%l_tab .or. inversion%bin_adf > 0) Deallocate (invr_name, Stat=fail(4))
-        If (Any(fail > 0)) Then
-          Write (message, '(a)') 'read_field deallocation failure'
-          Call error(0, message)
-        End If
+        If (Any(fail > 0)) Call error_dealloc('names lists', 'read_field')
 
         ! just finished with molecular data
 
@@ -3055,7 +3066,7 @@ Contains
                   charge = -Sign(1.0_wp, q_core) * Sqrt(p_core * k_crsh / (r4pie0 / electro%eps))
                   If (Abs(charge) <= zero_plus) Then
                     lshl_abort = .true.
-                    Call warning(296, Real(ishls, wp), Real(itmols, wp), 0.0_wp)
+                    Call warning(296, Real(ishls, wp), Real(itmols, wp), 0.0_wp, warning_triggered(6))
                   Else
                     sites%charge_site(isite2) = charge
                     mpoles%local_frame(1, isite2) = charge
@@ -3064,14 +3075,14 @@ Contains
                 Else If (p_core <= zero_plus) Then ! set drude force constants
                   If (k_crsh <= zero_plus) Then
                     lshl_abort = .true.
-                    Call warning(296, Real(ishls, wp), Real(itmols, wp), 0.0_wp)
+                    Call warning(296, Real(ishls, wp), Real(itmols, wp), 0.0_wp, warning_triggered(6))
                   Else
                     mpoles%polarisation_site(isite1) = (r4pie0 / electro%eps) * q_shel**2 / k_crsh
                   End If
                 Else If (k_crsh <= zero_plus) Then ! set polarisability
                   If (p_core <= zero_plus) Then
                     lshl_abort = .true.
-                    Call warning(296, Real(ishls, wp), Real(itmols, wp), 0.0_wp)
+                    Call warning(296, Real(ishls, wp), Real(itmols, wp), 0.0_wp, warning_triggered(6))
                   Else
                     cshell%prmshl(1, nshels) = (r4pie0 / electro%eps) * q_shel**2 / p_core
                     cshell%prmshl(2, nshels) = 0.0_wp
@@ -3113,7 +3124,7 @@ Contains
 
                 If (Abs(q_core * q_shel * k_crsh) <= zero_plus) Then
                   lshl_abort = .true.
-                  Call warning(296, Real(ishls, wp), Real(itmols, wp), 0.0_wp)
+                  Call warning(296, Real(ishls, wp), Real(itmols, wp), 0.0_wp, warning_triggered(6))
                 End If
               End Do
               nsite = nsite + sites%num_site(itmols)
@@ -3372,7 +3383,7 @@ Contains
                 rigid%frozen(0, nrigid) = lrgd
                 rigid%weightless(0, nrigid) = Real(lrgd, wp)
 
-                Call warning(305, Real(irgd, wp), Real(itmols, wp), 0.0_wp)
+                Call warning(305, Real(irgd, wp), Real(itmols, wp), 0.0_wp, warning_triggered(7))
 
                 frzrgd = frzrgd + 1
               End If
@@ -4906,10 +4917,7 @@ Contains
 
           fail(1) = 0
           Allocate (kim_name(sites%ntype_atom), Stat=fail(1))
-          If (fail(1) /= 0) Then
-            Write (message, '(a)') 'read_field, kim_name allocation failure'
-            Call error(0, message)
-          End If
+          If (fail(1) /= 0) Call error_alloc('kim_name', 'read_field')
 
           ! Get the list of unique species for kim interactions
           kim_name = ' '
@@ -4992,10 +5000,7 @@ Contains
             kim_name)
 
           Deallocate (kim_name, Stat=fail(1))
-          If (fail(1) /= 0) Then
-            Write (message, '(a)') 'read_field, deallocation failure'
-            Call error(0, message)
-          End If
+          If (fail(1) /= 0) Call error_dealloc('kim_name', 'read_field')
         End If
         ! read external field data
 
