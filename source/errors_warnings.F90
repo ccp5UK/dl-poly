@@ -62,12 +62,17 @@ Contains
 
   End Subroutine init_error_system
 
-  Subroutine warning_special(kode, a, b, c)
+  Subroutine warning_special(kode, a, b, c, triggered, level_once, level_always)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine for printing warning messages and returning
     ! control back to the main program
+    !
+    ! triggered - return logical as to whether this has triggered
+    ! level_once - print level for this to trigger only once (only works
+    !              in conjunction with triggered)
+    ! level_always - print level for this to always trigger
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov january 2017
@@ -81,8 +86,30 @@ Contains
 
     Integer,       Intent(In   ) :: kode
     Real(Kind=wp), Intent(In   ) :: a, b, c
-
+    Logical,       Intent(InOut), Optional :: triggered
+    Integer,       Intent(In   ), Optional :: level_once, level_always
+    Integer :: l1, la
     Integer :: ia, ib, ic
+
+    if (present(level_once)) then
+      l1 = level_once
+    else
+      l1 = 0
+    end if
+
+    if (present(level_always)) then
+      la = level_always
+    else
+      la = 3
+    end if
+
+    if (present(triggered) .and. .not. check_print_level(la)) then
+      if (triggered .or. .not. check_print_level(l1)) then
+        return
+      else
+        triggered = .true.
+      end if
+    end if
 
     If (eworld%idnode == 0) Then
 
@@ -689,11 +716,34 @@ Contains
 
   End Subroutine warning_special
 
-  Subroutine warning_general(message, master_only)
+  Subroutine warning_general(message, master_only, triggered, level_once, level_always)
     Character(Len=*),  Intent(In   ) :: message
     Logical, Optional, Intent(In   ) :: master_only
-
+    Logical,       Intent(InOut), Optional :: triggered
+    Integer,       Intent(In   ), Optional :: level_once, level_always
+    Integer :: l1, la
     Logical :: zeroOnly
+
+
+    if (present(level_once)) then
+      l1 = level_once
+    else
+      l1 = 0
+    end if
+
+    if (present(level_always)) then
+      la = level_always
+    else
+      la = 3
+    end if
+
+    if (present(triggered) .and. .not. check_print_level(la)) then
+      if (triggered .or. .not. check_print_level(l1)) then
+        return
+      else
+        triggered = .true.
+      end if
+    end if
 
     zeroOnly = .false.
     If (Present(master_only)) zeroOnly = master_only
