@@ -93,6 +93,8 @@ contains
     Character(Len=MAX_KEY), Dimension(:), Allocatable :: keys
     Character(Len=*), Dimension(0:7), Parameter :: data_name = &
          [Character(Len=7) :: 'NULL', 'INT', 'FLOAT', 'STRING', 'BOOL', 'OPTION', 'VECTOR3', 'VECTOR6']
+    Character(Len=*), Dimension(0:7), Parameter :: python_data_name = &
+         [Character(Len=10) :: 'None', 'int', 'float', 'str', 'bool', 'str', '(float,)*3', '(float,)*6']
     Integer :: i
 
     call params%get_keys(keys)
@@ -107,6 +109,8 @@ contains
 
     Case ('latex')
       Write(ifile, '(a)') '\begin{longtable}{l l p{10cm}}'
+    Case ('python')
+      Write(ifile, '(a)') 'DLPData.__init__(self, {'
     Case ('csv')
       Continue
     Case Default
@@ -140,6 +144,8 @@ contains
          Write(ifile, '(5(a,";"))') &
               trim(param%key), trim(data_name(param%data_type)), &
               trim(param%description), trim(param%val), trim(param%units)
+       Case ('python')
+         Write(ifile, '("''",a,"'':",1X, a, ",", 1X)', advance='No') trim(param%key), trim(python_data_name(param%data_type))
        end Select
 
     end do
@@ -150,6 +156,8 @@ contains
       Write(ifile, '(a)') '\end{document}'
     Case ('latex')
       Write(ifile, '(a)') '\end{longtable}'
+    Case ('python')
+      Write(ifile, '(a)') '})'
     Case ('csv')
       Continue
     end Select
