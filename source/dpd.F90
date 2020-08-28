@@ -99,7 +99,11 @@ Contains
 
     fail = 0
     Allocate (xxt(1:neigh%max_list), yyt(1:neigh%max_list), zzt(1:neigh%max_list), rrt(1:neigh%max_list), Stat=fail(1))
+#ifdef HALF_HALO
+    Allocate (fdpdx(1:config%mxatms), fdpdy(1:config%mxatms), fdpdz(1:config%mxatms), Stat=fail(2))
+#else
     Allocate (fdpdx(1:config%mxatdm), fdpdy(1:config%mxatdm), fdpdz(1:config%mxatdm), Stat=fail(2))
+#endif
     If (Any(fail > 0)) Then
       Write (message, '(a)') 'dpd_thermostat allocation failure'
       Call error(0, message)
