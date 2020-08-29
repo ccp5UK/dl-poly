@@ -961,7 +961,7 @@ Contains
             a = vdws%param(1, k)
             b = vdws%param(2, k)
             c = vdws%param(3, k)
-            r0 = vdws%param(3, k)
+            r0 = vdws%param(4, k)
             eadd = intRadMDF("mbuc", a, b, c, r0, vdws%cutoff, 1e-12_wp)
             padd = intdRadMDF("mbuc", a, b, c, r0, vdws%cutoff, 1e-12_wp)
 
