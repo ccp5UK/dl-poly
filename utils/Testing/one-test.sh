@@ -6,7 +6,7 @@ genTest(){
   iterations="$2"
   name=$(grep "${test/TEST/TEST } " $DLP_ROOT/data/README.txt | cut -d "-" -f 2-) 
   echo "processing test $test - $name"
-  tar -xf $data/${test}.tar.xz 
+#  tar -xf $data/${test}.tar.xz 
   pushd ${test}
   echo "    <testcase name=\"${test}\">" >> ../$testf
   echo "      <path archive=\"Yes\">${test}</path>" >> ../$testf
@@ -18,7 +18,7 @@ genTest(){
     done
   done
   echo "    </testcase>" >> ../$testf
-  rm -rf ${test}
+#  rm -rf ${test}
   popd
 }
 
