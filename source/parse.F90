@@ -507,7 +507,7 @@ Contains
 
     200 Continue
 
-    Call tabs_2_blanks(record)
+    Call tabs_2_blanks(record) ; Call strip_blanks(record)
 
     Deallocate (line, Stat=fail)
     If (fail > 0) Call error(1012)

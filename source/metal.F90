@@ -1527,6 +1527,7 @@ Contains
 
     Call get_line(safe, ntable, record, comm)
     If (.not. safe) Go To 100
+
     Call get_word(record, word)
     numpot = Nint(word_2_real(word))
 
