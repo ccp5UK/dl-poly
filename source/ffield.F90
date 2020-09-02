@@ -142,7 +142,7 @@ Contains
     ! author    - i.t.todorov february 2017
     ! contrib   - r.davidchak (eeam) july 2012
     ! contrib   - b.palmer (2band) may 2013
-    ! contrib   - a.v.brukhno & i.t.todorov march 2014 (itramolecular TPs & PDFs)
+    ! contrib   - a.v.brukhno & i.t.todorov march 2014 (intramolecular TPs & PDFs)
     ! contrib   - a.m.elena september 2016 (ljc)
     ! contrib   - a.m.elena february 2017
     ! contrib   - v.sokhan sokhan 2017
@@ -153,7 +153,8 @@ Contains
     ! contrib   - a.m.elena december 2017 (zblb)
     ! contrib   - a.m.elena april 2018 (mlj/mbuc)
     ! contrib   - a.m.elena may 2018 (m126)
-    ! amended   - i.t.todorov november 2018 (external field wall default)
+    ! amended   - i.t.todorov august 2018 (m126-dpd)
+    ! amended   - i.t.todorov october 2018 (external field zbnd default for f enforced)
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -484,7 +485,6 @@ Contains
             If (.not.safe) Go To 2000
             Call get_word(record, word)
           End Do
-          Call strip_blanks(record)
           sites%mol_name(itmols) = word(1:Len_trim(word) + 1)//record
 
           Write (message, '(a,13x,a40)') 'name of species:', sites%mol_name(itmols)
@@ -5906,12 +5906,10 @@ Contains
                 End If
 
                 Call get_line(safe, files(FILE_TABBND)%unit_no, record, comm)
-
                 If (.not. safe) Then
                   If (comm%idnode == 0) Call files(FILE_TABBND)%close ()
                   Call error(24)
                 End If
-
                 Call get_line(safe, files(FILE_TABBND)%unit_no, record, comm)
                 If (.not. safe) Then
                   If (comm%idnode == 0) Call files(FILE_TABBND)%close ()
@@ -5963,7 +5961,6 @@ Contains
                   If (comm%idnode == 0) Call files(FILE_TABANG)%close ()
                   Call error(24)
                 End If
-
                 Call get_line(safe, files(FILE_TABANG)%unit_no, record, comm)
                 If (.not. safe) Then
                   If (comm%idnode == 0) Call files(FILE_TABANG)%close ()
@@ -6012,7 +6009,6 @@ Contains
                   If (comm%idnode == 0) Call files(FILE_TABDIH)%close ()
                   Call error(24)
                 End If
-
                 Call get_line(safe, files(FILE_TABDIH)%unit_no, record, comm)
                 If (.not. safe) Then
                   If (comm%idnode == 0) Call files(FILE_TABDIH)%close ()
@@ -6061,7 +6057,6 @@ Contains
                   If (comm%idnode == 0) Call files(FILE_TABINV)%close ()
                   Call error(24)
                 End If
-
                 Call get_line(safe, files(FILE_TABINV)%unit_no, record, comm)
                 If (.not. safe) Then
                   If (comm%idnode == 0) Call files(FILE_TABINV)%close ()
@@ -6162,7 +6157,6 @@ Contains
               If (comm%idnode == 0) Call files(FILE_TABVDW)%close ()
               Call error(24)
             End If
-
             Call get_line(safe, files(FILE_TABVDW)%unit_no, record, comm)
             If (.not. safe) Then
               If (comm%idnode == 0) Call files(FILE_TABVDW)%close ()
