@@ -967,3 +967,18 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt tempion\_mean} \> real \> mean value of ionic temperature in system (K) \\
 \> {\tt tempion\_sum} \> real \> sum of ionic temperatures in system (K) \\
 \end{tabbing}
+\subsection{COORD, ICOORD and ADFDAT}
+
+
+CCOORD is the a coordination displacement file that dumps the positions of all the atoms that are
+considered to both change there initial local atomic coordination and move more that a set distance
+away.
+
+ICOORD is a dump file of both the initial coordination of each atom and the exact atoms its
+coordinated to and optional this at each writing step interval. Also provides the coordination
+distribution statistics for each atom after each writing step interval ( If adf is used and a specific
+coordination list is defined then this will also display for each list type ).
+
+ADFDAT is statistics file containing the angular distributions between atoms you define it to produce.
+
+

@@ -25,13 +25,15 @@ Version 4.10.0: August 2020
   + on the fly coordination calculation for radiation damage simulations
   + current calculations
   + new potentials available, ZBL, calcite Raitieri tappered, Generalised Lennard Jones by Frenkel, etc...
+  + integrate was removed, no leapfrog integration scheme.
 
-+ BUg fixes:
++ Bug fixes:
 
   + fix array bounds in tersoff potential
   + boundaries in stochastic thermostat work correctly now
   + TTM fixes for cell shape and integrator stability
   + fix for core-shell infrequent bug
+  + fix mdf long range correction incorrect non-zero for mbuck
 
 
 Version 4.09.4: March 2020
