@@ -37,8 +37,8 @@ Module constants
 
   !> Version particulars
 
-  Character(Len=8), Parameter :: DLP_VERSION = "4.10alph"
-  Character(Len=14), Parameter :: DLP_RELEASE = "  october 2018"
+  Character(Len=8), Parameter :: DLP_VERSION = "4.10.0"
+  Character(Len=14), Parameter :: DLP_RELEASE = "September 2020"
 
   !> FIXED PARAMETERS
   !> standard pi related values
