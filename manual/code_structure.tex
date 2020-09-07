@@ -200,22 +200,13 @@ it GPFA 1D FFT dependence.  They have dependencies on {\sc kinds\_f90},
 Generally, the \D file structure can be divided into four groups
 as follows:
 \begin{itemize}
-\item {\bf module files} in the {\em source} directory
 \item {\bf general files} in the {\em source} directory
-\item {\bf VV specific} files in the {\em source/VV} directory
-\item {\bf LFV specific} files in the {\em source/LFV} directory
 \item {\bf SERIAL specific} files in the {\em source/SERIAL} directory
 \end{itemize}
 The files in each group are listed in hierarchal order as closely
 as possible as examplified in the relevant \D Makefies in the
 {\em build} subdirectory.  The further down the category the file,
 the more dependent it is on the files listed above it.
-
-It is worth noting that the all {\sc w\_*.f90} files in {\em source} and
-{\em source/*V} are in fact inclusion files that are wrapped as routines
-within {\sc dl\_poly}.  This wrapping up of functional calls is done to
-shorten the length of the code by reusing general functional sequences
-where possible.
 
 \subsection{Module Files}
 
@@ -241,13 +232,6 @@ important reporting subroutines that have call points at various
 places in the code, and {\sc numeric\_container}, and
 {\sc spme\_container} are containers of simple functions and
 subroutines related in some way to their purpose in the code.
-
-\subsection{VV and LFV Specific Files}
-
-These implement the specific integration scheme as file-names are
-finished with the flavour they develop if they have a counterpart
-implementing the same algorithm but in the alternative flavour.
-Names are self-explanatory.
 
 \subsection{SERIAL Specific Files}
 

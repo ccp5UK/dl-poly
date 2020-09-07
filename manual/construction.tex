@@ -72,9 +72,8 @@ root segment.  The root segment {\sc /VV/dl\_poly} is placed in the
 for a molecular dynamics simulation.  It is the routine that first
 opens the OUTPUT file (Section~\ref{output-files}), which provides
 the summary of the job.  The root program calls the ``molecular
-dynamics cycle'' routines {\sc /LFV/md\_lfv} or {\sc /LFV/md\_vv}
-implementing the VV and LFV depending on which integrator has been
-specified for the simulation. These routines contain major routines
+dynamics cycle'' routines
+implementing the VV. These routines contain major routines
 required to perform the simulation, control the normal ``molecular
 dynamics cycle'' and monitor the {\em cpu} and {\em memory} usage.
 They also bring about a controlled termination of the program if

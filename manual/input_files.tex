@@ -264,6 +264,11 @@ The \uline{{\bf MAIN LIST}} of directives available is as follows:
 X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> \uuline{{\bf directive:}}                    \> \phantom{xxxxxxxxxxxxxxxxx} \uuline{{\bf meaning:}} \\
 \>                                              \> \\
+\> {\bf adf} $i j$                             \> Writes Angular distribution file ADFDAT \\
+\>                                              \> (Note adf cannot be used without coord present in CONTROL file) \\
+\>                                              \> i = timestep interval to write to ADFDAT \\
+\>                                              \> j = Precision of the Angular distribution bins\\
+\>                                              \> \\
 \> {\bf ana}lyse {\bf all} (sampling) (every) $f$ {\bf nbins} $n$ {\bf rmax} $r$
                                                 \> \phantom{xxxxxxxxxxxxxxxxx} calculate and collect all intramolecular PDFs \\
 \>                                              \> \phantom{xxxxxxxxxxxxxxxxx} every $f$ timesteps (default $f~=~1$), using a grid \\
@@ -299,6 +304,14 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf close time} $f$                         \> set the amount of time a job has to finalise I/O to $f$ seconds \\
 \>                                              \> (this must be smaller than the time specified by {\bf job time}, \\
 \>                                              \> see Further Comments on the CONTROL File notes) \\
+\>                                              \> \\
+\> {\bf coord} $i j f$                          \>  Writes Coordination analysis Files ICOORD and CCOORD \\
+\>                                              \> i = starting timestep for writing to files (no Defaults set) \\
+\>                                              \> j = timestep interval to write to files (no Defaults set) \\
+\>                                              \> f = Options available for whats is written in ICOORD and CCOORD \\
+\>                                              \> option 1 : f = 0 , Only writes out ICOORD file and only dumps the  coordination of each individual atom at i\\
+\>                                              \> option 2 : f = 1 , Writes out both CCOORD and ICOORD Files and only dumps the coordination of each individual atom at i\\
+\>                                              \> option 3 : f =2 , Writes out both CCOORD and ICOORD files and dumps the coordination of each atom every j number of steps\\
 \>                                              \> \\
 \> {\bf collect}                                \> include equilibration data in overall statistics \\
 \>                                              \> \\
@@ -448,9 +461,6 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> $j$ ($i \ge 0$) with energy $E$ ($E \ge 0$) in kilo-eV and direction \\
 \>                                              \> vector $x~y~z$ from the Cartesian origin (centre) of the MD box \\
 \>                                              \> (defaults: $i = 1, j = 0, E = 0, x = 1, y = 1, z = 1$) \\
-\>                                              \> \\
-\> {\bf integrat}or {\em string}                \> set the type of Verlet integrator, where {\em string} can only be \\
-\>                                              \> {\em leapfrog} or {\em velocity}, as the later is the default \\
 \>                                              \> \\
 \> {\bf job time} $f$                           \> set the walltime for a job to $f$ seconds \\
 \>                                              \> \\
@@ -879,6 +889,10 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> fall to zero smoothly for distances approaching $r_{\rm cut}$, by solving \\
 \>                                              \> $\left(\partial U_{new}(r) / \partial r \right)|_{r = r_{\rm cut}} = 0$ and $U_{new}(r)|_{r=r_{\rm cut}}= 0$ for $a$ and $b$ in \\
 \>                                              \> $U_{new}(r) = U(r) + a \cdot r + b$ and the using $U_{new}$ instead $U(r)$ \\
+\>                                              \> \\
+\> {\bf yml\_rdf}                               \>  print RDFDAT in yml format \\
+\>                                              \> \\
+\> {\bf yml\_statis}                            \>  print STATIS in yml format \\
 \>                                              \> \\
 \> {\bf zden} (sampling) (every) $f$            \> calculate and collect the Z-density profile \\
 \>                                              \> every $f$ timesteps (default $f~=~1$) \\
@@ -3431,6 +3445,36 @@ external
 magnetic 0  1/1.07564305   0
 ...
 \end{lstlisting}
+
+\subsubsection{crd}
+
+{\bf crd} i j k
+
+crd i j k Defines the atomic pairs to use for both coordination and angular distribution, followed by is i + j + k records:
+
+i = The number of unique atomic pairs
+
+i number of the following pattern: atom1 atom2 bond\_length
+
+j = The number of unique atoms you are building the pairs from
+
+j number of the following pattern: atom minimun\_displacement
+
+k = The number of lists to build coordination and angular distribution between
+
+k number of the following pattern: atom atom ‘-‘ atom
+
+{\bf Example in the FIELD File}
+
+\begin{verbatim}
+crd 2 3 1
+B O 1.9
+Si O 2.0
+B 0.9
+Si 1.0
+O 1.0
+Si B - O
+\end{verbatim}
 
 \subsubsection{Closing the FIELD File}
 
