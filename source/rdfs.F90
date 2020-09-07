@@ -99,6 +99,7 @@ Module rdfs
 Contains
 
   Subroutine allocate_rdf_arrays(T)
+
     Class(rdf_type) :: T
 
     Integer, Dimension(1:3) :: fail
@@ -115,9 +116,11 @@ Contains
 
     T%rdf = 0.0_wp
     T%usr = 0.0_wp
+
   End Subroutine allocate_rdf_arrays
 
   Subroutine allocate_block_average_array(T, nstrun, ntype_atom)
+
     Class(rdf_type)                 :: T
     Integer(Kind=wi), Intent(In   ) :: nstrun, ntype_atom
 
@@ -127,7 +130,7 @@ Contains
     T%block_size = nstrun / (T%num_blocks - 1)
     If (T%block_size < 2) Then
       T%block_size = 2
-    Endif
+    End If
 
     temp1 = T%max_rdf + 16 - Mod(T%max_rdf, 16)
     temp2 = T%max_grid + 16 - Mod(T%max_grid, 16)
@@ -138,6 +141,7 @@ Contains
     If (Any(fail > 0)) Call error(1016)
     T%block_averages = 0.0_wp
     T%tmp_rdf = 0.0_wp
+
   End Subroutine allocate_block_average_array
 
   Subroutine rdf_collect(iatm, rrt, neigh, config, rdf)
@@ -585,6 +589,7 @@ Contains
   End Subroutine rdf_compute
 
   Subroutine calculate_block(temp, rcut, sites, config, rdf)
+
     Real(Kind=wp),            Intent(In   ) :: temp, rcut
     Type(site_type),          Intent(In   ) :: sites
     Type(configuration_type), Intent(InOut) :: config
@@ -736,6 +741,7 @@ Contains
     If (Any(ierr > 0)) Then
       Call error(1084)
     End If
+
   End Subroutine calculate_errors
 
   Subroutine calculate_errors_jackknife(temp, rcut, sites, rdf, config, files, comm)
@@ -862,6 +868,7 @@ Contains
     If (Any(ierr > 0)) Then
       Call error(1084)
     End If
+
   End Subroutine calculate_errors_jackknife
 
   Subroutine rdf_excl_collect(iatm, rrt, neigh, config, rdf)
@@ -1126,6 +1133,7 @@ Contains
 
   !> Increase block number when required
   Subroutine rdf_increase_block_number(rdf, nstep)
+
     Type(rdf_type),   Intent(InOut) :: rdf
     Integer(Kind=wi), Intent(In   ) :: nstep
 
@@ -1134,9 +1142,11 @@ Contains
         rdf%block_number = rdf%block_number + 1
       End If
     End If
+
   End Subroutine rdf_increase_block_number
 
   Subroutine cleanup(T)
+
     Type(rdf_type) :: T
 
     If (Allocated(T%list)) Then
@@ -1148,5 +1158,7 @@ Contains
     If (Allocated(T%usr)) Then
       Deallocate (T%usr)
     End If
+
   End Subroutine cleanup
+
 End Module rdfs

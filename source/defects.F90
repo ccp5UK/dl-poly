@@ -426,6 +426,7 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    ! amended   - i.t.todorov july 2020 - tabs_2_blanks+strip_blanks
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -973,6 +974,7 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    ! amended   - i.t.todorov july 2020 - tabs_2_blanks
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1165,7 +1167,7 @@ Contains
             Do j = 1, Min(Len(record), Size(rec_buff, Dim=1))
               record(j:j) = rec_buff(j, this_rec_buff)
             End Do
-            Call strip_blanks(record)
+            Call tabs_2_blanks(record) ; Call strip_blanks(record)
             Call get_word(record, word); chbuf_read(i) = word(1:8)
             If (l_ind) Then
               Call get_word(record, word)

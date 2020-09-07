@@ -1,4 +1,5 @@
 Module ttm
+
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! dl_poly_4 module for defining arrays and initial parameters for
@@ -113,6 +114,7 @@ Module ttm
 Contains
 
   Subroutine ttm_setup_bounds(ttm, config, domain, megatm, padding_margin)
+
     !-----------------------------------------------------------------------
     !
     ! dl_poly_4 subroutine to finalise ttm for set_bounds
@@ -187,6 +189,7 @@ Contains
   end Subroutine ttm_setup_bounds
 
   Subroutine allocate_ttm_arrays(ttm, domain, config, comm)
+
     Type(ttm_type),           Intent(InOut) :: ttm
     Type(domains_type),       Intent(In   ) :: domain
     Type(configuration_type), Intent(InOut) :: config
@@ -1186,6 +1189,7 @@ Contains
     !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
     Type(ttm_type),   Intent(InOut) :: ttm
     Type(comms_type), Intent(InOut) :: comm
 
@@ -1671,6 +1675,7 @@ Contains
 ! fills halo regions of electronic temperature lattice from neighbouring sections
 ! (periodic boundary conditions)
   Subroutine boundaryHalo(ttm, domain, comm)
+
     Type(ttm_type),     Intent(InOut) :: ttm
     Type(domains_type), Intent(In   ) :: domain
     Type(comms_type),   Intent(In   ) :: comm
@@ -2511,4 +2516,5 @@ Contains
       Call warning(540, Abs(realdEdx - ttm%dEdX) / ttm%dEdX * 100_wp, 0.0_wp, 0.0_wp)
     End If
   End Subroutine gaussianTrack
+
 End Module ttm

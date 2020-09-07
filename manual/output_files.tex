@@ -583,6 +583,30 @@ $C(t)=\langle \vek{v}_{i}(0) \cdot  \vek{v}_{i}(t) \rangle$,
 scaled by $C(0) \equiv 3k_B T/m$.  Note that a readable version of these data
 for individual species is provided by the VAFDAT files (below).
 
+\subsection{The HEATFLUX File}
+The HEATFLUX file contains data relevant to the calculation of heat-flux via a
+Green-Kubo mothod via an external convolution, the information is written as:
+
+\begin{verbatim}
+STEP STPTMP VOLUME HEAT_FLUX
+\end{verbatim}
+
+\subsection{The PP\_CONT File}
+\label{pp-cont-file}
+
+This file contains the contributions of each particle to energies, forces
+and stresses in a format similar to to the CONFIG file, but with ID replaced
+with energy, and velocities/forces with the stress
+6-vector.
+
+\begin{verbatim}
+  TAG ATMNAM KIN_E MASS ENERGY
+  STR_XX STR_YX STR_ZX
+  STR_XY STR_YY STR_ZY
+  STR_XZ STR_YZ STR_ZZ
+\end{verbatim}
+
+
 \subsection{The REVCON File}
 \label{revcon-file}
 

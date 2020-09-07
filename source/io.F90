@@ -18,6 +18,7 @@ Module io
   ! author    - i.j.bush april 2011
   ! amended   - m.a.seaton november 2011
   ! amended   - a.m.elena september 2017
+  ! amended   - ilian.t.todorov april 2020 - n_reorg deallocation memory leak
   ! refactoring:
   !           - a.m.elena march-october 2018
   !           - j.madge march-october 2018
@@ -1152,6 +1153,11 @@ Contains
       Return
     End If
 
+    Deallocate ( n_reorg, Stat=error )
+    If (.not. ok(io, error == 0, io%base_comm)) Then
+       error = IO_DEALLOCATION_ERROR
+       Return
+    End If
     Deallocate (local_global_indices, Stat=error)
     If (.not. ok(io, error == 0, io%base_comm)) Then
       error = IO_DEALLOCATION_ERROR

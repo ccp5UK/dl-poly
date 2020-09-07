@@ -450,6 +450,8 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf finish}                                 \> close the CONTROL file (last data record) \\
 \>                                              \> \\
+\> {\bf heat\_flux}                              \> dump a HEATFLUX file containing data relevant to calculation of \\
+\>                                              \> heat-flux through convolution \\
 \> {\bf impact} $i~j~~~E~~x~y~z$                \> initiate impact on the particle with index $i$ ($i \ge 1$) at timestep \\
 \>                                              \> $j$ ($i \ge 0$) with energy $E$ ($E \ge 0$) in kilo-eV and direction \\
 \>                                              \> vector $x~y~z$ from the Cartesian origin (centre) of the MD box \\
@@ -576,6 +578,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf pres}sure $f$                           \> set required system pressure to $f$ katms \\
 \>                                              \> (target pressure for constant pressure\index{units!pressure} ensembles) \\
+\> {\bf pp\_dump}                                \> dump per-particle contributions to output file \\
 \>                                              \> \\
 \> {\bf print} (every) $n$                      \> print system data every $n$ timesteps \\
 \>                                              \> \\
@@ -2745,8 +2748,8 @@ that supports Si and C species. If the \D simulation has four atoms,
 where the first three are Si, and the fourth is C, the {\em kim\_interactions}
 would be used as:
 \begin{tabbing}
-	X\=XXXXXXXXXXX \=XX \=\kill
-	\> kim\_interactions    \> Si   \> C
+        X\=XXXXXXXXXXX \=XX \=\kill
+        \> kim\_interactions    \> Si   \> C
 \end{tabbing}
 
  The Si and C arguments map the  \D atom types to the Si and C species as

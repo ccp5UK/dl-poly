@@ -12,6 +12,7 @@ Module vdw
   !           - a.b.g.chalk march-october 2018
   !           - i.scivetti march-october 2018
   ! contrib   - a.m.elena march 2019 ! merge potentials.F90 into this module
+  !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use comms,           Only: comms_type,&
@@ -77,9 +78,9 @@ Module vdw
   Integer(Kind=wi), Parameter, Public :: VDW_RYDBERG = 14
   !> ZBL potential: $u=Z_1 Z_2/(4 \pi \epsilon_0 r) \sum_{i=1}^4 b_i e^{-c_i*r/a}$
   Integer(Kind=wi), Parameter, Public :: VDW_ZBL = 15
-  !> ZBL swithched with Morse: $u=f(r)\mathrm{zbl}(r)+(1-f(r))*\mathrm{morse}(r)$
+  !> ZBL switched with Morse: $u=f(r)\mathrm{zbl}(r)+(1-f(r))*\mathrm{morse}(r)$
   Integer(Kind=wi), Parameter, Public :: VDW_ZBL_SWITCH_MORSE = 16
-  !> ZBL swithched with Buckingham: $u=f(r)\mathrm{zbl}(r)+(1-f(r))*\mathrm{buckingham}(r)$
+  !> ZBL switched with Buckingham: $u=f(r)\mathrm{zbl}(r)+(1-f(r))*\mathrm{buckingham}(r)$
   Integer(Kind=wi), Parameter, Public :: VDW_ZBL_SWITCH_BUCKINGHAM = 17
   Integer(Kind=wi), Parameter, Public :: VDW_LJ_MDF = 18
   Integer(Kind=wi), Parameter, Public :: VDW_BUCKINGHAM_MDF = 19
@@ -914,7 +915,7 @@ Contains
 
           Case (VDW_ZBL_SWITCH_MORSE)
 
-            ! ZBL swithched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
+            ! ZBL switched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
 
             e0 = vdws%param(5, k)
             r0 = vdws%param(6, k)
@@ -933,7 +934,7 @@ Contains
 
           Case (VDW_ZBL_SWITCH_BUCKINGHAM)
 
-            ! ZBL swithched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
+            ! ZBL switched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
 
             A = vdws%param(5, k)
             r0 = vdws%param(6, k)
@@ -946,7 +947,7 @@ Contains
 
           Case (VDW_LJ_MDF)
 
-            ! LJ tappered with MDF:: u=f(r)LJ(r)
+            ! LJ tapered with MDF:: u=f(r)LJ(r)
 
             a = vdws%param(1, k)
             b = vdws%param(2, k)
@@ -956,18 +957,18 @@ Contains
 
           Case (VDW_BUCKINGHAM_MDF)
 
-            ! Buckingham tappered with MDF:: u=f(r)Buck(r)
+            ! Buckingham tapered with MDF:: u=f(r)Buck(r)
 
             a = vdws%param(1, k)
             b = vdws%param(2, k)
             c = vdws%param(3, k)
-            r0 = vdws%param(3, k)
+            r0 = vdws%param(4, k)
             eadd = intRadMDF("mbuc", a, b, c, r0, vdws%cutoff, 1e-12_wp)
             padd = intdRadMDF("mbuc", a, b, c, r0, vdws%cutoff, 1e-12_wp)
 
           Case (VDW_126_MDF)
 
-            ! LJ tappered with MDF:: u=f(r)LJ12-6(r)
+            ! LJ tapered with MDF:: u=f(r)LJ12-6(r)
 
             a = vdws%param(1, k)
             b = vdws%param(2, k)
@@ -1271,7 +1272,7 @@ Contains
 
       Case (VDW_ZBL_SWITCH_MORSE)
 
-        ! ZBL swithched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
+        ! ZBL switched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
 
         z1 = vdws%param(1, ivdw)
         z2 = vdws%param(2, ivdw)
@@ -1289,7 +1290,7 @@ Contains
 
       Case (VDW_ZBL_SWITCH_BUCKINGHAM)
 
-        ! ZBL swithched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
+        ! ZBL switched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
 
         z1 = vdws%param(1, ivdw)
         z2 = vdws%param(2, ivdw)
@@ -1307,7 +1308,7 @@ Contains
 
       Case (VDW_LJ_MDF)
 
-        ! LJ tappered with MDF:: u=f(r)LJ(r)
+        ! LJ tapered with MDF:: u=f(r)LJ(r)
 
         eps = vdws%param(1, ivdw)
         sig = vdws%param(2, ivdw)
@@ -1319,7 +1320,7 @@ Contains
 
       Case (VDW_BUCKINGHAM_MDF)
 
-        ! Buckingham tappered with MDF:: u=f(r)Buck(r)
+        ! Buckingham tapered with MDF:: u=f(r)Buck(r)
         a = vdws%param(1, ivdw)
         rho = vdws%param(2, ivdw)
         c = vdws%param(3, ivdw)
@@ -1331,7 +1332,7 @@ Contains
 
       Case (VDW_126_MDF)
 
-        ! LJ tappered with MDF:: u=f(r)LJ(r)
+        ! LJ tapered with MDF:: u=f(r)LJ(r)
         a = vdws%param(1, ivdw)
         b = vdws%param(2, ivdw)
         ri = vdws%param(3, ivdw)
@@ -2270,7 +2271,7 @@ Contains
 
       Case (VDW_ZBL_SWITCH_MORSE)
 
-        ! ZBL swithched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
+        ! ZBL switched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
 
         z1 = vdws%param(1, ivdw)
         z2 = vdws%param(2, ivdw)
@@ -2300,7 +2301,7 @@ Contains
 
       Case (VDW_ZBL_SWITCH_BUCKINGHAM)
 
-        ! ZBL swithched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
+        ! ZBL switched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
 
         z1 = vdws%param(1, ivdw)
         z2 = vdws%param(2, ivdw)
@@ -2330,7 +2331,7 @@ Contains
 
       Case (VDW_LJ_MDF)
 
-        ! LJ tappered with MDF:: u=f(r)LJ(r)
+        ! LJ tapered with MDF:: u=f(r)LJ(r)
 
         eps = vdws%param(1, ivdw)
         sig = vdws%param(2, ivdw)
@@ -2353,7 +2354,7 @@ Contains
 
       Case (VDW_BUCKINGHAM_MDF)
 
-        ! Buckingham tappered with MDF:: u=f(r)Buck(r)
+        ! Buckingham tapered with MDF:: u=f(r)Buck(r)
 
         a = vdws%param(1, ivdw)
         rho = vdws%param(2, ivdw)
@@ -2405,7 +2406,7 @@ Contains
 
       Case (VDW_126_MDF)
 
-        ! LJ tappered with MDF:: u=f(r)LJ(r)
+        ! LJ tapered with MDF:: u=f(r)LJ(r)
 
         a = vdws%param(1, ivdw)
         b = vdws%param(2, ivdw)
@@ -3005,7 +3006,7 @@ Contains
 
         Case (VDW_ZBL_SWITCH_MORSE)
 
-          ! ZBL swithched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
+          ! ZBL switched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
 
           z1 = vdws%param(1, k)
           z2 = vdws%param(2, k)
@@ -3037,7 +3038,7 @@ Contains
 
         Case (VDW_ZBL_SWITCH_BUCKINGHAM)
 
-          ! ZBL swithched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
+          ! ZBL switched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
 
           z1 = vdws%param(1, k)
           z2 = vdws%param(2, k)
@@ -3069,7 +3070,7 @@ Contains
 
         Case (VDW_LJ_MDF)
 
-          ! LJ tappered with MDF:: u=f(r)LJ(r)
+          ! LJ tapered with MDF:: u=f(r)LJ(r)
 
           eps = vdws%param(1, k)
           sig = vdws%param(2, k)
@@ -3094,7 +3095,7 @@ Contains
 
         Case (VDW_BUCKINGHAM_MDF)
 
-          ! Buckingham tappered with MDF:: u=f(r)Buck(r)
+          ! Buckingham tapered with MDF:: u=f(r)Buck(r)
           a = vdws%param(1, k)
           rho = vdws%param(2, k)
           c = vdws%param(3, k)
