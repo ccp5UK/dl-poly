@@ -3086,12 +3086,13 @@ Contains
          !Use DFTB+ as the force calculator instead of classical force fields
          flow%simulation_method = DFTB
 
+#ifdef EVB         
       Else If (word(1:3) == 'evb') Then 
          ! EVB settings, this flag has been already read by read_simtype.  
          ! here do nothing
+#endif
 
-        ! close control file
-
+      ! close control file
       Else If (word(1:6) == 'finish') Then
 
         Go To 2000
