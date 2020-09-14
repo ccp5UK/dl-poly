@@ -596,7 +596,7 @@ contains
       Case ('dpd')
         thermo%ensemble = ENS_NVE
 
-        Call info('Ensemble : NVT dpd (Dissipative Particle Dynamics)',.true.)
+        Call info('Ensemble: NVT dpd (Dissipative Particle Dynamics)',.true.)
 
         call params%retrieve('ensemble_dpd_order', option)
         select case (option)
@@ -698,7 +698,7 @@ contains
       ! Semi isotropic ensembles
 
       call params%retrieve('ensemble_semi_isotropic', option)
-      call params%retrieve('ensemble_semi_orthorhombie', ltmp)
+      call params%retrieve('ensemble_semi_orthorhombic', ltmp)
 
       select case (option)
       case ('off')
@@ -1553,78 +1553,6 @@ contains
       If (neigh%cutoff < 12.0_wp) Call warning(7, neigh%cutoff, 12.0_wp, 0.0_wp)
     End If
 
-    ! If (electro%key == ELECTROSTATIC_EWALD) Then
-
-    !   cell = config%cell
-    !   cut = neigh%cutoff + 1e-6_wp
-
-    !   if (config%imcon == IMCON_NOPBC) then
-    !     cell(1) = Max(2.0_wp*xhi+cut,3.0_wp*cut,cell(1))
-    !     cell(5) = Max(2.0_wp*yhi+cut,3.0_wp*cut,cell(5))
-    !     cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
-
-    !     cell(2) = 0.0_wp
-    !     cell(3) = 0.0_wp
-    !     cell(4) = 0.0_wp
-    !     cell(6) = 0.0_wp
-    !     cell(7) = 0.0_wp
-    !     cell(8) = 0.0_wp
-    !   else if (config%imcon == IMCON_SLAB) then
-    !     cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
-    !   End If
-    !   Call dcell(cell,cell_properties)
-
-    !   call params%retrieve('ewald_nsplines', ewld%bspline)
-
-    !   if (params%is_set([Character(Len=15) :: 'ewald_precision', 'ewald_alpha'])) then
-
-    !     call error(0, 'Cannot specify both precision and manual ewald parameters')
-
-    !   else if (params%is_set('ewald_alpha')) then
-
-    !     call params%retrieve('ewald_alpha', electro%alpha)
-
-    !     if (params%is_set([Character(Len=18) :: 'ewald_kvec', 'ewald_kvec_spacing'])) then
-
-    !       call error(0, 'Cannot specify both explicit k-vec grid and k-vec spacing')
-    !     else if (params%is_set('ewald_kvec')) then
-
-    !       call params%retrieve('ewald_kvec', vtmp)
-
-    !       ewld%fft_dim_a1 = Nint(vtmp(1))
-    !       ewld%fft_dim_b1 = Nint(vtmp(2))
-    !       ewld%fft_dim_c1 = Nint(vtmp(3))
-
-    !     else
-
-    !       call params%retrieve('ewald_kvec_spacing', rtmp)
-
-    !       ewld%fft_dim_a1 = Nint(rtmp / cell_properties(1))
-    !       ewld%fft_dim_b1 = Nint(rtmp / cell_properties(2))
-    !       ewld%fft_dim_c1 = Nint(rtmp / cell_properties(3))
-    !     end if
-
-    !     ! Sanity check for ill defined ewald sum parameters 1/8*2*2*2 == 1
-    !     tol = electro%alpha * Real(ewld%fft_dim_a1, wp) * Real(ewld%fft_dim_a1, wp) * Real(ewld%fft_dim_a1, wp)
-    !     If (Nint(tol) < 1) Call error(9)
-
-    !   else
-
-    !     call params%retrieve('ewald_precision', eps0)
-    !     if (eps0 > 0.5_wp .or. eps0 < 1e-20_wp) &
-    !          call error(0, 'ewald_precision outside permitted range (10^-20 < ewald_precision < 0.5)')
-
-    !     tol = Sqrt(Abs(Log(eps0*neigh%cutoff)))
-    !     electro%alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
-    !     tol1 = Sqrt(-Log(eps0*neigh%cutoff*(2.0_wp*tol*electro%alpha)**2))
-
-    !     ewld%fft_dim_a1 = 2 * Nint(0.25_wp + cell_properties(7) * electro%alpha * tol1 / pi)
-    !     ewld%fft_dim_b1 = 2 * Nint(0.25_wp + cell_properties(8) * electro%alpha * tol1 / pi)
-    !     ewld%fft_dim_c1 = 2 * Nint(0.25_wp + cell_properties(9) * electro%alpha * tol1 / pi)
-
-    !   end if
-    ! End If
-
     if (ewld%active) then
 
       cell = config%cell
@@ -1770,8 +1698,8 @@ contains
 
     if (params%num_set([Character(22) :: 'pressure_tensor', 'pressure_hydrostatic', 'pressure_perpendicular']) > 1) then
       call error(0, 'Multiple pressure specifications')
-      ! else if (params%num_set([Character(22) :: 'pressure_tensor', 'pressure_hydrostatic', 'pressure_perpendicular']) == 0) then
-      !   call error(0, 'No pressure specification')
+    ! else if (params%num_set([Character(22) :: 'pressure_tensor', 'pressure_hydrostatic', 'pressure_perpendicular']) == 0) then
+    !   call error(0, 'No pressure specification')
     end if
 
     if (params%is_set('pressure_tensor')) then
@@ -2209,12 +2137,10 @@ contains
 
       If (rdf%l_print) Then
         Call info('  -- RDF printing requested', .true., level=3)
-      Else
-        If (stats%lpana) Then
+      Else If (stats%lpana) Then
           Call info('  -- RDF printing triggered due to a PDA printing request', .true.)
-        Else
+      Else
           Call info('  -- No RDF printing requested', .true.)
-        End If
       End If
 
       If (rdf%max_rdf == 0) Then
@@ -2334,80 +2260,83 @@ contains
     Call info("System parameters: ", .true.)
 
     If (.not. thermo%lvar) then
-      Write (message, '(a,1p,e12.4)') '  Fixed simulation timestep (ps) ', thermo%tstep
+      Write (message, '(a,1p,e12.4)') '  Fixed simulation timestep (ps): ', thermo%tstep
       Call info(message, .true.)
     Else
-      Write (messages(1), '(a,1p,e12.4)') '  Variable simulation timestep (ps) ', thermo%tstep
+      Write (messages(1), '(a,1p,e12.4)') '  Variable simulation timestep (ps): ', thermo%tstep
       Write (messages(2), '(a)') '  Controls for variable timestep:'
-      Write (messages(3), '(2x,a,1p,e12.4)') '  -- Minimum distance Dmin (Angs) ', thermo%mndis
-      Write (messages(4), '(2x,a,1p,e12.4)') '  -- Maximum distance Dmax (Angs) ', thermo%mxdis
+      Write (messages(3), '(2x,a,1p,e12.4)') '  -- Minimum distance Dmin (Angs): ', thermo%mndis
+      Write (messages(4), '(2x,a,1p,e12.4)') '  -- Maximum distance Dmax (Angs): ', thermo%mxdis
       Call info(messages, 4, .true.)
       If (thermo%mxstp > zero_plus) Then
-        Write (message, '(a,1p,e12.4)') '  -- Timestep ceiling max step (ps) ', thermo%mxstp
+        Write (message, '(a,1p,e12.4)') '  -- Timestep ceiling max step (ps): ', thermo%mxstp
         Call info(message, .true.)
       end If
     end If
 
-    Write (message, '(a,i10)') '  Selected number of timesteps ', flow%run_steps
+    Write (message, '(a,i10)') '  Run Duration (steps): ', flow%run_steps
     if (flow%run_steps > 0) Call info(message, .true.)
 
     if (flow%equil_Steps > 0) then
-      Write (message, '(a,i10)') '  Equilibration period (steps) ', flow%equil_steps
+      Write (message, '(a,i10)') '  Equilibration period (steps): ', flow%equil_steps
       Call info(message, .true.)
 
       if (.not. flow%equilibration) Call info('  -- Equilibration included in overall averages', .true.)
 
       if (thermo%freq_tgaus > 0) then
-        Write (message, '(a,i10)') '  -- Temperature regaussing interval ', thermo%freq_tgaus
+        Call info('  -- Temperature regaussing: ON', .true.)
+        Write (message, '(a,i10)') '  -- Temperature regaussing interval (steps): ', thermo%freq_tgaus
         Call info(message, .true.)
       end if
 
       if (thermo%freq_tscale > 0) then
-        Call info('  -- Temperature scaling on', .true.)
-        Write (message, '(a,i10)') '  -- Temperature scaling interval (steps)', thermo%freq_tscale
+        Call info('  -- Temperature scaling: ON', .true.)
+        Write (message, '(a,i10)') '  -- Temperature scaling interval (steps): ', thermo%freq_tscale
         Call info(message, .true.)
       end if
 
       if (flow%force_cap) then
-        Write (messages(1), '(a)') '  -- Force capping on'
-        Write (messages(2), '(a,1p,e12.4)') '  -- Force capping limit (kT/Angs)', config%fmax
+        Write (messages(1), '(a)') '  -- Force capping: ON'
+        Write (messages(2), '(a,1p,e12.4)') '  -- Force capping limit (kT/Angs): ', config%fmax
         Call info(messages, 2, .true.)
       end if
 
       if (minim%minimise) then
-        Write (messages(1), '(a)') '  -- Minimisation option on'
+        Write (messages(1), '(a)') '  -- Minimisation: ON'
         Select Case(minim%key)
         Case(MIN_FORCE)
-          Write (messages(2), '(a,a8)') '   -- Minimisation criterion        ', "Force"
+          Write (messages(2), '(a,a8)')     '   -- Minimisation criterion:         ', "Force"
         Case(MIN_ENERGY)
-          Write (messages(2), '(a,a8)') '   -- Minimisation criterion        ', "Energy"
+          Write (messages(2), '(a,a8)')     '   -- Minimisation criterion:         ', "Energy"
         Case(MIN_DISTANCE)
-          Write (messages(2), '(a,a8)') '   -- Minimisation criterion        ', "Distance"
+          Write (messages(2), '(a,a8)')     '   -- Minimisation criterion:         ', "Distance"
         end Select
 
-        Write (messages(3), '(a,i10)') '   -- Minimisation frequency (steps)', minim%freq
-        Write (messages(4), '(a,1p,e12.4)') '   -- Minimisation tolerance        ', minim%tolerance
-        Write (messages(5), '(a,1p,e12.4)') '   -- Minimisation CGM step         ', minim%step_length
+        Write (messages(3), '(a,i10)')      '   -- Minimisation frequency (steps): ', minim%freq
+        Write (messages(4), '(a,1p,e12.4)') '   -- Minimisation tolerance:         ', minim%tolerance
+        Write (messages(5), '(a,1p,e12.4)') '   -- Minimisation CGM step:          ', minim%step_length
 
         Call info(messages, 5, .true.)
       end if
     end if
 
-    Write (message, '(a,i10)') '  Data dumping interval (steps) ', flow%freq_restart
-    Call info(message, .true.)
+    if (flow%freq_restart > 0) Then
+      Write (message, '(a,i10)') '  Restart dumping interval (steps): ', flow%freq_restart
+      Call info(message, .true.)
+    end if
 
     if (flow%freq_output > 0) then
-      Write (message, '(a,i10)') '  Data printing interval (steps) ', flow%freq_output
+      Write (message, '(a,i10)') '  Data printing interval (steps): ', flow%freq_output
       Call info(message, .true.)
     end if
 
     if (stats%intsta > 0) then
-      Write (message, '(a,i10)') '  Statistics file interval ', stats%intsta
+      Write (message, '(a,i10)') '  Statistics file interval (steps): ', stats%intsta
       Call info(message, .true.)
     end if
 
     if (.not. flow%print_topology) then
-      Call info('  No topology option on (avoids printing extended FIELD topology in OUTPUT)', .true., level=3)
+      Call info('  Not printing extended FIELD topology in OUTPUT', .true., level=3)
     else
       Call info('  Printing extended FIELD topology in OUTPUT: ON', .true.)
     end if
@@ -2423,13 +2352,14 @@ contains
       Call info('  Restart requested (continuing an old simulation)', .true.)
       Call warning('  Timestep from REVOLD overides specification in CONTROL', .true.)
     case (RESTART_KEY_CLEAN)
+      continue
     end select
 
-    Write (message, '(a,1p,e12.4)') '  Simulation temperature (K)  ', thermo%temp
+    Write (message, '(a,1p,e12.4)') '  Simulation temperature (K):  ', thermo%temp
     call info(message, .true.)
 
     if (thermo%l_stochastic_boundaries) then
-      Call info('  Pseudo thermostat attached to MD cell boundary', .true.)
+      Call info('  Pseudo-thermostat attached to MD cell boundary: ON', .true.)
 
       select case (thermo%key_pseudo)
       case (0)
@@ -2442,9 +2372,9 @@ contains
         Call info('  -- Thermostat control: direct temperature scaling', .true.)
       end select
 
-      Write (message, '(a,1p,e12.4)') '  -- Thermostat thickness (Angs) ', thermo%width_pseudo
+      Write (message, '(a,1p,e12.4)') '  -- Thermostat thickness (Angs): ', thermo%width_pseudo
       Call info(message, .true.)
-      Write (message, '(a,1p,e12.4)') '  -- Thermostat temperature (K) ', thermo%temp_pseudo
+      Write (message, '(a,1p,e12.4)') '  -- Thermostat temperature (K): ', thermo%temp_pseudo
       Call info(message, .true.)
     end if
 
@@ -2460,8 +2390,8 @@ contains
     end If
 
     If (cons%mxcons > 0 .or. pmf%mxpmf > 0) Then
-      Write (messages(1), '(a,i10)') '  Iterations for shake/rattle ', cons%max_iter_shake
-      Write (messages(2), '(a,1p,e12.4)') '  Tolerance for shake/rattle (Angs) ', cons%tolerance
+      Write (messages(1), '(a,i10)') '  Iterations for SHAKE/RATTLE: ', cons%max_iter_shake
+      Write (messages(2), '(a,1p,e12.4)') '  Tolerance for SHAKE/RATTLE (Angs): ', cons%tolerance
       Call info(messages, 2, .true.)
     end If
 
@@ -2471,12 +2401,12 @@ contains
     end if
 
     if (impa%active) then
-      Call info('  Impact enabled', .true.)
+      Call info('  Impact calculation: ON', .true.)
       Write (messages(1), '(a)') ''
-      Write (messages(2), '(a,i10)') '  -- Particle (index)', impa%imd
-      Write (messages(3), '(a,i10)') '  -- Timestep (steps)', impa%tmd
-      Write (messages(4), '(a,1p,e12.4)') '  -- Energy   (keV)  ', impa%emd
-      Write (messages(5), '(a,1p,3e12.4)') '  -- v-r(x,y,z)      ', impa%vmx, impa%vmy, impa%vmz
+      Write (messages(2), '(a,i10)') '  -- Particle (index): ', impa%imd
+      Write (messages(3), '(a,i10)') '  -- Timestep (steps): ', impa%tmd
+      Write (messages(4), '(a,1p,e12.4)') '  -- Energy   (keV): ', impa%emd
+      Write (messages(5), '(a,1p,3e12.4)') '  -- v-r(x,y,z): ', impa%vmx, impa%vmy, impa%vmz
 
       Call info(messages, 5, .true.)
 
@@ -2501,9 +2431,9 @@ contains
 
     ! ---------------- CUTOFF --------------------------------------------------
 
-    Write (message, '(a,1p,e12.4)') '  Real space cutoff (Angs) ', neigh%cutoff
+    Write (message, '(a,1p,e12.4)') '  Real space cutoff (Angs): ', neigh%cutoff
     Call info(message, .true.)
-    Write (message, '(a,1p,e12.4)') '  Cutoff padding (Angs) ', neigh%padding
+    Write (message, '(a,1p,e12.4)') '  Cutoff padding (Angs): ', neigh%padding
     Call info(message, .true.)
 
     Write (message, '(a,3i6)') "  Final link-cell decomposition (x,y,z): ", link_cell
@@ -2511,83 +2441,86 @@ contains
 
     ! ---------------- SUBCELLING ----------------------------------------------
 
-    Write (message, '(a,1p,e12.4)') '  Subcelling threshold density ', neigh%pdplnc
+    Write (message, '(a,1p,e12.4)') '  Subcelling threshold density: ', neigh%pdplnc
     call info(message, .true., 2)
 
     ! ---------------- VDW SETUP -----------------------------------------------
 
     if (vdws%l_direct) then
-      Call info('  VdWs - Direct Calculation', .true.)
+      Call info('  VdWs: Direct calculation', .true.)
     else if (vdws%no_vdw) then
-      Call info('  VdWs - Disabled', .true.)
+      Call info('  VdWs: Disabled', .true.)
       ! else if (ewld%vdw) then
       !   Call info('VdWs - Ewald', .true.)
     else
-      Call info('  VdWs - Tabulated', .true.)
-    end if
-    Write (message, '(a,1p,e12.4)') '  VdW cutoff (Angs) ', vdws%cutoff
-    call info(message, .true.)
-
-    if (vdws%mixing /= MIX_NULL) then
-      Call info('  Vdw cross terms mixing opted (for undefined mixed potentials)', .true.)
-      Call info('    mixing is limited to potentials of the same type only', .true.)
-      Call info('    mixing restricted to LJ-like potentials (12-6,LJ,WCA,DPD,AMOEBA)', .true.)
-
-      Select Case (vdws%mixing)
-      case (MIX_LORENTZ_BERTHELOT)
-        Call info('  Type of mixing selected - Lorentz-Berthelot :: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2', .true.)
-
-      case (MIX_FENDER_HALSEY)
-        Call info('  Type of mixing selected - Fender-Halsey :: e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2', .true.)
-
-      case (MIX_HOGERVORST)
-        Call info('  Type of mixing selected - Hogervorst (good hope) :: ' &
-             //'e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i*s_j)^(1/2)', .true.)
-
-      case (MIX_HALGREN)
-        Call info('  Type of mixing selected - Halgren HHG :: ' &
-             //'e_ij=4*e_i*e_j/[e_i^(1/2)+e_j^(1/2)]^2 ; s_ij=(s_i^3+s_j^3)/(s_i^2+s_j^2)', .true.)
-
-      case (MIX_WALDMAN_HAGLER)
-        Call info('  Type of mixing selected - WaldmanHagler :: ' &
-             //'e_ij=2*(e_i*e_j)^(1/2)*(s_i*s_j)^3/(s_i^6+s_j^6) ;s_ij=[(s_i^6+s_j^6)/2]^(1/6)', .true.)
-
-      case (MIX_TANG_TOENNIES)
-        Call info('  Type of mixing selected - Tang-Toennies :: ' &
-             //' e_ij=[(e_i*s_i^6)*(e_j*s_j^6)] / {[(e_i*s_i^12)^(1/13)+(e_j*s_j^12)^(1/13)]/2}^13', .true.)
-        Call info(Repeat(' ', 43)//'s_ij={[(e_i*s_i^6)*(e_j*s_j^6)]^(1/2) / e_ij}^(1/6)', .true.)
-
-      case (MIX_FUNCTIONAL)
-        Call info('  Type of mixing selected - Functional :: ' &
-             //'e_ij=3 * (e_i*e_j)^(1/2) * (s_i*s_j)^3 / ' &
-             //'SUM_L=0^2{[(s_i^3+s_j^3)^2 / (4*(s_i*s_j)^L)]^(6/(6-2L))}', .true.)
-        Call info(Repeat(' ', 40)//'s_ij=(1/3) * SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))}', .true.)
-      end Select
+      Call info('  VdWs: Tabulated', .true.)
     end if
 
-    if (vdws%l_force_shift) Call info('  VdW force-shifting option on', .true.)
+    if (.not. vdws%no_vdw) then
+      Write (message, '(a,1p,e12.4)') '  VdW cutoff (Angs): ', vdws%cutoff
+      call info(message, .true.)
+
+      if (vdws%mixing /= MIX_NULL) then
+        Call info('  Vdw cross terms mixing opted (for undefined mixed potentials)', .true.)
+        Call info('    mixing is limited to potentials of the same type only', .true.)
+        Call info('    mixing restricted to LJ-like potentials (12-6,LJ,WCA,DPD,AMOEBA)', .true.)
+
+        Select Case (vdws%mixing)
+        case (MIX_LORENTZ_BERTHELOT)
+          Call info('  Type of mixing selected: Lorentz-Berthelot - e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2', .true.)
+
+        case (MIX_FENDER_HALSEY)
+          Call info('  Type of mixing selected: Fender-Halsey - e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2', .true.)
+
+        case (MIX_HOGERVORST)
+          Call info('  Type of mixing selected: Hogervorst (good hope) - ' &
+               //'e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i*s_j)^(1/2)', .true.)
+
+        case (MIX_HALGREN)
+          Call info('  Type of mixing selected: Halgren HHG - ' &
+               //'e_ij=4*e_i*e_j/[e_i^(1/2)+e_j^(1/2)]^2 ; s_ij=(s_i^3+s_j^3)/(s_i^2+s_j^2)', .true.)
+
+        case (MIX_WALDMAN_HAGLER)
+          Call info('  Type of mixing selected: Waldman-Hagler - ' &
+               //'e_ij=2*(e_i*e_j)^(1/2)*(s_i*s_j)^3/(s_i^6+s_j^6) ;s_ij=[(s_i^6+s_j^6)/2]^(1/6)', .true.)
+
+        case (MIX_TANG_TOENNIES)
+          Call info('  Type of mixing selected: Tang-Toennies - ' &
+               //' e_ij=[(e_i*s_i^6)*(e_j*s_j^6)] / {[(e_i*s_i^12)^(1/13)+(e_j*s_j^12)^(1/13)]/2}^13', .true.)
+          Call info(Repeat(' ', 43)//'s_ij={[(e_i*s_i^6)*(e_j*s_j^6)]^(1/2) / e_ij}^(1/6)', .true.)
+
+        case (MIX_FUNCTIONAL)
+          Call info('  Type of mixing selected: Functional - ' &
+               //'e_ij=3 * (e_i*e_j)^(1/2) * (s_i*s_j)^3 / ' &
+               //'SUM_L=0^2{[(s_i^3+s_j^3)^2 / (4*(s_i*s_j)^L)]^(6/(6-2L))}', .true.)
+          Call info(Repeat(' ', 40)//'s_ij=(1/3) * SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))}', .true.)
+        end Select
+      end if
+
+      if (vdws%l_force_shift) Call info('  VdW force-shifting: ON', .true.)
+    end if
 
     ! ---------------- METALS --------------------------------------------------
 
-    if (met%l_direct) Call info('  Metal direct option on', .true.)
-    if (met%l_emb) Call info('  Metal sqrtrho option on', .true.)
+    if (met%l_direct) Call info('  Metal direct: ON', .true.)
+    if (met%l_emb) Call info('  Metal sqrtrho: ON', .true.)
 
     ! ---------------- POLARISATION --------------------------------------------
 
     if (mpoles%max_mpoles > 0) then
       Select Case(mpoles%key)
       Case(POLARISATION_CHARMM)
-        Call info('  Polarisation method - CHARMM')
+        Call info('  Polarisation method: CHARMM')
       Case(POLARISATION_DEFAULT)
-        Call info('  Polarisation method - Default')
+        Call info('  Polarisation method: Default')
       end Select
     end if
 
     if (cshell%mxshl > 0) then
-      Write (message, '(a,1p,e12.4)') '  -- Relaxed shell model CGM tolerance ', cshell%rlx_tol(1)
+      Write (message, '(a,1p,e12.4)') '  -- Relaxed shell model CGM tolerance (Force): ', cshell%rlx_tol(1)
       Call info(message, .true.)
       if (cshell%rlx_tol(2) > 0.0_wp) then
-        Write (message, '(a,1p,e12.4)') '  -- Relaxed shell model CGM step ', cshell%rlx_tol(2)
+        Write (message, '(a,1p,e12.4)') '  -- Relaxed shell model CGM step (Angs): ', cshell%rlx_tol(2)
         Call info(message, .true.)
       end if
     end if
@@ -2596,53 +2529,53 @@ contains
 
     Select Case (electro%key)
     case (ELECTROSTATIC_NULL)
-      Call info('  Electrostatics : Disabled', .true.)
+      Call info('  Electrostatics: Disabled', .true.)
     case (ELECTROSTATIC_EWALD)
 
-      Call info('  Electrostatics : Smooth Particle Mesh Ewald', .true.)
+      Call info('  Electrostatics: Smooth Particle Mesh Ewald', .true.)
 
-      Write (messages(1), '(a,1p,e12.4)') '  -- Ewald convergence parameter (A^-1) ', ewld%alpha
-      Write (messages(2), '(a,3i5)') '  -- Ewald kmax1 kmax2 kmax3   (x2) ', ewld%kspace%k_vec_dim_cont
+      Write (messages(1), '(a,1p,e12.4)') '  -- Ewald convergence parameter (Angs^-1): ', ewld%alpha
+      Write (messages(2), '(a,3i5)') '  -- Ewald kmax1 kmax2 kmax3   (x2): ', ewld%kspace%k_vec_dim_cont
       if (any(ewld%kspace%k_vec_dim /= ewld%kspace%k_vec_dim_cont)) then
-        Write (messages(3), '(a,3i5)') '  -- DaFT adjusted kmax values (x2) ', ewld%kspace%k_vec_dim
-        Write (messages(4), '(a,1p,i5)') '  -- B-spline interpolation order ', ewld%bspline%num_splines
+        Write (messages(3), '(a,3i5)') '  -- DaFT adjusted kmax values (x2): ', ewld%kspace%k_vec_dim
+        Write (messages(4), '(a,1p,i5)') '  -- B-spline interpolation order: ', ewld%bspline%num_splines
         Call info(messages, 4, .true.)
       Else
-        Write (messages(3), '(a,1p,i5)') '  -- B-spline interpolation order ', ewld%bspline%num_splines
+        Write (messages(3), '(a,1p,i5)') '  -- B-spline interpolation order: ', ewld%bspline%num_splines
         Call info(messages, 3, .true.)
       end If
 
     case (ELECTROSTATIC_DDDP)
-      Call info('  Electrostatics : Distance Dependent Dielectric', .true.)
+      Call info('  Electrostatics: Distance Dependent Dielectric', .true.)
 
     case (ELECTROSTATIC_COULOMB)
 
-      Call info('  Electrostatics : Coulombic Potential', .true.)
+      Call info('  Electrostatics: Coulombic Potential', .true.)
 
     case (ELECTROSTATIC_COULOMB_FORCE_SHIFT)
-      Call info('  Electrostatics : Force-Shifted Coulombic Potential', .true.)
+      Call info('  Electrostatics: Force-Shifted Coulombic Potential', .true.)
 
     case (ELECTROSTATIC_COULOMB_REACTION_FIELD)
-      Call info('  Electrostatics : Reaction Field', .true.)
+      Call info('  Electrostatics: Reaction Field', .true.)
     end select
 
     if (electro%key /= ELECTROSTATIC_NULL) then
       if (abs(electro%eps - 1.0_wp) > zero_plus) then
-        Write (message, '(a,1p,e12.4)') '  -- Relative dielectric constant ', electro%eps
+        Write (message, '(a,1p,e12.4)') '  -- Relative dielectric constant: ', electro%eps
         Call info(message, .true.)
       end if
 
       !! Fix with electro merge
       If (electro%key /= ELECTROSTATIC_EWALD .and. electro%damping > zero_plus) Then
         Call info('  -- Fennell damping applied', .true.)
-        Write (message, '(a,1p,e12.4)') '  -- Damping parameter (A^-1) ', electro%damping
+        Write (message, '(a,1p,e12.4)') '  -- Damping parameter (A^-1): ', electro%damping
         Call info(message, .true.)
       End If
 
       If (electro%lecx) Then
-        Call info('  -- Extended Coulombic eXclusion : YES', .true.)
+        Call info('  -- Extended Coulombic eXclusion: ON', .true.)
       Else
-        Call info('  -- Extended Coulombic eXclusion : NO', .true.)
+        Call info('  -- Extended Coulombic eXclusion: OFF', .true.)
       End If
 
     end if
@@ -2661,131 +2594,129 @@ contains
     case (ENS_NVE)
       Select Case (thermo%key_dpd)
       case (DPD_NULL)
-        Call info('  Ensemble : NVE (Microcanonical)',.true.)
+        Call info('  Ensemble: NVE (Microcanonical)',.true.)
       Case(DPD_FIRST_ORDER)
 
-        Call info('  Ensemble : NVT dpd (Dissipative Particle Dynamics)',.true.)
-        Call info("  Ensemble type : Shardlow's first order splitting (S1)",.true.)
+        Call info('  Ensemble: NVT dpd (Dissipative Particle Dynamics)',.true.)
+        Call info("  Ensemble type: Shardlow's first order splitting (S1)",.true.)
 
       Case (DPD_SECOND_ORDER)
 
-        Call info('  Ensemble : NVT dpd (Dissipative Particle Dynamics)',.true.)
-        Call info("  Ensemble type : Shardlow's first order splitting (S2)",.true.)
+        Call info('  Ensemble: NVT dpd (Dissipative Particle Dynamics)',.true.)
+        Call info("  Ensemble type: Shardlow's first order splitting (S2)",.true.)
       end select
 
       If (thermo%gamdpd(0) > zero_plus) Then
-        Write(message,'(a,1p,e12.4)') '  -- Drag coefficient (Dalton/ps) ', thermo%gamdpd(0)
+        Write(message,'(a,1p,e12.4)') '  -- Drag coefficient (Dalton/ps): ', thermo%gamdpd(0)
         Call info(message,.true.)
       End If
 
     case (ENS_NVT_EVANS)
 
-      Call info('  Ensemble : NVT Evans (Isokinetic)',.true.)
+      Call info('  Ensemble: NVT Evans (Isokinetic)',.true.)
       Call info('  Gaussian temperature constraints in use',.true.)
 
     case (ENS_NVT_LANGEVIN)
 
-      Call info('  Ensemble : NVT Langevin (Stochastic Dynamics)',.true.)
-      Write(message,'(a,1p,e12.4)') '  -- Thermostat friction (ps^-1)', thermo%chi
+      Call info('  Ensemble: NVT Langevin (Stochastic Dynamics)',.true.)
+      Write(message,'(a,1p,e12.4)') '  -- Thermostat friction (ps^-1): ', thermo%chi
       Call info(message,.true.)
 
     case (ENS_NVT_ANDERSON)
 
-      Write(messages(1),'(a)') '  Ensemble : NVT Andersen'
-      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps) ',thermo%tau_t
-      Write(messages(3),'(a,1p,e12.4)') '  -- Softness (dimensionless)',thermo%soft
+      Write(messages(1),'(a)') '  Ensemble: NVT Andersen'
+      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps): ',thermo%tau_t
+      Write(messages(3),'(a,1p,e12.4)') '  -- Softness (dimensionless): ',thermo%soft
 
       Call info(messages,3,.true.)
 
     case (ENS_NVT_BERENDSEN)
 
-      Call info('  Ensemble : NVT Berendsen',.true.)
-      Write(message,'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps) ',thermo%tau_t
+      Call info('  Ensemble: NVT Berendsen',.true.)
+      Write(message,'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps): ',thermo%tau_t
       Call info(message,.true.)
       Call warning('If you plan to use the Berendsen thermostat, please read https://doi.org/10.1021/acs.jctc.8b00446', .true.)
 
     case (ENS_NVT_NOSE_HOOVER)
 
-      Call info('  Ensemble : NVT Nose-Hoover',.true.)
-      Write(message,'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps) ',thermo%tau_t
+      Call info('  Ensemble: NVT Nose-Hoover',.true.)
+      Write(message,'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps): ',thermo%tau_t
       Call info(message,.true.)
 
     Case (ENS_NVT_GENTLE)
 
-      Write(messages(1),'(a)') '  Ensemble : NVT gentle stochastic thermostat'
-      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps) ',thermo%tau_t
-      Write(messages(3),'(a,1p,e12.4)') '  -- Friction on thermostat  (ps^-1) ',thermo%gama
+      Write(messages(1),'(a)') '  Ensemble: NVT gentle stochastic thermostat'
+      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps): ',thermo%tau_t
+      Write(messages(3),'(a,1p,e12.4)') '  -- Friction on thermostat  (ps^-1): ',thermo%gama
       Call info(messages,3,.true.)
 
     Case (ENS_NVT_LANGEVIN_INHOMO)
 
-
-      Write (messages(1), '(a)') '  Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)'
-      Write (messages(2), '(a,1p,e12.4)') '  -- e-phonon friction (ps^-1) ', thermo%chi_ep
-      Write (messages(3), '(a,1p,e12.4)') '  -- e-stopping friction (ps^-1) ', thermo%chi_es
-      Write (messages(4), '(a,1p,e12.4)') '  -- e-stopping velocity (A ps^-1) ', thermo%vel_es2
+      Write (messages(1), '(a)') '  Ensemble: NVT inhomogeneous Langevin (Stochastic Dynamics)'
+      Write (messages(2), '(a,1p,e12.4)') '  -- e-phonon friction (ps^-1): ', thermo%chi_ep
+      Write (messages(3), '(a,1p,e12.4)') '  -- e-stopping friction (ps^-1): ', thermo%chi_es
+      Write (messages(4), '(a,1p,e12.4)') '  -- e-stopping velocity (ang ps^-1): ', thermo%vel_es2
       Call info(messages, 4, .true.)
 
 
     Case (ENS_NPT_LANGEVIN)
 
-
-      Write(messages(1),'(a)') '  Ensemble : NPT isotropic Langevin (Stochastic Dynamics)'
-      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat friction (ps^-1)',thermo%chi
-      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat friction (ps^-1)',thermo%tai
+      Write(messages(1),'(a)') '  Ensemble: NPT isotropic Langevin (Stochastic Dynamics)'
+      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat friction (ps^-1): ',thermo%chi
+      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat friction (ps^-1): ',thermo%tai
       Call info(messages,3,.true.)
 
     Case (ENS_NPT_BERENDSEN)
 
 
-      Write(messages(1),'(a)') '  Ensemble : NPT isotropic Berendsen'
-      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps) ',thermo%tau_t
-      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat relaxation time (ps) ',thermo%tau_p
+      Write(messages(1),'(a)') '  Ensemble: NPT isotropic Berendsen'
+      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps): ',thermo%tau_t
+      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat relaxation time (ps): ',thermo%tau_p
       Call info(messages,3,.true.)
 
     Case (ENS_NPT_NOSE_HOOVER)
 
 
-      Write(messages(1),'(a)') '  Ensemble : NPT isotropic Nose-Hoover (Melchionna)'
-      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps) ',thermo%tau_t
-      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat relaxation time (ps) ',thermo%tau_p
+      Write(messages(1),'(a)') '  Ensemble: NPT isotropic Nose-Hoover (Melchionna)'
+      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps): ',thermo%tau_t
+      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat relaxation time (ps): ',thermo%tau_p
       Call info(messages,3,.true.)
 
     Case (ENS_NPT_MTK)
 
 
-      Write(messages(1),'(a)') '  Ensemble : NPT isotropic Martyna-Tuckerman-Klein'
-      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps) ',thermo%tau_t
-      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat relaxation time (ps) ',thermo%tau_p
+      Write(messages(1),'(a)') '  Ensemble: NPT isotropic Martyna-Tuckerman-Klein'
+      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps): ',thermo%tau_t
+      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat relaxation time (ps): ',thermo%tau_p
       Call info(messages,3,.true.)
 
 
     Case (ENS_NPT_LANGEVIN_ANISO)
 
-      Write(messages(1),'(a)') '  Ensemble : NPT anisotropic Langevin (Stochastic Dynamics)'
-      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat friction (ps^-1)',thermo%chi
-      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat friction (ps^-1)',thermo%tai
+      Write(messages(1),'(a)') '  Ensemble: NPT anisotropic Langevin (Stochastic Dynamics)'
+      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat friction (ps^-1): ',thermo%chi
+      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat friction (ps^-1): ',thermo%tai
       Call info(messages,3,.true.)
 
     Case (ENS_NPT_BERENDSEN_ANISO)
 
-      Write(messages(1),'(a)') '  Ensemble : NPT anisotropic Berendsen'
-      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps) ',thermo%tau_t
-      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat relaxation time (ps) ',thermo%tau_p
+      Write(messages(1),'(a)') '  Ensemble: NPT anisotropic Berendsen'
+      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps): ',thermo%tau_t
+      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat relaxation time (ps): ',thermo%tau_p
       Call info(messages,3,.true.)
 
     Case (ENS_NPT_NOSE_HOOVER_ANISO)
 
-      Write(messages(1),'(a)') '  Ensemble : NPT anisotropic Nose-Hoover (Melchionna)'
-      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps) ',thermo%tau_t
-      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat relaxation time (ps) ',thermo%tau_p
+      Write(messages(1),'(a)') '  Ensemble: NPT anisotropic Nose-Hoover (Melchionna)'
+      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps): ',thermo%tau_t
+      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat relaxation time (ps): ',thermo%tau_p
       Call info(messages,3,.true.)
 
     Case (ENS_NPT_MTK_ANISO)
 
-      Write(messages(1),'(a)') '  Ensemble : NPT anisotropic Martyna-Tuckerman-Klein'
-      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps) ',thermo%tau_t
-      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat relaxation time (ps) ',thermo%tau_p
+      Write(messages(1),'(a)') '  Ensemble: NPT anisotropic Martyna-Tuckerman-Klein'
+      Write(messages(2),'(a,1p,e12.4)') '  -- Thermostat relaxation time (ps): ',thermo%tau_t
+      Write(messages(3),'(a,1p,e12.4)') '  -- Barostat relaxation time (ps): ',thermo%tau_p
       Call info(messages,3,.true.)
 
     end select
@@ -2796,22 +2727,22 @@ contains
     case (CONSTRAINT_NONE)
       continue
     case (CONSTRAINT_SURFACE_AREA)
-      Call info('  Semi-isotropic barostat : constant normal pressure (Pn) &',.true.)
-      Call info('         (N-Pn-A-T)       : constant surface area (A)',.true.)
+      Call info('  Semi-isotropic barostat: constant normal pressure (Pn) &',.true.)
+      Call info('         (N-Pn-A-T)      : constant surface area (A)',.true.)
     case (CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC)
 
       if (thermo%tension > 0.0_wp) then
-        Write(messages(1),'(a)') '  Semi-isotropic barostat : constant normal pressure (Pn) &'
-        Write(messages(2),'(a)') '       (N-Pn-gamma-T)     : constant surface tension (gamma)'
+        Write(messages(1),'(a)') '  Semi-isotropic barostat: constant normal pressure (Pn) &'
+        Write(messages(2),'(a)') '       (N-Pn-gamma-T)    : constant surface tension (gamma)'
         Write(messages(3),'(a,1p,e11.4)') &
-             '  -- Simulation surface tension (dyn/cm)', convert_units(thermo%tension, 'internal_f/internal_l', 'dyn/cm')
+             '  -- Simulation surface tension ('//'dyn/cm'//'): ', convert_units(thermo%tension, 'internal_f/internal_l', 'dyn/cm')
         Call info(messages,3,.true.)
       else
-        Call info('  Semi-isotropic barostat : orthorhombic MD cell constraints',.true.)
+        Call info('  Semi-isotropic barostat: orthorhombic MD cell constraints',.true.)
       end if
 
       if (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) then
-        Call info('  Semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
+        Call info('  Semi-isotropic barostat: semi-orthorhombic MD cell constraints',.true.)
       end if
 
     end select
@@ -2826,82 +2757,80 @@ contains
     Call info('', .true.)
     Call info('TTM Parameters: ', .true.)
 
-    Write (messages(1), '(a,3(1x,i8))') 'ionic temperature grid size (x,y,z):', ttm%ntsys(1:3)
-    Write (messages(2), '(a,3(1x,f8.4))') 'temperature grid size (x,y,z):', ttm%delx, ttm%dely, ttm%delz
-    Write (messages(3), '(a,f10.4)') 'average number of atoms/cell: ', ttm%sysrho * ttm%volume
+    Write (messages(1), '(a,3(1x,i8))') '  Ionic temperature grid size (x,y,z): ', ttm%ntsys(1:3)
+    Write (messages(2), '(a,3(1x,f8.4))') '  Temperature grid size (x,y,z): ', ttm%delx, ttm%dely, ttm%delz
+    Write (messages(3), '(a,f10.4)') '  Average number of atoms/cell: ', ttm%sysrho * ttm%volume
     Call info(messages, 3, .true.)
-    Write (message, '(a,3(1x,i8))') 'electronic temperature grid size (x,y,z):', &
+    Write (message, '(a,3(1x,i8))') '  Electronic temperature grid size (x,y,z): ', &
          ttm%eltsys(1:3)
     Call info(message, .true.)
 
     if (ttm%ismetal) then
-      Call info('electronic subsystem represents metal: thermal conductivity required', .true.)
+      Call info('  Electronic subsystem: Metal (thermal conductivity required)', .true.)
     else
-      Call info('electronic subsystem represents non-metal: thermal diffusivity required', .true.)
+      Call info('  Electronic subsystem: Non-Metal (thermal diffusivity required)', .true.)
     end if
 
     if (ttm%ttmdyndens) then
-      Call info('dynamic calculations of average atomic density in active ionic cells', .true.)
+      Call info('  Dynamic atomic density: ON', .true.)
     else
-      Write (message, '(a,f10.4)') 'user-specified atomic density (A^-3) ', ttm%cellrho
+      Write (message, '(a,f10.4)') '  Atomic density (A^-3): ', ttm%cellrho
       Call info(message, .true.)
     end if
 
     select case (ttm%cetype)
     case (0) !Constant
-      Call info('electronic specific heat capacity set to constant value', .true.)
-      Write (message, '(a,1p,e12.4)') 'electronic s.h.c. (kB/atom) ', ttm%Ce0 / ttm%cellrho
+      Call info('  Electronic specific heat capacity: Constant', .true.)
+      Write (message, '(a,1p,e12.4)') '  -- Electronic S.H.C. (kB/atom): ', ttm%Ce0 / ttm%cellrho
       Call info(message, .true.)
 
     case (4) !Constant
-      Call info('electronic specific heat capacity set to constant value', .true.)
-      Write (message, '(a,1p,e12.4)') 'electronic s.h.c. (kB/atom) ', ttm%Ce0
+      Call info('  Electronic specific heat capacity: Constant', .true.)
+      Write (message, '(a,1p,e12.4)') '  -- Electronic S.H.C. (kB/atom): ', ttm%Ce0
       Call info(message, .true.)
 
     case (1) !tanh
-      Write (messages(1), '(a)') 'electronic specific heat capacity set to hyperbolic tangent function'
-      Write (messages(2), '(a,1p,e12.4)') 'constant term A (kB/atom) ', ttm%sh_A / ttm%cellrho
-      Write (messages(3), '(a,1p,e12.4)') 'temperature term B (K^-1) ', ttm%sh_B * 1.0e4_wp
+      Write (messages(1), '(a)') '  Electronic specific heat capacity: Hyperbolic tangent'
+      Write (messages(2), '(a,1p,e12.4)') '  -- Constant term A (kB/atom): ', ttm%sh_A / ttm%cellrho
+      Write (messages(3), '(a,1p,e12.4)') '  -- Temperature term B (K^-1): ', ttm%sh_B * 1.0e4_wp
       Call info(messages, 3, .true.)
 
     case (5) !tanh
-      Write (messages(1), '(a)') 'electronic specific heat capacity set to hyperbolic tangent function'
-      Write (messages(2), '(a,1p,e12.4)') 'constant term A (kB/atom) ', ttm%sh_A
-      Write (messages(3), '(a,1p,e12.4)') 'temperature term B (K^-1) ', ttm%sh_B * 1.0e4_wp
+      Write (messages(1), '(a)') '  Electronic specific heat capacity: Hyperbolic tangent'
+      Write (messages(2), '(a,1p,e12.4)') '  -- Constant term A (kB/atom): ', ttm%sh_A
+      Write (messages(3), '(a,1p,e12.4)') '  -- Temperature term B (K^-1): ', ttm%sh_B * 1.0e4_wp
       Call info(messages, 3, .true.)
 
     case (2, 6) !linear
-      Write (messages(1), '(a)') 'electronic specific heat capacity set to linear function up to Fermi temperature'
-      Write (messages(2), '(a,1p,e12.4)') 'max. electronic s.h.c. (kB/atom) ', ttm%Cemax
-      Write (messages(3), '(a,1p,e12.4)') 'Fermi temperature (K)', ttm%Tfermi
+      Write (messages(1), '(a)') '  Electronic specific heat capacity: Linear'
+      Write (messages(2), '(a,1p,e12.4)') '  -- Max. electronic S.H.C. (kB/atom): ', ttm%Cemax
+      Write (messages(3), '(a,1p,e12.4)') '  -- Fermi temperature (K):', ttm%Tfermi
       Call info(messages, 3, .true.)
 
     case (3) !tabulated
-      Call info('electronic volumetric heat capacity given as tabulated function of temperature', .true.)
+      Call info('  Electronic specific heat capacity: Tabulated', .true.)
 
     end select
 
     select case (ttm%ketype)
     case (0) ! Infinite
-      Call info('electronic thermal conductivity set to infinity', .true.)
+      Call info('  Electronic thermal conductivity: Infinity', .true.)
 
     case (1) ! Constant
-      Write (messages(1), '(a)') 'electronic thermal conductivity set to constant value'
-      Write (messages(2), '(a,1p,e12.4)') 'electronic t.c. (W m^-1 K^-1) ', &
+      Write (messages(1), '(a)') '  Electronic thermal conductivity: Constant'
+      Write (messages(2), '(a,1p,e12.4)') '  -- Electronic T.C. (W m^-1 K^-1): ', &
            convert_units(ttm%Ka0, 'k_b/ps/A', 'W/m/K')
       Call info(messages, 2, .true.)
 
     case (2) ! Drude
-      Write (messages(1), '(a)') 'electronic thermal conductivity set to drude model'
-      Write (messages(2), '(a,1p,e12.4)') 't.c. at system thermo%temp. (W m^-1 K^-1) ', &
+      Write (messages(1), '(a)') '  Electronic thermal conductivity: Drude model'
+      Write (messages(2), '(a,1p,e12.4)') '  -- T.C. at system temp. (W m^-1 K^-1): ', &
            convert_units(ttm%Ka0, 'k_b/ps/A', 'W/m/K')
       Call info(messages, 2, .true.)
 
     case (3) ! Tabulated
-      Write (messages(1), '(a)') 'electronic thermal conductivity given as tabulated function of temperature:'
-      Write (messages(2), '(a)') 'uses ionic or system temperature to calculate cell conductivity value'
-      Write (messages(3), '(a)') 'for thermal diffusion equation'
-      Call info(messages, 3, .true.)
+
+      Call info('  Electronic thermal conductivity: Tabulated', .true.)
 
     end select
 
@@ -2909,65 +2838,62 @@ contains
     case (0) ! Off
       continue
     case (1) ! Constant
-      Write (messages(1), '(a)') 'electronic thermal diffusivity set to constant value'
-      Write (messages(2), '(a,1p,e12.4)') 'electronic t.d. (m^2 s^-1) ', convert_units(ttm%diff0, 'ang^2/ps', 'm^2/s')
+      Write (messages(1), '(a)') '  Electronic thermal diffusivity: Constant'
+      Write (messages(2), '(a,1p,e12.4)') '  -- Electronic T.D. (m^2 s^-1): ', convert_units(ttm%diff0, 'ang^2/ps', 'm^2/s')
       Call info(messages, 2, .true.)
 
     case (2) ! Recip
 
-      Write (messages(1), '(a)') 'electronic thermal diffusivity set to reciprocal function up to Fermi temperature'
-      Write (messages(2), '(a,1p,e12.4)') 'datum electronic t.d. (m^2 s^-1) ', convert_units(ttm%diff0, 'ang^2/ps', 'm^2/s') /&
-           thermo%temp
-      Write (messages(3), '(a,1p,e12.4)') 'Fermi temperature (K) ', ttm%Tfermi
+      Write (messages(1), '(a)') '  Electronic thermal diffusivity: Reciprocal'
+      Write (messages(2), '(a,1p,e12.4)') '  -- Datum electronic T.D. (m^2 s^-1): ', &
+           convert_units(ttm%diff0, 'ang^2/ps', 'm^2/s') / thermo%temp
+      Write (messages(3), '(a,1p,e12.4)') '  -- Fermi temperature (K): ', ttm%Tfermi
       Call info(messages, 3, .true.)
 
     case (3) ! Tabulated
 
-      Call info('electronic thermal diffusivity given as tabulated function of temperature', .true.)
+      Call info('  Electronic thermal diffusivity: Tabulated', .true.)
 
     end select
 
 
-    Write (message, '(a,1p,i8)') 'min. atom no. for ionic cells ', ttm%amin
+    Write (message, '(a,1p,i8)') '  Mininum number of atoms for ionic cells: ', ttm%amin
     Call info(message, .true.)
 
     if (ttm%redistribute) then
-      Write (messages(1), '(a)') 'redistributing energy from deactivated electronic cells into active neighbours'
-      Write (messages(2), '(a)') '(requires at least one electronic temperature cell beyond ionic cells)'
-      Call info(messages, 2, .true.)
+      Call info('  Energy redistribution: ON', .true.)
     End If
 
-    Write (message, '(a,1p,e12.4)') 'elec. stopping power (eV/nm) ', convert_units(ttm%dedx, 'e.V/ang', 'e.V/nm')
+    Write (message, '(a,1p,e12.4)') '  Elec. stopping power (eV/nm): ', convert_units(ttm%dedx, 'e.V/ang', 'e.V/nm')
     Call info(message, .true.)
 
     if (ttm%fluence < zero_plus) then
       select case (ttm%sdepoType)
       case (1)
-        Write (messages(1), '(a)') 'initial gaussian spatial energy deposition in electronic system'
-        Write (messages(2), '(a,1p,e12.4)') 'thermo%ttm%sigma of distribution (nm) ', convert_units(ttm%sig, 'ang', 'nm')
-        Write (messages(3), '(a,1p,e12.4)') 'distribution cutoff (nm) ', convert_units(ttm%sigmax * ttm%sig, 'ang', 'nm')
+        Write (messages(1), '(a)') '   Spatial energy deposition: Gaussian'
+        Write (messages(2), '(a,1p,e12.4)') '  -- Sigma of distribution (nm): ', convert_units(ttm%sig, 'ang', 'nm')
+        Write (messages(3), '(a,1p,e12.4)') '  -- Distribution cutoff (nm): ', convert_units(ttm%sigmax * ttm%sig, 'ang', 'nm')
         Call info(messages, 3, .true.)
 
       case (2)
-        Call info('initial homogeneous (flat) spatial energy deposition in electronic system', .true.)
+        Call info('  Spatial energy deposition: Homogeneous', .true.)
       end select
 
     else
       select case (ttm%sdepoType)
       case (2)
-        Write (messages(1), '(a)') 'initial homogeneous (flat) spatial energy deposition in electronic system due to laser'
+        Write (messages(1), '(a)') '  Spatial energy deposition: Homogeneous Laser'
         Write (messages(2), '(a,1p,e12.4)') &
-             'absorbed ttm%fluence (mJ cm^-2) ', convert_units(ttm%fluence, 'e.V/ang^2', 'mJ/cm^2')
-        Write (messages(3), '(a,1p,e12.4)') 'penetration depth (nm) ', convert_units(ttm%pdepth, 'ang', 'nm')
+             '  -- Absorbed fluence (mJ cm^-2): ', convert_units(ttm%fluence, 'e.V/ang^2', 'mJ/cm^2')
+        Write (messages(3), '(a,1p,e12.4)') '  -- Penetration depth (nm): ', convert_units(ttm%pdepth, 'ang', 'nm')
         Call info(messages, 3, .true.)
 
       case (3)
 
-        Write (messages(1), '(a)') 'initial xy-homogeneous, z-exponential ' &
-             //'decaying spatial energy deposition in electronic system due to laser'
+        Write (messages(1), '(a)') '  Spatial energy deposition: Z-exponential decaying Laser '
         Write (messages(2), '(a,1p,e12.4)') &
-             'absorbed ttm%fluence at surface (mJ cm^-2) ', convert_units(ttm%fluence, 'e.V/ang^2', 'mJ/cm^2')
-        Write (messages(3), '(a,1p,e12.4)') 'penetration depth (nm) ', convert_units(ttm%pdepth, 'ang', 'nm')
+             '  -- Absorbed fluence at surface (mJ cm^-2): ', convert_units(ttm%fluence, 'e.V/ang^2', 'mJ/cm^2')
+        Write (messages(3), '(a,1p,e12.4)') '  -- Penetration depth (nm): ', convert_units(ttm%pdepth, 'ang', 'nm')
         Call info(messages, 3, .true.)
       end select
 
@@ -2975,84 +2901,79 @@ contains
 
     select case (ttm%tdepotype)
     case (1)
-      Write (messages(1), '(a)') 'gaussian temporal energy deposition in electronic system'
-      Write (messages(2), '(a,1p,e12.4)') 'thermo%ttm%sigma of distribution (ps) ', ttm%tdepo
-      Write (messages(3), '(a,1p,e12.4)') 'distribution cutoff (ps) ', 2.0_wp * ttm%tcdepo * ttm%tdepo
+      Write (messages(1), '(a)') '  Temporal energy deposition: Gaussian'
+      Write (messages(2), '(a,1p,e12.4)') '  -- Sigma of distribution (ps): ', ttm%tdepo
+      Write (messages(3), '(a,1p,e12.4)') '  -- Distribution cutoff (ps): ', 2.0_wp * ttm%tcdepo * ttm%tdepo
       Call info(messages, 3, .true.)
 
     case (2)
-      Write (messages(1), '(a)') 'decaying exponential temporal energy deposition in electronic system'
-      Write (messages(2), '(a,1p,e12.4)') 'tau of distribution (ps) ', ttm%tdepo
-      Write (messages(3), '(a,1p,e12.4)') 'distribution cutoff (ps) ', ttm%tcdepo * ttm%tdepo
+      Write (messages(1), '(a)') '  Temporal energy deposition: Decaying Exponential'
+      Write (messages(2), '(a,1p,e12.4)') '  -- Tau of distribution (ps): ', ttm%tdepo
+      Write (messages(3), '(a,1p,e12.4)') '  -- Distribution cutoff (ps): ', ttm%tcdepo * ttm%tdepo
       Call info(messages, 3, .true.)
 
     case (3)
-      Call info('dirac delta temporal energy deposition in electronic system', .true.)
+      Call info('  Temporal energy deposition: Dirac delta', .true.)
 
     case (4)
-      Write (messages(1), '(a)') 'square pulse temporal energy deposition in electronic system'
-      Write (messages(2), '(a,1p,e12.4)') 'pulse duration (ps) ', ttm%tdepo
+      Write (messages(1), '(a)') '  Temporal energy deposition: Square pulse'
+      Write (messages(2), '(a,1p,e12.4)') '  -- Pulse duration (ps): ', ttm%tdepo
       Call info(messages, 2, .true.)
 
     end select
 
     Select Case (ttm%gvar)
     Case (1)
-      Write (messages(1), '(a)') 'variable electron-phonon coupling values to be applied homogeneously'
+      Write (messages(1), '(a)') '  Variable electron-phonon coupling: Homogeneous'
     Case (2)
-      Write (messages(1), '(a)') 'variable electron-phonon coupling values to be applied heterogeneously'
+      Write (messages(1), '(a)') '  Variable electron-phonon coupling: Heterogeneous'
     End Select
-    Write (messages(2), '(a)') '(overrides value given for ensemble, required tabulated stopping'
-    Write (messages(3), '(a)') 'terms in g.dat file)'
-    Call info(messages, 3, .true.)
+    Write (messages(2), '(a)') '    (overrides value given for ensemble, required tabulated stopping terms in g.dat file)'
+    Call info(messages, 2, .true.)
 
     select case(ttm%bcTypeE)
     case(1)
-      Call info('electronic temperature boundary conditions set as periodic', .true.)
+      Call info('  Electronic temperature boundary conditions: Periodic', .true.)
 
     Case (2)
-      Write (messages(1), '(a)') 'electronic temperature boundary conditions set as dirichlet:'
-      Write (messages(2), '(a)') 'setting boundaries to system temperature'
+      Write (messages(1), '(a)') '  Electronic temperature boundary conditions: Dirichlet'
+      Write (messages(2), '(a)') '  -- Boundaries set to system temperature'
       Call info(messages, 2, .true.)
 
     case (3)
-      Write (messages(1), '(a)') 'electronic temperature boundary conditions set as neumann:'
-      Write (messages(2), '(a)') 'zero energy flux at boundaries'
-      Call info(messages, 2, .true.)
+      Call info('  Electronic temperature boundary conditions: Neumann', .true.)
 
     case (4)
-      Write (messages(1), '(a)') 'electronic temperature boundary conditions set as dirichlet (xy), neumann (z):'
-      Write (messages(2), '(a)') 'system temperature at x and y boundaries'
-      Write (messages(3), '(a)') 'zero energy flux at z boundaries'
-      Call info(messages, 3, .true.)
+      Write (messages(1), '(a)') '  Electronic temperature boundary conditions: Dirichlet (XY), Neumann (Z)'
+      Write (messages(2), '(a)') '  -- XY boundaries set to system temperature'
+      Call info(messages, 2, .true.)
 
     Case (5)
-      Write (messages(1), '(a)') 'electronic temperature boundary conditions set as robin:'
-      Write (messages(2), '(a,1p,e11.4)') 'temperature leakage at boundaries of ', ttm%fluxout
+      Write (messages(1), '(a)') '  Electronic temperature boundary conditions: Robin'
+      Write (messages(2), '(a,1p,e11.4)') '  -- Temperature leakage (%): ', convert_units(ttm%fluxout, '', '%')
       Call info(messages, 2, .true.)
 
     case (6)
-      Write (messages(1), '(a)') 'electronic temperature boundary conditions set as robin (xy), neumann (z):'
-      Write (messages(2), '(a,1p,e11.4)') 'temperature leakage at x and y boundaries of ', ttm%fluxout
-      Write (messages(3), '(a)') 'zero energy flux at z boundaries'
+      Write (messages(1), '(a)') '  Electronic temperature boundary conditions: Robin (XY), Neumann (Z):'
+      Write (messages(2), '(a,1p,e11.4)') '  -- XY Temperature leakage (%): ', convert_units(ttm%fluxout, '', '%')
       Call info(messages, 3, .true.)
 
     end select
 
-    Write (message, '(a,1p,e12.4)') 'electron-ion coupling offset (ps) ', ttm%ttmoffset
+    Write (message, '(a,1p,e12.4)') '  Electron-ion coupling offset (ps): ', ttm%ttmoffset
     Call info(message, .true.)
 
-    if (ttm%oneway) Call info('one-way electron-phonon coupling option switched on', .true.)
+    if (ttm%oneway) Call info('  One-way electron-phonon coupling: ON', .true.)
 
     if (ttm%ttmstats > 0) then
-      Write (messages(1), '(a)') 'ttm statistics file option on'
-      Write (messages(2), '(a,i10)') 'ttm statistics file interval ', ttm%ttmstats
+      Write (messages(1), '(a)') '  TTM statistics file: ON'
+      Write (messages(2), '(a,i10)') '  -- TTM statistics file interval (steps): ', ttm%ttmstats
       Call info(messages, 2, .true.)
     end if
 
     if (ttm%ttmtraj > 0) then
-      Write (messages(1), '(a)') 'ttm trajectory (temperature profile) file option on'
-      Write (messages(2), '(a,i10)') 'ttm trajectory file interval', ttm%ttmtraj
+      Write (messages(1), '(a)') '  TTM trajectory (temperature profile) file: ON'
+      Write (messages(2), '(a,i10)') '  -- TTM trajectory file interval (steps): ', ttm%ttmtraj
       Call info(messages, 2, .true.)
     end if
 
@@ -3317,14 +3238,14 @@ contains
 
         msd: block
           call table%set("msd_calculate", control_parameter( &
-               key = "msd", &
+               key = "msd_calculate", &
                name = "MSD calculating", &
                val = "off", &
                description = "Enable calculation of MSD", &
                data_type = DATA_BOOL))
 
           call table%set("msd_print", control_parameter( &
-               key = "msd", &
+               key = "msd_print", &
                name = "MSD printing", &
                val = "off", &
                description = "Enable printing of MSD", &
@@ -3990,7 +3911,7 @@ contains
              data_type = DATA_BOOL))
 
         call table%set("timestep_variable_min_dist", control_parameter( &
-             key = "variable_timestep_min_dist", &
+             key = "timestep_variable_min_dist", &
              name = "Variable timestep minimum distance", &
              val = "0.03", &
              units = "ang", &
@@ -3999,7 +3920,7 @@ contains
              data_type = DATA_FLOAT))
 
         call table%set("timestep_variable_max_dist", control_parameter( &
-             key = "variable_timestep_max_dist", &
+             key = "timestep_variable_max_dist", &
              name = "Variable timestep maximum distance", &
              val = "0.1", &
              units = "ang", &
@@ -4008,7 +3929,7 @@ contains
              data_type = DATA_FLOAT))
 
         call table%set("timestep_variable_max_delta", control_parameter( &
-             key = "variable_timestep_max_delta", &
+             key = "timestep_variable_max_delta", &
              name = "Variable timestep max delta", &
              val = "0.0", &
              units = "internal_t", &
@@ -4526,7 +4447,7 @@ contains
              key = "ttm_e-stopping_velocity", &
              name = "TTM Electron-stopping velocity", &
              val = "0.0", &
-             units = "A/ps", &
+             units = "ang/ps", &
              internal_units = "internal_v", &
              description = "Set TTM electron-stopping velocity", &
              data_type = DATA_FLOAT))
@@ -4664,8 +4585,8 @@ contains
              data_type = DATA_FLOAT))
 
         call table%set("minimisation_frequency", control_parameter( &
-             key = "minimisation_step_length", &
-             name = "Minimisation step length", &
+             key = "minimisation_frequency", &
+             name = "Minimisation frequency", &
              val = "0", &
              units = "steps", &
              internal_units = "steps", &

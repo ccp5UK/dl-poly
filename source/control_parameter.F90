@@ -145,7 +145,12 @@ contains
               trim(param%key), trim(data_name(param%data_type)), &
               trim(param%description), trim(param%val), trim(param%units)
        Case ('python')
-         Write(ifile, '("''",a,"'':",1X, a, ",", 1X)', advance='No') trim(param%key), trim(python_data_name(param%data_type))
+         if (len_trim(param%units) > 0) then
+           Write(ifile, '("''",a, "'':",1X,"(",a,",",1X,a,"),")') trim(param%key), trim(python_data_name(param%data_type)), &
+                trim(python_data_name(DATA_STRING))
+         else
+           Write(ifile, '("''",a,"'':",1X,a,",")') trim(param%key), trim(python_data_name(param%data_type))
+         end if
        end Select
 
     end do
@@ -161,6 +166,8 @@ contains
     Case ('csv')
       Continue
     end Select
+
+    flush(ifile)
 
   contains
 

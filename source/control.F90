@@ -1400,7 +1400,7 @@ Contains
             Write (messages(1), '(a)') 'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)'
             Write (messages(2), '(a,1p,e12.4)') 'e-phonon friction (ps^-1) ', thermo%chi_ep
             Write (messages(3), '(a,1p,e12.4)') 'e-stopping friction (ps^-1) ', thermo%chi_es
-            Write (messages(4), '(a,1p,e12.4)') 'e-stopping velocity (A ps^-1) ', thermo%vel_es2
+            Write (messages(4), '(a,1p,e12.4)') 'e-stopping velocity (ang ps^-1) ', thermo%vel_es2
             Call info(messages, 4, .true.)
 
             If (lens) Call error(414)
