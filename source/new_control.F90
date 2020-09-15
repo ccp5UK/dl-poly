@@ -1652,7 +1652,7 @@ contains
     if (thermo%tstep < zero_plus) call error(0, 'Timestep too small')
     call params%retrieve('timestep_variable', thermo%lvar)
 
-    If (thermo%key_dpd == DPD_NULL .and. thermo%lvar) then
+    If (thermo%key_dpd /= DPD_NULL .and. thermo%lvar) then
       thermo%lvar = .false.
       Call warning('variable timestep unavalable in DPD themostats', .true.)
     Else If (thermo%lvar) Then
