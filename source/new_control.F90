@@ -42,6 +42,14 @@ Module new_control
        FILE_REVIVE,&
        FILE_REVOLD,&
        FILE_STATS,&
+       FILE_RDF,&
+       FILE_MSD,&
+       FILE_TABBND,&
+       FILE_TABANG,&
+       FILE_TABDIH,&
+       FILE_TABINV,&
+       FILE_TABVDW,&
+       FILE_TABEAM,&
        file_type
   Use flow_control,         Only: RESTART_KEY_CLEAN,&
        RESTART_KEY_NOSCALE,&
@@ -530,6 +538,23 @@ contains
     files(FILE_REVCON)%filename = curr_option
     Call params%retrieve('io_file_revold', curr_option)
     files(FILE_REVOLD)%filename = curr_option
+    Call params%retrieve('io_file_rdf', curr_option)
+    files(FILE_RDF)%filename = curr_option
+    Call params%retrieve('io_file_msd', curr_option)
+    files(FILE_MSD)%filename = curr_option
+    Call params%retrieve('io_file_tabbnd', curr_option)
+    files(FILE_TABBND)%filename = curr_option
+    Call params%retrieve('io_file_tabang', curr_option)
+    files(FILE_TABANG)%filename = curr_option
+    Call params%retrieve('io_file_tabdih', curr_option)
+    files(FILE_TABDIH)%filename = curr_option
+    Call params%retrieve('io_file_tabinv', curr_option)
+    files(FILE_TABINV)%filename = curr_option
+    Call params%retrieve('io_file_tabvdw', curr_option)
+    files(FILE_TABVDW)%filename = curr_option
+    Call params%retrieve('io_file_tabeam', curr_option)
+    files(FILE_TABEAM)%filename = curr_option
+
   End Subroutine read_io
 
   Subroutine read_ensemble(params, thermo, ttm_active)
@@ -2054,6 +2079,14 @@ contains
     if (files(FILE_REVIVE)%filename /= "REVIVE") Call info('  REVIVE file is '//files(FILE_REVIVE)%filename,.true.)
     if (files(FILE_REVCON)%filename /= "REVCON") Call info('  REVCON file is '//files(FILE_REVCON)%filename,.true.)
     if (files(FILE_REVOLD)%filename /= "REVOLD") Call info('  REVOLD file is '//files(FILE_REVOLD)%filename,.true.)
+    if (files(FILE_RDF)%filename /= 'RDFDAT') Call info('  RDF file is '//files(FILE_RDF)%filename,.true.)
+    if (files(FILE_MSD)%filename /= 'MSDTMP') Call info('  MSD file is '//files(FILE_MSD)%filename,.true.)
+    if (files(FILE_TABBND)%filename /= 'TABBND') Call info('  TABBND file is '//files(FILE_TABBND)%filename,.true.)
+    if (files(FILE_TABANG)%filename /= 'TABANG') Call info('  TABANG file is '//files(FILE_TABANG)%filename,.true.)
+    if (files(FILE_TABDIH)%filename /= 'TABDIH') Call info('  TABDIH file is '//files(FILE_TABDIH)%filename,.true.)
+    if (files(FILE_TABINV)%filename /= 'TABINV') Call info('  TABINV file is '//files(FILE_TABINV)%filename,.true.)
+    if (files(FILE_TABVDW)%filename /= 'TABVDW') Call info('  TABVDW file is '//files(FILE_TABVDW)%filename,.true.)
+    if (files(FILE_TABEAM)%filename /= 'TABEAM') Call info('  TABEAM file is '//files(FILE_TABEAM)%filename,.true.)
 
   end Subroutine write_io
 
@@ -3845,6 +3878,63 @@ contains
              val = "REVCON", &
              description = "Set output revcon filepath, special options: NONE", &
              data_type = DATA_STRING))
+
+        call table%set('io_file_rdf', control_parameter( &
+             key = 'io_file_rdf', &
+             name = 'rdf filepath', &
+             val = 'RDFDAT', &
+             description = 'Set output RDF filepath, special options: NONE', &
+             data_type = DATA_STRING))
+
+        call table%set('io_file_msd', control_parameter( &
+             key = 'io_file_msd', &
+             name = 'msd filepath', &
+             val = 'MSDTMP', &
+             description = 'Set output MSD filepath, special options: NONE', &
+             data_type = DATA_STRING))
+
+        call table%set('io_file_tabbnd', control_parameter( &
+             key = 'io_file_tabbnd', &
+             name = 'tabbnd filepath', &
+             val = 'TABBND', &
+             description = 'Set input TABBND filepath', &
+             data_type = DATA_STRING))
+
+        call table%set('io_file_tabang', control_parameter( &
+             key = 'io_file_tabang', &
+             name = 'tabang filepath', &
+             val = 'TABANG', &
+             description = 'Set input TABANG filepath', &
+             data_type = DATA_STRING))
+
+        call table%set('io_file_tabdih', control_parameter( &
+             key = 'io_file_tabdih', &
+             name = 'tabdih filepath', &
+             val = 'TABDIH', &
+             description = 'Set input TABDIH filepath', &
+             data_type = DATA_STRING))
+
+        call table%set('io_file_tabinv', control_parameter( &
+             key = 'io_file_tabinv', &
+             name = 'tabinv filepath', &
+             val = 'TABINV', &
+             description = 'Set input TABINV filepath', &
+             data_type = DATA_STRING))
+
+        call table%set('io_file_tabvdw', control_parameter( &
+             key = 'io_file_tabvdw', &
+             name = 'tabvdw filepath', &
+             val = 'TABVDW', &
+             description = 'Set input TABVDW filepath', &
+             data_type = DATA_STRING))
+
+        call table%set('io_file_tabeam', control_parameter( &
+             key = 'io_file_tabeam', &
+             name = 'tabeam filepath', &
+             val = 'TABEAM', &
+             description = 'Set input TABEAM filepath', &
+             data_type = DATA_STRING))
+
       end block io_file
 
       call table%set('output_energy', control_parameter( &
