@@ -222,7 +222,7 @@ contains
 
     Call params%retrieve('print_level', print_level)
     Call set_print_level(print_level)
-    Call params%retrieve('safe_comms', devel%l_fast)
+    Call params%retrieve('unsafe_comms', devel%l_fast)
 
     call params%retrieve('output_energy', devel%l_eng)
     call params%retrieve('io_write_ascii_revive', devel%l_rout)
@@ -4111,7 +4111,7 @@ contains
              name = "Ensemble semi-isotropic constraint", &
              val = "off", &
              description = "Enable semi-isotropic barostat constraints, options: area, tension, orthorhombic", &
-             data_type = DATA_BOOL))
+             data_type = DATA_OPTION))
 
         call table%set("ensemble_semi_orthorhombic", control_parameter( &
              key = "ensemble_semi_orthorhombic", &
@@ -4937,11 +4937,11 @@ contains
            "good system cutoff, particle index contiguity, disable non-error warnings, minimisation information", &
            data_type = DATA_BOOL))
 
-      call table%set("safe_comms", control_parameter( &
-           key = "safe_comms", &
-           name = "Enable parallel safety", &
-           val = "on", &
-           description = "Ensure checks of logicals are enforced in parallel", &
+      call table%set("unsafe_comms", control_parameter( &
+           key = "unsafe_comms", &
+           name = "Disable parallel safety", &
+           val = "off", &
+           description = "Do not ensure checks of logicals are enforced in parallel", &
            data_type = DATA_BOOL))
 
 

@@ -47,6 +47,7 @@ Module ewald
 
     !> Ewald is performing polynomial VdW parts
     Logical, Public :: vdw = .false.
+
     !> VdW sets
     Integer, Allocatable, Dimension(:), Public :: reduced_VdW
 
