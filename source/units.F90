@@ -230,7 +230,7 @@ contains
 
     ! Unitless
 
-    call units_table%set("%", init_unit(abbrev="%", name="%", to_internal=100.0_wp))
+    call units_table%set("%", init_unit(abbrev="%", name="%", to_internal=0.01_wp))
     call units_table%set("", init_unit(abbrev="", name="", to_internal=1.0_wp))
 
   End Subroutine initialise_units

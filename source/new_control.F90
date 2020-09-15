@@ -3011,7 +3011,7 @@ contains
            name = "Expected density variance", &
            val = "1.0", &
            units = "%", &
-           internal_units = "%", &
+           internal_units = "", &
            description = "Set expected density variance for determining maximum array sizes", &
            data_type = DATA_FLOAT))
 
