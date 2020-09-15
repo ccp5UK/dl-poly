@@ -73,7 +73,6 @@ Module new_control
        sp,&
        wi,&
        wp
-  Use langevin,             Only: langevin_allocate_arrays
   Use metal,                Only: metal_type
   Use minimise,             Only: MIN_DISTANCE,&
        MIN_ENERGY,&
@@ -1390,7 +1389,6 @@ contains
 
     Real(Kind=wp), Dimension(9) :: cell
     Real(Kind=wp), Dimension(10):: cell_properties
-    Real(Kind=wp), Dimension(3) :: vtmp
     Real(Kind=wp) :: cut, tol, tol1, eps0, rtmp
 
     Character(Len=STR_LEN) :: option
@@ -1411,8 +1409,7 @@ contains
     case ('off')
       vdws%no_vdw = .true.
     case ('ewald')
-      ! Add when merged
-      !  ewld%vdw = .true.
+      ewld%vdw = .true.
     case default
       call bad_option('vdw_method', option)
     end select

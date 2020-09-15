@@ -101,7 +101,6 @@ Module control
                                   sp,&
                                   wi,&
                                   wp
-  Use langevin,             Only: langevin_allocate_arrays
   Use metal,                Only: metal_type
   Use minimise,             Only: MIN_DISTANCE,&
                                   MIN_ENERGY,&
@@ -1828,10 +1827,6 @@ Contains
           Call error(436)
 
         End If
-
-        ! For Langevin ensembles that require arrays
-
-        If (thermo%l_langevin) Call langevin_allocate_arrays(thermo, config%mxatms)
 
         ! read density variation option
 

@@ -774,7 +774,6 @@ Contains
     k = 0
 
     ! generate uniform random numbers on [-1, 1)
-
     ran0 = 1.0_wp
     Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
       ran1 = 2.0_wp * sarurnd(seed, i, j, k) - 1.0_wp

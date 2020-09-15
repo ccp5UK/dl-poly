@@ -88,6 +88,7 @@ Module meta
   Use kinds,                              Only: wi,&
                                                 wp
   Use kinetics,                           Only: cap_forces
+  Use langevin,                           Only: langevin_allocate_arrays
   Use metal,                              Only: metal_type
   Use minimise,                           Only: minimise_type
   Use mpole,                              Only: POLARISATION_CHARMM,&
@@ -650,7 +651,7 @@ Contains
     Type(configuration_type),  Intent(InOut) :: config
     Type(ttm_type),            Intent(InOut) :: ttms
 
-        ! ALLOCATE SITE & CONFIG
+    ! ALLOCATE SITE & CONFIG
     Call sites%init()
     Call config%init()
 
@@ -658,6 +659,9 @@ Contains
 
     ! ALLOCATE DPD ARRAYS
     Call thermo%init_dpd(vdws%max_vdw)
+
+    ! ALLOCATE LANGEVIN ARRAYS
+    Call langevin_allocate_arrays(thermo, config%mxatms)
 
     ! ALLOCATE INTRA-LIKE INTERACTION ARRAYS
     Call core_shells%init(config%mxatdm, sites%mxtmls, config%mxlshp, domain%neighbours)

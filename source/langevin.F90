@@ -41,6 +41,8 @@ Contains
 
     Integer :: fail
 
+    if (.not. thermo%l_langevin) return
+
     fail = 0
 
     Allocate (thermo%fxl(1:mxatms), thermo%fyl(1:mxatms), thermo%fzl(1:mxatms), Stat=fail)
