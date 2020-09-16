@@ -2466,7 +2466,7 @@ contains
     end if
 
     if (config%dvar > 1.0_wp) then
-      Write (message, '(a,9x,3i5)') '  Permitted density variance (%): ', &
+      Write (message, '(a,9x,e12.4)') '  Permitted density variance (%): ', &
            convert_units(config%dvar - 1.0_wp, '', '%')
       Call info(message, .true.)
     end if
@@ -2606,11 +2606,11 @@ contains
       Call info('  Electrostatics: Smooth Particle Mesh Ewald', .true.)
 
       if (ewld%precision > 0.0_wp) then
-        Write(message, '(a,e12.4)') '  -- Ewald sum precision: ', ewld%precision
+        Write(message, '(a,es12.4)') '  -- Ewald sum precision: ', ewld%precision
         Call info(message, .true.)
       end if
 
-      Write (messages(1), '(a,1p,e12.4)') '  -- Ewald convergence parameter (Angs^-1): ', ewld%alpha
+      Write (messages(1), '(a,1p,es12.4)') '  -- Ewald convergence parameter (Angs^-1): ', ewld%alpha
       Write (messages(2), '(a,3i5)') '  -- Ewald kmax1 kmax2 kmax3   (x2): ', ewld%kspace%k_vec_dim_cont
       if (any(ewld%kspace%k_vec_dim /= ewld%kspace%k_vec_dim_cont)) then
         Write (messages(3), '(a,3i5)') '  -- DaFT adjusted kmax values (x2): ', ewld%kspace%k_vec_dim
@@ -3092,7 +3092,7 @@ contains
       call table%set("density_variance", control_parameter( &
            key = "density_variance", &
            name = "Expected density variance", &
-           val = "1.0", &
+           val = "0.0", &
            units = "%", &
            internal_units = "", &
            description = "Set expected density variance for determining maximum array sizes", &

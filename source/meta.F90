@@ -554,7 +554,6 @@ Contains
       tether, threebody, zdensity, neigh, vdws, tersoffs, fourbody, rdf, mpoles, ext_field, &
       rigid, electro, domain, config, ewld, kim_data, files, flow, comm)
 
-
     Call info('', .true.)
     Call info("*** pre-scanning stage (set_bounds) DONE ***", .true.)
     Call time_elapsed(tmr)
