@@ -408,7 +408,7 @@ Contains
        kim_Data, bond, threebody, fourbody, tersoffs)
     call read_run_parameters(params, flow, thermo, stats, config%l_ind)
     call read_ttm(params, ttms)
-    call read_ensemble(params, thermo, ttms%l_ttm)
+    call read_ensemble(params, thermo, vdws%max_vdw, ttms%l_ttm)
     Call read_system_parameters(params, flow, config, thermo, impa, minim, plume, cons, pmfs, ttms%l_ttm)
 
     ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
@@ -656,9 +656,6 @@ Contains
     Call config%init()
 
     Call neigh%init_list(config%mxatdm)
-
-    ! ALLOCATE DPD ARRAYS
-    Call thermo%init_dpd(vdws%max_vdw)
 
     ! ALLOCATE LANGEVIN ARRAYS
     Call langevin_allocate_arrays(thermo, config%mxatms)

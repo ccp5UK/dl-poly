@@ -557,11 +557,12 @@ contains
 
   End Subroutine read_io
 
-  Subroutine read_ensemble(params, thermo, ttm_active)
+  Subroutine read_ensemble(params, thermo, nvdw, ttm_active)
     Type( parameters_hash_table ), intent( In    ) :: params
     Type( thermostat_type ), Intent( InOut ) :: thermo
-    Character(Len=STR_LEN) :: option
+    Integer, Intent( In    ) :: nvdw
     Logical, Intent( In    ) :: ttm_active
+    Character(Len=STR_LEN) :: option
     Logical :: ltmp
 
     call params%retrieve('ensemble', option, required = .true.)
@@ -633,6 +634,8 @@ contains
           call bad_option('ensemble_dpd_order', option)
         end select
 
+        ! ALLOCATE DPD ARRAYS
+        call thermo%init_dpd(nvdw + 1) ! Account for extra one in bounds?!
 
         call params%retrieve('ensemble_dpd_drag', thermo%gamdpd(0))
 

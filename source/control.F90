@@ -1425,6 +1425,8 @@ Contains
               Call error(436)
             End If
 
+            call thermo%init_dpd(vdws%max_vdw)
+
             Call get_word(record, word)
             thermo%gamdpd(0) = Abs(word_2_real(word, 0.0_wp))
 
