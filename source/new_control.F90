@@ -1797,6 +1797,11 @@ contains
       call bad_option('restart', option)
     end select
 
+    if (config%levcfg == 0 .and. flow%restart_key /= RESTART_KEY_CLEAN) then
+      Call warning('CONFIG contains positions only, forcing clean restart')
+      flow%restart_key = RESTART_KEY_CLEAN
+    end if
+
     ! ---------------- EQULIBRATION --------------------------------------------
 
     call params%retrieve('reset_temperature_interval', thermo%freq_zero)
@@ -2320,8 +2325,8 @@ contains
     Else
       Write (messages(1), '(a,1p,e12.4)') '  Variable simulation timestep (ps): ', thermo%tstep
       Write (messages(2), '(a)') '  Controls for variable timestep:'
-      Write (messages(3), '(2x,a,1p,e12.4)') '  -- Minimum distance Dmin (Angs): ', thermo%mndis
-      Write (messages(4), '(2x,a,1p,e12.4)') '  -- Maximum distance Dmax (Angs): ', thermo%mxdis
+      Write (messages(3), '(a,1p,e12.4)') '  -- Minimum distance Dmin (Angs): ', thermo%mndis
+      Write (messages(4), '(a,1p,e12.4)') '  -- Maximum distance Dmax (Angs): ', thermo%mxdis
       Call info(messages, 4, .true.)
       If (thermo%mxstp > zero_plus) Then
         Write (message, '(a,1p,e12.4)') '  -- Timestep ceiling max step (ps): ', thermo%mxstp
@@ -2407,7 +2412,9 @@ contains
       Call info('  Restart requested (continuing an old simulation)', .true.)
       Call warning('  Timestep from REVOLD overides specification in CONTROL', .true.)
     case (RESTART_KEY_CLEAN)
-      continue
+      if (config%levcfg /= 0) then
+        Call info('  Clean start requested, discarding CONFIG velocities', .true.)
+      end if
     end select
 
     Write (message, '(a,1p,e12.4)') '  Simulation temperature (K):  ', thermo%temp
@@ -2512,47 +2519,47 @@ contains
     end if
 
     if (.not. vdws%no_vdw) then
-      Write (message, '(a,1p,e12.4)') '  VdW cutoff (Angs): ', vdws%cutoff
+      Write (message, '(a,1p,e12.4)') '  -- VdW cutoff (Angs): ', vdws%cutoff
       call info(message, .true.)
 
       if (vdws%mixing /= MIX_NULL) then
-        Call info('  Vdw cross terms mixing opted (for undefined mixed potentials)', .true.)
+        Call info('  -- Vdw cross terms mixing opted (for undefined mixed potentials)', .true.)
         Call info('    mixing is limited to potentials of the same type only', .true.)
         Call info('    mixing restricted to LJ-like potentials (12-6,LJ,WCA,DPD,AMOEBA)', .true.)
 
         Select Case (vdws%mixing)
         case (MIX_LORENTZ_BERTHELOT)
-          Call info('  Type of mixing selected: Lorentz-Berthelot - e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2', .true.)
+          Call info('  -- Mixing scheme: Lorentz-Berthelot - e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2', .true.)
 
         case (MIX_FENDER_HALSEY)
-          Call info('  Type of mixing selected: Fender-Halsey - e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2', .true.)
+          Call info('  -- Mixing scheme: Fender-Halsey - e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2', .true.)
 
         case (MIX_HOGERVORST)
-          Call info('  Type of mixing selected: Hogervorst (good hope) - ' &
+          Call info('  -- Mixing scheme: Hogervorst (good hope) - ' &
                //'e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i*s_j)^(1/2)', .true.)
 
         case (MIX_HALGREN)
-          Call info('  Type of mixing selected: Halgren HHG - ' &
+          Call info('  -- Mixing scheme: Halgren HHG - ' &
                //'e_ij=4*e_i*e_j/[e_i^(1/2)+e_j^(1/2)]^2 ; s_ij=(s_i^3+s_j^3)/(s_i^2+s_j^2)', .true.)
 
         case (MIX_WALDMAN_HAGLER)
-          Call info('  Type of mixing selected: Waldman-Hagler - ' &
+          Call info('  -- Mixing scheme: Waldman-Hagler - ' &
                //'e_ij=2*(e_i*e_j)^(1/2)*(s_i*s_j)^3/(s_i^6+s_j^6) ;s_ij=[(s_i^6+s_j^6)/2]^(1/6)', .true.)
 
         case (MIX_TANG_TOENNIES)
-          Call info('  Type of mixing selected: Tang-Toennies - ' &
+          Call info('  -- Mixing scheme: Tang-Toennies - ' &
                //' e_ij=[(e_i*s_i^6)*(e_j*s_j^6)] / {[(e_i*s_i^12)^(1/13)+(e_j*s_j^12)^(1/13)]/2}^13', .true.)
           Call info(Repeat(' ', 43)//'s_ij={[(e_i*s_i^6)*(e_j*s_j^6)]^(1/2) / e_ij}^(1/6)', .true.)
 
         case (MIX_FUNCTIONAL)
-          Call info('  Type of mixing selected: Functional - ' &
+          Call info('  -- Mixing scheme: Functional - ' &
                //'e_ij=3 * (e_i*e_j)^(1/2) * (s_i*s_j)^3 / ' &
                //'SUM_L=0^2{[(s_i^3+s_j^3)^2 / (4*(s_i*s_j)^L)]^(6/(6-2L))}', .true.)
           Call info(Repeat(' ', 40)//'s_ij=(1/3) * SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))}', .true.)
         end Select
       end if
 
-      if (vdws%l_force_shift) Call info('  VdW force-shifting: ON', .true.)
+      if (vdws%l_force_shift) Call info('  -- VdW force-shifting: ON', .true.)
     end if
 
     ! ---------------- METALS --------------------------------------------------
@@ -2645,11 +2652,12 @@ contains
     Call info('', .true.)
     Call info('Thermostat details:', .true.)
 
-    select case(thermo%ensemble)
+    ensembles:select case(thermo%ensemble)
     case (ENS_NVE)
       Select Case (thermo%key_dpd)
       case (DPD_NULL)
         Call info('  Ensemble: NVE (Microcanonical)',.true.)
+        exit ensembles
       Case(DPD_FIRST_ORDER)
 
         Call info('  Ensemble: NVT dpd (Dissipative Particle Dynamics)',.true.)
@@ -2659,6 +2667,7 @@ contains
 
         Call info('  Ensemble: NVT dpd (Dissipative Particle Dynamics)',.true.)
         Call info("  Ensemble type: Shardlow's first order splitting (S2)",.true.)
+
       end select
 
       If (thermo%gamdpd(0) > zero_plus) Then
@@ -2774,7 +2783,7 @@ contains
       Write(messages(3),'(a,1p,e12.4)') '  -- Barostat relaxation time (ps): ',thermo%tau_p
       Call info(messages,3,.true.)
 
-    end select
+    end select ensembles
 
     ! Semi isotropic ensembles
 
