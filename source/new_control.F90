@@ -754,10 +754,6 @@ contains
       case default
         call bad_option('ensemble_semi_isotropic', option)
       end select
-      If (Any(thermo%iso == [CONSTRAINT_SURFACE_AREA,CONSTRAINT_SURFACE_TENSION])) Then
-        Call warning('semi-isotropic ensembles are only correct for infinite' &
-             //'interfaces placed perpendicularly to the z axis',.true.)
-      End If
 
     case default
       call bad_option('ensemble', option)
@@ -1393,7 +1389,7 @@ contains
 
     Real(Kind=wp), Dimension(9) :: cell
     Real(Kind=wp), Dimension(10):: cell_properties
-    Real(Kind=wp) :: cut, tol, tol1, eps0, rtmp
+    Real(Kind=wp) :: cut, tol, tol1, rtmp
     Integer :: SPLINE_LIMITS
 
     Character(Len=STR_LEN) :: message
@@ -1651,11 +1647,11 @@ contains
 
       else
 
-        call params%retrieve('ewald_precision', eps0)
+        call params%retrieve('ewald_precision', ewld%precision)
 
-        tol = Sqrt(Abs(Log(eps0*neigh%cutoff)))
-        ewld%alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
-        tol1 = Sqrt(-Log(eps0*neigh%cutoff*(2.0_wp*tol*ewld%alpha)**2))
+        tol = Sqrt(Abs(Log(ewld%precision*neigh%cutoff)))
+        ewld%alpha = Sqrt(Abs(Log(ewld%precision*neigh%cutoff*tol)))/neigh%cutoff
+        tol1 = Sqrt(-Log(ewld%precision*neigh%cutoff*(2.0_wp*tol*ewld%alpha)**2))
 
         ewld%kspace%k_vec_dim_cont = 2*Nint(0.25_wp + cell_properties(7:9)*ewld%alpha*tol1/pi)
 
@@ -1996,8 +1992,8 @@ contains
 
     if (check_print_level(1)) Call write_io(io_data, netcdf, files)
     if (check_print_level(1)) Call write_system_parameters(flow, config, stats, thermo, impa, minim, plume, cons, pmf)
-    If (check_print_level(1)) Call write_forcefield(link_cell, neigh, vdws, electro, ewld, mpoles, cshell, met)
     if (check_print_level(1)) Call write_ensemble(thermo)
+    If (check_print_level(1)) Call write_forcefield(link_cell, neigh, vdws, electro, ewld, mpoles, cshell, met)
     if (ttm%l_ttm .and. check_print_level(1)) Call write_ttm(thermo, ttm)
     if (check_print_level(1)) Call write_bond_analysis(stats, config, flow, bond, angle, dihedral, inversion)
     if (check_print_level(1)) &
@@ -2383,25 +2379,29 @@ contains
       end if
     end if
 
+    if (Any([flow%freq_restart > 0, flow%freq_output > 0, stats%intsta > 0, .not. flow%print_topology])) then
+      Call info('  File output info:', .true.)
+    end if
+
     if (flow%freq_restart > 0) Then
-      Write (message, '(a,i10)') '  Restart dumping interval (steps): ', flow%freq_restart
+      Write (message, '(a,i10)') '  -- Restart dumping interval (steps): ', flow%freq_restart
       Call info(message, .true.)
     end if
 
     if (flow%freq_output > 0) then
-      Write (message, '(a,i10)') '  Data printing interval (steps): ', flow%freq_output
+      Write (message, '(a,i10)') '  -- Data printing interval (steps): ', flow%freq_output
       Call info(message, .true.)
     end if
 
     if (stats%intsta > 0) then
-      Write (message, '(a,i10)') '  Statistics file interval (steps): ', stats%intsta
+      Write (message, '(a,i10)') '  -- Statistics file interval (steps): ', stats%intsta
       Call info(message, .true.)
     end if
 
     if (.not. flow%print_topology) then
-      Call info('  Not printing extended FIELD topology in OUTPUT', .true., level=3)
+      Call info('  -- Not printing extended FIELD topology in OUTPUT', .true., level=3)
     else
-      Call info('  Printing extended FIELD topology in OUTPUT: ON', .true.)
+      Call info('  -- Printing extended FIELD topology in OUTPUT: ON', .true.)
     end if
 
     if (stats%cur%on) Call info("  Computing currents: ON", .true.)
@@ -2461,7 +2461,13 @@ contains
     end If
 
     if (config%l_exp) then
-      Write (message, '(a,9x,3i5)') '  System expansion opted', config%nx, config%ny, config%nz
+      Write (message, '(a,9x,3i5)') '  System expansion: ', config%nx, config%ny, config%nz
+      Call info(message, .true.)
+    end if
+
+    if (config%dvar > 1.0_wp) then
+      Write (message, '(a,9x,3i5)') '  Permitted density variance (%): ', &
+           convert_units(config%dvar - 1.0_wp, '', '%')
       Call info(message, .true.)
     end if
 
@@ -2496,18 +2502,18 @@ contains
 
     ! ---------------- CUTOFF --------------------------------------------------
 
+    Write (message, '(a,3i6)') "  Final link-cell decomposition (x,y,z): ", link_cell
+    Call info(message, .true., level=1)
+
     Write (message, '(a,1p,e12.4)') '  Real space cutoff (Angs): ', neigh%cutoff
     Call info(message, .true.)
     Write (message, '(a,1p,e12.4)') '  Cutoff padding (Angs): ', neigh%padding
     Call info(message, .true.)
 
-    Write (message, '(a,3i6)') "  Final link-cell decomposition (x,y,z): ", link_cell
-    Call info(message, .true., level=1)
-
     ! ---------------- SUBCELLING ----------------------------------------------
 
     Write (message, '(a,1p,e12.4)') '  Subcelling threshold density: ', neigh%pdplnc
-    call info(message, .true., 2)
+    call info(message, .true.)
 
     ! ---------------- VDW SETUP -----------------------------------------------
 
@@ -2598,6 +2604,11 @@ contains
     case (ELECTROSTATIC_EWALD)
 
       Call info('  Electrostatics: Smooth Particle Mesh Ewald', .true.)
+
+      if (ewld%precision > 0.0_wp) then
+        Write(message, '(a,e12.4)') '  -- Ewald sum precision: ', ewld%precision
+        Call info(message, .true.)
+      end if
 
       Write (messages(1), '(a,1p,e12.4)') '  -- Ewald convergence parameter (Angs^-1): ', ewld%alpha
       Write (messages(2), '(a,3i5)') '  -- Ewald kmax1 kmax2 kmax3   (x2): ', ewld%kspace%k_vec_dim_cont
@@ -2813,6 +2824,11 @@ contains
       end if
 
     end select
+
+    If (Any(thermo%iso == [CONSTRAINT_SURFACE_AREA,CONSTRAINT_SURFACE_TENSION])) Then
+      Call info('  -- Semi-isotropic ensembles are only correct for infinite ', .true.)
+      Call info('       interfaces placed perpendicularly to the z axis', .true.)
+    End If
 
   end Subroutine write_ensemble
 

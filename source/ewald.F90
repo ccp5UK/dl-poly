@@ -60,6 +60,9 @@ Module ewald
     !> Ewald convergence parameter or Coulomb damping parameter (A^-1)
     Real(Kind=wp), Public :: alpha
 
+    !> Ewald requested precision
+    Real(Kind=wp), Public :: precision = -1.0_wp
+
     ! Merged types here for simplicity
     ! Ewald type containing data relevant to SPME style ewald
 
