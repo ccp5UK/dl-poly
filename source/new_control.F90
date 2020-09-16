@@ -2,6 +2,7 @@ Module new_control
 
   Use angles,               Only: angles_type
   Use angular_distribution, Only: adf_type
+  Use bspline,              Only: MIN_SPLINES, MAX_SPLINES
   Use bonds,                Only: bonds_type
   Use comms,                Only: comms_type,&
        gcheck
@@ -1390,7 +1391,9 @@ contains
     Real(Kind=wp), Dimension(9) :: cell
     Real(Kind=wp), Dimension(10):: cell_properties
     Real(Kind=wp) :: cut, tol, tol1, eps0, rtmp
+    Integer :: SPLINE_LIMITS
 
+    Character(Len=STR_LEN) :: message
     Character(Len=STR_LEN) :: option
 
     ! ---------------- SUBCELLING ----------------------------------------------
@@ -1596,6 +1599,28 @@ contains
       End If
 
       call params%retrieve('ewald_nsplines', ewld%bspline%num_splines)
+      ! Check splines in min
+      SPLINE_LIMITS = MIN_SPLINES + mpoles%max_order
+      If (ewld%bspline%num_splines < SPLINE_LIMITS) Then
+        Write(message, '(a,i0,a,i0,a)') &
+             "Number of bsplines (", ewld%bspline%num_splines,") less than minimum permitted (", &
+             SPLINE_LIMITS, ") -- Resetting"
+        Call Warning(message, .true.)
+        ewld%bspline%num_splines = Max(ewld%bspline%num_splines, SPLINE_LIMITS)
+      End If
+
+      ! Check splines even
+      if (Mod(ewld%bspline%num_splines, 2) /= 0) &
+           ewld%bspline%num_splines = ewld%bspline%num_splines + 1
+
+      !Check splines in max
+      If (ewld%bspline%num_splines > MAX_SPLINES) Then
+        Write(message, '(a,i0,a,i0,a)') &
+             "Number of bsplines (", ewld%bspline%num_splines,") greater than maxiumum permitted (", &
+             MAX_SPLINES, ")"
+        Call error(0, message)
+      End If
+
       Call dcell(cell,cell_properties)
 
       if (params%is_set([Character(15) :: 'ewald_precision', 'ewald_alpha'])) then
@@ -1651,7 +1676,7 @@ contains
 
     If (thermo%key_dpd /= DPD_NULL .and. thermo%lvar) then
       thermo%lvar = .false.
-      Call warning('variable timestep unavalable in DPD themostats', .true.)
+      Call warning('Variable timestep unavalable in DPD themostats', .true.)
     Else If (thermo%lvar) Then
       call params%retrieve('timestep_variable_min_dist', thermo%mndis)
       call params%retrieve('timestep_variable_max_dist', thermo%mxdis)

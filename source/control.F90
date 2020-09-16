@@ -26,6 +26,7 @@ Module control
 
   Use angles,               Only: angles_type
   Use angular_distribution, Only: adf_type
+  Use bspline,              Only: MIN_SPLINES, MAX_SPLINES
   Use bonds,                Only: bonds_type
   Use comms,                Only: comms_type,&
                                   gcheck
@@ -3851,7 +3852,7 @@ Contains
     Type(flow_type),          Intent(InOut) :: flow
     Type(comms_type),         Intent(InOut) :: comm
 
-    Integer, Parameter       :: mxspl_def = 8, mxspl_min = 3
+    Integer, Parameter       :: mxspl_def = 8
     Real(Kind=wp), Parameter :: rbin_def = 0.05_wp, rcbnd_def = 2.5_wp, rcut_def = 1.0_wp
 
     Character(Len=200) :: record
@@ -4668,15 +4669,15 @@ Contains
               ewld%bspline%num_splines = mxspl_def + mpoles%max_order
               bspline_local = ewld%bspline%num_splines
             Else
-              ewld%bspline%num_splines = Max(ewld%bspline%num_splines, mxspl_min)
+              ewld%bspline%num_splines = Max(ewld%bspline%num_splines, MIN_SPLINES)
               bspline_local = ewld%bspline%num_splines + mpoles%max_order
               bspline_local = 2 * Ceiling(0.5_wp * Real(bspline_local, wp))
             End If
             ewld%bspline%num_splines = 2 * Ceiling(0.5_wp * Real(ewld%bspline%num_splines, wp))
             ewld%bspline%num_splines = Max(ewld%bspline%num_splines, bspline_local)
 
-            If (ewld%bspline%num_splines > MAX_BSPLINE) Then
-               Write(message, '(a,i0,a)')"Number of bsplines bigger than ", MAX_BSPLINE, "! increase it and recompile!"
+            If (ewld%bspline%num_splines > MAX_SPLINES) Then
+               Write(message, '(a,i0,a)')"Number of bsplines bigger than ", MAX_SPLINES, "! increase it and recompile!"
                Call error(0, message)
             End If
 
