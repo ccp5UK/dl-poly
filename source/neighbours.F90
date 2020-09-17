@@ -5,7 +5,8 @@
 !> Author - J.Madge June 2018
 !> Modified - A.B.G Chalk July 2018
 !> Modified - i.t.todorov november 2019 (annotation)
-!> Modified - A.B. Brukhno march-may 2020 - 'half-halo VNL
+!> Modified - A.B. Brukhno march-may 2020 - 'half-halo' VNL
+!> Modified - m.a.seaton august 2020 - preprocessing tags for 'half-halo' VNL
 
 Module neighbours
 
@@ -335,6 +336,7 @@ Contains
   !> amended   - i.t.todorov november 2019 (nir deallocation fix, and comments)
   !> contrib   - a.v.brukhno march 2020 - 'half-halo' VNL search
   !> amended   - i.t.todorov may 2020 - flickering fix fixed
+  !> contrib   - m.a.seaton august 2020 - 'half-halo' VNL search preprocessing tags
 
   Subroutine link_cell_pairs(rvdw, rmet, lbook, megfrz, cshell, devel, neigh, &
                              mpoles, domain, tmr, config, comm)

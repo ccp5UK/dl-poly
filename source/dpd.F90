@@ -6,6 +6,7 @@ Module dpd
   !
   ! copyright - daresbury laboratory
   ! author    - i.t.todorov march 2016
+  ! contrib   - m.a.seaton august 2020
   ! refactoring:
   !           - a.m.elena march-october 2018
   !           - j.madge march-october 2018
@@ -69,6 +70,7 @@ Contains
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
     ! contrib   - i.t.todorov may 2020 - 'half-halo' VNL
+    !           - m.a.seaton august 2020 - preprocessing tags and array sizes
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -844,9 +846,7 @@ Contains
     ! Note: all depends on the ixyz halo array set in set_halo
     !
     ! copyright - daresbury laboratory
-    ! author    - i.t.todorov mat 2020 - helper routine for 'half-halo' VNL
-    !             to be called from two_body_forces before 'If (l_do_rdf) Then'
-    !             i.e. after all the relevant pairwise force routines using VNL
+    ! author    - i.t.todorov may 2020 - helper routine for 'half-halo' VNL
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -878,7 +878,6 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov may 2020 (helper routine for irreducable VNL)
-    !             called from refresh_halo_forces (halo.F90) <- two_body_forces (two_body.F90)
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

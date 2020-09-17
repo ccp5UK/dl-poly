@@ -80,6 +80,7 @@ Contains
     !! author    - w.smith august 1998
     !! amended   - i.t.todorov april 2015
     !! amended   - j. wilkins september 2018
+    !! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     !!
     !!-----------------------------------------------------------------------
     Real(Kind=wp),                              Intent(In   ) :: alpha

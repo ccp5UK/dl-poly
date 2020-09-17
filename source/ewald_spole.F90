@@ -69,6 +69,7 @@ Contains
     !! author    - w.smith august 1998
     !! amended   - i.t.todorov april 2015
     !! amended   - j. wilkins september 2018
+    !! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     !!
     !!-----------------------------------------------------------------------
     Type(electrostatic_type),                   Intent(In   ) :: electro
@@ -485,6 +486,7 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov february 2015
+    ! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -857,6 +859,7 @@ Contains
     !!
     !! copyright - daresbury laboratory
     !! author    - i.t.todorov december 2015
+    !! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     !!
     !!-----------------------------------------------------------------------
     Real(Kind=wp),                 Intent(  Out) :: engcpe_fr, vircpe_fr

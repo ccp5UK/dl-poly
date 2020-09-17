@@ -158,6 +158,7 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - t.forester october 1995
     !! amended   - i.t.todorov november 2014
+    !! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     !! refactoring:
     !!           - a.m.elena march-october 2018
     !!           - j.madge march-october 2018
@@ -363,6 +364,7 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - t.forester february 1995
     !! amended   - i.t.todorov november 2014
+    !! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     !! refactoring:
     !!           - a.m.elena march-october 2018
     !!           - j.madge march-october 2018
@@ -723,6 +725,7 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - t.forester april 1993
     !! amended   - i.t.todorov november 2014
+    !! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     !! refactoring:
     !!           - a.m.elena march-october 2018
     !!           - j.madge march-october 2018

@@ -1135,6 +1135,7 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov march 2015
+    ! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -1304,6 +1305,7 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov february 2015
+    ! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018

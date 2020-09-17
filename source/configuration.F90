@@ -7,6 +7,7 @@ Module configuration
   ! copyright - daresbury laboratory
   ! author    - i.t.todorov january 2017
   ! contrib   - i.j.bush march 2010
+  ! contrib   - a.v.brukhno & m.a.seaton august 2020
   ! refactoring:
   !           - a.m.elena march-october 2018
   !           - j.madge march-october 2018
