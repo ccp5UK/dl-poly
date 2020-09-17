@@ -157,6 +157,7 @@ Contains
     ! author    - t.forester march 1994
     ! amended   - i.t.todorov november 2014
     ! contrib   - a.b.g.chalk january 2017
+    ! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -883,6 +884,7 @@ Contains
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov november 2014
     ! contrib   - a.b.g.chalk january 2017
+    ! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018

@@ -12,7 +12,8 @@ Module metal
   !           - j.madge march-october 2018
   !           - a.b.g.chalk march-october 2018
   !           - i.scivetti march-october 2018
-  ! amended   - a.v.brukhno march-may 2020 - 'half-halo' VNL
+  ! amended   - a.v.brukhno march-may 2020 - 'half-halo' VNL, including
+  !           - m.a.seaton august 2020     - preprocessing tags
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -201,6 +202,8 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    ! amended   - m.a.seaton august 2020 - 'half-halo' VNL option
+    !                                      (preprocessing tags)
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -907,6 +910,7 @@ Contains
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
     ! amended   - a.v.brukhno march-may 2020 - 'half-halo' VNL
+    !           - m.a.seaton august 2020     - (preprocessing tags)
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -2208,6 +2212,8 @@ Contains
     ! copyright - daresbury laboratory
     ! author    - w.smith june 1995
     ! amended   - i.t.todorov december 2016
+    ! amended   - m.a.seaton august 2020 - 'half-halo' VNL (preprocessing
+    !                                      tags)
     ! contrib   - r.davidchak (eeam) june 2012
     ! contrib   - b.palmer (2band) may 2013
     ! refactoring:
@@ -2517,6 +2523,8 @@ Contains
     ! copyright - daresbury laboratory
     ! author    - w.smith june 1995
     ! amended   - i.t.todorov december 2016
+    ! amended   - m.a.seaton august 2020 - 'half-halo' VNL (preprocessing
+    !                                      tags)
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -3208,7 +3216,7 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - a.v.brukhno may 2020 - helper routine for 'half-halo' VNL
-    !             to be called from metal_ld_compute(...) after metal_ld_collect_*[eam/fst](...)
+    ! contrib   - m.a.seaton august 2020 - preprocessor tags
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -3415,8 +3423,6 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - a.v.brukhno march 2020 - helper routine for 'half-halo' VNL
-    !             to be called from two_body_forces before 'If (l_do_rdf) Then'
-    !             i.e. after all the relevant pairwise force routines using VNL
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

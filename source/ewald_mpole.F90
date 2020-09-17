@@ -35,6 +35,7 @@ Contains
     !!
     !! copyright - daresbury laboratory
     !! author    - h.a.boateng & i.t.todorov february 2016
+    !! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     !!
     !!----------------------------------------------------------------------!
 
@@ -45,7 +46,7 @@ Contains
     Real( Kind = wp ), Dimension( 1:9 ),              Intent( InOut ) :: stress
     Type( mpole_type ),                               Intent( InOut ) :: mpoles
     Type( electrostatic_type ),                       Intent( InOut ) :: electro
-    Type( ewald_type ),                          Intent( In    ) :: ewld
+    Type( ewald_type ),                               Intent( In    ) :: ewld
     Type( domains_type ),                             Intent( In    ) :: domain
     Type( comms_type ),                               Intent( In    ) :: comm
     Type( configuration_type ),                       Intent( InOut ) :: config
@@ -376,6 +377,7 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - h.a.boateng february 2014
     !! amended   - i.t.todorov february 2016
+    !! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     !!
     !!----------------------------------------------------------------------!
 
@@ -4362,6 +4364,7 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - h.a.boateng june 2016
     !! amended   - i.t.todorov february 2016
+    !! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     !!
     !!----------------------------------------------------------------------!
 
@@ -4743,6 +4746,7 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - h.a.boateng june 2016
     !! amended   - i.t.todorov march 2016
+    !! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     !!
     !!----------------------------------------------------------------------!
 
@@ -5413,6 +5417,7 @@ Contains
     !!
     !! copyright - daresbury laboratory
     !! author    - i.t.todorov & h.a.boateng february 2016
+    !! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     !!
     !!----------------------------------------------------------------------!
 

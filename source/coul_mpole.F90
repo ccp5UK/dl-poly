@@ -7,6 +7,7 @@ Module coul_mpole
   !!
   !! copyright - daresbury laboratory
   !! author    - h.a.boateng & i.t.todorov january 2017
+  !! contrib   - a.v.brukhno & m.a.seaton august 2020
   !! refactoring:
   !!           - a.m.elena march-october 2018
   !!           - j.madge march-october 2018
@@ -435,6 +436,7 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - h.a.boateng february 2016
     !! amended   - i.t.todorov february 2016
+    !! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     !! refactoring:
     !!           - a.m.elena march-october 2018
     !!           - j.madge march-october 2018
@@ -971,6 +973,7 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - h.a.boateng february 2016
     !! amended   - i.t.todorov february 2016
+    !! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     !!
     !!------------------------------------------------------------------------!
 
@@ -1524,6 +1527,7 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - h.a.boateng february 2016
     !! amended   - i.t.todorov february 2016
+    !! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     !! refactoring:
     !!           - a.m.elena march-october 2018
     !!           - j.madge march-october 2018
@@ -1839,6 +1843,7 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - h.a.boateng february 2016
     !! amended   - i.t.todorov february 2016
+    !! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     !! refactoring:
     !!           - a.m.elena march-october 2018
     !!           - j.madge march-october 2018
@@ -2158,6 +2163,7 @@ Contains
     !!
     !! copyright - daresbury laboratory
     !! author    - i.t.todorov february 2017
+    !! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     !! refactoring:
     !!           - a.m.elena march-october 2018
     !!           - j.madge march-october 2018
@@ -2323,6 +2329,7 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - h.a.boateng april 2015
     !! amended   - i.t.todorov february 2016
+    !! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     !! refactoring:
     !!           - a.m.elena march-october 2018
     !!           - j.madge march-october 2018

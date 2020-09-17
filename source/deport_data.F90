@@ -1946,8 +1946,7 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - a.v.brukhno may 2020 - helper routine for 'half-halo' VNL
-    !             to be called from refresh_halo_forces (halo.F90) <- two_body_forces (two_body.F90)
-    ! contrib   - m.a.seaton august 2020
+    ! contrib   - m.a.seaton august 2020 - added per-particle data
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

@@ -8,12 +8,12 @@ Version 4.10.0: August 2020
   + totally refactores DL_POLY_4, using OOP principles and modern software engineering
   + new SPME to allow per particle calculations for various quantities as stress and energy, see pp_dump
   + new IO systems, almost all the usual files now can be customised
-  + a new method to compute neighbour lists that can offer non-neglijable speedups for certain soft-matter systems, use
+  + a new method to compute neighbour lists that can offer non-negligible speedups for certain soft-matter systems, use
     -DWITH_HALF_HALO to activate
-  + set bouunds is totally rewritten allowing clearer understanding of how various buffer sizes are computed
+  + set bounds is totally rewritten, allowing clearer understanding of how various buffer sizes are computed
   + statis file structure changed, amsd and stress are swapped in the arrays now
   + yaml formats for statis and rdf, see yml_statis and yml_rdf keywords in control
-  + new timing reporting in OUPUT
+  + new timing reporting in OUTPUT
   + n(r) is not printed in RDFDAT rather that OUTPUT files
   + OUTPUT is cleaned up, with verbosity level  option added, see l_print
   + automatic regression testing is extented from 28 tests to 169
@@ -35,14 +35,17 @@ Version 4.10.0: August 2020
   + fix for core-shell infrequent bug
   + fix mdf long range correction incorrect non-zero for mbuck
 
-Version 4.09.5: July 2020
------------------------------
+Version 4.09.5: September 2020
+----------------------------------
 
 + Improvements, updates, etc.
   + all read and scan routines (TAB*, FIELD, HISTORY, DEFECTS) are now able to process tabbed data
+  + a new method to compute neighbour lists that can offer non-negligible speedups for certain soft-matter systems, use
+    -DWITH_HALF_HALO to activate
 + Bug-fixes:
   + fixing memory leak io\_module
   + fixing halo particles identification and designation to halo's link-cell space in link\_cell\_pairs and defects\_link\_cells
+  + TTM fixes for cell shape and integrator stability
 
 Version 4.09.4: March 2020
 -----------------------------
