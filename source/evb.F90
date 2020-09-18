@@ -1,9 +1,9 @@
 Module evb
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
-  ! dl_poly_4 module that declares arrays and variables and defines 
-  ! subroutines for the computation of the Empirical Valence Bond (EVB) method 
-  ! to simulate reactive dynamics via the coupling of non-reactive 
+  ! dl_poly_4 module that declares arrays and variables and defines
+  ! subroutines for the computation of the Empirical Valence Bond (EVB) method
+  ! to simulate reactive dynamics via the coupling of non-reactive
   ! Force-Fields (FFs)
   !
   ! copyright - daresbury laboratory
@@ -19,7 +19,7 @@ Module evb
                                       grecv,&
                                       gsend,&
                                       gsum,&
-                                      WriteConf_tag 
+                                      WriteConf_tag
   Use configuration,            Only: configuration_type
   Use constants,                Only: engunit,&
                                       eu_ev,&
@@ -32,13 +32,13 @@ Module evb
                                       DIHEDRAL_TAB
   Use errors_warnings,          Only: error,&
                                       info
-  Use external_field,           Only: external_field_type,& 
-                                      FIELD_ELECTRIC,& 
-                                      FIELD_MAGNETIC 
-  Use filename,                 Only: file_type,&  
-                                      FILE_POPEVB,&  
-                                      FILE_SETEVB  
-  Use flow_control,             Only: flow_type,& 
+  Use external_field,           Only: external_field_type,&
+                                      FIELD_ELECTRIC,&
+                                      FIELD_MAGNETIC
+  Use filename,                 Only: file_type,&
+                                      FILE_POPEVB,&
+                                      FILE_SETEVB
+  Use flow_control,             Only: flow_type,&
                                       RESTART_KEY_OLD
   Use four_body,                Only: four_body_type
   Use inversions,               Only: inversions_type,&
@@ -75,23 +75,23 @@ Module evb
 Type, Public ::  evb_type
 !> Type of EVB simulation: standard EVB (0). It is set to standard by default. Plan: Free-Energy-Perturbation (=1) and Multi-component EVB (=2).
   Integer(Kind = wi)              :: typsim = 0
-!> Number of sites that correspond to the EVB reactive unit (FF dependent) 
+!> Number of sites that correspond to the EVB reactive unit (FF dependent)
   Integer(Kind = wi), Allocatable :: num_site(:)
-!> Number of atoms of the EVB reactive unit 
+!> Number of atoms of the EVB reactive unit
   Integer(Kind = wi), Allocatable :: num_at(:)
 !> Number of types-of-molecules of the FIELD file that describe the EVB site (FF dependent)
   Integer(Kind = wi), Allocatable :: typemols(:)
 
 !> Coupling related variables for computing the coupling between fields
   Integer                         :: maxparam=4         !  maximum number of parameters used for the functional forms of coupling terms
-  Character(Len = 5), Allocatable :: typcoupl(:,:)       !  Matrix with the type of functional form (const or gauss) for coupling terms 
+  Character(Len = 5), Allocatable :: typcoupl(:,:)       !  Matrix with the type of functional form (const or gauss) for coupling terms
   Real(Kind = wp),    Allocatable :: coupl_param(:,:,:)  !  Matrix with input parameters for the functional forms for the
                                                          !  computations of the coupling terms
 
 !> Energy shift for force fields, convenient to model asymmetries in the potential energy surface (PES)
   Real(Kind = wp), Allocatable    :: eshift(:)
 
-!> Energy for each force field, including any potential shift (working array to build ene_matrix) 
+!> Energy for each force field, including any potential shift (working array to build ene_matrix)
   Real(Kind = wp), Allocatable    :: eneFF(:)
 
 !> EVB Energy matrix
@@ -102,18 +102,18 @@ Type, Public ::  evb_type
   Integer(Kind = wi), Allocatable :: ifail(:), iwork(:)
 !> EVB eigenvalues
   Real(Kind = wp), Allocatable    :: eigval(:)
-!> EVB eigenvectors 
+!> EVB eigenvectors
   Real(Kind = wp), Allocatable    :: psi(:,:)
 
 ! Limit for the maximum absolute value of the argument to compute exp()
-  Real(Kind = wp)                 :: elimit  
+  Real(Kind = wp)                 :: elimit
 
-!> Matrix for coupling terms 
-  Real(Kind = wp),    Allocatable :: coupl(:,:)      
+!> Matrix for coupling terms
+  Real(Kind = wp),    Allocatable :: coupl(:,:)
 
-!> Matrix for the gradient of coupling terms 
-  Real(Kind = wp),    Allocatable :: grad_coupl(:,:)      
-  
+!> Matrix for the gradient of coupling terms
+  Real(Kind = wp),    Allocatable :: grad_coupl(:,:)
+
 !> EVB Force matrix
   Real(Kind = wp), Allocatable    :: force_matrix(:,:)
 !> EVB ionic force (working array)
@@ -130,8 +130,8 @@ Type, Public ::  evb_type
   Integer(Kind = wi), Allocatable :: num_bond(:), num_angle(:), num_dihedral(:)
   Integer(Kind = wi), Allocatable :: num_inversion(:)
 !> Flag in case of zero coupling
-  Logical                         :: no_coupling = .False. 
-!> Flag to activate the printing of EVB population    
+  Logical                         :: no_coupling = .False.
+!> Flag to activate the printing of EVB population
   Logical                         :: population = .False.
 !> Flag for opening EVB population file POPEVB
   Logical                         :: population_file_open = .False.
@@ -144,10 +144,10 @@ Type, Public ::  evb_type
     Final             :: cleanup
 End Type evb_type
 
-  Public :: read_evb_settings  
+  Public :: read_evb_settings
   Public :: evb_check_configs
   Public :: evb_check_constraints
-  Public :: evb_check_intramolecular 
+  Public :: evb_check_intramolecular
   Public :: evb_check_intermolecular
   Public :: evb_check_external
   Public :: evb_check_intrinsic
@@ -217,9 +217,9 @@ Contains
 
     Class(evb_type), Intent(InOut)     :: evb
     Integer(Kind = wi), Intent (In   ) :: num_ff
-    
+
     Integer :: fail(1:24)
-  
+
     Allocate(evb%eshift(1:num_ff),             Stat=fail(1))
     Allocate(evb%ene_matrix(num_ff,num_ff),    Stat=fail(2))
     Allocate(evb%psi(num_ff,num_ff),           Stat=fail(3))
@@ -227,8 +227,8 @@ Contains
     Allocate(evb%ifail(num_ff),                Stat=fail(5))
     Allocate(evb%iwork(5*num_ff),              Stat=fail(6))
     Allocate(evb%work(8*num_ff),               Stat=fail(7))
-    Allocate(evb%eneFF(num_ff),                Stat=fail(8)) 
-    Allocate(evb%force(3,num_ff),              Stat=fail(9)) 
+    Allocate(evb%eneFF(num_ff),                Stat=fail(8))
+    Allocate(evb%force(3,num_ff),              Stat=fail(9))
     Allocate(evb%force_matrix(num_ff,num_ff),  Stat=fail(10))
     Allocate(evb%dE_dh(3,3),                   Stat=fail(11))
     Allocate(evb%stress(3,3),                  Stat=fail(12))
@@ -244,11 +244,11 @@ Contains
     Allocate(evb%num_angle(num_ff),            Stat=fail(22))
     Allocate(evb%num_dihedral(num_ff),         Stat=fail(23))
     Allocate(evb%num_inversion(num_ff),        Stat=fail(24))
-  
+
     If (Any(fail /= 0 ))Then
       Call error(0,' error - allocation failure in evb -> allocate_evb_arrays')
     End If
-  
+
   End Subroutine allocate_evb_arrays
 
   Subroutine cleanup(T)
@@ -334,15 +334,15 @@ Contains
       Deallocate(T%num_inversion)
     End If
 
-  End Subroutine cleanup        
+  End Subroutine cleanup
 
 
-  Subroutine read_evb_settings(evb, flow, sites, files, comm) 
+  Subroutine read_evb_settings(evb, flow, sites, files, comm)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
-    ! dl_poly_4 subroutine to read setting and parameter for EVB simulations 
-    ! from the SETEVB file. Few checks are also performed to verify 
-    ! the correctness of the input values. If any inconsistency is found, 
+    ! dl_poly_4 subroutine to read setting and parameter for EVB simulations
+    ! from the SETEVB file. Few checks are also performed to verify
+    ! the correctness of the input values. If any inconsistency is found,
     ! execution is aborted with an error message. Coupling parameters
     ! and energy shifts are printed to OUTPUT
     !
@@ -356,76 +356,76 @@ Contains
     Type(site_type),  Intent(In   ) :: sites(:)
     Type(file_type),  Intent(InOut) :: files(:)
     Type(comms_type), Intent(InOut) :: comm
-  
-  
+
+
     Logical               :: carry,safe
     Character(Len = 200)  :: record
     Character(Len = 40 )  :: word
-  
+
     Integer               :: ncoupl, icoupl
     Integer               :: m, i, j, k, kparam, ieshift
     Logical               :: FFmolflag, couplerror, eshifterror
-  
-    Logical, Allocatable  :: couplflag(:,:) 
-    Logical, Allocatable  :: eshiftflag(:) 
-  
+
+    Logical, Allocatable  :: couplflag(:,:)
+    Logical, Allocatable  :: eshiftflag(:)
+
     Character(Len = 256)  :: message, messages(5)
     Character(Len = 256)  :: evbunit
-  
+
     Call info(' ',.True.)
-    Call info(' Reading EVB settings from the SETEVB file and checking correctness...',.True.) 
+    Call info(' Reading EVB settings from the SETEVB file and checking correctness...',.True.)
     Call info(' ',.True.)
-  
+
     ! Check if units are the same for all FIELD files
-    ! To this purpose, field ffunit was added to site_type (site.F90). Values for sites(m)%ffunit were set 
-    ! equal to engunit in subroutine read_field when field was read. 
+    ! To this purpose, field ffunit was added to site_type (site.F90). Values for sites(m)%ffunit were set
+    ! equal to engunit in subroutine read_field when field was read.
     Do m=1, flow%NUM_FF-1
       If(Abs(sites(m)%ffunit-sites(m+1)%ffunit) >= epsilon(sites(m)%ffunit)) Then
         Write(message, '(1x,2(a,i2),a)') 'error - Units used in FF', m, ' **DIFFER** from those specified in FF ', m+1, &
-                                         '. Units MUST be the same for all FIELD files' 
+                                         '. Units MUST be the same for all FIELD files'
         Call error(0,message)
       End If
     End Do
-  
-    ! Allocate matrix for checking all possible couplings have been set 
+
+    ! Allocate matrix for checking all possible couplings have been set
     Allocate(couplflag(flow%NUM_FF,flow%NUM_FF))
-    Allocate(eshiftflag(flow%NUM_FF)) 
- 
+    Allocate(eshiftflag(flow%NUM_FF))
+
     ! Initialise the number of atoms that belong to the EVB site (calculated below)
     evb%num_at    = 0
 
-    ! Initialise the number of sites that belong to the EVB site 
+    ! Initialise the number of sites that belong to the EVB site
     evb%num_site    = 0
 
-    ! Initialization of flags for control over the reading of EVB input settings 
+    ! Initialization of flags for control over the reading of EVB input settings
     couplflag  = .False.
     eshiftflag = .False.
-  
+
     FFmolflag   = .False.
     couplerror  = .False.
     eshifterror = .False.
-  
-    !Initialise arrays of coupling parameters and energy shifts 
+
+    !Initialise arrays of coupling parameters and energy shifts
     evb%coupl_param= 0.0_wp
     evb%eshift=0.0_wp
-  
+
     ! Set the total number of coupling terms to be considered
-    ncoupl=(flow%NUM_FF-1)*flow%NUM_FF/2 
-  
+    ncoupl=(flow%NUM_FF-1)*flow%NUM_FF/2
+
     ! initialise counters
     icoupl=0
     ieshift=0
-  
-    ! Set safe flag for reading 
+
+    ! Set safe flag for reading
     safe = .True.
-  
+
     ! Open the SETEVB file with EVB settings
     If (comm%idnode == 0)Then
       Inquire(File=files(FILE_SETEVB)%filename, Exist=safe)
-    End If  
-    
+    End If
+
     Call gcheck(comm,safe,"enforce")
-    
+
     If (.not.safe) Then
       Write(message,'(1x,a)') 'error - File SETEVB (settings for EVB coupling terms) not found'
       Call error(0,message)
@@ -434,8 +434,8 @@ Contains
         Open(Newunit=files(FILE_SETEVB)%unit_no, File=files(FILE_SETEVB)%filename,Status='old')
       End If
     End If
-    Call get_line(safe,files(FILE_SETEVB)%unit_no,record,comm)  
-  
+    Call get_line(safe,files(FILE_SETEVB)%unit_no,record,comm)
+
     If (safe) Then
       carry = .True.
       Do While (carry)
@@ -445,30 +445,30 @@ Contains
         Call get_word(record,word)
 
         If (word(1:1) == '#' .Or. word(1:3) == '   ') Then
-  
+
         ! Read setting to print (or not) EVB population during the course of the MD sumilation
         Else If (word(1:6) == 'evbpop') Then
           evb%population = .True.
-  
-        ! For each chemical state, read the number of the type-of-molecules that describe the EVB site. 
-        ! For example, let us assume a EVB site in vacuum with two possible chemical states. In chemical state 1 the EVB site is a 
-        ! single molecule (described by one type-of-molecule in the FIELD file). In chemical state 2, the system 
-        ! breaks in two fragments described by 2 types-of-molecules (FIELD2 file). 
+
+        ! For each chemical state, read the number of the type-of-molecules that describe the EVB site.
+        ! For example, let us assume a EVB site in vacuum with two possible chemical states. In chemical state 1 the EVB site is a
+        ! single molecule (described by one type-of-molecule in the FIELD file). In chemical state 2, the system
+        ! breaks in two fragments described by 2 types-of-molecules (FIELD2 file).
         ! Thence, the specification for evbtypemols in the SETEVB file SHOULD be:
         !
         ! evbtypemols    1     2
         !
-        ! The number of values specified after the option "evbtypemols" MUST be equal to flow%NUM_FF, otherwise the run stops. 
-        ! Values for evbtypemols should not be larger than the corresponding value for option "molecules" specified in each FIELD file. 
-        ! 
-        ! By construction, any other type-of-molecule describing the non-EVB part MUST be specified in the FIELD file ONLY after 
-        ! the specification of all "evbtypemols" type-of-molecules that describe the EVB site. To exemplify this point, lets 
+        ! The number of values specified after the option "evbtypemols" MUST be equal to flow%NUM_FF, otherwise the run stops.
+        ! Values for evbtypemols should not be larger than the corresponding value for option "molecules" specified in each FIELD file.
+        !
+        ! By construction, any other type-of-molecule describing the non-EVB part MUST be specified in the FIELD file ONLY after
+        ! the specification of all "evbtypemols" type-of-molecules that describe the EVB site. To exemplify this point, lets
         ! consider the EVB site already described and assume a set of N_h2o surrounding non-reactive water molecules, described by
-        ! a water-type-of-molecule (with nummols n_h2o). The specification for "evbtypemols" should be the same as above. 
-        ! 
+        ! a water-type-of-molecule (with nummols n_h2o). The specification for "evbtypemols" should be the same as above.
+        !
         Else If (word(1:11) == 'evbtypemols') Then
           FFmolflag=.True.
-          Do k=1, flow%NUM_FF         
+          Do k=1, flow%NUM_FF
             Call get_word(record,word)
             If (word(1:2) == '  ') Then
               Write(message,'(1x,2a,i2,a)') 'error - In file SETEVB, incomplete line after the "evbtypemols" key. ', &
@@ -483,34 +483,34 @@ Contains
                                                     ' of the evbtypemols list (corresponding to FF', k, &
                                                     '). This value should be > 1 and <= MOLECULES, ', &
                                                     'where MOLECULES for this FF is equal to ', sites(k)%ntype_mol
-                Call error(0,message)                      
-              End If        
+                Call error(0,message)
+              End If
             End If
           End Do
 
         ! Read all coupling elements
         ! All the possible ncoupl pairs of couplings MUST be specified, otherwise the run stops (see counter icoupl)
-        ! The syntax for the spectication of each coupling term is the following, depending on the functional type 
+        ! The syntax for the spectication of each coupling term is the following, depending on the functional type
         !
         !             "Force Field pair of indexes"    "Type of interaction"   "Parameters (in the units of the FF)"
         ! evbcoupl          m            k                     const                   A1
         ! evbcoupl          m            k                     gauss                   A1   A2   A3   A4
-        !     
-        ! If specification has misspellings, or there is a wrong syntax, the simulation stops (hopefully) with 
-        ! the error printed  
-        !  
+        !
+        ! If specification has misspellings, or there is a wrong syntax, the simulation stops (hopefully) with
+        ! the error printed
+        !
         Else If(word(1:8) == 'evbcoupl') Then
           Call get_word(record,word)
           i = Nint(word_2_real(word,0.0_wp))
-  
+
           Call get_word(record,word)
           j = Nint(word_2_real(word,0.0_wp))
           If (i< 1 .Or. i > flow%NUM_FF .Or. j < 1 .Or. j > flow%NUM_FF) Then
-            Write(message,'(1x,a)') 'error - In file SETEVB, either wrong or incomplete list for the two FFs to be & 
-                                     & coupled after option "evbcoupl". ACTION: check syntaxis for this option.' 
-            Call error(0,message)  
-          End If        
-  
+            Write(message,'(1x,a)') 'error - In file SETEVB, either wrong or incomplete list for the two FFs to be &
+                                     & coupled after option "evbcoupl". ACTION: check syntaxis for this option.'
+            Call error(0,message)
+          End If
+
           If(i==j)Then
             Write(message,'(1x,a,i2,a)') 'error - In file SETEVB, wrong labelling following a "evbcoupl" option: FF ', i,&
                                          ' CANNOT couple to itself'
@@ -518,26 +518,26 @@ Contains
           End If
 
           If(couplflag(i,j))Then
-            Write(message,'(1x,2(a,i2),a)') 'error - In SETEVB file, the coupling between field ',i, ' and ', j, & 
+            Write(message,'(1x,2(a,i2),a)') 'error - In SETEVB file, the coupling between field ',i, ' and ', j, &
                                              ' cannot be defined more than once. ACTION: remove duplication'
             Call error(0,message)
-          Else  
+          Else
             couplflag(i,j)=.True.
             couplflag(j,i)=.True.
           End If
-  
+
           ! Read type of functional form for the coupling term
           Call get_word(record,evb%typcoupl(i,j))
           If (word(1:3) == '   ' .Or. word(1:1) == '!' .Or. word(1:1) == '#') Then
             couplerror=.True.
-          Else 
-            evb%typcoupl(j,i)= evb%typcoupl(i,j) 
-          End If        
-  
-          ! Read parameters for coupling. The number of parameters depend on the type, as follows 
+          Else
+            evb%typcoupl(j,i)= evb%typcoupl(i,j)
+          End If
+
+          ! Read parameters for coupling. The number of parameters depend on the type, as follows
           If (evb%typcoupl(i,j) == 'const') Then
-            kparam=1      
-            Do k=1, kparam        
+            kparam=1
+            Do k=1, kparam
               Call get_word(record,word)
               If (word(1:3) == '   ' .Or. word(1:1) == '!' .Or. word(1:1) == '#') Then
                 couplerror=.True.
@@ -548,7 +548,7 @@ Contains
             End Do
           Else If (evb%typcoupl(i,j) == 'gauss') Then
             kparam=evb%maxparam
-            Do k=1, kparam        
+            Do k=1, kparam
               Call get_word(record,word)
               If (word(1:3) == '   ' .Or. word(1:1) == '!' .Or. word(1:1) == '#') Then
                 couplerror=.True.
@@ -558,59 +558,59 @@ Contains
               End If
             End Do
             If(Abs(evb%coupl_param(i,j,3)) < epsilon(evb%coupl_param(i,j,3)) )Then
-              Write(messages(1),'(1x,a)')          'error - Wrong input parameter A3 for the gauss coupling between' 
+              Write(messages(1),'(1x,a)')          'error - Wrong input parameter A3 for the gauss coupling between'
               Write(messages(2),'(1x,2(a,i2),2a)') 'FFs', i, ' and ', j , '. This value MUST be different from zero.'
               Write(messages(3),'(1x,a)')          'See manual for details in the functional form of gauss coupling.'
               Call info(messages, 3, .True.)
               Call error(0)
-            End If        
-          Else 
+            End If
+          Else
             couplerror=.True.
-          End If  
+          End If
 
           If(couplerror)Then
-            Write(messages(1),'(1x,a)') 'error - Wrong input data for coupling parameters in file SETEVB. The correct format is: ' 
+            Write(messages(1),'(1x,a)') 'error - Wrong input data for coupling parameters in file SETEVB. The correct format is: '
             Write(messages(2),'(1x,a)') '        evbcoupl       i       j       type      list with (real) coupling-parameters'
-            Write(messages(3),'(1x,a)') '        where i and j are the fields to be coupled' 
+            Write(messages(3),'(1x,a)') '        where i and j are the fields to be coupled'
             Write(messages(4),'(1x,a)') '        If type=const, 1 coupling-parameter is needed'
             Write(messages(5),'(1x,a)') '        If type=gauss, 4 coupling-parameters are needed'
             Call info(messages,5,.True.)
             Call error(0)
-          End If        
-  
+          End If
+
           icoupl=icoupl+1
-  
+
         ! Read the energy shift for each force field
         ! Force field energies can be shifted by a given amount of energy, specified via evbshift.
         ! All energy shifts should be specified, even though shifts are zero. The syntax is:
         !
         ! evbshift      Field       DeltaE
         !
-        ! If there are mispellings, or missing input the run stops.  
+        ! If there are mispellings, or missing input the run stops.
 
         Else If (word(1:8) == 'evbshift') Then
           Call get_word(record,word)
           i = Nint(word_2_real(word,0.0_wp))
           If (i < 1 .Or. i > flow%NUM_FF) Then
-            eshifterror = .True.        
+            eshifterror = .True.
           End If
-  
-          ! Read evb%eshift(i) 
+
+          ! Read evb%eshift(i)
           Call get_word(record,word)
           If(word(1:3) == '   ' .Or. word(1:1) == '!' .Or. word(1:1) == '#') Then
-            eshifterror = .True. 
+            eshifterror = .True.
           Else
              If(.Not. eshifterror)Then
                evb%eshift(i)= word_2_real(word)
              End If
-          End If 
+          End If
 
           If(eshifterror)Then
-            Write(messages(1),'(1x,a)') 'error - Wrong input data for energy shift in file SETEVB. The correct format is: ' 
+            Write(messages(1),'(1x,a)') 'error - Wrong input data for energy shift in file SETEVB. The correct format is: '
             Write(messages(2),'(1x,a)') '        evbshift       i      E0'
             Write(messages(3),'(1x,a)') '        '
-            Write(messages(4),'(1x,a)') '        where i is the field to be shifted by E_i0' 
-            Write(messages(5),'(1x,a)') '        This energy shift E_i0 should be in units of the FIELD file that model the state i' 
+            Write(messages(4),'(1x,a)') '        where i is the field to be shifted by E_i0'
+            Write(messages(5),'(1x,a)') '        This energy shift E_i0 should be in units of the FIELD file that model the state i'
             Call info(messages,5,.True.)
             Call error(0)
           Else
@@ -619,51 +619,51 @@ Contains
               Call error(0,message)
             Else
               eshiftflag(i)=.True.
-            End If        
-          End If        
+            End If
+          End If
 
           ieshift=ieshift+1
-  
+
         Else If (word(1:6) == 'finish') Then
           carry=.false.
-  
-        Else 
+
+        Else
           Call strip_blanks(record)
           Write(message,'(1x,3a)') 'error - unknown directive ', word(1:Len_Trim(word)+1), 'found in SETEVB file'
           call error(0,message)
-  
+
         End If
-  
+
       End Do
     End If
-  
+
     If(icoupl  /= ncoupl)Then
       Write(message,'(1x,a)') 'error - In file SETEVB there are missing specification for "evbcoupl". '&
-                             &'All combinations, even if they are zero, shall be specified.'        
+                             &'All combinations, even if they are zero, shall be specified.'
       Call error(0,message)
-    End If        
+    End If
     If(ieshift /= flow%NUM_FF)Then
       Write(message,'(1x,a)') 'error - In file SETEVB there are missing specification for "evbshift". All fields &
-                             &must be specified'        
+                             &must be specified'
       Call error(0,message)
-    End If        
+    End If
     If(.Not. FFmolflag)Then
-      Write(message,'(1x,a)') 'error - Flag evbtypemols not found in the SETEVB file.'    
-      Call error(0,message) 
-    End If        
-  
+      Write(message,'(1x,a)') 'error - Flag evbtypemols not found in the SETEVB file.'
+      Call error(0,message)
+    End If
+
     Deallocate(eshiftflag, couplflag)
- 
-    ! Close SETEVB file 
+
+    ! Close SETEVB file
     If (comm%idnode == 0)Then
-      Close(files(FILE_SETEVB)%unit_no)   
-    End If  
-  
-    ! For standard EVB (evb%tysim=0), only one reactive EVB site is allowed. 
+      Close(files(FILE_SETEVB)%unit_no)
+    End If
+
+    ! For standard EVB (evb%tysim=0), only one reactive EVB site is allowed.
     ! Such a reactive site can be well composed of one or many fragments, depending on the chemical state.
     ! However, the nummols for the first evbtypemols type-of-molecules MUST be equal to 1.
     If(evb%typsim == 0)Then
-      Do m=1, flow%NUM_FF 
+      Do m=1, flow%NUM_FF
         Do i=1, evb%typemols(m)
          If(sites(m)%num_mols(i) /= 1 )Then
            Write(messages(1),'(1x,a)') 'error - For standard EVB simulations, only a single EVB reactive site is allowed'
@@ -671,29 +671,29 @@ Contains
            Write(messages(3),'(1x,a)') 'that define the EVB site (evbtypemols is set in the SETEVB file)'
            Call info(messages,3,.True.)
            Call error(0)
-         End If        
+         End If
         End Do
       End Do
-    End If 
-  
-  
+    End If
+
+
     ! Calculate the total number of atoms being part of the EVB reactive site
-    Do m=1, flow%NUM_FF  
+    Do m=1, flow%NUM_FF
       Do i=1, evb%typemols(m)
         evb%num_at(m)=evb%num_at(m)+sites(m)%num_mols(i)*sites(m)%num_site(i)
       End Do
     End Do
-  
-  
+
+
     ! Calculate the total sites being part of the EVB reactive site(s)
-    Do m=1, flow%NUM_FF        
+    Do m=1, flow%NUM_FF
       Do i=1, evb%typemols(m)
         evb%num_site(m)=evb%num_site(m)+sites(m)%num_site(i)
       End Do
     End Do
 
     ! Check if the number of EVB atoms is the same for all FFs. Print an error message and about otherwise.
-    Do m=1, flow%NUM_FF-1  
+    Do m=1, flow%NUM_FF-1
       If(evb%num_at(m) /= evb%num_at(m+1))Then
         Write(messages(1),'(1x,2(a,i2))') 'error - The total number of EVB atoms differ between FF', m, ' and FF ', m+1
         Write(messages(2),'(1x,a)')       'This means that the number of EVB atoms is different for different FIELD files'
@@ -701,10 +701,10 @@ Contains
         Write(messages(4),'(1x,a)')       'in SETEVB and the structure of type-of-molecules in the FIELD files'
         Call info(messages,4,.True.)
         Call error(0)
-      End If        
+      End If
     End Do
-  
-  ! Recover the label consistent witht the engunit factor   
+
+  ! Recover the label consistent witht the engunit factor
     If (abs(engunit-eu_ev) <= epsilon(eu_ev)) Then
       evbunit = 'eV'
     Else If (abs(engunit-eu_kcpm) <= epsilon(eu_kcpm)) Then
@@ -716,24 +716,24 @@ Contains
     Else If (abs(engunit-boltz) <= epsilon(boltz)) Then
       evbunit = 'Kelvin/Boltzmann'
     End If
-     
-  ! Print info about coupling  
+
+  ! Print info about coupling
     Write(messages(1),'(1x,a)') '------------'
     Write(messages(2),'(1x,a)') 'EVB settings'
     Write(messages(3),'(1x,a)') '------------'
-    Call info(messages,3,.True.) 
+    Call info(messages,3,.True.)
     Write(messages(1),'(1x,a)') '1) Coupling terms between Force Fields.'
-    Write(messages(2),'(1x,a)') 'The adopted functional form for the coupling between fields m and k (C_{mk})' 
+    Write(messages(2),'(1x,a)') 'The adopted functional form for the coupling between fields m and k (C_{mk})'
     Write(messages(3),'(1x,a)') 'can be of two types: constant (const) or Gaussian (gauss)'
     Write(messages(4),'(1x,a)') '(See manual for details of the Gaussian functional form)'
     Write(messages(5),'(1x,a)') 'Details for coupling terms are summarised in the following table:'
     Call info(messages,5,.True.)
     Write(messages(1),'(1x,a)')               '______________________________________________________________________&
-                                             &_____________________________' 
+                                             &_____________________________'
     Write(messages(2),'(1x,a,5x,a,5x,a)')           'Force Field pair' , 'Type' , 'Parameters ('//trim(evbunit)//')'
     Write(messages(3),'(5x,a,5x,a,10x,a,4(15x,a))')             'm','k', '    '  , 'A1', 'A2','A3','A4'
     Write(messages(4),'(1x,a)')               '______________________________________________________________________&
-                                             &_____________________________' 
+                                             &_____________________________'
     Call info(messages,4,.True.)
     Do i=1,flow%NUM_FF
      Do j=i+1,flow%NUM_FF
@@ -743,11 +743,11 @@ Contains
        ElseIf(evb%typcoupl(i,j)=='gauss')Then
          Write(message,'(2(4x,i2),10x,a,10x,4(E12.5,5x))') i , j, evb%typcoupl(i,j), (evb%coupl_param(i,j,k),k=1,4)
          Call info(message,.True.)
-       End If  
+       End If
      End Do
     EnD Do
     Write(message,'(1x,a)')               '______________________________________________________________________&
-                                             &_____________________________' 
+                                             &_____________________________'
     Call info(message,.True.)
     Call info(' ',.True.)
     Write(messages(1),'(1x,a)') '2) Energy shift for each Force Fields.'
@@ -766,45 +766,45 @@ Contains
     Write(message,'(1x,a)')     '_______________________________________________________'
     Call info(message,.True.)
     Call info(' ',.True.)
-    
+
     ! Convert coupling EVB parameters and energy shifts to internal units
     evb%eshift     = engunit*evb%eshift
-    evb%coupl_param = engunit*evb%coupl_param  
-  
+    evb%coupl_param = engunit*evb%coupl_param
+
     ! If There is no coupling defined, e.i. all type of coupling are constants and equal to zero
-    ! set the flag evb%no_coupling = .True. and this avoids the execution of evb_setzero in 
+    ! set the flag evb%no_coupling = .True. and this avoids the execution of evb_setzero in
     ! calculate_forces (drivers.F90)
     icoupl=0
-  
+
     Do i = 1, flow%NUM_FF
        Do j = i+1, flow%NUM_FF
          If( (abs(evb%coupl_param(i,j,1)) <= epsilon(evb%coupl_param(i,j,1))) .And. &
                   evb%typcoupl(i,j) == 'const'  )Then
             icoupl = icoupl + 1
-         End If       
+         End If
        End Do
     End Do
-  
+
     If( icoupl == ncoupl )Then
       evb%no_coupling=.True.
-    End If        
+    End If
 
     ! Set the limit for the maximum value of an argument to be computed by the exponential function.
     evb%elimit=700.0_wp
 
   End Subroutine read_evb_settings
-          
 
-  Subroutine evb_prevent(lplumed, lkim, lttm, thermo_dpd) 
+
+  Subroutine evb_prevent(lplumed, lkim, lttm, thermo_dpd)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
-    ! dl_poly_4 subroutine that aborts the execution of a standard EVB runs 
-    ! if the following are activated 
-    ! - plumed 
+    ! dl_poly_4 subroutine that aborts the execution of a standard EVB runs
+    ! if the following are activated
+    ! - plumed
     ! - kim
     ! - dpd
     ! - ttm
-    !  
+    !
     ! copyright - daresbury laboratory
     ! author    - i.scivetti August 2020
     !
@@ -817,8 +817,8 @@ Contains
 
     Logical              :: flag
     Character(Len = 256) :: appex, base
-    Character(Len = 256) :: message 
- 
+    Character(Len = 256) :: message
+
     flag=.False.
     base = 'error - Standard EVB formalism is not valid for '
 
@@ -835,10 +835,10 @@ Contains
    Else If(thermo_dpd/=0)Then
       flag=.True.
       appex='DPD'
-   End If 
+   End If
 
     If(flag)Then
-      Call info(' ', .True.)       
+      Call info(' ', .True.)
       Write(message, '(1x,a,1x,2a)') Trim(base), Trim(appex), ' simulations. Please reconsider the settings'
       Call error(0,message)
     End If
@@ -850,8 +850,8 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine to check consistency in the intrinsic properties for
-    ! each atom specified in the FIELD files. Since atomic labels and charges 
-    ! might change for the EVB part between different FFs (different chemistry), 
+    ! each atom specified in the FIELD files. Since atomic labels and charges
+    ! might change for the EVB part between different FFs (different chemistry),
     ! intrisic checking is set as follows:
     !
     ! - labels and charges are checked to be the same only for the non-EVB part
@@ -863,16 +863,16 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-          
+
     Type(evb_type),           Intent(In   ) :: evb
     Type(site_type),          Intent(In   ) :: sites(:)
     Type(configuration_type), Intent(In   ) :: config(:)
     Type(flow_type),          Intent(In   ) :: flow
     Type(comms_type),         Intent(InOut) :: comm
 
-    Integer                :: m, i 
-    Integer                :: mol1, mol2   
-  
+    Integer                :: m, i
+    Integer                :: mol1, mol2
+
     Logical                :: loopi
     Logical                :: lmass, lchg, ltag
 
@@ -882,15 +882,15 @@ Contains
 
     Character(Len =  8)    :: st1lab(2), st2lab(2)
     Integer                :: mol(2)
-  
-    Character(Len = 256)   :: labelint 
-     
+
+    Character(Len = 256)   :: labelint
+
     Call info(' ',.True.)
-    Call info(' intrinsic properties of atoms...',.True.) 
-  
+    Call info(' intrinsic properties of atoms...',.True.)
+
     ! Initialise flags
-    lmass=.False. 
-    lchg=.False. 
+    lmass=.False.
+    lchg=.False.
     ltag=.False.
 
     Do m = 1, flow%NUM_FF-1
@@ -900,32 +900,32 @@ Contains
         ! Check masses for all atoms
         If(Abs(config(m)%weight(i)-config(m+1)%weight(i)) > &
            epsilon(config(m)%weight(i)))Then
-          labelint= 'Mass'   
+          labelint= 'Mass'
           lmass=.True.
         End If
-        ! For all atoms of the non-EVB part 
+        ! For all atoms of the non-EVB part
         If(config(m)%ltg(i) > evb%num_at(m))Then
           ! Check labels
           If(config(m)%ltg(i) /= config(m+1)%ltg(i))Then
-            ltag = .True.      
-            labelint= 'Name'   
-          ! Check charges 
+            ltag = .True.
+            labelint= 'Name'
+          ! Check charges
           Else If(Abs(config(m)%parts(i)%chge - config(m+1)%parts(i)%chge) > &
                   epsilon(config(m)%parts(i)%chge))Then
-            labelint= 'Charge'   
-            lchg=.True.   
-          End If       
+            labelint= 'Charge'
+            lchg=.True.
+          End If
         End If
         ! If an inconsistency was found, mark the atomic site and type-of-molecule
         If(lmass .Or. lchg .Or. ltag)Then
           list(1)  =config(m)%ltg(i)
           st1lab(1)=config(m)%atmnam(i)
           Call obtain_sites_from_list(1,m,sites,list,st1num,mol1)
-          mol(1)=mol1   
+          mol(1)=mol1
           list(1)  =config(m+1)%ltg(i)
           st2lab(2)=config(m+1)%atmnam(i)
           Call obtain_sites_from_list(1,m+1,sites,list,st2num,mol2)
-          mol(2)=mol2   
+          mol(2)=mol2
           loopi=.False.
         End If
         i=i+1
@@ -941,9 +941,9 @@ Contains
   Subroutine evb_intrinsic_error(string, field, comm, lmass, ltag, lchg, st1num, st2num, st1lab, st2lab, mol)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
-    ! dl_poly_4 subroutine (auxiliary to evb_check_intrinsic) to print an 
+    ! dl_poly_4 subroutine (auxiliary to evb_check_intrinsic) to print an
     ! error message and abort if there was an inconsitency found.
-    ! 
+    !
     ! Communication is needed to detect for errors in all processors.
     !
     ! copyright - daresbury laboratory
@@ -952,39 +952,39 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Character(Len = 256),  Intent(InOut) :: string
-    Integer,               Intent(In   ) :: field 
+    Integer,               Intent(In   ) :: field
     Type(comms_type),      Intent(InOut) :: comm
-    Logical,               Intent(InOut) :: lmass 
+    Logical,               Intent(InOut) :: lmass
     Logical,               Intent(InOut) :: ltag
     Logical,               Intent(InOut) :: lchg
-    Integer,               Intent(InOut) :: st1num(:) 
-    Integer,               Intent(InOut) :: st2num(:) 
-    Character(Len = 8 ),   Intent(InOut) :: st1lab(:) 
-    Character(Len = 8 ),   Intent(InOut) :: st2lab(:) 
-    Integer,               Intent(InOut) :: mol(:) 
-  
+    Integer,               Intent(InOut) :: st1num(:)
+    Integer,               Intent(InOut) :: st2num(:)
+    Character(Len = 8 ),   Intent(InOut) :: st1lab(:)
+    Character(Len = 8 ),   Intent(InOut) :: st2lab(:)
+    Integer,               Intent(InOut) :: mol(:)
+
     Character(Len = 256)   :: messages(5)
     Integer                :: jdnode
     Logical                :: siterror
-  
+
     siterror = .False.
-    
+
     ! These are common error messages
     Write(messages(3),'(1x,3a)')     'ACTION: check settings in FIELD files. If, in principle, the above element numbers are &
-                                     &inconsistent with' 
+                                     &inconsistent with'
     Write(messages(4),'(1x,3a)')     'the amount of atomic sites listed for this type-of-molecule in the FIELD file, &
                                      &please consider the specification'
     Write(messages(5),'(1x,3a)')     'for the repetiton number of each site (if present, repetitions are set following the &
                                      &values for charges)'
- 
+
     If(comm%idnode == 0)Then
       Do jdnode=0,comm%mxnode-1
         If(jdnode>0)Then
           ! In node 0, receive the following variables from the rest of the nodes
-          Call grecv(comm, string, jdnode, WriteConf_tag)     
-          Call grecv(comm, ltag,   jdnode, WriteConf_tag)     
-          Call grecv(comm, lchg,   jdnode, WriteConf_tag)     
-          Call grecv(comm, lmass,  jdnode, WriteConf_tag)     
+          Call grecv(comm, string, jdnode, WriteConf_tag)
+          Call grecv(comm, ltag,   jdnode, WriteConf_tag)
+          Call grecv(comm, lchg,   jdnode, WriteConf_tag)
+          Call grecv(comm, lmass,  jdnode, WriteConf_tag)
           Call grecv(comm, st1num, jdnode, WriteConf_tag)
           Call grecv(comm, st2num, jdnode, WriteConf_tag)
           Call grecv(comm, st1lab, jdnode, WriteConf_tag)
@@ -993,37 +993,37 @@ Contains
         End If
         If(lmass .Or. ltag .Or. lchg) Then
           Write(messages(1),'(1x,5a,i6,2(a,i2))') 'error- ', trim(string), ' for site ', trim(st1lab(1)), ' corresponding to the ',&
-                                                   st1num(1), ' element of type-of-molecule ', mol(1), ' in the FF ', field 
+                                                   st1num(1), ' element of type-of-molecule ', mol(1), ' in the FF ', field
           siterror=.True.
-          If(lmass .Or. lchg)Then                 
+          If(lmass .Or. lchg)Then
             ! Error from inconsistency in mass or charge
             Write(messages(2),'(1x,a,i6,2(a,i2))')  '**DIFFERS** from the value assigned to the equivalent site: element ', &
-                                                    st2num(1), ' in type-of-molecule', mol(2), ' of FF ', field+1     
-          Else If(ltag)Then 
-            ! Error from inconsistency in the labelling 
-            Write(messages(2),'(1x,4a,i6,2(a,i2))') '**DIFFERS** from the name ', trim(st2lab(1)), 'assigned to the equivalent ', & 
-                                                    'site: element ', st2num(1), ' in type-of-molecule ', mol(2), ' of FF ', field+1     
-          End If                              
+                                                    st2num(1), ' in type-of-molecule', mol(2), ' of FF ', field+1
+          Else If(ltag)Then
+            ! Error from inconsistency in the labelling
+            Write(messages(2),'(1x,4a,i6,2(a,i2))') '**DIFFERS** from the name ', trim(st2lab(1)), 'assigned to the equivalent ', &
+                                                    'site: element ', st2num(1), ' in type-of-molecule ', mol(2), ' of FF ', field+1
+          End If
         End If
 
         If(siterror)Then
           Call info(messages,5,.True.)
           Call error(0)
-        End if  
+        End if
       End Do
-    Else 
-      ! If the node is not node 0, send the following variables to node 0   
-      Call gsend(comm, string, 0, WriteConf_tag)     
-      Call gsend(comm, ltag,   0, WriteConf_tag)     
-      Call gsend(comm, lchg,   0, WriteConf_tag)     
-      Call gsend(comm, lmass,  0, WriteConf_tag)     
-      Call gsend(comm, st1num, 0, WriteConf_tag)     
-      Call gsend(comm, st2num, 0, WriteConf_tag)     
+    Else
+      ! If the node is not node 0, send the following variables to node 0
+      Call gsend(comm, string, 0, WriteConf_tag)
+      Call gsend(comm, ltag,   0, WriteConf_tag)
+      Call gsend(comm, lchg,   0, WriteConf_tag)
+      Call gsend(comm, lmass,  0, WriteConf_tag)
+      Call gsend(comm, st1num, 0, WriteConf_tag)
+      Call gsend(comm, st2num, 0, WriteConf_tag)
       Call gsend(comm, st1lab, 0, WriteConf_tag)
       Call gsend(comm, st2lab, 0, WriteConf_tag)
-      Call gsend(comm, mol,    0, WriteConf_tag)     
-    End If 
-  
+      Call gsend(comm, mol,    0, WriteConf_tag)
+    End If
+
   End Subroutine evb_intrinsic_error
 
 
@@ -1031,12 +1031,12 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine to check all CONFIG files (one CONFIG file per FF)
-    ! have the same: 
+    ! have the same:
     !
     ! - number of atoms
     ! - coordinates
     ! - simulation cell dimensions
-    ! - symmetry (image convention) 
+    ! - symmetry (image convention)
     !
     ! copyright - daresbury laboratory
     ! author    - i.scivetti march-october 2019
@@ -1046,39 +1046,39 @@ Contains
     Type(configuration_type), Intent(In   ) :: config(:)
     Type(flow_type),          Intent(In   ) :: flow
     Type(comms_type),         Intent(InOut) :: comm
- 
-  
-    Integer                :: alpha, beta 
+
+
+    Integer                :: alpha, beta
     Integer                :: m, i
     Character(Len = 256)   :: message
     Character(Len = 256)   :: messages(3)
     Character(Len = 1)     :: coord, coord0
     Character(Len = 6)     :: string1, string2
     Logical                :: carry
-  
+
     Integer                :: jdnode, stnum
-  
+
     Real(Kind = wp)        :: cell(flow%NUM_FF,3,3)
-  
+
     Call info(' ',.True.)
-    Call info(' atomic coordinates, symmetry and dimensions for the simulation cell...',.True.) 
-  
+    Call info(' atomic coordinates, symmetry and dimensions for the simulation cell...',.True.)
+
     ! Comparison between different CONFIG files: check the value imcon (image convention/symmetry)
-    Do m = 1, flow%NUM_FF-1 
+    Do m = 1, flow%NUM_FF-1
       If(config(m)%imcon /= config(m+1)%imcon)then
-        If(m == 1) Then       
-          Write(string1,'(a1)') ' ' 
+        If(m == 1) Then
+          Write(string1,'(a1)') ' '
         Else
-          Write(string1,'(i2)') m      
-        End If        
+          Write(string1,'(i2)') m
+        End If
         Write(string2,'(i2)') m+1
-        ! In case an inconsistency has been found, complain and abort       
+        ! In case an inconsistency has been found, complain and abort
         Write(message,'(1x,5a)')  'error - Value for imcon *DIFFERS* between ', &
-                                  'CONFIG'//adjustl(trim(string1)), ' and ','CONFIG'//adjustl(trim(string2)), ' files'     
+                                  'CONFIG'//adjustl(trim(string1)), ' and ','CONFIG'//adjustl(trim(string2)), ' files'
         Call error(0,message)
-      End If 
-    End Do       
-  
+      End If
+    End Do
+
     ! Comparison between different CONFIG files: check number of atoms
     Do m = 1, flow%NUM_FF-1
       If(config(m)%megatm /= config(m+1)%megatm)Then
@@ -1087,10 +1087,10 @@ Contains
                                           &the number of atoms is the same'
         Call info(messages, 2, .True.)
         Call error(0)
-      End If        
-    End Do  
-  
-    ! Comparison between different CONFIG files: check simulation cell dimensions 
+      End If
+    End Do
+
+    ! Comparison between different CONFIG files: check simulation cell dimensions
     ! To this purpose, arrange config(m)%cell in a more convenient index notation, stored in cell
     Do m = 1, flow%NUM_FF
       Do alpha=1,3
@@ -1099,65 +1099,65 @@ Contains
         End Do
       End Do
     End Do
-    
+
     ! Compare cell dimensions
     Do alpha = 1, 3
       Do beta = 1, 3
-        Do m = 1, flow%NUM_FF-1 
+        Do m = 1, flow%NUM_FF-1
           If(abs(cell(m,alpha,beta)-cell(m+1,alpha,beta))>= epsilon(cell(m,alpha,beta)))then
-           If(m == 1) Then       
-             Write(string1,'(a1)') ' ' 
+           If(m == 1) Then
+             Write(string1,'(a1)') ' '
            Else
-             Write(string1,'(i2)') m      
-           End If        
+             Write(string1,'(i2)') m
+           End If
            Write(string2,'(i2)') m+1
-           ! In case an inconsistency has been found, complain and abort       
+           ! In case an inconsistency has been found, complain and abort
            Write(messages(1),'(1x,a,2i2,a)') 'error - Component (', alpha, beta,') of the simulation cell differs between'
-           Write(messages(2),'(1x,4a)')      'CONFIG'//adjustl(trim(string1)), ' and ','CONFIG'//adjustl(trim(string2)), ' files'     
+           Write(messages(2),'(1x,4a)')      'CONFIG'//adjustl(trim(string1)), ' and ','CONFIG'//adjustl(trim(string2)), ' files'
            Call info(messages,2,.True.)
-           Call error(0) 
-          End If 
-        End Do       
+           Call error(0)
+          End If
+        End Do
       End Do
     End Do
-  
+
     ! Comparison of ionic positions between all CONFIG files
     ! set initial flags for comparion
     coord0='w'
     coord=coord0
     carry=.True.
-    
+
     Do i = 1 , config(1)%natms
        Do m = 1, flow%NUM_FF-1
          If(carry)Then
-           ! check x-coordinate of atom i      
+           ! check x-coordinate of atom i
            If(abs(config(m)%parts(i)%xxx - config(m+1)%parts(i)%xxx) >= epsilon(config(m)%parts(i)%xxx))then
              coord='x'
              stnum=config(m)%ltg(i)
            End If
-           ! check y-coordinate of atom i      
+           ! check y-coordinate of atom i
            If(abs(config(m)%parts(i)%yyy - config(m+1)%parts(i)%yyy) >= epsilon(config(m)%parts(i)%yyy))then
              coord='y'
              stnum=config(m)%ltg(i)
            End If
-           ! check z-coordinate of atom i      
+           ! check z-coordinate of atom i
            If(abs(config(m)%parts(i)%zzz - config(m+1)%parts(i)%zzz) >= epsilon(config(m)%parts(i)%zzz))then
              coord='z'
              stnum=config(m)%ltg(i)
            End If
            If(coord /= coord0)Then
-             carry=.False.      
+             carry=.False.
              If(m == 1) Then
                Write(string1,'(a1)') ' '
              Else
-               Write(string1,'(i2)') m      
+               Write(string1,'(i2)') m
              End If
-             Write(string2,'(i2)') m+1 
-           End If        
+             Write(string2,'(i2)') m+1
+           End If
          End If
        End Do
      End Do
-  
+
     ! Since atoms are divided in different domains and processors we need to pass the flags (computed above) to the master node
      If(comm%idnode == 0)Then
        Do jdnode=0,comm%mxnode-1
@@ -1169,23 +1169,23 @@ Contains
            Call grecv(comm,string2,jdnode,WriteConf_tag)
          End If
          If(.Not. carry)Then
-           ! In case an inconsistency has been found, complain and abort       
+           ! In case an inconsistency has been found, complain and abort
            Write(messages(1),'(1x,3a,i7,6a)')    'error -  ', coord, '-coordinate for atom', stnum, &
                                                  ' **DIFFERS** between ', 'CONFIG'//adjustl(trim(string1)),&
-                                                 ' and ', 'CONFIG'//adjustl(trim(string2))     
+                                                 ' and ', 'CONFIG'//adjustl(trim(string2))
            Write(messages(2),'(1x,a)')           'ACTION: Fix the error. Atomic coordinates should not vary between CONFIG files'
            Call info(messages,2,.True.)
-           Call error(0) 
+           Call error(0)
          End If
        End Do
-     Else  
-         Call gsend(comm,stnum, 0,WriteConf_tag)     
+     Else
+         Call gsend(comm,stnum, 0,WriteConf_tag)
          Call gsend(comm,carry, 0,WriteConf_tag)
-         Call gsend(comm,coord, 0,WriteConf_tag)     
-         Call gsend(comm,string1, 0,WriteConf_tag)     
-         Call gsend(comm,string2, 0,WriteConf_tag)     
-     End If  
-  
+         Call gsend(comm,coord, 0,WriteConf_tag)
+         Call gsend(comm,string1, 0,WriteConf_tag)
+         Call gsend(comm,string2, 0,WriteConf_tag)
+     End If
+
   End Subroutine evb_check_configs
 
 
@@ -1193,24 +1193,24 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine to check consistency in the definition of constraints
-    ! between atoms (constraints are defined in each FIELD file). 
-    ! Check is carried out over frozen atoms, rigid bond constraint, rigid bodies, 
-    ! core shells and tether sites. 
+    ! between atoms (constraints are defined in each FIELD file).
+    ! Check is carried out over frozen atoms, rigid bond constraint, rigid bodies,
+    ! core shells and tether sites.
     !
     ! Whatever constraints one defines, they MUST NOT differ between FIELD files.
-    ! In other words, a group of atoms cannot be a rigid body for one FIELD 
-    ! and a flexible molecule for another FIELD. The same logic applies to other 
-    ! constraints. Even though the EVB could be computed independently, different 
-    ! contraint settings will lead to a dynamics that depends on the field, which 
+    ! In other words, a group of atoms cannot be a rigid body for one FIELD
+    ! and a flexible molecule for another FIELD. The same logic applies to other
+    ! constraints. Even though the EVB could be computed independently, different
+    ! contraint settings will lead to a dynamics that depends on the field, which
     ! is conceptually wrong.
     !
     ! To check consistency between all FFs, the process starts by comparing FF1 and FF2,
     ! continues with FF2 with FF3, FF3 with FF4,....., and finishes FF(NFF-1) with FF(NFF).
     !
-    ! At first sight, one might consider there is a lot of code repetition below. 
-    ! However, this is a consequence of having different formats for the specification 
-    ! of different constraint. There might be ways to improve/simplify the coding. 
-    ! This is left for further work. 
+    ! At first sight, one might consider there is a lot of code repetition below.
+    ! However, this is a consequence of having different formats for the specification
+    ! of different constraint. There might be ways to improve/simplify the coding.
+    ! This is left for further work.
     !
     ! copyright - daresbury laboratory
     ! author    - i.scivetti December 2019
@@ -1224,15 +1224,15 @@ Contains
     Type(tethers_type),       Intent(InOut) :: tether(:)
     Type(site_type),          Intent(In   ) :: sites(:)
     Type(flow_type),          Intent(In   ) :: flow
-    Type(rigid_bodies_type),  Intent(In   ) :: rigid(:)        
+    Type(rigid_bodies_type),  Intent(In   ) :: rigid(:)
     Type(comms_type),         Intent(InOut) :: comm
-  
+
     Integer                :: m, i, j, l, k
     Integer                :: field
-    Integer                :: mol1, mol2   
-  
-    Character(Len = 256)   :: labelint 
-  
+    Integer                :: mol1, mol2
+
+    Character(Len = 256)   :: labelint
+
     Logical                :: loopi, loopj, loopk
     Logical                :: siteevb, sitemiss, siteparam
     Integer                :: listdim
@@ -1243,49 +1243,49 @@ Contains
 
     Character(Len =  8)    :: st1lab(2), st2lab(2)
     Integer                :: mol(2)
-  
-    Real(Kind = wp)        :: param(2) 
-     
+
+    Real(Kind = wp)        :: param(2)
+
     Call info(' ',.True.)
-    Call info(' constraints (if any)...',.True.) 
-    
+    Call info(' constraints (if any)...',.True.)
+
     ! Initialise flags
     siteevb   = .False.   ! To check if the constraint unit is part of the EVB site (rigid bodies are not allowed)
     sitemiss  = .False.   ! To check if a given constraint unit is defined in all FFs
-    siteparam = .False.   ! To check if the parameters parameters with the constrained 
+    siteparam = .False.   ! To check if the parameters parameters with the constrained
                           ! unit is consistently defined for all FFs
 
 
-    ! Check consistency in the total number of rigid bodies 
+    ! Check consistency in the total number of rigid bodies
     ! (there must be the same number of rigid bodies defined for all chemical states)
 
-    ! Loop over FFs 
+    ! Loop over FFs
     Do m = 1, flow%NUM_FF-1
       If(rigid(m)%total /= rigid(m+1)%total)Then
         labelint='Total number of rigid body units'
         Call evb_constraint_error(labelint, m)
-      End If        
-    End Do  
+      End If
+    End Do
 
     ! Define the mximum dimension for the list of atoms (listdim) that are part of the constraints.
     ! All the constraints but rigid bodies contain two are less atoms per constraint. If
     ! rigid bodies are defined, then set listdim to the maximum number of atoms found for a rigid body.
 
-    If(rigid(1)%total /= 0 )Then 
+    If(rigid(1)%total /= 0 )Then
       listdim = rigid(1)%max_list
       ! Check all fields have exaclty the same number of maximum number of atoms for a rigid body unit.
       ! If not, print an error message and abort.
       Do m = 1, flow%NUM_FF-1
         If(rigid(m)%max_list /= rigid(m+1)%max_list)Then
-          labelint='maximum number of atoms for a rigid body'       
+          labelint='maximum number of atoms for a rigid body'
           Call evb_constraint_error(labelint, m)
-        End If        
+        End If
       End Do
     Else
-      ! If no rigid body is present, set listdim to 2, which is the dimension for the list 
-      ! of atoms corresponding to any constraint except rigid bodies      
-      listdim=2       
-    End If     
+      ! If no rigid body is present, set listdim to 2, which is the dimension for the list
+      ! of atoms corresponding to any constraint except rigid bodies
+      listdim=2
+    End If
 
     ! Allocate the following arrays according to the computed value for listdim
     Allocate(st1num(listdim), st2num(listdim),list(listdim))
@@ -1321,7 +1321,7 @@ Contains
             list(l) = rigid(m)%list(l,i)
           End Do
           Call obtain_sites_from_list(rigid(m)%list(-1,i),m,sites,list,st1num,mol1)
-          mol(1)=mol1 
+          mol(1)=mol1
           ! For this constraint, identify constituent sites and the type-of-molecule in FF(m+1)
           Do l = 1, rigid(m+1)%list(-1,i)
             list(l) = rigid(m+1)%list(l,i)
@@ -1331,30 +1331,30 @@ Contains
 
           ! Check if the rigid body is part of the EVB site for both FFs
           If(mol1 <= evb%typemols(m) .Or. mol2 <= evb%typemols(m+1))Then
-            listdim=rigid(m)%list(-1,i)       
+            listdim=rigid(m)%list(-1,i)
             siteevb=.True.
             loopi=.False.
             field=m
             If(mol2 <= evb%typemols(m+1))Then
               st1num = st2num
-              mol1  = mol2       
+              mol1  = mol2
               field = m+1
-            End If       
+            End If
           Else
             ! If rigid body is not part of the EVB site, continue with checking.
-            ! Does the rigid body contain the same amount of atoms in both FFs? 
+            ! Does the rigid body contain the same amount of atoms in both FFs?
             If(rigid(m)%list(-1,i) /= rigid(m+1)%list(-1,i))Then
-              listdim=rigid(m)%list(-1,i)  
+              listdim=rigid(m)%list(-1,i)
               siteparam=.True.
               loopi=.False.
               field = m
-            Else        
+            Else
               loopk=.True.
               k=1
-              ! Is the rigid body composed of the same atoms for both FFs? 
+              ! Is the rigid body composed of the same atoms for both FFs?
               Do While ( k <= rigid(m)%list(-1,i) .And. loopk)
                 If(rigid(m)%list(k,i) /= rigid(m+1)%list(k,i))Then
-                  listdim=rigid(m)%list(-1,i)  
+                  listdim=rigid(m)%list(-1,i)
                   sitemiss=.True.
                   loopi=.False.
                   loopk=.False.
@@ -1363,7 +1363,7 @@ Contains
                 k=k+1
               End Do
             End If
-          End If  
+          End If
           i=i+1
         End Do
         ! Call for checking if there was an error for any processor
@@ -1372,7 +1372,7 @@ Contains
       End Do
     End If
 
-    !! Frozen ions 
+    !! Frozen ions
     !!
     !! Check if ions are frozen or not.
     !! A frozen ion should be frozen in all FIELD files.
@@ -1391,11 +1391,11 @@ Contains
           list(1)  =config(m)%ltg(i)
           st1lab(1)=config(m)%atmnam(i)
           Call obtain_sites_from_list(1,m,sites,list,st1num,mol1)
-          mol(1)=mol1   
+          mol(1)=mol1
           list(1)  =config(m+1)%ltg(i)
           st2lab(1)=config(m+1)%atmnam(i)
           Call obtain_sites_from_list(1,m+1,sites,list,st2num,mol2)
-          mol(2)=mol2   
+          mol(2)=mol2
           siteparam=.True.
           loopi=.False.
         End If
@@ -1405,16 +1405,16 @@ Contains
       labelint='Frozen'
       Call evb_constraint_error(labelint, m, comm, st1num, st2num, st1lab, st2lab, mol,1, sitemiss, siteparam, siteevb)
     End Do
-  
-  
-    !! Bond constraints 
+
+
+    !! Bond constraints
     !!
     !! Check consistency in the definition of these units, only if bond constraints are defined.
     !!
     !! DL_POLY will complain and abort the execution if a bond constraint unit:
     !!
     !! - is not found in all FIELD files
-    !! - is not composed of the same atoms 
+    !! - is not composed of the same atoms
     !! - does not have the same constraint distance in all FIELD files
     !!
     !! In contrast to rigid bodies, the sequence of definition can be altered between FIELD files.
@@ -1423,18 +1423,18 @@ Contains
 
 
     ! Check that the number of bonds constraints is the same for all FIELD files
-    ! Loop over FFs 
+    ! Loop over FFs
     Do m = 1, flow%NUM_FF-1
       If( cons(m)%megcon /= cons(m+1)%megcon )Then
         labelint='Total number of bond-constraints'
         Call evb_constraint_error(labelint, m)
-      End If  
+      End If
     End Do
-  
+
     ! Check that bond constraint specification does not change beetween files
-    ! Perform the checking only if the number of bond contraints is different from zero 
+    ! Perform the checking only if the number of bond contraints is different from zero
     If(cons(1)%megcon /= 0)Then
-  
+
       ! Loop over FFs
       Do m = 1, flow%NUM_FF-1
         loopi=.True.
@@ -1447,9 +1447,9 @@ Contains
           Do While (j <= cons(m+1)%ntcons .And. loopj)
             If((cons(m)%listcon(1,i) == cons(m+1)%listcon(1,j)) .Or. (cons(m)%listcon(1,i) == cons(m+1)%listcon(2,j)) )Then
               If((cons(m)%listcon(2,i) == cons(m+1)%listcon(1,j)) .Or. (cons(m)%listcon(2,i) == cons(m+1)%listcon(2,j)) )Then
-                   
+
                 ! If the rigid bond unit is found in FF-(m+1), check if bond constraint distances are consistent
-                ! If distances are different, identify sites and type-of-molecules and exit loop.                    
+                ! If distances are different, identify sites and type-of-molecules and exit loop.
                 loopj=.False.
                 param(1)=cons(m)%prmcon(cons(m)%listcon(0,i))
                 param(2)=cons(m+1)%prmcon(cons(m+1)%listcon(0,j))
@@ -1466,13 +1466,13 @@ Contains
                   End Do
                   Call obtain_sites_from_list(2,m+1,sites,list,st2num,mol2)
                   mol(2)=mol2
-                End If  
-              End If  
+                End If
+              End If
             End If
             j=j+1
           End do
-            
-          ! If rigid bond unit is not found in FF-(m+1), identify sites and type-of-molecules. 
+
+          ! If rigid bond unit is not found in FF-(m+1), identify sites and type-of-molecules.
           If(loopj)Then
             loopi=.False.
             sitemiss=.True.
@@ -1481,8 +1481,8 @@ Contains
             End Do
             Call obtain_sites_from_list(2,m,sites,list,st1num,mol1)
             mol(1)=mol1
-          End If        
-    
+          End If
+
           i=i+1
         End Do
         ! Call for checking if there was an error for any processor
@@ -1491,7 +1491,7 @@ Contains
       End Do
     End If
 
-    !! Core-shells 
+    !! Core-shells
     !!
     !! Check consistency in the definition of these units, only if core-shells are defined.
     !!
@@ -1500,21 +1500,21 @@ Contains
     !! - is not found in all FIELD files
     !! - is described with different parameters in different FFs
     !!
-    !! The sequence of definition of core-shells can be altered between FIELD files. 
+    !! The sequence of definition of core-shells can be altered between FIELD files.
     !! Core-shells can be part of the EVB region.
-  
+
     ! Check that the number of core-shell units is the same for all FIELD files
-    ! Loop over FFs 
+    ! Loop over FFs
     Do m = 1, flow%NUM_FF-1
       If( cshell(m)%megshl /= cshell(m+1)%megshl )Then
         labelint='Total number of core-shell units'
         Call evb_constraint_error(labelint, m)
-      End If  
+      End If
     End Do
-  
-    ! Perform the checking only if the number of core-shell units is different from zero 
+
+    ! Perform the checking only if the number of core-shell units is different from zero
     If(cshell(1)%megshl /= 0)Then
-      ! Loop over FFs 
+      ! Loop over FFs
       Do m = 1, flow%NUM_FF-1
         loopi=.True.
         i=1
@@ -1522,7 +1522,7 @@ Contains
         Do While (i <= cshell(m)%ntshl .And. loopi)
           loopj=.True.
           j=1
-         
+
           ! Loop over core-shell units of FF(m+1)
           Do While (j <= cshell(m+1)%ntshl .And. loopj)
             If((cshell(m)%listshl(1,i) == cshell(m+1)%listshl(1,j)) .Or. &
@@ -1541,7 +1541,7 @@ Contains
                   ! constituent sites and type-of-molecule. Exit loop i.
                   If(abs(param(1)-param(2)) .gt. epsilon(param(1)))Then
                     loopi=.False.
-                    siteparam =.True. 
+                    siteparam =.True.
                     Do k=1,2
                       list(k)=cshell(m)%listshl(k,i)
                     End Do
@@ -1554,12 +1554,12 @@ Contains
                     mol(2)=mol2
                   End If
                 End Do
-               End If  
+               End If
             End If
             j=j+1
           End do
-   
-          ! If core-shell unit of FF(m) was not found in FF(m+1), identify atomic sites and type-of-molecule  
+
+          ! If core-shell unit of FF(m) was not found in FF(m+1), identify atomic sites and type-of-molecule
           If(loopj)Then
             loopi=.False.
             sitemiss=.True.
@@ -1568,19 +1568,19 @@ Contains
             End Do
             Call obtain_sites_from_list(2,m,sites,list,st1num,mol1)
             mol(1)=mol1
-           End If        
+           End If
         i=i+1
       End Do
-  
+
       ! Call for checking if there was an error for any processor
       labelint='Core-shell'
       Call evb_constraint_error(labelint, m, comm, st1num, st2num, st1lab, st2lab, mol, listdim, sitemiss, siteparam, siteevb)
-    
+
       End Do
-  
+
     End If
 
-    !! Tether units 
+    !! Tether units
     !!
     !! Check consistency in the definition of these units, only if they are defined.
     !!
@@ -1589,27 +1589,27 @@ Contains
     !! - is not found in all FIELD files
     !! - is described with different parameters in different FFs
     !!
-    !! The sequence of definition for tether units can be altered between FIELD files. 
+    !! The sequence of definition for tether units can be altered between FIELD files.
     !! Tehter can be part of the EVB region.
 
 
     ! Compute the total number of tethered sites
-    ! Loop over FFs 
+    ! Loop over FFs
     Do m = 1, flow%NUM_FF
       tether(m)%megteth=tether(m)%ntteth
      Call gsum(comm, tether(m)%megteth)
     End Do
-  
+
     ! Check that the number of tether units is the same for all FIELD files
-    ! Loop over FFs 
+    ! Loop over FFs
     Do m = 1, flow%NUM_FF-1
       If( tether(m)%megteth /= tether(m+1)%megteth )Then
         labelint='Total number of tether units'
         Call evb_constraint_error(labelint, m)
-      End If  
+      End If
     End Do
-  
-    ! Perform the checking only if the number of core-shell units is different from zero 
+
+    ! Perform the checking only if the number of core-shell units is different from zero
     If(tether(1)%megteth /= 0)Then
     ! Initialise flags
       Do m = 1, flow%NUM_FF-1
@@ -1631,20 +1631,20 @@ Contains
 
               If(tether(m)%keytet(tether(m)%listtet(0,i)) /= tether(m+1)%keytet(tether(m+1)%listtet(0,j)))Then
                 loopi=.False.
-                siteparam=.True.    
+                siteparam=.True.
                 list(1)=tether(m)%listtet(1,i)
                 Call obtain_sites_from_list(1,m,sites,list,st1num,mol1)
                 mol(1)=mol1
                 list(1)=tether(m+1)%listtet(1,j)
                 Call obtain_sites_from_list(1,m+1,sites,list,st2num,mol2)
-                mol(2)=mol2  
-              Else 
-                Do l=1,tether(m)%mxpteth  
+                mol(2)=mol2
+              Else
+                Do l=1,tether(m)%mxpteth
                   param(1)= tether(m)%prmtet(l,tether(m)%listtet(0,i))
                   param(2)= tether(m+1)%prmtet(l,tether(m+1)%listtet(0,j))
                   If(abs(param(1)-param(2)) .gt. epsilon(param(1)))Then
                     loopi=.False.
-                    siteparam =.True. 
+                    siteparam =.True.
                     list(1)=tether(m)%listtet(1,i)
                     Call obtain_sites_from_list(1,m,sites,list,st1num,mol1)
                     mol(1)=mol1
@@ -1653,64 +1653,64 @@ Contains
                     mol(2)=mol2
                   End If
                 End Do
-              End If  
+              End If
             End If
             j=j+1
           End do
-    
-          ! If tether unit of FF(m) was not found in FF(m+1), identify atomic sites and type-of-molecule  
+
+          ! If tether unit of FF(m) was not found in FF(m+1), identify atomic sites and type-of-molecule
           If(loopj)Then
             loopi=.False.
             sitemiss=.True.
             list(1)=tether(m)%listtet(1,i)
             Call obtain_sites_from_list(1,m,sites,list,st1num,mol1)
             mol(1)=mol1
-          End If        
+          End If
           i=i+1
         End Do
-        
+
         ! Call for checking if there was an error for any processor
         labelint='Tether'
         Call evb_constraint_error(labelint, m, comm, st1num, st2num, st1lab, st2lab, mol, listdim, sitemiss, siteparam)
       End Do
     End If
-  
+
     ! Dealocate working arrays
     Deallocate(list, st2num, st1num)
 
   End Subroutine evb_check_constraints
 
 
-  Subroutine obtain_sites_from_list(dimlist, field, sites, list, st, mol) 
+  Subroutine obtain_sites_from_list(dimlist, field, sites, list, st, mol)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
-    ! dl_poly_4 subroutine (auxiliary to evb_check_constraints and evb_check_intrinsic) 
-    ! to obtain the atomic site(s) and corresponding type-of-molecule given the index(es) 
-    ! assigned to the atom(s) via the input list. 
+    ! dl_poly_4 subroutine (auxiliary to evb_check_constraints and evb_check_intrinsic)
+    ! to obtain the atomic site(s) and corresponding type-of-molecule given the index(es)
+    ! assigned to the atom(s) via the input list.
     !
     ! copyright - daresbury laboratory
     ! author    - i.scivetti December 2019
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
-    Integer,         Intent(In   ) :: dimlist  
-    Integer,         Intent(In   ) :: field   
+
+    Integer,         Intent(In   ) :: dimlist
+    Integer,         Intent(In   ) :: field
     Type(site_type), Intent(In   ) :: sites(:)
     Integer,         Intent(In   ) :: list(:)
-    Integer,         Intent(  Out) :: st(:) 
-    Integer,         Intent(  Out) :: mol   
-  
+    Integer,         Intent(  Out) :: st(:)
+    Integer,         Intent(  Out) :: mol
+
     Integer :: i, j, k
     Integer :: atnum, nsite
-    Integer :: num, den       
-  
+    Integer :: num, den
+
     Logical :: flag
- 
+
     ! The input list has dimension dimlist (single atom, pair of atoms, rigid bodies)
-    Do i=1,dimlist  
+    Do i=1,dimlist
       flag=.True.
       atnum=list(i)
-  
+
       ! Search backwards
       Do k=sites(field)%ntype_mol-1,1,-1
        If(flag)Then
@@ -1724,24 +1724,24 @@ Contains
            st(i) = mod(num,den)
            If(st(i)==0)Then
              st(i)=sites(field)%num_site(k+1)
-           End If        
+           End If
            mol=k+1
            flag=.False.
-         End If  
+         End If
         End If
       End Do
- 
+
       ! If the above search failed it means that the atoms belongs to a site of the firts type-of-molecule
-      If(flag)Then  
+      If(flag)Then
         num=atnum
-        den=sites(field)%num_site(1)      
+        den=sites(field)%num_site(1)
         st(i)=mod(num,den)
         If(st(i)==0)Then
           st(i)=sites(field)%num_site(1)
         End If
-        mol=1     
-      End If        
-  
+        mol=1
+      End If
+
     End Do
 
   End Subroutine  obtain_sites_from_list
@@ -1751,64 +1751,64 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine (auxiliary to evb_check_constraints) to print contraint related errors.
-    ! Constraints are rigid bodies, tethers, bond-constraints, core shells and frozen ions. This 
+    ! Constraints are rigid bodies, tethers, bond-constraints, core shells and frozen ions. This
     ! subroutine to print an error message and abort if either
-    ! 
-    ! - the number for a given type of constraint is different between FIELD files 
+    !
+    ! - the number for a given type of constraint is different between FIELD files
     !   (no optional variable present when subroutine is called)
     ! - the constraint unit is defined in one FIELD but not found in other (via input sitemiss=.True.)
     ! - the specification for the constraint unit changes between FIELD files (via input siteparam=.True.)
-    ! - a rigid unit has been found in the EVB region (via siteevb=.True.) 
+    ! - a rigid unit has been found in the EVB region (via siteevb=.True.)
     !
-    ! Error messages depend on the constraint, which is identified via the input string 
+    ! Error messages depend on the constraint, which is identified via the input string
     !
     ! Communication is needed to detect error in all processors.
-    ! The format of the output message depends on the type of interactions 
-    ! 
+    ! The format of the output message depends on the type of interactions
+    !
     !
     ! copyright - daresbury laboratory
     ! author    - i.scivetti December 2019
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
+
 
     Character(Len = 256),  Intent(In   )           :: string
-    Integer,               Intent(In   )           :: field 
+    Integer,               Intent(In   )           :: field
     Type(comms_type),      Intent(InOut), Optional :: comm
-    Integer,               Intent(InOut), Optional :: st1num(:) 
-    Integer,               Intent(InOut), Optional :: st2num(:) 
-    Character(Len = 8 ),   Intent(InOut), Optional :: st1lab(:) 
-    Character(Len = 8 ),   Intent(InOut), Optional :: st2lab(:) 
-    Integer,               Intent(InOut), Optional :: mol(:) 
+    Integer,               Intent(InOut), Optional :: st1num(:)
+    Integer,               Intent(InOut), Optional :: st2num(:)
+    Character(Len = 8 ),   Intent(InOut), Optional :: st1lab(:)
+    Character(Len = 8 ),   Intent(InOut), Optional :: st2lab(:)
+    Integer,               Intent(InOut), Optional :: mol(:)
     Integer,               Intent(In   ), Optional :: listdim
-    Logical,               Intent(InOut), Optional :: sitemiss 
+    Logical,               Intent(InOut), Optional :: sitemiss
     Logical,               Intent(InOut), Optional :: siteparam
-    Logical,               Intent(InOut), Optional :: siteevb 
-  
+    Logical,               Intent(InOut), Optional :: siteevb
+
     Character(Len = 256)   :: messages(4)
     Character(Len = 256)   :: message1, message2
     Integer                :: jdnode, option
     Logical                :: siterror
     Integer                :: i
-  
+
     siterror = .False.
-     
+
     Write(messages(1),'(1x,a)')           'error -'
     Write(messages(4),'(1x,3a)')          'ACTION: chek settings for ' , trim(string), ' in FIELD files'
-  
+
     If(present(comm))Then
-  
+
       If(string(1:6)=='Tether')Then
         option=0
-      Else If(string(1:6)=='Frozen')Then  
+      Else If(string(1:6)=='Frozen')Then
         option=1
       Else If(string(1:15) == 'Bond-constraint' .Or. &
               string(1:10) == 'Core-shell')Then
-        option=2        
-      Else If(string(1:10) == 'Rigid-body')Then  
+        option=2
+      Else If(string(1:10) == 'Rigid-body')Then
         option=3
-      End If        
-  
+      End If
+
       If(comm%idnode == 0)Then
         Do jdnode=0,comm%mxnode-1
           If(jdnode>0)Then
@@ -1821,18 +1821,18 @@ Contains
             Call grecv(comm, st2lab    , jdnode, WriteConf_tag)
             Call grecv(comm, mol       , jdnode, WriteConf_tag)
           End If
-    
-          If(siteevb)Then 
-            If(option == 3)Then      
+
+          If(siteevb)Then
+            If(option == 3)Then
               Write(message1,*)                              trim(string),' unit composed of atomic sites', &
-                                                             (st1num(i), i = 1, listdim)  
+                                                             (st1num(i), i = 1, listdim)
               Write(message2,'(3x,2(a,i3),a)')              'is found in type-of-molecule ', mol(1), ' (FF ', field, ').'
 
               messages(2) = trim(message1)//trim(message2)
-            End If 
+            End If
 
             Write(messages(3),'(1x,3a)')                    'No ', trim(string), ' MUST BE defined for the EVB site (see values for&
-                                                            & evbtypemols in the SETEVB file)' 
+                                                            & evbtypemols in the SETEVB file)'
             siterror=.True.
 
           Else If(sitemiss) Then
@@ -1844,75 +1844,75 @@ Contains
                                                              st1num(2), ' of type-of-molecule ', mol(1), ' (set in  FF ', field, ')'
             Else If(option == 3)Then
               Write(message1,*)                              trim(string),' unit composed of atomic sites', &
-                                                             (st1num(i), i = 1, listdim)  
+                                                             (st1num(i), i = 1, listdim)
               Write(message2,'(3x,2(a,i3),a)')              'of type-of-molecule ', mol(1), ' (set in  FF ', field, ')'
               messages(2) = trim(message1)//trim(message2)
               Write(messages(3),'(1x,a,i2,a)')              'could either not find its equivalent in FF ', field+1, ' or the &
-                                                            &specification ordering for units is not consistent between these FFs' 
+                                                            &specification ordering for units is not consistent between these FFs'
 
-            End If                                         
+            End If
 
             If(option /= 3)Then
-              Write(messages(3),'(1x,a,i2,a)')              'could not find its equivalent in FF ', field+1, '.' 
-            End If  
-          
+              Write(messages(3),'(1x,a,i2,a)')              'could not find its equivalent in FF ', field+1, '.'
+            End If
+
             siterror=.True.
-      
+
           Else If(siteparam) Then
             If(option == 0)Then
-              Write(messages(2),'(1x,2a,i4,a,2(i2,a))')     trim(string),' unit specification for atomic site ', st1num(1), & 
+              Write(messages(2),'(1x,2a,i4,a,2(i2,a))')     trim(string),' unit specification for atomic site ', st1num(1), &
                                                             ' of type-of-molecule ', mol(1), ' (set in FF ', field,') **DIFFERS**'
-              Write(messages(3),'(1x,a,i4,a,2(i2,a))')      'from the specification for the corresponding atomic site', & 
+              Write(messages(3),'(1x,a,i4,a,2(i2,a))')      'from the specification for the corresponding atomic site', &
                                                             st2num(1), ' of type-of-molecule ', mol(2), ' (set in FF ', field+1,')'
-  
+
             ElseIf(option == 1)Then
-              Write(messages(2),'(1x,4a,2(i2,a))')          trim(string),' unit specification for atomic site ', trim(st1lab(1)), & 
-                                                            ' of type-of-molecule ', mol(1),        & 
+              Write(messages(2),'(1x,4a,2(i2,a))')          trim(string),' unit specification for atomic site ', trim(st1lab(1)), &
+                                                            ' of type-of-molecule ', mol(1),        &
                                                             ' (set in FF ', field,') **DIFFERS** from'
               Write(messages(3),'(1x,3a,2(i2,a))')          'the specification for the corresponding atomic site ',&
                                                             trim(st2lab(1)),' of type-of-molecule ', mol(2),&
                                                             ' (set in FF ', field+1,')'
             Else If(option == 2)Then
-              Write(messages(2),'(1x,2a,2(i6,a),2(i2,a))')  trim(string),' unit specification between atomic sites ', st1num(1), & 
-                                                            ' and ' , st1num(2) ,' of type-of-molecule ', mol(1),        & 
+              Write(messages(2),'(1x,2a,2(i6,a),2(i2,a))')  trim(string),' unit specification between atomic sites ', st1num(1), &
+                                                            ' and ' , st1num(2) ,' of type-of-molecule ', mol(1),        &
                                                             ' (set in FF ', field,') **DIFFERS** from'
               Write(messages(3),'(1x,3a,2(i6,a),2(i2,a))')  'the ', trim(string), ' specification between atomic sites  ', &
                                                             st2num(1), ' and ', st2num(2),           &
                                                             ' of type-of-molecule ', mol(2), ' (set in FF ', field+1,')'
             Else If(option == 3)Then
               Write(messages(2),*)                          trim(string),' unit composed of atomic sites', &
-                                                            (st1num(i), i = 1, listdim) 
+                                                            (st1num(i), i = 1, listdim)
               Write(messages(3),'(2(a,i2),a,2(a,i2))')      ' of type-of-molecule', mol(1), ' (set in  FF ', field, &
                                                             ') **DIFFERS** from the what it should be the corresponding unit ',  &
                                                             'defined in type-of-molecule ', mol(2), ' of FF ', field+1
-  
-            End If                                        
+
+            End If
             siterror=.True.
           End If
           If(siterror)Then
             Call info(messages,4,.True.)
             Call error(0)
-          End if  
+          End if
         End Do
-      Else  
-        Call gsend(comm, siteevb  , 0, WriteConf_tag)     
-        Call gsend(comm, sitemiss , 0, WriteConf_tag)     
-        Call gsend(comm, siteparam, 0, WriteConf_tag)     
-        Call gsend(comm, st1num   , 0, WriteConf_tag)     
-        Call gsend(comm, st2num   , 0, WriteConf_tag)     
+      Else
+        Call gsend(comm, siteevb  , 0, WriteConf_tag)
+        Call gsend(comm, sitemiss , 0, WriteConf_tag)
+        Call gsend(comm, siteparam, 0, WriteConf_tag)
+        Call gsend(comm, st1num   , 0, WriteConf_tag)
+        Call gsend(comm, st2num   , 0, WriteConf_tag)
         Call gsend(comm, st1lab   , 0, WriteConf_tag)
         Call gsend(comm, st2lab   , 0, WriteConf_tag)
-        Call gsend(comm, mol      , 0, WriteConf_tag)     
-      End If 
-  
+        Call gsend(comm, mol      , 0, WriteConf_tag)
+      End If
+
     Else
-  
+
       Write(messages(2),'(1x,2a,i2)')    trim(string), ' set in FIELD file', field
       Write(messages(3),'(1x,a,i2)')     '**DIFFERS** from the number of sites in FIELD file ', field+1
       Call info(messages,4,.True.)
       Call error(0)
-  
-    End If  
+
+    End If
 
 
   End Subroutine evb_constraint_error
@@ -1922,10 +1922,10 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine to check consistency in the definition of vdW
-    ! interactions between FIELD files. Check is carried out for pairs of vdW 
+    ! interactions between FIELD files. Check is carried out for pairs of vdW
     ! interactions that ONLY include atoms belonging to the non-reactive part of the system.
-    ! In fact, the vdW interactions between atoms of the non-reactive site should remain the 
-    ! independently of the chemical state. 
+    ! In fact, the vdW interactions between atoms of the non-reactive site should remain the
+    ! independently of the chemical state.
     !
     ! To check consistency between all FFs, the process starts by comparing FF1 and FF2,
     ! continues with FF2 with FF3, FF3 with FF4,....., and finishes FF(NFF) with FF1.
@@ -1939,7 +1939,7 @@ Contains
     Type(flow_type),        Intent(In   ) :: flow
     Type(site_type),        Intent(In   ) :: sites(:)
     Type(vdw_type),         Intent(InOut) :: vdws(:)
-  
+
     Integer               :: m, m2, k, i, j, l
     Integer               :: icvdw0, icvdw
     Integer               :: n_vdw_max
@@ -1949,56 +1949,56 @@ Contains
 
     Logical, Allocatable  :: vdw_noEVB(:,:)
 
-    Character(Len = 256)  :: labelint 
-   
+    Character(Len = 256)  :: labelint
+
     Character(Len = 8)    :: stlab(2)
-   
-    Real(Kind = wp)       :: param(2) 
-   
+
+    Real(Kind = wp)       :: param(2)
+
     Character(Len = 256)  :: messages(3)
-   
+
     ! Initialize values
     n_vdw_max = 0
 
     ! Initialise counters
-    icvdw0=0 
+    icvdw0=0
 
     ! Initialise flags
     lnovdw=.False.
     vdwerror=.False.
-  
+
     Call info(' ',.True.)
     Call info(' vdW interactions for the non-reactive part of the system...', .True.)
- 
+
     ! Check to find if there are vdW interactions specified in each FIELD file.
-    ! In case there are no vdw Interactions for any of the FIELD files, counter icvdw 
-    ! is zero and checking is not done 
+    ! In case there are no vdw Interactions for any of the FIELD files, counter icvdw
+    ! is zero and checking is not done
     Do m=1,flow%NUM_FF
       If(vdws(m)%n_vdw == 0)Then
-       icvdw0=icvdw0+1       
+       icvdw0=icvdw0+1
       Else
         ! Identify the largest amount of vdw interactions between all FIELD files
-        ! Due to the formation of new bonds, the amount of vdW interctions will be 
-        ! generally different for the involved FFs.     
+        ! Due to the formation of new bonds, the amount of vdW interctions will be
+        ! generally different for the involved FFs.
         If(vdws(m)%n_vdw > n_vdw_max)Then
-          n_vdw_max=vdws(m)%n_vdw        
+          n_vdw_max=vdws(m)%n_vdw
         End If
-       End If 
+       End If
     End Do
 
     If(icvdw0 == flow%NUM_FF)Then
      lnovdw=.True.
     Else
-     ! Allocate logical array to indicate which vdW interactions only include pair 
+     ! Allocate logical array to indicate which vdW interactions only include pair
      ! of atoms outside the reactive region (see below)
      Allocate(vdw_noEVB(flow%NUM_FF,n_vdw_max))
      vdw_noEVB=.False.
-    End If        
+    End If
 
-    ! Perform the checking only if there are vdW interactions 
+    ! Perform the checking only if there are vdW interactions
     If(.Not. lnovdw)Then
 
-      ! Identify those vdW interaction for which involved atoms are NOT part of the EVB region  
+      ! Identify those vdW interaction for which involved atoms are NOT part of the EVB region
       Do m = 1, flow%NUM_FF
         Do k = 1, vdws(m)%n_vdw
           icvdw=0
@@ -2008,29 +2008,29 @@ Contains
             Do While (i <= sites(m)%max_site .And. loopi)
               If(vdws(m)%labpair(j,k) == sites(m)%site_name(i))Then
                 loopi=.False.
-                icvdw=icvdw+1      
+                icvdw=icvdw+1
               End If
-            i=i+1        
+            i=i+1
             End Do
           End Do
           ! If the two sites of vdws(m)%labpair(:,k) are part of the non-EVB region, set the element of
           ! vdw_noEVB to .true.
-          If(icvdw==2)Then  
+          If(icvdw==2)Then
             vdw_noEVB(m,k) = .True.
-          End If  
+          End If
         End Do
       End Do
 
 
-      ! Check consistency of the vdW interactions between FFs only for interacting ions that are not part of the EVB site 
+      ! Check consistency of the vdW interactions between FFs only for interacting ions that are not part of the EVB site
       ! Loop over the FFs
       Do m = 1, flow%NUM_FF
         ! Here FF(N_FF) and FF1 are also compared
         If(m==flow%NUM_FF)Then
           m2=1
-        Else 
-          m2=m+1       
-        End If  
+        Else
+          m2=m+1
+        End If
 
         loopi=.True.
         i=1
@@ -2048,17 +2048,17 @@ Contains
                     ! If the vdW pair defined in FF(m) was found in FF(m2), check interaction key and parameters are consistent
                     Do l=1,2
                        stlab(l) =  vdws(m)%labpair(l,i)
-                    End Do  
+                    End Do
                     If(vdws(m)%ltp(i) /= vdws(m2)%ltp(j))Then
-                      vdwerror=.True.      
-                      loopi = .False. 
+                      vdwerror=.True.
+                      loopi = .False.
                       labelint= 'key'
-                    Else        
+                    Else
                       Do k=1, vdws(m)%max_param
                          param(1)= vdws(m)%param(k,i)
                          param(2)=vdws(m2)%param(k,j)
                          If(abs(param(1)-param(2)) .gt. epsilon(param(1)))Then
-                           vdwerror=.True.      
+                           vdwerror=.True.
                            loopi=.False.
                            labelint='parameters'
                          End If
@@ -2069,10 +2069,10 @@ Contains
               End If
               j=j+1
             End do
-            
+
             ! If the vdW pair defined in FF(m) was found in FF(m2)....
             If(loopj)Then
-              vdwerror=.True.      
+              vdwerror=.True.
               loopi=.False.
               labelint= 'missed'
               Do l=1,2
@@ -2084,17 +2084,17 @@ Contains
           i=i+1
         End Do
 
-        ! Print message and abort if errors were found. Since all processors read all vdW interactions 
-        ! from all FFs, communication is NOT needed here.        
+        ! Print message and abort if errors were found. Since all processors read all vdW interactions
+        ! from all FFs, communication is NOT needed here.
         If(vdwerror)Then
           Write(messages(1), '(1x,5a,i2)') 'error - vdW interaction between sites ', trim(stlab(1)), ' and ', trim(stlab(2)),&
-                                           ' in FF ', m       
+                                           ' in FF ', m
           If(labelint(1:6)=='missed')Then
             Write(messages(2), '(1x,a,i2)')  'has not been found in FF', m2
           Else
             Write(messages(2), '(1x,4a,i2)') 'has a different setting for the ', trim(labelint), ' with respect to the same ', &
                                              'interaction in FF ', m2
-          End If  
+          End If
           Write(messages(3),'(1x,a)')     'ACTION: chek consistency of settings in vdw interactions for sites that are not &
                                           &part of the reactive region'
           Call info(messages, 3, .True.)
@@ -2123,26 +2123,26 @@ Contains
     ! - three-body potentials (TBPs)
     ! - four-body potentials (FBPs)
     !
-    ! Since EVB is designed to describe reactions (bond breaking and formation) 
+    ! Since EVB is designed to describe reactions (bond breaking and formation)
     ! the above interactions are only meaningful for the non-reactive part of the system. Thus,
-    ! this subroutine first check that NONE of the EVB atoms interact via in ANY of these types of 
-    ! intermolecular interactions. 
+    ! this subroutine first check that NONE of the EVB atoms interact via in ANY of these types of
+    ! intermolecular interactions.
     !
-    ! For example, EVB could be used to model the bond breaking/formation of a molecule 
-    ! supported by a metallic substrate. Metallic interactions will ONLY manifest when 
+    ! For example, EVB could be used to model the bond breaking/formation of a molecule
+    ! supported by a metallic substrate. Metallic interactions will ONLY manifest when
     ! considering the interactions between atoms of the substrate. Molecule and surface might
     ! interact via vdW forces.
-    ! 
+    !
     ! To check consistency between all FFs, the process starts by comparing FF1 and FF2,
     ! continues with FF2 with FF3, FF3 with FF4,....., and finishes FF(NFF-1) with FF(NFF).
     !
-    ! For the case of four-body interactions, I (i.scivetti) have decided to prevent the EVB runs, 
+    ! For the case of four-body interactions, I (i.scivetti) have decided to prevent the EVB runs,
     ! mainly because four-body interactions were never tested to date (Feb 2020).
     !
-    ! At first sight, and similarly to subroutine evb_check_constraints, 
-    ! one might consider there is a lot of code repetition. 
-    ! However, this is a consequence of having different formats related to 
-    ! the settings for the different intermolecular interactions.  
+    ! At first sight, and similarly to subroutine evb_check_constraints,
+    ! one might consider there is a lot of code repetition.
+    ! However, this is a consequence of having different formats related to
+    ! the settings for the different intermolecular interactions.
     !
     ! copyright - daresbury laboratory
     ! author    - i.scivetti January 2020
@@ -2156,25 +2156,25 @@ Contains
     Type(metal_type),       Intent(InOut) :: met(:)
     Type(threebody_type),   Intent(InOut) :: threebody(:)
     Type(four_body_type),   Intent(InOut) :: fourbody(:)
-  
+
     Integer               :: m, i, j, k, l, il, ic
     Integer               :: nprter
-  
-    Character(Len = 256)  :: labelint 
-  
+
+    Character(Len = 256)  :: labelint
+
     Logical               :: loopi, loopj
     Logical               :: sitemiss, siteparam
-  
+
     Character(Len = 8)    :: stlab(3)
-  
-    Real(Kind = wp)       :: param(2) 
-  
+
+    Real(Kind = wp)       :: param(2)
+
     Character(Len = 256)  :: messages(5)
-  
-  
+
+
     Call info(' ',.True.)
     Call info(' inter-molecular interactions for the non-reactive part of the system...', .True.)
-  
+
     ! Initialise flags
     sitemiss=.False.
     siteparam=.False.
@@ -2188,7 +2188,7 @@ Contains
     !! - is not found in all FIELD files
     !! - is described with different parameters in different FFs
     !!
-    !! The sequence in the definition of tersoff interactions can be altered between FIELD files. 
+    !! The sequence in the definition of tersoff interactions can be altered between FIELD files.
     !! Metallic interactions MUST NOT include atoms of the EVB region.
 
     ! Check that the number of metallic pair interactions are the same for all FIELD files
@@ -2196,32 +2196,32 @@ Contains
       If( met(m)%n_potentials /= met(m+1)%n_potentials )Then
         labelint='Total number of METAL pair interactions'
         Call evb_intermolecular_error(labelint, m)
-      End If  
+      End If
     End Do
-   
-    ! Perform the checking only if the number of metallic pair interactions is different from zero 
+
+    ! Perform the checking only if the number of metallic pair interactions is different from zero
     If(met(1)%n_potentials /= 0)Then
 
       ! Check there is no EVB atom that interacts via metallic forces
       ! Loop over FFs
       Do m = 1, flow%NUM_FF
-        ! Loop over EVB atoms      
+        ! Loop over EVB atoms
         Do i=1,evb%num_at(m)
           ! Loop over metallic units
-          Do j= 1, met(m)%n_potentials 
+          Do j= 1, met(m)%n_potentials
             ! Loop over each member of the unit
             Do k = 1, 2
               If( trim(sites(m)%site_name(i)) == trim(met(m)%labunit(k,j)) )Then
                 Write(messages(1),'(1x,3a,i2,a)') 'error - Site ', trim(sites(m)%site_name(i)),  &
                                                   ' belongs to the EVB site in FF ', m,            &
-                                                  ' and MUST NOT interact via metallic forces'    
+                                                  ' and MUST NOT interact via metallic forces'
                 Call error(0, messages(1))
-              End If        
+              End If
             End Do
           End Do
         End Do
       End do
-     
+
       ! Check that metallic specification does not change beetween files
       ! Loop over FF
       Do m = 1, flow%NUM_FF-1
@@ -2243,13 +2243,13 @@ Contains
                 ! Check the label of each pair
                 If( (met(m)%labunit(2,i) == met(m+1)%labunit(k,j)) .And. k /= il )Then
                   loopj=.False.
-                  If(met(m)%labunit(3,i) /= met(m+1)%labunit(3,j) ) Then 
+                  If(met(m)%labunit(3,i) /= met(m+1)%labunit(3,j) ) Then
                     loopi=.False.
                     siteparam =.True.
                     stlab(1) =  met(m)%labunit(1,i)
                     stlab(2) =  met(m)%labunit(2,i)
                   Else
-                    ! Check interaction parameters      
+                    ! Check interaction parameters
                     Do l=1,met(m)%max_param
                       param(1)=met(m)%prm(l,i)
                       param(2)=met(m+1)%prm(l,j)
@@ -2257,33 +2257,33 @@ Contains
                         loopi=.False.
                         siteparam =.True.
                         stlab(1) =  met(m)%labunit(1,i)
-                        stlab(2) =  met(m)%labunit(2,i) 
+                        stlab(2) =  met(m)%labunit(2,i)
                       End If
                     End Do
-                  End If  
-                End If 
+                  End If
+                End If
               End Do
             End If
             j=j+1
           End do
-      
+
           ! If the metallic unit of FF(m) was not found in FF(m+1), identify the unit
           If(loopj)Then
             loopi=.False.
             sitemiss=.True.
             stlab(1)=   met(m)%labunit(1,i)
             stlab(2)=   met(m)%labunit(2,i)
-          End If        
-    
+          End If
+
           i=i+1
-    
+
         End Do
         ! Print erros and abort if there was an inconsistency found in the specification of metallic interactions
         labelint='Metal'
-        Call evb_intermolecular_error(labelint, m, sitemiss, siteparam, stlab) 
+        Call evb_intermolecular_error(labelint, m, sitemiss, siteparam, stlab)
       End Do
     End If
-  
+
     !! Tersoff interactions
     !!
     !! Check consistency in the definition of Tersoff potentials, only if they are defined in the FIELD files.
@@ -2292,11 +2292,11 @@ Contains
     !!
     !! - is not found in all FIELD files
     !! - is described with different parameters in different FFs
-    !!  
+    !!
     !! For key "tersoff", checking is also conducted to compare the correction of the pairwise interaction
-    !! between the Tersoff units.   
-    !! 
-    !! The sequence in the definition of Tersoff interactions can be altered between FIELD files. 
+    !! between the Tersoff units.
+    !!
+    !! The sequence in the definition of Tersoff interactions can be altered between FIELD files.
     !! Atoms of the EVB region MUST NOT interact via Tersoff forces.
 
     ! Check that the number of Tersoff interactions are the same for all FIELD files
@@ -2304,26 +2304,26 @@ Contains
       If( tersoff(m)%n_potential /= tersoff(m+1)%n_potential)Then
         labelint='Total number of Tersoff units'
         Call evb_intermolecular_error(labelint, m)
-      End If  
+      End If
     End Do
-  
-    ! Perform the checking only if the number of tersoff interactions is different from zero 
+
+    ! Perform the checking only if the number of tersoff interactions is different from zero
     If(tersoff(1)%n_potential /= 0)Then
 
       ! Check there is no EVB atoms that interacts via Tersoff forces
-      Do m = 1, flow%NUM_FF         
+      Do m = 1, flow%NUM_FF
         Do i=1,evb%num_at(m)
-          Do j= 1, tersoff(m)%n_potential 
+          Do j= 1, tersoff(m)%n_potential
               If( trim(sites(m)%site_name(i)) == trim(tersoff(m)%labunit(1,j)) )Then
                 Write(messages(1),'(1x,3a,i2,a)') 'PROBLEMS: Site ', trim(sites(m)%site_name(i)),  &
                                                   ' belongs to the EVB site in FF ', m,            &
-                                                  ' and MUST NOT interact via Tersoff forces'    
+                                                  ' and MUST NOT interact via Tersoff forces'
                Call error(0, messages(1))
-              End If        
+              End If
           End Do
         End Do
       End do
-      
+
       ! Check that Tersoff specification for each atomic unit does not change beetween files
       ! Loop over FFs
       Do m = 1, flow%NUM_FF-1
@@ -2337,7 +2337,7 @@ Contains
           Do While (j <= tersoff(m+1)%n_potential .And. loopj)
             If((tersoff(m)%labunit(1,i) == tersoff(m+1)%labunit(1,j)))Then
               If( tersoff(m)%labunit(2,i) == tersoff(m+1)%labunit(2,j) )Then
-                loopj=.False. 
+                loopj=.False.
                 ! If Tersoff atomic unit and key were coincide, check input parameters
                 Do l=1,tersoff(m)%max_param
                   param(1)=tersoff(m)%param(l,i)
@@ -2353,30 +2353,30 @@ Contains
             End If
             j=j+1
           End do
-    
+
           ! If Tersoff atomic unit of FF(m) was not found in FF(m+1), set sitemiss=.True. and exit loop.
           If(loopj)Then
             loopi=.False.
             sitemiss=.True.
             stlab(1)= tersoff(m)%labunit(1,i)
-          End If        
-  
+          End If
+
           i=i+1
-  
+
         End Do
-  
-        ! Print errors and abort if there was an inconsistency found in the specification of Tersoff units 
+
+        ! Print errors and abort if there was an inconsistency found in the specification of Tersoff units
         labelint='Tersoff-unit'
-        Call evb_intermolecular_error(labelint, m, sitemiss, siteparam, stlab) 
-    
+        Call evb_intermolecular_error(labelint, m, sitemiss, siteparam, stlab)
+
       End Do
-  
+
       ! Further checking in case the key of Tersoff potential is "tersoff"
-      ! Check consistency in the pairwise interaction terms of the potential 
+      ! Check consistency in the pairwise interaction terms of the potential
       If(tersoff(1)%key_pot == 1)Then
-        ! Check all the combinations are counted via definition of nprter      
+        ! Check all the combinations are counted via definition of nprter
         nprter = (tersoff(1)%max_ter * (tersoff(1)%max_ter + 1)) / 2
-        
+
         ! Loop over FFs
         Do m = 1, flow%NUM_FF-1
           loopi=.True.
@@ -2403,31 +2403,31 @@ Contains
                         loopi=.False.
                         siteparam =.True.
                         stlab(1) = tersoff(m)%labpair(1,i)
-                        stlab(2) = tersoff(m)%labpair(2,i) 
+                        stlab(2) = tersoff(m)%labpair(2,i)
                       End If
                     End Do
-                  End If  
+                  End If
                 End Do
               End If
              j=j+1
             End do
-      
+
             If(loopj)Then
               loopi=.False.
               sitemiss=.True.
               stlab(1)= tersoff(m)%labpair(1,i)
               stlab(2)= tersoff(m)%labpair(2,i)
-            End If        
+            End If
             i=i+1
           End Do
-        ! Print erros and abort if there was an inconsistency found in the specification of 
+        ! Print erros and abort if there was an inconsistency found in the specification of
         ! Tersoff pairwise interactions only for key "tersoff"
         labelint='Tersoff-pair'
-        Call evb_intermolecular_error(labelint, m, sitemiss, siteparam, stlab) 
+        Call evb_intermolecular_error(labelint, m, sitemiss, siteparam, stlab)
         End Do
       End If
     End If
-  
+
     !! Three-body potentials (TBP)
     !!
     !! Check consistency in the definition of TBP, only if they are defined in the FIELD files.
@@ -2437,7 +2437,7 @@ Contains
     !! - is not found in all FIELD files
     !! - is described with different parameters in different FFs
     !!
-    !! The sequence in the definition of Tersoff interactions can be altered between FIELD files. 
+    !! The sequence in the definition of Tersoff interactions can be altered between FIELD files.
     !! Atoms of the EVB region MUST NOT interact via TBP.
 
     ! Check that the number of defined units for TBP interactions are the same for all FIELD files
@@ -2445,28 +2445,28 @@ Contains
       If( threebody(m)%ntptbp /= threebody(m+1)%ntptbp )Then
         labelint='Total number of TBP pair interactions'
         Call evb_intermolecular_error(labelint, m)
-      End If  
+      End If
     End Do
-  
-    ! Perform the checking only if the number of TBP interactions set is different from zero 
+
+    ! Perform the checking only if the number of TBP interactions set is different from zero
     If(threebody(1)%ntptbp /= 0)Then
-    
+
       ! Check there is no EVB atom that interacts via TBP
-      Do m = 1, flow%NUM_FF         
+      Do m = 1, flow%NUM_FF
         Do i = 1, evb%num_at(m)
           Do j= 1, threebody(m)%ntptbp
             Do k = 1, 3
               If( trim(sites(m)%site_name(i)) == trim(threebody(m)%labunit(k,j)) )Then
                 Write(messages(1),'(1x,3a,i2,a)') 'PROBLEMS: Site ', trim(sites(m)%site_name(i)),  &
                                                   ' belongs to the EVB site in FF ', m,            &
-                                                  ' and MUST NOT interact via TBP forces'    
+                                                  ' and MUST NOT interact via TBP forces'
                 Call error(0, messages(1))
-              End If        
+              End If
             End Do
           End Do
         End Do
       End do
-    
+
       ! Check that TBP specification does not change beetween files
       Do m = 1, flow%NUM_FF-1
         loopi=.True.
@@ -2482,17 +2482,17 @@ Contains
             Do k=1,3
              If(threebody(m)%labunit(k,i) == threebody(m+1)%labunit(k,j))Then
               ic=ic+1
-             End If 
+             End If
             End Do
             If(ic == 3) loopj=.False.
-            
+
             If(.not. loopj)Then
                     ! Check if TBP key is the same. If not, identify unit and leave loop
               If(threebody(m)%labunit(4,i) /= threebody(m+1)%labunit(4,j))Then
                 loopi=.False.
                 siteparam =.True.
                 stlab(1) =  threebody(m)%labunit(1,i)
-                stlab(2) =  threebody(m)%labunit(2,i) 
+                stlab(2) =  threebody(m)%labunit(2,i)
               Else
                       ! Check if TBP parameters are the same. If not identify unit and leave loop
                 Do l=1,threebody(m)%mxptbp-1
@@ -2506,11 +2506,11 @@ Contains
                     End Do
                   End If
                 End Do
-              End If  
+              End If
             End If
             j=j+1
           End do
-          
+
           ! If TBP unit has not been found in FF(m+1)
           If(loopj)Then
             loopi=.False.
@@ -2518,17 +2518,17 @@ Contains
             Do k=1,3
              stlab(k) = threebody(m)%labunit(k,i)
             End Do
-          End If        
-      
+          End If
+
           i=i+1
         End Do
-        
+
         ! Print errors and abort if there was an inconsistency found in the specification of Tersoff units.
         labelint='TBP'
-        Call evb_intermolecular_error(labelint, m, sitemiss, siteparam, stlab) 
-      
+        Call evb_intermolecular_error(labelint, m, sitemiss, siteparam, stlab)
+
       End Do
-    
+
     End If
 
     !! Four-body potentials (TBP)
@@ -2537,9 +2537,9 @@ Contains
     !!
     Do m=1, flow%NUM_FF-1
       If(fourbody(m)%max_four_body /= 0)Then
-        Write(messages(1),'(1x,a)') 'error - EVB  simulations with four-body potentials are currently not implemented'      
+        Write(messages(1),'(1x,a)') 'error - EVB  simulations with four-body potentials are currently not implemented'
         Call info(messages,1,.True.)
-        Call error(0) 
+        Call error(0)
       End If
     End Do
 
@@ -2549,48 +2549,48 @@ Contains
   Subroutine evb_intermolecular_error(string, field, sitemiss, siteparam, stlab)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
-    ! dl_poly_4 subroutine (auxiliary to evb_check_intermolecular) to print an 
+    ! dl_poly_4 subroutine (auxiliary to evb_check_intermolecular) to print an
     ! error message and abort if either
-    ! 
-    ! - the number for a type of intermolecular interactions is different between FIELD files 
+    !
+    ! - the number for a type of intermolecular interactions is different between FIELD files
     ! - the interaction unit is defined in one FIELD but not found in other (sitemiss=.True.)
     ! - the specification for the intermolecular interation unit changes between FIELD files (siteparam=.True.)
-    !  
-    ! The format of the output error message depends on the intermolecular interactions 
-    ! 
+    !
+    ! The format of the output error message depends on the intermolecular interactions
+    !
     ! copyright - daresbury laboratory
     ! author    - i.scivetti December 2019
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
+
     Character(Len = 256),  Intent(In   )           :: string
-    Integer,               Intent(In   )           :: field 
-    Logical,               Intent(InOut), Optional :: sitemiss 
+    Integer,               Intent(In   )           :: field
+    Logical,               Intent(InOut), Optional :: sitemiss
     Logical,               Intent(InOut), Optional :: siteparam
-    Character(Len = 8),    Intent(InOut), Optional :: stlab(:) 
-  
+    Character(Len = 8),    Intent(InOut), Optional :: stlab(:)
+
     Character(Len = 256) :: messages(4)
     Integer                :: option
     Logical                :: siterror
-  
-    siterror = .False. 
+
+    siterror = .False.
     Write(messages(1),'(1x,a)')        'error -'
     Write(messages(4),'(1x,3a)')       'ACTION: chek settings for ' , trim(string), &
                                        ' interactions, as they MUST be the same for all FIELD files'
-  
+
     If(present(stlab))Then
-  
+
       If(string(1:3)=='TBP')Then
         option=0
-      Else If(string(1:5)=='Metal')Then  
+      Else If(string(1:5)=='Metal')Then
         option=1
       Else If(string(1:13) == 'Tersoff-unit')Then
-        option=2        
+        option=2
       Else If(string(1:13) == 'Tersoff-pair')Then
-        option=3        
-      End If        
-  
-          
+        option=3
+      End If
+
+
       If(sitemiss) Then
         If(option == 0)Then
           Write(messages(2),'(1x,8a,i2,a)')           trim(string),' unit ', &
@@ -2601,54 +2601,54 @@ Contains
                                                       trim(stlab(2)), ' (set in  FF ', field, ')'
         Else If(option == 2)Then
           Write(messages(2),'(1x,4a,i2,a)')           trim(string), ' ', trim(stlab(1)),' (set in  FF ', field, ')'
-  
+
         Else If(option == 3)Then
           Write(messages(2),'(1x,6a,i2,a)')           trim(string),' ', trim(stlab(1)),'-', trim(stlab(1)) ,&
                                                       ' (set in  FF ', field, ')'
-        End If                                     
-  
-        Write(messages(3),'(a,i2,a)')                 ' could not find its equivalent in FF ', field+1, '.' 
+        End If
+
+        Write(messages(3),'(a,i2,a)')                 ' could not find its equivalent in FF ', field+1, '.'
         siterror=.True.
-     
+
       Else If(siteparam) Then
           If(option == 0)Then
             Write(messages(2),'(1x,8a,i2,a)')         trim(string),' specification/parameters for unit ', &
                                                       trim(stlab(1)), '-', trim(stlab(2)), '-', trim(stlab(3)), &
-                                                      ' (set in FF ', field,')' 
+                                                      ' (set in FF ', field,')'
             Write(messages(3),'(1a,i2)')              ' **DIFFERS** from the specification set in FF ', field+1
-  
+
           Else If(option == 1)Then
             Write(messages(2),'(1x,6a,i2,a)')         trim(string),' specification/parameters for pair ',&
-                                                      trim(stlab(1)), '-', trim(stlab(2)), ' (set in FF ', field,')' 
-            Write(messages(3),'(2a,i2)')              ' **DIFFERS** from the specification for the same pair ', & 
+                                                      trim(stlab(1)), '-', trim(stlab(2)), ' (set in FF ', field,')'
+            Write(messages(3),'(2a,i2)')              ' **DIFFERS** from the specification for the same pair ', &
                                                       'set in FF ', field+1
           Else If(option == 2)Then
             Write(messages(2),'(1x,4a,i2,a)')         trim(string),' specification/parameters for ',&
-                                                      trim(stlab(1)), ' (set in FF ', field,')' 
+                                                      trim(stlab(1)), ' (set in FF ', field,')'
             Write(messages(3),'(a,i2)')               ' **DIFFERS** from the specification set in FF ', field+1
-        
+
           Else If(option == 3)Then
             Write(messages(2),'(1x,6a,i2,a)')         trim(string),' specification/parameters for pair ',&
-                                                      trim(stlab(1)), '-', trim(stlab(2)), ' (set in FF ', field,')' 
-            Write(messages(3),'(2a,i2)')              ' **DIFFERS** from the specification for the same pair ', & 
+                                                      trim(stlab(1)), '-', trim(stlab(2)), ' (set in FF ', field,')'
+            Write(messages(3),'(2a,i2)')              ' **DIFFERS** from the specification for the same pair ', &
                                                       'set in FF ', field+1
-          End If                                        
+          End If
           siterror=.True.
       End If
-  
+
       If(siterror)Then
           Call info(messages,4,.True.)
           Call error(0)
-      End if  
-  
+      End if
+
     Else
-  
+
       Write(messages(2),'(1x,2a,i2)')    trim(string), ' set in FIELD file', field
       Write(messages(3),'(a,i2)')        ' **DIFFERS** from the number set in FIELD file ' , field+1
       Call info(messages,4,.True.)
       Call error(0)
-  
-    End If  
+
+    End If
 
   End Subroutine evb_intermolecular_error
 
@@ -2675,28 +2675,28 @@ Contains
     Type(angles_type),          Intent(In   ) :: angle(:)
     Type(dihedrals_type),       Intent(In   ) :: dihedral(:)
     Type(inversions_type),      Intent(In   ) :: inversion(:)
-  
+
     Integer              :: m, i
-  
-    Character(Len = 256) :: labelint 
-  
+
+    Character(Len = 256) :: labelint
+
     ! Temporary array to count total number of interactions
     Integer, Allocatable :: numtot(:)
- 
-    ! Allocate array for the total number of intra-molecular interactions 
+
+    ! Allocate array for the total number of intra-molecular interactions
     Allocate(numtot(flow%NUM_FF))
-  
+
     Call info(' ',.True.)
     Call info(' intra-molecular interactions for the non-reactive part of the system...', .True.)
-  
-    ! Initialise the number for each type of interaction at EVB site 
-    evb%num_bond       = 0 
+
+    ! Initialise the number for each type of interaction at EVB site
+    evb%num_bond       = 0
     evb%num_angle      = 0
     evb%num_dihedral   = 0
     evb%num_inversion  = 0
-  
-    !! Bonds 
-  
+
+    !! Bonds
+
     labelint= 'Bond'
     numtot=0
 
@@ -2704,116 +2704,116 @@ Contains
     Do m= 1, flow%NUM_FF
       Do i= 1, sites(m)%ntype_mol
         numtot(m) = numtot(m)+bond(m)%num(i)
-        If(i <= evb%typemols(m))Then   
+        If(i <= evb%typemols(m))Then
           evb%num_bond(m) = evb%num_bond(m)+bond(m)%num(i)
-        End If        
+        End If
       End Do
-    End Do 
-  
+    End Do
+
     ! Compare if the total number of bonds for the non-reactive part is the same for all FFs (if not, print error)
     Do m=1, flow%NUM_FF-1
       If( (numtot(m)-evb%num_bond(m)) /= (numtot(m+1)-evb%num_bond(m+1)) )Then
         Call evb_intramolecular_number_error(labelint, m)
-      End If        
+      End If
     End Do
-  
+
     ! For the non-reactive part, check that specification for bonds does not change beetween FIELD files
     Do m = 1, flow%NUM_FF-1
       Call compare_intramolecular(labelint, m, 2, bond(m)%max_param, evb%num_bond(m), evb%num_bond(m+1), &
                                numtot(m), numtot(m+1), bond(m)%key, bond(m+1)%key, bond(m)%lst, bond(m+1)%lst, &
                                bond(m)%param, bond(m+1)%param, bond(m)%num, sites(m)%ntype_mol, BOND_TAB)
-    End Do                      
-  
-  
-    !! Angles 
+    End Do
+
+
+    !! Angles
     labelint= 'Angle'
     numtot=0
-  
+
     ! For each FIELD, calculate the number of angles for the EVB site and the total number of angles for the whole system
     Do m= 1, flow%NUM_FF
       Do i= 1, sites(m)%ntype_mol
         numtot(m) = numtot(m)+angle(m)%num(i)
-        If(i <= evb%typemols(m))Then    
+        If(i <= evb%typemols(m))Then
           evb%num_angle(m) = evb%num_angle(m)+angle(m)%num(i)
         End If
       End Do
-    End Do 
-  
+    End Do
+
     ! Compare if the total number of angles for the non-reactive part is the same for all FFs (if not, print error)
-    Do m=1, flow%NUM_FF-1  
+    Do m=1, flow%NUM_FF-1
       If( (numtot(m)-evb%num_angle(m)) /= (numtot(m+1)-evb%num_angle(m+1)) )Then
         Call evb_intramolecular_number_error(labelint, m)
-      End If        
+      End If
     End Do
-  
+
     ! For the non-reactive part, check that specification for angles does not change beetween FIELD files
     Do m = 1, flow%NUM_FF-1
       Call compare_intramolecular(labelint, m, 3, angle(m)%max_param, evb%num_angle(m), evb%num_angle(m+1), &
                                   numtot(m), numtot(m+1), angle(m)%key, angle(m+1)%key, angle(m)%lst, angle(m+1)%lst, &
                                   angle(m)%param, angle(m+1)%param, angle(m)%num, sites(m)%ntype_mol, ANGLE_TAB)
-    End Do                      
-  
-  
+    End Do
+
+
     !! Dihedrals
     labelint= 'Dihedral'
     numtot=0
-  
+
     ! For each FIELD, calculate the number of dihedrals for the EVB site and the total number of dihedrals for the whole system
     Do m= 1, flow%NUM_FF
       Do i= 1, sites(m)%ntype_mol
         numtot(m) = numtot(m)+dihedral(m)%num(i)
-        If(i <= evb%typemols(m))Then    
+        If(i <= evb%typemols(m))Then
           evb%num_dihedral(m) = evb%num_dihedral(m)+dihedral(m)%num(i)
         End If
       End Do
-    End Do 
-  
+    End Do
+
     ! Compare if the total number of dihedrals for the non-reactive part is the same for all FFs (if not, print error)
-    Do m=1, flow%NUM_FF-1  
+    Do m=1, flow%NUM_FF-1
       If( (numtot(m)-evb%num_dihedral(m)) /= (numtot(m+1)-evb%num_dihedral(m+1)) )Then
         Call evb_intramolecular_number_error(labelint, m)
-      End If        
+      End If
     End Do
-  
+
     ! For the non-reactive part, check that specification for dihedrals does not change beetween FIELD files
     Do m = 1, flow%NUM_FF-1
       Call compare_intramolecular(labelint, m, 4, dihedral(m)%max_param, evb%num_dihedral(m), evb%num_dihedral(m+1), &
                                   numtot(m), numtot(m+1), dihedral(m)%key, dihedral(m+1)%key, dihedral(m)%lst, dihedral(m+1)%lst, &
                                   dihedral(m)%param, dihedral(m+1)%param, dihedral(m)%num, sites(m)%ntype_mol, DIHEDRAL_TAB)
-    End Do                      
-  
-  
+    End Do
+
+
     !! Inversion
     labelint= 'Inversion'
     numtot=0
-  
+
     ! For each FIELD, calculate the number of inversions for the EVB site and the total number of inversions for the whole system
     Do m= 1, flow%NUM_FF
       Do i= 1, sites(m)%ntype_mol
         numtot(m) = numtot(m)+inversion(m)%num(i)
-        If(i <= evb%typemols(m))Then    
+        If(i <= evb%typemols(m))Then
           evb%num_inversion(m) = evb%num_inversion(m)+inversion(m)%num(i)
         End If
       End Do
-    End Do 
-  
+    End Do
+
     ! Compare if the total number of inversions for the non-reactive part is the same for all FFs (if not, print error)
-    Do m=1, flow%NUM_FF-1  
+    Do m=1, flow%NUM_FF-1
       If( (numtot(m)-evb%num_inversion(m)) /= (numtot(m+1)-evb%num_inversion(m+1)) )Then
         Call evb_intramolecular_number_error(labelint, m)
-      End If        
+      End If
     End Do
-  
+
     ! For the non-reactive part, check that specification for inversions does not change beetween FIELD files
     Do m = 1, flow%NUM_FF-1
       Call compare_intramolecular(labelint, m, 4, inversion(m)%max_param, evb%num_inversion(m), evb%num_inversion(m+1), &
                                numtot(m), numtot(m+1), inversion(m)%key, inversion(m+1)%key, inversion(m)%lst, inversion(m+1)%lst, &
                                inversion(m)%param, inversion(m+1)%param, inversion(m)%num, sites(m)%ntype_mol, INVERSION_TAB)
-    End Do                      
-  
+    End Do
+
     ! Deallocation of temporary array numtot
     Deallocate(numtot)
-  
+
   End Subroutine evb_check_intramolecular
 
 
@@ -2821,26 +2821,26 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine (auxiliary to evb_check_intramolecular) to print
-    ! and error message and abort the execution if the number of intramolecular 
-    ! interactions (of a given type) for the non-reactive part of the system 
+    ! and error message and abort the execution if the number of intramolecular
+    ! interactions (of a given type) for the non-reactive part of the system
     ! is not preserved for all FIELD files
-    !  
+    !
     ! copyright - daresbury laboratory
     ! author    - i.scivetti December 2019
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
-    Character(Len = 256), Intent(In   ) :: labelint 
+
+    Character(Len = 256), Intent(In   ) :: labelint
     Integer(Kind = wi),   Intent(In   ) :: field
-    
-    
+
+
     Character(Len = 256) :: messages(5)
-  
+
     Write(messages(1),'(1x,3a)')        'error - The total number of intramolecular ', trim(labelint),&
-                                        ' interactions between atoms that' 
+                                        ' interactions between atoms that'
     Write(messages(2),'(1x,a,i2,a,i2)') 'are NOT part of the EVB reactive fragment **DIFFERS** between FF ',&
-                                         field, ' and FF ', field+1 
-    Write(messages(3),'(1x,3a)')        'ACTION: check settings for ', trim(labelint), ' interactions and make sure' 
+                                         field, ' and FF ', field+1
+    Write(messages(3),'(1x,3a)')        'ACTION: check settings for ', trim(labelint), ' interactions and make sure'
     Write(messages(4),'(1x,a)')         'they are equally defined in all FIELD files.'
     Write(messages(5),'(1x,a)')         'Settings for the non-reactive part of the system MUST be the same for all FIELD files'
     Call info(messages,5,.True.)
@@ -2851,30 +2851,30 @@ Contains
 
   Subroutine compare_intramolecular(labelint, field, listdim, maxparam, evb_num1, evb_num2, &
                                  numtot1, numtot2, key1, key2, list1, list2,             &
-                                 param1, param2, numxmol, ntype_mol, keyexcl) 
+                                 param1, param2, numxmol, ntype_mol, keyexcl)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine (auxiliary to evb_check_intramolecular) to compare intramolecular
     ! interactions between FIELD files and print an error message (and abort) if either:
-    ! 
+    !
     ! - the interaction unit is defined in one FIELD but not found in other
-    ! - the specification for the intermolecular interation unit changes between FIELD files 
+    ! - the specification for the intermolecular interation unit changes between FIELD files
     !
     ! copyright - daresbury laboratory
     ! author    - i.scivetti December 2019
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Character(Len = 256), Intent(In   ) :: labelint 
+    Character(Len = 256), Intent(In   ) :: labelint
     Integer(Kind = wi),   Intent(In   ) :: field, listdim, maxparam
     Integer(Kind = wi),   Intent(In   ) :: evb_num1, evb_num2
     Integer(Kind = wi),   Intent(In   ) :: numtot1 , numtot2
-    Integer(Kind = wi),   Intent(In   ) :: key1(:) , key2(:)   
-    Integer(Kind = wi),   Intent(In   ) :: list1(:,:), list2(:,:)   
+    Integer(Kind = wi),   Intent(In   ) :: key1(:) , key2(:)
+    Integer(Kind = wi),   Intent(In   ) :: list1(:,:), list2(:,:)
     Integer(Kind = wi),   Intent(In   ) :: numxmol(:)
     Integer(Kind = wi),   Intent(In   ) :: ntype_mol
-    Integer(Kind = wi),   Intent(In   ) :: keyexcl 
-    Real(Kind = wp),      Intent(In   ) :: param1(:,:), param2(:,:) 
+    Integer(Kind = wi),   Intent(In   ) :: keyexcl
+    Real(Kind = wp),      Intent(In   ) :: param1(:,:), param2(:,:)
 
     Integer                :: i, j, k, mol
     Logical                :: llist, lparam, lkey
@@ -2891,17 +2891,17 @@ Contains
     Do While (i <= numtot1 .And. j <= numtot2)
       Do k=1,listdim
         If( list1(k,i) /= list2(k,j))Then
-          llist=.True.       
-        End If           
+          llist=.True.
+        End If
       End Do
       If(.Not. llist)Then
         If( key1(i) /= key2(j) ) Then
           lkey=.True.
-        End If        
+        End If
         If(key1(i) /= keyexcl)Then
           Do k=1,maxparam
             If( abs(param1(k,i)-param2(k,j)) >= epsilon(param1(k,i)) ) Then
-              lparam=.True. 
+              lparam=.True.
             End If
           End Do
         End If
@@ -2912,19 +2912,19 @@ Contains
         Call obtain_molecule_from_intra(i, numxmol, ntype_mol, mol)
 
         Write(messages(1), '(1x,a)' )        'error -'
-        Write(messages(2), * )                trim(labelint),' interaction between atoms', (list1(k,i), k = 1, listdim) 
-        Write(messages(3),'(1x,a,2(i2,a))')  'is defined in FF ', field, & 
-                                             ' for type-of-molecule', mol, ' (see the corresponding FIELD file).' 
+        Write(messages(2), * )                trim(labelint),' interaction between atoms', (list1(k,i), k = 1, listdim)
+        Write(messages(3),'(1x,a,2(i2,a))')  'is defined in FF ', field, &
+                                             ' for type-of-molecule', mol, ' (see the corresponding FIELD file).'
 
         If(lparam)Then
           Write(messages(4),'(1x,a)')        'Parameters for this unit *DO NOT* agree with the values set'
-        End If                      
+        End If
         If(lkey)Then
           Write(messages(4),'(1x,a)')        'Key-type of interaction for this unit *DIFFERS* from the type specified'
-        End If                      
+        End If
         If(llist)Then
           Write(messages(4),'(1x,a)')        'This interaction unit CANNOT be found '
-        End If                      
+        End If
 
         Write(messages(5),'(1x,a,i2,3a)')    'in FF', field+1, '. ACTION: find unit and verify it is equally defined for ', &
                                              'all FIELD files, as settings for ', trim(labelint)
@@ -2943,9 +2943,9 @@ Contains
   Subroutine obtain_molecule_from_intra(num_unit, numxmol, ntype_mol, mol)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
-    ! dl_poly_4 subroutine (auxiliary to compare_intramolecular) to obtain the 
+    ! dl_poly_4 subroutine (auxiliary to compare_intramolecular) to obtain the
     ! type-of-molecule given the index of an intramolecular interaction
-    !  
+    !
     ! copyright - daresbury laboratory
     ! author    - i.scivetti December 2019
     !
@@ -2956,14 +2956,14 @@ Contains
     Integer(Kind = wi),   Intent(In   ) :: numxmol(:)
     Integer(Kind = wi),   Intent(In   ) :: ntype_mol
     Integer(Kind = wi),   Intent(InOut) :: mol
- 
+
     Integer :: j, k
-    Integer :: intnum 
- 
+    Integer :: intnum
+
     Logical :: flag
- 
+
     flag=.True.
- 
+
     Do k=ntype_mol-1,1,-1
       If(flag)Then
         intnum=0
@@ -2973,20 +2973,20 @@ Contains
         If(intnum < num_unit)Then
           mol=k+1
           flag=.False.
-        End If  
+        End If
       End If
     End Do
- 
-
-  End Subroutine obtain_molecule_from_intra        
 
 
-  Subroutine evb_check_external(evb, flow, ext_field) 
+  End Subroutine obtain_molecule_from_intra
+
+
+  Subroutine evb_check_external(evb, flow, ext_field)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
-    ! dl_poly_4 subroutine that aborts the execution of a standard EVB runs 
-    ! if either electric of magnetic fields are present. 
-    !  
+    ! dl_poly_4 subroutine that aborts the execution of a standard EVB runs
+    ! if either electric of magnetic fields are present.
+    !
     ! copyright - daresbury laboratory
     ! author    - i.scivetti December 2019
     !
@@ -2995,14 +2995,14 @@ Contains
     Type(evb_type),             Intent(InOut) :: evb
     Type(flow_type),            Intent(In   ) :: flow
     Type(external_field_type),  Intent(In   ) :: ext_field(:)
-  
+
     Integer :: m
-    Character(Len = 256) :: message 
-  
-    ! For standard EVB (evb%tysim=0), only one reactive EVB site is allowed. 
-    ! Such a reactive site can be well composed of one or many fragments, depending on the chemical state 
+    Character(Len = 256) :: message
+
+    ! For standard EVB (evb%tysim=0), only one reactive EVB site is allowed.
+    ! Such a reactive site can be well composed of one or many fragments, depending on the chemical state
     If(evb%typsim == 0)Then
-  
+
       ! Kill the run for standard EVB with external electric or magnetic fields
       Do m=1, flow%NUM_FF
         If (ext_field(m)%key == FIELD_ELECTRIC .Or. ext_field(m)%key == FIELD_MAGNETIC ) Then
@@ -3010,8 +3010,8 @@ Contains
           Call error(0,message)
         End If
       End Do
-  
-    End If 
+
+    End If
 
   End Subroutine evb_check_external
 
@@ -3019,39 +3019,39 @@ Contains
   Subroutine evb_pes(evb, flow, config, stat)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
-    ! dl_poly_4 subroutine that calls for the computation of: 
+    ! dl_poly_4 subroutine that calls for the computation of:
     !
     ! - EVB coupling terms and their derivatives
     ! - EVB energy
-    ! - EVB forces 
+    ! - EVB forces
     ! - EVB stress
-    ! 
+    !
     ! copyright - daresbury laboratory
     ! author    - i.scivetti Febrauary 2020
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- 
+
     Type(evb_type), Intent(InOut) :: evb
     Type(flow_type), Intent(In   ) :: flow
     Type(configuration_type), Intent(InOut) :: config(:)
     Type(stats_type), Intent(InOut) :: stat(:)
-    
+
     Integer(Kind = wi) :: m
 
     ! Shift configurational energies
-    Do m=1,flow%NUM_FF 
+    Do m=1,flow%NUM_FF
       evb%eneFF(m) = stat(m)%stpcfg+evb%eshift(m)
     End Do
-      
+
     !Compute coupling terms and their gradients
     Call evb_couplings(flow, evb)
-  
-    !Compute EVB Energy 
+
+    !Compute EVB Energy
     Call evb_energy(evb, flow, stat)
-  
+
     !Compute EVB forces
     Call evb_force(evb, flow, config)
-  
+
     !Compute EVB stress
     Call evb_stress(evb, flow, config, stat)
 
@@ -3066,23 +3066,23 @@ Contains
     ! - matrix of coupling terms (evb%coupl), used to compute the EVB matrix
     ! - matrix with the derivatives of coupling terms (evb%grad_coupl), used
     !   to EVB forces and stress tensor
-    ! 
+    !
     ! copyright - daresbury laboratory
     ! author    - i.scivetti August 2019
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
+
       Type(flow_type),  Intent(In   ) :: flow
       Type(evb_type  ), Intent(InOut) :: evb
 
       Integer                         :: m,k
       Real(Kind = wp)                 :: ediff, earg
       Real(Kind = wp)                 :: A(evb%maxparam)
-    
+
       ! Initialise coupling matrices to zero
        evb%coupl=0.0d0
        evb%grad_coupl=0.0d0
-    
+
       Do m=1,flow%NUM_FF
         Do k=m+1,flow%NUM_FF
         ! Copy evb coupling parameters to array A, for the sake of clarity in coding the formulae
@@ -3098,15 +3098,15 @@ Contains
               evb%coupl(m,k) = A(1)*exp(-((ediff-A(2))/A(3))**2)+A(4)
               evb%grad_coupl(m,k) = -2.0_wp * (A(1)/A(3)**2)*(ediff-A(2))*exp(-((ediff-A(2))/A(3))**2)
             Else
-              Call evb_couplings_error(m,k,evb)      
+              Call evb_couplings_error(m,k,evb)
             End If
-          End If       
+          End If
           ! Make both matrices symmetric
           evb%coupl(k,m)      = evb%coupl(m,k)
-          evb%grad_coupl(k,m) = evb%grad_coupl(m,k) 
+          evb%grad_coupl(k,m) = evb%grad_coupl(m,k)
 
         End Do
-      End Do 
+      End Do
 
   End Subroutine evb_couplings
 
@@ -3114,27 +3114,27 @@ Contains
   Subroutine evb_couplings_error(m,k,evb)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
-    ! dl_poly_4 subroutine to print an error message and abort if any of the 
-    ! coupling terms exhibit numerical instabilities 
+    ! dl_poly_4 subroutine to print an error message and abort if any of the
+    ! coupling terms exhibit numerical instabilities
     !
     ! copyright - daresbury laboratory
     ! author    - i.scivetti August 2019
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- 
+
     Integer(Kind = wi), Intent(In   ) :: m, k
-    Type(evb_type  ),   Intent(InOut) :: evb 
+    Type(evb_type  ),   Intent(InOut) :: evb
 
     Character(Len = 256)   :: messages(4)
 
     Write(messages(1),'(1x,a)')          'error - Argument for the exponential term of the "gauss" coupling'
-    Write(messages(2),'(1x,2(a,i2),a)')  'between FFs', m, ' and ', k, ' is beyond the range of computation'  
-    Write(messages(3),'(1x,2(f6.1,a))')   -evb%elimit, ' < argument < ', evb%elimit, '. Either the energy of one FF ' 
+    Write(messages(2),'(1x,2(a,i2),a)')  'between FFs', m, ' and ', k, ' is beyond the range of computation'
+    Write(messages(3),'(1x,2(f6.1,a))')   -evb%elimit, ' < argument < ', evb%elimit, '. Either the energy of one FF '
     Write(messages(4),'(1x,a)')          'has diverged or the coupling parameters set in SETEVB are not correct.'
     Call info(messages, 4, .True.)
     Call error(0)
 
-  End Subroutine evb_couplings_error        
+  End Subroutine evb_couplings_error
 
 
   Subroutine evb_energy(evb, flow, stat)
@@ -3142,27 +3142,27 @@ Contains
     !
     ! dl_poly_4 subroutine that computes the EVB energy. Steps:
     !
-    ! - buildig the EVB matrix. Shifted conformational energies for each FF 
+    ! - buildig the EVB matrix. Shifted conformational energies for each FF
     !   are set in the diagonal elements; off diagonal terms are set equal
     !   to evb%coupl, previously computed via suroutine evb_couplings.
     ! - Diagonalization of the EVB matrix via the BLAS subroutine dsyevx
     ! - Check if diagonalization was successful
     ! - EVB eigenvectors are assigned to evb%psi
-    ! - Lowest eigenvalue evb%eigval is the EVB energy 
+    ! - Lowest eigenvalue evb%eigval is the EVB energy
     !
     ! This procedure is repeated at each time step
     !
     ! #ifdef condition is to allow serial compilation with blas subroutine dsyevx
-    ! 
+    !
     ! copyright - daresbury laboratory
     ! author    - i.scivetti August 2019
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- 
+
     Type(evb_type),   Intent(InOut) :: evb
     Type(flow_type),  Intent(In   ) :: flow
     Type(stats_type), Intent(InOut) :: stat(:)
-  
+
     Integer(Kind = wi) :: m,k           ! Indices for matrix elements
     Integer(Kind = wi) :: mevb, evbinfo ! Working intergers
 
@@ -3170,21 +3170,21 @@ Contains
 #ifdef EVB
     !Initialise matrix elements
     evb%ene_matrix = 0.0_wp
-  
-    !! Build EVB matrix 
+
+    !! Build EVB matrix
     ! Diagonal elements
-    Do m=1,flow%NUM_FF 
+    Do m=1,flow%NUM_FF
       evb%ene_matrix(m,m)= evb%eneFF(m)
     End Do
-  
+
     !Off-diagonal terms
     Do m=1,flow%NUM_FF
       Do k=m+1,flow%NUM_FF
-        evb%ene_matrix(m,k) = evb%coupl(m,k) 
+        evb%ene_matrix(m,k) = evb%coupl(m,k)
         evb%ene_matrix(k,m) = evb%coupl(k,m)
       End Do
     End Do
-    
+
     !!Diagonalization
     call dsyevx( 'V', 'I', 'U', flow%NUM_FF, evb%ene_matrix, flow%NUM_FF, -1., 0., 1, flow%NUM_FF, &
                   1.d-30, mevb, evb%eigval, evb%psi, flow%NUM_FF, evb%work, 8*flow%NUM_FF,     &
@@ -3192,29 +3192,29 @@ Contains
 
     !Check that diagonalization was successful
     If(evbinfo /= 0)Then
-      Call evb_diag_error(evbinfo)      
-    End If 
+      Call evb_diag_error(evbinfo)
+    End If
 
     !Assign eigenvalues to conformational energy
     Do m=1,flow%NUM_FF
       stat(m)%stpcfg=evb%eigval(1)
     End Do
-#endif    
+#endif
 
   End Subroutine evb_energy
 
-  
-  Subroutine evb_diag_error(evbinfo) 
+
+  Subroutine evb_diag_error(evbinfo)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine to print an error and abort if the diagonalization
-    ! was unsuccessful 
+    ! was unsuccessful
     !
     ! copyright - daresbury laboratory
     ! author    - i.scivetti Febraury 2020
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- 
+
     Integer(Kind = wi), Intent(In   ) :: evbinfo
 
     Character(Len = 256)   :: messages(4)
@@ -3222,10 +3222,10 @@ Contains
 
     If(evbinfo < 0)Then
       Write(messages(1),'(1x,a,i3,a)')   'error - EVB diagonalization failed as argument ', -evbinfo, &
-                                         ' has an illegal value.'   
+                                         ' has an illegal value.'
     Else If(evbinfo > 0)Then
       Write(messages(1),'(1x,a,i2,2a)')  'error - EVB diagonalization failed as eigenvector ', evbinfo, ' failed ',&
-                                         'to converge'   
+                                         'to converge'
     End If
 
     Write(messages(2),'(1x,a)')          'ACTION 1: check for incorrect input parameters for coupling terms in SETEVB'
@@ -3243,33 +3243,33 @@ Contains
     !
     ! dl_poly_4 subroutine that computes for the EVB force over each ion of the
     ! system. Steps:
-    ! 
+    !
     ! - build force matrix for each ion and coordinate, using matrix evb%grad_coupl
     !   computed previously by subroutine evb_couplings.
     ! - compute force evb%force using the EVB eigenvector.
     ! - copy evb%force to the force components of config(m)%parts(i)
-    ! 
+    !
     ! copyright - daresbury laboratory
     ! author    - i.scivetti March 2020
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- 
+
     Type(evb_type),           Intent(InOut) :: evb
     Type(flow_type),          Intent(In   ) :: flow
     Type(configuration_type), Intent(InOut) :: config(:)
-  
-  
+
+
     Integer(Kind = wi) :: m,k         ! Indices for matrix elements
     Integer(Kind = wi) :: i           ! Indices for atoms
     Integer(Kind = wi) :: alpha       ! Indices for cartesian coordinates x, y and z
-  
+
     Integer(Kind = wi) :: natms
     Real(Kind = wp)    :: fdiff
-  
-    !Maximum number of atoms. 
+
+    !Maximum number of atoms.
     !In evb_check_config, config%natms has been checked to be the same for all CONFIG files
-    natms=config(1)%natms 
-  
+    natms=config(1)%natms
+
     Do i=1, natms ! Copy forces from config%parts(i) to evb%force. x->1, y->2, y->3. We do this for each force field.
 
       Do m=1,flow%NUM_FF
@@ -3284,19 +3284,19 @@ Contains
         Do m=1,flow%NUM_FF
           evb%force_matrix(m,m)=evb%force(alpha,m)
         End Do
-        ! Off-diagonal elements     
+        ! Off-diagonal elements
         Do m=1,flow%NUM_FF
           Do k=m+1,flow%NUM_FF
-            fdiff=evb%force(alpha,m)-evb%force(alpha,k)       
-            evb%force_matrix(m,k)=fdiff*evb%grad_coupl(m,k) 
+            fdiff=evb%force(alpha,m)-evb%force(alpha,k)
+            evb%force_matrix(m,k)=fdiff*evb%grad_coupl(m,k)
             !Make matrix symmetric
             evb%force_matrix(k,m)=evb%force_matrix(m,k)
           End Do
         End Do
-  
-        !Set the first column of evb%force to zero   
+
+        !Set the first column of evb%force to zero
         evb%force(alpha,1)=0.0_wp
-  
+
         ! Matrix multiplication (evb%psi)^T*evb%force_matrix*(evb%psi) to compute evb%force(j,1)
         ! Store EVB force in column 1 of evb%force
         Do m=1,flow%NUM_FF
@@ -3304,15 +3304,15 @@ Contains
             evb%force(alpha,1)=evb%force(alpha,1)+evb%psi(m,1)*evb%force_matrix(m,k)*evb%psi(k,1)
           End Do
         End Do
-      End Do 
-  
+      End Do
+
     ! Once we have compute the the three force components, we copy evb-force to the configurational force of each FF
       Do m=1,flow%NUM_FF
         config(m)%parts(i)%fxx=evb%force(1,1)
         config(m)%parts(i)%fyy=evb%force(2,1)
         config(m)%parts(i)%fzz=evb%force(3,1)
       End Do
-  
+
     End Do
 
    End Subroutine evb_force
@@ -3321,69 +3321,69 @@ Contains
   Subroutine evb_stress(evb, flow, config, stat)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
-    ! dl_poly_4 subroutine that computes for the EVB stress tensor and 
-    ! EVB configurational virial. Steps: 
-    ! 
-    ! - build stress matrix evb%dE_dh using matrix evb%grad_coupl (computed previously 
+    ! dl_poly_4 subroutine that computes for the EVB stress tensor and
+    ! EVB configurational virial. Steps:
+    !
+    ! - build stress matrix evb%dE_dh using matrix evb%grad_coupl (computed previously
     !   by subroutine evb_couplings).
     ! - compute stress tensor evb%stress using the EVB eigenvector.
     ! - copy evb%stress to the stat(m)%stress
     ! - compute the total EVB virial
-    ! 
-    ! In principle, it is possible to have an EVB decomposition of the virial into separate 
-    ! contributions for various type of interactions (e.g. angles, bonds, dihedrals, 
+    !
+    ! In principle, it is possible to have an EVB decomposition of the virial into separate
+    ! contributions for various type of interactions (e.g. angles, bonds, dihedrals,
     ! coulombic, etc). However, i.scivetti has decided not to compute these contributions
     ! as their implementation would entail a significant amount of changes to the code, and
-    ! it would be completely irrelevant to describing the dynamics. Instead, the total 
+    ! it would be completely irrelevant to describing the dynamics. Instead, the total
     ! configurational virial is computed using the trace of the EVB stress tensor
-    ! 
+    !
     ! copyright - daresbury laboratory
     ! author    - i.scivetti March 2020
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- 
+
     Type(evb_type),           Intent(InOut) :: evb
     Type(flow_type),          Intent(In   ) :: flow
     Type(configuration_type), Intent(InOut) :: config(:)
     Type(stats_type),         Intent(InOut) :: stat(:)
-  
+
     ! Working arrays and variables
     Integer(Kind = wi) :: m,k                ! Indices for matrix elements
     Integer(Kind = wi) :: alpha, beta, gama  ! Indices for coordinates x, y, z
 
     Real(Kind = wp)    :: invcell(1:9)
-    Real(Kind = wp)    :: h(3,3)                 ! Matrix describing the simulation cell 
-    Real(Kind = wp)    :: det                    ! Volume of h  
+    Real(Kind = wp)    :: h(3,3)                 ! Matrix describing the simulation cell
+    Real(Kind = wp)    :: det                    ! Volume of h
     Real(Kind = wp)    :: invh(3,3)              ! Inverse of h
     Real(Kind = wp)    :: strff(flow%NUM_FF,3,3) ! Temporary working array to compute stress
-     
-  
-    !Arrange stat(m)%stress in a more convenient index notation and store in strff. We do that for every field. 
-    Do m=1,flow%NUM_FF 
+
+
+    !Arrange stat(m)%stress in a more convenient index notation and store in strff. We do that for every field.
+    Do m=1,flow%NUM_FF
       Do alpha=1,3
         Do beta=1,3
           strff(m,alpha,beta)=stat(m)%stress(3*(alpha-1)+beta)
         End Do
       End Do
     End Do
-  
-    !Arrange config(1)%cell in a more convenient index notation, stored in matrix h 
+
+    !Arrange config(1)%cell in a more convenient index notation, stored in matrix h
     Do alpha =1, 3
       Do beta =1, 3
-        h(alpha,beta)=config(1)%cell(3*(alpha-1)+beta) 
+        h(alpha,beta)=config(1)%cell(3*(alpha-1)+beta)
       End Do
     End Do
-       
-    !Compute the inverse of the lattice vectors   
+
+    !Compute the inverse of the lattice vectors
      Call invert(config(1)%cell,invcell,det)
-  
+
     !Arrange invcell in a more convenient index notation, stored in invh
     Do alpha=1,3
       Do beta=1,3
-        invh(alpha,beta)=invcell(3*(alpha-1)+beta) 
+        invh(alpha,beta)=invcell(3*(alpha-1)+beta)
       End Do
     End Do
-  
+
     Do alpha=1,3
       Do beta=1,3
 
@@ -3392,11 +3392,11 @@ Contains
         ! Diagonal elements
         Do m=1,flow%NUM_FF
           evb%stress_matrix(m,m)= 0.0_wp
-          Do gama=1,3  
+          Do gama=1,3
             evb%stress_matrix(m,m)= evb%stress_matrix(m,m)+strff(m,alpha,gama)*invh(beta,gama)
           End Do
         End Do
-        ! Off-diagonal elements     
+        ! Off-diagonal elements
         Do m=1,flow%NUM_FF
           Do k=m+1,flow%NUM_FF
             evb%stress_matrix(m,k)=0.0_wp
@@ -3407,12 +3407,12 @@ Contains
              evb%stress_matrix(m,k) = evb%stress_matrix(m,k)*evb%grad_coupl(m,k)
              !  Make matrix symmetric
             evb%stress_matrix(k,m)=evb%stress_matrix(m,k)
-          End Do 
+          End Do
         End Do
-        
+
         ! Initialise dE_dh to zero
         evb%dE_dh(alpha,beta)=0.0_wp
-    
+
         ! Matrix multiplication (evb%psi)^T*(evb%stress_matrix)*(evb%psi) to compute stat(1)%stress(j)
         Do m=1,flow%NUM_FF
           Do k=1,flow%NUM_FF
@@ -3421,8 +3421,8 @@ Contains
         End Do
 
       End Do
-    End Do 
-  
+    End Do
+
     !Obtain EVB stress tensor
     Do alpha=1,3
       Do beta=alpha,3
@@ -3434,20 +3434,20 @@ Contains
         ! Make stress tensor symmetric
         If(alpha /= beta)Then
           evb%stress(beta,alpha)=evb%stress(alpha,beta)
-        End If  
+        End If
       End Do
-    End Do 
-  
+    End Do
+
     !Copy evb%stress to stat(m)%stress for each FIELD
     Do alpha=1,3
       Do beta=1,3
-        Do m=1,flow%NUM_FF  
+        Do m=1,flow%NUM_FF
           stat(m)%stress(3*(alpha-1)+beta)=evb%stress(alpha,beta)
-        End Do  
+        End Do
       End Do
     End Do
-  
-  
+
+
     Do m=1,flow%NUM_FF
        stat(m)%virtot=-(stat(m)%stress(1)+stat(m)%stress(5)+stat(m)%stress(9))
     End Do
@@ -3461,7 +3461,7 @@ Contains
     ! dl_poly_4 subroutine to compute the population of EVB states at each timestep
     ! Results are written in file POPEVB ater equilibration, only if the flag
     ! evbpop is present in the SETEVB file
-    ! 
+    !
     ! copyright - daresbury laboratory
     ! author    - i.scivetti January 2020
     !
@@ -3474,32 +3474,32 @@ Contains
 
     Integer(Kind = wi) :: ff
     Logical            :: l_tmp
-  
+
     ! open EVB file file and write header
     If (evb%newjob .And. comm%idnode == 0) Then
-  
+
       evb%newjob = .false.
       l_tmp=.false.
-      
+
       ! If the flow%restart_key = RESTART_KEY_OLD is the file old (does it exist)?
       If (flow%restart_key == RESTART_KEY_OLD)Then
         Inquire(File=files(FILE_POPEVB)%filename, Exist=l_tmp)
       End If
-  
+
       If (.not.l_tmp) Then
         Open(Newunit=files(FILE_POPEVB)%unit_no,File=files(FILE_POPEVB)%filename, Status='Replace')
         Write(files(FILE_POPEVB)%unit_no,'(a,17x,a)') '# Time (ps)','Weights of each FFs in the total EVB state (FF 1, 2, etc)'
       Else
-        Open(Newunit=files(FILE_POPEVB)%unit_no,File=files(FILE_POPEVB)%filename, Position='append')      
-      End If  
-  
+        Open(Newunit=files(FILE_POPEVB)%unit_no,File=files(FILE_POPEVB)%filename, Position='append')
+      End If
+
     End If
-  
+
     ! Only print after equilibration
     If(flow%step>flow%equil_steps+1)Then
        If (comm%idnode == 0)Then
-         ! The specified writing format below allows to write a variable number of FFs       
-         Write(files(FILE_POPEVB)%unit_no,'(*(e16.6))') flow%time, (evb%psi(ff,1)**2, ff=1,flow%NUM_FF)    
+         ! The specified writing format below allows to write a variable number of FFs
+         Write(files(FILE_POPEVB)%unit_no,'(*(e16.6))') flow%time, (evb%psi(ff,1)**2, ff=1,flow%NUM_FF)
        End If
     End If
 
@@ -3509,9 +3509,9 @@ Contains
   Subroutine evb_setzero(flow, stat)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
-    ! dl_poly_4 subroutine that sets to zero most all the decomposed terms 
-    ! of the conformational virial and energy.  
-    ! 
+    ! dl_poly_4 subroutine that sets to zero most all the decomposed terms
+    ! of the conformational virial and energy.
+    !
     ! copyright - daresbury laboratory
     ! author    - i.scivetti January 2020
     !
@@ -3519,35 +3519,35 @@ Contains
 
     Type(flow_type),  Intent(In   ) :: flow
     Type(stats_type), Intent(InOut) :: stat(:)
-  
+
     Integer(Kind = wi) :: ff
-  
+
     Do ff=1,flow%NUM_FF
       !Energy components
       stat(ff)%engcpe = 0.0_wp
-      stat(ff)%engsrp = 0.0_wp 
-      stat(ff)%engter = 0.0_wp 
-      stat(ff)%engtbp = 0.0_wp 
-      stat(ff)%engfbp = 0.0_wp 
-      stat(ff)%engshl = 0.0_wp 
-      stat(ff)%engtet = 0.0_wp 
-      stat(ff)%engbnd = 0.0_wp 
-      stat(ff)%engang = 0.0_wp 
-      stat(ff)%engdih = 0.0_wp 
+      stat(ff)%engsrp = 0.0_wp
+      stat(ff)%engter = 0.0_wp
+      stat(ff)%engtbp = 0.0_wp
+      stat(ff)%engfbp = 0.0_wp
+      stat(ff)%engshl = 0.0_wp
+      stat(ff)%engtet = 0.0_wp
+      stat(ff)%engbnd = 0.0_wp
+      stat(ff)%engang = 0.0_wp
+      stat(ff)%engdih = 0.0_wp
       stat(ff)%enginv = 0.0_wp
       !Virial components
-      stat(ff)%vircpe = 0.0_wp 
+      stat(ff)%vircpe = 0.0_wp
       stat(ff)%virsrp = 0.0_wp
       stat(ff)%virter = 0.0_wp
       stat(ff)%virtbp = 0.0_wp
       stat(ff)%virfbp = 0.0_wp
       stat(ff)%virshl = 0.0_wp
-      stat(ff)%virtet = 0.0_wp 
+      stat(ff)%virtet = 0.0_wp
       stat(ff)%virbnd = 0.0_wp
       stat(ff)%virang = 0.0_wp
-      stat(ff)%virdih = 0.0_wp 
+      stat(ff)%virdih = 0.0_wp
       stat(ff)%virinv = 0.0_wp
-    End Do 
+    End Do
 
   End Subroutine evb_setzero
 
@@ -3555,12 +3555,12 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine that copies various variable type from the force-field 1
-    ! to the rest of the force fields. This copy is needed only when using the following features: 
+    ! to the rest of the force fields. This copy is needed only when using the following features:
     !
     ! -the regauss option for equilibration
     ! -the pseudo thermostat for higly non-equilibrium dynamics.
     !
-    !  
+    !
     ! copyright - daresbury laboratory
     ! author    - i.scivetti January 2020
     !
@@ -3574,19 +3574,19 @@ Contains
     Type(core_shell_type),    Intent(InOut) :: cshell(:)
     Type(constraints_type),   Intent(InOut) :: cons(:)
     Type(pmf_type),           Intent(InOut) :: pmf(:)
-  
+
     Integer(Kind = wi) :: m
-  
+
     Do m=2,flow%NUM_FF
-  
+
       config(m)%vxx=config(1)%vxx
       config(m)%vyy=config(1)%vyy
       config(m)%vzz=config(1)%vzz
-      
+
       config(m)%parts(:)%fxx=config(1)%parts(:)%fxx
       config(m)%parts(:)%fyy=config(1)%parts(:)%fyy
       config(m)%parts(:)%fzz=config(1)%parts(:)%fzz
-      
+
       config(m)%parts(:)%xxx=config(1)%parts(:)%xxx
       config(m)%parts(:)%yyy=config(1)%parts(:)%yyy
       config(m)%parts(:)%zzz=config(1)%parts(:)%zzz
@@ -3603,7 +3603,7 @@ Contains
   End Subroutine evb_merge_stochastic
 
   Subroutine print_evb_banner(ffnum)
-    Integer,          Intent(In   ) :: ffnum       
+    Integer,          Intent(In   ) :: ffnum
 
     Character(Len=*), Parameter :: fmt1 = '(a)', fmt2  = '(a,i2)'
 
@@ -3612,7 +3612,7 @@ Contains
     Write (banner(1), fmt1)  '*******************************************************************'
     Write (banner(2), fmt1)  '*******************************************************************'
     Write (banner(3), fmt1)  ' Simulation with the Empirical Valence Bond (EVB) method        '
-    Write (banner(4), fmt1)  '  ' 
+    Write (banner(4), fmt1)  '  '
     Write (banner(5), fmt2)  ' Number of Force-Fields (FF) to be coupled ', ffnum
     Write (banner(6), fmt1)  '*******************************************************************'
     Write (banner(7), fmt1)  '*******************************************************************'
