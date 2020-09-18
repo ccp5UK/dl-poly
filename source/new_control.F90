@@ -2191,7 +2191,7 @@ contains
     If (rdf%l_collect) Then
       Write(messages(1), '(a)') 'RDF collection requested:'
       Write(messages(2), '(a, i0.1)') '  -- Collect every (steps): ', rdf%freq
-      Write(messages(3), '(a, i0.1)') '  -- Bin size       (Angs): ', rdf%rbin
+      Write(messages(3), '(a, e12.4)') '  -- Bin size       (Angs): ', rdf%rbin
       Call info(messages, 3, .true.)
 
       If (rdf%l_print) Then
@@ -2214,7 +2214,7 @@ contains
     If (zdensity%l_collect) Then
       Write(messages(1), '(a)') 'Z-density profiles requested:'
       Write(messages(2), '(a, i0.1)') '  -- Collect every (steps): ', zdensity%frequency
-      Write(messages(3), '(a, i0.1)') '  -- Bin size       (Angs): ', zdensity%bin_width
+      Write(messages(3), '(a, e12.4)') '  -- Bin size       (Angs): ', zdensity%bin_width
       Call info(messages, 3, .true.)
 
       If (zdensity%l_print) Then
@@ -3555,6 +3555,8 @@ contains
                key = "rdf_binsize", &
                name = "RDF number of bins", &
                val = "0.05", &
+               units = "ang", &
+               internal_units = "ang", &
                description = "Set number of bins to be used in RDF analysis", &
                data_type = DATA_FLOAT))
 
@@ -3601,6 +3603,8 @@ contains
                key = "zden_binsize", &
                name = "ZDen number of bins", &
                val = "0.05", &
+               units = "ang", &
+               internal_units = "ang", &
                description = "Set number of bins to be used in ZDen analysis", &
                data_type = DATA_FLOAT))
         end block zden

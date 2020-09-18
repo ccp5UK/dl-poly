@@ -116,7 +116,8 @@ Contains
 
       Write (ounit, '(/,1x,a,i6)') 'warning issued ', kode
 
-      If (kode == 2) Then
+      select case (kode)
+      Case (2)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -124,23 +125,23 @@ Contains
         Write (ounit, '(/,1x,a,2(i0,a),/)') &
           '*** warning - DD with ', ia, ' idle nodes, (out of ', ib, ') mapped on vacuum !!! ***'
 
-      Else If (kode == 3) Then
+      Case (3)
 
         Write (ounit, '(/,1x,3(a,f7.3),a,/)') &
           '*** warning - DD cutoff(+padding) is: ', a, ' Angstroms while minimum half-cell width is: ', b, ' Angstroms !!! ***'
 
-      Else If (kode == 4) Then
+      Case (4)
 
         Write (ounit, '(/,2(1x,a,/))') &
           '*** warning - system with uncharged particles !!! ***', &
           '*** "no elec" or/and "no strict" directives in CONTROL may speed up simulation !!! ***'
 
-      Else If (kode == 5) Then
+      Case (5)
 
         Write (ounit, '(/,1x,a,f12.4,a,/)') &
           '*** warning - non-zero total system charge: ', a, ' positrons !!! ***'
 
-      Else If (kode == 6) Then
+      Case (6)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -153,22 +154,22 @@ Contains
           'and/or a badly defined intramolecular topology in FIELD !!! ***', &
           '*** further potential problems may be expected !!! ***'
 
-      Else If (kode == 7) Then
+      Case (7)
 
         Write (ounit, '(/,1x,a,f7.3,a,/,1x,a,/)') &
           '*** warning - DD cutoff is ', a, ' Angstroms !!! ***', &
           '*** Fennell damping is not recommended for cutoffs shorter than 10-12 Angstroms !!! ***'
 
-      Else If (kode == 8) Then
+      Case (8)
 
         Write (ounit, '(/,1x,a,2(f7.3,a),/)') &
           '*** warning - : detected maximum rigid body width: ', a, ' Angstroms while the DD cutoff is ', b, ' Angstroms !!! ***'
 
-      Else If (kode == 10) Then
+      Case (10)
 
         Write (ounit, '(/,1x,a,/)') '*** warning - no pair forces in use !!! ***'
 
-      Else If (kode == 20) Then
+      Case (20)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -177,62 +178,62 @@ Contains
         Write (ounit, '(/,1x,a,3(i0,a),/)') &
           '*** warning - : 1..4 scale factors reset for molecule: ', ia, ' sites: ', ib, ' & ', ic, ' !!! ***'
 
-      Else If (kode == 22) Then
+      Case (22)
 
         Write (ounit, '(/,1x,a,/)') '*** warning - : 1..4 scale factors reset for dihedrals in the system !!! ***'
 
-      Else If (kode == 30) Then
+      Case (30)
 
         Write (ounit, '(/,1x,a,/)') &
           '*** warning - Electrostatics requested in a non-periodic system !!! ***'
 
-      Else If (kode == 34) Then
+      Case (34)
 
         Write (ounit, '(/,1x,a,/)') '*** warning - redundant directive prim(ary cutoff) ignored !!! ***'
 
-      Else If (kode == 35) Then
+      Case (35)
 
         Write (ounit, '(3(/,1x,a),/)') &
           "*** warning - DL_POLY_2/Classic directive 'delr - Verlet shell strip cutoff' defaulted to ***", &
           "*** DL_POLY_4 directive 'neigh%padding - real space cutoff padding option' ***", &
           "*** neigh%padding=Max(neigh%padding,delr/4) !!! ***"
 
-      Else If (kode == 36) Then
+      Case (36)
 
         Write (ounit, '(2(/,1x,a),/)') &
           "*** warning - DL_POLY_2/Classic directive 'mult(iple timestep)' defaulted to ***", &
           "*** DL_POLY_4 directive 'infrequent k-space SPME evaluation' !!! ***"
 
-      Else If (kode == 37) Then
+      Case (37)
 
         Write (ounit, '(/,1x,a,/)') '*** warning - redundant directive all pairs ignored !!! ***'
 
-      Else If (kode == 38) Then
+      Case (38)
 
         Write (ounit, '(/,1x,a,/)') '*** warning - redundant directive no link ignored !!! ***'
 
-      Else If (kode == 40) Then
+      Case (40)
 
         Write (ounit, '(/,1x,a,f7.3,a,/)') '*** warning - tentative cutoff reset to ', a, ' Angstroms !!! ***'
 
-      Else If (kode == 50) Then
+      Case (50)
 
         Write (ounit, '(2(/,1x,a),f7.3,a,/)') &
           '*** warning - short-range interactions cutoff reset ***', '*** new cutoff radius (rvdw) ', a, ' Angstroms !!! ***'
 
-      Else If (kode == 60) Then
+      Case (60)
 
         Write (ounit, '(/,1x,a,f7.3,a,/)') '*** warning - total system charge ', a, ' positrons !!! ***'
 
-      Else If (kode == 70) Then
+      Case (70)
 
         Write (ounit, '(/,1x,a,f7.3,a,/)') '*** warning - switching length reset to ', a, ' Angstroms !!! ***'
 
-      Else If (kode == 80) Then
+      Case (80)
 
         Write (ounit, '(/,1x,a,/)') '*** warning - requested thermostat unavailable !!! ***'
 
-      Else If (kode == 90) Then
+      Case (90)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -259,13 +260,13 @@ Contains
             '*** unspecified warning encountered !!! ***'
         End If
 
-      Else If (kode == 100) Then
+      Case (100)
 
         Write (ounit, '(2(/,1x,a),/)') &
           '*** warning - primary link cell algorithm has a link cell dimension that is < 3 !!! ***', &
           '*** DL_POLY_4 RUNNING IN LOW EFFICIENCY MODE !!! ***'
 
-      Else If (kode == 110) Then
+      Case (110)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -274,29 +275,29 @@ Contains
           '*** warning - image convention incompatible with the set NsT ensemble ***', &
           '*** config%imcon reset from ', ia, ' to ', ib, ' !!! ***'
 
-      Else If (kode == 120) Then
+      Case (120)
 
         Write (ounit, '(/,1x,a,/)') &
           '*** warning - unspecified atom-atom interactions set to zero !!! ***'
 
-      Else If (kode == 130) Then
+      Case (130)
 
         Write (ounit, '(/,1x,a,/)') '*** warning - no ensemble is specified !!! ***'
 
-      Else If (kode == 135) Then
+      Case (135)
 
         Write (ounit, '(/,1x,a,/,1x,a,/)') &
           '*** warning - incorrect ensemble specified for two-temperature model !!! ***', &
           '*** replacing ensemble with NVT inhomogeneous Langevin !!! ***'
 
-      Else If (kode == 140) Then
+      Case (140)
 
         Write (ounit, '(/,1x,2a,2(f8.5,a),/,1x,a,/)') &
           '*** warning - control distances for variable timestep: ', &
           'Dmin = ', a, ' and Dmax = ', b, ' (Angstroms) !!! ***', &
           '*** do not comply with safty condition: Dmax > 2.5 Dmin > 0 !!! ***'
 
-      Else If (kode == 150) Then
+      Case (150)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -304,7 +305,7 @@ Contains
         Write (ounit, '(/,1x,a,2(i0,a),/)') &
           '*** warning - required export buffer size ', ia, ' and actual: ', ib, ' !!! ***'
 
-      Else If (kode == 160) Then
+      Case (160)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -312,19 +313,19 @@ Contains
         Write (ounit, '(/,1x,a,2(i0,a),/)') &
           '*** warning - required import array size ', ia, ' and actual: ', ib, ' !!! ***'
 
-      Else If (kode == 190) Then
+      Case (190)
 
         Write (ounit, '(2(/,1x,a),/)') &
           '*** warning - REVOLD format mishmash detected (restart requested) !!! ***', &
           '*** restart is abandoned and clean start is assumed !!! ***'
 
-      Else If (kode == 200) Then
+      Case (200)
 
         Write (ounit, '(2(/,1x,a),/)') &
           '*** warning - CONFIG contains positions only !!! ***', &
           '*** clean start is assumed !!! ***'
 
-      Else If (kode == 210) Then
+      Case (210)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -334,12 +335,12 @@ Contains
           '*** total degrees of freedom <=  total number of particles !!! ***', &
           '*** ', ia, ' <= ', ib, ' !!! ***'
 
-      Else If (kode == 220) Then
+      Case (220)
 
         Write (ounit, '(/,1x,a,/)') &
           '*** warning - Ewald sum requested in a non-periodic system !!! ***'
 
-      Else If (kode == 230) Then
+      Case (230)
 
         ia = Nint(a)
 
@@ -347,14 +348,14 @@ Contains
           '*** warning - PMF unit ', ia, ' config%weight is detected zero !!! ***', &
           '*** member config%weights defaulted to atom type masses (or units) !!! ***'
 
-      Else If (kode == 240) Then
+      Case (240)
 
         ia = Nint(a)
 
         Write (ounit, '(/,1x,a,i0,a,/)') &
           '*** warning - total number of nodes running in parallel: ', ia, ' !!! ***'
 
-      Else If (kode == 250) Then
+      Case (250)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -362,13 +363,13 @@ Contains
         Write (ounit, '(/,1x,a,2(i0,a),/)') &
           '*** warning - required coulombic exclusion array size ', ia, ' and actual (neigh%max_exclude): ', ib, ' !!! ***'
 
-      Else If (kode == 260) Then
+      Case (260)
 
         Write (ounit, '(2(/,1x,a),/)') &
           '*** warning - system volume in non-periodic systems is the MD config%cell volume !!! ***', &
           '*** system pressure is calculated with respect to this volume !!! ***'
 
-      Else If (kode == 270) Then
+      Case (270)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -376,13 +377,13 @@ Contains
         Write (ounit, '(/,1x,a,2(i0,a),/)') &
           '*** warning - required reading buffer size is ', ia, ' and actual ', ib, ' !!! ***'
 
-      Else If (kode == 280) Then
+      Case (280)
 
         Write (ounit, '(/,1x,a,/,1x,2(a,f9.3),a,/)') &
           '*** warning - pseudo thermostat cannot be applied for this model system since !!! ***', &
           '*** specified thermostat wall thickness ', a, ' > 1/4 minimum MD cell width ', b, ' (Angstroms) !!! ***'
 
-      Else If (kode == 290) Then
+      Case (290)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -390,7 +391,7 @@ Contains
         Write (ounit, '(/,1x,a,2(i0,a),/)') &
           '*** warning - required link-config%cell neigh%list size is ', ia, ' and actual (neigh%max_list) ', ib, ' !!! ***'
 
-      Else If (kode == 295) Then
+      Case (295)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -400,7 +401,7 @@ Contains
           '*** warning - PMF unit ', ia, ' and rigid body unit ', ib, &
           ' on molecular species type ', ic, ' in an illegal configuration !!! ***'
 
-      Else If (kode == 296) Then
+      Case (296)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -410,7 +411,7 @@ Contains
           ' on molecular species type ', ib, &
           ' with compromised polarisability !!! ***'
 
-      Else If (kode == 297) Then
+      Case (297)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -420,7 +421,7 @@ Contains
           '*** warning - core-shell unit ', ia, ' and angle unit ', ib, &
           ' on molecular species type ', ic, ' in an illegal configuration !!! ***'
 
-      Else If (kode == 298) Then
+      Case (298)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -430,7 +431,7 @@ Contains
           '*** warning - core-shell unit ', ia, ' and dihedral unit ', ib, &
           ' on molecular species type ', ic, ' in an illegal configuration !!! ***'
 
-      Else If (kode == 299) Then
+      Case (299)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -440,7 +441,7 @@ Contains
           '*** warning - core-shell unit ', ia, ' and inversion unit ', ib, &
           ' on molecular species type ', ic, ' in an illegal configuration !!! ***'
 
-      Else If (kode == 300) Then
+      Case (300)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -450,7 +451,7 @@ Contains
           '*** warning - core-shell unit ', ia, ' and PMF unit ', ib, &
           ' on molecular species type ', ic, ' in an illegal configuration !!! ***'
 
-      Else If (kode == 301) Then
+      Case (301)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -460,7 +461,7 @@ Contains
           '*** warning - core-shell unit ', ia, ' and constraint unit ', ib, &
           ' on molecular species type ', ic, ' in an illegal configuration !!! ***'
 
-      Else If (kode == 302) Then
+      Case (302)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -470,7 +471,7 @@ Contains
           '*** warning - core-shell unit ', ia, ' and rigid body unit ', ib, &
           ' on molecular species type ', ic, ' in an illegal configuration !!! ***'
 
-      Else If (kode == 303) Then
+      Case (303)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -480,7 +481,7 @@ Contains
           '*** warning - core-shell unit ', ia, ' and tether unit ', ib, &
           ' on molecular species type ', ic, ' in an illegal configuration !!! ***'
 
-      Else If (kode == 304) Then
+      Case (304)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -490,7 +491,7 @@ Contains
           '*** warning - constraint unit ', ia, ' and rigid body unit ', ib, &
           ' on molecular species type ', ic, ' in an illegal configuration !!! ***'
 
-      Else If (kode == 305) Then
+      Case (305)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -499,7 +500,7 @@ Contains
           '*** warning - rigid body unit ', ia, ' on molecular species type ', ib, &
           ' forced to freeze !!! ***'
 
-      Else If (kode == 306) Then
+      Case (306)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -508,7 +509,7 @@ Contains
           '*** warning - constraint unit ', ia, ' on molecular species type ', ib, &
           ' forced to freeze !!! ***'
 
-      Else If (kode == 307) Then
+      Case (307)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -518,7 +519,7 @@ Contains
           '*** warning - rigid body unit ', ia, ' on molecular species type ', ib, &
           ' set to have type ', ic, ' is problematic !!! ***'
 
-      Else If (kode == 308) Then
+      Case (308)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -528,7 +529,7 @@ Contains
           '*** warning - site ', ia, ' of constraint unit ', ib, &
           ' on molecular species type ', ic, ' is problematic !!! ***'
 
-      Else If (kode == 309) Then
+      Case (309)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -537,24 +538,24 @@ Contains
         Write (ounit, '(/,1x,a,3(i0,a))') &
           '*** warning - site ', ia, ' , member ', ib, ' of PMF unit ', ic, ' is problematic !!! ***'
 
-      Else If (kode == 310) Then
+      Case (310)
 
         Write (ounit, '(/,1x,a,/,1x,a,2(f6.2,a),/)') &
           '*** warning - control distance for defect look-up MUST be in the interval [Min(0.3,rcut/3);Min(1.2,rcut/2)] !!! ***', &
           '*** defects distance condition will default from ', a, ' to ', b, ' (Angstroms) !!! ***'
 
-      Else If (kode == 320) Then
+      Case (320)
 
         Write (ounit, '(/,1x,a,/)') &
           '*** warning - REFERENCE not found, CONFIG to be used as a reference for defects detection !!! ***'
 
-      Else If (kode == 330) Then
+      Case (330)
 
         Write (ounit, '(/,1x,a,/,1x,a,2(f10.6,a),/)') &
           '*** warning - iteration cycles length limit for conjugate gradient minimisers exceded !!! ***', &
           '*** specified convergence tolerance: ', a, ' , needed one for a pass: ', b, ' !!! ***'
 
-      Else If (kode == 340) Then
+      Case (340)
 
         Write (ounit, '(3(/,1x,a),2(f7.4,a),/,1x,a,f7.4,a,/)') &
           '*** warning - inconsistent binsize for spatial distribution functions !!! ***', &
@@ -562,12 +563,12 @@ Contains
           '*** 1.0E-5 (Angstroms) <= ', a, ' <= ', b, ' (Angstroms) !!! ***', &
           '*** binsize defaults to ', c, ' (Angstroms) !!! ***'
 
-      Else If (kode == 350) Then
+      Case (350)
 
         Write (ounit, '(/,1x,a)') &
           '*** warning - expansion along z axis not allowed for slab geometry, nz defaults to 1 !!! ***'
 
-      Else If (kode == 360) Then
+      Case (360)
 
         Write (ounit, '(/,1x,a,2(f12.7,a),3(/,1x,a),/)') &
           '*** warning - minimisation tolerance ', a, ' defaults to ', b, ' !!! ***', &
@@ -575,7 +576,7 @@ Contains
           '*** energy  : 0.0    <  tolerance <=    0.01, default = 0.005 !!! ***', &
           '*** distance: 1.0e-6 <= tolerance <=    0.10, default = 0.005 !!! ***'
 
-      Else If (kode == 370) Then
+      Case (370)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -585,14 +586,14 @@ Contains
           '*** the interval must be a positive integer beteen 1 and 10 !!! ***', &
           '*** values > 10 default to 4, no value or 0 defaults to 1 !!! ***'
 
-      Else If (kode == 380) Then
+      Case (380)
 
         ia = Nint(a)
 
         Write (ounit, '(/,1x,a,i0,a,/)') &
           '*** warning - IMPACT applied before the end of the equlibration period (', ia, ' step) !!! ***'
 
-      Else If (kode == 390) Then
+      Case (390)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -600,7 +601,7 @@ Contains
         Write (ounit, '(/,1x,a,2(i0,a),/)') &
           '*** warning - core-shell unit mix-up or duplicate specification (', ia, ',', ib, ') !!! ***'
 
-      Else If (kode == 400) Then
+      Case (400)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -608,7 +609,7 @@ Contains
         Write (ounit, '(/,1x,a,2(i0,a),/)') &
           '*** warning - constraint or rigid body duplicate specification (', ia, ',', ib, ') !!! ***'
 
-      Else If (kode == 410) Then
+      Case (410)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -616,7 +617,7 @@ Contains
         Write (ounit, '(/,1x,a,i0,a,/)') &
           '*** warning - tethered atom duplicate specification (', ia, ',', ib, ') !!! ***'
 
-      Else If (kode == 420) Then
+      Case (420)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -624,7 +625,7 @@ Contains
         Write (ounit, '(/,1x,a,2(i0,a),/)') &
           '*** warning - chemical bond duplicate specification (', ia, ',', ib, ') !!! ***'
 
-      Else If (kode == 430) Then
+      Case (430)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -632,7 +633,7 @@ Contains
         Write (ounit, '(/,1x,a,2(i0,a),/)') &
           '*** warning - bond angle duplicate specification (', ia, ',', ib, ') !!! ***'
 
-      Else If (kode == 440) Then
+      Case (440)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -640,7 +641,7 @@ Contains
         Write (ounit, '(/,1x,a,2(i0,a),/)') &
           '*** warning - dihedral angle duplicate specification (', ia, ',', ib, ') !!! ***'
 
-      Else If (kode == 450) Then
+      Case (450)
 
         ia = Nint(a)
         ib = Nint(b)
@@ -648,70 +649,70 @@ Contains
         Write (ounit, '(/,1x,a,2(i0,a),/)') &
           '*** warning - inversion angle duplicate specification (', ia, ',', ib, ') !!! ***'
 
-      Else If (kode == 460) Then
+      Case (460)
 
         Write (ounit, '(/,1x,a,/)') &
           '*** warning - further semi-isotropic barostat option search abandoned !!! ***'
 
-      Else If (kode == 470) Then
+      Case (470)
 
         Write (ounit, '(/,1x,a,/,1x,a,2(f5.2,a),/)') &
           '*** warning - control distance for diplacement qualification MUST be >= 0.25 Angstroms !!! ***', &
           '*** displacements distance condition will default from ', a, ' to ', b, ' Angstroms !!! ***'
 
-      Else If (kode == 480) Then
+      Case (480)
 
         Write (ounit, '(/,1x,a,/)') &
           '*** warning - "metal direct" option disabled as incompatible with EAM potentials (TABEAM) !!! ***'
 
-      Else If (kode == 490) Then
+      Case (490)
 
         Write (ounit, '(/,1x,a,/)') &
           '*** warning - "metal sqrtrho" option disabled as incompatible with FS type potentials (analytic forms) !!! ***'
 
-      Else If (kode == 500) Then
+      Case (500)
 
         Write (ounit, '(2(/,1x,a,/))') &
           '*** warning - insufficient electronic temperature cells to allow energy redistribution from inactive cells !!! ***', &
           '*** option switched off - electronic temperature conservation no longer guaranteed !!! ***'
 
-      Else If (kode == 510) Then
+      Case (510)
 
         Write (ounit, '(/,1x,a,/)') &
           '*** warning - no laser energy deposition for two-temperature model specified !!! ***'
 
-      Else If (kode == 515) Then
+      Case (515)
 
         Write (ounit, '(/,1x,a,/)') &
           '*** warning - no initial stopping power for two-temperature model specified !!! ***'
 
-      Else If (kode == 520) Then
+      Case (520)
 
         Write (ounit, '(/,1x,a,/)') &
           '*** warning - mismatch in timestep between REVIVE and provided electronic temperature lattice !!! ***'
 
-      Else If (kode == 530) Then
+      Case (530)
 
         Write (ounit, '(/,1x,a,f6.2,a,/,1x,a,/)') &
           '*** warning - possible time energy deposition discrepancy of at least ', a, '% !!! ***', &
           '*** discrepancy may be due to inactive cells !!! ***'
 
-      Else If (kode == 535) Then
+      Case (535)
 
         Write (ounit, '(/,1x,a,/)') &
           '*** warning - spatial energy deposition cutoff in xy-directions greater than available ionic temperature cells !!! ***'
 
-      Else If (kode == 540) Then
+      Case (540)
 
         Write (ounit, '(/,1x,a,f6.2,a,/)') &
           '*** warning - possible spatial energy deposition discrepancy of at least ', a, '% !!! ***'
 
-      Else
+      Case Default
 
         Write (ounit, '(/,1x,a,/)') &
           '*** unspecified warning encountered !!! ***'
 
-      End If
+      End select
 
     End If
 
@@ -882,1408 +883,1409 @@ Contains
 
       Write (ounit, '(/,1x,a,i5)') 'DL_POLY_4 terminated due to error ', kode
 
-      If (kode == 1) Then
+      select case (kode)
+      Case (1)
 
         Write (ounit, '(/,1x,a)') 'error - word_2_real failure'
 
-      Else If (kode == 2) Then
+      Case (2)
 
         Write (ounit, '(/,1x,a)') 'error - too many atom types in FIELD (scan_field)'
 
-      Else If (kode == 3) Then
+      Case (3)
 
         Write (ounit, '(/,1x,a)') 'error - unknown directive found in CONTROL file'
 
-      Else If (kode == 4) Then
+      Case (4)
 
         Write (ounit, '(/,1x,a)') 'error - unknown directive found in FIELD or MPOLES file'
 
-      Else If (kode == 5) Then
+      Case (5)
 
         Write (ounit, '(/,1x,a)') 'error - unknown energy unit requested'
 
-      Else If (kode == 6) Then
+      Case (6)
 
         Write (ounit, '(/,1x,a)') 'error - energy unit not specified'
 
-      Else If (kode == 7) Then
+      Case (7)
 
         Write (ounit, '(/,1x,a)') 'error - selected external field incompatible with selected ensemble (NVE only!!!)'
 
-      Else If (kode == 8) Then
+      Case (8)
 
         Write (ounit, '(/,1x,a)') 'error - ewald precision MUST be a POSITIVE real number'
 
-      Else If (kode == 9) Then
+      Case (9)
 
         Write (ounit, '(/,1x,a)') 'error - ewald sum parameters MUST be well defined'
 
-      Else If (kode == 10) Then
+      Case (10)
 
         Write (ounit, '(/,1x,a)') 'error - too many molecular types specified'
 
-      Else If (kode == 11) Then
+      Case (11)
 
         Write (ounit, '(/,1x,a)') 'error - duplicate molecule directive in FIELD file'
 
-      Else If (kode == 12) Then
+      Case (12)
 
         Write (ounit, '(/,1x,a)') 'error - unknown molecule directive in FIELD or MPOLES file'
 
-      Else If (kode == 13) Then
+      Case (13)
 
         Write (ounit, '(/,1x,a)') 'error - molecular species not yet specified'
 
-      Else If (kode == 14) Then
+      Case (14)
 
         Write (ounit, '(/,1x,a)') 'error - too many unique atom types specified'
 
-      Else If (kode == 15) Then
+      Case (15)
 
         Write (ounit, '(/,1x,a)') 'error - duplicate vdw potential specified'
 
-      Else If (kode == 16) Then
+      Case (16)
 
         Write (ounit, '(/,1x,a)') 'error - strange exit from FIELD file processing'
 
-      Else If (kode == 17) Then
+      Case (17)
 
         Write (ounit, '(/,1x,a)') 'error - strange exit from CONTROL file processing'
 
-      Else If (kode == 18) Then
+      Case (18)
 
         Write (ounit, '(/,1x,a)') 'error - duplicate three-body potential specified'
 
-      Else If (kode == 19) Then
+      Case (19)
 
         Write (ounit, '(/,1x,a)') 'error - duplicate four-body potential specified'
 
-      Else If (kode == 20) Then
+      Case (20)
 
         Write (ounit, '(/,1x,a)') 'error - too many molecule sites specified'
 
-      Else If (kode == 21) Then
+      Case (21)
 
         Write (ounit, '(/,1x,a)') 'error - molecule contains more atoms/sites than declared'
 
-      Else If (kode == 22) Then
+      Case (22)
 
         Write (ounit, '(/,1x,a)') 'error - unsuitable radial increment in TABLE||TABBND||TABANG||TABDIH||TABINV file'
 
-      Else If (kode == 23) Then
+      Case (23)
 
         Write (ounit, '(/,1x,a)') 'error - incompatible FIELD and TABLE file potentials'
 
-      Else If (kode == 24) Then
+      Case (24)
 
         Write (ounit, '(/,1x,a)') 'error - end of file encountered in TABLE||TABEAM||TABBND||TABANG||TABDIH||TABINV file'
 
-      Else If (kode == 25) Then
+      Case (25)
 
         Write (ounit, '(/,1x,a)') 'error - wrong atom type found in CONFIG file'
 
-      Else If (kode == 26) Then
+      Case (26)
 
         Write (ounit, '(/,1x,a)') 'error - neutral group option now redundant'
 
-      Else If (kode == 27) Then
+      Case (27)
 
         Write (ounit, '(/,1x,a)') "error - unit's member indexed outside molecule's site range"
 
-      Else If (kode == 28) Then
+      Case (28)
 
         Write (ounit, '(/,1x,a)') 'error - wrongly indexed atom entries found in CONFIG file'
 
-      Else If (kode == 30) Then
+      Case (30)
 
         Write (ounit, '(/,1x,a)') 'error - too many chemical bonds specified'
 
-      Else If (kode == 31) Then
+      Case (31)
 
         Write (ounit, '(/,1x,a)') 'error - too many chemical bonds per domain'
 
-      Else If (kode == 32) Then
+      Case (32)
 
         Write (ounit, '(/,1x,a)') 'error - coincidence of particles in core-shell unit'
 
-      Else If (kode == 33) Then
+      Case (33)
 
         Write (ounit, '(/,1x,a)') 'error - coincidence of particles in constraint bond unit'
 
-      Else If (kode == 34) Then
+      Case (34)
 
         Write (ounit, '(/,1x,a)') 'error - length of constraint bond unit >= real space cutoff (neigh%cutoff)'
 
-      Else If (kode == 35) Then
+      Case (35)
 
         Write (ounit, '(/,1x,a)') 'error - coincidence of particles in chemical bond unit'
 
-      Else If (kode == 36) Then
+      Case (36)
 
         Write (ounit, '(/,1x,a)') 'error - only one *bonds* directive per molecule is allowed'
 
-      Else If (kode == 38) Then
+      Case (38)
 
         Write (ounit, '(/,1x,a)') 'error - outgoing transfer buffer size exceeded in metal_ld_export'
 
-      Else If (kode == 39) Then
+      Case (39)
 
         Write (ounit, '(/,1x,a)') 'error - incoming data transfer size exceeds limit in metal_ld_export'
 
-      Else If (kode == 40) Then
+      Case (40)
 
         Write (ounit, '(/,1x,a)') 'error - too many bond constraints specified'
 
-      Else If (kode == 41) Then
+      Case (41)
 
         Write (ounit, '(/,1x,a)') 'error - too many bond constraints per domain'
 
-      Else If (kode == 42) Then
+      Case (42)
 
         Write (ounit, '(/,1x,a)') 'error - undefined direction passed to deport_atomic_data'
 
-      Else If (kode == 43) Then
+      Case (43)
 
         Write (ounit, '(/,1x,a)') 'error - outgoing transfer buffer exceeded in deport_atomic_data'
 
-      Else If (kode == 44) Then
+      Case (44)
 
         Write (ounit, '(/,1x,a)') 'error - incoming data transfer size exceeds limit in deport_atomic_data'
 
-      Else If (kode == 45) Then
+      Case (45)
 
         Write (ounit, '(/,1x,a)') 'error - too many atoms in CONFIG file or per domain'
 
-      Else If (kode == 46) Then
+      Case (46)
 
         Write (ounit, '(/,1x,a)') 'error - undefined direction passed to export_atomic_data/positions'
 
-      Else If (kode == 47) Then
+      Case (47)
 
         Write (ounit, '(/,1x,a)') 'error - undefined direction passed to metal_ld_export'
 
-      Else If (kode == 48) Then
+      Case (48)
 
         Write (ounit, '(/,1x,a)') 'error - transfer buffer too small in *_table_read'
 
-      Else If (kode == 49) Then
+      Case (49)
 
         Write (ounit, '(/,1x,a)') 'error - frozen shell (core-shell unit) specified'
 
-      Else If (kode == 50) Then
+      Case (50)
 
         Write (ounit, '(/,1x,a)') 'error - too many bond angles specified'
 
-      Else If (kode == 51) Then
+      Case (51)
 
         Write (ounit, '(/,1x,a)') 'error - too many bond angles per domain'
 
-      Else If (kode == 52) Then
+      Case (52)
 
         Write (ounit, '(/,1x,a)') 'error - end of FIELD or MPOLES file encountered'
 
-      Else If (kode == 53) Then
+      Case (53)
 
         Write (ounit, '(/,1x,a)') 'error - end of CONTROL file encountered'
 
-      Else If (kode == 54) Then
+      Case (54)
 
         Write (ounit, '(/,1x,a)') 'error - outgoing transfer buffer size exceeded in export_atomic_data/positions'
 
-      Else If (kode == 55) Then
+      Case (55)
 
         Write (ounit, '(/,1x,a)') 'error - end of CONFIG file encountered'
 
-      Else If (kode == 56) Then
+      Case (56)
 
         Write (ounit, '(/,1x,a)') 'error - incoming data transfer size exceeds limit in export_atomic_data/positions'
 
-      Else If (kode == 57) Then
+      Case (57)
 
         Write (ounit, '(/,1x,a)') 'error - too many core-shell units specified'
 
-      Else If (kode == 58) Then
+      Case (58)
 
         Write (ounit, '(/,1x,a)') 'error - number of atoms in system not conserved'
 
-      Else If (kode == 59) Then
+      Case (59)
 
         Write (ounit, '(/,1x,a)') 'error - too many core-shell units per domain'
 
-      Else If (kode == 60) Then
+      Case (60)
 
         Write (ounit, '(/,1x,a)') 'error - too many dihedral angles specified'
 
-      Else If (kode == 61) Then
+      Case (61)
 
         Write (ounit, '(/,1x,a)') 'error - too many dihedral angles per domain'
 
-      Else If (kode == 62) Then
+      Case (62)
 
         Write (ounit, '(/,1x,a)') 'error - too many tethered atoms specified'
 
-      Else If (kode == 63) Then
+      Case (63)
 
         Write (ounit, '(/,1x,a)') 'error - too many tethered atoms per domain'
 
-      Else If (kode == 64) Then
+      Case (64)
 
         Write (ounit, '(/,1x,a)') 'error - incomplete core-shell unit found in build_book_intra'
 
-      Else If (kode == 65) Then
+      Case (65)
 
         Write (ounit, '(/,1x,a)') 'error - too many excluded pairs specified'
 
-      Else If (kode == 66) Then
+      Case (66)
 
         Write (ounit, '(/,1x,a)') 'error - coincidence of particles in bond angle unit'
 
-      Else If (kode == 67) Then
+      Case (67)
 
         Write (ounit, '(/,1x,a)') 'error - coincidence of particles in dihedral unit'
 
-      Else If (kode == 68) Then
+      Case (68)
 
         Write (ounit, '(/,1x,a)') 'error - coincidence of particles in inversion unit'
 
-      Else If (kode == 69) Then
+      Case (69)
 
         Write (ounit, '(/,1x,a)') 'error - too many link cells required'
 
-      Else If (kode == 70) Then
+      Case (70)
 
         Write (ounit, '(/,1x,a)') 'error - constraint_quench failure'
 
-      Else If (kode == 71) Then
+      Case (71)
 
         Write (ounit, '(/,1x,a)') 'error - too many metal potentials specified'
 
-      Else If (kode == 72) Then
+      Case (72)
 
         Write (ounit, '(/,1x,a)') 'error - too many tersoff potentials specified'
 
-      Else If (kode == 73) Then
+      Case (73)
 
         Write (ounit, '(/,1x,a)') 'error - too many inversion potentials specified'
 
-      Else If (kode == 74) Then
+      Case (74)
 
         Write (ounit, '(/,1x,a)') 'error - unidentified atom in tersoff potential neigh%list'
 
-      Else If (kode == 76) Then
+      Case (76)
 
         Write (ounit, '(/,1x,a)') 'error - duplicate tersoff potential specified'
 
-      Else If (kode == 77) Then
+      Case (77)
 
         Write (ounit, '(/,1x,a)') 'error - too many inversion angles per domain'
 
-      Else If (kode == 79) Then
+      Case (79)
 
         Write (ounit, '(/,1x,a)') 'error - tersoff potential cutoff undefined'
 
-      Else If (kode == 80) Then
+      Case (80)
 
         Write (ounit, '(/,1x,a)') 'error - too many pair potentials specified'
 
-      Else If (kode == 81) Then
+      Case (81)
 
         Write (ounit, '(/,1x,a)') 'error - unidentified atom in pair potential neigh%list'
 
-      Else If (kode == 82) Then
+      Case (82)
 
         Write (ounit, '(/,1x,a)') 'error - calculated pair potential index too large'
 
-      Else If (kode == 83) Then
+      Case (83)
 
         Write (ounit, '(/,1x,a)') 'error - too many three-body/angles potentials specified'
 
-      Else If (kode == 84) Then
+      Case (84)
 
         Write (ounit, '(/,1x,a)') 'error - unidentified atom in three-body/angles potential neigh%list'
 
-      Else If (kode == 85) Then
+      Case (85)
 
         Write (ounit, '(/,1x,a)') 'error - required velocities not in CONFIG file'
 
-      Else If (kode == 86) Then
+      Case (86)
 
         Write (ounit, '(/,1x,a)') 'error - calculated three-body potential index too large'
 
-      Else If (kode == 88) Then
+      Case (88)
 
         Write (ounit, '(/,1x,a)') 'error - legend array exceeded in build_book_intra'
 
-      Else If (kode == 89) Then
+      Case (89)
 
         Write (ounit, '(/,1x,a)') 'error - too many four-body/dihedrals/inversions potentials specified'
 
-      Else If (kode == 90) Then
+      Case (90)
 
         Write (ounit, '(/,1x,a)') 'error - specified tersoff potentials have different types'
 
-      Else If (kode == 91) Then
+      Case (91)
 
         Write (ounit, '(/,1x,a)') 'error - unidentified atom in four-body/dihedrals/iversions potential neigh%list'
 
-      Else If (kode == 92) Then
+      Case (92)
 
         Write (ounit, '(/,1x,a)') 'error - specified metal potentials have different types'
 
-      Else If (kode == 93) Then
+      Case (93)
 
         Write (ounit, '(/,1x,a)') 'error - PMFs mixing with rigid bodies not allowed'
 
-      Else If (kode == 95) Then
+      Case (95)
 
         Write (ounit, '(/,1x,a)') 'error - neigh%cutoff (or neigh%cutoff+neigh%padding) > minimum of all half-cell widths'
 
-      Else If (kode == 96) Then
+      Case (96)
 
         Write (ounit, '(/,1x,a)') 'error - incorrect atom totals assignments in metal_ld_set_halo'
 
-      Else If (kode == 97) Then
+      Case (97)
 
         Write (ounit, '(/,1x,a)') 'error - constraints mixing with rigid bodies not allowed'
 
-      Else If (kode == 99) Then
+      Case (99)
 
         Write (ounit, '(/,1x,a)') 'error - cannot have shells as part of a constraint, rigid body or tether'
 
-      Else If (kode == 100) Then
+      Case (100)
 
         Write (ounit, '(/,1x,a)') 'error - core-shell unit separation > neigh%cutoff (the system cutoff)'
 
-      Else If (kode == 101) Then
+      Case (101)
 
         Write (ounit, '(/,1x,a)') 'error - calculated four-body potential index too large'
 
-      Else If (kode == 102) Then
+      Case (102)
 
         Write (ounit, '(/,1x,a)') 'error - neigh%cutoff < 2*tersoffs%cutoff (maximum cutoff for tersoff potentials)'
 
-      Else If (kode == 103) Then
+      Case (103)
 
         Write (ounit, '(/,1x,a)') 'error - parameter mxlshp exceeded in pass_shared_units'
 
-      Else If (kode == 104) Then
+      Case (104)
 
         Write (ounit, '(/,1x,a)') 'error - arrays listme and lstout exceeded in pass_shared_units'
 
-      Else If (kode == 105) Then
+      Case (105)
 
         Write (ounit, '(/,1x,a)') 'error - shake algorithm (constraints_shake) failed to converge'
 
-      Else If (kode == 106) Then
+      Case (106)
 
         Write (ounit, '(/,1x,a)') 'error - neighbour list array too small in link_cell_pairs'
 
-      Else If (kode == 107) Then
+      Case (107)
 
         Write (ounit, '(/,1x,a)') 'error - too many pairs for rdf%rdf look up specified'
 
-      Else If (kode == 108) Then
+      Case (108)
 
         Write (ounit, '(/,1x,a)') 'error - unidentified atom in rdf%rdf look up neigh%list'
 
-      Else If (kode == 109) Then
+      Case (109)
 
         Write (ounit, '(/,1x,a)') 'error - calculated pair rdf%rdf index too large'
 
-      Else If (kode == 110) Then
+      Case (110)
 
         Write (ounit, '(/,1x,a)') 'error - duplicate rdf%rdf look up pair specified'
 
-      Else If (kode == 111) Then
+      Case (111)
 
         Write (ounit, '(/,1x,a)') 'error - bond constraint separation > neigh%cutoff (the system cutoff)'
 
-      Else If (kode == 112) Then
+      Case (112)
 
         Write (ounit, '(/,1x,a)') 'error - only one *constraints* directive per molecule is allowed'
 
-      Else If (kode == 113) Then
+      Case (113)
 
         Write (ounit, '(/,1x,a)') 'error - intra-molecular bookkeeping arrays exceeded in deport_atomic_data'
 
-      Else If (kode == 114) Then
+      Case (114)
 
         Write (ounit, '(/,1x,a)') 'error - legend array exceeded in deport_atomic_data'
 
-      Else If (kode == 115) Then
+      Case (115)
 
         Write (ounit, '(/,1x,a)') 'error - transfer buffer exceeded in update_shared_units'
 
-      Else If (kode == 116) Then
+      Case (116)
 
         Write (ounit, '(/,1x,a)') 'error - incorrect atom transfer in update_shared_units'
 
-      Else If (kode == 118) Then
+      Case (118)
 
         Write (ounit, '(/,1x,a)') 'error - construction error in pass_shared_units'
 
-      Else If (kode == 120) Then
+      Case (120)
 
         Write (ounit, '(/,1x,a)') 'error - invalid determinant in matrix inversion'
 
-      Else If (kode == 122) Then
+      Case (122)
 
         Write (ounit, '(/,1x,a)') 'error - FIELD file not found'
 
-      Else If (kode == 124) Then
+      Case (124)
 
         Write (ounit, '(/,1x,a)') 'error - CONFIG file not found'
 
-      Else If (kode == 126) Then
+      Case (126)
 
         Write (ounit, '(/,1x,a)') 'error - CONTROL file not found'
 
-      Else If (kode == 128) Then
+      Case (128)
 
         Write (ounit, '(/,1x,a)') 'error - chemical bond unit separation > neigh%cutoff (the system cutoff)'
 
-      Else If (kode == 130) Then
+      Case (130)
 
         Write (ounit, '(/,1x,a)') 'error - bond angle unit diameter > neigh%cutoff (the system cutoff)'
 
-      Else If (kode == 132) Then
+      Case (132)
 
         Write (ounit, '(/,1x,a)') 'error - dihedral angle unit diameter > neigh%cutoff (the system cutoff)'
 
-      Else If (kode == 134) Then
+      Case (134)
 
         Write (ounit, '(/,1x,a)') 'error - inversion angle unit diameter > neigh%cutoff (the system cutoff)'
 
-      Else If (kode == 138) Then
+      Case (138)
 
         Write (ounit, '(/,1x,a)') 'error - incorrect atom totals assignments in refresh_halo_positions'
 
-      Else If (kode == 141) Then
+      Case (141)
 
         Write (ounit, '(/,1x,a)') 'error - duplicate metal potential specified'
 
-      Else If (kode == 150) Then
+      Case (150)
 
         Write (ounit, '(/,1x,a)') 'error - unknown van der waals potential selected'
 
-      Else If (kode == 151) Then
+      Case (151)
 
         Write (ounit, '(/,1x,a)') 'error - unknown EAM keyword in TABEAM'
 
-      Else If (kode == 152) Then
+      Case (152)
 
         Write (ounit, '(/,1x,a)') 'error - undefined direction passed to dpd_v_export'
 
-      Else If (kode == 154) Then
+      Case (154)
 
         Write (ounit, '(/,1x,a)') 'error - outgoing transfer buffer exceeded in dpd_v_export'
 
-      Else If (kode == 156) Then
+      Case (156)
 
         Write (ounit, '(/,1x,a)') 'error - incoming data transfer exceeds limit in dpd_v_export'
 
-      Else If (kode == 158) Then
+      Case (158)
 
         Write (ounit, '(/,1x,a)') 'error - incorrect atom totals assignments in dpd_v_set_halo'
 
-      Else If (kode == 160) Then
+      Case (160)
 
         Write (ounit, '(/,1x,a)') 'error - undefined direction passed to statistics_connect_spread'
 
-      Else If (kode == 163) Then
+      Case (163)
 
         Write (ounit, '(/,1x,a)') 'error - outgoing transfer buffer size exceeded in statistics_connect_spread'
 
-      Else If (kode == 164) Then
+      Case (164)
 
         Write (ounit, '(/,1x,a)') 'error - incoming data transfer size exceeds limit in statistics_connect_spread'
 
-      Else If (kode == 170) Then
+      Case (170)
 
         Write (ounit, '(/,1x,a)') 'error - too many variables for statistics array'
 
-      Else If (kode == 172) Then
+      Case (172)
 
         Write (ounit, '(/,1x,a)') 'error - duplicate intra-molecular entries specified in TABBND||TABANG||TABDIH||TABINV'
 
-      Else If (kode == 174) Then
+      Case (174)
 
         Write (ounit, '(/,1x,a)') 'error - incorrect atom totals assignments in mpoles_rotmat_set_halo'
 
-      Else If (kode == 176) Then
+      Case (176)
 
         Write (ounit, '(/,1x,a)') 'error - undefined direction passed to mpoles_rotmat_export'
 
-      Else If (kode == 178) Then
+      Case (178)
 
         Write (ounit, '(/,1x,a)') 'error - outgoing transfer buffer size exceeded in mpoles_rotmat_export'
 
-      Else If (kode == 180) Then
+      Case (180)
 
         Write (ounit, '(/,1x,a)') 'error - incoming data transfer size exceeds limit in mpoles_rotmat_export'
 
-      Else If (kode == 200) Then
+      Case (200)
 
         Write (ounit, '(/,1x,a)') 'error - rdf%rdf||z-density||bond%dst||angle%dst||dihedral%dst||inversion%dst'// &
           'buffer array too small in system_revive'
 
-      Else If (kode == 210) Then
+      Case (210)
 
         Write (ounit, '(/,1x,a)') 'error - only one *angles* directive per molecule is allowed'
 
-      Else If (kode == 220) Then
+      Case (220)
 
         Write (ounit, '(/,1x,a)') 'error - only one *dihedrals* directive per molecule is allowed'
 
-      Else If (kode == 230) Then
+      Case (230)
 
         Write (ounit, '(/,1x,a)') 'error - only one *inversions* directive per molecule is allowed'
 
-      Else If (kode == 240) Then
+      Case (240)
 
         Write (ounit, '(/,1x,a)') 'error - only one *tethers* directive per molecule is allowed'
 
-      Else If (kode == 300) Then
+      Case (300)
 
         Write (ounit, '(/,1x,a)') 'error - incorrect boundary condition for link-cell algorithms'
 
-      Else If (kode == 305) Then
+      Case (305)
 
         Write (ounit, '(/,1x,a)') 'error - too few link cells per dimension for many-body and tersoff forces subroutines'
 
-      Else If (kode == 307) Then
+      Case (307)
 
         Write (ounit, '(/,1x,a)') 'error - link cell algorithm violation'
 
-      Else If (kode == 308) Then
+      Case (308)
 
         Write (ounit, '(/,1x,a)') 'error - link cell algorithm in contention with SPME sum precision'
 
-      Else If (kode == 321) Then
+      Case (321)
 
         Write (ounit, '(/,1x,a)') 'error - LFV quaternion integrator failed'
 
-      Else If (kode == 340) Then
+      Case (340)
 
         Write (ounit, '(/,1x,a)') 'error - invalid integration option requested'
 
-      Else If (kode == 350) Then
+      Case (350)
 
         Write (ounit, '(/,1x,a)') 'error - too few degrees of freedom'
 
-      Else If (kode == 360) Then
+      Case (360)
 
         Write (ounit, '(/,1x,a)') 'error - degrees of freedom distribution problem'
 
-      Else If (kode == 380) Then
+      Case (380)
 
         Write (ounit, '(/,1x,a)') 'error - simulation temperature not specified or < 1 K'
 
-      Else If (kode == 381) Then
+      Case (381)
 
         Write (ounit, '(/,1x,a)') 'error - simulation timestep not specified'
 
-      Else If (kode == 382) Then
+      Case (382)
 
         Write (ounit, '(/,1x,a)') 'error - simulation cutoff not specified'
 
-      Else If (kode == 387) Then
+      Case (387)
 
         Write (ounit, '(/,1x,a)') 'error - system pressure not specified'
 
-      Else If (kode == 390) Then
+      Case (390)
 
         Write (ounit, '(/,1x,a)') 'error - npt/nst ensemble requested in non-periodic system'
 
-      Else If (kode == 402) Then
+      Case (402)
 
         Write (ounit, '(/,1x,a)') 'error - van der waals cutoff not specified'
 
-      Else If (kode == 410) Then
+      Case (410)
 
         Write (ounit, '(/,1x,a)') 'error - cell not consistent with image convention'
 
-      Else If (kode == 414) Then
+      Case (414)
 
         Write (ounit, '(/,1x,a)') 'error - conflicting ensemble options in CONTROL file'
 
-      Else If (kode == 416) Then
+      Case (416)
 
         Write (ounit, '(/,1x,a)') 'error - conflicting force options in CONTROL file'
 
-      Else If (kode == 430) Then
+      Case (430)
 
         Write (ounit, '(/,1x,a)') 'error - integration routine not available'
 
-      Else If (kode == 432) Then
+      Case (432)
 
         Write (ounit, '(/,1x,a)') 'error -  undefined tersoff potential'
 
-      Else If (kode == 433) Then
+      Case (433)
 
         Write (ounit, '(/,1x,a)') 'error - neigh%cutoff MUST be specified for the Ewald sum precision'
 
-      Else If (kode == 436) Then
+      Case (436)
 
         Write (ounit, '(/,1x,a)') 'error - unrecognised ensemble'
 
-      Else If (kode == 440) Then
+      Case (440)
 
         Write (ounit, '(/,1x,a)') 'error - undefined angular potential'
 
-      Else If (kode == 442) Then
+      Case (442)
 
         Write (ounit, '(/,1x,a)') 'error - undefined three-body potential'
 
-      Else If (kode == 443) Then
+      Case (443)
 
         Write (ounit, '(/,1x,a)') 'error - undefined four-body potential'
 
-      Else If (kode == 444) Then
+      Case (444)
 
         Write (ounit, '(/,1x,a)') 'error - undefined bond potential'
 
-      Else If (kode == 445) Then
+      Case (445)
 
         Write (ounit, '(/,1x,a)') 'error - r_14 > neigh%cutoff in dihedrals_forces'
 
-      Else If (kode == 446) Then
+      Case (446)
 
         Write (ounit, '(/,1x,a)') 'error - undefined electrostatic key in dihedrals_forces'
 
-      Else If (kode == 448) Then
+      Case (448)
 
         Write (ounit, '(/,1x,a)') 'error - undefined dihedral potential'
 
-      Else If (kode == 449) Then
+      Case (449)
 
         Write (ounit, '(/,1x,a)') 'error - undefined inversion potential'
 
-      Else If (kode == 450) Then
+      Case (450)
 
         Write (ounit, '(/,1x,a)') 'error - undefined tethering potential'
 
-      Else If (kode == 451) Then
+      Case (451)
 
         Write (ounit, '(/,1x,a)') 'error - three-body potential cutoff undefined'
 
-      Else If (kode == 452) Then
+      Case (452)
 
         Write (ounit, '(/,1x,a)') 'error - undefined pair potential'
 
-      Else If (kode == 453) Then
+      Case (453)
 
         Write (ounit, '(/,1x,a)') 'error - four-body potential cutoff undefined'
 
-      Else If (kode == 454) Then
+      Case (454)
 
         Write (ounit, '(/,1x,a)') 'error - undefined external field'
 
-      Else If (kode == 456) Then
+      Case (456)
 
         Write (ounit, '(/,1x,a)') 'error - external field xpis-ton is applied to a layer with at least one frozen particle'
 
-      Else If (kode == 461) Then
+      Case (461)
 
         Write (ounit, '(/,1x,a)') 'error - undefined metal potential'
 
-      Else If (kode == 462) Then
+      Case (462)
 
         Write (ounit, '(/,1x,a)') 'error - thermostat friction constant MUST be > 0'
 
-      Else If (kode == 463) Then
+      Case (463)
 
         Write (ounit, '(/,1x,a)') 'error - barostat friction constant MUST be > 0'
 
-      Else If (kode == 464) Then
+      Case (464)
 
         Write (ounit, '(/,1x,a)') 'error - thermostat relaxation time constant MUST be > 0'
 
-      Else If (kode == 466) Then
+      Case (466)
 
         Write (ounit, '(/,1x,a)') 'error - barostat relaxation time constant MUST be > 0'
 
-      Else If (kode == 467) Then
+      Case (467)
 
         Write (ounit, '(/,1x,a)') 'error - rho MUST not be zero in valid buckingham potential'
 
-      Else If (kode == 468) Then
+      Case (468)
 
         Write (ounit, '(/,1x,a)') 'error - r0 too large for snm potential with current cutoff'
 
-      Else If (kode == 470) Then
+      Case (470)
 
         Write (ounit, '(/,1x,a)') 'error - n < m in definition of n-m potential'
 
-      Else If (kode == 471) Then
+      Case (471)
 
         Write (ounit, '(/,1x,a)') 'error - neigh%cutoff < 2*rctbp (maximum cutoff for three-body potentials)'
 
-      Else If (kode == 472) Then
+      Case (472)
 
         Write (ounit, '(/,1x,a)') 'error - neigh%cutoff < 2*fourbody%cutoff (maximum cutoff for four-body potentials)'
 
-      Else If (kode == 474) Then
+      Case (474)
 
         Write (ounit, '(/,1x,a)') 'error - conjugate gradient mimimiser cycle limit exceeded'
 
-      Else If (kode == 476) Then
+      Case (476)
 
         Write (ounit, '(/,1x,a)') 'error - shells MUST all HAVE either zero or non-zero masses'
 
-      Else If (kode == 477) Then
+      Case (477)
 
         Write (ounit, '(/,1x,a)') 'error - only one *shells* directive per molecule is allowed'
 
-      Else If (kode == 478) Then
+      Case (478)
 
         Write (ounit, '(/,1x,a)') 'error - shake algorithms (constraints & pmf) failed to converge'
 
-      Else If (kode == 480) Then
+      Case (480)
 
         Write (ounit, '(/,1x,a)') 'error - PMF length > minimum of all half-cell widths'
 
-      Else If (kode == 484) Then
+      Case (484)
 
         Write (ounit, '(/,1x,a)') 'error - only one potential of mean force permitted'
 
-      Else If (kode == 486) Then
+      Case (486)
 
         Write (ounit, '(/,1x,a)') 'error - only one of the PMF units is permitted to have frozen atoms'
 
-      Else If (kode == 488) Then
+      Case (488)
 
         Write (ounit, '(/,1x,a)') 'error - too many PMF constraints per domain'
 
-      Else If (kode == 490) Then
+      Case (490)
 
         Write (ounit, '(/,1x,a)') 'error - local PMF constraint not found locally'
 
-      Else If (kode == 492) Then
+      Case (492)
 
         Write (ounit, '(/,1x,a)') 'error - a diameter of a PMF unit > minimum of all half cell widths'
 
-      Else If (kode == 494) Then
+      Case (494)
 
         Write (ounit, '(/,1x,a)') 'error - overconstrained PMF units'
 
-      Else If (kode == 497) Then
+      Case (497)
 
         Write (ounit, '(/,1x,a)') 'error - pmf_quench failure'
 
-      Else If (kode == 498) Then
+      Case (498)
 
         Write (ounit, '(/,1x,a)') 'error - shake algorithm (pmf_shake) failed to converge'
 
-      Else If (kode == 499) Then
+      Case (499)
 
         Write (ounit, '(/,1x,a)') 'error - rattle algorithm (pmf_rattle) failed to converge'
 
-      Else If (kode == 500) Then
+      Case (500)
 
         Write (ounit, '(/,1x,a)') 'error - PMF unit of zero length is not permitted'
 
-      Else If (kode == 501) Then
+      Case (501)
 
         Write (ounit, '(/,1x,a)') 'error - coincidence of particles in PMF unit'
 
-      Else If (kode == 502) Then
+      Case (502)
 
         Write (ounit, '(/,1x,a)') 'error - coincidence of units in PMF constraint'
 
-      Else If (kode == 504) Then
+      Case (504)
 
         Write (ounit, '(/,1x,a)') 'error - cutoff too large for TABLE file'
 
-      Else If (kode == 505) Then
+      Case (505)
 
         Write (ounit, '(/,1x,a)') 'error - EAM metal densities or pair crossfunctions out of range'
 
-      Else If (kode == 506) Then
+      Case (506)
 
         Write (ounit, '(/,1x,a)') 'error - EAM or MBPC metal densities out of range'
 
-      Else If (kode == 507) Then
+      Case (507)
 
         Write (ounit, '(/,1x,a)') 'error - metal density embedding out of range'
 
-      Else If (kode == 508) Then
+      Case (508)
 
         Write (ounit, '(/,1x,a)') 'error - EAM metal interaction entry in TABEAM unspecified in FIELD'
 
-      Else If (kode == 509) Then
+      Case (509)
 
         Write (ounit, '(/,1x,a)') 'error - duplicate entry for a pair interaction detected in TABEAM'
 
-      Else If (kode == 510) Then
+      Case (510)
 
         Write (ounit, '(/,1x,a)') 'error - duplicate entry for a density function detected in TABEAM'
 
-      Else If (kode == 511) Then
+      Case (511)
 
         Write (ounit, '(/,1x,a)') 'error - duplicate entry for an embedding function detected in TABEAM'
 
-      Else If (kode == 512) Then
+      Case (512)
 
         Write (ounit, '(/,1x,a)') 'error - non-definable vdw/dpd interactions detected in FIELD'
 
-      Else If (kode == 513) Then
+      Case (513)
 
         Write (ounit, '(/,1x,a)') 'error - particle assigned to non-existent domain in read_config'
 
-      Else If (kode == 514) Then
+      Case (514)
 
         Write (ounit, '(/,1x,a)') 'error - allowed image conventions are: 0, 1, 2, 3 and 6'
 
-      Else If (kode == 515) Then
+      Case (515)
 
         Write (ounit, '(/,1x,a)') 'error - rattle algorithm (constraints_rattle) failed to converge'
 
-      Else If (kode == 516) Then
+      Case (516)
 
         Write (ounit, '(/,1x,a)') 'error - the number nodes MUST be a power of 2 series number'
 
-      Else If (kode == 517) Then
+      Case (517)
 
         Write (ounit, '(/,1x,a)') 'error - allowed configuration information levels are: 0, 1 and 2'
 
-      Else If (kode == 518) Then
+      Case (518)
 
         Write (ounit, '(/,1x,a)') 'error - control distances for variable timestep not intact'
 
-      Else If (kode == 519) Then
+      Case (519)
 
         Write (ounit, '(/,1x,a)') 'error - REVOLD is incompatible or does not exist'
 
-      Else If (kode == 520) Then
+      Case (520)
 
         Write (ounit, '(/,1x,a)') 'error - domain decomposition failed'
 
-      Else If (kode == 530) Then
+      Case (530)
 
         Write (ounit, '(/,2(1x,a,/))') 'error - pseudo thermostat thickness MUST comply with', &
           '2 Angs <= thickness < a quarter of the minimum MD cell width'
 
-      Else If (kode == 540) Then
+      Case (540)
 
         Write (ounit, '(/,2(1x,a,/))') 'error - pseudo thermostat can ONLY be used in bulk simulations', &
           'i.e. imcon MUST be 1, 2 or 3'
 
-      Else If (kode == 551) Then
+      Case (551)
 
         Write (ounit, '(/,1x,a)') 'error - REFERENCE not found !!!'
 
-      Else If (kode == 552) Then
+      Case (552)
 
         Write (ounit, '(/,1x,a)') 'error - REFERENCE MUST contain cell parameters !!!'
 
-      Else If (kode == 553) Then
+      Case (553)
 
         Write (ounit, '(/,1x,a)') 'error - REFERENCE is inconsistent !!!'
 
-      Else If (kode == 554) Then
+      Case (554)
 
         Write (ounit, '(/,1x,a)') "error - REFERENCE's format different from CONFIG's !!!"
 
-      Else If (kode == 555) Then
+      Case (555)
 
         Write (ounit, '(/,1x,a)') 'error - particle assigned to non-existent domain in defects_read_reference'
 
-      Else If (kode == 556) Then
+      Case (556)
 
         Write (ounit, '(/,1x,a)') 'error - too many atoms in REFERENCE file'
 
-      Else If (kode == 557) Then
+      Case (557)
 
         Write (ounit, '(/,1x,a)') 'error - undefined direction passed to defects_reference_export'
 
-      Else If (kode == 558) Then
+      Case (558)
 
         Write (ounit, '(/,1x,a)') 'error - outgoing transfer buffer exceeded in defects_reference_export'
 
-      Else If (kode == 559) Then
+      Case (559)
 
         Write (ounit, '(/,1x,a)') 'error - incoming data transfer size exceeds limit in defects_reference_export'
 
-      Else If (kode == 560) Then
+      Case (560)
 
         Write (ounit, '(/,1x,a)') 'error - rdef found to be > half the shortest interatomic distance in REFERENCE'
 
-      Else If (kode == 570) Then
+      Case (570)
 
         Write (ounit, '(/,1x,a)') 'error - unsupported image convention (0) for system expansion option nfold'
 
-      Else If (kode == 580) Then
+      Case (580)
 
         Write (ounit, '(/,1x,a)') 'error - replay (HISTORY) option can only be used for structural property recalculation'
 
-      Else If (kode == 585) Then
+      Case (585)
 
         Write (ounit, '(/,1x,a)') 'error - HISTORY file does not exist'
 
-      Else If (kode == 590) Then
+      Case (590)
 
         Write (ounit, '(/,1x,a)') 'error - uknown minimisation type, only "force", "energy" and "distance" are recognised'
 
-      Else If (kode == 600) Then
+      Case (600)
 
         Write (ounit, '(/,1x,a)') 'error - "impact" option specified more than once in CONTROL'
 
-      Else If (kode == 610) Then
+      Case (610)
 
         Write (ounit, '(/,1x,a)') &
           'error - "impact" applied on particle that is either frozen, or the shell of a core-shell unit or part of a RB'
 
-      Else If (kode == 615) Then
+      Case (615)
 
         Write (ounit, '(/,1x,a)') 'error - q(core)*q(shell)*k(core-shell) MUST NOT be zero'
 
-      Else If (kode == 620) Then
+      Case (620)
 
         Write (ounit, '(/,1x,a)') 'error - duplicate or mixed intra-molecular entries specified in FIELD'
 
-      Else If (kode == 623) Then
+      Case (623)
 
         Write (ounit, '(/,1x,a)') "error - MPOLES's molecular data mismatched with respect to FIELD's data"
 
-      Else If (kode == 625) Then
+      Case (625)
 
         Write (ounit, '(/,1x,a)') 'error - only one *rigid* directive per molecule is allowed'
 
-      Else If (kode == 630) Then
+      Case (630)
 
         Write (ounit, '(/,1x,a)') 'error - too many rigid body units specified'
 
-      Else If (kode == 632) Then
+      Case (632)
 
         Write (ounit, '(/,1x,a)') 'error - rigid body unit MUST have at least 2 sites'
 
-      Else If (kode == 634) Then
+      Case (634)
 
         Write (ounit, '(/,1x,a)') 'error - rigid body unit MUST have at least one non-massless site'
 
-      Else If (kode == 636) Then
+      Case (636)
 
         Write (ounit, '(/,1x,a)') 'error - rigid body unit MUST NOT have any frozen site'
 
-      Else If (kode == 638) Then
+      Case (638)
 
         Write (ounit, '(/,1x,a)') 'error - coincidence of particles in a rigid body unit'
 
-      Else If (kode == 640) Then
+      Case (640)
 
         Write (ounit, '(/,1x,a)') 'error - too many rigid body units per domain'
 
-      Else If (kode == 642) Then
+      Case (642)
 
         Write (ounit, '(/,1x,a)') 'error - rigid body unit diameter > neigh%cutoff (the system cutoff)'
 
-      Else If (kode == 644) Then
+      Case (644)
 
         Write (ounit, '(/,1x,a)') 'error - overconstrained rigid body unit'
 
-      Else If (kode == 646) Then
+      Case (646)
 
         Write (ounit, '(/,1x,a)') 'error - overconstrained constraint unit'
 
-      Else If (kode == 648) Then
+      Case (648)
 
         Write (ounit, '(/,1x,a)') 'error - quaternion setup failed'
 
-      Else If (kode == 650) Then
+      Case (650)
 
         Write (ounit, '(/,1x,a)') 'error - failed to find principal axis system'
 
-      Else If (kode == 655) Then
+      Case (655)
 
         Write (ounit, '(/,1x,a)') 'error - FENE bond breaking failure'
 
-      Else If (kode == 660) Then
+      Case (660)
 
         Write (ounit, '(/,1x,a)') 'error - bond length > cutoff in TABBND or cutoff for PDF collection'
 
-      Else If (kode == 670) Then
+      Case (670)
 
         Write (ounit, '(/,1x,a)') 'error - insufficient electronic temperature cells for TTM heat diffusion'
 
-      Else If (kode == 680) Then
+      Case (680)
 
         Write (ounit, '(/,1x,a)') 'error - rpad too large for calculation of ionic temperatures'
 
-      Else If (kode == 681) Then
+      Case (681)
 
         Write (ounit, '(/,1x,a)') 'error - electronic specific heat not fully specified'
 
-      Else If (kode == 682) Then
+      Case (682)
 
         Write (ounit, '(/,1x,a)') 'error - thermal conductivity of metal not specified'
 
-      Else If (kode == 683) Then
+      Case (683)
 
         Write (ounit, '(/,1x,a)') 'error - thermal diffusivity of non-metal not specified'
 
-      Else If (kode == 684) Then
+      Case (684)
 
         Write (ounit, '(/,1x,a)') 'error - cannot find or open thermal conductivity table file (Ke.dat)'
 
-      Else If (kode == 685) Then
+      Case (685)
 
         Write (ounit, '(/,1x,a)') 'error - no data found in thermal conductivity table file (Ke.dat)'
 
-      Else If (kode == 686) Then
+      Case (686)
 
         Write (ounit, '(/,1x,a)') 'error - cannot find or open volumetric heat capacity table file (Ce.dat)'
 
-      Else If (kode == 687) Then
+      Case (687)
 
         Write (ounit, '(/,1x,a)') 'error - no data found in volumetric heat capacity table file (Ce.dat)'
 
-      Else If (kode == 688) Then
+      Case (688)
 
         Write (ounit, '(/,1x,a)') 'error - cannot find or open thermal diffusivity table file (De.dat)'
 
-      Else If (kode == 689) Then
+      Case (689)
 
         Write (ounit, '(/,1x,a)') 'error - no data found in thermal diffusivity table file (De.dat)'
 
-      Else If (kode == 690) Then
+      Case (690)
 
         Write (ounit, '(/,1x,a)') 'error - cannot find or open coupling constant table file (g.dat)'
 
-      Else If (kode == 691) Then
+      Case (691)
 
         Write (ounit, '(/,1x,a)') 'error - no data found in coupling constant table file (g.dat)'
 
-      Else If (kode == 692) Then
+      Case (692)
 
         Write (ounit, '(/,1x,a)') 'error - end of file encountered in table file (Ke.dat, Ce.dat, De.dat or g.dat)'
 
-      Else If (kode == 693) Then
+      Case (693)
 
         Write (ounit, '(/,1x,a)') 'error - negative electronic temperature: instability in electronic heat diffusion equation'
 
-      Else If (kode == 694) Then
+      Case (694)
 
         Write (ounit, '(/,1x,a)') 'error - electronic temperature restart file (DUMP_E) does not exist'
 
-      Else If (kode == 695) Then
+      Case (695)
 
         Write (ounit, '(/,1x,a)') &
           'error - mismatch in electronic temperature lattice sizes between restart (DUMP_E) and CONTROL files'
 
-      Else If (kode == 696) Then
+      Case (696)
 
         Write (ounit, '(/,1x,a)') 'error - cannot read electronic temperature restart (DUMP_E) file'
 
-      Else If (kode == 1000) Then
+      Case (1000)
 
         Write (ounit, '(/,1x,a)') 'error - working precision mismatch between FORTRAN90 and MPI implementation'
 
-      Else If (kode == 1001) Then
+      Case (1001)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in comms_module -> gcheck_vector'
 
-      Else If (kode == 1002) Then
+      Case (1002)
 
         Write (ounit, '(/,1x,a)') 'error - deallocation failure in comms_module -> gcheck_vector'
 
-      Else If (kode == 1003) Then
+      Case (1003)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in comms_module -> gisum_vector'
 
-      Else If (kode == 1004) Then
+      Case (1004)
 
         Write (ounit, '(/,1x,a)') 'error - deallocation failure in comms_module -> gisum_vector'
 
-      Else If (kode == 1005) Then
+      Case (1005)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in comms_module -> grsum_vector'
 
-      Else If (kode == 1006) Then
+      Case (1006)
 
         Write (ounit, '(/,1x,a)') 'error - deallocation failure in comms_module -> grsum_vector'
 
-      Else If (kode == 1007) Then
+      Case (1007)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in comms_module -> gimax_vector'
 
-      Else If (kode == 1008) Then
+      Case (1008)
 
         Write (ounit, '(/,1x,a)') 'error - deallocation failure in comms_module -> gimax_vector'
 
-      Else If (kode == 1009) Then
+      Case (1009)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in comms_module -> grmax_vector'
 
-      Else If (kode == 1010) Then
+      Case (1010)
 
         Write (ounit, '(/,1x,a)') 'error - deallocation failure in comms_module -> grmax_vector'
 
-      Else If (kode == 1011) Then
+      Case (1011)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in setup -> get_record'
 
-      Else If (kode == 1012) Then
+      Case (1012)
 
         Write (ounit, '(/,1x,a)') 'error - deallocation failure in setup -> get_record'
 
-      Else If (kode == 1013) Then
+      Case (1013)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in angles_module -> allocate_angles_arrays'
 
-      Else If (kode == 1014) Then
+      Case (1014)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in bonds_module -> allocate_bonds_arrays'
 
-      Else If (kode == 1015) Then
+      Case (1015)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in core_shell -> allocate_core_shell_arrays'
 
-      Else If (kode == 1016) Then
+      Case (1016)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in statistics -> allocate_statitics_arrays'
 
-      Else If (kode == 1017) Then
+      Case (1017)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in tethers_module -> allocate_tethers_arrays'
 
-      Else If (kode == 1018) Then
+      Case (1018)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in constraints -> allocate_constraints_arrays'
 
-      Else If (kode == 1019) Then
+      Case (1019)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in external_field_module -> allocate_external_field_arrays'
 
-      Else If (kode == 1020) Then
+      Case (1020)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in dihedrals -> allocate_dihedrals_arrays'
 
-      Else If (kode == 1021) Then
+      Case (1021)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in inversions -> allocate_inversion_arrays'
 
-      Else If (kode == 1022) Then
+      Case (1022)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in vdw -> allocate_vdw_arrays'
 
-      Else If (kode == 1023) Then
+      Case (1023)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in metal_module -> allocate_metal_arrays'
 
-      Else If (kode == 1024) Then
+      Case (1024)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in three_body_module -> allocate_three_body_arrays'
 
-      Else If (kode == 1025) Then
+      Case (1025)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in configuration -> allocate_config_arrays'
 
-      Else If (kode == 1026) Then
+      Case (1026)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in site -> allocate_site_arrays'
 
-      Else If (kode == 1027) Then
+      Case (1027)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in tersoff_module -> allocate_tersoff_arrays'
 
-      Else If (kode == 1030) Then
+      Case (1030)
 
         Write (ounit, '(/,1x,a)') 'error - deallocation failure in core_shell -> deallocate_core_shell_arrays'
 
-      Else If (kode == 1031) Then
+      Case (1031)
 
         Write (ounit, '(/,1x,a)') 'error - deallocation failure in tethers_module -> deallocate_tethers_arrays'
 
-      Else If (kode == 1032) Then
+      Case (1032)
 
         Write (ounit, '(/,1x,a)') 'error - deallocation failure in constraints -> deallocate_constraints_arrays'
 
-      Else If (kode == 1033) Then
+      Case (1033)
 
         Write (ounit, '(/,1x,a)') 'error - deallocation failure in dihedrals -> deallocate_dihedrals_arrays'
 
-      Else If (kode == 1034) Then
+      Case (1034)
 
         Write (ounit, '(/,1x,a)') 'error - deallocation failure in inversions -> deallocate_inversions_arrays'
 
-      Else If (kode == 1035) Then
+      Case (1035)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in defects_module -> allocate_defects_arrays'
 
-      Else If (kode == 1036) Then
+      Case (1036)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in pmf -> allocate_pmf_arrays'
 
-      Else If (kode == 1037) Then
+      Case (1037)
 
         Write (ounit, '(/,1x,a)') 'error - deallocation failure in pmf -> deallocate_pmf_arrays'
 
-      Else If (kode == 1038) Then
+      Case (1038)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in minimise_module -> allocate_minimise_arrays'
 
-      Else If (kode == 1040) Then
+      Case (1040)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in ewald_module -> ewald_allocate_kall_arrays'
 
-      Else If (kode == 1041) Then
+      Case (1041)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in langevin_module -> langevin_allocate_arrays'
 
-      Else If (kode == 1042) Then
+      Case (1042)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in rigid_bodies -> allocate_rigid_bodies_arrays'
 
-      Else If (kode == 1043) Then
+      Case (1043)
 
         Write (ounit, '(/,1x,a)') 'error - deallocation failure in rigid_bodies -> deallocate_rigid_bodies_arrays'
 
-      Else If (kode == 1044) Then
+      Case (1044)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in comms_module -> gimin_vector'
 
-      Else If (kode == 1045) Then
+      Case (1045)
 
         Write (ounit, '(/,1x,a)') 'error - deallocation failure in comms_module -> gimin_vector'
 
-      Else If (kode == 1046) Then
+      Case (1046)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in comms_module -> grmin_vector'
 
-      Else If (kode == 1047) Then
+      Case (1047)
 
         Write (ounit, '(/,1x,a)') 'error - deallocation failure in comms_module -> grmin_vector'
 
-      Else If (kode == 1048) Then
+      Case (1048)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in comms_module -> grsum_matrix'
 
-      Else If (kode == 1049) Then
+      Case (1049)
 
         Write (ounit, '(/,1x,a)') 'error - deallocation failure in comms_module -> grsum_matrix'
 
-      Else If (kode == 1050) Then
+      Case (1050)
 
         Write (ounit, '(/,1x,a)') 'error - sorted I/O base communicator not set'
 
-      Else If (kode == 1053) Then
+      Case (1053)
 
         Write (ounit, '(/,1x,a)') 'error - sorted I/O allocation error'
 
-      Else If (kode == 1056) Then
+      Case (1056)
 
         Write (ounit, '(/,1x,a)') 'error - unkown write option given to sorted I/O'
 
-      Else If (kode == 1059) Then
+      Case (1059)
 
         Write (ounit, '(/,1x,a)') 'error - unknown write level given to sorted I/O'
 
-      Else If (kode == 1060) Then
+      Case (1060)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in statistics -> allocate_statitics_connect'
 
-      Else If (kode == 1061) Then
+      Case (1061)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in statistics -> deallocate_statitics_connect'
 
-      Else If (kode == 1063) Then
+      Case (1063)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in vdw -> allocate_vdw_table_arrays'
 
-      Else If (kode == 1066) Then
+      Case (1066)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in vdw -> allocate_vdw_direct_fs_arrays'
 
-      Else If (kode == 1069) Then
+      Case (1069)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in metal_module -> allocate_metal_table_arrays'
 
-      Else If (kode == 1070) Then
+      Case (1070)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in ewald_module -> ewald_allocate_kfrz_arrays'
 
-      Else If (kode == 1072) Then
+      Case (1072)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in bonds_module -> allocate_bond_pot_arrays'
 
-      Else If (kode == 1073) Then
+      Case (1073)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in bonds_module -> allocate_bond_dst_arrays'
 
-      Else If (kode == 1074) Then
+      Case (1074)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in angles_module -> allocate_angl_pot_arrays'
 
-      Else If (kode == 1075) Then
+      Case (1075)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in angles_module -> allocate_angl_dst_arrays'
 
-      Else If (kode == 1076) Then
+      Case (1076)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in dihedrals -> allocate_dihd_pot_arrays'
 
-      Else If (kode == 1077) Then
+      Case (1077)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in dihedrals -> allocate_dihd_dst_arrays'
 
-      Else If (kode == 1078) Then
+      Case (1078)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in inversion_module -> allocate_invr_pot_arrays'
 
-      Else If (kode == 1079) Then
+      Case (1079)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in inversion_module -> allocate_invr_dst_arrays'
 
-      Else If (kode == 1080) Then
+      Case (1080)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in greenkubo_module -> allocate_greenkubo_arrays'
 
-      Else If (kode == 1081) Then
+      Case (1081)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in dpd -> allocate_dpd_arrays'
 
-      Else If (kode == 1082) Then
+      Case (1082)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in metal_module -> allocate_metal_erf_arrays'
 
-      Else If (kode == 1083) Then
+      Case (1083)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in ttm_module -> allocate_ttm_arrays'
 
-      Else If (kode == 1084) Then
+      Case (1084)
 
         Write (ounit, '(/,1x,a)') 'error - deallocation failure in ttm_module -> deallocate_ttm_arrays'
 
-      Else If (kode == 1085) Then
+      Case (1085)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in ttm_ion_temperature'
 
-      Else If (kode == 1086) Then
+      Case (1086)
 
         Write (ounit, '(/,1x,a)') 'error - deallocation failure in ttm_ion_temperature'
 
-      Else If (kode == 1087) Then
+      Case (1087)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in ttm_thermal_diffusion'
 
-      Else If (kode == 1088) Then
+      Case (1088)
 
         Write (ounit, '(/,1x,a)') 'error - deallocation failure in ttm_thermal_diffusion'
 
-      Else If (kode == 1089) Then
+      Case (1089)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in ttm_track_module -> depoinit'
 
-      Else If (kode == 1090) Then
+      Case (1090)
 
         Write (ounit, '(/,1x,a)') 'error - deallocation failure in ttm_track_module -> depoevolve'
 
-      Else
+      Case Default
 
         Write (ounit, '(/,1x,a)') 'error - see message above'
 
-      End If
+      End select
 
     End If
 
