@@ -18,7 +18,7 @@
 !           - a.b.g.chalk march-october 2018
 !           - i.scivetti march-october 2018
 ! contrib   - a.m.elena february 2019, cherry pick 4.09.2
-! EVB       - i.scivetti june-october 2019 
+! EVB       - i.scivetti june-october 2019
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -241,7 +241,7 @@ Contains
     Character(Len=40)  :: akey, word, word1, word2, word3
     Character(Len=80)  :: banner(9)
     Integer            :: grdana, grdang, grdbnd, grddih, grdinv, i, itmp, j, k, nstall, nstana
-    Integer            :: fftag 
+    Integer            :: fftag
     Integer(Kind=wi)   :: tmp_seed(1:3), traj_freq, traj_key, traj_start
     Logical            :: l_0, l_timcls, l_timjob, lens, lforc, limp, lplumed, lpres, lstep, &
                           lstrext, ltemp, safe
@@ -251,9 +251,9 @@ Contains
     ! initialise system control variables and their logical switches
 
     If (present(ff)) then
-     fftag = ff                                                             
+     fftag = ff
     Else
-     fftag = 1                                                                                
+     fftag = 1
     Endif
 
 
@@ -585,7 +585,7 @@ Contains
 
     ! default driver type
 
-    flow%simulation_method = MD_STD 
+    flow%simulation_method = MD_STD
 
     ! default value for the particle density per link cell limit
     ! below which subcelling (decreasing link-cell dimensions) stops
@@ -778,12 +778,12 @@ Contains
             vdws%mixing = MIX_LORENTZ_BERTHELOT
             If(fftag == 1)Then
               Call info('type of mixing selected - Lorentz–Berthelot :: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2', .true.)
-            End If  
+            End If
           Else If (word2(1:4) == 'fend') Then
             vdws%mixing = MIX_FENDER_HALSEY
             If(fftag == 1)Then
               Call info('type of mixing selected - Fender-Halsey :: e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2', .true.)
-            End If  
+            End If
           Else If (word2(1:4) == 'hoge') Then
             vdws%mixing = MIX_HOGERVORST
             If(fftag == 1) Call info('type of mixing selected - Hogervorst (good hope) :: ' &
@@ -807,7 +807,7 @@ Contains
               //'e_ij=3 * (e_i*e_j)^(1/2) * (s_i*s_j)^3 / SUM_L=0^2{[(s_i^3+s_j^3)^2 / (4*(s_i*s_j)^L)]^(6/(6-2L))}', .true.)
             If(fftag == 1) Then
               Call info(Repeat(' ',40)//'s_ij=(1/3) * SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))}', .true.)
-            End If        
+            End If
           Else
             Call strip_blanks(record)
             Write (message, '(4a)') word(1:Len_trim(word) + 1), &
@@ -954,11 +954,11 @@ Contains
         Write (message, '(a,i10)') 'zero K application interval', thermo%freq_zero
 
         If (l_0) Then
-          If (comm%idnode == 0)Then 
+          If (comm%idnode == 0)Then
             If(fftag == 1)Then
               Call info('fire option on - actual temperature will reset to 10 Kelvin if no target tempreature is specified', .true.)
-            End If  
-          End If  
+            End If
+          End If
         Else
           ltemp = .true.
           thermo%temp = 10.0_wp
@@ -2159,7 +2159,7 @@ Contains
           If (.not. ttm%l_ttm) Then
             If(fftag == 1)Then
               Call info('"no vom" option auto-switched on - COM momentum removal will be abandoned', .true.)
-            End If  
+            End If
             If(fftag == 1) Call warning('this may lead to a build up of the COM momentum ' &
                                      //'and a manifestation of the "flying ice-cube" effect', .true.)
           End If
@@ -2313,7 +2313,7 @@ Contains
 
           If(fftag == 1)Then
             Call info('electronic ttm%volumetric heat capacity given as tabulated function of temperature', .true.)
-          EndIf  
+          EndIf
 
         Else If (word1(1:5) == 'keinf') Then
 
@@ -3086,12 +3086,13 @@ Contains
          !Use DFTB+ as the force calculator instead of classical force fields
          flow%simulation_method = DFTB
 
-#ifdef EVB         
-      Else If (word(1:3) == 'evb') Then 
-         ! EVB settings, this flag has been already read by read_simtype.  
+      Else If (word(1:3) == 'evb') Then
+         ! EVB settings, this flag has been already read by read_simtype.
          ! here do nothing
-#endif
-
+        If (.Not. flow%with_evb) Then
+          Write (message, '(a)') "DL_POLY is compiled withot evb support! check documentation to activate EVB."
+          Call error(0, message)
+        End If
       ! close control file
       Else If (word(1:6) == 'finish') Then
 
@@ -3232,7 +3233,7 @@ Contains
       Else If (ttm%ttmthvelz) Then
         If(fftag == 1)Then
           Call info('applying to total velocities in x and y directions, thermal velocities in z direction', .true.)
-        End If  
+        End If
       Else
         If(fftag == 1) Call info('applying to total velocities in all directions', .true.)
       End If
@@ -3353,7 +3354,7 @@ Contains
           dihedral%bin_adf > 0 .and. inversion%bin_adf > 0) Then
           If(fftag == 1)Then
             Call info('full intramolecular distribution collection requested (all=bnd/ang/dih/inv):', .true.)
-          End If  
+          End If
         Else
           If(fftag == 1) Call info('intramolecular distribution collection requested for:', .true.)
         End If
@@ -3898,9 +3899,9 @@ Contains
     Real(Kind=wp)      :: celprp(1:10), cut, eps0, fac, tol, tol1
 
     If (present(ff)) then
-     fftag = ff                                                             
+     fftag = ff
     Else
-     fftag = 1                                                                                
+     fftag = 1
     Endif
 
 ! default spline for SPME (4 & 6 possible)

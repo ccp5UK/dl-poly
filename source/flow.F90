@@ -116,7 +116,11 @@ Module flow_control
     Integer(Kind = wi), Public :: NUM_FF
     !> Flags to kill EVB if reading "evb" settings failed
     Logical,            Public :: evbfail = .False.
-
+#ifdef EVB
+    Logical,            Public :: with_evb = .True.
+#else
+    Logical,            Public :: with_evb = .False.
+#endif
     Logical, Public          :: l_vdw = .False.
 
   Contains
@@ -142,14 +146,14 @@ Contains
   End Subroutine flow_type_line_printed
 
 
-  Subroutine read_simtype(flow,comm) 
+  Subroutine read_simtype(flow,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine to read option evb from CONTROL file. If present,
-    ! the number of fields to be coupled is assigned to flow%NUM_FF. If there 
-    ! is an error in the specification for this option evb or the CONTROL file is 
-    ! not found, variables are temporarily assigned and DL_POLY will print an 
+    ! the number of fields to be coupled is assigned to flow%NUM_FF. If there
+    ! is an error in the specification for this option evb or the CONTROL file is
+    ! not found, variables are temporarily assigned and DL_POLY will print an
     ! error message and abort later once OUTPUT file has been opened
     !
     ! copyright - daresbury laboratory
@@ -159,17 +163,17 @@ Contains
 
     Type(flow_type) , Intent(  Out) :: flow
     Type(comms_type), Intent(InOut) :: comm
-  
+
     Logical                :: carry,safe, stdtype
     Character( Len = 200 ) :: record
     Character( Len = 40  ) :: word
-  
+
     Integer       :: unit_no
-  
+
     ! Set safe flag
       safe    =.true.
       stdtype =.true.
-  
+
     ! Open CONTROL file
     If (comm%idnode == 0) Inquire(File='CONTROL', Exist=safe)
     Call gcheck(comm,safe,"enforce")
@@ -178,7 +182,7 @@ Contains
       ! DL_POLY will later abort by printing an error message
       ! At this stage we cannot stop the execution because OUTPUT has not been opened yet
       flow%simulation_method=MD_STD
-      flow%NUM_FF = 1 
+      flow%NUM_FF = 1
       Return
     Else
       ! If CONTROL file is found, proceed
@@ -186,18 +190,18 @@ Contains
         Open(Newunit=unit_no, File='CONTROL',Status='old')
       End If
     End If
-  
-    Call get_line(safe,unit_no,record,comm)  
-  
+
+    Call get_line(safe,unit_no,record,comm)
+
     If (safe) Then
       carry = .true.
       Do While (carry)
-  
+
         Call get_line(safe,unit_no,record,comm)
         If (.not.safe) Exit
         Call lower_case(record)
         Call get_word(record,word)
-  
+
         ! read EVB option. If for any reason there was a typo with the option "evb", DL_POLY will complain later
         If (word(1:3) == 'evb') Then
           flow%simulation_method=EmpVB
@@ -207,25 +211,25 @@ Contains
           If(flow%NUM_FF <= 1)Then
           ! If there is no value assigned or a wrong input value has been set, activate evbfail
             flow%NUM_FF  = 1
-            flow%evbfail = .True.         
-          End If        
+            flow%evbfail = .True.
+          End If
         Else If (word(1:6) == 'finish') Then
           carry=.false.
         End If
       End Do
-  
+
       If(stdtype)Then
       ! Set standard option
         flow%simulation_method= MD_STD
-        flow%NUM_FF = 1 
-      End If         
-  
+        flow%NUM_FF = 1
+      End If
+
     End If
-  
+
     ! Close CONTROL file
-    If (comm%idnode == 0) Close(unit_no)    
+    If (comm%idnode == 0) Close(unit_no)
 
   End Subroutine read_simtype
-          
+
 
 End Module flow_control
