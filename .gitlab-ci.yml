@@ -30,7 +30,7 @@ build-mpi-pure:
     - gcc
   script:
     - sh utils/build-mpi-pure.sh
-    - sh utils/build-mpi-pure-evb.sh
+    - sh utils/build-mpi-evb.sh
 
 build-mpi-netcdf:
   stage: build
