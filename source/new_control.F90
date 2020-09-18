@@ -2485,7 +2485,7 @@ contains
       Write (messages(2), '(a,i10)') '  -- Particle (index): ', impa%imd
       Write (messages(3), '(a,i10)') '  -- Timestep (steps): ', impa%tmd
       Write (messages(4), '(a,1p g12.5e2)') '  -- Energy   (keV): ', impa%emd
-      Write (messages(5), '(a,31p g12.5e2)') '  -- v-r(x,y,z): ', impa%vmx, impa%vmy, impa%vmz
+      Write (messages(5), '(a,3(1p g12.5e2))') '  -- v-r(x,y,z): ', impa%vmx, impa%vmy, impa%vmz
 
       Call info(messages, 5, .true.)
 
@@ -5125,69 +5125,21 @@ contains
 
       if (tmp(1:1) /= '[') call error(0, '')
       i = index(tmp, ']', back=.true.)
-      tmp = tmp(:i)
+
+      ! Cut off braces
+      tmp = tmp(2:i-1)
+
       input = tmp(i+1:)
 
-      test_int = 0
-      do i = 1, len_trim(tmp)
-        if (tmp(i:i) == '[') then
-          test_int = test_int + 1
-          tmp(i:i) = ' '
-        else if (tmp(i:i) == ']') then
-          test_int = test_int - 1
-          tmp(i:i) = ' '
-        end if
-      end do
-      if (test_int /= 0) call error(0, 'Unmatched brackets in input '//trim(tmp))
-
+      param%val = ""
       do while (tmp /= '')
         call get_word(tmp, val)
         ! Check all valid reals
         test_real = word_2_real(val)
         param%val = trim(param%val)//' '//val
       end do
-
       call get_word(input, unit)
       param%units = unit
-
-      ! call get_word(input, val)
-      ! if (val(1:1) /= '[') call error(0, 'Expected vector in key '//trim(param%key)//' received '//trim(input))
-      ! test_int = 1
-      ! ! Skip [ on read
-      ! if (trim(val(2:)) /= '') then
-      !    test_real = word_2_real(val(2:))
-      !    param%val = trim(val(2:))
-      ! end if
-
-      ! do
-      !    call get_word(input, val)
-      !    ! Handle multiline
-      !    do while(trim(input) == '')
-      !       call get_line(line_read, ifile, input, comm)
-      !       if (.not. line_read) call error(0, 'End of file while parsing '//trim(param%key))
-      !    end do
-
-      !    i = index(val, ']')
-      !    if (i > 1) then ! Val]
-      !       test_real = word_2_real(val(1:i-1))
-      !       param%val = trim(param%val) // ' ' // val(1:i-1)
-      !       test_int = test_int - 1
-      !    else if (i == 1) then ! Independent ]
-      !       test_int = test_int - 1
-      !    else
-      !       test_real = word_2_real(val)
-      !       param%val = trim(param%val) // ' ' // val
-      !    end if
-      !    if (test_int == 0) exit
-      ! end do
-
-      ! ! Handle multiline
-      ! do while(trim(input) == '')
-      !    call get_line(line_read, ifile, input, comm)
-      !    if (.not. line_read) call error(0, 'End of file while parsing '//trim(param%key))
-      ! end do
-      ! call get_word(input, unit)
-      ! param%units = unit
 
     case (DATA_OPTION, DATA_BOOL)
       call get_word(input, val)

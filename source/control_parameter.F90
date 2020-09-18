@@ -332,7 +332,7 @@ contains
     end if
     val = param%val
 
-    do i = 1, 4
+    do i = 1, 10
       call get_word(val, parse)
       if (parse == "") exit
       tmp(i) = word_2_real(parse)
@@ -346,7 +346,6 @@ contains
     select case(param%data_type)
     case (DATA_VECTOR3)
        if (size(output) /= 3) call error(0, "Bad length output vector")
-
        if (i /= 4) call error(0, "Bad length input vector")
        output = tmp(1:3)
 
