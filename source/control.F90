@@ -4293,13 +4293,13 @@ Contains
           Call get_word(record, word)
           ttm%eltsys(3) = Abs(Nint(word_2_real(word)))
 
-        Else If (word1(1:5) == 'metal') Then
+        Else If (word(1:5) == 'metal') Then
 
           ! sets properties of electronic subsystem as a metal
 
           ttm%isMetal = .true.
 
-        Else If (word1(1:8) == 'nonmetal') Then
+        Else If (word(1:8) == 'nonmetal') Then
 
           ! sets properties of electronic subsystem as a non-metal
 
