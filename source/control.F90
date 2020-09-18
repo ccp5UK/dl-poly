@@ -249,7 +249,6 @@ Contains
     ! initialise system control variables and their logical switches
 
     ! default expansion option
-
     config%l_exp = .false.
     config%nx = 1
     config%ny = 1
@@ -3264,8 +3263,7 @@ Contains
     End If
 
     ! report if vdws%cutoff is reset (measures taken in scan_config)
-
-    If ((.not.vdws%no_vdw) .and. Abs(vdws%cutoff-rvdw1) > 1.0e-6_wp) Then
+    If ((.not. vdws%no_vdw) .and. Abs(vdws%cutoff - rvdw1) > 1.0e-6_wp) Then
       Write (message, '(a,1p,e12.4)') 'vdw cutoff reset to (Angs) ', vdws%cutoff
       Call info(message, .true.)
     End If
