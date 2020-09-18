@@ -146,7 +146,7 @@ Contains
   End Subroutine flow_type_line_printed
 
 
-  Subroutine read_simtype(flow,comm)
+  Subroutine read_simtype(flow, control_filename, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -162,20 +162,27 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type(flow_type) , Intent(  Out) :: flow
+    Character(Len=*), Intent(In   ) :: control_filename
     Type(comms_type), Intent(InOut) :: comm
 
     Logical                :: carry,safe, stdtype
     Character( Len = 200 ) :: record
     Character( Len = 40  ) :: word
+    Character( Len = 100 ) :: cfilename
 
     Integer       :: unit_no
 
-    ! Set safe flag
-      safe    =.true.
-      stdtype =.true.
 
-    ! Open CONTROL file
-    If (comm%idnode == 0) Inquire(File='CONTROL', Exist=safe)
+    cfilename = "CONTROL"
+    If (Len_Trim(control_filename) > 0) Then
+      cfilename = Trim(control_filename)
+    End If
+    ! Set safe flag
+    safe    =.true.
+    stdtype =.true.
+
+    ! Check control file exists
+    If (comm%idnode == 0) Inquire(File=Trim(cfilename), Exist=safe)
     Call gcheck(comm,safe,"enforce")
     If (.not.safe) Then
       ! If CONTROL file is not found, set the following variables and return.
@@ -187,7 +194,7 @@ Contains
     Else
       ! If CONTROL file is found, proceed
       If (comm%idnode == 0) Then
-        Open(Newunit=unit_no, File='CONTROL',Status='old')
+        Open(Newunit=unit_no, File=trim(cfilename),Status='old')
       End If
     End If
 

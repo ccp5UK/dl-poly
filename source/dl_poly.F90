@@ -211,7 +211,7 @@ Program dl_poly
 
   ! Set the type of calculation to be performed. By default it is the standard DL_POLY
   ! calculation. Tag evb activates EVB calculation
-  Call read_simtype(flow(1),dlp_world(0))
+  Call read_simtype(flow(1), control_filename, dlp_world(0))
 
   ! Select metasimulation method
   ! IS: The following two subroutines should be merged into a single one. We separate them
