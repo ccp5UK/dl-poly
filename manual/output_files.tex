@@ -531,15 +531,14 @@ have been requested (by selecting directives {\bf rdf} and {\bf
 print rdf} in the CONTROL file) radial distribution functions are
 printed out.  This is written from the subroutine {\sc
 rdf\_compute}.  First the number of time-steps used for the
-collection of the histograms is stated.  Then each pre-requested
-function is given in turn.  For each function a header line states
+collection of the histograms is stated.
+
+For each function a header line states
 the atom types (`a' and `b') represented by the function.  Then
-$r,~g(r)$ and $n(r)$ are given in tabular form.  Output is given
-from 2 entries before the first non-zero entry in the $g(r)$
-histogram.  $n(r)$ is the average number of atoms of type `b' within
-a sphere of radius $r$ around an atom of type `a'.
-Note that a readable version of these data is provided by the
-RDFDAT file (below).
+$r, g(r)$ and $n(r)$ are given in tabular form. $n(r)$ is the average
+number of atoms of type `b' within a sphere of radius $r$ around
+an atom of type `a'. Note that a readable version of these data is
+provided by the RDFDAT file (below).
 
 \subsubsection{Umbrella Sampling Restraint RDF}
 
@@ -583,6 +582,30 @@ $Z(t)=C(t)/C(0)$ is the value of the velocity autocorrelation function,
 $C(t)=\langle \vek{v}_{i}(0) \cdot  \vek{v}_{i}(t) \rangle$,
 scaled by $C(0) \equiv 3k_B T/m$.  Note that a readable version of these data
 for individual species is provided by the VAFDAT files (below).
+
+\subsection{The HEATFLUX File}
+The HEATFLUX file contains data relevant to the calculation of heat-flux via a
+Green-Kubo mothod via an external convolution, the information is written as:
+
+\begin{verbatim}
+STEP STPTMP VOLUME HEAT_FLUX
+\end{verbatim}
+
+\subsection{The PP\_CONT File}
+\label{pp-cont-file}
+
+This file contains the contributions of each particle to energies, forces
+and stresses in a format similar to to the CONFIG file, but with ID replaced
+with energy, and velocities/forces with the stress
+6-vector.
+
+\begin{verbatim}
+  TAG ATMNAM KIN_E MASS ENERGY
+  STR_XX STR_YX STR_ZX
+  STR_XY STR_YY STR_ZY
+  STR_XZ STR_YZ STR_ZZ
+\end{verbatim}
+
 
 \subsection{The REVCON File}
 \label{revcon-file}
@@ -651,7 +674,8 @@ X\=XXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXX\=\kill
 \> {\tt atname 2} \> a8   \> second atom name \\
 {\bf following records} ({\em mxgrdf} records) \\
 \> {\tt radius}   \> real \> interatomic distance (\AA) \\
-\> {\tt g(r)}     \> real \> RDF at given radius
+\> {\tt g(r)}     \> real \> RDF at given radius \\
+\> {\tt n(r)}     \> real \> RDF at given radius \\
 \end{tabbing}
 
 {\bf Note 1.} The RDFDAT file is optional and appears when the
@@ -836,8 +860,8 @@ written in the format ``(1p,5e14.6)''.  The number of array
 elements required (determined by the parameter {\tt mxnstk} in the
 {\sc setup\_module} file) is
 \begin{eqnarray}
-{\tt mxnstk} & \ge & 28 + {\tt ntpatm}~(\rm number~of~unique~atomic~sites) ~+ \nonumber \\
-             &     & 9~(\rm stress~tensor~elements) ~+ \nonumber \\
+{\tt mxnstk} & \ge & 28 + 9~(\rm stress~tensor~elements) ~+ \nonumber \\
+             &     & {\tt ntpatm}~(\rm number~of~unique~atomic~sites) ~+ \nonumber \\
              &     & 10~(\rm if~constant~pressure~simulation~requested) ~+ \nonumber \\
              &     & 2~(\rm if~iso~>~0~requested) + 2~(\rm if~iso~>~1~requested) ~+ \nonumber \\
              &     & 2*mxatdm~(\rm if~msdtmp~option~is~used) \nonumber
@@ -890,11 +914,6 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt virpmf} \> real    \> PMF constraint virial \\
 \> {\tt press}  \> real    \> pressure, ${\cal P}$ \\
 \> {\tt consv}  \> real    \> extended DoF energy, $E_{consv}$ \\
-{\bf the next {\tt ntpatm} entries} \\
-\> {\tt amsd(1)} \> real   \> mean squared displacement of first atom types \\
-\> {\tt amsd(2)} \> real   \> mean squared displacement of second atom types \\
-\> {\tt ...} \> ... \> ... \\
-\> {\tt amsd(ntpatm)} \> real \> mean squared displacement of last atom types \\
 {\bf the next 9 entries for the stress tensor in pressure units} \\
 \> {\tt stress(1)} \> real \> xx component of stress tensor \\
 \> {\tt stress(2)} \> real \> xy component of stress tensor \\
@@ -902,6 +921,11 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt stress(4)} \> real \> yx component of stress tensor \\
 \> {\tt ...} \> real \> ... \\
 \> {\tt stress(9)} \> real \> zz component of stress tensor \\
+{\bf the next {\tt ntpatm} entries} \\
+\> {\tt amsd(1)} \> real   \> mean squared displacement of first atom types \\
+\> {\tt amsd(2)} \> real   \> mean squared displacement of second atom types \\
+\> {\tt ...} \> ... \> ... \\
+\> {\tt amsd(ntpatm)} \> real \> mean squared displacement of last atom types \\
 {\bf the next 10 entries - {\em if} a NPT or N$\mat{\sigma}$T simulation is undertaken} \\
 \> {\tt cell(1)} \> real   \> x component of $a$ cell vector \\
 \> {\tt cell(2)} \> real   \> y component of $a$ cell vector \\
@@ -910,10 +934,10 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt ...} \> real \> ... \\
 \> {\tt cell(9)} \> real   \> z component of $c$ cell vector \\
 \> {\tt stpipv} \> real    \> pressure, ${\cal P} \cdot {\cal V}$ \\
-{\bf the next 2 entries - {\em if} a NPT or NP$_{n}$AT simulation is undertaken} \\
+{\bf the next 2 entries - {\em if} NP$_{n}$AT simulation is undertaken with iso > 0} \\
 \> {\tt h\_z}   \> real    \> MD cell height $h_{z}$ to normal surface ${\cal A}\perp{z}$ \\
 \> {\tt A$\perp${z}} \> real \> MD cell normal surface ${\cal A}\perp{z}={\cal V}/h_{z}$ \\
-{\bf the next 2 entries - {\em if} a NPT or N$\gamma_{n}$AT simulation is undertaken} \\
+{\bf the next 2 entries - {\em if} a N$\gamma_{n}$AT simulation is undertaken with iso > 1} \\
 \> {\tt gamma\_x} \> real \> surface tension $\gamma_{n_{x}}$ on normal surface ${\cal A}\perp{z}$ \\
 \> {\tt gamma\_y} \> real \> surface tension $\gamma_{n_{y}}$ on normal surface ${\cal A}\perp{z}$
 \end{tabbing}
@@ -967,3 +991,25 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt tempion\_mean} \> real \> mean value of ionic temperature in system (K) \\
 \> {\tt tempion\_sum} \> real \> sum of ionic temperatures in system (K) \\
 \end{tabbing}
+
+\subsection{The POPEVB Files}\label{sec:evbpop}
+This is an unformatted file to print the weight of each chemical state $|\Psi^{(k)}_{\text{EVB}}\big|^{2}$ in the total EVB state, as described in section \ref{sec:evb}. Values are printed at each time step only after equilibration.\\ 
+The structure of the printed data is as follows:\\
+
+Time (ps)  $\,\,\,\,\,\,\,\,\,\,\,\,$    $|\Psi^{(1)}_{\text{EVB}}\big|^{2}$ $\,\,\,\,\,\,$    $|\Psi^{(2)}_{\text{EVB}}\big|^{2}$  $\,\,\,\,\,\,$    $|\Psi^{(3)}_{\text{EVB}}\big|^{2}$ $\cdots\cdots$    $|\Psi^{(N_F)}_{\text{EVB}}\big|^{2}$\\
+
+where $N_F$ is the number of force-fields coupled via the EVB simulation. 
+
+\subsection{COORD, ICOORD and ADFDAT}
+
+CCOORD is the a coordination displacement file that dumps the positions of all the atoms that are
+considered to both change there initial local atomic coordination and move more that a set distance
+away.
+
+ICOORD is a dump file of both the initial coordination of each atom and the exact atoms its
+coordinated to and optional this at each writing step interval. Also provides the coordination
+distribution statistics for each atom after each writing step interval ( If adf is used and a specific
+coordination list is defined then this will also display for each list type ).
+
+ADFDAT is statistics file containing the angular distributions between atoms you define it to produce.
+

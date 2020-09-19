@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-module load gnu openmpi/3.1.1 netcdf-fortran/4.4.4  pnetcdf/4.6.1
-module load plumed/gnu
+module load gnu/7 openmpi/3.1.6 netcdf-fortran/4.5.2  netcdf/4.7.3
+module load plumed/gnu 
+module load scalapack/2.1.0 dftb+/gcc/19.2
+module load openblas/0.3.10
 
-folder="build-mpi-testing" 
+folder="build-mpi-testing"
 rm -rf $folder && mkdir $folder && pushd $folder
-FFLAGS="-O3 -march=native -mtune=native" cmake ../ -DBUILD_TESTING=ON -DWITH_PLUMED=ON -DBUILDER="Gitlab Slave" && make -j10 && ctest -j 2 
-
-
+cmake ../ -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DWITH_PLUMED=ON -DINTERNAL_PLUMED=off -DWITH_EVB=On  && make -j10 && ctest --output-on-failure -j 2 -E TEST2[89]

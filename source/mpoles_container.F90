@@ -1,20 +1,5 @@
 Module mpoles_container
-  Use kinds,           Only : wp,wi
-  Use constants,           Only : sqrpi
-  Use configuration,   Only : configuration_type
-  Use mpole,           Only : mpole_type
-  Use ewald,           Only : dtpbsp, ewald_type
-  Use errors_warnings, Only : error
-  Use numerics,        Only : images_s, local_index
-
-  Implicit None
-
-  Private
-
-  Public :: coul_deriv, ewald_deriv, limit_erfr_deriv, explicit_ewald_real_loops, &
-    explicit_fscp_rfp_loops, explicit_spme_loops, explicit_spme_loop_s, &
-    rotate_mpoles, infinitesimal_rotation, rotate_mpoles_d
-  !!!!!!!!!!!!!!!!!!!!!!!! THIS IS MPOLES_CONTAINER !!!!!!!!!!!!!!!!!!!!!!
+  !------------------------ THIS IS MPOLES_CONTAINER ----------------------!
   !
   ! Subroutine coul_deriv - computes the derivatives of the 1/r kernel
   !                         for multipolar interactions
@@ -56,7 +41,22 @@ Module mpoles_container
   ! Subroutine rotate_mpoles_d - rotates a multipole in the local molecular frame
   !                              into the global frame for multipole order <= 2
   !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !------------------------------------------------------------------------!
+  Use kinds,           Only : wp,wi
+  Use constants,           Only : sqrpi
+  Use configuration,   Only : configuration_type
+  Use mpole,           Only : mpole_type
+  Use errors_warnings, Only : error
+  Use numerics,        Only : images_s, local_index
+  Use ewald,           Only : ewald_type
+
+  Implicit None
+
+  Private
+
+  Public :: coul_deriv, ewald_deriv, limit_erfr_deriv, explicit_ewald_real_loops, &
+    explicit_fscp_rfp_loops, explicit_spme_loops, explicit_spme_loop_s, &
+    rotate_mpoles, infinitesimal_rotation, rotate_mpoles_d
 
 Contains
 
@@ -3766,14 +3766,14 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( mpole_type ), Intent( In    ) :: mpoles
-    Type( ewald_type ), Intent( In    ) :: ewld
-    Type( configuration_type), Intent( InOut ) :: config
-    Integer,          Intent( In    ) :: flag
-    Real( Kind = wp), Intent( In    ) :: rcell(1:9)
-    Real( Kind = wp), Intent( In    ) :: imp(1:mpoles%max_mpoles)
-    Real( Kind = wp), Intent( In    ) :: impx(1:mpoles%max_mpoles),impy(1:mpoles%max_mpoles),impz(1:mpoles%max_mpoles)
-    Real( Kind = wp), Intent( In    ) :: bdx(0:ewld%bspline),bdy(0:ewld%bspline),bdz(0:ewld%bspline)
+    Type( mpole_type ),                                      Intent( In    ) :: mpoles
+    Type( ewald_type ),                                      Intent( In    ) :: ewld
+    Type( configuration_type),                               Intent( InOut ) :: config
+    Integer,                                                 Intent( In    ) :: flag
+    Real( Kind = wp),                                        Intent( In    ) :: rcell(1:9)
+    Real( Kind = wp), dimension(1:mpoles%max_mpoles),        Intent( In    ) :: imp, impx,impy,impz
+    Real( Kind = wp), dimension(0:ewld%bspline%num_splines), Intent( In    ) :: bdx,bdy,bdz
+
     Real( Kind = wp), Intent(   Out ) :: dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3
 
     ! Local variables
@@ -4851,13 +4851,13 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( ewald_type ), Intent( In    ) :: ewld
-    Type( mpole_type ), Intent( In    ) :: mpoles
-    Type( configuration_type ), Intent( InOut ) :: config
-    Real( Kind = wp), Intent( In    ) :: rcell(1:9)
-    Real( Kind = wp), Intent( In    ) :: bdx(0:ewld%bspline),bdy(0:ewld%bspline),bdz(0:ewld%bspline)
-    Real( Kind = wp), Intent( In    ) :: imp(1:mpoles%max_mpoles)
-    Real( Kind = wp), Intent(   Out ) :: dtp
+    Type( ewald_type ),                                      Intent( In    ) :: ewld
+    Type( mpole_type ),                                      Intent( In    ) :: mpoles
+    Type( configuration_type ),                              Intent( InOut ) :: config
+    Real( Kind = wp),                                        Intent( In    ) :: rcell(1:9)
+    Real( Kind = wp), Dimension(0:ewld%bspline%num_splines), Intent( In    ) :: bdx,bdy,bdz
+    Real( Kind = wp), Dimension(1:mpoles%max_mpoles),        Intent( In    ) :: imp
+    Real( Kind = wp),                                        Intent(   Out ) :: dtp
 
     ! Local variables
 
@@ -6446,5 +6446,96 @@ Contains
     End If
 
   End Subroutine rotate_mpoles_d
+
+  Function Dtpbsp(s1,s2,s3,rcell,bsddx,bsddy,bsddz,n_choose_k,config,ewld)
+
+    !!-----------------------------------------------------------------------
+    !!
+    !! Function to compute arbitrary derivatives of the product of three
+    !! b-splines for use with multipolear interactions
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - h.a.boateng april 2014
+    !! amended   - i.t.todorov march 2015
+    !!
+    !!-----------------------------------------------------------------------
+
+    Real( Kind = wp ) :: Dtpbsp
+
+    Type( ewald_type ), Intent( In    ) :: ewld
+    Integer,                                 Intent( In   ) :: s1,s2,s3
+    Real( Kind = wp ),                       Intent( In   ) :: rcell(9)
+    Real( Kind = wp ), Dimension( 0:ewld%bspline%num_splines ), Intent( In   ) :: bsddx,bsddy,bsddz
+    Real( Kind = wp ), Intent( In    ) :: n_choose_k(0:,0:)
+    Type( configuration_type ),              Intent( In    ) :: config
+
+    Real( Kind = wp ) :: tx,ty,tz,sx,sy,sz
+    Real( Kind = wp ) :: ka11,ka12,ka13,kb21,kb22,kb23,kc31,kc32,kc33
+    Integer           :: j1,j2,j3,k1,k2,k3,jj,kk,sk,sk3,sk2,sk1
+
+    Dtpbsp = 0.0_wp
+
+    ka11 = Real(ewld%kspace%k_vec_dim(1),wp)*rcell(1)
+    ka12 = Real(ewld%kspace%k_vec_dim(1),wp)*rcell(4)
+    ka13 = Real(ewld%kspace%k_vec_dim(1),wp)*rcell(7)
+    kb21 = Real(ewld%kspace%k_vec_dim(2),wp)*rcell(2)
+    kb22 = Real(ewld%kspace%k_vec_dim(2),wp)*rcell(5)
+    kb23 = Real(ewld%kspace%k_vec_dim(2),wp)*rcell(8)
+    kc31 = Real(ewld%kspace%k_vec_dim(3),wp)*rcell(3)
+    kc32 = Real(ewld%kspace%k_vec_dim(3),wp)*rcell(6)
+    kc33 = Real(ewld%kspace%k_vec_dim(3),wp)*rcell(9)
+
+    ! Typically, the box is orthogonal => only diagonals-ka11,kb22,kc33-are non-zero
+
+    If (config%imcon /= 3) Then
+
+      Dtpbsp = ka11**s1 * kb22**s2 * kc33**s3 * bsddx(s1) * bsddy(s2) * bsddz(s3)
+
+    Else
+
+      tz = 1.0_wp
+      Do k3 = 0, s3
+        ty = tz * n_choose_k(s3,k3); sk3=s3-k3
+
+        Do k2 = 0, s2
+          tx = ty * n_choose_k(s2,k2); sk2=s2-k2
+
+          Do k1 = 0, s1
+            kk = k1+k2+k3; sk1=s1-k1; sk=sk1+sk2+sk3
+
+            sz = tx * n_choose_k(s1,k1)*bsddx(kk)
+
+            Do j3 = 0, sk3
+              sy = sz * n_choose_k(sk3,j3)*kc33**(sk3-j3)
+
+              Do j2 = 0, sk2
+                sx = sy * n_choose_k(sk2,j2)*kc32**(sk2-j2)
+
+                Do j1 = 0, sk1
+                  jj = j1+j2+j3
+
+                  Dtpbsp = Dtpbsp + sx * kc31**(sk1-j1) * n_choose_k(sk1,j1)*bsddy(jj)*bsddz(sk-jj)
+
+                  sx=sx*kb21
+                End Do
+
+                sy=sy*kb22
+              End Do
+
+              sz=sz*kb23
+            End Do
+
+            tx=tx*ka11
+          End Do
+
+          ty=ty*ka12
+        End Do
+
+        tz=tz*ka13
+      End Do
+
+    End If
+
+  End Function Dtpbsp
 
 End Module mpoles_container

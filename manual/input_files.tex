@@ -215,6 +215,9 @@ print rdf
 zden                    7    steps
 print zden
 
+# EMPIRICAL VALENCE BOND (EVB) DIRECTIVE
+evb                    2 
+
 # EXECUTION TIME
 job time             1000 seconds
 close time             10 seconds
@@ -261,6 +264,11 @@ The \uline{{\bf MAIN LIST}} of directives available is as follows:
 X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> \uuline{{\bf directive:}}                    \> \phantom{xxxxxxxxxxxxxxxxx} \uuline{{\bf meaning:}} \\
 \>                                              \> \\
+\> {\bf adf} $i j$                             \> Writes Angular distribution file ADFDAT \\
+\>                                              \> (Note adf cannot be used without coord present in CONTROL file) \\
+\>                                              \> i = timestep interval to write to ADFDAT \\
+\>                                              \> j = Precision of the Angular distribution bins\\
+\>                                              \> \\
 \> {\bf ana}lyse {\bf all} (sampling) (every) $f$ {\bf nbins} $n$ {\bf rmax} $r$
                                                 \> \phantom{xxxxxxxxxxxxxxxxx} calculate and collect all intramolecular PDFs \\
 \>                                              \> \phantom{xxxxxxxxxxxxxxxxx} every $f$ timesteps (default $f~=~1$), using a grid \\
@@ -297,6 +305,14 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> (this must be smaller than the time specified by {\bf job time}, \\
 \>                                              \> see Further Comments on the CONTROL File notes) \\
 \>                                              \> \\
+\> {\bf coord} $i j f$                          \>  Writes Coordination analysis Files ICOORD and CCOORD \\
+\>                                              \> i = starting timestep for writing to files (no Defaults set) \\
+\>                                              \> j = timestep interval to write to files (no Defaults set) \\
+\>                                              \> f = Options available for whats is written in ICOORD and CCOORD \\
+\>                                              \> option 1 : f = 0 , Only writes out ICOORD file and only dumps the  coordination of each individual atom at i\\
+\>                                              \> option 2 : f = 1 , Writes out both CCOORD and ICOORD Files and only dumps the coordination of each individual atom at i\\
+\>                                              \> option 3 : f =2 , Writes out both CCOORD and ICOORD files and dumps the coordination of each atom every j number of steps\\
+\>                                              \> \\
 \> {\bf collect}                                \> include equilibration data in overall statistics \\
 \>                                              \> \\
 \> {\bf coul}omb                                \> calculate electrostatic forces using direct Coulomb sum\index{direct Coulomb sum}\index{potential!electrostatics} \\
@@ -327,6 +343,8 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> $f~=$ displacement qualifying cutoff (default $f~=~0.15~\AA$) \\
 \>                                              \> \\
 \> {\bf dump} $n$                               \> set restart data dump interval to $n$ steps (default $n~=~1000$) \\
+\>                                              \> \\
+\> {\bf evb}  $N_F$                    \> set an EVB simulation via the coupling of $N_F$ force-fields \\
 \>                                              \> \\
 \> {\bf ensemble nve}                           \> select NVE ensemble\index{ensemble!NVE} (default ensemble) \\
 \>                                              \> \\
@@ -437,13 +455,12 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf finish}                                 \> close the CONTROL file (last data record) \\
 \>                                              \> \\
+\> {\bf heat\_flux}                              \> dump a HEATFLUX file containing data relevant to calculation of \\
+\>                                              \> heat-flux through convolution \\
 \> {\bf impact} $i~j~~~E~~x~y~z$                \> initiate impact on the particle with index $i$ ($i \ge 1$) at timestep \\
 \>                                              \> $j$ ($i \ge 0$) with energy $E$ ($E \ge 0$) in kilo-eV and direction \\
 \>                                              \> vector $x~y~z$ from the Cartesian origin (centre) of the MD box \\
 \>                                              \> (defaults: $i = 1, j = 0, E = 0, x = 1, y = 1, z = 1$) \\
-\>                                              \> \\
-\> {\bf integrat}or {\em string}                \> set the type of Verlet integrator, where {\em string} can only be \\
-\>                                              \> {\em leapfrog} or {\em velocity}, as the later is the default \\
 \>                                              \> \\
 \> {\bf job time} $f$                           \> set the walltime for a job to $f$ seconds \\
 \>                                              \> \\
@@ -566,6 +583,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf pres}sure $f$                           \> set required system pressure to $f$ katms \\
 \>                                              \> (target pressure for constant pressure\index{units!pressure} ensembles) \\
+\> {\bf pp\_dump}                                \> dump per-particle contributions to output file \\
 \>                                              \> \\
 \> {\bf print} (every) $n$                      \> print system data every $n$ timesteps \\
 \>                                              \> \\
@@ -872,6 +890,10 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> $\left(\partial U_{new}(r) / \partial r \right)|_{r = r_{\rm cut}} = 0$ and $U_{new}(r)|_{r=r_{\rm cut}}= 0$ for $a$ and $b$ in \\
 \>                                              \> $U_{new}(r) = U(r) + a \cdot r + b$ and the using $U_{new}$ instead $U(r)$ \\
 \>                                              \> \\
+\> {\bf yml\_rdf}                               \>  print RDFDAT in yml format \\
+\>                                              \> \\
+\> {\bf yml\_statis}                            \>  print STATIS in yml format \\
+\>                                              \> \\
 \> {\bf zden} (sampling) (every) $f$            \> calculate and collect the Z-density profile \\
 \>                                              \> every $f$ timesteps (default $f~=~1$) \\
 \>                                              \> \\
@@ -934,7 +956,10 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> default output channel (screen, interactive) \\
 \>                                              \> \\
 \> {\bf l\_tor}                                 \> abandon the production of REVIVE and REVCON \\
-\>                                              \> between all Verlet neighbour list pairs at re/start
+\>                                              \> between all Verlet neighbour list pairs at re/start \\
+\> {\bf l\_vdw}                                 \> dumps to file all tabled vdw interactions in the order \\
+\>                                              \> they appear in the field file \\
+\>                                              \> \\
 \end{tabbing}
 
 \subsubsection{I/O Control Options}
@@ -1004,13 +1029,11 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> {\bf NOTE that {\em e} is not applicable for the {\em master} method} \\
 \>                                              \> \phantom{xxx} {\bf \em e, parallel error check} :: $Y$es (default $N$) \\
 \>                                              \> \\
-\> {\bf io output}  {\it filename}              \> use {\it filename} instead of OUTPUT \\
-\>                                              \> \\
 \> {\bf io config}  {\it filename}              \> use {\it filename} instead of CONFIG \\
 \>                                              \> \\
 \> {\bf io field}   {\it filename}              \> use {\it filename} instead of FIELD \\
 \>                                              \> \\
-\> {\bf io outstat} {\it filename}              \> use {\it filename} instead of STATIS \\
+\> {\bf io statis} {\it filename}              \> use {\it filename} instead of STATIS \\
 \>                                              \> \\
 \> {\bf io history} {\it filename}              \> use {\it filename} instead of HISTORY \\
 \>                                              \> \\
@@ -1020,7 +1043,27 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> \\
 \> {\bf io revold}  {\it filename}              \> use {\it filename} instead of REVOLD \\
 \>                                              \> \\
-\> {\bf io revcon}  {\it filename}              \> use {\it filename} instead of REVCON
+\> {\bf io revcon}  {\it filename}              \> use {\it filename} instead of REVCON \\
+\>                                              \> \\
+\> {\bf io rdf}  {\it filename}                 \> use {\it filename} instead of RDFDAT \\
+\>                                              \> \\
+\> {\bf io msd}  {\it filename}                 \> use {\it filename} instead of MSDTMP \\
+\>                                              \> \\
+\> {\bf io tabbnd}  {\it filename}              \> use {\it filename} instead of TABBND \\
+\>                                              \> \\
+\> {\bf io tabang}  {\it filename}              \> use {\it filename} instead of TABANG \\
+\>                                              \> \\
+\> {\bf io tabdih}  {\it filename}              \> use {\it filename} instead of TABDIH \\
+\>                                              \> \\
+\> {\bf io tabinv}  {\it filename}              \> use {\it filename} instead of TABINV \\
+\>                                              \> \\
+\> {\bf io vdw}  {\it filename}                 \> use {\it filename} instead of TABLE \\
+\>                                              \> \\
+\> {\bf io eam}  {\it filename}                 \> use {\it filename} instead of TABEAM \\
+\>                                              \> \\
+\> {\bf yml\_statis}                            \> statis now is YAML 1.2 compliant \\
+\>                                              \> \\
+\> {\bf yml\_rdf}                               \> RDFDAT is now YAML 1.2 compliant
 \end{tabbing}
 
 \subsubsection{Further Comments on the CONTROL File}
@@ -2686,21 +2729,61 @@ three-body\index{potential!three-body} and {\bf fbp} -
 four-body\index{potential!four-body}.  Each of these types is
 specified by a specific {\bf keyword} as described bellow.
 
-When \D is cross-compiled with an openKIM functionality (see
-Section~\ref{kim}) it is possible to specify a complete model of
-inter-molecular interactions, {\bf kim}, by calling the openKIM
+When \D is cross-compiled with an OpenKIM functionality (see
+Section~\ref{kim}), it is possible to specify a complete model of
+inter-molecular interactions, by calling the OpenKIM
 model name provided it available in your local KIM library.
+Two {\bf keyword}s are employed when using OpenKIM IMs, one to
+select the IM and perform necessary initialisation ({\bf kim\_init}), and
+the other ({\bf kim\_interactions}) to define a mapping between
+atom types in \D to the available species in the OpenKIM IM.
 
 \begin{enumerate}
 
-\item {\bf kim {\em model\_name}} \\
-where {\em model\_name} is the openKIM model identifier.
+\item {\bf kim\_init {\em model\_name}} \\
+where the {\em model\_name} is the OpenKIM model identifier,
+it uses the information retrieved from the OpenKIM repository to
+initialise and activate OpenKIM IMs for use in the \D.
+
+\item {\bf kim\_interactions {\em site\_names}} \\
+where {\em site\_names} defines a list of unique atomic names.
+It defines a mapping between atom types in \D to the available
+species in the OpenKIM IM. For example, consider an OpenKIM IM
+that supports Si and C species. If the \D simulation has four atoms,
+where the first three are Si, and the fourth is C, the {\em kim\_interactions}
+would be used as:
+\begin{tabbing}
+        X\=XXXXXXXXXXX \=XX \=\kill
+        \> kim\_interactions    \> Si   \> C
+\end{tabbing}
+
+ The Si and C arguments map the  \D atom types to the Si and C species as
+ defined within KIM PM.
+
+In addition to the usual \D error messages, the KIM library itself may generate
+errors, which should be printed to the screen. In this case, it is also useful to
+check the {\em kim.log} file for additional error information. The file
+{\em kim.log} should be generated in the same directory where \D is running.
 
 {\bf Note} that although a KIM model fully describes a model
-system it is still possible to specify further, complementing
-intra- and inter-molecular interactions in the FIELD!  This
+system, it is still possible to specify further, complementing
+intra- and inter-molecular interactions in the FIELD! This
 is a viable option only when the model system is extended
-beyond what the specific KIM model is intended to describes.
+beyond what the specific KIM model is intended to describe.
+
+By default, all the species in the \D system should match to
+the available species in the OpenKIM IM.
+
+{\bf Note} that there is an {\bf experimental feature}, implemented in
+the \D, where one can use a KIM IM in a hybrid style. In this case,
+one can create a system where part of species are interacting using a
+KIM IM (e.g., a machine learning model in KIM), and the rest of the species
+are interacting with the internal \D intra- and inter-molecular
+interactions provided in the FIELD. While this new feature provides
+great flexibility, it is not fully compliant with the KIM API interface
+standard. Thus using this feature some of the KIM IMs might fail
+with the error message {\em unexpected species code detected } or
+{\em unknown species detected}.
 
 \item {\bf vdw {\em n}} \\
 where {\em n} is the number of pair potentials to be entered.  It
@@ -2745,6 +2828,9 @@ $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - \left( \frac{\s
            &                           &            &          &          &                               & \\
 {\bf ljc}  & LJ cohesive \cite{barrat-99a} & $\epsilon$ & $\sigma$ & $c$  &                               &
 $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - c~\left( \frac{\sigma}{r}\right)^{6} \right]$ \\
+           &                           &            &          &          &                               & \\
+{\bf ljf}  & LJ Frenkel \cite{wang2019} & $\epsilon$ & $\sigma$ & $r_c$  &                               &
+  see Eq. \ref{eq:ljf} \\
            &                           &            &          &          &                               & \\
 {\bf nm}   & n-m \cite{mie-03a,clarke-86a} & $E_{o}$ & $n$     & $m$      & $r_{0}$                       &
 $U(r) = \frac{E_{o}}{(n-m)} \left[ m \left( \frac{r_{o}}{r} \right)^{n}
@@ -3360,6 +3446,36 @@ magnetic 0  1/1.07564305   0
 ...
 \end{lstlisting}
 
+\subsubsection{crd}
+
+{\bf crd} i j k
+
+crd i j k Defines the atomic pairs to use for both coordination and angular distribution, followed by is i + j + k records:
+
+i = The number of unique atomic pairs
+
+i number of the following pattern: atom1 atom2 bond\_length
+
+j = The number of unique atoms you are building the pairs from
+
+j number of the following pattern: atom minimun\_displacement
+
+k = The number of lists to build coordination and angular distribution between
+
+k number of the following pattern: atom atom ‘-‘ atom
+
+{\bf Example in the FIELD File}
+
+\begin{verbatim}
+crd 2 3 1
+B O 1.9
+Si O 2.0
+B 0.9
+Si 1.0
+O 1.0
+Si B - O
+\end{verbatim}
+
 \subsubsection{Closing the FIELD File}
 
 The FIELD file must be closed with the directive:\\
@@ -3972,3 +4088,49 @@ trajectory reading routine to default to reading a differently named, HISTORF
 expects a full force evaluation driven by expectedly a different FIELD field
 file from the one used for the HISTORF generation.  For more information do
 refer to CONTROL file directives and options (see Section~\ref{control-file}).
+
+\subsection{The SETEVB File}\label{sec:setevb}
+The file SETEVB is needed for EVB simulations. If this file is not found, the execution of DL\_POLY\_4 is aborted. For a EVB site described by $N_F$ force fields, the SETEVB file must contain all the settings specified via the directives of the following table.
+
+\begin{table}
+\caption{Description of EVB directives for the SETEVB file}
+\begin{longtable}[t]{p{0.15\textwidth}|p{0.85\textwidth}}
+\centering
+Setting  & Description \\
+\hline
+(Compulsory) &\\
+$evbtypemols$  & indicates how many of the first type-of-molecules specified in each of the $N_F$ FIELD files are used to describe the EVB reactive site. See section \ref{sec:evb-users} for further clarification.\\
+$evbcoupl$     & specifies the information for coupling parameters. Since $C_{mk}=C_{km}$ only $N_F(N_F-1)/2$ of these lines are needed. If the specification for any pair is repeated the simulation is stopped. The syntax for the specification is as follows, depending if one sets a coupling term to be a constant ($const$) or use the Gaussian functional form ($gauss$) of Eqn. (\ref{eq:coupl}) :\newline\newline
+                    \begin{tabular}{p{0.1\textwidth}p{0.06\textwidth}p{0.06\textwidth}p{0.1\textwidth}p{0.1\textwidth}p{0.1\textwidth}p{0.1\textwidth}p{0.1\textwidth}}
+                                            &\multicolumn{2}{l}{FF Pair}&   Type   & \multicolumn{4}{l}{   Parameters (in units of the FIELD file)  }\\
+                      $evbcoul$        &     $m$     &       $k$     & $const$ &   $\mathcal{A}_{1,mk}$  &   &  &   \\ 
+                      $evbcoul$        &     $m$     &       $k$     & $gauss$ &  $\mathcal{A}_{1,mk}$  &  $\mathcal{A}_{2,mk}$ & $\mathcal{A}_{3,mk}$ &  $\mathcal{A}_{4,mk}$ \\ 
+                       \end{tabular}\newline\newline
+                     Execution will stop if either:\newline
+                     $\bullet$ evbcoul is misspelled.\newline 
+                     $\bullet$ If $m=k$, $m,k < 1$ or $m,k > N_F$.\newline
+                     $\bullet$ Input type different from $const$ or $gauss$, misspelling including.  \newline
+                     $\bullet$ missing $\mathcal{A}_{mk}$ parameters.\newline
+                     $\bullet$ the specification for any pair is repeated.\newline
+                     Features\newline
+                     $\bullet$  the order for $m$ and $k$ is irrelevant.
+\\
+$evbshift$     & specifies the energy shift for a given FF. The syntax for this is specification as follows:\newline\newline
+                    \begin{tabular}{p{0.1\textwidth}p{0.1\textwidth}p{0.5\textwidth}}
+                                            &      FF           &   $\Delta E^{(m)}_{shift}$ (in units of the FIELD file)\\
+                      $evbshift$        &     $m$         &   value (either positive or negative)  \\ 
+                     \end{tabular}\newline\newline
+                     Execution will stop if either:\newline
+                     $\bullet$ evbshift is misspelled.\newline 
+                     $\bullet$ If $m < 1$ or $m> N_F$.\newline
+                     $\bullet$ missing $\Delta E^{(m)}_{shift}$ parameters.\newline
+                     $\bullet$ the specification for a given FF is repeated.\newline
+                     Features\newline
+                     $\bullet$  the order for $m$ is irrelevant.\\
+\hline
+(Optional)\\
+$evbpop$       & If present, the POPEVB file is written (see Section \ref{sec:evbpop}). File POPEVB is not overwritten upon $restart$. \\
+\end{longtable}
+\label{table:setevb}
+\end{table}
+

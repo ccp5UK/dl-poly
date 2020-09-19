@@ -7,122 +7,153 @@ before_script:
 stages:
   - build
   - test
-#  - manual 
+#  - manual
 
 build-serial:
   stage: build
-  tags: 
+  tags:
     - gcc
   script:
     - sh utils/build-serial.sh
+    - sh utils/build-serial-evb.sh
 
 build-openmp-pure:
   stage: build
-  tags: 
+  tags:
     - gcc
   script:
     - sh utils/build-openmp-pure.sh
 
 build-mpi-pure:
   stage: build
-  tags: 
+  tags:
     - gcc
   script:
     - sh utils/build-mpi-pure.sh
+    - sh utils/build-mpi-evb.sh
 
 build-mpi-netcdf:
   stage: build
-  tags: 
+  tags:
     - gcc
   script:
     - sh utils/build-mpi-netcdf.sh
 
 build-mpi-plumed:
   stage: build
-  tags: 
+  tags:
     - gcc
   script:
     - sh utils/build-mpi-plumed.sh
 
+build-mpi-plumed-internal:
+  stage: build
+  tags:
+    - gcc
+  script:
+    - sh utils/build-mpi-plumed-internal.sh
+
 build-mpi-kim:
   stage: build
-  tags: 
+  tags:
     - gcc
   script:
     - sh utils/build-mpi-kim.sh
 
+build-mpi-kim-internal:
+  stage: build
+  tags:
+    - gcc
+  script:
+    - sh utils/build-mpi-kim-internal.sh
+
 build-mpi-all:
   stage: build
-  tags: 
+  tags:
     - gcc
   script:
     - sh utils/build-mpi-all.sh
 
+build-gcc-dftbp:
+  stage: build
+  tags:
+    - gcc
+  script:
+    - sh utils/build-mpi-gnu-dftbp.sh
+
 build-intel:
   stage: build
-  tags: 
+  tags:
     - intel
   script:
     - sh utils/build-intel.sh
+    - sh utils/build-intel-evb.sh
+
+      #build-intel-dftbp:
+      #  stage: build
+      #  tags:
+      #    - intel
+      #  script:
+      #    - sh utils/build-intel-dftbp.sh
 
 #build-manual:
 #  stage: manual
 #  script:
 #    - cd manual
 #    - ./makedoc MANUAL_USR
-      
+
 build-win32-serial:
   stage: build
-  tags: 
+  tags:
     - gcc
   script:
     - sh utils/build-win32-serial.sh
 
 build-win64-serial:
   stage: build
-  tags: 
+  tags:
     - gcc
   script:
     - sh utils/build-win64-serial.sh
 
-build-win32-msmpi:
-  stage: build
-  tags: 
-    - gcc
-  script:
-    - sh utils/build-win32-msmpi.sh
-
-build-win64-msmpi:
-  stage: build
-  tags: 
-    - gcc
-  script:
-    - sh utils/build-win64-msmpi.sh
+#build-win32-msmpi:
+#  stage: build
+#  tags:
+#    - gcc
+#  script:
+#    - sh utils/build-win32-msmpi.sh
+#
+#build-win64-msmpi:
+#  stage: build
+#  tags:
+#    - gcc
+#  script:
+#    - sh utils/build-win64-msmpi.sh
 
 testing-mpi-gcc:
   stage: test
-  tags: 
+  tags:
     - gcc
   script:
     - sh utils/mpi-testing.sh
 
 testing-mpi-gcc-paranoid:
   stage: test
-  tags: 
+  tags:
     - gcc
   script:
     - sh utils/mpi-testing-paranoid.sh
 
 testing-mpi-intel:
   stage: test
-  tags: 
+  tags:
     - intel
   script:
     - sh utils/intel-testing.sh
 
 testing-mpi-intel-paranoid:
   stage: test
-  tags: 
+  tags:
     - intel
   script:
     - sh utils/intel-testing-paranoid.sh

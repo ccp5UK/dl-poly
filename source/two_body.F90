@@ -1,35 +1,73 @@
 Module two_body
-  Use kinds, Only : wp
-  Use comms,   Only : comms_type,gsum
-  Use constants, Only : pi, r4pie0
-  Use site, Only : site_type
-  Use configuration,  Only : configuration_type
-  Use neighbours,     Only : neighbours_type,link_cell_pairs
-  Use ewald,           Only : ewald_type
-  Use mpole,          Only : mpole_type,POLARISATION_CHARMM
-  Use coul_spole,     Only : coul_fscp_forces, coul_rfp_forces, coul_cp_forces, coul_dddp_forces
-  Use coul_mpole,    Only : coul_fscp_mforces, coul_rfp_mforces, coul_cp_mforces, &
-    coul_dddp_mforces, coul_chrm_forces, d_ene_trq_mpoles
-  Use poisson, Only : poisson_type,poisson_forces,poisson_frzn_forces
-  Use vdw,     Only : vdw_type,vdw_forces
-  Use metal,   Only : metal_type,metal_forces,metal_ld_compute,metal_lrc
-  Use kim,     Only : kim_type,kim_energy_and_forces
-  Use rdfs,    Only : rdf_type,rdf_collect,rdf_excl_collect,rdf_frzn_collect, &
-    rdf_increase_block_number
-  Use errors_warnings, Only : error
-  Use ewald_spole, Only : ewald_spme_forces,ewald_real_forces,ewald_frzn_forces, ewald_excl_forces
-  Use ewald_mpole, Only : ewald_spme_mforces, ewald_real_mforces,ewald_frzn_mforces,ewald_excl_mforces, &
-    ewald_spme_mforces_d,ewald_real_mforces_d,ewald_excl_mforces_d,ewald_excl_mforces
+  Use comms,           Only: comms_type,&
+                             gsum
+  Use configuration,   Only: configuration_type
+  Use constants,       Only: pi,&
+                             r4pie0
+  Use coul_mpole,      Only: coul_chrm_forces,&
+                             coul_cp_mforces,&
+                             coul_dddp_mforces,&
+                             coul_fscp_mforces,&
+                             coul_rfp_mforces,&
+                             d_ene_trq_mpoles
+  Use coul_spole,      Only: coul_cp_forces,&
+                             coul_dddp_forces,&
+                             coul_fscp_forces,&
+                             coul_rfp_forces
+  Use domains,         Only: domains_type
+  Use electrostatic,   Only: ELECTROSTATIC_COULOMB,&
+                             ELECTROSTATIC_COULOMB_FORCE_SHIFT,&
+                             ELECTROSTATIC_COULOMB_REACTION_FIELD,&
+                             ELECTROSTATIC_DDDP,&
+                             ELECTROSTATIC_EWALD,&
+                             ELECTROSTATIC_NULL,&
+                             ELECTROSTATIC_POISSON,&
+                             electrostatic_type
+  Use errors_warnings, Only: error,&
+                             error_alloc,&
+                             error_dealloc
+  Use ewald,           Only: ewald_type,&
+                             ewald_vdw_coeffs,&
+                             ewald_vdw_count,&
+                             ewald_vdw_init
+  Use ewald_spole,     Only: ewald_excl_forces,&
+                             ewald_real_forces_coul,&
+                             ewald_spme_forces_coul
+  Use ewald_general,   Only: ewald_real_forces_gen,&
+                             ewald_spme_forces_gen
+  Use kim,             Only: kim_energy_and_forces,&
+                             kim_type
+  Use kinds,           Only: wp
+  Use metal,           Only: metal_forces,&
+                             metal_ld_compute,&
+                             metal_lrc,&
+                             metal_type
+  Use mpole,           Only: POLARISATION_CHARMM,&
+                             mpole_type
+  Use neighbours,      Only: neighbours_type
+  Use numerics,        Only: calc_erfc,&
+                             calc_erfc_deriv
+  Use poisson,         Only: poisson_forces,&
+                             poisson_type
+#ifdef HALF_HALO
+  Use halo,            Only: refresh_halo_forces
+#endif /* HALF_HALO */
+  Use rdfs,            Only: rdf_collect,&
+                             rdf_excl_collect,&
+                             rdf_frzn_collect,&
+                             rdf_increase_block_number,&
+                             rdf_type
+  Use site,            Only: site_type
+  Use spme,            Only: init_spme_data,&
+                             spme_self_interaction
+  Use statistics,      Only: stats_type
+  Use timer,           Only: start_timer,&
+                             stop_timer,&
+                             timer_type
+  Use vdw,             Only: vdw_forces_tab,&
+                             vdw_forces_direct,&
+                             vdw_type
 
-  Use timer,      Only : timer_type, start_timer, stop_timer
-  Use development, Only : development_type
-  Use statistics, Only : stats_type
-  Use core_shell, Only : core_shell_type
-  Use electrostatic, Only : electrostatic_type, &
-    ELECTROSTATIC_EWALD,ELECTROSTATIC_DDDP, &
-    ELECTROSTATIC_COULOMB,ELECTROSTATIC_COULOMB_FORCE_SHIFT, &
-    ELECTROSTATIC_COULOMB_REACTION_FIELD,ELECTROSTATIC_POISSON
-  Use domains, Only : domains_type
   Implicit None
 
   Private
@@ -37,11 +75,9 @@ Module two_body
   Public :: two_body_forces
 Contains
 
-  Subroutine two_body_forces(ensemble,    &
-      lbook,megfrz, &
-      leql,nsteql,nstep,         &
-      cshell,stats,ewld,devel,met,pois,neigh,sites,vdws,rdf,mpoles,electro, &
-      domain,tmr,kim_data,config,comm)
+  Subroutine two_body_forces(ensemble, lbook, megfrz, leql, nsteql, nstep, &
+                             stats, ewld, met, pois, neigh, sites, vdws, rdf, mpoles, electro, &
+                             domain, tmr, kim_data, config, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -60,6 +96,7 @@ Contains
     ! contrib   - h.a.boateng february 2016
     ! contrib   - p.s.petkov february 2015
     ! contrib   - a.b.g.chalk january 2017
+    ! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -68,56 +105,52 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Integer,                  Intent(In)    :: ensemble
+    Logical,                  Intent(In)    :: lbook
+    Integer,                  Intent(In)    :: megfrz
+    Logical,                  Intent(In)    :: leql
+    Integer,                  Intent(In)    :: nsteql, nstep
+    Type(stats_type),         Intent(InOut) :: stats
+    Type(ewald_type),         Intent(InOut) :: ewld
+    Type(metal_type),         Intent(InOut) :: met
+    Type(poisson_type),       Intent(InOut) :: pois
+    Type(neighbours_type),    Intent(InOut) :: neigh
+    Type(site_type),          Intent(In)    :: sites
+    Type(vdw_type),           Intent(InOut) :: vdws
+    Type(rdf_type),           Intent(InOut) :: rdf
+    Type(mpole_type),         Intent(InOut) :: mpoles
+    Type(electrostatic_type), Intent(InOut) :: electro
+    Type(domains_type),       Intent(In)    :: domain
+    Type(timer_type),         Intent(InOut) :: tmr
+    Type(kim_type),           Intent(InOut) :: kim_data
+    Type(configuration_type), Intent(InOut) :: config
+    Type(comms_type),         Intent(InOut) :: comm
 
+    Integer                                     :: fail, i, ipot, j, k, limit
+    Logical                                     :: l_do_outer_loop, l_do_rdf, safe
+    Real(Kind=wp)                               :: buffer(0:19), engacc, engcpe_ch, engcpe_ex, &
+                                                   engcpe_fr, engcpe_nz, engcpe_rc, engcpe_rl, &
+                                                   engden, engkim, engmet, engvdw, engvdw_rc, &
+                                                   engvdw_rl, factor_nz, tmp, viracc, vircpe_ch, &
+                                                   vircpe_dt, vircpe_ex, vircpe_fr, vircpe_nz, &
+                                                   vircpe_rc, vircpe_rl, virden, virkim, virmet, &
+                                                   virvdw, virvdw_rc, virvdw_rl
+    Real(kind=wp), Allocatable, Dimension(:)    :: coul_coeffs, rrt, xxt, yyt, zzt
+    Real(kind=wp), Allocatable, Dimension(:, :) :: vdw_coeffs
 
-    Logical,                                  Intent( In    ) :: lbook,leql
-    Integer,                                  Intent( In    ) :: ensemble,        &
-      megfrz, &
-      nsteql,nstep
-    Type( core_shell_type ), Intent( InOut ) :: cshell
-    Type( stats_type ), Intent( InOut )                       :: stats
-    Type( ewald_type ),                       Intent( InOut ) :: ewld
-    Type( development_type ),                 Intent( In    ) :: devel
-    Type( metal_type ),                       Intent( InOut ) :: met
-    Type( poisson_type ),                     Intent( InOut ) :: pois
-    Type( neighbours_type ),                  Intent( InOut ) :: neigh
-    Type( site_type ),                        Intent( In    ) :: sites
-    Type( vdw_type ),                         Intent( InOut ) :: vdws
-    Type( rdf_type ),                         Intent( InOut ) :: rdf
-    Type( mpole_type ),                       Intent( InOut ) :: mpoles
-    Type( timer_type ),                       Intent( InOut ) :: tmr
-    Type( electrostatic_type ), Intent( InOut ) :: electro
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( kim_type ), Intent( InOut ) :: kim_data
-    Type( configuration_type ),               Intent( InOut ) :: config
-    Type( comms_type ),                       Intent( InOut ) :: comm
+! Array to remap charge/disp to 2D array
 
+#ifdef CHRONO
+    Call start_timer(tmr, 'Two-Body Init')
+#endif
 
-    Real( Kind = wp ) :: factor_nz
+    safe = .true.
+    fail = 0
 
-    Logical           :: safe, l_do_rdf
-    Integer           :: fail,i,j,k,limit
-    Real( Kind = wp ) :: engcpe_rc,vircpe_rc,engcpe_rl,vircpe_rl, &
-      engcpe_ch,vircpe_ch,engcpe_ex,vircpe_ex, &
-      engcpe_fr,vircpe_fr,engcpe_nz,vircpe_nz, &
-      vircpe_dt,                              &
-      engden,virden,engmet,virmet,             &
-      engvdw,virvdw,engkim,virkim,             &
-      engacc,viracc,tmp,buffer(0:19)
+    Allocate (xxt(1:neigh%max_list), yyt(1:neigh%max_list), zzt(1:neigh%max_list), rrt(1:neigh%max_list), Stat=fail)
+    If (fail > 0) Call error_alloc('distance arrays', 'two_body_forces')
 
-    Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rrt
-
-    Character( Len = 256 ) :: message
-
-    safe = .True. 
-    fail=0
-    Allocate (xxt(1:neigh%max_list),yyt(1:neigh%max_list),zzt(1:neigh%max_list),rrt(1:neigh%max_list), Stat=fail)
-    If (fail > 0) Then
-      Write(message,'(a)') 'two_body_forces allocation failure'
-      Call error(0,message)
-    End If
-
-    l_do_rdf = (rdf%l_collect .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,rdf%freq) == 0)
+    l_do_rdf = (rdf%l_collect .and. ((.not. leql) .or. nstep >= nsteql) .and. Mod(nstep, rdf%freq) == 0)
 
     ! If k-space SPME is evaluated infrequently check whether
     ! at this timestep to evaluate or "refresh" with old values.
@@ -125,8 +158,66 @@ Contains
     ! evaluation.  Repeat the same but only for the SPME k-space
     ! frozen-frozen evaluations in constant volume ensembles only.
 
-    If (Any([ELECTROSTATIC_EWALD,ELECTROSTATIC_POISSON] == electro%key)) Then
-      Call ewld%check(ensemble,megfrz,nsteql,electro%nstfce,nstep,config%mxatms)
+    ! Coulomb
+    If (ewld%vdw .and. .not. ewld%active) Call error(0, 'Ewald VdW requested but ewald not enabled')
+
+
+    If (ewld%active) Then
+      Allocate (coul_coeffs(config%mxatms), stat=fail)
+      If (fail > 0) Call error_alloc('coul_coeffs', 'two_body_forces')
+      coul_coeffs = config%parts(:)%chge
+
+
+      If (ewld%newjob_erf) Then
+
+        If (.not. ewld%direct) Then
+          Call electro%erfcgen(neigh%cutoff, ewld%alpha)
+        End If
+
+        ! Assume no VDW
+        ewld%num_pots = 0
+
+        ! Set number of pots
+        If (ewld%vdw) Call ewald_vdw_count(ewld, vdws)
+
+        If (electro%key == ELECTROSTATIC_EWALD) Then
+          Allocate (ewld%spme_data(0:ewld%num_pots), stat=fail)
+          If (fail > 0) Call error_alloc('ewld%spme_data', 'two_body_forces')
+
+          ewld%spme_data(0)%scaling = r4pie0 / electro%eps
+          Call init_spme_data(ewld%spme_data(0), 1)
+
+          If (electro%multipolar) Then
+            Call spme_self_interaction(ewld%alpha, config%natms, coul_coeffs, comm, ewld%spme_data(0), electro%mpoles)
+          Else
+            Call spme_self_interaction(ewld%alpha, config%natms, coul_coeffs, comm, ewld%spme_data(0))
+          End If
+
+        Else
+          Allocate (ewld%spme_data(1:ewld%num_pots), stat=fail)
+          If (fail > 0) Call error_alloc('ewld%spme_data', 'two_body_forces')
+        End If
+
+        If (ewld%vdw) Then
+          Call ewald_vdw_init(ewld)
+          Call ewald_vdw_coeffs(config, vdws, ewld, vdw_coeffs)
+
+          Do ipot = 1, ewld%num_pots
+            Call spme_self_interaction(ewld%alpha, config%natms, vdw_coeffs(:, ipot), comm, ewld%spme_data(ipot))
+          End Do
+
+          ! Disable long-range corrections (calculating long range explicitly)
+          vdws%elrc = 0.0_wp
+          vdws%vlrc = 0.0_wp
+
+        End If
+
+        ewld%newjob_erf = .false.
+
+      End If
+
+      If (ewld%vdw) Call ewald_vdw_coeffs(config, vdws, ewld, vdw_coeffs)
+
     End If
 
     ! initialise energy and virial accumulators
@@ -134,19 +225,20 @@ Contains
     engkim = 0.0_wp
     virkim = 0.0_wp
 
+    engden = 0.0_wp
+    virden = 0.0_wp
 
-    engden    = 0.0_wp
-    virden    = 0.0_wp
+    engmet = 0.0_wp
+    virmet = 0.0_wp
 
-    engmet    = 0.0_wp
-    virmet    = 0.0_wp
+    engvdw_rc = 0.0_wp
+    virvdw_rc = 0.0_wp
 
-    engvdw    = 0.0_wp
-    virvdw    = 0.0_wp
+    engvdw_rl = 0.0_wp
+    virvdw_rl = 0.0_wp
 
-    stats%engsrp    = 0.0_wp
-    stats%virsrp    = 0.0_wp
-
+    engvdw = 0.0_wp
+    virvdw = 0.0_wp
 
     engcpe_rc = 0.0_wp
     vircpe_rc = 0.0_wp
@@ -168,238 +260,286 @@ Contains
 
     vircpe_dt = 0.0_wp
 
-    stats%engcpe    = 0.0_wp
-    stats%vircpe    = 0.0_wp
-
-    ! Set up non-bonded interaction (verlet) list using link cells
-    If (neigh%update) Then
-      Call link_cell_pairs(vdws%cutoff,met%rcut,lbook,megfrz,cshell,devel, &
-        neigh,mpoles,domain,tmr,config,comm)
-    End If
+#ifdef CHRONO
+    Call stop_timer(tmr, 'Two-Body Init')
+#endif
 
     ! Calculate all contributions from KIM
     If (kim_data%active) Then
-      Call kim_energy_and_forces(kim_data,config%natms,config%nlast,config%parts, &
-        neigh%list,domain%map,config%lsite,config%lsi,config%lsa,config%ltg, &
-        sites%site_name,engkim,virkim,stats%stress,comm)
+#ifdef CHRONO
+      Call start_timer(tmr, 'KIM')
+#endif
+      Call kim_energy_and_forces(kim_data, config%natms, config%nlast, config%parts, &
+                                 neigh%list, domain%map, config%lsite, config%ltype, config%lsi, config%lsa, config%ltg, &
+                                 sites%site_name, engkim, virkim, stats%stress, comm)
+#ifdef CHRONO
+      Call stop_timer(tmr, 'KIM')
+#endif
     End If
 
     If (met%n_potentials > 0) Then
 
       ! Reset metal long-range corrections (constant pressure/stress only)
 
-      If (ensemble >= 20) Call metal_lrc(met,sites,config,comm)
+      If (ensemble >= 20) Call metal_lrc(met, sites, config, comm)
 
       ! calculate local density in metals
 
-      Call metal_ld_compute(engden,virden,stats%stress,sites%ntype_atom,met,neigh, &
-        domain,config,comm)
+      Call metal_ld_compute(engden, virden, stats%stress, sites%ntype_atom, met, neigh, &
+                            domain, config, comm)
     End If
 
     ! calculate coulombic forces, Ewald sum - fourier contribution
 #ifdef CHRONO
-    Call start_timer('Long Range')
+    Call start_timer(tmr, 'Long Range')
 #endif
+ 
+    If (electro%key == ELECTROSTATIC_EWALD) Then
+      Call ewald_spme_forces_coul(ewld, ewld%spme_data(0), domain, config, comm, &
+        & coul_coeffs, stats, engcpe_rc, vircpe_rc)
 
-    If (electro%key == ELECTROSTATIC_EWALD .and. ewld%l_fce) Then
-      If (mpoles%max_mpoles > 0) Then
-        If (mpoles%max_order <= 2) Then
-          Call ewald_spme_mforces_d(engcpe_rc,vircpe_rc,stats%stress,ewld,mpoles, &
-            electro,domain,config,comm)
-        Else
-          Call ewald_spme_mforces(engcpe_rc,vircpe_rc,stats%stress,ewld,mpoles, &
-            electro,domain,config,comm)
-        End If
-      Else
-        Call ewald_spme_forces(engcpe_rc,vircpe_rc,stats%stress,ewld,electro, &
-          domain,config,comm)
-      End If
     End If
+
+    If (ewld%vdw) Then
 #ifdef CHRONO
-    Call stop_timer('Long Range')
+      Call start_timer(tmr, 'SPME Order-n')
 #endif
+      Do ipot = 1, ewld%num_pots
 
-#ifdef CHRONO
-    Call start_timer('Short Range')
-#endif
-    ! outer loop over atoms
+        Call ewald_spme_forces_gen(ewld, ewld%spme_data(ipot), domain, config, comm, &
+          & vdw_coeffs(:, ipot), stats, engacc, viracc, tmr)
 
-    Do i=1,config%natms
+        engvdw_rc = engvdw_rc + engacc
+        virvdw_rc = virvdw_rc + viracc
 
-      ! Get neigh%list limit
-
-      limit=neigh%list(0,i)
-
-      ! calculate interatomic distances
-
-      Do k=1,limit
-        j=neigh%list(k,i)
-
-        xxt(k)=config%parts(i)%xxx-config%parts(j)%xxx
-        yyt(k)=config%parts(i)%yyy-config%parts(j)%yyy
-        zzt(k)=config%parts(i)%zzz-config%parts(j)%zzz
       End Do
 
-      ! periodic boundary conditions not needed by LC construction
-      !
-      !     Call images(imcon,cell,limit,xxt,yyt,zzt)
+#ifdef CHRONO
+      Call stop_timer(tmr, 'SPME Order-n')
+#endif
+    End If
 
-      ! distances, thanks to Alin Elena (one too many changes)
+#ifdef CHRONO
+    Call stop_timer(tmr, 'Long Range')
+    Call start_timer(tmr, 'Short Range')
+#endif
 
-      Do k=1,limit
-        rrt(k)=Sqrt(xxt(k)**2+yyt(k)**2+zzt(k)**2)
-      End Do
+#ifdef KIM
+    l_do_outer_loop = ((met%n_potentials > 0) .or. &
+                       (vdws%n_vdw > 0) .or. &
+                       (mpoles%max_mpoles > 0) .or. &
+                       ((electro%key /= ELECTROSTATIC_NULL) .and. &
+                        (electro%key /= ELECTROSTATIC_POISSON)) .or. &
+                       l_do_rdf)
 
-      ! calculate metal forces and potential
+    If (l_do_outer_loop) Then
+      ! outer loop over atoms
+#endif
+      Do i = 1, config%natms
 
-      If (met%n_potentials > 0) Then
-        Call metal_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,safe,sites%ntype_atom,met,neigh,config)
+        ! Get neigh%list limit
+        limit = neigh%list(0, i)
 
-        engmet=engmet+engacc
-        virmet=virmet+viracc
-      End If
+        ! calculate interatomic distances
 
-      ! calculate short-range force and potential terms
+        Do k = 1, limit
+          j = neigh%list(k, i)
+          xxt(k) = config%parts(i)%xxx - config%parts(j)%xxx
+          yyt(k) = config%parts(i)%yyy - config%parts(j)%yyy
+          zzt(k) = config%parts(i)%zzz - config%parts(j)%zzz
+          rrt(k) = Sqrt(xxt(k)*xxt(k)+yyt(k)*yyt(k)+zzt(k)*zzt(k))
+        End Do
 
-      If (vdws%n_vdw > 0) Then
-        Call vdw_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,vdws,config)
+        ! periodic boundary conditions not needed by LC construction
+        !
+        !     Call images(imcon,cell,limit,xxt,yyt,zzt)
 
-        engvdw=engvdw+engacc
-        virvdw=virvdw+viracc
-      End If
+        ! distances, thanks to Alin Elena (one too many changes)
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!
-      ! COULOMBIC CONTRIBUTIONS
-      !!!!!!!!!!!!!!!!!!!!!!!!1
+         ! it works slightly faster inside the single loop above
+!        Do k = 1, limit
+!          rrt(k) = Sqrt(xxt(k)**2 + yyt(k)**2 + zzt(k)**2)
+!        End Do
 
-      If (mpoles%max_mpoles > 0) Then
+        ! calculate metal forces and potential
 
-        !!! MULTIPOLAR ATOMIC SITES
+        If (met%n_potentials > 0) Then
+          Call metal_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, safe, sites%ntype_atom, met, neigh, config)
 
-        If (electro%key == ELECTROSTATIC_EWALD) Then
+          engmet = engmet + engacc
+          virmet = virmet + viracc
+        End If
 
-          ! calculate coulombic forces, Ewald sum - real space contribution
+        ! calculate short-range force and potential terms
 
-          If (mpoles%max_order <= 2) Then
-            Call ewald_real_mforces_d(i,xxt,yyt,zzt,rrt,engacc, &
-              viracc,stats%stress,ewld,neigh,mpoles,electro,config)
+        If (vdws%n_vdw > 0) Then
+          If (ewld%vdw) Then
+            Do ipot = 1, ewld%num_pots
+
+              Call ewald_real_forces_gen(ewld%alpha, ewld%spme_data(ipot), neigh, config, stats, &
+                   & vdw_coeffs(:, ipot), i, xxt, yyt, zzt, rrt, engacc, viracc)
+
+              engvdw_rl = engvdw_rl + engacc
+              virvdw_rl = virvdw_rl + viracc
+
+            End Do
+
+          Else If (vdws%l_direct) Then ! direct calculation
+
+            Call vdw_forces_direct(i, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, vdws, config)
+            engvdw = engvdw + engacc
+            virvdw = virvdw + viracc
+
+          else
+
+            Call vdw_forces_tab(i, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, vdws, config)
+            engvdw = engvdw + engacc
+            virvdw = virvdw + viracc
+
+          end If
+
+        End If
+
+        !-------------------
+        ! COULOMBIC CONTRIBUTIONS
+        !-------------------
+        If (.not. electro%no_elec) then
+          If (mpoles%max_mpoles > 0) Then
+
+            Select Case (electro%key)
+            Case (ELECTROSTATIC_EWALD)
+
+              If (ewld%direct) Then
+                Call ewald_real_forces_gen(ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
+                     & coul_coeffs, i, xxt, yyt, zzt, rrt, engacc, viracc)
+              Else
+                Call ewald_real_forces_coul(electro, ewld%spme_data(0), neigh, config, stats, &
+                     & i, xxt, yyt, zzt, rrt, engacc, viracc)
+              End If
+
+              engcpe_rl = engcpe_rl + engacc
+              vircpe_rl = vircpe_rl + viracc
+
+            Case (ELECTROSTATIC_DDDP)
+
+              ! distance dependant dielectric potential
+
+              Call coul_dddp_mforces(i, electro%eps, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, mpoles, config)
+
+              engcpe_rl = engcpe_rl + engacc
+              vircpe_rl = vircpe_rl + viracc
+
+            Case (ELECTROSTATIC_COULOMB)
+
+              ! coulombic 1/r potential with no truncation or damping
+
+              Call coul_cp_mforces(i, electro%eps, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, mpoles, config)
+
+              engcpe_rl = engcpe_rl + engacc
+              vircpe_rl = vircpe_rl + viracc
+
+            Case(ELECTROSTATIC_COULOMB_FORCE_SHIFT)
+
+              ! force-shifted coulomb potentials
+
+              Call coul_fscp_mforces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, mpoles, electro, config)
+
+              engcpe_rl = engcpe_rl + engacc
+              vircpe_rl = vircpe_rl + viracc
+
+            Case (ELECTROSTATIC_COULOMB_REACTION_FIELD)
+
+              ! reaction field potential
+
+              Call coul_rfp_mforces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, mpoles, electro, config)
+
+              engcpe_rl = engcpe_rl + engacc
+              vircpe_rl = vircpe_rl + viracc
+
+            End Select
+
           Else
-            Call ewald_real_mforces(i,xxt,yyt,zzt,rrt,engacc, &
-              viracc,stats%stress,neigh,mpoles,electro,config)
+
+            Select Case (electro%key)
+            Case (ELECTROSTATIC_EWALD)
+
+              ! calculate coulombic forces, Ewald sum - real space contribution
+
+              If (ewld%direct) Then
+                Call ewald_real_forces_gen(ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
+                     & coul_coeffs, i, xxt, yyt, zzt, rrt, engacc, viracc)
+              Else
+                Call ewald_real_forces_coul(electro, ewld%spme_data(0), neigh, config, stats, &
+                     & i, xxt, yyt, zzt, rrt, engacc, viracc)
+              End If
+
+              engcpe_rl = engcpe_rl + engacc
+              vircpe_rl = vircpe_rl + viracc
+
+            Case (ELECTROSTATIC_DDDP)
+
+              ! distance dependant dielectric potential
+
+              Call coul_dddp_forces(i, electro%eps, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, config)
+
+              engcpe_rl = engcpe_rl + engacc
+              vircpe_rl = vircpe_rl + viracc
+
+            Case (ELECTROSTATIC_COULOMB)
+
+              ! coulombic 1/r potential with no truncation or damping
+
+              Call coul_cp_forces(i, electro%eps, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, config)
+
+              engcpe_rl = engcpe_rl + engacc
+              vircpe_rl = vircpe_rl + viracc
+
+            Case (ELECTROSTATIC_COULOMB_FORCE_SHIFT)
+
+              ! force-shifted coulomb potentials
+
+              Call coul_fscp_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, electro, config)
+
+              engcpe_rl = engcpe_rl + engacc
+              vircpe_rl = vircpe_rl + viracc
+
+            Case (ELECTROSTATIC_COULOMB_REACTION_FIELD)
+
+              ! reaction field potential
+
+              Call coul_rfp_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, electro, config)
+
+              engcpe_rl = engcpe_rl + engacc
+              vircpe_rl = vircpe_rl + viracc
+
+            End Select
+
           End If
-
-          engcpe_rl=engcpe_rl+engacc
-          vircpe_rl=vircpe_rl+viracc
-
-        Else If (electro%key == ELECTROSTATIC_DDDP) Then
-
-          ! distance dependant dielectric potential
-
-          Call coul_dddp_mforces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,config)
-
-          engcpe_rl=engcpe_rl+engacc
-          vircpe_rl=vircpe_rl+viracc
-
-        Else If (electro%key == ELECTROSTATIC_COULOMB) Then
-
-          ! coulombic 1/r potential with no truncation or damping
-
-          Call coul_cp_mforces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,config)
-
-          engcpe_rl=engcpe_rl+engacc
-          vircpe_rl=vircpe_rl+viracc
-
-        Else If (electro%key == ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then
-
-          ! force-shifted coulomb potentials
-
-          Call coul_fscp_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,electro,config)
-
-          engcpe_rl=engcpe_rl+engacc
-          vircpe_rl=vircpe_rl+viracc
-
-        Else If (electro%key == ELECTROSTATIC_COULOMB_REACTION_FIELD) Then
-
-          ! reaction field potential
-
-          Call coul_rfp_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,electro,config)
-
-          engcpe_rl=engcpe_rl+engacc
-          vircpe_rl=vircpe_rl+viracc
-
         End If
 
-      Else
+        ! accumulate radial distribution functions
 
-        If (electro%key == ELECTROSTATIC_EWALD) Then
+        If (l_do_rdf) Call rdf_collect(i, rrt, neigh, config, rdf)
 
-          ! calculate coulombic forces, Ewald sum - real space contribution
+      End Do
 
-          Call ewald_real_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,config)
-
-          engcpe_rl=engcpe_rl+engacc
-          vircpe_rl=vircpe_rl+viracc
-
-        Else If (electro%key == ELECTROSTATIC_DDDP) Then
-
-          ! distance dependant dielectric potential
-
-          Call coul_dddp_forces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,config)
-
-          engcpe_rl=engcpe_rl+engacc
-          vircpe_rl=vircpe_rl+viracc
-
-        Else If (electro%key == ELECTROSTATIC_COULOMB) Then
-
-          ! coulombic 1/r potential with no truncation or damping
-
-          Call coul_cp_forces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,config)
-
-          engcpe_rl=engcpe_rl+engacc
-          vircpe_rl=vircpe_rl+viracc
-
-        Else If (electro%key == ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then
-
-          ! force-shifted coulomb potentials
-
-          Call coul_fscp_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,config)
-
-          engcpe_rl=engcpe_rl+engacc
-          vircpe_rl=vircpe_rl+viracc
-
-        Else If (electro%key == ELECTROSTATIC_COULOMB_REACTION_FIELD) Then
-
-          ! reaction field potential
-
-          Call coul_rfp_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,config)
-
-          engcpe_rl=engcpe_rl+engacc
-          vircpe_rl=vircpe_rl+viracc
-
-        End If
-
-      End If
-
-      ! accumulate radial distribution functions
-
-      If (l_do_rdf) Call rdf_collect(i,rrt,neigh,config,rdf)
-
-    End Do
-
+#ifdef KIM
+    End If
+#endif
     ! Poisson solver alternative to Ewald
 
     If (electro%key == ELECTROSTATIC_POISSON) Then
-      Call poisson_forces(engacc,viracc,stats%stress,pois,electro,domain,config,ewld,comm)
-      engcpe_rl=engcpe_rl+engacc
-      vircpe_rl=vircpe_rl+viracc
+      Call poisson_forces(engacc, viracc, stats%stress, pois, electro, domain, config, comm)
+      engcpe_rl = engcpe_rl + engacc
+      vircpe_rl = vircpe_rl + viracc
     End If
 
     ! metal potential safety
 
     If (safe) Then
-      tmp=0.0_wp
+      tmp = 0.0_wp
     Else
-      tmp=1.0_wp
+      tmp = 1.0_wp
     End If
 
     ! in the case of bonded interactions 3 possible subcases
@@ -408,21 +548,21 @@ Contains
     ! (2) Ewald corrections due to short-range exclusions
     ! (3) CHARMM core-shell self-induction additions
 
-    If ( lbook .and. &
-      (l_do_rdf .or. (Any([ELECTROSTATIC_EWALD,ELECTROSTATIC_POISSON] == electro%key)) &
-      .or. mpoles%key == POLARISATION_CHARMM) ) Then
-      Do i=1,config%natms ! outer loop over atoms
-        limit=neigh%list(-1,i)-neigh%list(0,i) ! Get neigh%list limit
+    If (lbook .and. &
+        (l_do_rdf .or. (Any([ELECTROSTATIC_EWALD, ELECTROSTATIC_POISSON] == electro%key)) &
+         .or. mpoles%key == POLARISATION_CHARMM)) Then
+      Do i = 1, config%natms ! outer loop over atoms
+        limit = neigh%list(-1, i) - neigh%list(0, i) ! Get neigh%list limit
         If (limit > 0) Then
 
           ! calculate interatomic distances
 
-          Do k=1,limit
-            j=neigh%list(neigh%list(0,i)+k,i)
+          Do k = 1, limit
+            j = neigh%list(neigh%list(0, i) + k, i)
 
-            xxt(k)=config%parts(i)%xxx-config%parts(j)%xxx
-            yyt(k)=config%parts(i)%yyy-config%parts(j)%yyy
-            zzt(k)=config%parts(i)%zzz-config%parts(j)%zzz
+            xxt(k) = config%parts(i)%xxx - config%parts(j)%xxx
+            yyt(k) = config%parts(i)%yyy - config%parts(j)%yyy
+            zzt(k) = config%parts(i)%zzz - config%parts(j)%zzz
           End Do
 
           ! periodic boundary conditions not needed by LC construction
@@ -431,45 +571,42 @@ Contains
 
           ! square of distances
 
-          Do k=1,limit
-            rrt(k)=Sqrt(xxt(k)**2+yyt(k)**2+zzt(k)**2)
+          Do k = 1, limit
+            rrt(k) = Sqrt(xxt(k)**2 + yyt(k)**2 + zzt(k)**2)
           End Do
 
           ! accumulate radial distribution functions
 
-          If (l_do_rdf) Call rdf_excl_collect(i,rrt,neigh,config,rdf)
+          If (l_do_rdf) Call rdf_excl_collect(i, rrt, neigh, config, rdf)
 
           If (electro%key == ELECTROSTATIC_EWALD) Then ! Ewald corrections
-            If (mpoles%max_mpoles > 0) Then
-              If (mpoles%max_order <= 2) Then
-                Call ewald_excl_mforces_d(i,xxt,yyt,zzt,rrt,engacc,viracc, &
-                  stats%stress,neigh,mpoles,electro,config)
-              Else
-                Call ewald_excl_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc, &
-                  stats%stress,neigh,mpoles,electro,config)
-              End If
-            Else
-              Call ewald_excl_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,config)
-            End If
 
-            engcpe_ex=engcpe_ex+engacc
-            vircpe_ex=vircpe_ex+viracc
+            Call ewald_excl_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, ewld, ewld%spme_data(0), config)
+            ! Call ewald_excl_forces(ewld, ewld%spme_data(0), neigh, electro, config, coul_coeffs, &
+            !                        i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress)
+
+            engcpe_ex = engcpe_ex + engacc
+            vircpe_ex = vircpe_ex + viracc
           End If
 
           ! get CHARMM core-shell self-induction contributions
 
           If (mpoles%key == POLARISATION_CHARMM) Then
-            If (neigh%list(-3,i)-neigh%list(0,i) > 0) Then
-              Call coul_chrm_forces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,config)
+            If (neigh%list(-3, i) - neigh%list(0, i) > 0) Then
+              Call coul_chrm_forces(i, electro%eps, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, mpoles, config)
 
-              engcpe_ch=engcpe_ch+engacc
-              vircpe_ch=vircpe_ch+viracc
+              engcpe_ch = engcpe_ch + engacc
+              vircpe_ch = vircpe_ch + viracc
             End If
           End If
 
         End If
       End Do
     End If
+
+#ifdef HALF_HALO
+    Call refresh_halo_forces(domain, config, mpoles, stats, comm)
+#endif /* HALF_HALO */
 
     ! counter for rdf%rdf statistics outside loop structures
     ! and frozen-frozen rdf%rdf completeness
@@ -479,21 +616,21 @@ Contains
 
         ! outer loop over atoms
 
-        Do i=1,config%natms
+        Do i = 1, config%natms
 
           ! Get neigh%list limit
 
-          limit=neigh%list(-2,i)-neigh%list(-1,i)
+          limit = neigh%list(-2, i) - neigh%list(-1, i)
           If (limit > 0) Then
 
             ! calculate interatomic distances
 
-            Do k=1,limit
-              j=neigh%list(neigh%list(-1,i)+k,i)
+            Do k = 1, limit
+              j = neigh%list(neigh%list(-1, i) + k, i)
 
-              xxt(k)=config%parts(i)%xxx-config%parts(j)%xxx
-              yyt(k)=config%parts(i)%yyy-config%parts(j)%yyy
-              zzt(k)=config%parts(i)%zzz-config%parts(j)%zzz
+              xxt(k) = config%parts(i)%xxx - config%parts(j)%xxx
+              yyt(k) = config%parts(i)%yyy - config%parts(j)%yyy
+              zzt(k) = config%parts(i)%zzz - config%parts(j)%zzz
             End Do
 
             ! periodic boundary conditions not needed by LC construction
@@ -502,13 +639,13 @@ Contains
 
             ! square of distances
 
-            Do k=1,limit
-              rrt(k)=Sqrt(xxt(k)**2+yyt(k)**2+zzt(k)**2)
+            Do k = 1, limit
+              rrt(k) = Sqrt(xxt(k)**2 + yyt(k)**2 + zzt(k)**2)
             End Do
 
             ! accumulate radial distribution functions
 
-            Call rdf_frzn_collect(i,rrt,neigh,config,rdf)
+            Call rdf_frzn_collect(i, rrt, neigh, config, rdf)
           End If
 
         End Do
@@ -518,53 +655,43 @@ Contains
       rdf%n_configs = rdf%n_configs + 1
     End If
 
-    Deallocate (xxt,yyt,zzt,rrt, Stat=fail)
-    If (fail > 0) Then
-      Write(message,'(a)') 'two_body_forces deallocation failure'
-      Call error(0,message)
-    End If
+#ifdef CHRONO
+    Call stop_timer(tmr, 'Short Range')
+    Call start_timer(tmr, 'Two-Body Final')
+#endif
+
+    Deallocate (xxt, yyt, zzt, rrt, Stat=fail)
+    If (fail > 0) Call error_dealloc('distance arrays', 'two_body_forces')
 
     !Increase rdf%block_number when required
     If (l_do_rdf) Then
-      Call rdf_increase_block_number(rdf,nstep)
+      Call rdf_increase_block_number(rdf, nstep)
     End If
 
     ! Further Ewald/Poisson Solver corrections or an infrequent refresh
 
-    If (Any([ELECTROSTATIC_EWALD,ELECTROSTATIC_POISSON] == electro%key)) Then
-      If (ewld%l_fce) Then
+    If (ewld%vdw) Then
+      engvdw = engvdw_rc + engvdw_rl
+      virvdw = virvdw_rc + virvdw_rl
+    End If
 
-        ! frozen pairs corrections to coulombic forces
-
-        If (megfrz /= 0) Then
-          If (electro%key == ELECTROSTATIC_EWALD) Then ! Ewald
-            If (mpoles%max_mpoles > 0) Then
-              Call ewald_frzn_mforces(engcpe_fr,vircpe_fr,stats%stress,ewld, &
-                neigh,mpoles,electro,config,comm)
-            Else
-              Call ewald_frzn_forces(engcpe_fr,vircpe_fr,stats%stress,ewld,neigh,electro,config,comm)
-            End If
-          Else !If (electro%key == ELECTROSTATIC_POISSON) Then ! Poisson Solver
-            Call poisson_frzn_forces(electro%eps,engcpe_fr,vircpe_fr,stats%stress,ewld,neigh,config,comm)
-          End If
+    If (Any([ELECTROSTATIC_EWALD, ELECTROSTATIC_POISSON] == electro%key)) Then
+      If (ELECTROSTATIC_EWALD == electro%key) Then
+        Deallocate (coul_coeffs, stat=fail)
+        If (fail > 0) Call error_dealloc('coul_coeffs', 'two_body_forces')
+        If (ewld%vdw) Then
+          Deallocate (vdw_coeffs, stat=fail)
+          If (fail > 0) Call error_dealloc('vdw_coeffs', 'two_body_forces')
         End If
-
-      Else
-
-        ! Refresh all Ewald k-space contributions
-
-        Call ewld%refresh(engcpe_rc,vircpe_rc,engcpe_fr,vircpe_fr,stats%stress,config)
-
       End If
 
       ! non-zero total system charge correction (for the whole system)
       ! ( Fuchs, Proc. R. Soc., A, 151, (585),1935 )
-
       If (Abs(config%sumchg) > 1.0e-6_wp) Then
-        factor_nz = -0.5_wp * (pi*r4pie0/electro%eps) * (config%sumchg/electro%alpha)**2
+        factor_nz = -0.5_wp * (pi * r4pie0 / electro%eps) * (config%sumchg / ewld%alpha)**2
 
-        engcpe_nz=factor_nz/config%volm
-        vircpe_nz=-3.0_wp*engcpe_nz
+        engcpe_nz = factor_nz / config%volm
+        vircpe_nz = -3.0_wp * engcpe_nz
       End If
     End If
 
@@ -572,22 +699,21 @@ Contains
     ! under infinitesimal rotations & convert to Cartesian coordinates
 
     If (mpoles%max_mpoles > 0) Then
-      Call d_ene_trq_mpoles(vircpe_dt,stats%stress,mpoles,config)
+      Call d_ene_trq_mpoles(vircpe_dt, stats%stress, mpoles, config)
     End If
 
     ! sum up contributions to domain,potentials
 
-
-    buffer( 0) = tmp
-    buffer( 1) = engkim
-    buffer( 2) = virkim
-    buffer( 3) = engden
-    buffer( 4) = virden
-    buffer( 5) = engmet
-    buffer( 6) = virmet
-    buffer( 7) = engvdw
-    buffer( 8) = virvdw
-    buffer( 9) = engcpe_rc
+    buffer(0) = tmp
+    buffer(1) = engkim
+    buffer(2) = virkim
+    buffer(3) = engden
+    buffer(4) = virden
+    buffer(5) = engmet
+    buffer(6) = virmet
+    buffer(7) = engvdw
+    buffer(8) = virvdw
+    buffer(9) = engcpe_rc
     buffer(10) = vircpe_rc
     buffer(11) = engcpe_rl
     buffer(12) = vircpe_rl
@@ -599,18 +725,18 @@ Contains
     buffer(18) = vircpe_fr
     buffer(19) = vircpe_dt
 
-    Call gsum(comm,buffer(0:19))
+    Call gsum(comm, buffer(0:19))
 
-    tmp       = buffer( 0)
-    engkim    = buffer( 1)
-    virkim    = buffer( 2)
-    engden    = buffer( 3)
-    virden    = buffer( 4)
-    engmet    = buffer( 5)
-    virmet    = buffer( 6)
-    engvdw    = buffer( 7)
-    virvdw    = buffer( 8)
-    engcpe_rc = buffer( 9)
+    tmp = buffer(0)
+    engkim = buffer(1)
+    virkim = buffer(2)
+    engden = buffer(3)
+    virden = buffer(4)
+    engmet = buffer(5)
+    virmet = buffer(6)
+    engvdw = buffer(7)
+    virvdw = buffer(8)
+    engcpe_rc = buffer(9)
     vircpe_rc = buffer(10)
     engcpe_rl = buffer(11)
     vircpe_rl = buffer(12)
@@ -622,27 +748,26 @@ Contains
     vircpe_fr = buffer(18)
     vircpe_dt = buffer(19)
 
-
-    safe=(tmp < 0.5_wp)
-    If (.not.safe) Call error(505)
+    safe = (tmp < 0.5_wp)
+    If (.not. safe) Call error(505)
 
     ! Self-interaction is constant for the default charges only SPME
 
-    If (electro%key == ELECTROSTATIC_EWALD) Then ! Sum it up for multipolar SPME
-      If (mpoles%max_mpoles > 0 .and. mpoles%max_order <= 2) Call gsum(comm,ewld%engsic)
-      !Write(message,'(a,1p,e18.10)') 'Self-interaction term: ',engsic
-      !Call info(message,.true.)
-    End If
+    ! If (electro%key == ELECTROSTATIC_EWALD) Then ! Sum it up for multipolar SPME
+    !    If (mpoles%max_mpoles > 0 .and. mpoles%max_order <= 2) Call gsum(comm,ewld%spme_data(0)%self_interaction)
+    !Write(message,'(a,1p,e18.10)') 'Self-interaction term: ',engsic
+    !Call info(message,.true.)
+    ! End If
 
     ! Globalise coulombic contributions: cpe
 
-    stats%engcpe = engcpe_rc + engcpe_rl + engcpe_ch + engcpe_ex + engcpe_fr + engcpe_nz
-    stats%vircpe = vircpe_rc + vircpe_rl + vircpe_ch + vircpe_ex + vircpe_fr + vircpe_nz + vircpe_dt
+    stats%engcpe = stats%engcpe + engcpe_rc + engcpe_rl + engcpe_ch + engcpe_ex + engcpe_fr + engcpe_nz
+    stats%vircpe = stats%vircpe + vircpe_rc + vircpe_rl + vircpe_ch + vircpe_ex + vircpe_fr + vircpe_nz + vircpe_dt
 
     ! Add non-zero total system charge correction to
     ! diagonal terms of stress tensor (per node)
 
-    tmp = - vircpe_nz/(3.0_wp*Real(comm%mxnode,wp))
+    tmp = -vircpe_nz / (3.0_wp * Real(comm%mxnode, wp))
     stats%stress(1) = stats%stress(1) + tmp
     stats%stress(5) = stats%stress(5) + tmp
     stats%stress(9) = stats%stress(9) + tmp
@@ -650,18 +775,20 @@ Contains
     ! Globalise short-range, KIM and metal interactions with
     ! their long-range corrections contributions: srp
 
-    stats%engsrp = engkim + (engden + engmet + met%elrc(0)) + (engvdw + vdws%elrc)
-    stats%virsrp = virkim + (virden + virmet + met%vlrc(0)) + (virvdw + vdws%vlrc)
+    stats%engsrp = stats%engsrp + engkim + (engden + engmet + met%elrc(0)) + (engvdw + vdws%elrc)
+    stats%virsrp = stats%virsrp + virkim + (virden + virmet + met%vlrc(0)) + (virvdw + vdws%vlrc)
+
+    If (stats%collect_pp) stats%pp_energy = stats%pp_energy + vdws%elrc / config%megatm
 
     ! Add long-range corrections to diagonal terms of stress tensor (per node)
 
-    tmp = - (vdws%vlrc+met%vlrc(0))/(3.0_wp*Real(comm%mxnode,wp))
+    tmp = -(vdws%vlrc + met%vlrc(0)) / (3.0_wp * Real(comm%mxnode, wp))
     stats%stress(1) = stats%stress(1) + tmp
     stats%stress(5) = stats%stress(5) + tmp
     stats%stress(9) = stats%stress(9) + tmp
 
 #ifdef CHRONO
-    Call stop_timer('Short Range')
+    Call stop_timer(tmr, 'Two-Body Final')
 #endif
 
   End Subroutine two_body_forces

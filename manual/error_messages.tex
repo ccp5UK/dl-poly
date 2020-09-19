@@ -1305,19 +1305,6 @@ During reading of metal potentials (pairs of atom types) in FIELD
 
 Delete one of the duplicate entries and resubmit.
 
-\subsubsection*{\underline{Message 145}: error - no two-body like interactions specified}
-
-This error arises when there are no two-body like interactions
-specified in FIELD and CONTROL.  I.e. none of the following
-interactions exists or if does, it has been switched off;
-any coulombic, vdw, metal, tersoff.  In \D expects that particles will
-be kept apparat, stay separated and never go through each other
-due to one of the fore-specified interactions.
-
-\noindent \underline{\em Action}:
-
-Users must alone take measures to prevent such outcome.
-
 \subsubsection*{\underline{Message 150}: error - unknown van der waals potential selected}
 
 \D checks when constructing the interpolation tables for the short
@@ -1506,14 +1493,6 @@ settings of the link cell algorithm.
 
 Rethink the simulation model; reduce number of nodes or/and SPME sum
 precision or/and increase cutoff.
-
-\subsubsection*{\underline{Message 321}: error - LFV quaternion integrator failed}
-
-This indicates unstable integration but may be due to many reasons.
-
-\noindent \underline{\em Action}:
-
-Rethink the simulation model.  Increase mxquat in CONTROL and resubmit or use VV integration to check system stability.
 
 \subsubsection*{\underline{Message 340}: error - invalid integration option requested}
 

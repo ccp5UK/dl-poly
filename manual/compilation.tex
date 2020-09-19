@@ -2,109 +2,7 @@
 \label{compilation}
 
 When you have obtained \D from Daresbury Laboratory and unpacked it,
-your next task will be to compile it.  There are two general ways to
-compile \D by using {\sl make} or {\sl cmake}.  Ultimately, both will
-lead to the use of the most common build generator on unix like systems
-(Linux, Apple OSX) -- the Makefile.  Thus it is assumed that all
-examples provided below are carried in a unix like environment.
-
-\subsection{The {\sl make} way with supplied legacy Makefiles}
-\label{make}
-
-To aid compilation three general makefiles have been provided
-in the sub-directory {\em build}.  These are ``Makefile\_MPI'' -
-for compiling a parallel version of \D, and ``Makefile\_SRL1'' and
-``Makefile\_SRL2'' - for compiling a serial versions.  After choosing
-what the default compilation is to be, the appropriate makefile is
-to be copied or linked as ``Makefile'' into the sub-directory
-{\em source}.  The general \D makefile will build an executable with
-the full range of functionality - sufficient for the test cases and
-for most users' requirements.  In very few cases, the user will have
-to modify few entries in the specification part of their makefile to
-match the location of certain software components on their system architecture.
-
-{\bf Note} that {\bf only} FORTRAN90 compiler is required for
-successful build of \D in serial mode, and {\bf only}
-FORTRAN90\index{FORTRAN90} and MPI implementation - for \D in
-parallel mode.  Should the user add additional functionality to
-the code, major changes of the makefile may be required!  Examples
-of makefiles for integrable features such as - openKIM\ref{kim}
-potentials, free energy methods with PLUMED\ref{plumed}, netCDF
-I/O formats - are included in the {\em build} directory.  However,
-we would like to encourage the usage of {\sl cmake} for builds
-with dependencies beyond the fully self-contained ({\em vanilla})
-version of \D.
-
-In UNIX environment the compilation of the program is initiated by
-typing the command:
-
-{\sl make} $target$ BUILDER='Your Name Here'
-
-\noindent where $target$ is the specification of the required
-machine.  For many computer systems this is all that is required
-to compile a working version of \D.   (To determine which
-targets are already defined in the makefile, examine it or type
-the command {\sl make} without a nominated target - it will
-produce a list of known targets.)  Specifying your name as the
-person building the code is optional but it may be useful
-metadata in the future for citation/acknowledgment purposes
-when the results produced with the particular executable
-are examined as part of a research programme.
-
-Some of the {\sl make} keywords and their uses are described below.
-{\bf Note} that some of the keywords may also be set in the UNIX
-environment (e.g. with the ``setenv'' command in a TCSH-shell, or
-``export'' in BASH-shell).
-
-\subsubsection*{Keywords in the Makefiles}
-
-\begin{enumerate}
-\item {\bf TARGET} \\
-The TARGET keyword indicates which kind of computer the code is to
-be compiled for.  This {\bf must} be specified - there is no default
-value.  Valid targets can be listed by the makefile if the command
-{\sl make} is typed, without arguments.  The list frequently changes
-as more targets are added and redundant ones removed.  Users are
-encouraged to extend the makefile for themselves, using existing
-targets as examples. \\
-
-\item {\bf EX} \\
-The EX keyword specifies the executable name.  The default name for
-the executable is ``DLPOLY.Z''. \\
-
-\item {\bf BINROOT} \\
-The BINROOT keyword specifies the directory in which the executable is
-to be stored.  The default setting is ``../execute''.
-\end{enumerate}
-
-\subsubsection*{Modifying the Makefiles}
-
-\begin{enumerate}
-\item {\bf Changing the FORTRAN90 compiler and MPI implementation} \\
-To specify the FORTRAN90 compiler in a target platform, the user
-must provide the full path to the executable in {\bf FC=``...''} and
-all appropriate options (as defined in the relevant
-FORTRAN90\index{FORTRAN90} manual) and the path to the MPI
-implementation in {\bf FCFLAGS=``...''}.  The same must be done
-for the linker: the path to the executable in {\bf LD=``...''}
-and the appropriate options and the path to the MPI implementation
-in {\bf LDFLAGS=``...''}.  It is recommended that the user creates
-their own $target$ entry in the makefile due to the large variety of
-(i) software needed for the compilation of \D and (ii) places where
-it could be installed (PATHS) - sometimes help from the administrator
-of their platform may be necessary. \\
-
-\item {\bf Adding new functionality} \\
-To include a new subroutine in the code simply add {\em subroutine}.o
-to the list of object names in the makefile (`OBJ\_ALL'').  {\bf Note}
-that there is a hierarchal order of adding file names in the ``OBJ\_MOD''
-list whereas such order does not exist in the ``OBJ\_ALL'' list.
-Therefore, should dependence exist between routines listed in the
-``OBJ\_ALL'' list, it {\bf must} be explicitly declared in the makefile.
-\end{enumerate}
-
-\subsection{The {\sl cmake} way}
-\label{cmake}
+your next task will be to compile it.
 
 CMake - \href{http://www.cmake.org/}{http://www.cmake.org/}\index{WWW} - is
 an open-source, cross-platform family of tools designed to build, test
@@ -116,13 +14,15 @@ created by Kitware in response to the need for a powerful, cross-platform
 build environment for open-source projects such as ITK, VTK, KDE, etc...
 
 In order to build a \D executable with cmake there are two stages -
-{\bf Stage~1}: generating the build files (makefiles); and
-{\bf Stage~2}: building the code (applying make).
+{\bf Stage~1}: generating the build files (e.g. makefiles); and
+{\bf Stage~2}: building the code (e.g. make).
 
 For the examples within this section we assume that \D has been
 downloaded, the archived contents extracted and we are stepped in the
 the main folder (root).  All commands and discussions that follow are
 relative to this root folder of \D.
+
+Full instructions can be also found online at \url{https://ccp5.gitlab.io/dlpoly-setup/}
 
 \begin{itemize}
 \item {\bf Stage~1}: Configure and generate the build files. \\

@@ -129,21 +129,17 @@ Section~\ref{parallelisation}).
 \subsubsection{Molecular Dynamics Algorithms}
 
 \D offers a selection of MD integration algorithms\index{algorithm}
-couched in both Velocity Verlet (VV) and Leapfrog Verlet (LFV)
-manner \index{algorithm!Verlet} \index{algorithm} \cite{allen-89a}.
+based on Velocity Verlet (VV) \index{algorithm!Verlet} \index{algorithm} \cite{allen-89a}.
 These generate NVE, NVE$_{kin}$, NVT, NPT and N\mat{\sigma}T
 ensembles\index{ensemble} with a selection of
 thermostats\index{thermostat} and barostats\index{barostat}.
 Parallel versions of the RATTLE\index{algorithm!RATTLE}
 \cite{andersen-83a} and SHAKE\index{algorithm!SHAKE}
 \cite{smith-94b} algorithms are used for solving bond
-constraints\index{constraints!bond} in the VV and LFV cast
-integrations respectively.  The rotational motion of
-rigid bodies\index{rigid body} (RBs) is handled with Fincham's
-implicit quaternion\index{quaternions} algorithm\index{algorithm!FIQA}
-(FIQA) \cite{fincham-92a} under the LFV scheme or with the
+constraints\index{constraints!bond}. The rotational motion of
+rigid bodies\index{rigid body} (RBs) is handled with the
 ``NOSQUISH'' algorithm of Miller {\em et al} \index{algorithm!NOSQUISH}
-\cite{miller-02a} under the VV integration.
+\cite{miller-02a}.
 
 The following MD algorithms\index{algorithm} are available:
 \begin{enumerate}

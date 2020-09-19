@@ -23,6 +23,10 @@
 
 \newcommand{\UnderscoreCommands}{\do\index}
 
+\usepackage{multirow}
+\usepackage{longtable}
+\usepackage{dsfont}
+
 % Layout settings
 \usepackage[portrait]{geometry}
 \setlength{\hoffset}{-10mm} \setlength{\voffset}{-12mm}
@@ -146,8 +150,8 @@ pdfcreator={I.T. Todorov},
 pdfkeywords={General Purpose Molecular Dynamics (MD) Software;
 Domain Decomposition (DD), Sub-Celled Liked Cells (LC);
 Conditional Verlet Neighbour List Building;
-Symplectic Integration, Velocity Verlet (VV), Leapfrog Verlet (LFV);
-Ensembles: NVE; NVEk - Evans; NVT - VV-Langevin Impulse \& LFV-Langevin,
+Symplectic Integration, Velocity Verlet (VV);
+Ensembles: NVE; NVEk - Evans; NVT - VV-Langevin Impulse,
 Andersen, Berendsen, Nose-Hoover, Gentle Stochastic Thermostat,
 Two-Temperature Model (Inhomogeneous Langevin) Thermostat,
 Dissipative Particle Dynamics (DPD) VV-Shardlow first \& second order splitting;
@@ -157,9 +161,9 @@ NsT (extended to constant normal pressure \& surface area or surface tension)
 User Defined Intra- \& Inter-molecular Force-field,
 Frozen Particles, External Fields;
 Constraint Bonds (CB) \& Potential of Mean Field (PMF) Dynamics
-with SHAKE (LFV) \& RATTLE (VV),
+with SHAKE \& RATTLE (VV),
 DD Rigid Body (RB) Dynamics with Euler-Quaternions using
-FIQA (LFV) \& NOSQUISH (VV) integration schemes;
+NOSQUISH (VV) integration schemes;
 Electrostatics beyond point charges with multipolar interactions
 up to hexadecapole (Cartesian poles formulation) \&
 Drude self-induced polarisation; CHARMM Duder Model;
@@ -172,7 +176,7 @@ Zero (FIRE) Temperature \& Conjugate Gradient Method (CGM) Minimisers;
 Temperature rescaling, Boundary Pseudo Thermostats, Defect Detection Tool;
 Coarse-Grained Analysis \& Dynamics, Lennard-Jones mixing rules;
 PLUMED MetaDynamics Plugin integrability, HDF5/netCDF integrability,
-OpenKIM Knodledge-base Interaction Models integrability;
+OpenKIM Open Knowledgebase of Interatomic Models integrability;
 Optimised Parallel (ASCII \& Amber-netCDF) I/O (includes MPI-I/O),
 Verifiable \& User Extendible Source Code in Self-Contained \& Portable,
 Modularised FORTRAN90, MPI Parallelisation \& Memory Distribution via DD},
@@ -315,7 +319,7 @@ to obtain more detailed information if need be.}
 If you have followed the procedure for obtaining and downloading the
 \D package (see Obtaining~the~Source~Code, Section~\ref{source}),
 have successfully unpacked it and are ready to compile the source code,
-then jump to the INSTALL Notes in the {\sc INSTALL} file, both in the main 
+then jump to the INSTALL Notes in the {\sc INSTALL} file, both in the main
 distribution directory as well as in the Appendix~\ref{readme}.
 
 If you have compiled successfully then a freshly date-stamped file,
@@ -408,6 +412,27 @@ This chapter describes the two-temperature model functionality available in \D.
 \newpage
 
 \input ttm.tex
+
+\chapter{Heat Flux}
+\label{heat-flux}
+\vskip 12ex
+\section*{Scope of Chapter}
+This chapter describes the heat flux functionality available in \D.
+\setcounter{equation}{0}
+\newpage
+
+\input heat_flux.tex
+
+\chapter{Extenting DL\_POLY\_4 to reactive systems: the Empirical Valence Bond method}
+\label{evb}
+{\bf Author}: Dr. Ivan Scivetti\\
+\vskip 12ex
+\section*{Scope of Chapter}
+This chapter presents the theoretical fundamentals of the Empirical Valence Bond (EVB) method and its implementation into the DL\_POLY\_4 code. This new feature allows to perform molecular dynamics simulations of reactive processes via the use of standard (non-reactive) force-fields.
+\setcounter{equation}{0}
+\newpage
+
+%\input evb.tex
 
 \chapter{Construction and Execution}
 \label{conex}

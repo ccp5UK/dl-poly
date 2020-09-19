@@ -1,6 +1,11 @@
 include_directories("${CMAKE_BINARY_DIR}/source")
 
 set(dlpoly_SRCS
+  asserts.F90
+  angular_distribution.F90
+  coord.F90
+  kpoints.F90
+  currents.F90
   meta.F90
   build_book.F90
   build_chrm.F90
@@ -26,13 +31,13 @@ set(dlpoly_SRCS
   external_field.F90
   stochastic_boundary.F90
   four_body.F90
+  evb.F90
   langevin.F90
   coul_spole.F90
   shared_units.F90
   numerics.F90
   impacts.F90
   errors_warnings.F90
-  potentials.F90
   rdfs.F90
   kinds.F90
   vdw.F90
@@ -60,8 +65,12 @@ set(dlpoly_SRCS
   bonds.F90
   constraints.F90
   coul_mpole.F90
+  bspline.F90
+  kspace.F90
+  spme.F90
   ewald_spole.F90
-  ewald_mpole.F90
+  ewald_general.F90
+#  ewald_mpole.F90
   inversions.F90
   metal.F90
   poisson.F90
@@ -80,6 +89,7 @@ set(dlpoly_SRCS
   electrostatic.F90
   kim.F90
   plumed.F90
+  dftb_library.F90
   netcdf.F90
   nve.F90
   nvt_anderson.F90
@@ -96,6 +106,7 @@ set(dlpoly_SRCS
   npt_nose_hoover.F90
   npt_langevin.F90
   npt_mtk.F90
+  unit_tests/test_configuration.F90
   )
 if(BUILDER)
   set_property(SOURCE development.F90 APPEND PROPERTY
@@ -107,35 +118,72 @@ set_property(SOURCE development.F90 APPEND PROPERTY
 if( NOT WITH_MPI)
   set(dlpoly_SERIAL_SRCS ${src_dir}/SERIAL/mpi_api.F90)
 endif()
-
-add_library(dlpoly ${dlpoly_SRCS} ${dlpoly_SERIAL_SRCS})
-if( NOT WITH_MPI)
-  set_target_properties(dlpoly PROPERTIES
-    COMPILE_DEFINITIONS "SERIAL"
-    INCLUDE_DIR ${src_dir}/SERIAL
+if(WITH_EXP)
+  set(EXP_SRCS
+    resources.F90
+    table.F90
+    psinfo.F90
+    meminfo.F90
     )
+endif()
+
+add_library(dlpoly ${dlpoly_SRCS} ${dlpoly_SERIAL_SRCS} ${EXP_SRCS})
+if( NOT WITH_MPI)
+  set_property(TARGET dlpoly APPEND PROPERTY
+    COMPILE_DEFINITIONS "SERIAL")
+  set_property(TARGET dlpoly APPEND PROPERTY
+    INCLUDE_DIR ${src_dir}/SERIAL)
+endif()
+if(WITH_EXP)
+  set_property(TARGET dlpoly APPEND PROPERTY
+    COMPILE_DEFINITIONS "EXPERIMENT")
+endif()
+
+if(WITH_EVB)
+  set_property(TARGET dlpoly APPEND PROPERTY
+    COMPILE_DEFINITIONS "EVB")
 endif()
 
 if(WITH_NETCDF)
-  set_target_properties(dlpoly PROPERTIES
-    COMPILE_DEFINITIONS "NETCDF"
-    )
+  set_property(TARGET dlpoly APPEND PROPERTY
+    COMPILE_DEFINITIONS "NETCDF")
 endif()
+
 if(WITH_PLUMED)
-  set_target_properties(dlpoly PROPERTIES
-    COMPILE_DEFINITIONS "PLUMED"
-    )
+  set_property(TARGET dlpoly APPEND PROPERTY
+    COMPILE_DEFINITIONS "PLUMED")
+  if (INTERNAL_PLUMED)
+    add_dependencies(dlpoly int-plumed)
+  endif()
 endif()
 
 if(WITH_KIM)
-  set_target_properties(dlpoly PROPERTIES
-    COMPILE_DEFINITIONS "KIM"
-    )
+  set_property(TARGET dlpoly APPEND PROPERTY
+    COMPILE_DEFINITIONS "KIM")
+  if (INTERNAL_KIM)
+    add_dependencies(dlpoly int-kim-api)
+  endif()
+  target_include_directories(dlpoly PUBLIC  ${KIM_INC})
 endif()
+
+if(WITH_DFTBP)
+  set_property(TARGET dlpoly APPEND PROPERTY
+    COMPILE_DEFINITIONS "DFTBP")
+  if (INTERNAL_DFTBP)
+     add_dependencies(dlpoly int-dftbp)
+     target_include_directories(dlpoly PUBLIC  ${DFTBP_INC})
+  endif()
+endif()
+
+if(WITH_ASSERT)
+  set_property(TARGET dlpoly APPEND PROPERTY
+    COMPILE_DEFINITIONS "WITH_ASSERT")
+endif()
+
 ## sets the linking
 link_directories (${LIBRARY_OUTPUT_PATH})
 add_executable(${target_name} dl_poly.F90)
 set_target_properties(${target_name} PROPERTIES LINK_FLAGS "${OMP_LINK_FLAGS} ${MIC_LINK_FLAGS}")
-target_link_libraries(${target_name} dlpoly ${LIBS})
+target_link_libraries(${target_name} dlpoly ${LIBS} ${BLAS_LIBRARIES})  
 install(TARGETS ${target_name} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 INSTALL_SUBLIB(dlpoly)

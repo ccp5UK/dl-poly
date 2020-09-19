@@ -18,7 +18,7 @@ potentials.
 
 In \D the total configuration energy of a molecular system may
 be written as:
-\begin{eqnarray}
+\begin{eqnarray}\label{eq:decomp-ene}
 U(\vek{r}_{1},\vek{r}_{2},\ldots,\vek{r}_{N})&=&
       \sum_{i_{shel}=1}^{N_{shel}} U_{shel}(i_{shel},\vek{r}_{core},\vek{r}_{shell}) \nonumber \\
 & & + \sum_{i_{teth}=1}^{N_{teth}} U_{teth}(i_{teth},\vek{r}_{i}^{{\bf t}=t},\vek{r}_{i}^{{\bf t}=0}) \nonumber \\
@@ -1084,6 +1084,21 @@ U(r_{ij}) = 4\epsilon\left[\left
 This potential has an extra constant to tune the attractive part of the
 potential serving to describe the different cohesiveness between different
 fluids and surfaces in engineering flows models.
+\item Lennard Jones, generalised by Frenkel et al. \cite{wang2019}: ({\bf ljf})
+  \begin{equation}
+     U(r_{ij}) = \left\{
+\begin{array}{lr}
+\varepsilon_{AB}\alpha_{AB}\left[ \left(\frac{\sigma_{AB}}{r_{ij}}\right)^2 -1\right]\left[ \left(\frac{r_{AB}^c}{r_{ij}}\right)^2 -1\right]^2 & r \leq r_{AB}^c \\
+0 & r >  r_{AB}^c \\
+\end{array}
+\right.
+  \label{eq:ljf}
+  \end{equation}
+    with
+\begin{equation}
+    \alpha_{AB} = \frac{1}{4}\left(\frac{r_{AB}^c}{\sigma_{AB}}\right)^2\left( \frac{3}{\left(\frac{r_{AB}^c}{\sigma_{AB}}\right)^2-1}\right)^3
+\end{equation}
+
 \item n-m potential (aka Mie) \cite{mie-03a,clarke-86a}:  ({\bf nm})
 \begin{equation}
 U(r_{ij}) = \frac{E_{o}}{(n-m)}\left[m\left
@@ -3368,20 +3383,105 @@ improvements.
 \emph{Note} that to use the PLUMED functionality within \D one must
 further ensure that \D is cross-compiled with it.
 
-\section{Open Knowledgebase of Interatomic Models - openKIM}
+\section{Open Knowledgebase of Interatomic Models - OpenKIM}
 \label{kim}
 
-\D force-field allows for full model interactions specification by using an
-openKIM model - \\ \href{http://OpenKIM.org/}{http://OpenKIM.org/}\index{WWW}.
-A KIM model contains all necessary interactions (bonded and non-bonded of
-any kind) and their parameters for a specific model within a designated
-container.  Thus a KIM model can be used as a force-field container when
+\D force-field allows for model interactions specification by using an
+OpenKIM model - \\ \href{https://openkim.org/}{https://openkim.org/}\index{WWW}.
+A KIM model contains all necessary (non-bonded) interactions and their
+parameters for a specific model within a designated container.  Thus a
+KIM model can be used as a force-field container when
 made available to \D at run time (see the description of the FIELD file in
 Section~\ref{field-file}) upon a specification within FIELD together with a
 matching molecular description for the model system, also specified in FIELD.
-Due to the history of the openKIM initiative and the constraints of the logic
+Due to the history of the OpenKIM initiative and the constraints of the logic
 of the \D FIELD file the designated place for a KIM model specification is
-in the VDW section.
+in the non-bonded interactions section~\ref{non-bonded}.
 
-\emph{Note} that to use openKIM functionality within \D one must further ensure
-that \D is compiled with openKIM support (see building.md).
+Employing OpenKIM interatomic models (IMs) provides \D users with multiple
+benefits, including:
+\subsection*{Reliability}
+\begin{itemize}
+\item All content archived in OpenKIM is reviewed by the KIM Editor for quality.
+\item IMs in OpenKIM are archived with full provenance control. Each is associated
+with a maintainer responsible for the integrity of the content. All changes are
+tracked and recorded.
+\item IMs in OpenKIM are exhaustively tested using KIM Tests that compute a host
+of material properties, and KIM Verification Checks that provide the user with
+information on various aspects of the IM behavior and coding correctness.
+This information is displayed on the IM’s page accessible through the OpenKIM
+browse interface.
+\end{itemize}
+
+\subsection*{Reproducibility}
+\begin{itemize}
+\item Each IM in OpenKIM is issued a unique identifier (KIM ID), which includes
+a version number (last three digits). Any changes that can result in different
+numerical values lead to a version increment in the KIM ID. This makes it
+possible to reproduce simulations since the specific version of a specific IM
+used can be retrieved using its KIM ID.
+
+\item OpenKIM is a member organization of DataCite and issues digital object
+identifiers (DOIs) to all IMs archived in OpenKIM. This makes it possible to cite
+the IM code used in a simulation in a publications to give credit to the developers
+and further facilitate reproducibility.
+\end{itemize}
+
+Currently, \D supports one type of IM archived in OpenKIM, which  is called a
+KIM Portable Model (PM). A KIM PM is an independent computer implementation
+of an IM written in one of the languages supported by KIM (C, C++, Fortran) that
+conforms to the KIM Application Programming Interface (KIM API) Portable Model
+Interface (PMI) standard. A KIM PM will work seamlessly with any simulation code
+that supports the KIM API/PMI standard (including \D; see \href{https://openkim.org/projects-using-kim/}{complete list
+	of supported codes}\index{WWW}).
+
+OpenKIM IMs are uniquely identified by a KIM ID. The extended KIM ID consists of
+a human-readable prefix identifying the type of IM, authors, publication year, and
+supported species, separated by two underscores from the KIM ID itself, which
+begins with an IM code (MO for a KIM Portable Model) followed by a unique 12-digit
+code and a 3-digit version identifier \\ (e.g. \text{\bf SNAP\_ChenDengTran\_2017\_Mo\_\_MO\_698578166685\_000}).
+
+Each OpenKIM IM has a dedicated ``Model Page'' on OpenKIM providing all the
+information on the IM including a title, description, authorship and citation
+information, test and verification check results, visualizations of results, a
+wiki with documentation and user comments, and access to raw files, and other
+information. The URL for the Model Page is constructed from the extended KIM
+ID of the IM \\ as \text{\bf https://openkim.org/id/extended\_KIM\_ID}.
+
+For example, for the spectral neighbor analysis potential (SNAP) listed above the
+Model Page is located at: \\
+\href{https://openkim.org/id/SNAP_ChenDengTran_2017_Mo__MO_698578166685_000}
+{https://openkim.org/id/SNAP\_ChenDengTran\_2017\_Mo\_\_MO\_698578166685\_000}\index{WWW}.
+
+See the \href{https://openkim.org/browse/models/by-species}{current list
+of KIM PMs archived in OpenKIM}\index{WWW}. This list is sorted by species
+and can be filtered to display only IMs for certain species combinations. You can also
+see \href{https://openkim.org/doc/usage/obtaining-models/}
+{Obtaining KIM Models} to learn how to install a pre-build binary of the OpenKIM
+repository of models.
+
+\emph{{\bf Note}}  that it is also possible to locally install IMs not archived in OpenKIM,
+in which case their names do not have to conform to the KIM ID format.
+
+To download, build, and install the KIM library on your system, see the
+\href{https://openkim.org/doc/usage/obtaining-models/}{detailed instructions}
+\index{WWW}.
+
+\emph{{\bf Note}} that to use OpenKIM functionality within \D one must further ensure
+that \D is compiled with OpenKIM support (see building.md).
+
+\subsection*{Citation of OpenKIM IMs}
+When publishing results obtained using OpenKIM IMs researchers are requested to
+cite the OpenKIM project
+\href{https://link.springer.com/article/10.1007%2Fs11837-011-0102-6}
+{(Tadmor)}\index{WWW}, KIM API
+\href{https://doi.org/10.25950/FF8F563A}{(Elliott)}\index{WWW}, and the specific
+IM codes used in the simulations, in addition to the relevant scientific references
+for the IM. The citation format for an IM is displayed on its page on
+\href{https://openkim.org/}{OpenKIM}\index{WWW}
+along with the corresponding BibTex file, and is automatically added to
+the \D ~~{\em log.cite} file.
+
+Citing the IM software (KIM infrastructure and specific PM or SM codes) used
+in the simulation gives credit to the researchers who developed them and
+enables open source efforts like OpenKIM to function.
