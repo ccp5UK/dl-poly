@@ -52,7 +52,7 @@ Module configuration
                              io_get_parameters, io_get_var, io_init, io_nc_create, io_nc_get_att, &
                              io_nc_get_dim, io_nc_get_var, io_nc_put_var, io_open, io_read_batch, &
                              io_set_parameters, io_type, io_write_batch, io_write_record, &
-                             io_write_sorted_file, recsz
+                             io_write_sorted_file, recsz, split_io_comm
   Use kinds,           Only: li,&
                              wi,&
                              wp
@@ -854,7 +854,7 @@ Contains
 
     Character(Len=256)                          :: messages(3)
     Integer                                     :: ierr
- 
+
     Integer(Kind=wi)                            :: conftag
 
     ! Choose which CONFIG file to read
@@ -2150,10 +2150,10 @@ Contains
     If (comm%idnode == 0) Inquire (File=fname, Exist=safe)
     Call gcheck(comm, safe)
     If (.not. safe) Then
-      write(message, '(1x,3a)') 'error - ', trim(fname), ' files not found'    
-      Call info(message,.True.)   
+      write(message, '(1x,3a)') 'error - ', trim(fname), ' files not found'
+      Call info(message,.True.)
       Call error(0)
-    End If  
+    End If
 
     ! Define/Detect the FAST reading status
 
@@ -2969,29 +2969,36 @@ Contains
 
       ! Write the rest
 
-      Call io_set_parameters(io, user_comm=comm%comm)
-      Call io_init(io, recsz)
-      Call io_open(io, io_write, comm%comm, fname, mode_wronly, fh)
+      Call io_set_parameters(io, user_comm = comm%comm )
+      Call io_init(io, recsz )
+      Call split_io_comm( io%base_comm, io%n_io_procs_write, io%io_comm, io%io_gather_comm, io%do_io )
+      io%io_comm_inited = .true.
+      !Only ranks that do IO should open the files.
+      If( io%do_io ) Then
+        Call io_open(io, io_write, io%io_comm, fname, mode_wronly, fh )
+      End If
 
-      rec_mpi_io = rec_mpi_io + Int(jj, offset_kind)
+      rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
       Call io_write_sorted_file(io, fh, levcfg, IO_RESTART, rec_mpi_io, config%natms, &
                                 config%ltg, config%atmnam, [0.0_wp], [0.0_wp], config%parts, &
                                 config%vxx, config%vyy, config%vzz, IO_SUBSET_POSITIONS + IO_SUBSET_FORCES, ierr)
 
-      If (ierr /= 0) Then
-        Select Case (ierr)
-        Case (IO_BASE_COMM_NOT_SET)
-          Call error(1050)
-        Case (IO_ALLOCATION_ERROR)
-          Call error(1053)
-        Case (IO_UNKNOWN_WRITE_OPTION)
-          Call error(1056)
-        Case (IO_UNKNOWN_WRITE_LEVEL)
-          Call error(1059)
+      If ( ierr /= 0 ) Then
+        Select Case( ierr )
+         Case( IO_BASE_COMM_NOT_SET )
+          Call error( 1050 )
+         Case( IO_ALLOCATION_ERROR )
+          Call error( 1053 )
+         Case( IO_UNKNOWN_WRITE_OPTION )
+          Call error( 1056 )
+         Case( IO_UNKNOWN_WRITE_LEVEL )
+          Call error( 1059 )
         End Select
       End If
-
-      Call io_close(io, fh)
+      If( io%do_io ) Then
+        Call io_close(io, fh )
+      End If
+      io%do_io = .false.
       Call io_finalize(io)
 
       ! SORTED Serial Direct Access FORTRAN
