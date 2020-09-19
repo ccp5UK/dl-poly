@@ -1087,7 +1087,7 @@ Contains
     ! open RDF file and Write headers
 
     If (comm%idnode == 0) Then
-      Open (Unit=nrdfdt, File='USRDAT', Status='replace')
+      Open (Newunit=nrdfdt, File='USRDAT', Status='replace')
       Write (nrdfdt, '(2a)') '# '//config%cfgname
       Write (nrdfdt, '(a)') "# RDF for the two fragments' COMs (umbrella sampling)"
       Write (nrdfdt, '(a,i10,f12.6,i10,e15.6,/)') '# bins, cutoff, frames, volume: ', &
