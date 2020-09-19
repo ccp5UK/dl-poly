@@ -78,7 +78,7 @@ Contains
   Subroutine set_bounds(site, ttm, io, cshell, cons, pmf, stats, thermo, green, devel, &
                         msd_data, met, pois, bond, angle, dihedral, inversion, tether, threebody, zdensity, &
                         neigh, vdws, tersoffs, fourbody, rdf, mpoles, ext_field, rigid, electro, domain, &
-                        config, ewld, kim_data, files, flow, comm)
+                        config, ewld, kim_data, files, flow, comm, ff)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -150,6 +150,7 @@ Contains
     Type(file_type),           Intent(InOut) :: files(:)
     Type(flow_type),           Intent(InOut) :: flow
     Type(comms_type),          Intent(InOut) :: comm
+    Integer,                   Intent(In   ), Optional :: ff
 
     Character(Len=256)           :: message
     Integer                      :: megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, mtshl, &
@@ -159,12 +160,20 @@ Contains
     Real(Kind=wp)                :: ats, cut, dens, dens0, fdvar, padding2, test, xhi, yhi, zhi
     Real(Kind=wp), Dimension(10) :: cell_properties
 
+    Integer            :: fftag
+              
+    If (present(ff)) then
+      fftag = ff
+    Else
+      fftag = 1
+    Endif
+
     ! scan the FIELD file data
 
     Call scan_field(megatm, site, neigh%max_exclude, mtshl, &
                     mtcons, mtrgd, mtteth, mtbond, mtangl, mtdihd, mtinv, &
                     ext_field, cshell, cons, pmf, met, bond, angle, dihedral, inversion, tether, threebody, &
-                    vdws, tersoffs, fourbody, rdf, mpoles, rigid, kim_data, files, electro, comm)
+                    vdws, tersoffs, fourbody, rdf, mpoles, rigid, kim_data, files, electro, comm, ff)
 
     ! Get imc_r & set config%dvar
 
@@ -172,7 +181,7 @@ Contains
 
     ! scan CONFIG file data
 
-    Call scan_config(config, megatm, config%dvar, config%levcfg, xhi, yhi, zhi, io, domain, files, comm)
+    Call scan_config(config, megatm, config%dvar, config%levcfg, xhi, yhi, zhi, io, domain, files, comm, ff)
 
     ! halt execution for unsupported image conditions in DD
     ! checks for some inherited from DL_POLY_2 are though kept
@@ -187,7 +196,7 @@ Contains
                       xhi, yhi, zhi, config%mxgana, config%l_ind, electro%nstfce, &
                       ttm, cshell, stats, thermo, green, devel, msd_data, met, pois, bond, angle, dihedral, &
                       inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, electro, ewld, kim_data, &
-                      files, flow, comm)
+                      files, flow, comm, ff)
 
     ! check integrity of cell vectors: for cubic cell
 
@@ -277,7 +286,7 @@ Contains
     ! decide on MXATMS while reading CONFIG and scan particle density
 
     Call read_config(config, megatm, config%levcfg, config%l_ind, flow%strict, neigh%cutoff, config%dvar, xhi, yhi, &
-                     zhi, dens0, dens, io, domain, files, comm)
+                     zhi, dens0, dens, io, domain, files, comm, ff)
 
     Call setup_buffers(fdvar, dens, dens0, megatm, link_cell, mxgrid, config, domain, stats, neigh, &
                        green, site, cshell, cons, pmf, rdf, rigid, tether, bond, angle, dihedral, inversion, &

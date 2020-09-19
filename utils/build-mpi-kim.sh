@@ -5,7 +5,7 @@ module load kim/gcc
 
 mkdir build-mpi-kim
 pushd build-mpi-kim
-cmake ../ -DWITH_KIM=ON -DINTERNAL_KIM=Off
+cmake ../ -DWITH_KIM=ON -DINTERNAL_KIM=Off 
 make -j10
 
 

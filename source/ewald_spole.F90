@@ -469,7 +469,9 @@ Contains
     ! deallocate (ewld%bspline%derivs, stat=fail(2))
     Deallocate (to_calc, stat=fail(3))
     Deallocate (Q_abc, F_abc, S_abc, stat=fail(4))
-    If (Any(fail > 0)) Call error_dealloc('output_arrays', 'ewald_spme_forces')
+    If (Any(fail > 0))Then
+      Call error_dealloc('output_arrays', 'ewald_spme_forces')
+    End If
 
   End Subroutine ewald_spme_forces_coul
 

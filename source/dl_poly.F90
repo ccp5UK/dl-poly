@@ -41,6 +41,8 @@ Program dl_poly
   !           - a.b.g.chalk march-october 2018
   !           - i.scivetti march-october 2018
   !
+  ! EVB       - i.scivetti march-october 2019
+  !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use angles,                             Only: angles_type
@@ -64,10 +66,11 @@ Program dl_poly
   Use ewald,                              Only: ewald_type
   Use external_field,                     Only: external_field_type
   Use filename,                           Only: file_type
-  Use flow_control,                       Only: EVB,&
+  Use flow_control,                       Only: EmpVB,&
                                                 FFS,&
-                                                MD,&
-                                                flow_type
+                                                MD_STD,&
+                                                flow_type,&
+                                                read_simtype
   Use four_body,                          Only: four_body_type
   Use greenkubo,                          Only: greenkubo_type
   Use impacts,                            Only: impact_type
@@ -196,27 +199,33 @@ Program dl_poly
       End Do
     End If
   End If
+
   Call gbcast(dlp_world(0), finish, 0)
   If (finish) Then
     Call exit_comms(dlp_world)
     Stop 0
   End If
-  ! temporary stuff this will need to be abstracted
-  Allocate (flow(1))
-  flow(1)%simulation_method = MD
 
-  If (flow(1)%simulation_method == MD) Then
+  ! IS: This has to be abstracted or defined to be of dimension 1 in module flow.
+  Allocate(flow(1))
+
+  ! Set the type of calculation to be performed. By default it is the standard DL_POLY
+  ! calculation. Tag evb activates EVB calculation
+  Call read_simtype(flow(1), control_filename, dlp_world(0))
+
+  ! Select metasimulation method
+  ! IS: The following two subroutines should be merged into a single one. We separate them
+  ! for the time being though.
+  If (flow(1)%simulation_method == MD_STD .Or. flow(1)%simulation_method == EmpVB) Then
     Call molecular_dynamics(dlp_world, thermo, ewld, tmr, devel, stats, &
                             green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, inversion, tether, &
                             threebody, zdensity, cons, neigh, pmfs, sites, core_shells, vdws, tersoffs, fourbody, &
                             rdf, netcdf, minim, mpoles, ext_field, rigid, electro, domain, flow, seed, traj, &
                             kim_data, config, ios, ttms, rsdsc, files, output_filename, control_filename, crd, adf)
-  Else If (flow(1)%simulation_method == EVB) Then
-    Write (0, *) "simulation type: EVB"
   Else If (flow(1)%simulation_method == FFS) Then
-    Write (0, *) "simulation type: FFS"
+     write(0,*) "simulation type: FFS"
   Else
-    Write (0, *) "Unknown simulation type"
+     Write (0, *) "Unknown simulation type"
   End If
 
   ! Terminate job

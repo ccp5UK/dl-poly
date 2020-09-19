@@ -67,6 +67,8 @@ Module site
     !> Density of atoms of each type?
     Real(Kind=wp), Allocatable, Public     :: dens(:)
     Integer(Kind=wi), Public               :: mxatyp, mxtmls
+    !> Units of the FF
+    Real(Kind=wp), Public                  :: ffunit
 
   Contains
     Private

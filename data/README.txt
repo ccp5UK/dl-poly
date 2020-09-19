@@ -197,3 +197,7 @@ TEST 179 - Sodium Chloride (27,000 ions) - Direct calculation of vdW interaction
 
 TEST 181 - Pseudo thermostat
 TEST 182 - LJ liquid with generalised lj potential ala Frenkel
+TEST 191 - EVB 3 Force fields
+TEST 192 - EVB constant npt
+TEST 193 - EVB gaussian nvt
+TEST 194 - EVB minimize

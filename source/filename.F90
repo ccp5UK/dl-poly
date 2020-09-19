@@ -5,6 +5,7 @@ Module filename
 !
 !> Author - J. Madge September 2018
 !> contrib - a.m.elena October 2018 - use standard integer for units
+!> contrib - i.Scivetti Aug       2018 - addition of extra files for EVB calculations 
   Use kinds, Only: wi
 
   Implicit None
@@ -68,8 +69,24 @@ Module filename
   !> TABEAM file
   Integer, Parameter, Public :: FILE_TABEAM = 20
 
+  !> SETEVB file
+  Integer, Parameter, Public :: FILE_SETEVB = 21 
+  !> POPEVB file
+  Integer, Parameter, Public :: FILE_POPEVB = 22
+  !> FIELD2 file
+  Integer, Parameter, Public :: FILE_FIELD_2=  23
+  !> CONFIG2 file
+  Integer, Parameter, Public :: FILE_CONFIG_2 = 24
+  !> REVCON2 file
+  Integer, Parameter, Public :: FILE_REVCON_2 = 25
+  !> FIELD3 file
+  Integer, Parameter, Public :: FILE_FIELD_3 =  26
+  !> CONFIG3 file
+  Integer, Parameter, Public :: FILE_CONFIG_3 = 27
+  !> REVCON3 file
+  Integer, Parameter, Public :: FILE_REVCON_3 = 28
   !> Size of filename array
-  Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 20
+  Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 28
 
   Public :: default_filenames
 
@@ -113,6 +130,16 @@ Contains
     default_names(FILE_TABINV) = "TABINV"
     default_names(FILE_TABVDW) = "TABLE"
     default_names(FILE_TABEAM) = "TABEAM"
+
+    default_names(FILE_SETEVB)   = "SETEVB"
+    default_names(FILE_POPEVB)   = "POPEVB"
+
+    default_names(FILE_FIELD_2)  = "FIELD2"
+    default_names(FILE_CONFIG_2) = "CONFIG2"
+    default_names(FILE_REVCON_2) = "REVCON2"
+    default_names(FILE_FIELD_3)  = "FIELD3"
+    default_names(FILE_CONFIG_3) = "CONFIG3"
+    default_names(FILE_REVCON_3) = "REVCON3"
 
     ! Set default filenames
     Do file_no = 1, FILENAME_SIZE

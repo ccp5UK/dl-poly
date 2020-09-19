@@ -1,19 +1,17 @@
 Module statistics
-
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-  ! dl_poly_4 module declaring global simulation property variables and
-  ! arrays
-  !
-  ! copyright - daresbury laboratory
-  ! author    - i.t.todorov february 2016
-  ! refactoring:
-  !           - a.m.elena march-october 2018
-  !           - j.madge march-october 2018
-  !           - a.b.g.chalk march-october 2018
-  !           - i.scivetti march-october 2018
-  !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!>
+!> dl_poly_4 module declaring global simulation property variables and
+!> arrays
+!
+!> copyright - daresbury laboratory
+!> author    - i.t.todorov february 2016
+!> refactoring:
+!           - a.m.elena march-october 2018
+!           - j.madge march-october 2018
+!           - a.b.g.chalk march-october 2018
+!           - i.scivetti march-october 2018
+!> contrib  - i.scivetti September 2019. Required changes to allow EVB simulations
+!
 
   Use comms,           Only: &
                              Spread_tag, comm_self, comms_type, gcheck, girecv, gmax, gsend, gsum, &
@@ -405,7 +403,7 @@ Contains
 
   Subroutine statistics_collect(config, lsim, leql, nsteql, lmsd, keyres, degfre, degshl, &
                                 degrot, nstep, tstep, time, tmst, mxatdm, stats, thermo, zdensity, &
-                                sites, files, comm)
+                                sites, files, comm, ff)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -441,6 +439,7 @@ Contains
     Type(site_type),          Intent(In   ) :: sites
     Type(file_type),          Intent(InOut) :: files(:)
     Type(comms_type),         Intent(InOut) :: comm
+    Integer( Kind = wi ), Intent( In  ), Optional :: ff
 
     Character(Len=256)         :: message
     Integer                    :: fail, i, iadd, j, k, kstak
@@ -449,14 +448,25 @@ Contains
                                   stpshl, zistk
     Real(Kind=wp), Allocatable :: amsd(:), xxt(:), yyt(:), zzt(:)
     Character(Len=100)         :: sunits, fmtt
+    Logical                    :: ffpass
+
+    If (present(ff)) then
+      If(ff==1)Then      
+        ffpass=.True.
+      Else
+        ffpass=.False.      
+      End If
+    Else
+      ffpass= .True.
+    Endif 
 
     fail = 0
+
     Allocate (amsd(1:sites%mxatyp), Stat=fail)
     If (fail > 0) Call error_alloc('amsd', 'statistics_collect')
 
     ! open statistics file and put header
-
-    If (stats%newjob .and. comm%idnode == 0) Then
+    If (stats%newjob .and. comm%idnode == 0 .and. ffpass) Then
       stats%newjob = .false.
 
       ! If the keyres = RESTART_KEY_OLD is the file old (does it exist)?
@@ -527,6 +537,10 @@ Contains
     ! instantaneous properties of system
 
     ! system energy
+    ! Configurational energy has been defined in subroutine w_calculateorces within drivers.F90
+    ! In the case of EVB calculations, the configurational energy is recomputed via diagonalisation 
+    ! of the EVB matrix (subroutine evb.F90)
+
     ! Configurational stats%stpcfg energy has been defined in subroutine calculate_forces within drivers.F90
 
     stats%stpeng = stats%stpcfg + stats%engke + stats%engrot
@@ -744,7 +758,7 @@ Contains
 
     ! write statistics file
 
-    If (comm%idnode == 0 .and. Mod(nstep, stats%intsta) == 0) Then
+    If (comm%idnode == 0 .and. Mod(nstep,stats%intsta) == 0 .and. ffpass) Then
       If (.not. stats%statis_file_open) Then
         Open (Newunit=files(FILE_STATS)%unit_no, File=files(FILE_STATS)%filename, Position='append')
         stats%statis_file_open = .true.

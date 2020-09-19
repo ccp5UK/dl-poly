@@ -215,6 +215,9 @@ print rdf
 zden                    7    steps
 print zden
 
+# EMPIRICAL VALENCE BOND (EVB) DIRECTIVE
+evb                    2 
+
 # EXECUTION TIME
 job time             1000 seconds
 close time             10 seconds
@@ -340,6 +343,8 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> $f~=$ displacement qualifying cutoff (default $f~=~0.15~\AA$) \\
 \>                                              \> \\
 \> {\bf dump} $n$                               \> set restart data dump interval to $n$ steps (default $n~=~1000$) \\
+\>                                              \> \\
+\> {\bf evb}  $N_F$                    \> set an EVB simulation via the coupling of $N_F$ force-fields \\
 \>                                              \> \\
 \> {\bf ensemble nve}                           \> select NVE ensemble\index{ensemble!NVE} (default ensemble) \\
 \>                                              \> \\
@@ -4083,3 +4088,49 @@ trajectory reading routine to default to reading a differently named, HISTORF
 expects a full force evaluation driven by expectedly a different FIELD field
 file from the one used for the HISTORF generation.  For more information do
 refer to CONTROL file directives and options (see Section~\ref{control-file}).
+
+\subsection{The SETEVB File}\label{sec:setevb}
+The file SETEVB is needed for EVB simulations. If this file is not found, the execution of DL\_POLY\_4 is aborted. For a EVB site described by $N_F$ force fields, the SETEVB file must contain all the settings specified via the directives of the following table.
+
+\begin{table}
+\caption{Description of EVB directives for the SETEVB file}
+\begin{longtable}[t]{p{0.15\textwidth}|p{0.85\textwidth}}
+\centering
+Setting  & Description \\
+\hline
+(Compulsory) &\\
+$evbtypemols$  & indicates how many of the first type-of-molecules specified in each of the $N_F$ FIELD files are used to describe the EVB reactive site. See section \ref{sec:evb-users} for further clarification.\\
+$evbcoupl$     & specifies the information for coupling parameters. Since $C_{mk}=C_{km}$ only $N_F(N_F-1)/2$ of these lines are needed. If the specification for any pair is repeated the simulation is stopped. The syntax for the specification is as follows, depending if one sets a coupling term to be a constant ($const$) or use the Gaussian functional form ($gauss$) of Eqn. (\ref{eq:coupl}) :\newline\newline
+                    \begin{tabular}{p{0.1\textwidth}p{0.06\textwidth}p{0.06\textwidth}p{0.1\textwidth}p{0.1\textwidth}p{0.1\textwidth}p{0.1\textwidth}p{0.1\textwidth}}
+                                            &\multicolumn{2}{l}{FF Pair}&   Type   & \multicolumn{4}{l}{   Parameters (in units of the FIELD file)  }\\
+                      $evbcoul$        &     $m$     &       $k$     & $const$ &   $\mathcal{A}_{1,mk}$  &   &  &   \\ 
+                      $evbcoul$        &     $m$     &       $k$     & $gauss$ &  $\mathcal{A}_{1,mk}$  &  $\mathcal{A}_{2,mk}$ & $\mathcal{A}_{3,mk}$ &  $\mathcal{A}_{4,mk}$ \\ 
+                       \end{tabular}\newline\newline
+                     Execution will stop if either:\newline
+                     $\bullet$ evbcoul is misspelled.\newline 
+                     $\bullet$ If $m=k$, $m,k < 1$ or $m,k > N_F$.\newline
+                     $\bullet$ Input type different from $const$ or $gauss$, misspelling including.  \newline
+                     $\bullet$ missing $\mathcal{A}_{mk}$ parameters.\newline
+                     $\bullet$ the specification for any pair is repeated.\newline
+                     Features\newline
+                     $\bullet$  the order for $m$ and $k$ is irrelevant.
+\\
+$evbshift$     & specifies the energy shift for a given FF. The syntax for this is specification as follows:\newline\newline
+                    \begin{tabular}{p{0.1\textwidth}p{0.1\textwidth}p{0.5\textwidth}}
+                                            &      FF           &   $\Delta E^{(m)}_{shift}$ (in units of the FIELD file)\\
+                      $evbshift$        &     $m$         &   value (either positive or negative)  \\ 
+                     \end{tabular}\newline\newline
+                     Execution will stop if either:\newline
+                     $\bullet$ evbshift is misspelled.\newline 
+                     $\bullet$ If $m < 1$ or $m> N_F$.\newline
+                     $\bullet$ missing $\Delta E^{(m)}_{shift}$ parameters.\newline
+                     $\bullet$ the specification for a given FF is repeated.\newline
+                     Features\newline
+                     $\bullet$  the order for $m$ is irrelevant.\\
+\hline
+(Optional)\\
+$evbpop$       & If present, the POPEVB file is written (see Section \ref{sec:evbpop}). File POPEVB is not overwritten upon $restart$. \\
+\end{longtable}
+\label{table:setevb}
+\end{table}
+

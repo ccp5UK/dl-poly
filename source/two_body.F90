@@ -161,6 +161,7 @@ Contains
     ! Coulomb
     If (ewld%vdw .and. .not. ewld%active) Call error(0, 'Ewald VdW requested but ewald not enabled')
 
+
     If (ewld%active) Then
       Allocate (coul_coeffs(config%mxatms), stat=fail)
       If (fail > 0) Call error_alloc('coul_coeffs', 'two_body_forces')
@@ -292,9 +293,8 @@ Contains
 #ifdef CHRONO
     Call start_timer(tmr, 'Long Range')
 #endif
-
+ 
     If (electro%key == ELECTROSTATIC_EWALD) Then
-
       Call ewald_spme_forces_coul(ewld, ewld%spme_data(0), domain, config, comm, &
         & coul_coeffs, stats, engcpe_rc, vircpe_rc)
 

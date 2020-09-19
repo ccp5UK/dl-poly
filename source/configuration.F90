@@ -36,6 +36,8 @@ Module configuration
                              error_dealloc,&
                              error_read
   Use filename,        Only: FILE_CONFIG,&
+                             FILE_CONFIG_2,&
+                             FILE_CONFIG_3,&
                              file_type
   Use flow_control,    Only: RESTART_KEY_CLEAN,&
                              flow_type
@@ -788,7 +790,7 @@ Contains
 
   End Subroutine check_config
 
-  Subroutine read_config(config, megatm, levcfg, l_ind, strict, rcut, dvar, xhi, yhi, zhi, dens0, dens, io, domain, files, comm)
+  Subroutine read_config(config, megatm, levcfg, l_ind, strict, rcut, dvar, xhi, yhi, zhi, dens0, dens, io, domain, files, comm, ff)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -818,6 +820,7 @@ Contains
     Type(domains_type), Intent(In)              :: domain
     Type(file_type), Intent(InOut)              :: files(:)
     Type(comms_type), Intent(InOut)             :: comm
+    Integer(Kind = wi), Intent(In), Optional    :: ff
 
     Real(Kind=wp)                               :: cut
 
@@ -851,6 +854,21 @@ Contains
 
     Character(Len=256)                          :: messages(3)
     Integer                                     :: ierr
+ 
+    Integer(Kind=wi)                            :: conftag
+
+    ! Choose which CONFIG file to read
+    If (present(ff)) then
+      If (ff == 1 ) Then
+        conftag=FILE_CONFIG
+      ElseIf( ff ==2 )Then
+        conftag=FILE_CONFIG_2
+      ElseIf( ff ==3 )Then
+        conftag=FILE_CONFIG_3
+      EndIf
+    Else
+      conftag=FILE_CONFIG
+    Endif
 
     safe = .true. ! we start safe
     l_his = .false. ! no HISTORY reading
@@ -920,9 +938,9 @@ Contains
     ! Define filename ASCII or netCDF
 
     If (io_read /= IO_READ_NETCDF) Then
-      fname = Trim(files(FILE_CONFIG)%filename)
+      fname=Trim(files(conftag)%filename)
     Else
-      fname = Trim(files(FILE_CONFIG)%filename)//'.nc'
+      fname=Trim(files(conftag)%filename)//'.nc'
     End If
 
     ! Define/Detect the FAST reading status
@@ -949,13 +967,14 @@ Contains
 
         ! Open CONFIG
 
-        Open (Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
+        Open(Newunit=files(conftag)%unit_no, File=files(conftag)%filename)
 
         ! Read the CONFIG file header (TITLE record)
 
         record = ' '
+
         Do i = 1, recsz-1 ! Stop early because of CR
-          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=ierr) record(i:i)
+          Read (Unit=files(conftag)%unit_no, Fmt='(a1)', Advance='No', IOStat=ierr) record(i:i)
           call error_read(ierr, 'read_config', break_eor=eor)
           if (eor) exit
        End Do
@@ -965,8 +984,9 @@ Contains
         ! Read configuration level and image condition (RECORD2)
 
         record = ' '
+
         Do i = 1, recsz-1 ! Stop early because of CR
-          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=ierr) record(i:i)
+          Read (Unit=files(conftag)%unit_no, Fmt='(a1)', Advance='No', IOStat=ierr) record(i:i)
           call error_read(ierr, 'read_config', break_eor=eor)
           if (eor) exit
        End Do
@@ -986,7 +1006,7 @@ Contains
 
       ! Close CONFIG
 
-      If (comm%idnode == 0) Call files(FILE_CONFIG)%close ()
+      If (comm%idnode == 0) Call files(conftag)%close()
 
     End If
 
@@ -1001,15 +1021,15 @@ Contains
       ! Open CONFIG and skip the header
 
       If (comm%idnode == 0) Then
-        Open (Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
+        Open(Newunit=files(conftag)%unit_no, File=files(conftag)%filename)
 
-        Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*) ! CONFIG file header (TITLE record)
-        Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*) ! configuration level and image condition
+        Read(Unit=files(conftag)%unit_no, Fmt=*)    ! CONFIG file header (TITLE record)
+        Read(Unit=files(conftag)%unit_no, Fmt=*)    ! configuration level and image condition
 
         If (config%imcon /= 0) Then
-          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*) ! cell vectors (not defined for imcon=0) but cell
-          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*) ! is modified in set_bounds for imcon 0 and 6!!!
-          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
+          Read(Unit=files(conftag)%unit_no, Fmt=*) ! cell vectors (not defined for imcon=0) but cell
+          Read(Unit=files(conftag)%unit_no, Fmt=*) ! is modified in set_bounds for imcon 0 and 6!!!
+          Read(Unit=files(conftag)%unit_no, Fmt=*)
         End If
       End If
 
@@ -1051,11 +1071,13 @@ Contains
         ! Read in transmission arrays
 
         If (comm%idnode == 0 .and. safe) Then
-          record = ' '
-          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a)', iostat=ierr) record
+
+         record = ' '
+          Read (Unit=files(conftag)%unit_no, Fmt='(a)', iostat=ierr) record
           call error_read(ierr, 'read_config')
           Call tabs_2_blanks(record); Call strip_blanks(record)
           Call get_word(record, word); chbuf(indatm) = word(1:8)
+
           If (l_ind) Then
             Call get_word(record, word)
             iwrk(indatm) = Nint(word_2_real(word, 0.0_wp, strict))
@@ -1068,12 +1090,12 @@ Contains
             iwrk(indatm) = nattot
           End If
 
-          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*, iostat=ierr) axx(indatm), ayy(indatm), azz(indatm)
+          Read (Unit=files(conftag)%unit_no, Fmt=*, iostat=ierr) axx(indatm), ayy(indatm), azz(indatm)
           call error_read(ierr, 'read_config')
           If (levcfg > 0) Then
-            Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*, iostat=ierr) bxx(indatm), byy(indatm), bzz(indatm)
+            Read (Unit=files(conftag)%unit_no, Fmt=*, iostat=ierr) bxx(indatm), byy(indatm), bzz(indatm)
             call error_read(ierr, 'read_config')
-            If (levcfg > 1) Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*, iostat=ierr) cxx(indatm), cyy(indatm), czz(indatm)
+            If (levcfg > 1) Read (Unit=files(conftag)%unit_no, Fmt=*, iostat=ierr) cxx(indatm), cyy(indatm), czz(indatm)
             call error_read(ierr, 'read_config')
            End If
         End If
@@ -1203,7 +1225,7 @@ Contains
 
       ! Close CONFIG
 
-      If (comm%idnode == 0) Call files(FILE_CONFIG)%close ()
+      If (comm%idnode == 0) Call files(conftag)%close()
       Call gsync(comm)
 
       Deallocate (chbuf, iwrk, Stat=fail(1))
@@ -1223,7 +1245,7 @@ Contains
         Call io_init(io, recsz)
         Call io_open(io, io_read, comm%comm, fname, mode_rdonly, fh)
       Else
-        Open (Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
+        Open(Newunit=files(conftag)%unit_no, File=files(conftag)%filename)
       End If
 
       ! top_skip is header size
@@ -1239,7 +1261,7 @@ Contains
       End If
 
       Call read_config_parallel(config, levcfg, dvar, l_ind, strict, megatm, l_his, l_xtr, &
-                                fast, fh, top_skip, xhi, yhi, zhi, io, domain, files, comm)
+                                fast, fh, top_skip, xhi, yhi, zhi, io, domain, files, comm, ff)
 
       ! Close CONFIG
 
@@ -1247,7 +1269,7 @@ Contains
         Call io_close(io, fh)
         Call io_finalize(io)
       Else
-        Call files(FILE_CONFIG)%close ()
+        Call files(conftag)%close()
       End If
 
     End If
@@ -1398,7 +1420,7 @@ Contains
   End Subroutine read_config
 
   Subroutine read_config_parallel(config, levcfg, dvar, l_ind, strict, megatm, l_his, &
-                                  l_xtr, fast, fh, top_skip, xhi, yhi, zhi, io, domain, files, comm)
+                                  l_xtr, fast, fh, top_skip, xhi, yhi, zhi, io, domain, files, comm, ff)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1431,6 +1453,7 @@ Contains
     Type(domains_type),        Intent(In   ) :: domain
     Type(file_type),           Intent(InOut) :: files(:)
     Type(comms_type),          Intent(InOut) :: comm
+    Integer( Kind = wi ), Intent( In   ), Optional :: ff
 
     Character(Len=1), Allocatable, Dimension(:, :) :: rec_buff
     Character(Len=200)                             :: record
@@ -1459,6 +1482,21 @@ Contains
 
 ! Some parameters and variables needed by io interfaces
 ! netCDF
+
+    Integer( Kind = wi )                :: conftag
+
+    ! Choose which CONFIG file to read
+    If (present(ff)) then
+      If (ff == 1 ) Then
+        conftag=FILE_CONFIG
+      ElseIf( ff ==2 )Then
+        conftag=FILE_CONFIG_2
+      ElseIf( ff ==3 )Then
+        conftag=FILE_CONFIG_3
+      EndIf
+    Else
+      conftag=FILE_CONFIG
+    Endif
 
     ! Get reading method, total number of I/O heads and buffer size
 
@@ -1522,20 +1560,20 @@ Contains
           Do n_ii = 1_li, n_sk / n_jj
             forma = ' '
             Write (forma, '( "(", i0, "/)" )') n_jj
-            Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, iostat=ierr)
+            Read (Unit=files(conftag)%unit_no, Fmt=forma, iostat=ierr)
             call error_read(ierr, 'read_config')
           End Do
           n_ii = Mod(n_sk, n_jj) - n_ii + 1_li
           If (n_ii > 0_li) Then
             forma = ' '
             Write (forma, '( "(", i0, "/)" )') n_ii
-            Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, iostat=ierr)
+            Read (Unit=files(conftag)%unit_no, Fmt=forma, iostat=ierr)
             call error_read(ierr, 'read_config')
           End If
         Else
           forma = ' '
           Write (forma, '( "(", i0, "/)" )') n_sk
-          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, iostat=ierr)
+          Read (Unit=files(conftag)%unit_no, Fmt=forma, iostat=ierr)
           call error_read(ierr, 'read_config')
         End If
 
@@ -1607,7 +1645,7 @@ Contains
             If (this_rec_buff == 0) Then
               recs_to_read = Min(Size(rec_buff, Dim=2), (to_read - i + 1) * recs_per_at)
               If (.not. fast) Then
-                Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma) rec_buff(:, 1:recs_to_read)
+                Read (Unit=files(conftag)%unit_no, Fmt=forma) rec_buff(:, 1:recs_to_read)
               Else
                 Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr)
                 call error_read(ierr, 'read_config_parallel')
@@ -1643,7 +1681,7 @@ Contains
               this_rec_buff = 0
               recs_to_read = Min(Size(rec_buff, Dim=2), (to_read - i + 1) * recs_per_at - 1)
               If (.not. fast) Then
-                Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma) rec_buff(:, 1:recs_to_read)
+                Read (Unit=files(conftag)%unit_no, Fmt=forma) rec_buff(:, 1:recs_to_read)
               Else
                 Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr)
                 rec_mpi_io = rec_mpi_io + Int(recs_to_read, offset_kind)
@@ -1665,7 +1703,7 @@ Contains
                 If (levcfg > 0) Then
                   recs_to_read = Min(Size(rec_buff, Dim=2), (to_read - i + 1) * recs_per_at - 2)
                   If (.not. fast) Then
-                    Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma) rec_buff(:, 1:recs_to_read)
+                    Read (Unit=files(conftag)%unit_no, Fmt=forma) rec_buff(:, 1:recs_to_read)
                   Else
                     Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr)
                     call error_read(ierr, 'read_config_parallel')
@@ -1688,7 +1726,7 @@ Contains
                   If (levcfg > 1) Then
                     recs_to_read = Min(Size(rec_buff, Dim=2), (to_read - i + 1) * recs_per_at - 3)
                     If (.not. fast) Then
-                      Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma) rec_buff(:, 1:recs_to_read)
+                      Read (Unit=files(conftag)%unit_no, Fmt=forma) rec_buff(:, 1:recs_to_read)
                     Else
                       Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr)
                       call error_read(ierr, 'read_config_parallel')
@@ -1957,21 +1995,20 @@ Contains
           Do n_ii = 1_li, n_sk / n_jj
             forma = ' '
             Write (forma, '( "(", i0, "/)" )') n_jj
-            Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, iostat=ierr)
+            Read (Unit=files(conftag)%unit_no, Fmt=forma, iostat=ierr)
             call error_read(ierr, 'read_config_parallel')
-
           End Do
           n_ii = Mod(Int(n_skip, li), n_jj)
           If (n_ii > 0_li) Then
             forma = ' '
             Write (forma, '( "(", i0, "/)" )') n_ii
-            Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, iostat=ierr)
+            Read (Unit=files(conftag)%unit_no, Fmt=forma, iostat=ierr)
             call error_read(ierr, 'read_config_parallel')
          End If
         Else
           forma = ' '
           Write (forma, '( "(", i0, "/)" )') n_sk
-          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, iostat=ierr)
+          Read (Unit=files(conftag)%unit_no, Fmt=forma, iostat=ierr)
           call error_read(ierr, 'read_config_parallel')
        End If
     End If
@@ -1988,7 +2025,7 @@ Contains
           If (first_at(my_read_proc_num) == megatm) Then
             recs_to_read = 1
             If (.not. fast) Then
-              Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, Iostat=ierr) rec_buff(:, 1:recs_to_read)
+              Read (Unit=files(conftag)%unit_no, Fmt=forma, Iostat=ierr) rec_buff(:, 1:recs_to_read)
             Else
               Call io_read_batch(io, fh, rec_mpi_io, 1, rec_buff, ierr)
             End If
@@ -2032,7 +2069,7 @@ Contains
   End Subroutine read_config_parallel
 
   Subroutine scan_config(config, megatm, dvar, levcfg, xhi, yhi, zhi, &
-                         io, domain, files, comm)
+                         io, domain, files, comm, ff)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2060,8 +2097,10 @@ Contains
     Type(domains_type),       Intent(In   ) :: domain
     Type(file_type),          Intent(InOut) :: files(:)
     Type(comms_type),         Intent(InOut) :: comm
+    Integer( Kind = wi ),       Intent( In   ), Optional :: ff
 
     Character(Len=200)        :: record
+    Character(Len=256)        :: message
     Character(Len=40)         :: fname, word
     Integer                   :: fh, i, io_read, recsz, totatm
     Integer                   :: ierr
@@ -2069,6 +2108,20 @@ Contains
     Logical                   :: eor
     Logical                   :: fast, l_his, l_ind, l_xtr, safe, strict
     Real(Kind=wp)             :: buffer(1:4), cell_vecs(1:3, 1:3), xxx, yyy, zzz
+    Integer( Kind = wi )      :: conftag
+
+    ! Choose which CONFIG file to read
+    If (present(ff)) then
+      If (ff == 1 ) Then
+        conftag=FILE_CONFIG
+      ElseIf( ff ==2 )Then
+        conftag=FILE_CONFIG_2
+      ElseIf( ff ==3 )Then
+        conftag=FILE_CONFIG_3
+      EndIf
+    Else
+      conftag=FILE_CONFIG
+    Endif
 
 ! Some parameters and variables needed by io interfaces
 ! default record size
@@ -2087,16 +2140,20 @@ Contains
     ! Define filename ASCII or netCDF
 
     If (io_read /= IO_READ_NETCDF) Then
-      fname = Trim(files(FILE_CONFIG)%filename)
+      fname = Trim(files(conftag)%filename)
     Else
-      fname = Trim(files(FILE_CONFIG)%filename)//'nc'
+      fname = Trim(files(conftag)%filename)//'nc'
     End If
 
     ! Check if we have a CONFIG
 
     If (comm%idnode == 0) Inquire (File=fname, Exist=safe)
     Call gcheck(comm, safe)
-    If (.not. safe) Call error(124)
+    If (.not. safe) Then
+      write(message, '(1x,3a)') 'error - ', trim(fname), ' files not found'    
+      Call info(message,.True.)   
+      Call error(0)
+    End If  
 
     ! Define/Detect the FAST reading status
 
@@ -2122,13 +2179,13 @@ Contains
 
         ! Open CONFIG
 
-        Open (Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
+        Open (Newunit=files(conftag)%unit_no, File=files(conftag)%filename)
 
         ! Read the CONFIG file header (TITLE record)
 
         record = ' '
         Do i = 1, recsz-1 ! Stop early because of CR
-          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=ierr) record(i:i)
+          Read (Unit=files(conftag)%unit_no, Fmt='(a1)', Advance='No', IOStat=ierr) record(i:i)
           call error_read(ierr, 'scan_config', break_eor=eor)
           if (eor) exit
         End Do
@@ -2139,7 +2196,7 @@ Contains
 
         record = ' '
         Do i = 1, recsz-1 ! Stop early because of CR
-          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=ierr) record(i:i)
+          Read (Unit=files(conftag)%unit_no, Fmt='(a1)', Advance='No', IOStat=ierr) record(i:i)
           call error_read(ierr, 'scan_config', break_eor=eor)
           if (eor) exit
         End Do
@@ -2162,7 +2219,7 @@ Contains
 
       ! Close CONFIG
 
-      If (comm%idnode == 0) Call files(FILE_CONFIG)%close ()
+      If (comm%idnode == 0) Call files(conftag)%close ()
 
     End If
 
@@ -2172,18 +2229,18 @@ Contains
 
       ! Open CONFIG
 
-      If (comm%idnode == 0) Open (Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
+      If (comm%idnode == 0) Open (Newunit=files(conftag)%unit_no, File=files(conftag)%filename)
 
       ! Read TITLE record (file header)
 
-      Call get_line(safe, files(FILE_CONFIG)%unit_no, record, comm)
+      Call get_line(safe, files(conftag)%unit_no, record, comm)
       If (.not. safe) Call error(0, 'Unexpected end of config')
 
       config%cfgname = Trim(record)
 
       ! Read configuration level and image condition
 
-      Call get_line(safe, files(FILE_CONFIG)%unit_no, record, comm)
+      Call get_line(safe, files(conftag)%unit_no, record, comm)
       If (.not. safe) Call error(0, 'Unexpected end of config')
 
       Call get_word(record, word)
@@ -2203,7 +2260,7 @@ Contains
       ! specify MD cell (not defined for imcon=0)
 
       If (config%imcon /= 0) Then
-        Call get_line(safe, files(FILE_CONFIG)%unit_no, record, comm)
+        Call get_line(safe, files(conftag)%unit_no, record, comm)
         If (.not. safe) Call error(0, 'Unexpected end of config')
         Call get_word(record, word)
         config%cell(1) = word_2_real(word)
@@ -2212,7 +2269,7 @@ Contains
         Call get_word(record, word)
         config%cell(3) = word_2_real(word)
 
-        Call get_line(safe, files(FILE_CONFIG)%unit_no, record, comm)
+        Call get_line(safe, files(conftag)%unit_no, record, comm)
         If (.not. safe) Call error(0, 'Unexpected end of config')
         Call get_word(record, word)
         config%cell(4) = word_2_real(word)
@@ -2221,7 +2278,7 @@ Contains
         Call get_word(record, word)
         config%cell(6) = word_2_real(word)
 
-        Call get_line(safe, files(FILE_CONFIG)%unit_no, record, comm)
+        Call get_line(safe, files(conftag)%unit_no, record, comm)
         If (.not. safe) Call error(0, 'Unexpected end of config')
         Call get_word(record, word)
         config%cell(7) = word_2_real(word)
@@ -2233,7 +2290,7 @@ Contains
 
       ! Close CONFIG
 
-      If (comm%idnode == 0) Call files(FILE_CONFIG)%close ()
+      If (comm%idnode == 0) Call files(conftag)%close ()
       Call gsync(comm)
 
     Else ! netCDF read
@@ -2279,27 +2336,27 @@ Contains
 
           ! Open CONFIG
 
-          Open (Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
+          Open (Newunit=files(conftag)%unit_no, File=files(conftag)%filename)
 
           ! Skip the header (we know exists from the basic scan)
 
-          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
-          Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
+          Read (Unit=files(conftag)%unit_no, Fmt=*)
+          Read (Unit=files(conftag)%unit_no, Fmt=*)
           If (config%imcon /= 0) Then
-            Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
-            Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
-            Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
+            Read (Unit=files(conftag)%unit_no, Fmt=*)
+            Read (Unit=files(conftag)%unit_no, Fmt=*)
+            Read (Unit=files(conftag)%unit_no, Fmt=*)
           End If
 
           ! Find the extreme dimensions for the system
 
           Do
-           Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=40)
-            Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30) xxx, yyy, zzz
+           Read (Unit=files(conftag)%unit_no, Fmt=*, End=40)
+            Read (Unit=files(conftag)%unit_no, Fmt=*, End=30) xxx, yyy, zzz
 
             If (levcfg > 0) Then
-              Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30)
-              If (levcfg > 1) Read (Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30)
+              Read (Unit=files(conftag)%unit_no, Fmt=*, End=30)
+              If (levcfg > 1) Read (Unit=files(conftag)%unit_no, Fmt=*, End=30)
             End If
 
             totatm = totatm + 1
@@ -2322,7 +2379,7 @@ Contains
 
         ! Close CONFIG
 
-        If (comm%idnode == 0) Call files(FILE_CONFIG)%close ()
+        If (comm%idnode == 0) Call files(conftag)%close ()
 
         buffer(1) = xhi
         buffer(2) = yhi
@@ -2346,7 +2403,7 @@ Contains
           Call io_init(io, recsz)
           Call io_open(io, io_read, comm%comm, fname, mode_rdonly, fh)
         Else
-          Open (Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
+          Open (Newunit=files(conftag)%unit_no, File=files(conftag)%filename)
         End If
 
         ! top_skip is header size
@@ -2362,7 +2419,7 @@ Contains
         End If
 
         Call read_config_parallel(config, levcfg, dvar, l_ind, strict, megatm, l_his, l_xtr, &
-                                  fast, fh, top_skip, xhi, yhi, zhi, io, domain, files, comm)
+                                  fast, fh, top_skip, xhi, yhi, zhi, io, domain, files, comm, ff)
 
         ! Close CONFIG
 
@@ -2370,7 +2427,7 @@ Contains
           Call io_close(io, fh)
           Call io_finalize(io)
         Else
-          Call files(FILE_CONFIG)%close ()
+          Call files(conftag)%close ()
         End If
 
       End If

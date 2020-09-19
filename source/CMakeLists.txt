@@ -31,6 +31,7 @@ set(dlpoly_SRCS
   external_field.F90
   stochastic_boundary.F90
   four_body.F90
+  evb.F90
   langevin.F90
   coul_spole.F90
   shared_units.F90
@@ -138,6 +139,11 @@ if(WITH_EXP)
     COMPILE_DEFINITIONS "EXPERIMENT")
 endif()
 
+if(WITH_EVB)
+  set_property(TARGET dlpoly APPEND PROPERTY
+    COMPILE_DEFINITIONS "EVB")
+endif()
+
 if(WITH_NETCDF)
   set_property(TARGET dlpoly APPEND PROPERTY
     COMPILE_DEFINITIONS "NETCDF")
@@ -178,6 +184,6 @@ endif()
 link_directories (${LIBRARY_OUTPUT_PATH})
 add_executable(${target_name} dl_poly.F90)
 set_target_properties(${target_name} PROPERTIES LINK_FLAGS "${OMP_LINK_FLAGS} ${MIC_LINK_FLAGS}")
-target_link_libraries(${target_name} dlpoly ${LIBS})
+target_link_libraries(${target_name} dlpoly ${LIBS} ${BLAS_LIBRARIES})  
 install(TARGETS ${target_name} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 INSTALL_SUBLIB(dlpoly)

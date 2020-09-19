@@ -51,6 +51,8 @@ Module ffield
                              FIELD_SPHERE, FIELD_UMBRELLA, FIELD_WALL, FIELD_WALL_PISTON, &
                              FIELD_ZRES, FIELD_ZRES_MINUS, FIELD_ZRES_PLUS, external_field_type
   Use filename,        Only: FILE_FIELD,&
+                             FILE_FIELD_2,&
+                             FILE_FIELD_3,&
                              FILE_TABANG,&
                              FILE_TABBND,&
                              FILE_TABDIH,&
@@ -129,7 +131,7 @@ Contains
 
   Subroutine read_field(rcut, cshell, pmf, cons, thermo, met, bond, angle, dihedral, &
                         inversion, tether, threebody, sites, vdws, tersoffs, fourbody, rdf, mpoles, &
-                        ext_field, rigid, electro, config, kim_data, files, flow, crd, comm)
+                        ext_field, rigid, electro, config, kim_data, files, flow, crd, comm, ff)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -159,6 +161,7 @@ Contains
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
     ! contrib   - a.m.elena march 2019 (remove error 145)
+    ! contrib   - i.scivetti may 2019 (EVB implementation)
     ! amended   - i.t.todorov march 2020 tersoff_generate call dependence added
     ! contrib   - a.m.elena july 2020 (ljf)
     !
@@ -193,6 +196,7 @@ Contains
     Type(flow_type),           Intent(InOut) :: flow
     Type(coord_type),          Intent(InOut) :: crd
     Type(comms_type),          Intent(InOut) :: comm
+    Integer( Kind = wi ), Intent( In   ), Optional :: ff
 
     Logical, Dimension(7)          :: warning_triggered ! 410, 420, 430, 440, 450, 296, 305
     Character(Len=100)             :: rfmt
@@ -226,6 +230,21 @@ Contains
                                       k_crsh, k_crsh_p, k_crsh_s, p_core, p_core_p, p_core_s, &
                                       parpot(1:30), pmf_tmp(1:2), q_core, q_core_p, q_core_s, &
                                       q_shel, q_shel_p, q_shel_s, sig(0:2), tmp, weight
+
+    Integer( Kind = wi )           :: fftag
+
+    ! Choose which FIELD file to read
+    If (present(ff)) then
+      If (ff == 1 ) Then
+        fftag=FILE_FIELD
+      ElseIf( ff ==2 )Then
+        fftag=FILE_FIELD_2
+      ElseIf( ff ==3 )Then
+        fftag=FILE_FIELD_3 
+      EndIf         
+    Else 
+      fftag=FILE_FIELD
+    Endif
 
     warning_triggered = .false.
 
@@ -336,7 +355,7 @@ Contains
     ! open force field data file
 
     If (comm%idnode == 0) Then
-      Open (Newunit=files(FILE_FIELD)%unit_no, File=files(FILE_FIELD)%filename, Status='old')
+      Open(Newunit=files(fftag)%unit_no, File=files(fftag)%filename,  Status = 'old')
     End If
     Call info(' ', .true., level=2)
     Call info('system specification', .true., level=3)
@@ -346,8 +365,8 @@ Contains
 
     ! omit first line
 
-    Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
-    If (.not. safe) Go To 2000
+    Call get_line(safe, files(fftag)%unit_no, record, comm)
+    If (.not.safe) Go To 2000
 
     ! read and process directives from field file
 
@@ -355,9 +374,9 @@ Contains
 
       word(1:1) = '#'
       Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-        Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
-        If (.not. safe) Go To 2000
-        Call get_word(record, word); Call lower_case(word)
+        Call get_line(safe, files(fftag)%unit_no, record, comm)
+        If (.not.safe) Go To 2000
+        Call get_word(record, word) ; Call lower_case(word)
       End Do
 
       ! energy unit for input/output
@@ -385,6 +404,9 @@ Contains
           Call info(word(1:Len_trim(word)), .true.)
           Call error(5)
         End If
+
+        sites%ffunit=engunit
+
 
         ! multipolar electrostatics control option
 
@@ -459,8 +481,8 @@ Contains
 
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-            Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
-            If (.not. safe) Go To 2000
+            Call get_line(safe, files(fftag)%unit_no, record, comm)
+            If (.not.safe) Go To 2000
             Call get_word(record, word)
           End Do
           sites%mol_name(itmols) = word(1:Len_trim(word) + 1)//record
@@ -478,7 +500,7 @@ Contains
 
             word(1:1) = '#'
             Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+              Call get_line(safe, files(fftag)%unit_no, record, comm)
               If (.not. safe) Go To 2000
               Call lower_case(record)
               Call get_word(record, word)
@@ -519,13 +541,13 @@ Contains
 
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                  Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                  Call get_line(safe, files(fftag)%unit_no, record, comm)
                   If (.not. safe) Go To 2000
                   Call get_word(record, word)
                 End Do
 
                 atom1 = word(1:8)
-
+                 
                 Call get_word(record, word)
                 weight = Abs(word_2_real(word))
 
@@ -622,7 +644,7 @@ Contains
 
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                  Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                  Call get_line(safe, files(fftag)%unit_no, record, comm)
                   If (.not. safe) Go To 2000
                   Call get_word(record, word)
                 End Do
@@ -648,6 +670,10 @@ Contains
 
                 isite1 = nsite - sites%num_site(itmols) + iatm1
                 isite2 = nsite - sites%num_site(itmols) + iatm2
+               
+                If ((iatm1 > sites%num_site(itmols)) .Or.  (iatm2 > sites%num_site(itmols))) Then
+                  Call error(0,"Index of shell is out of range")
+                End If
 
                 ! test for frozen core-shell unit and print unit
 
@@ -747,7 +773,7 @@ Contains
 
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                  Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                  Call get_line(safe, files(fftag)%unit_no, record, comm)
                   If (.not. safe) Go To 2000
                   Call get_word(record, word)
                 End Do
@@ -867,7 +893,7 @@ Contains
               Do ipmf = 1, 2
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                  Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                  Call get_line(safe, files(fftag)%unit_no, record, comm)
                   If (.not. safe) Go To 2000
                   Call lower_case(record)
                   Call get_word(record, word)
@@ -890,7 +916,7 @@ Contains
                 Do jpmf = 1, pmf%mxtpmf(ipmf)
                   word(1:1) = '#'
                   Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                    Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                    Call get_line(safe, files(fftag)%unit_no, record, comm)
                     If (.not. safe) Go To 2000
                     Call get_word(record, word)
                   End Do
@@ -1050,7 +1076,7 @@ Contains
 
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                  Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                  Call get_line(safe, files(fftag)%unit_no, record, comm)
                   If (.not. safe) Go To 2000
                   Call get_word(record, word)
                 End Do
@@ -1064,7 +1090,7 @@ Contains
                   If (Mod(jrgd, 16) == 0) Then
                     word(1:1) = '#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                      Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                      Call get_line(safe, files(fftag)%unit_no, record, comm)
                       If (.not. safe) Go To 2000
                       Call get_word(record, word)
                     End Do
@@ -1186,7 +1212,7 @@ Contains
 
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                  Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                  Call get_line(safe, files(fftag)%unit_no, record, comm)
                   If (.not. safe) Go To 2000
                   Call get_word(record, word)
                 End Do
@@ -1297,7 +1323,7 @@ Contains
 
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                  Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                  Call get_line(safe, files(fftag)%unit_no, record, comm)
                   If (.not. safe) Go To 2000
                   Call get_word(record, word)
                 End Do
@@ -1541,7 +1567,7 @@ Contains
 
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                  Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                  Call get_line(safe, files(fftag)%unit_no, record, comm)
                   If (.not. safe) Go To 2000
                   Call get_word(record, word)
                 End Do
@@ -1811,7 +1837,7 @@ Contains
 
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                  Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                  Call get_line(safe, files(fftag)%unit_no, record, comm)
                   If (.not. safe) Go To 2000
                   Call get_word(record, word)
                 End Do
@@ -2076,7 +2102,7 @@ Contains
 
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                  Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                  Call get_line(safe, files(fftag)%unit_no, record, comm)
                   If (.not. safe) Go To 2000
                   Call get_word(record, word)
                 End Do
@@ -3440,7 +3466,7 @@ Contains
 
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-            Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+            Call get_line(safe, files(fftag)%unit_no, record, comm)
             If (.not. safe) Go To 2000
             Call get_word(record, word)
           End Do
@@ -3600,7 +3626,7 @@ Contains
 
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-            Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+            Call get_line(safe, files(fftag)%unit_no, record, comm)
             If (.not. safe) Go To 2000
             Call get_word(record, word)
           End Do
@@ -3761,6 +3787,9 @@ Contains
 
           vdws%list(keyvdw) = itpvdw
           vdws%ltp(itpvdw) = keypot
+
+          vdws%labpair(1,itpvdw)=atom1
+          vdws%labpair(2,itpvdw)=atom2
 
           Do i = 1, vdws%max_param
             vdws%param(i, itpvdw) = parpot(i)
@@ -4228,18 +4257,24 @@ Contains
 
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-            Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+            Call get_line(safe, files(fftag)%unit_no, record, comm)
             If (.not. safe) Go To 2000
             Call get_word(record, word)
           End Do
 
           atom1 = word(1:8)
+
           Call get_word(record, word)
           atom2 = word(1:8)
 
           Call get_word(record, word)
           Call lower_case(word)
           keyword = word(1:4)
+
+          met%labunit(1,itpmet)=atom1
+          met%labunit(2,itpmet)=atom2
+          met%labunit(3,itpmet)=keyword
+
 
           If (keyword(1:3) == 'eam') Then
             keypot = 0 ! met%tab=1 set in scan_field
@@ -4410,16 +4445,19 @@ Contains
 
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-            Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+            Call get_line(safe, files(fftag)%unit_no, record, comm)
             If (.not. safe) Go To 2000
             Call get_word(record, word)
           End Do
 
           atom0 = word(1:8)
+          tersoffs%labunit(1,itpter)=atom0  
 
           Call get_word(record, word)
           Call lower_case(word)
           keyword = word(1:4)
+
+          tersoffs%labunit(2,itpter)=keyword  
 
           If (keyword == 'ters') Then
             keypot = TERS_TERSOFF
@@ -4443,7 +4481,7 @@ Contains
 
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-            Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+            Call get_line(safe, files(fftag)%unit_no, record, comm)
             If (.not. safe) Go To 2000
             Call get_word(record, word)
           End Do
@@ -4484,7 +4522,7 @@ Contains
 
             word(1:1) = '#'
             Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+              Call get_line(safe, files(fftag)%unit_no, record, comm)
               If (.not. safe) Go To 2000
               Call get_word(record, word)
             End Do
@@ -4573,7 +4611,7 @@ Contains
 
             word(1:1) = '#'
             Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+              Call get_line(safe, files(fftag)%unit_no, record, comm)
               If (.not. safe) Go To 2000
               Call get_word(record, word)
             End Do
@@ -4601,6 +4639,11 @@ Contains
             ka2 = Min(tersoffs%list(katom1), tersoffs%list(katom2))
 
             keyter = (ka1 * (ka1 - 1)) / 2 + ka2
+          
+            !Label for Tersoff pair interaction
+
+            tersoffs%labpair(1,icross)=atom1  
+            tersoffs%labpair(2,icross)=atom2  
 
             tersoffs%param2(keyter, 1) = parpot(1)
             tersoffs%param2(keyter, 2) = parpot(2)
@@ -4616,9 +4659,10 @@ Contains
         ! read in the three-body potential energy parameters
 
       Else If (word(1:3) == 'tbp') Then
+        ! Initialise parameters to zero
+        threebody%prmtbp = 0.0_wp
 
         Call get_word(record, word)
-        threebody%ntptbp = Nint(word_2_real(word))
 
         Write (message, '(a,i10)') 'number of specified three-body potentials ', threebody%ntptbp
         Call info(message, .true., level=3)
@@ -4643,7 +4687,7 @@ Contains
 
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-            Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+            Call get_line(safe, files(fftag)%unit_no, record, comm)
             If (.not. safe) Go To 2000
             Call get_word(record, word)
           End Do
@@ -4659,6 +4703,12 @@ Contains
           Call get_word(record, word)
           Call lower_case(word)
           keyword = word(1:4)
+
+          threebody%labunit(1,itptbp)=atom1
+          threebody%labunit(2,itptbp)=atom0
+          threebody%labunit(3,itptbp)=atom2
+          threebody%labunit(4,itptbp)=keyword
+
 
           If (keyword == 'harm') Then
             keypot = 1
@@ -4783,7 +4833,7 @@ Contains
 
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-            Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+            Call get_line(safe, files(fftag)%unit_no, record, comm)
             If (.not. safe) Go To 2000
             Call get_word(record, word)
           End Do
@@ -5013,7 +5063,7 @@ Contains
 
         word(1:1) = '#'
         Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-          Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+          Call get_line(safe, files(fftag)%unit_no, record, comm)
           If (.not. safe) Go To 2000
           Call get_word(record, word)
         End Do
@@ -5132,7 +5182,7 @@ Contains
 
       Else If (word(1:5) == 'close') Then
 
-        If (comm%idnode == 0) Call files(FILE_FIELD)%close ()
+        If (comm%idnode == 0) Call files(fftag)%close()
 
         ! Precautions: (vdws,met) may have led to rdf scanning (rdf%max_rdf > 0), see set_bounds
 
@@ -5186,14 +5236,16 @@ Contains
 
     ! uncontrolled error exit from field file processing
 
-    If (comm%idnode == 0) Call files(FILE_FIELD)%close ()
+    If (comm%idnode == 0) Call files(fftag)%close()
+
     Call error(16)
 
     ! end of field file error exit
 
     2000 Continue
 
-    If (comm%idnode == 0) Call files(FILE_FIELD)%close ()
+    If (comm%idnode == 0) Call files(fftag)%close()
+
     Call error(52)
 
   End Subroutine read_field
@@ -5398,10 +5450,11 @@ Contains
     Call info(banner, 19, .true., level=2)
   End Subroutine report_topology
 
+
   Subroutine scan_field(megatm, site, max_exclude, mtshl, &
                         mtcons, mtrgd, mtteth, mtbond, mtangl, mtdihd, mtinv, &
                         ext_field, cshell, cons, pmf, met, bond, angle, dihedral, inversion, tether, threebody, &
-                        vdws, tersoffs, fourbody, rdf, mpoles, rigid, kim_data, files, electro, comm)
+                        vdws, tersoffs, fourbody, rdf, mpoles, rigid, kim_data, files, electro, comm, ff)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -5449,6 +5502,7 @@ Contains
     Type(file_type),           Intent(InOut) :: files(:)
     Type(electrostatic_type),  Intent(InOut) :: electro
     Type(comms_type),          Intent(InOut) :: comm
+    Integer( Kind = wi ), Intent( In   ), Optional :: ff
 
     Integer, Parameter :: mmk = 1000, mxb = 6
 
@@ -5465,12 +5519,29 @@ Contains
     Logical                            :: check, lkim, safe
     Real(Kind=wp)                      :: rct, tmp, tmp1, tmp2
 
+    Integer( Kind = wi )               :: fftag
+
+    ! Choose which FIELD file to read
+    If (present(ff)) then
+      If (ff == 1 ) Then
+        fftag=FILE_FIELD
+      ElseIf( ff ==2 )Then
+        fftag=FILE_FIELD_2
+      ElseIf( ff ==3 )Then
+        fftag=FILE_FIELD_3 
+      EndIf
+    Else
+        fftag=FILE_FIELD
+    Endif
+
+
 ! Max number of different atom types
 ! Average maximum number of intra-like bonds per atom
 
     electro%no_elec = .true. ! no electrostatics opted
     mpoles%max_order = 0 ! default of maximum order of poles (charges)
     mpoles%max_mpoles = 0 ! default maximum number of independent poles values
+
     ! it initialises to 0 if no MULT directive exists in FIELD
 
     nummols = 0
@@ -5571,22 +5642,22 @@ Contains
 
     ! Open the interactions input file
 
-    If (comm%idnode == 0) Inquire (File=files(FILE_FIELD)%filename, Exist=safe)
-    Call gcheck(comm, safe, "enforce")
+    If (comm%idnode == 0) Inquire (File=files(fftag)%filename, Exist=safe)
+    Call gcheck(comm, safe,"enforce")
     If (.not. safe) Then
       Go To 20
     Else
-      If (comm%idnode == 0) Open (Newunit=files(FILE_FIELD)%unit_no, File=files(FILE_FIELD)%filename, Status='old')
+      If (comm%idnode == 0) Open (Newunit=files(fftag)%unit_no, File=files(fftag)%filename, Status='old')
     End If
 
-    Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+    Call get_line(safe, files(fftag)%unit_no, record, comm)
     If (.not. safe) Go To 30
 
     Do
 
       word(1:1) = '#'
       Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-        Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+        Call get_line(safe, files(fftag)%unit_no, record, comm)
         record_raw = record ! KIM needs case sensitive IM name
         If (.not. safe) Go To 30
         Call lower_case(record)
@@ -5616,7 +5687,7 @@ Contains
 
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-            Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+            Call get_line(safe, files(fftag)%unit_no, record, comm)
             If (.not. safe) Go To 30
             Call lower_case(record)
             Call get_word(record, word)
@@ -5626,7 +5697,7 @@ Contains
 
             word(1:1) = '#'
             Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+              Call get_line(safe, files(fftag)%unit_no, record, comm)
               If (.not. safe) Go To 30
               Call lower_case(record)
               Call get_word(record, word)
@@ -5650,7 +5721,7 @@ Contains
 
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                  Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                  Call get_line(safe, files(fftag)%unit_no, record, comm)
                   If (.not. safe) Go To 30
                   Call get_word(record, word)
                 End Do
@@ -5697,7 +5768,7 @@ Contains
               Do ishls = 1, numshl
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                  Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                  Call get_line(safe, files(fftag)%unit_no, record, comm)
                   If (.not. safe) Go To 30
                   Call get_word(record, word)
                 End Do
@@ -5715,7 +5786,7 @@ Contains
               Do icon = 1, numcon
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                  Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                  Call get_line(safe, files(fftag)%unit_no, record, comm)
                   If (.not. safe) Go To 30
                   Call get_word(record, word)
                 End Do
@@ -5728,7 +5799,7 @@ Contains
               Do ipmf = 1, 2
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                  Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                  Call get_line(safe, files(fftag)%unit_no, record, comm)
                   If (.not. safe) Go To 30
                   Call lower_case(record)
                   Call get_word(record, word)
@@ -5749,7 +5820,7 @@ Contains
                 Do jpmf = 1, pmf%mxtpmf(ipmf)
                   word(1:1) = '#'
                   Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                    Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                    Call get_line(safe, files(fftag)%unit_no, record, comm)
                     If (.not. safe) Go To 30
                     Call get_word(record, word)
                   End Do
@@ -5768,7 +5839,7 @@ Contains
               Do irgd = 1, numrgd
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                  Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                  Call get_line(safe, files(fftag)%unit_no, record, comm)
                   If (.not. safe) Go To 30
                   Call get_word(record, word)
                 End Do
@@ -5779,7 +5850,7 @@ Contains
                   If (Mod(lrgd, 16) == 0) Then
                     word(1:1) = '#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                      Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                      Call get_line(safe, files(fftag)%unit_no, record, comm)
                       If (.not. safe) Go To 30
                       Call get_word(record, word)
                     End Do
@@ -5801,7 +5872,7 @@ Contains
               Do iteth = 1, inumteth
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                  Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                  Call get_line(safe, files(fftag)%unit_no, record, comm)
                   If (.not. safe) Go To 30
                   Call get_word(record, word)
                 End Do
@@ -5821,7 +5892,7 @@ Contains
               Do ibonds = 1, numbonds
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                  Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                  Call get_line(safe, files(fftag)%unit_no, record, comm)
                   If (.not. safe) Go To 30
                   Call get_word(record, word)
                 End Do
@@ -5872,7 +5943,7 @@ Contains
               Do iang = 1, numang
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                  Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                  Call get_line(safe, files(fftag)%unit_no, record, comm)
                   If (.not. safe) Go To 30
                   Call get_word(record, word)
                 End Do
@@ -5920,7 +5991,7 @@ Contains
               Do idih = 1, numdih
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                  Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                  Call get_line(safe, files(fftag)%unit_no, record, comm)
                   If (.not. safe) Go To 30
                   Call get_word(record, word)
                 End Do
@@ -5968,7 +6039,7 @@ Contains
               Do iinv = 1, numinv
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                  Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                  Call get_line(safe, files(fftag)%unit_no, record, comm)
                   If (.not. safe) Go To 30
                   Call get_word(record, word)
                 End Do
@@ -6022,7 +6093,7 @@ Contains
         Do itprdf = 1, rdf%max_rdf
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-            Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+            Call get_line(safe, files(fftag)%unit_no, record, comm)
             If (.not. safe) Go To 30
             Call get_word(record, word)
           End Do
@@ -6044,7 +6115,7 @@ Contains
         Do itpvdw = 1, vdws%max_vdw
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-            Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+            Call get_line(safe, files(fftag)%unit_no, record, comm)
             If (.not. safe) Go To 30
             Call lower_case(record)
             Call get_word(record, word)
@@ -6114,7 +6185,7 @@ Contains
         Do itpmet = 1, met%max_metal
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-            Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+            Call get_line(safe, files(fftag)%unit_no, record, comm)
             If (.not. safe) Go To 30
             Call lower_case(record)
             Call get_word(record, word)
@@ -6149,6 +6220,7 @@ Contains
 
         If (met%max_metal > 0) Then
           met%max_metal = Max(met%max_metal, (site%mxatyp * (site%mxatyp + 1)) / 2)
+
 
           If (met%tab == 0) Then
             met%max_med = met%max_metal
@@ -6223,15 +6295,16 @@ Contains
         Call get_word(record, word)
         tersoffs%max_ter = Nint(word_2_real(word))
 
+
         Do itpter = 1, tersoffs%max_ter
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-            Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+            Call get_line(safe, files(fftag)%unit_no, record, comm)
             If (.not. safe) Go To 30
             Call lower_case(record)
             Call get_word(record, word)
           End Do
-
+            
           Call get_word(record, word)
           If (word(1:4) == 'ters') Then
             tersoffs%key_pot = TERS_TERSOFF
@@ -6241,7 +6314,7 @@ Contains
 
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-            Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+            Call get_line(safe, files(fftag)%unit_no, record, comm)
             If (.not. safe) Go To 30
             Call get_word(record, word)
           End Do
@@ -6252,7 +6325,7 @@ Contains
           If (tersoffs%key_pot == TERS_KIHS) Then
             word(1:1) = '#'
             Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+              Call get_line(safe, files(fftag)%unit_no, record, comm)
               If (.not. safe) Go To 30
               Call get_word(record, word)
             End Do
@@ -6264,7 +6337,7 @@ Contains
             Do itpter = 1, (tersoffs%max_ter * (tersoffs%max_ter + 1)) / 2
               word(1:1) = '#'
               Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+                Call get_line(safe, files(fftag)%unit_no, record, comm)
                 If (.not. safe) Go To 30
                 Call get_word(record, word)
               End Do
@@ -6277,12 +6350,13 @@ Contains
       Else If (word(1:3) == 'tbp') Then
 
         Call get_word(record, word)
+        threebody%ntptbp = Nint(word_2_real(word))
         threebody%mxtbp = Nint(word_2_real(word))
 
         Do itptbp = 1, threebody%mxtbp
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-            Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+            Call get_line(safe, files(fftag)%unit_no, record, comm)
             If (.not. safe) Go To 30
             Call get_word(record, word)
           End Do
@@ -6303,7 +6377,7 @@ Contains
         Do itpfbp = 1, fourbody%max_four_body
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-            Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+            Call get_line(safe, files(fftag)%unit_no, record, comm)
             If (.not. safe) Go To 30
             Call get_word(record, word)
           End Do
@@ -6351,7 +6425,7 @@ Contains
 
         word(1:1) = '#'
         Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-          Call get_line(safe, files(FILE_FIELD)%unit_no, record, comm)
+          Call get_line(safe, files(fftag)%unit_no, record, comm)
           If (.not. safe) Go To 30
           Call get_word(record, word)
         End Do
@@ -6397,8 +6471,7 @@ Contains
     End Do
 
     10 Continue
-
-    If (comm%idnode == 0) Call files(FILE_FIELD)%close ()
+    If (comm%idnode == 0) Call files(fftag)%close()
 
     If (kim_data%active) Then
       If (.not. lkim) Then
@@ -6452,11 +6525,14 @@ Contains
     ! FIELD file does not exist
 
     20 Continue
-    Call error(122)
+
+    write(message,'(1x,3a)') 'error - ', trim(files(fftag)%filename), ' file not found'
+    Call info(message, .True.)
+    Call error(0)
     Return
 
     30 Continue
-    If (comm%idnode == 0) Call files(FILE_FIELD)%close ()
+    If (comm%idnode == 0) Call files(fftag)%close()
     Call error(52)
 
   End Subroutine scan_field

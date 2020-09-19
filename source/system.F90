@@ -1,4 +1,10 @@
 Module system
+!
+!> System related subroutines
+!> authour -  J. Magdge Aug 2018  
+!>
+!> 
+!> contrib - i. scivetti Aug 2019
 
   Use angles,          Only: angles_type
   Use bonds,           Only: bonds_type
@@ -27,8 +33,11 @@ Module system
                              info,&
                              warning
   Use filename,        Only: FILE_CONFIG,&
+                             FILE_CONFIG_2,&
+                             FILE_CONFIG_3,&
                              FILE_FIELD,&
-                             FILE_REVCON,&
+                             FILE_FIELD_2,&
+                             FILE_FIELD_3,&
                              FILE_REVIVE,&
                              FILE_REVOLD,&
                              file_type
@@ -656,7 +665,7 @@ Contains
   End Subroutine system_init
 
   Subroutine system_expand(l_str, rcut, io, cshell, cons, bond, angle, &
-                           dihedral, inversion, sites, netcdf, rigid, config, files, comm)
+                           dihedral, inversion, sites, netcdf, rigid, config, files, comm, ff)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -689,6 +698,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(file_type),          Intent(InOut) :: files(:)
     Type(comms_type),         Intent(InOut) :: comm
+    Integer,                  Intent(In   ), Optional :: ff
 
     Character                                                    :: lf
     Character(Len=200)                                           :: record, record1
@@ -723,7 +733,26 @@ Contains
     Character(Len=recsz)                                         :: record2, record3
     Character(Len=Len(config%atmnam)), Allocatable, Dimension(:) :: atmnam_scaled
 
-! Some parameters and variables needed by io interfaces
+    Integer                             :: conftag, fftag
+
+    ! Choose which CONFIG and FIELD file to read, depending on the ff tag
+    If (present(ff)) then
+      If (ff == 1 ) Then
+        conftag=FILE_CONFIG
+        fftag=FILE_FIELD
+      ElseIf( ff ==2 )Then
+        conftag=FILE_CONFIG_2
+        fftag=FILE_FIELD_2
+      ElseIf( ff ==3 )Then
+        conftag=FILE_CONFIG_3
+        fftag=FILE_FIELD_3
+      EndIf
+    Else
+      conftag=FILE_CONFIG
+      fftag=FILE_FIELD
+    Endif
+
+    ! Some parameters and variables needed by io interfaces
 
     lmpldt = .false.
 
@@ -770,9 +799,9 @@ Contains
 
     record = ' '; Write (record, '(3(a1,i0))') '_', config%nx, '_', config%ny, '_', config%nz
     fcfg = ' '
-    fcfg = Trim(files(FILE_CONFIG)%filename)//record(1:Len_trim(record))
+    fcfg = Trim(files(conftag)%filename)//record(1:Len_trim(record))
     ffld = ' '
-    ffld = Trim(files(FILE_FIELD)%filename)//record(1:Len_trim(record))
+    ffld = Trim(files(fftag)%filename)//record(1:Len_trim(record))
     fmpl = ' '
     fmpl = "MPOLES"//record(1:Len_trim(record))
 
@@ -856,9 +885,10 @@ Contains
       Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
                io_write == IO_WRITE_SORTED_MASTER) Then
 
-        Open (Newunit=files(FILE_CONFIG)%unit_no, File=fcfg(1:Len_trim(fcfg)), Status='replace')
-        Call files(FILE_CONFIG)%close ()
-        Open (Newunit=files(FILE_CONFIG)%unit_no, File=fcfg(1:Len_trim(fcfg)), Form='formatted', Access='direct', Recl=recsz)
+        Open (Newunit=files(conftag)%unit_no, File=fcfg(1:Len_trim(fcfg)), Status='replace')
+        Call files(conftag)%close ()
+        Open (Newunit=files(conftag)%unit_no, File=fcfg(1:Len_trim(fcfg)), Form='formatted', Access='direct', Recl=recsz)
+
       End If
 
       ! Write configuration file headers
@@ -919,17 +949,18 @@ Contains
         Call io_nc_put_var(io, 'cell_angles', fh, angles, (/1, i/), (/3, 1/))
 
       Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
-               io_write == IO_WRITE_SORTED_MASTER) Then
 
-        Write (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a72,a1)', Rec=Int(1, li)) &
+        io_write == IO_WRITE_SORTED_MASTER) Then
+
+        Write (Unit=files(conftag)%unit_no, Fmt='(a72,a1)', Rec=Int(1, li)) &
           config%cfgname(1:72), lf
-        Write (Unit=files(FILE_CONFIG)%unit_no, Fmt='(3i10,a42,a1)', Rec=Int(2, li)) &
+        Write (Unit=files(conftag)%unit_no, Fmt='(3i10,a42,a1)', Rec=Int(2, li)) &
           0, config%imcon, nall * config%megatm, Repeat(' ', 42), lf
-        Write (Unit=files(FILE_CONFIG)%unit_no, Fmt='(3f20.12,a12,a1)', Rec=Int(3, li)) &
+        Write (Unit=files(conftag)%unit_no, Fmt='(3f20.12,a12,a1)', Rec=Int(3, li)) &
           fx * config%cell(1), fx * config%cell(2), fx * config%cell(3), Repeat(' ', 12), lf
-        Write (Unit=files(FILE_CONFIG)%unit_no, Fmt='(3f20.12,a12,a1)', Rec=Int(4, li)) &
+        Write (Unit=files(conftag)%unit_no, Fmt='(3f20.12,a12,a1)', Rec=Int(4, li)) &
           fy * config%cell(4), fy * config%cell(5), fy * config%cell(6), Repeat(' ', 12), lf
-        Write (Unit=files(FILE_CONFIG)%unit_no, Fmt='(3f20.12,a12,a1)', Rec=Int(5, li)) &
+        Write (Unit=files(conftag)%unit_no, Fmt='(3f20.12,a12,a1)', Rec=Int(5, li)) &
           fz * config%cell(7), fz * config%cell(8), fz * config%cell(9), Repeat(' ', 12), lf
 
       End If
@@ -1575,9 +1606,9 @@ Contains
 
                       If (comm%idnode == 0) Then
                         rec = rec + Int(1, li)
-                        Write (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a73)', Rec=rec) record2
+                        Write (Unit=files(conftag)%unit_no, Fmt='(a73)', Rec=rec) record2
                         rec = rec + Int(1, li)
-                        Write (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a73)', Rec=rec) record3
+                        Write (Unit=files(conftag)%unit_no, Fmt='(a73)', Rec=rec) record3
                       Else
                         Call gsend(comm, record2, 0, SysExpand_tag)
                         Call gsend(comm, record3, 0, SysExpand_tag)
@@ -1614,9 +1645,10 @@ Contains
                       Call grecv(comm, record3, idm, SysExpand_tag)
 
                       rec = rec + Int(1, li)
-                      Write (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a73)', Rec=rec) record2
+                      Write (Unit=files(conftag)%unit_no, Fmt='(a73)', Rec=rec) record2
                       rec = rec + Int(1, li)
-                      Write (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a73)', Rec=rec) record3
+                      Write (Unit=files(conftag)%unit_no, Fmt='(a73)', Rec=rec) record3
+
                     End If
                   End Do
                 End Do
@@ -1691,7 +1723,7 @@ Contains
     Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
              io_write == IO_WRITE_SORTED_MASTER) Then
 
-      Call files(FILE_CONFIG)%close ()
+      Call files(conftag)%close ()
 
     End If
 
@@ -1710,23 +1742,25 @@ Contains
     Call info(message, .true.)
 
     If (comm%idnode == 0) Then
-      Open (Newunit=files(FILE_FIELD)%unit_no, File=files(FILE_FIELD)%filename, Status='old')
-      Open (Newunit=files(FILE_CONFIG)%unit_no, File=ffld(1:Len_trim(ffld)), Status='replace')
+
+      Open (Newunit=files(fftag)%unit_no, File=files(fftag)%filename, Status='old')
+      Open (Newunit=files(conftag)%unit_no, File=ffld(1:Len_trim(ffld)), Status='replace')
       Write (message, '(2a)') '*** Expanding FIELD in file ', ffld(1:Len_trim(ffld))
       Call info(message, .true.)
 
       ! omit first line
 
       record = ' '
-      Read (Unit=files(FILE_FIELD)%unit_no, Fmt='(a)', End=10) record
+      Read (Unit=files(fftag)%unit_no, Fmt='(a)', End=10) record
       Call tabs_2_blanks(record); Call strip_blanks(record)
-      Write (files(FILE_CONFIG)%unit_no, '(a)') record(1:Len_trim(record))
+      Write (files(conftag)%unit_no, '(a)') record(1:Len_trim(record))
 
       ! read and process directives from field file
 
       Do
+
         record = ' '
-        Read (Unit=files(FILE_FIELD)%unit_no, Fmt='(a)', End=10) record
+        Read (Unit=files(fftag)%unit_no, Fmt='(a)', End=10) record
         Call tabs_2_blanks(record); Call strip_blanks(record)
         record1 = record
         Call get_word(record, word)
@@ -1745,7 +1779,7 @@ Contains
           Call get_word(record, word)
           index = Nint(word_2_real(word))
           Call get_word(record1, word)
-          Write (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a,i10)') word(1:Len_trim(word)), nall * index
+          Write (Unit=files(conftag)%unit_no, Fmt='(a,i10)') word(1:Len_trim(word)), nall * index
 
           ! close force field file
 
@@ -1753,18 +1787,19 @@ Contains
 
           Call gtime(t)
 
-          Write (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a)') record1(1:Len_trim(record1))
-          Call files(FILE_FIELD)%close ()
-          Call files(FILE_CONFIG)%close ()
+          Write (Unit=files(conftag)%unit_no, Fmt='(a)') record1(1:Len_trim(record1))
+          Call files(fftag)%close ()
+          Call files(conftag)%close ()
           Write (message, '(3a)') '*** ', ffld(1:Len_trim(ffld)), ' expansion done !'
           Call info(message, .true.)
+
           Exit
 
           ! just paste the copy
 
         Else
 
-          Write (files(FILE_CONFIG)%unit_no, '(a)') record1(1:Len_trim(record1))
+          Write (files(conftag)%unit_no, '(a)') record1(1:Len_trim(record1))
 
         End If
       End Do
@@ -1773,8 +1808,9 @@ Contains
 
       If (lmpldt) Inquire (File='MPOLES', Exist=lmpldt)
       If (lmpldt) Then
+
         Open (Unit=nmpldt, File='MPOLES', Status='old')
-        Open (Newunit=files(FILE_CONFIG)%unit_no, File=fmpl(1:Len_trim(fmpl)), Status='replace')
+        Open (Newunit=files(conftag)%unit_no, File=fmpl(1:Len_trim(fmpl)), Status='replace')
         Write (message, '(2a)') '*** Expanding MPOLES in file ', fmpl(1:Len_trim(fmpl))
         Call info(message, .true.)
 
@@ -1783,7 +1819,7 @@ Contains
         record = ' '
         Read (Unit=nmpldt, Fmt='(a)', End=10) record
         Call tabs_2_blanks(record); Call strip_blanks(record)
-        Write (files(FILE_CONFIG)%unit_no, '(a)') record(1:Len_trim(record))
+        Write (files(conftag)%unit_no, '(a)') record(1:Len_trim(record))
 
         ! read and process directives from mpoles file
 
@@ -1800,7 +1836,7 @@ Contains
             Call get_word(record, word)
             index = Nint(word_2_real(word))
             Call get_word(record1, word)
-            Write (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a,i10)') word(1:Len_trim(word)), nall * index
+            Write (Unit=files(conftag)%unit_no, Fmt='(a,i10)') word(1:Len_trim(word)), nall * index
 
             ! close mpoles file
 
@@ -1808,18 +1844,19 @@ Contains
 
             Call gtime(t)
 
-            Write (Unit=files(FILE_CONFIG)%unit_no, Fmt='(a)') record1(1:Len_trim(record1))
+            Write (Unit=files(conftag)%unit_no, Fmt='(a)') record1(1:Len_trim(record1))
             Close (Unit=nmpldt)
-            Call files(FILE_CONFIG)%close ()
+            Call files(conftag)%close ()
             Write (message, '(3a)') '*** ', fmpl(1:Len_trim(fmpl)), ' expansion done !'
             Call info(message, .true.)
+
             Exit
 
             ! just paste the copy
 
           Else
 
-            Write (files(FILE_CONFIG)%unit_no, '(a)') record1(1:Len_trim(record1))
+            Write (files(conftag)%unit_no, '(a)') record1(1:Len_trim(record1))
 
           End If
         End Do
@@ -2029,10 +2066,6 @@ Contains
       End If
 
     End If
-
-    ! Write REVCON
-    levcfg = 2 ! define level of information in REVCON
-    Call write_config(config, files(FILE_REVCON), levcfg, nstep, thermo%tstep, io, time, netcdf, comm)
 
     ! node 0 handles I/O
 
