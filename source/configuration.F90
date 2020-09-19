@@ -52,7 +52,7 @@ Module configuration
                              io_get_parameters, io_get_var, io_init, io_nc_create, io_nc_get_att, &
                              io_nc_get_dim, io_nc_get_var, io_nc_put_var, io_open, io_read_batch, &
                              io_set_parameters, io_type, io_write_batch, io_write_record, &
-                             io_write_sorted_file, recsz
+                             io_write_sorted_file, recsz, split_io_comm
   Use kinds,           Only: li,&
                              wi,&
                              wp
