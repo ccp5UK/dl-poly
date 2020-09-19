@@ -611,7 +611,7 @@ Contains
     Type(kim_type),            Intent(InOut) :: kim_data(:)
     Type(msd_type),            Intent(InOut) :: msd_data(:)
     Type(timer_type),          Intent(InOut) :: tmr
-    Type(file_type),           Intent(InOut) :: files(1)
+    Type(file_type),           Intent(InOut) :: files(:)
     Type(greenkubo_type),      Intent(InOut) :: green(:)
     Type(development_type),    Intent(InOut) :: devel
     Type(ewald_type),          Intent(InOut) :: ewld(:)
