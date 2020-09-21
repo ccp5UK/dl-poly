@@ -241,7 +241,7 @@ Contains
     Character(Len=80)  :: banner(9)
     Integer            :: grdana, grdang, grdbnd, grddih, grdinv, i, itmp, j, k, nstall, nstana
     Integer(Kind=wi)   :: tmp_seed(1:3), traj_freq, traj_key, traj_start
-    Logical            :: l_0, l_timcls, l_timjob, lens, lforc, limp, lplumed, lpres, lstep, &
+    Logical            :: l_0, l_timcls, l_timjob, lens, lforc, lplumed, lpres, lstep, &
                           lstrext, ltemp, safe
     Real(Kind=wp)      :: eps0, prmps(1:4), rcb_d, rcell(1:9), rcut1, rpad1, rvdw1, tmp, tol
     Type(testing_type) :: app_test, unit_test
@@ -268,7 +268,7 @@ Contains
     ! default impact option: option applied, particle index,
     ! timestep of impact, energy of impact, (3) direction of impact
 
-    limp = .false.
+    impa%active = .false.
     impa%imd = 0
     impa%tmd = -1
     impa%emd = 0.0_wp
@@ -887,8 +887,8 @@ Contains
         Write (messages(5), '(a,1p,3e12.4)') 'v-r(x,y,z)      ', impa%vmx, impa%vmy, impa%vmz
         Call info(messages,5, .true.)
 
-        If (limp) Call error(600)
-        limp = .true.
+        If (impa%active) Call error(600)
+        impa%active = .true.
 
         ! read seeding option
 
