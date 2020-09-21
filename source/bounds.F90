@@ -161,7 +161,7 @@ Contains
     Real(Kind=wp), Dimension(10) :: cell_properties
 
     Integer            :: fftag
-              
+
     If (present(ff)) then
       fftag = ff
     Else
@@ -1373,7 +1373,7 @@ Contains
 
     Integer                                       :: bspline_node_check
     Integer                                       :: tries
-    Real(Kind=wp)                                 :: test, tol
+    Real(Kind=wp)                                 :: tol
 
     Real(Kind=wp)                                 :: width_limit
     Real(Kind=wp)                                 :: ewald_limit
@@ -1569,7 +1569,7 @@ Contains
           tries = tries + 1
 
           neigh%padding = Round(Min(trial_pct * (width_limit - neigh%cutoff - delta_r), &
-                                    test * neigh%cutoff, &
+                                    cutoff_pct * neigh%cutoff, &
                                     ttm_padding, &
                                     ewald_limit), 2)
           If (neigh%padding < negligible_pad) neigh%padding = 0.0_wp ! Don't bother

@@ -201,49 +201,49 @@ Contains
     If (.not. spme_datum%initialised) &
       & Call error(0, 'SPME datum -- '//spme_datum%name//' -- not initialised in spme_self_interaction')
 
-    If (.not. Present(mpoles) .or. spme_datum%pot_order /= 1) Then ! present(mpole)
+    ! If (.not. Present(mpoles) .or. spme_datum%pot_order /= 1) Then ! present(mpole)
       prefac = spme_datum%scaling * (alpha**spme_datum%pot_order) * &
         & inv_gamma_1_2(spme_datum%pot_order) / Real(spme_datum%pot_order, wp)
       spme_datum%self_interaction = -Sum(coeffs(1:num_atoms)**2) * prefac
 
-    Else ! Special case for multipoles
-      !call limit_erfr_deriv(8,alpha,erf_limits)
-      prefac = -0.5_wp * spme_datum%scaling
+    ! Else ! Special case for multipoles
+    !   !call limit_erfr_deriv(8,alpha,erf_limits)
+    !   prefac = -0.5_wp * spme_datum%scaling
 
-      spme_datum%self_interaction = 0.0_wp
+    !   spme_datum%self_interaction = 0.0_wp
 
-      Do i = 1, num_atoms
-        atom_coeffs = coeffs(i)
+    !   Do i = 1, num_atoms
+    !     atom_coeffs = coeffs(i)
 
-        curr1 = 0
-        Do L_mp1 = 0, mpoles%num_mpoles
+    !     curr1 = 0
+    !     Do L_mp1 = 0, mpoles%num_mpoles
 
-          mpole_elem_i: Do i_curr = 1, mpoles%nmpole_derivs(L_mp1)
+    !       mpole_elem_i: Do i_curr = 1, mpoles%nmpole_derivs(L_mp1)
 
-            curr1 = curr1 + 1
-            i_derivs = mpoles%mpole_derivs(:, i_curr, L_mp1)
+    !         curr1 = curr1 + 1
+    !         i_derivs = mpoles%mpole_derivs(:, i_curr, L_mp1)
 
-            curr2 = 0
-            Do L_mp2 = 0, mpoles%num_mpoles
-              mpole_elem_j: Do j_curr = 1, mpoles%nmpole_derivs(L_mp2)
+    !         curr2 = 0
+    !         Do L_mp2 = 0, mpoles%num_mpoles
+    !           mpole_elem_j: Do j_curr = 1, mpoles%nmpole_derivs(L_mp2)
 
-                curr2 = curr2 + 1
-                j_derivs = mpoles%mpole_derivs(:, j_curr, L_mp2)
+    !             curr2 = curr2 + 1
+    !             j_derivs = mpoles%mpole_derivs(:, j_curr, L_mp2)
 
-                ij_derivs = i_derivs + j_derivs
-                If (All(Mod(ij_derivs, 2) == 0)) Then
-                  spme_datum%self_interaction = spme_datum%self_interaction + &
-                    & prefac * atom_coeffs * atom_coeffs * &
-                    & erf_limits(ij_derivs(1), ij_derivs(2), ij_derivs(3))
-                End If
+    !             ij_derivs = i_derivs + j_derivs
+    !             If (All(Mod(ij_derivs, 2) == 0)) Then
+    !               spme_datum%self_interaction = spme_datum%self_interaction + &
+    !                 & prefac * atom_coeffs * atom_coeffs * &
+    !                 & erf_limits(ij_derivs(1), ij_derivs(2), ij_derivs(3))
+    !             End If
 
-              End Do mpole_elem_j
-            End Do
+    !           End Do mpole_elem_j
+    !         End Do
 
-          End Do mpole_elem_i
-        End Do
-      End Do
-    End If
+    !       End Do mpole_elem_i
+    !     End Do
+    !   End Do
+    ! End If
 
     Call gsum(comm, spme_datum%self_interaction)
     spme_datum%self_interaction = spme_datum%self_interaction / Real(comm%mxnode, wp)
