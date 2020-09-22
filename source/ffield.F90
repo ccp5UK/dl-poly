@@ -240,9 +240,9 @@ Contains
       ElseIf( ff ==2 )Then
         fftag=FILE_FIELD_2
       ElseIf( ff ==3 )Then
-        fftag=FILE_FIELD_3 
-      EndIf         
-    Else 
+        fftag=FILE_FIELD_3
+      EndIf
+    Else
       fftag=FILE_FIELD
     Endif
 
@@ -547,7 +547,7 @@ Contains
                 End Do
 
                 atom1 = word(1:8)
-                 
+
                 Call get_word(record, word)
                 weight = Abs(word_2_real(word))
 
@@ -670,7 +670,7 @@ Contains
 
                 isite1 = nsite - sites%num_site(itmols) + iatm1
                 isite2 = nsite - sites%num_site(itmols) + iatm2
-               
+
                 If ((iatm1 > sites%num_site(itmols)) .Or.  (iatm2 > sites%num_site(itmols))) Then
                   Call error(0,"Index of shell is out of range")
                 End If
@@ -3912,18 +3912,20 @@ Contains
               nsite = 0 ! number of new cross pair potentials
               Do i = 1, sites%ntype_atom
                 isite = (i * (i - 1)) / 2 + i
-                If (vdws%list(isite) <= vdws%n_vdw) Then ! if it exists
+                If (vdws%list(isite) <= vdws%n_vdw) Then ! if V_ii exists
                   ia = vdws%ltp(vdws%list(isite))
                   Do j = i + 1, sites%ntype_atom
                     jsite = (j * (j - 1)) / 2 + j
-                    If (vdws%list(jsite) <= vdws%n_vdw) Then ! if it exists
+                    If (vdws%list(jsite) <= vdws%n_vdw) Then ! if V_jj exists
                       ja = vdws%ltp(vdws%list(jsite))
-                      If (ia == ja .and. & ! only if of the same type
-                          (ia == VDW_LENNARD_JONES .or. ia == VDW_12_6 .or. & ! and the type is allowed mixing
+                      If (ia == ja .and. &                                            ! only if i == j
+                          (ia == VDW_LENNARD_JONES .or. ia == VDW_12_6 .or. &         ! and the type is allowed mixing
                            ia == VDW_LENNARD_JONES_COHESIVE .or. ia == VDW_WCA .or. & ! LJ, 12-6, WCA, DPD, 14-7, LJC
                            ia == VDW_DPD .or. ia == VDW_AMOEBA .or. &
                            ia == VDW_LJ_MDF .or. ia == VDW_126_MDF)) Then
-                        ksite = isite + j - i
+
+                        ksite = jsite + i - j
+
                         If (vdws%list(ksite) > vdws%n_vdw) Then ! if it does not exist - no overriding
                           nsite = nsite + 1
                           vdws%list(ksite) = -1 ! set a temporary qualifier flag
@@ -3990,7 +3992,7 @@ Contains
                   Do j = i + 1, sites%ntype_atom
                     jsite = (j * (j - 1)) / 2 + j
                     ja = vdws%list(jsite)
-                    ksite = isite + j - i
+                    ksite = jsite + i - j
                     If (vdws%list(ksite) == -1) Then ! filter for action
                       vdws%n_vdw = vdws%n_vdw + 1 ! extend range
                       vdws%list(ksite) = vdws%n_vdw ! connect
@@ -4033,7 +4035,8 @@ Contains
                         del(2) = vdws%param(3, ja)
                       End If
 
-                      If (vdws%mixing == MIX_LORENTZ_BERTHELOT) Then
+                      select case (vdws%mixing)
+                      Case (MIX_LORENTZ_BERTHELOT)
 
                         ! LorentzBerthelot: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2
 
@@ -4047,7 +4050,7 @@ Contains
                         If (thermo%key_dpd /= DPD_NULL) &
                           thermo%gamdpd(ksite) = Sqrt(thermo%gamdpd(isite) * thermo%gamdpd(jsite))
 
-                      Else If (vdws%mixing == MIX_FENDER_HALSEY) Then
+                      Case (MIX_FENDER_HALSEY)
 
                         ! Fender-Halsey : e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2
 
@@ -4065,7 +4068,7 @@ Contains
                             (thermo%gamdpd(isite) + thermo%gamdpd(jsite))
                         End If
 
-                      Else If (vdws%mixing == MIX_HOGERVORST) Then
+                      Case (MIX_HOGERVORST)
 
                         ! Hogervorst good hope : e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i*s_j)^(1/2)
 
@@ -4079,7 +4082,7 @@ Contains
                         If (thermo%key_dpd /= DPD_NULL) &
                           thermo%gamdpd(ksite) = Sqrt(thermo%gamdpd(isite) * thermo%gamdpd(jsite))
 
-                      Else If (vdws%mixing == MIX_HALGREN) Then
+                      Case (MIX_HALGREN)
 
                         ! Halgren HHG: e_ij=4*e_i*e_j/[e_i^(1/2)+e_j^(1/2)]^2 ; s_ij=(s_i^3+s_j^3)/(s_i^2+s_j^2)
 
@@ -4100,7 +4103,7 @@ Contains
                           End If
                         End If
 
-                      Else If (vdws%mixing == MIX_WALDMAN_HAGLER) Then
+                      Case (MIX_WALDMAN_HAGLER)
 
                         ! WaldmanHagler : e_ij=2*(e_i*e_j)^(1/2)*(s_i*s_j)^3/(s_i^6+s_j^6) ; s_ij=[(s_i^6+s_j^6)/2]^(1/6)
 
@@ -4116,7 +4119,7 @@ Contains
                         If (thermo%key_dpd /= DPD_NULL) &
                           thermo%gamdpd(ksite) = Sqrt(thermo%gamdpd(isite) * thermo%gamdpd(jsite)) * ((sig(1) * sig(2))**3) / tmp
 
-                      Else If (vdws%mixing == MIX_TANG_TOENNIES) Then
+                      Case (MIX_TANG_TOENNIES)
 
                         ! Tang-Toennies : e_ij=[(e_i*s_i^6)*(e_j*s_j^6)] / {[(e_i*s_i^12)^(1/13)+(e_j*s_j^12)^(1/13)]/2}^13 ;
                         !                 s_ij={[(e_i*s_i^6)*(e_j*s_j^6)]^(1/2) / e_ij}^(1/6)
@@ -4134,7 +4137,7 @@ Contains
                         If (thermo%key_dpd /= DPD_NULL) &
                           thermo%gamdpd(ksite) = 0.5_wp * eps(0) * (thermo%gamdpd(isite) / eps(1) + thermo%gamdpd(jsite) / eps(2))
 
-                      Else If (vdws%mixing == MIX_FUNCTIONAL) Then
+                      Case (MIX_FUNCTIONAL)
 
                         ! Functional : e_ij=3 * (e_i*e_j)^(1/2) * (s_i*s_j)^3 / SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(6/(6-2L))} ;
                         !              s_ij=(1/3) * SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))}
@@ -4158,23 +4161,23 @@ Contains
                         If (thermo%key_dpd /= DPD_NULL) &
                           thermo%gamdpd(ksite) = 0.5_wp * eps(0) * (thermo%gamdpd(isite) / eps(1) + thermo%gamdpd(jsite) / eps(2))
 
-                      End If
+                      End Select
 
                       ! Recover and/or paste in the vdw parameter array
 
-                      If (keypot == VDW_12_6) Then ! 12-6
+                      Select Case (keypot)
+                      Case (VDW_12_6) ! 12-6
                         vdws%param(1, vdws%n_vdw) = 4.0_wp * eps(0) * (sig(0)**12)
                         vdws%param(2, vdws%n_vdw) = 4.0_wp * eps(0) * (sig(0)**6)
-                      Else If (keypot == VDW_LENNARD_JONES .or. keypot == VDW_DPD .or. &
-                               keypot == VDW_AMOEBA .or. keypot == VDW_LENNARD_JONES_COHESIVE .or. &
-                               keypot == VDW_LJ_MDF .or. keypot == VDW_126_MDF) Then ! LJ, DPD, 14-7, LJC
+                      Case (VDW_LENNARD_JONES, VDW_DPD, VDW_AMOEBA, VDW_LENNARD_JONES_COHESIVE, &
+                           VDW_LJ_MDF, VDW_126_MDF) ! LJ, DPD, 14-7, LJC
                         vdws%param(1, vdws%n_vdw) = eps(0)
                         vdws%param(2, vdws%n_vdw) = sig(0)
-                      Else If (keypot == VDW_WCA) Then ! WCA
+                      Case (VDW_WCA) ! WCA
                         vdws%param(1, vdws%n_vdw) = eps(0)
                         vdws%param(2, vdws%n_vdw) = sig(0)
                         vdws%param(3, vdws%n_vdw) = del(0)
-                      End If
+                      End Select
 
                       If (flow%print_topology) Then
                         If (thermo%key_dpd /= DPD_NULL) Then
@@ -4451,13 +4454,13 @@ Contains
           End Do
 
           atom0 = word(1:8)
-          tersoffs%labunit(1,itpter)=atom0  
+          tersoffs%labunit(1,itpter)=atom0
 
           Call get_word(record, word)
           Call lower_case(word)
           keyword = word(1:4)
 
-          tersoffs%labunit(2,itpter)=keyword  
+          tersoffs%labunit(2,itpter)=keyword
 
           If (keyword == 'ters') Then
             keypot = TERS_TERSOFF
@@ -4639,11 +4642,11 @@ Contains
             ka2 = Min(tersoffs%list(katom1), tersoffs%list(katom2))
 
             keyter = (ka1 * (ka1 - 1)) / 2 + ka2
-          
+
             !Label for Tersoff pair interaction
 
-            tersoffs%labpair(1,icross)=atom1  
-            tersoffs%labpair(2,icross)=atom2  
+            tersoffs%labpair(1,icross)=atom1
+            tersoffs%labpair(2,icross)=atom2
 
             tersoffs%param2(keyter, 1) = parpot(1)
             tersoffs%param2(keyter, 2) = parpot(2)
@@ -5528,7 +5531,7 @@ Contains
       ElseIf( ff ==2 )Then
         fftag=FILE_FIELD_2
       ElseIf( ff ==3 )Then
-        fftag=FILE_FIELD_3 
+        fftag=FILE_FIELD_3
       EndIf
     Else
         fftag=FILE_FIELD
@@ -6304,7 +6307,7 @@ Contains
             Call lower_case(record)
             Call get_word(record, word)
           End Do
-            
+
           Call get_word(record, word)
           If (word(1:4) == 'ters') Then
             tersoffs%key_pot = TERS_TERSOFF
