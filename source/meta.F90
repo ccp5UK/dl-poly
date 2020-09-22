@@ -1,4 +1,4 @@
-Module meta 
+Module meta
 !> meta-simulation routines
 !>
 !> Copyright - Daresbury Laboratory
@@ -21,7 +21,7 @@ Module meta
                                                 gsync,&
                                                 gtime,&
                                                 exit_comms,&
-                                                root_id 
+                                                root_id
   Use configuration,                      Only: check_config,&
                                                 configuration_type,&
                                                 freeze_atoms,&
@@ -51,8 +51,10 @@ Module meta
   Use errors_warnings,                    Only: error,&
                                                 info,&
                                                 init_error_system,&
+                                                get_print_level,&
+                                                set_print_level,&
                                                 warning
-  Use evb,                                Only: print_evb_banner                                      
+  Use evb,                                Only: print_evb_banner
   Use ewald,                              Only: ewald_type
   Use external_field,                     Only: external_field_type
   Use ffield,                             Only: read_field,&
@@ -63,8 +65,8 @@ Module meta
                                                 FILE_KPOINTS,&
                                                 FILE_OUTPUT,&
                                                 FILE_REVCON,&
-                                                FILE_REVCON_2,& 
-                                                FILE_REVCON_3,& 
+                                                FILE_REVCON_2,&
+                                                FILE_REVCON_3,&
                                                 FILE_STATS,&
                                                 default_filenames,&
                                                 file_type
@@ -196,7 +198,7 @@ Contains
     Character(len=1024),       Intent(In   ) :: output_filename
     Type(coord_type), Allocatable,          Intent(InOut) :: crd(:)
     Type(adf_type), Allocatable,            Intent(InOut) :: adf(:)
-                                    
+
     Type(comms_type) :: comm
 
     ! Allocate type arrays
@@ -224,7 +226,7 @@ Contains
                                       seed, traj, kim_data, config, ios, ttms, rsdsc, files, crd, adf)
 
   End Subroutine molecular_dynamics
-  
+
   Subroutine molecular_dynamics_driver(dlp_world, comm, thermo, ewld, tmr, devel, &
                                            stats, green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, &
                                            inversion, tether, threebody, zdensity, cons, neigh, pmfs, sites, core_shells, &
@@ -285,6 +287,7 @@ Contains
     Character(Len=256 ) :: message
     Integer(Kind=wi)    :: vacuum
     Integer(Kind=wi)    :: ff, frevc
+    Integer             :: old_print_level
     Logical             :: lfce
     Real(wp)            :: s
 
@@ -301,6 +304,7 @@ Contains
     End If
 
     Call scan_development(devel, files, comm)
+    old_print_level = get_print_level()
     ! Open output file, or direct output unit to stderr
     If (.not. devel%l_scr) Then
       Open (Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Status='replace')
@@ -309,7 +313,7 @@ Contains
     End If
     dlp_world(0)%ou = files(FILE_OUTPUT)%unit_no
     Call init_error_system(files(FILE_OUTPUT)%unit_no, dlp_world(0))
-  
+
 #ifdef CHRONO
     ! Start main timer
     Call init_timer_system(tmr, files(FILE_OUTPUT)%unit_no,dlp_world(0))
@@ -328,20 +332,28 @@ Contains
     ! Print error message in case there was an error when reading settings evb from CONTROL via read_simtype
     If(flow%evbfail)Then
       Write(message,'(a)') 'error - Either no or wrong specificaton following the keyword "evb" in CONTROL &
-                           &for the number of fields to be coupled via. Value MUST an integer larger than 1'      
+                           &for the number of fields to be coupled via. Value MUST an integer larger than 1'
       call error(0,message)
     End If
 
 
     ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
     ! (setup and domains)
-    Do ff = 1, flow%NUM_FF
+    Call set_bounds ( &
+         sites(1), ttms(1), ios, core_shells(1), cons(1), pmfs(1), stats(1), &
+         thermo(1), green(1), devel, msd_data(1), met(1), pois(1), bond(1), angle(1), dihedral(1), inversion(1), &
+         tether(1), threebody(1), zdensity(1), neigh(1), vdws(1), tersoffs(1), fourbody(1), rdf(1), mpoles(1), &
+         ext_field(1), rigid(1), electro(1), domain(1), config(1), ewld(1), kim_data(1), files, flow, comm, 1)
+
+    Call set_print_level(0)
+    Do ff = 2, flow%NUM_FF
       Call set_bounds ( &
         sites(ff), ttms(ff), ios, core_shells(ff), cons(ff), pmfs(ff), stats(ff), &
         thermo(ff), green(ff), devel, msd_data(ff), met(ff), pois(ff), bond(ff), angle(ff), dihedral(ff), inversion(ff), &
-        tether(ff), threebody(ff), zdensity(ff), neigh(ff), vdws(ff), tersoffs(ff), fourbody(ff), rdf(ff), mpoles(ff), & 
+        tether(ff), threebody(ff), zdensity(ff), neigh(ff), vdws(ff), tersoffs(ff), fourbody(ff), rdf(ff), mpoles(ff), &
         ext_field(ff), rigid(ff), electro(ff), domain(ff), config(ff), ewld(ff), kim_data(ff), files, flow, comm, ff)
     End Do
+    Call set_print_level(old_print_level)
 
     Call info('',.true.)
     Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
@@ -350,19 +362,19 @@ Contains
     If(flow%NUM_FF>1)Then
       Call info(' ',.true.)
       Call print_evb_banner(flow%NUM_FF)
-    End If  
+    End If
 
-    ! Now the loop is over the number of force fields to be coupled. Variable flow%NUM_FF was assigned in read_simtype 
+    ! Now the loop is over the number of force fields to be coupled. Variable flow%NUM_FF was assigned in read_simtype
     Do ff=1,flow%NUM_FF
       ! ALLOCATE SITE & CONFIG
       Call sites(ff)%init()
       Call config(ff)%init()
-      
+
       Call neigh(ff)%init_list(config(ff)%mxatdm)
 
       ! ALLOCATE DPD ARRAYS
       Call thermo(ff)%init_dpd(vdws(ff)%max_vdw)
-  
+
       ! ALLOCATE INTRA-LIKE INTERACTION ARRAYS
       Call core_shells(ff)%init(config(ff)%mxatdm, sites(ff)%mxtmls, config(ff)%mxlshp, domain(ff)%neighbours)
       Call cons(ff)%init(sites(ff)%mxtmls, config(ff)%mxatdm, config(ff)%mxlshp, domain(ff)%neighbours)
@@ -375,14 +387,14 @@ Contains
       Call inversion(ff)%init(config(ff)%mxatms, sites(ff)%mxtmls)
       Call mpoles(ff)%init(sites(ff)%max_site, neigh(ff)%max_exclude, config(ff)%mxatdm, &
                           & ewld(ff)%bspline%num_splines, config(ff)%mxatms)
-  
+
       ! ALLOCATE INTER-LIKE INTERACTION ARRAYS
       Call vdws(ff)%init()
       Call met(ff)%init(config(ff)%mxatms, sites(ff)%mxatyp)
       Call tersoffs(ff)%init(sites(ff)%max_site)
       Call threebody(ff)%init(sites(ff)%max_site)
       Call fourbody(ff)%init(sites(ff)%max_site)
-  
+
       ! ALLOCATE RDF, Z-DENSITY, STATISTICS & GREEN-KUBO ARRAYS
       Call rdf(ff)%init()
       Call zdensity(ff)%init(sites(ff)%mxatyp)
@@ -392,31 +404,38 @@ Contains
       ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
       Call allocate_ttm_arrays(ttms(ff),domain(ff),config(ff),comm)
       Call ttm_table_scan(config(ff)%mxbuff,ttms(ff),comm)
-  
+
       ! Setup KIM
-      Call kim_setup(kim_data(ff), config(ff)%mxatms, config(ff)%mxatdm, config(ff)%megatm,& 
+      Call kim_setup(kim_data(ff), config(ff)%mxatms, config(ff)%mxatdm, config(ff)%megatm,&
         neigh(ff)%max_list, domain(ff)%mxbfxp, comm%mxnode)
 
       ! External field
       Call ext_field(ff)%init()
 
     End Do
-    
+
     ! READ SIMULATION CONTROL PARAMETERS
-    Do ff = 1, flow%NUM_FF
+    Call read_control(lfce, impa, ttms(1), dfcts, rigid(1), rsdsc(1), core_shells(1), cons(1), pmfs(1), &
+         stats(1), thermo(1), green(1), devel, plume(1), msd_data(1), met(1), pois(1), bond(1), angle(1), dihedral(1), &
+         inversion(1), zdensity(1), neigh(1), vdws(1), rdf(1), minim(1), mpoles(1), electro(1), ewld(1), &
+         seed, traj, files, tmr, config(1), flow, crd(1), adf(1), comm)
+
+    call set_print_level(0)
+    Do ff = 2, flow%NUM_FF
       Call read_control(lfce, impa, ttms(ff), dfcts, rigid(ff), rsdsc(ff), core_shells(ff), cons(ff), pmfs(ff), &
         stats(ff), thermo(ff), green(ff), devel, plume(ff), msd_data(ff), met(ff), pois(ff), bond(ff), angle(ff), dihedral(ff), &
         inversion(ff), zdensity(ff), neigh(ff), vdws(ff), rdf(ff), minim(ff), mpoles(ff), electro(ff), ewld(ff), &
-        seed, traj, files, tmr, config(ff), flow, crd(ff), adf(ff), comm, ff)
+        seed, traj, files, tmr, config(ff), flow, crd(ff), adf(ff), comm)
     End Do
-    
+    call set_print_level(old_print_level)
+
     Do ff = 1, flow%NUM_FF
       If (stats(ff)%cur%on) Then
         Call config(ff)%k%init(files(FILE_KPOINTS)%filename, comm)
         Call stats(ff)%cur%init(config(ff)%k%n, 200, files(FILE_CURRENT), comm)
       End If
-    End Do 
-    
+    End Do
+
     ! READ SIMULATION FORCE FIELD
     Do ff = 1, flow%NUM_FF
       If(flow%NUM_FF > 1) Then
@@ -427,21 +446,21 @@ Contains
       Call read_field(neigh(ff)%cutoff, core_shells(ff), pmfs(ff), cons(ff), thermo(ff), met(ff), bond(ff), angle(ff), &
         dihedral(ff), inversion(ff), tether(ff), threebody(ff), sites(ff), vdws(ff), tersoffs(ff), fourbody(ff),rdf(ff), &
         mpoles(ff), ext_field(ff), rigid(ff), electro(ff), config(ff), kim_data(ff), files, flow, crd(ff), comm, ff)
-  
+
       ! If computing rdf errors, we need to initialise the arrays.
       If(rdf(ff)%l_errors_jack .or. rdf(ff)%l_errors_block) then
         Call rdf(ff)%init_block(flow%run_steps, sites(ff)%ntype_atom)
       End If
- 
+
       ! CHECK MD CONFIGURATION
       Call check_config(config(ff),electro(ff)%key,thermo(ff),sites(ff),flow,comm)
-  
+
     End Do
 
     Call info('',.true.)
     Call info("*** all reading and connectivity checks DONE ***",.true.)
     Call time_elapsed(tmr)
-    
+
     If (flow%l_vdw) Then
        If (vdws(1)%l_direct) Then
          Call error(0,"Error l_vdw does not work with vdw direct, remove vdw direct")
@@ -452,7 +471,7 @@ Contains
        Stop 0
      End If
     End If
-    
+
 
 #ifdef CHRONO
     Call stop_timer(tmr,'Initialisation')
@@ -462,7 +481,7 @@ Contains
     If (devel%l_org) Then
       Call info('',.true.)
       Call info("*** Translating the MD system along a vector (CONFIG to CFGORG) ***",.true.)
-  
+
       Do ff=1,flow%NUM_FF
         Call origin_config(config(ff),ios,devel,netcdf,comm)
       End Do
@@ -470,12 +489,12 @@ Contains
       Call info("*** ALL DONE ***",.true.)
       Call time_elapsed(tmr)
     End If
-  
+
     ! devel%l_scl: rescale CONFIG to CFGSCL and exit gracefully
     If (devel%l_scl) Then
       Call info('',.true.)
       Call info("*** Rescaling the MD system lattice (CONFIG to CFGSCL) ***",.true.)
-  
+
       Do ff=1,flow%NUM_FF
         Call scale_config(config(ff),ios,devel,netcdf,comm)
       End Do
@@ -489,13 +508,13 @@ Contains
       Call info('',.true.)
       Call info("*** Generating a zero timestep HISTORY frame of the MD system ***",.true.)
 
-      Do ff=1,flow%NUM_FF 
+      Do ff=1,flow%NUM_FF
         Call traj%init(key=0,freq=1,start=0)
         flow%step  = 0                            ! no steps done
         flow%time  = 0.0_wp                       ! time is not relevant
         Call trajectory_write(flow%restart_key,flow%step,thermo(ff)%tstep,flow%time,ios, &
                               stats(ff)%rsd,netcdf,config(ff),traj,files,comm)
-      End Do 
+      End Do
       Call info("*** ALL DONE ***",.true.)
       Call time_elapsed(tmr)
     End If
@@ -532,16 +551,16 @@ Contains
     Do ff = 1, flow%NUM_FF
       If(flow%NUM_FF > 1) Then
         write(message,'(i0)') ff
-        Call info("*** TOPOLOGY FOR FIELD "//trim(message)//" ***",.true.) 
-      End If  
+        Call info("*** TOPOLOGY FOR FIELD "//trim(message)//" ***",.true.)
+      End If
       If (flow%book) Then
-        Call build_book_intra(flow%strict, flow%print_topology, flow%simulation, & 
+        Call build_book_intra(flow%strict, flow%print_topology, flow%simulation, &
           flow,core_shells(ff), cons(ff), pmfs(ff), bond(ff), angle(ff), dihedral(ff), inversion(ff), tether(ff), &
           neigh(ff), sites(ff), rigid(ff), domain(ff), config(ff), comm)
         ! Setting newjob_build_book to FALSE if ff == flow%NUM_FF
         If(ff == flow%NUM_FF)Then
           flow%newjob_build_book=.FALSE.
-        EndIf  
+        EndIf
         If (mpoles(ff)%max_mpoles > 0) Then
           Call build_tplg_intra(neigh(ff)%max_exclude, bond(ff), angle(ff), dihedral(ff), inversion(ff), &
             mpoles(ff), config(ff), comm)
@@ -557,7 +576,7 @@ Contains
             inversion(ff), neigh(ff), rigid(ff), config(ff), comm)
         End If
       Else
-        Call report_topology(config(ff)%megatm, config(ff)%megfrz, config(ff)%atmfre, config(ff)%atmfrz, core_shells(ff), & 
+        Call report_topology(config(ff)%megatm, config(ff)%megfrz, config(ff)%atmfre, config(ff)%atmfrz, core_shells(ff), &
                              cons(ff), pmfs(ff), bond(ff), angle(ff), dihedral(ff), inversion(ff), tether(ff), sites(ff), &
                              rigid(ff))
 
@@ -573,7 +592,7 @@ Contains
          Call tether(ff)%deallocate_temp()
         End If
       End If
-    End Do  
+    End Do
 
     Call info('',.true.)
     Call info("*** bookkeeping DONE ***",.true.)
@@ -582,13 +601,13 @@ Contains
     Do ff = 1, flow%NUM_FF
       If(flow%NUM_FF > 1) Then
         write(message,'(i0)') ff
-        Call info("*** DETAILS OF NEIGHBOUR LIST FOR FIELD "//trim(message)//" ***",.true.) 
-      End If  
+        Call info("*** DETAILS OF NEIGHBOUR LIST FOR FIELD "//trim(message)//" ***",.true.)
+      End If
       ! set and halo rotational matrices and their infinitesimal rotations
       If (mpoles(ff)%max_mpoles > 0) Then
         Call mpoles_rotmat_set_halo(mpoles(ff),domain(ff),config(ff),comm)
       End If
-  
+
       ! SET initial system temperature
       Call set_temperature               &
         (flow%restart_key, flow%step, flow%run_steps, &
@@ -605,19 +624,19 @@ Contains
     Do ff = 1, flow%NUM_FF
       If (ttms(ff)%l_ttm) Then
         Call ttm_table_read(ttms(ff), comm)
-        Call ttm_system_init(flow%step, flow%equil_steps, flow%restart_key, 'DUMP_E', flow%time,& 
+        Call ttm_system_init(flow%step, flow%equil_steps, flow%restart_key, 'DUMP_E', flow%time,&
           thermo(ff)%temp, domain(ff), ttms(ff), comm)
       End If
-  
+
       ! Frozen atoms option
       Call freeze_atoms(config(ff))
-  
+
       ! Cap forces in equilibration mode
       If (flow%step <= flow%equil_steps .and. flow%force_cap) Call cap_forces(thermo(ff)%temp,config(ff),comm)
-  
+
       ! PLUMED initialisation or information message
       If (plume(ff)%l_plumed) Call plumed_init(config(ff)%megatm,thermo(ff)%tstep,thermo(ff)%temp,plume(ff),comm)
-  
+
     End Do
 
     ! Indicate nodes mapped on vacuum (no particles)
@@ -664,7 +683,7 @@ Contains
         impa, green, ewld, electro, dfcts, msd_data, tersoffs, tether, threebody, vdws, &
         devel, met, crd, adf, comm)
     Else
-      If(flow%NUM_FF==1)Then      
+      If(flow%NUM_FF==1)Then
         If (lfce) Then
           Call replay_historf(config(1), ios,rsdsc(1), flow,core_shells(1), cons(1), pmfs(1), stats(1), &
             thermo(1), plume(1), msd_data(1), bond(1), angle(1), dihedral(1), inversion(1), zdensity(1), neigh(1), &
@@ -673,14 +692,14 @@ Contains
             pois(1), green(1), ewld(1), devel, met(1), crd(1), comm)
         Else
           Call replay_history(config(1), ios, rsdsc(1), flow,core_shells(1), cons(1), pmfs(1), stats(1), &
-            thermo(1), msd_data(1), met(1), pois(1), bond(1), angle(1), dihedral(1), inversion(1), zdensity(1), &  
+            thermo(1), msd_data(1), met(1), pois(1), bond(1), angle(1), dihedral(1), inversion(1), zdensity(1), &
             neigh(1), sites(1), vdws(1), rdf(1), netcdf, minim(1), mpoles(1), ext_field(1), rigid(1), electro(1), &
-            domain(1), seed, traj, kim_data(1), dfcts, files, tmr, tether(1), green(1), ewld(1), devel, comm)   
+            domain(1), seed, traj, kim_data(1), dfcts, files, tmr, tether(1), green(1), ewld(1), devel, comm)
         EndIf
       Else
-        Write(message,'(1x,a)') 'error - replay option is not implemented for the EVB method.'       
+        Write(message,'(1x,a)') 'error - replay option is not implemented for the EVB method.'
         Call error(0,message)
-      End If  
+      End If
     End If
 
 #ifdef CHRONO
@@ -712,11 +731,11 @@ Contains
       Do ff = 1, flow%NUM_FF
         If(ff == 1)Then
           frevc = FILE_REVCON
-        Else If(ff == 2)Then 
+        Else If(ff == 2)Then
           frevc = FILE_REVCON_2
-        Else If(ff == 3)Then 
+        Else If(ff == 3)Then
           frevc = FILE_REVCON_3
-        End If      
+        End If
         Call write_config(config(ff), files(frevc), 2, flow%step, thermo(ff)%tstep, ios, flow%time, netcdf, comm)
       End Do
 
@@ -725,7 +744,7 @@ Contains
         files, comm)
       If (ttms(1)%l_ttm)Then
         Call ttm_system_revive ('DUMP_E', flow%step, flow%time, 1, flow%run_steps, ttms(1), comm)
-      End If  
+      End If
     End If
 
     ! Produce summary of simulation
@@ -764,8 +783,8 @@ Contains
 
    If (kim_data(1)%active) Then
       Call kim_citations(kim_data(1), comm)
-   End If    
-    
+   End If
+
     ! Get just the one number to compare against
 
     If (devel%l_eng) Then
@@ -779,7 +798,7 @@ Contains
     If (.not.devel%l_scr) Call files(FILE_OUTPUT)%close()
 
   End Subroutine molecular_dynamics_driver
-  
+
   !> Allocate all types uniformly, _i.e._ N of every type
 
   Subroutine allocate_types_uniform(array_size, thermo, ewld, tmr, devel, stats, &
@@ -1063,6 +1082,6 @@ Contains
     End If
     Call info(Repeat("*", 66), .true.)
   End Subroutine print_citations
-  
+
 
 End Module meta

@@ -161,7 +161,7 @@ Contains
     Real(Kind=wp), Dimension(10) :: cell_properties
 
     Integer            :: fftag
-              
+
     If (present(ff)) then
       fftag = ff
     Else
@@ -196,7 +196,7 @@ Contains
                       xhi, yhi, zhi, config%mxgana, config%l_ind, electro%nstfce, &
                       ttm, cshell, stats, thermo, green, devel, msd_data, met, pois, bond, angle, dihedral, &
                       inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, electro, ewld, kim_data, &
-                      files, flow, comm, ff)
+                      files, flow, comm)
 
     ! check integrity of cell vectors: for cubic cell
 
