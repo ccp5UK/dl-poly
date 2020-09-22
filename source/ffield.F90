@@ -2352,7 +2352,7 @@ Contains
               dihedral%total = dihedral%total + sites%num_mols(itmols) * dihedral%num(itmols)
               inversion%total = inversion%total + sites%num_mols(itmols) * inversion%num(itmols)
 
-              Go To 1000
+              Exit
 
             Else
 
@@ -2368,9 +2368,6 @@ Contains
           End Do
 
           ! just finished with this type molecule data
-
-          1000 Continue
-
         End Do
 
         ! report total molecules and sites
@@ -6079,13 +6076,11 @@ Contains
 
             Else If (word(1:6) == 'finish') Then
 
-              Go To 1000
+              Exit
 
             End If
 
           End Do
-
-          1000 Continue
 
         End Do
 
@@ -6468,13 +6463,12 @@ Contains
 
       Else If (word(1:5) == 'close') Then
 
-        Go To 10
+        Exit
 
       End If
 
     End Do
 
-    10 Continue
     If (comm%idnode == 0) Call files(fftag)%close()
 
     If (kim_data%active) Then
@@ -6989,7 +6983,7 @@ Contains
                   //'not be considered and are thus ignored', .true.)
               End If
 
-              Go To 1000
+              Exit
 
             Else
 
@@ -7005,8 +6999,6 @@ Contains
           End Do
 
           ! just finished with this type molecule data
-
-          1000 Continue
 
         End Do
 
