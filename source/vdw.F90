@@ -721,7 +721,7 @@ Contains
     plrc = 0.0_wp
     vdws%elrc = 0.0_wp
 
-    If (vdws%l_force_shift) Go To 10 ! force-shifting
+    If (.not. vdws%l_force_shift) Then
 
     ! initialise counter arrays and evaluate number density in system
 
@@ -1003,8 +1003,8 @@ Contains
       End Do
 
     End If
+    End If
 
-    10 Continue
 
     Write (messages(1), '(a)') 'long-range correction for:'
     Write (messages(2), '(2x,a,e15.6)') 'vdw energy ', vdws%elrc / engunit
@@ -1386,11 +1386,12 @@ Contains
     Character(Len=40)                        :: word
     Character(Len=8)                         :: atom1, atom2
     Integer                                  :: fail, i, ivdw, j, jtpatm, katom1, katom2, keyvdw, &
-                                                l, ngrid, ntable
+                                                l, ngrid, ntable, ierror
     Logical                                  :: remake, safe
     Real(Kind=wp)                            :: cutpot, delpot, dlrpot, ppp, rdr, rrr, t, t1, t2, &
                                                 vk, vk1, vk2
     Real(Kind=wp), Allocatable, Dimension(:) :: buffer
+
 
     If (comm%idnode == 0) Then
       Open (Newunit=files(FILE_TABVDW)%unit_no, File=files(FILE_TABVDW)%filename)
@@ -1400,12 +1401,12 @@ Contains
     ! skip header record
 
     Call get_line(safe, ntable, record, comm)
-    If (.not. safe) Go To 100
+    If (.not. safe) Call ferror(24)
 
     ! read mesh resolution
 
     Call get_line(safe, ntable, record, comm)
-    If (.not. safe) Go To 100
+    If (.not. safe) Call ferror(24)
 
     Call get_word(record, word)
     delpot = word_2_real(word)
@@ -1470,7 +1471,7 @@ Contains
         ! read pair potential labels and long-range corrections
 
         Call get_line(safe, ntable, record, comm)
-        If (.not. safe) Go To 100
+        If (.not. safe) Call ferror(24)
 
         Call get_word(record, atom1)
         Call get_word(record, atom2)
@@ -1506,7 +1507,8 @@ Contains
         Do i = 1, (ngrid + 3) / 4
           j = Min(4, ngrid - (i - 1) * 4)
           If (comm%idnode == 0) Then
-            Read (Unit=ntable, Fmt=*, End=100) buffer((i - 1) * 4 + 1:(i - 1) * 4 + j)
+            Read (Unit=ntable, Fmt=*, iostat=ierror) buffer((i - 1) * 4 + 1:(i - 1) * 4 + j)
+            If ( ierror > 0 ) Call ferror(24)
           Else
             buffer((i - 1) * 4 + 1:(i - 1) * 4 + j) = 0.0_wp
           End If
@@ -1566,7 +1568,8 @@ Contains
         Do i = 1, (ngrid + 3) / 4
           j = Min(4, ngrid - (i - 1) * 4)
           If (comm%idnode == 0) Then
-            Read (Unit=ntable, Fmt=*, End=100) buffer((i - 1) * 4 + 1:(i - 1) * 4 + j)
+            Read (Unit=ntable, Fmt=*, Iostat = ierror) buffer((i - 1) * 4 + 1:(i - 1) * 4 + j)
+            If ( ierror > 0 ) Call ferror(24)
           Else
             buffer((i - 1) * 4 + 1:(i - 1) * 4 + j) = 0.0_wp
           End If
@@ -1711,15 +1714,17 @@ Contains
       Write (message, '(a)') 'vdw_table_read deallocation failure'
       Call error(0, message)
     End If
-
-    Return
-
     ! end of file error exit
 
-    100 Continue
+    Contains
 
-    If (comm%idnode == 0) Call files(FILE_TABVDW)%close ()
-    Call error(24)
+      Subroutine ferror(code)
+        Integer, Intent(In) :: code
+
+        If (comm%idnode == 0) Call files(FILE_TABVDW)%close ()
+        Call error(code)
+
+      End Subroutine ferror
 
   End Subroutine vdw_table_read
 
