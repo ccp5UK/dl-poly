@@ -37,6 +37,7 @@ Module errors_warnings
   Public :: error_alloc, error_dealloc
   Public :: error_read
   Public :: set_print_level
+  Public :: get_print_level
   Public :: check_print_level
 
   Interface warning
@@ -825,6 +826,10 @@ Contains
     print_level = level
 
   End Subroutine set_print_level
+
+  Integer Function get_print_level()
+    get_print_level = print_level
+  end Function get_print_level
 
   Function check_print_level(level)
     Integer, Intent(In   ) :: level

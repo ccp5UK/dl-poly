@@ -170,7 +170,7 @@ Contains
   Subroutine read_control(lfce, impa, ttm, dfcts, rigid, &
                           rsdc, cshell, cons, pmf, stats, thermo, green, devel, plume, msd_data, met, &
                           pois, bond, angle, dihedral, inversion, zdensity, neigh, vdws, &
-                          rdf, minim, mpoles, electro, ewld, seed, traj, files, tmr, config, flow, crd, adf, comm, ff)
+                          rdf, minim, mpoles, electro, ewld, seed, traj, files, tmr, config, flow, crd, adf, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -234,14 +234,12 @@ Contains
     Type(coord_type),         Intent(InOut) :: crd
     Type(adf_type),           Intent(InOut) :: adf
     Type(comms_type),         Intent(InOut) :: comm
-    Integer,                  Intent( In   ), Optional :: ff
 
     Character(Len=200) :: record
     Character(Len=256) :: message, messages(7)
     Character(Len=40)  :: akey, word, word1, word2, word3
     Character(Len=80)  :: banner(9)
     Integer            :: grdana, grdang, grdbnd, grddih, grdinv, i, itmp, j, k, nstall, nstana
-    Integer            :: fftag
     Integer(Kind=wi)   :: tmp_seed(1:3), traj_freq, traj_key, traj_start
     Logical            :: l_0, l_timcls, l_timjob, lens, lforc, limp, lplumed, lpres, lstep, &
                           lstrext, ltemp, safe
@@ -249,13 +247,6 @@ Contains
     Type(testing_type) :: app_test, unit_test
 
     ! initialise system control variables and their logical switches
-
-    If (present(ff)) then
-     fftag = ff
-    Else
-     fftag = 1
-    Endif
-
 
     ! default expansion option
 
@@ -622,9 +613,9 @@ Contains
     Write (banner(4), '(a4,a72,a4)') '*** ', config%sysname, ' ***'
     Write (banner(5), '(a)') Repeat('*', 80)
     Write (banner(6), '(a)') ''
-    If(fftag == 1) Call info(banner, 6, .true.)
+    Call info(banner, 6, .true.)
 
-    If(fftag == 1) Call info('simulation control parameters', .true.)
+    Call info('simulation control parameters', .true.)
 
     ! read and process directives from CONTROL file
 
@@ -647,19 +638,19 @@ Contains
         Call info(message, .true.)
       Else If (word(1:5) == 'l_eng') Then
         devel%l_eng = .true.
-        If(fftag == 1) Call info('%%% OUTPUT contains an extra last line with E_tot !!! %%%', .true.)
+        Call info('%%% OUTPUT contains an extra last line with E_tot !!! %%%', .true.)
       Else If (word(1:6) == 'l_rout') Then
         devel%l_rout = .true.
-        If(fftag == 1) Call info('%%% REVIVE writing in ASCII opted !!! %%%', .true.)
+        Call info('%%% REVIVE writing in ASCII opted !!! %%%', .true.)
       Else If (word(1:5) == 'l_rin') Then
         devel%l_rin = .true.
-        If(fftag == 1) Call info('%%% REVOLD reading in ASCII opted !!! %%%', .true.)
+        Call info('%%% REVOLD reading in ASCII opted !!! %%%', .true.)
       Else If (word(1:5) == 'l_org') Then
         devel%l_org = .true.
         devel%l_trm = .true.
 
-        If(fftag == 1) Call info('%%% translate CONFIG along a vector into CFGORG after reading input & terminate !!! %%%', .true.)
-        If(fftag == 1) Call info('%%% vector and config level read as follows: %%%', .true.)
+        Call info('%%% translate CONFIG along a vector into CFGORG after reading input & terminate !!! %%%', .true.)
+        Call info('%%% vector and config level read as follows: %%%', .true.)
 
         Call get_word(record, word)
         devel%xorg = word_2_real(word)
@@ -674,13 +665,11 @@ Contains
         Write (messages(1), '(a)') '%%%'
         Write (messages(2), '(a,3f10.3,a)') '%%% vector(x,y,x) ', devel%xorg, devel%yorg, devel%zorg, ' %%%'
         Write (messages(3), '(a,i0,a)') '%%% CFGORG level ', devel%lvcforg, ' %%%'
-        If(fftag == 1) Call info(messages, 3, .true.)
+        Call info(messages, 3, .true.)
 
       Else If (word(1:5) == 'l_scl') Then
-        If(fftag == 1)Then
-          Call info('%%% rescale CONFIG to CFGSCL, after reading input & terminate !!! %%%', .true.)
-          Call info('%%% config level and new cell vectors to rescale to (read in a CONFIG-like manner): %%%', .true.)
-        End If
+        Call info('%%% rescale CONFIG to CFGSCL, after reading input & terminate !!! %%%', .true.)
+        Call info('%%% config level and new cell vectors to rescale to (read in a CONFIG-like manner): %%%', .true.)
 
         Call get_word(record, word)
         devel%lvcfscl = Min(Int(Abs(word_2_real(word, 0.0_wp))), config%levcfg)
@@ -704,36 +693,36 @@ Contains
         Write (messages(5), '(1x,a,3f20.10,a)') '%%% ', devel%cels(7:9), ' %%%'
         Write (messages(6), '(1x,a)') '%%%'
         Write (messages(7), '(1x,a,1p,g22.12,a)') '%%% CFGSCL ttm%volume ', tmp, '%%%'
-        If(fftag == 1) Call info(messages, 7, .true.)
+        Call info(messages, 7, .true.)
 
         If (tmp > zero_plus) Then
           devel%l_scl = .true.
           devel%l_trm = .true.
         Else
-          If(fftag == 1) Call info('%%% OPTION ABORTED DUE TO ZERO VOLUME !!! %%%', .true.)
+          Call info('%%% OPTION ABORTED DUE TO ZERO VOLUME !!! %%%', .true.)
           devel%l_trm = .true.
         End If
       Else If (word(1:5) == 'l_his') Then
         devel%l_his = .true.
         devel%l_trm = .true.
-        If(fftag == 1) Call info('%%% generate HISTORY after reading input & terminate !!! %%%', .true.)
+        Call info('%%% generate HISTORY after reading input & terminate !!! %%%', .true.)
       Else If (word(1:5) == 'l_tim') Then
         !        l_tim = .true.  ! done in scan_development
-        If(fftag == 1) Call info('%%% generate detailed timing !!! %%%', .true.)
+        Call info('%%% generate detailed timing !!! %%%', .true.)
       Else If (word(1:5) == 'l_tor') Then
         devel%l_tor = .true.
-        If(fftag == 1) Call info('%%% Turn off production of REVCON & REVIVE !!! %%%', .true.)
+        Call info('%%% Turn off production of REVCON & REVIVE !!! %%%', .true.)
       Else If (word(1:5) == 'l_trm') Then
         devel%l_trm = .true.
-        If(fftag == 1) Call info('%%% Terminate gracefully before initialisation !!! %%%', .true.)
+        Call info('%%% Terminate gracefully before initialisation !!! %%%', .true.)
       Else If (word(1:5) == 'l_dis') Then
         devel%l_dis = .true.
         Call get_word(record, word)
         devel%r_dis = Min(devel%r_dis, word_2_real(word, 0.1_wp))
-        If(fftag == 1) Call info(&
+        Call info(&
                         '%%% Turn on the check on minimum separation distance between VNL pairs at re/start !!! %%%', .true.)
         Write (message, '(a,1p,e12.4)') '%%% separation criterion (Angstroms) %%%', devel%r_dis
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
 
         ! read unit and app tests to perform
       Else If (word(1:9) == 'unit_test') Then
@@ -755,7 +744,7 @@ Contains
           ! direct evaluation option
 
           vdws%l_direct = .true.
-          If(fftag == 1) Call info('vdw direct option on', .true.)
+          Call info('vdw direct option on', .true.)
 
           ! Is ewald going to perform VdW stuff
 
@@ -768,63 +757,57 @@ Contains
 
           ! mixing type keywords
 
-          If(fftag == 1) Call info('vdw cross terms mixing opted (for undefined mixed potentials)', .true.)
-          If(fftag == 1) Call info('mixing is limited to potentials of the same type only', .true.)
-          If(fftag == 1) Call info('mixing restricted to LJ-like potentials (12-6,LJ,WCA,DPD,AMOEBA)', .true.)
+          Call info('vdw cross terms mixing opted (for undefined mixed potentials)', .true.)
+          Call info('mixing is limited to potentials of the same type only', .true.)
+          Call info('mixing restricted to LJ-like potentials (12-6,LJ,WCA,DPD,AMOEBA)', .true.)
 
           Call get_word(record, word2)
 
           If (word2(1:4) == 'lore') Then
             vdws%mixing = MIX_LORENTZ_BERTHELOT
-            If(fftag == 1)Then
-              Call info('type of mixing selected - Lorentz–Berthelot :: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2', .true.)
-            End If
+            Call info('type of mixing selected - Lorentz–Berthelot :: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2', .true.)
           Else If (word2(1:4) == 'fend') Then
             vdws%mixing = MIX_FENDER_HALSEY
-            If(fftag == 1)Then
-              Call info('type of mixing selected - Fender-Halsey :: e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2', .true.)
-            End If
+            Call info('type of mixing selected - Fender-Halsey :: e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2', .true.)
           Else If (word2(1:4) == 'hoge') Then
             vdws%mixing = MIX_HOGERVORST
-            If(fftag == 1) Call info('type of mixing selected - Hogervorst (good hope) :: ' &
+            Call info('type of mixing selected - Hogervorst (good hope) :: ' &
               //'e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i*s_j)^(1/2)', .true.)
           Else If (word2(1:4) == 'halg') Then
             vdws%mixing = MIX_HALGREN
-            If(fftag == 1) Call info('type of mixing selected - Halgren HHG :: ' &
+            Call info('type of mixing selected - Halgren HHG :: ' &
               //'e_ij=4*e_i*e_j/[e_i^(1/2)+e_j^(1/2)]^2 ; s_ij=(s_i^3+s_j^3)/(s_i^2+s_j^2)', .true.)
           Else If (word2(1:4) == 'wald') Then
             vdws%mixing = MIX_WALDMAN_HAGLER
-            If(fftag == 1) Call info('type of mixing selected - Waldman–Hagler :: ' &
+            Call info('type of mixing selected - Waldman–Hagler :: ' &
               //'e_ij=2*(e_i*e_j)^(1/2)*(s_i*s_j)^3/(s_i^6+s_j^6) ;s_ij=[(s_i^6+s_j^6)/2]^(1/6)', .true.)
           Else If (word2(1:4) == 'tang') Then
             vdws%mixing = MIX_TANG_TOENNIES
-            If(fftag == 1) Call info('type of mixing selected - Tang-Toennies :: ' &
+            Call info('type of mixing selected - Tang-Toennies :: ' &
               //' e_ij=[(e_i*s_i^6)*(e_j*s_j^6)] / {[(e_i*s_i^12)^(1/13)+(e_j*s_j^12)^(1/13)]/2}^13', .true.)
-            If(fftag == 1) Call info(Repeat(' ',43)//'s_ij={[(e_i*s_i^6)*(e_j*s_j^6)]^(1/2) / e_ij}^(1/6)', .true.)
+            Call info(Repeat(' ',43)//'s_ij={[(e_i*s_i^6)*(e_j*s_j^6)]^(1/2) / e_ij}^(1/6)', .true.)
           Else If (word2(1:4) == 'func') Then
             vdws%mixing = MIX_FUNCTIONAL
-            If(fftag == 1) Call info('type of mixing selected - Functional :: ' &
+            Call info('type of mixing selected - Functional :: ' &
               //'e_ij=3 * (e_i*e_j)^(1/2) * (s_i*s_j)^3 / SUM_L=0^2{[(s_i^3+s_j^3)^2 / (4*(s_i*s_j)^L)]^(6/(6-2L))}', .true.)
-            If(fftag == 1) Then
-              Call info(Repeat(' ',40)//'s_ij=(1/3) * SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))}', .true.)
-            End If
+            Call info(Repeat(' ',40)//'s_ij=(1/3) * SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))}', .true.)
           Else
             Call strip_blanks(record)
             Write (message, '(4a)') word(1:Len_trim(word) + 1), &
               word1(1:Len_Trim(word1) + 1),word2(1:Len_Trim(word2)+1), record
-            If(fftag == 1) Call info(message, .true.)
+            Call info(message, .true.)
             Call error(3)
           End If
 
         Else If (word1(1:5) == 'shift') Then
           ! force-shifting option
           vdws%l_force_shift = .true.
-          If(fftag == 1) Call info('vdw force-shifting option on', .true.)
+          Call info('vdw force-shifting option on', .true.)
         Else
           Call strip_blanks(record)
           Write (message, '(3a)') word(1:Len_trim(word) + 1), &
             word1(1:Len_Trim(word1) + 1), record
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
           Call error(3)
         End If
 
@@ -833,7 +816,7 @@ Contains
         Call get_word(record, word)
         If (word(1:6) == 'direct') Then
           ! read metal direct evaluation option
-          If(fftag == 1) Call info('metal direct option on', .true.)
+          Call info('metal direct option on', .true.)
           If (met%tab > 0) Then
             Call warning(480, 0.0_wp, 0.0_wp, 0.0_wp)
           Else
@@ -841,7 +824,7 @@ Contains
           End If
         Else If (word(1:7) == 'sqrtrho') Then
           ! read metal sqrtrho interpolation option for EAM embeding function in TABEAM
-          If(fftag == 1) Call info('metal sqrtrho option on', .true.)
+          Call info('metal sqrtrho option on', .true.)
           If (met%tab > 0) Then
             met%l_emb = .true.
           Else
@@ -854,7 +837,7 @@ Contains
 
       Else If (word(1:4) == 'slab') Then
 
-        If(fftag == 1) Call info('slab option on', .true.)
+        Call info('slab option on', .true.)
 
         ! io options (dealt with in scan_control<-set_bounds)
 
@@ -872,7 +855,7 @@ Contains
         Call get_word(record, word)
         config%nz = Max(1,Nint(Abs(word_2_real(word))))
         Write (message, '(a,9x,3i5)') 'system expansion opted',config%nx,config%ny,config%nz
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
 
         ! read impact option
 
@@ -903,7 +886,7 @@ Contains
         Write (messages(3), '(a,i10)') 'timestep (steps)', impa%tmd
         Write (messages(4), '(a,1p,e12.4)') 'energy   (keV)  ', impa%emd
         Write (messages(5), '(a,1p,3e12.4)') 'v-r(x,y,z)      ', impa%vmx, impa%vmy, impa%vmz
-        If(fftag == 1) Call info(messages,5, .true.)
+        Call info(messages,5, .true.)
 
         If (limp) Call error(600)
         limp = .true.
@@ -922,7 +905,7 @@ Contains
         Call seed%init(tmp_seed(1:3))
 
         Write (message, '(a,3i5)') 'radomisation seeds supplied: ', seed%seed(1:3)
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
 
         ! read temperature
 
@@ -932,7 +915,7 @@ Contains
         Call get_word(record, word)
         thermo%temp = Abs(word_2_real(word))
         Write (message, '(a,1p,e12.4)') 'simulation temperature (K)  ', thermo%temp
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
 
         ! read zero temperature optimisation
 
@@ -950,19 +933,17 @@ Contains
         If (word(1:5) == 'every') Call get_word(record, word)
         thermo%freq_zero = Max(thermo%freq_zero, Abs(Nint(word_2_real(word, 0.0_wp))))
 
-        If(fftag == 1) Call info('zero K optimisation on (during equilibration)', .true.)
+        Call info('zero K optimisation on (during equilibration)', .true.)
         Write (message, '(a,i10)') 'zero K application interval', thermo%freq_zero
 
         If (l_0) Then
           If (comm%idnode == 0)Then
-            If(fftag == 1)Then
-              Call info('fire option on - actual temperature will reset to 10 Kelvin if no target tempreature is specified', .true.)
-            End If
+            Call info('fire option on - actual temperature will reset to 10 Kelvin if no target tempreature is specified', .true.)
           End If
         Else
           ltemp = .true.
           thermo%temp = 10.0_wp
-          If(fftag == 1) Call info('fire option off - target temperature reset to 10 Kelvin', .true.)
+          Call info('fire option off - target temperature reset to 10 Kelvin', .true.)
         End If
 
         ! read pressure
@@ -992,11 +973,11 @@ Contains
           thermo%stress(6) = word_2_real(word)
           thermo%stress(8) = thermo%stress(6)
 
-          If(fftag == 1) Call info('simulation pressure tensor (katms):', .true.)
+          Call info('simulation pressure tensor (katms):', .true.)
           Write (messages(1), '(3f20.10)') thermo%stress(1:3)
           Write (messages(2), '(3f20.10)') thermo%stress(4:6)
           Write (messages(3), '(3f20.10)') thermo%stress(7:9)
-          If(fftag == 1) Call info(messages, 3, .true.)
+          Call info(messages, 3, .true.)
 
           ! convert from katms to internal units of pressure
 
@@ -1026,13 +1007,13 @@ Contains
 
         If (word(1:7) == 'noscale' .or. word(1:7) == 'unscale') Then
           flow%restart_key = RESTART_KEY_NOSCALE
-          If(fftag == 1) Call info('unscaled restart requested (starting a new simulation)', .true.)
+          Call info('unscaled restart requested (starting a new simulation)', .true.)
         Else If (word(1:5) == 'scale') Then
           flow%restart_key = RESTART_KEY_SCALE
-          If(fftag == 1) Call info('scaled restart requested (starting a new simulation)', .true.)
+          Call info('scaled restart requested (starting a new simulation)', .true.)
         Else
           flow%restart_key = RESTART_KEY_OLD
-          If(fftag == 1) Call info('restart requested (continuing an old simulation)', .true.)
+          Call info('restart requested (continuing an old simulation)', .true.)
           Call warning('timestep from REVOLD overides specification in CONTROL', .true.)
         End If
 
@@ -1053,7 +1034,7 @@ Contains
         Else
           Call strip_blanks(record)
           Write (message, '(3a)') word(1:Len_trim(word) + 1),word1(1:Len_Trim(word1) + 1), record
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
           Call error(3)
         End If
 
@@ -1082,18 +1063,18 @@ Contains
         Call get_word(record, word)
         flow%run_steps = Nint(word_2_real(word))
         Write (message, '(a,i10)') 'selected number of timesteps ',flow%run_steps
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
         ! read number of equilibration timesteps
       Else If (word(1:5) == 'equil') Then
         Call get_word(record, word)
         If (word(1:5) == 'steps') Call get_word(record, word)
         flow%equil_steps = Abs(Nint(word_2_real(word)))
         Write (message, '(a,i10)') 'equilibration period (steps) ', flow%equil_steps
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
         ! read collection option
       Else If (word(1:7) == 'collect') Then
         flow%equilibration = .false.
-        If(fftag == 1) Call info('equilibration included in overall averages', .true.)
+        Call info('equilibration included in overall averages', .true.)
         ! read pseudo thermostat option
       Else If (word(1:6) == 'pseudo') Then
 
@@ -1115,16 +1096,16 @@ Contains
         If (config%width / 4.0_wp > thermo%width_pseudo) Then
           thermo%l_stochastic_boundaries = .true.
           If (comm%idnode == 0) Then
-            If(fftag == 1) Call info('pseudo thermostat attached to MD cell boundary', .true.)
+            Call info('pseudo thermostat attached to MD cell boundary', .true.)
             Select Case (thermo%key_pseudo)
             Case (PSEUDO_LANGEVIN_DIRECT)
-              If(fftag == 1) Call info('thermostat control: Langevin + direct temperature scaling', .true.)
+              Call info('thermostat control: Langevin + direct temperature scaling', .true.)
             Case (PSEUDO_LANGEVIN)
-              If(fftag == 1) Call info('thermostat control: Langevin temperature scaling', .true.)
+              Call info('thermostat control: Langevin temperature scaling', .true.)
             Case (PSEUDO_GAUSSIAN)
-              If(fftag == 1) Call info('thermostat control: gaussian temperature scaling', .true.)
+              Call info('thermostat control: gaussian temperature scaling', .true.)
             Case (PSEUDO_DIRECT)
-              If(fftag == 1) Call info('thermostat control: direct temperature scaling', .true.)
+              Call info('thermostat control: direct temperature scaling', .true.)
             End Select
             Write (message, '(a,1p,e12.4)') 'thermostat thickness (Angs) ', tmp
           End If
@@ -1132,7 +1113,7 @@ Contains
           If (config%width / 4.0_wp > tmp .and. tmp >= thermo%width_pseudo) Then
             thermo%width_pseudo = tmp
           Else
-            If(fftag == 1) Call info('thermostat thickness insufficient - reset to 2 Angs', .true.)
+            Call info('thermostat thickness insufficient - reset to 2 Angs', .true.)
           End If
         Else
           Call warning(280, thermo%width_pseudo, config%width, 0.0_wp)
@@ -1147,7 +1128,7 @@ Contains
           thermo%temp_pseudo = Max(thermo%temp_pseudo, tmp)
         End If
         Write (message, '(a,1p,e12.4)') 'thermostat temperature (K) ', thermo%temp_pseudo
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
 
         ! read minimiser option
 
@@ -1169,7 +1150,7 @@ Contains
         Else
           Call strip_blanks(record)
           Write (message, '(4a)') word2(1:Len_Trim(word2) + 1),' ',word(1:Len_trim(word) + 1), record
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
           Call error(590)
         End If
 
@@ -1216,16 +1197,16 @@ Contains
           Write (messages(2), '(a,a8)') 'minimisation criterion        ', word1(1:8)
           Write (messages(3), '(a,i10)') 'minimisation frequency (steps)', minim%freq
           Write (messages(4), '(a,1p,e12.4)') 'minimisation tolerance        ', minim%tolerance
-          If(fftag == 1) Call info(messages, 4, .true.)
+          Call info(messages, 4, .true.)
           If (minim%step_length > zero_plus) Then
             Write (message, '(a,1p,e12.4)') 'minimisation CGM step         ', minim%step_length
-            If(fftag == 1) Call info(message, .true.)
+            Call info(message, .true.)
           End If
         Else
           Write (messages(1), '(a)') 'optimisation at start'
           Write (messages(2), '(a,a8)') 'optimisation criterion        ',word(1:8)
           Write (messages(4), '(a,1p,e12.4)') 'optimisation tolerance        ',minim%tolerance
-          If(fftag == 1) Call info(messages, 3, .true.)
+          Call info(messages, 3, .true.)
           If (minim%step_length > zero_plus) Then
             Write (message, '(a,1p,e12.4)') 'optimisation CGM step         ', minim%step_length
           End If
@@ -1242,7 +1223,7 @@ Contains
 
         thermo%l_tgaus =.true.
         Write (message, '(a,i10)') 'temperature regaussing interval ', thermo%freq_tgaus
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
 
         ! read temperature scaling option
 
@@ -1254,9 +1235,9 @@ Contains
         thermo%freq_tscale = Max(1, Abs(Nint(word_2_real(word, 0.0_wp))))
 
         thermo%l_tscale =.true.
-        If(fftag == 1) Call info('temperature scaling on (during equilibration)', .true.)
+        Call info('temperature scaling on (during equilibration)', .true.)
         Write (message, '(a,i10)') 'temperature scaling interval ', thermo%freq_tscale
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
 
         ! read polarisation option
 
@@ -1277,7 +1258,7 @@ Contains
           Write (message, '(a,f5.2)') &
             'CHARMM polarisation scheme selected with optional atomic thole dumping of ', &
             mpoles%thole
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
           If (mpoles%max_mpoles == 0 ) Then
             Call warning('scheme deselected due to switched off electrostatics', .true.)
           End If
@@ -1289,7 +1270,7 @@ Contains
             !              mpoles%key=POLARISATION_DEFAULT ! done in scan_control
           Else
             electro%lecx = .true. ! enable extended coulombic exclusion
-            If(fftag == 1) Call info('Extended Coulombic eXclusion activated for CHARMM polarisation', .true.)
+            Call info('Extended Coulombic eXclusion activated for CHARMM polarisation', .true.)
           End If
         End If
 
@@ -1308,7 +1289,7 @@ Contains
 
           thermo%ensemble = ENS_NVE
 
-          If(fftag == 1) Call info('Ensemble : NVE (Microcanonical)', .true.)
+          Call info('Ensemble : NVE (Microcanonical)', .true.)
 
           If (lens) Call error(414)
           lens = .true.
@@ -1321,8 +1302,8 @@ Contains
 
             thermo%ensemble = ENS_NVT_EVANS
 
-            If(fftag == 1) Call info('Ensemble : NVT Evans (Isokinetic)', .true.)
-            If(fftag == 1) Call info('Gaussian temperature constraints in use', .true.)
+            Call info('Ensemble : NVT Evans (Isokinetic)', .true.)
+            Call info('Gaussian temperature constraints in use', .true.)
 
             If (lens) Call error(414)
             lens = .true.
@@ -1334,9 +1315,9 @@ Contains
             Call get_word(record, word)
             thermo%chi = Abs(word_2_real(word))
 
-            If(fftag == 1) Call info('Ensemble : NVT Langevin (Stochastic Dynamics)', .true.)
+            Call info('Ensemble : NVT Langevin (Stochastic Dynamics)', .true.)
             Write (message, '(a,1p,e12.4)') 'thermostat friction ', thermo%chi
-            If(fftag == 1) Call info(message, .true.)
+            Call info(message, .true.)
 
             If (lens) Call error(414)
             lens = .true.
@@ -1354,7 +1335,7 @@ Contains
             Write (messages(1), '(a)') 'Ensemble : NVT Andersen'
             Write (messages(2), '(a,1p,e12.4)') 'thermostat relaxation time (ps) ', thermo%tau_t
             Write (messages(3), '(a,1p,e12.4)') 'softness (dimensionless)', thermo%soft
-            If(fftag == 1) Call info(messages, 3, .true.)
+            Call info(messages, 3, .true.)
             If (lens) Call error(414)
             lens = .true.
 
@@ -1365,9 +1346,9 @@ Contains
             Call get_word(record, word)
             thermo%tau_t = Abs(word_2_real(word))
 
-            If(fftag == 1) Call info('Ensemble : NVT Berendsen', .true.)
+            Call info('Ensemble : NVT Berendsen', .true.)
             Write (message, '(a,1p,e12.4)') 'thermostat relaxation time (ps) ', thermo%tau_t
-            If(fftag == 1) Call info(message, .true.)
+            Call info(message, .true.)
             Call warning('If you plan to use the Berendsen thermostat, read https://doi.org/10.1021/acs.jctc.8b00446', .true.)
 
             If (lens) Call error(414)
@@ -1380,9 +1361,9 @@ Contains
             Call get_word(record, word)
             thermo%tau_t = Abs(word_2_real(word))
 
-            If(fftag == 1) Call info('Ensemble : NVT Nose-Hoover', .true.)
+            Call info('Ensemble : NVT Nose-Hoover', .true.)
             Write (message, '(a,1p,e12.4)') 'thermostat relaxation time (ps) ', thermo%tau_t
-            If(fftag == 1) Call info(message, .true.)
+            Call info(message, .true.)
 
             If (lens) Call error(414)
             lens = .true.
@@ -1400,7 +1381,7 @@ Contains
             Write (messages(1), '(a)') 'Ensemble : NVT gentle stochastic thermostat'
             Write (messages(2), '(a,1p,e12.4)') 'thermostat relaxation time (ps) ', thermo%tau_t
             Write (messages(3), '(a,1p,e12.4)') 'friction on thermostat  (ps^-1) ', thermo%gama
-            If(fftag == 1) Call info(messages, 3, .true.)
+            Call info(messages, 3, .true.)
 
             If (lens) Call error(414)
             lens = .true.
@@ -1420,27 +1401,27 @@ Contains
             Write (messages(2), '(a,1p,e12.4)') 'e-phonon friction (ps^-1) ', thermo%chi_ep
             Write (messages(3), '(a,1p,e12.4)') 'e-stopping friction (ps^-1) ', thermo%chi_es
             Write (messages(4), '(a,1p,e12.4)') 'e-stopping velocity (A ps^-1) ', thermo%vel_es2
-            If(fftag == 1) Call info(messages, 4, .true.)
+            Call info(messages, 4, .true.)
 
             If (lens) Call error(414)
             lens = .true.
 
           Else If (word(1:3) == 'dpd') Then
 
-            If(fftag == 1) Call info('Ensemble : NVT dpd (Dissipative Particle Dynamics)', .true.)
+            Call info('Ensemble : NVT dpd (Dissipative Particle Dynamics)', .true.)
 
             ! thermo%key_dpd determined in scan_control
 
             If (thermo%key_dpd == DPD_FIRST_ORDER) Then
               thermo%ensemble = ENS_NVE ! equivalence to doing NVE with some extra fiddling before VV(0)
-              If(fftag == 1) Call info("Ensemble type : Shardlow's first order splitting (S1)", .true.)
+              Call info("Ensemble type : Shardlow's first order splitting (S1)", .true.)
             Else If (thermo%key_dpd == DPD_SECOND_ORDER) Then
               thermo%ensemble = ENS_NVE ! equivalence to doing NVE with some extra fiddling before VV(0) and after VV(1)
-              If(fftag == 1) Call info("Ensemble type : Shardlow's second order splitting (S2)", .true.)
+              Call info("Ensemble type : Shardlow's second order splitting (S2)", .true.)
             Else
               Call strip_blanks(record)
               Write (message, '(2a)') word(1:Len_trim(word) + 1), record
-              If(fftag == 1) Call info(message, .true.)
+              Call info(message, .true.)
               Call error(436)
             End If
 
@@ -1449,7 +1430,7 @@ Contains
 
             If (thermo%gamdpd(0) > zero_plus) Then
               Write (message, '(a,1p,e12.4)') 'drag coefficient (Dalton/ps) ', thermo%gamdpd(0)
-              If(fftag == 1) Call info(message, .true.)
+              Call info(message, .true.)
             End If
 
             If (lens) Call error(414)
@@ -1459,7 +1440,7 @@ Contains
 
             Call strip_blanks(record)
             Write (message, '(2a)') word(1:Len_trim(word) + 1), record
-            If(fftag == 1) Call info(message, .true.)
+            Call info(message, .true.)
             Call error(436)
 
           End If
@@ -1483,7 +1464,7 @@ Contains
             Write (messages(1), '(a)') 'Ensemble : NPT isotropic Langevin (Stochastic Dynamics)'
             Write (messages(2), '(a,1p,e12.4)') 'thermostat friction (ps^-1)', thermo%chi
             Write (messages(3), '(a,1p,e12.4)') 'barostat friction (ps^-1)', thermo%tai
-            If(fftag == 1) Call info(messages, 3, .true.)
+            Call info(messages, 3, .true.)
 
             !                 thermo%tau_t=1/(2.0_wp*pi*thermo%chi)
             !                 thermo%tau_p=1/(2.0_wp*pi*thermo%tai)
@@ -1503,7 +1484,7 @@ Contains
             Write (messages(1), '(a)') 'Ensemble : NPT isotropic Berendsen'
             Write (messages(2), '(a,1p,e12.4)') 'thermostat relaxation time (ps) ', thermo%tau_t
             Write (messages(3), '(a,1p,e12.4)') 'barostat relaxation time (ps) ', thermo%tau_p
-            If(fftag == 1) Call info(messages, 3, .true.)
+            Call info(messages, 3, .true.)
 
             If (lens) Call error(414)
             lens = .true.
@@ -1520,7 +1501,7 @@ Contains
             Write (messages(1), '(a)') 'Ensemble : NPT isotropic Nose-Hoover (Melchionna)'
             Write (messages(2), '(a,1p,e12.4)') 'thermostat relaxation time (ps) ', thermo%tau_t
             Write (messages(3), '(a,1p,e12.4)') 'barostat relaxation time (ps) ', thermo%tau_p
-            If(fftag == 1) Call info(messages, 3, .true.)
+            Call info(messages, 3, .true.)
 
             If (lens) Call error(414)
             lens = .true.
@@ -1537,7 +1518,7 @@ Contains
             Write (messages(1), '(a)') 'Ensemble : NPT isotropic Martyna-Tuckerman-Klein'
             Write (messages(2), '(a,1p,e12.4)') 'thermostat relaxation time (ps) ', thermo%tau_t
             Write (messages(3), '(a,1p,e12.4)') 'barostat relaxation time (ps) ', thermo%tau_p
-            If(fftag == 1) Call info(messages, 3, .true.)
+            Call info(messages, 3, .true.)
 
             If (lens) Call error(414)
             lens = .true.
@@ -1546,7 +1527,7 @@ Contains
 
             Call strip_blanks(record)
             Write (message, '(2a)') word(1:Len_Trim(word) + 1), record
-            If(fftag == 1) Call info(message, .true.)
+            Call info(message, .true.)
             Call error(436)
 
           End If
@@ -1571,7 +1552,7 @@ Contains
             Write (messages(1), '(a)') 'Ensemble : NPT anisotropic Langevin (Stochastic Dynamics)'
             Write (messages(2), '(a,1p,e12.4)') 'thermostat friction (ps^-1)', thermo%chi
             Write (messages(3), '(a,1p,e12.4)') 'barostat friction (ps^-1)', thermo%tai
-            If(fftag == 1) Call info(messages, 3, .true.)
+            Call info(messages, 3, .true.)
 
             !                 thermo%tau_t= thermo%chi
             !                 thermo%tau_p=2.0_wp*pi/thermo%tai
@@ -1579,8 +1560,8 @@ Contains
             Call get_word(record, word)
             If (word(1:4) == 'area') Then
               thermo%iso = CONSTRAINT_SURFACE_AREA
-              If(fftag == 1) Call info('semi-isotropic barostat : constant normal pressure (Pn) &', .true.)
-              If(fftag == 1) Call info('       (N-Pn-A-T)       : constant surface area (A)', .true.)
+              Call info('semi-isotropic barostat : constant normal pressure (Pn) &', .true.)
+              Call info('       (N-Pn-A-T)       : constant surface area (A)', .true.)
             Else If (word(1:4) == 'tens') Then
               thermo%iso = CONSTRAINT_SURFACE_TENSION
               Call get_word(record, word)
@@ -1588,37 +1569,37 @@ Contains
               Write (messages(1), '(a)') 'semi-isotropic barostat : constant normal pressure (Pn) &'
               Write (messages(2), '(a)') '     (N-Pn-gamma-T)     : constant surface tension (gamma)'
               Write (messages(3), '(a,1p,e11.4)') 'sumulation surface tension (dyn/cm)', thermo%tension
-              If(fftag == 1) Call info(messages, 3, .true.)
+              Call info(messages, 3, .true.)
               thermo%tension = thermo%tension/tenunt
 
               Call get_word(record, word)
               If (word(1:4) == 'semi') Then
                 thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
-                If(fftag == 1) Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
+                Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
               Else If (Len_Trim(word) > 0) Then
                 Call strip_blanks(record)
                 Write (message, '(2a)') word(1:Len_Trim(word) + 1), record
-                If(fftag == 1) Call info(message, .true.)
+                Call info(message, .true.)
                 Call warning(460,0.0_wp,0.0_wp,0.0_wp)
               End If
             Else If (word(1:4) == 'orth') Then
               Call get_word(record, word)
               If (Len_trim(word) == 0) Then
                 thermo%iso = CONSTRAINT_SURFACE_TENSION
-                If(fftag == 1) Call info('semi-isotropic barostat : orthorhombic MD cell constraints', .true.)
+                Call info('semi-isotropic barostat : orthorhombic MD cell constraints', .true.)
               Else If (word(1:4) == 'semi') Then
                 thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
-                If(fftag == 1) Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
+                Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
               Else
                 Call strip_blanks(record)
                 Write (message, '(2a)') word(1:Len_trim(word) + 1), record
-                If(fftag == 1) Call info(message, .true.)
+                Call info(message, .true.)
                 Call warning(460,0.0_wp,0.0_wp,0.0_wp)
               End If
             Else If (Len_trim(word) > 0) Then
               Call strip_blanks(record)
               Write (message, '(2a)') word(1:Len_trim(word) + 1), record
-              If(fftag == 1) Call info(message, .true.)
+              Call info(message, .true.)
               Call warning(460,0.0_wp,0.0_wp,0.0_wp)
             End If
             If (Any(thermo%iso == [CONSTRAINT_SURFACE_AREA, CONSTRAINT_SURFACE_TENSION])) Then
@@ -1641,13 +1622,13 @@ Contains
             Write (messages(1), '(a)') 'Ensemble : NPT anisotropic Berendsen'
             Write (messages(2), '(a,1p,e12.4)') 'thermostat relaxation time (ps) ', thermo%tau_t
             Write (messages(3), '(a,1p,e12.4)') 'barostat relaxation time (ps) ', thermo%tau_p
-            If(fftag == 1) Call info(messages, 3, .true.)
+            Call info(messages, 3, .true.)
 
             Call get_word(record, word)
             If (word(1:4) == 'area') Then
               thermo%iso = CONSTRAINT_SURFACE_AREA
-              If(fftag == 1) Call info('semi-isotropic barostat : constant normal pressure (Pn) &', .true.)
-              If(fftag == 1) Call info('       (N-Pn-A-T)       : constant surface area (A)', .true.)
+              Call info('semi-isotropic barostat : constant normal pressure (Pn) &', .true.)
+              Call info('       (N-Pn-A-T)       : constant surface area (A)', .true.)
             Else If (word(1:4) == 'tens') Then
               thermo%iso = CONSTRAINT_SURFACE_TENSION
               Call get_word(record, word)
@@ -1655,37 +1636,37 @@ Contains
               Write (messages(1), '(a)') 'semi-isotropic barostat : constant normal pressure (Pn) &'
               Write (messages(2), '(a)') '     (N-Pn-gamma-T)     : constant surface tension (gamma)'
               Write (messages(3), '(a,1p,e11.4)') 'sumulation surface tension (dyn/cm)', thermo%tension
-              If(fftag == 1) Call info(messages, 3, .true.)
+              Call info(messages, 3, .true.)
               thermo%tension= thermo%tension/tenunt
 
               Call get_word(record, word)
               If (word(1:4) == 'semi') Then
                 thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
-                If(fftag == 1) Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
+                Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
               Else If (Len_Trim(word) > 0) Then
                 Call strip_blanks(record)
                 Write (message, '(2a)') word(1:Len_trim(word) + 1), record
-                If(fftag == 1) Call info(message, .true.)
+                Call info(message, .true.)
                 Call warning(460, 0.0_wp, 0.0_wp, 0.0_wp)
               End If
             Else If (word(1:4) == 'orth') Then
               Call get_word(record, word)
               If (Len_trim(word) == 0) Then
                 thermo%iso = CONSTRAINT_SURFACE_TENSION
-                If(fftag == 1) Call info('semi-isotropic barostat : orthorhombic MD cell constraints', .true.)
+                Call info('semi-isotropic barostat : orthorhombic MD cell constraints', .true.)
               Else If (word(1:4) == 'semi') Then
                 thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
-                If(fftag == 1) Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
+                Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
               Else
                 Call strip_blanks(record)
                 Write (message, '(2a)') word(1:Len_trim(word) + 1), record
-                If(fftag == 1) Call info(message, .true.)
+                Call info(message, .true.)
                 Call warning(460, 0.0_wp, 0.0_wp, 0.0_wp)
               End If
             Else If (Len_trim(word) > 0) Then
               Call strip_blanks(record)
               Write (message, '(2a)') word(1:Len_trim(word) + 1), record
-              If(fftag == 1) Call info(message, .true.)
+              Call info(message, .true.)
               Call warning(460, 0.0_wp, 0.0_wp, 0.0_wp)
             End If
             If (Any(thermo%iso == [CONSTRAINT_SURFACE_AREA, CONSTRAINT_SURFACE_TENSION])) Then
@@ -1708,13 +1689,13 @@ Contains
             Write (messages(1), '(a)') 'Ensemble : NPT anisotropic Nose-Hoover (Melchionna)'
             Write (messages(2), '(a,1p,e12.4)') 'thermostat relaxation time (ps) ', thermo%tau_t
             Write (messages(3), '(a,1p,e12.4)') 'barostat relaxation time (ps) ', thermo%tau_p
-            If(fftag == 1) Call info(messages, 3, .true.)
+            Call info(messages, 3, .true.)
 
             Call get_word(record, word)
             If (word(1:4) == 'area') Then
               thermo%iso = CONSTRAINT_SURFACE_AREA
-              If(fftag == 1) Call info('semi-isotropic barostat : constant normal pressure (Pn) &', .true.)
-              If(fftag == 1) Call info('       (N-Pn-A-T)       : constant surface area (A)', .true.)
+              Call info('semi-isotropic barostat : constant normal pressure (Pn) &', .true.)
+              Call info('       (N-Pn-A-T)       : constant surface area (A)', .true.)
             Else If (word(1:4) == 'tens') Then
               thermo%iso = CONSTRAINT_SURFACE_TENSION
               Call get_word(record, word)
@@ -1722,37 +1703,37 @@ Contains
               Write (messages(1), '(a)') 'semi-isotropic barostat : constant normal pressure (Pn) &'
               Write (messages(2), '(a)') '     (N-Pn-gamma-T)     : constant surface tension (gamma)'
               Write (messages(3), '(a,1p,e11.4)') 'sumulation surface tension (dyn/cm)', thermo%tension
-              If(fftag == 1) Call info(messages, 3, .true.)
+              Call info(messages, 3, .true.)
               thermo%tension = thermo%tension/tenunt
 
               Call get_word(record, word)
               If (word(1:4) == 'semi') Then
                 thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
-                If(fftag == 1) Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
+                Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
               Else If (Len_Trim(word) > 0) Then
                 Call strip_blanks(record)
                 Write (message, '(2a)') word(1:Len_trim(word) + 1), record
-                If(fftag == 1) Call info(message, .true.)
+                Call info(message, .true.)
                 Call warning(460, 0.0_wp, 0.0_wp, 0.0_wp)
               End If
             Else If (word(1:4) == 'orth') Then
               Call get_word(record, word)
               If (Len_trim(word) == 0) Then
                 thermo%iso = CONSTRAINT_SURFACE_TENSION
-                If(fftag == 1) Call info('semi-isotropic barostat : orthorhombic MD cell constraints', .true.)
+                Call info('semi-isotropic barostat : orthorhombic MD cell constraints', .true.)
               Else If (word(1:4) == 'semi') Then
                 thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
-                If(fftag == 1) Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
+                Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
               Else
                 Call strip_blanks(record)
                 Write (message, '(2a)') word(1:Len_trim(word) + 1), record
-                If(fftag == 1) Call info(message, .true.)
+                Call info(message, .true.)
                 Call warning(460, 0.0_wp, 0.0_wp, 0.0_wp)
               End If
             Else If (Len_trim(word) > 0) Then
               Call strip_blanks(record)
               Write (message, '(2a)') word(1:Len_trim(word) + 1), record
-              If(fftag == 1) Call info(message, .true.)
+              Call info(message, .true.)
               Call warning(460, 0.0_wp, 0.0_wp, 0.0_wp)
             End If
             If (Any(thermo%iso == [CONSTRAINT_SURFACE_AREA, CONSTRAINT_SURFACE_TENSION])) Then
@@ -1775,13 +1756,13 @@ Contains
             Write (messages(1), '(a)') 'Ensemble : NPT anisotropic Martyna-Tuckerman-Klein'
             Write (messages(2), '(a,1p,e12.4)') 'thermostat relaxation time (ps) ', thermo%tau_t
             Write (messages(3), '(a,1p,e12.4)') 'barostat relaxation time (ps) ', thermo%tau_p
-            If(fftag == 1) Call info(messages, 3, .true.)
+            Call info(messages, 3, .true.)
 
             Call get_word(record, word)
             If (word(1:4) == 'area') Then
               thermo%iso = CONSTRAINT_SURFACE_AREA
-              If(fftag == 1) Call info('semi-isotropic barostat : constant normal pressure (Pn) &', .true.)
-              If(fftag == 1) Call info('       (N-Pn-A-T)       : constant surface area (A)', .true.)
+              Call info('semi-isotropic barostat : constant normal pressure (Pn) &', .true.)
+              Call info('       (N-Pn-A-T)       : constant surface area (A)', .true.)
             Else If (word(1:4) == 'tens') Then
               thermo%iso = CONSTRAINT_SURFACE_TENSION
               Call get_word(record, word)
@@ -1789,37 +1770,37 @@ Contains
               Write (messages(1), '(a)') 'semi-isotropic barostat : constant normal pressure (Pn) &'
               Write (messages(2), '(a)') '     (N-Pn-gamma-T)     : constant surface tension (gamma)'
               Write (messages(3), '(a,1p,e11.4)') 'sumulation surface tension (dyn/cm)', thermo%tension
-              If(fftag == 1) Call info(messages, 3, .true.)
+              Call info(messages, 3, .true.)
               thermo%tension = thermo%tension / tenunt
 
               Call get_word(record, word)
               If (word(1:4) == 'semi') Then
                 thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
-                If(fftag == 1) Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
+                Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
               Else If (Len_Trim(word) > 0) Then
                 Call strip_blanks(record)
                 Write (message, '(2a)') word(1:Len_trim(word) + 1), record
-                If(fftag == 1) Call info(message, .true.)
+                Call info(message, .true.)
                 Call warning(460, 0.0_wp, 0.0_wp, 0.0_wp)
               End If
             Else If (word(1:4) == 'orth') Then
               Call get_word(record, word)
               If (Len_trim(word) == 0) Then
                 thermo%iso = CONSTRAINT_SURFACE_TENSION
-                If(fftag == 1) Call info('semi-isotropic barostat : orthorhombic MD cell constraints', .true.)
+                Call info('semi-isotropic barostat : orthorhombic MD cell constraints', .true.)
               Else If (word(1:4) == 'semi') Then
                 thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
-                If(fftag == 1) Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
+                Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
               Else
                 Call strip_blanks(record)
                 Write (message, '(2a)') word(1:Len_trim(word) + 1), record
-                If(fftag == 1) Call info(message, .true.)
+                Call info(message, .true.)
                 Call warning(460, 0.0_wp, 0.0_wp, 0.0_wp)
               End If
             Else If (Len_trim(word) > 0) Then
               Call strip_blanks(record)
               Write (message, '(2a)') word(1:Len_trim(word) + 1), record
-              If(fftag == 1) Call info(message, .true.)
+              Call info(message, .true.)
               Call warning(460, 0.0_wp, 0.0_wp, 0.0_wp)
             End If
             If (Any(thermo%iso == [CONSTRAINT_SURFACE_AREA, CONSTRAINT_SURFACE_TENSION])) Then
@@ -1834,7 +1815,7 @@ Contains
 
             Call strip_blanks(record)
             Write (message, '(2a)') word(1:Len_trim(word) + 1), record
-            If(fftag == 1) Call info(message, .true.)
+            Call info(message, .true.)
             Call error(436)
 
           End If
@@ -1843,7 +1824,7 @@ Contains
 
           Call strip_blanks(record)
           Write (message, '(2a)') word(1:Len_trim(word) + 1), record
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
           Call error(436)
 
         End If
@@ -1860,7 +1841,7 @@ Contains
         tmp = Abs(word_2_real(word))
 
         Write (message, '(a,1p,e12.4)') 'density variation allowance (%) ', tmp
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
 
         ! read real space cutoff
 
@@ -1870,7 +1851,7 @@ Contains
         rcut1 = Abs(word_2_real(word))
 
         Write (message, '(a,1p,e12.4)') 'real space cutoff (Angs) ', rcut1
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
 
         ! read real space cutoff padding
 
@@ -1879,7 +1860,7 @@ Contains
         Call get_word(record, word); If (word(1:5) == 'width') Call get_word(record, word)
         rpad1 = Abs(word_2_real(word))
         Write (message, '(a,1p,e12.4)') 'cutoff padding (Angs) ', rpad1
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
 
         ! read vdw cutoff (short-range potentials)
 
@@ -1890,7 +1871,7 @@ Contains
         rvdw1 = Abs(word_2_real(word))
 
         Write (message, '(a,1p,e12.4)') 'vdw cutoff (Angs) ', rvdw1
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
 
         ! read Ewald sum parameters
 
@@ -1906,24 +1887,24 @@ Contains
 
           electro%key = ELECTROSTATIC_EWALD
 
-          If(fftag == 1) Call info('Electrostatics : Smooth Particle Mesh Ewald', .true.)
+          Call info('Electrostatics : Smooth Particle Mesh Ewald', .true.)
 
           If (word(1:9) == 'precision') Then
             Call get_word(record, word)
             tmp = Abs(word_2_real(word))
             Write (message, '(a,1p,e12.4)') 'Ewald sum precision ',tmp
-            If(fftag == 1) Call info(message, .true.)
+            Call info(message, .true.)
           End If
 
           ! This is sorted in set_bounds -> scan_control
 
           Write (messages(1), '(a,1p,e12.4)') 'Ewald convergence parameter (A^-1) ', ewld%alpha
           Write (messages(2), '(a,3i5)') 'Ewald kmax1 kmax2 kmax3   (x2) ', ewld%kspace%k_vec_dim_cont
-          If(fftag == 1) Call info(messages, 2, .true.)
+          Call info(messages, 2, .true.)
           If (Any(ewld%kspace%k_vec_dim /= ewld%kspace%k_vec_dim_cont)) Then
             !If (ewld%fft_dim_a /= ewld%fft_dim_a1 .or. ewld%fft_dim_b /= ewld%fft_dim_b1 .or. ewld%fft_dim_c /= ewld%fft_dim_c1) Then
             Write (messages(1), '(a,3i5)') 'DaFT adjusted kmax values (x2) ', ewld%kspace%k_vec_dim
-            If(fftag == 1) Call info(messages, 1, .true.)
+            Call info(messages, 1, .true.)
           End If
 
           ! Print infrequent k-space SPME evaluation
@@ -1937,7 +1918,7 @@ Contains
           End If
           If (electro%nstfce >= 1) Then
             Write (message, '(a,1p,i5)') 'k-space evaluation interval (steps)',electro%nstfce
-            If(fftag == 1) Call info(message, .true.)
+            Call info(message, .true.)
           End If
 
           If (lforc) Call error(416)
@@ -1950,7 +1931,7 @@ Contains
       Else If (word(1:6) == 'distan') Then
 
         electro%key = ELECTROSTATIC_DDDP
-        If(fftag == 1) Call info('Electrostatics : Distance Dependent Dielectric', .true.)
+        Call info('Electrostatics : Distance Dependent Dielectric', .true.)
 
         If (lforc) Call error(416)
         lforc = .true.
@@ -1960,7 +1941,7 @@ Contains
       Else If (word(1:4) == 'coul') Then
 
         electro%key = ELECTROSTATIC_COULOMB
-        If(fftag == 1) Call info('Electrostatics : Coulombic Potential', .true.)
+        Call info('Electrostatics : Coulombic Potential', .true.)
 
         If (lforc) Call error(416)
         lforc = .true.
@@ -1970,7 +1951,7 @@ Contains
       Else If (word(1:5) == 'shift') Then
 
         electro%key = ELECTROSTATIC_COULOMB_FORCE_SHIFT
-        If(fftag == 1) Call info('Electrostatics : Force-Shifted Coulombic Potential', .true.)
+        Call info('Electrostatics : Force-Shifted Coulombic Potential', .true.)
 
         Call get_word(record, word)
 
@@ -1978,23 +1959,23 @@ Contains
           Call get_word(record, word)
           electro%damping = Abs(word_2_real(word))
           Write (message, '(a,1p,e12.4)') 'damping parameter (A^-1) ', electro%damping
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
         Else If (word(1:9) == 'precision') Then
           Call get_word(record, word)
           eps0 = Abs(word_2_real(word))
           Write (message, '(a,1p,e12.4)') 'precision parameter ', eps0
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
           eps0 = Max(Min(eps0, 0.5_wp), 1.0e-20_wp)
           tol = Sqrt(Abs(Log(eps0 * neigh%cutoff)))
           electro%damping = Sqrt(Abs(Log(eps0 * neigh%cutoff * tol))) / neigh%cutoff
 
           Write (message, '(a,1p,e12.4)') 'damping parameter (A^-1) derived ', electro%damping
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
         End If
 
         electro%damp = electro%damping > zero_plus
         If (electro%damp) Then
-          If(fftag == 1) Call info('Fennell damping applied', .true.)
+          Call info('Fennell damping applied', .true.)
           If (neigh%cutoff < 12.0_wp) Call warning(7, neigh%cutoff, 12.0_wp, 0.0_wp)
         End If
 
@@ -2006,7 +1987,7 @@ Contains
       Else If (word(1:8) == 'reaction') Then
 
         electro%key = ELECTROSTATIC_COULOMB_REACTION_FIELD
-        If(fftag == 1) Call info('Electrostatics : Reaction Field', .true.)
+        Call info('Electrostatics : Reaction Field', .true.)
 
         If (word(1:5) == 'field') Call get_word(record, word)
         Call get_word(record, word)
@@ -2016,21 +1997,21 @@ Contains
 
           electro%damping = Abs(word_2_real(word))
           Write (message, '(a,1p,e12.4)') 'damping parameter (A^-1) ', electro%damping
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
         Else If (word(1:9) == 'precision') Then
           Call get_word(record, word)
           eps0 = Abs(word_2_real(word))
           Write (message, '(a,1p,e12.4)') 'precision parameter ', eps0
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
           eps0 = Max(Min(eps0, 0.5_wp), 1.0e-20_wp)
           tol = Sqrt(Abs(Log(eps0 * neigh%cutoff)))
           electro%damping = Sqrt(Abs(Log(eps0 * neigh%cutoff * tol))) / neigh%cutoff
           Write (message, '(a,1p,e12.4)') 'damping parameter (A^-1) derived ', electro%damping
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
         End If
         electro%damp = electro%damping > zero_plus
         If (electro%damp) Then
-          If(fftag == 1) Call info('Fennell damping applied', .true.)
+          Call info('Fennell damping applied', .true.)
           If (neigh%cutoff < 12.0_wp) Call warning(7, neigh%cutoff, 12.0_wp, 0.0_wp)
         End If
 
@@ -2040,7 +2021,7 @@ Contains
       Else If (word(1:5) == 'poiss' .or. word(1:5) == 'psolv') Then
 
         electro%key = ELECTROSTATIC_POISSON
-        If(fftag == 1) Call info('Electrostatics : Poisson equation solver', .true.)
+        Call info('Electrostatics : Poisson equation solver', .true.)
 
         prmps = 0.0_wp
         Do i = 1, 4
@@ -2071,7 +2052,7 @@ Contains
         Write (messages(2), '(a,1p,e12.4)') 'convergance epsilon ',prmps(2)
         Write (messages(3), '(a,1p,i5)') 'max # of Psolver iterations ',Nint(prmps(3))
         Write (messages(4), '(a,1p,i5)') 'max # of Jacobi  iterations ',Nint(prmps(4))
-        If(fftag == 1) Call info(messages, 4, .true.)
+        Call info(messages, 4, .true.)
 
         If (Abs(prmps(1) - 1.0_wp / pois%delta) > 1.0e-6_wp .or. Abs(prmps(2) - pois%eps) > 1.0e-6_wp .or. &
             Nint(prmps(3)) == 0 .or. Nint(prmps(4)) == 0) Then
@@ -2080,7 +2061,7 @@ Contains
           Write (messages(2), '(a,1p,e12.4)') 'convergance epsilon ', pois%eps
           Write (messages(3), '(a,1p,i5)') 'max # of Psolver iterations ', pois%mxitcg
           Write (messages(4), '(a,1p,i5)') 'max # of Jacobi  iterations ', pois%mxitjb
-          If(fftag == 1) Call info(messages, 4, .true.)
+          Call info(messages, 4, .true.)
         End If
 
         If (lforc) Call error(416)
@@ -2094,14 +2075,14 @@ Contains
         If (word(1:8) == 'constant') Call get_word(record, word)
         electro%eps = word_2_real(word)
         Write (message, '(a,1p,e12.4)') 'relative dielectric constant ',electro%eps
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
 
         ! read option for accounting for extended coulombic exclusion
 
       Else If (word(1:5) == 'exclu') Then
 
         electro%lecx = .true.
-        If(fftag == 1) Call info('Extended Coulombic eXclusion opted for', .true.)
+        Call info('Extended Coulombic eXclusion opted for', .true.)
 
         ! read force capping option
 
@@ -2116,7 +2097,7 @@ Contains
         If (tmp > zero_plus) config%fmax=tmp
         Write (messages(1), '(a)') 'force capping on (during equilibration)'
         Write (messages(2), '(a,1p,e12.4)') 'force capping limit (kT/Angs)',config%fmax
-        If(fftag == 1) Call info(messages, 2, .true.)
+        Call info(messages, 2, .true.)
 
         ! read 'no vdw', 'no elec', 'no ind' and 'no vafav' options
 
@@ -2132,7 +2113,7 @@ Contains
 
         Else If (word1(1:3) == 'str') Then
 
-          If(fftag == 1) Call info('no strict option on', .true.)
+          Call info('no strict option on', .true.)
           Write (banner(1), '(a)') '*** It skips printing inessential information in OUTPUT such as many       ***'
           Write (banner(2), '(a)') '*** warnings, FIELD digested information and full iteration cycles         ***'
           Write (banner(3), '(a)') '*** information from CGM based routines!  However, it also assumes some,   ***'
@@ -2142,11 +2123,11 @@ Contains
           Write (banner(7), '(a)') '*** performance without sacrificing on accuracy!  While it may, by chance, ***'
           Write (banner(8), '(a)') '*** help to pass previously failing runs it may as well lead to a run      ***'
           Write (banner(9), '(a)') '*** failure without warnings!  Beware, avoid usage if uncertain!           ***'
-          If(fftag == 1) Call info(banner,9, .true.)
+          Call info(banner,9, .true.)
 
         Else If (word1(1:3) == 'top') Then
 
-          If(fftag == 1) Call info('no topology option on (avoids printing extended FIELD topology in OUTPUT)', .true.)
+          Call info('no topology option on (avoids printing extended FIELD topology in OUTPUT)', .true.)
 
           flow%print_topology = .false.
 
@@ -2157,10 +2138,8 @@ Contains
         Else If (word1(1:3) == 'vom') Then ! "no vom" should be used with TTM
 
           If (.not. ttm%l_ttm) Then
-            If(fftag == 1)Then
-              Call info('"no vom" option auto-switched on - COM momentum removal will be abandoned', .true.)
-            End If
-            If(fftag == 1) Call warning('this may lead to a build up of the COM momentum ' &
+            Call info('"no vom" option auto-switched on - COM momentum removal will be abandoned', .true.)
+            Call warning('this may lead to a build up of the COM momentum ' &
                                      //'and a manifestation of the "flying ice-cube" effect', .true.)
           End If
 
@@ -2174,7 +2153,7 @@ Contains
 
           Call strip_blanks(record)
           Write (message, '(3a)') word(1:Len_trim(word) + 1),word1(1:Len_Trim(word1) + 1), record
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
           Call error(3)
 
         End If
@@ -2186,13 +2165,13 @@ Contains
         Call get_word(record, word)
         cshell%rlx_tol(1) = Max(1.0_wp,Abs(word_2_real(word)))
         Write (message, '(a,1p,e12.4)') 'relaxed shell model CGM tolerance ',cshell%rlx_tol(1)
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
 
         Call get_word(record, word1)
         cshell%rlx_tol(2) = word_2_real(word1, -1.0_wp)
         If (cshell%rlx_tol(2) > zero_plus) Then
           Write (message, '(a,1p,e12.4)') 'relaxed shell model CGM step ',cshell%rlx_tol(2)
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
         End If
 
         ! read maximum number of iterations in constraint algorithms
@@ -2233,7 +2212,7 @@ Contains
 
         If (.not. ttm%l_ttm) Then
           ttm%l_ttm = .true.
-          If(fftag == 1) Call info('Two Temperature Model (TTM) opted for', .true.)
+          Call info('Two Temperature Model (TTM) opted for', .true.)
         End If
 
         Call get_word(record, word1)
@@ -2246,7 +2225,7 @@ Contains
           Write (messages(1), '(a,3(1x,i8))') 'ionic temperature grid size (x,y,z):', ttm%ntsys(1:3)
           Write (messages(2), '(a,3(1x,f8.4))') 'temperature grid size (x,y,z):', ttm%delx, ttm%dely, ttm%delz
           Write (messages(3), '(a,f10.4)') 'average number of atoms/cell: ', ttm%sysrho*ttm%volume
-          If(fftag == 1) Call info(messages, 3, .true.)
+          Call info(messages, 3, .true.)
 
         Else If (word1(1:4) == 'ncet') Then
 
@@ -2255,20 +2234,20 @@ Contains
 
           Write (message, '(a,3(1x,i8))') 'electronic temperature grid size (x,y,z):', &
             ttm%eltsys(1:3)
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
 
         Else If (word1(1:5) == 'metal') Then
 
           ! sets properties of electronic subsystem as a metal:
           ! already determined in scan_control
 
-          If(fftag == 1) Call info('electronic subsystem represents metal: thermal conductivity required', .true.)
+          Call info('electronic subsystem represents metal: thermal conductivity required', .true.)
 
         Else If (word1(1:8) == 'nonmetal') Then
 
           ! sets properties of electronic subsystem as a non-metal
 
-          If(fftag == 1) Call info('electronic subsystem represents non-metal: thermal diffusivity required', .true.)
+          Call info('electronic subsystem represents non-metal: thermal diffusivity required', .true.)
 
         Else If (word1(1:7) == 'ceconst') Then
 
@@ -2276,9 +2255,9 @@ Contains
 
           Call get_word(record, word)
           ttm%Ce0 = word_2_real(word)
-          If(fftag == 1) Call info('electronic specific heat capacity set to constant value', .true.)
+          Call info('electronic specific heat capacity set to constant value', .true.)
           Write (message, '(a,1p,e12.4)') 'electronic s.h.c. (kB/atom) ', ttm%Ce0
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
 
         Else If (word1(1:6) == 'cetanh') Then
 
@@ -2291,7 +2270,7 @@ Contains
           Write (messages(1), '(a)') 'electronic specific heat capacity set to hyperbolic tangent function'
           Write (messages(2), '(a,1p,e12.4)') 'constant term A (kB/atom) ', ttm%sh_A
           Write (messages(3), '(a,1p,e12.4)') 'temperature term B (K^-1) ', ttm%sh_B
-          If(fftag == 1) Call info(messages, 3, .true.)
+          Call info(messages, 3, .true.)
 
         Else If (word1(1:5) == 'celin') Then
 
@@ -2305,21 +2284,19 @@ Contains
           Write (messages(1), '(a)') 'electronic specific heat capacity set to linear function up to Fermi temperature'
           Write (messages(2), '(a,1p,e12.4)') 'max. electronic s.h.c. (kB/atom) ', ttm%Cemax
           Write (messages(3), '(a,1p,e12.4)') 'Fermi temperature (K)', ttm%Tfermi
-          If(fftag == 1) Call info(messages, 3, .true.)
+          Call info(messages, 3, .true.)
 
         Else If (word1(1:5) == 'cetab') Then
 
           ! electronic ttm%volumetric heat capacity given in tabulated form
 
-          If(fftag == 1)Then
-            Call info('electronic ttm%volumetric heat capacity given as tabulated function of temperature', .true.)
-          EndIf
+          Call info('electronic ttm%volumetric heat capacity given as tabulated function of temperature', .true.)
 
         Else If (word1(1:5) == 'keinf') Then
 
           ! infinite electronic thermal conductivity
 
-          If(fftag == 1) Call info('electronic thermal conductivity set to infinity', .true.)
+          Call info('electronic thermal conductivity set to infinity', .true.)
 
         Else If (word1(1:7) == "keconst") Then
 
@@ -2329,7 +2306,7 @@ Contains
           ttm%Ka0 = word_2_real(word)
           Write (messages(1), '(a)') 'electronic thermal conductivity set to constant value'
           Write (messages(2), '(a,1p,e12.4)') 'electronic t.c. (W m^-1 K^-1) ', ttm%Ka0
-          If(fftag == 1) Call info(messages, 2, .true.)
+          Call info(messages, 2, .true.)
 
         Else If (word1(1:7) == 'kedrude') Then
 
@@ -2340,7 +2317,7 @@ Contains
           ttm%Ka0 = word_2_real(word)
           Write (messages(1), '(a)') 'electronic thermal conductivity set to drude model'
           Write (messages(2), '(a,1p,e12.4)') 't.c. at system thermo%temp. (W m^-1 K^-1) ', ttm%Ka0
-          If(fftag == 1) Call info(messages, 2, .true.)
+          Call info(messages, 2, .true.)
 
         Else If (word1(1:5) == 'ketab') Then
 
@@ -2349,7 +2326,7 @@ Contains
           Write (messages(1), '(a)') 'electronic thermal conductivity given as tabulated function of temperature:'
           Write (messages(2), '(a)') 'uses ionic or system temperature to calculate cell conductivity value'
           Write (messages(3), '(a)') 'for thermal diffusion equation'
-          If(fftag == 1) Call info(messages, 3, .true.)
+          Call info(messages, 3, .true.)
 
         Else If (word1(1:4) == 'diff' .or. word1(1:7) == 'deconst') Then
 
@@ -2360,7 +2337,7 @@ Contains
           ttm%Diff0 = word_2_real(word)
           Write (messages(1), '(a)') 'electronic thermal diffusivity set to constant value'
           Write (messages(2), '(a,1p,e12.4)') 'electronic t.d. (m^2 s^-1) ', ttm%Diff0
-          If(fftag == 1) Call info(messages, 2, .true.)
+          Call info(messages, 2, .true.)
 
         Else If (word1(1:7) == 'derecip') Then
 
@@ -2374,13 +2351,13 @@ Contains
           Write (messages(1), '(a)') 'electronic thermal diffusivity set to reciprocal function up to Fermi temperature'
           Write (messages(2), '(a,1p,e12.4)') 'datum electronic t.d. (m^2 s^-1) ', ttm%Diff0
           Write (messages(3), '(a,1p,e12.4)') 'Fermi temperature (K) ', ttm%Tfermi
-          If(fftag == 1) Call info(messages, 3, .true.)
+          Call info(messages, 3, .true.)
 
         Else If (word1(1:4) == 'detab') Then
 
           ! electronic thermal diffusivity given in tabulated form
 
-          If(fftag == 1) Call info('electronic thermal diffusivity given as tabulated function of temperature', .true.)
+          Call info('electronic thermal diffusivity given as tabulated function of temperature', .true.)
 
         Else If (word1(1:8) == 'atomdens') Then
 
@@ -2390,7 +2367,7 @@ Contains
           Call get_word(record, word)
           ttm%cellrho = word_2_real(word)
           Write (message, '(a,f10.4)') 'user-specified atomic density (A^-3) ', ttm%cellrho
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
 
         Else If (word1(1:7) == 'dyndens') Then
 
@@ -2399,7 +2376,7 @@ Contains
           ! to volumetric values
 
           ttm%ttmdyndens = .true.
-          If(fftag == 1) Call info('dynamic calculations of average atomic density in active ionic cells', .true.)
+          Call info('dynamic calculations of average atomic density in active ionic cells', .true.)
 
         Else If (word1(1:4) == 'amin') Then
 
@@ -2411,7 +2388,7 @@ Contains
           Call get_word(record, word)
           ttm%amin = Abs(Nint(word_2_real(word)))
           Write (message, '(a,1p,i8)') 'min. atom no. for ionic cells ', ttm%amin
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
 
         Else If (word1(1:6) == 'redist') Then
 
@@ -2421,7 +2398,7 @@ Contains
           If (ttm%redistribute) Then
             Write (messages(1), '(a)') 'redistributing energy from deactivated electronic cells into active neighbours'
             Write (messages(2), '(a)') '(requires at least one electronic temperature cell beyond ionic cells)'
-            If(fftag == 1) Call info(messages, 2, .true.)
+            Call info(messages, 2, .true.)
           End If
 
         Else If (word1(1:4) == 'dedx') Then
@@ -2431,7 +2408,7 @@ Contains
           Call get_word(record, word)
           ttm%dEdX = word_2_real(word)
           Write (message, '(a,1p,e12.4)') 'elec. stopping power (eV/nm) ', ttm%dEdX
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
 
         Else If (word1(1:6) == 'sgauss' .or. word1(1:5) == 'sigma') Then
 
@@ -2446,7 +2423,7 @@ Contains
           Write (messages(1), '(a)') 'initial gaussian spatial energy deposition in electronic system'
           Write (messages(2), '(a,1p,e12.4)') 'thermo%ttm%sigma of distribution (nm) ', ttm%sig
           Write (messages(3), '(a,1p,e12.4)') 'distribution cutoff (nm) ', ttm%sigmax * ttm%sig
-          If(fftag == 1) Call info(messages, 3, .true.)
+          Call info(messages, 3, .true.)
 
         Else If (word1(1:5) == 'sflat') Then
 
@@ -2454,7 +2431,7 @@ Contains
           ! electronic system
 
           ttm%sdepoType = 2
-          If(fftag == 1) Call info('initial homogeneous (flat) spatial energy deposition in electronic system', .true.)
+          Call info('initial homogeneous (flat) spatial energy deposition in electronic system', .true.)
 
         Else If (word1(1:5) == 'laser') Then
 
@@ -2483,7 +2460,7 @@ Contains
               'absorbed ttm%fluence at surface (mJ cm^-2) ', ttm%fluence
             Write (messages(3), '(a,1p,e12.4)') 'penetration depth (nm) ', ttm%pdepth
           End Select
-          If(fftag == 1) Call info(messages, 3, .true.)
+          Call info(messages, 3, .true.)
 
         Else If (word1(1:5) == 'gauss') Then
 
@@ -2498,7 +2475,7 @@ Contains
           Write (messages(1), '(a)') 'gaussian temporal energy deposition in electronic system'
           Write (messages(2), '(a,1p,e12.4)') 'thermo%ttm%sigma of distribution (ps) ', ttm%tdepo
           Write (messages(3), '(a,1p,e12.4)') 'distribution cutoff (ps) ',2.0_wp * ttm%tcdepo * ttm%tdepo
-          If(fftag == 1) Call info(messages, 3, .true.)
+          Call info(messages, 3, .true.)
 
         Else If (word1(1:5) == 'nexp') Then
 
@@ -2513,7 +2490,7 @@ Contains
           Write (messages(1), '(a)') 'decaying exponential temporal energy deposition in electronic system'
           Write (messages(2), '(a,1p,e12.4)') 'tau of distribution (ps) ', ttm%tdepo
           Write (messages(3), '(a,1p,e12.4)') 'distribution cutoff (ps) ', ttm%tcdepo * ttm%tdepo
-          If(fftag == 1) Call info(messages, 3, .true.)
+          Call info(messages, 3, .true.)
 
         Else If (word1(1:5) == 'delta') Then
 
@@ -2521,7 +2498,7 @@ Contains
           ! electronic system
 
           ttm%tdepoType = 3
-          If(fftag == 1) Call info('dirac delta temporal energy deposition in electronic system', .true.)
+          Call info('dirac delta temporal energy deposition in electronic system', .true.)
 
         Else If (word1(1:5) == 'pulse') Then
 
@@ -2534,12 +2511,12 @@ Contains
           ttm%tdepo = word_2_real(word)
           If (ttm%tdepo <= zero_plus) Then
             ttm%tdepoType = 3
-            If(fftag == 1) Call info('square pulse temporal energy deposition in electronic' &
+            Call info('square pulse temporal energy deposition in electronic' &
                                   //'system of zero duration: being treated as dirac delta')
           Else
             Write (messages(1), '(a)') 'square pulse temporal energy deposition in electronic system'
             Write (messages(2), '(a,1p,e12.4)') 'pulse duration (ps) ', ttm%tdepo
-            If(fftag == 1) Call info(messages, 2, .true.)
+            Call info(messages, 2, .true.)
           End If
 
         Else If (word1(1:4) == 'varg') Then
@@ -2558,7 +2535,7 @@ Contains
           End Select
           Write (messages(2), '(a)') '(overrides value given for ensemble, required tabulated stopping'
           Write (messages(3), '(a)') 'terms in g.dat file)'
-          If(fftag == 1) Call info(messages, 3, .true.)
+          Call info(messages, 3, .true.)
 
         Else If (word1(1:3) == 'bcs') Then
 
@@ -2568,30 +2545,30 @@ Contains
 
           If (word(1:8) == 'periodic') Then
             ttm%bcTypeE = 1
-            If(fftag == 1) Call info('electronic temperature boundary conditions set as periodic', .true.)
+            Call info('electronic temperature boundary conditions set as periodic', .true.)
           Else If (word(1:6) == 'dirich') Then
             ttm%bcTypeE = 2
             Write (messages(1), '(a)') 'electronic temperature boundary conditions set as dirichlet:'
             Write (messages(2), '(a)') 'setting boundaries to system temperature'
-            If(fftag == 1) Call info(messages, 2, .true.)
+            Call info(messages, 2, .true.)
           Else If (word(1:7) == 'neumann') Then
             ttm%bcTypeE = 3
             Write (messages(1), '(a)') 'electronic temperature boundary conditions set as neumann:'
             Write (messages(2), '(a)') 'zero energy flux at boundaries'
-            If(fftag == 1) Call info(messages, 2, .true.)
+            Call info(messages, 2, .true.)
           Else If (word(1:8) == 'xydirich') Then
             ttm%bcTypeE = 4
             Write (messages(1), '(a)') 'electronic temperature boundary conditions set as dirichlet (xy), neumann (z):'
             Write (messages(2), '(a)') 'system temperature at x and y boundaries'
             Write (messages(3), '(a)') 'zero energy flux at z boundaries'
-            If(fftag == 1) Call info(messages, 3, .true.)
+            Call info(messages, 3, .true.)
           Else If (word(1:5) == 'robin') Then
             ttm%bcTypeE = 5
             Call get_word(record, word)
             ttm%fluxout = word_2_real(word)
             Write (messages(1), '(a)') 'electronic temperature boundary conditions set as robin:'
             Write (messages(2), '(a,1p,e11.4)') 'temperature leakage at boundaries of ', ttm%fluxout
-            If(fftag == 1) Call info(messages, 2, .true.)
+            Call info(messages, 2, .true.)
           Else If (word(1:7) == 'xyrobin') Then
             ttm%bcTypeE = 6
             Call get_word(record, word)
@@ -2599,7 +2576,7 @@ Contains
             Write (messages(1), '(a)') 'electronic temperature boundary conditions set as robin (xy), neumann (z):'
             Write (messages(2), '(a,1p,e11.4)') 'temperature leakage at x and y boundaries of ', ttm%fluxout
             Write (messages(3), '(a)') 'zero energy flux at z boundaries'
-            If(fftag == 1) Call info(messages, 3, .true.)
+            Call info(messages, 3, .true.)
           End If
 
         Else If (word1(1:6) == 'offset') Then
@@ -2609,7 +2586,7 @@ Contains
           Call get_word(record, word)
           ttm%ttmoffset = word_2_real(word)
           Write (message, '(a,1p,e12.4)') 'electron-ion coupling offset (ps) ', ttm%ttmoffset
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
 
         Else If (word1(1:6) == 'oneway') Then
 
@@ -2618,7 +2595,7 @@ Contains
           ! ionic temperature
 
           ttm%oneway = .true.
-          If(fftag == 1) Call info('one-way electron-phonon coupling option switched on', .true.)
+          Call info('one-way electron-phonon coupling option switched on', .true.)
 
         Else If (word1(1:5) == 'stats') Then
 
@@ -2629,7 +2606,7 @@ Contains
           ttm%ttmstats = Abs(Nint(word_2_real(word)))
           Write (messages(1), '(a)') 'ttm statistics file option on'
           Write (messages(2), '(a,i10)') 'ttm statistics file interval ', ttm%ttmstats
-          If(fftag == 1) Call info(messages, 2, .true.)
+          Call info(messages, 2, .true.)
 
         Else If (word1(1:4) == 'traj') Then
 
@@ -2640,7 +2617,7 @@ Contains
           ttm%ttmtraj = Abs(Nint(word_2_real(word)))
           Write (messages(1), '(a)') 'ttm trajectory (temperature profile) file option on'
           Write (messages(2), '(a,i10)') 'ttm trajectory file interval', ttm%ttmtraj
-          If(fftag == 1) Call info(messages, 2, .true.)
+          Call info(messages, 2, .true.)
 
         End If
 
@@ -2672,7 +2649,7 @@ Contains
             akey /= 'dih' .and. akey /= 'inv') Then
           Call strip_blanks(record)
           Write (message, '(3a)') word(1:Len_trim(word) + 1),word1(1:Len_Trim(word1) + 1), record
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
           Call error(3)
         End If
 
@@ -2821,7 +2798,7 @@ Contains
           If (word(1:5) == 'every') Call get_word(record, word)
           flow%freq_output = Abs(Nint(word_2_real(word,1.0_wp)))
           Write (message, '(a,i10)') 'data printing interval (steps) ', flow%freq_output
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
         End If
 
         ! read stack option (reading done in set_bounds -> scan_control)
@@ -2829,7 +2806,7 @@ Contains
       Else If (word(1:5) == 'stack') Then
 
         Write (message, '(a,i10)') 'data stacking interval (steps) ',stats%mxstak
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
 
         ! read statistics printing option
 
@@ -2841,7 +2818,7 @@ Contains
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record, word)
         stats%intsta = Nint(word_2_real(word))
         Write (message, '(a,i10)') 'statistics file interval ', stats%intsta
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
 
         ! Perform thermal flux
 
@@ -2874,7 +2851,7 @@ Contains
         Write (messages(1), '(a)') 'MSDTMP file option on'
         Write (messages(2), '(2x,a,i10)') 'MSDTMP file start ', msd_data%start
         Write (messages(3), '(2x,a,i10)') 'MSDTMP file interval ',msd_data%freq
-        If(fftag == 1) Call info(messages, 3, .true.)
+        Call info(messages, 3, .true.)
 
         ! read trajectory printing option
 
@@ -2897,7 +2874,7 @@ Contains
         Write (messages(2), '(2x,a,i10)') 'trajectory file start ', traj_start
         Write (messages(3), '(2x,a,i10)') 'trajectory file interval ', traj_freq
         Write (messages(4), '(2x,a,i10)') 'trajectory file info key ', traj_key
-        If(fftag == 1) Call info(messages, 4, .true.)
+        Call info(messages, 4, .true.)
 
         If (traj_key > 3) Call error(517)
         If (traj_key == 3) Then
@@ -2930,7 +2907,7 @@ Contains
         Write (messages(2), '(2x,a,i10)') 'defects file start ', dfcts(1)%nsdef
         Write (messages(3), '(2x,a,i10)') 'defects file interval ', dfcts(1)%isdef
         Write (messages(4), '(2x,a,1p,e12.4)') 'defects distance condition (Angs) ', dfcts(1)%rdef
-        If(fftag == 1) Call info(messages, 4, .true.)
+        Call info(messages, 4, .true.)
         dfcts(1)%reffile = 'REFERENCE'
         dfcts(1)%deffile = 'DEFECTS'
 
@@ -2938,7 +2915,7 @@ Contains
         Call get_word(record, word)
         If (word(1:5) == 'extra') Then
           dfcts(2)%ldef = .true.
-          If(fftag == 1) Call info('defects1 file option on', .true.)
+          Call info('defects1 file option on', .true.)
           dfcts(2)%nsdef = dfcts(1)%nsdef
           dfcts(2)%isdef = dfcts(1)%isdef
           dfcts(2)%rdef  = dfcts(1)%rdef
@@ -2974,7 +2951,7 @@ Contains
         Write (messages(2), '(2x,a,i10)') 'DISPDAT file start ', rsdc%nsrsd
         Write (messages(3), '(2x,a,i10)') 'DISPDAT file interval ', rsdc%isrsd
         Write (messages(4), '(2x,a,1p,e12.4)') 'DISPDAT distance condition (Angs) ', rsdc%rrsd
-        If(fftag == 1) Call info(messages, 4, .true.)
+        Call info(messages, 4, .true.)
 
         ! read DL_POLY_2/Classic delr Verlet shell strip cutoff option (compatibility)
         ! as DL_POLY_4 real space cutoff padding option
@@ -2985,7 +2962,7 @@ Contains
         Call get_word(record, word); If (word(1:5) == 'width') Call get_word(record, word)
         rpad1 = 0.25_wp * Abs(word_2_real(word))
         Write (message, '(a,1p,e12.4)') 'cutoff padding (Angs) ', rpad1
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
 
         ! read DL_POLY_2/Classic multiple timestep option (compatibility)
         ! as DL_POLY_4 infrequent k-space SPME evaluation option
@@ -3054,7 +3031,7 @@ Contains
 
           Call strip_blanks(record)
           Write (message, '(3a)') word(1:Len_trim(word) + 1),word1(1:Len_Trim(word1) + 1), record
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
           Call error(3)
 
         End If
@@ -3075,7 +3052,7 @@ Contains
 
           Call strip_blanks(record)
           Write (message, '(3a)') word(1:Len_trim(word) + 1),word1(1:Len_Trim(word1) + 1), record
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
           Call error(3)
 
         End If
@@ -3147,7 +3124,7 @@ Contains
 
         Call strip_blanks(record)
         Write (message, '(2a)') word(1:Len_trim(word) + 1), record
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
         Call error(3)
 
       End If
@@ -3183,7 +3160,7 @@ Contains
     ! report restart
 
     If (flow%restart_key == RESTART_KEY_CLEAN) Then
-      If(fftag == 1) Call info('clean start requested', .true.)
+      Call info('clean start requested', .true.)
     Else If (config%levcfg == 0) Then
       Call warning(200, 0.0_wp, 0.0_wp, 0.0_wp)
       flow%restart_key = RESTART_KEY_CLEAN
@@ -3200,9 +3177,9 @@ Contains
         Write (messages(2), '(a,1p,e12.4)') 'e-phonon friction (ps^-1) ', thermo%chi_ep
         Write (messages(3), '(a,1p,e12.4)') 'e-stopping friction (ps^-1) ', thermo%chi_es
         Write (messages(4), '(a,1p,e12.4)') 'e-stopping velocity (A ps^-1)', thermo%vel_es2
-        If(fftag == 1) Call info(messages, 4, .true.)
+        Call info(messages, 4, .true.)
       Else
-        If(fftag == 1) Call info('Ensemble : NVE (Microcanonical)', .true.)
+        Call info('Ensemble : NVE (Microcanonical)', .true.)
       End If
       If (ttm%l_ttm) thermo%ensemble = ENS_NVT_LANGEVIN_INHOMO
       lens = .true.
@@ -3226,16 +3203,14 @@ Contains
       Write (messages(2), '(a,1p,e12.4)') 'e-phonon friction (ps^-1) ', thermo%chi_ep
       Write (messages(3), '(a,1p,e12.4)') 'e-stopping friction (ps^-1) ', thermo%chi_es
       Write (messages(4), '(a,1p,e12.4)') 'e-stopping velocity (A ps^-1)', thermo%vel_es2
-      If(fftag == 1) Call info(messages, 4, .true.)
+      Call info(messages, 4, .true.)
 
       If (ttm%ttmthvel) Then
-        If(fftag == 1) Call info('applying to thermal velocities in all directions', .true.)
+        Call info('applying to thermal velocities in all directions', .true.)
       Else If (ttm%ttmthvelz) Then
-        If(fftag == 1)Then
-          Call info('applying to total velocities in x and y directions, thermal velocities in z direction', .true.)
-        End If
+        Call info('applying to total velocities in x and y directions, thermal velocities in z direction', .true.)
       Else
-        If(fftag == 1) Call info('applying to total velocities in all directions', .true.)
+        Call info('applying to total velocities in all directions', .true.)
       End If
       thermo%ensemble = ENS_NVT_LANGEVIN_INHOMO
 
@@ -3246,25 +3221,25 @@ Contains
     If ((cons%mxcons > 0 .or. pmf%mxpmf > 0) .and. comm%idnode == 0) Then
       Write (messages(1), '(a,i10)') 'iterations for shake/rattle ', cons%max_iter_shake
       Write (messages(2), '(a,1p,e12.4)') 'tolerance for shake/rattle (Angs) ', cons%tolerance
-      If(fftag == 1) Call info(messages, 2, .true.)
+      Call info(messages, 2, .true.)
     End If
 
     ! report electrostatics
 
     If (electro%no_elec) Then
       electro%key=ELECTROSTATIC_NULL
-      If(fftag == 1) Call info('Electrostatics switched off!!!', .true.)
+      Call info('Electrostatics switched off!!!', .true.)
     Else If (electro%key == ELECTROSTATIC_NULL) Then
-      If(fftag == 1) Call info('Electrostatics : None Assumed', .true.)
+      Call info('Electrostatics : None Assumed', .true.)
     End If
 
     ! report for extended coulombic exclusion if needed
 
     If (electro%key /= ELECTROSTATIC_NULL) Then
       If (electro%lecx) Then
-        If(fftag == 1) Call info('Extended Coulombic eXclusion : YES', .true.)
+        Call info('Extended Coulombic eXclusion : YES', .true.)
       Else
-        If(fftag == 1) Call info('Extended Coulombic eXclusion : NO', .true.)
+        Call info('Extended Coulombic eXclusion : NO', .true.)
       End If
     End If
 
@@ -3273,7 +3248,7 @@ Contains
 
     If (Abs(neigh%cutoff-rcut1) > 1.0e-6_wp) Then
       Write (message, '(a,1p,e12.4)') 'real space cutoff reset to (Angs) ', neigh%cutoff
-      If(fftag == 1) Call info(message, .true.)
+      Call info(message, .true.)
     End If
 
     ! report if neigh%padding is reset (measures taken in scan_config & set_bounds -
@@ -3281,20 +3256,20 @@ Contains
 
     If (Abs(neigh%padding-rpad1) > 1.0e-6_wp) Then
       Write (message, '(a,1p,e12.4)') 'cutoff padding reset to (Angs) ', neigh%padding
-      If(fftag == 1) Call info(message, .true.)
+      Call info(message, .true.)
     End If
 
     ! report vdw
 
     If (vdws%no_vdw) Then
-      If(fftag == 1) Call info('vdw potential terms switched off', .true.)
+      Call info('vdw potential terms switched off', .true.)
     End If
 
     ! report if vdws%cutoff is reset (measures taken in scan_config)
 
     If ((.not.vdws%no_vdw) .and. Abs(vdws%cutoff-rvdw1) > 1.0e-6_wp) Then
       Write (message, '(a,1p,e12.4)') 'vdw cutoff reset to (Angs) ', vdws%cutoff
-      If(fftag == 1) Call info(message, .true.)
+      Call info(message, .true.)
     End If
 
     ! report timestep
@@ -3305,18 +3280,18 @@ Contains
         thermo%lvar = .false.
         Call warning('variable timestep unavalable in DPD themostats', .true.)
         Write (message, '(a,1p,e12.4)') 'fixed simulation timestep (ps) ', thermo%tstep
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
       Else
         If (thermo%mxdis >= 2.5_wp * thermo%mndis .and. thermo%mndis > 0.0_wp) Then
           Write (messages(1), '(a,1p,e12.4)') 'variable simulation timestep (ps) ', thermo%tstep
           Write (messages(2), '(a)') 'controls for variable timestep:'
           Write (messages(3), '(2x,a,1p,e12.4)') 'minimum distance Dmin (Angs) ', thermo%mndis
           Write (messages(4), '(2x,a,1p,e12.4)') 'maximum distance Dmax (Angs) ', thermo%mxdis
-          If(fftag == 1) Call info(messages, 4, .true.)
+          Call info(messages, 4, .true.)
 
           If (thermo%mxstp > zero_plus) Then
             Write (message, '(a,1p,e12.4)') 'timestep ceiling mxstp (ps) ', thermo%mxstp
-            If(fftag == 1) Call info(message, .true.)
+            Call info(message, .true.)
             thermo%tstep =  Min(thermo%tstep, thermo%mxstp)
           Else
             thermo%mxstp = Huge(1.0_wp)
@@ -3329,17 +3304,17 @@ Contains
 
     Else If (lstep) Then
       Write (message, '(a,1p,e12.4)') 'fixed simulation timestep (ps) ', thermo%tstep
-      If(fftag == 1) Call info(message, .true.)
+      Call info(message, .true.)
     End If
 
     ! report no vom option: its use recommended with ttm
 
     If (.not. config%l_vom .and. .not. ttm%l_ttm) Then
-      If(fftag == 1) Call info('no vom option on - COM momentum removal will be abandoned', .true.)
+      Call info('no vom option on - COM momentum removal will be abandoned', .true.)
       Call warning('this may lead to a build up of the COM momentum and a' &
                    //'manifestation of the "flying ice-cube" effect', .true.)
     Else If (config%l_vom .and. ttm%l_ttm) Then
-      If(fftag == 1) Call info('no vom option off - COM momentum removal will be used', .true.)
+      Call info('no vom option off - COM momentum removal will be used', .true.)
       Call warning('this may lead to incorrect dynamic behaviour for' &
                    //'two-temperature model: COM momentum removal recommended', .true.)
     End If
@@ -3348,15 +3323,13 @@ Contains
 
     If (stats%lpana .or. config%mxgana > 0) Then
       If (config%mxgana == 0) Then
-        If(fftag == 1) Call info('no intramolecular distribution collection requested', .true.)
+        Call info('no intramolecular distribution collection requested', .true.)
       Else
         If (bond%bin_pdf > 0 .and. angle%bin_adf > 0 .and. &
           dihedral%bin_adf > 0 .and. inversion%bin_adf > 0) Then
-          If(fftag == 1)Then
-            Call info('full intramolecular distribution collection requested (all=bnd/ang/dih/inv):', .true.)
-          End If
+          Call info('full intramolecular distribution collection requested (all=bnd/ang/dih/inv):', .true.)
         Else
-          If(fftag == 1) Call info('intramolecular distribution collection requested for:', .true.)
+          Call info('intramolecular distribution collection requested for:', .true.)
         End If
 
         i = Max(1, nstana, flow%freq_bond, flow%freq_angle, flow%freq_dihedral, flow%freq_inversion)
@@ -3378,12 +3351,12 @@ Contains
           Write (message, '(2(a,i10),a,f7.2,a)') &
             'bonds      - collection every ',flow%freq_bond,' step(s); ngrid = ', &
             bond%bin_pdf,' points; cutoff = ',bond%rcut, ' Angs'
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
           If (i + j + k > 1) Then
             Write (message, '(3(a,i10))') &
               'bonds      - reset values at  ', i,'                  ', j, &
               '                 ', k
-            If(fftag == 1) Call info(message, .true.)
+            Call info(message, .true.)
           End If
         End If
 
@@ -3397,11 +3370,11 @@ Contains
           j = Merge(1, 0, grdang /= angle%bin_adf)
           Write (message, '(2(a,i10),a)') &
             'angles     - collection every ', flow%freq_angle, ' step(s); ngrid = ', angle%bin_adf, ' points'
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
           If (i+j > 1) Then
             Write (message, '(2(a,i10))') &
               'angles     - reset values at  ', i,'                   ', j
-            If(fftag == 1) Call info(message, .true.)
+            Call info(message, .true.)
           End If
         End If
 
@@ -3415,11 +3388,11 @@ Contains
           j=Merge(1, 0, grddih /= dihedral%bin_adf)
           Write (message, '(2(a,i10),a)') &
             'dihedrals  - collection every ', flow%freq_dihedral, ' step(s); ngrid = ', dihedral%bin_adf, ' points'
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
           If (i+j > 1) Then
             Write (message, '(2(a,i10))') &
               'dihedrals  - reset values at  ',  i,'                  ', j
-            If(fftag == 1) Call info(message, .true.)
+            Call info(message, .true.)
           End If
         End If
 
@@ -3433,19 +3406,19 @@ Contains
           j=Merge(1, 0, grdinv /= inversion%bin_adf)
           Write (message, '(2(a,i10),a)') &
             'inversions - collection every ',flow%freq_inversion,' step(s); ngrid = ',inversion%bin_adf,' points'
-          If(fftag == 1) Call info(message, .true.)
+          Call info(message, .true.)
           If (i+j > 1) Then
             Write (message, '(2(a,i10))') &
               'inversions - reset values at  ', i,'                   ', j
-            If(fftag == 1) Call info(message, .true.)
+            Call info(message, .true.)
           End If
         End If
       End If
 
       If (stats%lpana) Then
-        If(fftag == 1) Call info('probability distribution analysis printing requested', .true.)
+        Call info('probability distribution analysis printing requested', .true.)
       Else
-        If(fftag == 1) Call info('no probability distribution analysis printing requested', .true.)
+        Call info('no probability distribution analysis printing requested', .true.)
       End If
     End If
 
@@ -3465,30 +3438,30 @@ Contains
         Write (messages(1), '(a)') 'rdf collection requested:'
         Write (messages(2), '(2x,a,i10)') 'rdf collection interval ', rdf%freq
         Write (messages(3), '(2x,a,1p,e12.4)') 'rdf binsize (Angstroms) ', rdf%rbin
-        If(fftag == 1) Call info(messages, 3, .true.)
+        Call info(messages, 3, .true.)
       Else
-        If(fftag == 1) Call info('no rdf collection requested', .true.)
+        Call info('no rdf collection requested', .true.)
       End If
 
       If (rdf%l_print) Then
-        If(fftag == 1) Call info('rdf printing requested', .true.)
+        Call info('rdf printing requested', .true.)
       Else
         If (stats%lpana) Then
-          If(fftag == 1) Call info('rdf printing triggered due to a PDA printing request', .true.)
+          Call info('rdf printing triggered due to a PDA printing request', .true.)
           rdf%l_print = stats%lpana
         Else
-          If(fftag == 1) Call info('no rdf printing requested', .true.)
+          Call info('no rdf printing requested', .true.)
         End If
       End If
 
       If (rdf%max_rdf == 0) Then
-        If(fftag == 1) Call info('no rdf pairs specified in FIELD', .true.)
+        Call info('no rdf pairs specified in FIELD', .true.)
       Else
-        If(fftag == 1) Call info('rdf pairs specified in FIELD', .true.)
+        Call info('rdf pairs specified in FIELD', .true.)
       End If
 
       If ((.not.rdf%l_collect) .or. rdf%max_rdf == 0) Then
-        If(fftag == 1) Call info('rdf routines not to be activated', .true.)
+        Call info('rdf routines not to be activated', .true.)
         rdf%l_collect = .false.
         rdf%l_print = .false.
       End If
@@ -3501,19 +3474,19 @@ Contains
         Write (messages(1), '(a)') 'z-density profiles requested:'
         Write (messages(2), '(2x,a,i10)') 'z-density collection interval ', zdensity%frequency
         Write (messages(3), '(2x,a,1p,e12.4)') 'z-density binsize (Angstroms) ', rdf%rbin
-        If(fftag == 1) Call info(messages, 3, .true.)
+        Call info(messages, 3, .true.)
       Else
-        If(fftag == 1) Call info('no z-density profiles requested', .true.)
+        Call info('no z-density profiles requested', .true.)
       End If
 
       If (zdensity%l_print) Then
-        If(fftag == 1) Call info('z-density printing requested', .true.)
+        Call info('z-density printing requested', .true.)
       Else
-        If(fftag == 1) Call info('no z-density printing requested', .true.)
+        Call info('no z-density printing requested', .true.)
       End If
 
       If (.not.zdensity%l_collect) Then
-        If(fftag == 1) Call info('z-density routines not to be activated', .true.)
+        Call info('z-density routines not to be activated', .true.)
         zdensity%l_print = .false.
       End If
     End If
@@ -3525,21 +3498,21 @@ Contains
         Write (messages(1), '(a)') 'vaf profiles requested:'
         Write (messages(2), '(2x,a,i10)') 'vaf collection interval ', green%freq
         Write (messages(3), '(2x,a,i10)') 'vaf binsize  ', green%binsize
-        If(fftag == 1) Call info(messages, 3, .true.)
+        Call info(messages, 3, .true.)
       Else
-        If(fftag == 1) Call info('no vaf collection requested', .true.)
+        Call info('no vaf collection requested', .true.)
       End If
 
       If (green%l_print) Then
-        If(fftag == 1) Call info('vaf printing requested', .true.)
+        Call info('vaf printing requested', .true.)
       Else
-        If(fftag == 1) Call info('no vaf printing requested', .true.)
+        Call info('no vaf printing requested', .true.)
       End If
 
       If (green%l_average) Then
-        If(fftag == 1) Call info('time-averaged vaf profile', .true.)
+        Call info('time-averaged vaf profile', .true.)
       Else
-        If(fftag == 1) Call info('instantaneous vaf profiles', .true.)
+        Call info('instantaneous vaf profiles', .true.)
       End If
     End If
 
@@ -3549,7 +3522,7 @@ Contains
     !    If (comm%idnode == 0) Then
     !      Write (messages(1), '(a)') 'thermal conductivities requested'
     !      Write (messages(2), '(a,i10)') 'heat current collection binsize',nsttcond
-    !      If(fftag == 1) Call info(messages, 2, .true.)
+    !      Call info(messages, 2, .true.)
     !    End If
     !  End If
 
@@ -3559,7 +3532,7 @@ Contains
     Write (messages(2), '(a,1p,e12.4)') 'subcelling threshold density ', neigh%pdplnc
     Write (messages(3), '(a,1p,e12.4)') 'allocated job run time (s) ', tmr%job
     Write (messages(4), '(a,1p,e12.4)') 'allocated job close time (s) ', tmr%clear_screen
-    If(fftag == 1) Call info(messages, 4, .true.)
+    Call info(messages, 4, .true.)
 
     ! report replay history
 
@@ -3567,11 +3540,11 @@ Contains
       If (lfce) Then
         Write (messages(1), '(a)') '*** HISTORF will be replayed with full force recalculation ***'
         Write (messages(2), '(a)') '*** There is no actual dynamics/integration!!!             ***'
-        If(fftag == 1) Call info(messages, 2, .true.)
+        Call info(messages, 2, .true.)
       Else
         Write (messages(1), '(a)') '*** HISTORY will be replayed (no actual simulation) ***'
         Write (messages(2), '(a)') '*** with structural properties will be recalculated ***'
-        If(fftag == 1) Call info(messages, 2, .true.)
+        Call info(messages, 2, .true.)
         ! abort if there's no structural property to recalculate
         If (.not. (rdf%l_collect .or. zdensity%l_collect .or. dfcts(1)%ldef .or. &
                    msd_data%l_msd .or. rsdc%lrsd .or. (config%mxgana > 0))) Then
@@ -3581,7 +3554,7 @@ Contains
 
       If (flow%restart_key /= RESTART_KEY_CLEAN) Then
         flow%restart_key = RESTART_KEY_CLEAN ! Force clean restart
-        If(fftag == 1) Call info('clean start enforced', .true.)
+        Call info('clean start enforced', .true.)
       End If
     End If
 
@@ -3595,28 +3568,28 @@ Contains
       If (thermo%tstep <= zero_plus) Then
         thermo%tstep = 0.001_wp
         Write (message, '(a,1p,e12.4)') 'default simulation timestep (ps) ', thermo%tstep
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
       End If
     Else If (.not. flow%strict) Then !!! NO STRICT
       If (.not.ltemp) Then ! Simulation temperature
         ltemp=.true.
         thermo%temp=300.0_wp
         Write (message, '(a,1p,e12.4)') 'default simulation temperature (K) ', thermo%temp
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
       End If
 
       If (.not. lpres) Then ! Simulation pressure
         lpres=.true.
         thermo%press=0.0_wp
         Write (message, '(a,1p,e12.4)') 'default simulation pressure (katms) ', thermo%press * prsunt
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
       End If
 
       If (.not. lstep) Then ! Simulation timestep
         lstep = .true.
         thermo%tstep = 0.001_wp
         Write (message, '(a,1p,e12.4)') 'default simulation timestep (ps) ', thermo%tstep
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
       End If
 
       If ((.not.l_timjob) .and. (.not.l_timcls)) Then ! Job times
@@ -3624,15 +3597,15 @@ Contains
         tmr%clear_screen = 1.0e7_wp
         Write (messages(1), '(a,1p,e12.4)') 'allocated job run time (s) ', tmr%job
         Write (messages(1), '(a,1p,e12.4)') 'allocated job close time (s) ', tmr%clear_screen
-        If(fftag == 1) Call info(messages, 2, .true.)
+        Call info(messages, 2, .true.)
       Else If ((.not.l_timjob) .and. l_timcls) Then
         tmr%job =100.0_wp * tmr%clear_screen
         Write (message, '(a,1p,e12.4)') 'allocated job run time (s) ', tmr%job
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
       Else If (l_timjob .and. (.not.l_timcls)) Then
         tmr%clear_screen = 0.01_wp * tmr%job
         Write (message, '(a,1p,e12.4)') 'allocated job close time (s) ', tmr%clear_screen
-        If(fftag == 1) Call info(message, .true.)
+        Call info(message, .true.)
       End If
 
     End If
@@ -3640,7 +3613,7 @@ Contains
     If (l_0 .and. (.not. ltemp)) Then ! zero K over zero fire
       thermo%temp = 10.0_wp
       Write (message, '(a,1p,e12.4)') 'default simulation temperature (K) ', thermo%temp
-      If(fftag == 1) Call info(message, .true.)
+      Call info(message, .true.)
     End If
 
     thermo%vel_es2 = thermo%vel_es2 * thermo%vel_es2 ! square of cutoff velocity for inhomogeneous Langevin thermostat and ttm
@@ -3667,7 +3640,7 @@ Contains
     If (thermo%ensemble == ENS_NVT_LANGEVIN_INHOMO) Then
       If (ttm%gvar == 0 .and. thermo%chi_ep <= zero_plus) Call error(462)
       If (Abs(thermo%chi_es) <= zero_plus) Then
-        If(fftag == 1) Call info('assuming no electronic stopping in inhomogeneous Langevin thermostat', .true.)
+        Call info('assuming no electronic stopping in inhomogeneous Langevin thermostat', .true.)
       End If
     End If
 
@@ -3697,7 +3670,7 @@ Contains
             Write (messages(2), '(a)') 'scalar pressure derived from pressure tensor as p = Trace[P]/3'
             Write (messages(3), '(a)') 'tensorial pressure to be zeroed (discarded)'
             Write (messages(4), '(a,1p,e12.4)') 'simulation pressure (katms) ', thermo%press * prsunt
-            If(fftag == 1) Call info(messages, 4, .true.)
+            Call info(messages, 4, .true.)
           Else
             Call error(387)
           End If
@@ -3708,7 +3681,7 @@ Contains
             Write (messages(1), '(a)') 'both tensorial and scalar system pressure specified for an npt ensemble simulation'
             Write (messages(2), '(a)') 'tensorial pressure directive is ignored'
             Write (messages(3), '(a)') 'tensorial pressure to be zeroed (discarded)'
-            If(fftag == 1) Call info(messages, 3, .true.)
+            Call info(messages, 3, .true.)
           End If
         End If
       Else If (thermo%anisotropic_pressure) Then
@@ -3718,7 +3691,7 @@ Contains
           If (lpres) Then
             Write (messages(1), '(a)') 'both tensorial and scalar system pressure specified for an nst ensemble simulation'
             Write (messages(2), '(a)') 'scalar pressure directive is ignored'
-            If(fftag == 1) Call info(messages, 2, .true.)
+            Call info(messages, 2, .true.)
 
             ! Define new scalar pressure and zero trace pressure tensor
 
@@ -3828,7 +3801,7 @@ Contains
   Subroutine scan_control(rcter, max_rigid, imcon, imc_n, cell, xhi, yhi, zhi, mxgana, &
                           l_ind, nstfce, ttm, cshell, stats, thermo, green, devel, msd_data, met, &
                           pois, bond, angle, dihedral, inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, &
-                          electro, ewld, kim_data, files, flow, comm, ff)
+                          electro, ewld, kim_data, files, flow, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -3884,7 +3857,6 @@ Contains
     Type(file_type),          Intent(InOut) :: files(:)
     Type(flow_type),          Intent(InOut) :: flow
     Type(comms_type),         Intent(InOut) :: comm
-    Integer,                  Intent(In   ), Optional :: ff
 
     Integer, Parameter       :: mxspl_def = 8, mxspl_min = 3
     Real(Kind=wp), Parameter :: rbin_def = 0.05_wp, rcbnd_def = 2.5_wp, rcut_def = 1.0_wp
@@ -3893,16 +3865,9 @@ Contains
     Character(Len=40)  :: akey, word, word1
     Character(Len=256) :: message
     Integer            :: bspline_local, i, itmp, nstrun
-    Integer            :: fftag
     Logical            :: carry, l_exp, l_n_m, la_ana, la_ang, la_bnd, la_dih, la_inv, lelec, &
                           lmet, lrcut, lrmet, lrvdw, lter, lvdw, safe
     Real(Kind=wp)      :: celprp(1:10), cut, eps0, fac, tol, tol1
-
-    If (present(ff)) then
-     fftag = ff
-    Else
-     fftag = 1
-    Endif
 
 ! default spline for SPME (4 & 6 possible)
 ! minimum spline order, needed for derivatives of forces
@@ -4256,7 +4221,7 @@ Contains
         Else If (word(1:3) == 'ind') Then
 
           l_ind = .false.
-          If( fftag == 1 ) Call info('no index (reading in CONFIG) option on', .true.)
+          Call info('no index (reading in CONFIG) option on', .true.)
 
         Else If (word(1:3) == 'str') Then
 
@@ -4558,10 +4523,10 @@ Contains
       If (.not. lrvdw) Then
         lrvdw = (vdws%cutoff > 1.0e-6_wp)
         vdws%cutoff = Min(vdws%cutoff, Max(neigh%cutoff, rcut_def))
-        If(fftag == 1) Call warning( &
+        Call warning( &
           'short-ranged interaction cutoff check: vdws%cutoff = Min(vdws%cutoff,Max(neigh%cutoff,rcut_def))', &
           .true.)
-        If(fftag == 1) Call warning(40, vdws%cutoff, 0.0_wp, 0.0_wp)
+        Call warning(40, vdws%cutoff, 0.0_wp, 0.0_wp)
       End If
 
       If (vdws%no_vdw) lvdw = .not. vdws%no_vdw
@@ -4573,10 +4538,10 @@ Contains
 
     neigh%cutoff = Max(neigh%cutoff, vdws%cutoff, met%rcut, kim_data%cutoff, bond%rcut, &
                        2.0_wp * rcter + 1.0e-6_wp)
-    If(fftag == 1) Call warning( &
+    Call warning( &
       'DD cutoff check: neigh%cutoff = Max(neigh%cutoff,vdws%cutoff,met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp', &
       .true.)
-    If(fftag == 1) Call warning(40, neigh%cutoff, 0.0_wp, 0.0_wp)
+    Call warning(40, neigh%cutoff, 0.0_wp, 0.0_wp)
     ! If KIM model requires
     If (kim_data%padding_neighbours_required) Then
       If (neigh%cutoff < kim_data%influence_distance) Then
@@ -4802,8 +4767,8 @@ Contains
           If (lrcut .or. lrvdw) Then
             lrmet = .true.
             met%rcut = Max(neigh%cutoff, vdws%cutoff)
-            If(fftag == 1) Call warning('metal interaction cutoff check: met%rcut=Max(neigh%cutoff,vdws%cutoff)', .true.)
-            If(fftag == 1) Call warning(40, met%rcut, 0.0_wp, 0.0_wp)
+            Call warning('metal interaction cutoff check: met%rcut=Max(neigh%cutoff,vdws%cutoff)', .true.)
+            Call warning(40, met%rcut, 0.0_wp, 0.0_wp)
           Else
             Call error(382)
           End If
@@ -4869,17 +4834,17 @@ Contains
             If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdws%cutoff
               neigh%cutoff = Max(vdws%cutoff, met%rcut, kim_data%cutoff, bond%rcut, &
                                  2.0_wp * rcter + 1.0e-6_wp)
-              If(fftag == 1) Call warning('DD cutoff check: cutoff = Max(vdws%cutoff,'// &
+              Call warning('DD cutoff check: cutoff = Max(vdws%cutoff,'// &
                            'met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp', &
                            .true.)
-              If(fftag == 1) Call warning(40, neigh%cutoff, 0.0_wp, 0.0_wp)
+              Call warning(40, neigh%cutoff, 0.0_wp, 0.0_wp)
             Else
               neigh%cutoff = Max(neigh%cutoff, vdws%cutoff, met%rcut, &
                                  kim_data%cutoff, bond%rcut, 2.0_wp * rcter + 1.0e-6_wp)
-              If(fftag == 1) Call warning('DD cutoff check: neigh%cutoff = Max(neigh%cutoff,vdws%cutoff,'// &
+              Call warning('DD cutoff check: neigh%cutoff = Max(neigh%cutoff,vdws%cutoff,'// &
                            'met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp', &
                            .true.)
-              If(fftag == 1) Call warning(40, neigh%cutoff, 0.0_wp, 0.0_wp)
+              Call warning(40, neigh%cutoff, 0.0_wp, 0.0_wp)
             End If
           End If
 
@@ -4946,24 +4911,24 @@ Contains
 
         If (lmet) Then
           met%rcut = neigh%cutoff
-          If(fftag == 1) Call warning('metal interactions cutoff check: met%rcut = neigh%cutoff', .true.)
-          If(fftag == 1) Call warning(40, met%rcut, 0.0_wp, 0.0_wp)
+          Call warning('metal interactions cutoff check: met%rcut = neigh%cutoff', .true.)
+          Call warning(40, met%rcut, 0.0_wp, 0.0_wp)
         End If
 
         ! Sort vdws%cutoff=neigh%cutoff if VDW interactions are in play
 
         If (lvdw .and. vdws%cutoff > neigh%cutoff) Then
           vdws%cutoff = neigh%cutoff
-          If(fftag == 1) Call warning('short-ranged interactions cutoff check: vdws%cutoff = neigh%cutoff', .true.)
-          If(fftag == 1) Call warning(40, vdws%cutoff, 0.0_wp, 0.0_wp)
+          Call warning('short-ranged interactions cutoff check: vdws%cutoff = neigh%cutoff', .true.)
+          Call warning(40, vdws%cutoff, 0.0_wp, 0.0_wp)
         End If
 
         ! Sort rbin as now neigh%cutoff is already pinned down
 
         If (rdf%rbin < 1.0e-05_wp .or. rdf%rbin > neigh%cutoff / 4.0_wp) Then
           rdf%rbin = Min(rbin_def, neigh%cutoff / 4.0_wp)
-          If(fftag == 1) Call warning('bin size cutoff check: rdf%rbin = Min(rbin_def,neigh%cutoff/4.0_wp)', .true.)
-          If(fftag == 1) Call warning(40, rdf%rbin, 0.0_wp, 0.0_wp)
+          Call warning('bin size cutoff check: rdf%rbin = Min(rbin_def,neigh%cutoff/4.0_wp)', .true.)
+          Call warning(40, rdf%rbin, 0.0_wp, 0.0_wp)
         End If
 
         carry = .false.
