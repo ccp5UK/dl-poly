@@ -5653,7 +5653,7 @@ Contains
     End If
 
     Call get_line(safe, files(fftag)%unit_no, record, comm)
-    If (.not. safe) Go To 30
+    If (.not. safe) Call ferror(52)
 
     Do
 
@@ -5661,7 +5661,7 @@ Contains
       Do While (word(1:1) == '#' .or. word(1:1) == ' ')
         Call get_line(safe, files(fftag)%unit_no, record, comm)
         record_raw = record ! KIM needs case sensitive IM name
-        If (.not. safe) Go To 30
+        If (.not. safe) Call ferror(52)
         Call lower_case(record)
         Call get_word(record, word)
       End Do
@@ -5690,7 +5690,7 @@ Contains
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
             Call get_line(safe, files(fftag)%unit_no, record, comm)
-            If (.not. safe) Go To 30
+            If (.not. safe) Call ferror(52)
             Call lower_case(record)
             Call get_word(record, word)
           End Do
@@ -5700,7 +5700,7 @@ Contains
             word(1:1) = '#'
             Do While (word(1:1) == '#' .or. word(1:1) == ' ')
               Call get_line(safe, files(fftag)%unit_no, record, comm)
-              If (.not. safe) Go To 30
+              If (.not. safe) Call ferror(52)
               Call lower_case(record)
               Call get_word(record, word)
             End Do
@@ -5724,7 +5724,7 @@ Contains
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                   Call get_line(safe, files(fftag)%unit_no, record, comm)
-                  If (.not. safe) Go To 30
+                  If (.not. safe) Call ferror(52)
                   Call get_word(record, word)
                 End Do
 
@@ -5771,7 +5771,7 @@ Contains
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                   Call get_line(safe, files(fftag)%unit_no, record, comm)
-                  If (.not. safe) Go To 30
+                  If (.not. safe) Call ferror(52)
                   Call get_word(record, word)
                 End Do
               End Do
@@ -5789,7 +5789,7 @@ Contains
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                   Call get_line(safe, files(fftag)%unit_no, record, comm)
-                  If (.not. safe) Go To 30
+                  If (.not. safe) Call ferror(52)
                   Call get_word(record, word)
                 End Do
               End Do
@@ -5802,7 +5802,7 @@ Contains
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                   Call get_line(safe, files(fftag)%unit_no, record, comm)
-                  If (.not. safe) Go To 30
+                  If (.not. safe) Call ferror(52)
                   Call lower_case(record)
                   Call get_word(record, word)
                 End Do
@@ -5810,12 +5810,12 @@ Contains
                 If (word(1:3) == 'pmf') Then
                   Call get_word(record, word)
                 Else
-                  Go To 30
+                  Call ferror(52)
                 End If
                 If (word(1:4) == 'unit') Then
                   Call get_word(record, word)
                 Else
-                  Go To 30
+                  Call ferror(52)
                 End If
                 pmf%mxtpmf(ipmf) = Nint(word_2_real(word))
 
@@ -5823,7 +5823,7 @@ Contains
                   word(1:1) = '#'
                   Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                     Call get_line(safe, files(fftag)%unit_no, record, comm)
-                    If (.not. safe) Go To 30
+                    If (.not. safe) Call ferror(52)
                     Call get_word(record, word)
                   End Do
                 End Do
@@ -5842,7 +5842,7 @@ Contains
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                   Call get_line(safe, files(fftag)%unit_no, record, comm)
-                  If (.not. safe) Go To 30
+                  If (.not. safe) Call ferror(52)
                   Call get_word(record, word)
                 End Do
                 jrgd = Nint(word_2_real(word))
@@ -5853,7 +5853,7 @@ Contains
                     word(1:1) = '#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                       Call get_line(safe, files(fftag)%unit_no, record, comm)
-                      If (.not. safe) Go To 30
+                      If (.not. safe) Call ferror(52)
                       Call get_word(record, word)
                     End Do
                   Else
@@ -5875,7 +5875,7 @@ Contains
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                   Call get_line(safe, files(fftag)%unit_no, record, comm)
-                  If (.not. safe) Go To 30
+                  If (.not. safe) Call ferror(52)
                   Call get_word(record, word)
                 End Do
               End Do
@@ -5895,7 +5895,7 @@ Contains
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                   Call get_line(safe, files(fftag)%unit_no, record, comm)
-                  If (.not. safe) Go To 30
+                  If (.not. safe) Call ferror(52)
                   Call get_word(record, word)
                 End Do
 
@@ -5946,7 +5946,7 @@ Contains
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                   Call get_line(safe, files(fftag)%unit_no, record, comm)
-                  If (.not. safe) Go To 30
+                  If (.not. safe) Call ferror(52)
                   Call get_word(record, word)
                 End Do
 
@@ -5994,7 +5994,7 @@ Contains
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                   Call get_line(safe, files(fftag)%unit_no, record, comm)
-                  If (.not. safe) Go To 30
+                  If (.not. safe) Call ferror(52)
                   Call get_word(record, word)
                 End Do
 
@@ -6042,7 +6042,7 @@ Contains
                 word(1:1) = '#'
                 Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                   Call get_line(safe, files(fftag)%unit_no, record, comm)
-                  If (.not. safe) Go To 30
+                  If (.not. safe) Call ferror(52)
                   Call get_word(record, word)
                 End Do
 
@@ -6096,7 +6096,7 @@ Contains
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
             Call get_line(safe, files(fftag)%unit_no, record, comm)
-            If (.not. safe) Go To 30
+            If (.not. safe) Call ferror(52)
             Call get_word(record, word)
           End Do
         End Do
@@ -6118,7 +6118,7 @@ Contains
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
             Call get_line(safe, files(fftag)%unit_no, record, comm)
-            If (.not. safe) Go To 30
+            If (.not. safe) Call ferror(52)
             Call lower_case(record)
             Call get_word(record, word)
           End Do
@@ -6188,7 +6188,7 @@ Contains
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
             Call get_line(safe, files(fftag)%unit_no, record, comm)
-            If (.not. safe) Go To 30
+            If (.not. safe) Call ferror(52)
             Call lower_case(record)
             Call get_word(record, word)
           End Do
@@ -6302,7 +6302,7 @@ Contains
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
             Call get_line(safe, files(fftag)%unit_no, record, comm)
-            If (.not. safe) Go To 30
+            If (.not. safe) Call ferror(52)
             Call lower_case(record)
             Call get_word(record, word)
           End Do
@@ -6317,7 +6317,7 @@ Contains
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
             Call get_line(safe, files(fftag)%unit_no, record, comm)
-            If (.not. safe) Go To 30
+            If (.not. safe) Call ferror(52)
             Call get_word(record, word)
           End Do
 
@@ -6328,7 +6328,7 @@ Contains
             word(1:1) = '#'
             Do While (word(1:1) == '#' .or. word(1:1) == ' ')
               Call get_line(safe, files(fftag)%unit_no, record, comm)
-              If (.not. safe) Go To 30
+              If (.not. safe) Call ferror(52)
               Call get_word(record, word)
             End Do
           End If
@@ -6340,7 +6340,7 @@ Contains
               word(1:1) = '#'
               Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                 Call get_line(safe, files(fftag)%unit_no, record, comm)
-                If (.not. safe) Go To 30
+                If (.not. safe) Call ferror(52)
                 Call get_word(record, word)
               End Do
             End Do
@@ -6359,7 +6359,7 @@ Contains
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
             Call get_line(safe, files(fftag)%unit_no, record, comm)
-            If (.not. safe) Go To 30
+            If (.not. safe) Call ferror(52)
             Call get_word(record, word)
           End Do
 
@@ -6380,7 +6380,7 @@ Contains
           word(1:1) = '#'
           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
             Call get_line(safe, files(fftag)%unit_no, record, comm)
-            If (.not. safe) Go To 30
+            If (.not. safe) Call ferror(52)
             Call get_word(record, word)
           End Do
 
@@ -6428,7 +6428,7 @@ Contains
         word(1:1) = '#'
         Do While (word(1:1) == '#' .or. word(1:1) == ' ')
           Call get_line(safe, files(fftag)%unit_no, record, comm)
-          If (.not. safe) Go To 30
+          If (.not. safe) Call ferror(52)
           Call get_word(record, word)
         End Do
 
@@ -6522,16 +6522,14 @@ Contains
     max_exclude = Min(mxnmst, Max(rigid%max_frozen, Sum(mxf) / Max(1, Sum(mxt))) * (Max(1, cshell%mxshl) + 1))
     If (max_exclude > 0) max_exclude = max_exclude + 1 ! violation excess element
 
-    Return
+    Contains
 
-    ! FIELD file does not exist
+    Subroutine ferror(code)
+      Integer, Intent(In ) :: code
 
-    20 Continue
-
-
-    30 Continue
-    If (comm%idnode == 0) Call files(fftag)%close()
-    Call error(52)
+      If (comm%idnode == 0) Call files(fftag)%close()
+      Call error(code)
+    End Subroutine ferror
 
   End Subroutine scan_field
 
