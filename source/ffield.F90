@@ -240,9 +240,9 @@ Contains
       ElseIf( ff ==2 )Then
         fftag=FILE_FIELD_2
       ElseIf( ff ==3 )Then
-        fftag=FILE_FIELD_3 
-      EndIf         
-    Else 
+        fftag=FILE_FIELD_3
+      EndIf
+    Else
       fftag=FILE_FIELD
     Endif
 
@@ -547,7 +547,7 @@ Contains
                 End Do
 
                 atom1 = word(1:8)
-                 
+
                 Call get_word(record, word)
                 weight = Abs(word_2_real(word))
 
@@ -670,7 +670,7 @@ Contains
 
                 isite1 = nsite - sites%num_site(itmols) + iatm1
                 isite2 = nsite - sites%num_site(itmols) + iatm2
-               
+
                 If ((iatm1 > sites%num_site(itmols)) .Or.  (iatm2 > sites%num_site(itmols))) Then
                   Call error(0,"Index of shell is out of range")
                 End If
@@ -4451,13 +4451,13 @@ Contains
           End Do
 
           atom0 = word(1:8)
-          tersoffs%labunit(1,itpter)=atom0  
+          tersoffs%labunit(1,itpter)=atom0
 
           Call get_word(record, word)
           Call lower_case(word)
           keyword = word(1:4)
 
-          tersoffs%labunit(2,itpter)=keyword  
+          tersoffs%labunit(2,itpter)=keyword
 
           If (keyword == 'ters') Then
             keypot = TERS_TERSOFF
@@ -4639,11 +4639,11 @@ Contains
             ka2 = Min(tersoffs%list(katom1), tersoffs%list(katom2))
 
             keyter = (ka1 * (ka1 - 1)) / 2 + ka2
-          
+
             !Label for Tersoff pair interaction
 
-            tersoffs%labpair(1,icross)=atom1  
-            tersoffs%labpair(2,icross)=atom2  
+            tersoffs%labpair(1,icross)=atom1
+            tersoffs%labpair(2,icross)=atom2
 
             tersoffs%param2(keyter, 1) = parpot(1)
             tersoffs%param2(keyter, 2) = parpot(2)
@@ -5528,7 +5528,7 @@ Contains
       ElseIf( ff ==2 )Then
         fftag=FILE_FIELD_2
       ElseIf( ff ==3 )Then
-        fftag=FILE_FIELD_3 
+        fftag=FILE_FIELD_3
       EndIf
     Else
         fftag=FILE_FIELD
@@ -5645,7 +5645,9 @@ Contains
     If (comm%idnode == 0) Inquire (File=files(fftag)%filename, Exist=safe)
     Call gcheck(comm, safe,"enforce")
     If (.not. safe) Then
-      Go To 20
+      write(message,'(1x,3a)') 'error - ', trim(files(fftag)%filename), ' file not found'
+      Call info(message, .True.)
+      Call error(0)
     Else
       If (comm%idnode == 0) Open (Newunit=files(fftag)%unit_no, File=files(fftag)%filename, Status='old')
     End If
@@ -6304,7 +6306,7 @@ Contains
             Call lower_case(record)
             Call get_word(record, word)
           End Do
-            
+
           Call get_word(record, word)
           If (word(1:4) == 'ters') Then
             tersoffs%key_pot = TERS_TERSOFF
@@ -6526,10 +6528,6 @@ Contains
 
     20 Continue
 
-    write(message,'(1x,3a)') 'error - ', trim(files(fftag)%filename), ' file not found'
-    Call info(message, .True.)
-    Call error(0)
-    Return
 
     30 Continue
     If (comm%idnode == 0) Call files(fftag)%close()
