@@ -1139,7 +1139,7 @@ Contains
                   Call info(message, .true., level=3)
 
                   Do iter = 1, nrigid
-                    Write (message, rfmt) rigid%lst(0:lrgd, iter)
+                    Write (message, '(*(g0,1x))') rigid%lst(0:lrgd, iter)
                     Call info(message, .true., level=3)
                   End Do
 
