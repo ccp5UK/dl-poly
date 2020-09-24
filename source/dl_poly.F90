@@ -55,6 +55,9 @@ Program dl_poly
                                                 init_comms
   Use configuration,                      Only: configuration_type
   Use constraints,                        Only: constraints_type
+  Use control,                            Only: read_simtype
+  Use control_parameter_module,           Only: parameters_hash_table,&
+                                                dump_parameters
   Use coord,                              Only: coord_type
   Use core_shell,                         Only: core_shell_type
   Use defects,                            Only: defects_type
@@ -65,14 +68,16 @@ Program dl_poly
   Use errors_warnings,                    Only: init_error_system
   Use ewald,                              Only: ewald_type
   Use external_field,                     Only: external_field_type
-  Use filename,                           Only: file_type
+  Use filename,                           Only: file_type,&
+                                                FILENAME_SIZE,&
+                                                FILE_CONTROL
   Use flow_control,                       Only: EmpVB,&
                                                 FFS,&
                                                 MD_STD,&
-                                                flow_type,&
-                                                read_simtype
+                                                flow_type
   Use four_body,                          Only: four_body_type
   Use greenkubo,                          Only: greenkubo_type
+  Use hash,                               Only: STR_LEN
   Use impacts,                            Only: impact_type
   Use inversions,                         Only: inversions_type
   Use io,                                 Only: io_type
@@ -85,6 +90,8 @@ Program dl_poly
   Use msd,                                Only: msd_type
   Use neighbours,                         Only: neighbours_type
   Use netcdf_wrap,                        Only: netcdf_param
+  Use new_control,                        Only: initialise_control, &
+                                                read_new_control
   Use numerics,                           Only: seed_type
   Use plumed,                             Only: plumed_type
   Use pmf,                                Only: pmf_type
@@ -106,14 +113,9 @@ Program dl_poly
 
   Use units,                              Only: initialise_units
 
-  ! HACK
-  Use new_control,                        Only: initialise_control
-  Use control_parameter_module,           Only: parameters_hash_table, dump_parameters
-
   Implicit None
 
   ! all your simulation variables
-  Type(parameters_hash_table)            :: params
   Type(comms_type), Allocatable          :: dlp_world(:)
   Type(thermostat_type), Allocatable     :: thermo(:)
   Type(ewald_type), Allocatable          :: ewld(:)
@@ -162,12 +164,16 @@ Program dl_poly
   Type(coord_type), Allocatable          :: crd(:)
   Type(adf_type), Allocatable            :: adf(:)
 
+  Type( parameters_hash_table ) :: params
+
   ! Local Variables
-  Character(len=1024) :: control_filename = '', arg
-  Character(len=1024) :: output_filename = ''
-  Character(Len=10)   :: mode
-  Logical             :: finish
-  Integer             :: i, ifile
+  Character(len=1024)           :: control_filename = '', arg
+  Character(len=1024)           :: output_filename = ''
+  Character(Len=STR_LEN)        :: option
+  Character(Len=10)             :: mode
+  Logical                       :: can_parse
+  Logical                       :: finish
+  Integer                       :: i, ifile
 
   ! SET UP COMMUNICATIONS & CLOCKING
 
@@ -179,6 +185,8 @@ Program dl_poly
 
   ! temporary stuff this will need to be abstracted
   Allocate (flow(1))
+  Call initialise_control(params)
+  call initialise_units()
 
   ! Assume we're running
   flow(1)%simulation = .true.
@@ -204,7 +212,6 @@ Program dl_poly
           Call get_command_argument(i, mode)
           i = i + 1
           Call get_command_argument(i, arg)
-          Call initialise_control(params)
           Open(newunit = ifile, file=trim(arg))
           Call dump_parameters(ifile, params, mode)
           finish = .true.
@@ -212,7 +219,6 @@ Program dl_poly
         Case ('--help')
           i = i + 1
           Call get_command_argument(i, control_filename)
-          Call initialise_control(params)
           Call params%help(control_filename)
           finish = .true.
           Exit
@@ -240,18 +246,52 @@ Program dl_poly
     Stop 0
   End If
 
-  call initialise_units()
+  Allocate(files(1,FILENAME_SIZE))
+      ! Rename control file if argument was passed
+    If (Len_Trim(control_filename) > 0 ) Then
+       Call files(1,FILE_CONTROL)%rename(control_filename)
+    Else
+       Call files(1,FILE_CONTROL)%rename('CONTROL')
+    End If
 
-  ! Set the type of calculation to be performed. By default it is the standard DL_POLY
-  ! calculation. Tag evb activates EVB calculation
-  Call read_simtype(flow(1), control_filename, dlp_world(0))
+
+    ! Temporary error system
+    Call init_error_system(eu, dlp_world(0))
+    call read_new_control(files(1,FILE_CONTROL), params, dlp_world(0), can_parse)
+
+    ! Cannot read as new style
+    if (can_parse) then
+      devel%new_control = .true.
+      Call params%retrieve('simulation_method', option)
+      Select Case (option)
+      Case ('md')
+        flow(1)%simulation_method=MD_STD
+        flow(1)%NUM_FF = 1
+      Case ('evb')
+        flow(1)%simulation_method=EmpVB
+        Call params%retrieve('evb_num_ff', flow(1)%NUM_FF)
+      Case ('ffs')
+        flow(1)%simulation_method=FFS
+      Case Default
+        flow(1)%simulation_method=-1
+      End Select
+
+    else
+       devel%new_control = .false.
+       ! Set the type of calculation to be performed. By default it is the standard DL_POLY
+       ! calculation. Tag evb activates EVB calculation
+       Call read_simtype(control_filename, flow(1), dlp_world(0))
+
+    end if
+
+
 
   ! Select metasimulation method
   ! IS: The following two subroutines should be merged into a single one. We separate them
   ! for the time being though.
   Select Case (flow(1)%simulation_method)
   Case (MD_STD, EmpVB)
-    Call molecular_dynamics(dlp_world, thermo, ewld, tmr, devel, stats, &
+    Call molecular_dynamics(params, dlp_world, thermo, ewld, tmr, devel, stats, &
                             green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, inversion, tether, &
                             threebody, zdensity, cons, neigh, pmfs, sites, core_shells, vdws, tersoffs, fourbody, &
                             rdf, netcdf, minim, mpoles, ext_field, rigid, electro, domain, flow, seed, traj, &

@@ -57,6 +57,7 @@ Module hash
      Procedure, Private, Pass :: get_loc => get_loc
      Procedure, Public, Pass :: in => contains_value
      Procedure, Public, Pass :: fix => fix_table
+     Procedure, Public, Pass :: destroy => destroy
      Final :: cleanup
 
   End Type hash_table
@@ -144,6 +145,48 @@ Contains
     table%allocated = .false.
 
   End Subroutine cleanup
+
+  Subroutine destroy(table)
+    !!-----------------------------------------------------------------------
+    !!
+    !! dl_poly_4 subroutine for deallocation of hash table
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins march 2020
+    !!-----------------------------------------------------------------------
+    Class(hash_table), Intent( InOut ) :: table
+    Integer :: ierr
+    Integer :: i
+
+    do i = 1, table%size
+      if (table%table_keys(i) /= BAD_VAL) then
+        Deallocate(table%table_data(i)%data, stat=ierr)
+        Nullify(table%table_data(i)%data)
+        If (ierr /= 0) call error_dealloc("hash%table_data element", "cleanup hash table")
+      end if
+    end do
+
+    if (allocated(table%table_data)) then
+       Deallocate(table%table_data, stat=ierr)
+       If (ierr /= 0) call error_dealloc("hash%table_data", "cleanup hash table")
+    end if
+
+    if (allocated(table%key_names)) then
+       Deallocate(table%key_names, stat=ierr)
+       If (ierr /= 0) call error_dealloc("hash%key_names", "cleanup hash table")
+    end if
+
+    if (allocated(table%table_keys)) then
+       Deallocate(table%table_keys, stat=ierr)
+       If (ierr /= 0) call error_dealloc("hash%table_keys", "cleanup hash table")
+    end if
+
+    table%size = -1
+    table%used_keys = -1
+    table%collisions = -1
+    table%allocated = .false.
+
+  End Subroutine destroy
 
   Subroutine allocate_hash_table(table, nbuckets, can_overwrite)
     !!-----------------------------------------------------------------------

@@ -3090,6 +3090,13 @@ contains
            description = "Run title", &
            data_type = DATA_STRING))
 
+      call table%set('simulation_method', control_parameter( &
+           key = "simulation_method", &
+           name = "Simulation Method ", &
+           val = "md", &
+           description = "Set trajectory output, options: MD, EVB, FFS", &
+           data_type = DATA_OPTION))
+
       call table%set("random_seed", control_parameter( &
            key = "random_seed", &
            name = "Random seed", &
