@@ -815,8 +815,8 @@ Contains
       electro%erfc%nsamples = -1
       electro%erfc_deriv%nsamples = -1
     Else
-      electro%erfc%nsamples = Max(1004, Nint(neigh%cutoff / delr_max) + 4)
-      electro%erfc_deriv%nsamples = Max(1004, Nint(neigh%cutoff / delr_max) + 4)
+      Call electro%init_erf_tables(Max(1004, Nint(neigh%cutoff / delr_max) + 4))
+      call electro%erfcgen(neigh%cutoff, ewld%alpha)
     End If
 
     ! maximum number of grid points for vdw interactions - overwritten

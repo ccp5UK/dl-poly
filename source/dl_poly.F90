@@ -185,6 +185,7 @@ Program dl_poly
 
   ! temporary stuff this will need to be abstracted
   Allocate (flow(1))
+  Allocate(devel(1))
   Call initialise_control(params)
   call initialise_units()
 

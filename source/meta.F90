@@ -1220,7 +1220,6 @@ Contains
     Allocate(dfcts(1,2))
     Allocate(tmr(1))
     Allocate(impa(1))
-    Allocate(devel(1))
     Allocate(netcdf(1))
     Allocate(seed(1))
     Allocate(traj(1))

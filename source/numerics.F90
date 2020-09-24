@@ -129,7 +129,7 @@ Module numerics
     Real(Kind=wp)                                    :: spacing
     Real(Kind=wp)                                    :: recip_spacing
     Integer, Public :: nsamples = -1
-    Logical, Public :: initialised
+    Logical, Public :: initialised = .false.
   Contains
     Private
 
@@ -231,7 +231,6 @@ Contains
     If (table_in%initialised) Return
 
     If (table_in%nsamples < 10) Call error(0, 'Too few samples to generate interpolation in init_interp_table')
-
     Allocate (table_in%table(table_in%nsamples), stat=fail)
     If (fail > 0) Call error_alloc('table_in%table', 'init_interp_table')
     table_in%spacing = range / Real(table_in%nsamples - 4, wp)
