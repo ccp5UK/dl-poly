@@ -179,7 +179,6 @@ Program dl_poly
 
   ! temporary stuff this will need to be abstracted
   Allocate (flow(1))
-  flow(1)%simulation_method = MD_STD
 
   ! Assume we're running
   flow(1)%simulation = .true.
@@ -224,7 +223,7 @@ Program dl_poly
           i = i + 1
           Call get_command_argument(i, output_filename)
        Case ('--replay', '-r')
-          flow%simulation = .false.
+          flow(1)%simulation = .false.
         Case default
           Write (eu, *) "No idea what you want, try -h "
           finish = .true.
@@ -242,9 +241,6 @@ Program dl_poly
   End If
 
   call initialise_units()
-
-  ! IS: This has to be abstracted or defined to be of dimension 1 in module flow.
-  Allocate(flow(1))
 
   ! Set the type of calculation to be performed. By default it is the standard DL_POLY
   ! calculation. Tag evb activates EVB calculation
