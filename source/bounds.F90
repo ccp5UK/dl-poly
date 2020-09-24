@@ -89,7 +89,7 @@ Contains
        neigh, vdws, tersoffs, fourbody, rdf, mpoles, ext_field, &
        rigid, electro, domain, config, ewld, kim_data, files, flow, comm, &
        xhi, yhi, zhi, megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, &
-         mtshl, mtteth, link_cell)
+       mtshl, mtteth, link_cell, ff)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -141,11 +141,20 @@ Contains
     Integer,                   Intent(In   ) :: megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, &
          mtshl, mtteth
     Integer, Dimension(3),     Intent(  Out) :: link_cell
+    Integer,                   Intent(In   ), Optional :: ff
 
     Character(Len=256) :: message
     Integer(Kind=wi)   :: mxgrid
     Real(Kind=wp), Dimension(10) :: cell_properties
     Real(Kind=wp)      :: cut, dens0, dens, padding2
+
+    Integer            :: fftag
+
+    If (present(ff)) then
+      fftag = ff
+    Else
+      fftag = 1
+    Endif
 
     call setup_cell_props(config, cell_properties)
 

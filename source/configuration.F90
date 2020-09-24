@@ -2107,7 +2107,6 @@ Contains
     Logical                   :: eor
     Logical                   :: fast, l_his, l_ind, l_xtr, safe, strict
     Real(Kind=wp)             :: buffer(1:4), cell_vecs(1:3, 1:3), xxx, yyy, zzz
-    Character(Len=256)        :: message
     Integer( Kind = wi )      :: conftag
 
     ! Choose which CONFIG file to read
@@ -2127,7 +2126,7 @@ Contains
 ! default record size
 
     safe = .true. ! we start safe
-    l_ind = .false. ! no indeces needed
+    l_ind = .false. ! no indices needed
     strict = .false. ! not in a strict mode
     l_his = .false. ! not reading history
     l_xtr = .true. ! seeking extreme cell dimensions

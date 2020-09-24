@@ -230,7 +230,7 @@ Contains
     Type(comms_type) :: comm
 
     ! Allocate type arrays
-    Call allocate_types_uniform(flow(1)%NUM_FF, thermo, ewld,tmr, devel, stats, &
+    Call allocate_types_uniform(flow(1)%NUM_FF, thermo, ewld, tmr, devel, stats, &
                                 green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, inversion, &
                                 tether, threebody, zdensity, cons, neigh, pmfs, sites, core_shells, vdws, tersoffs, &
                                 fourbody, rdf, netcdf, minim, mpoles, ext_field, rigid, electro,domain, &
@@ -262,62 +262,63 @@ Contains
        domain, flow, seed, traj, kim_data, config, ios, ttms, rsdsc, files, control_filename, &
        output_filename, crd, adf)
 
-    Type(comms_type),          Intent(InOut) :: dlp_world(0:), comm
-    Type(thermostat_type),     Intent(InOut) :: thermo
-    Type(ewald_type),          Intent(InOut) :: ewld
-    Type(timer_type),          Intent(InOut) :: tmr
-    Type(development_type),    Intent(InOut) :: devel
-    Type(stats_type),          Intent(InOut) :: stats
-    Type(greenkubo_type),      Intent(InOut) :: green
-    Type(plumed_type),         Intent(InOut) :: plume
-    Type(msd_type),            Intent(InOut) :: msd_data
-    Type(metal_type),          Intent(InOut) :: met
-    Type(poisson_type),        Intent(InOut) :: pois
-    Type(impact_type),         Intent(InOut) :: impa
-    Type(defects_type),        Intent(InOut) :: dfcts(2)
-    Type(bonds_type),          Intent(InOut) :: bond
-    Type(angles_type),         Intent(InOut) :: angle
-    Type(dihedrals_type),      Intent(InOut) :: dihedral
-    Type(inversions_type),     Intent(InOut) :: inversion
-    Type(tethers_type),        Intent(InOut) :: tether
-    Type(threebody_type),      Intent(InOut) :: threebody
-    Type(z_density_type),      Intent(InOut) :: zdensity
-    Type(constraints_type),    Intent(InOut) :: cons
-    Type(neighbours_type),     Intent(InOut) :: neigh
-    Type(pmf_type),            Intent(InOut) :: pmfs
-    Type(site_type),           Intent(InOut) :: sites
-    Type(core_shell_type),     Intent(InOut) :: core_shells
-    Type(vdw_type),            Intent(InOut) :: vdws
-    Type(tersoff_type),        Intent(InOut) :: tersoffs
-    Type(four_body_type),      Intent(InOut) :: fourbody
-    Type(rdf_type),            Intent(InOut) :: rdf
-    Type(netcdf_param),        Intent(InOut) :: netcdf
-    Type(minimise_type),       Intent(InOut) :: minim
-    Type(mpole_type),          Intent(InOut) :: mpoles
-    Type(external_field_type), Intent(InOut) :: ext_field
-    Type(rigid_bodies_type),   Intent(InOut) :: rigid
-    Type(electrostatic_type),  Intent(InOut) :: electro
-    Type(domains_type),        Intent(InOut) :: domain
-    Type(flow_type),           Intent(InOut) :: flow
-    Type(seed_type),           Intent(InOut) :: seed
-    Type(trajectory_type),     Intent(InOut) :: traj
-    Type(kim_type), Target,    Intent(InOut) :: kim_data
-    Type(configuration_type),  Intent(InOut) :: config
-    Type(io_type),             Intent(InOut) :: ios
-    Type(ttm_type),            Intent(InOut) :: ttms
-    Type(rsd_type), Target,    Intent(InOut) :: rsdsc
-    Type(file_type),           Intent(InOut) :: files(FILENAME_SIZE)
-    Type(coord_type),          Intent(InOut) :: crd
-    Type(adf_type),            Intent(InOut) :: adf
-    Character(len=1024),       Intent(In   ) :: control_filename
-    Character(len=1024),       Intent(In   ) :: output_filename
+    Type(comms_type),            Intent(InOut) :: dlp_world(0:),comm
+    Type(thermostat_type),       Intent(InOut) :: thermo(:)
+    Type(ewald_type),            Intent(InOut) :: ewld(:)
+    Type(timer_type),            Intent(InOut) :: tmr
+    Type(development_type),      Intent(InOut) :: devel
+    Type(stats_type),            Intent(InOut) :: stats(:)
+    Type(greenkubo_type),        Intent(InOut) :: green(:)
+    Type(plumed_type),           Intent(InOut) :: plume(:)
+    Type(msd_type),              Intent(InOut) :: msd_data(:)
+    Type(metal_type),            Intent(InOut) :: met(:)
+    Type(poisson_type),          Intent(InOut) :: pois(:)
+    Type(impact_type),           Intent(InOut) :: impa
+    Type(defects_type),          Intent(InOut) :: dfcts(:)
+    Type(bonds_type),            Intent(InOut) :: bond(:)
+    Type(angles_type ),          Intent(InOut) :: angle(:)
+    Type(dihedrals_type ),       Intent(InOut) :: dihedral(:)
+    Type(inversions_type ),      Intent(InOut) :: inversion(:)
+    Type(tethers_type ),         Intent(InOut) :: tether(:)
+    Type(threebody_type ),       Intent(InOut) :: threebody(:)
+    Type(z_density_type ),       Intent(InOut) :: zdensity(:)
+    Type(constraints_type ),     Intent(InOut) :: cons(:)
+    Type(neighbours_type ),      Intent(InOut) :: neigh(:)
+    Type(pmf_type ),             Intent(InOut) :: pmfs(:)
+    Type(site_type ),            Intent(InOut) :: sites(:)
+    Type(core_shell_type ),      Intent(InOut) :: core_shells(:)
+    Type(vdw_type ),             Intent(InOut) :: vdws(:)
+    Type(tersoff_type ),         Intent(InOut) :: tersoffs(:)
+    Type(four_body_type ),       Intent(InOut) :: fourbody(:)
+    Type(rdf_type ),             Intent(InOut) :: rdf(:)
+    Type(netcdf_param ),         Intent(InOut) :: netcdf
+    Type(minimise_type ),        Intent(InOut) :: minim(:)
+    Type(mpole_type ),           Intent(InOut) :: mpoles(:)
+    Type(external_field_type ),  Intent(InOut) :: ext_field(:)
+    Type(rigid_bodies_type ),    Intent(InOut) :: rigid(:)
+    Type(electrostatic_type ),   Intent(InOut) :: electro(:)
+    Type(domains_type ),         Intent(InOut) :: domain(:)
+    Type(flow_type ),            Intent(InOut) :: flow
+    Type(seed_type ),            Intent(InOut) :: seed
+    Type(trajectory_type ),      Intent(InOut) :: traj
+    Type(kim_type ), Target,     Intent(InOut) :: kim_data(:)
+    Type(configuration_type ),   Intent(InOut) :: config(:)
+    Type(io_type),               Intent(InOut) :: ios
+    Type(ttm_type),              Intent(InOut) :: ttms(:)
+    Type(rsd_type ), Target,     Intent(InOut) :: rsdsc(:)
+    Type(file_type ),            Intent(InOut) :: files(:)
+    Character(Len= 1024),        Intent(In   ) :: output_filename
+    Character(Len= 1024),        Intent(In   ) :: control_filename
+    Type(coord_type),            Intent(InOut) :: crd(:)
+    Type(adf_type),              Intent(InOut) :: adf(:)
 
-    Integer            :: megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, &
+    Type( parameters_hash_table ) :: params
+    Character(Len=256 ) :: message
+    Integer :: megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, &
          mtshl, mtteth
     Integer, Dimension(3) :: link_cell
-    Type( parameters_hash_table )            :: params
     Real(Kind=wp) :: xhi, yhi, zhi
-    Integer :: i, ifile, ierr
+    Integer :: i, ifile, ierr, ff
     Logical :: can_parse
 
     ! Rename control file if argument was passed
@@ -384,67 +385,82 @@ Contains
     Call start_timer(tmr, 'Initialisation')
 #endif
 
-    ! scan the FIELD file data
+    do ff = 1, flow%NUM_FF
+      ! Get densvar
+      call params%retrieve('density_variance', config(ff)%dvar)
+      config(ff)%dvar = 1.0_wp + config(ff)%dvar
 
-    Call scan_field(megatm, sites, neigh%max_exclude, mtshl, &
-                    mtcons, mtrgd, mtteth, mtbond, mtangl, mtdihd, mtinv, &
-                    ext_field, core_shells, cons, pmfs, met, bond, angle, dihedral, inversion, tether, threebody, &
-                    vdws, tersoffs, fourbody, rdf, mpoles, rigid, kim_data, files, electro, comm)
+      ! scan the FIELD file data
+      Call scan_field(megatm, sites(ff), neigh(ff)%max_exclude, &
+           mtshl, mtcons, mtrgd, mtteth, mtbond, mtangl, mtdihd, mtinv, &
+           ext_field(ff), core_shells(ff), cons(ff), pmfs(ff), met(ff), &
+           &bond(ff), angle(ff), dihedral(ff), inversion(ff), tether(ff), &
+           threebody(ff), vdws(ff), tersoffs(ff), fourbody(ff), rdf(ff), &
+           mpoles(ff), rigid(ff), kim_data(ff), files, electro(ff), comm, ff)
 
-    ! Get imc_r & set config%dvar
+      ! scan CONFIG file data
 
-    call params%retrieve('density_variance', config%dvar)
-    config%dvar = 1.0_wp + config%dvar
+      Call scan_config(config(ff), megatm, config(ff)%dvar, config(ff)%levcfg, xhi, yhi, zhi, ios, domain(ff), files, comm, ff)
 
-    ! scan CONFIG file data
+      ! read CONTROL data
 
-    Call scan_config(config, megatm, config%dvar, config%levcfg, xhi, yhi, zhi, ios, domain, files, comm)
-
-    ! scan CONTROL file data
-
-    call read_bond_analysis(params, flow, bond, angle, dihedral, inversion, config%mxgana)
-    call read_structure_analysis(params, stats, msd_data, rdf, green, zdensity, adf, crd, traj, dfcts, rsdsc)
-    call read_forcefield(params, neigh, config, xhi, yhi, zhi, flow, vdws, electro, ewld, mpoles, core_shells, met, &
-       kim_Data, bond, threebody, fourbody, tersoffs)
-    call read_run_parameters(params, flow, thermo, stats, config%l_ind)
-    call read_ttm(params, ttms)
-    call read_ensemble(params, thermo, vdws%max_vdw, ttms%l_ttm)
-    Call read_system_parameters(params, flow, config, thermo, impa, minim, plume, cons, pmfs, ttms%l_ttm)
+      call read_bond_analysis(params, flow, bond(ff), angle(ff), dihedral(ff), inversion(ff), config(ff)%mxgana)
+      call read_structure_analysis(params, stats(ff), msd_data(ff), rdf(ff), green(ff), &
+           zdensity(ff), adf(ff), crd(ff), traj, dfcts, rsdsc(ff))
+      call read_forcefield(params, neigh(ff), config(ff), xhi, yhi, zhi, flow, &
+           vdws(ff), electro(ff), ewld(ff), mpoles(ff), core_shells(ff), met(ff), kim_Data(ff), &
+           bond(ff), threebody(ff), fourbody(ff), tersoffs(ff))
+      call read_run_parameters(params, flow, thermo(ff), stats(ff), config(ff)%l_ind)
+      call read_ttm(params, ttms(ff))
+      call read_ensemble(params, thermo(ff), vdws(ff)%max_vdw, ttms(ff)%l_ttm)
+      Call read_system_parameters(params, flow, config(ff), thermo(ff), impa, minim(ff), &
+           plume(ff), cons(ff), pmfs(ff), ttms(ff)%l_ttm)
 
     ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
     ! (setup and domains)
-    Call set_bounds_new(sites, ttms, ios, core_shells, cons, pmfs, stats, green, devel, &
-       msd_data, met, bond, angle, dihedral, inversion, tether, threebody, zdensity, &
-       neigh, vdws, tersoffs, fourbody, rdf, mpoles, ext_field, &
-       rigid, electro, domain, config, ewld, kim_data, files, flow, comm, &
-       xhi, yhi, zhi, megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, &
-       mtshl, mtteth, link_cell)
+      Call set_bounds_new(sites(ff), ttms(ff), ios, core_shells(ff), cons(ff), pmfs(ff), stats(ff), green(ff), devel, &
+           msd_data(ff), met(ff), bond(ff), angle(ff), dihedral(ff), inversion(ff), tether(ff), threebody(ff), zdensity(ff), &
+           neigh(ff), vdws(ff), tersoffs(ff), fourbody(ff), rdf(ff), mpoles(ff), ext_field(ff), &
+           rigid(ff), electro(ff), domain(ff), config(ff), ewld(ff), kim_data(ff), files, flow, comm, &
+           xhi, yhi, zhi, megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, &
+           mtshl, mtteth, link_cell, ff)
 
-    Call write_parameters(ios, netcdf, files, neigh, config, link_cell, flow, stats, thermo, ttms, mpoles, vdws, &
-         electro, core_shells, ewld, met, impa, minim, plume, cons, pmfs, bond, angle, dihedral, inversion, &
-         msd_data, rdf, green, zdensity, adf, crd, dfcts, traj, rsdsc)
+      Call molecular_dynamics_allocate(sites(ff), config(ff), neigh(ff), thermo(ff), vdws(ff), core_shells(ff), &
+           cons(ff), pmfs(ff), rigid(ff), tether(ff), bond(ff), angle(ff), dihedral(ff), inversion(ff), &
+           mpoles(ff), met(ff), tersoffs(ff), threebody(ff), fourbody(ff), ext_field(ff), rdf(ff), &
+           zdensity(ff), stats(ff), green(ff), ttms(ff), domain(ff), ewld(ff), kim_data(ff), comm)
 
-    Call molecular_dynamics_allocate(sites, config, neigh, thermo, vdws, core_shells, cons, pmfs, &
-         rigid, tether, bond, angle, dihedral, inversion, mpoles, met, tersoffs, threebody, fourbody, &
-         ext_field, rdf, zdensity, stats, green, ttms, domain, ewld, kim_data, comm)
+      If (stats(ff)%cur%on) Then
+        Call config(ff)%k%init(files(FILE_KPOINTS)%filename, comm)
+        Call stats(ff)%cur%init(config(ff)%k%n, 200, files(FILE_CURRENT), comm)
+      End If
 
-    If (stats%cur%on) Then
-      Call config%k%init(files(FILE_KPOINTS)%filename, comm)
-      Call stats%cur%init(config%k%n, 200, files(FILE_CURRENT), comm)
-    End If
+    end do
+
+    Call write_parameters(ios, netcdf, files, neigh(1), config(1), link_cell, flow, stats(1), thermo(1), &
+         ttms(1), mpoles(1), vdws(1), electro(1), core_shells(1), ewld(1), met(1), impa, minim(1), &
+         plume(1), cons(1), pmfs(1), bond(1), angle(1), dihedral(1), inversion(1), msd_data(1), rdf(1), &
+         green(1), zdensity(1), adf(1), crd(1), dfcts, traj, rsdsc(1))
 
     ! READ SIMULATION FORCE FIELD
-    Call read_field(neigh%cutoff, core_shells, pmfs, cons, thermo, met, bond, angle, &
-                    dihedral, inversion, tether, threebody, sites, vdws, tersoffs, fourbody, rdf, &
-                    mpoles, ext_field, rigid, electro, config, kim_data, files, flow, crd, comm)
+    Do ff = 1, flow%NUM_FF
+      If(flow%NUM_FF > 1) Then
+        write(message,'(i0)') ff
+        Call info(" ",.true.)
+        Call info("*** DETAILS OF INTERACTIONS FOR FIELD "//trim(message)//" ***",.true.)
+      End If
+      Call read_field(neigh(ff)%cutoff, core_shells(ff), pmfs(ff), cons(ff), thermo(ff), met(ff), bond(ff), angle(ff), &
+        dihedral(ff), inversion(ff), tether(ff), threebody(ff), sites(ff), vdws(ff), tersoffs(ff), fourbody(ff),rdf(ff), &
+        mpoles(ff), ext_field(ff), rigid(ff), electro(ff), config(ff), kim_data(ff), files, flow, crd(ff), comm, ff)
 
-    ! If computing rdf errors, we need to initialise the arrays.
-    If (rdf%l_errors_jack .or. rdf%l_errors_block) Then
-      Call rdf%init_block(flow%run_steps, sites%ntype_atom)
-    End If
+      ! If computing rdf errors, we need to initialise the arrays.
+      If(rdf(ff)%l_errors_jack .or. rdf(ff)%l_errors_block) then
+        Call rdf(ff)%init_block(flow%run_steps, sites(ff)%ntype_atom)
+      End If
 
-    ! CHECK MD CONFIGURATION
-    Call check_config(config, electro%key, thermo, sites, flow, comm)
+      ! CHECK MD CONFIGURATION
+      Call check_config(config(ff),electro(ff)%key,thermo(ff),sites(ff),flow,comm)
+    End Do
 
 #ifdef CHRONO
     Call stop_timer(tmr, 'Initialisation')
@@ -458,56 +474,62 @@ Contains
        vdws, tersoffs, fourbody, rdf, netcdf, minim, mpoles, ext_field, rigid, electro, &
        domain, flow, seed, traj, kim_data, config, ios, ttms, rsdsc, files, control_filename, &
        output_filename, crd, adf)
-    Type(comms_type),          Intent(InOut) :: dlp_world(0:), comm
-    Type(thermostat_type),     Intent(InOut) :: thermo
-    Type(ewald_type),          Intent(InOut) :: ewld
-    Type(timer_type),          Intent(InOut) :: tmr
-    Type(development_type),    Intent(InOut) :: devel
-    Type(stats_type),          Intent(InOut) :: stats
-    Type(greenkubo_type),      Intent(InOut) :: green
-    Type(plumed_type),         Intent(InOut) :: plume
-    Type(msd_type),            Intent(InOut) :: msd_data
-    Type(metal_type),          Intent(InOut) :: met
-    Type(poisson_type),        Intent(InOut) :: pois
-    Type(impact_type),         Intent(InOut) :: impa
-    Type(defects_type),        Intent(InOut) :: dfcts(2)
-    Type(bonds_type),          Intent(InOut) :: bond
-    Type(angles_type),         Intent(InOut) :: angle
-    Type(dihedrals_type),      Intent(InOut) :: dihedral
-    Type(inversions_type),     Intent(InOut) :: inversion
-    Type(tethers_type),        Intent(InOut) :: tether
-    Type(threebody_type),      Intent(InOut) :: threebody
-    Type(z_density_type),      Intent(InOut) :: zdensity
-    Type(constraints_type),    Intent(InOut) :: cons
-    Type(neighbours_type),     Intent(InOut) :: neigh
-    Type(pmf_type),            Intent(InOut) :: pmfs
-    Type(site_type),           Intent(InOut) :: sites
-    Type(core_shell_type),     Intent(InOut) :: core_shells
-    Type(vdw_type),            Intent(InOut) :: vdws
-    Type(tersoff_type),        Intent(InOut) :: tersoffs
-    Type(four_body_type),      Intent(InOut) :: fourbody
-    Type(rdf_type),            Intent(InOut) :: rdf
-    Type(netcdf_param),        Intent(InOut) :: netcdf
-    Type(minimise_type),       Intent(InOut) :: minim
-    Type(mpole_type),          Intent(InOut) :: mpoles
-    Type(external_field_type), Intent(InOut) :: ext_field
-    Type(rigid_bodies_type),   Intent(InOut) :: rigid
-    Type(electrostatic_type),  Intent(InOut) :: electro
-    Type(domains_type),        Intent(InOut) :: domain
-    Type(flow_type),           Intent(InOut) :: flow
-    Type(seed_type),           Intent(InOut) :: seed
-    Type(trajectory_type),     Intent(InOut) :: traj
-    Type(kim_type), Target,    Intent(InOut) :: kim_data
-    Type(configuration_type),  Intent(InOut) :: config
-    Type(io_type),             Intent(InOut) :: ios
-    Type(ttm_type),            Intent(InOut) :: ttms
-    Type(rsd_type), Target,    Intent(InOut) :: rsdsc
-    Type(file_type),           Intent(InOut) :: files(FILENAME_SIZE)
-    Type(coord_type),          Intent(InOut) :: crd
-    Type(adf_type),            Intent(InOut) :: adf
-    Character(len=1024),       Intent(In   ) :: control_filename
-    Character(len=1024),       Intent(In   ) :: output_filename
-    Logical            :: lfce
+    Type(comms_type),            Intent(InOut) :: dlp_world(0:),comm
+    Type(thermostat_type),       Intent(InOut) :: thermo(:)
+    Type(ewald_type),            Intent(InOut) :: ewld(:)
+    Type(timer_type),            Intent(InOut) :: tmr
+    Type(development_type),      Intent(InOut) :: devel
+    Type(stats_type),            Intent(InOut) :: stats(:)
+    Type(greenkubo_type),        Intent(InOut) :: green(:)
+    Type(plumed_type),           Intent(InOut) :: plume(:)
+    Type(msd_type),              Intent(InOut) :: msd_data(:)
+    Type(metal_type),            Intent(InOut) :: met(:)
+    Type(poisson_type),          Intent(InOut) :: pois(:)
+    Type(impact_type),           Intent(InOut) :: impa
+    Type(defects_type),          Intent(InOut) :: dfcts(:)
+    Type(bonds_type),            Intent(InOut) :: bond(:)
+    Type(angles_type ),          Intent(InOut) :: angle(:)
+    Type(dihedrals_type ),       Intent(InOut) :: dihedral(:)
+    Type(inversions_type ),      Intent(InOut) :: inversion(:)
+    Type(tethers_type ),         Intent(InOut) :: tether(:)
+    Type(threebody_type ),       Intent(InOut) :: threebody(:)
+    Type(z_density_type ),       Intent(InOut) :: zdensity(:)
+    Type(constraints_type ),     Intent(InOut) :: cons(:)
+    Type(neighbours_type ),      Intent(InOut) :: neigh(:)
+    Type(pmf_type ),             Intent(InOut) :: pmfs(:)
+    Type(site_type ),            Intent(InOut) :: sites(:)
+    Type(core_shell_type ),      Intent(InOut) :: core_shells(:)
+    Type(vdw_type ),             Intent(InOut) :: vdws(:)
+    Type(tersoff_type ),         Intent(InOut) :: tersoffs(:)
+    Type(four_body_type ),       Intent(InOut) :: fourbody(:)
+    Type(rdf_type ),             Intent(InOut) :: rdf(:)
+    Type(netcdf_param ),         Intent(InOut) :: netcdf
+    Type(minimise_type ),        Intent(InOut) :: minim(:)
+    Type(mpole_type ),           Intent(InOut) :: mpoles(:)
+    Type(external_field_type ),  Intent(InOut) :: ext_field(:)
+    Type(rigid_bodies_type ),    Intent(InOut) :: rigid(:)
+    Type(electrostatic_type ),   Intent(InOut) :: electro(:)
+    Type(domains_type ),         Intent(InOut) :: domain(:)
+    Type(flow_type ),            Intent(InOut) :: flow
+    Type(seed_type ),            Intent(InOut) :: seed
+    Type(trajectory_type ),      Intent(InOut) :: traj
+    Type(kim_type ), Target,     Intent(InOut) :: kim_data(:)
+    Type(configuration_type ),   Intent(InOut) :: config(:)
+    Type(io_type),               Intent(InOut) :: ios
+    Type(ttm_type),              Intent(InOut) :: ttms(:)
+    Type(rsd_type ), Target,     Intent(InOut) :: rsdsc(:)
+    Type(file_type ),            Intent(InOut) :: files(:)
+    Character(Len= 1024),        Intent(In   ) :: output_filename
+    Character(Len= 1024),        Intent(In   ) :: control_filename
+    Type(coord_type),            Intent(InOut) :: crd(:)
+    Type(adf_type),              Intent(InOut) :: adf(:)
+
+    Character(Len=256 ) :: message
+    Integer(Kind=wi)    :: vacuum
+    Integer(Kind=wi)    :: ff, frevc
+    Integer             :: old_print_level
+    Logical             :: lfce
+    Real(wp)            :: s
 
     ! Set default file names
     Call default_filenames(files)
@@ -549,10 +571,21 @@ Contains
 
     ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
     ! (setup and domains)
-    Call set_bounds(sites, ttms, ios, core_shells, cons, pmfs, stats, &
-      thermo, green, devel, msd_data, met, pois, bond, angle, dihedral, inversion, &
-      tether, threebody, zdensity, neigh, vdws, tersoffs, fourbody, rdf, mpoles, ext_field, &
-      rigid, electro, domain, config, ewld, kim_data, files, flow, comm)
+    Call set_bounds ( &
+         sites(1), ttms(1), ios, core_shells(1), cons(1), pmfs(1), stats(1), &
+         thermo(1), green(1), devel, msd_data(1), met(1), pois(1), bond(1), angle(1), dihedral(1), inversion(1), &
+         tether(1), threebody(1), zdensity(1), neigh(1), vdws(1), tersoffs(1), fourbody(1), rdf(1), mpoles(1), &
+         ext_field(1), rigid(1), electro(1), domain(1), config(1), ewld(1), kim_data(1), files, flow, comm, 1)
+
+    Call set_print_level(0)
+    Do ff = 2, flow%NUM_FF
+      Call set_bounds ( &
+        sites(ff), ttms(ff), ios, core_shells(ff), cons(ff), pmfs(ff), stats(ff), &
+        thermo(ff), green(ff), devel, msd_data(ff), met(ff), pois(ff), bond(ff), angle(ff), dihedral(ff), inversion(ff), &
+        tether(ff), threebody(ff), zdensity(ff), neigh(ff), vdws(ff), tersoffs(ff), fourbody(ff), rdf(ff), mpoles(ff), &
+        ext_field(ff), rigid(ff), electro(ff), domain(ff), config(ff), ewld(ff), kim_data(ff), files, flow, comm, ff)
+    End Do
+    Call set_print_level(old_print_level)
 
     Call info('', .true.)
     Call info("*** pre-scanning stage (set_bounds) DONE ***", .true.)
@@ -564,9 +597,10 @@ Contains
     End If
 
     Do ff=1,flow%NUM_FF
-      Call molecular_dynamics_allocate(sites(ff), config(ff), neigh(ff), thermo(ff), vdws(ff), core_shells(ff), cons(ff), pmfs(ff), &
-           rigid(ff), tether(ff), bond(ff), angle(ff), dihedral(ff), inversion(ff), mpoles(ff), met(ff), tersoffs(ff), threebody(ff), fourbody(ff), &
-           ext_field(ff), rdf(ff), zdensity(ff), stats(ff), green(ff), ttms(ff), domain(ff), ewld(ff), kim_data(ff), comm)
+      Call molecular_dynamics_allocate(sites(ff), config(ff), neigh(ff), thermo(ff), vdws(ff), core_shells(ff), &
+           cons(ff), pmfs(ff), rigid(ff), tether(ff), bond(ff), angle(ff), dihedral(ff), inversion(ff), mpoles(ff), &
+           met(ff), tersoffs(ff), threebody(ff), fourbody(ff), ext_field(ff), rdf(ff), zdensity(ff), stats(ff), &
+           green(ff), ttms(ff), domain(ff), ewld(ff), kim_data(ff), comm)
     end Do
 
     ! READ SIMULATION CONTROL PARAMETERS
@@ -577,10 +611,11 @@ Contains
 
     call set_print_level(0)
     Do ff = 2, flow%NUM_FF
-      Call read_control(lfce(ff), impa(ff), ttms(ff), dfcts(ff), rigid(ff), rsdsc(ff), core_shells(ff), cons(ff), pmfs(ff), &
-           stats(ff), thermo(ff), green(ff), devel(ff), plume(ff), msd_data(ff), met(ff), pois(ff), bond(ff), angle(ff), dihedral(ff), &
-           inversion(ff), zdensity(ff), neigh(ff), vdws(ff), rdf(ff), minim(ff), mpoles(ff), electro(ff), ewld(ff), &
-           seed(ff), traj(ff), files(ff), tmr(ff), config(ff), flow(ff), crd(ff), adf(ff), comm)
+      Call read_control(lfce, impa, ttms(ff), dfcts, rigid(ff), rsdsc(ff), core_shells(ff), cons(ff), &
+           pmfs(ff), stats(ff), thermo(ff), green(ff), devel, plume(ff), msd_data(ff), met(ff), pois(ff), &
+           bond(ff), angle(ff), dihedral(ff), inversion(ff), zdensity(ff), neigh(ff), vdws(ff), rdf(ff), minim(ff), &
+           mpoles(ff), electro(ff), ewld(ff), seed, traj, files, tmr, config(ff), flow, &
+           crd(ff), adf(ff), comm)
     End Do
     call set_print_level(old_print_level)
 
@@ -702,57 +737,58 @@ Contains
        domain, flow, seed, traj, kim_data, config, ios, ttms, rsdsc, files, control_filename, &
        output_filename, crd, adf)
 
-    Type(comms_type),          Intent(InOut) :: dlp_world(0:), comm
-    Type(thermostat_type),     Intent(InOut) :: thermo
-    Type(ewald_type),          Intent(InOut) :: ewld
-    Type(timer_type),          Intent(InOut) :: tmr
-    Type(development_type),    Intent(InOut) :: devel
-    Type(stats_type),          Intent(InOut) :: stats
-    Type(greenkubo_type),      Intent(InOut) :: green
-    Type(plumed_type),         Intent(InOut) :: plume
-    Type(msd_type),            Intent(InOut) :: msd_data
-    Type(metal_type),          Intent(InOut) :: met
-    Type(poisson_type),        Intent(InOut) :: pois
-    Type(impact_type),         Intent(InOut) :: impa
-    Type(defects_type),        Intent(InOut) :: dfcts(2)
-    Type(bonds_type),          Intent(InOut) :: bond
-    Type(angles_type),         Intent(InOut) :: angle
-    Type(dihedrals_type),      Intent(InOut) :: dihedral
-    Type(inversions_type),     Intent(InOut) :: inversion
-    Type(tethers_type),        Intent(InOut) :: tether
-    Type(threebody_type),      Intent(InOut) :: threebody
-    Type(z_density_type),      Intent(InOut) :: zdensity
-    Type(constraints_type),    Intent(InOut) :: cons
-    Type(neighbours_type),     Intent(InOut) :: neigh
-    Type(pmf_type),            Intent(InOut) :: pmfs
-    Type(site_type),           Intent(InOut) :: sites
-    Type(core_shell_type),     Intent(InOut) :: core_shells
-    Type(vdw_type),            Intent(InOut) :: vdws
-    Type(tersoff_type),        Intent(InOut) :: tersoffs
-    Type(four_body_type),      Intent(InOut) :: fourbody
-    Type(rdf_type),            Intent(InOut) :: rdf
-    Type(netcdf_param),        Intent(InOut) :: netcdf
-    Type(minimise_type),       Intent(InOut) :: minim
-    Type(mpole_type),          Intent(InOut) :: mpoles
-    Type(external_field_type), Intent(InOut) :: ext_field
-    Type(rigid_bodies_type),   Intent(InOut) :: rigid
-    Type(electrostatic_type),  Intent(InOut) :: electro
-    Type(domains_type),        Intent(InOut) :: domain
-    Type(flow_type),           Intent(InOut) :: flow
-    Type(seed_type),           Intent(InOut) :: seed
-    Type(trajectory_type),     Intent(InOut) :: traj
-    Type(kim_type), Target,    Intent(InOut) :: kim_data
-    Type(configuration_type),  Intent(InOut) :: config
-    Type(io_type),             Intent(InOut) :: ios
-    Type(ttm_type),            Intent(InOut) :: ttms
-    Type(rsd_type), Target,    Intent(InOut) :: rsdsc
-    Type(file_type),           Intent(InOut) :: files(FILENAME_SIZE)
-    Character(len=1024),       Intent(In   ) :: control_filename
-    Character(len=1024),       Intent(In   ) :: output_filename
-    Type(coord_type),          Intent(InOut) :: crd
-    Type(adf_type),            Intent(InOut) :: adf
+    Type(comms_type),            Intent(InOut) :: dlp_world(0:),comm
+    Type(thermostat_type),       Intent(InOut) :: thermo(:)
+    Type(ewald_type),            Intent(InOut) :: ewld(:)
+    Type(timer_type),            Intent(InOut) :: tmr
+    Type(development_type),      Intent(InOut) :: devel
+    Type(stats_type),            Intent(InOut) :: stats(:)
+    Type(greenkubo_type),        Intent(InOut) :: green(:)
+    Type(plumed_type),           Intent(InOut) :: plume(:)
+    Type(msd_type),              Intent(InOut) :: msd_data(:)
+    Type(metal_type),            Intent(InOut) :: met(:)
+    Type(poisson_type),          Intent(InOut) :: pois(:)
+    Type(impact_type),           Intent(InOut) :: impa
+    Type(defects_type),          Intent(InOut) :: dfcts(:)
+    Type(bonds_type),            Intent(InOut) :: bond(:)
+    Type(angles_type ),          Intent(InOut) :: angle(:)
+    Type(dihedrals_type ),       Intent(InOut) :: dihedral(:)
+    Type(inversions_type ),      Intent(InOut) :: inversion(:)
+    Type(tethers_type ),         Intent(InOut) :: tether(:)
+    Type(threebody_type ),       Intent(InOut) :: threebody(:)
+    Type(z_density_type ),       Intent(InOut) :: zdensity(:)
+    Type(constraints_type ),     Intent(InOut) :: cons(:)
+    Type(neighbours_type ),      Intent(InOut) :: neigh(:)
+    Type(pmf_type ),             Intent(InOut) :: pmfs(:)
+    Type(site_type ),            Intent(InOut) :: sites(:)
+    Type(core_shell_type ),      Intent(InOut) :: core_shells(:)
+    Type(vdw_type ),             Intent(InOut) :: vdws(:)
+    Type(tersoff_type ),         Intent(InOut) :: tersoffs(:)
+    Type(four_body_type ),       Intent(InOut) :: fourbody(:)
+    Type(rdf_type ),             Intent(InOut) :: rdf(:)
+    Type(netcdf_param ),         Intent(InOut) :: netcdf
+    Type(minimise_type ),        Intent(InOut) :: minim(:)
+    Type(mpole_type ),           Intent(InOut) :: mpoles(:)
+    Type(external_field_type ),  Intent(InOut) :: ext_field(:)
+    Type(rigid_bodies_type ),    Intent(InOut) :: rigid(:)
+    Type(electrostatic_type ),   Intent(InOut) :: electro(:)
+    Type(domains_type ),         Intent(InOut) :: domain(:)
+    Type(flow_type ),            Intent(InOut) :: flow
+    Type(seed_type ),            Intent(InOut) :: seed
+    Type(trajectory_type ),      Intent(InOut) :: traj
+    Type(kim_type ), Target,     Intent(InOut) :: kim_data(:)
+    Type(configuration_type ),   Intent(InOut) :: config(:)
+    Type(io_type),               Intent(InOut) :: ios
+    Type(ttm_type),              Intent(InOut) :: ttms(:)
+    Type(rsd_type ), Target,     Intent(InOut) :: rsdsc(:)
+    Type(file_type ),            Intent(InOut) :: files(:)
+    Character(Len= 1024),        Intent(In   ) :: output_filename
+    Character(Len= 1024),        Intent(In   ) :: control_filename
+    Type(coord_type),            Intent(InOut) :: crd(:)
+    Type(adf_type),              Intent(InOut) :: adf(:)
 
     Real(kind=wp)      :: s
+    Integer(Kind=wi)    :: ff, frevc
     Character(len=256) :: message
     Integer(Kind=wi)   :: vacuum
     Logical            :: lfce

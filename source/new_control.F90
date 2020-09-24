@@ -58,7 +58,7 @@ Module new_control
        RESTART_KEY_SCALE,&
        flow_type, &
        DFTB, &
-       MD
+       MD_STD
   Use greenkubo,            Only: greenkubo_type
   Use impacts,              Only: impact_type
   Use inversions,           Only: inversions_type

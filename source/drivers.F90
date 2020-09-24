@@ -2067,10 +2067,12 @@ Contains
         (tmr%job-tmr%elapsed) > tmr%clear_screen )
 
       ! Apply impact
-      Do ff=1,flow%NUM_FF
-        if (impa%active) &
-             Call impact_option(cnfig(ff)%levcfg, flow%step, flow%equil_steps, rigid(ff), cshell(ff), stat(ff), impa, cnfig(ff), comm)
-      End Do
+      if (impa%active) then
+        Do ff=1,flow%NUM_FF
+          Call impact_option(cnfig(ff)%levcfg, flow%step, &
+               flow%equil_steps, rigid(ff), cshell(ff), stat(ff), impa, cnfig(ff), comm)
+        End Do
+      end if
 
       ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT if needed immediately after restart
       ! cnfig%levcfg == 2 avoids application twice when forces are calculated at (re)start
@@ -2105,7 +2107,7 @@ Contains
 
         Do ff = 1, flow%NUM_FF
         ! Switch on electron-phonon coupling only after flow%time offset
-        if (ttm%l_ttm) ttm(ff)%l_epcp = (flow%time >= ttm(ff)%ttmoffset)
+        if (ttm(ff)%l_ttm) ttm(ff)%l_epcp = (flow%time >= ttm(ff)%ttmoffset)
 
         ! Integrate equations of motion - velocity verlet first stage
           Call integrate_vv(VV_FIRST_STAGE, flow,cnfig(ff), ttm(ff), cshell(ff), cons(ff), pmf(ff), stat(ff), &
