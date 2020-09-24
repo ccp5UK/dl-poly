@@ -2335,7 +2335,7 @@ contains
       Write (messages(3), '(a,1p g12.5e2)') '  -- Minimum distance Dmin (Angs): ', thermo%mndis
       Write (messages(4), '(a,1p g12.5e2)') '  -- Maximum distance Dmax (Angs): ', thermo%mxdis
       Call info(messages, 4, .true.)
-      If (thermo%mxstp > zero_plus) Then
+      If (thermo%mxstp > zero_plus .and. thermo%mxstp < 1.0e10_wp) Then
         Write (message, '(a,1p g12.5e2)') '  -- Timestep ceiling max step (ps): ', thermo%mxstp
         Call info(message, .true.)
       end If
