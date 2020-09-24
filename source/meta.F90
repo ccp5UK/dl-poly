@@ -596,13 +596,6 @@ Contains
       Call print_evb_banner(flow%NUM_FF)
     End If
 
-    Do ff=1,flow%NUM_FF
-      Call molecular_dynamics_allocate(sites(ff), config(ff), neigh(ff), thermo(ff), vdws(ff), core_shells(ff), &
-           cons(ff), pmfs(ff), rigid(ff), tether(ff), bond(ff), angle(ff), dihedral(ff), inversion(ff), mpoles(ff), &
-           met(ff), tersoffs(ff), threebody(ff), fourbody(ff), ext_field(ff), rdf(ff), zdensity(ff), stats(ff), &
-           green(ff), ttms(ff), domain(ff), ewld(ff), kim_data(ff), comm)
-    end Do
-
     ! READ SIMULATION CONTROL PARAMETERS
     Call read_control(lfce, impa, ttms(1), dfcts, rigid(1), rsdsc(1), core_shells(1), cons(1), pmfs(1), &
          stats(1), thermo(1), green(1), devel, plume(1), msd_data(1), met(1), pois(1), bond(1), angle(1), dihedral(1), &
@@ -618,6 +611,13 @@ Contains
            crd(ff), adf(ff), comm)
     End Do
     call set_print_level(old_print_level)
+
+    Do ff=1,flow%NUM_FF
+      Call molecular_dynamics_allocate(sites(ff), config(ff), neigh(ff), thermo(ff), vdws(ff), core_shells(ff), &
+           cons(ff), pmfs(ff), rigid(ff), tether(ff), bond(ff), angle(ff), dihedral(ff), inversion(ff), mpoles(ff), &
+           met(ff), tersoffs(ff), threebody(ff), fourbody(ff), ext_field(ff), rdf(ff), zdensity(ff), stats(ff), &
+           green(ff), ttms(ff), domain(ff), ewld(ff), kim_data(ff), comm)
+    end Do
 
     Do ff = 1, flow%NUM_FF
       If (stats(ff)%cur%on) Then
