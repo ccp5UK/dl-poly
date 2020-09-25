@@ -1837,8 +1837,8 @@ contains
     call params%retrieve('minimisation_criterion', option)
     minim%minimise = option /= 'off'
 
-    call params%retrieve('minimisation_tolerance', minim%tolerance)
     call params%get('minimisation_tolerance', param)
+    read(param%val, *) minim%tolerance
 
     call params%retrieve('minimisation_frequency', minim%freq)
     call params%retrieve('minimisation_step_length', minim%step_length)
