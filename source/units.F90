@@ -233,6 +233,10 @@ contains
     call units_table%set("%", init_unit(abbrev="%", name="%", to_internal=0.01_wp))
     call units_table%set("", init_unit(abbrev="", name="", to_internal=1.0_wp))
 
+    ! System Properties
+
+    call units_table%set("temp", init_unit(abbrev="T", name="System Temperature", temp=1, to_internal=1.0_wp))
+
   End Subroutine initialise_units
 
   Function convert_units(val, from, to, stat) result(res)

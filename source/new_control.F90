@@ -899,7 +899,7 @@ contains
       call params%retrieve('rdf_error_analysis', option)
 
       select case (option)
-      case ('jack')
+      case ('jackknife')
         rdf%l_errors_jack = .TRUE.
       case ('block')
         rdf%l_errors_block = .TRUE.
@@ -3585,7 +3585,7 @@ contains
                key = "rdf_error_analysis", &
                name = "RDF Error Analysis", &
                val = "off", &
-               description = "Enable RDF error analysis, options: Off, Jack, Block", &
+               description = "Enable RDF error analysis, options: Off, Jackknife, Block", &
                data_type = DATA_OPTION))
 
           call table%set("rdf_error_analysis_blocks", control_parameter( &
@@ -4720,8 +4720,8 @@ contains
            key = "equilibration_force_cap", &
            name = "Equilibration force cap", &
            val = "1000.0", &
-           units = "N", &
-           internal_units = "internal_f", &
+           units = "k_b.temp/ang", &
+           internal_units = "k_b.temp/ang", &
            description = "Set force cap clamping maximum force during equilibration", &
            data_type = DATA_FLOAT))
 
