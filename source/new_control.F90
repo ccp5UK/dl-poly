@@ -999,9 +999,9 @@ contains
 
     if (defect(1)%ldef) then
 
-      call params%retrieve('defects_start', defect%nsdef)
-      call params%retrieve('defects_interval', defect%isdef)
-      call params%retrieve('defects_distance', defect%rdef)
+      call params%retrieve('defects_start', defect(1)%nsdef)
+      call params%retrieve('defects_interval', defect(1)%isdef)
+      call params%retrieve('defects_distance', defect(1)%rdef)
       ! if (defects%rdef < )
 
       defect(1)%newjob = .true.
