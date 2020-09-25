@@ -734,7 +734,7 @@ contains
         continue
       case ('area')
         thermo%iso = CONSTRAINT_SURFACE_AREA
-      case ('tens')
+      case ('surface', 'tension')
 
         thermo%iso = CONSTRAINT_SURFACE_TENSION
 
