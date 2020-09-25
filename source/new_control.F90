@@ -797,12 +797,14 @@ contains
         bond%rcut = minimum_bond_anal_length
         call warning('Bond less than minimum length, setting to minimum (2.5 Ang)', .true.)
       end if
-
       bond%bin_pdf = itmp2
       if (params%is_set('analyse_num_bins_bonds')) &
            call params%retrieve('analyse_num_bins_bonds', bond%bin_pdf)
 
       call params%retrieve('analyse_frequency_bonds', flow%freq_bond)
+    else
+      bond%bin_pdf = -1
+      flow%freq_bond = -1
     end if
 
     if (l_angle) then
@@ -810,6 +812,9 @@ contains
       if (params%is_set('analyse_num_bins_angles')) &
            call params%retrieve('analyse_num_bins_angles', angle%bin_adf)
       call params%retrieve('analyse_frequency_angles', flow%freq_angle)
+    else
+      angle%bin_adf = -1
+      flow%freq_angle = -1
     end if
 
     if (l_dihedral) then
@@ -817,6 +822,9 @@ contains
       if (params%is_set('analyse_num_bins_dihedrals')) &
            call params%retrieve('analyse_num_bins_dihedrals', dihedral%bin_adf)
       call params%retrieve('analyse_frequency_dihedrals', flow%freq_dihedral)
+    else
+      dihedral%bin_adf = -1
+      flow%freq_dihedral = -1
     end if
 
     if (l_inversion) then
@@ -825,6 +833,9 @@ contains
            call params%retrieve('analyse_num_bins_inversions', inversion%bin_adf)
 
       call params%retrieve('analyse_frequency_inversions', flow%freq_inversion)
+    else
+      inversion%bin_adf = -1
+      flow%freq_inversion = -1
     end if
 
     if (any([l_bond, l_angle, l_dihedral, l_inversion])) then
@@ -1419,31 +1430,26 @@ contains
     if (vdws%max_vdw <= 0) vdws%no_vdw = .true.
 
     call params%retrieve('vdw_mix_method', option)
-    if (option /= 'off') then
-
-      select case (option)
-      case ('off')
-        continue
-
-      case ('lorentz-bethelot')
-        vdws%mixing = MIX_LORENTZ_BERTHELOT
-      case ('fender-halsey')
-        vdws%mixing = MIX_FENDER_HALSEY
-      case ('hogervorst')
-        vdws%mixing = MIX_HOGERVORST
-      case ('halgren')
-        vdws%mixing = MIX_HALGREN
-      case ('waldman-hagler')
-        vdws%mixing = MIX_WALDMAN_HAGLER
-      case ('tang-tonnies')
-        vdws%mixing = MIX_TANG_TOENNIES
-      case ('functional')
-        vdws%mixing = MIX_FUNCTIONAL
-      case default
-        call bad_option('vdw_mix_method', option)
-
-      end select
-    end if
+    select case (option)
+    case ('off')
+      vdws%mixing = MIX_NULL
+    case ('lorentz-bethelot')
+      vdws%mixing = MIX_LORENTZ_BERTHELOT
+    case ('fender-halsey')
+      vdws%mixing = MIX_FENDER_HALSEY
+    case ('hogervorst')
+      vdws%mixing = MIX_HOGERVORST
+    case ('halgren')
+      vdws%mixing = MIX_HALGREN
+    case ('waldman-hagler')
+      vdws%mixing = MIX_WALDMAN_HAGLER
+    case ('tang-tonnies')
+      vdws%mixing = MIX_TANG_TOENNIES
+    case ('functional')
+      vdws%mixing = MIX_FUNCTIONAL
+    case default
+      call bad_option('vdw_mix_method', option)
+    end select
 
     call params%retrieve('vdw_force_shift', vdws%l_force_shift)
 
@@ -4856,8 +4862,8 @@ contains
                key = "ewald_alpha", &
                name = "Ewald alpha", &
                val = "0.0", &
-               units = "1/Ang", &
-               internal_units = "1/internal_l", &
+               units = "ang^-1", &
+               internal_units = "internal_l^-1", &
                description = "Set real-recip changeover location for Ewald calculations", &
                data_type = DATA_FLOAT))
 
@@ -4874,8 +4880,8 @@ contains
                key = "ewald_kvec_spacing", &
                name = "Ewald k-vector spacing", &
                val = "0.0", &
-               units = "1/ang", &
-               internal_units = "1/internal_l", &
+               units = "ang^-1", &
+               internal_units = "internal_l^-1", &
                description = "Calculate k-vector samples for an even sampling of given spacing in Ewald calculations", &
                data_type = DATA_FLOAT))
 

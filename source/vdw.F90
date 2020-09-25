@@ -118,7 +118,7 @@ Module vdw
     Private
 
     !> No Van der Waals switch
-    Logical, Public                       :: no_vdw
+    Logical, Public                       :: no_vdw = .false.
     !> Flag for any tabulated potential
     Logical, Public                       :: l_tab = .false.
     !> Direct calculation flag

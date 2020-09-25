@@ -418,8 +418,8 @@ contains
        tmp = string(3:)
        call lower_case(tmp)
        if (i < 1 .or. .not. units_table%in(tmp)) call error(0, "Unit not found "//string(2:))
-        factor = prefix(i)
-        string = string(1:1) // string(3:)
+       factor = prefix(i)
+       string = string(1:1) // string(3:)
     end if
 
   end Subroutine handle_decimal_prefix

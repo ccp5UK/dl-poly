@@ -115,8 +115,8 @@ Module configuration
     Integer(Kind=wi), Public      :: mxtana, mxgana, mxbfss, mxbuff
     Integer(Kind=wi), Public      :: mxlshp, mxatms, mxatdm
     ! general flags
-    Logical                       :: l_ind, l_exp
-    Integer                       :: levcfg, nx, ny, nz, &
+    Logical                       :: l_ind = .false., l_exp = .false.
+    Integer                       :: levcfg, nx = 1, ny = 1, nz = 1, &
                                      atmfre, atmfrz, megatm, megfrz
     ! Degrees of freedom must be in long integers so we do 2.1x10^9 particles
     Integer(Kind=li)              :: degfre, degshl, degtra, degrot
