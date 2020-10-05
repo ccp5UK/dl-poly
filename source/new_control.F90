@@ -1406,6 +1406,7 @@ contains
     Real(Kind=wp) :: cut, tol, tol1, rtmp
     Integer :: SPLINE_LIMITS
 
+    Logical :: metals_on, vdws_on
     Character(Len=STR_LEN) :: message
     Character(Len=STR_LEN) :: option
 
@@ -1430,6 +1431,9 @@ contains
       call bad_option('vdw_method', option)
     end select
     if (vdws%max_vdw <= 0) vdws%no_vdw = .true.
+
+    vdws_on = .not. vdws%no_vdw
+    metals_on = met%max_metal > 0
 
     call params%retrieve('vdw_mix_method', option)
     select case (option)
@@ -1474,34 +1478,51 @@ contains
       neigh%padding = 0.0_wp
       call warning('Bad padding value, reset to 0.0', .true.)
     end if
-
     flow%reset_padding = params%is_set('padding')
-    if (.not. vdws%no_vdw) then
+
+    if (vdws_on) then
       call params%retrieve('vdw_cutoff', rtmp)
+
       if (vdws%cutoff > REAL_TOL .and. vdws%cutoff < rtmp .and. Abs(vdws%cutoff - rtmp) > REAL_TOL) then
         Write (message, '(a,1p,e12.4)') 'VdW cutoff set by bounds to (Angs): ', vdws%cutoff
         Call warning(message, .true.)
+
       else
         vdws%cutoff = rtmp
       End If
 
       if (vdws%cutoff < minimum_rcut) then
         vdws%cutoff = neigh%cutoff
-        call warning('vdw_cutoff less than minimum cutoff, setting to global cutoff', .true.)
+        call warning('VdW cutoff less than minimum cutoff, setting to global cutoff', .true.)
       end if
+
     else
       vdws%cutoff = 0.0_wp
     end if
 
-    if (met%max_metal > 0 .and. met%rcut < REAL_TOL) then
+    if (metals_on .and. met%rcut < REAL_TOL) then
       met%rcut=Max(met%rcut, neigh%cutoff,vdws%cutoff)
       call warning('metal_cutoff not set, setting to max of global cutoff and vdw cutoff', .true.)
     end if
 
     neigh%cutoff = Max(neigh%cutoff, vdws%cutoff, met%rcut, kim_data%cutoff, bond%rcut, &
          2.0_wp * tersoffs%cutoff + REAL_TOL)
-    print*, neigh%cutoff, vdws%cutoff, met%rcut, kim_data%cutoff, bond%rcut, &
-         2.0_wp * tersoffs%cutoff + REAL_TOL
+
+    ! Sort met%rcut=neigh%cutoff if metal interactions are in play, even if
+    ! they are defined by EAM since met%rcut can be /= neigh%cutoff in such
+    ! instances, this can break the NLAST check in metal_ld_set_halo
+
+    if (metals_on) met%rcut = neigh%cutoff
+
+    ! Sort vdws%cutoff=neigh%cutoff if VDW interactions are in play
+
+    If (vdws_on .and. vdws%cutoff > neigh%cutoff) Then
+      vdws%cutoff = neigh%cutoff
+      Call warning('VdW cutoff greater than global cutoff, setting to global cutoff', .true.)
+    End If
+
+    ! print*, neigh%cutoff, vdws%cutoff, met%rcut, kim_data%cutoff, bond%rcut, &
+    !      2.0_wp * tersoffs%cutoff + REAL_TOL
 
     if (threebody%mxtbp > 0 .and. threebody%cutoff < REAL_TOL) then
       call warning('three body cutoff not set, setting to half of global cutoff', .true.)
@@ -2398,6 +2419,11 @@ contains
 
         Call info(messages, 5, .true.)
       end if
+    end if
+
+    if (stats%mxstak > 0) then
+      Write(message, '(a,i10)') '  Rolling averages length (steps): ', stats%mxstak
+      Call info(message, .true.)
     end if
 
     if (Any([flow%freq_restart > 0, flow%freq_output > 0, stats%intsta > 0, .not. flow%print_topology])) then

@@ -3794,6 +3794,7 @@ Contains
       ttm%fluence = ttm%fluence * ttm%mJcm2_to_eVA2
       ttm%dEdX = 0.1_wp * ttm%dEdX
     End If
+
   End Subroutine read_control
 
   Subroutine scan_control(max_rigid, imcon, cell, xhi, yhi, zhi, mxgana, &
