@@ -1476,7 +1476,7 @@ contains
     flow%reset_padding = params%is_set('padding')
 
     call params%retrieve('vdw_cutoff', rtmp)
-    if (Abs(rtmp - vdws%cutoff) > 1.0e-6_wp) then
+    if (vdws%cutoff > 0.0_wp .and. Abs(vdws%cutoff - rtmp) > 1.0e-6_wp) then
       Write (message, '(a,1p,e12.4)') 'VdW cutoff set by bounds to (Angs): ', vdws%cutoff
       Call warning(message, .true.)
     else

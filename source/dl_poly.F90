@@ -171,7 +171,6 @@ Program dl_poly
   Character(len=1024)           :: output_filename = ''
   Character(Len=STR_LEN)        :: option
   Character(Len=10)             :: mode
-  Logical                       :: can_parse
   Logical                       :: finish
   Integer                       :: i, ifile
 
@@ -258,11 +257,9 @@ Program dl_poly
 
     ! Temporary error system
     Call init_error_system(eu, dlp_world(0))
-    call read_new_control(files(1,FILE_CONTROL), params, dlp_world(0), can_parse)
+    call read_new_control(files(1,FILE_CONTROL), params, dlp_world(0), devel(1)%new_control)
 
-    ! Cannot read as new style
-    if (can_parse) then
-      devel%new_control = .true.
+    if (devel(1)%new_control) then
       Call params%retrieve('simulation_method', option)
       Select Case (option)
       Case ('md')
@@ -277,9 +274,9 @@ Program dl_poly
         flow(1)%simulation_method=-1
       End Select
 
-    else
-       devel%new_control = .false.
-       ! Set the type of calculation to be performed. By default it is the standard DL_POLY
+    else     ! Cannot read as new style
+
+      ! Set the type of calculation to be performed. By default it is the standard DL_POLY
        ! calculation. Tag evb activates EVB calculation
        Call read_simtype(control_filename, flow(1), dlp_world(0))
 

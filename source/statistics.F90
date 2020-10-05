@@ -451,14 +451,14 @@ Contains
     Logical                    :: ffpass
 
     If (present(ff)) then
-      If(ff==1)Then      
+      If(ff==1)Then
         ffpass=.True.
       Else
-        ffpass=.False.      
+        ffpass=.False.
       End If
     Else
       ffpass= .True.
-    Endif 
+    Endif
 
     fail = 0
 
@@ -538,7 +538,7 @@ Contains
 
     ! system energy
     ! Configurational energy has been defined in subroutine w_calculateorces within drivers.F90
-    ! In the case of EVB calculations, the configurational energy is recomputed via diagonalisation 
+    ! In the case of EVB calculations, the configurational energy is recomputed via diagonalisation
     ! of the EVB matrix (subroutine evb.F90)
 
     ! Configurational stats%stpcfg energy has been defined in subroutine calculate_forces within drivers.F90
