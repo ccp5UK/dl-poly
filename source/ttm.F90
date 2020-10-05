@@ -60,30 +60,107 @@ Module ttm
   Type, Public :: ttm_type
 
     Real(Kind=wp), Allocatable :: eltemp(:, :, :, :), eltemp_adj(:, :, :, :)
-    Real(Kind=wp), Allocatable :: asource(:), tempion(:), ttmvom(:, :), gsource(:)
     Real(Kind=wp), Allocatable :: act_ele_cell(:, :, :, :), old_ele_cell(:, :, :, :)
+    Real(Kind=wp), Allocatable :: asource(:)
+    Real(Kind=wp), Allocatable :: tempion(:)
+    Real(Kind=wp), Allocatable :: ttmvom(:, :)
+    Real(Kind=wp), Allocatable :: gsource(:)
     Logical, Allocatable :: adjust(:, :, :, :)
 
-    Real(Kind=wp), Allocatable :: cetable(:, :), gtable(:, :), detable(:, :), ketable(:, :)
+    Real(Kind=wp), Allocatable :: cetable(:, :)
+    Real(Kind=wp), Allocatable :: gtable(:, :)
+    Real(Kind=wp), Allocatable :: detable(:, :)
+    Real(Kind=wp), Allocatable :: ketable(:, :)
 
-    Integer :: ntsys(3), eltsys(3)
-    Integer :: ntcell(3), eltcell(3)
-    Integer :: ntcelloff(3), midI(3), midE(3), zeroE(3)
+    !> Ionic temperature grid size
+    Integer :: ntsys(3) = [0, 0, 10]
+    !> Electronic temperature grid size
+    Integer :: eltsys(3) = 50
+    Integer :: ntcell(3)
+    Integer :: eltcell(3)
+    Integer :: ntcelloff(3)
+    Integer :: midI(3), midE(3)
+    Integer :: zeroE(3)
 
     Integer :: tmpmsgx, tmpmsgy, tmpmsgz
     Integer :: nummsgx, nummsgy, nummsgz
 
-    Real(Kind=wp) :: delx, dely, delz, delu, delv, delw, volume, rvolume
-    Real(Kind=wp) :: zerocell(3), grcell(9)
+    !> Temperature grid size
+    Real(Kind=wp) :: delx, dely, delz
+    !> Temperature reciprocal grid size
+    Real(Kind=wp) :: delu, delv, delw
+    !> Volume, recip volume
+    Real(Kind=wp) :: volume, rvolume
+    Real(Kind=wp) :: zerocell(3)
+    Real(Kind=wp) :: grcell(9)
+    !> Number of TTM cells
     Integer :: numcell
-    Integer :: ttmbc(6), ttmbcmap(6)
+    Integer :: ttmbc(6)
+    Integer :: ttmbcmap(6)
 
-    Logical :: l_ttm, isMetal, l_epcp, redistribute, ttmthvel, ttmthvelz, oneway, ttmdyndens, findepo
-    Integer :: CeType, KeType, DeType, gvar, bcTypeE, ttmstats, ttmtraj, tdepoType, sdepoType
-    Real(Kind=wp) :: fluxout, ttmoffset, depostart, depoend
-    Real(Kind=wp) :: sh_A, sh_B, Ka0, Ce0
-    Real(Kind=wp) :: Cemax, Tfermi, Diff0
-    Real(Kind=wp) :: dEdX, sig, sigmax, tdepo, tcdepo
+    !> TTM Active
+    Logical :: l_ttm = .false.
+    !> Modelling metal
+    Logical :: isMetal = .false.
+    !> Electron-phonon coupling
+    Logical :: l_epcp = .false.
+    !> Redistribute energy between cells
+    Logical :: redistribute
+    !> Remove CoM motion
+    Logical :: ttmthvel = .true.
+    !> Remove CoM motion in Z only
+    Logical :: ttmthvelz = .false.
+    !> One way e-p coupling
+    Logical :: oneway = .false.
+    !> Density calculated dynamically
+    Logical :: ttmdyndens = .false.
+    Logical :: findepo
+    !> Heat capacity type
+    Integer :: CeType = 0
+    !> Condictivity type
+    Integer :: KeType = 0
+    !> Diffusivity type
+    Integer :: DeType = 0
+    !> E-P coupling type
+    Integer :: gvar = 0
+    !> Boundary conditions type
+    Integer :: bcTypeE = 3
+    !> Frequency of printing STATS file
+    Integer :: ttmstats = 0
+    !> Frequency of printing TRAJ file
+    Integer :: ttmtraj = 0
+    !> Temporal deposition type
+    Integer :: tdepoType = 1
+    !> Spatial deposition type
+    Integer :: sdepoType = 0
+    !> Permitted flux for Robin boundaries
+    Real(Kind=wp) :: fluxout = 0.95_wp
+    !> Time to start E-P Coupling
+    Real(Kind=wp) :: ttmoffset = 0.0_wp
+    Real(Kind=wp) :: depostart
+    Real(Kind=wp) :: depoend
+    !> Specific heat parameters
+    Real(Kind=wp) :: sh_A = 0.0_wp, sh_B = 0.0_wp
+    !> Thermal conductivity
+    Real(Kind=wp) :: Ka0 = 0.0_wp
+    !> Heat capacity
+    Real(Kind=wp) :: Ce0 = 1.0_wp
+    !> Heat capacity max
+    Real(Kind=wp) :: Cemax = 0.0_wp
+    !> Fermi temperature
+    Real(Kind=wp) :: Tfermi = 0.0_wp
+    !> Diffusivity
+    Real(Kind=wp) :: Diff0 = 0.0_wp
+    !> Energy
+    Real(Kind=wp) :: dEdX = 0.0_wp
+    !> Spatial distribution parameter
+    Real(Kind=wp) :: sig = 1.0_wp
+    !> Spatial distribution cutoff
+    Real(Kind=wp) :: sigmax = 5.0_wp
+    !> Temporal deposition parameter
+    Real(Kind=wp) :: tdepo = 1.0e-3_wp
+    !> Temporal deposition cutoff
+    Real(Kind=wp) :: tcdepo = 5.0_wp
 
     ! DEBUG (TODO)
     Real(Kind=wp) :: epstart
@@ -91,11 +168,23 @@ Module ttm
     Integer :: nstepcpl = 0
 
     Integer :: cel, gel, del, kel
-    Integer :: acell, acell_old, amin
+    Integer :: acell
+    Integer :: acell_old
+    !> Minimum number of atoms for ionic cells
+    Integer :: amin = 1
 
+    !> Unit conversions
     Real(Kind=wp) :: Jm3K_to_kBA3, JKms_to_kBAps, kB_to_eV, eV_to_kB, mJcm2_to_eVA2, epc_to_chi
-    Real(Kind=wp) :: cellrho, rcellrho, sysrho
-    Real(Kind=wp) :: fluence, pdepth
+    !> Cell density
+    Real(Kind=wp) :: cellrho
+    !> Reciprocal cell density
+    Real(Kind=wp) :: rcellrho
+    !> Number density
+    Real(Kind=wp) :: sysrho
+    !> Laser deposition fluence
+    Real(Kind=wp) :: fluence = 0.0_wp
+    !> Laser deposition penetration depth
+    Real(Kind=wp) :: pdepth = 0.0_wp
     Real(Kind=wp) :: epthreshold = 1.1_wp
     Real(Kind=wp) :: tdiffw(6)
 

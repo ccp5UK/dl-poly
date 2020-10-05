@@ -59,29 +59,29 @@ Module neighbours
     Real(Kind=wp), Allocatable, Public :: xbg(:), ybg(:), zbg(:)
 
     !> Largest vdw cutoff, defines Verlet neighbour list radius
-    Real(Kind=wp), Public :: cutoff
+    Real(Kind=wp), Public :: cutoff = 0.0_wp
     !> Cutoff squared
-    Real(Kind=wp), Public :: cutoff_2
+    Real(Kind=wp), Public :: cutoff_2 = 0.0_wp
     !> Padding around cutoff
-    Real(Kind=wp), Public                 :: padding
+    Real(Kind=wp), Public                 :: padding = 0.0_wp
     !> Actual Verlet neighbour list cutoff (cutoff+padding)
-    Real(Kind=wp), Public                 :: cutoff_extended
+    Real(Kind=wp), Public                 :: cutoff_extended = 0.0_wp
     !> Linked cell list
     Integer(Kind=wi), Allocatable, Public :: list(:, :)
     !> Maximum rank of linked cell list
-    Integer(Kind=wi), Public              :: max_list
+    Integer(Kind=wi), Public              :: max_list = 0
     !> Maximum number of cells per domain
-    Integer(Kind=wi), Public              :: max_cell
+    Integer(Kind=wi), Public              :: max_cell = 0
     !> Excluded atom list
     Integer(Kind=wi), Allocatable, Public :: list_excl(:, :)
     !> Maximum size of excluded atom list
-    Integer(Kind=wi), Public              :: max_exclude
+    Integer(Kind=wi), Public              :: max_exclude = 0
     !> CVNL newstart indicator
     Logical                               :: newstart = .true.
     !> CVNL newsjob indicator
     Logical                               :: newjob = .true.
     !> particle density at which VNL cubcelling stops
-    Real(Kind=wp), Public                 :: pdplnc
+    Real(Kind=wp), Public                 :: pdplnc = 50.0_wp
 
   Contains
 

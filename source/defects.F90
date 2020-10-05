@@ -74,9 +74,16 @@ Module defects
   !> Defect Type
   Type, Public :: defects_type
 
-    Logical                       :: ldef, newjob
-    Integer(Kind=wi)              :: isdef, nsdef
-    Real(Kind=wp)                 :: rdef
+    !> Whether calculating defects
+    Logical                       :: ldef = .false.
+    !> Whether defects initialised
+    Logical                       :: newjob = .true.
+    !> Step to start at
+    Integer(Kind=wi)              :: nsdef = 0
+    !> Frequency of collection
+    Integer(Kind=wi)              :: isdef = 1
+    !> Default value for accepting defect
+    Real(Kind=wp)                 :: rdef = 0.75_wp
     Character(Len=12)             :: reffile
     Character(Len=12)             :: deffile
     Integer(Kind=wi)              :: nrefs = 0, nlrefs = 0

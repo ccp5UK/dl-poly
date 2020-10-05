@@ -53,8 +53,8 @@ Module constraints
     Integer, Public                    :: m_con = 0
     Integer, Public                    :: megcon
     Integer, Public                    :: mxtcon, mxcons, mxfcon
-    Integer, Public                    :: max_iter_shake
-    Real(Kind=wp), Public              :: tolerance
+    Integer, Public                    :: max_iter_shake = 250
+    Real(Kind=wp), Public              :: tolerance = 1.0e-6_wp
     Integer, Allocatable, Public       :: numcon(:)
     Integer, Allocatable, Public       :: lstcon(:, :), listcon(:, :), legcon(:, :)
     Integer, Allocatable, Public       :: lishp_con(:), lashp_con(:)

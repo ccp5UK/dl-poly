@@ -115,20 +115,20 @@ Module dihedrals
     Real(Kind=wp), Allocatable, Public    :: dst(:, :)
     ! Maximums
     !> Maximum number of dihedral angle types
-    Integer(Kind=wi), Public              :: max_types
+    Integer(Kind=wi), Public              :: max_types = 0
     !> Maximum number of dihedral angles per node
-    Integer(Kind=wi), Public              :: max_angles
+    Integer(Kind=wi), Public              :: max_angles = 0
     !> Length of legend array
-    Integer(Kind=wi), Public              :: max_legend
+    Integer(Kind=wi), Public              :: max_legend = 0
     !> Maximum number of dihedral parameters
-    Integer(Kind=wi), Public              :: max_param
+    Integer(Kind=wi), Public              :: max_param = 0
     ! Number of bins
     !> Angular distribution function bins
-    Integer(Kind=wi), Public              :: bin_adf
+    Integer(Kind=wi), Public              :: bin_adf = 0
     !> Tabulated potential bins
-    Integer(Kind=wi), Public              :: bin_tab
+    Integer(Kind=wi), Public              :: bin_tab = 0
     Logical                               :: newjob = .true.
-    Real(Kind=wp)                         :: rdr
+    Real(Kind=wp)                         :: rdr = 0.0_wp
   Contains
     Private
 

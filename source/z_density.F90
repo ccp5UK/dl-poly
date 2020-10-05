@@ -35,19 +35,19 @@ Module z_density
     Private
 
     !> Collection switch
-    Logical, Public                    :: l_collect
+    Logical, Public                    :: l_collect = .false.
     !> Printing switch
-    Logical, Public                    :: l_print
+    Logical, Public                    :: l_print = .false.
     !> Number of configurations sampled
     Integer(Kind=wi), Public           :: n_samples = 0
     !> Collection frequency in steps
-    Integer(Kind=wi), Public           :: frequency
+    Integer(Kind=wi), Public           :: frequency = 1
     !> Bin width
-    Real(Kind=wp), Public              :: bin_width
+    Real(Kind=wp), Public              :: bin_width = 0.0_wp
     !> z density
     Real(Kind=wp), Allocatable, Public :: density(:, :)
     !> Maximum number of Zden grid points
-    Integer(Kind=wi), Public           :: max_grid
+    Integer(Kind=wi), Public           :: max_grid = 0
 
   Contains
     Private

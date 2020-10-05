@@ -62,17 +62,17 @@ Module flow_control
     !> Check if first call of md_vv or calculate_forces
     Logical, Public          :: newjob = .true.
     !> Strict mode
-    Logical, Public          :: strict
+    Logical, Public          :: strict = .true.
     !> Topology printing switch
-    Logical, Public          :: print_topology
+    Logical, Public          :: print_topology = .true.
     !> Force capping switch
-    Logical, Public          :: force_cap
+    Logical, Public          :: force_cap = .false.
     !> Equilibration state flag
-    Logical, Public          :: equilibration
+    Logical, Public          :: equilibration = .true.
     !> Full simulation (_i.e._ not replay) flag
-    Logical, Public          :: simulation
+    Logical, Public          :: simulation = .true.
     !> Book keeping flag
-    Logical, Public          :: book
+    Logical, Public          :: book = .true.
     !> Excluded interactions flag
     Logical, Public :: exclusions
 
@@ -83,32 +83,41 @@ Module flow_control
     Logical, Public :: heat_flux
 
     !> Restart key
-    Integer(Kind=wi), Public :: restart_key
+    Integer(Kind=wi), Public :: restart_key = RESTART_KEY_CLEAN
     !> Current simulation step
-    Integer(kind=wi), Public :: step
+    Integer(kind=wi), Public :: step =0
     !> Current simulation time (step * timestep)
-    Real(Kind=wp), Public    :: time
+    Real(Kind=wp), Public    :: time = 0.0_wp
     !> Starting time, non-zero if job is restarted
-    Real(Kind=wp), Public    :: start_time
+    Real(Kind=wp), Public    :: start_time = 0.0_wp
     !> Number of production steps
-    Integer(Kind=wi), Public :: run_steps
+    Integer(Kind=wi), Public :: run_steps = 0
     !> Number of equilibration steps
-    Integer(Kind=wi), Public :: equil_steps
+    Integer(Kind=wi), Public :: equil_steps = 0
     !> Data printing interval (in steps)
-    Integer(Kind=wi), Public :: freq_output
+    Integer(Kind=wi), Public :: freq_output = 100
+    !Analyse
+    !> Analyse bonds
+    Logical, Public :: analyse_bond = .false.
+    !> Analyse angles
+    Logical, Public :: analyse_ang = .false.
+    !> Analyse dihedrals
+    Logical, Public :: analyse_dih = .false.
+    !> Analyse inversions
+    Logical, Public :: analyse_inv = .false.
     !> Bond distribution calculation period (in steps)
-    Integer(Kind=wi), Public :: freq_bond
+    Integer(Kind=wi), Public :: freq_bond = 0
     !> Angle distribution calculation period (in steps)
-    Integer(Kind=wi), Public :: freq_angle
+    Integer(Kind=wi), Public :: freq_angle = 0
     !> Dihedral distribution calculation period (in steps)
-    Integer(Kind=wi), Public :: freq_dihedral
+    Integer(Kind=wi), Public :: freq_dihedral = 0
     !> Inversion distribution calculation period (in steps)
-    Integer(Kind=wi), Public :: freq_inversion
-    !> Restart files creation period (in steps
-    Integer(Kind=wi), Public :: freq_restart
+    Integer(Kind=wi), Public :: freq_inversion = 0
+    !> Restart files creation period (in steps)
+    Integer(Kind=wi), Public :: freq_restart = 1000
     !> Reset padding flag
     Logical, Public :: reset_padding
-    !> Type of Simulation we perform
+    !> Type of Simulation we are performing
     Integer, Public          :: simulation_method = MD_STD
     !> MD step that DL_POLY starts at
     Integer, Public          :: initial_md_step = 0

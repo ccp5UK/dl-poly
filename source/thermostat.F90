@@ -42,117 +42,6 @@ Module thermostat
   !> Direct temperature scaling
   Integer(Kind=wi), Parameter, Public :: PSEUDO_DIRECT = 3
 
-  !> Type containing thermostat and barostat variables
-  Type, Public :: thermostat_type
-    Private
-
-    !> Ensemble key
-    Integer(Kind=wi), Public           :: ensemble
-    !> Flag for variable config%cell size e.g. NPT ensembles
-    Logical, Public                    :: variable_cell = .false.
-    !> Flag for anisotropic pressure
-    Logical, Public                    :: anisotropic_pressure = .false.
-    !> Simulation temperature
-    Real(Kind=wp), Public              :: temp
-    !> Simulation pressure
-    Real(Kind=wp), Public              :: press
-    !> Simulation stress
-    Real(Kind=wp), Public              :: stress(1:9)
-    !> Average total energy due to equipartition
-    Real(Kind=wp), Public              :: sigma
-    !> Thermostat relaxation time
-    Real(Kind=wp), Public              :: tau_t
-    !> Barostat relxation time
-    Real(Kind=wp), Public              :: tau_p
-    !> Surface tension
-    Real(Kind=wp), Public              :: tension
-    !> Constraint type for anisotropic barostats
-    Integer(Kind=wi), Public           :: iso
-    !> Andersen thermostat softness
-    Real(Kind=wp), Public              :: soft
-    !> Langevin switch
-    Logical, Public                    :: l_langevin = .false.
-    !> Gentle Stochastic dynamics (Langevin) thermostat friction
-    Real(Kind=wp), Public              :: gama
-    !> Stochastic Dynamics (SD Langevin) thermostat friction
-    Real(Kind=wp), Public              :: chi
-    !> Inhomogeneous Stochastic Dynamics (SD Langevin)
-    !> thermostat/electron-phonon friction
-    Real(Kind=wp), Public              :: chi_ep
-    !> Inhomogeneous Stochastic Dynamics (SD Langevin)
-    !> thermostat/electronic stopping friction
-    Real(Kind=wp), Public              :: chi_es
-    !> Stochastic Dynamics (SD Langevin) barostat friction
-    Real(Kind=wp), Public              :: tai
-    !> Square of cutoff velocity for inhomogeneous Langevin thermostat and ttm
-    Real(Kind=wp), Public              :: vel_es2
-    !> Instantaneous thermostat friction
-    Real(Kind=wp), Public              :: chi_t
-    !> Instantaneous barostat friction
-    Real(Kind=wp), Public              :: chi_p
-    !> Friction integral for thermostat/barostat
-    Real(Kind=wp), Public              :: cint
-    !> Cell parameter scaling factor for barostats
-    Real(Kind=wp), Public              :: eta(1:9)
-    !> DPD switch
-    Integer, Public                    :: key_dpd = DPD_NULL
-    !> DPD drag?
-    Real(Kind=wp), Allocatable, Public :: gamdpd(:)
-    Real(Kind=wp), Allocatable, Public :: sigdpd(:)
-    !> Pseudo thermostat switch
-    Logical, Public                    :: l_stochastic_boundaries
-    !> Pseudo thermostat type
-    Integer, Public                    :: key_pseudo
-    !> Pseudo thermostat temperature
-    Real(Kind=wp), Public              :: temp_pseudo
-    !> Pseudo thermostat thickness
-    Real(Kind=wp), Public              :: width_pseudo
-    !> Temperature scaling switch
-    Logical, Public                    :: l_tscale
-    !> Temperature scaling frequency
-    Integer, Public                    :: freq_tscale
-    !> Temperature regaussing switch
-    Logical, Public                    :: l_tgaus
-    !> Temperature regaussing frequency
-    Integer, Public                    :: freq_tgaus
-    !> Zero temperature optimisation switch
-    Logical, Public                    :: l_zero
-    !> Zero temperature regaussing frequency
-    Integer, Public                    :: freq_zero
-    Logical, Public                    :: newjob_0 = .true.
-    Logical, Public                    :: newjob_1 = .true.
-    Logical, Public                    :: newjob_2 = .true.
-    Logical, Public                    :: newjob_sb = .true.
-    Logical, Public                    :: newjob_nst_scl_0 = .true.
-    Logical, Public                    :: newjob_nst_scl_1 = .true.
-    Logical, Public                    :: newjob_npt_scl_0 = .true.
-    Logical, Public                    :: newjob_npt_scl_1 = .true.
-    Integer, Public                    :: mxiter, mxkit, kit
-    Logical, Public                    :: unsafe = .false.
-    Real(Kind=wp), Public              :: volm0, elrc0, virlrc0, h_z, cell0(1:9)
-    Real(Kind=wp), Public              :: qmass, ceng, pmass, chip0, rf, factor, temp_lang
-    Real(Kind=wp), Allocatable, Public :: dens0(:)
-    Integer, Public                    :: ntp, stp, rtp
-    Real(Kind=wp), Public              :: rcell(1:9), cwx,cwy,cwz, ecwx,ecwy,ecwz, chit_sb = 0.0_wp
-    ! q. index arrays and tp. sum arrays
-    Integer, Allocatable, Public       :: qn(:), tpn(:)
-    Integer, Allocatable, Public       :: qs(:, :), tps(:)
-    Integer, Allocatable, Public       :: qr(:), tpr(:)
-    Real(Kind=wp), Public              :: fpl(1:9) = 0.0_wp
-    Real(Kind=wp), Public, Allocatable :: fxl(:), fyl(:), fzl(:)
-    !> variable timestep control
-    Logical, Public                    :: lvar
-    Real(Kind=wp), Public              :: tstep
-    Real(Kind=wp), Public              :: mndis, mxdis, mxstp
-
-  Contains
-
-    Private
-
-    Procedure, Public :: init_dpd => allocate_dpd_arrays
-    Final             :: cleanup
-
-  End Type thermostat_type
 
   ! Thermostat keys
   !> Microcannonical ensemble
@@ -201,6 +90,118 @@ Module thermostat
   Integer(Kind=wi), Parameter, Public :: CONSTRAINT_SURFACE_TENSION = 2
   !> Semi-orthorhombic constrains
   Integer(Kind=wi), Parameter, Public :: CONSTRAINT_SEMI_ORTHORHOMBIC = 3
+
+  !> Type containing thermostat and barostat variables
+  Type, Public :: thermostat_type
+    Private
+
+    !> Ensemble key
+    Integer(Kind=wi), Public           :: ensemble = ENS_NVE
+    !> Flag for variable config%cell size e.g. NPT ensembles
+    Logical, Public                    :: variable_cell = .false.
+    !> Flag for anisotropic pressure
+    Logical, Public                    :: anisotropic_pressure = .false.
+    !> Simulation temperature
+    Real(Kind=wp), Public              :: temp = 0.0_wp
+    !> Simulation pressure
+    Real(Kind=wp), Public              :: press = 0.0_wp
+    !> Simulation stress
+    Real(Kind=wp), Public              :: stress(1:9) = 0.0_wp
+    !> Average total energy due to equipartition
+    Real(Kind=wp), Public              :: sigma = 0.0_wp
+    !> Thermostat relaxation time
+    Real(Kind=wp), Public              :: tau_t = 0.0_wp
+    !> Barostat relxation time
+    Real(Kind=wp), Public              :: tau_p = 0.0_wp
+    !> Surface tension
+    Real(Kind=wp), Public              :: tension = 0.0_wp
+    !> Constraint type for anisotropic barostats
+    Integer(Kind=wi), Public           :: iso = CONSTRAINT_NONE
+    !> Andersen thermostat softness
+    Real(Kind=wp), Public              :: soft = 0.0_wp
+    !> Langevin switch
+    Logical, Public                    :: l_langevin = .false.
+    !> Gentle Stochastic dynamics (Langevin) thermostat friction
+    Real(Kind=wp), Public              :: gama = 0.0_wp
+    !> Stochastic Dynamics (SD Langevin) thermostat friction
+    Real(Kind=wp), Public              :: chi = 0.0_wp
+    !> Inhomogeneous Stochastic Dynamics (SD Langevin)
+    !> thermostat/electron-phonon friction
+    Real(Kind=wp), Public              :: chi_ep = 0.0_wp
+    !> Inhomogeneous Stochastic Dynamics (SD Langevin)
+    !> thermostat/electronic stopping friction
+    Real(Kind=wp), Public              :: chi_es = 0.0_wp
+    !> Stochastic Dynamics (SD Langevin) barostat friction
+    Real(Kind=wp), Public              :: tai = 0.0_wp
+    !> Square of cutoff velocity for inhomogeneous Langevin thermostat and ttm
+    Real(Kind=wp), Public              :: vel_es2 = 50.0_wp
+    !> Instantaneous thermostat friction
+    Real(Kind=wp), Public              :: chi_t = 0.0_wp
+    !> Instantaneous barostat friction
+    Real(Kind=wp), Public              :: chi_p = 0.0_wp
+    !> Friction integral for thermostat/barostat
+    Real(Kind=wp), Public              :: cint = 0.0_wp
+    !> Cell parameter scaling factor for barostats
+    Real(Kind=wp), Public              :: eta(1:9) = 0.0_wp
+    !> DPD switch
+    Integer, Public                    :: key_dpd = DPD_NULL
+    !> DPD drag?
+    Real(Kind=wp), Allocatable, Public :: gamdpd(:)
+    Real(Kind=wp), Allocatable, Public :: sigdpd(:)
+    !> Pseudo thermostat switch
+    Logical, Public                    :: l_stochastic_boundaries = .false.
+    !> Pseudo thermostat type
+    Integer, Public                    :: key_pseudo = PSEUDO_LANGEVIN_DIRECT
+    !> Pseudo thermostat temperature
+    Real(Kind=wp), Public              :: temp_pseudo = 1.0_wp
+    !> Pseudo thermostat thickness
+    Real(Kind=wp), Public              :: width_pseudo = 2.0_wp
+    !> Temperature scaling switch
+    Logical, Public                    :: l_tscale = .false.
+    !> Temperature scaling frequency
+    Integer, Public                    :: freq_tscale = 0
+    !> Temperature regaussing switch
+    Logical, Public                    :: l_tgaus = .false.
+    !> Temperature regaussing frequency
+    Integer, Public                    :: freq_tgaus = 0
+    !> Zero temperature optimisation switch
+    Logical, Public                    :: l_zero = .false.
+    !> Zero temperature regaussing frequency
+    Integer, Public                    :: freq_zero = 0
+    Logical, Public                    :: newjob_0 = .true.
+    Logical, Public                    :: newjob_1 = .true.
+    Logical, Public                    :: newjob_2 = .true.
+    Logical, Public                    :: newjob_sb = .true.
+    Logical, Public                    :: newjob_nst_scl_0 = .true.
+    Logical, Public                    :: newjob_nst_scl_1 = .true.
+    Logical, Public                    :: newjob_npt_scl_0 = .true.
+    Logical, Public                    :: newjob_npt_scl_1 = .true.
+    Integer, Public                    :: mxiter, mxkit, kit
+    Logical, Public                    :: unsafe = .false.
+    Real(Kind=wp), Public              :: volm0, elrc0, virlrc0, h_z, cell0(1:9)
+    Real(Kind=wp), Public              :: qmass, ceng, pmass, chip0, rf, factor, temp_lang
+    Real(Kind=wp), Allocatable, Public :: dens0(:)
+    Integer, Public                    :: ntp, stp, rtp
+    Real(Kind=wp), Public              :: rcell(1:9), cwx,cwy,cwz, ecwx,ecwy,ecwz, chit_sb = 0.0_wp
+    ! q. index arrays and tp. sum arrays
+    Integer, Allocatable, Public       :: qn(:), tpn(:)
+    Integer, Allocatable, Public       :: qs(:, :), tps(:)
+    Integer, Allocatable, Public       :: qr(:), tpr(:)
+    Real(Kind=wp), Public              :: fpl(1:9) = 0.0_wp
+    Real(Kind=wp), Public, Allocatable :: fxl(:), fyl(:), fzl(:)
+    !> variable timestep control
+    Logical, Public                    :: lvar = .false.
+    Real(Kind=wp), Public              :: tstep = 0.0_wp
+    Real(Kind=wp), Public              :: mndis = 0.03_wp, mxdis = 0.10_wp, mxstp = 0.0_wp
+
+  Contains
+
+    Private
+
+    Procedure, Public :: init_dpd => allocate_dpd_arrays
+    Final             :: cleanup
+
+  End Type thermostat_type
 
   Interface adjust_timestep
     Module Procedure adjust_timestep_1

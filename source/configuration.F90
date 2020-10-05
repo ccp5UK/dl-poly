@@ -121,7 +121,7 @@ Module configuration
     ! Degrees of freedom must be in long integers so we do 2.1x10^9 particles
     Integer(Kind=li)              :: degfre, degshl, degtra, degrot
     ! vdws%elrc,vdws%vlrc - vdw energy and virial are scalars and in vdw
-    Real(Kind=wp)                 :: dvar, fmax, width
+    Real(Kind=wp)                 :: dvar = 0.0_wp, fmax, width
     Type(kpoints_type)            :: k
 
   Contains

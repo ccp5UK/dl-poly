@@ -55,11 +55,11 @@ Module trajectory
     Private
 
     !> Level of detail in trajectory
-    Integer(Kind=wi), Public      :: key
+    Integer(Kind=wi), Public      :: key = 0
     !> Frequency to write trajectory
-    Integer(Kind=wi), Public      :: freq
+    Integer(Kind=wi), Public      :: freq = 1
     !> Step to start writing trajectory
-    Integer(Kind=wi), Public      :: start
+    Integer(Kind=wi), Public      :: start = 0
     !> Contribution to record size, replaces egregious old method of calculating
     !> traj%key+2 repeatedly
     Integer(Kind=wi)              :: record_size

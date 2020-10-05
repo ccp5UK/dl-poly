@@ -133,8 +133,8 @@ Module rigid_bodies
     !> Maximum list size
     Integer(Kind=wi), Public              :: max_list
 
-    Integer(Kind=wi), Public :: mxquat
-    Real(Kind=wp), Public :: quattol
+    Integer(Kind=wi), Public :: mxquat = 100
+    Real(Kind=wp), Public :: quattol = 1.0e-8_wp
   Contains
     Private
 

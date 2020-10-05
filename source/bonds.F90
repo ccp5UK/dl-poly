@@ -118,18 +118,18 @@ Module bonds
     Real(Kind=wp), Allocatable, Public    :: dst(:, :)
     ! Maximums
     !> Maximum number of bond types
-    Integer(Kind=wi), Public              :: max_types
+    Integer(Kind=wi), Public              :: max_types = 0
     !> Maximum number of bonds per node
-    Integer(Kind=wi), Public              :: max_bonds
+    Integer(Kind=wi), Public              :: max_bonds = 0
     !> Length of legend array
-    Integer(Kind=wi), Public              :: max_legend
+    Integer(Kind=wi), Public              :: max_legend = 0
     !> Maximum number of bonds parameters
-    Integer(Kind=wi), Public              :: max_param
+    Integer(Kind=wi), Public              :: max_param = 0
     ! Number of bins
     !> pdf bins
-    Integer(Kind=wi), Public              :: bin_pdf
+    Integer(Kind=wi), Public              :: bin_pdf = 0
     !> Tabulated potential bins
-    Integer(Kind=wi), Public              :: bin_tab
+    Integer(Kind=wi), Public              :: bin_tab = 0
 
   Contains
     Private

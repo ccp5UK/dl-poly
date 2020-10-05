@@ -37,11 +37,11 @@ Module greenkubo
     Private
 
     !> VAF calculate
-    Logical, Public          :: l_collect
+    Logical, Public          :: l_collect = .false.
     !> VAF printing switch
-    Logical, Public          :: l_print
+    Logical, Public          :: l_print = .false.
     !> VAF time averaging switch
-    Logical, Public          :: l_average
+    Logical, Public          :: l_average = .true.
     !> VAF sampling frequency in steps
     Integer(Kind=wi), Public :: freq = 1
     !> VAF sample size

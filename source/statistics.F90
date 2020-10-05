@@ -67,11 +67,19 @@ Module statistics
 
     Integer(Kind=wi)           :: numacc = 0, &
                                   natms0 = 0
-    Integer(Kind=wi)           :: mxnstk, mxstak, intsta
+    Integer(Kind=wi)           :: mxnstk
+    !> Max stack size for rolling averages
+    Integer(Kind=wi)           :: mxstak = 1
+    !> Frequency of STATIS output
+    Integer(Kind=wi)           :: intsta = 100
+    !> Whether file open
     Logical                    :: statis_file_open = .false.
+    !> Whether file is YAML style
     Logical                    :: file_yaml = .false.
+    !> Whether stats has been set up
     Logical                    :: newjob = .true.
-    Logical                    :: lpana
+    !> Whether any bond, angle, etc. analysis
+    Logical                    :: lpana = .false.
     Real(Kind=wp)              :: consv = 0.0_wp, shlke = 0.0_wp, engke = 0.0_wp, &
                                   engrot = 0.0_wp, engcpe = 0.0_wp, engsrp = 0.0_wp, &
                                   engter = 0.0_wp, engtbp = 0.0_wp, engfbp = 0.0_wp, &

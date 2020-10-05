@@ -772,28 +772,28 @@ contains
     Type(dihedrals_type),         Intent(InOut) :: dihedral
     Type(inversions_type),        Intent(InOut) :: inversion
     Integer,                      Intent(  Out) :: max_grid_analysis
+    Logical :: ltmp
     Integer :: itmp, itmp2
-    Logical :: l_bond, l_angle, l_dihedral, l_inversion, ltmp
 
     Real( kind = wp ), Parameter :: minimum_bond_anal_length = 2.5_wp
 
-    call params%retrieve('analyse_bonds', l_bond)
-    call params%retrieve('analyse_angles', l_angle)
-    call params%retrieve('analyse_dihedrals', l_dihedral)
-    call params%retrieve('analyse_inversions', l_inversion)
+    call params%retrieve('analyse_bonds', flow%analyse_bond)
+    call params%retrieve('analyse_angles', flow%analyse_ang)
+    call params%retrieve('analyse_dihedrals', flow%analyse_dih)
+    call params%retrieve('analyse_inversions', flow%analyse_inv)
     call params%retrieve('analyse_all', ltmp)
     if (ltmp) then
-      l_bond = .true.
-      l_angle = .true.
-      l_dihedral = .true.
-      l_inversion = .true.
+      flow%analyse_bond = .true.
+      flow%analyse_ang = .true.
+      flow%analyse_dih = .true.
+      flow%analyse_inv = .true.
     end if
 
     ! Set global
     call params%retrieve('analyse_frequency', itmp)
     call params%retrieve('analyse_num_bins', itmp2)
 
-    if (l_bond) then
+    if (flow%analyse_bond) then
       call params%retrieve('analyse_max_dist', bond%rcut)
       if (bond%rcut < minimum_bond_anal_length) then
         bond%rcut = minimum_bond_anal_length
@@ -809,7 +809,7 @@ contains
       flow%freq_bond = -1
     end if
 
-    if (l_angle) then
+    if (flow%analyse_ang) then
       angle%bin_adf = itmp2
       if (params%is_set('analyse_num_bins_angles')) &
            call params%retrieve('analyse_num_bins_angles', angle%bin_adf)
@@ -819,7 +819,7 @@ contains
       flow%freq_angle = -1
     end if
 
-    if (l_dihedral) then
+    if (flow%analyse_dih) then
       dihedral%bin_adf = itmp2
       if (params%is_set('analyse_num_bins_dihedrals')) &
            call params%retrieve('analyse_num_bins_dihedrals', dihedral%bin_adf)
@@ -829,7 +829,7 @@ contains
       flow%freq_dihedral = -1
     end if
 
-    if (l_inversion) then
+    if (flow%analyse_inv) then
       inversion%bin_adf = itmp2
       if (params%is_set('analyse_num_bins_inversions')) &
            call params%retrieve('analyse_num_bins_inversions', inversion%bin_adf)
@@ -840,7 +840,7 @@ contains
       flow%freq_inversion = -1
     end if
 
-    if (any([l_bond, l_angle, l_dihedral, l_inversion])) then
+    if (any([flow%analyse_bond, flow%analyse_ang, flow%analyse_dih, flow%analyse_inv])) then
       max_grid_analysis = Max(bond%bin_pdf, angle%bin_adf, dihedral%bin_adf, inversion%bin_adf)
     end if
 
@@ -1790,6 +1790,7 @@ contains
     !   call error(0, 'No pressure specification')
     end if
 
+    thermo%stress = 0.0_wp
     if (params%is_set('pressure_tensor')) then
       call params%retrieve('pressure_tensor', vtmp)
       thermo%stress(1) = vtmp(1)
@@ -2170,12 +2171,12 @@ contains
     Character(Len=256) :: messages(4)
 
     Call info('', .true.)
-    If (config%mxgana == 0) Then
+    If (.not. any([flow%analyse_bond, flow%analyse_ang, flow%analyse_dih, flow%analyse_inv])) Then
       Call info('No intramolecular distribution collection requested', .true., level=3)
     Else
       Call info('Intramolecular distribution collection requested for:', .true.)
 
-      if (flow%freq_bond > 0) then
+      if (flow%analyse_bond) then
         Write(messages(1), '(a)') '  Bonds:'
         Write(messages(2), '(a, i0.1)') '  -- Collect every (steps): ', flow%freq_bond
         Write(messages(3), '(a, i0.1)') '  -- Num samples  (points): ', bond%bin_pdf
@@ -2183,21 +2184,21 @@ contains
         Call info(messages, 4, .true.)
       end if
 
-      if (flow%freq_angle > 0) then
+      if (flow%analyse_ang) then
         Write(messages(1), '(a)') '  Angles:'
         Write(messages(2), '(a, i0.1)') '  -- Collect every (steps): ', flow%freq_angle
         Write(messages(3), '(a, i0.1)') '  -- Num samples  (points): ', angle%bin_adf
         Call info(messages, 3, .true.)
       end if
 
-      if (flow%freq_dihedral > 0) then
+      if (flow%analyse_dih) then
         Write(messages(1), '(a)') '  Dihedrals:'
         Write(messages(2), '(a, i0.1)') '  -- Collect every (steps): ', flow%freq_dihedral
         Write(messages(3), '(a, i0.1)') '  -- Num samples  (points): ', dihedral%bin_adf
         Call info(messages, 3, .true.)
       end if
 
-      if (flow%freq_inversion > 0) then
+      if (flow%analyse_inv) then
         Write(messages(1), '(a)') '  Inversions:'
         Write(messages(2), '(a, i0.1)') '  -- Collect every (steps): ', flow%freq_inversion
         Write(messages(3), '(a, i0.1)') '  -- Num samples  (points): ', inversion%bin_adf

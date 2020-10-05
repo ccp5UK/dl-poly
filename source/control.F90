@@ -448,11 +448,11 @@ Contains
 
     ttm%sdepoType = 0
     ttm%sig = 1.0_wp
-    ttm%sigmax = 5
+    ttm%sigmax = 5.0_wp
 
     ttm%tdepoType = 1
     ttm%tdepo = 1.0e-3_wp
-    ttm%tcdepo = 5
+    ttm%tcdepo = 5.0_wp
 
     ! default boundary conditions for electronic temperature
 
@@ -2670,6 +2670,11 @@ Contains
           If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record, word)
           tmp = Abs(word_2_real(word)) ! bond length
 
+          flow%analyse_bond = .true.
+          flow%analyse_ang = .true.
+          flow%analyse_dih = .true.
+          flow%analyse_inv = .true.
+
           nstana = Max(nstana, i)
           grdana = Max(grdana, j)
           rcb_d = Max(rcb_d, tmp)
@@ -2678,16 +2683,20 @@ Contains
           tmp = Abs(word_2_real(word)) ! bond length
 
           flow%freq_bond = Max(flow%freq_bond, i)
+          flow%analyse_bond = .true.
           grdbnd = j
           rcb_d = Max(rcb_d, tmp)
         Else If (akey == 'ang') Then
           flow%freq_angle = Max(flow%freq_angle, i)
+          flow%analyse_ang = .true.
           grdang = j
         Else If (akey == 'dih') Then
           flow%freq_dihedral = Max(flow%freq_dihedral, i)
+          flow%analyse_dih = .true.
           grddih = j
         Else If (akey == 'inv') Then
           flow%freq_inversion = Max(flow%freq_inversion, i)
+          flow%analyse_inv = .true.
           grdinv = j
         End If
         grdana = Max(grdana, grdbnd, grdang, grddih, grdinv)
@@ -3320,11 +3329,10 @@ Contains
     ! report intramolecular analysis options
 
     If (stats%lpana .or. config%mxgana > 0) Then
-      If (config%mxgana == 0) Then
+      If (.not. any([flow%analyse_bond, flow%analyse_ang, flow%analyse_dih, flow%analyse_inv])) Then
         Call info('no intramolecular distribution collection requested', .true.)
       Else
-        If (bond%bin_pdf > 0 .and. angle%bin_adf > 0 .and. &
-          dihedral%bin_adf > 0 .and. inversion%bin_adf > 0) Then
+        If (all([flow%analyse_bond, flow%analyse_ang, flow%analyse_dih, flow%analyse_inv])) Then
           Call info('full intramolecular distribution collection requested (all=bnd/ang/dih/inv):', .true.)
         Else
           Call info('intramolecular distribution collection requested for:', .true.)
@@ -4680,7 +4688,7 @@ Contains
             ewld%bspline%num_splines = Max(ewld%bspline%num_splines, bspline_local)
 
             If (ewld%bspline%num_splines > MAX_SPLINES) Then
-               Write(message, '(a,i0,a)')"Number of bsplines bigger than ", MAX_SPLINES, "! increase it and recompile!"
+               Write(message, '(a,i0,a)') "Number of bsplines bigger than ", MAX_SPLINES, "! Increase it and recompile!"
                Call error(0, message)
             End If
 

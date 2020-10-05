@@ -44,9 +44,9 @@ Module rdfs
     Private
 
     !> RDF collection flag
-    Logical, Public                       :: l_collect
+    Logical, Public                       :: l_collect = .false.
     !> RDF recording flag
-    Logical, Public                       :: l_print
+    Logical, Public                       :: l_print = .false.
     !> Total number of blocks?
     Integer(Kind=wi), Public              :: num_blocks = 2
     !> RDF collection frequency (in steps)

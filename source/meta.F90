@@ -741,7 +741,6 @@ Contains
     Integer, Dimension(3) :: link_cell
     Real(Kind=wp) :: xhi, yhi, zhi
     Integer :: i, ifile, ierr, ff
-    Logical :: can_parse
 
     ! Setup io immediately
     call read_io(params, ios, netcdf, files, comm)
@@ -920,7 +919,6 @@ Contains
     Type(adf_type),              Intent(InOut) :: adf(:)
 
     Character(Len=256 ) :: message
-    Integer(Kind=wi)    :: vacuum
     Integer(Kind=wi)    :: ff, frevc
     Integer             :: old_print_level
     Logical             :: lfce

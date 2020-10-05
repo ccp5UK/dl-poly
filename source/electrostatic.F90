@@ -33,13 +33,13 @@ Module electrostatic
   Type, Public :: electrostatic_type
     Private
 
-    !> No electrostatics switch
-    Logical, Public :: no_elec
-
     !> Electrostatic potential key
     Integer( Kind = wi ), Public :: key = ELECTROSTATIC_NULL
 
-    Logical,           Public :: initialised
+    !> No electrostatics switch
+    Logical, Public :: no_elec = .false.
+
+    Logical,           Public :: initialised = .false.
     Logical,           Public :: multipolar = .false.
     Type( mpole_type), Public :: mpoles
     Integer,           Public :: num_mpoles = 0
@@ -50,20 +50,20 @@ Module electrostatic
     Integer, Dimension(3,1,0:0), Public :: mpole_derivs = reshape([0,0,0],[3,1,1])
 
     !> Damped or not?
-    Logical,           Public :: damp
+    Logical,           Public :: damp = .false.
     !> Damping distance
-    Real( Kind = wp ), Public :: damping
+    Real( Kind = wp ), Public :: damping = 0.0_wp
 
     !> Relative dielectric constant
-    Real( Kind = wp ), Public :: eps
+    Real( Kind = wp ), Public :: eps = 1.0_wp
 
-    Logical, Public :: lecx
+    Logical, Public :: lecx = .false.
 
-    Integer, Public :: nstfce
+    Integer, Public :: nstfce = 1
 
     Real( Kind = wp ), Public :: force_shift = 0.0_wp, energy_shift = 0.0_wp
 
-    Real( Kind = wp ), Dimension(0:2), Public :: reaction_field
+    Real( Kind = wp ), Dimension(0:2), Public :: reaction_field = 0.0_wp
 
     type ( interp_table ), Public :: erfc, erfc_deriv
 

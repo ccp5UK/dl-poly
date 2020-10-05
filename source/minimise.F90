@@ -89,19 +89,19 @@ Module minimise
     Private
 
     !> Minimisation switch
-    Logical, Public                    :: minimise
+    Logical, Public                    :: minimise = .false.
     !> Minimisation key
-    Integer(Kind=wi), Public           :: key
+    Integer(Kind=wi), Public           :: key = MIN_NULL
     !> Relaxed indicator?
     Logical, Public                    :: relaxed = .true.
     !> Transport switch
     Logical, Public                    :: transport = .false.
     !> Minimisation fequency (steps)
-    Integer(Kind=wi), Public           :: freq
+    Integer(Kind=wi), Public           :: freq = 0
     !> Minimisation tolerance
-    Real(Kind=wp), Public              :: tolerance
+    Real(Kind=wp), Public              :: tolerance = 0.0_wp
     !> Conjugate gradients method step length
-    Real(Kind=wp), Public              :: step_length
+    Real(Kind=wp), Public              :: step_length = -1.0_wp
     !> Coordinate arrays?
     Real(Kind=wp), Allocatable, Public :: oxx(:), oyy(:), ozz(:)
     Logical                            :: newjob = .true., l_rdf, l_mov
