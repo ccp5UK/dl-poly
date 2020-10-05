@@ -163,6 +163,8 @@ Module new_control
 
   !> Max number of params, increase to reduce hash collisions
   Integer, Parameter :: PARAMS_TABLE_SIZE = 500
+
+  Real(kind=wp), Parameter :: REAL_TOL = 1.0e-6_wp
 !  Character(Len=7), Parameter :: FMT_REAL="1p g12.5e2"
 
   Public :: initialise_control
@@ -1474,34 +1476,39 @@ contains
     end if
 
     flow%reset_padding = params%is_set('padding')
+    if (.not. vdws%no_vdw) then
+      call params%retrieve('vdw_cutoff', rtmp)
+      if (vdws%cutoff > REAL_TOL .and. vdws%cutoff < rtmp .and. Abs(vdws%cutoff - rtmp) > REAL_TOL) then
+        Write (message, '(a,1p,e12.4)') 'VdW cutoff set by bounds to (Angs): ', vdws%cutoff
+        Call warning(message, .true.)
+      else
+        vdws%cutoff = rtmp
+      End If
 
-    call params%retrieve('vdw_cutoff', rtmp)
-    if (vdws%cutoff > 0.0_wp .and. Abs(vdws%cutoff - rtmp) > 1.0e-6_wp) then
-      Write (message, '(a,1p,e12.4)') 'VdW cutoff set by bounds to (Angs): ', vdws%cutoff
-      Call warning(message, .true.)
+      if (vdws%cutoff < minimum_rcut) then
+        vdws%cutoff = neigh%cutoff
+        call warning('vdw_cutoff less than minimum cutoff, setting to global cutoff', .true.)
+      end if
     else
-      vdws%cutoff = rtmp
-    End If
-
-    if (vdws%cutoff < minimum_rcut) then
-      vdws%cutoff = neigh%cutoff
-      call warning('vdw_cutoff less than minimum cutoff, setting to global cutoff', .true.)
+      vdws%cutoff = 0.0_wp
     end if
 
-    if (met%max_metal > 0 .and. met%rcut < 1.0e-6_wp) then
+    if (met%max_metal > 0 .and. met%rcut < REAL_TOL) then
       met%rcut=Max(met%rcut, neigh%cutoff,vdws%cutoff)
       call warning('metal_cutoff not set, setting to max of global cutoff and vdw cutoff', .true.)
     end if
 
     neigh%cutoff = Max(neigh%cutoff, vdws%cutoff, met%rcut, kim_data%cutoff, bond%rcut, &
-         2.0_wp * tersoffs%cutoff + 1.0e-6_wp)
+         2.0_wp * tersoffs%cutoff + REAL_TOL)
+    print*, neigh%cutoff, vdws%cutoff, met%rcut, kim_data%cutoff, bond%rcut, &
+         2.0_wp * tersoffs%cutoff + REAL_TOL
 
-    if (threebody%mxtbp > 0 .and. threebody%cutoff < 1.0e-6_wp) then
+    if (threebody%mxtbp > 0 .and. threebody%cutoff < REAL_TOL) then
       call warning('three body cutoff not set, setting to half of global cutoff', .true.)
       threebody%cutoff = 0.5_wp * neigh%cutoff
     end if
 
-    If (fourbody%max_four_body > 0 .and. fourbody%cutoff < 1.0e-6_wp) then
+    If (fourbody%max_four_body > 0 .and. fourbody%cutoff < REAL_TOL) then
       call warning('four body cutoff not set, setting to half of global cutoff', .true.)
       fourbody%cutoff = 0.5_wp * neigh%cutoff
     end If
@@ -1864,7 +1871,7 @@ contains
       minim%key = MIN_DISTANCE
       param%internal_units = "internal_l"
       minim%tolerance = convert_units(minim%tolerance, param%units, param%internal_units)
-      If (minim%tolerance < 1.0e-6_wp .or. minim%tolerance > 0.1_wp) &
+      If (minim%tolerance < REAL_TOL .or. minim%tolerance > 0.1_wp) &
            minim%tolerance = 0.005_wp
 
     case default
