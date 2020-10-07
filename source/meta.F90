@@ -326,19 +326,18 @@ Contains
            vdws, tersoffs, fourbody, rdf, netcdf, minim, mpoles, ext_field, rigid, electro, &
            domain, flow, seed, traj, kim_data, config, ios, ttms, rsdsc, files, control_filename, &
            output_filename, crd, adf)
-      else
-       !! Enable when new becomes standard
-       ! call warning('Control file '//trim(files(FILE_CONTROL)%filename)//' is in old style', .true.)
-       ! call warning('Please update, as this will be deprecated in future releases', .true.)
+    else
+      !! Enable when new becomes standard
+      ! call warning('Control file '//trim(files(FILE_CONTROL)%filename)//' is in old style', .true.)
+      ! call warning('Please update, as this will be deprecated in future releases', .true.)
 
-       call molecular_dynamics_initialise_old(dlp_world, comm, thermo, ewld, tmr, devel, &
-       stats, green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, &
-       inversion, tether, threebody, zdensity, cons, neigh, pmfs, sites, core_shells, &
-       vdws, tersoffs, fourbody, rdf, netcdf, minim, mpoles, ext_field, rigid, electro, &
-       domain, flow, seed, traj, kim_data, config, ios, ttms, rsdsc, files, control_filename, &
-       output_filename, crd, adf)
-     end if
-
+      call molecular_dynamics_initialise_old(dlp_world, comm, thermo, ewld, tmr, devel, &
+           stats, green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, &
+           inversion, tether, threebody, zdensity, cons, neigh, pmfs, sites, core_shells, &
+           vdws, tersoffs, fourbody, rdf, netcdf, minim, mpoles, ext_field, rigid, electro, &
+           domain, flow, seed, traj, kim_data, config, ios, ttms, rsdsc, files, control_filename, &
+           output_filename, crd, adf)
+    end if
 
     Call info('', .true.)
     Call info("*** all reading and connectivity checks DONE ***", .true.)
@@ -409,7 +408,7 @@ Contains
         write(message,'(i0)') ff
         Call info("*** LONG RANGE INFORMATION FOR FIELD "//trim(message)//" ***",.true.)
       End If
-    ! READ REVOLD (thermodynamic and structural data from restart file)
+      ! READ REVOLD (thermodynamic and structural data from restart file)
       Call system_init(neigh(ff)%cutoff, flow%restart_key, flow%time, flow%start_time, flow%step, &
         stats(ff), devel, green(ff), thermo(ff), met(ff), bond(ff), angle(ff), dihedral(ff), inversion(ff), &
         zdensity(ff), sites(ff), vdws(ff), rdf(ff), config(ff), files, comm)
@@ -970,6 +969,7 @@ Contains
          tether(1), threebody(1), zdensity(1), neigh(1), vdws(1), tersoffs(1), fourbody(1), rdf(1), mpoles(1), &
          ext_field(1), rigid(1), electro(1), domain(1), config(1), ewld(1), kim_data(1), files, flow, comm, 1)
 
+    old_print_level = get_print_level()
     Call set_print_level(0)
     Do ff = 2, flow%NUM_FF
       Call set_bounds ( &

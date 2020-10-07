@@ -896,6 +896,8 @@ contains
 
     ! RDF
     call params%retrieve('rdf_calculate', rdf%l_collect)
+    ! Necessary for some reason
+    call params%retrieve('rdf_binsize', rdf%rbin)
 
     if (rdf%l_collect) then
       call params%retrieve('rdf_error_analysis', option)
@@ -915,7 +917,6 @@ contains
            & call params%retrieve('rdf_error_analysis_blocks', rdf%num_blocks)
 
       call params%retrieve('rdf_frequency', rdf%freq)
-      call params%retrieve('rdf_binsize', rdf%rbin)
       call params%retrieve('rdf_print', rdf%l_print)
 
     else if (params%is_any_set([Character(13) :: 'rdf_frequency', 'rdf_binsize', 'rdf_print'])) then
