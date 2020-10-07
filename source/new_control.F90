@@ -1809,7 +1809,8 @@ contains
       thermo%stress(1:9:4) = vtmp(1:3)
     else
       call params%retrieve('pressure_hydrostatic', rtmp)
-      thermo%stress(1:9:4) = rtmp
+      ! thermo%stress(1:9:4) = rtmp
+      thermo%press = rtmp
     end if
 
     if (.not. thermo%anisotropic_pressure) then
@@ -1852,11 +1853,11 @@ contains
     If (thermo%freq_zero == 0) thermo%freq_zero = flow%equil_steps + 1
 
     call params%retrieve('regauss_frequency', thermo%freq_tgaus)
-    if (thermo%freq_tgaus > 0) thermo%l_tgaus = .true.
+    thermo%l_tgaus = thermo%freq_tgaus > 0
     If (thermo%freq_tgaus == 0) thermo%freq_tgaus = flow%equil_steps + 1
 
     call params%retrieve('rescale_frequency', thermo%freq_tscale)
-    if (thermo%freq_tscale > 0) thermo%l_tscale = .true.
+    thermo%l_tscale = thermo%freq_tscale > 0
     If (thermo%freq_tscale == 0) thermo%freq_tscale = flow%equil_steps + 1
 
     if (params%is_set('equilibration_force_cap')) then
@@ -2492,10 +2493,10 @@ contains
       Call info(message, .true.)
     end if
 
-    If (.not. thermo%anisotropic_pressure) then
+    If (thermo%press > 0.0_wp) then
       write(message, '(3A,1p g12.5e2)') '  Simulation pressure (','katms','):', convert_units(thermo%press, 'internal_p', 'katm')
       Call info(message, .true.)
-    Else
+    Else If (any(thermo%stress > 0.0_wp)) Then
       write (messages(1), '(3A)') '  Simulation pressure (','katms','):'
       Write (messages(2), '(2X, 3(1p g12.5e2))') (convert_units(thermo%stress(itmp), 'internal_p', 'katm'), itmp = 1,3)
       Write (messages(3), '(2X, 3(1p g12.5e2))') (convert_units(thermo%stress(itmp), 'internal_p', 'katm'), itmp = 4,6)
@@ -4397,7 +4398,6 @@ contains
              description = "Set Fermi temperature in TTM, for tanh", &
              data_type = DATA_FLOAT))
 
-
         call table%set("ttm_fermi_temp", control_parameter( &
              key = "ttm_fermi_temp", &
              name = "TTM Fermi temperature", &
@@ -4736,7 +4736,7 @@ contains
       call table%set("regauss_frequency", control_parameter( &
            key = "regauss_frequency", &
            name = "Regauss frequency", &
-           val = "-1", &
+           val = "0", &
            units = "steps", &
            internal_units = "steps", &
            description = "Set the frequency of temperature regaussing", &
@@ -4745,7 +4745,7 @@ contains
       call table%set("rescale_frequency", control_parameter( &
            key = "rescale_frequency", &
            name = "Rescale frequency", &
-           val = "-1", &
+           val = "0", &
            units = "steps", &
            internal_units = "steps", &
            description = "Set the frequency of temperature rescaling", &

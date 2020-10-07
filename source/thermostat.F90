@@ -127,7 +127,7 @@ Module thermostat
     Real(Kind=wp), Public              :: chi = 0.0_wp
     !> Inhomogeneous Stochastic Dynamics (SD Langevin)
     !> thermostat/electron-phonon friction
-    Real(Kind=wp), Public              :: chi_ep = 0.0_wp
+    Real(Kind=wp), Public              :: chi_ep = 0.5_wp
     !> Inhomogeneous Stochastic Dynamics (SD Langevin)
     !> thermostat/electronic stopping friction
     Real(Kind=wp), Public              :: chi_es = 0.0_wp
