@@ -1809,11 +1809,10 @@ contains
       thermo%stress(1:9:4) = vtmp(1:3)
     else
       call params%retrieve('pressure_hydrostatic', rtmp)
-      ! thermo%stress(1:9:4) = rtmp
-      thermo%press = rtmp
+      thermo%stress(1:9:4) = rtmp
     end if
 
-    if (.not. thermo%anisotropic_pressure) then
+    if (.not. thermo%anisotropic_pressure .or. thermo%iso /= CONSTRAINT_NONE) then
       thermo%press = sum(thermo%stress(1:9:4)) / 3.0_wp
       thermo%stress = 0.0_wp
     end if
@@ -4727,7 +4726,7 @@ contains
       call table%set("reset_temperature_interval", control_parameter( &
            key = "reset_temperature_interval", &
            name = "Reset temperature time", &
-           val = "0", &
+           val = "-1", &
            units = "steps", &
            internal_units = "steps", &
            description = "Interval between temperature zeroing during equilibration for minimisation", &
@@ -4736,7 +4735,7 @@ contains
       call table%set("regauss_frequency", control_parameter( &
            key = "regauss_frequency", &
            name = "Regauss frequency", &
-           val = "0", &
+           val = "-1", &
            units = "steps", &
            internal_units = "steps", &
            description = "Set the frequency of temperature regaussing", &
@@ -4745,7 +4744,7 @@ contains
       call table%set("rescale_frequency", control_parameter( &
            key = "rescale_frequency", &
            name = "Rescale frequency", &
-           val = "0", &
+           val = "-1", &
            units = "steps", &
            internal_units = "steps", &
            description = "Set the frequency of temperature rescaling", &
