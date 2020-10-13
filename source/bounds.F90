@@ -73,9 +73,6 @@ Module bounds
   Use trajectory,      Only: trajectory_type
   Use defects,         Only: defects_type
 
-  !Hack
-  Use control_parameter_module, Only : parameters_hash_table
-
   Implicit None
 
   Private
@@ -938,7 +935,7 @@ Contains
       ! maximum of 8 fold increase in of surface thickness (domain+halo) to volume (domain only) as per geometric reasoning
       tmp = 1.25_wp * fdvar * 8.0_wp * Real(megatm, wp)
       tmp = Min(tmp, bigint_r)
-      config%mxatms = Min(config%mxatms , Nint(tmp))
+      config%mxatms = Min(config%mxatms, Nint(tmp))
     Else If (config%imcon == IMCON_SLAB) Then ! comm%mxnode >= 4 .or. (link_cell(x) >= 2 && link_cell(y) >= 2)
       ! maximum of 7 fold increase in of surface thickness (domain+halo) to volume (domain only) as per geometric reasoning
       tmp = 1.25_wp * fdvar * 7.0_wp * Real(megatm, wp)

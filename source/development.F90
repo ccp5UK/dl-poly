@@ -75,6 +75,9 @@ Module development
     Real(Kind=wp), Public :: r_dis = 0.5_wp
     !> Devel start time
     Real(Kind=wp), Public :: t_zero
+    !> Test DFTB
+    Logical, Public :: test_dftb_library
+
   End Type development_type
 
   Public :: scan_development

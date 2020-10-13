@@ -247,6 +247,8 @@ contains
       call seed%init(nint(vtmp(1:3)))
     end if
 
+    call params%retrieve('dftb_test', devel%test_dftb_library)
+
   end Subroutine read_devel
 
   Subroutine read_io(params, io_data, netcdf, files, comm)
@@ -5054,12 +5056,12 @@ contains
            data_type = DATA_BOOL))
 
 
-      ! call table%set("unit_test", control_parameter( &
-      !      key = "unit_test", &
-      !      name = "Run unit tests", &
-      !      val = "off", &
-      !      description = "Do not perform a DLPOLY run, instead run unit tests", &
-      !      data_type = DATA_BOOL))
+      call table%set("dftb_test", control_parameter( &
+           key = "dftb_test", &
+           name = "Run dftb tests", &
+           val = "off", &
+           description = "Do not perform a DLPOLY run, instead run dftb tests", &
+           data_type = DATA_BOOL))
 
     end block miscellaneous
 

@@ -410,7 +410,11 @@ Contains
               ((.not. flow%equilibration) .or. flow%step >= flow%equil_steps) .and. &
               Mod(flow%step, flow%freq_angle) == 0)
 
-      switch = 1 + Merge(1, 0, ltmp)
+      if (ltmp) then
+        switch = 2
+      else
+        switch = 1
+      end if
       Call angles_forces(switch, stat%engang, stat%virang, stat%stress, angle, cnfig, comm)
     End If
 
@@ -421,7 +425,11 @@ Contains
               ((.not. flow%equilibration) .or. flow%step >= flow%equil_steps) &
               .and. Mod(flow%step, flow%freq_dihedral) == 0)
 
-      switch = 1 + Merge(1, 0, ltmp)
+      if (ltmp) then
+        switch = 2
+      else
+        switch = 1
+      end if
       Call dihedrals_forces(switch, stat%engdih, stat%virdih, stat%stress, &
                             neigh%cutoff, stat%engcpe, stat%vircpe, stat%engsrp, &
                             stat%virsrp, dihedral, vdws, mpoles, electro, cnfig, comm)
@@ -434,7 +442,11 @@ Contains
               ((.not. flow%equilibration) .or. flow%step >= flow%equil_steps) .and. &
               Mod(flow%step, flow%freq_inversion) == 0)
 
-      switch = 1 + Merge(1, 0, ltmp)
+      if (ltmp) then
+        switch = 2
+      else
+        switch = 1
+      end if
       Call inversions_forces(switch, stat%enginv, stat%virinv, stat%stress, inversion, cnfig, comm)
     End If
 
@@ -718,7 +730,11 @@ Contains
           ((.not.flow%equilibration) .or. flow%step >= flow%equil_steps) .and. &
           Mod(flow%step,flow%freq_bond) == 0)
 
-         switch = 1 + Merge(1, 0, ltmp)
+        if (ltmp) then
+          switch = 2
+        else
+          switch = 1
+        end if
          Call bonds_forces(switch, stat(ff)%engbnd, stat(ff)%virbnd, stat(ff)%stress, neigh(ff)%cutoff, &
                            stat(ff)%engcpe, stat(ff)%vircpe, bond(ff), mpoles(ff), electro(ff), cnfig(ff), comm)
       End If
@@ -730,7 +746,11 @@ Contains
         ((.not.flow%equilibration) .or. flow%step >= flow%equil_steps) .and. &
         Mod(flow%step,flow%freq_angle) == 0)
 
-        switch = 1 + Merge(1, 0, ltmp)
+        if (ltmp) then
+          switch = 2
+        else
+          switch = 1
+        end if
         Call angles_forces(switch, stat(ff)%engang, stat(ff)%virang, stat(ff)%stress, angle(ff), cnfig(ff), comm)
       End If
 
@@ -741,7 +761,11 @@ Contains
         ((.not.flow%equilibration) .or. flow%step >= flow%equil_steps) &
         .and. Mod(flow%step,flow%freq_dihedral) == 0)
 
-        switch = 1 + Merge(1, 0, ltmp)
+        if (ltmp) then
+          switch = 2
+        else
+          switch = 1
+        end if
         Call dihedrals_forces(switch, stat(ff)%engdih, stat(ff)%virdih, stat(ff)%stress, &
                               neigh(ff)%cutoff, stat(ff)%engcpe, stat(ff)%vircpe, stat(ff)%engsrp, &
                               stat(ff)%virsrp, dihedral(ff), vdws(ff), mpoles(ff), electro(ff), cnfig(ff), comm)
@@ -754,7 +778,11 @@ Contains
         ((.not.flow%equilibration) .or. flow%step >= flow%equil_steps) .and. &
          Mod(flow%step,flow%freq_inversion) == 0)
 
-         switch = 1 + Merge(1, 0, ltmp)
+        if (ltmp) then
+          switch = 2
+        else
+          switch = 1
+        end if
          Call inversions_forces(switch, stat(ff)%enginv, stat(ff)%virinv, stat(ff)%stress, inversion(ff), cnfig(ff), comm)
        End If
 
@@ -966,10 +994,10 @@ Contains
     Endif
 
     Call geo%set_geometry(comm, config, gathered, atmnam)
-    If (devel%unit_test%dftb_library) Then
+    If (devel%test_dftb_library) Then
        !Call print_DFTB_geometry_data(geo, flow%step)
        Call run_dftbplus(comm, flow, geo, forces, atomic_charges, &
-                         run_app_test = devel%unit_test%dftb_library)
+                         run_app_test = devel%test_dftb_library)
     Else
        Call run_dftbplus(comm, flow, geo, forces, atomic_charges)
     Endif

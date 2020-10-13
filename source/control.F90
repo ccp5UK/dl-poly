@@ -833,6 +833,10 @@ Contains
 
         ! read expansion option
 
+      Else If (word(1:8) == 'app_test') Then
+
+        devel%test_dftb_library = .true.
+
       Else If (word(1:5) == 'nfold') Then
 
         config%l_exp = .true.

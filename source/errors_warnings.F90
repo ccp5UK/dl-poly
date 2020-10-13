@@ -2291,7 +2291,6 @@ Contains
 
     ! close all I/O channels
     Call close_unit(ounit)
-    open(ounit, file="NNNN", status="old")
 
     ! abort comms
 

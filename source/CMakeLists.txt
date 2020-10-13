@@ -189,7 +189,6 @@ if(WITH_ASSERT)
     COMPILE_DEFINITIONS "WITH_ASSERT")
 endif()
 
-
 ## sets the linking
 link_directories (${LIBRARY_OUTPUT_PATH})
 add_executable(${target_name} dl_poly.F90)
