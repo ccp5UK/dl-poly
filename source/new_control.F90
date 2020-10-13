@@ -181,10 +181,8 @@ Module new_control
   Public :: read_system_parameters
   Public :: write_parameters
 
-  ! Public for old-style
-  Public :: bad_option
-  Public :: write_ensemble
-
+  ! For unit testing
+  Public :: parse_control_file
 contains
 
   Subroutine read_new_control(control_file, params, comm, can_parse)
@@ -200,6 +198,7 @@ contains
     Type( comms_type ), Intent( InOut ) :: comm
     Logical, Intent(   Out) :: can_parse
 
+
     Call initialise_control(params)
     open(newunit=control_file%unit_no, file=control_file%filename, status='old', action='read')
     can_parse = try_parse(control_file%unit_no, params, comm)
@@ -210,7 +209,7 @@ contains
       return
     end if
 
-    Call parse_file(control_file%unit_no, params, comm)
+    Call parse_control_file(control_file%unit_no, params, comm)
     call control_file%close()
 
   end Subroutine read_new_control
@@ -221,6 +220,8 @@ contains
     Type( timer_type),             Intent( InOut ) :: tmr
     Type( seed_type),              Intent( InOut ) :: seed
     Real(kind=wp), Dimension(3) :: vtmp
+    Character(len=STR_LEN) :: option
+    Character(len=STR_LEN) :: word
     Integer :: print_level
 
     Call params%retrieve('print_level', print_level)
@@ -231,10 +232,9 @@ contains
     call params%retrieve('io_write_ascii_revive', devel%l_rout)
     call params%retrieve('io_read_ascii_revold', devel%l_rin)
     call params%retrieve('initial_minimum_separation', devel%r_dis)
-    call params%retrieve('unit_test', devel%run_unit_tests)
 
-    call params%retrieve('time_depth', tmr%max_depth)
-    call params%retrieve('time_per_mpi', tmr%proc_detail)
+    call params%retrieve('timer_depth', tmr%max_depth)
+    call params%retrieve('timer_per_mpi', tmr%proc_detail)
 
     call params%retrieve('time_job', tmr%job)
     if (tmr%job < 0.0_wp) tmr%job = Huge(1.0_wp)
@@ -4075,14 +4075,14 @@ contains
            description = "Disable unnecessary printing, levels: 0 - silent, 1 - quiet, 2 - standard, 3 - full", &
            data_type = DATA_INT))
 
-      call table%set("time_depth", control_parameter( &
-           key = "time_depth", &
+      call table%set("timer_depth", control_parameter( &
+           key = "timer_depth", &
            name = "Timer print level", &
            val = "4", &
            description = "Do not display timers beyond so this depth", &
            data_type = DATA_INT))
 
-      call table%set("time_per_mpi", control_parameter( &
+      call table%set("timer_per_mpi", control_parameter( &
            key = "timer_per_mpi", &
            name = "Per Process timing", &
            val = "off", &
@@ -4418,7 +4418,7 @@ contains
              name = "TTM Electronic conductivity", &
              val = "0.0", &
              units = "W/m/K", &
-             internal_units = "k_b/ps/A", &
+             internal_units = "k_b/ps/Ang", &
              description = "Set electronic conductivity in TTM ", &
              data_type = DATA_FLOAT))
 
@@ -4593,7 +4593,7 @@ contains
              data_type = DATA_BOOL))
 
         call table%set("ttm_stats_frequency", control_parameter( &
-             key = "ttm_statis_frequency", &
+             key = "ttm_stats_frequency", &
              name = "Frequency of TTM statis output", &
              val = "0", &
              units = "steps", &
@@ -4939,7 +4939,7 @@ contains
              data_type = DATA_OPTION))
 
         call table%set("polarisation_thole", control_parameter( &
-             key = "polarisation", &
+             key = "polarisation_thole", &
              name = "Polarisation", &
              val = "1.3", &
              description = "Set global atomic damping factor", &
@@ -5054,12 +5054,12 @@ contains
            data_type = DATA_BOOL))
 
 
-      call table%set("unit_test", control_parameter( &
-           key = "unit_test", &
-           name = "Run unit tests", &
-           val = "off", &
-           description = "Do not perform a DLPOLY run, instead run unit tests", &
-           data_type = DATA_BOOL))
+      ! call table%set("unit_test", control_parameter( &
+      !      key = "unit_test", &
+      !      name = "Run unit tests", &
+      !      val = "off", &
+      !      description = "Do not perform a DLPOLY run, instead run unit tests", &
+      !      data_type = DATA_BOOL))
 
     end block miscellaneous
 
@@ -5098,7 +5098,7 @@ contains
 
   end Function try_parse
 
-  Subroutine parse_file(ifile, params, comm)
+  Subroutine parse_control_file(ifile, params, comm)
     !!-----------------------------------------------------------------------
     !!
     !! Read a control file filling the params table
@@ -5134,7 +5134,7 @@ contains
     end do
 
     call params%fix()
-  end Subroutine parse_file
+  end Subroutine parse_control_file
 
   Subroutine read_control_param(input, param, ifile, comm)
     Type( control_parameter ), Intent ( InOut ) :: param
@@ -5174,9 +5174,8 @@ contains
       i = index(tmp, ']', back=.true.)
 
       ! Cut off braces
-      tmp = tmp(2:i-1)
-
       input = tmp(i+1:)
+      tmp = tmp(2:i-1)
 
       param%val = ""
       do while (tmp /= '')
@@ -5185,6 +5184,7 @@ contains
         test_real = word_2_real(val)
         param%val = trim(param%val)//' '//val
       end do
+
       call get_word(input, unit)
       param%units = unit
 

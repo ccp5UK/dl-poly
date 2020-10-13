@@ -61,6 +61,7 @@ Module units
   Type(units_hash_table), Private, save :: units_table
 
   Public :: initialise_units
+  Public :: destroy_units
   Public :: convert_units
   Public :: set_timestep
   Public :: set_out_units
@@ -239,6 +240,17 @@ contains
 
   End Subroutine initialise_units
 
+  Subroutine destroy_units()
+    !!-----------------------------------------------------------------------
+    !! Deallocate units table
+    !!
+    !! copyright - daresbury laboratory
+    !! author - j.wilkins april 2020
+    !!-----------------------------------------------------------------------
+    call units_table%destroy()
+  end Subroutine destroy_units
+
+
   Function convert_units(val, from, to, stat) result(res)
     !!-----------------------------------------------------------------------
     !!
@@ -393,6 +405,7 @@ contains
     Type(unit_data), intent(out) :: factor
     Character(Len=256) :: tmp
     Character(len=*), Parameter :: prefix_symbol = "YZEPTGMk dcmunpfazy"
+    Character(Len=*), Parameter :: number = "1234567890-+"
     Type(unit_data), Dimension(19), Parameter :: prefix = [ &
          & unit_data(name="Yotta", abbrev="Y", conversion_to_internal=1e24_wp), &
          & unit_data(name="Zetta", abbrev="Z", conversion_to_internal=1e21_wp), &
@@ -417,7 +430,7 @@ contains
     factor = null_unit
     tmp = string(2:)
     call lower_case(tmp)
-    if (.not. units_table%in(tmp)) then
+    if (.not. units_table%in(tmp) .and. verify(trim(string(2:)), number) /= 0) then
        i = index(prefix_symbol, string(2:2))
        tmp = string(3:)
        call lower_case(tmp)
@@ -475,19 +488,27 @@ contains
     end do
 
     do i = 1, size(parsed)
-       curr_parse = parsed(i)
-       call handle_decimal_prefix(curr_parse, factor)
-       call lower_case(curr_parse)
-       call units_table%get(curr_parse(2:), tmp_unit)
+      curr_parse = parsed(i)
 
-       select case (curr_parse(1:1))
-       case (".")
-          output = output * (factor * tmp_unit)
-       case ("/")
-          output = output / (factor * tmp_unit)
-       case default
-          call error(0, "Cannot parse unit string "//string)
-       end select
+      call handle_decimal_prefix(curr_parse, factor)
+      call lower_case(curr_parse)
+      if (verify(trim(curr_parse(2:)), number) /= 0) then
+        call units_table%get(curr_parse(2:), tmp_unit)
+      else if (trim(curr_parse(2:)) /= "") then
+        tmp_unit = unit_data(name="", abbrev="", conversion_to_internal=1.0)
+        read(curr_parse(2:), *) tmp_unit%conversion_to_internal
+      else
+        cycle
+      end if
+
+      select case (curr_parse(1:1))
+      case (".")
+        output = output * (factor * tmp_unit)
+      case ("/")
+        output = output / (factor * tmp_unit)
+      case default
+        call error(0, "Cannot parse unit string "//string)
+      end select
     end do
 
     output%abbrev = string

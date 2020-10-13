@@ -106,13 +106,16 @@ set(dlpoly_SRCS
   npt_nose_hoover.F90
   npt_langevin.F90
   npt_mtk.F90
-  unit_tests/test_configuration.F90
 
   control_parameter.F90
   new_control.F90
   hash.F90
   units.F90
 
+  unit_tests/unit_test.F90
+  unit_tests/test_units.F90
+  unit_tests/test_control.F90
+  unit_tests/test_configuration.F90
   )
 if(BUILDER)
   set_property(SOURCE development.F90 APPEND PROPERTY
@@ -186,10 +189,11 @@ if(WITH_ASSERT)
     COMPILE_DEFINITIONS "WITH_ASSERT")
 endif()
 
+
 ## sets the linking
 link_directories (${LIBRARY_OUTPUT_PATH})
 add_executable(${target_name} dl_poly.F90)
 set_target_properties(${target_name} PROPERTIES LINK_FLAGS "${OMP_LINK_FLAGS} ${MIC_LINK_FLAGS}")
-target_link_libraries(${target_name} dlpoly ${LIBS} ${BLAS_LIBRARIES})  
+target_link_libraries(${target_name} dlpoly ${LIBS} ${BLAS_LIBRARIES})
 install(TARGETS ${target_name} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 INSTALL_SUBLIB(dlpoly)

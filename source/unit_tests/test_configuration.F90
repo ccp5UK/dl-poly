@@ -88,10 +88,10 @@ Module test_configuration
 Contains
 
   ! Runs all unit tests for configuration module
-  Subroutine run_configuration_tests()
+  Subroutine run_configuration_tests(comm)
+    Type(comms_type), intent(inout) :: comm
     Integer                  :: i
     Logical                  :: passed(3)
-    Type(comms_type)         :: comm
     Type(configuration_type) :: config
 
     !Test coordinates are gathered from all processes and broadcast to all
@@ -176,7 +176,7 @@ Contains
     Allocate (coords(3, config%megatm))
     Call unpack_gathered_coordinates(comm, config, gathered, coords)
 
-    passed = All(position == coords)
+    passed = All(abs(position - coords) < 1.0e-6_wp)
     If (.not. passed) Then
       Write (error_unit, '(/,1x,a)') "test_gather_coordinates_1: position /= coords"
     Endif

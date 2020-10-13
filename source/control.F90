@@ -46,8 +46,7 @@ Module control
   Use coord,                Only: coord_type
   Use core_shell,           Only: core_shell_type
   Use defects,              Only: defects_type
-  Use development,          Only: development_type,&
-                                  testing_type
+  Use development,          Only: development_type
   Use dihedrals,            Only: dihedrals_type
   Use electrostatic,        Only: ELECTROSTATIC_COULOMB,&
                                   ELECTROSTATIC_COULOMB_FORCE_SHIFT,&
@@ -246,7 +245,6 @@ Contains
     Logical            :: l_0, l_timcls, l_timjob, lens, lforc, lplumed, lpres, lstep, &
                           lstrext, ltemp, safe
     Real(Kind=wp)      :: eps0, prmps(1:4), rcb_d, rcell(1:9), rcut1, rpad1, rvdw1, tmp, tol
-    Type(testing_type) :: app_test, unit_test
 
     ! initialise system control variables and their logical switches
 
@@ -724,17 +722,6 @@ Contains
                         '%%% Turn on the check on minimum separation distance between VNL pairs at re/start !!! %%%', .true.)
         Write (message, '(a,1p,e12.4)') '%%% separation criterion (Angstroms) %%%', devel%r_dis
         Call info(message, .true.)
-
-        ! read unit and app tests to perform
-      Else If (word(1:9) == 'unit_test') Then
-        devel%run_unit_tests = .true.
-        Call unit_test%all()
-        devel%unit_test = unit_test
-
-      Else If (word(1:8) == 'app_test') Then
-        devel%run_app_tests = .true.
-        Call app_test%all()
-        devel%app_test = app_test
 
         ! read VDW options
       Else If (word(1:3) == 'vdw') Then

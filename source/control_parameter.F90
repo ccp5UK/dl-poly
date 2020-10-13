@@ -111,7 +111,7 @@ contains
       Write(ifile, '(a)') '\begin{longtable}{l l p{10cm}}'
     Case ('python')
       Write(ifile, '(a)') 'DLPData.__init__(self, {'
-    Case ('csv')
+    Case ('csv', 'test')
       Continue
     Case Default
       Call error(0, 'Bad mode option '//trim(mode))
@@ -151,8 +151,30 @@ contains
          else
            Write(ifile, '("''",a,"'':",1X,a,",")') trim(param%key), trim(python_data_name(param%data_type))
          end if
+       Case ('test')
+         select case (param%data_type)
+         Case (DATA_NULL)
+           continue
+         Case (DATA_INT)
+           param%val = "66666"
+         Case (DATA_FLOAT)
+           param%val = "6.666"
+         Case (DATA_STRING, DATA_OPTION)
+           write(param%val, *) "JUNK"
+         Case (DATA_BOOL)
+           if (param%val == "on") then
+             param%val = "off"
+           else
+             param%val = "on"
+           end if
+         Case(DATA_VECTOR3)
+           param%val = "[ 6.666 6.666 6.666 ]"
+         Case (DATA_VECTOR6)
+           param%val = "[ 6.666 6.666 6.666 6.666 6.666 6.666 ]"
+         end select
        end Select
 
+       Write(ifile, '(3(a,1X))') trim(param%key), trim(param%val), trim(param%units)
     end do
 
     Select Case (mode)
@@ -163,7 +185,7 @@ contains
       Write(ifile, '(a)') '\end{longtable}'
     Case ('python')
       Write(ifile, '(a)') '})'
-    Case ('csv')
+    Case ('csv', 'test')
       Continue
     end Select
 
@@ -305,6 +327,7 @@ contains
     end if
     val = param%val
     call get_word(val, parse)
+
     output = word_2_real(parse)
     output = convert_units(output, param%units, param%internal_units, stat)
     if (.not. stat) then

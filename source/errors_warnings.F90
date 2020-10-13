@@ -2291,6 +2291,7 @@ Contains
 
     ! close all I/O channels
     Call close_unit(ounit)
+    open(ounit, file="NNNN", status="old")
 
     ! abort comms
 
@@ -2384,7 +2385,6 @@ Contains
     Logical :: has_name, is_open
 
     Inquire (i, opened=is_open, named=has_name, iostat=ierr)
-    flush(i)
     If (is_open .and. has_name .and. ierr == 0 .and. All(i /= [-1, ERROR_UNIT, INPUT_UNIT, OUTPUT_UNIT])) Then
       Close (i)
     End If

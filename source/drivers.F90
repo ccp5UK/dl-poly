@@ -966,10 +966,10 @@ Contains
     Endif
 
     Call geo%set_geometry(comm, config, gathered, atmnam)
-    If (devel%app_test%dftb_library) Then
+    If (devel%unit_test%dftb_library) Then
        !Call print_DFTB_geometry_data(geo, flow%step)
        Call run_dftbplus(comm, flow, geo, forces, atomic_charges, &
-                         run_app_test = devel%app_test%dftb_library)
+                         run_app_test = devel%unit_test%dftb_library)
     Else
        Call run_dftbplus(comm, flow, geo, forces, atomic_charges)
     Endif

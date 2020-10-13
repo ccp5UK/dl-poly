@@ -547,6 +547,7 @@ Contains
 
     Close (u)
   End Function number_of_lines
+
   Function word_2_real(word, def, report)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

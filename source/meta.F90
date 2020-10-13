@@ -113,7 +113,6 @@ Module meta
                                                 system_revive
   Use temperature,                        Only: set_temperature
   Use tersoff,                            Only: tersoff_type
-  Use test_configuration,                 Only: run_configuration_tests
   Use tethers,                            Only: tethers_type
   Use thermostat,                         Only: thermostat_type
   Use three_body,                         Only: threebody_type
@@ -535,20 +534,20 @@ Contains
   call start_timer(tmr,'Main Calc')
 #endif
 
-    ! Unit testing (in the absence of a unit testing framework)
-    If (devel%run_unit_tests) Then
+    ! ! Unit testing (in the absence of a unit testing framework)
+    ! If (devel%run_unit_tests) Then
 
-      If (devel%unit_test%configuration) Then
-        If(comm%idnode == root_id) Then
-          Write(*,*) 'Running unit tests for configuration module'
-        Endif
-        Call run_configuration_tests()
-      End If
+    !   If (devel%unit_test%configuration) Then
+    !     If(comm%idnode == root_id) Then
+    !       Write(*,*) 'Running unit tests for configuration module'
+    !     Endif
+    !     Call run_configuration_tests()
+    !   End If
 
-      If(comm%idnode == root_id) Write(*,*) 'Unit tests completed'
-      Call exit_comms(dlp_world)
-      Stop 0
-    Endif
+    !   If(comm%idnode == root_id) Write(*,*) 'Unit tests completed'
+    !   Call exit_comms(dlp_world)
+    !   Stop 0
+    ! Endif
 
     ! Now you can run fast, boy
     If (devel%l_fast) Call gsync(comm, devel%l_fast)

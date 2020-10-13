@@ -81,7 +81,8 @@ Program dl_poly
   Use impacts,                            Only: impact_type
   Use inversions,                         Only: inversions_type
   Use io,                                 Only: io_type
-  Use, Intrinsic :: iso_fortran_env,      Only: eu => error_unit
+  Use, Intrinsic :: iso_fortran_env,      Only: eu => error_unit, &
+                                                ou => output_unit
   Use kim,                                Only: kim_type
   Use meta,                               Only: molecular_dynamics
   Use metal,                              Only: metal_type
@@ -108,6 +109,7 @@ Program dl_poly
   Use timer,                              Only: timer_type
   Use trajectory,                         Only: trajectory_type
   Use ttm,                                Only: ttm_type
+  Use unit_test,                          Only: testing_type
   Use vdw,                                Only: vdw_type
   Use z_density,                          Only: z_density_type
 
@@ -165,6 +167,7 @@ Program dl_poly
   Type(adf_type), Allocatable            :: adf(:)
 
   Type( parameters_hash_table ) :: params
+  Type( testing_type ) :: tests
 
   ! Local Variables
   Character(len=1024)           :: control_filename = '', arg
@@ -195,7 +198,7 @@ Program dl_poly
   If (dlp_world(0)%idnode == 0) Then
     If (command_argument_count() > 0) Then
       i = 0
-      Do
+      parse_cmd:Do
         i = i + 1
         Call get_command_argument(i, arg)
         Select Case (arg)
@@ -210,33 +213,80 @@ Program dl_poly
         Case ('--dump')
           i = i + 1
           Call get_command_argument(i, mode)
+          Select Case (mode)
+          Case ('latexdoc','latex','python','csv','test')
+            Continue
+          Case Default
+            Write(eu, '(a)') 'Bad mode option '//trim(mode)
+            finish = .true.
+            exit
+          end Select
+
           i = i + 1
           Call get_command_argument(i, arg)
-          Open(newunit = ifile, file=trim(arg))
+
+          if (trim(arg) == "SCREEN") then
+            ifile = ou
+          else
+            Open(newunit = ifile, file=trim(arg))
+          end if
+
           Call dump_parameters(ifile, params, mode)
           finish = .true.
           Exit
         Case ('--help')
           i = i + 1
-          Call get_command_argument(i, control_filename)
-          Call params%help(control_filename)
+          Call get_command_argument(i, arg)
+          Call params%help(arg)
           finish = .true.
           Exit
+
+        Case ('--keywords', '-k')
+          Call params%help()
+          finish = .true.
+          Exit
+
         Case ('-c')
           i = i + 1
           Call get_command_argument(i, control_filename)
         Case ('-o')
           i = i + 1
           Call get_command_argument(i, output_filename)
-       Case ('--replay', '-r')
+        Case ('-test', '-t')
+
+          Call get_command_argument(i+1, arg)
+          do while (arg(1:1) /= "-" .and. i < command_argument_count())
+            i = i + 1
+            Select case (arg)
+            Case ("control")
+              tests%control = .true.
+            Case ("configuration")
+              tests%configuration = .true.
+            Case ("units")
+              tests%units = .true.
+            Case ("all")
+              Call tests%all()
+            Case Default
+              Write(eu, *) "Invalid test option:", trim(arg)
+              finish = .true.
+              exit parse_cmd
+            end Select
+            Call get_command_argument(i+1, arg)
+          end do
+
+          Call init_error_system(ou,dlp_world(0))
+          Call tests%run(dlp_world(0))
+          finish = .true.
+
+        Case ('--replay', '-r')
           flow(1)%simulation = .false.
         Case default
           Write (eu, *) "No idea what you want, try -h "
           finish = .true.
-          Exit
+          Exit parse_cmd
         End Select
         If (i == command_argument_count()) Exit
-      End Do
+      End Do parse_cmd
     End If
   End If
 

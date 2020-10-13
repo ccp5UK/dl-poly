@@ -32,16 +32,6 @@ Module development
 
   Private
 
-  !> Logicals indicating whether tests should be run for
-  !> corresponding module. Add as required
-  Type, Public :: testing_type
-     Logical :: configuration
-     Logical :: dftb_library
-   Contains
-     Procedure :: all => set_all_tests_true
-     !Procedure :: set => set_tests
-  End Type testing_type
-
   !> Type containing development module variables
   Type, Public :: development_type
     Private
@@ -85,13 +75,7 @@ Module development
     Real(Kind=wp), Public :: r_dis = 0.5_wp
     !> Devel start time
     Real(Kind=wp), Public :: t_zero
-    !> Unit testing
-    Logical, Public :: run_unit_tests = .false.
-    Type(testing_type), Public :: unit_test
-    !> App testing
-    Logical, Public :: run_app_tests = .false.
-    Type(testing_type), Public :: app_test
- End Type development_type
+  End Type development_type
 
   Public :: scan_development
   Public :: build_info
@@ -304,12 +288,5 @@ Contains
     end Subroutine info_local
 
   End Subroutine build_info
-
-
-  Subroutine set_all_tests_true(this)
-    Class(testing_type), Intent(inout) :: this
-    this%configuration = .true.
-    this%dftb_library = .true.
-  End Subroutine set_all_tests_true
 
 End Module development

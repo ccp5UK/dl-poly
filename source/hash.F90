@@ -188,7 +188,7 @@ Contains
 
   End Subroutine destroy
 
-  Subroutine allocate_hash_table(table, nbuckets, can_overwrite)
+  Recursive Subroutine allocate_hash_table(table, nbuckets, can_overwrite)
     !!-----------------------------------------------------------------------
     !!
     !! Subroutine for allocation and initialisation of hash table
@@ -204,12 +204,18 @@ Contains
     Logical, Optional :: can_overwrite
     Integer :: ierr
 
+    if (table%allocated) then
+      call table%resize(nbuckets)
+      return
+    end if
+
     if (present(can_overwrite)) then
        table%can_overwrite = can_overwrite
     end if
 
     table%size = nbuckets
     table%used_keys = 0
+
     Allocate(table%table_data(nbuckets), stat=ierr)
     If (ierr /= 0) call error_alloc("hash%table_data", "allocate_hash_table")
     Allocate(table%key_names(nbuckets), stat=ierr)
