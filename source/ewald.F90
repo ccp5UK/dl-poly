@@ -70,8 +70,7 @@ Module ewald
     Integer, Public :: num_pots = 0
     !>
     Logical, Public :: newjob_erf = .true.
-    Logical, Public :: newjob_spme = .true.
-    Logical, Public :: newjob_spme_gen = .true.
+    Logical, Public :: newjob = .true.
 
     !> SPME function container
     Type(spme_component), Dimension(:), Allocatable, Public :: spme_data
@@ -110,10 +109,10 @@ Contains
     countloop: Do ivdw = 1, vdws%n_vdw
       keypot = vdws%ltp(ivdw)
 
-      ! Need to remove duplicates of the same pot for mapping to linear array
-      Do ipot = 1, ewld%num_pots
-        If (keypot == ewld%reduced_vdw(ipot)) Cycle countloop
-      End Do
+      ! ! Need to remove duplicates of the same pot for mapping to linear array
+      ! Do ipot = 1, ewld%num_pots
+      !   If (keypot == ewld%reduced_vdw(ipot)) Cycle countloop
+      ! End Do
 
       Select Case (keypot)
       Case (VDW_12_6, VDW_LENNARD_JONES, VDW_N_M, VDW_N_M_SHIFT, VDW_HYDROGEN_BOND, VDW_BORN_HUGGINS_MEYER) ! 6-12
@@ -239,14 +238,12 @@ Contains
     Integer :: fail, ipot, j, k, keypot
 
     ! Set up potentials
-
-    Allocate (vdw_coeffs(config%mxatms, ewld%num_pots), stat=fail)
+    Allocate (vdw_coeffs(config%nlast, ewld%num_pots), stat=fail)
     If (fail > 0) Call error_alloc('vdw_coeffs', 'two_body_forces')
 
-    !! JW952
     ! Build coeffs array ( Assume sqrt(i)*sqrt(j) division [see: Darden])
     ! Inefficient, but temporary?
-    Do k = 1, config%mxatms
+    Do k = 1, config%nlast
       j = config%ltype(k)
       If (j == 0) Cycle
       j = j * (j - 1) / 2 + j
@@ -264,10 +261,12 @@ Contains
 
       Case (VDW_LENNARD_JONES) ! 12-6
         ! 4eps * (A)
-        ewld%spme_data(ipot)%scaling = vdws%param(1, j) * 4.0_wp
-        ewld%spme_data(ipot + 1)%scaling = -vdws%param(1, j) * 4.0_wp
-        vdw_coeffs(k, ipot) = vdws%param(2, j)**6
-        vdw_coeffs(k, ipot + 1) = vdws%param(2, j)**3
+        ewld%spme_data(ipot)%scaling = 1.0_wp! * 4.0_wp * vdws%param(1, j)
+        ewld%spme_data(ipot + 1)%scaling = -1.0_wp! * 4.0_wp * vdws%param(1, j)
+        ! ^12 component square roote
+        vdw_coeffs(k, ipot) =  vdws%param(2, j)**(12/2) * sqrt(vdws%param(1, j) * 4.0_wp)
+        ! ^6 component square rooted
+        vdw_coeffs(k, ipot + 1) = vdws%param(2, j)**(6/2) * sqrt(vdws%param(1, j) * 4.0_wp)
 
       Case (VDW_12_6) ! 12-6
         ewld%spme_data(ipot)%scaling = 1.0_wp

@@ -343,7 +343,7 @@ Contains
     Call scan_field(megatm, site, neigh%max_exclude, mtshl, &
                     mtcons, mtrgd, mtteth, mtbond, mtangl, mtdihd, mtinv, &
                     ext_field, cshell, cons, pmf, met, bond, angle, dihedral, inversion, tether, threebody, &
-                    vdws, tersoffs, fourbody, rdf, mpoles, rigid, kim_data, files, electro, comm, ff)
+                    vdws, tersoffs, fourbody, rdf, mpoles, rigid, kim_data, files, electro, comm, fftag)
 
     ! Get imc_r & set config%dvar
 
@@ -351,7 +351,7 @@ Contains
 
     ! scan CONFIG file data
 
-    Call scan_config(config, megatm, config%dvar, config%levcfg, xhi, yhi, zhi, io, domain, files, comm, ff)
+    Call scan_config(config, megatm, config%dvar, config%levcfg, xhi, yhi, zhi, io, domain, files, comm, fftag)
 
     ! scan CONTROL file data
 
@@ -421,7 +421,7 @@ Contains
     ! decide on MXATMS while reading CONFIG and scan particle density
 
     Call read_config(config, megatm, config%levcfg, config%l_ind, flow%strict, neigh%cutoff, config%dvar, xhi, yhi, &
-                     zhi, dens0, dens, io, domain, files, comm, ff)
+                     zhi, dens0, dens, io, domain, files, comm, fftag)
 
     Call setup_buffers(fdvar, dens, dens0, megatm, link_cell, mxgrid, config, domain, stats, neigh, &
                        green, site, cshell, cons, pmf, rdf, rigid, tether, bond, angle, dihedral, inversion, &
@@ -808,7 +808,7 @@ Contains
 
     ! maximum number of grid points for electrostatics
 
-    If (ewld%direct .or. electro%no_elec) Then
+    If (ewld%direct .or. (electro%no_elec .and. .not. ewld%vdw)) Then
       electro%erfc%nsamples = -1
       electro%erfc_deriv%nsamples = -1
     Else

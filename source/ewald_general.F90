@@ -147,6 +147,7 @@ Contains
 
         pos_j = [x_pos(m), y_pos(m), z_pos(m)]
         alpha_r = mod_r_ij * alpha
+
         inv_mod_r_ij = 1.0_wp / mod_r_ij
 
         ! Complete prefactor
@@ -279,18 +280,16 @@ Contains
 !! Stress
 !! Ierr
 
-    Call start_timer(tmr, 'Setup')
-
     If (Any(Abs(coeffs) > zero_plus)) Then
       Continue
     Else
       Return
     End If
 
-    If (ewld%newjob_spme_gen) Then
+    If (ewld%newjob) Then
       Call ewald_spme_init(domain, config%mxatms, comm, ewld%kspace, &
         & ewld%bspline)
-      ewld%newjob_spme_gen = .false.
+      ewld%newjob = .false.
     End If
 
     fail = 0
@@ -331,7 +330,6 @@ Contains
 
     Call invert(config%cell, rcell, det)
     If (Abs(det) < 1.0e-6_wp) Call error(120)
-    Call stop_timer(tmr, 'Setup')
 
     ! convert cell coordinates to fractional coordinates intervalled [0,1)
     ! (bottom left corner of md cell) and stretch over kmaxs in different
@@ -348,7 +346,6 @@ Contains
     ! (1:natms) particle can enter the halo and vice versa.  so dd
     ! bounding is unsafe!!!
 
-    Call start_timer(tmr, 'Recip')
     llspl = .true.
     Do i = 1, config%nlast
       Do dim = 1, 3
@@ -375,9 +372,6 @@ Contains
 
     ewld%kspace%recip_indices = Int(ewld%kspace%recip_coords)
 
-    Call stop_timer(tmr, 'Recip')
-
-    Call start_timer(tmr, 'BSpline')
     ! check for breakage of llspl when .not.llvnl = (ewld%bspline%num_spline_pad == ewld%bspline)
 
     ewld%bspline%num_spline_padded = ewld%bspline%num_spline_pad
@@ -393,25 +387,18 @@ Contains
 
     Deallocate (ewld%kspace%recip_coords, stat=fail(1))
     If (fail(1) > 0) Call error_dealloc('recip_coords', 'ewald_spme_forces')
-    Call stop_timer(tmr, 'BSpline')
 
-    Call start_timer(tmr, 'Charge')
     Call spme_construct_charge_array(to_calc(0), ewld, to_calc(1:), &
          ewld%kspace%recip_indices, coeffs, ewld%kspace%charge_grid)
-    Call stop_timer(tmr, 'Charge')
 
     If (.not. stats%collect_pp .or. spme_datum%pot_order /= 1) Then
 
       ! If we don't need per-particle data, we can use the old method of getting the stress (cheaper)
-      Call start_timer(tmr, 'Potential')
       Call spme_construct_potential_grid_gen(ewld, rcell, ewld%kspace%charge_grid, spme_datum, &
         & potential_kernel, ewld%kspace%potential_grid, s_abc(:, 0))
-      Call stop_timer(tmr, 'Potential')
-      Call start_timer(tmr, 'ForceEnergy')
       Call spme_calc_force_energy(ewld, comm, domain, config, coeffs, &
         & rcell, ewld%kspace%recip_indices, ewld%kspace%potential_grid, &
         & stats%collect_pp, q_abc, f_abc)
-      Call stop_timer(tmr, 'ForceEnergy')
 
     Else
 
@@ -427,8 +414,6 @@ Contains
         & rcell, ewld%kspace%recip_indices, ewld%kspace%stress_grid, s_abc)
 
     End If
-
-    Call start_timer(tmr, 'Output')
 
     ! Rescale to real space
     q_abc = q_abc * scale
@@ -476,7 +461,6 @@ Contains
     Deallocate (to_calc, stat=fail(3))
     Deallocate (Q_abc, F_abc, S_abc, stat=fail(4))
     If (Any(fail > 0)) Call error_dealloc('output_arrays', 'ewald_spme_forces')
-    Call stop_timer(tmr, 'Output')
 
   End Subroutine ewald_spme_forces_gen
 
@@ -507,7 +491,7 @@ Contains
 
     Call setup_kspace(kspace_in, domain, (kspace_in%k_vec_dim), comm)
 
-!!! begin cardinal b-splines set-up
+    ! Bsplines
 
     bspline_in%num_deriv = 2
     Allocate (bspline_in%derivs(3, 0:bspline_in%num_deriv, 1:bspline_in%num_splines, 1:max_atoms), stat=fail(1))
@@ -515,10 +499,6 @@ Contains
 
     ! calculate the global b-spline coefficients
     Call bspline_coeffs_gen(kspace_in, bspline_in)
-
-!!! end cardinal b-splines set-up
-
-!!! begin daft set-up
 
     ! workspace arrays for DaFT
 
@@ -531,8 +511,6 @@ Contains
     Allocate (kspace_in%pfft_work(1:kspace_in%block_fac(1), 1:kspace_in%block_fac(2), 1:kspace_in%block_fac(3)), &
               stat=fail(4))
     If (Any(fail > 0)) Call error_alloc('SPME DaFT workspace arrays', 'ewald_spme_init')
-
-!!! end daft set-up
 
   End Subroutine ewald_spme_init
 
@@ -625,6 +603,8 @@ Contains
                                       pressure_virial, recip_conv_fac
     Real(Kind=wp), Dimension(10)   :: recip_cell_properties
     Real(Kind=wp), Dimension(3, 3) :: recip_pos, stress_temp
+    Real(Kind=wp) :: test_fac
+
 
 !! SPME contribution to the stress
 !! Reciprocal lattice vectors
@@ -643,6 +623,7 @@ Contains
 !! Virial contribution to the pressure
 
     recip_conv_fac = 1.0_wp / ewld%alpha
+    test_fac = (1.0e-6_wp / recip_conv_fac)**2 ! f_p_fac > 1e-6
 
     ! set reciprocal space cutoff
 
@@ -704,7 +685,7 @@ Contains
               & f_p_fac, ewld%alpha, spme_datum%pot_order)
 
             ! By L'Hopital's rule, m=0 does not contribute to stress
-            If (Present(stress_contrib) .and. k_vec_2 > 1.0e-6_wp) Then
+            If (Present(stress_contrib) .and. k_vec_2 > test_fac) Then
 
               pressure_virial = Real(stress_kernel(bb1, potential_grid(j_local, k_local, l_local), &
                 & f_p_fac, ewld%alpha, spme_datum%pot_order)  &
@@ -1029,7 +1010,7 @@ Contains
 
 !!! Kernels
 
-  Function potential_kernel(B_m, pot, pi_m_over_a, pot_order)
+  Function potential_kernel(B_m, pot, pi_m_over_a, conv_factor, pot_order)
     !!----------------------------------------------------------------------!
     !!
     !! Kernel for calculating energy and forces for SPME method
@@ -1041,6 +1022,7 @@ Contains
     Real(Kind=wp)    :: B_m
     Complex(Kind=wp) :: pot
     Real(Kind=wp)    :: pi_m_over_a
+    Real(kind=wp)    :: conv_factor
     Integer          :: pot_order
     Complex(Kind=wp) :: potential_kernel
 

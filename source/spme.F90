@@ -117,7 +117,7 @@ Contains
 
     Character(Len=256) :: message
 
-!! Potential order for later expansion and cleaning (initialising individual ones not all)
+    ! Potential order for later expansion and cleaning (initialising individual ones not all)
 
     If (spme_datum%initialised) Return ! Nothing to do
 
@@ -129,24 +129,6 @@ Contains
       Write (message, '(/,1x,3a)') "Error: ", Trim(spme_datum%name), " not supported (negative)"
       Call error(0, message)
     End If
-
-    ! select case (pot_order)
-    ! case (1)
-    !   spme_datum%f_p       => f_1
-    !   spme_datum%g_p       => g_1
-    ! case (2)
-    !   spme_datum%f_p       => f_2
-    !   spme_datum%g_p       => g_2
-    ! case (6)
-    !   spme_datum%f_p       => f_6
-    !   spme_datum%g_p       => g_6
-    ! case (12)
-    !   spme_datum%f_p       => f_12
-    !   spme_datum%g_p       => g_12
-    ! case default
-    !   write(message,'(/,1x,3a)') "Error: ", trim(spme_datum%name), " not supported"
-    !   call error(0, message)
-    ! end select
 
     spme_datum%initialised = .true.
 
@@ -367,61 +349,75 @@ Contains
     Integer       :: curr_pot_order, p_work
     Real(kind=wp) :: base_integ, curr_xp, exp_xsq, x_2, x_fac, xp
 
-    x_2 = x**2
-    exp_xsq = Exp(-x_2)
-    p_work = 2 - pot_order
+    Select case(pot_order)
+    Case (1)
+      f_p = f_1(x)
+    Case (2)
+      f_p = f_2(x)
+    Case (4)
+      f_p = f_4(x)
+    Case (6)
+      f_p = f_6(x)
+    Case (12)
+      f_p = f_12(x)
+    Case Default
 
-    If (Mod(p_work, 2) == 0) Then
-      ! even integrals base is I( 0, x )
-      base_integ = 0.5_wp * sqrpi * calc_erfc(x)
-      curr_pot_order = 0
-      xp = 1.0_wp
-    Else
-      If (p_work > 0) Then
-        ! positive odd integrals base is I( 1, x )
-        base_integ = 0.5_wp * exp_xsq
-        curr_pot_order = 1
-        xp = x
+      x_2 = x**2
+      exp_xsq = Exp(-x_2)
+      p_work = 2 - pot_order
+
+      If (Mod(p_work, 2) == 0) Then
+        ! even integrals base is I( 0, x )
+        base_integ = 0.5_wp * sqrpi * calc_erfc(x)
+        curr_pot_order = 0
+        xp = 1.0_wp
       Else
-        ! negative odd integrals, base is I( -1, x ), which is 0.5 * E1( x * x )
-        ! where e1 is the first order exponential integral
-        base_integ = -0.5_wp * calc_exp_int(-x_2)
-        curr_pot_order = -1
-        xp = 1.0_wp / x
-      End If
-    End If
-
-    f_p = base_integ
-
-    If (curr_pot_order == p_work) Then
-      If (x < 1.0e-6_wp) Then
-        f_p = 0.0_wp ! if p < 3 && x is small
-        Return
+        If (p_work > 0) Then
+          ! positive odd integrals base is I( 1, x )
+          base_integ = 0.5_wp * exp_xsq
+          curr_pot_order = 1
+          xp = x
+        Else
+          ! negative odd integrals, base is I( -1, x ), which is 0.5 * E1( x * x )
+          ! where e1 is the first order exponential integral
+          base_integ = -0.5_wp * calc_exp_int(-x_2)
+          curr_pot_order = -1
+          xp = 1.0_wp / x
+        End If
       End If
 
-      Continue
-    Else If (curr_pot_order > p_work) Then
-      ! recurse down
-      x_fac = 1.0_wp / x_2
-      curr_xp = xp / x
-      Do curr_pot_order = curr_pot_order, p_work + 1, -2
-        ! f_p = 2.0_wp * ( f_p - 0.5_wp * x**(curr_pot_order - 1) * exp_xsq ) / real( curr_pot_order - 1, wp )
-        f_p = 2.0_wp * (f_p - 0.5_wp * curr_xp * exp_xsq) / Real(curr_pot_order - 1, wp)
-        curr_xp = curr_xp * x_fac
-      End Do
-    Else
-      ! recurse up
-      x_fac = x_2
-      curr_xp = xp * x
-      Do curr_pot_order = curr_pot_order, p_work - 1, 2
-        ! not tested !!!!! 5/11/18
-        ! f_p = 0.5_wp * x ** ( p_now + 1 ) ) * exp_xsq + 0.5_wp * ( curr_pot_order + 1 ) * f_p
-        f_p = 0.5_wp * (curr_xp * exp_xsq + Real(curr_pot_order + 1, wp) * f_p)
-        curr_xp = curr_xp * x_fac
-      End Do
-    End If
+      f_p = base_integ
 
-    f_p = 2.0_wp * x**(pot_order - 3) * calc_inv_gamma_1_2(pot_order) * f_p
+      If (curr_pot_order == p_work) Then
+        If (x < 1.0e-6_wp) Then
+          f_p = 0.0_wp ! if p < 3 && x is small
+          Return
+        End If
+
+        Continue
+      Else If (curr_pot_order > p_work) Then
+        ! recurse down
+        x_fac = 1.0_wp / x_2
+        curr_xp = xp / x
+        Do curr_pot_order = curr_pot_order, p_work + 1, -2
+          ! f_p = 2.0_wp * ( f_p - 0.5_wp * x**(curr_pot_order - 1) * exp_xsq ) / real( curr_pot_order - 1, wp )
+          f_p = 2.0_wp * (f_p - 0.5_wp * curr_xp * exp_xsq) / Real(curr_pot_order - 1, wp)
+          curr_xp = curr_xp * x_fac
+        End Do
+      Else
+        ! recurse up
+        x_fac = x_2
+        curr_xp = xp * x
+        Do curr_pot_order = curr_pot_order, p_work - 1, 2
+          ! not tested !!!!! 5/11/18
+          ! f_p = 0.5_wp * x ** ( p_now + 1 ) ) * exp_xsq + 0.5_wp * ( curr_pot_order + 1 ) * f_p
+          f_p = 0.5_wp * (curr_xp * exp_xsq + Real(curr_pot_order + 1, wp) * f_p)
+          curr_xp = curr_xp * x_fac
+        End Do
+      End If
+
+      f_p = 2.0_wp * x**(pot_order - 3) * calc_inv_gamma_1_2(pot_order) * f_p
+    end Select
 
   End Function f_p
 

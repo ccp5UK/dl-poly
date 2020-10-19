@@ -738,7 +738,6 @@ Contains
 
         Else If (word1(1:5) == 'ewald') Then
 
-          ewld%vdw = .true.
           Call info('vdw ewald option on', .true.)
 
         Else If (word1(1:3) == 'mix') Then
@@ -4136,6 +4135,12 @@ Contains
         If (word(1:5) == 'times' .or. word(1:4) == 'step') Call get_word(record, word)
         nstfce = Max(nstfce, Nint(Abs(word_2_real(word))))
 
+      Else If (word(1:3) == 'vdw') Then
+
+        Call get_word(record, word)
+        ewld%vdw = word(1:5) == 'ewald'
+        if (ewld%vdw) call warning("Ewald vdw", .true.)
+
         ! read electrostatics
 
       Else If (word(1:5) == 'ewald' .or. word(1:4) == 'spme') Then
@@ -4551,7 +4556,6 @@ Contains
 
       Call lower_case(record)
       Call get_word(record, word)
-
       ! record is commented out
 
       If (word(1:1) == '#' .or. word(1:1) == ' ') Then

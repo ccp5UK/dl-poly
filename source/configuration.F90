@@ -85,8 +85,9 @@ Module configuration
     Character(Len=72)             :: cfgname = ' ', &
                                      sysname = ' '
     Integer                       :: imcon = -1, &
-                                     natms = 0, &
-                                     nlast = 0, &
+                                     imc_n = -1, &
+                                     natms = 0, & ! Number of local atoms
+                                     nlast = 0, & ! Number of atoms + Halo
                                      nfree = 0
     Real(Kind=wp)                 :: cell(1:9) = 0.0_wp, &
                                      volm = 0.0_wp, &
@@ -113,7 +114,7 @@ Module configuration
     Logical, Public               :: l_vom = .true., &
                                      lvom = .true. ! this is confusing and needless complicated
     Integer(Kind=wi), Public      :: mxtana, mxgana, mxbfss, mxbuff
-    Integer(Kind=wi), Public      :: mxlshp, mxatms, mxatdm
+    Integer(Kind=wi), Public      :: mxlshp, mxatms, mxatdm ! mxatms = most ever atoms possible
     ! general flags
     Logical                       :: l_ind = .false., l_exp = .false.
     Integer                       :: levcfg, nx = 1, ny = 1, nz = 1, &
