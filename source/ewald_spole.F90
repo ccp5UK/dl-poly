@@ -300,10 +300,10 @@ Contains
       Return
     End If
 
-    If (ewld%newjob_spme) Then
+    If (ewld%newjob) Then
       Call ewald_spme_init(domain, config%mxatms, comm, ewld%kspace, &
         & ewld%bspline)
-      ewld%newjob_spme = .false.
+      ewld%newjob = .false.
     End If
 
     fail = 0
