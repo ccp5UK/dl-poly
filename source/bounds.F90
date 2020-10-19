@@ -671,7 +671,7 @@ Contains
 
     ! maximum number of grid points for electrostatics
 
-    If (ewld%direct .or. electro%no_elec) Then
+    If (ewld%direct .or. (electro%no_elec .and. .not. ewld%vdw)) Then
       electro%erfc%nsamples = -1
       electro%erfc_deriv%nsamples = -1
     Else
