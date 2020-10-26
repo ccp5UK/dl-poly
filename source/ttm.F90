@@ -172,9 +172,13 @@ Module ttm
     Integer :: acell_old
     !> Minimum number of atoms for ionic cells
     Integer :: amin = 1
-
     !> Unit conversions
-    Real(Kind=wp) :: Jm3K_to_kBA3, JKms_to_kBAps, kB_to_eV, eV_to_kB, mJcm2_to_eVA2, epc_to_chi
+    Real(Kind=wp) :: Jm3K_to_kBA3 = 1.0e-7_wp / (boltz * tenunt) ! convert J m^-3 K^-1 to kB A^-3
+    Real(Kind=wp) :: JKms_to_kBAps = 10.0_wp / (boltz * tenunt) ! convert W m^-1 K^-1 to kB A^-1 ps^-1
+    Real(Kind=wp) :: kB_to_eV = boltz / eu_ev ! convert kB to eV
+    Real(Kind=wp) :: eV_to_kB = eu_ev / boltz ! convert eV to kB
+    Real(Kind=wp) :: mJcm2_to_eVA2 = 1.0e4_wp / (eu_ev * tenunt) ! convert mJ cm^-2 to eV A^-2
+    Real(Kind=wp) :: epc_to_chi
     !> Cell density
     Real(Kind=wp) :: cellrho
     !> Reciprocal cell density
@@ -298,12 +302,6 @@ Contains
 
     ! Setup constants based on fundamental values (found in
     ! setup.f90)
-
-    ttm%JKms_to_kBAps = 10.0_wp / (boltz * tenunt) ! convert W m^-1 K^-1 to kB A^-1 ps^-1
-    ttm%Jm3K_to_kBA3 = 1.0e-7_wp / (boltz * tenunt) ! convert J m^-3 K^-1 to kB A^-3
-    ttm%kB_to_eV = boltz / eu_ev ! convert kB to eV
-    ttm%eV_to_kB = eu_ev / boltz ! convert eV to kB
-    ttm%mJcm2_to_eVA2 = 1.0e4_wp / (eu_ev * tenunt) ! convert mJ cm^-2 to eV A^-2
 
     If (ttm%l_ttm) Then
 
@@ -1339,8 +1337,8 @@ Contains
       If (comm%idnode == 0) Open (Newunit=ntable, File='Ce.dat', Status='old')
 
       i = 0
-      Do While (i < ttm%cel)
 
+      Do While (i < ttm%cel)
         Call get_line(safe, ntable, record, comm)
         If (.not. safe) Then
           Go To 100
@@ -1437,6 +1435,7 @@ Contains
           vk1 = word_2_real(word)
           Call get_word(record, word)
           vk2 = word_2_real(word)
+
           If (vk1 >= zero_plus) Then
             i = i + 1
             ttm%gtable(i, 1) = vk1
@@ -1572,11 +1571,10 @@ Contains
 
       ! check existence of specific heat capacity table file
 
-      If (ttm%CeType == 3) Then
+      If (ttm%CeType == 3 .or. ttm%CeType == 7) Then
 
         Inquire (File='Ce.dat', Exist=lexist)
         Call gcheck(comm, lexist)
-
         If (.not. lexist) Then
           Go To 200
         Else

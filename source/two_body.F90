@@ -309,7 +309,6 @@ Contains
         Call ewald_spme_forces_gen(ewld, ewld%spme_data(ipot), domain, config, comm, &
           & vdw_coeffs(:, ipot), stats, engacc, viracc, tmr)
 
-        print*, ewld%spme_data(ipot)%self_interaction
         engvdw_rc = engvdw_rc + engacc
         virvdw_rc = virvdw_rc + viracc
 
@@ -761,11 +760,6 @@ Contains
     ! End If
 
     ! Globalise coulombic contributions: cpe
-
-    print*, "ENGVDW", engvdw_rl, engvdw_rc, engvdw
-    print*, "VIRVDW", virvdw_rl, virvdw_rc, virvdw
-    print*, "ENGCPE", engcpe_rl, engcpe_rc, engcpe_rl + engcpe_rc
-    print*, "VIRCPE", vircpe_rl, vircpe_rc, vircpe_rl + vircpe_rc
 
     stats%engcpe = stats%engcpe + engcpe_rc + engcpe_rl + engcpe_ch + engcpe_ex + engcpe_fr + engcpe_nz
     stats%vircpe = stats%vircpe + vircpe_rc + vircpe_rl + vircpe_ch + vircpe_ex + vircpe_fr + vircpe_nz + vircpe_dt

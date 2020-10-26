@@ -1524,9 +1524,6 @@ contains
       Call warning('VdW cutoff greater than global cutoff, setting to global cutoff', .true.)
     End If
 
-    ! print*, neigh%cutoff, vdws%cutoff, met%rcut, kim_data%cutoff, bond%rcut, &
-    !      2.0_wp * tersoffs%cutoff + REAL_TOL
-
     if (threebody%mxtbp > 0 .and. threebody%cutoff < REAL_TOL) then
       call warning('three body cutoff not set, setting to half of global cutoff', .true.)
       threebody%cutoff = 0.5_wp * neigh%cutoff
