@@ -56,7 +56,7 @@ Module netcdf_wrap
     Integer( Kind = wi ) :: pp = wp
     !> The netCDF handle corresponding to the real printing precision
 #ifdef NETCDF
-    Integer( Kind = wi ) :: ncp = NF90_DOUBLE
+    Integer( Kind = wi ), Public :: ncp = NF90_DOUBLE
 #endif
   End Type netcdf_param
 

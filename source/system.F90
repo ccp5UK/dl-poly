@@ -1,9 +1,9 @@
 Module system
 !
 !> System related subroutines
-!> authour -  J. Magdge Aug 2018  
+!> author -  J. Madge Aug 2018
 !>
-!> 
+!>
 !> contrib - i. scivetti Aug 2019
 
   Use angles,          Only: angles_type
@@ -242,6 +242,7 @@ Contains
 
       l_tmp = .true.
       If (comm%idnode == 0) Inquire (File=files(FILE_REVOLD)%filename, Exist=l_tmp)
+
       Call gcheck(comm, l_tmp, "enforce")
       If (.not. l_tmp) Call error(519)
 

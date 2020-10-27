@@ -67,11 +67,19 @@ Module statistics
 
     Integer(Kind=wi)           :: numacc = 0, &
                                   natms0 = 0
-    Integer(Kind=wi)           :: mxnstk, mxstak, intsta
+    Integer(Kind=wi)           :: mxnstk
+    !> Max stack size for rolling averages
+    Integer(Kind=wi)           :: mxstak = 1
+    !> Frequency of STATIS output
+    Integer(Kind=wi)           :: intsta = 100
+    !> Whether file open
     Logical                    :: statis_file_open = .false.
+    !> Whether file is YAML style
     Logical                    :: file_yaml = .false.
+    !> Whether stats has been set up
     Logical                    :: newjob = .true.
-    Logical                    :: lpana
+    !> Whether any bond, angle, etc. analysis
+    Logical                    :: lpana = .false.
     Real(Kind=wp)              :: consv = 0.0_wp, shlke = 0.0_wp, engke = 0.0_wp, &
                                   engrot = 0.0_wp, engcpe = 0.0_wp, engsrp = 0.0_wp, &
                                   engter = 0.0_wp, engtbp = 0.0_wp, engfbp = 0.0_wp, &
@@ -451,14 +459,14 @@ Contains
     Logical                    :: ffpass
 
     If (present(ff)) then
-      If(ff==1)Then      
+      If(ff==1)Then
         ffpass=.True.
       Else
-        ffpass=.False.      
+        ffpass=.False.
       End If
     Else
       ffpass= .True.
-    Endif 
+    Endif
 
     fail = 0
 
@@ -538,7 +546,7 @@ Contains
 
     ! system energy
     ! Configurational energy has been defined in subroutine w_calculateorces within drivers.F90
-    ! In the case of EVB calculations, the configurational energy is recomputed via diagonalisation 
+    ! In the case of EVB calculations, the configurational energy is recomputed via diagonalisation
     ! of the EVB matrix (subroutine evb.F90)
 
     ! Configurational stats%stpcfg energy has been defined in subroutine calculate_forces within drivers.F90
@@ -849,8 +857,10 @@ Contains
 
     ! z-density collection
 
-    If (zdensity%l_collect .and. ((.not. leql) .or. nstep >= nsteql) .and. &
+    If (zdensity%l_collect) then
+      if (((.not. leql) .or. nstep >= nsteql) .and. &
         Mod(nstep, zdensity%frequency) == 0) Call z_density_collect(zdensity, config)
+    end If
 
     ! Catch time of starting statistical averages
 

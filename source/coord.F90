@@ -22,13 +22,22 @@ Module coord
 
   Type, Public :: coord_type
 
-    Integer                       :: ncoordpairs, coordinterval, coordstart, coordops, &
-                                     ncoorddis, ncoordab, maxlist = 1000
+    !> Number of coordinate pairs
+    Integer                       :: ncoordpairs
+    !> Frequency of collection
+    Integer                       :: coordinterval = 100
+    !> Step to start
+    Integer                       :: coordstart = 0
+    Integer                       :: coordops = 0
+    Integer                       :: ncoorddis
+    Integer                       :: ncoordab
+    Integer                       :: maxlist = 1000
     Real(wp), Allocatable         :: arraycuts(:), discuts(:)
     Character(Len=8), Allocatable :: arraypairs(:, :), disatms(:)
     Integer, Allocatable          :: coordlist(:, :), icoordlist(:, :), defectlist(:), adfcoordlist(:, :)
     Integer, Allocatable          :: ltype(:, :), ltypeA(:, :), ltypeB(:, :), cstat(:, :), disltype(:)
-    Logical                       :: coordon
+    !> Active
+    Logical                       :: coordon = .false.
     Real(wp)                      :: coordis
 
   Contains

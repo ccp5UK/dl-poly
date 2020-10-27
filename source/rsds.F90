@@ -37,12 +37,18 @@ Module rsds
   Type, Public :: rsd_type
     Private
 
+    !> Active
+    Logical, Public          :: lrsd = .false.
+    !> Initialised
     Logical                  :: newjob = .true.
     Integer(Kind=li)         :: rec = 0_li, &
                                 frm = 0_li
-    Integer(Kind=wi), Public :: nsrsd, isrsd
-    Real(Kind=wp), Public    :: rrsd
-    Logical, Public          :: lrsd
+    !> Step to start at
+    Integer(Kind=wi), Public :: nsrsd = 0
+    !> Frequency of collection
+    Integer(Kind=wi), Public :: isrsd = 1
+    !> Cutoff for accepting an atom has moved
+    Real(Kind=wp), Public    :: rrsd = 0.15_wp
 
   End Type
   Public :: rsd_write

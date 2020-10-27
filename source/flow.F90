@@ -62,17 +62,17 @@ Module flow_control
     !> Check if first call of md_vv or calculate_forces
     Logical, Public          :: newjob = .true.
     !> Strict mode
-    Logical, Public          :: strict
+    Logical, Public          :: strict = .true.
     !> Topology printing switch
-    Logical, Public          :: print_topology
+    Logical, Public          :: print_topology = .true.
     !> Force capping switch
-    Logical, Public          :: force_cap
+    Logical, Public          :: force_cap = .false.
     !> Equilibration state flag
-    Logical, Public          :: equilibration
+    Logical, Public          :: equilibration = .true.
     !> Full simulation (_i.e._ not replay) flag
-    Logical, Public          :: simulation
+    Logical, Public          :: simulation = .true.
     !> Book keeping flag
-    Logical, Public          :: book
+    Logical, Public          :: book = .true.
     !> Excluded interactions flag
     Logical, Public :: exclusions
 
@@ -83,32 +83,41 @@ Module flow_control
     Logical, Public :: heat_flux
 
     !> Restart key
-    Integer(Kind=wi), Public :: restart_key
+    Integer(Kind=wi), Public :: restart_key = RESTART_KEY_CLEAN
     !> Current simulation step
-    Integer(kind=wi), Public :: step
+    Integer(kind=wi), Public :: step =0
     !> Current simulation time (step * timestep)
-    Real(Kind=wp), Public    :: time
+    Real(Kind=wp), Public    :: time = 0.0_wp
     !> Starting time, non-zero if job is restarted
-    Real(Kind=wp), Public    :: start_time
+    Real(Kind=wp), Public    :: start_time = 0.0_wp
     !> Number of production steps
-    Integer(Kind=wi), Public :: run_steps
+    Integer(Kind=wi), Public :: run_steps = 0
     !> Number of equilibration steps
-    Integer(Kind=wi), Public :: equil_steps
+    Integer(Kind=wi), Public :: equil_steps = 0
     !> Data printing interval (in steps)
-    Integer(Kind=wi), Public :: freq_output
+    Integer(Kind=wi), Public :: freq_output = 100
+    !Analyse
+    !> Analyse bonds
+    Logical, Public :: analyse_bond = .false.
+    !> Analyse angles
+    Logical, Public :: analyse_ang = .false.
+    !> Analyse dihedrals
+    Logical, Public :: analyse_dih = .false.
+    !> Analyse inversions
+    Logical, Public :: analyse_inv = .false.
     !> Bond distribution calculation period (in steps)
-    Integer(Kind=wi), Public :: freq_bond
+    Integer(Kind=wi), Public :: freq_bond = 0
     !> Angle distribution calculation period (in steps)
-    Integer(Kind=wi), Public :: freq_angle
+    Integer(Kind=wi), Public :: freq_angle = 0
     !> Dihedral distribution calculation period (in steps)
-    Integer(Kind=wi), Public :: freq_dihedral
+    Integer(Kind=wi), Public :: freq_dihedral = 0
     !> Inversion distribution calculation period (in steps)
-    Integer(Kind=wi), Public :: freq_inversion
-    !> Restart files creation period (in steps
-    Integer(Kind=wi), Public :: freq_restart
+    Integer(Kind=wi), Public :: freq_inversion = 0
+    !> Restart files creation period (in steps)
+    Integer(Kind=wi), Public :: freq_restart = 1000
     !> Reset padding flag
     Logical, Public :: reset_padding
-    !> Type of Simulation we perform
+    !> Type of Simulation we are performing
     Integer, Public          :: simulation_method = MD_STD
     !> MD step that DL_POLY starts at
     Integer, Public          :: initial_md_step = 0
@@ -128,8 +137,6 @@ Module flow_control
     Procedure, Public :: line_printed => flow_type_line_printed
   End Type flow_type
 
-  Public :: read_simtype
-
 Contains
 
   Pure Function flow_type_new_page(T) Result(new_page)
@@ -144,99 +151,5 @@ Contains
 
     T%lines = T%lines + 1
   End Subroutine flow_type_line_printed
-
-
-  Subroutine read_simtype(flow, control_filename, comm)
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine to read option evb from CONTROL file. If present,
-    ! the number of fields to be coupled is assigned to flow%NUM_FF. If there
-    ! is an error in the specification for this option evb or the CONTROL file is
-    ! not found, variables are temporarily assigned and DL_POLY will print an
-    ! error message and abort later once OUTPUT file has been opened
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Type(flow_type) , Intent(  Out) :: flow
-    Character(Len=*), Intent(In   ) :: control_filename
-    Type(comms_type), Intent(InOut) :: comm
-
-    Logical                :: carry,safe, stdtype
-    Character( Len = 200 ) :: record
-    Character( Len = 40  ) :: word
-    Character( Len = 100 ) :: cfilename
-
-    Integer       :: unit_no
-
-
-    cfilename = "CONTROL"
-    If (Len_Trim(control_filename) > 0) Then
-      cfilename = Trim(control_filename)
-    End If
-    ! Set safe flag
-    safe    =.true.
-    stdtype =.true.
-
-    ! Check control file exists
-    If (comm%idnode == 0) Inquire(File=Trim(cfilename), Exist=safe)
-    Call gcheck(comm,safe,"enforce")
-    If (.not.safe) Then
-      ! If CONTROL file is not found, set the following variables and return.
-      ! DL_POLY will later abort by printing an error message
-      ! At this stage we cannot stop the execution because OUTPUT has not been opened yet
-      flow%simulation_method=MD_STD
-      flow%NUM_FF = 1
-      Return
-    Else
-      ! If CONTROL file is found, proceed
-      If (comm%idnode == 0) Then
-        Open(Newunit=unit_no, File=trim(cfilename),Status='old')
-      End If
-    End If
-
-    Call get_line(safe,unit_no,record,comm)
-
-    If (safe) Then
-      carry = .true.
-      Do While (carry)
-
-        Call get_line(safe,unit_no,record,comm)
-        If (.not.safe) Exit
-        Call lower_case(record)
-        Call get_word(record,word)
-
-        ! read EVB option. If for any reason there was a typo with the option "evb", DL_POLY will complain later
-        If (word(1:3) == 'evb') Then
-          flow%simulation_method=EmpVB
-          stdtype =.false.
-          Call get_word(record,word)
-          flow%NUM_FF = Nint(word_2_real(word,0.0_wp))
-          If(flow%NUM_FF <= 1)Then
-          ! If there is no value assigned or a wrong input value has been set, activate evbfail
-            flow%NUM_FF  = 1
-            flow%evbfail = .True.
-          End If
-        Else If (word(1:6) == 'finish') Then
-          carry=.false.
-        End If
-      End Do
-
-      If(stdtype)Then
-      ! Set standard option
-        flow%simulation_method= MD_STD
-        flow%NUM_FF = 1
-      End If
-
-    End If
-
-    ! Close CONTROL file
-    If (comm%idnode == 0) Close(unit_no)
-
-  End Subroutine read_simtype
-
 
 End Module flow_control

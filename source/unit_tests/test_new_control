@@ -1,0 +1,25 @@
+title 8xGRAMICIDIN A WITH WATER SOLVATING (99120 ATOMS)
+
+temperature  300.0 K
+print_frequency  5.0 steps
+stats_frequency  5.0 steps
+vdw_cutoff  8.0 ang
+cutoff  8.0 ang
+coul_method ewald
+ewald_precision 1e-06
+ensemble npt
+ensemble_method berendsen
+ensemble_thermostat_coupling  0.5 ps
+ensemble_barostat_coupling  1.0 ps
+time_run  20.0 steps
+time_equilibration  20.0 steps
+time_job  7200.0 s
+time_close  100.0 s
+record_equilibration ON
+timestep_variable ON
+timestep  0.001 ps
+pressure_hydrostatic  0.001 katm
+restart rescale
+rescale_frequency  3.0 steps
+equilibration_force_cap  1000.0 k_B.temp/ang
+shake_tolerance  1e-06 ang

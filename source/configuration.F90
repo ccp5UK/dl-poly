@@ -116,13 +116,13 @@ Module configuration
     Integer(Kind=wi), Public      :: mxtana, mxgana, mxbfss, mxbuff
     Integer(Kind=wi), Public      :: mxlshp, mxatms, mxatdm ! mxatms = most ever atoms possible
     ! general flags
-    Logical                       :: l_ind, l_exp
-    Integer                       :: levcfg, nx, ny, nz, &
+    Logical                       :: l_ind = .false., l_exp = .false.
+    Integer                       :: levcfg, nx = 1, ny = 1, nz = 1, &
                                      atmfre, atmfrz, megatm, megfrz
     ! Degrees of freedom must be in long integers so we do 2.1x10^9 particles
     Integer(Kind=li)              :: degfre, degshl, degtra, degrot
     ! vdws%elrc,vdws%vlrc - vdw energy and virial are scalars and in vdw
-    Real(Kind=wp)                 :: dvar, fmax, width
+    Real(Kind=wp)                 :: dvar = 0.0_wp, fmax, width
     Type(kpoints_type)            :: k
 
   Contains
@@ -185,7 +185,7 @@ Module configuration
   Public :: unpack_gathered_coordinates
   Public :: distribute_forces, gather_forces
   Public :: ordering_indices
-
+  Public :: setup_cell_props
 Contains
 
   Pure Subroutine chvom(T, flag)
@@ -905,7 +905,7 @@ Contains
     ! Amend volume of density cell if cluster, slab or bulk slab
     ! cell dimensional properties overwritten but not needed anyway
 
-    If (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB .or. config%imc_n == 6) Then
+    If (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB) Then
       celh = config%cell
 
       If (config%imcon == IMCON_NOPBC) Then
@@ -1852,7 +1852,7 @@ Contains
             End If
           End Do
 
-          ! If only detecting box dimensions for imcon == IMCON_NOPBC or 6 or imc_n == 6
+          ! If only detecting box dimensions for imcon == IMCON_NOPBC
 
         Else
 
@@ -1959,7 +1959,7 @@ Contains
             Write (messages(2), '(2(a,i0))') 'but maximum & minumum numbers of atoms per domain asked for : ', &
               max_fail, ' & ', min_fail
             Write (messages(3), '(a,i0)') 'estimated densvar value for passing this stage safely is : ', &
-              Ceiling((dvar * (Real(max_fail, wp) / Real(config%mxatms, wp))**(1.0_wp / 1.7_wp) - 1.0_wp) * 100.0_wp)
+              Ceiling((dvar * (Real(max_fail, wp) / Real(config%mxatms, wp)) - 1.0_wp) * 100.0_wp)
             Call info(messages, 3, .true.)
             Call error(45)
           End If
@@ -1974,7 +1974,7 @@ Contains
 
     End Do
 
-    ! If only detecting box dimensions for imcon == IMCON_NOPBC or 6 or imc_n == 6
+    ! If only detecting box dimensions for imcon == IMCON_NOPBC or IMCON_SLAB
 
     If (l_xtr) Then
       Call gmax(comm, xhi)
@@ -2127,7 +2127,7 @@ Contains
 ! default record size
 
     safe = .true. ! we start safe
-    l_ind = .false. ! no indeces needed
+    l_ind = .false. ! no indices needed
     strict = .false. ! not in a strict mode
     l_his = .false. ! not reading history
     l_xtr = .true. ! seeking extreme cell dimensions
@@ -2326,7 +2326,7 @@ Contains
     yhi = 0.0_wp
     zhi = 0.0_wp
 
-    If (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB .or. config%imc_n == 6) Then
+    If (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB) Then
 
       ! If MASTER read
 
@@ -2342,7 +2342,7 @@ Contains
 
           Read (Unit=files(conftag)%unit_no, Fmt=*)
           Read (Unit=files(conftag)%unit_no, Fmt=*)
-          If (config%imcon /= 0) Then
+          If (config%imcon /= IMCON_NOPBC) Then
             Read (Unit=files(conftag)%unit_no, Fmt=*)
             Read (Unit=files(conftag)%unit_no, Fmt=*)
             Read (Unit=files(conftag)%unit_no, Fmt=*)
@@ -2433,6 +2433,16 @@ Contains
       End If
 
     End If
+
+    ! halt execution for unsupported image conditions in DD
+    ! checks for some inherited from DL_POLY_2 are though kept
+
+    If (config%imcon == IMCON_TRUNC_OCTO .or. &
+        config%imcon == IMCON_RHOMBIC_DODEC .or. &
+        config%imcon == IMCON_HEXAGONAL) then
+      write(message, '(A,I0.1,A)') 'Imcon ',config%imcon,' no longer supported in DL_POLY_4'
+      Call error(0, message)
+    end If
 
   End Subroutine scan_config
 
@@ -3660,12 +3670,9 @@ Contains
     Integer :: i,j
     Character(Len=60) :: error_message
 
-    error_message = "Sizes of vectors a and b differ"
-    Call assert(Size(a) == Size(b), error_message)
-    error_message = "All elements vector a must be unique for mapping to work"
-    Call assert(.not. all_elements_unique(a), error_message)
-    error_message = "All elements vector b must be unique for mapping to work"
-    Call assert(.not. all_elements_unique(b), error_message)
+    Call assert(Size(a) == Size(b), "Sizes of vectors a and b differ")
+    Call assert(.not. all_elements_unique(a), "All elements vector a must be unique for mapping to work")
+    Call assert(.not. all_elements_unique(b), "All elements vector b must be unique for mapping to work")
 
     Allocate(b_to_a(Size(a)), a_to_b(Size(a)))
 
@@ -3702,6 +3709,43 @@ Contains
 
     Return
   End Function all_elements_unique
+
+  Subroutine setup_cell_props(config, cell_properties)
+    Type(configuration_type), Intent(InOut) :: config
+    Real(kind=wp) :: ats
+    Real(kind=wp) :: test
+    Real(kind=wp), Dimension(10), Intent(Out) :: cell_properties
+    ! check integrity of cell vectors: for cubic cell
+
+    If (config%imcon == IMCON_CUBIC) then
+
+      ats = (Abs(config%cell(1)) + Abs(config%cell(5))) / 2.0_wp
+      test = 1.0e-10_wp * ats ! 1.0e-10_wp tolerance in primitive cell type specification of dimensions
+      If (any(Abs(config%cell(1:9:4) - ats) > test)) Call error(410)
+    end If
+
+    ! check for diagonal cell matrix if appropriate: imcon=1,2
+
+    If (config%imcon /= IMCON_NOPBC .and. config%imcon /= IMCON_PARALLELOPIPED .and. config%imcon /= IMCON_SLAB) Then
+      If (Any(Abs(config%cell(2:4)) > zero_plus)) Then
+        Call error(0, 'Cell not consistent with image convention (non-orthogonal)')
+      End If
+      If (Any(Abs(config%cell(6:8)) > zero_plus)) Then
+        Call error(0, 'Cell not consistent with image convention (non-orthorgonal)')
+      End If
+    End If
+
+    ! calculate dimensional properties of simulation cell
+    ! (for use in link-cells) and ttm%volume and define min cell config%width
+
+    Call dcell(config%cell, cell_properties)
+    config%width = Min(cell_properties(7), cell_properties(8), cell_properties(9))
+
+    config%volm = cell_properties(10)
+
+    If (config%imcon == IMCON_SLAB) config%width = Min(cell_properties(7), cell_properties(8))
+
+  end Subroutine setup_cell_props
 
 
 End Module configuration

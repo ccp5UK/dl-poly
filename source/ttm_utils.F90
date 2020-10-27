@@ -198,13 +198,14 @@ Contains
     Type(ttm_type),   Intent(InOut) :: ttm
     Type(comms_type), Intent(InOut) :: comm
 
-    Real(Kind=wp) :: eltempav = 0.0_wp, epc = 0.0_wp
+    Real(Kind=wp) :: eltempav
 
     Call eltemp_mean(eltempav, ttm, comm)
+    Call interpolate(ttm%gel, ttm%gtable, eltempav, chi)
 
-    Call interpolate(ttm%gel, ttm%gtable, eltempav, epc)
-
-    chi = epc * Merge(ttm%rcellrho, 1.0_wp, ttm%ttmdyndens)
+    if (ttm%ttmdyndens) then
+      chi = chi * ttm%rcellrho
+    end if
 
   End Subroutine calcchies
 

@@ -26,6 +26,7 @@ Module control
 
   Use angles,               Only: angles_type
   Use angular_distribution, Only: adf_type
+  Use bspline,              Only: MIN_SPLINES, MAX_SPLINES
   Use bonds,                Only: bonds_type
   Use comms,                Only: comms_type,&
                                   gcheck
@@ -45,8 +46,7 @@ Module control
   Use coord,                Only: coord_type
   Use core_shell,           Only: core_shell_type
   Use defects,              Only: defects_type
-  Use development,          Only: development_type,&
-                                  testing_type
+  Use development,          Only: development_type
   Use dihedrals,            Only: dihedrals_type
   Use electrostatic,        Only: ELECTROSTATIC_COULOMB,&
                                   ELECTROSTATIC_COULOMB_FORCE_SHIFT,&
@@ -81,6 +81,7 @@ Module control
                                   file_type
   Use flow_control,         Only: DFTB,&
                                   MD_STD,&
+                                  EmpVB,&
                                   RESTART_KEY_CLEAN,&
                                   RESTART_KEY_NOSCALE,&
                                   RESTART_KEY_OLD,&
@@ -101,7 +102,6 @@ Module control
                                   sp,&
                                   wi,&
                                   wp
-  Use langevin,             Only: langevin_allocate_arrays
   Use metal,                Only: metal_type
   Use minimise,             Only: MIN_DISTANCE,&
                                   MIN_ENERGY,&
@@ -164,6 +164,7 @@ Module control
   Public :: scan_control_io
   Public :: scan_control
   Public :: scan_control_pre
+  Public :: read_simtype
 
 Contains
 
@@ -241,15 +242,13 @@ Contains
     Character(Len=80)  :: banner(9)
     Integer            :: grdana, grdang, grdbnd, grddih, grdinv, i, itmp, j, k, nstall, nstana
     Integer(Kind=wi)   :: tmp_seed(1:3), traj_freq, traj_key, traj_start
-    Logical            :: l_0, l_timcls, l_timjob, lens, lforc, limp, lplumed, lpres, lstep, &
+    Logical            :: l_0, l_timcls, l_timjob, lens, lforc, lplumed, lpres, lstep, &
                           lstrext, ltemp, safe
     Real(Kind=wp)      :: eps0, prmps(1:4), rcb_d, rcell(1:9), rcut1, rpad1, rvdw1, tmp, tol
-    Type(testing_type) :: app_test, unit_test
 
     ! initialise system control variables and their logical switches
 
     ! default expansion option
-
     config%l_exp = .false.
     config%nx = 1
     config%ny = 1
@@ -269,7 +268,7 @@ Contains
     ! default impact option: option applied, particle index,
     ! timestep of impact, energy of impact, (3) direction of impact
 
-    limp = .false.
+    impa%active = .false.
     impa%imd = 0
     impa%tmd = -1
     impa%emd = 0.0_wp
@@ -447,11 +446,11 @@ Contains
 
     ttm%sdepoType = 0
     ttm%sig = 1.0_wp
-    ttm%sigmax = 5
+    ttm%sigmax = 5.0_wp
 
     ttm%tdepoType = 1
     ttm%tdepo = 1.0e-3_wp
-    ttm%tcdepo = 5
+    ttm%tcdepo = 5.0_wp
 
     ! default boundary conditions for electronic temperature
 
@@ -724,17 +723,6 @@ Contains
         Write (message, '(a,1p,e12.4)') '%%% separation criterion (Angstroms) %%%', devel%r_dis
         Call info(message, .true.)
 
-        ! read unit and app tests to perform
-      Else If (word(1:9) == 'unit_test') Then
-        devel%run_unit_tests = .true.
-        Call unit_test%all()
-        devel%unit_test = unit_test
-
-      Else If (word(1:8) == 'app_test') Then
-        devel%run_app_tests = .true.
-        Call app_test%all()
-        devel%app_test = app_test
-
         ! read VDW options
       Else If (word(1:3) == 'vdw') Then
         Call get_word(record, word1)
@@ -844,6 +832,10 @@ Contains
 
         ! read expansion option
 
+      Else If (word(1:8) == 'app_test') Then
+
+        devel%test_dftb_library = .true.
+
       Else If (word(1:5) == 'nfold') Then
 
         config%l_exp = .true.
@@ -887,8 +879,8 @@ Contains
         Write (messages(5), '(a,1p,3e12.4)') 'v-r(x,y,z)      ', impa%vmx, impa%vmy, impa%vmz
         Call info(messages,5, .true.)
 
-        If (limp) Call error(600)
-        limp = .true.
+        If (impa%active) Call error(600)
+        impa%active = .true.
 
         ! read seeding option
 
@@ -1399,7 +1391,7 @@ Contains
             Write (messages(1), '(a)') 'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)'
             Write (messages(2), '(a,1p,e12.4)') 'e-phonon friction (ps^-1) ', thermo%chi_ep
             Write (messages(3), '(a,1p,e12.4)') 'e-stopping friction (ps^-1) ', thermo%chi_es
-            Write (messages(4), '(a,1p,e12.4)') 'e-stopping velocity (A ps^-1) ', thermo%vel_es2
+            Write (messages(4), '(a,1p,e12.4)') 'e-stopping velocity (ang ps^-1) ', thermo%vel_es2
             Call info(messages, 4, .true.)
 
             If (lens) Call error(414)
@@ -1423,6 +1415,8 @@ Contains
               Call info(message, .true.)
               Call error(436)
             End If
+
+            call thermo%init_dpd(vdws%max_vdw)
 
             Call get_word(record, word)
             thermo%gamdpd(0) = Abs(word_2_real(word, 0.0_wp))
@@ -1827,10 +1821,6 @@ Contains
           Call error(436)
 
         End If
-
-        ! For Langevin ensembles that require arrays
-
-        If (thermo%l_langevin) Call langevin_allocate_arrays(thermo, config%mxatms)
 
         ! read density variation option
 
@@ -2670,6 +2660,11 @@ Contains
           If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record, word)
           tmp = Abs(word_2_real(word)) ! bond length
 
+          flow%analyse_bond = .true.
+          flow%analyse_ang = .true.
+          flow%analyse_dih = .true.
+          flow%analyse_inv = .true.
+
           nstana = Max(nstana, i)
           grdana = Max(grdana, j)
           rcb_d = Max(rcb_d, tmp)
@@ -2678,16 +2673,20 @@ Contains
           tmp = Abs(word_2_real(word)) ! bond length
 
           flow%freq_bond = Max(flow%freq_bond, i)
+          flow%analyse_bond = .true.
           grdbnd = j
           rcb_d = Max(rcb_d, tmp)
         Else If (akey == 'ang') Then
           flow%freq_angle = Max(flow%freq_angle, i)
+          flow%analyse_ang = .true.
           grdang = j
         Else If (akey == 'dih') Then
           flow%freq_dihedral = Max(flow%freq_dihedral, i)
+          flow%analyse_dih = .true.
           grddih = j
         Else If (akey == 'inv') Then
           flow%freq_inversion = Max(flow%freq_inversion, i)
+          flow%analyse_inv = .true.
           grdinv = j
         End If
         grdana = Max(grdana, grdbnd, grdang, grddih, grdinv)
@@ -3265,8 +3264,7 @@ Contains
     End If
 
     ! report if vdws%cutoff is reset (measures taken in scan_config)
-
-    If ((.not.vdws%no_vdw) .and. Abs(vdws%cutoff-rvdw1) > 1.0e-6_wp) Then
+    If ((.not. vdws%no_vdw) .and. Abs(vdws%cutoff - rvdw1) > 1.0e-6_wp) Then
       Write (message, '(a,1p,e12.4)') 'vdw cutoff reset to (Angs) ', vdws%cutoff
       Call info(message, .true.)
     End If
@@ -3321,11 +3319,10 @@ Contains
     ! report intramolecular analysis options
 
     If (stats%lpana .or. config%mxgana > 0) Then
-      If (config%mxgana == 0) Then
+      If (.not. any([flow%analyse_bond, flow%analyse_ang, flow%analyse_dih, flow%analyse_inv])) Then
         Call info('no intramolecular distribution collection requested', .true.)
       Else
-        If (bond%bin_pdf > 0 .and. angle%bin_adf > 0 .and. &
-          dihedral%bin_adf > 0 .and. inversion%bin_adf > 0) Then
+        If (all([flow%analyse_bond, flow%analyse_ang, flow%analyse_dih, flow%analyse_inv])) Then
           Call info('full intramolecular distribution collection requested (all=bnd/ang/dih/inv):', .true.)
         Else
           Call info('intramolecular distribution collection requested for:', .true.)
@@ -3795,10 +3792,11 @@ Contains
       ttm%fluence = ttm%fluence * ttm%mJcm2_to_eVA2
       ttm%dEdX = 0.1_wp * ttm%dEdX
     End If
+
   End Subroutine read_control
 
-  Subroutine scan_control(rcter, max_rigid, imcon, imc_n, cell, xhi, yhi, zhi, mxgana, &
-                          l_ind, nstfce, ttm, cshell, stats, thermo, green, devel, msd_data, met, &
+  Subroutine scan_control(max_rigid, imcon, cell, xhi, yhi, zhi, mxgana, &
+                          read_indices, nstfce, ttm, cshell, stats, thermo, green, devel, msd_data, met, &
                           pois, bond, angle, dihedral, inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, &
                           electro, ewld, kim_data, files, flow, comm)
 
@@ -3823,13 +3821,11 @@ Contains
     ! contrib   - i.t.todorov april 2019 l_trm reading and setting
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    Real(Kind=wp),            Intent(In   ) :: rcter
     Integer,                  Intent(In   ) :: max_rigid, imcon
-    Integer,                  Intent(InOut) :: imc_n
     Real(Kind=wp),            Intent(InOut) :: cell(1:9)
     Real(Kind=wp),            Intent(In   ) :: xhi, yhi, zhi
     Integer,                  Intent(  Out) :: mxgana
-    Logical,                  Intent(  Out) :: l_ind
+    Logical,                  Intent(  Out) :: read_indices
     Integer,                  Intent(  Out) :: nstfce
     Type(ttm_type),           Intent(InOut) :: ttm
     Type(core_shell_type),    Intent(In   ) :: cshell
@@ -3857,14 +3853,14 @@ Contains
     Type(flow_type),          Intent(InOut) :: flow
     Type(comms_type),         Intent(InOut) :: comm
 
-    Integer, Parameter       :: mxspl_def = 8, mxspl_min = 3
+    Integer, Parameter       :: mxspl_def = 8
     Real(Kind=wp), Parameter :: rbin_def = 0.05_wp, rcbnd_def = 2.5_wp, rcut_def = 1.0_wp
 
     Character(Len=200) :: record
     Character(Len=40)  :: akey, word, word1
     Character(Len=256) :: message
     Integer            :: bspline_local, i, itmp, nstrun
-    Logical            :: carry, l_exp, l_n_m, la_ana, la_ang, la_bnd, la_dih, la_inv, lelec, &
+    Logical            :: carry, l_exp, no_metal, la_ana, la_ang, la_bnd, la_dih, la_inv, lelec, &
                           lmet, lrcut, lrmet, lrvdw, lter, lvdw, safe
     Real(Kind=wp)      :: celprp(1:10), cut, eps0, fac, tol, tol1
 
@@ -3877,7 +3873,7 @@ Contains
 
     ! default reading indices options
 
-    l_ind = .true.
+    read_indices = .true.
 
     ! strict flag
 
@@ -3886,10 +3882,6 @@ Contains
     ! replay history option (real dynamics = no replay)
 
     flow%simulation = .true. ! don't replay history
-
-    ! slab option default
-
-    imc_n = imcon
 
     ! default switches for intramolecular analysis grids
 
@@ -3915,7 +3907,7 @@ Contains
     lrvdw = .false. ! Even though it vdws%cutoff may have been read from TABLE
 
     lmet = (met%max_metal > 0)
-    l_n_m = .not. lmet
+    no_metal = .not. lmet
     lrmet = (met%rcut > 1.0e-6_wp)
 
     lter = (tersoffs%max_ter > 0)
@@ -4011,12 +4003,6 @@ Contains
       Else If (word(1:5) == 'l_trm') Then
 
         devel%l_trm = .true.
-
-        ! read slab option (limiting DD slicing in z direction to 2)
-
-      Else If (word(1:4) == 'slab') Then
-
-        If (imcon /= 0 .and. imcon /= 6) imc_n = 6
 
         ! read real space cut off
 
@@ -4225,7 +4211,7 @@ Contains
 
         Else If (word(1:3) == 'ind') Then
 
-          l_ind = .false.
+          read_indices = .false.
           Call info('no index (reading in CONFIG) option on', .true.)
 
         Else If (word(1:3) == 'str') Then
@@ -4542,9 +4528,10 @@ Contains
     ! Sort neigh%cutoff as the maximum of all valid cutoffs
 
     neigh%cutoff = Max(neigh%cutoff, vdws%cutoff, met%rcut, kim_data%cutoff, bond%rcut, &
-                       2.0_wp * rcter + 1.0e-6_wp)
+                       2.0_wp * tersoffs%cutoff + 1.0e-6_wp)
     Call warning( &
-      'DD cutoff check: neigh%cutoff = Max(neigh%cutoff,vdws%cutoff,met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp', &
+         'DD cutoff check: neigh%cutoff = '// &
+         'Max(neigh%cutoff,vdws%cutoff,met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*tersoffs%cutoff+1.0e-6_wp', &
       .true.)
     Call warning(40, neigh%cutoff, 0.0_wp, 0.0_wp)
     ! If KIM model requires
@@ -4645,9 +4632,6 @@ Contains
               tol1 = Sqrt(-Log(eps0 * neigh%cutoff * (2.0_wp * tol * ewld%alpha)**2))
 
               fac = 1.0_wp
-              If (imcon == IMCON_TRUNC_OCTO .or. &
-                  imcon == IMCON_RHOMBIC_DODEC .or. &
-                  imcon == IMCON_HEXAGONAL) fac = 2.0_wp**(1.0_wp / 3.0_wp)
 
               ewld%kspace%k_vec_dim_cont = 2 * Nint(0.25_wp + fac * celprp(7:9) * ewld%alpha * tol1 / pi)
 
@@ -4691,15 +4675,15 @@ Contains
               ewld%bspline%num_splines = mxspl_def + mpoles%max_order
               bspline_local = ewld%bspline%num_splines
             Else
-              ewld%bspline%num_splines = Max(ewld%bspline%num_splines, mxspl_min)
+              ewld%bspline%num_splines = Max(ewld%bspline%num_splines, MIN_SPLINES)
               bspline_local = ewld%bspline%num_splines + mpoles%max_order
               bspline_local = 2 * Ceiling(0.5_wp * Real(bspline_local, wp))
             End If
             ewld%bspline%num_splines = 2 * Ceiling(0.5_wp * Real(ewld%bspline%num_splines, wp))
             ewld%bspline%num_splines = Max(ewld%bspline%num_splines, bspline_local)
 
-            If (ewld%bspline%num_splines > MAX_BSPLINE) Then
-               Write(message, '(a,i0,a)')"Number of bsplines bigger than ", MAX_BSPLINE, "! increase it and recompile!"
+            If (ewld%bspline%num_splines > MAX_SPLINES) Then
+               Write(message, '(a,i0,a)') "Number of bsplines bigger than ", MAX_SPLINES, "! Increase it and recompile!"
                Call error(0, message)
             End If
 
@@ -4808,14 +4792,14 @@ Contains
 
           ! Reset vdws%cutoff, met%rcut and neigh%cutoff when only tersoff potentials are opted for
 
-          If (lter .and. electro%no_elec .and. vdws%no_vdw .and. l_n_m .and. .not. rdf%l_collect) Then
+          If (lter .and. electro%no_elec .and. vdws%no_vdw .and. no_metal .and. .not. rdf%l_collect) Then
             vdws%cutoff = 0.0_wp
             met%rcut = 0.0_wp
             If (.not. flow%strict) Then
               If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdws%cutoff
-                neigh%cutoff = 2.0_wp * Max(bond%rcut, rcter) + 1.0e-6_wp
+                neigh%cutoff = 2.0_wp * Max(bond%rcut, tersoffs%cutoff) + 1.0e-6_wp
               Else
-                neigh%cutoff = Max(neigh%cutoff, 2.0_wp * Max(bond%rcut, rcter) + 1.0e-6_wp)
+                neigh%cutoff = Max(neigh%cutoff, 2.0_wp * Max(bond%rcut, tersoffs%cutoff) + 1.0e-6_wp)
               End If
             End If
           End If
@@ -4837,39 +4821,39 @@ Contains
             lrcut = .true.
             If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdws%cutoff
               neigh%cutoff = Max(vdws%cutoff, met%rcut, kim_data%cutoff, bond%rcut, &
-                                 2.0_wp * rcter + 1.0e-6_wp)
-              Call warning('DD cutoff check: cutoff = Max(vdws%cutoff,'// &
-                           'met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp', &
+                                 2.0_wp * tersoffs%cutoff + 1.0e-6_wp)
+              Call warning('DD cutoff check: neigh%cutoff = Max(vdws%cutoff,'// &
+                           'met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*tersoffs%cutoff+1.0e-6_wp', &
                            .true.)
               Call warning(40, neigh%cutoff, 0.0_wp, 0.0_wp)
             Else
               neigh%cutoff = Max(neigh%cutoff, vdws%cutoff, met%rcut, &
-                                 kim_data%cutoff, bond%rcut, 2.0_wp * rcter + 1.0e-6_wp)
+                                 kim_data%cutoff, bond%rcut, 2.0_wp * tersoffs%cutoff + 1.0e-6_wp)
               Call warning('DD cutoff check: neigh%cutoff = Max(neigh%cutoff,vdws%cutoff,'// &
-                           'met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp', &
+                           'met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*tersoffs%cutoff+1.0e-6_wp', &
                            .true.)
               Call warning(40, neigh%cutoff, 0.0_wp, 0.0_wp)
             End If
           End If
 
           ! Reset vdws%cutoff and met%rcut when only tersoff potentials are opted for and
-          ! possibly reset neigh%cutoff to 2.0_wp*rcter+1.0e-6_wp (leaving room for failure)
+          ! possibly reset neigh%cutoff to 2.0_wp*tersoffs%cutoff+1.0e-6_wp (leaving room for failure)
 
-          If (lter .and. electro%no_elec .and. vdws%no_vdw .and. l_n_m .and. .not. rdf%l_collect .and. &
+          If (lter .and. electro%no_elec .and. vdws%no_vdw .and. no_metal .and. .not. rdf%l_collect .and. &
               kim_data%active) Then
             vdws%cutoff = 0.0_wp
             met%rcut = 0.0_wp
             If (.not. flow%strict) Then
               lrcut = .true.
               If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdws%cutoff
-                neigh%cutoff = Max(bond%rcut, 2.0_wp * rcter + 1.0e-6_wp)
+                neigh%cutoff = Max(bond%rcut, 2.0_wp * tersoffs%cutoff + 1.0e-6_wp)
                 Call warning('DD cutoff check: neigh%cutoff = Max('// &
-                             'bond%rcut,2.0_wp*rcter+1.0e-6_wp', .true.)
+                             'bond%rcut,2.0_wp*tersoffs%cutoff+1.0e-6_wp', .true.)
                 Call warning(40, neigh%cutoff, 0.0_wp, 0.0_wp)
               Else
-                neigh%cutoff = Max(neigh%cutoff, bond%rcut, 2.0_wp * rcter + 1.0e-6_wp)
+                neigh%cutoff = Max(neigh%cutoff, bond%rcut, 2.0_wp * tersoffs%cutoff + 1.0e-6_wp)
                 Call warning('DD cutoff check: neigh%cutoff = Max(neigh%cutoff'// &
-                             'bond%rcut,2.0_wp*rcter+1.0e-6_wp', .true.)
+                             'bond%rcut,2.0_wp*tersoffs%cutoff+1.0e-6_wp', .true.)
                 Call warning(40, neigh%cutoff, 0.0_wp, 0.0_wp)
               End If
             End If
@@ -4964,11 +4948,11 @@ Contains
 
   End Subroutine scan_control
 
-  Subroutine scan_control_pre(imc_n, dvar, files, comm)
+  Subroutine scan_control_pre(dvar, files, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
-    ! dl_poly_4 subroutine for scanning the imc_n & dvar options in the
+    ! dl_poly_4 subroutine for scanning the dvar option in the
     ! control file
     !
     ! copyright - daresbury laboratory
@@ -4982,7 +4966,6 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,          Intent(InOut) :: imc_n
     Real(Kind=wp),    Intent(  Out) :: dvar
     Type(file_type),  Intent(InOut) :: files(:)
     Type(comms_type), Intent(InOut) :: comm
@@ -5028,15 +5011,6 @@ Contains
         Call get_word(record, word)
         dvar = Abs(word_2_real(word))
         dvar = 1.0_wp + Abs(dvar) / 100.0_wp
-
-        ! read slab option
-        ! limiting DD slicing in z direction to 2 for load balancing purposes
-        ! this is really a pre-scan in order to get the MD box dimensions
-        ! from scan_config before the option is read again in scan_control
-
-      Else If (word(1:4) == 'slab') Then
-
-        imc_n = 6
 
         ! io options
 
@@ -5730,5 +5704,97 @@ Contains
     If (comm%idnode == 0) Call files(FILE_CONTROL)%close ()
 
   End Subroutine scan_control_output
+
+  Subroutine read_simtype(control_filename, flow, comm)
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine to read option evb from CONTROL file. If present,
+    ! the number of fields to be coupled is assigned to flow%NUM_FF. If there
+    ! is an error in the specification for this option evb or the CONTROL file is
+    ! not found, variables are temporarily assigned and DL_POLY will print an
+    ! error message and abort later once OUTPUT file has been opened
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.scivetti march-october 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type(flow_type) , Intent(  Out) :: flow
+    Character(Len=*), Intent(In   ) :: control_filename
+    Type(comms_type), Intent(InOut) :: comm
+
+    Logical                :: carry,safe, stdtype
+    Character( Len = 200 ) :: record
+    Character( Len = 40  ) :: word
+    Character( Len = 100 ) :: cfilename
+
+    Integer       :: unit_no
+
+
+    cfilename = "CONTROL"
+    If (Len_Trim(control_filename) > 0) Then
+      cfilename = Trim(control_filename)
+    End If
+    ! Set safe flag
+    safe    =.true.
+    stdtype =.true.
+
+    ! Check control file exists
+    If (comm%idnode == 0) Inquire(File=Trim(cfilename), Exist=safe)
+    Call gcheck(comm,safe,"enforce")
+    If (.not.safe) Then
+      ! If CONTROL file is not found, set the following variables and return.
+      ! DL_POLY will later abort by printing an error message
+      ! At this stage we cannot stop the execution because OUTPUT has not been opened yet
+      flow%simulation_method=MD_STD
+      flow%NUM_FF = 1
+      Return
+    Else
+      ! If CONTROL file is found, proceed
+      If (comm%idnode == 0) Then
+        Open(Newunit=unit_no, File=trim(cfilename),Status='old')
+      End If
+    End If
+
+    Call get_line(safe,unit_no,record,comm)
+
+    If (safe) Then
+      carry = .true.
+      Do While (carry)
+
+        Call get_line(safe,unit_no,record,comm)
+        If (.not.safe) Exit
+        Call lower_case(record)
+        Call get_word(record,word)
+
+        ! read EVB option. If for any reason there was a typo with the option "evb", DL_POLY will complain later
+        If (word(1:3) == 'evb') Then
+          flow%simulation_method=EmpVB
+          stdtype =.false.
+          Call get_word(record,word)
+          flow%NUM_FF = Nint(word_2_real(word,0.0_wp))
+          If(flow%NUM_FF <= 1)Then
+          ! If there is no value assigned or a wrong input value has been set, activate evbfail
+            flow%NUM_FF  = 1
+            flow%evbfail = .True.
+          End If
+        Else If (word(1:6) == 'finish') Then
+          carry=.false.
+        End If
+      End Do
+
+      If(stdtype)Then
+      ! Set standard option
+        flow%simulation_method= MD_STD
+        flow%NUM_FF = 1
+      End If
+
+    End If
+
+    ! Close CONTROL file
+    If (comm%idnode == 0) Close(unit_no)
+
+  End Subroutine read_simtype
 
 End Module control

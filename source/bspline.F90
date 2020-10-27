@@ -24,8 +24,8 @@ Module bspline
 
   Public :: bspline_coeffs_gen, bspline_splines_gen
 
-  !! JW952
-  ! Attach to Ewald type?
+  Integer, Parameter, Public :: MIN_SPLINES=3, MAX_SPLINES=20
+
   Type, Public                                                :: bspline_type
     !> Number of required derivatives
     Integer(Kind=wi), Public                                  :: num_deriv

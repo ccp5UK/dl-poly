@@ -118,7 +118,7 @@ Module vdw
     Private
 
     !> No Van der Waals switch
-    Logical, Public                       :: no_vdw
+    Logical, Public                       :: no_vdw = .false.
     !> Flag for any tabulated potential
     Logical, Public                       :: l_tab = .false.
     !> Direct calculation flag
@@ -748,7 +748,7 @@ Contains
 
           keypot = vdws%ltp(k)
 
-          select case (keypot)
+          Select case (keypot)
           Case (VDW_TAB)
 
             ! tabulated energy and pressure lrc
@@ -1061,7 +1061,7 @@ Contains
 
       keypot = vdws%ltp(ivdw)
 
-      select case (keypot)
+      Select Case (keypot)
       Case (VDW_12_6)
 
         ! 12-6 potential :: u=a/r^12-b/r^6

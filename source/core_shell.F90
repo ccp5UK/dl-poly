@@ -70,7 +70,7 @@ Module core_shell
     Real(Kind=wp), Allocatable         :: oxt(:), oyt(:), ozt(:)
     !> Relaxed shell indicator
     Logical, Public                    :: relaxed = .true.
-    Real(Kind=wp), Public              :: rlx_tol(1:2)
+    Real(Kind=wp), Public              :: rlx_tol(1:2) = [1.0_wp, -1.0_wp]
   Contains
     Private
     Procedure, Public                  :: init => allocate_core_shell_arrays

@@ -62,13 +62,13 @@ Module drivers
                                   evb_setzero,&
                                   evb_population,&
                                   evb_check_external,&
-                                  evb_check_intermolecular,& 
-                                  evb_check_intramolecular,& 
+                                  evb_check_intermolecular,&
+                                  evb_check_intramolecular,&
                                   evb_check_constraints,&
                                   evb_check_configs, &
                                   evb_check_intrinsic, &
                                   evb_check_vdw, &
-                                  evb_prevent 
+                                  evb_prevent
   Use ewald,                Only: ewald_type
   Use external_field,       Only: FIELD_NULL,&
                                   external_field_apply,&
@@ -392,7 +392,13 @@ Contains
       ltmp = (bond%bin_pdf > 0 .and. &
               ((.not. flow%equilibration) .or. flow%step >= flow%equil_steps) .and. &
               Mod(flow%step, flow%freq_bond) == 0)
-      switch = 1 + Merge(1, 0, ltmp)
+
+      if (ltmp) then
+        switch = 2
+      else
+        switch = 1
+      end if
+
       Call bonds_forces(switch, stat%engbnd, stat%virbnd, stat%stress, neigh%cutoff, &
                         stat%engcpe, stat%vircpe, bond, mpoles, electro, cnfig, comm)
     End If
@@ -404,7 +410,11 @@ Contains
               ((.not. flow%equilibration) .or. flow%step >= flow%equil_steps) .and. &
               Mod(flow%step, flow%freq_angle) == 0)
 
-      switch = 1 + Merge(1, 0, ltmp)
+      if (ltmp) then
+        switch = 2
+      else
+        switch = 1
+      end if
       Call angles_forces(switch, stat%engang, stat%virang, stat%stress, angle, cnfig, comm)
     End If
 
@@ -415,7 +425,11 @@ Contains
               ((.not. flow%equilibration) .or. flow%step >= flow%equil_steps) &
               .and. Mod(flow%step, flow%freq_dihedral) == 0)
 
-      switch = 1 + Merge(1, 0, ltmp)
+      if (ltmp) then
+        switch = 2
+      else
+        switch = 1
+      end if
       Call dihedrals_forces(switch, stat%engdih, stat%virdih, stat%stress, &
                             neigh%cutoff, stat%engcpe, stat%vircpe, stat%engsrp, &
                             stat%virsrp, dihedral, vdws, mpoles, electro, cnfig, comm)
@@ -428,7 +442,11 @@ Contains
               ((.not. flow%equilibration) .or. flow%step >= flow%equil_steps) .and. &
               Mod(flow%step, flow%freq_inversion) == 0)
 
-      switch = 1 + Merge(1, 0, ltmp)
+      if (ltmp) then
+        switch = 2
+      else
+        switch = 1
+      end if
       Call inversions_forces(switch, stat%enginv, stat%virinv, stat%stress, inversion, cnfig, comm)
     End If
 
@@ -571,12 +589,12 @@ Contains
                                    green, devel, ewld, met, seed, thermo, crd, comm)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! dl_poly_4 subroutine to calculate energies, forces, stress and virials for a given ionic configuration
-   ! This subroutine is an extension of of the former subroutine calculate_forces that allows coupling up to 
+   ! This subroutine is an extension of of the former subroutine calculate_forces that allows coupling up to
    ! three FFs are coupled via EVB, and it also works for a single FF
    !
    ! copyright - daresbury laboratory
    ! contribution - i.scivetti January 2020
-   !    
+   !
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type(evb_type),            Intent(InOut) :: evbff
@@ -620,7 +638,7 @@ Contains
     Type(thermostat_type),     Intent(InOut) :: thermo(:)
     Type(coord_type),          Intent(InOut) :: crd(:)
     Type(comms_type)    ,      Intent(InOut) :: comm
- 
+
     Integer          :: i, ff
     Integer(Kind=wi) :: switch
     Logical          :: ltmp
@@ -629,7 +647,7 @@ Contains
     ! for new simulations when using the relaxed shell model
     ! set shells on top of their cores preventatively
 
-     Do ff = 1, flow%NUM_FF  
+     Do ff = 1, flow%NUM_FF
        If ( (cshell(ff)%megshl > 0 .and. cshell(ff)%keyshl == SHELL_RELAXED) .and. &
          (flow%restart_key == RESTART_KEY_CLEAN .and. flow%step == 0 .and. flow%equil_steps > 0) ) Then
          Call core_shell_on_top(cshell(ff), cnfig(ff), comm)
@@ -645,10 +663,10 @@ Contains
 
 
     100  Continue ! Only used when relaxed is false
- 
-    ! Initialise force arrays and possible torques for multipolar electrostatics, 
+
+    ! Initialise force arrays and possible torques for multipolar electrostatics,
     ! stress tensor (these are all additive in the force subroutines) and torques
-    Do ff = 1, flow%NUM_FF  
+    Do ff = 1, flow%NUM_FF
       Do i =1, cnfig(ff)%mxatms
         cnfig(ff)%parts(i)%fxx = 0.0_wp
         cnfig(ff)%parts(i)%fyy = 0.0_wp
@@ -664,7 +682,7 @@ Contains
     stat%engsrp = 0.0_wp
     stat%virsrp = 0.0_wp
     stat%engcpe = 0.0_wp
-    stat%vircpe = 0.0_wp    
+    stat%vircpe = 0.0_wp
 
     Do ff = 1, flow%NUM_FF
     ! Set up non-bonded interaction (verlet) list using link cells
@@ -673,8 +691,8 @@ Contains
          Call link_cell_pairs(vdws(ff)%cutoff, met(ff)%rcut, flow%book, cnfig(ff)%megfrz, cshell(ff), devel, &
                               neigh(ff), mpoles(ff), domain(ff), tmr, cnfig(ff), comm)
       End If
-    End Do  
-    
+    End Do
+
     Do ff = 1, flow%NUM_FF
       ! Calculate tersoff forces
 
@@ -689,20 +707,20 @@ Contains
       If (fourbody(ff)%n_potential > 0) Call four_body_forces(fourbody(ff), stat(ff), neigh(ff), domain(ff), cnfig(ff), comm)
 
     End Do
-      
+
 #ifdef CHRONO
     Call start_timer(tmr, 'Bonded Forces')
 #endif
-    
-    ! Computation of intramolecular interactions    
+
+    ! Computation of intramolecular interactions
     Do ff = 1, flow%NUM_FF
-    
+
       ! Calculate shell model forces
 
       If (cshell(ff)%megshl > 0) Call core_shell_forces(cshell(ff), stat(ff), cnfig(ff), comm)
 
       ! Calculate tethered atom forces
- 
+
       If (tether(ff)%total > 0) Call tethers_forces(stat(ff), tether(ff), cnfig(ff), comm)
 
       ! Calculate bond forces
@@ -712,7 +730,11 @@ Contains
           ((.not.flow%equilibration) .or. flow%step >= flow%equil_steps) .and. &
           Mod(flow%step,flow%freq_bond) == 0)
 
-         switch = 1 + Merge(1, 0, ltmp)
+        if (ltmp) then
+          switch = 2
+        else
+          switch = 1
+        end if
          Call bonds_forces(switch, stat(ff)%engbnd, stat(ff)%virbnd, stat(ff)%stress, neigh(ff)%cutoff, &
                            stat(ff)%engcpe, stat(ff)%vircpe, bond(ff), mpoles(ff), electro(ff), cnfig(ff), comm)
       End If
@@ -723,8 +745,12 @@ Contains
         ltmp = (angle(ff)%bin_adf > 0 .and. &
         ((.not.flow%equilibration) .or. flow%step >= flow%equil_steps) .and. &
         Mod(flow%step,flow%freq_angle) == 0)
-        
-        switch = 1 + Merge(1, 0, ltmp)
+
+        if (ltmp) then
+          switch = 2
+        else
+          switch = 1
+        end if
         Call angles_forces(switch, stat(ff)%engang, stat(ff)%virang, stat(ff)%stress, angle(ff), cnfig(ff), comm)
       End If
 
@@ -735,20 +761,28 @@ Contains
         ((.not.flow%equilibration) .or. flow%step >= flow%equil_steps) &
         .and. Mod(flow%step,flow%freq_dihedral) == 0)
 
-        switch = 1 + Merge(1, 0, ltmp)
+        if (ltmp) then
+          switch = 2
+        else
+          switch = 1
+        end if
         Call dihedrals_forces(switch, stat(ff)%engdih, stat(ff)%virdih, stat(ff)%stress, &
                               neigh(ff)%cutoff, stat(ff)%engcpe, stat(ff)%vircpe, stat(ff)%engsrp, &
                               stat(ff)%virsrp, dihedral(ff), vdws(ff), mpoles(ff), electro(ff), cnfig(ff), comm)
       End If
-  
+
       ! Calculate inversion forces
 
       If (inversion(ff)%total > 0) Then
         ltmp = (inversion(ff)%bin_adf > 0 .and. &
         ((.not.flow%equilibration) .or. flow%step >= flow%equil_steps) .and. &
          Mod(flow%step,flow%freq_inversion) == 0)
-         
-         switch = 1 + Merge(1, 0, ltmp)
+
+        if (ltmp) then
+          switch = 2
+        else
+          switch = 1
+        end if
          Call inversions_forces(switch, stat(ff)%enginv, stat(ff)%virinv, stat(ff)%stress, inversion(ff), cnfig(ff), comm)
        End If
 
@@ -757,8 +791,8 @@ Contains
 #ifdef CHRONO
     Call stop_timer(tmr,'Bonded Forces')
 #endif
-    
-    ! Computation of electrostatics, vdW and metal interactions    
+
+    ! Computation of electrostatics, vdW and metal interactions
     Do ff=1,flow%NUM_FF
       ! Calculate pair-like forces (metal,vdws,electrostatic) and add lrc
       If (.not.(met(ff)%max_metal == 0 .and. electro(ff)%key == ELECTROSTATIC_NULL .and. &
@@ -770,7 +804,7 @@ Contains
       End If
     End Do
 
-    ! Gather info for stress   
+    ! Gather info for stress
     Do ff=1,flow%NUM_FF
       Call gsum(comm, stat(ff)%stress)
     End do
@@ -782,10 +816,10 @@ Contains
                         stat(ff)%enginv
     End Do
 
-    ! Compute EVB energy, forces and stress tensor only if number of FFs > 1    
+    ! Compute EVB energy, forces and stress tensor only if number of FFs > 1
     If(flow%NUM_FF > 1)Then
-      Call evb_pes(evbff,flow,cnfig,stat) 
-    End If  
+      Call evb_pes(evbff,flow,cnfig,stat)
+    End If
 
     ! Apply external field
     ! For standard EVB we prevent such a calculation in evb_check_external
@@ -795,7 +829,7 @@ Contains
                                   ext_field(ff), rigid(ff), domain(ff), cnfig(ff), comm)
         stat(ff)%stpcfg = stat(ff)%stpcfg + stat(ff)%engfld
       End If
-    End Do 
+    End Do
 
     Do ff=1,flow%NUM_FF
     ! Apply PLUMED driven dynamics
@@ -843,9 +877,9 @@ Contains
          If (.not.(cshell(ff)%relaxed .and. minim(ff)%relaxed)) Then
             Call refresh_mappings(cnfig(ff), flow, cshell(ff), cons(ff), pmf(ff), stat(ff), msd_data(ff), bond(ff), angle(ff), &
                                   dihedral(ff), inversion(ff), tether(ff), neigh(ff), sites(ff), mpoles(ff), rigid(ff), &
-                                  domain(ff), kim_data(ff), ewld(ff), green(ff), minim(ff), thermo(ff), electro(ff), crd(ff), & 
+                                  domain(ff), kim_data(ff), ewld(ff), green(ff), minim(ff), thermo(ff), electro(ff), crd(ff), &
                                   comm, tmr)
-            If(ff == flow%NUM_FF) Go To 100 
+            If(ff == flow%NUM_FF) Go To 100
          End If
       End If
     End Do
@@ -882,18 +916,18 @@ Contains
       stat(1)%virtot = stat(1)%vircpe + stat(1)%virsrp + stat(1)%virter + stat(1)%virtbp + stat(1)%virfbp + &
                        stat(1)%virshl + stat(1)%virtet + stat(1)%virbnd + stat(1)%virang + stat(1)%virdih + &
                        stat(1)%virinv + stat(1)%virfld
-    EndIf      
+    EndIf
 
-    ! If coupling terms are non-zero functions, it is not possible wihtin the EVB framework 
-    ! to have a decomposition of the energy and virial into separate contributions 
-    ! for each type of interaction (e.g. angles, bonds, dihedrals, etc). 
-    ! For this reason, we set all these components to zero in the subroutine ebv_setzero. 
+    ! If coupling terms are non-zero functions, it is not possible wihtin the EVB framework
+    ! to have a decomposition of the energy and virial into separate contributions
+    ! for each type of interaction (e.g. angles, bonds, dihedrals, etc).
+    ! For this reason, we set all these components to zero in the subroutine ebv_setzero.
     !
-    ! The user might want to set no coupling terms between the force fields by choosing zero functions 
+    ! The user might want to set no coupling terms between the force fields by choosing zero functions
     ! (setting 'const' equal to zero in the SETEVB file).
     ! Only in this case the energy/virial decomposition is possible and evb_setzero is not called
     If(flow%NUM_FF > 1)Then
-      If(.Not. evbff%no_coupling)Then      
+      If(.Not. evbff%no_coupling)Then
         Call evb_setzero(flow,stat)
       End If
     End If
@@ -906,7 +940,7 @@ Contains
                                  rigid(ff)%map_shared, SHARED_UNIT_UPDATE_FORCES, domain(ff), comm)
       End If
     End Do
- 
+
   End Subroutine calculate_forces_evb
 
 
@@ -960,10 +994,10 @@ Contains
     Endif
 
     Call geo%set_geometry(comm, config, gathered, atmnam)
-    If (devel%app_test%dftb_library) Then
+    If (devel%test_dftb_library) Then
        !Call print_DFTB_geometry_data(geo, flow%step)
        Call run_dftbplus(comm, flow, geo, forces, atomic_charges, &
-                         run_app_test = devel%app_test%dftb_library)
+                         run_app_test = devel%test_dftb_library)
     Else
        Call run_dftbplus(comm, flow, geo, forces, atomic_charges)
     Endif
@@ -1655,7 +1689,7 @@ Contains
       End If
     Else
       ffpass= .True.
-    Endif    
+    Endif
 
 
     ! Get complete stress tensor
@@ -1913,7 +1947,7 @@ Contains
     !
     ! dl_poly_4 subroutine to drive a MD simulation with EVB. This subroutine
     ! is the EVB version of md_vv adapted to considering one and multiple
-    ! force-fields. This subroutine should replace vv_md upon merging EVB changes.  
+    ! force-fields. This subroutine should replace vv_md upon merging EVB changes.
     !
     ! copyright - daresbury laboratory
     ! author    - i.scivetti December 2019
@@ -1960,10 +1994,10 @@ Contains
     Type(msd_type ),           Intent(InOut) :: msd_data(:)
     Type(tersoff_type),        Intent(InOut) :: tersoffs(:)
     Type(tethers_type),        Intent(InOut) :: tether(:)
-    Type(threebody_type ),     Intent(InOut) :: threebody(:) 
+    Type(threebody_type ),     Intent(InOut) :: threebody(:)
     Type(vdw_type ),           Intent(InOut) :: vdws(:)
     Type(development_type ),   Intent(InOut) :: devel
-    Type(metal_type ),         Intent(InOut) :: met(:) 
+    Type(metal_type ),         Intent(InOut) :: met(:)
     Type(coord_type),          Intent(InOut) :: crd(:)
     Type(adf_type),            Intent(InOut) :: adf(:)
     Type(comms_type )    ,     Intent(InOut) :: comm
@@ -1974,8 +2008,8 @@ Contains
 
     Integer                     :: heat_flux_unit
     Real(kind=wp), Dimension(3) :: heat_flux
-    
-    
+
+
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV_EVB INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
     ! Calculate physical quantities at restart
@@ -1988,13 +2022,13 @@ Contains
       Call evb_prevent(plume(1)%l_plumed, kim_data(1)%active, ttm(1)%l_ttm, thermo(1)%key_dpd)
       ! Allocate EVB variables
       Call evbff%init(flow%NUM_FF)
-      ! Read EVB settings 
+      ! Read EVB settings
       Call read_evb_settings(evbff, flow, sites, files, comm)
-      Call info('Start EVB checking for the consistency of:',.True.) 
+      Call info('Start EVB checking for the consistency of:',.True.)
       ! Check consistency of intra-molecular interactions between different force fiels
-      ! for atoms that are not part of the EVB site  
+      ! for atoms that are not part of the EVB site
       Call evb_check_intramolecular(evbff, flow, sites, bond, angle, dihedral, inversion)
-      ! Check consistency of inter-molecular interactions 
+      ! Check consistency of inter-molecular interactions
       Call evb_check_intermolecular(evbff, flow, sites, tersoffs, met, threebody, fourbody)
       ! Check external fields
       Call evb_check_external(evbff, flow, ext_field)
@@ -2002,15 +2036,15 @@ Contains
       Call evb_check_configs(cnfig, flow, comm)
       ! Check consistency in the constraint specification between different FFs
       Call evb_check_constraints(evbff, cnfig, cons, cshell, tether, sites, flow, rigid, comm)
-      ! Check consistency of intrinsic properties for sites 
+      ! Check consistency of intrinsic properties for sites
       Call evb_check_intrinsic(evbff,sites,cnfig,flow,comm)
-      ! Check consistency of intrinsic properties for sites 
+      ! Check consistency of intrinsic properties for sites
       Call evb_check_vdw(evbff,flow, sites, vdws)
       Call info(' ',.True.)
-      Call info('EVB checking was successful !',.True.) 
+      Call info('EVB checking was successful !',.True.)
       Call info(' ',.True.)
    End If
-    
+
     ! Calculate kinetic tensor and energy at restart
     Do ff = 1, flow%NUM_FF
 
@@ -2021,20 +2055,20 @@ Contains
       Else
         Call kinstress(stat(ff)%strkin, cnfig(ff), comm)
       End If
-      
+
       stat(ff)%engke = 0.5_wp * (stat(ff)%strkin(1) +stat(ff)%strkin(5) + stat(ff)%strkin(9))
-  
+
       ! If cnfig%levcfg=2 and RBs are present, update forces on shared ones
       ! and get RB COM stress and virial at restart.  If cnfig%levcfg<2
       ! forces are calculated at (re)start
-       
+
       If (cnfig(ff)%levcfg == 2) Then
         If (rigid(ff)%total > 0) Then
           If (rigid(ff)%share) Then
-            Call update_shared_units(cnfig(ff), rigid(ff)%list_shared, rigid(ff)%map_shared, &    
+            Call update_shared_units(cnfig(ff), rigid(ff)%list_shared, rigid(ff)%map_shared, &
                                      SHARED_UNIT_UPDATE_FORCES,domain(ff),comm)
           End If
-  
+
           If (thermo(ff)%l_langevin) Then
             Call langevin_forces(flow%step, thermo(ff)%temp, thermo(ff)%tstep, thermo(ff)%chi, &
                                  thermo(ff)%fxl, thermo(ff)%fyl,thermo(ff)%fzl, cshell(ff), cnfig(ff), seed)
@@ -2051,7 +2085,7 @@ Contains
       End If
 
     End Do
- 
+
     !!!!!!!!!!!!!!!!!!!!!!!  W_AT_START_VV_EVB INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -2061,9 +2095,12 @@ Contains
         (tmr%job-tmr%elapsed) > tmr%clear_screen )
 
       ! Apply impact
-      Do ff=1,flow%NUM_FF
-        Call impact_option(cnfig(ff)%levcfg, flow%step, flow%equil_steps, rigid(ff), cshell(ff), stat(ff), impa, cnfig(ff), comm)
-      End Do
+      if (impa%active) then
+        Do ff=1,flow%NUM_FF
+          Call impact_option(cnfig(ff)%levcfg, flow%step, &
+               flow%equil_steps, rigid(ff), cshell(ff), stat(ff), impa, cnfig(ff), comm)
+        End Do
+      end if
 
       ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT if needed immediately after restart
       ! cnfig%levcfg == 2 avoids application twice when forces are calculated at (re)start
@@ -2093,12 +2130,12 @@ Contains
           If (thermo(ff)%l_zero .and. flow%step <= flow%equil_steps .and. &
               Mod(flow%step-flow%equil_steps,thermo(ff)%freq_zero) == 0) Then
               Call zero_k_optimise(stat(ff), rigid(ff), cnfig(ff), comm)
-          End If 
+          End If
         End Do
 
         Do ff = 1, flow%NUM_FF
         ! Switch on electron-phonon coupling only after flow%time offset
-        ttm(ff)%l_epcp = (flow%time >= ttm(ff)%ttmoffset)
+        if (ttm(ff)%l_ttm) ttm(ff)%l_epcp = (flow%time >= ttm(ff)%ttmoffset)
 
         ! Integrate equations of motion - velocity verlet first stage
           Call integrate_vv(VV_FIRST_STAGE, flow,cnfig(ff), ttm(ff), cshell(ff), cons(ff), pmf(ff), stat(ff), &
@@ -2108,7 +2145,7 @@ Contains
           Call refresh_mappings(cnfig(ff), flow, cshell(ff), cons(ff), pmf(ff), stat(ff), msd_data(ff), bond(ff), &
                                 angle(ff), dihedral(ff), inversion(ff), tether(ff), neigh(ff), sites(ff), mpoles(ff),&
                                 rigid(ff), domain(ff), kim_data(ff), ewld(ff), green(ff), minim(ff), thermo(ff), &
-                                electro(ff), crd(ff), comm, tmr)        
+                                electro(ff), crd(ff), comm, tmr)
         EndDo
 
       End If ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
@@ -2122,7 +2159,7 @@ Contains
           Call stat(ff)%allocate_per_particle_arrays(cnfig(ff)%mxatms)
 #endif /* HALF_HALO */
         End If
-      End Do 
+      End Do
 
       ! Evaluate forces
 
@@ -2140,7 +2177,7 @@ Contains
 !!$            Call output_dftb_forces(comm, flow, cnfig)
 !!$         Endif
 !!$#endif
-      Endif        
+      Endif
 
      ! If system has written per-particle data
       Do ff = 1, flow%NUM_FF
@@ -2148,11 +2185,11 @@ Contains
           heat_flux = calculate_heat_flux(stat(ff), cnfig(ff), comm)
 
           If (flow%heat_flux .and. comm%idnode == 0) Then
-            If(ff==1)Then      
+            If(ff==1)Then
               Open (Newunit=heat_flux_unit, File='HEATFLUX', Position='append')
               Write (heat_flux_unit, '(I8.1, 1X, 5(G19.12, 1X))') flow%step, stat(ff)%stptmp, cnfig(ff)%volm, heat_flux
               Close (heat_flux_unit)
-            End If 
+            End If
           End If
 
           If (flow%write_per_particle) Then
@@ -2162,7 +2199,7 @@ Contains
           Call stat(ff)%deallocate_per_particle_arrays()
         End If
       End Do
-      
+
       ! Calculate physical quantities, collect statistics and report at t=0
       If (flow%step == 0) Then
         Do ff = 1, flow%NUM_FF
@@ -2189,7 +2226,7 @@ Contains
             Call ttm_thermal_diffusion(thermo(ff)%tstep, flow%time, flow%step, flow%equil_steps, flow%freq_output, &
                                        flow%freq_restart, flow%run_steps,ttm(ff),thermo(ff),domain(ff),comm)
           End If
-        End Do 
+        End Do
 
 
         ! Integrate equations of motion - velocity verlet second stage
@@ -2203,26 +2240,26 @@ Contains
         fregauss=.False.
 
         If(thermo(1)%l_tgaus .and. (flow%step <= flow%equil_steps) .and. Mod(flow%step-flow%equil_steps,thermo(1)%freq_tgaus) == 0)&
-          fregauss=.True.       
+          fregauss=.True.
 
         If(thermo(1)%l_stochastic_boundaries .or. fregauss)Then
           Call kinetic_options(flow, cnfig(1), cshell(1), cons(1), pmf(1), stat(1), sites(1), ext_field(1), domain(1), &
                                seed, rigid(1), thermo(1), comm)
 
           If(flow%NUM_FF>1)Then
-             Call evb_merge_stochastic(flow, cnfig, stat, rigid, thermo, cshell, cons, pmf) 
+             Call evb_merge_stochastic(flow, cnfig, stat, rigid, thermo, cshell, cons, pmf)
           End If
-        Else        
+        Else
           Do ff=1,flow%NUM_FF
            Call kinetic_options(flow, cnfig(ff), cshell(ff), cons(ff), pmf(ff), stat(ff), sites(ff), ext_field(ff), domain(ff), &
                                 seed, rigid(ff), thermo(ff), comm)
           End Do
-        End If 
+        End If
 
-        ! Evaluate and write EVB population 
+        ! Evaluate and write EVB population
          If(flow%NUM_FF > 1 .and. evbff%population)then
           Call evb_population(evbff, flow, files, comm)
-         End If      
+         End If
 
         ! Update total flow%time of simulation
         flow%time = flow%time + thermo(1)%tstep
@@ -2244,7 +2281,7 @@ Contains
             stat(1),devel,green(1),thermo(1),bond(1),angle(1),dihedral(1),inversion(1),zdensity,rdf(1), &
             netcdf,cnfig(1),files,comm)
         End If
-        
+
         Do ff = 1, flow%NUM_FF
           If(ff == 1)Then
             Call init_coord_list(cnfig(ff), neigh(ff), crd(ff), sites(ff), flow, comm)
@@ -2252,7 +2289,7 @@ Contains
             Call adf_calculate(cnfig(ff), sites(ff), flow, crd(ff), adf(ff), comm)
           End If
         End Do
-        
+
 
       End If ! DO THAT ONLY IF 0<flow%step<=flow%run_steps AND THIS IS AN OLD JOB (flow%newjob=.false.)
 
@@ -2267,16 +2304,16 @@ Contains
       Call gtime(tmr%elapsed)
 
       ! Change cnfig%levcfg appropriately
-      Do ff = 1, flow%NUM_FF 
+      Do ff = 1, flow%NUM_FF
         If (cnfig(ff)%levcfg == 1) cnfig(ff)%levcfg=2
       End Do
 
     End Do
 
       !Close EVB population file if opened
-      If (evbff%population_file_open .and. comm%idnode==0) Then 
+      If (evbff%population_file_open .and. comm%idnode==0) Then
         Call files(FILE_POPEVB)%close()
-      End If  
+      End If
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV_EVB INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 #ifdef EXPERIMENT

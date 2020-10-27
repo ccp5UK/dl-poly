@@ -21,9 +21,13 @@ Module angular_distribution
   Implicit None
   Type, Public :: adf_type
 
-    Real(Kind=wp)        :: rij(1:100), rik, rjk, prec
+    Real(Kind=wp)        :: rij(1:100), rik, rjk
+    !> Angle precision
+    Real(Kind=wp)        :: prec
     Integer, Allocatable :: astat(:, :), coordlist(:, :)
+    !> Frequency of collection
     Integer              :: interval
+    !> Active
     Logical              :: adfon
 !        real(wp), allocatable :: rij(1:10)
 
@@ -161,4 +165,3 @@ Contains
   End Subroutine adf_calculate
 
 End Module angular_distribution
-

@@ -55,6 +55,9 @@ Program dl_poly
                                                 init_comms
   Use configuration,                      Only: configuration_type
   Use constraints,                        Only: constraints_type
+  Use control,                            Only: read_simtype
+  Use control_parameter_module,           Only: parameters_hash_table,&
+                                                dump_parameters
   Use coord,                              Only: coord_type
   Use core_shell,                         Only: core_shell_type
   Use defects,                            Only: defects_type
@@ -65,18 +68,21 @@ Program dl_poly
   Use errors_warnings,                    Only: init_error_system
   Use ewald,                              Only: ewald_type
   Use external_field,                     Only: external_field_type
-  Use filename,                           Only: file_type
+  Use filename,                           Only: file_type,&
+                                                FILENAME_SIZE,&
+                                                FILE_CONTROL
   Use flow_control,                       Only: EmpVB,&
                                                 FFS,&
                                                 MD_STD,&
-                                                flow_type,&
-                                                read_simtype
+                                                flow_type
   Use four_body,                          Only: four_body_type
   Use greenkubo,                          Only: greenkubo_type
+  Use hash,                               Only: STR_LEN
   Use impacts,                            Only: impact_type
   Use inversions,                         Only: inversions_type
   Use io,                                 Only: io_type
-  Use, Intrinsic :: iso_fortran_env,      Only: eu => error_unit
+  Use, Intrinsic :: iso_fortran_env,      Only: eu => error_unit, &
+                                                ou => output_unit
   Use kim,                                Only: kim_type
   Use meta,                               Only: molecular_dynamics
   Use metal,                              Only: metal_type
@@ -85,6 +91,8 @@ Program dl_poly
   Use msd,                                Only: msd_type
   Use neighbours,                         Only: neighbours_type
   Use netcdf_wrap,                        Only: netcdf_param
+  Use new_control,                        Only: initialise_control, &
+                                                read_new_control
   Use numerics,                           Only: seed_type
   Use plumed,                             Only: plumed_type
   Use pmf,                                Only: pmf_type
@@ -101,8 +109,11 @@ Program dl_poly
   Use timer,                              Only: timer_type
   Use trajectory,                         Only: trajectory_type
   Use ttm,                                Only: ttm_type
+  Use unit_test,                          Only: testing_type
   Use vdw,                                Only: vdw_type
   Use z_density,                          Only: z_density_type
+
+  Use units,                              Only: initialise_units
 
   Implicit None
 
@@ -155,11 +166,16 @@ Program dl_poly
   Type(coord_type), Allocatable          :: crd(:)
   Type(adf_type), Allocatable            :: adf(:)
 
+  Type( parameters_hash_table ) :: params
+  Type( testing_type ) :: tests
+
   ! Local Variables
-  Character(len=1024) :: control_filename = '', arg
-  Character(len=1024) :: output_filename = ''
-  Logical             :: finish
-  Integer             :: i
+  Character(len=1024)           :: control_filename = '', arg
+  Character(len=1024)           :: output_filename = ''
+  Character(Len=STR_LEN)        :: option
+  Character(Len=10)             :: mode
+  Logical                       :: finish
+  Integer                       :: i, ifile
 
   ! SET UP COMMUNICATIONS & CLOCKING
 
@@ -169,34 +185,108 @@ Program dl_poly
   !Call init_error_system(nrite,dlp_world(0))
   Call gsync(dlp_world(0))
 
+  ! temporary stuff this will need to be abstracted
+  Allocate (flow(1))
+  Allocate(devel(1))
+  Call initialise_control(params)
+  call initialise_units()
+
+  ! Assume we're running
+  flow(1)%simulation = .true.
+  ! Assume we're using old format
   finish = .false.
   If (dlp_world(0)%idnode == 0) Then
     If (command_argument_count() > 0) Then
       i = 0
-      Do
+      parse_cmd:Do
         i = i + 1
         Call get_command_argument(i, arg)
-        Select Case (Trim (arg))
+        Select Case (arg)
         Case ('-h')
           Call get_command_argument(0, arg)
           Write (eu, '(a)') "Usage: "//Trim(arg)//" -c CONTROL_FILENAME -o OUTPUT_FILENAME"
           Write (eu, '(a)') "Each of -c or -o options are optional"
           Write (eu, '(a)') "use -h to see this help"
+          Write (eu, '(a)') "use --help to search help"
           finish = .true.
           Exit
+        Case ('--dump')
+          i = i + 1
+          Call get_command_argument(i, mode)
+          Select Case (mode)
+          Case ('latexdoc','latex','python','csv','test')
+            Continue
+          Case Default
+            Write(eu, '(a)') 'Bad mode option '//trim(mode)
+            finish = .true.
+            exit
+          end Select
+
+          i = i + 1
+          Call get_command_argument(i, arg)
+
+          if (trim(arg) == "SCREEN") then
+            ifile = ou
+          else
+            Open(newunit = ifile, file=trim(arg))
+          end if
+
+          Call dump_parameters(ifile, params, mode)
+          finish = .true.
+          Exit
+        Case ('--help')
+          i = i + 1
+          Call get_command_argument(i, arg)
+          Call params%help(arg)
+          finish = .true.
+          Exit
+
+        Case ('--keywords', '-k')
+          Call params%help()
+          finish = .true.
+          Exit
+
         Case ('-c')
           i = i + 1
           Call get_command_argument(i, control_filename)
         Case ('-o')
           i = i + 1
           Call get_command_argument(i, output_filename)
+        Case ('-test', '-t')
+
+          Call get_command_argument(i+1, arg)
+          do while (arg(1:1) /= "-" .and. i < command_argument_count())
+            i = i + 1
+            Select case (arg)
+            Case ("control")
+              tests%control = .true.
+            Case ("configuration")
+              tests%configuration = .true.
+            Case ("units")
+              tests%units = .true.
+            Case ("all")
+              Call tests%all()
+            Case Default
+              Write(eu, *) "Invalid test option:", trim(arg)
+              finish = .true.
+              exit parse_cmd
+            end Select
+            Call get_command_argument(i+1, arg)
+          end do
+
+          Call init_error_system(ou,dlp_world(0))
+          Call tests%run(dlp_world(0))
+          finish = .true.
+
+        Case ('--replay', '-r')
+          flow(1)%simulation = .false.
         Case default
           Write (eu, *) "No idea what you want, try -h "
           finish = .true.
-          Exit
+          Exit parse_cmd
         End Select
         If (i == command_argument_count()) Exit
-      End Do
+      End Do parse_cmd
     End If
   End If
 
@@ -206,27 +296,59 @@ Program dl_poly
     Stop 0
   End If
 
-  ! IS: This has to be abstracted or defined to be of dimension 1 in module flow.
-  Allocate(flow(1))
+  Allocate(files(1,FILENAME_SIZE))
+      ! Rename control file if argument was passed
+    If (Len_Trim(control_filename) > 0 ) Then
+       Call files(1,FILE_CONTROL)%rename(control_filename)
+    Else
+       Call files(1,FILE_CONTROL)%rename('CONTROL')
+    End If
 
-  ! Set the type of calculation to be performed. By default it is the standard DL_POLY
-  ! calculation. Tag evb activates EVB calculation
-  Call read_simtype(flow(1), control_filename, dlp_world(0))
+
+    ! Temporary error system
+    Call init_error_system(eu, dlp_world(0))
+    call read_new_control(files(1,FILE_CONTROL), params, dlp_world(0), devel(1)%new_control)
+
+    if (devel(1)%new_control) then
+      Call params%retrieve('simulation_method', option)
+      Select Case (option)
+      Case ('md')
+        flow(1)%simulation_method=MD_STD
+        flow(1)%NUM_FF = 1
+      Case ('evb')
+        flow(1)%simulation_method=EmpVB
+        Call params%retrieve('evb_num_ff', flow(1)%NUM_FF)
+      Case ('ffs')
+        flow(1)%simulation_method=FFS
+      Case Default
+        flow(1)%simulation_method=-1
+      End Select
+
+    else     ! Cannot read as new style
+
+      ! Set the type of calculation to be performed. By default it is the standard DL_POLY
+       ! calculation. Tag evb activates EVB calculation
+       Call read_simtype(control_filename, flow(1), dlp_world(0))
+
+    end if
+
+
 
   ! Select metasimulation method
   ! IS: The following two subroutines should be merged into a single one. We separate them
   ! for the time being though.
-  If (flow(1)%simulation_method == MD_STD .Or. flow(1)%simulation_method == EmpVB) Then
-    Call molecular_dynamics(dlp_world, thermo, ewld, tmr, devel, stats, &
+  Select Case (flow(1)%simulation_method)
+  Case (MD_STD, EmpVB)
+    Call molecular_dynamics(params, dlp_world, thermo, ewld, tmr, devel, stats, &
                             green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, inversion, tether, &
                             threebody, zdensity, cons, neigh, pmfs, sites, core_shells, vdws, tersoffs, fourbody, &
                             rdf, netcdf, minim, mpoles, ext_field, rigid, electro, domain, flow, seed, traj, &
                             kim_data, config, ios, ttms, rsdsc, files, output_filename, control_filename, crd, adf)
-  Else If (flow(1)%simulation_method == FFS) Then
+  Case (FFS)
      write(0,*) "simulation type: FFS"
-  Else
+  Case Default
      Write (0, *) "Unknown simulation type"
-  End If
+  End Select
 
   ! Terminate job
 

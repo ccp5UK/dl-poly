@@ -44,13 +44,13 @@ Module rdfs
     Private
 
     !> RDF collection flag
-    Logical, Public                       :: l_collect
+    Logical, Public                       :: l_collect = .false.
     !> RDF recording flag
-    Logical, Public                       :: l_print
+    Logical, Public                       :: l_print = .false.
     !> Total number of blocks?
     Integer(Kind=wi), Public              :: num_blocks = 2
     !> RDF collection frequency (in steps)
-    Integer(Kind=wi), Public              :: freq
+    Integer(Kind=wi), Public              :: freq = 1
     !> Number of configurations used in RDF calculation
     Integer(Kind=wi), Public              :: n_configs = 0
     !> Number of rdf look up pairs

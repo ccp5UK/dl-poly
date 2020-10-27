@@ -1,5 +1,6 @@
 Module bounds
   Use angles,          Only: angles_type
+  Use angular_distribution, Only : adf_type
   Use bonds,           Only: bonds_type
   Use comms,           Only: comms_type
   Use configuration,   Only: IMCON_CUBIC,&
@@ -11,7 +12,8 @@ Module bounds
                              IMCON_TRUNC_OCTO,&
                              configuration_type,&
                              read_config,&
-                             scan_config
+                             scan_config,&
+                             setup_cell_props
   Use constants,       Only: delr_max,&
                              delth_max,&
                              pi,&
@@ -19,6 +21,7 @@ Module bounds
   Use constraints,     Only: constraints_type
   Use control,         Only: scan_control,&
                              scan_control_pre
+  Use coord,           Only: coord_type
   Use core_shell,      Only: core_shell_type
   Use development,     Only: development_type
   Use dihedrals,       Only: dihedrals_type
@@ -66,14 +69,181 @@ Module bounds
                              ttm_type
   Use vdw,             Only: vdw_type
   Use z_density,       Only: z_density_type
+  Use rsds,            Only: rsd_type
+  Use trajectory,      Only: trajectory_type
+  Use defects,         Only: defects_type
 
   Implicit None
 
   Private
 
-  Public :: set_bounds
+  Public :: set_bounds, set_bounds_new
 
 Contains
+
+  Subroutine set_bounds_new(site, ttm, io, cshell, cons, pmf, stats, green, devel, &
+       msd_data, met, bond, angle, dihedral, inversion, tether, threebody, zdensity, &
+       neigh, vdws, tersoffs, fourbody, rdf, mpoles, ext_field, &
+       rigid, electro, domain, config, ewld, kim_data, files, flow, comm, &
+       xhi, yhi, zhi, megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, &
+       mtshl, mtteth, link_cell, ff)
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine to determine various limits as array bounds,
+    ! grid sizes, paddings, iterations, etc. as specified in setup,
+    ! using new control scheme
+    !
+    ! copyright - daresbury laboratory
+    ! author    - j.s.wilkins june 2020
+    ! based on  - i.t.todorov december 2016
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type(site_type),           Intent(InOut) :: site
+    Type(ttm_type),            Intent(InOut) :: ttm
+    Type(io_type),             Intent(InOut) :: io
+    Type(core_shell_type),     Intent(InOut) :: cshell
+    Type(constraints_type),    Intent(InOut) :: cons
+    Type(pmf_type),            Intent(InOut) :: pmf
+    Type(stats_type),          Intent(InOut) :: stats
+    Type(greenkubo_type),      Intent(InOut) :: green
+    Type(development_type),    Intent(InOut) :: devel
+    Type(msd_type),            Intent(InOut) :: msd_data
+    Type(metal_type),          Intent(InOut) :: met
+    Type(bonds_type),          Intent(InOut) :: bond
+    Type(angles_type),         Intent(InOut) :: angle
+    Type(dihedrals_type),      Intent(InOut) :: dihedral
+    Type(inversions_type),     Intent(InOut) :: inversion
+    Type(tethers_type),        Intent(InOut) :: tether
+    Type(threebody_type),      Intent(InOut) :: threebody
+    Type(z_density_type),      Intent(InOut) :: zdensity
+    Type(neighbours_type),     Intent(InOut) :: neigh
+    Type(vdw_type),            Intent(InOut) :: vdws
+    Type(tersoff_type),        Intent(InOut) :: tersoffs
+    Type(four_body_type),      Intent(InOut) :: fourbody
+    Type(rdf_type),            Intent(InOut) :: rdf
+    Type(mpole_type),          Intent(InOut) :: mpoles
+    Type(external_field_type), Intent(InOut) :: ext_field
+    Type(rigid_bodies_type),   Intent(InOut) :: rigid
+    Type(electrostatic_type),  Intent(InOut) :: electro
+    Type(domains_type),        Intent(InOut) :: domain
+    Type(configuration_type),  Intent(InOut) :: config
+    Type(ewald_type),          Intent(InOut) :: ewld
+    Type(kim_type),            Intent(InOut) :: kim_data
+    Type(file_type),           Intent(InOut) :: files(:)
+    Type(flow_type),           Intent(InOut) :: flow
+    Type(comms_type),          Intent(InOut) :: comm
+    Real(Kind=wp),             Intent(InOut) :: xhi, yhi, zhi
+    Integer,                   Intent(In   ) :: megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, &
+         mtshl, mtteth
+    Integer, Dimension(3),     Intent(  Out) :: link_cell
+    Integer,                   Intent(In   ), Optional :: ff
+
+    Character(Len=256) :: message
+    Integer(Kind=wi)   :: mxgrid
+    Real(Kind=wp), Dimension(10) :: cell_properties
+    Real(Kind=wp)      :: cut, dens0, dens, padding2
+
+    Integer            :: fftag
+
+    If (present(ff)) then
+      fftag = ff
+    Else
+      fftag = 1
+    Endif
+
+    call setup_cell_props(config, cell_properties)
+
+    ! check value of cutoff and reset if necessary
+
+    If (config%imcon /= IMCON_NOPBC) Then
+      ! halt program if potential cutoff exceeds the minimum half-cell config%width
+
+      If (neigh%cutoff >= config%width / 2.0_wp) Then
+        Call warning(3, neigh%cutoff, config%width / 2.0_wp, 0.0_wp)
+
+        If (.not. devel%l_trm) Then
+          Call error(95)
+        End If
+      End If
+    End If
+
+    ! config%dvar push of dihedral%max_legend and neigh%max_exclude ranges as the usual suspects
+
+    dihedral%max_legend = Nint(config%dvar * Real(dihedral%max_legend, wp))
+    neigh%max_exclude = Nint(config%dvar * Real(neigh%max_exclude, wp))
+
+    !!! INTRA-LIKE POTENTIAL PARAMETERS !!!
+
+    call setup_potential_parameters(config%dvar, comm%mxnode, config, domain, site, vdws, met, tersoffs, &
+       cshell, mtshl, cons, mtcons, rigid, mtrgd, tether, mtteth, bond, mtbond, &
+       angle, mtangl, dihedral, mtdihd, inversion, mtinv, threebody, fourbody, ext_field)
+
+    !!! GRIDDING PARAMETERS !!!
+
+    call setup_grids(config, neigh, vdws, met, tersoffs, bond, angle, dihedral, inversion, ext_field, &
+       electro, ewld, zdensity, rdf, mxgrid)
+
+    ! DD PARAMETERS - by hypercube mapping of MD cell onto machine resources
+    ! Dependences: MD cell config%widths (explicit) and machine resources (implicit)
+
+    Call map_domains(config%imcon, cell_properties(7), cell_properties(8), cell_properties(9), domain, comm)
+
+    Call info(' ', .true.)
+    Write (message, '(a,3(i6,1x))') 'node/domain decomposition (x,y,z): ', &
+         domain%nx, domain%ny, domain%nz
+    Call info(message, .true., level=2)
+
+    ! TTM matters
+    padding2 = Huge(1.0_wp) ! Default to huge so fails in mins
+    If (ttm%l_ttm) Call ttm_setup_bounds(ttm, config, domain, megatm, padding2)
+
+    ! Link-cell and VNL matters
+
+    call setup_vnl(config%dvar, neigh, flow, domain, ewld, devel, config, met, vdws, electro, rdf, &
+         cell_properties, link_cell, kim_data, comm, padding2)
+
+    ! decide on MXATMS while reading CONFIG and scan particle density
+
+    Call read_config(config, megatm, config%levcfg, config%l_ind, flow%strict, neigh%cutoff, config%dvar, xhi, yhi, &
+         zhi, dens0, dens, io, domain, files, comm)
+
+    Call setup_buffers(config%dvar, dens, dens0, megatm, link_cell, mxgrid, config, domain, stats, neigh, &
+       green, site, cshell, cons, pmf, rdf, rigid, tether, bond, angle, dihedral, inversion, zdensity, ewld, mpoles, &
+       electro%no_elec, msd_data%l_msd, comm)
+
+    ! reset (increase) link-cell maximum (neigh%max_cell)
+    ! if tersoff or three- or four-body potentials exist
+
+    If (tersoffs%max_ter > 0 .or. threebody%mxtbp > 0 .or. fourbody%max_four_body > 0) Then
+      cut = neigh%cutoff + 1.0e-6_wp ! define cut,
+      If (tersoffs%max_ter > 0) cut = Min(cut, tersoffs%cutoff + 1.0e-6_wp)
+      If (threebody%mxtbp > 0) cut = Min(cut, threebody%cutoff + 1.0e-6_wp)
+      If (fourbody%max_four_body > 0) cut = Min(cut, fourbody%cutoff + 1.0e-6_wp)
+
+      link_cell(1) = Int(domain%nx_recip * cell_properties(7) / cut)
+      link_cell(2) = Int(domain%ny_recip * cell_properties(8) / cut)
+      link_cell(3) = Int(domain%nz_recip * cell_properties(9) / cut)
+
+      Write (message, '(a,3i6)') "link-cell decomposition 2 (x,y,z): ", link_cell
+      Call info(message, .true., level=3)
+
+      If (any(link_cell  < 3)) Call error(305)
+
+      If      (config%imcon == IMCON_NOPBC) Then
+        neigh%max_cell = Max(neigh%max_cell, Nint((config%dvar**4) * Real(Product(link_cell + 5), wp)))
+      Else If (config%imcon == IMCON_SLAB) Then
+        neigh%max_cell = Max(neigh%max_cell, Nint((config%dvar**3) * Real(Product(link_cell + 5), wp)))
+      Else
+        neigh%max_cell = Max(neigh%max_cell, Nint((config%dvar**2) * Real(Product(link_cell + 5), wp)))
+      End If
+    End If
+
+    If (any(link_cell < 3)) Call warning(100, 0.0_wp, 0.0_wp, 0.0_wp)
+
+  end Subroutine set_bounds_new
+
 
   Subroutine set_bounds(site, ttm, io, cshell, cons, pmf, stats, thermo, green, devel, &
                         msd_data, met, pois, bond, angle, dihedral, inversion, tether, threebody, zdensity, &
@@ -177,60 +347,25 @@ Contains
 
     ! Get imc_r & set config%dvar
 
-    Call scan_control_pre(config%imc_n, config%dvar, files, comm)
+    Call scan_control_pre(config%dvar, files, comm)
 
     ! scan CONFIG file data
 
     Call scan_config(config, megatm, config%dvar, config%levcfg, xhi, yhi, zhi, io, domain, files, comm, fftag)
 
-    ! halt execution for unsupported image conditions in DD
-    ! checks for some inherited from DL_POLY_2 are though kept
-
-    If (config%imcon == IMCON_TRUNC_OCTO .or. &
-        config%imcon == IMCON_RHOMBIC_DODEC .or. &
-        config%imcon == IMCON_HEXAGONAL) Call error(514)
-
     ! scan CONTROL file data
 
-    Call scan_control(tersoffs%cutoff, rigid%max_rigid, config%imcon, config%imc_n, config%cell, &
-                      xhi, yhi, zhi, config%mxgana, config%l_ind, electro%nstfce, &
-                      ttm, cshell, stats, thermo, green, devel, msd_data, met, pois, bond, angle, dihedral, &
-                      inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, electro, ewld, kim_data, &
-                      files, flow, comm)
+    Call scan_control(rigid%max_rigid, config%imcon, config%cell, &
+         xhi, yhi, zhi, config%mxgana, config%l_ind, electro%nstfce, &
+         ttm, cshell, stats, thermo, green, devel, msd_data, met, pois, bond, angle, dihedral, &
+         inversion, zdensity, neigh, vdws, tersoffs, rdf, mpoles, electro, ewld, kim_data, &
+         files, flow, comm)
 
-    ! check integrity of cell vectors: for cubic cell
-
-    If (config%imcon == IMCON_CUBIC) Then
-
-      ats = (Abs(config%cell(1)) + Abs(config%cell(5))) / 2.0_wp
-      test = 1.0e-10_wp * ats ! 1.0e-10_wp tolerance in primitive cell type specification of dimensions
-      If (Any(Abs(config%cell(1:9:4) - ats) > test)) Call error(410)
-    End If
-
-    ! check for diagonal cell matrix if appropriate: imcon=1,2
-
-    If (config%imcon /= IMCON_NOPBC .and. config%imcon /= IMCON_PARALLELOPIPED .and. config%imcon /= IMCON_SLAB) Then
-      If (Any(Abs(config%cell(2:4)) > zero_plus)) Then
-        Call error(410)
-      End If
-      If (Any(Abs(config%cell(6:8)) > zero_plus)) Then
-        Call error(410)
-      End If
-    End If
-
-    ! calculate dimensional properties of simulation cell
-    ! (for use in link-cells) and ttm%volume and define min cell config%width
-
-    Call dcell(config%cell, cell_properties)
-    config%width = Min(cell_properties(7), cell_properties(8), cell_properties(9))
-
-    config%volm = cell_properties(10)
+    call setup_cell_props(config, cell_properties)
 
     ! check value of cutoff and reset if necessary
 
-    If (config%imcon > 0) Then
-      If (config%imcon == IMCON_SLAB) config%width = Min(cell_properties(7), cell_properties(8))
-
+    If (config%imcon /= IMCON_NOPBC) Then
       ! halt program if potential cutoff exceeds the minimum half-cell config%width
 
       If (neigh%cutoff >= config%width / 2.0_wp) Then
@@ -246,7 +381,7 @@ Contains
 
     ! config%dvar function
 
-    fdvar = config%dvar**1.7_wp ! 1.7_wp arbitrary power factor magnifying densvar effect
+    fdvar = config%dvar!**1.7_wp ! 1.7_wp arbitrary power factor magnifying densvar effect
 
     ! config%dvar push of dihedral%max_legend and neigh%max_exclude ranges as the usual suspects
 
@@ -267,7 +402,7 @@ Contains
     ! DD PARAMETERS - by hypercube mapping of MD cell onto machine resources
     ! Dependences: MD cell config%widths (explicit) and machine resources (implicit)
 
-    Call map_domains(config%imc_n, cell_properties(7), cell_properties(8), cell_properties(9), domain, comm)
+    Call map_domains(config%imcon, cell_properties(7), cell_properties(8), cell_properties(9), domain, comm)
 
     Call info(' ', .true.)
     Write (message, '(a,3(i6,1x))') 'node/domain decomposition (x,y,z): ', &
@@ -649,6 +784,8 @@ Contains
       rdf%max_grid_usr = 0 ! decider on calling USR RDF
     End If
 
+    ! grids setting and overrides
+
     ! the number 1004 is minimum default TABLE's gridding - 1000 (equidistant) values
     ! with 2 extra ones on each side (for derivatives) totals.
     ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
@@ -675,8 +812,8 @@ Contains
       electro%erfc%nsamples = -1
       electro%erfc_deriv%nsamples = -1
     Else
-      electro%erfc%nsamples = Max(1004, Nint(neigh%cutoff / delr_max) + 4)
-      electro%erfc_deriv%nsamples = Max(1004, Nint(neigh%cutoff / delr_max) + 4)
+      Call electro%init_erf_tables(Max(1004, Nint(neigh%cutoff / delr_max) + 4))
+      call electro%erfcgen(neigh%cutoff, ewld%alpha)
     End If
 
     ! maximum number of grid points for vdw interactions - overwritten
@@ -710,381 +847,6 @@ Contains
                  inversion%bin_tab, electro%erfc%nsamples, vdws%max_grid, met%maxgrid, tersoffs%max_grid)
 
   End Subroutine setup_grids
-
-!   Subroutine setup_vnl(fdvar, neigh, flow, domain, ewld, devel, config, met, vdws, electro, rdf, &
-!        tersoffs, threebody, fourbody, cell_properties, link_cell, kim_data, comm, ttm_padding)
-!     Type(neighbours_type),        Intent( InOut ) :: neigh
-!     Type(flow_type),              Intent( In    ) :: flow
-!     Type(domains_type),           Intent( In    ) :: domain
-!     Type(ewald_type),             Intent( InOut ) :: ewld
-!     Type(metal_type),             Intent( In    ) :: met
-!     Type(vdw_type),               Intent( In    ) :: vdws
-!     Type(electrostatic_type),     Intent( In    ) :: electro
-!     Type(rdf_type),               Intent( In    ) :: rdf
-  ! Type(tersoff_type),           Intent( In    ) :: tersoffs
-  ! Type(threebody_type),         Intent( In    ) :: threebody
-  ! Type(four_body_type),         Intent( In    ) :: fourbody
-!     Type(development_type),       Intent( In    ) :: devel
-!     Type(configuration_type),     Intent( In    ) :: config
-!     Type(kim_type),               Intent( In    ) :: kim_data
-!     Type(comms_type),             Intent( In    ) :: comm
-!     Integer,       Dimension(3),  Intent(   Out ) :: link_cell
-!     Real(Kind=wp), Dimension(10), Intent( In    ) :: cell_properties
-!     Real(Kind=wp),                Intent( In    ) :: ttm_padding
-!     Real(Kind=wp),                Intent( In    ) :: fdvar
-
-!     Real(Kind=wp), Parameter :: minimum_pad = 0.05 ! Ang
-!     Real(Kind=wp), Parameter :: minimum_pad_cutoff_frac = 0.005 ! 0.5%
-!     Real(Kind=wp), Parameter :: padding_trial_diff = 0.02_wp  ! 2% neigh%padding auto-push (may double)
-!     Real(Kind=wp), Parameter :: trial_pct = 0.95_wp  ! (95%) giving 5% slack
-!     Real(Kind=wp), Parameter :: delta_r = 1.0e-6_wp
-!     Real(Kind=wp)            :: negligible_pad
-!     Character(Len=256) :: message, messages(3)
-!     Logical            :: no_default_padding
-!     Integer,       Dimension(3) :: print_decomp
-!     Integer :: bspline_node_check
-!     Real(kind=wp) :: padding_tmp
-!     Real(Kind=wp) :: test, tol
-!     Real(kind=wp) :: cut
-
-!     ! LC and VNL matters
-!     ! Reset_padding implies padding in control
-!     no_default_padding = neigh%padding <= zero_plus .and. flow%reset_padding
-
-! 5   Continue
-
-!     If (neigh%padding > zero_plus) Then
-
-!       ! define cut adding delta r (1.0e-6_wp the smallest distance we care about)
-
-!       cut = neigh%cutoff + delta_r
-
-!       ! Provide advise on decomposition
-
-!       print_decomp = Int(cell_properties(7:9) / cut)
-
-!       Write (message, '(a,i6,a,3(i0,a))') &
-!            'pure cutoff driven limit on largest possible decomposition:', Product(print_decomp), &
-!            ' nodes/domains (', print_decomp(1), ',', print_decomp(2), ',', print_decomp(3), ')'
-!       Call info(message, .true., level=3)
-
-!       print_decomp = Max(1, print_decomp / 2)
-
-!       Write (message, '(a,i6,a,3(i0,a))') &
-!            'pure cutoff driven limit on largest balanced decomposition:', Product(print_decomp), &
-!            ' nodes/domains (', print_decomp(1), ',', print_decomp(2), ',', print_decomp(3), ')'
-!       Call info(message, .true., level=3)
-
-!     End If
-
-! 10  Continue ! possible neigh%cutoff redefinition...
-
-!     ! Define link-cell cutoff (minimum config%width)
-
-!     neigh%cutoff_extended = neigh%cutoff + neigh%padding
-
-!     ! define cut adding delta r (1.0e-6_wp the smallest distance we care about)
-
-!     cut = neigh%cutoff_extended + delta_r
-
-!     ! Provide advise on decomposition
-
-!     print_decomp = Int(cell_properties(7:9) / cut)
-
-!     Write (message, '(a,i6,a,3(i0,a))') &
-!          'cutoffs driven limit on largest possible decomposition:', Product(print_decomp), &
-!          ' nodes/domains (', print_decomp(1), ',', print_decomp(2), ',', print_decomp(3), ')'
-!     Call info(message, .true., level=3)
-
-!     print_decomp = Max(1, print_decomp / 2)
-
-!     Write (message, '(a,i6,a,3(i0,a))') &
-!          'cutoffs driven limit on largest balanced decomposition:', Product(print_decomp), &
-!          ' nodes/domains (', print_decomp(1), ',', print_decomp(2), ',', print_decomp(3), ')'
-!     Call info(message, .true., level=3)
-
-!     ! calculate link cell dimensions per node
-
-!     link_cell = Int([domain%nx_recip, domain%ny_recip, domain%nz_recip] * cell_properties(7:9) / cut)
-
-!     ! print link cell algorithm and check for violations or...
-
-!     Write (message, '(a,3i6)') "link-cell decomposition 1 (x,y,z): ", link_cell
-!     Call info(message, .true., level=3)
-
-!     negligible_pad  = Min(minimum_pad, minimum_pad_cutoff_frac * neigh%cutoff)  ! tolerance
-
-!     if (ewld%bspline > 0) then                                                  ! 2% (w/ SPME/PS) or 4% (w/o SPME/PS)
-!       test = padding_trial_diff
-!     else
-!       test = 2.0_wp * padding_trial_diff
-!     end if
-!     ! remove delta r (1.0e-6_wp the smallest distance we care about)
-!     cut  = Min(config%width / 2.0_wp, domain%nx_recip * cell_properties(7), & ! domain size
-!          domain%ny_recip * cell_properties(8), &
-!          domain%nz_recip * cell_properties(9)) - delta_r
-
-!     If (Product(link_cell) == 0) Then
-!       If (devel%l_trm) Then ! we are prepared to exit gracefully(-:
-
-!         neigh%cutoff = cut  ! - neigh%padding (was zeroed in scan_control)
-!         Write (message, '(a)') "real space cutoff reset has occurred, early run termination is due"
-!         Call warning(message, .true.)
-!         Go To 10
-!       Else
-
-!         If (cut < neigh%cutoff) Then
-!           Write (message, '(1x,2(a,f0.3),a)') 'user specified or autogenerated padding: ', neigh%padding, &
-!                ' , DD+LC suggested maximum value: ', 0.0_wp, ' Angstrom'
-!           Call info(message, .true.)
-!           Write (message, '(1x,2(a,f0.3),a)') 'user specified cutoff: ', neigh%cutoff, &
-!                ' , DD+LC suggested maximum cutoff: ', cut, ' Angstrom'
-!           Write (message, '(a)') 'neigh%cutoff <= Min(domain config%width) < neigh%cutoff_extended = neigh%cutoff + neigh%padding'
-!           Call warning(message, .true.)
-!           Call error(307)
-
-!         Else ! neigh%padding is defined & in 'no strict' mode
-
-!           If (neigh%padding > zero_plus .and. (.not. flow%strict)) Then ! Re-set neigh%padding with some slack
-!             neigh%padding = Min(trial_pct * (cut - neigh%cutoff), test * neigh%cutoff)
-!             If (ttm_padding > zero_plus) neigh%padding = Min(neigh%padding, ttm_padding)
-!             neigh%padding = Real(Int(100.0_wp * neigh%padding), wp) / 100.0_wp
-!             If (neigh%padding < negligible_pad) neigh%padding = 0.0_wp ! Don't bother
-!             Go To 10
-
-!           Else
-!             Write (message, '(1x,2(a,f0.3),a)') 'user specified padding: ', neigh%padding, &
-!                  ' , DD+LC suggested maximum value: ', trial_pct * (cut - neigh%cutoff), ' Angstrom'
-!             Call info(message, .true.)
-!             Write (message, '(a)') 'neigh%cutoff <= Min(domain config%width) < neigh%cutoff_extended = neigh%cutoff + neigh%padding'
-!             Call warning(message, .true.)
-!             Call error(307)
-
-!           End If
-!         End If
-!       End If
-!     Else ! push/reset the limits in 'no strict' mode and be somewhat hopeful for undefined rpad in 'strict' when neigh%padding=0
-!       If (.not. (met%max_metal == 0 .and. electro%no_elec .and. vdws%no_vdw .and. rdf%max_rdf == 0 .and. kim_data%active)) Then ! 2b link-cells are needed
-!         padding_tmp = 0.0_wp
-!         If (comm%mxnode == 1 .and. Minval(link_cell) < 2) Then
-!           padding_tmp = trial_pct * (0.5_wp * config%width - neigh%cutoff - delta_r)
-!           ! remove delta r (1.0e-6_wp the smallest distance we care about)
-!         End If
-
-!         If (neigh%padding <= zero_plus) Then ! When neigh%padding is undefined give it some value
-!           If (Int(Real(Minval(link_cell), wp) / (1.0_wp + test)) >= 2) Then ! good non-exception
-!             neigh%padding = test * neigh%cutoff
-!             If (padding_tmp > zero_plus) neigh%padding = Min(neigh%padding, padding_tmp)
-!             If (ttm_padding > zero_plus) neigh%padding = Min(neigh%padding, ttm_padding)
-!             neigh%padding = Real(Int(100.0_wp * neigh%padding), wp) / 100.0_wp
-!             If (neigh%padding > negligible_pad) Go To 10
-!           Else ! not so good non-exception
-!             neigh%padding = Min(trial_pct * (Min(domain%nx_recip * cell_properties(7) / Real(link_cell(1), wp), &
-!                  domain%ny_recip * cell_properties(8) / Real(link_cell(2), wp), &
-!                  domain%nz_recip * cell_properties(9) / Real(link_cell(3), wp)) &
-!                  - neigh%cutoff - delta_r), test * neigh%cutoff)
-!             ! remove delta r (1.0e-6_wp the smallest distance we care about)
-!             If (padding_tmp > zero_plus) neigh%padding = Min(neigh%padding, padding_tmp)
-!             If (ttm_padding > zero_plus) neigh%padding = Min(neigh%padding, ttm_padding)
-!             neigh%padding = Real(Int(100.0_wp * neigh%padding), wp) / 100.0_wp ! round up
-!           End If
-!         End If
-
-!         If (neigh%padding < negligible_pad) neigh%padding = 0.0_wp ! Don't bother
-!       Else
-!         neigh%padding = 0.0_wp ! Don't bother
-!       End If
-
-!       If (no_default_padding) Then ! forget about it
-!         neigh%padding = 0.0_wp
-!       Else If (.not. flow%strict) Then ! less hopeful for undefined rpad
-!         neigh%padding = trial_pct * neigh%padding
-!         neigh%padding = Real(Int(100.0_wp * neigh%padding), wp) / 100.0_wp ! round up
-!         If (neigh%padding < negligible_pad) neigh%padding = 0.0_wp ! Don't bother
-!       End If
-
-!       neigh%cutoff_extended = neigh%cutoff + neigh%padding ! recalculate neigh%cutoff_extended respectively
-!     End If
-
-!     ! Ensure padding is large enough for KIM model
-
-!     If (kim_data%padding_neighbours_required) Then
-!       If (neigh%padding < kim_data%influence_distance) Then
-!         neigh%padding = kim_data%influence_distance
-!         neigh%cutoff_extended = neigh%cutoff + neigh%padding
-!       End If
-!     End If
-
-!     neigh%unconditional_update = (neigh%padding > zero_plus) ! Determine/Detect conditional VNL updating at start
-
-!     If (any(link_cell < 3)) Call warning(100, 0.0_wp, 0.0_wp, 0.0_wp)
-
-!     ! get total link cells per domain (boundary padding included)
-!     ! total link-cells per node/domain is ncells = (link_cell(x)+2)*(link_cell(y)+2)*(link_cell(z)+2)
-!     ! allow for more (possible b-spline SPME triggered increase in nlast),
-!     ! total link-cells per node/domain is ncells = (link_cell(x)+3)*(link_cell(y)+3)*(link_cell(z)+3)
-!     ! allow for thermal expansion of unsettled systems
-!     ! total link-cells per node/domain is ncells = (link_cell(x)+4)*(link_cell(y)+4)*(link_cell(z)+4)
-!     ! magnify the effect of densvar on neigh%max_cell for different conf%imcon scenarios
-
-!     If      (config%imcon == IMCON_NOPBC) Then
-!       neigh%max_cell = Nint(fdvar**4 * Real(Product(link_cell + 4), wp))
-!     Else If (config%imcon == IMCON_SLAB) Then
-!       neigh%max_cell = Nint(fdvar**3 * Real(Product(link_cell + 4), wp))
-!     Else
-!       neigh%max_cell = Nint(fdvar**2 * Real(Product(link_cell + 4), wp))
-!     End If
-
-!     ! SPME electrostatics particularities
-
-!     ! qlx,qly,qlz - SPME fictional link-cell dimensions postulating that:
-!     ! domain%nx <= ewld%fft_dim_a/ewld%bspline, domain%ny <= ewld%fft_dim_b/ewld%bspline, domain%nz <= ewld%fft_dim_c/ewld%bspline.
-!     ! Otherwise, this node's b-splines in SPME will need extra 'positive halo'
-!     ! that is not on the immediate neighbouring nodes in negative
-!     ! directions but beyond them (which may mean self-halo in some cases)
-
-!     ewld%fft_dim_a = ewld%fft_dim_a1
-!     ewld%fft_dim_b = ewld%fft_dim_b1
-!     ewld%fft_dim_c = ewld%fft_dim_c1
-
-!     ! ewld%bspline = 0 is an indicator for no SPME or Poisson Solver electrostatics in CONTROL
-
-!     If (ewld%bspline /= 0) Then
-
-!       ! ensure (ewld%fft_dim_a,ewld%fft_dim_b,ewld%fft_dim_c) consistency between the DD
-!       ! processor grid (map_domains is already called) and the grid
-!       ! method or comment out adjustments if using ewald_spme_force~
-
-!       Call adjust_kmax(ewld%fft_dim_a, domain%nx)
-!       Call adjust_kmax(ewld%fft_dim_b, domain%ny)
-!       Call adjust_kmax(ewld%fft_dim_c, domain%nz)
-
-!       ! Calculate and check ql.
-
-!       print_decomp(1) = Min(link_cell(1), ewld%fft_dim_a / (ewld%bspline * domain%nx))
-!       print_decomp(2) = Min(link_cell(2), ewld%fft_dim_b / (ewld%bspline * domain%ny))
-!       print_decomp(3) = Min(link_cell(3), ewld%fft_dim_c / (ewld%bspline * domain%nz))
-
-!       If (.not. neigh%unconditional_update) Then
-!         ewld%bspline1 = ewld%bspline
-!       Else
-!         ewld%bspline1 = ewld%bspline + Ceiling((neigh%padding * Real(ewld%bspline, wp)) / neigh%cutoff)
-
-!         ! Redefine ql.
-
-!         print_decomp(1) = Min(link_cell(1), ewld%fft_dim_a / (ewld%bspline1 * domain%nx))
-!         print_decomp(2) = Min(link_cell(2), ewld%fft_dim_b / (ewld%bspline1 * domain%ny))
-!         print_decomp(3) = Min(link_cell(3), ewld%fft_dim_c / (ewld%bspline1 * domain%nz))
-!       End If
-
-!       ! Hard luck, giving up after trying once more
-
-!       If (Product(print_decomp) == 0) Then
-!         If ((no_default_padding .eqv. flow%reset_padding) .and. neigh%padding > zero_plus) Then ! defaulted padding must be removed
-!           neigh%padding = 0.0_wp
-!           no_default_padding = .true.
-!           Go To 5
-!         Else
-!           bspline_node_check = Min(ewld%fft_dim_a / domain%nx, &
-!                ewld%fft_dim_b / domain%ny, &
-!                ewld%fft_dim_c / domain%nz) - ewld%bspline
-!           If (.not. flow%strict) Then
-!             If (bspline_node_check == 0 .and. neigh%padding > zero_plus) Then
-!               neigh%padding = 0.0_wp
-!               no_default_padding = .true.
-!               Go To 5
-!             Else If (bspline_node_check > 0 .and. neigh%padding > zero_plus) Then
-!               padding_tmp = Min(neigh%padding, trial_pct * neigh%cutoff * (Real(bspline_node_check, wp) / Real(ewld%bspline, wp)))
-!               padding_tmp = Real(Int(100.0_wp * padding_tmp), wp) / 100.0_wp
-!               If (padding_tmp > zero_plus) Then
-!                 If (padding_tmp < negligible_pad) padding_tmp = 0.0_wp ! Don't bother
-!               End If
-!               If (padding_tmp < neigh%padding .and. padding_tmp >= zero_plus) Then
-!                 neigh%padding = padding_tmp
-!                 Go To 10
-!               Else
-!                 Write (message, '(2(a,f0.3),a)') 'user specified or autogenerated padding: ', neigh%padding, &
-!                      ' , SPME suggested maximum value: ', padding_tmp, ' Angstrom'
-!                 Call info(message, .true.)
-!               End If
-!             End If
-!           Else
-!             padding_tmp = 0.0_wp
-!             If (neigh%padding > zero_plus) Then
-!               padding_tmp = trial_pct * neigh%cutoff * (Real(bspline_node_check, wp) / Real(ewld%bspline, wp))
-!               padding_tmp = Real(Int(100.0_wp * padding_tmp), wp) / 100.0_wp
-!               If (padding_tmp > zero_plus) Then
-!                 If (padding_tmp < negligible_pad) padding_tmp = 0.0_wp ! Don't bother
-!               End If
-!             End If
-!             Write (message, '(2(a,f0.3),a)') 'user specified or autogenerated padding: ', neigh%padding, &
-!                  ' , SPME suggested maximum value: ', padding_tmp, ' Angstrom'
-!             Call info(message, .true., level=2)
-!           End If
-
-!           test = Min(Real(ewld%fft_dim_a1, wp) / Real(domain%nx, wp), &
-!                Real(ewld%fft_dim_b1, wp) / Real(domain%ny, wp), &
-!                Real(ewld%fft_dim_c1, wp) / Real(domain%nz, wp)) / Real(ewld%bspline, wp)
-!           tol = Min(Real(ewld%fft_dim_a, wp) / Real(domain%nx, wp), &
-!                Real(ewld%fft_dim_b, wp) / Real(domain%ny, wp), &
-!                Real(ewld%fft_dim_c, wp) / Real(domain%nz, wp)) / Real(ewld%bspline1, wp)
-
-!           Write (messages(1), '(a,4(i0,a))') &
-!                'SPME driven limit on largest possible decomposition:', &
-!                (ewld%fft_dim_a / ewld%bspline1) * (ewld%fft_dim_b / ewld%bspline1) * (ewld%fft_dim_c / ewld%bspline1),   &
-!                ' nodes/domains (',                                                                                       &
-!                ewld%fft_dim_a / ewld%bspline1, ',', ewld%fft_dim_b / ewld%bspline1, ',', ewld%fft_dim_c / ewld%bspline1, &
-!                ') for currently specified cutoff (with padding) & Ewald precision (sum parameters)'
-!           Write (messages(2), '(a,f0.2,a)') &
-!                'SPME suggested factor to decrease currently specified cutoff (with padding) by: ', &
-!                1.0_wp / test, ' for currently specified Ewald precision & domain decomposition'
-!           Write (messages(3), '(a,f0.2,a)') &
-!                'SPME suggested factor to increase current Ewald precision by: ', &
-!                (1.0_wp - tol) * 100.0_wp, ' for currently specified cutoff (with padding) & domain decomposition'
-!           Call info(messages, 3, .true., level=2)
-!         End If
-
-!         If (devel%l_trm) Then
-!           print_decomp = link_cell
-!           Write (message, '(a)') "SPME partitioning aborted, early run termination is due"
-!           Call warning(message, .true.)
-!         Else
-!           Call error(308)
-!         End If
-!       End If
-
-!     End If
-
-!     ! reset (increase) link-cell maximum (neigh%max_cell)
-!     ! if tersoff or three- or four-body potentials exist
-
-  ! If (tersoffs%max_ter > 0 .or. threebody%mxtbp > 0 .or. fourbody%max_four_body > 0) Then
-  !   cut = neigh%cutoff + 1.0e-6_wp ! define cut,
-  !   If (tersoffs%max_ter > 0) cut = Min(cut, tersoffs%cutoff + 1.0e-6_wp)
-  !   If (threebody%mxtbp > 0) cut = Min(cut, threebody%cutoff + 1.0e-6_wp)
-  !   If (fourbody%max_four_body > 0) cut = Min(cut, fourbody%cutoff + 1.0e-6_wp)
-
-  !   link_cell(1) = Int(domain%nx_recip * cell_properties(7) / cut)
-  !   link_cell(2) = Int(domain%ny_recip * cell_properties(8) / cut)
-  !   link_cell(3) = Int(domain%nz_recip * cell_properties(9) / cut)
-
-  !   Write (message, '(a,3i6)') "link-cell decomposition 2 (x,y,z): ", link_cell
-  !   Call info(message, .true., level=3)
-
-  !   If (any(link_cell  < 3)) Call error(305)
-
-  !   If      (config%imcon == IMCON_NOPBC) Then
-  !     neigh%max_cell = Max(neigh%max_cell, Nint((fdvar**4) * Real(Product(link_cell + 5), wp)))
-  !   Else If (config%imcon == IMCON_SLAB) Then
-  !     neigh%max_cell = Max(neigh%max_cell, Nint((fdvar**3) * Real(Product(link_cell + 5), wp)))
-  !   Else
-  !     neigh%max_cell = Max(neigh%max_cell, Nint((fdvar**2) * Real(Product(link_cell + 5), wp)))
-  !   End If
-  ! End If
-
-  ! Write (message, '(a,3i6)') "Final link-cell decomposition (x,y,z): ", link_cell
-  ! Call info(message, .true., level=1)
-!   end Subroutine setup_vnl
 
   Subroutine setup_buffers(fdvar, maximum_local_density, maximum_domain_density, megatm, link_cell, max_grid, &
                            config, domain, stats, neigh, green, site, cshell, cons, pmf, rdf, &
@@ -1127,7 +889,7 @@ Contains
     ! Create f(fdvar,maximum_local_density,maximum_domain_density) function of density push, maximum 'local' density, maximum domains' density
 
     If ((comm%mxnode == 1 .or. Any(link_cell < 3)) .or. &
-        (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB .or. config%imc_n == IMCON_SLAB) .or. &
+        (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB) .or. &
         (maximum_local_density / maximum_domain_density <= 0.5_wp) .or. (fdvar > 10.0_wp)) Then
       fdens = maximum_domain_density ! for all possibly bad cases resort to max density
     Else
@@ -1174,7 +936,7 @@ Contains
       tmp = 1.25_wp * fdvar * 8.0_wp * Real(megatm, wp)
       tmp = Min(tmp, bigint_r)
       config%mxatms = Min(config%mxatms, Nint(tmp))
-    Else If (config%imcon == IMCON_SLAB .or. config%imc_n == IMCON_SLAB) Then ! comm%mxnode >= 4 .or. (link_cell(x) >= 2 && link_cell(y) >= 2)
+    Else If (config%imcon == IMCON_SLAB) Then ! comm%mxnode >= 4 .or. (link_cell(x) >= 2 && link_cell(y) >= 2)
       ! maximum of 7 fold increase in of surface thickness (domain+halo) to volume (domain only) as per geometric reasoning
       tmp = 1.25_wp * fdvar * 7.0_wp * Real(megatm, wp)
       tmp = Min(tmp, bigint_r)
@@ -1340,23 +1102,23 @@ Contains
   End Subroutine setup_buffers
 
   Subroutine setup_vnl(fdvar, neigh, flow, domain, ewld, devel, config, met, vdws, electro, rdf, &
-                       cell_properties, link_cell, kim_data, comm, ttm_padding)
-    Type(neighbours_type), Intent(InOut) :: neigh
-    Type(flow_type), Intent(In) :: flow
-    Type(domains_type), Intent(In) :: domain
-    Type(ewald_type), Intent(InOut) :: ewld
-    Type(metal_type), Intent(In) :: met
-    Type(vdw_type), Intent(In) :: vdws
-    Type(electrostatic_type), Intent(In) :: electro
-    Type(rdf_type), Intent(In) :: rdf
-    Type(development_type), Intent(In) :: devel
-    Type(configuration_type), Intent(In) :: config
-    Type(kim_type), Intent(In) :: kim_data
-    Type(comms_type), Intent(In) :: comm
-    Integer, Dimension(3), Intent(Out) :: link_cell
-    Real(Kind=wp), Dimension(10), Intent(In) :: cell_properties
-    Real(Kind=wp), Intent(In) :: ttm_padding
-    Real(Kind=wp), Intent(In) :: fdvar
+       cell_properties, link_cell, kim_data, comm, ttm_padding)
+    Type(neighbours_type),        Intent( InOut ) :: neigh
+    Type(flow_type),              Intent( In    ) :: flow
+    Type(domains_type),           Intent( In    ) :: domain
+    Type(ewald_type),             Intent( InOut ) :: ewld
+    Type(metal_type),             Intent( In    ) :: met
+    Type(vdw_type),               Intent( In    ) :: vdws
+    Type(electrostatic_type),     Intent( In    ) :: electro
+    Type(rdf_type),               Intent( In    ) :: rdf
+    Type(development_type),       Intent( In    ) :: devel
+    Type(configuration_type),     Intent( In    ) :: config
+    Type(kim_type),               Intent( In    ) :: kim_data
+    Type(comms_type),             Intent( In    ) :: comm
+    Integer,       Dimension(3),  Intent(   Out ) :: link_cell
+    Real(Kind=wp), Dimension(10), Intent( In    ) :: cell_properties
+    Real(Kind=wp),                Intent( In    ) :: ttm_padding
+    Real(Kind=wp),                Intent( In    ) :: fdvar
 
     Real(Kind=wp), Parameter                      :: minimum_pad = 0.05 ! Ang
     Real(Kind=wp), Parameter                      :: minimum_pad_cutoff_frac = 0.005 ! 0.5%

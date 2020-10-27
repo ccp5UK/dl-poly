@@ -129,7 +129,7 @@ Module numerics
     Real(Kind=wp)                                    :: spacing
     Real(Kind=wp)                                    :: recip_spacing
     Integer, Public :: nsamples = -1
-    Logical, Public :: initialised
+    Logical, Public :: initialised = .false.
   Contains
     Private
 
@@ -231,7 +231,6 @@ Contains
     If (table_in%initialised) Return
 
     If (table_in%nsamples < 10) Call error(0, 'Too few samples to generate interpolation in init_interp_table')
-
     Allocate (table_in%table(table_in%nsamples), stat=fail)
     If (fail > 0) Call error_alloc('table_in%table', 'init_interp_table')
     table_in%spacing = range / Real(table_in%nsamples - 4, wp)
@@ -774,7 +773,6 @@ Contains
     k = 0
 
     ! generate uniform random numbers on [-1, 1)
-
     ran0 = 1.0_wp
     Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
       ran1 = 2.0_wp * sarurnd(seed, i, j, k) - 1.0_wp

@@ -32,16 +32,6 @@ Module development
 
   Private
 
-  !> Logicals indicating whether tests should be run for
-  !> corresponding module. Add as required
-  Type, Public :: testing_type
-     Logical :: configuration
-     Logical :: dftb_library
-   Contains
-     Procedure :: all => set_all_tests_true
-     !Procedure :: set => set_tests
-  End Type testing_type
-
   !> Type containing development module variables
   Type, Public :: development_type
     Private
@@ -69,6 +59,10 @@ Module development
     Logical, Public       :: l_tor = .false.
     !> check on minimum separation distance between VNL pairs at re/start
     Logical, Public       :: l_dis = .false.
+
+    !> See whether the new control file format should be used
+    Logical, Public        :: new_control = .false.
+
     !> CFGORG levcfg
     Integer, Public       :: lvcforg = -1
     !> reorigin vector
@@ -81,13 +75,10 @@ Module development
     Real(Kind=wp), Public :: r_dis = 0.5_wp
     !> Devel start time
     Real(Kind=wp), Public :: t_zero
-    !> Unit testing
-    Logical, Public :: run_unit_tests = .false.
-    Type(testing_type), Public :: unit_test
-    !> App testing
-    Logical, Public :: run_app_tests = .false.
-    Type(testing_type), Public :: app_test
- End Type development_type
+    !> Test DFTB
+    Logical, Public :: test_dftb_library
+
+  End Type development_type
 
   Public :: scan_development
   Public :: build_info
@@ -197,7 +188,7 @@ Contains
 #define __VERSION__ 'XYZ'
 #endif
 
-  Subroutine build_info()
+  Subroutine build_info(ifile)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -212,7 +203,7 @@ Contains
     !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+    Integer, Optional :: ifile
     Character(Len=10) :: time
     Character(Len=47) :: aux
     Character(Len=256) :: aux2
@@ -221,8 +212,9 @@ Contains
     Character(Len=8)  :: date
     Integer           :: i, value(1:8)
 
-    Call info('', .true.)
-    Call info(Repeat("*", 66), .true.)
+
+    Call info_local(ifile, '')
+    Call info_local(ifile, Repeat("*", 66))
     If (Len_trim(__DATE__//"  @  "//__TIME__) > 47) Then
       Write (aux, '(a47)') __DATE__//"  @  "//__TIME__
     Else
@@ -230,7 +222,7 @@ Contains
     End If
     Call clean_string(aux)
     Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", "birthday:", aux, "****"
-    Call info(message, .true.)
+    Call info_local(ifile, message)
 
     If (Len_trim(__HOSTNAME__) > 47) Then
       Write (aux, '(a47)') __HOSTNAME__
@@ -239,7 +231,7 @@ Contains
     End If
     Call clean_string(aux)
     Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", " machine:", aux, "****"
-    Call info(message, .true.)
+    Call info_local(ifile, message)
 
     If (Len_trim(__BUILDER__) > 47) Then
       Write (aux, '(a47)') __BUILDER__
@@ -248,7 +240,7 @@ Contains
     End If
     Call clean_string(aux)
     Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", " builder:", aux, "****"
-    Call info(message, .true.)
+    Call info_local(ifile, message)
 
     aux2 = compiler_version()
     Call clean_string(aux2)
@@ -261,19 +253,19 @@ Contains
     If (mpi_ver > 0) Then
       Write (aux, '(a1,i0,a1,i0)') "v", mpi_ver, ".", mpi_subver
       Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", "     MPI:", aux, "****"
-      Call info(message, .true.)
+      Call info_local(ifile, message)
 #ifndef OLDMPI
       Call clean_string(lib_version)
       Do i = 1, Len_trim(lib_version), 46
         aux = lib_version(i:Min(i + 45, Len_trim(lib_version)))
         Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", "MPI libs:", aux, "****"
-        Call info(message, .true.)
+        Call info_local(ifile, message)
       End Do
 #endif
     Else If (mpi_ver < 0) Then
       Write (aux, *) "MPI Library too old.  Please update!!!"
       Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", "MPI libs:", aux, "****"
-      Call info(message, .true.)
+      Call info_local(ifile, message)
     End If
 
     Call Date_and_time(date, time, zone, value)
@@ -281,17 +273,23 @@ Contains
       time(1:2), ":", time(3:4), ":", time(5:10), "  (GMT", &
       zone(1:3), ":", zone(4:5), ")"
     Write (message, '(a4,1x,a9,a47,1x,a4)') "****", "executed:", aux, "****"
-    Call info(message, .true.)
-    Call info(Repeat("*", 66), .true.)
-    Call info('', .true.)
+    Call info_local(ifile, message)
+    Call info_local(ifile, Repeat("*", 66))
+    Call info_local(ifile, '')
+
+  contains
+
+    Subroutine info_local(ifile, message)
+      Character(Len=*), Intent(In) :: message
+      Integer, Optional :: ifile
+
+      if (present(ifile)) then
+        write(ifile, '(a)') message
+      else
+        Call info(message, .true.)
+      end if
+    end Subroutine info_local
 
   End Subroutine build_info
-
-
-  Subroutine set_all_tests_true(this)
-    Class(testing_type), Intent(inout) :: this
-    this%configuration = .true.
-    this%dftb_library = .true.
-  End Subroutine set_all_tests_true
 
 End Module development
