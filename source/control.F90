@@ -780,8 +780,7 @@ Contains
             Call info(Repeat(' ',40)//'s_ij=(1/3) * SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))}', .true.)
           Else
             Call strip_blanks(record)
-            Write (message, '(4a)') word(1:Len_trim(word) + 1), &
-              word1(1:Len_Trim(word1) + 1),word2(1:Len_Trim(word2)+1), record
+            Write (message, '(4(a,1X))') Trim(word), Trim(word1),Trim(word2), record
             Call info(message, .true.)
             Call error(3)
           End If
@@ -792,8 +791,7 @@ Contains
           Call info('vdw force-shifting option on', .true.)
         Else
           Call strip_blanks(record)
-          Write (message, '(3a)') word(1:Len_trim(word) + 1), &
-            word1(1:Len_Trim(word1) + 1), record
+          Write (message, '(3(a,1X))') Trim(word), Trim(word1), record
           Call info(message, .true.)
           Call error(3)
         End If
@@ -1024,7 +1022,7 @@ Contains
           thermo%tstep = word_2_real(word)
         Else
           Call strip_blanks(record)
-          Write (message, '(3a)') word(1:Len_trim(word) + 1),word1(1:Len_Trim(word1) + 1), record
+          Write (message, '(3(a,1X))') Trim(word),Trim(word1), record
           Call info(message, .true.)
           Call error(3)
         End If
@@ -1140,7 +1138,7 @@ Contains
           word1 = 'distance'
         Else
           Call strip_blanks(record)
-          Write (message, '(4a)') word2(1:Len_Trim(word2) + 1),' ',word(1:Len_trim(word) + 1), record
+          Write (message, '(3(a,1X))') Trim(word2),Trim(word), record
           Call info(message, .true.)
           Call error(590)
         End If
@@ -1411,7 +1409,7 @@ Contains
               Call info("Ensemble type : Shardlow's second order splitting (S2)", .true.)
             Else
               Call strip_blanks(record)
-              Write (message, '(2a)') word(1:Len_trim(word) + 1), record
+              Write (message, '(2(a,1X))') Trim(word), record
               Call info(message, .true.)
               Call error(436)
             End If
@@ -1432,7 +1430,7 @@ Contains
           Else
 
             Call strip_blanks(record)
-            Write (message, '(2a)') word(1:Len_trim(word) + 1), record
+            Write (message, '(2(a,1X))') Trim(word), record
             Call info(message, .true.)
             Call error(436)
 
@@ -1519,7 +1517,7 @@ Contains
           Else
 
             Call strip_blanks(record)
-            Write (message, '(2a)') word(1:Len_Trim(word) + 1), record
+            Write (message, '(2(a,1X))') Trim(word), record
             Call info(message, .true.)
             Call error(436)
 
@@ -1571,7 +1569,7 @@ Contains
                 Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
               Else If (Len_Trim(word) > 0) Then
                 Call strip_blanks(record)
-                Write (message, '(2a)') word(1:Len_Trim(word) + 1), record
+                Write (message, '(2(a,1X))') Trim(word), record
                 Call info(message, .true.)
                 Call warning(460,0.0_wp,0.0_wp,0.0_wp)
               End If
@@ -1585,13 +1583,13 @@ Contains
                 Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
               Else
                 Call strip_blanks(record)
-                Write (message, '(2a)') word(1:Len_trim(word) + 1), record
+                Write (message, '(2(a,1X))') Trim(word), record
                 Call info(message, .true.)
                 Call warning(460,0.0_wp,0.0_wp,0.0_wp)
               End If
             Else If (Len_trim(word) > 0) Then
               Call strip_blanks(record)
-              Write (message, '(2a)') word(1:Len_trim(word) + 1), record
+              Write (message, '(2(a,1X))') Trim(word), record
               Call info(message, .true.)
               Call warning(460,0.0_wp,0.0_wp,0.0_wp)
             End If
@@ -1638,7 +1636,7 @@ Contains
                 Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
               Else If (Len_Trim(word) > 0) Then
                 Call strip_blanks(record)
-                Write (message, '(2a)') word(1:Len_trim(word) + 1), record
+                Write (message, '(2(a,1X))') Trim(word), record
                 Call info(message, .true.)
                 Call warning(460, 0.0_wp, 0.0_wp, 0.0_wp)
               End If
@@ -1652,13 +1650,13 @@ Contains
                 Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
               Else
                 Call strip_blanks(record)
-                Write (message, '(2a)') word(1:Len_trim(word) + 1), record
+                Write (message, '(2(a,1X))') Trim(word), record
                 Call info(message, .true.)
                 Call warning(460, 0.0_wp, 0.0_wp, 0.0_wp)
               End If
             Else If (Len_trim(word) > 0) Then
               Call strip_blanks(record)
-              Write (message, '(2a)') word(1:Len_trim(word) + 1), record
+              Write (message, '(2(a,1X))') Trim(word), record
               Call info(message, .true.)
               Call warning(460, 0.0_wp, 0.0_wp, 0.0_wp)
             End If
@@ -1705,7 +1703,7 @@ Contains
                 Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
               Else If (Len_Trim(word) > 0) Then
                 Call strip_blanks(record)
-                Write (message, '(2a)') word(1:Len_trim(word) + 1), record
+                Write (message, '(2(a,1X))') Trim(word), record
                 Call info(message, .true.)
                 Call warning(460, 0.0_wp, 0.0_wp, 0.0_wp)
               End If
@@ -1719,13 +1717,13 @@ Contains
                 Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
               Else
                 Call strip_blanks(record)
-                Write (message, '(2a)') word(1:Len_trim(word) + 1), record
+                Write (message, '(2(a,1X))') Trim(word), record
                 Call info(message, .true.)
                 Call warning(460, 0.0_wp, 0.0_wp, 0.0_wp)
               End If
             Else If (Len_trim(word) > 0) Then
               Call strip_blanks(record)
-              Write (message, '(2a)') word(1:Len_trim(word) + 1), record
+              Write (message, '(2(a,1X))') Trim(word), record
               Call info(message, .true.)
               Call warning(460, 0.0_wp, 0.0_wp, 0.0_wp)
             End If
@@ -1772,7 +1770,7 @@ Contains
                 Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
               Else If (Len_Trim(word) > 0) Then
                 Call strip_blanks(record)
-                Write (message, '(2a)') word(1:Len_trim(word) + 1), record
+                Write (message, '(2(a,1X))') Trim(word), record
                 Call info(message, .true.)
                 Call warning(460, 0.0_wp, 0.0_wp, 0.0_wp)
               End If
@@ -1786,13 +1784,13 @@ Contains
                 Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
               Else
                 Call strip_blanks(record)
-                Write (message, '(2a)') word(1:Len_trim(word) + 1), record
+                Write (message, '(2(a,1X))') Trim(word), record
                 Call info(message, .true.)
                 Call warning(460, 0.0_wp, 0.0_wp, 0.0_wp)
               End If
             Else If (Len_trim(word) > 0) Then
               Call strip_blanks(record)
-              Write (message, '(2a)') word(1:Len_trim(word) + 1), record
+              Write (message, '(2(a,1X))') Trim(word), record
               Call info(message, .true.)
               Call warning(460, 0.0_wp, 0.0_wp, 0.0_wp)
             End If
@@ -1807,7 +1805,7 @@ Contains
           Else
 
             Call strip_blanks(record)
-            Write (message, '(2a)') word(1:Len_trim(word) + 1), record
+            Write (message, '(2(a,1X))') Trim(word), record
             Call info(message, .true.)
             Call error(436)
 
@@ -1816,7 +1814,7 @@ Contains
         Else
 
           Call strip_blanks(record)
-          Write (message, '(2a)') word(1:Len_trim(word) + 1), record
+          Write (message, '(2(a,1X))') Trim(word), record
           Call info(message, .true.)
           Call error(436)
 
@@ -2141,7 +2139,7 @@ Contains
         Else
 
           Call strip_blanks(record)
-          Write (message, '(3a)') word(1:Len_trim(word) + 1),word1(1:Len_Trim(word1) + 1), record
+          Write (message, '(3(a,1X))') Trim(word),Trim(word1), record
           Call info(message, .true.)
           Call error(3)
 
@@ -2637,7 +2635,7 @@ Contains
         If (akey /= 'all' .and. akey /= 'bon' .and. akey /= 'ang' .and. &
             akey /= 'dih' .and. akey /= 'inv') Then
           Call strip_blanks(record)
-          Write (message, '(3a)') word(1:Len_trim(word) + 1),word1(1:Len_Trim(word1) + 1), record
+          Write (message, '(3(a,1X))') Trim(word),Trim(word1), record
           Call info(message, .true.)
           Call error(3)
         End If
@@ -3028,7 +3026,7 @@ Contains
         Else
 
           Call strip_blanks(record)
-          Write (message, '(3a)') word(1:Len_trim(word) + 1),word1(1:Len_Trim(word1) + 1), record
+          Write (message, '(3a,1X)') Trim(word),Trim(word1), record
           Call info(message, .true.)
           Call error(3)
 
@@ -3049,7 +3047,7 @@ Contains
         Else
 
           Call strip_blanks(record)
-          Write (message, '(3a)') word(1:Len_trim(word) + 1),word1(1:Len_Trim(word1) + 1), record
+          Write (message, '(3(a,1X))') Trim(word),Trim(word1), record
           Call info(message, .true.)
           Call error(3)
 
@@ -3121,7 +3119,7 @@ Contains
       Else
 
         Call strip_blanks(record)
-        Write (message, '(2a)') word(1:Len_trim(word) + 1), record
+        Write (message, '(2(a,1X))') Trim(word), record
         Call info(message, .true.)
         Call error(3)
 
@@ -5137,7 +5135,7 @@ Contains
             Call info('I/O read method: serial by using a single master process', .true., level=2)
           Else
             Call strip_blanks(record)
-            Write (message, '(4a)') 'io ', word1(1:Len_trim(word1) + 1), word(1:Len_trim(word) + 1), record
+            Write (message, '(4(a,1X))') 'io', Trim(word1), Trim(word), record
             Call info(message, .true.)
             Call error(3)
           End If
@@ -5282,7 +5280,7 @@ Contains
               Call info('I/O write method: parallel by using netCDF in 64-bit format', .true.)
               Call io_nc_set_real_precision(dp, netcdf, err_r)
               record1 = ' '
-              record1 = word(1:Len_trim(word) + 1)//record ! back up
+              record1 = Trim(word)//" "//record ! back up
               record = record1
             End If
           Else If (word(1:6) == 'master') Then
@@ -5290,7 +5288,7 @@ Contains
             Call info('I/O write method: serial by using a single master process', .true.)
           Else
             Call strip_blanks(record)
-            Write (message, '(4a)') 'io ', word1(1:Len_trim(word1) + 1), word(1:Len_trim(word) + 1), record
+            Write (message, '(4(a,1X))') 'io', Trim(word1), Trim(word), record
             Call info(message, .true.)
             Call error(3)
           End If
@@ -5313,7 +5311,7 @@ Contains
               Call info('I/O write type: data sorting on', .true.)
             Else
               record1 = ' '
-              record1 = word(1:Len_trim(word) + 1)//record ! back up
+              record1 = Trim(word)//" "//record ! back up
               record = record1
               Call info('I/O write type: data sorting on (assumed)', .true., level=3)
             End If
@@ -5466,7 +5464,7 @@ Contains
 
         Else
           Call strip_blanks(record)
-          Write (message, '(2a)') word(1:Len_trim(word) + 1), record
+          Write (message, '(2(a,1X))') Trim(word), record
           Call info(message, .true.)
           Call error(3)
         End If
