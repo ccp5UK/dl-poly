@@ -267,7 +267,6 @@ Contains
 
 
     location = table%hash(input)
-
     key = table%table_keys(location)
     ! Handle open addressing
     do while (trim(key) /= trim(input))
@@ -275,7 +274,8 @@ Contains
           exit
        end if
        table%collisions = table%collisions + 1
-       location = mod(location + 1, table%size)
+       location = location + 1
+       if (location > table%size) location = 1 ! Loop back through safely
        key = table%table_keys(location)
     end do
 
