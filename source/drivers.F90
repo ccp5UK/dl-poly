@@ -2628,7 +2628,7 @@ Contains
              cnfig%degfre, cnfig%degshl, cnfig%degrot, &
              nstph, tsths, flow%time, tmsh, &
              cnfig%mxatdm, stat, thermo, &
-             zdensity, sites, files, comm)
+             zdensity, sites, files, comm, 1)
 
           ! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
 
@@ -3006,7 +3006,7 @@ Contains
              cnfig%degfre, cnfig%degshl, cnfig%degrot, &
              nstph, tsths, flow%time, tmsh, &
              cnfig%mxatdm, stat, thermo, &
-             zdensity, sites, files, comm)
+             zdensity, sites, files, comm, 1)
 
           ! line-printer output
           ! Update cpu flow%time

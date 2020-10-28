@@ -447,7 +447,7 @@ Contains
     Type(site_type),          Intent(In   ) :: sites
     Type(file_type),          Intent(InOut) :: files(:)
     Type(comms_type),         Intent(InOut) :: comm
-    Integer( Kind = wi ), Intent( In  ), Optional :: ff
+    Integer,                  Intent(In   ) :: ff
 
     Character(Len=256)         :: message
     Integer                    :: fail, i, iadd, j, k, kstak
@@ -458,15 +458,11 @@ Contains
     Character(Len=100)         :: sunits, fmtt
     Logical                    :: ffpass
 
-    If (present(ff)) then
-      If(ff==1)Then
-        ffpass=.True.
-      Else
-        ffpass=.False.
-      End If
+    If(ff==1)Then
+      ffpass=.True.
     Else
-      ffpass= .True.
-    Endif
+      ffpass=.False.
+    End If
 
     fail = 0
 

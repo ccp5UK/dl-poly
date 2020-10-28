@@ -699,7 +699,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(file_type),          Intent(InOut) :: files(:)
     Type(comms_type),         Intent(InOut) :: comm
-    Integer,                  Intent(In   ), Optional :: ff
+    Integer,                  Intent(In   ) :: ff
 
     Character                                                    :: lf
     Character(Len=200)                                           :: record, record1
@@ -737,21 +737,16 @@ Contains
     Integer                             :: conftag, fftag
 
     ! Choose which CONFIG and FIELD file to read, depending on the ff tag
-    If (present(ff)) then
-      If (ff == 1 ) Then
-        conftag=FILE_CONFIG
-        fftag=FILE_FIELD
-      ElseIf( ff ==2 )Then
-        conftag=FILE_CONFIG_2
-        fftag=FILE_FIELD_2
-      ElseIf( ff ==3 )Then
-        conftag=FILE_CONFIG_3
-        fftag=FILE_FIELD_3
-      EndIf
-    Else
+    If (ff == 1 ) Then
       conftag=FILE_CONFIG
       fftag=FILE_FIELD
-    Endif
+    ElseIf( ff ==2 )Then
+      conftag=FILE_CONFIG_2
+      fftag=FILE_FIELD_2
+    ElseIf( ff ==3 )Then
+      conftag=FILE_CONFIG_3
+      fftag=FILE_FIELD_3
+    EndIf
 
     ! Some parameters and variables needed by io interfaces
 
