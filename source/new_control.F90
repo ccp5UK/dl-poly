@@ -5090,7 +5090,8 @@ contains
       ! Skip blanks
       if (key == "") cycle
       Call lower_case(key)
-      can_parse = params%in(key)
+      can_parse = key == "title"
+      ! can_parse = params%in(key)
       exit
     end do
     rewind(ifile)
