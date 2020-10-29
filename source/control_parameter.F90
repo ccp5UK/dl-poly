@@ -124,7 +124,6 @@ contains
          ! Escape _
          param%key = escape(param%key)
          param%val = escape(param%val)
-         param%units = escape(param%units)
          param%description = escape(param%description)
 
          if (param%val == '') then
@@ -172,9 +171,9 @@ contains
          Case (DATA_VECTOR6)
            param%val = "[ 6.666 6.666 6.666 6.666 6.666 6.666 ]"
          end select
+         Write(ifile, '(3(a,1X))') trim(param%key), trim(param%val), trim(param%units)
        end Select
 
-       Write(ifile, '(3(a,1X))') trim(param%key), trim(param%val), trim(param%units)
     end do
 
     Select Case (mode)

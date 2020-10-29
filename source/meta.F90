@@ -805,6 +805,7 @@ Contains
       call read_ensemble(params, thermo(ff), vdws(ff)%max_vdw, ttms(ff)%l_ttm)
       Call read_system_parameters(params, flow, config(ff), thermo(ff), impa, minim(ff), &
            plume(ff), cons(ff), pmfs(ff), ttms(ff)%l_ttm)
+      stats%require_pp = flow%heat_flux .or. flow%write_per_particle
 
     ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
     ! (setup and domains)

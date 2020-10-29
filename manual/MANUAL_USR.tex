@@ -1,5 +1,5 @@
-%\documentclass[11pt,a4paper,twoside,dvipdfm,pdflatex,makeidx]{report}
-\documentclass[11pt,a4paper,twoside,dvipdfmx,pdflatex,makeidx]{report}
+%% \documentclass[11pt,a4paper,twoside,dvipdfm,pdflatex,makeidx]{report}
+ \documentclass[11pt,a4paper,twoside,dvipdfmx,pdflatex,makeidx]{report}
 
 % Floats settings
 % Alter some LaTeX defaults for better treatment of figures:
@@ -235,7 +235,7 @@ Modularised FORTRAN90, MPI Parallelisation \& Memory Distribution via DD},
 STFC Daresbury Laboratory \\
 Daresbury, Warrington WA4 4AD \\
 Cheshire, England, United Kingdom}
-\date{\bf Version 4.09~~--~~September 2018}
+\date{\bf Version 4.11~~--~~October 2020}
 \clearpage
 \end{titlepage}
 
@@ -448,6 +448,17 @@ run it.
 \input preparation.tex
 \input ewald_precision.tex
 \input diagnostic.tex
+
+\chapter{New Control Format}
+\label{new-style}
+\vskip 12ex
+\section*{Scope of Chapter}
+This chapter describes the changes from old-style to new-style
+control with information for users and developers.
+\setcounter{equation}{0}
+\newpage
+
+\input new_control.tex
 
 \chapter{Data Files}
 \label{files}

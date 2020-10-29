@@ -35,18 +35,13 @@ frameworks for user-definable work-flows.
 \subsection{The CONTROL File}
 \label{control-file}
 
-The CONTROL file is read by the subroutine {\sc read\_control} and
-defines the control variables for running a \D job.  (It is also
-read by the subroutine {\sc scan\_control} in the {\sc
-set\_bounds} routine.)  It makes extensive use of {\bf directives}
-and {\bf keywords}.  Directives are character strings that appear
+The CONTROL file is read by the subroutine {\sc read\_new\_control} and
+defines the control variables for running a \D job.
+Keywords are character strings that appear
 as the first entry on a data record (or line) and which invoke a
-particular operation or provide numerical parameters.  Also
-associated with each directive may be one or more keywords, which
-may qualify a particular directive by, for example, adding extra
-options.  Directives can appear in any order in the CONTROL file,
-except for the {\bf finish} directive which marks the end of the
-file.  Some of the directives are mandatory (for example the {\bf
+particular operation or provide numerical parameters.
+Keywords can appear in any order in the CONTROL file and
+some of the directives are mandatory (for example the {\bf
 timestep} directive that defines the timestep), others are
 optional.
 
@@ -55,199 +50,30 @@ inherent dangers.  It is, for example, quite easy to specify
 contradictory directives, or invoke algorithms\index{algorithm}
 that do not work together.  By large \D tries to sort out these
 difficulties and print helpful error messages, but it does not
-claim to be fully foolproof.  Another common mistake is to specify
-more than once a directive that has no contradictory, disabling,
-altering or antagonistic directives - then the one specified
-last will be used as a control directive (for example
-{\bf densvar, equil, steps, press, mxshak, shake, ...}).
-Fortunately, in most cases the CONTROL file will be small and
-easy to check visually.  It is important to think carefully about
+claim to be fully foolproof. It is important to think carefully about
 a simulation beforehand and ensure that \D is being asked to do
 something that is physically reasonable.  It should also be
 remembered that the present capabilities the package may not
 allow the simulation required and it may be necessary for you
 yourself to add new features.
 
-An example CONTROL file appears below.  The directives and
-keywords appearing are described in the following section.  The
-example lists all possible and not mutually excluding directives
-in a particular order.  Although this order is not mandatory, it
-is highly recommended.
+An example CONTROL file appears below. The directives and
+keywords appearing are described in the following section.
 
-\begin{lstlisting}
-TITLE RECORD: DL_POLY_4 SAFE ORDER OF CONTROL DIRECTIVES
-
-# I/O REDIRECT
-io output  my-dl_poly-run
-io config  CONFIG-CDS-generated
-io field   FIELD-dl_field.out
-io history new-trajectory
-io revive  REVIVE-2ps-run
-io revold  REVIVE-1ps-run
-io revcon  REVCON-100k-output
-
-# I/O READ: METHOD, READER COUNT, BATCH & BUFFER SIZES
-io read  mpiio        2 2000000 20000
-
-# I/O WRITE: METHOD, TYPE, WRITER COUNT, BATCH & BUFFER SIZES
-io write mpiio sorted 8 2000000 20000
-
-# SYSTEM REPLICATION & IMPACT OPTION
-nfold              10 10 10
-impact 1 2000 7.5 1.0 2.0 3.0
-
-# DENSITY VARIATION ARRAY BOOST
-densvar                  10 %
-
-# INDEX AND VERIFICATION BYPASS AND NO TOPOLOGY REPORTING
-no index
-no strict
-no topology
-
-# INTERACTIONS BYPASS
-no electostatics
-no vdw
-
-# APPLY MIXING TO ALLOWED & AVAILABLE VDW CROSS INTERACTIONS
-# Lorentz-Berthelot || Fender-Halsey || Hogervorst (good hope) || Halgren HHG || Tang-Toennies
-vdw mixing Lorentz
-
-# DIRECT CALCULATION OF VDW/METAL INTERACTIONS INSTEAD OF
-# EVALUATION BY SPLINING OVER TABULATED VALUES IN MEMORY
-vdw direct
-metal direct
-
-# FORCE-SHIFT VDW INTERACTIONS SO THAT ENERGY AND FORCE
-# CONTRIBUTIONS FALL SMOOTHLY TO ZERO WHEN APPROACHING R_CUT
-vdw shift
-
-# RANDOM NUMBER GENERATOR SEEDING
-seed 100 200 300
-
-# SLAB SIMULATION PARALLEL CONTROL
-slab
-
-# RESTART OPTIONS
-restart noscale
-dump                 1000     steps
-
-# SYSTEM TARGET TEMPERATURE AND PRESSURE
-temperature           300.0   Kelvin
-pressure                0.001 k-atmospheres
-
-# SYSTEM CUTOFFS AND ELECTROSTATICS
-rcut                   10.0  Angstroms
-rpad                    0.35 Angstroms
-rvdw                    8.0  Angstroms
-subcelling threshold   50.0  particles
-exclude
-epsilon                 1.0
-ewald precision         1.0e-5
-ewald evaluate          4
-
-# RELAXED SHELL MODEL TOLERANCE
-rlxtol                  1.0
-
-# CONSTRANTS ITERATION LENGTH and TOLERANCE
-mxshak                250 cycles
-shake                   1.0e-5
-
-# INTEGRATION FLAVOUR, ENSEMBLE AND PSEUDO THERMOSTAT
-integration velocity verlet
-ensemble nst berendsen 0.5 1.5
-pseudo langevin   2.0 150.0
-
-# INTEGRATION TIMESTEP
-variable timestep       0.001 pico-seconds
-mindis                  0.03  Angstroms
-maxdis                  0.10  Angstroms
-mxstep                  0.005 pico-seconds
-
-# SUMULATION & EQUILIBRATION LENGTH
-steps               10000 steps
-equilibration        1000 steps
-
-# EQUILIBRATION DIRECTIVES
-zero fire
-cap                   500 kT/Angstrom
-scale                   5 steps
-regauss                 3 steps
-minimise force      20  1.0    0.00001
-optimise energy         0.001  0.00005
-
-# STATISTICS
-collect
-stack                  50 deep
-stats                  10 steps
-
-# OUTPUT
-print                  20 steps
-
-# HISTORY
-replay
-trajectory        20 30 0
-
-# DEFECTS TRAJECTORY - DEFECTS
-defects           40 15 0.75
-
-# DISPLACEMENTS TRAJECTORY - RSDDAT
-displacements     70 10 0.25
-
-# MSDTMP
-msdtmp           1000 100
-
-# INTRAMOLECULAR PDF ANALYSIS BY TYPE IF PRESENT
-analyse  bonds       sample every 100  nbins 250  rmax 5.0
-analyse  angles      sample every 100  nbins 360  # [ 0 : pi]
-analyse  dihedrals   sample every 100  nbins 720  # [-pi: pi]
-analyse  inversions  sample every 100  nbins 360  # [ 0 : pi]
-
-# INTRAMOLECULAR PDF ANALYSIS FOR ALL TYPES PRESENT
-analyse  all         sample every 100  nbins 1000  rmax 5.0
-
-# PRINT ANY DEFINED INTER-(RDF->VDW) & INTRA-(bonded) MOLECULAR PDF ANALYSIS
-print analysis
-
-# RDF & Z-DENSITY
-binsize                 0.05 Angstroms
-rdf                     7    steps
-print rdf
-zden                    7    steps
-print zden
-
-# EMPIRICAL VALENCE BOND (EVB) DIRECTIVE
-evb                    2 
-
-# EXECUTION TIME
-job time             1000 seconds
-close time             10 seconds
-
-# FINISH
-finish
-\end{lstlisting}
+\lstinputlisting{EXAMPLE_CONTROL}
 
 \subsubsection{The CONTROL File Format}
 
 The file is free-formatted and not case-sensitive.  Every line is
 treated as a command sentence (record).  Commented records
-(beginning with a \#) and blank lines are not processed and may be
+(beginning with a \# or !) and blank lines are not processed and may be
 added to aid legibility (see example above).  Records must be
-limited in length to 200 characters.  Records are read in words
-({\bf directives} and additional {\bf keywords} and {\bf
-numbers}), as a word must not exceed 40 characters in length.
-Words are recognised as such by separation by one or more space
-characters.  Additional annotation is not recommended but may be
-added onto a directive line after the last control word in it.
+limited in length to 200 characters.  Records are read in as up to three words
+``keyword value unit''. A word must not exceed 256 characters in length.
 
-\begin{itemize}
-\item The first record in the CONTROL file is a header (up to 100
-characters long) to aid identification of the file.
-\item The last record is a {\bf finish} directive, which marks
-the end of the input data.
-\end{itemize}
+Additional annotation must be rendered as a comment.
 
-Between the header and the {\bf finish} directive, a wide choice
-of control directives may be inserted.  These are described below.
+The first keyword (i.e.\ not comment) in the CONTROL file is must be title and a suiltable title.
 
 \subsubsection{The CONTROL File Directives}
 \label{control_options}
@@ -259,1015 +85,33 @@ recommended that the user uses only the {\bf bold} part of these
 directives.
 
 The \uline{{\bf MAIN LIST}} of directives available is as follows:
-
-\begin{tabbing}
-X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
-\> \uuline{{\bf directive:}}                    \> \phantom{xxxxxxxxxxxxxxxxx} \uuline{{\bf meaning:}} \\
-\>                                              \> \\
-\> {\bf adf} $i j$                             \> Writes Angular distribution file ADFDAT \\
-\>                                              \> (Note adf cannot be used without coord present in CONTROL file) \\
-\>                                              \> i = timestep interval to write to ADFDAT \\
-\>                                              \> j = Precision of the Angular distribution bins\\
-\>                                              \> \\
-\> {\bf ana}lyse {\bf all} (sampling) (every) $f$ {\bf nbins} $n$ {\bf rmax} $r$
-                                                \> \phantom{xxxxxxxxxxxxxxxxx} calculate and collect all intramolecular PDFs \\
-\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} every $f$ timesteps (default $f~=~1$), using a grid \\
-\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} with $n$ bins and bonds cutoff of $r$ \AA \\
-\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} (default r~=~2~\AA). \\
-\>                                              \> \\
-\> {\bf ana}lyse {\bf bon}ds (sampling) (every) $f$ {\bf nbins} $n$ {\bf rmax} $r$
-                                                \> \phantom{xxxxxxxxxxxxxxxxx} calculate and collect bonds PDFs \\
-\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} every $f$ timesteps (default $f~=~1$), using a grid \\
-\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} with $n$ bins in the range $(0:r]$ (default r~=~2~\AA). \\
-\>                                              \> \\
-\> {\bf ana}lyse {\bf ang}les (sampling) (every) $f$ {\bf nbins} $n$
-                                                \> \phantom{xxxxxxxxxxxxxxxxx} calculate and collect angles PDFs \\
-\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} every $f$ timesteps (default $f~=~1$), using a grid \\
-\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} with $n$ bins in the range $(0:180]$ (degrees). \\
-\>                                              \> \\
-\> {\bf ana}lyse {\bf dih}edrals (sampling) (every) $f$ {\bf nbins} $n$
-                                                \> \phantom{xxxxxxxxxxxxxxxxx} calculate and collect dihedrals PDFs \\
-\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} every $f$ timesteps (default $f~=~1$), using a grid \\
-\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} with $n$ bins in the range $(-180:180]$ (degrees). \\
-\>                                              \> \\
-\> {\bf ana}lyse {\bf inv}ersions (sampling) (every) $f$ {\bf nbins} $n$
-                                                \> \phantom{xxxxxxxxxxxxxxxxx} calculate and collect inversions PDFs \\
-\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} every $f$ timesteps (default $f~=~1$), using a grid \\
-\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} with $n$ bins in the range $(0:180]$ (degrees). \\
-\>                                              \> \\
-\> {\bf binsize} $f$                            \> set the bin size for radial and z-density distribution functions to \\
-\>                                              \> $f$ \AA~ (if $10^{-5}$~\AA~$\le~f~\le~r_{\rm cut}/4$ or undefined, $f$ defaults to $0.05$ \AA) \\
-\>                                              \> \\
-\> {\bf cap} (forces) $f$                       \> cap forces during equilibration period, $f$ is maximum \\
-\>                                              \> cap in units of k$_{B}$T/\AA~~(default $f~=~1000$ k$_{B}$T/\AA) \\
-\>                                              \> \\
-\> {\bf close time} $f$                         \> set the amount of time a job has to finalise I/O to $f$ seconds \\
-\>                                              \> (this must be smaller than the time specified by {\bf job time}, \\
-\>                                              \> see Further Comments on the CONTROL File notes) \\
-\>                                              \> \\
-\> {\bf coord} $i j f$                          \>  Writes Coordination analysis Files ICOORD and CCOORD \\
-\>                                              \> i = starting timestep for writing to files (no Defaults set) \\
-\>                                              \> j = timestep interval to write to files (no Defaults set) \\
-\>                                              \> f = Options available for whats is written in ICOORD and CCOORD \\
-\>                                              \> option 1 : f = 0 , Only writes out ICOORD file and only dumps the  coordination of each individual atom at i\\
-\>                                              \> option 2 : f = 1 , Writes out both CCOORD and ICOORD Files and only dumps the coordination of each individual atom at i\\
-\>                                              \> option 3 : f =2 , Writes out both CCOORD and ICOORD files and dumps the coordination of each atom every j number of steps\\
-\>                                              \> \\
-\> {\bf collect}                                \> include equilibration data in overall statistics \\
-\>                                              \> \\
-\> {\bf coul}omb                                \> calculate electrostatic forces using direct Coulomb sum\index{direct Coulomb sum}\index{potential!electrostatics} \\
-\>                                              \> \\
-\> {\bf cut}off $f$ ($\equiv$ {\bf rcut} $f$)   \> set required long-ranged interactions\index{potential!electrostatics} cutoff, $r_{\rm cut}$, to $f$ \AA~ \\
-\>                                              \> \\
-\> {\bf defe}cts $i~j~f$                        \> write defects trajectory file, DEFECTS, with controls: \\
-\>                                              \> $i~=$ start timestep for dumping defects configurations \\
-\>                                              \> \phantom{xxx} (default $i~=~0$) \\
-\>                                              \> $j~=$ timestep interval between configurations (default $j~=~1$) \\
-\>                                              \> $f~=$ site-interstitial cutoff (default $f~=~{\rm Min}\left[0.75,r_{\rm cut}/3\right]$~\AA, \\
-\>                                              \> ${\rm Min}\left[0.3,r_{\rm cut}/3\right]$~\AA~$\le~f~\le~{\rm Min}\left[3.5,r_{\rm cut}/2\right]$~\AA) \\
-\>                                              \> \\
-\> {\bf delr} $f$  ($\equiv$ {\bf rpad} $4f$)   \> \C Verlet shell strip cutoff option is iterpreted \\
-\>                                              \> by \D as the {\bf pad}ding ($\equiv$ {\bf rpad}) $f/4$ option, so that \\
-\>                                              \> $r_{\rm pad}$ gets set to ${\rm Max}(r_{\rm pad},f_{\rm delr}/4)$ \\
-\>                                              \> \\
-\> {\bf densvar} $f$                            \> allow for local variation of $\approx f$ \% in the system density \\
-\>                                              \> of (i) particles and (ii) any present bonded-like entities (very \\
-\>                                              \> useful for extremely non-equilibrium simulations, default $f~=~0$) \\
-\> {\bf distan}ce                               \> calculate electrostatic forces using Coulomb sum with \\
-\>                                              \> distance dependent dielectric\index{distance dependant dielectric} \\
-\>                                              \> \\
-\> {\bf disp}lacements $i~j~f$                  \> write displacements trajectory file, RSDDAT, with controls: \\
-\>                                              \> $i~=$ start timestep for dumping displacements configurations \\
-\>                                              \> \phantom{xxx} (default $i~=~0$) \\
-\>                                              \> $j~=$ timestep interval between configurations (default $j~=~1$) \\
-\>                                              \> $f~=$ displacement qualifying cutoff (default $f~=~0.15~\AA$) \\
-\>                                              \> \\
-\> {\bf dump} $n$                               \> set restart data dump interval to $n$ steps (default $n~=~1000$) \\
-\>                                              \> \\
-\> {\bf evb}  $N_F$                    \> set an EVB simulation via the coupling of $N_F$ force-fields \\
-\>                                              \> \\
-\> {\bf ensemble nve}                           \> select NVE ensemble\index{ensemble!NVE} (default ensemble) \\
-\>                                              \> \\
-\> {\bf ensemble nvt evans}                     \> select NVE$_{kin}$ ensemble\index{ensemble!Evans NVT}, type Evans with \\
-\>                                              \> Gaussian constraints thermostat\index{thermostat} \\
-\>                                              \> \\
-\> {\bf ensemble nvt lang}evin $f$              \> select NVT ensemble\index{ensemble!Langevin NVT}, type Langevin with thermostat\index{thermostat} \\
-\>                                              \> relaxation speed (friction) constant $f$ in ps$^{-1}$ \\
-\>                                              \> \\
-\> {\bf ensemble nvt ander}sen $f_{1}~f_{2}$    \> select NVT ensemble\index{ensemble!Langevin NVT}, type Andersen with $f_{1},~f_{2}$ as the \\
-\>                                              \> thermostat\index{thermostat} relaxation time in ps and softness ( $0 \le f_{2} \le 1$) \\
-\>                                              \> \\
-\> {\bf ensemble nvt ber}endesen $f$            \> select NVT ensemble\index{ensemble!Berendsen NVT}, type Berendsen with thermostat\index{thermostat} \\
-\>                                              \> relaxation constant $f$ in ps \\
-\>                                              \> \\
-\> {\bf ensemble nvt hoover} $f$                \> select NVT ensemble\index{ensemble!Nos\'{e}-Hoover NVT}, type Nose-Hoover with thermostat\index{thermostat} \\
-\>                                              \> relaxation constant $f$ in ps \\
-\>                                              \> \\
-\> {\bf ensemble nvt gst} $f_{1}~f_{2}$         \> select NVT ensemble\index{ensemble!Gentle Stochastic NVT}, type Gentle Stochastic with thermostat\index{thermostat} \\
-\>                                              \> relaxation constant $f_{1}$ in ps and Langevin friction $f_{1}$ in ps$^{-1}$ \\
-\>                                              \> \\
-\> {\bf ensemble nvt ttm} $f_{1}~f_{2}~f_{3}$         \> select NVT ensemble\index{ensemble!Inhomogeneous Langevin NVT}, type inhomogeneous Langevin designed \\
-\>                                              \> for use as part of the \index{Two-Temperature Model} two-temperature model (TTM), \\
-\>                                              \> with thermostat\index{thermostat} relaxation constant $f_{1}$ in ps$^{-1}$, \\
-\>                                              \> enhancement of relaxation constant $f_{2}$ in ps$^{-1}$ and \\
-\>                                              \> cut-off particle velocity for friction enhancement $f_{3}$ in \AA~ps$^{-1}$ \\
-\>                                              \> (defaults: $f_{1} = 0.5$, $f_{2} = 0$, $f_{3} = 50$) \\
-\>                                              \> \\
-\> {\bf ensemble nvt inhomo}geneous $f_{1}~f_{2}~f_{3}$         \> \phantom{xxxxxxxx} select NVT ensemble\index{ensemble!Inhomogeneous Langevin NVT}, type inhomogeneous Langevin: \\
-\>                                              \> \phantom{xxxxxxxx}identical to {\bf ensemble nvt ttm} (see above for constants) \\
-\>                                              \> \\
-\> {\bf ensemble nvt dpd}\textrm{\textit{\textbf{type}}}~~$\gamma$
-                                                \> select NVT ensemble\index{ensemble!DPD}, with a DPD thermostat\index{thermostat} of type
-                                                \textrm{\textit{\textbf{s1}}} or \textrm{\textit{\textbf{s2}}} \\
-\>                                              \> for Shardlow's splitting of first or second order respectively, \\
-\>                                              \> with an {\em optional} system global drag coefficient $\gamma$ in Dalton$/$ps \\
-\>                                              \> \\
-\> {\bf ensemble npt lang}evin $f_{1}~f_{2}$    \> select NPT ensemble\index{ensemble!Langevin NPT}, type Langevin, with $f_{1},~f_{2}$ as the \\
-\>                                              \> thermostat\index{thermostat} and barostat\index{barostat} relaxation speed (friction) constants in ps$^{-1}$ \\
-\>                                              \> \\
-\> {\bf ensemble npt ber}endsen $f_{1}~f_{2}$   \> select NPT ensemble\index{ensemble!Berendsen NPT}, type Berendsen with $f_{1},~f_{2}$ as the \\
-\>                                              \> thermostat\index{thermostat} and barostat\index{barostat} relaxation times in ps \\
-\>                                              \> \\
-\> {\bf ensemble npt hoover} $f_{1}~f_{2}$      \> select NPT ensemble\index{ensemble!Nos\'{e}-Hoover NPT}, type Nose-Hoover, with $f_{1},~f_{2}$ as the \\
-\>                                              \> thermostat\index{thermostat} and barostat\index{barostat} relaxation times in ps \\
-\>                                              \> \\
-\> {\bf ensemble npt mtk} $f_{1}~f_{2}$         \> select NPT ensemble\index{ensemble!Martyna-Tuckerman-Klein NPT}, type Martyna-Tuckerman-Klein with \\
-\>                                              \> $f_{1},~f_{2}$ as the thermostat\index{thermostat} and barostat\index{barostat} relaxation times in ps \\
-\>                                              \> \\
-\> {\bf ensemble nst lang}evin $f_{1}~f_{2}$    \> select N$\mat{\sigma}$T ensemble\index{ensemble!Langevin N$\sigma$T}, type Langevin with $f_{1},~f_{2}$ as the \\
-\>                                              \> thermostat\index{thermostat} and barostat\index{barostat} relaxation speed (friction) constants in ps$^{-1}$ \\
-\>                                              \> \\
-\> {\bf ensemble nst ber}endsen $f_{1}~f_{2}$   \> select N$\mat{\sigma}$T ensemble\index{ensemble!Berendsen N$\sigma$T}, type Berendsen with $f_{1},~f_{2}$ as \\
-\>                                              \> the thermostat\index{thermostat} and barostat\index{barostat} relaxation times in ps \\
-\>                                              \> \\
-\> {\bf ensemble nst hoover} $f_{1}~f_{2}$      \> select N$\mat{\sigma}$T ensemble\index{ensemble!Nos\'{e}-Hoover N$\sigma$T}, type Nose-Hoover with $f_{1},~f_{2}$ as \\
-\>                                              \> the thermostat\index{thermostat} and barostat\index{barostat} relaxation times in ps \\
-\>                                              \> \\
-\> {\bf ensemble nst mtk} $f_{1}~f_{2}$         \> select N$\sigma$T ensemble\index{ensemble!Martyna-Tuckerman-Klein N$\sigma$T}, type Martyna-Tuckerman-Klein with \\
-\>                                              \> $f_{1},~f_{2}$ as the thermostat\index{thermostat} and barostat\index{barostat} relaxation times in ps \\
-\>                                              \> \\
-\> {\bf ensemble nst} $Q~f_{1} f_{2}$ {\bf area} \> select NP$_{n}$AT ensemble, type $Q$ (i.e. {\em lang}, {\em ber}, {\em hoover} or {\em mtk}), \\
-\>                                              \> with $f_{1},~f_{2}$ as the thermostat\index{thermostat} and barostat\index{barostat} relaxation \\
-\>                                              \> times in ps (for {\em lang} barostat friction in ps$^{-1}$) \\
-\>                                              \> \\
-\> {\bf ensemble nst} $Q~f_{1} f_{2}$ {\bf tens}ion $\gamma$ \> select NP$_{n}\gamma$T ensemble, type $Q$ (i.e. {\em lang}, {\em ber}, \\
-\>                                              \> {\em hoover} or {\em mtk}), with $f_{1},~f_{2}$ as the thermostat\index{thermostat} \\
-\>                                              \> and barostat\index{barostat} relaxation times in ps and set required \\
-\>                                              \> simulation (target/external) surface tension to $\gamma$ dyn/cm \\
-\>                                              \> \\
-\> {\bf ensemble nst} $Q~f_{1} f_{2}$ {\bf tens} $\gamma$ {\bf semi}
-                                                \> \phantom{xxx} select the same NP$_{n}\gamma$T ensemble as above but with \\
-\>                                              \> \phantom{xxx} the "semi-anisotropic constraint" so that the\\
-\>                                              \> \phantom{xxx} MD cell changes isotropically in the $(x,y)$ plane \\
-\>                                              \> \\
-\> {\bf ensemble nst} $Q~f_{1} f_{2}$ {\bf orth}orhombic
-                                                \> \phantom{xxx} select the NPT anisotropic ensemble for the orthorhombic\\
-\>                                              \> \phantom{xxx} MD cell ("orthorhombic constraint" - equivalent to the \\
-\>                                              \> \phantom{xxx} NP$_{n}\gamma$T ensemble when $\gamma=0$: NP$_{n}\gamma=0$T ) \\
-\>                                              \> \\
-\> {\bf ensemble nst} $Q~f_{1} f_{2}$ {\bf orth semi}
-                                                \> \phantom{xxx} select the same NP$_{n}\gamma=0$T ensemble as above but with the \\
-\>                                              \> \phantom{xxx} "semi-anisotropic constraint" so that the MD cell changes \\
-\>                                              \> \phantom{xxx} isotropically in the $(x,y)$ plane ("semi-orthorhombic \\
-\>                                              \> \phantom{xxx} constraint" - equivalent to the NP$_{n}\gamma=0$T semi ensemble) \\
-\>                                              \> \\
-\> {\bf eps}ilon (constant) $f$                 \> set relative dielectric constant to $f$ (default $f~=~1.0$) \\
-\>                                              \> \\
-\> {\bf equil}ibration (steps) $n$              \> equilibrate system for the first $n$ timesteps (default $n~=~0$) \\
-\>                                              \> \\
-\> {\bf ewald evalu}ate (every) $n$             \> evaluate the k-space contributions to the Ewald sum\index{Ewald!SPME}\index{potential!electrostatics} \\
-\>                                              \> once every $n$ timesteps ($1~\le~n~\le~10$, activated when $n~\ge~2$, \\
-\>                                              \> $n~<~1$ or undefined defaults to $n~=~1$, $n~>~10$ defaults to $n~=~4$) \\
-\>                                              \> \\
-\> {\bf ewald precision} $f$                    \> calculate electrostatic forces using Ewald sum\index{Ewald!SPME}\index{potential!electrostatics} with \\
-\>                                              \> automatic parameter optimisation for precission $f$ \\
-\>                                              \> ($10^{-20}~\le~f~\le~0.5$, default $f~=~10^{-20}$) \\
-\>                                              \> \\
-\> {\bf ewald} (sum) $\alpha~k_{1}~k_{2}~k_{3}$ \> calculate electrostatic forces using Ewald sum\index{Ewald!SPME}\index{potential!electrostatics} with \\
-\>                                              \> $\alpha~=~$ Ewald convergence parameter in \AA$^{-1}$ \\
-\>                                              \> $k1~=$ is the maximum k-vector index in x-direction \\
-\>                                              \> $k2~=$ is the maximum k-vector index in y-direction \\
-\>                                              \> $k3~=$ is the maximum k-vector index in z-direction \\
-\>                                              \> \\
-\> {\bf exclu}de                                \> switch on extended coulombic exclusion affecting intra-molecular \\
-\>                                              \> interactions such as: chemical bonds and bond angles; as well as \\
-\>                                              \> bond constraints between ions that have shells and cores \\
-\>                                              \> \\
-\> {\bf finish}                                 \> close the CONTROL file (last data record) \\
-\>                                              \> \\
-\> {\bf heat\_flux}                              \> dump a HEATFLUX file containing data relevant to calculation of \\
-\>                                              \> heat-flux through convolution \\
-\> {\bf impact} $i~j~~~E~~x~y~z$                \> initiate impact on the particle with index $i$ ($i \ge 1$) at timestep \\
-\>                                              \> $j$ ($i \ge 0$) with energy $E$ ($E \ge 0$) in kilo-eV and direction \\
-\>                                              \> vector $x~y~z$ from the Cartesian origin (centre) of the MD box \\
-\>                                              \> (defaults: $i = 1, j = 0, E = 0, x = 1, y = 1, z = 1$) \\
-\>                                              \> \\
-\> {\bf job time} $f$                           \> set the walltime for a job to $f$ seconds \\
-\>                                              \> \\
-\> {\bf maxdis} $f$                             \> set maximum distance allowed in variable timestep (control) \\
-\>                                              \> to $f$ \AA~(default $f~=~0.10$ \AA) \\
-\>                                              \> \\
-\> {\bf metal direct}                           \> enforce the direct calculation of metal interactions defined \\
-\>                                              \> by explicit potential forms, i.e. it will not work for metal \\
-\>                                              \> alloy systems using the EAM, EEAM, 2BEAM or 2BEEAM (TABEAM) \\
-\>                                              \> \\
-\> {\bf metal sqrtrho}                          \> swich the TABEAM default of reading embedding functions, \\
-\>                                              \> $F(\rho)$, as interpolated over densities, $\rho$, to as \\
-\>                                              \> interpolated over $\sqrt{\rho}$, i.e. $F~=~F(\sqrt{\rho})$\\
-\>                                              \> \\
-\> {\bf mindis} $f$                             \> set minimum distance allowed in variable timestep (control) \\
-\>                                              \> to $f$ \AA~(default $f~=~0.03$ \AA) \\
-\>                                              \> \\
-\> {\bf minim}ise {\em string} $n$ $f$ $s$      \> minimise the instantaneous system configuration every \\
-\>                                              \> $n$ steps during equilibration (with respect to the last \\
-\>                                              \> equilibration step) using conjugate gradient method (CGM) \\
-\>                                              \> with respect to the criterion, {\em string}, tolerance, $f$, and \\
-\>                                              \> and optional CGM stepping, $s$, where this criterion can only be: \\
-\>                                              \> {\em force} ($1~\le~f~\le~1000$, default $f~=~50$) or \\
-\>                                              \> {\em energy} ($0~<~f~\le~0.01$, default $f~=~0.005$) or \\
-\>                                              \> {\em distance} (maximum absolute displacement in \AA, \\
-\>                                              \> $10^{-6}~\le~f~\le~0.1$, default $f~=~0.005$); \\
-\>                                              \> the optional stepping, $s$, default is $\delta t_{instanteneous}^{2}$; the lowest {\em string} \\
-\>                                              \> CGM minimised configuration during equilibration is saved \\
-\>                                              \> in a file, CFGMIN which has the same format as CONFIG, \\
-\>                                              \> {\bf N.B.} thermostat and barostat memory are not erased \\
-\>                                              \> \\
-\> {\bf msdtmp} $i~j$                           \> write MSDTMP file, containing particles' individual $\sqrt{MSD}$ \\
-\>                                              \> (in \AA) and T$_{mean}$ (in Kelvin), with controls: \\
-\>                                              \> $i~=$ start timestep for dumping configurations (default $i~=~0$) \\
-\>                                              \> $j~=$ timestep interval between configurations (default $j~=~1$) \\
-\>                                              \> \\
-\> {\bf mult}iple (timestep) $n$                \> act exactly the same as {\bf ewald evalu}ate (every) $n$ option above \\
-\>                                              \> \\
-\> {\bf mxquat} $n$                             \> set FIQA iterations limit to $n$ (default $n~=~100$) \\
-\>                                              \> \\
-\> {\bf mxshak} $n$                             \> set shake/rattle iterations limit to $n$ (default $n~=~250$) \\
-\>                                              \> \\
-\>                                              \> \\
-\> {\bf mxstep} $f$                             \> set maximum timestep value in variable timestep (control) to $f$ \\
-\>                                              \> ps (no default $f~=~0.0$ ps but if not opted sets to Huge(1.0)) \\
-\>                                              \> \\
-\> {\bf nfold} $i~j~k$                          \> option to create matching CONFIG\_i\_j\_k and FIELD\_i\_j\_k \\
-\>                                              \> for a volumetrically expanded version of the current system \\
-\>                                              \> (CONFIG and FIELD) by replicating CONFIG's contents \\
-\>                                              \> ($i$, $j$, $k$) times along the MD cell lattice vectors \\
-\>                                              \> while preserving FIELD's topology template intact \\
-\>                                              \> \\
-\> {\bf no elec}                                \> ignore electrostatics in simulation \\
-\>                                              \> \\
-\> {\bf no ind}ex                               \> ignore particles' indices as read from the CONFIG file \\
-\>                                              \> and set particles' indexing by order of reading, \\
-\>                                              \> this option assumes that the FIELD topology description \\
-\>                                              \> matches the crystallographic sites from the CONFIG file by \\
-\>                                              \> their order of reading rather than by their actual indexing \\
-\>                                              \> \\
-\> {\bf no str}ict                              \> {\bf (i)} abort strict checks such as; on existence of well defined \\
-\>                                              \> system cutoff, on contiguity of particles' indices when \\
-\>                                              \> connecting CONFIG (crystallographic listing) to FIELD \\
-\>                                              \> (topology), on IO when {\bf io} {\em mpiio/direct sorted} is selected, etc., \\
-\>                                              \> {\bf (ii)} abort display of warnings, non-leading to error messages \\
-\>                                              \> and of iteration cycles in minimisation/relaxation routines, \\
-\>                                              \> {\bf (iii)} assume safe defaults for the general simulation cutoff \\
-\>                                              \> and its padding, temperature, pressure and job times \\
-\>                                              \> \\
-\> {\bf no top}ology                            \> skip detailed topology reporting during read of FIELD in OUTPUT \\
-\>                                              \> (no FIELD replication), useful for large bio-chemcal simulations \\
-\>                                              \> \\
-\> {\bf no vafav}eraging                        \> ignore time-averaging of velocity autocorrelation functions \\
-\>                                              \> (VAFs), report all calculated VAF profiles for individual species \\
-\>                                              \> to VAFDAT files and final profile (for all species) in OUTPUT \\
-\>                                              \> \\
-\> {\bf no vdw}                                 \> ignore short range (non-bonded)\index{potential!non-bonded} interactions in simulation \\
-\>                                              \> \\
-\> {\bf no vom}                                 \> ignore Centre of Mass momentum removal during the simulation \\
-\>                                              \> \\
-\> {\bf optim}ise {\em string} $f$ $s$          \> minimise the system configuration at start during equilibration \\
-\>                                              \> using conjugate gradient method (CGM) with respect to the \\
-\>                                              \> criterion, {\em string}, tolerance, $f$ and optional CGM \\
-\>                                              \> stepping, $s$, where this criterion can only be: \\
-\>                                              \> {\em force} ($1~\le~f~\le~1000$, default $f~=~50$) or \\
-\>                                              \> {\em energy} ($0~<~f~\le~0.01$, default $f~=~0.005$) or \\
-\>                                              \> {\em distance} (maximum absolute displacement in \AA, \\
-\>                                              \> $10^{-6}~\le~f~\le~0.1$, default $f~=~0.005$); \\
-\>                                              \> the optional stepping, $s$, default is $(\Delta t_{instanteneous})^{2}$; \\
-\>                                              \> the CGM minimised configuration is saved \\
-\>                                              \> in a file, CFGMIN which has the same format as CONFIG \\
-\>                                              \> \\
-\> {\bf pad}ding $f$  ($\equiv$ {\bf rpad} $f$) \> set optional padding to the major cutoff, \\
-\>                                              \> $r_{\rm cut}$, to $f$ \AA~ ($f \ge {\rm Min}[0.05,0.5\%.r_{\rm cut}]$, default $f~=~0$) \\
-\>                                              \> \\
-\> {\bf plumed} {\em string} (on$|$off)         \> global on/off switch for a PLUMED calculation  {\em on} is specified \\
-\>                                              \> (default {\em on}), if {\em off} is specified all other plumed directives are ignored \\
-\>                                              \> \\
-\> {\bf plumed input} $<$$filename$$>$          \> starts a PLUMED calculation, if not switched off, sets PLUMED \\
-\>                                              \> input to be read from $<$$filename$$>$ (if unspecified the default is \\
-\>                                              \> $<$$filename$$>$~=~PLUMED) \\
-\>                                              \> \\
-\> {\bf plumed log} $<$$filename$$>$            \> starts a PLUMED calculation, if not switched off, and sets \\
-\>                                              \> PLUMED logging to be recorded in $<$$filename$$>$ (default \\
-\>                                              \> $<$$filename$$>$~=~OUTPUT.PLUMED) \\
-\>                                              \> \\
-\> {\bf plumed precision} $int$-$val$           \> starts a PLUMED calculation, if not switched off, and sets \\
-\>                                              \> PLUMED calculation precision to $int$-$val$ (default \\
-\>                                              \> $int$-$val$~=~$wp$ - the \D working precision) \\
-\>                                              \> \\
-\> {\bf plumed restart} {\em string} (yes$|$no) \> starts a PLUMED calculation, if not switched off, and hints \\
-\>                                              \> PLUMED about restarting (default {\em on}), if {\em off} is specified \\
-\>                                              \> PLUMED restart accumulators will reinitialised \\
-\>                                              \> \\
-\> {\bf polar}isation {\em scheme/type} {\bf thole} $f$ \> set possible polarisation scheme to $type$ with \\
-\>                                              \> optional global atomic (Thole) dumping factor \\
-\>                                              \> (default $f=1.3$ if none are specified in MPOLES), \\
-\>                                              \> only $type=CHARMM$ for Druder core-shell polarisation \\
-\>                                              \> is currently available!!! \\
-\>                                              \> \\
-\> {\bf pres}sure $f$                           \> set required system pressure to $f$ katms \\
-\>                                              \> (target pressure for constant pressure\index{units!pressure} ensembles) \\
-\> {\bf pp\_dump}                                \> dump per-particle contributions to output file \\
-\>                                              \> \\
-\> {\bf print} (every) $n$                      \> print system data every $n$ timesteps \\
-\>                                              \> \\
-\> {\bf print ana}lysis                         \> print any opted for analysis inter- \& and intra-molecular PDFs \\
-\>                                              \> in OUTPUT as well as their corresponding files *DAT, *PMF, *TAB \\
-\>                                              \> \\
-\> {\bf print rdf}                              \> print radial distribution functions \\
-\>                                              \> \\
-\> {\bf print vaf}                              \> print velocity autocorrelation functions \\
-\>                                              \> \\
-\> {\bf print zden}                             \> print Z-density profile \\
-\>                                              \> \\
-\> {\bf pseudo} {\em string} $f_{1}~f_{2}$      \> attach a pseudo thermal bath with a thermostat of type \\
-\>                                              \> {\em string}, where string can only be {\em langevin}, {\em gauss} or {\em direct} \\
-\>                                              \> (if none is specified then {\em langevin$\rightarrow$direct} are applied \\
-\>                                              \> successively), $f_{1}$ is the thickness of the thermostat \\
-\>                                              \> layers, attached on the inside of the MD cell boundaries, \\
-\>                                              \> in units of \AA~~(default $f{1}~=~2$ \AA), $f_{2}$ is the \\
-\>                                              \> thermostat temperature in Kelvin ($f{2}~\ge~1$), which \\
-\>                                              \> when unspecified defaults to the system target temperature \\
-\>                                              \> \\
-\> {\bf quater}nion (tolerance) $f$             \> set quaternion tolerance to f (default $10^{-8}$) \\
-\>                                              \> \\
-\> {\bf rdf} (sampling) (every) $f$             \> calculate and collect radial distribution functions \\
-\>                                              \> every $f$ timesteps (default $f~=~1$) \\
-\>                                              \> \\
-\> {\bf reaction} (field)                       \> calculate electrostatic forces using reaction field\index{reaction field} electrostatics\index{potential!electrostatics} \\
-\>                                              \> \\
-\> {\bf reaction} (field) {\bf damp} $\alpha$   \> calculate electrostatic forces using reaction field\index{reaction field} electrostatics\index{potential!electrostatics} \\
-\>                                              \> with Fennell \cite{fennell-06a} damping (Ewald-like convergence) \\
-\>                                              \> parameter $\alpha$ in \AA$^{-1}$ \\
-\>                                              \> \\
-\> {\bf reaction} (field) {\bf precision} $f$   \> calculate electrostatic forces using reaction field\index{reaction field} electrostatics\index{potential!electrostatics} \\
-\>                                              \> with Fennell \cite{fennell-06a} damping (Ewald-like convergence) \\
-\>                                              \> derived by automatic parameter optimisation for precision $f$ \\
-\>                                              \> as for Ewald summation ($10^{-20}~\le~f~\le~0.5$, default $f~=~10^{-20}$) \\
-\>                                              \> \\
-\> {\bf regaus}s (every) $n$                    \> resample the instantaneous system momenta distribution \\
-\>                                              \> every $n$ steps (default $n~=~1$) during equilibration \\
-\>                                              \> (with respect to the last equilibration step), {\bf N.B.} \\
-\>                                              \> any thermostat and barostat memory is also erased \\
-\>                                              \> \\
-\> {\bf replay} (history)                       \> abort simulation and replay HISTORY to recalculate structural \\
-\>                                              \> properties such as RDFs, z-density profiles, defects and \\
-\>                                              \> displacements trajectories (execution halts if no property is specified) \\
-\>                                              \> \\
-\> {\bf replay} (history) {\bf force}           \> abort simulation and replay the HISTORF file (a HISTORY copy) \\
-\>                                              \> with full force evaluation driven by FIELD (different from \\
-\>                                              \> the one used for the HISTORF generation) \\
-\>                                              \> \\
-\> {\bf restart}                                \> restart job from end point of previous run \\
-\>                                              \> (i.e. continue current simulation, REVOLD required) \\
-\>                                              \> \\
-\> {\bf restart noscale}                        \> restart job from previous run without scaling \\
-\>                                              \> system temperature (i.e. begin a new simulation from \\
-\>                                              \> older run without temperature reset, REVOLD is not used) \\
-\>                                              \> \\
-\> {\bf restart scale}                          \> restart job from previous run with scaling \\
-\>                                              \> system temperature (i.e. begin a new simulation from \\
-\>                                              \> older run with temperature reset, REVOLD is not used) \\
-\>                                              \> \\
-\> {\bf rcut} $f$  ($\equiv$ {\bf cut}off $f$)  \> act exactly the same as the {\bf cut}off $f$ option above \\
-\>                                              \> \\
-\> {\bf rlxtol} $f$ $s$                         \> set the CGM tolerance (on total force gradient), $f$, for the \\
-\>                                              \> relaxed shell model (default $f~=~1$ in D~\AA~~ps$^{-2}$) and \\
-\>                                              \> optional CGM stepping, $s$, (default $Max(k_{core-shell})/2$) \\
-\>                                              \> \\
-\> {\bf rpad} $f$  ($\equiv$ {\bf pad}ding $f$) \> act exactly the same as {\bf pad}ding $f$ option above \\
-\>                                              \> \\
-\> {\bf rvdw} (cutoff) $f$                      \> set required short-ranged interactions cutoff to $f$ \AA \\
-\>                                              \> \\
-\> {\bf scale} (temperature) (every) $n$        \> rescale system temperature every $n$ steps (default $n~=~1$) \\
-\>                                              \> during equilibration (with respect to the last equilibration \\
-\>                                              \> step - atomic velocities are scaled collectively), {\bf N.B.} \\
-\>                                              \> any thermostat and barostat memory is also erased \\
-\>                                              \> \\
-\> {\bf seed} $n_{1}~n_{2}~n_{3}$               \> seed control to the random number generator used in the \\
-\>                                              \> generation of gaussian distributions and stochastic processes \\
-\>                                              \> \\
-\> {\bf shake} (tolerance) $f$                  \> set shake/rattle tolerance to $f$ (default $f~=~10^{-6}$) \\
-\>                                              \> \\
-\> {\bf shift}                                  \> calculate electrostatic forces using force-shifted Coulomb sum\index{force-shifted Coulomb sum} \\
-\>                                              \> \\
-\> {\bf shift damp} $\alpha$                    \> calculate electrostatic forces using force-shifted Coulomb sum\index{force-shifted Coulomb sum} \\
-\>                                              \> with Fennell \cite{fennell-06a} damping (Ewald-like convergence) \\
-\>                                              \> parameter $\alpha$ in \AA$^{-1}$ \\
-\>                                              \> \\
-\> {\bf shift precision} $f$                    \> calculate electrostatic forces using force-shifted Coulomb sum\index{force-shifted Coulomb sum} \\
-\>                                              \> with Fennell \cite{fennell-06a} damping (Ewald-like convergence) \\
-\>                                              \> derived by automatic parameter optimisation for precision $f$ \\
-\>                                              \> as for Ewald summation ($10^{-20}~\le~f~\le~0.5$, default $f~=~10^{-20}$) \\
-\>                                              \> \\
-\> {\bf slab}                                   \> limits the number of processors in z-direction to 2 \\
-\>                                              \> for slab simulations \\
-\>                                              \> \\
-\> {\bf spme evalu}ate (every) $n$              \> act exactly the same as {\bf ewald evalu}ate (every) $n$ \\
-\>                                              \> \\
-\> {\bf spme precision} $f$                     \> act exactly the same as {\bf ewald precision} $f$ \\
-\>                                              \> \\
-\> {\bf spme} (sum) $\alpha~k_{1}~k_{2}~k_{3}$  \> calculate electrostatic forces using Ewald sum\index{Ewald!SPME}\index{potential!electrostatics} with \\
-\>                                              \> $\alpha~=~$ Ewald convergence parameter in \AA$^{-1}$ \\
-\>                                              \> $k1~=$ is twice the maximum k-vector index in x-direction \\
-\>                                              \> $k2~=$ is twice the maximum k-vector index in y-direction \\
-\>                                              \> $k3~=$ is twice the maximum k-vector index in z-direction \\
-\>                                              \> \\
-\> {\bf stack} (size) $n$                       \> set rolling average stack to {\em n} timesteps \\
-\>                                              \> \\
-\> {\bf stats} (every) $n$                      \> accumulate statistics data every $n$ timesteps \\
-\>                                              \> \\
-\> {\bf steps} $n$                              \> run simulation for $n$ timesteps (default $n~=~0$, \\
-\>                                              \> corresponding to a "dry" run) \\
-\>                                              \> \\
-\> {\bf subcell}ing (threshold) (density) $f$   \> set the subcelling threshold density of particles per link cell below \\
-\>                                              \> which decreasing link-cell size stops $f$ ($f~\ge~1.0$, default $f~=~50.0$) \\
-\>                                              \> \\
-\> {\bf temp}erature $f$                        \> set required simulation temperature to $f$ Kelvin \\
-\>                                              \> (target temperature for constant temperature\index{units!temperature} ensembles) \\
-\>                                              \> \\
-\> {\bf traj}ectory $i~j~k$                     \> write HISTORY file with controls: \\
-\>                                              \> $i~=$ start timestep for dumping configurations (default $i~=~0$) \\
-\>                                              \> $j~=$ timestep interval between configurations (default $j~=~1$) \\
-\>                                              \> $k~=$ data level (default $k~=~0$, see Table~\ref{keytrj}) \\
-\>                                              \> \\
-\> {\bf ttm amin} $n$                           \> sets minimum number of atoms required in each ionic temperature \\
-\>                                              \> cell (CIT) to ensure cell is active (default $n~=~1$) \\
-\>                                              \> \\
-\> {\bf ttm atomdens} $f$                       \> sets atomic density, used to convert specific heat capacities to \\
-\>                                              \> volumetric heat capacities, to $f$ (default $f$ set by system \\
-\>                                              \> configuration) \\
-\>                                              \> \\
-\> {\bf ttm bcs} $Q$                            \> sets electronic temperature boundary conditions for \index{Two-Temperature Model}two-temperature\\
-\>                                              \> model (TTM) to type $Q$, where $Q$ can be: \\
-\>                                              \> {\em periodic}: periodic boundaries in all directions \\
-\>                                              \> {\em dirich}: Dirichlet boundaries in all directions with simulation \\
-\>                                              \> temperature as constant value \\
-\>                                              \> {\em neumann}: Neumann (zero-flux) boundaries in all directions\\
-\>                                              \> {\em robin} $f$: Robin boundaries in all directions, leaking temperature \\
-\>                                              \> fraction $f$ (default $f~=~0.96$) \\
-\>                                              \> {\em xydirich}: Dirichlet boundaries in x- and y- directions, \\
-\>                                              \> Neumann (zero-flux) boundary in z-direction \\
-\>                                              \> {\em xyrobin} $f$: Robin boundaries in x- and y-directions \\
-\>                                              \> (default $f~=~0.96$), Neumann (zero) boundary in z-direction \\
-\>                                              \> \\
-\> {\bf ttm ceconst} $f$                        \> sets constant electronic specific heat capacity to $f$ $k_B$/atom \\
-\>                                              \> (default $f~=~1$) \\
-\>                                              \> \\
-\> {\bf ttm celin} $f_{1}~f_{2}$                \> sets electronic specific heat capacity to linear function of temperature \\
-\>                                              \> with maximum value of $f_{1}$ $k_B$/atom at and beyond Fermi temperature \\
-\>                                              \> $f_{2}$ K \\
-\>                                              \> \\
-\> {\bf ttm cetab}                              \> sets electronic volumetric heat capacity (equal to specific heat capacity \\
-\>                                              \> divided by density) based on tabulated values given in additional file \\
-\>                                              \> (Ce.dat) \\
-\>                                              \> \\
-\> {\bf ttm cetanh} $f_{1}~f_{2}$               \> sets electronic specific heat capacity to hyperbolic tangent form, \\
-\>                                              \> $C_{e} (T_{e}) = f_{1} \tanh \left(10^{-4} f_{2} T_{e} \right)$, with constants $f_{1}$ $k_B$/atom and $f_{2}$ K$^{-1}$ \\
-\>                                              \> \\
-\> {\bf ttm deconst} $f$                        \> sets constant thermal diffusivity of non-metal system to $f$ m$^2$/s \\
-\>                                              \> \\
-\> {\bf ttm dedx} $f$                           \> sets electron stopping power of projectile entering electronic system \\
-\>                                              \> to $f$ eV/nm (default $f~=~0$): this energy is deposited into electronic \\
-\>                                              \> temperature cells (CETs) after equilibration \\
-\>                                              \> \\
-\> {\bf ttm delta}                              \> specifies temporal energy deposition to electronic system occurs in  \\
-\>                                              \> a single thermal diffusion timestep, i.e. as a Dirac delta-like time \\
-\>                                              \> pulse \\
-\>                                              \> \\
-\> {\bf ttm derecip} $f_{1}~f_{2}$              \> sets thermal diffusivity of non-metal system to reciprocal function of \\
-\>                                              \> temperature with value at system temperature of $f$ m$^2$/s, holding \\
-\>                                              \> constant beyond Fermi temperature $f_{2}$ K \\
-\>                                              \> \\
-\> {\bf ttm detab}                              \> sets thermal diffusivity of non-metal system based on tabulated \\
-\>                                              \> values given in additional file (De.dat) \\
-\>                                              \> \\
-\> {\bf ttm diff} $f$                           \> identical to {\bf ttm deconst} \\
-\>                                              \> \\
-\> {\bf ttm dyndens}                            \> dynamically recalculate atom density by only including active \\
-\>                                              \> ionic temperature cells (CITs), used to convert specific heat \\
-\>                                              \> capacities to volumetric heat capacities after energy deposition \\
-\>                                              \> \\
-\> {\bf ttm gauss} $f_{1}~f_{2}$  \> specifies temporal energy deposition to electronic system as \\
-\>                                              \> Gaussian function of time with standard deviation $f_{1}$ ps, lasting \\
-\>                                              \> for $2 f_{2}$ standard deviations (defaults: $f_{1}~=~0.001$, $f_{2} = 5$) \\
-\>                                              \> \\
-\> {\bf ttm keconst} $f$                        \> sets constant electronic thermal conductivity of metal system to \\
-\>                                              \> $f$ W~m$^{-1}$~K$^{-1}$ \\
-\>                                              \> \\
-\> {\bf ttm kedrude} $f$                        \> sets electronic thermal conductivity of metal system as \\
-\>                                              \> Drude model ($K_{e} (T_{e}) = f \frac{T_{e}}{T_{0}}$), with value of \\
-\>                                              \> $f$ W~m$^{-1}$~K$^{-1}$ at system temperature ($T_{0}$) \\
-\>                                              \> \\
-\> {\bf ttm keinf}                              \> sets infinitely high electronic thermal conductivity \\
-\>                                              \> \\
-\> {\bf ttm ketab}                              \> sets thermal conductivity based on tabulated values given in \\
-\>                                              \> additional file (Ke.dat), using either local ionic temperature from \\
-\>                                              \> CIT or system temperature in CETs outside of atomic system \\
-\>                                              \> \\
-\> {\bf ttm laser} $f_{1}~f_{2}$   \> specifies initial energy deposition into electronic system occurs \\
-\>                                              \> due to laser (homogeneously in space) with absorbed fluence \\
-\>                                              \> $f_{1}$ mJ cm$^{-2}$ and penetration depth $f_{2}$ nm \\
-\>                                              \> \\
-\> {\bf ttm laser} $f_{1}~f_{2}~{\bf zdep} $    \> specifies initial energy deposition into electronic system occurs \\
-\>                                              \> due to laser, homogeneously in x- and y-directions, exponential decay in \\
-\>                                              \> z-direction, with maximum absorbed fluence $f_{1}$ mJ cm$^{-2}$ and \\
-\>                                              \> penetration depth $f_{2}$ nm \\
-\>                                              \> \\
-\> {\bf ttm metal}                              \> specifies parameters for metallic system are required for \\
-\>                                              \> \index{Two-Temperature Model}two-temperature model, i.e. thermal conductivity \\
-\>                                              \> \\
-\> {\bf ttm ncit} $n$                           \> set number of coarse-grained ionic temperature (CIT) cells for \\
-\>                                              \> \index{Two-Temperature Model}two-temperature model (TTM) in z-direction (default $n~=~10$): \\
-\>                                              \>  numbers in x- and y-directions set according to system size \\
-\>                                              \> \\
-\> {\bf ttm ncet} $n_{1}~n_{2}~n_{3}$           \> set numbers of coarse-grained electronic temperature (CET) cells for \\
-\>                                              \> two-temperature model (TTM): $n_{1}$ for x-direction, $n_{2}$ for y-direction,\\
-\>                                              \> $n_{3}$ for z-direction (defaults $n_{1,2,3}~=~20)$ \\
-\>                                              \> \\
-\> {\bf ttm nexp} $f_{1}~f_{2}$                 \> specifies temporal energy deposition to electronic system as \\
-\>                                              \> decaying exponential function of time with exponential decay \\
-\>                                              \> constant $f_{1}$ ps, lasting for $f_{2}$ time constants (until $f_{1} f_{2}$ ps) \\
-\>                                              \> (defaults: $f_{1}~=~0.001$, $f_{2} = 5$) \\
-\>                                              \> \\
-\> {\bf ttm nonmetal}                           \> specifies parameters for non-metallic system are required for \\
-\>                                              \> \index{Two-Temperature Model}two-temperature model), i.e. thermal diffusivity \\
-\>                                              \> \\
-\> {\bf ttm nothvel}                            \> apply inhomogeneous Langevin thermostat to total particle velocities, \\
-\>                                              \> overriding default of using thermal velocities (excluding localised flow) \\
-\>                                              \> \\
-\> {\bf ttm offset} $f$                         \> offsets initial coupling of electronic and ionic systems via \\
-\>                                              \> inhomogeneous Langevin thermostat until after $f$ ps (default $f~=~0$) \\
-\>                                              \> \\
-\> {\bf ttm oneway}                             \> switches on one-way electron-phonon coupling: only switched on \\
-\>                                              \> when electronic tempereature is greater than ionic temperature \\
-\>                                              \> \\
-\> {\bf ttm pulse} $f$                          \> specifies temporal energy deposition to electronic system as  \\
-\>                                              \> square pulse of duration $f$ ps (if $f = 0$, treated as Dirac \\
-\>                                              \> delta pulse) \\
-\>                                              \> \\
-\> {\bf ttm redist}ribute                       \> redistribute electronic energy in newly-deactivated temperature \\
-\>                                              \> cells to nearest active neighbours \\
-\>                                              \> \\
-\> {\bf ttm sflat}                              \> specifies initial spatial deposition of energy into electronic system \\
-\>                                              \> as flat (homogeneous) profile \\
-\>                                              \> \\
-\> {\bf ttm sgauss} $f_{1}~f_{2}$               \> specifies initial spatial deposition of energy into electronic system \\
-\>                                              \> as Gaussian profile at centre of ionic temperature cells with \\
-\>                                              \> standard deviation $f_{1}$ nm, cutting off at $f_{2}$ standard \\
-\>                                              \> deviations (defaults: $f_{1} = 1$, $f_{2} = 5$) \\
-\>                                              \> \\
-\> {\bf ttm sigma} $f_{1}~f_{2}$ \> identical to {\bf ttm sgauss} \\
-\>                                              \> \\
-\> {\bf ttm stats} $n$                          \> accumulate statistics for two-temperature model every $n$ timesteps \\
-\>                                              \> in PEAK\_E and PEAK\_I files \\
-\>                                              \> \\
-\> {\bf ttm thvelz}                             \> apply inhomogeneous Langevin thermostat to particle thermal velocities \\
-\>                                              \> in z-direction only (using total velocities in x- and y-directions) \\
-\>                                              \> \\
-\> {\bf ttm traj} $n$                           \> accumulate profiles of electronic and ionic temperatures every \\
-\>                                              \> $n$ timesteps in LATS\_E and LATS\_I files \\
-\>                                              \> \\
-\> {\bf ttm varg homo}geneous                   \> specifies electron-phonon coupling in thermal diffusion source \\
-\>                                              \> term and inhomogeneous Langevin thermostat is set dynamically \\
-\>                                              \> using mean electronic temperature (homogeneously) from a tabulated \\
-\>                                              \> function of electronic temperature in additional file (g.dat) \\
-\>                                              \> \\
-\> {\bf ttm varg hetero}geneous                 \> specifies electron-phonon coupling in thermal diffusion source \\
-\>                                              \> term and inhomogeneous Langevin thermostat is set dynamically \\
-\>                                              \> using local electronic temperature (heterogeneously) from a tabulated \\
-\>                                              \> function of electronic temperature in additional file (g.dat) \\
-\>                                              \> \\
-\> {\bf vaf} (sampling) (every) $i$ (bin) (size) $n$ \> \phantom{xxxx} calculate and collect velocity autocorrelation function profiles \\
-\>                                                   \> \phantom{xxxx} every $i$ timesteps (default $i~=~50$) with a bin size set to $n$ \\
-\>                                                   \> \phantom{xxxx} timesteps (default $n~=~2i$, if $i~/ge~100$, or $n~=~100$ otherwise) \\
-\>                                              \> \\
-\> {\bf timestep} $f$                           \> set timestep to $f$ ps \\
-\>                                              \> \\
-\> {\bf variable timestep} $f$                  \> variable timestep, start with timestep of $f$ ps \\
-\>                                              \> \\
-\> {\bf vdw direct}                             \> enforces the direct calculation of van der Waals interactions \\
-\>                                              \> defined by explicit potential forms, i.e. it will not work for \\
-\>                                              \> systems using tabulated potentials (TABLE) \\
-\>                                              \> \\
-\> {\bf vdw mix}ing  {\em rule}                 \> apply the mixing {\em rule} to all specified analytical, \\
-\>                                              \> single-species van der Waals potential interactions \\
-\>                                              \> to generate cross-species interactions when: \\
-\>                                              \> \phantom{x} (i)~~~the latter has not already been specified; \\
-\>                                              \> \phantom{x} (ii)~~single species potentials are available \\
-\>                                              \> \phantom{x} ~~~~~~(specified) and of the same type; and \\
-\>                                              \> \phantom{x} (iii)~their type is allowed to mix, i.e. of \\
-\>                                              \> \phantom{x} ~~~~~~12-6 or LJ or DPD or 14-7 or WCA type. \\
-\>                                              \> The available mixing {\bf \em rule}s are as follows: \\
-\>                                              \> \phantom{x} {\em lore}ntz for the Lorentz-Berthelot type of mixing \\
-\>                                              \> \phantom{x} {\em fend}er for the Fender-Halsey type of mixing \\
-\>                                              \> \phantom{x} {\em hoge}rvorst for the Hogervorst (good hope) type of mixing \\
-\>                                              \> \phantom{x} {\em halg}ren for the Halgren HHG type of mixing \\
-\>                                              \> \phantom{x} {\em tang} for the Tang-Toennies type of mixing \\
-\>                                              \> \phantom{x} {\em func}tional for the Functional type of mixing \\
-\>                                              \> The mixing formulae can be found in Section~\ref{vdw} \\
-\>                                              \> \\
-\> {\bf vdw shift}                              \> apply a force-shifting procedure to all van der Waals \\
-\>                                              \> potentials (except for the shifted-force n-m and dpd ones) \\
-\>                                              \> so that the VDW interactions' energy and force contributions \\
-\>                                              \> fall to zero smoothly for distances approaching $r_{\rm cut}$, by solving \\
-\>                                              \> $\left(\partial U_{new}(r) / \partial r \right)|_{r = r_{\rm cut}} = 0$ and $U_{new}(r)|_{r=r_{\rm cut}}= 0$ for $a$ and $b$ in \\
-\>                                              \> $U_{new}(r) = U(r) + a \cdot r + b$ and the using $U_{new}$ instead $U(r)$ \\
-\>                                              \> \\
-\> {\bf yml\_rdf}                               \>  print RDFDAT in yml format \\
-\>                                              \> \\
-\> {\bf yml\_statis}                            \>  print STATIS in yml format \\
-\>                                              \> \\
-\> {\bf zden} (sampling) (every) $f$            \> calculate and collect the Z-density profile \\
-\>                                              \> every $f$ timesteps (default $f~=~1$) \\
-\>                                              \> \\
-\> {\bf zero} (fire) (every $n$)                \> perform a dynamic "zero temperature" optimisation MD run \\
-\>                                              \> during equilibration; if $fire$ is specified then the system \\
-\>                                              \> target temperature is assumed, if not then it is reset to \\
-\>                                              \> $10$ Kelvin; if $n$ is specified then every $n$ steps \\
-\>                                              \> (default $n~=~1$, with respect to the last equilibration step) \\
-\>                                              \> {\bf N.B.} thermostat and barostat memory are not erased
-\end{tabbing}
-
-\begin{table}[htbp]
-\begin{centering}
-\caption{\label{keytrj} Internal Trajectory/Defects File Key}
-\vskip 1ex
-\begin{tabular}{|r|l|}
-\hline
-{\tt keytrj} & \multicolumn{1}{c|}{meaning} \\
-\hline
-0 & coordinates only in file \\
-1 & coordinates and velocities in file \\
-2 & coordinates, velocities and forces in file \\
-\hline
-\end{tabular}
-\vskip 1ex
-\end{centering}
-\end{table}
-
-\D also offers a \uline{{\bf SPECIAL OPTIONS LIST}} of directives as follows:
-
-\begin{tabbing}
-X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
-\> \uuline{{\bf directive:}}                    \> \phantom{xxxxxxxxxxxxxxxxx} \uuline{{\bf meaning:}} \\
-\>                                              \> \\
-\> {\bf l\_dis}                                 \> check and report on the minimum separation distance \\
-\>                                              \> \\
-\> {\bf l\_fast}                                \> abandon global safety checks, which gives more speed \\
-\>                                              \> to simulations run at too few link cells per domain \\
-\>                                              \> regimes by abandoning global safety checks, however, \\
-\>                                              \> in case of parallel failures no controlled manner \\
-\>                                              \> termination will happen (OS's feedback dependence!!!) \\
-\>                                              \> \\
-\> {\bf l\_his}                                 \> generate a one frame HISTORY from CONFIG \\
-\>                                              \> and terminate straight after \\
-\>                                              \> \\
-\> {\bf l\_org} $x~~y~~z~~n$                    \> after reading input recast CONFIG's contents in CFGORG by \\
-\>                                              \> translating all coordinates along a vector ($x,y,z$), default \\
-\>                                              \> (0,0,0), with a configuration level $n$ (default $n=0$) \& terminate \\
-\>                                              \> \\
-\> {\bf l\_rin}                                 \> read REVOLD in ASCII (default is binary) \\
-\>                                              \> \\
-\> {\bf l\_rout}                                \> write REVIVE in ASCII (default is binary) \\
-\>                                              \> \\
-\> {\bf l\_scl} \phantom{xxx} $n$               \> after reading input cast CONFIG's contents into CFGSCL with \\
-\> \phantom{xxxxxxxx} $a_{1}~~a_{2}~~a_{3}$     \> a configuration level $n$ (default $n=0$), rescaling all coordinates \\
-\> \phantom{xxxxxxxx} $b_{1}~~b_{2}~~b_{3}$     \> within a new lattice defined by the vectors ($\vek{a},\vek{b},\vek{c}$), \\
-\> \phantom{xxxxxxxx} $c_{1}~~c_{2}~~c_{3}$     \> each specified on a new line, \& then terminate the run \\
-\>                                              \> \\
-\> {\bf l\_scr}                                 \> redirect OUTPUT file's contents to the OS's \\
-\>                                              \> default output channel (screen, interactive) \\
-\>                                              \> \\
-\> {\bf l\_tor}                                 \> abandon the production of REVIVE and REVCON \\
-\>                                              \> between all Verlet neighbour list pairs at re/start \\
-\> {\bf l\_vdw}                                 \> dumps to file all tabled vdw interactions in the order \\
-\>                                              \> they appear in the field file \\
-\>                                              \> \\
-\end{tabbing}
-
-\subsubsection{I/O Control Options}
-\label{io}
-
-\noindent{\bf Note} that historically DL\_POLY used serial I/O read
-and write as well as hard-coded names for different I/O files (see
-Figure~\ref{input-files}).  However, {\bf (i)} since version 4.01
-\D has defaulted to using parallel read and write via MPI-I/O
-(but also supporting a variety of alternative options) and
-{\bf (ii)} since version 4.09 the program has also introduced the
-functionality for user defined I/O filenames, both available via
-the CONTROL {\bf io} directives below.  Even the CONTROL file may
-be named differently but in this case the alternative name must be
-passed as a command line argument to the \D executable (usually named
-{\bf DLPOLY.Z}).  It is worth noting that the latter options have
-paved the way for user defined work-flows exploitation of the \D engine.
-
-The \uline{{\bf I/O LIST}} of directives available is as follows:
-
-\begin{tabbing}
-X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
-\> \uuline{{\bf directive:}}                    \> \phantom{xxxxxxxxxxxxxxxxx} \uuline{{\bf meaning:}} \\
-\>                                              \> \\
-\> {\bf io read} {\em method}  $j$ $k$ $l$ $e$  \> set the general I/O read interface to: \\
-\>                                              \> {\bf \em method} :: {\em mpiio} for MPI-I/O, {\em direct} for parallel direct access \\
-\>                                              \> \phantom{x} FORTRAN I/O or {\em master} for traditional master I/O or {\em netcdf} \\
-\>                                              \> \phantom{x} for netCDF I/O provided \D is compiled in a \\
-\>                                              \> \phantom{x} netCDF-enabled mode (default {\em mpiio}) \\
-\>                                              \> \phantom{xxx} {\bf \em j, reader count} :: $1~\le~j~\le~{\tt job~size}$ \\
-\>                                              \> \phantom{xxxx} (default $j~=~2^{Int\left[Log\left\{Min({\tt job~size},2\sqrt{\tt job~size})\right\}/Log(2)\right]}$) \\
-\>                                              \> \phantom{xxxx} is the designated number of processes to \\
-\>                                              \> \phantom{xxxx} carry out I/O read operations simultaneously \\
-\>                                              \> {\bf NOTE that {\em k} is not applicable for the {\em master} method} \\
-\>                                              \> \phantom{xxx} {\bf \em k, batch size} :: $1~\le~k~\le~10,000,000$ (default $2,000,000$) \\
-\>                                              \> \phantom{xxxx} is the maximum number of particle entities in a batch, i.e. \\
-\>                                              \> \phantom{xxxx} multiples of ({\em species},{\em index},$\vek{r}$,$\vek{v}$,$\vek{f}$,{\em etc.}), transmitted between \\
-\>                                              \> \phantom{xxxx} I/O groups (= I/O readers) for domain distribution purposes \\
-\>                                              \> {\bf \em l, buffer size} :: $100~\le~l~\le~100,000$ (default $20,000$) \\
-\>                                              \> \phantom{x} is the maximum number of ASCII line records read in a batch \\
-\>                                              \> {\bf NOTE that {\em e} is not applicable for the {\em master} method} \\
-\>                                              \> \phantom{xxx} {\bf \em e, parallel error check} :: $Y$es (default $N$) \\
-\>                                              \> \\
-\> {\bf io writ}e {\em method} $rp$ {\em type} $j$ $k$ $l$ $e$ \> set the general I/O write interface to: \\
-\>                                              \> {\bf \em method} :: {\em mpiio} for MPI-I/O, {\em direct} for parallel direct access \\
-\>                                              \> \phantom{x} FORTRAN I/O or {\em master} for traditional master I/O or {\em netcdf} \\
-\>                                              \> \phantom{x} for netCDF I/O provided \D is compiled in a \\
-\>                                              \> \phantom{x} netCDF-enabled mode (default {\em mpiio}) \\
-\>                                              \> \phantom{x} {\bf WARRNING: {\em direct} is not a platfotm portable} \\
-\>                                              \> \phantom{x} {\bf solution (as it fails on LUSTRE but works on GPFS)} \\
-\>                                              \> {\bf NOTE that {\em rp} is only applicable for the {\em netcdf} method} \\
-\>                                              \> {\bf \em rp, real precision} :: {\em 32bit} or {\em amber} for 32-bit (float), \\
-\>                                              \> \phantom{x} otherwise 64-bit (double) is defaulted if unspecified \\
-\>                                              \> {\bf \em type} :: {\em sorted} or {\em unsort}ed (DD scrambled) by global index output \\
-\>                                              \> \phantom{x} (default {\em sorted}) \\
-\>                                              \> \phantom{xxx} {\bf \em j, writer count} :: $1~\le~j~\le~{\tt job~size}$ \\
-\>                                              \> \phantom{xxxx} (default $j~=~2^{Int\left[Log\left\{Min({\tt job~size},8\sqrt{\tt job~size})\right\}/Log(2)\right]}$) \\
-\>                                              \> \phantom{xxxx} is the designated number of processes to \\
-\>                                              \> \phantom{xxxx} carry out I/O write operations simultaneously \\
-\>                                              \> {\bf NOTE that {\em k} is not applicable for the {\em master} method} \\
-\>                                              \> \phantom{xxx} {\bf \em k, batch size} :: $1~\le~k~\le~10,000,000$ (default $2,000,000$) \\
-\>                                              \> \phantom{xxxx} is the maximum number of particle entities in a batch, i.e. \\
-\>                                              \> \phantom{xxxx} multiples of ({\em species},{\em index},$\vek{r}$,$\vek{v}$,$\vek{f}$,{\em etc.}), transmitted between \\
-\>                                              \> \phantom{xxxx} I/O groups (= I/O writers) for global sorting purposes \\
-\>                                              \> {\bf \em l, buffer size} :: $100~\le~l~\le~100,000$ (default $20,000$) \\
-\>                                              \> \phantom{x} is the maximum number of ASCII line records written in a batch \\
-\>                                              \> {\bf NOTE that {\em e} is not applicable for the {\em master} method} \\
-\>                                              \> \phantom{xxx} {\bf \em e, parallel error check} :: $Y$es (default $N$) \\
-\>                                              \> \\
-\> {\bf io config}  {\it filename}              \> use {\it filename} instead of CONFIG \\
-\>                                              \> \\
-\> {\bf io field}   {\it filename}              \> use {\it filename} instead of FIELD \\
-\>                                              \> \\
-\> {\bf io statis} {\it filename}              \> use {\it filename} instead of STATIS \\
-\>                                              \> \\
-\> {\bf io history} {\it filename}              \> use {\it filename} instead of HISTORY \\
-\>                                              \> \\
-\> {\bf io historf} {\it filename}              \> use {\it filename} instead of HISTORF \\
-\>                                              \> \\
-\> {\bf io revive}  {\it filename}              \> use {\it filename} instead of REVIVE \\
-\>                                              \> \\
-\> {\bf io revold}  {\it filename}              \> use {\it filename} instead of REVOLD \\
-\>                                              \> \\
-\> {\bf io revcon}  {\it filename}              \> use {\it filename} instead of REVCON \\
-\>                                              \> \\
-\> {\bf io rdf}  {\it filename}                 \> use {\it filename} instead of RDFDAT \\
-\>                                              \> \\
-\> {\bf io msd}  {\it filename}                 \> use {\it filename} instead of MSDTMP \\
-\>                                              \> \\
-\> {\bf io tabbnd}  {\it filename}              \> use {\it filename} instead of TABBND \\
-\>                                              \> \\
-\> {\bf io tabang}  {\it filename}              \> use {\it filename} instead of TABANG \\
-\>                                              \> \\
-\> {\bf io tabdih}  {\it filename}              \> use {\it filename} instead of TABDIH \\
-\>                                              \> \\
-\> {\bf io tabinv}  {\it filename}              \> use {\it filename} instead of TABINV \\
-\>                                              \> \\
-\> {\bf io vdw}  {\it filename}                 \> use {\it filename} instead of TABLE \\
-\>                                              \> \\
-\> {\bf io eam}  {\it filename}                 \> use {\it filename} instead of TABEAM \\
-\>                                              \> \\
-\> {\bf yml\_statis}                            \> statis now is YAML 1.2 compliant \\
-\>                                              \> \\
-\> {\bf yml\_rdf}                               \> RDFDAT is now YAML 1.2 compliant
-\end{tabbing}
+\input params.tex
 
 \subsubsection{Further Comments on the CONTROL File}
 
 \begin{enumerate}
-\item A number of the directives (or their {\bf mutually
-exclusive} alternatives) are {\bf mandatory}:
-\begin{enumerate}
-\item {\bf rcut} ($\equiv$ {\bf cut}): specifying the short range forces cutoff.
-{\bf It is compulsory in all circumstances as all \D algorithms are
-directly or indirectly dependent on it.}
-\item {\bf temp} or {\bf zero}: both may specify the system target temperature.
-Though not mutually exclusive aim to specify {\bf temp} and {\bf zero} after
-in CONTROL.  {\bf Use only one instance of these in CONTROL!}
-If a "dry run" is performed (see below) these can be omitted.
-\item {\bf timestep} or {\bf variable timestep}: specifying the
-simulation timestep.  {\bf Use only one instance of these in
-CONTROL!} If a "dry run" is performed (see below) and a timestep
-length is not supplied a default one of $0.001$ ps is provided.
-\item {\bf ewald/spme sum/precision} \index{Ewald!summation}
-or {\bf coul} or {\bf shift} or {\bf distan} or {\bf reaction}
-or {\bf no elec}: specifying the required coulombic forces
-option.  Apart from {\bf no elec} the rest of the directives are
-mutually exclusive from one another.  {\bf If none is specified
-then none is applied!}
-\end{enumerate}
+\item{} All keywords in new-style control files must be unique, double specification will result in an error. This is to protect users from unexpected behaviour.
 
-\item Some directives are optional.  If not specified \D may give
-default values if necessary.  (Some but not all defaults are specified
-above in the list of directives.)  However fail-safe \D is, not always will
-it assume a default value for certain parameters.  To enable \D to
-be even more liberal in the fail-safe features, users are recommended
-to use {\bf no strict} option.
+\item{} The following parameters are {\bf mandatory}:
+  \begin{enumerate}
+  \item{}ensemble
+  \item{}ensemble\_method
+  \item{}cutoff
+  \item{}timestep
+  \end{enumerate}
 
-\item The {\bf steps} and {\bf equilibration} directives have a
-default of zero.  If not used or used with their default values a
-"dry run" is performed.  This includes force generation and system
-dump (REVCON and REVIVE) and, depending on the rest of the options,
-may include; velocity generation, force capping, application of the
-CGM minimiser, application of the pseudo thermostat, and dumps of
-HISTORY, DEFECTS, RDFDAT, ZDNDAT and MSDTMP.  {\bf Note} that, since
-no actual dynamics is to be performed, the {\bf temperature} and
-{\bf pressure} directives do not play any role and are therefore
-not necessary.
+\item{} Some directives are optional. If not specified \D may give default values if necessary.  (defaults are specified above in the list of directives) However fail-safe \D is, ensure parameters are appropriate for the system of interest and defaults should only be used after it is known that they are valid.
 
-\item If the CGM minimiser, {\bf minim}ise, is specified with zero
-frequency, it is only applied at timestep zero if
-${\bf equilibration}~\ge~{\bf steps}$ (i.e. optimise structure at
-start only!).  This is equvalent to using the {\bf optim}ise
-directive.  In this way it can be used as a configuration
-optimiser at the beginning of the equilibration period or when
-a "dry run" ({\bf steps}~$= 0$) is performed (i.e. equilibrate
-without any actual dynamics!).  {\bf Note} that the default CGM search
-algorithm stepping uses a step that is proportional to the square of
-the instantaneous value of the {\bf timestep} and thus its usage in
-may lead to algorithm's instability and failure in the cases when
-optimisation is applied before any dynamics occurs in a model
-system in an unphysical state (i.e. much away from equilibrium)
-and/or with an ill/badly defined forcefield for the state.  Hence,
-special care (specifying the optional CGM stepping for example)
-should be taken when the option is used, especially as {\bf optimise}
-or/and in a "dry run" mode with a timestep value too large for the model system state.
+\item{} The {\bf time\_run} and {\bf time\_equilibration} directives have a default of zero.  If not used or used with their default values a "dry run" is performed.  This includes force generation and system dump (REVCON and REVIVE) and, depending on the rest of the options, may include; velocity generation, force capping, application of the CGM minimiser, application of the pseudo thermostat, and dumps of HISTORY, DEFECTS, RDFDAT, ZDNDAT and MSDTMP.  {\bf Note} that, since no actual dynamics is to be performed, the {\bf temperature} and {\bf pressure} directives do not play any role and are therefore not necessary.
 
-\item The {\bf variable timestep} (or also {\bf timestep variable})
-option requires the user to specify an initial guess for a
-reasonable timestep for the system (in picoseconds).  The simulation
-is unlikely to retain this as the operational timestep however, as
-the latter may change in response to the dynamics of the system.  The
-option is used in conjunction with the default values of {\bf maxdis}
-($0.10$~\AA) and {\bf mindis} ($0.03$~\AA), which can also be
-optionally altered if used as directives (note the rule that
-{\bf maxdis}~$>~2.5$~{\bf mindis} applies).  Also, an additional
-{\bf mxstep} (in ps) control can be applied.  These serve as
-control values in the variable timestep algorithm, which calculates
-the greatest distance a particle has travelled in any timestep
-during the simulation.  If the maximum distance is exceeded, the
-timestep variable is halved and the step repeated.  If the greatest
-move is less than the minimum allowed, the timestep variable is
-doubled and the step repeated provided it does not exceed the
-user specified {\bf mxstep}.  If it does then it scales to
-{\bf mxstep} and the step is repeated.  In this way the integration
-timestep self-adjusts in response to the dynamics of the system.
-{\bf Note} that this option is abandoned when used in conjunction with
-DPD thermostats ({\bf ensemble nvt dpd}\textrm{\textit{\textbf{type}}}~~$\gamma$),
-since it cannot be applied efficiently and furthermore it is not
-well defined in a DPD sense either.
+\item{} If the CGM minimiser, {\bf minimise\_frequency}, is specified with zero frequency, it is only applied at timestep zero if ${\bf time\_equilibration}~\ge~{\bf time\_run}$ (i.e. optimise structure at start only!). In this way it can be used as a configuration optimiser at the beginning of the equilibration period or when a "dry run" ({\bf time\_run}~$= 0$) is performed (i.e. equilibrate without any actual dynamics!).  {\bf Note} that the default CGM search algorithm stepping uses a step that is proportional to the square of the instantaneous value of the {\bf timestep} and thus its usage in may lead to algorithm's instability and failure in the cases when optimisation is applied before any dynamics occurs in a model system in an unphysical state (i.e. much away from equilibrium) and/or with an ill/badly defined forcefield for the state.  Hence, special care (specifying the optional CGM stepping for example) should be taken when the option is used, especially in a "dry run" mode with a timestep value too large for the model system state.
+\item{} The {\bf timestep\_variable} option requires the user to specify an initial guess for a reasonable timestep for the system.  The simulation is unlikely to retain this as the operational timestep however, as the latter may change in response to the dynamics of the system.  The option is used in conjunction with the default values of {\bf timestep\_variable\_max\_dist} ($0.10$~\AA) and {\bf timestep\_variable\_min\_dist} ($0.03$~\AA), which can also be optionally altered if used as directives (note the rule that {\bf timestep\_variable\_max\_dist} $>~2.5$~{\bf timestep\_variable\_min\_dist} applies).  Also, an additional {\bf timestep\_variable\_max\_delta} (in ps) control can be applied.  These serve as control values in the variable timestep algorithm, which calculates the greatest distance a particle has travelled in any timestep during the simulation.  If the maximum distance is exceeded, the timestep variable is halved and the step repeated.  If the greatest move is less than the minimum allowed, the timestep variable is doubled and the step repeated provided it does not exceed the user specified {\bf timestep\_variable\_max\_delta}.  If it does then it scales to {\bf timestep\_variable\_max\_delta} and the step is repeated.  In this way the integration timestep self-adjusts in response to the dynamics of the system. {\bf Note} that this option is abandoned when used in conjunction with DPD thermostats ({\bf ensemble\_method dpd}), since it cannot be applied efficiently and furthermore it is not well defined in a DPD sense either.
 
-\item The {\bf job time} and {\bf close time} directives are
-required to ensure a controlled close down procedure when a job
-runs out of time.  The time specified by the {\bf job time}
-directive indicates the total time allowed for the job.  (This
-must obviously be set equal to the time specified to the operating
-system when the job is submitted.)  The {\bf close time} directive
-represents the time \D will require to write and close all the
-data files at the end of processing.  This means the {\em
-effective} processing time limit is equal to the job time minus
-the close time.  Thus when \D reaches the effective job time limit
-it begins the close down procedure with enough time in hand to
-ensure the files are correctly written.  In this way you may be
-sure the restart files etc. are complete when the job terminates.
-{\bf Note} that setting the close time too small will mean the job
-will crash before the files have been finished.  If it is set too
-large \D will begin closing down too early.  How large the close
-time needs to be to ensure safe close down is system dependent and
-a matter of experience.  It generally increases with increasing
-simulation system size.
+\item The starting options for a simulation are governed by the keyword {\bf restart}.  If this is {\bf not} specified in the control file, the simulation will start as new.  When specified, it will continue a previous simulation ({\bf restart}) provided all needed restart files are in place and not corrupted.  If they are not in place or are found corrupted, it will start a new simulation without initial temperature scaling of the previous configuration ({\bf restart noscale}).
 
-\item The starting options for a simulation are governed by the
-keyword {\bf restart}.  If this is {\bf not} specified in the
-control file, the simulation will start as new.  When specified, it
-will continue a previous simulation ({\bf restart}) provided all
-needed restart files are in place and not corrupted.  If they are
-not in place or are found corrupted, it will start a new simulation
-without initial temperature scaling of the previous configuration
-({\bf restart noscale}).  Internally these options are handled by
-the integer variable {\tt keyres}, which is explained in Table~\ref{keyres}.
+\item The {\bf ensemble nst} keyword is also used in the N$\sigma$T ensembles extension to NP$_{n}$AT and NP$_{n}\gamma$T ones.  {\bf Note} that these semi-isotropic ensembles are only correct for infinite interfaces placed perpendicularly to the z axis!  This means that the interface is homogeneous (unbroken) and continuous in the (x,y) plane of the MD cell, which assumes that that two of the cell vectors have a cross product only in the z direction.  (For example, if the MD box is defined by its lattice vectors $(\vek{a},\vek{b},\vek{c})$ then $\vek{a} \times \vek{b} = \pm (0,0,1)$.) It is the users' responsibility to ensure this holds for their model system.
 
-\begin{table}[htbp]
-\begin{centering}
-\caption{\label{keyres} Internal Restart Key}
-\vskip 1ex
-\begin{tabular}{|r|l|}
-\hline
-{\tt keyres} & \multicolumn{1}{c|}{meaning} \\
-\hline
-0 & start new simulation from CONFIG file \\
-  & and assign velocities from Gaussian distribution \\
-1 & continue current simulation \\
-2 & start new simulation from CONFIG file \\
-  & and rescale velocities to desired temperature \\
-3 & start new simulation from CONFIG file \\
-  & and {\bf do not} rescale velocities \\
-\hline
-\end{tabular}
-\vskip 1ex
-\end{centering}
-\end{table}
-
-\item The various {\bf ensemble} options (i.e.
-{\bf nve}\index{ensemble!NVE},
-{\bf nvt evans}\index{ensemble!Evans NVT},
-{\bf nvt ander}sen\index{ensemble!Andersen NVT},
-{\bf nvt lang}evin\index{ensemble!Langevin NVT},
-{\bf nvt ber}endsen\index{ensemble!Berendsen NVT},
-{\bf nvt hoover}\index{ensemble!Nos\'{e}-Hoover NVT},
-{\bf nvt ttm} or {\bf nvt inhomo}geneous\index{ensemble!Inhomogeneous Langevin NVT},
-{\bf npt lang}evin\index{ensemble!Langevin NPT},
-{\bf npt ber}endsen\index{ensemble!Berendsen NPT},
-{\bf npt hoover}\index{ensemble!Nos\'{e}-Hoover NPT},
-{\bf npt mtk}\index{ensemble!Martyna-Tuckerman-Klein NPT},
-{\bf nst lang}evin\index{ensemble!Langevin N$\sigma$T},
-{\bf nst ber}endsen\index{ensemble!Berendsen N$\sigma$T},
-{\bf nst hoover}\index{ensemble!Nos\'{e}-Hoover N$\sigma$T},
-{\bf nst mtk}\index{ensemble!Martyna-Tuckerman-Klein  N$\sigma$T})
-are mutually exclusive, though none is mandatory (the default is
-the NVE ensemble\index{ensemble!NVE}).  These options are handled
-internally by the integer variable {\tt keyens}.  The meaning of
-this variable is explained in Table~\ref{keyens}.  The {\bf nst}
-keyword is also used in the N$\sigma$T ensembles extension to
-NP$_{n}$AT and NP$_{n}\gamma$T ones.  {\bf Note} that
-these semi-isotropic ensembles are only correct for infinite
-interfaces placed perpendicularly to the z axis!  This means
-that the interface is homogenious (unbroken) and continuous
-in the (x,y) plane of the MD cell, which assumes that that two
-of the cell vectors have a cross product only in the z
-direction.  (For example, if the MD box is defined by
-its lattice vectors $(\vek{a},\vek{b},\vek{c})$ then
-$\vek{a} \times \vek{b} = \pm (0,0,1)$.)
-It is the users' responsibility to ensure this holds for
-their model system.
-
-\begin{table}[htbp]
-\begin{centering}
-\caption{\label{keyens} Internal Ensemble Key}
-\vskip 1ex
-\begin{tabular}{|r|l|}
-\hline
-{\tt keyens} & \multicolumn{1}{c|}{meaning} \\
-\hline
- 0 & Microcanonical ensemble\index{ensemble!microcanonical|see{ensemble,NVE}} (NVE) \index{ensemble!NVE} \\
- 1 & Evans NVT\index{ensemble!Evans NVT} ensemble (NVE$_{kin}$) \\
-10 & Langevin NVT\index{ensemble!Langevin NVT} ensemble \\
-11 & Berendsen NVT ensemble\index{ensemble!Berendsen NVT} \\
-12 & Nos\'{e}-Hoover NVT ensemble\index{ensemble!Nos\'{e}-Hoover NVT} \\
-15 & inhomogenous Langevin NVT\index{ensemble!Inhomogeneous Langevin NVT} ensemble \\
-20 & Langevin NPT\index{ensemble!Langevin NPT} ensemble \\
-21 & Berendsen NPT ensemble\index{ensemble!Berendsen NPT} \\
-22 & Nos\'{e}-Hoover NPT ensemble\index{ensemble!Nos\'{e}-Hoover NPT} \\
-23 & Martyna-Tuckerman-Klein NPT ensemble \index{ensemble!Martyna-Tuckerman-Klein NPT} \\
-30 & Langevin N$\mat{\sigma}$T\index{ensemble!Langevin N$\sigma$T} ensemble \\
-31 & Berendsen N$\mat{\sigma}$T ensemble\index{ensemble!Berendsen N$\sigma$T} \\
-32 & Nos\'{e}-Hoover N$\mat{\sigma}$T ensemble\index{ensemble!Nos\'{e}-Hoover N$\sigma$T} \\
-33 & Martyna-Tuckerman-Klein N\mat{\sigma}T ensemble \index{ensemble!Martyna-Tuckerman-Klein N$\sigma$T} \\
-\hline
-\end{tabular}
-\vskip 1ex
-\end{centering}
-\end{table}
-
-\item The {\bf zero} directive, enables a "zero temperature"
-optimisation.  If no optional "fire" keyword is added then the
-target temperature of the simulation is reset to $10$ Kelvin.
-In either case a crude energy minimiser is used to help the
-system relax before each integration of the equations of motion.
+\item The {\bf reset\_temperature\_interval} directive, enables a "zero temperature" optimisation. In this case a crude energy minimiser is used to help the system relax before each integration of the equations of motion.
 The function of the minimiser can be summarised as
 \begin{equation}
 \vek{v}_{i} \leftarrow \left\{ \begin{array} {l@{\quad:\quad}l}
@@ -1277,9 +121,8 @@ The function of the minimiser can be summarised as
 \vek{f}_{i} \ge 0
 \end{array} \right.
 \end{equation}
-for systems with free particles only, where $\vek{v}_{i}$ and
-$\vek{f}_{i}$ are the force and velocity of particle $i$.  The
-algorithm is extended in the case of RBs by including
+for systems with free particles only, where $\vek{v}_{i}$ and $\vek{f}_{i}$ are the force and velocity of particle $i$.  The algorithm is extended in the case of RBs by including
+
 \begin{eqnarray}
 \vek{V}_{j} \leftarrow \left\{ \begin{array} {l@{\quad:\quad}l}
 0 & \vek{V}_{j} \cdot \vek{F}_{j} < 0 \\
@@ -1294,510 +137,121 @@ algorithm is extended in the case of RBs by including
 \vek{\tau}_{j} \ge 0
 \end{array} \right.~~,
 \end{eqnarray}
-where $\vek{V}_{j}$ and $\vek{F}_{j}$ are the velocity and
-force of the RB's centre of mass, and $\vek{\omega}_{j}$ and
-$\vek{\tau}_{j}$ are the angular velocity and torque of RB $j$.
-Measures are taken to conserve the MD cell momentum and the
-thermostat's instantaneous kinetic energy.
 
-This must not be thought of as a true energy minimization
-method.  {\bf Note} that this optimisation is only applied
-when the simulation runs in equilibration mode.
+where $\vek{V}_{j}$ and $\vek{F}_{j}$ are the velocity and force of the RB's centre of mass, and $\vek{\omega}_{j}$ and $\vek{\tau}_{j}$ are the angular velocity and torque of RB $j$. Measures are taken to conserve the MD cell momentum and the thermostat's instantaneous kinetic energy.
+
+This must not be thought of as a true energy minimization method.  {\bf Note} that this optimisation is only applied when the simulation runs in equilibration mode.
 
 The algorithm is developed in the \D routine {\sc zero\_k\_optimise}.
 
-\item The {\bf impact} $i$ $j$ $E$ $x$ $y$ $z$ directive will
-not be activated if the particle index is beyond the one of
-the last particle.  The option will fail in a controlled manner
-at application time if the particle is found to be in a frozen
-state or the shell of an ion or part of a rigid body.  During
-application the center of mass momentum is re-zeroed to prevent
-any drifts.  The user must take care to have the impact
-initiated after any possible equilibration.  Otherwise, the
-system will be thermostatted and the impact energy dissipated
-during the equilibration.
+\item The {\bf impact} directives will not be activated if the particle index is beyond the one of the last particle.  The option will fail in a controlled manner at application time if the particle is found to be in a frozen state or the shell of an ion or part of a rigid body.  During application the center of mass momentum is re-zeroed to prevent any drifts.  The user must take care to have the impactinitiated after any possible equilibration.  Otherwise, the system will be thermostatted and the impact energy dissipated during the equilibration.
 
-\item The {\bf pseudo} option is intended to be used in highly
-non-equilibrium simulations when users are primarily interested in
-the structural changes in the core of the simulated system as the
-the MD cell boundaries of the system are coupled to a thermal bath.
+\item The {\bf pseudo\_thermostat} directives are intended to be used in highly non-equilibrium simulations when users are primarily interested in the structural changes in the core of the simulated system as the the MD cell boundaries of the system are coupled to a thermal bath.
 
-The thermal bath can be used with two types of temperature scaling
-algorithms - {\bf(i)} Langevin (stochastic thermostat), {\bf(ii)} Gauss
-and {\bf(iii)} Direct (direct thermostat).  If no type is specified then
-the Langevin temperature control algorithm is applied first followed the
-Direct one.  The user is also required to specify the width of the
-pseudo thermostat, $f_{1}$ (in \AA), which must be larger than 2~\AA~
-and less than or equal to a quarter of minimum width of the MD cell.
-The thermostat is an $f_{1}$ \AA~ thick buffer layer attached on the
-inside at the MD cell boundaries.
+The thermal bath can be used with several types of temperature scaling algorithms
+  \begin{enumerate}
+  \item{} Langevin (stochastic thermostat),
+  \item{} Gauss
+  \item{}Direct (direct thermostat).
+  \end{enumerate}
 
-The temperature of the bath is specified by the user, $T~=~f_{2}$
-(in Kelvin), which must be larger than 1 Kelvin.  If none is supplied
-by the user, $T$ defaults to the system target temperature.
+  The user is also required to specify the width of the pseudo thermostat, {\bf pseudo\_thermostat\_width}, which must be larger than 2~\AA~ and less than or equal to a quarter of minimum width of the MD cell. The thermostat is an pseudo\_thermostat\_width thick buffer layer attached on the inside at the MD cell boundaries.
+
+The temperature of the bath is specified by the user, {\bf pseudo\_thermostat\_temperature}, which must be larger than 1 Kelvin.
 
 \begin{itemize}
-\item {\bf pseudo langevin}
+\item {\bf langevin}
 
-The stochasticity of the Langevin thermostat emulates an infinite
-environment around the MD cell, providing a means for ``natural''
-heat exchange between the MD system and the heath bath thus aiding
-possible heat build up in the system.  In this way the instantaneous
-temperature of the system is driven naturally towards the bath
-temperature.  Every particle within the thermostat buffer layer is
-coupled to a viscous background and a stochastic heat bath, such
-that
+The stochasticity of the Langevin thermostat emulates an infinite environment around the MD cell, providing a means for ``natural'' heat exchange between the MD system and the heath bath thus aiding possible heat build up in the system.  In this way the instantaneous temperature of the system is driven naturally towards the bath temperature.  Every particle within the thermostat buffer layer is coupled to a viscous background and a stochastic heat bath, such that
 \begin{eqnarray}
 {d \vek{r}_{i}(t) \over d t} &=& \vek{v}_{i}(t) \nonumber \\
 {d \vek{v}_{i}(t) \over d t} &=& {{\vek{f}_{i}(t)+\vek{R}_{i}(t)}
 \over m_{i}} - \chi (t) \; \vek{v}_{i}(t)~~,
 \end{eqnarray}
-where $\chi (t)$ is the friction parameter from the dynamics in the
-the MD cell and $R(t)$ is stochastic force with zero mean that
-satisfies the fluctuation-dissipation theorem:
+where $\chi (t)$ is the friction parameter from the dynamics in the the MD cell and $R(t)$ is stochastic force with zero mean that satisfies the fluctuation-dissipation theorem:
 \begin{equation}
 \left< R^{\alpha}_{i}(t)~R^{\beta}_{j}(t^\prime) \right> =
 2~\chi(t)~m_{i}~k_{B}T~\delta_{ij}~\delta_{\alpha
 \beta}~\delta(t-t^\prime)~~,
 \end{equation}
-where superscripts denote Cartesian indices, subscripts particle
-indices, $k_{B}$ is the Boltzmann constant, $T$ the bath
-temperature and $m_{i}$ the particle's mass.  The algorithm is
-implemented in routine {\sc pseudo} and has two stages:
+where superscripts denote Cartesian indices, subscripts particle indices, $k_{B}$ is the Boltzmann constant, $T$ the bath temperature and $m_{i}$ the particle's mass.  The algorithm is implemented in routine {\sc pseudo} and has two stages:
 \begin{itemize}
-\item Generate random forces on all particles within
-the thermostat.  Here, care must be exercised to prevent
-introduction of non-zero net force when the random forces are added
-to the system force field.
-\item Rescale the kinetic energy of the thermostat bath so that
-particles within have Gaussian distributed kinetic energy with
-respect to the target temperature and determine the (Gaussian
-constraint) friction within the thermostat:
+\item Generate random forces on all particles within the thermostat.  Here, care must be exercised to prevent introduction of non-zero net force when the random forces are added to the system force field.
+\item Rescale the kinetic energy of the thermostat bath so that particles within have Gaussian distributed kinetic energy with respect to the target temperature and determine the (Gaussian constraint) friction within the thermostat:
 \begin{equation}
 \chi(t) = Max \left( 0, \frac
 {\sum_{i} [\vec{f}_{i}(t) + \vec{R}_{i}(t)] \cdot \vec{v}_{i}(t)}
 {\sum_{i} m_{i}~\vec{v}_{i}^{2}(t)} \right)~~.
 \end{equation}
-Care must be exercised to prevent introduction of non-zero net
-momentum.  (Users are reminded to use for target temperature the
-temperature at which the original system was equilibrated in order
-to avoid simulation instabilities.)
+Care must be exercised to prevent introduction of non-zero net momentum.  (Users are reminded to use for target temperature the temperature at which the original system was equilibrated in order to avoid simulation instabilities.)
 \end{itemize}
-The effect of this algorithm is to relax the buffer region of the
-system on a local scale and to effectively dissipate the incoming
-excess kinetic energy from the rest of the system, thus emulating an
-infinite-like environment surrounding the MD cell.  The thermostat
-width matters as the more violent the events on the inside of the MD
-cell, the bigger width may be needed in order to ensure safe
-dissipation of the excess kinetic energy.
+The effect of this algorithm is to relax the buffer region of the system on a local scale and to effectively dissipate the incomingexcess kinetic energy from the rest of the system, thus emulating an infinite-like environment surrounding the MD cell.  The thermostat width matters as the more violent the events on the inside of the MD cell, the bigger width may be needed in order to ensure safe dissipation of the excess kinetic energy.
 
-\item {\bf pseudo Gauss}
+\item {\bf Gaussian}
 
 \begin{itemize}
-\item Rescale the kinetic energy of the thermostat bath so that
-particles within have Gaussian distributed kinetic energy with
-respect to the target temperature.
+\item Rescale the kinetic energy of the thermostat bath so that particles within have Gaussian distributed kinetic energy with respect to the target temperature.
 \end{itemize}
 
-\item {\bf pseudo direct}
+\item {\bf direct}
 
-The Direct thermostat is the simplest possible model allowing for
-heat exchange between the MD system and the heath bath.  All (mass,
-non-frozen) particles within the bath have their kinetic energy
-scaled to $1.5~k_{B}T~$ at the end of each time step during the
-simulation.  Care is exercised to prevent introduction of non-zero
-net momentum when scaling velocities. (Users are reminded to use for
-target temperature the temperature at which the original system was
-equilibrated in order to avoid simulation instabilities.) Due to the
-``unphysical'' nature of this temperature control the thermostat
-width does not matter to the same extent as in the case of the
-Langevin thermostat.
+The Direct thermostat is the simplest possible model allowing for heat exchange between the MD system and the heath bath.  All (mass, non-frozen) particles within the bath have their kinetic energy scaled to $1.5~k_{B}T~$ at the end of each time step during the simulation.  Care is exercised to prevent introduction of non-zero net momentum when scaling velocities. (Users are reminded to use for target temperature the temperature at which the original system was equilibrated in order to avoid simulation instabilities.) Due to the ``unphysical'' nature of this temperature control the thermostat width does not matter to the same extent as in the case of the Langevin thermostat.
 \end{itemize}
 
-{\bf Note} that embedding a thermostat in the MD cell walls is bound to
-produce {\bf wrong ensemble averages}, and instantaneous pressure
-and stress build-ups at the thermostat boundary.  Therefore,
-ensembles lose their meaning as such and so does the conserved
-quantity for true ensembles.  {\em If the {\bf pseudo} thermostat
-option is specified without any type of temperature control in
-CONTROL then both types will be applied in the order
-Langevin$\rightarrow$Direct at each time step during the
-simulation}.
+{\bf Note} that embedding a thermostat in the MD cell walls is bound to produce {\bf wrong ensemble averages}, and instantaneous pressure and stress build-ups at the thermostat boundary.  Therefore, ensembles lose their meaning as such and so does the conserved quantity for true ensembles.
 
-The algorithms are developed in the \D routines {\sc pseudo\_vv} and
-{\sc pseudo\_lfv} respectively.
+The algorithms are developed in the \D routine {\sc pseudo\_vv}.
 
-\item The {\bf defe}cts option will trigger reading of REFERENCE
-(see Section~\ref{reference-file}), which defines a reference MD
-cell with particles' positions defining the crystalline lattice
-sites.  If REFERENCE is not found the simulation will either \\
-{\bf ( i)} halt if the simulation has been restarted, i.e. is a
-continuation of an old one - the {\bf restart} option is used in
-CONTROL and the REVOLD (see Section~\ref{revold-file}) file has
-been provided. \\
-or \\
-{\bf (ii)} recover using CONFIG (see Section~\ref{config-file})
-if it is a new simulation run, i.e {\bf restart} option is not
-used in CONTROL or REVOLD has not been provided.
-
-The actual defect detection is based on comparison of the simulated
-MD cell to the reference MD cell based on a user defined
-site-interstitial cutoff, $R_{def}$,
+\item The {\bf defects\_calculate} option will trigger reading of REFERENCE (see Section~\ref{reference-file}), which defines a reference MD cell with particles' positions defining the crystalline lattice sites.  If REFERENCE is not found the simulation will either:
+  \begin{itemize}
+  \item{} halt if the simulation has been restarted, i.e. is a continuation of an old one - the {\bf restart} option is used in CONTROL and the REVOLD (see Section~\ref{revold-file}) file has been provided.
+  \item{} recover using CONFIG (see Section~\ref{config-file}) if it is a new simulation run, i.e {\bf restart} option is not used in CONTROL or REVOLD has not been provided.
+  \end{itemize}
+The actual defect detection is based on comparison of the simulated MD cell to the reference MD cell based on a user defined site-interstitial cutoff, $R_{def}$,
 \begin{equation}
 {\rm Min}\left[0.3,r_{\rm cut}/3\right]~\AA~\le~R_{def}~\le~{\rm Min}\left[1.2,r_{\rm cut}/2\right]~\AA \nonumber
 \end{equation}
-with a default value of ${\rm Min}\left[0.75,r_{\rm cut}/3\right]$~\AA.
-(If the supplied value exceeds the limits the simulation execution
-will halt).  If a particle, $p$, is located in the vicinity of a
-site, $s$, defined by a sphere with its centre at this site and a
-radius, $R_{def}$, then the particle is a {\em first hand} claimee
-of $s$, and the site is not vacant.  Otherwise, the site is
-presumed vacant and the particle is presumed a general interstitial.
-If a site, $s$, is claimed and another particle, $p\prime$, is
-located within the sphere around it, then $p\prime$ becomes an
-interstitial associated with $s$.  After all particles and all sites
-are considered, it is clear which sites are vacancies.  Finally,
-for every claimed site, distances between the site and its
-{\em first hand} claimee and interstitials are compared and the
-particle with the shortest one becomes the {\em real} claimee.  If a
-{\em first hand} claimee of $s$ is not the {\em real} claimee it
-becomes an interstitial associated with $s$.  At this stage it is
-clear which particles are interstitials.  The sum of interstitials
-and vacancies gives the total number of defects in the simulated MD
-cell.
+with a default value of ${\rm Min}\left[0.75,r_{\rm cut}/3\right]$~\AA. (If the supplied value exceeds the limits the simulation execution will halt).  If a particle, $p$, is located in the vicinity of a site, $s$, defined by a sphere with its centre at this site and a radius, $R_{def}$, then the particle is a {\em first hand} claimee of $s$, and the site is not vacant.  Otherwise, the site is presumed vacant and the particle is presumed a general interstitial. If a site, $s$, is claimed and another particle, $p\prime$, is located within the sphere around it, then $p\prime$ becomes an interstitial associated with $s$.  After all particles and all sites are considered, it is clear which sites are vacancies.  Finally, for every claimed site, distances between the site and its {\em first hand} claimee and interstitials are compared and the particle with the shortest one becomes the {\em real} claimee.  If a {\em first hand} claimee of $s$ is not the {\em real} claimee it becomes an interstitial associated with $s$.  At this stage it is clear which particles are interstitials.  The sum of interstitials and vacancies gives the total number of defects in the simulated MD cell.
 
-Frozen particles and particles detected to be shells of
-polarisable ions are not considered in the defect detection.
+Frozen particles and particles detected to be shells of polarisable ions are not considered in the defect detection.
 
-{\bf Note} that the algorithm cannot be applied safely if $R_{def}$ is
-larger than half the shortest interatomic distance within the
-reference MD cell since a particle may; (i) claim more than one
-site, (ii) be an interstitial associated with more than one site, or
-both (i) and (ii).  On the other hand, low values of $R_{def}$ are
-likely to lead to slight overestimation of defects.
+{\bf Note} that the algorithm cannot be applied safely if $R_{def}$ is larger than half the shortest interatomic distance within the reference MD cell since a particle may; (i) claim more than one site, (ii) be an interstitial associated with more than one site, or both (i) and (ii).  On the other hand, low values of $R_{def}$ are likely to lead to slight overestimation of defects.
 
-If the simulation and reference MD cell have the same number of
-atoms then the total number of interstitials is always equal to the
-total number of defects.
+If the simulation and reference MD cell have the same number of atoms then the total number of interstitials is always equal to the total number of defects.
 
-\item The {\bf disp}lacements option will trigger dump of atom
-displacements based on a qualifying cutoff in a trajectory like
-manner.  Displacements of atoms from their original position at
-the end of equilibration (the start of statistics), $t~=0~$, is
-carried out at each timestep.
+\item The {\bf displacements\_calculate} option will trigger dump of atom displacements based on a qualifying cutoff in a trajectory like manner.  Displacements of atoms from their original position at the end of equilibration (the start of statistics), $t~=0~$, is carried out at each timestep.
 
-\item The tolerance and stepping for relaxed shell model {\bf rlxtol},
-is a last resort option to aid shell relaxation of systems with very
-energetic and/or rough potential surface.  Users are advised to use
-it with caution, should there really need be, as the use of high values
-for the tolerance (default of 1) may result in physically incorrect
-dynamics and small stepping (default $Max(k_{core-shell})/2$) to
-expensive force evaluations.
+\item The tolerance and stepping for relaxed shell model {\bf rlx\_tol}, is a last resort option to aid shell relaxation of systems with very energetic and/or rough potential surface.  Users are advised to use it with caution, should there really need be, as the use of high values for the tolerance (default of 1) may result in physically incorrect dynamics and small stepping (default $Max(k_{core-shell})/2$) to expensive force evaluations.
 
-\item The difference between the directives {\bf ewald} and {\bf spme}
-is only in the {\bf ewald/spme sum} directive, in which the
-{\bf ewald sum} specifies the indices of the maximum k-vector, whereas
-the {\bf spme sum} the dimensions of the 3D charge array
-(which are exactly twice the maximum k-vector indices).  {\bf Note}
-that in either case, \D will carry out the
-SPME\index{Ewald!SPME}\index{potential!electrostatics} coulombic evaluation.
+\item The choice of reaction field electrostatics (directive {\bf coul\_method reaction\_field}) relies on the specification of the relative dielectric constant external to the cavity.  This is specified by the {\bf coul\_dielectric\_constant} directive.
 
-\item The force selection directives
-{\bf ewald/spme sum/precision}\index{Ewald!summation},
-{\bf reaction}, {\bf coul}, {\bf shift}, {\bf dist}, {\bf no elec}
-are handled internally by the integer variable {\tt keyfce}.
-See Table~\ref{keyfce} for an explanation of this variable.
-{\bf Note} that all these options with the exception of the last,
-{\bf no elec}, are mutually exclusive.
-
-\begin{table}[htbp]
-\begin{centering}
-\caption{\label{keyfce} Electrostatics Key}
-\vskip 1ex
-\begin{tabular}{|r|l|}
-\hline
-{\tt keyfce} & \multicolumn{1}{c|}{meaning} \\
-\hline
-\multicolumn{2}{|c|} {Electrostatics are evaluated as follows:}\\
-\hline
-0  & Ignore electrostatic\index{potential!electrostatics} interactions \\
-2  & SPM Ewald summation\index{Ewald!SPME}\index{potential!electrostatics}\\
-4  & Coulomb sum with distance dependent dielectric\index{distance dependant dielectric} \\
-6  & Standard truncated Coulomb sum\index{direct Coulomb sum} \\
-8  & Force-shifted Coulomb sum\index{force-shifted Coulomb sum} \\
-10 & Reaction field electrostatics\index{reaction field} \\
-\hline
-\end{tabular}
-\vskip 1ex
-\end{centering}
-\end{table}
-
-\item {\bf ewald evaluate} or {\bf multiple} are not mutually
-exclusive and it is the first instance of these in CONTROL that
-is read and applied in the following simulation.
-
-\item The choice of reaction field electrostatics
-(directive {\bf reaction}) relies on the specification of the
-relative dielectric constant external to the cavity.  This is
-specified by the {\bf eps} directive.
-
-\item The directive {\bf ewald/spme evaluate} is only triggered
-when {\bf ewald/spme sum/precision} is present.  It sets an infrequent
-evaluation of the k-space contributions to the Ewald summation.
-Although this option decreases the simulation cost it also inherently
-decreases the accuracy of the dynamics.  {\bf Note} that the usage of
-this feature may lead to inacuarte or even wrong and unphysical
-dynamics as the less frequent the evaluation, the greater the inacuarcy.
-
-\item \D uses two different potential cutoffs.  These are as
-follows:
+\item \D uses two different potential cutoffs. These are as follows:
 \begin{enumerate}
-\item  $r_{\rm cut}$ - the universal cutoff set by {\bf cutoff}.
-It applies to the real space part of the electrostatics calculations
-and to the van der Waals\index{potential!van der Waals} potentials if
-no other cutoff is applied.
-\item $r_{\rm vdw}$ - the user-specified cutoff for the van
-der Waals potentials set by {\bf rvdw}.  If not specified its value
-defaults to $r_{\rm cut}$.
+\item  $r_{\rm cut}$ - the universal cutoff set by {\bf cutoff}. It applies to the real space part of the electrostatics calculations and to the van der Waals\index{potential!van der Waals} potentials if no other cutoff is applied.
+\item $r_{\rm vdw}$ - the user-specified cutoff for the van der Waals potentials set by {\bf vdw\_cutoff}.  If not specified its value defaults to $r_{\rm cut}$.
 \end{enumerate}
 
-\item Constraint algorithms in \D, SHAKE/RATTLE (see Section~\ref{shake-rattle}),
-use default iteration precision of 10$^{-6}$ and limit of iteration
-cycles of 250.  Users may experience that during optimisation of a
-new built system containing constraints simulation may fail
-prematurely since a constraint algorithm failed to converge.
-In such cases directives {\bf mxshak} (to increase) and {\bf shake}
-(to decrease) may be used to decrease the strain in the system
-and stablise the simulation numerics until equilibration is achieved.
+\item Constraint algorithms in \D, SHAKE/RATTLE (see Section~\ref{shake-rattle}), use default iteration precision of 10$^{-6}$ and limit of iteration cycles of 250.  Users may experience that during optimisation of a new built system containing constraints simulation may fail prematurely since a constraint algorithm failed to converge. In such cases directives {\bf shake\_max\_iter} (to increase) and {\bf shake\_tolerance} (to decrease) may be used to decrease the strain in the system and stablise the simulation numerics until equilibration is achieved.
 
-\item \D's DD strategy assumes that the local (per domain/node or
-link cell) density of various system entities (i.e. atoms, bonds,
-angles, etc.) does not vary much during a simulation and some
-limits for these are assumed empirically.  This may not the case in
-extremely non-equilibrium simulations, where the assumed limits
-are prone to be exceeded or in some specific systems where these
-do not hold from the start.  A way to tackle such circumstances and
-avoid simulations crash (by controlled termination) is to use the
-{\bf densvar} $f$ option.  In the {\sc set\_bounds} subroutine \D
-makes assumptions at the beginning of the simulation and corrects
-the lengths of bonded-like interaction lists arrays ({\tt mxshl,
-mxcons, mxrgd, mxteth, mxbond, mxangl, mxdihd, mxinv}) as well as the
-lengths of link-cell ({\tt mxlist}) and domain ({\tt mxatms, mxatdm})
-lists arrays when the option is activated with $f > 0$.  Greater
-values of $f$ will correspond to allocation bigger global arrays
-and larger memory consumption by \D during the simulation.
-{\bf Note} that this option may demand more memory than available
-on the computer architecture.  In such cases \D will terminate
-with an array allocation failure message.
+\item \D's DD strategy assumes that the local (per domain/node or link cell) density of various system entities (i.e. atoms, bonds, angles, etc.) does not vary much during a simulation and some limits for these are assumed empirically.  This may not the case in extremely non-equilibrium simulations, where the assumed limits are prone to be exceeded or in some specific systems where these do not hold from the start.  A way to tackle such circumstances and avoid simulations crash (by controlled termination) is to use the {\bf density\_variance} $f$ option.  In the {\sc set\_bounds} subroutine \D makes assumptions at the beginning of the simulation and corrects the lengths of bonded-like interaction lists arrays ({\tt mxshl, mxcons, mxrgd, mxteth, mxbond, mxangl, mxdihd, mxinv}) as well as the lengths of link-cell ({\tt mxlist}) and domain ({\tt mxatms, mxatdm}) lists arrays when the option is activated with $f > 0$.  Greater values of $f$ will correspond to allocation bigger global arrays and larger memory consumption by \D during the simulation. {\bf Note} that this option may demand more memory than available on the computer architecture.  In such cases \D will terminate with an array allocation failure message.
 
-\item As a default, \D does not store statistical data during the
-equilibration period.  If the directive {\bf collect} is used,
-equilibration data will be incorporated into the overall statistics.
+\item As a default, \D does not store statistical data during the equilibration period.  If the directive {\bf record\_equilibration} is used, equilibration data will be incorporated into the overall statistics.
 
-\item The {\bf vaf} directive switches on velocity autocorrelation
-function (VAF) calculations for individual atomic species in \D
-after equilibration or immediately at start if the directive {\bf collect}
-is used.  It controls how often VAF profiles are started what the size
-of each profile (in timesteps).  Overlapping profiles are possible and
-require more memory to store them (and initial velocities) while they
-are being calculated.  By default \D will report time-averaged VAF profiles.
-This can be overridden using the {\bf no~vafav}eraging directive, which
-will instead report individual `instantaneous' VAF profiles.
+\item The {\bf vaf\_calculate} directive switches on velocity autocorrelation function (VAF) calculations for individual atomic species in \D after equilibration or immediately at start if the directive {\bf record\_equilibration} is used.  It controls how often VAF profiles are started what the size of each profile (in timesteps).  Overlapping profiles are possible and require more memory to store them (and initial velocities) while they are being calculated.  By default \D will report time-averaged VAF profiles. This can be overridden using the {\bf vaf\_averaging} directive, which will instead report individual `instantaneous' VAF profiles.
 
-\item {\bf io {\em action} [{\em options}]} controls how I/O is performed
-by \D.  The options can help the performance of I/O
-operations within \D for potentially large files during the run.
-The form of the command depends on the value of {\bf action},
-which may take the value either {\bf read} or {\bf write}.
-In general, this command should only be used for tuning the
-I/O subsystem in \D for large runs.  For small to average
-sized systems the built-in defaults usually suffice.
+\item The {\bf no vom} option will trigger a default bypass of the {\sc getvom} routine which will return zero and thus no COM removal will happen.  {\bf Note that this will lead to COM momentum accumulation for many though not all ensembles!}.  Such accumulation will propagate to the generation of flow in the MD cell and ultimately suppress the thermal motion of the particles in the system, leading to the so called "frozen ice cube effect"!  It is worth nothing that this option must be turned on for the correct application of stochastic dynamics via the langevin temperature control (NVT Langevin)!  If the option is not applied then the dynamics will lead to peculiar thermalisation of different atomic species to mass- and system size-dependent temperatures.
 
-\begin{enumerate}
-\item {\bf io read {\em method} [{\em options}]}
+\item The {\bf padding} option will add extra distance, $r_{\rm pad}$, if larger than $f \ge {\rm Min}[0.05,0.5\%.r_{\rm cut}]$~\AA, to the major cutoff, $r_{\rm cut}$, to construct a larger link-cell width, $r_{\rm lnk}=r_{\rm cut}+r_{\rm pad}$, which will trigger a construction of a larger Verlet neighbour list (VNL) while at the same time facilitate its conditional update, rather at every timestpe.  The VNL conditaional update is check at the end of each tiemstep and triggered only when the most travelled particle has moved a distance larger than $r_{\rm pad}/2$.  It is worth noting that padding is at expense of extra memory but if used wisely it could improve time to solution from 10\% to 100\% depending on force-field complexity.  If it is too large or too small (that is why the $f \ge {\rm Min}[0.05,0.5\%.r_{\rm cut}]$~\AA~limit) it will lead to performace degradation.  It is recomended that $r_{\rm pad}$ is set up at a value of $\approx 1 \div 5\%$ of the cutoff, $r_{\rm cut}$, as long as the major link-cell algorithm uses a link-cell decomposition that not worse than $4 \otimes 4 \otimes 4$ per domain.  For such setups, in practice, one may expect average compute speedups \footnote{I.e.~I/O effects are excluded from comparison with a default simulation and comparisons are carried over a few hundreds of timesteps.  This is usually accounting for over $90\%$ of the time to solution.} of the order of $10 \div 30\%$ for force-fields involving the Ewald summation methodology and $60 \div 100\%$ for force-fields without electrostatics evaluations involving the Ewald summation methodology.
 
-With action set to {\bf read} the {\bf io} command controls how
-the reading of large files is performed.  {\em method} controls
-how the disk is accessed.  Possible values are {\em mpiio},
-in which case MPI-I/O is used, {\em direct}, which uses
-parallel FORTRAN direct access files, and {\em master} which
-performs all I/O through a master processor, or {\em netcdf}
-for netCDF I/O provided \D is compiled in a netCDF-enabled mode.
-{\em mpiio} is the recommended method, and for large systems
-{\em master} should be avoided.  Available options depend
-on which method is to be used, and all are optional in each
-case.  Where numerical values are to be supplied specifying
-0 or a negative numbers indicates that \D will resort to
-the default value.  The possible options are:
+\item The {\bf subcelling\_threshold\_density} option will set the threshold density of particles per link cell below which subcelling (decreasing link-cell size) stops.  The default is 50 although experimenting with values between 10 and 100 may provide sufficient information about a performance sweetspot.  The comparison condition is carried out on the average density per sub-link cell of each domain.  Thus subcelling takes into account only the per domain density variation.  Obviously, the subcelling threshhold is limited to 1 particle per cell for the sake of safety and sanity reasons.
 
-\begin{itemize}
-\item {\bf io read mpiio$|$direct$|$netcdf [$j$ [$k$ [$l$ [$e$]]]]}
+\item The {\bf coul\_extended\_exclusion} option will make sure that for all {\em conventional} (no distance restraints) intra-molecular interactions (bonds, angles, digedrals, inversions) as well as for CB and RB units any intra-core-shell interactions fall within the list of excluded interactions.  This is not a default behaviour.  The option is also triggered by the {\bf polarisation} directvies.
 
-$j$ specifies the number of processors that shall access
-the disk.  $k$ specifies the maximum number of particles
-that the reading processors shall deal with at any one time.
-Large values give good performance, but may results in an
-unacceptable memory overhead.  $l$ specifies the maximum
-number of particles that the reading processors shall
-read from the disk in one I/O transaction.  Large values
-give good performance, but may results in an unacceptable
-memory overhead.  $e$ accepts $Y$es only to switch global
-error checking performed by the I/O subsystem, the default
-is $N$o.
-
-\item {\bf io read master [$l$]}
-
-$l$ specifies the maximum number of particles that the
-reading process shall read from the disk in one I/O
-transaction.  Large values give good performance, but may
-results in an unacceptable memory overhead.
-\end{itemize}
-
-\item {\bf io writ}e {\bf{\em method} [{\em rp}] {\em type} [{\em options}]}
-
-With action set to {\bf writ}e the {\bf io} command
-controls how the writing of large files is performed.
-{\em method} controls how the disk is accessed.  Possible
-values are {\em mpiio}, in which case MPI-I/O is used,
-{\em direct}, which uses parallel FORTRAN direct access
-files, and {\em master} which performs all I/O through
-a master processor, or {\em netcdf} for netCDF I/O
-provided \D is compiled in a netCDF-enabled mode.
-{\em mpiio} is the recommended method, and for
-large systems {\em master} should be avoided and also
-THE DIRECT OPTION IS NOT STRICTLY PORTABLE, and so may
-cause problems on some machines.  {\em rp} is an
-optional specification, only applicable to {\em netcdf}
-method for opting the binary precision for real numbers.
-It only takes {\em 32bit} or {\em amber} for 32-bit
-(float) precision, otherwise 64-bit (double) precision
-is defaulted.  {\em type} controls the ordering of the
-particles on output.  Possible values are {\em sort}ed
-and {\em unsort}ed.  {\em sort}ed ensures that the
-ordering of the particles the default - sequential,
-ascending.  Whereas {\em unsort}ed uses the natural internal
-ordering of \D which changes during the simulation.
-The recommended and default value is {\em sort}ed.  If none
-is specified \D defaultes to the {\em sort}ed type of I/O.
-It should be noted that the overhead of the {\em sort}ed
-otion compared to the {\em unsort}ed is usually very small.
-Available options depend on which method is to be used, and
-all are optional in each case.  Where numerical values are
-to be supplied specifying 0 or a negative numbers
-indicates that \D will resort to the default value.
-The possible options are:
-
-\begin{itemize}
-\item {\bf io writ}e {\bf mpiio$|$direct$|$netcdf [rp] sort$|$unsort [$j$ [$k$ [$l$ [$e$]]]]}
-
-$j$ specifies the number of processors that shall access
-the disk.  $k$ specifies the maximum number of particles
-that the writing processors shall deal with at any one time.
-Large values give good performance, but may results in an
-unacceptable memory overhead.  $l$ specifies the maximum
-number of particles that the writing processors shall
-write to the disk in one I/O transaction.  Large values
-give good performance, but may results in an unacceptable
-memory overhead.  $e$ accepts $Y$es only to switch global
-error checking performed by the I/O subsystem, the default
-is $N$o.
-
-\item {\bf io write master sort$|$unsort [$l$]}
-
-$l$ specifies the maximum number of particles that the
-writing process shall write to the disk in one I/O
-transaction.  Large values give good performance, but may
-results in an unacceptable memory overhead.
-\end{itemize}
-\end{enumerate}
-
-\item The {\bf no vom} option will trigger a default bypass of
-the {\sc getvom} routine which will return zero and thus no COM
-removal will happen.  {\bf Note that this will lead to COM momentum
-accumulation for many though not all ensembles!}.  Such accumulation
-will propagate to the generation of flow in the MD cell and ultimately
-suppress the thermal motion of the particles in the system, leading to
-the so called "frozen ice cube effect"!  It is worth nothing that this
-option must be turned on for the correct application of stochastic
-dynamics via the langevin temperature control (NVT Langevin)!  If
-the option is not applied then the dynamics will lead to peculiar
-thermalisation of different atomic species to mass- and system
-size-dependent temperatures.
-
-\item The {\bf replay force} option will attempt to open a renamed
-HISTORY as HISTORF and instead following any integration scheme specified
-in CONTROL read the positions as integration outcomes and proceed with
-the usual MD cycle.  There are a couple of restrictions that may lead to
-failures of this feature's application.
-\begin{itemize}
-\item The CONFIG file at (re)start must be the same as the frame
-in HISTORF that CONTROL (REVOLD) attempts to (re)start from.
-
-\item If any two HISTORF consecutive frames are too far apart in
-time from each other then domain information reallocation follow-up
-may break when the feature is used in parallel.
-\end{itemize}
-
-\item The {\bf rpad} ($\equiv$ {\bf pad}) option will add extra distance,
-$r_{\rm pad}$, if larger than $f \ge {\rm Min}[0.05,0.5\%.r_{\rm cut}]$~\AA,
-to the major cutoff, $r_{\rm cut}$, to construct a larger link-cell width,
-$r_{\rm lnk}=r_{\rm cut}+r_{\rm pad}$, which will trigger a construction of
-a larger Verlet neighbour list (VNL) while at the same time facilitate its
-conditional update, rather at every timestpe.  The VNL conditaional update
-is check at the end of each tiemstep and triggered only when the most
-travelled particle has moved a distance larger than $r_{\rm pad}/2$.  It is
-worth noting that padding is at expense of extra memory but if used wisely
-it could improve time to solution from 10\% to 100\% depending on force-field
-complexity.  If it is too large or too small (that is why the
-$f \ge {\rm Min}[0.05,0.5\%.r_{\rm cut}]$~\AA~limit) it will lead to
-performace degradation.  It is recomended that $r_{\rm pad}$ is set up at a
-value of $\approx 1 \div 5\%$ of the cutoff, $r_{\rm cut}$, as long as the
-major link-cell algorithm uses a link-cell decomposition that not worse than
-$4 \otimes 4 \otimes 4$ per domain.  For such setups, in practice, one
-may expect average compute speedups \footnote{I.e.~I/O effects are excluded
-from comparison with a default simulation and comparisons are carried over
-a few hundreds of timesteps.  This is usually accounting for over $90\%$ of
-the time to solution.} of the order of $10 \div 30\%$ for force-fields
-involving the Ewald summation methodology and $60 \div 100\%$ for force-fields
-without electrostatics evaluations involving the Ewald summation methodology.
-
-\item The {\bf subcell} option will set the threshold density of particles
-per link cell below which subcelling (decreasing link-cell size) stops.  The
-default is 50 although experimenting with values between 10 and 100 may
-provide sufficient information about a performance sweetspot.  The comparison
-condition is carried out on the average density per sub-link cell of each
-domain.  Thus subcelling takes into account only the per domain density
-variation.  Obviously, the subcelling threshhold is limited to 1 particle per
-cell for the sake of safety and sanity reasons.
-
-\item The {\bf exclu}de option will make sure that for all {\em conventional}
-(no distance restraints) intra-molecular interactions (bonds, angles,
-digedrals, inversions) as well as for CB and RB units any intra-core-shell
-interactions fall within the list of excluded interactions.  This is not
-a default behaviour.  The option is also triggered by the {\bf polar}isation
-option.
-
-\item The various {\bf ttm} options all have the effect of switching on the
-\index{Two-Temperature Model}two-temperature model (TTM), which assumes
-the use of the \index{ensemble!Inhomogeneous Langevin NVT}inhomogeneous
-Langevin NVT ensemble. It is not possible to specify any other ensemble
-for TTM-based systems, so the inhomogeneous Langevin NVT ensemble will
-always be used in this case, with default values for the friction terms and cut-off
-velocity if these are not specified. No implementation of the inhomogeneous
-Langevin ensemble currently exists for rigid bodies. To model metallic systems,
-the thermal conductivity must be specified either as infinitely large, a constant
-value, a linear function of electronic temperature (based on the Drude model)
-or as a tabulated function of temperature, while non-metallic systems require
-a constant thermal diffusivity. Any energy deposition is applied after equilibration.
-An additional restart file, DUMP\_E, consisting of electronic temperatures for
-each electronic temperature cell (CET), is produced along with REVCON and
-REVIVE when TTM is switched on.
+\item The various {\bf ttm} options all have the effect of switching on the \index{Two-Temperature Model}two-temperature model (TTM), which assumes the use of the inhomogeneous Langevin NVT ensemble. It is not possible to specify any other ensemble for TTM-based systems, so the inhomogeneous Langevin NVT ensemble will always be used in this case, with default values for the friction terms and cut-off velocity if these are not specified. No implementation of the inhomogeneous Langevin ensemble currently exists for rigid bodies. To model metallic systems, the thermal conductivity must be specified either as infinitely large, a constant value, a linear function of electronic temperature (based on the Drude model) or as a tabulated function of temperature, while non-metallic systems require a constant thermal diffusivity. Any energy deposition is applied after equilibration. An additional restart file, DUMP\_E, consisting of electronic temperatures for each electronic temperature cell (CET), is produced along with REVCON and REVIVE when TTM is switched on.
 
 \end{enumerate}
 
-\noindent Users are advised to study the example CONTROL files
-appearing in the {\em data} sub-directory to see how different
-files are constructed.
+\noindent Users are advised to study the example CONTROL files appearing in the {\em data} sub-directory to see how different files are constructed.
 
 \subsection{The CONFIG File}
 \label{config-file}
@@ -4103,11 +2557,11 @@ $evbtypemols$  & indicates how many of the first type-of-molecules specified in 
 $evbcoupl$     & specifies the information for coupling parameters. Since $C_{mk}=C_{km}$ only $N_F(N_F-1)/2$ of these lines are needed. If the specification for any pair is repeated the simulation is stopped. The syntax for the specification is as follows, depending if one sets a coupling term to be a constant ($const$) or use the Gaussian functional form ($gauss$) of Eqn. (\ref{eq:coupl}) :\newline\newline
                     \begin{tabular}{p{0.1\textwidth}p{0.06\textwidth}p{0.06\textwidth}p{0.1\textwidth}p{0.1\textwidth}p{0.1\textwidth}p{0.1\textwidth}p{0.1\textwidth}}
                                             &\multicolumn{2}{l}{FF Pair}&   Type   & \multicolumn{4}{l}{   Parameters (in units of the FIELD file)  }\\
-                      $evbcoul$        &     $m$     &       $k$     & $const$ &   $\mathcal{A}_{1,mk}$  &   &  &   \\ 
-                      $evbcoul$        &     $m$     &       $k$     & $gauss$ &  $\mathcal{A}_{1,mk}$  &  $\mathcal{A}_{2,mk}$ & $\mathcal{A}_{3,mk}$ &  $\mathcal{A}_{4,mk}$ \\ 
+                      $evbcoul$        &     $m$     &       $k$     & $const$ &   $\mathcal{A}_{1,mk}$  &   &  &   \\
+                      $evbcoul$        &     $m$     &       $k$     & $gauss$ &  $\mathcal{A}_{1,mk}$  &  $\mathcal{A}_{2,mk}$ & $\mathcal{A}_{3,mk}$ &  $\mathcal{A}_{4,mk}$ \\
                        \end{tabular}\newline\newline
                      Execution will stop if either:\newline
-                     $\bullet$ evbcoul is misspelled.\newline 
+                     $\bullet$ evbcoul is misspelled.\newline
                      $\bullet$ If $m=k$, $m,k < 1$ or $m,k > N_F$.\newline
                      $\bullet$ Input type different from $const$ or $gauss$, misspelling including.  \newline
                      $\bullet$ missing $\mathcal{A}_{mk}$ parameters.\newline
@@ -4118,10 +2572,10 @@ $evbcoupl$     & specifies the information for coupling parameters. Since $C_{mk
 $evbshift$     & specifies the energy shift for a given FF. The syntax for this is specification as follows:\newline\newline
                     \begin{tabular}{p{0.1\textwidth}p{0.1\textwidth}p{0.5\textwidth}}
                                             &      FF           &   $\Delta E^{(m)}_{shift}$ (in units of the FIELD file)\\
-                      $evbshift$        &     $m$         &   value (either positive or negative)  \\ 
+                      $evbshift$        &     $m$         &   value (either positive or negative)  \\
                      \end{tabular}\newline\newline
                      Execution will stop if either:\newline
-                     $\bullet$ evbshift is misspelled.\newline 
+                     $\bullet$ evbshift is misspelled.\newline
                      $\bullet$ If $m < 1$ or $m> N_F$.\newline
                      $\bullet$ missing $\Delta E^{(m)}_{shift}$ parameters.\newline
                      $\bullet$ the specification for a given FF is repeated.\newline
@@ -4133,4 +2587,3 @@ $evbpop$       & If present, the POPEVB file is written (see Section \ref{sec:ev
 \end{longtable}
 \label{table:setevb}
 \end{table}
-

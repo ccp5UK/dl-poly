@@ -965,7 +965,17 @@ contains
     if (coords%coordon) then
       call params%retrieve('coord_start', coords%coordstart)
       call params%retrieve('coord_interval', coords%coordinterval)
-      call params%retrieve('coord_ops', coords%coordops)
+      call params%retrieve('coord_ops', option)
+      Select Case (option)
+      Case ("icoord")
+        coords%coordops = 0
+      Case ("ccoord")
+        coords%coordops = 1
+      Case ("full")
+        coords%coordops = 2
+      Case Default
+        call bad_option("coord_ops", option)
+      end Select
 
     else if (params%is_any_set([Character(14) :: 'coord_start', 'coord_interval', 'coord_ops'])) then
       Call warning('coord_start, coord_interval or coord_ops found without coord_calculate')
@@ -1059,7 +1069,6 @@ contains
     call params%retrieve('ttm_num_ion_cells', ttm%ntsys(3))
     call params%retrieve('ttm_num_elec_cells', ttm%eltsys)
     call params%retrieve('ttm_metal', ttm%ismetal)
-    call params%retrieve('ttm_dens_model', option)
 
     call params%retrieve('ttm_heat_cap_model', option)
     select case (option)
@@ -1086,6 +1095,7 @@ contains
       call bad_option('ttm_heat_cap_model', option)
     end select
 
+    call params%retrieve('ttm_dens_model', option)
     select case (option)
     case ('constant')
       ttm%ttmdyndens = .false.
@@ -1369,7 +1379,7 @@ contains
     test = convert_units(1.0_wp, out_units%emf, internal_units%emf)
 
     ! Initialise timestep unit
-    call params%retrieve('timestep', test, .true.)
+    call params%retrieve('timestep', test, required = .true.)
     call set_timestep(test)
 
     call set_out_units(out_units)
@@ -1470,7 +1480,7 @@ contains
 
     ! ---------------- CUTOFF --------------------------------------------------
 
-    call params%retrieve('cutoff', neigh%cutoff)
+    call params%retrieve('cutoff', neigh%cutoff, required = .true.)
     if (neigh%cutoff < minimum_rcut) then
       neigh%cutoff = minimum_rcut
       call warning('neighbour cutoff less than minimum_cutoff (1.0 Ang), setting to minimum_cutoff', .true.)
@@ -1711,7 +1721,7 @@ contains
 
     Logical :: ltmp
 
-    CAll params%retrieve('timestep', thermo%tstep)
+    CAll params%retrieve('timestep', thermo%tstep, required = .true.)
     if (thermo%tstep < zero_plus) call error(0, 'Timestep too small')
     call params%retrieve('timestep_variable', thermo%lvar)
 
@@ -1973,6 +1983,11 @@ contains
       impa%vmy = vtmp(2)
       impa%vmz = vtmp(3)
     end if
+
+    ! --------------- PER-PARTICLE ---------------------------------------------
+
+    call params%retrieve('heat_flux', flow%heat_flux)
+    Call params%retrieve('write_per_particle', flow%write_per_particle)
 
     ! --------------- EXPANSION ------------------------------------------------
 
@@ -2453,6 +2468,8 @@ contains
     end if
 
     if (stats%cur%on) Call info("  Computing currents: ON", .true.)
+    if (flow%heat_flux) Call info("  Computing heat flux: ON", .true.)
+    if (flow%write_per_particle) Call info("  Per-particle info: ON", .true.)
 
     select case (flow%restart_key)
     case (RESTART_KEY_SCALE)
@@ -3134,7 +3151,7 @@ contains
            key = "simulation_method", &
            name = "Simulation Method ", &
            val = "md", &
-           description = "Set trajectory output, options: MD, EVB, FFS", &
+           description = "Set simulation method, options: MD, EVB, FFS", &
            data_type = DATA_OPTION))
 
       call table%set("random_seed", control_parameter( &
@@ -3159,14 +3176,14 @@ contains
            val = "1000", &
            units = "steps", &
            internal_units = "steps", &
-           description = "Set data dumping frequency", &
+           description = "Set data dumping frequency for restarts", &
            data_type = DATA_FLOAT))
 
       call table%set("subcell_threshold", control_parameter( &
            key = "subcell_threshold", &
            name = "Subcelling threshold density", &
            val = "50.0", &
-           description = "Set subcelling threshold density", &
+           description = "Set subcelling threshold density for setting minimum particles per link-cell", &
            data_type = DATA_FLOAT))
 
       run_times: block
@@ -3176,7 +3193,7 @@ contains
              val = "0", &
              units = "steps", &
              internal_units = "steps", &
-             description = "Set calculation run length", &
+             description = "Set duration of simulation (inc. equilibration)", &
              data_type = DATA_FLOAT))
 
         call table%set("time_equilibration", control_parameter( &
@@ -3185,7 +3202,7 @@ contains
              val = "0", &
              units = "steps", &
              internal_units = "steps", &
-             description = "Set equilibration run length", &
+             description = "Set equilibration duration", &
              data_type = DATA_FLOAT))
 
         call table%set("time_job", control_parameter( &
@@ -3214,7 +3231,7 @@ contains
              val = "0", &
              units = "steps", &
              internal_units = "steps", &
-             description = "Set frequency of stats sampling", &
+             description = "Set frequency of stats sampling to statis file", &
              data_type = DATA_FLOAT))
 
         call table%set("stack_size", control_parameter( &
@@ -3230,7 +3247,7 @@ contains
              key = "record_equilibration", &
              name = "Record equilibration", &
              val = "off", &
-             description = "Include equilibration in outputs", &
+             description = "Include equilibration in output", &
              data_type = DATA_BOOL))
 
         call table%set("print_per_particle_contrib", control_parameter( &
@@ -3280,7 +3297,7 @@ contains
                key = "analyse_inversions", &
                name = "Analyse inversions", &
                val = "off", &
-               description = "Enable analysis inversions", &
+               description = "Enable analysis for all inversions", &
                data_type = DATA_BOOL))
 
           call table%set("analyse_frequency", control_parameter( &
@@ -3289,7 +3306,7 @@ contains
                val = "1", &
                units = "steps", &
                internal_units = "steps", &
-               description = "Set frequency of analysis data", &
+               description = "Set global frequency of data analysis", &
                data_type = DATA_FLOAT))
 
           call table%set("analyse_frequency_bonds", control_parameter( &
@@ -3342,7 +3359,7 @@ contains
                key = "analyse_num_bins", &
                name = "Analysis number of bins", &
                val = "-1", &
-               description = "Set number of bins to be used in bonding analysis", &
+               description = "Set global number of bins to be used in bonding analysis", &
                data_type = DATA_INT))
 
           call table%set("analyse_num_bins_bonds", control_parameter( &
@@ -3474,7 +3491,7 @@ contains
                val = "0.75", &
                units = "ang", &
                internal_units = "internal_l", &
-               description = "Set defects condition", &
+               description = "Set cutoff for deviation to be considered by defects as interstitial", &
                data_type = DATA_FLOAT))
 
           call table%set("defects_backup", control_parameter( &
@@ -3518,7 +3535,7 @@ contains
                val = "0.75", &
                units = "ang", &
                internal_units = "internal_l", &
-               description = "Set displacements condition", &
+               description = "Set cutoff for qualifying as displacement", &
                data_type = DATA_FLOAT))
 
         end block displacements
@@ -3528,23 +3545,25 @@ contains
                key = "coord_calculate", &
                name = "Coordination calculating", &
                val = "off", &
-               description = "Enable calculation of Coordination", &
+               description = "Enable calculation of coordination", &
                data_type = DATA_BOOL))
 
           call table%set("coord_ops", control_parameter( &
                key = "coord_ops", &
                name = "Coord ops", &
-               val = "0", &
-               description = "Set Coordops", &
-               data_type = DATA_INT))
+               val = "icoord", &
+               description = "Set Coordops, options: icoord: only dumps the coordination of each atom at i; "//&
+               "CCOORD: only dumps coordination of each atom at i; "//&
+               "FULL: dumps the coordination of each atom every j steps", &
+               data_type = DATA_OPTION))
 
           call table%set("coord_start", control_parameter( &
                key = "coord_start", &
-               name = "Coordination Start calculating", &
+               name = "Coordination start calculating", &
                val = "0", &
                units = "steps", &
                internal_units = "steps", &
-               description = "Start timestep for dumping Coordination configurations", &
+               description = "Start timestep for dumping coordination configurations", &
                data_type = DATA_FLOAT))
 
           call table%set("coord_interval", control_parameter( &
@@ -3553,7 +3572,7 @@ contains
                val = "100", &
                units = "steps", &
                internal_units = "steps", &
-               description = "Interval between dumping Coordination configurations", &
+               description = "Interval between dumping coordination configurations", &
                data_type = DATA_FLOAT))
         end block coord
 
@@ -3562,7 +3581,7 @@ contains
                key = "adf_calculate", &
                name = "ADF calculating", &
                val = "off", &
-               description = "Enable calculation of Adf", &
+               description = "Enable calculation of ADF", &
                data_type = DATA_BOOL))
 
           call table%set("adf_frequency", control_parameter( &
@@ -3571,14 +3590,14 @@ contains
                val = "100", &
                units = "steps", &
                internal_units = "steps", &
-               description = "Set frequency of Adf sampling", &
+               description = "Set frequency of ADF sampling", &
                data_type = DATA_FLOAT))
 
           call table%set("adf_precision", control_parameter( &
                key = "adf_precision", &
                name = "ADF Precision", &
                val = "0.0", &
-               description = "Set precision in Adf analysis", &
+               description = "Set precision of angular distribution bins in ADF analysis", &
                data_type = DATA_FLOAT))
         end block adf
 
@@ -3633,16 +3652,16 @@ contains
         zden: block
           call table%set("zden_calculate", control_parameter( &
                key = "zden_calculate", &
-               name = "Zden calculating", &
+               name = "ZDen calculating", &
                val = "off", &
-               description = "Enable calculation of Zden", &
+               description = "Enable calculation of ZDen", &
                data_type = DATA_BOOL))
 
           call table%set("zden_print", control_parameter( &
                key = "zden_print", &
-               name = "Zden printing", &
+               name = "ZDen printing", &
                val = "on", &
-               description = "Enable printing of Zden", &
+               description = "Enable printing of ZDen", &
                data_type = DATA_BOOL))
 
           call table%set("zden_frequency", control_parameter( &
@@ -3713,6 +3732,24 @@ contains
 
       end block statistics
 
+      call table%set("heat_flux", control_parameter( &
+             key = "heat_flux", &
+             name = "Calculate heat flux", &
+             val = "off", &
+             description = "Enable calculation of heat flux", &
+             data_type = DATA_BOOL))
+
+        call table%set("write_per_particle", control_parameter( &
+             key = "write_per_particle", &
+             name = "Dump per-particle interaction information to file", &
+             val = "off", &
+             description = "Enable dumping of per-particle information", &
+             data_type = DATA_BOOL))
+      per_particle:block
+
+      end block per_particle
+
+
     end block run_properties
 
     io: block
@@ -3722,7 +3759,7 @@ contains
            val = "0", &
            units = "steps", &
            internal_units = "steps", &
-           description = "Set frequency of results sampling", &
+           description = "Set frequency of printing results to output", &
            data_type = DATA_FLOAT))
 
       units: block
@@ -3730,84 +3767,84 @@ contains
              key = "io_units_scheme", &
              name = "I/O units scheme", &
              val = "internal", &
-             description = "Set I/O units scheme, options: internal, si, atomic", &
+             description = "Set I/O units scheme, options: internal, si, atomic (*unused*)", &
              data_type = DATA_OPTION))
 
         call table%set("io_units_length", control_parameter( &
              key = "io_units_length", &
              name = "I/O units length", &
              val = "internal_l", &
-             description = "Set I/O units for length", &
+             description = "Set I/O units for length (*unused*)", &
              data_type = DATA_OPTION))
 
         call table%set("io_units_time", control_parameter( &
              key = "io_units_time", &
              name = "I/O units time", &
              val = "internal_t", &
-             description = "Set I/O units for time", &
+             description = "Set I/O units for time (*unused*)", &
              data_type = DATA_OPTION))
 
         call table%set("io_units_mass", control_parameter( &
              key = "io_units_mass", &
              name = "I/O units mass", &
              val = "internal_m", &
-             description = "Set I/O units for mass", &
+             description = "Set I/O units for mass (*unused*)", &
              data_type = DATA_OPTION))
 
         call table%set("io_units_charge", control_parameter( &
              key = "io_units_charge", &
              name = "I/O units charge", &
              val = "internal_q", &
-             description = "Set I/O units for charge", &
+             description = "Set I/O units for charge (*unused*)", &
              data_type = DATA_OPTION))
 
         call table%set("io_units_energy", control_parameter( &
              key = "io_units_energy", &
              name = "I/O units energy", &
              val = "internal_e", &
-             description = "Set I/O units for energy", &
+             description = "Set I/O units for energy (*unused*)", &
              data_type = DATA_OPTION))
 
         call table%set("io_units_pressure", control_parameter( &
              key = "io_units_pressure", &
              name = "I/O units pressure", &
              val = "internal_p", &
-             description = "Set I/O units for pressure", &
+             description = "Set I/O units for pressure (*unused*)", &
              data_type = DATA_OPTION))
 
         call table%set("io_units_force", control_parameter( &
              key = "io_units_force", &
              name = "I/O units force", &
              val = "internal_f", &
-             description = "Set I/O units for force", &
+             description = "Set I/O units for force (*unused*)", &
              data_type = DATA_OPTION))
 
         call table%set("io_units_velocity", control_parameter( &
              key = "io_units_velocity", &
              name = "I/O units velocity", &
              val = "internal_v", &
-             description = "Set I/O units for velocity", &
+             description = "Set I/O units for velocity (*unused*)", &
              data_type = DATA_OPTION))
 
         call table%set("io_units_power", control_parameter( &
              key = "io_units_power", &
              name = "I/O units power", &
              val = "internal_e/internal_t", &
-             description = "Set I/O units for power", &
+             description = "Set I/O units for power (*unused*)", &
              data_type = DATA_OPTION))
 
         call table%set("io_units_surface_tension", control_parameter( &
              key = "io_units_surface_tension", &
              name = "I/O units surface tension", &
              val = "internal_f/internal_l", &
-             description = "Set I/O units for surface tension", &
+             description = "Set I/O units for surface tension (*unused*)", &
              data_type = DATA_OPTION))
 
         call table%set("io_units_emf", control_parameter( &
              key = "io_units_emf", &
              name = "I/O units emf", &
              val = "internal_e/internal_q", &
-             description = "Set I/O units for electromotive force", &
+             description = "Set I/O units for electromotive force (*unused*)", &
              data_type = DATA_OPTION))
 
       end block units
@@ -4078,14 +4115,14 @@ contains
            key = "timer_depth", &
            name = "Timer print level", &
            val = "4", &
-           description = "Do not display timers beyond so this depth", &
+           description = "Do not display timers beyond this many levels in final timer output", &
            data_type = DATA_INT))
 
       call table%set("timer_per_mpi", control_parameter( &
            key = "timer_per_mpi", &
            name = "Per Process timing", &
            val = "off", &
-           description = "Time each MPI process individually", &
+           description = "Write timings for each MPI process individually", &
            data_type = DATA_BOOL))
 
     end block io
@@ -4779,7 +4816,7 @@ contains
              val = "-1.0", &
              units = "ang", &
              internal_units = "internal_l", &
-             description = "Set minimisation tolerance, units: unknown", &
+             description = "Set minimisation tolerance", &
              data_type = DATA_FLOAT))
 
         call table%set("minimisation_frequency", control_parameter( &
@@ -5022,9 +5059,9 @@ contains
       call table%set("plumed_precision", control_parameter( &
            key = "plumed_precision", &
            name = "Plumed precision", &
-           val = "1.0", &
-           description = "Set plumed precision", &
-           data_type = DATA_FLOAT))
+           val = "8", &
+           description = "Set plumed numerical precision (4=single, 8=double)", &
+           data_type = DATA_INT))
 
       call table%set("plumed_restart", control_parameter( &
            key = "plumed_restart", &
