@@ -1,0 +1,370 @@
+\section{Introduction}
+As of DLPOLY 4.11, there is a new refactored form of control (henceforth new-style). The primary motivation behind this change is an overall improvement in consistency of keywords for the purpose of allowing easier automation of DLPOLY jobs. The revisions confer several additional benefits, however, for both users and developers. These include, but are not limited to:
+
+\begin{itemize}
+  \item{}More easily extensible hash-table based control
+  \item{}New control parameter allows definition of defaults, internal units and a description
+  \item{}Searchable keyword help for keyword description
+  \item{}Consistent ``keyword value unit'' scheme for all keywords
+  \item{}Automated and generalised unit parsing and conversion scheme
+  \item{}More standardised naming scheme
+  \item{}Only reads control file once in one location
+  \item{}Decomposed reading routines for easier handling and addition of new parameters
+  \item{}Writing routines for parameters independent of reading
+  \item{}Warnings during reading are directed to the top of output file
+  \item{}Restructured indentation-based parameter output for easier parsing
+\end{itemize}
+
+The standard form of the new control is that of:
+\begin{verbatim}
+keyword value [unit]
+\end{verbatim}
+All new-style control parameters are of this form.
+
+Values are \textbf{required} if a keyword is present.
+Units are \textbf{required} for non-dimensionless data.
+
+\subsection{Keywords}
+Keywords in new-style control only have one value and attempt to only affect one thing, this means that what, in old-style, might be a single keyword will be subdivided into multiple parameters in new-style. An example of this is the ensemble parameter, which previously might be rendered as:
+
+\begin{verbatim}
+ensemble nvt hoover 1.0
+\end{verbatim}
+
+will, in new-style, be rendered:
+
+\begin{verbatim}
+ensemble nvt
+ensemble_method hoover
+ensemble_thermostat_coupling 1.0 ps
+\end{verbatim}
+
+\subsection{Value types}
+New-style control divides control parameters into distinct classes of parameters depending on how they should be handled by the parser. These are int, float, bool, string, option and vector (3,6), however, these are easily extensible and in future more may be added by developers.
+\subsubsection{Int}
+These values, identified by the \verb#DATA_INT# enumeration, are simple integer values. There is also a special case for unit-converted integer values for steps values (see: \S\ref{new_control:units}).
+
+\begin{verbatim}
+vaf_binsize 21
+\end{verbatim}
+
+\subsubsection{Floats}
+These values, identified by the \verb#DATA_FLOAT# enumeration, are generally dimensioned real data and will be converted between input and internal units when read.
+
+\begin{verbatim}
+analyse_max_dist 2.0 ang
+\end{verbatim}
+
+\subsubsection{Vector}
+These values, identified by the \verb#DATA_VECTOR3# or \verb#DATA_VECTOR6# enumerations, are connected sets of data which may be either floats or ints
+
+\begin{verbatim}
+pressure_tensor [ 1.0 2.0 3.0 4.0 5.0 6.0 ] GPa
+ewald_kvec [ 32 64 32 ]
+\end{verbatim}
+
+\subsubsection{Bool}
+These values, identified by the \verb#DATA_BOOL# enumeration, are binary options which are set by ``On'' or ``Off''
+
+\begin{verbatim}
+vdw_force_shift ON
+\end{verbatim}
+
+\subsubsection{String}
+These values, identified by the \verb#DATA_STRING# enumeration, are arbitrary strings of characters usually used for setting filepaths, however, they may have special options such as \verb#SCREEN# or \verb#NONE# to specify override their function.
+
+\begin{verbatim}
+io_file_config CONTROL.new
+io_file_output SCREEN
+\end{verbatim}
+
+\subsubsection{Option}
+These values, identified by the \verb#DATA_OPTION# enumeration, would otherwise be indistinguishable from strings, however, they are differentiated by the fact that there are number of expected values to switch between.
+
+\begin{verbatim}
+coul_method dddp
+\end{verbatim}
+
+\subsection{Units}\label{new_control:units}
+The automatic units conversion allows the user to enter any dimensionally correct physical unit as input to allow ease and complete flexibility. Units can be entered in a natural manner with decimal prefixes.
+
+Units are \textbf{case insensitive}, however decimal prefixes are \textbf{case sensitive}.
+
+Units can be combined using a full stop (period) [\verb#.#] for product or slash [\verb#/#] for quotients or raised to an exponent with a caret [\verb#^#]
+\begin{verbatim}
+2.0 e.V
+1.0 m/s
+3.0 ang^3
+\end{verbatim}
+for 2 electron-volts, 1 metre per second \& 3 cubic \AA{}ngstr\"oms respectively.
+
+Decimal prefixes are applied directly to the unit they affect.
+\begin{verbatim}
+2.0 GPa
+3.0 ang/ps
+\end{verbatim}
+for 2 Gigapascals \& 3 \AA{}ngstr\"oms per picosecond respectively.
+
+The special unit ``steps'' is derived from the timestep parameter and will be automatically converted to/from to allow consistent run-lengths.
+\begin{verbatim}
+timestep 2.0 fs
+time_run 30 steps
+time_run 60.0 fs
+\end{verbatim}
+will mean the calculation will perform 30 steps of 2 fs (60fs) and alternatively 60fs regardless of the timestep.
+
+\section{Adding new keywords}
+
+New keywords should be added to the parameters hash in \verb#initialise_control# in the style:
+\begin{verbatim}
+call table%set("<keyword>", control_parameter( &
+     key = "<keyword>", &
+     name = "<human-readable-full-name>", &
+     val = "<default-value>", &
+     units = "<units-of-default>", &
+     internal_units = "<units-to-use-internally>", &
+     description = "<description-for-help>", &
+     data_type = <data-type>))
+\end{verbatim}
+where values in \verb#<># are to be filled in, and \verb#data-type# is one of \verb#DATA_INT#, \verb#DATA_FLOAT#, \verb#DATA_STRING#, \verb#DATA_BOOL#, \verb#DATA_OPTION#, \verb#DATA_VECTOR3#, \verb#DATA_VECTOR6# and other relevant data is filled in.
+
+If your data is unitless, you can remove the \verb#units# and \verb#internal_units# entries and they will default to unitless.
+
+Keywords to be parsed in \verb#initialise_control# are grouped into named blocks for ease of maintaining these, ensure your keyword is appropriately grouped either into one of these or its own relevant block.
+
+Once the data exists in the parameters table (through \verb#initialise_control#) it is ready to be read in and searched for through the help functions.
+
+The next step is to retrieve the parsed keyword, there are various functions to subdivide reading to increase maintainability and reduce argument lists to workable levels. Within an appropriate read function, call the following function:
+\begin{verbatim}
+call params%retrieve("<keyword>", <storage>)
+\end{verbatim}
+where \verb#<storage># is the variable (of an appropriate type) to store the data. Any necessary unit or data conversion will be performed by the retrieval automatically. If the keyword is not present in control, it will default to ``<default-value> <default-units>'' as specified in the table entry.
+
+\textbf{Note:} Only floats, vectors and ints in units of steps will act upon units.
+
+Following this, the information should be added to the write function corresponding to the read function for ease of maintainability. It should be noted that written data should be appropriately indented.
+
+\textbf{Note:} Should you be writing a lot of information, it may be best to hide the information printing behind the print level via:
+\begin{verbatim}
+Call info(message, .true., level=N)
+\end{verbatim}
+where higher N requires the \verb#print_level# variable to be a higher value (default=2).
+
+\section{Going from old to new}
+For most cases to go from old to new, it should be a simple case of using the dlpoly-py tool (Available from: \url{https://gitlab.com/drFaustroll/dlpoly-py/}) and using the \verb#old2new# tool in the tools directory through:
+\begin{verbatim}
+<path-to-old2new>/old2new.py CONTROL
+\end{verbatim}
+which will create/overwrite \verb#CONTROL.new#.
+
+
+\begin{tabbing}
+X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
+\>    Old Keyword \> New Keyword(s) \\\\
+\>    first line (taken to be title) \> title \\\\
+\>    {\bf l\_scr} \> io\_file\_output SCREEN \\\\
+\>    {\bf l\_tor} \> io\_file\_revcon NONE \\
+\> \> io\_file\_revive NONE \\\\
+\>    {\bf l\_eng} \> output\_energy ON \\\\
+\>    {\bf l\_rout} \> io\_write\_ascii\_revive ON \\\\
+\>    {\bf l\_rin} \> io\_read\_ascii\_revive ON \\\\
+\>    {\bf l\_print} \> print\_level \\\\
+\>    {\bf l\_dis} \> initial\_minimum\_separation \\\\
+\>    {\bf l\_fast} \> unsafe\_comms ON  \\\\
+\>    {\bf adf} $i~j$ \> adf\_calculate ON \\
+\> \> adf\_frequency $i$ steps \\
+\> \> adf\_precision $j$ \\    \\
+\>    {\bf ana}lyse {\bf all} (sampling) (every) $f$ {\bf nbins} $n$ {\bf rmax} $r$ \\
+\> \> analyse\_all ON \\
+\> \> analyse\_frequency $f$ steps \\
+\> \> analyse\_max\_dist $r$ ang \\
+\> \> analayse\_num\_bins $n$ \\\\
+\>    {\bf ana} ({\bf bon} $|$ {\bf ang} $|$ {\bf dih} $|$ {\bf inv})  (sampling) (every) $f$ {\bf nbins} $n$ \\
+\> \> analyse\_(bonds$|$angles$|$dihedrals$|$inversion) ON \\
+\> \> analyse\_frequency\_(bonds$|$angles$|$dihedrals$|$inversion) $f$ steps \\
+\> \> analyse\_num\_bins\_(bonds$|$angles$|$dihedrals$|$inversion) $n$ \\\\
+\>    {\bf binsize} $f$ \> rdf\_binsize $f$ ang \\
+\> \> zden\_binsize $f$ ang \\\\
+\>    {\bf cap} (forces) $f$  \> equilibration\_force\_cap $f$ k\_B.temp/ang \\\\
+\>    {\bf close time} $f$ \> time\_close $f$ s \\\\
+\>    {\bf job time} $f$ \> time\_job $f$ s \\
+\> \> {\bf Note: Defaults to 1e304} \\\\
+\>    {\bf coord} $i~j~f$ \> coord\_calculate ON \\
+\> \> coord\_ops (icoord$|$ccoord$|$full) \\
+\> \> coord\_start $j$ steps \\
+\> \> coord\_interval $f$ steps \\\\
+\>    {\bf collect} \> record\_equilibration \\\\
+\>    {\bf coul}$|${\bf distan}$|${\bf reaction}$|${\bf shift} \> coul\_method (dddp$|$pairwise$|$reaction\_field$|$force\_shifted) \\
+\>    {\bf shift} {\bf damp} $\alpha{}$ \> coul\_damping $\alpha{}$ 1/ang \\
+\>    {\bf reaction} {\bf damp} $\alpha{}$ \> \\
+\>    {\bf shift} {\bf precision} $f$ \> coul\_precision $f$  \\
+\>    {\bf reaction} {\bf precision} $f$ \> \\\\
+\>    {\bf cut}off $f$ ($\equiv$ {\bf rcut} $f$) \> cutoff $f$ ang \\\\
+\>    {\bf defe}cts $i~j~f$ \> defects\_calculate ON  \\
+\> \> defects\_start $j$ steps \\
+\> \> defects\_interval $f$ steps \\
+\> \> defects\_distance $f$ ang \\\\
+\>    {\bf delr} $f$  ($\equiv$ {\bf rpad} $4f$) \> removed (see: padding) \\\\
+\>    {\bf densvar} $f$ \> density\_variance $f$ \% \\\\
+\>    {\bf disp}lacements $i~j~f$ \> displacements\_calculate ON  \\
+\> \> displacements\_start $j$ steps \\
+\> \> displacements\_interval $f$ steps \\
+\> \> displacements\_distance $f$ ang \\\\
+\>    {\bf dump} $n$ \> data\_dump\_frequency $n$ steps \\\\
+\>    {\bf ensemble} ({\bf nve}$|${\bf nvt}$|${\bf npt}$|${\bf nst}) \> ensemble (nve$|$nvt$|$npt$|$nst) \\
+\>    {\bf evans} \> ensemble\_method evans \\
+\>    {\bf lang}evin $f$ \> ensemble\_method langevin \\
+\>    \> ensemble\_thermostat\_friction $f$ 1/ps \\
+\>    {\bf ander}sen $f_{1}~f_{2}$ \> ensemble\_method andersen \\
+\>    \> ensemble\_thermostat\_coupling $f_{1}$ ps \\
+\>    \> ensemble\_thermostat\_softness $f_{2}$ \\
+\>    {\bf ber}endsen $f$ \> ensemble\_method berendsen \\
+\>    \> ensemble\_thermostat\_coupling $f$ ps \\
+\>    {\bf hoover} $f$ \> ensemble\_method (hoover$|$nose$|$nose-hoover) \\
+\>    \> ensemble\_thermostat\_coupling $f$ ps \\
+\>    {\bf gst} $f_{1}~f_{2}$ \> ensemble\_method (gentle$|$gst) \\
+\>    \> ensemble\_thermostat\_coupling $f_{1}$ ps \\
+\>    \> ensemble\_thermostat\_friction $f_{2}$ 1/ps \\
+\>    {\bf ttm}$|${\bf inhomo} $f_{1}~f_{2}~f_{3}$ \> ensemble\_method ttm \\
+\>    \> ttm\_e-phonon\_friction   $f_{3}$ 1/ps \\
+\>    \> ttm\_e-stopping\_friction $f_{2}$ 1/ps \\
+\>    \> ttm\_e-stopping\_velocity $f_{3}$ ang/ps \\
+\>    {\bf dpd s1} $gamma$ \> ensemble\_method dpd \\
+\>    \> ensemble\_dpd\_order (1$|$first) \\
+\>    \> ensemble\_dpd\_drag $gamma$ Da/ps \\
+\>    {\bf dpd s2} $gamma$ \> ensemble\_method dpd \\
+\>    \> ensemble\_dpd\_order (2$|$second) \\
+\>    \> ensemble\_dpd\_drag $gamma$ Da/ps \\\\
+\>    {\bf eps}ilon $f$ \> coul\_dielectric\_constant $f$ \\\\
+\>    {\bf equil}ibration (steps) $f$ \> time\_equilibration $f$ steps \\\\
+\>    {\bf ewald precision} $f$ \> coul\_method ewald \\
+\> \> ewald\_precision $f$ \\\\
+\>    {\bf ewald} (sum) $\alpha~k_{1}~k_{2}~k_{3}$ \> coul\_method ewald \\
+\> \> ewald\_alpha $\alpha{}$ \\
+\> \> ewald\_kvec [ $k_{1}~k_{2}~k_{3}$ ] \\\\
+\>    {\bf exclu}de \> coul\_extended\_exclusion ON \\\\
+\>    {\bf finish} \> removed \\\\
+\>    {\bf heat\_flux} \> heat\_flux ON \\\\
+\>    {\bf impact} $i~j~~~E~~x~y~z$ \> impact\_part\_index $i$ \\
+\> \> impact\_time $j$ steps \\
+\> \> impact\_energy $E$ ke.V \\
+\> \> impact\_direction [ $x~y~z$ ] \\\\
+\>    {\bf nfold} $i~j~k$ \> nfold [ $i~j~k$ ] \\\\
+\>    {\bf no elec} \> coul\_method off \\\\
+\>    {\bf no ind}ex \> ignore\_config\_indices ON \\\\
+\>    {\bf no str}ict \> strict\_checks OFF \\\\
+\>    {\bf no top}ology \> print\_topology\_info OFF \\\\
+\>    {\bf no vafav}eraging \> vaf\_averaging OFF \\\\
+\>    {\bf no vdw} \> vdw\_method OFF \\\\
+\>    {\bf no vom} \> fixed\_com ON \\\\
+\>    {\bf metal direct} \> metal\_direct ON \\
+\>    {\bf metal sqrtrho} \> metal\_sqrtrho ON \\\\
+\>    {\bf minim}ise {\em string} $n$ $f$ $s$ \> minimisation\_criterion (off$|$force$|$energy$|$distance) \\
+\>    {\bf optim}ise {\em string}  $f$ $s$ \> minimisation\_frequency $n$ steps \\
+\> \> minimisation\_tolerance $f$ (internal\_f$|$internal\_e$|$ang) \\
+\> \> minimisation\_step\_length $s$ ang \\\\
+\>    {\bf msdtmp} $i~j$ \> msd\_calculate ON \\
+\> \> msd\_start $i$ steps \\
+\> \> msd\_interval $i$ steps \\\\
+\>    {\bf pad}ding $f$  ($\equiv$ {\bf rpad} $f$) \> padding $f$ ang \\\\
+\>    {\bf plumed} {\em string} (on$|$off)         \> plumed (ON$|$OFF) \\
+\>    {\bf plumed input} $<$$filename$$>$          \> plumed\_input $<$$filename$$>$ \\
+\>    {\bf plumed log} $<$$filename$$>$            \> plumed\_log $<$$filename$$>$ \\
+\>    {\bf plumed precision} $int$-$val$           \> plumed\_precision $int$-$val$ \\
+\>    {\bf plumed restart} {\em string} (yes$|$no) \> plumed\_restart (ON$|$OFF) \\\\
+\>    {\bf polar}isation {\em scheme/type} {\bf thole} $f$ \> \phantom{xxxx} polarisation\_model (charmm$|$default) \\
+\> \> polarisation\_thole $f$ \\\\
+\>    {\bf pres}sure $f$ \> pressure\_hydrostatic $f$ katm \\
+\>    {\bf pres}sure {\bf tensor} $xx~yy~zz~xy~xz~yz$ \> \phantom{xxxx} pressure\_tensor [ $xx~yy~zz~xy~xz~yz$ ] katm \\
+\> \> pressure\_perpendicular $xx~yy~zz$ katm \\\\
+\>    {\bf pp\_dump} \> write\_per\_particle ON \\\\
+\>    {\bf print} (every) $n$ \> print\_frequency $n$ steps \\\\
+\>    {\bf print ana}lysis \> removed \\
+\>    {\bf print rdf} \> rdf\_print ON \\\\
+\>    {\bf print vaf} \> vaf\_print ON \\\\
+\>    {\bf print zden} \> zden\_print ON \\\\
+\>    {\bf pseudo}  {\em string} $f_{1}~f_{2}$ \> pseudo\_thermostat\_method (off$|$langevin-direct$|$langevin$|$gaussian$|$direct) \\
+\> \> pseudo\_thermostat\_width $f_{1}$ ang \\
+\> \> pseudo\_thermostat\_temperature $f_{2}$ K \\\\
+\>    {\bf quater}nion (tolerance) $f$ \> removed \\\\
+\>    {\bf rdf} (sampling) (every) $f$ \> rdf\_frequency $f$ steps \\\\
+\>    {\bf regaus}s (every) $n$ \> regauss\_frequency $n$ steps \\\\
+\>    {\bf replay} (history) \> Now command line option \\\\
+\>    {\bf restart} ($|$noscale$|$scale) \> restart (clean$|$continue$|$rescale$|$noscale) \\\\
+\>    {\bf rlxtol} $f$ $s$ \> rlx\_tol $f$ internal\_f \\
+\> \> rlx\_cgm\_step $s$ ang \\\\
+\>    {\bf rvdw} (cutoff) $f$ \> vdw\_cutoff $f$ ang \\\\
+\>    {\bf scale} (temperature) (every) $f$ \> rescale\_frequency $f$ steps \\\\
+\>    {\bf seed} $n_{1}~n_{2}~n_{3}$ \> random\_seed [ $n_{1}~n_{2}~n_{3}$ ] \\\\
+\>    {\bf slab} \> removed \\\\
+\>    {\bf stack} (size) $n$ \> stack\_size $n$ steps \\\\
+\>    {\bf stats} (every) $n$ \> stats\_frequency $n$ steps \\\\
+\>    {\bf steps} $n$ \> time\_run $n$ steps \\\\
+\>    {\bf subcell}ing (threshold) (density) $f$ \> \phantom{xxxx} subcell\_threshold $f$ \\\\
+\>    {\bf temp}erature $f$ \> temperature $f$ K \\\\
+\>    {\bf traj}ectory $i~j~k$ \> traj\_calculate ON \\
+\> \> traj\_start $i$ steps \\
+\> \> traj\_interval $j$ steps \\
+\> \> traj\_key (pos$|$pos-vel$|$pos-vel-force$|$compressed) \\\\
+\>    {\bf ttm amin} $n$ \> ttm\_min\_atoms $n$ \\
+\>    {\bf ttm bcs} $Q$ \> ttm\_boundary\_condition (periodic$|$dirichlet$|$neumann$|$robin) \\
+\> \> ttm\_boundary\_xy (ON$|$OFF) \\
+\> \> ttm\_boundary\_heat\_flux $f$ \% \\
+\>    {\bf ttm ceconst} $f$ \> ttm\_heat\_cap\_model (constant$|$tanh$|$linear$|$tabulated) \\
+\>    {\bf ttm cetab} \> ttm\_heat\_cap $f|f_{1}$ internal\_e/amu/K \\
+\>    {\bf ttm celin} $f_{1}~f_{2}$ \> ttm\_fermi\_temp $f_{2}$ K \\
+\>    {\bf ttm cetanh} $f_{1}~f_{2}$ \> ttm\_temp\_term $f_{2}$ K\verb#^#-1 \\
+\>    {\bf ttm deconst}$|${\bf diff} $f$ \> ttm\_diff\_model (constant$|$reciprocal$|$tabulated) \\
+\>    {\bf ttm derecip} $f_{1}~f_{2}$ \> ttm\_diff $f|f_{1}$ m\verb#^#2/s \\
+\>    {\bf ttm detab} \> ttm\_fermi\_temp $f_{2}$ K \\
+\>    {\bf ttm dedx} $f$ \> ttm\_stopping\_power $f$ e.V/nm \\
+\>    {\bf ttm dyndens} \> ttm\_dens\_model (constant$|$dynamic) \\
+\>    {\bf ttm atomdens} $f$ \> ttm\_dens $f$ ang\verb#^#-3 \\
+\>    {\bf ttm keconst} $f$ \> ttm\_elec\_cond\_model (infinite$|$constant$|$drude$|$tabulated) \\
+\>    {\bf ttm kedrude} $f$ \> ttm\_elec\_cond $f$ W/m/K \\
+\>    {\bf ttm keinf} \> \\
+\>    {\bf ttm ketab} \> \\
+\>    {\bf ttm delta} \> ttm\_temporal\_dist delta \\
+\>    {\bf ttm pulse} $f$ \> ttm\_temporal\_duration $f|f_{1}$ ps \\
+\>    {\bf ttm gauss} $f_{1}~f_{2}$ \> ttm\_temporal\_cutoff $f_{2}$ ps \\
+\>    {\bf ttm nexp} $f_{1}~f_{2}$ \> \\
+\>    {\bf ttm sflat} \> ttm\_spatial\_dist flat \\
+\>    {\bf ttm sgauss} $f_{1}~f_{2}$ \> ttm\_spatial\_dist gaussian \\
+\>    {\bf ttm sigma} $f_{1}~f_{2}$ \> ttm\_spatial\_sigma $f_{1}$ nm \\
+\> \> ttm\_spatial\_cutoff $f_{2}$ nm \\
+\>    {\bf ttm laser} $f_{1}~f_{2}$ \> ttm\_spatial\_dist laser \\
+\>    {\bf ttm laser} $f_{1}~f_{2}~{\bf zdep} $ \> ttm\_laser\_type (flat$|$exponential) \\
+\> \> ttm\_fluence $f_{1}$ mJ/cm\verb#^#2 \\
+\> \> ttm\_penetration\_depth $f_{2}$ nm \\
+\>    {\bf ttm metal} \> ttm\_metal ON \\
+\>    {\bf ttm nonmetal} \> ttm\_metal OFF \\
+\>    {\bf ttm ncit} $n$ \> ttm\_num\_ion\_cells $n$ \\
+\>    {\bf ttm ncet} $n_{1}~n_{2}~n_{3}$ \> ttm\_num\_elec\_cell [ $n_{1}~n_{2}~n_{3}$ ] \\
+\>    {\bf ttm offset} $f$ \> ttm\_time\_offset $f$ ps \\
+\>    {\bf ttm oneway} \> ttm\_oneway ON \\
+\>    {\bf ttm redist}ribute \> ttm\_redistribute ON \\
+\>    {\bf ttm thvelz} \> ttm\_com\_correction (full$|$zdir$|$off) \\
+\>    {\bf ttm nothvel} \> \\
+\>    {\bf ttm stats} $n$ \> ttm\_stats\_frequency $n$ steps \\
+\>    {\bf ttm traj} $n$ \> ttm\_traj\_frequency $n$ steps \\
+\>    {\bf ttm varg homo}geneous \> ttm\_variable\_ep homo \\
+\>    {\bf ttm varg hetero}geneous \> ttm\_variable\_ep hetero \\\\
+\>    {\bf vaf} (sampling) (every) $i$ (bin) (size) $n$ \\
+\> \> vaf\_calculate ON \\
+\> \> vaf\_frequency $i$ steps \\
+\> \> vaf\_binsize $n$ \\\\
+\>    {\bf timestep} $f$ \> timestep $f$ ps \\\\
+\>    {\bf variable timestep} $f$ \> timestep $f$ ps \\
+\> \> timestep\_variable ON \\
+\>    {\bf maxdis} $f$ \> timestep\_variable\_max\_dist $f$ ang \\
+\>    {\bf mindis} $f$ \> timestep\_variable\_min\_dist $f$ ang \\
+\>    {\bf mxstep} $f$ \> timestep\_variable\_max\_delta $f$ ps \\\\
+\>    {\bf vdw direct} \> vdw\_method (tabulated$|$direct$|$ewald$|$off) \\
+\>    {\bf vdw mix}ing {\em rule} \> vdw\_mix\_method (Lorentz-Berthelot$|$Fender-Hasley$|$Hogervorst$|$ \\
+\> \> \phantom{xxxxxxxxxxxxxxxxxx}Waldman-Hagler$|$Tang-Toennies$|$Functional) \\
+\>    {\bf vdw shift} \> vdw\_force\_shift ON \\\\
+\>    {\bf zden} (sampling) (every) $f$ \> zden\_calculate ON \\
+\> \> zden\_frequency $f$ steps \\
+\>    {\bf zero} (fire) (every $n$) \> reset\_temperature\_interval $n$ steps \\\\
+\\
+\end{tabbing}
