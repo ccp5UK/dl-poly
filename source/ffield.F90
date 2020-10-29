@@ -196,7 +196,7 @@ Contains
     Type(flow_type),           Intent(InOut) :: flow
     Type(coord_type),          Intent(InOut) :: crd
     Type(comms_type),          Intent(InOut) :: comm
-    Integer( Kind = wi ), Intent( In   ), Optional :: ff
+    Integer,                   Intent(In   ) :: ff
 
     Logical, Dimension(7)          :: warning_triggered ! 410, 420, 430, 440, 450, 296, 305
     Character(Len=100)             :: rfmt
@@ -234,17 +234,13 @@ Contains
     Integer( Kind = wi )           :: fftag
 
     ! Choose which FIELD file to read
-    If (present(ff)) then
-      If (ff == 1 ) Then
-        fftag=FILE_FIELD
-      ElseIf( ff ==2 )Then
-        fftag=FILE_FIELD_2
-      ElseIf( ff ==3 )Then
-        fftag=FILE_FIELD_3
-      EndIf
-    Else
+    If (ff == 1) Then
       fftag=FILE_FIELD
-    Endif
+    ElseIf(ff ==2)Then
+      fftag=FILE_FIELD_2
+    ElseIf(ff ==3)Then
+      fftag=FILE_FIELD_3
+    EndIf
 
     warning_triggered = .false.
 
@@ -5504,7 +5500,7 @@ Contains
     Type(file_type),           Intent(InOut) :: files(:)
     Type(electrostatic_type),  Intent(InOut) :: electro
     Type(comms_type),          Intent(InOut) :: comm
-    Integer( Kind = wi ), Intent( In   ), Optional :: ff
+    Integer,                   Intent(In   ) :: ff
 
     Integer, Parameter :: mmk = 1000, mxb = 6
 
@@ -5524,17 +5520,13 @@ Contains
     Integer( Kind = wi )               :: fftag
 
     ! Choose which FIELD file to read
-    If (present(ff)) then
-      If (ff == 1 ) Then
-        fftag=FILE_FIELD
-      ElseIf( ff ==2 )Then
-        fftag=FILE_FIELD_2
-      ElseIf( ff ==3 )Then
-        fftag=FILE_FIELD_3
-      EndIf
-    Else
-        fftag=FILE_FIELD
-    Endif
+    If (ff == 1 ) Then
+      fftag=FILE_FIELD
+    ElseIf( ff ==2 )Then
+      fftag=FILE_FIELD_2
+    ElseIf( ff ==3 )Then
+      fftag=FILE_FIELD_3
+    EndIf
 
 
 ! Max number of different atom types

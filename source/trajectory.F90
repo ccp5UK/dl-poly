@@ -639,7 +639,7 @@ Contains
 
       Call read_config_parallel(config, levcfg, dvar, traj%l_ind_read, l_str, megatm, &
                                 traj%l_his_read, traj%l_xtr_read, traj%fast_read, traj%fh_read, &
-                                traj%top_skip_read, xhi, yhi, zhi, io, domain, files, comm)
+                                traj%top_skip_read, xhi, yhi, zhi, io, domain, files, comm, 1)
 
       If (traj%fast_read) Then
         If (levcfg /= 3) Then
@@ -688,7 +688,7 @@ Contains
 
       Call read_config_parallel(config, levcfg, dvar, traj%l_ind_read, l_str, megatm, &
                                 traj%l_his_read, traj%l_xtr_read, traj%fast_read, traj%fh_read, &
-                                Int(i, Kind(traj%top_skip_read)), xhi, yhi, zhi, io, domain, files, comm)
+                                Int(i, Kind(traj%top_skip_read)), xhi, yhi, zhi, io, domain, files, comm, 1)
 
       If (traj%frm1_read == traj%frm_read) Go To 200
 

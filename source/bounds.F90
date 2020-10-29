@@ -138,20 +138,12 @@ Contains
     Integer,                   Intent(In   ) :: megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, &
          mtshl, mtteth
     Integer, Dimension(3),     Intent(  Out) :: link_cell
-    Integer,                   Intent(In   ), Optional :: ff
+    Integer,                   Intent(In   ) :: ff
 
     Character(Len=256) :: message
     Integer(Kind=wi)   :: mxgrid
     Real(Kind=wp), Dimension(10) :: cell_properties
     Real(Kind=wp)      :: cut, dens0, dens, padding2
-
-    Integer            :: fftag
-
-    If (present(ff)) then
-      fftag = ff
-    Else
-      fftag = 1
-    Endif
 
     call setup_cell_props(config, cell_properties)
 
@@ -207,7 +199,7 @@ Contains
     ! decide on MXATMS while reading CONFIG and scan particle density
 
     Call read_config(config, megatm, config%levcfg, config%l_ind, flow%strict, neigh%cutoff, config%dvar, xhi, yhi, &
-         zhi, dens0, dens, io, domain, files, comm)
+         zhi, dens0, dens, io, domain, files, comm, ff)
 
     Call setup_buffers(config%dvar, dens, dens0, megatm, link_cell, mxgrid, config, domain, stats, neigh, &
        green, site, cshell, cons, pmf, rdf, rigid, tether, bond, angle, dihedral, inversion, zdensity, ewld, mpoles, &
@@ -320,7 +312,7 @@ Contains
     Type(file_type),           Intent(InOut) :: files(:)
     Type(flow_type),           Intent(InOut) :: flow
     Type(comms_type),          Intent(InOut) :: comm
-    Integer,                   Intent(In   ), Optional :: ff
+    Integer,                   Intent(In   ) :: ff
 
     Character(Len=256)           :: message
     Integer                      :: megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, mtshl, &
@@ -330,20 +322,12 @@ Contains
     Real(Kind=wp)                :: ats, cut, dens, dens0, fdvar, padding2, test, xhi, yhi, zhi
     Real(Kind=wp), Dimension(10) :: cell_properties
 
-    Integer            :: fftag
-
-    If (present(ff)) then
-      fftag = ff
-    Else
-      fftag = 1
-    Endif
-
     ! scan the FIELD file data
 
     Call scan_field(megatm, site, neigh%max_exclude, mtshl, &
                     mtcons, mtrgd, mtteth, mtbond, mtangl, mtdihd, mtinv, &
                     ext_field, cshell, cons, pmf, met, bond, angle, dihedral, inversion, tether, threebody, &
-                    vdws, tersoffs, fourbody, rdf, mpoles, rigid, kim_data, files, electro, comm, fftag)
+                    vdws, tersoffs, fourbody, rdf, mpoles, rigid, kim_data, files, electro, comm, ff)
 
     ! Get imc_r & set config%dvar
 
@@ -351,7 +335,7 @@ Contains
 
     ! scan CONFIG file data
 
-    Call scan_config(config, megatm, config%dvar, config%levcfg, xhi, yhi, zhi, io, domain, files, comm, fftag)
+    Call scan_config(config, megatm, config%dvar, config%levcfg, xhi, yhi, zhi, io, domain, files, comm, ff)
 
     ! scan CONTROL file data
 
@@ -421,7 +405,7 @@ Contains
     ! decide on MXATMS while reading CONFIG and scan particle density
 
     Call read_config(config, megatm, config%levcfg, config%l_ind, flow%strict, neigh%cutoff, config%dvar, xhi, yhi, &
-                     zhi, dens0, dens, io, domain, files, comm, fftag)
+                     zhi, dens0, dens, io, domain, files, comm, ff)
 
     Call setup_buffers(fdvar, dens, dens0, megatm, link_cell, mxgrid, config, domain, stats, neigh, &
                        green, site, cshell, cons, pmf, rdf, rigid, tether, bond, angle, dihedral, inversion, &

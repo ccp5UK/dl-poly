@@ -820,7 +820,7 @@ Contains
     Type(domains_type), Intent(In)              :: domain
     Type(file_type), Intent(InOut)              :: files(:)
     Type(comms_type), Intent(InOut)             :: comm
-    Integer(Kind = wi), Intent(In), Optional    :: ff
+    Integer,          Intent(In)                :: ff
 
     Real(Kind=wp)                               :: cut
 
@@ -858,17 +858,13 @@ Contains
     Integer(Kind=wi)                            :: conftag
 
     ! Choose which CONFIG file to read
-    If (present(ff)) then
-      If (ff == 1 ) Then
-        conftag=FILE_CONFIG
-      ElseIf( ff ==2 )Then
-        conftag=FILE_CONFIG_2
-      ElseIf( ff ==3 )Then
-        conftag=FILE_CONFIG_3
-      EndIf
-    Else
+    If (ff == 1 ) Then
       conftag=FILE_CONFIG
-    Endif
+    ElseIf( ff ==2 )Then
+      conftag=FILE_CONFIG_2
+    ElseIf( ff ==3 )Then
+      conftag=FILE_CONFIG_3
+    EndIf
 
     safe = .true. ! we start safe
     l_his = .false. ! no HISTORY reading
@@ -1453,7 +1449,7 @@ Contains
     Type(domains_type),        Intent(In   ) :: domain
     Type(file_type),           Intent(InOut) :: files(:)
     Type(comms_type),          Intent(InOut) :: comm
-    Integer( Kind = wi ), Intent( In   ), Optional :: ff
+    Integer,                   Intent(In   ) :: ff
 
     Character(Len=1), Allocatable, Dimension(:, :) :: rec_buff
     Character(Len=200)                             :: record
@@ -1486,17 +1482,13 @@ Contains
     Integer( Kind = wi )                :: conftag
 
     ! Choose which CONFIG file to read
-    If (present(ff)) then
-      If (ff == 1 ) Then
-        conftag=FILE_CONFIG
-      ElseIf( ff ==2 )Then
-        conftag=FILE_CONFIG_2
-      ElseIf( ff ==3 )Then
-        conftag=FILE_CONFIG_3
-      EndIf
-    Else
+    If (ff == 1 ) Then
       conftag=FILE_CONFIG
-    Endif
+    ElseIf( ff ==2 )Then
+      conftag=FILE_CONFIG_2
+    ElseIf( ff ==3 )Then
+      conftag=FILE_CONFIG_3
+    EndIf
 
     ! Get reading method, total number of I/O heads and buffer size
 
@@ -2097,7 +2089,7 @@ Contains
     Type(domains_type),       Intent(In   ) :: domain
     Type(file_type),          Intent(InOut) :: files(:)
     Type(comms_type),         Intent(InOut) :: comm
-    Integer( Kind = wi ),       Intent( In   ), Optional :: ff
+    Integer,                  Intent(In   ) :: ff
 
     Character(Len=200)        :: record
     Character(Len=256)        :: message
@@ -2111,17 +2103,13 @@ Contains
     Integer( Kind = wi )      :: conftag
 
     ! Choose which CONFIG file to read
-    If (present(ff)) then
-      If (ff == 1 ) Then
-        conftag=FILE_CONFIG
-      ElseIf( ff ==2 )Then
-        conftag=FILE_CONFIG_2
-      ElseIf( ff ==3 )Then
-        conftag=FILE_CONFIG_3
-      EndIf
-    Else
+    If (ff == 1 ) Then
       conftag=FILE_CONFIG
-    Endif
+    ElseIf( ff ==2 )Then
+      conftag=FILE_CONFIG_2
+    ElseIf( ff ==3 )Then
+      conftag=FILE_CONFIG_3
+    EndIf
 
 ! Some parameters and variables needed by io interfaces
 ! default record size
