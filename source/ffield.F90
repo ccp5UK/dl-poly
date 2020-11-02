@@ -5640,8 +5640,7 @@ Contains
     Call gcheck(comm, safe,"enforce")
     If (.not. safe) Then
       write(message,'(1x,3a)') 'error - ', trim(files(fftag)%filename), ' file not found'
-      Call info(message, .True.)
-      Call error(0)
+      Call error(0, message)
     Else
       If (comm%idnode == 0) Open (Newunit=files(fftag)%unit_no, File=files(fftag)%filename, Status='old')
     End If

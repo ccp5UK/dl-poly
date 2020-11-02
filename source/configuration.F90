@@ -2138,9 +2138,8 @@ Contains
     If (comm%idnode == 0) Inquire (File=fname, Exist=safe)
     Call gcheck(comm, safe)
     If (.not. safe) Then
-      write(message, '(1x,3a)') 'error - ', trim(fname), ' files not found'
-      Call info(message,.True.)
-      Call error(0)
+      Write(message, '(1x,3a)') 'error - ', trim(fname), ' files not found'
+      Call error(0, message)
     End If
 
     ! Define/Detect the FAST reading status

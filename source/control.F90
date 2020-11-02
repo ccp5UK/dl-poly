@@ -3062,10 +3062,6 @@ Contains
       Else If (word(1:3) == 'evb') Then
          ! EVB settings, this flag has been already read by read_simtype.
          ! here do nothing
-        If (.Not. flow%with_evb) Then
-          Write (message, '(a)') "DL_POLY is compiled withot evb support! check documentation to activate EVB."
-          Call error(0, message)
-        End If
       ! close control file
       Else If (word(1:6) == 'finish') Then
 
@@ -5722,7 +5718,7 @@ Contains
     Character(Len=*), Intent(In   ) :: control_filename
     Type(comms_type), Intent(InOut) :: comm
 
-    Logical                :: carry,safe, stdtype
+    Logical                :: safe
     Character( Len = 200 ) :: record
     Character( Len = 40  ) :: word
     Character( Len = 100 ) :: cfilename
@@ -5730,17 +5726,23 @@ Contains
     Integer       :: unit_no
 
 
-    cfilename = "CONTROL"
     If (Len_Trim(control_filename) > 0) Then
       cfilename = Trim(control_filename)
+    else
+      cfilename = "CONTROL"
     End If
-    ! Set safe flag
-    safe    =.true.
-    stdtype =.true.
+
+    !set safe flag (only root checks file)
+    safe = .true.
+
+    ! Set standard option
+    flow%simulation_method= MD_STD
+    flow%NUM_FF = 1
 
     ! Check control file exists
     If (comm%idnode == 0) Inquire(File=Trim(cfilename), Exist=safe)
     Call gcheck(comm,safe,"enforce")
+
     If (.not.safe) Then
       ! If CONTROL file is not found, set the following variables and return.
       ! DL_POLY will later abort by printing an error message
@@ -5748,18 +5750,15 @@ Contains
       flow%simulation_method=MD_STD
       flow%NUM_FF = 1
       Return
-    Else
-      ! If CONTROL file is found, proceed
-      If (comm%idnode == 0) Then
-        Open(Newunit=unit_no, File=trim(cfilename),Status='old')
-      End If
-    End If
+    end If
+
+    ! If CONTROL file is found, proceed
+    If (comm%idnode == 0) Open(Newunit=unit_no, File=trim(cfilename),Status='old')
 
     Call get_line(safe,unit_no,record,comm)
 
     If (safe) Then
-      carry = .true.
-      Do While (carry)
+      Do
 
         Call get_line(safe,unit_no,record,comm)
         If (.not.safe) Exit
@@ -5769,24 +5768,12 @@ Contains
         ! read EVB option. If for any reason there was a typo with the option "evb", DL_POLY will complain later
         If (word(1:3) == 'evb') Then
           flow%simulation_method=EmpVB
-          stdtype =.false.
           Call get_word(record,word)
           flow%NUM_FF = Nint(word_2_real(word,0.0_wp))
-          If(flow%NUM_FF <= 1)Then
-          ! If there is no value assigned or a wrong input value has been set, activate evbfail
-            flow%NUM_FF  = 1
-            flow%evbfail = .True.
-          End If
         Else If (word(1:6) == 'finish') Then
-          carry=.false.
+          exit
         End If
       End Do
-
-      If(stdtype)Then
-      ! Set standard option
-        flow%simulation_method= MD_STD
-        flow%NUM_FF = 1
-      End If
 
     End If
 

@@ -46,6 +46,8 @@ Module flow_control
   !> Simulation type keys: DFTB+
   Integer(Kind=wi), Parameter, Public :: DFTB = 4
 
+  Integer(Kind=wi), Parameter, Public :: MAX_FF = 3
+
   !> Type containing program flow data
   Type, Public :: flow_type
     Private
@@ -122,14 +124,7 @@ Module flow_control
     !> MD step that DL_POLY starts at
     Integer, Public          :: initial_md_step = 0
     !> Define number of force-fields to be coupled
-    Integer(Kind = wi), Public :: NUM_FF
-    !> Flags to kill EVB if reading "evb" settings failed
-    Logical,            Public :: evbfail = .False.
-#ifdef EVB
-    Logical,            Public :: with_evb = .True.
-#else
-    Logical,            Public :: with_evb = .False.
-#endif
+    Integer(Kind = wi), Public :: num_ff = 1
     Logical, Public          :: l_vdw = .False.
 
   Contains

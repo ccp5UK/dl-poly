@@ -74,7 +74,9 @@ Module meta
                                                 FILE_STATS,&
                                                 default_filenames,&
                                                 file_type
-  Use flow_control,                       Only: flow_type
+  Use flow_control,                       Only: flow_type, &
+                                                EmpVB, &
+                                                MAX_FF
   Use four_body,                          Only: four_body_type
   Use greenkubo,                          Only: greenkubo_type
   Use halo,                               Only: set_halo_particles
@@ -775,6 +777,14 @@ Contains
     Call start_timer(tmr, 'Initialisation')
 #endif
 
+#ifndef EVB
+    if (flow%simulation_method == EmpVB) &
+         call error(0, "DL_POLY is compiled without evb support! check documentation to activate EVB.")
+#endif
+
+    if (flow%simulation_method == EmpVB .and. (flow%num_ff <= 1 .or. flow%num_ff >= MAX_FF)) &
+         call error(0, "Invalid number of coupled force-fields for EVB requested")
+
     do ff = 1, flow%NUM_FF
       ! Get densvar
       call params%retrieve('density_variance', config(ff)%dvar)
@@ -943,7 +953,6 @@ Contains
     dlp_world(0)%ou = files(FILE_OUTPUT)%unit_no
     Call init_error_system(files(FILE_OUTPUT)%unit_no, dlp_world(0))
 
-
     ! OPEN MAIN OUTPUT CHANNEL & PRINT HEADER AND MACHINE RESOURCES
     Call scan_control_output(files, comm)
 
@@ -952,6 +961,15 @@ Contains
 #ifdef DEBUG
     Call build_info()
 #endif
+
+
+#ifndef EVB
+    if (flow%simulation_method == EmpVB) &
+         call error(0, "DL_POLY is compiled without evb support! check documentation to activate EVB.")
+#endif
+
+    if (flow%simulation_method == EmpVB .and. (flow%num_ff <= 1 .or. flow%num_ff >= MAX_FF)) &
+         call error(0, "Invalid number of coupled force-fields for EVB requested")
 
     Call scan_control_io(ios, netcdf, files, comm)
 
