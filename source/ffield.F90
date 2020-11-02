@@ -3698,16 +3698,38 @@ Contains
               End If
             End If
           Else
-            itmp = Merge(vdws%max_param + 1, vdws%max_param, thermo%key_dpd /= DPD_NULL)
-            Do i = 1, itmp ! make sure thermo%gamdpd is read and reported for DPD
+
+            if (thermo%key_dpd /= DPD_NULL) then
+              itmp = vdws%max_param + 1
+            else
+              itmp = vdws%max_param
+            end if
+
+            Do i = 1, itmp
               Call get_word(record, word)
               parpot(i) = word_2_real(word)
             End Do
+
             If (flow%print_topology) Then
               Write (rfmt, '(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,', itmp, 'f15.6)'
               Write (message, rfmt) itpvdw, atom1, atom2, keyword, parpot(1:itmp)
               Call info(message, .true., level=3)
             End If
+
+            ! Perform relevant error checks
+            Select Case (keypot)
+            Case (VDW_BUCKINGHAM)
+              If (Abs(parpot(2)) <= zero_plus) Then
+                If (Abs(parpot(1)) <= zero_plus) Then
+                  parpot(2) = 1.0_wp
+                Else
+                  Call error(467)
+                End If
+              End If
+            Case (VDW_N_M_SHIFT)
+              If (parpot(2) <= parpot(3)) Call error(470)
+              If (parpot(5) < parpot(4)) Call error(468)
+            end Select
 
             ! convert energies to internal unit
 
@@ -3718,6 +3740,7 @@ Contains
               parpot(2) = parpot(2) * engunit
             Case (VDW_BUCKINGHAM)
               parpot(3) = parpot(3) * engunit
+
             Case (VDW_BORN_HUGGINS_MEYER)
               parpot(4) = parpot(4) * engunit
               parpot(5) = parpot(5) * engunit
@@ -4215,12 +4238,12 @@ Contains
           End If
 
           ! generate vdw force arrays
-
           If (.not. vdws%no_vdw) Then
             If ((.not. vdws%l_direct) .or. vdws%l_tab) Call vdw_generate(vdws)
             If (vdws%l_tab) Call vdw_table_read(vdws, sites, files, comm)
-            If (vdws%l_direct .and. (Any(vdws%ltp(1:vdws%n_vdw) /= VDW_NULL) &
-                                     .or. Any(vdws%ltp(1:vdws%n_vdw) /= VDW_TAB))) Then
+            If (vdws%l_direct .and. &
+              (Any(vdws%ltp(1:vdws%n_vdw) /= VDW_NULL) .or. &
+               Any(vdws%ltp(1:vdws%n_vdw) /= VDW_TAB))) Then
               Call vdw_direct_fs_generate(vdws)
             End If
           End If

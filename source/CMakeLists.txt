@@ -116,6 +116,7 @@ set(dlpoly_SRCS
   unit_tests/test_units.F90
   unit_tests/test_control.F90
   unit_tests/test_configuration.F90
+  unit_tests/test_vdw.F90
   )
 if(BUILDER)
   set_property(SOURCE development.F90 APPEND PROPERTY

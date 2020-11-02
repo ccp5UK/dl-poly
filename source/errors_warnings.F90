@@ -1364,10 +1364,6 @@ Contains
 
         Write (ounit, '(/,1x,a)') 'error - duplicate metal potential specified'
 
-      Case (150)
-
-        Write (ounit, '(/,1x,a)') 'error - unknown van der waals potential selected'
-
       Case (151)
 
         Write (ounit, '(/,1x,a)') 'error - unknown EAM keyword in TABEAM'
@@ -2065,10 +2061,6 @@ Contains
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in inversions -> allocate_inversion_arrays'
 
-      Case (1022)
-
-        Write (ounit, '(/,1x,a)') 'error - allocation failure in vdw -> allocate_vdw_arrays'
-
       Case (1023)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in metal_module -> allocate_metal_arrays'
@@ -2188,14 +2180,6 @@ Contains
       Case (1061)
 
         Write (ounit, '(/,1x,a)') 'error - allocation failure in statistics -> deallocate_statitics_connect'
-
-      Case (1063)
-
-        Write (ounit, '(/,1x,a)') 'error - allocation failure in vdw -> allocate_vdw_table_arrays'
-
-      Case (1066)
-
-        Write (ounit, '(/,1x,a)') 'error - allocation failure in vdw -> allocate_vdw_direct_fs_arrays'
 
       Case (1069)
 
