@@ -408,7 +408,7 @@ Contains
 
             Select Case (electro%key)
             Case (ELECTROSTATIC_EWALD)
-
+              Call error(0, 'Ewald multiples have been disabled due to issues with their prior implementation.')
               If (ewld%direct) Then
                 Call ewald_real_forces_gen(ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
                      & coul_coeffs, i, xxt, yyt, zzt, rrt, engacc, viracc)
