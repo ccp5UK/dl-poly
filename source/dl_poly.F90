@@ -264,6 +264,8 @@ Program dl_poly
               tests%configuration = .true.
             Case ("units")
               tests%units = .true.
+            Case ("vdw")
+              tests%vdw = .true.
             Case ("all")
               Call tests%all()
             Case Default

@@ -4,7 +4,7 @@ Module unit_test
   Use test_configuration, only : run_configuration_tests
   Use test_units, only : run_units_tests
   Use test_control, only : run_control_tests
-
+  Use test_vdw, Only : run_vdw_tests
   Implicit None
 
   !> Logicals indicating whether tests should be run for
@@ -14,6 +14,7 @@ Module unit_test
     Logical, Public :: units = .false.
     Logical, Public :: control = .false.
     Logical, Public :: dftb_library = .false.
+    Logical, Public :: vdw = .false.
   Contains
     Procedure :: all => set_all_tests_true
     Procedure :: run => run_unit_tests
@@ -27,6 +28,7 @@ Contains
     this%units = .true.
     this%control = .true.
     this%dftb_library = .true.
+    this%vdw = .true.
   End Subroutine set_all_tests_true
 
   Subroutine run_unit_tests(this, comm)
@@ -36,6 +38,6 @@ Contains
     if (this%units) Call run_units_tests()
     if (this%control) Call run_control_tests(comm)
     if (this%configuration) Call run_configuration_tests(comm)
-
+    if (this%vdw) Call run_vdw_tests()
   End Subroutine run_unit_tests
 end Module unit_test
