@@ -292,6 +292,8 @@ Program dl_poly
     End If
   End If
 
+  Call gbcast(dlp_world(0), control_filename, 0)
+  Call gbcast(dlp_world(0), output_filename, 0)
   Call gbcast(dlp_world(0), finish, 0)
   If (finish) Then
     Call exit_comms(dlp_world)

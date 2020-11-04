@@ -183,6 +183,7 @@ Module comms
     Module Procedure gbcast_real2d
     Module Procedure gbcast_real_scalar
     Module Procedure gbcast_char
+    Module Procedure gbcast_char_scalar
     Module Procedure gbcast_logical_scalar
   End Interface !gbcast
 
@@ -1218,6 +1219,27 @@ Contains
     Call MPI_BCAST(s, 1, wp_mpi, root, comm%comm, comm%ierr)
 
   End Subroutine gbcast_real_scalar
+
+  Subroutine gbcast_char_scalar(comm, vec, root)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 broadcast a real array subroutine
+    !
+    ! copyright - daresbury laboratory
+    ! author    - a.m.elena Nov 2020
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Type(comms_type), Intent(InOut) :: comm
+    Character(Len=*), Intent(InOut) :: vec
+    Integer,          Intent(In   ) :: root
+
+    Integer :: n_s
+
+    If (comm%mxnode == 1) Return
+    n_s = Len(vec) * CHARACTER_STORAGE_SIZE / 8
+
+    Call MPI_BCAST(vec, n_s, MPI_CHARACTER, root, comm%comm, comm%ierr)
+  End Subroutine gbcast_char_scalar
 
   Subroutine gbcast_char(comm, vec, root)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
