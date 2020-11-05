@@ -88,7 +88,7 @@ contains
   Subroutine dump_parameters(ifile, params, mode)
     Integer, Intent(In) :: ifile
     Class(parameters_hash_table), Intent(In) :: params
-    Character(Len=10), Intent(In), Value :: mode
+    Character(Len=10), Intent(In) :: mode
     Type (control_parameter) :: param
     Character(Len=MAX_KEY), Dimension(:), Allocatable :: keys
     Character(Len=*), Dimension(0:7), Parameter :: data_name = &
@@ -274,14 +274,14 @@ contains
     case(DATA_INT)
        read(param%val, *) itmp
        write(unit, '(3(A,1X), "-> ", i0, 1X, A)') trim(param%key), trim(param%val), &
-            & trim(param%units), rtmp, trim(param%internal_units)
+            & trim(param%units), itmp, trim(param%internal_units)
     case(DATA_VECTOR3)
        read(param%val, *) rtmp3
        do itmp = 1,3
           rtmp3(itmp) = convert_units(rtmp3(itmp), param%units, param%internal_units)
        end do
        write(unit, '(3(A,1X), "-> [", 3(g15.6e2,1X), "]", 1X, A)') trim(param%key), trim(param%val), &
-            & trim(param%units), rtmp, trim(param%internal_units)
+            & trim(param%units), rtmp3, trim(param%internal_units)
     case(DATA_VECTOR6)
        read(param%val, *) rtmp6
        do itmp = 1,6
@@ -289,7 +289,7 @@ contains
        end do
 
        write(unit, '(3(A,1X), "-> [", 6(g15.6e2,1X), "]", 1X, A)') trim(param%key), trim(param%val), &
-            & trim(param%units), rtmp, trim(param%internal_units)
+            & trim(param%units), rtmp6, trim(param%internal_units)
     case default
        write(unit, fmt='(3(A,1X))') trim(param%key), trim(param%val), trim(param%units)
     end select

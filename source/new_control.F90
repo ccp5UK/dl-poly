@@ -1999,6 +1999,10 @@ contains
       config%nz = nint(vtmp(3))
     end if
 
+    call params%retrieve('replay', flow%simulation)
+    flow%simulation = .not. flow%simulation
+    call params%retrieve('replay_calculate_forces', flow%replay_recalculate_forces)
+
   end Subroutine read_system_parameters
 
   Subroutine write_parameters(io_data, netcdf, files, neigh, config, link_cell, flow, stats, thermo, ttm, mpoles, vdws, &
@@ -5098,6 +5102,26 @@ contains
            data_type = DATA_BOOL))
 
     end block miscellaneous
+
+    replay: block
+
+      call table%set("replay", control_parameter( &
+           key = "replay", &
+           name = "Replay history", &
+           val = "off", &
+           description = "Don't perform simulation, instead replay history", &
+           data_type = DATA_BOOL))
+
+      call table%set("replay_calculate_forces", control_parameter( &
+           key = "replay_calculate_forces", &
+           name = "Replay history recalculate forces", &
+           val = "on", &
+           description = "On history replay recalculate forces", &
+           data_type = DATA_BOOL))
+
+
+    end block replay
+
 
   end Subroutine initialise_control
 
