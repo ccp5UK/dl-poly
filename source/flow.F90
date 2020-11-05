@@ -73,6 +73,8 @@ Module flow_control
     Logical, Public          :: equilibration = .true.
     !> Full simulation (_i.e._ not replay) flag
     Logical, Public          :: simulation = .true.
+    !> Replay calculate forces
+    Logical, Public          :: replay_recalculate_forces = .false.
     !> Book keeping flag
     Logical, Public          :: book = .true.
     !> Excluded interactions flag

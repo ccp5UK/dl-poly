@@ -316,7 +316,6 @@ Contains
     Integer(Kind=wi)    :: ff, frevc
     Character(len=256) :: message
     Integer(Kind=wi)   :: vacuum
-    Logical            :: lfce
 
     Call gtime(tmr%elapsed) ! Initialise wall clock time
 
@@ -536,21 +535,6 @@ Contains
   call start_timer(tmr,'Main Calc')
 #endif
 
-    ! ! Unit testing (in the absence of a unit testing framework)
-    ! If (devel%run_unit_tests) Then
-
-    !   If (devel%unit_test%configuration) Then
-    !     If(comm%idnode == root_id) Then
-    !       Write(*,*) 'Running unit tests for configuration module'
-    !     Endif
-    !     Call run_configuration_tests()
-    !   End If
-
-    !   If(comm%idnode == root_id) Write(*,*) 'Unit tests completed'
-    !   Call exit_comms(dlp_world)
-    !   Stop 0
-    ! Endif
-
     ! Now you can run fast, boy
     If (devel%l_fast) Call gsync(comm, devel%l_fast)
 
@@ -562,7 +546,7 @@ Contains
         devel, met, crd, adf, comm)
     Else
       If(flow%NUM_FF==1)Then
-        If (lfce) Then
+        If (flow%replay_recalculate_forces) Then
           Call replay_historf(config(1), ios,rsdsc(1), flow,core_shells(1), cons(1), pmfs(1), stats(1), &
             thermo(1), plume(1), msd_data(1), bond(1), angle(1), dihedral(1), inversion(1), zdensity(1), neigh(1), &
             sites(1), vdws(1), tersoffs(1), fourbody(1), rdf(1), netcdf, minim(1), mpoles(1), ext_field(1), rigid(1), &
@@ -930,7 +914,6 @@ Contains
     Character(Len=256 ) :: message
     Integer(Kind=wi)    :: ff, frevc
     Integer             :: old_print_level
-    Logical             :: lfce
     Real(wp)            :: s
 
     ! Set default file names
@@ -1008,14 +991,14 @@ Contains
     End If
 
     ! READ SIMULATION CONTROL PARAMETERS
-    Call read_control(lfce, impa, ttms(1), dfcts, rigid(1), rsdsc(1), core_shells(1), cons(1), pmfs(1), &
+    Call read_control(flow%replay_recalculate_forces, impa, ttms(1), dfcts, rigid(1), rsdsc(1), core_shells(1), cons(1), pmfs(1), &
          stats(1), thermo(1), green(1), devel, plume(1), msd_data(1), met(1), pois(1), bond(1), angle(1), dihedral(1), &
          inversion(1), zdensity(1), neigh(1), vdws(1), rdf(1), minim(1), mpoles(1), electro(1), ewld(1), &
          seed, traj, files, tmr, config(1), flow, crd(1), adf(1), comm)
 
     call set_print_level(0)
     Do ff = 2, flow%NUM_FF
-      Call read_control(lfce, impa, ttms(ff), dfcts, rigid(ff), rsdsc(ff), core_shells(ff), cons(ff), &
+      Call read_control(flow%replay_recalculate_forces, impa, ttms(ff), dfcts, rigid(ff), rsdsc(ff), core_shells(ff), cons(ff), &
            pmfs(ff), stats(ff), thermo(ff), green(ff), devel, plume(ff), msd_data(ff), met(ff), pois(ff), &
            bond(ff), angle(ff), dihedral(ff), inversion(ff), zdensity(ff), neigh(ff), vdws(ff), rdf(ff), minim(ff), &
            mpoles(ff), electro(ff), ewld(ff), seed, traj, files, tmr, config(ff), flow, &
