@@ -34,7 +34,7 @@ Module tethers
   Type, Public :: tethers_type
     Private
     !> total number of tether types
-    Integer( Kind =  wi ), Public :: megteth
+    Integer(Kind=wi), Public :: megteth
     !> Number of types of tether
     Integer(Kind=wi), Public              :: ntteth = 0
     Integer(Kind=wi), Public              :: mxtteth, mxteth, mxftet, mxpteth
@@ -144,7 +144,7 @@ Contains
     Type(comms_type),         Intent(InOut) :: comm
 
     Character(Len=256)         :: message
-    Integer                    :: fail(1:2), i, ia, kk
+    Integer                    :: fail(1:2), i, ia, kk, nk
     Integer, Allocatable       :: lstopt(:, :)
     Logical                    :: safe
     Real(Kind=wp)              :: buffer(1:2), fx, fy, fz, gamma, k, k2, k3, k4, omega, rab, rc, &
@@ -165,38 +165,35 @@ Contains
     safe = .true.
 
     ! calculate tether vector
-
+    nk = 0
     Do i = 1, tether%ntteth
 
       ! indices of tethered atoms
 
-      ia = local_index(tether%listtet(1, i), config%nlast, config%lsi, config%lsa); lstopt(1, i) = ia
+      ia = local_index(tether%listtet(1, i), config%nlast, config%lsi, config%lsa)
 
-      lstopt(0, i) = 0
       If (ia > 0 .and. ia <= config%natms) Then !Tag
-        If (config%lfrzn(ia) == 0) lstopt(0, i) = 1
-      End If
+        If (config%lfrzn(ia) == 0) Then
+          nk = nk + 1
 
-      ! There is no need to check for uncompressed unit since
-      ! a tether is a point, it is either in or out by construction
+          lstopt(0, nk) = i
+          lstopt(1, nk) = ia
 
-      ! components of tether vector
+          ! There is no need to check for uncompressed unit since
+          ! a tether is a point, it is either in or out by construction
 
-      If (lstopt(0, i) > 0) Then
-        xdab(i) = config%parts(ia)%xxx - stats%xin(ia)
-        ydab(i) = config%parts(ia)%yyy - stats%yin(ia)
-        zdab(i) = config%parts(ia)%zzz - stats%zin(ia)
-      Else ! (DEBUG)
-        xdab(i) = 0.0_wp
-        ydab(i) = 0.0_wp
-        zdab(i) = 0.0_wp
+          ! components of tether vector
+          xdab(nk) = config%parts(ia)%xxx - stats%xin(ia)
+          ydab(nk) = config%parts(ia)%yyy - stats%yin(ia)
+          zdab(nk) = config%parts(ia)%zzz - stats%zin(ia)
+        End If
       End If
 
     End Do
 
     ! periodic boundary condition
 
-    Call images(config%imcon, config%cell, tether%ntteth, xdab, ydab, zdab)
+    Call images(config%imcon, config%cell, nk, xdab, ydab, zdab)
 
     ! initialise stress tensor accumulators
 
@@ -214,96 +211,93 @@ Contains
 
     ! loop over all specified tethered atoms
 
-    Do i = 1, tether%ntteth
-      If (lstopt(0, i) > 0) Then
+    Do i = 1, nk
+      ! indices of tethered atoms
 
-        ! indices of tethered atoms
+      ia = lstopt(1, i)
 
-        ia = lstopt(1, i)
+      ! define components of bond vector
 
-        ! define components of bond vector
+      rab = Sqrt(xdab(i)**2 + ydab(i)**2 + zdab(i)**2)
 
-        rab = Sqrt(xdab(i)**2 + ydab(i)**2 + zdab(i)**2)
+      ! check for possible zero length vector
 
-        ! check for possible zero length vector
-
-        If (rab < 1.0e-10_wp) Then
-          rrab = 0.0_wp
-        Else
-          rrab = 1.0_wp / rab
-        End If
-
-        ! index of potential function parameters
-
-        kk = tether%listtet(0, i)
-
-        ! calculate scalar constant terms
-
-        If (tether%keytet(kk) == 1) Then
-
-          ! harmonic function
-
-          k = tether%prmtet(1, kk)
-
-          omega = 0.5_wp * k * rab**2
-          gamma = k
-
-        Else If (tether%keytet(kk) == 2) Then
-
-          ! restrained harmonic
-
-          k = tether%prmtet(1, kk)
-          rc = tether%prmtet(2, kk)
-
-          omega = 0.5_wp * k * Min(rab, rc)**2 + k * rc * Sign(Max(rab - rc, 0.0_wp), rab)
-          gamma = k * Sign(Min(rab, rc), rab) * rrab
-
-        Else If (tether%keytet(kk) == 3) Then
-
-          ! quartic potential
-
-          k2 = tether%prmtet(1, kk)
-          k3 = tether%prmtet(2, kk)
-          k4 = tether%prmtet(3, kk)
-
-          omega = rab**2 * (0.5_wp * k2 + (k3 / 3.0_wp) * rab + 0.25_wp * k4 * rab**2)
-          gamma = k2 + k3 * rab + k4 * rab**2
-
-        Else
-
-          ! undefined potential
-
-          safe = .false.
-          omega = 0.0_wp
-          gamma = 0.0_wp
-
-        End If
-
-        ! calculate forces
-
-        fx = -gamma * xdab(i)
-        fy = -gamma * ydab(i)
-        fz = -gamma * zdab(i)
-
-        config%parts(ia)%fxx = config%parts(ia)%fxx + fx
-        config%parts(ia)%fyy = config%parts(ia)%fyy + fy
-        config%parts(ia)%fzz = config%parts(ia)%fzz + fz
-
-        ! calculate tether energy and virial
-
-        stats%engtet = stats%engtet + omega
-        stats%virtet = stats%virtet + gamma * rab * rab
-
-        ! calculate stress tensor
-
-        strs1 = strs1 + xdab(i) * fx
-        strs2 = strs2 + xdab(i) * fy
-        strs3 = strs3 + xdab(i) * fz
-        strs5 = strs5 + ydab(i) * fy
-        strs6 = strs6 + ydab(i) * fz
-        strs9 = strs9 + zdab(i) * fz
-
+      If (rab < 1.0e-10_wp) Then
+        rrab = 0.0_wp
+      Else
+        rrab = 1.0_wp / rab
       End If
+
+      ! index of potential function parameters
+
+      kk = tether%listtet(0, lstopt(0, i))
+
+      ! calculate scalar constant terms
+
+      Select Case (tether%keytet (kk))
+      Case (1)
+
+        ! harmonic function
+
+        k = tether%prmtet(1, kk)
+
+        omega = 0.5_wp * k * rab**2
+        gamma = k
+
+      Case (2)
+
+        ! restrained harmonic
+
+        k = tether%prmtet(1, kk)
+        rc = tether%prmtet(2, kk)
+
+        omega = 0.5_wp * k * Min(rab, rc)**2 + k * rc * Sign(Max(rab - rc, 0.0_wp), rab)
+        gamma = k * Sign(Min(rab, rc), rab) * rrab
+
+      Case (3)
+
+        ! quartic potential
+
+        k2 = tether%prmtet(1, kk)
+        k3 = tether%prmtet(2, kk)
+        k4 = tether%prmtet(3, kk)
+
+        omega = rab**2 * (0.5_wp * k2 + (k3 / 3.0_wp) * rab + 0.25_wp * k4 * rab**2)
+        gamma = k2 + k3 * rab + k4 * rab**2
+
+      Case Default
+
+        ! undefined potential
+
+        safe = .false.
+        omega = 0.0_wp
+        gamma = 0.0_wp
+
+      End Select
+
+      ! calculate forces
+
+      fx = -gamma * xdab(i)
+      fy = -gamma * ydab(i)
+      fz = -gamma * zdab(i)
+
+      config%parts(ia)%fxx = config%parts(ia)%fxx + fx
+      config%parts(ia)%fyy = config%parts(ia)%fyy + fy
+      config%parts(ia)%fzz = config%parts(ia)%fzz + fz
+
+      ! calculate tether energy and virial
+
+      stats%engtet = stats%engtet + omega
+      stats%virtet = stats%virtet + gamma * rab * rab
+
+      ! calculate stress tensor
+
+      strs1 = strs1 + xdab(i) * fx
+      strs2 = strs2 + xdab(i) * fy
+      strs3 = strs3 + xdab(i) * fz
+      strs5 = strs5 + ydab(i) * fy
+      strs6 = strs6 + ydab(i) * fz
+      strs9 = strs9 + zdab(i) * fz
     End Do
 
     ! complete stress tensor

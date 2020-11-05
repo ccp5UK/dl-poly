@@ -38,10 +38,10 @@ Module bonds
   Use errors_warnings, Only: error,&
                              info,&
                              warning
+  Use filename,        Only: FILE_TABBND,&
+                             file_type
   Use kinds,           Only: wi,&
                              wp
-  Use filename,        Only: FILE_TABBND, &
-                             file_type
   Use mpole,           Only: mpole_type
   Use numerics,        Only: images,&
                              local_index
@@ -572,7 +572,7 @@ Contains
     Type(comms_type),              Intent(InOut) :: comm
 
     Character(Len=256)         :: message
-    Integer                    :: fail(1:2), i, ia, ib, j, keyb, kk, l
+    Integer                    :: fail(1:2), i, ia, ib, j, keyb, kk, l, nk
     Integer, Allocatable       :: lstopt(:, :)
     Logical                    :: safe(1:3)
     Logical, Allocatable       :: lunsafe(:)
@@ -592,20 +592,25 @@ Contains
     End If
 
     ! calculate atom separation vectors
-
+    nk = 0
     Do i = 1, bond%n_types
       lunsafe(i) = .false.
 
       ! indices of bonded atoms
 
-      ia = local_index(bond%list(1, i), config%nlast, config%lsi, config%lsa); lstopt(1, i) = ia
-      ib = local_index(bond%list(2, i), config%nlast, config%lsi, config%lsa); lstopt(2, i) = ib
+      ia = local_index(bond%list(1, i), config%nlast, config%lsi, config%lsa)
+      ib = local_index(bond%list(2, i), config%nlast, config%lsi, config%lsa)
 
-      lstopt(0, i) = 0
       If (ia > 0 .and. ib > 0) Then ! Tag
         If (config%lfrzn(ia) * config%lfrzn(ib) == 0) Then
           If (ia <= config%natms .or. ib <= config%natms) Then
-            lstopt(0, i) = 1
+            nk = nk + 1
+            lstopt(0, nk) = i
+            lstopt(1, nk) = ia
+            lstopt(2, nk) = ib
+            xdab(nk) = config%parts(ia)%xxx - config%parts(ib)%xxx
+            ydab(nk) = config%parts(ia)%yyy - config%parts(ib)%yyy
+            zdab(nk) = config%parts(ia)%zzz - config%parts(ib)%zzz
           End If
         End If
       Else ! Detect uncompressed unit
@@ -613,21 +618,9 @@ Contains
              (ib > 0 .and. ib <= config%natms)) .and. &
             (ia == 0 .or. ib == 0)) lunsafe(i) = .true.
       End If
-
-      ! components of bond vector
-
-      If (lstopt(0, i) > 0) Then
-        xdab(i) = config%parts(ia)%xxx - config%parts(ib)%xxx
-        ydab(i) = config%parts(ia)%yyy - config%parts(ib)%yyy
-        zdab(i) = config%parts(ia)%zzz - config%parts(ib)%zzz
-      Else ! (DEBUG)
-        xdab(i) = 0.0_wp
-        ydab(i) = 0.0_wp
-        zdab(i) = 0.0_wp
-      End If
     End Do
 
-    ! Check for uncompressed units
+    ! Check for uncompressed units, why shall this happen?
 
     safe(1) = .not. Any(lunsafe(1:bond%n_types))
     Call gcheck(comm, safe(1))
@@ -650,7 +643,7 @@ Contains
 
     ! periodic boundary condition
 
-    Call images(config%imcon, config%cell, bond%n_types, xdab, ydab, zdab)
+    Call images(config%imcon, config%cell, nk, xdab, ydab, zdab)
 
     ! Initialise safety flag
 
@@ -690,295 +683,292 @@ Contains
 
     ! loop over all specified chemical bond potentials
 
-    Do i = 1, bond%n_types
-      If (lstopt(0, i) > 0) Then
+    Do i = 1, nk
 
-        ! indices of bonded atoms
+      ! indices of bonded atoms
 
-        ia = lstopt(1, i)
-        ib = lstopt(2, i)
+      ia = lstopt(1, i)
+      ib = lstopt(2, i)
 
-        ! define components of bond vector
+      ! define components of bond vector
 
-        rab2 = xdab(i)**2 + ydab(i)**2 + zdab(i)**2
-        rab = Sqrt(rab2)
+      rab2 = xdab(i)**2 + ydab(i)**2 + zdab(i)**2
+      rab = Sqrt(rab2)
 
-        ! index of potential function parameters
+      ! index of potential function parameters
 
-        kk = bond%list(0, i)
-        keyb = bond%key(kk)
+      kk = bond%list(0, lstopt(0,i))
+      keyb = bond%key(kk)
 
-        ! accumulate the histogram (distribution)
+      ! accumulate the histogram (distribution)
 
-        If (Mod(isw, 2) == 0 .and. ia <= config%natms) Then
-          j = bond%ldf(kk)
-          l = Min(1 + Int(rab * rdelr), bond%bin_pdf)
+      If (Mod(isw, 2) == 0 .and. ia <= config%natms) Then
+        j = bond%ldf(kk)
+        l = Min(1 + Int(rab * rdelr), bond%bin_pdf)
 
-          bond%dst(l, j) = bond%dst(l, j) + 1.0_wp
+        bond%dst(l, j) = bond%dst(l, j) + 1.0_wp
 
-          If (rab > bond%rcut) safe(3) = .false. ! catch bondbreaking
-        End If
-        If (isw == 0) Cycle
+        If (rab > bond%rcut) safe(3) = .false. ! catch bondbreaking
+      End If
+      If (isw == 0) Cycle
 
-        ! calculate scalar constant terms
+      ! calculate scalar constant terms
+      Select Case (keyb)
+      Case (BOND_NULL)
 
-        If (keyb == BOND_NULL) Then
+        ! null interaction
 
-          ! null interaction
+        omega = 0.0_wp
+        gamma = 0.0_wp
 
-          omega = 0.0_wp
-          gamma = 0.0_wp
+      Case (BOND_HARMONIC)
 
-        Else If (keyb == BOND_HARMONIC) Then
+        ! harmonic potential
 
-          ! harmonic potential
+        k = bond%param(1, kk)
+        r0 = bond%param(2, kk)
+        dr = rab - r0
 
-          k = bond%param(1, kk)
-          r0 = bond%param(2, kk)
-          dr = rab - r0
+        term = k * dr
 
-          term = k * dr
+        omega = term * 0.5_wp * dr
+        gamma = -term / rab
 
-          omega = term * 0.5_wp * dr
-          gamma = -term / rab
+      Case (BOND_MORSE)
 
-        Else If (keyb == BOND_MORSE) Then
+        ! Morse potential
 
-          ! Morse potential
+        e0 = bond%param(1, kk)
+        r0 = bond%param(2, kk)
+        k = bond%param(3, kk)
 
-          e0 = bond%param(1, kk)
-          r0 = bond%param(2, kk)
-          k = bond%param(3, kk)
+        term = Exp(-k * (rab - r0))
 
-          term = Exp(-k * (rab - r0))
+        omega = e0 * term * (term - 2.0_wp)
+        gamma = -2.0_wp * e0 * k * term * (1.0_wp - term) / rab
 
-          omega = e0 * term * (term - 2.0_wp)
-          gamma = -2.0_wp * e0 * k * term * (1.0_wp - term) / rab
+      Case (BOND_12_6)
 
-        Else If (keyb == BOND_12_6) Then
+        ! 12-6 potential
 
-          ! 12-6 potential
+        a = bond%param(1, kk)
+        b = bond%param(2, kk)
 
-          a = bond%param(1, kk)
-          b = bond%param(2, kk)
+        term = rab**(-6)
 
-          term = rab**(-6)
+        omega = term * (a * term - b)
+        gamma = 6.0_wp * term * (2.0_wp * a * term - b) / rab2
 
-          omega = term * (a * term - b)
-          gamma = 6.0_wp * term * (2.0_wp * a * term - b) / rab2
+      Case (BOND_LJ)
 
-        Else If (keyb == BOND_LJ) Then
+        ! Lennard-Jones potential
 
-          ! Lennard-Jones potential
+        eps = bond%param(1, kk)
+        sig = bond%param(2, kk)
 
-          eps = bond%param(1, kk)
-          sig = bond%param(2, kk)
+        term = (sig / rab)**6
 
-          term = (sig / rab)**6
+        omega = 4.0_wp * eps * term * (term - 1.0_wp)
+        gamma = 24.0_wp * eps * term * (2.0_wp * term - 1.0_wp) / rab2
 
-          omega = 4.0_wp * eps * term * (term - 1.0_wp)
-          gamma = 24.0_wp * eps * term * (2.0_wp * term - 1.0_wp) / rab2
+      Case (BOND_RESTRAINED)
 
-        Else If (keyb == BOND_RESTRAINED) Then
+        ! restrained harmonic
 
-          ! restrained harmonic
+        k = bond%param(1, kk)
+        r0 = bond%param(2, kk)
+        dr = rab - r0
+        dra = Abs(dr)
+        rc = bond%param(3, kk)
 
-          k = bond%param(1, kk)
-          r0 = bond%param(2, kk)
-          dr = rab - r0
-          dra = Abs(dr)
-          rc = bond%param(3, kk)
+        omega = k * (0.5_wp * Min(dra, rc)**2 + rc * Max(dra - rc, 0.0_wp))
+        gamma = -k * Sign(Min(dra, rc), dr) / rab
 
-          omega = k * (0.5_wp * Min(dra, rc)**2 + rc * Max(dra - rc, 0.0_wp))
-          gamma = -k * Sign(Min(dra, rc), dr) / rab
+      Case (BOND_QUARTIC)
 
-        Else If (keyb == BOND_QUARTIC) Then
+        ! quartic potential
 
-          ! quartic potential
+        k2 = bond%param(1, kk)
+        r0 = bond%param(2, kk)
+        dr = rab - r0
+        k3 = bond%param(3, kk)
+        k4 = bond%param(4, kk)
 
-          k2 = bond%param(1, kk)
-          r0 = bond%param(2, kk)
-          dr = rab - r0
-          k3 = bond%param(3, kk)
-          k4 = bond%param(4, kk)
+        dr2 = dr**2
 
-          dr2 = dr**2
+        omega = dr2 * (0.5_wp * k2 + k3 * dr / 3.0_wp + 0.25_wp * k4 * dr2)
+        gamma = -dr * (k2 + k3 * dr + k4 * dr2) / rab
 
-          omega = dr2 * (0.5_wp * k2 + k3 * dr / 3.0_wp + 0.25_wp * k4 * dr2)
-          gamma = -dr * (k2 + k3 * dr + k4 * dr2) / rab
+      Case (BOND_BUCKINGHAM)
 
-        Else If (keyb == BOND_BUCKINGHAM) Then
+        ! Buckingham exp-6 potential
 
-          ! Buckingham exp-6 potential
+        a = bond%param(1, kk)
+        rho = bond%param(2, kk)
+        c = bond%param(3, kk)
 
-          a = bond%param(1, kk)
-          rho = bond%param(2, kk)
-          c = bond%param(3, kk)
+        term1 = a * Exp(-rab / rho)
+        term2 = -c / rab**6
 
-          term1 = a * Exp(-rab / rho)
-          term2 = -c / rab**6
+        omega = term1 + term2
+        gamma = (term1 / rho + 6.0_wp * term2 / rab) / rab
 
-          omega = term1 + term2
-          gamma = (term1 / rho + 6.0_wp * term2 / rab) / rab
+      Case (BOND_COULOMB)
 
-        Else If (keyb == BOND_COULOMB) Then
+        omega = 0.0_wp
+        gamma = 0.0_wp
+        ! We need to initialise fx, fy and fz in case one of the involved charges (or both) is zero,
+        ! which would lead to chgprd = 0 and omission of the intra subroutines
+        fx = 0.0_wp
+        fy = 0.0_wp
+        fz = 0.0_wp
 
-          omega = 0.0_wp
-          gamma = 0.0_wp
-          ! We need to initialise fx, fy and fz in case one of the involved charges (or both) is zero,
-          ! which would lead to chgprd = 0 and omission of the intra subroutines
-          fx = 0.0_wp
-          fy = 0.0_wp
-          fz = 0.0_wp
+        ! scaled charge product times dielectric constants
 
-          ! scaled charge product times dielectric constants
-
-          chgprd = bond%param(1, kk) * config%parts(ia)%chge * config%parts(ib)%chge * r4pie0 / electro%eps
-          If ((Abs(chgprd) > zero_plus .or. mpoles%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
-            If (mpoles%max_mpoles > 0) Then
-              Call intra_mcoul(rcut, ia, ib, chgprd, rab, xdab(i), ydab(i), zdab(i), &
-                               omega, viracc, fx, fy, fz, safe(1), mpoles, electro, config)
-            Else
-              Call intra_coul(rcut, chgprd, rab, rab2, omega, gamma, safe(1), electro)
-
-              fx = gamma * xdab(i)
-              fy = gamma * ydab(i)
-              fz = gamma * zdab(i)
-
-              viracc = -gamma * rab2
-            End If
-
-            ! correct electrostatic energy and virial
-
-            If (ia <= config%natms) Then
-              engc12 = engc12 + omega
-              virc12 = virc12 + viracc
-            End If
-
-            ! clear all but keep the forces
-
-            omega=0.0_wp
-            gamma=0.0_wp
-            viracc=0.0_wp
-          End If
-
-        Else If (keyb == BOND_FENE) Then
-
-          ! extended FENE (Finite Extensive Non-linear Elastic) potential
-
-          k = bond%param(1, kk)
-          r0 = bond%param(2, kk)
-          delta = bond%param(3, kk)
-          dr = rab - delta
-
-          term = 1.0_wp - (dr / r0)**2
-          If (term > 0.0_wp) Then
-            omega = -0.5_wp * k * r0**2 * Log(term)
-            gamma = -k * dr / term / rab
+        chgprd = bond%param(1, kk) * config%parts(ia)%chge * config%parts(ib)%chge * r4pie0 / electro%eps
+        If ((Abs(chgprd) > zero_plus .or. mpoles%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
+          If (mpoles%max_mpoles > 0) Then
+            Call intra_mcoul(rcut, ia, ib, chgprd, rab, xdab(i), ydab(i), zdab(i), &
+                             omega, viracc, fx, fy, fz, safe(1), mpoles, electro, config)
           Else
-            safe(2) = .false.
-            omega = 0.0_wp
-            gamma = 0.0_wp
+            Call intra_coul(rcut, chgprd, rab, rab2, omega, gamma, safe(1), electro)
+
+            fx = gamma * xdab(i)
+            fy = gamma * ydab(i)
+            fz = gamma * zdab(i)
+
+            viracc = -gamma * rab2
           End If
 
-        Else If (keyb == BOND_MM3) Then
+          ! correct electrostatic energy and virial
 
-          ! MM3-bond-stretch potential
-
-          k = bond%param(1, kk)
-          r0 = bond%param(2, kk)
-          dr = rab - r0
-
-          e0 = 2.55_wp * dr
-
-          omega = k * dr**2 * (1.0_wp - e0 * (1.0_wp - (7.0_wp / 12.0_wp) * e0))
-          gamma = -2.0_wp * k * dr * (1.0_wp - e0 * (1.5_wp - 7.0_wp / 6.0_wp * e0)) / rab
-
-        Else If (keyb == BOND_TAB) Then
-
-          ! TABBND potential
-
-          j = bond%ltp(kk)
-          If (rab <= bond%tab_potential(-1, j)) Then ! rab <= cutpot
-            rdr = bond%tab_force(-1, j) ! 1.0_wp/delpot
-
-            l = Int(rab * rdr)
-            ppp = rab * rdr - Real(l, wp)
-
-            vk = bond%tab_potential(l, j)
-            vk1 = bond%tab_potential(l + 1, j)
-            vk2 = bond%tab_potential(l + 2, j)
-
-            t1 = vk + (vk1 - vk) * ppp
-            t2 = vk1 + (vk2 - vk1) * (ppp - 1.0_wp)
-
-            omega = t1 + (t2 - t1) * ppp * 0.5_wp
-
-            vk = bond%tab_force(l, j); If (l == 0) vk = vk * rab
-            vk1 = bond%tab_force(l + 1, j)
-            vk2 = bond%tab_force(l + 2, j)
-
-            t1 = vk + (vk1 - vk) * ppp
-            t2 = vk1 + (vk2 - vk1) * (ppp - 1.0_wp)
-
-            gamma = (t1 + (t2 - t1) * ppp * 0.5_wp) / rab2
-          Else ! bond breaking
-            safe(3) = .false.
-            omega = 0.0_wp
-            gamma = 0.0_wp
+          If (ia <= config%natms) Then
+            engc12 = engc12 + omega
+            virc12 = virc12 + viracc
           End If
 
-        Else
+          ! clear all but keep the forces
 
-          ! undefined potential
-
-          safe(1) = .false.
           omega = 0.0_wp
           gamma = 0.0_wp
-
+          viracc = 0.0_wp
         End If
 
-        ! calculate forces and virial additions
+      Case (BOND_FENE)
 
-        If (keyb /= BOND_COULOMB) Then
-          fx = gamma * xdab(i)
-          fy = gamma * ydab(i)
-          fz = gamma * zdab(i)
+        ! extended FENE (Finite Extensive Non-linear Elastic) potential
 
-          viracc = -gamma * rab2
+        k = bond%param(1, kk)
+        r0 = bond%param(2, kk)
+        delta = bond%param(3, kk)
+        dr = rab - delta
+
+        term = 1.0_wp - (dr / r0)**2
+        If (term > 0.0_wp) Then
+          omega = -0.5_wp * k * r0**2 * Log(term)
+          gamma = -k * dr / term / rab
+        Else
+          safe(2) = .false.
+          omega = 0.0_wp
+          gamma = 0.0_wp
         End If
 
-        ! add forces
+      Case (BOND_MM3)
 
-        If (ia <= config%natms) Then
+        ! MM3-bond-stretch potential
 
-          config%parts(ia)%fxx = config%parts(ia)%fxx + fx
-          config%parts(ia)%fyy = config%parts(ia)%fyy + fy
-          config%parts(ia)%fzz = config%parts(ia)%fzz + fz
+        k = bond%param(1, kk)
+        r0 = bond%param(2, kk)
+        dr = rab - r0
 
-          ! calculate bond energy and virial
+        e0 = 2.55_wp * dr
 
-          engbnd = engbnd + omega
-          virbnd = virbnd + viracc
+        omega = k * dr**2 * (1.0_wp - e0 * (1.0_wp - (7.0_wp / 12.0_wp) * e0))
+        gamma = -2.0_wp * k * dr * (1.0_wp - e0 * (1.5_wp - 7.0_wp / 6.0_wp * e0)) / rab
 
-          ! calculate stress tensor
+      Case (BOND_TAB)
 
-          strs1 = strs1 + xdab(i) * fx
-          strs2 = strs2 + xdab(i) * fy
-          strs3 = strs3 + xdab(i) * fz
-          strs5 = strs5 + ydab(i) * fy
-          strs6 = strs6 + ydab(i) * fz
-          strs9 = strs9 + zdab(i) * fz
+        ! TABBND potential
 
+        j = bond%ltp(kk)
+        If (rab <= bond%tab_potential(-1, j)) Then ! rab <= cutpot
+          rdr = bond%tab_force(-1, j) ! 1.0_wp/delpot
+
+          l = Int(rab * rdr)
+          ppp = rab * rdr - Real(l, wp)
+
+          vk = bond%tab_potential(l, j)
+          vk1 = bond%tab_potential(l + 1, j)
+          vk2 = bond%tab_potential(l + 2, j)
+
+          t1 = vk + (vk1 - vk) * ppp
+          t2 = vk1 + (vk2 - vk1) * (ppp - 1.0_wp)
+
+          omega = t1 + (t2 - t1) * ppp * 0.5_wp
+
+          vk = bond%tab_force(l, j); If (l == 0) vk = vk * rab
+          vk1 = bond%tab_force(l + 1, j)
+          vk2 = bond%tab_force(l + 2, j)
+
+          t1 = vk + (vk1 - vk) * ppp
+          t2 = vk1 + (vk2 - vk1) * (ppp - 1.0_wp)
+
+          gamma = (t1 + (t2 - t1) * ppp * 0.5_wp) / rab2
+        Else ! bond breaking
+          safe(3) = .false.
+          omega = 0.0_wp
+          gamma = 0.0_wp
         End If
 
-        If (ib <= config%natms) Then
+      Case Default
 
-          config%parts(ib)%fxx = config%parts(ib)%fxx - fx
-          config%parts(ib)%fyy = config%parts(ib)%fyy - fy
-          config%parts(ib)%fzz = config%parts(ib)%fzz - fz
+        ! undefined potential
 
-        End If
+        safe(1) = .false.
+        omega = 0.0_wp
+        gamma = 0.0_wp
+
+      End Select
+
+      ! calculate forces and virial additions
+
+      If (keyb /= BOND_COULOMB) Then
+        fx = gamma * xdab(i)
+        fy = gamma * ydab(i)
+        fz = gamma * zdab(i)
+
+        viracc = -gamma * rab2
+      End If
+
+      ! add forces
+
+      If (ia <= config%natms) Then
+
+        config%parts(ia)%fxx = config%parts(ia)%fxx + fx
+        config%parts(ia)%fyy = config%parts(ia)%fyy + fy
+        config%parts(ia)%fzz = config%parts(ia)%fzz + fz
+
+        ! calculate bond energy and virial
+
+        engbnd = engbnd + omega
+        virbnd = virbnd + viracc
+
+        ! calculate stress tensor
+
+        strs1 = strs1 + xdab(i) * fx
+        strs2 = strs2 + xdab(i) * fy
+        strs3 = strs3 + xdab(i) * fz
+        strs5 = strs5 + ydab(i) * fy
+        strs6 = strs6 + ydab(i) * fz
+        strs9 = strs9 + zdab(i) * fz
+
+      End If
+
+      If (ib <= config%natms) Then
+
+        config%parts(ib)%fxx = config%parts(ib)%fxx - fx
+        config%parts(ib)%fyy = config%parts(ib)%fyy - fy
+        config%parts(ib)%fzz = config%parts(ib)%fzz - fz
 
       End If
     End Do
@@ -1061,7 +1051,7 @@ Contains
     Character(Len=40)          :: word
     Character(Len=8)           :: atom1, atom2
     Integer                    :: fail(1:2), i, itbnd, jtbnd, jtpatm, katom1, katom2, l, ngrid, &
-                                  rtbnd, ntable
+                                  ntable, rtbnd
     Integer, Allocatable       :: read_type(:)
     Logical                    :: remake, safe
     Real(Kind=wp)              :: bufp0, bufv0, cutpot, delpot, dlrpot, ppp, rdr, rrr, rrr0, t1, &

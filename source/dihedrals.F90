@@ -40,7 +40,7 @@ Module dihedrals
   Use errors_warnings, Only: error,&
                              info,&
                              warning
-  Use filename,        Only: FILE_TABDIH, &
+  Use filename,        Only: FILE_TABDIH,&
                              file_type
   Use kinds,           Only: wi,&
                              wp
@@ -733,7 +733,8 @@ Contains
     Type(comms_type),              Intent(InOut) :: comm
 
     Character(Len=256)         :: message, messages(7)
-    Integer                    :: ai, aj, fail(1:5), i, ia, ia0, ib, ic, id, id0, j, keyd, kk, l
+    Integer                    :: ai, aj, fail(1:5), i, ia, ia0, ib, ic, id, id0, j, keyd, kk, l, &
+                                  nk
     Integer, Allocatable       :: lstopt(:, :)
     Logical                    :: csa, csd, safe(1:3)
     Logical, Allocatable       :: lad(:, :), lunsafe(:)
@@ -761,22 +762,21 @@ Contains
     End If
 
     ! calculate atom separation vectors
-
+    nk = 0
     Do i = 1, dihedral%n_types
       lunsafe(i) = .false.
 
       ! indices of dihedral atoms
 
-      ia = local_index(dihedral%list(1, i), config%nlast, config%lsi, config%lsa); lstopt(1, i) = ia
-      ib = local_index(dihedral%list(2, i), config%nlast, config%lsi, config%lsa); lstopt(2, i) = ib
-      ic = local_index(dihedral%list(3, i), config%nlast, config%lsi, config%lsa); lstopt(3, i) = ic
-      id = local_index(dihedral%list(4, i), config%nlast, config%lsi, config%lsa); lstopt(4, i) = id
+      ia = local_index(dihedral%list(1, i), config%nlast, config%lsi, config%lsa)
+      ib = local_index(dihedral%list(2, i), config%nlast, config%lsi, config%lsa)
+      ic = local_index(dihedral%list(3, i), config%nlast, config%lsi, config%lsa)
+      id = local_index(dihedral%list(4, i), config%nlast, config%lsi, config%lsa)
       If (dihedral%l_core_shell) Then
-        ia0 = local_index(dihedral%list(5, i), config%nlast, config%lsi, config%lsa); lstopt(5, i) = ia0
-        id0 = local_index(dihedral%list(6, i), config%nlast, config%lsi, config%lsa); lstopt(6, i) = id0
+        ia0 = local_index(dihedral%list(5, i), config%nlast, config%lsi, config%lsa)
+        id0 = local_index(dihedral%list(6, i), config%nlast, config%lsi, config%lsa)
       End If
 
-      lstopt(0, i) = 0
       If (dihedral%l_core_shell) Then
         If (ia > 0 .and. ib > 0 .and. ic > 0 .and. id > 0 .and. &
             ia0 > 0 .and. id0 > 0) Then !Tag
@@ -784,7 +784,62 @@ Contains
             If (ia <= config%natms .or. ib <= config%natms .or. &
                 ic <= config%natms .or. id <= config%natms .or. &
                 ia0 <= config%natms .or. id0 <= config%natms) Then
-              lstopt(0, i) = 1
+
+              nk = nk + 1
+              lstopt(0, nk) = i
+              lstopt(1, nk) = ia
+              lstopt(2, nk) = ib
+              lstopt(3, nk) = ic
+              lstopt(4, nk) = id
+              lstopt(5, nk) = ia0
+              lstopt(6, nk) = id0
+
+              ! define components of bond vectors
+
+              xdab(nk) = config%parts(ia)%xxx - config%parts(ib)%xxx
+              ydab(nk) = config%parts(ia)%yyy - config%parts(ib)%yyy
+              zdab(nk) = config%parts(ia)%zzz - config%parts(ib)%zzz
+
+              xdbc(nk) = config%parts(ib)%xxx - config%parts(ic)%xxx
+              ydbc(nk) = config%parts(ib)%yyy - config%parts(ic)%yyy
+              zdbc(nk) = config%parts(ib)%zzz - config%parts(ic)%zzz
+
+              xdcd(nk) = config%parts(ic)%xxx - config%parts(id)%xxx
+              ydcd(nk) = config%parts(ic)%yyy - config%parts(id)%yyy
+              zdcd(nk) = config%parts(ic)%zzz - config%parts(id)%zzz
+
+              csa = (dihedral%list(1, i) /= dihedral%list(5, i))
+              csd = (dihedral%list(4, i) /= dihedral%list(6, i))
+
+              lad(:, i) = .false.
+              If (csa .or. csd) Then
+                If (csa .and. csd) Then
+                  lad(1, nk) = .true.
+                  xdad(1, nk) = config%parts(ia0)%xxx - config%parts(id)%xxx
+                  ydad(1, nk) = config%parts(ia0)%yyy - config%parts(id)%yyy
+                  zdad(1, nk) = config%parts(ia0)%zzz - config%parts(id)%zzz
+
+                  lad(2, nk) = .true.
+                  xdad(2, nk) = config%parts(ia)%xxx - config%parts(id0)%xxx
+                  ydad(2, nk) = config%parts(ia)%yyy - config%parts(id0)%yyy
+                  zdad(2, nk) = config%parts(ia)%zzz - config%parts(id0)%zzz
+
+                  lad(3, nk) = .true.
+                  xdad(3, nk) = config%parts(ia0)%xxx - config%parts(id0)%xxx
+                  ydad(3, nk) = config%parts(ia0)%yyy - config%parts(id0)%yyy
+                  zdad(3, nk) = config%parts(ia0)%zzz - config%parts(id0)%zzz
+                Else If (csa) Then
+                  lad(1, nk) = .true.
+                  xdad(1, nk) = config%parts(ia0)%xxx - config%parts(id)%xxx
+                  ydad(1, nk) = config%parts(ia0)%yyy - config%parts(id)%yyy
+                  zdad(1, nk) = config%parts(ia0)%zzz - config%parts(id)%zzz
+                Else If (csd) Then
+                  lad(2, nk) = .true.
+                  xdad(2, nk) = config%parts(ia)%xxx - config%parts(id0)%xxx
+                  ydad(2, nk) = config%parts(ia)%yyy - config%parts(id0)%yyy
+                  zdad(2, nk) = config%parts(ia)%zzz - config%parts(id0)%zzz
+                End If
+              End If
             End If
           End If
         Else ! Detect uncompressed unit
@@ -802,7 +857,27 @@ Contains
           If (config%lfrzn(ia) * config%lfrzn(ib) * config%lfrzn(ic) * config%lfrzn(id) == 0) Then
             If (ia <= config%natms .or. ib <= config%natms .or. &
                 ic <= config%natms .or. id <= config%natms) Then
-              lstopt(0, i) = 1
+
+              ! define components of bond vectors
+              nk = nk + 1
+              lstopt(0, nk) = i
+              lstopt(1, nk) = ia
+              lstopt(2, nk) = ib
+              lstopt(3, nk) = ic
+              lstopt(4, nk) = id
+
+              xdab(nk) = config%parts(ia)%xxx - config%parts(ib)%xxx
+              ydab(nk) = config%parts(ia)%yyy - config%parts(ib)%yyy
+              zdab(nk) = config%parts(ia)%zzz - config%parts(ib)%zzz
+
+              xdbc(nk) = config%parts(ib)%xxx - config%parts(ic)%xxx
+              ydbc(nk) = config%parts(ib)%yyy - config%parts(ic)%yyy
+              zdbc(nk) = config%parts(ib)%zzz - config%parts(ic)%zzz
+
+              xdcd(nk) = config%parts(ic)%xxx - config%parts(id)%xxx
+              ydcd(nk) = config%parts(ic)%yyy - config%parts(id)%yyy
+              zdcd(nk) = config%parts(ic)%zzz - config%parts(id)%zzz
+
             End If
           End If
         Else ! Detect uncompressed unit
@@ -814,75 +889,6 @@ Contains
         End If
       End If
 
-      ! define components of bond vectors
-
-      If (lstopt(0, i) > 0) Then
-        xdab(i) = config%parts(ia)%xxx - config%parts(ib)%xxx
-        ydab(i) = config%parts(ia)%yyy - config%parts(ib)%yyy
-        zdab(i) = config%parts(ia)%zzz - config%parts(ib)%zzz
-
-        xdbc(i) = config%parts(ib)%xxx - config%parts(ic)%xxx
-        ydbc(i) = config%parts(ib)%yyy - config%parts(ic)%yyy
-        zdbc(i) = config%parts(ib)%zzz - config%parts(ic)%zzz
-
-        xdcd(i) = config%parts(ic)%xxx - config%parts(id)%xxx
-        ydcd(i) = config%parts(ic)%yyy - config%parts(id)%yyy
-        zdcd(i) = config%parts(ic)%zzz - config%parts(id)%zzz
-
-        If (dihedral%l_core_shell) Then
-          csa = (dihedral%list(1, i) /= dihedral%list(5, i))
-          csd = (dihedral%list(4, i) /= dihedral%list(6, i))
-
-          lad(:, i) = .false.
-          If (csa .or. csd) Then
-            If (csa .and. csd) Then
-              lad(1, i) = .true.
-              xdad(1, i) = config%parts(ia0)%xxx - config%parts(id)%xxx
-              ydad(1, i) = config%parts(ia0)%yyy - config%parts(id)%yyy
-              zdad(1, i) = config%parts(ia0)%zzz - config%parts(id)%zzz
-
-              lad(2, i) = .true.
-              xdad(2, i) = config%parts(ia)%xxx - config%parts(id0)%xxx
-              ydad(2, i) = config%parts(ia)%yyy - config%parts(id0)%yyy
-              zdad(2, i) = config%parts(ia)%zzz - config%parts(id0)%zzz
-
-              lad(3, i) = .true.
-              xdad(3, i) = config%parts(ia0)%xxx - config%parts(id0)%xxx
-              ydad(3, i) = config%parts(ia0)%yyy - config%parts(id0)%yyy
-              zdad(3, i) = config%parts(ia0)%zzz - config%parts(id0)%zzz
-            Else If (csa) Then
-              lad(1, i) = .true.
-              xdad(1, i) = config%parts(ia0)%xxx - config%parts(id)%xxx
-              ydad(1, i) = config%parts(ia0)%yyy - config%parts(id)%yyy
-              zdad(1, i) = config%parts(ia0)%zzz - config%parts(id)%zzz
-            Else If (csd) Then
-              lad(2, i) = .true.
-              xdad(2, i) = config%parts(ia)%xxx - config%parts(id0)%xxx
-              ydad(2, i) = config%parts(ia)%yyy - config%parts(id0)%yyy
-              zdad(2, i) = config%parts(ia)%zzz - config%parts(id0)%zzz
-            End If
-          End If
-        End If
-      Else ! (DEBUG)
-        xdab(i) = 0.0_wp
-        ydab(i) = 0.0_wp
-        zdab(i) = 0.0_wp
-
-        xdbc(i) = 0.0_wp
-        ydbc(i) = 0.0_wp
-        zdbc(i) = 0.0_wp
-
-        xdcd(i) = 0.0_wp
-        ydcd(i) = 0.0_wp
-        zdcd(i) = 0.0_wp
-
-        If (dihedral%l_core_shell) Then
-          lad(i, :) = .false.
-          xdad(i, :) = 0.0_wp
-          ydad(i, :) = 0.0_wp
-          zdad(i, :) = 0.0_wp
-        End If
-      End If
     End Do
 
     ! Check for uncompressed units
@@ -909,24 +915,24 @@ Contains
 
     ! periodic boundary condition
 
-    Call images(config%imcon, config%cell, dihedral%n_types, xdab, ydab, zdab)
-    Call images(config%imcon, config%cell, dihedral%n_types, xdbc, ydbc, zdbc)
-    Call images(config%imcon, config%cell, dihedral%n_types, xdcd, ydcd, zdcd)
+    Call images(config%imcon, config%cell, nk, xdab, ydab, zdab)
+    Call images(config%imcon, config%cell, nk, xdbc, ydbc, zdbc)
+    Call images(config%imcon, config%cell, nk, xdcd, ydcd, zdcd)
 
     If (Mod(isw, 3) > 0) Then
 
       If (dihedral%l_core_shell) Then
-        If (Any(lad(1, 1:dihedral%n_types))) Then
-          Call images(config%imcon, config%cell, dihedral%n_types, xdad(1, 1:dihedral%n_types), &
-                      ydad(1, 1:dihedral%n_types), zdad(1, 1:dihedral%n_types))
+        If (Any(lad(1, 1:nk))) Then
+          Call images(config%imcon, config%cell, nk, xdad(1, 1:nk), &
+                      ydad(1, 1:nk), zdad(1, 1:nk))
         End If
-        If (Any(lad(2, 1:dihedral%n_types))) Then
-          Call images(config%imcon, config%cell, dihedral%n_types, xdad(2, 1:dihedral%n_types), &
-                      ydad(2, 1:dihedral%n_types), zdad(2, 1:dihedral%n_types))
+        If (Any(lad(2, 1:nk))) Then
+          Call images(config%imcon, config%cell, nk, xdad(2, 1:nk), &
+                      ydad(2, 1:nk), zdad(2, 1:nk))
         End If
-        If (Any(lad(3, 1:dihedral%n_types))) Then
-          Call images(config%imcon, config%cell, dihedral%n_types, xdad(3, 1:dihedral%n_types), &
-                      ydad(3, 1:dihedral%n_types), zdad(3, 1:dihedral%n_types))
+        If (Any(lad(3, 1:nk))) Then
+          Call images(config%imcon, config%cell, nk, xdad(3, 1:nk), &
+                      ydad(3, 1:nk), zdad(3, 1:nk))
         End If
       End If
 
@@ -966,755 +972,752 @@ Contains
 
     ! loop over all specified dihedrals
 
-    Do i = 1, dihedral%n_types
-      If (lstopt(0, i) > 0) Then
+    Do i = 1, nk
 
-        ! indices of dihedral atoms
+      ! indices of dihedral atoms
 
-        ia = lstopt(1, i)
-        ib = lstopt(2, i)
-        ic = lstopt(3, i)
-        id = lstopt(4, i)
+      ia = lstopt(1, i)
+      ib = lstopt(2, i)
+      ic = lstopt(3, i)
+      id = lstopt(4, i)
 
-        ! indices of 1-4 shelled dihedral atoms
+      ! indices of 1-4 shelled dihedral atoms
 
+      If (dihedral%l_core_shell) Then
+        ia0 = lstopt(5, i)
+        id0 = lstopt(6, i)
+      End If
+
+      ! define components of bond vectors
+
+      xab = xdab(i)
+      yab = ydab(i)
+      zab = zdab(i)
+
+      xbc = xdbc(i)
+      ybc = ydbc(i)
+      zbc = zdbc(i)
+      rrbc = 1.0_wp / Sqrt(xbc * xbc + ybc * ybc + zbc * zbc)
+
+      xcd = xdcd(i)
+      ycd = ydcd(i)
+      zcd = zdcd(i)
+
+      xac = xab + xbc
+      yac = yab + ybc
+      zac = zab + zbc
+
+      ! construct first dihedral vector
+
+      pbx = yab * zbc - zab * ybc
+      pby = zab * xbc - xab * zbc
+      pbz = xab * ybc - yab * xbc
+
+      pb2 = pbx * pbx + pby * pby + pbz * pbz
+
+      rpb1 = 1.0_wp / Sqrt(pb2)
+      rpb2 = rpb1 * rpb1
+
+      ! construct second dihedral vector
+
+      pcx = ybc * zcd - zbc * ycd
+      pcy = zbc * xcd - xbc * zcd
+      pcz = xbc * ycd - ybc * xcd
+
+      pc2 = pcx * pcx + pcy * pcy + pcz * pcz
+
+      rpc1 = 1.0_wp / Sqrt(pc2)
+      rpc2 = rpc1 * rpc1
+
+      ! determine dihedral angle
+
+      pbpc = pbx * pcx + pby * pcy + pbz * pcz
+      cost = pbpc * rpb1 * rpc1
+      If (Abs(cost) > 1.0_wp) cost = Sign(1.0_wp, cost)
+      sint = (xbc * (pcy * pbz - pcz * pby) + ybc * (pbx * pcz - pbz * pcx) + &
+              zbc * (pcx * pby - pcy * pbx)) * (rpb1 * rpc1 * rrbc)
+
+      theta = Atan2(sint, cost)
+
+      ! avoid singularity in sint
+
+      sint = Sign(Max(1.0e-10_wp, Abs(sint)), sint)
+      rsint = 1.0_wp / sint
+
+      ! selection of potential energy function type
+
+      kk = dihedral%list(0, lstopt(0, i))
+      keyd = dihedral%key(kk)
+
+      ! accumulate the histogram (distribution)
+
+      If (Mod(isw, 2) == 0 .and. ia <= config%natms) Then
+        j = dihedral%ldf(kk)
+        l = Min(1 + Int((theta + pi) * rdelth), dihedral%bin_adf)
+
+        dihedral%dst(l, j) = dihedral%dst(l, j) + 1.0_wp
+      End If
+      If (isw == 0) Cycle
+
+      ! calculate potential energy and scalar force term
+      Select Case (keyd)
+      Case (DIHEDRAL_COSINE)
+        ! torsion dihedral potential
+
+        a = dihedral%param(1, kk)
+        d = dihedral%param(2, kk)
+        m = dihedral%param(3, kk)
+
+        term = m * theta - d
+
+        pterm = a * (1.0_wp + Cos(term))
+        gamma = -a * m * Sin(term) * rsint * rpb1 * rpc1
+
+      Case (DIHEDRAL_HARMONIC)
+
+        ! harmonic improper dihedral
+
+        a = dihedral%param(1, kk)
+        theta0 = dihedral%param(2, kk)
+        dtheta = theta - theta0
+        dtheta = dtheta - Real(Nint(dtheta * rtwopi), wp) * twopi
+
+        term = a * dtheta
+
+        pterm = 0.5_wp * term * dtheta
+        gamma = term * rsint * rpb1 * rpc1
+
+      Case (DIHEDRAL_HARMONIC_COSINE)
+
+        ! harmonic cosine dihedral (note sint is cancelled)
+
+        a = dihedral%param(1, kk)
+        theta0 = dihedral%param(2, kk)
+        dtheta = Cos(theta) - Cos(theta0)
+
+        term = a * dtheta
+
+        pterm = 0.5_wp * term * dtheta
+        gamma = -term * rpb1 * rpc1
+
+      Case (DIHEDRAL_TRIPLE_COSINE)
+
+        ! 3-term cosine dihedral
+
+        a1 = dihedral%param(1, kk)
+        a2 = dihedral%param(2, kk)
+        a3 = dihedral%param(3, kk)
+
+        pterm = 0.5_wp * (a1 * (1.0_wp + Cos(theta)) + &
+                          a2 * (1.0_wp - Cos(2.0_wp * theta)) + &
+                          a3 * (1.0_wp + Cos(3.0_wp * theta)))
+        gamma = -0.5_wp * (a1 * Sin(theta) - &
+                           2.0_wp * a2 * Sin(2.0_wp * theta) + &
+                           3.0_wp * a3 * Sin(3.0_wp * theta)) * rsint * rpb1 * rpc1
+
+      Case (DIHEDRAL_RYCKAERT_BELLEMANS)
+
+        ! ryckaert-bellemans potential
+        !
+        ! reference: chem. phys. lett., vol. 30, p. 123 (1975)
+        ! ATTENTION: Modified to have the transition configuration correspond
+        !            to theta=180 rather than theta=0 as in original form
+
+        a = dihedral%param(1, kk)
+        m = Cos(theta)
+
+        pterm = a * (1.116_wp - 1.462_wp * m - 1.578_wp * m**2 + &
+                     0.368_wp * m**3 + 3.156_wp * m**4 + 3.788_wp * m**5)
+        gamma = a * (1.462_wp + 3.156_wp * m - 1.104_wp * m**2 - &
+                     12.624_wp * m**3 - 18.94_wp * m**4) * rpb1 * rpc1
+
+      Case (DIHEDRAL_FLUORINATED_RYCKAERT_BELLEMANS)
+
+        ! fluorinated ryckaert-bellemans potential
+        ! reference: Rice at al., JCP 104, p. 2101 (1996)
+
+        a = dihedral%param(1, kk)
+        m = Cos(theta)
+        d = Exp(-56.0_wp * (theta - pi)**2)
+        term = -1083.04_wp * (theta - pi) * d
+
+        pterm = a * (3.55_wp - 2.78_wp * m - 3.56_wp * m**2 - &
+                     1.64_wp * m**3 + 7.13_wp * m**4 + 12.84_wp * m**5 + &
+                     9.67_wp * d)
+        gamma = (a * (2.78_wp + 7.12_wp * m + 4.92_wp * m**2 - &
+                      28.52_wp * m**3 - 64.2_wp * m**4) + term * rsint) * rpb1 * rpc1
+
+      Case (DIHEDRAL_OPLS)
+
+        ! opls cosine dihedral
+
+        a0 = dihedral%param(1, kk)
+        a1 = dihedral%param(2, kk)
+        a2 = dihedral%param(3, kk)
+        a3 = dihedral%param(6, kk)
+        theta0 = dihedral%param(7, kk)
+        dtheta = theta - theta0
+
+        pterm = a0 + 0.5_wp * (a1 * (1.0_wp + Cos(dtheta)) + &
+                               a2 * (1.0_wp - Cos(2.0_wp * dtheta)) + &
+                               a3 * (1.0_wp + Cos(3.0_wp * dtheta)))
+        gamma = -0.5_wp * (a1 * Sin(dtheta) - &
+                           2.0_wp * a2 * Sin(2.0_wp * dtheta) + &
+                           3.0_wp * a3 * Sin(3.0_wp * dtheta)) * rsint * rpb1 * rpc1
+
+      Case (DIHEDRAL_TAB)
+
+        ! TABDIH potential
+
+        j = dihedral%ltp(kk)
+        rdr = dihedral%tab_force(-1, j) ! 1.0_wp/delpot (in rad^-1)
+
+        l = Int((theta + pi) * rdr) ! theta (-pi,+pi) is shifted
+        ppp = (theta + pi) * rdr - Real(l, wp) ! by +pi so l is [1,ngrid]
+
+        vk = dihedral%tab_potential(l, j)
+        vk1 = dihedral%tab_potential(l + 1, j)
+        vk2 = dihedral%tab_potential(l + 2, j)
+
+        t1 = vk + (vk1 - vk) * ppp
+        t2 = vk1 + (vk2 - vk1) * (ppp - 1.0_wp)
+
+        pterm = t1 + (t2 - t1) * ppp * 0.5_wp
+
+        vk = dihedral%tab_force(l, j)
+        vk1 = dihedral%tab_force(l + 1, j)
+        vk2 = dihedral%tab_force(l + 2, j)
+
+        t1 = vk + (vk1 - vk) * ppp
+        t2 = vk1 + (vk2 - vk1) * (ppp - 1.0_wp)
+
+        gamma = -(t1 + (t2 - t1) * ppp * 0.5_wp) * rsint * rpb1 * rpc1
+
+      Case Default
+
+        ! flag undefined potential
+
+        safe(1) = .false.
+        pterm = 0.0_wp
+        gamma = 0.0_wp
+
+      End Select
+
+      ! calculate atomic forces
+
+      fax = gamma * ((-pcy * zbc + pcz * ybc) - pbpc * rpb2 * (-pby * zbc + pbz * ybc))
+      fay = gamma * ((pcx * zbc - pcz * xbc) - pbpc * rpb2 * (pbx * zbc - pbz * xbc))
+      faz = gamma * ((-pcx * ybc + pcy * xbc) - pbpc * rpb2 * (-pbx * ybc + pby * xbc))
+
+      fcx = gamma * ((-pcy * zab + pcz * yab) - pbpc * rpb2 * (-pby * zab + pbz * yab))
+      fcy = gamma * ((pcx * zab - pcz * xab) - pbpc * rpb2 * (pbx * zab - pbz * xab))
+      fcz = gamma * ((-pcx * yab + pcy * xab) - pbpc * rpb2 * (-pbx * yab + pby * xab))
+
+      fb1x = gamma * ((-pby * zcd + pbz * ycd) - pbpc * rpc2 * (-pcy * zcd + pcz * ycd))
+      fb1y = gamma * ((pbx * zcd - pbz * xcd) - pbpc * rpc2 * (pcx * zcd - pcz * xcd))
+      fb1z = gamma * ((-pbx * ycd + pby * xcd) - pbpc * rpc2 * (-pcx * ycd + pcy * xcd))
+
+      fd1x = gamma * ((-pby * zbc + pbz * ybc) - pbpc * rpc2 * (-pcy * zbc + pcz * ybc))
+      fd1y = gamma * ((pbx * zbc - pbz * xbc) - pbpc * rpc2 * (pcx * zbc - pcz * xbc))
+      fd1z = gamma * ((-pbx * ybc + pby * xbc) - pbpc * rpc2 * (-pcx * ybc + pcy * xbc))
+
+      If (ia <= config%natms) Then
+
+        ! sum of dihedral energy (dihedral virial is zero!!!)
+
+        engdih = engdih + pterm
+
+        ! stress tensor calculation for dihedral terms
+
+        strs1 = strs1 + xab * fax + xbc * (fb1x - fcx) - xcd * fd1x
+        strs2 = strs2 + yab * fax + ybc * (fb1x - fcx) - ycd * fd1x
+        strs3 = strs3 + zab * fax + zbc * (fb1x - fcx) - zcd * fd1x
+        strs5 = strs5 + yab * fay + ybc * (fb1y - fcy) - ycd * fd1y
+        strs6 = strs6 + yab * faz + ybc * (fb1z - fcz) - ycd * fd1z
+        strs9 = strs9 + zab * faz + zbc * (fb1z - fcz) - zcd * fd1z
+
+        config%parts(ia)%fxx = config%parts(ia)%fxx + fax
+        config%parts(ia)%fyy = config%parts(ia)%fyy + fay
+        config%parts(ia)%fzz = config%parts(ia)%fzz + faz
+
+      End If
+
+      If (ib <= config%natms) Then
+
+        config%parts(ib)%fxx = config%parts(ib)%fxx - fax - fcx + fb1x
+        config%parts(ib)%fyy = config%parts(ib)%fyy - fay - fcy + fb1y
+        config%parts(ib)%fzz = config%parts(ib)%fzz - faz - fcz + fb1z
+
+      End If
+
+      If (ic <= config%natms) Then
+
+        config%parts(ic)%fxx = config%parts(ic)%fxx + fcx - fb1x - fd1x
+        config%parts(ic)%fyy = config%parts(ic)%fyy + fcy - fb1y - fd1y
+        config%parts(ic)%fzz = config%parts(ic)%fzz + fcz - fb1z - fd1z
+
+      End If
+
+      If (id <= config%natms) Then
+
+        config%parts(id)%fxx = config%parts(id)%fxx + fd1x
+        config%parts(id)%fyy = config%parts(id)%fyy + fd1y
+        config%parts(id)%fzz = config%parts(id)%fzz + fd1z
+
+      End If
+
+      xad = xac + xcd
+      yad = yac + ycd
+      zad = zac + zcd
+
+      rad2 = 0.0_wp; rad = 0.0_wp
+
+      rad2(0) = xad**2 + yad**2 + zad**2
+      rad(0) = Sqrt(rad2(0))
+
+      If (dihedral%l_core_shell) Then
+        If (lad(1, i)) Then
+          rad2(1) = xdad(1, i)**2 + ydad(1, i)**2 + zdad(1, i)**2
+          rad(1) = Sqrt(rad2(1))
+        End If
+        If (lad(2, i)) Then
+          rad2(2) = xdad(2, i)**2 + ydad(2, i)**2 + zdad(2, i)**2
+          rad(2) = Sqrt(rad2(2))
+        End If
+        If (lad(3, i)) Then
+          rad2(3) = xdad(3, i)**2 + ydad(3, i)**2 + zdad(3, i)**2
+          rad(3) = Sqrt(rad2(3))
+        End If
+      End If
+
+      ! flag error if rad > cutoff
+
+      If (Any(rad > rcut)) Then
+        Write (messages(1), *) 'AB', xab, yab, zab
+        Write (messages(2), *) 'BC', xbc, ybc, zbc, xac, yac, zac
+        Write (messages(3), *) 'CD', xcd, ycd, zcd, xad, yad, zad
+        Write (messages(4), *) 'A', config%parts(ia)%xxx, config%parts(ia)%yyy, config%parts(ia)%zzz
+        Write (messages(5), *) 'B', config%parts(ib)%xxx, config%parts(ib)%yyy, config%parts(ib)%zzz
+        Write (messages(6), *) 'C', config%parts(ic)%xxx, config%parts(ic)%yyy, config%parts(ic)%zzz
+        Write (messages(7), *) 'D', config%parts(id)%xxx, config%parts(id)%yyy, config%parts(id)%zzz
+        Call info(messages, 7)
         If (dihedral%l_core_shell) Then
-          ia0 = lstopt(5, i)
-          id0 = lstopt(6, i)
+          If (lad(1, i)) Then
+            Write (message, *) 'A0', config%parts(ia0)%xxx, config%parts(ia0)%yyy, config%parts(ia0)%zzz
+            Call info(message)
+          End If
+          If (lad(2, i)) Then
+            Write (message, *) 'D0', config%parts(id0)%xxx, config%parts(id0)%yyy, config%parts(id0)%zzz
+            Call info(message)
+          End If
         End If
-
-        ! define components of bond vectors
-
-        xab = xdab(i)
-        yab = ydab(i)
-        zab = zdab(i)
-
-        xbc = xdbc(i)
-        ybc = ydbc(i)
-        zbc = zdbc(i)
-        rrbc = 1.0_wp / Sqrt(xbc * xbc + ybc * ybc + zbc * zbc)
-
-        xcd = xdcd(i)
-        ycd = ydcd(i)
-        zcd = zdcd(i)
-
-        xac = xab + xbc
-        yac = yab + ybc
-        zac = zab + zbc
-
-        ! construct first dihedral vector
-
-        pbx = yab * zbc - zab * ybc
-        pby = zab * xbc - xab * zbc
-        pbz = xab * ybc - yab * xbc
-
-        pb2 = pbx * pbx + pby * pby + pbz * pbz
-
-        rpb1 = 1.0_wp / Sqrt(pb2)
-        rpb2 = rpb1 * rpb1
-
-        ! construct second dihedral vector
-
-        pcx = ybc * zcd - zbc * ycd
-        pcy = zbc * xcd - xbc * zcd
-        pcz = xbc * ycd - ybc * xcd
-
-        pc2 = pcx * pcx + pcy * pcy + pcz * pcz
-
-        rpc1 = 1.0_wp / Sqrt(pc2)
-        rpc2 = rpc1 * rpc1
-
-        ! determine dihedral angle
-
-        pbpc = pbx * pcx + pby * pcy + pbz * pcz
-        cost = pbpc * rpb1 * rpc1
-        If (Abs(cost) > 1.0_wp) cost = Sign(1.0_wp, cost)
-        sint = (xbc * (pcy * pbz - pcz * pby) + ybc * (pbx * pcz - pbz * pcx) + &
-                zbc * (pcx * pby - pcy * pbx)) * (rpb1 * rpc1 * rrbc)
-
-        theta = Atan2(sint, cost)
-
-        ! avoid singularity in sint
-
-        sint = Sign(Max(1.0e-10_wp, Abs(sint)), sint)
-        rsint = 1.0_wp / sint
-
-        ! selection of potential energy function type
-
-        kk = dihedral%list(0, i)
-        keyd = dihedral%key(kk)
-
-        ! accumulate the histogram (distribution)
-
-        If (Mod(isw, 2) == 0 .and. ia <= config%natms) Then
-          j = dihedral%ldf(kk)
-          l = Min(1 + Int((theta + pi) * rdelth), dihedral%bin_adf)
-
-          dihedral%dst(l, j) = dihedral%dst(l, j) + 1.0_wp
+        Write (message, *) i, config%ltg(ia), config%ltg(ib), config%ltg(ic), config%ltg(id), rcut, rad(0)
+        Call info(message)
+        If (dihedral%l_core_shell) Then
+          If (lad(1, i)) Then
+            Write (message, *) i, config%ltg(ia0), config%ltg(id), rad(1)
+            Call info(message)
+          End If
+          If (lad(2, i)) Then
+            Write (message, *) i, config%ltg(ia), config%ltg(id0), rad(2)
+            Call info(message)
+          End If
+          If (lad(3, i)) Then
+            Write (message, *) i, config%ltg(ia0), config%ltg(id0), rad(3)
+            Call info(message)
+          End If
         End If
-        If (isw == 0) Cycle
+        safe(2) = .false.
+      End If
 
-        ! calculate potential energy and scalar force term
+      ! 1-4 electrostatics: adjust by weighting factor
+      ! assumes 1-4 interactions are in the exclude neigh%list and Rad < rcut
 
-        If (keyd == DIHEDRAL_COSINE) Then
+      scale = dihedral%param(4, kk)
 
-          ! torsion dihedral potential
+      ! scaled charge product times dielectric constants
 
-          a = dihedral%param(1, kk)
-          d = dihedral%param(2, kk)
-          m = dihedral%param(3, kk)
+      chgprd = scale * config%parts(ia)%chge * config%parts(id)%chge * r4pie0 / electro%eps
+      If ((Abs(chgprd) > zero_plus .or. mpoles%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
 
-          term = m * theta - d
-
-          pterm = a * (1.0_wp + Cos(term))
-          gamma = -a * m * Sin(term) * rsint * rpb1 * rpc1
-
-        Else If (keyd == DIHEDRAL_HARMONIC) Then
-
-          ! harmonic improper dihedral
-
-          a = dihedral%param(1, kk)
-          theta0 = dihedral%param(2, kk)
-          dtheta = theta - theta0
-          dtheta = dtheta - Real(Nint(dtheta * rtwopi), wp) * twopi
-
-          term = a * dtheta
-
-          pterm = 0.5_wp * term * dtheta
-          gamma = term * rsint * rpb1 * rpc1
-
-        Else If (keyd == DIHEDRAL_HARMONIC_COSINE) Then
-
-          ! harmonic cosine dihedral (note sint is cancelled)
-
-          a = dihedral%param(1, kk)
-          theta0 = dihedral%param(2, kk)
-          dtheta = Cos(theta) - Cos(theta0)
-
-          term = a * dtheta
-
-          pterm = 0.5_wp * term * dtheta
-          gamma = -term * rpb1 * rpc1
-
-        Else If (keyd == DIHEDRAL_TRIPLE_COSINE) Then
-
-          ! 3-term cosine dihedral
-
-          a1 = dihedral%param(1, kk)
-          a2 = dihedral%param(2, kk)
-          a3 = dihedral%param(3, kk)
-
-          pterm = 0.5_wp * (a1 * (1.0_wp + Cos(theta)) + &
-                            a2 * (1.0_wp - Cos(2.0_wp * theta)) + &
-                            a3 * (1.0_wp + Cos(3.0_wp * theta)))
-          gamma = -0.5_wp * (a1 * Sin(theta) - &
-                             2.0_wp * a2 * Sin(2.0_wp * theta) + &
-                             3.0_wp * a3 * Sin(3.0_wp * theta)) * rsint * rpb1 * rpc1
-
-        Else If (keyd == DIHEDRAL_RYCKAERT_BELLEMANS) Then
-
-          ! ryckaert-bellemans potential
-          !
-          ! reference: chem. phys. lett., vol. 30, p. 123 (1975)
-          ! ATTENTION: Modified to have the transition configuration correspond
-          !            to theta=180 rather than theta=0 as in original form
-
-          a = dihedral%param(1, kk)
-          m = Cos(theta)
-
-          pterm = a * (1.116_wp - 1.462_wp * m - 1.578_wp * m**2 + &
-                       0.368_wp * m**3 + 3.156_wp * m**4 + 3.788_wp * m**5)
-          gamma = a * (1.462_wp + 3.156_wp * m - 1.104_wp * m**2 - &
-                       12.624_wp * m**3 - 18.94_wp * m**4) * rpb1 * rpc1
-
-        Else If (keyd == DIHEDRAL_FLUORINATED_RYCKAERT_BELLEMANS) Then
-
-          ! fluorinated ryckaert-bellemans potential
-          ! reference: Rice at al., JCP 104, p. 2101 (1996)
-
-          a = dihedral%param(1, kk)
-          m = Cos(theta)
-          d = Exp(-56.0_wp * (theta - pi)**2)
-          term = -1083.04_wp * (theta - pi) * d
-
-          pterm = a * (3.55_wp - 2.78_wp * m - 3.56_wp * m**2 - &
-                       1.64_wp * m**3 + 7.13_wp * m**4 + 12.84_wp * m**5 + &
-                       9.67_wp * d)
-          gamma = (a * (2.78_wp + 7.12_wp * m + 4.92_wp * m**2 - &
-                        28.52_wp * m**3 - 64.2_wp * m**4) + term * rsint) * rpb1 * rpc1
-
-        Else If (keyd == DIHEDRAL_OPLS) Then
-
-          ! opls cosine dihedral
-
-          a0 = dihedral%param(1, kk)
-          a1 = dihedral%param(2, kk)
-          a2 = dihedral%param(3, kk)
-          a3 = dihedral%param(6, kk)
-          theta0 = dihedral%param(7, kk)
-          dtheta = theta - theta0
-
-          pterm = a0 + 0.5_wp * (a1 * (1.0_wp + Cos(dtheta)) + &
-                                 a2 * (1.0_wp - Cos(2.0_wp * dtheta)) + &
-                                 a3 * (1.0_wp + Cos(3.0_wp * dtheta)))
-          gamma = -0.5_wp * (a1 * Sin(dtheta) - &
-                             2.0_wp * a2 * Sin(2.0_wp * dtheta) + &
-                             3.0_wp * a3 * Sin(3.0_wp * dtheta)) * rsint * rpb1 * rpc1
-
-        Else If (keyd == DIHEDRAL_TAB) Then
-
-          ! TABDIH potential
-
-          j = dihedral%ltp(kk)
-          rdr = dihedral%tab_force(-1, j) ! 1.0_wp/delpot (in rad^-1)
-
-          l = Int((theta + pi) * rdr) ! theta (-pi,+pi) is shifted
-          ppp = (theta + pi) * rdr - Real(l, wp) ! by +pi so l is [1,ngrid]
-
-          vk = dihedral%tab_potential(l, j)
-          vk1 = dihedral%tab_potential(l + 1, j)
-          vk2 = dihedral%tab_potential(l + 2, j)
-
-          t1 = vk + (vk1 - vk) * ppp
-          t2 = vk1 + (vk2 - vk1) * (ppp - 1.0_wp)
-
-          pterm = t1 + (t2 - t1) * ppp * 0.5_wp
-
-          vk = dihedral%tab_force(l, j)
-          vk1 = dihedral%tab_force(l + 1, j)
-          vk2 = dihedral%tab_force(l + 2, j)
-
-          t1 = vk + (vk1 - vk) * ppp
-          t2 = vk1 + (vk2 - vk1) * (ppp - 1.0_wp)
-
-          gamma = -(t1 + (t2 - t1) * ppp * 0.5_wp) * rsint * rpb1 * rpc1
-
+        If (mpoles%max_mpoles > 0) Then
+          Call intra_mcoul(rcut, ia, id, scale, rad(0), xad, yad, zad, coul, &
+                           virele, fx, fy, fz, safe(3), mpoles, electro, config)
         Else
+          Call intra_coul(rcut, chgprd, rad(0), rad2(0), coul, fcoul, safe(3), electro)
 
-          ! flag undefined potential
+          fx = fcoul * xad
+          fy = fcoul * yad
+          fz = fcoul * zad
 
-          safe(1) = .false.
-          pterm = 0.0_wp
-          gamma = 0.0_wp
-
+          virele = -fcoul * rad2(0)
         End If
-
-        ! calculate atomic forces
-
-        fax = gamma * ((-pcy * zbc + pcz * ybc) - pbpc * rpb2 * (-pby * zbc + pbz * ybc))
-        fay = gamma * ((pcx * zbc - pcz * xbc) - pbpc * rpb2 * (pbx * zbc - pbz * xbc))
-        faz = gamma * ((-pcx * ybc + pcy * xbc) - pbpc * rpb2 * (-pbx * ybc + pby * xbc))
-
-        fcx = gamma * ((-pcy * zab + pcz * yab) - pbpc * rpb2 * (-pby * zab + pbz * yab))
-        fcy = gamma * ((pcx * zab - pcz * xab) - pbpc * rpb2 * (pbx * zab - pbz * xab))
-        fcz = gamma * ((-pcx * yab + pcy * xab) - pbpc * rpb2 * (-pbx * yab + pby * xab))
-
-        fb1x = gamma * ((-pby * zcd + pbz * ycd) - pbpc * rpc2 * (-pcy * zcd + pcz * ycd))
-        fb1y = gamma * ((pbx * zcd - pbz * xcd) - pbpc * rpc2 * (pcx * zcd - pcz * xcd))
-        fb1z = gamma * ((-pbx * ycd + pby * xcd) - pbpc * rpc2 * (-pcx * ycd + pcy * xcd))
-
-        fd1x = gamma * ((-pby * zbc + pbz * ybc) - pbpc * rpc2 * (-pcy * zbc + pcz * ybc))
-        fd1y = gamma * ((pbx * zbc - pbz * xbc) - pbpc * rpc2 * (pcx * zbc - pcz * xbc))
-        fd1z = gamma * ((-pbx * ybc + pby * xbc) - pbpc * rpc2 * (-pcx * ybc + pcy * xbc))
 
         If (ia <= config%natms) Then
 
-          ! sum of dihedral energy (dihedral virial is zero!!!)
+          ! correction to electrostatic energy and virial
 
-          engdih = engdih + pterm
+          engc14 = engc14 + coul
+          virc14 = virc14 + virele
 
-          ! stress tensor calculation for dihedral terms
+          ! calculate stress tensor
 
-          strs1 = strs1 + xab * fax + xbc * (fb1x - fcx) - xcd * fd1x
-          strs2 = strs2 + yab * fax + ybc * (fb1x - fcx) - ycd * fd1x
-          strs3 = strs3 + zab * fax + zbc * (fb1x - fcx) - zcd * fd1x
-          strs5 = strs5 + yab * fay + ybc * (fb1y - fcy) - ycd * fd1y
-          strs6 = strs6 + yab * faz + ybc * (fb1z - fcz) - ycd * fd1z
-          strs9 = strs9 + zab * faz + zbc * (fb1z - fcz) - zcd * fd1z
+          strs1 = strs1 + xad * fx
+          strs2 = strs2 + xad * fy
+          strs3 = strs3 + xad * fz
+          strs5 = strs5 + yad * fy
+          strs6 = strs6 + yad * fz
+          strs9 = strs9 + zad * fz
 
-          config%parts(ia)%fxx = config%parts(ia)%fxx + fax
-          config%parts(ia)%fyy = config%parts(ia)%fyy + fay
-          config%parts(ia)%fzz = config%parts(ia)%fzz + faz
-
-        End If
-
-        If (ib <= config%natms) Then
-
-          config%parts(ib)%fxx = config%parts(ib)%fxx - fax - fcx + fb1x
-          config%parts(ib)%fyy = config%parts(ib)%fyy - fay - fcy + fb1y
-          config%parts(ib)%fzz = config%parts(ib)%fzz - faz - fcz + fb1z
-
-        End If
-
-        If (ic <= config%natms) Then
-
-          config%parts(ic)%fxx = config%parts(ic)%fxx + fcx - fb1x - fd1x
-          config%parts(ic)%fyy = config%parts(ic)%fyy + fcy - fb1y - fd1y
-          config%parts(ic)%fzz = config%parts(ic)%fzz + fcz - fb1z - fd1z
+          config%parts(ia)%fxx = config%parts(ia)%fxx + fx
+          config%parts(ia)%fyy = config%parts(ia)%fyy + fy
+          config%parts(ia)%fzz = config%parts(ia)%fzz + fz
 
         End If
 
         If (id <= config%natms) Then
 
-          config%parts(id)%fxx = config%parts(id)%fxx + fd1x
-          config%parts(id)%fyy = config%parts(id)%fyy + fd1y
-          config%parts(id)%fzz = config%parts(id)%fzz + fd1z
-
-        End If
-
-        xad = xac + xcd
-        yad = yac + ycd
-        zad = zac + zcd
-
-        rad2 = 0.0_wp; rad = 0.0_wp
-
-        rad2(0) = xad**2 + yad**2 + zad**2
-        rad(0) = Sqrt(rad2(0))
-
-        If (dihedral%l_core_shell) Then
-          If (lad(1, i)) Then
-            rad2(1) = xdad(1, i)**2 + ydad(1, i)**2 + zdad(1, i)**2
-            rad(1) = Sqrt(rad2(1))
-          End If
-          If (lad(2, i)) Then
-            rad2(2) = xdad(2, i)**2 + ydad(2, i)**2 + zdad(2, i)**2
-            rad(2) = Sqrt(rad2(2))
-          End If
-          If (lad(3, i)) Then
-            rad2(3) = xdad(3, i)**2 + ydad(3, i)**2 + zdad(3, i)**2
-            rad(3) = Sqrt(rad2(3))
-          End If
-        End If
-
-        ! flag error if rad > cutoff
-
-        If (Any(rad > rcut)) Then
-          Write (messages(1), *) 'AB', xab, yab, zab
-          Write (messages(2), *) 'BC', xbc, ybc, zbc, xac, yac, zac
-          Write (messages(3), *) 'CD', xcd, ycd, zcd, xad, yad, zad
-          Write (messages(4), *) 'A', config%parts(ia)%xxx, config%parts(ia)%yyy, config%parts(ia)%zzz
-          Write (messages(5), *) 'B', config%parts(ib)%xxx, config%parts(ib)%yyy, config%parts(ib)%zzz
-          Write (messages(6), *) 'C', config%parts(ic)%xxx, config%parts(ic)%yyy, config%parts(ic)%zzz
-          Write (messages(7), *) 'D', config%parts(id)%xxx, config%parts(id)%yyy, config%parts(id)%zzz
-          Call info(messages, 7)
-          If (dihedral%l_core_shell) Then
-            If (lad(1, i)) Then
-              Write (message, *) 'A0', config%parts(ia0)%xxx, config%parts(ia0)%yyy, config%parts(ia0)%zzz
-              Call info(message)
-            End If
-            If (lad(2, i)) Then
-              Write (message, *) 'D0', config%parts(id0)%xxx, config%parts(id0)%yyy, config%parts(id0)%zzz
-              Call info(message)
-            End If
-          End If
-          Write (message, *) i, config%ltg(ia), config%ltg(ib), config%ltg(ic), config%ltg(id), rcut, rad(0)
-          Call info(message)
-          If (dihedral%l_core_shell) Then
-            If (lad(1, i)) Then
-              Write (message, *) i, config%ltg(ia0), config%ltg(id), rad(1)
-              Call info(message)
-            End If
-            If (lad(2, i)) Then
-              Write (message, *) i, config%ltg(ia), config%ltg(id0), rad(2)
-              Call info(message)
-            End If
-            If (lad(3, i)) Then
-              Write (message, *) i, config%ltg(ia0), config%ltg(id0), rad(3)
-              Call info(message)
-            End If
-          End If
-          safe(2) = .false.
-        End If
-
-        ! 1-4 electrostatics: adjust by weighting factor
-        ! assumes 1-4 interactions are in the exclude neigh%list and Rad < rcut
-
-        scale = dihedral%param(4, kk)
-
-        ! scaled charge product times dielectric constants
-
-        chgprd = scale * config%parts(ia)%chge * config%parts(id)%chge * r4pie0 / electro%eps
-        If ((Abs(chgprd) > zero_plus .or. mpoles%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
-
-          If (mpoles%max_mpoles > 0) Then
-            Call intra_mcoul(rcut, ia, id, scale, rad(0), xad, yad, zad, coul, &
-                             virele, fx, fy, fz, safe(3), mpoles, electro, config)
-          Else
-            Call intra_coul(rcut, chgprd, rad(0), rad2(0), coul, fcoul, safe(3), electro)
-
-            fx = fcoul * xad
-            fy = fcoul * yad
-            fz = fcoul * zad
-
-            virele = -fcoul * rad2(0)
-          End If
-
-          If (ia <= config%natms) Then
-
-            ! correction to electrostatic energy and virial
-
-            engc14 = engc14 + coul
-            virc14 = virc14 + virele
-
-            ! calculate stress tensor
-
-            strs1 = strs1 + xad * fx
-            strs2 = strs2 + xad * fy
-            strs3 = strs3 + xad * fz
-            strs5 = strs5 + yad * fy
-            strs6 = strs6 + yad * fz
-            strs9 = strs9 + zad * fz
-
-            config%parts(ia)%fxx = config%parts(ia)%fxx + fx
-            config%parts(ia)%fyy = config%parts(ia)%fyy + fy
-            config%parts(ia)%fzz = config%parts(ia)%fzz + fz
-
-          End If
-
-          If (id <= config%natms) Then
-
-            config%parts(id)%fxx = config%parts(id)%fxx - fx
-            config%parts(id)%fyy = config%parts(id)%fyy - fy
-            config%parts(id)%fzz = config%parts(id)%fzz - fz
-
-          End If
-
-        End If
-
-        If (dihedral%l_core_shell) Then
-          If (lad(1, i)) Then
-            chgprd = scale * config%parts(ia0)%chge * config%parts(id)%chge * r4pie0 / electro%eps
-            If ((Abs(chgprd) > zero_plus .or. mpoles%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
-              If (mpoles%max_mpoles > 0) Then
-                Call intra_mcoul(rcut, ia0, id, scale, rad(1), xdad(1, i), &
-                                 ydad(1, i), zdad(1, i), coul, virele, fx, fy, fz, safe(3), mpoles, electro, config)
-              Else
-                Call intra_coul(rcut, chgprd, rad(1), rad2(1), coul, fcoul, safe(3), electro)
-
-                fx = fcoul * xdad(1, i)
-                fy = fcoul * ydad(1, i)
-                fz = fcoul * zdad(1, i)
-
-                virele = -fcoul * rad2(1)
-              End If
-
-              If (ia0 <= config%natms) Then
-
-                ! correction to electrostatic energy and virial
-
-                engc14 = engc14 + coul
-                virc14 = virc14 + virele
-
-                ! calculate stress tensor
-
-                strs1 = strs1 + xdad(1, i) * fx
-                strs2 = strs2 + xdad(1, i) * fy
-                strs3 = strs3 + xdad(1, i) * fz
-                strs5 = strs5 + ydad(1, i) * fy
-                strs6 = strs6 + ydad(1, i) * fz
-                strs9 = strs9 + zdad(1, i) * fz
-
-                config%parts(ia0)%fxx = config%parts(ia0)%fxx + fx
-                config%parts(ia0)%fyy = config%parts(ia0)%fyy + fy
-                config%parts(ia0)%fzz = config%parts(ia0)%fzz + fz
-
-              End If
-
-              If (id <= config%natms) Then
-
-                config%parts(id)%fxx = config%parts(id)%fxx - fx
-                config%parts(id)%fyy = config%parts(id)%fyy - fy
-                config%parts(id)%fzz = config%parts(id)%fzz - fz
-
-              End If
-
-            End If
-          End If
-
-          If (lad(2, i)) Then
-            chgprd = scale * config%parts(ia)%chge * config%parts(id0)%chge * r4pie0 / electro%eps
-            If ((Abs(chgprd) > zero_plus .or. mpoles%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
-              If (mpoles%max_mpoles > 0) Then
-                Call intra_mcoul(rcut, ia, id0, scale, rad(2), xdad(2, i), &
-                                 ydad(2, i), zdad(2, i), coul, virele, fx, fy, fz, safe(3), mpoles, electro, config)
-              Else
-                Call intra_coul(rcut, chgprd, rad(2), rad2(2), coul, fcoul, safe(3), electro)
-
-                fx = fcoul * xdad(2, i)
-                fy = fcoul * ydad(2, i)
-                fz = fcoul * zdad(2, i)
-
-                virele = -fcoul * rad2(2)
-              End If
-
-              If (ia <= config%natms) Then
-
-                ! correction to electrostatic energy and virial
-
-                engc14 = engc14 + coul
-                virc14 = virc14 + virele
-
-                ! calculate stress tensor
-
-                strs1 = strs1 + xdad(2, i) * fx
-                strs2 = strs2 + xdad(2, i) * fy
-                strs3 = strs3 + xdad(2, i) * fz
-                strs5 = strs5 + ydad(2, i) * fy
-                strs6 = strs6 + ydad(2, i) * fz
-                strs9 = strs9 + zdad(2, i) * fz
-
-                config%parts(ia)%fxx = config%parts(ia)%fxx + fx
-                config%parts(ia)%fyy = config%parts(ia)%fyy + fy
-                config%parts(ia)%fzz = config%parts(ia)%fzz + fz
-
-              End If
-
-              If (id0 <= config%natms) Then
-
-                config%parts(id0)%fxx = config%parts(id0)%fxx - fx
-                config%parts(id0)%fyy = config%parts(id0)%fyy - fy
-                config%parts(id0)%fzz = config%parts(id0)%fzz - fz
-
-              End If
-            End If
-          End If
-
-          If (lad(3, i)) Then
-            chgprd = scale * config%parts(ia0)%chge * config%parts(id0)%chge * r4pie0 / electro%eps
-            If ((Abs(chgprd) > zero_plus .or. mpoles%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
-              If (mpoles%max_mpoles > 0) Then
-                Call intra_mcoul(rcut, ia0, id0, scale, rad(3), xdad(3, i), &
-                                 ydad(3, i), zdad(3, i), coul, virele, fx, fy, fz, safe(3), mpoles, electro, config)
-              Else
-                Call intra_coul(rcut, chgprd, rad(3), rad2(3), coul, fcoul, safe(3), electro)
-
-                fx = fcoul * xdad(3, i)
-                fy = fcoul * ydad(3, i)
-                fz = fcoul * zdad(3, i)
-
-                virele = -fcoul * rad2(3)
-              End If
-
-              If (ia0 <= config%natms) Then
-
-                ! correction to electrostatic energy and virial
-
-                engc14 = engc14 + coul
-                virc14 = virc14 + virele
-
-                ! calculate stress tensor
-
-                strs1 = strs1 + xdad(3, i) * fx
-                strs2 = strs2 + xdad(3, i) * fy
-                strs3 = strs3 + xdad(3, i) * fz
-                strs5 = strs5 + ydad(3, i) * fy
-                strs6 = strs6 + ydad(3, i) * fz
-                strs9 = strs9 + zdad(3, i) * fz
-
-                config%parts(ia0)%fxx = config%parts(ia0)%fxx + fx
-                config%parts(ia0)%fyy = config%parts(ia0)%fyy + fy
-                config%parts(ia0)%fzz = config%parts(ia0)%fzz + fz
-
-              End If
-
-              If (id0 <= config%natms) Then
-
-                config%parts(id0)%fxx = config%parts(id0)%fxx - fx
-                config%parts(id0)%fyy = config%parts(id0)%fyy - fy
-                config%parts(id0)%fzz = config%parts(id0)%fzz - fz
-
-              End If
-            End If
-          End If
-        End If
-
-        ! 1-4 short-range (vdw) interactions: adjust by weighting factor
-        ! assumes 1-4 interactions are in the exclude neigh%list and Rad < vdws%cutoff
-
-        scale = dihedral%param(5, kk)
-        If (Abs(scale) > zero_plus .and. vdws%n_vdw > 0) Then
-
-          ! atomic type indices
-
-          ai = config%ltype(ia)
-          aj = config%ltype(id)
-
-          Call dihedrals_14_vdw(ai, aj, rad(0), rad2(0), eng, gamma, dihedral, vdws)
-
-          gamma = scale * gamma
-          eng = scale * eng
-
-          fx = gamma * xad
-          fy = gamma * yad
-          fz = gamma * zad
-
-          If (ia <= config%natms) Then
-
-            ! add scaled 1-4 short-range potential energy and virial
-
-            engs14 = engs14 + eng
-            virs14 = virs14 - gamma * rad2(0)
-
-            ! calculate stress tensor
-
-            strs1 = strs1 + xad * fx
-            strs2 = strs2 + xad * fy
-            strs3 = strs3 + xad * fz
-            strs5 = strs5 + yad * fy
-            strs6 = strs6 + yad * fz
-            strs9 = strs9 + zad * fz
-
-            config%parts(ia)%fxx = config%parts(ia)%fxx + fx
-            config%parts(ia)%fyy = config%parts(ia)%fyy + fy
-            config%parts(ia)%fzz = config%parts(ia)%fzz + fz
-
-          End If
-
-          If (id <= config%natms) Then
-
-            config%parts(id)%fxx = config%parts(id)%fxx - fx
-            config%parts(id)%fyy = config%parts(id)%fyy - fy
-            config%parts(id)%fzz = config%parts(id)%fzz - fz
-
-          End If
-
-          If (dihedral%l_core_shell) Then
-            If (lad(1, i)) Then
-              ai = config%ltype(ia0)
-              aj = config%ltype(id)
-
-              Call dihedrals_14_vdw(ai, aj, rad(1), rad2(1), eng, gamma, dihedral, vdws)
-
-              gamma = scale * gamma
-              eng = scale * eng
-
-              fx = gamma * xdad(1, i)
-              fy = gamma * ydad(1, i)
-              fz = gamma * zdad(1, i)
-
-              If (ia0 <= config%natms) Then
-
-                ! add scaled 1-4 short-range potential energy and virial
-
-                engs14 = engs14 + eng
-                virs14 = virs14 - gamma * rad2(1)
-
-                ! calculate stress tensor
-
-                strs1 = strs1 + xdad(1, i) * fx
-                strs2 = strs2 + xdad(1, i) * fy
-                strs3 = strs3 + xdad(1, i) * fz
-                strs5 = strs5 + ydad(1, i) * fy
-                strs6 = strs6 + ydad(1, i) * fz
-                strs9 = strs9 + zdad(1, i) * fz
-
-                config%parts(ia0)%fxx = config%parts(ia0)%fxx + fx
-                config%parts(ia0)%fyy = config%parts(ia0)%fyy + fy
-                config%parts(ia0)%fzz = config%parts(ia0)%fzz + fz
-
-              End If
-
-              If (id <= config%natms) Then
-
-                config%parts(id)%fxx = config%parts(id)%fxx - fx
-                config%parts(id)%fyy = config%parts(id)%fyy - fy
-                config%parts(id)%fzz = config%parts(id)%fzz - fz
-
-              End If
-            End If
-
-            If (lad(2, i)) Then
-              ai = config%ltype(ia)
-              aj = config%ltype(id0)
-
-              Call dihedrals_14_vdw(ai, aj, rad(2), rad2(2), eng, gamma, dihedral, vdws)
-
-              gamma = scale * gamma
-              eng = scale * eng
-
-              fx = gamma * xdad(2, i)
-              fy = gamma * ydad(2, i)
-              fz = gamma * zdad(2, i)
-
-              If (ia <= config%natms) Then
-
-                ! add scaled 1-4 short-range potential energy and virial
-
-                engs14 = engs14 + eng
-                virs14 = virs14 - gamma * rad2(2)
-
-                ! calculate stress tensor
-
-                strs1 = strs1 + xdad(2, i) * fx
-                strs2 = strs2 + xdad(2, i) * fy
-                strs3 = strs3 + xdad(2, i) * fz
-                strs5 = strs5 + ydad(2, i) * fy
-                strs6 = strs6 + ydad(2, i) * fz
-                strs9 = strs9 + zdad(2, i) * fz
-
-                config%parts(ia)%fxx = config%parts(ia)%fxx + fx
-                config%parts(ia)%fyy = config%parts(ia)%fyy + fy
-                config%parts(ia)%fzz = config%parts(ia)%fzz + fz
-
-              End If
-
-              If (id0 <= config%natms) Then
-
-                config%parts(id0)%fxx = config%parts(id0)%fxx - fx
-                config%parts(id0)%fyy = config%parts(id0)%fyy - fy
-                config%parts(id0)%fzz = config%parts(id0)%fzz - fz
-
-              End If
-            End If
-
-            If (lad(3, i)) Then
-              ai = config%ltype(ia0)
-              aj = config%ltype(id0)
-
-              Call dihedrals_14_vdw(ai, aj, rad(3), rad2(3), eng, gamma, dihedral, vdws)
-
-              gamma = scale * gamma
-              eng = scale * eng
-
-              fx = gamma * xdad(3, i)
-              fy = gamma * ydad(3, i)
-              fz = gamma * zdad(3, i)
-
-              If (ia0 <= config%natms) Then
-
-                ! add scaled 1-4 short-range potential energy and virial
-
-                engs14 = engs14 + eng
-                virs14 = virs14 - gamma * rad2(3)
-
-                ! calculate stress tensor
-
-                strs1 = strs1 + xdad(3, i) * fx
-                strs2 = strs2 + xdad(3, i) * fy
-                strs3 = strs3 + xdad(3, i) * fz
-                strs5 = strs5 + ydad(3, i) * fy
-                strs6 = strs6 + ydad(3, i) * fz
-                strs9 = strs9 + zdad(3, i) * fz
-
-                config%parts(ia0)%fxx = config%parts(ia0)%fxx + fx
-                config%parts(ia0)%fyy = config%parts(ia0)%fyy + fy
-                config%parts(ia0)%fzz = config%parts(ia0)%fzz + fz
-
-              End If
-
-              If (id0 <= config%natms) Then
-
-                config%parts(id0)%fxx = config%parts(id0)%fxx - fx
-                config%parts(id0)%fyy = config%parts(id0)%fyy - fy
-                config%parts(id0)%fzz = config%parts(id0)%fzz - fz
-
-              End If
-            End If
-          End If
+          config%parts(id)%fxx = config%parts(id)%fxx - fx
+          config%parts(id)%fyy = config%parts(id)%fyy - fy
+          config%parts(id)%fzz = config%parts(id)%fzz - fz
 
         End If
 
       End If
+
+      If (dihedral%l_core_shell) Then
+        If (lad(1, i)) Then
+          chgprd = scale * config%parts(ia0)%chge * config%parts(id)%chge * r4pie0 / electro%eps
+          If ((Abs(chgprd) > zero_plus .or. mpoles%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
+            If (mpoles%max_mpoles > 0) Then
+              Call intra_mcoul(rcut, ia0, id, scale, rad(1), xdad(1, i), &
+                               ydad(1, i), zdad(1, i), coul, virele, fx, fy, fz, safe(3), mpoles, electro, config)
+            Else
+              Call intra_coul(rcut, chgprd, rad(1), rad2(1), coul, fcoul, safe(3), electro)
+
+              fx = fcoul * xdad(1, i)
+              fy = fcoul * ydad(1, i)
+              fz = fcoul * zdad(1, i)
+
+              virele = -fcoul * rad2(1)
+            End If
+
+            If (ia0 <= config%natms) Then
+
+              ! correction to electrostatic energy and virial
+
+              engc14 = engc14 + coul
+              virc14 = virc14 + virele
+
+              ! calculate stress tensor
+
+              strs1 = strs1 + xdad(1, i) * fx
+              strs2 = strs2 + xdad(1, i) * fy
+              strs3 = strs3 + xdad(1, i) * fz
+              strs5 = strs5 + ydad(1, i) * fy
+              strs6 = strs6 + ydad(1, i) * fz
+              strs9 = strs9 + zdad(1, i) * fz
+
+              config%parts(ia0)%fxx = config%parts(ia0)%fxx + fx
+              config%parts(ia0)%fyy = config%parts(ia0)%fyy + fy
+              config%parts(ia0)%fzz = config%parts(ia0)%fzz + fz
+
+            End If
+
+            If (id <= config%natms) Then
+
+              config%parts(id)%fxx = config%parts(id)%fxx - fx
+              config%parts(id)%fyy = config%parts(id)%fyy - fy
+              config%parts(id)%fzz = config%parts(id)%fzz - fz
+
+            End If
+
+          End If
+        End If
+
+        If (lad(2, i)) Then
+          chgprd = scale * config%parts(ia)%chge * config%parts(id0)%chge * r4pie0 / electro%eps
+          If ((Abs(chgprd) > zero_plus .or. mpoles%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
+            If (mpoles%max_mpoles > 0) Then
+              Call intra_mcoul(rcut, ia, id0, scale, rad(2), xdad(2, i), &
+                               ydad(2, i), zdad(2, i), coul, virele, fx, fy, fz, safe(3), mpoles, electro, config)
+            Else
+              Call intra_coul(rcut, chgprd, rad(2), rad2(2), coul, fcoul, safe(3), electro)
+
+              fx = fcoul * xdad(2, i)
+              fy = fcoul * ydad(2, i)
+              fz = fcoul * zdad(2, i)
+
+              virele = -fcoul * rad2(2)
+            End If
+
+            If (ia <= config%natms) Then
+
+              ! correction to electrostatic energy and virial
+
+              engc14 = engc14 + coul
+              virc14 = virc14 + virele
+
+              ! calculate stress tensor
+
+              strs1 = strs1 + xdad(2, i) * fx
+              strs2 = strs2 + xdad(2, i) * fy
+              strs3 = strs3 + xdad(2, i) * fz
+              strs5 = strs5 + ydad(2, i) * fy
+              strs6 = strs6 + ydad(2, i) * fz
+              strs9 = strs9 + zdad(2, i) * fz
+
+              config%parts(ia)%fxx = config%parts(ia)%fxx + fx
+              config%parts(ia)%fyy = config%parts(ia)%fyy + fy
+              config%parts(ia)%fzz = config%parts(ia)%fzz + fz
+
+            End If
+
+            If (id0 <= config%natms) Then
+
+              config%parts(id0)%fxx = config%parts(id0)%fxx - fx
+              config%parts(id0)%fyy = config%parts(id0)%fyy - fy
+              config%parts(id0)%fzz = config%parts(id0)%fzz - fz
+
+            End If
+          End If
+        End If
+
+        If (lad(3, i)) Then
+          chgprd = scale * config%parts(ia0)%chge * config%parts(id0)%chge * r4pie0 / electro%eps
+          If ((Abs(chgprd) > zero_plus .or. mpoles%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
+            If (mpoles%max_mpoles > 0) Then
+              Call intra_mcoul(rcut, ia0, id0, scale, rad(3), xdad(3, i), &
+                               ydad(3, i), zdad(3, i), coul, virele, fx, fy, fz, safe(3), mpoles, electro, config)
+            Else
+              Call intra_coul(rcut, chgprd, rad(3), rad2(3), coul, fcoul, safe(3), electro)
+
+              fx = fcoul * xdad(3, i)
+              fy = fcoul * ydad(3, i)
+              fz = fcoul * zdad(3, i)
+
+              virele = -fcoul * rad2(3)
+            End If
+
+            If (ia0 <= config%natms) Then
+
+              ! correction to electrostatic energy and virial
+
+              engc14 = engc14 + coul
+              virc14 = virc14 + virele
+
+              ! calculate stress tensor
+
+              strs1 = strs1 + xdad(3, i) * fx
+              strs2 = strs2 + xdad(3, i) * fy
+              strs3 = strs3 + xdad(3, i) * fz
+              strs5 = strs5 + ydad(3, i) * fy
+              strs6 = strs6 + ydad(3, i) * fz
+              strs9 = strs9 + zdad(3, i) * fz
+
+              config%parts(ia0)%fxx = config%parts(ia0)%fxx + fx
+              config%parts(ia0)%fyy = config%parts(ia0)%fyy + fy
+              config%parts(ia0)%fzz = config%parts(ia0)%fzz + fz
+
+            End If
+
+            If (id0 <= config%natms) Then
+
+              config%parts(id0)%fxx = config%parts(id0)%fxx - fx
+              config%parts(id0)%fyy = config%parts(id0)%fyy - fy
+              config%parts(id0)%fzz = config%parts(id0)%fzz - fz
+
+            End If
+          End If
+        End If
+      End If
+
+      ! 1-4 short-range (vdw) interactions: adjust by weighting factor
+      ! assumes 1-4 interactions are in the exclude neigh%list and Rad < vdws%cutoff
+
+      scale = dihedral%param(5, kk)
+      If (Abs(scale) > zero_plus .and. vdws%n_vdw > 0) Then
+
+        ! atomic type indices
+
+        ai = config%ltype(ia)
+        aj = config%ltype(id)
+
+        Call dihedrals_14_vdw(ai, aj, rad(0), rad2(0), eng, gamma, dihedral, vdws)
+
+        gamma = scale * gamma
+        eng = scale * eng
+
+        fx = gamma * xad
+        fy = gamma * yad
+        fz = gamma * zad
+
+        If (ia <= config%natms) Then
+
+          ! add scaled 1-4 short-range potential energy and virial
+
+          engs14 = engs14 + eng
+          virs14 = virs14 - gamma * rad2(0)
+
+          ! calculate stress tensor
+
+          strs1 = strs1 + xad * fx
+          strs2 = strs2 + xad * fy
+          strs3 = strs3 + xad * fz
+          strs5 = strs5 + yad * fy
+          strs6 = strs6 + yad * fz
+          strs9 = strs9 + zad * fz
+
+          config%parts(ia)%fxx = config%parts(ia)%fxx + fx
+          config%parts(ia)%fyy = config%parts(ia)%fyy + fy
+          config%parts(ia)%fzz = config%parts(ia)%fzz + fz
+
+        End If
+
+        If (id <= config%natms) Then
+
+          config%parts(id)%fxx = config%parts(id)%fxx - fx
+          config%parts(id)%fyy = config%parts(id)%fyy - fy
+          config%parts(id)%fzz = config%parts(id)%fzz - fz
+
+        End If
+
+        If (dihedral%l_core_shell) Then
+          If (lad(1, i)) Then
+            ai = config%ltype(ia0)
+            aj = config%ltype(id)
+
+            Call dihedrals_14_vdw(ai, aj, rad(1), rad2(1), eng, gamma, dihedral, vdws)
+
+            gamma = scale * gamma
+            eng = scale * eng
+
+            fx = gamma * xdad(1, i)
+            fy = gamma * ydad(1, i)
+            fz = gamma * zdad(1, i)
+
+            If (ia0 <= config%natms) Then
+
+              ! add scaled 1-4 short-range potential energy and virial
+
+              engs14 = engs14 + eng
+              virs14 = virs14 - gamma * rad2(1)
+
+              ! calculate stress tensor
+
+              strs1 = strs1 + xdad(1, i) * fx
+              strs2 = strs2 + xdad(1, i) * fy
+              strs3 = strs3 + xdad(1, i) * fz
+              strs5 = strs5 + ydad(1, i) * fy
+              strs6 = strs6 + ydad(1, i) * fz
+              strs9 = strs9 + zdad(1, i) * fz
+
+              config%parts(ia0)%fxx = config%parts(ia0)%fxx + fx
+              config%parts(ia0)%fyy = config%parts(ia0)%fyy + fy
+              config%parts(ia0)%fzz = config%parts(ia0)%fzz + fz
+
+            End If
+
+            If (id <= config%natms) Then
+
+              config%parts(id)%fxx = config%parts(id)%fxx - fx
+              config%parts(id)%fyy = config%parts(id)%fyy - fy
+              config%parts(id)%fzz = config%parts(id)%fzz - fz
+
+            End If
+          End If
+
+          If (lad(2, i)) Then
+            ai = config%ltype(ia)
+            aj = config%ltype(id0)
+
+            Call dihedrals_14_vdw(ai, aj, rad(2), rad2(2), eng, gamma, dihedral, vdws)
+
+            gamma = scale * gamma
+            eng = scale * eng
+
+            fx = gamma * xdad(2, i)
+            fy = gamma * ydad(2, i)
+            fz = gamma * zdad(2, i)
+
+            If (ia <= config%natms) Then
+
+              ! add scaled 1-4 short-range potential energy and virial
+
+              engs14 = engs14 + eng
+              virs14 = virs14 - gamma * rad2(2)
+
+              ! calculate stress tensor
+
+              strs1 = strs1 + xdad(2, i) * fx
+              strs2 = strs2 + xdad(2, i) * fy
+              strs3 = strs3 + xdad(2, i) * fz
+              strs5 = strs5 + ydad(2, i) * fy
+              strs6 = strs6 + ydad(2, i) * fz
+              strs9 = strs9 + zdad(2, i) * fz
+
+              config%parts(ia)%fxx = config%parts(ia)%fxx + fx
+              config%parts(ia)%fyy = config%parts(ia)%fyy + fy
+              config%parts(ia)%fzz = config%parts(ia)%fzz + fz
+
+            End If
+
+            If (id0 <= config%natms) Then
+
+              config%parts(id0)%fxx = config%parts(id0)%fxx - fx
+              config%parts(id0)%fyy = config%parts(id0)%fyy - fy
+              config%parts(id0)%fzz = config%parts(id0)%fzz - fz
+
+            End If
+          End If
+
+          If (lad(3, i)) Then
+            ai = config%ltype(ia0)
+            aj = config%ltype(id0)
+
+            Call dihedrals_14_vdw(ai, aj, rad(3), rad2(3), eng, gamma, dihedral, vdws)
+
+            gamma = scale * gamma
+            eng = scale * eng
+
+            fx = gamma * xdad(3, i)
+            fy = gamma * ydad(3, i)
+            fz = gamma * zdad(3, i)
+
+            If (ia0 <= config%natms) Then
+
+              ! add scaled 1-4 short-range potential energy and virial
+
+              engs14 = engs14 + eng
+              virs14 = virs14 - gamma * rad2(3)
+
+              ! calculate stress tensor
+
+              strs1 = strs1 + xdad(3, i) * fx
+              strs2 = strs2 + xdad(3, i) * fy
+              strs3 = strs3 + xdad(3, i) * fz
+              strs5 = strs5 + ydad(3, i) * fy
+              strs6 = strs6 + ydad(3, i) * fz
+              strs9 = strs9 + zdad(3, i) * fz
+
+              config%parts(ia0)%fxx = config%parts(ia0)%fxx + fx
+              config%parts(ia0)%fyy = config%parts(ia0)%fyy + fy
+              config%parts(ia0)%fzz = config%parts(ia0)%fzz + fz
+
+            End If
+
+            If (id0 <= config%natms) Then
+
+              config%parts(id0)%fxx = config%parts(id0)%fxx - fx
+              config%parts(id0)%fyy = config%parts(id0)%fyy - fy
+              config%parts(id0)%fzz = config%parts(id0)%fzz - fz
+
+            End If
+          End If
+        End If
+
+      End If
+
     End Do
 
     If (Mod(isw, 3) > 0) Then
@@ -2194,7 +2197,9 @@ Contains
 
       If (vdws%l_direct) Then ! direct calculation
 
-        If (ityp == 1) Then
+        Select Case (ityp)
+
+        Case (1)
 
           ! 12-6 potential :: u=a/r^12-b/r^6
 
@@ -2211,7 +2216,7 @@ Contains
             gamma = gamma - vdws%afs(k) / rrr
           End If
 
-        Else If (ityp == 2) Then
+        Case (2)
 
           ! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-(sig/r)^6]
 
@@ -2228,7 +2233,7 @@ Contains
             gamma = gamma - vdws%afs(k) / rrr
           End If
 
-        Else If (ityp == 3) Then
+        Case (3)
 
           ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
 
@@ -2250,7 +2255,7 @@ Contains
             gamma = gamma - vdws%afs(k) / rrr
           End If
 
-        Else If (ityp == 4) Then
+        Case (4)
 
           ! Buckingham exp-6 potential :: u=a*Exp(-r/rho)-c/r^6
 
@@ -2278,7 +2283,7 @@ Contains
             gamma = gamma - vdws%afs(k) / rrr
           End If
 
-        Else If (ityp == 5) Then
+        Case (5)
 
           ! Born-Huggins-Meyer exp-6-8 potential :: u=a*Exp(b*(sig-r))-c/r^6-d/r^8
 
@@ -2300,7 +2305,7 @@ Contains
             gamma = gamma - vdws%afs(k) / rrr
           End If
 
-        Else If (ityp == 6) Then
+        Case (6)
 
           ! Hydrogen-bond 12-10 potential :: u=a/r^12-b/r^10
 
@@ -2318,7 +2323,7 @@ Contains
             gamma = gamma - vdws%afs(k) / rrr
           End If
 
-        Else If (ityp == 7) Then
+        Case (7)
 
           ! shifted and force corrected n-m potential (w.smith) ::
 
@@ -2348,7 +2353,7 @@ Contains
                                     - rrr / rc * ((beta / c)**n - (beta / c)**m)) * b / rsq
           End If
 
-        Else If (ityp == 8) Then
+        Case (8)
 
           ! Morse potential :: u=e0*{[1-Exp(-kk(r-r0))]^2-1}
 
@@ -2366,7 +2371,7 @@ Contains
             gamma = gamma - vdws%afs(k) / rrr
           End If
 
-        Else If (ityp == 9) Then
+        Case (9)
 
           ! Weeks-Chandler-Andersen (shifted & truncated Lenard-Jones) (i.t.todorov)
           ! :: u=4*eps*[{sig/(r-d)}^12-{sig/(r-d)}^6]-eps
@@ -2387,7 +2392,7 @@ Contains
             End If
           End If
 
-        Else If (ityp == 10) Then
+        Case (10)
 
           ! DPD potential - Groot-Warren (standard) :: u=(1/2).a.r.(1-r/rc)^2
 
@@ -2402,7 +2407,7 @@ Contains
             gamma = t1 * (3.0_wp * t2 - 1.0_wp) / rsq
           End If
 
-        Else If (ityp == 11) Then
+        Case (11)
 
           ! AMOEBA 14-7 :: u=eps * [1.07/((sig/r)+0.07)]^7 * [(1.12/((sig/r)^7+0.12))-2]
 
@@ -2422,43 +2427,45 @@ Contains
             gamma = gamma - vdws%afs(k) / rrr
           End If
 
-        Else If (Abs(vdws%tab_potential(0, k)) > zero_plus) Then ! potential read from TABLE - (ityp == 0)
+        Case (0)
+          If (Abs(vdws%tab_potential(0, k)) > zero_plus) Then ! potential read from TABLE - (ityp == 0)
 
-          l = Int(rrr * dihedrals%rdr)
-          ppp = rrr * dihedrals%rdr - Real(l, wp)
+            l = Int(rrr * dihedrals%rdr)
+            ppp = rrr * dihedrals%rdr - Real(l, wp)
 
-          ! calculate interaction energy using 3-point interpolation
+            ! calculate interaction energy using 3-point interpolation
 
-          vk = vdws%tab_potential(l, k)
-          vk1 = vdws%tab_potential(l + 1, k)
-          vk2 = vdws%tab_potential(l + 2, k)
+            vk = vdws%tab_potential(l, k)
+            vk1 = vdws%tab_potential(l + 1, k)
+            vk2 = vdws%tab_potential(l + 2, k)
 
-          t1 = vk + (vk1 - vk) * ppp
-          t2 = vk1 + (vk2 - vk1) * (ppp - 1.0_wp)
+            t1 = vk + (vk1 - vk) * ppp
+            t2 = vk1 + (vk2 - vk1) * (ppp - 1.0_wp)
 
-          eng = t1 + (t2 - t1) * ppp * 0.5_wp
-          ! force-shifting
-          If (vdws%l_force_shift) Then
-            eng = eng + vdws%tab_force(vdws%max_grid - 4, k) * (rrr / vdws%cutoff - 1.0_wp) - &
-                  vdws%tab_potential(vdws%max_grid - 4, k)
+            eng = t1 + (t2 - t1) * ppp * 0.5_wp
+            ! force-shifting
+            If (vdws%l_force_shift) Then
+              eng = eng + vdws%tab_force(vdws%max_grid - 4, k) * (rrr / vdws%cutoff - 1.0_wp) - &
+                    vdws%tab_potential(vdws%max_grid - 4, k)
+            End If
+
+            ! calculate forces using 3-point interpolation
+
+            gk = vdws%tab_force(l, k); If (l == 0) gk = gk * rrr
+            gk1 = vdws%tab_force(l + 1, k)
+            gk2 = vdws%tab_force(l + 2, k)
+
+            t1 = gk + (gk1 - gk) * ppp
+            t2 = gk1 + (gk2 - gk1) * (ppp - 1.0_wp)
+
+            gamma = (t1 + (t2 - t1) * ppp * 0.5_wp) / rsq
+            ! force-shifting
+            If (vdws%l_force_shift) Then
+              gamma = gamma - vdws%tab_force(vdws%max_grid - 4, k) / (rrr * vdws%cutoff)
+            End If
           End If
 
-          ! calculate forces using 3-point interpolation
-
-          gk = vdws%tab_force(l, k); If (l == 0) gk = gk * rrr
-          gk1 = vdws%tab_force(l + 1, k)
-          gk2 = vdws%tab_force(l + 2, k)
-
-          t1 = gk + (gk1 - gk) * ppp
-          t2 = gk1 + (gk2 - gk1) * (ppp - 1.0_wp)
-
-          gamma = (t1 + (t2 - t1) * ppp * 0.5_wp) / rsq
-          ! force-shifting
-          If (vdws%l_force_shift) Then
-            gamma = gamma - vdws%tab_force(vdws%max_grid - 4, k) / (rrr * vdws%cutoff)
-          End If
-
-        End If
+        End Select
 
       Else If (Abs(vdws%tab_potential(0, k)) > zero_plus) Then ! no direct = fully tabulated calculation
 

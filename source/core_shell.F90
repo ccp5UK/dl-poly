@@ -168,7 +168,7 @@ Contains
     Type(comms_type),         Intent(InOut) :: comm
 
     Character(Len=256)         :: message
-    Integer                    :: fail(1:2), i, ia, ib, j, kk
+    Integer                    :: fail(1:2), i, ia, ib, j, kk, nk
     Integer, Allocatable       :: lstopt(:, :)
     Logical                    :: safe
     Logical, Allocatable       :: lunsafe(:)
@@ -187,19 +187,26 @@ Contains
     r_4_fac = 1.0_wp / 24.0_wp ! aharmonic shell coefficient = 1/(4!)
 
     ! calculate core-shell separation vectors
-
+    nk = 0
     Do i = 1, cshell%ntshl
       lunsafe(i) = .false.
 
       ! indices of atoms in a core-shell
 
-      ia = local_index(cshell%listshl(1, i), config%nlast, config%lsi, config%lsa); lstopt(1, i) = ia
-      ib = local_index(cshell%listshl(2, i), config%nlast, config%lsi, config%lsa); lstopt(2, i) = ib
+      ia = local_index(cshell%listshl(1, i), config%nlast, config%lsi, config%lsa)
+      ib = local_index(cshell%listshl(2, i), config%nlast, config%lsi, config%lsa)
 
       lstopt(0, i) = 0
       If (ia > 0 .and. ib > 0) Then ! Tag
         If (ia <= config%natms .or. ib <= config%natms) Then
-          lstopt(0, i) = 1
+          nk = nk + 1
+          lstopt(0, nk) = i
+          lstopt(1, nk) = ia
+          lstopt(2, nk) = ib
+          ! components of bond vector
+          xdab(nk) = config%parts(ia)%xxx - config%parts(ib)%xxx
+          ydab(nk) = config%parts(ia)%yyy - config%parts(ib)%yyy
+          zdab(nk) = config%parts(ia)%zzz - config%parts(ib)%zzz
         End If
       Else ! Detect uncompressed unit
         If (((ia > 0 .and. ia <= config%natms) .or. &
@@ -207,17 +214,6 @@ Contains
             (ia == 0 .or. ib == 0)) lunsafe(i) = .true.
       End If
 
-      ! components of bond vector
-
-      If (lstopt(0, i) > 0) Then
-        xdab(i) = config%parts(ia)%xxx - config%parts(ib)%xxx
-        ydab(i) = config%parts(ia)%yyy - config%parts(ib)%yyy
-        zdab(i) = config%parts(ia)%zzz - config%parts(ib)%zzz
-      Else ! (DEBUG)
-        xdab(i) = 0.0_wp
-        ydab(i) = 0.0_wp
-        zdab(i) = 0.0_wp
-      End If
     End Do
 
     ! Check for uncompressed units
@@ -244,7 +240,7 @@ Contains
 
     ! periodic boundary condition
 
-    Call images(config%imcon, config%cell, cshell%ntshl, xdab, ydab, zdab)
+    Call images(config%imcon, config%cell, nk, xdab, ydab, zdab)
 
     ! initialise stress tensor accumulators
 
@@ -262,65 +258,63 @@ Contains
 
     ! loop over all specified core-shell units
 
-    Do i = 1, cshell%ntshl
-      If (lstopt(0, i) > 0) Then
+    Do i = 1, nk
 
-        ! indices of atoms in a core-shell
+      ! indices of atoms in a core-shell
 
-        ia = lstopt(1, i)
-        ib = lstopt(2, i)
+      ia = lstopt(1, i)
+      ib = lstopt(2, i)
 
-        ! define components of bond vector
+      ! define components of bond vector
 
-        rabsq = xdab(i)**2 + ydab(i)**2 + zdab(i)**2
+      rabsq = xdab(i)**2 + ydab(i)**2 + zdab(i)**2
 
-        ! index of potential function parameters
+      ! index of potential function parameters
 
-        kk = cshell%listshl(0, i)
+      kk = cshell%listshl(0, lstopt(0, i))
 
-        ! calculate scalar constant terms using spring potential function
-        ! and the parameters in array prmshl
+      ! calculate scalar constant terms using spring potential function
+      ! and the parameters in array prmshl
 
-        omega = (0.5_wp * cshell%prmshl(1, kk) + r_4_fac * cshell%prmshl(2, kk) * rabsq) * rabsq
-        gamma = cshell%prmshl(1, kk) + cshell%prmshl(2, kk) * rabsq
+      omega = (0.5_wp * cshell%prmshl(1, kk) + r_4_fac * cshell%prmshl(2, kk) * rabsq) * rabsq
+      gamma = cshell%prmshl(1, kk) + cshell%prmshl(2, kk) * rabsq
 
-        ! calculate forces
+      ! calculate forces
 
-        fx = -gamma * xdab(i)
-        fy = -gamma * ydab(i)
-        fz = -gamma * zdab(i)
+      fx = -gamma * xdab(i)
+      fy = -gamma * ydab(i)
+      fz = -gamma * zdab(i)
 
-        If (ia <= config%natms) Then
+      If (ia <= config%natms) Then
 
-          config%parts(ia)%fxx = config%parts(ia)%fxx + fx
-          config%parts(ia)%fyy = config%parts(ia)%fyy + fy
-          config%parts(ia)%fzz = config%parts(ia)%fzz + fz
+        config%parts(ia)%fxx = config%parts(ia)%fxx + fx
+        config%parts(ia)%fyy = config%parts(ia)%fyy + fy
+        config%parts(ia)%fzz = config%parts(ia)%fzz + fz
 
-          ! calculate core-shell unit energy
+        ! calculate core-shell unit energy
 
-          stat%engshl = stat%engshl + omega
-          stat%virshl = stat%virshl + gamma * rabsq
+        stat%engshl = stat%engshl + omega
+        stat%virshl = stat%virshl + gamma * rabsq
 
-          ! calculate stress tensor
+        ! calculate stress tensor
 
-          strs1 = strs1 + xdab(i) * fx
-          strs2 = strs2 + xdab(i) * fy
-          strs3 = strs3 + xdab(i) * fz
-          strs5 = strs5 + ydab(i) * fy
-          strs6 = strs6 + ydab(i) * fz
-          strs9 = strs9 + zdab(i) * fz
-
-        End If
-
-        If (ib <= config%natms) Then
-
-          config%parts(ib)%fxx = config%parts(ib)%fxx - fx
-          config%parts(ib)%fyy = config%parts(ib)%fyy - fy
-          config%parts(ib)%fzz = config%parts(ib)%fzz - fz
-
-        End If
+        strs1 = strs1 + xdab(i) * fx
+        strs2 = strs2 + xdab(i) * fy
+        strs3 = strs3 + xdab(i) * fz
+        strs5 = strs5 + ydab(i) * fy
+        strs6 = strs6 + ydab(i) * fz
+        strs9 = strs9 + zdab(i) * fz
 
       End If
+
+      If (ib <= config%natms) Then
+
+        config%parts(ib)%fxx = config%parts(ib)%fxx - fx
+        config%parts(ib)%fyy = config%parts(ib)%fyy - fy
+        config%parts(ib)%fzz = config%parts(ib)%fzz - fz
+
+      End If
+
     End Do
 
     ! complete stress tensor
