@@ -88,7 +88,7 @@ contains
   Subroutine dump_parameters(ifile, params, mode)
     Integer, Intent(In) :: ifile
     Class(parameters_hash_table), Intent(In) :: params
-    Character(Len=10), Intent(In), Value :: mode
+    Character(Len=10), Intent(In) :: mode
     Type (control_parameter) :: param
     Character(Len=MAX_KEY), Dimension(:), Allocatable :: keys
     Character(Len=*), Dimension(0:7), Parameter :: data_name = &
