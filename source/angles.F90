@@ -33,10 +33,10 @@ Module angles
   Use errors_warnings, Only: error,&
                              info,&
                              warning
+  Use filename,        Only: FILE_TABANG,&
+                             file_type
   Use kinds,           Only: wi,&
                              wp
-  Use filename,        Only: FILE_TABANG, &
-                             file_type
   Use numerics,        Only: images,&
                              local_index
   Use parse,           Only: get_line,&
@@ -584,7 +584,7 @@ Contains
     Type(comms_type),         Intent(InOut) :: comm
 
     Character(Len=256)         :: message
-    Integer                    :: fail(1:3), i, ia, ib, ic, j, keya, kk, l
+    Integer                    :: fail(1:3), i, ia, ib, ic, j, keya, kk, l, nk
     Integer, Allocatable       :: lstopt(:, :)
     Logical                    :: safe
     Logical, Allocatable       :: lunsafe(:)
@@ -607,20 +607,32 @@ Contains
 
     ! calculate atom separation vectors
 
+    nk = 0
     Do i = 1, angle%n_types
       lunsafe(i) = .false.
 
       ! indices of angle bonded atoms
 
-      ia = local_index(angle%list(1, i), config%nlast, config%lsi, config%lsa); lstopt(1, i) = ia
-      ib = local_index(angle%list(2, i), config%nlast, config%lsi, config%lsa); lstopt(2, i) = ib
-      ic = local_index(angle%list(3, i), config%nlast, config%lsi, config%lsa); lstopt(3, i) = ic
+      ia = local_index(angle%list(1, i), config%nlast, config%lsi, config%lsa)
+      ib = local_index(angle%list(2, i), config%nlast, config%lsi, config%lsa)
+      ic = local_index(angle%list(3, i), config%nlast, config%lsi, config%lsa)
 
-      lstopt(0, i) = 0
       If (ia > 0 .and. ib > 0 .and. ic > 0) Then ! Tag
         If (config%lfrzn(ia) * config%lfrzn(ib) * config%lfrzn(ic) == 0) Then
           If (ia <= config%natms .or. ib <= config%natms .or. ic <= config%natms) Then
-            lstopt(0, i) = 1
+            nk = nk + 1
+            lstopt(0, nk) = i
+            lstopt(1, nk) = ia
+            lstopt(2, nk) = ib
+            lstopt(3, nk) = ic
+            ! define components of bond vectors
+            xdab(nk) = config%parts(ia)%xxx - config%parts(ib)%xxx
+            ydab(nk) = config%parts(ia)%yyy - config%parts(ib)%yyy
+            zdab(nk) = config%parts(ia)%zzz - config%parts(ib)%zzz
+
+            xdbc(nk) = config%parts(ic)%xxx - config%parts(ib)%xxx
+            ydbc(nk) = config%parts(ic)%yyy - config%parts(ib)%yyy
+            zdbc(nk) = config%parts(ic)%zzz - config%parts(ib)%zzz
           End If
         End If
       Else ! Detect uncompressed unit
@@ -628,26 +640,6 @@ Contains
              (ib > 0 .and. ib <= config%natms) .or. &
              (ic > 0 .and. ic <= config%natms)) .and. &
             (ia == 0 .or. ib == 0 .or. ic == 0)) lunsafe(i) = .true.
-      End If
-
-      ! define components of bond vectors
-
-      If (lstopt(0, i) > 0) Then
-        xdab(i) = config%parts(ia)%xxx - config%parts(ib)%xxx
-        ydab(i) = config%parts(ia)%yyy - config%parts(ib)%yyy
-        zdab(i) = config%parts(ia)%zzz - config%parts(ib)%zzz
-
-        xdbc(i) = config%parts(ic)%xxx - config%parts(ib)%xxx
-        ydbc(i) = config%parts(ic)%yyy - config%parts(ib)%yyy
-        zdbc(i) = config%parts(ic)%zzz - config%parts(ib)%zzz
-      Else ! (DEBUG)
-        xdab(i) = 0.0_wp
-        ydab(i) = 0.0_wp
-        zdab(i) = 0.0_wp
-
-        xdbc(i) = 0.0_wp
-        ydbc(i) = 0.0_wp
-        zdbc(i) = 0.0_wp
       End If
     End Do
 
@@ -675,8 +667,8 @@ Contains
 
     ! periodic boundary condition
 
-    Call images(config%imcon, config%cell, angle%n_types, xdab, ydab, zdab)
-    Call images(config%imcon, config%cell, angle%n_types, xdbc, ydbc, zdbc)
+    Call images(config%imcon, config%cell, nk, xdab, ydab, zdab)
+    Call images(config%imcon, config%cell, nk, xdbc, ydbc, zdbc)
 
     If (Mod(isw, 3) > 0) Then
 
@@ -709,406 +701,402 @@ Contains
 
     ! loop over all specified angle potentials
 
-    Do i = 1, angle%n_types
-      If (lstopt(0, i) > 0) Then
+    Do i = 1, nk
+      ! indices of bonded atoms
 
-        ! indices of bonded atoms
+      ia = lstopt(1, i)
+      ib = lstopt(2, i)
+      ic = lstopt(3, i)
 
-        ia = lstopt(1, i)
-        ib = lstopt(2, i)
-        ic = lstopt(3, i)
+      ! define components of first bond vector
 
-        ! define components of first bond vector
+      rab = Sqrt(xdab(i)**2 + ydab(i)**2 + zdab(i)**2)
+      rrab = 1.0_wp / rab
 
-        rab = Sqrt(xdab(i)**2 + ydab(i)**2 + zdab(i)**2)
-        rrab = 1.0_wp / rab
+      xab = xdab(i) * rrab
+      yab = ydab(i) * rrab
+      zab = zdab(i) * rrab
 
-        xab = xdab(i) * rrab
-        yab = ydab(i) * rrab
-        zab = zdab(i) * rrab
+      ! define components of second bond vector
 
-        ! define components of second bond vector
+      rbc = Sqrt(xdbc(i)**2 + ydbc(i)**2 + zdbc(i)**2)
+      rrbc = 1.0_wp / rbc
 
-        rbc = Sqrt(xdbc(i)**2 + ydbc(i)**2 + zdbc(i)**2)
-        rrbc = 1.0_wp / rbc
+      xbc = xdbc(i) * rrbc
+      ybc = ydbc(i) * rrbc
+      zbc = zdbc(i) * rrbc
 
-        xbc = xdbc(i) * rrbc
-        ybc = ydbc(i) * rrbc
-        zbc = zdbc(i) * rrbc
+      ! determine bond angle and calculate potential energy
 
-        ! determine bond angle and calculate potential energy
+      cost = (xab * xbc + yab * ybc + zab * zbc)
+      If (Abs(cost) > 1.0_wp) cost = Sign(1.0_wp, cost)
+      theta = Acos(cost)
+      sint = Max(1.0e-10_wp, Sqrt(1.0_wp - cost**2))
+      rsint = 1.0_wp / sint
 
-        cost = (xab * xbc + yab * ybc + zab * zbc)
-        If (Abs(cost) > 1.0_wp) cost = Sign(1.0_wp, cost)
-        theta = Acos(cost)
-        sint = Max(1.0e-10_wp, Sqrt(1.0_wp - cost**2))
-        rsint = 1.0_wp / sint
+      ! index of potential function parameters
 
-        ! index of potential function parameters
+      kk = angle%list(0, lstopt(0, i))
+      keya = angle%key(kk)
 
-        kk = angle%list(0, i)
-        keya = angle%key(kk)
+      ! accumulate the histogram (distribution)
 
-        ! accumulate the histogram (distribution)
+      If (Mod(isw, 2) == 0 .and. ib <= config%natms) Then
+        j = angle%ldf(kk)
+        l = Min(1 + Int(theta * rdelth), angle%bin_adf)
 
-        If (Mod(isw, 2) == 0 .and. ib <= config%natms) Then
-          j = angle%ldf(kk)
-          l = Min(1 + Int(theta * rdelth), angle%bin_adf)
+        angle%dst(l, j) = angle%dst(l, j) + 1.0_wp
+      End If
+      If (isw == 0) Cycle
+      Select Case (keya)
+      Case (ANGLE_HARMONIC)
 
-          angle%dst(l, j) = angle%dst(l, j) + 1.0_wp
-        End If
-        If (isw == 0) Cycle
+        ! harmonic potential
 
-        If (keya == ANGLE_HARMONIC) Then
+        k = angle%param(1, kk)
+        theta0 = angle%param(2, kk)
+        dtheta = theta - theta0
 
-          ! harmonic potential
+        tmp = k * dtheta
 
-          k = angle%param(1, kk)
-          theta0 = angle%param(2, kk)
-          dtheta = theta - theta0
+        pterm = tmp * 0.5_wp * dtheta
+        gamma = tmp * rsint
+        gamsa = 0.0_wp
+        gamsc = 0.0_wp
+        vterm = 0.0_wp
 
-          tmp = k * dtheta
+      Case (ANGLE_QUARTIC)
 
-          pterm = tmp * 0.5_wp * dtheta
-          gamma = tmp * rsint
-          gamsa = 0.0_wp
-          gamsc = 0.0_wp
-          vterm = 0.0_wp
+        ! quartic potential
 
-        Else If (keya == ANGLE_QUARTIC) Then
+        k2 = angle%param(1, kk)
+        theta0 = angle%param(2, kk)
+        dtheta = theta - theta0
+        k3 = angle%param(3, kk)
+        k4 = angle%param(4, kk)
 
-          ! quartic potential
+        pterm = 0.5_wp * k2 * dtheta**2 + (k3 / 3.0_wp) * dtheta**3 + 0.25 * k4 * dtheta**4
+        gamma = dtheta * (k2 + k3 * dtheta + k4 * dtheta**2) * rsint
+        gamsa = 0.0_wp
+        gamsc = 0.0_wp
+        vterm = 0.0_wp
 
-          k2 = angle%param(1, kk)
-          theta0 = angle%param(2, kk)
-          dtheta = theta - theta0
-          k3 = angle%param(3, kk)
-          k4 = angle%param(4, kk)
+      Case (ANGLE_TRUNCATED_HARMONIC)
 
-          pterm = 0.5_wp * k2 * dtheta**2 + (k3 / 3.0_wp) * dtheta**3 + 0.25 * k4 * dtheta**4
-          gamma = dtheta * (k2 + k3 * dtheta + k4 * dtheta**2) * rsint
-          gamsa = 0.0_wp
-          gamsc = 0.0_wp
-          vterm = 0.0_wp
+        ! truncated Harmonic potential
 
-        Else If (keya == ANGLE_TRUNCATED_HARMONIC) Then
+        k = angle%param(1, kk)
+        theta0 = angle%param(2, kk)
+        dtheta = theta - theta0
+        rho = angle%param(3, kk)
+        switch = -(rab**8 + rbc**8) / rho**8
 
-          ! truncated Harmonic potential
+        tmp = k * dtheta * Exp(switch)
 
-          k = angle%param(1, kk)
-          theta0 = angle%param(2, kk)
-          dtheta = theta - theta0
-          rho = angle%param(3, kk)
-          switch = -(rab**8 + rbc**8) / rho**8
+        pterm = tmp * 0.5_wp * dtheta
+        gamma = tmp * rsint
+        gamsa = pterm * 8.0_wp * rab**7 / rho**8
+        gamsc = pterm * 8.0_wp * rbc**7 / rho**8
+        vterm = pterm * 8.0_wp * switch
 
-          tmp = k * dtheta * Exp(switch)
+      Case (ANGLE_SCREENED_HARMONIC)
 
-          pterm = tmp * 0.5_wp * dtheta
-          gamma = tmp * rsint
-          gamsa = pterm * 8.0_wp * rab**7 / rho**8
-          gamsc = pterm * 8.0_wp * rbc**7 / rho**8
-          vterm = pterm * 8.0_wp * switch
+        ! screened Harmonic potential
+
+        k = angle%param(1, kk)
+        theta0 = angle%param(2, kk)
+        dtheta = theta - theta0
+        rho1 = angle%param(3, kk)
+        rho2 = angle%param(4, kk)
+        switch = -(rab / rho1 + rbc / rho2)
 
-        Else If (keya == ANGLE_SCREENED_HARMONIC) Then
+        tmp = k * dtheta * Exp(switch)
+
+        pterm = tmp * 0.5_wp * dtheta
+        gamma = tmp * rsint
+        gamsa = pterm / rho1
+        gamsc = pterm / rho2
+        vterm = pterm * switch
 
-          ! screened Harmonic potential
+      Case (ANGLE_SCREENED_VESSAL)
 
-          k = angle%param(1, kk)
-          theta0 = angle%param(2, kk)
-          dtheta = theta - theta0
-          rho1 = angle%param(3, kk)
-          rho2 = angle%param(4, kk)
-          switch = -(rab / rho1 + rbc / rho2)
+        ! screened Vessal potential (type 1)
 
-          tmp = k * dtheta * Exp(switch)
+        k = angle%param(1, kk)
+        theta0 = angle%param(2, kk)
+        dth0pi = theta0 - pi
+        dthpi = theta - pi
+        dth = dth0pi**2 - dthpi**2
+        rho1 = angle%param(3, kk)
+        rho2 = angle%param(4, kk)
+        switch = -(rab / rho1 + rbc / rho2)
+
+        tmp = (k * dth / (2.0_wp * dth0pi**2)) * Exp(switch)
 
-          pterm = tmp * 0.5_wp * dtheta
-          gamma = tmp * rsint
-          gamsa = pterm / rho1
-          gamsc = pterm / rho2
-          vterm = pterm * switch
+        pterm = tmp * 0.25_wp * dth
+        gamma = tmp * dthpi * rsint
+        gamsa = pterm / rho1
+        gamsc = pterm / rho2
+        vterm = pterm * switch
+
+      Case (ANGLE_TRUNCATED_VESSAL)
 
-        Else If (keya == ANGLE_SCREENED_VESSAL) Then
+        ! truncated Vessal potential (type 2)
 
-          ! screened Vessal potential (type 1)
+        k = angle%param(1, kk)
+        theta0 = angle%param(2, kk)
+        dtheta = theta - theta0
+        dth0pi = theta0 - pi
+        dthpi = theta - pi
+        a = angle%param(3, kk)
+        rho = angle%param(4, kk)
+        switch = -(rab**8 + rbc**8) / rho**8
 
-          k = angle%param(1, kk)
-          theta0 = angle%param(2, kk)
-          dth0pi = theta0 - pi
-          dthpi = theta - pi
-          dth = dth0pi**2 - dthpi**2
-          rho1 = angle%param(3, kk)
-          rho2 = angle%param(4, kk)
-          switch = -(rab / rho1 + rbc / rho2)
+        tmp = k * dtheta * Exp(switch)
 
-          tmp = (k * dth / (2.0_wp * dth0pi**2)) * Exp(switch)
+        pterm = tmp * dtheta * (theta**a * (dthpi + dth0pi)**2 + 0.5_wp * a * pi**(a - 1.0_wp) * dth0pi**3)
+        gamma = tmp * (theta**(a - 1.0_wp) * (dthpi + dth0pi) * &
+                       ((a + 4.0_wp) * theta**2 - twopi * (a + 2.0_wp) * theta - a * theta0 * (dth0pi - pi)) + &
+                       a * pi**(a - 1.0_wp) * dth0pi**3) * rsint
+        gamsa = pterm * 8.0_wp * rab**7 / rho**8
+        gamsc = pterm * 8.0_wp * rbc**7 / rho**8
+        vterm = pterm * 8.0_wp * switch
 
-          pterm = tmp * 0.25_wp * dth
-          gamma = tmp * dthpi * rsint
-          gamsa = pterm / rho1
-          gamsc = pterm / rho2
-          vterm = pterm * switch
+      Case (ANGLE_HARMONIC_COSINE)
 
-        Else If (keya == ANGLE_TRUNCATED_VESSAL) Then
+        ! harmonic cosine potential (note cancellation of sint in gamma)
 
-          ! truncated Vessal potential (type 2)
+        k = angle%param(1, kk)
+        theta0 = angle%param(2, kk)
+        dtheta = Cos(theta) - Cos(theta0)
 
-          k = angle%param(1, kk)
-          theta0 = angle%param(2, kk)
-          dtheta = theta - theta0
-          dth0pi = theta0 - pi
-          dthpi = theta - pi
-          a = angle%param(3, kk)
-          rho = angle%param(4, kk)
-          switch = -(rab**8 + rbc**8) / rho**8
+        tmp = k * dtheta
 
-          tmp = k * dtheta * Exp(switch)
+        pterm = tmp * 0.5_wp * dtheta
+        gamma = -tmp
+        gamsa = 0.0_wp
+        gamsc = 0.0_wp
+        vterm = 0.0_wp
 
-          pterm = tmp * dtheta * (theta**a * (dthpi + dth0pi)**2 + 0.5_wp * a * pi**(a - 1.0_wp) * dth0pi**3)
-          gamma = tmp * (theta**(a - 1.0_wp) * (dthpi + dth0pi) * &
-                         ((a + 4.0_wp) * theta**2 - twopi * (a + 2.0_wp) * theta - a * theta0 * (dth0pi - pi)) + &
-                         a * pi**(a - 1.0_wp) * dth0pi**3) * rsint
-          gamsa = pterm * 8.0_wp * rab**7 / rho**8
-          gamsc = pterm * 8.0_wp * rbc**7 / rho**8
-          vterm = pterm * 8.0_wp * switch
+      Case (ANGLE_COSINE)
 
-        Else If (keya == ANGLE_HARMONIC_COSINE) Then
+        ! ordinary cosine potential
 
-          ! harmonic cosine potential (note cancellation of sint in gamma)
+        k = angle%param(1, kk)
+        delta = angle%param(2, kk)
+        m = angle%param(3, kk)
+        a = m * theta - delta
+
+        pterm = k * (1.0_wp + Cos(a))
+        gamma = -k * m * Sin(a) * rsint
+        gamsa = 0.0_wp
+        gamsc = 0.0_wp
+        vterm = 0.0_wp
 
-          k = angle%param(1, kk)
-          theta0 = angle%param(2, kk)
-          dtheta = Cos(theta) - Cos(theta0)
+      Case (ANGLE_MM3_STRETCH)
+
+        ! MM3-stretch-bend potential
+
+        a = angle%param(1, kk)
+        theta0 = angle%param(2, kk)
+        dtheta = theta - theta0
+        rho1 = angle%param(3, kk)
+        dr1 = rab - rho1
+        rho2 = angle%param(4, kk)
+        dr2 = rbc - rho2
+
+        tmp = a * dr1 * dr2
+
+        pterm = tmp * dtheta
+        gamma = tmp * rsint
+        gamsa = -pterm / dr1
+        gamsc = -pterm / dr2
+        vterm = -(gamsa * rab + gamsc * rbc)
 
-          tmp = k * dtheta
+      Case (ANGLE_COMPASS_STRETCH_STRETCH)
 
-          pterm = tmp * 0.5_wp * dtheta
-          gamma = -tmp
-          gamsa = 0.0_wp
-          gamsc = 0.0_wp
-          vterm = 0.0_wp
+        ! compass stretch-stretch potential
 
-        Else If (keya == ANGLE_COSINE) Then
+        a = angle%param(1, kk)
+        rho1 = angle%param(2, kk)
+        dr1 = rab - rho1
+        rho2 = angle%param(3, kk)
+        dr2 = rbc - rho2
 
-          ! ordinary cosine potential
+        pterm = a * dr1 * dr2
+        gamma = 0.0_wp
+        gamsa = -a * dr2
+        gamsc = -a * dr1
+        vterm = -(gamsa * rab + gamsc * rbc)
 
-          k = angle%param(1, kk)
-          delta = angle%param(2, kk)
-          m = angle%param(3, kk)
-          a = m * theta - delta
+      Case (ANGLE_COMPASS_STRETCH_BEND)
 
-          pterm = k * (1.0_wp + Cos(a))
-          gamma = -k * m * Sin(a) * rsint
-          gamsa = 0.0_wp
-          gamsc = 0.0_wp
-          vterm = 0.0_wp
+        ! compass stretch-bend potential
 
-        Else If (keya == ANGLE_MM3_STRETCH) Then
+        a = angle%param(1, kk)
+        theta0 = angle%param(2, kk)
+        dtheta = theta - theta0
+        rho1 = angle%param(3, kk)
+        dr1 = rab - rho1
 
-          ! MM3-stretch-bend potential
-
-          a = angle%param(1, kk)
-          theta0 = angle%param(2, kk)
-          dtheta = theta - theta0
-          rho1 = angle%param(3, kk)
-          dr1 = rab - rho1
-          rho2 = angle%param(4, kk)
-          dr2 = rbc - rho2
-
-          tmp = a * dr1 * dr2
-
-          pterm = tmp * dtheta
-          gamma = tmp * rsint
-          gamsa = -pterm / dr1
-          gamsc = -pterm / dr2
-          vterm = -(gamsa * rab + gamsc * rbc)
+        tmp = a * dr1
 
-        Else If (keya == ANGLE_COMPASS_STRETCH_STRETCH) Then
+        pterm = tmp * dtheta
+        gamma = tmp * rsint
+        gamsa = -a * dtheta
+        gamsc = 0.0_wp
+        vterm = -gamsa * rab
 
-          ! compass stretch-stretch potential
+      Case (ANGLE_COMPASS_ALL)
 
-          a = angle%param(1, kk)
-          rho1 = angle%param(2, kk)
-          dr1 = rab - rho1
-          rho2 = angle%param(3, kk)
-          dr2 = rbc - rho2
+        ! combined compass angle potential with 3 coupling terms
 
-          pterm = a * dr1 * dr2
-          gamma = 0.0_wp
-          gamsa = -a * dr2
-          gamsc = -a * dr1
-          vterm = -(gamsa * rab + gamsc * rbc)
+        a = angle%param(1, kk)
+        b = angle%param(2, kk)
+        c = angle%param(3, kk)
+        theta0 = angle%param(4, kk)
+        dtheta = theta - theta0
+        rho1 = angle%param(5, kk)
+        dr1 = rab - rho1
+        rho2 = angle%param(6, kk)
+        dr2 = rbc - rho2
 
-        Else If (keya == ANGLE_COMPASS_STRETCH_BEND) Then
+        tmp = b * dr1 + c * dr2
 
-          ! compass stretch-bend potential
+        pterm = a * dr1 * dr2 + dtheta * tmp
+        gamma = tmp * rsint
+        gamsa = -a * dr2 - b * dtheta
+        gamsc = -a * dr1 - c * dtheta
+        vterm = -(gamsa * rab + gamsc * rbc)
 
-          a = angle%param(1, kk)
-          theta0 = angle%param(2, kk)
-          dtheta = theta - theta0
-          rho1 = angle%param(3, kk)
-          dr1 = rab - rho1
+      Case (ANGLE_MM3_ANGLE)
 
-          tmp = a * dr1
+        ! MM3-angle-bend potential
 
-          pterm = tmp * dtheta
-          gamma = tmp * rsint
-          gamsa = -a * dtheta
-          gamsc = 0.0_wp
-          vterm = -gamsa * rab
+        k = angle%param(1, kk)
+        theta0 = angle%param(2, kk)
+        dtheta = theta - theta0
 
-        Else If (keya == ANGLE_COMPASS_ALL) Then
+        pterm = k * dtheta**2 * (1.0_wp - 1.4e-2_wp * dtheta + 5.60e-5_wp * dtheta**2 - &
+                                 7.0e-7_wp * dtheta**3 + 2.20e-8_wp * dtheta**4)
+        gamma = k * dtheta * (2.0_wp - 4.2e-2_wp * dtheta + 2.24e-4_wp * dtheta**2 - &
+                              3.5e-6_wp * dtheta**3 + 1.32e-7_wp * dtheta**4) * rsint
+        gamsa = 0.0_wp
+        gamsc = 0.0_wp
+        vterm = 0.0_wp
 
-          ! combined compass angle potential with 3 coupling terms
+      Case (ANGLE_KKY)
 
-          a = angle%param(1, kk)
-          b = angle%param(2, kk)
-          c = angle%param(3, kk)
-          theta0 = angle%param(4, kk)
-          dtheta = theta - theta0
-          rho1 = angle%param(5, kk)
-          dr1 = rab - rho1
-          rho2 = angle%param(6, kk)
-          dr2 = rbc - rho2
+        ! KKY potential
 
-          tmp = b * dr1 + c * dr2
+        k = angle%param(1, kk)
+        theta0 = angle%param(2, kk)
+        dtheta = theta - theta0
+        gr = angle%param(3, kk)
+        rm = angle%param(4, kk)
+        dr1 = rab - rm
+        rho1 = Exp(gr * dr1) + 1.0_wp
+        dr2 = rbc - rm
 
-          pterm = a * dr1 * dr2 + dtheta * tmp
-          gamma = tmp * rsint
-          gamsa = -a * dr2 - b * dtheta
-          gamsc = -a * dr1 - c * dtheta
-          vterm = -(gamsa * rab + gamsc * rbc)
+        rho2 = Exp(gr * dr2) + 1.0_wp
+        rho = 1.0_wp * Sqrt(rho1 * rho2)
 
-        Else If (keya == ANGLE_MM3_ANGLE) Then
+        pterm = -k * rho * (Cos(2.0_wp * dtheta) - 1.0_wp)
+        gamma = 2.0_wp * k * rho * Sin(2.0_wp * dtheta) * rsint
+        gamsa = -0.5_wp * gr * pterm * (1.0_wp - 1.0_wp / rho1)
+        gamsc = -0.5_wp * gr * pterm * (1.0_wp - 1.0_wp / rho2)
+        vterm = -(gamsa * rab + gamsc * rbc)
 
-          ! MM3-angle-bend potential
+      Case (ANGLE_TAB)
 
-          k = angle%param(1, kk)
-          theta0 = angle%param(2, kk)
-          dtheta = theta - theta0
+        ! TABANG potential
 
-          pterm = k * dtheta**2 * (1.0_wp - 1.4e-2_wp * dtheta + 5.60e-5_wp * dtheta**2 - &
-                                   7.0e-7_wp * dtheta**3 + 2.20e-8_wp * dtheta**4)
-          gamma = k * dtheta * (2.0_wp - 4.2e-2_wp * dtheta + 2.24e-4_wp * dtheta**2 - &
-                                3.5e-6_wp * dtheta**3 + 1.32e-7_wp * dtheta**4) * rsint
-          gamsa = 0.0_wp
-          gamsc = 0.0_wp
-          vterm = 0.0_wp
+        j = angle%ltp(kk)
+        rdr = angle%tab_force(-1, j) ! 1.0_wp/delpot (in rad^-1)
 
-        Else If (keya == ANGLE_KKY) Then
+        l = Int(theta * rdr)
+        ppp = theta * rdr - Real(l, wp)
 
-          ! KKY potential
+        vk = angle%tab_potential(l, j)
+        vk1 = angle%tab_potential(l + 1, j)
+        vk2 = angle%tab_potential(l + 2, j)
 
-          k = angle%param(1, kk)
-          theta0 = angle%param(2, kk)
-          dtheta = theta - theta0
-          gr = angle%param(3, kk)
-          rm = angle%param(4, kk)
-          dr1 = rab - rm
-          rho1 = Exp(gr * dr1) + 1.0_wp
-          dr2 = rbc - rm
+        t1 = vk + (vk1 - vk) * ppp
+        t2 = vk1 + (vk2 - vk1) * (ppp - 1.0_wp)
 
-          rho2 = Exp(gr * dr2) + 1.0_wp
-          rho = 1.0_wp * Sqrt(rho1 * rho2)
+        pterm = t1 + (t2 - t1) * ppp * 0.5_wp
 
-          pterm = -k * rho * (Cos(2.0_wp * dtheta) - 1.0_wp)
-          gamma = 2.0_wp * k * rho * Sin(2.0_wp * dtheta) * rsint
-          gamsa = -0.5_wp * gr * pterm * (1.0_wp - 1.0_wp / rho1)
-          gamsc = -0.5_wp * gr * pterm * (1.0_wp - 1.0_wp / rho2)
-          vterm = -(gamsa * rab + gamsc * rbc)
+        vk = angle%tab_force(l, j); If (l == 0) vk = vk * theta
+        vk1 = angle%tab_force(l + 1, j)
+        vk2 = angle%tab_force(l + 2, j)
 
-        Else If (keya == ANGLE_TAB) Then
+        t1 = vk + (vk1 - vk) * ppp
+        t2 = vk1 + (vk2 - vk1) * (ppp - 1.0_wp)
 
-          ! TABANG potential
+        gamma = -(t1 + (t2 - t1) * ppp * 0.5_wp) * rsint
 
-          j = angle%ltp(kk)
-          rdr = angle%tab_force(-1, j) ! 1.0_wp/delpot (in rad^-1)
+        vterm = 0.0_wp
+        gamsa = 0.0_wp
+        gamsc = 0.0_wp
 
-          l = Int(theta * rdr)
-          ppp = theta * rdr - Real(l, wp)
+      Case Default
 
-          vk = angle%tab_potential(l, j)
-          vk1 = angle%tab_potential(l + 1, j)
-          vk2 = angle%tab_potential(l + 2, j)
+        ! undefined potential
 
-          t1 = vk + (vk1 - vk) * ppp
-          t2 = vk1 + (vk2 - vk1) * (ppp - 1.0_wp)
+        safe = .false.
+        pterm = 0.0_wp
+        gamma = 0.0_wp
+        gamsa = 0.0_wp
+        gamsc = 0.0_wp
+        vterm = 0.0_wp
 
-          pterm = t1 + (t2 - t1) * ppp * 0.5_wp
+      End Select
 
-          vk = angle%tab_force(l, j); If (l == 0) vk = vk * theta
-          vk1 = angle%tab_force(l + 1, j)
-          vk2 = angle%tab_force(l + 2, j)
+      ! calculate atomic forces
 
-          t1 = vk + (vk1 - vk) * ppp
-          t2 = vk1 + (vk2 - vk1) * (ppp - 1.0_wp)
+      fxa = gamma * (xbc - xab * cost) * rrab + gamsa * xab
+      fya = gamma * (ybc - yab * cost) * rrab + gamsa * yab
+      fza = gamma * (zbc - zab * cost) * rrab + gamsa * zab
 
-          gamma = -(t1 + (t2 - t1) * ppp * 0.5_wp) * rsint
+      fxc = gamma * (xab - xbc * cost) * rrbc + gamsc * xbc
+      fyc = gamma * (yab - ybc * cost) * rrbc + gamsc * ybc
+      fzc = gamma * (zab - zbc * cost) * rrbc + gamsc * zbc
 
-          vterm = 0.0_wp
-          gamsa = 0.0_wp
-          gamsc = 0.0_wp
+      If (ia <= config%natms) Then
 
-        Else
+        config%parts(ia)%fxx = config%parts(ia)%fxx + fxa
+        config%parts(ia)%fyy = config%parts(ia)%fyy + fya
+        config%parts(ia)%fzz = config%parts(ia)%fzz + fza
 
-          ! undefined potential
+      End If
 
-          safe = .false.
-          pterm = 0.0_wp
-          gamma = 0.0_wp
-          gamsa = 0.0_wp
-          gamsc = 0.0_wp
-          vterm = 0.0_wp
+      If (ib <= config%natms) Then
 
-        End If
+        ! energy and virial (associated to the head atom)
 
-        ! calculate atomic forces
+        engang = engang + pterm
+        virang = virang + vterm
 
-        fxa = gamma * (xbc - xab * cost) * rrab + gamsa * xab
-        fya = gamma * (ybc - yab * cost) * rrab + gamsa * yab
-        fza = gamma * (zbc - zab * cost) * rrab + gamsa * zab
+        ! calculate stress tensor (associated to the head atom)
 
-        fxc = gamma * (xab - xbc * cost) * rrbc + gamsc * xbc
-        fyc = gamma * (yab - ybc * cost) * rrbc + gamsc * ybc
-        fzc = gamma * (zab - zbc * cost) * rrbc + gamsc * zbc
+        strs1 = strs1 + rab * xab * fxa + rbc * xbc * fxc
+        strs2 = strs2 + rab * xab * fya + rbc * xbc * fyc
+        strs3 = strs3 + rab * xab * fza + rbc * xbc * fzc
+        strs5 = strs5 + rab * yab * fya + rbc * ybc * fyc
+        strs6 = strs6 + rab * yab * fza + rbc * ybc * fzc
+        strs9 = strs9 + rab * zab * fza + rbc * zbc * fzc
 
-        If (ia <= config%natms) Then
+        config%parts(ib)%fxx = config%parts(ib)%fxx - fxa - fxc
+        config%parts(ib)%fyy = config%parts(ib)%fyy - fya - fyc
+        config%parts(ib)%fzz = config%parts(ib)%fzz - fza - fzc
 
-          config%parts(ia)%fxx = config%parts(ia)%fxx + fxa
-          config%parts(ia)%fyy = config%parts(ia)%fyy + fya
-          config%parts(ia)%fzz = config%parts(ia)%fzz + fza
+      End If
 
-        End If
+      If (ic <= config%natms) Then
 
-        If (ib <= config%natms) Then
-
-          ! energy and virial (associated to the head atom)
-
-          engang = engang + pterm
-          virang = virang + vterm
-
-          ! calculate stress tensor (associated to the head atom)
-
-          strs1 = strs1 + rab * xab * fxa + rbc * xbc * fxc
-          strs2 = strs2 + rab * xab * fya + rbc * xbc * fyc
-          strs3 = strs3 + rab * xab * fza + rbc * xbc * fzc
-          strs5 = strs5 + rab * yab * fya + rbc * ybc * fyc
-          strs6 = strs6 + rab * yab * fza + rbc * ybc * fzc
-          strs9 = strs9 + rab * zab * fza + rbc * zbc * fzc
-
-          config%parts(ib)%fxx = config%parts(ib)%fxx - fxa - fxc
-          config%parts(ib)%fyy = config%parts(ib)%fyy - fya - fyc
-          config%parts(ib)%fzz = config%parts(ib)%fzz - fza - fzc
-
-        End If
-
-        If (ic <= config%natms) Then
-
-          config%parts(ic)%fxx = config%parts(ic)%fxx + fxc
-          config%parts(ic)%fyy = config%parts(ic)%fyy + fyc
-          config%parts(ic)%fzz = config%parts(ic)%fzz + fzc
-
-        End If
+        config%parts(ic)%fxx = config%parts(ic)%fxx + fxc
+        config%parts(ic)%fyy = config%parts(ic)%fyy + fyc
+        config%parts(ic)%fzz = config%parts(ic)%fzz + fzc
 
       End If
     End Do
@@ -1183,7 +1171,7 @@ Contains
     Character(Len=40)          :: word
     Character(Len=8)           :: atom1, atom2, atom3
     Integer                    :: fail(1:2), i, itang, jtang, jtpatm, katom1, katom2, katom3, l, &
-                                  ngrid, rtang, ntable
+                                  ngrid, ntable, rtang
     Integer, Allocatable       :: read_type(:)
     Logical                    :: remake, safe
     Real(Kind=wp)              :: bufp0, bufv0, delpot, dgr2rad, dlrpot, ppp, rad2dgr, rdr, rrr, &
