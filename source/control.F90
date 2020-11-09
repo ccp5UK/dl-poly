@@ -3813,6 +3813,7 @@ Contains
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
     ! contrib   - i.t.todorov april 2019 l_trm reading and setting
+    ! amended   - i.t.todorov november 2020 vdw%cutoff reset enforcing
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     Integer,                  Intent(In   ) :: max_rigid, imcon
@@ -4738,6 +4739,8 @@ Contains
           If (lrcut) Then
             lrvdw = .true.
             vdws%cutoff = neigh%cutoff
+            Call warning('short-ranged interaction cutoff reset: vdws%cutoff = neigh%cutoff', .true.)
+            Call warning(40, vdws%cutoff, 0.0_wp, 0.0_wp)
           Else
             Call error(402)
           End If
@@ -4901,7 +4904,7 @@ Contains
 
         If (lvdw .and. vdws%cutoff > neigh%cutoff) Then
           vdws%cutoff = neigh%cutoff
-          Call warning('short-ranged interactions cutoff check: vdws%cutoff = neigh%cutoff', .true.)
+          Call warning('short-ranged interactions cutoff reset: vdws%cutoff = neigh%cutoff', .true.)
           Call warning(40, vdws%cutoff, 0.0_wp, 0.0_wp)
         End If
 

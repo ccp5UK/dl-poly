@@ -449,6 +449,7 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    ! amended   - i.t.todorov august 2010 (jump over MD cell boundary fix)
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -456,9 +457,10 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
+    Logical              :: safe
     Character(Len=256)   :: message
     Integer              :: fail, i, ia, ib, j
-    Logical              :: safe
+    Real(Kind=wp)        :: x(1:1),y(1:1),z(1:1)
     Logical, Allocatable :: lunsafe(:)
 
     fail = 0
@@ -483,9 +485,15 @@ Contains
       ! area by construction, if not go to a controlled termination)
 
       If (ib > 0 .and. ib <= config%natms .and. ia > 0) Then
-        config%parts(ib)%xxx = config%parts(ia)%xxx
-        config%parts(ib)%yyy = config%parts(ia)%yyy
-        config%parts(ib)%zzz = config%parts(ia)%zzz
+        x(1) = config%parts(ib)%xxx - config%parts(ia)%xxx
+        y(1) = config%parts(ib)%yyy - config%parts(ia)%yyy
+        z(1) = config%parts(ib)%zzz - config%parts(ia)%zzz
+
+        Call images(config%imcon, config%cell, 1, x, y, z)
+
+        config%parts(ib)%xxx = config%parts(ib)%xxx - x(1)
+        config%parts(ib)%yyy = config%parts(ib)%yyy - y(1)
+        config%parts(ib)%zzz = config%parts(ib)%zzz - z(1)
       End If
 
       ! Detect uncompressed unit

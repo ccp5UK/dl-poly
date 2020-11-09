@@ -1,6 +1,8 @@
 Release notes for DL_POLY_4
 ===========================
 
++ Bug fix core\_shells\_on\_top shells wrap-around crossing MD box by adding relative vectors' move of shells on cores
+
 Version 4.10.0: August 2020
 ---------------------------
 
@@ -26,22 +28,27 @@ Version 4.10.0: August 2020
   + current calculations
   + new potentials available, ZBL, calcite Raitieri tappered, Generalised Lennard Jones by Frenkel, etc...
   + integrate was removed, no leapfrog integration scheme.
+  + expansion of the two-temperature model (TTM) to triclinic (non-orthorhombic) systems - ttm\_modile, langevin\_forces, ttm\_ion\_diffusion, ttm\_thermal\_diffusion
+  + processing tabbed data is reinforced for all reading routines parse\_module, read\_field
 
 + Bug fixes:
 
   + fix array bounds in tersoff potential
   + boundaries in stochastic thermostat work correctly now
-  + TTM fixes for cell shape and integrator stability
   + fix for core-shell infrequent bug
   + fix mdf long range correction incorrect non-zero for mbuck
+  + fixing memory leak io\_module
+  + fixing halo particles identification and designation to halo's link-cell space in link\_cell\_pairs and defects\_link\_cells
+  + TTM fixes for cell shape and integrator stability
 
 Version 4.09.5: September 2020
 ----------------------------------
 
 + Improvements, updates, etc.
-  + all read and scan routines (TAB*, FIELD, HISTORY, DEFECTS) are now able to process tabbed data
   + a new method to compute neighbour lists that can offer non-negligible speedups for certain soft-matter systems, use
-    -DWITH_HALF_HALO to activate
+    -DWITH_HALF_HALO to activate during the cmake process
+  + expansion of the two-temperature model (TTM) to triclinic (non-orthorhombic) systems - ttm\_modile, langevin\_forces, ttm\_ion\_diffusion, ttm\_thermal\_diffusion
+  + processing tabbed data is reinforced for all reading routines parse\_module, read\_field
 + Bug-fixes:
   + fixing memory leak io\_module
   + fixing halo particles identification and designation to halo's link-cell space in link\_cell\_pairs and defects\_link\_cells
