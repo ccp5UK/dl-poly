@@ -12,16 +12,11 @@ Module system
                              Revive_tag, SysExpand_tag, comm_self, comms_type, gbcast, gcheck, &
                              grecv, gsend, gsum, gsync, gtime, mode_create, mode_wronly, &
                              offset_kind
-  Use configuration,   Only: configuration_type,&
-                             write_config,&
+  Use configuration,   Only: IMCON_CUBIC,&
                              IMCON_NOPBC,&
-                             IMCON_CUBIC,&
-                             IMCON_ORTHORHOMBIC,&
                              IMCON_PARALLELOPIPED,&
                              IMCON_SLAB,&
-                             IMCON_TRUNC_OCTO,&
-                             IMCON_RHOMBIC_DODEC,&
-                             IMCON_HEXAGONAL
+                             configuration_type
   Use constants,       Only: engunit,&
                              nmpldt,&
                              zero_plus
@@ -721,32 +716,31 @@ Contains
     Integer, Allocatable, Dimension(:)                           :: ltg_scaled
     Integer(Kind=offset_kind)                                    :: top_skip
     Integer(Kind=li)                                             :: offset, rec
-    Integer                                                      :: at_scaled, fail(1:5), fh, i, &
-                                                                    iang, iatm, ibond, icnst, &
-                                                                    idih, idm, ierr, iinv, imols, &
-                                                                    indatm, indatm1, index, &
-                                                                    io_write, irgd, ishls, itmols, &
-                                                                    ix, iy, iz, j, jatm, loc_ind, &
-                                                                    lrgd, m, mxiter, nall, nangle, &
-                                                                    nattot, nbonds, nconst, &
-                                                                    ndihed, ninver, nrigid, &
-                                                                    nshels, sapmpt, sapmtt, setspc
+    Integer                                                      :: at_scaled, conftag, fail(1:5), &
+                                                                    fftag, fh, i, iang, iatm, &
+                                                                    ibond, icnst, idih, idm, ierr, &
+                                                                    iinv, imols, indatm, indatm1, &
+                                                                    index, io_write, irgd, ishls, &
+                                                                    itmols, ix, iy, iz, j, jatm, &
+                                                                    loc_ind, lrgd, m, mxiter, &
+                                                                    nall, nangle, nattot, nbonds, &
+                                                                    nconst, ndihed, ninver, &
+                                                                    nrigid, nshels, sapmpt, &
+                                                                    sapmtt, setspc
     Character(Len=recsz)                                         :: record2, record3
     Character(Len=Len(config%atmnam)), Allocatable, Dimension(:) :: atmnam_scaled
 
-    Integer                             :: conftag, fftag
-
     ! Choose which CONFIG and FIELD file to read, depending on the ff tag
-    If (ff == 1 ) Then
-      conftag=FILE_CONFIG
-      fftag=FILE_FIELD
-    ElseIf( ff ==2 )Then
-      conftag=FILE_CONFIG_2
-      fftag=FILE_FIELD_2
-    ElseIf( ff ==3 )Then
-      conftag=FILE_CONFIG_3
-      fftag=FILE_FIELD_3
-    EndIf
+    If (ff == 1) Then
+      conftag = FILE_CONFIG
+      fftag = FILE_FIELD
+    Elseif (ff == 2) Then
+      conftag = FILE_CONFIG_2
+      fftag = FILE_FIELD_2
+    Elseif (ff == 3) Then
+      conftag = FILE_CONFIG_3
+      fftag = FILE_FIELD_3
+    Endif
 
     ! Some parameters and variables needed by io interfaces
 
@@ -945,8 +939,7 @@ Contains
         Call io_nc_put_var(io, 'cell_angles', fh, angles, (/1, i/), (/3, 1/))
 
       Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
-
-        io_write == IO_WRITE_SORTED_MASTER) Then
+               io_write == IO_WRITE_SORTED_MASTER) Then
 
         Write (Unit=files(conftag)%unit_no, Fmt='(a72,a1)', Rec=Int(1, li)) &
           config%cfgname(1:72), lf
@@ -1921,7 +1914,7 @@ Contains
 
     Character(Len=256)                       :: message
     Character(Len=40)                        :: forma
-    Integer                                  :: fail(1:3), i, j, jatms, jdnode, l, levcfg, nsum
+    Integer                                  :: fail(1:3), i, j, jatms, jdnode, l, nsum
     Integer, Allocatable, Dimension(:)       :: iwrk
     Logical                                  :: ready
     Real(Kind=wp)                            :: r_mxnode

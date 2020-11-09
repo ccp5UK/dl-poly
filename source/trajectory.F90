@@ -2,16 +2,12 @@ Module trajectory
   Use comms,           Only: &
                              Traject_tag, comm_self, comms_type, gbcast, gcheck, grecv, gsend, &
                              gsum, gsync, mode_rdonly, mode_wronly, offset_kind
-  Use configuration,   Only: configuration_type,&
-                             read_config_parallel,&
+  Use configuration,   Only: IMCON_HEXAGONAL,&
                              IMCON_NOPBC,&
-                             IMCON_CUBIC,&
-                             IMCON_ORTHORHOMBIC,&
-                             IMCON_PARALLELOPIPED,&
-                             IMCON_SLAB,&
-                             IMCON_TRUNC_OCTO,&
                              IMCON_RHOMBIC_DODEC,&
-                             IMCON_HEXAGONAL
+                             IMCON_TRUNC_OCTO,&
+                             configuration_type,&
+                             read_config_parallel
   Use constants,       Only: half_minus
   Use domains,         Only: domains_type
   Use errors_warnings, Only: error,&
@@ -1156,7 +1152,8 @@ Contains
 
       ! Start of file
 
-      rec_mpi_io=Int(traj%rec_write,offset_kind)+Int(jj,offset_kind)+Int(n_atm(0),offset_kind)*Int(traj%record_size,offset_kind)
+      rec_mpi_io = Int(traj%rec_write, offset_kind) + Int(jj, offset_kind) + Int(n_atm(0), offset_kind) *&
+        &Int(traj%record_size, offset_kind)
       jj = 0
 
       Call io_set_parameters(io, user_comm=comm%comm)
@@ -1490,13 +1487,13 @@ Contains
 
       ! Write the rest
 
-      Call io_set_parameters(io, user_comm = comm%comm )
-      Call io_init(io, traj%recsz_write )
-      Call split_io_comm( io%base_comm, io%n_io_procs_write, io%io_comm, io%io_gather_comm, io%do_io )
+      Call io_set_parameters(io, user_comm=comm%comm)
+      Call io_init(io, traj%recsz_write)
+      Call split_io_comm(io%base_comm, io%n_io_procs_write, io%io_comm, io%io_gather_comm, io%do_io)
       io%io_comm_inited = .true.
       !Only ranks that do IO should open the files.
-      If( io%do_io ) Then
-        Call io_open(io, io_write, io%io_comm, traj%fname, mode_wronly, fh )
+      If (io%do_io) Then
+        Call io_open(io, io_write, io%io_comm, traj%fname, mode_wronly, fh)
       End If
 
       Call io_write_sorted_file(io, fh, traj%file_key(), IO_HISTORY, rec_mpi_io, config%natms, &
@@ -1526,8 +1523,8 @@ Contains
           Call io_write_record(io, fh, Int(1, offset_kind), record(1:traj%recsz_write))
         End If
       End If
-      If( io%do_io ) Then
-        Call io_close(io, fh )
+      If (io%do_io) Then
+        Call io_close(io, fh)
       End If
       Call io_finalize(io)
 
@@ -1536,8 +1533,8 @@ Contains
     Else If (io_write == IO_WRITE_SORTED_MASTER) Then
 
       Allocate (chbuf(1:config%mxatms), iwrk(1:config%mxatms), Stat=fail(1))
-      Allocate (bxx(1:config%mxatms), byy(1:config%mxatms), bzz(1:config%mxatms), Stat=fail(3))
-      Allocate (temp_parts(1:config%mxatms), eee(1:config%mxatms), fff(1:config%mxatms), Stat=fail(5))
+      Allocate (bxx(1:config%mxatms), byy(1:config%mxatms), bzz(1:config%mxatms), Stat=fail(2))
+      Allocate (temp_parts(1:config%mxatms), eee(1:config%mxatms), fff(1:config%mxatms), Stat=fail(3))
       If (Any(fail > 0)) Then
         Write (message, '(a)') 'trajectory_write allocation failure'
         Call error(0, message)
@@ -1654,17 +1651,17 @@ Contains
 
         Call gsend(comm, config%natms, 0, Traject_tag)
         If (config%natms > 0) Then
-          Call gsend(comm, config%atmnam(:), 0, Traject_tag)
-          Call gsend(comm, config%ltg(:), 0, Traject_tag)
+          Call gsend(comm, config%atmnam(1:config%natms), 0, Traject_tag)
+          Call gsend(comm, config%ltg(1:config%natms), 0, Traject_tag)
 
-          Call gsend(comm, config%parts(:), 0, Traject_tag)
-          Call gsend(comm, config%weight(:), 0, Traject_tag)
-          Call gsend(comm, rsd(:), 0, Traject_tag)
+          Call gsend(comm, config%parts(1:config%natms), 0, Traject_tag)
+          Call gsend(comm, config%weight(1:config%natms), 0, Traject_tag)
+          Call gsend(comm, rsd(1:config%natms), 0, Traject_tag)
 
           If (traj%key /= TRAJ_KEY_COORD) Then
-            Call gsend(comm, config%vxx(:), 0, Traject_tag)
-            Call gsend(comm, config%vyy(:), 0, Traject_tag)
-            Call gsend(comm, config%vzz(:), 0, Traject_tag)
+            Call gsend(comm, config%vxx(1:config%natms), 0, Traject_tag)
+            Call gsend(comm, config%vyy(1:config%natms), 0, Traject_tag)
+            Call gsend(comm, config%vzz(1:config%natms), 0, Traject_tag)
           End If
 
         End If
@@ -1676,8 +1673,8 @@ Contains
       End If
 
       Deallocate (chbuf, iwrk, Stat=fail(1))
-      Deallocate (bxx, byy, bzz, Stat=fail(3))
-      Deallocate (temp_parts, eee, fff, Stat=fail(5))
+      Deallocate (bxx, byy, bzz, Stat=fail(2))
+      Deallocate (temp_parts, eee, fff, Stat=fail(3))
       If (Any(fail > 0)) Then
         Write (message, '(a)') 'trajectory_write deallocation failure'
         Call error(0, message)
@@ -2030,13 +2027,13 @@ Contains
 
       ! Write the rest
 
-      Call io_set_parameters(io, user_comm = comm%comm )
-      Call io_init(io, traj%recsz_write )
-      Call split_io_comm( io%base_comm, io%n_io_procs_write, io%io_comm, io%io_gather_comm, io%do_io )
+      Call io_set_parameters(io, user_comm=comm%comm)
+      Call io_init(io, traj%recsz_write)
+      Call split_io_comm(io%base_comm, io%n_io_procs_write, io%io_comm, io%io_gather_comm, io%do_io)
       io%io_comm_inited = .true.
       !Only ranks that do IO should open the files.
-      If( io%do_io ) Then
-        Call io_open(io, io_write, io%io_comm, traj%fname, mode_wronly, fh )
+      If (io%do_io) Then
+        Call io_open(io, io_write, io%io_comm, traj%fname, mode_wronly, fh)
       End If
 
       Call io_write_sorted_file(io, fh, 0 * traj%file_key(), IO_HISTORD, rec_mpi_io, config%natms, &
@@ -2044,16 +2041,16 @@ Contains
                                 (/0.0_wp/), (/0.0_wp/), (/0.0_wp/), &
                                 IO_SUBSET_POSITIONS, ierr)
 
-      If ( ierr /= 0 ) Then
-        Select Case( ierr )
-         Case( IO_BASE_COMM_NOT_SET )
-          Call error( 1050 )
-         Case( IO_ALLOCATION_ERROR )
-          Call error( 1053 )
-         Case( IO_UNKNOWN_WRITE_OPTION )
-          Call error( 1056 )
-         Case( IO_UNKNOWN_WRITE_LEVEL )
-          Call error( 1059 )
+      If (ierr /= 0) Then
+        Select Case (ierr)
+        Case (IO_BASE_COMM_NOT_SET)
+          Call error(1050)
+        Case (IO_ALLOCATION_ERROR)
+          Call error(1053)
+        Case (IO_UNKNOWN_WRITE_OPTION)
+          Call error(1056)
+        Case (IO_UNKNOWN_WRITE_LEVEL)
+          Call error(1059)
         End Select
       End If
 
@@ -2068,8 +2065,8 @@ Contains
         End If
       End If
 
-      If( io%do_io ) Then
-        Call io_close(io, fh )
+      If (io%do_io) Then
+        Call io_close(io, fh)
       End If
       Call io_finalize(io)
 
