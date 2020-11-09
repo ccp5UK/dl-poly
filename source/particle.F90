@@ -11,7 +11,7 @@ Module particle
   Private
 
   Type, Public :: corePart
-
+    Sequence
     Real(Kind=wp)    :: xxx, yyy, zzz
     Real(Kind=wp)    :: fxx, fyy, fzz
     Real(Kind=wp)    :: chge
