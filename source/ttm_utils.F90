@@ -574,7 +574,7 @@ Contains
     Real(Kind=wp), Allocatable             :: buffer(:, :, :, :), energydist(:, :, :, :)
 
     Ce0a = ttm%Ce0 * Merge(ttm%cellrho, 1.0_wp, ttm%ttmdyndens)
-    sh_Aa = sh_Aa * Merge(ttm%cellrho, 1.0_wp, ttm%ttmdyndens)
+    sh_Aa = ttm%sh_A * Merge(ttm%cellrho, 1.0_wp, ttm%ttmdyndens)
     Cemaxa = ttm%Cemax * Merge(ttm%cellrho, 1.0_wp, ttm%ttmdyndens)
 
     Allocate (energydist(ttm%numcell, -1:1, -1:1, -1:1))
