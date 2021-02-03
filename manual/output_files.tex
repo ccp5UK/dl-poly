@@ -1000,16 +1000,19 @@ Time (ps)  $\,\,\,\,\,\,\,\,\,\,\,\,$    $|\Psi^{(1)}_{\text{EVB}}\big|^{2}$ $\,
 
 where $N_F$ is the number of force-fields coupled via the EVB simulation. 
 
-\subsection{COORD, ICOORD and ADFDAT}
+\subsection{The ICOORD, CCOORD and ADFDAT files}
 
-CCOORD is the a coordination displacement file that dumps the positions of all the atoms that are
-considered to both change there initial local atomic coordination and move more that a set distance
-away.
+ICOORD and CCOORD are output files that log coordination number data for pairs of atomic species specified by the user.
+To perform this analysis and output these files the user must enter the keyword {\bf coord\_calculate} (see section \ref{control_options}) into the CONTROL file
+and {\bf crd} (see section \ref{sec:crd}) into the FIELD file.
 
-ICOORD is a dump file of both the initial coordination of each atom and the exact atoms its
-coordinated to and optional this at each writing step interval. Also provides the coordination
-distribution statistics for each atom after each writing step interval ( If adf is used and a specific
-coordination list is defined then this will also display for each list type ).
+ICOORD is a dump file that can contain 2 types of data. The top of the file contains the initial coordination of each atom and the exact atoms it is
+coordinated to. There is an option to write this data at set intervals (the writing step interval) or just at the initial step. The bottom of the file provides the coordination
+distribution statistics for each atom after each writing step interval. The coordination distribution for the [atom list] - [atom list] pairs will also be displayed here.
 
-ADFDAT is statistics file containing the angular distributions between atoms you define it to produce.
+CCOORD is a coordination displacement file that dumps the positions of all atoms that are
+considered to both change their initial local atomic coordination, and move more than a set distance
+from their initial position, at set intervals. This procedure is described in reference \cite{Diver2020}.
+
+ADFDAT is statistics file containing the angular distributions for the atom pairs specified.
 
