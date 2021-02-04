@@ -23,7 +23,8 @@ Module ttm_utils
                              gmax,&
                              gmin,&
                              gsum
-  Use constants,       Only: zero_plus
+  Use constants,       Only: zero_plus,&
+                             kB_to_eV
   Use domains,         Only: domains_type
   Use errors_warnings, Only: error
   Use kinds,           Only: wp
@@ -31,7 +32,10 @@ Module ttm_utils
                              eltemp_mean,&
                              eltemp_min,&
                              eltemp_sum,&
-                             ttm_type
+                             ttm_type,&
+                             TTM_CE_CONST, TTM_CE_TANH, TTM_CE_LINEAR, TTM_CE_TABULATED,&
+                             TTM_CE_CONST_DYN, TTM_CE_TANH_DYN, TTM_CE_LINEAR_DYN, TTM_CE_TABULATED_DYN,&
+                             TTM_KE_TABULATED, TTM_DE_METAL, TTM_DE_CONST, TTM_DE_RECIP, TTM_DE_TABULATED
 
 #ifdef SERIAL
   Use mpi_api
@@ -93,29 +97,29 @@ Contains
     Ce = 1.0_wp
 
     Select Case (ttm%CeType)
-    Case (0)
+    Case (TTM_CE_CONST)
       ! Case 0: constant specific heat capacity (given as kB/A^3)
       Ce = ttm%Ce0
-    Case (1)
+    Case (TTM_CE_TANH)
       ! Case 1: hyperbolic tangent specific heat capacity (given as kB/A^3) -
       !         Ce = ttm%sh_A*Tanh(T*ttm%sh_B*1.0e-4) [kB/atom]
       Ce = ttm%sh_A * Tanh(T * ttm%sh_B)
-    Case (2)
+    Case (TTM_CE_LINEAR)
       ! Case 2: linear specific heat capacity to maximum value at/beyond ttm%Tfermi
       !         (given as kB/A^3)
       Ce = Min(T / ttm%Tfermi, 1.0_wp) * ttm%Cemax
-    Case (4)
+    Case (TTM_CE_CONST_DYN)
       ! Case 4: constant specific heat capacity (converted as kB/A^3)
       Ce = ttm%Ce0 * ttm%cellrho
-    Case (5)
+    Case (TTM_CE_TANH_DYN)
       ! Case 5: hyperbolic tangent specific heat capacity (converted to kB/A^3) -
       !         Ce = ttm%sh_A*Tanh(T*ttm%sh_B*1.0e-4) [kB/atom]
       Ce = ttm%sh_A * ttm%cellrho * Tanh(T * ttm%sh_B)
-    Case (6)
+    Case (TTM_CE_LINEAR_DYN)
       ! Case 6: linear specific heat capacity to maximum value at/beyond ttm%Tfermi
       !         (converted to kB/A^3)
       Ce = Min(T / ttm%Tfermi, 1.0_wp) * ttm%Cemax * ttm%cellrho
-    Case (3, 7)
+    Case (TTM_CE_TABULATED, TTM_CE_TABULATED_DYN)
       ! Case 3: interpolated specific heat capacity from table (given as kB/A^3)
       Call interpolate(ttm%cel, ttm%cetable, T, Ce)
     Case Default
@@ -134,7 +138,7 @@ Contains
     Real(Kind=wp)                 :: Ke
 
     Select Case (ttm%KeType)
-    Case (3)
+    Case (TTM_KE_TABULATED)
       ! Case 3: thermal conductivity interpolated from table
       Ke = Kep(T, ttm)
     Case Default
@@ -167,18 +171,18 @@ Contains
     Real(Kind=wp)                 :: alp
 
     Select Case (ttm%DeType)
-    Case (0)
+    Case (TTM_DE_METAL)
       ! Case 0: metal system - ratio of conductivity/heat capacity
       alp = Ke(Te, ttm) / Ce(Te, ttm)
-    Case (1)
+    Case (TTM_DE_CONST)
       ! Case 1: non-metal system - constant value (given as A^2/ps)
       alp = ttm%Diff0
-    Case (2)
+    Case (TTM_DE_RECIP)
       ! Case 2: non-metal system - reciprocal function of temperature
       !         up to Fermi temperature, ttm%Diff0 previously scaled with
       !         system temperature (given as A^2/ps)
       alp = ttm%Diff0 / Min(Te, ttm%Tfermi)
-    Case (3)
+    Case (TTM_DE_TABULATED)
       ! Case 3: non-metal system - thermal diffusivity interpolated
       !         from table (given as A^2/ps)
       Call interpolate(ttm%del, ttm%detable, Te, alp)
@@ -437,21 +441,26 @@ Contains
                     ijk = 1 + i + (ttm%ntcell(1) + 2) * (j + (ttm%ntcell(2) + 2) * k)
                     ! integrate electronic heat capacity from temp0 to electronic temperature
                     ! of config%cell if it is within global range and active (within ionic temperature config%cells)
-            If (lx > 0 .and. lx <= ttm%eltsys(1) .and. ly > 0 .and. ly <= ttm%eltsys(2) .and. lz > 0 .and. lz <= ttm%eltsys(3)) Then
+                    If (lx > 0 .and. lx <= ttm%eltsys(1) .and. ly > 0 .and. &
+                         ly <= ttm%eltsys(2) .and. lz > 0 .and. &
+                         lz <= ttm%eltsys(3)) Then
                       eltmp = ttm%eltemp(ijk, ii, jj, kk)
-                  tmp = Merge(1.0_wp, 0.0_wp, (ttm%act_ele_cell(ijk, 0, 0, 0) > zero_plus .or. (ii /= 0 .or. jj /= 0 .or. kk /= 0)))
+                      tmp = Merge(1.0_wp, 0.0_wp, &
+                           (ttm%act_ele_cell(ijk, 0, 0, 0) > zero_plus .or. (ii /= 0 .or. jj /= 0 .or. kk /= 0)))
                       totalcell = totalcell + tmp
+
                       Select Case (ttm%CeType)
-                      Case (0, 4)
+                      Case (TTM_CE_CONST, TTM_CE_CONST_DYN)
                         ! constant specific heat capacity
                         tmp = tmp * Ce0a * (eltmp - temp0)
-                      Case (1, 5)
+                      Case (TTM_CE_TANH, TTM_CE_TANH_DYN)
                         ! hyperbolic tangent specific heat capacity
                         tmp = tmp * sh_Aa * Log(Cosh(ttm%sh_B * eltmp) / Cosh(ttm%sh_B * temp0)) / ttm%sh_B
-                      Case (2, 6)
+                      Case (TTM_CE_LINEAR, TTM_CE_LINEAR_DYN)
                         ! linear specific heat capacity to Fermi temperature
-        tmp = tmp * Cemaxa * (0.5_wp * ((Min(ttm%Tfermi, eltmp))**2 - temp0 * temp0) / ttm%Tfermi + Max(eltmp - ttm%Tfermi, 0.0_wp))
-                      Case Default
+                        tmp = tmp * Cemaxa * (0.5_wp * ((Min(ttm%Tfermi, eltmp))**2 - temp0 * temp0) / ttm%Tfermi + &
+                             Max(eltmp - ttm%Tfermi, 0.0_wp))
+                      Case (TTM_CE_TABULATED, TTM_CE_TABULATED_DYN)
                         ! tabulated ttm%volumetric heat capacity or more complex
                         ! functions: integrate using trapezium rule
                         ! with final interval of <=1 kelvin
@@ -459,11 +468,14 @@ Contains
                         tmp = 0.0_wp
                         sgnplus = Sign(1.0_wp, Real(numint, Kind=wp))
                         Do n = 1, Abs(numint)
-      tmp = tmp + 0.5_wp * sgnplus * (Ce(temp0 + sgnplus * Real(n - 1, Kind=wp), ttm) + Ce(temp0 + sgnplus * Real(n, Kind=wp), ttm))
+                          tmp = tmp + 0.5_wp * sgnplus * (Ce(temp0 + sgnplus * Real(n - 1, Kind=wp), ttm) + &
+                               Ce(temp0 + sgnplus * Real(n, Kind=wp), ttm))
                         End Do
                         tmp = tmp + 0.5_wp * (Ce(temp0 + Real(numint, Kind=wp), ttm) + Ce(eltmp, ttm))
+                      Case Default
+                        Call error(0, 'Unrecognised TTM heat capacity model')
                       End Select
-                      Ue = Ue + tmp * ttm%volume * ttm%kB_to_eV
+                      Ue = Ue + tmp * ttm%volume * kB_to_eV
                     End If
                   End Do
                 End Do
@@ -598,17 +610,17 @@ Contains
             U_e = 0.0_wp
             end_Te = ttm%eltemp(ijk, 0, 0, 0)
             Select Case (ttm%CeType)
-            Case (0, 4)
+            Case (TTM_CE_CONST, TTM_CE_CONST_DYN)
               ! constant specific heat capacity
               U_e = Ce0a * (end_Te - temp0)
-            Case (1, 5)
+            Case (TTM_CE_TANH, TTM_CE_TANH_DYN)
               ! hyperbolic tangent specific heat capacity
               U_e = sh_Aa * Log(Cosh(ttm%sh_B * end_Te) / Cosh(ttm%sh_B * temp0)) / ttm%sh_B
-            Case (2, 6)
+            Case (TTM_CE_LINEAR, TTM_CE_LINEAR_DYN)
               ! linear specific heat capacity to Fermi temperature
               increase = Min(ttm%Tfermi, end_Te)
               U_e = Cemaxa * (0.5_wp * (increase * increase - temp0 * temp0) / ttm%Tfermi + Max(end_Te - ttm%Tfermi, 0.0_wp))
-            Case Default
+            Case (TTM_CE_TABULATED, TTM_CE_TABULATED_DYN)
               ! tabulated ttm%volumetric heat capacity or more complex
               ! functions: integrate using trapezium rule
               ! with final interval of <=1 kelvin
@@ -751,7 +763,7 @@ Contains
     ! available functional form of heat capacity
 
     Select Case (ttm%CeType)
-    Case (0, 4)
+    Case (TTM_CE_CONST, TTM_CE_CONST_DYN)
       ! constant specific heat capacity
       Do kk = -1, 1
         Do jj = -1, 1
@@ -768,7 +780,7 @@ Contains
           End Do
         End Do
       End Do
-    Case (1, 5)
+    Case (TTM_CE_TANH, TTM_CE_TANH_DYN)
       ! hyperbolic tangent specific heat capacity
       Do kk = -1, 1
         Do jj = -1, 1
@@ -787,7 +799,7 @@ Contains
           End Do
         End Do
       End Do
-    Case (2, 6)
+    Case (TTM_CE_LINEAR, TTM_CE_LINEAR_DYN)
       ! linear specific heat capacity to Fermi temperature
       Do kk = -1, 1
         Do jj = -1, 1
@@ -810,7 +822,7 @@ Contains
           End Do
         End Do
       End Do
-    Case Default
+    Case (TTM_CE_TABULATED, TTM_CE_TABULATED_DYN)
       ! tabulated ttm%volumetric heat capacity or more complex
       ! function: find new temperature iteratively by
       ! gradual integration (1 kelvin at a time)

@@ -26,7 +26,8 @@ Module langevin
   Use numerics,        Only: box_mueller_saru3,&
                              seed_type
   Use thermostat,      Only: thermostat_type
-  Use ttm,             Only: ttm_type
+  Use ttm,             Only: ttm_type,&
+                             TTM_EPVAR_NULL, TTM_EPVAR_HOMO, TTM_EPVAR_HETERO
   Use ttm_utils,       Only: Gep
 
   Implicit None
@@ -97,7 +98,7 @@ Contains
         ! homogeneous electron-phonon coupling
 
         Select Case (ttm%gvar)
-        Case (0, 1)
+        Case (TTM_EPVAR_NULL, TTM_EPVAR_HOMO)
           ! constant electron-phonon chi parameter and homogeneous
           ! e-p coupling cases
           scale = Sqrt(2.0_wp * chi * boltz / tstep)
@@ -123,7 +124,7 @@ Contains
             End If
           End Do
 
-        Case (2)
+        Case (TTM_EPVAR_HETERO)
           ! heterogeneous electron-phonon coupling case: calculate individual
           ! chi value for each ionic temperature voxel (ignore input value)
           scale = Sqrt(2.0_wp * boltz / tstep)

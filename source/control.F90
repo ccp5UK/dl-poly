@@ -41,7 +41,10 @@ Module control
                                   prsunt,&
                                   tenunt,&
                                   zero_plus,&
-                                  MAX_BSPLINE
+                                  MAX_BSPLINE,&
+                                  Jm3K_to_kBA3,&
+                                  JKms_to_kBAps,&
+                                  mJcm2_to_eVA2
   Use constraints,          Only: constraints_type
   Use coord,                Only: coord_type
   Use core_shell,           Only: core_shell_type
@@ -143,7 +146,16 @@ Module control
                                   PSEUDO_LANGEVIN, PSEUDO_LANGEVIN_DIRECT, thermostat_type
   Use timer,                Only: timer_type
   Use trajectory,           Only: trajectory_type
-  Use ttm,                  Only: ttm_type
+  Use ttm,                  Only: ttm_type,&
+                                  TTM_SDEPO_NULL, TTM_SDEPO_GAUSS, TTM_SDEPO_FLAT, TTM_SDEPO_EXP,&
+                                  TTM_EPVAR_NULL, TTM_EPVAR_HOMO, TTM_EPVAR_HETERO,&
+                                  TTM_CE_CONST, TTM_CE_TANH, TTM_CE_LINEAR, TTM_CE_TABULATED,&
+                                  TTM_CE_CONST_DYN, TTM_CE_TANH_DYN, TTM_CE_LINEAR_DYN, TTM_CE_TABULATED_DYN,&
+                                  TTM_KE_INFINITE, TTM_KE_CONST, TTM_KE_DRUDE, TTM_KE_TABULATED,&
+                                  TTM_DE_METAL, TTM_DE_CONST, TTM_DE_RECIP, TTM_DE_TABULATED,&
+                                  TTM_BC_PERIODIC, TTM_BC_DIRICHLET, TTM_BC_DIRICHLET_XY, TTM_BC_NEUMANN,&
+                                  TTM_BC_ROBIN, TTM_BC_ROBIN_XY,&
+                                  TTM_TDEPO_DELTA, TTM_TDEPO_EXP, TTM_TDEPO_GAUSS, TTM_TDEPO_PULSE
   Use vdw,                  Only: MIX_FENDER_HALSEY,&
                                   MIX_FUNCTIONAL,&
                                   MIX_HALGREN,&
@@ -444,17 +456,17 @@ Contains
     ! default values for (i) spatial, (ii) temporal
     ! energy deposition
 
-    ttm%sdepoType = 0
+    ttm%sdepoType = TTM_SDEPO_NULL
     ttm%sig = 1.0_wp
     ttm%sigmax = 5.0_wp
 
-    ttm%tdepoType = 1
+    ttm%tdepoType = TTM_TDEPO_GAUSS
     ttm%tdepo = 1.0e-3_wp
     ttm%tcdepo = 5.0_wp
 
     ! default boundary conditions for electronic temperature
 
-    ttm%bcTypeE = 3
+    ttm%bcTypeE = TTM_BC_NEUMANN
 
     ! default minimum number of atoms required per voxel cell
     ! to calculate ionic temperatures and one-way electron-phonon
@@ -2402,7 +2414,7 @@ Contains
           ! gaussian spatial distribution for initial energy deposition into
           ! electronic system
 
-          ttm%sdepoType = 1
+          ttm%sdepoType = TTM_SDEPO_GAUSS
           Call get_word(record, word)
           ttm%sig = word_2_real(word)
           Call get_word(record, word)
@@ -2417,7 +2429,7 @@ Contains
           ! homogeneous spatial distribution for initial energy deposition into
           ! electronic system
 
-          ttm%sdepoType = 2
+          ttm%sdepoType = TTM_SDEPO_FLAT
           Call info('initial homogeneous (flat) spatial energy deposition in electronic system', .true.)
 
         Else If (word1(1:5) == 'laser') Then
@@ -2426,21 +2438,21 @@ Contains
           ! electronic system due to laser: setting absorbed fluence and
           ! penetration depth
 
-          ttm%sdepoType = 2
+          ttm%sdepoType = TTM_SDEPO_FLAT
           Call get_word(record, word)
           ttm%fluence = word_2_real(word)
           Call get_word(record, word)
           ttm%pdepth = word_2_real(word)
           Call get_word(record, word)
-          If (word(1:4) == 'zdep') ttm%sdepoType = 3
+          If (word(1:4) == 'zdep') ttm%sdepoType = TTM_SDEPO_EXP
           Select Case (ttm%sdepoType)
-          Case (2)
+          Case (TTM_SDEPO_FLAT)
             Write (messages(1), '(a)') 'initial homogeneous (flat) spatial ' &
               //'energy deposition in electronic system due to laser'
             Write (messages(2), '(a,1p,e12.4)') &
               'absorbed ttm%fluence (mJ cm^-2) ', ttm%fluence
             Write (messages(3), '(a,1p,e12.4)') 'penetration depth (nm) ', ttm%pdepth
-          Case (3)
+          Case (TTM_SDEPO_EXP)
             Write (messages(1), '(a)') 'initial xy-homogeneous, z-exponential ' &
               //'decaying spatial energy deposition in electronic system due to laser'
             Write (messages(2), '(a,1p,e12.4)') &
@@ -2454,7 +2466,7 @@ Contains
           ! gaussian temporal distribution for energy deposition into
           ! electronic system
 
-          ttm%tdepoType = 1
+          ttm%tdepoType = TTM_TDEPO_GAUSS
           Call get_word(record, word)
           ttm%tdepo = word_2_real(word)
           Call get_word(record, word)
@@ -2469,7 +2481,7 @@ Contains
           ! decaying exponential temporal distribution for energy deposition into
           ! electronic system
 
-          ttm%tdepoType = 2
+          ttm%tdepoType = TTM_TDEPO_EXP
           Call get_word(record, word)
           ttm%tdepo = word_2_real(word)
           Call get_word(record, word)
@@ -2484,7 +2496,7 @@ Contains
           ! dirac delta temporal distribution for energy deposition into
           ! electronic system
 
-          ttm%tdepoType = 3
+          ttm%tdepoType = TTM_TDEPO_DELTA
           Call info('dirac delta temporal energy deposition in electronic system', .true.)
 
         Else If (word1(1:5) == 'pulse') Then
@@ -2493,11 +2505,11 @@ Contains
           ! electronic system (defaults to dirac delta if pulse duration
           ! set to zero)
 
-          ttm%tdepoType = 4
+          ttm%tdepoType = TTM_TDEPO_PULSE
           Call get_word(record, word)
           ttm%tdepo = word_2_real(word)
           If (ttm%tdepo <= zero_plus) Then
-            ttm%tdepoType = 3
+            ttm%tdepoType = TTM_TDEPO_DELTA
             Call info('square pulse temporal energy deposition in electronic' &
                                   //'system of zero duration: being treated as dirac delta')
           Else
@@ -2515,9 +2527,9 @@ Contains
           ! electronic temperature for each voxel)
 
           Select Case (ttm%gvar)
-          Case (1)
+          Case (TTM_EPVAR_HOMO)
             Write (messages(1), '(a)') 'variable electron-phonon coupling values to be applied homogeneously'
-          Case (2)
+          Case (TTM_EPVAR_HETERO)
             Write (messages(1), '(a)') 'variable electron-phonon coupling values to be applied heterogeneously'
           End Select
           Write (messages(2), '(a)') '(overrides value given for ensemble, required tabulated stopping'
@@ -2531,33 +2543,33 @@ Contains
           Call get_word(record, word)
 
           If (word(1:8) == 'periodic') Then
-            ttm%bcTypeE = 1
+            ttm%bcTypeE = TTM_BC_PERIODIC
             Call info('electronic temperature boundary conditions set as periodic', .true.)
           Else If (word(1:6) == 'dirich') Then
-            ttm%bcTypeE = 2
+            ttm%bcTypeE = TTM_BC_DIRICHLET
             Write (messages(1), '(a)') 'electronic temperature boundary conditions set as dirichlet:'
             Write (messages(2), '(a)') 'setting boundaries to system temperature'
             Call info(messages, 2, .true.)
           Else If (word(1:7) == 'neumann') Then
-            ttm%bcTypeE = 3
+            ttm%bcTypeE = TTM_BC_NEUMANN
             Write (messages(1), '(a)') 'electronic temperature boundary conditions set as neumann:'
             Write (messages(2), '(a)') 'zero energy flux at boundaries'
             Call info(messages, 2, .true.)
           Else If (word(1:8) == 'xydirich') Then
-            ttm%bcTypeE = 4
+            ttm%bcTypeE = TTM_BC_DIRICHLET_XY
             Write (messages(1), '(a)') 'electronic temperature boundary conditions set as dirichlet (xy), neumann (z):'
             Write (messages(2), '(a)') 'system temperature at x and y boundaries'
             Write (messages(3), '(a)') 'zero energy flux at z boundaries'
             Call info(messages, 3, .true.)
           Else If (word(1:5) == 'robin') Then
-            ttm%bcTypeE = 5
+            ttm%bcTypeE = TTM_BC_ROBIN
             Call get_word(record, word)
             ttm%fluxout = word_2_real(word)
             Write (messages(1), '(a)') 'electronic temperature boundary conditions set as robin:'
             Write (messages(2), '(a,1p,e11.4)') 'temperature leakage at boundaries of ', ttm%fluxout
             Call info(messages, 2, .true.)
           Else If (word(1:7) == 'xyrobin') Then
-            ttm%bcTypeE = 6
+            ttm%bcTypeE = TTM_BC_ROBIN_XY
             Call get_word(record, word)
             ttm%fluxout = word_2_real(word)
             Write (messages(1), '(a)') 'electronic temperature boundary conditions set as robin (xy), neumann (z):'
@@ -3628,7 +3640,7 @@ Contains
     End If
 
     If (thermo%ensemble == ENS_NVT_LANGEVIN_INHOMO) Then
-      If (ttm%gvar == 0 .and. thermo%chi_ep <= zero_plus) Call error(462)
+      If (ttm%gvar == TTM_EPVAR_NULL .and. thermo%chi_ep <= zero_plus) Call error(462)
       If (Abs(thermo%chi_es) <= zero_plus) Then
         Call info('assuming no electronic stopping in inhomogeneous Langevin thermostat', .true.)
       End If
@@ -3702,15 +3714,14 @@ Contains
     ! Two-temperature model: calculate atomic density (if not
     ! already specified and electron-phonon friction
     ! conversion factor (to calculate thermo%chi_ep from G_ep values)
-    If (ttm%l_ttm) Then
+    If (ttm%l_ttm) then
       If (ttm%cellrho <= zero_plus) ttm%cellrho = ttm%sysrho
       If (ttm%cellrho > zero_plus) Then
         ttm%rcellrho = 1.0_wp / ttm%cellrho
       Else
         ttm%rcellrho = 0.0_wp
       End If
-
-      ttm%epc_to_chi = 1.0e-12_wp * ttm%Jm3K_to_kBA3 / 3.0_wp
+      ttm%epc_to_chi = 1.0e-12_wp * Jm3K_to_kBA3 / 3.0_wp
       If (.not. ttm%ttmdyndens) ttm%epc_to_chi = ttm%epc_to_chi * ttm%rcellrho
 
       ! Check sufficient parameters are specified for TTM electronic specific
@@ -3718,30 +3729,30 @@ Contains
 
       If (ttm%ttmdyndens) ttm%CeType = ttm%CeType + 4
       Select Case (ttm%CeType)
-      Case (0)
+      Case (TTM_CE_CONST)
         ! constant electronic specific heat: will convert from kB/atom to kB/A^3
         ! by multiplication of atomic density
         ttm%Ce0 = ttm%Ce0 * ttm%cellrho
-      Case (1)
+      Case (TTM_CE_TANH)
         ! hyperbolic tangent electronic specific heat: multiplier will be converted
         ! from kB/atom to kB/A^3, temperature term (K^-1) is now scaled by 10^-4
         If (Abs(ttm%sh_A) <= zero_plus .or. Abs(ttm%sh_B) <= zero_plus) Call error(681)
         ttm%sh_A = ttm%sh_A * ttm%cellrho
         ttm%sh_B = ttm%sh_B * 1.0e-4_wp
-      Case (2)
+      Case (TTM_CE_LINEAR)
         ! linear electronic specific heat to Fermi temperature: maximum
         ! value will be converted from kB/atom to kB/A^3
         If (Abs(ttm%Tfermi) <= zero_plus .or. Abs(ttm%Cemax) <= zero_plus) Call error(681)
         ttm%Cemax = ttm%Cemax * ttm%cellrho
-      Case (4)
+      Case (TTM_CE_CONST_DYN)
         ! constant electronic specific heat: will convert from kB/atom to kB/A^3
         ! by multiplication of atomic density
-      Case (5)
+      Case (TTM_CE_TANH_DYN)
         ! hyperbolic tangent electronic specific heat: multiplier will be converted
         ! from kB/atom to kB/A^3, temperature term (K^-1) is now scaled by 10^-4
         If (Abs(ttm%sh_A) <= zero_plus .or. Abs(ttm%sh_B) <= zero_plus) Call error(681)
         ttm%sh_B = ttm%sh_B * 1.0e-4_wp
-      Case (6)
+      Case (TTM_CE_LINEAR_DYN)
         ! linear electronic specific heat to Fermi temperature: maximum
         ! value will be converted from kB/atom to kB/A^3
         If (Abs(ttm%Tfermi) <= zero_plus .or. Abs(ttm%Cemax) <= zero_plus) Call error(681)
@@ -3750,17 +3761,17 @@ Contains
       Select Case (ttm%KeType)
         ! constant and Drude thermal conductivity: convert from W m^-1 K^-1
         ! to kB ps^-1 A^-1
-      Case (1, 2)
+      Case (TTM_KE_CONST, TTM_KE_DRUDE)
         If (ttm%isMetal .and. Abs(ttm%Ka0) <= zero_plus) Call error(682)
-        ttm%Ka0 = ttm%Ka0 * ttm%JKms_to_kBAps
+        ttm%Ka0 = ttm%Ka0 * JKms_to_kBAps
       End Select
 
       Select Case (ttm%DeType)
-      Case (1)
+      Case (TTM_DE_CONST)
         ! constant thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
         If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus) Call error(683)
         ttm%Diff0 = ttm%Diff0 * 1.0e8_wp
-      Case (2)
+      Case (TTM_DE_RECIP)
         ! reciprocal thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
         ! and ttm%Diff0 scaled with system temperature
         If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus .or. Abs(ttm%Tfermi) <= zero_plus) Call error(683)
@@ -3773,17 +3784,18 @@ Contains
       ttm%sig = ttm%sig * 10.0_wp
 
       ! penetration depth: convert from nm to A
-      If ((ttm%sdepoType == 2 .and. Abs(ttm%dEdX) <= zero_plus .and. Abs(ttm%pdepth - 1.0_wp) <= zero_plus) .or. &
-          (ttm%sdepoType == 3 .and. Abs(ttm%pdepth - 1.0_wp) <= zero_plus)) &
-        Call warning(510, 0.0_wp, 0.0_wp, 0.0_wp)
+      If ((ttm%sdepoType == TTM_SDEPO_FLAT .and. Abs(ttm%dEdX) <= zero_plus .and. Abs(ttm%pdepth - 1.0_wp) <= zero_plus) .or. &
+          (ttm%sdepoType == TTM_SDEPO_EXP .and. Abs(ttm%pdepth - 1.0_wp) <= zero_plus)) &
+          Call warning(510, 0.0_wp, 0.0_wp, 0.0_wp)
       ttm%pdepth = 10.0_wp * ttm%pdepth
 
       ! electronic stopping power: convert from eV/nm to eV/A
       ! ttm%fluence: convert from mJ cm^-2 to eV A^-2
-      If (ttm%sdepoType > 0 .and. ttm%sdepoType < 3 .and. (Abs(ttm%dEdx) <= zero_plus .or. Abs(ttm%fluence) < zero_plus)) &
-        Call warning(515, 0.0_wp, 0.0_wp, 0.0_wp)
+      If (ttm%sdepoType /= TTM_SDEPO_NULL .and. ttm%sdepoType /= TTM_SDEPO_EXP .and. &
+           (Abs(ttm%dEdx) <= zero_plus .or. Abs(ttm%fluence) < zero_plus)) &
+           Call warning(515, 0.0_wp, 0.0_wp, 0.0_wp)
 
-      ttm%fluence = ttm%fluence * ttm%mJcm2_to_eVA2
+      ttm%fluence = ttm%fluence * mJcm2_to_eVA2
       ttm%dEdX = 0.1_wp * ttm%dEdX
     End If
 
@@ -3952,13 +3964,13 @@ Contains
 
     ! default ttm heat capacity, conductivity and diffusivity types
 
-    ttm%CeType = 0
-    ttm%KeType = 0
-    ttm%DeType = 0
+    ttm%CeType = TTM_CE_CONST
+    ttm%KeType = TTM_KE_INFINITE
+    ttm%DeType = TTM_DE_METAL
 
     ! default ttm electron-phonon coupling type
 
-    ttm%gvar = 0
+    ttm%gvar = TTM_EPVAR_NULL
 
     ! Set safe flag
 
@@ -4325,41 +4337,41 @@ Contains
 
           ! electronic specific heat capacity given as constant value
 
-          ttm%CeType = 0
+          ttm%CeType = TTM_CE_CONST
 
         Else If (word(1:6) == 'cetanh') Then
 
           ! electronic specific heat capacity given as tanh function
 
-          ttm%CeType = 1
+          ttm%CeType = TTM_CE_TANH
 
         Else If (word(1:5) == 'celin') Then
 
           ! electronic specific heat capacity given as linear function
           ! up to Fermi temperature, constant afterwards
 
-          ttm%CeType = 2
+          ttm%CeType = TTM_CE_LINEAR
 
         Else If (word(1:5) == 'cetab') Then
 
           ! electronic ttm%volumetric heat capacity given in tabulated form
 
-          ttm%CeType = 3
+          ttm%CeType = TTM_CE_TABULATED
 
         Else If (word(1:5) == 'keinf') Then
 
           ! infinite electronic thermal conductivity
 
-          ttm%DeType = 0
-          ttm%KeType = 0
+          ttm%DeType = TTM_DE_METAL
+          ttm%KeType = TTM_KE_INFINITE
           ttm%isMetal = .true.
 
         Else If (word(1:7) == "keconst") Then
 
           ! electronic thermal conductivity given as constant value
 
-          ttm%DeType = 0
-          ttm%KeType = 1
+          ttm%DeType = TTM_DE_METAL
+          ttm%KeType = TTM_KE_CONST
           ttm%isMetal = .true.
 
         Else If (word(1:7) == 'kedrude') Then
@@ -4367,16 +4379,16 @@ Contains
           ! electronic thermal conductivity given as drude model (propertional to
           ! electronic temperature, giving t.c. at system temperature)
 
-          ttm%DeType = 0
-          ttm%KeType = 2
+          ttm%DeType = TTM_DE_METAL
+          ttm%KeType = TTM_KE_DRUDE
           ttm%isMetal = .true.
 
         Else If (word(1:5) == 'ketab') Then
 
           ! electronic thermal conductivity given in tabulated form
 
-          ttm%DeType = 0
-          ttm%KeType = 3
+          ttm%DeType = TTM_DE_METAL
+          ttm%KeType = TTM_KE_TABULATED
           ttm%isMetal = .true.
 
         Else If (word(1:4) == 'diff' .or. word(1:7) == 'deconst') Then
@@ -4384,8 +4396,8 @@ Contains
           ! electronic thermal diffusivity given as constant value
           ! (for non-metal systems)
 
-          ttm%KeType = 1
-          ttm%DeType = 1
+          ttm%KeType = TTM_KE_CONST
+          ttm%DeType = TTM_DE_CONST
           ttm%isMetal = .false.
 
         Else If (word(1:7) == 'derecip') Then
@@ -4393,16 +4405,16 @@ Contains
           ! electronic thermal diffusivity given as reciprocal function
           ! of temperature (up to Fermi temperature), constant afterwards
 
-          ttm%KeType = 1
-          ttm%DeType = 2
+          ttm%KeType = TTM_KE_CONST
+          ttm%DeType = TTM_DE_RECIP
           ttm%isMetal = .false.
 
         Else If (word(1:4) == 'detab') Then
 
           ! electronic thermal diffusivity given in tabulated form
 
-          ttm%KeType = 1
-          ttm%DeType = 3
+          ttm%KeType = TTM_KE_CONST
+          ttm%DeType = TTM_DE_TABULATED
           ttm%isMetal = .false.
 
         Else If (word(1:4) == 'varg') Then
@@ -4415,9 +4427,9 @@ Contains
 
           Call get_word(record, word)
           If (word(1:4) == 'homo') Then
-            ttm%gvar = 1
+            ttm%gvar = TTM_EPVAR_HOMO
           Else If (word(1:6) == 'hetero') Then
-            ttm%gvar = 2
+            ttm%gvar = TTM_EPVAR_HETERO
           End If
 
         Else If (word(1:7) == 'nothvel') Then
