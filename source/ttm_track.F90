@@ -29,7 +29,8 @@ Module ttm_track
                              gsum
   Use configuration,   Only: configuration_type
   Use constants,       Only: boltz,&
-                             zero_plus
+                             zero_plus,&
+                             eV_to_kB
   Use domains,         Only: domains_type
   Use errors_warnings, Only: error,&
                              info,&
@@ -45,7 +46,13 @@ Module ttm_track
                              eltemp_min,&
                              eltemp_minKe,&
                              ttm_system_revive,&
-                             ttm_type
+                             ttm_type,&
+                             TTM_TDEPO_GAUSS, TTM_TDEPO_EXP, TTM_TDEPO_DELTA, TTM_TDEPO_PULSE,&
+                             TTM_CE_CONST, TTM_CE_CONST_DYN, TTM_CE_TANH, TTM_CE_TANH_DYN,&
+                             TTM_CE_LINEAR, TTM_CE_LINEAR_DYN, TTM_CE_TABULATED, TTM_CE_TABULATED_DYN,&
+                             TTM_EPVAR_NULL, TTM_EPVAR_HOMO, TTM_EPVAR_HETERO,&
+                             TTM_KE_INFINITE, TTM_KE_CONST, TTM_KE_DRUDE, TTM_KE_TABULATED,&
+                             TTM_SDEPO_NULL
   Use ttm_utils,       Only: Ce,&
                              Ke,&
                              alp,&
@@ -86,33 +93,38 @@ Contains
 
     ! provide atomic density corrections to heat capacities
 
-    Ce0a = ttm%Ce0 * Merge(ttm%cellrho, 1.0_wp, ttm%ttmdyndens)
-    sh_Aa = ttm%sh_A * Merge(ttm%cellrho, 1.0_wp, ttm%ttmdyndens)
-    Cemaxa = ttm%Cemax * Merge(ttm%cellrho, 1.0_wp, ttm%ttmdyndens)
+    Ce0a = ttm%Ce0
+    sh_Aa = ttm%sh_A
+    Cemaxa = ttm%Cemax
+    if (ttm%ttmdyndens) then
+      Ce0a = ttm%Ce0 * ttm%cellrho
+      sh_Aa = ttm%sh_A * ttm%cellrho
+      Cemaxa = ttm%Cemax * ttm%cellrho
+    end if
 
     ! start deposition, reducing size of timestep for thermal diffusion
 
     currenttime = time - ttm%depostart + tstep / Real(redtstepmx, Kind=wp) * Real(redtstep, Kind=wp)
 
     Select Case (ttm%tdepoType)
-    Case (1)
+    Case (TTM_TDEPO_GAUSS)
       ! Gaussian temporal deposition
       adjtime = currenttime / ttm%tdepo - ttm%tcdepo
       deposit = (currenttime < 2.0_wp * ttm%tdepo * ttm%tcdepo)
       invbin = tstep / Real(redtstepmx, Kind=wp)
       adjeng = Exp(-0.5_wp * adjtime * adjtime)
-    Case (2)
+    Case (TTM_TDEPO_EXP)
       ! decaying exponential temporal deposition
       adjtime = currenttime / ttm%tdepo
       deposit = (currenttime < ttm%tdepo * ttm%tcdepo)
       invbin = tstep / (ttm%tdepo * Real(redtstepmx, Kind=wp))
       adjeng = Exp(-adjtime)
-    Case (3)
+    Case (TTM_TDEPO_DELTA)
       ! delta temporal deposition (over single diffusion timestep)
       deposit = (currenttime < tstep / (Real(redtstepmx, Kind=wp)))
       invbin = 1.0_wp
       adjeng = 1.0_wp
-    Case (4)
+    Case (TTM_TDEPO_PULSE)
       ! pulse temporal deposition (over ttm%tdepo ps)
       deposit = (currenttime < ttm%tdepo)
       invbin = 1.0_wp
@@ -126,14 +138,14 @@ Contains
     If (deposit) Then
       ttm%lat_B(:, :, :) = ttm%lat_U(:, :, :) * ttm%norm * invbin * adjeng
       Select Case (ttm%CeType)
-      Case (0, 4)
+      Case (TTM_CE_CONST, TTM_CE_CONST_DYN)
         ! constant specific heat capacity
         Do k = 1, ttm%ntcell(3)
           Do j = 1, ttm%ntcell(2)
             Do i = 1, ttm%ntcell(1)
               ijk = 1 + i + (ttm%ntcell(1) + 2) * (j + (ttm%ntcell(2) + 2) * k)
               ttm%lat_I(i, j, k) = ttm%lat_I(i, j, k) + ttm%lat_B(i, j, k) * ttm%act_ele_cell(ijk, 0, 0, 0)
-              energy_diff = ttm%lat_B(i, j, k) * ttm%act_ele_cell(ijk, 0, 0, 0) * ttm%rvolume * ttm%eV_to_kB
+              energy_diff = ttm%lat_B(i, j, k) * ttm%act_ele_cell(ijk, 0, 0, 0) * ttm%rvolume * eV_to_kB
               If (energy_diff > zero_plus) Then
                 start_Te = ttm%eltemp(ijk, 0, 0, 0)
                 end_Te = start_Te + energy_diff / Ce0a
@@ -142,14 +154,14 @@ Contains
             End Do
           End Do
         End Do
-      Case (1, 5)
+      Case (TTM_CE_TANH, TTM_CE_TANH_DYN)
         ! hyperbolic tangent specific heat capacity
         Do k = 1, ttm%ntcell(3)
           Do j = 1, ttm%ntcell(2)
             Do i = 1, ttm%ntcell(1)
               ijk = 1 + i + (ttm%ntcell(1) + 2) * (j + (ttm%ntcell(2) + 2) * k)
               ttm%lat_I(i, j, k) = ttm%lat_I(i, j, k) + ttm%lat_B(i, j, k) * ttm%act_ele_cell(ijk, 0, 0, 0)
-              energy_diff = ttm%lat_B(i, j, k) * ttm%act_ele_cell(ijk, 0, 0, 0) * ttm%rvolume * ttm%eV_to_kB
+              energy_diff = ttm%lat_B(i, j, k) * ttm%act_ele_cell(ijk, 0, 0, 0) * ttm%rvolume * eV_to_kB
               If (energy_diff > zero_plus) Then
                 start_Te = ttm%eltemp(ijk, 0, 0, 0)
                 increase = Cosh(ttm%sh_B * start_Te) * Exp(ttm%sh_B * energy_diff / sh_Aa)
@@ -160,14 +172,14 @@ Contains
             End Do
           End Do
         End Do
-      Case (2, 6)
+      Case (TTM_CE_LINEAR, TTM_CE_LINEAR_DYN)
         ! linear specific heat capacity to Fermi temperature
         Do k = 1, ttm%ntcell(3)
           Do j = 1, ttm%ntcell(2)
             Do i = 1, ttm%ntcell(1)
               ijk = 1 + i + (ttm%ntcell(1) + 2) * (j + (ttm%ntcell(2) + 2) * k)
               ttm%lat_I(i, j, k) = ttm%lat_I(i, j, k) + ttm%lat_B(i, j, k) * ttm%act_ele_cell(ijk, 0, 0, 0)
-              energy_diff = ttm%lat_B(i, j, k) * ttm%act_ele_cell(ijk, 0, 0, 0) * ttm%rvolume * ttm%eV_to_kB
+              energy_diff = ttm%lat_B(i, j, k) * ttm%act_ele_cell(ijk, 0, 0, 0) * ttm%rvolume * eV_to_kB
               If (energy_diff > zero_plus) Then
                 start_Te = ttm%eltemp(ijk, 0, 0, 0)
                 If (start_Te >= ttm%Tfermi) Then
@@ -181,7 +193,7 @@ Contains
             End Do
           End Do
         End Do
-      Case Default
+      Case (TTM_CE_TABULATED, TTM_CE_TABULATED_DYN)
         ! tabulated ttm%volumetric heat capacity or more complex
         ! function: find new temperature iteratively by
         ! gradual integration (0.01 kelvin at a time)
@@ -191,7 +203,7 @@ Contains
             Do i = 1, ttm%ntcell(1)
               ijk = 1 + i + (ttm%ntcell(1) + 2) * (j + (ttm%ntcell(2) + 2) * k)
               ttm%lat_I(i, j, k) = ttm%lat_I(i, j, k) + ttm%lat_B(i, j, k) * ttm%act_ele_cell(ijk, 0, 0, 0)
-              energy_diff = ttm%lat_B(i, j, k) * ttm%act_ele_cell(ijk, 0, 0, 0) * ttm%rvolume * ttm%eV_to_kB
+              energy_diff = ttm%lat_B(i, j, k) * ttm%act_ele_cell(ijk, 0, 0, 0) * ttm%rvolume * eV_to_kB
               ! work out change in electronic temperature for energy deposition
               ! (searching first in 0.01 kelvin increments, then interpolate based
               ! on constant heat capacity)
@@ -214,6 +226,9 @@ Contains
             End Do
           End Do
         End Do
+
+      Case Default
+        call error(0, 'Unrecognised TTM heat capacity model')
       End Select
 
     Else
@@ -332,9 +347,9 @@ Contains
     ! strength (known value for constant and homogeneous dynamic calculations)
 
     Select Case (ttm%gvar)
-    Case (0, 1)
+    Case (TTM_EPVAR_NULL, TTM_EPVAR_HOMO)
       gsadd = thermo%chi_ep
-    Case (2)
+    Case (TTM_EPVAR_HETERO)
       gsadd = 1.0_wp
     End Select
 
@@ -828,9 +843,9 @@ Contains
 
     If (ttm%ttmdyndens .and. ttm%findepo) Then
       Select Case (ttm%gvar)
-      Case (0, 1)
+      Case (TTM_EPVAR_NULL, TTM_EPVAR_HOMO)
         ttm%cellrho = crho / (Real(ttm%acell, Kind=wp) * thermo%chi_ep * ttm%volume)
-      Case (2)
+      Case (TTM_EPVAR_HETERO)
         ttm%cellrho = crho / (Real(ttm%acell, Kind=wp) * ttm%volume)
       End Select
       If (ttm%cellrho > zero_plus) Then
@@ -925,7 +940,8 @@ Contains
     ! deposition stage 1 (initialization):
     ! nstep-nsteql offsets equilibration time
 
-    If ((nstep - nsteql) == 1 .and. (ttm%sdepoType > 0 .and. (ttm%dEdX > zero_plus .or. ttm%fluence > zero_plus))) Then
+    If ((nstep - nsteql) == 1 .and. (ttm%sdepoType /= TTM_SDEPO_NULL &
+         .and. (ttm%dEdX > zero_plus .or. ttm%fluence > zero_plus))) Then
       Call depoinit(time, ttm, comm)
     End If
 
@@ -949,23 +965,23 @@ Contains
     ! temperature finite difference solver
 
     Select Case (ttm%KeType)
-    Case (0)
+    Case (TTM_KE_INFINITE)
       ! infinite thermal conductivity
       redtstepmx = 1
       opttstep = tstep
-    Case (1)
+    Case (TTM_KE_CONST)
       ! constant thermal conductivity and non-metal systems
       mintstep = 0.5_wp * del2av / alp(eltempmax, ttm)
       maxtstep = 0.5_wp * del2av / alp(eltempmin, ttm)
       opttstep = fopttstep * Min(mintstep, maxtstep)
       redtstepmx = Max(Ceiling(tstep / opttstep), 2)
-    Case (2)
+    Case (TTM_KE_DRUDE)
       ! Drude-type thermal conductivity
       mintstep = 0.5_wp * del2av * Ce(eltempmax, ttm) / KeD(eltempmax, temp, ttm)
       maxtstep = 0.5_wp * del2av * Ce(eltempmin, ttm) / KeD(eltempmin, temp, ttm)
       opttstep = fopttstep * Min(mintstep, maxtstep)
       redtstepmx = Max(Ceiling(tstep / opttstep), 2)
-    Case (3)
+    Case (TTM_KE_TABULATED)
       Call eltemp_maxKe(temp, eltempmaxKe, ttm, comm)
       Call eltemp_minke(temp, eltempminKe, ttm, comm)
       ! tabulated thermal conductivity
@@ -977,11 +993,11 @@ Contains
 
     ! reduce timestep further for deposition stage
 
-    If (ttm%KeType > 0 .and. ttm%trackInit) Then
+    If (ttm%KeType /= TTM_KE_INFINITE .and. ttm%trackInit) Then
       Select Case (ttm%tdepoType)
-      Case (1)
+      Case (TTM_TDEPO_GAUSS)
         redtstepmx = Max(50, redtstepmx)
-      Case (2)
+      Case (TTM_TDEPO_EXP)
         redtstepmx = Max(10000, redtstepmx)
       Case Default
         redtstepmx = Max(2, redtstepmx)
@@ -1066,7 +1082,7 @@ Contains
       ! numerical stability
 
       Select Case (ttm%KeType)
-      Case (0)
+      Case (TTM_KE_INFINITE)
         ! infinite thermal conductivity case: set all electronic temperatures
         ! to mean value in active cells, to system temperature in inactive cells
         Call eltemp_mean(eltempmean, ttm, comm)
@@ -1075,7 +1091,7 @@ Contains
           If (ttm%act_ele_cell(ijk, 0, 0, 0) <= zero_plus) eltemp1(ijk, 0, 0, 0) = temp
         End Do
 
-      Case (1)
+      Case (TTM_KE_CONST)
         ! constant thermal conductivity or non-metal case
         If (ttm%redistribute) Then
           ! system with cell deactivation/energy redistribution
@@ -1254,7 +1270,7 @@ Contains
           End Do
         End If
 
-      Case (2)
+      Case (TTM_KE_DRUDE)
         ! Drude-type thermal conductivity case
         If (ttm%redistribute) Then
           ! system with cell deactivation/energy redistribution
@@ -1481,7 +1497,7 @@ Contains
           End Do
         End If
 
-      Case (3)
+      Case (TTM_KE_TABULATED)
         ! tabulated thermal conductivity: uses local ionic or system temperature to calculate value
         If (ttm%redistribute) Then
           ! system with cell deactivation/energy redistribution
@@ -1682,10 +1698,10 @@ Contains
                   ! exceeds ionic temperature
                   If (ttm%l_epcp .and. ttm%eltemp(ijk, 0, 0, 0) > ttm%tempion(ijk)) Then
                     Select Case (ttm%gvar)
-                    Case (0, 1)
+                    Case (TTM_EPVAR_NULL, TTM_EPVAR_HOMO)
                       eltemp1(ijk, 0, 0, 0) = eltemp1(ijk, 0, 0, 0) - alploc * ttm%gsource(ijk) * &
                                                                       (ttm%eltemp(ijk, 0, 0, 0) - ttm%tempion(ijk))
-                    Case (2)
+                    Case (TTM_EPVAR_HETERO)
                       eltemp1(ijk, 0, 0, 0) = eltemp1(ijk, 0, 0, 0) - alploc * ttm%gsource(ijk) * &
                                  Gep(ttm%eltemp(ijk, 0, 0, 0), ttm) * (ttm%eltemp(ijk, 0, 0, 0) - ttm%tempion(ijk))
                     End Select
@@ -1708,10 +1724,10 @@ Contains
                   ! e-p coupling term
                   If (ttm%l_epcp) Then
                     Select Case (ttm%gvar)
-                    Case (0, 1)
+                    Case (TTM_EPVAR_NULL, TTM_EPVAR_HOMO)
                       eltemp1(ijk, 0, 0, 0) = eltemp1(ijk, 0, 0, 0) - alploc * ttm%gsource(ijk) * &
                                                                       (ttm%eltemp(ijk, 0, 0, 0) - ttm%tempion(ijk))
-                    Case (2)
+                    Case (TTM_EPVAR_HETERO)
                       eltemp1(ijk, 0, 0, 0) = eltemp1(ijk, 0, 0, 0) - alploc * ttm%gsource(ijk) * &
                                  Gep(ttm%eltemp(ijk, 0, 0, 0), ttm) * (ttm%eltemp(ijk, 0, 0, 0) - ttm%tempion(ijk))
                     End Select

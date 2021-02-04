@@ -32,7 +32,8 @@ Module nvt_langevin
                              thermostat_type
   Use timer,           Only: timer_type
   Use ttm,             Only: eltemp_max,eltemp_min,&
-                             ttm_type
+                             ttm_type,&
+                             TTM_EPVAR_NULL, TTM_EPVAR_HOMO, TTM_EPVAR_HETERO
   Use ttm_utils,       Only: Gep,&
                              calcchies
 
@@ -1269,14 +1270,14 @@ Contains
 
     ! Rescale chi to match average electronic temperature if
     ! using homogeneous electron-phonon coupling
-    If (ttm%l_ttm .and. ttm%gvar == 1) Then
+    If (ttm%l_ttm .and. ttm%gvar == TTM_EPVAR_HOMO) Then
       Call calcchies(thermo%chi_ep, ttm, comm)
     End If
 
     ! check whether or not Langevin forces are needed: if electron-phonon
     ! friction coefficient is/will be greater than zero and coupling is
     ! switched on after time offset
-    lrand = ((thermo%chi_ep > zero_plus .or. ttm%gvar == 2) .and. ttm%l_epcp)
+    lrand = ((thermo%chi_ep > zero_plus .or. ttm%gvar == TTM_EPVAR_HETERO) .and. ttm%l_epcp)
 
     ! first pass of velocity verlet algorithm
     If (stage == VV_FIRST_STAGE) Then
@@ -1333,9 +1334,9 @@ Contains
       ! value of friction factor to give largest timestep)
 
       Select Case (ttm%gvar)
-      Case (0, 1)
+      Case (TTM_EPVAR_NULL, TTM_EPVAR_HOMO)
         chi = Min(thermo%chi_ep, thermo%chi_ep + thermo%chi_es)
-      Case (2)
+      Case (TTM_EPVAR_HETERO)
         Call eltemp_max(eltempmax, ttm, comm)
         Call eltemp_min(eltempmin, ttm, comm)
         chi = Gep(eltempmin, ttm)
@@ -1369,7 +1370,7 @@ Contains
       ! electron-phonon coupling
 
       Select Case (ttm%gvar)
-      Case (0, 1)
+      Case (TTM_EPVAR_NULL, TTM_EPVAR_HOMO)
         chi = Merge(thermo%chi_ep, 0.0_wp, ttm%l_epcp) + thermo%chi_es
         t0a = Exp(-chi * tstep)
         If (chi > zero_plus) Then
@@ -1420,13 +1421,13 @@ Contains
               ijk = 1 + ia + (ttm%ntcell(1) + 2) * (ja + (ttm%ntcell(2) + 2) * ka)
               If (ttm%act_ele_cell(ijk, 0, 0, 0) > zero_plus .and. ttm%eltemp(ijk, 0, 0, 0) > ttm%tempion(ijk)) Then
                 Select Case (ttm%gvar)
-                Case (0, 1)
+                Case (TTM_EPVAR_NULL, TTM_EPVAR_HOMO)
                   t0 = Merge(t0a, t0b, lvel)
                   t1 = Merge(t1a, t1b, lvel)
                   scr1 = Merge(scr1a, scr1b, lvel)
                   scl1 = Merge(scl1a, scl1b, lvel)
                   scv1 = Merge(scv1a, scv1b, lvel)
-                Case (2)
+                Case (TTM_EPVAR_HETERO)
                   chi = Merge(Gep(ttm%eltemp(ijk, 0, 0, 0), ttm), 0.0_wp, ttm%l_epcp) + Merge(thermo%chi_es, 0.0_wp, lvel)
                   If (ttm%l_epcp) Then
                     t0 = Exp(-tstep * chi)
@@ -1488,13 +1489,13 @@ Contains
               ijk = 1 + ia + (ttm%ntcell(1) + 2) * (ja + (ttm%ntcell(2) + 2) * ka)
               If (ttm%act_ele_cell(ijk, 0, 0, 0) > zero_plus) Then
                 Select Case (ttm%gvar)
-                Case (0, 1)
+                Case (TTM_EPVAR_NULL, TTM_EPVAR_HOMO)
                   t0 = Merge(t0a, t0b, lvel)
                   t1 = Merge(t1a, t1b, lvel)
                   scr1 = Merge(scr1a, scr1b, lvel)
                   scl1 = Merge(scl1a, scl1b, lvel)
                   scv1 = Merge(scv1a, scv1b, lvel)
-                Case (2)
+                Case (TTM_EPVAR_HETERO)
                   chi = Merge(Gep(ttm%eltemp(ijk, 0, 0, 0), ttm), 0.0_wp, ttm%l_epcp) + Merge(thermo%chi_es, 0.0_wp, lvel)
                   If (ttm%l_epcp) Then
                     t0 = Exp(-tstep * chi)

@@ -34,7 +34,9 @@ Module ttm
                              rt2,&
                              sqrpi,&
                              tenunt,&
-                             zero_plus
+                             zero_plus,&
+                             JKms_to_kBAps,&
+                             Jm3K_to_kBA3
   Use domains,         Only: domains_type,&
                              idcube
   Use errors_warnings, Only: error,&
@@ -197,6 +199,20 @@ Module ttm
 
     Logical :: trackInit = .false.
   End Type ttm_type
+
+  Integer, Parameter, Public :: TTM_CE_CONST=0, TTM_CE_TANH=1, &
+       TTM_CE_LINEAR=2, TTM_CE_TABULATED=3, &
+       TTM_CE_CONST_DYN=4, TTM_CE_TANH_DYN=5, &
+       TTM_CE_LINEAR_DYN=6, TTM_CE_TABULATED_DYN=7
+  Integer, Parameter, Public :: TTM_KE_INFINITE=0, TTM_KE_CONST=1, &
+       TTM_KE_DRUDE=2, TTM_KE_TABULATED=3
+  Integer, Parameter, Public :: TTM_DE_METAL=0, TTM_DE_CONST=1, TTM_DE_RECIP=2, &
+       TTM_DE_TABULATED=3
+  Integer, Parameter, Public :: TTM_EPVAR_NULL=0, TTM_EPVAR_HOMO=1, TTM_EPVAR_HETERO=2
+  Integer, Parameter, Public :: TTM_SDEPO_NULL=0, TTM_SDEPO_GAUSS=1, TTM_SDEPO_FLAT=2, TTM_SDEPO_EXP=3
+  Integer, Parameter, Public :: TTM_TDEPO_GAUSS=1, TTM_TDEPO_EXP=2, TTM_TDEPO_DELTA=3, TTM_TDEPO_PULSE=4
+  Integer, Parameter, Public :: TTM_BC_PERIODIC=1, TTM_BC_DIRICHLET=2, TTM_BC_NEUMANN=3, &
+       TTM_BC_DIRICHLET_XY=4, TTM_BC_ROBIN=5, TTM_BC_ROBIN_XY=6
 
   Public :: allocate_ttm_arrays, deallocate_ttm_arrays
   Public :: eltemp_min, eltemp_max, &
@@ -985,13 +1001,13 @@ Contains
     ! spatial distribution of track
 
     Select Case (ttm%sdepoType)
-    Case (1)
+    Case (TTM_SDEPO_GAUSS)
       ! Gaussian spatial deposition
       Call gaussianTrack(ttm%lat_U, ttm, comm)
-    Case (2)
+    Case (TTM_SDEPO_FLAT)
       ! Constant (flat) spatial deposition
       Call uniformDist(ttm%lat_U, ttm)
-    Case (3)
+    Case (TTM_SDEPO_EXP)
       ! xy-flat, z-exp spatial deposition
       Call uniformDistZexp(ttm%lat_U, ttm)
     End Select
@@ -1003,19 +1019,19 @@ Contains
 
     Select Case (ttm%tdepoType)
       !   type=1: gauss(t)
-    Case (1)
+    Case (TTM_TDEPO_GAUSS)
       ! Gaussian temporal deposition
       ttm%norm = 1.0_wp / (sqrpi * rt2 * ttm%tdepo)
       ttm%depoend = ttm%depostart + 2.0_wp * ttm%tcdepo * ttm%tdepo
-    Case (2)
+    Case (TTM_TDEPO_EXP)
       ! decaying exponential temporal deposition
       ttm%norm = 1.0_wp / (1.0_wp - Exp(-ttm%tcdepo))
       ttm%depoend = ttm%depostart + 2.0_wp * ttm%tcdepo * ttm%tdepo
-    Case (3)
+    Case (TTM_TDEPO_DELTA)
       ! delta temporal deposition
       ttm%norm = 1.0_wp
       ttm%depoend = ttm%depostart
-    Case (4)
+    Case (TTM_TDEPO_PULSE)
       ! pulse temporal deposition
       ttm%norm = 1.0_wp / ttm%tdepo
       ttm%depoend = ttm%depostart + ttm%tdepo
@@ -1289,7 +1305,7 @@ Contains
 
     ! read thermal conductivity data
 
-    If (ttm%KeType == 3) Then
+    If (ttm%KeType == TTM_KE_TABULATED) Then
 
       If (comm%idnode == 0) Open (Newunit=ntable, File='Ke.dat', Status='old')
 
@@ -1326,13 +1342,13 @@ Contains
 
       ! convert thermal conductivity values from W m^-1 K^-1 to kB A^-1 ps^-1
 
-      ttm%ketable(1:ttm%kel, 2) = ttm%ketable(1:ttm%kel, 2) * ttm%JKms_to_kBAps
+      ttm%ketable(1:ttm%kel, 2) = ttm%ketable(1:ttm%kel, 2) * JKms_to_kBAps
 
     End If
 
     ! read volumetric heat capacity data
 
-    If (ttm%CeType == 3 .or. ttm%CeType == 7) Then
+    If (ttm%CeType == TTM_CE_TABULATED .or. ttm%CeType == TTM_CE_TABULATED_DYN) Then
 
       If (comm%idnode == 0) Open (Newunit=ntable, File='Ce.dat', Status='old')
 
@@ -1372,13 +1388,13 @@ Contains
 
       ! convert volumetric heat capacity values from J m^-3 K^-1 to kB A^-3
 
-      ttm%cetable(1:ttm%cel, 2) = ttm%cetable(1:ttm%cel, 2) * ttm%Jm3K_to_kBA3
+      ttm%cetable(1:ttm%cel, 2) = ttm%cetable(1:ttm%cel, 2) * Jm3K_to_kBA3
 
     End If
 
     ! read thermal diffusivity data
 
-    If (ttm%DeType == 3) Then
+    If (ttm%DeType == TTM_DE_TABULATED) Then
 
       If (comm%idnode == 0) Open (Newunit=ntable, File='De.dat', Status='old')
 
@@ -1420,7 +1436,7 @@ Contains
 
     ! read coupling constant data
 
-    If (ttm%gvar > 0) Then
+    If (ttm%gvar /= TTM_EPVAR_NULL) Then
 
       If (comm%idnode == 0) Open (Newunit=ntable, File='g.dat', Status='old')
 
@@ -1520,7 +1536,7 @@ Contains
 
       ! check existence of thermal conductivity table file
 
-      If (ttm%KeType == 3) Then
+      If (ttm%KeType == TTM_KE_TABULATED) Then
 
         Inquire (File='Ke.dat', Exist=lexist)
         Call gcheck(comm, lexist)
@@ -1571,7 +1587,7 @@ Contains
 
       ! check existence of specific heat capacity table file
 
-      If (ttm%CeType == 3 .or. ttm%CeType == 7) Then
+      If (ttm%CeType == TTM_CE_TABULATED .or. ttm%CeType == TTM_CE_TABULATED_DYN) Then
 
         Inquire (File='Ce.dat', Exist=lexist)
         Call gcheck(comm, lexist)
@@ -1621,7 +1637,7 @@ Contains
 
       ! check existence of thermal diffusivity table file
 
-      If (ttm%DeType == 3) Then
+      If (ttm%DeType == TTM_DE_TABULATED) Then
 
         Inquire (File='De.dat', Exist=lexist)
         Call gcheck(comm, lexist)
@@ -1672,7 +1688,7 @@ Contains
 
       ! check existence of coupling constant table file
 
-      If (ttm%gvar > 0) Then
+      If (ttm%gvar /= TTM_EPVAR_NULL) Then
 
         Inquire (File='g.dat', Exist=lexist)
         Call gcheck(comm, lexist)
@@ -1919,7 +1935,7 @@ Contains
 
     Select Case (key)
       ! Periodic boundary conditions
-    Case (1)
+    Case (TTM_BC_PERIODIC)
       If (ttm%ttmbcmap(1) >= 0 .or. ttm%ttmbcmap(2) >= 0) Then
         If (comm%mxnode > 1) Then
           Do kk = -ttm%eltcell(3), ttm%eltcell(3)
@@ -2039,7 +2055,7 @@ Contains
       End If
 
       ! Infinite sink/source (Dirichlet) boundary conditions
-    Case (2)
+    Case (TTM_BC_DIRICHLET)
       If (ttm%ttmbcmap(1) >= 0) Then
         Do kk = -ttm%eltcell(3), ttm%eltcell(3)
           Do jj = -ttm%eltcell(2), ttm%eltcell(2)
@@ -2119,7 +2135,7 @@ Contains
       End If
 
       ! 'Confined' (von Neumann) boundary conditions
-    Case (3)
+    Case (TTM_BC_NEUMANN)
       If (ttm%ttmbcmap(1) >= 0) Then
         Do kk = -ttm%eltcell(3), ttm%eltcell(3)
           Do jj = -ttm%eltcell(2), ttm%eltcell(2)
@@ -2206,7 +2222,7 @@ Contains
 
       ! Mixed case: Infinite sink/source (Dirichlet) boundaries in x/y-directions
       !             'Confined' (von Neumann) boundary in z-direction
-    Case (4)
+    Case (TTM_BC_DIRICHLET_XY)
       If (ttm%ttmbcmap(1) >= 0) Then
         Do kk = -ttm%eltcell(3), ttm%eltcell(3)
           Do jj = -ttm%eltcell(2), ttm%eltcell(2)
@@ -2288,7 +2304,7 @@ Contains
       End If
 
       ! Robin boundary conditions
-    Case (5)
+    Case (TTM_BC_ROBIN)
       If (ttm%ttmbcmap(1) >= 0) Then
         Do kk = -ttm%eltcell(3), ttm%eltcell(3)
           Do jj = -ttm%eltcell(2), ttm%eltcell(2)
@@ -2375,7 +2391,7 @@ Contains
 
       ! Mixed case: Robin boundaries in x/y-directions
       !             'Confined' (von Neumann) boundary in z-direction
-    Case (6)
+    Case (TTM_BC_ROBIN_XY)
       If (ttm%ttmbcmap(1) >= 0) Then
         Do kk = -ttm%eltcell(3), ttm%eltcell(3)
           Do jj = -ttm%eltcell(2), ttm%eltcell(2)

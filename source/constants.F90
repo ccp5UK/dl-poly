@@ -114,6 +114,14 @@ Module constants
 
   Real(Kind=wp), Parameter :: tenunt = 1.660540200_wp
 
+  !> TTM conversion factors
+  Real(Kind=wp), Parameter :: JKms_to_kBAps = 10.0_wp / (boltz * tenunt) ! convert W m^-1 K^-1 to kB A^-1 ps^-1
+  Real(Kind=wp), Parameter :: Jm3K_to_kBA3 = 1.0e-7_wp / (boltz * tenunt) ! convert J m^-3 K^-1 to kB A^-3
+  Real(Kind=wp), Parameter :: kB_to_eV = boltz / eu_ev ! convert kB to eV
+  Real(Kind=wp), Parameter :: eV_to_kB = eu_ev / boltz ! convert eV to kB
+  Real(Kind=wp), Parameter :: mJcm2_to_eVA2 = 1.0e4_wp / (eu_ev * tenunt) ! convert mJ cm^-2 to eV A^-2
+
+
   !> Maximum bin sizes for distance and angle grids
 
   Real(Kind=wp), Parameter :: delr_max = 0.01_wp !! Angstroms
