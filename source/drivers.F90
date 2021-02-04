@@ -1673,7 +1673,7 @@ Contains
     Type(greenkubo_type),     Intent(InOut) :: green
     Type(minimise_type),      Intent(InOut) :: minim
     Type(comms_type),         Intent(InOut) :: comm
-    Integer( Kind = wi ), Intent( In     ), Optional :: ff
+    Integer( Kind = wi ),     Intent(In   ) :: ff
 
     Character(Len=256) :: message, messages(5)
 
@@ -1681,15 +1681,11 @@ Contains
 
     Logical                 :: ffpass
 
-    If (present(ff)) then
-      If(ff==1)Then
-        ffpass=.True.
-      Else
-        ffpass=.False.
-      End If
+    If(ff==1)Then
+      ffpass=.True.
     Else
-      ffpass= .True.
-    Endif
+      ffpass=.False.
+    End If
 
 
     ! Get complete stress tensor
