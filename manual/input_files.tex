@@ -1900,11 +1900,11 @@ magnetic 0  1/1.07564305   0
 ...
 \end{lstlisting}
 
-\subsubsection{crd}
+\subsubsection{crd}\label{sec:crd}
 
 {\bf crd} i j k
 
-crd i j k Defines the atomic pairs to use for both coordination and angular distribution, followed by is i + j + k records:
+This section defines the atomic pairs to use for both coordination and angular distribution calculations. The start of this section is given by the keyword {\bf crd} followed by the i j k records:
 
 i = The number of unique atomic pairs
 
@@ -1916,7 +1916,7 @@ j number of the following pattern: atom minimun\_displacement
 
 k = The number of lists to build coordination and angular distribution between
 
-k number of the following pattern: atom atom ‘-‘ atom
+k number of the following pattern: atom atom ... ‘-‘ atom atom ...
 
 {\bf Example in the FIELD File}
 
