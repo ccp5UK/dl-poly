@@ -190,8 +190,10 @@ if(WITH_ASSERT)
     COMPILE_DEFINITIONS "WITH_ASSERT")
 endif()
 
+
 ## sets the linking
 link_directories (${LIBRARY_OUTPUT_PATH})
+target_link_libraries(dlpoly ${LIBS})
 add_executable(${target_name} dl_poly.F90)
 set_target_properties(${target_name} PROPERTIES LINK_FLAGS "${OMP_LINK_FLAGS} ${MIC_LINK_FLAGS}")
 target_link_libraries(${target_name} dlpoly ${LIBS})
