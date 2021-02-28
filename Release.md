@@ -1,7 +1,22 @@
 Release notes for DL_POLY_4
 ===========================
 
+
+Version 5.0.0: February 2021
+----------------------------
+
++ Change of license DL_POLY_4 is now LGPL 3.0
++ Version bump to 5.0.0
++ Empirical Valence bond formalism is implemeneted, see Manual.
++ Thermal conductivity can be estimated now using, heat flux
++ A more logical consistent structure for control file is available
++ new command line arguments, see -h for details
 + Bug fix core\_shells\_on\_top shells wrap-around crossing MD box by adding relative vectors' move of shells on cores
++ more go to statements removed to make the code easier to read
++ multipolar electrostatics is disabled till put in line with new refactored electrostatics.
++ fixed a memory leak in electrostatics, introduced by refactor
++ zero correctly dihedrals, etc.
++ netcdf is deprecated and will be removed in the next release.
 
 Version 4.10.0: August 2020
 ---------------------------
