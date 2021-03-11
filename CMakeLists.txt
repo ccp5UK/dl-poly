@@ -126,15 +126,15 @@ if(WITH_PLUMED)
 
   if (INTERNAL_PLUMED)
     include(ExternalProject)
+    enable_language(CXX)
     ExternalProject_Add(int-plumed
       GIT_REPOSITORY https://github.com/plumed/plumed2.git
       GIT_TAG v2.5.2
       GIT_SHALLOW true
       GIT_PROGRESS true
       BUILD_IN_SOURCE 1
-
       PREFIX int-plumed-api
-      CONFIGURE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/int-plumed-api/plumed-api/configure --prefix=${CMAKE_INSTALL_PREFIX}
+      CONFIGURE_COMMAND CXX=${CMAKE_CXX_COMPILER} FC=${CMAKE_Fortran_COMPILER} ${CMAKE_CURRENT_BINARY_DIR}/int-plumed-api/plumed-api/configure --prefix=${CMAKE_INSTALL_PREFIX}
       SOURCE_DIR int-plumed-api/plumed-api
       )
     set(PLUMED_LIB ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
