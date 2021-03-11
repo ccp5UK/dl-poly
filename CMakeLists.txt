@@ -93,6 +93,7 @@ endif()
 if(WITH_KIM)
   if(INTERNAL_KIM)
     include(ExternalProject)
+    enable_language(CXX)
     ExternalProject_Add(int-kim-api
       GIT_REPOSITORY https://github.com/openkim/kim-api
       GIT_TAG v2.1.3
@@ -101,7 +102,7 @@ if(WITH_KIM)
       PREFIX int-kim-api
       BINARY_DIR int-kim-api/kim-api-build
       SOURCE_DIR int-kim-api/kim-api
-      CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}  -DBUILD_SHARED_LIBS=off -DCMAKE_BUILD_TYPE=Release
+      CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DBUILD_SHARED_LIBS=off -DCMAKE_BUILD_TYPE=Release
       )
 
     set(KIM_INC ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/kim-api/mod)
@@ -127,15 +128,15 @@ if(WITH_PLUMED)
 
   if (INTERNAL_PLUMED)
     include(ExternalProject)
+    enable_language(CXX)
     ExternalProject_Add(int-plumed
       GIT_REPOSITORY https://github.com/plumed/plumed2.git
       GIT_TAG v2.5.2
       GIT_SHALLOW true
       GIT_PROGRESS true
       BUILD_IN_SOURCE 1
-
       PREFIX int-plumed-api
-      CONFIGURE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/int-plumed-api/plumed-api/configure --prefix=${CMAKE_INSTALL_PREFIX}
+      CONFIGURE_COMMAND CXX=${CMAKE_CXX_COMPILER} FC=${CMAKE_Fortran_COMPILER} ${CMAKE_CURRENT_BINARY_DIR}/int-plumed-api/plumed-api/configure --prefix=${CMAKE_INSTALL_PREFIX}
       SOURCE_DIR int-plumed-api/plumed-api
       )
     set(PLUMED_LIB ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
