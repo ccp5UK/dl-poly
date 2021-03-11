@@ -91,6 +91,7 @@ endif()
 if(WITH_KIM)
   if(INTERNAL_KIM)
     include(ExternalProject)
+    enable_language(CXX)
     ExternalProject_Add(int-kim-api
       GIT_REPOSITORY https://github.com/openkim/kim-api
       GIT_TAG v2.1.3
@@ -99,7 +100,7 @@ if(WITH_KIM)
       PREFIX int-kim-api
       BINARY_DIR int-kim-api/kim-api-build
       SOURCE_DIR int-kim-api/kim-api
-      CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}  -DBUILD_SHARED_LIBS=off -DCMAKE_BUILD_TYPE=Release
+      CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DBUILD_SHARED_LIBS=off -DCMAKE_BUILD_TYPE=Release
       )
 
     set(KIM_INC ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/kim-api/mod)
