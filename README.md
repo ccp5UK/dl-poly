@@ -19,3 +19,8 @@ More info:
 - Martyn F. Guest, Alin M. Elena & Aidan B. G. Chalk
   Molecular Simulation (2019), https://doi.org/10.1080/08927022.2019.1603380
 
+* [Extra info on building and distro binaries](https://ccp5.gitlab.io/dlpoly-setup/)
+* [Tutorials, oldish](https://ccp5.gitlab.io/dlpoly/)
+* [Python companion helper](https://pypi.org/project/dlpoly-py/)
+
+
