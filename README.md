@@ -23,4 +23,12 @@ More info:
 * [Tutorials, oldish](https://ccp5.gitlab.io/dlpoly/)
 * [Python companion helper](https://pypi.org/project/dlpoly-py/)
 
+Main support channels are the mailing list and matrix room, be sure you check the archive before you start.
+  
+* [Mat Sci forum](https://matsci.org/c/dlpoly/28)
+* [matrix room](https://matrix.to/#/!MsDOMMiBCBkTvqGxOz:matrix.org/$-Tgf2pIJ9CD732cbG5FEawZiRy8CJlexMbgwD25vvBQ?via=matrix.org)
+  
+
+
+
 
