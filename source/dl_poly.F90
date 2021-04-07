@@ -94,6 +94,12 @@ Program dl_poly
   Use z_density,                          Only: z_density_type
 
   Use units,                              Only: initialise_units
+#ifdef NVIDIA
+  Use constants,                          Only: wp,&
+                                                half_minus,&
+                                                half_plus
+
+#endif  
 
   Implicit None
 
@@ -156,6 +162,12 @@ Program dl_poly
   Character(Len=10)             :: mode
   Logical                       :: finish
   Integer                       :: i, ifile
+
+
+#ifdef NVIDIA
+  half_plus = Nearest(0.5_wp, +1.0_wp)
+  half_minus = Nearest(0.5_wp, -1.0_wp)
+#endif 
 
   ! SET UP COMMUNICATIONS & CLOCKING
 
