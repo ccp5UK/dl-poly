@@ -175,10 +175,15 @@ Module constants
 
   !> +0.0 in working precision
   Real(Kind=wp), Parameter     :: zero_plus = Tiny(1.0_wp)
+#ifdef NVIDIA
+  Real(Kind=wp) :: half_plus
+  Real(Kind=wp) :: half_minus
+#else
   !> Nearest number to 0.5, greater than 0.5, in working precision
   Real(Kind=wp), Parameter     :: half_plus = Nearest(0.5_wp, +1.0_wp)
   !> Nearest number to 0.5, less than 0.5, in working precision
   Real(Kind=wp), Parameter     :: half_minus = Nearest(0.5_wp, -1.0_wp)
+#endif
   !> Smallest difference between floats of kind wp
   Real(Kind=wp), Parameter     :: epsilon_wp = Epsilon(epsilon_wp)
   !> complex zero
