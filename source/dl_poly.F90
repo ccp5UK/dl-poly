@@ -5,30 +5,10 @@ Program dl_poly
   ! dl_poly_4 is an stfc/ccp5 program package for the dynamical
   ! simulation of molecular systems.
   !
-  ! dl_poly_4 is the property of the stfc daresbury laboratory,
-  ! daresbury, warrington wa4 4ad.  no part of the package may
-  ! be redistributed to third parties without the consent of
-  ! daresbury laboratory.
-  !
-  ! dl_poly_4 is available free of charge to academic institutions
-  ! engaged in non-commercial research only.  potential users not
-  ! in this category must consult the ccp5 program librarian at
-  ! daresbury to negotiate terms of use.
-  !
-  ! neither the stfc, daresbury laboratory, ccp5 nor the authors
-  ! of this package claim that it is free from errors and do not
-  ! accept liability for any loss or damage that may arise from
-  ! its use.  it is the users responsibility to verify that the
-  ! package dl_poly_4 is fit for the purpose the user intends for
-  ! it.
-  !
-  ! users of this package are recommended to consult the dl_poly_4
-  ! user and reference manuals for the full terms and conditions
-  ! of its use.
-  !
   ! dl_poly_4 is based on dl_poly_3 by i.t.todorov & w.smith.
   !
   ! copyright - daresbury laboratory
+  ! license   - LGPL 3.0;  https://www.gnu.org/licenses/lgpl-3.0.en.html
   ! authors   - i.t.todorov & w.smith april 2020
   ! contrib   - i.j.bush, h.a.boateng, m.a.seaton,
   !             a.brukhno, a.m.elena, r.davidchak,
