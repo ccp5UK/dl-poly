@@ -21,7 +21,10 @@ Module development
   Use parse,           Only: get_line, get_word, lower_case, clean_string, word_2_real
   Use filename,        Only: file_type, FILE_CONTROL
   Use errors_warnings, Only: info, error , set_print_level
+#ifndef NVIDIA  
   Use iso_fortran_env, ONly: compiler_version
+#endif
+
 #ifdef OLDMPI
   Use comms,           Only: mpi_ver, mpi_subver, comms_type, gcheck
 #else
@@ -241,8 +244,11 @@ Contains
     Call clean_string(aux)
     Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", " builder:", aux, "****"
     Call info_local(ifile, message)
-
+#ifdef NVIDIA
+    aux2 = 'xxx'
+#else
     aux2 = compiler_version()
+#endif
     Call clean_string(aux2)
     Do i = 1, Len_trim(aux2), 46
       aux = aux2(i:Min(i + 45, Len_trim(aux2)))
