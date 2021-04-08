@@ -175,8 +175,8 @@ Module numerics
   Public :: get_nth_prime
   Public :: calc_erf
   Public :: calc_erf_deriv
-  Public :: calc_erfc
-  Public :: calc_erfc_deriv
+  Public :: calc_erfc_n
+  Public :: calc_erfc_deriv_n
   Public :: calc_exp_int
   Public :: calc_gamma_1_2
   Public :: calc_inv_gamma_1_2
@@ -3643,7 +3643,7 @@ Contains
 
   End Function get_nth_prime
 
-  Pure Function calc_erfc(x) Result(erfc)
+  Pure Function calc_erfc_n(x) Result(erfc)
     !!-----------------------------------------------------------------------
     !!
     !! dl_poly_4 routine for calculating a point on the complementary error function
@@ -3663,9 +3663,9 @@ Contains
     tt = 1.0_wp / (1.0_wp + pp * x)
     erfc = tt * (a1 + tt * (a2 + tt * (a3 + tt * (a4 + tt * a5)))) * Exp(-(x**2))
 
-  End Function calc_erfc
+  End Function calc_erfc_n
 
-  Pure Function calc_erfc_deriv(x) Result(d_erfc)
+  Pure Function calc_erfc_deriv_n(x) Result(d_erfc)
     !!-----------------------------------------------------------------------
     !!
     !! dl_poly_4 routine for calculating a point on the complementary error function derivative
@@ -3679,7 +3679,7 @@ Contains
 
     d_erfc = 2.0_wp * Exp(-(x**2)) * rsqrpi
 
-  End Function calc_erfc_deriv
+  End Function calc_erfc_deriv_n
 
   Pure Function calc_erf(x) Result(erf)
     !!-----------------------------------------------------------------------

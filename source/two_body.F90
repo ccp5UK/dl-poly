@@ -45,8 +45,6 @@ Module two_body
   Use mpole,           Only: POLARISATION_CHARMM,&
                              mpole_type
   Use neighbours,      Only: neighbours_type
-  Use numerics,        Only: calc_erfc,&
-                             calc_erfc_deriv
   Use poisson,         Only: poisson_forces,&
                              poisson_type
 #ifdef HALF_HALO
