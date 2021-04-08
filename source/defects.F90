@@ -136,9 +136,16 @@ Contains
     Integer(Kind=wi) :: fail(3)
 
     fail = 0
-    Deallocate (dfcts%namr, Stat=fail(1))
-    Deallocate (dfcts%lri, dfcts%lra, dfcts%indr, Stat=fail(2))
-    Deallocate (dfcts%xr, dfcts%yr, dfcts%zr, Stat=fail(3))
+    If (Allocated(dfcts%namr)) Then
+      Deallocate (dfcts%namr, Stat=fail(1))
+    End If
+
+    If (Allocated(dfcts%lri)) Then
+      Deallocate (dfcts%lri, dfcts%lra, dfcts%indr, Stat=fail(2))
+    End If
+    If (Allocated(dfcts%xr)) Then
+      Deallocate (dfcts%xr, dfcts%yr, dfcts%zr, Stat=fail(3))
+    End If
 
     If (Any(fail > 0)) Call error(1035)
   End Subroutine deallocate_defects_arrays
