@@ -18,7 +18,7 @@ Module spme
   Use errors_warnings, Only: error
   Use kinds,           Only: wp
   Use mpole,           Only: mpole_type
-  Use numerics,        Only: calc_erfc,&
+  Use numerics,        Only: calc_erfc_n,&
                              calc_exp_int,&
                              calc_inv_gamma_1_2,&
                              factorial
@@ -261,7 +261,7 @@ Contains
     Real(Kind=wp), Intent(In   ) :: x
     Real(Kind=wp)                :: f_2
 
-    f_2 = sqrpi * calc_erfc(x) / x
+    f_2 = sqrpi * calc_erfc_n(x) / x
 
   End Function f_2
 
@@ -280,7 +280,7 @@ Contains
     Real(Kind=wp) :: x_2
 
     x_2 = x**2
-    f_4 = 2.0_wp * (Exp(-x_2) - sqrpi * x * calc_erfc(x))
+    f_4 = 2.0_wp * (Exp(-x_2) - sqrpi * x * calc_erfc_n(x))
   End Function f_4
 
   Pure Function f_6(x)
@@ -300,7 +300,7 @@ Contains
     Real(Kind=wp) :: x_2
 
     x_2 = x**2
-    f_6 = third * ((1.0_wp - 2.0_wp * x_2) * Exp(-x_2) + 2.0_wp * sqrpi * (x**3) * calc_erfc(x))
+    f_6 = third * ((1.0_wp - 2.0_wp * x_2) * Exp(-x_2) + 2.0_wp * sqrpi * (x**3) * calc_erfc_n(x))
 
   End Function f_6
 
@@ -329,7 +329,7 @@ Contains
 
     x_2 = x**2
 
-    f_12 = Sum([(coeffs(i) * x_2**i, i=0, 4)]) * Exp(-x_2) - prefac * 16.0_wp * sqrpi * x**9 * calc_erfc(x)
+    f_12 = Sum([(coeffs(i) * x_2**i, i=0, 4)]) * Exp(-x_2) - prefac * 16.0_wp * sqrpi * x**9 * calc_erfc_n(x)
 
   End Function f_12
 
@@ -368,7 +368,7 @@ Contains
 
       If (Mod(p_work, 2) == 0) Then
         ! even integrals base is I( 0, x )
-        base_integ = 0.5_wp * sqrpi * calc_erfc(x)
+        base_integ = 0.5_wp * sqrpi * calc_erfc_n(x)
         curr_pot_order = 0
         xp = 1.0_wp
       Else
@@ -450,7 +450,7 @@ Contains
     Real(Kind=wp), Intent(In   ) :: x
     Real(Kind=wp)                :: g_1
 
-    g_1 = calc_erfc(x)
+    g_1 = calc_erfc_n(x)
 
   End Function g_1
 
@@ -552,7 +552,7 @@ Contains
         x_curr = x_curr * x_2
       End Do
       g_p = g_p * Exp(-x_2) * rsqrpi
-      g_p = g_p + calc_erfc(x)
+      g_p = g_p + calc_erfc_n(x)
 
     End If
 

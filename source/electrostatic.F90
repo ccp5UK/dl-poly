@@ -8,7 +8,7 @@
 Module electrostatic
   Use kinds, Only : wi,wp
   Use mpole, Only : mpole_type
-  Use numerics, Only : interp_table, calc_erfc, calc_erfc_deriv
+  Use numerics, Only : interp_table, calc_erfc_n, calc_erfc_deriv_n
   Implicit None
 
   Private
@@ -71,8 +71,8 @@ Module electrostatic
     Procedure, Public :: init_erf_tables
     Procedure, Public :: erfcgen
     ! If an exact erfc is desired
-    Procedure, NoPass, Public :: calc_erfc => calc_erfc
-    Procedure, NoPass, Public :: calc_erfc_deriv => calc_erfc_deriv
+    Procedure, NoPass, Public :: calc_erfc => calc_erfc_n
+    Procedure, NoPass, Public :: calc_erfc_deriv => calc_erfc_deriv_n
   End Type electrostatic_type
 
 contains
@@ -112,7 +112,7 @@ contains
       Real( Kind = wp ) :: rrr
       Real( Kind = wp ) :: erfc_ar_over_r
 
-      erfc_ar_over_r = calc_erfc(alpha*rrr) / rrr
+      erfc_ar_over_r = calc_erfc_n(alpha*rrr) / rrr
     end Function erfc_ar_over_r
 
     Function erfc_ar_over_r_deriv(rrr)
@@ -120,7 +120,7 @@ contains
       Real( Kind = wp ) :: erfc_ar_over_r_deriv
 
       rsq = rrr ** 2
-      erfc_ar_over_r_deriv = (erfc_ar_over_r(rrr) + alpha*calc_erfc_deriv(alpha*rrr))/rsq
+      erfc_ar_over_r_deriv = (erfc_ar_over_r(rrr) + alpha*calc_erfc_deriv_n(alpha*rrr))/rsq
     end Function erfc_ar_over_r_deriv
 
 

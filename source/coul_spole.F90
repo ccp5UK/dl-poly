@@ -3,7 +3,7 @@ Module coul_spole
   Use configuration,   Only : configuration_type
   Use constants,       Only : r4pie0,zero_plus,sqrpi
   Use errors_warnings, Only : error, error_alloc, error_dealloc
-  Use numerics,        Only : calc_erfc, calc_erfc_deriv
+  Use numerics,        Only : calc_erfc_n, calc_erfc_deriv_n
   Use neighbours,      Only : neighbours_type
   Use electrostatic,   Only : electrostatic_type, &
     ELECTROSTATIC_EWALD,ELECTROSTATIC_DDDP, &
@@ -59,8 +59,8 @@ Contains
 
       If (electro%damp) Then
 
-        erc = calc_erfc(electro%damping*rcut) / rcut
-        fer = (erc + electro%damping*calc_erfc_deriv(electro%damping*rcut)) / rcut**2
+        erc = calc_erfc_n(electro%damping*rcut) / rcut
+        fer = (erc + electro%damping*calc_erfc_deriv_n(electro%damping*rcut)) / rcut**2
 
         electro%force_shift  = fer*rcut
         electro%energy_shift  = -(erc + electro%force_shift*rcut)
@@ -324,7 +324,7 @@ Contains
             End If
 #endif /* HALF_HALO */
           End If
-          
+
         End If
 
 
@@ -539,7 +539,7 @@ Contains
 
         End If
 
-        
+
       End Do
 
       ! load back forces
