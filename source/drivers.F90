@@ -20,7 +20,8 @@ Module drivers
                                   gather_coordinates,&
                                   gather_atomic_names,&
                                   distribute_forces,&
-                                  gather_forces
+                                  gather_forces,&
+                                  write_config
   Use constants,            Only: boltz
   Use constraints,          Only: constraints_quench,&
                                   constraints_type
@@ -78,6 +79,7 @@ Module drivers
                                   FILE_HISTORY,&
                                   FILE_POPEVB,&
                                   FILE_OUTPUT,&
+                                  FILE_REVCON,&
                                   file_type
   Use flow_control,         Only: RESTART_KEY_CLEAN,&
                                   RESTART_KEY_OLD,&
@@ -2276,6 +2278,7 @@ Contains
            Call system_revive(neigh(1)%cutoff,flow%step,flow%time,sites(1),io,flow%start_time, &
             stat(1),devel,green(1),thermo(1),bond(1),angle(1),dihedral(1),inversion(1),zdensity,rdf(1), &
             netcdf,cnfig(1),files,comm)
+           Call write_config(cnfig(1), files(FILE_REVCON), 2, flow%step, thermo(1)%tstep, io, flow%time, netcdf, comm)
         End If
 
         Do ff = 1, flow%NUM_FF
