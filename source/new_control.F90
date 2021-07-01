@@ -1887,6 +1887,11 @@ contains
       continue
     case ('force')
       minim%key = MIN_FORCE
+
+      If (.not. params%is_set('minimisation_tolerance')) Then
+        param%units = "internal_f"
+      End If
+
       param%internal_units = "internal_f"
       minim%tolerance = convert_units(minim%tolerance, param%units, param%internal_units)
       If (minim%tolerance < 1.0_wp .or. minim%tolerance > 1000.0_wp) &
@@ -1894,6 +1899,11 @@ contains
 
     case ('energy')
       minim%key = MIN_ENERGY
+
+      If (.not. params%is_set('minimisation_tolerance')) Then
+        param%units = "internal_e"
+      End If
+
       param%internal_units = "internal_e"
       minim%tolerance = convert_units(minim%tolerance, param%units, param%internal_units)
       If (minim%tolerance < zero_plus .or. minim%tolerance > 0.01_wp) &
@@ -1901,6 +1911,11 @@ contains
 
     case ('distance')
       minim%key = MIN_DISTANCE
+
+      If (.not. params%is_set('minimisation_tolerance')) Then
+        param%units = "internal_l"
+      End If
+
       param%internal_units = "internal_l"
       minim%tolerance = convert_units(minim%tolerance, param%units, param%internal_units)
       If (minim%tolerance < REAL_TOL .or. minim%tolerance > 0.1_wp) &
