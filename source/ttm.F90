@@ -1143,10 +1143,13 @@ Contains
       Call eltemp_min(lat_min, ttm, comm)
       Write (message, '(a)') 'electronic temperatures read from DUMP_E file for two-temperature model'
       Call info(message, .true.)
-      Write (message, '(1x,"minimum temperature (K) = ",ES11.4,/,1x,"maximum temperature (K) = ",' &
-             //'ES11.4,/,1x,"sum of temperatures (K) = ",ES11.4)') &
-        lat_min, lat_max, lat_sum
+      Write (message, '(1x,"minimum temperature            (K) = ",ES12.4)') lat_min
       Call info(message, .true.)
+      Write (message, '(1x,"maximum temperature            (K) = ",ES12.4)') lat_max
+      Call info(message, .true.)
+      Write (message, '(1x,"sum of temperatures            (K) = ",ES12.4)') lat_sum
+      Call info(message, .true.)
+
       If (comm%idnode == 0) Then
         Close (iounit)
       End If
@@ -1334,10 +1337,13 @@ Contains
       End If
       Write (message, '(a)') 'thermal conductivity table read from Ke.dat file for two-temperature model'
       Call info(message, .true.)
-      Write (message, '(1x,"minimum temperature            (K) = ",ES12.4,/,1x,"maximum temperature            (K) = ",' &
-             //'ES12.4,/,1x,"minimum t.c. value   (W m^-1 K^-1) = ",ES12.4,/,1x,' &
-             //'"maximum t.c. value   (W m^-1 K^-1) = ",ES12.4)') &
-        Minval(ttm%ketable(:, 1)), Maxval(ttm%ketable(:, 1)), Minval(ttm%ketable(:, 2)), Maxval(ttm%ketable(:, 2))
+      Write (message, '(1x,"minimum temperature            (K) = ",ES12.4)') Minval(ttm%ketable(:, 1))
+      Call info(message, .true.)
+      Write (message, '(1x,"maximum temperature            (K) = ",ES12.4)') Maxval(ttm%ketable(:, 1))
+      Call info(message, .true.)
+      Write (message, '(1x,"minimum t. c. value            (K) = ",ES12.4)') Minval(ttm%ketable(:, 2))
+      Call info(message, .true.)
+      Write (message, '(1x,"maximum t. c. value            (K) = ",ES12.4)') Maxval(ttm%ketable(:, 2))
       Call info(message, .true.)
 
       ! convert thermal conductivity values from W m^-1 K^-1 to kB A^-1 ps^-1
@@ -1423,9 +1429,13 @@ Contains
       End If
       Write (message, '(a)') 'thermal diffusivity table read from De.dat file for two-temperature model'
       Call info(message, .true.)
-      Write (message, '(1x,"minimum temperature            (K) = ",ES12.4,/,1x,"maximum temperature            (K) = ",ES12.4,' &
-             //'/,1x,"minimum diffusivity value  (m^2/s) = ",ES12.4,/,1x,"maximum diffusivity value  (m^2/s) = ",ES12.4)') &
-        Minval(ttm%detable(:, 1)), Maxval(ttm%detable(:, 1)), Minval(ttm%detable(:, 2)), Maxval(ttm%detable(:, 2))
+      Write (message, '(1x,"minimum temperature            (K) = ",ES12.4)') Minval(ttm%detable(:, 1))
+      Call info(message, .true.)
+      Write (message, '(1x,"maximum temperature            (K) = ",ES12.4)') Maxval(ttm%detable(:, 1))
+      Call info(message, .true.)
+      Write (message, '(1x,"minimum diffusivity value  (m^2/s) = ",ES12.4)') Minval(ttm%detable(:, 2))
+      Call info(message, .true.)
+      Write (message, '(1x,"maximum diffusivity value  (m^2/s) = ",ES12.4)') Maxval(ttm%detable(:, 2))
       Call info(message, .true.)
 
       ! convert thermal diffusivity values from m^2 s^-1 to A^2 ps^-1
