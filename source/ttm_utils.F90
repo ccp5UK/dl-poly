@@ -673,8 +673,8 @@ Contains
       Else
         ii = 0
       End If
-      Call MPI_ISEND(energydist(ijk1, 0, 0, 0), 1, ttm%tmpmsgx, domain%map(2), Grid2_tag, MPI_COMM_WORLD, req(1), ierr)
-      Call MPI_IRECV(buffer(ijk2, ii, 0, 0), 1, ttm%tmpmsgx, domain%map(1), Grid2_tag, MPI_COMM_WORLD, req(2), ierr)
+      Call MPI_ISEND(energydist(ijk1, 0, 0, 0), 1, ttm%tmpmsgx, domain%map(2), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
+      Call MPI_IRECV(buffer(ijk2, ii, 0, 0), 1, ttm%tmpmsgx, domain%map(1), Grid2_tag, MPI_COMM_WORLD, req(4), ierr)
       Call MPI_WAITALL(4, req, stat, ierr)
 
       ! -y/+y direction
