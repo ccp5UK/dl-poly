@@ -11,7 +11,7 @@ Module units
   Use constants, only : pi, boltz
   Use hash, only: hash_table, MAX_KEY, STR_LEN
   Use hash, only: get_double, get_int, get_complex
-  Use errors_warnings, only : error, error_alloc, error_dealloc
+  Use errors_warnings, only : error, error_units, error_alloc, error_dealloc
   Use parse, only : lower_case
   Implicit None
 
@@ -300,7 +300,7 @@ contains
         stat=.false.
         return
       else
-        call error(0, 'Cannot convert between '//trim(from)//' & '//trim(to)//' different dimensions')
+        call error_units(from, to)
       end if
 
     end if

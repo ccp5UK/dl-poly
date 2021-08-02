@@ -4,7 +4,7 @@ module control_parameter_module
   Use parse, only : word_2_real, get_word, get_line
   Use kinds, only : wp
   Use hash, only : hash_table, MAX_KEY, STR_LEN
-  Use errors_warnings, only : error, warning
+  Use errors_warnings, only : error, error_units, warning
   Implicit None
 
   Private
@@ -264,32 +264,39 @@ contains
     Real(Kind=wp) :: rtmp, rtmp3(3), rtmp6(6)
     Integer :: itmp
     Character (Len=*), Intent(Inout) :: iomsg
+    Logical :: stat
 
     select case (param%data_type)
     case(DATA_FLOAT)
-       read(param%val, *) rtmp
-       rtmp = convert_units(rtmp, param%units, param%internal_units)
-       write(unit, '(3(A,1X), "-> ", g15.6e2, 1X, A)') trim(param%key), trim(param%val), &
-            & trim(param%units), rtmp, trim(param%internal_units)
-    case(DATA_INT)
-       read(param%val, *) itmp
-       write(unit, '(3(A,1X), "-> ", i0, 1X, A)') trim(param%key), trim(param%val), &
-            & trim(param%units), itmp, trim(param%internal_units)
-    case(DATA_VECTOR3)
-       read(param%val, *) rtmp3
-       do itmp = 1,3
-          rtmp3(itmp) = convert_units(rtmp3(itmp), param%units, param%internal_units)
-       end do
-       write(unit, '(3(A,1X), "-> [", 3(g15.6e2,1X), "]", 1X, A)') trim(param%key), trim(param%val), &
-            & trim(param%units), rtmp3, trim(param%internal_units)
-    case(DATA_VECTOR6)
-       read(param%val, *) rtmp6
-       do itmp = 1,6
-          rtmp6(itmp) = convert_units(rtmp6(itmp), param%units, param%internal_units)
-       end do
+      read(param%val, *) rtmp
+      rtmp = convert_units(rtmp, param%units, param%internal_units, stat)
+      if (.not. stat) call error_units(param%units, param%internal_units, 'Cannot write '//param%key//': bad units')
 
-       write(unit, '(3(A,1X), "-> [", 6(g15.6e2,1X), "]", 1X, A)') trim(param%key), trim(param%val), &
-            & trim(param%units), rtmp6, trim(param%internal_units)
+      write(unit, '(3(A,1X), "-> ", g15.6e2, 1X, A)') trim(param%key), trim(param%val), &
+           & trim(param%units), rtmp, trim(param%internal_units)
+    case(DATA_INT)
+      read(param%val, *) itmp
+      write(unit, '(3(A,1X), "-> ", i0, 1X, A)') trim(param%key), trim(param%val), &
+           & trim(param%units), itmp, trim(param%internal_units)
+    case(DATA_VECTOR3)
+      read(param%val, *) rtmp3
+      do itmp = 1,3
+        rtmp3(itmp) = convert_units(rtmp3(itmp), param%units, param%internal_units, stat)
+        if (.not. stat) call error_units(param%units, param%internal_units, 'Cannot write '//param%key//': bad units')
+
+      end do
+      write(unit, '(3(A,1X), "-> [", 3(g15.6e2,1X), "]", 1X, A)') trim(param%key), trim(param%val), &
+           & trim(param%units), rtmp3, trim(param%internal_units)
+    case(DATA_VECTOR6)
+      read(param%val, *) rtmp6
+      do itmp = 1,6
+        rtmp6(itmp) = convert_units(rtmp6(itmp), param%units, param%internal_units, stat)
+        if (.not. stat) call error_units(param%units, param%internal_units, 'Cannot write '//param%key//': bad units')
+
+      end do
+
+      write(unit, '(3(A,1X), "-> [", 6(g15.6e2,1X), "]", 1X, A)') trim(param%key), trim(param%val), &
+           & trim(param%units), rtmp6, trim(param%internal_units)
     case default
        write(unit, fmt='(3(A,1X))') trim(param%key), trim(param%val), trim(param%units)
     end select
@@ -329,10 +336,7 @@ contains
 
     output = word_2_real(parse)
     output = convert_units(output, param%units, param%internal_units, stat)
-    if (.not. stat) then
-      call warning("When parsing "//key)
-      call error(0, 'Cannot convert between '//trim(param%units)//' & '//trim(param%internal_units)//' different dimensions')
-    end if
+    if (.not. stat) call error_units(param%units, param%internal_units, "When parsing key: "//trim(key))
 
   End Subroutine retrieve_float
 
@@ -359,10 +363,8 @@ contains
       if (parse == "") exit
       tmp(i) = word_2_real(parse)
       tmp(i) = convert_units(tmp(i), param%units, param%internal_units, stat)
-      if (.not. stat) then
-        call warning("When parsing "//key)
-        call error(0, 'Cannot convert between '//trim(param%units)//' & '//trim(param%internal_units)//' different dimensions')
-      end if
+      if (.not. stat) call error_units(param%units, param%internal_units, "When parsing key: "//trim(key))
+
     end do
 
     select case(param%data_type)

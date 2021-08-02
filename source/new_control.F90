@@ -28,6 +28,7 @@ Module new_control
        ELECTROSTATIC_POISSON,&
        electrostatic_type
   Use errors_warnings,      Only: error,&
+       error_units,&
        info,&
        warning,&
        set_print_level,&
@@ -197,10 +198,12 @@ contains
     Type( file_type ), Intent( InOut ) :: control_file
     Type( comms_type ), Intent( InOut ) :: comm
     Logical, Intent(   Out) :: can_parse
-
+    Integer :: ierr
 
     Call initialise_control(params)
-    open(newunit=control_file%unit_no, file=control_file%filename, status='old', action='read')
+    open(newunit=control_file%unit_no, file=control_file%filename, status='old', action='read', iostat=ierr)
+    if (ierr .ne. 0) call error(0, 'CONTROL file not found')
+
     can_parse = try_parse(control_file%unit_no, params, comm)
 
     ! Possibly old style
@@ -1294,6 +1297,9 @@ contains
     Type( units_scheme ) :: out_units
     Character(Len=STR_LEN) :: option
     Real(kind = wp) :: test
+    Character(Len=STR_LEN) :: mess
+
+    Logical :: stat
 
     call params%retrieve("io_units_scheme", option)
 
@@ -1366,17 +1372,39 @@ contains
          call params%retrieve("io_units_emf", out_units%emf)
 
     ! Check units validity
-    test = convert_units(1.0_wp, out_units%length, internal_units%length)
-    test = convert_units(1.0_wp, out_units%time, internal_units%time)
-    test = convert_units(1.0_wp, out_units%mass, internal_units%mass)
-    test = convert_units(1.0_wp, out_units%charge, internal_units%charge)
-    test = convert_units(1.0_wp, out_units%energy, internal_units%energy)
-    test = convert_units(1.0_wp, out_units%pressure, internal_units%pressure)
-    test = convert_units(1.0_wp, out_units%force, internal_units%force)
-    test = convert_units(1.0_wp, out_units%velocity, internal_units%velocity)
-    test = convert_units(1.0_wp, out_units%power, internal_units%power)
-    test = convert_units(1.0_wp, out_units%surf_ten, internal_units%surf_ten)
-    test = convert_units(1.0_wp, out_units%emf, internal_units%emf)
+    test = convert_units(1.0_wp, out_units%length, internal_units%length, stat)
+    if (.not. stat) call error_units(out_units%length, internal_units%length, 'Invalid output unit for length')
+
+    test = convert_units(1.0_wp, out_units%time, internal_units%time, stat)
+    if (.not. stat) call error_units(out_units%length, internal_units%length, 'Invalid output unit for time')
+
+    test = convert_units(1.0_wp, out_units%mass, internal_units%mass, stat)
+    if (.not. stat) call error_units(out_units%length, internal_units%length, 'Invalid output unit for mass')
+
+    test = convert_units(1.0_wp, out_units%charge, internal_units%charge, stat)
+    if (.not. stat) call error_units(out_units%length, internal_units%length, 'Invalid output unit for charge')
+
+    test = convert_units(1.0_wp, out_units%energy, internal_units%energy, stat)
+    if (.not. stat) call error_units(out_units%length, internal_units%length, 'Invalid output unit for energy')
+
+    test = convert_units(1.0_wp, out_units%pressure, internal_units%pressure, stat)
+    if (.not. stat) call error_units(out_units%length, internal_units%length, 'Invalid output unit for pressure')
+
+    test = convert_units(1.0_wp, out_units%force, internal_units%force, stat)
+    if (.not. stat) call error_units(out_units%length, internal_units%length, 'Invalid output unit for force')
+
+    test = convert_units(1.0_wp, out_units%velocity, internal_units%velocity, stat)
+    if (.not. stat) call error_units(out_units%length, internal_units%length, 'Invalid output unit for velocity')
+
+    test = convert_units(1.0_wp, out_units%power, internal_units%power, stat)
+    if (.not. stat) call error_units(out_units%length, internal_units%length, 'Invalid output unit for power')
+
+    test = convert_units(1.0_wp, out_units%surf_ten, internal_units%surf_ten, stat)
+    if (.not. stat) call error_units(out_units%length, internal_units%length, 'Invalid output unit for surface tension')
+
+    test = convert_units(1.0_wp, out_units%emf, internal_units%emf, stat)
+    if (.not. stat) call error_units(out_units%length, internal_units%length, 'Invalid output unit for emf')
+
 
     ! Initialise timestep unit
     call params%retrieve('timestep', test, required = .true.)
@@ -1786,6 +1814,7 @@ contains
     Real(Kind=wp), Dimension(6) :: vtmp
     Real(Kind=wp) :: rtmp
     Logical :: ltmp
+    Logical :: stat
 
     Call params%retrieve('title', option)
     config%sysname = option(1:72)
@@ -1893,7 +1922,9 @@ contains
       End If
 
       param%internal_units = "internal_f"
-      minim%tolerance = convert_units(minim%tolerance, param%units, param%internal_units)
+      minim%tolerance = convert_units(minim%tolerance, param%units, param%internal_units, stat)
+      if (.not. stat) call error_units(param%units, param%internal_units, 'Minimisation tolerance wrong type')
+
       If (minim%tolerance < 1.0_wp .or. minim%tolerance > 1000.0_wp) &
            minim%tolerance = 50.0_wp
 
@@ -1905,7 +1936,9 @@ contains
       End If
 
       param%internal_units = "internal_e"
-      minim%tolerance = convert_units(minim%tolerance, param%units, param%internal_units)
+      minim%tolerance = convert_units(minim%tolerance, param%units, param%internal_units, stat)
+      if (.not. stat) call error_units(param%units, param%internal_units, 'Minimisation tolerance wrong type')
+
       If (minim%tolerance < zero_plus .or. minim%tolerance > 0.01_wp) &
            minim%tolerance = 0.005_wp
 
@@ -1917,7 +1950,9 @@ contains
       End If
 
       param%internal_units = "internal_l"
-      minim%tolerance = convert_units(minim%tolerance, param%units, param%internal_units)
+      minim%tolerance = convert_units(minim%tolerance, param%units, param%internal_units, stat)
+      if (.not. stat) call error_units(param%units, param%internal_units, 'Minimisation tolerance wrong type')
+
       If (minim%tolerance < REAL_TOL .or. minim%tolerance > 0.1_wp) &
            minim%tolerance = 0.005_wp
 
