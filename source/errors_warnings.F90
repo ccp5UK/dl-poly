@@ -13,6 +13,7 @@ Module errors_warnings
 !> contrib - a.m.elena March 2019 - remove error 145
 !> contrib - a.m.elena March 2019 - fix wrong logic in warning
 
+  Use constants,                     Only: lf
   Use comms,                         Only: abort_comms,&
                                            comms_type
   Use, Intrinsic :: iso_fortran_env, Only: error_unit,&
@@ -35,6 +36,7 @@ Module errors_warnings
   Public :: info
   Public :: init_error_system
   Public :: error_alloc, error_dealloc
+  Public :: error_units
   Public :: error_read
   Public :: set_print_level
   Public :: get_print_level
@@ -870,12 +872,12 @@ Contains
     If (zeroOnly) Then
       If (eworld%idnode == 0) Then
         If (Present(message)) Then
-          Write (ounit, '(a)') Trim(message)
+          Write (ounit, '(/,a)') Trim(message)
         End If
       End If
     Else
       If (Present(message)) Then
-        Write (ounit, '(a,1x,i0)') Trim(message)//", node: ", eworld%idnode
+        Write (ounit, '(/,a,1x,i0)') Trim(message)//", node: ", eworld%idnode
       End If
     End If
 
@@ -1335,10 +1337,6 @@ Contains
       Case (124)
 
         Write (ounit, '(/,1x,a)') 'error - CONFIG file not found'
-
-      Case (126)
-
-        Write (ounit, '(/,1x,a)') 'error - CONTROL file not found'
 
       Case (128)
 
@@ -2320,6 +2318,30 @@ Contains
     Call abort_comms(eworld, 1002)
 
   End Subroutine error_dealloc
+
+  Subroutine error_units(from, to, message)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Simple error handling wrapper for unit errors
+    !! Handles "missing" units and custom messages
+    !!
+    !!
+    !! copyright - daresbury laboratory
+    !! author - j.wilkins august 2021
+    !!-----------------------------------------------------------------------
+    Character(Len=*), Intent(In) :: from, to
+    Character(Len=*), Intent(In), Optional :: message
+    Character(Len=500) :: outstr
+
+    outstr = 'Cannot convert between "'//trim(from)//'" & "'//trim(to)//'", different dimensions'
+
+    if (from == '') outstr = trim(outstr)//', possibly missing units'
+
+    if (present(message)) outstr = message//lf//'    '//outstr
+
+    call error(0, outstr)
+
+  end Subroutine error_units
 
   Subroutine error_read(ierr, routine, break_eor, break_end)
     !!----------------------------------------------------------------------!

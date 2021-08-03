@@ -191,4 +191,7 @@ Module constants
   !> smallest distance we care about for link cells
   Real(Kind=wp), Parameter     :: smalldr = 1.0e-6_wp
 
+  !> New line char
+  Character, Parameter :: lf = new_line('a')
+
 End Module constants

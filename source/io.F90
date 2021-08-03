@@ -30,7 +30,7 @@ Module io
   Use comms,           Only: comms_type,&
                              gsync,&
                              wp_mpi
-  Use constants,       Only: prsunt
+  Use constants,       Only: prsunt, default_lf => lf
   Use errors_warnings, Only: error
   Use kinds,           Only: li,&
                              wp
@@ -124,7 +124,6 @@ Module io
   Integer, Parameter :: default_n_io_procs_read = 2
   Integer, Parameter :: default_buffer_size_write = 20000
   Integer, Parameter :: default_buffer_size_read = 20000
-  Character, Parameter :: default_lf = new_line('A')
 
   ! Range of FORTRAN unit numbers we shall consider when trying to find a unit number
   Integer, Parameter :: LOW_HANDLE = 10
@@ -5220,4 +5219,3 @@ Contains
   End Subroutine io_nc_compiled
 
 End Module io
-

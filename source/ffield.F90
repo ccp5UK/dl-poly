@@ -19,7 +19,7 @@ Module ffield
   Use configuration,   Only: configuration_type
   ! INTERACTION MODULES
   Use constants,       Only: &
-                             VA_to_dl, boltz, engunit, eu_ev, eu_kcpm, eu_kjpm, nmpldt, pi, &
+                             VA_to_dl, boltz, engunit, eu_ev, eu_kcpm, eu_kjpm, lf, nmpldt, pi, &
                              prsunt, r4pie0, tesla_to_dl, zero_plus
   Use constraints,     Only: constraints_type
   Use coord,           Only: coord_type
@@ -4968,7 +4968,7 @@ Contains
         If (.not. lmols) Call error(13)
 
         If (.not. kim_data%active) Then
-          Write (message, '(a, 1x, 2a)') new_line('a'), &
+          Write (message, '(a, 1x, 2a)') lf, &
             'read_field, `kim_init` must be used to initialise the ', &
             'kim interatomic model'
           Call error(0, message)
@@ -5020,7 +5020,7 @@ Contains
 
           If (nkim < sites%ntype_atom) Then
             If (nkim == 0) Then
-              Write (message, '(a, 1x, a)') new_line('a'), &
+              Write (message, '(a, 1x, a)') lf, &
                 'read_field, Illegal `kim_interactions` keyword'
               Call error(0, message)
             End If
@@ -5029,12 +5029,12 @@ Contains
                          '< number of species in the simulation', .true.)
             Write (messages(1), '(3a)') '*** This is KIM in a hybrid '// &
               'style. It enables the use of DL_POLY interactions and '// &
-              'KIM  interactions', new_line('a'), '*** in one '// &
+              'KIM  interactions', lf, '*** in one '// &
               'simulation, where only part of species in the simulation '// &
               'are counted in KIM interactions.'
             Write (messages(2), '(3a)') '*** This is an experimental '// &
               'feature, implemented in DL_POLY and is not compliant '// &
-              'with the KIM-API', new_line('a'), '*** standard. (See '// &
+              'with the KIM-API', lf, '*** standard. (See '// &
               'the DL_POLY manual for more information)'
             Call info(messages, 2, .true.)
           End If
@@ -5054,7 +5054,7 @@ Contains
 
             ! If the species is not found
             If (atmchk) Then
-              Write (message, '(a, 1x, 3a)') new_line('a'), &
+              Write (message, '(a, 1x, 3a)') lf, &
                 'read_field, `kim_interactions` has species `', &
                 Trim(kim_name(ia)), '` which is not defined before'
               Call error(0, message)
@@ -6414,7 +6414,7 @@ Contains
         If (word(1:8) == 'kim_init') Then
 
           If (kim_data%active) Then
-            Write (message, '(a, 1x, a)') new_line('a'), &
+            Write (message, '(a, 1x, a)') lf, &
               'scan_field, `kim_init` has been used before'
             Call error(0, message)
           End If
@@ -6431,7 +6431,7 @@ Contains
         If (word(1:16) == 'kim_interactions') lkim = .true.
 
         If (.not. kim_data%active) Then
-          Write (message, '(a, 1x, 2a)') new_line('a'), &
+          Write (message, '(a, 1x, 2a)') lf, &
             'scan_field, `kim_init` must be used to initialise ', &
             'the kim interatomic model'
           Call error(0, message)
@@ -6490,7 +6490,7 @@ Contains
 
     If (kim_data%active) Then
       If (.not. lkim) Then
-        Write (message, '(a, 1x, 3a)') new_line('a'), &
+        Write (message, '(a, 1x, 3a)') lf, &
           'scan_field, `kim_interactions` must be used to perform all ', &
           'the necessary steps and set up the kim interatomic model ', &
           'selected in `kim_init` '
