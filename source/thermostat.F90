@@ -298,7 +298,7 @@ Contains
     mxdr = Sqrt(mxdr)
     Call gmax(comm, mxdr)
 
-    If ((mxdr < mndis .or. mxdr > mxdis) .and. tstep < mxstp) Then
+    If ((mxdr < mndis .and. tstep < mxstp) .or. mxdr > mxdis) Then
 
       ! scale tstep and derivatives
 
@@ -373,7 +373,7 @@ Contains
     mxdr = Sqrt(mxdr)
     Call gmax(comm, mxdr)
 
-    If ((mxdr < mndis .or. mxdr > mxdis) .and. tstep < mxstp) Then
+    If ((mxdr < mndis .and. tstep < mxstp) .or. mxdr > mxdis) Then
 
       ! scale tstep and derivatives
       If (mxdr > mxdis) Then

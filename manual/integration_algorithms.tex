@@ -570,10 +570,17 @@ easily related to the Langevin random forces as defined in equation~(\ref{langev
 The algorithm is self-consistent and requires no iterations.
 It is worth noting that the integration is conditional upon
 the Cholesky factorisation which is impossible when
-$\Delta t < \sigma_{1}^{2}/\sigma_{2}$~.  That is why a safety
-check is put in place which when failed iteratively increases
-the integration timestep to a safe value with respect to the
-above condition.
+$\Delta t < \sigma_{1}^{2}/\sigma_{2}$~. Happily, one can show that
+\begin{equation}
+\sigma_{1}^{2}/\sigma_{2} =
+\dfrac{2}{\chi}\tanh{\bigg(\dfrac{\chi \Delta t}{2} \bigg)},
+\end{equation}
+which, for non-negative $\chi, \Delta t$ is always $\leq \Delta t$~.
+
+% That is why a safety
+% check is put in place which when failed iteratively increases
+% the integration timestep to a safe value with respect to the
+% above condition.
 
 {\bf Note} that by the nature of the ensemble the centre of mass will
 not be stationary although the ensemble average warrants its proximity

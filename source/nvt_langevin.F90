@@ -188,42 +188,19 @@ Contains
         stat%strpmf = 0.0_wp
       End If
 
-      ! Create primitive scalers and adjust/increase timestep if need be
-      ! when Cholesky factorisation is compromised
-
-      t0 = Exp(-thermo%chi * tstep)
-      t1 = (1.0_wp - t0) / (thermo%chi)
-      t2 = (1.0_wp - t0**2) / (2 * thermo%chi)
-
-      safe = .true.
-      Do
-        tmp = t1**2 / t2
-        If (tstep - tmp >= zero_plus) Then
-          If ((.not. safe)) Then
-            Write (message, "('timestep increased due to impossibility of integration, new timestep is:',3x,1p,e16.8,/)") &
-              tstep
-
-            Call info(message, .true.)
-          Endif
-          Exit
-        Else
-          safe = .false.
-          tstep = tmp + 1.0e-10_wp
-          t0 = Exp(-thermo%chi * tstep)
-          t1 = (1.0_wp - t0) / (thermo%chi)
-          t2 = (1.0_wp - t0**2) / (2 * thermo%chi)
-        End If
-      End Do
+      ! Don't need to check or adjust timestep for Cholesky factorization:
+      ! tstep - t1^2/t2 > 0 is an IDENTITY, and (check for yourself) boils down
+      ! to:
+      !   tstep - 2 * tanh(chi * tstep / 2) / chi > 0
+      ! aka
+      !   1 - tanh(a)/a > 0
+      ! with a = chi * tstep / 2.
+      ! The function 1 - tanh(a)/a is always > 0 for finite a, and equals zero
+      ! iff a=0. The checks were here previously, and triggered, because of
+      ! rounding errors in the evaluation of the terms.
 
       ! Create complex scalers
-
-      scr = (t1 - t2) / Sqrt(t2)
-      scl = Sqrt(tstep - (t1**2) / t2)
-      scv = Sqrt(t2)
-
-      scr1 = (t1 - t2) / Sqrt(t2 * tstep) / thermo%chi
-      scl1 = Sqrt(1.0_wp - (t1**2) / (t2 * tstep)) / thermo%chi
-      scv1 = Sqrt(t2 / tstep)
+      call langevin_scalers(thermo%chi, tstep, t0, t1, scr1, scv1, scl1)
 
       ! update velocity and position
 
@@ -589,41 +566,11 @@ Contains
         stat%strpmf = 0.0_wp
       End If
 
-      ! Create primitive scalers and adjust/increase timestep if need be
-      ! when Cholesky factorisation is compromised
-
-      t0 = Exp(-thermo%chi * tstep)
-      t1 = (1.0_wp - t0) / (thermo%chi)
-      t2 = (1.0_wp - t0**2) / (2 * thermo%chi)
-
-      safe = .true.
-      Do
-        tmp = t1**2 / t2
-        If (tstep - tmp >= zero_plus) Then
-          If (.not. safe) Then
-            Write (message, "('timestep increased due to impossibility of integration, new timestep is:',3x,1p,e16.8,/)") &
-              tstep
-            Call info(message, .true.)
-          End If
-          Exit
-        Else
-          safe = .false.
-          tstep = tmp + 1.0e-10_wp
-          t0 = Exp(-thermo%chi * tstep)
-          t1 = (1.0_wp - t0) / (thermo%chi)
-          t2 = (1.0_wp - t0**2) / (2 * thermo%chi)
-        End If
-      End Do
+      ! Don't need to check or adjust timestep for Cholesky factorization:
+      ! (see above comment in nvt_l0_vv).
 
       ! Create complex scalers
-
-      scr = (t1 - t2) / Sqrt(t2)
-      scl = Sqrt(tstep - (t1**2) / t2)
-      scv = Sqrt(t2)
-
-      scr1 = (t1 - t2) / Sqrt(t2 * tstep) / thermo%chi
-      scl1 = Sqrt(Max(1.0_wp - (t1**2) / (t2 * tstep), 0.0_wp)) / thermo%chi
-      scv1 = Sqrt(t2 / tstep)
+      call langevin_scalers(thermo%chi, tstep, t0, t1, scr1, scv1, scl1)
 
       ! update velocity and position of FPs
 
@@ -1329,42 +1276,8 @@ Contains
         stat%strpmf = 0.0_wp
       End If
 
-      ! Create primitive scalers and adjust/increase timestep if need be
-      ! when Cholesky factorisation is compromised (using minimum possible
-      ! value of friction factor to give largest timestep)
-
-      Select Case (ttm%gvar)
-      Case (TTM_EPVAR_NULL, TTM_EPVAR_HOMO)
-        chi = Min(thermo%chi_ep, thermo%chi_ep + thermo%chi_es)
-      Case (TTM_EPVAR_HETERO)
-        Call eltemp_max(eltempmax, ttm, comm)
-        Call eltemp_min(eltempmin, ttm, comm)
-        chi = Gep(eltempmin, ttm)
-        chi = Min(chi, Gep(eltempmax, ttm))
-        chi = Min(chi, chi + thermo%chi_es)
-      End Select
-      t0 = Exp(-chi * tstep)
-      t1 = (1.0_wp - t0) / (chi)
-      t2 = (1.0_wp - t0**2) / (2 * chi)
-
-      safe = .true.
-      Do
-        tmp = t1**2 / t2
-        If (tstep - tmp >= zero_plus) Then
-          If (.not. safe) Then
-            Write (message, "('timestep increased due to impossibility of integration, new timestep is:',3x,1p,e16.8)") &
-              tstep
-            Call info(message, .true.)
-          End If
-          Exit
-        Else
-          safe = .false.
-          tstep = tmp + 1.0e-10_wp
-          t0 = Exp(-chi * tstep)
-          t1 = (1.0_wp - t0) / (chi)
-          t2 = (1.0_wp - t0**2) / (2 * chi)
-        End If
-      End Do
+      ! Don't need to check or adjust timestep for Cholesky factorization:
+      ! (see above comment in nvt_l0_vv).
 
       ! Create complex scalers: only for constant and homogeneous
       ! electron-phonon coupling
@@ -1372,34 +1285,13 @@ Contains
       Select Case (ttm%gvar)
       Case (TTM_EPVAR_NULL, TTM_EPVAR_HOMO)
         chi = Merge(thermo%chi_ep, 0.0_wp, ttm%l_epcp) + thermo%chi_es
-        t0a = Exp(-chi * tstep)
-        If (chi > zero_plus) Then
-          t1a = (1.0_wp - t0a) / (chi)
-          t2a = (1.0_wp - t0a**2) / (2 * chi)
-          scr1a = (t1a - t2a) / Sqrt(t2a * tstep) / chi
-          scl1a = Sqrt(1.0_wp - (t1a**2) / (t2a * tstep)) / chi
-          scv1a = Sqrt(t2a / tstep)
-        Else
-          t1a = tstep
-          t2a = 0.0_wp
-          scr1a = 0.0_wp
-          scl1a = 0.0_wp
-          scv1a = 0.0_wp
-        End If
+        ! Null out.
+        call langevin_scalers(chi, tstep, t0a, t1a, scr1a, scv1a, scl1a)
         If (lrand) Then
-          t0b = Exp(-thermo%chi_ep * tstep)
-          t1b = (1.0_wp - t0b) / thermo%chi_ep
-          t2b = (1.0_wp - t0b**2) / (2 * thermo%chi_ep)
-          scr1b = (t1b - t2b) / Sqrt(t2b * tstep) / thermo%chi_ep
-          scl1b = Sqrt(1.0_wp - (t1b**2) / (t2b * tstep)) / thermo%chi_ep
-          scv1b = Sqrt(t2b / tstep)
+          call langevin_scalers(thermo%chi_ep, tstep, t0b, t1b, scr1b, scv1b, scl1b)
         Else
-          t0b = 0.0_wp
-          t1b = tstep
-          t2b = 0.0_wp
-          scr1b = 0.0_wp
-          scl1b = 0.0_wp
-          scv1b = 0.0_wp
+          ! Null out.
+          call langevin_scalers(zero_plus, tstep, t0b, t1b, scr1b, scv1b, scl1b)
         End If
       End Select
 
@@ -1430,26 +1322,15 @@ Contains
                 Case (TTM_EPVAR_HETERO)
                   chi = Merge(Gep(ttm%eltemp(ijk, 0, 0, 0), ttm), 0.0_wp, ttm%l_epcp) + Merge(thermo%chi_es, 0.0_wp, lvel)
                   If (ttm%l_epcp) Then
-                    t0 = Exp(-tstep * chi)
-                    t1 = (1.0_wp - t0) / chi
-                    t2 = (1.0_wp - t0**2) / (2 * chi)
-                    scr1 = (t1 - t2) / Sqrt(t2 * tstep) / chi
-                    scl1 = Sqrt(1.0_wp - (t1**2) / (t2 * tstep)) / chi
-                    scv1 = Sqrt(t2 / tstep)
+                    call langevin_scalers(chi, tstep, t0, t1, scr1, scv1, scl1)
                   Else
-                    t0 = 1.0_wp
-                    t1 = tstep
-                    scr1 = 0.0_wp
-                    scl1 = 0.0_wp
-                    scv1 = 0.0_wp
+                    ! Null out.
+                    call langevin_scalers(zero_plus, tstep, t0, t1, scr1, scv1, scl1)
                   End If
                 End Select
               Else
-                t0 = 1.0_wp
-                t1 = tstep
-                scr1 = 0.0_wp
-                scl1 = 0.0_wp
-                scv1 = 0.0_wp
+                ! Null out.
+                call langevin_scalers(zero_plus, tstep, t0, t1, scr1, scv1, scl1)
               End If
 
               ! Half-kick velocity
@@ -1498,28 +1379,15 @@ Contains
                 Case (TTM_EPVAR_HETERO)
                   chi = Merge(Gep(ttm%eltemp(ijk, 0, 0, 0), ttm), 0.0_wp, ttm%l_epcp) + Merge(thermo%chi_es, 0.0_wp, lvel)
                   If (ttm%l_epcp) Then
-                    t0 = Exp(-tstep * chi)
-                    t1 = (1.0_wp - t0) / chi
-                    t2 = (1.0_wp - t0**2) / (2 * chi)
-                    scr1 = (t1 - t2) / Sqrt(t2 * tstep) / chi
-                    scl1 = Sqrt(1.0_wp - (t1**2) / (t2 * tstep)) / chi
-                    scv1 = Sqrt(t2 / tstep)
+                    call langevin_scalers(chi, tstep, t0, t1, scr1, scv1, scl1)
                   Else
-                    t0 = 1.0_wp
-                    t1 = tstep
-                    t2 = 0.0_wp
-                    scr1 = 0.0_wp
-                    scl1 = 0.0_wp
-                    scv1 = 0.0_wp
+                    ! Null out.
+                    call langevin_scalers(zero_plus, tstep, t0, t1, scr1, scv1, scl1)
                   End If
                 End Select
               Else
-                t0 = 1.0_wp
-                t1 = tstep
-                t2 = 0.0_wp
-                scr1 = 0.0_wp
-                scl1 = 0.0_wp
-                scv1 = 0.0_wp
+                ! Null out.
+                call langevin_scalers(zero_plus, tstep, t0, t1, scr1, scv1, scl1)
               End If
 
               ! Half-kick velocity
@@ -1683,4 +1551,74 @@ Contains
       Call error(0, message)
     End If
   End Subroutine nvt_l2_vv
+
+  Subroutine langevin_scalers(chi, tstep, t0, t1, scr, scv, scl)
+    ! *{{ Info.
+    ! Set the langevin impulse scaling terms. This routine didn't used to
+    ! exist, but does now, because I noticed some issues with the old default
+    ! scheme (instability at small time step, e.g. after an impact). This new
+    ! routine avoids common numerical instability, and maintains the fact that
+    ! the Cholesky factorization of the matrix used in the LI scheme is
+    ! *never* (in a mathematical sense) compromised. Previously, it appeared
+    ! to be, but only because of spurious numerical errors in the evaluation
+    ! of the old scalers. This routine corrects those errors.
+
+    ! Is this really a problem?
+    ! For high-energy impacts (several hundred keV, say), variable time steps
+    ! can often (for the default dmin) get as low as 1e-5ps. This puts the LI
+    ! scheme into a region where numerical instability in the evaluation of
+    ! the scalers is realised. This once resulted in a perpetual for me: the
+    ! variable timestep wanted to reduce timestep, but the "impossibility of
+    ! integration..." check wanted to re-grow the time step until the "stable"
+    ! criterion was met. Because of a goto statement, this pair of events
+    ! happened indefinitely after an impact event.
+    ! }}*
+    Real(Kind=wp),            Intent(In ) :: chi, tstep
+    Real(Kind=wp),            Intent(Out) :: t0, t1, scr, scv, scl
+
+    ! When to switch to the series expansions?
+    Real(Kind=wp), Parameter :: stol = 1.0e-3_wp
+
+    ! Handy dimensionless parameter for series expansions.
+    Real(Kind=wp)            :: alpha
+
+    ! t0 for velocity full-time fluctuation.
+    t0 = Exp(-chi * tstep)
+
+    If ( chi <= zero_plus ) Then
+      ! no chi, no try.
+      t1 = tstep
+      ! NB t2 (old code) is now defunct. It was used as a temp variable to
+      ! calculate scalers, and doesn't feature elsewhere in dynamics.
+      scr = 0.d0
+      scl = 0.d0
+      scv = 0.d0
+      return
+    End If
+
+    ! t1 for pos full-time fluctuation.
+    t1 = (1.0_wp - t0) / chi
+
+    ! Handy dimensionless parameter for series expansions.
+    alpha = 0.5_wp * chi * tstep
+
+    ! Calculate pos, vel, force scalers
+    If ( alpha < stol ) Then
+      ! Use series expansions. More stable at extremely small argument, and
+      ! more accurate c.f. rounding errors than the old defaults near the
+      ! threshold.
+      scr = (alpha-alpha**2+0.5_wp*(alpha**3)-(alpha**4)/6.0_wp+0.075_wp*(alpha**5)) / chi
+      scl = (alpha-0.2_wp*(alpha**3)+(32.0_wp*alpha**5)/525.0_wp) / (chi * Sqrt(3.0_wp))
+      scv = 1.0_wp-alpha+5.0_wp*alpha**2/6.0_wp-0.5_wp*alpha**3
+    Else
+      ! Expressions which aren't as accurate as the series expansions at
+      ! small arguments, but which have lesser rounding errors than the old
+      ! defaults, and which are more accurate for larger arguments.
+      ! (These don't suffer spurious "impossibility" issue bc. of precision.)
+      scr = (1.0_wp - t0)**2 / (Sqrt(alpha*(1.0_wp - t0**2)) * 2.0_wp * chi)
+      scl = Sqrt(1.0_wp - Tanh(alpha) / alpha) / chi
+      scv = Sqrt((1.0_wp - t0**2) / (4.0_wp * alpha))
+    End If
+
+  End Subroutine langevin_scalers
 End Module nvt_langevin
