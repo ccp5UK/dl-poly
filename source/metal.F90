@@ -2458,7 +2458,7 @@ Contains
 #ifndef HALF_HALO
               If (ki == kj .and. jatm <= config%natms) met%rhs(jatm) = met%rhs(jatm) + density
 #else /* HALF_HALO */
-              If (ki == kj) & met%rhs(jatm) = met%rhs(jatm) + density
+              If (ki == kj) met%rhs(jatm) = met%rhs(jatm) + density
 #endif /* HALF_HALO */
 
             End If
