@@ -109,6 +109,7 @@ Contains
   Subroutine deallocate_timer_type(tmr)
     Type(timer_type) :: tmr
     Type(node), Pointer :: current, next
+    Integer ierr
 
     current => tmr%tree%head%child
 
@@ -126,7 +127,7 @@ Contains
           nullify(current%parent%child)
         end if
 
-        deallocate(current)
+        deallocate(current, stat=ierr)
       end if
       current => next
     end do
