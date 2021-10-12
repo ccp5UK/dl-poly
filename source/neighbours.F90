@@ -197,7 +197,13 @@ Contains
     m9 = 0.95_wp ! (95%) giving 5% slack
 
     tol = Min(m6, m7 * neigh%cutoff) ! tolerance
-    test = m8 * Merge(1.0_wp, 2.0_wp, bspline > 0) ! 2% (w/ SPME) or 4% (w/o SPME)
+
+    If ( bspline > 0 ) Then
+      test = m8  ! 2% (w/ SPME)
+    Else
+      test = m8 * 2.0_wp  ! 4% (w/o SPME)
+    End If
+
     cut = Min(domain%nx_recip * celprp(7), & ! domain size
               domain%ny_recip * celprp(8), &
               domain%nz_recip * celprp(9)) - smalldr ! remove delta r (the smallest distance we care about)

@@ -99,7 +99,7 @@ Program dl_poly
                                                 half_minus,&
                                                 half_plus
 
-#endif  
+#endif
 
   Implicit None
 
@@ -167,7 +167,7 @@ Program dl_poly
 #ifdef NVIDIA
   half_plus = Nearest(0.5_wp, +1.0_wp)
   half_minus = Nearest(0.5_wp, -1.0_wp)
-#endif 
+#endif
 
   ! SET UP COMMUNICATIONS & CLOCKING
 
