@@ -30,7 +30,7 @@ Module bspline
     !> Number of required derivatives
     Integer(Kind=wi), Public                                  :: num_deriv
     !> SPME FFT B-spline order
-    Integer(Kind=wi), Public                                  :: num_splines
+    Integer(Kind=wi), Public                                  :: num_splines = 0
     !> SPME FFT B-spline order when padding radius > 0
     Integer(Kind=wi), Public                                  :: num_spline_pad
     !> And another one

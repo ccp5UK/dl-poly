@@ -1677,7 +1677,7 @@ contains
         cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
       End If
 
-      call params%retrieve('ewald_nsplines', ewld%bspline%num_splines, required = .true. )
+      call params%retrieve('ewald_nsplines', ewld%bspline%num_splines)
       ! Check splines in min
       SPLINE_LIMITS = MIN_SPLINES + mpoles%max_order
       If (ewld%bspline%num_splines < SPLINE_LIMITS) Then
