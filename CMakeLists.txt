@@ -153,6 +153,11 @@ else()
   message(STATUS "Build without PLUMED support")
 endif()
 
+# YL 05/10/2021: for linking DL_POLY as a driver
+if(INTERFACE)
+    add_definitions("-DINTERFACE")
+endif()
+
 if(UNIX)
   add_definitions("-DUNIX")
 elseif(WIN32)

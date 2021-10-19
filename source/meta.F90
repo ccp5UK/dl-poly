@@ -1279,7 +1279,9 @@ Contains
 
     If (Allocated(angle)) Deallocate (angle)
     If (Allocated(bond)) Deallocate (bond)
+#ifndef INTERFACED
     If (Allocated(config)) Deallocate (config)
+#endif
     If (Allocated(cons)) Deallocate (cons)
     If (Allocated(core_shells)) Deallocate (core_shells)
     If (Allocated(devel)) Deallocate (devel)
@@ -1310,7 +1312,9 @@ Contains
     If (Allocated(rsdsc)) Deallocate (rsdsc)
     If (Allocated(seed)) Deallocate (seed)
     If (Allocated(sites)) Deallocate (sites)
+#ifndef INTERFACED
     If (Allocated(stats)) Deallocate (stats)
+#endif
     If (Allocated(tersoffs)) Deallocate (tersoffs)
     If (Allocated(tether)) Deallocate (tether)
     If (Allocated(thermo)) Deallocate (thermo)
