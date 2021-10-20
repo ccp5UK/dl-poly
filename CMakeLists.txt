@@ -154,8 +154,8 @@ else()
 endif()
 
 # YL 05/10/2021: for linking DL_POLY as a driver
-if(INTERFACE)
-    add_definitions("-DINTERFACE")
+if(INTERFACED)
+    add_definitions("-DINTERFACED")
 endif()
 
 if(UNIX)
