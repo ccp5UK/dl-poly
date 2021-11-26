@@ -1007,7 +1007,7 @@ contains
       end select
 
       ! Need to dealias
-      call traj%init((traj%key), (traj%freq), (traj%start))
+      call traj%init((traj%key-1), (traj%freq), (traj%start))
 
     else if (params%is_any_set([Character(13) :: 'traj_start', 'traj_interval', 'traj_key'])) then
       Call warning('traj_start, traj_interval or traj_key found without traj_calculate')

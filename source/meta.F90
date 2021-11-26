@@ -765,7 +765,6 @@ Contains
     if (flow%simulation_method == EmpVB) &
          call error(0, "DL_POLY is compiled without evb support! check documentation to activate EVB.")
 #endif
-    write(0,*) flow%num_ff
     if (flow%simulation_method == EmpVB .and. (flow%num_ff <= 1 .or. flow%num_ff > MAX_FF)) &
          call error(0, "Invalid number of coupled force-fields for EVB requested")
 

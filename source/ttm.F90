@@ -1523,7 +1523,7 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,          Intent(InOut) :: mxbuff
+    Integer,          Intent(In)    :: mxbuff
     Type(ttm_type),   Intent(InOut) :: ttm
     Type(comms_type), Intent(InOut) :: comm
 
