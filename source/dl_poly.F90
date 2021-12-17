@@ -25,80 +25,77 @@ Program dl_poly
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use angles,                             Only: angles_type
-  Use angular_distribution,               Only: adf_type
-  Use bonds,                              Only: bonds_type
-  Use comms,                              Only: comms_type,&
-                                                exit_comms,&
-                                                gbcast,&
-                                                gsync,&
-                                                init_comms
-  Use configuration,                      Only: configuration_type
-  Use constraints,                        Only: constraints_type
-  Use control,                            Only: read_simtype
-  Use control_parameter_module,           Only: parameters_hash_table,&
-                                                dump_parameters
-  Use coord,                              Only: coord_type
-  Use core_shell,                         Only: core_shell_type
-  Use defects,                            Only: defects_type
-  Use development,                        Only: development_type
-  Use dihedrals,                          Only: dihedrals_type
-  Use domains,                            Only: domains_type
-  Use electrostatic,                      Only: electrostatic_type
-  Use errors_warnings,                    Only: init_error_system
-  Use ewald,                              Only: ewald_type
-  Use external_field,                     Only: external_field_type
-  Use filename,                           Only: file_type,&
-                                                FILENAME_SIZE,&
-                                                FILE_CONTROL
-  Use flow_control,                       Only: EmpVB,&
-                                                FFS,&
-                                                MD_STD,&
-                                                flow_type
-  Use four_body,                          Only: four_body_type
-  Use greenkubo,                          Only: greenkubo_type
-  Use hash,                               Only: STR_LEN
-  Use impacts,                            Only: impact_type
-  Use inversions,                         Only: inversions_type
-  Use io,                                 Only: io_type
-  Use, Intrinsic :: iso_fortran_env,      Only: eu => error_unit, &
-                                                ou => output_unit
-  Use kim,                                Only: kim_type
-  Use meta,                               Only: molecular_dynamics
-  Use metal,                              Only: metal_type
-  Use minimise,                           Only: minimise_type
-  Use mpole,                              Only: mpole_type
-  Use msd,                                Only: msd_type
-  Use neighbours,                         Only: neighbours_type
-  Use netcdf_wrap,                        Only: netcdf_param
-  Use new_control,                        Only: initialise_control, &
-                                                read_new_control
-  Use numerics,                           Only: seed_type
-  Use plumed,                             Only: plumed_type
-  Use pmf,                                Only: pmf_type
-  Use poisson,                            Only: poisson_type
-  Use rdfs,                               Only: rdf_type
-  Use rigid_bodies,                       Only: rigid_bodies_type
-  Use rsds,                               Only: rsd_type
-  Use site,                               Only: site_type
-  Use statistics,                         Only: stats_type
-  Use tersoff,                            Only: tersoff_type
-  Use tethers,                            Only: tethers_type
-  Use thermostat,                         Only: thermostat_type
-  Use three_body,                         Only: threebody_type
-  Use timer,                              Only: timer_type
-  Use trajectory,                         Only: trajectory_type
-  Use ttm,                                Only: ttm_type
-  Use unit_test,                          Only: testing_type
-  Use vdw,                                Only: vdw_type
-  Use z_density,                          Only: z_density_type
-
-  Use units,                              Only: initialise_units
+  Use angles,                                 Only: angles_type
+  Use angular_distribution,                   Only: adf_type
+  Use bonds,                                  Only: bonds_type
+  Use comms,                                  Only: comms_type,&
+                                                    exit_comms,&
+                                                    gbcast,&
+                                                    gsync,&
+                                                    init_comms
+  Use configuration,                          Only: configuration_type
+  Use constraints,                            Only: constraints_type
+  Use control,                                Only: read_simtype
+  Use control_parameter_module,               Only: dump_parameters,&
+                                                    parameters_hash_table
+  Use coord,                                  Only: coord_type
+  Use core_shell,                             Only: core_shell_type
+  Use defects,                                Only: defects_type
+  Use development,                            Only: development_type
+  Use dihedrals,                              Only: dihedrals_type
+  Use domains,                                Only: domains_type
+  Use electrostatic,                          Only: electrostatic_type
+  Use errors_warnings,                        Only: init_error_system
+  Use ewald,                                  Only: ewald_type
+  Use external_field,                         Only: external_field_type
+  Use filename,                               Only: FILENAME_SIZE,&
+                                                    FILE_CONTROL,&
+                                                    file_type
+  Use flow_control,                           Only: EmpVB,&
+                                                    FFS,&
+                                                    MD_STD,&
+                                                    flow_type
+  Use four_body,                              Only: four_body_type
+  Use greenkubo,                              Only: greenkubo_type
+  Use hash,                                   Only: STR_LEN
+  Use impacts,                                Only: impact_type
+  Use inversions,                             Only: inversions_type
+  Use io,                                     Only: io_type
+  Use, Intrinsic :: iso_fortran_env,          Only: eu => error_unit,&
+                                                    ou => output_unit
+  Use kim,                                    Only: kim_type
+  Use meta,                                   Only: molecular_dynamics
+  Use metal,                                  Only: metal_type
+  Use minimise,                               Only: minimise_type
+  Use mpole,                                  Only: mpole_type
+  Use msd,                                    Only: msd_type
+  Use neighbours,                             Only: neighbours_type
+  Use new_control,                            Only: initialise_control,&
+                                                    read_new_control
+  Use numerics,                               Only: seed_type
+  Use plumed,                                 Only: plumed_type
+  Use pmf,                                    Only: pmf_type
+  Use poisson,                                Only: poisson_type
+  Use rdfs,                                   Only: rdf_type
+  Use rigid_bodies,                           Only: rigid_bodies_type
+  Use rsds,                                   Only: rsd_type
+  Use site,                                   Only: site_type
+  Use statistics,                             Only: stats_type
+  Use tersoff,                                Only: tersoff_type
+  Use tethers,                                Only: tethers_type
+  Use thermostat,                             Only: thermostat_type
+  Use three_body,                             Only: threebody_type
+  Use timer,                                  Only: timer_type
+  Use trajectory,                             Only: trajectory_type
+  Use ttm,                                    Only: ttm_type
+  Use unit_test,                              Only: testing_type
+  Use units,                                  Only: initialise_units
+  Use vdw,                                    Only: vdw_type
+  Use z_density,                              Only: z_density_type
 #ifdef NVIDIA
-  Use constants,                          Only: wp,&
-                                                half_minus,&
-                                                half_plus
-
+  Use constants,                              Only: wp, &
+                                                    half_minus, &
+                                                    half_plus
 #endif
 
   Implicit None
@@ -133,7 +130,6 @@ Program dl_poly
   Type(tersoff_type), Allocatable        :: tersoffs(:)
   Type(four_body_type), Allocatable      :: fourbody(:)
   Type(rdf_type), Allocatable            :: rdf(:)
-  Type(netcdf_param), Allocatable        :: netcdf(:)
   Type(minimise_type), Allocatable       :: minim(:)
   Type(mpole_type), Allocatable          :: mpoles(:)
   Type(external_field_type), Allocatable :: ext_field(:)
@@ -152,8 +148,8 @@ Program dl_poly
   Type(coord_type), Allocatable          :: crd(:)
   Type(adf_type), Allocatable            :: adf(:)
 
-  Type( parameters_hash_table ) :: params
-  Type( testing_type ) :: tests
+  Type(parameters_hash_table) :: params
+  Type(testing_type) :: tests
 
   ! Local Variables
   Character(len=1024)           :: control_filename = '', arg
@@ -162,7 +158,6 @@ Program dl_poly
   Character(Len=10)             :: mode
   Logical                       :: finish
   Integer                       :: i, ifile
-
 
 #ifdef NVIDIA
   half_plus = Nearest(0.5_wp, +1.0_wp)
@@ -179,9 +174,9 @@ Program dl_poly
 
   ! temporary stuff this will need to be abstracted
   Allocate (flow(1))
-  Allocate(devel(1))
+  Allocate (devel(1))
   Call initialise_control(params)
-  call initialise_units()
+  Call initialise_units()
 
   ! Assume we're running
   flow(1)%simulation = .true.
@@ -190,7 +185,7 @@ Program dl_poly
   If (dlp_world(0)%idnode == 0) Then
     If (command_argument_count() > 0) Then
       i = 0
-      parse_cmd:Do
+      parse_cmd: Do
         i = i + 1
         Call get_command_argument(i, arg)
         Select Case (arg)
@@ -206,22 +201,22 @@ Program dl_poly
           i = i + 1
           Call get_command_argument(i, mode)
           Select Case (mode)
-          Case ('latexdoc','latex','python','csv','test')
+          Case ('latexdoc', 'latex', 'python', 'csv', 'test')
             Continue
           Case Default
-            Write(eu, '(a)') 'Bad mode option '//trim(mode)
+            Write (eu, '(a)') 'Bad mode option '//Trim(mode)
             finish = .true.
-            exit
-          end Select
+            Exit
+          End Select
 
           i = i + 1
           Call get_command_argument(i, arg)
 
-          if (trim(arg) == "SCREEN") then
+          If (Trim(arg) == "SCREEN") Then
             ifile = ou
-          else
-            Open(newunit = ifile, file=trim(arg))
-          end if
+          Else
+            Open (newunit=ifile, file=Trim(arg))
+          End If
 
           Call dump_parameters(ifile, params, mode)
           finish = .true.
@@ -246,10 +241,10 @@ Program dl_poly
           Call get_command_argument(i, output_filename)
         Case ('-test', '-t')
 
-          Call get_command_argument(i+1, arg)
-          do while (arg(1:1) /= "-" .and. i < command_argument_count())
+          Call get_command_argument(i + 1, arg)
+          Do While (arg(1:1) /= "-" .and. i < command_argument_count())
             i = i + 1
-            Select case (arg)
+            Select Case (arg)
             Case ("control")
               tests%control = .true.
             Case ("configuration")
@@ -261,14 +256,14 @@ Program dl_poly
             Case ("all")
               Call tests%all()
             Case Default
-              Write(eu, *) "Invalid test option:", trim(arg)
+              Write (eu, *) "Invalid test option:", Trim(arg)
               finish = .true.
-              exit parse_cmd
-            end Select
-            Call get_command_argument(i+1, arg)
-          end do
+              Exit parse_cmd
+            End Select
+            Call get_command_argument(i + 1, arg)
+          End Do
 
-          Call init_error_system(ou,dlp_world(0))
+          Call init_error_system(ou, dlp_world(0))
           Call tests%run(dlp_world(0))
           finish = .true.
 
@@ -292,58 +287,55 @@ Program dl_poly
     Stop 0
   End If
 
-  Allocate(files(1,FILENAME_SIZE))
-      ! Rename control file if argument was passed
-    If (Len_Trim(control_filename) > 0 ) Then
-       Call files(1,FILE_CONTROL)%rename(control_filename)
-    Else
-       Call files(1,FILE_CONTROL)%rename('CONTROL')
-    End If
+  Allocate (files(1, FILENAME_SIZE))
+  ! Rename control file if argument was passed
+  If (Len_trim(control_filename) > 0) Then
+    Call files(1, FILE_CONTROL)%rename(control_filename)
+  Else
+    Call files(1, FILE_CONTROL)%rename('CONTROL')
+  End If
 
+  ! Temporary error system
+  Call init_error_system(eu, dlp_world(0))
+  Call read_new_control(files(1, FILE_CONTROL), params, dlp_world(0), devel(1)%new_control)
 
-    ! Temporary error system
-    Call init_error_system(eu, dlp_world(0))
-    call read_new_control(files(1,FILE_CONTROL), params, dlp_world(0), devel(1)%new_control)
+  If (devel(1)%new_control) Then
+    Call params%retrieve('simulation_method', option)
+    Select Case (option)
+    Case ('md')
+      flow(1)%simulation_method = MD_STD
+      flow(1)%NUM_FF = 1
+    Case ('evb')
+      flow(1)%simulation_method = EmpVB
+      Call params%retrieve('evb_num_ff', flow(1)%NUM_FF)
+    Case ('ffs')
+      flow(1)%simulation_method = FFS
+    Case Default
+      flow(1)%simulation_method = -1
+    End Select
 
-    if (devel(1)%new_control) then
-      Call params%retrieve('simulation_method', option)
-      Select Case (option)
-      Case ('md')
-        flow(1)%simulation_method=MD_STD
-        flow(1)%NUM_FF = 1
-      Case ('evb')
-        flow(1)%simulation_method=EmpVB
-        Call params%retrieve('evb_num_ff', flow(1)%NUM_FF)
-      Case ('ffs')
-        flow(1)%simulation_method=FFS
-      Case Default
-        flow(1)%simulation_method=-1
-      End Select
+  Else ! Cannot read as new style
 
-    else     ! Cannot read as new style
+    ! Set the type of calculation to be performed. By default it is the standard DL_POLY
+    ! calculation. Tag evb activates EVB calculation
+    Call read_simtype(control_filename, flow(1), dlp_world(0))
 
-      ! Set the type of calculation to be performed. By default it is the standard DL_POLY
-       ! calculation. Tag evb activates EVB calculation
-       Call read_simtype(control_filename, flow(1), dlp_world(0))
-
-    end if
-
-
+  End If
 
   ! Select metasimulation method
   ! IS: The following two subroutines should be merged into a single one. We separate them
   ! for the time being though.
-  Select Case (flow(1)%simulation_method)
+  Select Case (flow (1)%simulation_method)
   Case (MD_STD, EmpVB)
     Call molecular_dynamics(params, dlp_world, thermo, ewld, tmr, devel, stats, &
                             green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, inversion, tether, &
                             threebody, zdensity, cons, neigh, pmfs, sites, core_shells, vdws, tersoffs, fourbody, &
-                            rdf, netcdf, minim, mpoles, ext_field, rigid, electro, domain, flow, seed, traj, &
+                            rdf, minim, mpoles, ext_field, rigid, electro, domain, flow, seed, traj, &
                             kim_data, config, ios, ttms, rsdsc, files, output_filename, control_filename, crd, adf)
   Case (FFS)
-     write(0,*) "simulation type: FFS"
+    Write (0, *) "simulation type: FFS"
   Case Default
-     Write (0, *) "Unknown simulation type"
+    Write (0, *) "Unknown simulation type"
   End Select
 
   ! Terminate job

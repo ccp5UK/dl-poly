@@ -27,20 +27,14 @@ Module io
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use comms,           Only: comms_type,&
-                             gsync,&
-                             wp_mpi
-  Use constants,       Only: prsunt, default_lf => lf
+  Use comms, Only: comms_type, &
+    gsync, &
+    wp_mpi
+  Use constants, Only: prsunt, default_lf => lf
   Use errors_warnings, Only: error
-  Use kinds,           Only: li,&
-                             wp
-  Use netcdf_wrap,     Only: &
-                             netcdf_close, netcdf_compiled, netcdf_create, netcdf_desc, &
-                             netcdf_get_att, netcdf_get_def, netcdf_get_dim, &
-                             netcdf_get_file_real_precision, netcdf_get_real_precision, &
-                             netcdf_get_var, netcdf_open, netcdf_param, netcdf_put_var, &
-                             netcdf_set_def, netcdf_set_real_precision
-  Use particle,        Only: corePart
+  Use kinds, Only: li, &
+    wp
+  Use particle, Only: corePart
 #ifdef SERIAL
   Use mpi_api
 #else
@@ -69,12 +63,10 @@ Module io
   Integer, Parameter, Public :: IO_WRITE_SORTED_MPIIO = 10
   Integer, Parameter, Public :: IO_WRITE_SORTED_DIRECT = 11
   Integer, Parameter, Public :: IO_WRITE_SORTED_MASTER = 12
-  Integer, Parameter, Public :: IO_WRITE_SORTED_NETCDF = 13
 
   Integer, Parameter, Public :: IO_READ_MPIIO = 0
   Integer, Parameter, Public :: IO_READ_DIRECT = 1
   Integer, Parameter, Public :: IO_READ_MASTER = 2
-  Integer, Parameter, Public :: IO_READ_NETCDF = 3
 
   !Values to set which particle subset we're using
   Integer, Parameter, Public :: IO_SUBSET_POSITIONS = 1
@@ -99,17 +91,6 @@ Module io
   Public :: io_write_record
   Public :: io_write_batch
   Public :: io_read_batch
-  Public :: io_nc_compiled
-  Public :: io_nc_create
-  Public :: io_nc_get_dim
-  Public :: io_nc_set_def
-  Public :: io_nc_put_var
-  Public :: io_get_var
-  Public :: io_nc_get_var
-  Public :: io_nc_get_att
-  Public :: io_nc_set_real_precision
-  Public :: io_nc_get_real_precision
-  Public :: io_nc_get_file_real_precision
   Public :: split_io_comm
 
   ! Private entities
@@ -132,7 +113,6 @@ Module io
   Integer, Parameter :: UNUSED = 0
   Integer, Parameter :: FILE_MPI = 1
   Integer, Parameter :: FILE_FORTRAN = 2
-  Integer, Parameter :: FILE_NETCDF = 3
 
   Integer, Parameter :: READ_ONLY = 1
   Integer, Parameter :: WRITE_ONLY = 2
@@ -142,9 +122,8 @@ Module io
     Integer           :: method = UNUSED
     Integer           :: file_handle = -1
     Integer           :: action = -1
-    Type(netcdf_desc) :: desc
-
   End Type file_data
+
   Type, Public :: io_type
 
     ! The record size
@@ -162,10 +141,10 @@ Module io
     Integer          :: buffer_size_write = default_buffer_size_write ! Number of lines in each buffer
     Integer          :: buffer_size_read = default_buffer_size_read ! Number of lines in each buffer
     Logical          :: global_error_check = .false. ! Whether to check across all processors for errors.
-    Integer          :: io_comm            = MPI_COMM_NULL                   ! Specific IO Communicator
-    Integer          :: io_gather_comm     = MPI_COMM_NULL                   ! IO Gather communicator
-    Logical          :: do_io              = .false.                         ! Whether this rank performs IO in current operation.
-    Logical          :: io_comm_inited     = .false.                         ! Whether the communicator has been inisitalised
+    Integer          :: io_comm = MPI_COMM_NULL ! Specific IO Communicator
+    Integer          :: io_gather_comm = MPI_COMM_NULL ! IO Gather communicator
+    Logical          :: do_io = .false. ! Whether this rank performs IO in current operation.
+    Logical          :: io_comm_inited = .false. ! Whether the communicator has been inisitalised
 
     Character        :: lf = default_lf ! The line feed character to use
     ! These indices depend on the write level, so can't parameterise them
@@ -193,30 +172,6 @@ Module io
   Integer, Parameter :: N_HISTORY_DATA = 3
   Integer, Parameter :: N_HISTORD_DATA = 1
   Integer, Parameter :: N_MSDTMP_DATA = 2
-
-  Interface io_nc_put_var
-    Module Procedure io_nc_put_var_rwp_0d
-    Module Procedure io_nc_put_var_rwp_1d
-    Module Procedure io_nc_put_var_rwp_2d
-    Module Procedure io_nc_put_var_int_0d
-    Module Procedure io_nc_put_var_int_1d
-    Module Procedure io_nc_put_var_chr_2d
-  End Interface io_nc_put_var
-
-  Interface io_nc_get_var
-    Module Procedure io_nc_get_var_rwp_0d
-    Module Procedure io_nc_get_var_rwp_1d
-    Module Procedure io_nc_get_var_rwp_2d
-    Module Procedure io_nc_get_var_int_0d
-    Module Procedure io_nc_get_var_int_1d
-    Module Procedure io_nc_get_var_chr_1d
-    Module Procedure io_nc_get_var_chr_2d
-  End Interface io_nc_get_var
-
-  Interface io_nc_get_att
-    Module Procedure io_nc_get_att_int
-    Module Procedure io_nc_get_att_chr
-  End Interface io_nc_get_att
 
   Interface io_write_sorted_file
     Module Procedure io_write_sorted_file_parts
@@ -272,23 +227,6 @@ Contains
 
   End Subroutine io_finalize
 
-  Subroutine io_nc_create(param, comm, file_name, title, n)
-
-    ! Create a netCDF file.  Note it will overwrite any existing file.
-
-    Type(netcdf_param), Intent(In   ) :: param
-    Integer,            Intent(In   ) :: comm
-    Character(Len=*),   Intent(In   ) :: file_name, title
-    Integer,            Intent(In   ) :: n
-
-    Type(netcdf_desc) :: desc
-
-    Call netcdf_create(Trim(file_name), desc, comm, MPI_INFO_NULL)
-    Call netcdf_set_def(title, n, param, desc)
-    Call netcdf_close(desc)
-
-  End Subroutine io_nc_create
-
   Subroutine io_open(io, method, comm, file_name, flags, file_handle)
 
     ! Open a file for access
@@ -306,16 +244,13 @@ Contains
     Integer,          Intent(In   ) :: flags
     Integer,          Intent(  Out) :: file_handle
 
-    Integer           :: fh, ierr
-    Logical           :: do_read, do_write
-    Type(netcdf_desc) :: desc
+    Integer :: fh, ierr
+    Logical :: do_read, do_write
 
     do_read = method == IO_READ_MPIIO .or. &
-              method == IO_READ_DIRECT .or. &
-              method == IO_READ_NETCDF
+              method == IO_READ_DIRECT
     do_write = method == IO_WRITE_UNSORTED_MPIIO .or. method == IO_WRITE_SORTED_MPIIO .or. &
-               method == IO_WRITE_UNSORTED_DIRECT .or. method == IO_WRITE_SORTED_DIRECT .or. &
-               method == IO_WRITE_SORTED_NETCDF
+               method == IO_WRITE_UNSORTED_DIRECT .or. method == IO_WRITE_SORTED_DIRECT
 
     Call get_file_handle(io, file_handle)
     If (file_handle == LOW_HANDLE - 1) Then
@@ -373,30 +308,6 @@ Contains
 
       End If
 
-    Else If ((method == IO_WRITE_SORTED_NETCDF) .or. &
-             (method == IO_READ_NETCDF)) Then
-
-      If (file_handle /= LOW_HANDLE - 1) Then
-
-        Call netcdf_open(Trim(file_name), desc, comm, MPI_INFO_NULL)
-        Call netcdf_get_def(desc)
-
-        io%known_files(file_handle)%method = FILE_NETCDF
-        io%known_files(file_handle)%file_handle = file_handle
-        io%known_files(file_handle)%desc = desc
-        io%known_files(file_handle)%name = file_name
-        If (do_read) Then
-          io%known_files(file_handle)%action = read_only
-        Else If (do_write) Then
-          io%known_files(file_handle)%action = write_only
-        End If
-
-      Else
-
-        file_handle = -1
-
-      End If
-
     Else
 
       file_handle = -1
@@ -428,10 +339,6 @@ Contains
         ! Leave in sync
         Call MPI_BARRIER(io%base_comm, ierr)
         Close (Unit=file_handle)
-
-        ! using netCDF
-      Else If (io%known_files(io_file_handle)%method == FILE_NETCDF) Then
-        Call netcdf_close(io%known_files(io_file_handle)%desc)
       End If
 
       io%known_files(io_file_handle)%name = 'UNDEFINED'
@@ -441,17 +348,6 @@ Contains
     End If
 
   End Subroutine io_close
-
-  Subroutine io_nc_get_dim(io, what, io_file_handle, val)
-
-    Type(io_type),    Intent(InOut) :: io
-    Character(Len=*), Intent(In   ) :: what
-    Integer,          Intent(In   ) :: io_file_handle
-    Integer,          Intent(  Out) :: val
-
-    Call netcdf_get_dim(what, io%known_files(io_file_handle)%desc, val)
-
-  End Subroutine io_nc_get_dim
 
   Subroutine io_delete(io, file_name, comm)
 
@@ -736,8 +632,6 @@ Contains
     Real(Kind=wp), Dimension(:), Intent(In) :: vz
     Integer, Intent(Out) :: error
 
-    Type(netcdf_desc) :: desc
-
     Real(Kind=wp), Dimension(:, :), Allocatable :: local_data
     Real(Kind=wp), Dimension(:, :), Allocatable :: gathered_data
     Real(Kind=wp), Dimension(:, :), Allocatable :: sorted_data
@@ -759,7 +653,6 @@ Contains
     Integer :: itmp
     Integer :: iter
 
-
     Character(Len=1), Dimension(:, :), Allocatable :: local_name
     Character(Len=1), Dimension(:, :), Allocatable :: gathered_name
     Character(Len=1), Dimension(:, :), Allocatable :: sorted_name
@@ -780,13 +673,13 @@ Contains
     ! a member of a given communicator or not ( if it's not in a communicator
     ! it has no data about it ) also return DO_IO to indicate whether this
     ! processor will perform I/O, i.e.  if it is a member of IO_COMM.
-    If( .not. io%io_comm_inited ) Then
-      Call split_io_comm( io%base_comm, io%n_io_procs_write, io%io_comm, io%io_gather_comm, io%do_io )
+    If (.not. io%io_comm_inited) Then
+      Call split_io_comm(io%base_comm, io%n_io_procs_write, io%io_comm, io%io_gather_comm, io%do_io)
       io%io_comm_inited = .true.
     End If
-    If ( io%do_io ) Then
-      Call MPI_COMM_RANK( io%io_comm, me_in_io, ierr )
-      Call MPI_COMM_SIZE( io%io_comm, actual_io_procs, ierr )
+    If (io%do_io) Then
+      Call MPI_COMM_RANK(io%io_comm, me_in_io, ierr)
+      Call MPI_COMM_SIZE(io%io_comm, actual_io_procs, ierr)
     End If
 
     ! Allocate required data structures for stuff local to this processor,
@@ -886,8 +779,8 @@ Contains
     ! Note it's not a standard to pass an unallocated array unless the
     ! dummy argument is allocatable.  Here this is not the case hence allocate
     ! to size zero on procs that will not need the array.
-    If ( io%do_io ) Then
-      Allocate ( n_reorg( 0:actual_io_procs - 1 ), Stat = error )
+    If (io%do_io) Then
+      Allocate (n_reorg(0:actual_io_procs - 1), Stat=error)
     Else
       Allocate (n_reorg(0:-1), Stat=error)
     End If
@@ -925,21 +818,6 @@ Contains
 
     bottom_batch = 1
     top_batch = Min(io%batch_size_write, tot_atoms)
-
-    ! For netCDF close the file and reopen it so that the communicator
-    ! associated with the file only contains those processors which will actually
-    ! do the I/O.  This seems to avoid some problems on the Cray XT series.
-!    If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-!      desc = io%known_files( file_handle )%desc
-!      Call netcdf_close( desc )
-!    End If
-!
-!    If ( io%do_io ) Then
-!      If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-!        Call netcdf_open( Trim( io%known_files( file_handle )%name ), desc, io%io_comm, MPI_INFO_NULL )
-!        Call netcdf_get_def( desc )
-!      End If
-!    End If
 
     Do
 
@@ -988,12 +866,12 @@ Contains
           Exit
         End If
         ! Then max over the I/O processors and broadcast it back over the io_gather_group.
-        If ( io%do_io ) Then
+        If (io%do_io) Then
           Call MPI_ALLREDUCE(n_gathered, itmp, 1, &
                              MPI_INTEGER, MPI_MAX, io%io_comm, ierr)
           n_gathered = itmp
         End If
-        Call MPI_BCAST( n_gathered, 1, MPI_INTEGER, 0, io%io_gather_comm, ierr )
+        Call MPI_BCAST(n_gathered, 1, MPI_INTEGER, 0, io%io_gather_comm, ierr)
         ! Check if the required memory to hold the atoms is too much
         If (n_gathered > io%batch_size_write) Then
           ! If it is the last iteration was the last acceptable, so go back
@@ -1016,8 +894,8 @@ Contains
       ! Gather the data onto the I/O processors.  Note allocation to full
       ! size only occurs on the I/O processor, as that is where it is needed,
       ! but to keep to the standard alloc to zero on the other procs
-      If ( io%do_io ) Then
-        Allocate ( gathered_global_indices( 1:this_batch_size ), Stat = error )
+      If (io%do_io) Then
+        Allocate (gathered_global_indices(1:this_batch_size), Stat=error)
       Else
         Allocate (gathered_global_indices(0:-1), Stat=error)
       End If
@@ -1026,9 +904,9 @@ Contains
         Return
       End If
 
-      If ( io%do_io ) Then
-        Allocate ( gathered_data( 1:Size( local_data, Dim = 1 ), 1:this_batch_size ), &
-          Stat = error )
+      If (io%do_io) Then
+        Allocate (gathered_data(1:Size(local_data, Dim=1), 1:this_batch_size), &
+                  Stat=error)
       Else
         Allocate (gathered_data(1:Size(local_data, Dim=1), 0:-1), Stat=error)
       End If
@@ -1037,9 +915,9 @@ Contains
         Return
       End If
 
-      If ( io%do_io ) Then
-        Allocate ( gathered_name( 1:Size( local_name, Dim = 1 ), 1:this_batch_size ), &
-          Stat = error )
+      If (io%do_io) Then
+        Allocate (gathered_name(1:Size(local_name, Dim=1), 1:this_batch_size), &
+                  Stat=error)
       Else
         Allocate (gathered_name(1:Size(local_name, Dim=1), 0:-1), Stat=error)
       End If
@@ -1048,17 +926,17 @@ Contains
         Return
       End If
 
-      Call gather_data( io%io_gather_comm, local_bottom, local_top,               &
-        local_global_indices   , local_data   , local_name,    &
-        gathered_global_indices, gathered_data, gathered_name, &
-        n_gathered, error )
-      If ( .not. ok(io, error == 0, io%base_comm ) ) Then
+      Call gather_data(io%io_gather_comm, local_bottom, local_top, &
+                       local_global_indices, local_data, local_name, &
+                       gathered_global_indices, gathered_data, gathered_name, &
+                       n_gathered, error)
+      If (.not. ok(io, error == 0, io%base_comm)) Then
         Return
       End If
 
       itmp = 0; error = 0
       ! Data now on the I/O procs - so they only do work now.
-      IO_PROCS_ONLY: If ( io%do_io ) Then
+      IO_PROCS_ONLY: If (io%do_io) Then
 
         ! Sort the data currently on the I/O processors into order of increasing ( local values of
         ! the ) global indices
@@ -1066,44 +944,44 @@ Contains
 
         ! Avoid deadlock problems on error
 
-        If ( ok(io,  error == 0, io%io_comm ) ) Then
+        If (ok(io, error == 0, io%io_comm)) Then
 
           ! Work out how much data is on each IO processor
           ! after the reorganization in the global sort
-          Call how_much_after_reorg( io%io_comm, n_gathered, n_reorg )
+          Call how_much_after_reorg(io%io_comm, n_gathered, n_reorg)
 
           ! Now allocate the data for use after the global sort
-          n_me = n_reorg( me_in_io )
-          Allocate ( sorted_indices( 1:n_me ), Stat = error )
-          If ( ok(io,  error == 0, io%io_comm ) ) Then
-            Allocate ( sorted_data( 1:size_local, 1:n_me ), Stat = error )
-            If ( ok(io,  error == 0, io%io_comm ) ) Then
-              Allocate ( sorted_name( 1:Len( atom_name ), 1:n_me ), Stat = error )
-              If ( ok(io,  error == 0, io%io_comm ) ) Then
+          n_me = n_reorg(me_in_io)
+          Allocate (sorted_indices(1:n_me), Stat=error)
+          If (ok(io, error == 0, io%io_comm)) Then
+            Allocate (sorted_data(1:size_local, 1:n_me), Stat=error)
+            If (ok(io, error == 0, io%io_comm)) Then
+              Allocate (sorted_name(1:Len(atom_name), 1:n_me), Stat=error)
+              If (ok(io, error == 0, io%io_comm)) Then
                 ! And sort the data across the I/O processors
-                Call global_sort( io%io_comm, &
-                  n_gathered, gathered_global_indices, gathered_data, gathered_name, &
-                  n_reorg   , sorted_indices         , sorted_data  , sorted_name,   &
-                  error )
+                Call global_sort(io%io_comm, &
+                                 n_gathered, gathered_global_indices, gathered_data, gathered_name, &
+                                 n_reorg, sorted_indices, sorted_data, sorted_name, &
+                                 error)
 
-                If ( ok(io,  error == 0, io%io_comm ) ) Then
+                If (ok(io, error == 0, io%io_comm)) Then
                   ! Finally write the damn thing !!
                   Call config_out(io, io%io_comm, write_level, write_options, file_handle, first_record, &
-                    n_me, sorted_indices, sorted_data, sorted_name, error )
+                                  n_me, sorted_indices, sorted_data, sorted_name, error)
                 End If
 
-                Deallocate ( sorted_name , Stat = error )
-                If ( .not. ok(io, error == 0, io%io_comm ) ) Then
+                Deallocate (sorted_name, Stat=error)
+                If (.not. ok(io, error == 0, io%io_comm)) Then
                   error = IO_DEALLOCATION_ERROR
                   Exit
                 End If
-                Deallocate ( sorted_data , Stat = error )
-                If ( .not. ok(io, error == 0, io%io_comm ) ) Then
+                Deallocate (sorted_data, Stat=error)
+                If (.not. ok(io, error == 0, io%io_comm)) Then
                   error = IO_DEALLOCATION_ERROR
                   Exit
                 End If
-                Deallocate ( sorted_indices , Stat = error )
-                If ( .not. ok(io, error == 0, io%io_comm ) ) Then
+                Deallocate (sorted_indices, Stat=error)
+                If (.not. ok(io, error == 0, io%io_comm)) Then
                   error = IO_DEALLOCATION_ERROR
                   Exit
                 End If
@@ -1159,10 +1037,10 @@ Contains
       Return
     End If
 
-    Deallocate ( n_reorg, Stat=error )
+    Deallocate (n_reorg, Stat=error)
     If (.not. ok(io, error == 0, io%base_comm)) Then
-       error = IO_DEALLOCATION_ERROR
-       Return
+      error = IO_DEALLOCATION_ERROR
+      Return
     End If
     Deallocate (local_global_indices, Stat=error)
     If (.not. ok(io, error == 0, io%base_comm)) Then
@@ -1180,21 +1058,8 @@ Contains
       Return
     End If
 
-    ! For netCDF reopen the file in its original state
-!    If ( io%do_io ) Then
-!      If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-!        Call netcdf_close( desc )
-!      End If
-!    End If
-!
-!    If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-!      Call netcdf_open( Trim( io%known_files( file_handle )%name ), io%known_files( file_handle )%desc, &
-!        io%base_comm, MPI_INFO_NULL )
-!      Call netcdf_get_def( io%known_files( file_handle )%desc )
-!    End If
-
     ! Free comms
-    Call free_io_comm( io%do_io, io%io_comm, io%io_gather_comm )
+    Call free_io_comm(io%do_io, io%io_comm, io%io_gather_comm)
     io%io_comm_inited = .false.
 
     ! Leave in sync
@@ -1805,55 +1670,76 @@ Contains
 
     Character(Len=1), Allocatable, Dimension(:, :) :: buffer
     Integer(Kind=MPI_OFFSET_KIND)                  :: next_rec
-    Integer                                        :: frame, i, in_buffer, j, ln, n_buff
+    Integer                                        :: i, in_buffer, j, n_buff
     Character(Len=io%rec_size)                     :: line
 
       error = 0
 
-      If (io%method_write /= IO_WRITE_SORTED_NETCDF) Then
+      ! The io_buffer
+      n_buff = Min(n, io%buffer_size_write)
+      Allocate (buffer(1:io%rec_size, 1:n_buff), Stat=error)
+      If (.not. ok(io, error == 0, io_comm)) Then
+        error = IO_ALLOCATION_ERROR
+        Return
+      End If
 
-        ! The io_buffer
-        n_buff = Min(n, io%buffer_size_write)
-        Allocate (buffer(1:io%rec_size, 1:n_buff), Stat=error)
-        If (.not. ok(io, error == 0, io_comm)) Then
-          error = IO_ALLOCATION_ERROR
-          Return
+      ! Loop over the atoms filling up the buffer.  Once full dump to disk.
+      in_buffer = 0
+      If (write_options /= IO_MSDTMP .and. write_options /= IO_HISTORD) Then
+        next_rec = Int(first_record, MPI_OFFSET_KIND) + &
+                   Int(indices(1) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND)
+      Else
+        next_rec = Int(first_record, MPI_OFFSET_KIND) + &
+                   Int(indices(1) - 1, MPI_OFFSET_KIND)
+      End If
+
+      Do i = 1, n
+
+        ! Atom name - change structure according to whether
+        ! the weight, charge and rsd are stored or not
+        ! Also note slight pain due to array of character not being the same as character( Len( Size( array ) )
+        ! being extremely careful here as MPI only knows about character( Len = 1 ), so the derived
+        ! type can ONLY be an array of char ....
+        Select Case (write_options)
+        Case (IO_RESTART)
+          ! Restart file
+          Write (line, '( 8a1, i10, a54, a1 )') name(:, i), indices(i), Repeat(' ', 54), io%lf
+        Case (IO_HISTORY)
+          ! History File
+          Write (line, '( 8a1, i10, 3(1x,f13.6), a12, a1 )') name(:, i), indices(i), &
+            Data(io%W_IND, i), Data(io%Q_IND, i), Data(io%D_IND, i), Repeat(' ', 12), io%lf
+        Case (IO_HISTORD)
+          ! Short History File
+          Write (line, '( 6a1, 4f7.1, a1 )') &
+            name(1:6, i), Data(RX_IND, i), Data(RY_IND, i), Data(RZ_IND, i), Data(io%D_IND, i), io%lf
+        Case (IO_MSDTMP)
+          ! MSDTMP file
+          Write (line, '( 8a1, i10, 1p, 2e13.4, a8, a1 )') name(:, i), indices(i), &
+            Data(io%W_IND, i), Data(io%Q_IND, i), Repeat(' ', 8), io%lf
+        End Select
+        in_buffer = in_buffer + 1
+        Do j = 1, io%rec_size
+          buffer(j, in_buffer) = line(j:j)
+        End Do
+
+        If (in_buffer == n_buff) Then
+          Call io_write_batch(io, file_handle, next_rec, in_buffer, buffer)
+          in_buffer = 0
+          If (write_options /= IO_MSDTMP .and. write_options /= IO_HISTORD) Then
+            next_rec = Int(first_record, MPI_OFFSET_KIND) + &
+                       Int(indices(i) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND) + &
+                       Int(1, MPI_OFFSET_KIND)
+          Else
+            next_rec = Int(first_record, MPI_OFFSET_KIND) + Int(indices(i) - 1, MPI_OFFSET_KIND) + &
+                       Int(1, MPI_OFFSET_KIND)
+          End If
         End If
 
-        ! Loop over the atoms filling up the buffer.  Once full dump to disk.
-        in_buffer = 0
         If (write_options /= IO_MSDTMP .and. write_options /= IO_HISTORD) Then
-          next_rec = Int(first_record, MPI_OFFSET_KIND) + &
-                     Int(indices(1) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND)
-        Else
-          next_rec = Int(first_record, MPI_OFFSET_KIND) + &
-                     Int(indices(1) - 1, MPI_OFFSET_KIND)
-        End If
 
-        Do i = 1, n
-
-          ! Atom name - change structure according to whether
-          ! the weight, charge and rsd are stored or not
-          ! Also note slight pain due to array of character not being the same as character( Len( Size( array ) )
-          ! being extremely careful here as MPI only knows about character( Len = 1 ), so the derived
-          ! type can ONLY be an array of char ....
-          Select Case (write_options)
-          Case (IO_RESTART)
-            ! Restart file
-            Write (line, '( 8a1, i10, a54, a1 )') name(:, i), indices(i), Repeat(' ', 54), io%lf
-          Case (IO_HISTORY)
-            ! History File
-            Write (line, '( 8a1, i10, 3(1x,f13.6), a12, a1 )') name(:, i), indices(i), &
-              Data(io%W_IND, i), Data(io%Q_IND, i), Data(io%D_IND, i), Repeat(' ', 12), io%lf
-          Case (IO_HISTORD)
-            ! Short History File
-            Write (line, '( 6a1, 4f7.1, a1 )') &
-              name(1:6, i), Data(RX_IND, i), Data(RY_IND, i), Data(RZ_IND, i), Data(io%D_IND, i), io%lf
-          Case (IO_MSDTMP)
-            ! MSDTMP file
-            Write (line, '( 8a1, i10, 1p, 2e13.4, a8, a1 )') name(:, i), indices(i), &
-              Data(io%W_IND, i), Data(io%Q_IND, i), Repeat(' ', 8), io%lf
-          End Select
+          ! Atomic coordinates
+          Write (line, '( 3g20.10, a12, a1 )') &
+            Data(RX_IND, i), Data(RY_IND, i), Data(RZ_IND, i), Repeat(' ', 12), io%lf
           in_buffer = in_buffer + 1
           Do j = 1, io%rec_size
             buffer(j, in_buffer) = line(j:j)
@@ -1862,21 +1748,15 @@ Contains
           If (in_buffer == n_buff) Then
             Call io_write_batch(io, file_handle, next_rec, in_buffer, buffer)
             in_buffer = 0
-            If (write_options /= IO_MSDTMP .and. write_options /= IO_HISTORD) Then
-              next_rec = Int(first_record, MPI_OFFSET_KIND) + &
-                         Int(indices(i) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND) + &
-                         Int(1, MPI_OFFSET_KIND)
-            Else
-              next_rec = Int(first_record, MPI_OFFSET_KIND) + Int(indices(i) - 1, MPI_OFFSET_KIND) + &
-                         Int(1, MPI_OFFSET_KIND)
-            End If
+            next_rec = Int(first_record, MPI_OFFSET_KIND) + &
+                       Int(indices(i) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND) + &
+                       Int(2, MPI_OFFSET_KIND)
           End If
 
-          If (write_options /= IO_MSDTMP .and. write_options /= IO_HISTORD) Then
-
-            ! Atomic coordinates
+          ! Velocities, if required
+          If (write_level > 0) Then
             Write (line, '( 3g20.10, a12, a1 )') &
-              Data(RX_IND, i), Data(RY_IND, i), Data(RZ_IND, i), Repeat(' ', 12), io%lf
+              Data(VX_IND, i), Data(VY_IND, i), Data(VZ_IND, i), Repeat(' ', 12), io%lf
             in_buffer = in_buffer + 1
             Do j = 1, io%rec_size
               buffer(j, in_buffer) = line(j:j)
@@ -1887,105 +1767,41 @@ Contains
               in_buffer = 0
               next_rec = Int(first_record, MPI_OFFSET_KIND) + &
                          Int(indices(i) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND) + &
-                         Int(2, MPI_OFFSET_KIND)
+                         Int(3, MPI_OFFSET_KIND)
             End If
-
-            ! Velocities, if required
-            If (write_level > 0) Then
-              Write (line, '( 3g20.10, a12, a1 )') &
-                Data(VX_IND, i), Data(VY_IND, i), Data(VZ_IND, i), Repeat(' ', 12), io%lf
-              in_buffer = in_buffer + 1
-              Do j = 1, io%rec_size
-                buffer(j, in_buffer) = line(j:j)
-              End Do
-
-              If (in_buffer == n_buff) Then
-                Call io_write_batch(io, file_handle, next_rec, in_buffer, buffer)
-                in_buffer = 0
-                next_rec = Int(first_record, MPI_OFFSET_KIND) + &
-                           Int(indices(i) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND) + &
-                           Int(3, MPI_OFFSET_KIND)
-              End If
-            End If
-
-            ! Forces, if required
-            If (write_level > 1) Then
-              Write (line, '( 3g20.10, a12, a1 )') &
-                Data(FX_IND, i), Data(FY_IND, i), Data(FZ_IND, i), Repeat(' ', 12), io%lf
-              in_buffer = in_buffer + 1
-              Do j = 1, io%rec_size
-                buffer(j, in_buffer) = line(j:j)
-              End Do
-
-              If (in_buffer == n_buff) Then
-                Call io_write_batch(io, file_handle, next_rec, in_buffer, buffer)
-                in_buffer = 0
-                next_rec = Int(first_record, MPI_OFFSET_KIND) + &
-                           Int(indices(i) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND) + &
-                           Int(4, MPI_OFFSET_KIND)
-              End If
-            End If
-
           End If
 
-        End Do
+          ! Forces, if required
+          If (write_level > 1) Then
+            Write (line, '( 3g20.10, a12, a1 )') &
+              Data(FX_IND, i), Data(FY_IND, i), Data(FZ_IND, i), Repeat(' ', 12), io%lf
+            in_buffer = in_buffer + 1
+            Do j = 1, io%rec_size
+              buffer(j, in_buffer) = line(j:j)
+            End Do
 
-        If (in_buffer /= 0) Then
-          Call io_write_batch(io, file_handle, next_rec, in_buffer, buffer)
-          in_buffer = 0
-        End If
-
-        Deallocate (buffer, Stat=error)
-        If (.not. ok(io, error == 0, io_comm)) Then
-          error = IO_DEALLOCATION_ERROR
-          Return
-        End If
-
-      Else
-
-        ! netCDF write
-        ln = Size(name, Dim=1)
-        frame = Int(first_record, Kind(frame))
-
-        Select Case (write_options)
-        Case (IO_RESTART)
-          ! Restart file
-          Call netcdf_put_var('atomnames', desc, name, [indices(1), frame], [ln, n, 1])
-          Call netcdf_put_var('indices', desc, indices, [indices(1), frame], [n, 1])
-        Case (IO_HISTORY)
-          ! History File
-          If (frame == 1) Then
-            Call netcdf_put_var('atomnames', desc, name, [indices(1), frame], [ln, n, 1])
-            Call netcdf_put_var('indices', desc, indices, [indices(1), frame], [n, 1])
-            Call netcdf_put_var('masses', desc, Data(io%W_IND, 1:n), [indices(1), frame], [n, 1])
-            Call netcdf_put_var('charges', desc, Data(io%Q_IND, 1:n), [indices(1), frame], [n, 1])
+            If (in_buffer == n_buff) Then
+              Call io_write_batch(io, file_handle, next_rec, in_buffer, buffer)
+              in_buffer = 0
+              next_rec = Int(first_record, MPI_OFFSET_KIND) + &
+                         Int(indices(i) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND) + &
+                         Int(4, MPI_OFFSET_KIND)
+            End If
           End If
-          Call netcdf_put_var('rsd', desc, Data(io%D_IND, 1:n), [indices(1), frame], [n, 1])
-        Case (IO_HISTORD)
-          ! Short History File
-          If (frame == 1) &
-            Call netcdf_put_var('atomnames', desc, name, [indices(1), frame], [ln, n, 1])
-          Call netcdf_put_var('rsd', desc, Data(io%D_IND, 1:n), [indices(1), frame], [n, 1])
-        Case (IO_MSDTMP)
 
-          ! Impossible for the time being
-
-        End Select
-
-        If (write_options /= IO_MSDTMP) Then
-          Select Case (write_level)
-          Case (0)
-            Call netcdf_put_var('coordinates', desc, Data(RX_IND:RZ_IND, 1:n), [1, indices(1), frame], [3, n, 1])
-          Case (1)
-            Call netcdf_put_var('coordinates', desc, Data(RX_IND:RZ_IND, 1:n), [1, indices(1), frame], [3, n, 1])
-            Call netcdf_put_var('velocities', desc, Data(VX_IND:VZ_IND, 1:n), [1, indices(1), frame], [3, n, 1])
-          Case (2)
-            Call netcdf_put_var('coordinates', desc, Data(RX_IND:RZ_IND, 1:n), [1, indices(1), frame], [3, n, 1])
-            Call netcdf_put_var('velocities', desc, Data(VX_IND:VZ_IND, 1:n), [1, indices(1), frame], [3, n, 1])
-            Call netcdf_put_var('forces', desc, Data(FX_IND:FZ_IND, 1:n), [1, indices(1), frame], [3, n, 1])
-          End Select
         End If
 
+      End Do
+
+      If (in_buffer /= 0) Then
+        Call io_write_batch(io, file_handle, next_rec, in_buffer, buffer)
+        in_buffer = 0
+      End If
+
+      Deallocate (buffer, Stat=error)
+      If (.not. ok(io, error == 0, io_comm)) Then
+        error = IO_DEALLOCATION_ERROR
+        Return
       End If
 
     End Subroutine config_out
@@ -2031,8 +1847,6 @@ Contains
     Integer, Intent(In) :: subset
     Integer, Intent(Out) :: error
 
-    Type(netcdf_desc) :: desc
-
     Real(Kind=wp), Dimension(:, :), Allocatable :: local_data
     Real(Kind=wp), Dimension(:, :), Allocatable :: gathered_data
     Real(Kind=wp), Dimension(:, :), Allocatable :: sorted_data
@@ -2054,7 +1868,6 @@ Contains
     Integer :: itmp
     Integer :: iter
 
-
     Character(Len=1), Dimension(:, :), Allocatable :: local_name
     Character(Len=1), Dimension(:, :), Allocatable :: gathered_name
     Character(Len=1), Dimension(:, :), Allocatable :: sorted_name
@@ -2075,13 +1888,13 @@ Contains
     ! a member of a given communicator or not ( if it's not in a communicator
     ! it has no data about it ) also return DO_IO to indicate whether this
     ! processor will perform I/O, i.e.  if it is a member of IO_COMM.
-    If( .not. io%io_comm_inited ) Then
-      Call split_io_comm( io%base_comm, io%n_io_procs_write, io%io_comm, io%io_gather_comm, io%do_io )
+    If (.not. io%io_comm_inited) Then
+      Call split_io_comm(io%base_comm, io%n_io_procs_write, io%io_comm, io%io_gather_comm, io%do_io)
       io%io_comm_inited = .true.
     End If
-    If ( io%do_io ) Then
-      Call MPI_COMM_RANK( io%io_comm, me_in_io, ierr )
-      Call MPI_COMM_SIZE( io%io_comm, actual_io_procs, ierr )
+    If (io%do_io) Then
+      Call MPI_COMM_RANK(io%io_comm, me_in_io, ierr)
+      Call MPI_COMM_SIZE(io%io_comm, actual_io_procs, ierr)
     End If
 
     ! Allocate required data structures for stuff local to this processor,
@@ -2181,8 +1994,8 @@ Contains
     ! Note it's not a standard to pass an unallocated array unless the
     ! dummy argument is allocatable.  Here this is not the case hence allocate
     ! to size zero on procs that will not need the array.
-    If ( io%do_io ) Then
-      Allocate ( n_reorg( 0:actual_io_procs - 1 ), Stat = error )
+    If (io%do_io) Then
+      Allocate (n_reorg(0:actual_io_procs - 1), Stat=error)
     Else
       Allocate (n_reorg(0:-1), Stat=error)
     End If
@@ -2220,21 +2033,6 @@ Contains
 
     bottom_batch = 1
     top_batch = Min(io%batch_size_write, tot_atoms)
-
-    ! For netCDF close the file and reopen it so that the communicator
-    ! associated with the file only contains those processors which will actually
-    ! do the I/O.  This seems to avoid some problems on the Cray XT series.
-!    If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-!      desc = io%known_files( file_handle )%desc
-!      Call netcdf_close( desc )
-!    End If
-!
-!    If ( io%do_io ) Then
-!      If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-!        Call netcdf_open( Trim( io%known_files( file_handle )%name ), desc, io%io_comm, MPI_INFO_NULL )
-!        Call netcdf_get_def( desc )
-!      End If
-!    End If
 
     Do
 
@@ -2276,29 +2074,29 @@ Contains
         ! For this batch size what is the biggest number of atoms ant processor
         ! needs to hold ? First find out within an io_gather_group how many
         ! atoms the I/O processor for that group will hold
-        Call MPI_ALLREDUCE( Max( local_top - local_bottom + 1, 0 ), n_gathered, 1, &
-          MPI_INTEGER, MPI_SUM, io%io_gather_comm, ierr )
+        Call MPI_ALLREDUCE(Max(local_top - local_bottom + 1, 0), n_gathered, 1, &
+                           MPI_INTEGER, MPI_SUM, io%io_gather_comm, ierr)
         ! If we are covering all the remaining atoms can now exit
         If (top_batch == tot_atoms) Then
           Exit
         End If
         ! Then max over the I/O processors and broadcast it back over the io_gather_group.
-        If ( io%do_io ) Then
-          Call MPI_ALLREDUCE( n_gathered, itmp, 1, &
-            MPI_INTEGER, MPI_MAX, io%io_comm, ierr )
+        If (io%do_io) Then
+          Call MPI_ALLREDUCE(n_gathered, itmp, 1, &
+                             MPI_INTEGER, MPI_MAX, io%io_comm, ierr)
           n_gathered = itmp
         End If
-        Call MPI_BCAST( n_gathered, 1, MPI_INTEGER, 0, io%io_gather_comm, ierr )
+        Call MPI_BCAST(n_gathered, 1, MPI_INTEGER, 0, io%io_gather_comm, ierr)
         ! Check if the required memory to hold the atoms is too much
         If (n_gathered > io%batch_size_write) Then
           ! If it is the last iteration was the last acceptable, so go back
           ! to that and exit.
           this_batch_size = this_batch_size / 2
-          top_batch = Min( bottom_batch + this_batch_size - 1, tot_atoms )
-          Call batch_limits_set( local_global_indices, bottom_batch, top_batch, &
-            local_bottom, local_top )
-          Call MPI_ALLREDUCE( local_top - local_bottom + 1, n_gathered, 1, &
-            MPI_INTEGER, MPI_SUM, io%io_gather_comm, ierr )
+          top_batch = Min(bottom_batch + this_batch_size - 1, tot_atoms)
+          Call batch_limits_set(local_global_indices, bottom_batch, top_batch, &
+                                local_bottom, local_top)
+          Call MPI_ALLREDUCE(local_top - local_bottom + 1, n_gathered, 1, &
+                             MPI_INTEGER, MPI_SUM, io%io_gather_comm, ierr)
           Exit
         Else
           ! The batch is till smaller than the limit.  Try again.
@@ -2311,8 +2109,8 @@ Contains
       ! Gather the data onto the I/O processors.  Note allocation to full
       ! size only occurs on the I/O processor, as that is where it is needed,
       ! but to keep to the standard alloc to zero on the other procs
-      If ( io%do_io ) Then
-        Allocate ( gathered_global_indices( 1:this_batch_size ), Stat = error )
+      If (io%do_io) Then
+        Allocate (gathered_global_indices(1:this_batch_size), Stat=error)
       Else
         Allocate (gathered_global_indices(0:-1), Stat=error)
       End If
@@ -2321,9 +2119,9 @@ Contains
         Return
       End If
 
-      If ( io%do_io ) Then
-        Allocate ( gathered_data( 1:Size( local_data, Dim = 1 ), 1:this_batch_size ), &
-          Stat = error )
+      If (io%do_io) Then
+        Allocate (gathered_data(1:Size(local_data, Dim=1), 1:this_batch_size), &
+                  Stat=error)
       Else
         Allocate (gathered_data(1:Size(local_data, Dim=1), 0:-1), Stat=error)
       End If
@@ -2332,9 +2130,9 @@ Contains
         Return
       End If
 
-      If ( io%do_io ) Then
-        Allocate ( gathered_name( 1:Size( local_name, Dim = 1 ), 1:this_batch_size ), &
-          Stat = error )
+      If (io%do_io) Then
+        Allocate (gathered_name(1:Size(local_name, Dim=1), 1:this_batch_size), &
+                  Stat=error)
       Else
         Allocate (gathered_name(1:Size(local_name, Dim=1), 0:-1), Stat=error)
       End If
@@ -2343,17 +2141,17 @@ Contains
         Return
       End If
 
-      Call gather_data( io%io_gather_comm, local_bottom, local_top,               &
-        local_global_indices   , local_data   , local_name,    &
-        gathered_global_indices, gathered_data, gathered_name, &
-        n_gathered, error )
-      If ( .not. ok(io, error == 0, io%base_comm ) ) Then
+      Call gather_data(io%io_gather_comm, local_bottom, local_top, &
+                       local_global_indices, local_data, local_name, &
+                       gathered_global_indices, gathered_data, gathered_name, &
+                       n_gathered, error)
+      If (.not. ok(io, error == 0, io%base_comm)) Then
         Return
       End If
 
       itmp = 0; error = 0
       ! Data now on the I/O procs - so they only do work now.
-      IO_PROCS_ONLY: If ( io%do_io ) Then
+      IO_PROCS_ONLY: If (io%do_io) Then
 
         ! Sort the data currently on the I/O processors into order of increasing ( local values of
         ! the ) global indices
@@ -2361,44 +2159,44 @@ Contains
 
         ! Avoid deadlock problems on error
 
-        If ( ok(io,  error == 0, io%io_comm ) ) Then
+        If (ok(io, error == 0, io%io_comm)) Then
 
           ! Work out how much data is on each IO processor
           ! after the reorganization in the global sort
-          Call how_much_after_reorg( io%io_comm, n_gathered, n_reorg )
+          Call how_much_after_reorg(io%io_comm, n_gathered, n_reorg)
 
           ! Now allocate the data for use after the global sort
-          n_me = n_reorg( me_in_io )
-          Allocate ( sorted_indices( 1:n_me ), Stat = error )
-          If ( ok(io,  error == 0, io%io_comm ) ) Then
-            Allocate ( sorted_data( 1:size_local, 1:n_me ), Stat = error )
-            If ( ok(io,  error == 0, io%io_comm ) ) Then
-              Allocate ( sorted_name( 1:Len( atom_name ), 1:n_me ), Stat = error )
-              If ( ok(io,  error == 0, io%io_comm ) ) Then
+          n_me = n_reorg(me_in_io)
+          Allocate (sorted_indices(1:n_me), Stat=error)
+          If (ok(io, error == 0, io%io_comm)) Then
+            Allocate (sorted_data(1:size_local, 1:n_me), Stat=error)
+            If (ok(io, error == 0, io%io_comm)) Then
+              Allocate (sorted_name(1:Len(atom_name), 1:n_me), Stat=error)
+              If (ok(io, error == 0, io%io_comm)) Then
                 ! And sort the data across the I/O processors
-                Call global_sort( io%io_comm, &
-                  n_gathered, gathered_global_indices, gathered_data, gathered_name, &
-                  n_reorg   , sorted_indices         , sorted_data  , sorted_name,   &
-                  error )
+                Call global_sort(io%io_comm, &
+                                 n_gathered, gathered_global_indices, gathered_data, gathered_name, &
+                                 n_reorg, sorted_indices, sorted_data, sorted_name, &
+                                 error)
 
-                If ( ok(io,  error == 0, io%io_comm ) ) Then
+                If (ok(io, error == 0, io%io_comm)) Then
                   ! Finally write the damn thing !!
                   Call config_out(io, io%io_comm, write_level, write_options, file_handle, first_record, &
-                    n_me, sorted_indices, sorted_data, sorted_name, error )
+                                  n_me, sorted_indices, sorted_data, sorted_name, error)
                 End If
 
-                Deallocate ( sorted_name , Stat = error )
-                If ( .not. ok(io, error == 0, io%io_comm ) ) Then
+                Deallocate (sorted_name, Stat=error)
+                If (.not. ok(io, error == 0, io%io_comm)) Then
                   error = IO_DEALLOCATION_ERROR
                   Exit
                 End If
-                Deallocate ( sorted_data , Stat = error )
-                If ( .not. ok(io, error == 0, io%io_comm ) ) Then
+                Deallocate (sorted_data, Stat=error)
+                If (.not. ok(io, error == 0, io%io_comm)) Then
                   error = IO_DEALLOCATION_ERROR
                   Exit
                 End If
-                Deallocate ( sorted_indices , Stat = error )
-                If ( .not. ok(io, error == 0, io%io_comm ) ) Then
+                Deallocate (sorted_indices, Stat=error)
+                If (.not. ok(io, error == 0, io%io_comm)) Then
                   error = IO_DEALLOCATION_ERROR
                   Exit
                 End If
@@ -2470,23 +2268,9 @@ Contains
       Return
     End If
 
-    ! For netCDF reopen the file in its original state
-!    If ( io%do_io ) Then
-!      If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-!        Call netcdf_close( desc )
-!      End If
-!    End If
-!
-!    If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-!      Call netcdf_open( Trim( io%known_files( file_handle )%name ), io%known_files( file_handle )%desc, &
-!        io%base_comm, MPI_INFO_NULL )
-!      Call netcdf_get_def( io%known_files( file_handle )%desc )
-!    End If
-
     ! Free comms
-    Call free_io_comm( io%do_io, io%io_comm, io%io_gather_comm )
+    Call free_io_comm(io%do_io, io%io_comm, io%io_gather_comm)
     io%io_comm_inited = .false.
-
 
     ! Leave in sync
     Call MPI_BARRIER(io%base_comm, ierr)
@@ -3103,55 +2887,76 @@ Contains
 
     Character(Len=1), Allocatable, Dimension(:, :) :: buffer
     Integer(Kind=MPI_OFFSET_KIND)                  :: next_rec
-    Integer                                        :: frame, i, in_buffer, j, ln, n_buff
+    Integer                                        :: i, in_buffer, j, n_buff
     Character(Len=io%rec_size)                     :: line
 
       error = 0
 
-      If (io%method_write /= IO_WRITE_SORTED_NETCDF) Then
+      ! The io_buffer
+      n_buff = Min(n, io%buffer_size_write)
+      Allocate (buffer(1:io%rec_size, 1:n_buff), Stat=error)
+      If (.not. ok(io, error == 0, io_comm)) Then
+        error = IO_ALLOCATION_ERROR
+        Return
+      End If
 
-        ! The io_buffer
-        n_buff = Min(n, io%buffer_size_write)
-        Allocate (buffer(1:io%rec_size, 1:n_buff), Stat=error)
-        If (.not. ok(io, error == 0, io_comm)) Then
-          error = IO_ALLOCATION_ERROR
-          Return
+      ! Loop over the atoms filling up the buffer.  Once full dump to disk.
+      in_buffer = 0
+      If (write_options /= IO_MSDTMP .and. write_options /= IO_HISTORD) Then
+        next_rec = Int(first_record, MPI_OFFSET_KIND) + &
+                   Int(indices(1) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND)
+      Else
+        next_rec = Int(first_record, MPI_OFFSET_KIND) + &
+                   Int(indices(1) - 1, MPI_OFFSET_KIND)
+      End If
+
+      Do i = 1, n
+
+        ! Atom name - change structure according to whether
+        ! the weight, charge and rsd are stored or not
+        ! Also note slight pain due to array of character not being the same as character( Len( Size( array ) )
+        ! being extremely careful here as MPI only knows about character( Len = 1 ), so the derived
+        ! type can ONLY be an array of char ....
+        Select Case (write_options)
+        Case (IO_RESTART)
+          ! Restart file
+          Write (line, '( 8a1, i10, a54, a1 )') name(:, i), indices(i), Repeat(' ', 54), io%lf
+        Case (IO_HISTORY)
+          ! History File
+          Write (line, '( 8a1, i10, 3(1x,f13.6), a12, a1 )') name(:, i), indices(i), &
+            Data(io%W_IND, i), Data(io%Q_IND, i), Data(io%D_IND, i), Repeat(' ', 12), io%lf
+        Case (IO_HISTORD)
+          ! Short History File
+          Write (line, '( 6a1, 4f7.1, a1 )') &
+            name(1:6, i), Data(RX_IND, i), Data(RY_IND, i), Data(RZ_IND, i), Data(io%D_IND, i), io%lf
+        Case (IO_MSDTMP)
+          ! MSDTMP file
+          Write (line, '( 8a1, i10, 1p, 2e13.4, a8, a1 )') name(:, i), indices(i), &
+            Data(io%W_IND, i), Data(io%Q_IND, i), Repeat(' ', 8), io%lf
+        End Select
+        in_buffer = in_buffer + 1
+        Do j = 1, io%rec_size
+          buffer(j, in_buffer) = line(j:j)
+        End Do
+
+        If (in_buffer == n_buff) Then
+          Call io_write_batch(io, file_handle, next_rec, in_buffer, buffer)
+          in_buffer = 0
+          If (write_options /= IO_MSDTMP .and. write_options /= IO_HISTORD) Then
+            next_rec = Int(first_record, MPI_OFFSET_KIND) + &
+                       Int(indices(i) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND) + &
+                       Int(1, MPI_OFFSET_KIND)
+          Else
+            next_rec = Int(first_record, MPI_OFFSET_KIND) + Int(indices(i) - 1, MPI_OFFSET_KIND) + &
+                       Int(1, MPI_OFFSET_KIND)
+          End If
         End If
 
-        ! Loop over the atoms filling up the buffer.  Once full dump to disk.
-        in_buffer = 0
         If (write_options /= IO_MSDTMP .and. write_options /= IO_HISTORD) Then
-          next_rec = Int(first_record, MPI_OFFSET_KIND) + &
-                     Int(indices(1) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND)
-        Else
-          next_rec = Int(first_record, MPI_OFFSET_KIND) + &
-                     Int(indices(1) - 1, MPI_OFFSET_KIND)
-        End If
 
-        Do i = 1, n
-
-          ! Atom name - change structure according to whether
-          ! the weight, charge and rsd are stored or not
-          ! Also note slight pain due to array of character not being the same as character( Len( Size( array ) )
-          ! being extremely careful here as MPI only knows about character( Len = 1 ), so the derived
-          ! type can ONLY be an array of char ....
-          Select Case (write_options)
-          Case (IO_RESTART)
-            ! Restart file
-            Write (line, '( 8a1, i10, a54, a1 )') name(:, i), indices(i), Repeat(' ', 54), io%lf
-          Case (IO_HISTORY)
-            ! History File
-            Write (line, '( 8a1, i10, 3(1x,f13.6), a12, a1 )') name(:, i), indices(i), &
-              Data(io%W_IND, i), Data(io%Q_IND, i), Data(io%D_IND, i), Repeat(' ', 12), io%lf
-          Case (IO_HISTORD)
-            ! Short History File
-            Write (line, '( 6a1, 4f7.1, a1 )') &
-              name(1:6, i), Data(RX_IND, i), Data(RY_IND, i), Data(RZ_IND, i), Data(io%D_IND, i), io%lf
-          Case (IO_MSDTMP)
-            ! MSDTMP file
-            Write (line, '( 8a1, i10, 1p, 2e13.4, a8, a1 )') name(:, i), indices(i), &
-              Data(io%W_IND, i), Data(io%Q_IND, i), Repeat(' ', 8), io%lf
-          End Select
+          ! Atomic coordinates
+          Write (line, '( 3g20.10, a12, a1 )') &
+            Data(RX_IND, i), Data(RY_IND, i), Data(RZ_IND, i), Repeat(' ', 12), io%lf
           in_buffer = in_buffer + 1
           Do j = 1, io%rec_size
             buffer(j, in_buffer) = line(j:j)
@@ -3160,21 +2965,15 @@ Contains
           If (in_buffer == n_buff) Then
             Call io_write_batch(io, file_handle, next_rec, in_buffer, buffer)
             in_buffer = 0
-            If (write_options /= IO_MSDTMP .and. write_options /= IO_HISTORD) Then
-              next_rec = Int(first_record, MPI_OFFSET_KIND) + &
-                         Int(indices(i) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND) + &
-                         Int(1, MPI_OFFSET_KIND)
-            Else
-              next_rec = Int(first_record, MPI_OFFSET_KIND) + Int(indices(i) - 1, MPI_OFFSET_KIND) + &
-                         Int(1, MPI_OFFSET_KIND)
-            End If
+            next_rec = Int(first_record, MPI_OFFSET_KIND) + &
+                       Int(indices(i) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND) + &
+                       Int(2, MPI_OFFSET_KIND)
           End If
 
-          If (write_options /= IO_MSDTMP .and. write_options /= IO_HISTORD) Then
-
-            ! Atomic coordinates
+          ! Velocities, if required
+          If (write_level > 0) Then
             Write (line, '( 3g20.10, a12, a1 )') &
-              Data(RX_IND, i), Data(RY_IND, i), Data(RZ_IND, i), Repeat(' ', 12), io%lf
+              Data(VX_IND, i), Data(VY_IND, i), Data(VZ_IND, i), Repeat(' ', 12), io%lf
             in_buffer = in_buffer + 1
             Do j = 1, io%rec_size
               buffer(j, in_buffer) = line(j:j)
@@ -3185,105 +2984,41 @@ Contains
               in_buffer = 0
               next_rec = Int(first_record, MPI_OFFSET_KIND) + &
                          Int(indices(i) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND) + &
-                         Int(2, MPI_OFFSET_KIND)
+                         Int(3, MPI_OFFSET_KIND)
             End If
-
-            ! Velocities, if required
-            If (write_level > 0) Then
-              Write (line, '( 3g20.10, a12, a1 )') &
-                Data(VX_IND, i), Data(VY_IND, i), Data(VZ_IND, i), Repeat(' ', 12), io%lf
-              in_buffer = in_buffer + 1
-              Do j = 1, io%rec_size
-                buffer(j, in_buffer) = line(j:j)
-              End Do
-
-              If (in_buffer == n_buff) Then
-                Call io_write_batch(io, file_handle, next_rec, in_buffer, buffer)
-                in_buffer = 0
-                next_rec = Int(first_record, MPI_OFFSET_KIND) + &
-                           Int(indices(i) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND) + &
-                           Int(3, MPI_OFFSET_KIND)
-              End If
-            End If
-
-            ! Forces, if required
-            If (write_level > 1) Then
-              Write (line, '( 3g20.10, a12, a1 )') &
-                Data(FX_IND, i), Data(FY_IND, i), Data(FZ_IND, i), Repeat(' ', 12), io%lf
-              in_buffer = in_buffer + 1
-              Do j = 1, io%rec_size
-                buffer(j, in_buffer) = line(j:j)
-              End Do
-
-              If (in_buffer == n_buff) Then
-                Call io_write_batch(io, file_handle, next_rec, in_buffer, buffer)
-                in_buffer = 0
-                next_rec = Int(first_record, MPI_OFFSET_KIND) + &
-                           Int(indices(i) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND) + &
-                           Int(4, MPI_OFFSET_KIND)
-              End If
-            End If
-
           End If
 
-        End Do
+          ! Forces, if required
+          If (write_level > 1) Then
+            Write (line, '( 3g20.10, a12, a1 )') &
+              Data(FX_IND, i), Data(FY_IND, i), Data(FZ_IND, i), Repeat(' ', 12), io%lf
+            in_buffer = in_buffer + 1
+            Do j = 1, io%rec_size
+              buffer(j, in_buffer) = line(j:j)
+            End Do
 
-        If (in_buffer /= 0) Then
-          Call io_write_batch(io, file_handle, next_rec, in_buffer, buffer)
-          in_buffer = 0
-        End If
-
-        Deallocate (buffer, Stat=error)
-        If (.not. ok(io, error == 0, io_comm)) Then
-          error = IO_DEALLOCATION_ERROR
-          Return
-        End If
-
-      Else
-
-        ! netCDF write
-        ln = Size(name, Dim=1)
-        frame = Int(first_record, Kind(frame))
-
-        Select Case (write_options)
-        Case (IO_RESTART)
-          ! Restart file
-          Call netcdf_put_var('atomnames', desc, name, [indices(1), frame], [ln, n, 1])
-          Call netcdf_put_var('indices', desc, indices, [indices(1), frame], [n, 1])
-        Case (IO_HISTORY)
-          ! History File
-          If (frame == 1) Then
-            Call netcdf_put_var('atomnames', desc, name, [indices(1), frame], [ln, n, 1])
-            Call netcdf_put_var('indices', desc, indices, [indices(1), frame], [n, 1])
-            Call netcdf_put_var('masses', desc, Data(io%W_IND, 1:n), [indices(1), frame], [n, 1])
-            Call netcdf_put_var('charges', desc, Data(io%Q_IND, 1:n), [indices(1), frame], [n, 1])
+            If (in_buffer == n_buff) Then
+              Call io_write_batch(io, file_handle, next_rec, in_buffer, buffer)
+              in_buffer = 0
+              next_rec = Int(first_record, MPI_OFFSET_KIND) + &
+                         Int(indices(i) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND) + &
+                         Int(4, MPI_OFFSET_KIND)
+            End If
           End If
-          Call netcdf_put_var('rsd', desc, Data(io%D_IND, 1:n), [indices(1), frame], [n, 1])
-        Case (IO_HISTORD)
-          ! Short History File
-          If (frame == 1) &
-            Call netcdf_put_var('atomnames', desc, name, [indices(1), frame], [ln, n, 1])
-          Call netcdf_put_var('rsd', desc, Data(io%D_IND, 1:n), [indices(1), frame], [n, 1])
-        Case (IO_MSDTMP)
 
-          ! Impossible for the time being
-
-        End Select
-
-        If (write_options /= IO_MSDTMP) Then
-          Select Case (write_level)
-          Case (0)
-            Call netcdf_put_var('coordinates', desc, Data(RX_IND:RZ_IND, 1:n), [1, indices(1), frame], [3, n, 1])
-          Case (1)
-            Call netcdf_put_var('coordinates', desc, Data(RX_IND:RZ_IND, 1:n), [1, indices(1), frame], [3, n, 1])
-            Call netcdf_put_var('velocities', desc, Data(VX_IND:VZ_IND, 1:n), [1, indices(1), frame], [3, n, 1])
-          Case (2)
-            Call netcdf_put_var('coordinates', desc, Data(RX_IND:RZ_IND, 1:n), [1, indices(1), frame], [3, n, 1])
-            Call netcdf_put_var('velocities', desc, Data(VX_IND:VZ_IND, 1:n), [1, indices(1), frame], [3, n, 1])
-            Call netcdf_put_var('forces', desc, Data(FX_IND:FZ_IND, 1:n), [1, indices(1), frame], [3, n, 1])
-          End Select
         End If
 
+      End Do
+
+      If (in_buffer /= 0) Then
+        Call io_write_batch(io, file_handle, next_rec, in_buffer, buffer)
+        in_buffer = 0
+      End If
+
+      Deallocate (buffer, Stat=error)
+      If (.not. ok(io, error == 0, io_comm)) Then
+        error = IO_DEALLOCATION_ERROR
+        Return
       End If
 
     End Subroutine config_out
@@ -3334,8 +3069,6 @@ Contains
     Real(Kind=wp), Dimension(:), Intent(In) :: fz
     Integer, Intent(Out) :: error
 
-    Type(netcdf_desc) :: desc
-
     Real(Kind=wp), Dimension(:, :), Allocatable :: local_data
     Real(Kind=wp), Dimension(:, :), Allocatable :: gathered_data
     Real(Kind=wp), Dimension(:, :), Allocatable :: sorted_data
@@ -3357,9 +3090,9 @@ Contains
     Integer :: itmp
     Integer :: iter
 
-    Character( Len = 1 ), Dimension( :, : ), Allocatable :: local_name
-    Character( Len = 1 ), Dimension( :, : ), Allocatable :: gathered_name
-    Character( Len = 1 ), Dimension( :, : ), Allocatable :: sorted_name
+    Character(Len=1), Dimension(:, :), Allocatable :: local_name
+    Character(Len=1), Dimension(:, :), Allocatable :: gathered_name
+    Character(Len=1), Dimension(:, :), Allocatable :: sorted_name
     Integer :: ierr
     ! Ever the optimist
     error = 0
@@ -3377,13 +3110,13 @@ Contains
     ! a member of a given communicator or not ( if it's not in a communicator
     ! it has no data about it ) also return DO_IO to indicate whether this
     ! processor will perform I/O, i.e.  if it is a member of IO_COMM.
-    If( .not. io%io_comm_inited) Then
-      Call split_io_comm( io%base_comm, io%n_io_procs_write, io%io_comm, io%io_gather_comm, io%do_io )
+    If (.not. io%io_comm_inited) Then
+      Call split_io_comm(io%base_comm, io%n_io_procs_write, io%io_comm, io%io_gather_comm, io%do_io)
       io%io_comm_inited = .true.
     End If
-    If ( io%do_io ) Then
-      Call MPI_COMM_RANK( io%io_comm, me_in_io, ierr )
-      Call MPI_COMM_SIZE( io%io_comm, actual_io_procs, ierr )
+    If (io%do_io) Then
+      Call MPI_COMM_RANK(io%io_comm, me_in_io, ierr)
+      Call MPI_COMM_SIZE(io%io_comm, actual_io_procs, ierr)
     End If
 
     ! Allocate required data structures for stuff local to this processor,
@@ -3483,8 +3216,8 @@ Contains
     ! Note it's not a standard to pass an unallocated array unless the
     ! dummy argument is allocatable.  Here this is not the case hence allocate
     ! to size zero on procs that will not need the array.
-    If ( io%do_io ) Then
-      Allocate ( n_reorg( 0:actual_io_procs - 1 ), Stat = error )
+    If (io%do_io) Then
+      Allocate (n_reorg(0:actual_io_procs - 1), Stat=error)
     Else
       Allocate (n_reorg(0:-1), Stat=error)
     End If
@@ -3522,21 +3255,6 @@ Contains
 
     bottom_batch = 1
     top_batch = Min(io%batch_size_write, tot_atoms)
-
-    ! For netCDF close the file and reopen it so that the communicator
-    ! associated with the file only contains those processors which will actually
-    ! do the I/O.  This seems to avoid some problems on the Cray XT series.
-!    If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-!      desc = io%known_files( file_handle )%desc
-!      Call netcdf_close( desc )
-!    End If
-!
-!    If ( io%do_io ) Then
-!      If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-!        Call netcdf_open( Trim( io%known_files( file_handle )%name ), desc, io%io_comm, MPI_INFO_NULL )
-!        Call netcdf_get_def( desc )
-!      End If
-!    End If
 
     Do
 
@@ -3578,29 +3296,29 @@ Contains
         ! For this batch size what is the biggest number of atoms ant processor
         ! needs to hold ? First find out within an io_gather_group how many
         ! atoms the I/O processor for that group will hold
-        Call MPI_ALLREDUCE( Max( local_top - local_bottom + 1, 0 ), n_gathered, 1, &
-          MPI_INTEGER, MPI_SUM, io%io_gather_comm, ierr )
+        Call MPI_ALLREDUCE(Max(local_top - local_bottom + 1, 0), n_gathered, 1, &
+                           MPI_INTEGER, MPI_SUM, io%io_gather_comm, ierr)
         ! If we are covering all the remaining atoms can now exit
         If (top_batch == tot_atoms) Then
           Exit
         End If
         ! Then max over the I/O processors and broadcast it back over the io_gather_group.
-        If ( io%do_io ) Then
-          Call MPI_ALLREDUCE( n_gathered, itmp, 1, &
-            MPI_INTEGER, MPI_MAX, io%io_comm, ierr )
+        If (io%do_io) Then
+          Call MPI_ALLREDUCE(n_gathered, itmp, 1, &
+                             MPI_INTEGER, MPI_MAX, io%io_comm, ierr)
           n_gathered = itmp
         End If
-        Call MPI_BCAST( n_gathered, 1, MPI_INTEGER, 0, io%io_gather_comm, ierr )
+        Call MPI_BCAST(n_gathered, 1, MPI_INTEGER, 0, io%io_gather_comm, ierr)
         ! Check if the required memory to hold the atoms is too much
         If (n_gathered > io%batch_size_write) Then
           ! If it is the last iteration was the last acceptable, so go back
           ! to that and exit.
           this_batch_size = this_batch_size / 2
-          top_batch = Min( bottom_batch + this_batch_size - 1, tot_atoms )
-          Call batch_limits_set( local_global_indices, bottom_batch, top_batch, &
-            local_bottom, local_top )
-          Call MPI_ALLREDUCE( local_top - local_bottom + 1, n_gathered, 1, &
-            MPI_INTEGER, MPI_SUM, io%io_gather_comm, ierr )
+          top_batch = Min(bottom_batch + this_batch_size - 1, tot_atoms)
+          Call batch_limits_set(local_global_indices, bottom_batch, top_batch, &
+                                local_bottom, local_top)
+          Call MPI_ALLREDUCE(local_top - local_bottom + 1, n_gathered, 1, &
+                             MPI_INTEGER, MPI_SUM, io%io_gather_comm, ierr)
           Exit
         Else
           ! The batch is till smaller than the limit.  Try again.
@@ -3613,8 +3331,8 @@ Contains
       ! Gather the data onto the I/O processors.  Note allocation to full
       ! size only occurs on the I/O processor, as that is where it is needed,
       ! but to keep to the standard alloc to zero on the other procs
-      If ( io%do_io ) Then
-        Allocate ( gathered_global_indices( 1:this_batch_size ), Stat = error )
+      If (io%do_io) Then
+        Allocate (gathered_global_indices(1:this_batch_size), Stat=error)
       Else
         Allocate (gathered_global_indices(0:-1), Stat=error)
       End If
@@ -3623,9 +3341,9 @@ Contains
         Return
       End If
 
-      If ( io%do_io ) Then
-        Allocate ( gathered_data( 1:Size( local_data, Dim = 1 ), 1:this_batch_size ), &
-          Stat = error )
+      If (io%do_io) Then
+        Allocate (gathered_data(1:Size(local_data, Dim=1), 1:this_batch_size), &
+                  Stat=error)
       Else
         Allocate (gathered_data(1:Size(local_data, Dim=1), 0:-1), Stat=error)
       End If
@@ -3634,9 +3352,9 @@ Contains
         Return
       End If
 
-      If ( io%do_io ) Then
-        Allocate ( gathered_name( 1:Size( local_name, Dim = 1 ), 1:this_batch_size ), &
-          Stat = error )
+      If (io%do_io) Then
+        Allocate (gathered_name(1:Size(local_name, Dim=1), 1:this_batch_size), &
+                  Stat=error)
       Else
         Allocate (gathered_name(1:Size(local_name, Dim=1), 0:-1), Stat=error)
       End If
@@ -3645,17 +3363,17 @@ Contains
         Return
       End If
 
-      Call gather_data( io%io_gather_comm, local_bottom, local_top,               &
-        local_global_indices   , local_data   , local_name,    &
-        gathered_global_indices, gathered_data, gathered_name, &
-        n_gathered, error )
-      If ( .not. ok(io, error == 0, io%base_comm ) ) Then
+      Call gather_data(io%io_gather_comm, local_bottom, local_top, &
+                       local_global_indices, local_data, local_name, &
+                       gathered_global_indices, gathered_data, gathered_name, &
+                       n_gathered, error)
+      If (.not. ok(io, error == 0, io%base_comm)) Then
         Return
       End If
 
       itmp = 0; error = 0
       ! Data now on the I/O procs - so they only do work now.
-      IO_PROCS_ONLY: If ( io%do_io ) Then
+      IO_PROCS_ONLY: If (io%do_io) Then
 
         ! Sort the data currently on the I/O processors into order of increasing ( local values of
         ! the ) global indices
@@ -3663,44 +3381,44 @@ Contains
 
         ! Avoid deadlock problems on error
 
-        If ( ok(io,  error == 0, io%io_comm ) ) Then
+        If (ok(io, error == 0, io%io_comm)) Then
 
           ! Work out how much data is on each IO processor
           ! after the reorganization in the global sort
-          Call how_much_after_reorg( io%io_comm, n_gathered, n_reorg )
+          Call how_much_after_reorg(io%io_comm, n_gathered, n_reorg)
 
           ! Now allocate the data for use after the global sort
-          n_me = n_reorg( me_in_io )
-          Allocate ( sorted_indices( 1:n_me ), Stat = error )
-          If ( ok(io,  error == 0, io%io_comm ) ) Then
-            Allocate ( sorted_data( 1:size_local, 1:n_me ), Stat = error )
-            If ( ok(io,  error == 0, io%io_comm ) ) Then
-              Allocate ( sorted_name( 1:Len( atom_name ), 1:n_me ), Stat = error )
-              If ( ok(io,  error == 0, io%io_comm ) ) Then
+          n_me = n_reorg(me_in_io)
+          Allocate (sorted_indices(1:n_me), Stat=error)
+          If (ok(io, error == 0, io%io_comm)) Then
+            Allocate (sorted_data(1:size_local, 1:n_me), Stat=error)
+            If (ok(io, error == 0, io%io_comm)) Then
+              Allocate (sorted_name(1:Len(atom_name), 1:n_me), Stat=error)
+              If (ok(io, error == 0, io%io_comm)) Then
                 ! And sort the data across the I/O processors
-                Call global_sort( io%io_comm, &
-                  n_gathered, gathered_global_indices, gathered_data, gathered_name, &
-                  n_reorg   , sorted_indices         , sorted_data  , sorted_name,   &
-                  error )
+                Call global_sort(io%io_comm, &
+                                 n_gathered, gathered_global_indices, gathered_data, gathered_name, &
+                                 n_reorg, sorted_indices, sorted_data, sorted_name, &
+                                 error)
 
-                If ( ok(io,  error == 0, io%io_comm ) ) Then
+                If (ok(io, error == 0, io%io_comm)) Then
                   ! Finally write the damn thing !!
                   Call config_out(io, io%io_comm, write_level, write_options, file_handle, first_record, &
-                    n_me, sorted_indices, sorted_data, sorted_name, error )
+                                  n_me, sorted_indices, sorted_data, sorted_name, error)
                 End If
 
-                Deallocate ( sorted_name , Stat = error )
-                If ( .not. ok(io, error == 0, io%io_comm ) ) Then
+                Deallocate (sorted_name, Stat=error)
+                If (.not. ok(io, error == 0, io%io_comm)) Then
                   error = IO_DEALLOCATION_ERROR
                   Exit
                 End If
-                Deallocate ( sorted_data , Stat = error )
-                If ( .not. ok(io, error == 0, io%io_comm ) ) Then
+                Deallocate (sorted_data, Stat=error)
+                If (.not. ok(io, error == 0, io%io_comm)) Then
                   error = IO_DEALLOCATION_ERROR
                   Exit
                 End If
-                Deallocate ( sorted_indices , Stat = error )
-                If ( .not. ok(io, error == 0, io%io_comm ) ) Then
+                Deallocate (sorted_indices, Stat=error)
+                If (.not. ok(io, error == 0, io%io_comm)) Then
                   error = IO_DEALLOCATION_ERROR
                   Exit
                 End If
@@ -3772,21 +3490,8 @@ Contains
       Return
     End If
 
-    ! For netCDF reopen the file in its original state
-!    If ( io%do_io ) Then
-!      If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-!        Call netcdf_close( desc )
-!      End If
-!    End If
-!
-!    If ( io%known_files( file_handle )%method == FILE_NETCDF ) Then
-!      Call netcdf_open( Trim( io%known_files( file_handle )%name ), io%known_files( file_handle )%desc, &
-!        io%base_comm, MPI_INFO_NULL )
-!      Call netcdf_get_def( io%known_files( file_handle )%desc )
-!    End If
-
     ! Free comms
-    Call free_io_comm( io%do_io, io%io_comm, io%io_gather_comm )
+    Call free_io_comm(io%do_io, io%io_comm, io%io_gather_comm)
     io%io_comm_inited = .false.
 
     ! Leave in sync
@@ -4397,55 +4102,76 @@ Contains
 
     Character(Len=1), Allocatable, Dimension(:, :) :: buffer
     Integer(Kind=MPI_OFFSET_KIND)                  :: next_rec
-    Integer                                        :: frame, i, in_buffer, j, ln, n_buff
+    Integer                                        :: i, in_buffer, j, n_buff
     Character(Len=io%rec_size)                     :: line
 
       error = 0
 
-      If (io%method_write /= IO_WRITE_SORTED_NETCDF) Then
+      ! The io_buffer
+      n_buff = Min(n, io%buffer_size_write)
+      Allocate (buffer(1:io%rec_size, 1:n_buff), Stat=error)
+      If (.not. ok(io, error == 0, io_comm)) Then
+        error = IO_ALLOCATION_ERROR
+        Return
+      End If
 
-        ! The io_buffer
-        n_buff = Min(n, io%buffer_size_write)
-        Allocate (buffer(1:io%rec_size, 1:n_buff), Stat=error)
-        If (.not. ok(io, error == 0, io_comm)) Then
-          error = IO_ALLOCATION_ERROR
-          Return
+      ! Loop over the atoms filling up the buffer.  Once full dump to disk.
+      in_buffer = 0
+      If (write_options /= IO_MSDTMP .and. write_options /= IO_HISTORD) Then
+        next_rec = Int(first_record, MPI_OFFSET_KIND) + &
+                   Int(indices(1) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND)
+      Else
+        next_rec = Int(first_record, MPI_OFFSET_KIND) + &
+                   Int(indices(1) - 1, MPI_OFFSET_KIND)
+      End If
+
+      Do i = 1, n
+
+        ! Atom name - change structure according to whether
+        ! the weight, charge and rsd are stored or not
+        ! Also note slight pain due to array of character not being the same as character( Len( Size( array ) )
+        ! being extremely careful here as MPI only knows about character( Len = 1 ), so the derived
+        ! type can ONLY be an array of char ....
+        Select Case (write_options)
+        Case (IO_RESTART)
+          ! Restart file
+          Write (line, '( 8a1, i10, a54, a1 )') name(:, i), indices(i), Repeat(' ', 54), io%lf
+        Case (IO_HISTORY)
+          ! History File
+          Write (line, '( 8a1, i10, 3(1x,f13.6), a12, a1 )') name(:, i), indices(i), &
+            Data(io%W_IND, i), Data(io%Q_IND, i), Data(io%D_IND, i), Repeat(' ', 12), io%lf
+        Case (IO_HISTORD)
+          ! Short History File
+          Write (line, '( 6a1, 4f7.1, a1 )') &
+            name(1:6, i), Data(RX_IND, i), Data(RY_IND, i), Data(RZ_IND, i), Data(io%D_IND, i), io%lf
+        Case (IO_MSDTMP)
+          ! MSDTMP file
+          Write (line, '( 8a1, i10, 1p, 2e13.4, a8, a1 )') name(:, i), indices(i), &
+            Data(io%W_IND, i), Data(io%Q_IND, i), Repeat(' ', 8), io%lf
+        End Select
+        in_buffer = in_buffer + 1
+        Do j = 1, io%rec_size
+          buffer(j, in_buffer) = line(j:j)
+        End Do
+
+        If (in_buffer == n_buff) Then
+          Call io_write_batch(io, file_handle, next_rec, in_buffer, buffer)
+          in_buffer = 0
+          If (write_options /= IO_MSDTMP .and. write_options /= IO_HISTORD) Then
+            next_rec = Int(first_record, MPI_OFFSET_KIND) + &
+                       Int(indices(i) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND) + &
+                       Int(1, MPI_OFFSET_KIND)
+          Else
+            next_rec = Int(first_record, MPI_OFFSET_KIND) + Int(indices(i) - 1, MPI_OFFSET_KIND) + &
+                       Int(1, MPI_OFFSET_KIND)
+          End If
         End If
 
-        ! Loop over the atoms filling up the buffer.  Once full dump to disk.
-        in_buffer = 0
         If (write_options /= IO_MSDTMP .and. write_options /= IO_HISTORD) Then
-          next_rec = Int(first_record, MPI_OFFSET_KIND) + &
-                     Int(indices(1) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND)
-        Else
-          next_rec = Int(first_record, MPI_OFFSET_KIND) + &
-                     Int(indices(1) - 1, MPI_OFFSET_KIND)
-        End If
 
-        Do i = 1, n
-
-          ! Atom name - change structure according to whether
-          ! the weight, charge and rsd are stored or not
-          ! Also note slight pain due to array of character not being the same as character( Len( Size( array ) )
-          ! being extremely careful here as MPI only knows about character( Len = 1 ), so the derived
-          ! type can ONLY be an array of char ....
-          Select Case (write_options)
-          Case (IO_RESTART)
-            ! Restart file
-            Write (line, '( 8a1, i10, a54, a1 )') name(:, i), indices(i), Repeat(' ', 54), io%lf
-          Case (IO_HISTORY)
-            ! History File
-            Write (line, '( 8a1, i10, 3(1x,f13.6), a12, a1 )') name(:, i), indices(i), &
-              Data(io%W_IND, i), Data(io%Q_IND, i), Data(io%D_IND, i), Repeat(' ', 12), io%lf
-          Case (IO_HISTORD)
-            ! Short History File
-            Write (line, '( 6a1, 4f7.1, a1 )') &
-              name(1:6, i), Data(RX_IND, i), Data(RY_IND, i), Data(RZ_IND, i), Data(io%D_IND, i), io%lf
-          Case (IO_MSDTMP)
-            ! MSDTMP file
-            Write (line, '( 8a1, i10, 1p, 2e13.4, a8, a1 )') name(:, i), indices(i), &
-              Data(io%W_IND, i), Data(io%Q_IND, i), Repeat(' ', 8), io%lf
-          End Select
+          ! Atomic coordinates
+          Write (line, '( 3g20.10, a12, a1 )') &
+            Data(RX_IND, i), Data(RY_IND, i), Data(RZ_IND, i), Repeat(' ', 12), io%lf
           in_buffer = in_buffer + 1
           Do j = 1, io%rec_size
             buffer(j, in_buffer) = line(j:j)
@@ -4454,21 +4180,15 @@ Contains
           If (in_buffer == n_buff) Then
             Call io_write_batch(io, file_handle, next_rec, in_buffer, buffer)
             in_buffer = 0
-            If (write_options /= IO_MSDTMP .and. write_options /= IO_HISTORD) Then
-              next_rec = Int(first_record, MPI_OFFSET_KIND) + &
-                         Int(indices(i) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND) + &
-                         Int(1, MPI_OFFSET_KIND)
-            Else
-              next_rec = Int(first_record, MPI_OFFSET_KIND) + Int(indices(i) - 1, MPI_OFFSET_KIND) + &
-                         Int(1, MPI_OFFSET_KIND)
-            End If
+            next_rec = Int(first_record, MPI_OFFSET_KIND) + &
+                       Int(indices(i) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND) + &
+                       Int(2, MPI_OFFSET_KIND)
           End If
 
-          If (write_options /= IO_MSDTMP .and. write_options /= IO_HISTORD) Then
-
-            ! Atomic coordinates
+          ! Velocities, if required
+          If (write_level > 0) Then
             Write (line, '( 3g20.10, a12, a1 )') &
-              Data(RX_IND, i), Data(RY_IND, i), Data(RZ_IND, i), Repeat(' ', 12), io%lf
+              Data(VX_IND, i), Data(VY_IND, i), Data(VZ_IND, i), Repeat(' ', 12), io%lf
             in_buffer = in_buffer + 1
             Do j = 1, io%rec_size
               buffer(j, in_buffer) = line(j:j)
@@ -4479,105 +4199,41 @@ Contains
               in_buffer = 0
               next_rec = Int(first_record, MPI_OFFSET_KIND) + &
                          Int(indices(i) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND) + &
-                         Int(2, MPI_OFFSET_KIND)
+                         Int(3, MPI_OFFSET_KIND)
             End If
-
-            ! Velocities, if required
-            If (write_level > 0) Then
-              Write (line, '( 3g20.10, a12, a1 )') &
-                Data(VX_IND, i), Data(VY_IND, i), Data(VZ_IND, i), Repeat(' ', 12), io%lf
-              in_buffer = in_buffer + 1
-              Do j = 1, io%rec_size
-                buffer(j, in_buffer) = line(j:j)
-              End Do
-
-              If (in_buffer == n_buff) Then
-                Call io_write_batch(io, file_handle, next_rec, in_buffer, buffer)
-                in_buffer = 0
-                next_rec = Int(first_record, MPI_OFFSET_KIND) + &
-                           Int(indices(i) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND) + &
-                           Int(3, MPI_OFFSET_KIND)
-              End If
-            End If
-
-            ! Forces, if required
-            If (write_level > 1) Then
-              Write (line, '( 3g20.10, a12, a1 )') &
-                Data(FX_IND, i), Data(FY_IND, i), Data(FZ_IND, i), Repeat(' ', 12), io%lf
-              in_buffer = in_buffer + 1
-              Do j = 1, io%rec_size
-                buffer(j, in_buffer) = line(j:j)
-              End Do
-
-              If (in_buffer == n_buff) Then
-                Call io_write_batch(io, file_handle, next_rec, in_buffer, buffer)
-                in_buffer = 0
-                next_rec = Int(first_record, MPI_OFFSET_KIND) + &
-                           Int(indices(i) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND) + &
-                           Int(4, MPI_OFFSET_KIND)
-              End If
-            End If
-
           End If
 
-        End Do
+          ! Forces, if required
+          If (write_level > 1) Then
+            Write (line, '( 3g20.10, a12, a1 )') &
+              Data(FX_IND, i), Data(FY_IND, i), Data(FZ_IND, i), Repeat(' ', 12), io%lf
+            in_buffer = in_buffer + 1
+            Do j = 1, io%rec_size
+              buffer(j, in_buffer) = line(j:j)
+            End Do
 
-        If (in_buffer /= 0) Then
-          Call io_write_batch(io, file_handle, next_rec, in_buffer, buffer)
-          in_buffer = 0
-        End If
-
-        Deallocate (buffer, Stat=error)
-        If (.not. ok(io, error == 0, io_comm)) Then
-          error = IO_DEALLOCATION_ERROR
-          Return
-        End If
-
-      Else
-
-        ! netCDF write
-        ln = Size(name, Dim=1)
-        frame = Int(first_record, Kind(frame))
-
-        Select Case (write_options)
-        Case (IO_RESTART)
-          ! Restart file
-          Call netcdf_put_var('atomnames', desc, name, [indices(1), frame], [ln, n, 1])
-          Call netcdf_put_var('indices', desc, indices, [indices(1), frame], [n, 1])
-        Case (IO_HISTORY)
-          ! History File
-          If (frame == 1) Then
-            Call netcdf_put_var('atomnames', desc, name, [indices(1), frame], [ln, n, 1])
-            Call netcdf_put_var('indices', desc, indices, [indices(1), frame], [n, 1])
-            Call netcdf_put_var('masses', desc, Data(io%W_IND, 1:n), [indices(1), frame], [n, 1])
-            Call netcdf_put_var('charges', desc, Data(io%Q_IND, 1:n), [indices(1), frame], [n, 1])
+            If (in_buffer == n_buff) Then
+              Call io_write_batch(io, file_handle, next_rec, in_buffer, buffer)
+              in_buffer = 0
+              next_rec = Int(first_record, MPI_OFFSET_KIND) + &
+                         Int(indices(i) - 1, MPI_OFFSET_KIND) * Int(write_level + 2, MPI_OFFSET_KIND) + &
+                         Int(4, MPI_OFFSET_KIND)
+            End If
           End If
-          Call netcdf_put_var('rsd', desc, Data(io%D_IND, 1:n), [indices(1), frame], [n, 1])
-        Case (IO_HISTORD)
-          ! Short History File
-          If (frame == 1) &
-            Call netcdf_put_var('atomnames', desc, name, [indices(1), frame], [ln, n, 1])
-          Call netcdf_put_var('rsd', desc, Data(io%D_IND, 1:n), [indices(1), frame], [n, 1])
-        Case (IO_MSDTMP)
 
-          ! Impossible for the time being
-
-        End Select
-
-        If (write_options /= IO_MSDTMP) Then
-          Select Case (write_level)
-          Case (0)
-            Call netcdf_put_var('coordinates', desc, Data(RX_IND:RZ_IND, 1:n), [1, indices(1), frame], [3, n, 1])
-          Case (1)
-            Call netcdf_put_var('coordinates', desc, Data(RX_IND:RZ_IND, 1:n), [1, indices(1), frame], [3, n, 1])
-            Call netcdf_put_var('velocities', desc, Data(VX_IND:VZ_IND, 1:n), [1, indices(1), frame], [3, n, 1])
-          Case (2)
-            Call netcdf_put_var('coordinates', desc, Data(RX_IND:RZ_IND, 1:n), [1, indices(1), frame], [3, n, 1])
-            Call netcdf_put_var('velocities', desc, Data(VX_IND:VZ_IND, 1:n), [1, indices(1), frame], [3, n, 1])
-            Call netcdf_put_var('forces', desc, Data(FX_IND:FZ_IND, 1:n), [1, indices(1), frame], [3, n, 1])
-          End Select
         End If
 
+      End Do
+
+      If (in_buffer /= 0) Then
+        Call io_write_batch(io, file_handle, next_rec, in_buffer, buffer)
+        in_buffer = 0
+      End If
+
+      Deallocate (buffer, Stat=error)
+      If (.not. ok(io, error == 0, io_comm)) Then
+        error = IO_DEALLOCATION_ERROR
+        Return
       End If
 
     End Subroutine config_out
@@ -4706,257 +4362,6 @@ Contains
 
   End Subroutine io_read_batch
 
-  Subroutine io_nc_set_def(io, param, io_file_handle, title, n)
-
-    Type(io_type),      Intent(InOut) :: io
-    Type(netcdf_param), Intent(InOut) :: param
-    Integer,            Intent(In   ) :: io_file_handle
-    Character(Len=*),   Intent(In   ) :: title
-    Integer,            Intent(In   ) :: n
-
-    Call netcdf_set_def(title, n, param, io%known_files(io_file_handle)%desc)
-
-  End Subroutine io_nc_set_def
-
-  Subroutine io_nc_put_var_rwp_0d(io, what, io_file_handle, val, start, count)
-
-    Type(io_type),    Intent(InOut) :: io
-    Character(Len=*), Intent(In   ) :: what
-    Integer,          Intent(In   ) :: io_file_handle
-    Real(Kind=wp),    Intent(In   ) :: val
-    Integer,          Intent(In   ) :: start, count
-
-    Call netcdf_put_var(what, io%known_files(io_file_handle)%desc, val, start, count)
-
-  End Subroutine io_nc_put_var_rwp_0d
-
-  Subroutine io_nc_put_var_rwp_1d(io, what, io_file_handle, val, start, count)
-
-    Type(io_type),               Intent(InOut) :: io
-    Character(Len=*),            Intent(In   ) :: what
-    Integer,                     Intent(In   ) :: io_file_handle
-    Real(Kind=wp), Dimension(:), Intent(In   ) :: val
-    Integer, Dimension(:),       Intent(In   ) :: start, count
-
-    Call netcdf_put_var(what, io%known_files(io_file_handle)%desc, val, start, count)
-
-  End Subroutine io_nc_put_var_rwp_1d
-
-  Subroutine io_nc_put_var_rwp_2d(io, what, io_file_handle, val, start, count)
-
-    Type(io_type),                  Intent(InOut) :: io
-    Character(Len=*),               Intent(In   ) :: what
-    Integer,                        Intent(In   ) :: io_file_handle
-    Real(Kind=wp), Dimension(:, :), Intent(In   ) :: val
-    Integer, Dimension(:),          Intent(In   ) :: start, count
-
-    Call netcdf_put_var(what, io%known_files(io_file_handle)%desc, val, start, count)
-
-  End Subroutine io_nc_put_var_rwp_2d
-
-  Subroutine io_nc_put_var_int_0d(io, what, io_file_handle, val, start, count)
-
-    Type(io_type),    Intent(InOut) :: io
-    Character(Len=*), Intent(In   ) :: what
-    Integer,          Intent(In   ) :: io_file_handle, val, start, count
-
-    Call netcdf_put_var(what, io%known_files(io_file_handle)%desc, val, start, count)
-
-  End Subroutine io_nc_put_var_int_0d
-
-  Subroutine io_nc_put_var_int_1d(io, what, io_file_handle, val, start, count)
-
-    Type(io_type),         Intent(InOut) :: io
-    Character(Len=*),      Intent(In   ) :: what
-    Integer,               Intent(In   ) :: io_file_handle
-    Integer, Dimension(:), Intent(In   ) :: val, start, count
-
-    Call netcdf_put_var(what, io%known_files(io_file_handle)%desc, val, start, count)
-
-  End Subroutine io_nc_put_var_int_1d
-
-  Subroutine io_nc_put_var_chr_2d(io, what, io_file_handle, val, start, count)
-
-    Type(io_type),              Intent(InOut) :: io
-    Character(Len=*),           Intent(In   ) :: what
-    Integer,                    Intent(In   ) :: io_file_handle
-    Character, Dimension(:, :), Intent(In   ) :: val
-    Integer, Dimension(:),      Intent(In   ) :: start, count
-
-    Call netcdf_put_var(what, io%known_files(io_file_handle)%desc, val, start, count)
-
-  End Subroutine io_nc_put_var_chr_2d
-
-  Subroutine io_get_var(io, what, fh, start, count, x, y, z)
-
-    Type(io_type),               Intent(InOut) :: io
-    Character(Len=*),            Intent(In   ) :: what
-    Integer,                     Intent(In   ) :: fh
-    Integer, Dimension(:),       Intent(In   ) :: start, count
-    Real(Kind=wp), Dimension(:), Intent(  Out) :: x, y, z
-
-    Character(Len=256)                          :: message
-    Integer                                     :: fail, i, to_read
-    Real(Kind=wp), Allocatable, Dimension(:, :) :: buff
-
-    to_read = Count(2)
-
-    Allocate (buff(1:3, 1:to_read), Stat=fail)
-    If (fail /= 0) Then
-      Write (message, '(a)') 'allocation failure in io_get_var'
-      Call error(0, message)
-    End If
-
-    Call io_nc_get_var(io, what, fh, buff, start, count)
-
-    Do i = 1, to_read
-      x(i) = buff(1, i)
-      y(i) = buff(2, i)
-      z(i) = buff(3, i)
-    End Do
-
-    Deallocate (buff, Stat=fail)
-    If (fail /= 0) Then
-      Write (message, '(a)') 'deallocation failure in io_get_var'
-      Call error(0, message)
-    End If
-  End Subroutine io_get_var
-
-  Subroutine io_nc_get_var_rwp_0d(io, what, io_file_handle, val, start, count)
-
-    Type(io_type),    Intent(InOut) :: io
-    Character(Len=*), Intent(In   ) :: what
-    Integer,          Intent(In   ) :: io_file_handle
-    Real(Kind=wp),    Intent(  Out) :: val
-    Integer,          Intent(In   ) :: start, count
-
-    Call netcdf_get_var(what, io%known_files(io_file_handle)%desc, val, start, count)
-
-  End Subroutine io_nc_get_var_rwp_0d
-
-  Subroutine io_nc_get_var_rwp_1d(io, what, io_file_handle, val, start, count)
-
-    Type(io_type),               Intent(InOut) :: io
-    Character(Len=*),            Intent(In   ) :: what
-    Integer,                     Intent(In   ) :: io_file_handle
-    Real(Kind=wp), Dimension(:), Intent(  Out) :: val
-    Integer, Dimension(:),       Intent(In   ) :: start, count
-
-    Call netcdf_get_var(what, io%known_files(io_file_handle)%desc, val, start, count)
-
-  End Subroutine io_nc_get_var_rwp_1d
-
-  Subroutine io_nc_get_var_rwp_2d(io, what, io_file_handle, val, start, count)
-
-    Type(io_type),                  Intent(InOut) :: io
-    Character(Len=*),               Intent(In   ) :: what
-    Integer,                        Intent(In   ) :: io_file_handle
-    Real(Kind=wp), Dimension(:, :), Intent(  Out) :: val
-    Integer, Dimension(:),          Intent(In   ) :: start, count
-
-    Call netcdf_get_var(what, io%known_files(io_file_handle)%desc, val, start, count)
-
-  End Subroutine io_nc_get_var_rwp_2d
-
-  Subroutine io_nc_get_var_int_0d(io, what, io_file_handle, val, start, count)
-
-    Type(io_type),    Intent(InOut) :: io
-    Character(Len=*), Intent(In   ) :: what
-    Integer,          Intent(In   ) :: io_file_handle
-    Integer,          Intent(  Out) :: val
-    Integer,          Intent(In   ) :: start, count
-
-    Call netcdf_get_var(what, io%known_files(io_file_handle)%desc, val, start, count)
-
-  End Subroutine io_nc_get_var_int_0d
-
-  Subroutine io_nc_get_var_int_1d(io, what, io_file_handle, val, start, count)
-
-    Type(io_type),         Intent(InOut) :: io
-    Character(Len=*),      Intent(In   ) :: what
-    Integer,               Intent(In   ) :: io_file_handle
-    Integer, Dimension(:), Intent(  Out) :: val
-    Integer, Dimension(:), Intent(In   ) :: start, count
-
-    Call netcdf_get_var(what, io%known_files(io_file_handle)%desc, val, start, count)
-
-  End Subroutine io_nc_get_var_int_1d
-
-  Subroutine io_nc_get_var_chr_1d(io, what, io_file_handle, val, start, count)
-
-    Type(io_type),                  Intent(InOut) :: io
-    Character(Len=*),               Intent(In   ) :: what
-    Integer,                        Intent(In   ) :: io_file_handle
-    Character(Len=*), Dimension(:), Intent(  Out) :: val
-    Integer, Dimension(:),          Intent(In   ) :: start, count
-
-    Call netcdf_get_var(what, io%known_files(io_file_handle)%desc, val, start, count)
-
-  End Subroutine io_nc_get_var_chr_1d
-
-  Subroutine io_nc_get_var_chr_2d(io, what, io_file_handle, val, start, count)
-
-    Type(io_type),                     Intent(InOut) :: io
-    Character(Len=*),                  Intent(In   ) :: what
-    Integer,                           Intent(In   ) :: io_file_handle
-    Character(Len=*), Dimension(:, :), Intent(  Out) :: val
-    Integer, Dimension(:),             Intent(In   ) :: start, count
-
-    Call netcdf_get_var(what, io%known_files(io_file_handle)%desc, val, start, count)
-
-  End Subroutine io_nc_get_var_chr_2d
-
-  Subroutine io_nc_get_att_int(io, what, io_file_handle, val)
-
-    Type(io_type),    Intent(InOut) :: io
-    Character(Len=*), Intent(In   ) :: what
-    Integer,          Intent(In   ) :: io_file_handle
-    Integer,          Intent(  Out) :: val
-
-    Call netcdf_get_att(what, io%known_files(io_file_handle)%desc, val)
-
-  End Subroutine io_nc_get_att_int
-
-  Subroutine io_nc_get_att_chr(io, what, io_file_handle, val)
-
-    Type(io_type),    Intent(InOut) :: io
-    Character(Len=*), Intent(In   ) :: what
-    Integer,          Intent(In   ) :: io_file_handle
-    Character,        Intent(  Out) :: val
-
-    Call netcdf_get_att(what, io%known_files(io_file_handle)%desc, val)
-
-  End Subroutine io_nc_get_att_chr
-
-  Subroutine io_nc_set_real_precision(k, param, error)
-
-    Integer,            Intent(In   ) :: k
-    Type(netcdf_param), Intent(InOut) :: param
-    Integer,            Intent(  Out) :: error
-
-    Call netcdf_set_real_precision(k, param, error)
-
-  End Subroutine io_nc_set_real_precision
-
-  Subroutine io_nc_get_real_precision(param, p, r, error)
-
-    Type(netcdf_param), Intent(In   ) :: param
-    Integer,            Intent(  Out) :: p, r, error
-
-    Call netcdf_get_real_precision(param, p, r, error)
-
-  End Subroutine io_nc_get_real_precision
-
-  Subroutine io_nc_get_file_real_precision(io, io_file_handle, p, r, error)
-
-    Type(io_type), Intent(InOut) :: io
-    Integer,       Intent(In   ) :: io_file_handle
-    Integer,       Intent(  Out) :: p, r, error
-
-    Call netcdf_get_file_real_precision(io%known_files(io_file_handle)%desc, p, r, error)
-
-  End Subroutine io_nc_get_file_real_precision
-
   Subroutine split_io_comm(base_comm, n_io_procs_write, io_comm, io_gather_comm, do_io)
 
     ! Derive from the base communicator two further ones, IO_COMM and IO_GATHER_COMM.
@@ -5025,7 +4430,7 @@ Contains
         colour = MPI_UNDEFINED
       End If
       do_io = (colour == 0)
-      Call MPI_COMM_SPLIT( base_comm, colour, key, io_comm, ierr )
+      Call MPI_COMM_SPLIT(base_comm, colour, key, io_comm, ierr)
 
       ! And now the gather comm
       colour = rank_base / (everyth_for_io + 1)
@@ -5038,13 +4443,13 @@ Contains
 
     ! Freeing IO_COMM and IO_GATHER_COMM.
 
-    Logical, Intent( InOut )  :: do_io
-    ! Note we can not set an intent on this - on procs NOT doing I/O it is
-    ! intent Out, on procs doing I/O it is InOut
-    Integer, Intent( InOut ) :: io_comm
-    Integer, Intent( InOut ) :: io_gather_comm
+    Logical, Intent(InOut) :: do_io
+    Integer, Intent(InOut) :: io_comm, io_gather_comm
 
     Integer :: ierr
+
+! Note we can not set an intent on this - on procs NOT doing I/O it is
+! intent Out, on procs doing I/O it is InOut
 
 ! Note we can not set an intent on this - on procs NOT doing I/O it is
 ! intent Out, on procs doing I/O it is InOut
@@ -5052,7 +4457,7 @@ Contains
     If (do_io) Then
       Call MPI_COMM_FREE(io_comm, ierr)
     End If
-    Call MPI_COMM_FREE( io_gather_comm, ierr )
+    Call MPI_COMM_FREE(io_gather_comm, ierr)
     io_comm = MPI_COMM_NULL
     io_gather_comm = MPI_COMM_NULL
 
@@ -5211,11 +4616,5 @@ Contains
     file_handle = LOW_HANDLE - 1
 
   End Subroutine get_file_handle
-
-  Subroutine io_nc_compiled()
-
-    Call netcdf_compiled()
-
-  End Subroutine io_nc_compiled
 
 End Module io

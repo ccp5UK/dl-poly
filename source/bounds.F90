@@ -319,7 +319,7 @@ Contains
                                     mtteth
     Integer(Kind=wi)             :: mxgrid
     Integer, Dimension(3)        :: link_cell
-    Real(Kind=wp)                :: ats, cut, dens, dens0, fdvar, padding2, test, xhi, yhi, zhi
+    Real(Kind=wp)                :: cut, dens, dens0, fdvar, padding2, xhi, yhi, zhi
     Real(Kind=wp), Dimension(10) :: cell_properties
 
     ! scan the FIELD file data

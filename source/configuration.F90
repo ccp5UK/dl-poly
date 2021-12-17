@@ -43,21 +43,18 @@ Module configuration
                              flow_type
   Use io,              Only: &
                              IO_ALLOCATION_ERROR, IO_BASE_COMM_NOT_SET, IO_READ_MASTER, &
-                             IO_READ_NETCDF, IO_RESTART, IO_SUBSET_FORCES, IO_SUBSET_POSITIONS, &
+                             IO_RESTART, IO_SUBSET_FORCES, IO_SUBSET_POSITIONS, &
                              IO_UNKNOWN_WRITE_LEVEL, IO_UNKNOWN_WRITE_OPTION, &
                              IO_WRITE_SORTED_DIRECT, IO_WRITE_SORTED_MASTER, &
-                             IO_WRITE_SORTED_MPIIO, IO_WRITE_SORTED_NETCDF, &
-                             IO_WRITE_UNSORTED_DIRECT, IO_WRITE_UNSORTED_MASTER, &
-                             IO_WRITE_UNSORTED_MPIIO, io_close, io_delete, io_finalize, &
-                             io_get_parameters, io_get_var, io_init, io_nc_create, io_nc_get_att, &
-                             io_nc_get_dim, io_nc_get_var, io_nc_put_var, io_open, io_read_batch, &
-                             io_set_parameters, io_type, io_write_batch, io_write_record, &
-                             io_write_sorted_file, recsz, split_io_comm
+                             IO_WRITE_SORTED_MPIIO, IO_WRITE_UNSORTED_DIRECT, &
+                             IO_WRITE_UNSORTED_MASTER, IO_WRITE_UNSORTED_MPIIO, io_close, &
+                             io_delete, io_finalize, io_get_parameters, io_init, io_open, &
+                             io_read_batch, io_set_parameters, io_type, io_write_batch, &
+                             io_write_record, io_write_sorted_file, recsz, split_io_comm
   Use kinds,           Only: li,&
                              wi,&
                              wp
   Use kpoints,         Only: kpoints_type
-  Use netcdf_wrap,     Only: netcdf_param
   Use numerics,        Only: dcell,&
                              images,&
                              invert,&
@@ -928,23 +925,15 @@ Contains
 
     Call io_get_parameters(io, user_method_read=io_read)
 
-    ! Define filename ASCII or netCDF
+    ! Define filename ASCII
 
-    If (io_read /= IO_READ_NETCDF) Then
-      fname = Trim(files(conftag)%filename)
-    Else
-      fname = Trim(files(conftag)%filename)//'.nc'
-    End If
+    fname = Trim(files(conftag)%filename)
 
     ! Define/Detect the FAST reading status
 
     If (io_read == IO_READ_MASTER) Then
 
       fast = .false.
-
-    Else If (io_read == IO_READ_NETCDF) Then
-
-      fast = .true.
 
     Else
 
@@ -1243,14 +1232,10 @@ Contains
 
       ! top_skip is header size
 
-      If (io_read /= IO_READ_NETCDF) Then
-        If (config%imcon == IMCON_NOPBC) Then
-          top_skip = Int(2, offset_kind)
-        Else
-          top_skip = Int(5, offset_kind)
-        End If
+      If (config%imcon == IMCON_NOPBC) Then
+        top_skip = Int(2, offset_kind)
       Else
-        top_skip = Int(1, offset_kind) ! This is now the frame = 1
+        top_skip = Int(5, offset_kind)
       End If
 
       Call read_config_parallel(config, levcfg, dvar, l_ind, strict, megatm, l_his, l_xtr, &
@@ -1453,15 +1438,13 @@ Contains
     Character(Len=256)                             :: messages(3)
     Character(Len=40)                              :: forma, word
     Character(Len=8), Allocatable, Dimension(:)    :: chbuf, chbuf_read, chbuf_scat
-    Integer                                        :: ats_per_proc, batsz, Count(1:3), fail(1:8), &
-                                                      frame, i, idm, ierr, indatm, io_read, ipx, &
-                                                      ipy, ipz, j, k, max_fail, min_fail, &
-                                                      my_read_proc_num, n_ats_in_file, n_loc, &
+    Integer                                        :: ats_per_proc, batsz, fail(1:8), i, idm, &
+                                                      ierr, indatm, io_read, ipx, ipy, ipz, j, k, &
+                                                      max_fail, min_fail, my_read_proc_num, n_loc, &
                                                       n_read_procs_use, per_read_proc, &
                                                       recs_per_at, recs_per_proc, recs_to_read, &
-                                                      recsz, start(1:3), this_base_proc, &
-                                                      this_rec_buff, to_read, which_read_proc, &
-                                                      wp_vals_per_at
+                                                      recsz, this_base_proc, this_rec_buff, &
+                                                      to_read, which_read_proc, wp_vals_per_at
     Integer(Kind=li)                               :: n_ii, n_jj, n_sk
     Integer(Kind=offset_kind)                      :: n_skip, rec_mpi_io
     Integer(Kind=wi)                               :: conftag
@@ -1475,7 +1458,6 @@ Contains
     Real(Kind=wp), Allocatable, Dimension(:, :)    :: scatter_buffer, scatter_buffer_read
 
 ! Some parameters and variables needed by io interfaces
-! netCDF
 
     ! Choose which CONFIG file to read
     If (ff == 1) Then
@@ -1576,11 +1558,8 @@ Contains
 
       ! Allocate record buffer, reading buffers, scatter buffers and indexing arrays
 
-      If (io_read /= IO_READ_NETCDF) Then
-        Allocate (rec_buff(1:recsz, 1:batsz), Stat=fail(1))
-      Else
-        Allocate (rec_buff(1:Len(chbuf_read), 1:batsz), Stat=fail(1))
-      End If
+      Allocate (rec_buff(1:recsz, 1:batsz), Stat=fail(1))
+
       Allocate (chbuf_read(1:batsz), iwrk_read(1:batsz), Stat=fail(2))
       Allocate (axx_read(1:batsz), ayy_read(1:batsz), azz_read(1:batsz), Stat=fail(3))
       Allocate (bxx_read(1:batsz), byy_read(1:batsz), bzz_read(1:batsz), Stat=fail(4))
@@ -1625,71 +1604,92 @@ Contains
       Readers_only: If (do_read .and. indatm == 0) Then
         to_read = Min(batsz, orig_first_at(my_read_proc_num + 1) - first_at(my_read_proc_num))
 
-        No_netCDF: If (io_read /= IO_READ_NETCDF) Then
-
-          this_rec_buff = 0
-          recs_to_read = 0
-          Do i = 1, to_read
-            If (this_rec_buff == 0) Then
-              recs_to_read = Min(Size(rec_buff, Dim=2), (to_read - i + 1) * recs_per_at)
-              If (.not. fast) Then
-                Read (Unit=files(conftag)%unit_no, Fmt=forma) rec_buff(:, 1:recs_to_read)
-              Else
-                Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr)
-                Call error_read(ierr, 'read_config_parallel')
-                rec_mpi_io = rec_mpi_io + Int(recs_to_read, offset_kind)
-              End If
+        this_rec_buff = 0
+        recs_to_read = 0
+        Do i = 1, to_read
+          If (this_rec_buff == 0) Then
+            recs_to_read = Min(Size(rec_buff, Dim=2), (to_read - i + 1) * recs_per_at)
+            If (.not. fast) Then
+              Read (Unit=files(conftag)%unit_no, Fmt=forma) rec_buff(:, 1:recs_to_read)
+            Else
+              Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr)
+              Call error_read(ierr, 'read_config_parallel')
+              rec_mpi_io = rec_mpi_io + Int(recs_to_read, offset_kind)
             End If
+          End If
 
-            ! Atom details
-            record = ''
+          ! Atom details
+          record = ''
+          this_rec_buff = this_rec_buff + 1
+          Do j = 1, Min(Len(record), Size(rec_buff, Dim=1))
+            record(j:j) = rec_buff(j, this_rec_buff)
+          End Do
+          Call tabs_2_blanks(record); Call strip_blanks(record)
+
+          Call get_word(record, word); chbuf_read(i) = word(1:8)
+          If (l_ind) Then
+            Call get_word(record, word)
+            iwrk_read(i) = Nint(word_2_real(word, 0.0_wp, strict))
+            If (iwrk_read(i) /= 0) Then
+              iwrk_read(i) = Abs(iwrk_read(i))
+            Else
+              iwrk_read(i) = first_at(my_read_proc_num) + i
+            End If
+          Else
+            iwrk_read(i) = first_at(my_read_proc_num) + i
+          End If
+
+          If (levcfg == 3) Read (record, Fmt=*, iostat=ierr) axx_read(i), ayy_read(i), azz_read(i)
+          Call error_read(ierr, 'read_config_parallel')
+
+          If (this_rec_buff == recs_to_read) Then
+            this_rec_buff = 0
+            recs_to_read = Min(Size(rec_buff, Dim=2), (to_read - i + 1) * recs_per_at - 1)
+            If (.not. fast) Then
+              Read (Unit=files(conftag)%unit_no, Fmt=forma) rec_buff(:, 1:recs_to_read)
+            Else
+              Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr)
+              rec_mpi_io = rec_mpi_io + Int(recs_to_read, offset_kind)
+            End If
+          End If
+
+          If (levcfg /= 3) Then
+
+            ! Positions
+
             this_rec_buff = this_rec_buff + 1
             Do j = 1, Min(Len(record), Size(rec_buff, Dim=1))
               record(j:j) = rec_buff(j, this_rec_buff)
             End Do
-            Call tabs_2_blanks(record); Call strip_blanks(record)
-
-            Call get_word(record, word); chbuf_read(i) = word(1:8)
-            If (l_ind) Then
-              Call get_word(record, word)
-              iwrk_read(i) = Nint(word_2_real(word, 0.0_wp, strict))
-              If (iwrk_read(i) /= 0) Then
-                iwrk_read(i) = Abs(iwrk_read(i))
-              Else
-                iwrk_read(i) = first_at(my_read_proc_num) + i
-              End If
-            Else
-              iwrk_read(i) = first_at(my_read_proc_num) + i
-            End If
-
-            If (levcfg == 3) Read (record, Fmt=*, iostat=ierr) axx_read(i), ayy_read(i), azz_read(i)
+            Read (record, Fmt=*, iostat=ierr) axx_read(i), ayy_read(i), azz_read(i)
             Call error_read(ierr, 'read_config_parallel')
-
             If (this_rec_buff == recs_to_read) Then
               this_rec_buff = 0
-              recs_to_read = Min(Size(rec_buff, Dim=2), (to_read - i + 1) * recs_per_at - 1)
-              If (.not. fast) Then
-                Read (Unit=files(conftag)%unit_no, Fmt=forma) rec_buff(:, 1:recs_to_read)
-              Else
-                Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr)
-                rec_mpi_io = rec_mpi_io + Int(recs_to_read, offset_kind)
+              If (levcfg > 0) Then
+                recs_to_read = Min(Size(rec_buff, Dim=2), (to_read - i + 1) * recs_per_at - 2)
+                If (.not. fast) Then
+                  Read (Unit=files(conftag)%unit_no, Fmt=forma) rec_buff(:, 1:recs_to_read)
+                Else
+                  Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr)
+                  Call error_read(ierr, 'read_config_parallel')
+                  rec_mpi_io = rec_mpi_io + Int(recs_to_read, offset_kind)
+                End If
               End If
             End If
 
-            If (levcfg /= 3) Then
+            ! Velocities
 
-              ! Positions
-
+            If (levcfg > 0) Then
               this_rec_buff = this_rec_buff + 1
               Do j = 1, Min(Len(record), Size(rec_buff, Dim=1))
                 record(j:j) = rec_buff(j, this_rec_buff)
               End Do
-              Read (record, Fmt=*, iostat=ierr) axx_read(i), ayy_read(i), azz_read(i)
+              Read (record, Fmt=*, iostat=ierr) bxx_read(i), byy_read(i), bzz_read(i)
               Call error_read(ierr, 'read_config_parallel')
               If (this_rec_buff == recs_to_read) Then
                 this_rec_buff = 0
-                If (levcfg > 0) Then
-                  recs_to_read = Min(Size(rec_buff, Dim=2), (to_read - i + 1) * recs_per_at - 2)
+                If (levcfg > 1) Then
+                  recs_to_read = Min(Size(rec_buff, Dim=2), (to_read - i + 1) * recs_per_at - 3)
                   If (.not. fast) Then
                     Read (Unit=files(conftag)%unit_no, Fmt=forma) rec_buff(:, 1:recs_to_read)
                   Else
@@ -1700,79 +1700,23 @@ Contains
                 End If
               End If
 
-              ! Velocities
+              ! Forces
 
-              If (levcfg > 0) Then
+              If (levcfg > 1) Then
                 this_rec_buff = this_rec_buff + 1
                 Do j = 1, Min(Len(record), Size(rec_buff, Dim=1))
                   record(j:j) = rec_buff(j, this_rec_buff)
                 End Do
-                Read (record, Fmt=*, iostat=ierr) bxx_read(i), byy_read(i), bzz_read(i)
+                Read (record, Fmt=*, iostat=ierr) cxx_read(i), cyy_read(i), czz_read(i)
                 Call error_read(ierr, 'read_config_parallel')
                 If (this_rec_buff == recs_to_read) Then
                   this_rec_buff = 0
-                  If (levcfg > 1) Then
-                    recs_to_read = Min(Size(rec_buff, Dim=2), (to_read - i + 1) * recs_per_at - 3)
-                    If (.not. fast) Then
-                      Read (Unit=files(conftag)%unit_no, Fmt=forma) rec_buff(:, 1:recs_to_read)
-                    Else
-                      Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr)
-                      Call error_read(ierr, 'read_config_parallel')
-                      rec_mpi_io = rec_mpi_io + Int(recs_to_read, offset_kind)
-                    End If
-                  End If
-                End If
-
-                ! Forces
-
-                If (levcfg > 1) Then
-                  this_rec_buff = this_rec_buff + 1
-                  Do j = 1, Min(Len(record), Size(rec_buff, Dim=1))
-                    record(j:j) = rec_buff(j, this_rec_buff)
-                  End Do
-                  Read (record, Fmt=*, iostat=ierr) cxx_read(i), cyy_read(i), czz_read(i)
-                  Call error_read(ierr, 'read_config_parallel')
-                  If (this_rec_buff == recs_to_read) Then
-                    this_rec_buff = 0
-                  End If
                 End If
               End If
-
-            End If
-          End Do
-
-        Else
-
-          If (to_read /= 0) Then
-            frame = Int(top_skip, Kind(frame))
-
-            Call io_nc_get_var(io, 'atomnames', fh, rec_buff, [first_at(my_read_proc_num) + 1, frame], [8, to_read, 1])
-            Do i = 1, to_read
-              Do j = 1, Min(Len(chbuf_read), Size(rec_buff, Dim=1))
-                chbuf_read(i) (j:j) = rec_buff(j, i)
-              End Do
-            End Do
-            If (l_ind) Then
-              Call io_nc_get_var(io, 'indices', fh, iwrk_read, [first_at(my_read_proc_num) + 1, frame], [to_read, 1])
             End If
 
-            start = [1, first_at(my_read_proc_num) + 1, frame]
-            count = [3, to_read, 1]
-
-            Select Case (levcfg)
-            Case (0, 3)
-              Call io_get_var(io, 'coordinates', fh, start, count, axx_read, ayy_read, azz_read)
-            Case (1)
-              Call io_get_var(io, 'coordinates', fh, start, count, axx_read, ayy_read, azz_read)
-              Call io_get_var(io, 'velocities', fh, start, count, bxx_read, byy_read, bzz_read)
-            Case (2)
-              Call io_get_var(io, 'coordinates', fh, start, count, axx_read, ayy_read, azz_read)
-              Call io_get_var(io, 'velocities', fh, start, count, bxx_read, byy_read, bzz_read)
-              Call io_get_var(io, 'forces', fh, start, count, cxx_read, cyy_read, czz_read)
-            End Select
           End If
-
-        End If No_netCDF
+        End Do
 
         If (.not. l_xtr) Then
 
@@ -2005,29 +1949,17 @@ Contains
 
       If (do_read) Then
 
-        If (io_read /= IO_READ_NETCDF) Then
+        ! The last reader to check for EoFile in CONFIG
+        ! and if none is hit to call error to abort
 
-          ! The last reader to check for EoFile in CONFIG
-          ! and if none is hit to call error to abort
-
-          If (first_at(my_read_proc_num) == megatm) Then
-            recs_to_read = 1
-            If (.not. fast) Then
-              Read (Unit=files(conftag)%unit_no, Fmt=forma, Iostat=ierr) rec_buff(:, 1:recs_to_read)
-            Else
-              Call io_read_batch(io, fh, rec_mpi_io, 1, rec_buff, ierr)
-            End If
-            safe = (ierr /= 0)
+        If (first_at(my_read_proc_num) == megatm) Then
+          recs_to_read = 1
+          If (.not. fast) Then
+            Read (Unit=files(conftag)%unit_no, Fmt=forma, Iostat=ierr) rec_buff(:, 1:recs_to_read)
+          Else
+            Call io_read_batch(io, fh, rec_mpi_io, 1, rec_buff, ierr)
           End If
-
-        Else
-
-          ! As netCDF files have no real concept of line numbers,
-          ! instead check the arrays are the correct size
-
-          Call io_nc_get_dim(io, 'atom', fh, n_ats_in_file)
-          safe = n_ats_in_file == megatm
-
+          safe = (ierr /= 0)
         End If
 
       End If
@@ -2094,7 +2026,7 @@ Contains
     Integer(Kind=offset_kind) :: top_skip
     Integer(Kind=wi)          :: conftag
     Logical                   :: eor, fast, l_his, l_ind, l_xtr, safe, strict
-    Real(Kind=wp)             :: buffer(1:4), cell_vecs(1:3, 1:3), xxx, yyy, zzz
+    Real(Kind=wp)             :: buffer(1:4), xxx, yyy, zzz
 
     ! Choose which CONFIG file to read
     If (ff == 1) Then
@@ -2119,13 +2051,9 @@ Contains
 
     Call io_get_parameters(io, user_method_read=io_read)
 
-    ! Define filename ASCII or netCDF
+    ! Define filename ASCII
 
-    If (io_read /= IO_READ_NETCDF) Then
-      fname = Trim(files(conftag)%filename)
-    Else
-      fname = Trim(files(conftag)%filename)//'nc'
-    End If
+    fname = Trim(files(conftag)%filename)
 
     ! Check if we have a CONFIG
 
@@ -2141,10 +2069,6 @@ Contains
     If (io_read == IO_READ_MASTER) Then
 
       fast = .false.
-
-    Else If (io_read == IO_READ_NETCDF) Then
-
-      fast = .true.
 
     Else
 
@@ -2206,99 +2130,71 @@ Contains
 
     !!! SCAN HEADER
 
-    If (io_read /= IO_READ_NETCDF) Then ! ASCII read
+    ! Open CONFIG
 
-      ! Open CONFIG
+    If (comm%idnode == 0) Open (Newunit=files(conftag)%unit_no, File=files(conftag)%filename)
 
-      If (comm%idnode == 0) Open (Newunit=files(conftag)%unit_no, File=files(conftag)%filename)
+    ! Read TITLE record (file header)
 
-      ! Read TITLE record (file header)
+    Call get_line(safe, files(conftag)%unit_no, record, comm)
+    If (.not. safe) Call error(0, 'Unexpected end of config')
+
+    config%cfgname = Trim(record)
+
+    ! Read configuration level and image condition
+
+    Call get_line(safe, files(conftag)%unit_no, record, comm)
+    If (.not. safe) Call error(0, 'Unexpected end of config')
+
+    Call get_word(record, word)
+    levcfg = Nint(word_2_real(word))
+
+    ! halt execution if configuration level is unsupported
+
+    If (levcfg < 0 .or. levcfg > 2) Call error(517)
+
+    Call get_word(record, word)
+    config%imcon = Nint(word_2_real(word))
+
+    ! halt execution if image conventions is unsupported
+
+    If (config%imcon < 0 .or. config%imcon > 7) Call error(514)
+
+    ! specify MD cell (not defined for imcon=0)
+
+    If (config%imcon /= 0) Then
+      Call get_line(safe, files(conftag)%unit_no, record, comm)
+      If (.not. safe) Call error(0, 'Unexpected end of config')
+      Call get_word(record, word)
+      config%cell(1) = word_2_real(word)
+      Call get_word(record, word)
+      config%cell(2) = word_2_real(word)
+      Call get_word(record, word)
+      config%cell(3) = word_2_real(word)
 
       Call get_line(safe, files(conftag)%unit_no, record, comm)
       If (.not. safe) Call error(0, 'Unexpected end of config')
-
-      config%cfgname = Trim(record)
-
-      ! Read configuration level and image condition
+      Call get_word(record, word)
+      config%cell(4) = word_2_real(word)
+      Call get_word(record, word)
+      config%cell(5) = word_2_real(word)
+      Call get_word(record, word)
+      config%cell(6) = word_2_real(word)
 
       Call get_line(safe, files(conftag)%unit_no, record, comm)
       If (.not. safe) Call error(0, 'Unexpected end of config')
-
       Call get_word(record, word)
-      levcfg = Nint(word_2_real(word))
-
-      ! halt execution if configuration level is unsupported
-
-      If (levcfg < 0 .or. levcfg > 2) Call error(517)
-
+      config%cell(7) = word_2_real(word)
       Call get_word(record, word)
-      config%imcon = Nint(word_2_real(word))
-
-      ! halt execution if image conventions is unsupported
-
-      If (config%imcon < 0 .or. config%imcon > 7) Call error(514)
-
-      ! specify MD cell (not defined for imcon=0)
-
-      If (config%imcon /= 0) Then
-        Call get_line(safe, files(conftag)%unit_no, record, comm)
-        If (.not. safe) Call error(0, 'Unexpected end of config')
-        Call get_word(record, word)
-        config%cell(1) = word_2_real(word)
-        Call get_word(record, word)
-        config%cell(2) = word_2_real(word)
-        Call get_word(record, word)
-        config%cell(3) = word_2_real(word)
-
-        Call get_line(safe, files(conftag)%unit_no, record, comm)
-        If (.not. safe) Call error(0, 'Unexpected end of config')
-        Call get_word(record, word)
-        config%cell(4) = word_2_real(word)
-        Call get_word(record, word)
-        config%cell(5) = word_2_real(word)
-        Call get_word(record, word)
-        config%cell(6) = word_2_real(word)
-
-        Call get_line(safe, files(conftag)%unit_no, record, comm)
-        If (.not. safe) Call error(0, 'Unexpected end of config')
-        Call get_word(record, word)
-        config%cell(7) = word_2_real(word)
-        Call get_word(record, word)
-        config%cell(8) = word_2_real(word)
-        Call get_word(record, word)
-        config%cell(9) = word_2_real(word)
-      End If
-
-      ! Close CONFIG
-
-      If (comm%idnode == 0) Call files(conftag)%close ()
-      Call gsync(comm)
-
-    Else ! netCDF read
-
-      ! Open CONFIG
-
-      Call io_set_parameters(io, user_comm=comm%comm)
-      Call io_open(io, io_read, comm%comm, fname, mode_rdonly, fh)
-
-      i = 1 ! For config there is only one frame
-
-      Call io_nc_get_att(io, 'title', fh, config%cfgname)
-
-      Call io_nc_get_var(io, 'datalevel', fh, levcfg, i, 1)
-      If (levcfg < 0 .or. levcfg > 2) Call error(517)
-
-      Call io_nc_get_var(io, 'imageconvention', fh, config%imcon, i, 1)
-      If (config%imcon < 0 .or. config%imcon > 7) Call error(514)
-
-      Call io_nc_get_var(io, 'cell', fh, cell_vecs, [1, 1, i], [3, 3, 1])
-      config%cell = Reshape(cell_vecs, [Size(config%cell)])
-
-      ! Close CONFIG
-
-      Call io_close(io, fh)
-
+      config%cell(8) = word_2_real(word)
+      Call get_word(record, word)
+      config%cell(9) = word_2_real(word)
     End If
+
+    ! Close CONFIG
+
+    If (comm%idnode == 0) Call files(conftag)%close ()
+    Call gsync(comm)
 
     ! ELABORATE SCAN
 
@@ -2389,14 +2285,10 @@ Contains
 
         ! top_skip is header size
 
-        If (io_read /= IO_READ_NETCDF) Then
-          If (config%imcon == IMCON_NOPBC) Then
-            top_skip = Int(2, offset_kind)
-          Else
-            top_skip = Int(5, offset_kind)
-          End If
+        If (config%imcon == IMCON_NOPBC) Then
+          top_skip = Int(2, offset_kind)
         Else
-          top_skip = Int(1, offset_kind) ! This is now the frame = 1
+          top_skip = Int(5, offset_kind)
         End If
 
         Call read_config_parallel(config, levcfg, dvar, l_ind, strict, megatm, l_his, l_xtr, &
@@ -2427,7 +2319,7 @@ Contains
 
   End Subroutine scan_config
 
-  Subroutine scale_config(config, io, devel, netcdf, comm)
+  Subroutine scale_config(config, io, devel, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2448,7 +2340,6 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(io_type),            Intent(InOut) :: io
     Type(development_type),   Intent(In   ) :: devel
-    Type(netcdf_param),       Intent(In   ) :: netcdf
     Type(comms_type),         Intent(InOut) :: comm
 
     Integer         :: i, step
@@ -2487,12 +2378,12 @@ Contains
     time = 0.0_wp ! time is not relevant
 
     rcell = config%cell; config%cell = devel%cels
-    Call write_config(config, cfgscl, devel%lvcfscl, step, tstep, io, time, netcdf, comm)
+    Call write_config(config, cfgscl, devel%lvcfscl, step, tstep, io, time, comm)
     config%cell = rcell
 
   End Subroutine scale_config
 
-  Subroutine write_config(config, cfile, levcfg, step, tstep, io, time, netcdf, comm)
+  Subroutine write_config(config, cfile, levcfg, step, tstep, io, time, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2516,7 +2407,6 @@ Contains
     Real(Kind=wp),            Intent(In   ) :: tstep
     Type(io_type),            Intent(InOut) :: io
     Real(Kind=wp),            Intent(In   ) :: time
-    Type(netcdf_param),       Intent(In   ) :: netcdf
     Type(comms_type),         Intent(InOut) :: comm
 
     Character                                      :: lf
@@ -2531,8 +2421,6 @@ Contains
     Integer(Kind=offset_kind)                      :: rec_mpi_io
     Integer, Allocatable, Dimension(:)             :: iwrk, n_atm
     Logical                                        :: ready
-    Real(Kind=wp)                                  :: angles(1:3), cell_vecs(1:3, 1:3), &
-                                                      celprp(1:10), lengths(1:3)
     Real(Kind=wp), Allocatable, Dimension(:)       :: axx, ayy, azz, bxx, byy, bzz, cxx, cyy, czz
     Type(corePart), Allocatable, Dimension(:)      :: temp_parts
 
@@ -2857,19 +2745,14 @@ Contains
         Call error(0, message)
       End If
 
-      ! SORTED MPI-I/O or Parallel Direct Access FORTRAN or netCDF
+      ! SORTED MPI-I/O or Parallel Direct Access FORTRAN
 
     Else If (io_write == IO_WRITE_SORTED_MPIIO .or. &
-             io_write == IO_WRITE_SORTED_DIRECT .or. &
-             io_write == IO_WRITE_SORTED_NETCDF) Then
+             io_write == IO_WRITE_SORTED_DIRECT) Then
 
       ! name convention
 
-      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        fname = cfile%filename
-      Else
-        fname = Trim(cfile%filename)//'.nc'
-      End If
+      fname = cfile%filename
 
       ! Write header only at start, where just one node is needed
       ! Start of file
@@ -2881,67 +2764,27 @@ Contains
         Call io_set_parameters(io, user_comm=comm_self)
         Call io_init(io, recsz)
         Call io_delete(io, fname, comm) ! Sort existence issues
-        If (io_write == IO_WRITE_SORTED_NETCDF) Then
-          Call io_nc_create(netcdf, comm_self, fname, config%cfgname, config%megatm)
-        End If
         Call io_open(io, io_write, comm_self, fname, mode_wronly + mode_create, fh)
 
-        ! Non netCDF
+        ! Write header
 
-        If (io_write /= IO_WRITE_SORTED_NETCDF) Then
+        Write (record, Fmt='(a72,a1)') config%cfgname(1:72), lf
+        Call io_write_record(io, fh, Int(jj, offset_kind), record)
+        jj = jj + 1
 
-          ! Write header
+        Write (record, Fmt='(4i10,1p,2e16.7,a1)') levcfg, config%imcon, config%megatm, step, tstep, time, lf
+        Call io_write_record(io, fh, Int(jj, offset_kind), record)
+        jj = jj + 1
 
-          Write (record, Fmt='(a72,a1)') config%cfgname(1:72), lf
-          Call io_write_record(io, fh, Int(jj, offset_kind), record)
-          jj = jj + 1
+        ! Write optional cell information (if present)
 
-          Write (record, Fmt='(4i10,1p,2e16.7,a1)') levcfg, config%imcon, config%megatm, step, tstep, time, lf
-          Call io_write_record(io, fh, Int(jj, offset_kind), record)
-          jj = jj + 1
-
-          ! Write optional cell information (if present)
-
-          If (config%imcon > 0) Then
-            Do i = 0, 2
-              Write (record, '( 3f20.10, a12, a1 )') &
-                config%cell(1 + i * 3:3 + i * 3), Repeat(' ', 12), lf
-              Call io_write_record(io, fh, Int(jj, offset_kind), record)
-              jj = jj + 1
-            End Do
-          End If
-
-        Else ! netCDF write
-
-          jj = 1 ! For config there is only one frame
-
-          Call io_nc_put_var(io, 'time', fh, time, jj, 1)
-          Call io_nc_put_var(io, 'step', fh, step, jj, 1)
-          Call io_nc_put_var(io, 'datalevel', fh, levcfg, jj, 1)
-          Call io_nc_put_var(io, 'imageconvention', fh, config%imcon, jj, 1)
-          Call io_nc_put_var(io, 'timestep', fh, tstep, jj, 1)
-
-          If (config%imcon > 0) Then
-            Call dcell(config%cell, celprp) ! get cell properties
-
-            cell_vecs = Reshape(config%cell, [3, 3])
-
-            lengths(1) = celprp(1)
-            lengths(2) = celprp(2)
-            lengths(3) = celprp(3)
-
-            angles(1) = Acos(celprp(5))
-            angles(2) = Acos(celprp(6))
-            angles(3) = Acos(celprp(4))
-            angles = angles * 180.0_wp / (4.0_wp * Atan(1.0_wp)) ! Convert to degrees
-
-            ! Print
-
-            Call io_nc_put_var(io, 'cell', fh, cell_vecs, [1, 1, jj], [3, 3, 1])
-            Call io_nc_put_var(io, 'cell_lengths', fh, lengths, [1, jj], [3, 1])
-            Call io_nc_put_var(io, 'cell_angles', fh, angles, [1, jj], [3, 1])
-          End If
-
+        If (config%imcon > 0) Then
+          Do i = 0, 2
+            Write (record, '( 3f20.10, a12, a1 )') &
+              config%cell(1 + i * 3:3 + i * 3), Repeat(' ', 12), lf
+            Call io_write_record(io, fh, Int(jj, offset_kind), record)
+            jj = jj + 1
+          End Do
         End If
 
         Call io_close(io, fh)
@@ -2949,12 +2792,8 @@ Contains
 
       Else
 
-        If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-          jj = jj + 2
-          If (config%imcon > 0) jj = jj + 3
-        Else
-          jj = 1
-        End If
+        jj = jj + 2
+        If (config%imcon > 0) jj = jj + 3
 
       End If
       Call gsync(comm)
@@ -3357,7 +3196,7 @@ Contains
 
   End Subroutine freeze_atoms
 
-  Subroutine origin_config(config, io, devel, netcdf, comm)
+  Subroutine origin_config(config, io, devel, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -3373,7 +3212,6 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(io_type),            Intent(InOut) :: io
     Type(development_type),   Intent(In   ) :: devel
-    Type(netcdf_param),       Intent(In   ) :: netcdf
     Type(comms_type),         Intent(InOut) :: comm
 
     Integer         :: i, step
@@ -3399,7 +3237,7 @@ Contains
     tstep = 0.0_wp ! no step exists
     time = 0.0_wp ! time is not relevant
 
-    Call write_config(config, cfgorg, devel%lvcforg, step, tstep, io, time, netcdf, comm)
+    Call write_config(config, cfgorg, devel%lvcforg, step, tstep, io, time, comm)
 
   End Subroutine origin_config
 

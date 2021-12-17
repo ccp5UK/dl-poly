@@ -28,18 +28,17 @@ Module msd
   Use constants,       Only: boltz,&
                              zero_plus
   Use errors_warnings, Only: error
-  Use filename,        Only: FILE_MSD, &
+  Use filename,        Only: FILE_MSD,&
                              file_type
   Use flow_control,    Only: RESTART_KEY_OLD
   Use io,              Only: &
                              IO_ALLOCATION_ERROR, IO_BASE_COMM_NOT_SET, IO_MSDTMP, &
                              IO_UNKNOWN_WRITE_LEVEL, IO_UNKNOWN_WRITE_OPTION, &
                              IO_WRITE_SORTED_DIRECT, IO_WRITE_SORTED_MASTER, &
-                             IO_WRITE_SORTED_MPIIO, IO_WRITE_SORTED_NETCDF, &
-                             IO_WRITE_UNSORTED_DIRECT, IO_WRITE_UNSORTED_MASTER, &
-                             IO_WRITE_UNSORTED_MPIIO, io_close, io_finalize, io_get_parameters, &
-                             io_init, io_open, io_set_parameters, io_type, io_write_batch, &
-                             io_write_record, io_write_sorted_file
+                             IO_WRITE_SORTED_MPIIO, IO_WRITE_UNSORTED_DIRECT, &
+                             IO_WRITE_UNSORTED_MASTER, IO_WRITE_UNSORTED_MPIIO, io_close, &
+                             io_finalize, io_get_parameters, io_init, io_open, io_set_parameters, &
+                             io_type, io_write_batch, io_write_record, io_write_sorted_file
   Use kinds,           Only: li,&
                              wi,&
                              wp
@@ -62,7 +61,7 @@ Module msd
     Integer(Kind=wi), Public :: freq
     Logical                  :: newjob = .true., &
                                 fast = .true.
-    Character(Len=40)        :: fname
+    Character(Len=1024)        :: fname
     Integer(Kind=li)         :: rec = 0_li, &
                                 frm = 0_li
   End Type msd_type
@@ -124,10 +123,6 @@ Contains
     Call io_get_parameters(io, user_method_write=io_write)
     Call io_get_parameters(io, user_buffer_size_write=batsz)
     Call io_get_parameters(io, user_line_feed=lf)
-
-    ! netCDF not implemented for MSDTMP.  Switch to DEFAULT temporarily.
-
-    If (io_write == IO_WRITE_SORTED_NETCDF) io_write = IO_WRITE_SORTED_MPIIO
 
     If (msd_data%newjob) Then
       msd_data%newjob = .false.
@@ -320,7 +315,8 @@ Contains
 
         If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(36 + k) / (boltz * 3.0_wp)
 
-   Write (record, Fmt='(a8,i10,1p,2e13.4,a8,a1)') config%atmnam(i), config%ltg(i), Sqrt(stpval(36 + k - 1)), tmp, Repeat(' ', 8), lf
+        Write (record, Fmt='(a8,i10,1p,2e13.4,a8,a1)') config%atmnam(i), &
+          config%ltg(i), Sqrt(stpval(36 + k - 1)), tmp, Repeat(' ', 8), lf
         jj = jj + 1
         Do k = 1, recsz
           chbat(k, jj) = record(k:k)
@@ -364,7 +360,7 @@ Contains
 
         msd_data%rec = msd_data%rec + Int(1, li)
         Write (Unit=files(FILE_MSD)%unit_no, Fmt='(a8,2i10,2f12.6,a1)', Rec=msd_data%rec) 'timestep', nstep, &
-            megatm, tstep, time, lf
+          megatm, tstep, time, lf
 
         Do i = 1, config%natms
           k = 2 * i
@@ -555,7 +551,7 @@ Contains
 
         msd_data%rec = msd_data%rec + Int(1, li)
         Write (Unit=files(FILE_MSD)%unit_no, Fmt='(a8,2i10,2f12.6,a1)', Rec=msd_data%rec) 'timestep', nstep, &
-               megatm, tstep, time, lf
+          megatm, tstep, time, lf
 
         Do i = 1, config%natms
           k = 2 * i

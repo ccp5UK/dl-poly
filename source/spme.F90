@@ -172,10 +172,7 @@ Contains
     Type(spme_component),        Intent(inout) :: spme_datum
     Type(mpole_type), Optional,  Intent(In   ) :: mpoles
 
-    Integer                                 :: curr1, curr2, i, i_curr, j_curr, L_mp1, L_mp2
-    Integer, Dimension(3)                   :: i_derivs, ij_derivs, j_derivs
-    Real(Kind=wp)                           :: atom_coeffs, prefac
-    Real(Kind=wp), Dimension(0:8, 0:8, 0:8) :: erf_limits
+    Real(Kind=wp) :: prefac
 
 ! use electrostatic, only : electrostatic_type
 !    use mpoles_container, only : limit_erfr_deriv
@@ -184,9 +181,9 @@ Contains
       & Call error(0, 'SPME datum -- '//spme_datum%name//' -- not initialised in spme_self_interaction')
 
     ! If (.not. Present(mpoles) .or. spme_datum%pot_order /= 1) Then ! present(mpole)
-      prefac = spme_datum%scaling * (alpha**spme_datum%pot_order) * &
-        & inv_gamma_1_2(spme_datum%pot_order) / Real(spme_datum%pot_order, wp)
-      spme_datum%self_interaction = -Sum(coeffs(1:num_atoms)**2) * prefac
+    prefac = spme_datum%scaling * (alpha**spme_datum%pot_order) * &
+      & inv_gamma_1_2(spme_datum%pot_order) / Real(spme_datum%pot_order, wp)
+    spme_datum%self_interaction = -Sum(coeffs(1:num_atoms)**2) * prefac
 
     ! Else ! Special case for multipoles
     !   !call limit_erfr_deriv(8,alpha,erf_limits)
@@ -349,7 +346,7 @@ Contains
     Integer       :: curr_pot_order, p_work
     Real(kind=wp) :: base_integ, curr_xp, exp_xsq, x_2, x_fac, xp
 
-    Select case(pot_order)
+    Select Case (pot_order)
     Case (1)
       f_p = f_1(x)
     Case (2)
@@ -417,7 +414,7 @@ Contains
       End If
 
       f_p = 2.0_wp * x**(pot_order - 3) * calc_inv_gamma_1_2(pot_order) * f_p
-    end Select
+    End Select
 
   End Function f_p
 

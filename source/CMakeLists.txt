@@ -90,7 +90,6 @@ set(dlpoly_SRCS
   kim.F90
   plumed.F90
   dftb_library.F90
-  netcdf.F90
   nve.F90
   nvt_anderson.F90
   nvt_berendsen.F90
@@ -152,11 +151,6 @@ endif()
 if(WITH_EVB)
   set_property(TARGET dlpoly APPEND PROPERTY
     COMPILE_DEFINITIONS "EVB")
-endif()
-
-if(WITH_NETCDF)
-  set_property(TARGET dlpoly APPEND PROPERTY
-    COMPILE_DEFINITIONS "NETCDF")
 endif()
 
 if(WITH_PLUMED)
