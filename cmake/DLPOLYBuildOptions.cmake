@@ -1,5 +1,4 @@
 option(WITH_MPI "build a MPI version" ON)
-option(WITH_OPENMP "build an OpenMP version" OFF)
 option(WITH_EXTRATIME "activate extra timing information" ON)
 option(WITH_KIM "Build with KIM support" OFF)
 option(INTERNAL_KIM "Build with Internal KIM rather than external" ON)

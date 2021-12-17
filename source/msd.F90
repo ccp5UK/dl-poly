@@ -61,7 +61,7 @@ Module msd
     Integer(Kind=wi), Public :: freq
     Logical                  :: newjob = .true., &
                                 fast = .true.
-    Character(Len=40)        :: fname
+    Character(Len=1024)        :: fname
     Integer(Kind=li)         :: rec = 0_li, &
                                 frm = 0_li
   End Type msd_type

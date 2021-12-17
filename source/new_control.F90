@@ -170,7 +170,7 @@ Contains
     Open (newunit=control_file%unit_no, file=control_file%filename, status='old', action='read', iostat=ierr)
     If (ierr .ne. 0) Call error(0, 'CONTROL file not found')
 
-    can_parse = try_parse(control_file%unit_no, params, comm)
+    can_parse = try_parse(control_file%unit_no, comm)
 
     ! Possibly old style
     If (.not. can_parse) Then
@@ -2043,7 +2043,7 @@ Contains
     If (check_print_level(1)) Call write_ensemble(thermo)
     If (check_print_level(1)) Call write_forcefield(link_cell, neigh, vdws, electro, ewld, mpoles, cshell, met)
     If (ttm%l_ttm .and. check_print_level(1)) Call write_ttm(thermo, ttm)
-    If (check_print_level(1)) Call write_bond_analysis(stats, config, flow, bond, angle, dihedral, inversion)
+    If (check_print_level(1)) Call write_bond_analysis(stats, flow, bond, angle, dihedral, inversion)
     If (check_print_level(1)) &
       Call write_structure_analysis(stats, msd_data, rdf, vaf, zdensity, adf, coords, traj, defect, displacement)
     Call info('', .true.)
@@ -2148,9 +2148,8 @@ Contains
 
   End Subroutine write_io
 
-  Subroutine write_bond_analysis(stats, config, flow, bond, angle, dihedral, inversion)
+  Subroutine write_bond_analysis(stats, flow, bond, angle, dihedral, inversion)
     Type(stats_type),         Intent(In   ) :: stats
-    Type(configuration_type), Intent(In   ) :: config
     Type(flow_type),          Intent(In   ) :: flow
     Type(bonds_type),         Intent(In   ) :: bond
     Type(angles_type),        Intent(In   ) :: angle
@@ -2330,6 +2329,23 @@ Contains
     Else
       Call info('No displacements analysis requested', .true., level=3)
     End If
+
+    If (coords%coordon) Then
+      Write (messages(1), '(a)') 'Coordination analysis requested:'
+      Write (messages(2), '(a)') '  -- display to be implemented'
+      Call info(messages, 2, .true.)
+    Else
+      Call info('No coordination analysis requested', .true., level=3)
+    End If
+
+    If (adf%adfon) Then
+      Write (messages(1), '(a)') 'Angular analysis requested:'
+      Write (messages(2), '(a)') '  -- display to be implemented'
+      Call info(messages, 2, .true.)
+    Else
+      Call info('No angular analysis requested', .true., level=3)
+    End If
+
 
   End Subroutine write_structure_analysis
 
@@ -2521,6 +2537,17 @@ Contains
       Call info(messages, 5, .true.)
 
     End If
+
+    If (plume%l_plumed) Then
+      Call info('  Plumed calculation: ON', .true.)
+      Write (messages(1), '(a)') ''
+      Write (messages(2), '(a,a)') '  -- PLUMED input: ', plume%input
+      Write (messages(3), '(a,a)') '  -- PLUMED log: ', plume%logfile
+      Write (messages(4), '(a,i0)') '  -- PLUMED precision: ', plume%prec
+      Write (messages(5), '(a,i0)') '  -- PLUMED restart: ', plume%restart
+      Call info(messages, 5, .true.)
+    End If
+
 
   End Subroutine write_system_parameters
 
@@ -5082,7 +5109,7 @@ Contains
 
   End Subroutine initialise_control
 
-  Function try_parse(ifile, params, comm) Result(can_parse)
+  Function try_parse(ifile, comm) Result(can_parse)
     !!-----------------------------------------------------------------------
     !!
     !! Attempt to detect if a control file is new or old style
@@ -5092,7 +5119,6 @@ Contains
     !! author - j.wilkins may 2020
     !!-----------------------------------------------------------------------
     Integer,                     Intent(In   ) :: ifile
-    Type(parameters_hash_table), Intent(In   ) :: params
     Type(comms_type),            Intent(InOut) :: comm
     Logical                                    :: can_parse
 
