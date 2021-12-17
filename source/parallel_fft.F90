@@ -29,8 +29,7 @@ Module parallel_fft
 #ifdef SERIAL
   Use mpi_api
 #else
-  Use mpi, Only: MPI_COMM_DUP,MPI_COMM_SIZE,MPI_COMM_RANK,MPI_COMM_SPLIT,MPI_COMM_FREE,&
-    MPI_RECV,MPI_STATUS_SIZE
+  Use mpi
 #endif
 
   Implicit None
