@@ -26,25 +26,22 @@ Module control
 
   Use angles,               Only: angles_type
   Use angular_distribution, Only: adf_type
-  Use bspline,              Only: MIN_SPLINES, MAX_SPLINES
   Use bonds,                Only: bonds_type
+  Use bspline,              Only: MAX_SPLINES,&
+                                  MIN_SPLINES
   Use comms,                Only: comms_type,&
                                   gcheck
-  Use configuration,        Only: IMCON_HEXAGONAL,&
-                                  IMCON_NOPBC,&
-                                  IMCON_RHOMBIC_DODEC,&
+  Use configuration,        Only: IMCON_NOPBC,&
                                   IMCON_SLAB,&
-                                  IMCON_TRUNC_OCTO,&
                                   configuration_type
-  Use constants,            Only: epsilon_wp,&
+  Use constants,            Only: JKms_to_kBAps,&
+                                  Jm3K_to_kBA3,&
+                                  epsilon_wp,&
+                                  mJcm2_to_eVA2,&
                                   pi,&
                                   prsunt,&
                                   tenunt,&
-                                  zero_plus,&
-                                  MAX_BSPLINE,&
-                                  Jm3K_to_kBA3,&
-                                  JKms_to_kBAps,&
-                                  mJcm2_to_eVA2
+                                  zero_plus
   Use constraints,          Only: constraints_type
   Use coord,                Only: coord_type
   Use core_shell,           Only: core_shell_type
@@ -63,28 +60,14 @@ Module control
                                   info,&
                                   warning
   Use ewald,                Only: ewald_type
-  Use filename,             Only: FILE_CONFIG,&
-                                  FILE_CONTROL,&
-                                  FILE_FIELD,&
-                                  FILE_HISTORF,&
-                                  FILE_HISTORY,&
-                                  FILE_OUTPUT,&
-                                  FILE_REVCON,&
-                                  FILE_REVIVE,&
-                                  FILE_REVOLD,&
-                                  FILE_STATS,&
-                                  FILE_RDF,&
-                                  FILE_MSD,&
-                                  FILE_TABBND,&
-                                  FILE_TABANG,&
-                                  FILE_TABDIH,&
-                                  FILE_TABINV,&
-                                  FILE_TABVDW,&
-                                  FILE_TABEAM,&
-                                  file_type
+  Use filename,             Only: &
+                                  FILE_CONFIG, FILE_CONTROL, FILE_FIELD, FILE_HISTORF, &
+                                  FILE_HISTORY, FILE_MSD, FILE_RDF, FILE_REVCON, FILE_REVIVE, &
+                                  FILE_REVOLD, FILE_STATS, FILE_TABANG, FILE_TABBND, FILE_TABDIH, &
+                                  FILE_TABEAM, FILE_TABINV, FILE_TABVDW, file_type
   Use flow_control,         Only: DFTB,&
-                                  MD_STD,&
                                   EmpVB,&
+                                  MD_STD,&
                                   RESTART_KEY_CLEAN,&
                                   RESTART_KEY_NOSCALE,&
                                   RESTART_KEY_OLD,&
@@ -94,16 +77,13 @@ Module control
   Use impacts,              Only: impact_type
   Use inversions,           Only: inversions_type
   Use io,                   Only: &
-                                  IO_READ_DIRECT, IO_READ_MASTER, IO_READ_MPIIO, IO_READ_NETCDF, &
+                                  IO_READ_DIRECT, IO_READ_MASTER, IO_READ_MPIIO, &
                                   IO_WRITE_SORTED_DIRECT, IO_WRITE_SORTED_MASTER, &
-                                  IO_WRITE_SORTED_MPIIO, IO_WRITE_SORTED_NETCDF, &
-                                  IO_WRITE_UNSORTED_DIRECT, IO_WRITE_UNSORTED_MASTER, &
-                                  IO_WRITE_UNSORTED_MPIIO, io_get_parameters, io_nc_compiled, &
-                                  io_nc_set_real_precision, io_set_parameters, io_type
+                                  IO_WRITE_SORTED_MPIIO, IO_WRITE_UNSORTED_DIRECT, &
+                                  IO_WRITE_UNSORTED_MASTER, IO_WRITE_UNSORTED_MPIIO, &
+                                  io_get_parameters, io_set_parameters, io_type
   Use kim,                  Only: kim_type
-  Use kinds,                Only: dp,&
-                                  sp,&
-                                  wi,&
+  Use kinds,                Only: wi,&
                                   wp
   Use metal,                Only: metal_type
   Use minimise,             Only: MIN_DISTANCE,&
@@ -116,7 +96,6 @@ Module control
                                   mpole_type
   Use msd,                  Only: msd_type
   Use neighbours,           Only: neighbours_type
-  Use netcdf_wrap,          Only: netcdf_param
   Use numerics,             Only: dcell,&
                                   invert,&
                                   seed_type
@@ -146,16 +125,17 @@ Module control
                                   PSEUDO_LANGEVIN, PSEUDO_LANGEVIN_DIRECT, thermostat_type
   Use timer,                Only: timer_type
   Use trajectory,           Only: trajectory_type
-  Use ttm,                  Only: ttm_type,&
-                                  TTM_SDEPO_NULL, TTM_SDEPO_GAUSS, TTM_SDEPO_FLAT, TTM_SDEPO_EXP,&
-                                  TTM_EPVAR_NULL, TTM_EPVAR_HOMO, TTM_EPVAR_HETERO,&
-                                  TTM_CE_CONST, TTM_CE_TANH, TTM_CE_LINEAR, TTM_CE_TABULATED,&
-                                  TTM_CE_CONST_DYN, TTM_CE_TANH_DYN, TTM_CE_LINEAR_DYN, TTM_CE_TABULATED_DYN,&
-                                  TTM_KE_INFINITE, TTM_KE_CONST, TTM_KE_DRUDE, TTM_KE_TABULATED,&
-                                  TTM_DE_METAL, TTM_DE_CONST, TTM_DE_RECIP, TTM_DE_TABULATED,&
-                                  TTM_BC_PERIODIC, TTM_BC_DIRICHLET, TTM_BC_DIRICHLET_XY, TTM_BC_NEUMANN,&
-                                  TTM_BC_ROBIN, TTM_BC_ROBIN_XY,&
-                                  TTM_TDEPO_DELTA, TTM_TDEPO_EXP, TTM_TDEPO_GAUSS, TTM_TDEPO_PULSE
+  Use ttm,                  Only: &
+                                  TTM_BC_DIRICHLET, TTM_BC_DIRICHLET_XY, TTM_BC_NEUMANN, &
+                                  TTM_BC_PERIODIC, TTM_BC_ROBIN, TTM_BC_ROBIN_XY, TTM_CE_CONST, &
+                                  TTM_CE_CONST_DYN, TTM_CE_LINEAR, TTM_CE_LINEAR_DYN, &
+                                  TTM_CE_TABULATED, TTM_CE_TANH, TTM_CE_TANH_DYN, TTM_DE_CONST, &
+                                  TTM_DE_METAL, TTM_DE_RECIP, TTM_DE_TABULATED, TTM_EPVAR_HETERO, &
+                                  TTM_EPVAR_HOMO, TTM_EPVAR_NULL, TTM_KE_CONST, TTM_KE_DRUDE, &
+                                  TTM_KE_INFINITE, TTM_KE_TABULATED, TTM_SDEPO_EXP, &
+                                  TTM_SDEPO_FLAT, TTM_SDEPO_GAUSS, TTM_SDEPO_NULL, &
+                                  TTM_TDEPO_DELTA, TTM_TDEPO_EXP, TTM_TDEPO_GAUSS, &
+                                  TTM_TDEPO_PULSE, ttm_type
   Use vdw,                  Only: MIX_FENDER_HALSEY,&
                                   MIX_FUNCTIONAL,&
                                   MIX_HALGREN,&
@@ -254,8 +234,8 @@ Contains
     Character(Len=80)  :: banner(9)
     Integer            :: grdana, grdang, grdbnd, grddih, grdinv, i, itmp, j, k, nstall, nstana
     Integer(Kind=wi)   :: tmp_seed(1:3), traj_freq, traj_key, traj_start
-    Logical            :: l_0, l_timcls, l_timjob, lens, lforc, lplumed, lpres, lstep, &
-                          lstrext, ltemp, safe
+    Logical            :: l_0, l_timcls, l_timjob, lens, lforc, lplumed, lpres, lstep, lstrext, &
+                          ltemp, safe
     Real(Kind=wp)      :: eps0, prmps(1:4), rcb_d, rcell(1:9), rcut1, rpad1, rvdw1, tmp, tol
 
     ! initialise system control variables and their logical switches
@@ -730,8 +710,8 @@ Contains
         devel%l_dis = .true.
         Call get_word(record, word)
         devel%r_dis = Min(devel%r_dis, word_2_real(word, 0.1_wp))
-        Call info(&
-                        '%%% Turn on the check on minimum separation distance between VNL pairs at re/start !!! %%%', .true.)
+        Call info( &
+          '%%% Turn on the check on minimum separation distance between VNL pairs at re/start !!! %%%', .true.)
         Write (message, '(a,1p,e12.4)') '%%% separation criterion (Angstroms) %%%', devel%r_dis
         Call info(message, .true.)
 
@@ -771,28 +751,29 @@ Contains
           Else If (word2(1:4) == 'hoge') Then
             vdws%mixing = MIX_HOGERVORST
             Call info('type of mixing selected - Hogervorst (good hope) :: ' &
-              //'e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i*s_j)^(1/2)', .true.)
+                      //'e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i*s_j)^(1/2)', .true.)
           Else If (word2(1:4) == 'halg') Then
             vdws%mixing = MIX_HALGREN
             Call info('type of mixing selected - Halgren HHG :: ' &
-              //'e_ij=4*e_i*e_j/[e_i^(1/2)+e_j^(1/2)]^2 ; s_ij=(s_i^3+s_j^3)/(s_i^2+s_j^2)', .true.)
+                      //'e_ij=4*e_i*e_j/[e_i^(1/2)+e_j^(1/2)]^2 ; s_ij=(s_i^3+s_j^3)/(s_i^2+s_j^2)', .true.)
           Else If (word2(1:4) == 'wald') Then
             vdws%mixing = MIX_WALDMAN_HAGLER
             Call info('type of mixing selected - Waldman–Hagler :: ' &
-              //'e_ij=2*(e_i*e_j)^(1/2)*(s_i*s_j)^3/(s_i^6+s_j^6) ;s_ij=[(s_i^6+s_j^6)/2]^(1/6)', .true.)
+                      //'e_ij=2*(e_i*e_j)^(1/2)*(s_i*s_j)^3/(s_i^6+s_j^6) ;s_ij=[(s_i^6+s_j^6)/2]^(1/6)', .true.)
           Else If (word2(1:4) == 'tang') Then
             vdws%mixing = MIX_TANG_TOENNIES
             Call info('type of mixing selected - Tang-Toennies :: ' &
-              //' e_ij=[(e_i*s_i^6)*(e_j*s_j^6)] / {[(e_i*s_i^12)^(1/13)+(e_j*s_j^12)^(1/13)]/2}^13', .true.)
-            Call info(Repeat(' ',43)//'s_ij={[(e_i*s_i^6)*(e_j*s_j^6)]^(1/2) / e_ij}^(1/6)', .true.)
+                      //' e_ij=[(e_i*s_i^6)*(e_j*s_j^6)] / {[(e_i*s_i^12)^(1/13)+(e_j*s_j^12)^(1/13)]/2}^13', .true.)
+            Call info(Repeat(' ', 43)//'s_ij={[(e_i*s_i^6)*(e_j*s_j^6)]^(1/2) / e_ij}^(1/6)', .true.)
           Else If (word2(1:4) == 'func') Then
             vdws%mixing = MIX_FUNCTIONAL
             Call info('type of mixing selected - Functional :: ' &
-              //'e_ij=3 * (e_i*e_j)^(1/2) * (s_i*s_j)^3 / SUM_L=0^2{[(s_i^3+s_j^3)^2 / (4*(s_i*s_j)^L)]^(6/(6-2L))}', .true.)
-            Call info(Repeat(' ',40)//'s_ij=(1/3) * SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))}', .true.)
+                      //'e_ij=3 * (e_i*e_j)^(1/2) * (s_i*s_j)^3 /' &
+                      //'SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(6/(6-2L))}', .true.)
+            Call info(Repeat(' ', 40)//'s_ij=(1/3) * SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))}', .true.)
           Else
             Call strip_blanks(record)
-            Write (message, '(4(a,1X))') Trim(word), Trim(word1),Trim(word2), record
+            Write (message, '(4(a,1X))') Trim(word), Trim(word1), Trim(word2), record
             Call info(message, .true.)
             Call error(3)
           End If
@@ -850,12 +831,12 @@ Contains
 
         config%l_exp = .true.
         Call get_word(record, word)
-        config%nx = Max(1,Nint(Abs(word_2_real(word))))
+        config%nx = Max(1, Nint(Abs(word_2_real(word))))
         Call get_word(record, word)
-        config%ny = Max(1,Nint(Abs(word_2_real(word))))
+        config%ny = Max(1, Nint(Abs(word_2_real(word))))
         Call get_word(record, word)
-        config%nz = Max(1,Nint(Abs(word_2_real(word))))
-        Write (message, '(a,9x,3i5)') 'system expansion opted',config%nx,config%ny,config%nz
+        config%nz = Max(1, Nint(Abs(word_2_real(word))))
+        Write (message, '(a,9x,3i5)') 'system expansion opted', config%nx, config%ny, config%nz
         Call info(message, .true.)
 
         ! read impact option
@@ -887,7 +868,7 @@ Contains
         Write (messages(3), '(a,i10)') 'timestep (steps)', impa%tmd
         Write (messages(4), '(a,1p,e12.4)') 'energy   (keV)  ', impa%emd
         Write (messages(5), '(a,1p,3e12.4)') 'v-r(x,y,z)      ', impa%vmx, impa%vmy, impa%vmz
-        Call info(messages,5, .true.)
+        Call info(messages, 5, .true.)
 
         If (impa%active) Call error(600)
         impa%active = .true.
@@ -938,7 +919,7 @@ Contains
         Write (message, '(a,i10)') 'zero K application interval', thermo%freq_zero
 
         If (l_0) Then
-          If (comm%idnode == 0)Then
+          If (comm%idnode == 0) Then
             Call info('fire option on - actual temperature will reset to 10 Kelvin if no target tempreature is specified', .true.)
           End If
         Else
@@ -1034,7 +1015,7 @@ Contains
           thermo%tstep = word_2_real(word)
         Else
           Call strip_blanks(record)
-          Write (message, '(3(a,1X))') Trim(word),Trim(word1), record
+          Write (message, '(3(a,1X))') Trim(word), Trim(word1), record
           Call info(message, .true.)
           Call error(3)
         End If
@@ -1063,7 +1044,7 @@ Contains
       Else If (word(1:5) == 'steps') Then
         Call get_word(record, word)
         flow%run_steps = Nint(word_2_real(word))
-        Write (message, '(a,i10)') 'selected number of timesteps ',flow%run_steps
+        Write (message, '(a,i10)') 'selected number of timesteps ', flow%run_steps
         Call info(message, .true.)
         ! read number of equilibration timesteps
       Else If (word(1:5) == 'equil') Then
@@ -1150,7 +1131,7 @@ Contains
           word1 = 'distance'
         Else
           Call strip_blanks(record)
-          Write (message, '(3(a,1X))') Trim(word2),Trim(word), record
+          Write (message, '(3(a,1X))') Trim(word2), Trim(word), record
           Call info(message, .true.)
           Call error(590)
         End If
@@ -1205,8 +1186,8 @@ Contains
           End If
         Else
           Write (messages(1), '(a)') 'optimisation at start'
-          Write (messages(2), '(a,a8)') 'optimisation criterion        ',word(1:8)
-          Write (messages(4), '(a,1p,e12.4)') 'optimisation tolerance        ',minim%tolerance
+          Write (messages(2), '(a,a8)') 'optimisation criterion        ', word(1:8)
+          Write (messages(4), '(a,1p,e12.4)') 'optimisation tolerance        ', minim%tolerance
           Call info(messages, 3, .true.)
           If (minim%step_length > zero_plus) Then
             Write (message, '(a,1p,e12.4)') 'optimisation CGM step         ', minim%step_length
@@ -1222,7 +1203,7 @@ Contains
         If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record, word)
         thermo%freq_tgaus = Max(1, Abs(Nint(word_2_real(word, 0.0_wp))))
 
-        thermo%l_tgaus =.true.
+        thermo%l_tgaus = .true.
         Write (message, '(a,i10)') 'temperature regaussing interval ', thermo%freq_tgaus
         Call info(message, .true.)
 
@@ -1235,7 +1216,7 @@ Contains
         If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record, word)
         thermo%freq_tscale = Max(1, Abs(Nint(word_2_real(word, 0.0_wp))))
 
-        thermo%l_tscale =.true.
+        thermo%l_tscale = .true.
         Call info('temperature scaling on (during equilibration)', .true.)
         Write (message, '(a,i10)') 'temperature scaling interval ', thermo%freq_tscale
         Call info(message, .true.)
@@ -1260,7 +1241,7 @@ Contains
             'CHARMM polarisation scheme selected with optional atomic thole dumping of ', &
             mpoles%thole
           Call info(message, .true.)
-          If (mpoles%max_mpoles == 0 ) Then
+          If (mpoles%max_mpoles == 0) Then
             Call warning('scheme deselected due to switched off electrostatics', .true.)
           End If
           If (cshell%mxshl == 0) Then
@@ -1426,7 +1407,7 @@ Contains
               Call error(436)
             End If
 
-            call thermo%init_dpd(vdws%max_vdw)
+            Call thermo%init_dpd(vdws%max_vdw)
 
             Call get_word(record, word)
             thermo%gamdpd(0) = Abs(word_2_real(word, 0.0_wp))
@@ -1573,17 +1554,17 @@ Contains
               Write (messages(2), '(a)') '     (N-Pn-gamma-T)     : constant surface tension (gamma)'
               Write (messages(3), '(a,1p,e11.4)') 'sumulation surface tension (dyn/cm)', thermo%tension
               Call info(messages, 3, .true.)
-              thermo%tension = thermo%tension/tenunt
+              thermo%tension = thermo%tension / tenunt
 
               Call get_word(record, word)
               If (word(1:4) == 'semi') Then
                 thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
                 Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
-              Else If (Len_Trim(word) > 0) Then
+              Else If (Len_trim(word) > 0) Then
                 Call strip_blanks(record)
                 Write (message, '(2(a,1X))') Trim(word), record
                 Call info(message, .true.)
-                Call warning(460,0.0_wp,0.0_wp,0.0_wp)
+                Call warning(460, 0.0_wp, 0.0_wp, 0.0_wp)
               End If
             Else If (word(1:4) == 'orth') Then
               Call get_word(record, word)
@@ -1597,13 +1578,13 @@ Contains
                 Call strip_blanks(record)
                 Write (message, '(2(a,1X))') Trim(word), record
                 Call info(message, .true.)
-                Call warning(460,0.0_wp,0.0_wp,0.0_wp)
+                Call warning(460, 0.0_wp, 0.0_wp, 0.0_wp)
               End If
             Else If (Len_trim(word) > 0) Then
               Call strip_blanks(record)
               Write (message, '(2(a,1X))') Trim(word), record
               Call info(message, .true.)
-              Call warning(460,0.0_wp,0.0_wp,0.0_wp)
+              Call warning(460, 0.0_wp, 0.0_wp, 0.0_wp)
             End If
             If (Any(thermo%iso == [CONSTRAINT_SURFACE_AREA, CONSTRAINT_SURFACE_TENSION])) Then
               Call warning('semi-isotropic ensembles are only correct for infinite' &
@@ -1640,13 +1621,13 @@ Contains
               Write (messages(2), '(a)') '     (N-Pn-gamma-T)     : constant surface tension (gamma)'
               Write (messages(3), '(a,1p,e11.4)') 'sumulation surface tension (dyn/cm)', thermo%tension
               Call info(messages, 3, .true.)
-              thermo%tension= thermo%tension/tenunt
+              thermo%tension = thermo%tension / tenunt
 
               Call get_word(record, word)
               If (word(1:4) == 'semi') Then
                 thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
                 Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
-              Else If (Len_Trim(word) > 0) Then
+              Else If (Len_trim(word) > 0) Then
                 Call strip_blanks(record)
                 Write (message, '(2(a,1X))') Trim(word), record
                 Call info(message, .true.)
@@ -1707,13 +1688,13 @@ Contains
               Write (messages(2), '(a)') '     (N-Pn-gamma-T)     : constant surface tension (gamma)'
               Write (messages(3), '(a,1p,e11.4)') 'sumulation surface tension (dyn/cm)', thermo%tension
               Call info(messages, 3, .true.)
-              thermo%tension = thermo%tension/tenunt
+              thermo%tension = thermo%tension / tenunt
 
               Call get_word(record, word)
               If (word(1:4) == 'semi') Then
                 thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
                 Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
-              Else If (Len_Trim(word) > 0) Then
+              Else If (Len_trim(word) > 0) Then
                 Call strip_blanks(record)
                 Write (message, '(2(a,1X))') Trim(word), record
                 Call info(message, .true.)
@@ -1780,7 +1761,7 @@ Contains
               If (word(1:4) == 'semi') Then
                 thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
                 Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints', .true.)
-              Else If (Len_Trim(word) > 0) Then
+              Else If (Len_trim(word) > 0) Then
                 Call strip_blanks(record)
                 Write (message, '(2(a,1X))') Trim(word), record
                 Call info(message, .true.)
@@ -1891,7 +1872,7 @@ Contains
           If (word(1:9) == 'precision') Then
             Call get_word(record, word)
             tmp = Abs(word_2_real(word))
-            Write (message, '(a,1p,e12.4)') 'Ewald sum precision ',tmp
+            Write (message, '(a,1p,e12.4)') 'Ewald sum precision ', tmp
             Call info(message, .true.)
           End If
 
@@ -1916,7 +1897,7 @@ Contains
             electro%nstfce = 4
           End If
           If (electro%nstfce >= 1) Then
-            Write (message, '(a,1p,i5)') 'k-space evaluation interval (steps)',electro%nstfce
+            Write (message, '(a,1p,i5)') 'k-space evaluation interval (steps)', electro%nstfce
             Call info(message, .true.)
           End If
 
@@ -2047,10 +2028,10 @@ Contains
           End If
         End Do
 
-        Write (messages(1), '(a,1p,e12.4)') 'gridspacing parameter (A) ',prmps(1)
-        Write (messages(2), '(a,1p,e12.4)') 'convergance epsilon ',prmps(2)
-        Write (messages(3), '(a,1p,i5)') 'max # of Psolver iterations ',Nint(prmps(3))
-        Write (messages(4), '(a,1p,i5)') 'max # of Jacobi  iterations ',Nint(prmps(4))
+        Write (messages(1), '(a,1p,e12.4)') 'gridspacing parameter (A) ', prmps(1)
+        Write (messages(2), '(a,1p,e12.4)') 'convergance epsilon ', prmps(2)
+        Write (messages(3), '(a,1p,i5)') 'max # of Psolver iterations ', Nint(prmps(3))
+        Write (messages(4), '(a,1p,i5)') 'max # of Jacobi  iterations ', Nint(prmps(4))
         Call info(messages, 4, .true.)
 
         If (Abs(prmps(1) - 1.0_wp / pois%delta) > 1.0e-6_wp .or. Abs(prmps(2) - pois%eps) > 1.0e-6_wp .or. &
@@ -2073,7 +2054,7 @@ Contains
         Call get_word(record, word)
         If (word(1:8) == 'constant') Call get_word(record, word)
         electro%eps = word_2_real(word)
-        Write (message, '(a,1p,e12.4)') 'relative dielectric constant ',electro%eps
+        Write (message, '(a,1p,e12.4)') 'relative dielectric constant ', electro%eps
         Call info(message, .true.)
 
         ! read option for accounting for extended coulombic exclusion
@@ -2093,9 +2074,9 @@ Contains
         If (word(1:5) == 'force') Call get_word(record, word)
 
         tmp = Abs(word_2_real(word))
-        If (tmp > zero_plus) config%fmax=tmp
+        If (tmp > zero_plus) config%fmax = tmp
         Write (messages(1), '(a)') 'force capping on (during equilibration)'
-        Write (messages(2), '(a,1p,e12.4)') 'force capping limit (kT/Angs)',config%fmax
+        Write (messages(2), '(a,1p,e12.4)') 'force capping limit (kT/Angs)', config%fmax
         Call info(messages, 2, .true.)
 
         ! read 'no vdw', 'no elec', 'no ind' and 'no vafav' options
@@ -2122,7 +2103,7 @@ Contains
           Write (banner(7), '(a)') '*** performance without sacrificing on accuracy!  While it may, by chance, ***'
           Write (banner(8), '(a)') '*** help to pass previously failing runs it may as well lead to a run      ***'
           Write (banner(9), '(a)') '*** failure without warnings!  Beware, avoid usage if uncertain!           ***'
-          Call info(banner,9, .true.)
+          Call info(banner, 9, .true.)
 
         Else If (word1(1:3) == 'top') Then
 
@@ -2139,7 +2120,7 @@ Contains
           If (.not. ttm%l_ttm) Then
             Call info('"no vom" option auto-switched on - COM momentum removal will be abandoned', .true.)
             Call warning('this may lead to a build up of the COM momentum ' &
-                                     //'and a manifestation of the "flying ice-cube" effect', .true.)
+                         //'and a manifestation of the "flying ice-cube" effect', .true.)
           End If
 
           config%l_vom = .false.
@@ -2151,7 +2132,7 @@ Contains
         Else
 
           Call strip_blanks(record)
-          Write (message, '(3(a,1X))') Trim(word),Trim(word1), record
+          Write (message, '(3(a,1X))') Trim(word), Trim(word1), record
           Call info(message, .true.)
           Call error(3)
 
@@ -2162,14 +2143,14 @@ Contains
       Else If (word(1:6) == 'rlxtol') Then
 
         Call get_word(record, word)
-        cshell%rlx_tol(1) = Max(1.0_wp,Abs(word_2_real(word)))
-        Write (message, '(a,1p,e12.4)') 'relaxed shell model CGM tolerance ',cshell%rlx_tol(1)
+        cshell%rlx_tol(1) = Max(1.0_wp, Abs(word_2_real(word)))
+        Write (message, '(a,1p,e12.4)') 'relaxed shell model CGM tolerance ', cshell%rlx_tol(1)
         Call info(message, .true.)
 
         Call get_word(record, word1)
         cshell%rlx_tol(2) = word_2_real(word1, -1.0_wp)
         If (cshell%rlx_tol(2) > zero_plus) Then
-          Write (message, '(a,1p,e12.4)') 'relaxed shell model CGM step ',cshell%rlx_tol(2)
+          Write (message, '(a,1p,e12.4)') 'relaxed shell model CGM step ', cshell%rlx_tol(2)
           Call info(message, .true.)
         End If
 
@@ -2223,7 +2204,7 @@ Contains
 
           Write (messages(1), '(a,3(1x,i8))') 'ionic temperature grid size (x,y,z):', ttm%ntsys(1:3)
           Write (messages(2), '(a,3(1x,f8.4))') 'temperature grid size (x,y,z):', ttm%delx, ttm%dely, ttm%delz
-          Write (messages(3), '(a,f10.4)') 'average number of atoms/cell: ', ttm%sysrho*ttm%volume
+          Write (messages(3), '(a,f10.4)') 'average number of atoms/cell: ', ttm%sysrho * ttm%volume
           Call info(messages, 3, .true.)
 
         Else If (word1(1:4) == 'ncet') Then
@@ -2473,7 +2454,7 @@ Contains
           ttm%tcdepo = word_2_real(word)
           Write (messages(1), '(a)') 'gaussian temporal energy deposition in electronic system'
           Write (messages(2), '(a,1p,e12.4)') 'thermo%ttm%sigma of distribution (ps) ', ttm%tdepo
-          Write (messages(3), '(a,1p,e12.4)') 'distribution cutoff (ps) ',2.0_wp * ttm%tcdepo * ttm%tdepo
+          Write (messages(3), '(a,1p,e12.4)') 'distribution cutoff (ps) ', 2.0_wp * ttm%tcdepo * ttm%tdepo
           Call info(messages, 3, .true.)
 
         Else If (word1(1:5) == 'nexp') Then
@@ -2511,7 +2492,7 @@ Contains
           If (ttm%tdepo <= zero_plus) Then
             ttm%tdepoType = TTM_TDEPO_DELTA
             Call info('square pulse temporal energy deposition in electronic' &
-                                  //'system of zero duration: being treated as dirac delta')
+                      //'system of zero duration: being treated as dirac delta')
           Else
             Write (messages(1), '(a)') 'square pulse temporal energy deposition in electronic system'
             Write (messages(2), '(a,1p,e12.4)') 'pulse duration (ps) ', ttm%tdepo
@@ -2647,7 +2628,7 @@ Contains
         If (akey /= 'all' .and. akey /= 'bon' .and. akey /= 'ang' .and. &
             akey /= 'dih' .and. akey /= 'inv') Then
           Call strip_blanks(record)
-          Write (message, '(3(a,1X))') Trim(word),Trim(word1), record
+          Write (message, '(3(a,1X))') Trim(word), Trim(word1), record
           Call info(message, .true.)
           Call error(3)
         End If
@@ -2779,13 +2760,13 @@ Contains
         ! read print options
 
       Else If (word(1:10) == 'yml_statis') Then
-        stats%file_yaml = .True.
+        stats%file_yaml = .true.
 
         Write (message, '(a)') "# statis printed in yaml format"
         Call info(message, .true.)
 
       Else If (word(1:7) == 'yml_rdf') Then
-        rdf%is_yaml = .True.
+        rdf%is_yaml = .true.
 
         Write (message, '(a)') "# RDFDAT printed in yaml format"
         Call info(message, .true.)
@@ -2804,7 +2785,7 @@ Contains
           green%l_print = .true.
         Else
           If (word(1:5) == 'every') Call get_word(record, word)
-          flow%freq_output = Abs(Nint(word_2_real(word,1.0_wp)))
+          flow%freq_output = Abs(Nint(word_2_real(word, 1.0_wp)))
           Write (message, '(a,i10)') 'data printing interval (steps) ', flow%freq_output
           Call info(message, .true.)
         End If
@@ -2813,7 +2794,7 @@ Contains
 
       Else If (word(1:5) == 'stack') Then
 
-        Write (message, '(a,i10)') 'data stacking interval (steps) ',stats%mxstak
+        Write (message, '(a,i10)') 'data stacking interval (steps) ', stats%mxstak
         Call info(message, .true.)
 
         ! read statistics printing option
@@ -2858,7 +2839,7 @@ Contains
 
         Write (messages(1), '(a)') 'MSDTMP file option on'
         Write (messages(2), '(2x,a,i10)') 'MSDTMP file start ', msd_data%start
-        Write (messages(3), '(2x,a,i10)') 'MSDTMP file interval ',msd_data%freq
+        Write (messages(3), '(2x,a,i10)') 'MSDTMP file interval ', msd_data%freq
         Call info(messages, 3, .true.)
 
         ! read trajectory printing option
@@ -2926,8 +2907,8 @@ Contains
           Call info('defects1 file option on', .true.)
           dfcts(2)%nsdef = dfcts(1)%nsdef
           dfcts(2)%isdef = dfcts(1)%isdef
-          dfcts(2)%rdef  = dfcts(1)%rdef
-          dfcts(2)%newjob = .True.
+          dfcts(2)%rdef = dfcts(1)%rdef
+          dfcts(2)%newjob = .true.
           ! Name REFERENCE and DEFECTS files
           dfcts(2)%reffile = 'REFERENCE1'
           dfcts(2)%deffile = 'DEFECTS1'
@@ -3038,7 +3019,7 @@ Contains
         Else
 
           Call strip_blanks(record)
-          Write (message, '(3a,1X)') Trim(word),Trim(word1), record
+          Write (message, '(3a,1X)') Trim(word), Trim(word1), record
           Call info(message, .true.)
           Call error(3)
 
@@ -3059,22 +3040,22 @@ Contains
         Else
 
           Call strip_blanks(record)
-          Write (message, '(3(a,1X))') Trim(word),Trim(word1), record
+          Write (message, '(3(a,1X))') Trim(word), Trim(word1), record
           Call info(message, .true.)
           Call error(3)
 
         End If
 
-      ! dftb_driver
+        ! dftb_driver
       Else If (word(1:11) == 'dftb_driver') Then
 
-         !Use DFTB+ as the force calculator instead of classical force fields
-         flow%simulation_method = DFTB
+        !Use DFTB+ as the force calculator instead of classical force fields
+        flow%simulation_method = DFTB
 
       Else If (word(1:3) == 'evb') Then
-         ! EVB settings, this flag has been already read by read_simtype.
-         ! here do nothing
-      ! close control file
+        ! EVB settings, this flag has been already read by read_simtype.
+        ! here do nothing
+        ! close control file
       Else If (word(1:6) == 'finish') Then
 
         Go To 2000
@@ -3231,7 +3212,7 @@ Contains
     ! report electrostatics
 
     If (electro%no_elec) Then
-      electro%key=ELECTROSTATIC_NULL
+      electro%key = ELECTROSTATIC_NULL
       Call info('Electrostatics switched off!!!', .true.)
     Else If (electro%key == ELECTROSTATIC_NULL) Then
       Call info('Electrostatics : None Assumed', .true.)
@@ -3250,7 +3231,7 @@ Contains
     ! report if neigh%cutoff is reset (measures taken in scan_config -
     ! neigh%cutoff is the maximum cutoff needed in the system)
 
-    If (Abs(neigh%cutoff-rcut1) > 1.0e-6_wp) Then
+    If (Abs(neigh%cutoff - rcut1) > 1.0e-6_wp) Then
       Write (message, '(a,1p,e12.4)') 'real space cutoff reset to (Angs) ', neigh%cutoff
       Call info(message, .true.)
     End If
@@ -3258,7 +3239,7 @@ Contains
     ! report if neigh%padding is reset (measures taken in scan_config & set_bounds -
     ! neigh%padding is the cutoff padding needed the conditional VNL update)
 
-    If (Abs(neigh%padding-rpad1) > 1.0e-6_wp) Then
+    If (Abs(neigh%padding - rpad1) > 1.0e-6_wp) Then
       Write (message, '(a,1p,e12.4)') 'cutoff padding reset to (Angs) ', neigh%padding
       Call info(message, .true.)
     End If
@@ -3295,7 +3276,7 @@ Contains
           If (thermo%mxstp > zero_plus) Then
             Write (message, '(a,1p,e12.4)') 'timestep ceiling mxstp (ps) ', thermo%mxstp
             Call info(message, .true.)
-            thermo%tstep =  Min(thermo%tstep, thermo%mxstp)
+            thermo%tstep = Min(thermo%tstep, thermo%mxstp)
           Else
             thermo%mxstp = Huge(1.0_wp)
           End If
@@ -3325,10 +3306,10 @@ Contains
     ! report intramolecular analysis options
 
     If (stats%lpana .or. config%mxgana > 0) Then
-      If (.not. any([flow%analyse_bond, flow%analyse_ang, flow%analyse_dih, flow%analyse_inv])) Then
+      If (.not. Any([flow%analyse_bond, flow%analyse_ang, flow%analyse_dih, flow%analyse_inv])) Then
         Call info('no intramolecular distribution collection requested', .true.)
       Else
-        If (all([flow%analyse_bond, flow%analyse_ang, flow%analyse_dih, flow%analyse_inv])) Then
+        If (All([flow%analyse_bond, flow%analyse_ang, flow%analyse_dih, flow%analyse_inv])) Then
           Call info('full intramolecular distribution collection requested (all=bnd/ang/dih/inv):', .true.)
         Else
           Call info('intramolecular distribution collection requested for:', .true.)
@@ -3349,14 +3330,14 @@ Contains
             i = 0
           End If
           j = Merge(1, 0, grdbnd /= bond%bin_pdf)
-          k = Merge(1, 0, Abs(bond%rcut-rcb_d) > 1.0e-3_wp)
+          k = Merge(1, 0, Abs(bond%rcut - rcb_d) > 1.0e-3_wp)
           Write (message, '(2(a,i10),a,f7.2,a)') &
-            'bonds      - collection every ',flow%freq_bond,' step(s); ngrid = ', &
-            bond%bin_pdf,' points; cutoff = ',bond%rcut, ' Angs'
+            'bonds      - collection every ', flow%freq_bond, ' step(s); ngrid = ', &
+            bond%bin_pdf, ' points; cutoff = ', bond%rcut, ' Angs'
           Call info(message, .true.)
           If (i + j + k > 1) Then
             Write (message, '(3(a,i10))') &
-              'bonds      - reset values at  ', i,'                  ', j, &
+              'bonds      - reset values at  ', i, '                  ', j, &
               '                 ', k
             Call info(message, .true.)
           End If
@@ -3373,9 +3354,9 @@ Contains
           Write (message, '(2(a,i10),a)') &
             'angles     - collection every ', flow%freq_angle, ' step(s); ngrid = ', angle%bin_adf, ' points'
           Call info(message, .true.)
-          If (i+j > 1) Then
+          If (i + j > 1) Then
             Write (message, '(2(a,i10))') &
-              'angles     - reset values at  ', i,'                   ', j
+              'angles     - reset values at  ', i, '                   ', j
             Call info(message, .true.)
           End If
         End If
@@ -3387,13 +3368,13 @@ Contains
           Else
             i = 0
           End If
-          j=Merge(1, 0, grddih /= dihedral%bin_adf)
+          j = Merge(1, 0, grddih /= dihedral%bin_adf)
           Write (message, '(2(a,i10),a)') &
             'dihedrals  - collection every ', flow%freq_dihedral, ' step(s); ngrid = ', dihedral%bin_adf, ' points'
           Call info(message, .true.)
-          If (i+j > 1) Then
+          If (i + j > 1) Then
             Write (message, '(2(a,i10))') &
-              'dihedrals  - reset values at  ',  i,'                  ', j
+              'dihedrals  - reset values at  ', i, '                  ', j
             Call info(message, .true.)
           End If
         End If
@@ -3405,13 +3386,13 @@ Contains
           Else
             i = 0
           End If
-          j=Merge(1, 0, grdinv /= inversion%bin_adf)
+          j = Merge(1, 0, grdinv /= inversion%bin_adf)
           Write (message, '(2(a,i10),a)') &
-            'inversions - collection every ',flow%freq_inversion,' step(s); ngrid = ',inversion%bin_adf,' points'
+            'inversions - collection every ', flow%freq_inversion, ' step(s); ngrid = ', inversion%bin_adf, ' points'
           Call info(message, .true.)
-          If (i+j > 1) Then
+          If (i + j > 1) Then
             Write (message, '(2(a,i10))') &
-              'inversions - reset values at  ', i,'                   ', j
+              'inversions - reset values at  ', i, '                   ', j
             Call info(message, .true.)
           End If
         End If
@@ -3462,7 +3443,7 @@ Contains
         Call info('rdf pairs specified in FIELD', .true.)
       End If
 
-      If ((.not.rdf%l_collect) .or. rdf%max_rdf == 0) Then
+      If ((.not. rdf%l_collect) .or. rdf%max_rdf == 0) Then
         Call info('rdf routines not to be activated', .true.)
         rdf%l_collect = .false.
         rdf%l_print = .false.
@@ -3487,7 +3468,7 @@ Contains
         Call info('no z-density printing requested', .true.)
       End If
 
-      If (.not.zdensity%l_collect) Then
+      If (.not. zdensity%l_collect) Then
         Call info('z-density routines not to be activated', .true.)
         zdensity%l_print = .false.
       End If
@@ -3573,16 +3554,16 @@ Contains
         Call info(message, .true.)
       End If
     Else If (.not. flow%strict) Then !!! NO STRICT
-      If (.not.ltemp) Then ! Simulation temperature
-        ltemp=.true.
-        thermo%temp=300.0_wp
+      If (.not. ltemp) Then ! Simulation temperature
+        ltemp = .true.
+        thermo%temp = 300.0_wp
         Write (message, '(a,1p,e12.4)') 'default simulation temperature (K) ', thermo%temp
         Call info(message, .true.)
       End If
 
       If (.not. lpres) Then ! Simulation pressure
-        lpres=.true.
-        thermo%press=0.0_wp
+        lpres = .true.
+        thermo%press = 0.0_wp
         Write (message, '(a,1p,e12.4)') 'default simulation pressure (katms) ', thermo%press * prsunt
         Call info(message, .true.)
       End If
@@ -3594,17 +3575,17 @@ Contains
         Call info(message, .true.)
       End If
 
-      If ((.not.l_timjob) .and. (.not.l_timcls)) Then ! Job times
+      If ((.not. l_timjob) .and. (.not. l_timcls)) Then ! Job times
         tmr%job = 1.0e8_wp
         tmr%clear_screen = 1.0e7_wp
         Write (messages(1), '(a,1p,e12.4)') 'allocated job run time (s) ', tmr%job
         Write (messages(1), '(a,1p,e12.4)') 'allocated job close time (s) ', tmr%clear_screen
         Call info(messages, 2, .true.)
-      Else If ((.not.l_timjob) .and. l_timcls) Then
-        tmr%job =100.0_wp * tmr%clear_screen
+      Else If ((.not. l_timjob) .and. l_timcls) Then
+        tmr%job = 100.0_wp * tmr%clear_screen
         Write (message, '(a,1p,e12.4)') 'allocated job run time (s) ', tmr%job
         Call info(message, .true.)
-      Else If (l_timjob .and. (.not.l_timcls)) Then
+      Else If (l_timjob .and. (.not. l_timcls)) Then
         tmr%clear_screen = 0.01_wp * tmr%job
         Write (message, '(a,1p,e12.4)') 'allocated job close time (s) ', tmr%clear_screen
         Call info(message, .true.)
@@ -3665,7 +3646,7 @@ Contains
       If (.not. thermo%anisotropic_pressure) Then
         If (.not. lpres) Then
           If (lstrext) Then
-            thermo%press = (thermo%stress(1) + thermo%stress(5) + thermo%stress(9))/3.0_wp
+            thermo%press = (thermo%stress(1) + thermo%stress(5) + thermo%stress(9)) / 3.0_wp
             thermo%stress = 0.0_wp
 
             Write (messages(1), '(a)') 'tensorial system pressure specified for an npt ensemble simulation'
@@ -3714,7 +3695,7 @@ Contains
     ! Two-temperature model: calculate atomic density (if not
     ! already specified and electron-phonon friction
     ! conversion factor (to calculate thermo%chi_ep from G_ep values)
-    If (ttm%l_ttm) then
+    If (ttm%l_ttm) Then
       If (ttm%cellrho <= zero_plus) ttm%cellrho = ttm%sysrho
       If (ttm%cellrho > zero_plus) Then
         ttm%rcellrho = 1.0_wp / ttm%cellrho
@@ -3786,14 +3767,14 @@ Contains
       ! penetration depth: convert from nm to A
       If ((ttm%sdepoType == TTM_SDEPO_FLAT .and. Abs(ttm%dEdX) <= zero_plus .and. Abs(ttm%pdepth - 1.0_wp) <= zero_plus) .or. &
           (ttm%sdepoType == TTM_SDEPO_EXP .and. Abs(ttm%pdepth - 1.0_wp) <= zero_plus)) &
-          Call warning(510, 0.0_wp, 0.0_wp, 0.0_wp)
+        Call warning(510, 0.0_wp, 0.0_wp, 0.0_wp)
       ttm%pdepth = 10.0_wp * ttm%pdepth
 
       ! electronic stopping power: convert from eV/nm to eV/A
       ! ttm%fluence: convert from mJ cm^-2 to eV A^-2
       If (ttm%sdepoType /= TTM_SDEPO_NULL .and. ttm%sdepoType /= TTM_SDEPO_EXP .and. &
-           (Abs(ttm%dEdx) <= zero_plus .or. Abs(ttm%fluence) < zero_plus)) &
-           Call warning(515, 0.0_wp, 0.0_wp, 0.0_wp)
+          (Abs(ttm%dEdx) <= zero_plus .or. Abs(ttm%fluence) < zero_plus)) &
+        Call warning(515, 0.0_wp, 0.0_wp, 0.0_wp)
 
       ttm%fluence = ttm%fluence * mJcm2_to_eVA2
       ttm%dEdX = 0.1_wp * ttm%dEdX
@@ -3864,11 +3845,11 @@ Contains
     Real(Kind=wp), Parameter :: rbin_def = 0.05_wp, rcbnd_def = 2.5_wp, rcut_def = 1.0_wp
 
     Character(Len=200) :: record
-    Character(Len=40)  :: akey, word, word1
     Character(Len=256) :: message
+    Character(Len=40)  :: akey, word
     Integer            :: bspline_local, i, itmp, nstrun
-    Logical            :: carry, l_exp, no_metal, la_ana, la_ang, la_bnd, la_dih, la_inv, lelec, &
-                          lmet, lrcut, lrmet, lrvdw, lter, lvdw, safe
+    Logical            :: carry, l_exp, la_ana, la_ang, la_bnd, la_dih, la_inv, lelec, lmet, &
+                          lrcut, lrmet, lrvdw, lter, lvdw, no_metal, safe
     Real(Kind=wp)      :: celprp(1:10), cut, eps0, fac, tol, tol1
 
 ! default spline for SPME (4 & 6 possible)
@@ -4146,7 +4127,7 @@ Contains
 
         Call get_word(record, word)
         ewld%vdw = word(1:5) == 'ewald'
-        if (ewld%vdw) call warning("Ewald vdw", .true.)
+        If (ewld%vdw) Call warning("Ewald vdw", .true.)
 
         ! read electrostatics
 
@@ -4537,8 +4518,8 @@ Contains
     neigh%cutoff = Max(neigh%cutoff, vdws%cutoff, met%rcut, kim_data%cutoff, bond%rcut, &
                        2.0_wp * tersoffs%cutoff + 1.0e-6_wp)
     Call warning( &
-         'DD cutoff check: neigh%cutoff = '// &
-         'Max(neigh%cutoff,vdws%cutoff,met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*tersoffs%cutoff+1.0e-6_wp', &
+      'DD cutoff check: neigh%cutoff = '// &
+      'Max(neigh%cutoff,vdws%cutoff,met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*tersoffs%cutoff+1.0e-6_wp', &
       .true.)
     Call warning(40, neigh%cutoff, 0.0_wp, 0.0_wp)
     ! If KIM model requires
@@ -4690,8 +4671,8 @@ Contains
             ewld%bspline%num_splines = Max(ewld%bspline%num_splines, bspline_local)
 
             If (ewld%bspline%num_splines > MAX_SPLINES) Then
-               Write(message, '(a,i0,a)') "Number of bsplines bigger than ", MAX_SPLINES, "! Increase it and recompile!"
-               Call error(0, message)
+              Write (message, '(a,i0,a)') "Number of bsplines bigger than ", MAX_SPLINES, "! Increase it and recompile!"
+              Call error(0, message)
             End If
 
           Else !If (itmp == 0) Then ! Poisson Solver
@@ -5050,7 +5031,7 @@ Contains
 
   End Subroutine scan_control_pre
 
-  Subroutine scan_control_io(io, netcdf, files, comm)
+  Subroutine scan_control_io(io, files, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -5067,17 +5048,16 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type(io_type),      Intent(InOut) :: io
-    Type(netcdf_param), Intent(InOut) :: netcdf
-    Type(file_type),    Intent(InOut) :: files(:)
-    Type(comms_type),   Intent(InOut) :: comm
+    Type(io_type),    Intent(InOut) :: io
+    Type(file_type),  Intent(InOut) :: files(:)
+    Type(comms_type), Intent(InOut) :: comm
 
     Integer, Parameter :: MAX_BATCH_SIZE = 10000000, MAX_BUFFER_SIZE = 100000
 
     Character(Len=200) :: record, record1
     Character(Len=256) :: message
     Character(Len=40)  :: word, word1
-    Integer            :: err_r, io_read, io_write, itmp
+    Integer            :: io_read, io_write, itmp
     Logical            :: carry, l_io_r, l_io_w, l_tmp, safe
     Real(Kind=wp)      :: tmp
 
@@ -5138,9 +5118,6 @@ Contains
           Else If (word(1:6) == 'direct') Then
             io_read = IO_READ_DIRECT
             Call info('I/O read method: parallel by using direct access', .true., level=2)
-          Else If (word(1:6) == 'netcdf') Then
-            io_read = IO_READ_NETCDF
-            Call info('I/O read method: parallel by using netCDF', .true., level=2)
           Else If (word(1:6) == 'master') Then
             io_read = IO_READ_MASTER
             Call info('I/O read method: serial by using a single master process', .true., level=2)
@@ -5159,8 +5136,7 @@ Contains
           ! empirical evidence from HECToR
 
           If (io_read == IO_READ_MPIIO .or. &
-              io_read == IO_READ_DIRECT .or. &
-              io_read == IO_READ_NETCDF) Then
+              io_read == IO_READ_DIRECT) Then
 
             Call get_word(record, word)
             itmp = Nint(Abs(word_2_real(word, 0.0_wp)))
@@ -5253,7 +5229,7 @@ Contains
           End If
 
         Else If (word(1:4) == 'writ' .or. &
-                 word(1:5) == 'mpiio' .or. word(1:6) == 'direct' .or. word(1:6) == 'netcdf' .or. word(1:6) == 'master') Then
+                 word(1:5) == 'mpiio' .or. word(1:6) == 'direct' .or. word(1:6) == 'master') Then
 
           l_io_w = .true.
           io_write = IO_WRITE_SORTED_MPIIO
@@ -5278,22 +5254,6 @@ Contains
             io_write = IO_WRITE_SORTED_DIRECT
             Call info('I/O write method: parallel by using direct access', .true.)
             Call warning('in parallel this I/O write method has portability issues', .true.)
-          Else If (word(1:6) == 'netcdf') Then
-            io_write = IO_WRITE_SORTED_NETCDF
-            Call get_word(record, word) ! Check if the user wants the "amber-like/32-bit" format
-            If (word(1:5) == 'amber' .or. word(1:5) == '32bit') Then
-              ! Use 32-bit quantities in output for real numbers
-              If (comm%idnode == 0) &
-                Call info('I/O write method: parallel by using netCDF in the amber-like/32-bit format', .true.)
-              Call io_nc_set_real_precision(sp, netcdf, err_r)
-            Else
-              ! Use 64-bit quantities in output for real numbers
-              Call info('I/O write method: parallel by using netCDF in 64-bit format', .true.)
-              Call io_nc_set_real_precision(dp, netcdf, err_r)
-              record1 = ' '
-              record1 = Trim(word)//" "//record ! back up
-              record = record1
-            End If
           Else If (word(1:6) == 'master') Then
             io_write = IO_WRITE_SORTED_MASTER
             Call info('I/O write method: serial by using a single master process', .true.)
@@ -5336,8 +5296,7 @@ Contains
           ! 1 <= writers <= mxnode or be wise, default = 8 or 1 when master
 
           If (io_write == IO_WRITE_SORTED_MPIIO .or. &
-              io_write == IO_WRITE_SORTED_DIRECT .or. &
-              io_write == IO_WRITE_SORTED_NETCDF) Then
+              io_write == IO_WRITE_SORTED_DIRECT) Then
 
             Call get_word(record, word)
             itmp = Nint(Abs(word_2_real(word, 0.0_wp)))
@@ -5576,8 +5535,6 @@ Contains
       End If
 
     End If
-
-    If (io_write == IO_WRITE_SORTED_NETCDF .or. io_read == IO_READ_NETCDF) Call io_nc_compiled()
     Return
 
     ! CONTROL file does not exist
@@ -5729,21 +5686,19 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type(flow_type) , Intent(  Out) :: flow
     Character(Len=*), Intent(In   ) :: control_filename
+    Type(flow_type),  Intent(  Out) :: flow
     Type(comms_type), Intent(InOut) :: comm
 
-    Logical                :: safe
-    Character( Len = 200 ) :: record
-    Character( Len = 40  ) :: word
-    Character( Len = 100 ) :: cfilename
+    Character(Len=100) :: cfilename
+    Character(Len=200) :: record
+    Character(Len=40)  :: word
+    Integer            :: unit_no
+    Logical            :: safe
 
-    Integer       :: unit_no
-
-
-    If (Len_Trim(control_filename) > 0) Then
+    If (Len_trim(control_filename) > 0) Then
       cfilename = Trim(control_filename)
-    else
+    Else
       cfilename = "CONTROL"
     End If
 
@@ -5751,49 +5706,49 @@ Contains
     safe = .true.
 
     ! Set standard option
-    flow%simulation_method= MD_STD
+    flow%simulation_method = MD_STD
     flow%NUM_FF = 1
 
     ! Check control file exists
-    If (comm%idnode == 0) Inquire(File=Trim(cfilename), Exist=safe)
-    Call gcheck(comm,safe,"enforce")
+    If (comm%idnode == 0) Inquire (File=Trim(cfilename), Exist=safe)
+    Call gcheck(comm, safe, "enforce")
 
-    If (.not.safe) Then
+    If (.not. safe) Then
       ! If CONTROL file is not found, set the following variables and return.
       ! DL_POLY will later abort by printing an error message
       ! At this stage we cannot stop the execution because OUTPUT has not been opened yet
-      flow%simulation_method=MD_STD
+      flow%simulation_method = MD_STD
       flow%NUM_FF = 1
       Return
-    end If
+    End If
 
     ! If CONTROL file is found, proceed
-    If (comm%idnode == 0) Open(Newunit=unit_no, File=trim(cfilename),Status='old')
+    If (comm%idnode == 0) Open (Newunit=unit_no, File=Trim(cfilename), Status='old')
 
-    Call get_line(safe,unit_no,record,comm)
+    Call get_line(safe, unit_no, record, comm)
 
     If (safe) Then
       Do
 
-        Call get_line(safe,unit_no,record,comm)
-        If (.not.safe) Exit
+        Call get_line(safe, unit_no, record, comm)
+        If (.not. safe) Exit
         Call lower_case(record)
-        Call get_word(record,word)
+        Call get_word(record, word)
 
         ! read EVB option. If for any reason there was a typo with the option "evb", DL_POLY will complain later
         If (word(1:3) == 'evb') Then
-          flow%simulation_method=EmpVB
-          Call get_word(record,word)
-          flow%NUM_FF = Nint(word_2_real(word,0.0_wp))
+          flow%simulation_method = EmpVB
+          Call get_word(record, word)
+          flow%NUM_FF = Nint(word_2_real(word, 0.0_wp))
         Else If (word(1:6) == 'finish') Then
-          exit
+          Exit
         End If
       End Do
 
     End If
 
     ! Close CONTROL file
-    If (comm%idnode == 0) Close(unit_no)
+    If (comm%idnode == 0) Close (unit_no)
 
   End Subroutine read_simtype
 

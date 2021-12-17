@@ -19,15 +19,8 @@ Module defects
                              gbcast, gcheck, girecv, gmax, grecv, gscatter, gscatter_columns, &
                              gscatterv, gsend, gsum, gsync, gwait, mode_create, mode_rdonly, &
                              mode_wronly, offset_kind
-  Use configuration,   Only: configuration_type,&
-                             IMCON_NOPBC,&
-                             IMCON_CUBIC,&
-                             IMCON_ORTHORHOMBIC,&
-                             IMCON_PARALLELOPIPED,&
-                             IMCON_SLAB,&
-                             IMCON_TRUNC_OCTO,&
-                             IMCON_RHOMBIC_DODEC,&
-                             IMCON_HEXAGONAL
+  Use configuration,   Only: IMCON_NOPBC,&
+                             configuration_type
   Use constants,       Only: half_minus,&
                              ndefdt,&
                              nrefdt,&
@@ -41,21 +34,18 @@ Module defects
   Use flow_control,    Only: RESTART_KEY_OLD
   Use io,              Only: &
                              IO_ALLOCATION_ERROR, IO_BASE_COMM_NOT_SET, IO_READ_MASTER, &
-                             IO_READ_NETCDF, IO_RESTART, IO_UNKNOWN_WRITE_LEVEL, &
-                             IO_UNKNOWN_WRITE_OPTION, IO_WRITE_SORTED_DIRECT, &
-                             IO_WRITE_SORTED_MASTER, IO_WRITE_SORTED_MPIIO, &
-                             IO_WRITE_SORTED_NETCDF, IO_WRITE_UNSORTED_DIRECT, &
+                             IO_RESTART, IO_UNKNOWN_WRITE_LEVEL, IO_UNKNOWN_WRITE_OPTION, &
+                             IO_WRITE_SORTED_DIRECT, IO_WRITE_SORTED_MASTER, &
+                             IO_WRITE_SORTED_MPIIO, IO_WRITE_UNSORTED_DIRECT, &
                              IO_WRITE_UNSORTED_MASTER, IO_WRITE_UNSORTED_MPIIO, io_close, &
-                             io_delete, io_finalize, io_get_parameters, io_get_var, io_init, &
-                             io_nc_create, io_nc_get_var, io_nc_put_var, io_open, io_read_batch, &
-                             io_set_parameters, io_type, io_write_batch, io_write_record, &
-                             io_write_sorted_file
+                             io_delete, io_finalize, io_get_parameters, io_init, io_open, &
+                             io_read_batch, io_set_parameters, io_type, io_write_batch, &
+                             io_write_record, io_write_sorted_file
   Use kinds,           Only: li,&
                              wi,&
                              wp
   Use neighbours,      Only: defects_link_cells,&
                              neighbours_type
-  Use netcdf_wrap,     Only: netcdf_param
   Use numerics,        Only: dcell,&
                              invert,&
                              pbcshift,&
@@ -426,7 +416,7 @@ Contains
 
   !> defects_reference_read
 
-  Subroutine defects_reference_read(nstep, io, dfcts, sites, netcdf, domain, config, files, comm)
+  Subroutine defects_reference_read(nstep, io, dfcts, sites, domain, config, files, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -448,7 +438,6 @@ Contains
     Type(io_type),            Intent(InOut) :: io
     Type(defects_type),       Intent(InOut) :: dfcts
     Type(site_type),          Intent(In   ) :: sites
-    Type(netcdf_param),       Intent(In   ) :: netcdf
     Type(domains_type),       Intent(In   ) :: domain
     Type(configuration_type), Intent(InOut) :: config
     Type(file_type),          Intent(InOut) :: files(:)
@@ -464,7 +453,7 @@ Contains
     Integer(Kind=offset_kind)                   :: top_skip
     Integer, Allocatable, Dimension(:)          :: iwrk
     Logical                                     :: fast, l_ind, l_str, lexist, loop, match, safe
-    Real(Kind=wp)                               :: cell_vecs(1:3, 1:3), det, sxx, syy, szz
+    Real(Kind=wp)                               :: det, sxx, syy, szz
     Real(Kind=wp), Allocatable, Dimension(:)    :: axx, ayy, azz
 
 ! Some parameters and variables needed by io interfaces
@@ -480,13 +469,8 @@ Contains
 
     Call io_get_parameters(io, user_method_read=io_read)
 
-    ! Define filename ASCII or netCDF
-
-    If (io_read /= IO_READ_NETCDF) Then
-      fname = Trim(dfcts%reffile)
-    Else
-      fname = Trim(dfcts%reffile)//'.nc'
-    End If
+    ! Define filename ASCII
+    fname = Trim(dfcts%reffile)
 
     ! Check if we have a REFERENCE and default megref
 
@@ -498,11 +482,8 @@ Contains
         Call error(551)
       Else ! Use data from CONFIG
         Call warning(320, 0.0_wp, 0.0_wp, 0.0_wp)
-        If (io_read /= IO_READ_NETCDF) Then
-          fname = Trim(files(FILE_CONFIG)%filename)
-        Else
-          fname = Trim(files(FILE_CONFIG)%filename)//'.nc'
-        End If
+        fname = Trim(files(FILE_CONFIG)%filename)
+
         megref = config%natms
         Call gsum(comm, megref)
         If (config%imcon == IMCON_NOPBC) Call error(552) ! Lattice parameters are a must
@@ -514,10 +495,6 @@ Contains
     If (io_read == IO_READ_MASTER) Then
 
       fast = .false.
-
-    Else If (io_read == IO_READ_NETCDF) Then
-
-      fast = .true.
 
     Else
 
@@ -595,93 +572,65 @@ Contains
 
     !!! SCAN HEADER
 
-    If (io_read /= IO_READ_NETCDF) Then ! ASCII read
+    ! Open file
 
-      ! Open file
+    If (comm%idnode == 0) Open (Unit=nrefdt, File=fname)
 
-      If (comm%idnode == 0) Open (Unit=nrefdt, File=fname)
+    ! Read TITLE record (file header)
 
-      ! Read TITLE record (file header)
+    Call get_line(safe, nrefdt, record, comm)
+    If (.not. safe) Go To 100
+
+    ! Read configuration level and image condition
+
+    Call get_line(safe, nrefdt, record, comm)
+    If (.not. safe) Go To 100
+
+    Call get_word(record, word)
+    lvcfgr = Nint(word_2_real(word))
+
+    Call get_word(record, word)
+    imconr = Nint(word_2_real(word))
+
+    If (imconr /= 0) Then
+      Call get_line(safe, nrefdt, record, comm)
+      If (.not. safe) Go To 100
+      Call get_word(record, word)
+      dfcts%celr(1) = word_2_real(word)
+      Call get_word(record, word)
+      dfcts%celr(2) = word_2_real(word)
+      Call get_word(record, word)
+      dfcts%celr(3) = word_2_real(word)
 
       Call get_line(safe, nrefdt, record, comm)
       If (.not. safe) Go To 100
-
-      ! Read configuration level and image condition
+      Call get_word(record, word)
+      dfcts%celr(4) = word_2_real(word)
+      Call get_word(record, word)
+      dfcts%celr(5) = word_2_real(word)
+      Call get_word(record, word)
+      dfcts%celr(6) = word_2_real(word)
 
       Call get_line(safe, nrefdt, record, comm)
       If (.not. safe) Go To 100
-
       Call get_word(record, word)
-      lvcfgr = Nint(word_2_real(word))
-
+      dfcts%celr(7) = word_2_real(word)
       Call get_word(record, word)
-      imconr = Nint(word_2_real(word))
-
-      If (imconr /= 0) Then
-        Call get_line(safe, nrefdt, record, comm)
-        If (.not. safe) Go To 100
-        Call get_word(record, word)
-        dfcts%celr(1) = word_2_real(word)
-        Call get_word(record, word)
-        dfcts%celr(2) = word_2_real(word)
-        Call get_word(record, word)
-        dfcts%celr(3) = word_2_real(word)
-
-        Call get_line(safe, nrefdt, record, comm)
-        If (.not. safe) Go To 100
-        Call get_word(record, word)
-        dfcts%celr(4) = word_2_real(word)
-        Call get_word(record, word)
-        dfcts%celr(5) = word_2_real(word)
-        Call get_word(record, word)
-        dfcts%celr(6) = word_2_real(word)
-
-        Call get_line(safe, nrefdt, record, comm)
-        If (.not. safe) Go To 100
-        Call get_word(record, word)
-        dfcts%celr(7) = word_2_real(word)
-        Call get_word(record, word)
-        dfcts%celr(8) = word_2_real(word)
-        Call get_word(record, word)
-        dfcts%celr(9) = word_2_real(word)
-      Else
-        Call error(552) ! Lattice parameters are a must
-      End If
-
-      ! image conditions not compliant with DD and link-cell
-
-      If (imconr == 4 .or. imconr == 5 .or. imconr == 7) Call error(300)
-
-      ! Close REFERENCE
-
-      If (comm%idnode == 0) Close (Unit=nrefdt)
-      Call gsync(comm)
-
-    Else ! netCDF read
-
-      ! Open file
-
-      Call io_set_parameters(io, user_comm=comm%comm)
-      Call io_open(io, io_read, comm%comm, fname, mode_rdonly, fh)
-
-      i = 1 ! For config there is only one frame
-
-      Call io_nc_get_var(io, 'datalevel', fh, lvcfgr, i, 1)
-
-      Call io_nc_get_var(io, 'imageconvention', fh, imconr, i, 1)
-
-      ! image conditions not compliant with DD and link-cell
-
-      If (imconr == 4 .or. imconr == 5 .or. imconr == 7) Call error(300)
-
-      Call io_nc_get_var(io, 'cell', fh, cell_vecs, [1, 1, i], [3, 3, 1])
-      dfcts%celr = Reshape(cell_vecs, [Size(dfcts%celr)])
-
-      ! Close REFERENCE
-
-      Call io_close(io, fh)
-
+      dfcts%celr(8) = word_2_real(word)
+      Call get_word(record, word)
+      dfcts%celr(9) = word_2_real(word)
+    Else
+      Call error(552) ! Lattice parameters are a must
     End If
+
+    ! image conditions not compliant with DD and link-cell
+
+    If (imconr == 4 .or. imconr == 5 .or. imconr == 7) Call error(300)
+
+    ! Close REFERENCE
+
+    If (comm%idnode == 0) Close (Unit=nrefdt)
+    Call gsync(comm)
 
     ! REFERENCE to CONFIG cell match
 
@@ -893,11 +842,7 @@ Contains
 
       ! top_skip is header size
 
-      If (io_read /= IO_READ_NETCDF) Then
-        top_skip = Int(5, offset_kind) ! config%imcon is a must
-      Else
-        top_skip = Int(1, offset_kind) ! This is now the frame = 1
-      End If
+      top_skip = Int(5, offset_kind) ! config%imcon is a must
 
       Call defects_reference_read_parallel(lvcfgr, l_ind, l_str, megref, fast, fh, &
                                            top_skip, io, dfcts, domain, comm)
@@ -959,7 +904,7 @@ Contains
     ! MATCH glitch fix
 
     If (.not. match) Then
-      Call defects_reference_write(fname, megref, io, dfcts, netcdf, config, comm)
+      Call defects_reference_write(fname, megref, io, dfcts, config, comm)
       Go To 5
     End If
 
@@ -1008,12 +953,11 @@ Contains
     Character(Len=256)                             :: message
     Character(Len=40)                              :: forma, word
     Character(Len=8), Allocatable, Dimension(:)    :: chbuf, chbuf_read, chbuf_scat
-    Integer                                        :: ats_per_proc, batsz, Count(1:3), fail(1:6), &
-                                                      frame, i, idm, ierr, indatm, io_read, ipx, &
-                                                      ipy, ipz, j, k, my_read_proc_num, n_loc, &
-                                                      n_read_procs_use, per_read_proc, &
-                                                      recs_per_at, recs_per_proc, recs_to_read, &
-                                                      recsz, start(1:3), this_base_proc, &
+    Integer                                        :: ats_per_proc, batsz, fail(1:6), i, idm, &
+                                                      ierr, indatm, io_read, ipx, ipy, ipz, j, k, &
+                                                      my_read_proc_num, n_loc, n_read_procs_use, &
+                                                      per_read_proc, recs_per_at, recs_per_proc, &
+                                                      recs_to_read, recsz, this_base_proc, &
                                                       this_rec_buff, to_read, which_read_proc, &
                                                       wp_vals_per_at
     Integer(Kind=li)                               :: n_ii, n_jj, n_sk
@@ -1026,7 +970,6 @@ Contains
     Real(Kind=wp), Allocatable, Dimension(:, :)    :: scatter_buffer, scatter_buffer_read
 
 ! Some parameters and variables needed by io interfaces
-! netCDF
 
     ! Get reading method, total number of I/O heads and buffer size
 
@@ -1113,11 +1056,8 @@ Contains
 
       ! Allocate record buffer, reading buffers, scatter buffers and indexing arrays
 
-      If (io_read /= IO_READ_NETCDF) Then
-        Allocate (rec_buff(1:recsz, 1:batsz), Stat=fail(1))
-      Else
-        Allocate (rec_buff(1:Len(chbuf_read), 1:batsz), Stat=fail(1))
-      End If
+      Allocate (rec_buff(1:recsz, 1:batsz), Stat=fail(1))
+
       Allocate (chbuf_read(1:batsz), iwrk_read(1:batsz), Stat=fail(2))
       Allocate (axx_read(1:batsz), ayy_read(1:batsz), azz_read(1:batsz), Stat=fail(3))
       Allocate (scatter_buffer_read(1:wp_vals_per_at, 1:batsz), Stat=fail(4))
@@ -1160,44 +1100,61 @@ Contains
       Readers_only: If (do_read .and. indatm == 0) Then
         to_read = Min(batsz, orig_first_at(my_read_proc_num + 1) - first_at(my_read_proc_num))
 
-        No_netCDF: If (io_read /= IO_READ_NETCDF) Then
-
-          this_rec_buff = 0
-          recs_to_read = 0
-          Do i = 1, to_read
-            If (this_rec_buff == 0) Then
-              recs_to_read = Min(Size(rec_buff, Dim=2), (to_read - i + 1) * recs_per_at)
-              If (.not. fast) Then
-                Read (Unit=nrefdt, Fmt=forma) rec_buff(:, 1:recs_to_read)
-              Else
-                Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, comm%ierr)
-                rec_mpi_io = rec_mpi_io + Int(recs_to_read, offset_kind)
-              End If
+        this_rec_buff = 0
+        recs_to_read = 0
+        Do i = 1, to_read
+          If (this_rec_buff == 0) Then
+            recs_to_read = Min(Size(rec_buff, Dim=2), (to_read - i + 1) * recs_per_at)
+            If (.not. fast) Then
+              Read (Unit=nrefdt, Fmt=forma) rec_buff(:, 1:recs_to_read)
+            Else
+              Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, comm%ierr)
+              rec_mpi_io = rec_mpi_io + Int(recs_to_read, offset_kind)
             End If
+          End If
 
-            ! Atom details
+          ! Atom details
 
-            this_rec_buff = this_rec_buff + 1
-            Do j = 1, Min(Len(record), Size(rec_buff, Dim=1))
-              record(j:j) = rec_buff(j, this_rec_buff)
-            End Do
-            Call tabs_2_blanks(record) ; Call strip_blanks(record)
-            Call get_word(record, word); chbuf_read(i) = word(1:8)
-            If (l_ind) Then
-              Call get_word(record, word)
-              iwrk_read(i) = Nint(word_2_real(word, 0.0_wp, l_str))
-              If (iwrk_read(i) /= 0) Then
-                iwrk_read(i) = Abs(iwrk_read(i))
-              Else
-                iwrk_read(i) = first_at(my_read_proc_num) + i
-              End If
+          this_rec_buff = this_rec_buff + 1
+          Do j = 1, Min(Len(record), Size(rec_buff, Dim=1))
+            record(j:j) = rec_buff(j, this_rec_buff)
+          End Do
+          Call tabs_2_blanks(record); Call strip_blanks(record)
+          Call get_word(record, word); chbuf_read(i) = word(1:8)
+          If (l_ind) Then
+            Call get_word(record, word)
+            iwrk_read(i) = Nint(word_2_real(word, 0.0_wp, l_str))
+            If (iwrk_read(i) /= 0) Then
+              iwrk_read(i) = Abs(iwrk_read(i))
             Else
               iwrk_read(i) = first_at(my_read_proc_num) + i
             End If
+          Else
+            iwrk_read(i) = first_at(my_read_proc_num) + i
+          End If
 
-            If (this_rec_buff == recs_to_read) Then
-              this_rec_buff = 0
-              recs_to_read = Min(Size(rec_buff, Dim=2), (to_read - i + 1) * recs_per_at - 1)
+          If (this_rec_buff == recs_to_read) Then
+            this_rec_buff = 0
+            recs_to_read = Min(Size(rec_buff, Dim=2), (to_read - i + 1) * recs_per_at - 1)
+            If (.not. fast) Then
+              Read (Unit=nrefdt, Fmt=forma) rec_buff(:, 1:recs_to_read)
+            Else
+              Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, comm%ierr)
+              rec_mpi_io = rec_mpi_io + Int(recs_to_read, offset_kind)
+            End If
+          End If
+
+          ! Positions
+
+          this_rec_buff = this_rec_buff + 1
+          Do j = 1, Min(Len(record), Size(rec_buff, Dim=1))
+            record(j:j) = rec_buff(j, this_rec_buff)
+          End Do
+          Read (record, Fmt=*, End=100) axx_read(i), ayy_read(i), azz_read(i)
+          If (this_rec_buff == recs_to_read) Then
+            this_rec_buff = 0
+            If (lvcfgr > 0) Then
+              recs_to_read = Min(Size(rec_buff, Dim=2), (to_read - i + 1) * recs_per_at - 2)
               If (.not. fast) Then
                 Read (Unit=nrefdt, Fmt=forma) rec_buff(:, 1:recs_to_read)
               Else
@@ -1205,18 +1162,16 @@ Contains
                 rec_mpi_io = rec_mpi_io + Int(recs_to_read, offset_kind)
               End If
             End If
+          End If
 
-            ! Positions
+          ! Velocities
 
+          If (lvcfgr > 0) Then
             this_rec_buff = this_rec_buff + 1
-            Do j = 1, Min(Len(record), Size(rec_buff, Dim=1))
-              record(j:j) = rec_buff(j, this_rec_buff)
-            End Do
-            Read (record, Fmt=*, End=100) axx_read(i), ayy_read(i), azz_read(i)
             If (this_rec_buff == recs_to_read) Then
               this_rec_buff = 0
-              If (lvcfgr > 0) Then
-                recs_to_read = Min(Size(rec_buff, Dim=2), (to_read - i + 1) * recs_per_at - 2)
+              If (lvcfgr > 1) Then
+                recs_to_read = Min(Size(rec_buff, Dim=2), (to_read - i + 1) * recs_per_at - 3)
                 If (.not. fast) Then
                   Read (Unit=nrefdt, Fmt=forma) rec_buff(:, 1:recs_to_read)
                 Else
@@ -1225,58 +1180,18 @@ Contains
                 End If
               End If
             End If
-
-            ! Velocities
-
-            If (lvcfgr > 0) Then
-              this_rec_buff = this_rec_buff + 1
-              If (this_rec_buff == recs_to_read) Then
-                this_rec_buff = 0
-                If (lvcfgr > 1) Then
-                  recs_to_read = Min(Size(rec_buff, Dim=2), (to_read - i + 1) * recs_per_at - 3)
-                  If (.not. fast) Then
-                    Read (Unit=nrefdt, Fmt=forma) rec_buff(:, 1:recs_to_read)
-                  Else
-                    Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, comm%ierr)
-                    rec_mpi_io = rec_mpi_io + Int(recs_to_read, offset_kind)
-                  End If
-                End If
-              End If
-            End If
-
-            ! Forces
-
-            If (lvcfgr > 1) Then
-              this_rec_buff = this_rec_buff + 1
-
-              If (this_rec_buff == recs_to_read) Then
-                this_rec_buff = 0
-              End If
-            End If
-          End Do
-
-        Else
-
-          If (to_read /= 0) Then
-            frame = Int(top_skip, Kind(frame))
-
-            Call io_nc_get_var(io, 'atomnames', fh, rec_buff, [first_at(my_read_proc_num) + 1, frame], [8, to_read, 1])
-            Do i = 1, to_read
-              Do j = 1, Min(Len(chbuf_read), Size(rec_buff, Dim=1))
-                chbuf_read(i) (j:j) = rec_buff(j, i)
-              End Do
-            End Do
-            If (l_ind) Then
-              Call io_nc_get_var(io, 'indices', fh, iwrk_read, [first_at(my_read_proc_num) + 1, frame], [to_read, 1])
-            End If
-
-            start = [1, first_at(my_read_proc_num) + 1, frame]
-            count = [3, to_read, 1]
-
-            Call io_get_var(io, 'coordinates', fh, start, count, axx_read, ayy_read, azz_read)
           End If
 
-        End If No_netCDF
+          ! Forces
+
+          If (lvcfgr > 1) Then
+            this_rec_buff = this_rec_buff + 1
+
+            If (this_rec_buff == recs_to_read) Then
+              this_rec_buff = 0
+            End If
+          End If
+        End Do
 
         ! Assign atoms positions in fractional coordinates to the correct domains
         ! (DD bounding) and broadcast them
@@ -1590,7 +1505,7 @@ Contains
 
   End Subroutine defects_reference_set_halo
 
-  Subroutine defects_reference_write(name, megref, io, dfcts, netcdf, config, comm)
+  Subroutine defects_reference_write(name, megref, io, dfcts, config, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1612,7 +1527,6 @@ Contains
     Integer,                  Intent(In   ) :: megref
     Type(io_type),            Intent(InOut) :: io
     Type(defects_type),       Intent(InOut) :: dfcts
-    Type(netcdf_param),       Intent(In   ) :: netcdf
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
@@ -1629,8 +1543,7 @@ Contains
     Integer(Kind=offset_kind)                      :: rec_mpi_io
     Integer, Allocatable, Dimension(:)             :: iwrk, n_atm
     Logical                                        :: ready
-    Real(Kind=wp)                                  :: angles(1:3), cell_vecs(1:3, 1:3), &
-                                                      celprp(1:10), lengths(1:3), x, y, z
+    Real(Kind=wp)                                  :: x, y, z
     Real(Kind=wp), Allocatable, Dimension(:)       :: axx, ayy, azz
 
 ! default record size
@@ -1652,8 +1565,6 @@ Contains
     Call io_get_parameters(io, user_line_feed=lf)
 
     ! Nasty fix here as this is a REWRITE!!!
-
-    If (io_read == IO_READ_NETCDF) io_write = IO_WRITE_SORTED_NETCDF
 
     ! Get offsets and define batch
 
@@ -1918,11 +1829,10 @@ Contains
         Call error(0, message)
       End If
 
-      ! SORTED MPI-I/O or Parallel Direct Access FORTRAN or netCDF
+      ! SORTED MPI-I/O or Parallel Direct Access FORTRAN
 
     Else If (io_write == IO_WRITE_SORTED_MPIIO .or. &
-             io_write == IO_WRITE_SORTED_DIRECT .or. &
-             io_write == IO_WRITE_SORTED_NETCDF) Then
+             io_write == IO_WRITE_SORTED_DIRECT) Then
 
       ! Write header only at start, where just one node is needed
       ! Start of file
@@ -1934,72 +1844,30 @@ Contains
         Call io_set_parameters(io, user_comm=comm_self)
         Call io_init(io, recsz)
         Call io_delete(io, name, comm) ! Sort existence issues
-        If (io_write == IO_WRITE_SORTED_NETCDF) Then
-          Call io_nc_create(netcdf, comm_self, name, config%cfgname, megref)
-        End If
         Call io_open(io, io_write, comm_self, name, mode_wronly + mode_create, fh)
 
-        ! Non netCDF
+        ! Write header
 
-        If (io_write /= IO_WRITE_SORTED_NETCDF) Then
+        Write (record, Fmt='(a72,a1)') config%cfgname(1:72), lf
+        Call io_write_record(io, fh, Int(jj, offset_kind), record)
+        jj = jj + 1
 
-          ! Write header
+        Write (record, Fmt='(3i10,a42,a1)') 0, config%imcon, megref, Repeat(' ', 42), lf
+        Call io_write_record(io, fh, Int(jj, offset_kind), record)
+        jj = jj + 1
 
-          Write (record, Fmt='(a72,a1)') config%cfgname(1:72), lf
+        Do i = 0, 2
+          Write (record, '( 3f20.10, a12, a1 )') config%cell(1 + i * 3:3 + i * 3), Repeat(' ', 12), lf
           Call io_write_record(io, fh, Int(jj, offset_kind), record)
           jj = jj + 1
-
-          Write (record, Fmt='(3i10,a42,a1)') 0, config%imcon, megref, Repeat(' ', 42), lf
-          Call io_write_record(io, fh, Int(jj, offset_kind), record)
-          jj = jj + 1
-
-          Do i = 0, 2
-            Write (record, '( 3f20.10, a12, a1 )') config%cell(1 + i * 3:3 + i * 3), Repeat(' ', 12), lf
-            Call io_write_record(io, fh, Int(jj, offset_kind), record)
-            jj = jj + 1
-          End Do
-
-        Else ! netCDF write
-
-          jj = 1 ! For config there is only one frame
-
-          Call io_nc_put_var(io, 'time', fh, 0.0_wp, jj, 1)
-          Call io_nc_put_var(io, 'step', fh, 0, jj, 1)
-          Call io_nc_put_var(io, 'datalevel', fh, 0, jj, 1)
-          Call io_nc_put_var(io, 'imageconvention', fh, config%imcon, jj, 1)
-          Call io_nc_put_var(io, 'timestep', fh, 0.0_wp, jj, 1)
-
-          Call dcell(config%cell, celprp) ! get config%cell properties
-
-          cell_vecs = Reshape(config%cell, [3, 3])
-
-          lengths(1) = celprp(1)
-          lengths(2) = celprp(2)
-          lengths(3) = celprp(3)
-
-          angles(1) = Acos(celprp(5))
-          angles(2) = Acos(celprp(6))
-          angles(3) = Acos(celprp(4))
-          angles = angles * 180.0_wp / (4.0_wp * Atan(1.0_wp)) ! Convert to degrees
-
-          ! Print
-
-          Call io_nc_put_var(io, 'cell', fh, cell_vecs, [1, 1, jj], [3, 3, 1])
-          Call io_nc_put_var(io, 'cell_lengths', fh, lengths, [1, jj], [3, 1])
-          Call io_nc_put_var(io, 'cell_angles', fh, angles, [1, jj], [3, 1])
-
-        End If
+        End Do
 
         Call io_close(io, fh)
         Call io_finalize(io)
 
       Else
 
-        If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-          jj = jj + 5
-        Else
-          jj = 1
-        End If
+        jj = jj + 5
 
       End If
       Call gsync(comm)
@@ -2176,7 +2044,7 @@ Contains
 
   !> defects_write
   Subroutine defects_write(keyres, ensemble, nstep, tstep, time, io, cshell, dfcts, neigh, &
-                           sites, netcdf, domain, config, files, comm)
+                           sites, domain, config, files, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2201,19 +2069,18 @@ Contains
     Type(defects_type),       Intent(InOut) :: dfcts
     Type(neighbours_type),    Intent(In   ) :: neigh
     Type(site_type),          Intent(In   ) :: sites
-    Type(netcdf_param),       Intent(In   ) :: netcdf
     Type(domains_type),       Intent(In   ) :: domain
     Type(configuration_type), Intent(InOut) :: config
     Type(file_type),          Intent(InOut) :: files(:)
     Type(comms_type),         Intent(InOut) :: comm
 
     Integer, Parameter                      :: nsbcll = 27, recsz = 73
-    Integer, Dimension(1:nsbcll), Parameter :: nix = [0, -1, -1, -1, 0, 0, 0, 1, 1, 1, -1, -1, -1&
-                                               , 0, 0, 1, 1, 1, -1, -1, -1, 0, 0, 0, 1, 1, 1], niy&
-                                               = [0, -1, 0, 1, -1, 0, 1, -1, 0, 1, -1, 0, 1, -1, &
-                                               1, -1, 0, 1, -1, 0, 1, -1, 0, 1, -1, 0, 1], niz = [&
-                                               0, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, &
-                                               0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    Integer, Dimension(1:nsbcll), Parameter :: nix = [0, -1, -1, -1, 0, 0, 0, 1, 1, 1, -1, -1, -1, &
+                                               0, 0, 1, 1, 1, -1, -1, -1, 0, 0, 0, 1, 1, 1], niy = &
+                                               [0, -1, 0, 1, -1, 0, 1, -1, 0, 1, -1, 0, 1, -1, 1, &
+                                               -1, 0, 1, -1, 0, 1, -1, 0, 1, -1, 0, 1], niz = [0, &
+                                               -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0&
+                                               , 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 
     Character                                      :: lf
     Character(Len=1), Allocatable, Dimension(:, :) :: chbat
@@ -2246,10 +2113,6 @@ Contains
     Call io_get_parameters(io, user_buffer_size_write=batsz)
     Call io_get_parameters(io, user_line_feed=lf)
 
-    ! netCDF not implemented for DEFECTS.  Switch to DEFAULT temporarily.
-
-    If (io_write == IO_WRITE_SORTED_NETCDF) io_write = IO_WRITE_SORTED_MPIIO
-
     If (dfcts%newjob) Then
       dfcts%newjob = .false.
 
@@ -2259,7 +2122,7 @@ Contains
 
       ! Build lattice sites list from REFERENCE
       Call dfcts%init(config%mxatms)
-      Call defects_reference_read(nstep, io, dfcts, sites, netcdf, domain, config, files, comm)
+      Call defects_reference_read(nstep, io, dfcts, sites, domain, config, files, comm)
 
       ! Assume that the MD cell will not change much in size and shape from
       ! the one provided in REFERENCE, a smaller halo(cutoff(rdef)) is to be set

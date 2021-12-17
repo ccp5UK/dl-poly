@@ -7,18 +7,18 @@ Module units
   !! author - j.wilkins april 2020
   !!-----------------------------------------------------------------------
 
-  Use kinds, only : wp
-  Use constants, only : pi, boltz
-  Use hash, only: hash_table, MAX_KEY, STR_LEN
-  Use hash, only: get_double, get_int, get_complex
-  Use errors_warnings, only : error, error_units, error_alloc, error_dealloc
-  Use parse, only : lower_case
+  Use kinds,           Only: wp
+  Use constants,       Only: pi, boltz
+  Use hash,            Only: hash_table, MAX_KEY, STR_LEN
+  Use hash,            Only: get_double, get_int, get_complex
+  Use errors_warnings, Only: error, error_units, error_alloc, error_dealloc
+  Use parse,           Only: lower_case
   Implicit None
 
   Private
 
   Type, Private, Extends(hash_table) :: units_hash_table
-   contains
+   Contains
      Generic  , Public  :: get => get_unit
      Procedure, Private :: get_unit
   end type units_hash_table

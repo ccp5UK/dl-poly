@@ -44,17 +44,15 @@ Module system
                              IO_ALLOCATION_ERROR, IO_BASE_COMM_NOT_SET, IO_RESTART, &
                              IO_UNKNOWN_WRITE_LEVEL, IO_UNKNOWN_WRITE_OPTION, &
                              IO_WRITE_SORTED_DIRECT, IO_WRITE_SORTED_MASTER, &
-                             IO_WRITE_SORTED_MPIIO, IO_WRITE_SORTED_NETCDF, &
-                             IO_WRITE_UNSORTED_DIRECT, IO_WRITE_UNSORTED_MASTER, &
-                             IO_WRITE_UNSORTED_MPIIO, io_close, io_delete, io_finalize, &
-                             io_get_parameters, io_init, io_nc_create, io_nc_put_var, io_open, &
+                             IO_WRITE_SORTED_MPIIO, IO_WRITE_UNSORTED_DIRECT, &
+                             IO_WRITE_UNSORTED_MASTER, IO_WRITE_UNSORTED_MPIIO, io_close, &
+                             io_delete, io_finalize, io_get_parameters, io_init, io_open, &
                              io_set_parameters, io_type, io_write_record, io_write_sorted_file, &
                              recsz
   Use kinds,           Only: li,&
                              wp
   Use metal,           Only: metal_lrc,&
                              metal_type
-  Use netcdf_wrap,     Only: netcdf_param
   Use numerics,        Only: dcell,&
                              images
   Use parse,           Only: get_word,&
@@ -661,7 +659,7 @@ Contains
   End Subroutine system_init
 
   Subroutine system_expand(l_str, rcut, io, cshell, cons, bond, angle, &
-                           dihedral, inversion, sites, netcdf, rigid, config, files, comm, ff)
+                           dihedral, inversion, sites, rigid, config, files, comm, ff)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -689,7 +687,6 @@ Contains
     Type(dihedrals_type),     Intent(InOut) :: dihedral
     Type(inversions_type),    Intent(InOut) :: inversion
     Type(site_type),          Intent(In   ) :: sites
-    Type(netcdf_param),       Intent(In   ) :: netcdf
     Type(rigid_bodies_type),  Intent(In   ) :: rigid
     Type(configuration_type), Intent(InOut) :: config
     Type(file_type),          Intent(InOut) :: files(:)
@@ -703,11 +700,9 @@ Contains
     Real(Kind=wp), Allocatable, Dimension(:)                     :: f1, f2, f3, f4, f5, f6, f7, &
                                                                     f8, f9, x_scaled, xm, &
                                                                     y_scaled, ym, z_scaled, zm
-    Real(Kind=wp)                                                :: angles(1:3), c1, c2, c3, c4, &
-                                                                    cell_vecs(1:3, 1:3), &
-                                                                    celprp(1:10), fx, fy, fz, hwx, &
-                                                                    hwy, hwz, lengths(1:3), r, t, &
-                                                                    x, x1(1:1), y, y1(1:1), z, &
+    Real(Kind=wp)                                                :: c1, c2, c3, c4, celprp(1:10), &
+                                                                    fx, fy, fz, hwx, hwy, hwz, r, &
+                                                                    t, x, x1(1:1), y, y1(1:1), z, &
                                                                     z1(1:1)
     Logical                                                      :: lmpldt, safe, safeg, safel, &
                                                                     safem, safer, safex, safey, &
@@ -795,10 +790,6 @@ Contains
     fmpl = ' '
     fmpl = "MPOLES"//record(1:Len_trim(record))
 
-    ! netCDF CONFIG name convention
-
-    If (io_write == IO_WRITE_SORTED_NETCDF) fcfg = fcfg(1:Len_trim(fcfg))//'.nc'
-
     fx = Real(config%nx, wp)
     fy = Real(config%ny, wp)
     fz = Real(config%nz, wp)
@@ -861,15 +852,11 @@ Contains
       If (io_write == IO_WRITE_UNSORTED_MPIIO .or. &
           io_write == IO_WRITE_UNSORTED_DIRECT .or. &
           io_write == IO_WRITE_SORTED_MPIIO .or. &
-          io_write == IO_WRITE_SORTED_DIRECT .or. &
-          io_write == IO_WRITE_SORTED_NETCDF) Then
+          io_write == IO_WRITE_SORTED_DIRECT) Then
 
         Call io_set_parameters(io, user_comm=comm_self)
         Call io_init(io, recsz)
         Call io_delete(io, fcfg(1:Len_trim(fcfg)), comm)
-        If (io_write == IO_WRITE_SORTED_NETCDF) Then
-          Call io_nc_create(netcdf, comm_self, fcfg(1:Len_trim(fcfg)), config%cfgname, config%megatm * nall)
-        End If
         Call io_open(io, io_write, comm_self, fcfg(1:Len_trim(fcfg)), mode_wronly + mode_create, fh)
 
       Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
@@ -912,32 +899,6 @@ Contains
         Write (record2, Fmt='(3f20.10,a12,a1)') fz * config%cell(7), fz * config%cell(8), fz * config%cell(9), Repeat(' ', 12), lf
         Call io_write_record(io, fh, Int(4, offset_kind), record2)
 
-      Else If (io_write == IO_WRITE_SORTED_NETCDF) Then
-
-        i = 1 ! For config there is only one frame
-
-        Call io_nc_put_var(io, 'time', fh, 0.0_wp, i, 1)
-        Call io_nc_put_var(io, 'step', fh, 0, i, 1)
-        Call io_nc_put_var(io, 'datalevel', fh, 0, i, 1)
-        Call io_nc_put_var(io, 'imageconvention', fh, config%imcon, i, 1)
-
-        cell_vecs(:, 1) = fx * config%cell(1:3)
-        cell_vecs(:, 2) = fy * config%cell(4:6)
-        cell_vecs(:, 3) = fz * config%cell(7:9)
-
-        lengths(1) = fx * celprp(1)
-        lengths(2) = fy * celprp(2)
-        lengths(3) = fz * celprp(3)
-
-        angles(1) = Acos(celprp(5))
-        angles(2) = Acos(celprp(6))
-        angles(3) = Acos(celprp(4))
-        angles = angles * 180.0_wp / (4.0_wp * Atan(1.0_wp)) ! Convert to degrees
-
-        Call io_nc_put_var(io, 'cell', fh, cell_vecs, (/1, 1, i/), (/3, 3, 1/))
-        Call io_nc_put_var(io, 'cell_lengths', fh, lengths, (/1, i/), (/3, 1/))
-        Call io_nc_put_var(io, 'cell_angles', fh, angles, (/1, i/), (/3, 1/))
-
       Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
                io_write == IO_WRITE_SORTED_MASTER) Then
 
@@ -957,8 +918,7 @@ Contains
     End If
 
     If (io_write == IO_WRITE_UNSORTED_MPIIO .or. &
-        io_write == IO_WRITE_SORTED_MPIIO .or. &
-        io_write == IO_WRITE_SORTED_NETCDF) Then
+        io_write == IO_WRITE_SORTED_MPIIO) Then
 
       If (comm%idnode == 0) Then
         Call io_close(io, fh)
@@ -1565,8 +1525,7 @@ Contains
                   index = index + Int((offset - Int(5, li)) / Int(2, li))
 
                   If (io_write == IO_WRITE_UNSORTED_MPIIO .or. &
-                      io_write == IO_WRITE_SORTED_MPIIO .or. &
-                      io_write == IO_WRITE_SORTED_NETCDF) Then
+                      io_write == IO_WRITE_SORTED_MPIIO) Then
 
                     at_scaled = at_scaled + 1
 
@@ -1660,18 +1619,13 @@ Contains
     End If
 
     If (io_write == IO_WRITE_UNSORTED_MPIIO .or. &
-        io_write == IO_WRITE_SORTED_MPIIO .or. &
-        io_write == IO_WRITE_SORTED_NETCDF) Then
+        io_write == IO_WRITE_SORTED_MPIIO) Then
 
       Call io_set_parameters(io, user_comm=comm%comm)
       Call io_init(io, recsz)
       Call io_open(io, io_write, comm%comm, fcfg(1:Len_trim(fcfg)), mode_wronly, fh)
 
-      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        top_skip = Int(5, offset_kind)
-      Else
-        top_skip = Int(1, offset_kind) ! netCDF frame
-      End If
+      top_skip = Int(5, offset_kind)
 
       Call io_write_sorted_file(io, fh, 0, IO_RESTART, top_skip, at_scaled, &
                                 ltg_scaled, atmnam_scaled, &
@@ -1871,7 +1825,7 @@ Contains
   End Subroutine system_expand
 
   Subroutine system_revive(rcut, nstep, time, sites, io, tmst, stats, devel, &
-                           green, thermo, bond, angle, dihedral, inversion, zdensity, rdf, netcdf, config, &
+                           green, thermo, bond, angle, dihedral, inversion, zdensity, rdf, config, &
                            files, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1907,7 +1861,6 @@ Contains
     Type(inversions_type),    Intent(InOut) :: inversion
     Type(z_density_type),     Intent(InOut) :: zdensity
     Type(rdf_type),           Intent(InOut) :: rdf
-    Type(netcdf_param),       Intent(In   ) :: netcdf
     Type(configuration_type), Intent(InOut) :: config
     Type(file_type),          Intent(InOut) :: files(:)
     Type(comms_type),         Intent(InOut) :: comm

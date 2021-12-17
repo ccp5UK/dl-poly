@@ -17,17 +17,10 @@ Module minimise
   Use comms,           Only: comms_type,&
                              gmax,&
                              gsum
-  Use configuration,   Only: configuration_type,&
+  Use configuration,   Only: IMCON_NOPBC,&
+                             configuration_type,&
                              getcom,&
-                             write_config,&
-                             IMCON_NOPBC,&
-                             IMCON_CUBIC,&
-                             IMCON_ORTHORHOMBIC,&
-                             IMCON_PARALLELOPIPED,&
-                             IMCON_SLAB,&
-                             IMCON_TRUNC_OCTO,&
-                             IMCON_RHOMBIC_DODEC,&
-                             IMCON_HEXAGONAL
+                             write_config
   Use constants,       Only: engunit,&
                              zero_plus
   Use constraints,     Only: constraints_pseudo_bonds,&
@@ -50,7 +43,6 @@ Module minimise
                              kinstresf,&
                              kinstress,&
                              kinstrest
-  Use netcdf_wrap,     Only: netcdf_param
   Use numerics,        Only: images,&
                              invert
   Use parse,           Only: lower_case,&
@@ -109,8 +101,8 @@ Module minimise
     Integer                            :: keyopt
     Real(Kind=wp)                      :: min_pass
     Real(Kind=wp)                      :: total, grad_tol, eng_tol, dist_tol, step, &
-                         eng_0, eng_min, eng, eng0, eng1, eng2, &
-                         grad, grad0, grad1, grad2, onorm, sgn, stride, gamma
+                                          eng_0, eng_min, eng, eng0, eng1, eng2, &
+                                          grad, grad0, grad1, grad2, onorm, sgn, stride, gamma
   Contains
     Private
 
@@ -154,7 +146,7 @@ Contains
   End Subroutine deallocate_minimise_arrays
 
   Subroutine minimise_relax(l_str, rdf_collect, tstep, stpcfg, io, stats, &
-                            pmf, cons, netcdf, minim, rigid, domain, config, files, comm)
+                            pmf, cons, minim, rigid, domain, config, files, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -186,7 +178,6 @@ Contains
     Type(stats_type),         Intent(InOut) :: stats
     Type(pmf_type),           Intent(InOut) :: pmf
     Type(constraints_type),   Intent(InOut) :: cons
-    Type(netcdf_param),       Intent(In   ) :: netcdf
     Type(minimise_type),      Intent(InOut) :: minim
     Type(rigid_bodies_type),  Intent(InOut) :: rigid
     Type(domains_type),       Intent(In   ) :: domain
@@ -595,7 +586,7 @@ Contains
       i = Nint(stats%passmin(1))
       If (.not. l_str) Then
         Write (message, '(3(1x,a),5x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
-       'Minimised', minim%word, 'passes', 'eng_tot', 'minim%grad_tol', 'minim%eng_tol', 'minim%dist_tol', 'tol=', minim%tolerance, &
+          'Minimised', minim%word, 'passes', 'eng_tot', 'grad_tol', 'eng_tol', 'dist_tol', 'tol=', minim%tolerance, &
           'minim%step=', minim%step
         Call info(message, .true.)
         Write (message, "(1x,130('-'))")
@@ -636,7 +627,7 @@ Contains
         levcfg = 0 ! define level of information in file
 
         Call write_config(config, minfile, levcfg, i - 1, minim%eng_min / engunit, &
-                          io, minim%eng_0 / engunit, netcdf, comm)
+                          io, minim%eng_0 / engunit, comm)
       End If
 
       ! setup new quaternions

@@ -18,11 +18,10 @@ Module rsds
   Use flow_control,    Only: RESTART_KEY_OLD
   Use io,              Only: &
                              IO_WRITE_SORTED_DIRECT, IO_WRITE_SORTED_MASTER, &
-                             IO_WRITE_SORTED_MPIIO, IO_WRITE_SORTED_NETCDF, &
-                             IO_WRITE_UNSORTED_DIRECT, IO_WRITE_UNSORTED_MASTER, &
-                             IO_WRITE_UNSORTED_MPIIO, io_close, io_finalize, io_get_parameters, &
-                             io_init, io_open, io_set_parameters, io_type, io_write_batch, &
-                             io_write_record
+                             IO_WRITE_SORTED_MPIIO, IO_WRITE_UNSORTED_DIRECT, &
+                             IO_WRITE_UNSORTED_MASTER, IO_WRITE_UNSORTED_MPIIO, io_close, &
+                             io_finalize, io_get_parameters, io_init, io_open, io_set_parameters, &
+                             io_type, io_write_batch, io_write_record
   Use kinds,           Only: li,&
                              wi,&
                              wp
@@ -108,10 +107,6 @@ Contains
     Call io_get_parameters(io, user_method_write=io_write)
     Call io_get_parameters(io, user_buffer_size_write=batsz)
     Call io_get_parameters(io, user_line_feed=lf)
-
-    ! netCDF not implemented for RSDDAT.  Switch to DEFAULT temporarily.
-
-    If (io_write == IO_WRITE_SORTED_NETCDF) io_write = IO_WRITE_SORTED_MPIIO
 
     If (rsdc%newjob) Then
       rsdc%newjob = .false.

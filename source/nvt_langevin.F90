@@ -31,9 +31,10 @@ Module nvt_langevin
                              adjust_timestep,&
                              thermostat_type
   Use timer,           Only: timer_type
-  Use ttm,             Only: eltemp_max,eltemp_min,&
-                             ttm_type,&
-                             TTM_EPVAR_NULL, TTM_EPVAR_HOMO, TTM_EPVAR_HETERO
+  Use ttm,             Only: TTM_EPVAR_HETERO,&
+                             TTM_EPVAR_HOMO,&
+                             TTM_EPVAR_NULL,&
+                             ttm_type
   Use ttm_utils,       Only: Gep,&
                              calcchies
 
@@ -91,10 +92,8 @@ Contains
 
     Character(Len=256)         :: message
     Integer                    :: fail(1:9), i
-    Logical                    :: safe
     Logical, Allocatable       :: lstitr(:)
-    Real(Kind=wp)              :: hstep, rstep, scl, scl1, scr, scr1, scv, scv1, t0, t1, t2, tmp, &
-                                  vom(1:3)
+    Real(Kind=wp)              :: hstep, rstep, scl1, scr1, scv1, t0, t1, tmp, vom(1:3)
     Real(Kind=wp), Allocatable :: fxl(:), fxr(:), fxt(:), fyl(:), fyr(:), fyt(:), fzl(:), fzr(:), &
                                   fzt(:), oxt(:), oyt(:), ozt(:), vxt(:), vyt(:), vzt(:), xxt(:), &
                                   yyt(:), zzt(:)
@@ -200,7 +199,7 @@ Contains
       ! rounding errors in the evaluation of the terms.
 
       ! Create complex scalers
-      call langevin_scalers(thermo%chi, tstep, t0, t1, scr1, scv1, scl1)
+      Call langevin_scalers(thermo%chi, tstep, t0, t1, scr1, scv1, scl1)
 
       ! update velocity and position
 
@@ -378,15 +377,14 @@ Contains
 
     Character(Len=256)         :: message
     Integer                    :: fail(1:14), i, i1, i2, irgd, j, jrgd, krgd, lrgd, matms, rgdtyp
-    Logical                    :: safe
     Logical, Allocatable       :: lstitr(:)
     Real(Kind=wp)              :: fmx, fmxl, fmxr, fmy, fmyl, fmyr, fmz, fmzl, fmzr, hstep, mxdr, &
                                   opx, opy, opz, p0, p00, p1, p11, p2, p22, p3, p33, qt0, qt0l, &
                                   qt0r, qt1, qt1l, qt1r, qt2, qt2l, qt2r, qt3, qt3l, qt3r, &
-                                  rot(1:9), rstep, scl, scl1, scr, scr1, scv, scv1, t0, t1, t2, &
-                                  tmp, tqx, tqxl, tqxr, tqy, tqyl, tqyr, tqz, tqzl, tqzr, trx, &
-                                  trxl, trxr, try, tryl, tryr, trz, trzl, trzr, vom(1:3), vpx, &
-                                  vpy, vpz, x(1:1), y(1:1), z(1:1)
+                                  rot(1:9), rstep, scl1, scr1, scv1, t0, t1, tmp, tqx, tqxl, tqxr, &
+                                  tqy, tqyl, tqyr, tqz, tqzl, tqzr, trx, trxl, trxr, try, tryl, &
+                                  tryr, trz, trzl, trzr, vom(1:3), vpx, vpy, vpz, x(1:1), y(1:1), &
+                                  z(1:1)
     Real(Kind=wp), Allocatable :: fxl(:), fxr(:), fxt(:), fyl(:), fyr(:), fyt(:), fzl(:), fzr(:), &
                                   fzt(:), ggx(:), ggy(:), ggz(:), oxt(:), oyt(:), ozt(:), q0t(:), &
                                   q1t(:), q2t(:), q3t(:), rgdoxt(:), rgdoyt(:), rgdozt(:), &
@@ -570,7 +568,7 @@ Contains
       ! (see above comment in nvt_l0_vv).
 
       ! Create complex scalers
-      call langevin_scalers(thermo%chi, tstep, t0, t1, scr1, scv1, scl1)
+      Call langevin_scalers(thermo%chi, tstep, t0, t1, scr1, scv1, scl1)
 
       ! update velocity and position of FPs
 
@@ -1163,11 +1161,10 @@ Contains
 
     Character(Len=256)         :: message
     Integer                    :: fail(1:9), i, ia, ijk, ja, ka
-    Logical                    :: lrand, lvel, safe
+    Logical                    :: lrand, lvel
     Logical, Allocatable       :: lstitr(:)
-    Real(Kind=wp)              :: chi, eltempmax, eltempmin, hstep, rstep, scl1, scl1a, scl1b, scr1, scr1a, &
-                                  scr1b, scv1, scv1a, scv1b, t0, t0a, t0b, t1, t1a, t1b, t2, t2a, &
-                                  t2b, tmp, velsq, vom(1:3)
+    Real(Kind=wp)              :: chi, hstep, rstep, scl1, scl1a, scl1b, scr1, scr1a, scr1b, scv1, &
+                                  scv1a, scv1b, t0, t0a, t0b, t1, t1a, t1b, tmp, velsq, vom(1:3)
     Real(Kind=wp), Allocatable :: fxl(:), fxr(:), fxt(:), fyl(:), fyr(:), fyt(:), fzl(:), fzr(:), &
                                   fzt(:), oxt(:), oyt(:), ozt(:), vxt(:), vyt(:), vzt(:), xxt(:), &
                                   yyt(:), zzt(:)
@@ -1286,12 +1283,12 @@ Contains
       Case (TTM_EPVAR_NULL, TTM_EPVAR_HOMO)
         chi = Merge(thermo%chi_ep, 0.0_wp, ttm%l_epcp) + thermo%chi_es
         ! Null out.
-        call langevin_scalers(chi, tstep, t0a, t1a, scr1a, scv1a, scl1a)
+        Call langevin_scalers(chi, tstep, t0a, t1a, scr1a, scv1a, scl1a)
         If (lrand) Then
-          call langevin_scalers(thermo%chi_ep, tstep, t0b, t1b, scr1b, scv1b, scl1b)
+          Call langevin_scalers(thermo%chi_ep, tstep, t0b, t1b, scr1b, scv1b, scl1b)
         Else
           ! Null out.
-          call langevin_scalers(zero_plus, tstep, t0b, t1b, scr1b, scv1b, scl1b)
+          Call langevin_scalers(zero_plus, tstep, t0b, t1b, scr1b, scv1b, scl1b)
         End If
       End Select
 
@@ -1307,9 +1304,9 @@ Contains
             If (config%weight(i) > 1.0e-6_wp) Then
               ! check for active config%cell and electronic temperature is
               ! higher than ionic tmeperature: if not, switch off thermostat
-              ia = Floor(xxt(i)*ttm%grcell(1)+yyt(i)*ttm%grcell(4)+zzt(i)*ttm%grcell(7)+ttm%zerocell(1)) + 1
-              ja = Floor(xxt(i)*ttm%grcell(2)+yyt(i)*ttm%grcell(5)+zzt(i)*ttm%grcell(8)+ttm%zerocell(2)) + 1
-              ka = Floor(xxt(i)*ttm%grcell(3)+yyt(i)*ttm%grcell(6)+zzt(i)*ttm%grcell(9)+ttm%zerocell(3)) + 1
+              ia = Floor(xxt(i) * ttm%grcell(1) + yyt(i) * ttm%grcell(4) + zzt(i) * ttm%grcell(7) + ttm%zerocell(1)) + 1
+              ja = Floor(xxt(i) * ttm%grcell(2) + yyt(i) * ttm%grcell(5) + zzt(i) * ttm%grcell(8) + ttm%zerocell(2)) + 1
+              ka = Floor(xxt(i) * ttm%grcell(3) + yyt(i) * ttm%grcell(6) + zzt(i) * ttm%grcell(9) + ttm%zerocell(3)) + 1
               ijk = 1 + ia + (ttm%ntcell(1) + 2) * (ja + (ttm%ntcell(2) + 2) * ka)
               If (ttm%act_ele_cell(ijk, 0, 0, 0) > zero_plus .and. ttm%eltemp(ijk, 0, 0, 0) > ttm%tempion(ijk)) Then
                 Select Case (ttm%gvar)
@@ -1322,15 +1319,15 @@ Contains
                 Case (TTM_EPVAR_HETERO)
                   chi = Merge(Gep(ttm%eltemp(ijk, 0, 0, 0), ttm), 0.0_wp, ttm%l_epcp) + Merge(thermo%chi_es, 0.0_wp, lvel)
                   If (ttm%l_epcp) Then
-                    call langevin_scalers(chi, tstep, t0, t1, scr1, scv1, scl1)
+                    Call langevin_scalers(chi, tstep, t0, t1, scr1, scv1, scl1)
                   Else
                     ! Null out.
-                    call langevin_scalers(zero_plus, tstep, t0, t1, scr1, scv1, scl1)
+                    Call langevin_scalers(zero_plus, tstep, t0, t1, scr1, scv1, scl1)
                   End If
                 End Select
               Else
                 ! Null out.
-                call langevin_scalers(zero_plus, tstep, t0, t1, scr1, scv1, scl1)
+                Call langevin_scalers(zero_plus, tstep, t0, t1, scr1, scv1, scl1)
               End If
 
               ! Half-kick velocity
@@ -1364,9 +1361,9 @@ Contains
             lvel = (velsq > thermo%vel_es2 .and. thermo%chi_es > zero_plus)
             If (config%weight(i) > 1.0e-6_wp) Then
               ! check for active config%cell: if not, switch off thermostat
-              ia = Floor(xxt(i)*ttm%grcell(1)+yyt(i)*ttm%grcell(4)+zzt(i)*ttm%grcell(7)+ttm%zerocell(1)) + 1
-              ja = Floor(xxt(i)*ttm%grcell(2)+yyt(i)*ttm%grcell(5)+zzt(i)*ttm%grcell(8)+ttm%zerocell(2)) + 1
-              ka = Floor(xxt(i)*ttm%grcell(3)+yyt(i)*ttm%grcell(6)+zzt(i)*ttm%grcell(9)+ttm%zerocell(3)) + 1
+              ia = Floor(xxt(i) * ttm%grcell(1) + yyt(i) * ttm%grcell(4) + zzt(i) * ttm%grcell(7) + ttm%zerocell(1)) + 1
+              ja = Floor(xxt(i) * ttm%grcell(2) + yyt(i) * ttm%grcell(5) + zzt(i) * ttm%grcell(8) + ttm%zerocell(2)) + 1
+              ka = Floor(xxt(i) * ttm%grcell(3) + yyt(i) * ttm%grcell(6) + zzt(i) * ttm%grcell(9) + ttm%zerocell(3)) + 1
               ijk = 1 + ia + (ttm%ntcell(1) + 2) * (ja + (ttm%ntcell(2) + 2) * ka)
               If (ttm%act_ele_cell(ijk, 0, 0, 0) > zero_plus) Then
                 Select Case (ttm%gvar)
@@ -1379,15 +1376,15 @@ Contains
                 Case (TTM_EPVAR_HETERO)
                   chi = Merge(Gep(ttm%eltemp(ijk, 0, 0, 0), ttm), 0.0_wp, ttm%l_epcp) + Merge(thermo%chi_es, 0.0_wp, lvel)
                   If (ttm%l_epcp) Then
-                    call langevin_scalers(chi, tstep, t0, t1, scr1, scv1, scl1)
+                    Call langevin_scalers(chi, tstep, t0, t1, scr1, scv1, scl1)
                   Else
                     ! Null out.
-                    call langevin_scalers(zero_plus, tstep, t0, t1, scr1, scv1, scl1)
+                    Call langevin_scalers(zero_plus, tstep, t0, t1, scr1, scv1, scl1)
                   End If
                 End Select
               Else
                 ! Null out.
-                call langevin_scalers(zero_plus, tstep, t0, t1, scr1, scv1, scl1)
+                Call langevin_scalers(zero_plus, tstep, t0, t1, scr1, scv1, scl1)
               End If
 
               ! Half-kick velocity
@@ -1573,19 +1570,20 @@ Contains
     ! criterion was met. Because of a goto statement, this pair of events
     ! happened indefinitely after an impact event.
     ! }}*
-    Real(Kind=wp),            Intent(In ) :: chi, tstep
-    Real(Kind=wp),            Intent(Out) :: t0, t1, scr, scv, scl
+    Real(Kind=wp), Intent(In   ) :: chi, tstep
+    Real(Kind=wp), Intent(  Out) :: t0, t1, scr, scv, scl
 
-    ! When to switch to the series expansions?
     Real(Kind=wp), Parameter :: stol = 1.0e-3_wp
 
-    ! Handy dimensionless parameter for series expansions.
-    Real(Kind=wp)            :: alpha
+    Real(Kind=wp) :: alpha
+
+! When to switch to the series expansions?
+! Handy dimensionless parameter for series expansions.
 
     ! t0 for velocity full-time fluctuation.
     t0 = Exp(-chi * tstep)
 
-    If ( chi <= zero_plus ) Then
+    If (chi <= zero_plus) Then
       ! no chi, no try.
       t1 = tstep
       ! NB t2 (old code) is now defunct. It was used as a temp variable to
@@ -1593,7 +1591,7 @@ Contains
       scr = 0.d0
       scl = 0.d0
       scv = 0.d0
-      return
+      Return
     End If
 
     ! t1 for pos full-time fluctuation.
@@ -1603,19 +1601,19 @@ Contains
     alpha = 0.5_wp * chi * tstep
 
     ! Calculate pos, vel, force scalers
-    If ( alpha < stol ) Then
+    If (alpha < stol) Then
       ! Use series expansions. More stable at extremely small argument, and
       ! more accurate c.f. rounding errors than the old defaults near the
       ! threshold.
-      scr = (alpha-alpha**2+0.5_wp*(alpha**3)-(alpha**4)/6.0_wp+0.075_wp*(alpha**5)) / chi
-      scl = (alpha-0.2_wp*(alpha**3)+(32.0_wp*alpha**5)/525.0_wp) / (chi * Sqrt(3.0_wp))
-      scv = 1.0_wp-alpha+5.0_wp*alpha**2/6.0_wp-0.5_wp*alpha**3
+      scr = (alpha - alpha**2 + 0.5_wp * (alpha**3) - (alpha**4) / 6.0_wp + 0.075_wp * (alpha**5)) / chi
+      scl = (alpha - 0.2_wp * (alpha**3) + (32.0_wp * alpha**5) / 525.0_wp) / (chi * Sqrt(3.0_wp))
+      scv = 1.0_wp - alpha + 5.0_wp * alpha**2 / 6.0_wp - 0.5_wp * alpha**3
     Else
       ! Expressions which aren't as accurate as the series expansions at
       ! small arguments, but which have lesser rounding errors than the old
       ! defaults, and which are more accurate for larger arguments.
       ! (These don't suffer spurious "impossibility" issue bc. of precision.)
-      scr = (1.0_wp - t0)**2 / (Sqrt(alpha*(1.0_wp - t0**2)) * 2.0_wp * chi)
+      scr = (1.0_wp - t0)**2 / (Sqrt(alpha * (1.0_wp - t0**2)) * 2.0_wp * chi)
       scl = Sqrt(1.0_wp - Tanh(alpha) / alpha) / chi
       scv = Sqrt((1.0_wp - t0**2) / (4.0_wp * alpha))
     End If
