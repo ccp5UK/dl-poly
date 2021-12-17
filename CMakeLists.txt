@@ -131,7 +131,7 @@ if(WITH_PLUMED)
     enable_language(CXX)
     ExternalProject_Add(int-plumed
       GIT_REPOSITORY https://github.com/plumed/plumed2.git
-      GIT_TAG v2.5.2
+      GIT_TAG v${PLUMED_VERSION}
       GIT_SHALLOW true
       GIT_PROGRESS true
       BUILD_IN_SOURCE 1
@@ -139,7 +139,9 @@ if(WITH_PLUMED)
       CONFIGURE_COMMAND CXX=${CMAKE_CXX_COMPILER} FC=${CMAKE_Fortran_COMPILER} ${CMAKE_CURRENT_BINARY_DIR}/int-plumed-api/plumed-api/configure --prefix=${CMAKE_INSTALL_PREFIX}
       SOURCE_DIR int-plumed-api/plumed-api
       )
+# this is silly but plumed seems not to pick on some lib64
     set(PLUMED_LIB ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+    set(PLUMED_LIB ${PLUMED_LIB} ${CMAKE_INSTALL_PREFIX}/lib)
     set(LIBS ${LIBS} plumed)
     message(STATUS "Build with PLUMED support")
     message(STATUS "Building PLUMED for you")
