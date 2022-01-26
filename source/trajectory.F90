@@ -17,22 +17,18 @@ Module trajectory
   Use flow_control,    Only: RESTART_KEY_OLD
   Use io,              Only: &
                              IO_ALLOCATION_ERROR, IO_BASE_COMM_NOT_SET, IO_HISTORD, IO_HISTORY, &
-                             IO_READ_DIRECT, IO_READ_MASTER, IO_READ_MPIIO, IO_READ_NETCDF, &
-                             IO_SUBSET_POSITIONS, IO_UNKNOWN_WRITE_LEVEL, IO_UNKNOWN_WRITE_OPTION, &
+                             IO_READ_DIRECT, IO_READ_MASTER, IO_READ_MPIIO, IO_SUBSET_POSITIONS, &
+                             IO_UNKNOWN_WRITE_LEVEL, IO_UNKNOWN_WRITE_OPTION, &
                              IO_WRITE_SORTED_DIRECT, IO_WRITE_SORTED_MASTER, &
-                             IO_WRITE_SORTED_MPIIO, IO_WRITE_SORTED_NETCDF, &
-                             IO_WRITE_UNSORTED_DIRECT, IO_WRITE_UNSORTED_MASTER, &
-                             IO_WRITE_UNSORTED_MPIIO, io_close, io_finalize, io_get_parameters, &
-                             io_init, io_nc_create, io_nc_get_dim, io_nc_get_file_real_precision, &
-                             io_nc_get_real_precision, io_nc_get_var, io_nc_put_var, io_open, &
-                             io_read_batch, io_set_parameters, io_type, io_write_batch, &
-                             io_write_record, io_write_sorted_file, split_io_comm
+                             IO_WRITE_SORTED_MPIIO, IO_WRITE_UNSORTED_DIRECT, &
+                             IO_WRITE_UNSORTED_MASTER, IO_WRITE_UNSORTED_MPIIO, io_close, &
+                             io_finalize, io_get_parameters, io_init, io_open, io_read_batch, &
+                             io_set_parameters, io_type, io_write_batch, io_write_record, &
+                             io_write_sorted_file, split_io_comm
   Use kinds,           Only: li,&
                              wi,&
                              wp
-  Use netcdf_wrap,     Only: netcdf_param
-  Use numerics,        Only: dcell,&
-                             invert,&
+  Use numerics,        Only: invert,&
                              shellsort2
   Use parse,           Only: get_line,&
                              get_word,&
@@ -193,8 +189,7 @@ Contains
                                      nattot, totatm
     Integer, Allocatable          :: iwrk(:)
     Logical                       :: lexist, safe
-    Real(Kind=wp)                 :: cell_vecs(1:3, 1:3), det, rcell(1:9), sxx, syy, szz, xhi, &
-                                     yhi, zhi
+    Real(Kind=wp)                 :: det, rcell(1:9), sxx, syy, szz, xhi, yhi, zhi
     Real(Kind=wp), Allocatable    :: axx(:), ayy(:), azz(:), bxx(:), byy(:), bzz(:), cxx(:), &
                                      cyy(:), czz(:)
 
@@ -209,109 +204,82 @@ Contains
 
       ! ASCII read
 
-      If (traj%io_read /= IO_READ_NETCDF) Then
+      ! Define the default record size
 
-        ! Define the default record size
+      traj%recsz_read = 73
 
-        traj%recsz_read = 73
+      ! Does HISTORY exist
 
-        ! Does HISTORY exist
+      lexist = .true.
+      If (comm%idnode == 0) Inquire (File=fname, Exist=lexist)
+      Call gcheck(comm, lexist, "enforce")
+      If (.not. lexist) Go To 400
 
-        lexist = .true.
-        If (comm%idnode == 0) Inquire (File=fname, Exist=lexist)
-        Call gcheck(comm, lexist, "enforce")
-        If (.not. lexist) Go To 400
+      ! Open HISTORY
 
-        ! Open HISTORY
+      If (comm%idnode == 0) Open (Newunit=files(FILE_HISTORY)%unit_no, File=files(FILE_HISTORY)%filename)
 
-        If (comm%idnode == 0) Open (Newunit=files(FILE_HISTORY)%unit_no, File=files(FILE_HISTORY)%filename)
+      ! read the HISTORY file header
 
-        ! read the HISTORY file header
+      Call get_line(safe, files(FILE_HISTORY)%unit_no, record, comm); If (.not. safe) Go To 300
 
-        Call get_line(safe, files(FILE_HISTORY)%unit_no, record, comm); If (.not. safe) Go To 300
+      Call get_line(safe, files(FILE_HISTORY)%unit_no, record, comm); If (.not. safe) Go To 300
+      Call get_word(record, word); levcfg = Nint(word_2_real(word, 0.0_wp))
+      Call get_word(record, word)
+      Call get_word(record, word); If (Nint(word_2_real(word)) /= megatm) Go To 300
+      Call get_word(record, word); traj%frm_read = Nint(word_2_real(word, 0.0_wp), li)
+      Call get_word(record, word); traj%rec_read = Nint(word_2_real(word, 0.0_wp), li)
 
-        Call get_line(safe, files(FILE_HISTORY)%unit_no, record, comm); If (.not. safe) Go To 300
-        Call get_word(record, word); levcfg = Nint(word_2_real(word, 0.0_wp))
-        Call get_word(record, word)
-        Call get_word(record, word); If (Nint(word_2_real(word)) /= megatm) Go To 300
-        Call get_word(record, word); traj%frm_read = Nint(word_2_real(word, 0.0_wp), li)
-        Call get_word(record, word); traj%rec_read = Nint(word_2_real(word, 0.0_wp), li)
+      ! Change traj%fast_read if no database records exists or the file is new
 
-        ! Change traj%fast_read if no database records exists or the file is new
+      If (traj%frm_read == Int(0, li) .and. traj%rec_read == Int(0, li)) traj%fast_read = .false.
 
-        If (traj%frm_read == Int(0, li) .and. traj%rec_read == Int(0, li)) traj%fast_read = .false.
+      If (levcfg /= 3) Then
 
-        If (levcfg /= 3) Then
+        ! Detect DL_POLY_2 HISTORY and amend traj%io_read and traj%recsz_read
 
-          ! Detect DL_POLY_2 HISTORY and amend traj%io_read and traj%recsz_read
-
-          If ((.not. traj%fast_read) .and. traj%io_read == IO_READ_MPIIO) Then
-            traj%io_read = IO_READ_DIRECT
-            traj%recsz_read = 200
-          End If
-
-        Else
-
-          ! Detect compressed HISTORY and make amendments
-
-          traj%l_ind_read = .false.
-          If (traj%fast_read .and. traj%io_read /= IO_READ_MASTER) Then
-            traj%io_read = IO_READ_MPIIO
-            traj%recsz_read = 35
-          Else
-            traj%io_read = IO_READ_DIRECT
-          End If
-
+        If ((.not. traj%fast_read) .and. traj%io_read == IO_READ_MPIIO) Then
+          traj%io_read = IO_READ_DIRECT
+          traj%recsz_read = 200
         End If
 
-        If (traj%io_read /= IO_READ_MASTER) Then
-          traj%top_skip_read = Int(2, offset_kind)
+      Else
 
-          fail(1) = 0
-          Allocate (traj%buffer(1:traj%recsz_read, 1:4), Stat=fail(1))
-          If (fail(1) > 0) Then
-            Write (message, '(a)') 'read_history allocation failure 1'
-            Call error(0, message)
-          End If
+        ! Detect compressed HISTORY and make amendments
 
-          If (traj%io_read == IO_READ_MPIIO) Then
-            If (comm%idnode == 0) Call files(FILE_HISTORY)%close ()
-
-            Call io_set_parameters(io, user_comm=comm%comm)
-            Call io_init(io, traj%recsz_read)
-            Call io_open(io, traj%io_read, comm%comm, fname, mode_rdonly, traj%fh_read)
-          End If
-        End If
-
-      Else ! netCDF read
-
-        ! Does HISTORY exist
-
-        lexist = .true.
-        If (comm%idnode == 0) Inquire (File=fname, Exist=lexist)
-        Call gcheck(comm, lexist, "enforce")
-        If (.not. lexist) Go To 400
-
-        ! fast and rec are irrelevant for netCDF (initialised at declaration)
-
-        traj%fast_read = .true.
-        traj%rec_read = Int(0, li)
-
-        Call io_set_parameters(io, user_comm=comm%comm)
-        Call io_open(io, traj%io_read, comm%comm, fname, mode_rdonly, traj%fh_read)
-        Call io_nc_get_dim(io, 'frame', traj%fh_read, i)
-
-        If (i > 0) Then
-          traj%frm_read = Int(i, li)
+        traj%l_ind_read = .false.
+        If (traj%fast_read .and. traj%io_read /= IO_READ_MASTER) Then
+          traj%io_read = IO_READ_MPIIO
+          traj%recsz_read = 35
         Else
-          Go To 300
+          traj%io_read = IO_READ_DIRECT
         End If
 
       End If
+
+      If (traj%io_read /= IO_READ_MASTER) Then
+        traj%top_skip_read = Int(2, offset_kind)
+
+        fail(1) = 0
+        Allocate (traj%buffer(1:traj%recsz_read, 1:4), Stat=fail(1))
+        If (fail(1) > 0) Then
+          Write (message, '(a)') 'read_history allocation failure 1'
+          Call error(0, message)
+        End If
+
+        If (traj%io_read == IO_READ_MPIIO) Then
+          If (comm%idnode == 0) Call files(FILE_HISTORY)%close ()
+
+          Call io_set_parameters(io, user_comm=comm%comm)
+          Call io_init(io, traj%recsz_read)
+          Call io_open(io, traj%io_read, comm%comm, fname, mode_rdonly, traj%fh_read)
+        End If
+      End If
+
     Else
-      If (traj%io_read == IO_READ_MPIIO .or. traj%io_read == IO_READ_NETCDF) &
+      If (traj%io_read == IO_READ_MPIIO) &
         Call io_set_parameters(io, user_comm=comm%comm)
-      If (traj%io_read == IO_READ_MPIIO) Call io_init(io, traj%recsz_read)
+      Call io_init(io, traj%recsz_read)
     End If
 
     ! Reinitialise local-to-global counters and all levels of information at every bloody read
@@ -579,7 +547,7 @@ Contains
 
       ! PROPER ASCII read
 
-    Else If (traj%io_read /= IO_READ_NETCDF) Then
+    Else
 
       Call io_read_batch(io, traj%fh_read, traj%top_skip_read, 4, traj%buffer, ierr)
       If (ierr < 0) Go To 300
@@ -652,40 +620,6 @@ Contains
       ! Update current frame and exit gracefully
 
       traj%frm1_read = traj%frm1_read + Int(1, li)
-      If (traj%frm1_read == traj%frm_read) Go To 200
-
-    Else ! netCDF read
-
-      ! Update current frame
-
-      traj%frm1_read = traj%frm1_read + Int(1, li)
-      i = Int(traj%frm1_read)
-
-      Call io_nc_get_var(io, 'time', traj%fh_read, time, i, 1)
-      Call io_nc_get_var(io, 'datalevel', traj%fh_read, levcfg, i, 1)
-      Call io_nc_get_var(io, 'imageconvention', traj%fh_read, config%imcon, i, 1)
-
-      ! image conditions not compliant with DD and link-cell
-
-      If (config%imcon == IMCON_TRUNC_OCTO .or. &
-          config%imcon == IMCON_RHOMBIC_DODEC .or. &
-          config%imcon == IMCON_HEXAGONAL) Call error(300)
-
-      Call io_nc_get_var(io, 'timestep', traj%fh_read, tstep, i, 1)
-      Call io_nc_get_var(io, 'step', traj%fh_read, nstep, i, 1)
-
-      Write (message, '(a,i10,a,f10.3,a)') 'HISTORY step ', nstep, ' (', time, ' ps) is being read'
-      Call info(message, .true.)
-
-      ! Note that in netCDF the frames are not long integers - Int( traj%frm1_read )
-
-      Call io_nc_get_var(io, 'cell', traj%fh_read, cell_vecs, (/1, 1, i/), (/3, 3, 1/))
-      config%cell = Reshape(cell_vecs, (/Size(config%cell)/))
-
-      Call read_config_parallel(config, levcfg, dvar, traj%l_ind_read, l_str, megatm, &
-                                traj%l_his_read, traj%l_xtr_read, traj%fast_read, traj%fh_read, &
-                                Int(i, Kind(traj%top_skip_read)), xhi, yhi, zhi, io, domain, files, comm, 1)
-
       If (traj%frm1_read == traj%frm_read) Go To 200
 
     End If
@@ -794,7 +728,7 @@ Contains
 
   End Subroutine read_history
 
-  Subroutine trajectory_write(keyres, nstep, tstep, time, io, rsd, netcdf, config, &
+  Subroutine trajectory_write(keyres, nstep, tstep, time, io, rsd, config, &
                               traj, files, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -818,7 +752,6 @@ Contains
     Real(Kind=wp),            Intent(In   ) :: tstep, time
     Type(io_type),            Intent(InOut) :: io
     Real(Kind=wp),            Intent(In   ) :: rsd(:)
-    Type(netcdf_param),       Intent(In   ) :: netcdf
     Type(configuration_type), Intent(InOut) :: config
     Type(trajectory_type),    Intent(InOut) :: traj
     Type(file_type),          Intent(InOut) :: files(:)
@@ -830,21 +763,17 @@ Contains
     Character(Len=256)                             :: message
     Character(Len=40)                              :: word
     Character(Len=8), Allocatable, Dimension(:)    :: chbuf
-    Integer                                        :: batsz, fail(1:5), fh, file_p, file_r, i, &
-                                                      ierr, io_p, io_r, io_write, jatms, jdnode, &
-                                                      jj, k
+    Integer                                        :: batsz, fail(1:5), fh, i, ierr, io_write, &
+                                                      jatms, jdnode, jj, k
     Integer(Kind=li)                               :: rec1
     Integer(Kind=offset_kind)                      :: jj_io, rec_mpi_io
     Integer, Allocatable, Dimension(:)             :: iwrk, n_atm
     Logical                                        :: lexist, ready, safe
-    Real(Kind=wp)                                  :: angles(1:3), buffer(1:2), &
-                                                      cell_vecs(1:3, 1:3), celprp(1:10), &
-                                                      lengths(1:3)
+    Real(Kind=wp)                                  :: buffer(1:2)
     Real(Kind=wp), Allocatable, Dimension(:)       :: bxx, byy, bzz, eee, fff
     Type(corePart), Allocatable, Dimension(:)      :: temp_parts
 
 ! Some parameters and variables needed by io interfaces
-! netCDF check
 
     If (.not. (nstep >= traj%start .and. Mod(nstep - traj%start, traj%freq) == 0)) Return
 
@@ -863,12 +792,7 @@ Contains
       traj%newjob_write = .false.
 
       ! name convention
-
-      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        traj%fname = files(FILE_HISTORY)%filename
-      Else
-        traj%fname = Trim(files(FILE_HISTORY)%filename)//'.nc'
-      End If
+      traj%fname = files(FILE_HISTORY)%filename
 
       ! If keyres = RESTART_KEY_OLD, is HISTORY old (does it exist) and
       ! how many frames and records are in there
@@ -886,192 +810,102 @@ Contains
       10 Continue
       If (.not. lexist) Then
 
-        If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-          If (comm%idnode == 0) Then
-            Open (Newunit=files(FILE_HISTORY)%unit_no, File=traj%fname, &
-                  Form='formatted', Access='direct', Status='replace', Recl=traj%recsz_write)
-            Write (Unit=files(FILE_HISTORY)%unit_no, Fmt='(a72,a1)', Rec=Int(1, li)) config%cfgname(1:72), lf
-            Write (Unit=files(FILE_HISTORY)%unit_no, Fmt='(3i10,2i21,a1)', Rec=Int(2, li)) &
-              traj%file_key(), config%imcon, config%megatm, traj%frm_write, traj%rec_write, lf
-            Call files(FILE_HISTORY)%close ()
-          End If
-          traj%rec_write = Int(2, li)
-          traj%frm_write = Int(0, li)
-        Else
-          If (comm%idnode == 0) Then
-            Call io_set_parameters(io, user_comm=comm_self)
-            Call io_nc_create(netcdf, comm_self, traj%fname, config%cfgname, config%megatm)
-          End If
+        If (comm%idnode == 0) Then
+          Open (Newunit=files(FILE_HISTORY)%unit_no, File=traj%fname, &
+                Form='formatted', Access='direct', Status='replace', Recl=traj%recsz_write)
+          Write (Unit=files(FILE_HISTORY)%unit_no, Fmt='(a72,a1)', Rec=Int(1, li)) config%cfgname(1:72), lf
+          Write (Unit=files(FILE_HISTORY)%unit_no, Fmt='(3i10,2i21,a1)', Rec=Int(2, li)) &
+            traj%file_key(), config%imcon, config%megatm, traj%frm_write, traj%rec_write, lf
+          Call files(FILE_HISTORY)%close ()
         End If
+        traj%rec_write = Int(2, li)
+        traj%frm_write = Int(0, li)
 
         ! Get some sense out of it
 
       Else
 
         safe = .true.
-        If (io_write /= IO_WRITE_SORTED_NETCDF) Then
+        If (comm%idnode == 0) Then
 
-          If (comm%idnode == 0) Then
+          Open (Newunit=files(FILE_HISTORY)%unit_no, File=traj%fname, Form='formatted')
 
-            Open (Newunit=files(FILE_HISTORY)%unit_no, File=traj%fname, Form='formatted')
+          Do
 
-            Do
+            record(1:traj%recsz_write) = ' '
 
-              record(1:traj%recsz_write) = ' '
+            ! Assume new style of HISTORY with bookkeeping.
 
-              ! Assume new style of HISTORY with bookkeeping.
+            If (traj%fast_write) Then
 
-              If (traj%fast_write) Then
+              Read (Unit=files(FILE_HISTORY)%unit_no, Fmt=*, End=20) ! title record
+              traj%rec_write = traj%rec_write + Int(1, li)
+              Read (Unit=files(FILE_HISTORY)%unit_no, Fmt='(a)', End=20) record(1:traj%recsz_write) ! bookkeeping record
+              Call tabs_2_blanks(record); Call strip_blanks(record)
+              traj%rec_write = traj%rec_write + Int(1, li)
 
-                Read (Unit=files(FILE_HISTORY)%unit_no, Fmt=*, End=20) ! title record
-                traj%rec_write = traj%rec_write + Int(1, li)
-                Read (Unit=files(FILE_HISTORY)%unit_no, Fmt='(a)', End=20) record(1:traj%recsz_write) ! bookkeeping record
-                Call tabs_2_blanks(record); Call strip_blanks(record)
-                traj%rec_write = traj%rec_write + Int(1, li)
-
-                Call get_word(record(1:traj%recsz_write), word)
-                If (word(1:Len_trim(word)) /= 'timestep') Then
-                  Call get_word(record(1:traj%recsz_write), word); Call get_word(record(1:traj%recsz_write), word)
-                  Call get_word(record(1:traj%recsz_write), word); traj%frm_write = Nint(word_2_real(word, 0.0_wp), li)
-                  Call get_word(record(1:traj%recsz_write), word); traj%rec_write = Nint(word_2_real(word, 0.0_wp), li)
-                  If (traj%frm_write /= Int(0, li) .and. traj%rec_write > Int(2, li)) Then
-                    Go To 20 ! New style
-                  Else
-                    traj%fast_write = .false. ! TOUGH, old style
-                    traj%rec_write = Int(2, li)
-                    traj%frm_write = Int(0, li)
-                  End If
-                Else
-                  safe = .false. ! Overwrite the file, it's junk to me
-                  Go To 20
-                End If
-
-                ! TOUGH, it needs scanning through
-
-              Else
-
-                Read (Unit=files(FILE_HISTORY)%unit_no, Fmt='(a)', End=20) record(1:traj%recsz_write) ! timestep record
-                Call tabs_2_blanks(record); Call strip_blanks(record)
-                traj%rec_write = traj%rec_write + Int(1, li)
-
+              Call get_word(record(1:traj%recsz_write), word)
+              If (word(1:Len_trim(word)) /= 'timestep') Then
                 Call get_word(record(1:traj%recsz_write), word); Call get_word(record(1:traj%recsz_write), word)
-                Call get_word(record(1:traj%recsz_write), word); jj = Nint(word_2_real(word))
-                Call get_word(record(1:traj%recsz_write), word); k = Nint(word_2_real(word))
-
-                word = ' '
-                i = 3 + (2 + k) * jj ! total number of lines to read
-                Write (word, '( "(", i0, "( / ) )" )') i - 1
-                Read (Unit=files(FILE_HISTORY)%unit_no, Fmt=word, End=20)
-                traj%rec_write = traj%rec_write + Int(i, li)
-                traj%frm_write = traj%frm_write + Int(1, li)
-
+                Call get_word(record(1:traj%recsz_write), word); traj%frm_write = Nint(word_2_real(word, 0.0_wp), li)
+                Call get_word(record(1:traj%recsz_write), word); traj%rec_write = Nint(word_2_real(word, 0.0_wp), li)
+                If (traj%frm_write /= Int(0, li) .and. traj%rec_write > Int(2, li)) Then
+                  Go To 20 ! New style
+                Else
+                  traj%fast_write = .false. ! TOUGH, old style
+                  traj%rec_write = Int(2, li)
+                  traj%frm_write = Int(0, li)
+                End If
+              Else
+                safe = .false. ! Overwrite the file, it's junk to me
+                Go To 20
               End If
 
-            End Do
+              ! TOUGH, it needs scanning through
 
-            20 Continue
-            Call files(FILE_HISTORY)%close ()
+            Else
 
-          End If
+              Read (Unit=files(FILE_HISTORY)%unit_no, Fmt='(a)', End=20) record(1:traj%recsz_write) ! timestep record
+              Call tabs_2_blanks(record); Call strip_blanks(record)
+              traj%rec_write = traj%rec_write + Int(1, li)
 
-          Call gcheck(comm, safe, "enforce")
-          If (.not. safe) Then
-            lexist = .false.
+              Call get_word(record(1:traj%recsz_write), word); Call get_word(record(1:traj%recsz_write), word)
+              Call get_word(record(1:traj%recsz_write), word); jj = Nint(word_2_real(word))
+              Call get_word(record(1:traj%recsz_write), word); k = Nint(word_2_real(word))
 
-            traj%rec_write = Int(0, li)
-            traj%frm_write = Int(0, li)
+              word = ' '
+              i = 3 + (2 + k) * jj ! total number of lines to read
+              Write (word, '( "(", i0, "( / ) )" )') i - 1
+              Read (Unit=files(FILE_HISTORY)%unit_no, Fmt=word, End=20)
+              traj%rec_write = traj%rec_write + Int(i, li)
+              traj%frm_write = traj%frm_write + Int(1, li)
 
-            Go To 10
-          Else If (comm%mxnode > 1) Then
-            buffer(1) = Real(traj%frm_write, wp)
-            buffer(2) = Real(traj%rec_write, wp)
+            End If
 
-            Call gbcast(comm, buffer, 0)
+          End Do
 
-            traj%frm_write = Nint(buffer(1), li)
-            traj%rec_write = Nint(buffer(2), li)
-          End If
+          20 Continue
+          Call files(FILE_HISTORY)%close ()
 
-        Else ! netCDF read
-
-          If (comm%idnode == 0) Then
-            Call io_set_parameters(io, user_comm=comm_self)
-            Call io_open(io, io_write, comm_self, traj%fname, mode_rdonly, fh)
-
-            ! Get the precision that the history file was written in
-            ! and check it matches the requested precision
-
-            Call io_nc_get_file_real_precision(io, fh, file_p, file_r, ierr)
-            safe = (ierr == 0)
-          End If
-          Call gcheck(comm, safe)
-          If (.not. safe) Then
-            If (comm%idnode == 0) Write (message, '(a)') &
-              "Can not determine precision in an exisiting HISTORY.nc file in trajectory_write"
-
-            ! Sync before killing for the error in the hope that something sensible happens
-
-            Call gsync(comm)
-            Call error(0, message)
-          End If
-
-          If (comm%idnode == 0) Then
-            Call io_nc_get_real_precision(netcdf, io_p, io_r, ierr)
-            safe = (ierr == 0)
-          End If
-          Call gcheck(comm, safe)
-          If (.not. safe) Then
-            If (comm%idnode == 0) Write (message, '(a)') &
-              "Can not determine the desired writing precision in trajectory_write"
-
-            ! Sync before killing for the error in the hope that something sensible happens
-
-            Call gsync(comm)
-            Call error(0, message)
-          End If
-
-          If (comm%idnode == 0) safe = (io_p == file_p .and. io_r == file_r)
-          Call gcheck(comm, safe)
-          If (.not. safe) Then
-            Select Case (Selected_real_kind (io_p, io_r))
-            Case (Kind (1.0))
-              Write (message, '(a)') 'Precision requested: Single'
-            Case (Kind (1.0d0))
-              Write (message, '(a)') 'Precision requested: Double'
-            End Select
-            Call info(message, .true.)
-            Select Case (Selected_real_kind (file_p, file_r))
-            Case (Kind (1.0))
-              Write (message, '(a)') "Precision in file: Single"
-            Case (Kind (1.0d0))
-              Write (message, '(a)') "Precision in file: Double"
-            End Select
-            Call info(message, .true.)
-
-            Call gsync(comm)
-            Call error(0, 'Requested writing precision inconsistent with that in an existing HISTORY.nc')
-          End If
-
-          ! Get the frame number to check
-          ! For netCDF this is the "frame number" which is not a long integer!
-
-          If (comm%idnode == 0) Call io_nc_get_dim(io, 'frame', fh, jj)
-          Call gbcast(comm, jj, 0)
-
-          If (jj > 0) Then
-            traj%frm_write = Int(jj, li)
-
-            If (comm%idnode == 0) Call io_close(io, fh)
-          Else ! Overwrite the file, it's junk to me
-            lexist = .false.
-
-            traj%rec_write = Int(0, li)
-            traj%frm_write = Int(0, li)
-
-            Go To 10
-          End If
         End If
 
+        Call gcheck(comm, safe, "enforce")
+        If (.not. safe) Then
+          lexist = .false.
+
+          traj%rec_write = Int(0, li)
+          traj%frm_write = Int(0, li)
+
+          Go To 10
+        Else If (comm%mxnode > 1) Then
+          buffer(1) = Real(traj%frm_write, wp)
+          buffer(2) = Real(traj%rec_write, wp)
+
+          Call gbcast(comm, buffer, 0)
+
+          traj%frm_write = Nint(buffer(1), li)
+          traj%rec_write = Nint(buffer(2), li)
+        End If
       End If
     End If
 
@@ -1403,8 +1237,7 @@ Contains
       ! SORTED MPI-I/O or Parallel Ditraj%rec_writet Access FORTRAN or netCDF
 
     Else If (io_write == IO_WRITE_SORTED_MPIIO .or. &
-             io_write == IO_WRITE_SORTED_DIRECT .or. &
-             io_write == IO_WRITE_SORTED_NETCDF) Then
+             io_write == IO_WRITE_SORTED_DIRECT) Then
 
       ! Write header only at start, where just one node is needed
       ! Start of file
@@ -1418,57 +1251,19 @@ Contains
         Call io_init(io, traj%recsz_write)
         Call io_open(io, io_write, comm_self, traj%fname, mode_wronly, fh)
 
-        ! Non netCDF
+        ! Write header and cell information
 
-        If (io_write /= IO_WRITE_SORTED_NETCDF) Then
+        Write (record(1:traj%recsz_write), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep', nstep, config%megatm, traj%file_key(), &
+          config%imcon, tstep, time, lf
+        Call io_write_record(io, fh, jj_io, record(1:traj%recsz_write))
+        jj_io = jj_io + Int(1, offset_kind)
 
-          ! Write header and cell information
-
-          Write (record(1:traj%recsz_write), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep', nstep, config%megatm, traj%file_key(), &
-            config%imcon, tstep, time, lf
+        Do i = 0, 2
+          Write (record(1:traj%recsz_write), Fmt='(3f20.10,a12,a1)') &
+            config%cell(1 + i * 3), config%cell(2 + i * 3), config%cell(3 + i * 3), Repeat(' ', 12), lf
           Call io_write_record(io, fh, jj_io, record(1:traj%recsz_write))
           jj_io = jj_io + Int(1, offset_kind)
-
-          Do i = 0, 2
-            Write (record(1:traj%recsz_write), Fmt='(3f20.10,a12,a1)') &
-              config%cell(1 + i * 3), config%cell(2 + i * 3), config%cell(3 + i * 3), Repeat(' ', 12), lf
-            Call io_write_record(io, fh, jj_io, record(1:traj%recsz_write))
-            jj_io = jj_io + Int(1, offset_kind)
-          End Do
-
-        Else ! netCDF write
-
-          ! Get the current and new frame numbers
-
-          Call io_nc_get_dim(io, 'frame', fh, jj)
-          jj = jj + 1
-
-          Call io_nc_put_var(io, 'time', fh, time, jj, 1)
-          Call io_nc_put_var(io, 'step', fh, nstep, jj, 1)
-          Call io_nc_put_var(io, 'datalevel', fh, traj%file_key(), jj, 1)
-          Call io_nc_put_var(io, 'imageconvention', fh, config%imcon, jj, 1)
-          Call io_nc_put_var(io, 'timestep ', fh, tstep, jj, 1)
-
-          Call dcell(config%cell, celprp) ! get config%cell properties
-
-          cell_vecs = Reshape(config%cell, (/3, 3/))
-
-          lengths(1) = celprp(1)
-          lengths(2) = celprp(2)
-          lengths(3) = celprp(3)
-
-          angles(1) = Acos(celprp(5))
-          angles(2) = Acos(celprp(6))
-          angles(3) = Acos(celprp(4))
-          angles = angles * 180.0_wp / (4.0_wp * Atan(1.0_wp)) ! Convert to degrees
-
-          ! Print
-
-          Call io_nc_put_var(io, 'cell', fh, cell_vecs, (/1, 1, jj/), (/3, 3, 1/))
-          Call io_nc_put_var(io, 'cell_lengths', fh, lengths, (/1, jj/), (/3, 1/))
-          Call io_nc_put_var(io, 'cell_angles', fh, angles, (/1, jj/), (/3, 1/))
-
-        End If
+        End Do
 
         Call io_close(io, fh)
         Call io_finalize(io)
@@ -1478,12 +1273,7 @@ Contains
 
       ! Start of file
 
-      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        rec_mpi_io = Int(traj%rec_write, offset_kind) + Int(4, offset_kind)
-      Else ! netCDF write
-        Call gbcast(comm, jj, 0)
-        rec_mpi_io = Int(jj, offset_kind)
-      End If
+      rec_mpi_io = Int(traj%rec_write, offset_kind) + Int(4, offset_kind)
 
       ! Write the rest
 
@@ -1515,13 +1305,11 @@ Contains
 
       ! Update and save offset pointer
 
-      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        traj%rec_write = traj%rec_write + Int(4, li) + Int(config%megatm, li) * Int(traj%record_size, li)
-        If (comm%idnode == 0) Then
-          Write (record(1:traj%recsz_write), Fmt='(3i10,2i21,a1)') traj%file_key(), config%imcon, config%megatm, traj%frm_write, &
-            traj%rec_write, lf
-          Call io_write_record(io, fh, Int(1, offset_kind), record(1:traj%recsz_write))
-        End If
+      traj%rec_write = traj%rec_write + Int(4, li) + Int(config%megatm, li) * Int(traj%record_size, li)
+      If (comm%idnode == 0) Then
+        Write (record(1:traj%recsz_write), Fmt='(3i10,2i21,a1)') traj%file_key(), config%imcon, config%megatm, traj%frm_write, &
+          traj%rec_write, lf
+        Call io_write_record(io, fh, Int(1, offset_kind), record(1:traj%recsz_write))
       End If
       If (io%do_io) Then
         Call io_close(io, fh)
@@ -1704,11 +1492,7 @@ Contains
 
       ! name convention
 
-      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        traj%fname = files(FILE_HISTORY)%filename
-      Else
-        traj%fname = Trim(files(FILE_HISTORY)%filename)//'.nc'
-      End If
+      traj%fname = files(FILE_HISTORY)%filename
 
       ! If keyres = RESTART_KEY_OLD, is HISTORY old (does it exist) and
       ! how many frames and records are in there
@@ -1726,186 +1510,96 @@ Contains
       110 Continue
       If (.not. lexist) Then
 
-        If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-          If (comm%idnode == 0) Then
-            Open (Newunit=files(FILE_HISTORY)%unit_no, File=traj%fname, &
-                  Form='formatted', Access='direct', Status='replace', Recl=traj%recsz_write)
-            Write (Unit=files(FILE_HISTORY)%unit_no, Fmt='(a34,a1)', Rec=Int(1, li)) config%cfgname(1:34), lf
-            Write (Unit=files(FILE_HISTORY)%unit_no, Fmt='(2i2,3i10,a1)', Rec=Int(2, li)) &
-              traj%file_key(), config%imcon, config%megatm, traj%frm_write, traj%rec_write, lf
-            Call files(FILE_HISTORY)%close ()
-          End If
-          traj%rec_write = Int(2, li)
-          traj%frm_write = Int(0, li)
-        Else
-          If (comm%idnode == 0) Then
-            Call io_set_parameters(io, user_comm=comm_self)
-            Call io_nc_create(netcdf, comm_self, traj%fname, config%cfgname, config%megatm)
-          End If
+        If (comm%idnode == 0) Then
+          Open (Newunit=files(FILE_HISTORY)%unit_no, File=traj%fname, &
+                Form='formatted', Access='direct', Status='replace', Recl=traj%recsz_write)
+          Write (Unit=files(FILE_HISTORY)%unit_no, Fmt='(a34,a1)', Rec=Int(1, li)) config%cfgname(1:34), lf
+          Write (Unit=files(FILE_HISTORY)%unit_no, Fmt='(2i2,3i10,a1)', Rec=Int(2, li)) &
+            traj%file_key(), config%imcon, config%megatm, traj%frm_write, traj%rec_write, lf
+          Call files(FILE_HISTORY)%close ()
         End If
+        traj%rec_write = Int(2, li)
+        traj%frm_write = Int(0, li)
 
         ! Get some sense of it
 
       Else
 
         safe = .true.
-        If (io_write /= IO_WRITE_SORTED_NETCDF) Then
+        If (comm%idnode == 0) Then
 
-          If (comm%idnode == 0) Then
+          Open (Newunit=files(FILE_HISTORY)%unit_no, File=traj%fname, Form='formatted')
 
-            Open (Newunit=files(FILE_HISTORY)%unit_no, File=traj%fname, Form='formatted')
+          Do
 
-            Do
+            record(1:traj%recsz_write) = ' '
 
-              record(1:traj%recsz_write) = ' '
+            ! Assume new style of HISTORY with bookkeeping.
 
-              ! Assume new style of HISTORY with bookkeeping.
+            If (traj%fast_write) Then
 
-              If (traj%fast_write) Then
+              Read (Unit=files(FILE_HISTORY)%unit_no, Fmt=*, End=120) ! title record
+              traj%rec_write = traj%rec_write + Int(1, li)
+              Read (Unit=files(FILE_HISTORY)%unit_no, Fmt='(a)', End=120) record(1:traj%recsz_write) ! bookkeeping record
+              Call tabs_2_blanks(record); Call strip_blanks(record)
+              traj%rec_write = traj%rec_write + Int(1, li)
 
-                Read (Unit=files(FILE_HISTORY)%unit_no, Fmt=*, End=120) ! title record
-                traj%rec_write = traj%rec_write + Int(1, li)
-                Read (Unit=files(FILE_HISTORY)%unit_no, Fmt='(a)', End=120) record(1:traj%recsz_write) ! bookkeeping record
-                Call tabs_2_blanks(record); Call strip_blanks(record)
-                traj%rec_write = traj%rec_write + Int(1, li)
-
-                Call get_word(record(1:traj%recsz_write), word)
-                If (word(1:Len_trim(word)) /= 'timestep') Then
-                  Call get_word(record(1:traj%recsz_write), word); Call get_word(record(1:traj%recsz_write), word)
-                  Call get_word(record(1:traj%recsz_write), word); traj%frm_write = Nint(word_2_real(word, 0.0_wp), li)
-                  Call get_word(record(1:traj%recsz_write), word); traj%rec_write = Nint(word_2_real(word, 0.0_wp), li)
-                  If (traj%frm_write /= Int(0, li) .and. traj%rec_write > Int(2, li)) Then
-                    Go To 120 ! New style
-                  Else
-                    traj%fast_write = .false. ! TOUGH, old style
-                    traj%rec_write = Int(2, li)
-                    traj%frm_write = Int(0, li)
-                  End If
+              Call get_word(record(1:traj%recsz_write), word)
+              If (word(1:Len_trim(word)) /= 'timestep') Then
+                Call get_word(record(1:traj%recsz_write), word); Call get_word(record(1:traj%recsz_write), word)
+                Call get_word(record(1:traj%recsz_write), word); traj%frm_write = Nint(word_2_real(word, 0.0_wp), li)
+                Call get_word(record(1:traj%recsz_write), word); traj%rec_write = Nint(word_2_real(word, 0.0_wp), li)
+                If (traj%frm_write /= Int(0, li) .and. traj%rec_write > Int(2, li)) Then
+                  Go To 120 ! New style
                 Else
-                  safe = .false. ! Overwrite the file, it's junk to me
-                  Go To 120
+                  traj%fast_write = .false. ! TOUGH, old style
+                  traj%rec_write = Int(2, li)
+                  traj%frm_write = Int(0, li)
                 End If
-
-                ! TOUGH, it needs scanning through
-
               Else
-
-                Read (Unit=files(FILE_HISTORY)%unit_no, Fmt=*, End=120) ! timestep record
-                traj%rec_write = traj%rec_write + Int(1, li)
-
-                word = ' '
-                i = 3 + config%megatm ! total number of lines to read
-                Write (word, '( "(", i0, "( / ) )" )') i - 1
-                Read (Unit=files(FILE_HISTORY)%unit_no, Fmt=word, End=120)
-                traj%rec_write = traj%rec_write + Int(i, li)
-                traj%frm_write = traj%frm_write + Int(1, li)
-
+                safe = .false. ! Overwrite the file, it's junk to me
+                Go To 120
               End If
 
-            End Do
+              ! TOUGH, it needs scanning through
 
-            120 Continue
-            Call files(FILE_HISTORY)%close ()
+            Else
 
-          End If
+              Read (Unit=files(FILE_HISTORY)%unit_no, Fmt=*, End=120) ! timestep record
+              traj%rec_write = traj%rec_write + Int(1, li)
 
-          Call gcheck(comm, safe, "enforce")
-          If (.not. safe) Then
-            lexist = .false.
+              word = ' '
+              i = 3 + config%megatm ! total number of lines to read
+              Write (word, '( "(", i0, "( / ) )" )') i - 1
+              Read (Unit=files(FILE_HISTORY)%unit_no, Fmt=word, End=120)
+              traj%rec_write = traj%rec_write + Int(i, li)
+              traj%frm_write = traj%frm_write + Int(1, li)
 
-            traj%rec_write = Int(0, li)
-            traj%frm_write = Int(0, li)
+            End If
 
-            Go To 110
-          Else If (comm%mxnode > 1) Then
-            buffer(1) = Real(traj%frm_write, wp)
-            buffer(2) = Real(traj%rec_write, wp)
+          End Do
 
-            Call gbcast(comm, buffer, 0)
+          120 Continue
+          Call files(FILE_HISTORY)%close ()
 
-            traj%frm_write = Nint(buffer(1), li)
-            traj%rec_write = Nint(buffer(2), li)
-          End If
+        End If
 
-        Else ! netCDF read
+        Call gcheck(comm, safe, "enforce")
+        If (.not. safe) Then
+          lexist = .false.
 
-          If (comm%idnode == 0) Then
-            Call io_set_parameters(io, user_comm=comm_self)
-            Call io_open(io, io_write, comm_self, traj%fname, mode_rdonly, fh)
+          traj%rec_write = Int(0, li)
+          traj%frm_write = Int(0, li)
 
-            ! Get the precision that the history file was written in
-            ! and check it matches the requested precision
+          Go To 110
+        Else If (comm%mxnode > 1) Then
+          buffer(1) = Real(traj%frm_write, wp)
+          buffer(2) = Real(traj%rec_write, wp)
 
-            Call io_nc_get_file_real_precision(io, fh, file_p, file_r, ierr)
-            safe = (ierr == 0)
-          End If
-          Call gcheck(comm, safe)
-          If (.not. safe) Then
-            If (comm%idnode == 0) Write (message, '(a)') &
-              "Can not determine precision in an exisiting HISTORY.nc file in trajectory_write"
+          Call gbcast(comm, buffer, 0)
 
-            ! Sync before killing for the error in the hope that something sensible happens
-
-            Call gsync(comm)
-            Call error(0, message)
-          End If
-
-          If (comm%idnode == 0) Then
-            Call io_nc_get_real_precision(netcdf, io_p, io_r, ierr)
-            safe = (ierr == 0)
-          End If
-          Call gcheck(comm, safe)
-          If (.not. safe) Then
-            If (comm%idnode == 0) Write (message, '(a)') &
-              "Can not determine the desired writing precision in trajectory_write"
-
-            ! Sync before killing for the error in the hope that something sensible happens
-
-            Call gsync(comm)
-            Call error(0, message)
-          End If
-
-          If (comm%idnode == 0) safe = (io_p == file_p .and. io_r == file_r)
-          Call gcheck(comm, safe)
-          If (.not. safe) Then
-            Select Case (Selected_real_kind (io_p, io_r))
-            Case (Kind (1.0))
-              Write (message, '(a)') 'Precision requested: Single'
-            Case (Kind (1.0d0))
-              Write (message, '(a)') 'Precision requested: Double'
-            End Select
-            Call info(message, .true.)
-            Select Case (Selected_real_kind (file_p, file_r))
-            Case (Kind (1.0))
-              Write (message, '(a)') "Precision in file: Single"
-            Case (Kind (1.0d0))
-              Write (message, '(a)') "Precision in file: Double"
-            End Select
-            Call info(message, .true.)
-
-            Call gsync(comm)
-            Call error(0, 'Requested writing precision inconsistent with that in an existing HISTORY.nc')
-          End If
-
-          ! Get the frame number to check
-          ! For netCDF this is the "frame number" which is not a long integer!
-
-          jj = 0
-          If (comm%idnode == 0) Call io_nc_get_dim(io, 'frame', fh, jj)
-          Call gbcast(comm, jj, 0)
-
-          If (jj > 0) Then
-            traj%frm_write = Int(jj, li)
-
-            If (comm%idnode == 0) Call io_close(io, fh)
-          Else ! Overwrite the file, it's junk to me
-            lexist = .false.
-
-            traj%rec_write = Int(0, li)
-            traj%frm_write = Int(0, li)
-
-            Go To 110
-          End If
+          traj%frm_write = Nint(buffer(1), li)
+          traj%rec_write = Nint(buffer(2), li)
         End If
 
       End If
@@ -1942,8 +1636,7 @@ Contains
     If (io_write == IO_WRITE_UNSORTED_MPIIO .or. &
         io_write == IO_WRITE_UNSORTED_DIRECT .or. &
         io_write == IO_WRITE_SORTED_MPIIO .or. &
-        io_write == IO_WRITE_SORTED_DIRECT .or. &
-        io_write == IO_WRITE_SORTED_NETCDF) Then
+        io_write == IO_WRITE_SORTED_DIRECT) Then
 
       Call io_set_parameters(io, user_comm=comm%comm)
       Call io_init(io, traj%recsz_write)
@@ -1961,54 +1654,18 @@ Contains
         Call io_init(io, traj%recsz_write)
         Call io_open(io, io_write, comm_self, traj%fname, mode_wronly, fh)
 
-        ! Non netCDF
+        ! Write header and cell information
 
-        If (io_write /= IO_WRITE_SORTED_NETCDF) Then
+        Write (record(1:traj%recsz_write), Fmt='(a8,i6,f8.5,f12.5,a1)') 'timestep', nstep, tstep, time, lf
+        Call io_write_record(io, fh, jj_io, record(1:traj%recsz_write))
+        jj_io = jj_io + Int(1, offset_kind)
 
-          ! Write header and cell information
-
-          Write (record(1:traj%recsz_write), Fmt='(a8,i6,f8.5,f12.5,a1)') 'timestep', nstep, tstep, time, lf
+        Do i = 0, 2
+          Write (record(1:traj%recsz_write), Fmt='(3f10.3,a4,a1)') &
+            config%cell(1 + i * 3), config%cell(2 + i * 3), config%cell(3 + i * 3), Repeat(' ', 4), lf
           Call io_write_record(io, fh, jj_io, record(1:traj%recsz_write))
           jj_io = jj_io + Int(1, offset_kind)
-
-          Do i = 0, 2
-            Write (record(1:traj%recsz_write), Fmt='(3f10.3,a4,a1)') &
-              config%cell(1 + i * 3), config%cell(2 + i * 3), config%cell(3 + i * 3), Repeat(' ', 4), lf
-            Call io_write_record(io, fh, jj_io, record(1:traj%recsz_write))
-            jj_io = jj_io + Int(1, offset_kind)
-          End Do
-
-        Else ! netCDF write
-
-          ! Get the current and new frame numbers
-
-          Call io_nc_get_dim(io, 'frame', fh, jj)
-          jj = jj + 1
-
-          Call io_nc_put_var(io, 'time', fh, time, jj, 1)
-          Call io_nc_put_var(io, 'step', fh, nstep, jj, 1)
-          Call io_nc_put_var(io, 'timestep ', fh, tstep, jj, 1)
-
-          Call dcell(config%cell, celprp) ! get config%cell properties
-
-          cell_vecs = Reshape(config%cell, (/3, 3/))
-
-          lengths(1) = celprp(1)
-          lengths(2) = celprp(2)
-          lengths(3) = celprp(3)
-
-          angles(1) = Acos(celprp(5))
-          angles(2) = Acos(celprp(6))
-          angles(3) = Acos(celprp(4))
-          angles = angles * 180.0_wp / (4.0_wp * Atan(1.0_wp)) ! Convert to degrees
-
-          ! Print
-
-          Call io_nc_put_var(io, 'cell', fh, cell_vecs, (/1, 1, jj/), (/3, 3, 1/))
-          Call io_nc_put_var(io, 'cell_lengths', fh, lengths, (/1, jj/), (/3, 1/))
-          Call io_nc_put_var(io, 'cell_angles', fh, angles, (/1, jj/), (/3, 1/))
-
-        End If
+        End Do
 
         Call io_close(io, fh)
         Call io_finalize(io)
@@ -2018,12 +1675,7 @@ Contains
 
       ! Start of file
 
-      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        rec_mpi_io = Int(traj%rec_write, offset_kind) + Int(4, offset_kind)
-      Else ! netCDF write
-        Call gbcast(comm, jj, 0)
-        rec_mpi_io = Int(jj, offset_kind)
-      End If
+      rec_mpi_io = Int(traj%rec_write, offset_kind) + Int(4, offset_kind)
 
       ! Write the rest
 
@@ -2056,13 +1708,11 @@ Contains
 
       ! Update and save offset pointer
 
-      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        traj%rec_write = traj%rec_write + Int(4, li) + Int(config%megatm, li)
-        If (comm%idnode == 0) Then
-          Write (record(1:traj%recsz_write), Fmt='(2i2,3i10,a1)') traj%file_key(), config%imcon, config%megatm, traj%frm_write, &
-            traj%rec_write, lf
-          Call io_write_record(io, fh, Int(1, offset_kind), record(1:traj%recsz_write))
-        End If
+      traj%rec_write = traj%rec_write + Int(4, li) + Int(config%megatm, li)
+      If (comm%idnode == 0) Then
+        Write (record(1:traj%recsz_write), Fmt='(2i2,3i10,a1)') traj%file_key(), config%imcon, config%megatm, traj%frm_write, &
+          traj%rec_write, lf
+        Call io_write_record(io, fh, Int(1, offset_kind), record(1:traj%recsz_write))
       End If
 
       If (io%do_io) Then

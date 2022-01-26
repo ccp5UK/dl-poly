@@ -60,16 +60,6 @@ if(WITH_HALF_HALO)
   message(STATUS "Build with HALF_HALO support")
 endif()
 
-if(WITH_OPENMP)
-  find_package(OpenMP REQUIRED)
-  add_definitions(${OpenMP_Fortran_FLAGS})
-  add_definitions(-D__OPENMP)
-  set(OMP_LINK_FLAGS ${OpenMP_Fortran_FLAGS})
-  message(STATUS "Build with OPENMP support")
-else()
-  message(STATUS "Build without OPENMP support")
-endif()
-
 if(WITH_EVB)
   find_package(LAPACK)
   if (LAPACK_FOUND)
@@ -78,16 +68,6 @@ if(WITH_EVB)
   message(STATUS "Build with EVB support")
 else()
 	message(STATUS "Build without EVB support")
-endif()
-
-if(WITH_NETCDF)
-  set(NETCDF_F90 "YES")
-  find_package(NetCDF REQUIRED)
-  include_directories(${NETCDF_INCLUDES_F90})
-  set(LIBS ${LIBS} ${NETCDF_LIBRARIES})
-  message(STATUS "Build with netcdf support")
-else()
-  message(STATUS "Build without netcdf support")
 endif()
 
 if(WITH_KIM)
@@ -131,7 +111,7 @@ if(WITH_PLUMED)
     enable_language(CXX)
     ExternalProject_Add(int-plumed
       GIT_REPOSITORY https://github.com/plumed/plumed2.git
-      GIT_TAG v2.5.2
+      GIT_TAG v${PLUMED_VERSION}
       GIT_SHALLOW true
       GIT_PROGRESS true
       BUILD_IN_SOURCE 1
@@ -139,7 +119,9 @@ if(WITH_PLUMED)
       CONFIGURE_COMMAND CXX=${CMAKE_CXX_COMPILER} FC=${CMAKE_Fortran_COMPILER} ${CMAKE_CURRENT_BINARY_DIR}/int-plumed-api/plumed-api/configure --prefix=${CMAKE_INSTALL_PREFIX}
       SOURCE_DIR int-plumed-api/plumed-api
       )
+# this is silly but plumed seems not to pick on some lib64
     set(PLUMED_LIB ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+    set(PLUMED_LIB ${PLUMED_LIB} ${CMAKE_INSTALL_PREFIX}/lib)
     set(LIBS ${LIBS} plumed)
     message(STATUS "Build with PLUMED support")
     message(STATUS "Building PLUMED for you")

@@ -125,7 +125,10 @@ Contains
     Type(comms_type),         Intent(InOut) :: comm
 
     Integer                                     :: fail, i, ipot, j, k, limit
-    Logical                                     :: l_do_outer_loop, l_do_rdf, safe
+#ifdef KIM
+    Logical                                     :: l_do_outer_loop
+#endif
+    Logical                                     :: l_do_rdf, safe
     Real(Kind=wp)                               :: buffer(0:19), engacc, engcpe_ch, engcpe_ex, &
                                                    engcpe_fr, engcpe_nz, engcpe_rc, engcpe_rl, &
                                                    engden, engkim, engmet, engvdw, engvdw_rc, &
