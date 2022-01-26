@@ -318,8 +318,8 @@ Contains
 
       If (l_str) Then
         Write (message, '(3(1x,a),6x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
-          'Minimising', minim%word, 'pass', 'eng_tot', 'minim%grad_tol', 'minim%eng_tol', 'minim%dist_tol', 'tol=', &
-          minim%tolerance, 'minim%step=', minim%step
+          'Minimising', minim%word, 'pass', 'eng_tot', 'grad_tol', 'eng_tol', 'dist_tol', 'tol=', &
+          minim%tolerance, 'step=', minim%step
         Call info(message, .true.)
         Write (message, "(1x,130('-'))")
         Call info(message, .true.)
@@ -595,8 +595,8 @@ Contains
       i = Nint(stats%passmin(1))
       If (.not. l_str) Then
         Write (message, '(3(1x,a),5x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
-       'Minimised', minim%word, 'passes', 'eng_tot', 'minim%grad_tol', 'minim%eng_tol', 'minim%dist_tol', 'tol=', minim%tolerance, &
-          'minim%step=', minim%step
+       'Minimised', minim%word, 'passes', 'eng_tot', 'grad_tol', 'eng_tol', 'dist_tol', 'tol=', minim%tolerance, &
+          'step=', minim%step
         Call info(message, .true.)
         Write (message, "(1x,130('-'))")
         Call info(message, .true.)
