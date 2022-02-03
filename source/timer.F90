@@ -538,7 +538,7 @@ Contains
     fhead = '(1X, "|", 12X, "Name", 12X, "| Process  ", "|  Calls   ", "|  Call Min  ", "|  Call Max  ",'//&
           & '"|  Call Ave  ", "|  Tot Min   ", "|   Tot Max  ", "|   Tot Ave  ", "|      %     ", "|")'
     fcontent = '(1X, "|", 1X, A7, 1X, A18, 1X, "|", 1X, A8, 1X, "|", 1X, I8, 1X, "|", 1X, ES10.3, 1X, "|", 1X, ES10.3, 1X,'//&
-          & '"|", 1X, ES10.3, 1X, "|", 1X, ES10.3, 1X, "|", 1X, ES10.3, 1X, "|", 1X, ES10.3, 1X, "|", 1X, ES10.3, 1X, "|")'
+          & '"|", 1X, ES10.3, 1X, "|", 1X, ES10.3, 1X, "|", 1X, ES10.3, 1X, "|", 1X, ES10.3, 1X, "|", 1X, F10.2, 1X, "|")'
 
     message(:) = ''
 
