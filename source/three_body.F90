@@ -45,7 +45,7 @@ Module three_body
     Integer(Kind=wi), Allocatable :: lsttbp(:), ltptbp(:)
     Real(Kind=wp), Allocatable    :: prmtbp(:, :), rcttbp(:)
 
-    Character(Len=8), Allocatable, Public  :: labunit(:,:) 
+    Character(Len=8), Allocatable, Public  :: labunit(:,:)
 
   Contains
     Private
@@ -54,7 +54,17 @@ Module three_body
     Final             :: deallocate_three_body_arrays
   End Type
 
+  Integer(Kind=wi), Parameter, Public :: TBP_HARM = 1
+  Integer(Kind=wi), Parameter, Public :: TBP_TRUNC_HARM = 2
+  Integer(Kind=wi), Parameter, Public :: TBP_SCREEN_HARM = 3
+  Integer(Kind=wi), Parameter, Public :: TBP_SCREEN_VESSAL = 4
+  Integer(Kind=wi), Parameter, Public :: TBP_TRUNC_VESSAL = 5
+  Integer(Kind=wi), Parameter, Public :: TBP_H_BOND = 6
+  Integer(Kind=wi), Parameter, Public :: TBP_SW = 7
+
+
   Public ::  three_body_forces
+
 
 Contains
 
@@ -541,7 +551,7 @@ Contains
 
                                         ktyp = threebody%ltptbp(kktbp)
 
-                                        If (ktyp /= 6) Then
+                                        If (ktyp /= TBP_H_BOND) Then
 
                                           ! for potentials different from dreiding/CHARMM hydrogen bond
 
@@ -551,7 +561,7 @@ Contains
 
                                         End If
 
-                                        If (ktyp == 1) Then
+                                        If (ktyp == TBP_HARM) Then
 
                                           ! harmonic valence angle potential
 
@@ -568,7 +578,7 @@ Contains
                                           gamsc = 0.0_wp
                                           gamsb = 0.0_wp
 
-                                        Else If (ktyp == 2) Then
+                                        Else If (ktyp == TBP_TRUNC_HARM) Then
 
                                           ! truncated harmonic valence angle potential
 
@@ -587,7 +597,7 @@ Contains
                                           gamsc = pterm * 8.0_wp * rbc**7 / rho**8
                                           gamsb = 0.0_wp
 
-                                        Else If (ktyp == 3) Then
+                                        Else If (ktyp == TBP_SCREEN_HARM) Then
 
                                           ! screened harmonic valence angle potential
 
@@ -610,7 +620,7 @@ Contains
                                           gamsc = (pterm / threebody%prmtbp(4, kktbp))
                                           gamsb = 0.0_wp
 
-                                        Else If (ktyp == 4) Then
+                                        Else If (ktyp == TBP_SCREEN_VESSAL) Then
 
                                           ! screened Vessal potential type 1
 
@@ -632,7 +642,7 @@ Contains
                                           gamsc = pterm / rho2
                                           gamsb = 0.0_wp
 
-                                        Else If (ktyp == 5) Then
+                                        Else If (ktyp == TBP_TRUNC_VESSAL) Then
 
                                           ! truncated Vessal potential type 2
 
@@ -658,7 +668,7 @@ Contains
                                           gamsc = pterm * 8.0_wp * rbc**7 / rho**8
                                           gamsb = 0.0_wp
 
-                                        Else If (ktyp == 6) Then
+                                        Else If (ktyp == TBP_H_BOND) Then
 
                                           ! dreiding/CHARMM hydrogen bond
 
@@ -685,6 +695,17 @@ Contains
                                             gamsc = 0.0_wp
                                             gamsb = 0.0_wp
                                           End If
+
+                                        Else If (ktyp == TBP_SW) Then
+
+                                          ! V(rba,rbc,ϑ_abc)=k0*exp(ρ/(r_ba-rc)+(r_bc-rc))*(cosϑ_abc-cosϑ_0)
+
+                                          k0 = threebody%prmtbp(1, kktbp)
+                                          cost0 = threebody%prmtbp(2, kktbp)
+                                          dtheta = cost - cost0
+                                          rho = threebody%prmtbp(3, kktbp)
+                                          rc = threebody%prmtbp(4, kktbp)
+                                          switch = (rho/(rab-rc)  + rho/(rbc)
 
                                         Else
 

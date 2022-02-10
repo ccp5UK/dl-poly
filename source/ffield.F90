@@ -107,7 +107,10 @@ Module ffield
   Use thermostat,      Only: DPD_NULL,&
                              ENS_NVE,&
                              thermostat_type
-  Use three_body,      Only: threebody_type
+  Use three_body,      Only: threebody_type, TBP_HARM,&
+                             TBP_SCREEN_VESSAL,&
+                             TBP_TRUNC_HARM,&
+                             TBP_SCREEN_HARM,TBP_TRUNC_VESSAL,TBP_SW,TBP_H_BOND
   Use vdw,             Only: &
                              MIX_FENDER_HALSEY, MIX_FUNCTIONAL, MIX_HALGREN, MIX_HOGERVORST, &
                              MIX_LORENTZ_BERTHELOT, MIX_NULL, MIX_TANG_TOENNIES, &
@@ -4730,17 +4733,19 @@ Contains
 
 
           If (keyword == 'harm') Then
-            keypot = 1
+            keypot = TBP_HARM
           Else If (keyword == 'thrm') Then
-            keypot = 2
+            keypot = TBP_TRUNC_HARM
           Else If (keyword == 'shrm') Then
-            keypot = 3
+            keypot = TBP_SCREEN_HARM
           Else If (keyword == 'bvs1') Then
-            keypot = 4
+            keypot = TBP_SCREEN_VESSAL
           Else If (keyword == 'bvs2') Then
-            keypot = 5
+            keypot = TBP_TRUNC_VESSAL
           Else If (keyword == 'hbnd') Then
-            keypot = 6
+            keypot = TBP_H_BOND
+          Else If (keyword == 'sw') Then
+            keypot = TBP_SW
           Else
             Call info(keyword, .true.)
             Call error(442)
