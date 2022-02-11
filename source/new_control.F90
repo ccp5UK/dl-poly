@@ -1545,7 +1545,7 @@ Contains
       mpoles%max_order = 0
       mpoles%key = POLARISATION_DEFAULT
       electro%key = ELECTROSTATIC_NULL
-    Case ('ewald')
+    Case ('ewald','spme')
       electro%key = ELECTROSTATIC_EWALD
       ewld%active = .true.
 
