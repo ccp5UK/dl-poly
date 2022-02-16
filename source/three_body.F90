@@ -163,7 +163,7 @@ Contains
                                                 strs1, strs2, strs3, strs5, strs6, strs9, switch, &
                                                 sxab, sxbc, syab, sybc, szab, szbc, term, theta, &
                                                 theta0, vterm, xab, xac, xbc, xdc, yab, yac, ybc, &
-                                                ydc, zab, zac, zbc, zdc
+                                                ydc, zab, zac, zbc, zdc, termab, termbc, rc, cost0
     Real(Kind=wp), Allocatable, Dimension(:) :: xxt, yyt, zzt
 
 ! Number of neighbouring cells to look around for counting
@@ -616,8 +616,6 @@ Contains
                                           gamsa = pterm / rho1
                                           gamsc = pterm / rho2
 
-                                          gamsa = (pterm / threebody%prmtbp(3, kktbp))
-                                          gamsc = (pterm / threebody%prmtbp(4, kktbp))
                                           gamsb = 0.0_wp
 
                                         Else If (ktyp == TBP_SCREEN_VESSAL) Then
@@ -698,14 +696,24 @@ Contains
 
                                         Else If (ktyp == TBP_SW) Then
 
-                                          ! V(rba,rbc,ϑ_abc)=k0*exp(ρ/(r_ba-rc)+(r_bc-rc))*(cosϑ_abc-cosϑ_0)
+                                          ! V(rba,rbc,ϑ_abc)=k0*exp(ρ/(r_ba-rc)+(r_bc-rc))*(cosϑ_abc-cosϑ_0)^2
 
                                           k0 = threebody%prmtbp(1, kktbp)
                                           cost0 = threebody%prmtbp(2, kktbp)
-                                          dtheta = cost - cost0
+                                          dtheta = (cost - cost0)
                                           rho = threebody%prmtbp(3, kktbp)
                                           rc = threebody%prmtbp(4, kktbp)
-                                          switch = (rho/(rab-rc)  + rho/(rbc)
+                                          switch = rho/(rab-rc)  + rho/(rbc-rc)
+                                          termab = -rho/(rab-rc)**2
+                                          termbc = -rho/(rbc-rc)**2
+
+                                          gamma = k0 * dtheta * Exp(switch) ! ∂V/∂ϑ_abc/sin(ϑ_abc)
+                                          pterm = gamma * 0.5_wp * dtheta ! V(rba,rbc,ϑ_abc)
+
+                                          gamsa = pterm * termab ! -∂V/∂r_ab
+                                          gamsc = pterm * termbc ! -∂V/∂r_bc
+                                          vterm = gamsa * rab + gamsc * rbc ! -r_ab*∂V/∂r_ab -r_bc*∂V/∂r_bc
+                                          gamsb = 0.0_wp
 
                                         Else
 
