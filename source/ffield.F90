@@ -19,8 +19,8 @@ Module ffield
   Use configuration,   Only: configuration_type
   ! INTERACTION MODULES
   Use constants,       Only: &
-                             VA_to_dl, boltz, engunit, eu_ev, eu_kcpm, eu_kjpm, lf, nmpldt, pi, &
-                             prsunt, r4pie0, tesla_to_dl, zero_plus
+                             VA_to_dl, boltz, engunit, eu_ev, eu_kcpm, eu_kjpm, lf, nmpldt, &
+                             prsunt, r4pie0, tesla_to_dl, zero_plus, deg_2_rad
   Use constraints,     Only: constraints_type
   Use coord,           Only: coord_type
   Use core_shell,      Only: SHELL_ADIABATIC,&
@@ -107,7 +107,10 @@ Module ffield
   Use thermostat,      Only: DPD_NULL,&
                              ENS_NVE,&
                              thermostat_type
-  Use three_body,      Only: threebody_type
+  Use three_body,      Only: threebody_type, TBP_HARM,&
+                             TBP_SCREEN_VESSAL,&
+                             TBP_TRUNC_HARM,&
+                             TBP_SCREEN_HARM,TBP_TRUNC_VESSAL,TBP_SW,TBP_H_BOND
   Use vdw,             Only: &
                              MIX_FENDER_HALSEY, MIX_FUNCTIONAL, MIX_HALGREN, MIX_HOGERVORST, &
                              MIX_LORENTZ_BERTHELOT, MIX_NULL, MIX_TANG_TOENNIES, &
@@ -1716,9 +1719,9 @@ Contains
                   ! convert angles to radians
 
                   If (angle%key(nangle) == ANGLE_COMPASS_ALL) Then
-                    angle%param(4, nangle) = angle%param(4, nangle) * (pi / 180.0_wp)
+                    angle%param(4, nangle) = angle%param(4, nangle) * deg_2_rad
                   Else If (angle%key(nangle) /= ANGLE_COMPASS_STRETCH_STRETCH) Then
-                    angle%param(2, nangle) = angle%param(2, nangle) * (pi / 180.0_wp)
+                    angle%param(2, nangle) = angle%param(2, nangle) * deg_2_rad
                   End If
 
                 Else ! TABANG to read
@@ -1952,9 +1955,9 @@ Contains
                     dihedral%param(2, ndihed) = dihedral%param(2, ndihed) * engunit
                     dihedral%param(3, ndihed) = dihedral%param(3, ndihed) * engunit
                     dihedral%param(6, ndihed) = dihedral%param(6, ndihed) * engunit
-                    dihedral%param(7, ndihed) = dihedral%param(7, ndihed) * (pi / 180.0_wp)
+                    dihedral%param(7, ndihed) = dihedral%param(7, ndihed) * deg_2_rad
                   Else
-                    dihedral%param(2, ndihed) = dihedral%param(2, ndihed) * (pi / 180.0_wp)
+                    dihedral%param(2, ndihed) = dihedral%param(2, ndihed) * deg_2_rad
                   End If
 
                 Else ! TABDIH to read
@@ -2196,7 +2199,7 @@ Contains
                   If (inversion%key(ninver) == INVERSION_CALCITE) Then
                     inversion%param(2, ninver) = inversion%param(2, ninver) * engunit
                   Else
-                    inversion%param(2, ninver) = inversion%param(2, ninver) * (pi / 180.0_wp)
+                    inversion%param(2, ninver) = inversion%param(2, ninver) * deg_2_rad
                     If (inversion%key(ninver) == INVERSION_HARMONIC_COSINE) &
                       inversion%param(2, ninver) = Cos(inversion%param(2, ninver))
                   End If
@@ -4734,17 +4737,19 @@ Contains
 
 
           If (keyword == 'harm') Then
-            keypot = 1
+            keypot = TBP_HARM
           Else If (keyword == 'thrm') Then
-            keypot = 2
+            keypot = TBP_TRUNC_HARM
           Else If (keyword == 'shrm') Then
-            keypot = 3
+            keypot = TBP_SCREEN_HARM
           Else If (keyword == 'bvs1') Then
-            keypot = 4
+            keypot = TBP_SCREEN_VESSAL
           Else If (keyword == 'bvs2') Then
-            keypot = 5
+            keypot = TBP_TRUNC_VESSAL
           Else If (keyword == 'hbnd') Then
-            keypot = 6
+            keypot = TBP_H_BOND
+          Else If (keyword == 'sw') Then
+            keypot = TBP_SW
           Else
             Call info(keyword, .true.)
             Call error(442)
@@ -4793,7 +4798,10 @@ Contains
           ! convert parameters to internal units and angles to radians
 
           parpot(1) = parpot(1) * engunit
-          If (keypot /= 6) parpot(2) = parpot(2) * (pi / 180.0_wp)
+          If (keypot /= TBP_H_BOND ) parpot(2) = parpot(2) * deg_2_rad
+          If (keypot == TBP_SW) Then
+            parpot(2) = Cos(parpot(2))
+          End If
 
           If (threebody%lsttbp(keytbp) > 0) Call error(18)
 
@@ -4929,7 +4937,7 @@ Contains
           ! convert parameters to internal units and angles to radians
 
           parpot(1) = parpot(1) * engunit
-          parpot(2) = parpot(2) * (pi / 180.0_wp)
+          parpot(2) = parpot(2) * deg_2_rad
 
           If (keypot == 2) Then
             parpot(2) = Cos(parpot(2))

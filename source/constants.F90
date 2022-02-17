@@ -49,6 +49,7 @@ Module constants
   Real(Kind=wp), Parameter :: sqrpi = Sqrt(pi)
   Real(Kind=wp), Parameter :: rtwopi = 1.0_wp / twopi
   Real(Kind=wp), Parameter :: rsqrpi = 1.0_wp / (Sqrt(pi))
+  Real(Kind=wp), Parameter :: deg_2_rad = pi/180.0_wp
 
   !> Gamma function in steps of 1/2
   Real(Kind=wp), Dimension(24), Parameter :: gamma_1_2 = [ &
