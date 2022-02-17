@@ -116,7 +116,7 @@ Module ffield
                              VDW_HYDROGEN_BOND, VDW_LENNARD_JONES, VDW_LENNARD_JONES_COHESIVE, &
                              VDW_LJF, VDW_LJ_MDF, VDW_MORSE, VDW_MORSE_12, VDW_NULL, VDW_N_M, &
                              VDW_N_M_SHIFT, VDW_RYDBERG, VDW_TAB, VDW_WCA, VDW_ZBL, &
-                             VDW_ZBL_SWITCH_BUCKINGHAM, VDW_ZBL_SWITCH_MORSE, &
+                             VDW_ZBL_SWITCH_BUCKINGHAM, VDW_ZBL_SWITCH_MORSE, VDW_SANDERSON,&
                              vdw_direct_fs_generate, vdw_generate, vdw_table_read, vdw_type
 
   Implicit None
@@ -3676,6 +3676,8 @@ Contains
             keypot = VDW_126_MDF
           Else If (keyword == 'ljf') Then
             keypot = VDW_LJF
+          Else If (keyword == 'sand') Then
+            keypot = VDW_SANDERSON
           Else
             Call info(keyword, .true.)
             Call error(452)
@@ -3854,6 +3856,8 @@ Contains
             Case (VDW_BUCKINGHAM_MDF)
               thermo%gamdpd(keyvdw) = Abs(parpot(5))
             Case (VDW_LJF)
+              thermo%gamdpd(keyvdw) = Abs(parpot(4))
+            Case (VDW_SANDERSON)
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
             End Select
 
