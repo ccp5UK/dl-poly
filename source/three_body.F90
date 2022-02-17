@@ -707,14 +707,13 @@ Contains
                                           termab = -rho/(rab-rc)**2
                                           termbc = -rho/(rbc-rc)**2
 
-                                          gamma = k0 * dtheta * Exp(switch) ! ∂V/∂ϑ_abc/sin(ϑ_abc)
+                                          gamma = k0 * dtheta * Exp(switch) ! -∂V/∂ϑ_abc/sin(ϑ_abc)
                                           pterm = gamma * 0.5_wp * dtheta ! V(rba,rbc,ϑ_abc)
 
-                                          gamsa = pterm * termab ! -∂V/∂r_ab
-                                          gamsc = pterm * termbc ! -∂V/∂r_bc
-                                          vterm = gamsa * rab + gamsc * rbc ! -r_ab*∂V/∂r_ab -r_bc*∂V/∂r_bc
+                                          gamsa = pterm * termab  ! ∂V/∂r_ab
+                                          gamsc = pterm * termbc  ! ∂V/∂r_bc
+                                          vterm = gamsa * rab + gamsc * rbc ! r_ab*∂V/∂r_ab + r_bc*∂V/∂r_bc
                                           gamsb = 0.0_wp
-
                                         Else
 
                                           safe = .false.
