@@ -92,6 +92,8 @@ Module vdw
   Integer(Kind=wi), Parameter, Public :: VDW_BUCKINGHAM_MDF = 19
   Integer(Kind=wi), Parameter, Public :: VDW_126_MDF = 20
   Integer(Kind=wi), Parameter, Public :: VDW_LJF = 21
+  ! Sanderson potential $u = -A*exp{-[(r-L)/d ]**2}
+  Integer(Kind=wi), Parameter, Public :: VDW_SANDERSON = 22
 
   ! Mixing rule parameters
   !> Null
@@ -575,6 +577,24 @@ Contains
     eng = f * z + (1.0_wp - f) * b
     gamma = f * dz + df * z + (1.0_wp - f) * db - df * b
   End Subroutine zblb
+
+  Pure Subroutine sanderson(r, params, eng, gamma)
+    ! Sanderson theory , covalent,modelled with assumed Gaussian function (sharp peak/dips)  :: u=-A*Exp{-[(r-L)/d]^2)}
+    Real(wp), Intent(In   ) :: r, params(:) !A, L,d
+    Real(wp), Intent(  Out) :: eng, gamma
+
+    Real(wp) :: b, t, L, d
+
+
+    L = params(2)
+    d = params(3)
+    b = ((r - L)/d)**2.0_wp
+    t = params(1) * Exp(-b)
+    eng = -t
+
+    gamma = -2.0_wp*(r-L)*r*t/(d**2.0_wp)
+
+  End Subroutine sanderson
 
   Pure Real(wp) Function intRadZBL(kk, a, rw, prec)
     Real(wp), Intent(In   ) :: kk, a, rw, prec
@@ -1217,6 +1237,10 @@ Contains
             Case (VDW_LJF)
               eadd = 0.0_wp
               padd = 0.0_wp
+
+            Case (VDW_SANDERSON)
+              eadd = 0.0_wp ! implement me
+              padd = 0.0_wp
             End Select
 
             ! Self-interaction accounted once, interaction between different species
@@ -1416,6 +1440,10 @@ Contains
 
         z = 0.0_wp
         dz = 0.0_wp
+
+      Case (VDW_SANDERSON)
+
+        Call sanderson(vdws%cutoff, vdws%param(1:3, ivdw), z, dz)
 
       Case Default
 
@@ -2100,6 +2128,18 @@ Contains
         vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
         vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
 
+      Case (VDW_SANDERSON)
+
+        ! Sanderson potential :: u=-A*Exp{-[(r-L)/d]^2)}
+        Do i = 1, vdws%max_grid
+          r = Real(i, wp) * dlrpot
+
+          call sanderson(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
+
+        End Do
+        vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
+        vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
+
       Case Default
 
         If (.not. vdws%l_tab) Call error(0, 'Unknown Van der Waals potential selected')
@@ -2428,6 +2468,14 @@ Contains
           gamma = gamma * r_rsq
 
           ! by construction is zero outside vdws%cutoff so no shifting
+
+        Case (VDW_SANDERSON)
+          ! Sanderson potential :: u=-A*Exp{-[(r-L)/d]^2)}
+
+          call SANDERSON(rrr, vdws%param(:,k), eng, gamma)
+
+          eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
+          gamma = gamma*r_rsq - vdws%afs(k) * r_rrr
 
         Case (VDW_TAB)
 
