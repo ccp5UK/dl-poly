@@ -712,7 +712,7 @@ Contains
 
                                           gamsa = pterm * termab  ! ∂V/∂r_ab
                                           gamsc = pterm * termbc  ! ∂V/∂r_bc
-                                          vterm =  -gamsa * rab -gamsc * rbc ! -r_ab*∂V/∂r_ab - r_bc*∂V/∂r_bc
+                                          vterm = gamsa * rab  + gamsc * rbc ! r_ab*∂V/∂r_ab + r_bc*∂V/∂r_bc
                                           gamsb = 0.0_wp
                                         Else
 
