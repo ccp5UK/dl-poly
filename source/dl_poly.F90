@@ -200,8 +200,11 @@ Program dl_poly
         Case ('--dump')
           i = i + 1
           Call get_command_argument(i, mode)
+          If (mode == '') Then
+            mode = "default"
+          End IF
           Select Case (mode)
-          Case ('latexdoc', 'latex', 'python', 'csv', 'test')
+          Case ('latexdoc', 'latex', 'python', 'csv', 'test', 'default')
             Continue
           Case Default
             Write (eu, '(a)') 'Bad mode option '//Trim(mode)
@@ -209,10 +212,13 @@ Program dl_poly
             Exit
           End Select
 
-          i = i + 1
-          Call get_command_argument(i, arg)
+          Select Case (mode)
+          Case ('latexdoc', 'latex', 'python', 'csv', 'test', 'default')
+            i = i + 1
+            Call get_command_argument(i, arg)
+          End Select
 
-          If (Trim(arg) == "SCREEN") Then
+          If (Trim(arg) == "SCREEN" .or. arg == '') Then
             ifile = ou
           Else
             Open (newunit=ifile, file=Trim(arg))
@@ -224,7 +230,12 @@ Program dl_poly
         Case ('--help')
           i = i + 1
           Call get_command_argument(i, arg)
-          Call params%help(arg)
+          If (arg == '' ) Then
+            mode = 'default'
+            Call dump_parameters(ou, params, mode)
+          Else
+            Call params%help(arg)
+          End IF
           finish = .true.
           Exit
 

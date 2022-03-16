@@ -113,6 +113,8 @@ contains
       Write(ifile, '(a)') 'DLPData.__init__(self, {'
     Case ('csv', 'test')
       Continue
+    Case ('default')
+      Write(ifile, '(a)') 'Param | type | description | default value | unit '
     Case Default
       Call error(0, 'Bad mode option '//trim(mode))
     end Select
@@ -141,6 +143,10 @@ contains
          end if
        Case ('csv')
          Write(ifile, '(5(a,";"))') &
+              trim(param%key), trim(data_name(param%data_type)), &
+              trim(param%description), trim(param%val), trim(param%units)
+       Case ('default')
+         Write(ifile, '(5(a,"| "))') &
               trim(param%key), trim(data_name(param%data_type)), &
               trim(param%description), trim(param%val), trim(param%units)
        Case ('python')
@@ -184,7 +190,7 @@ contains
       Write(ifile, '(a)') '\end{longtable}'
     Case ('python')
       Write(ifile, '(a)') '})'
-    Case ('csv', 'test')
+    Case ('csv', 'test','default')
       Continue
     end Select
 
