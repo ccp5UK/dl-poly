@@ -558,7 +558,7 @@ Contains
         Write (message, "(1x,130('-'))")
         Call info(message, .true.)
         Write (message, '(3(1x,a),6x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
-          'Minimising', minim%word, 'pass', 'eng_tot', 'minim%grad_tol', 'minim%eng_tol', 'minim%dist_tol', 'tol=', &
+          'Minimising', minim%word, 'pass', 'eng_tot', 'grad_tol', 'eng_tol', 'dist_tol', 'tol=', &
           minim%tolerance, 'minim%step=', minim%step
         Call info(message, .true.)
         Write (message, "(1x,130('-'))")
