@@ -59,7 +59,7 @@ Module mpi_api
 
   ! MPI-I/O bookkeeping
 
-  Integer, Parameter        :: MPI_STATUS_SIZE                                   = 0
+  Integer, Parameter        :: MPI_STATUS_SIZE                                   = 1
   Integer, Parameter        :: MPI_MAX_PROCESSOR_NAME                            = 100
   Integer, Parameter        :: MPI_MAX_LIBRARY_VERSION_STRING                    = 100
   Integer, Parameter                                               :: mpi_io_max = 64
