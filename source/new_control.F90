@@ -3247,14 +3247,6 @@ Contains
                        description="Include equilibration in output", &
                        data_type=DATA_BOOL))
 
-        Call table%set("print_per_particle_contrib", control_parameter( &
-                       key="print_per_particle_contrib", &
-                       name="Per-particle contributions", &
-                       val="off", &
-                       description="Calculate and print per-particle contributions to energy," &
-                       //"force and stress to file every stats step", &
-                       data_type=DATA_BOOL))
-
         Call table%set("print_probability_distribution", control_parameter( &
                        key="print_probability_distribution", &
                        name="Print probability distribution", &

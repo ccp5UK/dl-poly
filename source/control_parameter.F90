@@ -346,7 +346,7 @@ contains
     Character(Len=STR_LEN) :: parse, val
     Type( control_parameter ) :: param
     Logical, Intent( In    ), Optional :: required
-    Real(kind=wp), dimension(9) :: tmp
+    Real(kind=wp), dimension(10) :: tmp
     Real(kind=wp), dimension(:), Intent( Out    ) :: output
 
     Integer :: i
@@ -398,7 +398,6 @@ contains
     Integer, dimension(:), Intent( Out    ) :: output
 
     Integer :: i
-    Logical :: stat
 
     call table%get(key, param)
     if (present(required)) then
