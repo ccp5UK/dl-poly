@@ -213,7 +213,7 @@ Program dl_poly
           End Select
 
           Select Case (mode)
-          Case ('latexdoc', 'latex', 'python', 'csv', 'test', 'default')
+          Case ('latexdoc', 'latex', 'python', 'csv', 'test')
             i = i + 1
             Call get_command_argument(i, arg)
           End Select
