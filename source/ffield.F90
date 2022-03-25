@@ -359,7 +359,7 @@ Contains
     Call info(' ', .true., level=2)
     Call info('system specification', .true., level=3)
     If (.not. flow%print_topology) Then
-      Call info('detailed topology opted out', .true.)
+      Call info('#detailed topology opted out', .true.)
     End If
 
     ! omit first line

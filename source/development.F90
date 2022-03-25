@@ -21,7 +21,7 @@ Module development
   Use parse,           Only: get_line, get_word, lower_case, clean_string, word_2_real
   Use filename,        Only: file_type, FILE_CONTROL
   Use errors_warnings, Only: info, error , set_print_level
-#ifndef NVIDIA  
+#ifndef NVIDIA
   Use iso_fortran_env, ONly: compiler_version
 #endif
 
@@ -217,14 +217,14 @@ Contains
 
 
     Call info_local(ifile, '')
-    Call info_local(ifile, Repeat("*", 66))
+    Call info_local(ifile, '#'//Repeat("*", 65))
     If (Len_trim(__DATE__//"  @  "//__TIME__) > 47) Then
       Write (aux, '(a47)') __DATE__//"  @  "//__TIME__
     Else
       Write (aux, *) __DATE__//"  @  "//__TIME__
     End If
     Call clean_string(aux)
-    Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", "birthday:", aux, "****"
+    Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "#***", "birthday:", aux, "****"
     Call info_local(ifile, message)
 
     If (Len_trim(__HOSTNAME__) > 47) Then
@@ -233,7 +233,7 @@ Contains
       Write (aux, *) __HOSTNAME__
     End If
     Call clean_string(aux)
-    Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", " machine:", aux, "****"
+    Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "#***", " machine:", aux, "****"
     Call info_local(ifile, message)
 
     If (Len_trim(__BUILDER__) > 47) Then
@@ -242,7 +242,7 @@ Contains
       Write (aux, *) __BUILDER__
     End If
     Call clean_string(aux)
-    Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", " builder:", aux, "****"
+    Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "#***", " builder:", aux, "****"
     Call info_local(ifile, message)
 #ifdef NVIDIA
     aux2 = 'xxx'
@@ -252,25 +252,25 @@ Contains
     Call clean_string(aux2)
     Do i = 1, Len_trim(aux2), 46
       aux = aux2(i:Min(i + 45, Len_trim(aux2)))
-      Write (message, '(a4,1x,a9,1x,a,1x,a4)') "****", "compiler:", Trim(aux), "****"
+      Write (message, '(a4,1x,a9,1x,a,1x,a4)') "#***", "compiler:", Trim(aux), "****"
       Call info(message, .true.)
     End Do
 
     If (mpi_ver > 0) Then
       Write (aux, '(a1,i0,a1,i0)') "v", mpi_ver, ".", mpi_subver
-      Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", "     MPI:", aux, "****"
+      Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "#***", "     MPI:", aux, "****"
       Call info_local(ifile, message)
 #ifndef OLDMPI
       Call clean_string(lib_version)
       Do i = 1, Len_trim(lib_version), 46
         aux = lib_version(i:Min(i + 45, Len_trim(lib_version)))
-        Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", "MPI libs:", aux, "****"
+        Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "#***", "MPI libs:", aux, "****"
         Call info_local(ifile, message)
       End Do
 #endif
     Else If (mpi_ver < 0) Then
       Write (aux, *) "MPI Library too old.  Please update!!!"
-      Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "****", "MPI libs:", aux, "****"
+      Write (message, '(a4,1x,a9,1x,a46,1x,a4)') "#***", "MPI libs:", aux, "****"
       Call info_local(ifile, message)
     End If
 
@@ -278,9 +278,9 @@ Contains
     Write (aux, *) date(1:4), "-", date(5:6), "-", date(7:8), "  @  ", &
       time(1:2), ":", time(3:4), ":", time(5:10), "  (GMT", &
       zone(1:3), ":", zone(4:5), ")"
-    Write (message, '(a4,1x,a9,a47,1x,a4)') "****", "executed:", aux, "****"
+    Write (message, '(a4,1x,a9,a47,1x,a4)') "#***", "executed:", aux, "****"
     Call info_local(ifile, message)
-    Call info_local(ifile, Repeat("*", 66))
+    Call info_local(ifile, "#"//Repeat("*", 65))
     Call info_local(ifile, '')
 
   contains

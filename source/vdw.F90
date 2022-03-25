@@ -1263,9 +1263,9 @@ Contains
     End If
 
 
-    Write (messages(1), '(a)') 'long-range correction for:'
-    Write (messages(2), '(2x,a,e15.6)') 'vdw energy ', vdws%elrc / engunit
-    Write (messages(3), '(2x,a,e15.6)') 'vdw pressure ', plrc * prsunt
+    Write (messages(1), '(a)') 'long-range correction for[add units]:'
+    Write (messages(2), '(2x,a,e15.6)') 'vdw energy: ', vdws%elrc / engunit
+    Write (messages(3), '(2x,a,e15.6)') 'vdw pressure: ', plrc * prsunt
     Call info(messages, 3, .true.)
 
     ! convert plrc to a viral term

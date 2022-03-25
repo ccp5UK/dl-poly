@@ -1460,7 +1460,6 @@ Contains
 
     If (vdws_on) Then
       Call params%retrieve('vdw_cutoff', rtmp)
-
       If (vdws%cutoff > REAL_TOL .and. vdws%cutoff < rtmp .and. Abs(vdws%cutoff - rtmp) > REAL_TOL) Then
         Write (message, '(a,1p,e12.4)') 'VdW cutoff set by bounds to (Angs): ', vdws%cutoff
         Call warning(message, .true.)
@@ -1469,9 +1468,15 @@ Contains
         vdws%cutoff = rtmp
       End If
 
-      If (vdws%cutoff < minimum_rcut) Then
+      If (vdws%cutoff < minimum_rcut .and. vdws%cutoff > 0.0_wp) Then
         vdws%cutoff = neigh%cutoff
         Call warning('VdW cutoff less than minimum cutoff, setting to global cutoff', .true.)
+      End If
+      !  there is no  specification of cutoff for vdw in the control
+
+      If (vdws%cutoff < 0.0_wp) Then
+        vdws%cutoff = neigh%cutoff
+        Call info('# VdW cutoff set to global cutoff', .true.)
       End If
 
     Else
@@ -2025,10 +2030,10 @@ Contains
     Character(Len=80) :: banner(6)
 
     Write (banner(1), '(a)') ''
-    Write (banner(2), '(a)') Repeat('*', 80)
-    Write (banner(3), '(a4,a72,a4)') '*** ', 'title:'//Repeat(' ', 66), ' ***'
-    Write (banner(4), '(a4,a72,a4)') '*** ', config%sysname, ' ***'
-    Write (banner(5), '(a)') Repeat('*', 80)
+    Write (banner(2), '(a)') '#'//Repeat('*', 79)
+    Write (banner(3), '(a4,a72,a4)') '#** ', 'title:'//Repeat(' ', 66), ' ***'
+    Write (banner(4), '(a4,a72,a4)') '#** ', config%sysname, ' ***'
+    Write (banner(5), '(a)')'#'//Repeat('*', 79)
     Write (banner(6), '(a)') ''
     Call info(banner, 6, .true.)
 
@@ -2067,16 +2072,16 @@ Contains
 
     End Select
 
-    Write (message, '(a,i0.1)') '  I/O readers set to ', io_data%n_io_procs_read
+    Write (message, '(a,i0.1)') '  I/O readers: ', io_data%n_io_procs_read
     Call info(message, .true.)
 
     Select Case (io_data%method_write)
     Case (IO_READ_MPIIO, IO_READ_DIRECT)
-      Write (message, '(a,i0.1)') '  I/O read batch size (assumed) ', io_data%batch_size_read
+      Write (message, '(a,i0.1)') '  I/O read batch size (assumed): ', io_data%batch_size_read
       Call info(message, .true., level=3)
     End Select
 
-    Write (message, '(a,i0.1)') '  I/O read buffer size set to ', io_data%buffer_size_read
+    Write (message, '(a,i0.1)') '  I/O read buffer size: ', io_data%buffer_size_read
     Call info(message, .true., level=3)
 
     Select Case (io_data%method_write)
@@ -2101,17 +2106,17 @@ Contains
 
     End Select
 
-    Write (message, '(a,i0.1)') '  I/O writers set to ', io_data%n_io_procs_write
+    Write (message, '(a,i0.1)') '  I/O writers: ', io_data%n_io_procs_write
     Call info(message, .true.)
 
     Select Case (io_data%method_write)
     Case (IO_WRITE_SORTED_MPIIO, IO_WRITE_UNSORTED_MPIIO, IO_WRITE_SORTED_DIRECT, &
           IO_WRITE_UNSORTED_DIRECT)
-      Write (message, '(a,i10)') '  I/O write batch size (assumed) ', io_data%batch_size_write
+      Write (message, '(a,i10)') '  I/O write batch size (assumed): ', io_data%batch_size_write
       Call info(message, .true., level=3)
     End Select
 
-    Write (message, '(a,i10)') '  I/O write buffer size set to ', io_data%buffer_size_write
+    Write (message, '(a,i10)') '  I/O write buffer size: ', io_data%buffer_size_write
     Call info(message, .true., level=3)
 
     If (io_data%global_error_check) Then
@@ -2122,23 +2127,23 @@ Contains
 
     Call info('', .true.)
     Call info('File outputs: ', .true.)
-    If (files(FILE_OUTPUT)%filename /= "OUTPUT") Call info('  OUTPUT file is '//files(FILE_OUTPUT)%filename, .true.)
-    If (files(FILE_CONFIG)%filename /= "CONFIG") Call info('  CONFIG file is '//files(FILE_CONFIG)%filename, .true.)
-    If (files(FILE_FIELD)%filename /= "FIELD") Call info('  FIELD file is '//files(FILE_FIELD)%filename, .true.)
-    If (files(FILE_STATS)%filename /= "STATIS") Call info('  STATIS file is '//files(FILE_STATS)%filename, .true.)
-    If (files(FILE_HISTORY)%filename /= "HISTORY") Call info('  HISTORY file is '//files(FILE_HISTORY)%filename, .true.)
-    If (files(FILE_HISTORF)%filename /= "HISTORF") Call info('  HISTORF file is '//files(FILE_HISTORF)%filename, .true.)
-    If (files(FILE_REVIVE)%filename /= "REVIVE") Call info('  REVIVE file is '//files(FILE_REVIVE)%filename, .true.)
-    If (files(FILE_REVCON)%filename /= "REVCON") Call info('  REVCON file is '//files(FILE_REVCON)%filename, .true.)
-    If (files(FILE_REVOLD)%filename /= "REVOLD") Call info('  REVOLD file is '//files(FILE_REVOLD)%filename, .true.)
-    If (files(FILE_RDF)%filename /= 'RDFDAT') Call info('  RDF file is '//files(FILE_RDF)%filename, .true.)
-    If (files(FILE_MSD)%filename /= 'MSDTMP') Call info('  MSD file is '//files(FILE_MSD)%filename, .true.)
-    If (files(FILE_TABBND)%filename /= 'TABBND') Call info('  TABBND file is '//files(FILE_TABBND)%filename, .true.)
-    If (files(FILE_TABANG)%filename /= 'TABANG') Call info('  TABANG file is '//files(FILE_TABANG)%filename, .true.)
-    If (files(FILE_TABDIH)%filename /= 'TABDIH') Call info('  TABDIH file is '//files(FILE_TABDIH)%filename, .true.)
-    If (files(FILE_TABINV)%filename /= 'TABINV') Call info('  TABINV file is '//files(FILE_TABINV)%filename, .true.)
-    If (files(FILE_TABVDW)%filename /= 'TABVDW') Call info('  TABVDW file is '//files(FILE_TABVDW)%filename, .true.)
-    If (files(FILE_TABEAM)%filename /= 'TABEAM') Call info('  TABEAM file is '//files(FILE_TABEAM)%filename, .true.)
+    If (files(FILE_OUTPUT)%filename /= "OUTPUT") Call info('  OUTPUT file: '//files(FILE_OUTPUT)%filename, .true.)
+    If (files(FILE_CONFIG)%filename /= "CONFIG") Call info('  CONFIG file: '//files(FILE_CONFIG)%filename, .true.)
+    If (files(FILE_FIELD)%filename /= "FIELD") Call info('  FIELD file: '//files(FILE_FIELD)%filename, .true.)
+    If (files(FILE_STATS)%filename /= "STATIS") Call info('  STATIS file: '//files(FILE_STATS)%filename, .true.)
+    If (files(FILE_HISTORY)%filename /= "HISTORY") Call info('  HISTORY file: '//files(FILE_HISTORY)%filename, .true.)
+    If (files(FILE_HISTORF)%filename /= "HISTORF") Call info('  HISTORF file: '//files(FILE_HISTORF)%filename, .true.)
+    If (files(FILE_REVIVE)%filename /= "REVIVE") Call info('  REVIVE file: '//files(FILE_REVIVE)%filename, .true.)
+    If (files(FILE_REVCON)%filename /= "REVCON") Call info('  REVCON file: '//files(FILE_REVCON)%filename, .true.)
+    If (files(FILE_REVOLD)%filename /= "REVOLD") Call info('  REVOLD file: '//files(FILE_REVOLD)%filename, .true.)
+    If (files(FILE_RDF)%filename /= 'RDFDAT') Call info('  RDF file: '//files(FILE_RDF)%filename, .true.)
+    If (files(FILE_MSD)%filename /= 'MSDTMP') Call info('  MSD file: '//files(FILE_MSD)%filename, .true.)
+    If (files(FILE_TABBND)%filename /= 'TABBND') Call info('  TABBND file: '//files(FILE_TABBND)%filename, .true.)
+    If (files(FILE_TABANG)%filename /= 'TABANG') Call info('  TABANG file: '//files(FILE_TABANG)%filename, .true.)
+    If (files(FILE_TABDIH)%filename /= 'TABDIH') Call info('  TABDIH file: '//files(FILE_TABDIH)%filename, .true.)
+    If (files(FILE_TABINV)%filename /= 'TABINV') Call info('  TABINV file: '//files(FILE_TABINV)%filename, .true.)
+    If (files(FILE_TABVDW)%filename /= 'TABVDW') Call info('  TABVDW file: '//files(FILE_TABVDW)%filename, .true.)
+    If (files(FILE_TABEAM)%filename /= 'TABEAM') Call info('  TABEAM file: '//files(FILE_TABEAM)%filename, .true.)
 
   End Subroutine write_io
 
@@ -2154,7 +2159,7 @@ Contains
 
     Call info('', .true.)
     If (.not. Any([flow%analyse_bond, flow%analyse_ang, flow%analyse_dih, flow%analyse_inv])) Then
-      Call info('No intramolecular distribution collection requested', .true., level=3)
+      Call info('# No intramolecular distribution collection requested', .true., level=3)
     Else
       Call info('Intramolecular distribution collection requested for:', .true.)
 
@@ -2190,9 +2195,9 @@ Contains
     End If
 
     If (stats%lpana) Then
-      Call info('Probability distribution analysis printing requested', .true.)
+      Call info('# Probability distribution analysis printing requested', .true.)
     Else
-      Call info('No probability distribution analysis printing requested', .true., level=3)
+      Call info('# No probability distribution analysis printing requested', .true., level=3)
     End If
 
   End Subroutine write_bond_analysis
@@ -4986,7 +4991,7 @@ Contains
         Call table%set("vdw_cutoff", control_parameter( &
                        key="vdw_cutoff", &
                        name="VdW cutoff", &
-                       val="0.0", &
+                       val="-1.0", &
                        units="internal_l", &
                        internal_units="internal_l", &
                        description="Set cut-off for Van der Waal's potentials", &

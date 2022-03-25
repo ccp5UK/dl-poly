@@ -599,10 +599,10 @@ Contains
     If (.not. safe) Go To 1000
 
     Write (banner(1), '(a)') ''
-    Write (banner(2), '(a)') Repeat('*', 80)
-    Write (banner(3), '(a4,a72,a4)') '*** ', 'title:'//Repeat(' ', 66), ' ***'
-    Write (banner(4), '(a4,a72,a4)') '*** ', config%sysname, ' ***'
-    Write (banner(5), '(a)') Repeat('*', 80)
+    Write (banner(2), '(a)') '#'//Repeat('*', 79)
+    Write (banner(3), '(a4,a72,a4)') '#** ', 'title:'//Repeat(' ', 66), ' ***'
+    Write (banner(4), '(a4,a72,a4)') '#** ', config%sysname, ' ***'
+    Write (banner(5), '(a)') '#'//Repeat('*', 79)
     Write (banner(6), '(a)') ''
     Call info(banner, 6, .true.)
 

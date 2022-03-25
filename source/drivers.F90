@@ -156,7 +156,8 @@ Module drivers
                                   statistics_connect_frames,&
                                   statistics_connect_set,&
                                   stats_type,&
-                                  write_per_part_contribs
+                                  write_per_part_contribs, &
+                                  write_header
   Use stochastic_boundary,  Only: stochastic_boundary_vv
   Use system,               Only: system_revive
   Use temperature,          Only: regauss_temperature,&
@@ -1691,7 +1692,7 @@ Contains
     ! VV forces evaluation report for 0th or weird restart
 
     If (cnfig%levcfg == 1) Then
-      Call info('forces evaluated at (re)start for VV integration...', .true.)
+      Call info('# forces evaluated at (re)start for VV integration...', .true.)
       Call info('', .true.)
     End If
 
@@ -1704,15 +1705,7 @@ Contains
       Call gtime(tmr%elapsed)
 
       If (flow%new_page()) Then
-        Write (messages(1), '(a)') Repeat('-', 130)
-        Write (messages(2), '(9x,a4,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
-          'step', 'eng_tot', 'temp_tot', 'eng_cfg', 'eng_src', 'eng_cou', 'eng_bnd', 'eng_ang', 'eng_dih', 'eng_tet'
-        Write (messages(3), '(5x,a8,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
-          'time(ps)', ' eng_pv', 'temp_rot', 'vir_cfg', 'vir_src', 'vir_cou', 'vir_bnd', 'vir_ang', 'vir_con', 'vir_tet'
-        Write (messages(4), '(5x,a8,5x,a7,4x,a8,5x,a7,5x,a7,7x,a5,8x,a4,7x,a5,5x,a7,7x,a5)') &
-          'cpu  (s)', 'volume', 'temp_shl', 'eng_shl', 'vir_shl', 'alpha', 'beta', 'gamma', 'vir_pmf', 'press'
-        Write (messages(5), '(a)') Repeat('-', 130)
-        Call info(messages, 5, .true.)
+        Call write_header()
       Else If (ttm%l_ttm) Then
         Write (messages(1), '(a)') Repeat('-', 130)
         Call info(messages, 1, .true.)
