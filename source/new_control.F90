@@ -1361,10 +1361,11 @@ Contains
     !!
     !! copyright - daresbury laboratory
     !! author - j.wilkins april 2020
+    !! contrib - a.m.elena march 2021 - we always need a cell if NO_PBC or SLAB
     !!-----------------------------------------------------------------------
     Type(parameters_hash_table), Intent(In   ) :: params
     Type(neighbours_type),       Intent(InOut) :: neigh
-    Type(configuration_type),    Intent(In   ) :: config
+    Type(configuration_type),    Intent(InOut) :: config
     Real(Kind=wp),               Intent(In   ) :: xhi, yhi, zhi
     Type(flow_type),             Intent(InOut) :: flow
     Type(vdw_type),              Intent(InOut) :: vdws
@@ -1386,7 +1387,6 @@ Contains
     Logical                      :: metals_on, vdws_on
     Real(Kind=wp)                :: cut, rtmp, tol, tol1
     Real(Kind=wp), Dimension(10) :: cell_properties
-    Real(Kind=wp), Dimension(9)  :: cell
 
     ! ---------------- SUBCELLING ----------------------------------------------
 
@@ -1509,6 +1509,18 @@ Contains
       fourbody%cutoff = 0.5_wp * neigh%cutoff
     End If
 
+    !  sort out cell for NON-PBC and slab...
+    cut = neigh%cutoff + 1e-6_wp
+
+    If (config%imcon == IMCON_NOPBC) Then
+      config%cell = 0.0_wp
+      config%cell(1) = Max(2.0_wp * xhi + cut, 3.0_wp * cut, config%cell(1))
+      config%cell(5) = Max(2.0_wp * yhi + cut, 3.0_wp * cut, config%cell(5))
+      config%cell(9) = Max(2.0_wp * zhi + cut, 3.0_wp * cut, config%cell(9))
+    Else If (config%imcon == IMCON_SLAB) Then
+      config%cell(9) = Max(2.0_wp * zhi + cut, 3.0_wp * cut, config%cell(9))
+    End If
+
     ! ---------------- POLARISATION --------------------------------------------
 
     Call params%retrieve('polarisation_model', option)
@@ -1593,26 +1605,8 @@ Contains
       Call info('Fennell damping applied', .true.)
       If (neigh%cutoff < 12.0_wp) Call warning(7, neigh%cutoff, 12.0_wp, 0.0_wp)
     End If
-
     If (ewld%active) Then
 
-      cell = config%cell
-      cut = neigh%cutoff + 1e-6_wp
-
-      If (config%imcon == IMCON_NOPBC) Then
-        cell(1) = Max(2.0_wp * xhi + cut, 3.0_wp * cut, cell(1))
-        cell(5) = Max(2.0_wp * yhi + cut, 3.0_wp * cut, cell(5))
-        cell(9) = Max(2.0_wp * zhi + cut, 3.0_wp * cut, cell(9))
-
-        cell(2) = 0.0_wp
-        cell(3) = 0.0_wp
-        cell(4) = 0.0_wp
-        cell(6) = 0.0_wp
-        cell(7) = 0.0_wp
-        cell(8) = 0.0_wp
-      Else If (config%imcon == IMCON_SLAB) Then
-        cell(9) = Max(2.0_wp * zhi + cut, 3.0_wp * cut, cell(9))
-      End If
 
       Call params%retrieve('ewald_nsplines', ewld%bspline%num_splines)
       ! Check splines in min
@@ -1637,7 +1631,7 @@ Contains
         Call error(0, message)
       End If
 
-      Call dcell(cell, cell_properties)
+      Call dcell(config%cell, cell_properties)
 
       If (params%is_set([Character(15) :: 'ewald_precision', 'ewald_alpha'])) Then
 
