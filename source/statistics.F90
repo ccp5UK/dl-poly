@@ -185,6 +185,7 @@ Module statistics
   Public :: statistics_connect_frames
   Public :: statistics_connect_set
   Public :: write_per_part_contribs
+  Public :: write_header
   Public :: statistics_result
 Contains
 
@@ -1662,6 +1663,22 @@ Contains
 
   End Subroutine statistics_connect_spread
 
+
+  Subroutine write_header()
+    Character(Len=256), Dimension(5) :: messages
+
+    Write (messages(1), '(a)') Repeat('-', 130)
+    Write (messages(2), '(9x,a4,5x,a7,1x,a11,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
+      'step', 'eng_tot', 'temp_tot[K]', 'eng_cfg', 'eng_src', 'eng_cou', 'eng_bnd', 'eng_ang', 'eng_dih', 'eng_tet'
+    Write (messages(3), '(5x,a8,5x,a7,1x,a11,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
+      'time[ps]', ' eng_pv', 'temp_rot[K]', 'vir_cfg', 'vir_src', 'vir_cou', 'vir_bnd', 'vir_ang', 'vir_con', 'vir_tet'
+    Write (messages(4), '(5x,a8,5x,a7,1x,a11,5x,a7,5x,a7,4x,a8,5x,a7,4x,a8,5x,a7,7x,a5)') &
+      'cpu  [s]', 'volume', 'temp_shl[K]', 'eng_shl', 'vir_shl', 'alpha[o]', 'beta[o]', 'gamma[o]', 'vir_pmf', 'press'
+    Write (messages(5), '(a)') Repeat('-', 130)
+    Call info(messages, 5, .true.)
+
+  End Subroutine write_header
+
   Subroutine statistics_result(config, minim, lmsd, &
                                nstrun, keyshl, megcon, megpmf, &
                                nstep, time, tmst, &
@@ -1709,7 +1726,7 @@ Contains
     If (neigh_uncond_update .and. nstep > 0) Then
 
       Write (message, '(a,f7.2,2(a,i4))') &
-        'VNL skipping run statistics - skips per timestep: average ', stats%neighskip(3), &
+        '# VNL skipping run statistics - skips per timestep: average ', stats%neighskip(3), &
         ' minimum ', Nint(Merge(stats%neighskip(4), stats%neighskip(5), stats%neighskip(4) < stats%neighskip(5))), &
         ' maximum ', Nint(stats%neighskip(5))
       Call info(message, .true.)
@@ -1719,7 +1736,7 @@ Contains
 
     If (minim) Then
       Write (message, '(a,f7.2,2(a,i4))') &
-        'minimisation run statistics - cycles per call: average ', stats%passmin(3), &
+        '# minimisation run statistics - cycles per call: average ', stats%passmin(3), &
         ' minimum ', Nint(stats%passmin(4)), ' maximum ', Nint(stats%passmin(5))
       Call info(message, .true.)
     End If
@@ -1728,7 +1745,7 @@ Contains
 
     If (keyshl == 2) Then
       Write (message, '(a,f7.2,2(a,i4))') &
-        'hell relaxation run statistics - cycles per timestep: average ', stats%passshl(3), &
+        '# shell relaxation run statistics - cycles per timestep: average ', stats%passshl(3), &
         ' minimum ', Nint(stats%passshl(4)), ' maximum ', Nint(stats%passshl(5))
       Call info(message, .true.)
     End If
@@ -1739,7 +1756,7 @@ Contains
       Call gmax(comm, stats%passcon(3:5, 1, 1)); Call gmax(comm, stats%passcon(3:5, 2, 1))
       If (stats%passcon(3, 1, 1) > 0.0_wp) Then
         Write (message, '(2(a,f5.2),4(a,i3))') &
-          'constraints shake  run statistics - cycles per call/timestep: average ', &
+          '# constraints shake  run statistics - cycles per call/timestep: average ', &
           stats%passcon(3, 1, 1), ' / ', stats%passcon(3, 2, 1), &
           ' minimum ', Nint(stats%passcon(4, 1, 1)), ' / ', Nint(stats%passcon(4, 2, 1)), &
           ' maximum ', Nint(stats%passcon(5, 1, 1)), ' / ', Nint(stats%passcon(5, 2, 1))
@@ -1749,7 +1766,7 @@ Contains
       Call gmax(comm, stats%passcon(3:5, 1, 2)); Call gmax(comm, stats%passcon(3:5, 2, 2))
       If (stats%passcon(3, 1, 2) > 0.0_wp) Then
         Write (message, '(2(a,f5.2),4(a,i3))') &
-          'constraints rattle  run statistics - cycles per call/timestep: average ', &
+          '# constraints rattle  run statistics - cycles per call/timestep: average ', &
           stats%passcon(3, 1, 1), ' / ', stats%passcon(3, 2, 1), &
           ' minimum ', Nint(stats%passcon(4, 1, 2)), ' / ', Nint(stats%passcon(4, 2, 2)), &
           ' maximum ', Nint(stats%passcon(5, 1, 2)), ' / ', Nint(stats%passcon(5, 2, 2))
@@ -1763,7 +1780,7 @@ Contains
       Call gmax(comm, stats%passpmf(3:5, 1, 1)); Call gmax(comm, stats%passpmf(3:5, 2, 1))
       If (stats%passpmf(3, 1, 1) > 0.0_wp) Then
         Write (message, '(2(a,f5.2),4(a,i3))') &
-          'PMFs shake  run statistics - cycles per call/timestep: average ', &
+          '# PMFs shake  run statistics - cycles per call/timestep: average ', &
           stats%passpmf(3, 1, 1), ' / ', stats%passpmf(3, 2, 1), &
           ' minimum ', Nint(stats%passpmf(4, 1, 1)), ' / ', Nint(stats%passpmf(4, 2, 1)), &
           ' maximum ', Nint(stats%passpmf(5, 1, 1)), ' / ', Nint(stats%passpmf(5, 2, 1))
@@ -1773,7 +1790,7 @@ Contains
       Call gmax(comm, stats%passpmf(3:5, 1, 2)); Call gmax(comm, stats%passpmf(3:5, 2, 2))
       If (stats%passpmf(3, 1, 2) > 0.0_wp) Then
         Write (message, '(2(a,f5.2),4(a,i3))') &
-          'PMFs rattle  run statistics - cycles per call/timestep: average ', &
+          '# PMFs rattle  run statistics - cycles per call/timestep: average ', &
           stats%passpmf(3, 1, 2), ' / ', stats%passpmf(3, 2, 2), &
           ' minimum ', Nint(stats%passpmf(4, 1, 2)), ' / ', Nint(stats%passpmf(4, 2, 2)), &
           ' maximum ', Nint(stats%passpmf(5, 1, 2)), ' / ', Nint(stats%passpmf(5, 2, 2))
@@ -1796,9 +1813,9 @@ Contains
     ! Report termination
 
     If ((nstep == 0 .and. nstrun == 0) .or. stats%numacc == 0) Then
-      Write (message, '(a)') 'dry run terminated'
+      Write (message, '(a)') '# dry run terminated'
     Else
-      Write (message, '(2(a,i9,a,f10.3),a)') 'run terminated after ', nstep, &
+      Write (message, '(2(a,i9,a,f10.3),a)') '# run terminated after ', nstep, &
         ' steps (', time, ' ps), final averages calculated over', stats%numacc, &
         ' steps (', tmp, ' ps)'
     End If
@@ -1816,7 +1833,7 @@ Contains
       iadd = 27
 
       If (comm%idnode == 0) Then
-        Write (message, '(a)') 'pressure tensor  (katms):'
+        Write (message, '(a)') 'Pressure tensor  (katms):'
         Call info(message, .true.)
 
         Do i = iadd, iadd + 6, 3
@@ -1855,15 +1872,7 @@ Contains
       avvol = stats%sumval(19)
 
       ! final averages and fluctuations
-      Write (messages(1), '(a)') Repeat('-', 130)
-      Write (messages(2), '(9x,a4,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
-        'step', 'eng_tot', 'temp_tot', 'eng_cfg', 'eng_src', 'eng_cou', 'eng_bnd', 'eng_ang', 'eng_dih', 'eng_tet'
-      Write (messages(3), '(5x,a8,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
-        'time(ps)', ' eng_pv', 'temp_rot', 'vir_cfg', 'vir_src', 'vir_cou', 'vir_bnd', 'vir_ang', 'vir_con', 'vir_tet'
-      Write (messages(4), '(5x,a8,5x,a7,4x,a8,5x,a7,5x,a7,7x,a5,8x,a4,7x,a5,5x,a7,7x,a5)') &
-        'cpu  (s)', 'volume', 'temp_shl', 'eng_shl', 'vir_shl', 'alpha', 'beta', 'gamma', 'vir_pmf', 'press'
-      Write (messages(5), '(a)') Repeat('-', 130)
-      Call info(messages, 5, .true.)
+      Call write_header()
 
       Write (messages(1), '(i13,1p,9e12.4)') stats%numacc, stats%sumval(1:9)
       Write (messages(2), '(f13.5,1p,9e12.4)') tmp, stats%sumval(10:18)

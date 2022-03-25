@@ -25,6 +25,8 @@ Module meta
   Use configuration,                          Only: check_config,&
                                                     configuration_type,&
                                                     freeze_atoms,&
+                                                    compute_density,&
+                                                    print_system_info,&
                                                     origin_config,&
                                                     scale_config,&
                                                     scan_config,&
@@ -337,7 +339,7 @@ Contains
     End If
 
     Call info('', .true.)
-    Call info("*** all reading and connectivity checks DONE ***", .true.)
+    Call info("#** all reading and connectivity checks done ***", .true.)
     Call time_elapsed(tmr)
 
     If (flow%l_vdw) Then
@@ -345,7 +347,7 @@ Contains
         Call error(0, "Error l_vdw does not work with vdw direct, remove vdw direct")
       Else
         Call vdws(1)%print(comm)
-        Call info("Dumped vdw interaction tables!", .true.)
+        Call info("# Dumped vdw interaction tables!", .true.)
         Call exit_comms(dlp_world)
         Stop 0
       End If
@@ -354,33 +356,33 @@ Contains
     ! devel%l_org: translate CONFIG into CFGORG and exit gracefully
     If (devel%l_org) Then
       Call info('', .true.)
-      Call info("*** Translating the MD system along a vector (CONFIG to CFGORG) ***", .true.)
+      Call info("#** Translating the MD system along a vector (CONFIG to CFGORG) ***", .true.)
 
       Do ff = 1, flow%NUM_FF
         Call origin_config(config(ff), ios, devel, comm)
       End Do
 
-      Call info("*** ALL DONE ***", .true.)
+      Call info("#** All done ***", .true.)
       Call time_elapsed(tmr)
     End If
 
     ! devel%l_scl: rescale CONFIG to CFGSCL and exit gracefully
     If (devel%l_scl) Then
       Call info('', .true.)
-      Call info("*** Rescaling the MD system lattice (CONFIG to CFGSCL) ***", .true.)
+      Call info("#** Rescaling the MD system lattice (CONFIG to CFGSCL) ***", .true.)
 
       Do ff = 1, flow%NUM_FF
         Call scale_config(config(ff), ios, devel, comm)
       End Do
 
-      Call info("*** ALL DONE ***", .true.)
+      Call info("#** All done ***", .true.)
       Call time_elapsed(tmr)
     End If
 
     ! devel%l_his: generate HISTORY and exit gracefully
     If (devel%l_his) Then
       Call info('', .true.)
-      Call info("*** Generating a zero timestep HISTORY frame of the MD system ***", .true.)
+      Call info("#** Generating a zero timestep HISTORY frame of the MD system ***", .true.)
 
       Do ff = 1, flow%NUM_FF
         Call traj%init(key=0, freq=1, start=0)
@@ -389,7 +391,7 @@ Contains
         Call trajectory_write(flow%restart_key, flow%step, thermo(ff)%tstep, flow%time, ios, &
                               stats(ff)%rsd, config(ff), traj, files, comm)
       End Do
-      Call info("*** ALL DONE ***", .true.)
+      Call info("#** All done ***", .true.)
       Call time_elapsed(tmr)
     End If
 
@@ -403,7 +405,7 @@ Contains
 
       If (flow%NUM_FF > 1) Then
         Write (message, '(i0)') ff
-        Call info("*** LONG RANGE INFORMATION FOR FIELD "//Trim(message)//" ***", .true.)
+        Call info("#** Long range information for field "//Trim(message)//" ***", .true.)
       End If
       ! READ REVOLD (thermodynamic and structural data from restart file)
       Call system_init(neigh(ff)%cutoff, flow%restart_key, flow%time, flow%start_time, flow%step, &
@@ -418,7 +420,7 @@ Contains
     End Do
 
     Call info('', .true.)
-    Call info("*** initialisation and haloing DONE ***", .true.)
+    Call info("#** initialisation and haloing done ***", .true.)
     Call time_elapsed(tmr)
 
     ! For any intra-like interaction, construct book keeping arrays and
@@ -426,7 +428,7 @@ Contains
     Do ff = 1, flow%NUM_FF
       If (flow%NUM_FF > 1) Then
         Write (message, '(i0)') ff
-        Call info("*** TOPOLOGY FOR FIELD "//Trim(message)//" ***", .true.)
+        Call info("#** Topology for field "//Trim(message)//" ***", .true.)
       End If
       If (flow%book) Then
         Call build_book_intra(flow%strict, flow%print_topology, flow%simulation, &
@@ -473,13 +475,13 @@ Contains
     End Do
 
     Call info('', .true.)
-    Call info("*** bookkeeping DONE ***", .true.)
+    Call info("#** bookkeeping done ***", .true.)
     Call time_elapsed(tmr)
 
     Do ff = 1, flow%NUM_FF
       If (flow%NUM_FF > 1) Then
         Write (message, '(i0)') ff
-        Call info("*** DETAILS OF NEIGHBOUR LIST FOR FIELD "//Trim(message)//" ***", .true.)
+        Call info("#** Details of neighbour list for field "//Trim(message)//" ***", .true.)
       End If
       ! set and halo rotational matrices and their infinitesimal rotations
       If (mpoles(ff)%max_mpoles > 0) Then
@@ -491,10 +493,14 @@ Contains
         (flow%restart_key, flow%step, flow%run_steps, &
          stats(ff)%engrot, sites(ff)%dof_site, core_shells(ff), stats(ff), cons(ff), pmfs(ff), thermo(ff), minim(ff), &
          rigid(ff), domain(ff), config(ff), seed, comm)
+
+      Call compute_density(config(ff),comm)
+      Call print_system_info(config(ff))
+
     End Do
 
     Call info('', .true.)
-    Call info("*** temperature setting DONE ***", .true.)
+    Call info("#** temperature setting done ***", .true.)
     Call time_elapsed(tmr)
 
     ! Read ttm table file and initialise electronic temperature
@@ -580,7 +586,7 @@ Contains
     If (stats(1)%statis_file_open) Call files(FILE_STATS)%close ()
 
     ! Report termination of the MD simulation
-    Write (message, '(3(a,f12.3),a)') 'run terminating... elapsed  cpu time: ', &
+    Write (message, '(3(a,f12.3),a)') '# run terminating... elapsed  cpu time: ', &
       tmr%elapsed, ' sec, job time: ', tmr%job, ' sec, close time: ', tmr%clear_screen, ' sec'
     Call info(message, .true.)
 
@@ -654,14 +660,6 @@ Contains
 
     If (kim_data(1)%active) Then
       Call kim_citations(kim_data(1), comm)
-    End If
-
-    ! Get just the one number to compare against
-
-    If (devel%l_eng) Then
-      Write (message, '(a,1p,e20.10)') "TOTAL ENERGY: ", stats(1)%stpval(1)
-      Call info('', .true.)
-      Call info(message, .true.)
     End If
 
     ! Close output channel
@@ -846,7 +844,7 @@ Contains
       If (flow%NUM_FF > 1) Then
         Write (message, '(i0)') ff
         Call info(" ", .true.)
-        Call info("*** DETAILS OF INTERACTIONS FOR FIELD "//Trim(message)//" ***", .true.)
+        Call info("#** Details of interactions for field "//Trim(message)//" ***", .true.)
       End If
       Call read_field(neigh(ff)%cutoff, core_shells(ff), pmfs(ff), cons(ff), &
                       thermo(ff), met(ff), bond(ff), angle(ff), &
@@ -1002,7 +1000,7 @@ Contains
     Call set_print_level(old_print_level)
 
     Call info('', .true.)
-    Call info("*** pre-scanning stage (set_bounds) DONE ***", .true.)
+    Call info("#** pre-scanning stage (set_bounds) done ***", .true.)
     Call time_elapsed(tmr)
 
     If (flow%NUM_FF > 1) Then
@@ -1055,7 +1053,7 @@ Contains
       If (flow%NUM_FF > 1) Then
         Write (message, '(i0)') ff
         Call info(" ", .true.)
-        Call info("*** DETAILS OF INTERACTIONS FOR FIELD "//Trim(message)//" ***", .true.)
+        Call info("#** Details of interactions for field "//Trim(message)//" ***", .true.)
       End If
       Call read_field(neigh(ff)%cutoff, core_shells(ff), pmfs(ff), cons(ff), &
                       thermo(ff), met(ff), bond(ff), angle(ff), &
@@ -1365,21 +1363,21 @@ Contains
 
     Character(Len=66) :: banner(15)
 
-    Write (banner(1), fmt1) Repeat("*", 66)
-    Write (banner(2), fmt1) "*************  stfc/ccp5  program  library  package  ** D ********"
-    Write (banner(3), fmt1) "*************  daresbury laboratory general purpose  *** L *******"
-    Write (banner(4), fmt1) "**         **  classical molecular dynamics program  **** \ ******"
-    Write (banner(5), fmt1) "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****"
-    Write (banner(6), fmt2) "**         **  version:  ", DLP_VERSION, " /  ", DLP_RELEASE, "  ****** O ****"
-    Write (banner(7), fmt3) "*************  execution on  ", dlp_world(0)%mxnode, " process(es)  ******* L ***"
-    Write (banner(8), fmt1) "*************  contributors' list:                   ******** Y **"
-    Write (banner(9), fmt1) "*************  ------------------------------------  *************"
-    Write (banner(10), fmt1) "*************  i.j.bush, h.a.boateng, r.davidchak,   *************"
-    Write (banner(11), fmt1) "*************  m.a.seaton, a.v.brukhno, a.m.elena,   *************"
-    Write (banner(12), fmt1) "*************  s.l.daraszewicz,g.khara,s.t.murphy    *************"
-    Write (banner(13), fmt1) "*************  j.madge,a.b.g.chalk,i.scivetti,       *************"
-    Write (banner(14), fmt1) "*************  j.wilkins                             *************"
-    Write (banner(15), fmt1) "******************************************************************"
+    Write (banner(1), fmt1) "#"//Repeat("*", 65)
+    Write (banner(2), fmt1) "#************  stfc/ccp5  program  library  package  ** D ********"
+    Write (banner(3), fmt1) "#************  daresbury laboratory general purpose  *** L *******"
+    Write (banner(4), fmt1) "#*         **  classical molecular dynamics program  **** \ ******"
+    Write (banner(5), fmt1) "#* DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****"
+    Write (banner(6), fmt2) "#*         **  version:  ", DLP_VERSION, " /  ", DLP_RELEASE, "  ****** O ****"
+    Write (banner(7), fmt3) "#************  execution on  ", dlp_world(0)%mxnode, " process(es)  ******* L ***"
+    Write (banner(8), fmt1) "#************  contributors' list:                   ******** Y **"
+    Write (banner(9), fmt1) "#************  ------------------------------------  *************"
+    Write (banner(10), fmt1) "#************  i.j.bush, h.a.boateng, r.davidchak,   *************"
+    Write (banner(11), fmt1) "#************  m.a.seaton, a.v.brukhno, a.m.elena,   *************"
+    Write (banner(12), fmt1) "#************  s.l.daraszewicz,g.khara,s.t.murphy    *************"
+    Write (banner(13), fmt1) "#************  j.madge,a.b.g.chalk,i.scivetti,       *************"
+    Write (banner(14), fmt1) "#************  j.wilkins                             *************"
+    Write (banner(15), fmt1) "#*****************************************************************"
     Call info(banner, 15, .true., level=-1)
   End Subroutine print_banner
 
@@ -1395,36 +1393,36 @@ Contains
     ! Ask for reference in publications
 
     Call info('', .true.)
-    Write (banner(1), fmt1) Repeat("*", 66)
-    Write (banner(2), fmt1) '**** Thank you for using the DL_POLY_4 package in your work.  ****'
-    Write (banner(3), fmt1) '**** Please, acknowledge our efforts by including the         ****'
-    Write (banner(4), fmt1) '**** following references when publishing data obtained using ****'
-    Write (banner(5), fmt1) '**** DL_POLY_4:                                               ****'
-    Write (banner(6), fmt1) '****   - I.T. Todorov, W. Smith, K. Trachenko & M.T. Dove,    ****'
-    Write (banner(7), fmt1) '****     J. Mater. Chem., 16, 1911-1918 (2006),               ****'
-    Write (banner(8), fmt1) '****     https://doi.org/10.1039/B517931A                     ****'
+    Write (banner(1), fmt1) '#'//Repeat("*", 65)
+    Write (banner(2), fmt1) '#*** Thank you for using the DL_POLY_4 package in your work.  ****'
+    Write (banner(3), fmt1) '#*** Please, acknowledge our efforts by including the         ****'
+    Write (banner(4), fmt1) '#*** following references when publishing data obtained using ****'
+    Write (banner(5), fmt1) '#*** DL_POLY_4:                                               ****'
+    Write (banner(6), fmt1) '#***   - I.T. Todorov, W. Smith, K. Trachenko & M.T. Dove,    ****'
+    Write (banner(7), fmt1) '#***     J. Mater. Chem., 16, 1911-1918 (2006),               ****'
+    Write (banner(8), fmt1) '#***     https://doi.org/10.1039/B517931A                     ****'
     Call info(banner, 8, .true., level=-1)
     If (electro%key == ELECTROSTATIC_EWALD) Then
-      Write (banner(1), fmt1) '****   - I.J. Bush, I.T. Todorov & W. Smith,                  ****'
-      Write (banner(2), fmt1) '****     Comp. Phys. Commun., 175, 323-329 (2006),            ****'
-      Write (banner(3), fmt1) '****     https://doi.org/10.1016/j.cpc.2006.05.001            ****'
+      Write (banner(1), fmt1) '#***   - I.J. Bush, I.T. Todorov & W. Smith,                  ****'
+      Write (banner(2), fmt1) '#***     Comp. Phys. Commun., 175, 323-329 (2006),            ****'
+      Write (banner(3), fmt1) '#***     https://doi.org/10.1016/j.cpc.2006.05.001            ****'
       Call info(banner, 3, .true., level=-1)
     End If
     If (mpoles%max_mpoles > 0) Then
-      Write (banner(1), fmt1) '****   - H.A. Boateng & I.T. Todorov,                         ****'
-      Write (banner(2), fmt1) '****     J. Chem. Phys., 142, 034117 (2015),                  ****'
-      Write (banner(3), fmt1) '****     https://doi.org/10.1063/1.4905952                    ****'
+      Write (banner(1), fmt1) '#***   - H.A. Boateng & I.T. Todorov,                         ****'
+      Write (banner(2), fmt1) '#***     J. Chem. Phys., 142, 034117 (2015),                  ****'
+      Write (banner(3), fmt1) '#***     https://doi.org/10.1063/1.4905952                    ****'
       Call info(banner, 3, .true., level=-1)
     End If
     If (ttms%l_ttm) Then
-      Write (banner(1), fmt1) '****   - E. Zarkadoula, S.L. Daraszewicz, D.M. Duffy,         ****'
-      Write (banner(2), fmt1) '****     M.A. Seaton, I.T. Todorov, K. Nordlund, M.T. Dove &  ****'
-      Write (banner(3), fmt1) '****     K. Trachenko                                         ****'
-      Write (banner(4), fmt1) '****     J. Phys.: Condens. Matter, 24, 085401 (2014),        ****'
-      Write (banner(5), fmt1) '****     https://doi.org/10.1088/0953-8984/26/8/085401        ****'
+      Write (banner(1), fmt1) '#***   - E. Zarkadoula, S.L. Daraszewicz, D.M. Duffy,         ****'
+      Write (banner(2), fmt1) '#***     M.A. Seaton, I.T. Todorov, K. Nordlund, M.T. Dove &  ****'
+      Write (banner(3), fmt1) '#***     K. Trachenko                                         ****'
+      Write (banner(4), fmt1) '#***     J. Phys.: Condens. Matter, 24, 085401 (2014),        ****'
+      Write (banner(5), fmt1) '#***     https://doi.org/10.1088/0953-8984/26/8/085401        ****'
       Call info(banner, 5, .true., level=-1)
     End If
-    Call info(Repeat("*", 66), .true.)
+    Call info('#'//Repeat("*", 65), .true.)
   End Subroutine print_citations
 
 End Module meta

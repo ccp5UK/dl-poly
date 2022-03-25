@@ -145,15 +145,15 @@ Contains
     ! Report DoF
 
     Write (messages(1), '(a)') 'degrees of freedom break-down list:'
-    Write (messages(2), '(2x,a,i12)') 'free particles        ', meg
-    Write (messages(3), '(2x,a,i12)') 'centre of mass        ', -com
-    Write (messages(4), '(2x,a,i12)') 'non-periodicity       ', -non
-    Write (messages(5), '(2x,a,i12)') 'frozen free particles ', -frz
-    Write (messages(6), '(2x,a,i12)') 'shell-pseudo          ', -config%degshl
-    Write (messages(7), '(2x,a,i12)') 'constrained           ', -con
-    Write (messages(8), '(2x,a,i12)') 'RB translational      ', config%degtra
-    Write (messages(9), '(2x,a,i12)') 'RB rotational         ', config%degrot
-    Write (messages(10), '(2x,a,i12)') 'total (real)          ', config%degfre
+    Write (messages(2), '(2x,a,i0)') 'free particles:             ', meg
+    Write (messages(3), '(2x,a,i0)') 'centre of mass:             ', -com
+    Write (messages(4), '(2x,a,i0)') 'non-periodicity:            ', -non
+    Write (messages(5), '(2x,a,i0)') 'frozen free particles:      ', -frz
+    Write (messages(6), '(2x,a,i0)') 'shell-pseudo:               ', -config%degshl
+    Write (messages(7), '(2x,a,i0)') 'constrained:                ', -con
+    Write (messages(8), '(2x,a,i0)') 'Rigid bodies translational: ', config%degtra
+    Write (messages(9), '(2x,a,i0)') 'Rigid bodies rotational:    ', config%degrot
+    Write (messages(10), '(2x,a,i0)') 'total (real):               ', config%degfre
     Call info(messages, 10, .true.)
 
     ! Check DoF distribution

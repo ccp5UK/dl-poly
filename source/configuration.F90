@@ -108,6 +108,8 @@ Module configuration
     Real(Kind=wp)                 :: totmas
     Real(Kind=wp)                 :: totmas_r
     Real(Kind=wp)                 :: meg
+    Real(Kind=wp)                 :: density
+    Real(Kind=wp)                 :: tot_mass_w_frz
     Logical, Public               :: l_vom = .true., &
                                      lvom = .true. ! this is confusing and needless complicated
     Integer(Kind=wi), Public      :: mxtana, mxgana, mxbfss, mxbuff
@@ -182,6 +184,8 @@ Module configuration
   Public :: distribute_forces, gather_forces
   Public :: ordering_indices
   Public :: setup_cell_props
+  Public :: compute_density
+  Public :: print_system_info
 Contains
 
   Pure Subroutine chvom(T, flag)
@@ -420,6 +424,52 @@ Contains
 
   End Subroutine deallocate_config_arrays
 
+
+  Function imcon2words(key) result(period)
+    Integer, Intent(In   ) :: key
+    Character(Len=42)      :: period
+
+
+    Select Case(key)
+    Case(IMCON_NOPBC)
+      period = "non periodic"
+    Case (IMCON_CUBIC)
+      period = "cubic"
+    Case (IMCON_ORTHORHOMBIC)
+      period = "orthorhombic"
+    Case (IMCON_PARALLELOPIPED)
+      period = "Parallelepiped"
+    Case (IMCON_SLAB)
+      period = "slab (xy-periodic)"
+    Case Default
+      period = "Unknown"
+    End Select
+  End Function imcon2words
+
+  Real(Kind=wp) Function get_total_mass(config, ex_frz, comm)
+    Type(configuration_type),    Intent(In) :: config
+    Logical,                     Intent(In) :: ex_frz
+    Type(comms_type),            Intent(InOut) :: comm
+
+    Real(Kind=wp) :: mass
+    Integer       :: i
+
+    mass = 0.0_wp
+
+    If (ex_frz) Then
+      Do i = 1, config%natms
+        If (config%lfrzn(i) == 0) mass = mass + config%weight(i)
+      End Do
+    Else
+      Do i = 1, config%natms
+        mass = mass + config%weight(i)
+      End Do
+    End If
+
+    Call gsum(comm, mass)
+    get_total_mass = mass
+  End Function get_total_mass
+
   Subroutine check_config(config, electro_key, thermo, sites, flow, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -466,7 +516,7 @@ Contains
     If (config%newjob_check_config) Then
       Write (message, "('configuration file name: ',10x,a)") config%cfgname
       Call info(message, .true.)
-      Write (message, "('selected image convention',6x,i10)") config%imcon
+      Write (message, "('selected image convention:',5x,a)") imcon2words(config%imcon)
       Call info(message, .true.)
     End If
 
@@ -509,7 +559,7 @@ Contains
     ! Specify molecular dynamics simulation cell
 
     If (config%newjob_check_config) Then
-      Write (message, "('simulation cell vectors')")
+      Write (message, "('Simulation cell vectors [Ang]:')")
       Call Info(message, .true.)
       Write (message, "(3f20.10)") config%cell(1:3)
       Call Info(message, .true.)
@@ -517,7 +567,7 @@ Contains
       Call Info(message, .true.)
       Write (message, "(3f20.10)") config%cell(7:9)
       Call Info(message, .true.)
-      Write (message, "('system volume     ',2x,1p,g22.12)") det
+      Write (message, "('System volume:     ',2x,1p,g22.12, ' Ang^3')") det
       Call Info(message, .true.)
     End If
 
@@ -3008,12 +3058,8 @@ Contains
     If (config%newjob_totmas) Then
       config%newjob_totmas = .false.
 
-      config%totmas = 0.0_wp
-      Do i = 1, config%natms
-        If (config%lfrzn(i) == 0) config%totmas = config%totmas + config%weight(i)
-      End Do
+      config%totmas = get_total_mass(config,.true.,comm)
 
-      Call gsum(comm, config%totmas)
     End If
 
     com = 0.0_wp
@@ -3555,5 +3601,33 @@ Contains
     If (config%imcon == IMCON_SLAB) config%width = Min(cell_properties(7), cell_properties(8))
 
   End Subroutine setup_cell_props
+
+  Subroutine print_system_info(config)
+    Type(configuration_type),     Intent(In) :: config
+
+    Character(Len=256) :: message
+
+    Call info('', .true.)
+    Call info('System properties: ', .true.)
+    Write(message,'(a,g0.8,a)')"  - mass: ", config%tot_mass_w_frz," Da"
+    If (config%imcon /= IMCON_NOPBC .or. config%imcon /= IMCON_SLAB) Then
+      Call info(message, .true.)
+      Write(message,'(a,g0.8,a)')"  - volume: ", config%volm," Ang^3"
+      Call info(message, .true.)
+      Write(message,'(a,g0.8,a)')"  - density: ", config%density, " Da/Ang^3"
+      Call info(message, .true.)
+    End If
+  End Subroutine print_system_info
+
+  Subroutine compute_density(config,comm)
+    Type(configuration_type),     Intent(InOut) :: config
+    Type(comms_type),            Intent(InOut) :: comm
+
+    config%tot_mass_w_frz = get_total_mass(config, .false., comm)
+    config%density = 0.0_wp
+    If (config%imcon /= IMCON_NOPBC .or. config%imcon /= IMCON_SLAB) Then
+      config%density = config%tot_mass_w_frz/config%volm
+    End If
+  End Subroutine compute_density
 
 End Module configuration
