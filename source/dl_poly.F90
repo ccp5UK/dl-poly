@@ -194,7 +194,16 @@ Program dl_poly
           Write (eu, '(a)') "Usage: "//Trim(arg)//" -c CONTROL_FILENAME -o OUTPUT_FILENAME"
           Write (eu, '(a)') "Each of -c or -o options are optional"
           Write (eu, '(a)') "use -h to see this help"
-          Write (eu, '(a)') "use --help to search help"
+          Write (eu, '(a)') "use --help, --keywords, -k  to see all keywords for control file"
+          Write (eu, '(a)') "use --help <keyword> to see keyword info"
+          Write (eu, '(a)') "use --control or -c <control.file> use the control file given"
+          Write (eu, '(a)') "use --output or -o <output.file> print output in the output.file indicated"
+          Write (eu, '(a)') "use -o SCREEN print output on the screen"
+          Write (eu, '(a)') "use -dump <type> <file> print keywords to file or SCREEN"
+          Write (eu, '(a)') "          supported <type> latexdoc, latex, python, csv"
+          Write (eu, '(a)') "use --replay or -r replay a simulation"
+          Write (eu, '(a)') "use --test or -t <type> run unit tests"
+          Write (eu, '(a)') "           supported <type> control configuration vdw units all"
           finish = .true.
           Exit
         Case ('--dump')
@@ -244,10 +253,10 @@ Program dl_poly
           finish = .true.
           Exit
 
-        Case ('-c')
+        Case ('-c', '--control')
           i = i + 1
           Call get_command_argument(i, control_filename)
-        Case ('-o')
+        Case ('-o', '--output')
           i = i + 1
           Call get_command_argument(i, output_filename)
         Case ('-test', '-t')

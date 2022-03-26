@@ -1,10 +1,11 @@
 module control_parameter_module
 
-  Use units, only : convert_units
-  Use parse, only : word_2_real, get_word, get_line
-  Use kinds, only : wp
-  Use hash, only : hash_table, MAX_KEY, STR_LEN
+  Use units, only           : convert_units
+  Use parse, only           : word_2_real, get_word, get_line
+  Use kinds, only           : wp
+  Use hash, only            : hash_table, MAX_KEY, STR_LEN
   Use errors_warnings, only : error, error_units, warning
+  Use, Intrinsic           :: iso_fortran_env, Only: error_unit
   Implicit None
 
   Private
@@ -66,7 +67,7 @@ contains
     Type (control_parameter) :: param
 
     call params%get(key, param)
-    call write_control_param_help(param, 0)
+    call write_control_param_help(param, error_unit)
 
   End Subroutine control_help_single
 
@@ -80,7 +81,7 @@ contains
 
     do i = 1, params%used_keys
        call params%get(keys(i), param)
-       call write_control_param_help(param, 0)
+       call write_control_param_help(param, error_unit)
     end do
 
   End Subroutine control_help_all
@@ -249,7 +250,7 @@ contains
     write(unit, '(A,A)') "Name: ", trim(param%name)
     write(unit, '(A,A,1X,A)') "Default: ", trim(param%val), trim(param%units)
     write(unit, '(A,A)') "Description: ", trim(param%description)
-    write(unit, '(A)') trim(type(param%data_type))
+    write(unit, '(A,A)') "Type: ", trim(type(param%data_type))
     write(unit, *) ""
 
   end Subroutine write_control_param_help
