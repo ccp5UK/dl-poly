@@ -84,7 +84,8 @@ Module timer
     Integer                   :: out_unit
 
   contains
-    Final :: deallocate_timer_type
+    !Final :: deallocate_timer_type
+    Procedure :: deallocate_timer_type
 
   End Type timer_type
 
@@ -107,7 +108,8 @@ Module timer
 Contains
 
   Subroutine deallocate_timer_type(tmr)
-    Type(timer_type) :: tmr
+    !Type(timer_type) :: tmr
+    Class(timer_type) :: tmr
     Type(node), Pointer :: current, next
 
     current => tmr%tree%head%child
@@ -505,8 +507,6 @@ Contains
         Call gsync(comm)
       End Do
     End If
-
-    ! call deallocate_timer_type(tmr)
 
   End Subroutine timer_report
 
