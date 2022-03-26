@@ -652,6 +652,8 @@ Contains
 #ifdef CHRONO
     Call stop_timer(tmr, 'Termination')
     Call timer_report(tmr, comm)
+    ! this is to keep finalizer happy. not all compilers call the finalizer in main
+    call tmr%deallocate_timer_type()
 #endif
 
     ! Ask for reference in publications
