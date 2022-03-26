@@ -40,7 +40,7 @@ contains
     write(test_unit, '(a,1X,a)') "stats_frequency", "6.666 steps"
     write(test_unit, '(a,1X,a)') "stack_size", "6.666 steps"
     write(test_unit, '(a,1X,a)') "record_equilibration", "on"
-    write(test_unit, '(a,1X,a)') "print_per_particle_contrib", "on"
+    write(test_unit, '(a,1X,a)') "write_per_particle", "on"
     write(test_unit, '(a,1X,a)') "print_probability_distribution", "on"
     write(test_unit, '(a,1X,a)') "analyse_all", "on"
     write(test_unit, '(a,1X,a)') "analyse_angles", "on"
@@ -123,7 +123,6 @@ contains
     write(test_unit, '(a,1X,a)') "io_write_buffer_size", "66666"
     write(test_unit, '(a,1X,a)') "io_write_sorted", "off"
     write(test_unit, '(a,1X,a)') "io_write_error_check", "on"
-    write(test_unit, '(a,1X,a)') "io_write_netcdf_format", "JUNK"
     write(test_unit, '(a,1X,a)') "io_write_ascii_revive", "on"
     write(test_unit, '(a,1X,a)') "io_file_output", "JUNK"
     write(test_unit, '(a,1X,a)') "io_file_config", "JUNK"
@@ -484,8 +483,6 @@ contains
     call assert(ltmp, "Accurate retrieval of io_write_error_check failed")
     call params%retrieve("io_write_method", ctmp)
     call assert(ctmp, "JUNK", "Accurate retrieval of  failed")
-    call params%retrieve("io_write_netcdf_format", ctmp)
-    call assert(ctmp, "JUNK", "Accurate retrieval of  failed")
     call params%retrieve("io_write_sorted", ltmp)
     call assert(.not. ltmp, "Accurate retrieval of io_write_sorted failed")
     call params%retrieve("io_write_writers", itmp)
@@ -540,8 +537,6 @@ contains
     call assert(rtmp, 6.666_wp, "Accurate retrieval of print_frequency failed")
     call params%retrieve("print_level", itmp)
     call assert(itmp, 66666, "Accurate retrieval of print_level failed")
-    call params%retrieve("print_per_particle_contrib", ltmp)
-    call assert(ltmp, "Accurate retrieval of print_per_particle_contrib failed")
     call params%retrieve("print_probability_distribution", ltmp)
     call assert(ltmp, "Accurate retrieval of print_probability_distribution failed")
     call params%retrieve("print_topology_info", ltmp)
