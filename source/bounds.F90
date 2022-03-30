@@ -1199,7 +1199,7 @@ Contains
 
       bspline_node_check = Minval(Int(ewld%kspace%k_vec_dim/[domain%nx, domain%ny, domain%nz]))
       If (bspline_node_check == ewld%bspline%num_splines) Then
-        Call warning('LC+DD with SPME grid too small to support padding')
+        Call warning('LC+DD with SPME grid too small to support padding',.true.)
         neigh%padding = 0.0_wp
         no_default_padding = .true.
 
