@@ -17,70 +17,95 @@ Module units
 
   Private
 
+  Integer, Parameter :: ndims = 7
+  Character, Dimension(ndims), parameter :: dims = ['M','L','T','t','C','l','a'] ! mass length time temp current luminosity angle
+
+  Integer, Dimension(ndims), Parameter :: &
+       dims_charge = [0,0,1,0,1,0,0], &
+       dims_energy = [1,2,-2,0,0,0,0], &
+       dims_pressure = [1,-1,-2,0,0,0,0], &
+       dims_force = [1,1,-2,0,0,0,0], &
+       dims_velocity = [0,1,-1,0,0,0,0], &
+       dims_power = [1,2,-3,0,0,0,0], &
+       dims_surf_ten = [1,0,-2,0,0,0,0], &
+       dims_emf = [1,2,-3,0,-1,0,0]
+
   Type, Private, Extends(hash_table) :: units_hash_table
-   Contains
-     Generic  , Public  :: get => get_unit
-     Procedure, Private :: get_unit
+  Contains
+    Generic  , Public  :: get => get_unit
+    Procedure, Private :: get_unit
   end type units_hash_table
 
-  Type, Public :: units_scheme
-     !! Basic encapsulation of output units scheme
-     Character(Len=STR_LEN), Public :: length, time, mass, charge, energy, &
-          pressure, force, velocity, power, surf_ten, emf
-  End Type units_scheme
-
   Type, Private :: unit_data
-     !! Type containing data corresponding to units
-     Character(Len=STR_LEN) :: name
-     Character(Len=MAX_KEY) :: abbrev
-     Real(Kind=wp) :: conversion_to_internal
-     Integer, Dimension(8) :: dims = [0, 0, 0, 0, 0, 0, 0, 0] ! mass length time temp mol current luminosity angle
-   contains
-     Generic, Public :: Operator(*) => unit_mult
-     Generic, Public :: Operator(/) => unit_div
-     Generic, Public :: Operator(**) => unit_pow
-     Procedure, Pass, Private :: unit_mult, unit_div, unit_pow
-     Procedure, Nopass :: init => init_unit
+    !! Type containing data corresponding to units
+    Character(Len=STR_LEN) :: name
+    Character(Len=MAX_KEY) :: abbrev
+    Real(Kind=wp) :: conversion_to_internal
+    Integer, Dimension(ndims) :: dims = [0, 0, 0, 0, 0, 0, 0] ! mass length time temp current luminosity angle
+  contains
+    Generic, Public :: Operator(*) => unit_mult
+    Generic, Public :: Operator(/) => unit_div
+    Generic, Public :: Operator(**) => unit_pow
+    Procedure, Pass, Private :: unit_mult, unit_div, unit_pow
+    Procedure, Nopass :: init => init_unit
   end type unit_data
 
-  Type(units_scheme), Public, Parameter :: internal_units = units_scheme( &
+  Type(unit_data), Private, Parameter :: null_unit = unit_data('', '', 1.0_wp)
+
+
+  Type, Public :: units_scheme
+    !! Basic encapsulation of output units scheme
+    Character(Len=STR_LEN), Public :: length, time, mass, charge, energy, &
+         temp='K', current='A', luminosity='', angle='rad', &
+         pressure, force, velocity, power, surf_ten, emf
+    Type(unit_data), Public :: length_unit=null_unit, time_unit=null_unit, &
+         mass_unit=null_unit, charge_unit=null_unit, energy_unit=null_unit, &
+         luminosity_unit=null_unit, angle_unit=null_unit, pressure_unit=null_unit, &
+         force_unit=null_unit, velocity_unit =null_unit, power_unit=null_unit, &
+         temp_unit=null_unit, current_unit=null_unit, surf_ten_unit=null_unit,&
+         emf_unit=null_unit
+  Contains
+    Procedure :: test => test_scheme
+    Procedure :: recalc => recalculate_scheme_units
+    Procedure, Nopass :: init => init_scheme
+  End Type units_scheme
+
+  Type(units_scheme), Public, Protected, Save :: internal_units = units_scheme( &
        length = 'internal_l', &
        time = 'internal_t', &
        mass = 'internal_m', &
        charge = 'internal_q', &
        energy = 'internal_e', &
+       temp = 'K', &
+       current = 'A', &
+       luminosity = '', &
+       angle = 'rad', &
        pressure = 'internal_p', &
        force = 'internal_f', &
        velocity = 'internal_v', &
        power = 'internal_e/internal_t', &
        surf_ten = 'internal_f/internal_l', &
        emf = 'internal_e/internal_q')
-  Type(units_scheme), Protected, Save :: out_units = internal_units
+  Type(units_scheme), Public, Protected, Save :: out_units
 
-  Type(unit_data), Private, Parameter :: null_unit = unit_data('', '', 1.0_wp)
   Type(units_hash_table), Private, save :: units_table
+
+  Interface convert_units
+    module procedure convert_units_str_str
+    module procedure convert_units_unit_unit
+  end Interface convert_units
 
   Public :: initialise_units
   Public :: destroy_units
   Public :: convert_units
   Public :: set_timestep
+
+  Public :: init_scheme
   Public :: set_out_units
+  Public :: to_out_units
+
 
 contains
-
-  Subroutine set_out_units(scheme)
-    !!-----------------------------------------------------------------------
-    !!
-    !! Set an output units scheme
-    !!
-    !! copyright - daresbury laboratory
-    !! author - j.wilkins april 2020
-    !!-----------------------------------------------------------------------
-    Type(units_scheme), Intent( In    ) :: scheme
-
-    out_units = scheme
-
-  end Subroutine set_out_units
 
   Subroutine initialise_units()
     !!-----------------------------------------------------------------------
@@ -100,7 +125,7 @@ contains
     Real(kind=wp), Parameter :: bohr = 0.52918_wp*angstrom
     Real(kind=wp), Parameter :: inch = 2.54e-2_wp*metre
 
-    Real(kind=wp), Parameter :: joulepmol = 0.1_wp, joule = joulepmol*avogadro
+    Real(kind=wp), Parameter :: joulepmol = 0.1_wp, joule = joulepmol !*avogadro
     Real(kind=wp), Parameter :: calorie = 4.1842_wp*joule
 
     Real(kind=wp), Parameter :: hartree = 4.359744722e-18_wp*joule
@@ -162,10 +187,15 @@ contains
     call units_table%set("c", &
          & init_unit(abbrev="C", name="Coulomb", current=1, time=1, to_internal=coulomb))
 
+    ! Current
+
+    call units_table%set("a", &
+         & init_unit(abbrev="A", name="Ampere", current=1, to_internal=electron_charge/second))
+
     ! Energy
 
     call units_table%set("internal_e", &
-         & init_unit(abbrev="internal_e", name="10 J/mol", mass=1, length=2, time=-2, mol=-1, to_internal=1.0_wp))
+         & init_unit(abbrev="internal_e", name="10 J/mol", mass=1, length=2, time=-2, to_internal=1.0_wp))
     call units_table%set("j", init_unit(abbrev="J", name="Joule", mass=1, length=2, time=-2, to_internal=joule))
     call units_table%set("cal", &
          & init_unit(abbrev="Cal", name="Calorie", mass=1, length=2, time=-2, to_internal=calorie))
@@ -219,9 +249,6 @@ contains
     call units_table%set("v", init_unit(abbrev="V", name="Volt", mass=1, length=2, time=-3, current=-1, &
          & to_internal=joule/coulomb))
 
-    ! Mols
-
-    call units_table%set("mol", init_unit(abbrev="mol", name="Mole", mol=1, to_internal=avogadro))
 
     ! Angles
 
@@ -233,10 +260,14 @@ contains
 
     call units_table%set("%", init_unit(abbrev="%", name="%", to_internal=0.01_wp))
     call units_table%set("", init_unit(abbrev="", name="", to_internal=1.0_wp))
+    call units_table%set("mol", init_unit(abbrev="mol", name="Mole", to_internal=avogadro))
 
     ! System Properties
 
     call units_table%set("temp", init_unit(abbrev="T", name="System Temperature", temp=1, to_internal=1.0_wp))
+
+    call internal_units%recalc()
+    call set_out_units(internal_units)
 
   End Subroutine initialise_units
 
@@ -250,8 +281,7 @@ contains
     call units_table%destroy()
   end Subroutine destroy_units
 
-
-  Function convert_units(val, from, to, stat) result(res)
+  Function convert_units_str_str(val, from, to, stat) result(res)
     !!-----------------------------------------------------------------------
     !!
     !! Convert val amount of unit "from" into unit "to"
@@ -270,7 +300,6 @@ contains
     Character(Len=*), Intent(In) :: from, to
     Logical, Intent(Out), Optional :: stat
     Real(kind=wp) :: res
-    Character, Dimension(7), parameter :: dims = ['M','L','T','t','m','C','l'] ! mass length time temp mol current luminosity
     Integer :: i
     Type( unit_data ) :: from_unit, to_unit
     Type( unit_data ) :: output
@@ -279,7 +308,6 @@ contains
       stat = .true.
     end if
 
-    output = output%init("", "", 1.0_wp)
     from_unit = parse_unit_string(from)
     to_unit = parse_unit_string(to)
     output = to_unit / from_unit
@@ -287,12 +315,12 @@ contains
     if (any(output%dims /= 0)) then
 
 #ifdef debug
-      do i = 1, 7
+      do i = 1, ndims
         if (from_unit%dims(i) /= 0) write(0, "(A2,i0,'.')", advance='No') dims(i)//"^",from_unit%dims(i)
       end do
       write(0,*)
-      do i = 1, 7
-        if (from_unit%dims(i) /= 0) write(0, "(A2,i0,'.')", advance='No') dims(i)//"^",to_unit%dims(i)
+      do i = 1, ndims
+        if (to_unit%dims(i) /= 0) write(0, "(A2,i0,'.')", advance='No') dims(i)//"^",to_unit%dims(i)
       end do
 #endif
 
@@ -307,7 +335,339 @@ contains
 
     res = val / output%conversion_to_internal
 
-  end Function convert_units
+  end Function convert_units_str_str
+
+  Function convert_units_unit_unit(val, from_unit, to_unit, stat) result(res)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Convert val amount of unit "from" into unit "to"
+    !!
+    !! On failure --
+    !!
+    !! if stat present
+    !! Set output name to error, stat to true
+    !! Else
+    !! Error out
+    !!
+    !! copyright - daresbury laboratory
+    !! author - j.wilkins april 2020
+    !!-----------------------------------------------------------------------
+    Real(kind=wp), Intent(in) :: val
+    Type( unit_data ),Intent(In) :: from_unit, to_unit
+    Logical, Intent(Out), Optional :: stat
+    Real(kind=wp) :: res
+    Integer :: i
+    Type( unit_data ) :: output
+
+    if (present(stat)) then
+      stat = .true.
+    end if
+
+    output = to_unit / from_unit
+
+    if (any(output%dims /= 0)) then
+
+#ifdef debug
+      do i = 1, ndims
+        if (from_unit%dims(i) /= 0) write(0, "(A2,i0,'.')", advance='No') dims(i)//"^",from_unit%dims(i)
+      end do
+      write(0,*)
+      do i = 1, ndims
+        if (to_unit%dims(i) /= 0) write(0, "(A2,i0,'.')", advance='No') dims(i)//"^",to_unit%dims(i)
+      end do
+#endif
+
+      if (present(stat)) then
+        stat=.false.
+        return
+      else
+        call error_units(from_unit%name, to_unit%name)
+      end if
+
+    end if
+
+    res = val / output%conversion_to_internal
+
+  end Function convert_units_unit_unit
+
+  Function init_scheme(length, time, mass, charge, energy, &
+       temp, current, luminosity, angle, &
+       pressure, force, velocity, power, surf_ten, emf) Result(scheme)
+    !!-----------------------------------------------------------------------
+    !! Initialise a unit scheme, if not otherwise specified it will default to
+    !! current out_units
+    !!
+    !! copyright - daresbury laboratory
+    !! author - j.wilkins april 2022
+    !!-----------------------------------------------------------------------
+
+    Type(units_scheme) :: scheme
+    Character(Len=*), Intent(In), Optional :: length, time, mass, charge, energy, &
+         temp, current, luminosity, angle, &
+         pressure, force, velocity, power, surf_ten, emf
+
+    if (present(length)) then
+      scheme%length = length
+    else
+      scheme%length = out_units%length
+    end if
+
+    if (present(time)) then
+      scheme%time = time
+    else
+      scheme%time = out_units%time
+    end if
+
+    if (present(mass)) then
+      scheme%mass = mass
+    else
+      scheme%mass = out_units%mass
+    end if
+
+    if (present(charge)) then
+      scheme%charge = charge
+    else
+      scheme%charge = out_units%charge
+    end if
+
+    if (present(energy)) then
+      scheme%energy = energy
+    else
+      scheme%energy = out_units%energy
+    end if
+
+    if (present(temp)) then
+      scheme%temp = temp
+    else
+      scheme%temp = out_units%temp
+    end if
+
+    if (present(current)) then
+      scheme%current = current
+    else
+      scheme%current = out_units%current
+    end if
+
+    if (present(luminosity)) then
+      scheme%luminosity = luminosity
+    else
+      scheme%luminosity = out_units%luminosity
+    end if
+
+    if (present(angle)) then
+      scheme%angle = angle
+    else
+      scheme%angle = out_units%angle
+    end if
+
+    if (present(pressure)) then
+      scheme%pressure = pressure
+    else
+      scheme%pressure = out_units%pressure
+    end if
+
+    if (present(force)) then
+      scheme%force = force
+    else
+      scheme%force = out_units%force
+    end if
+
+    if (present(velocity)) then
+      scheme%velocity = velocity
+    else
+      scheme%velocity = out_units%velocity
+    end if
+
+    if (present(power)) then
+      scheme%power = power
+    else
+      scheme%power = out_units%power
+    end if
+
+    if (present(surf_ten)) then
+      scheme%surf_ten = surf_ten
+    else
+      scheme%surf_ten = out_units%surf_ten
+    end if
+
+    if (present(emf)) then
+      scheme%emf = emf
+    else
+      scheme%emf = out_units%emf
+    end if
+
+    call scheme%recalc()
+
+  end Function init_scheme
+
+  Subroutine recalculate_scheme_units(scheme)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Test validity of units scheme
+    !!
+    !! copyright - daresbury laboratory
+    !! author - j.wilkins april 2022
+    !!-----------------------------------------------------------------------
+    Class(units_scheme), Intent( InOut ) :: scheme
+
+    scheme%length_unit = parse_unit_string(scheme%length)
+    scheme%time_unit = parse_unit_string(scheme%time)
+    scheme%mass_unit = parse_unit_string(scheme%mass)
+    scheme%charge_unit = parse_unit_string(scheme%charge)
+    scheme%energy_unit = parse_unit_string(scheme%energy)
+    scheme%temp_unit = parse_unit_string(scheme%temp)
+    scheme%current_unit = parse_unit_string(scheme%current)
+    scheme%luminosity_unit = parse_unit_string(scheme%luminosity)
+    scheme%angle_unit = parse_unit_string(scheme%angle)
+    scheme%pressure_unit = parse_unit_string(scheme%pressure)
+    scheme%force_unit = parse_unit_string(scheme%force)
+    scheme%velocity_unit = parse_unit_string(scheme%velocity)
+    scheme%power_unit = parse_unit_string(scheme%power)
+    scheme%surf_ten_unit = parse_unit_string(scheme%surf_ten)
+    scheme%emf_unit = parse_unit_string(scheme%emf)
+
+  end Subroutine recalculate_scheme_units
+
+  Subroutine test_scheme(scheme)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Test validity of units scheme
+    !!
+    !! copyright - daresbury laboratory
+    !! author - j.wilkins april 2022
+    !!-----------------------------------------------------------------------
+    Class(units_scheme), Intent( In    ) :: scheme
+    Real(kind=wp)          :: test
+    Logical                :: stat
+
+    ! Check units validity
+    test = convert_units(1.0_wp, scheme%length, internal_units%length, stat)
+    If (.not. stat) Call error_units(scheme%length, internal_units%length, 'Invalid output unit for length')
+
+    test = convert_units(1.0_wp, scheme%time, internal_units%time, stat)
+    If (.not. stat) Call error_units(scheme%time, internal_units%time, 'Invalid output unit for time')
+
+    test = convert_units(1.0_wp, scheme%mass, internal_units%mass, stat)
+    If (.not. stat) Call error_units(scheme%mass, internal_units%mass, 'Invalid output unit for mass')
+
+    test = convert_units(1.0_wp, scheme%charge, internal_units%charge, stat)
+    If (.not. stat) Call error_units(scheme%charge, internal_units%charge, 'Invalid output unit for charge')
+
+    test = convert_units(1.0_wp, scheme%energy, internal_units%energy, stat)
+    If (.not. stat) Call error_units(scheme%energy, internal_units%energy, 'Invalid output unit for energy')
+
+    test = convert_units(1.0_wp, scheme%pressure, internal_units%pressure, stat)
+    If (.not. stat) Call error_units(scheme%pressure, internal_units%pressure, 'Invalid output unit for pressure')
+
+    test = convert_units(1.0_wp, scheme%force, internal_units%force, stat)
+    If (.not. stat) Call error_units(scheme%force, internal_units%force, 'Invalid output unit for force')
+
+    test = convert_units(1.0_wp, scheme%velocity, internal_units%velocity, stat)
+    If (.not. stat) Call error_units(scheme%velocity, internal_units%velocity, 'Invalid output unit for velocity')
+
+    test = convert_units(1.0_wp, scheme%power, internal_units%power, stat)
+    If (.not. stat) Call error_units(scheme%power, internal_units%power, 'Invalid output unit for power')
+
+    test = convert_units(1.0_wp, scheme%surf_ten, internal_units%surf_ten, stat)
+    If (.not. stat) Call error_units(scheme%surf_ten, internal_units%surf_ten, 'Invalid output unit for surface tension')
+
+    test = convert_units(1.0_wp, scheme%emf, internal_units%emf, stat)
+    If (.not. stat) Call error_units(scheme%emf, internal_units%emf, 'Invalid output unit for emf')
+
+  end Subroutine test_scheme
+
+  Subroutine set_out_units(scheme)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Set an output units scheme
+    !!
+    !! copyright - daresbury laboratory
+    !! author - j.wilkins april 2020
+    !!-----------------------------------------------------------------------
+    Type(units_scheme), Value :: scheme
+
+    Call scheme%recalc()
+    Call scheme%test()
+
+    out_units = scheme
+
+  end Subroutine set_out_units
+
+  Subroutine to_out_units(val, from, res, out_unit, out_unit_full, stat)
+    !!-----------------------------------------------------------------------
+    !!
+    !! Convert var to default output units
+    !!
+    !! copyright - daresbury laboratory
+    !! author - j.wilkins april 2022
+    !!-----------------------------------------------------------------------
+    Real(kind=wp), Intent(in) :: val
+    Character(Len=*), Intent(In) :: from
+    Logical, Intent(Out), Optional :: stat
+
+    Real(kind=wp), Intent(Out) :: res
+    Character(Len=STR_LEN), Intent(Out), Optional :: out_unit
+    Character(Len=STR_LEN), Intent(Out), Optional :: out_unit_full
+
+    Type( unit_data ) :: from_unit, to_unit
+
+    Type(unit_data), Dimension(ndims) :: out_unit_vals
+    Integer :: i, curr_dim
+
+    if (present(stat)) then
+      stat = .true.
+    end if
+
+    from_unit = parse_unit_string(from)
+
+    if (all(from_unit%dims == dims_energy)) then
+      to_unit = out_units%energy_unit
+
+    else if (all(from_unit%dims == dims_charge)) then
+      to_unit = out_units%charge_unit
+
+    else if (all(from_unit%dims == dims_pressure)) then
+      to_unit = out_units%pressure_unit
+
+    else if (all(from_unit%dims == dims_force)) then
+      to_unit = out_units%force_unit
+
+    else if (all(from_unit%dims == dims_velocity)) then
+      to_unit = out_units%velocity_unit
+
+    else if (all(from_unit%dims == dims_power)) then
+      to_unit = out_units%power_unit
+
+    else if (all(from_unit%dims == dims_surf_ten)) then
+      to_unit = out_units%surf_ten_unit
+
+    else if (all(from_unit%dims == dims_emf)) then
+      to_unit = out_units%emf_unit
+
+    else
+
+      out_unit_vals = [ &
+           out_units%mass_unit, &
+           out_units%length_unit, &
+           out_units%time_unit, &
+           out_units%temp_unit, &
+           out_units%current_unit, &
+           out_units%luminosity_unit, &
+           out_units%angle_unit]
+
+      to_unit = null_unit
+
+      do i = 1, ndims
+        to_unit = to_unit * (out_unit_vals(i)**from_unit%dims(i))
+      end do
+    end if
+
+    res = convert_units(val, from_unit, to_unit, stat)
+
+    if (present(out_unit)) out_unit = to_unit%abbrev
+    if (present(out_unit_full)) out_unit_full = to_unit%name
+
+  end Subroutine to_out_units
 
   Function init_unit(name, abbrev, to_internal, mass, length, time, temp, mol, current, luminosity, angle)
     Type(unit_data) :: init_unit
@@ -317,35 +677,31 @@ contains
 
     init_unit = unit_data(name=name, abbrev=abbrev, conversion_to_internal=to_internal)
     if (present(mass)) then
-       init_unit%dims(1) = mass
+      init_unit%dims(1) = mass
     end if
 
     if (present(length)) then
-       init_unit%dims(2) = length
+      init_unit%dims(2) = length
     end if
 
     if (present(time)) then
-       init_unit%dims(3) = time
+      init_unit%dims(3) = time
     end if
 
     if (present(temp)) then
-       init_unit%dims(4) = temp
-    end if
-
-    if (present(mol)) then
-       init_unit%dims(5) = mol
+      init_unit%dims(4) = temp
     end if
 
     if (present(current)) then
-       init_unit%dims(6) = current
+      init_unit%dims(5) = current
     end if
 
     if (present(luminosity)) then
-       init_unit%dims(7) = luminosity
+      init_unit%dims(6) = luminosity
     end if
 
     if (present(angle)) then
-       init_unit%dims(8) = angle
+      init_unit%dims(7) = angle
     end if
 
   end Function init_unit
@@ -382,12 +738,19 @@ contains
 
     write(b_str, "(i0.1)") b
 
-    unit_pow = unit_data( &
-         name = trim(a%name)//"^"//trim(b_str), &
-         abbrev = trim(a%abbrev)//"^"//trim(b_str), &
-         conversion_to_internal = a%conversion_to_internal**b, &
-         dims = a%dims*b &
-    )
+    select case (b)
+    case (0)
+      unit_pow = null_unit
+    case (1)
+      unit_pow = a
+    case default
+      unit_pow = unit_data( &
+           name = trim(a%name)//"^"//trim(b_str), &
+           abbrev = trim(a%abbrev)//"^"//trim(b_str), &
+           conversion_to_internal = a%conversion_to_internal**b, &
+           dims = a%dims*b &
+           )
+    end select
 
   end Function unit_pow
 
@@ -431,12 +794,12 @@ contains
     tmp = string(2:)
     call lower_case(tmp)
     if (.not. units_table%in(tmp) .and. verify(trim(string(2:)), number) /= 0) then
-       i = index(prefix_symbol, string(2:2))
-       tmp = string(3:)
-       call lower_case(tmp)
-       if (i < 1 .or. .not. units_table%in(tmp)) call error(0, "Unit not found "//string(2:))
-       factor = prefix(i)
-       string = string(1:1) // string(3:)
+      i = index(prefix_symbol, string(2:2))
+      tmp = string(3:)
+      call lower_case(tmp)
+      if (i < 1 .or. .not. units_table%in(tmp)) call error(0, "Unit not found "//string(2:))
+      factor = prefix(i)
+      string = string(1:1) // string(3:)
     end if
 
   end Subroutine handle_decimal_prefix
@@ -465,26 +828,26 @@ contains
 
     ! Handle powers first
     do i = size(parsed), 1, -1
-       curr_parse = parsed(i)
-       if (curr_parse(1:1) == "^") then
-          if (verify(trim(curr_parse(2:)), number) /= 0) call error(0, "Non numeric power issued")
-          read(curr_parse(2:), "(i8.1)") n
-          curr_parse = parsed(i-1)
-          call handle_decimal_prefix(curr_parse, factor)
-          call lower_case(curr_parse)
-          call units_table%get(curr_parse(2:), tmp_unit)
-          tmp_unit = (factor*tmp_unit) ** n
-          select case (curr_parse(1:1))
-          case (".")
-             output = output * tmp_unit
-          case ("/")
-             output = output / tmp_unit
-          case default
-             call error(0, "Cannot parse unit string"//string)
-          end select
-          parsed(i) = "."
-          parsed(i-1) = "."
-       end if
+      curr_parse = parsed(i)
+      if (curr_parse(1:1) == "^") then
+        if (verify(trim(curr_parse(2:)), number) /= 0) call error(0, "Non numeric power issued")
+        read(curr_parse(2:), "(i8.1)") n
+        curr_parse = parsed(i-1)
+        call handle_decimal_prefix(curr_parse, factor)
+        call lower_case(curr_parse)
+        call units_table%get(curr_parse(2:), tmp_unit)
+        tmp_unit = (factor*tmp_unit) ** n
+        select case (curr_parse(1:1))
+        case (".")
+          output = output * tmp_unit
+        case ("/")
+          output = output / tmp_unit
+        case default
+          call error(0, "Cannot parse unit string"//string)
+        end select
+        parsed(i) = "."
+        parsed(i-1) = "."
+      end if
     end do
 
     do i = 1, size(parsed)
@@ -495,7 +858,7 @@ contains
       if (verify(trim(curr_parse(2:)), number) /= 0) then
         call units_table%get(curr_parse(2:), tmp_unit)
       else if (trim(curr_parse(2:)) /= "") then
-        tmp_unit = unit_data(name="", abbrev="", conversion_to_internal=1.0)
+        tmp_unit = null_unit
         read(curr_parse(2:), *) tmp_unit%conversion_to_internal
       else
         cycle
@@ -541,14 +904,14 @@ contains
 
     j = 1
     do i = 1, nParts
-       k = verify(string(j+1:), alphabet)
-       if (k == 0) then
-          k = len(string) + 1
-       else
-          k = j+k
-       end if
-       output(i) = string(j:k-1)
-       j = k
+      k = verify(string(j+1:), alphabet)
+      if (k == 0) then
+        k = len(string) + 1
+      else
+        k = j+k
+      end if
+      output(i) = string(j:k-1)
+      j = k
     end do
 
 
@@ -588,9 +951,9 @@ contains
 
     Select Type( stuff )
     Type is ( unit_data )
-       val = stuff
+      val = stuff
     Class Default
-       Call error(0, 'Trying to get unit from a not unit')
+      Call error(0, 'Trying to get unit from a not unit')
     End Select
     deallocate(stuff)
     nullify(stuff)

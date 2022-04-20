@@ -1235,10 +1235,9 @@ Contains
 
   Subroutine read_units(params)
     Type(parameters_hash_table), Intent(In   ) :: params
+    Real(kind=wp)          :: test
 
     Character(Len=STR_LEN) :: option
-    Logical                :: stat
-    Real(kind=wp)          :: test
     Type(units_scheme)     :: out_units
 
     Call params%retrieve("io_units_scheme", option)
@@ -1248,43 +1247,49 @@ Contains
       out_units = internal_units
 
     Case ('si')
-      out_units%length = 'm'
-      out_units%time = 's'
-      out_units%mass = 'kg'
-      out_units%charge = 'C'
-      out_units%energy = 'J'
-      out_units%pressure = 'Pa'
-      out_units%force = 'N'
-      out_units%velocity = 'm/s'
-      out_units%power = 'W'
-      out_units%surf_ten = 'N/m'
-      out_units%emf = 'V'
+
+      out_units = units_scheme( &
+           length = 'm', &
+           time = 's', &
+           mass = 'kg', &
+           charge = 'C', &
+           energy = 'J', &
+           pressure = 'Pa', &
+           force = 'N', &
+           velocity = 'm/s', &
+           power = 'W', &
+           surf_ten = 'N/m', &
+           emf = 'V')
 
     Case ('atomic')
-      out_units%length = 'ang'
-      out_units%time = 'ps'
-      out_units%mass = 'amu'
-      out_units%charge = 'q_e'
-      out_units%energy = 'e.V'
-      out_units%pressure = 'GPa'
-      out_units%force = 'e.V/ang'
-      out_units%velocity = 'ang/ps'
-      out_units%power = 'e.V/ps'
-      out_units%surf_ten = 'e.V/ang^2'
-      out_units%emf = 'e.V/q_e'
+
+      out_units = units_scheme( &
+           length = 'ang', &
+           time = 'ps', &
+           mass = 'amu', &
+           charge = 'q_e', &
+           energy = 'e.V', &
+           pressure = 'GPa', &
+           force = 'e.V/ang', &
+           velocity = 'ang/ps', &
+           power = 'e.V/ps', &
+           surf_ten = 'e.V/ang^2', &
+           emf = 'e.V/q_e')
 
     Case ('hartree')
-      out_units%length = 'bohr'
-      out_units%time = 'aut'
-      out_units%mass = 'm_e'
-      out_units%charge = 'q_e'
-      out_units%energy = 'Ha'
-      out_units%pressure = 'Ha/bohr^3'
-      out_units%force = 'Ha/bohr'
-      out_units%velocity = 'auv'
-      out_units%power = 'Ha/aut'
-      out_units%surf_ten = 'Ha/bohr^2'
-      out_units%emf = 'Ha/q_e'
+
+      out_units = units_scheme( &
+           length = 'bohr', &
+           time = 'aut', &
+           mass = 'm_e', &
+           charge = 'q_e', &
+           energy = 'Ha', &
+           pressure = 'Ha/bohr^3', &
+           force = 'Ha/bohr', &
+           velocity = 'auv', &
+           power = 'Ha/aut', &
+           surf_ten = 'Ha/bohr^2', &
+           emf = 'Ha/q_e')
 
     End Select
 
@@ -1310,40 +1315,6 @@ Contains
       Call params%retrieve("io_units_surface_tension", out_units%surf_ten)
     If (params%is_set("io_units_emf")) &
       Call params%retrieve("io_units_emf", out_units%emf)
-
-    ! Check units validity
-    test = convert_units(1.0_wp, out_units%length, internal_units%length, stat)
-    If (.not. stat) Call error_units(out_units%length, internal_units%length, 'Invalid output unit for length')
-
-    test = convert_units(1.0_wp, out_units%time, internal_units%time, stat)
-    If (.not. stat) Call error_units(out_units%length, internal_units%length, 'Invalid output unit for time')
-
-    test = convert_units(1.0_wp, out_units%mass, internal_units%mass, stat)
-    If (.not. stat) Call error_units(out_units%length, internal_units%length, 'Invalid output unit for mass')
-
-    test = convert_units(1.0_wp, out_units%charge, internal_units%charge, stat)
-    If (.not. stat) Call error_units(out_units%length, internal_units%length, 'Invalid output unit for charge')
-
-    test = convert_units(1.0_wp, out_units%energy, internal_units%energy, stat)
-    If (.not. stat) Call error_units(out_units%length, internal_units%length, 'Invalid output unit for energy')
-
-    test = convert_units(1.0_wp, out_units%pressure, internal_units%pressure, stat)
-    If (.not. stat) Call error_units(out_units%length, internal_units%length, 'Invalid output unit for pressure')
-
-    test = convert_units(1.0_wp, out_units%force, internal_units%force, stat)
-    If (.not. stat) Call error_units(out_units%length, internal_units%length, 'Invalid output unit for force')
-
-    test = convert_units(1.0_wp, out_units%velocity, internal_units%velocity, stat)
-    If (.not. stat) Call error_units(out_units%length, internal_units%length, 'Invalid output unit for velocity')
-
-    test = convert_units(1.0_wp, out_units%power, internal_units%power, stat)
-    If (.not. stat) Call error_units(out_units%length, internal_units%length, 'Invalid output unit for power')
-
-    test = convert_units(1.0_wp, out_units%surf_ten, internal_units%surf_ten, stat)
-    If (.not. stat) Call error_units(out_units%length, internal_units%length, 'Invalid output unit for surface tension')
-
-    test = convert_units(1.0_wp, out_units%emf, internal_units%emf, stat)
-    If (.not. stat) Call error_units(out_units%length, internal_units%length, 'Invalid output unit for emf')
 
     ! Initialise timestep unit
     Call params%retrieve('timestep', test, required=.true.)
