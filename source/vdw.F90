@@ -32,7 +32,8 @@ Module vdw
                              info,&
                              warning
   Use kinds,           Only: wi,&
-                             wp
+                             wp,&
+                             STR_LEN
   Use filename,        Only: FILE_TABVDW, &
                              file_type
   Use neighbours,      Only: neighbours_type
@@ -42,6 +43,7 @@ Module vdw
                              word_2_real
   Use site,            Only: site_type
   Use statistics,      Only: stats_type
+  Use units,           Only: to_out_units
   Implicit None
 
   Private
@@ -958,11 +960,13 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)                       :: messages(3)
+    Character(Len=STR_LEN)                       :: messages(3)
     Integer                                  :: fail, i, ivdw, j, k, keypot
     Real(Kind=wp)                            :: a, b, c, d, denprd, e0, eadd, eps, kk, mr, nr, &
                                                 padd, plrc, r, r0, s9, sig, t, z1, z2
     Real(Kind=wp), Allocatable, Dimension(:) :: numfrz
+    Real( kind = wp ) :: v
+    Character(Len=STR_LEN) :: unit
 
     fail = 0
     Allocate (numfrz(sites%mxatyp), Stat=fail)
@@ -1184,12 +1188,12 @@ Contains
                 eadd = -2.0_wp * e0 * t / (kk * kk * kk) * ((kk * vdws%cutoff + 1)**2 + 1) + &
                      e0 * t * t / (4.0_wp * kk * kk * kk) * ((kk * vdws%cutoff + 1)**2 + kk * kk * vdws%cutoff * vdws%cutoff)
                 padd = -2.0_wp * e0 * t / (kk * kk * kk) * (kk**3 * vdws%cutoff**3 + &
-                     3 * kk**2 * vdws%cutoff**2 + 6 * kk * vdws%cutoff + 6) + &
-                     e0 * t * t / (4.0_wp * kk * kk * kk) * &
-                     (4.0_wp * kk**3 * vdws%cutoff**3 + 6 * kk**2 * vdws%cutoff**2 + 6 * kk * vdws%cutoff + 3)
+                  3 * kk**2 * vdws%cutoff**2 + 6 * kk * vdws%cutoff + 6) + &
+                  e0 * t * t / (4.0_wp * kk * kk * kk) * &
+                  (4.0_wp * kk**3 * vdws%cutoff**3 + 6 * kk**2 * vdws%cutoff**2 + 6 * kk * vdws%cutoff + 3)
               End If
 
-            Case (VDW_ZBL_SWITCH_BUCKINGHAM)
+             Case (VDW_ZBL_SWITCH_BUCKINGHAM)
 
               ! ZBL switched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
 
@@ -1201,9 +1205,9 @@ Contains
 
               eadd = (vdws%cutoff**2 + 2 * r0 * vdws%cutoff + 2 * r0**2) * t * r0 - c / (3.0_wp * vdws%cutoff**3)
               padd = (vdws%cutoff**3 + 3 * r0 * vdws%cutoff**2 + 6 * r0**2 * vdws%cutoff + 6 * r0**3) * t - &
-                   2.0_wp * c / (vdws%cutoff**3)
+                2.0_wp * c / (vdws%cutoff**3)
 
-            Case (VDW_LJ_MDF)
+             Case (VDW_LJ_MDF)
 
               ! LJ tapered with MDF:: u=f(r)LJ(r)
 
@@ -1213,7 +1217,7 @@ Contains
               eadd = intRadMDF("mlj", a, b, 0.0_wp, c, vdws%cutoff, 1e-12_wp)
               padd = intdRadMDF("mlj", a, b, 0.0_wp, c, vdws%cutoff, 1e-12_wp)
 
-            Case (VDW_BUCKINGHAM_MDF)
+             Case (VDW_BUCKINGHAM_MDF)
 
               ! Buckingham tapered with MDF:: u=f(r)Buck(r)
 
@@ -1224,7 +1228,7 @@ Contains
               eadd = intRadMDF("mbuc", a, b, c, r0, vdws%cutoff, 1e-12_wp)
               padd = intdRadMDF("mbuc", a, b, c, r0, vdws%cutoff, 1e-12_wp)
 
-            Case (VDW_126_MDF)
+             Case (VDW_126_MDF)
 
               ! LJ tapered with MDF:: u=f(r)LJ12-6(r)
 
@@ -1234,11 +1238,11 @@ Contains
               eadd = intRadMDF("m126", a, b, 0.0_wp, c, vdws%cutoff, 1e-12_wp)
               padd = intdRadMDF("m126", a, b, 0.0_wp, c, vdws%cutoff, 1e-12_wp)
 
-            Case (VDW_LJF)
+             Case (VDW_LJF)
               eadd = 0.0_wp
               padd = 0.0_wp
 
-            Case (VDW_SANDERSON)
+             Case (VDW_SANDERSON)
               eadd = 0.0_wp ! implement me
               padd = 0.0_wp
             End Select
@@ -1262,12 +1266,12 @@ Contains
       End If
     End If
 
-
-    Write (messages(1), '(a)') 'long-range correction for[add units]:'
-    Write (messages(2), '(2x,a,e15.6)') 'vdw energy: ', vdws%elrc / engunit
-    Write (messages(3), '(2x,a,e15.6)') 'vdw pressure: ', plrc * prsunt
+    Write (messages(1), '(a)') 'long-range correction for:'
+    Call to_out_units(vdws%elrc,'internal_e',v,unit)
+    Write (messages(2), '(2x,a,e15.6)') 'vdw energy('//Trim(unit)//'): ', v
+    Call to_out_units(plrc,'internal_p',v,unit)
+    Write (messages(3), '(2x,a,e15.6)') 'vdw pressure('//Trim(unit)//'): ', v
     Call info(messages, 3, .true.)
-
     ! convert plrc to a viral term
 
     vdws%vlrc = plrc * (-3.0_wp * config%volm)
@@ -1483,7 +1487,7 @@ Contains
     Type(comms_type), Intent(InOut) :: comm
 
     Character(Len=200)                       :: record
-    Character(Len=256)                       :: message, messages(4)
+    Character(Len=STR_LEN)                       :: message, messages(4)
     Character(Len=40)                        :: word
     Character(Len=8)                         :: atom1, atom2
     Integer                                  :: fail, i, ivdw, j, jtpatm, katom1, katom2, keyvdw, &

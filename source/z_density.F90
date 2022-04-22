@@ -23,7 +23,7 @@ Module z_density
                              error_alloc,&
                              error_dealloc
   Use kinds,           Only: wi,&
-                             wp
+    wp,STR_LEN
   Use site,            Only: site_type
 
   Implicit None
@@ -149,7 +149,7 @@ Contains
     Type(site_type),          Intent(In   ) :: sites
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256) :: messages(2)
+    Character(Len=STR_LEN) :: messages(2)
     Integer            :: j, k
     Real(Kind=wp)      :: delr, dvolz, factor, rho, rho1, rrr, sum, sum1, zlen
 

@@ -13,7 +13,7 @@ Module nvt_anderson
   Use domains,         Only: domains_type
   Use errors_warnings, Only: error,&
                              info
-  Use kinds,           Only: wp
+  Use kinds,           Only: wp,STR_LEN
   Use kinetics,        Only: getknr,&
                              getvom,&
                              kinstresf,&
@@ -91,7 +91,7 @@ Contains
     Type(seed_type),          Intent(InOut) :: seed
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail(1:11), i, i1, i2, j, k, matms, ntp, stp
     Integer, Allocatable       :: qn(:), qs(:, :), tpn(:), tps(:)
     Logical, Allocatable       :: lstitr(:)
@@ -460,7 +460,7 @@ Contains
     Type(seed_type),          Intent(InOut) :: seed
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail(1:17), i, i1, i2, irgd, j, jrgd, k, krgd, lrgd, matms, ntp, &
                                   rgdtyp, rtp, stp
     Integer, Allocatable       :: qn(:), qr(:), qs(:, :), tpn(:), tpr(:), tps(:)

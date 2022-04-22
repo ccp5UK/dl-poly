@@ -9,7 +9,7 @@ Module nst_berendsen
   Use domains,         Only: domains_type
   Use errors_warnings, Only: error,&
                              info
-  Use kinds,           Only: wp
+  Use kinds,           Only: wp,STR_LEN
   Use kinetics,        Only: getvom
   Use numerics,        Only: dcell,&
                              images,&
@@ -91,7 +91,7 @@ Contains
     Real(Kind=wp), Parameter :: beta = 7.3728e-3_wp, uni(1:9) = (/1.0_wp, 0.0_wp, 0.0_wp, 0.0_wp, &
                                 1.0_wp, 0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp/)
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail(1:9), i, iter
     Logical, Allocatable       :: lstitr(:)
     Real(Kind=wp)              :: celprp(1:10), czero(1:9), hstep, mxdr, rstep, tmp, vom(1:3)
@@ -437,7 +437,7 @@ Contains
     Real(Kind=wp), Parameter :: beta = 7.3728e-3_wp, uni(1:9) = (/1.0_wp, 0.0_wp, 0.0_wp, 0.0_wp, &
                                 1.0_wp, 0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp/)
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail(1:15), i, i1, i2, irgd, iter, j, jrgd, krgd, lrgd, matms, &
                                   rgdtyp
     Logical, Allocatable       :: lstitr(:)

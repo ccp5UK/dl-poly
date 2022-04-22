@@ -83,7 +83,7 @@ Module control
                                   IO_WRITE_UNSORTED_MASTER, IO_WRITE_UNSORTED_MPIIO, &
                                   io_get_parameters, io_set_parameters, io_type
   Use kim,                  Only: kim_type
-  Use kinds,                Only: wi,&
+  Use kinds,                Only: wi,STR_LEN,&
                                   wp
   Use metal,                Only: metal_type
   Use minimise,             Only: MIN_DISTANCE,&
@@ -229,7 +229,7 @@ Contains
     Type(comms_type),         Intent(InOut) :: comm
 
     Character(Len=200) :: record
-    Character(Len=256) :: message, messages(7)
+    Character(Len=STR_LEN) :: message, messages(7)
     Character(Len=40)  :: akey, word, word1, word2, word3
     Character(Len=80)  :: banner(9)
     Integer            :: grdana, grdang, grdbnd, grddih, grdinv, i, itmp, j, k, nstall, nstana
@@ -3845,7 +3845,7 @@ Contains
     Real(Kind=wp), Parameter :: rbin_def = 0.05_wp, rcbnd_def = 2.5_wp, rcut_def = 1.0_wp
 
     Character(Len=200) :: record
-    Character(Len=256) :: message
+    Character(Len=STR_LEN) :: message
     Character(Len=40)  :: akey, word
     Integer            :: bspline_local, i, itmp, nstrun
     Logical            :: carry, l_exp, la_ana, la_ang, la_bnd, la_dih, la_inv, lelec, lmet, &
@@ -5055,7 +5055,7 @@ Contains
     Integer, Parameter :: MAX_BATCH_SIZE = 10000000, MAX_BUFFER_SIZE = 100000
 
     Character(Len=200) :: record, record1
-    Character(Len=256) :: message
+    Character(Len=STR_LEN) :: message
     Character(Len=40)  :: word, word1
     Integer            :: io_read, io_write, itmp
     Logical            :: carry, l_io_r, l_io_w, l_tmp, safe

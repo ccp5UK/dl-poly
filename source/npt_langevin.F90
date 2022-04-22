@@ -11,7 +11,7 @@ Module npt_langevin
   Use domains,         Only: domains_type
   Use errors_warnings, Only: error,&
                              info
-  Use kinds,           Only: li,&
+  Use kinds,           Only: li,STR_LEN,&
                              wp
   Use kinetics,        Only: getkin,&
                              getknf,&
@@ -101,7 +101,7 @@ Contains
     Type(seed_type),          Intent(InOut) :: seed
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail(1:9), i, iter
     Logical, Allocatable       :: lstitr(:)
     Real(Kind=wp)              :: chip0, engke0, hstep, qstep, rstep, scale, str(1:9), tmp, vir, &
@@ -538,7 +538,7 @@ Contains
     Type(seed_type),          Intent(InOut) :: seed
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail(1:14), i, i1, i2, irgd, iter, j, jrgd, krgd, lrgd, matms, &
                                   rgdtyp
     Logical, Allocatable       :: lstitr(:)

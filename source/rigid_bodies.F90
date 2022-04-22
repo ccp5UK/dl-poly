@@ -26,7 +26,7 @@ Module rigid_bodies
   Use errors_warnings, Only: error,&
                              info,&
                              warning
-  Use kinds,           Only: li,&
+  Use kinds,           Only: li,STR_LEN,&
                              wi,&
                              wp
   Use neighbours,      Only: neighbours_type
@@ -357,7 +357,7 @@ Contains
     Real(Kind=wp),            Intent(  Out) :: rgdzzz(1:rigid%max_rigid), &
                                                rgdyyy(1:rigid%max_rigid), rgdxxx(1:rigid%max_rigid)
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail, irgd, jrgd, krgd, lrgd, rgdtyp
     Real(Kind=wp)              :: tmp
     Real(Kind=wp), Allocatable :: gxx(:), gyy(:), gzz(:)
@@ -452,7 +452,7 @@ Contains
     Type(rigid_bodies_type),                     Intent(In   ) :: rigid
     Real(Kind=wp), Dimension(1:rigid%max_rigid), Intent(  Out) :: rgdzzz, rgdyyy, rgdxxx
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail, irgd, jrgd, krgd, lrgd, rgdtyp
     Real(Kind=wp)              :: tmp
     Real(Kind=wp), Allocatable :: gxx(:), gyy(:), gzz(:)
@@ -636,7 +636,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail, i, i1, i2, irgd, jrgd, krgd, lrgd, rgdtyp
     Real(Kind=wp)              :: rot(1:9), tmp, weight, wxx, wyy, wzz, x(1:1), y(1:1), z(1:1)
     Real(Kind=wp), Allocatable :: gxx(:), gyy(:), gzz(:)
@@ -832,7 +832,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message, messages(2)
+    Character(Len=STR_LEN)         :: message, messages(2)
     Integer                    :: fail(1:2), frzrgd, i, i1, i2, i3, iatm1, ifrz, ill, irgd, &
                                   isite1, itmols, jrgd, krgd, lrgd, nrigid, nsite, ntmp, rgdtyp, &
                                   rotrgd, trargd
@@ -1665,7 +1665,7 @@ Contains
     Type(rigid_bodies_type),  Intent(InOut) :: rigid
     Type(configuration_type), Intent(InOut) :: config
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail, i, i1, i2, irgd, jrgd, krgd, lrgd, rgdtyp
     Real(Kind=wp)              :: fmx, fmy, fmz, qqq, tmp, torque, tqx, tqy, tqz, x(1:1), y(1:1), &
                                   z(1:1)
@@ -2077,7 +2077,7 @@ Contains
 
     Character(Len=*), Parameter :: sub = "rigid_bodies_str_ss"
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail, i, irgd, jrgd, krgd, lrgd, rgdtyp
     Real(Kind=wp), Allocatable :: gxx(:), gyy(:), gzz(:)
 
@@ -2196,7 +2196,7 @@ Contains
 
     Character(Len=*), Parameter :: sub = "rigid_bodies_str__s"
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail, i, irgd, jrgd, krgd, lrgd, rgdtyp
     Real(Kind=wp)              :: tmp_fx, tmp_fy, tmp_fz
     Real(Kind=wp), Allocatable :: gxx(:), gyy(:), gzz(:)
@@ -2315,7 +2315,7 @@ Contains
     Type(rigid_bodies_type),  Intent(InOut) :: rigid
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)   :: message
+    Character(Len=STR_LEN)   :: message
     Integer              :: fail, i, irgd, jrgd, lrgd, s
     Logical              :: safe
     Logical, Allocatable :: lunsafe(:)
@@ -2405,7 +2405,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail, irgd, jrgd, krgd, lrgd, mrgd, nrgd, rgdtyp
     Real(Kind=wp)              :: d, width
     Real(Kind=wp), Allocatable :: gxx(:), gyy(:), gzz(:)
@@ -2505,7 +2505,7 @@ Contains
     Type(domains_type),       Intent(In   ) :: domain
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail, i, irgd, j, jrgd, lrgd
     Real(Kind=wp)              :: a1, a2, a3, a5, a6, a9, b1, b2, b3, b5, b6, b9, com(1:3), scale, &
                                   x, xa, y, ya, z, za
@@ -3387,7 +3387,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail, i1, i2, i3, ill, irgd, itmp, jrgd, krgd, lrgd, rgdtyp
     Real(Kind=wp)              :: aa(1:9), aq, bq, cq, dq, eq, fq, gq, hq, rnorm, rot(1:9), rsq, &
                                   tol, x, y, z

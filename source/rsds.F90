@@ -22,7 +22,7 @@ Module rsds
                              IO_WRITE_UNSORTED_MASTER, IO_WRITE_UNSORTED_MPIIO, io_close, &
                              io_finalize, io_get_parameters, io_init, io_open, io_set_parameters, &
                              io_type, io_write_batch, io_write_record
-  Use kinds,           Only: li,&
+  Use kinds,           Only: li,STR_LEN,&
                              wi,&
                              wp
   Use parse,           Only: get_word,&
@@ -85,7 +85,7 @@ Contains
 
     Character                                      :: lf
     Character(Len=1), Allocatable, Dimension(:, :) :: chbat
-    Character(Len=256)                             :: message
+    Character(Len=STR_LEN)                             :: message
     Character(Len=40)                              :: word
     Character(Len=8), Allocatable, Dimension(:)    :: chbuf, nam
     Character(Len=recsz)                           :: record

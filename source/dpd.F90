@@ -27,7 +27,7 @@ Module dpd
   Use domains,         Only: domains_type
   Use errors_warnings, Only: error,&
                              warning
-  Use kinds,           Only: wp
+  Use kinds,           Only: wp,STR_LEN
   Use neighbours,      Only: neighbours_type
   Use numerics,        Only: box_mueller_saru2,&
                              seed_type
@@ -568,7 +568,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)                       :: message
+    Character(Len=STR_LEN)                       :: message
     Integer                                  :: fail, i, iadd, iblock, imove, itmp, ix, iy, iz, j, &
                                                 jdnode, jmove, jxyz, kdnode, kx, kxyz, ky, kz, &
                                                 limit
@@ -794,7 +794,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)   :: message
+    Character(Len=STR_LEN)   :: message
     Integer              :: fail, mlast
     Integer, Allocatable :: ixyz0(:)
     Logical              :: safe

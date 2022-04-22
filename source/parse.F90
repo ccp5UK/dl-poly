@@ -20,7 +20,7 @@ Module parse
   Use errors_warnings,               Only: error,&
                                            warning
   Use, Intrinsic :: iso_fortran_env, Only: IOSTAT_END
-  Use kinds,                         Only: wp
+  Use kinds,                         Only: wp,STR_LEN
 
   Implicit None
 
@@ -577,7 +577,7 @@ Contains
     Logical, Optional,       Intent(In   ) :: report
     Real(Kind=wp)                          :: word_2_real
 
-    Character(Len=256) :: message
+    Character(Len=STR_LEN) :: message
     Character(Len=40)  :: forma
     Integer            :: slash_position, word_end
     Logical            :: l_report

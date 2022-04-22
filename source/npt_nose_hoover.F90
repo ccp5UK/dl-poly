@@ -11,7 +11,7 @@ Module npt_nose_hoover
   Use domains,         Only: domains_type
   Use errors_warnings, Only: error,&
                              info
-  Use kinds,           Only: li,&
+  Use kinds,           Only: li,STR_LEN,&
                              wp
   Use kinetics,        Only: getvom,&
                              kinstresf,&
@@ -97,7 +97,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail(1:9), i, iter
     Logical, Allocatable       :: lstitr(:)
     Real(Kind=wp)              :: chip0, chit0, cint0, com(1:3), hstep, mxdr, qstep, rstep, scale, &
@@ -489,7 +489,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail(1:14), i, i1, i2, irgd, iter, j, jrgd, krgd, lrgd, matms, &
                                   rgdtyp
     Logical, Allocatable       :: lstitr(:)

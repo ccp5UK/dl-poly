@@ -57,7 +57,7 @@ Program dl_poly
                                                     flow_type
   Use four_body,                              Only: four_body_type
   Use greenkubo,                              Only: greenkubo_type
-  Use hash,                                   Only: STR_LEN
+  Use kinds,                                  Only: STR_LEN
   Use impacts,                                Only: impact_type
   Use inversions,                             Only: inversions_type
   Use io,                                     Only: io_type

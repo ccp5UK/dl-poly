@@ -33,4 +33,7 @@ Module kinds
 
   !> Working integer
   Integer, Parameter, Public :: wi = ni
+
+  !> Working string length
+  Integer, Parameter, Public :: STR_LEN = 256
 End Module kinds

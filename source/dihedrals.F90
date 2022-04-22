@@ -43,7 +43,7 @@ Module dihedrals
   Use filename,        Only: FILE_TABDIH,&
                              file_type
   Use kinds,           Only: wi,&
-                             wp
+    wp,STR_LEN
   Use mpole,           Only: mpole_type
   Use numerics,        Only: images,&
                              local_index
@@ -383,7 +383,7 @@ Contains
     Type(configuration_type),       Intent(InOut) :: config
     Type(comms_type),               Intent(InOut) :: comm
 
-    Character(Len=256)         :: message, messages(3)
+    Character(Len=STR_LEN)         :: message, messages(3)
     Integer                    :: fail, i, ig, j, kk, ll, ngrid
     Logical                    :: zero
     Real(Kind=wp)              :: coef, delth, dfed, dfed0, dfed1, dfed2, dgr2rad, dgrid, factor, &
@@ -732,7 +732,7 @@ Contains
     Type(configuration_type),      Intent(InOut) :: config
     Type(comms_type),              Intent(InOut) :: comm
 
-    Character(Len=256)         :: message, messages(7)
+    Character(Len=STR_LEN)         :: message, messages(7)
     Integer                    :: ai, aj, fail(1:5), i, ia, ia0, ib, ic, id, id0, j, keyd, kk, l, &
                                   nk
     Integer, Allocatable       :: lstopt(:, :)
@@ -1801,7 +1801,7 @@ Contains
     Type(comms_type),     Intent(InOut) :: comm
 
     Character(Len=200)         :: record
-    Character(Len=256)         :: message, messages(5)
+    Character(Len=STR_LEN)         :: message, messages(5)
     Character(Len=32)          :: iddihd
     Character(Len=40)          :: word
     Character(Len=8)           :: atom1, atom2, atom3, atom4

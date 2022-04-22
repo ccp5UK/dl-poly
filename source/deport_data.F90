@@ -36,7 +36,7 @@ Module deport_data
   Use greenkubo,        Only: greenkubo_type
   Use inversions,       Only: inversions_type
   Use kim,              Only: kim_type
-  Use kinds,            Only: wp
+  Use kinds,            Only: wp,STR_LEN
   Use minimise,         Only: minimise_type
   Use mpole,            Only: POLARISATION_CHARMM,&
                               mpole_type
@@ -119,7 +119,7 @@ Contains
     Type(coord_type),         Intent(InOut) :: crd
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)                       :: message
+    Character(Len=STR_LEN)                       :: message
     Integer                                  :: fail(1:3), i, iatm, iblock, ii, imove, ix, iy, iz, &
                                                 j, jangle, jatm, jbonds, jconst, jcrd, jdihed, &
                                                 jdnode, jinver, jj, jmove, jpmf, jrigid, jshels, &
@@ -1680,7 +1680,7 @@ Contains
     Type(kim_type),           Intent(InOut) :: kim_data
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)                       :: message
+    Character(Len=STR_LEN)                       :: message
     Integer                                  :: fail, i, iadd, iblock, imove, itmp, ix, iy, iz, j, &
                                                 jdnode, jmove, jxyz, kdnode, kx, kxyz, ky, kz, &
                                                 limit
@@ -2309,7 +2309,7 @@ Contains
     Type(kim_type),           Intent(InOut) :: kim_data
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)                       :: message
+    Character(Len=STR_LEN)                       :: message
     Integer                                  :: fail, i, iadd, iblock, imove, itmp, ix, iy, iz, j, &
                                                 jdnode, jmove, jxyz, kdnode, kx, ky, kz, limit
     Logical                                  :: lex, ley, lez, lsx, lsy, lsz, lwrap, safe
@@ -2563,7 +2563,7 @@ Contains
     Type(domains_type), Intent(In   ) :: domain
     Type(comms_type),   Intent(InOut) :: comm
 
-    Character(Len=256)                       :: message
+    Character(Len=STR_LEN)                       :: message
     Integer                                  :: fail, i, iadd, iblock, idl1, idl2, idl3, idl4, &
                                                 imove, itmp, ix, iy, iz, j, jdnode, jmove, jxyz, &
                                                 kdnode, kx, kxyz, ky, kz, limit
@@ -2796,7 +2796,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)   :: message
+    Character(Len=STR_LEN)   :: message
     Integer              :: fail, i, mlast
     Integer, Allocatable :: ixyz0(:)
     Logical              :: safe
@@ -2898,7 +2898,7 @@ Contains
     Type(coord_type),         Intent(InOut) :: crd
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256) :: message
+    Character(Len=STR_LEN) :: message
     Integer            :: i, ipx, ipy, ipz, itmp(1:9), jtmp(1:9), nlimit
     Logical            :: safe(1:9)
     Real(Kind=wp)      :: big(1:3), celprp(1:10), cut, det, rcell(1:9), tmp, x, y, z

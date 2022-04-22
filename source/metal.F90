@@ -37,7 +37,7 @@ Module metal
                              warning
   Use filename,        Only: FILE_TABEAM, &
                              file_type
-  Use kinds,           Only: wi,&
+  Use kinds,           Only: wi,STR_LEN,&
                              wp
   Use neighbours,      Only: neighbours_type
   Use parse,           Only: get_line,&
@@ -927,7 +927,7 @@ Contains
     Type(configuration_type),      Intent(InOut) :: config
     Type(comms_type),              Intent(InOut) :: comm
 
-    Character(Len=256)                       :: message
+    Character(Len=STR_LEN)                       :: message
     Integer                                  :: fail, i, j, k, k0, l, limit
     Logical                                  :: safe
     Real(Kind=wp)                            :: fk0, fk1, fk2, ppp, rdr, rhosqr, rrr, t1, t2
@@ -1279,7 +1279,7 @@ Contains
     Type(configuration_type), Intent(In   ) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256) :: message, messages(3)
+    Character(Len=STR_LEN) :: message, messages(3)
     Integer            :: i, j, k0, k1, k2, keypot, kmet, mmm, nnn
     Real(Kind=wp)      :: aaa, ccc, eee, elrc0, elrc1, elrc2, elrcsum, eps, mmmr, nnnr, ppp, qqq, &
                           rr0, sig, tmp, vlrc0, vlrc1, vlrc2, zet
@@ -1513,7 +1513,7 @@ Contains
     Type(comms_type), Intent(InOut) :: comm
 
     Character(Len=200)                       :: record
-    Character(Len=256)                       :: message
+    Character(Len=STR_LEN)                       :: message
     Character(Len=4)                         :: keyword
     Character(Len=40)                        :: word
     Character(Len=8)                         :: atom1, atom2
@@ -2922,7 +2922,7 @@ Contains
     Type(domains_type), Intent(In   ) :: domain
     Type(comms_type),   Intent(InOut) :: comm
 
-    Character(Len=256)                       :: message
+    Character(Len=STR_LEN)                       :: message
     Integer                                  :: fail, i, iadd, iblock, imove, itmp, ix, iy, iz, j, &
                                                 jdnode, jmove, jxyz, kdnode, kx, kxyz, ky, kz, &
                                                 limit
@@ -3169,7 +3169,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)   :: message
+    Character(Len=STR_LEN)   :: message
     Integer              :: fail, mlast
     Integer, Allocatable :: ixyz0(:)
     Logical              :: safe

@@ -1,4 +1,12 @@
 Module new_control
+  !!-----------------------------------------------------------------------
+  !!
+  !! Module to handle new style, logical consistent, control file in dlpoly
+  !!
+  !! copyright - daresbury laboratory
+  !! author - j.wilkins april 2020
+  !! contrib - a.m.elena april 2022
+  !!-----------------------------------------------------------------------
 
   Use angles,                   Only: angles_type
   Use angular_distribution,     Only: adf_type
@@ -54,8 +62,7 @@ Module new_control
                                       flow_type
   Use four_body,                Only: four_body_type
   Use greenkubo,                Only: greenkubo_type
-  Use hash,                     Only: MAX_KEY,&
-                                      STR_LEN
+  Use hash,                     Only: MAX_KEY
   Use impacts,                  Only: impact_type
   Use inversions,               Only: inversions_type
   Use io,                       Only: &
@@ -65,7 +72,8 @@ Module new_control
                                       IO_WRITE_UNSORTED_MASTER, IO_WRITE_UNSORTED_MPIIO, &
                                       io_get_parameters, io_set_parameters, io_type
   Use kim,                      Only: kim_type
-  Use kinds,                    Only: wp
+  Use kinds,                    Only: STR_LEN,&
+                                      wp
   Use metal,                    Only: metal_type
   Use minimise,                 Only: MIN_DISTANCE,&
                                       MIN_ENERGY,&
@@ -107,10 +115,14 @@ Module new_control
                                       TRAJ_KEY_COORD_VEL_FORCE,&
                                       trajectory_type
   Use ttm,                      Only: ttm_type
-  Use units,                    Only: convert_units,&
+  Use units,                    Only: atomic_units,&
+                                      convert_units,&
+                                      current_units => out_units,&
+                                      hartree_units,&
                                       internal_units,&
                                       set_out_units,&
                                       set_timestep,&
+                                      si_units,&
                                       units_scheme
   Use vdw,                      Only: MIX_FENDER_HALSEY,&
                                       MIX_FUNCTIONAL,&
@@ -168,7 +180,7 @@ Contains
 
     Call initialise_control(params)
     Open (newunit=control_file%unit_no, file=control_file%filename, status='old', action='read', iostat=ierr)
-    If (ierr .ne. 0) Call error(0, 'CONTROL file not found')
+    If (ierr /= 0) Call error(0, 'CONTROL file not found')
 
     can_parse = try_parse(control_file%unit_no, comm)
 
@@ -1235,63 +1247,35 @@ Contains
 
   Subroutine read_units(params)
     Type(parameters_hash_table), Intent(In   ) :: params
-    Real(kind=wp)          :: test
 
     Character(Len=STR_LEN) :: option
+    Real(kind=wp)          :: test
     Type(units_scheme)     :: out_units
 
-    Call params%retrieve("io_units_scheme", option)
+    out_units = current_units
 
-    Select Case (option)
-    Case ('internal')
-      out_units = internal_units
+    If (params%is_set("io_units_scheme")) Then
+      Call params%retrieve("io_units_scheme", option)
 
-    Case ('si')
+      Select Case (option)
+      Case ('internal')
 
-      out_units = units_scheme( &
-           length = 'm', &
-           time = 's', &
-           mass = 'kg', &
-           charge = 'C', &
-           energy = 'J', &
-           pressure = 'Pa', &
-           force = 'N', &
-           velocity = 'm/s', &
-           power = 'W', &
-           surf_ten = 'N/m', &
-           emf = 'V')
+        out_units = internal_units
 
-    Case ('atomic')
+      Case ('si')
 
-      out_units = units_scheme( &
-           length = 'ang', &
-           time = 'ps', &
-           mass = 'amu', &
-           charge = 'q_e', &
-           energy = 'e.V', &
-           pressure = 'GPa', &
-           force = 'e.V/ang', &
-           velocity = 'ang/ps', &
-           power = 'e.V/ps', &
-           surf_ten = 'e.V/ang^2', &
-           emf = 'e.V/q_e')
+        out_units = si_units
 
-    Case ('hartree')
+      Case ('atomic')
 
-      out_units = units_scheme( &
-           length = 'bohr', &
-           time = 'aut', &
-           mass = 'm_e', &
-           charge = 'q_e', &
-           energy = 'Ha', &
-           pressure = 'Ha/bohr^3', &
-           force = 'Ha/bohr', &
-           velocity = 'auv', &
-           power = 'Ha/aut', &
-           surf_ten = 'Ha/bohr^2', &
-           emf = 'Ha/q_e')
+        out_units = atomic_units
 
-    End Select
+      Case ('hartree')
+
+        out_units = hartree_units
+
+      End Select
+    End If
 
     If (params%is_set("io_units_length")) &
       Call params%retrieve("io_units_length", out_units%length)
@@ -1533,7 +1517,7 @@ Contains
       mpoles%max_order = 0
       mpoles%key = POLARISATION_DEFAULT
       electro%key = ELECTROSTATIC_NULL
-    Case ('ewald','spme')
+    Case ('ewald', 'spme')
       electro%key = ELECTROSTATIC_EWALD
       ewld%active = .true.
 
@@ -1582,7 +1566,6 @@ Contains
       If (neigh%cutoff < 12.0_wp) Call warning(7, neigh%cutoff, 12.0_wp, 0.0_wp)
     End If
     If (ewld%active) Then
-
 
       Call params%retrieve('ewald_nsplines', ewld%bspline%num_splines)
       ! Check splines in min
@@ -2004,7 +1987,7 @@ Contains
     Write (banner(2), '(a)') '#'//Repeat('*', 79)
     Write (banner(3), '(a4,a72,a4)') '#** ', 'title:'//Repeat(' ', 66), ' ***'
     Write (banner(4), '(a4,a72,a4)') '#** ', config%sysname, ' ***'
-    Write (banner(5), '(a)')'#'//Repeat('*', 79)
+    Write (banner(5), '(a)') '#'//Repeat('*', 79)
     Write (banner(6), '(a)') ''
     Call info(banner, 6, .true.)
 
@@ -2119,14 +2102,14 @@ Contains
   End Subroutine write_io
 
   Subroutine write_bond_analysis(stats, flow, bond, angle, dihedral, inversion)
-    Type(stats_type),         Intent(In   ) :: stats
-    Type(flow_type),          Intent(In   ) :: flow
-    Type(bonds_type),         Intent(In   ) :: bond
-    Type(angles_type),        Intent(In   ) :: angle
-    Type(dihedrals_type),     Intent(In   ) :: dihedral
-    Type(inversions_type),    Intent(In   ) :: inversion
+    Type(stats_type),      Intent(In   ) :: stats
+    Type(flow_type),       Intent(In   ) :: flow
+    Type(bonds_type),      Intent(In   ) :: bond
+    Type(angles_type),     Intent(In   ) :: angle
+    Type(dihedrals_type),  Intent(In   ) :: dihedral
+    Type(inversions_type), Intent(In   ) :: inversion
 
-    Character(Len=256) :: messages(4)
+    Character(Len=STR_LEN) :: messages(4)
 
     Call info('', .true.)
     If (.not. Any([flow%analyse_bond, flow%analyse_ang, flow%analyse_dih, flow%analyse_inv])) Then
@@ -2185,7 +2168,7 @@ Contains
     Type(defects_type),    Intent(In   ) :: defect(:)
     Type(rsd_type),        Intent(In   ) :: displacement
 
-    Character(Len=256) :: messages(4)
+    Character(Len=STR_LEN) :: messages(4)
 
     Call info('', .true.)
 
@@ -2316,7 +2299,6 @@ Contains
       Call info('No angular analysis requested', .true., level=3)
     End If
 
-
   End Subroutine write_structure_analysis
 
   Subroutine write_system_parameters(flow, config, stats, thermo, impa, minim, plume, cons, pmf)
@@ -2330,7 +2312,7 @@ Contains
     Type(constraints_type),   Intent(In   ) :: cons
     Type(pmf_type),           Intent(In   ) :: pmf
 
-    Character(Len=256) :: message, messages(5)
+    Character(Len=STR_LEN) :: message, messages(5)
     Integer            :: itmp
 
     Call info('', .true.)
@@ -2518,7 +2500,6 @@ Contains
       Call info(messages, 5, .true.)
     End If
 
-
   End Subroutine write_system_parameters
 
   Subroutine write_forcefield(link_cell, neigh, vdws, electro, ewld, mpoles, cshell, met)
@@ -2531,7 +2512,7 @@ Contains
     Type(core_shell_type),    Intent(In   ) :: cshell
     Type(metal_type),         Intent(In   ) :: met
 
-    Character(Len=256) :: message, messages(4)
+    Character(Len=STR_LEN) :: message, messages(4)
 
     Call info('', .true.)
     Call info('Forcefield Parameters: ', .true.)
@@ -2868,7 +2849,7 @@ Contains
     Type(thermostat_type), Intent(In   ) :: thermo
     Type(ttm_type),        Intent(In   ) :: ttm
 
-    Character(Len=256) :: message, messages(3)
+    Character(Len=STR_LEN) :: message, messages(3)
 
     Call info('', .true.)
     Call info('TTM Parameters: ', .true.)
@@ -5080,9 +5061,9 @@ Contains
     !! copyright - daresbury laboratory
     !! author - j.wilkins may 2020
     !!-----------------------------------------------------------------------
-    Integer,                     Intent(In   ) :: ifile
-    Type(comms_type),            Intent(InOut) :: comm
-    Logical                                    :: can_parse
+    Integer,          Intent(In   ) :: ifile
+    Type(comms_type), Intent(InOut) :: comm
+    Logical                         :: can_parse
 
     Character(Len=STR_LEN) :: input, key, units, val
     Logical                :: line_read

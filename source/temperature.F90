@@ -24,7 +24,7 @@ Module temperature
                              warning
   Use flow_control,    Only: RESTART_KEY_CLEAN,&
                              RESTART_KEY_SCALE
-  Use kinds,           Only: li,&
+  Use kinds,           Only: li,STR_LEN,&
                              wp
   Use kinetics,        Only: getkin,&
                              getknf,&
@@ -90,7 +90,7 @@ Contains
     Type(seed_type),             Intent(InOut) :: seed
     Type(comms_type),            Intent(InOut) :: comm
 
-    Character(Len=256)   :: message, messages(10)
+    Character(Len=STR_LEN)   :: message, messages(10)
     Integer              :: fail(1:2), i, i1, i2, irgd, j, jrgd, k, lrgd, ntp, rgdtyp, stp
     Integer(Kind=li)     :: com, con, frz, meg, non
     Integer, Allocatable :: qn(:), qs(:, :), tpn(:), tps(:)
@@ -659,7 +659,7 @@ Contains
     Type(seed_type),          Intent(InOut) :: seed
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)   :: message
+    Character(Len=STR_LEN)   :: message
     Integer              :: fail, i, irgd, is, j, jrgd, k, l, lrgd, rgdtyp
     Integer, Allocatable :: ind(:), pair(:, :)
     Real(Kind=wp)        :: tmp, vom(1:3)
@@ -829,7 +829,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)                       :: message
+    Character(Len=STR_LEN)                       :: message
     Integer                                  :: fail, i, irgd, j, jrgd, lrgd, rgdtyp
     Real(Kind=wp)                            :: amx, amy, amz, com(1:3), engke, engkf, engkt, &
                                                 engrot, rot(1:9), rotinv(1:9), tmp, tmp1, &

@@ -22,7 +22,7 @@ Module plumed
   Use errors_warnings, Only: error,&
                              info,&
                              warning
-  Use kinds,           Only: wi,&
+  Use kinds,           Only: wi,STR_LEN,&
                              wp
   Use statistics,      Only: stats_type
 
@@ -109,7 +109,7 @@ Contains
   Subroutine plumed_print_about(plume)
     Type(plumed_type), Intent(In) :: plume
 #ifdef PLUMED
-    Character(Len=256) :: messages(9), banner(15)
+    Character(Len=STR_LEN) :: messages(9), banner(15)
 
     Write (banner(1), '(a)') ""
     Write (banner(2), '(a)') "***_____________________________________ "
@@ -154,7 +154,7 @@ Contains
     Type(comms_type),         Intent(InOut) :: comm
 
 #ifdef PLUMED
-    Character(Len=256) :: message
+    Character(Len=STR_LEN) :: message
     Real(Kind=wp), Dimension(:), Allocatable :: tx, ty, tz, tfx, tfy, tfz, tchge
     Integer :: fail(1:2), i
     Allocate (tx(1:config%mxatms), ty(1:config%mxatms), tz(1:config%mxatms), tchge(1:config%mxatms), stat=fail(1))

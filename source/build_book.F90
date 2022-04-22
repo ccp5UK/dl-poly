@@ -15,7 +15,7 @@ Module build_book
   Use ffield,          Only: report_topology
   Use flow_control,    Only: flow_type
   Use inversions,      Only: inversions_type
-  Use kinds,           Only: wp
+  Use kinds,           Only: wp,STR_LEN
   Use neighbours,      Only: neighbours_type
   Use numerics,        Only: local_index
   Use pmf,             Only: pmf_type
@@ -76,7 +76,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)                 :: message, messages(7)
+    Character(Len=STR_LEN)                 :: message, messages(7)
     Integer                            :: fail(1:2), i, iangle, iat0, iatm, ibonds, iconst, &
                                           idihed, iinver, imols, ipmf, irigid, ishels, isite, &
                                           iteths, itmols, itmp(1:9), j, jangle, jat0, jatm, &

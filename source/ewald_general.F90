@@ -32,7 +32,7 @@ Module ewald_general
                              error_alloc,&
                              error_dealloc
   Use ewald,           Only: ewald_type
-  Use kinds,           Only: wp
+  Use kinds,           Only: wp,STR_LEN
   Use kspace,          Only: kspace_type,&
                              setup_kspace
   Use neighbours,      Only: neighbours_type
@@ -737,7 +737,7 @@ Contains
     Real(Kind=wp), Dimension(0:),                      Intent(  Out) :: energies
     Real(Kind=wp), Dimension(:, :),                    Intent(  Out) :: forces
 
-    Character(Len=256)                                   :: message
+    Character(Len=STR_LEN)                                   :: message
     Integer                                              :: fail, i, j, jj, k, kk, l, ll
     Integer, Dimension(3, 2)                             :: extended_domain
     Real(Kind=wp)                                        :: atom_coeffs, energy_total

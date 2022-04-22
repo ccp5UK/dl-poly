@@ -53,7 +53,8 @@ Module configuration
                              io_write_record, io_write_sorted_file, recsz, split_io_comm
   Use kinds,           Only: li,&
                              wi,&
-                             wp
+                             wp,&
+                             STR_LEN
   Use kpoints,         Only: kpoints_type
   Use numerics,        Only: dcell,&
                              images,&
@@ -70,6 +71,9 @@ Module configuration
   Use site,            Only: site_type
   Use thermostat,      Only: CONSTRAINT_NONE,&
                              thermostat_type
+  Use units,           Only: convert_units,&
+                             to_out_units
+
 
   Implicit None
 
@@ -503,7 +507,7 @@ Contains
                               indatm, totatm, mol_sit, loc_ind
     Real(Kind=wp)      :: rcell(1:9), det
 
-    Character(Len=256) :: message
+    Character(Len=STR_LEN) :: message
 
     Integer, Allocatable :: iwrk(:)
 
@@ -896,7 +900,7 @@ Contains
                                                    bxx, byy, bzz, &
                                                    cxx, cyy, czz
 
-    Character(Len=256)                          :: messages(3)
+    Character(Len=STR_LEN)                          :: messages(3)
     Integer                                     :: ierr
 
     Integer(Kind=wi)                            :: conftag
@@ -1485,7 +1489,7 @@ Contains
 
     Character(Len=1), Allocatable, Dimension(:, :) :: rec_buff
     Character(Len=200)                             :: record
-    Character(Len=256)                             :: messages(3)
+    Character(Len=STR_LEN)                             :: messages(3)
     Character(Len=40)                              :: forma, word
     Character(Len=8), Allocatable, Dimension(:)    :: chbuf, chbuf_read, chbuf_scat
     Integer                                        :: ats_per_proc, batsz, fail(1:8), i, idm, &
@@ -2070,7 +2074,7 @@ Contains
     Integer,                  Intent(In   ) :: ff
 
     Character(Len=200)        :: record
-    Character(Len=256)        :: message
+    Character(Len=STR_LEN)        :: message
     Character(Len=40)         :: fname, word
     Integer                   :: fh, i, ierr, io_read, recsz, totatm
     Integer(Kind=offset_kind) :: top_skip
@@ -2462,7 +2466,7 @@ Contains
     Character                                      :: lf
     Character(Len=1), Allocatable, Dimension(:, :) :: chbat
     Character(Len=1024)                            :: fname
-    Character(Len=256)                             :: message
+    Character(Len=STR_LEN)                             :: message
     Character(Len=8), Allocatable, Dimension(:)    :: chbuf
     Character(Len=recsz)                           :: record
     Integer                                        :: batsz, fail(1:4), fh, i, ierr, io_write, &
@@ -3147,7 +3151,7 @@ Contains
     Real(Kind=wp),            Intent(  Out) :: cmm(0:3)
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail, i, j, k
     Real(Kind=wp)              :: mass, r(1:3)
     Real(Kind=wp), Allocatable :: mol(:, :)
@@ -3605,16 +3609,20 @@ Contains
   Subroutine print_system_info(config)
     Type(configuration_type),     Intent(In) :: config
 
-    Character(Len=256) :: message
+    Character(Len=STR_LEN) :: message,unit
+    Real(Kind=wp) :: v
 
     Call info('', .true.)
     Call info('System properties: ', .true.)
-    Write(message,'(a,g0.8,a)')"  - mass: ", config%tot_mass_w_frz," Da"
+    Call to_out_units(config%tot_mass_w_frz,'internal_m',v,unit)
+    Write(message,'(a,g0.8)')"  - mass("//Trim(unit)//"): ", v
     If (config%imcon /= IMCON_NOPBC .or. config%imcon /= IMCON_SLAB) Then
       Call info(message, .true.)
-      Write(message,'(a,g0.8,a)')"  - volume: ", config%volm," Ang^3"
+      Call to_out_units(config%volm,'internal_l^3',v,unit)
+      Write(message,'(a,g0.8)')"  - volume("//Trim(unit)//"): ", v
       Call info(message, .true.)
-      Write(message,'(a,g0.8,a)')"  - density: ", config%density, " Da/Ang^3"
+      Write(message,'(a,g0.8)')"  - density(g/cm^3): ", convert_units(config%density,"internal_m/internal_l^3","g/cm^3")
+
       Call info(message, .true.)
     End If
   End Subroutine print_system_info

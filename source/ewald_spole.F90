@@ -35,7 +35,7 @@ Module ewald_spole
                              spme_construct_charge_array,&
                              spme_construct_potential_grid_gen,&
                              stress_kernel
-  Use kinds,           Only: wp
+  Use kinds,           Only: wp,STR_LEN
   Use neighbours,      Only: neighbours_type
   Use numerics,        Only: dcell,&
                              invert
@@ -875,7 +875,7 @@ Contains
     Real(Kind=wp), Parameter :: a1 = 0.254829592_wp, a2 = -0.284496736_wp, a3 = 1.421413741_wp, &
                                 a4 = -1.453152027_wp, a5 = 1.061405429_wp, pp = 0.3275911_wp
 
-    Character(Len=256)                       :: message
+    Character(Len=STR_LEN)                       :: message
     Integer                                  :: fail, global_id_i, i, ii, j, jj, k, limit, nzfr
     Integer, Allocatable, Dimension(:)       :: l_ind, nz_fr
     Real(Kind=wp)                            :: atom_coeffs_ij, det, erf_gamma, erfr, exp1, &

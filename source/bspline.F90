@@ -16,7 +16,7 @@ Module bspline
                              error_alloc,&
                              error_dealloc
   Use kinds,           Only: wi,&
-                             wp
+    wp,STR_LEN
   Use kspace,          Only: kspace_type
 
   Implicit None
@@ -85,7 +85,7 @@ Contains
     Type(kspace_type),  Intent(In   ) :: kspace
     Type(bspline_type), Intent(InOut) :: bspline
 
-    Character(Len=256)                          :: message
+    Character(Len=STR_LEN)                          :: message
     Complex(Kind=wp)                            :: temp_spline
     Complex(Kind=wp), Allocatable, Dimension(:) :: ww1, ww2, ww3
     Integer                                     :: fail, i, j, k, n

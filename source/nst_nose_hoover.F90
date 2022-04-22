@@ -12,7 +12,7 @@ Module nst_nose_hoover
   Use domains,         Only: domains_type
   Use errors_warnings, Only: error,&
                              info
-  Use kinds,           Only: li,&
+  Use kinds,           Only: li,STR_LEN,&
                              wp
   Use kinetics,        Only: getvom,&
                              kinstresf,&
@@ -108,7 +108,7 @@ Contains
     Real(Kind=wp), Parameter :: uni(1:9) = (/1.0_wp, 0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp, 0.0_wp, 0.0_wp&
                                 , 0.0_wp, 1.0_wp/)
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail(1:9), i, iter
     Logical, Allocatable       :: lstitr(:)
     Real(Kind=wp)              :: aaa(1:9), bbb(1:9), cell0(1:9), celprp(1:10), chit0, chpzr, &
@@ -556,7 +556,7 @@ Contains
     Real(Kind=wp), Parameter :: uni(1:9) = (/1.0_wp, 0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp, 0.0_wp, 0.0_wp&
                                 , 0.0_wp, 1.0_wp/)
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail(1:14), i, i1, i2, irgd, iter, j, jrgd, krgd, lrgd, matms, &
                                   rgdtyp
     Logical, Allocatable       :: lstitr(:)

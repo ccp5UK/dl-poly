@@ -96,7 +96,8 @@ Module numerics
                                            ieee_value
   Use kinds,                         Only: li,&
                                            wi,&
-                                           wp
+                                           wp,&
+                                           STR_LEN
   Use particle,                      Only: corePart
 
   Implicit None
@@ -1065,7 +1066,7 @@ Contains
     Integer, Intent(In   ) :: n, ind_top, list(1:*)
     Logical                :: match
 
-    Character(Len=256) :: message
+    Character(Len=STR_LEN) :: message
     Integer            :: ind_now, ind_old
 
     If (n < 1) Then

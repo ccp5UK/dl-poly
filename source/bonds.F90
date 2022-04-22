@@ -41,7 +41,7 @@ Module bonds
   Use filename,        Only: FILE_TABBND,&
                              file_type
   Use kinds,           Only: wi,&
-                             wp
+    wp,STR_LEN
   Use mpole,           Only: mpole_type
   Use numerics,        Only: images,&
                              local_index
@@ -239,7 +239,7 @@ Contains
     Type(configuration_type),       Intent(InOut) :: config
     Type(comms_type),               Intent(InOut) :: comm
 
-    Character(Len=256)         :: message, messages(2)
+    Character(Len=STR_LEN)         :: message, messages(2)
     Integer                    :: fail, i, ig, j, kk, ll, ngrid
     Logical                    :: zero
     Real(Kind=wp)              :: coef, delr, dfed, dfed0, dfed1, dfed2, dgrid, dvol, factor, &
@@ -571,7 +571,7 @@ Contains
     Type(configuration_type),      Intent(InOut) :: config
     Type(comms_type),              Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail(1:2), i, ia, ib, j, keyb, kk, l, nk
     Integer, Allocatable       :: lstopt(:, :)
     Logical                    :: safe(1:3)
@@ -1047,7 +1047,7 @@ Contains
 
     Character(Len=16)          :: idbond
     Character(Len=200)         :: record
-    Character(Len=256)         :: message, messages(4)
+    Character(Len=STR_LEN)         :: message, messages(4)
     Character(Len=40)          :: word
     Character(Len=8)           :: atom1, atom2
     Integer                    :: fail(1:2), i, itbnd, jtbnd, jtpatm, katom1, katom2, l, ngrid, &

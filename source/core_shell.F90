@@ -31,7 +31,8 @@ Module core_shell
                              warning
   Use filename,        Only: FILE_OUTPUT,&
                              file_type
-  Use kinds,           Only: wp
+  Use kinds,           Only: STR_LEN,&
+                             wp
   Use numerics,        Only: images,&
                              local_index
   Use parse,           Only: lower_case,&
@@ -167,7 +168,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)     :: message
     Integer                    :: fail(1:2), i, ia, ib, j, kk, nk
     Integer, Allocatable       :: lstopt(:, :)
     Logical                    :: safe
@@ -457,11 +458,11 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Logical              :: safe
-    Character(Len=256)   :: message
-    Integer              :: fail, i, ia, ib, j
-    Real(Kind=wp)        :: x(1:1),y(1:1),z(1:1)
-    Logical, Allocatable :: lunsafe(:)
+    Character(Len=STR_LEN) :: message
+    Integer                :: fail, i, ia, ib, j
+    Logical                :: safe
+    Logical, Allocatable   :: lunsafe(:)
+    Real(Kind=wp)          :: x(1:1), y(1:1), z(1:1)
 
     fail = 0
     Allocate (lunsafe(1:cshell%mxshl), Stat=fail)
@@ -659,7 +660,7 @@ Contains
     Integer, Parameter :: mxpass = 100
 
     Character(Len=10)          :: c_out
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)     :: message
     Integer                    :: fail(1:2), i, ia, ib, jshl
     Integer, Allocatable       :: lst_sh(:), lstopt(:, :)
     Logical                    :: l_out

@@ -5,11 +5,12 @@ Module units
   !!
   !! copyright - daresbury laboratory
   !! author - j.wilkins april 2020
+  !! contrib - a.m.elena april 2022 - add more units schemes
   !!-----------------------------------------------------------------------
 
-  Use kinds,           Only: wp
+  Use kinds,           Only: wp,STR_LEN
   Use constants,       Only: pi, boltz
-  Use hash,            Only: hash_table, MAX_KEY, STR_LEN
+  Use hash,            Only: hash_table, MAX_KEY
   Use hash,            Only: get_double, get_int, get_complex
   Use errors_warnings, Only: error, error_units, error_alloc, error_dealloc
   Use parse,           Only: lower_case
@@ -56,14 +57,14 @@ Module units
   Type, Public :: units_scheme
     !! Basic encapsulation of output units scheme
     Character(Len=STR_LEN), Public :: length, time, mass, charge, energy, &
-         temp='K', current='A', luminosity='', angle='rad', &
-         pressure, force, velocity, power, surf_ten, emf
+      temp='K', current='A', luminosity='', angle='rad', &
+      pressure, force, velocity, power, surf_ten, emf
     Type(unit_data), Public :: length_unit=null_unit, time_unit=null_unit, &
-         mass_unit=null_unit, charge_unit=null_unit, energy_unit=null_unit, &
-         luminosity_unit=null_unit, angle_unit=null_unit, pressure_unit=null_unit, &
-         force_unit=null_unit, velocity_unit =null_unit, power_unit=null_unit, &
-         temp_unit=null_unit, current_unit=null_unit, surf_ten_unit=null_unit,&
-         emf_unit=null_unit
+      mass_unit=null_unit, charge_unit=null_unit, energy_unit=null_unit, &
+      luminosity_unit=null_unit, angle_unit=null_unit, pressure_unit=null_unit, &
+      force_unit=null_unit, velocity_unit =null_unit, power_unit=null_unit, &
+      temp_unit=null_unit, current_unit=null_unit, surf_ten_unit=null_unit,&
+      emf_unit=null_unit
   Contains
     Procedure :: test => test_scheme
     Procedure :: recalc => recalculate_scheme_units
@@ -71,21 +72,100 @@ Module units
   End Type units_scheme
 
   Type(units_scheme), Public, Protected, Save :: internal_units = units_scheme( &
-       length = 'internal_l', &
-       time = 'internal_t', &
-       mass = 'internal_m', &
-       charge = 'internal_q', &
-       energy = 'internal_e', &
-       temp = 'K', &
-       current = 'A', &
-       luminosity = '', &
-       angle = 'rad', &
-       pressure = 'internal_p', &
-       force = 'internal_f', &
-       velocity = 'internal_v', &
-       power = 'internal_e/internal_t', &
-       surf_ten = 'internal_f/internal_l', &
-       emf = 'internal_e/internal_q')
+    length = 'internal_l', &
+    time = 'internal_t', &
+    mass = 'internal_m', &
+    charge = 'internal_q', &
+    energy = 'internal_e', &
+    temp = 'K', &
+    current = 'A', &
+    luminosity = '', &
+    angle = 'rad', &
+    pressure = 'internal_p', &
+    force = 'internal_f', &
+    velocity = 'internal_v', &
+    power = 'internal_e/internal_t', &
+    surf_ten = 'internal_f/internal_l', &
+    emf = 'internal_e/internal_q')
+
+  Type(units_scheme), Public, Protected, Save :: si_units = units_scheme( &
+    length = 'm', &
+    time = 's', &
+    mass = 'kg', &
+    charge = 'C', &
+    energy = 'J', &
+    pressure = 'Pa', &
+    force = 'N', &
+    velocity = 'm/s', &
+    power = 'W', &
+    surf_ten = 'N/m', &
+    emf = 'V')
+
+  Type(units_scheme), Public, Protected, Save :: atomic_units = units_scheme( &
+    length = 'ang', &
+    time = 'ps', &
+    mass = 'amu', &
+    charge = 'q_e', &
+    energy = 'e.V', &
+    pressure = 'GPa', &
+    force = 'e.V/ang', &
+    velocity = 'ang/ps', &
+    power = 'e.V/ps', &
+    surf_ten = 'e.V/ang^2', &
+    emf = 'e.V/q_e')
+
+  Type(units_scheme), Public, Protected, Save :: hartree_units = units_scheme( &
+    length = 'bohr', &
+    time = 'aut', &
+    mass = 'm_e', &
+    charge = 'q_e', &
+    energy = 'Ha', &
+    pressure = 'Ha/bohr^3', &
+    force = 'Ha/bohr', &
+    velocity = 'auv', &
+    power = 'Ha/aut', &
+    surf_ten = 'Ha/bohr^2', &
+    emf = 'Ha/q_e')
+
+  Type(units_scheme), Public, Protected, Save :: kj_units = units_scheme( &
+    length = 'ang', &
+    time = 'ps', &
+    mass = 'amu', &
+    charge = 'q_e', &
+    energy = 'kJ', &
+    pressure = 'GPa', &
+    force = 'kJ/ang', &
+    velocity = 'ang/ps', &
+    power = 'kJ/ps', &
+    surf_ten = 'kJ/ang^2', &
+    emf = 'kJ/q_e')
+
+  Type(units_scheme), Public, Protected, Save :: kcal_units = units_scheme( &
+    length = 'ang', &
+    time = 'ps', &
+    mass = 'amu', &
+    charge = 'q_e', &
+    energy = 'kCal', &
+    pressure = 'GPa', &
+    force = 'kCal/ang', &
+    velocity = 'ang/ps', &
+    power = 'kCal/ps', &
+    surf_ten = 'Cal/ang^2', &
+    emf = 'kCal/q_e')
+
+  Type(units_scheme), Public, Protected, Save :: kb_units = units_scheme( &
+    length = 'ang', &
+    time = 'ps', &
+    mass = 'amu', &
+    charge = 'q_e', &
+    energy = 'e.V', &
+    pressure = 'GPa', &
+    force = 'e.V/ang', &
+    velocity = 'ang/ps', &
+    power = 'e.V/ps', &
+    surf_ten = 'e.V/ang^2', &
+    emf = 'e.V/q_e')
+
   Type(units_scheme), Public, Protected, Save :: out_units
 
   Type(units_hash_table), Private, save :: units_table
@@ -766,7 +846,7 @@ contains
     Character(len=*), Intent(inout) :: string
     Integer :: i
     Type(unit_data), intent(out) :: factor
-    Character(Len=256) :: tmp
+    Character(Len=STR_LEN) :: tmp
     Character(len=*), Parameter :: prefix_symbol = "YZEPTGMk dcmunpfazy"
     Character(Len=*), Parameter :: number = "1234567890-+"
     Type(unit_data), Dimension(19), Parameter :: prefix = [ &
@@ -815,8 +895,8 @@ contains
     Type( unit_data ) :: output
     Type( unit_data ) :: tmp_unit
     Character(Len=*), Intent ( in ) :: string
-    Character(Len=256) :: curr_parse
-    Character(Len=256), Dimension(:), Allocatable :: parsed
+    Character(Len=STR_LEN) :: curr_parse
+    Character(Len=STR_LEN), Dimension(:), Allocatable :: parsed
     Character(Len=*), Parameter :: number = "1234567890-+"
     Type(unit_data) :: factor
     Integer :: i
@@ -886,7 +966,7 @@ contains
     !! copyright - daresbury laboratory
     !! author - j.wilkins april 2020
     !!-----------------------------------------------------------------------
-    Character(Len=256), Dimension(:), Allocatable :: output
+    Character(Len=STR_LEN), Dimension(:), Allocatable :: output
     Character(Len=*), Intent( In ) :: string
     Character(Len=*), Parameter :: alphabet = "-+1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_%'"//'"'
     Character(Len=*), Parameter :: punc = "./^"

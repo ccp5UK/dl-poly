@@ -25,7 +25,7 @@ Module three_body
   Use domains,         Only: domains_type
   Use errors_warnings, Only: error,&
                              warning
-  Use kinds,           Only: wi,&
+  Use kinds,           Only: wi,STR_LEN,&
                              wp
   Use neighbours,      Only: neighbours_type
   Use numerics,        Only: dcell,&
@@ -148,7 +148,7 @@ Contains
                                                -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0&
                                                , 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1/)
 
-    Character(Len=256)                       :: message
+    Character(Len=STR_LEN)                       :: message
     Integer                                  :: fail(1:2), i, ia, ib, ic, icell, ii, itbp, ix, iy, &
                                                 iz, j, jcell, jj, jk, jktbp, jtbp, jx, jy, jz, k, &
                                                 kk, kktbp, ktbp, ktyp, last, limit, nbx, nby, nbz, &

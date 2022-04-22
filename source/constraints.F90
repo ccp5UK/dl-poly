@@ -26,7 +26,7 @@ Module constraints
                              info,&
                              warning
   Use kinds,           Only: wi,&
-                             wp
+    wp,STR_LEN
   Use numerics,        Only: images,&
                              local_index
   Use pmf,             Only: pmf_rattle,&
@@ -267,7 +267,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail(1:2), i, icyc, j, k
     Logical                    :: safe
     Logical, Allocatable       :: lstitr(:)
@@ -459,7 +459,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)   :: message
+    Character(Len=STR_LEN)   :: message
     Integer              :: fail, i, j, k, l
     Logical              :: safe
     Logical, Allocatable :: lunsafe(:)
@@ -615,7 +615,7 @@ Contains
     Logical                :: safe
     Integer                :: fail, i, j, k, icyc
     Real(Kind=wp)      :: dis, amti, amtj, dli, dlj, esig, gamma, gammi, gammj
-    Character(Len=256) :: message
+    Character(Len=STR_LEN) :: message
 
     Real(Kind=wp), Dimension(:), Allocatable :: vxt, vyt, vzt
 
@@ -809,7 +809,7 @@ Contains
     Real(Kind=wp), Dimension(:), Allocatable :: xxt, yyt, zzt
     Real(Kind=wp), Dimension(:), Allocatable :: dxt, dyt, dzt, dt2, esig
 
-    Character(Len=256) :: message
+    Character(Len=STR_LEN) :: message
 
     fail = 0
     Allocate (xxt(1:config%mxatms), yyt(1:config%mxatms), zzt(1:config%mxatms), Stat=fail(1))

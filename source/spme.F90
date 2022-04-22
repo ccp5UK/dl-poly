@@ -16,7 +16,7 @@ Module spme
                              rsqrpi,&
                              sqrpi
   Use errors_warnings, Only: error
-  Use kinds,           Only: wp
+  Use kinds,           Only: wp,STR_LEN
   Use mpole,           Only: mpole_type
   Use numerics,        Only: calc_erfc_n,&
                              calc_exp_int,&
@@ -115,7 +115,7 @@ Contains
     Type(spme_component)   :: spme_datum
     Integer, Intent(In   ) :: pot_order
 
-    Character(Len=256) :: message
+    Character(Len=STR_LEN) :: message
 
     ! Potential order for later expansion and cleaning (initialising individual ones not all)
 

@@ -9,7 +9,7 @@ Module stochastic_boundary
                              core_shell_type
   Use domains,         Only: domains_type
   Use errors_warnings, Only: error
-  Use kinds,           Only: wp
+  Use kinds,           Only: wp,STR_LEN
   Use kinetics,        Only: getknr,&
                              getvom,&
                              kinstresf,&
@@ -82,7 +82,7 @@ Contains
     Type(seed_type),             Intent(InOut) :: seed
     Type(comms_type),            Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail(1:3), i, i1, i2, irgd, j, jrgd, k, krgd, lrgd, matms, rgdtyp
     Real(Kind=wp)              :: buffer(1:4), celprp(1:10), sx, sy, sz, fmx, fmy, fmz, mxdr, &
                                   odott, rot(1:9), scale, tkin, tmp, tqx, tqy, tqz, trot, &

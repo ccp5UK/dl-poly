@@ -17,7 +17,7 @@ Module gpfa235
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use errors_warnings, Only: error
-  Use kinds,           Only: wp
+  Use kinds,           Only: wp,STR_LEN
 
   Implicit None
 
@@ -2494,7 +2494,7 @@ Contains
 
   Subroutine ABORT_IT()
 
-    Character(Len=256) :: message
+    Character(Len=STR_LEN) :: message
 
     Write (message, Fmt=100)
     100 Format(/'************************************'/ &

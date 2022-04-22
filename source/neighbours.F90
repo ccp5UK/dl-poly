@@ -27,7 +27,7 @@ Module neighbours
   Use kim,             Only: kim_type
   Use kinds,           Only: li,&
                              wi,&
-                             wp
+    wp,STR_LEN
   Use mpole,           Only: POLARISATION_CHARMM,&
                              mpole_type
   Use numerics,        Only: dcell,&
@@ -132,7 +132,7 @@ Contains
     Type(kim_type),           Intent(In   ) :: kim_data
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)                       :: message
+    Character(Len=STR_LEN)                       :: message
     Integer                                  :: fail, i, ilx, ily, ilz
     Real(Kind=wp)                            :: celprp(1:10), cut, m6, m7, m8, m9, test, tol
     Real(Kind=wp), Allocatable, Dimension(:) :: r, x, y, z
@@ -298,7 +298,7 @@ Contains
     Type(neighbours_type),    Intent(InOut) :: neigh
     Type(configuration_type), Intent(InOut) :: config
 
-    Character(Len=256) :: message
+    Character(Len=STR_LEN) :: message
     Integer            :: fail, i
 
     If (.not. neigh%unconditional_update) Return
@@ -384,7 +384,7 @@ Contains
 #endif /* HALF_HALO */
     Real(Kind=wp), Dimension(:), Allocatable :: xxt, yyt, zzt
 
-    Character(Len=256) :: message, messages(3)
+    Character(Len=STR_LEN) :: message, messages(3)
 
 #ifdef CHRONO
     Call start_timer(tmr, 'Linked Cells')

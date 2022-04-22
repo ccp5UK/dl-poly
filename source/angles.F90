@@ -35,7 +35,8 @@ Module angles
                              warning
   Use filename,        Only: FILE_TABANG,&
                              file_type
-  Use kinds,           Only: wi,&
+  Use kinds,           Only: STR_LEN,&
+                             wi,&
                              wp
   Use numerics,        Only: images,&
                              local_index
@@ -237,7 +238,7 @@ Contains
     Type(configuration_type),       Intent(InOut) :: config
     Type(comms_type),               Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)     :: message
     Integer                    :: fail, i, ig, j, kk, ll, ngrid
     Logical                    :: zero
     Real(Kind=wp)              :: coef, delth, dfed, dfed0, dfed1, dfed2, dgr2rad, dgrid, factor, &
@@ -583,7 +584,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)     :: message
     Integer                    :: fail(1:3), i, ia, ib, ic, j, keya, kk, l, nk
     Integer, Allocatable       :: lstopt(:, :)
     Logical                    :: safe
@@ -1167,9 +1168,9 @@ Contains
 
     Character(Len=200)         :: record
     Character(Len=24)          :: idangl
-    Character(Len=256)         :: message, messages(4)
     Character(Len=40)          :: word
     Character(Len=8)           :: atom1, atom2, atom3
+    Character(Len=STR_LEN)     :: message, messages(4)
     Integer                    :: fail(1:2), i, itang, jtang, jtpatm, katom1, katom2, katom3, l, &
                                   ngrid, ntable, rtang
     Integer, Allocatable       :: read_type(:)

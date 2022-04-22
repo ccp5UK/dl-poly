@@ -26,7 +26,7 @@ Module greenkubo
                              info
   Use flow_control,    Only: RESTART_KEY_OLD
   Use kinds,           Only: wi,&
-                             wp
+    wp,STR_LEN
   Use site,            Only: site_type
 
   Implicit None
@@ -134,7 +134,7 @@ Contains
     Type(greenkubo_Type),     Intent(InOut) :: green
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail, i, j, k, l, nsum
     Real(Kind=wp), Allocatable :: vafcoll(:)
 
@@ -260,7 +260,7 @@ Contains
     Integer(Kind=wi),            Intent(In   ) :: mxatyp
     Type(greenkubo_type),        Intent(In   ) :: green
 
-    Character(Len=256) :: message
+    Character(Len=STR_LEN) :: message
     Integer            :: i
     Real(Kind=wp)      :: factor, gvaf, numt, ovaf, time0, timei
 

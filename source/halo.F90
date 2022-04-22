@@ -17,7 +17,7 @@ Module halo
   Use errors_warnings, Only: error
   Use ewald,           Only: ewald_type
   Use kim,             Only: kim_type
-  Use kinds,           Only: wp
+  Use kinds,           Only: wp,STR_LEN
   Use mpole,           Only: mpole_type
   Use neighbours,      Only: neighbours_type,&
                              vnl_set_check
@@ -66,7 +66,7 @@ Contains
     Type(kim_type),           Intent(InOut) :: kim_data
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)   :: message
+    Character(Len=STR_LEN)   :: message
     Integer              :: fail, mlast
     Integer, Allocatable :: ixyz0(:)
     Logical              :: safe

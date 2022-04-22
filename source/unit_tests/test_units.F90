@@ -1,28 +1,34 @@
 Module test_units
 
-  Use asserts, only : assert
-  Use constants, only : tenunt, boltz
-  Use units, only : initialise_units, convert_units, destroy_units, &
-       & to_out_units, units_scheme, set_out_units, units_scheme, init_scheme
-  Use kinds, only : wp
+  Use asserts, Only: assert
+  Use kinds,   Only: STR_LEN,&
+                     wp
+  Use units,   Only: convert_units,&
+                     destroy_units,&
+                     init_scheme,&
+                     initialise_units,&
+                     set_out_units,&
+                     to_out_units,&
+                     units_scheme
+
   Implicit None
 
-contains
+Contains
 
   Subroutine run_units_tests()
-    Real( kind = wp ), parameter :: eV_J = 1.602176634e-19_wp !J
-    Real( kind = wp ), parameter :: Ha_eV = 27.211386245988_wp !eV
-    Real( kind = wp ), parameter :: Cal_J = 4.1842_wp
-    Real( kind = wp ), parameter :: Ha_J = 4.3597482e-18_wp
-    Real( kind = wp ), Parameter :: pound_kg = 0.45359237_wp
-    Real( kind = wp ), Parameter :: atm_GPa = 0.00010132501_wp
-    Real( kind = wp ), Parameter :: kB_JK = 1.3804703422756560E-023
-    Real( kind = wp ) :: unit_test
-    Character(Len=256) :: unit_name
+    Real(kind=wp), Parameter :: atm_GPa = 0.00010132501_wp, Cal_J = 4.1842_wp, &
+                                eV_J = 1.602176634e-19_wp, Ha_eV = 27.211386245988_wp, &
+                                Ha_J = 4.3597482e-18_wp, kB_JK = 1.3804703422756560E-023, &
+                                pound_kg = 0.45359237_wp
 
-    Type(units_scheme) :: scheme
+    Character(Len=STR_LEN) :: unit_name
+    Real(kind=wp)          :: unit_test
+    Type(units_scheme)     :: scheme
 
-    call initialise_units()
+!J
+!eV
+
+    Call initialise_units()
 
     unit_test = convert_units(1.0_wp, 'e_h', 'e.V')
     Call assert(unit_test, Ha_eV, "Hartree->eV fail")
@@ -72,30 +78,30 @@ contains
     unit_test = convert_units(1.0_wp, 'k_B', 'm^2.kg.s^-2/K')
     Call assert(unit_test, kB_JK, "k_b->m^2.kg.s^-2/K fail")
 
-    call to_out_units(1.0_wp, 'Ang', unit_test, out_unit=unit_name)
+    Call to_out_units(1.0_wp, 'Ang', unit_test, out_unit=unit_name)
     Call assert(unit_test, 1.0_wp, "Out units internal fail")
     Call assert(unit_name, 'internal_l', "Out units internal fail")
 
     scheme = init_scheme( &
-         length = 'm', &
-         time = 's', &
-         mass = 'kg', &
-         charge = 'C', &
-         energy = 'J', &
-         pressure = 'Pa', &
-         force = 'N', &
-         velocity = 'm/s', &
-         power = 'W', &
-         surf_ten = 'N/m', &
-         emf = 'V')
-    call set_out_units(scheme)
+             length='m', &
+             time='s', &
+             mass='kg', &
+             charge='C', &
+             energy='J', &
+             pressure='Pa', &
+             force='N', &
+             velocity='m/s', &
+             power='W', &
+             surf_ten='N/m', &
+             emf='V')
+    Call set_out_units(scheme)
 
-    call to_out_units(1.0_wp, 'Ang', unit_test, out_unit=unit_name)
+    Call to_out_units(1.0_wp, 'Ang', unit_test, out_unit=unit_name)
     Call assert(unit_test, 1.0e-10_wp, "Out units internal fail")
     Call assert(unit_name, 'm', "Out units internal fail")
 
-    call destroy_units()
+    Call destroy_units()
 
-  end Subroutine run_units_tests
+  End Subroutine run_units_tests
 
-end Module test_units
+End Module test_units

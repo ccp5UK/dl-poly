@@ -25,7 +25,7 @@ Module trajectory
                              io_finalize, io_get_parameters, io_init, io_open, io_read_batch, &
                              io_set_parameters, io_type, io_write_batch, io_write_record, &
                              io_write_sorted_file, split_io_comm
-  Use kinds,           Only: li,&
+  Use kinds,           Only: li,STR_LEN,&
                              wi,&
                              wp
   Use numerics,        Only: invert,&
@@ -182,7 +182,7 @@ Contains
     Type(comms_type),         Intent(InOut) :: comm
 
     Character(Len=200)            :: record
-    Character(Len=256)            :: message
+    Character(Len=STR_LEN)            :: message
     Character(Len=40)             :: word
     Character(Len=8), Allocatable :: chbuf(:)
     Integer                       :: fail(1:5), i, idm, ierr, indatm, ipx, ipy, ipz, k, l, m, &
@@ -760,7 +760,7 @@ Contains
     Character                                      :: lf
     Character(Len=1), Allocatable, Dimension(:, :) :: chbat
     Character(Len=200)                             :: record
-    Character(Len=256)                             :: message
+    Character(Len=STR_LEN)                             :: message
     Character(Len=40)                              :: word
     Character(Len=8), Allocatable, Dimension(:)    :: chbuf
     Integer                                        :: batsz, fail(1:5), fh, i, ierr, io_write, &

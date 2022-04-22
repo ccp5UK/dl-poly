@@ -41,7 +41,8 @@ Module statistics
                              io_finalize, io_get_parameters, io_history, io_init, io_open, &
                              io_set_parameters, io_type, io_unknown_write_level, &
                              io_unknown_write_option, io_write_batch, io_write_sorted_file
-  Use kinds,           Only: li,&
+  Use kinds,           Only: STR_LEN,&
+                             li,&
                              wi,&
                              wp
   Use numerics,        Only: dcell,&
@@ -450,19 +451,18 @@ Contains
     Type(comms_type),         Intent(InOut) :: comm
     Integer,                  Intent(In   ) :: ff
 
-    Character(Len=256)         :: message
+    Character(Len=100)         :: fmtt, sunits
+    Character(Len=STR_LEN)     :: message
     Integer                    :: fail, i, iadd, j, k, kstak
-    Logical                    :: l_tmp
+    Logical                    :: ffpass, l_tmp
     Real(Kind=wp)              :: celprp(1:10), h_z, sclnv1, sclnv2, stpcns, stpipv, stprot, &
                                   stpshl, zistk
     Real(Kind=wp), Allocatable :: amsd(:), xxt(:), yyt(:), zzt(:)
-    Character(Len=100)         :: sunits, fmtt
-    Logical                    :: ffpass
 
-    If(ff==1)Then
-      ffpass=.True.
+    If (ff == 1) Then
+      ffpass = .true.
     Else
-      ffpass=.False.
+      ffpass = .false.
     End If
 
     fail = 0
@@ -484,8 +484,8 @@ Contains
         stats%statis_file_open = .true.
 
         If (stats%file_yaml) Then
-          Write(files(FILE_STATS)%unit_no,'(a)') "%YAML 1.2"
-          Write(files(FILE_STATS)%unit_no,'(a)') "---"
+          Write (files(FILE_STATS)%unit_no, '(a)') "%YAML 1.2"
+          Write (files(FILE_STATS)%unit_no, '(a)') "---"
         End If
         Write (files(FILE_STATS)%unit_no, '(a,a)') "title: ", config%cfgname
 
@@ -502,39 +502,39 @@ Contains
         Else ! once in a blue moon
           sunits = "DPD (Unknown)"
         End If
-        Write(files(FILE_STATS)%unit_no,'(a,a)') "energy unitS: ",Trim(sunits)
+        Write (files(FILE_STATS)%unit_no, '(a,a)') "energy unitS: ", Trim(sunits)
         If (stats%file_yaml) Then
-          Write(files(FILE_STATS)%unit_no,'(a,a)') "labels: "
-          Write(files(FILE_STATS)%unit_no,'(2x,a4,*(a,", "))',advance="no") "- [ ",&
-            'step','time','Total Extended System Energy','System Temperature',&
-            'Configurational Energy','Short Range Potential Energy','Electrostatic Energy',&
-            'Chemical Bond Energy','Valence Angle And 3-Body Potential Energy',&
-            'Dihedral Inversion And 4-Body Potential Energy',&
-            'Tethering Energy', 'Enthalpy (Total Energy + Pv)','Rotational Temperature','Total Virial',&
-            'Short-Range Virial','Electrostatic Virial','Bond Virial','Valence Angle And 3-Body Virial',&
-            'Constraint Bond Virial','Tethering Virial','Volume', 'Core-Shell Temperature',&
-            'Core-Shell Potential Energy','Core-Shell Virial','Md Cell Angle Α',&
-            'Md Cell Angle Β','Md Cell Angle Gamma','Pmf Constraint Virial','Pressure',&
-            'External Degree Of Freedom','stress xx','stress xy','stress xz','stress yx',&
-            'stress yy','stress yz','stress zx', 'stress zy','stress zz'
-            Do i=1,sites%ntype_atom - 1
-              Write(files(FILE_STATS)%unit_no,'(a)',advance="no")"amsd "//sites%unique_atom(i)//", "
-            End Do
-            Write(files(FILE_STATS)%unit_no,'(a)',advance="no")"amsd "//sites%unique_atom(sites%ntype_atom)
-            If (thermo%variable_cell) Then
-                Write(files(FILE_STATS)%unit_no,'(", ",*(a,", "))',advance="no") "cell A1", "cell A2", "cell A3", &
-                  "cell B1", "cell B2", "cell B3", "cell C1", "cell C2", "cell C3"
-                Write(files(FILE_STATS)%unit_no,'(a)',advance="no") "pV"
+          Write (files(FILE_STATS)%unit_no, '(a,a)') "labels: "
+          Write (files(FILE_STATS)%unit_no, '(2x,a4,*(a,", "))', advance="no") "- [ ", &
+            'step', 'time', 'Total Extended System Energy', 'System Temperature', &
+            'Configurational Energy', 'Short Range Potential Energy', 'Electrostatic Energy', &
+            'Chemical Bond Energy', 'Valence Angle And 3-Body Potential Energy', &
+            'Dihedral Inversion And 4-Body Potential Energy', &
+            'Tethering Energy', 'Enthalpy (Total Energy + Pv)', 'Rotational Temperature', 'Total Virial', &
+            'Short-Range Virial', 'Electrostatic Virial', 'Bond Virial', 'Valence Angle And 3-Body Virial', &
+            'Constraint Bond Virial', 'Tethering Virial', 'Volume', 'Core-Shell Temperature', &
+            'Core-Shell Potential Energy', 'Core-Shell Virial', 'Md Cell Angle Α', &
+            'Md Cell Angle Β', 'Md Cell Angle Gamma', 'Pmf Constraint Virial', 'Pressure', &
+            'External Degree Of Freedom', 'stress xx', 'stress xy', 'stress xz', 'stress yx', &
+            'stress yy', 'stress yz', 'stress zx', 'stress zy', 'stress zz'
+          Do i = 1, sites%ntype_atom - 1
+            Write (files(FILE_STATS)%unit_no, '(a)', advance="no") "amsd "//sites%unique_atom(i)//", "
+          End Do
+          Write (files(FILE_STATS)%unit_no, '(a)', advance="no") "amsd "//sites%unique_atom(sites%ntype_atom)
+          If (thermo%variable_cell) Then
+            Write (files(FILE_STATS)%unit_no, '(", ",*(a,", "))', advance="no") "cell A1", "cell A2", "cell A3", &
+              "cell B1", "cell B2", "cell B3", "cell C1", "cell C2", "cell C3"
+            Write (files(FILE_STATS)%unit_no, '(a)', advance="no") "pV"
 
-                If (thermo%iso /= CONSTRAINT_NONE) Then
-                  Write(files(FILE_STATS)%unit_no,'(a)',advance="no") ",h_z, A_z"
-                  If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
-                    Write(files(FILE_STATS)%unit_no,'(a)',advance="no") ",gamma_x, gamma_y"
-                  End If
-                End If
+            If (thermo%iso /= CONSTRAINT_NONE) Then
+              Write (files(FILE_STATS)%unit_no, '(a)', advance="no") ",h_z, A_z"
+              If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
+                Write (files(FILE_STATS)%unit_no, '(a)', advance="no") ",gamma_x, gamma_y"
+              End If
             End If
-          Write(files(FILE_STATS)%unit_no,'(a2)') " ]"
-          Write(files(FILE_STATS)%unit_no,'(a,a)') "timesteps: "
+          End If
+          Write (files(FILE_STATS)%unit_no, '(a2)') " ]"
+          Write (files(FILE_STATS)%unit_no, '(a,a)') "timesteps: "
         End If
       End If
     End If
@@ -763,7 +763,7 @@ Contains
 
     ! write statistics file
 
-    If (comm%idnode == 0 .and. Mod(nstep,stats%intsta) == 0 .and. ffpass) Then
+    If (comm%idnode == 0 .and. Mod(nstep, stats%intsta) == 0 .and. ffpass) Then
       If (.not. stats%statis_file_open) Then
         Open (Newunit=files(FILE_STATS)%unit_no, File=files(FILE_STATS)%filename, Position='append')
         stats%statis_file_open = .true.
@@ -771,8 +771,8 @@ Contains
 
       If (lmsd) Then
         If (stats%file_yaml) Then
-          Write(fmtt,'(a,i0,a)')'(2x,a4,i0,",",',iadd + 1 - 2 * mxatdm,'(g16.8,","),g16.8,a2)'
-          Write(files(FILE_STATS)%unit_no,fmt=Trim(fmtt))"- [ ",nstep, time, &
+          Write (fmtt, '(a,i0,a)') '(2x,a4,i0,",",', iadd + 1 - 2 * mxatdm, '(g16.8,","),g16.8,a2)'
+          Write (files(FILE_STATS)%unit_no, fmt=Trim(fmtt)) "- [ ", nstep, time, &
             stats%stpval(1:27), stats%stpval(0), stats%stpval(28:36), &
             stats%stpval(37 + 2 * mxatdm:iadd), ' ]'
         Else
@@ -782,8 +782,8 @@ Contains
         End If
       Else
         If (stats%file_yaml) Then
-          Write(fmtt,'(a,i0,a)')'(2x,a4,i0,",",',iadd+1,'(g16.8,","),g16.8,a2)'
-          Write(files(FILE_STATS)%unit_no,fmt=Trim(fmtt))"- [ ",nstep, time, &
+          Write (fmtt, '(a,i0,a)') '(2x,a4,i0,",",', iadd + 1, '(g16.8,","),g16.8,a2)'
+          Write (files(FILE_STATS)%unit_no, fmt=Trim(fmtt)) "- [ ", nstep, time, &
             stats%stpval(1:27), stats%stpval(0), stats%stpval(28:iadd), ' ]'
         Else
           Write (files(FILE_STATS)%unit_no, '(i10,1p,e14.6,0p,i10,/, (1p,5e14.6))') &
@@ -854,10 +854,10 @@ Contains
 
     ! z-density collection
 
-    If (zdensity%l_collect) then
-      if (((.not. leql) .or. nstep >= nsteql) .and. &
-        Mod(nstep, zdensity%frequency) == 0) Call z_density_collect(zdensity, config)
-    end If
+    If (zdensity%l_collect) Then
+      If (((.not. leql) .or. nstep >= nsteql) .and. &
+          Mod(nstep, zdensity%frequency) == 0) Call z_density_collect(zdensity, config)
+    End If
 
     ! Catch time of starting statistical averages
 
@@ -895,7 +895,7 @@ Contains
     Type(comms_type), Intent(InOut) :: comm
 
     Integer :: icyc, nres
-    Character(Len=256) :: message
+    Character(Len=STR_LEN) :: message
 
     stats%found = 0; icyc = 0; nres = 1
     Do While (icyc <= Max(domain%nx, domain%ny, domain%nz) / 2 .and. nres > 0)
@@ -1331,7 +1331,7 @@ Contains
     Type(domains_type),       Intent(In   ) :: domain
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)                       :: message
+    Character(Len=STR_LEN)                   :: message
     Integer                                  :: fail, i, iblock, imove, ix, iy, iz, j, jdnode, jj, &
                                                 jmove, jxyz, kdnode, keep, kk, kmove, kx, kxyz, &
                                                 ky, kz, l, newatm, send
@@ -1663,9 +1663,8 @@ Contains
 
   End Subroutine statistics_connect_spread
 
-
   Subroutine write_header()
-    Character(Len=256), Dimension(5) :: messages
+    Character(Len=STR_LEN), Dimension(5) :: messages
 
     Write (messages(1), '(a)') Repeat('-', 130)
     Write (messages(2), '(9x,a4,5x,a7,1x,a11,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
@@ -1711,11 +1710,11 @@ Contains
     Type(site_type),          Intent(In   ) :: sites
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)               :: message
-    Character(Len=256), Dimension(5) :: messages
-    Integer                          :: i, iadd, mxnstk
-    Logical                          :: check
-    Real(Kind=wp)                    :: avvol, dc, h_z, srmsd, timelp, tmp, tx, ty
+    Character(Len=STR_LEN)               :: message
+    Character(Len=STR_LEN), Dimension(5) :: messages
+    Integer                              :: i, iadd, mxnstk
+    Logical                              :: check
+    Real(Kind=wp)                        :: avvol, dc, h_z, srmsd, timelp, tmp, tx, ty
 
     mxnstk = stats%mxnstk
 
@@ -2116,9 +2115,9 @@ Contains
     Character, Dimension(record_size, 10)    :: buffer
     Integer                                  :: batsz, energy_force_handle, i, ierr, io_write, jj
     Integer(Kind=offset_Kind)                :: rec_mpi_io
+    Real(Kind=wp)                            :: velocity(3)
     Real(Kind=wp), Allocatable, Dimension(:) :: dummy
     Type(io_type)                            :: my_io
-    Real(Kind=wp)                            :: velocity(3)
 
 !! Atom details
 !! Communicator
@@ -2182,9 +2181,9 @@ Contains
 
     Call gsync(comm)
 
-    Do i = 1 , config%natms
+    Do i = 1, config%natms
       velocity = [config%vxx(i), config%vyy(i), config%vzz(i)]
-      dummy(i) = 0.5_wp * config%weight(i) * Dot_product(velocity, velocity) /engunit
+      dummy(i) = 0.5_wp * config%weight(i) * Dot_product(velocity, velocity) / engunit
     End Do
 
     Call io_set_parameters(my_io, user_comm=comm%comm)

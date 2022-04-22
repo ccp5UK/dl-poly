@@ -16,7 +16,7 @@ Module build_chrm
                              info,&
                              warning
   Use inversions,      Only: inversions_type
-  Use kinds,           Only: wi,&
+  Use kinds,           Only: wi,STR_LEN,&
                              wp
   Use mpole,           Only: POLARISATION_DEFAULT,&
                              mpole_type
@@ -70,7 +70,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256) :: message
+    Character(Len=STR_LEN) :: message
     Integer            :: fail, i, ia, ia0, ib, ib0, ibig, j, ja, ja0, jb, jb0, jc, jc0, jd, jd0, &
                           k, ka, ka0, kb, kb0, kc, kc0, kd, kd0, kk, l
     Logical            :: safe

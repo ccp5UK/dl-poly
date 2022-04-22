@@ -31,7 +31,7 @@ Module rdfs
   Use filename,        Only: FILE_RDF,&
                              file_type
   Use kinds,           Only: wi,&
-                             wp
+    wp,STR_LEN
   Use neighbours,      Only: neighbours_type
   Use site,            Only: site_type
 
@@ -241,7 +241,7 @@ Contains
     Type(file_type),          Intent(InOut) :: files(:)
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message, messages(2)
+    Character(Len=STR_LEN)         :: message, messages(2)
     Integer                    :: fail, i, ia, ib, ig, kk, ll, ngrid, nrdfdt
     !Logical                    :: zero
     Real(Kind=wp)              :: coef, delr, dfed, dfed0, dfed1, dfed2, dgrid, dvol, factor1, &
@@ -650,7 +650,7 @@ Contains
     Type(file_type),          Intent(InOut) :: files(:)
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)                             :: messages(2)
+    Character(Len=STR_LEN)                             :: messages(2)
     Integer                                        :: i, ierr(2), j, k, kk, l, nr_blocks, nrdfdt
     Real(Kind=wp)                                  :: delr, i_nr_blocks, test1
     Real(kind=wp), Allocatable, Dimension(:, :, :) :: averages, errors
@@ -754,7 +754,7 @@ Contains
     Type(file_type),          Intent(InOut) :: files(:)
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)                             :: messages(2)
+    Character(Len=STR_LEN)                             :: messages(2)
     Integer                                        :: i, ierr(2), j, k, kk, l, nr_blocks, nrdfdt
     Real(Kind=wp)                                  :: delr, i_nr_blocks, test1
     Real(Kind=wp), Allocatable, Dimension(:, :, :) :: averages, errors

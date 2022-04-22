@@ -23,7 +23,7 @@ Module pmf
   Use errors_warnings, Only: error,&
                              info,&
                              warning
-  Use kinds,           Only: wp
+  Use kinds,           Only: wp,STR_LEN
   Use numerics,        Only: dcell,&
                              images,&
                              local_index
@@ -190,7 +190,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)                          :: message
+    Character(Len=STR_LEN)                          :: message
     Integer                                     :: fail(1:3), gpmf, gpmf1, gpmf2, iadd, ipmf, j, &
                                                    jpmf, k, l, m
     Logical                                     :: safe(1:2)
@@ -455,7 +455,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail(1:5), icyc, ipmf, jpmf, k, l
     Logical                    :: safe
     Logical, Allocatable       :: lstitr(:)
@@ -688,7 +688,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)                 :: message
+    Character(Len=STR_LEN)                 :: message
     Integer                            :: fail, gpmf, ipmf, jpmf
     Integer, Allocatable, Dimension(:) :: i1pmf0, i2pmf0
     Logical                            :: ok, safe
@@ -816,7 +816,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)                       :: message
+    Character(Len=STR_LEN)                       :: message
     Integer                                  :: fail, gpmf, gpmf1, gpmf2, iadd, ipmf, j, jpmf, k, l
     Logical                                  :: safe
     Real(Kind=wp), Allocatable, Dimension(:) :: buffer
@@ -950,7 +950,7 @@ Contains
     Type(pmf_type),           Intent(Inout) :: pmf
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)                       :: message
+    Character(Len=STR_LEN)                       :: message
     Integer                                  :: fail, icyc, ipmf, jpmf, k, l
     Logical                                  :: safe
     Real(Kind=wp)                            :: amt(1:2), gamm(1:2), gamma, tmp, tstep2
@@ -1152,7 +1152,7 @@ Contains
     Type(pmf_type),           Intent(Inout) :: pmf
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)                          :: message
+    Character(Len=STR_LEN)                          :: message
     Integer                                     :: fail(1:2), icyc, ipmf, jpmf, k, l
     Logical                                     :: safe
     Real(Kind=wp)                               :: dis, esig, gamm(1:2), gamma

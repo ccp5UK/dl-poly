@@ -9,7 +9,7 @@ Module nve
   Use domains,         Only: domains_type
   Use errors_warnings, Only: error,&
                              info
-  Use kinds,           Only: wp
+  Use kinds,           Only: wp,STR_LEN
   Use kinetics,        Only: getknr,&
                              kinstresf,&
                              kinstress,&
@@ -68,7 +68,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail(1:9), i
     Logical, Allocatable       :: lstitr(:)
     Real(Kind=wp)              :: hstep, mxdr, rstep, tmp
@@ -272,7 +272,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail(1:14), i, i1, i2, irgd, j, jrgd, krgd, lrgd, matms, rgdtyp
     Logical, Allocatable       :: lstitr(:)
     Real(Kind=wp)              :: fmx, fmy, fmz, hstep, mxdr, opx, opy, opz, p0, p1, p2, p3, qt0, &

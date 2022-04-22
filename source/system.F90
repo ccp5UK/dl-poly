@@ -49,7 +49,7 @@ Module system
                              io_delete, io_finalize, io_get_parameters, io_init, io_open, &
                              io_set_parameters, io_type, io_write_record, io_write_sorted_file, &
                              recsz
-  Use kinds,           Only: li,&
+  Use kinds,           Only: li,STR_LEN,&
                              wp
   Use metal,           Only: metal_lrc,&
                              metal_type
@@ -1865,7 +1865,7 @@ Contains
     Type(file_type),          Intent(InOut) :: files(:)
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)                       :: message
+    Character(Len=STR_LEN)                       :: message
     Character(Len=40)                        :: forma
     Integer                                  :: fail(1:3), i, j, jatms, jdnode, l, nsum
     Integer, Allocatable, Dimension(:)       :: iwrk

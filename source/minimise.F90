@@ -33,7 +33,7 @@ Module minimise
   Use filename,        Only: FILE_OUTPUT,&
                              file_type
   Use io,              Only: io_type
-  Use kinds,           Only: wi,&
+  Use kinds,           Only: wi,STR_LEN,&
                              wp
   Use kinetics,        Only: getkin,&
                              getknf,&
@@ -188,7 +188,7 @@ Contains
     Integer, Parameter :: mxpass = 1000
 
     Character(Len=10)          :: c_out
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail(1:8), i, j, levcfg
     Logical                    :: l_out
     Logical, Allocatable       :: lstitr(:)
@@ -697,7 +697,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)                       :: message
+    Character(Len=STR_LEN)                       :: message
     Integer                                  :: fail, i, i1, i2, irgd, j, jrgd, krgd, lrgd, rgdtyp
     Real(Kind=wp)                            :: amx, amy, amz, com(1:3), e_f, e_r, e_t, engkf, &
                                                 engkt, fmx, fmy, fmz, fsq, rot(1:9), rotinv(1:9), &

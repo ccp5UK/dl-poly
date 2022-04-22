@@ -89,7 +89,7 @@ Module meta
   Use kim,                                    Only: kim_citations,&
                                                     kim_setup,&
                                                     kim_type
-  Use kinds,                                  Only: wi,&
+  Use kinds,                                  Only: wi,STR_LEN,&
                                                     wp
   Use kinetics,                               Only: cap_forces
   Use langevin,                               Only: langevin_allocate_arrays
@@ -151,7 +151,8 @@ Module meta
                                                     printLatticeStatsToFile
   Use vdw,                                    Only: vdw_type
   Use z_density,                              Only: z_density_type
-
+  Use units,                                  Only: set_out_units,&
+                                                    internal_units
   Implicit None
   Private
 
@@ -726,9 +727,9 @@ Contains
     Type(coord_type),            Intent(InOut) :: crd(:)
     Type(adf_type),              Intent(InOut) :: adf(:)
 
-    Character(Len=256)    :: message
+    Character(Len=STR_LEN)    :: message
     Integer               :: ff, i, ierr, ifile, megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, &
-                             mtrgd, mtshl, mtteth
+      mtrgd, mtshl, mtteth
     Integer, Dimension(3) :: link_cell
     Real(Kind=wp)         :: xhi, yhi, zhi
 
@@ -741,9 +742,9 @@ Contains
 
     Do i = 1, FILENAME_SIZE
       Select Case (files (i)%filename)
-      Case ("SCREEN")
+       Case ("SCREEN")
         files(i)%unit_no = error_unit
-      Case ("NONE")
+       Case ("NONE")
         files(i)%filename = null_unit
       End Select
     End Do
@@ -781,11 +782,12 @@ Contains
 
       ! scan the FIELD file data
       Call scan_field(megatm, sites(ff), neigh(ff)%max_exclude, &
-                      mtshl, mtcons, mtrgd, mtteth, mtbond, mtangl, mtdihd, mtinv, &
-                      ext_field(ff), core_shells(ff), cons(ff), pmfs(ff), met(ff), &
-                      bond(ff), angle(ff), dihedral(ff), inversion(ff), tether(ff), &
-                      threebody(ff), vdws(ff), tersoffs(ff), fourbody(ff), rdf(ff), &
-                      mpoles(ff), rigid(ff), kim_data(ff), files, electro(ff), comm, ff)
+        mtshl, mtcons, mtrgd, mtteth, mtbond, mtangl, mtdihd, mtinv, &
+        ext_field(ff), core_shells(ff), cons(ff), pmfs(ff), met(ff), &
+        bond(ff), angle(ff), dihedral(ff), inversion(ff), tether(ff), &
+        threebody(ff), vdws(ff), tersoffs(ff), fourbody(ff), rdf(ff), &
+        mpoles(ff), rigid(ff), kim_data(ff), files, electro(ff), comm, ff)
+      Call read_units(params)
 
       ! scan CONFIG file data
 
@@ -930,7 +932,7 @@ Contains
     Type(coord_type),          Intent(InOut) :: crd(:)
     Type(adf_type),            Intent(InOut) :: adf(:)
 
-    Character(Len=256) :: message
+    Character(Len=STR_LEN) :: message
     Integer            :: old_print_level
     Integer(Kind=wi)   :: ff
 

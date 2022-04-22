@@ -43,7 +43,7 @@ Module evb
   Use four_body,                Only: four_body_type
   Use inversions,               Only: inversions_type,&
                                       INVERSION_TAB
-  Use kinds,                    Only: wp, &
+  Use kinds,                    Only: wp,STR_LEN, &
                                       wi
   Use metal,                    Only: metal_type
   Use numerics,                 Only: invert
@@ -3607,7 +3607,7 @@ Contains
 
     Character(Len=*), Parameter :: fmt1 = '(a)', fmt2  = '(a,i2)'
 
-    Character(Len=256) :: banner(7)
+    Character(Len=STR_LEN) :: banner(7)
 
     Write (banner(1), fmt1)  '*******************************************************************'
     Write (banner(2), fmt1)  '*******************************************************************'

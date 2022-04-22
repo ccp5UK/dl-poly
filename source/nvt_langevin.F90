@@ -10,7 +10,7 @@ Module nvt_langevin
   Use domains,         Only: domains_type
   Use errors_warnings, Only: error,&
                              info
-  Use kinds,           Only: wp
+  Use kinds,           Only: wp,STR_LEN
   Use kinetics,        Only: getknr,&
                              getvom,&
                              kinstresf,&
@@ -90,7 +90,7 @@ Contains
     Type(seed_type),          Intent(InOut) :: seed
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail(1:9), i
     Logical, Allocatable       :: lstitr(:)
     Real(Kind=wp)              :: hstep, rstep, scl1, scr1, scv1, t0, t1, tmp, vom(1:3)
@@ -375,7 +375,7 @@ Contains
     Type(seed_type),          Intent(InOut) :: seed
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail(1:14), i, i1, i2, irgd, j, jrgd, krgd, lrgd, matms, rgdtyp
     Logical, Allocatable       :: lstitr(:)
     Real(Kind=wp)              :: fmx, fmxl, fmxr, fmy, fmyl, fmyr, fmz, fmzl, fmzr, hstep, mxdr, &
@@ -1159,7 +1159,7 @@ Contains
     Type(seed_type),          Intent(InOut) :: seed
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail(1:9), i, ia, ijk, ja, ka
     Logical                    :: lrand, lvel
     Logical, Allocatable       :: lstitr(:)

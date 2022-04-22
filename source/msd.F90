@@ -41,7 +41,7 @@ Module msd
                              io_type, io_write_batch, io_write_record, io_write_sorted_file
   Use kinds,           Only: li,&
                              wi,&
-                             wp
+    wp,STR_LEN
   Use parse,           Only: get_word,&
                              tabs_2_blanks,&
                              word_2_real
@@ -101,7 +101,7 @@ Contains
 
     Character                                      :: lf
     Character(Len=1), Allocatable, Dimension(:, :) :: chbat
-    Character(Len=256)                             :: message
+    Character(Len=STR_LEN)                             :: message
     Character(Len=40)                              :: word
     Character(Len=8), Allocatable, Dimension(:)    :: chbuf
     Character(Len=recsz)                           :: record

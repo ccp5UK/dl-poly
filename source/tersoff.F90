@@ -23,7 +23,7 @@ Module tersoff
   Use domains,         Only: domains_type
   Use errors_warnings, Only: error,&
                              warning
-  Use kinds,           Only: wi,&
+  Use kinds,           Only: wi,STR_LEN,&
                              wp
   Use neighbours,      Only: neighbours_type
   Use numerics,        Only: dcell,&
@@ -172,7 +172,7 @@ Contains
                                                -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0&
                                                , 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1/)
 
-    Character(Len=256)                       :: message
+    Character(Len=STR_LEN)                       :: message
     Integer                                  :: fail(1:7), i, iatm, icell, ii, ijter, ikter, iter, &
                                                 ix, iy, iz, j, jatm, jcell, jj, jter, jx, jy, jz, &
                                                 k, katm, kk, kter, limit, ll, nbx, nby, nbz, ncells

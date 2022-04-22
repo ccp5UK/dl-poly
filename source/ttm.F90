@@ -44,7 +44,7 @@ Module ttm
                              warning
   Use flow_control,    Only: RESTART_KEY_CLEAN,&
                              RESTART_KEY_OLD
-  Use kinds,           Only: wp
+  Use kinds,           Only: wp,STR_LEN
   Use parse,           Only: get_line,&
                              get_word,&
                              word_2_real
@@ -983,7 +983,7 @@ Contains
     Type(comms_type), Intent(InOut) :: comm
 
     Character(Len=14)       :: number
-    Character(Len=256)      :: messages(2)
+    Character(Len=STR_LEN)      :: messages(2)
     Integer, Dimension(1:3) :: fail
 
     fail = 0
@@ -1072,7 +1072,7 @@ Contains
     Type(comms_type),   Intent(InOut) :: comm
 
     Character(Len=200) :: record
-    Character(Len=256) :: message
+    Character(Len=STR_LEN) :: message
     Character(Len=40)  :: word
     Integer            :: i, ii, ijk, iounit, ipos(3), ix, iy, iz, jj, kk, nstp, nxx, nyy, &
                           nzz
@@ -1300,7 +1300,7 @@ Contains
     Type(comms_type), Intent(InOut) :: comm
 
     Character(Len=200) :: record
-    Character(Len=256) :: message
+    Character(Len=STR_LEN) :: message
     Character(Len=40)  :: word
     Integer            :: i, ntable
     Logical            :: safe
@@ -1528,7 +1528,7 @@ Contains
     Type(comms_type), Intent(InOut) :: comm
 
     Character(Len=200)                       :: record
-    Character(Len=256)                       :: message
+    Character(Len=STR_LEN)                       :: message
     Character(Len=40)                        :: word
     Integer                                  :: fail, ntable
     Logical                                  :: lexist, safe

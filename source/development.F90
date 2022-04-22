@@ -17,7 +17,7 @@ Module development
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds,           Only: wp
+  Use kinds,           Only: wp,STR_LEN
   Use parse,           Only: get_line, get_word, lower_case, clean_string, word_2_real
   Use filename,        Only: file_type, FILE_CONTROL
   Use errors_warnings, Only: info, error , set_print_level
@@ -209,7 +209,7 @@ Contains
     Integer, Optional :: ifile
     Character(Len=10) :: time
     Character(Len=47) :: aux
-    Character(Len=256) :: aux2
+    Character(Len=STR_LEN) :: aux2
     Character(Len=5)  :: zone
     Character(Len=66) :: message
     Character(Len=8)  :: date

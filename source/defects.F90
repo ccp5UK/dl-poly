@@ -43,7 +43,7 @@ Module defects
                              io_write_record, io_write_sorted_file
   Use kinds,           Only: li,&
                              wi,&
-                             wp
+    wp,STR_LEN
   Use neighbours,      Only: defects_link_cells,&
                              neighbours_type
   Use numerics,        Only: dcell,&
@@ -167,7 +167,7 @@ Contains
     Type(domains_type), Intent(In   ) :: domain
     Type(comms_type),   Intent(InOut) :: comm
 
-    Character(Len=256)                       :: message
+    Character(Len=STR_LEN)                       :: message
     Integer                                  :: fail, i, iadd, iblock, imove, itmp, ix, iy, iz, j, &
                                                 jdnode, jmove, jxyz, kdnode, kx, kxyz, ky, kz, &
                                                 limit
@@ -444,7 +444,7 @@ Contains
     Type(comms_type),         Intent(InOut) :: comm
 
     Character(Len=200)                          :: record
-    Character(Len=256)                          :: message
+    Character(Len=STR_LEN)                          :: message
     Character(Len=40)                           :: fname, word
     Character(Len=8), Allocatable, Dimension(:) :: chbuf
     Integer                                     :: fail(1:2), fh, fsite, i, idm, ifrz, imconr, &
@@ -950,7 +950,7 @@ Contains
 
     Character(Len=1), Allocatable, Dimension(:, :) :: rec_buff
     Character(Len=200)                             :: record
-    Character(Len=256)                             :: message
+    Character(Len=STR_LEN)                             :: message
     Character(Len=40)                              :: forma, word
     Character(Len=8), Allocatable, Dimension(:)    :: chbuf, chbuf_read, chbuf_scat
     Integer                                        :: ats_per_proc, batsz, fail(1:6), i, idm, &
@@ -1384,7 +1384,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)   :: message
+    Character(Len=STR_LEN)   :: message
     Integer              :: fail, i, ia, ib, j, nlx, nly, nlz
     Integer, Allocatable :: ixyz(:)
     Real(Kind=wp)        :: celprp(1:10), xdc, ydc, zdc
@@ -1534,7 +1534,7 @@ Contains
 
     Character                                      :: lf
     Character(Len=1), Allocatable, Dimension(:, :) :: chbat
-    Character(Len=256)                             :: message
+    Character(Len=STR_LEN)                             :: message
     Character(Len=8), Allocatable, Dimension(:)    :: chbuf
     Character(Len=recsz)                           :: record
     Integer                                        :: batsz, fail(1:4), fh, i, ierr, io_read, &
@@ -2084,7 +2084,7 @@ Contains
 
     Character                                      :: lf
     Character(Len=1), Allocatable, Dimension(:, :) :: chbat
-    Character(Len=256)                             :: message
+    Character(Len=STR_LEN)                             :: message
     Character(Len=40)                              :: word
     Character(Len=8), Allocatable, Dimension(:)    :: chbuf, nami, namv
     Character(Len=recsz)                           :: record

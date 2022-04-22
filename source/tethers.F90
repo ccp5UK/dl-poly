@@ -20,7 +20,7 @@ Module tethers
                              gsum
   Use configuration,   Only: configuration_type
   Use errors_warnings, Only: error
-  Use kinds,           Only: wi,&
+  Use kinds,           Only: wi,STR_LEN,&
                              wp
   Use numerics,        Only: images,&
                              local_index
@@ -143,7 +143,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail(1:2), i, ia, kk, nk
     Integer, Allocatable       :: lstopt(:, :)
     Logical                    :: safe

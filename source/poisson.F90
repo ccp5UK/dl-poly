@@ -14,7 +14,7 @@ Module poisson
   Use electrostatic,   Only: electrostatic_type
   Use errors_warnings, Only: error,&
                              info
-  Use kinds,           Only: wi,&
+  Use kinds,           Only: wi,STR_LEN,&
                              wp
   Use neighbours,      Only: neighbours_type
   Use numerics,        Only: dcell,&
@@ -147,7 +147,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(domains_type),       Intent(In   ) :: domain
 
-    Character(Len=256) :: message
+    Character(Len=STR_LEN) :: message
     Integer            :: fail(10)
 
 ! calculates preambles
@@ -717,7 +717,7 @@ Contains
                                        zdb, zdt
     Type(comms_type), Intent(InOut) :: comm
 
-    Character(Len=256)                             :: message
+    Character(Len=STR_LEN)                             :: message
     Integer                                        :: fail
     Real(Kind=wp), Allocatable, Dimension(:, :, :) :: recv_buffer, send_buffer
 
@@ -1321,7 +1321,7 @@ Contains
     Type(configuration_type),      Intent(InOut) :: config
     Type(comms_type),              Intent(InOut) :: comm
 
-    Character(Len=256)                       :: message
+    Character(Len=STR_LEN)                       :: message
     Integer                                  :: fail, i, idi, ii, j, jj, k, limit, nzfr
     Integer, Allocatable, Dimension(:)       :: l_ind, nz_fr
     Real(Kind=wp)                            :: chgprd, coul, det, fcoul, fx, fy, fz, rcell(1:9), &

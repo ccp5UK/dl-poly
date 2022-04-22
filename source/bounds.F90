@@ -44,7 +44,7 @@ Module bounds
   Use inversions,      Only: inversions_type
   Use io,              Only: io_type
   Use kim,             Only: kim_type
-  Use kinds,           Only: wi,&
+  Use kinds,           Only: wi,STR_LEN,&
                              wp
   Use metal,           Only: metal_type
   Use mpole,           Only: POLARISATION_CHARMM,&
@@ -140,7 +140,7 @@ Contains
     Integer, Dimension(3),     Intent(  Out) :: link_cell
     Integer,                   Intent(In   ) :: ff
 
-    Character(Len=256) :: message
+    Character(Len=STR_LEN) :: message
     Integer(Kind=wi)   :: mxgrid
     Real(Kind=wp), Dimension(10) :: cell_properties
     Real(Kind=wp)      :: cut, dens0, dens, padding2
@@ -314,7 +314,7 @@ Contains
     Type(comms_type),          Intent(InOut) :: comm
     Integer,                   Intent(In   ) :: ff
 
-    Character(Len=256)           :: message
+    Character(Len=STR_LEN)           :: message
     Integer                      :: megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, mtshl, &
                                     mtteth
     Integer(Kind=wi)             :: mxgrid
@@ -1126,7 +1126,7 @@ Contains
     Real(kind=wp), Dimension(3)                   :: lc_det
     Real(kind=wp)                                 :: cut
 
-    Character(Len=256)                            :: message, messages(3)
+    Character(Len=STR_LEN)                            :: message, messages(3)
 
     ! LC and VNL matters
     ! Reset_padding implies padding in control

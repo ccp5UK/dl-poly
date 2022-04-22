@@ -35,7 +35,7 @@ Module ttm_track
   Use errors_warnings, Only: error,&
                              info,&
                              warning
-  Use kinds,           Only: wp
+  Use kinds,           Only: wp,STR_LEN
   Use thermostat,      Only: thermostat_type
   Use ttm,             Only: boundaryCond,&
                              boundaryHalo,&
@@ -82,7 +82,7 @@ Contains
     Type(comms_type), Intent(InOut) :: comm
 
     Character(Len=14)       :: number
-    Character(Len=256)      :: messages(2)
+    Character(Len=STR_LEN)      :: messages(2)
     Integer                 :: i, ijk, j, k
     Integer, Dimension(1:3) :: fail = 0
     Logical                 :: deposit
@@ -909,7 +909,7 @@ Contains
     Type(domains_type),    Intent(In   ) :: domain
     Type(comms_type),      Intent(InOut) :: comm
 
-    Character(Len=256)         :: messages(6)
+    Character(Len=STR_LEN)         :: messages(6)
     Integer                    :: fail, i, ii, ijk, j, jj, k, kk, redtstep, redtstepmx, &
                                   ixp, ixm, iyp, iym, izp, izm, ixpiyp, ixpiym, ixmiyp, ixmiym, &
                                   ixpizp, ixpizm, ixmizp, ixmizm, iypizp, iypizm, iymizp, iymizm

@@ -82,7 +82,7 @@ Module drivers
                                   inversions_type
   Use io,                   Only: io_type
   Use kim,                  Only: kim_type
-  Use kinds,                Only: wi,&
+  Use kinds,                Only: wi,STR_LEN,&
                                   wp
   Use kinetics,             Only: cap_forces,&
                                   getknr,&
@@ -220,7 +220,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256) :: messages(6)
+    Character(Len=STR_LEN) :: messages(6)
 
     !!!!!!!!!!!!!!!!!!!!!  W_IMPACT_OPTION INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
@@ -1659,7 +1659,7 @@ Contains
     Type(comms_type),         Intent(InOut) :: comm
     Integer(Kind=wi),         Intent(In   ) :: ff
 
-    Character(Len=256) :: message, messages(5)
+    Character(Len=STR_LEN) :: message, messages(5)
     Logical            :: ffpass
 
 !!!!!!!!!!!!!!!!!  W_STATISTICS_REPORT INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
@@ -2331,7 +2331,7 @@ Contains
     Type(comms_type),          Intent(InOut) :: comm
 
     Character(Len=10)  :: c_out
-    Character(Len=256) :: messages(6)
+    Character(Len=STR_LEN) :: messages(6)
     Integer            :: exout, i
     Integer(Kind=wi)   :: nstpe, nstph, switch
     Logical            :: l_out
@@ -2765,7 +2765,7 @@ Contains
     Type(comms_type),          Intent(InOut) :: comm
 
     Character(Len=10)  :: c_out
-    Character(Len=256) :: messages(5)
+    Character(Len=STR_LEN) :: messages(5)
     Integer            :: exout, i, nstpe, nstph
     Logical            :: l_out
     Real(Kind=wp)      :: tmsh, tsths

@@ -34,7 +34,7 @@ Module inversions
   Use filename,        Only: FILE_TABINV,&
                              file_type
   Use kinds,           Only: wi,&
-                             wp
+    wp,STR_LEN
   Use numerics,        Only: images,&
                              local_index
   Use parse,           Only: get_line,&
@@ -221,7 +221,7 @@ Contains
     Type(configuration_type),       Intent(InOut) :: config
     Type(comms_type),               Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail, i, ig, j, kk, ll, ngrid
     Logical                    :: zero
     Real(Kind=wp)              :: coef, delth, dfed, dfed0, dfed1, dfed2, dgr2rad, dgrid, factor, &
@@ -563,7 +563,7 @@ Contains
     Type(configuration_type),      Intent(InOut) :: config
     Type(comms_type),              Intent(InOut) :: comm
 
-    Character(Len=256)         :: message
+    Character(Len=STR_LEN)         :: message
     Integer                    :: fail(1:4), i, ia, ib, ic, id, j, keyi, kk, l, nk
     Integer, Allocatable       :: lstopt(:, :)
     Logical                    :: safe
@@ -1272,7 +1272,7 @@ Contains
     Type(comms_type),      Intent(InOut) :: comm
 
     Character(Len=200)         :: record
-    Character(Len=256)         :: message, messages(4)
+    Character(Len=STR_LEN)         :: message, messages(4)
     Character(Len=32)          :: idinvr
     Character(Len=40)          :: word
     Character(Len=8)           :: atom1, atom2, atom3, atom4

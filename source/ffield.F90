@@ -74,7 +74,7 @@ Module ffield
                              kim_interactions,&
                              kim_type
   ! SITE MODULE
-  Use kinds,           Only: wi,&
+  Use kinds,           Only: wi,STR_LEN,&
                              wp
   Use metal,           Only: metal_generate,&
                              metal_generate_erf,&
@@ -121,6 +121,14 @@ Module ffield
                              VDW_N_M_SHIFT, VDW_RYDBERG, VDW_TAB, VDW_WCA, VDW_ZBL, &
                              VDW_ZBL_SWITCH_BUCKINGHAM, VDW_ZBL_SWITCH_MORSE, VDW_SANDERSON,&
                              vdw_direct_fs_generate, vdw_generate, vdw_table_read, vdw_type
+  Use units,           Only: internal_units,&
+                             set_out_units,&
+                             atomic_units,&
+                             si_units,&
+                             hartree_units,&
+                             kj_units,&
+                             kb_units,&
+                             kcal_units
 
   Implicit None
 
@@ -208,7 +216,7 @@ Contains
     Character(Len=200)             :: record
     Character(Len=24)              :: idangl
     Character(Len=24), Allocatable :: angl_name(:)
-    Character(Len=256)             :: message, messages(3)
+    Character(Len=STR_LEN)             :: message, messages(3)
     Character(Len=32)              :: iddihd, idinvr
     Character(Len=32), Allocatable :: dihd_name(:), invr_name(:)
     Character(Len=4)               :: keyword
@@ -5313,7 +5321,7 @@ Contains
     Type(rigid_bodies_type), Intent(In   ) :: rigid
 
     Character(Len=20)  :: fmt1, fmt2, fmt3
-    Character(Len=256) :: banner(19)
+    Character(Len=STR_LEN) :: banner(19)
     Character(Len=4)   :: frzpmf
     Integer            :: frzang, frzbnd, frzdih, frzinv, frzshl, frztet, iang, iatm1, iatm2, &
                           iatm3, iatm4, ibond, idih, iinv, ipmf, ishls, isite1, isite2, isite3, &
@@ -5540,7 +5548,7 @@ Contains
     Integer, Parameter :: mmk = 1000, mxb = 6
 
     Character(Len=200)                 :: record, record_raw
-    Character(Len=256)                 :: message
+    Character(Len=STR_LEN)                 :: message
     Character(Len=40)                  :: word
     Character(Len=8)                   :: name
     Character(Len=8), Dimension(1:mmk) :: chr
@@ -5694,9 +5702,39 @@ Contains
         Call get_word(record, word)
       End Do
 
-      ! multipoles container detection
 
-      If (word(1:5) == 'multi') Then
+      If (word(1:5) == 'units') Then
+        Call get_word(record, word); Call lower_case(word)
+
+        Select Case(Trim(word))
+
+         case('ev')
+
+          Call info('set units to eV', .true., level=3)
+          Call set_out_units(atomic_units)
+
+         Case('kcal')
+          Call info('set units to kcal/mol', .true., level=3)
+          Call set_out_units(kcal_units)
+         Case( 'kj')
+          Call info('set units to kJ/mol', .true., level=3)
+          Call set_out_units(kj_units)
+         Case('internal')
+          Call info('set units to dl_poly internal units (10 J/mol)', .true., level=3)
+          Call set_out_units(internal_units)
+         Case('k')
+          Call info('set units to Kelvin/Boltzmann', .true., level=3)
+          Call set_out_units(kb_units)
+         Case( ' ')
+          Call info('set units to dl_poly internal units (10 J/mol)', .true., level=3)
+          Call set_out_units(internal_units)
+         Case default
+          Call info(word(1:Len_trim(word)), .true.)
+          Call error(5)
+        End Select
+        ! multipoles container detection
+
+      Else If (word(1:5) == 'multi') Then
 
         Call get_word(record, word); Call lower_case(word)
         If (word(1:5) == 'order') Call get_word(record, word)
@@ -6583,7 +6621,7 @@ Contains
     Type(comms_type),      Intent(InOut) :: comm
 
     Character(Len=200) :: record, record1, record2
-    Character(Len=256) :: message, messages(3)
+    Character(Len=STR_LEN) :: message, messages(3)
     Character(Len=40)  :: word
     Character(Len=8)   :: atom
     Integer            :: i, indmpl, indmpl_final, indmpl_start, ishls, isite, isite2, itmols, j, &

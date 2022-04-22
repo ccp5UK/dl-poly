@@ -11,7 +11,7 @@ Module shared_units
   Use configuration,   Only: configuration_type
   Use domains,         Only: domains_type
   Use errors_warnings, Only: error
-  Use kinds,           Only: wp
+  Use kinds,           Only: wp,STR_LEN
   Use numerics,        Only: local_index,&
                              shellsort
 
@@ -73,7 +73,7 @@ Contains
     Type(comms_type),            Intent(InOut) :: comm
     Real(Kind=wp), Dimension(:), Intent(InOut) :: q0, q1, q2, q3, vxx, vyy, vzz, oxx, oyy, ozz
 
-    Character(Len=256)                 :: message
+    Character(Len=STR_LEN)                 :: message
     Integer                            :: fail, i, j, jdnode, k, k0, kdnode, l, l_in, l_me, l_out, &
                                           m, n_k, n_nt
     Integer, Allocatable, Dimension(:) :: i0, j0, listin, listme, lstout
@@ -435,7 +435,7 @@ Contains
     Integer,                  Intent(In   ) :: lashp(1:domain%neighbours)
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)                       :: message
+    Character(Len=STR_LEN)                       :: message
     Integer                                  :: fail, i, iadd, iblock, j, j0, jdnode, k, k0, &
                                                 kdnode, limit, m, mpi_type, n
     Logical                                  :: safe(1:2)
@@ -620,7 +620,7 @@ Contains
     Integer,                  Intent(In   ) :: lashp(1:domain%neighbours)
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)                       :: message
+    Character(Len=STR_LEN)                       :: message
     Integer                                  :: fail, i, iadd, iblock, j, j0, jdnode, k, k0, &
                                                 kdnode, limit, m, n
     Logical                                  :: safe(1:2)
@@ -790,7 +790,7 @@ Contains
     Integer,                  Intent(In   ) :: lashp(1:domain%neighbours)
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=256)                 :: message
+    Character(Len=STR_LEN)                 :: message
     Integer                            :: fail, i, iadd, iblock, j, j0, jdnode, k, k0, kdnode, &
                                           limit, m, n
     Integer, Allocatable, Dimension(:) :: ibuffer

@@ -66,7 +66,7 @@ Module kim
                                           kim_time_unit_ps, kim_to_string, Operator(.eq.)
 #endif
   Use kinds,                        Only: wi,&
-                                          wp
+    wp,STR_LEN
   Use numerics,                     Only: local_index
   Use particle,                     Only: corepart
 
@@ -283,11 +283,11 @@ Contains
     Integer(Kind=c_int)              :: parameter_index
     Integer(Kind=wi)                 :: max_len, i
     Integer(Kind=wi)                 :: fail(4)
-    Character(Kind=c_char, Len=256)  :: parameter_name
+    Character(Kind=c_char, Len=STR_LEN)  :: parameter_name
     Character(Kind=c_char, Len=1024) :: parameter_description
-    Character(Kind=c_char, Len=256)  :: parameter_string
+    Character(Kind=c_char, Len=STR_LEN)  :: parameter_string
     Character(Len=68)                :: fmt, banner(7)
-    Character(Len=256)               :: message
+    Character(Len=STR_LEN)               :: message
 
 #ifdef KIM
     Type(kim_data_type_type) :: kim_data_type

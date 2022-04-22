@@ -18,7 +18,8 @@ Module timer
                                            mtime,&
                                            timer_tag
   Use, Intrinsic :: iso_fortran_env, Only: eu => error_unit
-  Use kinds,                         Only: wp
+  Use kinds,                         Only: wp,&
+                                           STR_LEN
 
   Implicit None
 
@@ -478,7 +479,7 @@ Contains
     Type(timer_type), Intent(InOut) :: tmr
     Type(comms_type), Intent(InOut) :: comm
 
-    Character(Len=256), Allocatable, Dimension(:) :: message
+    Character(Len=STR_LEN), Allocatable, Dimension(:) :: message
     Integer                                       :: ierr, proc
     Type(node), Pointer                           :: current_timer
 
@@ -526,7 +527,7 @@ Contains
     Integer,                          Intent(In   ) :: max_depth, proc_id
     Character(Len=*), Dimension(-2:), Intent(  Out) :: message
 
-    Character(Len=256)  :: fcontent, fhead, fline
+    Character(Len=STR_LEN)  :: fcontent, fhead, fline
     Character(Len=7)    :: depth_symb
     Character(Len=8)    :: proc_string
     Integer             :: depth, itimer, write_node
@@ -694,7 +695,7 @@ Contains
     !!------------------------------------------------!
     Type(timer_type), Intent(InOut) :: tmr
 
-    Character(Len=256) :: message
+    Character(Len=STR_LEN) :: message
 
     Call gtime(tmr%elapsed)
     Write (message, '(a,f12.3,a)') "time elapsed since job start: ", tmr%elapsed, " sec"
@@ -795,7 +796,7 @@ Contains
     Type(call_stack),        Intent(  Out) :: newStack
     Character(Len=max_name), Intent(  Out) :: name
 
-    Character(Len=256) :: stack
+    Character(Len=STR_LEN) :: stack
     Integer            :: cnt, i
 
     stack = Adjustl(stack_string)
