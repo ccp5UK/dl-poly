@@ -115,15 +115,10 @@ Module new_control
                                       TRAJ_KEY_COORD_VEL_FORCE,&
                                       trajectory_type
   Use ttm,                      Only: ttm_type
-  Use units,                    Only: atomic_units,&
-                                      convert_units,&
-                                      current_units => out_units,&
-                                      hartree_units,&
-                                      internal_units,&
-                                      set_out_units,&
-                                      set_timestep,&
-                                      si_units,&
-                                      units_scheme
+  Use units,                    Only: &
+                                      atomic_units, convert_units, current_units => out_units, &
+                                      hartree_units, internal_units, kb_units, kcal_units, &
+                                      kj_units, set_out_units, set_timestep, si_units, units_scheme
   Use vdw,                      Only: MIX_FENDER_HALSEY,&
                                       MIX_FUNCTIONAL,&
                                       MIX_HALGREN,&
@@ -1273,6 +1268,15 @@ Contains
       Case ('hartree')
 
         out_units = hartree_units
+      Case ('kj')
+
+        out_units = kj_units
+      Case ('kcal')
+
+        out_units = kcal_units
+      Case ('boltzman')
+
+        out_units = kb_units
 
       End Select
     End If
@@ -2313,7 +2317,7 @@ Contains
     Type(pmf_type),           Intent(In   ) :: pmf
 
     Character(Len=STR_LEN) :: message, messages(5)
-    Integer            :: itmp
+    Integer                :: itmp
 
     Call info('', .true.)
     Call info("System parameters: ", .true.)
@@ -3706,7 +3710,7 @@ Contains
                        key="io_units_scheme", &
                        name="I/O units scheme", &
                        val="internal", &
-                       description="Set I/O units scheme, options: internal, si, atomic (*unused*)", &
+                       description="Set I/O units scheme, options: internal, si, atomic, hartree, kj, kcal, boltzman", &
                        data_type=DATA_OPTION))
 
         Call table%set("io_units_length", control_parameter( &
