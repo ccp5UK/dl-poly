@@ -197,8 +197,8 @@ Contains
 
         Write (ounit, '(3(/,1x,a),/)') &
           "#** warning - DL_POLY_2/Classic directive 'delr - Verlet shell strip cutoff' defaulted to ***", &
-          "#** DL_POLY_4 directive 'neigh%padding - real space cutoff padding option' ***", &
-          "#** neigh%padding=Max(neigh%padding,delr/4) !!! ***"
+          "#** DL_POLY_4 directive 'padding - real space cutoff padding option' ***", &
+          "#** neigh%padding=Max(padding,delr/4) !!! ***"
 
       Case (36)
 
@@ -261,12 +261,6 @@ Contains
           Write (ounit, '(/,1x,a,/)') &
             '#** unspecified warning encountered !!! ***'
         End If
-
-      Case (100)
-
-        Write (ounit, '(2(/,1x,a),/)') &
-          '#** warning - primary link cell algorithm has a link cell dimension that is < 3 !!! ***', &
-          '#** DL_POLY_4 RUNNING IN LOW EFFICIENCY MODE !!! ***'
 
       Case (110)
 

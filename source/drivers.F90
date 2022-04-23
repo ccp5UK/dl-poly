@@ -1127,7 +1127,8 @@ Contains
     ! Integrate equations of motion - velocity verlet
 
     If (.not. rigid%on) Then
-      If (thermo%ensemble == ENS_NVE) Then
+      Select Case(thermo%ensemble)
+      Case(ENS_NVE)
 
         ! Microcanonical ensemble
 
@@ -1136,7 +1137,7 @@ Contains
            stat%strkin, stat%engke, thermo, &
            cshell, cons, pmf, stat, domain, tmr, cnfig, comm)
 
-      Else If (thermo%ensemble == ENS_NVT_EVANS) Then
+      Case(ENS_NVT_EVANS)
 
         ! Evans thermostat (Gaussian temperature constraints)
 
@@ -1146,7 +1147,7 @@ Contains
            stat%strkin, stat%engke, thermo, &
            cshell, cons, pmf, stat, domain, tmr, cnfig, comm)
 
-      Else If (thermo%ensemble == ENS_NVT_LANGEVIN) Then
+      Case (ENS_NVT_LANGEVIN)
 
         ! Langevin thermostat (Stochastic Dynamics)
 
@@ -1156,7 +1157,7 @@ Contains
            stat%strkin, stat%engke, &
            cshell, cons, pmf, stat, thermo, domain, tmr, cnfig, seed, comm)
 
-      Else If (thermo%ensemble == ENS_NVT_ANDERSON) Then
+      Case (ENS_NVT_ANDERSON)
 
         ! Andersen thermostat (Stochastic Dynamics)
 
@@ -1166,7 +1167,7 @@ Contains
            stat%strkin, stat%engke, &
            cshell, cons, pmf, stat, thermo, sites, domain, tmr, cnfig, seed, comm)
 
-      Else If (thermo%ensemble == ENS_NVT_BERENDSEN) Then
+      Case (ENS_NVT_BERENDSEN)
 
         ! Berendsen thermostat
 
@@ -1175,7 +1176,7 @@ Contains
            stat%strkin, stat%engke, &
            cshell, cons, pmf, stat, thermo, domain, tmr, cnfig, comm)
 
-      Else If (thermo%ensemble == ENS_NVT_NOSE_HOOVER) Then
+      Case (ENS_NVT_NOSE_HOOVER)
 
         ! Nose-Hoover thermostat
 
@@ -1185,7 +1186,7 @@ Contains
            stat%strkin, stat%engke, &
            cshell, cons, pmf, stat, thermo, domain, tmr, cnfig, comm)
 
-      Else If (thermo%ensemble == ENS_NVT_GENTLE) Then
+      Case (ENS_NVT_GENTLE)
 
         ! Gentle-Stochastic thermostat
 
@@ -1196,7 +1197,7 @@ Contains
            stat%strkin, stat%engke, &
            cshell, cons, pmf, stat, thermo, domain, tmr, cnfig, seed, comm)
 
-      Else If (thermo%ensemble == ENS_NVT_LANGEVIN_INHOMO) Then
+      Case (ENS_NVT_LANGEVIN_INHOMO)
 
         ! Inhomogeneous (two-temperature)
         ! Langevin thermostat (Stochastic Dynamics)
@@ -1207,7 +1208,7 @@ Contains
            stat%strkin, stat%engke, &
            ttm, cshell, cons, pmf, stat, thermo, domain, tmr, cnfig, seed, comm)
 
-      Else If (thermo%ensemble == ENS_NPT_LANGEVIN) Then
+      Case(ENS_NPT_LANGEVIN)
 
         ! Langevin thermostat and isotropic barostat
 
@@ -1220,7 +1221,7 @@ Contains
            cshell, cons, pmf, stat, thermo, sites, vdws, domain, &
            tmr, cnfig, seed, comm)
 
-      Else If (thermo%ensemble == ENS_NPT_BERENDSEN) Then
+      Case (ENS_NPT_BERENDSEN)
 
         ! Berendsen thermostat and isotropic barostat
 
@@ -1231,7 +1232,7 @@ Contains
            cshell, cons, pmf, stat, thermo, sites, vdws, domain, &
            tmr, cnfig, comm)
 
-      Else If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
+      Case (ENS_NPT_NOSE_HOOVER)
 
         ! Nose-Hoover thermostat and isotropic barostat
 
@@ -1243,7 +1244,7 @@ Contains
            cshell, cons, pmf, stat, thermo, sites, vdws, &
            domain, tmr, cnfig, comm)
 
-      Else If (thermo%ensemble == ENS_NPT_MTK) Then
+      Case (ENS_NPT_MTK)
 
         ! Martyna-Tuckerman-Klein (MTK) thermostat and isotropic barostat
 
@@ -1255,7 +1256,7 @@ Contains
            cshell, cons, pmf, stat, thermo, sites, vdws, domain, &
            tmr, cnfig, comm)
 
-      Else If (thermo%ensemble == ENS_NPT_LANGEVIN_ANISO) Then
+      Case (ENS_NPT_LANGEVIN_ANISO)
 
         ! Langevin thermostat and barostat anisotropic (cell shape varying)
 
@@ -1268,7 +1269,7 @@ Contains
            cshell, cons, pmf, stat, thermo, sites, vdws, domain, &
            tmr, cnfig, seed, comm)
 
-      Else If (thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
+      Case (ENS_NPT_BERENDSEN_ANISO)
 
         ! Berendsen thermostat and barostat anisotropic (cell shape varying)
 
@@ -1279,7 +1280,7 @@ Contains
            cshell, cons, pmf, stat, thermo, sites, vdws, domain, &
            tmr, cnfig, comm)
 
-      Else If (thermo%ensemble == ENS_NPT_NOSE_HOOVER_ANISO) Then
+      Case (ENS_NPT_NOSE_HOOVER_ANISO)
 
         ! Nose-Hoover thermostat and anisotropic barostat (cell shape varying)
 
@@ -1291,7 +1292,7 @@ Contains
            cshell, cons, pmf, stat, thermo, sites, vdws, &
            domain, tmr, cnfig, comm)
 
-      Else If (thermo%ensemble == ENS_NPT_MTK_ANISO) Then
+      Case (ENS_NPT_MTK_ANISO)
 
         ! MTK thermostat and anisotropic barostat (cell shape varying)
 
@@ -1303,15 +1304,10 @@ Contains
            cshell, cons, pmf, stat, thermo, sites, vdws, domain, &
            tmr, cnfig, comm)
 
-      Else
-
-        ! Invalid ensemble option
-
-        Call error(430)
-
-      End If
+      End Select
     Else
-      If (thermo%ensemble == ENS_NVE) Then
+      Select Case(thermo%ensemble)
+      Case (ENS_NVE)
 
         ! Microcanonical ensemble
 
@@ -1321,7 +1317,7 @@ Contains
            stat%strcom, stat%vircom, thermo, cshell, cons, pmf, &
            stat, rigid, domain, tmr, cnfig, comm)
 
-      Else If (thermo%ensemble == ENS_NVT_EVANS) Then
+      Case (ENS_NVT_EVANS)
 
         ! Evans thermostat (Gaussian temperature constraints)
 
@@ -1332,7 +1328,7 @@ Contains
            stat%strcom, stat%vircom, thermo, cshell, cons, pmf, &
            stat, rigid, domain, tmr, cnfig, comm)
 
-      Else If (thermo%ensemble == ENS_NVT_LANGEVIN) Then
+      Case (ENS_NVT_LANGEVIN)
 
         ! Langevin thermostat (Stochastic Dynamics)
 
@@ -1343,7 +1339,7 @@ Contains
            stat%strcom, stat%vircom, cshell, cons, pmf, &
            stat, thermo, rigid, domain, tmr, cnfig, seed, comm)
 
-      Else If (thermo%ensemble == ENS_NVT_ANDERSON) Then
+      Case (ENS_NVT_ANDERSON)
 
         ! Andersen thermostat (Stochastic Dynamics)
 
@@ -1354,7 +1350,7 @@ Contains
            stat%strcom, stat%vircom, cshell, cons, pmf, &
            stat, thermo, sites, rigid, domain, tmr, cnfig, seed, comm)
 
-      Else If (thermo%ensemble == ENS_NVT_BERENDSEN) Then
+      Case (ENS_NVT_BERENDSEN)
 
         ! Berendsen thermostat
 
@@ -1364,7 +1360,7 @@ Contains
            stat%strcom, stat%vircom, cshell, cons, pmf, &
            stat, thermo, rigid, domain, tmr, cnfig, comm)
 
-      Else If (thermo%ensemble == ENS_NVT_NOSE_HOOVER) Then
+      Case (ENS_NVT_NOSE_HOOVER)
 
         ! Nose-Hoover thermostat
 
@@ -1375,7 +1371,7 @@ Contains
            stat%strcom, stat%vircom, cshell, cons, pmf, &
            stat, thermo, rigid, domain, tmr, cnfig, comm)
 
-      Else If (thermo%ensemble == ENS_NVT_GENTLE) Then
+      Case (ENS_NVT_GENTLE)
 
         ! Gentle-Stochastic thermostat
 
@@ -1387,7 +1383,7 @@ Contains
            stat%strcom, stat%vircom, cshell, cons, pmf, &
            stat, thermo, rigid, domain, tmr, cnfig, seed, comm)
 
-      Else If (thermo%ensemble == ENS_NPT_LANGEVIN) Then
+      Case (ENS_NPT_LANGEVIN)
 
         ! Langevin thermostat and isotropic barostat
 
@@ -1401,7 +1397,7 @@ Contains
            cshell, cons, pmf, stat, thermo, sites, vdws, &
            rigid, domain, tmr, cnfig, seed, comm)
 
-      Else If (thermo%ensemble == ENS_NPT_BERENDSEN) Then
+      Case (ENS_NPT_BERENDSEN)
 
         ! Berendsen thermostat and isotropic barostat
 
@@ -1413,7 +1409,7 @@ Contains
            cshell, cons, pmf, stat, thermo, sites, vdws, &
            rigid, domain, tmr, cnfig, comm)
 
-      Else If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
+      Case (ENS_NPT_NOSE_HOOVER)
 
         ! Nose-Hoover thermostat and isotropic barostat
 
@@ -1426,7 +1422,7 @@ Contains
            cshell, cons, pmf, stat, thermo, sites, vdws, &
            rigid, domain, tmr, cnfig, comm)
 
-      Else If (thermo%ensemble == ENS_NPT_MTK) Then
+      Case (ENS_NPT_MTK)
 
         ! Martyna-Tuckerman-Klein (MTK) thermostat and isotropic barostat
 
@@ -1439,7 +1435,7 @@ Contains
            cshell, cons, pmf, stat, thermo, sites, vdws, &
            rigid, domain, tmr, cnfig, comm)
 
-      Else If (thermo%ensemble == ENS_NPT_LANGEVIN_ANISO) Then
+      Case (ENS_NPT_LANGEVIN_ANISO)
 
         ! Langevin thermostat and barostat anisotropic (cell shape varying)
 
@@ -1453,7 +1449,7 @@ Contains
            cshell, cons, pmf, stat, thermo, sites, vdws, &
            rigid, domain, tmr, cnfig, seed, comm)
 
-      Else If (thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
+      Case (ENS_NPT_BERENDSEN_ANISO)
 
         ! Berendsen thermostat and barostat anisotropic (cell shape varying)
 
@@ -1465,7 +1461,7 @@ Contains
            cshell, cons, pmf, stat, thermo, sites, vdws, &
            rigid, domain, tmr, cnfig, comm)
 
-      Else If (thermo%ensemble == ENS_NPT_NOSE_HOOVER_ANISO) Then
+      Case (ENS_NPT_NOSE_HOOVER_ANISO)
 
         ! Nose-Hoover thermostat and anisotropic barostat (cell shape varying)
 
@@ -1478,7 +1474,7 @@ Contains
            cshell, cons, pmf, stat, thermo, sites, vdws, &
            rigid, domain, tmr, cnfig, comm)
 
-      Else If (thermo%ensemble == ENS_NPT_MTK_ANISO) Then
+      Case (ENS_NPT_MTK_ANISO)
 
         ! MTK thermostat and anisotropic barostat (cell shape varying)
 
@@ -1491,13 +1487,7 @@ Contains
            cshell, cons, pmf, stat, thermo, sites, vdws, &
            rigid, domain, tmr, cnfig, comm)
 
-      Else
-
-        ! Invalid ensemble option
-
-        Call error(430)
-
-      End If
+      End Select
     End If
 
     ! Sharlow's second order splittings for VV only (LFV->VV) DPD thermostat - no variable flow%time-stepping!!!

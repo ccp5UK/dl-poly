@@ -5706,32 +5706,31 @@ Contains
       If (word(1:5) == 'units') Then
         Call get_word(record, word); Call lower_case(word)
 
-        Select Case(Trim(word))
-
-         case('ev')
-
+        ! here we shall use a select case on word, unfortunately since dlpoly
+        ! was never very strict on units, in past kcal/donkey/moon is still a valid option
+        ! for kcal.
+        If (word(1:2)=='ev') Then
           Call info('set units to eV', .true., level=3)
           Call set_out_units(atomic_units)
-
-         Case('kcal')
+        Else If (word(1:4) == 'kcal') Then
           Call info('set units to kcal/mol', .true., level=3)
           Call set_out_units(kcal_units)
-         Case( 'kj')
+        Else If (word(1:2) ==  'kj') Then
           Call info('set units to kJ/mol', .true., level=3)
           Call set_out_units(kj_units)
-         Case('internal')
+        Else If (word(1:8) == 'internal') Then
           Call info('set units to dl_poly internal units (10 J/mol)', .true., level=3)
           Call set_out_units(internal_units)
-         Case('k')
+        Else If (word(1:1) == 'k') Then
           Call info('set units to Kelvin/Boltzmann', .true., level=3)
           Call set_out_units(kb_units)
-         Case( ' ')
+        Else If ( word(1:1) == ' ') Then
           Call info('set units to dl_poly internal units (10 J/mol)', .true., level=3)
           Call set_out_units(internal_units)
-         Case default
+        Else
           Call info(word(1:Len_trim(word)), .true.)
           Call error(5)
-        End Select
+        End If
         ! multipoles container detection
 
       Else If (word(1:5) == 'multi') Then

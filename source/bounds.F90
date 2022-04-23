@@ -140,7 +140,7 @@ Contains
     Integer, Dimension(3),     Intent(  Out) :: link_cell
     Integer,                   Intent(In   ) :: ff
 
-    Character(Len=STR_LEN) :: message
+    Character(Len=STR_LEN) :: message,messages(2)
     Integer(Kind=wi)   :: mxgrid
     Real(Kind=wp), Dimension(10) :: cell_properties
     Real(Kind=wp)      :: cut, dens0, dens, padding2
@@ -232,7 +232,13 @@ Contains
       End If
     End If
 
-    If (any(link_cell < 3)) Call warning(100, 0.0_wp, 0.0_wp, 0.0_wp)
+    If (any(link_cell < 3)) Then
+      Write (messages(1), '(a)') &
+          '#** warning - primary link cell algorithm has a link cell dimension that is < 3 !!! ***'
+      Write (messages(2), '(a)') &
+          '#** DL_POLY_4 RUNNING IN LOW EFFICIENCY MODE !!! ***'
+      Call info(messages, 2, .true., level=3)
+    End If
 
   end Subroutine set_bounds_new
 
@@ -314,7 +320,7 @@ Contains
     Type(comms_type),          Intent(InOut) :: comm
     Integer,                   Intent(In   ) :: ff
 
-    Character(Len=STR_LEN)           :: message
+    Character(Len=STR_LEN)       :: message,messages(2)
     Integer                      :: megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, mtshl, &
                                     mtteth
     Integer(Kind=wi)             :: mxgrid
@@ -439,7 +445,13 @@ Contains
       End If
     End If
 
-    If (Any(link_cell < 3)) Call warning(100, 0.0_wp, 0.0_wp, 0.0_wp)
+    If (any(link_cell < 3)) Then
+      Write (messages(1), '(a)') &
+          '#** warning - primary link cell algorithm has a link cell dimension that is < 3 !!! ***'
+      Write (messages(2), '(a)') &
+          '#** DL_POLY_4 RUNNING IN LOW EFFICIENCY MODE !!! ***'
+      Call info(messages, 2, .true., level=3)
+    End If
 
     Write (message, '(a,3i6)') "Final link-cell decomposition (x,y,z): ", link_cell
     Call info(message, .true., level=1)
@@ -1260,9 +1272,9 @@ Contains
         cutoff_padding = cutoff_pct * neigh%cutoff
       End If
 
-      Write (messages(1), '(7(1X,A15,1X))') "neigh%padding", "ewald_padding", "ttm_padding", "default_padding", &
+      Write (messages(1), '(7(1X,A15,1X))') "padding", "ewald_padding", "ttm_padding", "default_padding", &
         "serial_padding", "cutoff_padding", "width_limit"
-      Write (messages(2), '(7(1X,F15.8,1X))') neigh%padding, ewald_padding, ttm_padding, default_padding, &
+      Write (messages(2), '(7(1X,g15.8,1X))') neigh%padding, ewald_padding, ttm_padding, default_padding, &
         serial_padding, cutoff_padding, width_limit - neigh%cutoff
       Call info(messages, 2, .true., level=3)
       neigh%padding = Min(neigh%padding, ewald_padding, ttm_padding, default_padding, serial_padding, cutoff_padding, &
