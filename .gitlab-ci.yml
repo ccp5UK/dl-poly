@@ -32,13 +32,6 @@ build-mpi-pure:
     - sh utils/build-mpi-pure.sh
     - sh utils/build-mpi-evb.sh
 
-build-mpi-netcdf:
-  stage: build
-  tags:
-    - gcc
-  script:
-    - sh utils/build-mpi-netcdf.sh
-
 build-mpi-plumed:
   stage: build
   tags:
