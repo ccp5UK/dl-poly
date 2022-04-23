@@ -36,7 +36,7 @@ Program dl_poly
   Use configuration,                          Only: configuration_type
   Use constraints,                            Only: constraints_type
   Use control,                                Only: read_simtype
-  Use control_parameter_module,               Only: dump_parameters,&
+  Use control_parameters,                     Only: dump_parameters,&
                                                     parameters_hash_table
   Use coord,                                  Only: coord_type
   Use core_shell,                             Only: core_shell_type

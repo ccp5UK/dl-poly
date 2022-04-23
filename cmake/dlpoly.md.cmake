@@ -42,7 +42,7 @@ exclude: ewald_spme_mfie~d_d.f90
       ../source/SERIAL/ewald_spme_mfie~d_d.F90
 
 project_url: file://@CMAKE_BINARY_DIR@/docs
-license: stfc
+license: lgplv3
 print_creation_date: true
 parallel: 1
 

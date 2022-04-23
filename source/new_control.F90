@@ -21,7 +21,7 @@ Module new_control
                                       tenunt,&
                                       zero_plus
   Use constraints,              Only: constraints_type
-  Use control_parameter_module, Only: DATA_BOOL,&
+  Use control_parameters,       Only: DATA_BOOL,&
                                       DATA_FLOAT,&
                                       DATA_INT,&
                                       DATA_OPTION,&

@@ -3,7 +3,7 @@ Module test_control
   Use asserts,                  Only: assert
   Use comms,                    Only: comms_type,&
                                       gsync
-  Use control_parameter_module, Only: parameters_hash_table
+  Use control_parameters,       Only: parameters_hash_table
   Use kinds,                    Only: STR_LEN,&
                                       wp
   Use new_control,              Only: initialise_control,&

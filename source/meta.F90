@@ -37,7 +37,7 @@ Module meta
   Use control,                                Only: read_control,&
                                                     scan_control_io,&
                                                     scan_control_output
-  Use control_parameter_module,               Only: parameters_hash_table
+  Use control_parameters,                     Only: parameters_hash_table
   Use coord,                                  Only: coord_type
   Use core_shell,                             Only: core_shell_type
   Use defects,                                Only: defects_type

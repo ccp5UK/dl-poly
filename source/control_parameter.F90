@@ -1,4 +1,4 @@
-Module control_parameter_module
+Module control_parameters
   !!-----------------------------------------------------------------------
   !!
   !! Module to handle control parameters in dlpoly
@@ -107,9 +107,11 @@ Subroutine dump_parameters(ifile, params, mode)
   Type(control_parameter) :: param
   Character(Len=MAX_KEY), Dimension(:), Allocatable :: keys
   Character(Len=*), Dimension(0:7), Parameter :: data_name = &
-                                      [Character(Len=7) :: 'NULL', 'INT', 'FLOAT', 'STRING', 'BOOL', 'OPTION', 'VECTOR3', 'VECTOR6']
+                                                 [Character(Len=7) :: 'NULL', 'INT', 'FLOAT', 'STRING', &
+                                                                       'BOOL', 'OPTION', 'VECTOR3', 'VECTOR6']
   Character(Len=*), Dimension(0:7), Parameter :: python_data_name = &
-                                     [Character(Len=10) :: 'None', 'int', 'float', 'str', 'bool', 'str', '(float,)*3', '(float,)*6']
+                                                 [Character(Len=10) :: 'None', 'int', 'float', 'str', 'bool', &
+                                                                        'str', '(float,)*3', '(float,)*6']
   Integer :: i
 
   Call params%get_keys(keys)
@@ -593,4 +595,4 @@ Function num_set(table, key)
 
 End Function num_set
 
-End Module control_parameter_module
+End Module control_parameters
