@@ -11,6 +11,21 @@ sources = [{'filename': 'dl_poly_%(version)s.tar.bz2',
 'extract_cmd':'tar -xvf %s'
 }]
 
+configopts = " -DWITH_PLUMED=ON -DINTERNAL_PLUMED=OFF -DPLUMED_VERSION=2.7.3"
+configopts += " -DWITH_KIM=ON -DINTERNAL_KIM=OFF "
+
+dependencies = [
+    ('PLUMED', '2.7.3'),
+    ('kim-api','2.2.1',)
+]
+
+
+builddependencies = [
+    ('CMake', '3.21.1')
+]
+
+separate_build_dir = True
+
 sanity_check_paths = {
     'files': ['bin/DLPOLY.Z'],
     'dirs':[]

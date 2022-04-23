@@ -5,11 +5,27 @@ homepage = "https://www.scd.stfc.ac.uk/Pages/DL_POLY.aspx"
 description = "classical md"
 
 toolchain = {'name':'foss','version':'2021b'}
+toolchainopts = {'extra_fflags':'-fallow-argument-mismatch'}
+
 
 sources = [{'filename': 'dl_poly_%(version)s.tar.bz2',
 'source_urls':['https://gitlab.com/ccp5/dl-poly/-/archive/%(version)s/'],
 'extract_cmd':'tar -xvf %s'
 }]
+
+configopts = " -DWITH_PLUMED=ON -DINTERNAL_PLUMED=OFF -DPLUMED_VERSION=2.7.3"
+configopts += " -DWITH_KIM=ON -DINTERNAL_KIM=OFF "
+
+dependencies = [
+    ('PLUMED', '2.7.3'),
+    ('kim-api','2.2.1',)
+]
+
+builddependencies = [
+    ('CMake', '3.21.1')
+]
+
+separate_build_dir = True
 
 sanity_check_paths = {
     'files': ['bin/DLPOLY.Z'],
