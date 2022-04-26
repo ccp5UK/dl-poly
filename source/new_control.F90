@@ -1996,6 +1996,7 @@ Contains
     Call info(banner, 6, .true.)
 
     If (check_print_level(1)) Call write_io(io_data, files)
+    If (check_print_level(1)) Call write_units()
     If (check_print_level(1)) Call write_system_parameters(flow, config, stats, thermo, impa, minim, plume, cons, pmf)
     If (check_print_level(1)) Call write_ensemble(thermo)
     If (check_print_level(1)) Call write_forcefield(link_cell, neigh, vdws, electro, ewld, mpoles, cshell, met)
@@ -2104,6 +2105,35 @@ Contains
     If (files(FILE_TABEAM)%filename /= 'TABEAM') Call info('  TABEAM file: '//files(FILE_TABEAM)%filename, .true.)
 
   End Subroutine write_io
+
+  Subroutine write_units()
+    !!-----------------------------------------------------------------------
+    !!
+    !! Write current units information
+    !!
+    !! copyright - daresbury laboratory
+    !! author - j.wilkins april 2022
+    !!-----------------------------------------------------------------------
+
+    Call info('', .true.)
+    Call info('Current Units Scheme:', .true.)
+    Call info('  Length units: '//current_units%length_unit%abbrev, .true.)
+    Call info('  Time units: '//current_units%time_unit%abbrev, .true.)
+    Call info('  Mass units: '//current_units%mass_unit%abbrev, .true.)
+    Call info('  Charge units: '//current_units%charge_unit%abbrev, .true.)
+    Call info('  Energy units: '//current_units%energy_unit%abbrev, .true.)
+    Call info('  Temperature units: '//current_units%temp_unit%abbrev, .true.)
+    Call info('  Current units: '//current_units%current_unit%abbrev, .true.)
+    Call info('  Luminosity units: '//current_units%luminosity_unit%abbrev, .true.)
+    Call info('  Angle units: '//current_units%angle_unit%abbrev, .true.)
+    Call info('  Pressure units: '//current_units%pressure_unit%abbrev, .true.)
+    Call info('  Force units: '//current_units%force_unit%abbrev, .true.)
+    Call info('  Velocity units: '//current_units%velocity_unit%abbrev, .true.)
+    Call info('  Power units: '//current_units%power_unit%abbrev, .true.)
+    Call info('  Surface Tension units: '//current_units%surf_ten_unit%abbrev, .true.)
+    Call info('  EMF units: '//current_units%emf_unit%abbrev, .true.)
+
+  end Subroutine write_units
 
   Subroutine write_bond_analysis(stats, flow, bond, angle, dihedral, inversion)
     Type(stats_type),      Intent(In   ) :: stats

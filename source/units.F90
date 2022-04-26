@@ -233,7 +233,7 @@ contains
 
     call units_table%set("internal_t", init_unit(abbrev="internal_t", name="Picosecond", time=1, to_internal=1.0_wp))
     call units_table%set("hr", init_unit(abbrev="hr", name="Hour", time=1, to_internal=3600.0_wp*second))
-    call units_table%set("min", init_unit(abbrev="min", name="Minute", time=1, to_internal=60*second))
+    call units_table%set("min", init_unit(abbrev="min", name="Minute", time=1, to_internal=60.0_wp*second))
     call units_table%set("s", init_unit(abbrev="s", name="Second", time=1, to_internal=second))
     call units_table%set("aut", init_unit(abbrev="aut", name="Atomic Time Unit", time=1, to_internal=aut))
 
@@ -311,7 +311,7 @@ contains
     call units_table%set("internal_v", &
          & init_unit(abbrev="ang/ps", name="Angstrom per picosecond", length=1, time=-1, to_internal=1.0_wp))
     call units_table%set("auv", &
-         & init_unit(abbrev="aut", name="Atomic Velocity Unit", length=1, time=-1, to_internal=bohr/aut))
+         & init_unit(abbrev="auv", name="Atomic Velocity Unit", length=1, time=-1, to_internal=bohr/aut))
 
     ! Constants
 
