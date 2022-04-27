@@ -175,8 +175,7 @@ Module DLPOLYModule
   Type(testing_type) :: tests
 
   ! Local Variables
-  Character(len=1024)           :: control_filename = '', arg
-  Character(len=1024)           :: output_filename = ''
+  Character(len=1024)           :: arg
   Character(Len=STR_LEN)        :: option
   Character(Len=10)             :: mode
   Logical                       :: finish
