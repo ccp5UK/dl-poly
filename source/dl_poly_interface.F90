@@ -54,7 +54,7 @@ Module DLPOLYModule
   Use configuration,                          Only: configuration_type
   Use constraints,                            Only: constraints_type
   Use control,                                Only: read_simtype
-  Use control_parameter_module,               Only: dump_parameters,&
+  Use control_parameters,                     Only: dump_parameters,&
                                                     parameters_hash_table
   Use coord,                                  Only: coord_type
   Use core_shell,                             Only: core_shell_type
@@ -75,7 +75,7 @@ Module DLPOLYModule
                                                     flow_type
   Use four_body,                              Only: four_body_type
   Use greenkubo,                              Only: greenkubo_type
-  Use hash,                                   Only: STR_LEN
+  Use kinds,                                  Only: STR_LEN
   Use impacts,                                Only: impact_type
   Use inversions,                             Only: inversions_type
   Use io,                                     Only: io_type
@@ -175,7 +175,8 @@ Module DLPOLYModule
   Type(testing_type) :: tests
 
   ! Local Variables
-  Character(len=1024)           :: arg
+  Character(len=1024)           :: control_filename = '', arg
+  Character(len=1024)           :: output_filename = ''
   Character(Len=STR_LEN)        :: option
   Character(Len=10)             :: mode
   Logical                       :: finish
@@ -222,35 +223,32 @@ Module DLPOLYModule
     Call files(1, FILE_CONTROL)%rename('CONTROL')
   End If
 
+  ! Temporary error system
+  Call init_error_system(eu, dlp_world(0))
+  Call read_new_control(files(1, FILE_CONTROL), params, dlp_world(0), devel(1)%new_control)
 
-    ! Temporary error system
-    Call init_error_system(eu, dlp_world(0))
-    call read_new_control(files(1,FILE_CONTROL), params, dlp_world(0), devel(1)%new_control)
+  If (devel(1)%new_control) Then
+    Call params%retrieve('simulation_method', option)
+    Select Case (option)
+    Case ('md')
+      flow(1)%simulation_method = MD_STD
+      flow(1)%NUM_FF = 1
+    Case ('evb')
+      flow(1)%simulation_method = EmpVB
+      Call params%retrieve('evb_num_ff', flow(1)%NUM_FF)
+    Case ('ffs')
+      flow(1)%simulation_method = FFS
+    Case Default
+      flow(1)%simulation_method = -1
+    End Select
 
-    if (devel(1)%new_control) then
-      Call params%retrieve('simulation_method', option)
-      Select Case (option)
-      Case ('md')
-        flow(1)%simulation_method=MD_STD
-        flow(1)%NUM_FF = 1
-      Case ('evb')
-        flow(1)%simulation_method=EmpVB
-        Call params%retrieve('evb_num_ff', flow(1)%NUM_FF)
-      Case ('ffs')
-        flow(1)%simulation_method=FFS
-      Case Default
-        flow(1)%simulation_method=-1
-      End Select
+  Else ! Cannot read as new style
 
-    else     ! Cannot read as new style
+    ! Set the type of calculation to be performed. By default it is the standard DL_POLY
+    ! calculation. Tag evb activates EVB calculation
+    Call read_simtype(control_filename, flow(1), dlp_world(0))
 
-      ! Set the type of calculation to be performed. By default it is the standard DL_POLY
-       ! calculation. Tag evb activates EVB calculation
-       Call read_simtype(control_filename, flow(1), dlp_world(0))
-
-    end if
-
-
+  End If
 
   ! Select metasimulation method
   ! IS: The following two subroutines should be merged into a single one. We separate them
