@@ -6,6 +6,6 @@ module load openblas/0.3.10
 
 mkdir build-mpi-all
 pushd build-mpi-all
-cmake ../ -DWITH_KIM=ON -DWITH_PLUMED=ON -DPLUMED_VERSION=2.4.2 -DINTERNAL_KIM=off -DINTERNAL_PLUMED=off -DWITH_EVB=on
+cmake ../ -DWITH_KIM=ON -DWITH_PLUMED=ON -DPLUMED_VERSION=2.4.2 -DINTERNAL_KIM=off -DINTERNAL_PLUMED=off -DWITH_EVB=on -DINTERACED=on
 make -j10
 

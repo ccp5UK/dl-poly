@@ -16,6 +16,7 @@ option(WITH_ASSERT "Build with asserts" OFF)
 option(WITH_DFTBP "Build with DFTB+ library" OFF)
 option(WITH_EXP "Build with experimental and debugs" OFF)
 option(WITH_HALF_HALO "uses half halo for neighbour lists" OFF)
+option(INTERFACED "enables chemshell interface " OFF)
 
 set(SCALAPACK "GCC" CACHE STRING "just a coding for the scalapack one wants")
 set(MPI_NPROCS 8 CACHE STRING "number of MPI processes to be used for code coverage and tests")
