@@ -14,66 +14,57 @@
 
 ## Standard MPI
 ```sh
+git clone https://gitlab.com/ccp5/dl-poly.git
+cmake -S dl-poly -Bbuild-mpi-pure -DCMAKE_BUILD_TYPE=Release
+cmake --build build-mpi-pure
+cmake --install build-mpi-pure
+```
+
+older version of cmake
+
+```sh
 mkdir build-mpi-pure
 pushd build-mpi-pure
-FFLAGS="-O3" cmake ../
+cmake ../ -DCMAKE_BUILD_TYPE=Release
 make -j10
 make install
 ```
+
 * will use whatever default MPI is found
 
 *Intel Compilers - Intel MPI*
 ```sh
-FC=ifort FFLAGS="-O3" cmake ../ -DMPI_Fortran_COMPILER=mpiifort 
-```
-*Intel Compilers - Some default mpi library, other than Intel MPI*
-```sh
-FC=ifort FFLAGS="-O3" cmake ../ 
+FC=ifort cmake -S dl-poly -Bbuild-mpi-pure -DCMAKE_BUILD_TYPE=Release -DMPI_Fortran_COMPILER=mpiifort
+cmake --build build-mpi-pure
+cmake --install build-mpi-pure
 ```
 
-## Hybrid MPI and OpenMP
+*Intel Compilers - Some default mpi library, other than Intel MPI*
 ```sh
-mkdir build-mpi-openmp
-pushd build-mpi-openmp
-FFLAGS="-O3" cmake ../ -DWITH_OPENMP=ON
-make -j10
-make install
-```
-*Intel Compilers - Intel MPI*
-```sh
-FC=ifort FFLAGS="-O3" cmake ../ -DWITH_OPENMP=ON -DMPI_Fortran_COMPILER=mpiifort
+FC=ifort cmake -S dl-poly -Bbuild-mpi-pure -DCMAKE_BUILD_TYPE=Release
+cmake --build build-mpi-pure
+cmake --install build-mpi-pure
 ```
 
 ## Serial
 ```sh
-mkdir build-serial
-pushd build-serial
-FFLAGS="-O3" cmake ../ -DWITH_MPI=OFF
+cmake -S dl-poly -Bbuild-serial -DCMAKE_BUILD_TYPE=Release -DWITH_MPI=OFF
+cmake --build build-serial
+cmake --install build-serial
 ```
 *Intel Compilers*
 ```sh
-FC=ifort FFLAGS="-O3" cmake ../ -DWITH_MPI=OFF
-```
-
-## Serial with OpenMP threads
-```sh
-mkdir build-openmp
-pushd build-openmp
-FFLAGS="-O3" cmake ../ -DWITH_OPENMP=ON -DWITH_MPI=OFF
-```
-*Intel Compilers*
-```sh
-FC=ifort FFLAGS="-O3" cmake ../ -DWITH_OPENMP=ON -DWITH_MPI=OFF
-```
-## Xeon Phi
-```sh
-mkdir build-xeonphi
-pushd build-xeonphi
-FC=ifort FFLAGS="-O3 " cmake ../ -DWITH_PHI=ON -DWITH_MPI=ON
+FC=ifort cmake -S dl-poly -Bbuild-serial -DCMAKE_BUILD_TYPE=Release -DWITH_MPI=OFF
+cmake --build build-serial
+cmake --install build-serial
 ```
 
 ## Optimisation flags
-* gfortran
+* gfortran/cray/intel use as options, flags are documented in [cmake/flags.cmake](cmake/flags.cmake)
+
+```sh
+-DCMAKE_BUILD_TYPE=Release
+```
 
 ```sh
 FFLAGS="-O3 -mtune=native"
@@ -89,10 +80,10 @@ FFLAGS="-fpp -O3 -xHost -fimf-domain-exclusion=15"
 for the flags matching the _running machine_
 
 ## Debugging, or when things go unexpected
-* gfortran/ifort
+* gfortran/cray/intel use as options, flags are documented in [cmake/flags.cmake](cmake/flags.cmake)
 
 ```sh
-cmake ../ -DCMAKE_BUILD_TYPE=Debug
+-DCMAKE_BUILD_TYPE=Debug
 ```
 * other compilers
 
@@ -100,49 +91,25 @@ cmake ../ -DCMAKE_BUILD_TYPE=Debug
 FFLAGS="desired flags" cmake ../
 ```
 
-## Building with NETCDF support
-```sh
-mkdir build-mpi-netcdf
-pushd build-mpi-netcdf
-FFLAGS="-O3" cmake ../ -DWITH_NETCDF=ON
-make -j10
-make install
-```
-
 ## Building with KIM support
 ```
-mkdir build-mpi-kim
-pushd build-mpi-kim
-FFLAGS="-O3" cmake ../ -DWITH_KIM=ON
-make -j10
-make install
+cmake -S dl-poly -Bbuild-with-kim -DCMAKE_BUILD_TYPE=Release -DWITH_KIM=ON -DCMAKE_INSTALL_PREFIX=mypath
+cmake --build build-with-kim
+cmake --install build-with-kim
 ```
 
 ## Building with PLUMED support
 ```sh
-mkdir build-mpi-plumed
-pushd build-mpi-plumed
-FFLAGS="-O3" cmake ../ -DWITH_PLUMED=ON
-make -j10
-make install
+cmake -S dl-poly -Bbuild-with-plumed -DCMAKE_BUILD_TYPE=Release -DWITH_PLUMED=ON -DCMAKE_INSTALL_PREFIX=mypath
+cmake --build build-with-plumed
+cmake --install build-with-plumed
 ```
 
-## building with DOXYGEN API Documentation 
+## building with FORD API Documentation
 
 ```sh
-mkdir build-mpi
-cd build mpi
-cmake -DDOCS_DOXYGEN=On ..
-make doxygen
-```
-
-## building with FORD API Documentation 
-
-```sh
-mkdir build-mpi
-cd build mpi
-cmake -DDOCS_FORD=On ..
-make ford
+cmake -S dl-poly -Bbuild-with-ford -DDOCS_FORD=On
+cmake --build build-with-ford -- ford
 ```
 
 # FAQ
