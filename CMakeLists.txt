@@ -4,7 +4,10 @@ project(DL_POLY Fortran)
 set(DLPOLY_VERSION_MAJOR "5")
 set(DLPOLY_VERSION_MINOR "1")
 set(DLPOLY_VERSION_PATCH "0")
+
 set(DLPOLY_VERSION "${DLPOLY_VERSION_MAJOR}.${DLPOLY_VERSION_MINOR}.${DLPOLY_VERSION_PATCH}")
+set(DLPOLY_VERSION_DATE "May 2022")
+
 set(AUTHOR "Ilian Todorov;Bill Smith;Alin M Elena")
 set(AUTHOR_DETAILS "ilian.todorov@stfc.ac.uk;alin-marin.elena@stfc.ac.uk")
 set(DESCRIPTION "DL_POLY4 classical MD code")
@@ -31,6 +34,22 @@ include(flags)
 if(COMMAND cmake_policy)
   #  cmake_policy(SET CMP0004 OLD)
 endif(COMMAND cmake_policy)
+
+if(EXISTS ${CMAKE_SOURCE_DIR}/.git)
+  find_package(Git)
+  if(Git_FOUND)
+    execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+      OUTPUT_VARIABLE vers
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+      set(DLPOLY_VERSION "${vers}")
+  endif()
+  string(TIMESTAMP  TODAY "%d %m %Y")
+  set(DLPOLY_VERSION_DATE "${TODAY}")
+endif()
+
+message(STATUS "Building version: ${DLPOLY_VERSION}")
+message(STATUS "Version date: ${DLPOLY_VERSION_DATE}")
 
 if(WITH_MPI)
   ### if we want MPI check for it and set the internal kitchen
@@ -138,11 +157,6 @@ if(WITH_PLUMED)
   link_directories(${PLUMED_LIB})
 else()
   message(STATUS "Build without PLUMED support")
-endif()
-
-# YL 05/10/2021: for linking DL_POLY as a driver
-if(INTERFACED)
-    add_definitions("-DINTERFACED")
 endif()
 
 if(UNIX)

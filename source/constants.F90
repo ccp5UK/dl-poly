@@ -35,10 +35,17 @@ Module constants
 
   Implicit None
 
-  !> Version particulars
-
+  !> Version particulars, this shall automatically come from cmake, safe defaults exist but only for extra protection.
+#ifdef VERSION
+  Character(Len=8), Parameter :: DLP_VERSION = VERSION
+#else
   Character(Len=8), Parameter :: DLP_VERSION = "5.1.0"
-  Character(Len=14), Parameter :: DLP_RELEASE = "March 2021"
+#endif
+#ifdef VERSION_DATE
+  Character(Len=14), Parameter :: DLP_RELEASE = VERSION_DATE
+#else
+  Character(Len=14), Parameter :: DLP_RELEASE = "March 2022"
+#endif
 
   !> FIXED PARAMETERS
   !> standard pi related values
