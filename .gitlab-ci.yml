@@ -81,6 +81,12 @@ build-intel:
   script:
     - sh utils/build-intel.sh
     - sh utils/build-intel-evb.sh
+build-ifx:
+  stage: build
+  tags:
+    - intel
+  script:
+    - sh utils/build-ifx.sh
 
       #build-intel-dftbp:
       #  stage: build
@@ -143,6 +149,13 @@ testing-mpi-intel:
     - intel
   script:
     - sh utils/intel-testing.sh
+    
+testing-mpi-ifx:
+  stage: test
+  tags:
+    - intel
+  script:
+    - sh utils/ifx-testing.sh
 
 testing-mpi-intel-paranoid:
   stage: test
