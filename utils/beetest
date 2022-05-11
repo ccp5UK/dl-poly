@@ -157,7 +157,7 @@ if options.test:
 defined_properties = dict()
 for p in xmltree.findall("properties/property"):
   proplist = dict()
-  for f in p.getchildren():
+  for f in p:
     proplist[f.tag] = f.text
   defined_properties[p.attrib["name"]] = proplist
 
@@ -347,7 +347,7 @@ for testsuite in xmltree.findall("testsuite"):
       sys.stdout.flush()
 
     #properties = [prop.tag for prop in testcase.getchildren()]
-    properties = [prop for prop in testcase.getchildren()]
+    properties = [prop for prop in testcase]
     properties = list(filterfalse(lambda x: x.tag == "path", properties))
     properties = list(filterfalse(lambda x: x.tag == "input", properties))
     properties = list(filterfalse(lambda x: x.tag == "output", properties))
