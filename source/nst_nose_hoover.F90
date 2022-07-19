@@ -11,6 +11,7 @@ Module nst_nose_hoover
   Use core_shell,      Only: core_shell_type
   Use domains,         Only: domains_type
   Use errors_warnings, Only: error,&
+                             error_alloc,&
                              info
   Use kinds,           Only: li,STR_LEN,&
                              wp
@@ -130,8 +131,7 @@ Contains
     Allocate (vxt(1:config%mxatms), vyt(1:config%mxatms), vzt(1:config%mxatms), Stat=fail(8))
     Allocate (fxt(1:config%mxatms), fyt(1:config%mxatms), fzt(1:config%mxatms), Stat=fail(9))
     If (Any(fail > 0)) Then
-      Write (message, '(a)') 'nst_h0 allocation failure'
-      Call error(0, message)
+      Call error_alloc('pos/vel/force arrays', 'nst_h0_vv')
     End If
 
     If (thermo%newjob_0) Then
@@ -145,9 +145,9 @@ Contains
 
       Allocate (thermo%dens0(1:sites%mxatyp), Stat=fail(1))
       If (fail(1) > 0) Then
-        Write (message, '(a)') 'thermo%dens0 allocation failure'
-        Call error(0, message)
+        Call error_alloc('thermo%dens0', 'nst_h0_vv')
       End If
+
       Do i = 1, sites%ntype_atom
         thermo%dens0(i) = sites%dens(i)
       End Do
@@ -156,29 +156,33 @@ Contains
       ! Initialise and get thermo%h_z for orthorhombic constraints
 
       thermo%h_z = 0
-      If (thermo%iso == CONSTRAINT_SURFACE_AREA) Then
+      Select Case (thermo%iso)
+      Case (CONSTRAINT_SURFACE_AREA)
         thermo%eta(1:8) = 0.0_wp
-      Else If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
+      Case (CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC)
         thermo%eta(2:4) = 0.0_wp
         thermo%eta(6:8) = 0.0_wp
 
         Call dcell(config%cell, celprp)
         thermo%h_z = celprp(9)
-      End If
+      End Select
 
       ! inertia parameters for Nose-Hoover thermostat and barostat
 
       thermo%qmass = 2.0_wp * thermo%sigma * thermo%tau_t**2
       tmp = 2.0_wp * thermo%sigma / (boltz * Real(degfre, wp))
-      If (thermo%iso == CONSTRAINT_NONE) Then
+
+      Select Case (thermo%iso)
+      Case (CONSTRAINT_NONE)
         thermo%ceng = 2.0_wp * thermo%sigma + 3.0_wp**2 * boltz * tmp
-      Else If (thermo%iso == CONSTRAINT_SURFACE_AREA) Then
+      Case (CONSTRAINT_SURFACE_AREA)
         thermo%ceng = 2.0_wp * thermo%sigma + 1.0_wp * boltz * tmp
-      Else If (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
+      Case (CONSTRAINT_SURFACE_TENSION)
         thermo%ceng = 2.0_wp * thermo%sigma + 3.0_wp * boltz * tmp
-      Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
+      Case (CONSTRAINT_SEMI_ORTHORHOMBIC)
         thermo%ceng = 2.0_wp * thermo%sigma + 2.0_wp * boltz * tmp
-      End If
+      End Select
+
       thermo%pmass = ((2.0_wp * thermo%sigma + 3.0_wp * boltz * tmp) / 3.0_wp) * thermo%tau_p**2
 
       ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
@@ -453,9 +457,8 @@ Contains
       Call nvt_h0_scl(qstep, thermo%pmass, thermo%chip0, engke, thermo, config, comm)
 
       ! conserved quantity less kinetic and potential energy terms
-
       consv = 0.5_wp * thermo%qmass * thermo%chi_t**2 + 0.5_wp * thermo%pmass * thermo%chip0**2 + &
-              thermo%ceng * thermo%cint + thermo%press * config%volm
+              thermo%ceng * thermo%cint + (thermo%press + sum(thermo%stress(1:9:4))/3.0_wp) * config%volm
 
       ! remove system centre of mass velocity
 
@@ -556,7 +559,7 @@ Contains
     Real(Kind=wp), Parameter :: uni(1:9) = (/1.0_wp, 0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp, 0.0_wp, 0.0_wp&
                                 , 0.0_wp, 1.0_wp/)
 
-    Character(Len=STR_LEN)         :: message
+    Character(Len=STR_LEN)     :: message
     Integer                    :: fail(1:14), i, i1, i2, irgd, iter, j, jrgd, krgd, lrgd, matms, &
                                   rgdtyp
     Logical, Allocatable       :: lstitr(:)
@@ -581,6 +584,7 @@ Contains
       Call pmf%allocate_work()
       Allocate (oxt(1:config%mxatms), oyt(1:config%mxatms), ozt(1:config%mxatms), Stat=fail(6))
     End If
+
     Allocate (ggx(1:rigid%max_list * rigid%max_rigid), &
               ggy(1:rigid%max_list * rigid%max_rigid), &
               ggz(1:rigid%max_list * rigid%max_rigid), &
@@ -602,8 +606,7 @@ Contains
               rgdoyt(1:rigid%max_rigid), &
               rgdozt(1:rigid%max_rigid), Stat=fail(14))
     If (Any(fail > 0)) Then
-      Write (message, '(a)') 'nst_h1 allocation failure'
-      Call error(0, message)
+      Call error_alloc('work arrays', 'nst_h1_vv')
     End If
 
     If (thermo%newjob_1) Then
@@ -617,9 +620,9 @@ Contains
 
       Allocate (thermo%dens0(1:sites%mxatyp), Stat=fail(1))
       If (fail(1) > 0) Then
-        Write (message, '(a)') 'thermo%dens0 allocation failure'
-        Call error(0, message)
+        Call error_alloc('thermo%dens0', 'nst_h1_vv')
       End If
+
       Do i = 1, sites%ntype_atom
         thermo%dens0(i) = sites%dens(i)
       End Do
@@ -628,29 +631,31 @@ Contains
       ! Initialise and get thermo%h_z for orthorhombic constraints
 
       thermo%h_z = 0
-      If (thermo%iso == CONSTRAINT_SURFACE_AREA) Then
+      Select Case (thermo%iso)
+      Case (CONSTRAINT_SURFACE_AREA)
         thermo%eta(1:8) = 0.0_wp
-      Else If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
+      Case (CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC)
         thermo%eta(2:4) = 0.0_wp
         thermo%eta(6:8) = 0.0_wp
 
         Call dcell(config%cell, celprp)
         thermo%h_z = celprp(9)
-      End If
+      End Select
 
       ! inertia parameters for Nose-Hoover thermostat and barostat
 
       thermo%qmass = 2.0_wp * thermo%sigma * thermo%tau_t**2
       tmp = 2.0_wp * thermo%sigma / (boltz * Real(degfre, wp))
-      If (thermo%iso == CONSTRAINT_NONE) Then
+      Select Case (thermo%iso)
+      Case (CONSTRAINT_NONE)
         thermo%ceng = 2.0_wp * thermo%sigma + 3.0_wp**2 * boltz * tmp
-      Else If (thermo%iso == CONSTRAINT_SURFACE_AREA) Then
+      Case (CONSTRAINT_SURFACE_AREA)
         thermo%ceng = 2.0_wp * thermo%sigma + 1.0_wp * boltz * tmp
-      Else If (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
+      Case (CONSTRAINT_SURFACE_TENSION)
         thermo%ceng = 2.0_wp * thermo%sigma + 3.0_wp * boltz * tmp
-      Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
+      Case (CONSTRAINT_SEMI_ORTHORHOMBIC)
         thermo%ceng = 2.0_wp * thermo%sigma + 2.0_wp * boltz * tmp
-      End If
+      End Select
       thermo%pmass = ((Real(degfre - degrot, wp) + 3.0_wp) / 3.0_wp) * boltz * tmp * thermo%tau_p**2
 
       ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
@@ -1361,7 +1366,7 @@ Contains
       ! conserved quantity less kinetic and potential energy terms
 
       consv = 0.5_wp * thermo%qmass * thermo%chi_t**2 + 0.5_wp * thermo%pmass * thermo%chip0**2 + &
-              thermo%ceng * thermo%cint + thermo%press * config%volm
+              thermo%ceng * thermo%cint + (thermo%press + sum(thermo%stress(1:9:4))/3.0_wp) * config%volm
 
       ! remove system centre of mass velocity
 
@@ -1703,27 +1708,31 @@ Contains
 
     ! split anisotropic from semi-isotropic barostats
 
-    If (thermo%iso == CONSTRAINT_NONE) Then
+    Select Case (thermo%iso)
+    Case (CONSTRAINT_NONE)
       thermo%eta = thermo%eta + hstep * (strcom + strcon + stress + strkin + thermo%factor * uni - &
-                                         (thermo%press * uni + thermo%stress) * config%volm) / thermo%pmass
-    Else
-      If (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
-        thermo%eta(1) = thermo%eta(1) + hstep * (strcom(1) + strcon(1) + stress(1) + strkin(1) + &
-                                                 thermo%factor - (thermo%press + thermo%stress(1) - thermo%tension / thermo%h_z) * &
-                                                 config%volm) / thermo%pmass
-        thermo%eta(5) = thermo%eta(5) + hstep * (strcom(5) + strcon(5) + stress(5) + strkin(5) + &
-                                                 thermo%factor - (thermo%press + thermo%stress(5) - thermo%tension / thermo%h_z) * &
-                                                 config%volm) / thermo%pmass
-      Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
-        thermo%eta(1) = 0.5_wp * (thermo%eta(1) + thermo%eta(5)) + hstep * (0.5_wp * &
-                                 (strcom(1) + strcon(1) + stress(1) + strkin(1) + strcom(5) + strcon(5) + stress(5) + strkin(5)) + &
-                                                  thermo%factor - (thermo%press + 0.5_wp * (thermo%stress(1) + thermo%stress(5)) - &
-                                                                          thermo%tension / thermo%h_z) * config%volm) / thermo%pmass
-        thermo%eta(5) = thermo%eta(1)
-      End If
+        (thermo%press * uni + thermo%stress) * config%volm) / thermo%pmass
+
+    Case (CONSTRAINT_SURFACE_TENSION)
+      thermo%eta(1) = thermo%eta(1) + hstep * (strcom(1) + strcon(1) + stress(1) + strkin(1) + &
+        thermo%factor - (thermo%press + thermo%stress(1) - thermo%tension / thermo%h_z) * &
+        config%volm) / thermo%pmass
+      thermo%eta(5) = thermo%eta(5) + hstep * (strcom(5) + strcon(5) + stress(5) + strkin(5) + &
+        thermo%factor - (thermo%press + thermo%stress(5) - thermo%tension / thermo%h_z) * &
+        config%volm) / thermo%pmass
       thermo%eta(9) = thermo%eta(9) + hstep * (strcom(9) + strcon(9) + stress(9) + strkin(9) + &
-                                               thermo%factor - (thermo%press + thermo%stress(9)) * config%volm) / thermo%pmass
-    End If
+        thermo%factor - (thermo%press + thermo%stress(9)) * config%volm) / thermo%pmass
+
+    Case (CONSTRAINT_SEMI_ORTHORHOMBIC)
+      thermo%eta(1) = 0.5_wp * (thermo%eta(1) + thermo%eta(5)) + hstep * (0.5_wp * &
+        (strcom(1) + strcon(1) + stress(1) + strkin(1) + strcom(5) + strcon(5) + stress(5) + strkin(5)) + &
+        thermo%factor - (thermo%press + 0.5_wp * (thermo%stress(1) + thermo%stress(5)) - &
+        thermo%tension / thermo%h_z) * config%volm) / thermo%pmass
+      thermo%eta(5) = thermo%eta(1)
+      thermo%eta(9) = thermo%eta(9) + hstep * (strcom(9) + strcon(9) + stress(9) + strkin(9) + &
+        thermo%factor - (thermo%press + thermo%stress(9)) * config%volm) / thermo%pmass
+
+    End Select
 
     ! thermostat thermo%eta to 2/4*tstep
 
@@ -1796,28 +1805,33 @@ Contains
 
     ! split anisotropic from semi-isotropic barostats
 
-    If (thermo%iso == CONSTRAINT_NONE) Then
+    Select Case (thermo%iso)
+
+    Case (CONSTRAINT_NONE)
       thermo%eta = thermo%eta + hstep * &
-                   (strcom + strcon + stress + strkin + thermo%factor * uni - &
-                    (thermo%press * uni + thermo%stress) * config%volm) / thermo%pmass
-    Else
-      If (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
-        thermo%eta(1) = thermo%eta(1) + hstep * (strcom(1) + strcon(1) + stress(1) + strkin(1) + &
-                                                 thermo%factor - (thermo%press + thermo%stress(1) - thermo%tension / thermo%h_z) * &
-                                                 config%volm) / thermo%pmass
-        thermo%eta(5) = thermo%eta(5) + hstep * (strcom(5) + strcon(5) + stress(5) + strkin(5) + &
-                                                 thermo%factor - (thermo%press + thermo%stress(5) - thermo%tension / thermo%h_z) * &
-                                                 config%volm) / thermo%pmass
-      Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
-        thermo%eta(1) = 0.5_wp * (thermo%eta(1) + thermo%eta(5)) + hstep * (0.5_wp * &
-                                 (strcom(1) + strcon(1) + stress(1) + strkin(1) + strcom(5) + strcon(5) + stress(5) + strkin(5)) + &
-                                                  thermo%factor - (thermo%press + 0.5_wp * (thermo%stress(1) + thermo%stress(5)) - &
-                                                                          thermo%tension / thermo%h_z) * config%volm) / thermo%pmass
-        thermo%eta(5) = thermo%eta(1)
-      End If
+        (strcom + strcon + stress + strkin + thermo%factor * uni - &
+        (thermo%press * uni + thermo%stress) * config%volm) / thermo%pmass
+
+    Case (CONSTRAINT_SURFACE_TENSION)
+      thermo%eta(1) = thermo%eta(1) + hstep * (strcom(1) + strcon(1) + stress(1) + strkin(1) + &
+        thermo%factor - (thermo%press + thermo%stress(1) - thermo%tension / thermo%h_z) * &
+        config%volm) / thermo%pmass
+      thermo%eta(5) = thermo%eta(5) + hstep * (strcom(5) + strcon(5) + stress(5) + strkin(5) + &
+        thermo%factor - (thermo%press + thermo%stress(5) - thermo%tension / thermo%h_z) * &
+        config%volm) / thermo%pmass
       thermo%eta(9) = thermo%eta(9) + hstep * (strcom(9) + strcon(9) + stress(9) + strkin(9) + &
-                                               thermo%factor - (thermo%press + thermo%stress(9)) * config%volm) / thermo%pmass
-    End If
+        thermo%factor - (thermo%press + thermo%stress(9)) * config%volm) / thermo%pmass
+
+    Case (CONSTRAINT_SEMI_ORTHORHOMBIC)
+      thermo%eta(1) = 0.5_wp * (thermo%eta(1) + thermo%eta(5)) + hstep * (0.5_wp * &
+        (strcom(1) + strcon(1) + stress(1) + strkin(1) + strcom(5) + strcon(5) + stress(5) + strkin(5)) + &
+        thermo%factor - (thermo%press + 0.5_wp * (thermo%stress(1) + thermo%stress(5)) - &
+        thermo%tension / thermo%h_z) * config%volm) / thermo%pmass
+      thermo%eta(5) = thermo%eta(1)
+      thermo%eta(9) = thermo%eta(9) + hstep * (strcom(9) + strcon(9) + stress(9) + strkin(9) + &
+        thermo%factor - (thermo%press + thermo%stress(9)) * config%volm) / thermo%pmass
+
+    End Select
 
     ! thermostat thermo%eta to full (4/4)*tstep
 

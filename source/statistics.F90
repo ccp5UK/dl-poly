@@ -459,11 +459,7 @@ Contains
                                   stpshl, zistk
     Real(Kind=wp), Allocatable :: amsd(:), xxt(:), yyt(:), zzt(:)
 
-    If (ff == 1) Then
-      ffpass = .true.
-    Else
-      ffpass = .false.
-    End If
+    ffpass = ff == 1
 
     fail = 0
 
@@ -585,7 +581,7 @@ Contains
     ! system enthalpy
 
     If (thermo%variable_cell) Then ! P_target*V_instantaneous
-      stats%stpeth = stats%stpeng + thermo%press * stats%stpvol
+      stats%stpeth = stats%stpeng + (thermo%press + sum(thermo%stress(1:9:4))/3.0_wp) * stats%stpvol
     Else ! for thermo%variable_cell=.false. V_instantaneous=V_target
       stats%stpeth = stats%stpeng + stpipv ! and there is only P_instantaneous
     End If

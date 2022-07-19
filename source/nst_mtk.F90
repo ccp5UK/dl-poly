@@ -149,29 +149,31 @@ Contains
       ! Initialise and get h_z for orthorhombic constraints
 
       thermo%h_z = 0
-      If (thermo%iso == CONSTRAINT_SURFACE_AREA) Then
+      Select Case (thermo%iso)
+      Case (CONSTRAINT_SURFACE_AREA)
         thermo%eta(1:8) = 0.0_wp
-      Else If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
+      Case (CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC)
         thermo%eta(2:4) = 0.0_wp
         thermo%eta(6:8) = 0.0_wp
 
         Call dcell(config%cell, celprp)
         thermo%h_z = celprp(9)
-      End If
+      End Select
 
       ! inertia parameters for Nose-Hoover thermostat and barostat
 
       thermo%qmass = 2.0_wp * thermo%sigma * thermo%tau_t**2
       tmp = 2.0_wp * thermo%sigma / (boltz * Real(degfre, wp))
-      If (thermo%iso == CONSTRAINT_NONE) Then
+      Select Case (thermo%iso)
+      Case (CONSTRAINT_NONE)
         thermo%ceng = 2.0_wp * thermo%sigma + 3.0_wp**2 * boltz * tmp
-      Else If (thermo%iso == CONSTRAINT_SURFACE_AREA) Then
+      Case (CONSTRAINT_SURFACE_AREA)
         thermo%ceng = 2.0_wp * thermo%sigma + 1.0_wp * boltz * tmp
-      Else If (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
+      Case (CONSTRAINT_SURFACE_TENSION)
         thermo%ceng = 2.0_wp * thermo%sigma + 3.0_wp * boltz * tmp
-      Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
+      Case (CONSTRAINT_SEMI_ORTHORHOMBIC)
         thermo%ceng = 2.0_wp * thermo%sigma + 2.0_wp * boltz * tmp
-      End If
+      End Select
       thermo%pmass = ((2.0_wp * thermo%sigma + 3.0_wp * boltz * tmp) / 3.0_wp) * thermo%tau_p**2
 
       ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
@@ -385,10 +387,11 @@ Contains
 
       ! get h_z for orthorhombic constraints
 
-      If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
+      Select Case (thermo%iso)
+      Case (CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC)
         Call dcell(config%cell, celprp)
         thermo%h_z = celprp(9)
-      End If
+      End Select
 
       ! second stage of velocity verlet algorithm
 
@@ -437,7 +440,7 @@ Contains
 
       ! conserved quantity less kinetic and potential energy terms
       consv = 0.5_wp * thermo%qmass * thermo%chi_t**2 + 0.5_wp * thermo%pmass * thermo%chip0**2 + &
-              thermo%ceng * thermo%cint + thermo%press * config%volm
+              thermo%ceng * thermo%cint + (thermo%press + sum(thermo%stress(1:9:4))/3.0_wp) * config%volm
 
       ! remove system centre of mass velocity
 
@@ -602,29 +605,32 @@ Contains
       ! Initialise and get h_z for orthorhombic constraints
 
       thermo%h_z = 0
-      If (thermo%iso == CONSTRAINT_SURFACE_AREA) Then
+      Select Case (thermo%iso)
+      Case (CONSTRAINT_SURFACE_AREA)
         thermo%eta(1:8) = 0.0_wp
-      Else If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
+      Case (CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC)
         thermo%eta(2:4) = 0.0_wp
         thermo%eta(6:8) = 0.0_wp
 
         Call dcell(config%cell, celprp)
         thermo%h_z = celprp(9)
-      End If
+      End Select
 
       ! inertia parameters for Nose-Hoover thermostat and barostat
 
       thermo%qmass = 2.0_wp * thermo%sigma * thermo%tau_t**2
       tmp = 2.0_wp * thermo%sigma / (boltz * Real(degfre, wp))
-      If (thermo%iso == CONSTRAINT_NONE) Then
+
+      Select Case (thermo%iso)
+      Case (CONSTRAINT_NONE)
         thermo%ceng = 2.0_wp * thermo%sigma + 3.0_wp**2 * boltz * tmp
-      Else If (thermo%iso == CONSTRAINT_SURFACE_AREA) Then
+      Case (CONSTRAINT_SURFACE_AREA)
         thermo%ceng = 2.0_wp * thermo%sigma + 1.0_wp * boltz * tmp
-      Else If (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
+      Case (CONSTRAINT_SURFACE_TENSION)
         thermo%ceng = 2.0_wp * thermo%sigma + 3.0_wp * boltz * tmp
-      Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
+      Case (CONSTRAINT_SEMI_ORTHORHOMBIC)
         thermo%ceng = 2.0_wp * thermo%sigma + 2.0_wp * boltz * tmp
-      End If
+      End Select
       thermo%pmass = ((Real(degfre - degrot, wp) + 3.0_wp) / 3.0_wp) * boltz * tmp * thermo%tau_p**2
 
       ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
@@ -1127,10 +1133,11 @@ Contains
 
       ! get h_z for orthorhombic constraints
 
-      If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
+      Select Case (thermo%iso)
+      Case (CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC)
         Call dcell(config%cell, celprp)
         thermo%h_z = celprp(9)
-      End If
+      End Select
 
       ! second stage of velocity verlet algorithm
 
@@ -1318,7 +1325,7 @@ Contains
       ! conserved quantity less kinetic and potential energy terms
 
       consv = 0.5_wp * thermo%qmass * thermo%chi_t**2 + 0.5_wp * thermo%pmass * thermo%chip0**2 + &
-              thermo%ceng * thermo%cint + thermo%press * config%volm
+              thermo%ceng * thermo%cint + (thermo%press + sum(thermo%stress(1:9:4))/3.0_wp) * config%volm
 
       ! remove system centre of mass velocity
 

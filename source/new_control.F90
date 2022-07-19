@@ -47,6 +47,7 @@ Module new_control
                                       error_units,&
                                       info,&
                                       set_print_level,&
+                                      get_print_level,&
                                       warning
   Use ewald,                    Only: ewald_type
   Use filename,                 Only: &
@@ -874,7 +875,7 @@ Contains
       Call params%retrieve('rdf_print', rdf%l_print)
 
     Else If (params%is_any_set([Character(13) :: 'rdf_frequency', 'rdf_binsize', 'rdf_print'])) Then
-      Call warning('rdf_print, rdf_frequency or rdf_binsize found without rdf_calculate')
+      Call warning('rdf_print, rdf_frequency or rdf_binsize found without rdf_calculate', .true.)
     End If
 
     Call params%retrieve('print_probability_distribution', stats%lpana)
@@ -894,7 +895,7 @@ Contains
       Call params%retrieve('zden_print', zden%l_print)
 
     Else If (params%is_any_set([Character(14) :: 'zden_frequency', 'zden_binsize', 'zden_print'])) Then
-      Call warning('zden_print, zden_frequency or zden_binsize found without zden_calculate')
+      Call warning('zden_print, zden_frequency or zden_binsize found without zden_calculate', .true.)
     End If
 
     ! ADF
@@ -907,7 +908,7 @@ Contains
       Call params%retrieve('adf_precision', adf%prec)
 
     Else If (params%is_any_set([Character(13) :: 'adf_frequency', 'adf_precision'])) Then
-      Call warning('adf_frequency or adf_precision found without adf_calculate')
+      Call warning('adf_frequency or adf_precision found without adf_calculate', .true.)
     End If
 
     ! Coord
@@ -1703,6 +1704,7 @@ Contains
     Type(pmf_type),              Intent(In   ) :: pmf
     Logical,                     Intent(In   ) :: ttm_active
 
+    Character(Len=STR_LEN)      :: messages(3)
     Character(Len=STR_LEN)      :: option
     Logical                     :: ltmp, stat
     Real(Kind=wp)               :: rtmp
@@ -1744,8 +1746,17 @@ Contains
     End If
 
     If (.not. thermo%anisotropic_pressure .or. thermo%iso /= CONSTRAINT_NONE) Then
+      if (any(thermo%stress(1:9:4) /= thermo%stress(1)) .or. & ! Different diagonal
+           any(abs(thermo%stress(2:6:2)) > zero_plus)) then    ! Off-diagonal terms
+        Write (messages(1), '(a)') 'Tensorial system pressure specified for an npt ensemble simulation'
+        Write (messages(2), '(a)') 'scalar pressure derived from pressure tensor as p = Trace[P]/3'
+        Write (messages(3), '(a)') 'tensorial pressure to be zeroed (discarded)'
+        Call info(messages, 3, .true.)
+      end if
+
       thermo%press = Sum(thermo%stress(1:9:4)) / 3.0_wp
       thermo%stress = 0.0_wp
+
     End If
 
     Call params%retrieve('fixed_com', config%l_vom)
@@ -1948,42 +1959,47 @@ Contains
 
   End Subroutine read_system_parameters
 
-  Subroutine write_parameters(io_data, files, neigh, config, link_cell, flow, stats, thermo, ttm, mpoles, vdws, &
-                              electro, cshell, ewld, met, impa, minim, plume, cons, pmf, bond, angle, dihedral, inversion, &
-                              msd_data, rdf, vaf, zdensity, adf, coords, defect, traj, displacement)
-    Type(io_type),            Intent(In   ) :: io_data
-    Type(file_type),          Intent(In   ) :: files(:)
-    Type(neighbours_type),    Intent(In   ) :: neigh
-    Type(configuration_type), Intent(In   ) :: config
-    Integer, Dimension(3),    Intent(In   ) :: link_cell
-    Type(flow_type),          Intent(In   ) :: flow
-    Type(stats_type),         Intent(In   ) :: stats
-    Type(thermostat_type),    Intent(In   ) :: thermo
-    Type(ttm_type),           Intent(In   ) :: ttm
-    Type(mpole_type),         Intent(In   ) :: mpoles
-    Type(vdw_type),           Intent(In   ) :: vdws
-    Type(electrostatic_type), Intent(In   ) :: electro
-    Type(core_shell_type),    Intent(In   ) :: cshell
-    Type(ewald_type),         Intent(In   ) :: ewld
-    Type(metal_type),         Intent(In   ) :: met
-    Type(impact_type),        Intent(In   ) :: impa
-    Type(minimise_type),      Intent(In   ) :: minim
-    Type(plumed_type),        Intent(In   ) :: plume
-    Type(constraints_type),   Intent(In   ) :: cons
-    Type(pmf_type),           Intent(In   ) :: pmf
-    Type(bonds_type),         Intent(In   ) :: bond
-    Type(angles_type),        Intent(In   ) :: angle
-    Type(dihedrals_type),     Intent(In   ) :: dihedral
-    Type(inversions_type),    Intent(In   ) :: inversion
-    Type(msd_type),           Intent(In   ) :: msd_data
-    Type(rdf_type),           Intent(InOut) :: rdf
-    Type(greenkubo_type),     Intent(In   ) :: vaf
-    Type(z_density_type),     Intent(InOut) :: zdensity
-    Type(adf_type),           Intent(In   ) :: adf
-    Type(coord_type),         Intent(In   ) :: coords
-    Type(defects_type),       Intent(In   ) :: defect(:)
-    Type(trajectory_type),    Intent(In   ) :: traj
-    Type(rsd_type),           Intent(In   ) :: displacement
+  Subroutine write_parameters(devel, tmr, seed, io_data, files, neigh, config, &
+                              link_cell, flow, stats, thermo, ttm, mpoles, vdws, electro, cshell, &
+                              ewld, met, impa, minim, plume, cons, pmf, bond, angle, dihedral, &
+                              inversion , msd_data, rdf, vaf, zdensity, adf, coords, defect, traj, &
+                              displacement)
+    Type(development_type),      Intent(In   ) :: devel
+    Type(timer_type),            Intent(In   ) :: tmr
+    Type(seed_type),             Intent(In   ) :: seed
+    Type(io_type),               Intent(In   ) :: io_data
+    Type(file_type),             Intent(In   ) :: files(:)
+    Type(neighbours_type),       Intent(In   ) :: neigh
+    Type(configuration_type),    Intent(In   ) :: config
+    Integer, Dimension(3),       Intent(In   ) :: link_cell
+    Type(flow_type),             Intent(In   ) :: flow
+    Type(stats_type),            Intent(In   ) :: stats
+    Type(thermostat_type),       Intent(In   ) :: thermo
+    Type(ttm_type),              Intent(In   ) :: ttm
+    Type(mpole_type),            Intent(In   ) :: mpoles
+    Type(vdw_type),              Intent(In   ) :: vdws
+    Type(electrostatic_type),    Intent(In   ) :: electro
+    Type(core_shell_type),       Intent(In   ) :: cshell
+    Type(ewald_type),            Intent(In   ) :: ewld
+    Type(metal_type),            Intent(In   ) :: met
+    Type(impact_type),           Intent(In   ) :: impa
+    Type(minimise_type),         Intent(In   ) :: minim
+    Type(plumed_type),           Intent(In   ) :: plume
+    Type(constraints_type),      Intent(In   ) :: cons
+    Type(pmf_type),              Intent(In   ) :: pmf
+    Type(bonds_type),            Intent(In   ) :: bond
+    Type(angles_type),           Intent(In   ) :: angle
+    Type(dihedrals_type),        Intent(In   ) :: dihedral
+    Type(inversions_type),       Intent(In   ) :: inversion
+    Type(msd_type),              Intent(In   ) :: msd_data
+    Type(rdf_type),              Intent(InOut) :: rdf
+    Type(greenkubo_type),        Intent(In   ) :: vaf
+    Type(z_density_type),        Intent(InOut) :: zdensity
+    Type(adf_type),              Intent(In   ) :: adf
+    Type(coord_type),            Intent(In   ) :: coords
+    Type(defects_type),          Intent(In   ) :: defect(:)
+    Type(trajectory_type),       Intent(In   ) :: traj
+    Type(rsd_type),              Intent(In   ) :: displacement
 
     Character(Len=80) :: banner(6)
 
@@ -1995,6 +2011,7 @@ Contains
     Write (banner(6), '(a)') ''
     Call info(banner, 6, .true.)
 
+    If (check_print_level(1)) Call write_devel(devel, tmr, seed)
     If (check_print_level(1)) Call write_io(io_data, files)
     If (check_print_level(1)) Call write_units()
     If (check_print_level(1)) Call write_system_parameters(flow, config, stats, thermo, impa, minim, plume, cons, pmf)
@@ -2134,6 +2151,68 @@ Contains
     Call info('  EMF units: '//current_units%emf_unit%abbrev, .true.)
 
   end Subroutine write_units
+
+  Subroutine write_devel(devel, tmr, seed)
+    Type(development_type),      Intent(In) :: devel
+    Type(timer_type),            Intent(In) :: tmr
+    Type(seed_type),             Intent(In) :: seed
+
+    Integer :: i,j,k,l,ij,kl
+    Character(Len=STR_LEN) :: message
+
+    Call info('', .true.)
+    Call info('Software Params:', .true.)
+    Write (message, '(a,i0.1)') '  Verbosity: ', get_print_level()
+    Call info(message, .true.)
+    if (devel%l_fast) &
+         Call info('  Unsafe comms: ON', .true.)
+    if (devel%l_eng) &
+         Call info('  Output final energy: ON', .true.)
+    if (devel%l_rout) &
+         Call info('  Write ASCII REVIVE: ON', .true.)
+    if (devel%l_rin) &
+         Call info('  Read ASCII REVOLD: ON', .true.)
+    if (devel%r_dis > 0.0_wp) then
+      Write (message, '(a,g12.5e2)') '  Initial minimum separation (ang): ', devel%r_dis
+      Call info(message, .true.)
+    end if
+
+    Write (message, '(a,i0.1)') '  Max timer depth: ', tmr%max_depth
+    Call info(message, .true., level=2)
+    if (tmr%proc_detail) &
+         Call info('  Per process timings: ON')
+
+    if (tmr%job < Huge(1.0_wp) - 1.0_wp) then
+      Write (message, '(a,g12.5e2)') '  Job time (s): ', tmr%job
+      Call info(message, .true.)
+    else
+      Call info('  Job time: Unlimited', .true.)
+    end if
+
+    Write (message, '(a,g12.5e2)') '  Close time (s): ', tmr%clear_screen
+    Call info(message, .true., level=3)
+
+    if (seed%defined) then
+
+      ij = Mod(Abs(seed%seed(1)), 31328)
+      i = Mod(ij / 177, 177) + 2;
+      j = Mod(ij, 177) + 2;
+      kl = Mod(Abs(seed%seed(2)), 30081)
+      k = Mod(kl / 169, 178) + 1
+      l = Mod(kl, 169)
+
+      Write (message, "(a, '[', 3(i0.1, ',', 1X), i0.1, ']')") '  Uniform random seed (proc0): ', i,j,k,l
+      Call info(message, .true., level=3)
+    else
+      Call info('  Uniform random seed (proc0): [12, 34, 56, 78]', .true., level=3)
+    end if
+    Write (message, "(a, '[', 2(i0.1, ',', 1X), i0.1, ']')") '  Saru random seed: ', seed%seed
+    Call info(message, .true., level=2)
+
+    if (devel%test_dftb_library) &
+         Call info('  Testing DFTB library: ON')
+
+  End Subroutine write_devel
 
   Subroutine write_bond_analysis(stats, flow, bond, angle, dihedral, inversion)
     Type(stats_type),      Intent(In   ) :: stats

@@ -970,6 +970,7 @@ Contains
           thermo%press = word_2_real(word)
 
           Write (message, '(a,1p,e12.4)') 'simulation pressure (katms) ', thermo%press
+          Call info(message, .true.)
 
           ! convert from katms to internal units of pressure
 
@@ -3617,11 +3618,14 @@ Contains
          thermo%ensemble == ENS_NPT_LANGEVIN .or. &
          thermo%ensemble == ENS_NPT_LANGEVIN_ANISO) .and. &
         thermo%chi <= zero_plus) Then
-      Call error(462)
+      Call error(0, 'Thermostat friction constant MUST be > 0')
     End If
 
     If (thermo%ensemble == ENS_NVT_LANGEVIN_INHOMO) Then
-      If (ttm%gvar == TTM_EPVAR_NULL .and. thermo%chi_ep <= zero_plus) Call error(462)
+      If (ttm%gvar == TTM_EPVAR_NULL .and. thermo%chi_ep <= zero_plus) then
+        Call error(0, 'Thermostat friction constant MUST be > 0')
+      end If
+
       If (Abs(thermo%chi_es) <= zero_plus) Then
         Call info('assuming no electronic stopping in inhomogeneous Langevin thermostat', .true.)
       End If
@@ -3629,7 +3633,9 @@ Contains
 
     If ((thermo%ensemble == ENS_NPT_LANGEVIN .or. &
          thermo%ensemble == ENS_NPT_LANGEVIN_ANISO) .and. &
-        thermo%tai <= zero_plus) Call error(463)
+         thermo%tai <= zero_plus) Then
+      Call error(0, 'Barostat friction constant MUST be > 0')
+    end If
 
     ! check settings in ensembles with thermo%tau_t
 
@@ -3637,58 +3643,54 @@ Contains
              ENS_NPT_BERENDSEN, ENS_NPT_NOSE_HOOVER, ENS_NPT_MTK, &
              ENS_NPT_BERENDSEN_ANISO, ENS_NPT_NOSE_HOOVER_ANISO, ENS_NPT_MTK_ANISO] &
             == thermo%ensemble) .and. thermo%tau_t <= 0.0_wp) Then
-      Call error(464)
+      Call error(0, 'Thermostat relaxation time constant MUST be > 0')
     End If
 
     ! check settings in ensembles with thermo%press
 
     If (thermo%variable_cell) Then
-      If (.not. thermo%anisotropic_pressure) Then
-        If (.not. lpres) Then
-          If (lstrext) Then
-            thermo%press = (thermo%stress(1) + thermo%stress(5) + thermo%stress(9)) / 3.0_wp
-            thermo%stress = 0.0_wp
-
-            Write (messages(1), '(a)') 'tensorial system pressure specified for an npt ensemble simulation'
-            Write (messages(2), '(a)') 'scalar pressure derived from pressure tensor as p = Trace[P]/3'
-            Write (messages(3), '(a)') 'tensorial pressure to be zeroed (discarded)'
-            Write (messages(4), '(a,1p,e12.4)') 'simulation pressure (katms) ', thermo%press * prsunt
-            Call info(messages, 4, .true.)
-          Else
-            Call error(387)
-          End If
-        Else
-          If (lstrext) Then
-            thermo%stress = 0.0_wp
-
-            Write (messages(1), '(a)') 'both tensorial and scalar system pressure specified for an npt ensemble simulation'
-            Write (messages(2), '(a)') 'tensorial pressure directive is ignored'
-            Write (messages(3), '(a)') 'tensorial pressure to be zeroed (discarded)'
-            Call info(messages, 3, .true.)
-          End If
-        End If
-      Else If (thermo%anisotropic_pressure) Then
-        If (.not. lstrext) Then
-          If (.not. lpres) Call error(387)
-        Else
-          If (lpres) Then
-            Write (messages(1), '(a)') 'both tensorial and scalar system pressure specified for an nst ensemble simulation'
-            Write (messages(2), '(a)') 'scalar pressure directive is ignored'
-            Call info(messages, 2, .true.)
-
-            ! Define new scalar pressure and zero trace pressure tensor
-
-            thermo%press = (thermo%stress(1) + thermo%stress(5) + thermo%stress(9)) / 3.0_wp
-            thermo%stress(1) = thermo%stress(1) - thermo%press
-            thermo%stress(5) = thermo%stress(5) - thermo%press
-            thermo%stress(9) = thermo%stress(9) - thermo%press
-          End If
-        End If
-      End If
       If (thermo%ensemble /= ENS_NPT_LANGEVIN .and. &
-          thermo%ensemble /= ENS_NPT_LANGEVIN_ANISO .and. &
-          thermo%tau_p <= 0.0_wp) Then
-        Call error(466)
+        thermo%ensemble /= ENS_NPT_LANGEVIN_ANISO .and. &
+        thermo%tau_p <= 0.0_wp) Then
+        Call error(0, 'Barostat relaxation time constant MUST be > 0')
+      End If
+
+      If (.not. lstrext .and. .not. lpres) Then
+        Call error(0, 'System pressure not specified')
+      End If
+
+      If (.not. thermo%anisotropic_pressure) Then
+        If (lstrext .and. .not. lpres) Then
+          thermo%press = (thermo%stress(1) + thermo%stress(5) + thermo%stress(9)) / 3.0_wp
+          thermo%stress = 0.0_wp
+
+          Write (messages(1), '(a)') 'tensorial system pressure specified for an npt ensemble simulation'
+          Write (messages(2), '(a)') 'scalar pressure derived from pressure tensor as p = Trace[P]/3'
+          Write (messages(3), '(a)') 'tensorial pressure to be zeroed (discarded)'
+          Write (messages(4), '(a,1p,e12.4)') 'simulation pressure (katms) ', thermo%press * prsunt
+          Call info(messages, 4, .true.)
+        Else If (lstrext .and. lpres) Then
+          thermo%stress = 0.0_wp
+
+          Write (messages(1), '(a)') 'both tensorial and scalar system pressure specified for an npt ensemble simulation'
+          Write (messages(2), '(a)') 'tensorial pressure directive is ignored'
+          Write (messages(3), '(a)') 'tensorial pressure to be zeroed (discarded)'
+          Call info(messages, 3, .true.)
+        End If
+
+      Else If (thermo%anisotropic_pressure) Then
+        If (lpres .and. lstrext) Then
+          Write (messages(1), '(a)') 'both tensorial and scalar system pressure specified for an nst ensemble simulation'
+          Write (messages(2), '(a)') 'scalar pressure directive is ignored'
+          Call info(messages, 2, .true.)
+
+          ! Define new scalar pressure and zero trace pressure tensor
+
+          thermo%press = (thermo%stress(1) + thermo%stress(5) + thermo%stress(9)) / 3.0_wp
+          thermo%stress(1) = thermo%stress(1) - thermo%press
+          thermo%stress(5) = thermo%stress(5) - thermo%press
+          thermo%stress(9) = thermo%stress(9) - thermo%press
+        End If
       End If
     End If
 

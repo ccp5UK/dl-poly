@@ -836,12 +836,13 @@ Contains
 
     End Do
 
-    Call write_parameters(ios, files, neigh(1), config(1), link_cell, flow, stats(1), thermo(1), &
-                          ttms(1), mpoles(1), vdws(1), electro(1), core_shells(1), &
-                          ewld(1), met(1), impa, minim(1), &
-                          plume(1), cons(1), pmfs(1), bond(1), angle(1), dihedral(1), &
-                          inversion(1), msd_data(1), rdf(1), &
-                          green(1), zdensity(1), adf(1), crd(1), dfcts, traj, rsdsc(1))
+    Call write_parameters(devel, tmr, seed, ios, files, neigh(1), &
+                          config(1), link_cell, flow, stats(1), thermo(1), ttms(1), &
+                          mpoles(1), vdws(1), electro(1), core_shells(1), ewld(1), &
+                          met(1), impa, minim(1), plume(1), cons(1), pmfs(1), &
+                          bond(1), angle(1), dihedral(1), inversion(1), msd_data(1), &
+                          rdf(1), green(1), zdensity(1), adf(1), crd(1), dfcts, traj, &
+                          rsdsc(1))
 
     ! READ SIMULATION FORCE FIELD
     Do ff = 1, flow%NUM_FF

@@ -159,15 +159,16 @@ Contains
       ! Initialise and get thermo%h_z for orthorhombic constraints
 
       thermo%h_z = 0
-      If (thermo%iso == CONSTRAINT_SURFACE_AREA) Then
+      select case (thermo%iso)
+      Case (CONSTRAINT_SURFACE_AREA)
         thermo%eta(1:8) = 0.0_wp
-      Else If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
+      Case (CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC)
         thermo%eta(2:4) = 0.0_wp
         thermo%eta(6:8) = 0.0_wp
 
         Call dcell(config%cell, celprp)
         thermo%h_z = celprp(9)
-      End If
+      End Select
 
       ! inertia parameter for barostat
 
@@ -397,10 +398,11 @@ Contains
 
       ! get thermo%h_z for orthorhombic constraints
 
-      If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
+      Select Case (thermo%iso)
+      Case (CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC)
         Call dcell(config%cell, celprp)
         thermo%h_z = celprp(9)
-      End If
+      End Select
 
       ! second stage of velocity verlet algorithm
 
@@ -478,7 +480,7 @@ Contains
 
       ! conserved quantity less kinetic and potential energy terms
 
-      consv = 0.5_wp * thermo%pmass * tmp + thermo%press * config%volm
+      consv = 0.5_wp * thermo%pmass * tmp + (thermo%press + sum(thermo%stress(1:9:4))/3.0_wp) * config%volm
 
       ! remove system centre of mass velocity
 
@@ -654,15 +656,16 @@ Contains
       ! Initialise and get thermo%h_z for orthorhombic constraints
 
       thermo%h_z = 0
-      If (thermo%iso == CONSTRAINT_SURFACE_AREA) Then
+      Select Case (thermo%iso)
+      Case (CONSTRAINT_SURFACE_AREA)
         thermo%eta(1:8) = 0.0_wp
-      Else If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
+      Case (CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC)
         thermo%eta(2:4) = 0.0_wp
         thermo%eta(6:8) = 0.0_wp
 
         Call dcell(config%cell, celprp)
         thermo%h_z = celprp(9)
-      End If
+      End Select
 
       ! inertia parameter for barostat
 
@@ -1243,10 +1246,11 @@ Contains
 
       ! get thermo%h_z for orthorhombic constraints
 
-      If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
+      Select Case (thermo%iso)
+      Case (CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC)
         Call dcell(config%cell, celprp)
         thermo%h_z = celprp(9)
-      End If
+      End Select
 
       ! second stage of velocity verlet algorithm
 
@@ -1528,7 +1532,7 @@ Contains
 
       ! conserved quantity less kinetic and potential energy terms
 
-      consv = 0.5_wp * thermo%pmass * tmp + thermo%press * config%volm
+      consv = 0.5_wp * thermo%pmass * tmp + (thermo%press + sum(thermo%stress(1:9:4))/3.0_wp) * config%volm
 
       ! remove system centre of mass velocity
 

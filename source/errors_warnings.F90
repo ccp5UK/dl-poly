@@ -1477,10 +1477,6 @@ Contains
 
         Write (ounit, '(/,1x,a)') '# error - simulation cutoff not specified'
 
-      Case (387)
-
-        Write (ounit, '(/,1x,a)') '# error - system pressure not specified'
-
       Case (390)
 
         Write (ounit, '(/,1x,a)') '# error - npt/nst ensemble requested in non-periodic system'
@@ -1576,22 +1572,6 @@ Contains
       Case (461)
 
         Write (ounit, '(/,1x,a)') '# error - undefined metal potential'
-
-      Case (462)
-
-        Write (ounit, '(/,1x,a)') '# error - thermostat friction constant MUST be > 0'
-
-      Case (463)
-
-        Write (ounit, '(/,1x,a)') '# error - barostat friction constant MUST be > 0'
-
-      Case (464)
-
-        Write (ounit, '(/,1x,a)') '# error - thermostat relaxation time constant MUST be > 0'
-
-      Case (466)
-
-        Write (ounit, '(/,1x,a)') '# error - barostat relaxation time constant MUST be > 0'
 
       Case (467)
 
