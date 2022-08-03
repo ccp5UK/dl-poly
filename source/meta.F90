@@ -38,6 +38,7 @@ Module meta
                                                     scan_control_io,&
                                                     scan_control_output
   Use control_parameters,                     Only: parameters_hash_table
+  Use control_output,                         Only: write_parameters
   Use coord,                                  Only: coord_type
   Use core_shell,                             Only: core_shell_type
   Use defects,                                Only: defects_type
@@ -108,8 +109,7 @@ Module meta
                                                     read_structure_analysis,&
                                                     read_system_parameters,&
                                                     read_ttm,&
-                                                    read_units,&
-                                                    write_parameters
+                                                    read_units
   Use numerics,                               Only: seed_type
   Use plumed,                                 Only: plumed_finalize,&
                                                     plumed_init,&

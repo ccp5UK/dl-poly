@@ -25,6 +25,7 @@ Module configuration
                              mode_rdonly, mode_wronly, mpi_distribution_type, offset_kind, op_land
   Use constants,       Only: half_minus,&
                              zero_plus
+  Use control_parameters,Only: write_param
   Use development,     Only: development_type
   Use domains,         Only: domains_type
   Use electrostatic,   Only: ELECTROSTATIC_EWALD,&
@@ -3614,16 +3615,10 @@ Contains
 
     Call info('', .true.)
     Call info('System properties: ', .true.)
-    Call to_out_units(config%tot_mass_w_frz,'internal_m',v,unit)
-    Write(message,'(a,g0.8)')"  - mass("//Trim(unit)//"): ", v
+    call write_param('Mass', config%tot_mass_w_frz,'internal_m', indent=2)
     If (config%imcon /= IMCON_NOPBC .or. config%imcon /= IMCON_SLAB) Then
-      Call info(message, .true.)
-      Call to_out_units(config%volm,'internal_l^3',v,unit)
-      Write(message,'(a,g0.8)')"  - volume("//Trim(unit)//"): ", v
-      Call info(message, .true.)
-      Write(message,'(a,g0.8)')"  - density(g/cm^3): ", convert_units(config%density,"internal_m/internal_l^3","g/cm^3")
-
-      Call info(message, .true.)
+      Call write_param('Volume', config%volm, 'internal_l^3', indent=2)
+      Call write_param('Density', config%density, 'internal_m/internal_l^3', 'g/cm^3', indent=2)
     End If
   End Subroutine print_system_info
 

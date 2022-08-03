@@ -108,6 +108,7 @@ set(dlpoly_SRCS
 
   control_parameter.F90
   new_control.F90
+  control_output.F90
   hash.F90
   units.F90
 
