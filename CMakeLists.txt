@@ -328,8 +328,8 @@ if(BUILD_TESTING)
     if (EXISTS ${CMAKE_SOURCE_DIR}/data/${arg}.tar.xz)
       message(STATUS "Using already downloaded ${arg}.tar.xz")
     else()
-      message(STATUS "Trying to download ${arg}.tar.xz from https://www.ccp5.ac.uk/sites/www.ccp5.ac.uk/files/DL_POLY/data/${DLPOLY_VERSION_MAJOR}.${DLPOLY_VERSION_MINOR}")
-      file(DOWNLOAD https://www.ccp5.ac.uk/sites/www.ccp5.ac.uk/files/DL_POLY/data/${DLPOLY_VERSION_MAJOR}.${DLPOLY_VERSION_MINOR}/${arg}.tar.xz
+      message(STATUS "Trying to download ${arg}.tar.xz from https://www.ccp5.ac.uk/wp-content/uploads/2022/08/")
+      file(DOWNLOAD https://www.ccp5.ac.uk/wp-content/uploads/2022/08/${arg}.tar.xz
 	  ${CMAKE_SOURCE_DIR}/data/${arg}.tar.xz STATUS DL_TEST)
       list(GET DL_TEST 0 ERRNO)
       if ("${ERRNO}" EQUAL "0")
