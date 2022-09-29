@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-module load gnu/7 openmpi/3.1.6 
-module load plumed/gnu
+module load foss/2022a
+module load PLUMED/2.8.0-foss-2022a
 
 mkdir build-mpi-plumed
 pushd build-mpi-plumed
-cmake ../ -DWITH_PLUMED=ON -DINTERNAL_PLUMED=off -DPLUMED_VERSION=2.4.2 
+FFLAGS="-fallow-argument-mismatch " cmake ../ -DWITH_PLUMED=ON -DINTERNAL_PLUMED=off -DPLUMED_VERSION=2.8.0 
 make -j10
 
 

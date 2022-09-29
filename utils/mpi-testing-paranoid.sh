@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
-module load gnu/7 openmpi/3.1.6
-module load openblas/0.3.10
-#module load plumed/gnu netcdf-fortran/4.4.4  pnetcdf/4.6.1
+module load foss/2022a
 
 folder="build-mpi-testing-paranoid"
 rm -rf $folder && mkdir $folder && pushd $folder

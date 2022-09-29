@@ -83,14 +83,12 @@ build-mpi-all:
   only:
     - merge_requests
 
-build-gcc-dftbp:
-  stage: build
-  tags:
-    - gcc
-  script:
-    - sh utils/build-mpi-gnu-dftbp.sh
-  only:
-    - merge_requests
+#build-gcc-dftbp:
+#  stage: build
+#  tags:
+#    - gcc
+#  script:
+#    - sh utils/build-mpi-gnu-dftbp.sh
 
 build-intel:
   stage: build

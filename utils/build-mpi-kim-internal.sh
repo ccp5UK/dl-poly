@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-module load gnu/7 openmpi/3.1.6
+module load foss/2022a
 
 rm -rf build-mpi-kim
 mkdir build-mpi-kim

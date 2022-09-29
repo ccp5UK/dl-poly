@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-source /opt/intel/oneapi/setvars.sh
-module load gnu openblas
+module load intel/2022a
 
 mpr=`which mpirun`
 rm -rf build-intel-testing

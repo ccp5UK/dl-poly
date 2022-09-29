@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-module load intel/2020a
+module load intel/2022a
 
 mkdir -p build-mpi-intel
 pushd build-mpi-intel

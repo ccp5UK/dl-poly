@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source /opt/intel/oneapi/setvars.sh
+module load intel/2022a
 
 mkdir -p build-mpi-ifx
 pushd build-mpi-ifx
