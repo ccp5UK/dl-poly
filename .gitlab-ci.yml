@@ -2,9 +2,11 @@ variables:
   GIT_SSL_NO_VERIFY: "true"
 
 before_script:
-  - module use /opt/modules/
+  - source utils/modules.sh
 
 stages:
+  - manual
+  - pages
   - build
   - test
 
@@ -83,12 +85,6 @@ build-mpi-all:
   only:
     - merge_requests
 
-#build-gcc-dftbp:
-#  stage: build
-#  tags:
-#    - gcc
-#  script:
-#    - sh utils/build-mpi-gnu-dftbp.sh
 
 build-intel:
   stage: build
@@ -97,6 +93,9 @@ build-intel:
   script:
     - sh utils/build-intel.sh
     - sh utils/build-intel-evb.sh
+  only:
+    - merge_requests
+
 build-ifx:
   stage: build
   tags:
@@ -106,23 +105,10 @@ build-ifx:
   only:
     - merge_requests
 
-      #build-intel-dftbp:
-      #  stage: build
-      #  tags:
-      #    - intel
-      #  script:
-      #    - sh utils/build-intel-dftbp.sh
-
-#build-manual:
-#  stage: manual
-#  script:
-#    - cd manual
-#    - ./makedoc MANUAL_USR
-
 build-win32-serial:
   stage: build
   tags:
-    - gcc
+    - win
   script:
     - sh utils/build-win32-serial.sh
   only:
@@ -131,25 +117,11 @@ build-win32-serial:
 build-win64-serial:
   stage: build
   tags:
-    - gcc
+    - win
   script:
     - sh utils/build-win64-serial.sh
   only:
     - merge_requests
-
-#build-win32-msmpi:
-#  stage: build
-#  tags:
-#    - gcc
-#  script:
-#    - sh utils/build-win32-msmpi.sh
-#
-#build-win64-msmpi:
-#  stage: build
-#  tags:
-#    - gcc
-#  script:
-#    - sh utils/build-win64-msmpi.sh
 
 testing-mpi-gcc:
   stage: test
@@ -197,3 +169,29 @@ testing-mpi-intel-paranoid:
     - devel
   only:
     - merge_requests
+
+build-html:
+  image: alpine
+  stage: manual
+  script:
+    - apk --no-cache add py3-pip python3-dev
+    - pip install sphinx groundwork-sphinx-theme
+    - apk --no-cache add make
+    - cd documentation
+    - make html
+
+pages:
+  image: alpine
+  stage: pages
+  script:
+  - apk --no-cache add py3-pip python3-dev
+  - pip install sphinx groundwork-sphinx-theme
+  - apk --no-cache add make
+  - cd documentation
+  - make html
+  - mv build/html/ ~/public/
+  artifacts:
+    paths:
+    - public
+  only:
+    - manual-sphinx
