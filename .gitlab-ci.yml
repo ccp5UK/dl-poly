@@ -18,6 +18,7 @@ build-serial:
     - sh utils/build-serial.sh
     - sh utils/build-serial-evb.sh
   only:
+    - devel
     - merge_requests
 
 build-openmp-pure:
@@ -179,6 +180,9 @@ build-html:
     - apk --no-cache add make
     - cd documentation
     - make html
+  only:
+    - devel
+    - merge_requests
 
 pages:
   image: alpine
@@ -189,7 +193,7 @@ pages:
   - apk --no-cache add make
   - cd documentation
   - make html
-  - mv build/html/ ~/public/
+  - mv build/html/ ../public/
   artifacts:
     paths:
     - public
