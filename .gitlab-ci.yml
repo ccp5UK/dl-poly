@@ -28,6 +28,7 @@ build-openmp-pure:
   script:
     - sh utils/build-openmp-pure.sh
   only:
+    - devel
     - merge_requests
 
 
@@ -39,6 +40,7 @@ build-mpi-pure:
     - sh utils/build-mpi-pure.sh
     - sh utils/build-mpi-evb.sh
   only:
+    - devel
     - merge_requests
 
 build-mpi-plumed:
@@ -48,6 +50,7 @@ build-mpi-plumed:
   script:
     - sh utils/build-mpi-plumed.sh
   only:
+    - devel
     - merge_requests
 
 build-mpi-plumed-internal:
@@ -66,6 +69,7 @@ build-mpi-kim:
   script:
     - sh utils/build-mpi-kim.sh
   only:
+    - devel
     - merge_requests
 
 build-mpi-kim-internal:
@@ -75,6 +79,7 @@ build-mpi-kim-internal:
   script:
     - sh utils/build-mpi-kim-internal.sh
   only:
+    - devel
     - merge_requests
 
 build-mpi-all:
@@ -84,6 +89,7 @@ build-mpi-all:
   script:
     - sh utils/build-mpi-all.sh
   only:
+    - devel
     - merge_requests
 
 
@@ -95,6 +101,7 @@ build-intel:
     - sh utils/build-intel.sh
     - sh utils/build-intel-evb.sh
   only:
+    - devel
     - merge_requests
 
 build-ifx:
@@ -104,6 +111,7 @@ build-ifx:
   script:
     - sh utils/build-ifx.sh
   only:
+    - devel
     - merge_requests
 
 build-win32-serial:
@@ -113,6 +121,7 @@ build-win32-serial:
   script:
     - sh utils/build-win32-serial.sh
   only:
+    - devel
     - merge_requests
 
 build-win64-serial:
@@ -122,6 +131,7 @@ build-win64-serial:
   script:
     - sh utils/build-win64-serial.sh
   only:
+    - devel
     - merge_requests
 
 testing-mpi-gcc:
@@ -131,6 +141,7 @@ testing-mpi-gcc:
   script:
     - sh utils/mpi-testing.sh
   only:
+    - devel
     - merge_requests
 
 testing-mpi-gcc-paranoid:
@@ -140,6 +151,7 @@ testing-mpi-gcc-paranoid:
   script:
     - sh utils/mpi-testing-paranoid.sh
   only:
+    - devel
     - merge_requests
 
 testing-mpi-intel:
@@ -149,6 +161,7 @@ testing-mpi-intel:
   script:
     - sh utils/intel-testing.sh
   only:
+    - devel
     - merge_requests
 
 testing-mpi-ifx:
@@ -158,6 +171,7 @@ testing-mpi-ifx:
   script:
     - sh utils/ifx-testing.sh
   only:
+    - devel
     - merge_requests
 
 testing-mpi-intel-paranoid:
