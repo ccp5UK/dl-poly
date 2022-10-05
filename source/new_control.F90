@@ -762,7 +762,7 @@ Contains
 
       Call params%retrieve('analyse_frequency_bonds', flow%freq_bond)
     Else
-      bond%bin_pdf = -1
+      bond%bin_pdf = 0
       flow%freq_bond = -1
     End If
 
@@ -772,7 +772,7 @@ Contains
         Call params%retrieve('analyse_num_bins_angles', angle%bin_adf)
       Call params%retrieve('analyse_frequency_angles', flow%freq_angle)
     Else
-      angle%bin_adf = -1
+      angle%bin_adf = 0
       flow%freq_angle = -1
     End If
 
@@ -782,7 +782,7 @@ Contains
         Call params%retrieve('analyse_num_bins_dihedrals', dihedral%bin_adf)
       Call params%retrieve('analyse_frequency_dihedrals', flow%freq_dihedral)
     Else
-      dihedral%bin_adf = -1
+      dihedral%bin_adf = 0
       flow%freq_dihedral = -1
     End If
 
@@ -793,7 +793,7 @@ Contains
 
       Call params%retrieve('analyse_frequency_inversions', flow%freq_inversion)
     Else
-      inversion%bin_adf = -1
+      inversion%bin_adf = 0
       flow%freq_inversion = -1
     End If
 
