@@ -231,7 +231,7 @@ contains
 
     ! Time
 
-    call units_table%set("internal_t", init_unit(abbrev="internal_t", name="Picosecond", time=1, to_internal=1.0_wp))
+    call units_table%set("internal_t", init_unit(abbrev="ps", name="Picosecond", time=1, to_internal=1.0_wp))
     call units_table%set("hr", init_unit(abbrev="hr", name="Hour", time=1, to_internal=3600.0_wp*second))
     call units_table%set("min", init_unit(abbrev="min", name="Minute", time=1, to_internal=60.0_wp*second))
     call units_table%set("s", init_unit(abbrev="s", name="Second", time=1, to_internal=second))
@@ -239,7 +239,7 @@ contains
 
     ! Length
 
-    call units_table%set("internal_l", init_unit(abbrev="internal_l", name="Angstrom", length=1, to_internal=1.0_wp))
+    call units_table%set("internal_l", init_unit(abbrev="ang", name="Angstrom", length=1, to_internal=1.0_wp))
     call units_table%set("ang", init_unit(abbrev="ang", name="Angstrom", length=1, to_internal=angstrom))
     call units_table%set("bohr", init_unit(abbrev="bohr", name="Bohr", length=1, to_internal=bohr))
     call units_table%set("m", init_unit(abbrev="m", name="Metre", length=1, to_internal=metre))
@@ -248,7 +248,7 @@ contains
 
     ! Mass
 
-    call units_table%set("internal_m", init_unit(abbrev="internal_m", name="Atomic Mass Unit", mass=1, to_internal=1.0_wp))
+    call units_table%set("internal_m", init_unit(abbrev="Da", name="Atomic Mass Unit", mass=1, to_internal=1.0_wp))
     call units_table%set("da", init_unit(abbrev="Da", name="Atomic Mass Unit", mass=1, to_internal=1.0_wp))
     call units_table%set("amu", init_unit(abbrev="amu", name="Atomic Mass Unit", mass=1, to_internal=1.0_wp))
     call units_table%set("m_e", init_unit(abbrev="m_e", name="Electron mass", mass=1, to_internal=electron_mass))
@@ -259,7 +259,7 @@ contains
     ! Charge
 
     call units_table%set("internal_q", &
-         & init_unit(abbrev="internal_q", name="Elementary charge", current=1, time=1, to_internal=1.0_wp))
+         & init_unit(abbrev="q_e", name="Elementary charge", current=1, time=1, to_internal=1.0_wp))
     call units_table%set("q_e", &
          & init_unit(abbrev="q_e", name="Elementary charge", current=1, time=1, to_internal=electron_charge))
     call units_table%set("e", &
@@ -275,7 +275,7 @@ contains
     ! Energy
 
     call units_table%set("internal_e", &
-         & init_unit(abbrev="internal_e", name="10 J/mol", mass=1, length=2, time=-2, to_internal=1.0_wp))
+         & init_unit(abbrev="internal_e (10J/mol)", name="10 J/mol", mass=1, length=2, time=-2, to_internal=1.0_wp))
     call units_table%set("j", init_unit(abbrev="J", name="Joule", mass=1, length=2, time=-2, to_internal=joule))
     call units_table%set("cal", &
          & init_unit(abbrev="Cal", name="Calorie", mass=1, length=2, time=-2, to_internal=calorie))
@@ -293,14 +293,14 @@ contains
     ! Pressure
 
     call units_table%set("internal_p", &
-         & init_unit(abbrev="internal_p", name="163 atm", mass=1, length=-1, time=-2, to_internal=1.0_wp))
+         & init_unit(abbrev="internal_p (163atm)", name="163 atm", mass=1, length=-1, time=-2, to_internal=1.0_wp))
     call units_table%set("atm", init_unit(abbrev="atm", name="Atmosphere", mass=1, length=-1, time=-2, to_internal=atmosphere))
     call units_table%set("pa", init_unit(abbrev="Pa", name="Pascal", mass=1, length=-1, time=-2, to_internal=pascal))
 
     ! Force
 
     call units_table%set("internal_f", &
-         & init_unit(abbrev="internal_f", name="internal_f", mass=1, length=1, time=-2, to_internal=1.0_wp))
+         & init_unit(abbrev="Da.ang/ps**2", name="internal_f", mass=1, length=1, time=-2, to_internal=1.0_wp))
     call units_table%set("n", &
          & init_unit(abbrev="N", name="Newton", mass=1, length=1, time=-2, to_internal=newton))
     call units_table%set("dyn", &
@@ -316,7 +316,7 @@ contains
     ! Constants
 
     call units_table%set("grav", &
-         & init_unit(abbrev="g_e", name="9.81 m/s^2", length=1, time=-2, to_internal=gravity))
+         & init_unit(abbrev="9.81 m/s^2", name="9.81 m/s^2", length=1, time=-2, to_internal=gravity))
     call units_table%set("k_b", &
          & init_unit(abbrev="k_B", name="Boltzmann constant", length=2, mass=1, time=-2, temp=-1, to_internal=boltz))
 
@@ -329,6 +329,10 @@ contains
     call units_table%set("v", init_unit(abbrev="V", name="Volt", mass=1, length=2, time=-3, current=-1, &
          & to_internal=joule/coulomb))
 
+    ! Magnetic Field
+
+    call units_table%set("t", init_unit(abbrev="T", name="Tesla", mass=1, time=-2, current=-1, &
+         & to_internal=kilogram/(second*electron_charge)))
 
     ! Angles
 
@@ -344,7 +348,7 @@ contains
 
     ! System Properties
 
-    call units_table%set("temp", init_unit(abbrev="T", name="System Temperature", temp=1, to_internal=1.0_wp))
+    call units_table%set("temp", init_unit(abbrev="sysT", name="System Temperature", temp=1, to_internal=1.0_wp))
 
     call internal_units%recalc()
     call set_out_units(internal_units)
