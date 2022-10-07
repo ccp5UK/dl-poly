@@ -254,6 +254,10 @@ Contains
           thermo%eta(9) = 1.0_wp + tstep * beta * (stat%strcon(9) + stat%strpmf(9) + stress(9) + strkin(9) - &
                (thermo%press + thermo%stress(9)) * config%volm) / (thermo%tau_p * config%volm)
 
+        Case Default
+          thermo%eta(9) = 1.0_wp + tstep * beta * (stat%strcon(9) + stat%strpmf(9) + stress(9) + strkin(9) - &
+               (thermo%press + thermo%stress(9)) * config%volm) / (thermo%tau_p * config%volm)
+
         End Select
 
         ! update velocity and position
@@ -763,6 +767,7 @@ Contains
         Case (CONSTRAINT_NONE)
           thermo%eta = uni + tstep * beta * (strcom + stat%strcon + stat%strpmf + stress + strkin - &
                (thermo%press * uni + thermo%stress) * config%volm) / (thermo%tau_p * config%volm)
+
         Case (CONSTRAINT_SURFACE_TENSION)
           thermo%eta(1) = 1.0_wp + tstep * beta * (strcom(1) + stat%strcon(1) + stat%strpmf(1) + stress(1) + strkin(1) - &
                (thermo%press + thermo%stress(1) - thermo%tension / thermo%h_z) * config%volm) / (thermo%tau_p * config%volm)
@@ -770,6 +775,7 @@ Contains
                (thermo%press + thermo%stress(5) - thermo%tension / thermo%h_z) * config%volm) / (thermo%tau_p * config%volm)
           thermo%eta(9) = 1.0_wp + tstep * beta * (strcom(9) + stat%strcon(9) + stat%strpmf(9) + stress(9) + strkin(9) - &
                (thermo%press + thermo%stress(9)) * config%volm) / (thermo%tau_p * config%volm)
+
         Case (CONSTRAINT_SEMI_ORTHORHOMBIC)
           thermo%eta(1) = 1.0_wp + tstep * beta * (0.5_wp * &
                (strcom(1) + stat%strcon(1) + stat%strpmf(1) + stress(1) + strkin(1) + &
@@ -779,6 +785,11 @@ Contains
           thermo%eta(5) = thermo%eta(1)
           thermo%eta(9) = 1.0_wp + tstep * beta * (strcom(9) + stat%strcon(9) + stat%strpmf(9) + stress(9) + strkin(9) - &
                (thermo%press + thermo%stress(9)) * config%volm) / (thermo%tau_p * config%volm)
+
+        Case Default
+          thermo%eta(9) = 1.0_wp + tstep * beta * (strcom(9) + stat%strcon(9) + stat%strpmf(9) + stress(9) + strkin(9) - &
+               (thermo%press + thermo%stress(9)) * config%volm) / (thermo%tau_p * config%volm)
+
         End Select
 
         ! update config%cell parameters: anisotropic

@@ -1732,6 +1732,10 @@ Contains
       thermo%eta(9) = thermo%eta(9) + hstep * (strcom(9) + strcon(9) + stress(9) + strkin(9) + &
         thermo%factor - (thermo%press + thermo%stress(9)) * config%volm) / thermo%pmass
 
+    Case Default
+      thermo%eta(9) = thermo%eta(9) + hstep * (strcom(9) + strcon(9) + stress(9) + strkin(9) + &
+           thermo%factor - (thermo%press + thermo%stress(9)) * config%volm) / thermo%pmass
+
     End Select
 
     ! thermostat thermo%eta to 2/4*tstep
@@ -1830,6 +1834,10 @@ Contains
       thermo%eta(5) = thermo%eta(1)
       thermo%eta(9) = thermo%eta(9) + hstep * (strcom(9) + strcon(9) + stress(9) + strkin(9) + &
         thermo%factor - (thermo%press + thermo%stress(9)) * config%volm) / thermo%pmass
+
+    Case Default
+      thermo%eta(9) = thermo%eta(9) + hstep * (strcom(9) + strcon(9) + stress(9) + strkin(9) + &
+           thermo%factor - (thermo%press + thermo%stress(9)) * config%volm) / thermo%pmass
 
     End Select
 
