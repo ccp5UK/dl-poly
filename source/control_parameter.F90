@@ -304,46 +304,46 @@ Contains
     Real(Kind=wp) :: rtmp, rtmp3(3), rtmp6(6)
 
     Select Case (param%data_type)
-    Case (DATA_FLOAT)
-      Read (param%val, *) rtmp
-      rtmp = convert_units(rtmp, param%units, param%internal_units, stat)
-      If (.not. stat) Call error_units(param%units, param%internal_units, 'Cannot write '//param%key//': bad units')
-
-      Write (unit, '(3(A,1X), "-> ", g15.6e2, 1X, A)') Trim(param%key), Trim(param%val), &
-           & Trim(param%units), rtmp, Trim(param%internal_units)
-    Case (DATA_INT)
-      Read (param%val, *) itmp
-      Write (unit, '(3(A,1X), "-> ", i0, 1X, A)') Trim(param%key), Trim(param%val), &
-           & Trim(param%units), itmp, Trim(param%internal_units)
-    Case (DATA_VECTOR3)
-      Read (param%val, *) rtmp3
-      Do itmp = 1, 3
-        rtmp3(itmp) = convert_units(rtmp3(itmp), param%units, param%internal_units, stat)
+      Case (DATA_FLOAT)
+        Read (param%val, *) rtmp
+        rtmp = convert_units(rtmp, param%units, param%internal_units, stat)
         If (.not. stat) Call error_units(param%units, param%internal_units, 'Cannot write '//param%key//': bad units')
 
-      End Do
-      Write (unit, '(3(A,1X), "-> [", 3(g15.6e2,1X), "]", 1X, A)') Trim(param%key), Trim(param%val), &
-           & Trim(param%units), rtmp3, Trim(param%internal_units)
-    Case (DATA_VECTOR6)
-      Read (param%val, *) rtmp6
-      Do itmp = 1, 6
-        rtmp6(itmp) = convert_units(rtmp6(itmp), param%units, param%internal_units, stat)
-        If (.not. stat) Call error_units(param%units, param%internal_units, 'Cannot write '//param%key//': bad units')
+        Write (unit, '(3(A,1X), "-> ", g15.6e2, 1X, A)', iostat=iostat, iomsg=iomsg) Trim(param%key), Trim(param%val), &
+        & Trim(param%units), rtmp, Trim(param%internal_units)
+      Case (DATA_INT)
+        Read (param%val, *) itmp
+        Write (unit, '(3(A,1X), "-> ", i0, 1X, A)',iostat=iostat, iomsg=iomsg) Trim(param%key), Trim(param%val), &
+        & Trim(param%units), itmp, Trim(param%internal_units)
+      Case (DATA_VECTOR3)
+        Read (param%val, *) rtmp3
+        Do itmp = 1, 3
+          rtmp3(itmp) = convert_units(rtmp3(itmp), param%units, param%internal_units, stat)
+          If (.not. stat) Call error_units(param%units, param%internal_units, 'Cannot write '//param%key//': bad units')
 
-      End Do
+        End Do
+        Write (unit, '(3(A,1X), "-> [", 3(g15.6e2,1X), "]", 1X, A)', iostat=iostat, iomsg=iomsg) Trim(param%key), Trim(param%val), &
+        & Trim(param%units), rtmp3, Trim(param%internal_units)
+      Case (DATA_VECTOR6)
+        Read (param%val, *) rtmp6
+        Do itmp = 1, 6
+          rtmp6(itmp) = convert_units(rtmp6(itmp), param%units, param%internal_units, stat)
+          If (.not. stat) Call error_units(param%units, param%internal_units, 'Cannot write '//param%key//': bad units')
 
-      Write (unit, '(3(A,1X), "-> [", 6(g15.6e2,1X), "]", 1X, A)') Trim(param%key), Trim(param%val), &
-           & Trim(param%units), rtmp6, Trim(param%internal_units)
-    Case default
-      Write (unit, fmt='(3(A,1X))') Trim(param%key), Trim(param%val), Trim(param%units)
-    End Select
+        End Do
 
-  End Subroutine write_control_param
+        Write (unit, '(3(A,1X), "-> [", 6(g15.6e2,1X), "]", 1X, A)', iostat=iostat, iomsg=iomsg) Trim(param%key), Trim(param%val), &
+        & Trim(param%units), rtmp6, Trim(param%internal_units)
+       Case default
+         Write (unit, fmt='(3(A,1X))', iostat=iostat, iomsg=iomsg) Trim(param%key), Trim(param%val), Trim(param%units)
+      End Select
 
-  Subroutine retrieve_option_or_string(table, key, output, required)
-    Class(parameters_hash_table)          :: table
-    Character(Len=*),       Intent(In   ) :: key
-    Character(Len=STR_LEN), Intent(  Out) :: output
+    End Subroutine write_control_param
+
+    Subroutine retrieve_option_or_string(table, key, output, required)
+      Class(parameters_hash_table)          :: table
+      Character(Len=*),       Intent(In   ) :: key
+      Character(Len=STR_LEN), Intent(  Out) :: output
     Logical, Optional,      Intent(In   ) :: required
 
     Type(control_parameter) :: param
