@@ -634,11 +634,11 @@ Contains
 
     ! load charge array into complex array for fft
 
-    ewld%kspace%potential_grid = Cmplx(charge_grid, Kind=wp)
+    potential_grid = Cmplx(charge_grid, Kind=wp)
 
     ! calculate inverse 3d fft of charge array (in place)
 
-    Call pfft(ewld%kspace%potential_grid, ewld%kspace%pfft_work, ewld%kspace%context, 1)
+    Call pfft(potential_grid, ewld%kspace%pfft_work, ewld%kspace%context, 1)
 
     ! initialise temporary stress tensor
 
@@ -710,7 +710,7 @@ Contains
 
     If (Present(stress_contrib)) stress_contrib = Reshape(stress_temp, [9])
 
-    Call pfft(ewld%kspace%potential_grid, ewld%kspace%pfft_work, ewld%kspace%context, -1)
+    Call pfft(potential_grid, ewld%kspace%pfft_work, ewld%kspace%context, -1)
 
   End Subroutine spme_construct_potential_grid_gen
 

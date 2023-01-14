@@ -419,6 +419,7 @@ Contains
 
       Call spme_calc_force_energy(ewld, comm, domain, config, coeffs, &
         & rcell, ewld%kspace%recip_indices, ewld%kspace%potential_grid, stats%collect_pp, q_abc, f_abc)
+
       Call spme_calc_stress(ewld, comm, domain, config, coeffs, &
         & rcell, ewld%kspace%recip_indices, ewld%kspace%stress_grid, s_abc)
 
@@ -1299,7 +1300,7 @@ Contains
     test_fac = (1.0e-6_wp / recip_conv_fac)**2 ! f_p_fac > 1e-6
     ! set reciprocal space cutoff
 
-    Call dcell(recip_cell, recip_cell_properties)
+    call dcell(recip_cell, recip_cell_properties)
 
     cut_off = 0.5_wp * 1.05_wp * Minval(ewld%kspace%k_vec_dim_real * recip_cell_properties(7:9))
     cut_off_2 = cut_off**2
@@ -1310,7 +1311,7 @@ Contains
 
     ! calculate inverse 3d fft of charge array (in place)
 
-    Call pfft(ewld%kspace%potential_grid, ewld%kspace%pfft_work, ewld%kspace%context, 1)
+    Call pfft(potential_grid, ewld%kspace%pfft_work, ewld%kspace%context, 1)
 
     ! initialise temporary stress tensor
 
