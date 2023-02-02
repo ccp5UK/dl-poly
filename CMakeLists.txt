@@ -329,15 +329,9 @@ if(BUILD_TESTING)
     if (EXISTS ${CMAKE_SOURCE_DIR}/data/${arg}.tar.xz)
       message(STATUS "Using already downloaded ${arg}.tar.xz")
     else()
-      if (${is_beetest})
-        message(STATUS "Trying to download ${arg}.tar.xz from https://www.ccp5.ac.uk/wp-content/uploads/2022/09/")
-        file(DOWNLOAD https://www.ccp5.ac.uk/wp-content/uploads/2022/09/${arg}.tar.xz
-          ${CMAKE_SOURCE_DIR}/data/${arg}.tar.xz STATUS DL_TEST)
-      else()
-        message(STATUS, "Trying to download ${arg}.tar.xz from https://www.ccp5.ac.uk/wp-content/uploads/2023/08/")
-        file(DOWNLOAD https://www.ccp5.ac.uk/wp-content/uploads/2023/08/${arg}.tar.xz
-          ${CMAKE_SOURCE_DIR}/data/${arg}.tar.xz STATUS DL_TEST)
-      endif()
+      message(STATUS "Trying to download ${arg}.tar.xz from  https://github.com/ccp5UK/dl-poly-data")
+      file(DOWNLOAD https://github.com/ccp5UK/dl-poly-data/raw/main/data/5.1.0/${arg}.tar.xz
+	  ${CMAKE_SOURCE_DIR}/data/${arg}.tar.xz STATUS DL_TEST)
       list(GET DL_TEST 0 ERRNO)
       if ("${ERRNO}" EQUAL "0")
         message(STATUS "Download successful for ${arg}.tar.xz")
@@ -355,7 +349,7 @@ if(BUILD_TESTING)
       add_test(NAME ${arg}
         COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/utils/beetest -f all.xml -v -k -s all -t ${arg} "${dlp}" WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Testing)
     else()
-      add_test(NAME ${arg} 
+      add_test(NAME ${arg}
         COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/utils/run-test.py --exe "${CMAKE_BINARY_DIR}/bin/${target_name}" --mpi "${MPIEXEC} ${MPIEXEC_PREFLAGS} -n" --np "${MPI_NPROCS}" --dir ${CMAKE_BINARY_DIR}/Testing/${arg} --verbose)
     endif()
     set_tests_properties(${arg} PROPERTIES PASS_REGULAR_EXPRESSION "Status: PASSED")
