@@ -92,10 +92,12 @@ Program dl_poly
   Use units,                                  Only: initialise_units
   Use vdw,                                    Only: vdw_type
   Use z_density,                              Only: z_density_type
+  Use constants,                              Only: DLP_VERSION, &
+                                                    DLP_RELEASE
 #ifdef NVIDIA
   Use constants,                              Only: wp, &
                                                     half_minus, &
-                                                    half_plus
+                                                    half_plus, &
 #endif
 
   Implicit None
@@ -152,12 +154,11 @@ Program dl_poly
   Type(testing_type) :: tests
 
   ! Local Variables
-  Character(len=1024)           :: control_filename = '', arg
-  Character(len=1024)           :: output_filename = ''
+  Character(len=1024)           :: control_filename
+  Character(len=1024)           :: output_filename
   Character(Len=STR_LEN)        :: option
-  Character(Len=10)             :: mode
   Logical                       :: finish
-  Integer                       :: i, ifile
+  Integer                       :: ifile
 
 #ifdef NVIDIA
   half_plus = Nearest(0.5_wp, +1.0_wp)
@@ -183,120 +184,7 @@ Program dl_poly
   ! Assume we're using old format
   finish = .false.
   If (dlp_world(0)%idnode == 0) Then
-    If (command_argument_count() > 0) Then
-      i = 0
-      parse_cmd: Do
-        i = i + 1
-        Call get_command_argument(i, arg)
-        Select Case (arg)
-        Case ('-h')
-          Call get_command_argument(0, arg)
-          Write (eu, '(a)') "Usage: "//Trim(arg)//" -c CONTROL_FILENAME -o OUTPUT_FILENAME"
-          Write (eu, '(a)') "Each of -c or -o options are optional"
-          Write (eu, '(a)') "use -h to see this help"
-          Write (eu, '(a)') "use --help, --keywords, -k  to see all keywords for control file"
-          Write (eu, '(a)') "use --help <keyword> to see keyword info"
-          Write (eu, '(a)') "use --control or -c <control.file> use the control file given"
-          Write (eu, '(a)') "use --output or -o <output.file> print output in the output.file indicated"
-          Write (eu, '(a)') "use -o SCREEN print output on the screen"
-          Write (eu, '(a)') "use -dump <type> <file> print keywords to file or SCREEN"
-          Write (eu, '(a)') "          supported <type> latexdoc, latex, python, csv"
-          Write (eu, '(a)') "use --replay or -r replay a simulation"
-          Write (eu, '(a)') "use --test or -t <type> run unit tests"
-          Write (eu, '(a)') "           supported <type> control configuration vdw units all"
-          finish = .true.
-          Exit
-        Case ('--dump')
-          i = i + 1
-          Call get_command_argument(i, mode)
-          If (mode == '') Then
-            mode = "default"
-          End IF
-          Select Case (mode)
-          Case ('latexdoc', 'latex', 'python', 'csv', 'test', 'default')
-            Continue
-          Case Default
-            Write (eu, '(a)') 'Bad mode option '//Trim(mode)
-            finish = .true.
-            Exit
-          End Select
-
-          Select Case (mode)
-          Case ('latexdoc', 'latex', 'python', 'csv', 'test')
-            i = i + 1
-            Call get_command_argument(i, arg)
-          End Select
-
-          If (Trim(arg) == "SCREEN" .or. arg == '') Then
-            ifile = ou
-          Else
-            Open (newunit=ifile, file=Trim(arg))
-          End If
-
-          Call dump_parameters(ifile, params, mode)
-          finish = .true.
-          Exit
-        Case ('--help')
-          i = i + 1
-          Call get_command_argument(i, arg)
-          If (arg == '' ) Then
-            mode = 'default'
-            Call dump_parameters(ou, params, mode)
-          Else
-            Call params%help(arg)
-          End IF
-          finish = .true.
-          Exit
-
-        Case ('--keywords', '-k')
-          Call params%help()
-          finish = .true.
-          Exit
-
-        Case ('-c', '--control')
-          i = i + 1
-          Call get_command_argument(i, control_filename)
-        Case ('-o', '--output')
-          i = i + 1
-          Call get_command_argument(i, output_filename)
-        Case ('-test', '-t')
-
-          Call get_command_argument(i + 1, arg)
-          Do While (arg(1:1) /= "-" .and. i < command_argument_count())
-            i = i + 1
-            Select Case (arg)
-            Case ("control")
-              tests%control = .true.
-            Case ("configuration")
-              tests%configuration = .true.
-            Case ("units")
-              tests%units = .true.
-            Case ("vdw")
-              tests%vdw = .true.
-            Case ("all")
-              Call tests%all()
-            Case Default
-              Write (eu, *) "Invalid test option:", Trim(arg)
-              finish = .true.
-              Exit parse_cmd
-            End Select
-            Call get_command_argument(i + 1, arg)
-          End Do
-
-          Call init_error_system(ou, dlp_world(0))
-          Call tests%run(dlp_world(0))
-          finish = .true.
-
-        Case ('--replay', '-r')
-          flow(1)%simulation = .false.
-        Case default
-          Write (eu, *) "No idea what you want, try -h "
-          finish = .true.
-          Exit parse_cmd
-        End Select
-        If (i == command_argument_count()) Exit
-      End Do parse_cmd
-    End If
+    Call parse_command_args(dlp_world(0), params, tests, flow(1), output_filename, control_filename, finish)
   End If
 
   Call gbcast(dlp_world(0), control_filename, 0)
@@ -366,5 +254,178 @@ Program dl_poly
   ! Create wrappers for the MD cycle in VV, and replay history
   Deallocate (flow)
   Deallocate (dlp_world)
+
+contains
+
+  Subroutine parse_command_args(comms_in, params, tests, flow, output_filename, control_filename, finish)
+
+    Type(comms_type),            Intent(In   ) :: comms_in
+    Type(parameters_hash_table), Intent(In   ) :: params
+    Type(testing_type),          Intent(InOut) :: tests
+    Type(flow_type),             Intent(InOut) :: flow
+    Character(len=1024),         Intent(  Out) :: output_filename, control_filename
+    Logical,                     Intent(  Out) :: finish
+
+    Character(len=1024) :: arg
+    Character(Len=10) :: mode
+    Integer :: i
+
+    output_filename = ''
+    control_filename = ''
+
+    if (command_argument_count() > 0) then
+
+      i = 0
+
+      parse_cmd: Do
+        i = i + 1
+        Call get_command_argument(i, arg)
+        Select Case (arg)
+
+        Case ('-h')
+          Call get_command_argument(0, arg)
+          Write (eu, '(a)') "Usage: "//Trim(arg)//" [-h] [-V] [-r] [-c <CONTROL_FILENAME>] [-o <OUTPUT_FILENAME>]"
+          Write (eu, '(a)') "use -h to see this help and quit"
+          Write (eu, '(a)') "use --version, -V to print version information and quit"
+          Write (eu, '(a)') "use --help, --keywords, -k  to see all keywords for control file"
+          Write (eu, '(a)') "use --help <keyword> to see keyword info"
+          Write (eu, '(a)') "use --control or -c <control.file> use the control file given"
+          Write (eu, '(a)') "use --output or -o <output.file> print output in the output.file indicated"
+          Write (eu, '(a)') "use -o SCREEN print output on the screen"
+          Write (eu, '(a)') "use --dump <type> <file> print keywords to file or SCREEN"
+          Write (eu, '(a)') "          supported <type> latexdoc, latex, python, csv"
+          Write (eu, '(a)') "use --replay or -r replay a simulation"
+          Write (eu, '(a)') "use --test or -t <type> run unit tests"
+          Write (eu, '(a)') "           supported <type> control configuration vdw units all"
+
+          finish = .true.
+          Exit parse_cmd
+
+        Case ('--version', '-V')
+          If (scan(DLP_VERSION, ".") /= 0) Then
+            Write (eu, '(a)') "DL_POLY v"//trim(DLP_VERSION)//", release date "//trim(DLP_RELEASE)
+          Else
+            Write (eu, '(a)') "DL_POLY (Git Hash: "//trim(DLP_VERSION)//"), last commit "//trim(DLP_RELEASE)
+          End If
+          Write (eu, '(a)') "GNU LESSER GENERAL PUBLIC LICENSE v3"
+          Write (eu, '(a)') ""
+          Write (eu, '(a)') "See: "
+          Write (eu, '(a)') "https://www.gnu.org/licenses/lgpl-3.0-standalone.html"
+
+          finish = .true.
+          Exit parse_cmd
+
+        Case ('--dump')
+          i = i + 1
+          Call get_command_argument(i, mode)
+          If (mode == '') Then
+            mode = "default"
+          End IF
+
+          Select Case (mode)
+          Case ('latexdoc', 'latex', 'python', 'csv', 'test', 'default')
+            Continue
+          Case Default
+            Write (eu, '(a)') 'Bad mode option '//Trim(mode)
+            finish = .true.
+            Exit parse_cmd
+          End Select
+
+          Select Case (mode)
+          Case ('latexdoc', 'latex', 'python', 'csv', 'test')
+            i = i + 1
+            Call get_command_argument(i, arg)
+          End Select
+
+          If (Trim(arg) == "SCREEN" .or. arg == '') Then
+            ifile = ou
+          Else
+            Open (newunit=ifile, file=Trim(arg))
+          End If
+
+          Call dump_parameters(ifile, params, mode)
+          finish = .true.
+          Exit parse_cmd
+
+        Case ('--help')
+          i = i + 1
+          Call get_command_argument(i, arg)
+          If (arg == '') Then
+            mode = 'default'
+            Call dump_parameters(ou, params, mode)
+          Else
+            Call params%help(arg)
+          End IF
+          finish = .true.
+          Exit parse_cmd
+
+        Case ('--keywords', '-k')
+          Call params%help()
+          finish = .true.
+          Exit parse_cmd
+
+        Case ('--control', '-c')
+          i = i + 1
+          Call get_command_argument(i, control_filename)
+
+        Case ('--output', '-o')
+          i = i + 1
+          Call get_command_argument(i, output_filename)
+
+        Case ('--test', '-t')
+
+          Do While (i < command_argument_count())
+            i = i + 1
+            Call get_command_argument(i, arg)
+
+            If (arg(1:1) == "-") Then
+              Exit
+            End If
+
+            Select Case (arg)
+            Case ("control")
+              Write(eu, '(a)') "Running test: control"
+              tests%control = .true.
+            Case ("configuration")
+              Write(eu, '(a)') "Running test: configuration"
+              tests%configuration = .true.
+            Case ("units")
+              Write(eu, '(a)') "Running test: units"
+              tests%units = .true.
+            Case ("vdw")
+              Write(eu, '(a)') "Running test: vdw"
+              tests%vdw = .true.
+            Case ("all")
+              Write(eu, '(a)') "Running test: control"
+              Write(eu, '(a)') "Running test: configuration"
+              Write(eu, '(a)') "Running test: units"
+              Write(eu, '(a)') "Running test: vdw"
+              Call tests%all()
+            Case Default
+              Write (eu, *) "Invalid test option:", Trim(arg)
+              finish = .true.
+              Exit parse_cmd
+            End Select
+          End Do
+
+          Call init_error_system(ou, comms_in)
+          Call tests%run(comms_in)
+          Write(eu, '(a)') "Tests complete"
+          finish = .true.
+
+        Case ('--replay', '-r')
+          flow%simulation = .false.
+
+        Case default
+          Write (eu, *) "No idea what you want, try -h "
+          finish = .true.
+          Exit parse_cmd
+        End Select
+
+        If (i == command_argument_count()) Exit parse_cmd
+      End Do parse_cmd
+    End If
+
+  end Subroutine parse_command_args
 
 End Program dl_poly

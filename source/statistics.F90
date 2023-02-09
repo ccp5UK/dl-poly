@@ -2084,7 +2084,7 @@ Contains
     Call gsum(comm, e_v)
     Call gsum(comm, S_v)
 
-    heat_flux = (e_v + S_v) / (1000.0_wp * engunit * config%volm)
+    heat_flux = (e_v + S_v) / (engunit * config%volm)
 
   End Function calculate_heat_flux
 
