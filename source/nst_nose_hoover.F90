@@ -122,14 +122,14 @@ Contains
 
     fail = 0
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-      Allocate (lstitr(1:config%mxatms), Stat=fail(1))
-      Call cons%allocate_work(config%mxatms)
+      Allocate (lstitr(1:config%nlast), Stat=fail(1))
+      Call cons%allocate_work(config%nlast)
       Call pmf%allocate_work()
-      Allocate (oxt(1:config%mxatms), oyt(1:config%mxatms), ozt(1:config%mxatms), Stat=fail(6))
+      Allocate (oxt(1:config%nlast), oyt(1:config%nlast), ozt(1:config%nlast), Stat=fail(6))
     End If
-    Allocate (xxt(1:config%mxatms), yyt(1:config%mxatms), zzt(1:config%mxatms), Stat=fail(7))
-    Allocate (vxt(1:config%mxatms), vyt(1:config%mxatms), vzt(1:config%mxatms), Stat=fail(8))
-    Allocate (fxt(1:config%mxatms), fyt(1:config%mxatms), fzt(1:config%mxatms), Stat=fail(9))
+    Allocate (xxt(1:config%nlast), yyt(1:config%nlast), zzt(1:config%nlast), Stat=fail(7))
+    Allocate (vxt(1:config%nlast), vyt(1:config%nlast), vzt(1:config%nlast), Stat=fail(8))
+    Allocate (fxt(1:config%nlast), fyt(1:config%nlast), fzt(1:config%nlast), Stat=fail(9))
     If (Any(fail > 0)) Then
       Call error_alloc('pos/vel/force arrays', 'nst_h0_vv')
     End If
@@ -579,19 +579,19 @@ Contains
 
     fail = 0
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-      Allocate (lstitr(1:config%mxatms), Stat=fail(1))
-      Call cons%allocate_work(config%mxatms)
+      Allocate (lstitr(1:config%nlast), Stat=fail(1))
+      Call cons%allocate_work(config%nlast)
       Call pmf%allocate_work()
-      Allocate (oxt(1:config%mxatms), oyt(1:config%mxatms), ozt(1:config%mxatms), Stat=fail(6))
+      Allocate (oxt(1:config%nlast), oyt(1:config%nlast), ozt(1:config%nlast), Stat=fail(6))
     End If
 
     Allocate (ggx(1:rigid%max_list * rigid%max_rigid), &
               ggy(1:rigid%max_list * rigid%max_rigid), &
               ggz(1:rigid%max_list * rigid%max_rigid), &
               Stat=fail(7))
-    Allocate (xxt(1:config%mxatms), yyt(1:config%mxatms), zzt(1:config%mxatms), Stat=fail(8))
-    Allocate (vxt(1:config%mxatms), vyt(1:config%mxatms), vzt(1:config%mxatms), Stat=fail(9))
-    Allocate (fxt(1:config%mxatms), fyt(1:config%mxatms), fzt(1:config%mxatms), Stat=fail(10))
+    Allocate (xxt(1:config%nlast), yyt(1:config%nlast), zzt(1:config%nlast), Stat=fail(8))
+    Allocate (vxt(1:config%nlast), vyt(1:config%nlast), vzt(1:config%nlast), Stat=fail(9))
+    Allocate (fxt(1:config%nlast), fyt(1:config%nlast), fzt(1:config%nlast), Stat=fail(10))
     Allocate (q0t(1:rigid%max_rigid), &
               q1t(1:rigid%max_rigid), &
               q2t(1:rigid%max_rigid), &

@@ -77,14 +77,14 @@ Contains
 
     fail = 0
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-      Allocate (lstitr(1:config%mxatms), Stat=fail(1))
-      Call cons%allocate_work(config%mxatms)
+      Allocate (lstitr(1:config%natms), Stat=fail(1))
+      Call cons%allocate_work(config%nlast)
       Call pmf%allocate_work()
-      Allocate (oxt(1:config%mxatms), oyt(1:config%mxatms), ozt(1:config%mxatms), Stat=fail(6))
+      Allocate (oxt(1:config%nlast), oyt(1:config%nlast), ozt(1:config%nlast), Stat=fail(6))
     End If
-    Allocate (xxt(1:config%mxatms), yyt(1:config%mxatms), zzt(1:config%mxatms), Stat=fail(7))
-    Allocate (vxt(1:config%mxatms), vyt(1:config%mxatms), vzt(1:config%mxatms), Stat=fail(8))
-    Allocate (fxt(1:config%mxatms), fyt(1:config%mxatms), fzt(1:config%mxatms), Stat=fail(9))
+    Allocate (xxt(1:config%nlast), yyt(1:config%nlast), zzt(1:config%nlast), Stat=fail(7))
+    Allocate (vxt(1:config%nlast), vyt(1:config%nlast), vzt(1:config%nlast), Stat=fail(8))
+    Allocate (fxt(1:config%nlast), fyt(1:config%nlast), fzt(1:config%nlast), Stat=fail(9))
     If (Any(fail > 0)) Then
       Write (message, '(a)') 'nve_0 allocation failure'
       Call error(0, message)
@@ -286,30 +286,30 @@ Contains
 
     fail = 0
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-      Allocate (lstitr(1:config%mxatms), Stat=fail(1))
-      Call cons%allocate_work(config%mxatms)
+      Allocate (lstitr(1:config%natms), Stat=fail(1))
+      Call cons%allocate_work(config%nlast)
       Call pmf%allocate_work()
-      Allocate (oxt(1:config%mxatms), oyt(1:config%mxatms), ozt(1:config%mxatms), Stat=fail(6))
+      Allocate (oxt(1:config%nlast), oyt(1:config%nlast), ozt(1:config%nlast), Stat=fail(6))
     End If
     Allocate (ggx(1:rigid%max_list * rigid%max_rigid), &
-              ggy(1:rigid%max_list * rigid%max_rigid), &
-              ggz(1:rigid%max_list * rigid%max_rigid), Stat=fail(7))
-    Allocate (xxt(1:config%mxatms), yyt(1:config%mxatms), zzt(1:config%mxatms), Stat=fail(8))
-    Allocate (vxt(1:config%mxatms), vyt(1:config%mxatms), vzt(1:config%mxatms), Stat=fail(9))
-    Allocate (fxt(1:config%mxatms), fyt(1:config%mxatms), fzt(1:config%mxatms), Stat=fail(10))
+      ggy(1:rigid%max_list * rigid%max_rigid), &
+      ggz(1:rigid%max_list * rigid%max_rigid), Stat=fail(7))
+    Allocate (xxt(1:config%nlast), yyt(1:config%nlast), zzt(1:config%nlast), Stat=fail(8))
+    Allocate (vxt(1:config%nlast), vyt(1:config%nlast), vzt(1:config%nlast), Stat=fail(9))
+    Allocate (fxt(1:config%nlast), fyt(1:config%nlast), fzt(1:config%nlast), Stat=fail(10))
     Allocate (q0t(1:rigid%max_rigid), &
-              q1t(1:rigid%max_rigid), &
-              q2t(1:rigid%max_rigid), &
-              q3t(1:rigid%max_rigid), Stat=fail(11))
+      q1t(1:rigid%max_rigid), &
+      q2t(1:rigid%max_rigid), &
+      q3t(1:rigid%max_rigid), Stat=fail(11))
     Allocate (rgdxxt(1:rigid%max_rigid), &
-              rgdyyt(1:rigid%max_rigid), &
-              rgdzzt(1:rigid%max_rigid), Stat=fail(12))
+      rgdyyt(1:rigid%max_rigid), &
+      rgdzzt(1:rigid%max_rigid), Stat=fail(12))
     Allocate (rgdvxt(1:rigid%max_rigid), &
-              rgdvyt(1:rigid%max_rigid), &
-              rgdvzt(1:rigid%max_rigid), Stat=fail(13))
+      rgdvyt(1:rigid%max_rigid), &
+      rgdvzt(1:rigid%max_rigid), Stat=fail(13))
     Allocate (rgdoxt(1:rigid%max_rigid), &
-              rgdoyt(1:rigid%max_rigid), &
-              rgdozt(1:rigid%max_rigid), Stat=fail(14))
+      rgdoyt(1:rigid%max_rigid), &
+      rgdozt(1:rigid%max_rigid), Stat=fail(14))
     If (Any(fail > 0)) Then
       Write (message, '(a)') 'nve_1 allocation failure'
       Call error(0, message)
@@ -425,80 +425,80 @@ Contains
         rgdozt(irgd) = rigid%ozz(irgd)
       End Do
 
-      100 Continue
+100 Continue
 
-      ! constraint virial and stress tensor
+    ! constraint virial and stress tensor
 
-      If (cons%megcon > 0) Then
-        stat%vircon = 0.0_wp
-        stat%strcon = 0.0_wp
+    If (cons%megcon > 0) Then
+      stat%vircon = 0.0_wp
+      stat%strcon = 0.0_wp
+    End If
+
+    ! PMF virial and stress tensor
+
+    If (pmf%megpmf > 0) Then
+      stat%virpmf = 0.0_wp
+      stat%strpmf = 0.0_wp
+    End If
+
+    ! update velocity and position of FPs
+
+    Do j = 1, config%nfree
+      i = config%lstfre(j)
+
+      If (config%weight(i) > 1.0e-6_wp) Then
+        tmp = hstep / config%weight(i)
+        config%vxx(i) = vxt(i) + tmp * fxt(i)
+        config%vyy(i) = vyt(i) + tmp * fyt(i)
+        config%vzz(i) = vzt(i) + tmp * fzt(i)
+
+        config%parts(i)%xxx = xxt(i) + tstep * config%vxx(i)
+        config%parts(i)%yyy = yyt(i) + tstep * config%vyy(i)
+        config%parts(i)%zzz = zzt(i) + tstep * config%vzz(i)
       End If
+    End Do
 
-      ! PMF virial and stress tensor
+    ! SHAKE procedures
+    If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
+      Call apply_shake(tstep, oxt, oyt, ozt, &
+        lstitr, stat, pmf, cons, domain, tmr, config, thermo, comm)
+    End If
 
-      If (pmf%megpmf > 0) Then
-        stat%virpmf = 0.0_wp
-        stat%strpmf = 0.0_wp
-      End If
+    ! update velocity and position of RBs
 
-      ! update velocity and position of FPs
+    krgd = 0
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
 
-      Do j = 1, config%nfree
-        i = config%lstfre(j)
+      ! For all good RBs
 
-        If (config%weight(i) > 1.0e-6_wp) Then
-          tmp = hstep / config%weight(i)
-          config%vxx(i) = vxt(i) + tmp * fxt(i)
-          config%vyy(i) = vyt(i) + tmp * fyt(i)
-          config%vzz(i) = vzt(i) + tmp * fzt(i)
+      lrgd = rigid%list(-1, irgd)
+      If (rigid%frozen(0, rgdtyp) < lrgd) Then
 
-          config%parts(i)%xxx = xxt(i) + tstep * config%vxx(i)
-          config%parts(i)%yyy = yyt(i) + tstep * config%vyy(i)
-          config%parts(i)%zzz = zzt(i) + tstep * config%vzz(i)
-        End If
-      End Do
+        ! calculate COM force and torque
 
-      ! SHAKE procedures
-      If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-        Call apply_shake(tstep, oxt, oyt, ozt, &
-                         lstitr, stat, pmf, cons, domain, tmr, config, thermo, comm)
-      End If
+        fmx = 0.0_wp; fmy = 0.0_wp; fmz = 0.0_wp
+        tqx = 0.0_wp; tqy = 0.0_wp; tqz = 0.0_wp
+        Do jrgd = 1, lrgd
+          krgd = krgd + 1
 
-      ! update velocity and position of RBs
+          i = rigid%index_local(jrgd, irgd) ! local index of particle/site
 
-      krgd = 0
-      Do irgd = 1, rigid%n_types
-        rgdtyp = rigid%list(0, irgd)
+          ! If the RB has a frozen particle then no net force
 
-        ! For all good RBs
+          If (rigid%frozen(0, rgdtyp) == 0) Then
+            fmx = fmx + fxt(i)
+            fmy = fmy + fyt(i)
+            fmz = fmz + fzt(i)
+          End If
 
-        lrgd = rigid%list(-1, irgd)
-        If (rigid%frozen(0, rgdtyp) < lrgd) Then
+          tqx = tqx + ggy(krgd) * fzt(i) - ggz(krgd) * fyt(i)
+          tqy = tqy + ggz(krgd) * fxt(i) - ggx(krgd) * fzt(i)
+          tqz = tqz + ggx(krgd) * fyt(i) - ggy(krgd) * fxt(i)
+        End Do
 
-          ! calculate COM force and torque
-
-          fmx = 0.0_wp; fmy = 0.0_wp; fmz = 0.0_wp
-          tqx = 0.0_wp; tqy = 0.0_wp; tqz = 0.0_wp
-          Do jrgd = 1, lrgd
-            krgd = krgd + 1
-
-            i = rigid%index_local(jrgd, irgd) ! local index of particle/site
-
-            ! If the RB has a frozen particle then no net force
-
-            If (rigid%frozen(0, rgdtyp) == 0) Then
-              fmx = fmx + fxt(i)
-              fmy = fmy + fyt(i)
-              fmz = fmz + fzt(i)
-            End If
-
-            tqx = tqx + ggy(krgd) * fzt(i) - ggz(krgd) * fyt(i)
-            tqy = tqy + ggz(krgd) * fxt(i) - ggx(krgd) * fzt(i)
-            tqz = tqz + ggx(krgd) * fyt(i) - ggy(krgd) * fxt(i)
-          End Do
-
-          ! If the RB has 2+ frozen particles (ill=1) the net torque
-          ! must align along the axis of rotation
+        ! If the RB has 2+ frozen particles (ill=1) the net torque
+        ! must align along the axis of rotation
 
           If (rigid%frozen(0, rgdtyp) > 1) Then
             i1 = rigid%index_local(rigid%index_global(1, rgdtyp), irgd)
