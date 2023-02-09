@@ -875,6 +875,7 @@ Contains
 
       Call params%retrieve('rdf_frequency', rdf%freq)
       Call params%retrieve('rdf_print', rdf%l_print)
+      Call params%retrieve('io_rdf_yaml', rdf%is_yaml)
 
     Else If (params%is_any_set([Character(13) :: 'rdf_frequency', 'rdf_binsize', 'rdf_print'])) Then
       Call warning('rdf_print, rdf_frequency or rdf_binsize found without rdf_calculate', .true.)
@@ -1691,6 +1692,8 @@ Contains
     Call params%retrieve('print_topology_info', flow%print_topology)
 
     Call params%retrieve('currents_calculate', stats%cur%on)
+
+    Call params%retrieve('io_statis_yaml', stats%file_yaml)
 
   End Subroutine read_run_parameters
 
@@ -2898,6 +2901,20 @@ Contains
                        val='TABEAM', &
                        description='Set input TABEAM filepath', &
                        data_type=DATA_STRING))
+
+        Call table%set('io_statis_yaml', control_parameter( &
+          key='io_statis_yaml', &
+          name='write statis file in yaml format', &
+          val='off', &
+          description='write statis file in yaml format', &
+          data_type=DATA_BOOL))
+
+        Call table%set('io_rdf_yaml', control_parameter( &
+          key='io_rdf_yaml', &
+          name='write rdf file in yaml format', &
+          val='off', &
+          description='write rdf file in yaml format', &
+          data_type=DATA_BOOL))
 
       End block io_file
 
