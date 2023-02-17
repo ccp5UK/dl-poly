@@ -9,7 +9,7 @@ Module units
   !!-----------------------------------------------------------------------
 
   Use kinds,           Only: wp,STR_LEN
-  Use constants,       Only: pi, boltz
+  Use constants,       Only: pi, boltz, avogadro
   Use hash,            Only: hash_table, MAX_KEY
   Use hash,            Only: get_double, get_int, get_complex
   Use errors_warnings, Only: error, error_units, error_alloc, error_dealloc
@@ -198,7 +198,6 @@ contains
     Real(kind=wp), Parameter :: planck_internal = 6.350780668_wp
     Real(kind=wp), Parameter :: electron_charge = 1.0_wp
     Real(kind=wp), Parameter :: coulomb = 6.241509074460763e+18_wp
-    Real(kind=wp), Parameter :: avogadro = 6.022140857e23_wp
 
     Real(kind=wp), Parameter :: metre = 1e10_wp
     Real(kind=wp), Parameter :: angstrom = 1.0_wp

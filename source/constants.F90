@@ -103,6 +103,10 @@ Module constants
 
   Real(Kind=wp), Parameter :: boltz = 8.31451115e-1_wp
 
+  !> Avogadro number
+
+  Real(kind=wp), Parameter :: avogadro = 6.022140857e23_wp
+
   !> Energy unit for OUTPUT and STATIS - defined in read_field
 
   Real(Kind=wp), Parameter :: eu_ev = 9648.530821_wp, & !! for eV       - most used
@@ -123,11 +127,11 @@ Module constants
   Real(Kind=wp), Parameter :: tenunt = 1.660540200_wp
 
   !> TTM conversion factors
-  Real(Kind=wp), Parameter :: JKms_to_kBAps = 10.0_wp / (boltz * tenunt) ! convert W m^-1 K^-1 to kB A^-1 ps^-1
-  Real(Kind=wp), Parameter :: Jm3K_to_kBA3 = 1.0e-7_wp / (boltz * tenunt) ! convert J m^-3 K^-1 to kB A^-3
+  Real(Kind=wp), Parameter :: JKms_to_kBAps = 1.0e-23_wp * avogadro / boltz ! convert W m^-1 K^-1 to kB A^-1 ps^-1
+  Real(Kind=wp), Parameter :: Jm3K_to_kBA3 = 1.0e-31_wp * avogadro / boltz  ! convert J m^-3 K^-1 to kB A^-3
   Real(Kind=wp), Parameter :: kB_to_eV = boltz / eu_ev ! convert kB to eV
   Real(Kind=wp), Parameter :: eV_to_kB = eu_ev / boltz ! convert eV to kB
-  Real(Kind=wp), Parameter :: mJcm2_to_eVA2 = 1.0e4_wp / (eu_ev * tenunt) ! convert mJ cm^-2 to eV A^-2
+  Real(Kind=wp), Parameter :: mJcm2_to_eVA2 = 1.0e-20_wp * avogadro / eu_ev ! convert mJ cm^-2 to eV A^-2
 
 
   !> Maximum bin sizes for distance and angle grids

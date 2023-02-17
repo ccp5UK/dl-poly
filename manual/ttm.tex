@@ -448,7 +448,7 @@ near-perfect parallel scaling to thousands of processors.
 
 \subsection*{Functionality and directives}
 
-All directives in the CONTROL file beginning with {\bf ttm} will switch on
+The CONTROL file direction {\bf ttm\_calculate} can be used to switch on
 the two-temperature model (2T-MD) as described above. If no other
 information is provided, \D will use default values for certain required
 properties, but some information {\em must} be provided: if this information
@@ -457,59 +457,59 @@ Section \ref{control_options}: more details about these directives are given
 below.
 
 The inhomogeneous Langevin thermostat can be activated using the
-directive {\bf ensemble~nvt~ttm} or {\bf \mbox{ensemble}~nvt~inhomo} in the
+directive {\bf ensemble\_method} with the {\bf ttm} option in the
 CONTROL file, specifying the electron-phonon friction term ($\chi_{ep}$,
-in ps$^{-1}$), electronic stopping friction term ($\chi_{es}$, in ps$^{-1}$)
+in ps$^{-1}$ using {\bf ttm\_e-phonon\_friction}), electronic stopping friction 
+term ($\chi_{es}$, in ps$^{-1}$ using {\bf ttm\_e-stopping\_friction})
 and the cutoff atomic velocity for electronic stopping ($v_{cut}$, in
-\AA~ps$^{-1}$). This thermostat is required for 2T-MD calculations
-but can also be used independently: this CONTROL file directive therefore
-does not automatically switch on the two-temperature model, but the
-thermostat will be selected automatically if TTM is otherwise switched on.
-Default values for $\chi_{ep}$, $\chi_{es}$ and $v_{cut}$ will be used in this
-case if they have not been specified, although if a standard NVT Langevin
-ensemble has been selected, its thermostat friction term $\chi$ will be used
-for $\chi_{ep}$.
+\AA~ps$^{-1}$ using {\bf ttm\_e-stopping\_velocity}). This thermostat is 
+required for 2T-MD calculations but can also be used independently: these 
+CONTROL file directives therefore do not automatically switch on the 
+two-temperature model, but \D will quit with an error message if TTM is selected
+and the ensemble is not NVT or the ensemble method is not {\bf ttm}.
 
 By default, the inhomogeneous Langevin thermostat will be applied only to
 particle thermal velocities, i.e. velocities that have been corrected to
 remove the centre-of-mass flow calculated from its coarse-grained ionic
-temperature (CIT) voxel. This can be overridden either by the directive
-{\bf ttm thvelz} to only correct the z-direction velocity component and use
-total velocity components in the x- and y-directions, or by the directive
-{\bf ttm nothvel} to omit all velocity corrections and use total particle
-velocities. A warning message will also be printed if the {\bf no vom} option
-is not used, as removal of total centre-of-mass motion may affect the
+temperature (CIT) voxel. The directive {\bf ttm\_com\_correction} directive
+can be set to {\bf full} for this default behaviour, {\bf zdir} to only correct the
+z-direction velocity component and use total velocity components in the 
+x- and y-directions, or {\bf off} to omit all velocity corrections and use total
+particle velocities. A warning message will also be printed if the {\bf fixed\_com} 
+option is switched on, as removal of total centre-of-mass motion may affect the
 dynamics of systems with electronic stopping effects.
 
 The number of coarse-grained electronic temperature (CET) voxels is
-specified in the CONTROL file with the directive {\bf ttm ncet}: by default,
+specified in the CONTROL file with the directive {\bf ttm\_num\_elec\_cellst}: by default,
 a grid of $50 \times 50 \times 50$ will be used if this information is not
 supplied by the user. The number of coarse-grained ionic temperature (CIT)
 voxels in the z-direction is specified in CONTROL using the directive
-{\bf ttm ncit}: the default number is 10, and the number of voxels in x-
+{\bf ttm\_num\_ion\_cells}: the default number is 10, and the number of voxels in x-
 and y-directions will be determined automatically based on system size.
 The number of CET voxels must be at least the same as CIT or larger:
 too few CET voxels will cause \D to terminate.
 
 The volumetric heat capacity $C_e$\index{Two-Temperature Model!heat capacity}
 can be obtained for TTM calculations in four different forms with their
-corresponding CONTROL file directives:
+corresponding options for the CONTROL file directive {\bf ttm\_heat\_cap\_model}:
 \begin{itemize}
-\item A temperature-independent constant value ({\bf ttm ceconst})\begin{equation*}C_e = C_0 \rho\end{equation*}
-\item A linear function of temperature up to a maximum at the Fermi temperature $T_{f}$ ({\bf ttm celin}) \begin{equation*}C_e (T) = C_0 \rho \max \left(T/T_{f}, 1\right)\end{equation*}
-\item A hyperbolic tangent function of temperature ({\bf ttm cetanh}) \begin{equation*}C_e (T) = A \rho \tanh \left(10^{-4} B T\right)\end{equation*}
-\item A tabulated function of temperature supplied in a Ce.dat file  ({\bf ttm cetab}).
+\item A temperature-independent constant value ({\bf constant})\begin{equation*}C_e = C_0 \rho\end{equation*}
+\item A linear function of temperature up to a maximum at the Fermi temperature $T_{f}$ ({\bf linear}) \begin{equation*}C_e (T) = C_0 \rho \max \left(T/T_{f}, 1\right)\end{equation*}
+\item A hyperbolic tangent function of temperature ({\bf tanh}) \begin{equation*}C_e (T) = A \rho \tanh \left(10^{-4} B T\right)\end{equation*}
+\item A tabulated function of temperature supplied in a Ce.dat file  ({\bf tabulated}).
 \end{itemize}
 Note that the values given for the first three options are specific heat
-capacities ($C_0$ and $A$ given in $k_B$ per atom), which are
-converted to volumetric heat capacities by multiplying by the atomic
-density $\rho = \frac{N}{\Delta V}$. The atomic density is assumed to
-be constant throughout the system, and this value can be set in one of three
-ways: (1) a value can be calculated from the provided configuration at the
-start (assuming all ionic temperature cells are active), (2) the user can
-specifiy a value using the {\bf ttm atomdens} directive in the CONTROL file,
-or (3) after energy deposition to the electronic temperature grid, the value
-can be calculated dynamically from active CITs when using the {\bf ttm dyndens}
+capacities ($C_0$ and $A$ given in $k_B$ per atom by 
+the {\bf ttm\_heat\_cap} directive), which are converted to volumetric 
+heat capacities by multiplying by the atomic density $\rho = \frac{N}{\Delta V}$. 
+The atomic density is assumed to be constant throughout the system, and 
+this value can be set in one of three ways: (1) a value can be calculated 
+from the provided configuration at the start (assuming all ionic temperature 
+cells are active), (2) the user can specifiy a value using the {\bf ttm\_dens} 
+directive in the CONTROL file and apply it using the {\bf constant} option
+for the [\bf ttm\_dens\_model} directive, or (3) after energy deposition 
+to the electronic temperature grid, the value can be calculated dynamically 
+from active CITs when using the {\bf dynamic} option for the [\bf ttm\_dens\_model}
 directive. In the latter case, the system or user-specified atomic density is
 used during energy deposition. Tabulated volumetric heat capacities are
 given in the Ce.dat file as J~m$^{-3}$~K$^{-1}$, which are converted to
@@ -520,15 +520,16 @@ determined from the product of cell volume and the integral of the
 volumetric heat capacity between the system temperature $T_0$
 and its current electronic temperature $T_e$.
 
-If the system is metallic (specified by the CONTROL directive {\bf ttm metal}),
+If the system is metallic (specified by the CONTROL directive {\bf ttm\_metal} as on),
 a thermal conductivity\index{Two-Temperature Model!thermal conductivity}
 needs to be supplied: no default value is provided by \D.
-Four options are available with their corresponding CONTROL file directives:
+Four options are available with their corresponding keywords for the CONTROL file 
+directive {\bf ttm\_elec\_cond\_model}:
 \begin{itemize}
-\item An infinitely large value ({\bf ttm keinf}) \begin{equation*}K_e = \infty\end{equation*}
-\item A temperature-independent constant value  ({\bf ttm keconst}) \begin{equation*}K_e = K_0\end{equation*}
-\item A Drude-model (linear) function of temperature ({\bf ttm kedrude}) \begin{equation*}K_e (T) = K_0 \frac{T}{T_0}\end{equation*}
-\item A tabulated function of temperature supplied in a Ke.dat file ({\bf ttm ketab}).
+\item An infinitely large value ({\bf infinite}) \begin{equation*}K_e = \infty\end{equation*}
+\item A temperature-independent constant value  ({\bf constant}) \begin{equation*}K_e = K_0\end{equation*}
+\item A Drude-model (linear) function of temperature ({\bf drude}) \begin{equation*}K_e (T) = K_0 \frac{T}{T_0}\end{equation*}
+\item A tabulated function of temperature supplied in a Ke.dat file ({\bf tabulated}).
 \end{itemize}
 All values (constants or tabulated) are supplied in W~m$^{-1}$~K$^{-1}$.
 In the case of infinitely large conductivity, all heat diffusion in the electronic
@@ -538,13 +539,14 @@ electronic temperature for a given voxel, while the tabulated function will use
 either the ionic temperature for overlapping cells or the system temperature
 for CET voxels beyond the CIT system.
 
-If the system is non-metallic (specified by {\bf ttm nonmetal} in CONTROL),
+If the system is non-metallic (specified by {\bf ttm\_metal} as off in CONTROL),
 a thermal diffusivity\index{Two-Temperature Model!thermal diffusivity}
 needs to be supplied: no default value is provided by \D.
-Three options are available with their corresponding CONTROL file directives:
+Three options are available with their corresponding options for the CONTROL 
+file directive {\bf ttm\_diff\_model}:
 \begin{itemize}
-\item A temperature-independent constant value ({\bf ttm~deconst} or {\bf ttm~diff}) \begin{equation*}D_e = D_0\end{equation*}
-\item A reciprocal function of temperature up to the Fermi temperature $T_{f}$ ({\bf ttm~derecip}) \begin{equation*}D_e (T) = D_0 \frac{T_0}{\min \left(T, T_{f}\right)}\end{equation*}
+\item A temperature-independent constant value ({\bf constant}) \begin{equation*}D_e = D_0\end{equation*}
+\item A reciprocal function of temperature up to the Fermi temperature $T_{f}$ ({\bf recip} or {\bf reciprocal}) \begin{equation*}D_e (T) = D_0 \frac{T_0}{\min \left(T, T_{f}\right)}\end{equation*}
 \item A tabulated function of temperature supplied in a De.dat file ({\bf ttm~detab}).
 \end{itemize}
 All values (constant and tabulated) are supplied in m$^2$~s$^{-1}$ and
@@ -554,7 +556,7 @@ The electron-phonon coupling\index{Two-Temperature Model!electron-phonon couplin
 friction term $\chi_{ep}$ can either be held at
 the constant value given in {\bf ensemble nvt ttm}, or it can be dynamically
 varied according to electronic temperature. The CONTROL file directive
-{\bf ttm varg} can be used to specify that the electron-phonon coupling
+{\bf ttm\_variable\_ep} can be used to specify that the electron-phonon coupling
 constant $G_{ep}$ is supplied in tabulated form from a g.dat file, with
 values of $G_{ep}$ given in W~m$^{-3}$~K$^{-1}$ and converted to
 $\chi_{ep}$ values (using Equation (\ref{eq:chiep}) with the mean value for
@@ -567,47 +569,58 @@ $chi_{ep}$ for each atom.
 
 Boundary conditions\index{Two-Temperature Model!boundary conditions}
 to the electronic temperature system are applied
-using the {\bf ttm bcs} directive in the CONTROL file. Along with the
-Dirichlet, Neumann and Robin boundary conditions described earlier in
-this chapter, periodic boundary conditions can also be applied.
-Combinations of Dirichlet or Robin boundary conditions in x- and
-y-directions with Neumann boundary conditions in the z-direction are
-also available. These boundary conditions have no direct connection to
-any boundary conditions used for the MD system: conditions for the
-latter should be chosen carefully by the user to give the desired effects.
+using the {\bf ttm\_boundary\_condition} directive in the CONTROL file: 
+\begin{itemize}
+\item {\bf dirichlet}
+\item {\bf neumann}
+\item {\bf robin}
+\item {\bf periodic}
+\end{itemize}
+with the {\bf ttm\_boundary\_xy} switch available to apply the Dirichlet or
+Robin boundary conditions in x- and y-directions with Neumann boundary
+conditions in the z-direction. These boundary conditions have no direct 
+connection to any boundary conditions used for the MD system: conditions 
+for the latter should be chosen carefully by the user to give the desired effects.
+In the case of Robin boundary conditions, the {\bf ttm\_boundary\_heat\_flux}
+directive can be used to indicate the proportion of energy flux (given as a
+percentage) leaving the electronic system at the boundaries.
 
 An energy deposition\index{Two-Temperature Model!energy deposition}
-($A(r,t)$) can be applied using one of two CONTROL file directives:
+($A(r,t) = f(r,z) g(t) \Delta V$) can be applied using the CONTROL file 
+directive {\bf ttm\_spatial\_dist}, which can use the following types:
 \begin{itemize}
-\item {\bf ttm dedx}: specifies the electron stopping power of a projectile entering the electronic system ($\frac{dE}{dx}$ in eV/nm);
-\item {\bf ttm laser}: specifies the absorbed fluence ($F$ in mJ~cm$^{-2}$) and penetration depth ($l_p$ in nm) of a laser.
+\item {\bf gaussian}: specifies a Gaussian distribution in x- and y-directions from the centre of the system (applied homogeneously in the z-direction), i.e.\begin{equation*}f(r) = \frac{dE}{dx} \frac{1}{2 \pi \sigma^2} e^{-\frac{r^2}{2\sigma^2}}\end{equation*} with standard deviation $\sigma$ ({\bf ttm\_spatial\_sigma}), extending up to a cut-off distance given in multiples of $\sigma$ ({\bf ttm\_spatial\_cutoff});
+\item {\bf flat}: specifies a homogeneous distribution in x-, y- and z-directions \begin{equation*}f(r) = \frac{dE}{dV} = \frac{dE}{dx} \frac{1}{L_{x} L_{y}}\end{equation*} where $L_{x}$ and $L_{y}$ are the MD system dimensions in x- and y-directions;
+\item {\bf laser}: specifies a homogeneous distribution in x- and y-directions with either a homogeneous distribution or exponential decay in the z-direction (from the centre of the system), originating from a laser.
 \end{itemize}
-The energy deposition can be split into spatial and temporal parts, i.e.
-$A(r,t) = f(r,z) g(t) \Delta V$. Depositions can be applied spatially in one of three ways:
+In the case of the Gaussian or flat distributions, the stopping power for 
+the depositions are given as $\frac{dE}{dx}$ ({\bf ttm\_stopping\_power}) 
+in eV/nm. For lasers this quantity is obtained from the fluence $F$ 
+({\bf ttm\_fluence}) in mJ~cm$^2$ and penetration depth $l_p$
+({\bf ttm\_penetration\_depth}) in nm. The directive {\bf ttm\_laser\_type} 
+enables the type of laser ({\bf flat}, {\bf exponential}) to be selected: the flat
+type is similar to the equivalent non-laser option with $\frac{F}{l_p} = \frac{dE}{dV}$,
+while the exponential function \begin{equation*}f(r,z) = \frac{F}{l_p} \exp\left(-\frac{|z|}{l_p}\right) \end{equation*} 
+uses the penetration depth $l_p$ as the exponential scaling factor.
+The depositions can be applied temporally in one of four ways
+with the {\bf ttm\_temporal\_dist} option:
 \begin{itemize}
-\item {\bf ttm sflat}: specifies a homogeneous distribution in x-, y- and z-directions \begin{equation*}f(r) = \frac{dE}{dV} = \frac{dE}{dx} \frac{1}{L_{x} L_{y}}\end{equation*} where $L_{x}$ and $L_{y}$ are the MD system dimensions in x- and y-directions;
-\item {\bf ttm sgauss}: specifies a Gaussian distribution in x- and y-directions from the centre of the system, i.e.\begin{equation*}f(r) = \frac{dE}{dx} \frac{1}{2 \pi \sigma^2} e^{-\frac{r^2}{2\sigma^2}}\end{equation*} with standard deviation $\sigma$, extending up to a cut-off distance (given in multiples of $\sigma$);
-\item {\bf ttm laser} $F$ $l_p$ {\bf zdep}: specifies a homogeneous distribution in x- and y-directions with exponential decay in the z-direction (from the centre of the system) \begin{equation*}f(r,z) = \frac{F}{l_p} \exp\left(-\frac{|z|}{l_p}\right) \end{equation*} using the penetration depth $l_p$ as the exponential scaling factor.
+\item {\bf delta}: specifies a Dirac delta function in time \begin{equation*} g(t) = \delta (t - t_0) \end{equation*} which is approximated as an energy injection during a single diffusion timestep;
+\item {\bf square}: specifies a square pulse function in time \begin{equation*} g(t) = \left\{\begin{array}{lr} \frac{1}{\tau}, & t - t_0 < \tau\\ 0, & t<t_0 \text{ and } t - t_0 \ge \tau \end{array} \right. \end{equation*} over a period $\tau$;
+\item {\bf gaussian}: specifies a Gaussian function in time \begin{equation*} g(t) = \frac{1}{\sigma\sqrt{2\pi}}e^{-\left(\frac{t-t_0}{\sigma}\right)^2} \end{equation*} over a period of a multiple of standard deviations $\sigma$;
+\item {\bf exponential}: specifies a decaying exponential function in time \begin{equation*} g(t) = e^{-\frac{t-t_0}{\tau}} \end{equation*} over a period of a multiple of $\tau$.
 \end{itemize}
-In the first two cases, spatial depositions are homogeneous in the z-direction.
-Unless the {\bf zdep} option is invoked, laser depositions are homogeneous
-in all three directions (similar to the {\bf ttm sflat} case), with the ratio of
-absorbed fluence to penetration depth equal to $\frac{dE}{dV}$.
-The deposition can be applied temporally in one of four ways:
-\begin{itemize}
-\item {\bf ttm delta}: specifies a Dirac delta function in time \begin{equation*} g(t) = \delta (t - t_0) \end{equation*} which is approximated as an energy injection during a single diffusion timestep;
-\item {\bf ttm pulse}: specifies a square pulse function in time \begin{equation*} g(t) = \left\{\begin{array}{lr} \frac{1}{\tau}, & t - t_0 < \tau\\ 0, & t<t_0 \text{ and } t - t_0 \ge \tau \end{array} \right. \end{equation*} over a period $\tau$;
-\item {\bf ttm gauss}: specifies a Gaussian function in time \begin{equation*} g(t) = \frac{1}{\sigma\sqrt{2\pi}}e^{-\left(\frac{t-t_0}{\sigma}\right)^2} \end{equation*} over a period of a multiple of standard deviations $\sigma$;
-\item {\bf ttm nexp}: specifies a decaying exponential function in time \begin{equation*} g(t) = e^{-\frac{t-t_0}{\tau}} \end{equation*} over a period of a multiple of $\tau$.
-\end{itemize}
-The exponential function is scaled to ensure the correct total energy
-(within a tolerance of $\pm 1$\%) is deposited to the electronic system.
-Energy depositions are achieved by determining the required increases
-in electronic temperature to add the required energy to the CET voxel.
+with the {\bf ttm\_temporal\_duration} giving the time duration of the pulse
+in ps and {\bf ttm\_temporal\_cutoff} gives the deposition duration as 
+multiples of the duration. The exponential function is scaled to ensure 
+the correct total energy (within a tolerance of $\pm 1$\%) is deposited 
+to the electronic system. Energy depositions are achieved by determining 
+the required increases in electronic temperature to add the required energy 
+to the CET voxel.
 
 To calculate ionic temperatures in CIT voxels, a minimum number of
 atoms is required: this can be specified by the CONTROL file directive
-{\bf ttm amin}, although a default value of 1 is used if this is not supplied
+{\bf ttm\_min\_atoms}, although a default value of 1 is used if this is not supplied
 by the user. Any CIT voxel that includes this number of atoms will be
 considered as active and an ionic temperature can be calculated from
 the mean kinetic energy of atoms in the voxel (after centre-of-mass
@@ -616,13 +629,13 @@ considered inactive: no electron-phonon coupling is applied to the
 corresponding electronic temperature cell, although thermal diffusion is
 still applied as normal. All voxels within the CIT grid are checked
 at each MD timestep and can be reactivated once the minimum number
-of atoms can be found. If the {\bf ttm dyndens} option is also specified,
-the average cell density (number of atoms per unit volume) will be
-recalculated after energy deposition by only considering active CIT
-voxels: note that the system-based or user-specified atomic density
-will be used before and during energy deposition.
+of atoms can be found. If the {\bf dynamic} option for the {\bf ttm\_dens\_model}  
+is also specified, the average cell density (number of atoms per unit volume) 
+will be recalculated after energy deposition by only considering active CIT
+voxels: note that the system-based or user-specified atomic density 
+(the latter given by {\bf ttm\_dens}) will be used before and during energy deposition.
 
-If the {\bf ttm redist} option is in use, any recently deactivated voxels
+If the {\bf ttm\_redistribute} option is in use, any recently deactivated voxels
 have their electronic energy transferred to neighbouring active voxels
 by increasing their electronic temperatures: these are used for localised
 Dirichlet (constant temperature) boundary conditions during thermal
@@ -636,18 +649,18 @@ electronic energy from deactivated cells is not lost: if this condition
 does not hold, the energy transfer option is switched off.
 
 To equilibrate the electronic system prior to any energy deposition,
-the CONTROL file directive {\bf ttm offset} can be used to allow the
+the CONTROL file directive {\bf ttm\_time\_offset} can be used to allow the
 electronic and ionic systems to settle: this switches off the
 electron-phonon terms in both electronic heat diffusion calculations
 and the inhomogeneous Langevin thermostat, only applying
-electronic stopping effects. The {\bf ttm oneway} directive restricts
+electronic stopping effects. The {\bf ttm\_oneway} directive restricts
 electron-phonon coupling to coarse-grained ionic temperature (CIT)
 voxels and their atoms when the electronic temperature is higher
 than the ionic temperature: both the electron-phonon coupling term
 in the thermal diffusion equation and the inhomogeneous Langevin
 thermostat are switched off if this condition is not met.
 
-The CONTROL file directives {\bf ttm stats} and {\bf ttm traj} switches
+The CONTROL file directives {\bf ttm\_stats\_frequency} and {\bf ttm\_traj\_frequency} switches
 on outputs of statistical information and limited temperature trajectory
 snapshots of the two-temperature model simulation. Ionic
 temperatures (minimum, maximum, mean and sum) are supplied at
@@ -657,24 +670,24 @@ temperature profiles along the y-direction at the centre of the xz plane
 are given in the LATS\_I and LATS\_E respectively at user-defined
 intervals.
 
-\subsection*{Overview of program structure}
+%\subsection*{Overview of program structure}
 
-The following modules, both modified and added, incorporate the
-two-temperature molecular dynamics model in \D:
-\begin{itemize}
-	\item  {\sc dl\_poly.f90}: modified to initialise {\sc ttm\_module.f90};
-	\item  {\sc read\_control.f90}: modified to include the additional control directives required to activate and parameterise 2T-MD;
-	\item  {\sc ttm\_module.f90}: deal with initial array allocation, locations of electronic temperature voxel boundaries etc.;
-	\item  {\sc ttm\_track\_module.f90}: deal with initial energy deposition to the electronic temperature grid;
-	\item  {\sc ttm\_utils.f90}: contains functions to calculate properties for heat diffusion calculations, boundary conditions etc.;
-	\item  {\sc ttm\_table\_scan.f90}: scans for any-temperature dependent electronic parameter data files;
-	\item  {\sc ttm\_table\_scan.f90}: reads in tabulated parameters for the electronic system;
-	\item  {\sc ttm\_system\_init.f90}: reads in any electronic temperature files (DUMP\_E) to allow simulation restart;
-	\item  {\sc w\_md\_lfv.f90} and {\sc w\_md\_vv.f90}: modified to calculate ionic lattice and electronic cell temperatures and call the new inhomogeneous Langevin thermostat ({\sc nvt\_l2\_lfv.f90} and {\sc nvt\_l2\_vv.f90});
-	\item  {\sc ttm\_ion\_temperatures.f90}: calculates local ion lattice temperatures from average kinetic energies of atoms in coarse-grained ionic temperature (CIT) cells and electronic stopping terms (determining energy transferred from ions to electrons);
-	\item  {\sc ttm\_thermal\_diffusion.f90}: calculates local electronic temperatures by solving the heat diffusion equation using a finite-difference solver, including source and sink terms representing energy exchange with the MD cell;
-	\item  {\sc w\_integrate\_lfv.f90} and {\sc w\_integrate\_vv.f90}: modified to call the new inhomogeneous Langevin thermostat ({\sc nvt\_l2\_lfv.f90} and {\sc nvt\_l2\_vv.f90});
-	\item  {\sc nvt\_l2\_lfv.f90} and {\sc nvt\_l2\_vv.f90}: new inhomogeneous Langevin thermostat (both leap-frog and velocity Verlet variants);
-	\item {\sc langevin\_forces.f90}: modified to allow scaling of Langevin random forces by local electronic temperature instead of system temperature;
-    \item  {\sc ttm\_system\_revive.f90}: writes file with electronic temperatures (DUMP\_E) to allow the MD system with TTM to be restarted.
-\end{itemize}
+%The following modules, both modified and added, incorporate the
+%two-temperature molecular dynamics model in \D:
+%\begin{itemize}
+%	\item  {\sc dl\_poly.f90}: modified to initialise {\sc ttm\_module.f90};
+%	\item  {\sc read\_control.f90}: modified to include the additional control directives required to activate and parameterise 2T-MD;
+%	\item  {\sc ttm\_module.f90}: deal with initial array allocation, locations of electronic temperature voxel boundaries etc.;
+%	\item  {\sc ttm\_track\_module.f90}: deal with initial energy deposition to the electronic temperature grid;
+%	\item  {\sc ttm\_utils.f90}: contains functions to calculate properties for heat diffusion calculations, boundary conditions etc.;
+%	\item  {\sc ttm\_table\_scan.f90}: scans for any-temperature dependent electronic parameter data files;
+%	\item  {\sc ttm\_table\_scan.f90}: reads in tabulated parameters for the electronic system;
+%	\item  {\sc ttm\_system\_init.f90}: reads in any electronic temperature files (DUMP\_E) to allow simulation restart;
+%	\item  {\sc w\_md\_lfv.f90} and {\sc w\_md\_vv.f90}: modified to calculate ionic lattice and electronic cell temperatures and call the new inhomogeneous Langevin thermostat ({\sc nvt\_l2\_lfv.f90} and {\sc nvt\_l2\_vv.f90});
+%	\item  {\sc ttm\_ion\_temperatures.f90}: calculates local ion lattice temperatures from average kinetic energies of atoms in coarse-grained ionic temperature (CIT) cells and electronic stopping terms (determining energy transferred from ions to electrons);
+%	\item  {\sc ttm\_thermal\_diffusion.f90}: calculates local electronic temperatures by solving the heat diffusion equation using a finite-difference solver, including source and sink terms representing energy exchange with the MD cell;
+%	\item  {\sc w\_integrate\_lfv.f90} and {\sc w\_integrate\_vv.f90}: modified to call the new inhomogeneous Langevin thermostat ({\sc nvt\_l2\_lfv.f90} and {\sc nvt\_l2\_vv.f90});
+%	\item  {\sc nvt\_l2\_lfv.f90} and {\sc nvt\_l2\_vv.f90}: new inhomogeneous Langevin thermostat (both leap-frog and velocity Verlet variants);
+%	\item {\sc langevin\_forces.f90}: modified to allow scaling of Langevin random forces by local electronic temperature instead of system temperature;
+   % \item  {\sc ttm\_system\_revive.f90}: writes file with electronic temperatures (DUMP\_E) to allow the MD system with TTM to be restarted.
+%\end{itemize}

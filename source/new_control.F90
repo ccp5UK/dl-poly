@@ -6,6 +6,7 @@ Module new_control
   !! copyright - daresbury laboratory
   !! author - j.wilkins april 2020
   !! contrib - a.m.elena april 2022
+  !! contrib - m.a.seaton october 2022
   !!-----------------------------------------------------------------------
 
   Use angles,                   Only: angles_type
@@ -116,7 +117,17 @@ Module new_control
                                       TRAJ_KEY_COORD_VEL,&
                                       TRAJ_KEY_COORD_VEL_FORCE,&
                                       trajectory_type
-  Use ttm,                      Only: ttm_type
+  Use ttm,                      Only: &
+                                      TTM_BC_DIRICHLET, TTM_BC_DIRICHLET_XY, TTM_BC_NEUMANN, &
+                                      TTM_BC_PERIODIC, TTM_BC_ROBIN, TTM_BC_ROBIN_XY, TTM_CE_CONST, &
+                                      TTM_CE_CONST_DYN, TTM_CE_LINEAR, TTM_CE_LINEAR_DYN, &
+                                      TTM_CE_TABULATED, TTM_CE_TANH, TTM_CE_TANH_DYN, TTM_DE_CONST, &
+                                      TTM_DE_METAL, TTM_DE_RECIP, TTM_DE_TABULATED, TTM_EPVAR_HETERO, &
+                                      TTM_EPVAR_HOMO, TTM_EPVAR_NULL, TTM_KE_CONST, TTM_KE_DRUDE, &
+                                      TTM_KE_INFINITE, TTM_KE_TABULATED, TTM_SDEPO_EXP, &
+                                      TTM_SDEPO_FLAT, TTM_SDEPO_GAUSS, TTM_SDEPO_NULL, &
+                                      TTM_TDEPO_DELTA, TTM_TDEPO_EXP, TTM_TDEPO_GAUSS, &
+                                      TTM_TDEPO_PULSE, ttm_type
   Use units,                    Only: &
                                       atomic_units, convert_units, current_units => out_units, &
                                       hartree_units, internal_units, kb_units, kcal_units, &
@@ -526,7 +537,7 @@ Contains
     Logical                :: ltmp
 
     Call params%retrieve('ensemble', option, required=.true.)
-    If (ttm_active .and. option /= 'ttm') Call error(0, 'TTM requested, ensemble not ttm')
+    If (ttm_active .and. option /= 'nvt') Call error(0, 'TTM requested, ensemble not nvt')
     Select Case (option)
     Case ('nve', 'pmf')
       thermo%ensemble = ENS_NVE
@@ -535,6 +546,8 @@ Contains
 
       Call params%retrieve('ensemble_method', option, required=.true.)
 
+      If (ttm_active .and. option /='ttm') Call error(0, 'TTM requested: ensemble method not ttm (inhomogeneous Langevin)')
+                           
       Select Case (option)
       Case ('evans')
         thermo%ensemble = ENS_NVT_EVANS
@@ -1012,9 +1025,11 @@ Contains
 
   End Subroutine read_structure_analysis
 
-  Subroutine read_ttm(params, ttm)
+  Subroutine read_ttm(params, ttm, config, megatm)
     Type(parameters_hash_table), Intent(In   ) :: params
     Type(ttm_type),              Intent(  Out) :: ttm
+    Type(configuration_type),    Intent(In   ) :: config
+    Integer,                     Intent(In   ) :: megatm
 
     Character(Len=STR_LEN) :: option
     Logical                :: ltmp
@@ -1022,112 +1037,131 @@ Contains
     Call params%retrieve('ttm_calculate', ttm%l_ttm)
     If (.not. ttm%l_ttm) Return
 
+    ! Calculate average atomic density as default value of
+    ! atomic density used to convert specific heat capacities
+    ! and electron-phonon couplings to volumetric properties
+
+    ttm%sysrho = Real(megatm, Kind=wp) / Product(config%cell(1:9:4))
+
     Call params%retrieve('ttm_num_ion_cells', ttm%ntsys(3))
     Call params%retrieve('ttm_num_elec_cells', ttm%eltsys)
-    Call params%retrieve('ttm_metal', ttm%ismetal)
+    Call params%retrieve('ttm_metal', ttm%ismetal, required=.true.)
 
     Call params%retrieve('ttm_heat_cap_model', option)
     Select Case (option)
     Case ('constant')
-      ttm%cetype = 0
-      Call params%retrieve('ttm_heat_cap', ttm%ce0)
+      ttm%cetype = TTM_CE_CONST
+      Call params%retrieve('ttm_heat_cap', ttm%ce0, required=.true.)
+      If (ttm%ce0 <= zero_plus) &
+        Call error(0, 'Electronic specific heat not fully specified')
     Case ('tanh')
-      ttm%cetype = 1
-      Call params%retrieve('ttm_heat_cap', ttm%sh_A)
-      Call params%retrieve('ttm_temp_term', ttm%sh_B)
+      ttm%cetype = TTM_CE_TANH
+      Call params%retrieve('ttm_heat_cap', ttm%sh_A, required=.true.)
+      Call params%retrieve('ttm_temp_term', ttm%sh_B, required=.true.)
 
       If (ttm%sh_A <= zero_plus .or. ttm%sh_B <= zero_plus) &
         Call error(0, 'Electronic specific heat not fully specified')
+      ttm%sh_B = 1.0e-4_wp * ttm%sh_B ! rescale value of temperature term to deal with multiplier in heat capacity equation
     Case ('linear')
-      ttm%cetype = 2
-      Call params%retrieve('ttm_heat_cap', ttm%Cemax)
-      Call params%retrieve('ttm_fermi_temp', ttm%Tfermi)
-
+      ttm%cetype = TTM_CE_LINEAR
+      Call params%retrieve('ttm_heat_cap', ttm%Cemax, required=.true.)
+      Call params%retrieve('ttm_fermi_temp', ttm%Tfermi, required=.true.)
       If (ttm%Tfermi <= zero_plus .or. ttm%Cemax <= zero_plus) &
         Call error(0, 'Electronic specific heat not fully specified')
     Case ('tabulated')
-      ttm%cetype = 3
+      ttm%cetype = TTM_CE_TABULATED
     Case default
-      Call bad_option('ttm_heat_cap_model', option)
+      ttm%cetype = TTM_CE_CONST   ! if not specified, set to default constant value (1 k_B/atom)
+      ttm%ce0 = 1.0_wp
     End Select
 
     Call params%retrieve('ttm_dens_model', option)
     Select Case (option)
     Case ('constant')
       ttm%ttmdyndens = .false.
-      Call params%retrieve('ttm_dens', ttm%cellrho, .true.)
-      If (ttm%cellrho <= zero_plus) Call error(0, 'Bad ttm_dens (<= 0)')
+      Call params%retrieve('ttm_dens', ttm%cellrho)
+      If (ttm%cellrho <= zero_plus) ttm%cellrho = ttm%sysrho   ! if no density specified, use default value
       ttm%rcellrho = 1.0_wp / ttm%cellrho
 
-      ! Rescale
+      ! Rescale heat capacities and electron-phonon coupling factor using atomic density
       ttm%sh_A = ttm%sh_A * ttm%cellrho
       ttm%Cemax = ttm%Cemax * ttm%cellrho
-      ttm%epc_to_chi = convert_units(1.0e-12_wp * ttm%rcellrho / 3.0_wp, 'J.m^-3.K^-1', 'k_B/internal_l^3')
+      ttm%epc_to_chi = convert_units(ttm%rcellrho / 3.0_wp, 'W.mol.m^-3.K^-1', 'k_B/internal_l^3/internal_t')
 
     Case ('dynamic')
       ttm%ttmdyndens = .true.
       ttm%CeType = ttm%CeType + 4
-      ttm%epc_to_chi = convert_units(1.0e-12_wp / 3.0_wp, 'J.m^-3.K^-1', 'k_B/internal_l^3')
+      ttm%epc_to_chi = convert_units(1.0_wp / 3.0_wp, 'W.mol.m^-3.K^-1', 'k_B/internal_l^3/internal_t')
+
+      Call params%retrieve('ttm_dens', ttm%cellrho)
+      If (ttm%cellrho <= zero_plus) ttm%cellrho = ttm%sysrho   ! if no (initial) density specified, use default value
+      ttm%rcellrho = 1.0_wp / ttm%cellrho
 
     Case default
-      Call bad_option('ttm_dens_model', option)
+      ttm%ttmdyndens = .false.             ! if density model not specified, use constant model with default atomic density
+      ttm%cellrho = ttm%sysrho             ! (number of atoms per unit volume based on contents of FIELD and CONFIG files)
+      ttm%rcellrho = 1.0_wp / ttm%cellrho
+      ! Rescale heat capacities and electron-phonon coupling factor using atomic density
+      ttm%sh_A = ttm%sh_A * ttm%cellrho
+      ttm%Cemax = ttm%Cemax * ttm%cellrho
+      ttm%epc_to_chi = convert_units(ttm%rcellrho / 3.0_wp, 'W.mol.m^-3.K^-1', 'k_B/internal_l^3/internal_t')
     End Select
 
     If (ttm%ismetal) Then
-      ttm%detype = 0
+      ttm%detype = TTM_DE_METAL  ! metals use ratio of conductivity to heat capacity for thermal diffusivity
 
-      Call params%retrieve('ttm_elec_cond_model', option, required=.true.)
+      Call params%retrieve('ttm_elec_cond_model', option)
       Select Case (option)
       Case ('infinite')
-        ttm%ketype = 0
+        ttm%ketype = TTM_KE_INFINITE
       Case ('constant')
-        ttm%ketype = 1
-        Call params%retrieve('ttm_elec_cond', ttm%ka0)
+        ttm%ketype = TTM_KE_CONST
+        Call params%retrieve('ttm_elec_cond', ttm%ka0, required=.true.)
         If (ttm%ka0 <= zero_plus) &
           Call error(0, 'Electronic thermal conductivity not fully specified')
       Case ('drude')
-        ttm%ketype = 2
-        Call params%retrieve('ttm_elec_cond', ttm%ka0)
-
+        ttm%ketype = TTM_KE_DRUDE
+        Call params%retrieve('ttm_elec_cond', ttm%ka0, required=.true.)
         If (ttm%ka0 <= zero_plus) &
           Call error(0, 'Electronic thermal conductivity not fully specified')
       Case ('tabulated')
-        ttm%ketype = 3
+        ttm%ketype = TTM_KE_TABULATED
       Case default
-        Call bad_option('ttm_elec_cond_model', option)
+        ttm%ketype = TTM_KE_INFINITE  ! if not specified, assume infinite thermal conductivity as default
       End Select
     Else
-      ttm%ketype = 0
+      ttm%ketype = TTM_KE_CONST  ! non-metals must specify diffusivities: assume thermal conductivity
+                                 ! is constant but no need to specify a value
 
       Call params%retrieve('ttm_diff_model', option, required=.true.)
       Select Case (option)
       Case ('constant')
-        ttm%detype = 1
-        Call params%retrieve('ttm_diff', ttm%diff0)
+        ttm%detype = TTM_DE_CONST
+        Call params%retrieve('ttm_diff', ttm%diff0, required=.true.)
         If (ttm%diff0 <= zero_plus) &
           Call error(0, 'Thermal diffusivity of non-metal not specified')
       Case ('recip', 'reciprocal')
-        ttm%detype = 2
-        Call params%retrieve('ttm_diff', ttm%diff0)
-        Call params%retrieve('ttm_fermi_temp', ttm%Tfermi)
+        ttm%detype = TTM_DE_RECIP
+        Call params%retrieve('ttm_diff', ttm%diff0, required=.true.)
+        Call params%retrieve('ttm_fermi_temp', ttm%Tfermi, required=.true.)
         If (ttm%diff0 <= zero_plus .or. ttm%Tfermi <= zero_plus) &
           Call error(0, 'Thermal diffusivity of non-metal not specified')
       Case ('tabulated')
-        ttm%detype = 3
+        ttm%detype = TTM_DE_TABULATED
       Case default
         Call bad_option('ttm_diff_model', option)
       End Select
 
     End If
 
-    Call params%retrieve('ttm_variable_ep', option, required=.true.)
+    Call params%retrieve('ttm_variable_ep', option)
     Select Case (option)
     Case ('homo')
-      ttm%gvar = 1
+      ttm%gvar = TTM_EPVAR_HOMO     ! uses (homogeneous) e-p coupling value based on average electronic temperature
     Case ('hetero')
-      ttm%gvar = 2
+      ttm%gvar = TTM_EPVAR_HETERO   ! uses (heterogeneous) e-p coupling values based on local electronic temperatures
     Case default
-      Call bad_option('ttm_variable_ep', option)
+      ttm%gvar = TTM_EPVAR_NULL     ! default: uses constant value as supplied with ensemble information
     End Select
 
     Call params%retrieve('ttm_com_correction', option)
@@ -1142,7 +1176,8 @@ Contains
       ttm%ttmthvel = .false.
       ttm%ttmthvelz = .false.
     Case default
-      Call bad_option('ttm_com_correction', option)
+      ttm%ttmthvel = .true.    ! default com correction equivalent to full case
+      ttm%ttmthvelz = .false.
     End Select
 
     Call params%retrieve('ttm_redistribute', ttm%redistribute)
@@ -1150,17 +1185,20 @@ Contains
     Call params%retrieve('ttm_min_atoms', ttm%amin)
     ttm%amin = Max(ttm%amin, 1) ! minimum number of atoms for ttm ionic temperature cell
 
+    ttm%dedx = 0.0_wp
     Call params%retrieve('ttm_stopping_power', ttm%dedx)
 
     Call params%retrieve('ttm_spatial_dist', option)
     Select Case (option)
     Case ('gaussian')
-      ttm%sdepoType = 1
+      ttm%sdepoType = TTM_SDEPO_GAUSS
       Call params%retrieve('ttm_spatial_sigma', ttm%sig)
       Call params%retrieve('ttm_spatial_cutoff', ttm%sigmax)
+      If (ttm%sig <= zero_plus) ttm%sig = 10.0_wp       ! default spatial sigma value of 1 nm (10 angstroms)
+      If (ttm%sigmax <= zero_plus) ttm%sigmax = 5.0_wp  ! default spatial cutoff of 5 sigmas
 
     Case ('flat')
-      ttm%sdepoType = 2
+      ttm%sdepoType = TTM_SDEPO_FLAT
 
     Case ('laser')
       Call params%retrieve('ttm_laser_type', option)
@@ -1169,72 +1207,76 @@ Contains
 
       Select Case (option)
       Case ('flat')
-        ttm%sdepoType = 2
+        ttm%sdepoType = TTM_SDEPO_FLAT
 
       Case ('exponential')
-        ttm%sdepoType = 3
+        ttm%sdepoType = TTM_SDEPO_EXP
 
       Case default
-        Call bad_option('ttm_laser_type', option)
+        ttm%sdepoType = TTM_SDEPO_FLAT  ! default flat option for laser if not specified
       End Select
 
     Case default
-      Call bad_option('ttm_spatial_dist', option)
+      ttm%sdepoType = TTM_SDEPO_NULL ! default null option if not specified (e.g. if applying energy cascade direct to MD system)
     End Select
 
     Call params%retrieve('ttm_temporal_dist', option)
     Select Case (option)
     Case ('gaussian')
-      ttm%tdepotype = 1
+      ttm%tdepotype = TTM_TDEPO_GAUSS
       Call params%retrieve('ttm_temporal_duration', ttm%tdepo)
       Call params%retrieve('ttm_temporal_cutoff', ttm%tcdepo)
 
     Case ('exponential')
-      ttm%tdepotype = 2
+      ttm%tdepotype = TTM_TDEPO_EXP
       Call params%retrieve('ttm_temporal_duration', ttm%tdepo)
       Call params%retrieve('ttm_temporal_cutoff', ttm%tcdepo)
 
     Case ('delta')
-      ttm%tdepotype = 3
+      ttm%tdepotype = TTM_TDEPO_DELTA
 
     Case ('square')
-      ttm%tdepotype = 4
+      ttm%tdepotype = TTM_TDEPO_PULSE
       Call params%retrieve('ttm_temporal_duration', ttm%tdepo)
       If (ttm%tdepo <= zero_plus) Then
-        ttm%tdepoType = 3
+        ttm%tdepoType = TTM_TDEPO_DELTA
       End If
 
     Case default
-      Call bad_option('ttm_temporal_dist', option)
+      ttm%tdepotype = TTM_TDEPO_GAUSS
     End Select
+
+    If (ttm%tdepo <= zero_plus) ttm%tdepo = 1.0e-3_wp  ! default temporal duration if not otherwise specified
+    If (ttm%tdepotype /= TTM_TDEPO_DELTA .and. ttm%tcdepo <= zero_plus) &
+                                &ttm%tcdepo = 5.0_wp  ! default temporal cutoff if not otherwise specified and not using delta
 
     Call params%retrieve('ttm_boundary_condition', option)
     Call params%retrieve('ttm_boundary_xy', ltmp)
     Select Case (option)
     Case ('periodic')
-      ttm%bctypee = 1
+      ttm%bctypee = TTM_BC_PERIODIC
 
     Case ('dirichlet')
       If (ltmp) Then
-        ttm%bcTypeE = 4
+        ttm%bcTypeE = TTM_BC_DIRICHLET_XY
       Else
-        ttm%bcTypeE = 2
+        ttm%bcTypeE = TTM_BC_DIRICHLET
       End If
 
     Case ('neumann')
-      ttm%bcTypeE = 3
+      ttm%bcTypeE = TTM_BC_NEUMANN
     Case ('robin')
 
       Call params%retrieve('ttm_boundary_heat_flux', ttm%fluxout)
 
       If (ltmp) Then
-        ttm%bcTypeE = 6
+        ttm%bcTypeE = TTM_BC_ROBIN_XY
       Else
-        ttm%bcTypeE = 5
+        ttm%bcTypeE = TTM_BC_ROBIN
       End If
 
     Case default
-      Call bad_option('ttm_boundary_condition', option)
+      ttm%bcTypeE = TTM_BC_NEUMANN  ! defaults to Neumann BCs if not otherwise specified
     End Select
 
     Call params%retrieve('ttm_time_offset', ttm%ttmoffset)
@@ -1769,6 +1811,10 @@ Contains
       Call info('"no fixed_com" option auto-switched on - COM momentum removal will be abandoned', .true.)
       Call warning('this may lead to a build up of the COM momentum ' &
                    //'and a manifestation of the "flying ice-cube" effect', .true.)
+    Else If (config%l_vom .and. ttm_active) Then
+      Call info('"fixed_com" option auto-switched on - COM momentum removal will be applied globally', .true.)
+      Call warning('this can interfere with temperature-cell COM momentum removal ' &
+                   //'and affect dynamics', .true.)
     End If
 
     ! ---------------- INITIALISATION ------------------------------------------
@@ -3256,9 +3302,9 @@ Contains
                        key="ttm_heat_cap", &
                        name="TTM Heat Capacity", &
                        val="0.0", &
-                       units="internal_e/internal_m/K", &
-                       internal_units="internal_e/internal_m/K", &
-                       description="Sets constant, scale or maximum heat capcity in TTM", &
+                       units="k_B", &
+                       internal_units="k_B", &
+                       description="Sets constant, scale or maximum (per atom) specific heat capacity in TTM", &
                        data_type=DATA_FLOAT))
 
         Call table%set("ttm_temp_term", control_parameter( &
@@ -3281,7 +3327,7 @@ Contains
 
         Call table%set("ttm_elec_cond_model", control_parameter( &
                        key="ttm_elec_cond_model", &
-                       name="TTM Electonic conductivity model", &
+                       name="TTM Electronic conductivity model", &
                        val="", &
                        description="Set electronic conductivity model in TTM, options: Infinite, constant, drude, tabulated", &
                        data_type=DATA_OPTION))
@@ -3363,9 +3409,9 @@ Contains
                        key="ttm_spatial_cutoff", &
                        name="TTM Spatial cutoff", &
                        val="5.0", &
-                       units="nm", &
-                       internal_units="nm", &
-                       description="Set the cutoff for spatial distributions of TTM", &
+                       units="", &
+                       internal_units="", &
+                       description="Set the cutoff for spatial distributions of TTM as a multiple of sigma", &
                        data_type=DATA_FLOAT))
 
         Call table%set("ttm_fluence", control_parameter( &
@@ -3413,9 +3459,9 @@ Contains
                        key="ttm_temporal_cutoff", &
                        name="TTM Time Cutoff", &
                        val="5.0", &
-                       units="ps", &
-                       internal_units="ps", &
-                       description="Set temporal cutoff for TTM (gaussian, exponential)", &
+                       units="", &
+                       internal_units="", &
+                       description="Set temporal cutoff for TTM (gaussian, exponential) as a multiple of its duration", &
                        data_type=DATA_FLOAT))
 
         Call table%set("ttm_variable_ep", control_parameter( &

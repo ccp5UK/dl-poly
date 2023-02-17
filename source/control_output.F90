@@ -104,7 +104,17 @@ module control_output
                                       TRAJ_KEY_COORD_VEL,&
                                       TRAJ_KEY_COORD_VEL_FORCE,&
                                       trajectory_type
-  Use ttm,                      Only: ttm_type
+  Use ttm,                      Only: &
+                                      TTM_BC_DIRICHLET, TTM_BC_DIRICHLET_XY, TTM_BC_NEUMANN, &
+                                      TTM_BC_PERIODIC, TTM_BC_ROBIN, TTM_BC_ROBIN_XY, TTM_CE_CONST, &
+                                      TTM_CE_CONST_DYN, TTM_CE_LINEAR, TTM_CE_LINEAR_DYN, &
+                                      TTM_CE_TABULATED, TTM_CE_TANH, TTM_CE_TANH_DYN, TTM_DE_CONST, &
+                                      TTM_DE_METAL, TTM_DE_RECIP, TTM_DE_TABULATED, TTM_EPVAR_HETERO, &
+                                      TTM_EPVAR_HOMO, TTM_EPVAR_NULL, TTM_KE_CONST, TTM_KE_DRUDE, &
+                                      TTM_KE_INFINITE, TTM_KE_TABULATED, TTM_SDEPO_EXP, &
+                                      TTM_SDEPO_FLAT, TTM_SDEPO_GAUSS, TTM_SDEPO_NULL, &
+                                      TTM_TDEPO_DELTA, TTM_TDEPO_EXP, TTM_TDEPO_GAUSS, &
+                                      TTM_TDEPO_PULSE, ttm_type
   Use units,                    Only: &
                                       atomic_units, convert_units, current_units => out_units, &
                                       hartree_units, internal_units, kb_units, kcal_units, &
@@ -185,7 +195,7 @@ Contains
     If (check_print_level(1)) Call write_io(io_data, files)
     If (check_print_level(1)) Call write_units()
     If (check_print_level(1)) Call write_system_parameters(flow, config, stats, thermo, impa, minim, plume, cons, pmf)
-    If (check_print_level(1)) Call write_ensemble(thermo)
+    If (check_print_level(1)) Call write_ensemble(thermo, ttm)
     If (check_print_level(1)) Call write_forcefield(link_cell, neigh, vdws, electro, ewld, mpoles, cshell, met)
     If (ttm%l_ttm .and. check_print_level(1)) Call write_ttm(thermo, ttm)
     If (check_print_level(1)) Call write_bond_analysis(stats, flow, bond, angle, dihedral, inversion)
@@ -850,8 +860,9 @@ Contains
 
   End Subroutine write_forcefield
 
-  Subroutine write_ensemble(thermo)
+  Subroutine write_ensemble(thermo, ttm)
     Type(thermostat_type), Intent(In   ) :: thermo
+    Type(ttm_type),        Intent(In   ) :: ttm
 
     Character(Len=STR_LEN)               :: message
     Character(Len=STR_LEN), Dimension(4) :: messages
@@ -921,6 +932,17 @@ Contains
       Call write_param('e-phonon friction', thermo%chi_ep, 'internal_t^-1', indent=2)
       Call write_param('e-stopping friction', thermo%chi_es, 'internal_t^-1', indent=2)
       Call write_param('e-stopping velocity', thermo%vel_es2, 'internal_l.internal_t^-1', indent=2)
+      If (ttm%l_ttm) Then
+        Call info('  Applying thermostat with Two-Temperature Model, using local cell electronic temperatures', .true.)
+        If (ttm%ttmthvel .and. ttm%ttmthvelz) Then
+          Call info('  with only z-components of velocities adjusted using local centre-of-mass corrections for each cell', .true.)
+        Else If (ttm%ttmthvel) Then
+          Call info('  with velocities adjusted using local centre-of-mass corrections for each cell', .true.)
+        Else
+          Call info('  without adjusting velocities for local centre-of-mass corrections in each cell', .true.)
+        End If
+  
+      End If
 
     Case (ENS_NPT_LANGEVIN)
 
@@ -1027,71 +1049,78 @@ Contains
     End If
 
     Call write_param('Dynamic atomic density', ttm%ttmdyndens, indent=1, off_level=3)
-    If (.not. ttm%ttmdyndens) Call write_param('Atomic density', ttm%cellrho, 'internal_l^-3', indent=1)
+    If (.not. ttm%ttmdyndens) Then
+      Call write_param('Atomic density', ttm%cellrho, 'internal_l^-3', indent=1)
+    Else
+      Call write_param('Initial atomic density', ttm%cellrho, 'internal_l^-3', indent=1)
+    End If
 
     Select Case (ttm%cetype)
-    Case (0) !Constant
+    Case (TTM_CE_CONST) !Constant
       Call write_param('Electronic specific heat capacity', 'Constant', indent=1)
       Call write_param('Electronic S.H.C. (kB/atom)', ttm%Ce0 / ttm%cellrho, indent=2)
 
-    Case (4) !Constant
+    Case (TTM_CE_CONST_DYN) !Constant
       Call write_param('Electronic specific heat capacity', 'Constant', indent=1)
       Call write_param('Electronic S.H.C. (kB/atom)', ttm%Ce0, indent=2)
 
-    Case (1) !tanh
+    Case (TTM_CE_TANH) !tanh
       Call write_param('Electronic specific heat capacity', 'Hyperbolic tangent', indent=1)
       Call write_param('Constant term A (kB/atom): ', ttm%sh_A / ttm%cellrho, indent=2)
       Call write_param('Temperature term B', ttm%sh_B * 1.0e4_wp, 'K^-1', indent=2)
 
-    Case (5) !tanh
+    Case (TTM_CE_TANH_DYN) !tanh
       Call write_param('Electronic specific heat capacity', 'Hyperbolic tangent', indent=1)
       Call write_param('Constant term A (kB/atom): ', ttm%sh_A, indent=2)
       Call write_param('Temperature term B', ttm%sh_B * 1.0e4_wp, 'K^-1', indent=2)
 
-    Case (2, 6) !linear
+    Case (TTM_CE_LINEAR, TTM_CE_LINEAR_DYN) !linear
       Call write_param('Electronic specific heat capacity', 'Linear', indent=1)
       Call write_param('Max. electronic S.H.C. (kB/atom): ', ttm%Cemax, indent=2)
       Call write_param('Fermi Temperature', ttm%Tfermi, 'K', indent=2)
 
-    Case (3) !tabulated
+    Case (TTM_CE_TABULATED) !tabulated
       Call write_param('Electronic specific heat capacity', 'Tabulated', indent=1)
 
     End Select
 
-    Select Case (ttm%ketype)
-    Case (0) ! Infinite
-      Call write_param('Electronic thermal conductivity', 'Infinity', indent=1)
+    If (ttm%ismetal) Then
+      Select Case (ttm%ketype) ! print thermal conductivity type only for metals
+      Case (TTM_KE_INFINITE) ! Infinite
+        Call write_param('Electronic thermal conductivity', 'Infinity', indent=1)
 
-    Case (1) ! Constant
-      Call write_param('Electronic thermal conductivity', 'Constant', indent=1)
-      Call write_param('Electronic T.C.', ttm%Ka0, 'k_b/ps/A', 'W/m/K', indent=2)
+      Case (TTM_KE_CONST) ! Constant
+        Call write_param('Electronic thermal conductivity', 'Constant', indent=1)
+        Call write_param('Electronic T.C.', ttm%Ka0, 'k_b/ps/Ang', 'W/m/K', indent=2)
 
-    Case (2) ! Drude
-      Call write_param('Electronic thermal conductivity', 'Drude model', indent=1)
-      Call write_param('T.C. at system temp.', ttm%Ka0, 'k_b/ps/A', 'W/m/K', indent=2)
+      Case (TTM_KE_DRUDE) ! Drude
+        Call write_param('Electronic thermal conductivity', 'Drude model', indent=1)
+        Call write_param('T.C. at system temp.', ttm%Ka0, 'k_b/ps/Ang', 'W/m/K', indent=2)
 
-    Case (3) ! Tabulated
-      Call write_param('Electronic thermal conductivity', 'Tabulated', indent=1)
+      Case (TTM_KE_TABULATED) ! Tabulated
+        Call write_param('Electronic thermal conductivity', 'Tabulated', indent=1)
 
-    End Select
+      End Select
 
-    Select Case (ttm%detype)
-    Case (0) ! Off
-      Call write_param('Electronic thermal diffusivity', 'Off', indent=1, level=3)
-    Case (1) ! Constant
-      Call write_param('Electronic thermal diffusivity', 'Constant', indent=1)
-      Call write_param('Electronic T.D.', ttm%diff0, 'internal_l^2/internal_t', indent=2)
+    Else
+      Select Case (ttm%detype) ! print thermal diffusivity type only for non-metals
+      Case (TTM_DE_METAL) ! Off (for metals: will probably not get here!)
+        Call write_param('Electronic thermal diffusivity', 'Off', indent=1, level=3)
+      Case (TTM_DE_CONST) ! Constant
+        Call write_param('Electronic thermal diffusivity', 'Constant', indent=1)
+        Call write_param('Electronic T.D.', ttm%diff0, 'internal_l^2/internal_t', indent=2)
 
-    Case (2) ! Recip
+      Case (TTM_DE_RECIP) ! Recip
 
-      Call write_param('Electronic thermal diffusivity', 'Reciprocal', indent=1)
-      Call write_param('Datum Electronic T.D.', ttm%diff0/thermo%temp, 'internal_l^2/internal_t/K', indent=2)
-      Call write_param('Fermi Temperature', ttm%Tfermi, 'K', indent=2)
+        Call write_param('Electronic thermal diffusivity', 'Reciprocal', indent=1)
+        Call write_param('Datum Electronic T.D.', ttm%diff0/thermo%temp, 'internal_l^2/internal_t/K', indent=2)
+        Call write_param('Fermi Temperature', ttm%Tfermi, 'K', indent=2)
 
-    Case (3) ! Tabulated
-      Call write_param('Electronic thermal diffusivity', 'Tabulated', indent=1)
+      Case (TTM_DE_TABULATED) ! Tabulated
+        Call write_param('Electronic thermal diffusivity', 'Tabulated', indent=1)
 
-    End Select
+      End Select
+    End If
 
     Call write_param('Mininum number of atoms for ionic cells', ttm%amin, indent=1)
     Call write_param('Energy redistribution', ttm%redistribute, indent=1, off_level=3)
@@ -1099,23 +1128,23 @@ Contains
 
     If (ttm%fluence < zero_plus) Then
       Select Case (ttm%sdepoType)
-      Case (1)
+      Case (TTM_SDEPO_GAUSS)
         Call write_param('Spatial energy deposition', 'Gaussian', indent=1)
         Call write_param('Sigma of distribution', ttm%sig, 'ang', indent=2)
         Call write_param('Distribution cutoff', ttm%sigmax * ttm%sig, 'ang', indent=2)
 
-      Case (2)
+      Case (TTM_SDEPO_FLAT)
         Call write_param('Spatial energy deposition', 'Homogeneous', indent=1)
       End Select
 
     Else
       Select Case (ttm%sdepoType)
-      Case (2)
+      Case (TTM_SDEPO_FLAT)
         Call write_param('Spatial energy deposition', 'Homogeneous Laser', indent=1)
         Call write_param('Absorbed fluence', ttm%fluence, 'e.V/ang^2', indent=2)
         Call write_param('Penetration depth', ttm%pdepth, 'internal_l', indent=2)
 
-      Case (3)
+      Case (TTM_SDEPO_EXP)
         Call write_param('Spatial energy deposition', 'Z-exponential decaying Laser', indent=1)
         Call write_param('Absorbed fluence at surface', ttm%fluence, 'e.V/ang^2', indent=2)
         Call write_param('Penetration depth', ttm%pdepth, 'internal_l', indent=2)
@@ -1125,53 +1154,54 @@ Contains
     End If
 
     Select Case (ttm%tdepotype)
-    Case (1)
+    Case (TTM_TDEPO_GAUSS)
       Call write_param('Temporal energy deposition', 'Gaussian', indent=1)
       Call write_param('Sigma of distribution', ttm%tdepo, 'ps', indent=2)
       Call write_param('Distribution cutoff', 2.0_wp * ttm%tcdepo * ttm%tdepo, 'ps', indent=2)
 
-    Case (2)
+    Case (TTM_TDEPO_EXP)
       Call write_param('Temporal energy deposition', 'Decaying exponential', indent=1)
       Call write_param('Tau of distribution', ttm%tdepo, 'ps', indent=2)
       Call write_param('Distribution cutoff', ttm%tcdepo * ttm%tdepo, 'ps', indent=2)
 
-    Case (3)
+    Case (TTM_TDEPO_DELTA)
       Call write_param('Temporal energy deposition', 'Dirac delta', indent=1)
 
-    Case (4)
+    Case (TTM_TDEPO_PULSE)
       Call write_param('Temporal energy deposition', 'Square pulse', indent=1)
       Call write_param('Pulse duration', ttm%tdepo, 'ps', indent=2)
 
     End Select
 
     Select Case (ttm%gvar)
-    Case (1)
+    Case (TTM_EPVAR_HOMO)
       Call write_param('Variable electron-phonon coupling', 'Homogeneous', indent=1)
-    Case (2)
+      Call info('    (overrides value given for ensemble, required tabulated stopping terms in g.dat file)', .true.)
+    Case (TTM_EPVAR_HETERO)
       Call write_param('Variable electron-phonon coupling', 'Heterogeneous', indent=1)
+      Call info('    (overrides value given for ensemble, required tabulated stopping terms in g.dat file)', .true.)
     End Select
-    Call info('    (overrides value given for ensemble, required tabulated stopping terms in g.dat file)', .true.)
 
     Select Case (ttm%bcTypeE)
-    Case (1)
+    Case (TTM_BC_PERIODIC)
       Call write_param('Electronic temperature boundary conditions', 'Periodic', indent=1)
 
-    Case (2)
+    Case (TTM_BC_DIRICHLET)
       Call write_param('Electronic temperature boundary conditions', 'Dirichlet', indent=1)
       Call info('  -- Boundaries set to system temperature', .true.)
 
-    Case (3)
+    Case (TTM_BC_NEUMANN)
       Call write_param('Electronic temperature boundary conditions', 'Neumann', indent=1)
 
-    Case (4)
+    Case (TTM_BC_DIRICHLET_XY)
       Call write_param('Electronic temperature boundary conditions', 'Dirichlet (XY), Neumann (Z)', indent=1)
       Call info('  -- XY boundaries set to system temperature', .true.)
 
-    Case (5)
+    Case (TTM_BC_ROBIN)
       Call write_param('Electronic temperature boundary conditions', 'Robin', indent=1)
       Call write_param('Temperature leakage', ttm%fluxout, '', '%', indent=2)
 
-    Case (6)
+    Case (TTM_BC_ROBIN_XY)
       Call write_param('Electronic temperature boundary conditions', 'Robin (XY), Neumann (Z)', indent=1)
       Call write_param('Temperature leakage', ttm%fluxout, '', '%', indent=2)
 

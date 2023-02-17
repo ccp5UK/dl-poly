@@ -802,7 +802,7 @@ Contains
                            vdws(ff), electro(ff), ewld(ff), mpoles(ff), core_shells(ff), met(ff), kim_Data(ff), &
                            bond(ff), threebody(ff), fourbody(ff), tersoffs(ff))
       Call read_run_parameters(params, flow, thermo(ff), stats(ff), config(ff)%l_ind)
-      Call read_ttm(params, ttms(ff))
+      Call read_ttm(params, ttms(ff), config(ff), megatm)
       Call read_ensemble(params, thermo(ff), vdws(ff)%max_vdw, ttms(ff)%l_ttm)
       Call read_system_parameters(params, flow, config(ff), thermo(ff), impa, minim(ff), &
                                   plume(ff), cons(ff), pmfs(ff), ttms(ff)%l_ttm)

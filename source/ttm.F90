@@ -10,6 +10,7 @@ Module ttm
   ! contrib   - g.khara may 2016
   ! contrib   - m.a.seaton september 2017
   ! contrib   - m.a.seaton february 2020
+  ! contrib   - m.a.seaton october 2022
   ! refactoring:
   !           - a.m.elena march-october 2018
   !           - j.madge march-october 2018
@@ -174,12 +175,7 @@ Module ttm
     Integer :: acell_old
     !> Minimum number of atoms for ionic cells
     Integer :: amin = 1
-    !> Unit conversions
-    Real(Kind=wp) :: Jm3K_to_kBA3 = 1.0e-7_wp / (boltz * tenunt) ! convert J m^-3 K^-1 to kB A^-3
-    Real(Kind=wp) :: JKms_to_kBAps = 10.0_wp / (boltz * tenunt) ! convert W m^-1 K^-1 to kB A^-1 ps^-1
-    Real(Kind=wp) :: kB_to_eV = boltz / eu_ev ! convert kB to eV
-    Real(Kind=wp) :: eV_to_kB = eu_ev / boltz ! convert eV to kB
-    Real(Kind=wp) :: mJcm2_to_eVA2 = 1.0e4_wp / (eu_ev * tenunt) ! convert mJ cm^-2 to eV A^-2
+    !> Units conversion for e-p coupling values
     Real(Kind=wp) :: epc_to_chi
     !> Cell density
     Real(Kind=wp) :: cellrho
@@ -291,7 +287,9 @@ Contains
     ! Calculate average atomic density: if not overridden by
     ! 'ttm atomdens' directive in CONTROL file, will be used
     ! to convert specific heat capacities to ttm%volumetric
-    ! heat capacity etc.
+    ! heat capacity etc. (kept in here as still needed for 
+    ! old CONTROL file format: already calculated in read_ttm
+    ! for new format)
 
     ttm%sysrho = Real(megatm, Kind=wp) / Product(config%cell(1:9:4))
 
