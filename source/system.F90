@@ -2228,9 +2228,9 @@ Contains
 
           Call gsend(comm, config%ltg(1:config%natms), 0, Revive_tag)
 
-          Call gsend(comm, green%vxi(1, j), 0, Revive_tag)
-          Call gsend(comm, green%vyi(1, j), 0, Revive_tag)
-          Call gsend(comm, green%vzi(1, j), 0, Revive_tag)
+          Call gsend(comm, green%vxi(1:config%natms, j), 0, Revive_tag)
+          Call gsend(comm, green%vyi(1:config%natms, j), 0, Revive_tag)
+          Call gsend(comm, green%vzi(1:config%natms, j), 0, Revive_tag)
         End Do
 
       End If
