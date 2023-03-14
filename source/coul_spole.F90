@@ -6,7 +6,7 @@ Module coul_spole
   Use numerics,        Only : calc_erfc_n, calc_erfc_deriv_n
   Use neighbours,      Only : neighbours_type
   Use electrostatic,   Only : electrostatic_type, &
-    ELECTROSTATIC_EWALD,ELECTROSTATIC_DDDP, &
+    ELECTROSTATIC_SPME,ELECTROSTATIC_DDDP, &
     ELECTROSTATIC_COULOMB,ELECTROSTATIC_COULOMB_FORCE_SHIFT, &
     ELECTROSTATIC_COULOMB_REACTION_FIELD
   Use statistics,      Only : calculate_stress, stats_type
@@ -86,7 +86,7 @@ Contains
 
     ! Electrostatics by ewald sum = direct coulombic
 
-    If (Any([ELECTROSTATIC_EWALD,ELECTROSTATIC_COULOMB] == electro%key)) Then
+    If (Any([ELECTROSTATIC_SPME,ELECTROSTATIC_COULOMB] == electro%key)) Then
 
       coul = chgprd/rrr
       fcoul= coul/rsq

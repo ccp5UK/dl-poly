@@ -19,7 +19,7 @@ Module two_body
                              ELECTROSTATIC_COULOMB_FORCE_SHIFT,&
                              ELECTROSTATIC_COULOMB_REACTION_FIELD,&
                              ELECTROSTATIC_DDDP,&
-                             ELECTROSTATIC_EWALD,&
+                             ELECTROSTATIC_SPME,&
                              ELECTROSTATIC_NULL,&
                              ELECTROSTATIC_POISSON,&
                              electrostatic_type
@@ -181,7 +181,7 @@ Contains
         ! Set number of pots
         If (ewld%vdw) Call ewald_vdw_count(ewld, vdws)
 
-        If (electro%key == ELECTROSTATIC_EWALD) Then
+        If (electro%key == ELECTROSTATIC_SPME) Then
           Allocate (ewld%spme_data(0:ewld%num_pots), stat=fail)
           If (fail > 0) Call error_alloc('ewld%spme_data', 'two_body_forces')
 
@@ -295,7 +295,7 @@ Contains
     Call start_timer(tmr, 'Long Range')
 #endif
 
-    If (electro%key == ELECTROSTATIC_EWALD) Then
+    If (electro%key == ELECTROSTATIC_SPME) Then
       Call ewald_spme_forces_coul(ewld, ewld%spme_data(0), domain, config, comm, &
         & coul_coeffs, stats, engcpe_rc, vircpe_rc)
 
@@ -408,7 +408,7 @@ Contains
           If (mpoles%max_mpoles > 0) Then
 
             Select Case (electro%key)
-            Case (ELECTROSTATIC_EWALD)
+            Case (ELECTROSTATIC_SPME)
               Call error(0, 'Ewald multiples have been disabled due to issues with their prior implementation.')
               If (ewld%direct) Then
                 Call ewald_real_forces_gen(ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
@@ -462,7 +462,7 @@ Contains
           Else
 
             Select Case (electro%key)
-            Case (ELECTROSTATIC_EWALD)
+            Case (ELECTROSTATIC_SPME)
 
               ! calculate coulombic forces, Ewald sum - real space contribution
 
@@ -550,7 +550,7 @@ Contains
     ! (3) CHARMM core-shell self-induction additions
 
     If (lbook .and. &
-        (l_do_rdf .or. (Any([ELECTROSTATIC_EWALD, ELECTROSTATIC_POISSON] == electro%key)) &
+        (l_do_rdf .or. (Any([ELECTROSTATIC_SPME, ELECTROSTATIC_POISSON] == electro%key)) &
          .or. mpoles%key == POLARISATION_CHARMM)) Then
       Do i = 1, config%natms ! outer loop over atoms
         limit = neigh%list(-1, i) - neigh%list(0, i) ! Get neigh%list limit
@@ -580,7 +580,7 @@ Contains
 
           If (l_do_rdf) Call rdf_excl_collect(i, rrt, neigh, config, rdf)
 
-          If (electro%key == ELECTROSTATIC_EWALD) Then ! Ewald corrections
+          If (electro%key == ELECTROSTATIC_SPME) Then ! Ewald corrections
 
             Call ewald_excl_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, neigh, ewld, ewld%spme_data(0), config)
             ! Call ewald_excl_forces(ewld, ewld%spme_data(0), neigh, electro, config, coul_coeffs, &
@@ -676,8 +676,8 @@ Contains
       virvdw = virvdw_rc + virvdw_rl
     End If
 
-    If (Any([ELECTROSTATIC_EWALD, ELECTROSTATIC_POISSON] == electro%key)) Then
-      If (ELECTROSTATIC_EWALD == electro%key) Then
+    If (Any([ELECTROSTATIC_SPME, ELECTROSTATIC_POISSON] == electro%key)) Then
+      If (ELECTROSTATIC_SPME == electro%key) Then
         Deallocate (coul_coeffs, stat=fail)
         If (fail > 0) Call error_dealloc('coul_coeffs', 'two_body_forces')
         If (ewld%vdw) Then
@@ -754,7 +754,7 @@ Contains
 
     ! Self-interaction is constant for the default charges only SPME
 
-    ! If (electro%key == ELECTROSTATIC_EWALD) Then ! Sum it up for multipolar SPME
+    ! If (electro%key == ELECTROSTATIC_SPME) Then ! Sum it up for multipolar SPME
     !    If (mpoles%max_mpoles > 0 .and. mpoles%max_order <= 2) Call gsum(comm,ewld%spme_data(0)%self_interaction)
     !Write(message,'(a,1p,e18.10)') 'Self-interaction term: ',engsic
     !Call info(message,.true.)

@@ -40,7 +40,7 @@ Module new_control
                                       ELECTROSTATIC_COULOMB_FORCE_SHIFT,&
                                       ELECTROSTATIC_COULOMB_REACTION_FIELD,&
                                       ELECTROSTATIC_DDDP,&
-                                      ELECTROSTATIC_EWALD,&
+                                      ELECTROSTATIC_SPME,&
                                       ELECTROSTATIC_NULL,&
                                       electrostatic_type
   Use errors_warnings,          Only: check_print_level,&
@@ -1423,9 +1423,9 @@ Contains
       vdws%l_direct = .true.
     Case ('off')
       vdws%no_vdw = .true.
-    Case ('ewald')
+    Case ('spme')
       ewld%vdw = .true.
-    Case default
+     Case default
       Call bad_option('vdw_method', option)
     End Select
     If (vdws%max_vdw <= 0) vdws%no_vdw = .true.
@@ -1582,8 +1582,8 @@ Contains
       mpoles%max_order = 0
       mpoles%key = POLARISATION_DEFAULT
       electro%key = ELECTROSTATIC_NULL
-    Case ('ewald', 'spme')
-      electro%key = ELECTROSTATIC_EWALD
+    Case ('spme')
+      electro%key = ELECTROSTATIC_SPME
       ewld%active = .true.
 
     Case ('dddp')
@@ -1632,7 +1632,7 @@ Contains
     End If
     If (ewld%active) Then
 
-      Call params%retrieve('ewald_nsplines', ewld%bspline%num_splines)
+      Call params%retrieve('spme_nsplines', ewld%bspline%num_splines)
       ! Check splines in min
       SPLINE_LIMITS = MIN_SPLINES + mpoles%max_order
       If (ewld%bspline%num_splines < SPLINE_LIMITS) Then
@@ -1657,23 +1657,24 @@ Contains
 
       Call dcell(config%cell, cell_properties)
 
-      If (params%is_set([Character(15) :: 'ewald_precision', 'ewald_alpha'])) Then
+      If (params%is_set([Character(15) :: 'spme_precision', 'spme_alpha'])) Then
 
-        Call error(0, 'Cannot specify both precision and manual ewald parameters')
+        Call error(0, 'Cannot specify both precision and manual spme parameters')
 
-      Else If (params%is_set('ewald_alpha')) Then
+      Else If (params%is_set('spme_alpha')) Then
 
-        Call params%retrieve('ewald_alpha', ewld%alpha)
-        If (params%is_set([Character(18) :: 'ewald_kvec', 'ewald_kvec_spacing'])) Then
+        Call params%retrieve('spme_alpha', ewld%alpha)
+        If (params%is_set([Character(18) :: 'spme_kvec', 'spme_kvec_spacing'])) Then
 
           Call error(0, 'Cannot specify both explicit k-vec grid and k-vec spacing')
-        Else If (params%is_set('ewald_kvec')) Then
+        Else If (params%is_set('spme_kvec')) Then
 
-          Call params%retrieve('ewald_kvec', vtmp, 3)
+          Call params%retrieve('spme_kvec', ewld%kspace%k_vec_dim_cont)
           ewld%kspace%k_vec_dim_cont = vtmp(1:3)
+
         Else
 
-          Call params%retrieve('ewald_kvec_spacing', rtmp)
+          Call params%retrieve('spme_kvec_spacing', rtmp)
           ewld%kspace%k_vec_dim_cont = Nint(rtmp / cell_properties(7:9))
         End If
 
@@ -1683,7 +1684,7 @@ Contains
 
       Else
 
-        Call params%retrieve('ewald_precision', ewld%precision)
+        Call params%retrieve('spme_precision', ewld%precision)
 
         tol = Sqrt(Abs(Log(ewld%precision * neigh%cutoff)))
         ewld%alpha = Sqrt(Abs(Log(ewld%precision * neigh%cutoff * tol))) / neigh%cutoff
@@ -2051,6 +2052,8 @@ Contains
 
     Call params%retrieve('io_statis_yaml', stats%file_yaml)
 
+    Call params%retrieve('evb_num_ff', flow%NUM_FF)
+
   End Subroutine read_run_parameters
 
   Subroutine read_system_parameters(params, flow, config, thermo, impa, minim, plume, cons, pmf, ttm_active)
@@ -2380,22 +2383,29 @@ Contains
                      key="subcell_threshold", &
                      name="Subcelling threshold density", &
                      val="50.0", &
-                     description="Set subcelling threshold density for setting minimum particles per link-cell", &
-                     data_type=DATA_FLOAT))
+        description="Set subcelling threshold density for setting minimum particles per link-cell", &
+        data_type=DATA_FLOAT))
+
+      Call table%set('evb_num_ff', control_parameter( &
+        key="number of evb forcedields", &
+        name="number of Empirical valence forcefields ", &
+        val="1", &
+        description="Set number of forcefields to be used in EVB", &
+        data_type=DATA_INT))
 
       run_times:block
         Call table%set("time_run", control_parameter( &
-                       key="time_run", &
-                       name="Calculation run length", &
-                       val="0", &
-                       units="steps", &
-                       internal_units="steps", &
-                       description="Set duration of simulation (inc. equilibration)", &
-                       data_type=DATA_FLOAT))
+          key="time_run", &
+          name="Calculation run length", &
+          val="0", &
+          units="steps", &
+          internal_units="steps", &
+          description="Set duration of simulation (inc. equilibration)", &
+          data_type=DATA_FLOAT))
 
         Call table%set("time_equilibration", control_parameter( &
-                       key="time_equilibration", &
-                       name="Equilibration run length", &
+          key="time_equilibration", &
+          name="Equilibration run length", &
                        val="0", &
                        units="steps", &
                        internal_units="steps", &
@@ -4188,65 +4198,65 @@ Contains
                        description="Calculate electrostatics using Fennell damping (Ewald-like) with given precision", &
                        data_type=DATA_FLOAT))
 
-        ewald:block
-          Call table%set("ewald_precision", control_parameter( &
-                         key="ewald_precision", &
-                         name="Ewald precision", &
-                         val="1.0e-6", &
-                         description="Set Ewald parameters to calculate within given precision for Ewald calculations", &
-                         data_type=DATA_FLOAT))
+        spme:block
+          Call table%set("spme_precision", control_parameter( &
+            key="spme_precision", &
+            name="Spme precision", &
+            val="1.0e-6", &
+            description="Set spme parameters to calculate within given precision for Spme calculations", &
+            data_type=DATA_FLOAT))
 
-          Call table%set("ewald_alpha", control_parameter( &
-                         key="ewald_alpha", &
-                         name="Ewald alpha", &
-                         val="0.0", &
-                         units="ang^-1", &
-                         internal_units="internal_l^-1", &
-                         description="Set real-recip changeover location for Ewald calculations", &
-                         data_type=DATA_FLOAT))
+          Call table%set("spme_alpha", control_parameter( &
+            key="spme_alpha", &
+            name="Spme alpha", &
+            val="0.0", &
+            units="ang^-1", &
+            internal_units="internal_l^-1", &
+            description="Set real-recip changeover location for Spme calculations", &
+            data_type=DATA_FLOAT))
 
-          Call table%set("ewald_kvec", control_parameter( &
-                         key="ewald_kvec", &
-                         name="Ewald k-vector samples", &
-                         val="0 0 0", &
-                         units="", &
-                         internal_units="", &
-                         description="Set number of k-space samples for Ewald calculations", &
-                         data_type=DATA_VECTOR))
+Call table%set("spme_kvec", control_parameter( &
+            key="spme_kvec", &
+            name="SPME k-vector samples", &
+            val="0 0 0", &
+            units="", &
+            internal_units="", &
+            description="Set number of k-space samples for SPME calculations", &
+            data_type=DATA_VECTOR))
 
-          Call table%set("ewald_kvec_spacing", control_parameter( &
-                         key="ewald_kvec_spacing", &
-                         name="Ewald k-vector spacing", &
-                         val="0.0", &
-                         units="ang^-1", &
-                         internal_units="internal_l^-1", &
-                         description="Calculate k-vector samples for an even sampling of given spacing in Ewald calculations", &
-                         data_type=DATA_FLOAT))
+          Call table%set("spme_kvec_spacing", control_parameter( &
+            key="spme_kvec_spacing", &
+            name="spme k-vector spacing", &
+            val="0.0", &
+            units="ang^-1", &
+            internal_units="internal_l^-1", &
+            description="Calculate k-vector samples for an even sampling of given spacing in spme calculations", &
+            data_type=DATA_FLOAT))
 
-          Call table%set("ewald_nsplines", control_parameter( &
-                         key="ewald_nsplines", &
-                         name="Number of B-Splines", &
-                         val="8", &
-                         description="Set number of B-Splines for Ewald SPME calculations, min=3", &
-                         data_type=DATA_INT))
-        End block ewald
+          Call table%set("spme_nsplines", control_parameter( &
+            key="spme_nsplines", &
+            name="Number of B-Splines", &
+            val="8", &
+            description="Set number of B-Splines for Ewald SPME calculations, min=3", &
+            data_type=DATA_INT))
+        End block spme
 
       End block coulomb
 
       polarisation:block
         Call table%set("polarisation_model", control_parameter( &
-                       key="polarisation_model", &
-                       name="Polarisation model", &
-                       val="default", &
-                       description="Enable polarisation, options: default, CHARMM", &
-                       data_type=DATA_OPTION))
+          key="polarisation_model", &
+          name="Polarisation model", &
+          val="default", &
+          description="Enable polarisation, options: default, CHARMM", &
+          data_type=DATA_OPTION))
 
         Call table%set("polarisation_thole", control_parameter( &
-                       key="polarisation_thole", &
-                       name="Polarisation", &
-                       val="1.3", &
-                       description="Set global atomic damping factor", &
-                       data_type=DATA_FLOAT))
+          key="polarisation_thole", &
+          name="Polarisation", &
+          val="1.3", &
+          description="Set global atomic damping factor", &
+          data_type=DATA_FLOAT))
       End block polarisation
 
       metal:block
@@ -4270,7 +4280,7 @@ Contains
                        key="vdw_method", &
                        name="VdW Method", &
                        val="tabulated", &
-                       description="Set method for Van der Waal's calculations, options: off, direct, tabulated, ewald", &
+          description="Set method for Van der Waal's calculations, options: off, direct, tabulated, spme", &
                        data_type=DATA_OPTION))
 
         Call table%set("vdw_cutoff", control_parameter( &

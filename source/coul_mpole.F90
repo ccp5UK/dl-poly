@@ -24,7 +24,7 @@ Module coul_mpole
                               ELECTROSTATIC_COULOMB_FORCE_SHIFT,&
                               ELECTROSTATIC_COULOMB_REACTION_FIELD,&
                               ELECTROSTATIC_DDDP,&
-                              ELECTROSTATIC_EWALD,&
+                              ELECTROSTATIC_SPME,&
                               electrostatic_type
   Use kinds,            Only: wp
   Use mpole,            Only: mpole_type
@@ -155,7 +155,7 @@ Contains
 
     ! Electrostatics by ewald sum = direct coulombic
 
-    If (Any([ELECTROSTATIC_EWALD, ELECTROSTATIC_COULOMB] == electro%key)) Then
+    If (Any([ELECTROSTATIC_SPME, ELECTROSTATIC_COULOMB] == electro%key)) Then
 
       ! compute derivatives of 1/r kernel
 
@@ -345,7 +345,7 @@ Contains
 
       End Do
 
-      If (Any([ELECTROSTATIC_EWALD, ELECTROSTATIC_DDDP, ELECTROSTATIC_COULOMB] == electro%key)) Then
+      If (Any([ELECTROSTATIC_SPME, ELECTROSTATIC_DDDP, ELECTROSTATIC_COULOMB] == electro%key)) Then
 
         virele = -coul
 

@@ -245,11 +245,11 @@ Contains
     Write (test_unit, '(a,1X,a)') "coul_extended_exclusion", "on"
     Write (test_unit, '(a,1X,a)') "coul_method", "JUNK"
     Write (test_unit, '(a,1X,a)') "coul_precision", "6.666"
-    Write (test_unit, '(a,1X,a)') "ewald_precision", "6.666"
-    Write (test_unit, '(a,1X,a)') "ewald_alpha", "6.666 ang^-1"
-    Write (test_unit, '(a,1X,a)') "ewald_kvec", "[ 6.666 6.666 6.666 ]"
-    Write (test_unit, '(a,1X,a)') "ewald_kvec_spacing", "6.666 ang^-1"
-    Write (test_unit, '(a,1X,a)') "ewald_nsplines", "66666"
+    Write (test_unit, '(a,1X,a)') "spme_precision", "6.666"
+    Write (test_unit, '(a,1X,a)') "spme_alpha", "6.666 ang^-1"
+    Write (test_unit, '(a,1X,a)') "spme_kvec", "[ 6.666 6.666 6.666 ]"
+    Write (test_unit, '(a,1X,a)') "spme_kvec_spacing", "6.666 ang^-1"
+    Write (test_unit, '(a,1X,a)') "spme_nsplines", "66666"
     Write (test_unit, '(a,1X,a)') "polarisation_model", "JUNK"
     Write (test_unit, '(a,1X,a)') "polarisation_thole", "6.666"
     Write (test_unit, '(a,1X,a)') "metal_direct", "on"
@@ -443,19 +443,19 @@ Contains
     Call params%retrieve("equilibration_force_cap", rtmp)
     Call assert(rtmp, 6.666_wp, "Accurate retrieval of equilibration_force_cap failed", passed_accum = passed)
 
-    Call params%retrieve("ewald_alpha", rtmp)
+    Call params%retrieve("spme_alpha", rtmp)
     Call assert(rtmp, 6.666_wp, "Accurate retrieval of ewald_alpha failed", passed_accum = passed)
 
-    Call params%retrieve("ewald_kvec_spacing", rtmp)
+    Call params%retrieve("spme_kvec_spacing", rtmp)
     Call assert(rtmp, 6.666_wp, "Accurate retrieval of ewald_kvec_spacing failed", passed_accum = passed)
 
-    Call params%retrieve("ewald_kvec", vtmp, 3)
+    Call params%retrieve("spme_kvec", vtmp, 3)
     Call assert(vtmp(1:3), [6.666_wp, 6.666_wp, 6.666_wp], "Accurate retrieval of ewald_kvec failed", passed_accum = passed)
 
-    Call params%retrieve("ewald_nsplines", itmp)
+    Call params%retrieve("spme_nsplines", itmp)
     Call assert(itmp, 66666, "Accurate retrieval of ewald_nsplines failed", passed_accum = passed)
 
-    Call params%retrieve("ewald_precision", rtmp)
+    Call params%retrieve("spme_precision", rtmp)
     Call assert(rtmp, 6.666_wp, "Accurate retrieval of ewald_precision failed", passed_accum = passed)
 
     Call params%retrieve("fixed_com", ltmp)

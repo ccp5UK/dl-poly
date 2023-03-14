@@ -52,7 +52,7 @@ Module control
                                   ELECTROSTATIC_COULOMB_FORCE_SHIFT,&
                                   ELECTROSTATIC_COULOMB_REACTION_FIELD,&
                                   ELECTROSTATIC_DDDP,&
-                                  ELECTROSTATIC_EWALD,&
+                                  ELECTROSTATIC_SPME,&
                                   ELECTROSTATIC_NULL,&
                                   ELECTROSTATIC_POISSON,&
                                   electrostatic_type
@@ -1866,7 +1866,7 @@ Contains
 
         Else
 
-          electro%key = ELECTROSTATIC_EWALD
+          electro%key = ELECTROSTATIC_SPME
 
           Call info('Electrostatics : Smooth Particle Mesh Ewald', .true.)
 
@@ -4135,7 +4135,7 @@ Contains
 
       Else If (word(1:5) == 'ewald' .or. word(1:4) == 'spme') Then
 
-        electro%key = ELECTROSTATIC_EWALD
+        electro%key = ELECTROSTATIC_SPME
 
         Call get_word(record, word)
 

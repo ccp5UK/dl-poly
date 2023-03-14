@@ -13,7 +13,7 @@ Module halo
                              export_atomic_positions
 #endif /* HALF_HALO */
   Use domains,         Only: domains_type
-  Use electrostatic,   Only: ELECTROSTATIC_EWALD
+  Use electrostatic,   Only: ELECTROSTATIC_SPME
   Use errors_warnings, Only: error
   Use ewald,           Only: ewald_type
   Use kim,             Only: kim_type
@@ -216,7 +216,7 @@ Contains
     ! Larger widths may be needed by SPME for the b-splines -
     ! used in the halo transport in NEGATIVE DIRECTIONS ONLY!!!
 
-    If (electro_key == ELECTROSTATIC_EWALD) Then
+    If (electro_key == ELECTROSTATIC_SPME) Then
       ecwx = Real(ewld%bspline%num_spline_pad, wp) / Real(ewld%kspace%k_vec_dim(1), wp)
       ecwy = Real(ewld%bspline%num_spline_pad, wp) / Real(ewld%kspace%k_vec_dim(2), wp)
       ecwz = Real(ewld%bspline%num_spline_pad, wp) / Real(ewld%kspace%k_vec_dim(3), wp)

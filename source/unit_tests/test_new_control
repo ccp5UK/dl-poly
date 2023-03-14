@@ -5,8 +5,8 @@ print_frequency  5.0 steps
 stats_frequency  5.0 steps
 vdw_cutoff  8.0 ang
 cutoff  8.0 ang
-coul_method ewald
-ewald_precision 1e-06
+coul_method spme
+spme_precision 1e-06
 ensemble npt
 ensemble_method berendsen
 ensemble_thermostat_coupling  0.5 ps

@@ -28,7 +28,7 @@ module control_output
                                       ELECTROSTATIC_COULOMB_FORCE_SHIFT,&
                                       ELECTROSTATIC_COULOMB_REACTION_FIELD,&
                                       ELECTROSTATIC_DDDP,&
-                                      ELECTROSTATIC_EWALD,&
+                                      ELECTROSTATIC_SPME,&
                                       ELECTROSTATIC_NULL,&
                                       electrostatic_type
   Use errors_warnings,          Only: check_print_level,&
@@ -814,7 +814,7 @@ Contains
     Select Case (electro%key)
     Case (ELECTROSTATIC_NULL)
       Call write_param('Electrostatics', 'Disabled', indent=1)
-    Case (ELECTROSTATIC_EWALD)
+    Case (ELECTROSTATIC_SPME)
 
       Call write_param('Electrostatics', 'Smooth Particle Mesh Ewald', indent=1)
 
@@ -850,8 +850,8 @@ Contains
 
       ! Fix with electro merge
       Call write_param('Fennell damping', &
-           electro%key /= ELECTROSTATIC_EWALD .and. electro%damping > zero_plus, indent=2, off_level=3)
-      If (electro%key /= ELECTROSTATIC_EWALD .and. electro%damping > zero_plus) &
+           electro%key /= ELECTROSTATIC_SPME .and. electro%damping > zero_plus, indent=2, off_level=3)
+      If (electro%key /= ELECTROSTATIC_SPME .and. electro%damping > zero_plus) &
         Call write_param('Damping parameter', electro%damping, 'internal_l^-1', indent=2)
 
       Call write_param('Extended Coulombic eXclusion', electro%lecx, indent=2)

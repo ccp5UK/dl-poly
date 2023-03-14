@@ -51,7 +51,7 @@ Module meta
   Use drivers,                                Only: md_vv,&
                                                     replay_historf,&
                                                     replay_history
-  Use electrostatic,                          Only: ELECTROSTATIC_EWALD,&
+  Use electrostatic,                          Only: ELECTROSTATIC_SPME,&
                                                     electrostatic_type
   Use errors_warnings,                        Only: check_print_level,&
                                                     error,&
@@ -1428,7 +1428,7 @@ Contains
     Write (banner(7), fmt1) '#***     J. Mater. Chem., 16, 1911-1918 (2006),               ****'
     Write (banner(8), fmt1) '#***     https://doi.org/10.1039/B517931A                     ****'
     Call info(banner, 8, .true., level=-1)
-    If (electro%key == ELECTROSTATIC_EWALD) Then
+    If (electro%key == ELECTROSTATIC_SPME) Then
       Write (banner(1), fmt1) '#***   - I.J. Bush, I.T. Todorov & W. Smith,                  ****'
       Write (banner(2), fmt1) '#***     Comp. Phys. Commun., 175, 323-329 (2006),            ****'
       Write (banner(3), fmt1) '#***     https://doi.org/10.1016/j.cpc.2006.05.001            ****'

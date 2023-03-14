@@ -17,7 +17,7 @@ Module electrostatic
   !> No electrostatics
   Integer( Kind = wi ), Parameter, Public :: ELECTROSTATIC_NULL = 0
   !> Ewald Sum
-  Integer( Kind = wi ), Parameter, Public :: ELECTROSTATIC_EWALD = 1
+  Integer( Kind = wi ), Parameter, Public :: ELECTROSTATIC_SPME = 1
   !> Distance dependent dielectric potential
   Integer( Kind = wi ), Parameter, Public :: ELECTROSTATIC_DDDP = 2
   !> Direct real-space Coulomb potential

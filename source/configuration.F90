@@ -28,7 +28,7 @@ Module configuration
   Use control_parameters,Only: write_param
   Use development,     Only: development_type
   Use domains,         Only: domains_type
-  Use electrostatic,   Only: ELECTROSTATIC_EWALD,&
+  Use electrostatic,   Only: ELECTROSTATIC_SPME,&
                              ELECTROSTATIC_NULL
   Use errors_warnings, Only: error,&
                              error_alloc,&
@@ -532,7 +532,7 @@ Contains
     ! Check things for non-periodic systems
 
     If (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB) Then
-      If (electro_key == ELECTROSTATIC_EWALD) Then
+      If (electro_key == ELECTROSTATIC_SPME) Then
         Call warning(220, 0.0_wp, 0.0_wp, 0.0_wp)
       Else If (electro_key /= ELECTROSTATIC_NULL) Then
         Call warning(30, 0.0_wp, 0.0_wp, 0.0_wp)
