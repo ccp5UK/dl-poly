@@ -26,7 +26,8 @@ Module control_parameters
 
   !> Data types enumeration
   Integer, Parameter, Public :: DATA_NULL = 0, DATA_INT = 1, DATA_FLOAT = 2, DATA_STRING = 3, &
-       DATA_BOOL = 4, DATA_OPTION = 5, DATA_VECTOR3 = 6, DATA_VECTOR6 = 7
+       DATA_BOOL = 4, DATA_OPTION = 5, DATA_VECTOR = 6, STRING_VECTOR = 7
+
 
   Type, Public, Extends(hash_table) :: parameters_hash_table
   Contains
@@ -35,9 +36,9 @@ Module control_parameters
     Procedure, Private :: get_param
     !> Set retrieve up to parse stored params
     Generic, Public  :: retrieve => retrieve_option_or_string, retrieve_float, &
-         & retrieve_vector_real, retrieve_vector_int, retrieve_int, retrieve_bool
+         & retrieve_vector_real, retrieve_vector_int, retrieve_vector_string, retrieve_int, retrieve_bool
     Procedure, Pass(table), Private :: retrieve_option_or_string, retrieve_float, &
-         & retrieve_vector_real, retrieve_vector_int, retrieve_int, retrieve_bool
+         & retrieve_vector_real, retrieve_vector_int, retrieve_vector_string, retrieve_int, retrieve_bool
     !> Check if list of things is set
     Procedure, Public :: is_any_set
     Procedure :: is_set_single, is_all_set, num_set
@@ -60,8 +61,10 @@ Module control_parameters
     Character(Len=MAX_KEY) :: internal_units = ""
     !> Information to be printed with help
     Character(Len=STR_LEN) :: description = ""
-    !> Control parameter data type (int, float, vector3, vector6, string, bool, option)
+    !> Control parameter data type (int, float, VECTOR, stringVECTOR, string, bool, option)
     Integer :: data_type = DATA_NULL
+    !> length, 1 for scalars, possibly >1 for data_VECTOR and string_VECTOR
+    Integer :: length = 0
     !> Is value set
     Logical :: set = .false.
   Contains
@@ -119,11 +122,11 @@ Contains
     Type(control_parameter) :: param
     Character(Len=MAX_KEY), Dimension(:), Allocatable :: keys
     Character(Len=*), Dimension(0:7), Parameter :: data_name = &
-         [Character(Len=7) :: 'NULL', 'INT', 'FLOAT', 'STRING', &
-         'BOOL', 'OPTION', 'VECTOR3', 'VECTOR6']
+         [Character(Len=13) :: 'NULL', 'INT', 'FLOAT', 'STRING', &
+         'BOOL', 'OPTION', 'VECTOR', 'STRING_VECTOR']
     Character(Len=*), Dimension(0:7), Parameter :: python_data_name = &
          [Character(Len=10) :: 'None', 'int', 'float', 'str', 'bool', &
-         'str', '(float,)*3', '(float,)*6']
+         'str', '(float,)*N', '(Char,)*N']
     Integer :: i
 
     Call params%get_keys(keys)
@@ -201,10 +204,10 @@ Contains
           Else
             param%val = "on"
           End If
-        Case (DATA_VECTOR3)
-          param%val = "[ 6.666 6.666 6.666 ]"
-        Case (DATA_VECTOR6)
-          param%val = "[ 6.666 6.666 6.666 6.666 6.666 6.666 ]"
+        Case (DATA_VECTOR)
+          param%val = "[ 6.666 6.666 6.666 ...]"
+        Case (STRING_VECTOR)
+          param%val = "[ "" "" "" ... ]"
         End Select
         Write (ifile, '(3(a,1X))') Trim(param%key), Trim(param%val), Trim(param%units)
       End Select
@@ -299,9 +302,10 @@ Contains
     Integer,                  Intent(  Out) :: iostat
     Character(Len=*),         Intent(Inout) :: iomsg
 
-    Integer       :: itmp
-    Logical       :: stat
-    Real(Kind=wp) :: rtmp, rtmp3(3), rtmp6(6)
+    Integer                     :: itmp
+    Logical                     :: stat
+    Real(Kind=wp)               :: rtmp
+    Real(Kind=wp), Allocatable  :: rtmpN(:)
 
     Select Case (param%data_type)
       Case (DATA_FLOAT)
@@ -315,25 +319,20 @@ Contains
         Read (param%val, *) itmp
         Write (unit, '(3(A,1X), "-> ", i0, 1X, A)',iostat=iostat, iomsg=iomsg) Trim(param%key), Trim(param%val), &
         & Trim(param%units), itmp, Trim(param%internal_units)
-      Case (DATA_VECTOR3)
-        Read (param%val, *) rtmp3
-        Do itmp = 1, 3
-          rtmp3(itmp) = convert_units(rtmp3(itmp), param%units, param%internal_units, stat)
-          If (.not. stat) Call error_units(param%units, param%internal_units, 'Cannot write '//param%key//': bad units')
 
+      Case (DATA_VECTOR)
+        If (Allocated(rtmpN)) Then 
+          Deallocate(rtmpN)
+          Allocate(rtmpN(1:param%length))
+        End If
+
+        Read (param%val, *) rtmpN
+        Do itmp = 1, param%length
+          rtmpN(itmp) = convert_units(rtmpN(itmp), param%units, param%internal_units, stat)
         End Do
         Write (unit, '(3(A,1X), "-> [", 3(g15.6e2,1X), "]", 1X, A)', iostat=iostat, iomsg=iomsg) Trim(param%key), Trim(param%val), &
-        & Trim(param%units), rtmp3, Trim(param%internal_units)
-      Case (DATA_VECTOR6)
-        Read (param%val, *) rtmp6
-        Do itmp = 1, 6
-          rtmp6(itmp) = convert_units(rtmp6(itmp), param%units, param%internal_units, stat)
-          If (.not. stat) Call error_units(param%units, param%internal_units, 'Cannot write '//param%key//': bad units')
+        & Trim(param%units), rtmpN, Trim(param%internal_units)
 
-        End Do
-
-        Write (unit, '(3(A,1X), "-> [", 6(g15.6e2,1X), "]", 1X, A)', iostat=iostat, iomsg=iomsg) Trim(param%key), Trim(param%val), &
-        & Trim(param%units), rtmp6, Trim(param%internal_units)
        Case default
          Write (unit, fmt='(3(A,1X))', iostat=iostat, iomsg=iomsg) Trim(param%key), Trim(param%val), Trim(param%units)
       End Select
@@ -379,16 +378,16 @@ Contains
 
   End Subroutine retrieve_float
 
-  Subroutine retrieve_vector_real(table, key, output, required)
+  Subroutine retrieve_vector_real(table, key, output, dimension, required)
     Class(parameters_hash_table)               :: table
     Character(Len=*),            Intent(In   ) :: key
-    Real(kind=wp), Dimension(:), Intent(  Out) :: output
+    Real(kind=wp), Allocatable,  Intent(  Out) :: output(:)
+    Integer, Optional,           Intent(In   ) :: dimension
     Logical, Optional,           Intent(In   ) :: required
 
     Character(Len=STR_LEN)       :: parse, val
-    Integer                      :: i
+    Integer                      :: i, length
     Logical                      :: stat
-    Real(kind=wp), Dimension(10) :: tmp
     Type(control_parameter)      :: param
 
     Call table%get(key, param)
@@ -397,45 +396,100 @@ Contains
     End If
     val = param%val
 
-    Do i = 1, 10
+    If (Allocated(output)) Then 
+      Deallocate(output)
+    End If
+
+    ! get length
+    length = 0
+    Do While (parse /= "")
+      Call get_word(val, parse)
+      If (parse /= "") Then 
+        length = length + 1
+      End If
+    End Do
+
+    If (length == 0) Then
+        Call error(0,"Zero length input vector")
+    Else If (Present(dimension) .and. length /= dimension) Then
+      Call error(0,"input vector length not equal to request vector length")
+    End If
+
+    val = param%val
+
+    param%length = length
+
+    Allocate(output(1:length))
+
+    Do i = 1, length
       Call get_word(val, parse)
       If (parse == "") Exit
-      tmp(i) = word_2_real(parse)
-      tmp(i) = convert_units(tmp(i), param%units, param%internal_units, stat)
+      output(i) = word_2_real(parse)
+      output(i) = convert_units(output(i), param%units, param%internal_units, stat)
       If (.not. stat) Call error_units(param%units, param%internal_units, "When parsing key: "//Trim(key))
 
     End Do
 
-    Select Case (param%data_type)
-    Case (DATA_VECTOR3)
-      If (Size(output) /= 3) Call error(0, "Bad length output vector")
-      If (i /= 4) Call error(0, "Bad length input vector")
-      output = tmp(1:3)
-
-    Case (DATA_VECTOR6)
-      If (Size(output) /= 6) Call error(0, "Bad length output vector")
-      Select Case (i)
-      Case (7)
-        output = tmp(1:6)
-      Case (10)
-        output = [tmp(1), tmp(5), tmp(9), tmp(2), tmp(3), tmp(4)]
-      Case default
-        Call error(0, "Bad length input vector")
-      End Select
-
-    End Select
-
   End Subroutine retrieve_vector_real
 
-  Subroutine retrieve_vector_int(table, key, output, required)
+  Subroutine retrieve_vector_string(table, key, output, dimension, required)
+    Class(parameters_hash_table)                  :: table
+    Character(Len=*),               Intent(In   ) :: key
+    Character(Len=3), Allocatable,  Intent(  Out) :: output(:)
+    Integer, Optional,              Intent(In   ) :: dimension
+    Logical, Optional,              Intent(In   ) :: required
+
+    Character(Len=STR_LEN)                        :: parse, val
+    Integer                                       :: i, length
+    Type(control_parameter)                       :: param
+
+    Call table%get(key, param)
+    If (Present(required)) Then
+      If (required .and. .not. param%set) Call error(0, 'Necessary parameter '//Trim(key)//' not set')
+    End If
+    val = param%val
+
+    If (Allocated(output)) Then 
+      Deallocate(output)
+    End If
+
+    ! get length
+    length = 0
+    Do While (parse /= "")
+      Call get_word(val, parse)
+      If (parse /= "") Then 
+        length = length + 1
+      End If
+    End Do
+
+    If (length == 0) Then
+      Call error(0,"Zero length input vector")
+    Else If (Present(dimension) .and. length /= dimension) Then
+      Call error(0,"input vector length not equal to request vector length")
+    End If
+
+    val = param%val
+    param%length = length
+
+    Allocate(output(1:length))
+
+    Do i = 1, length
+      Call get_word(val, parse)
+      If (parse == "") Exit
+      output(i) = Trim(parse)
+    End Do
+
+  End Subroutine retrieve_vector_string
+
+  Subroutine retrieve_vector_int(table, key, output, dimension, required)
     Class(parameters_hash_table)         :: table
     Character(Len=*),      Intent(In   ) :: key
-    Integer, Dimension(:), Intent(  Out) :: output
+    Integer, Allocatable,  Intent(  Out) :: output(:)
+    Integer, Optional,     Intent(In   ) :: dimension
     Logical, Optional,     Intent(In   ) :: required
 
     Character(Len=STR_LEN)  :: parse, val
-    Integer                 :: i
-    Integer, Dimension(9)   :: tmp
+    Integer                 :: i, length
     Type(control_parameter) :: param
 
     Call table%get(key, param)
@@ -444,33 +498,38 @@ Contains
     End If
     val = param%val
 
-    Do i = 1, 9
+    If (Allocated(output)) Then 
+      Deallocate(output)
+    End If
+
+    ! get length
+    length = 0
+    Do While (parse /= "")
       Call get_word(val, parse)
-      If (parse == "") Exit
-      tmp(i) = Nint(word_2_real(parse))
+      If (parse /= "") Then 
+        length = length + 1
+      End If
     End Do
 
-    Select Case (param%data_type)
-    Case (DATA_VECTOR3)
-      If (Size(output) /= 3) Call error(0, "Bad length output vector")
+    If (length == 0) Then
+        Call error(0,"Zero length input vector")
+    Else If (Present(dimension) .and. length /= dimension) Then
+      Call error(0,"input vector length not equal to request vector length")
+    End If
 
-      If (i /= 4) Call error(0, "Bad length input vector")
-      output = tmp(1:3)
+    val = param%val
+    param%length = length
 
-    Case (DATA_VECTOR6)
-      If (Size(output) /= 6) Call error(0, "Bad length output vector")
-      Select Case (i)
-      Case (7)
-        output = tmp(1:6)
-      Case (10)
-        output = [tmp(1), tmp(5), tmp(9), tmp(2), tmp(3), tmp(4)]
-      Case default
-        Call error(0, "Bad length input vector")
-      End Select
+    Allocate(output(1:length))
 
-    End Select
+    Do i = 1, length
+      Call get_word(val, parse)
+      If (parse == "") Exit
+      output(i) = Nint(word_2_real(parse))
+    End Do
 
   End Subroutine retrieve_vector_int
+
 
   Subroutine retrieve_int(table, key, output, required)
     Class(parameters_hash_table)     :: table

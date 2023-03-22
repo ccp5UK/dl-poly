@@ -22,7 +22,7 @@ Contains
     Integer                     :: itmp, test_unit
     Logical                     :: ltmp
     Real(kind=wp)               :: rtmp, ts
-    Real(kind=wp), Dimension(6) :: vtmp
+    Real(kind=wp), Allocatable  :: vtmp(:)
     Type(parameters_hash_table) :: params
 
     Call gsync(comm)
@@ -182,7 +182,7 @@ Contains
     Write (test_unit, '(a,1X,a)') "ttm_num_elec_cells", "[ 6.666 6.666 6.666 ]"
     Write (test_unit, '(a,1X,a)') "ttm_metal", "on"
     Write (test_unit, '(a,1X,a)') "ttm_heat_cap_model", "JUNK"
-    Write (test_unit, '(a,1X,a)') "ttm_heat_cap", "6.666 internal_e/internal_m/K"
+    Write (test_unit, '(a,1X,a)') "ttm_heat_cap", "6.666 k_B"
     Write (test_unit, '(a,1X,a)') "ttm_temp_term", "6.666 K^-1"
     Write (test_unit, '(a,1X,a)') "ttm_fermi_temp", "6.666 K"
     Write (test_unit, '(a,1X,a)') "ttm_elec_cond_model", "JUNK"
@@ -195,13 +195,13 @@ Contains
     Write (test_unit, '(a,1X,a)') "ttm_stopping_power", "6.666 e.V/nm"
     Write (test_unit, '(a,1X,a)') "ttm_spatial_dist", "JUNK"
     Write (test_unit, '(a,1X,a)') "ttm_spatial_sigma", "6.666 nm"
-    Write (test_unit, '(a,1X,a)') "ttm_spatial_cutoff", "6.666 nm"
+    Write (test_unit, '(a,1X,a)') "ttm_spatial_cutoff", "6.666"
     Write (test_unit, '(a,1X,a)') "ttm_fluence", "6.666 mJ/cm^2"
     Write (test_unit, '(a,1X,a)') "ttm_penetration_depth", "6.666 nm"
     Write (test_unit, '(a,1X,a)') "ttm_laser_type", "JUNK"
     Write (test_unit, '(a,1X,a)') "ttm_temporal_dist", "JUNK"
     Write (test_unit, '(a,1X,a)') "ttm_temporal_duration", "6.666 ps"
-    Write (test_unit, '(a,1X,a)') "ttm_temporal_cutoff", "6.666 ps"
+    Write (test_unit, '(a,1X,a)') "ttm_temporal_cutoff", "6.666"
     Write (test_unit, '(a,1X,a)') "ttm_variable_ep", "JUNK"
     Write (test_unit, '(a,1X,a)') "ttm_boundary_condition", "JUNK"
     Write (test_unit, '(a,1X,a)') "ttm_boundary_xy", "on"
@@ -385,7 +385,7 @@ Contains
     Call assert(rtmp, 6.666_wp, "Accurate retrieval of ewald_alpha failed")
     Call params%retrieve("ewald_kvec_spacing", rtmp)
     Call assert(rtmp, 6.666_wp, "Accurate retrieval of ewald_kvec_spacing failed")
-    Call params%retrieve("ewald_kvec", vtmp(1:3))
+    Call params%retrieve("ewald_kvec", vtmp, 3)
     Call assert(vtmp(1:3), [6.666_wp, 6.666_wp, 6.666_wp], "Accurate retrieval of ewald_kvec failed")
     Call params%retrieve("ewald_nsplines", itmp)
     Call assert(itmp, 66666, "Accurate retrieval of ewald_nsplines failed")
@@ -395,7 +395,7 @@ Contains
     Call assert(.not. ltmp, "Accurate retrieval of fixed_com failed")
     Call params%retrieve("ignore_config_indices", ltmp)
     Call assert(ltmp, "Accurate retrieval of ignore_config_indices failed")
-    Call params%retrieve("impact_direction", vtmp(1:3))
+    Call params%retrieve("impact_direction", vtmp, 3)
     Call assert(vtmp(1:3), [6.666_wp, 6.666_wp, 6.666_wp], "Accurate retrieval of impact_direction failed")
     Call params%retrieve("impact_energy", rtmp)
     Call assert(rtmp, 6.666_wp, "Accurate retrieval of impact_energy failed")
@@ -509,7 +509,7 @@ Contains
     Call assert(ltmp, "Accurate retrieval of msd_print failed")
     Call params%retrieve("msd_start", rtmp)
     Call assert(rtmp, 6.666_wp, "Accurate retrieval of msd_start failed")
-    Call params%retrieve("nfold", vtmp(1:3))
+    Call params%retrieve("nfold", vtmp, 3)
     Call assert(vtmp(1:3), [6.666_wp, 6.666_wp, 6.666_wp], "Accurate retrieval of nfold failed")
     Call params%retrieve("output_energy", ltmp)
     Call assert(ltmp, "Accurate retrieval of output_energy failed")
@@ -531,9 +531,9 @@ Contains
     Call assert(rtmp, 6.666_wp, "Accurate retrieval of polarisation_thole failed")
     Call params%retrieve("pressure_hydrostatic", rtmp)
     Call assert(rtmp, 6.666_wp, "Accurate retrieval of pressure_hydrostatic failed")
-    Call params%retrieve("pressure_tensor", vtmp)
+    Call params%retrieve("pressure_tensor", vtmp, 6)
     Call assert(vtmp, [6.666_wp, 6.666_wp, 6.666_wp, 6.666_wp, 6.666_wp, 6.666_wp], "Accurate retrieval of pressure_tensor failed")
-    Call params%retrieve("pressure_perpendicular", vtmp(1:3))
+    Call params%retrieve("pressure_perpendicular", vtmp, 3)
     Call assert(vtmp(1:3), [6.666_wp, 6.666_wp, 6.666_wp], "Accurate retrieval of pressure_perpendicular failed")
     Call params%retrieve("print_frequency", rtmp)
     Call assert(rtmp, 6.666_wp, "Accurate retrieval of print_frequency failed")
@@ -549,7 +549,7 @@ Contains
     Call assert(rtmp, 6.666_wp, "Accurate retrieval of pseudo_thermostat_temperature failed")
     Call params%retrieve("pseudo_thermostat_width", rtmp)
     Call assert(rtmp, 6.666_wp, "Accurate retrieval of pseudo_thermostat_width failed")
-    Call params%retrieve("random_seed", vtmp(1:3))
+    Call params%retrieve("random_seed", vtmp, 3)
     Call assert(vtmp(1:3), [6.666_wp, 6.666_wp, 6.666_wp], "Accurate retrieval of random_seed failed")
     Call params%retrieve("rdf_binsize", rtmp)
     Call assert(rtmp, 6.666_wp, "Accurate retrieval of rdf_binsize failed")
@@ -667,7 +667,7 @@ Contains
     Call assert(ltmp, "Accurate retrieval of ttm_metal failed")
     Call params%retrieve("ttm_min_atoms", itmp)
     Call assert(itmp, 66666, "Accurate retrieval of ttm_min_atoms failed")
-    Call params%retrieve("ttm_num_elec_cells", vtmp(1:3))
+    Call params%retrieve("ttm_num_elec_cells", vtmp, 3)
     Call assert(vtmp(1:3), [6.666_wp, 6.666_wp, 6.666_wp], "Accurate retrieval of ttm_num_elec_cells failed")
     Call params%retrieve("ttm_num_ion_cells", itmp)
     Call assert(itmp, 66666, "Accurate retrieval of ttm_num_ion_cells failed")

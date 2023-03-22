@@ -27,8 +27,8 @@ Module new_control
                                       DATA_INT,&
                                       DATA_OPTION,&
                                       DATA_STRING,&
-                                      DATA_VECTOR3,&
-                                      DATA_VECTOR6,&
+                                      DATA_VECTOR,&
+                                      STRING_VECTOR,&
                                       control_parameter,&
                                       parameters_hash_table
   Use coord,                    Only: coord_type
@@ -211,7 +211,7 @@ Contains
     Type(seed_type),             Intent(InOut) :: seed
 
     Integer                     :: print_level
-    Real(kind=wp), Dimension(3) :: vtmp
+    Real(kind=wp), Allocatable  :: vtmp(:)
 
     Call params%retrieve('print_level', print_level)
     Call set_print_level(print_level)
@@ -232,7 +232,7 @@ Contains
     If (tmr%clear_screen < 0.0_wp) tmr%clear_screen = 0.01_wp * tmr%job
 
     If (params%is_set('random_seed')) Then
-      Call params%retrieve('random_seed', vtmp(1:3))
+      Call params%retrieve('random_seed', vtmp,3)
       Call seed%init(Nint(vtmp(1:3)))
     End If
 
@@ -1032,6 +1032,7 @@ Contains
     Integer,                     Intent(In   ) :: megatm
 
     Character(Len=STR_LEN) :: option
+    Integer, Allocatable   :: vtmp(:)
     Logical                :: ltmp
 
     Call params%retrieve('ttm_calculate', ttm%l_ttm)
@@ -1044,7 +1045,8 @@ Contains
     ttm%sysrho = Real(megatm, Kind=wp) / Product(config%cell(1:9:4))
 
     Call params%retrieve('ttm_num_ion_cells', ttm%ntsys(3))
-    Call params%retrieve('ttm_num_elec_cells', ttm%eltsys)
+    Call params%retrieve('ttm_num_elec_cells', vtmp, 3)
+    ttm%eltsys(1:3) = vtmp
     Call params%retrieve('ttm_metal', ttm%ismetal, required=.true.)
 
     Call params%retrieve('ttm_heat_cap_model', option)
@@ -1392,6 +1394,7 @@ Contains
     Logical                      :: metals_on, vdws_on
     Real(Kind=wp)                :: cut, rtmp, tol, tol1
     Real(Kind=wp), Dimension(10) :: cell_properties
+    Integer, Allocatable         :: vtmp(:)
 
     ! ---------------- SUBCELLING ----------------------------------------------
 
@@ -1654,7 +1657,8 @@ Contains
           Call error(0, 'Cannot specify both explicit k-vec grid and k-vec spacing')
         Else If (params%is_set('ewald_kvec')) Then
 
-          Call params%retrieve('ewald_kvec', ewld%kspace%k_vec_dim_cont)
+          Call params%retrieve('ewald_kvec', vtmp, 3)
+          ewld%kspace%k_vec_dim_cont = vtmp(1:3)
         Else
 
           Call params%retrieve('ewald_kvec_spacing', rtmp)
@@ -1755,7 +1759,7 @@ Contains
     Character(Len=STR_LEN)      :: option
     Logical                     :: ltmp, stat
     Real(Kind=wp)               :: rtmp
-    Real(Kind=wp), Dimension(6) :: vtmp
+    Real(Kind=wp), Allocatable  :: vtmp(:)
     Type(control_parameter)     :: param
 
     Call params%retrieve('title', option)
@@ -1773,7 +1777,7 @@ Contains
 
     thermo%stress = 0.0_wp
     If (params%is_set('pressure_tensor')) Then
-      Call params%retrieve('pressure_tensor', vtmp)
+      Call params%retrieve('pressure_tensor', vtmp, 6)
       thermo%stress(1) = vtmp(1)
       thermo%stress(5) = vtmp(2)
       thermo%stress(9) = vtmp(3)
@@ -1785,7 +1789,7 @@ Contains
       thermo%stress(8) = vtmp(6)
 
     Else If (params%is_set('pressure_perpendicular')) Then
-      Call params%retrieve('pressure_perpendicular', vtmp(1:3))
+      Call params%retrieve('pressure_perpendicular', vtmp, 3)
       thermo%stress(1:9:4) = vtmp(1:3)
     Else
       Call params%retrieve('pressure_hydrostatic', rtmp)
@@ -1983,7 +1987,7 @@ Contains
       Call params%retrieve('impact_part_index', impa%imd)
       Call params%retrieve('impact_time', impa%tmd)
       Call params%retrieve('impact_energy', impa%emd)
-      Call params%retrieve('impact_direction', vtmp(1:3))
+      Call params%retrieve('impact_direction', vtmp, 3)
       impa%vmx = vtmp(1)
       impa%vmy = vtmp(2)
       impa%vmz = vtmp(3)
@@ -1996,7 +2000,7 @@ Contains
 
     ! --------------- EXPANSION ------------------------------------------------
 
-    Call params%retrieve('nfold', vtmp(1:3))
+    Call params%retrieve('nfold', vtmp, 3)
     config%l_exp = Any(Nint(vtmp(1:3)) > 1)
     If (config%l_exp) Then
       config%nx = Nint(vtmp(1))
@@ -2042,7 +2046,7 @@ Contains
                      name="Random seed", &
                      val="1 2 3", &
                      description="Set random seed", &
-                     data_type=DATA_VECTOR3))
+                     data_type=DATA_VECTOR))
 
       Call table%set("density_variance", control_parameter( &
                      key="density_variance", &
@@ -3166,7 +3170,7 @@ Contains
                        units="katm", &
                        internal_units="internal_p", &
                        description="Set the target pressure tensor for NsT calculations", &
-                       data_type=DATA_VECTOR6))
+                       data_type=DATA_VECTOR))
 
         Call table%set("pressure_hydrostatic", control_parameter( &
                        key="pressure_hydrostatic", &
@@ -3184,7 +3188,7 @@ Contains
                        units="katm", &
                        internal_units="internal_p", &
                        description="Set the target pressure as x, y, z perpendicular to cell faces for NPT calculations", &
-                       data_type=DATA_VECTOR3))
+                       data_type=DATA_VECTOR))
 
         Call table%set("temperature", control_parameter( &
                        key="temperature", &
@@ -3257,7 +3261,7 @@ Contains
                        units="", &
                        internal_units="", &
                        description="Direction vector for impact simulations", &
-                       data_type=DATA_VECTOR3))
+                       data_type=DATA_VECTOR))
       End block impact
 
       ttm:block
@@ -3281,7 +3285,7 @@ Contains
                        name="Number of TTM electronic cells", &
                        val="50 50 50", &
                        description="Set number of coarse-grained electronic temperature cells (CET)", &
-                       data_type=DATA_VECTOR3))
+                       data_type=DATA_VECTOR))
 
         Call table%set("ttm_metal", control_parameter( &
                        key="ttm_metal", &
@@ -3739,7 +3743,7 @@ Contains
                      name="N Fold", &
                      val="1 1 1", &
                      description="Expand cell before running", &
-                     data_type=DATA_VECTOR3))
+                     data_type=DATA_VECTOR))
 
     End block initialisation_parameters
 
@@ -3828,7 +3832,7 @@ Contains
                          units="", &
                          internal_units="", &
                          description="Set number of k-space samples for Ewald calculations", &
-                         data_type=DATA_VECTOR3))
+                         data_type=DATA_VECTOR))
 
           Call table%set("ewald_kvec_spacing", control_parameter( &
                          key="ewald_kvec_spacing", &
@@ -4096,7 +4100,7 @@ Contains
       param%val = val
       Call get_word(input, unit)
       param%units = unit
-    Case (DATA_VECTOR3, DATA_VECTOR6)
+    Case (DATA_VECTOR, STRING_VECTOR)
       ! Handle Multiline
       i = Index(input, '&')
       tmp = ''
@@ -4119,7 +4123,9 @@ Contains
       Do While (tmp /= '')
         Call get_word(tmp, val)
         ! Check all valid reals
-        test_real = word_2_real(val)
+        If (param%data_type /= STRING_VECTOR) Then
+          test_real = word_2_real(val)
+        End If
         param%val = Trim(param%val)//' '//val
       End Do
 
