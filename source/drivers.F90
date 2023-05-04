@@ -570,7 +570,7 @@ Contains
 
   End Subroutine calculate_forces_for_historf
 
-  Subroutine calculate_forces_evb(evbff, cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &
+  Subroutine calculate_forces(evbff, cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &
                                   inversion, tether, threebody, neigh, sites, vdws, tersoffs, fourbody, rdf, &
                                   minim, mpoles, ext_field, rigid, electro, domain, kim_data, msd_data, tmr, files, &
                                   green, devel, ewld, met, seed, thermo, crd, comm)
@@ -926,7 +926,7 @@ Contains
       End If
     End Do
 
-  End Subroutine calculate_forces_evb
+  End Subroutine calculate_forces
 
   !> @brief Compute forces using DFTB+ v18.2
   !!
@@ -2118,7 +2118,7 @@ Contains
       ! Evaluate forces
 
       If (flow%simulation_method /= DFTB) Then
-        Call calculate_forces_evb(evbff, cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &
+        Call calculate_forces(evbff, cnfig, flow, io, cshell, cons, pmf, stat, plume, pois, bond, angle, dihedral, &
                                   inversion, tether, threebody, neigh, sites, vdws, tersoffs, fourbody, rdf, &
                                   minim, mpoles, ext_field, rigid, electro, domain, kim_data, msd_data, tmr, &
                                   files, green, devel, ewld, met, seed, thermo, crd, comm)
