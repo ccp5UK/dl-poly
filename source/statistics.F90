@@ -15,7 +15,10 @@ Module statistics
 
   Use comms,           Only: &
                              Spread_tag, comm_self, comms_type, gcheck, girecv, gmax, gsend, gsum, &
-                             gsync, gtime, gwait, mode_create, mode_wronly, offset_kind
+                             gsync, gtime, gwait, mode_create, mode_wronly, offset_kind, &
+                             gatherv_scatterv_index_arrays, ggatherv, gscatterv, root_id, &
+                             gscatter
+                             
   Use configuration,   Only: configuration_type
   Use constants,       Only: boltz,&
                              engunit,&
@@ -33,7 +36,7 @@ Module statistics
                              error_dealloc,&
                              info,&
                              warning
-  Use filename,        Only: FILE_STATS,&
+  Use filename,        Only: FILE_STATS, FILE_COR, &
                              file_type
   Use flow_control,    Only: RESTART_KEY_OLD
   Use io,              Only: &
@@ -59,76 +62,104 @@ Module statistics
                              thermostat_type
   Use z_density,       Only: z_density_collect,&
                              z_density_type
+  Use correlators,      Only: correlator, correlator_buffer_type, indices_buffer_type
 
   Implicit None
 
   Private
 
+  ! correlation observables, and interface
+  Type, Abstract, Public :: observable
+    Contains
+      Procedure(get_value),     Deferred :: value
+      Procedure(get_dimension), Deferred :: dimension
+      Procedure(get_name),      Deferred :: name
+      Procedure(get_id)  ,      Deferred :: id
+      Procedure(is_per_atom),   Deferred :: per_atom
+  End Type observable
+
+  Type, Public :: observable_holder
+    Class(observable), Allocatable :: observable
+  End Type
+
+  Type, Public :: correlation
+    Class(observable), Allocatable :: A
+    Class(observable), Allocatable :: B
+    ! 0 indicates not tracking an atom but a global property
+    ! >= 1 indicates a local atom's index, or global resp.
+    Integer                        :: atom, atom_global
+  End Type 
+
+  Type, Public :: correlator_holder
+    Type(correlator)               :: correlator
+    Type(correlation)              :: correlation
+  End Type
+
   Type, Public :: stats_type
 
-    Integer(Kind=wi)           :: numacc = 0, &
-                                  natms0 = 0
-    Integer(Kind=wi)           :: mxnstk
+    Integer(Kind=wi)                   :: numacc = 0, &
+                                         natms0 = 0
+    Integer(Kind=wi)                   :: mxnstk
     !> Max stack size for rolling averages
-    Integer(Kind=wi)           :: mxstak = 1
+    Integer(Kind=wi)                   :: mxstak = 1
     !> Frequency of STATIS output
-    Integer(Kind=wi)           :: intsta = 100
+    Integer(Kind=wi)                   :: intsta = 100
     !> Whether file open
-    Logical                    :: statis_file_open = .false.
+    Logical                            :: statis_file_open = .false.
     !> Whether file is YAML style
-    Logical                    :: file_yaml = .false.
+    Logical                            :: file_yaml = .false.
     !> Whether stats has been set up
-    Logical                    :: newjob = .true.
+    Logical                            :: newjob = .true.
     !> Whether any bond, angle, etc. analysis
-    Logical                    :: lpana = .false.
-    Real(Kind=wp)              :: consv = 0.0_wp, shlke = 0.0_wp, engke = 0.0_wp, &
-                                  engrot = 0.0_wp, engcpe = 0.0_wp, engsrp = 0.0_wp, &
-                                  engter = 0.0_wp, engtbp = 0.0_wp, engfbp = 0.0_wp, &
-                                  engshl = 0.0_wp, engtet = 0.0_wp, engbnd = 0.0_wp, &
-                                  engang = 0.0_wp, engdih = 0.0_wp, enginv = 0.0_wp, &
-                                  engfld = 0.0_wp, engcon = 0.0_wp, engpmf = 0.0_wp
-    Real(Kind=wp)              :: stptmp = 0.0_wp, stpprs = 0.0_wp, stpvol = 0.0_wp, &
-                                  stpcfg = 0.0_wp, stpeng = 0.0_wp, stpeth = 0.0_wp, &
-                                  stpvir = 0.0_wp
-    Real(Kind=wp)              :: virtot = 0.0_wp, vircom = 0.0_wp, vircpe = 0.0_wp, &
-                                  virsrp = 0.0_wp, virshl = 0.0_wp, virter = 0.0_wp, &
-                                  virtbp = 0.0_wp, virfbp = 0.0_wp, vircon = 0.0_wp, &
-                                  virpmf = 0.0_wp, virtet = 0.0_wp, virbnd = 0.0_wp, &
-                                  virang = 0.0_wp, virdih = 0.0_wp, virinv = 0.0_wp, &
-                                  virfld = 0.0_wp, virdpd = 0.0_wp
-    Real(Kind=wp)              :: strtot(1:9) = 0.0_wp, strkin(1:9) = 0.0_wp, strknf(1:9) = 0.0_wp, &
-                                  strknt(1:9) = 0.0_wp, strcom(1:9) = 0.0_wp, strcon(1:9) = 0.0_wp, &
-                                  strpmf(1:9) = 0.0_wp, stress(1:9) = 0.0_wp, strdpd(1:9) = 0.0_wp
-    Real(Kind=wp)              :: clin(1:9) = 0.0_wp
+    Logical                            :: lpana = .false.
+    Real(Kind=wp)                      :: consv = 0.0_wp, shlke = 0.0_wp, engke = 0.0_wp, &
+                                         engrot = 0.0_wp, engcpe = 0.0_wp, engsrp = 0.0_wp, &
+                                         engter = 0.0_wp, engtbp = 0.0_wp, engfbp = 0.0_wp, &
+                                         engshl = 0.0_wp, engtet = 0.0_wp, engbnd = 0.0_wp, &
+                                         engang = 0.0_wp, engdih = 0.0_wp, enginv = 0.0_wp, &
+                                         engfld = 0.0_wp, engcon = 0.0_wp, engpmf = 0.0_wp
+    Real(Kind=wp)                      :: stptmp = 0.0_wp, stpprs = 0.0_wp, stpvol = 0.0_wp, &
+                                         stpcfg = 0.0_wp, stpeng = 0.0_wp, stpeth = 0.0_wp, &
+                                         stpvir = 0.0_wp
+    Real(Kind=wp)                      :: virtot = 0.0_wp, vircom = 0.0_wp, vircpe = 0.0_wp, &
+                                         virsrp = 0.0_wp, virshl = 0.0_wp, virter = 0.0_wp, &
+                                         virtbp = 0.0_wp, virfbp = 0.0_wp, vircon = 0.0_wp, &
+                                         virpmf = 0.0_wp, virtet = 0.0_wp, virbnd = 0.0_wp, &
+                                         virang = 0.0_wp, virdih = 0.0_wp, virinv = 0.0_wp, &
+                                         virfld = 0.0_wp, virdpd = 0.0_wp
+    Real(Kind=wp)                      :: strtot(1:9) = 0.0_wp, strkin(1:9) = 0.0_wp, strknf(1:9) = 0.0_wp, &
+                                         strknt(1:9) = 0.0_wp, strcom(1:9) = 0.0_wp, strcon(1:9) = 0.0_wp, &
+                                         strpmf(1:9) = 0.0_wp, stress(1:9) = 0.0_wp, strdpd(1:9) = 0.0_wp
+    Real(Kind=wp)                      :: clin(1:9) = 0.0_wp
     ! constraints accumulators
-    Real(Kind=wp), Public      :: passcnq(1:5) = (/ & ! QUENCHING per call
-                                  0.0_wp, & ! cycles counter
-                                  0.0_wp, & ! access counter
-                                  0.0_wp, & ! average cycles
-                                  999999999.0_wp, & ! minimum cycles : ~Huge(1)
-                                  0.0_wp/) ! maximum cycles
-    Real(Kind=wp), Public      :: passcon(1:5, 1:2, 1:2) = Reshape((/ & ! dim::1-shake, dim:1:-per-call
+    Real(Kind=wp), Public              :: passcnq(1:5) = (/ & ! QUENCHING per call
+                                         0.0_wp, & ! cycles counter
+                                         0.0_wp, & ! access counter
+                                         0.0_wp, & ! average cycles
+                                         999999999.0_wp, & ! minimum cycles : ~Huge(1)
+                                         0.0_wp/) ! maximum cycles
+    Real(Kind=wp), Public              :: passcon(1:5, 1:2, 1:2) = Reshape((/ & ! dim::1-shake, dim:1:-per-call
                                                                    0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp, & ! dim::1-shake, dim:2:-per-tst
                                                                    0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp, & ! dim::2-rattle, dim:1:-per-call
                                                                    0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp, & ! dim::2-rattle, dim:2:-per-tst
                                                                    0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp/), (/5, 2, 2/))
-    Real(Kind=wp), Public      :: passpmq(1:5) = (/ & ! QUENCHING per call
-                                  0.0_wp, & ! cycles counter
-                                  0.0_wp, & ! access counter
-                                  0.0_wp, & ! average cycles
-                                  999999999.0_wp, & ! minimum cycles : ~Huge(1)
-                                  0.0_wp/) ! maximum cycles
-    Real(Kind=wp), Public      :: passpmf(1:5, 1:2, 1:2) = Reshape((/ & ! dim::1-shake, dim:1:-per-call
+    Real(Kind=wp), Public              :: passpmq(1:5) = (/ & ! QUENCHING per call
+                                         0.0_wp, & ! cycles counter
+                                         0.0_wp, & ! access counter
+                                         0.0_wp, & ! average cycles
+                                         999999999.0_wp, & ! minimum cycles : ~Huge(1)
+                                         0.0_wp/) ! maximum cycles
+    Real(Kind=wp), Public              :: passpmf(1:5, 1:2, 1:2) = Reshape((/ & ! dim::1-shake, dim:1:-per-call
                                                                    0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp, & ! dim::1-shake, dim:2:-per-tst
                                                                    0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp, & ! dim::2-rattle, dim:1:-per-call
                                                                    0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp, & ! dim::2-rattle, dim:2:-per-tst
                                                                    0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp/), (/5, 2, 2/))
-    Real(Kind=wp), Public      :: passshl(1:5) = (/ &
-                                  0.0_wp, & ! cycles counter
-                                  0.0_wp, & ! access counter
-                                  0.0_wp, & ! average cycles
-                                  999999999.0_wp, & ! minimum cycles : ~Huge(1)
-                                  0.0_wp/) ! maximum cycles
+    Real(Kind=wp), Public              :: passshl(1:5) = (/ &
+                                         0.0_wp, & ! cycles counter
+                                         0.0_wp, & ! access counter
+                                         0.0_wp, & ! average cycles
+                                         999999999.0_wp, & ! minimum cycles : ~Huge(1)
+                                         0.0_wp/) ! maximum cycles
     !> Skips, elements are as follows
     !>
     !> - 1 skips counter
@@ -136,31 +167,39 @@ Module statistics
     !> - 3 average skips
     !> - 4 minimum skips ~Huge(1)
     !> - 5 maximum skips
-    Real(Kind=wp), Public      :: neighskip(1:5) = [0.0_wp, 0.0_wp, 0.0_wp, &
+    Real(Kind=wp), Public              :: neighskip(1:5) = [0.0_wp, 0.0_wp, 0.0_wp, &
                                                     999999999.0_wp, 0.0_wp]
-    Real(Kind=wp), Public      :: passmin(1:5) = [ &
-                                  0.0_wp, & ! cycles counter
-                                  0.0_wp, & ! access counter
-                                  0.0_wp, & ! average cycles
-                                  999999999.0_wp, & ! minimum cycles : ~Huge(1)
-                                  0.0_wp] ! maximum cycles
-    Type(current_type)         :: cur
-    Real(Kind=wp), Allocatable :: xin(:), yin(:), zin(:)
-    Real(Kind=wp), Allocatable :: xto(:), yto(:), zto(:), rsd(:)
-    Real(Kind=wp), Allocatable :: stpval(:), stpvl0(:), sumval(:), ssqval(:)
-    Real(Kind=wp), Allocatable :: zumval(:), ravval(:), stkval(:, :)
-    Integer, Allocatable       :: found(:), found0(:)
-    Integer, Allocatable       :: lsi0(:), lsa0(:), lsa00(:), ltg0(:)
-    Real(Kind=wp), Allocatable :: xin0(:), yin0(:), zin0(:)
-    Real(Kind=wp), Allocatable :: xto0(:), yto0(:), zto0(:)
-    Real(Kind=wp), Allocatable :: stpval0(:), stpvl00(:), sumval0(:), ssqval0(:)
-    Real(Kind=wp), Allocatable :: zumval0(:), ravval0(:), stkval0(:, :)
+    Real(Kind=wp), Public              :: passmin(1:5) = [ &
+                                         0.0_wp, & ! cycles counter
+                                         0.0_wp, & ! access counter
+                                         0.0_wp, & ! average cycles
+                                         999999999.0_wp, & ! minimum cycles : ~Huge(1)
+                                         0.0_wp] ! maximum cycles
+    Type(current_type)                 :: cur
+    Logical                            :: calculate_correlations
+    Integer                            :: number_of_correlations, max_buffer_per_atom
+    Type(correlator_holder), Allocatable :: correlations(:)
+    Type(correlation),       Allocatable :: unique_correlations(:)
+    Integer,                 Allocatable :: unique_correlation_params(:)
+    Logical                              :: per_atom_correlations, requires_reindex
+    ! Integer, Allocatable               :: number_of_blocks(:), points_per_block(:), window_size(:)
+    ! Integer, Allocatable               :: min_distance(:), dim_left(:), dim_right(:)
+    Real(Kind=wp), Allocatable         :: xin(:), yin(:), zin(:)
+    Real(Kind=wp), Allocatable         :: xto(:), yto(:), zto(:), rsd(:)
+    Real(Kind=wp), Allocatable         :: stpval(:), stpvl0(:), sumval(:), ssqval(:)
+    Real(Kind=wp), Allocatable         :: zumval(:), ravval(:), stkval(:, :)
+    Integer, Allocatable               :: found(:), found0(:)
+    Integer, Allocatable               :: lsi0(:), lsa0(:), lsa00(:), ltg0(:)
+    Real(Kind=wp), Allocatable         :: xin0(:), yin0(:), zin0(:)
+    Real(Kind=wp), Allocatable         :: xto0(:), yto0(:), zto0(:)
+    Real(Kind=wp), Allocatable         :: stpval0(:), stpvl00(:), sumval0(:), ssqval0(:)
+    Real(Kind=wp), Allocatable         :: zumval0(:), ravval0(:), stkval0(:, :)
 
     !> Store for per-particle energy data
-    Real(Kind=wp), Allocatable :: pp_energy(:)
+    Real(Kind=wp), Allocatable         :: pp_energy(:)
 
     !> Store for per-particle stress data
-    Real(Kind=wp), Allocatable :: pp_stress(:, :)
+    Real(Kind=wp), Allocatable         :: pp_stress(:, :)
 
     !> Whether per-particle information is needed
     Logical :: require_pp = .false.
@@ -171,15 +210,83 @@ Module statistics
   Contains
     Private
 
-    Procedure, Public :: init => allocate_statistics_arrays
-    Procedure, Public :: init_connect => allocate_statistics_connect
-    Procedure, Public :: clean_connect => deallocate_statistics_connect
+    Procedure, Public :: init              => allocate_statistics_arrays
+    Procedure, Public :: init_connect      => allocate_statistics_connect
+    Procedure, Public :: init_correlations => allocate_correlations_arrays
+    Procedure, Public :: init_correlator   => allocate_correlator
+    Procedure, Public :: clean_connect     => deallocate_statistics_connect
     Procedure, Public :: update_stress
     Procedure, Public, Pass :: allocate_per_particle_arrays
     Procedure, Public, Pass :: deallocate_per_particle_arrays
+    Procedure, Public :: correlator_deport
+    Procedure, Public :: correlator_recieve
+    Procedure, Public :: dump_correlations 
+    Procedure, Public :: revive_correlations 
+    Procedure, Public :: reindex_correlators
     Final :: cleanup
   End Type
 
+  Abstract Interface 
+    ! Kernal for selecting data for correlation
+    Subroutine get_value(t, config, stats, v, atom)
+        Import observable, configuration_type, stats_type, wp
+        Class(observable),          Intent(In   ) :: t
+        Type(configuration_type),   Intent(InOut) :: config
+        Type(stats_type),           Intent(InOut) :: stats
+        Real(Kind=wp), Allocatable, Intent(InOut) :: v(:)
+        Integer,       Optional,    Intent(In   ) :: atom
+    End Subroutine get_value
+
+    ! utility to get size of observable
+    Subroutine get_dimension(t, v)
+        Import observable
+        Class(observable), Intent(In   ) :: t
+        Integer,           Intent(  Out) :: v
+    End Subroutine get_dimension
+
+    ! utility to get name of observable (i.e. for i/o)
+    Subroutine get_name(t, v)
+        Import observable
+        Class(observable), Intent(In   ) :: t
+        Character(Len=2),  Intent(  Out) :: v
+    End Subroutine get_name
+
+    ! utility to get numerical id of observable (i.e. for revive)
+    Subroutine get_id(t, v)
+      Import observable
+      Class(observable), Intent(In   ) :: t
+      Integer,           Intent(  Out) :: v
+    End Subroutine get_id
+
+    Subroutine is_per_atom(t,v)
+      Import observable
+      Class(observable), Intent(In   ) :: t
+      Logical,           Intent(  Out) :: v
+    End Subroutine is_per_atom
+  End Interface
+
+  Interface operator (==)
+    Module Procedure is_equal
+  End Interface
+
+  Type, Extends(observable), Public :: observable_velocity
+  Contains
+      Procedure :: value     => velocity_value
+      Procedure :: dimension => velocity_dimension
+      Procedure :: name      => velocity_name
+      Procedure :: id        => velocity_id
+      Procedure :: per_atom  => velocity_per_atom
+  End Type
+
+  Type, Extends(observable), Public :: observable_stress
+  Contains
+      Procedure :: value     => stress_value
+      Procedure :: dimension => stress_dimension
+      Procedure :: name      => stress_name
+      Procedure :: id        => stress_id
+      Procedure :: per_atom  => stress_per_atom
+  End Type
+  
   Public :: calculate_stress
   Public :: calculate_heat_flux
   Public :: statistics_collect
@@ -188,15 +295,18 @@ Module statistics
   Public :: write_per_part_contribs
   Public :: write_header
   Public :: statistics_result
+  Public :: correlation_result
+  Public :: character_to_observable
+  Public :: code_to_observable
 Contains
 
   Subroutine allocate_statistics_arrays(stats, mxrgd, mxatms, mxatdm)
-    Class(stats_type), Intent(InOut) :: stats
-    Integer,           Intent(In   ) :: mxrgd, mxatms, mxatdm
+    Class(stats_type), Intent(InOut)   :: stats
+    Integer,           Intent(In   )   :: mxrgd, mxatms, mxatdm
 
-    Integer                 :: mxnstk, mxstak, nxatms
-    Integer, Dimension(1:4) :: fail
-
+    Integer                            :: mxnstk, mxstak, nxatms
+    Integer,           Dimension(1:4)  :: fail
+ 
     fail = 0
 
     If (mxrgd > 0) Then
@@ -300,7 +410,6 @@ Contains
 
   Subroutine cleanup(stats)
     Type(stats_type), Intent(InOut) :: stats
-
     If (Allocated(stats%xin)) Then
       Deallocate (stats%xin)
     End If
@@ -409,7 +518,361 @@ Contains
     If (Allocated(stats%stkval0)) Then
       Deallocate (stats%stkval0)
     End If
+
+    !Call deallocate_correlations_arrays()
   End Subroutine cleanup
+
+  Subroutine allocate_correlations_arrays(stats)
+    Class(stats_type), Intent(InOut) :: stats
+    Integer,           Dimension(1)  :: fail
+
+    Allocate(stats%correlations(1:stats%number_of_correlations), Stat = fail(1))
+
+    If (Any(fail > 0)) Call error_alloc("allocate_correlations_arrays", "statistics")
+
+  End Subroutine allocate_correlations_arrays
+
+  Subroutine allocate_correlator(stats, atom, global, blocks, points, window, &
+    A, B, correlator_index)
+    Class(stats_type),        Intent(InOut) :: stats
+    Integer,                  Intent(In   ) :: atom, global, blocks, points, window, &
+                                               correlator_index
+    Class(observable),        Intent(In   ) :: A, B
+    Integer                                 :: dim_left, dim_right
+    
+    stats%correlations(correlator_index)%correlation%A = A
+    stats%correlations(correlator_index)%correlation%B = B
+    stats%correlations(correlator_index)%correlation%atom = atom
+    stats%correlations(correlator_index)%correlation%atom_global = global
+
+
+    Call stats%correlations(correlator_index)%correlation%A%dimension(dim_left)
+    Call stats%correlations(correlator_index)%correlation%B%dimension(dim_right)
+
+    Call stats%correlations(correlator_index)%correlator%init(blocks, points, window, dim_left, dim_right)
+  
+  End Subroutine allocate_correlator
+
+  Subroutine correlation_result(stats, comm, files, config, sites, nstep, time, tmst)
+    
+    Class(stats_type),        Intent(InOut) :: stats
+    Type(comms_type),         Intent(InOut) :: comm
+    Type(file_type),          Intent(InOut) :: files(:)
+    Type(configuration_type), Intent(In   ) :: config
+    Type(site_type),          Intent(In   ) :: sites
+    Integer,                  Intent(In   ) :: nstep
+    Real(Kind=wp),            Intent(In   ) :: time,tmst
+    Integer                                 :: i, tau, j, k, flat_dim, l, r, &
+                                               file_unit, atom
+    Real(Kind=wp), Allocatable              :: cor_accumulator(:,:,:,:), correlation(:,:,:)
+    Real(Kind=wp), Allocatable              :: flat_correlation(:)
+    Real(Kind=wp), Allocatable              :: timesteps(:)    
+    Integer,       Allocatable              :: type_counts(:)
+    Character(Len=2)                        :: correlation_name
+    Character(Len=2)                        :: char_left, char_right, &
+                                               component_left, component_right
+    Character(Len=2), Dimension(1:3)        :: components_vector
+    Character(Len=2), Dimension(1:9)        :: components_matrix
+    Real(Kind=wp)                           :: t, dt
+    Integer                                 :: points, window, blocks,&
+                                               dim_left, dim_right
+    Type(observable_holder)                 :: A, B
+
+    components_vector = (/ 'x', 'y', 'z' /)
+    components_matrix = (/'xx', 'xy', 'xz', 'yx', 'yy', 'yz', 'zx', 'zy', 'zz'/)
+
+    file_unit = files(FILE_COR)%unit_no
+
+    If (comm%idnode == root_id) Then
+
+      Open(Newunit=file_unit,File=Trim(files(FILE_COR)%filename),Status='replace')
+
+      If (stats%file_yaml) Then
+        Write (file_unit,'(a)') "%YAML 1.2"
+        Write (file_unit,'(a)') "---"
+        Write (file_unit, '(a,a)') "title: ", Trim(config%cfgname)
+        Write (file_unit, '(a)') "correlations:"
+      Else
+        Write (file_unit, '(a,a)') "title: ", Trim(config%cfgname)
+      End If
+    
+    End If
+
+    Do i = 1, Size(stats%unique_correlations)
+
+      If (Allocated(correlation)) Then
+        Deallocate(correlation)
+      End If 
+
+      If (Allocated(cor_accumulator)) Then
+        Deallocate(cor_accumulator)
+      End If 
+
+      If (Allocated(flat_correlation)) Then 
+        Deallocate(flat_correlation)
+      End If
+
+      If (Allocated(type_counts)) Then 
+        Deallocate(type_counts)
+      End If
+
+      Call stats%unique_correlations(i)%A%name(char_left)
+      Call stats%unique_correlations(i)%B%name(char_right)
+      correlation_name = Trim(char_left)//Trim(char_right)
+
+      If (stats%unique_correlations(i)%atom > 0) Then
+
+        Do j = 1, stats%number_of_correlations
+
+          If (stats%correlations(j)%correlation%A == stats%unique_correlations(i)%A .and. &
+              stats%correlations(j)%correlation%B == stats%unique_correlations(i)%B ) Then
+
+            ! found a match, assume all same (they should be)
+            
+            points = stats%correlations(j)%correlator%points_per_block
+            blocks = stats%correlations(j)%correlator%number_of_blocks
+            dim_left = stats%correlations(j)%correlator%left_dim
+            dim_right = stats%correlations(j)%correlator%right_dim
+            window = stats%correlations(j)%correlator%window_size
+
+            Allocate(cor_accumulator(1:sites%mxatyp, 1:points*blocks, &
+              1:dim_left, 1:dim_right ))
+
+            Allocate(correlation(1:points*blocks,1:dim_left,1:dim_right))
+
+            flat_dim = sites%mxatyp*points*blocks*dim_left*dim_right
+
+            Allocate(flat_correlation(1:flat_dim))
+            Allocate(type_counts(1:sites%mxatyp))
+
+            type_counts = 0
+            flat_correlation = 0.0
+            correlation = 0.0
+            cor_accumulator = 0.0
+            
+            ! data allocated, now exit to accumulate 
+
+            exit
+          End If
+
+        End Do
+
+        ! accumulate average
+
+        Do j = 1, stats%number_of_correlations
+
+          If (stats%correlations(j)%correlator%count_updated == 0) Then
+            ! no data was seen in this correlator, distinct from 0 
+            ! correlation case
+            Cycle
+          End If
+          
+          If (stats%correlations(j)%correlation%A == stats%unique_correlations(i)%A .and. &
+              stats%correlations(j)%correlation%B == stats%unique_correlations(i)%B ) Then
+
+            atom = stats%correlations(j)%correlation%atom
+
+            correlation = 0.0
+            Call stats%correlations(j)%correlator%get_correlation(correlation)
+
+            cor_accumulator(config%ltype(atom),:,:,:) = &
+              cor_accumulator(config%ltype(atom),:,:,:) + correlation
+
+            type_counts(config%ltype(atom)) = type_counts(config%ltype(atom)) + 1
+
+          End If
+
+        End Do
+
+        ! now collect onto root
+
+        flat_correlation = Reshape(cor_accumulator,(/flat_dim/))
+        Call gsum(comm, flat_correlation)
+        flat_correlation = flat_correlation / comm%mxnode
+        cor_accumulator = Reshape(flat_correlation,(/sites%mxatyp,points*blocks,&
+         dim_left,dim_right/))
+
+        ! for later averaging
+        Call gsum(comm,type_counts)
+        
+        If (comm%idnode == root_id) Then
+
+          Do j = 1,sites%mxatyp
+
+            If (stats%file_yaml) Then
+
+              Write (file_unit, '(*(a))') "    - name: [", correlation_name, ", ", &
+                                                          Trim(sites%unique_atom(j)), "]"
+
+              Write (file_unit, '(a)') "      parameters:"
+              Write (file_unit, '(a,i0)') "            points_per_block: ", &
+                      points
+              Write (file_unit, '(a,i0)') "            number_of_blocks: ", &
+                      blocks
+              Write (file_unit, '(a,i0)') "            window_size: ", &
+                      window
+
+              t = 0.0
+              dt = time / nstep
+
+              If (Allocated(timesteps)) Then
+                Deallocate(timesteps)
+              End If
+
+              Allocate(timesteps(1:points*blocks))
+
+              Do tau = 1,points*blocks
+                timesteps(tau) = t
+                t = t + dt
+              End Do  
+              
+              
+              Write(file_unit, '(a,*(g16.8,","))',advance="no") "      lags: [", timesteps(1:Size(timesteps)-1)
+              
+              Write(file_unit, '(g16.8,a)') timesteps(Size(timesteps)), "]"
+
+              cor_accumulator(j,:,:,:) = cor_accumulator(j,:,:,:) / (1+type_counts(j))
+
+              Write (file_unit, '(a)') "      components: "
+
+              Do l = 1,dim_left
+                
+                If (dim_left == 3) Then
+                  component_left = Trim(components_vector(l))
+                Else If (dim_left == 9) Then 
+                  component_left = Trim(components_matrix(l))
+                End If
+
+                Do r = 1,dim_right
+
+                  If (dim_right == 3) Then
+                    component_right = Trim(components_vector(r))
+                  Else If (dim_right == 9) Then 
+                    component_right = Trim(components_matrix(r))
+                  End If
+
+                  Write (file_unit, '(a,a,a)',advance="no") "           ", &
+                    Trim(char_left)//'_'//Trim(component_left)//"-"//Trim(char_right)//'_'//Trim(component_right), ": "
+
+                    Write(file_unit, '(a,*(g16.8,","))',advance="no") "[", cor_accumulator(j,1:Size(cor_accumulator,2)-1,l,r)
+                    
+                    Write(file_unit, '(g16.8,a)') cor_accumulator(j,Size(cor_accumulator,2),l,r), "]"
+
+                End Do
+              End Do  
+              
+            End If
+          End Do
+        End If
+
+      Else
+
+        If (comm%idnode == root_id) Then
+
+          k = 0
+          Do j = 1, stats%number_of_correlations
+
+            If (stats%correlations(j)%correlation%A == stats%unique_correlations(i)%A .and. &
+                stats%correlations(j)%correlation%B == stats%unique_correlations(i)%B ) Then
+
+              ! found a match (should be unique)
+              k = j
+              
+              points = stats%correlations(j)%correlator%points_per_block
+              blocks = stats%correlations(j)%correlator%number_of_blocks
+              dim_left = stats%correlations(j)%correlator%left_dim
+              dim_right = stats%correlations(j)%correlator%right_dim
+              window = stats%correlations(j)%correlator%window_size
+
+              Allocate(correlation(1:points*blocks,1:dim_left,1:dim_right))
+
+              flat_dim = points*blocks*dim_left*dim_right
+
+              Allocate(flat_correlation(1:flat_dim))
+
+              flat_correlation = 0.0
+              correlation = 0.0
+            
+              exit
+            End If
+            
+          End Do
+
+          If (k == 0) Then
+            Call error(0,"correlation not found for correlation result")
+          End If
+
+          Call stats%correlations(k)%correlator%get_correlation(correlation)
+
+          If (stats%file_yaml) Then
+
+            Write (file_unit, '(*(a))') "    - name: [", correlation_name, ", global]"
+
+            Write (file_unit, '(a)') "      parameters:"
+            Write (file_unit, '(a,i0)') "            points_per_block: ", &
+                    points
+            Write (file_unit, '(a,i0)') "            number_of_blocks: ", &
+                    blocks
+            Write (file_unit, '(a,i0)') "            window_size: ", &
+                    window
+
+            t = 0.0
+            dt = time / nstep
+
+            If (Allocated(timesteps)) Then
+              Deallocate(timesteps)
+            End If
+
+            Allocate(timesteps(1:points*blocks))
+
+            Do tau = 1,points*blocks
+              timesteps(tau) = t
+              t = t + dt
+            End Do  
+            
+            
+            Write(file_unit, '(a,*(g16.8,","))',advance="no") "      lags: [", timesteps(1:Size(timesteps)-1)
+            
+            Write(file_unit, '(g16.8,a)') timesteps(Size(timesteps)), "]"
+
+            Write (file_unit, '(a)') "      components: "
+
+            Do l = 1,dim_left
+                
+              If (dim_left == 3) Then
+                component_left = Trim(components_vector(l))
+              Else If (dim_left == 9) Then 
+                component_left = Trim(components_matrix(l))
+              End If
+
+              Do r = 1,dim_right
+
+                If (dim_right == 3) Then
+                  component_right = Trim(components_vector(r))
+                Else If (dim_right == 9) Then 
+                  component_right = Trim(components_matrix(r))
+                End If              
+
+                Write (file_unit, '(a,a,a)',advance="no") "           ", &
+                Trim(char_left)//'_'//Trim(component_left)//"-"//Trim(char_right)//'_'//Trim(component_right), ": "
+
+                  Write(file_unit, '(a,*(g16.8,","))',advance="no") "[", correlation(1:Size(correlation,1)-1,l,r)
+                  
+                  Write(file_unit, '(g16.8,a)') correlation(Size(correlation,1),l,r), "]"
+
+              End Do
+            End Do  
+            
+          End If
+          
+        End If
+
+      End If
+
+    End Do
+
+  End Subroutine correlation_result
+    
 
   Subroutine statistics_collect(config, lsim, leql, nsteql, lmsd, keyres, degfre, degshl, &
                                 degrot, nstep, tstep, time, tmst, mxatdm, stats, thermo, zdensity, &
@@ -458,6 +921,7 @@ Contains
     Real(Kind=wp)              :: celprp(1:10), h_z, sclnv1, sclnv2, stpcns, stpipv, stprot, &
                                   stpshl, zistk
     Real(Kind=wp), Allocatable :: amsd(:), xxt(:), yyt(:), zzt(:)
+    Real(Kind=wp), Allocatable :: observable_a(:), observable_b(:)
 
     ffpass = ff == 1
 
@@ -641,14 +1105,50 @@ Contains
         stats%zto(i) = 0.0_wp
       End Do
     End If
-
     If (nstep > 0) Then
       If (lsim) Then ! real dynamics is happening
         Do i = 1, config%natms
+
           stats%xto(i) = stats%xto(i) + config%vxx(i) * tstep
           stats%yto(i) = stats%yto(i) + config%vyy(i) * tstep
           stats%zto(i) = stats%zto(i) + config%vzz(i) * tstep
+
         End Do
+
+        If ((.not. leql) .or. nstep >= nsteql) Then
+          
+          Do j = 1, stats%number_of_correlations
+
+            i = stats%correlations(j)%correlation%atom
+
+            If (Allocated(observable_a)) Then 
+              Deallocate(observable_a)
+            End If
+
+            If (Allocated(observable_b)) Then 
+              Deallocate(observable_b)
+            End If
+
+            If (i > 0) Then
+                
+              Call stats%correlations(j)%correlation%A%value(config, stats, observable_a, i)
+              Call stats%correlations(j)%correlation%B%value(config, stats, observable_b, i)
+
+              Call stats%correlations(j)%correlator%update(observable_a,observable_b)
+
+            Else If (comm%idnode == root_id) Then
+
+              Call stats%correlations(j)%correlation%A%value(config, stats, observable_a)
+              Call stats%correlations(j)%correlation%B%value(config, stats, observable_b)
+
+              Call stats%correlations(j)%correlator%update(observable_a,observable_b)
+            
+            End If
+
+          End Do
+
+        End If
+
       Else ! HISTORY is replayed
         Allocate (xxt(1:config%mxatms), yyt(1:config%mxatms), zzt(1:config%mxatms), Stat=fail)
         If (fail > 0) Call error_alloc("atomic positions", "statistics_collect")
@@ -1677,7 +2177,7 @@ Contains
   Subroutine statistics_result(config, minim, lmsd, &
                                nstrun, keyshl, megcon, megpmf, &
                                nstep, time, tmst, &
-                               mxatdm, neigh_uncond_update, stats, thermo, sites, comm)
+                               mxatdm, neigh_uncond_update, stats, thermo, sites, comm, files)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1705,6 +2205,7 @@ Contains
     Type(thermostat_type),    Intent(In   ) :: thermo
     Type(site_type),          Intent(In   ) :: sites
     Type(comms_type),         Intent(InOut) :: comm
+    Type(file_type),          Intent(InOut) :: files(:)
 
     Character(Len=STR_LEN)               :: message
     Character(Len=STR_LEN), Dimension(5) :: messages
@@ -2022,6 +2523,9 @@ Contains
 
     End If
 
+    If (stats%calculate_correlations) Then
+      Call correlation_result(stats,comm,files,config,sites, nstep, time, tmst)
+    End If
     ! print final time check
 
     Call gtime(timelp)
@@ -2070,10 +2574,8 @@ Contains
 
 !! Per-particle energy * velocity
 !! Per-particle stress * velocity
-
     e_v = 0.0_wp
     S_v = 0.0_wp
-
     Do iatm = 1, config%natms
       velocity = [config%vxx(iatm), config%vyy(iatm), config%vzz(iatm)]
       !      Σ    (        P              +                                  K                           ) *     V
@@ -2217,5 +2719,662 @@ Contains
     If (ierr > 0) Call error_dealloc('dummy', 'write_per_part_contribs')
 
   End Subroutine write_per_part_contribs
+
+  Subroutine correlator_recieve(this, config, comm, buffer, recieve_atom_index, buffer_index)
+      Class(stats_type),                       Intent(InOut)  :: this
+      Type(configuration_type),                Intent(InOut)  :: config
+      Type(comms_type),                        Intent(InOut)  :: comm
+      Real(Kind=wp),           Dimension(:),   Intent(InOut)  :: buffer
+      Integer,                                 Intent(In)     :: recieve_atom_index
+      Integer,                                 Intent(InOut)  :: buffer_index
+      Type(correlator_holder), Allocatable                    :: tmp_cors(:)
+      Integer,                 Allocatable                    :: t(:)
+      Class(observable),       Allocatable                    :: A, B
+      Integer                                                 :: i, iA, iB, global_index, local_index, &
+                                                                 window, blocks, points, dim_left, dim_right, &
+                                                                 jA, jB, new_index, s
+
+      If (this%per_atom_correlations) Then
+
+        ! data packed as 
+          ! global atom index
+          ! A observable code
+          ! B observable code
+          ! flat correlator data (see correlator.F90) 
+
+        s = buffer_index
+        buffer_index = buffer_index + 1
+        global_index = buffer(buffer_index)
+
+        buffer_index = buffer_index + 1
+        iA = buffer(buffer_index)
+
+        buffer_index = buffer_index + 1
+        iB = buffer(buffer_index)
+
+        Call code_to_observable(iA,A)
+        Call code_to_observable(iB,B)
+
+        Allocate(tmp_cors(1:(Size(this%correlations)+1)))
+
+        local_index = 0
+
+        ! find the local atom index for the recieved atom
+        Do i = 1, config%natms
+          If (config%ltg(i) == global_index) Then 
+            local_index = i
+            exit
+          End If
+        End Do
+
+        If (local_index == 0) Then 
+          buffer_index = s
+          ! nothing to do
+          Return
+        End If
+
+        Do i = 1, Size(this%correlations)
+
+          tmp_cors(i) = this%correlations(i)
+
+        End Do
+
+        Call A%dimension(dim_left)
+        Call B%dimension(dim_right)
+        
+        ! obtain correlation parameters
+        Do i = 1, Size(this%unique_correlations)
+
+          Call this%unique_correlations(i)%A%id(jA)
+          Call this%unique_correlations(i)%B%id(jB)
+
+          If (iA == jA .and. iB == jB) Then
+            blocks = this%unique_correlation_params((i-1)*3+1)
+            points = this%unique_correlation_params((i-1)*3+2)
+            window = this%unique_correlation_params((i-1)*3+3)
+            exit
+          End If
+
+        End Do
+
+        ! initialise new correlator
+        new_index = Size(tmp_cors)
+        Call code_to_observable(iA,tmp_cors(new_index)%correlation%A)
+        Call code_to_observable(iB,tmp_cors(new_index)%correlation%B)
+        tmp_cors(new_index)%correlation%atom = local_index
+        tmp_cors(new_index)%correlation%atom_global = global_index
+        Call tmp_cors(new_index)%correlator%init(blocks,points,window,dim_left,dim_right)
+
+        Call move_alloc(tmp_cors,this%correlations)
+
+        ! recieve from buffer
+        Call this%correlations(new_index)%correlator%recieve_buffer(buffer,buffer_index)
+
+        buffer_index = s + this%max_buffer_per_atom
+
+        this%number_of_correlations = Size(this%correlations)
+        this%requires_reindex = .true.
+
+      End If
+
+  End Subroutine correlator_recieve
+
+  Subroutine correlator_deport(this, config, comm, buffer, atom_index, buffer_index)
+    Class(stats_type),                    Intent(InOut) :: this
+    Type(configuration_type),             Intent(InOut) :: config
+    Type(comms_type),                     Intent(InOut)  :: comm
+    Real(Kind=wp), Dimension(:),          Intent(InOut) :: buffer
+    Integer,                              Intent(In)    :: atom_index
+    Integer,                              Intent(InOut) :: buffer_index
+    Type(correlator_holder), Allocatable                :: tmp_cors(:)
+    Integer                                             :: i, A, B, j, s, deportations
+
+    If (this%per_atom_correlations) Then
+
+
+      ! data packed as 
+        ! global atom index
+        ! A observable code
+        ! B observable code
+        ! flat correlator data (see correlator.F90) 
+    
+      j = 0
+      deportations = 0
+      ! deport to buffer
+      
+      s = buffer_index
+      Do i = 1, Size(this%correlations)
+        If (this%correlations(i)%correlation%atom == atom_index) Then
+          Call this%correlations(i)%correlation%A%id(A)
+          Call this%correlations(i)%correlation%B%id(B)
+          buffer_index = buffer_index + 1
+          buffer(buffer_index) = config%ltg(atom_index)
+          buffer_index = buffer_index + 1
+          buffer(buffer_index) = A
+          buffer_index = buffer_index + 1
+          buffer(buffer_index) = B 
+          Call this%correlations(i)%correlator%deport_buffer(buffer,buffer_index,.true.)
+          deportations = deportations + 1
+        Else 
+          j = j + 1
+        End If
+      End Do
+
+      buffer_index = s + deportations*this%max_buffer_per_atom
+      ! remove old correlator
+
+      Allocate(tmp_cors(1:j))
+
+      j = 1
+      Do i = 1, Size(this%correlations)
+        If (this%correlations(i)%correlation%atom /= atom_index) Then
+          tmp_cors(j) = this%correlations(i)
+          j = j + 1
+        End If
+      End Do
+
+      Call move_alloc(tmp_cors,this%correlations)
+
+      this%number_of_correlations = Size(this%correlations)
+
+      this%requires_reindex = .true.
+
+    End If
+
+  End Subroutine correlator_deport
+
+  Subroutine reindex_correlators(this, config, comm)
+    Class(stats_type),                    Intent(InOut)     :: this
+    Type(configuration_type),             Intent(InOut)     :: config
+    Type(comms_type),                     Intent(InOut)     :: comm
+    Integer                                                 :: i, j, k, &
+                                                               cor_global, cor_local, iA, iB
+    Logical                                                 :: found
+    Logical,                 Allocatable                    :: cors(:)
+    Type(correlator_holder), Allocatable                    :: tmp_cors(:)
+
+
+
+    If (this%requires_reindex) Then
+
+      k = 0
+
+      Allocate(cors(1:this%number_of_correlations))
+
+      Do i = 1,this%number_of_correlations
+
+        cor_global = this%correlations(i)%correlation%atom_global
+        cor_local = this%correlations(i)%correlation%atom
+        
+        found = .false.
+        If (cor_local > 0) Then
+          If (cor_global /= config%ltg(cor_local)) Then
+            ! this correlation has de-synced from it's tracked atom (a constant)
+            Do j = 1, config%natms
+              If (config%ltg(j) == cor_global) Then
+                this%correlations(i)%correlation%atom = j
+                found = .true.
+                exit
+              End If
+            End Do
+          Else 
+            found = .true.
+          End If
+        Else
+          found = .true.
+        End If
+        If (found .eqv. .false.) Then
+          cors(i) = .false.
+        Else
+          k = k + 1
+          cors(i) = .true.
+        End if
+
+      End Do
+
+      ! check all correlations are correct, ignore any 
+      !  that are not tracking a local atom
+
+      Allocate(tmp_cors(1:k))
+
+      k = 1
+      Do i = 1, this%number_of_correlations
+        If (cors(i)) Then
+          tmp_cors(k) = this%correlations(i)
+          Call tmp_cors(k)%correlation%A%id(iA)
+          Call tmp_cors(k)%correlation%B%id(iB)
+          k = k + 1
+        End If
+      End Do
+
+      Call move_alloc(tmp_cors,this%correlations)
+
+      this%requires_reindex = .false.
+
+      this%number_of_correlations = Size(this%correlations)
+
+    End If
+      
+  End Subroutine reindex_correlators 
+
+  !!!!!!!! correlators revive !!!!!!!!!
+
+  Subroutine dump_correlations(this, comm, config, unit)
+    Class(stats_type),              Intent(InOut) :: this
+    Type(comms_type),               Intent(InOut) :: comm
+    Type(configuration_type),       Intent(InOut) :: config
+    Integer,                        Intent(In   ) :: unit
+
+    Real(Kind=wp),    Allocatable                 :: data_buffer(:), local_buffer(:)
+    Integer,          Allocatable                 :: local_ids(:), ids_buffer(:)
+    Type(correlator_buffer_type)                  :: packed_correlators
+    Type(indices_buffer_type)                     :: packed_ids
+    Integer                                       :: i, buffer_size, correlations, &
+                                                     buffer_index, j, packed_index, &
+                                                     atom, A, B
+    Real(Kind=wp)                                 :: write_sum
+  
+    ! determine total buffer sizes needed for root
+
+    buffer_size = 0
+    correlations = 0
+    If (this%calculate_correlations) Then
+      Do i = 1, Size(this%correlations)
+        correlations = correlations + 1
+        buffer_size = buffer_size + this%correlations(i)%correlator%buffer_size-3
+      End Do
+
+      Allocate(local_ids(1:4*correlations))
+      Allocate(local_buffer(1:buffer_size))
+
+      ! collect local buffer first
+      buffer_index = 0
+      Do i = 1, Size(this%correlations)
+        Call this%correlations(i)%correlation%A%id(A)
+        Call this%correlations(i)%correlation%B%id(B)
+        local_ids((i-1)*4+1) = A
+        local_ids((i-1)*4+2) = B
+        If (this%correlations(i)%correlation%atom > 0) Then
+          local_ids((i-1)*4+3) = config%ltg(this%correlations(i)%correlation%atom)
+        Else
+          local_ids((i-1)*4+3) = 0
+        End If
+        local_ids((i-1)*4+4) = this%correlations(i)%correlator%buffer_size-3
+        Call this%correlations(i)%correlator%deport_buffer(local_buffer,buffer_index)
+      End Do
+    End If
+
+    ! now globally sum sizes
+    Call gsum(comm,buffer_size)
+    Call gsum(comm,correlations)
+
+    Call packed_ids%initialise(comm, 4*correlations)
+    Call packed_correlators%initialise(comm, buffer_size)
+
+    If (comm%idnode == root_id) Then
+
+      Allocate(data_buffer(1:buffer_size))
+      Allocate(ids_buffer(1:4*correlations))
+
+    End If
+
+    Call gatherv_scatterv_index_arrays(comm, &
+    Size(local_ids), &
+    packed_ids%mpi%counts, &
+    packed_ids%mpi%displ & 
+    )
+
+    Call ggatherv(comm, local_ids, &
+      packed_ids%mpi%counts, &
+      packed_ids%mpi%displ, &
+      packed_ids%buffer)
+
+    Call gatherv_scatterv_index_arrays(comm, &
+      Size(local_buffer), &
+      packed_correlators%mpi%counts, &
+      packed_correlators%mpi%displ & 
+    )
+
+    Call ggatherv(comm, local_buffer, &
+      packed_correlators%mpi%counts, &
+      packed_correlators%mpi%displ, &
+      packed_correlators%buffer)
+
+    ! dump on root
+
+    If (comm%idnode == root_id) Then
+      buffer_index = 1
+      write_sum = 0.0
+      Do i = 1, correlations
+        Write (unit) packed_ids%buffer((i-1)*4+1), &
+          packed_ids%buffer((i-1)*4+2), &
+          packed_ids%buffer((i-1)*4+3), &
+          packed_ids%buffer((i-1)*4+4), &
+          packed_correlators%buffer(buffer_index:(buffer_index+packed_ids%buffer((i-1)*4+4)-1))
+
+        write_sum = write_sum + Sum(packed_correlators%buffer(buffer_index:(buffer_index+packed_ids%buffer((i-1)*4+4)-1)))
+        buffer_index = buffer_index + packed_ids%buffer((i-1)*4+4)
+
+      End Do
+
+    End If
+
+    Call packed_ids%finalise()
+    Call packed_correlators%finalise()
+
+  End Subroutine dump_correlations
+
+  Subroutine revive_correlations(this, comm, config, unit, keyio, no_advance, format)
+    Class(stats_type),              Intent(InOut) :: this
+    Type(comms_type),               Intent(InOut) :: comm
+    Type(configuration_type),       Intent(InOut) :: config
+    Integer,                        Intent(In   ) :: unit
+    Logical,                        Intent(In   ) :: no_advance
+    Character(Len=40),              Intent(In   ) :: format
+    Integer,                        Intent(InOut) :: keyio
+
+    Real(Kind=wp),    Allocatable                 :: data_buffer(:), local_buffer(:)
+    Integer,          Allocatable                 :: local_ids(:), ids_buffer(:), &
+                                                     offests_buffer(:), sizes_buffer(:)
+    Type(correlator_buffer_type)                  :: packed_correlators
+    Type(indices_buffer_type)                     :: packed_ids
+    Integer                                       :: i, buffer_size, correlations, &
+                                                     buffer_index, j, packed_index, &
+                                                     A, B, atom, offset
+  
+    If (this%calculate_correlations) Then                                                 
+      Allocate(local_ids(1:4*Size(this%correlations)))
+
+      ! determine total buffer sizes needed for root
+
+      buffer_size = 0
+      correlations = 0
+
+      ! collect local id buffers
+      Do i = 1, Size(this%correlations)
+        correlations = correlations + 1
+        buffer_size = buffer_size + this%correlations(i)%correlator%buffer_size-3
+        Call this%correlations(i)%correlation%A%id(A)
+        Call this%correlations(i)%correlation%B%id(B)
+        local_ids((i-1)*4+1) = A
+        local_ids((i-1)*4+2) = B
+        If (this%correlations(i)%correlation%atom > 0) Then
+          local_ids((i-1)*4+3) = config%ltg(this%correlations(i)%correlation%atom)
+        Else
+          local_ids((i-1)*4+3) = 0
+        End If
+        local_ids((i-1)*4+4) = this%correlations(i)%correlator%buffer_size-3
+
+      End Do
+
+      Allocate(local_buffer(1:buffer_size))
+
+    End If
+
+    Call gsum(comm,buffer_size)
+    Call gsum(comm,correlations)
+
+    Call packed_ids%initialise(comm, 4*correlations)
+    Call packed_correlators%initialise(comm, buffer_size)
+
+    If (comm%idnode == root_id) Then
+
+      Allocate(data_buffer(1:buffer_size))
+      Allocate(sizes_buffer(1:correlations))
+      Allocate(ids_buffer(1:4*correlations))
+      Allocate(offests_buffer(1:correlations))
+    
+    End If
+
+    Call gatherv_scatterv_index_arrays(comm, &
+    Size(local_ids), &
+    packed_ids%mpi%counts, &
+    packed_ids%mpi%displ & 
+    )
+
+    Call ggatherv(comm, local_ids, &
+      packed_ids%mpi%counts, &
+      packed_ids%mpi%displ, &
+      packed_ids%buffer)
+
+    If (comm%idnode == root_id) Then
+
+      ! root reads the data as is
+
+      buffer_index = 1
+
+      Do i = 1, correlations
+          offests_buffer(i) = buffer_index
+          If (no_advance) Then
+            Read (Unit=unit, IOStat=keyio, Fmt=format, Advance = 'No') &
+              ids_buffer((i-1)*4+1), ids_buffer((i-1)*4+2), ids_buffer((i-1)*4+3), &
+              ids_buffer((i-1)*4+4), &
+              data_buffer(buffer_index:(buffer_index+ids_buffer((i-1)*4+4)-1))
+          Else
+            Read (Unit=unit, IOStat=keyio) &
+              ids_buffer((i-1)*4+1), ids_buffer((i-1)*4+2), ids_buffer((i-1)*4+3), &
+              ids_buffer((i-1)*4+4), &
+              data_buffer(buffer_index:(buffer_index+ids_buffer((i-1)*4+4)-1))
+          End If
+          sizes_buffer(i) = ids_buffer((i-1)*4+4)
+          buffer_index = buffer_index + sizes_buffer(i)
+      End Do
+
+    End If
+
+    If (comm%idnode == root_id) Then
+
+      ! now setup arrays for scattering
+      packed_correlators%buffer = data_buffer
+
+      buffer_index = 1
+
+      Do i = 1, correlations
+
+        A = packed_ids%buffer((i-1)*4+1)
+        B = packed_ids%buffer((i-1)*4+2)
+        atom = packed_ids%buffer((i-1)*4+3)
+
+        packed_index = -1
+
+        ! find where this data should be placed
+        Do j = 1, correlations
+          If (ids_buffer((j-1)*4+1) == A .and. &
+              ids_buffer((j-1)*4+2) == B .and. &
+              ids_buffer((j-1)*4+3) == atom) Then
+
+            ! found
+            packed_index = j
+            exit
+
+          End If
+        End Do
+
+        If (packed_index == -1) Then
+          Call error(0, "correlator not found in revive")
+        End If
+
+        offset = offests_buffer(packed_index)
+        buffer_size = sizes_buffer(packed_index)
+
+        packed_correlators%buffer(buffer_index:(buffer_index+buffer_size-1)) = &
+          data_buffer(offset:(offset+buffer_size-1))
+
+        buffer_index = buffer_index + buffer_size
+      
+      End Do
+
+    End If
+
+    ! data packed, deport
+
+    Call gatherv_scatterv_index_arrays(comm, &
+    Size(local_buffer), &
+    packed_correlators%mpi%counts, &
+    packed_correlators%mpi%displ & 
+    )
+
+    Call gscatterv(comm, packed_correlators%buffer, &
+      packed_correlators%mpi%counts, &
+      packed_correlators%mpi%displ, &
+      local_buffer, root_id)
+
+    buffer_index = 0
+    Do i = 1, Size(this%correlations)
+      Call this%correlations(i)%correlator%recieve_buffer(local_buffer,buffer_index)
+    End Do
+
+    Call packed_ids%finalise()
+    Call packed_correlators%finalise()
+
+  End Subroutine revive_correlations
+
+  !!!!!!!! observables !!!!!!!! 
+
+  Function is_equal(left,right) result (b)
+    Class(observable), Intent(In   ) :: left
+    Class(observable), Intent(In   ) :: right
+    Logical                          :: b
+    Integer                          :: lid, rid
+
+    Call left%id(lid)
+    Call right%id(rid)
+
+    b = lid == rid      
+  End Function is_equal
+
+  Subroutine character_to_observable(c, o)
+    Character(Len=*),                Intent(In   ) :: c
+    Class(observable), Allocatable,  Intent(  Out) :: o
+    Logical                                        :: success
+
+    success = .false.
+    If (c == "v" .or. c == "velocity") Then 
+      Allocate(observable_velocity::o)
+      success = .true.
+    Else If (c == "s" .or. c == "stress") Then
+      Allocate(observable_stress::o)
+      success = .true.
+    End If
+
+    If (success .eqv. .false.) Then
+      Call error(0,"correlation observable could not be allocated from character: "//c)
+    End If
+
+  End Subroutine character_to_observable
+
+  Subroutine code_to_observable(c, o)
+    Integer,                        Intent(In   )  :: c
+    Class(observable), Allocatable, Intent(  Out)  :: o
+    Logical                                        :: success
+    
+    success = .false.
+    If (c == 0) Then 
+      Allocate(observable_velocity::o)
+      success = .true.
+    Else If (c == 1) Then
+      Allocate(observable_stress::o)
+      success = .true.
+    End If
+
+    If (success .eqv. .false.) Then
+      Call error(0,"correlation observable could not be allocated from internal code")
+    End If
+
+  End Subroutine code_to_observable
+  
+  !!!!!!!!!! observable_velocity !!!!!!!!!!
+
+  Subroutine velocity_value(t, config, stats, v, atom)
+    Class(observable_velocity),   Intent(In   ) :: t
+    Type(configuration_type),     Intent(InOut) :: config
+    Type(stats_type),             Intent(InOut) :: stats
+    Real(Kind=wp), Allocatable,   Intent(InOut) :: v(:)
+    Integer, Optional,            Intent(In   ) :: atom
+    
+    Integer                                     :: d
+
+    Call velocity_dimension(t,d)
+
+    Allocate(v(1:d))
+
+    If (Present(atom)) Then
+      v(1) = config%vxx(atom)
+      v(2) = config%vyy(atom)
+      v(3) = config%vzz(atom)
+    Else
+      Call error(0,message="no atom index specified")
+    End If
+    
+  End Subroutine velocity_value
+
+  Subroutine velocity_dimension(t, v)
+      Class(observable_velocity), Intent(In   ) :: t
+      Integer,                    Intent(  Out) :: v
+      v = 3
+  End Subroutine velocity_dimension
+
+  Subroutine velocity_name(t, v)
+      Class(observable_velocity), Intent(In   ) :: t
+      Character(Len=2),           Intent(  Out) :: v
+      v = 'v '
+  End Subroutine velocity_name
+
+  Subroutine velocity_id(t, v)
+    Class(observable_velocity),   Intent(In   ) :: t
+    Integer,                      Intent(  Out) :: v
+    v = 0
+  End Subroutine velocity_id
+
+  Subroutine velocity_per_atom(t, v)
+    Class(observable_velocity), Intent(In   ) :: t
+    Logical,                    Intent(  Out) :: v
+    v = .true.
+  End Subroutine velocity_per_atom
+
+  !!!!!!!!!! observable stress !!!!!!!!!!
+
+  Subroutine stress_value(t, config, stats, v, atom)
+    Class(observable_stress),     Intent(In   ) :: t
+    Type(configuration_type),     Intent(InOut) :: config
+    Type(stats_type),             Intent(InOut) :: stats
+    Real(Kind=wp), Allocatable,   Intent(InOut) :: v(:)
+    Integer, Optional,            Intent(In   ) :: atom
+    
+    Integer                                     :: d, i
+
+    Call stress_dimension(t,d)
+
+    Allocate(v(1:d))
+
+    Do i = 1, 9
+      v(i) = stats%strtot(i) * prsunt / stats%stpvol
+    End Do
+
+  End Subroutine stress_value
+
+  Subroutine stress_dimension(t, v)
+      Class(observable_stress), Intent(In   ) :: t
+      Integer,                  Intent(  Out) :: v
+      v = 9
+  End Subroutine stress_dimension
+
+  Subroutine stress_name(t, v)
+      Class(observable_stress), Intent(In   ) :: t
+      Character(Len=2),         Intent(  Out) :: v
+      v = 's '
+  End Subroutine stress_name
+
+  Subroutine stress_id(t, v)
+    Class(observable_stress), Intent(In   ) :: t
+    Integer,                  Intent(  Out) :: v
+    v = 1
+  End Subroutine stress_id
+
+  Subroutine stress_per_atom(t, v)
+    Class(observable_stress), Intent(In   ) :: t
+    Logical,                  Intent(  Out) :: v
+    v = .false.
+  End Subroutine stress_per_atom
 
 End Module statistics

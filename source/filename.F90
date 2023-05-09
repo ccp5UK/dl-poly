@@ -85,8 +85,10 @@ Module filename
   Integer, Parameter, Public :: FILE_CONFIG_3 = 27
   !> REVCON3 file
   Integer, Parameter, Public :: FILE_REVCON_3 = 28
+  !> COR 
+  Integer, Parameter, Public :: FILE_COR = 29
   !> Size of filename array
-  Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 28
+  Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 29
 
   Public :: default_filenames
 
@@ -140,6 +142,7 @@ Contains
     default_names(FILE_FIELD_3)  = "FIELD3"
     default_names(FILE_CONFIG_3) = "CONFIG3"
     default_names(FILE_REVCON_3) = "REVCON3"
+    default_names(FILE_COR) = "COR"
 
     ! Set default filenames
     Do file_no = 1, FILENAME_SIZE

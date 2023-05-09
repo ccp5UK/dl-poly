@@ -53,6 +53,7 @@ set(dlpoly_SRCS
   core_shell.F90
   rigid_bodies.F90
   dpd.F90
+  correlator.F90
   statistics.F90
   msd.F90
   kinetics.F90

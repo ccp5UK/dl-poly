@@ -14,7 +14,7 @@ Module trajectory
                              info
   Use filename,        Only: FILE_HISTORY,&
                              file_type
-  Use flow_control,    Only: RESTART_KEY_OLD
+  Use flow_control,    Only: RESTART_KEY_OLD,flow_type
   Use io,              Only: &
                              IO_ALLOCATION_ERROR, IO_BASE_COMM_NOT_SET, IO_HISTORD, IO_HISTORY, &
                              IO_READ_DIRECT, IO_READ_MASTER, IO_READ_MPIIO, IO_SUBSET_POSITIONS, &
@@ -149,7 +149,7 @@ Contains
   End Function trajectory_file_key
 
   Subroutine read_history(l_str, fname, megatm, levcfg, dvar, nstep, tstep, time, exout, &
-                          io, traj, sites, domain, config, files, comm)
+                          io, traj, sites, domain, config, files, comm, flow)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -180,6 +180,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(file_type),          Intent(InOut) :: files(:)
     Type(comms_type),         Intent(InOut) :: comm
+    Type(flow_type),          Intent(InOut) :: flow
 
     Character(Len=200)            :: record
     Character(Len=STR_LEN)            :: message

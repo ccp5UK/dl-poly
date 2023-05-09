@@ -1045,6 +1045,8 @@ Contains
         config%mxbfss = 2 * (6 + stats%mxstak)
       End If
 
+      domain%mxbfdp = domain%mxbfdp + stats%max_buffer_per_atom
+
       domain%mxbfdp = config%mxatdm * domain%mxbfdp
       config%mxbfss = config%mxatdm * config%mxbfss
 

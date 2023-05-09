@@ -246,6 +246,7 @@ Module comms
   End Interface gscatter_columns
 
   Interface ggatherv
+     Module Procedure ggatherv_integer
      Module Procedure ggatherv_real
      Module Procedure ggatherv_real_2d
   End Interface ggatherv
@@ -1987,7 +1988,7 @@ Contains
     Integer :: r_s
 
     r_s = Size(recvbuf, Dim=1)
-
+    
     Call MPI_SCATTER(sendbuf(:), scount, wp_mpi, &
                      recvbuf(:), r_s, wp_mpi, root, comm%comm, comm%ierr)
   End Subroutine gscatter_real_to_vector
@@ -2204,6 +2205,52 @@ Contains
                      process_id, comm%comm, comm%ierr)
 
   End Subroutine ggatherv_real
+
+  Subroutine ggatherv_integer(comm, send_buf, recv_counts, disps, recv_buf, recv_process)
+    !> @brief Gather send buffer from each task and broadcast the combined data
+    !! to single process
+    !!
+    !! dl_poly_4 Gather data of type Integer, stored in send buffers of
+    !! variable size into a receive buffer, and broadcast to specified process
+    !! If no process is specified, data is gathered on root_id
+    !!
+    !! @param[in]     comm             Object containing MPI settings and comms
+    !! @param[in]     send_buf         Local send buffer array
+    !! @param[inout]  recv_counts      Holds size of send buffer of each process
+    !! @param[inout]  disps            Holds offset of send buffer w.r.t. index in
+    !!                                 receive buffer (single, contiguous index)
+    !! @param[out]    recv_buf         Global receive buffer array
+    !! @param[in]     recv_process     Optional. Process id for received data
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - H. Devereux, 2023 (simple edit of A. Buccheri Jan 2020)
+    !
+
+    Type( comms_type ), Intent( InOut ) :: comm
+    Integer,            Intent( In    ) :: send_buf(:)
+    Integer,            Intent( In    ) :: recv_counts(:)
+    Integer,            Intent( In    ) :: disps(:)
+    Integer,            Intent( Out   ) :: recv_buf(:)
+    Integer, Optional,  Intent( In    ) :: recv_process
+
+    Integer :: process_id
+    Character( Len = 100 )              :: error_message
+
+    error_message = 'ggatherv: Sum of send_buffer sizes in receive_counts '//&
+         'does not equal total size of receive_buffer.'
+    Call assert(Sum(recv_counts) == Size(recv_buf), error_message)
+
+    If(Present(recv_process)) Then
+       process_id = recv_process
+    Else
+       process_id = root_id
+    Endif
+
+    Call MPI_GATHERV(send_buf,   Size(send_buf),     MPI_INTEGER, &
+                     recv_buf,   recv_counts, disps, MPI_INTEGER, &
+                     process_id, comm%comm, comm%ierr)
+
+  End Subroutine ggatherv_integer
 
 
   Subroutine ggatherv_real_2d(comm, send_buf, recv_counts, disps, recv_buf, recv_process)

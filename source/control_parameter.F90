@@ -409,10 +409,16 @@ Contains
       End If
     End Do
 
-    If (length == 0) Then
+    If (Present(dimension)) Then
+
+      If (length == 0) Then
         Call error(0,"Zero length input vector")
-    Else If (Present(dimension) .and. length /= dimension) Then
-      Call error(0,"input vector length not equal to request vector length")
+      End If 
+
+      If (length /= dimension) Then
+        Call error(0,"input vector length not equal to request vector length")
+      End If
+      
     End If
 
     val = param%val
@@ -433,15 +439,15 @@ Contains
   End Subroutine retrieve_vector_real
 
   Subroutine retrieve_vector_string(table, key, output, dimension, required)
-    Class(parameters_hash_table)                  :: table
-    Character(Len=*),               Intent(In   ) :: key
-    Character(Len=3), Allocatable,  Intent(  Out) :: output(:)
-    Integer, Optional,              Intent(In   ) :: dimension
-    Logical, Optional,              Intent(In   ) :: required
+    Class(parameters_hash_table)                        :: table
+    Character(Len=*),                     Intent(In   ) :: key
+    Character(Len=STR_LEN), Allocatable,  Intent(  Out) :: output(:)
+    Integer, Optional,                    Intent(In   ) :: dimension
+    Logical, Optional,                    Intent(In   ) :: required
 
-    Character(Len=STR_LEN)                        :: parse, val
-    Integer                                       :: i, length
-    Type(control_parameter)                       :: param
+    Character(Len=STR_LEN)                              :: parse, val
+    Integer                                             :: i, length
+    Type(control_parameter)                             :: param
 
     Call table%get(key, param)
     If (Present(required)) Then
@@ -462,10 +468,16 @@ Contains
       End If
     End Do
 
-    If (length == 0) Then
-      Call error(0,"Zero length input vector")
-    Else If (Present(dimension) .and. length /= dimension) Then
-      Call error(0,"input vector length not equal to request vector length")
+    If (Present(dimension)) Then
+
+      If (length == 0) Then
+        Call error(0,"Zero length input vector")
+      End If 
+
+      If (length /= dimension) Then
+        Call error(0,"input vector length not equal to request vector length")
+      End If
+      
     End If
 
     val = param%val
@@ -510,11 +522,17 @@ Contains
         length = length + 1
       End If
     End Do
+    
+    If (Present(dimension)) Then
 
-    If (length == 0) Then
+      If (length == 0) Then
         Call error(0,"Zero length input vector")
-    Else If (Present(dimension) .and. length /= dimension) Then
-      Call error(0,"input vector length not equal to request vector length")
+      End If 
+
+      If (length /= dimension) Then
+        Call error(0,"input vector length not equal to request vector length")
+      End If
+
     End If
 
     val = param%val

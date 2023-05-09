@@ -126,7 +126,7 @@ Contains
                                                 jteths, jxyz, k, kangle, katm, kbonds, kconst, &
                                                 kdihed, kdnode, keep, kinver, kk, kmove, kpmf, &
                                                 krigid, kshels, kteths, kx, ky, kz, l, latm, ll, &
-                                                matm, natm, newatm
+                                                matm, natm, newatm, cor
     Integer, Allocatable, Dimension(:)       :: i1pmf, i2pmf, ind_off, ind_on, lrgd
     Logical                                  :: check, lex, ley, lez, lsx, lsy, lsz, lwrap, safe, &
                                                 safe1, stay
@@ -375,6 +375,12 @@ Contains
           Else
             safe = .false.
           End If
+        End If
+
+        ! pack correlations arrays
+
+        If (stats%number_of_correlations > 0) Then
+          Call stats%correlator_deport(config,comm,buffer,i,imove)
         End If
 
         ! pack MSD arrays
@@ -959,7 +965,6 @@ Contains
 
     Do i = 1, jmove
       newatm = i + keep
-
       ! unpack positions
 
       config%parts(newatm)%xxx = buffer(kmove + 1)
@@ -1028,6 +1033,12 @@ Contains
 
           kmove = kmove + 3
         End Do
+      End If
+
+      ! unpack correlations arrays
+
+      If (stats%number_of_correlations > 0) Then
+        Call stats%correlator_recieve(config,comm,buffer,i,kmove)
       End If
 
       ! unpack MSD arrays
@@ -3165,6 +3176,8 @@ Contains
         End If
 
       End If
+
+      Call stats%reindex_correlators(config,comm)
 
     Else
 

@@ -39,8 +39,12 @@ Module configuration
   Use filename,        Only: FILE_CONFIG,&
                              FILE_CONFIG_2,&
                              FILE_CONFIG_3,&
+                             FILE_REVCON,&
+                             FILE_REVCON_2,&
+                             FILE_REVCON_3,&
                              file_type
   Use flow_control,    Only: RESTART_KEY_CLEAN,&
+                             RESTART_KEY_OLD,&
                              flow_type
   Use io,              Only: &
                              IO_ALLOCATION_ERROR, IO_BASE_COMM_NOT_SET, IO_READ_MASTER, &
@@ -97,7 +101,7 @@ Module configuration
     Character(Len=len_atmnam), Allocatable       :: atmnam(:)
     Integer, Allocatable          :: lsite(:), ltype(:)
     Integer, Allocatable          :: lfrzn(:), lfree(:)
-    Integer, Allocatable          :: lsi(:), lsa(:), ltg(:)
+    Integer, Allocatable          :: lsi(:), lsa(:), ltg(:) ! ltg - local to global (atom index)
     Integer, Allocatable          :: ixyz(:)
 #ifdef HALF_HALO
     Integer, Allocatable          :: ixyzM(:)
@@ -839,7 +843,8 @@ Contains
 
   End Subroutine check_config
 
-  Subroutine read_config(config, megatm, levcfg, l_ind, strict, rcut, dvar, xhi, yhi, zhi, dens0, dens, io, domain, files, comm, ff)
+  Subroutine read_config(config, megatm, levcfg, l_ind, strict, rcut, dvar, xhi,&
+    yhi, zhi, dens0, dens, io, domain, files, comm, ff)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -869,14 +874,14 @@ Contains
     Type(domains_type), Intent(In)              :: domain
     Type(file_type), Intent(InOut)              :: files(:)
     Type(comms_type), Intent(InOut)             :: comm
-    Integer, Intent(In)                :: ff
+    Integer, Intent(In)                         :: ff
 
     Real(Kind=wp)                               :: cut
 
     Character(Len=200)                          :: record
     Character(Len=40)                           :: word, fname
     Logical                                     :: eor
-    Logical                                     :: safe, l_his, l_xtr, fast
+    Logical                                     :: safe, l_his, l_xtr, fast, revive
     Integer                                     :: fail(1:4), i, idm, max_fail, min_fail, &
                                                    icell, ncells, &
                                                    indatm, nattot, totatm, &
@@ -1740,7 +1745,6 @@ Contains
                 record(j:j) = rec_buff(j, this_rec_buff)
               End Do
               Read (record, Fmt=*, iostat=ierr) bxx_read(i), byy_read(i), bzz_read(i)
-              Call error_read(ierr, 'read_config_parallel')
               If (this_rec_buff == recs_to_read) Then
                 this_rec_buff = 0
                 If (levcfg > 1) Then
@@ -2075,13 +2079,14 @@ Contains
     Integer,                  Intent(In   ) :: ff
 
     Character(Len=200)        :: record
-    Character(Len=STR_LEN)        :: message
+    Character(Len=STR_LEN)    :: message
     Character(Len=40)         :: fname, word
     Integer                   :: fh, i, ierr, io_read, recsz, totatm
     Integer(Kind=offset_kind) :: top_skip
     Integer(Kind=wi)          :: conftag
-    Logical                   :: eor, fast, l_his, l_ind, l_xtr, safe, strict
+    Logical                   :: eor, fast, l_his, l_ind, l_xtr, safe, strict, revcon
     Real(Kind=wp)             :: buffer(1:4), xxx, yyy, zzz
+    Character(Len=STR_LEN)    :: option
 
     ! Choose which CONFIG file to read
     If (ff == 1) Then

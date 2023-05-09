@@ -2415,7 +2415,8 @@ Contains
       ! Make a move - Read a frame
 
       Call read_history(flow%strict, files(FILE_HISTORY)%filename, cnfig%megatm, cnfig%levcfg, cnfig%dvar, &
-                        flow%step, thermo%tstep, flow%time, exout, io, traj, sites, domain, cnfig, files, comm)
+                        flow%step, thermo%tstep, flow%time, exout, io, traj, sites, domain, cnfig, files, &
+                        comm, flow)
 
       If (traj%restart) Then
         traj%restart = .false.
@@ -2825,7 +2826,8 @@ Contains
       ! Make a move - Read a frame
 
       Call read_history(flow%strict, files(FILE_HISTORF)%filename, cnfig%megatm, cnfig%levcfg, cnfig%dvar, &
-                        flow%step, thermo%tstep, flow%time, exout, io, traj, sites, domain, cnfig, files, comm)
+                        flow%step, thermo%tstep, flow%time, exout, io, traj, sites, domain, cnfig, files, &
+                        comm, flow)
 
       If (traj%restart) Then
         traj%restart = .false.

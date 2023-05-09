@@ -14,7 +14,7 @@ Module new_control
   Use bonds,                    Only: bonds_type
   Use bspline,                  Only: MAX_SPLINES,&
                                       MIN_SPLINES
-  Use comms,                    Only: comms_type
+  Use comms,                    Only: comms_type, root_id
   Use configuration,            Only: IMCON_NOPBC,&
                                       IMCON_SLAB,&
                                       configuration_type
@@ -55,7 +55,7 @@ Module new_control
                                       FILE_CONFIG, FILE_FIELD, FILE_HISTORF, FILE_HISTORY, &
                                       FILE_MSD, FILE_OUTPUT, FILE_RDF, FILE_REVCON, FILE_REVIVE, &
                                       FILE_REVOLD, FILE_STATS, FILE_TABANG, FILE_TABBND, &
-                                      FILE_TABDIH, FILE_TABEAM, FILE_TABINV, FILE_TABVDW, file_type
+                                      FILE_TABDIH, FILE_TABEAM, FILE_TABINV, FILE_TABVDW, FILE_COR, file_type
   Use flow_control,             Only: DFTB,&
                                       RESTART_KEY_CLEAN,&
                                       RESTART_KEY_NOSCALE,&
@@ -96,7 +96,8 @@ Module new_control
   Use pmf,                      Only: pmf_type
   Use rdfs,                     Only: rdf_type
   Use rsds,                     Only: rsd_type
-  Use statistics,               Only: stats_type
+  Use statistics,               Only: stats_type, observable, observable_velocity, observable_holder, &
+                                      character_to_observable
   Use tersoff,                  Only: tersoff_type
   Use thermostat,               Only: &
                                       CONSTRAINT_NONE, CONSTRAINT_SEMI_ORTHORHOMBIC, &
@@ -143,6 +144,8 @@ Module new_control
                                       MIX_WALDMAN_HAGLER,&
                                       vdw_type
   Use z_density,                Only: z_density_type
+  Use correlators,              Only: correlator, &
+                                      DEFAULT_BLOCKS, DEFAULT_POINTS, DEFAULT_WINDOW
 
   Implicit None
 
@@ -162,6 +165,9 @@ Module new_control
   Public :: read_forcefield
   Public :: read_devel
   Public :: read_structure_analysis
+  Public :: read_correlation_count
+  Public :: read_correlations_parameters
+  Public :: correlation_deport_size
   Public :: read_units
   Public :: read_bond_analysis
   Public :: read_run_parameters
@@ -524,6 +530,8 @@ Contains
     files(FILE_TABVDW)%filename = curr_option
     Call params%retrieve('io_file_tabeam', curr_option)
     files(FILE_TABEAM)%filename = curr_option
+    Call params%retrieve('io_file_cor', curr_option)
+    files(FILE_COR)%filename = curr_option
 
   End Subroutine read_io
 
@@ -1684,6 +1692,287 @@ Contains
 
   End Subroutine read_forcefield
 
+  Subroutine correlation_deport_size(params, stats)
+    Type(parameters_hash_table),          Intent(InOut) :: params
+    Type(stats_type),                     Intent(InOut) :: stats
+    Character(Len=STR_LEN), Allocatable                 :: option(:)
+    Integer,                Allocatable                 :: window(:), blocks(:), points(:)
+    Class(observable),      Allocatable                 :: A, B
+    Integer                                             :: dim_left, dim_right, &
+                                                           buffer_size, i, &
+                                                           this_window, this_blocks, this_points
+    Character(Len=STR_LEN)                              :: a_name, b_name
+
+    Call params%retrieve('correlation_observable',option, required=.false.)
+    Call params%retrieve("correlation_blocks",blocks,required=.false.)
+    Call params%retrieve("correlation_block_points",points,required=.false.)
+    Call params%retrieve("correlation_window",window,required=.false.)
+
+    buffer_size = 0
+
+    Do i = 1,Size(option)
+
+      If (i <= Size(blocks)) Then
+        this_blocks = blocks(i)
+      Else
+        this_blocks = DEFAULT_BLOCKS
+      End If
+
+      If (i <= Size(points)) Then
+        this_points = points(i)
+      Else
+        this_points = DEFAULT_POINTS
+      End If
+
+      If (i <= Size(window)) Then
+        this_window = window(i)
+      Else
+        this_window = DEFAULT_window
+      End If
+
+      If (this_points < this_window) Then
+        Call error(0, "points per block less than window size")
+      End If
+
+      Call parse_correlation_observable(option(i), a_name, b_name)
+
+      Call character_to_observable(a_name,A)
+      Call character_to_observable(b_name,B)
+
+      Call A%dimension(dim_left)
+      Call B%dimension(dim_right)
+
+      buffer_size = Max(buffer_size, this_blocks*dim_left               &
+                          + this_blocks*dim_right                       &
+                          + this_blocks                                 &
+                          + this_blocks*this_points*dim_left            &
+                          + this_blocks*this_points*2                   &
+                          + this_blocks*this_points*dim_right           &
+                          + this_blocks                                 &
+                          + this_blocks*this_points*dim_left*dim_right  &
+                          + this_blocks*this_points+3                   &
+      )
+
+    End Do
+    
+    stats%max_buffer_per_atom = buffer_size
+
+  End Subroutine correlation_deport_size
+
+  Subroutine parse_correlation_observable(option, a, b)
+    Character(Len=STR_LEN), Intent(In   ) :: option
+    Character(Len=STR_LEN), Intent(InOut) :: a, b
+    Integer                               :: i
+
+    i = Scan(option,'-')
+
+    If (i == 0) Then 
+      Call error(0, "invalid correlation observable in control, missing delimiter -, read: "//option)
+    End If
+
+    a = Trim(option(1:i-1))
+    b = Trim(option(i+1:Len(option)))
+
+    If (Len(a) == 0 .or. Len(b) == 0) Then
+      Call error(0, "invalid correlation observable in control, missing names, read: "//option)
+    End If
+
+    ! a, and b are names of >0 length
+    !  whether a and b are valid names is handled elsewhere
+    
+  End Subroutine parse_correlation_observable
+
+  Subroutine read_correlation_count(params, stats, comm, atoms)
+    Type(parameters_hash_table),          Intent(InOut) :: params
+    Type(stats_type),                     Intent(InOut) :: stats
+    Type(comms_type),                     Intent(InOut) :: comm
+    Integer,                              Intent(In   ) :: atoms
+    Character(Len=STR_LEN),   Allocatable               :: option(:)
+    Character(Len=STR_LEN)                              :: a_name, b_name
+    Integer                                             :: this_window, this_blocks, this_points
+    Integer, Allocatable                                :: window(:), blocks(:), points(:)
+    Integer, Dimension(1:3)                             :: ivec_tmp
+    Integer                                             :: count, i
+    Class(observable_holder), Allocatable               :: A, B
+    Logical                                             :: per_atom, is_per_atom
+
+    stats%calculate_correlations = .false.
+    stats%per_atom_correlations = .false.
+    stats%number_of_correlations = 0
+
+    Call params%retrieve('correlation_observable',option, required=.false.)
+    Call params%retrieve("correlation_blocks",blocks,required=.false.)
+    Call params%retrieve("correlation_block_points",points,required=.false.)
+    Call params%retrieve("correlation_window",window,required=.false.)
+
+    Call params%retrieve('correlation_observable',option, required=.false.)
+
+    If (Allocated(stats%unique_correlations) .eqv. .false.) Allocate(stats%unique_correlations(1:Size(option)))
+    If (Allocated(stats%unique_correlation_params) .eqv. .false.) Allocate(stats%unique_correlation_params(1:3*Size(option)))
+
+    Do i = 1,Size(option)
+
+      If (i <= Size(blocks)) Then
+        this_blocks = blocks(i)
+      Else
+        this_blocks = DEFAULT_BLOCKS
+      End If
+
+      If (i <= Size(points)) Then
+        this_points = points(i)
+      Else
+        this_points = DEFAULT_POINTS
+      End If
+
+      If (i <= Size(window)) Then
+        this_window = window(i)
+      Else
+        this_window = DEFAULT_window
+      End If
+
+      If (this_points < this_window) Then
+        Call error(0, "points per block less than window size")
+      End If
+
+      is_per_atom = .false.
+
+      Call parse_correlation_observable(option(i), a_name, b_name)
+
+      Call character_to_observable(a_name,stats%unique_correlations(i)%A)
+      Call character_to_observable(b_name,stats%unique_correlations(i)%B)
+
+      Call stats%unique_correlations(i)%A%per_atom(per_atom)
+      If (per_atom) Then 
+       is_per_atom = .true.
+      Else 
+       Call stats%unique_correlations(i)%B%per_atom(per_atom)
+       If (per_atom) Then
+         is_per_atom = .true.
+       End If
+      End If
+
+      If (is_per_atom) Then 
+        stats%unique_correlations(i)%atom = 1
+        stats%number_of_correlations = stats%number_of_correlations + atoms
+        stats%per_atom_correlations = .true.
+      Else
+        stats%unique_correlations(i)%atom = 0
+        If (comm%idnode == root_id) Then
+          stats%number_of_correlations = stats%number_of_correlations + 1
+        End If
+      End If
+
+      stats%unique_correlation_params((i-1)*3+1) = this_blocks
+      stats%unique_correlation_params((i-1)*3+2) = this_points
+      stats%unique_correlation_params((i-1)*3+3) = this_window
+
+    End Do
+
+    If (stats%number_of_correlations > 0) Then
+      stats%calculate_correlations = .true.
+    End If
+  End Subroutine read_correlation_count
+
+  Subroutine retrieve_correlator_params(params, stats, config, comm, key, count, blocks, points, window)
+    Type(parameters_hash_table), Intent(InOut) :: params
+    Type(stats_type),            Intent(InOut) :: stats
+    Type(configuration_type),    Intent(InOut) :: config
+    Type(comms_type),            Intent(InOut) :: comm
+    Character(Len=STR_LEN),      Intent(In   ) :: key
+    Integer,                     Intent(In   ) :: blocks, points, window
+    Integer,                     Intent(InOut) :: count
+    Integer                                    :: index, i, & 
+                                                  buffer_size_per_atom, &
+                                                  dim_left, dim_right
+    Character(Len=STR_LEN)                     :: a_name, b_name    
+   Class(observable), Allocatable              :: A, B
+   Logical                                     :: per_atom, is_per_atom
+
+   is_per_atom = .false.
+   buffer_size_per_atom = 0
+
+   Call parse_correlation_observable(key, a_name, b_name)
+
+   Call character_to_observable(a_name,A)
+   Call A%dimension(dim_left)
+   Call character_to_observable(b_name,B)
+   Call B%dimension(dim_right)
+
+   Call A%per_atom(per_atom)
+
+   If (per_atom) Then 
+    is_per_atom = .true.
+   Else 
+    Call B%per_atom(per_atom)
+    If (per_atom) Then
+      is_per_atom = per_atom
+    End If
+   End If
+
+   If (is_per_atom) Then
+      Do i = 1,config%natms
+        Call stats%init_correlator(i, config%ltg(i), blocks, points, window, &
+        A, B, count)
+        count = count + 1
+      End Do
+   Else If (comm%idnode == root_id) Then
+      Call stats%init_correlator(0, 0, blocks, points, window, &
+      A, B, count)
+      count = count + 1
+   End If
+
+  End Subroutine retrieve_correlator_params
+
+  Subroutine read_correlations_parameters(params,stats,comm,config)
+    Type(parameters_hash_table), Intent(InOut) :: params
+    Type(stats_type),            Intent(InOut) :: stats
+    Type(comms_type),            Intent(InOut) :: comm
+    Type(configuration_type),    Intent(InOut) :: config
+    Integer                                    :: this_window, this_blocks, this_points,&
+                                                  count, i
+    Integer, Allocatable                       :: window(:), blocks(:), points(:)
+    Character(Len=STR_LEN), Allocatable        :: option(:)
+
+    count = 1
+
+    Call params%retrieve("correlation_blocks",blocks,required=.false.)
+    Call params%retrieve("correlation_block_points",points,required=.false.)
+    Call params%retrieve("correlation_window",window,required=.false.)
+
+    Call params%retrieve('correlation_observable',option, required=.false.)
+
+    Do i = 1,Size(option)
+
+      If (i <= Size(blocks)) Then
+        this_blocks = blocks(i)
+      Else
+        this_blocks = DEFAULT_BLOCKS
+      End If
+
+      If (i <= Size(points)) Then
+        this_points = points(i)
+      Else
+        this_points = DEFAULT_POINTS
+      End If
+
+      If (i <= Size(window)) Then
+        this_window = window(i)
+      Else
+        this_window = DEFAULT_window
+      End If
+
+      If (this_points < this_window) Then
+        Call error(0, "points per block less than window size")
+      End If
+
+      Call retrieve_correlator_params(params, stats, config, comm, option(i), count, &
+        this_blocks, this_points, this_window)
+
+    End Do
+
+  End Subroutine read_correlations_parameters
+
+
   Subroutine read_run_parameters(params, flow, thermo, stats, read_config_indices)
     Type(parameters_hash_table), Intent(In   ) :: params
     Type(flow_type),             Intent(InOut) :: flow
@@ -2304,6 +2593,46 @@ Contains
                          data_type=DATA_FLOAT))
         End block msd
 
+        correlation:block
+
+          Call table%set("correlation_observable", control_parameter( &
+                         key="correlation_observable", &
+                         name="correlations to calculate", &
+                         val="", &
+                         units="", &
+                         internal_units="", &
+                         description="Enable calculation of correlations", &
+                         data_type=STRING_VECTOR))
+
+          Call table%set("correlation_blocks", control_parameter( &
+                         key="correlation_blocks", &
+                         name="correlation blocks", &
+                         val="", &
+                         units="", &
+                         internal_units="", &
+                         description="Correlation blocks", &
+                         data_type=DATA_VECTOR))
+
+          Call table%set("correlation_block_points", control_parameter( &
+                         key="correlation_block_points", &
+                         name="correlation points per block", &
+                         val="", &
+                         units="", &
+                         internal_units="", &
+                         description="Correlation blocks", &
+                         data_type=DATA_VECTOR))
+
+          Call table%set("correlation_window", control_parameter( &
+                         key="correlation_window", &
+                         name="correlation window", &
+                         val="", &
+                         units="", &
+                         internal_units="", &
+                         description="correlation window averaging", &
+                         data_type=DATA_VECTOR))
+
+        End block correlation
+
         traj:block
           Call table%set("traj_calculate", control_parameter( &
                          key="traj_calculate", &
@@ -2624,6 +2953,7 @@ Contains
                      val="off", &
                      description="Enable dumping of per-particle information", &
                      data_type=DATA_BOOL))
+                     
       per_particle:block
 
       End block per_particle
@@ -2950,6 +3280,13 @@ Contains
                        name='tabeam filepath', &
                        val='TABEAM', &
                        description='Set input TABEAM filepath', &
+                       data_type=DATA_STRING))
+
+        Call table%set('io_file_cor', control_parameter( &
+                       key='io_file_cor', &
+                       name='cor filepath', &
+                       val='COR', &
+                       description='Set output COR filepath, special options: NONE', &
                        data_type=DATA_STRING))
 
         Call table%set('io_statis_yaml', control_parameter( &

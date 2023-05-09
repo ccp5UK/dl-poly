@@ -109,7 +109,10 @@ Module meta
                                                     read_structure_analysis,&
                                                     read_system_parameters,&
                                                     read_ttm,&
-                                                    read_units
+                                                    read_units, &
+                                                    read_correlation_count, &
+                                                    read_correlations_parameters, &
+                                                    correlation_deport_size
   Use numerics,                               Only: seed_type
   Use plumed,                                 Only: plumed_finalize,&
                                                     plumed_init,&
@@ -640,7 +643,7 @@ Contains
        cons(1)%megcon, pmfs(1)%megpmf, &
        flow%step, flow%time, flow%start_time, &
        config(1)%mxatdm, neigh(1)%unconditional_update, &
-       stats(1), thermo(1), sites(1), comm)
+       stats(1), thermo(1), sites(1), comm, files)
 
     ! Final anlysis
     Call analysis_result(neigh(1)%cutoff, thermo(1), &
@@ -727,7 +730,7 @@ Contains
     Type(coord_type),            Intent(InOut) :: crd(:)
     Type(adf_type),              Intent(InOut) :: adf(:)
 
-    Character(Len=STR_LEN)    :: message
+    Character(Len=STR_LEN)    :: message, option
     Integer               :: ff, i, ierr, ifile, megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, &
       mtrgd, mtshl, mtteth
     Integer, Dimension(3) :: link_cell
@@ -791,8 +794,8 @@ Contains
 
       ! scan CONFIG file data
 
-      Call scan_config(config(ff), megatm, config(ff)%dvar, config(ff)%levcfg, xhi, yhi, zhi, ios, domain(ff), files, comm, ff)
-
+      Call scan_config(config(ff), megatm, config(ff)%dvar, config(ff)%levcfg, xhi,&
+       yhi, zhi, ios, domain(ff), files, comm, ff)
       ! read CONTROL data
 
       Call read_bond_analysis(params, flow, bond(ff), angle(ff), dihedral(ff), inversion(ff), config(ff)%mxgana)
@@ -807,6 +810,8 @@ Contains
       Call read_system_parameters(params, flow, config(ff), thermo(ff), impa, minim(ff), &
                                   plume(ff), cons(ff), pmfs(ff), ttms(ff)%l_ttm)
       stats%require_pp = flow%heat_flux .or. flow%write_per_particle
+
+      Call correlation_deport_size(params, stats(ff))
 
       ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
       ! (setup and domains)
@@ -832,6 +837,12 @@ Contains
       If (stats(ff)%cur%on) Then
         Call config(ff)%k%init(files(FILE_KPOINTS)%filename, comm)
         Call stats(ff)%cur%init(config(ff)%k%n, 200, files(FILE_CURRENT), comm)
+      End If
+
+      Call read_correlation_count(params,stats(ff), comm, config(ff)%natms)
+      If (stats(ff)%calculate_correlations) Then
+        Call stats(ff)%init_correlations()
+        Call read_correlations_parameters(params,stats(ff),comm,config(ff))
       End If
 
     End Do
