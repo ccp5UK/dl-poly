@@ -126,7 +126,7 @@ Contains
                                                 jteths, jxyz, k, kangle, katm, kbonds, kconst, &
                                                 kdihed, kdnode, keep, kinver, kk, kmove, kpmf, &
                                                 krigid, kshels, kteths, kx, ky, kz, l, latm, ll, &
-                                                matm, natm, newatm, cor
+                                                matm, natm, newatm
     Integer, Allocatable, Dimension(:)       :: i1pmf, i2pmf, ind_off, ind_on, lrgd
     Logical                                  :: check, lex, ley, lez, lsx, lsy, lsz, lwrap, safe, &
                                                 safe1, stay
@@ -380,7 +380,7 @@ Contains
         ! pack correlations arrays
 
         If (stats%number_of_correlations > 0) Then
-          Call stats%correlator_deport(config,comm,buffer,i,imove)
+          Call stats%correlator_deport(config,buffer,i,imove)
         End If
 
         ! pack MSD arrays
@@ -1038,7 +1038,7 @@ Contains
       ! unpack correlations arrays
 
       If (stats%number_of_correlations > 0) Then
-        Call stats%correlator_recieve(config,comm,buffer,i,kmove)
+        Call stats%correlator_recieve(config,buffer,kmove)
       End If
 
       ! unpack MSD arrays
@@ -3177,7 +3177,7 @@ Contains
 
       End If
 
-      Call stats%reindex_correlators(config,comm)
+      Call stats%reindex_correlators(config)
 
     Else
 

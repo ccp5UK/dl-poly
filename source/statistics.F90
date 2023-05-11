@@ -553,7 +553,7 @@ Contains
   
   End Subroutine allocate_correlator
 
-  Subroutine correlation_result(stats, comm, files, config, sites, nstep, time, tmst)
+  Subroutine correlation_result(stats, comm, files, config, sites, nstep, time)
     
     Class(stats_type),        Intent(InOut) :: stats
     Type(comms_type),         Intent(InOut) :: comm
@@ -561,7 +561,7 @@ Contains
     Type(configuration_type), Intent(In   ) :: config
     Type(site_type),          Intent(In   ) :: sites
     Integer,                  Intent(In   ) :: nstep
-    Real(Kind=wp),            Intent(In   ) :: time,tmst
+    Real(Kind=wp),            Intent(In   ) :: time
     Integer                                 :: i, tau, j, k, flat_dim, l, r, &
                                                file_unit, atom
     Real(Kind=wp), Allocatable              :: cor_accumulator(:,:,:,:), correlation(:,:,:)
@@ -576,7 +576,6 @@ Contains
     Real(Kind=wp)                           :: t, dt
     Integer                                 :: points, window, blocks,&
                                                dim_left, dim_right
-    Type(observable_holder)                 :: A, B
 
     components_vector = (/ 'x', 'y', 'z' /)
     components_matrix = (/'xx', 'xy', 'xz', 'yx', 'yy', 'yz', 'zx', 'zy', 'zz'/)
@@ -2524,7 +2523,7 @@ Contains
     End If
 
     If (stats%calculate_correlations) Then
-      Call correlation_result(stats,comm,files,config,sites, nstep, time, tmst)
+      Call correlation_result(stats,comm,files,config,sites, nstep, time)
     End If
     ! print final time check
 
@@ -2720,15 +2719,12 @@ Contains
 
   End Subroutine write_per_part_contribs
 
-  Subroutine correlator_recieve(this, config, comm, buffer, recieve_atom_index, buffer_index)
+  Subroutine correlator_recieve(this, config, buffer, buffer_index)
       Class(stats_type),                       Intent(InOut)  :: this
       Type(configuration_type),                Intent(InOut)  :: config
-      Type(comms_type),                        Intent(InOut)  :: comm
       Real(Kind=wp),           Dimension(:),   Intent(InOut)  :: buffer
-      Integer,                                 Intent(In)     :: recieve_atom_index
       Integer,                                 Intent(InOut)  :: buffer_index
       Type(correlator_holder), Allocatable                    :: tmp_cors(:)
-      Integer,                 Allocatable                    :: t(:)
       Class(observable),       Allocatable                    :: A, B
       Integer                                                 :: i, iA, iB, global_index, local_index, &
                                                                  window, blocks, points, dim_left, dim_right, &
@@ -2744,13 +2740,13 @@ Contains
 
         s = buffer_index
         buffer_index = buffer_index + 1
-        global_index = buffer(buffer_index)
+        global_index = INT(buffer(buffer_index))
 
         buffer_index = buffer_index + 1
-        iA = buffer(buffer_index)
+        iA = INT(buffer(buffer_index))
 
         buffer_index = buffer_index + 1
-        iB = buffer(buffer_index)
+        iB = INT(buffer(buffer_index))
 
         Call code_to_observable(iA,A)
         Call code_to_observable(iB,B)
@@ -2819,10 +2815,9 @@ Contains
 
   End Subroutine correlator_recieve
 
-  Subroutine correlator_deport(this, config, comm, buffer, atom_index, buffer_index)
+  Subroutine correlator_deport(this, config, buffer, atom_index, buffer_index)
     Class(stats_type),                    Intent(InOut) :: this
     Type(configuration_type),             Intent(InOut) :: config
-    Type(comms_type),                     Intent(InOut)  :: comm
     Real(Kind=wp), Dimension(:),          Intent(InOut) :: buffer
     Integer,                              Intent(In)    :: atom_index
     Integer,                              Intent(InOut) :: buffer_index
@@ -2883,10 +2878,9 @@ Contains
 
   End Subroutine correlator_deport
 
-  Subroutine reindex_correlators(this, config, comm)
+  Subroutine reindex_correlators(this, config)
     Class(stats_type),                    Intent(InOut)     :: this
     Type(configuration_type),             Intent(InOut)     :: config
-    Type(comms_type),                     Intent(InOut)     :: comm
     Integer                                                 :: i, j, k, &
                                                                cor_global, cor_local, iA, iB
     Logical                                                 :: found
@@ -2970,8 +2964,7 @@ Contains
     Type(correlator_buffer_type)                  :: packed_correlators
     Type(indices_buffer_type)                     :: packed_ids
     Integer                                       :: i, buffer_size, correlations, &
-                                                     buffer_index, j, packed_index, &
-                                                     atom, A, B
+                                                     buffer_index, A, B
     Real(Kind=wp)                                 :: write_sum
   
     ! determine total buffer sizes needed for root

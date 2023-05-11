@@ -149,7 +149,7 @@ Contains
   End Function trajectory_file_key
 
   Subroutine read_history(l_str, fname, megatm, levcfg, dvar, nstep, tstep, time, exout, &
-                          io, traj, sites, domain, config, files, comm, flow)
+                          io, traj, sites, domain, config, files, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -180,7 +180,6 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(file_type),          Intent(InOut) :: files(:)
     Type(comms_type),         Intent(InOut) :: comm
-    Type(flow_type),          Intent(InOut) :: flow
 
     Character(Len=200)            :: record
     Character(Len=STR_LEN)            :: message

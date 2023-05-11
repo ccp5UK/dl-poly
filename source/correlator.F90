@@ -299,7 +299,7 @@ Module correlators
     Class(correlator),             Intent(InOut) :: this
     Real(Kind=wp), Dimension(:),   Intent(InOut) :: buffer
     Integer,                       Intent(InOut) :: buffer_index
-    Integer                                      :: from_index, to_index, elements, i
+    Integer                                      :: from_index, to_index, elements
     Logical, Optional,             Intent(In   ) :: free  
 
     
@@ -382,7 +382,7 @@ Module correlators
     Class(correlator),             Intent(InOut)  :: this
     Real(Kind=wp), Dimension(:),   Intent(InOut)  :: buffer
     Integer,                       Intent(InOut)  :: buffer_index
-    Integer                                       :: from_index, to_index, s
+    Integer                                       :: from_index, to_index
 
     ! left accumulator
     from_index = buffer_index + 1
@@ -430,7 +430,7 @@ Module correlators
     ! shift index
     from_index = buffer_index + 1
     to_index = from_index+this%number_of_blocks - 1
-    this%shift_index(:) = buffer(from_index:to_index)
+    this%shift_index(:) = INT(buffer(from_index:to_index))
     buffer_index = to_index
 
     ! correlation
@@ -443,8 +443,8 @@ Module correlators
     ! count correlated
     from_index = buffer_index + 1
     to_index = from_index+this%number_of_blocks*this%points_per_block - 1
-    this%count_correlated(:,:) = Reshape(buffer(from_index:to_index), &
-      (/this%number_of_blocks,this%points_per_block/))
+    this%count_correlated(:,:) = INT(Reshape(buffer(from_index:to_index), &
+      (/this%number_of_blocks,this%points_per_block/)))
     buffer_index = to_index
 
     this%count_updated = 1

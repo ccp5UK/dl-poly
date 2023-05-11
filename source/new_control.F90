@@ -1791,9 +1791,7 @@ Contains
     Character(Len=STR_LEN)                              :: a_name, b_name
     Integer                                             :: this_window, this_blocks, this_points
     Integer, Allocatable                                :: window(:), blocks(:), points(:)
-    Integer, Dimension(1:3)                             :: ivec_tmp
-    Integer                                             :: count, i
-    Class(observable_holder), Allocatable               :: A, B
+    Integer                                             :: i
     Logical                                             :: per_atom, is_per_atom
 
     stats%calculate_correlations = .false.
@@ -1873,16 +1871,14 @@ Contains
     End If
   End Subroutine read_correlation_count
 
-  Subroutine retrieve_correlator_params(params, stats, config, comm, key, count, blocks, points, window)
-    Type(parameters_hash_table), Intent(InOut) :: params
+  Subroutine retrieve_correlator_params(stats, config, comm, key, count, blocks, points, window)
     Type(stats_type),            Intent(InOut) :: stats
     Type(configuration_type),    Intent(InOut) :: config
     Type(comms_type),            Intent(InOut) :: comm
     Character(Len=STR_LEN),      Intent(In   ) :: key
     Integer,                     Intent(In   ) :: blocks, points, window
     Integer,                     Intent(InOut) :: count
-    Integer                                    :: index, i, & 
-                                                  buffer_size_per_atom, &
+    Integer                                    :: i, buffer_size_per_atom, &
                                                   dim_left, dim_right
     Character(Len=STR_LEN)                     :: a_name, b_name    
    Class(observable), Allocatable              :: A, B
@@ -1965,7 +1961,7 @@ Contains
         Call error(0, "points per block less than window size")
       End If
 
-      Call retrieve_correlator_params(params, stats, config, comm, option(i), count, &
+      Call retrieve_correlator_params(stats, config, comm, option(i), count, &
         this_blocks, this_points, this_window)
 
     End Do

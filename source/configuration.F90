@@ -881,7 +881,7 @@ Contains
     Character(Len=200)                          :: record
     Character(Len=40)                           :: word, fname
     Logical                                     :: eor
-    Logical                                     :: safe, l_his, l_xtr, fast, revive
+    Logical                                     :: safe, l_his, l_xtr, fast
     Integer                                     :: fail(1:4), i, idm, max_fail, min_fail, &
                                                    icell, ncells, &
                                                    indatm, nattot, totatm, &
@@ -2084,9 +2084,8 @@ Contains
     Integer                   :: fh, i, ierr, io_read, recsz, totatm
     Integer(Kind=offset_kind) :: top_skip
     Integer(Kind=wi)          :: conftag
-    Logical                   :: eor, fast, l_his, l_ind, l_xtr, safe, strict, revcon
+    Logical                   :: eor, fast, l_his, l_ind, l_xtr, safe, strict
     Real(Kind=wp)             :: buffer(1:4), xxx, yyy, zzz
-    Character(Len=STR_LEN)    :: option
 
     ! Choose which CONFIG file to read
     If (ff == 1) Then
