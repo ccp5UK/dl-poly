@@ -1798,12 +1798,11 @@ Contains
     stats%per_atom_correlations = .false.
     stats%number_of_correlations = 0
 
+
     Call params%retrieve('correlation_observable',option, required=.false.)
     Call params%retrieve("correlation_blocks",blocks,required=.false.)
     Call params%retrieve("correlation_block_points",points,required=.false.)
     Call params%retrieve("correlation_window",window,required=.false.)
-
-    Call params%retrieve('correlation_observable',option, required=.false.)
 
     If (Allocated(stats%unique_correlations) .eqv. .false.) Allocate(stats%unique_correlations(1:Size(option)))
     If (Allocated(stats%unique_correlation_params) .eqv. .false.) Allocate(stats%unique_correlation_params(1:3*Size(option)))
@@ -1869,6 +1868,7 @@ Contains
     If (stats%number_of_correlations > 0) Then
       stats%calculate_correlations = .true.
     End If
+
   End Subroutine read_correlation_count
 
   Subroutine retrieve_correlator_params(stats, config, comm, key, count, blocks, points, window)
@@ -1930,12 +1930,11 @@ Contains
     Character(Len=STR_LEN), Allocatable        :: option(:)
 
     count = 1
-
+ 
+    Call params%retrieve('correlation_observable',option, required=.false.)
     Call params%retrieve("correlation_blocks",blocks,required=.false.)
     Call params%retrieve("correlation_block_points",points,required=.false.)
     Call params%retrieve("correlation_window",window,required=.false.)
-
-    Call params%retrieve('correlation_observable',option, required=.false.)
 
     Do i = 1,Size(option)
 

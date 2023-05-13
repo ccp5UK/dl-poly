@@ -401,13 +401,17 @@ Contains
     End If
 
     ! get length
+    Call get_word(val, parse)
     length = 0
-    Do While (parse /= "")
-      Call get_word(val, parse)
-      If (parse /= "") Then 
-        length = length + 1
-      End If
-    End Do
+    If (parse /= "") Then
+      length = 1
+      Do While (parse /= "")
+        Call get_word(val, parse)
+        If (parse /= "") Then 
+          length = length + 1
+        End If
+      End Do
+    End If
 
     If (Present(dimension)) Then
 
@@ -460,13 +464,17 @@ Contains
     End If
 
     ! get length
+    Call get_word(val, parse)
     length = 0
-    Do While (parse /= "")
-      Call get_word(val, parse)
-      If (parse /= "") Then 
-        length = length + 1
-      End If
-    End Do
+    If (parse /= "") Then
+      length = 1
+      Do While (parse /= "")
+        Call get_word(val, parse)
+        If (parse /= "") Then 
+          length = length + 1
+        End If
+      End Do
+    End If
 
     If (Present(dimension)) Then
 
@@ -515,13 +523,17 @@ Contains
     End If
 
     ! get length
+    Call get_word(val, parse)
     length = 0
-    Do While (parse /= "")
-      Call get_word(val, parse)
-      If (parse /= "") Then 
-        length = length + 1
-      End If
-    End Do
+    If (parse /= "") Then
+      length = 1
+      Do While (parse /= "")
+        Call get_word(val, parse)
+        If (parse /= "") Then 
+          length = length + 1
+        End If
+      End Do
+    End If
     
     If (Present(dimension)) Then
 
