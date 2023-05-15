@@ -614,9 +614,7 @@ Contains
 
       End If
 
-      If (stats%calculate_correlations) Then 
-        Call stats%revive_correlations(comm, config, files(FILE_REVOLD)%unit_no, keyio, devel%l_rin, forma)
-      End If
+      Call stats%revive_correlations(comm, config, files(FILE_REVOLD)%unit_no, keyio, devel%l_rin, forma)
 
       Call gsync(comm)
 
@@ -2245,12 +2243,7 @@ Contains
 
     End If
 
-    ! dump correlators
-    If (stats%calculate_correlations) Then 
-      
-      Call stats%dump_correlations(comm, config, files(FILE_REVIVE)%unit_no)
-
-    End IF
+    Call stats%dump_correlations(comm, config, files(FILE_REVIVE)%unit_no)
 
     Call gsync(comm)
     

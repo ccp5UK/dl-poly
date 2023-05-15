@@ -1702,6 +1702,7 @@ Contains
                                                            buffer_size, i, &
                                                            this_window, this_blocks, this_points
     Character(Len=STR_LEN)                              :: a_name, b_name
+    Logical                                             :: a_per_atom, b_per_atom
 
     Call params%retrieve('correlation_observable',option, required=.false.)
     Call params%retrieve("correlation_blocks",blocks,required=.false.)
@@ -1742,16 +1743,26 @@ Contains
       Call A%dimension(dim_left)
       Call B%dimension(dim_right)
 
-      buffer_size = Max(buffer_size, this_blocks*dim_left               &
-                          + this_blocks*dim_right                       &
-                          + this_blocks                                 &
-                          + this_blocks*this_points*dim_left            &
-                          + this_blocks*this_points*2                   &
-                          + this_blocks*this_points*dim_right           &
-                          + this_blocks                                 &
-                          + this_blocks*this_points*dim_left*dim_right  &
-                          + this_blocks*this_points+3                   &
-      )
+      a_per_atom = .false.
+      b_per_atom = .false.
+
+      Call A%per_atom(a_per_atom)
+      Call B%per_atom(b_per_atom)
+
+      if (a_per_atom .or. b_per_atom) Then
+
+        buffer_size = Max(buffer_size, this_blocks*dim_left               &
+                            + this_blocks*dim_right                       &
+                            + this_blocks                                 &
+                            + this_blocks*this_points*dim_left            &
+                            + this_blocks*this_points*2                   &
+                            + this_blocks*this_points*dim_right           &
+                            + this_blocks                                 &
+                            + this_blocks*this_points*dim_left*dim_right  &
+                            + this_blocks*this_points+3                   &
+        )
+
+      End If
 
     End Do
     

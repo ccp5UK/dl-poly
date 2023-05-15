@@ -2964,14 +2964,18 @@ Contains
     Type(correlator_buffer_type)                  :: packed_correlators
     Type(indices_buffer_type)                     :: packed_ids
     Integer                                       :: i, buffer_size, correlations, &
-                                                     buffer_index, A, B
+                                                     buffer_index, A, B, &
+                                                     local_correlations, local_buffer_size
     Real(Kind=wp)                                 :: write_sum
   
     ! determine total buffer sizes needed for root
 
     buffer_size = 0
     correlations = 0
+    local_correlations = 0
+    local_buffer_size = 0
     If (this%calculate_correlations) Then
+
       Do i = 1, Size(this%correlations)
         correlations = correlations + 1
         buffer_size = buffer_size + this%correlations(i)%correlator%buffer_size-3
@@ -2995,6 +2999,17 @@ Contains
         local_ids((i-1)*4+4) = this%correlations(i)%correlator%buffer_size-3
         Call this%correlations(i)%correlator%deport_buffer(local_buffer,buffer_index)
       End Do
+
+      local_correlations = correlations
+      local_buffer_size = buffer_size
+
+    End If
+
+    If (local_correlations == 0) Then
+      ! ggatherv will call Size, so must at least
+      !   have a dummy allocation
+      Allocate(local_ids(0))
+      Allocate(local_buffer(0))
     End If
 
     ! now globally sum sizes
@@ -3012,7 +3027,7 @@ Contains
     End If
 
     Call gatherv_scatterv_index_arrays(comm, &
-    Size(local_ids), &
+    4*local_correlations, &
     packed_ids%mpi%counts, &
     packed_ids%mpi%displ & 
     )
@@ -3023,7 +3038,7 @@ Contains
       packed_ids%buffer)
 
     Call gatherv_scatterv_index_arrays(comm, &
-      Size(local_buffer), &
+      local_buffer_size, &
       packed_correlators%mpi%counts, &
       packed_correlators%mpi%displ & 
     )
@@ -3073,15 +3088,19 @@ Contains
     Type(indices_buffer_type)                     :: packed_ids
     Integer                                       :: i, buffer_size, correlations, &
                                                      buffer_index, j, packed_index, &
-                                                     A, B, atom, offset
-  
+                                                     A, B, atom, offset, local_correlations, &
+                                                     local_buffer_size
+
+    local_correlations = 0
+    local_buffer_size = 0
+    buffer_size = 0
+    correlations = 0
     If (this%calculate_correlations) Then                                                 
       Allocate(local_ids(1:4*Size(this%correlations)))
 
-      ! determine total buffer sizes needed for root
+      local_correlations = Size(this%correlations)
 
-      buffer_size = 0
-      correlations = 0
+      ! determine total buffer sizes needed for root
 
       ! collect local id buffers
       Do i = 1, Size(this%correlations)
@@ -3101,7 +3120,15 @@ Contains
       End Do
 
       Allocate(local_buffer(1:buffer_size))
+      local_buffer_size = buffer_size
 
+    End If
+
+    If (local_correlations == 0) Then
+      ! ggatherv will call Size, so must at least
+      !   have a dummy allocation
+      Allocate(local_ids(0))
+      Allocate(local_buffer(0))
     End If
 
     Call gsum(comm,buffer_size)
@@ -3120,7 +3147,7 @@ Contains
     End If
 
     Call gatherv_scatterv_index_arrays(comm, &
-    Size(local_ids), &
+    4*local_correlations, &
     packed_ids%mpi%counts, &
     packed_ids%mpi%displ & 
     )
@@ -3202,7 +3229,7 @@ Contains
     ! data packed, deport
 
     Call gatherv_scatterv_index_arrays(comm, &
-    Size(local_buffer), &
+    local_buffer_size, &
     packed_correlators%mpi%counts, &
     packed_correlators%mpi%displ & 
     )
@@ -3213,9 +3240,11 @@ Contains
       local_buffer, root_id)
 
     buffer_index = 0
-    Do i = 1, Size(this%correlations)
-      Call this%correlations(i)%correlator%recieve_buffer(local_buffer,buffer_index)
-    End Do
+    If (this%calculate_correlations) Then  
+      Do i = 1, Size(this%correlations)
+        Call this%correlations(i)%correlator%recieve_buffer(local_buffer,buffer_index)
+      End Do
+    End If
 
     Call packed_ids%finalise()
     Call packed_correlators%finalise()
