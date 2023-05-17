@@ -1740,14 +1740,14 @@ Contains
       Call character_to_observable(a_name,A)
       Call character_to_observable(b_name,B)
 
-      Call A%dimension(dim_left)
-      Call B%dimension(dim_right)
+      dim_left = A%dimension()
+      dim_right = B%dimension()
 
       a_per_atom = .false.
       b_per_atom = .false.
 
-      Call A%per_atom(a_per_atom)
-      Call B%per_atom(b_per_atom)
+      a_per_atom = A%per_atom()
+      b_per_atom = B%per_atom()
 
       if (a_per_atom .or. b_per_atom) Then
 
@@ -1849,11 +1849,11 @@ Contains
       Call character_to_observable(a_name,stats%unique_correlations(i)%A)
       Call character_to_observable(b_name,stats%unique_correlations(i)%B)
 
-      Call stats%unique_correlations(i)%A%per_atom(per_atom)
+      per_atom = stats%unique_correlations(i)%A%per_atom()
       If (per_atom) Then 
        is_per_atom = .true.
       Else 
-       Call stats%unique_correlations(i)%B%per_atom(per_atom)
+       per_atom = stats%unique_correlations(i)%B%per_atom()
        If (per_atom) Then
          is_per_atom = .true.
        End If
@@ -1901,16 +1901,16 @@ Contains
    Call parse_correlation_observable(key, a_name, b_name)
 
    Call character_to_observable(a_name,A)
-   Call A%dimension(dim_left)
+   dim_left = A%dimension()
    Call character_to_observable(b_name,B)
-   Call B%dimension(dim_right)
+   dim_right = B%dimension()
 
-   Call A%per_atom(per_atom)
+   per_atom = A%per_atom()
 
    If (per_atom) Then 
     is_per_atom = .true.
    Else 
-    Call B%per_atom(per_atom)
+    per_atom = B%per_atom()
     If (per_atom) Then
       is_per_atom = per_atom
     End If

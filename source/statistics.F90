@@ -68,6 +68,8 @@ Module statistics
 
   Private
 
+  Integer, Parameter :: MAX_CORRELATION_NAME_LENGTH = 16
+
   ! correlation observables, and interface
   Type, Abstract, Public :: observable
     Contains
@@ -237,31 +239,31 @@ Module statistics
     End Subroutine get_value
 
     ! utility to get size of observable
-    Subroutine get_dimension(t, v)
+    Function get_dimension(t) Result(v)
         Import observable
         Class(observable), Intent(In   ) :: t
-        Integer,           Intent(  Out) :: v
-    End Subroutine get_dimension
+        Integer                          :: v
+    End Function get_dimension
 
     ! utility to get name of observable (i.e. for i/o)
-    Subroutine get_name(t, v)
-        Import observable
+    Function get_name(t) Result(v)
+        Import observable, MAX_CORRELATION_NAME_LENGTH
         Class(observable), Intent(In   ) :: t
-        Character(Len=2),  Intent(  Out) :: v
-    End Subroutine get_name
+        Character(Len=MAX_CORRELATION_NAME_LENGTH)                 :: v
+    End Function get_name
 
     ! utility to get numerical id of observable (i.e. for revive)
-    Subroutine get_id(t, v)
+    Function get_id(t) Result(v)
       Import observable
       Class(observable), Intent(In   ) :: t
-      Integer,           Intent(  Out) :: v
-    End Subroutine get_id
+      Integer                          :: v
+    End Function get_id
 
-    Subroutine is_per_atom(t,v)
+    Function is_per_atom(t) Result(v)
       Import observable
       Class(observable), Intent(In   ) :: t
-      Logical,           Intent(  Out) :: v
-    End Subroutine is_per_atom
+      Logical                          :: v
+    End Function is_per_atom
   End Interface
 
   Interface operator (==)
@@ -545,8 +547,8 @@ Contains
     stats%correlations(correlator_index)%correlation%atom_global = global
 
 
-    Call stats%correlations(correlator_index)%correlation%A%dimension(dim_left)
-    Call stats%correlations(correlator_index)%correlation%B%dimension(dim_right)
+    dim_left = stats%correlations(correlator_index)%correlation%A%dimension()
+    dim_right = stats%correlations(correlator_index)%correlation%B%dimension()
 
     Call stats%correlations(correlator_index)%correlator%init(blocks, points, window, dim_left, dim_right)
   
@@ -554,27 +556,27 @@ Contains
 
   Subroutine correlation_result(stats, comm, files, config, sites, nstep, time)
     
-    Class(stats_type),        Intent(InOut) :: stats
-    Type(comms_type),         Intent(InOut) :: comm
-    Type(file_type),          Intent(InOut) :: files(:)
-    Type(configuration_type), Intent(In   ) :: config
-    Type(site_type),          Intent(In   ) :: sites
-    Integer,                  Intent(In   ) :: nstep
-    Real(Kind=wp),            Intent(In   ) :: time
-    Integer                                 :: i, tau, j, k, flat_dim, l, r, &
-                                               file_unit, atom
-    Real(Kind=wp), Allocatable              :: cor_accumulator(:,:,:,:), correlation(:,:,:)
-    Real(Kind=wp), Allocatable              :: flat_correlation(:)
-    Real(Kind=wp), Allocatable              :: timesteps(:)    
-    Integer,       Allocatable              :: type_counts(:)
-    Character(Len=2)                        :: correlation_name
-    Character(Len=2)                        :: char_left, char_right, &
-                                               component_left, component_right
-    Character(Len=2), Dimension(1:3)        :: components_vector
-    Character(Len=2), Dimension(1:9)        :: components_matrix
-    Real(Kind=wp)                           :: t, dt
-    Integer                                 :: points, window, blocks,&
-                                               dim_left, dim_right
+    Class(stats_type),        Intent(InOut)       :: stats
+    Type(comms_type),         Intent(InOut)       :: comm
+    Type(file_type),          Intent(InOut)       :: files(:)
+    Type(configuration_type), Intent(In   )       :: config
+    Type(site_type),          Intent(In   )       :: sites
+    Integer,                  Intent(In   )       :: nstep
+    Real(Kind=wp),            Intent(In   )       :: time
+    Integer                                       :: i, tau, j, k, flat_dim, l, r, &
+                                                     file_unit, atom
+    Real(Kind=wp), Allocatable                    :: cor_accumulator(:,:,:,:), correlation(:,:,:)
+    Real(Kind=wp), Allocatable                    :: flat_correlation(:)
+    Real(Kind=wp), Allocatable                    :: timesteps(:)    
+    Integer,       Allocatable                    :: type_counts(:)
+    Character(Len=MAX_CORRELATION_NAME_LENGTH*2+1)  :: correlation_name
+    Character(Len=MAX_CORRELATION_NAME_LENGTH)    :: char_left, char_right, &
+                                                     component_left, component_right
+    Character(Len=2), Dimension(1:3)              :: components_vector
+    Character(Len=2), Dimension(1:9)              :: components_matrix
+    Real(Kind=wp)                                 :: t, dt
+    Integer                                       :: points, window, blocks,&
+                                                     dim_left, dim_right
 
     components_vector = (/ 'x', 'y', 'z' /)
     components_matrix = (/'xx', 'xy', 'xz', 'yx', 'yy', 'yz', 'zx', 'zy', 'zz'/)
@@ -610,9 +612,9 @@ Contains
         Deallocate(type_counts)
       End If
 
-      Call stats%unique_correlations(i)%A%name(char_left)
-      Call stats%unique_correlations(i)%B%name(char_right)
-      correlation_name = Trim(char_left)//Trim(char_right)
+      char_left = stats%unique_correlations(i)%A%name()
+      char_right = stats%unique_correlations(i)%B%name()
+      correlation_name = Trim(char_left)//'-'//Trim(char_right)
 
       If (stats%unique_correlations(i)%atom > 0) Then
 
@@ -2749,14 +2751,14 @@ Contains
 
         End Do
 
-        Call A%dimension(dim_left)
-        Call B%dimension(dim_right)
+        dim_left = A%dimension()
+        dim_right = B%dimension()
         
         ! obtain correlation parameters
         Do i = 1, Size(this%unique_correlations)
 
-          Call this%unique_correlations(i)%A%id(jA)
-          Call this%unique_correlations(i)%B%id(jB)
+          jA = this%unique_correlations(i)%A%id()
+          jB = this%unique_correlations(i)%B%id()
 
           If (iA == jA .and. iB == jB) Then
             blocks = this%unique_correlation_params((i-1)*3+1)
@@ -2816,8 +2818,8 @@ Contains
 
       Do i = 1, Size(this%correlations)
         If (this%correlations(i)%correlation%atom_global == config%ltg(atom_index)) Then
-          Call this%correlations(i)%correlation%A%id(A)
-          Call this%correlations(i)%correlation%B%id(B)
+          A = this%correlations(i)%correlation%A%id()
+          B = this%correlations(i)%correlation%B%id()
           buffer_index = buffer_index + 1
           buffer(buffer_index) = config%ltg(atom_index)
           buffer_index = buffer_index + 1
@@ -2904,8 +2906,8 @@ Contains
     Do i = 1, this%number_of_correlations
       If (cors(i)) Then
         tmp_cors(k) = this%correlations(i)
-        Call tmp_cors(k)%correlation%A%id(iA)
-        Call tmp_cors(k)%correlation%B%id(iB)
+        iA = tmp_cors(k)%correlation%A%id()
+        iB = tmp_cors(k)%correlation%B%id()
         k = k + 1
       End If
     End Do
@@ -2953,8 +2955,8 @@ Contains
       ! collect local buffer first
       buffer_index = 0
       Do i = 1, Size(this%correlations)
-        Call this%correlations(i)%correlation%A%id(A)
-        Call this%correlations(i)%correlation%B%id(B)
+        A = this%correlations(i)%correlation%A%id()
+        B = this%correlations(i)%correlation%B%id()
         local_ids((i-1)*4+1) = A
         local_ids((i-1)*4+2) = B
         If (this%correlations(i)%correlation%atom > 0) Then
@@ -3072,8 +3074,8 @@ Contains
       Do i = 1, Size(this%correlations)
         correlations = correlations + 1
         buffer_size = buffer_size + this%correlations(i)%correlator%buffer_size-3
-        Call this%correlations(i)%correlation%A%id(A)
-        Call this%correlations(i)%correlation%B%id(B)
+        A = this%correlations(i)%correlation%A%id()
+        B = this%correlations(i)%correlation%B%id()
         local_ids((i-1)*4+1) = A
         local_ids((i-1)*4+2) = B
         If (this%correlations(i)%correlation%atom > 0) Then
@@ -3226,8 +3228,8 @@ Contains
     Logical                          :: b
     Integer                          :: lid, rid
 
-    Call left%id(lid)
-    Call right%id(rid)
+    lid = left%id()
+    rid = right%id()
 
     b = lid == rid      
   End Function is_equal
@@ -3238,10 +3240,10 @@ Contains
     Logical                                        :: success
 
     success = .false.
-    If (c == "v" .or. c == "velocity") Then 
+    If (c == velocity_name(observable_velocity()) .or. c == "v") Then 
       Allocate(observable_velocity::o)
       success = .true.
-    Else If (c == "s" .or. c == "stress") Then
+    Else If (c == stress_name(observable_stress()) .or. c == "s") Then
       Allocate(observable_stress::o)
       success = .true.
     End If
@@ -3259,10 +3261,10 @@ Contains
     Character(Len=100)                             :: msg
     
     success = .false.
-    If (c == 0) Then 
+    If (c == velocity_id(observable_velocity())) Then 
       Allocate(observable_velocity::o)
       success = .true.
-    Else If (c == 1) Then
+    Else If (c == stress_id(observable_stress())) Then
       Allocate(observable_stress::o)
       success = .true.
     End If
@@ -3285,7 +3287,7 @@ Contains
     
     Integer                                     :: d
 
-    Call velocity_dimension(t,d)
+    d = velocity_dimension(t)
 
     Allocate(v(1:d))
 
@@ -3299,29 +3301,29 @@ Contains
     
   End Subroutine velocity_value
 
-  Subroutine velocity_dimension(t, v)
+  Function velocity_dimension(t) Result(v)
       Class(observable_velocity), Intent(In   ) :: t
-      Integer,                    Intent(  Out) :: v
+      Integer                                   :: v
       v = 3
-  End Subroutine velocity_dimension
+  End Function velocity_dimension
 
-  Subroutine velocity_name(t, v)
-      Class(observable_velocity), Intent(In   ) :: t
-      Character(Len=2),           Intent(  Out) :: v
-      v = 'v '
-  End Subroutine velocity_name
+  Function velocity_name(t) Result(v)
+      Class(observable_velocity), Intent(In   )   :: t
+      Character(Len=MAX_CORRELATION_NAME_LENGTH)  :: v
+      v = 'velocity'
+  End Function velocity_name
 
-  Subroutine velocity_id(t, v)
+  Function velocity_id(t) Result(v)
     Class(observable_velocity),   Intent(In   ) :: t
-    Integer,                      Intent(  Out) :: v
+    Integer                                     :: v
     v = 0
-  End Subroutine velocity_id
+  End Function velocity_id
 
-  Subroutine velocity_per_atom(t, v)
+  Function velocity_per_atom(t) Result(v)
     Class(observable_velocity), Intent(In   ) :: t
-    Logical,                    Intent(  Out) :: v
+    Logical                                   :: v
     v = .true.
-  End Subroutine velocity_per_atom
+  End Function velocity_per_atom
 
   !!!!!!!!!! observable stress !!!!!!!!!!
 
@@ -3334,7 +3336,7 @@ Contains
     
     Integer                                     :: d, i
 
-    Call stress_dimension(t,d)
+    d = stress_dimension(t)
 
     Allocate(v(1:d))
 
@@ -3344,28 +3346,28 @@ Contains
 
   End Subroutine stress_value
 
-  Subroutine stress_dimension(t, v)
+  Function stress_dimension(t) Result(v)
       Class(observable_stress), Intent(In   ) :: t
-      Integer,                  Intent(  Out) :: v
+      Integer                                 :: v
       v = 9
-  End Subroutine stress_dimension
+  End Function stress_dimension
 
-  Subroutine stress_name(t, v)
-      Class(observable_stress), Intent(In   ) :: t
-      Character(Len=2),         Intent(  Out) :: v
-      v = 's '
-  End Subroutine stress_name
+  Function stress_name(t) Result(v)
+      Class(observable_stress), Intent(In   )     :: t
+      Character(Len=MAX_CORRELATION_NAME_LENGTH)  :: v
+      v = 'stress'
+  End Function stress_name
 
-  Subroutine stress_id(t, v)
+  Function stress_id(t) Result(v)
     Class(observable_stress), Intent(In   ) :: t
-    Integer,                  Intent(  Out) :: v
+    Integer                                 :: v
     v = 1
-  End Subroutine stress_id
+  End Function stress_id
 
-  Subroutine stress_per_atom(t, v)
+  Function stress_per_atom(t) Result(v)
     Class(observable_stress), Intent(In   ) :: t
-    Logical,                  Intent(  Out) :: v
+    Logical                                 :: v
     v = .false.
-  End Subroutine stress_per_atom
+  End Function stress_per_atom
 
 End Module statistics
