@@ -2103,10 +2103,11 @@ Contains
         Enddo
 
       End If ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
-
+  
       Do ff = 1, flow%NUM_FF
-        ! If system is to write per-particle data AND write step AND not equilibration
-        If (stat(ff)%require_pp .and. Mod(flow%step, stat(ff)%intsta) == 0 .and. flow%step >= flow%equil_steps) Then
+        ! If system is correlating heatflux or, to write per-particle data AND write step AND not equilibration
+        If (stat(ff)%correlating_heat_flux .or. &
+          (stat(ff)%require_pp .and. Mod(flow%step, stat(ff)%intsta) == 0 .and. flow%step >= flow%equil_steps)) Then
 #ifndef HALF_HALO
           Call stat(ff)%allocate_per_particle_arrays(cnfig(ff)%natms)
 #else /* HALF_HALO */
@@ -2136,12 +2137,12 @@ Contains
       ! If system has written per-particle data
       Do ff = 1, flow%NUM_FF
         If (stat(ff)%collect_pp) Then
-          heat_flux = calculate_heat_flux(stat(ff), cnfig(ff), comm)
+          stat(ff)%heat_flux = calculate_heat_flux(stat(ff), cnfig(ff), comm)
 
           If (flow%heat_flux .and. comm%idnode == 0) Then
             If (ff == 1) Then
               Open (Newunit=heat_flux_unit, File='HEATFLUX', Position='append')
-              Write (heat_flux_unit, '(I8.1, 1X, 5(G19.12, 1X))') flow%step, stat(ff)%stptmp, cnfig(ff)%volm, heat_flux
+              Write (heat_flux_unit, '(I8.1, 1X, 5(G19.12, 1X))') flow%step, stat(ff)%stptmp, cnfig(ff)%volm, stat(ff)%heat_flux
               Close (heat_flux_unit)
             End If
           End If

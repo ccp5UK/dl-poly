@@ -97,7 +97,7 @@ Module new_control
   Use rdfs,                     Only: rdf_type
   Use rsds,                     Only: rsd_type
   Use statistics,               Only: stats_type, observable, observable_velocity, observable_holder, &
-                                      character_to_observable
+                                      character_to_observable, observable_heat_flux
   Use tersoff,                  Only: tersoff_type
   Use thermostat,               Only: &
                                       CONSTRAINT_NONE, CONSTRAINT_SEMI_ORTHORHOMBIC, &
@@ -1803,6 +1803,7 @@ Contains
     Integer                                             :: this_window, this_blocks, this_points
     Integer, Allocatable                                :: window(:), blocks(:), points(:)
     Integer                                             :: i
+    Type(observable_heat_flux)                          :: h
     Logical                                             :: per_atom, is_per_atom
 
     stats%calculate_correlations = .false.
@@ -1848,6 +1849,14 @@ Contains
 
       Call character_to_observable(a_name,stats%unique_correlations(i)%A)
       Call character_to_observable(b_name,stats%unique_correlations(i)%B)
+
+      If (stats%unique_correlations(i)%A%id() == h%id() .or. &
+          stats%unique_correlations(i)%B%id() == h%id()) Then
+          
+       stats%require_pp = .true.
+       stats%correlating_heat_flux = .true.
+
+      End If
 
       per_atom = stats%unique_correlations(i)%A%per_atom()
       If (per_atom) Then 

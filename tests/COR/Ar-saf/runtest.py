@@ -14,7 +14,7 @@ def actual(**kwargs):
 
     dl.load_correlations()
 
-    ss = np.array(dl.correlations.components[0]['s_xy-s_xy'])+np.array(dl.correlations.components[0]['s_yz-s_yz'])+np.array(dl.correlations.components[0]['s_zx-s_zx'])
+    ss = np.array(dl.correlations.components[0]['stress_xy-stress_xy'])+np.array(dl.correlations.components[0]['stress_yz-stress_yz'])+np.array(dl.correlations.components[0]['stress_zx-stress_zx'])
 
     ss = np.array(ss)/ss[0]
 
@@ -24,6 +24,6 @@ def expected(**kwargs):
     
     cor = dlpoly.correlations.Correlations(source=kwargs["workdir"]+"Ar.cor")
 
-    ss = np.array(cor.components[0]['s_xy-s_xy'])+np.array(cor.components[0]['s_yz-s_yz'])+np.array(cor.components[0]['s_zx-s_zx'])
+    ss = np.array(cor.components[0]['stress_xy-stress_xy'])+np.array(cor.components[0]['stress_yz-stress_yz'])+np.array(cor.components[0]['stress_zx-stress_zx'])
 
     return np.array(ss)/ss[0]

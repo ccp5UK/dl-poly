@@ -14,16 +14,18 @@ def actual(**kwargs):
 
     dl.load_correlations()
 
-    vv = np.array(dl.correlations.components[0]['v_x-v_x'])+np.array(dl.correlations.components[0]['v_y-v_y'])+np.array(dl.correlations.components[0]['v_z-v_z'])
-    vv = np.array(vv)/vv[0]
-
-    return vv
+    for d in dl.correlations.derived:
+        if 'viscosity' in d.keys():
+            return d['viscosity']['value']
+    
+    return np.nan
 
 def expected(**kwargs):
     
     cor = dlpoly.correlations.Correlations(source=kwargs["workdir"]+"Ar.cor")
 
-    vv = np.array(cor.components[0]['v_x-v_x'])+np.array(cor.components[0]['v_y-v_y'])+np.array(cor.components[0]['v_z-v_z'])
-    vv = np.array(vv)/vv[0]
-
-    return vv
+    for d in cor.derived:
+        if 'viscosity' in d.keys():
+            return d['viscosity']['value']
+    
+    return np.nan

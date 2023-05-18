@@ -62,7 +62,8 @@ Module statistics
                              thermostat_type
   Use z_density,       Only: z_density_collect,&
                              z_density_type
-  Use correlators,      Only: correlator, correlator_buffer_type, indices_buffer_type
+  Use correlators,     Only: correlator, correlator_buffer_type, indices_buffer_type
+  Use units,           Only: to_out_units 
 
   Implicit None
 
@@ -196,6 +197,9 @@ Module statistics
     Real(Kind=wp), Allocatable         :: stpval0(:), stpvl00(:), sumval0(:), ssqval0(:)
     Real(Kind=wp), Allocatable         :: zumval0(:), ravval0(:), stkval0(:, :)
 
+    !> store spot heat flux
+    Real(Kind=wp)                      :: heat_flux(1:3) = [0.0_wp, 0.0_wp, 0.0_wp]
+
     !> Store for per-particle energy data
     Real(Kind=wp), Allocatable         :: pp_energy(:)
 
@@ -207,6 +211,9 @@ Module statistics
 
     !> Whether this step is a step to collect per-particle data
     Logical :: collect_pp = .false.
+
+    !> Whether heat_flux is correlated
+    Logical :: correlating_heat_flux = .false.
 
   Contains
     Private
@@ -287,9 +294,19 @@ Module statistics
       Procedure :: id        => stress_id
       Procedure :: per_atom  => stress_per_atom
   End Type
+  Type, Extends(observable), Public :: observable_heat_flux
+  Contains
+      Procedure :: value     => heat_flux_value
+      Procedure :: dimension => heat_flux_dimension
+      Procedure :: name      => heat_flux_name
+      Procedure :: id        => heat_flux_id
+      Procedure :: per_atom  => heat_flux_per_atom
+  End Type
   
   Public :: calculate_stress
+  Public :: calculate_viscosity
   Public :: calculate_heat_flux
+  Public :: calculate_thermal_conductivity
   Public :: statistics_collect
   Public :: statistics_connect_frames
   Public :: statistics_connect_set
@@ -574,9 +591,12 @@ Contains
                                                      component_left, component_right
     Character(Len=2), Dimension(1:3)              :: components_vector
     Character(Len=2), Dimension(1:9)              :: components_matrix
-    Real(Kind=wp)                                 :: t, dt
+    Real(Kind=wp)                                 :: t, dt, visc, therm_cond, conv
     Integer                                       :: points, window, blocks,&
                                                      dim_left, dim_right
+    Character(Len=STR_LEN)                        :: units
+                                              
+                        
 
     components_vector = (/ 'x', 'y', 'z' /)
     components_matrix = (/'xx', 'xy', 'xz', 'yx', 'yy', 'yz', 'zx', 'zy', 'zz'/)
@@ -819,7 +839,34 @@ Contains
             timesteps(tau) = t
             t = t + dt
           End Do  
-          
+
+          If (char_left == stress_name(observable_stress()) .and. &
+              char_right == stress_name(observable_stress())) Then
+
+            visc = calculate_viscosity(stats, correlation, dt)
+
+            Write (file_unit, '(a)') "      derived:"
+            Write (file_unit, '(a)') "            viscosity:"
+            Write (file_unit, '(a,g16.8)') "                  value: ", visc
+            Write (file_unit, '(a)') "                  units: Katm ps "
+
+            correlation = correlation * prsunt * prsunt
+
+          Else If(char_left == heat_flux_name(observable_heat_flux()) .and. &
+                  char_right == heat_flux_name(observable_heat_flux())) Then
+
+            therm_cond = calculate_thermal_conductivity(stats, correlation, dt, units)
+
+            Write (file_unit, '(a)') "      derived:"
+            Write (file_unit, '(a)') "            thermal-conductivity:"
+            Write (file_unit, '(a,g16.8)') "                  value: ", therm_cond
+            Write (file_unit, '(a,a)') "                  units: ", units
+            
+            Call to_out_units(1.0_wp, "internal_e", conv)
+
+            correlation = correlation / conv
+
+          End If
           
           Write(file_unit, '(a,*(g16.8,","))',advance="no") "      lags: [", timesteps(1:Size(timesteps)-1)
           
@@ -2578,6 +2625,49 @@ Contains
 
   End Function calculate_heat_flux
 
+  Function calculate_viscosity(stats, correlation, dt) Result(visc)
+    Type(stats_type), Intent(In   ) :: stats
+    Real(Kind=wp),    Intent(In   ) :: correlation(:,:,:)
+    Real(Kind=wp),    Intent(In   ) :: dt
+    Real(Kind=wp)                   :: visc
+
+    ! combine xy, yz, zx
+
+    visc = ( Sum(correlation(:,2,2)) + Sum(correlation(:,6,6)) + Sum(correlation(:,7,7)) ) / 3.0_wp
+
+    ! in internal pressure-time units
+
+    visc = ( stats%stpvol / (boltz*stats%stptmp) ) * visc * dt
+    
+    ! now in Katm - internal time 
+
+    visc = visc * prsunt 
+
+  End Function calculate_viscosity
+
+  Function calculate_thermal_conductivity(stats, correlation, dt, units) Result(therm_cond)
+    Type(stats_type),       Intent(In   ) :: stats
+    Real(Kind=wp),          Intent(In   ) :: correlation(:,:,:)
+    Real(Kind=wp),          Intent(In   ) :: dt
+    Character(Len=STR_LEN), Intent(  Out) :: units
+    Real(Kind=wp)                         :: therm_cond, conv
+                                        
+
+    ! z component 
+
+    therm_cond = Sum(correlation(:,3,3)) * dt
+
+    ! careful, DL_POLY already divides by volume in calculate_heat_flux
+
+    Call to_out_units(1.0_wp, "internal_e", conv, units)
+
+    therm_cond = stats%stpvol / (stats%stptmp * stats%stptmp * (boltz/engunit)) * therm_cond
+
+    units = Trim(units)//" / (ps Ang K)"
+    
+  End Function calculate_thermal_conductivity
+
+
   Subroutine write_per_part_contribs(config, comm, energies, stresses, nstep) !, forces
     !!----------------------------------------------------------------------!
     !!
@@ -3246,6 +3336,9 @@ Contains
     Else If (c == stress_name(observable_stress()) .or. c == "s") Then
       Allocate(observable_stress::o)
       success = .true.
+    Else If (c == heat_flux_name(observable_heat_flux()) .or. c == "hf") Then
+      Allocate(observable_heat_flux::o)
+      success = .true.
     End If
 
     If (success .eqv. .false.) Then
@@ -3266,6 +3359,9 @@ Contains
       success = .true.
     Else If (c == stress_id(observable_stress())) Then
       Allocate(observable_stress::o)
+      success = .true.
+    Else If (c == heat_flux_id(observable_heat_flux())) Then
+      Allocate(observable_heat_flux::o)
       success = .true.
     End If
 
@@ -3341,7 +3437,7 @@ Contains
     Allocate(v(1:d))
 
     Do i = 1, 9
-      v(i) = stats%strtot(i) * prsunt / stats%stpvol
+      v(i) = stats%strtot(i) / stats%stpvol
     End Do
 
   End Subroutine stress_value
@@ -3369,5 +3465,48 @@ Contains
     Logical                                 :: v
     v = .false.
   End Function stress_per_atom
+
+    !!!!!!!!!! observable heat_flux !!!!!!!!!!
+
+  Subroutine heat_flux_value(t, config, stats, v, atom)
+    Class(observable_heat_flux),     Intent(In   ) :: t
+    Type(configuration_type),        Intent(InOut) :: config
+    Type(stats_type),                Intent(InOut) :: stats
+    Real(Kind=wp), Allocatable,      Intent(InOut) :: v(:)
+    Integer, Optional,               Intent(In   ) :: atom
+    
+    Integer                                        :: d, i
+
+    d = heat_flux_dimension(t)
+
+    Allocate(v(1:d))
+
+    v = stats%heat_flux
+
+  End Subroutine heat_flux_value
+
+  Function heat_flux_dimension(t) Result(v)
+      Class(observable_heat_flux),   Intent(In   ) :: t
+      Integer                                      :: v
+      v = 3
+  End Function heat_flux_dimension
+
+  Function heat_flux_name(t) Result(v)
+      Class(observable_heat_flux), Intent(In   )     :: t
+      Character(Len=MAX_CORRELATION_NAME_LENGTH)     :: v
+      v = 'heat_flux'
+  End Function heat_flux_name
+
+  Function heat_flux_id(t) Result(v)
+    Class(observable_heat_flux), Intent(In   ) :: t
+    Integer                                    :: v
+    v = 2
+  End Function heat_flux_id
+
+  Function heat_flux_per_atom(t) Result(v)
+    Class(observable_heat_flux), Intent(In   ) :: t
+    Logical                                    :: v
+    v = .false.
+  End Function heat_flux_per_atom
 
 End Module statistics

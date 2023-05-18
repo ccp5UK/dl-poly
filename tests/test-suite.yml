@@ -9,10 +9,22 @@ tests:
   - name: "COR"
     title: "DL_POLY On-the-fly correlations"
     testcases:
-      - name: "Arss"
+      - name: "Ar-saf"
         title: "Argon stress auto-correlation"
         type: "regression"
-      - name: "Arvv"
+      - name: "Ar-vaf"
         title: "Argon velocity auto-correlation"
         type: "regression"
         tolerance: 0.0001
+      - name: "Ar-hfaf"
+        title: "Argon heatflux auto-correlation"
+        type: "regression"
+        tolerance: 0.0001
+      - name: "Ar-viscosity"
+        title: "viscosity measurement"
+        type: "regression"
+        tolerance: 0.001
+      - name: "Ar-thermal-conductivity"
+        title: "thermal-conductivity measurement"
+        type: "regression"
+        tolerance: 0.001
