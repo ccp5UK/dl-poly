@@ -1,0 +1,11 @@
+Argon                                                                           
+UNITS kJ
+MOLECULES 1
+Argon Atoms
+NUMMOLS 100
+ATOMS   1
+Ar         39.948000    0.000000 
+FINISH
+VDW     1
+Ar      Ar      lj   0.9661      3.405
+CLOSE

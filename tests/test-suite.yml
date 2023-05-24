@@ -1,0 +1,17 @@
+# %YAML 1.2
+
+defaults:
+  fail_allow: no
+  timeout: 300
+  tolerance: 0.0000001
+
+tests:
+  - name: "COR"
+    title: "DL_POLY On-the-fly correlations"
+    testcases:
+      - name: "Arss"
+        title: "Argon stress auto-correlation"
+        type: "regression"
+      - name: "Arvv"
+        title: "Argon velocity auto-correlation"
+        type: "regression"
