@@ -176,12 +176,12 @@ Module statistics
                                          999999999.0_wp, & ! minimum cycles : ~Huge(1)
                                          0.0_wp] ! maximum cycles
     Type(current_type)                 :: cur
-    Logical                            :: calculate_correlations
-    Integer                            :: number_of_correlations, max_buffer_per_atom
+    Logical                            :: calculate_correlations = .false.
+    Integer                            :: number_of_correlations = 0, max_buffer_per_atom = 0
     Type(correlator_holder), Allocatable :: correlations(:)
     Type(correlation),       Allocatable :: unique_correlations(:)
     Integer,                 Allocatable :: unique_correlation_params(:)
-    Logical                              :: per_atom_correlations, requires_reindex
+    Logical                              :: per_atom_correlations = .false., requires_reindex = .false.
     ! Integer, Allocatable               :: number_of_blocks(:), points_per_block(:), window_size(:)
     ! Integer, Allocatable               :: min_distance(:), dim_left(:), dim_right(:)
     Real(Kind=wp), Allocatable         :: xin(:), yin(:), zin(:)

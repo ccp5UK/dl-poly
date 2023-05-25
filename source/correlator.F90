@@ -36,9 +36,15 @@ Module correlators
       Integer(Kind=wi),  Allocatable :: shift_index(:)
       Real(Kind=wp),     Allocatable :: correlation(:,:,:,:)
       Integer(Kind=wi),  Allocatable :: count_correlated(:,:)
-      Integer(Kind=wi)               :: number_of_blocks, max_block_used, left_dim, &
-                                        right_dim, window_size, points_per_block, min_dist, &
-                                        buffer_size, count_updated
+      Integer(Kind=wi)               :: number_of_blocks = 0, & 
+                                        max_block_used = 0, &
+                                        left_dim = 0, &
+                                        right_dim = 0, & 
+                                        window_size = 0, & 
+                                        points_per_block = 0, &
+                                        min_dist = 0, &
+                                        buffer_size = 0, &
+                                        count_updated = 0
   
     Contains
       Private
