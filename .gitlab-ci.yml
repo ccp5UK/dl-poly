@@ -138,6 +138,7 @@ testing-mpi-gcc:
   stage: test
   tags:
     - gcc
+    - tests
   script:
     - sh utils/mpi-testing.sh
   only:
@@ -148,6 +149,7 @@ testing-mpi-gcc-paranoid:
   stage: test
   tags:
     - gcc
+    - tests
   script:
     - sh utils/mpi-testing-paranoid.sh
   only:
@@ -158,6 +160,7 @@ testing-mpi-intel:
   stage: test
   tags:
     - intel
+    - tests
   script:
     - sh utils/intel-testing.sh
   only:
@@ -168,6 +171,7 @@ testing-mpi-ifx:
   stage: test
   tags:
     - intel
+    - tests
   script:
     - sh utils/ifx-testing.sh
   only:
@@ -178,6 +182,7 @@ testing-mpi-intel-paranoid:
   stage: test
   tags:
     - intel
+    - tests
   script:
     - sh utils/intel-testing-paranoid.sh
   except:
