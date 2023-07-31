@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-module load foss/2022a
+module load foss/2022a Python
 module load PLUMED/2.8.0-foss-2022a
 
 pip install git+https://gitlab.com/drFaustroll/dlpoly-py.git ruamel.yaml

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-module load foss/2022a
+module load foss/2022a Python
+
+pip install git+https://gitlab.com/drFaustroll/dlpoly-py.git ruamel.yaml
 
 folder="build-mpi-testing-paranoid"
 rm -rf $folder && mkdir $folder && pushd $folder

@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
-module load intel/2022a
+module load intel/2022a Python
 mpr=`which mpirun`
+
+pip install git+https://gitlab.com/drFaustroll/dlpoly-py.git ruamel.yaml
 
 rm -rf build-intel-testing
 mkdir build-intel-testing

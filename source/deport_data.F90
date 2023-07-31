@@ -1038,7 +1038,7 @@ Contains
       ! unpack correlations arrays
 
       If (stats%number_of_correlations > 0) Then
-        Call stats%correlator_recieve(config,buffer,kmove)
+        Call stats%correlator_recieve(config,newatm,buffer,kmove)
       End If
 
       ! unpack MSD arrays
@@ -3176,9 +3176,7 @@ Contains
         End If
 
       End If
-
-      Call stats%reindex_correlators(config)
-
+      
     Else
 
       ! Restore periodic boundaries (re-bound > re-wrap)

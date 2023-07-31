@@ -176,12 +176,11 @@ Module statistics
                                          999999999.0_wp, & ! minimum cycles : ~Huge(1)
                                          0.0_wp] ! maximum cycles
     Type(current_type)                 :: cur
-    Logical                            :: calculate_correlations = .false.
+    Logical                            :: calculate_correlations = .false., per_atom_correlations = .false.
     Integer                            :: number_of_correlations = 0, max_buffer_per_atom = 0
     Type(correlator_holder), Allocatable :: correlations(:)
     Type(correlation),       Allocatable :: unique_correlations(:)
     Integer,                 Allocatable :: unique_correlation_params(:)
-    Logical                              :: per_atom_correlations = .false., requires_reindex = .false.
     ! Integer, Allocatable               :: number_of_blocks(:), points_per_block(:), window_size(:)
     ! Integer, Allocatable               :: min_distance(:), dim_left(:), dim_right(:)
     Real(Kind=wp), Allocatable         :: xin(:), yin(:), zin(:)
@@ -687,7 +686,7 @@ Contains
 
         flat_correlation = Reshape(cor_accumulator,(/flat_dim/))
         Call gsum(comm, flat_correlation)
-        flat_correlation = flat_correlation / comm%mxnode
+        flat_correlation = flat_correlation 
         cor_accumulator = Reshape(flat_correlation,(/sites%mxatyp,points*blocks,&
          dim_left,dim_right/))
 
@@ -1115,7 +1114,7 @@ Contains
         End Do
 
         If ((.not. leql) .or. nstep >= nsteql) Then
-          
+
           Do j = 1, stats%number_of_correlations
 
             i = stats%correlations(j)%correlation%atom
@@ -2719,9 +2718,10 @@ Contains
 
   End Subroutine write_per_part_contribs
 
-  Subroutine correlator_recieve(this, config, buffer, buffer_index)
+  Subroutine correlator_recieve(this, config, newatm, buffer, buffer_index)
       Class(stats_type),                       Intent(InOut)  :: this
       Type(configuration_type),                Intent(InOut)  :: config
+      Integer,                                 Intent(In   )  :: newatm
       Real(Kind=wp),           Dimension(:),   Intent(InOut)  :: buffer
       Integer,                                 Intent(InOut)  :: buffer_index
       Type(correlator_holder), Allocatable                    :: tmp_cors(:)
@@ -2730,7 +2730,7 @@ Contains
                                                                  window, blocks, points, dim_left, dim_right, &
                                                                  jA, jB, new_index, s
 
-      If (this%per_atom_correlations) Then
+      If (this%per_atom_correlations .and. this%calculate_correlations) Then
 
         ! data packed as 
           ! global atom index
@@ -2753,21 +2753,7 @@ Contains
 
         Allocate(tmp_cors(1:(Size(this%correlations)+1)))
 
-        local_index = 0
-
-        ! find the local atom index for the recieved atom
-        Do i = 1, config%natms
-          If (config%ltg(i) == global_index) Then 
-            local_index = i
-            exit
-          End If
-        End Do
-
-        If (local_index == 0) Then 
-          buffer_index = s
-          ! nothing to do
-          Return
-        End If
+        local_index = newatm
 
         Do i = 1, Size(this%correlations)
 
@@ -2809,7 +2795,8 @@ Contains
         buffer_index = s + this%max_buffer_per_atom
 
         this%number_of_correlations = Size(this%correlations)
-        this%requires_reindex = .true.
+ 
+        Call reindex_correlators(this, config)
 
       End If
 
@@ -2824,7 +2811,7 @@ Contains
     Type(correlator_holder), Allocatable                :: tmp_cors(:)
     Integer                                             :: i, A, B, j, s, deportations
 
-    If (this%per_atom_correlations) Then
+    If (this%per_atom_correlations .and. this%calculate_correlations) Then
 
 
       ! data packed as 
@@ -2838,8 +2825,9 @@ Contains
       ! deport to buffer
       
       s = buffer_index
+
       Do i = 1, Size(this%correlations)
-        If (this%correlations(i)%correlation%atom == atom_index) Then
+        If (this%correlations(i)%correlation%atom_global == config%ltg(atom_index)) Then
           Call this%correlations(i)%correlation%A%id(A)
           Call this%correlations(i)%correlation%B%id(B)
           buffer_index = buffer_index + 1
@@ -2854,7 +2842,6 @@ Contains
           j = j + 1
         End If
       End Do
-
       buffer_index = s + deportations*this%max_buffer_per_atom
       ! remove old correlator
 
@@ -2862,7 +2849,7 @@ Contains
 
       j = 1
       Do i = 1, Size(this%correlations)
-        If (this%correlations(i)%correlation%atom /= atom_index) Then
+        If (this%correlations(i)%correlation%atom_global /= config%ltg(atom_index)) Then
           tmp_cors(j) = this%correlations(i)
           j = j + 1
         End If
@@ -2872,7 +2859,7 @@ Contains
 
       this%number_of_correlations = Size(this%correlations)
 
-      this%requires_reindex = .true.
+      Call reindex_correlators(this, config)
 
     End If
 
@@ -2880,7 +2867,7 @@ Contains
 
   Subroutine reindex_correlators(this, config)
     Class(stats_type),                    Intent(InOut)     :: this
-    Type(configuration_type),             Intent(InOut)     :: config
+    Type(configuration_type),             Intent(In   )     :: config
     Integer                                                 :: i, j, k, &
                                                                cor_global, cor_local, iA, iB
     Logical                                                 :: found
@@ -2888,67 +2875,58 @@ Contains
     Type(correlator_holder), Allocatable                    :: tmp_cors(:)
 
 
+    k = 0
 
-    If (this%requires_reindex) Then
+    Allocate(cors(1:this%number_of_correlations))
+    cors = .false.
 
-      k = 0
+    Do i = 1,this%number_of_correlations
 
-      Allocate(cors(1:this%number_of_correlations))
-
-      Do i = 1,this%number_of_correlations
-
-        cor_global = this%correlations(i)%correlation%atom_global
-        cor_local = this%correlations(i)%correlation%atom
-        
-        found = .false.
-        If (cor_local > 0) Then
-          If (cor_global /= config%ltg(cor_local)) Then
-            ! this correlation has de-synced from it's tracked atom (a constant)
-            Do j = 1, config%natms
-              If (config%ltg(j) == cor_global) Then
-                this%correlations(i)%correlation%atom = j
-                found = .true.
-                exit
-              End If
-            End Do
-          Else 
-            found = .true.
-          End If
-        Else
-          found = .true.
-        End If
-        If (found .eqv. .false.) Then
-          cors(i) = .false.
-        Else
-          k = k + 1
-          cors(i) = .true.
-        End if
-
-      End Do
-
-      ! check all correlations are correct, ignore any 
-      !  that are not tracking a local atom
-
-      Allocate(tmp_cors(1:k))
-
-      k = 1
-      Do i = 1, this%number_of_correlations
-        If (cors(i)) Then
-          tmp_cors(k) = this%correlations(i)
-          Call tmp_cors(k)%correlation%A%id(iA)
-          Call tmp_cors(k)%correlation%B%id(iB)
-          k = k + 1
-        End If
-      End Do
-
-      Call move_alloc(tmp_cors,this%correlations)
-
-      this%requires_reindex = .false.
-
-      this%number_of_correlations = Size(this%correlations)
-
-    End If
+      cor_global = this%correlations(i)%correlation%atom_global
+      cor_local = this%correlations(i)%correlation%atom
       
+      found = .false.
+      If (cor_local > 0) Then
+        If(cor_global /= config%ltg(cor_local)) Then
+          Do j = 1, config%natms
+            If (config%ltg(j) == cor_global) Then
+              this%correlations(i)%correlation%atom = j
+              cors(i) = .true.
+              k = k + 1
+              Exit
+            End If
+          End Do
+        Else 
+          cors(i) = .true.
+            k = k + 1
+        End If
+      Else
+        cors(i) = .true.
+        k = k + 1
+      End if
+
+    End Do
+
+    ! check all correlations are correct, ignore any 
+    !  that are not tracking a local atom
+
+    Allocate(tmp_cors(1:k))
+
+    k = 1
+    Do i = 1, this%number_of_correlations
+      If (cors(i)) Then
+        tmp_cors(k) = this%correlations(i)
+        Call tmp_cors(k)%correlation%A%id(iA)
+        Call tmp_cors(k)%correlation%B%id(iB)
+        k = k + 1
+      End If
+    End Do
+
+    Call move_alloc(tmp_cors,this%correlations)
+
+    this%number_of_correlations = Size(this%correlations)
+
+
   End Subroutine reindex_correlators 
 
   !!!!!!!! correlators revive !!!!!!!!!
@@ -2992,7 +2970,7 @@ Contains
         local_ids((i-1)*4+1) = A
         local_ids((i-1)*4+2) = B
         If (this%correlations(i)%correlation%atom > 0) Then
-          local_ids((i-1)*4+3) = config%ltg(this%correlations(i)%correlation%atom)
+          local_ids((i-1)*4+3) = this%correlations(i)%correlation%atom_global
         Else
           local_ids((i-1)*4+3) = 0
         End If
@@ -3178,6 +3156,7 @@ Contains
           End If
           sizes_buffer(i) = ids_buffer((i-1)*4+4)
           buffer_index = buffer_index + sizes_buffer(i)
+
       End Do
 
     End If
@@ -3289,6 +3268,7 @@ Contains
     Integer,                        Intent(In   )  :: c
     Class(observable), Allocatable, Intent(  Out)  :: o
     Logical                                        :: success
+    Character(Len=100)                             :: msg
     
     success = .false.
     If (c == 0) Then 
@@ -3300,7 +3280,8 @@ Contains
     End If
 
     If (success .eqv. .false.) Then
-      Call error(0,"correlation observable could not be allocated from internal code")
+      Write(msg,'(a,i0)') "correlation observable could not be allocated from internal code: ", c
+      Call error(0,msg)
     End If
 
   End Subroutine code_to_observable
