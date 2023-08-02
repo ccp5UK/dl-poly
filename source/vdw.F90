@@ -42,7 +42,7 @@ Module vdw
                              get_word,&
                              word_2_real
   Use site,            Only: site_type
-  Use statistics,      Only: stats_type
+  Use statistics,      Only: stats_type, calculate_stress
   Use units,           Only: to_out_units
   Implicit None
 
@@ -2568,15 +2568,7 @@ Contains
 #endif /* HALF_HALO */
 
         If (stats%collect_pp) Then
-          stress_temp_comp(1) = stress_temp_comp(1) + xxt(mm) * fx
-          stress_temp_comp(2) = stress_temp_comp(2) + xxt(mm) * fy
-          stress_temp_comp(3) = stress_temp_comp(3) + xxt(mm) * fz
-          stress_temp_comp(4) = stress_temp_comp(4) + xxt(mm) * fy
-          stress_temp_comp(5) = stress_temp_comp(5) + yyt(mm) * fy
-          stress_temp_comp(6) = stress_temp_comp(6) + yyt(mm) * fz
-          stress_temp_comp(7) = stress_temp_comp(7) + xxt(mm) * fz
-          stress_temp_comp(8) = stress_temp_comp(8) + yyt(mm) * fz
-          stress_temp_comp(9) = stress_temp_comp(9) + zzt(mm) * fz
+          stress_temp_comp = calculate_stress( [xxt(mm), yyt(mm), zzt(mm)], [fx,fy,fz] )
           stats%pp_energy(iatm) = stats%pp_energy(iatm) + eng * 0.5_wp
           stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
 #ifndef HALF_HALO
@@ -2810,15 +2802,7 @@ Contains
         End If
 #endif /* HALF_HALO */
         If (stats%collect_pp) Then
-          stress_temp_comp(1) = stress_temp_comp(1) + xxt(mm) * fx
-          stress_temp_comp(2) = stress_temp_comp(2) + xxt(mm) * fy
-          stress_temp_comp(3) = stress_temp_comp(3) + xxt(mm) * fz
-          stress_temp_comp(4) = stress_temp_comp(4) + xxt(mm) * fy
-          stress_temp_comp(5) = stress_temp_comp(5) + yyt(mm) * fy
-          stress_temp_comp(6) = stress_temp_comp(6) + yyt(mm) * fz
-          stress_temp_comp(7) = stress_temp_comp(7) + xxt(mm) * fz
-          stress_temp_comp(8) = stress_temp_comp(8) + yyt(mm) * fz
-          stress_temp_comp(9) = stress_temp_comp(9) + zzt(mm) * fz
+          stress_temp_comp = calculate_stress( [xxt(mm), yyt(mm), zzt(mm)], [fx,fy,fz] )
           stats%pp_energy(iatm) = stats%pp_energy(iatm) + eng * 0.5_wp
           stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
 #ifndef HALF_HALO
