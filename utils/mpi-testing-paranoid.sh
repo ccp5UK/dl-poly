@@ -2,7 +2,7 @@
 
 module load foss/2022a Python
 
-pip install git+https://gitlab.com/drFaustroll/dlpoly-py.git ruamel.yaml
+source ~/venvs/dlpoly/bin/activate
 
 folder="build-mpi-testing-paranoid"
 rm -rf $folder && mkdir $folder && pushd $folder

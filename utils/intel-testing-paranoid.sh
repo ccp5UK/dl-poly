@@ -3,7 +3,7 @@
 module load intel/2022a Python
 mpr=`which mpirun`
 
-pip install git+https://gitlab.com/drFaustroll/dlpoly-py.git ruamel.yaml
+source ~/venvs/dlpoly/bin/activate
 
 rm -rf build-intel-testing-p
 mkdir build-intel-testing-p

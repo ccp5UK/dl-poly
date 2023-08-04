@@ -350,7 +350,10 @@ if(BUILD_TESTING)
 
   set(dlp "${MPIEXEC} ${MPIEXEC_PREFLAGS} -n ${MPI_NPROCS} ${CMAKE_BINARY_DIR}/bin/${target_name} > err.log")
 
-  add_test(NAME "TestSuite" COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/run-test-suite.py --exe "${CMAKE_BINARY_DIR}/bin/${target_name}" --mpi "${MPIEXEC} ${MPIEXEC_PREFLAGS} -n" --np "${MPI_NPROCS}" --dir ${CMAKE_SOURCE_DIR}/tests --verbose)
+  file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/Testing/Correlations)
+  file(COPY ${CMAKE_SOURCE_DIR}/tests/
+	  DESTINATION ${CMAKE_BINARY_DIR}/Testing/Correlations/)
+  add_test(NAME "TestSuite" COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR}/Testing/Correlations/run-test-suite.py --exe "${CMAKE_BINARY_DIR}/bin/${target_name}" --mpi "${MPIEXEC} ${MPIEXEC_PREFLAGS} -n" --np "${MPI_NPROCS}" --dir ${CMAKE_BINARY_DIR}/Testing/Correlations/ --verbose)
   set_tests_properties("TestSuite" PROPERTIES PASS_REGULAR_EXPRESSION "Status: PASSED")
 
   foreach(test RANGE 1 9 1)
