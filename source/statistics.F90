@@ -585,14 +585,10 @@ Contains
 
       Open(Newunit=file_unit,File=Trim(files(FILE_COR)%filename),Status='replace')
 
-      If (stats%file_yaml) Then
-        Write (file_unit,'(a)') "%YAML 1.2"
-        Write (file_unit,'(a)') "---"
-        Write (file_unit, '(a,a)') "title: ", Trim(config%cfgname)
-        Write (file_unit, '(a)') "correlations:"
-      Else
-        Write (file_unit, '(a,a)') "title: ", Trim(config%cfgname)
-      End If
+      Write (file_unit,'(a)') "%YAML 1.2"
+      Write (file_unit,'(a)') "---"
+      Write (file_unit, '(a,a)') "title: ", Trim(config%cfgname)
+      Write (file_unit, '(a)') "correlations:"
     
     End If
 
@@ -697,69 +693,65 @@ Contains
 
           Do j = 1,sites%mxatyp
 
-            If (stats%file_yaml) Then
+            Write (file_unit, '(*(a))') "    - name: [", correlation_name, ", ", &
+                                                        Trim(sites%unique_atom(j)), "]"
 
-              Write (file_unit, '(*(a))') "    - name: [", correlation_name, ", ", &
-                                                          Trim(sites%unique_atom(j)), "]"
+            Write (file_unit, '(a)') "      parameters:"
+            Write (file_unit, '(a,i0)') "            points_per_block: ", &
+                    points
+            Write (file_unit, '(a,i0)') "            number_of_blocks: ", &
+                    blocks
+            Write (file_unit, '(a,i0)') "            window_size: ", &
+                    window
 
-              Write (file_unit, '(a)') "      parameters:"
-              Write (file_unit, '(a,i0)') "            points_per_block: ", &
-                      points
-              Write (file_unit, '(a,i0)') "            number_of_blocks: ", &
-                      blocks
-              Write (file_unit, '(a,i0)') "            window_size: ", &
-                      window
+            t = 0.0
+            dt = time / nstep
 
-              t = 0.0
-              dt = time / nstep
+            If (Allocated(timesteps)) Then
+              Deallocate(timesteps)
+            End If
 
-              If (Allocated(timesteps)) Then
-                Deallocate(timesteps)
+            Allocate(timesteps(1:points*blocks))
+
+            Do tau = 1,points*blocks
+              timesteps(tau) = t
+              t = t + dt
+            End Do  
+            
+            
+            Write(file_unit, '(a,*(g16.8,","))',advance="no") "      lags: [", timesteps(1:Size(timesteps)-1)
+            
+            Write(file_unit, '(g16.8,a)') timesteps(Size(timesteps)), "]"
+
+            cor_accumulator(j,:,:,:) = cor_accumulator(j,:,:,:) / (1+type_counts(j))
+
+            Write (file_unit, '(a)') "      components: "
+
+            Do l = 1,dim_left
+              
+              If (dim_left == 3) Then
+                component_left = Trim(components_vector(l))
+              Else If (dim_left == 9) Then 
+                component_left = Trim(components_matrix(l))
               End If
 
-              Allocate(timesteps(1:points*blocks))
+              Do r = 1,dim_right
 
-              Do tau = 1,points*blocks
-                timesteps(tau) = t
-                t = t + dt
-              End Do  
-              
-              
-              Write(file_unit, '(a,*(g16.8,","))',advance="no") "      lags: [", timesteps(1:Size(timesteps)-1)
-              
-              Write(file_unit, '(g16.8,a)') timesteps(Size(timesteps)), "]"
-
-              cor_accumulator(j,:,:,:) = cor_accumulator(j,:,:,:) / (1+type_counts(j))
-
-              Write (file_unit, '(a)') "      components: "
-
-              Do l = 1,dim_left
-                
-                If (dim_left == 3) Then
-                  component_left = Trim(components_vector(l))
-                Else If (dim_left == 9) Then 
-                  component_left = Trim(components_matrix(l))
+                If (dim_right == 3) Then
+                  component_right = Trim(components_vector(r))
+                Else If (dim_right == 9) Then 
+                  component_right = Trim(components_matrix(r))
                 End If
 
-                Do r = 1,dim_right
+                Write (file_unit, '(a,a,a)',advance="no") "           ", &
+                  Trim(char_left)//'_'//Trim(component_left)//"-"//Trim(char_right)//'_'//Trim(component_right), ": "
 
-                  If (dim_right == 3) Then
-                    component_right = Trim(components_vector(r))
-                  Else If (dim_right == 9) Then 
-                    component_right = Trim(components_matrix(r))
-                  End If
+                  Write(file_unit, '(a,*(g16.8,","))',advance="no") "[", cor_accumulator(j,1:Size(cor_accumulator,2)-1,l,r)
+                  
+                  Write(file_unit, '(g16.8,a)') cor_accumulator(j,Size(cor_accumulator,2),l,r), "]"
 
-                  Write (file_unit, '(a,a,a)',advance="no") "           ", &
-                    Trim(char_left)//'_'//Trim(component_left)//"-"//Trim(char_right)//'_'//Trim(component_right), ": "
-
-                    Write(file_unit, '(a,*(g16.8,","))',advance="no") "[", cor_accumulator(j,1:Size(cor_accumulator,2)-1,l,r)
-                    
-                    Write(file_unit, '(g16.8,a)') cor_accumulator(j,Size(cor_accumulator,2),l,r), "]"
-
-                End Do
-              End Do  
-              
-            End If
+              End Do
+            End Do  
           End Do
         End If
 
@@ -802,69 +794,65 @@ Contains
 
           Call stats%correlations(k)%correlator%get_correlation(correlation)
 
-          If (stats%file_yaml) Then
+          Write (file_unit, '(*(a))') "    - name: [", correlation_name, ", global]"
 
-            Write (file_unit, '(*(a))') "    - name: [", correlation_name, ", global]"
+          Write (file_unit, '(a)') "      parameters:"
+          Write (file_unit, '(a,i0)') "            points_per_block: ", &
+                  points
+          Write (file_unit, '(a,i0)') "            number_of_blocks: ", &
+                  blocks
+          Write (file_unit, '(a,i0)') "            window_size: ", &
+                  window
 
-            Write (file_unit, '(a)') "      parameters:"
-            Write (file_unit, '(a,i0)') "            points_per_block: ", &
-                    points
-            Write (file_unit, '(a,i0)') "            number_of_blocks: ", &
-                    blocks
-            Write (file_unit, '(a,i0)') "            window_size: ", &
-                    window
+          t = 0.0
+          dt = time / nstep
 
-            t = 0.0
-            dt = time / nstep
+          If (Allocated(timesteps)) Then
+            Deallocate(timesteps)
+          End If
 
-            If (Allocated(timesteps)) Then
-              Deallocate(timesteps)
+          Allocate(timesteps(1:points*blocks))
+
+          Do tau = 1,points*blocks
+            timesteps(tau) = t
+            t = t + dt
+          End Do  
+          
+          
+          Write(file_unit, '(a,*(g16.8,","))',advance="no") "      lags: [", timesteps(1:Size(timesteps)-1)
+          
+          Write(file_unit, '(g16.8,a)') timesteps(Size(timesteps)), "]"
+
+          Write (file_unit, '(a)') "      components: "
+
+          Do l = 1,dim_left
+              
+            If (dim_left == 3) Then
+              component_left = Trim(components_vector(l))
+            Else If (dim_left == 9) Then 
+              component_left = Trim(components_matrix(l))
             End If
 
-            Allocate(timesteps(1:points*blocks))
+            Do r = 1,dim_right
 
-            Do tau = 1,points*blocks
-              timesteps(tau) = t
-              t = t + dt
-            End Do  
-            
-            
-            Write(file_unit, '(a,*(g16.8,","))',advance="no") "      lags: [", timesteps(1:Size(timesteps)-1)
-            
-            Write(file_unit, '(g16.8,a)') timesteps(Size(timesteps)), "]"
+              If (dim_right == 3) Then
+                component_right = Trim(components_vector(r))
+              Else If (dim_right == 9) Then 
+                component_right = Trim(components_matrix(r))
+              End If              
 
-            Write (file_unit, '(a)') "      components: "
+              Write (file_unit, '(a,a,a)',advance="no") "           ", &
+              Trim(char_left)//'_'//Trim(component_left)//"-"//Trim(char_right)//'_'//Trim(component_right), ": "
 
-            Do l = 1,dim_left
+                Write(file_unit, '(a,*(g16.8,","))',advance="no") "[", correlation(1:Size(correlation,1)-1,l,r)
                 
-              If (dim_left == 3) Then
-                component_left = Trim(components_vector(l))
-              Else If (dim_left == 9) Then 
-                component_left = Trim(components_matrix(l))
-              End If
+                Write(file_unit, '(g16.8,a)') correlation(Size(correlation,1),l,r), "]"
 
-              Do r = 1,dim_right
-
-                If (dim_right == 3) Then
-                  component_right = Trim(components_vector(r))
-                Else If (dim_right == 9) Then 
-                  component_right = Trim(components_matrix(r))
-                End If              
-
-                Write (file_unit, '(a,a,a)',advance="no") "           ", &
-                Trim(char_left)//'_'//Trim(component_left)//"-"//Trim(char_right)//'_'//Trim(component_right), ": "
-
-                  Write(file_unit, '(a,*(g16.8,","))',advance="no") "[", correlation(1:Size(correlation,1)-1,l,r)
-                  
-                  Write(file_unit, '(g16.8,a)') correlation(Size(correlation,1),l,r), "]"
-
-              End Do
-            End Do  
-            
-          End If
+            End Do
+          End Do  
           
         End If
-
+        
       End If
 
     End Do
