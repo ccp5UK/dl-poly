@@ -9,7 +9,7 @@ To enable the calculation of heat flux add the {\bf heat\_flux} keyword into the
 The heat flux for two-body interactions is defined as:
 
 \begin{equation}
-\vek{J} = \frac{1}{V} \left[ \sum\limits^{N}_{i} e_{i} \vek{v}_{i} - \sum\limits^{N}_{i} \mat{S}_{i} \vek{v}_{i} \right]
+\vek{J} = \frac{1}{V} \left[ \sum\limits^{N}_{i} e_{i} \vek{v}_{i} - \sum\limits^{N}_{i} \mat{S}_{i} \vek{v}_{i} \right]\label{heat-flux-definition}
 \end{equation}
 where $\mat{J}$ is the heat flux, $V$ is the volume of the cell, $N$ is the number of particles, $e$ is the energy, $\vek{v}$ is the velocity, $\mat{S}$ is the stress. All subscript $i$ refer to the particle.
 
