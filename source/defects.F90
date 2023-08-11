@@ -42,8 +42,7 @@ Module defects
                              io_read_batch, io_set_parameters, io_type, io_write_batch, &
                              io_write_record, io_write_sorted_file
   Use kinds,           Only: li,&
-                             wi,&
-    wp,STR_LEN
+                             wi, STR_FILENAME, wp,STR_LEN
   Use neighbours,      Only: defects_link_cells,&
                              neighbours_type
   Use numerics,        Only: dcell,&
@@ -74,8 +73,8 @@ Module defects
     Integer(Kind=wi)              :: isdef = 1
     !> Default value for accepting defect
     Real(Kind=wp)                 :: rdef = 0.75_wp
-    Character(Len=12)             :: reffile
-    Character(Len=12)             :: deffile
+    Character(Len=STR_FILENAME)   :: reffile
+    Character(Len=STR_FILENAME)   :: deffile
     Integer(Kind=wi)              :: nrefs = 0, nlrefs = 0
     Integer(Kind=li)              :: rec = 0_li, frm = 0_li
     Integer(Kind=wi)              :: mxlcdef
@@ -444,8 +443,9 @@ Contains
     Type(comms_type),         Intent(InOut) :: comm
 
     Character(Len=200)                          :: record
-    Character(Len=STR_LEN)                          :: message
-    Character(Len=40)                           :: fname, word
+    Character(Len=STR_LEN)                      :: message
+    Character(Len=STR_FILENAME)                 :: fname
+    Character(Len=40)                           :: word
     Character(Len=8), Allocatable, Dimension(:) :: chbuf
     Integer                                     :: fail(1:2), fh, fsite, i, idm, ifrz, imconr, &
                                                    indatm, io_read, ipx, ipy, ipz, isite, itmols, &

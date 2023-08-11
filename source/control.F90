@@ -84,7 +84,7 @@ Module control
                                   io_get_parameters, io_set_parameters, io_type
   Use kim,                  Only: kim_type
   Use kinds,                Only: wi,STR_LEN,&
-                                  wp
+                                  wp, STR_FILENAME
   Use metal,                Only: metal_type
   Use minimise,             Only: MIN_DISTANCE,&
                                   MIN_ENERGY,&
@@ -5692,11 +5692,11 @@ Contains
     Type(flow_type),  Intent(  Out) :: flow
     Type(comms_type), Intent(InOut) :: comm
 
-    Character(Len=100) :: cfilename
-    Character(Len=200) :: record
-    Character(Len=40)  :: word
-    Integer            :: unit_no
-    Logical            :: safe
+    Character(Len=STR_FILENAME) :: cfilename
+    Character(Len=200)          :: record
+    Character(Len=40)           :: word
+    Integer                     :: unit_no
+    Logical                     :: safe
 
     If (Len_trim(control_filename) > 0) Then
       cfilename = Trim(control_filename)

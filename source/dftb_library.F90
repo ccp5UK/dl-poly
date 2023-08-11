@@ -18,6 +18,7 @@ Module dftb_library
   Use asserts,         Only : assert
   Use parse,           Only : number_of_lines 
   Use flow_control,    Only : flow_type
+  Use kinds,           Only : STR_FILENAME
   
   !> DFTB+ API modules 
   Use dftbp_mmapi,      Only : TDftbPlus_init, TDftbPlus, TDftbPlusInput, TDftbPlus_destruct!, string
@@ -68,7 +69,7 @@ Module dftb_library
   !> Modular parameters
   Logical :: IO
   !> Default dftb input file name 
-  Character(Len=11), Parameter :: dftb_fname = 'dftb_in.hsd'
+  Character(Len=STR_FILENAME), Parameter :: dftb_fname = 'dftb_in.hsd'
   !> Suppress IO - Change for debugging
   Logical,   Parameter :: suppressIO = .true.
 
@@ -171,9 +172,9 @@ Contains
     Character(Len=*),         Intent( In    ),   Optional :: input_fname
 
     !> DFTB+ input file name 
-    Character(Len=100) :: fname
+    Character(Len=STR_FILENAME) :: fname
     !> Pointers to the parts of the input tree that will be set                                
-    Type(fnode), Pointer :: pRoot, pGeo, pParserOpts, pAnalysis
+    Type(fnode), Pointer        :: pRoot, pGeo, pParserOpts, pAnalysis
     !> "Does geometry already exist in DTFB+ input?" (== "replace geometry in HSD tree?") 
     Logical  :: replace_geometry
       
@@ -229,11 +230,11 @@ Contains
     Character(Len=*), Intent(In), Optional :: input_fname
     Logical           :: geometry_present
   
-    Character(Len=100):: fname
-    Character(Len=60) :: line
-    Integer           :: N,i,noccurrences,ios
-    Logical           :: exist
-    Character(Len=100):: message 
+    Character(Len=STR_FILENAME) :: fname
+    Character(Len=60)           :: line
+    Integer                     :: N,i,noccurrences,ios
+    Logical                     :: exist
+    Character(Len=100)          :: message 
 
     If(Present(input_fname)) Then
        fname = input_fname
@@ -286,11 +287,11 @@ Contains
 
     !Declarations
     Character(Len=*), Optional, Intent(In) :: input_fname
-    Character(Len=20) :: fname 
-    Character(Len=60) :: line
-    Character(Len=200):: message
-    Integer           :: N,i,noccurrences,ios
-    Logical           :: exist
+    Character(Len=STR_FILENAME) :: fname 
+    Character(Len=60)           :: line
+    Character(Len=200)          :: message
+    Integer                     :: N,i,noccurrences,ios
+    Logical                     :: exist
 
     !Main Routine
     If(Present(input_fname)) Then

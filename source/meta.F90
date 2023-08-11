@@ -91,7 +91,7 @@ Module meta
                                                     kim_setup,&
                                                     kim_type
   Use kinds,                                  Only: wi,STR_LEN,&
-                                                    wp
+                                                    wp, STR_FILENAME
   Use kinetics,                               Only: cap_forces
   Use langevin,                               Only: langevin_allocate_arrays
   Use metal,                                  Only: metal_type
@@ -310,7 +310,7 @@ Contains
     Type(ttm_type),              Intent(InOut) :: ttms(:)
     Type(rsd_type), Target,      Intent(InOut) :: rsdsc(:)
     Type(file_type),             Intent(InOut) :: files(:)
-    Character(Len=1024),         Intent(In   ) :: control_filename, output_filename
+    Character(Len=STR_FILENAME), Intent(In   ) :: control_filename, output_filename
     Type(coord_type),            Intent(InOut) :: crd(:)
     Type(adf_type),              Intent(InOut) :: adf(:)
 
@@ -726,7 +726,7 @@ Contains
     Type(ttm_type),              Intent(InOut) :: ttms(:)
     Type(rsd_type), Target,      Intent(InOut) :: rsdsc(:)
     Type(file_type),             Intent(InOut) :: files(:)
-    Character(Len=1024),         Intent(In   ) :: control_filename, output_filename
+    Character(Len=STR_FILENAME), Intent(In   ) :: control_filename, output_filename
     Type(coord_type),            Intent(InOut) :: crd(:)
     Type(adf_type),              Intent(InOut) :: adf(:)
 
@@ -896,53 +896,53 @@ Contains
                                                domain, flow, seed, traj, kim_data, config, ios, &
                                                ttms, rsdsc, files, control_filename, &
                                                output_filename, crd, adf)
-    Type(comms_type),          Intent(InOut) :: dlp_world(0:), comm
-    Type(thermostat_type),     Intent(InOut) :: thermo(:)
-    Type(ewald_type),          Intent(InOut) :: ewld(:)
-    Type(timer_type),          Intent(InOut) :: tmr
-    Type(development_type),    Intent(InOut) :: devel
-    Type(stats_type),          Intent(InOut) :: stats(:)
-    Type(greenkubo_type),      Intent(InOut) :: green(:)
-    Type(plumed_type),         Intent(InOut) :: plume(:)
-    Type(msd_type),            Intent(InOut) :: msd_data(:)
-    Type(metal_type),          Intent(InOut) :: met(:)
-    Type(poisson_type),        Intent(InOut) :: pois(:)
-    Type(impact_type),         Intent(InOut) :: impa
-    Type(defects_type),        Intent(InOut) :: dfcts(:)
-    Type(bonds_type),          Intent(InOut) :: bond(:)
-    Type(angles_type),         Intent(InOut) :: angle(:)
-    Type(dihedrals_type),      Intent(InOut) :: dihedral(:)
-    Type(inversions_type),     Intent(InOut) :: inversion(:)
-    Type(tethers_type),        Intent(InOut) :: tether(:)
-    Type(threebody_type),      Intent(InOut) :: threebody(:)
-    Type(z_density_type),      Intent(InOut) :: zdensity(:)
-    Type(constraints_type),    Intent(InOut) :: cons(:)
-    Type(neighbours_type),     Intent(InOut) :: neigh(:)
-    Type(pmf_type),            Intent(InOut) :: pmfs(:)
-    Type(site_type),           Intent(InOut) :: sites(:)
-    Type(core_shell_type),     Intent(InOut) :: core_shells(:)
-    Type(vdw_type),            Intent(InOut) :: vdws(:)
-    Type(tersoff_type),        Intent(InOut) :: tersoffs(:)
-    Type(four_body_type),      Intent(InOut) :: fourbody(:)
-    Type(rdf_type),            Intent(InOut) :: rdf(:)
-    Type(minimise_type),       Intent(InOut) :: minim(:)
-    Type(mpole_type),          Intent(InOut) :: mpoles(:)
-    Type(external_field_type), Intent(InOut) :: ext_field(:)
-    Type(rigid_bodies_type),   Intent(InOut) :: rigid(:)
-    Type(electrostatic_type),  Intent(InOut) :: electro(:)
-    Type(domains_type),        Intent(InOut) :: domain(:)
-    Type(flow_type),           Intent(InOut) :: flow
-    Type(seed_type),           Intent(InOut) :: seed
-    Type(trajectory_type),     Intent(InOut) :: traj
-    Type(kim_type), Target,    Intent(InOut) :: kim_data(:)
-    Type(configuration_type),  Intent(InOut) :: config(:)
-    Type(io_type),             Intent(InOut) :: ios
-    Type(ttm_type),            Intent(InOut) :: ttms(:)
-    Type(rsd_type), Target,    Intent(InOut) :: rsdsc(:)
-    Type(file_type),           Intent(InOut) :: files(:)
-    Character(Len=1024),       Intent(In   ) :: control_filename, output_filename
-    Type(coord_type),          Intent(InOut) :: crd(:)
-    Type(adf_type),            Intent(InOut) :: adf(:)
+    Type(comms_type),            Intent(InOut) :: dlp_world(0:), comm
+    Type(thermostat_type),       Intent(InOut) :: thermo(:)
+    Type(ewald_type),            Intent(InOut) :: ewld(:)
+    Type(timer_type),            Intent(InOut) :: tmr
+    Type(development_type),      Intent(InOut) :: devel
+    Type(stats_type),            Intent(InOut) :: stats(:)
+    Type(greenkubo_type),        Intent(InOut) :: green(:)
+    Type(plumed_type),           Intent(InOut) :: plume(:)
+    Type(msd_type),              Intent(InOut) :: msd_data(:)
+    Type(metal_type),            Intent(InOut) :: met(:)
+    Type(poisson_type),          Intent(InOut) :: pois(:)
+    Type(impact_type),           Intent(InOut) :: impa
+    Type(defects_type),          Intent(InOut) :: dfcts(:)
+    Type(bonds_type),            Intent(InOut) :: bond(:)
+    Type(angles_type),           Intent(InOut) :: angle(:)
+    Type(dihedrals_type),        Intent(InOut) :: dihedral(:)
+    Type(inversions_type),       Intent(InOut) :: inversion(:)
+    Type(tethers_type),          Intent(InOut) :: tether(:)
+    Type(threebody_type),        Intent(InOut) :: threebody(:)
+    Type(z_density_type),        Intent(InOut) :: zdensity(:)
+    Type(constraints_type),      Intent(InOut) :: cons(:)
+    Type(neighbours_type),       Intent(InOut) :: neigh(:)
+    Type(pmf_type),              Intent(InOut) :: pmfs(:)
+    Type(site_type),             Intent(InOut) :: sites(:)
+    Type(core_shell_type),       Intent(InOut) :: core_shells(:)
+    Type(vdw_type),              Intent(InOut) :: vdws(:)
+    Type(tersoff_type),          Intent(InOut) :: tersoffs(:)
+    Type(four_body_type),        Intent(InOut) :: fourbody(:)
+    Type(rdf_type),              Intent(InOut) :: rdf(:)
+    Type(minimise_type),         Intent(InOut) :: minim(:)
+    Type(mpole_type),            Intent(InOut) :: mpoles(:)
+    Type(external_field_type),   Intent(InOut) :: ext_field(:)
+    Type(rigid_bodies_type),     Intent(InOut) :: rigid(:)
+    Type(electrostatic_type),    Intent(InOut) :: electro(:)
+    Type(domains_type),          Intent(InOut) :: domain(:)
+    Type(flow_type),             Intent(InOut) :: flow
+    Type(seed_type),             Intent(InOut) :: seed
+    Type(trajectory_type),       Intent(InOut) :: traj
+    Type(kim_type), Target,      Intent(InOut) :: kim_data(:)
+    Type(configuration_type),    Intent(InOut) :: config(:)
+    Type(io_type),               Intent(InOut) :: ios
+    Type(ttm_type),              Intent(InOut) :: ttms(:)
+    Type(rsd_type), Target,      Intent(InOut) :: rsdsc(:)
+    Type(file_type),             Intent(InOut) :: files(:)
+    Character(Len=STR_FILENAME), Intent(In   ) :: control_filename, output_filename
+    Type(coord_type),            Intent(InOut) :: crd(:)
+    Type(adf_type),              Intent(InOut) :: adf(:)
 
     Character(Len=STR_LEN) :: message
     Integer            :: old_print_level

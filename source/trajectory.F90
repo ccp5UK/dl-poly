@@ -25,7 +25,7 @@ Module trajectory
                              io_finalize, io_get_parameters, io_init, io_open, io_read_batch, &
                              io_set_parameters, io_type, io_write_batch, io_write_record, &
                              io_write_sorted_file, split_io_comm
-  Use kinds,           Only: li,STR_LEN,&
+  Use kinds,           Only: li,STR_LEN, STR_FILENAME,&
                              wi,&
                              wp
   Use numerics,        Only: invert,&
@@ -69,7 +69,7 @@ Module trajectory
     Character(Len=1), Allocatable :: buffer(:, :)
     Logical                       :: newjob_write = .true., &
                                      fast_write = .true.
-    Character(Len=1024)           :: fname
+    Character(Len=STR_FILENAME)   :: fname
     Integer                       :: recsz_write = 73 ! default record size
     Integer(Kind=li)              :: rec_write = 0_li, &
                                      frm_write = 0_li

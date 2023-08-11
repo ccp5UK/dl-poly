@@ -59,7 +59,7 @@ Module configuration
   Use kinds,           Only: li,&
                              wi,&
                              wp,&
-                             STR_LEN
+                             STR_LEN, STR_FILENAME
   Use kpoints,         Only: kpoints_type
   Use numerics,        Only: dcell,&
                              images,&
@@ -879,7 +879,8 @@ Contains
     Real(Kind=wp)                               :: cut
 
     Character(Len=200)                          :: record
-    Character(Len=40)                           :: word, fname
+    Character(Len=40)                           :: word
+    Character(Len=STR_FILENAME)                 :: fname
     Logical                                     :: eor
     Logical                                     :: safe, l_his, l_xtr, fast
     Integer                                     :: fail(1:4), i, idm, max_fail, min_fail, &
@@ -2080,7 +2081,7 @@ Contains
 
     Character(Len=200)        :: record
     Character(Len=STR_LEN)    :: message
-    Character(Len=40)         :: fname, word
+    Character(Len=STR_LEN)    :: fname, word
     Integer                   :: fh, i, ierr, io_read, recsz, totatm
     Integer(Kind=offset_kind) :: top_skip
     Integer(Kind=wi)          :: conftag
@@ -2470,8 +2471,8 @@ Contains
 
     Character                                      :: lf
     Character(Len=1), Allocatable, Dimension(:, :) :: chbat
-    Character(Len=1024)                            :: fname
-    Character(Len=STR_LEN)                             :: message
+    Character(Len=STR_FILENAME)                    :: fname
+    Character(Len=STR_LEN)                         :: message
     Character(Len=8), Allocatable, Dimension(:)    :: chbuf
     Character(Len=recsz)                           :: record
     Integer                                        :: batsz, fail(1:4), fh, i, ierr, io_write, &

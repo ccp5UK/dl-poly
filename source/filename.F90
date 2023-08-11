@@ -6,7 +6,7 @@ Module filename
 !> Author - J. Madge September 2018
 !> contrib - a.m.elena October 2018 - use standard integer for units
 !> contrib - i.Scivetti Aug       2018 - addition of extra files for EVB calculations 
-  Use kinds, Only: wi
+  Use kinds, Only: wi, STR_FILENAME
 
   Implicit None
 
@@ -17,7 +17,7 @@ Module filename
     Private
 
     !> Filename
-    Character(Len=1024), Public :: filename
+    Character(Len=STR_FILENAME), Public :: filename
     !> Fortran unit number, set with newunit=T%unit_no
     Integer, Public             :: unit_no = -2
 
@@ -106,7 +106,7 @@ Contains
   Subroutine default_filenames(filenames)
     Type(file_type) :: filenames(FILENAME_SIZE)
 
-    Character(Len=1024), Dimension(FILENAME_SIZE) :: default_names
+    Character(Len=STR_FILENAME), Dimension(FILENAME_SIZE) :: default_names
     Integer(Kind=wi)                              :: file_no
 
 !> Default file names array

@@ -41,7 +41,7 @@ Module msd
                              io_type, io_write_batch, io_write_record, io_write_sorted_file
   Use kinds,           Only: li,&
                              wi,&
-    wp,STR_LEN
+                             STR_FILENAME, wp,STR_LEN
   Use parse,           Only: get_word,&
                              tabs_2_blanks,&
                              word_2_real
@@ -54,16 +54,16 @@ Module msd
     Private
 
     !> MSD recording switch
-    Logical, Public          :: l_msd = .false.
+    Logical, Public             :: l_msd = .false.
     !> Step to begin recording MSD
-    Integer(Kind=wi), Public :: start
+    Integer(Kind=wi), Public    :: start
     !> Frequency to record MSD (steps)
-    Integer(Kind=wi), Public :: freq
-    Logical                  :: newjob = .true., &
-                                fast = .true.
-    Character(Len=1024)        :: fname
-    Integer(Kind=li)         :: rec = 0_li, &
-                                frm = 0_li
+    Integer(Kind=wi), Public    :: freq
+    Logical                     :: newjob = .true., &
+                                   fast = .true.
+    Character(Len=STR_FILENAME) :: fname
+    Integer(Kind=li)            :: rec = 0_li, &
+                                  frm = 0_li
   End Type msd_type
 
   Public :: msd_write

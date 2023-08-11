@@ -36,4 +36,5 @@ Module kinds
 
   !> Working string length
   Integer, Parameter, Public :: STR_LEN = 256
+  Integer, Parameter, Public :: STR_FILENAME = 1024
 End Module kinds

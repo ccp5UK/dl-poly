@@ -23,7 +23,7 @@ Module plumed
                              info,&
                              warning
   Use kinds,           Only: wi,STR_LEN,&
-                             wp
+                             wp, STR_FILENAME
   Use statistics,      Only: stats_type
 
   Implicit None
@@ -35,20 +35,20 @@ Module plumed
     Private
 
     !> PLUMED switch
-    Logical, Public            :: l_plumed = .false.
-    Character(Len=125), Public :: input = "PLUMED"
-    Character(Len=125), Public :: logfile = "OUTPUT.PLUMED"
+    Logical, Public                     :: l_plumed = .false.
+    Character(Len=STR_FILENAME), Public :: input = "PLUMED"
+    Character(Len=STR_FILENAME), Public :: logfile = "OUTPUT.PLUMED"
     !> DL_POLY precision
-    Integer, Public            :: prec = wp
+    Integer, Public                     :: prec = wp
     !> default no
-    Integer(Kind=wi), Public   :: restart = 0
+    Integer(Kind=wi), Public            :: restart = 0
     !> PLUMED energy
-    Real(Kind=wp)              :: eng
+    Real(Kind=wp)                       :: eng
     !> PLUMED virial
-    Real(Kind=wp)              :: virial(1:9)
-    Integer(Kind=wi)           :: version = 0, &
-                                  Stop = 0, &
-                                  has_plumed = 0
+    Real(Kind=wp)                       :: virial(1:9)
+    Integer(Kind=wi)                    :: version = 0, &
+                                           Stop = 0, &
+                                           has_plumed = 0
   End Type plumed_type
 
   ! PLUMED parameters
