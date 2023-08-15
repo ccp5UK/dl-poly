@@ -175,6 +175,7 @@ Contains
     Type( electrostatic_type ),                       Intent( InOut ) :: electro
     Type( configuration_type ),                       Intent( InOut ) :: config
     Real( Kind = wp ), Dimension( 9 )                                 :: stress_temp, stress_temp_comp
+    Real( Kind = wp ), Dimension( 3 )                                 :: f_temp, x_temp
     Real( Kind = wp ) :: coul
 
     Integer           :: idi,jatm,m
@@ -302,8 +303,9 @@ Contains
             vircpe = vircpe - egamma*rsq
 
             ! calculate stress tensor
-
-            stress_temp_comp = calculate_stress( [xxt(m), yyt(m), zzt(m)], [fx,fy,fz] )
+            x_temp = (/ xxt(m), yyt(m), zzt(m) /)
+            f_temp = (/ fx, fy, fz /)
+            stress_temp_comp = calculate_stress( x_temp, f_temp  )
             stress_temp = stress_temp + stress_temp_comp
 
 
@@ -312,7 +314,9 @@ Contains
 #endif /* HALF_HALO */
 
           If (stats%collect_pp) Then
-            stress_temp_comp = calculate_stress( [xxt(m), yyt(m), zzt(m)], [fx,fy,fz] )
+            x_temp = (/ xxt(m), yyt(m), zzt(m) /)
+            f_temp = (/ fx, fy, fz /)
+            stress_temp_comp = calculate_stress( x_temp, f_temp  )
             stats%pp_energy(iatm) = stats%pp_energy(iatm) + coul * 0.5_wp
             stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
 #ifndef HALF_HALO
@@ -381,6 +385,7 @@ Contains
     Type( electrostatic_type ),                       Intent( InOut ) :: electro
     Type( configuration_type ),                       Intent( InOut ) :: config
     Real( Kind = wp ), Dimension( 9 )                                 :: stress_temp, stress_temp_comp
+    Real( Kind = wp ), Dimension( 3 )                                 :: x_temp, f_temp       
     Real( Kind = wp ) :: coul
 
     !> Intermediate reaction field variable
@@ -516,7 +521,9 @@ Contains
 
             ! calculate stress tensor
 
-            stress_temp_comp = calculate_stress( [xxt(m), yyt(m), zzt(m)], [fx,fy,fz] )
+            x_temp = (/ xxt(m), yyt(m), zzt(m) /)
+            f_temp = (/ fx, fy, fz /)
+            stress_temp_comp = calculate_stress( x_temp, f_temp  )
             stress_temp = stress_temp + stress_temp_comp
 
 #ifndef HALF_HALO
@@ -524,7 +531,9 @@ Contains
 #endif /* HALF_HALO */
 
           If (stats%collect_pp) Then
-            stress_temp_comp = calculate_stress( [xxt(m), yyt(m), zzt(m)], [fx,fy,fz] )
+            x_temp = (/ xxt(m), yyt(m), zzt(m) /)
+            f_temp = (/ fx, fy, fz /)
+            stress_temp_comp = calculate_stress( x_temp, f_temp  )
             stats%pp_energy(iatm) = stats%pp_energy(iatm) + coul * 0.5_wp
             stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
 #ifndef HALF_HALO
@@ -581,6 +590,7 @@ Contains
     Type( stats_type ),                               Intent( InOut ) :: stats
     Type( configuration_type ),                       Intent( InOut ) :: config
     Real( Kind = wp ), Dimension( 9 )                                 :: stress_temp, stress_temp_comp
+    Real( Kind = wp ), Dimension( 3 )                                 :: x_temp, f_temp       
     Integer           :: idi,jatm,m
 
     Real( Kind = wp ) :: chgea,chgprd,rrr,coul,fcoul, &
@@ -671,7 +681,9 @@ Contains
 
             ! calculate stress tensor
 
-            stress_temp_comp = calculate_stress( [xxt(m), yyt(m), zzt(m)], [fx,fy,fz] )
+            x_temp = (/ xxt(m), yyt(m), zzt(m) /)
+            f_temp = (/ fx, fy, fz /)
+            stress_temp_comp = calculate_stress( x_temp, f_temp  )
             stress_temp = stress_temp + stress_temp_comp
 
 #ifndef HALF_HALO
@@ -679,7 +691,9 @@ Contains
 #endif /* HALF_HALO */
 
           If (stats%collect_pp) Then
-            stress_temp_comp = calculate_stress( [xxt(m), yyt(m), zzt(m)], [fx,fy,fz] )
+            x_temp = (/ xxt(m), yyt(m), zzt(m) /)
+            f_temp = (/ fx, fy, fz /)
+            stress_temp_comp = calculate_stress( x_temp, f_temp  )
             stats%pp_energy(iatm) = stats%pp_energy(iatm) + coul * 0.5_wp
             stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
 #ifndef HALF_HALO
@@ -742,6 +756,7 @@ Contains
     Type( stats_type ),                               Intent( InOut ) :: stats
     Type( configuration_type ),                       Intent( InOut ) :: config
     Real( Kind = wp ), Dimension( 9 )                                 :: stress_temp, stress_temp_comp
+    Real( Kind = wp ), Dimension( 3 )                                 :: x_temp, f_temp       
     Integer           :: idi,jatm,m
 
     Real( Kind = wp ) :: chgea,chgprd,rrr,rsq,coul,fcoul, &
@@ -834,7 +849,9 @@ Contains
 
             ! calculate stress tensor
 
-            stress_temp_comp = calculate_stress( [xxt(m), yyt(m), zzt(m)], [fx,fy,fz] )
+            x_temp = (/ xxt(m), yyt(m), zzt(m) /)
+            f_temp = (/ fx, fy, fz /)
+            stress_temp_comp = calculate_stress( x_temp, f_temp  )
             stress_temp = stress_temp + stress_temp_comp
 
 #ifndef HALF_HALO
@@ -842,7 +859,9 @@ Contains
 #endif /* HALF_HALO */
 
           If (stats%collect_pp) Then
-            stress_temp_comp = calculate_stress( [xxt(m), yyt(m), zzt(m)], [fx,fy,fz] )
+            x_temp = (/ xxt(m), yyt(m), zzt(m) /)
+            f_temp = (/ fx, fy, fz /)
+            stress_temp_comp = calculate_stress( x_temp, f_temp  )
             stats%pp_energy(iatm) = stats%pp_energy(iatm) + coul * 0.5_wp
             stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
 #ifndef HALF_HALO

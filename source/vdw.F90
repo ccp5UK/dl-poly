@@ -2214,6 +2214,7 @@ Contains
     Real(Kind=wp) :: r_rrr, r_rrv, r_rsq, r_rvdw, rrr, rscl, rsq
     Real(Kind=wp) :: strs1, strs2, strs3, strs5, strs6, strs9, t1, t2
     Real(Kind=wp) :: stress_temp_comp(9)
+    Real(Kind=wp) :: x_temp(3), f_temp(3)
     ! define grid resolution for potential arrays and interpolation spacing
 
     If (vdws%newjob) Then
@@ -2568,7 +2569,9 @@ Contains
 #endif /* HALF_HALO */
 
         If (stats%collect_pp) Then
-          stress_temp_comp = calculate_stress( [xxt(mm), yyt(mm), zzt(mm)], [fx,fy,fz] )
+          x_temp = (/ xxt(mm), yyt(mm), zzt(mm) /)
+          f_temp = (/ fx, fy, fz /)
+          stress_temp_comp = calculate_stress( x_temp, f_temp  )
           stats%pp_energy(iatm) = stats%pp_energy(iatm) + eng * 0.5_wp
           stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
 #ifndef HALF_HALO
@@ -2639,6 +2642,7 @@ Contains
     Type(configuration_type),                   Intent(InOut) :: config
 
     Real(Kind=wp), Dimension(9) :: stress_temp_comp
+    Real(Kind=wp), Dimension(3) :: x_temp, f_temp
     Integer       :: ai, aj, idi, ityp, jatm, k, key, l, mm
     Real(kind=wp) :: t1, t2, vk, vk1, vk2, gk, gk1, gk2, ppp
     Real(kind=wp) :: fix, fiy, fiz, fx, fy, fz, gamma, eng
@@ -2802,7 +2806,9 @@ Contains
         End If
 #endif /* HALF_HALO */
         If (stats%collect_pp) Then
-          stress_temp_comp = calculate_stress( [xxt(mm), yyt(mm), zzt(mm)], [fx,fy,fz] )
+          x_temp = (/ xxt(mm), yyt(mm), zzt(mm) /)
+          f_temp = (/ fx, fy, fz /)
+          stress_temp_comp = calculate_stress( x_temp, f_temp  )
           stats%pp_energy(iatm) = stats%pp_energy(iatm) + eng * 0.5_wp
           stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
 #ifndef HALF_HALO
