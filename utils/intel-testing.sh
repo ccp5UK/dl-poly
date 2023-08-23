@@ -3,7 +3,6 @@
 module load intel/2022a Python
 mpr=`which mpirun`
 
-source ~/venvs/dlpoly/bin/activate
 
 rm -rf build-intel-testing
 mkdir build-intel-testing

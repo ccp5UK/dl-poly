@@ -3,7 +3,6 @@
 module load foss/2022a Python
 module load PLUMED/2.8.0-foss-2022a
 
-source ~/venvs/dlpoly/bin/activate
 
 folder="build-mpi-testing"
 rm -rf $folder && mkdir $folder && pushd $folder

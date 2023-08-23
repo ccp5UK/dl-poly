@@ -5,10 +5,21 @@ before_script:
   - source utils/modules.sh
 
 stages:
-  - manual
+  - doc
   - pages
   - build
   - test
+  - update
+
+update-python:
+  stage: update
+  tags:
+    - gcc
+  script:
+    - sh utils/python_deps_update.sh
+  only:
+    - devel
+    - merge_requests
 
 build-serial:
   stage: build
@@ -192,7 +203,7 @@ testing-mpi-intel-paranoid:
 
 build-html:
   image: alpine
-  stage: manual
+  stage: doc
   script:
     - apk --no-cache add py3-pip python3-dev
     - pip install sphinx groundwork-sphinx-theme
