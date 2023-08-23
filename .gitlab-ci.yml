@@ -13,6 +13,7 @@ stages:
 
 update-python:
   stage: update
+  when: manual
   tags:
     - gcc
   script:
