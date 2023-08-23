@@ -14,11 +14,21 @@ def actual(**kwargs):
 
     dl.load_correlations()
 
-    ss = np.array(dl.correlations.components[0]['stress_xy-stress_xy'])+np.array(dl.correlations.components[0]['stress_yz-stress_yz'])+np.array(dl.correlations.components[0]['stress_zx-stress_zx'])
+    components = dl.correlations.components[0]
+    if ('s_xy-s_xy' in components.keys()):
+        ss = np.array(components['s_xy-s_xy'])+np.array(components['s_yz-s_yz'])+np.array(components['s_zx-s_zx'])
+    else:
+        ss = np.array(components['stress_xy-stress_xy'])+np.array(components['stress_yz-stress_yz'])+np.array(components['stress_zx-stress_zx'])
 
     ss = np.array(ss)/ss[0]
+    
+    visc = np.nan
 
-    return ss
+    for d in dl.correlations.derived:
+        if 'viscosity' in d.keys():
+            visc = d['viscosity']['value']
+
+    return {"correlation" : ss, "viscosity" : visc}
 
 def expected(**kwargs):
     
@@ -26,4 +36,8 @@ def expected(**kwargs):
 
     ss = np.array(cor.components[0]['stress_xy-stress_xy'])+np.array(cor.components[0]['stress_yz-stress_yz'])+np.array(cor.components[0]['stress_zx-stress_zx'])
 
-    return np.array(ss)/ss[0]
+    for d in cor.derived:
+        if 'viscosity' in d.keys():
+            visc = d['viscosity']['value']
+
+    return {"correlation" : np.array(ss)/ss[0], "viscosity" : visc}

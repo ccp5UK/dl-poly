@@ -14,7 +14,12 @@ def actual(**kwargs):
 
     dl.load_correlations()
 
-    vv = np.array(dl.correlations.components[0]['velocity_x-velocity_x'])+np.array(dl.correlations.components[0]['velocity_y-velocity_y'])+np.array(dl.correlations.components[0]['velocity_z-velocity_z'])
+    components = dl.correlations.components[0]
+    if ('v_x-v_x' in components.keys()):
+        vv = np.array(components['v_x-v_x'])+np.array(components['v_y-v_y'])+np.array(components['v_z-v_z'])
+    else:
+        vv = np.array(components['velocity_x-velocity_x'])+np.array(components['velocity_y-velocity_y'])+np.array(components['velocity_z-velocity_z'])
+    
     vv = np.array(vv)/vv[0]
 
     return vv

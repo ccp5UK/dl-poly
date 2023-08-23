@@ -353,8 +353,15 @@ if(BUILD_TESTING)
   file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/Testing/Correlations)
   file(COPY ${CMAKE_SOURCE_DIR}/tests/
 	  DESTINATION ${CMAKE_BINARY_DIR}/Testing/Correlations/)
-  add_test(NAME "Correlations" COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR}/Testing/Correlations/run-test-suite.py --exe "${CMAKE_BINARY_DIR}/bin/${target_name}" --mpi "${MPIEXEC} ${MPIEXEC_PREFLAGS} -n" --np "${MPI_NPROCS}" --dir ${CMAKE_BINARY_DIR}/Testing/Correlations/ --verbose)
-  set_tests_properties("Correlations" PROPERTIES PASS_REGULAR_EXPRESSION "Status: PASSED")
+    
+  add_test(NAME "VAF" COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR}/Testing/Correlations/run-test.py test-vaf.yml --exe "${CMAKE_BINARY_DIR}/bin/${target_name}" --mpi "${MPIEXEC} ${MPIEXEC_PREFLAGS} -n" --np "${MPI_NPROCS}" --dir ${CMAKE_BINARY_DIR}/Testing/Correlations/ --verbose)
+  set_tests_properties("VAF" PROPERTIES PASS_REGULAR_EXPRESSION "Status: PASSED")
+
+  add_test(NAME "SAF" COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR}/Testing/Correlations/run-test.py test-saf.yml --exe "${CMAKE_BINARY_DIR}/bin/${target_name}" --mpi "${MPIEXEC} ${MPIEXEC_PREFLAGS} -n" --np "${MPI_NPROCS}" --dir ${CMAKE_BINARY_DIR}/Testing/Correlations/ --verbose)
+  set_tests_properties("SAF" PROPERTIES PASS_REGULAR_EXPRESSION "Status: PASSED")
+
+  add_test(NAME "HFAF" COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR}/Testing/Correlations/run-test.py test-hfaf.yml --exe "${CMAKE_BINARY_DIR}/bin/${target_name}" --mpi "${MPIEXEC} ${MPIEXEC_PREFLAGS} -n" --np "${MPI_NPROCS}" --dir ${CMAKE_BINARY_DIR}/Testing/Correlations/ --verbose)
+  set_tests_properties("HFAF" PROPERTIES PASS_REGULAR_EXPRESSION "Status: PASSED")
 
   foreach(test RANGE 1 9 1)
     do_test("TEST0${test}")

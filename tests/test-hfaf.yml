@@ -1,0 +1,7 @@
+# %YAML 1.2
+
+test:
+  name: "HFAF"
+  title: "DL_POLY On-the-fly heatflux auto-correlation function with thermal-conductivity"
+  type: "regression"
+  tolerance: 0.0001
