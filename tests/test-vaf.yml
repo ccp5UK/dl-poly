@@ -1,7 +1,0 @@
-# %YAML 1.2
-
-test:
-  name: "VAF"
-  title: "DL_POLY On-the-fly velocity auto-correlation function"
-  type: "regression"
-  tolerance: 0.0001

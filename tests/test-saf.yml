@@ -1,7 +1,0 @@
-# %YAML 1.2
-
-test:
-  name: "SAF"
-  title: "DL_POLY On-the-fly stress auto-correlation function with viscosity"
-  type: "regression"
-  tolerance: 0.0001

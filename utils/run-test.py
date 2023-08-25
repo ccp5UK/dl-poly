@@ -9,9 +9,11 @@ from pathlib import Path
 import argparse
 import os
 
+import glob
+import subprocess
+
 parser = argparse.ArgumentParser(description='Test DL_POLY')
 
-parser.add_argument('test', type=str, default=None)
 parser.add_argument('--exe', type=str, default=None, help='location of DLPOLY.Z executable')
 parser.add_argument('--np', type=int, default=1, help='number of processes')
 parser.add_argument('--mpi', type=str, default='mpirun -n', help='mpi executable')
@@ -26,9 +28,17 @@ verbose = args.verbose
 cwd = os.getcwd()
 os.chdir(args.dir)
 
+sys.path.append(args.dir)
+
+fname = args.dir.split('/')[-1]
+
+subprocess.run(['tar','-xvJf',f'{args.dir}/{fname}.tar.xz', '--strip-components', '1'])
+
 yaml_parser = YAML()
 
-with open(f"{args.test}", 'rb') as in_file:
+file = glob.glob(f"{args.dir}/test*.yml")[0]
+
+with open(file, 'rb') as in_file:
     test = yaml_parser.load(in_file)['test']
 
 if (verbose):
@@ -41,11 +51,11 @@ Results: {}
 
 results = yaml_parser.load(test_result_string)
 
-testcase = __import__(test["name"]+"."+"runtest", fromlist=[test["name"]])
+testcase = __import__("runtest")
 
-actual = testcase.actual(workdir=test["name"]+"/", exe=args.exe, np=args.np, mpi=args.mpi)
+actual = testcase.actual(workdir='./', exe=args.exe, np=args.np, mpi=args.mpi)
 
-expected = testcase.expected(workdir=test["name"]+"/")
+expected = testcase.expected(workdir='./')
 
 passed = False
 
