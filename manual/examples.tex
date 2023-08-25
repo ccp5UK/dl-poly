@@ -1,22 +1,16 @@
 \section{Example Simulations}
 
 Because of the size of the data files for the \D
-example simulations, they are not shipped in the standard
-download of the \D source.  Instead users are requested
-to download them from the CCP5 FTP server as follows:
+standard test cases, they are not shipped in the standard
+download of the \D source. Test files are downloaded
+automatically when building/ running CMake with the CMake variable BUILD\_TESTING=ON.
+This can be done as follows:
 
 \begin{lstlisting}
-FTP site : ftp.dl.ac.uk
-Username : anonymous
-Password : your email address
-Directory: ccp5/DL_POLY/DL_POLY_4.0/DATA
-Files    : test_X.tar.xz
-\end{lstlisting}
-
-where `\_X' stands for the example simulation number.
-
-Remember to use the BINARY data option when transferring these
-files.
+    folder="build-mpi-testing"
+    rm -rf $folder && mkdir $folder && pushd $folder
+    cmake ../ -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON 
+\end{lstlisting}  
 
 Unpack the files in the `data' subdirectory using `gunzip' and
 `tar -xf' to create the `TEST\_X' directory.

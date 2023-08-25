@@ -335,8 +335,14 @@ If {\bf unsuccessful} then you should read the Compiling~and~Running~\D
 
 To run the code you first need to place the necessary input files
 within {\em execute}.  TEST cases containing suitable input files,
-as well as examples of output files, can be obtained at the \D FTP
-site, \FTP.  Examine the contents of {\em data}/{\tt README.txt} and
+as well as examples of output files, can be obtained by running CMake 
+or building \D with the CMake option BUILD\_TESTING=ON. For example
+\begin{lstlisting}
+    folder="build-mpi-testing"
+    rm -rf $folder && mkdir $folder && pushd $folder
+    cmake ../ -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON 
+\end{lstlisting}  
+Examine the contents of {\em data}/{\tt README.txt} and
 {\em bench}/{\tt README.txt} for more information.  To run the serial
 version you simply issue the command {\tt DLPOLY.Z} %(or {\tt DLPOLY.Z.cu})
 within the {\em execute} subdirectory.  If you have compiled a parallel

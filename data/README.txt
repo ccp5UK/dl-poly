@@ -3,19 +3,13 @@ Standard Test Cases for DL_POLY_4
 
 Because of the size of the data files for the DL_POLY_4
 standard test cases, they are not shipped in the standard
-download of the DL_POLY_4 source.  Instead, users are requested
-to download them from the CCP5 FTP server as follows:
+download of the DL_POLY_4 source. Test files are downloaded
+automatically when building/ running CMake with the CMake variable BUILD_TESTING=ON.
+This can be done as follows:
 
-FTP site : ftp.dl.ac.uk
-Username : anonymous
-Password : your email address
-Directory: ccp5/DL_POLY/DL_POLY_4.0/DATA/4.09
-Files    : test_X.tar.xz
-
-where `_X' stands for the test case number.
-
-Remember to use the BINARY data option when transferring these
-files.
+folder="build-mpi-testing"
+rm -rf $folder && mkdir $folder && pushd $folder
+cmake ../ -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON 
 
 Unpack the files in the `data' subdirectory using firstly
 `gunzip' to uncompress them and then `tar -xf' to create the
@@ -201,3 +195,9 @@ TEST 191 - EVB 3 Force fields
 TEST 192 - EVB constant npt
 TEST 193 - EVB gaussian nvt
 TEST 194 - EVB minimize
+
+TEST 195 - Argon, Velocity on-the-fly correlation
+TEST 196 - Argon, Stress on-the-fly correlation (with viscosity calculation)
+TEST 197 - Argon, Heatflux on-the-fly correaltion (with thermal conductivity calculation)
+TEST 198 - Argon, Mean square displacement 
+TEST 199 - Argon, Radial distriution function
