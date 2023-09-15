@@ -1688,37 +1688,38 @@ Contains
 
     ! line-printer output every flow%freq_output steps
 
-    If ((flow%lines == 0 .or. Mod(flow%step, flow%freq_output) == 0) .and. ffpass) Then
+    If (flow%freq_output > 0) Then 
+      If (flow%lines == 0 .or. (Mod(flow%step, flow%freq_output) == 0) .and. ffpass) Then
 
-      ! Update cpu flow%time
+        ! Update cpu flow%time
 
-      Call gtime(tmr%elapsed)
+        Call gtime(tmr%elapsed)
 
-      If (flow%new_page()) Then
-        Call write_header()
-      Else If (ttm%l_ttm) Then
-        Write (messages(1), '(a)') Repeat('-', 130)
-        Call info(messages, 1, .true.)
+        If (flow%new_page()) Then
+          Call write_header()
+        Else If (ttm%l_ttm) Then
+          Write (messages(1), '(a)') Repeat('-', 130)
+          Call info(messages, 1, .true.)
+        End If
+
+        Write (messages(1), '(i13,1p,9e12.4)') flow%step, stat%stpval(1:9)
+        Write (messages(2), '(f13.5,1p,9e12.4)') flow%time, stat%stpval(10:18)
+        Write (messages(3), '(0p,f13.3,1p,9e12.4)') tmr%elapsed, stat%stpval(19:27)
+        Write (messages(4), '(a)') ''
+        Call info(messages, 4, .true.)
+
+        Write (messages(1), '(6x,a7,1p,9e12.4)') 'rolling', stat%ravval(1:9)
+        Write (messages(2), '(5x,a8,1p,9e12.4)') 'averages', stat%ravval(10:18)
+        Write (messages(3), '(13x,9e12.4)') stat%ravval(19:27)
+        Write (messages(4), '(a)') Repeat('-', 130)
+        Call info(messages, 4, .true.)
+
+        If (flow%step /= 0) Then
+          Call flow%line_printed()
+        End If
+
       End If
-
-      Write (messages(1), '(i13,1p,9e12.4)') flow%step, stat%stpval(1:9)
-      Write (messages(2), '(f13.5,1p,9e12.4)') flow%time, stat%stpval(10:18)
-      Write (messages(3), '(0p,f13.3,1p,9e12.4)') tmr%elapsed, stat%stpval(19:27)
-      Write (messages(4), '(a)') ''
-      Call info(messages, 4, .true.)
-
-      Write (messages(1), '(6x,a7,1p,9e12.4)') 'rolling', stat%ravval(1:9)
-      Write (messages(2), '(5x,a8,1p,9e12.4)') 'averages', stat%ravval(10:18)
-      Write (messages(3), '(13x,9e12.4)') stat%ravval(19:27)
-      Write (messages(4), '(a)') Repeat('-', 130)
-      Call info(messages, 4, .true.)
-
-      If (flow%step /= 0) Then
-        Call flow%line_printed()
-      End If
-
     End If
-
     ! Reports at end of equilibration period
 
     If (flow%step == flow%equil_steps .and. ffpass) Then
@@ -1791,10 +1792,13 @@ Contains
                        flow%step, flow%time, green, comm)
     End If
 
-    If (stat%cur%on .and. (Mod(flow%step, flow%freq_output) == 0) .and. (flow%step > flow%equil_steps)) Then
+    If (flow%freq_output > 0) Then
+      If (stat%cur%on .and. (Mod(flow%step, flow%freq_output) == 0) &
+          .and. (flow%step > flow%equil_steps)) Then
 
-      Call stat%cur%compute(cnfig, flow%time, comm)
+        Call stat%cur%compute(cnfig, flow%time, comm)
 
+      End If
     End If
 
   End Subroutine statistics_report
@@ -1874,7 +1878,7 @@ Contains
     ! Close and Open OUTPUT at about 'i'th print-out or 'i' minute intervals
 
     i = 20
-    If (flow%step > 0) Then
+    If (flow%step > 0 .and. flow%freq_output > 0) Then
       If (Mod(flow%step, i * flow%freq_output) == 0 .or. &
           (tmr%elapsed > Real(i * 60, wp) .and. &
            tmr%elapsed - Real(((Int(tmr%elapsed) / (i * 60)) * i * 60), wp) < &
@@ -2105,14 +2109,16 @@ Contains
       End If ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
   
       Do ff = 1, flow%NUM_FF
-        ! If system is correlating heatflux or, to write per-particle data AND write step AND not equilibration
-        If (stat(ff)%correlating_heat_flux .or. &
-          (stat(ff)%require_pp .and. Mod(flow%step, stat(ff)%intsta) == 0 .and. flow%step >= flow%equil_steps)) Then
+        If (stat(ff)%intsta > 0) Then
+          ! If system is correlating heatflux or, to write per-particle data AND write step AND not equilibration
+          If (stat(ff)%correlating_heat_flux .or. &
+            (stat(ff)%require_pp .and. Mod(flow%step, stat(ff)%intsta) == 0 .and. flow%step >= flow%equil_steps)) Then
 #ifndef HALF_HALO
-          Call stat(ff)%allocate_per_particle_arrays(cnfig(ff)%natms)
+            Call stat(ff)%allocate_per_particle_arrays(cnfig(ff)%natms)
 #else /* HALF_HALO */
-          Call stat(ff)%allocate_per_particle_arrays(cnfig(ff)%mxatms)
+            Call stat(ff)%allocate_per_particle_arrays(cnfig(ff)%mxatms)
 #endif /* HALF_HALO */
+          End If
         End If
       End Do
 

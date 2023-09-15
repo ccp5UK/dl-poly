@@ -908,6 +908,8 @@ Contains
 
     End Do
 
+    Close(file_unit)
+
   End Subroutine correlation_result
     
 
@@ -968,7 +970,7 @@ Contains
     If (fail > 0) Call error_alloc('amsd', 'statistics_collect')
 
     ! open statistics file and put header
-    If (stats%newjob .and. comm%idnode == 0 .and. ffpass) Then
+    If (stats%intsta > 0 .and. stats%newjob .and. comm%idnode == 0 .and. ffpass) Then
       stats%newjob = .false.
 
       ! If the keyres = RESTART_KEY_OLD is the file old (does it exist)?
@@ -1295,39 +1297,41 @@ Contains
     End If
 
     ! write statistics file
-
-    If (comm%idnode == 0 .and. Mod(nstep, stats%intsta) == 0 .and. ffpass) Then
-      If (.not. stats%statis_file_open) Then
-        Open (Newunit=files(FILE_STATS)%unit_no, File=files(FILE_STATS)%filename, Position='append')
-        stats%statis_file_open = .true.
-      End If
-
-      If (lmsd) Then
-        If (stats%file_yaml) Then
-          Write (fmtt, '(a,i0,a)') '(2x,a4,i0,",",', iadd + 1 - 2 * mxatdm, '(g16.8,","),g16.8,a2)'
-          Write (files(FILE_STATS)%unit_no, fmt=Trim(fmtt)) "- [ ", nstep, time, &
-            stats%stpval(1:27), stats%stpval(0), stats%stpval(28:36), &
-            stats%stpval(37 + 2 * mxatdm:iadd), ' ]'
-        Else
-          Write (files(FILE_STATS)%unit_no, '(i10,1p,e14.6,0p,i10,/, (1p,5e14.6))') &
-            nstep, time, iadd + 1 - 2 * mxatdm, stats%stpval(1:27), stats%stpval(0), stats%stpval(28:36), &
-            stats%stpval(37 + 2 * mxatdm:iadd)
+    If (stats%intsta > 0) Then 
+      If (comm%idnode == 0 .and. Mod(nstep, stats%intsta) == 0 .and. ffpass) Then
+        If (.not. stats%statis_file_open) Then
+          Open (Newunit=files(FILE_STATS)%unit_no, File=files(FILE_STATS)%filename, Position='append')
+          stats%statis_file_open = .true.
         End If
-      Else
-        If (stats%file_yaml) Then
-          Write (fmtt, '(a,i0,a)') '(2x,a4,i0,",",', iadd + 1, '(g16.8,","),g16.8,a2)'
-          Write (files(FILE_STATS)%unit_no, fmt=Trim(fmtt)) "- [ ", nstep, time, &
-            stats%stpval(1:27), stats%stpval(0), stats%stpval(28:iadd), ' ]'
+
+        If (lmsd) Then
+          If (stats%file_yaml) Then
+            Write (fmtt, '(a,i0,a)') '(2x,a4,i0,",",', iadd + 1 - 2 * mxatdm, '(g16.8,","),g16.8,a2)'
+            Write (files(FILE_STATS)%unit_no, fmt=Trim(fmtt)) "- [ ", nstep, time, &
+              stats%stpval(1:27), stats%stpval(0), stats%stpval(28:36), &
+              stats%stpval(37 + 2 * mxatdm:iadd), ' ]'
+          Else
+            Write (files(FILE_STATS)%unit_no, '(i10,1p,e14.6,0p,i10,/, (1p,5e14.6))') &
+              nstep, time, iadd + 1 - 2 * mxatdm, stats%stpval(1:27), stats%stpval(0), stats%stpval(28:36), &
+              stats%stpval(37 + 2 * mxatdm:iadd)
+          End If
         Else
-          Write (files(FILE_STATS)%unit_no, '(i10,1p,e14.6,0p,i10,/, (1p,5e14.6))') &
-            nstep, time, iadd + 1, stats%stpval(1:27), stats%stpval(0), stats%stpval(28:iadd)
+          If (stats%file_yaml) Then
+            Write (fmtt, '(a,i0,a)') '(2x,a4,i0,",",', iadd + 1, '(g16.8,","),g16.8,a2)'
+            Write (files(FILE_STATS)%unit_no, fmt=Trim(fmtt)) "- [ ", nstep, time, &
+              stats%stpval(1:27), stats%stpval(0), stats%stpval(28:iadd), ' ]'
+          Else
+            Write (files(FILE_STATS)%unit_no, '(i10,1p,e14.6,0p,i10,/, (1p,5e14.6))') &
+              nstep, time, iadd + 1, stats%stpval(1:27), stats%stpval(0), stats%stpval(28:iadd)
+          End If
         End If
+
+        If (nstep > 0) Then
+          Call correlation_result(stats, comm, files, config, sites, nstep, time)
+        End If 
+
       End If
-
-      Call correlation_result(stats, comm, files, config, sites, nstep, time)
-
     End If
-
     ! check on number of variables for stack
 
     If (iadd > stats%mxnstk) Call error(170)
