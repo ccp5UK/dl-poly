@@ -1324,6 +1324,8 @@ Contains
         End If
       End If
 
+      Call correlation_result(stats, comm, files, config, sites, nstep, time)
+
     End If
 
     ! check on number of variables for stack
