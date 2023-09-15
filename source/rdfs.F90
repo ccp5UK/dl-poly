@@ -302,7 +302,7 @@ Contains
       If (rdf%is_yaml) Then
         Write (nrdfdt,'(a)') "%YAML 1.2"
         Write (nrdfdt,'(a)') "---"
-        Write (nrdfdt, '(a,a)') "title: ", Trim(config%cfgname)
+        Write (nrdfdt, '(a,a,a)') "title: '", Trim(config%cfgname),"'"
         Write (nrdfdt, '(a,i0)') "npairs: ", rdf%n_pairs
         Write (nrdfdt, '(a,i0)') "ngrid: ", rdf%max_grid
         write (nrdfdt,'(a,*(g16.8,","))',advance="no") "grid: [ ", x(1:rdf%max_grid-1)

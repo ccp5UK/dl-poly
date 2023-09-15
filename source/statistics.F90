@@ -611,7 +611,7 @@ Contains
 
       Write (file_unit,'(a)') "%YAML 1.2"
       Write (file_unit,'(a)') "---"
-      Write (file_unit, '(a,a)') "title: ", Trim(config%cfgname)
+      Write (file_unit, '(a,a,a)') "title: '", Trim(config%cfgname), "'"
       Write (file_unit, '(a)') "correlations:"
     
     End If
@@ -984,7 +984,7 @@ Contains
           Write (files(FILE_STATS)%unit_no, '(a)') "%YAML 1.2"
           Write (files(FILE_STATS)%unit_no, '(a)') "---"
         End If
-        Write (files(FILE_STATS)%unit_no, '(a,a)') "title: ", config%cfgname
+        Write (files(FILE_STATS)%unit_no, '(a,a,a)') "title: '", config%cfgname, "'"
 
         If (Abs(engunit - eu_ev) <= zero_plus) Then
           sunits = "electron Volts"
