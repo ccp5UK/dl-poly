@@ -44,6 +44,8 @@ Module statistics
                              io_finalize, io_get_parameters, io_history, io_init, io_open, &
                              io_set_parameters, io_type, io_unknown_write_level, &
                              io_unknown_write_option, io_write_batch, io_write_sorted_file
+  Use integrators,     Only: trapezium_rule, simpsons_rule, integrator
+  
   Use kinds,           Only: STR_LEN,&
                              li,&
                              wi,&
@@ -2626,18 +2628,21 @@ Contains
   End Function calculate_heat_flux
 
   Function calculate_viscosity(stats, correlation, dt) Result(visc)
-    Type(stats_type), Intent(In   ) :: stats
-    Real(Kind=wp),    Intent(In   ) :: correlation(:,:,:)
-    Real(Kind=wp),    Intent(In   ) :: dt
-    Real(Kind=wp)                   :: visc
+    Type(stats_type),  Intent(In   ) :: stats
+    Real(Kind=wp),     Intent(In   ) :: correlation(:,:,:)
+    Real(Kind=wp),     Intent(In   ) :: dt
+    Real(Kind=wp)                    :: visc
+    Class(integrator), Allocatable   :: inter 
 
     ! combine xy, yz, zx
 
-    visc = ( Sum(correlation(:,2,2)) + Sum(correlation(:,6,6)) + Sum(correlation(:,7,7)) ) / 3.0_wp
+    Allocate(simpsons_rule::inter)
+
+    visc = inter%integrate_uniform( (correlation(:,2,2) + correlation(:,6,6) + correlation(:,7,7))/3.0_wp, dt)
 
     ! in internal pressure-time units
 
-    visc = ( stats%stpvol / (boltz*stats%stptmp) ) * visc * dt
+    visc = ( stats%stpvol / (boltz*stats%stptmp) ) * visc
     
     ! now in Katm - internal time 
 
@@ -2651,11 +2656,14 @@ Contains
     Real(Kind=wp),          Intent(In   ) :: dt
     Character(Len=STR_LEN), Intent(  Out) :: units
     Real(Kind=wp)                         :: therm_cond, conv
+    Class(integrator),      Allocatable   :: inter 
                                         
 
-    ! z component 
+    ! z component
+    
+    Allocate(simpsons_rule::inter)
 
-    therm_cond = Sum(correlation(:,3,3)) * dt
+    therm_cond = inter%integrate_uniform(correlation(:,3,3),dt)
 
     ! careful, DL_POLY already divides by volume in calculate_heat_flux
 

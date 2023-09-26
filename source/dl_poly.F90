@@ -395,11 +395,15 @@ contains
             Case ("vdw")
               Write(eu, '(a)') "Running test: vdw"
               tests%vdw = .true.
+            Case ("integrators")
+              Write(eu, '(a)') "Running test: integrators"
+              tests%integrators = .true.
             Case ("all")
               Write(eu, '(a)') "Running test: control"
               Write(eu, '(a)') "Running test: configuration"
               Write(eu, '(a)') "Running test: units"
               Write(eu, '(a)') "Running test: vdw"
+              Write(eu, '(a)') "Running test: integrators"
               Call tests%all()
             Case Default
               Write (eu, *) "Invalid test option:", Trim(arg)

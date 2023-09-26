@@ -156,7 +156,7 @@ Contains
     End If
 
     if (present(passed)) then
-      passed = abs(actual - expected) < tol
+      passed = All(abs(actual - expected) < tol)
     end if
 #endif
   end Subroutine assert_almost_equal_rvec

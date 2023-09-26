@@ -53,6 +53,7 @@ set(dlpoly_SRCS
   core_shell.F90
   rigid_bodies.F90
   dpd.F90
+  integrators.F90
   correlator.F90
   statistics.F90
   msd.F90
@@ -118,6 +119,7 @@ set(dlpoly_SRCS
   unit_tests/test_control.F90
   unit_tests/test_configuration.F90
   unit_tests/test_vdw.F90
+  unit_tests/test_integrators.F90
   )
 if(BUILDER)
   set_property(SOURCE development.F90 APPEND PROPERTY
