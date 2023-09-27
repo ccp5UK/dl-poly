@@ -11,8 +11,10 @@ Module test_integrators
 
   Contains
   
-    Subroutine run_integrators_tests()
+    Subroutine run_integrators_tests(passed_all)
       
+        Logical, Intent(InOut)            :: passed_all
+
         Real(Kind=wp), Allocatable        :: t(:), f(:), tnu(:), fnu(:)
         Real(Kind=wp)                     :: actual, expected, dtau
         Integer                           :: i, k
@@ -37,8 +39,8 @@ Module test_integrators
             ! non uniform pattern
             k = Mod(i*237, 1039)
             k = Mod(k*23 , 1049)
-            dtau = dtau + (Real(Mod(k,100))/100.0)*(0.02-0.005)+0.005
-            tnu(i) = tnu(i) + dtau
+            dtau = (Real(Mod(k,100))/100.0)*(0.02-0.005)+0.005
+            tnu(i) = tnu(i-1) + dtau
             fnu(i) = Cos(tnu(i))
         End Do
 
@@ -48,56 +50,70 @@ Module test_integrators
 
         actual = inter%integrate_uniform(f, dt)
 
-        Call assert(Abs(actual-expected) < 0.01,"trapezium rule (uniform) fail")
+        Call assert(actual, expected,"trapezium rule (uniform) fail", passed_accum = passed_all, tolerance = 1e-3_wp)
 
         actual = inter%integrate(f, t)
 
-        Call assert(Abs(actual-expected) < 0.01, "trapezium rule (non-uniform) fail")
+        Call assert(actual, expected, "trapezium rule (non-uniform) on uniform data fail", &
+            passed_accum = passed_all, tolerance = 1e-3_wp)
 
         expected = Sin(tnu(Size(tnu)))
 
         actual = inter%integrate(fnu, tnu)
 
-        Call assert(Abs(actual-expected) < 0.01, "trapezium rule (non-uniform) fail")
+        Call assert(actual, expected, "trapezium rule (non-uniform) on non-uniform data fail", &
+            passed_accum = passed_all, tolerance = 1e-3_wp)
 
-        expected = Sin(t(Size(t)))
+        expected = DSin(t(Size(t)))
 
         func => DCos
 
         actual = inter%integrate_func_d(func, t)
 
-        Call assert(Abs(actual-expected) < 0.01, "trapezium rule (func) fail")
+        Call assert(actual, expected, "trapezium rule (func) fail", passed_accum = passed_all, tolerance = 1e-3_wp)
 
         Deallocate(inter)
 
         Allocate(simpsons_rule::inter)
 
+        expected = Sin(t(Size(t)))
+
         actual = inter%integrate_uniform(f, dt)
 
-        Call assert(Abs(actual-expected) < 0.01,"simpsons rule (uniform) fail")
+        Call assert(actual, expected, "simpsons rule (uniform) fail", passed_accum = passed_all, tolerance = 1e-3_wp)
+   
+        expected = Sin(t(Size(t)-1))
+
+        actual = inter%integrate_uniform(f(1:Size(f)-1), dt)
+
+        Call assert(actual, expected, "simpsons rule (uniform) even intervals fail", passed_accum = passed_all, tolerance = 1e-3_wp)
+   
+        expected = Sin(t(Size(t)))
 
         actual = inter%integrate(f, t)
 
-        Call assert(Abs(actual-expected) < 0.01, "simpsons rule (non-uniform) fail")
+        Call assert(actual, expected, "simpsons rule (non-uniform) on uniform data fail", &
+            passed_accum = passed_all, tolerance = 1e-3_wp)
 
         expected = Sin(tnu(Size(tnu)))
 
         actual = inter%integrate(fnu, tnu)
 
-        Call assert(Abs(actual-expected) < 0.01, "simpsons rule (non-uniform) fail")
+        Call assert(actual, expected, "simpsons rule (non-uniform) on non-uniform data fail", &
+            passed_accum = passed_all, tolerance = 1e-3_wp)
 
         Call assert( &
-            Abs(inter%integrate_uniform(fnu, dt)-expected) < &
+            Abs(inter%integrate_uniform(fnu, dt)-expected) > &
             Abs(inter%integrate(fnu, tnu)-expected), &
-            "simpsons rule (non uniform) better on non-uniform data fail")
+            "simpsons rule (non uniform) better on non-uniform data fail", passed_accum = passed_all)
 
-        expected = Sin(t(Size(t)))
+        expected = DSin(t(Size(t)))
 
         func => DCos
 
         actual = inter%integrate_func_d(func, t)
 
-        Call assert(Abs(actual-expected) < 0.01, "simpsons rule (func) fail")
+        Call assert(actual, expected, "simpsons rule (func) fail", passed_accum = passed_all, tolerance = 1e-3_wp)
 
         Deallocate(inter)
 

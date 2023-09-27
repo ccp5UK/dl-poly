@@ -204,7 +204,7 @@ contains
     Real(kind=wp), Parameter :: bohr = 0.52918_wp*angstrom
     Real(kind=wp), Parameter :: inch = 2.54e-2_wp*metre
 
-    Real(kind=wp), Parameter :: joulepmol = 0.1_wp, joule = joulepmol !*avogadro
+    Real(kind=wp), Parameter :: joulepmol = 0.1_wp, joule = joulepmol * avogadro
     Real(kind=wp), Parameter :: calorie = 4.1842_wp*joule
 
     Real(kind=wp), Parameter :: hartree = 4.359744722e-18_wp*joule

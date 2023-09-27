@@ -265,6 +265,7 @@ contains
     Type(flow_type),             Intent(InOut) :: flow
     Character(len=1024),         Intent(  Out) :: output_filename, control_filename
     Logical,                     Intent(  Out) :: finish
+    Logical                                    :: passed = .true.
 
     Character(len=1024) :: arg
     Character(Len=10) :: mode
@@ -413,8 +414,12 @@ contains
           End Do
 
           Call init_error_system(ou, comms_in)
-          Call tests%run(comms_in)
-          Write(eu, '(a)') "Tests complete"
+          Call tests%run(comms_in, passed)
+          If (passed) Then
+            Write(eu, '(a)') "Status: PASSED"
+          Else 
+            Write(eu, '(a)') "Status: FAILED"
+          End If
           finish = .true.
 
         Case ('--replay', '-r')

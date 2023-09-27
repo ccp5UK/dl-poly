@@ -88,11 +88,12 @@ Module test_configuration
 Contains
 
   ! Runs all unit tests for configuration module
-  Subroutine run_configuration_tests(comm)
-    Type(comms_type), intent(inout) :: comm
-    Integer                  :: i
-    Logical                  :: passed(3)
-    Type(configuration_type) :: config
+  Subroutine run_configuration_tests(comm, passed_all)
+    Type(comms_type), Intent(InOut) :: comm
+    Logical,          Intent(  Out) :: passed_all
+    Integer                         :: i
+    Logical                         :: passed(3)
+    Type(configuration_type)        :: config
 
     !Test coordinates are gathered from all processes and broadcast to all
     Call initialise_config(comm, position, species, config)
@@ -108,6 +109,8 @@ Contains
       Enddo
     Endif
 
+    passed_all = All(passed)
+
     Call finalise_config(config)
 
   End Subroutine run_configuration_tests
@@ -121,8 +124,8 @@ Contains
 
     Integer :: i, ia, istart, istop
 
-    Call assert(Size(position, 1) == Size(species), &
-                "Size(position,1) /= Size(species)")
+    Call assert(Size(position, 2) == Size(species), &
+                "Size(position,2) /= Size(species)")
 
     config%megatm = n_atoms
     !Alternative to domain decomposition

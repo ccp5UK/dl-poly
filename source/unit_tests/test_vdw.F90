@@ -23,36 +23,43 @@ Module test_vdw
 
 Contains
 
-  Subroutine run_vdw_tests()
+  Subroutine run_vdw_tests(passed)
+      Logical, Intent(  Out) :: passed
 
+      passed = .true.
     ! Call test_indiv_funcs()
-    Call test_forces_direct()
+    Call test_forces_direct(passed)
 
   end Subroutine run_vdw_tests
 
-  Subroutine test_forces_direct()
+  Subroutine test_forces_direct(passed)
+
+    Logical, Intent(  Out) :: passed
 
     Real(kind=wp), Dimension(NUM_VDW_POTS), Parameter :: expected_e =  [&
-         16128.000000000000, 15616.000000000000, -1.0000000000000000, 80.000000000000000, &
-         4567.8016528925955, 363.25771964635982, 367.25771964635982, -2.3934693402873668, &
-         45.598150033144236, -1.0000000000000000, 1.0000000000000000, 0.12500000000000000, &
-         555.50928442334305, 2.1495939317213679, 16882.652704957312, 3.8142266913481757E+030, &
-         11761.890149027382, 4.0000000000000000, 16128.000000000000, -2.3934693402873668, &
-         -1.0000000000000000]
+        -1.0000000000000000_wp, 16128.000000000000_wp, 80.000000000000000_wp, -2.3934693402873668_wp, &
+        45.598150033144236_wp, -1.0000000000000000_wp, 4567.8016528926664_wp, 363.25771964635982_wp, &
+        1.0000000000000000_wp, 0.12500000000000000_wp, 555.50928442334305_wp, 15616.000000000000_wp, &
+        367.25771964635982_wp, 2.1495939317213679_wp, 16882.652704957309_wp, 3.8142266913481757E+030_wp, &
+        11761.890149027380_wp, 16128.000000000000_wp, -2.3934693402873668_wp, -1.0000000000000000_wp, &
+        4.0000000000000000_wp]
     Real(kind=wp), Dimension(NUM_VDW_POTS), Parameter :: expected_v = [&
-         195072.00000000000, 192000.00000000000, 0.0000000000000000, 288.00000000000000, &
-         16899.173553719134, 2300.0595394172847, 2348.0595394172847, -17.696734670143684, &
-         45.196300066288472, -8.0000000000000000, -12.000000000000000, 0.12500000000000000, &
-         3719.0014773362891, -0.71653131057378916, 50044.066263312910, 5.2445617006037455E+031, &
-         36135.103419546067, 40.000000000000000, 195072.00000000000, -17.696734670143684, &
-         0.0000000000000000]
+        0.0000000000000000_wp, -195072.00000000000_wp, -288.00000000000000_wp, 17.696734670143684_wp, &
+        -45.196300066288472_wp, 8.0000000000000000_wp, -16899.173553719396_wp, -2300.0595394172847_wp, &
+        12.000000000000000_wp, -0.12500000000000000_wp, -3719.0014773362891_wp, -192000.00000000000_wp, &
+        -2348.0595394172847_wp, 0.71653131057378916_wp, -50044.066263312896_wp, -5.2445617006037446E+031_wp, &
+        -36135.103419546060_wp, -195072.00000000000_wp, 17.696734670143684_wp, 0.0000000000000000_wp, &
+        -40.000000000000000_wp]
+
 
     Type(vdw_type) :: test
     Type(neighbours_type) :: neigh
     Type(stats_type) :: stats
     Type(configuration_type) :: config
-    Real(wp), Dimension(NUM_VDW_POTS) :: eng, gamma
+    Real(wp), Dimension(NUM_VDW_POTS) :: eng = 0.0_wp, gamma = 0.0_wp
     Integer :: i
+
+    passed = .true.
 
     Call setup_fake_system(neigh, stats, config)
 
@@ -76,8 +83,8 @@ Contains
       Call vdw_forces_direct(1, ones, ones, ones, ones, eng(i), gamma(i), stats, neigh, test, config)
     end do
 
-    Call assert(all(abs(eng - expected_e) < 1.0e-6), "VdW Energies differ from expected")
-    Call assert(all(abs(gamma - expected_v) < 1.0e-6), "VdW Virials differ from expected")
+    Call assert(eng, expected_e, "VdW Energies differ from expected", passed_accum = passed)
+    Call assert(gamma, expected_v, "VdW Virials differ from expected", passed_accum = passed)
 
   end Subroutine test_forces_direct
 

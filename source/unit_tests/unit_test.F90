@@ -34,14 +34,38 @@ Contains
     this%integrators = .true.
   End Subroutine set_all_tests_true
 
-  Subroutine run_unit_tests(this, comm)
-    Class(testing_type), Intent(inout) :: this
-    Type(comms_type) :: comm
+  Subroutine run_unit_tests(this, comm, passed_all)
+    Class(testing_type), Intent(InOut) :: this
+    Type(comms_type)                   :: comm
+    Logical,             Intent(  Out) :: passed_all
+    Logical                            :: passed = .true.
 
-    if (this%units) Call run_units_tests()
-    if (this%control) Call run_control_tests(comm)
-    if (this%configuration) Call run_configuration_tests(comm)
-    if (this%vdw) Call run_vdw_tests()
-    if (this%integrators) Call run_integrators_tests()
+    passed_all = .true.
+
+    If (this%units) Then 
+      Call run_units_tests(passed)
+      passed_all = passed_all .and. passed
+    End If
+
+    If (this%control) Then 
+      Call run_control_tests(comm, passed)
+      passed_all = passed_all .and. passed
+    End If
+    
+    If (this%configuration) Then
+      Call run_configuration_tests(comm, passed)
+      passed_all = passed_all .and. passed
+    End If
+    
+    If (this%vdw) Then 
+      Call run_vdw_tests(passed)
+      passed_all = passed_all .and. passed
+    End If
+
+    If (this%integrators) Then
+      Call run_integrators_tests(passed)
+      passed_all = passed_all .and. passed
+    End If
+
   End Subroutine run_unit_tests
 end Module unit_test

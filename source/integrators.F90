@@ -121,10 +121,10 @@ Contains
     End Function trapezium_rule_func
 
     Function trapezium_rule_uniform(i, f, dt) Result(v)
+        Class(trapezium_rule),          Intent(In   ) :: i
         Real(Kind=wp), Dimension(:),    Intent(In   ) :: f
         Real(Kind=wp),                  Intent(In   ) :: dt
         Real(Kind=wp)                                 :: v
-        Class(trapezium_rule),          Intent(In   ) :: i
         
         v = 0.0_wp
         If (Size(f) == 2) Then
@@ -158,18 +158,28 @@ Contains
         Procedure (integrand_d), Pointer,   Intent(In   ) :: f
         Real(Kind=wp), Dimension(:),        Intent(In   ) :: t
         Real(Kind=wp)                                     :: v, dt
-        Integer                                           :: k
+        Integer                                           :: k, n
 
-        dt = (t(Size(t))-t(1)) / Real(Size(t))
+        n = Size(t)
+        dt = (t(Size(t))-t(1)) / Real(n, Kind=wp)
         v = 0.0_wp
         If (Size(t) == 2) Then
             v = dt * (f(t(1)) + f(t(2)))*0.5_wp
         Else
+            n = Size(t)-1
+            If (Mod(Size(t),2) == 0) Then
+                n = n - 3
+            End If
             v = 0.0_wp
-            Do k = 1, Int(Floor(Real(Size(t))*0.5_wp))-1
+            Do k = 1, Int(Floor(Real(n,Kind=wp)*0.5_wp))
                 v = v + f(t(2*k-1)) + 4.0_wp * f(t(2*k)) + f(t(2*k+1))
             End Do
             v = 1.0_wp/3.0_wp * v * dt
+            If (Mod(Size(t),2 ) == 0) Then
+                ! uneven interval correction (3/8th rule)
+                n = Size(t)-1
+                v = v + (3.0_wp/8.0_wp) * dt * ( f(t(n-3)) + 3.0_wp*f(t(n-2)) + 3.0_wp*f(t(n-1)) + f(t(n)))
+            End If 
         End If
     End Function simpsons_rule_func_d
 
@@ -178,18 +188,27 @@ Contains
         Procedure (integrand), Pointer,   Intent(In   ) :: f
         Real, Dimension(:),               Intent(In   ) :: t
         Real                                            :: v, dt
-        Integer                                         :: k
+        Integer                                         :: k, n
 
         dt = (t(Size(t))-t(1)) / Real(Size(t))
         v = 0.0
         If (Size(t) == 2) Then
             v = dt * (f(t(1)) + f(t(2)))*0.5
         Else
+            n = Size(t)-1
+            If (Mod(Size(t),2) == 0) Then
+                n = n - 3
+            End If
             v = 0.0
-            Do k = 1, Int(Floor(Real(Size(t))*0.5))-1
+            Do k = 1, Int(Floor(Real(n))*0.5)
                 v = v + f(t(2*k-1)) + 4.0 * f(t(2*k)) + f(t(2*k+1))
             End Do
             v = 1.0/3.0 * v * dt
+            If (Mod(Size(t),2 ) == 0) Then
+                ! uneven interval correction (3/8th rule)
+                n = Size(t)-1
+                v = v + (3.0/8.0) * dt * ( f(t(n-3)) + 3.0*f(t(n-2)) + 3.0*f(t(n-1)) + f(t(n)))
+            End If 
         End If
     End Function simpsons_rule_func
 
@@ -198,17 +217,27 @@ Contains
         Real(Kind=wp), Dimension(:),     Intent(In   ) :: f
         Real(Kind=wp),                   Intent(In   ) :: dt
         Real(Kind=wp)                                  :: v
-        Integer                                        :: k
+        Integer                                        :: k, n
         
         v = 0.0_wp
         If (Size(f) == 2) Then
             v = dt * (f(1) + f(2))*0.5_wp
         Else
+            n = Size(f)-1
+            If (Mod(Size(f),2) == 0) Then
+                n = n - 3
+            End If
             v = 0.0_wp
-            Do k = 1, Int(Floor(Real(Size(f))*0.5_wp))-1
+            Do k = 1, Int(Floor(Real(n)*0.5_wp))
                 v = v + f(2*k-1) + 4.0_wp * f(2*k) + f(2*k+1)
             End Do
             v = 1.0_wp/3.0_wp * v * dt
+
+            If (Mod(Size(f),2 ) == 0) Then
+                ! uneven interval correction (3/8th rule)
+                n = Size(f)-1
+                v = v + (3.0_wp/8.0_wp) * dt * ( f(n-3) + 3.0_wp*f(n-2) + 3.0_wp*f(n-1) + f(n))
+            End If 
         End If
     End Function simpsons_rule_uniform
 

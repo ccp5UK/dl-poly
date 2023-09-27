@@ -17,7 +17,7 @@ Module asserts
   Implicit None
 
   Integer, Parameter :: error_code_logical = -101
-  Real(kind=wp), Parameter :: tol = 1.0e-6
+  Real(kind=wp), Parameter :: default_tol = 1.0e-6
 
   Interface assert
     Module Procedure assert_true
@@ -37,10 +37,11 @@ Contains
   !! @param[in]     logical_condition    Condition to test
   !! @param[in]     message              Optional message
   !
-  Subroutine assert_true(logical_condition, message, passed)
-    Logical, Intent(In)           :: logical_condition
-    Character(Len=*), Intent(In), Optional :: message
-    Logical, Intent(Out), Optional :: passed
+  Subroutine assert_true(logical_condition, message, passed, passed_accum)
+    Logical,          Intent(In   )                 :: logical_condition
+    Character(Len=*), Intent(In   ),       Optional :: message
+    Logical,          Intent(  Out),       Optional :: passed
+    Logical,          Intent(InOut),       Optional :: passed_accum
 
 #ifdef WITH_ASSERT
     If (.not. logical_condition) Then
@@ -54,17 +55,22 @@ Contains
 !!$#endif
     End If
 
-    if (present(passed)) then
-      passed = .not. logical_condition
-    end if
+    If (Present(passed)) then
+      passed = logical_condition
+    End If
+
+    If (Present(passed_accum)) Then
+      passed_accum = passed_accum .and. logical_condition
+    End If
 
 #endif
   End Subroutine assert_true
 
-  Subroutine assert_equal_int(actual, expected, message, passed)
-    Integer, Intent(In) :: actual, expected
-    Character(Len=*), Intent(In), Optional :: message
-    Logical, Intent(Out), Optional :: passed
+  Subroutine assert_equal_int(actual, expected, message, passed, passed_accum)
+    Integer,          Intent(In   )           :: actual, expected
+    Character(Len=*), Intent(In   ), Optional :: message
+    Logical,          Intent(  Out), Optional :: passed
+    Logical,          Intent(InOut), Optional :: passed_accum
 
 #ifdef WITH_ASSERT
     If (actual /= expected) Then
@@ -80,16 +86,22 @@ Contains
 !!$#endif
     End If
 
-    if (present(passed)) then
+    If (Present(passed)) then
       passed = actual == expected
-    end if
+    End If
+
+    If (Present(passed_accum)) Then
+      passed_accum = passed_accum .and. (actual == expected)
+    End If
+
 #endif
   end Subroutine assert_equal_int
 
-  Subroutine assert_equal_string(actual, expected, message, passed)
-    Character(Len=*), Intent(In) :: actual, expected
-    Character(Len=*), Intent(In), Optional :: message
-    Logical, Intent(Out), Optional :: passed
+  Subroutine assert_equal_string(actual, expected, message, passed, passed_accum)
+    Character(Len=*), Intent(In   )           :: actual, expected
+    Character(Len=*), Intent(In   ), Optional :: message
+    Logical,          Intent(  Out), Optional :: passed
+    Logical,          Intent(InOut), Optional :: passed_accum
 
 #ifdef WITH_ASSERT
     If (actual /= expected) Then
@@ -105,16 +117,32 @@ Contains
 !!$#endif
     End If
 
-    if (present(passed)) then
+    If (Present(passed)) then
       passed = actual == expected
-    end if
+    End If
+
+    If (Present(passed_accum)) Then
+      passed_accum = passed_accum .and. (actual == expected)
+    End If
+
 #endif
   end Subroutine assert_equal_string
 
-  Subroutine assert_almost_equal(actual, expected, message, passed)
-    Real(Kind=wp), Intent(In) :: actual, expected
-    Character(Len=*), Intent(In), Optional :: message
-    Logical, Intent(Out), Optional :: passed
+  Subroutine assert_almost_equal(actual, expected, message, passed, passed_accum, tolerance)
+    Real(Kind=wp),    Intent(In   )           :: actual, expected
+    Character(Len=*), Intent(In   ), Optional :: message
+    Logical,          Intent(  Out), Optional :: passed
+    Logical,          Intent(InOut), Optional :: passed_accum
+    Real(Kind=wp),    Intent(In   ), Optional :: tolerance
+
+    Real(Kind=wp)                             :: tol
+
+    If (Present(tolerance)) Then
+      tol = tolerance
+    Else 
+      tol = default_tol
+    End If
+
 
 #ifdef WITH_ASSERT
     If (abs(actual - expected) > tol) Then
@@ -130,16 +158,31 @@ Contains
 !!$#endif
     End If
 
-    if (present(passed)) then
+    If (Present(passed)) then
       passed = abs(actual - expected) < tol
-    end if
+    End If
+
+    If (Present(passed_accum)) Then
+      passed_accum = passed_accum .and. (abs(actual - expected) < tol)
+    End If
+
 #endif
   end Subroutine assert_almost_equal
 
-  Subroutine assert_almost_equal_rvec(actual, expected, message, passed)
-    Real(Kind=wp), Dimension(:), Intent(In) :: actual, expected
-    Character(Len=*), Intent(In), Optional :: message
-    Logical, Intent(Out), Optional :: passed
+  Subroutine assert_almost_equal_rvec(actual, expected, message, passed, passed_accum, tolerance)
+    Real(Kind=wp), Dimension(:), Intent(In   )           :: actual, expected
+    Character(Len=*),            Intent(In   ), Optional :: message
+    Logical,                     Intent(  Out), Optional :: passed
+    Logical,                     Intent(InOut), Optional :: passed_accum
+    Real(Kind=wp),               Intent(In   ), Optional :: tolerance
+
+    Real(Kind=wp)                                        :: tol
+
+    If (Present(tolerance)) Then
+      tol = tolerance
+    Else 
+      tol = default_tol
+    End If
 
 #ifdef WITH_ASSERT
     If (any(abs(actual - expected) > tol)) Then
@@ -155,9 +198,14 @@ Contains
 !!$#endif
     End If
 
-    if (present(passed)) then
-      passed = All(abs(actual - expected) < tol)
-    end if
+    If (Present(passed)) then
+      passed = All(Abs(actual - expected) < tol)
+    End If
+
+    If (Present(passed_accum)) Then
+      passed_accum = passed_accum .and. All(Abs(actual - expected) < tol)
+    End If
+
 #endif
   end Subroutine assert_almost_equal_rvec
 

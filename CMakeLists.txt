@@ -401,6 +401,16 @@ if(BUILD_TESTING)
     do_test("TEST${test}" 0)
   endforeach()
 
+  set(UNIT_TESTS control configuration units vdw integrators)
+  set(UNIT_TESTS_ID TEST200 TEST201 TEST202 TEST203 TEST204)
+
+  foreach(test RANGE 0 4 1)
+    list(GET UNIT_TESTS_ID ${test} id)
+    list(GET UNIT_TESTS ${test} name)
+    add_test(NAME ${id} COMMAND ${CMAKE_BINARY_DIR}/bin/${target_name} --test ${name})
+    set_tests_properties(${id} PROPERTIES PASS_REGULAR_EXPRESSION "Status: PASSED")
+  endforeach()
+
 else()
   message(STATUS "Build without testing target")
 endif()
