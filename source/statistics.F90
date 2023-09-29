@@ -599,7 +599,7 @@ Contains
     Character(Len=STR_LEN)                        :: units
                                               
                         
-    If (Allocated(stats%unique_correlations) .eqv. .false.) Then 
+    If (stats%calculate_correlations .eqv. .false.) Then 
       Return 
     End If
 
@@ -911,7 +911,9 @@ Contains
 
     End Do
 
-    Close(file_unit)
+    If (comm%idnode == root_id) Then
+      Close(file_unit)
+    End If
 
   End Subroutine correlation_result
     
@@ -1329,11 +1331,11 @@ Contains
           End If
         End If
 
-        If (nstep > 0) Then
-          Call correlation_result(stats, comm, files, config, sites, nstep, time)
-        End If 
-
       End If
+
+      If (Mod(nstep, stats%intsta) == 0 .and. nstep > 0) Then
+        Call correlation_result(stats, comm, files, config, sites, nstep, time)
+      End If 
     End If
     ! check on number of variables for stack
 
