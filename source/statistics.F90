@@ -599,6 +599,9 @@ Contains
     Character(Len=STR_LEN)                        :: units
                                               
                         
+    If (Allocated(stats%unique_correlations) .eqv. .false.) Then 
+      Return 
+    End If
 
     components_vector = (/ 'x', 'y', 'z' /)
     components_matrix = (/'xx', 'xy', 'xz', 'yx', 'yy', 'yz', 'zx', 'zy', 'zz'/)
