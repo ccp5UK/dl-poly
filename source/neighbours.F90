@@ -120,7 +120,7 @@ Contains
   !> contrib   - i.t.todorov july 2018
   !> contrib   - i.t.todorov november 2019 (magic numbers commenting)
 
-  Subroutine vnl_check(l_str, width, neigh, stat, domain, config, bspline, kim_data, comm)
+  Subroutine vnl_check(l_str, width, neigh, stat, domain, config, bspline, kim_data, tmr, comm)
 
     Logical,                  Intent(In   ) :: l_str
     Real(Kind=wp),            Intent(InOut) :: width
@@ -130,6 +130,7 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Integer(Kind=wi),         Intent(In   ) :: bspline
     Type(kim_type),           Intent(In   ) :: kim_data
+    Type(timer_type),         Intent(InOut) :: tmr
     Type(comms_type),         Intent(InOut) :: comm
 
     Character(Len=STR_LEN)                       :: message
@@ -138,6 +139,10 @@ Contains
     Real(Kind=wp), Allocatable, Dimension(:) :: r, x, y, z
 
     If (.not. neigh%unconditional_update) Return
+
+#ifdef CHRONO
+    Call start_timer(tmr, 'VNL Check')
+#endif
 
     Allocate (x(config%natms), y(config%natms), z(config%natms), r(config%natms), Stat=fail)
 
@@ -283,6 +288,10 @@ Contains
       Write (message, '(a)') 'vnl_check deallocation failure'
       Call error(0, message)
     End If
+
+#ifdef CHRONO
+    Call stop_timer(tmr, 'VNL Check')
+#endif
 
   End Subroutine vnl_check
 

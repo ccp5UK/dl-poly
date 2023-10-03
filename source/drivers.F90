@@ -1044,11 +1044,11 @@ Contains
 
     ! Scale t=0 reference positions
 
-    If (flow%step > 0) Call xscale(cnfig, thermo%tstep, thermo, stat, neigh, rigid, domain, comm)
+    If (flow%step > 0) Call xscale(cnfig, thermo%tstep, thermo, stat, neigh, rigid, domain, tmr, comm)
 
     ! Check VNL conditioning
 
-    Call vnl_check(flow%strict, cnfig%width, neigh, stat, domain, cnfig, ewld%bspline%num_splines, kim_data, comm)
+    Call vnl_check(flow%strict, cnfig%width, neigh, stat, domain, cnfig, ewld%bspline%num_splines, kim_data, tmr, comm)
 
     If (neigh%update) Then
 
@@ -1057,11 +1057,11 @@ Contains
       Call relocate_particles(cnfig%dvar, neigh%cutoff_extended, flow%book, &
                               msd_data%l_msd, cnfig%megatm, flow, cshell, cons, pmf, stat, thermo, green, &
                               bond, angle, dihedral, inversion, tether, neigh, sites, minim, mpoles, &
-                              rigid, domain, cnfig, crd, comm)
+                              rigid, domain, cnfig, crd, tmr, comm)
 
       ! Exchange atomic data in border regions
 
-      Call set_halo_particles(electro%key, neigh, sites, mpoles, domain, cnfig, ewld, kim_data, comm) ! inducing in here only
+      Call set_halo_particles(electro%key, neigh, sites, mpoles, domain, cnfig, ewld, kim_data, tmr, comm) ! inducing in here only
 
       ! Re-tag RBs when called again after the very first flow%time
       ! when it's done in rigid_bodies_setup <- build_book_intra
@@ -1112,7 +1112,9 @@ Contains
     Type(comms_type),         Intent(InOut) :: comm
 
 ! used for vv stage control
-
+#ifdef CHRONO 
+    Call start_timer(tmr, "Integrate vv")
+#endif
     !!!!!!!!!!!!!!!!!!!!!!  W_INTEGRATE_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
     ! Sharlow's splittings for VV only (LFV->VV) DPD thermostat - no variable flow%time-stepping!!!
@@ -1498,6 +1500,10 @@ Contains
       Call dpd_thermostat(stage, flow%strict, neigh%cutoff, flow%step, thermo%tstep, stat, thermo, &
                           neigh, rigid, domain, cnfig, seed, comm)
     End If
+
+#ifdef CHRONO 
+    Call stop_timer(tmr, "Integrate vv")
+#endif
 
     !!!!!!!!!!!!!!!!!!!!!!  W_INTEGRATE_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
@@ -2471,7 +2477,7 @@ Contains
           ! SET domain borders and link-cells as default for new jobs
           ! exchange atomic data and positions in border regions
 
-          Call set_halo_particles(electro%key, neigh, sites, mpoles, domain, cnfig, ewld, kim_data, comm)
+          Call set_halo_particles(electro%key, neigh, sites, mpoles, domain, cnfig, ewld, kim_data, tmr, comm)
 
           ! For any intra-like interaction, construct book keeping arrays and
           ! exclusion arrays for overlapped two-body inter-like interactions
@@ -2882,7 +2888,7 @@ Contains
           ! SET domain borders and link-cells as default for new jobs
           ! exchange atomic data and positions in border regions
 
-          Call set_halo_particles(electro%key, neigh, sites, mpoles, domain, cnfig, ewld, kim_data, comm)
+          Call set_halo_particles(electro%key, neigh, sites, mpoles, domain, cnfig, ewld, kim_data, tmr, comm)
 
           ! For any intra-like interaction, construct book keeping arrays and
           ! exclusion arrays for overlapped two-body inter-like interactions

@@ -5,7 +5,7 @@ Module timer
   !!
   !! copyright - daresbury laboratory
   !! author    - j.s.wilkins february 2019
-  !!
+  !! contrib   - h.l.devereux Oct 2023 (yaml timer dumping)
   !!------------------------------------------------!
   Use comms,                         Only: comms_type,&
                                            gmax,&
@@ -79,10 +79,10 @@ Module timer
     Type(timer_tree), Pointer :: tree
     Type(call_stack)          :: stack
     Real(Kind=wp)             :: elapsed, job, clear_screen
-    Logical                   :: proc_detail = .false.
+    Logical                   :: proc_detail = .false., yaml = .false., to_file = .false.
     Integer                   :: max_depth = 1
     Integer                   :: proc_id
-    Integer                   :: out_unit
+    Integer                   :: out_unit, file_unit
 
   contains
     !Final :: deallocate_timer_type
@@ -198,21 +198,29 @@ Contains
 
   End Subroutine pop_stack
 
-  Subroutine init_timer_system(tmr, nrite, comm)
+  Subroutine init_timer_system(tmr, outunit, comm, fileunit)
     !!------------------------------------------------!
     !!
     !! Initialise a timer system
     !!
     !! copyright - daresbury laboratory
     !! author    - j.s.wilkins february 2019
-    !!
+    !! contrib   - h.l.devereux Oct 2023 (yaml timer dumping)
     !!------------------------------------------------!
-    Type(timer_type), Intent(inout) :: tmr
-    Integer,          Intent(In   ) :: nrite
-    Type(comms_type), Intent(In   ) :: comm
+    Type(timer_type), Intent(inout)           :: tmr
+    Integer,          Intent(In   )           :: outunit
+    Type(comms_type), Intent(In   )           :: comm
+    Integer,          Intent(In   ), Optional :: fileunit
 
     tmr%proc_id = comm%idnode
-    tmr%out_unit = nrite
+    tmr%out_unit = outunit
+
+    If (Present(fileunit)) Then
+      tmr%file_unit = fileunit
+      tmr%to_file = .true.
+    End If
+    tmr%out_unit = outunit
+
     Allocate (tmr%tree)
     Allocate (tmr%tree%head)
     tmr%tree%head%tree => tmr%tree
@@ -474,14 +482,14 @@ Contains
     !!
     !! copyright - daresbury laboratory
     !! author    - j.s.wilkins february 2019
-    !!
+    !! contrib   - h.l.devereux Oct 2023 (yaml timer dumping)
     !!------------------------------------------------!
-    Type(timer_type), Intent(InOut) :: tmr
-    Type(comms_type), Intent(InOut) :: comm
+    Type(timer_type), Intent(InOut)                   :: tmr
+    Type(comms_type), Intent(InOut)                   :: comm
 
-    Character(Len=STR_LEN), Allocatable, Dimension(:) :: message
-    Integer                                       :: ierr, proc
-    Type(node), Pointer                           :: current_timer
+    Character(Len=1024), Allocatable, Dimension(:)    :: message
+    Integer                                           :: ierr, proc
+    Type(node), Pointer                               :: current_timer
 
     Call stop_timer(tmr, 'Main')
 
@@ -490,8 +498,15 @@ Contains
     Allocate (message(-2:tmr%tree%n_timers + 3), stat=ierr)
     If (ierr > 0) Call timer_error(tmr, 'Error allocating message in timer_print_tree')
 
+    If (tmr%yaml) Then 
+
+      Call timer_print_yaml(comm, tmr, current_timer, tmr%max_depth, -1, message)
+      Call timer_write(message, tmr, tmr%to_file)
+
+    End If
+
     Call timer_print_tree(comm, tmr, current_timer, tmr%max_depth, -1, message)
-    Call timer_write(message, tmr)
+    Call timer_write(message, tmr, .false.)
 
     If (tmr%proc_detail) Then
       Do proc = 0, comm%mxnode - 1
@@ -504,10 +519,11 @@ Contains
           If (comm%idnode == 0) Call grecv(comm, message, proc, timer_tag)
         End If
 
-        Call timer_write(message, tmr)
+        Call timer_write(message, tmr, .false.)
         Call gsync(comm)
       End Do
     End If
+
 
   End Subroutine timer_report
 
@@ -632,6 +648,121 @@ Contains
 
   End Subroutine timer_print_tree
 
+  Subroutine timer_print_yaml(comm, tmr, init_node, max_depth, proc_id, message)
+   !!------------------------------------------------!
+    !!
+    !! Return a table of the given timer system to
+    !! the message variable, in yaml format
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - h.l.devereux Oct 2023
+    !!
+    !!------------------------------------------------!
+    Type(comms_type),                 Intent(InOut) :: comm
+    Type(timer_type),                 Intent(In   ) :: tmr
+    Type(node), Target,               Intent(In   ) :: init_node
+    Integer,                          Intent(In   ) :: max_depth, proc_id
+    Character(Len=*), Dimension(-2:), Intent(  Out) :: message
+
+    Character(Len=8)    :: proc_string
+    Integer             :: depth, itimer, write_node
+    Real(Kind=wp)       :: call_av, call_max, call_min, sum_timed, total_av, total_elapsed, &
+                           total_max, total_min
+    Type(node), Pointer :: current_timer
+
+    message(:) = ''
+
+    sum_timed = 0.0_wp
+
+    If (proc_id < 0) Then
+      write_node = 0
+      proc_string = "All"
+    Else
+      write_node = proc_id
+      Write (proc_string, '(i8.1)') proc_id
+    End If
+
+    current_timer => init_node
+    total_elapsed = current_timer%time%total
+
+    depth = 0
+    itimer = 0
+
+    ! Write table open and header
+    Write (message(-2), '(a)') '%YAML 1.2'//NEW_LINE('a')//'---'
+    Write (message(-1), '(a)') "timers: "
+
+    Do While (depth > -1)
+
+      If (current_timer%time%running) &
+        & Call timer_error(tmr, 'Program terminated while timer '//Trim(current_timer%time%name)//' still running')
+
+      total_min = current_timer%time%total
+      total_max = current_timer%time%total
+      total_av = current_timer%time%total
+
+      If (proc_id < 0) Then
+        Call gmin(comm, total_min)
+        Call gmax(comm, total_max)
+        Call gsum(comm, total_av)
+        total_av = total_av / comm%mxnode
+      End If
+
+      If (depth == 1 .and. current_timer%parent%time%name == "Main") sum_timed = sum_timed + total_av
+
+      call_min = current_timer%time%min
+      call_max = current_timer%time%max
+
+      If (proc_id < 0) Then
+        Call gmin(comm, call_min)
+        Call gmax(comm, call_max)
+      End If
+
+      call_av = total_av / current_timer%time%calls
+
+      Write (message(itimer), '(5a, i0, 3(a, g16.8), a, 4(a, g16.8))') &
+                       Repeat('      ', depth+1)//Trim(current_timer%time%name)//':', &
+        NEW_LINE('a')//Repeat('      ', depth+2)//'Proc: ', proc_string, &
+        NEW_LINE('a')//Repeat('      ', depth+2)//'Call: ', &
+        NEW_LINE('a')//Repeat('      ', depth+2)//'      count: ', current_timer%time%calls, &
+        NEW_LINE('a')//Repeat('      ', depth+2)//'      min: ', call_min, &
+        NEW_LINE('a')//Repeat('      ', depth+2)//'      max: ', call_max, &
+        NEW_LINE('a')//Repeat('      ', depth+2)//'      average: ', call_av, &
+        NEW_LINE('a')//Repeat('      ', depth+2)//'Total: ', &
+        NEW_LINE('a')//Repeat('      ', depth+2)//'      min: ', total_min, &
+        NEW_LINE('a')//Repeat('      ', depth+2)//'      max: ', total_max, &
+        NEW_LINE('a')//Repeat('      ', depth+2)//'      average: ', total_av, &
+        NEW_LINE('a')//Repeat('      ', depth+2)//'Percent: ', total_av * 100.0_wp / total_elapsed
+
+      If (Associated(current_timer%child) .and. depth < max_depth) Then
+        current_timer => current_timer%child
+        depth = depth + 1
+      Else If (Associated(current_timer%next_sibling)) Then
+        current_timer => current_timer%next_sibling
+      Else If (Associated(current_timer%parent)) Then ! Recurse back up
+        Do While (Associated(current_timer%parent))
+          current_timer => current_timer%parent
+          depth = depth - 1
+          If (Associated(current_timer%next_sibling)) Then
+            current_timer => current_timer%next_sibling
+            Exit
+          End If
+        End Do
+      Else
+        Exit
+      End If
+      itimer = itimer + 1
+
+    End Do
+
+    Write (message(itimer), '(3a, 2(a, g16.8))') &
+                     '      Untimed: ', &
+      NEW_LINE('a')//'            Proc: ', proc_string, &
+      NEW_LINE('a')//'            Total: ', total_elapsed - sum_timed, &
+      NEW_LINE('a')//'            Percent: ', 100.0_wp - sum_timed * 100.0_wp / total_elapsed
+
+  End Subroutine
+
   Subroutine init_timer(current_timer, name)
     !!------------------------------------------------!
     !!
@@ -703,25 +834,36 @@ Contains
 
   End Subroutine time_elapsed
 
-  Subroutine timer_write_mul(message, timer_in)
+  Subroutine timer_write_mul(message, timer_in, to_file)
     !!------------------------------------------------!
     !!
     !! Write multiple lines to standard out
     !!
     !! copyright - daresbury laboratory
     !! author    - j.s.wilkins february 2019
-    !!
+    !! contrib   - h.l.devereux Oct 2023 (yaml timer dumping)
     !!------------------------------------------------!
     Character(Len=*), Dimension(:), Intent(In   ) :: message
     Type(timer_type), Optional,     Intent(In   ) :: timer_in
+    Logical,          Optional,     Intent(In   ) :: to_file
 
     Integer :: i
+    Logical :: write_file = .false.
+
+
+    If (Present(to_file)) Then 
+      write_file = to_file
+    End If
 
     If (Present(timer_in)) Then
 
       If (timer_in%proc_id == 0) Then
         Do i = 1, Size(message)
-          Write (timer_in%out_unit, '(a)') Trim(message(i))
+          If (write_file) Then
+            Write (timer_in%file_unit, '(a)') Trim(message(i))
+          Else
+            Write (timer_in%out_unit, '(a)') Trim(message(i))
+          End If
         End Do
       End If
 
@@ -735,22 +877,34 @@ Contains
 
   End Subroutine timer_write_mul
 
-  Subroutine timer_write_sing(message, timer_in)
+  Subroutine timer_write_sing(message, timer_in, to_file)
     !!------------------------------------------------!
     !!
     !! Write a single line to standard out
     !!
     !! copyright - daresbury laboratory
     !! author    - j.s.wilkins february 2019
+    !! contrib   - h.l.devereux Oct 2023 (yaml timer dumping)
     !!
     !!------------------------------------------------!
     Character(Len=*),           Intent(In   ) :: message
     Type(timer_type), Optional, Intent(In   ) :: timer_in
+    Logical,          Optional, Intent(In   ) :: to_file
+    
+    Logical :: write_file = .false.
+
+    If (Present(to_file)) Then 
+      write_file = to_file
+    End If
 
     If (Present(timer_in)) Then
 
       If (timer_in%proc_id == 0) Then
-        Write (timer_in%out_unit, '(a)') Trim(message)
+        If (write_file) Then
+          Write (timer_in%file_unit, '(a)') Trim(message)
+        Else
+          Write (timer_in%out_unit, '(a)') Trim(message)
+        End If
       End If
 
     Else

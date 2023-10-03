@@ -47,6 +47,9 @@ Module rigid_bodies
                              ENS_NPT_NOSE_HOOVER,&
                              ENS_NPT_NOSE_HOOVER_ANISO,&
                              thermostat_type
+  Use timer,           Only: start_timer,&
+                             stop_timer,&
+                             timer_type
 
   Implicit None
 
@@ -2480,7 +2483,7 @@ Contains
     End If
   End Subroutine rigid_bodies_widths
 
-  Subroutine xscale(config, tstep, thermo, stats, neigh, rigid, domain, comm)
+  Subroutine xscale(config, tstep, thermo, stats, neigh, rigid, domain, tmr, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2503,6 +2506,7 @@ Contains
     Type(neighbours_type),    Intent(InOut) :: neigh
     Type(rigid_bodies_type),  Intent(InOut) :: rigid
     Type(domains_type),       Intent(In   ) :: domain
+    Type(timer_type),         Intent(InOut) :: tmr
     Type(comms_type),         Intent(InOut) :: comm
 
     Character(Len=STR_LEN)         :: message
@@ -2511,8 +2515,16 @@ Contains
                                   x, xa, y, ya, z, za
     Real(Kind=wp), Allocatable :: rgdxin(:), rgdyin(:), rgdzin(:)
 
-    If (.not. thermo%variable_cell) Return
+#ifdef CHRONO
+    Call start_timer(tmr, 'xscale')
+#endif
 
+    If (.not. thermo%variable_cell) Then 
+#ifdef CHRONO
+      Call stop_timer(tmr, 'xscale')
+#endif
+      Return
+    End If
     If (.not. rigid%on) Then
 
       If (thermo%ensemble == ENS_NPT_BERENDSEN .or. thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
@@ -3351,6 +3363,10 @@ Contains
 
     Call pbcshift(config%imcon, config%cell, config%natms, stats%xin, stats%yin, stats%zin)
     If (neigh%unconditional_update) Call pbcshift(config%imcon, config%cell, config%natms, neigh%xbg, neigh%ybg, neigh%zbg)
+
+#ifdef CHRONO
+    Call stop_timer(tmr, 'xscale')
+#endif
 
   End Subroutine xscale
 

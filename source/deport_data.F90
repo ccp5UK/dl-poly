@@ -64,6 +64,9 @@ Module deport_data
   Use statistics,       Only: stats_type
   Use tethers,          Only: tethers_type
   Use thermostat,       Only: thermostat_type
+  Use timer,            Only: start_timer,&
+                              stop_timer,&
+                              timer_type
 
   Implicit None
 
@@ -2866,7 +2869,7 @@ Contains
 
   Subroutine relocate_particles(dvar, cutoff_extended, lbook, lmsd, megatm, flow, cshell, cons, &
                                 pmf, stats, thermo, green, bond, angle, dihedral, inversion, tether, &
-                                neigh, sites, minim, mpoles, rigid, domain, config, crd, comm)
+                                neigh, sites, minim, mpoles, rigid, domain, config, crd, tmr, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2907,13 +2910,16 @@ Contains
     Type(domains_type),       Intent(In   ) :: domain
     Type(configuration_type), Intent(InOut) :: config
     Type(coord_type),         Intent(InOut) :: crd
+    Type(timer_type),         Intent(InOut) :: tmr
     Type(comms_type),         Intent(InOut) :: comm
 
     Character(Len=STR_LEN) :: message
     Integer            :: i, ipx, ipy, ipz, itmp(1:9), jtmp(1:9), nlimit
     Logical            :: safe(1:9)
     Real(Kind=wp)      :: big(1:3), celprp(1:10), cut, det, rcell(1:9), tmp, x, y, z
-
+#ifdef CHRONO
+    Call start_timer(tmr, 'Relocate Particles')
+#endif
     ! Define cut
 
     cut = cutoff_extended + 1.0e-6_wp
@@ -3188,6 +3194,10 @@ Contains
     ! Halt program if potential cutoff exceeds cell width
 
     If (cutoff_extended >= Min(celprp(7), celprp(8), celprp(9)) / 2.0_wp) Call error(95)
+  
+#ifdef CHRONO
+    Call stop_timer(tmr, 'Relocate Particles')
+#endif
 
   End Subroutine relocate_particles
 

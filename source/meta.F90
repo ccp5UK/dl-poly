@@ -420,7 +420,7 @@ Contains
       ! SET domain borders and link-config%cells as default for new jobs
       ! exchange atomic data and positions in border regions
       Call set_halo_particles(electro(ff)%key, neigh(ff), sites(ff), mpoles(ff), domain(ff), config(ff), &
-                              ewld(ff), kim_data(ff), comm)
+                              ewld(ff), kim_data(ff), tmr, comm)
     End Do
 
     Call info('', .true.)
@@ -731,7 +731,7 @@ Contains
     Type(adf_type),              Intent(InOut) :: adf(:)
 
     Character(Len=STR_LEN)    :: message, option
-    Integer               :: ff, i, ierr, ifile, megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, &
+    Integer               :: ff, i, ierr, ifile, tfile, megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, &
       mtrgd, mtshl, mtteth
     Integer, Dimension(3) :: link_cell
     Real(Kind=wp)         :: xhi, yhi, zhi
@@ -767,7 +767,12 @@ Contains
 
 #ifdef CHRONO
     ! Start main timer
-    Call init_timer_system(tmr, files(FILE_OUTPUT)%unit_no, dlp_world(0))
+    If (tmr%yaml) Then
+      Open (Newunit=tfile, File='timers', Status='replace')
+      Call init_timer_system(tmr, files(FILE_OUTPUT)%unit_no, dlp_world(0), tfile)
+    Else
+      Call init_timer_system(tmr, files(FILE_OUTPUT)%unit_no, dlp_world(0))
+    End If
     Call start_timer(tmr, 'Initialisation')
 #endif
 

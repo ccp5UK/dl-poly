@@ -62,7 +62,9 @@ Module statistics
                              CONSTRAINT_SEMI_ORTHORHOMBIC,&
                              CONSTRAINT_SURFACE_TENSION,&
                              thermostat_type
-  Use timer,           Only: timer_type, stop_timer, start_timer
+  Use timer,           Only: start_timer,&
+                             stop_timer,&
+                             timer_type
   Use z_density,       Only: z_density_collect,&
                              z_density_type
   Use correlators,     Only: correlator, correlator_buffer_type, indices_buffer_type
@@ -970,8 +972,8 @@ Contains
     Real(Kind=wp), Allocatable :: amsd(:), xxt(:), yyt(:), zzt(:)
     Real(Kind=wp), Allocatable :: observable_a(:), observable_b(:)
 
-#ifdef CHRONO
-    Call start_timer(tmr, "Stats")
+#ifdef CHRONO 
+    Call start_timer(tmr, "Statistics Collect")
 #endif
 
     ffpass = ff == 1
@@ -1419,8 +1421,8 @@ Contains
     Deallocate (amsd, Stat=fail)
     If (fail > 0) Call error_alloc("amsd", "statistics_collect")
 
-#ifdef CHRONO
-    Call stop_timer(tmr, "Stats")
+#ifdef CHRONO 
+    Call stop_timer(tmr, "Statistics Collect")
 #endif
 
   End Subroutine statistics_collect

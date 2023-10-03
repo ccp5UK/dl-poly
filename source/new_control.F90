@@ -228,6 +228,7 @@ Contains
     Call params%retrieve('io_read_ascii_revold', devel%l_rin)
     Call params%retrieve('initial_minimum_separation', devel%r_dis)
 
+    Call params%retrieve('timer_yaml_file', tmr%yaml)
     Call params%retrieve('timer_depth', tmr%max_depth)
     Call params%retrieve('timer_per_mpi', tmr%proc_detail)
 
@@ -3365,6 +3366,12 @@ Contains
                      val="4", &
                      description="Do not display timers beyond this many levels in final timer output", &
                      data_type=DATA_INT))
+      Call table%set("timer_yaml_file", control_parameter( &
+                     key="timer_yaml_file", &
+                     name="Timer yaml file", &
+                     val="off", &
+                     description="Output timers as a yaml file", &
+                     data_type=DATA_BOOL))
 
       Call table%set("timer_per_mpi", control_parameter( &
                      key="timer_per_mpi", &

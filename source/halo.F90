@@ -28,6 +28,9 @@ Module halo
 #ifdef HALF_HALO
   Use statistics,      Only: stats_type
 #endif /* HALF_HALO */
+  Use timer,           Only: start_timer,&
+                             stop_timer,&
+                             timer_type
 
   Implicit None
 
@@ -147,7 +150,7 @@ Contains
   End Subroutine refresh_halo_forces
 #endif /* HALF_HALO */
 
-  Subroutine set_halo_particles(electro_key, neigh, sites, mpoles, domain, config, ewld, kim_data, comm)
+  Subroutine set_halo_particles(electro_key, neigh, sites, mpoles, domain, config, ewld, kim_data, tmr, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -173,11 +176,16 @@ Contains
     Type(configuration_type), Intent(InOut) :: config
     Type(ewald_type),         Intent(In   ) :: ewld
     Type(kim_type),           Intent(InOut) :: kim_data
+    Type(timer_type),         Intent(InOut) :: tmr
     Type(comms_type),         Intent(InOut) :: comm
 
     Integer       :: i, ia, ib, j, nlx, nly, nlz
     Real(Kind=wp) :: celprp(1:10), cut, cwx, cwy, cwz, det, ecwx, ecwy, ecwz, rcell(1:9), x, xdc, &
                      y, ydc, z, zdc
+
+#ifdef CHRONO
+    Call start_timer(tmr, 'Set halo particles')
+#endif
 
     ! Define cut
 
@@ -339,6 +347,10 @@ Contains
         config%lstfre(config%nfree) = i
       End If
     End Do
+
+#ifdef CHRONO
+    Call stop_timer(tmr, 'Set halo particles')
+#endif
 
   End Subroutine set_halo_particles
 End Module halo
