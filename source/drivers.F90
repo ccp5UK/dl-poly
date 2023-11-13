@@ -1677,7 +1677,7 @@ Contains
        flow%restart_key, &
        cnfig%degfre, cnfig%degshl, cnfig%degrot, &
        flow%step, thermo%tstep, flow%time, flow%start_time, &
-       cnfig%mxatdm, stat, thermo, zdensity, sites, files, comm, ff)
+       cnfig%mxatdm, stat, thermo, zdensity, sites, files, comm, ff, tmr)
 
     ! VV forces evaluation report for 0th or weird restart
 
@@ -2588,7 +2588,7 @@ Contains
              cnfig%degfre, cnfig%degshl, cnfig%degrot, &
              nstph, tsths, flow%time, tmsh, &
              cnfig%mxatdm, stat, thermo, &
-             zdensity, sites, files, comm, 1)
+             zdensity, sites, files, comm, 1, tmr)
 
           ! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
 
@@ -2966,7 +2966,7 @@ Contains
              cnfig%degfre, cnfig%degshl, cnfig%degrot, &
              nstph, tsths, flow%time, tmsh, &
              cnfig%mxatdm, stat, thermo, &
-             zdensity, sites, files, comm, 1)
+             zdensity, sites, files, comm, 1, tmr)
 
           ! line-printer output
           ! Update cpu flow%time

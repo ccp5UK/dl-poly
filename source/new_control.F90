@@ -2039,6 +2039,8 @@ Contains
 
     Call params%retrieve('stats_frequency', stats%intsta)
 
+    Call params%retrieve('correlation_dump_frequency', stats%cor_dump_freq)
+
     Call params%retrieve('print_topology_info', flow%print_topology)
 
     Call params%retrieve('currents_calculate', stats%cur%on)
@@ -2645,6 +2647,15 @@ Contains
                          internal_units="", &
                          description="correlation window averaging", &
                          data_type=DATA_VECTOR))
+
+          Call table%set("correlation_dump_frequency", control_parameter( &
+                         key="correlation_dump_frequency", &
+                         name="correlation data dump frequency", & 
+                         val="0", &
+                         units="steps", &
+                         internal_units="steps", &
+                         description="frequency to dump correlation data", &
+                         data_type=DATA_FLOAT))
 
         End block correlation
 

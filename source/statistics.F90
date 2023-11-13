@@ -62,6 +62,7 @@ Module statistics
                              CONSTRAINT_SEMI_ORTHORHOMBIC,&
                              CONSTRAINT_SURFACE_TENSION,&
                              thermostat_type
+  Use timer,           Only: timer_type, stop_timer, start_timer
   Use z_density,       Only: z_density_collect,&
                              z_density_type
   Use correlators,     Only: correlator, correlator_buffer_type, indices_buffer_type
@@ -186,6 +187,7 @@ Module statistics
     Type(correlator_holder), Allocatable :: correlations(:)
     Type(correlation),       Allocatable :: unique_correlations(:)
     Integer,                 Allocatable :: unique_correlation_params(:)
+    Integer                              :: cor_dump_freq = 0 
     ! Integer, Allocatable               :: number_of_blocks(:), points_per_block(:), window_size(:)
     ! Integer, Allocatable               :: min_distance(:), dim_left(:), dim_right(:)
     Real(Kind=wp), Allocatable         :: xin(:), yin(:), zin(:)
@@ -920,7 +922,7 @@ Contains
 
   Subroutine statistics_collect(config, lsim, leql, nsteql, lmsd, keyres, degfre, degshl, &
                                 degrot, nstep, tstep, time, tmst, mxatdm, stats, thermo, zdensity, &
-                                sites, files, comm, ff)
+                                sites, files, comm, ff, tmr)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -957,6 +959,7 @@ Contains
     Type(file_type),          Intent(InOut) :: files(:)
     Type(comms_type),         Intent(InOut) :: comm
     Integer,                  Intent(In   ) :: ff
+    Type(timer_type),         Intent(InOut) :: tmr
 
     Character(Len=100)         :: fmtt, sunits
     Character(Len=STR_LEN)     :: message
@@ -966,6 +969,10 @@ Contains
                                   stpshl, zistk
     Real(Kind=wp), Allocatable :: amsd(:), xxt(:), yyt(:), zzt(:)
     Real(Kind=wp), Allocatable :: observable_a(:), observable_b(:)
+
+#ifdef CHRONO
+    Call start_timer(tmr, "Stats")
+#endif
 
     ffpass = ff == 1
 
@@ -1160,7 +1167,7 @@ Contains
         End Do
 
         If ((.not. leql) .or. nstep >= nsteql) Then
-
+      
           Do j = 1, stats%number_of_correlations
 
             i = stats%correlations(j)%correlation%atom
@@ -1333,8 +1340,10 @@ Contains
 
       End If
 
-      If (Mod(nstep, stats%intsta) == 0 .and. nstep > 0) Then
-        Call correlation_result(stats, comm, files, config, sites, nstep, time)
+      If (stats%cor_dump_freq > 0) Then
+        If (Mod(nstep, stats%cor_dump_freq) == 0) Then
+          Call correlation_result(stats, comm, files, config, sites, nstep, time)
+        End If
       End If 
     End If
     ! check on number of variables for stack
@@ -1409,6 +1418,10 @@ Contains
 
     Deallocate (amsd, Stat=fail)
     If (fail > 0) Call error_alloc("amsd", "statistics_collect")
+
+#ifdef CHRONO
+    Call stop_timer(tmr, "Stats")
+#endif
 
   End Subroutine statistics_collect
 
@@ -2225,7 +2238,7 @@ Contains
   Subroutine statistics_result(config, minim, lmsd, &
                                nstrun, keyshl, megcon, megpmf, &
                                nstep, time, tmst, &
-                               mxatdm, neigh_uncond_update, stats, thermo, sites, comm, files)
+                               mxatdm, neigh_uncond_update, stats, thermo, sites, comm, files, tmr)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2254,6 +2267,7 @@ Contains
     Type(site_type),          Intent(In   ) :: sites
     Type(comms_type),         Intent(InOut) :: comm
     Type(file_type),          Intent(InOut) :: files(:)
+    Type(timer_type),         Intent(InOut) :: tmr
 
     Character(Len=STR_LEN)               :: message
     Character(Len=STR_LEN), Dimension(5) :: messages

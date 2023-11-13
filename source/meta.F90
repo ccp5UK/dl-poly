@@ -643,7 +643,7 @@ Contains
        cons(1)%megcon, pmfs(1)%megpmf, &
        flow%step, flow%time, flow%start_time, &
        config(1)%mxatdm, neigh(1)%unconditional_update, &
-       stats(1), thermo(1), sites(1), comm, files)
+       stats(1), thermo(1), sites(1), comm, files, tmr)
 
     ! Final anlysis
     Call analysis_result(neigh(1)%cutoff, thermo(1), &
