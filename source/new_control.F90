@@ -556,7 +556,7 @@ Contains
       Call params%retrieve('ensemble_method', option, required=.true.)
 
       If (ttm_active .and. option /='ttm') Call error(0, 'TTM requested: ensemble method not ttm (inhomogeneous Langevin)')
-                           
+
       Select Case (option)
       Case ('evans')
         thermo%ensemble = ENS_NVT_EVANS
@@ -1766,7 +1766,7 @@ Contains
       End If
 
     End Do
-    
+
     stats%max_buffer_per_atom = buffer_size
 
   End Subroutine correlation_deport_size
@@ -1778,7 +1778,7 @@ Contains
 
     i = Scan(option,'-')
 
-    If (i == 0) Then 
+    If (i == 0) Then
       Call error(0, "invalid correlation observable in control, missing delimiter -, read: "//option)
     End If
 
@@ -1791,7 +1791,7 @@ Contains
 
     ! a, and b are names of >0 length
     !  whether a and b are valid names is handled elsewhere
-    
+
   End Subroutine parse_correlation_observable
 
   Subroutine read_correlation_count(params, stats, comm, atoms)
@@ -1853,23 +1853,23 @@ Contains
 
       If (stats%unique_correlations(i)%A%id() == h%id() .or. &
           stats%unique_correlations(i)%B%id() == h%id()) Then
-          
+
        stats%require_pp = .true.
        stats%correlating_heat_flux = .true.
 
       End If
 
       per_atom = stats%unique_correlations(i)%A%per_atom()
-      If (per_atom) Then 
+      If (per_atom) Then
        is_per_atom = .true.
-      Else 
+      Else
        per_atom = stats%unique_correlations(i)%B%per_atom()
        If (per_atom) Then
          is_per_atom = .true.
        End If
       End If
 
-      If (is_per_atom) Then 
+      If (is_per_atom) Then
         stats%unique_correlations(i)%atom = 1
         stats%number_of_correlations = stats%number_of_correlations + atoms
         stats%per_atom_correlations = .true.
@@ -1901,7 +1901,7 @@ Contains
     Integer,                     Intent(InOut) :: count
     Integer                                    :: i, buffer_size_per_atom, &
                                                   dim_left, dim_right
-    Character(Len=STR_LEN)                     :: a_name, b_name    
+    Character(Len=STR_LEN)                     :: a_name, b_name
    Class(observable), Allocatable              :: A, B
    Logical                                     :: per_atom, is_per_atom
 
@@ -1917,9 +1917,9 @@ Contains
 
    per_atom = A%per_atom()
 
-   If (per_atom) Then 
+   If (per_atom) Then
     is_per_atom = .true.
-   Else 
+   Else
     per_atom = B%per_atom()
     If (per_atom) Then
       is_per_atom = per_atom
@@ -1951,7 +1951,7 @@ Contains
     Character(Len=STR_LEN), Allocatable        :: option(:)
 
     count = 1
- 
+
     Call params%retrieve('correlation_observable',option, required=.false.)
     Call params%retrieve("correlation_blocks",blocks,required=.false.)
     Call params%retrieve("correlation_block_points",points,required=.false.)
@@ -2651,7 +2651,7 @@ Contains
 
           Call table%set("correlation_dump_frequency", control_parameter( &
                          key="correlation_dump_frequency", &
-                         name="correlation data dump frequency", & 
+                         name="correlation data dump frequency", &
                          val="0", &
                          units="steps", &
                          internal_units="steps", &
@@ -2980,7 +2980,7 @@ Contains
                      val="off", &
                      description="Enable dumping of per-particle information", &
                      data_type=DATA_BOOL))
-                     
+
       per_particle:block
 
       End block per_particle
@@ -3215,21 +3215,21 @@ Contains
                        key="io_file_statis", &
                        name="Statistics filepath", &
                        val="STATIS", &
-                       description="Set output statistics filepath, special options: NONE", &
+                       description="Set output statistics filepath", &
                        data_type=DATA_STRING))
 
         Call table%set("io_file_history", control_parameter( &
                        key="io_file_history", &
                        name="History filepath", &
                        val="HISTORY", &
-                       description="Set output history filepath, special options: NONE", &
+                       description="Set output history filepath", &
                        data_type=DATA_STRING))
 
         Call table%set("io_file_historf", control_parameter( &
                        key="io_file_historf", &
                        name="Historf filepath", &
                        val="HISTORF", &
-                       description="Set output historf filepath, special options: NONE", &
+                       description="Set output historf filepath", &
                        data_type=DATA_STRING))
 
         Call table%set("io_file_revive", control_parameter( &
@@ -3243,7 +3243,7 @@ Contains
                        key="io_file_revold", &
                        name="Revold filepath", &
                        val="REVOLD", &
-                       description="Set output revold filepath, special options: NONE", &
+                       description="Set output revold filepath", &
                        data_type=DATA_STRING))
 
         Call table%set("io_file_revcon", control_parameter( &
@@ -3257,14 +3257,14 @@ Contains
                        key='io_file_rdf', &
                        name='rdf filepath', &
                        val='RDFDAT', &
-                       description='Set output RDF filepath, special options: NONE', &
+                       description='Set output RDF filepath', &
                        data_type=DATA_STRING))
 
         Call table%set('io_file_msd', control_parameter( &
                        key='io_file_msd', &
                        name='msd filepath', &
                        val='MSDTMP', &
-                       description='Set output MSD filepath, special options: NONE', &
+                       description='Set output MSD filepath', &
                        data_type=DATA_STRING))
 
         Call table%set('io_file_tabbnd', control_parameter( &
@@ -3313,7 +3313,7 @@ Contains
                        key='io_file_cor', &
                        name='cor filepath', &
                        val='COR', &
-                       description='Set output COR filepath, special options: NONE', &
+                       description='Set output COR filepath', &
                        data_type=DATA_STRING))
 
         Call table%set('io_statis_yaml', control_parameter( &

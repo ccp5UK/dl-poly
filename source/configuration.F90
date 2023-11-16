@@ -2484,6 +2484,11 @@ Contains
     Real(Kind=wp), Allocatable, Dimension(:)       :: axx, ayy, azz, bxx, byy, bzz, cxx, cyy, czz
     Type(corePart), Allocatable, Dimension(:)      :: temp_parts
 
+    ! Nothing to write then nothing to compute
+    if (cfile%is_null()) then
+      return
+    end if
+
 ! record line
 ! Some parameters and variables needed by io interfaces
 

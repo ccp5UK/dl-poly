@@ -5,7 +5,7 @@ Module filename
 !
 !> Author - J. Madge September 2018
 !> contrib - a.m.elena October 2018 - use standard integer for units
-!> contrib - i.Scivetti Aug       2018 - addition of extra files for EVB calculations 
+!> contrib - i.Scivetti Aug       2018 - addition of extra files for EVB calculations
   Use kinds, Only: wi, STR_FILENAME
 
   Implicit None
@@ -25,6 +25,7 @@ Module filename
     Procedure, Public :: init => file_type_init
     Procedure, Public :: rename => file_type_init
     Procedure, Public :: Close => close_file
+    Procedure, Public :: is_null => file_type_null
   End Type file_type
 
   ! Core file location keys
@@ -70,7 +71,7 @@ Module filename
   Integer, Parameter, Public :: FILE_TABEAM = 20
 
   !> SETEVB file
-  Integer, Parameter, Public :: FILE_SETEVB = 21 
+  Integer, Parameter, Public :: FILE_SETEVB = 21
   !> POPEVB file
   Integer, Parameter, Public :: FILE_POPEVB = 22
   !> FIELD2 file
@@ -85,7 +86,7 @@ Module filename
   Integer, Parameter, Public :: FILE_CONFIG_3 = 27
   !> REVCON3 file
   Integer, Parameter, Public :: FILE_REVCON_3 = 28
-  !> COR 
+  !> COR
   Integer, Parameter, Public :: FILE_COR = 29
   !> Size of filename array
   Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 29
@@ -101,6 +102,16 @@ Contains
 
     T%filename = Trim(filename)
   End Subroutine file_type_init
+
+  !> Determine if file is null
+  Function file_type_null(T)
+    Class(file_type) :: T
+    logical :: file_type_null
+
+    file_type_null = T%filename == 'NONE' .or. &
+         T%filename == 'NUL' .or. &
+         T%filename == '/dev/null'
+  End Function file_type_null
 
   !> Allocate filename array and set defaults
   Subroutine default_filenames(filenames)

@@ -1877,6 +1877,11 @@ Contains
     Real(Kind=wp)                            :: r_mxnode
     Real(Kind=wp), Allocatable, Dimension(:) :: axx, ayy, azz, bxx, byy, bzz
 
+    ! If we don't need to write, don't bother calculating anything.
+    if (files(FILE_REVIVE)%is_null()) then
+      return
+    end if
+
     forma = ' '
     fail = 0
     Allocate (iwrk(1:config%mxatms), Stat=fail(1))
@@ -1886,6 +1891,7 @@ Contains
       Write (message, '(a)') 'system_revive allocation failure '
       Call error(0, message)
     End If
+
 
     ! Define format for REVIVE printing in ASCII
 
@@ -2246,7 +2252,7 @@ Contains
     Call stats%dump_correlations(comm, config, files(FILE_REVIVE)%unit_no)
 
     Call gsync(comm)
-    
+
     If (comm%idnode == 0) Call files(FILE_REVIVE)%close ()
 
     r_mxnode = 1.0_wp / Real(comm%mxnode, wp)
