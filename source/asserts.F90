@@ -188,8 +188,8 @@ Contains
     If (any(abs(actual - expected) > tol)) Then
       If (Present(message)) Then
         Write (error_unit, '(/,1x,a)') Trim(Adjustl(message))
-        Write (error_unit, '(a, g15.8)') "Expected: ", expected
-        Write (error_unit, '(a, g15.8)') "Received: ", actual
+        Write (error_unit, '(a,*(g16.8,","))') "Expected: ", expected
+        Write (error_unit, '(a,*(g16.8,","))') "Received: ", actual
       End If
 !!$#ifdef SERIAL
 !!$      Stop error_code_logical

@@ -440,22 +440,19 @@ Contains
   end Subroutine wca
 
   Pure Subroutine dpd(r, params, eng, gamma)
-    ! DPD potential - Groot-Warren (standard) :: u=(1/2).a.r.(1-r/rc)^2
+    ! DPD potential - Groot-Warren (standard) :: u=(1/2).a.rc.(1-r/rc)^2
     Real(wp), Intent(In   ) :: r, params(:) !, a, rc
     Real(wp), Intent(  Out) :: eng, gamma
-    Real(wp) :: r_inv_2
 
     Real(wp) :: t1, t2
 
     If (r < params(2)) then
 
-      r_inv_2 = r**(-2)
-
       t2 = r / params(2)
-      t1 = 0.5_wp * params(1) * r * (1.0_wp - t2)
+      t1 = 0.5_wp * params(1) * params(2) * (1.0_wp - t2)
 
       eng = t1 * (1.0_wp - t2)
-      gamma = t1 * (3.0_wp * t2 - 1.0_wp)
+      gamma = 2.0_wp * t1 * t2
     else
 
       eng = 0.0_wp
