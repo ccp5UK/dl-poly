@@ -788,6 +788,7 @@ Contains
     If (flow%simulation_method == EmpVB .and. (flow%num_ff <= 1 .or. flow%num_ff > MAX_FF)) &
       Call error(0, "Invalid number of coupled force-fields for EVB requested")
 
+    Call read_units(params)
     Do ff = 1, flow%NUM_FF
       ! Get densvar
       Call params%retrieve('density_variance', config(ff)%dvar)
@@ -800,7 +801,6 @@ Contains
         bond(ff), angle(ff), dihedral(ff), inversion(ff), tether(ff), &
         threebody(ff), vdws(ff), tersoffs(ff), fourbody(ff), rdf(ff), &
         mpoles(ff), rigid(ff), kim_data(ff), files, electro(ff), comm, ff)
-      Call read_units(params)
 
       ! scan CONFIG file data
 

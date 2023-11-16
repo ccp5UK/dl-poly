@@ -57,11 +57,13 @@ Module new_control
                                       FILE_REVOLD, FILE_STATS, FILE_TABANG, FILE_TABBND, &
                                       FILE_TABDIH, FILE_TABEAM, FILE_TABINV, FILE_TABVDW, FILE_COR, &
                                       FILE_CURRENT, file_type
+                                      FILE_FIELD_2, FILE_FIELD_3, FILE_SETEVB,FILE_POPEVB, &
+                                      FILE_CONFIG_2,FILE_CONFIG_3,FILE_REVCON_2,FILE_REVCON_3
   Use flow_control,             Only: DFTB,&
-                                      RESTART_KEY_CLEAN,&
-                                      RESTART_KEY_NOSCALE,&
-                                      RESTART_KEY_OLD,&
-                                      RESTART_KEY_SCALE,&
+    RESTART_KEY_CLEAN,&
+    RESTART_KEY_NOSCALE,&
+    RESTART_KEY_OLD,&
+    RESTART_KEY_SCALE,EmpVB,&
                                       flow_type
   Use four_body,                Only: four_body_type
   Use greenkubo,                Only: greenkubo_type
@@ -502,8 +504,16 @@ Contains
     files(FILE_OUTPUT)%filename = curr_option
     Call params%retrieve('io_file_config', curr_option)
     files(FILE_CONFIG)%filename = curr_option
+    Call params%retrieve('io_file_config_2', curr_option)
+    files(FILE_CONFIG_2)%filename = curr_option
+    Call params%retrieve('io_file_config_3', curr_option)
+    files(FILE_CONFIG_3)%filename = curr_option
     Call params%retrieve('io_file_field', curr_option)
     files(FILE_FIELD)%filename = curr_option
+    Call params%retrieve('io_file_field_2', curr_option)
+    files(FILE_FIELD_2)%filename = curr_option
+    Call params%retrieve('io_file_field_3', curr_option)
+    files(FILE_FIELD_3)%filename = curr_option
     Call params%retrieve('io_file_statis', curr_option)
     files(FILE_STATS)%filename = curr_option
     Call params%retrieve('io_file_history', curr_option)
@@ -514,6 +524,10 @@ Contains
     files(FILE_REVIVE)%filename = curr_option
     Call params%retrieve('io_file_revcon', curr_option)
     files(FILE_REVCON)%filename = curr_option
+    Call params%retrieve('io_file_revcon_2', curr_option)
+    files(FILE_REVCON_2)%filename = curr_option
+    Call params%retrieve('io_file_revcon_3', curr_option)
+    files(FILE_REVCON_3)%filename = curr_option
     Call params%retrieve('io_file_revold', curr_option)
     files(FILE_REVOLD)%filename = curr_option
     Call params%retrieve('io_file_rdf', curr_option)
@@ -536,6 +550,10 @@ Contains
     files(FILE_TABEAM)%filename = curr_option
     Call params%retrieve('io_file_cor', curr_option)
     files(FILE_COR)%filename = curr_option
+    Call params%retrieve('io_file_setevb', curr_option)
+    files(FILE_SETEVB)%filename = curr_option
+    Call params%retrieve('io_file_popevb', curr_option)
+    files(FILE_POPEVB)%filename = curr_option
 
   End Subroutine read_io
 
@@ -1667,15 +1685,17 @@ Contains
         If (params%is_set([Character(18) :: 'spme_kvec', 'spme_kvec_spacing'])) Then
 
           Call error(0, 'Cannot specify both explicit k-vec grid and k-vec spacing')
+
         Else If (params%is_set('spme_kvec')) Then
 
-          Call params%retrieve('spme_kvec', ewld%kspace%k_vec_dim_cont)
+          Call params%retrieve('spme_kvec', vtmp)
           ewld%kspace%k_vec_dim_cont = vtmp(1:3)
 
         Else
 
           Call params%retrieve('spme_kvec_spacing', rtmp)
           ewld%kspace%k_vec_dim_cont = Nint(rtmp / cell_properties(7:9))
+
         End If
 
         ! Sanity check for ill defined ewald sum parameters 1/8*2*2*2 == 1
@@ -2053,6 +2073,9 @@ Contains
     Call params%retrieve('io_statis_yaml', stats%file_yaml)
 
     Call params%retrieve('evb_num_ff', flow%NUM_FF)
+    if (flow%NUM_FF > 1 .and. flow%simulation_method /= EmpVB) then
+      call error(0,"evb_num_ff specified without simulation_method: evb",.true.)
+    end if
 
   End Subroutine read_run_parameters
 
@@ -3218,15 +3241,29 @@ Contains
                        data_type=DATA_STRING))
 
         Call table%set("io_file_field", control_parameter( &
-                       key="io_file_field", &
-                       name="Field filepath", &
-                       val="FIELD", &
-                       description="Set input field filepath", &
-                       data_type=DATA_STRING))
+          key="io_file_field", &
+          name="Field filepath", &
+          val="FIELD", &
+          description="Set input field filepath", &
+          data_type=DATA_STRING))
+
+        Call table%set("io_file_field_2", control_parameter( &
+          key="io_file_field_2", &
+          name="Field filepath", &
+          val="FIELD2", &
+          description="Set input field filepath for evb second state", &
+          data_type=DATA_STRING))
+        Call table%set("io_file_field_3", control_parameter( &
+          key="io_file_field_3", &
+          name="Field filepath", &
+          val="FIELD3", &
+          description="Set input field filepath for evb third state", &
+          data_type=DATA_STRING))
+
 
         Call table%set("io_file_statis", control_parameter( &
-                       key="io_file_statis", &
-                       name="Statistics filepath", &
+          key="io_file_statis", &
+          name="Statistics filepath", &
                        val="STATIS", &
                        description="Set output statistics filepath", &
                        data_type=DATA_STRING))
@@ -3260,25 +3297,25 @@ Contains
                        data_type=DATA_STRING))
 
         Call table%set("io_file_revcon", control_parameter( &
-                       key="io_file_revcon", &
-                       name="Revcon filepath", &
-                       val="REVCON", &
-                       description="Set output revcon filepath, special options: NONE", &
-                       data_type=DATA_STRING))
+          key="io_file_revcon", &
+          name="Revcon filepath", &
+          val="REVCON", &
+          description="Set output revcon filepath, special options: NONE", &
+          data_type=DATA_STRING))
 
         Call table%set('io_file_rdf', control_parameter( &
-                       key='io_file_rdf', &
-                       name='rdf filepath', &
-                       val='RDFDAT', &
-                       description='Set output RDF filepath', &
-                       data_type=DATA_STRING))
+        key='io_file_rdf', &
+          name='rdf filepath', &
+          val='RDFDAT', &
+          description='Set output RDF filepath, special options: NONE', &
+          data_type=DATA_STRING))
 
         Call table%set('io_file_msd', control_parameter( &
-                       key='io_file_msd', &
-                       name='msd filepath', &
-                       val='MSDTMP', &
-                       description='Set output MSD filepath', &
-                       data_type=DATA_STRING))
+          key='io_file_msd', &
+          name='msd filepath', &
+          val='MSDTMP', &
+          description='Set output MSD filepath, special options: NONE', &
+          data_type=DATA_STRING))
 
         Call table%set('io_file_currents', control_parameter( &
                        key='io_file_currents', &
@@ -3288,53 +3325,67 @@ Contains
                        data_type=DATA_STRING))
 
         Call table%set('io_file_tabbnd', control_parameter( &
-                       key='io_file_tabbnd', &
-                       name='tabbnd filepath', &
-                       val='TABBND', &
-                       description='Set input TABBND filepath', &
-                       data_type=DATA_STRING))
+          key='io_file_tabbnd', &
+          name='tabbnd filepath', &
+          val='TABBND', &
+          description='Set input TABBND filepath', &
+          data_type=DATA_STRING))
 
         Call table%set('io_file_tabang', control_parameter( &
-                       key='io_file_tabang', &
-                       name='tabang filepath', &
-                       val='TABANG', &
-                       description='Set input TABANG filepath', &
-                       data_type=DATA_STRING))
+          key='io_file_tabang', &
+          name='tabang filepath', &
+          val='TABANG', &
+          description='Set input TABANG filepath', &
+          data_type=DATA_STRING))
 
         Call table%set('io_file_tabdih', control_parameter( &
-                       key='io_file_tabdih', &
-                       name='tabdih filepath', &
-                       val='TABDIH', &
-                       description='Set input TABDIH filepath', &
-                       data_type=DATA_STRING))
+          key='io_file_tabdih', &
+          name='tabdih filepath', &
+          val='TABDIH', &
+          description='Set input TABDIH filepath', &
+          data_type=DATA_STRING))
 
         Call table%set('io_file_tabinv', control_parameter( &
-                       key='io_file_tabinv', &
-                       name='tabinv filepath', &
-                       val='TABINV', &
-                       description='Set input TABINV filepath', &
-                       data_type=DATA_STRING))
+          key='io_file_tabinv', &
+          name='tabinv filepath', &
+          val='TABINV', &
+          description='Set input TABINV filepath', &
+          data_type=DATA_STRING))
 
         Call table%set('io_file_tabvdw', control_parameter( &
-                       key='io_file_tabvdw', &
-                       name='tabvdw filepath', &
-                       val='TABVDW', &
-                       description='Set input TABVDW filepath', &
-                       data_type=DATA_STRING))
+          key='io_file_tabvdw', &
+          name='tabvdw filepath', &
+          val='TABVDW', &
+          description='Set input TABVDW filepath', &
+          data_type=DATA_STRING))
 
         Call table%set('io_file_tabeam', control_parameter( &
-                       key='io_file_tabeam', &
-                       name='tabeam filepath', &
-                       val='TABEAM', &
-                       description='Set input TABEAM filepath', &
-                       data_type=DATA_STRING))
+          key='io_file_tabeam', &
+          name='tabeam filepath', &
+          val='TABEAM', &
+          description='Set input TABEAM filepath', &
+          data_type=DATA_STRING))
 
         Call table%set('io_file_cor', control_parameter( &
-                       key='io_file_cor', &
-                       name='cor filepath', &
-                       val='COR', &
-                       description='Set output COR filepath', &
-                       data_type=DATA_STRING))
+          key='io_file_cor', &
+          name='cor filepath', &
+          val='COR', &
+          description='Set output COR filepath, special options: NONE', &
+          data_type=DATA_STRING))
+
+        Call table%set('io_file_setevb', control_parameter( &
+          key='io_file_setevb', &
+          name='evb set files', &
+          val='SETEVB', &
+          description='Set filepath for SETEVB', &
+          data_type=DATA_STRING))
+
+        Call table%set('io_file_popevb', control_parameter( &
+          key='io_file_popevb', &
+          name='evb pop files', &
+          val='POPEVB', &
+          description='Set filepath for POPEVB', &
+          data_type=DATA_STRING))
 
         Call table%set('io_statis_yaml', control_parameter( &
           key='io_statis_yaml', &
@@ -3349,6 +3400,31 @@ Contains
           val='off', &
           description='write rdf file in yaml format', &
           data_type=DATA_BOOL))
+
+        Call table%set("io_file_revcon_2", control_parameter( &
+          key="io_file_revcon_2", &
+          name="Revcon filepath for second evb", &
+          val="REVCON2", &
+          description="Set output revcon filepath, second evb", &
+          data_type=DATA_STRING))
+        Call table%set("io_file_revcon_3", control_parameter( &
+          key="io_file_revcon_3", &
+          name="Revcon filepath for third evb", &
+          val="REVCON3", &
+          description="Set output revcon filepath, third evb", &
+          data_type=DATA_STRING))
+        Call table%set("io_file_config_2", control_parameter( &
+          key="io_file_config_2", &
+          name="Config filepath", &
+          val="CONFIG2", &
+          description="Set input configuration filepath for second evb", &
+          data_type=DATA_STRING))
+        Call table%set("io_file_config_3", control_parameter( &
+          key="io_file_config_3", &
+          name="Config filepath", &
+          val="CONFIG3", &
+          description="Set input configuration filepath for third EVB", &
+          data_type=DATA_STRING))
 
       End block io_file
 
@@ -4215,10 +4291,10 @@ Contains
             description="Set real-recip changeover location for Spme calculations", &
             data_type=DATA_FLOAT))
 
-Call table%set("spme_kvec", control_parameter( &
+          Call table%set("spme_kvec", control_parameter( &
             key="spme_kvec", &
             name="SPME k-vector samples", &
-            val="0 0 0", &
+            val="[0 0 0]", &
             units="", &
             internal_units="", &
             description="Set number of k-space samples for SPME calculations", &

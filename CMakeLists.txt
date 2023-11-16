@@ -23,7 +23,6 @@ if(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
     message(STATUS "Compiler version acceptable? No")
     message(FATAL_ERROR "You need a GNU supported compiler, minimum version 6.0.0")
   endif()
-elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel")
 endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake" "${CMAKE_SOURCE_DIR}/cmake/Modules")

@@ -231,23 +231,23 @@ Contains
     Character(Len=8)               :: atom0, atom1, atom2, atom3
     Character(Len=8), Allocatable  :: kim_name(:)
     Integer                        :: fail(1:4), frzcon, frzrgd, i, ia, iang, iatm1, iatm2, iatm3, &
-                                      iatm4, ibond, icnst, icross, idih, ifbp, ifrz, iinv, ipmf, &
-                                      irept, irgd, is(0:4), ishls, isite, isite1, isite2, isite3, &
-                                      isite4, itbp, iter, iteth, itmols, itmp, itpcrd, itpfbp, &
-                                      itpmet, itprdf, itptbp, itpter, itpvdw, j, ja, jpmf, jrgd, &
-                                      js(0:4), jsite, jtpatm, ka1, ka2, ka3, katom0, katom1, &
-                                      katom2, katom3, katom4, keyfbp, keymet, keypot, keyrdf, &
-                                      keytbp, keyter, keyvdw, kfbp, kpmf, krgd, ksite, ktbp, lrgd, &
-                                      msite, nangle, nbonds, nconst, ndihed, nfld, ninver, nkim, &
-                                      nrept, nrigid, nshels, nsite, ntab, nteth, ntmp, ntpang, &
-                                      ntpbnd, ntpcrd, ntpcrd2, ntpcrd3, ntpdih, ntpinv, rwidth
+      iatm4, ibond, icnst, icross, idih, ifbp, ifrz, iinv, ipmf, &
+      irept, irgd, is(0:4), ishls, isite, isite1, isite2, isite3, &
+      isite4, itbp, iter, iteth, itmols, itmp, itpcrd, itpfbp, &
+      itpmet, itprdf, itptbp, itpter, itpvdw, j, ja, jpmf, jrgd, &
+      js(0:4), jsite, jtpatm, ka1, ka2, ka3, katom0, katom1, &
+      katom2, katom3, katom4, keyfbp, keymet, keypot, keyrdf, &
+      keytbp, keyter, keyvdw, kfbp, kpmf, krgd, ksite, ktbp, lrgd, &
+      msite, nangle, nbonds, nconst, ndihed, nfld, ninver, nkim, &
+      nrept, nrigid, nshels, nsite, ntab, nteth, ntmp, ntpang, &
+      ntpbnd, ntpcrd, ntpcrd2, ntpcrd3, ntpdih, ntpinv, rwidth
     Logical                        :: atmchk, l_ang, l_bnd, l_con, l_dih, l_inv, l_rgd, l_shl, &
-                                      l_tet, ldpd_safe, lmet_safe, lmols, lpmf, lshl_abort, &
-                                      lshl_all, lshl_one, lter_safe, lunits, safe
+      l_tet, ldpd_safe, lmet_safe, lmols, lpmf, lshl_abort, &
+      lshl_all, lshl_one, lter_safe, lunits, safe
     Real(Kind=wp)                  :: charge, d_core, d_core_p, d_core_s, del(0:2), eps(0:2), &
-                                      k_crsh, k_crsh_p, k_crsh_s, p_core, p_core_p, p_core_s, &
-                                      parpot(1:30), pmf_tmp(1:2), q_core, q_core_p, q_core_s, &
-                                      q_shel, q_shel_p, q_shel_s, sig(0:2), tmp, weight
+      k_crsh, k_crsh_p, k_crsh_s, p_core, p_core_p, p_core_s, &
+      parpot(1:30), pmf_tmp(1:2), q_core, q_core_p, q_core_s, &
+      q_shel, q_shel_p, q_shel_s, sig(0:2), tmp, weight
 
     Integer( Kind = wi )           :: fftag
 
@@ -468,7 +468,7 @@ Contains
 
         Write (message, '(a,6x,i10)') 'number of molecular types', sites%ntype_mol
         Call info(message, .true., level=3)
-
+        write(0,*)  sites%mxtmls
         If (sites%ntype_mol > sites%mxtmls) Then
           Call error(10)
         End If

@@ -1,4 +1,3 @@
-Module filename
 !> Module maintaining access to DL_POLY files
 !>
 !> Copyright - Daresbury Laboratory
@@ -6,6 +5,7 @@ Module filename
 !> Author - J. Madge September 2018
 !> contrib - a.m.elena October 2018 - use standard integer for units
 !> contrib - i.Scivetti Aug       2018 - addition of extra files for EVB calculations
+Module filename
   Use kinds, Only: wi, STR_FILENAME
 
   Implicit None

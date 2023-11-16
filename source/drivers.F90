@@ -1112,7 +1112,7 @@ Contains
     Type(comms_type),         Intent(InOut) :: comm
 
 ! used for vv stage control
-#ifdef CHRONO 
+#ifdef CHRONO
     Call start_timer(tmr, "Integrate vv")
 #endif
     !!!!!!!!!!!!!!!!!!!!!!  W_INTEGRATE_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
@@ -1501,7 +1501,7 @@ Contains
                           neigh, rigid, domain, cnfig, seed, comm)
     End If
 
-#ifdef CHRONO 
+#ifdef CHRONO
     Call stop_timer(tmr, "Integrate vv")
 #endif
 
@@ -1694,7 +1694,7 @@ Contains
 
     ! line-printer output every flow%freq_output steps
 
-    If (flow%freq_output > 0) Then 
+    If (flow%freq_output > 0) Then
       If (flow%lines == 0 .or. (Mod(flow%step, flow%freq_output) == 0) .and. ffpass) Then
 
         ! Update cpu flow%time
@@ -2113,7 +2113,7 @@ Contains
         Enddo
 
       End If ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
-  
+
       Do ff = 1, flow%NUM_FF
         If (stat(ff)%intsta > 0) Then
           ! If system is correlating heatflux or, to write per-particle data AND write step AND not equilibration
