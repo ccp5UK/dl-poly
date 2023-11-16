@@ -68,7 +68,7 @@ Module statistics
   Use z_density,       Only: z_density_collect,&
                              z_density_type
   Use correlators,     Only: correlator, correlator_buffer_type, indices_buffer_type
-  Use units,           Only: to_out_units 
+  Use units,           Only: to_out_units
 
   Implicit None
 
@@ -101,6 +101,13 @@ Module statistics
   Type, Public :: correlator_holder
     Type(correlator)               :: correlator
     Type(correlation)              :: correlation
+  End Type
+
+  Type, Public :: statistic_accumulator
+    Real(Kind=wp) :: mu = 0.0_wp, var = 0.0_wp, tmp = 0.0_wp
+    Integer       :: count = 0
+    Contains 
+      Procedure update_statistic
   End Type
 
   Type, Public :: stats_type
@@ -192,6 +199,7 @@ Module statistics
     Integer                              :: cor_dump_freq = 0 
     ! Integer, Allocatable               :: number_of_blocks(:), points_per_block(:), window_size(:)
     ! Integer, Allocatable               :: min_distance(:), dim_left(:), dim_right(:)
+    Type(statistic_accumulator)          :: volume_accum, mass_accum, temperature_accum
     Real(Kind=wp), Allocatable         :: xin(:), yin(:), zin(:)
     Real(Kind=wp), Allocatable         :: xto(:), yto(:), zto(:), rsd(:)
     Real(Kind=wp), Allocatable         :: stpval(:), stpvl0(:), sumval(:), ssqval(:)
@@ -322,6 +330,7 @@ Module statistics
   Public :: correlation_result
   Public :: character_to_observable
   Public :: code_to_observable
+  Public :: update_statistic
 Contains
 
   Subroutine allocate_statistics_arrays(stats, mxrgd, mxatms, mxatdm)
@@ -597,7 +606,8 @@ Contains
                                                      component_left, component_right
     Character(Len=2), Dimension(1:3)              :: components_vector
     Character(Len=2), Dimension(1:9)              :: components_matrix
-    Real(Kind=wp)                                 :: t, dt, visc, therm_cond, conv
+    Real(Kind=wp)                                 :: t, dt, visc, conv
+    Real(Kind=wp),    Dimension(1:10)             :: therm_cond
     Integer                                       :: points, window, blocks,&
                                                      dim_left, dim_right
     Character(Len=STR_LEN)                        :: units
@@ -611,7 +621,6 @@ Contains
     components_matrix = (/'xx', 'xy', 'xz', 'yx', 'yy', 'yz', 'zx', 'zy', 'zz'/)
 
     file_unit = files(FILE_COR)%unit_no
-
     If (comm%idnode == root_id) Then
 
       Open(Newunit=file_unit,File=Trim(files(FILE_COR)%filename),Status='replace')
@@ -854,26 +863,29 @@ Contains
 
             visc = calculate_viscosity(stats, correlation, dt)
 
-            Write (file_unit, '(a)') "      derived:"
-            Write (file_unit, '(a)') "            viscosity:"
+            Call to_out_units(1.0_wp, "internal_m", conv, units)
+
+            Write (file_unit, '(a)')       "      derived:"
+            Write (file_unit, '(a)')       "            viscosity:"
             Write (file_unit, '(a,g16.8)') "                  value: ", visc
-            Write (file_unit, '(a)') "                  units: Katm ps "
+            Write (file_unit, '(a)')       "                  units: Katm ps "
+            Write (file_unit, '(a)')       "            kinematic-viscosity:"
+            Write (file_unit, '(a,g16.8)') "                  value: ", &
+              visc/((conv*stats%mass_accum%mu) / stats%volume_accum%mu)
+            Write (file_unit, '(a)')       "                  units: Katm ps / ("//Trim(units)//" / Ang^3)"
 
             correlation = correlation * prsunt * prsunt
 
           Else If(char_left == heat_flux_name(observable_heat_flux()) .and. &
                   char_right == heat_flux_name(observable_heat_flux())) Then
 
-            therm_cond = calculate_thermal_conductivity(stats, correlation, dt, units)
+                  therm_cond = calculate_thermal_conductivity(stats, correlation, dt, units)
 
-            Write (file_unit, '(a)') "      derived:"
-            Write (file_unit, '(a)') "            thermal-conductivity:"
-            Write (file_unit, '(a,g16.8)') "                  value: ", therm_cond
-            Write (file_unit, '(a,a)') "                  units: ", units
-            
-            Call to_out_units(1.0_wp, "internal_e", conv)
-
-            correlation = correlation / conv
+                  Write (file_unit, '(a)')                         "      derived:"
+                  Write (file_unit, '(a)')                         "            thermal-conductivity:"
+                  Write (file_unit, '(a,g16.8)')                   "                  value: ", therm_cond(10)
+                  Write (file_unit, '(a,a)')                       "                  units: ", Trim(units)
+                  Write (file_unit, '(a, 8(g16.8,","), g16.8, a)') "                  components: [", therm_cond(1:9), "]" 
 
           End If
           
@@ -1413,6 +1425,12 @@ Contains
       If (((.not. leql) .or. nstep >= nsteql) .and. &
           Mod(nstep, zdensity%frequency) == 0) Call z_density_collect(zdensity, config)
     End If
+
+    ! accumulation of volume and mass averages (used e.g. by viscosity calculation)
+
+    Call stats%volume_accum%update_statistic(stats%stpvol)
+    Call stats%mass_accum%update_statistic(config%totmas)
+    Call stats%temperature_accum%update_statistic(stats%stptmp)
 
     ! Catch time of starting statistical averages
 
@@ -2669,7 +2687,7 @@ Contains
 
     ! in internal pressure-time units
 
-    visc = ( stats%stpvol / (boltz*stats%stptmp) ) * visc
+    visc = ( stats%volume_accum%mu / (boltz*stats%temperature_accum%mu) ) * visc
     
     ! now in Katm - internal time 
 
@@ -2677,30 +2695,42 @@ Contains
 
   End Function calculate_viscosity
 
+
   Function calculate_thermal_conductivity(stats, correlation, dt, units) Result(therm_cond)
-    Type(stats_type),       Intent(In   ) :: stats
-    Real(Kind=wp),          Intent(In   ) :: correlation(:,:,:)
-    Real(Kind=wp),          Intent(In   ) :: dt
-    Character(Len=STR_LEN), Intent(  Out) :: units
-    Real(Kind=wp)                         :: therm_cond, conv
-    Class(integrator),      Allocatable   :: inter 
+    Type(stats_type),              Intent(In   ) :: stats
+    Real(Kind=wp),                 Intent(In   ) :: correlation(:,:,:)
+    Real(Kind=wp),                 Intent(In   ) :: dt
+    Character(Len=STR_LEN),        Intent(  Out) :: units
+    Real(Kind=wp)                                :: conv
+    Real(Kind=wp), Dimension(1:10)               :: therm_cond
+    Integer                                      :: i, j, k
+    Class(integrator),             Allocatable   :: inter
                                         
 
     ! z component
     
     Allocate(simpsons_rule::inter)
 
-    therm_cond = inter%integrate_uniform(correlation(:,3,3),dt)
+    k = 1
+    Do i = 1, 3
+      Do j = 1, 3
+        therm_cond(k) = inter%integrate_uniform(correlation(:,i,j),dt)
+        k = k + 1
+      End Do
+    End Do
+
+    therm_cond(10) = (therm_cond(1) + therm_cond(5) + therm_cond(9))/3.0_wp
 
     ! careful, DL_POLY already divides by volume in calculate_heat_flux
 
     Call to_out_units(1.0_wp, "internal_e", conv, units)
 
-    therm_cond = stats%stpvol / (stats%stptmp * stats%stptmp * (boltz/engunit)) * therm_cond
+    therm_cond = stats%volume_accum%mu / ( (stats%temperature_accum%mu**2) * (boltz/engunit)) * therm_cond
 
     units = Trim(units)//" / (ps Ang K)"
     
   End Function calculate_thermal_conductivity
+
 
 
   Subroutine write_per_part_contribs(config, comm, energies, stresses, nstep) !, forces
@@ -3543,5 +3573,23 @@ Contains
     Logical                                    :: v
     v = .false.
   End Function heat_flux_per_atom
+
+  Subroutine update_statistic(acc, v)
+    Class(statistic_accumulator), Intent(InOut) :: acc 
+    Real(Kind=wp)                               :: v
+
+    Real(Kind=wp) :: mu_last
+
+    ! tmp for Welford's algorithm
+    mu_last = acc%mu
+    ! online average
+    acc%mu = (acc%count * acc%mu + v) / (acc%count+1)
+    ! Welford's algorithm
+    acc%tmp = acc%tmp + (v - mu_last)*(v - acc%mu)
+    ! unbiased
+    acc%var = acc%tmp / (Max(1,acc%count))
+    acc%count = acc%count + 1
+
+  End Subroutine
 
 End Module statistics

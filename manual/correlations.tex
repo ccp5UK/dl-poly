@@ -76,7 +76,7 @@ In the (new style) CONTROL (see Section~\ref{new-style}) correlations are specif
 Through a combination of the three parameters short or long timescale correlations may be computed. For example taking {\bf correlation\_blocks} $= 1$, {\bf correlation\_block\_points} $= 100$, and {\bf correlation\_window} $= 1$ will result in a maximum
 lag time correlated of $99 \Delta t$ for simulation time step $\Delta t$. Whereas taking {\bf correlation\_window} $= 2$ and {\bf correlation\_blocks} $= 2$ will give a higher maximum correlation lag time, $(198 \Delta t)$, but the averaging window of $2$ will result in a small accuracy reduction. 
 
-\subsubsection{Output}
+\subsection{Output}
 
 When correlation functions are specified by the user the resulting data is written as a YAML file, COR, containing the distinct correlations with their lag times, components, and any derived quantities. For example when computing the SAF the derived viscosity value for the simulation is automatically calculated, in this case the COR output file may look like the following
 
@@ -101,3 +101,13 @@ correlations:
            ...
            stress_zz-stress_zz: [                   ...                     ]
 \end{verbatim}
+
+\subsubsection{Specific Correlation Ouput}
+\textbf{Stress correlations}: When accumulating system stress correlation functions a derived sheer-viscosity measurement is written to the output file, along with a kinematic viscosity. These are both calculated using equation \ref{viscosity-gk}, averaged over the xy, yz, and zx correlations. The latter is calculated by additionally dividing by the system density, thus the kinematic viscosity is 
+\begin{equation}
+    \eta_k = \eta / \rho,
+\end{equation}
+where $\rho$ is averaged over the simulation time.
+
+\textbf{Heatflux correlations}: When accumulating heatflux correlations the thermal-conductivity is written to output as a derived measurement. This is calculated following equation \ref{thermal-conductivity-gk} (i.e. with averaging over x, y, and z directions). Additionally the components of lattice thermal-conductivity are also written for each component pairs, xx, xy, xz, etc.
+
