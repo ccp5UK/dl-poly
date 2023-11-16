@@ -3088,9 +3088,16 @@ Contains
     Type(indices_buffer_type)                     :: packed_ids
     Integer                                       :: i, buffer_size, correlations, &
                                                      buffer_index, A, B, &
-                                                     local_correlations, local_buffer_size
+                                                     local_correlations, local_buffer_size, &
+                                                     n_local_cor
     Real(Kind=wp)                                 :: write_sum
   
+    n_local_cor = 0
+    If (Allocated(this%correlations)) n_local_cor = Size(this%correlations)
+    Call gsum(comm, n_local_cor)
+
+    If (n_local_cor == 0) Return
+
     ! determine total buffer sizes needed for root
 
     buffer_size = 0
@@ -3212,7 +3219,13 @@ Contains
     Integer                                       :: i, buffer_size, correlations, &
                                                      buffer_index, j, packed_index, &
                                                      A, B, atom, offset, local_correlations, &
-                                                     local_buffer_size
+                                                     local_buffer_size, n_local_cor
+
+    n_local_cor = 0
+    If (Allocated(this%correlations)) n_local_cor = Size(this%correlations)
+    Call gsum(comm, n_local_cor)
+
+    If (n_local_cor == 0) Return
 
     local_correlations = 0
     local_buffer_size = 0
