@@ -64,7 +64,7 @@ Module development
     Logical, Public       :: l_dis = .false.
 
     !> See whether the new control file format should be used
-    Logical, Public        :: new_control = .false.
+    Logical, Public        :: old_control = .false.
 
     !> CFGORG levcfg
     Integer, Public       :: lvcforg = -1

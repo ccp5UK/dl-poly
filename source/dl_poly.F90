@@ -35,11 +35,11 @@ Program dl_poly
                                                     init_comms
   Use configuration,                          Only: configuration_type
   Use constraints,                            Only: constraints_type
-  Use control,                                Only: read_simtype
+  Use old_control,                                Only: read_simtype
   Use control_parameters,                     Only: dump_parameters,&
-                                                    parameters_hash_table
+    parameters_hash_table
   Use coord,                                  Only: coord_type
-  Use core_shell,                             Only: core_shell_type
+  Use corE_shell,                             Only: core_shell_type
   Use defects,                                Only: defects_type
   Use development,                            Only: development_type
   Use dihedrals,                              Only: dihedrals_type
@@ -70,8 +70,8 @@ Program dl_poly
   Use mpole,                                  Only: mpole_type
   Use msd,                                    Only: msd_type
   Use neighbours,                             Only: neighbours_type
-  Use new_control,                            Only: initialise_control,&
-                                                    read_new_control
+  Use control,                            Only: initialise_control,&
+                                                    read_control
   Use numerics,                               Only: seed_type
   Use plumed,                                 Only: plumed_type
   Use pmf,                                    Only: pmf_type
@@ -206,9 +206,8 @@ Program dl_poly
     Call files(1, FILE_CONTROL)%rename('CONTROL')
   End If
 
-  Call read_new_control(files(1, FILE_CONTROL), params, dlp_world(0), devel(1)%new_control)
-
-  If (devel(1)%new_control) Then
+  Call read_control(files(1, FILE_CONTROL), params, dlp_world(0), devel(1)%old_control)
+  If (.not. devel(1)%old_control) Then
     Call params%retrieve('simulation_method', option)
     Select Case (option)
     Case ('md')
@@ -418,7 +417,7 @@ contains
           Call tests%run(comms_in, passed)
           If (passed) Then
             Write(eu, '(a)') "Status: PASSED"
-          Else 
+          Else
             Write(eu, '(a)') "Status: FAILED"
           End If
           finish = .true.

@@ -6,7 +6,7 @@ Module test_control
   Use control_parameters,       Only: parameters_hash_table
   Use kinds,                    Only: STR_LEN,&
                                       wp
-  Use new_control,              Only: initialise_control,&
+  Use control,              Only: initialise_control,&
                                       parse_control_file
   Use units,                    Only: destroy_units,&
                                       initialise_units,&

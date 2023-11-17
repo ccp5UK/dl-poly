@@ -34,9 +34,9 @@ Module meta
   Use constants,                              Only: DLP_RELEASE,&
                                                     DLP_VERSION
   Use constraints,                            Only: constraints_type
-  Use control,                                Only: read_control,&
-                                                    scan_control_io,&
-                                                    scan_control_output
+  Use old_control,                            Only: read_control,&
+    scan_control_io,&
+    scan_control_output
   Use control_parameters,                     Only: parameters_hash_table
   Use control_output,                         Only: write_parameters
   Use coord,                                  Only: coord_type
@@ -44,14 +44,14 @@ Module meta
   Use defects,                                Only: defects_type
   Use deport_data,                            Only: mpoles_rotmat_set_halo
   Use development,                            Only: build_info,&
-                                                    development_type,&
-                                                    scan_development
+    development_type,&
+    scan_development
   Use dihedrals,                              Only: dihedrals_type
   Use domains,                                Only: domains_type
   Use drivers,                                Only: md_vv,&
-                                                    replay_historf,&
-                                                    replay_history
-  Use electrostatic,                          Only: ELECTROSTATIC_SPME,&
+    replay_historf,&
+    replay_history
+  Use electrostatiC,                          Only: ELECTROSTATIC_SPME,&
                                                     electrostatic_type
   Use errors_warnings,                        Only: check_print_level,&
                                                     error,&
@@ -100,7 +100,7 @@ Module meta
                                                     mpole_type
   Use msd,                                    Only: msd_type
   Use neighbours,                             Only: neighbours_type
-  Use new_control,                            Only: read_bond_analysis,&
+  Use control,                            Only: read_bond_analysis,&
                                                     read_devel,&
                                                     read_ensemble,&
                                                     read_forcefield,&
@@ -174,8 +174,8 @@ Contains
                                 green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, inversion, &
                                 tether, threebody, zdensity, cons, neigh, pmfs, sites, core_shells, vdws, tersoffs, &
                                 fourbody, rdf, minim, mpoles, ext_field, rigid, electro, domain, flow, &
-                                seed, traj, kim_data, config, ios, ttms, rsdsc, files, control_filename, &
-                                output_filename, crd, adf)
+                                seed, traj, kim_data, config, ios, ttms, rsdsc, files, output_filename, &
+                                control_filename, crd, adf)
     Type(parameters_hash_table),            Intent(InOut) :: params
     Type(comms_type),                       Intent(InOut) :: dlp_world(0:)
     Type(thermostat_type), Allocatable,     Intent(InOut) :: thermo(:)
@@ -221,7 +221,7 @@ Contains
     Type(ttm_type), Allocatable,            Intent(InOut) :: ttms(:)
     Type(rsd_type), Allocatable, Target,    Intent(InOut) :: rsdsc(:)
     Type(file_type), Allocatable,           Intent(InOut) :: files(:, :)
-    Character(len=1024),                    Intent(In   ) :: control_filename, output_filename
+    Character(len=1024),                    Intent(In   ) :: output_filename, control_filename
     Type(coord_type), Allocatable,          Intent(InOut) :: crd(:)
     Type(adf_type), Allocatable,            Intent(InOut) :: adf(:)
 
@@ -262,8 +262,8 @@ Contains
                                        vdws, tersoffs, fourbody, rdf, minim, mpoles, &
                                        ext_field, rigid, electro, &
                                        domain, flow, seed, traj, kim_data, config, &
-                                       ios, ttms, rsdsc, files, control_filename, &
-                                       output_filename, crd, adf)
+                                       ios, ttms, rsdsc, files, output_filename, &
+                                       control_filename, crd, adf)
 
     Type(parameters_hash_table), Intent(InOut) :: params
     Type(comms_type),            Intent(InOut) :: dlp_world(0:), comm
@@ -320,26 +320,26 @@ Contains
 
     Call gtime(tmr%elapsed) ! Initialise wall clock time
 
-    If (devel%new_control) Then
+    If (.not. devel%old_control) Then
       Call molecular_dynamics_initialise(params, dlp_world, comm, thermo, ewld, tmr, devel, &
                                          stats, green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, &
                                          inversion, tether, threebody, zdensity, cons, neigh, pmfs, sites, core_shells, &
                                          vdws, tersoffs, fourbody, rdf, minim, mpoles, ext_field, rigid, electro, &
                                          domain, flow, seed, traj, kim_data, config, &
-                                         ios, ttms, rsdsc, files, control_filename, &
-                                         output_filename, crd, adf)
+                                         ios, ttms, rsdsc, files, output_filename, &
+                                         control_filename, crd, adf)
     Else
       !! Enable when new becomes standard
-      ! call warning('Control file '//trim(files(FILE_CONTROL)%filename)//' is in old style', .true.)
-      ! call warning('Please update, as this will be deprecated in future releases', .true.)
+      call warning('Control file '//trim(files(FILE_CONTROL)%filename)//' is in old style', .true.)
+      call warning('Please update, as this will be deprecated in future releases', .true.)
 
       Call molecular_dynamics_initialise_old(dlp_world, comm, thermo, ewld, tmr, devel, &
                                              stats, green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, &
                                              inversion, tether, threebody, zdensity, cons, neigh, pmfs, sites, core_shells, &
                                              vdws, tersoffs, fourbody, rdf, minim, mpoles, ext_field, rigid, electro, &
                                              domain, flow, seed, traj, kim_data, config, ios, &
-                                             ttms, rsdsc, files, control_filename, &
-                                             output_filename, crd, adf)
+                                             ttms, rsdsc, files, output_filename, &
+                                             control_filename, crd, adf)
     End If
 
     Do ff = 1, flow%num_ff
@@ -683,8 +683,8 @@ Contains
                                            stats, green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, &
                                            inversion, tether, threebody, zdensity, cons, neigh, pmfs, sites, core_shells, &
                                            vdws, tersoffs, fourbody, rdf, minim, mpoles, ext_field, rigid, electro, &
-                                           domain, flow, seed, traj, kim_data, config, ios, ttms, rsdsc, files, control_filename, &
-                                           output_filename, crd, adf)
+                                           domain, flow, seed, traj, kim_data, config, ios, ttms, rsdsc, files, output_filename, &
+                                           control_filename, crd, adf)
 
     Type(parameters_hash_table), Intent(InOut) :: params
     Type(comms_type),            Intent(InOut) :: dlp_world(0:), comm
@@ -904,8 +904,8 @@ Contains
                                                vdws, tersoffs, fourbody, rdf, minim, mpoles, &
                                                ext_field, rigid, electro, &
                                                domain, flow, seed, traj, kim_data, config, ios, &
-                                               ttms, rsdsc, files, control_filename, &
-                                               output_filename, crd, adf)
+                                               ttms, rsdsc, files, output_filename, &
+                                               control_filename, crd, adf)
     Type(comms_type),            Intent(InOut) :: dlp_world(0:), comm
     Type(thermostat_type),       Intent(InOut) :: thermo(:)
     Type(ewald_type),            Intent(InOut) :: ewld(:)

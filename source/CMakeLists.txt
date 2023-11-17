@@ -11,7 +11,7 @@ set(dlpoly_SRCS
   build_chrm.F90
   build_excl.F90
   build_tplg.F90
-  control.F90
+  old_control.F90
   trajectory.F90
   temperature.F90
   bounds.F90
@@ -111,7 +111,7 @@ set(dlpoly_SRCS
   npt_mtk.F90
 
   control_parameter.F90
-  new_control.F90
+  control.F90
   control_output.F90
   hash.F90
   units.F90

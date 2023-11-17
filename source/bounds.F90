@@ -19,8 +19,8 @@ Module bounds
                              pi,&
                              zero_plus
   Use constraints,     Only: constraints_type
-  Use control,         Only: scan_control,&
-                             scan_control_pre
+  Use old_control,         Only: scan_control,&
+    scan_control_pre
   Use coord,           Only: coord_type
   Use core_shell,      Only: core_shell_type
   Use development,     Only: development_type
