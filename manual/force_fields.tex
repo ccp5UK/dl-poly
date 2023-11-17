@@ -1165,6 +1165,14 @@ U(r_{ij}) = \left\{ \begin{array} {l@{\quad:\quad}l}
 0 & r_{ij} \ge r_{c} \end{array} \right.
 \end{equation}
 It takes the Groot-Warren \cite{groot-97a} form giving a soft and purely repulsive interaction.
+\item $n$DPD potential:  ({\bf ndpd})
+\begin{equation}
+U(r_{ij}) = \left\{ \begin{array} {l@{\quad:\quad}l}
+\frac{Ab}{n+1}~r_{c}~\left(1-\frac{r_{ij}}{r_{c}}\right)^{n+1} - \frac{A}{2}~r_{c}~\left(1-\frac{r_{ij}}{r_{c}}\right)^{2} & r_{ij} < r_{c} \\
+0 & r_{ij} \ge r_{c} \end{array} \right.
+\end{equation}
+It is a modification of the `standard DPD' Groot-Warren form \cite{sokhan-23a}, providing additional attraction
+and more control over repulsion with power index $n$ while still remaining soft.
 \item 14-7 pair potential \cite{ponder-10a}:  ({\bf 14-7})
 \begin{equation}
 U(r_{ij}) = \epsilon\left(\frac{1.07}{(r_{ij}/r_{o})+0.07}\right)^{7}\left(\frac{1.12}{(r_{ij}/r_{o})^{7}+0.12}-2\right)

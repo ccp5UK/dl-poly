@@ -118,7 +118,7 @@ Module ffield
                              VDW_BORN_HUGGINS_MEYER, VDW_BUCKINGHAM, VDW_BUCKINGHAM_MDF, VDW_DPD, &
                              VDW_HYDROGEN_BOND, VDW_LENNARD_JONES, VDW_LENNARD_JONES_COHESIVE, &
                              VDW_LJF, VDW_LJ_MDF, VDW_MORSE, VDW_MORSE_12, VDW_NULL, VDW_N_M, &
-                             VDW_N_M_SHIFT, VDW_RYDBERG, VDW_TAB, VDW_WCA, VDW_ZBL, &
+                             VDW_N_M_SHIFT, VDW_RYDBERG, VDW_TAB, VDW_WCA, VDW_ZBL, VDW_NDPD, &
                              VDW_ZBL_SWITCH_BUCKINGHAM, VDW_ZBL_SWITCH_MORSE, VDW_SANDERSON,&
                              vdw_direct_fs_generate, vdw_generate, vdw_table_read, vdw_type
   Use units,           Only: internal_units,&
@@ -3665,6 +3665,8 @@ Contains
             keypot = VDW_WCA
           Else If (keyword == 'dpd') Then
             keypot = VDW_DPD
+          Else If (keyword == 'ndpd') Then
+            keypot = VDW_NDPD
           Else If (keyword == '14-7') Then
             keypot = VDW_AMOEBA
           Else If (keyword == 'ljc') Then
@@ -3848,6 +3850,8 @@ Contains
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
             Case (VDW_DPD)
               thermo%gamdpd(keyvdw) = Abs(parpot(3))
+            Case (VDW_NDPD)
+              thermo%gamdpd(keyvdw) = Abs(parpot(5))
             Case (VDW_AMOEBA)
               thermo%gamdpd(keyvdw) = Abs(parpot(3))
             Case (VDW_LENNARD_JONES_COHESIVE)
@@ -6196,6 +6200,7 @@ Contains
             Call get_word(record, word)
             Call get_word(record, word)
             Call get_word(record, word)
+!            Call get_word(record, word)    ! Need to include this line to detect correct r_c value!
             vdws%cutoff = Max(vdws%cutoff, word_2_real(word))
           Else If (word(1:3) == 'wca') Then
             Call get_word(record, word)
@@ -6204,6 +6209,13 @@ Contains
             tmp = tmp2 + tmp1 * 2.0_wp**(1.0_wp / 6.0_wp)
             vdws%cutoff = Max(vdws%cutoff, tmp)
           Else If (word(1:3) == 'dpd') Then
+            Call get_word(record, word)
+            Call get_word(record, word)
+            vdws%cutoff = Max(vdws%cutoff, word_2_real(word))
+          Else If (word(1:4) == 'ndpd') Then
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word)
             Call get_word(record, word)
             vdws%cutoff = Max(vdws%cutoff, word_2_real(word))
           End If

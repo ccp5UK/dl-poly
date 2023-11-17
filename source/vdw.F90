@@ -50,7 +50,7 @@ Module vdw
 
   ! VdW potential parameters
   !> Number of available potential types
-  Integer(Kind=wi), Parameter, Public :: NUM_VDW_POTS = 21
+  Integer(Kind=wi), Parameter, Public :: NUM_VDW_POTS = 23
 
   !> No VdW potential
   Integer(Kind=wi), Parameter, Public :: VDW_NULL = -1
@@ -74,7 +74,7 @@ Module vdw
   Integer(Kind=wi), Parameter, Public :: VDW_MORSE = 8
   !> Shifted Weeks-Chandler-Anderson potential
   Integer(Kind=wi), Parameter, Public :: VDW_WCA = 9
-  !> DPD potential
+  !> DPD potential: $u=(A*r_c)/2*(1-r/r_c)^2$
   Integer(Kind=wi), Parameter, Public :: VDW_DPD = 10
   !> AMOEBA 14-7: $u=eps * [1.07/((\sigma/r)+0.07)]^7 * [(1.12/((\sigma/r)^7+0.12))-2]$
   Integer(Kind=wi), Parameter, Public :: VDW_AMOEBA = 11
@@ -94,8 +94,10 @@ Module vdw
   Integer(Kind=wi), Parameter, Public :: VDW_BUCKINGHAM_MDF = 19
   Integer(Kind=wi), Parameter, Public :: VDW_126_MDF = 20
   Integer(Kind=wi), Parameter, Public :: VDW_LJF = 21
-  ! Sanderson potential $u = -A*exp{-[(r-L)/d ]**2}
+  !> Sanderson potential $u = -A*exp{-[(r-L)/d ]**2}
   Integer(Kind=wi), Parameter, Public :: VDW_SANDERSON = 22
+  !> nDPD potential: $u=(A*b*r_c)(n+1)*(1-r/r_c)^(n+1)-(A*r_c)/2*(1-r/r_c)^2$
+  Integer(Kind=wi), Parameter, Public :: VDW_NDPD = 23
 
   ! Mixing rule parameters
   !> Null
@@ -460,6 +462,29 @@ Contains
     end If
 
   end Subroutine dpd
+
+  Pure Subroutine ndpd(r, params, eng, gamma)
+    ! nDPD potential :: u = (1/(n+1)).a.b.rc.(1-r/rc)^(n+1)-(1/2).a.rc.(1-r/rc)^2
+    Real(wp), Intent(In   ) :: r, params(:) !, a, b, n, rc
+    Real(wp), Intent(  Out) :: eng, gamma
+
+    Real(wp) :: t0, t1, t2
+
+    If (r < params(4)) then
+    
+      t2 = r / params(4)
+      t1 = params(1) * params(4) * (1.0_wp - t2)
+      t0 = params(2) * (1.0_wp - t2) ** (params(3) - 1.0_wp)
+
+      eng = t1 * (1.0_wp - t2) * (t0 / (params(3)+1.0_wp) - 0.5_wp)
+      gamma = t1 * t2 * (t0 - 1.0_wp)
+    else
+
+      eng = 0.0_wp
+      gamma = 0.0_wp
+    end if
+
+  end Subroutine ndpd
 
   Pure Subroutine amoeba(r, params, eng, gamma)
     ! AMOEBA 14-7 :: u=eps * [1.07/((r/sig)+0.07)]^7 * [(1.12/((r/sig)^7+0.12))-2]
@@ -1377,6 +1402,12 @@ Contains
         z = 0.0_wp
         dz = 0.0_wp
 
+      Case (VDW_NDPD) ! all zeroed in vdw
+
+        ! nDPD potential :: u=(1/(n+1)).a.b.rc.(1-r/rc)^(n+1)-(1/2).a.rc.(1-r/rc)^2
+        z = 0.0_wp
+        dz = 0.0_wp
+
       Case (VDW_AMOEBA)
 
         ! AMOEBA 14-7 :: u=eps * [1.07/((sig/r)+0.07)]^7 * [(1.12/((sig/r)^7+0.12))-2]
@@ -1821,6 +1852,7 @@ Contains
     ! contrib   - a.m.elena december 2017 (zblb)
     ! contrib   - a.m.elena april 2018 (mlj/mbuc)
     ! contrib   - a.m.elena may 2018 (m126)
+    ! contrib   - m.a.seaton november 2023 (ndpd)
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -1986,6 +2018,18 @@ Contains
         End Do
         vdws%tab_force(0, ivdw) = vdws%param(1, ivdw)
 
+      Case (VDW_NDPD)
+
+        ! nDPD potential :: u=(1/(n+1)).a.b.rc.(1-r/rc)^(n+1)-(1/2).a.rc.(1-r/rc)^2
+
+        Do i = 0, vdws%max_grid
+          r = Real(i, wp) * dlrpot
+
+          call ndpd(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
+
+        End Do
+        vdws%tab_force(0, ivdw) = vdws%param(1, ivdw) * (vdws%param(2, ivdw))
+
       Case (VDW_AMOEBA)
 
         ! AMOEBA 14-7 :: u=eps * [1.07/((r/sig)+0.07)]^7 * [(1.12/((r/sig)^7+0.12))-2]
@@ -2147,8 +2191,8 @@ Contains
 
       End select
 
-      ! no shifting to shifted n-m and DPD
-      If (vdws%l_force_shift .and. (keypot /= VDW_N_M_SHIFT .and. keypot /= VDW_DPD)) Then
+      ! no shifting to shifted n-m, DPD and nDPD
+      If (vdws%l_force_shift .and. (keypot /= VDW_N_M_SHIFT .and. keypot /= VDW_DPD .and. keypot /= VDW_NDPD)) Then
 
         Do i = 1, vdws%max_grid - 4
           t = vdws%tab_potential(i, ivdw) + &
@@ -2188,6 +2232,7 @@ Contains
     ! contrib   - a.m.elena april 2018 (mlj/mbuc)
     ! contrib   - a.m.elena may 2018 (m126)
     ! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
+    ! contrib   - m.a.seaton november 2023 (ndpd)
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -2374,6 +2419,13 @@ Contains
           ! DPD potential - Groot-Warren (standard) :: u=(1/2).a.r.(1-r/rc)^2
 
           Call dpd(rrr, vdws%param(:, k), eng, gamma)
+          gamma = gamma * r_rsq
+
+        Case (VDW_NDPD)
+
+          ! nDPD potential :: u=(1/(n+1)).a.b.rc.(1-r/rc)^(n+1)-(1/2).a.rc.(1-r/rc)^2
+
+          Call ndpd(rrr, vdws%param(:, k), eng, gamma)
           gamma = gamma * r_rsq
 
         Case (VDW_AMOEBA)
