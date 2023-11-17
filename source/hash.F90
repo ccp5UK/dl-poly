@@ -114,6 +114,8 @@ Contains
 
     Integer :: i, ierr
 
+    if (.not. table%allocated) return
+
     Do i = 1, table%size
       If (table%table_keys(i) /= BAD_VAL) Then
         Deallocate (table%table_data(i)%data, stat=ierr)
