@@ -1,0 +1,14 @@
+/* Add a white background to the vector diagrams to support dark mode in webpage */
+.vector-diagram {
+    background: white;
+    border: 5pt black;
+}
+
+/* Properly style figures (default styling options don't seem to work) */
+.centre-fig {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+    font-style: italic;
+}

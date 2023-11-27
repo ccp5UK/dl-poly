@@ -207,9 +207,9 @@ build-html:
   stage: doc
   script:
     - apk --no-cache add py3-pip python3-dev
-    - pip install sphinx groundwork-sphinx-theme
     - apk --no-cache add make
     - cd documentation
+    - pip install -r requirements.txt 
     - make html
   only:
     - devel
@@ -220,9 +220,9 @@ pages:
   stage: pages
   script:
   - apk --no-cache add py3-pip python3-dev
-  - pip install sphinx groundwork-sphinx-theme
   - apk --no-cache add make
   - cd documentation
+  - pip install -r requirements.txt 
   - make html
   - mv build/html/* ../public/
   artifacts:

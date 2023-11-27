@@ -1,0 +1,5 @@
+sphinx >= 4.0 
+piccolo-theme>=0.14.0
+anybadge 
+sphinxcontrib-bibtex 
+myst_parser

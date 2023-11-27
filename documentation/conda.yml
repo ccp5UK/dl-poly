@@ -1,0 +1,13 @@
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.7 
+  - sphinx>=4.0 
+  - sphinx-toolbox
+  - piccolo-theme>=0.14.0
+  - anybadge 
+  - pip 
+  - pip: 
+    - sphinxcontrib-bibtex 
+    - myst_parser
