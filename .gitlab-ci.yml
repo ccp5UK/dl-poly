@@ -225,8 +225,12 @@ pages:
   - pip install -r requirements.txt 
   - make html
   - mv build/html/* ../public/
+  - cd ../
+  - anybadge -l docs -v sphinx -f docs_badge.svg -c green 
   artifacts:
     paths:
     - public
+    - docs_badge.svg
+    expire_in: 30 days
   only:
     - devel
