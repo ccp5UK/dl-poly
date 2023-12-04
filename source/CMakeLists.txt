@@ -84,6 +84,7 @@ set(dlpoly_SRCS
   z_density.F90
   greenkubo.F90
   gpfa235.F90
+  gpfa_wrappers.F90
   parallel_fft.F90
   drivers.F90
   thermostat.F90

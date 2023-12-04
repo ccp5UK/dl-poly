@@ -18,14 +18,15 @@ Module parallel_fft
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use comms,     Only: wp_mpi
+  Use comms,         Only: wp_mpi
 ! access to the generalised wp_mpi and
   ! the intrinsics in mpif.h/mpi-module
-  Use constants, Only: pi
-  Use gpfa235,   Only: gpfa_set
-  Use kinds,     Only: wp
-  Use numerics,  Only: factor,&
-                       get_nth_prime
+  Use constants,     Only: pi
+  Use gpfa235,       Only: gpfa_set
+  Use gpfa_wrappers, Only: gpfa_wrap
+  Use kinds,         Only: wp
+  Use numerics,      Only: factor,&
+                           get_nth_prime
 #ifdef SERIAL
   Use mpi_api
 #else

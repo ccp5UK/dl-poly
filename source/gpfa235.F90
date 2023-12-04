@@ -2505,31 +2505,3 @@ Contains
   End Subroutine ABORT_IT
 
 End Module gpfa235
-
-!!!!!!!!!!!!!! This is horrible... relies on implicit conversion from complex to real...
-Subroutine gpfa_wrap(a, trigs, stride, jump, n, n_ffts, direction, start)
-  Use kinds, Only: wp
-  Use gpfa235, Only: gpfa
-    Real(Kind=wp), Dimension(*), Intent(InOut) :: a
-    Real(Kind=wp), Dimension(*), Intent(In   ) :: trigs
-    Integer,                     Intent(In   ) :: stride, jump, n, n_ffts, direction, start
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 routine wrapper for GPFA going into DaFT package
-!
-! copyright - daresbury laboratory
-! author    - i.j.bush march 1999
-! amended   - i.t.todorov november 2009
-! refactoring:
-!           - a.m.elena march-october 2018
-!           - j.madge march-october 2018
-!           - a.b.g.chalk march-october 2018
-!           - i.scivetti march-october 2018
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Call gpfa(a(start), a(start + 1), trigs, stride, jump, n, n_ffts, direction)
-
-End Subroutine gpfa_wrap
-
