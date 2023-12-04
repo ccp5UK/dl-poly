@@ -169,6 +169,9 @@ Program dl_poly
 
   Allocate (dlp_world(0:0))
   Call init_comms(dlp_world(0))
+
+  ! Temporary error system
+  Call init_error_system(eu, dlp_world(0))
   !dlp_world(0)%ou=nrite
   !Call init_error_system(nrite,dlp_world(0))
   Call gsync(dlp_world(0))
@@ -203,8 +206,6 @@ Program dl_poly
     Call files(1, FILE_CONTROL)%rename('CONTROL')
   End If
 
-  ! Temporary error system
-  Call init_error_system(eu, dlp_world(0))
   Call read_new_control(files(1, FILE_CONTROL), params, dlp_world(0), devel(1)%new_control)
 
   If (devel(1)%new_control) Then

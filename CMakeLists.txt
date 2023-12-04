@@ -363,7 +363,11 @@ if(BUILD_TESTING)
 
   configure_file(${CMAKE_SOURCE_DIR}/cmake/all.xml.cmake Testing/all.xml)
 
-  set(dlp "${MPIEXEC} ${MPIEXEC_PREFLAGS} -n ${MPI_NPROCS} ${CMAKE_BINARY_DIR}/bin/${target_name} > err.log")
+  if (WITH_MPI)
+    set(dlp "${MPIEXEC} ${MPIEXEC_PREFLAGS} -n ${MPI_NPROCS} ${CMAKE_BINARY_DIR}/bin/${target_name} > err.log")
+  else()
+    set(dlp "${CMAKE_BINARY_DIR}/bin/${target_name} > err.log")
+  endif()
 
   foreach(test RANGE 1 9 1)
     do_test("TEST0${test}" 1)
