@@ -14,7 +14,7 @@ Module statistics
 !
 
   Use comms,           Only: &
-                             Spread_tag, comm_self, comms_type, gcheck, girecv, gmax, gsend, gsum, &
+                             Spread_tag, comm_self, comms_type, gcheck, girecv, gmax, gmin, gsend, gsum, &
                              gsync, gtime, gwait, mode_create, mode_wronly, offset_kind, &
                              gatherv_scatterv_index_arrays, ggatherv, gscatterv, root_id, &
                              gscatter
@@ -608,14 +608,19 @@ Contains
     Character(Len=2), Dimension(1:9)              :: components_matrix
     Real(Kind=wp)                                 :: t, dt, visc, conv
     Real(Kind=wp),    Dimension(1:10)             :: therm_cond
-    Integer                                       :: points, window, blocks,&
-                                                     dim_left, dim_right
+    Integer                                       :: points, window, blocks, &
+                                                     dim_left, dim_right, &
+                                                     points_cor, &
+                                                     max_points_cor, &
+                                                     min_points_cor
     Character(Len=STR_LEN)                        :: units
                                               
                         
     If (stats%calculate_correlations .eqv. .false.) Then 
       Return 
     End If
+
+    dt = time / nstep
 
     components_vector = (/ 'x', 'y', 'z' /)
     components_matrix = (/'xx', 'xy', 'xz', 'yx', 'yy', 'yz', 'zx', 'zy', 'zz'/)
@@ -650,6 +655,10 @@ Contains
         Deallocate(type_counts)
       End If
 
+      If (Allocated(timesteps)) Then 
+        Deallocate(timesteps)
+      End If
+
       char_left = stats%unique_correlations(i)%A%name()
       char_right = stats%unique_correlations(i)%B%name()
       correlation_name = Trim(char_left)//'-'//Trim(char_right)
@@ -679,10 +688,13 @@ Contains
             Allocate(flat_correlation(1:flat_dim))
             Allocate(type_counts(1:sites%mxatyp))
 
+            Allocate(timesteps(1:points*blocks))
+
             type_counts = 0
-            flat_correlation = 0.0
-            correlation = 0.0
-            cor_accumulator = 0.0
+            flat_correlation = 0.0_wp
+            correlation = 0.0_wp
+            cor_accumulator = 0.0_wp
+            timesteps = 0.0_wp
             
             ! data allocated, now exit to accumulate 
 
@@ -707,7 +719,7 @@ Contains
             atom = stats%correlations(j)%correlation%atom
 
             correlation = 0.0
-            Call stats%correlations(j)%correlator%get_correlation(correlation)
+            Call stats%correlations(j)%correlator%get_correlation(correlation, timesteps, time/nstep, points_cor)
 
             cor_accumulator(config%ltype(atom),:,:,:) = &
               cor_accumulator(config%ltype(atom),:,:,:) + correlation
@@ -719,6 +731,15 @@ Contains
         End Do
 
         ! now collect onto root
+        points_cor = points_cor - 1
+        max_points_cor = points_cor
+        Call gmax(comm, max_points_cor)
+        min_points_cor = points_cor 
+        Call gmin(comm, min_points_cor)
+
+        If (max_points_cor /= min_points_cor) Then
+          Call error(0, "differing number of correlated points between processors for same correlation");
+        End If
 
         flat_correlation = Reshape(cor_accumulator,(/flat_dim/))
         Call gsum(comm, flat_correlation)
@@ -743,25 +764,10 @@ Contains
                     blocks
             Write (file_unit, '(a,i0)') "            window_size: ", &
                     window
-
-            t = 0.0
-            dt = time / nstep
-
-            If (Allocated(timesteps)) Then
-              Deallocate(timesteps)
-            End If
-
-            Allocate(timesteps(1:points*blocks))
-
-            Do tau = 1,points*blocks
-              timesteps(tau) = t
-              t = t + dt
-            End Do  
             
+            Write(file_unit, '(a,*(g16.8,","))',advance="no") "      lags: [", timesteps(1:points_cor-1)
             
-            Write(file_unit, '(a,*(g16.8,","))',advance="no") "      lags: [", timesteps(1:Size(timesteps)-1)
-            
-            Write(file_unit, '(g16.8,a)') timesteps(Size(timesteps)), "]"
+            Write(file_unit, '(g16.8,a)') timesteps(points_cor), "]"
 
             cor_accumulator(j,:,:,:) = cor_accumulator(j,:,:,:) / (1+type_counts(j))
 
@@ -786,9 +792,9 @@ Contains
                 Write (file_unit, '(a,a,a)',advance="no") "           ", &
                   Trim(char_left)//'_'//Trim(component_left)//"-"//Trim(char_right)//'_'//Trim(component_right), ": "
 
-                  Write(file_unit, '(a,*(g16.8,","))',advance="no") "[", cor_accumulator(j,1:Size(cor_accumulator,2)-1,l,r)
+                  Write(file_unit, '(a,*(g16.8,","))',advance="no") "[", cor_accumulator(j,1:points_cor-1,l,r)
                   
-                  Write(file_unit, '(g16.8,a)') cor_accumulator(j,Size(cor_accumulator,2),l,r), "]"
+                  Write(file_unit, '(g16.8,a)') cor_accumulator(j,points_cor,l,r), "]"
 
               End Do
             End Do  
@@ -820,6 +826,8 @@ Contains
 
               Allocate(flat_correlation(1:flat_dim))
 
+              Allocate(timesteps(1:blocks*points))
+
               flat_correlation = 0.0
               correlation = 0.0
             
@@ -832,7 +840,9 @@ Contains
             Call error(0,"correlation not found for correlation result")
           End If
 
-          Call stats%correlations(k)%correlator%get_correlation(correlation)
+          Call stats%correlations(k)%correlator%get_correlation(correlation, timesteps, time/nstep, points_cor)
+
+          points_cor = points_cor - 1
 
           Write (file_unit, '(*(a))') "    - name: [", correlation_name, ", global]"
 
@@ -844,24 +854,10 @@ Contains
           Write (file_unit, '(a,i0)') "            window_size: ", &
                   window
 
-          t = 0.0
-          dt = time / nstep
-
-          If (Allocated(timesteps)) Then
-            Deallocate(timesteps)
-          End If
-
-          Allocate(timesteps(1:points*blocks))
-
-          Do tau = 1,points*blocks
-            timesteps(tau) = t
-            t = t + dt
-          End Do  
-
           If (char_left == stress_name(observable_stress()) .and. &
               char_right == stress_name(observable_stress())) Then
 
-            visc = calculate_viscosity(stats, correlation, dt)
+            visc = calculate_viscosity(stats, correlation(1:points_cor, :, :), dt)
 
             Call to_out_units(1.0_wp, "internal_m", conv, units)
 
@@ -879,7 +875,7 @@ Contains
           Else If(char_left == heat_flux_name(observable_heat_flux()) .and. &
                   char_right == heat_flux_name(observable_heat_flux())) Then
 
-                  therm_cond = calculate_thermal_conductivity(stats, correlation, dt, units)
+                  therm_cond = calculate_thermal_conductivity(stats, correlation(1:points_cor, :, :), dt, units)
 
                   Write (file_unit, '(a)')                         "      derived:"
                   Write (file_unit, '(a)')                         "            thermal-conductivity:"
@@ -889,9 +885,9 @@ Contains
 
           End If
           
-          Write(file_unit, '(a,*(g16.8,","))',advance="no") "      lags: [", timesteps(1:Size(timesteps)-1)
+          Write(file_unit, '(a,*(g16.8,","))',advance="no") "      lags: [", timesteps(1:points_cor-1)
           
-          Write(file_unit, '(g16.8,a)') timesteps(Size(timesteps)), "]"
+          Write(file_unit, '(g16.8,a)') timesteps(points_cor), "]"
 
           Write (file_unit, '(a)') "      components: "
 
@@ -914,9 +910,9 @@ Contains
               Write (file_unit, '(a,a,a)',advance="no") "           ", &
               Trim(char_left)//'_'//Trim(component_left)//"-"//Trim(char_right)//'_'//Trim(component_right), ": "
 
-                Write(file_unit, '(a,*(g16.8,","))',advance="no") "[", correlation(1:Size(correlation,1)-1,l,r)
+                Write(file_unit, '(a,*(g16.8,","))',advance="no") "[", correlation(1:points_cor-1,l,r)
                 
-                Write(file_unit, '(g16.8,a)') correlation(Size(correlation,1),l,r), "]"
+                Write(file_unit, '(g16.8,a)') correlation(points_cor,l,r), "]"
 
             End Do
           End Do  

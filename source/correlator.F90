@@ -118,30 +118,41 @@ Module correlators
     Call this%mpi%finalise()
   End Subroutine finalise_indices_buffer_type
   
-  Subroutine get_correlation(this, correlation)
+  Subroutine get_correlation(this, correlation, timesteps, tstep, points_correlated)
     Class(correlator),                                     Intent(InOut)  :: this
     Real(Kind=wp), Dimension(& 
       1:this%points_per_block*this%number_of_blocks, &
       1:this%left_dim, 1:this%right_dim) ,                 Intent(InOut)  :: correlation
+    Real(Kind=wp), Dimension(&
+      1:this%points_per_block*this%number_of_blocks),      Intent(InOut)  :: timesteps
+    Real(Kind=wp),                                         Intent(In   )  :: tstep
+    Integer,                                               Intent(  Out)  :: points_correlated
     Integer                                                               :: im, i, k
     
-    correlation = 0.0
+    correlation = 0.0_wp
+    timesteps = 0.0_wp
 
     im = 1
     Do i = 1,this%points_per_block
       If (this%count_correlated(1,i) > 0) Then
         correlation(im,:,:) = correlation(im,:,:) + this%correlation(1,i,:,:) / this%count_correlated(1,i)
+        timesteps(im) = i - 1
         im = im + 1
       End If
     End Do
     Do k = 2,this%max_block_used
-      Do i = this%min_dist,this%points_per_block
+      Do i = this%min_dist+1,this%points_per_block
         If (this%count_correlated(k,i) > 0) Then
           correlation(im,:,:) = correlation(im,:,:) + this%correlation(k,i,:,:) / this%count_correlated(k,i)
+          timesteps(im) = Real(i-1,Kind=wp) * (Real(this%window_size, Kind=wp)**(k-1))
           im = im + 1
         EndIf
       End Do
     End Do
+
+    ! this can be less than blocks * points_per_block 
+    !  depending on the averaging parameter
+    points_correlated = im
 
   End Subroutine get_correlation
 
@@ -167,11 +178,11 @@ Module correlators
     !  and accumulate
     this%left_shift(block_index,s,:) = data_left
     this%left_accumulator(block_index,:) = this%left_accumulator(block_index,:) + data_left
-    this%shift_not_null(block_index,s,1) = .true.
+    this%shift_not_null(block_index,s,:) = .true.
 
     this%right_shift(block_index,s,:) = data_right
     this%right_accumulator(block_index,:) = this%right_accumulator(block_index,:) + data_right
-    this%shift_not_null(block_index,s,2) = .true.
+    this%shift_not_null(block_index,s,:) = .true.
 
     this%count_accumulated(block_index) = this%count_accumulated(block_index) + 1
 
@@ -207,14 +218,14 @@ Module correlators
         End If
         j = j - 1
         If (j <= 0) Then 
-          j = this%points_per_block
+          j = j + this%points_per_block
         End If
       End Do
     Else
-      j = i - this%min_dist
-      Do n = this%min_dist, this%points_per_block 
+      j = i - this%min_dist+1
+      Do n = this%min_dist+1, this%points_per_block 
         If (j <= 0) Then
-          j = this%points_per_block
+          j = j + this%points_per_block
         End If
         flag = .false.
         If ( this%shift_not_null(block_index,i,1) &
