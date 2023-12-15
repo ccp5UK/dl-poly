@@ -1434,7 +1434,7 @@ Contains
     Select Case (option)
     Case ('off')
       vdws%mixing = MIX_NULL
-    Case ('lorentz-bethelot')
+    Case ('lorentz-berthelot')
       vdws%mixing = MIX_LORENTZ_BERTHELOT
     Case ('fender-halsey')
       vdws%mixing = MIX_FENDER_HALSEY
