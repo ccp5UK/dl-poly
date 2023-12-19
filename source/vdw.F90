@@ -14,6 +14,7 @@ Module vdw
   ! contrib   - a.m.elena march 2019 ! merge potentials.F90 into this module
   ! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
   ! contrib   - j.s.wilkins october 2020 Major cleanup
+  ! contrib   - a.m.elena march 2023 add sw potential
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use comms,           Only: comms_type,&
@@ -50,7 +51,7 @@ Module vdw
 
   ! VdW potential parameters
   !> Number of available potential types
-  Integer(Kind=wi), Parameter, Public :: NUM_VDW_POTS = 23
+  Integer(Kind=wi), Parameter, Public :: NUM_VDW_POTS = 24
 
   !> No VdW potential
   Integer(Kind=wi), Parameter, Public :: VDW_NULL = -1
@@ -98,6 +99,8 @@ Module vdw
   Integer(Kind=wi), Parameter, Public :: VDW_SANDERSON = 22
   !> nDPD potential: $u=(A*b*r_c)(n+1)*(1-r/r_c)^(n+1)-(A*r_c)/2*(1-r/r_c)^2$
   Integer(Kind=wi), Parameter, Public :: VDW_NDPD = 23
+  ! Stillinger Webber 2 body part potential $u = A*\varepsilon*[B(\sigma/r)^p - (sigma/r)^q]*exp(\sigma/(r-aa*\sigma))}$
+  Integer(Kind=wi), Parameter, Public :: VDW_SW = 24
 
   ! Mixing rule parameters
   !> Null
@@ -471,7 +474,7 @@ Contains
     Real(wp) :: t0, t1, t2
 
     If (r < params(4)) then
-    
+
       t2 = r / params(4)
       t1 = params(1) * params(4) * (1.0_wp - t2)
       t0 = params(2) * (1.0_wp - t2) ** (params(3) - 1.0_wp)
@@ -619,6 +622,34 @@ Contains
     gamma = -2.0_wp*(r-L)*r*t/(d**2.0_wp)
 
   End Subroutine sanderson
+
+  Pure Subroutine sw(r, params, eng, gamma)
+    Real(wp), Intent(In   ) :: r, params(:) ! eps,A, B, sig, p, q, aa
+    Real(wp), Intent(  Out) :: eng, gamma
+
+    Real(wp) :: e,A,B,eps, sig, p,q, aa,t
+
+
+    eps = params(1)
+    A = params(2)
+    B = params(3)
+    sig = params(4)
+    p = params(5)
+    q = params(6)
+    aa = params(7)
+
+    e = sig/(r - aa*sig)
+    if (r < aa*sig) then
+      t = A*eps*(B*(sig/r)**p - (sig/r)**q)*Exp(e)
+
+      eng = t
+      gamma = A * eps * (B*p*(sig/r)**p - q*(sig/r)**q)*Exp(e) + t*r*e/(r - aa*sig)
+    else
+      eng = 0.0_wp
+      gamma = 0.0_wp
+    end if
+
+  End Subroutine sw
 
   Pure Real(wp) Function intRadZBL(kk, a, rw, prec)
     Real(wp), Intent(In   ) :: kk, a, rw, prec
@@ -1267,6 +1298,9 @@ Contains
              Case (VDW_SANDERSON)
               eadd = 0.0_wp ! implement me
               padd = 0.0_wp
+             Case (VDW_SW)
+              eadd = 0.0_wp ! implement me
+              padd = 0.0_wp
             End Select
 
             ! Self-interaction accounted once, interaction between different species
@@ -1476,6 +1510,9 @@ Contains
       Case (VDW_SANDERSON)
 
         Call sanderson(vdws%cutoff, vdws%param(1:3, ivdw), z, dz)
+      Case (VDW_SW)
+        Call sw(vdws%cutoff, vdws%param(1:7, ivdw), z, dz)
+
 
       Case Default
 
@@ -2180,10 +2217,20 @@ Contains
           r = Real(i, wp) * dlrpot
 
           call sanderson(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
+        End Do
+        vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
+        vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
+      Case (VDW_SW)
+
+        Do i = 1, vdws%max_grid
+          r = Real(i, wp) * dlrpot
+
+          call sw(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
 
         End Do
         vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
         vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
+
 
       Case Default
 
@@ -2526,7 +2573,14 @@ Contains
         Case (VDW_SANDERSON)
           ! Sanderson potential :: u=-A*Exp{-[(r-L)/d]^2)}
 
-          call SANDERSON(rrr, vdws%param(:,k), eng, gamma)
+          call sanderson(rrr, vdws%param(:,k), eng, gamma)
+
+          eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
+          gamma = gamma*r_rsq - vdws%afs(k) * r_rrr
+
+        Case (VDW_SW)
+
+          call sw(rrr, vdws%param(:,k), eng, gamma)
 
           eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
           gamma = gamma*r_rsq - vdws%afs(k) * r_rrr

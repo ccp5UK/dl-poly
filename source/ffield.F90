@@ -119,7 +119,7 @@ Module ffield
                              VDW_HYDROGEN_BOND, VDW_LENNARD_JONES, VDW_LENNARD_JONES_COHESIVE, &
                              VDW_LJF, VDW_LJ_MDF, VDW_MORSE, VDW_MORSE_12, VDW_NULL, VDW_N_M, &
                              VDW_N_M_SHIFT, VDW_RYDBERG, VDW_TAB, VDW_WCA, VDW_ZBL, VDW_NDPD, &
-                             VDW_ZBL_SWITCH_BUCKINGHAM, VDW_ZBL_SWITCH_MORSE, VDW_SANDERSON,&
+                             VDW_ZBL_SWITCH_BUCKINGHAM, VDW_ZBL_SWITCH_MORSE, VDW_SANDERSON,VDW_SW,&
                              vdw_direct_fs_generate, vdw_generate, vdw_table_read, vdw_type
   Use units,           Only: internal_units,&
                              set_out_units,&
@@ -3691,6 +3691,8 @@ Contains
             keypot = VDW_LJF
           Else If (keyword == 'sand') Then
             keypot = VDW_SANDERSON
+          Else If (keyword == 'sw') Then
+            keypot = VDW_SW
           Else
             Call info(keyword, .true.)
             Call error(452)
@@ -3874,6 +3876,8 @@ Contains
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
             Case (VDW_SANDERSON)
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
+            Case (VDW_SW)
+              thermo%gamdpd(keyvdw) = Abs(parpot(8))
             End Select
 
             If (thermo%gamdpd(0) > zero_plus) thermo%gamdpd(keyvdw) = thermo%gamdpd(0) ! override
@@ -4777,7 +4781,18 @@ Contains
           parpot(4) = word_2_real(word)
           Call get_word(record, word)
           parpot(5) = word_2_real(word)
-
+          if (keypot == TBP_SW) then
+            Call get_word(record, word)
+            parpot(6) = word_2_real(word)
+            Call get_word(record, word)
+            parpot(7) = word_2_real(word)
+            Call get_word(record, word)
+            parpot(8) = word_2_real(word)
+            Call get_word(record, word)
+            parpot(9) = word_2_real(word)
+            Call get_word(record, word)
+            parpot(10) = word_2_real(word)
+          end if
           If (flow%print_topology) Then
             Write (rfmt, '(a,i0,a)') '(2x,i10,5x,3a8,3x,a4,1x,', threebody%mxptbp, 'f15.6)'
             Write (message, rfmt) itptbp, atom1, atom0, atom2, keyword, parpot(1:threebody%mxptbp)
@@ -4810,10 +4825,7 @@ Contains
           ! convert parameters to internal units and angles to radians
 
           parpot(1) = parpot(1) * engunit
-          If (keypot /= TBP_H_BOND ) parpot(2) = parpot(2) * deg_2_rad
-          If (keypot == TBP_SW) Then
-            parpot(2) = Cos(parpot(2))
-          End If
+          If (All([TBP_H_BOND, TBP_SW]/=keypot) ) parpot(2) = parpot(2) * deg_2_rad
 
           If (threebody%lsttbp(keytbp) > 0) Call error(18)
 
@@ -4824,14 +4836,19 @@ Contains
           threebody%ltptbp(itptbp) = keypot
 
           ! calculate max three-body cutoff
-
-          threebody%cutoff = Max(threebody%cutoff, parpot(5))
-          If (parpot(5) < 1.0e-6_wp) Then
-            threebody%rcttbp(itptbp) = threebody%cutoff
-            parpot(5) = threebody%cutoff
-          Else
-            threebody%rcttbp(itptbp) = parpot(5)
-          End If
+          block
+            integer :: h = 5
+            If (keypot == TBP_SW) Then
+              h = 10
+            End If
+            threebody%cutoff = Max(threebody%cutoff, parpot(h))
+            If (parpot(h) < 1.0e-6_wp) Then
+              threebody%rcttbp(itptbp) = threebody%cutoff
+              parpot(h) = threebody%cutoff
+            Else
+              threebody%rcttbp(itptbp) = parpot(h)
+            End If
+          End Block
 
           ! store three-body potential parameters
 

@@ -629,7 +629,7 @@ Contains
       threebody%mx2tbp = (site%mxatyp * (site%mxatyp + 1)) / 2
       threebody%mxtbp = threebody%mx2tbp * site%mxatyp
 
-      threebody%mxptbp = 5
+      threebody%mxptbp = 10
     Else
       threebody%mx2tbp = 0
       threebody%mxtbp = 0

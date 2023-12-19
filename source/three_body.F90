@@ -163,7 +163,9 @@ Contains
                                                 strs1, strs2, strs3, strs5, strs6, strs9, switch, &
                                                 sxab, sxbc, syab, sybc, szab, szbc, term, theta, &
                                                 theta0, vterm, xab, xac, xbc, xdc, yab, yac, ybc, &
-                                                ydc, zab, zac, zbc, zdc, termab, termbc, rc, cost0
+                                                ydc, zab, zac, zbc, zdc, termab, termbc, rc, cost0,&
+                                                rc_ba, rc_bc, rho_ba, rho_bc
+
     Real(Kind=wp), Allocatable, Dimension(:) :: xxt, yyt, zzt
 
 ! Number of neighbouring cells to look around for counting
@@ -657,10 +659,10 @@ Contains
 
                                           gamma = pterm * (theta**(a - 1.0_wp) * (dthpi + dth0pi) * &
                                            ((a + 4.0_wp) * theta**2 - twopi * (a + 2.0_wp) * theta - a * theta0 * (dth0pi - pi)) + &
-                                                           a * pi**(a - 1.0_wp) * dth0pi**3) * rsint
+                                            a * pi**(a - 1.0_wp) * dth0pi**3) * rsint
 
                                           pterm = pterm * dtheta * &
-                                                  (theta**a * (dthpi + dth0pi)**2 + 0.5_wp * a * pi**(a - 1.0_wp) * dth0pi**3)
+                                            (theta**a * (dthpi + dth0pi)**2 + 0.5_wp * a * pi**(a - 1.0_wp) * dth0pi**3)
                                           vterm = pterm * 8.0_wp * switch
                                           gamsa = pterm * 8.0_wp * rab**7 / rho**8
                                           gamsc = pterm * 8.0_wp * rbc**7 / rho**8
@@ -696,19 +698,21 @@ Contains
 
                                         Else If (ktyp == TBP_SW) Then
 
-                                          ! V(rba,rbc,ϑ_abc)=k0*exp(ρ/(r_ba-rc)+(r_bc-rc))*(cosϑ_abc-cosϑ_0)^2
+                                          ! V(rba,rbc,ϑ_abc)=λ*ℇ*(cosϑ_abc-cosϑ_0)^2*exp(γ_ba*σ_ba/(r_ba-a_ba*σ_ba)+γ_bc*σ_bc/(r_bc-a_bc*σ_bc))*(cosϑ_abc-cosϑ_0)^2
 
-                                          k0 = threebody%prmtbp(1, kktbp)
-                                          cost0 = threebody%prmtbp(2, kktbp)
-                                          dtheta = (cost - cost0)
-                                          rho = threebody%prmtbp(3, kktbp)
-                                          rc = threebody%prmtbp(4, kktbp)
-                                          switch = rho/(rab-rc)  + rho/(rbc-rc)
-                                          termab = -rho/(rab-rc)**2
-                                          termbc = -rho/(rbc-rc)**2
+                                          k0 = threebody%prmtbp(1, kktbp)*threebody%prmtbp(2, kktbp)
+                                          cost0 = threebody%prmtbp(3, kktbp)
+                                          dtheta = - 2.0_wp*(cost - cost0)
+                                          rho_ba = threebody%prmtbp(4, kktbp)*threebody%prmtbp(5, kktbp)
+                                          rc_ba = threebody%prmtbp(5, kktbp)*threebody%prmtbp(6, kktbp)
+                                          rho_bc = threebody%prmtbp(7, kktbp)*threebody%prmtbp(8, kktbp)
+                                          rc_bc = threebody%prmtbp(8, kktbp)*threebody%prmtbp(9, kktbp)
+                                          switch = rho_ba/(rab-rc_ba)  + rho_bc/(rbc-rc_bc)
+                                          termab = - rho_ba/(rab-rc_ba)**2
+                                          termbc = - rho_bc/(rbc-rc_bc)**2
 
                                           gamma = k0 * dtheta * Exp(switch) ! -∂V/∂ϑ_abc/sin(ϑ_abc)
-                                          pterm = gamma * 0.5_wp * dtheta ! V(rba,rbc,ϑ_abc)
+                                          pterm = gamma * 0.25_wp * dtheta ! V(rba,rbc,ϑ_abc)
 
                                           gamsa = pterm * termab  ! ∂V/∂r_ab
                                           gamsc = pterm * termbc  ! ∂V/∂r_bc
