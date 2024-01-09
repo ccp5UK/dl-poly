@@ -8,6 +8,7 @@ It can be built in serial form or parallel form via MPI. See instructions below 
 * [Build instructions for Archer2](https://ccp5.gitlab.io/dlpoly-setup/archer2.html)
 * [Coding style](./coding_style.md)
 * [Contribution workflow and the review process](./contributing.md)
+* [Documentation](https://ccp5.gitlab.io/dl-poly/)
 
 More info:
 
@@ -21,7 +22,8 @@ More info:
   Molecular Simulation (2019), https://doi.org/10.1080/08927022.2019.1603380
 
 * [Extra info on building and distro binaries](https://ccp5.gitlab.io/dlpoly-setup/)
-* [Tutorials, oldish](https://ccp5.gitlab.io/dlpoly/)
+* [Exercises with dlpoly-py](https://gitlab.com/ccp5/dlpoly-py/-/tree/devel/examples?ref_type=heads)
+* [Tutorials](https://ccp5.gitlab.io/dlpoly/)
 * [Python companion helper](https://pypi.org/project/dlpoly-py/)
 
 Main support channels are the mailing list and matrix room, be sure you check the archive before you start.
