@@ -298,19 +298,3 @@ with a surface fluence of 36 mJ/cm\ :math:`^2` and penetration depth of
 
 Additional input files (Ce.dat and g.dat) are required to supply
 tabulated heat capacity and electron-phonon coupling values.
-
-Benchmark Cases
-===============
-
-DL_POLY_4 benchmark test cases are available to download them from the
-CCP5 FTP server as follows:
-
-::
-
-   FTP site : ftp.dl.ac.uk
-   Username : anonymous
-   Password : your email address
-   Directory: ccp5/DL_POLY/DL_POLY_4.0/BENCH
-
-The DL_POLY_4 authors provide these on an "AS IS" terms. For more
-information refer to the README.txt file within.

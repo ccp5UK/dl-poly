@@ -579,18 +579,7 @@ testing the released version of DL_POLY_4. The examples of input data are copied
 into the *execute* sub-directory when a program is being tested. The test
 cases are documented in Chapter :ref:`examples_sec`. Note that these
 are no longer within the distribution of any DL_POLY version but are
-made available on-line at the DL_POLY :index:`FTP` - `<ftp://ftp.dl.ac.uk/ccp5/DL\_POLY/>`_.
-
-.. index:: single: sub-directory;bench 
-
-The *bench* Sub-directory
--------------------------
-
-This directory contains examples of input and output data for DL_POLY_4 that are
-suitable for benchmarking DL_POLY_4 on large scale computers. These are described
-in Chapter :ref:`examples_sec`. Note that these are no longer within
-the distribution of any DL_POLY version but are made available on-line
-at the DL_POLY :index:`FTP` - `<ftp://ftp.dl.ac.uk/ccp5/DL\_POLY/>`_.
+downloaded when building with testing enabled in cmake.
 
 .. index:: single: sub-directory;java
 
