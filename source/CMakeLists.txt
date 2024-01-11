@@ -40,6 +40,7 @@ set(dlpoly_SRCS
   errors_warnings.F90
   rdfs.F90
   kinds.F90
+  two_body_potentials.F90
   vdw.F90
   minimise.F90
   dihedrals.F90

@@ -92,6 +92,13 @@ Module ffield
                              strip_blanks,&
                              word_2_real
   Use pmf,             Only: pmf_type
+  Use two_body_potentials, Only: LJ, lj_coh, LJ126, n_m, &
+                             nm_shift, morse, morse12, &
+                             buckingham, bhm, hbond, &
+                             wca, dpd, ndpd, amoeba, &
+                             rydberg, zbl, zblb, fm, zbls, &
+                             sanderson, MDF, ljf, mlj, &
+                             mbuck, mlj126, sw
   Use rdfs,            Only: rdf_type
   ! PARSE MODULE
   Use rigid_bodies,    Only: rigid_bodies_type
@@ -3755,36 +3762,65 @@ Contains
             Select Case (keypot)
             Case (VDW_12_6)
               parpot(2) = parpot(2) * engunit
+              Allocate(LJ126::vdws%potentials(itpvdw)%p)
+            Case (VDW_LENNARD_JONES)
+              Allocate(LJ::vdws%potentials(itpvdw)%p)
+            Case (VDW_N_M) 
+              Allocate(n_m::vdws%potentials(itpvdw)%p)
             Case (VDW_BUCKINGHAM)
               parpot(3) = parpot(3) * engunit
-
+              Allocate(buckingham::vdws%potentials(itpvdw)%p)
             Case (VDW_BORN_HUGGINS_MEYER)
               parpot(4) = parpot(4) * engunit
               parpot(5) = parpot(5) * engunit
+              Allocate(bhm::vdws%potentials(itpvdw)%p)
             Case (VDW_HYDROGEN_BOND)
               parpot(2) = parpot(2) * engunit
+              Allocate(hbond::vdws%potentials(itpvdw)%p)
+            Case (VDW_N_M_SHIFT)
+              Allocate(nm_shift::vdws%potentials(itpvdw)%p)
+            Case (VDW_MORSE)
+              Allocate(morse::vdws%potentials(itpvdw)%p)
             Case (VDW_WCA)
               parpot(2) = Abs(parpot(2))
               If (parpot(3) > parpot(2) / 2.0_wp) &
                 parpot(3) = Sign(1.0_wp, parpot(3)) * parpot(2) / 2.0_wp
               parpot(4) = 2.0_wp**(1.0_wp / 6.0_wp) * parpot(2) + parpot(3)
+              Allocate(wca::vdws%potentials(itpvdw)%p)
+            Case (VDW_DPD)
+              Allocate(dpd::vdws%potentials(itpvdw)%p)
+            Case (VDW_NDPD)
+              Allocate(ndpd::vdws%potentials(itpvdw)%p)
+            Case (VDW_AMOEBA)
+              Allocate(amoeba::vdws%potentials(itpvdw)%p)
+            Case (VDW_LENNARD_JONES_COHESIVE)
+              Allocate(lj_coh::vdws%potentials(itpvdw)%p)
             Case (VDW_MORSE_12)
               parpot(4) = parpot(4) * engunit
+              Allocate(morse12::vdws%potentials(itpvdw)%p)
             Case (VDW_RYDBERG)
               parpot(2) = parpot(2) * engunit
+              Allocate(rydberg::vdws%potentials(itpvdw)%p)
             Case (VDW_ZBL)
               parpot(1) = parpot(1) / engunit
+              Allocate(zbl::vdws%potentials(itpvdw)%p)
             Case (VDW_ZBL_SWITCH_MORSE)
               parpot(1) = parpot(1) / engunit
               parpot(5) = parpot(5) * engunit
+              Allocate(zbls::vdws%potentials(itpvdw)%p)
             Case (VDW_ZBL_SWITCH_BUCKINGHAM)
               parpot(1) = parpot(1) / engunit
               parpot(5) = parpot(5) * engunit
               parpot(7) = parpot(7) * engunit
+              Allocate(zblb::vdws%potentials(itpvdw)%p)
+            Case (VDW_LJ_MDF)
+              Allocate(mlj::vdws%potentials(itpvdw)%p)
             Case (VDW_BUCKINGHAM_MDF)
               parpot(3) = parpot(3) * engunit
+              Allocate(mbuck::vdws%potentials(itpvdw)%p)
             Case (VDW_126_MDF)
               parpot(2) = parpot(2) * engunit
+              Allocate(mlj126::vdws%potentials(itpvdw)%p)
             Case (VDW_LJF)
               Block
                 Real(kind=wp) :: x, rc, s, a
@@ -3795,8 +3831,21 @@ Contains
                 parpot(1) = parpot(1) * a
                 parpot(2) = parpot(2)**2
                 parpot(3) = parpot(3)**2
+                Allocate(ljf::vdws%potentials(itpvdw)%p)
               End Block
+            Case (VDW_SANDERSON)
+                Allocate(sanderson::vdws%potentials(itpvdw)%p)
+            Case (VDW_SW)
+                Allocate(sw::vdws%potentials(itpvdw)%p)
             End Select
+
+            If (Allocated(vdws%potentials(itpvdw)%p) .eqv. .false.) Then
+              Write (message, '(a, i0)') "potential not allocated: keypot = ", keypot
+              Call error(0, message)
+            End If
+
+            Call vdws%potentials(itpvdw)%p%set_parameters(parpot)
+            
           End If
 
           katom1 = 0
@@ -4208,14 +4257,17 @@ Contains
                       Case (VDW_12_6) ! 12-6
                         vdws%param(1, vdws%n_vdw) = 4.0_wp * eps(0) * (sig(0)**12)
                         vdws%param(2, vdws%n_vdw) = 4.0_wp * eps(0) * (sig(0)**6)
+                        Call vdws%potentials(vdws%n_vdw)%p%set_parameters(vdws%param(1:2, vdws%n_vdw))
                       Case (VDW_LENNARD_JONES, VDW_DPD, VDW_AMOEBA, VDW_LENNARD_JONES_COHESIVE, &
                            VDW_LJ_MDF, VDW_126_MDF) ! LJ, DPD, 14-7, LJC
                         vdws%param(1, vdws%n_vdw) = eps(0)
                         vdws%param(2, vdws%n_vdw) = sig(0)
+                        Call vdws%potentials(vdws%n_vdw)%p%set_parameters(vdws%param(1:2, vdws%n_vdw))
                       Case (VDW_WCA) ! WCA
                         vdws%param(1, vdws%n_vdw) = eps(0)
                         vdws%param(2, vdws%n_vdw) = sig(0)
                         vdws%param(3, vdws%n_vdw) = del(0)
+                        Call vdws%potentials(vdws%n_vdw)%p%set_parameters(vdws%param(1:3, vdws%n_vdw))
                       End Select
 
                       If (flow%print_topology) Then

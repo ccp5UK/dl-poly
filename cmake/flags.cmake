@@ -16,6 +16,12 @@ if (NOT FLAGS_SET)
       set(CMAKE_Fortran_FLAGS_DEBUG "-g -O0 -stand f18 -traceback -C -fp-stack-check -ftrapuv -init=snan -init=arrays" CACHE STRING "Flags used by the Fortran compiler during DEBUG builds." FORCE)
       set(CMAKE_Fortran_FLAGS_RELEASE "-Ofast -stand f18" CACHE STRING "Flags used by the Fortran compiler during RELEASE builds." FORCE)
       set(CMAKE_Fortran_FLAGS_PROFILE "-Ofast -stand f18 -pg -qopt-report=5" CACHE STRING "Flags used by the Fortran compiler during PROFILE builds." FORCE)
+ 
+    elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "IntelLLVM")
+      # ifx compiler
+      set(CMAKE_Fortran_FLAGS_DEBUG "-g -traceback -O0 -std18 -check all -warn all -fp-model:consistent" CACHE STRING "Flags used by the Fortran compiler during DEBUG builds." FORCE)
+      set(CMAKE_Fortran_FLAGS_RELEASE "-Ofast -std18 -fp-model:consistent" CACHE STRING "Flags used by the Fortran compiler during RELEASE builds." FORCE)
+      set(CMAKE_Fortran_FLAGS_PROFILE "-g -traceback -O0 -std18 -check all -warn all -fp-model:consistent -qopt-report" CACHE STRING "Flags used by the Fortran compiler during PROFILE builds." FORCE)
 
     elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "Cray")
 

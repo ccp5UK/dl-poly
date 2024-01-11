@@ -1,14 +1,21 @@
 Module test_vdw
 
-  Use asserts, only : assert
-  Use constants, only : wp
-  Use vdw, only : vdw_type, NUM_VDW_POTS, vdw_forces_direct! , LJ, lj_coh, LJ126, &
-       ! n_m, nm_shift, morse, morse_12, buckingham, bhm, hbond, &
-       ! wca, dpd, amoeba, rydberg, zbl, fm, zbls, zblb, MDF, ljf, &
-       ! mlj, mbuck, mlj126, sanderson, ndpd
-  Use neighbours, only : neighbours_type
-  Use statistics, only : stats_type
-  Use configuration, only : configuration_type
+  Use asserts,                  Only: assert
+  Use constants,                Only: wp
+  Use vdw,                      Only: vdw_type, NUM_VDW_POTS, vdw_forces_direct
+  Use neighbours,               Only: neighbours_type
+  Use statistics,               Only: stats_type
+  Use configuration,            Only: configuration_type
+  Use two_body_potentials,      Only: potential, &
+                                      potential_energy, &
+                                      potential_holder, &
+                                      LJ, lj_coh, LJ126, n_m, &
+                                      nm_shift, morse, morse12, &
+                                      buckingham, bhm, hbond, &
+                                      wca, dpd, ndpd, amoeba, &
+                                      rydberg, zbl, zblb, fm, zbls, &
+                                      sanderson, MDF, ljf, mlj, &
+                                      mbuck, mlj126, sw
 
   Implicit None
 
@@ -56,25 +63,20 @@ Contains
     Type(neighbours_type) :: neigh
     Type(stats_type) :: stats
     Type(configuration_type) :: config
-    Real(wp), Dimension(NUM_VDW_POTS) :: eng = 0.0_wp, gamma = 0.0_wp
+    Real(wp), Dimension(1:NUM_VDW_POTS) :: eng = 0.0_wp, gamma = 0.0_wp
+    Class(potential_holder), Allocatable :: pots(:)
     Integer :: i
 
     passed = .true.
 
-    Call setup_fake_system(neigh, stats, config)
-
-    test%max_vdw = 1
-    test%max_param = 7
-    test%newjob = .false.
-    test%cutoff = 10.0_wp
-    Call test%init()
-    Call test%init_direct()
-    test%param(:,1) = params
-    test%list = 1
+    Call setup_fake_system(test, pots, neigh, stats, config)
 
     do i = 1, NUM_VDW_POTS
       ! Cycle through each pot
       test%ltp = i
+      test%potentials(1) = pots(i)
+      Call test%update_potential_cutoffs()
+      
       stats%stress = 0.0_wp
       config%parts(:)%fxx = 0.0_wp
       config%parts(:)%fyy = 0.0_wp
@@ -88,58 +90,72 @@ Contains
 
   end Subroutine test_forces_direct
 
-  ! Subroutine test_indiv_funcs()
-
-  !   Real(kind=wp), Dimension(NUM_VDW_POTS), Parameter :: expected_e =  [&
-  !        16128.000000000000, 15616.000000000000, -1.0000000000000000, 80.000000000000000, &
-  !        4567.8016528925955, 363.25771964635982, 367.25771964635982, -2.3934693402873668, &
-  !        45.598150033144236, -1.0000000000000000, 1.0000000000000000, 0.25000000000000000, &
-  !        555.50928442334305, 2.1495939317213679, 16882.652704957312, 3.8142266913481757E+030, &
-  !        11761.890149027382, 4.0000000000000000, 16128.000000000000, -2.3934693402873668, &
-  !        -1.0000000000000000, -0.8948393168143698, -0.4921875000000000]
-  !   Real(kind=wp), Dimension(NUM_VDW_POTS), Parameter :: expected_v = [&
-  !        195072.00000000000, 192000.00000000000, 0.0000000000000000, 288.00000000000000, &
-  !        16899.173553719134, 2300.0595394172847, 2348.0595394172847, -17.696734670143684, &
-  !        45.196300066288472, -8.0000000000000000, -12.000000000000000, 0.50000000000000000, &
-  !        3719.0014773362891, -0.71653131057378916, 50044.066263312910, 5.2445617006037455E+031, &
-  !        36135.103419546067, 40.000000000000000, 195072.00000000000, -17.696734670143684, &
-  !        0.0000000000000000, 0.1988531815143044, 0.09375000000000000]
-
-  !   Real(kind=wp), Dimension(NUM_VDW_POTS) :: eng, gamma
-
-  !   Call LJ         (r, params, eng( 1 ), gamma( 1 ))
-  !   Call lj_coh     (r, params, eng( 2 ), gamma( 2 ))
-  !   Call LJ126      (r, params, eng( 3 ), gamma( 3 ))
-  !   Call n_m        (r, params, eng( 4 ), gamma( 4 ))
-  !   Call nm_shift   (r, params, eng( 5 ), gamma( 5 ))
-  !   Call morse      (r, params, eng( 6 ), gamma( 6 ))
-  !   Call morse_12   (r, params, eng( 7 ), gamma( 7 ))
-  !   Call buckingham (r, params, eng( 8 ), gamma( 8 ))
-  !   Call bhm        (r, params, eng( 9 ), gamma( 9 ))
-  !   Call hbond      (r, params, eng(10 ), gamma(10 ))
-  !   Call wca        (r, params, eng(11 ), gamma(11 ))
-  !   Call dpd        (r, params, eng(12 ), gamma(12 ))
-  !   Call amoeba     (r, params, eng(13 ), gamma(13 ))
-  !   Call rydberg    (r, params, eng(14 ), gamma(14 ))
-  !   Call zbl        (r, params, eng(15 ), gamma(15 ))
-  !   Call zbls       (r, params, eng(16 ), gamma(16 ))
-  !   Call zblb       (r, params, eng(17 ), gamma(17 ))
-  !   Call ljf        (r, params, eng(18 ), gamma(18 ))
-  !   Call mlj        (r, params, eng(19 ), gamma(19 ))
-  !   Call mbuck      (r, params, eng(20 ), gamma(20 ))
-  !   Call mlj126     (r, params, eng(21 ), gamma(21 ))
-  !   Call sanderson  (r, params, eng(22 ), gamma(22 ))
-  !   Call ndpd       (r, params, eng(23 ), gamma(23 ))
-
-  !   Call assert(all(abs(eng - expected_e) < 1.0e-6), "VdW Energies differ from expected")
-  !   Call assert(all(abs(gamma - expected_v) < 1.0e-6), "VdW Virials differ from expected")
-
-  ! end Subroutine test_indiv_funcs
-
-  Subroutine setup_fake_system(neigh, stats, config)
+  Subroutine setup_fake_system(test, pots, neigh, stats, config)
+    Type(vdw_type), Intent(InOut) :: test
+    Class(potential_holder), Allocatable, Intent(InOut) :: pots(:)
     Type(neighbours_type), Intent(InOut) :: neigh
     Type(stats_type), Intent(InOut) :: stats
     Type(configuration_type), Intent(InOut) :: config
+
+    test%max_vdw = 1
+    test%max_param = 7
+    test%newjob = .false.
+    test%cutoff = 10.0_wp
+    Call test%init()
+    Call test%init_direct()
+    test%param(:,1) = params
+    test%list = 1
+
+    Allocate(pots(1:NUM_VDW_POTS+1))
+
+    Allocate(LJ126::pots(1)%p)
+    Call pots(1)%p%set_parameters(params)
+    Allocate(LJ::pots(2)%p)
+    Call pots(2)%p%set_parameters(params)
+    Allocate(n_m::pots(3)%p)
+    Call pots(3)%p%set_parameters(params)
+    Allocate(buckingham::pots(4)%p)
+    Call pots(4)%p%set_parameters(params)
+    Allocate(bhm::pots(5)%p)
+    Call pots(5)%p%set_parameters(params)
+    Allocate(hbond::pots(6)%p)
+    Call pots(6)%p%set_parameters(params)
+    Allocate(nm_shift::pots(7)%p)
+    Call pots(7)%p%set_parameters(params)
+    Allocate(morse::pots(8)%p)
+    Call pots(8)%p%set_parameters(params)
+    Allocate(wca::pots(9)%p)
+    Call pots(9)%p%set_parameters(params)
+    Allocate(dpd::pots(10)%p)
+    Call pots(10)%p%set_parameters(params)
+    Allocate(amoeba::pots(11)%p)
+    Call pots(11)%p%set_parameters(params)
+    Allocate(lj_coh::pots(12)%p)
+    Call pots(12)%p%set_parameters(params)
+    Allocate(morse12::pots(13)%p)
+    Call pots(13)%p%set_parameters(params)
+    Allocate(rydberg::pots(14)%p)
+    Call pots(14)%p%set_parameters(params)
+    Allocate(zbl::pots(15)%p)
+    Call pots(15)%p%set_parameters(params)
+    Allocate(zbls::pots(16)%p)
+    Call pots(16)%p%set_parameters(params)
+    Allocate(zblb::pots(17)%p)
+    Call pots(17)%p%set_parameters(params)
+    Allocate(mlj::pots(18)%p)
+    Call pots(18)%p%set_parameters(params)
+    Allocate(mbuck::pots(19)%p)
+    Call pots(19)%p%set_parameters(params)
+    Allocate(mlj126::pots(20)%p)
+    Call pots(20)%p%set_parameters(params)
+    Allocate(ljf::pots(21)%p)
+    Call pots(21)%p%set_parameters(params)
+    Allocate(sanderson::pots(22)%p)
+    Call pots(22)%p%set_parameters(params)
+    Allocate(ndpd::pots(23)%p)
+    Call pots(23)%p%set_parameters(params)
+    Allocate(sw::pots(24)%p)
+    Call pots(24)%p%set_parameters(params)
 
     neigh%max_list = 2
     neigh%max_exclude = 0

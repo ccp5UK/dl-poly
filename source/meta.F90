@@ -342,6 +342,11 @@ Contains
                                              output_filename, crd, adf)
     End If
 
+    Do ff = 1, flow%num_ff
+      ! set them here rather than at every vdw_forces_direct computation
+      Call vdws(ff)%update_potential_cutoffs()
+    End Do
+
     Call info('', .true.)
     Call info("#** all reading and connectivity checks done ***", .true.)
     Call time_elapsed(tmr)

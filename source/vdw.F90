@@ -17,34 +17,44 @@ Module vdw
   ! contrib   - a.m.elena march 2023 add sw potential
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use comms,           Only: comms_type,&
-                             gbcast,&
-                             gsum
-  Use configuration,   Only: configuration_type
-  Use constants,       Only: delr_max,&
-                             engunit,&
-                             prsunt,&
-                             r4pie0,&
-                             twopi,&
-                             zero_plus
-  Use errors_warnings, Only: error,&
-                             error_alloc,&
-                             error_dealloc,&
-                             info,&
-                             warning
-  Use kinds,           Only: wi,&
-                             wp,&
-                             STR_LEN
-  Use filename,        Only: FILE_TABVDW, &
-                             file_type
-  Use neighbours,      Only: neighbours_type
-  Use numerics,        Only: nequal
-  Use parse,           Only: get_line,&
-                             get_word,&
-                             word_2_real
-  Use site,            Only: site_type
-  Use statistics,      Only: stats_type, calculate_stress
-  Use units,           Only: to_out_units
+  Use comms,                    Only: comms_type,&
+                                      gbcast,&
+                                      gsum
+  Use configuration,            Only: configuration_type
+  Use constants,                Only: delr_max,&
+                                      engunit,&
+                                      prsunt,&
+                                      r4pie0,&
+                                      twopi,&
+                                      zero_plus
+  Use errors_warnings,          Only: error,&
+                                      error_alloc,&
+                                      error_dealloc,&
+                                      info,&
+                                      warning
+  Use kinds,                    Only: wi,&
+                                      wp,&
+                                      STR_LEN
+  Use filename,                 Only: FILE_TABVDW, &
+                                      file_type
+  Use neighbours,               Only: neighbours_type
+  Use numerics,                 Only: nequal
+  Use parse,                    Only: get_line,&
+                                      get_word,&
+                                      word_2_real
+  Use two_body_potentials,      Only: potential, &
+                                      potential_energy, &
+                                      potential_holder, &
+                                      LJ, lj_coh, LJ126, n_m, &
+                                      nm_shift, morse, morse12, &
+                                      buckingham, bhm, hbond, &
+                                      wca, dpd, ndpd, amoeba, &
+                                      rydberg, zbl, zblb, fm, zbls, &
+                                      sanderson, MDF, ljf, mlj, &
+                                      mbuck, mlj126, sw
+  Use site,                      Only: site_type
+  Use statistics,                Only: stats_type, calculate_stress
+  Use units,                     Only: to_out_units
   Implicit None
 
   Private
@@ -121,12 +131,7 @@ Module vdw
   !> Functional: $e_{ij}=3*(e_i*e_j)^{1/2} * (s_i*s_j)^3 / \sum_{L=0}^2 [(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(6/(6-2L))$
   !>             $s_ij=(1/3) \sum_{L=0}^2 [(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))$
   Integer(Kind=wi), Parameter, Public :: MIX_FUNCTIONAL = 7
-
-  ! ZBL constants
-  Real(wp), Parameter, Dimension(4) :: b = [0.18175_wp, 0.50986_wp, 0.28022_wp, 0.02817_wp], &
-                                       c = [3.1998_wp, 0.94229_wp, 0.40290_wp, 0.20162_wp]
-  Real(wp), Parameter, Public       :: ab = 0.52917721067_wp
-
+  
   !> Type containing Van der Waals data
   Type, Public :: vdw_type
     Private
@@ -143,7 +148,11 @@ Module vdw
     Integer(Kind=wi), Public              :: n_vdw = 0
     !> Mixing type
     Integer(Kind=wi), Public              :: mixing = MIX_NULL
+    ! list of potentials
+    Type(potential_holder), Allocatable, Public :: potentials(:)
+    ! list of vdw interactions 
     Integer(Kind=wi), Allocatable, Public :: list(:)
+    ! potential type
     Integer(Kind=wi), Allocatable, Public :: ltp(:)
     !> VdW label for pair
     Character(Len=8), Allocatable, Public :: labpair(:, :)
@@ -180,29 +189,61 @@ Module vdw
     Procedure, Public :: init_table => allocate_vdw_table_arrays
     Procedure, Public :: init_direct => allocate_vdw_direct_fs_arrays
     Procedure, Public :: print => dump_vdws
+    Procedure, Public :: update_potential_cutoffs => potential_cutoffs
     Final             :: cleanup
   End Type vdw_type
 
   Public :: vdw_forces_tab, vdw_forces_direct, vdw_generate, vdw_table_read, vdw_lrc, vdw_direct_fs_generate
 
-  ! Public ::  LJ, lj_coh, LJ126, &
-  !      n_m, nm_shift, morse, morse_12, buckingham, bhm, hbond, &
-  !      wca, dpd, amoeba, rydberg, zbl, fm, zbls, zblb, MDF, ljf, &
-  !      mlj, mbuck, mlj126
-
 Contains
+
+  Subroutine potential_cutoffs(vdws)
+    Class(vdw_type),  Intent(InOut) :: vdws
+    Integer                         :: ivdw, ityp
+    Real(Kind=wp)                   :: param(1:5)
+ 
+    Do ivdw = 1, vdws%max_vdw
+
+      ityp = vdws%ltp(ivdw)
+
+      Select Case (ityp)
+
+      Case(VDW_LJ_MDF)
+
+        param(1:3) = vdws%param(1:3, ivdw)
+        param(4) = vdws%cutoff
+        Call vdws%potentials(ivdw)%p%set_parameters(param(1:4))
+
+      Case(VDW_BUCKINGHAM_MDF)
+
+        param(1:4) = vdws%param(1:4, ivdw)
+        param(5) = vdws%cutoff
+        Call vdws%potentials(ivdw)%p%set_parameters(param(1:5))
+
+      Case(VDW_126_MDF)
+
+        param(1:3) = vdws%param(1:3, ivdw)
+        param(4) = vdws%cutoff
+        Call vdws%potentials(ivdw)%p%set_parameters(param(1:4))
+      
+      End Select
+
+    End Do
+
+  End Subroutine potential_cutoffs
 
   Subroutine allocate_vdw_arrays(T)
     Class(vdw_type) :: T
 
-    Integer, Dimension(1:4) :: fail
+    Integer, Dimension(1:5) :: fail
 
     fail = 0
 
-    Allocate (T%list(1:T%max_vdw), Stat=fail(1))
-    Allocate (T%ltp(1:T%max_vdw), Stat=fail(2))
-    Allocate (T%param(1:T%max_param, 1:T%max_vdw), Stat=fail(3))
-    Allocate (T%labpair(1:2, 1:T%max_vdw), Stat=fail(4))
+    Allocate (T%potentials(1:T%max_vdw), Stat=fail(1))
+    Allocate (T%list(1:T%max_vdw), Stat=fail(2))
+    Allocate (T%ltp(1:T%max_vdw), Stat=fail(3))
+    Allocate (T%param(1:T%max_param, 1:T%max_vdw), Stat=fail(4))
+    Allocate (T%labpair(1:2, 1:T%max_vdw), Stat=fail(5))
 
     If (Any(fail > 0)) Call error_alloc('VdW arrays', 'allocate_vdw_arrays')
 
@@ -244,418 +285,12 @@ Contains
     T%bfs = 0.0_wp
   End Subroutine allocate_vdw_direct_fs_arrays
 
-  Pure Subroutine LJ(r, params, e, v)
-    ! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-(sig/r)^6]
-    Real(wp), Intent(In   ) :: r, params(:) ! eps, sig, coh
-    Real(wp), Intent(  Out) :: e, v
-
-    Real(wp) :: sor6
-
-    sor6 = (params(2) / r)**6
-    e = 4.0_wp * params(1) * sor6 * (sor6 - 1.0_wp)
-    v = 24.0_wp * params(1) * sor6 * (2.0_wp * sor6 - 1.0_wp)
-
-  End Subroutine LJ
-
-  Pure Subroutine lj_coh(r, params, e, v)
-    ! Lennard-Jones cohesive potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
-    Real(wp), Intent(In   ) :: r, params(:) ! eps, sig, coh
-    Real(wp), Intent(  Out) :: e, v
-
-    Real(wp) :: sor6
-
-    sor6 = (params(2) / r)**6
-    e = 4.0_wp * params(1) * sor6 * (sor6 - params(3))
-    v = 24.0_wp * params(1) * sor6 * (2.0_wp * sor6 - params(3))
-
-  End Subroutine lj_coh
-
-  Pure Subroutine LJ126(r, params, eng, gamma)
-    ! 12-6 potential :: u=a/r^12-b/r^6
-    Real(wp), Intent(In   ) :: r, params(:) ! A, B
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Real(wp) :: r_6
-
-    r_6 = (1.0_wp / r)**6
-    eng = (params(1) * r_6 - params(2)) * r_6
-    gamma = 6.0_wp * r_6 * (2.0_wp * params(1) * r_6 - params(2))
-
-  End Subroutine LJ126
-
-  Pure Subroutine n_m(r, params, eng, gamma)
-    ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(r0/r)^m]
-    Real(wp), Intent(In   ) :: r, params(:) !e0, n, m, r0
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Real(wp) :: a, b, r_n, r_m
-
-
-    a = params(4) / r
-    b = 1.0_wp / (params(2) - params(3))
-    r_n = a**int(params(2))
-    r_m = a**int(params(3))
-
-    eng = params(1) * (params(3) * r_n - params(2) * r_m) * b
-    gamma = params(1) * params(3) * params(2) * (r_n - r_m) * b
-  end Subroutine n_m
-
-  Pure Subroutine nm_shift(r, params, eng, gamma)
-    ! shifted and force corrected n-m potential (w.smith) ::
-    Real(wp), Intent(In   ) :: r, params(:) !e0, n, m, r0, r_trunc
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Real(wp) :: r_inv, r_inv_2
-    Real(wp) :: alpha, beta, t, a, b, c, e1, c_inv
-    Real(wp) :: n_int, m_int
-    Real(wp) :: n, m
-
-    If (r <= params(5)) Then
-      r_inv = r**(-1)
-      r_inv_2 = r_inv**2
-      n = params(2)
-      n_int = Nint(n)
-      m = params(3)
-      m_int = Nint(m)
-
-      t = n - m
-
-      b = 1.0_wp / t
-      c = params(5) / params(4)
-      c_inv = params(4) / params(5)
-
-      beta = c * ((c**(m_int + 1) - 1.0_wp) / (c**(n_int + 1) - 1.0_wp))**b
-      alpha = -t / (m * (beta**n_int) * (1.0_wp + (n * c_inv - n - 1.0_wp) * c_inv**n_int) &
-           - n * (beta**m_int) * (1.0_wp + (m * c_inv - m - 1.0_wp) * c_inv**m_int))
-      e1 = params(1) * alpha
-
-      a = params(4) * r_inv
-
-      eng = e1 * (m * (beta**n_int) * (a**n_int - (1.0_wp * c_inv)**n_int) &
-           - n * (beta**m_int) * (a**m_int - (1.0_wp * c_inv)**m_int) &
-           + n * m * ((r / params(5) - 1.0_wp) * ((beta * c_inv)**n_int - (beta * c_inv)**m_int))) * b
-      gamma = e1 * m * n * ((beta**n_int) * a**n_int - (beta**m_int) * a**m_int &
-           - r / params(5) * ((beta * c_inv)**n_int - (beta * c_inv)**m_int)) * b
-    else
-      eng = 0.0_wp
-      gamma = 0.0_wp
-    end If
-
-  end Subroutine nm_shift
-
-  Pure Subroutine morse(r, params, eng, gamma)
-    ! Morse potential :: u=e0*{[1-Exp(-kk(r-r0))]^2-1}
-    Real(wp), Intent(In   ) :: r, params(:) ! e0, r0, k
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Real(wp) :: t
-
-    t = Exp(-params(3) * (r - params(2)))
-
-    eng = params(1) * ((1.0_wp - t)**2 - 1.0_wp)
-    gamma = -2.0_wp * r * params(1) * params(3) * (1.0_wp - t) * t
-
-  End Subroutine morse
-
-  Pure Subroutine morse_12(r, params, eng, gamma)
-    ! Morse potential :: u=e0*{[1-Exp(-kk(r-r0))]^2-1}+c/r^12
-    Real(wp), Intent(In   ) :: r, params(:) !e0, r0, kk, c
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Real(wp) :: t1, t2
-
-    t1 = Exp(-params(3) * (r - params(2)))
-    t2 = params(4) * r**(-12)
-
-    eng = params(1) * t1 * (t1 - 2.0_wp) + t2
-    gamma = -2.0_wp * r * params(1) * params(3) * (1.0_wp - t1) * t1 + 12.0_wp * t2
-
-  end Subroutine morse_12
-
-  Pure Subroutine buckingham(r, params, eng, gamma)
-    ! Buckingham exp-6 potential :: u=a*Exp(-r/rho)-c/r^6
-    Real(wp), Intent(In   ) :: r, params(:) !A, rho, C
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Real(wp) :: b, t1, t2
-
-    b = r / params(2)
-    t1 = params(1) * Exp(-b)
-    t2 = -params(3) / r**6
-
-    eng = t1 + t2
-    gamma = t1 * b + 6.0_wp * t2
-
-  End Subroutine buckingham
-
-  Pure Subroutine bhm(r, params, eng, gamma)
-    ! Born-Huggins-Meyer exp-6-8 potential :: u=a*Exp(b*(sig-r))-c/r^6-d/r^8
-    Real(wp), Intent(In   ) :: r, params(:) !a, b, sig, c, d
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Real(wp) :: r_inv_2, t1, t2, t3
-
-    r_inv_2 = r**(-2)
-
-    t1 = params(1) * Exp(params(2) * (params(3) - r))
-    t2 = -params(4) * r_inv_2**3
-    t3 = -params(5) * r_inv_2**4
-
-    eng = t1 + t2 + t3
-    gamma = (t1 * r * params(2) + 6.0_wp * t2 + 8.0_wp * t3)
-
-  end Subroutine bhm
-
-  Pure Subroutine hbond(r, params, eng, gamma)
-    ! Hydrogen-bond 12-10 potential :: u=a/r^12-b/r^10
-    Real(wp), Intent(In   ) :: r, params(:) !a, b
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Real(wp) :: fac12, fac10
-    Real(wp) :: r_inv_2
-
-    r_inv_2 = r**(-2)
-
-    fac12 = params(1) * r_inv_2**6
-    fac10 = -params(2) * r_inv_2**5
-
-    eng = fac12 + fac10
-    gamma = (12.0_wp * fac12 + 10.0_wp * fac10)
-
-  end Subroutine hbond
-
-  Pure Subroutine wca(r, params, eng, gamma)
-    ! Weeks-Chandler-Andersen (shifted & truncated Lenard-Jones) (i.t.todorov)
-    ! :: u=4*eps*[{sig/(r-d)}^12-{sig/(r-d)}^6]-eps
-    Real(wp), Intent(In   ) :: r, params(:) !eps, sig, d, cut
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Real(wp) :: sigma_r_6
-
-    If (r < params(4) .or. Abs(r - params(3)) < 1.0e-10_wp) Then
-      sigma_r_6 = (params(2) / (r - params(3)))**6
-
-      eng = 4.0_wp * params(1) * sigma_r_6 * (sigma_r_6 - 1.0_wp) + params(1)
-      gamma = 24.0_wp * params(1) * sigma_r_6 * (2.0_wp * sigma_r_6 - 1.0_wp) * r / (r - params(3))
-    Else
-      eng = 0.0_wp
-      gamma = 0.0_wp
-    end If
-
-  end Subroutine wca
-
-  Pure Subroutine dpd(r, params, eng, gamma)
-    ! DPD potential - Groot-Warren (standard) :: u=(1/2).a.rc.(1-r/rc)^2
-    Real(wp), Intent(In   ) :: r, params(:) !, a, rc
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Real(wp) :: t1, t2
-
-    If (r < params(2)) then
-
-      t2 = r / params(2)
-      t1 = 0.5_wp * params(1) * params(2) * (1.0_wp - t2)
-
-      eng = t1 * (1.0_wp - t2)
-      gamma = 2.0_wp * t1 * t2
-    else
-
-      eng = 0.0_wp
-      gamma = 0.0_wp
-    end If
-
-  end Subroutine dpd
-
-  Pure Subroutine ndpd(r, params, eng, gamma)
-    ! nDPD potential :: u = (1/(n+1)).a.b.rc.(1-r/rc)^(n+1)-(1/2).a.rc.(1-r/rc)^2
-    Real(wp), Intent(In   ) :: r, params(:) !, a, b, n, rc
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Real(wp) :: t0, t1, t2
-
-    If (r < params(4)) then
-
-      t2 = r / params(4)
-      t1 = params(1) * params(4) * (1.0_wp - t2)
-      t0 = params(2) * (1.0_wp - t2) ** (params(3) - 1.0_wp)
-
-      eng = t1 * (1.0_wp - t2) * (t0 / (params(3)+1.0_wp) - 0.5_wp)
-      gamma = t1 * t2 * (t0 - 1.0_wp)
-    else
-
-      eng = 0.0_wp
-      gamma = 0.0_wp
-    end if
-
-  end Subroutine ndpd
-
-  Pure Subroutine amoeba(r, params, eng, gamma)
-    ! AMOEBA 14-7 :: u=eps * [1.07/((r/sig)+0.07)]^7 * [(1.12/((r/sig)^7+0.12))-2]
-    Real(wp), Intent(In   ) :: r, params(:) !eps, sig
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Real(wp) :: r_inv_2
-    Real(wp) :: rho, t1, t2, t3, t
-
-    r_inv_2 = r**(-2)
-    rho = r / params(2)
-
-    t1 = 1.0_wp / (0.07_wp + rho)
-    t2 = 1.0_wp / (0.12_wp + rho**7)
-    t3 = params(1) * (1.07_wp * t1)**7
-
-    t = t3 * ((1.12_wp * t2) - 2.0_wp)
-
-    eng = t
-    gamma = 7.0_wp * (t1 * t + 1.12_wp * t3 * t2**2 * rho**6) * rho
-
-  end Subroutine amoeba
-
-  Pure Subroutine rydberg(r, params, eng, gamma)
-    ! Rydberg potential:: u=(a+b*r)Exp(-r/c)
-    Real(wp), Intent(In   ) :: r, params(:) !a, b, c
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Real(wp) :: kk, t1
-
-    kk = r / params(3)
-    t1 = Exp(-kk)
-
-    eng = (params(1) + params(2) * r) * t1
-    gamma = kk * t1 * (params(1) - params(2) * params(3) + params(2) * r)
-
-  end Subroutine rydberg
-
-  Pure Subroutine zbl(r, params, eng, gamma)
-    ! ZBL potential:: u=Z1Z2/(40r)_{i=1}^4b_ie^{-c_i*r/a}
-    Real(wp), Intent(In   ) :: r, params(:) !k, ia
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Integer  :: i
-    Real(wp) :: kk, a
-    Real(wp) :: ir, t1, x
-
-    ! this is in fact inverse a
-    a = (params(1)**0.23_wp + params(2)**0.23_wp) / (ab * 0.88534_wp)
-    kk = params(1) * params(2) * r4pie0
-
-    eng = 0.0_wp
-    gamma = 0.0_wp
-    x = r * a
-    ir = 1.0_wp / r
-    Do i = 1, 4
-      t1 = b(i) * Exp(-x * c(i))
-      eng = eng + t1
-      gamma = gamma - c(i) * t1
-    End Do
-    eng = kk * eng * ir
-    ! -rU/r
-    gamma = eng - a * kk * gamma
-
-  End Subroutine zbl
-
-  Pure Subroutine fm(r, params, eng, gamma)
-    Real(wp), Intent(In   ) :: r, params(:) ! rm, ic
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Real(wp) :: t, c
-
-    c = 1.0_wp / params(2)
-
-    If (r < params(1)) Then
-      t = Exp(-(params(1) - r) * c) * 0.5_wp
-      eng = 1.0_wp - t
-      ! -rf/r
-      gamma = r * c * t
-    Else
-      t = Exp(-(r - params(1)) * c) * 0.5_wp
-      eng = t
-      ! -rf/r
-      gamma = r * c * t
-    End If
-
-  End Subroutine fm
-
-  Pure Subroutine zbls(r, params, eng, gamma)
-    ! ZBL switched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
-    Real(wp), Intent(In   ) :: r, params(:) ! kk, ia, rm, ic, d, k, r0
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Real(wp) :: df, dm, dz, f, m, z
-
-    Call zbl(r, params(1:2), z, dz)
-    Call fm(r, params(3:4), f, df)
-    Call morse(r, params(5:7), m, dm)
-    eng = f * z + (1.0_wp - f) * m
-    gamma = f * dz + df * z + (1.0_wp - f) * dm - df * m
-
-  End Subroutine zbls
-
-  Pure Subroutine zblb(r, params, eng, gamma)
-    ! ZBL switched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
-    Real(wp), Intent(In   ) :: r, params(:) !kk, ia, rm, ic, A, r0, C
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Real(wp) :: b, db, df, dz, f, z
-
-    Call zbl(r, params(1:2), z, dz)
-    Call fm(r, params(3:4), f, df)
-    Call buckingham(r, params(5:7), b, db)
-    eng = f * z + (1.0_wp - f) * b
-    gamma = f * dz + df * z + (1.0_wp - f) * db - df * b
-  End Subroutine zblb
-
-  Pure Subroutine sanderson(r, params, eng, gamma)
-    ! Sanderson theory , covalent,modelled with assumed Gaussian function (sharp peak/dips)  :: u=-A*Exp{-[(r-L)/d]^2)}
-    Real(wp), Intent(In   ) :: r, params(:) !A, L,d
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Real(wp) :: b, t, L, d
-
-
-    L = params(2)
-    d = params(3)
-    b = ((r - L)/d)**2.0_wp
-    t = params(1) * Exp(-b)
-    eng = -t
-
-    gamma = -2.0_wp*(r-L)*r*t/(d**2.0_wp)
-
-  End Subroutine sanderson
-
-  Pure Subroutine sw(r, params, eng, gamma)
-    Real(wp), Intent(In   ) :: r, params(:) ! eps,A, B, sig, p, q, aa
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Real(wp) :: e,A,B,eps, sig, p,q, aa,t
-
-
-    eps = params(1)
-    A = params(2)
-    B = params(3)
-    sig = params(4)
-    p = params(5)
-    q = params(6)
-    aa = params(7)
-
-    e = sig/(r - aa*sig)
-    if (r < aa*sig) then
-      t = A*eps*(B*(sig/r)**p - (sig/r)**q)*Exp(e)
-
-      eng = t
-      gamma = A * eps * (B*p*(sig/r)**p - q*(sig/r)**q)*Exp(e) + t*r*e/(r - aa*sig)
-    else
-      eng = 0.0_wp
-      gamma = 0.0_wp
-    end if
-
-  End Subroutine sw
-
   Pure Real(wp) Function intRadZBL(kk, a, rw, prec)
     Real(wp), Intent(In   ) :: kk, a, rw, prec
-
-    Integer  :: i, j, n
-    Real(wp) :: df0, f0, f1, f2, h, ie, is, s, sold, x
+    Type(zbl)               :: pot
+    Type(potential_energy)  :: e 
+    Integer                 :: i, j, n
+    Real(wp)                :: f0, f1, f2, h, ie, is, s, sold, x
 
     n = 10000
     is = rw
@@ -665,15 +300,25 @@ Contains
     sold = Huge(1.0_wp)
     j = 1
 
+    pot%k = kk
+    pot%ia = a
+
     Do While (Abs(s - sold) * h / 3.0_wp > prec)
       sold = s
 
       Do i = (j - 1) * n, j * n, 2
 
         x = is + i * h
-        Call zbl(x, [kk, a], f0, df0)
-        Call zbl(x + h, [kk, a], f1, df0)
-        Call zbl(x + 2.0_wp * h, [kk, a], f2, df0)
+
+        e = pot%energy(x)
+        f0 = e%energy
+        
+        e = pot%energy(x+h)
+        f1 = e%energy
+        
+        e = pot%energy(x+2.0_wp*h)
+        f2 = e%energy
+
         s = s + x * x * f0 + &
             4.0_wp * (x + h)**2 * f1 + &
             (x + 2.0_wp * h)**2 * f2
@@ -684,11 +329,12 @@ Contains
     intRadZBL = s * h / 3.0_wp
   End Function intRadZBL
 
-  Pure Real(wp) Function intdRadZBL(kk, a, rw, prec)
+  Real(wp) Function intdRadZBL(kk, a, rw, prec)
     Real(wp), Intent(In   ) :: kk, a, rw, prec
-
-    Integer  :: i, j, n
-    Real(wp) :: df0, df1, df2, f0, h, ie, is, s, sold, x
+    Type(zbl)               :: pot
+    Type(potential_energy)  :: e 
+    Integer                 :: i, j, n
+    Real(wp)                :: df0, df1, df2, h, ie, is, s, sold, x
 
     n = 10000
     is = rw
@@ -697,6 +343,9 @@ Contains
     s = 0.0_wp
     sold = Huge(1.0_wp)
     j = 1
+    
+    pot%k = kk 
+    pot%ia = a
 
     Do While (Abs(s - sold) * h / 3.0_wp > prec)
       sold = s
@@ -704,9 +353,16 @@ Contains
       Do i = (j - 1) * n, j * n, 2
 
         x = is + i * h
-        Call zbl(x, [kk, a], f0, df0)
-        Call zbl(x + h, [kk, a], f0, df1)
-        Call zbl(x + 2.0_wp * h, [kk, a], f0, df2)
+
+        e = pot%energy(x)
+        df0 = e%gamma
+        
+        e = pot%energy(x+h)
+        df1 = e%gamma
+        
+        e = pot%energy(x+2.0_wp*h)
+        df2 = e%gamma
+
         s = s + x * x * df0 + &
             4.0_wp * (x + h)**2 * df1 + &
             (x + 2.0_wp * h)**2 * df2
@@ -717,95 +373,44 @@ Contains
     intdRadZBL = s * h / 3.0_wp
   End Function intdRadZBL
 
-  Pure Subroutine MDF(r, params, eng, gamma)
-    Real(wp), Intent(In   ) :: r, params(:) !ri, rc
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Real(wp) :: rci
-
-    If (r < params(1)) Then
-      eng = 1.0_wp
-      gamma = 0.0_wp
-    Else If (r > params(2)) Then
-      eng = 0.0_wp
-      gamma = 0.0_wp
-    Else
-      rci = (params(2) - params(1))**5
-      eng = (params(2) - r)**3 * (10.0_wp * params(1)**2 - 5.0_wp * params(2) * params(1) - &
-           15.0_wp * r * params(1) + params(2)**2 + 3.0_wp * r * params(2) + 6 * r**2) / rci
-      gamma = 30.0_wp * r * (r - params(2))**2 * (r - params(1))**2 / rci
-    End If
-
-  End Subroutine MDF
-
-  Pure Subroutine ljf(r, params, eng, gamma)
-    Real(wp), Intent(In   ) :: r, params(:) !ea, sig2, rc2
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Real(wp) :: r2
-    Real(wp) :: ir, rct, st,x
-
-    r2 = r*r
-
-    If (r2 > params(3)) Then
-      eng = 0.0_wp
-      gamma = 0.0_wp
-    Else
-      ir = 1.0_wp/r2
-      st = params(2)*ir
-      rct = params(3)*ir
-      x = params(1) * (rct - 1.0_wp)**2
-      eng = x * (st - 1.0_wp)
-      gamma = 4.0_wp * params(1) * rct * &
-           (rct - 1.0_wp)*(st - 1.0_wp) + 2.0_wp * x * st
-    End If
-
-  End Subroutine ljf
-
-  Pure Subroutine mlj(r, params, eng, gamma)
-    Real(wp), Intent(In   ) :: r, params(:) !eps, sig, ri
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Real(wp) :: el, em, vl, vm
-
-    Call LJ(r, [params(1:2), -1.0_wp], el, vl)
-    Call MDF(r, params(3:4), em, vm)
-    eng = el * em
-    gamma = vl * em + vm * el
-
-  End Subroutine mlj
-
-  Pure Subroutine mbuck(r, params, eng, gamma)
-    Real(wp), Intent(In   ) :: r, params(:) ! A, r0, c, ri, rc
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Real(wp) :: eb, em, vb, vm
-
-    Call buckingham(r, params(1:3), eb, vb)
-    Call MDF(r, params(4:5), em, vm)
-    eng = eb * em
-    gamma = vb * em + vm * eb
-
-  End Subroutine mbuck
-
-  Pure Subroutine mlj126(r, params, eng, gamma)
-    Real(wp), Intent(In   ) :: r, params(:) !A, B, ri, rc
-    Real(wp), Intent(  Out) :: eng, gamma
-
-    Real(wp) :: el, em, vl, vm
-
-    Call LJ126(r, params(1:2), el, vl)
-    Call MDF(r, params(3:4), em, vm)
-    eng = el * em
-    gamma = vl * em + vm * el
-  End Subroutine mlj126
-
   Pure Real(wp) Function intRadMDF(pot, a, b, c, ri, rw, prec)
     Character(Len=*), Intent(In   ) :: pot
     Real(wp),         Intent(In   ) :: a, b, c, ri, rw, prec
+    Class(potential), Allocatable   :: p
+    Type(potential_energy)          :: e
+    Type(mlj126)                    :: p_mlj126 
+    Type(mbuck)                     :: p_mbuck
+    Type(mlj)                       :: p_mlj 
 
     Integer  :: i, j, n
-    Real(wp) :: df0, f0, f1, f2, h, ie, is, s, sold, x
+    Real(wp) :: f0, f1, f2, h, ie, is, s, sold, x
+
+    If (pot == 'm126') Then 
+      Allocate(mlj126::p)
+      p_mlj126%LJ126%a = a 
+      p_mlj126%LJ126%b = b
+      p_mlj126%MDF%ri = ri 
+      p_mlj126%MDF%rc = rw
+      p = p_mlj126
+    Else If (pot == 'mbuc') Then 
+      Allocate(mbuck::p)
+      p_mbuck%buckingham%A = a 
+      p_mbuck%buckingham%rho = b 
+      p_mbuck%buckingham%C = c
+      p_mbuck%MDF%ri = ri 
+      p_mbuck%MDF%rc = rw 
+      p = p_mbuck
+    Else If (pot == 'mlj') Then 
+      Allocate(mlj::p)
+      p_mlj%LJ%sigma = a 
+      p_mlj%LJ%epsilon = b
+      p_mlj%MDF%ri = ri
+      p_mlj%MDF%rc = rw
+      p = p_mlj
+    Else  
+      intRadMDF = 0.0_wp 
+      Return 
+    End If 
 
     n = 10000
     is = rw
@@ -821,20 +426,15 @@ Contains
       Do i = (j - 1) * n, j * n, 2
 
         x = is + i * h
-        ! this is stupid by remember we do it only once
-        If (pot == 'm126') Then
-          Call mlj126(x, [a, b, ri, rw], f0, df0)
-          Call mlj126(x + h, [a, b, ri, rw], f1, df0)
-          Call mlj126(x + 2.0_wp * h, [a, b, ri, rw], f2, df0)
-        Else If (pot == 'mbuc') Then
-          Call mbuck(x, [a, b, c, ri, rw], f0, df0)
-          Call mbuck(x + h, [a, b, c, ri, rw], f1, df0)
-          Call mbuck(x + 2.0_wp * h, [a, b, c, ri, rw], f2, df0)
-        Else If (pot == 'mlj') Then
-          Call mlj(x, [a, b, ri, rw], f0, df0)
-          Call mlj(x + h, [a, b, ri, rw], f1, df0)
-          Call mlj(x + 2.0_wp * h, [a, b, ri, rw], f2, df0)
-        End If
+
+        e = p%energy(x)
+        f0 = e%energy
+
+        e = p%energy(x+h)
+        f1 = e%energy
+
+        e = p%energy(x+2.0_wp*h)
+        f2 = e%energy
 
         s = s + x * x * f0 + &
             4.0_wp * (x + h)**2 * f1 + &
@@ -849,9 +449,41 @@ Contains
   Pure Real(wp) Function intdRadMDF(pot, a, b, c, ri, rw, prec)
     Character(Len=*), Intent(In   ) :: pot
     Real(wp),         Intent(In   ) :: a, b, c, ri, rw, prec
+    Class(potential), Allocatable   :: p
+    Type(potential_energy)          :: e
+    Type(mlj126)                    :: p_mlj126 
+    Type(mbuck)                     :: p_mbuck
+    Type(mlj)                       :: p_mlj 
 
     Integer  :: i, j, n
-    Real(wp) :: df0, df1, df2, f0, h, ie, is, s, sold, x
+    Real(wp) :: df0, df1, df2, h, ie, is, s, sold, x
+
+    If (pot == 'm126') Then 
+      Allocate(mlj126::p)
+      p_mlj126%LJ126%a = a 
+      p_mlj126%LJ126%b = b
+      p_mlj126%MDF%ri = ri 
+      p_mlj126%MDF%rc = rw
+      p = p_mlj126
+    Else If (pot == 'mbuc') Then 
+      Allocate(mbuck::p)
+      p_mbuck%buckingham%A = a 
+      p_mbuck%buckingham%rho = b 
+      p_mbuck%buckingham%C = c
+      p_mbuck%MDF%ri = ri 
+      p_mbuck%MDF%rc = rw 
+      p = p_mbuck
+    Else If (pot == 'mlj') Then 
+      Allocate(mlj::p)
+      p_mlj%LJ%sigma = a 
+      p_mlj%LJ%epsilon = b
+      p_mlj%MDF%ri = ri
+      p_mlj%MDF%rc = rw
+      p = p_mlj
+    Else  
+      intdRadMDF = 0.0_wp 
+      Return 
+    End If 
 
     n = 10000
     is = rw
@@ -867,19 +499,16 @@ Contains
       Do i = (j - 1) * n, j * n, 2
 
         x = is + i * h
-        If (pot == 'm126') Then
-          Call mlj126(x, [a, b, ri, rw], f0, df0)
-          Call mlj126(x + h, [a, b, ri, rw], f0, df1)
-          Call mlj126(x + 2.0_wp * h, [a, b, ri, rw], f0, df2)
-        Else If (pot == 'mbuc') Then
-          Call mbuck(x, [a, b, c, ri, rw], f0, df0)
-          Call mbuck(x + h, [a, b, c, ri, rw], f0, df1)
-          Call mbuck(x + 2.0_wp * h, [a, b, c, ri, rw], f0, df2)
-        Else If (pot == 'mlj') Then
-          Call mlj(x, [a, b, ri, rw], f0, df0)
-          Call mlj(x + h, [a, b, ri, rw], f0, df1)
-          Call mlj(x + 2.0_wp * h, [a, b, ri, rw], f0, df2)
-        End If
+       
+        e = p%energy(x)
+        df0 = e%gamma
+
+        e = p%energy(x+h)
+        df1 = e%gamma
+
+        e = p%energy(x+2.0_wp*h)
+        df2 = e%gamma
+
         s = s + x * x * df0 + &
             4.0_wp * (x + h)**2 * df1 + &
             (x + 2.0_wp * h)**2 * df2
@@ -1222,7 +851,7 @@ Contains
               z2 = vdws%param(2, k)
 
               ! this is in fact inverse a
-              a = (z1**0.23_wp + z2**0.23_wp) / (ab * 0.88534_wp)
+              a = (z1**0.23_wp + z2**0.23_wp) / (0.52917721067_wp * 0.88534_wp)
               kk = z1 * z2 * r4pie0
               eadd = intRadZBL(kk, a, vdws%cutoff, 1e-12_wp)
               padd = intdRadZBL(kk, a, vdws%cutoff, 1e-12_wp)
@@ -1360,8 +989,9 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     Type(vdw_type), Intent(InOut) :: vdws
-    Integer       :: ivdw, keypot
-    Real(Kind=wp) :: z, dz
+    Integer                       :: ivdw, keypot
+    Real(Kind=wp)                 :: z, dz
+    Type(potential_energy)        :: z_dz
 
     ! allocate arrays for force-shifted corrections
 
@@ -1372,151 +1002,42 @@ Contains
 
     Do ivdw = 1, vdws%n_vdw
 
+      z_dz = vdws%potentials(ivdw)%p%energy(vdws%cutoff)
+      z = z_dz%energy
+      dz = z_dz%gamma
+
       keypot = vdws%ltp(ivdw)
 
       Select Case (keypot)
-      Case (VDW_12_6)
 
-        ! 12-6 potential :: u=a/r^12-b/r^6
+        ! a few special cases
 
-        Call LJ126(vdws%cutoff, vdws%param(:, ivdw), z, dz)
+        Case (VDW_N_M_SHIFT)
 
-      Case (VDW_LENNARD_JONES)
+          ! shifted and force corrected n-m potential (w.smith) ::
+          z = 0.0_wp
+          dz = 0.0_wp
 
-        ! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-(sig/r)^6]
+        Case (VDW_DPD) ! all zeroed in vdw
 
-        Call LJ(vdws%cutoff, vdws%param(:, ivdw), z, dz)
+          ! DPD potential - Groot-Warren (standard) :: u=(1/2).a.r.(1-r/rc)^2
+          z = 0.0_wp
+          dz = 0.0_wp
 
-      Case (VDW_N_M)
+        Case (VDW_NDPD)
 
-        ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
+          z = 0.0_wp
+          dz = 0.0_wp
 
-        Call n_m(vdws%cutoff, vdws%param(:, ivdw), z, dz)
+        Case (VDW_LJF)
 
-      Case (VDW_BUCKINGHAM)
+          z = 0.0_wp
+          dz = 0.0_wp
 
-        ! Buckingham exp-6 potential :: u=a*Exp(-r/rho)-c/r^6
+        Case (VDW_126_MDF)
 
-        Call buckingham(vdws%cutoff, vdws%param(:, ivdw), z, dz)
-
-      Case (VDW_BORN_HUGGINS_MEYER)
-
-        ! Born-Huggins-Meyer exp-6-8 potential :: u=a*Exp(b*(sig-r))-c/r^6-d/r^8
-
-        Call bhm(vdws%cutoff, vdws%param(:, ivdw), z, dz)
-
-      Case (VDW_HYDROGEN_BOND)
-
-        ! Hydrogen-bond 12-10 potential :: u=a/r^12-b/r^10
-
-        Call hbond(vdws%cutoff, vdws%param(:, ivdw), z, dz)
-
-      Case (VDW_N_M_SHIFT)
-
-        ! shifted and force corrected n-m potential (w.smith) ::
-        z = 0.0_wp
-        dz = 0.0_wp
-
-      Case (VDW_MORSE)
-
-        ! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}
-
-        Call morse(vdws%cutoff, vdws%param(:, ivdw), z, dz)
-
-      Case (VDW_WCA)
-
-        ! Weeks-Chandler-Andersen (shifted & truncated Lenard-Jones) (i.t.todorov)
-        ! :: u=4*eps*[{sig/(r-d)}^12-{sig/(r-d)}^6]-eps
-
-        Call wca(vdws%cutoff, vdws%param(:, ivdw), z, dz)
-
-      Case (VDW_DPD) ! all zeroed in vdw
-
-        ! DPD potential - Groot-Warren (standard) :: u=(1/2).a.r.(1-r/rc)^2
-        z = 0.0_wp
-        dz = 0.0_wp
-
-      Case (VDW_NDPD) ! all zeroed in vdw
-
-        ! nDPD potential :: u=(1/(n+1)).a.b.rc.(1-r/rc)^(n+1)-(1/2).a.rc.(1-r/rc)^2
-        z = 0.0_wp
-        dz = 0.0_wp
-
-      Case (VDW_AMOEBA)
-
-        ! AMOEBA 14-7 :: u=eps * [1.07/((sig/r)+0.07)]^7 * [(1.12/((sig/r)^7+0.12))-2]
-
-        Call amoeba(vdws%cutoff, vdws%param(:, ivdw), z, dz)
-
-      Case (VDW_LENNARD_JONES_COHESIVE)
-
-        ! Lennard-Jones cohesive potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
-
-        Call lj_coh(vdws%cutoff, vdws%param(:, ivdw), z, dz)
-
-      Case (VDW_MORSE_12)
-
-        ! Morse potential with twelve term:: u=e0*{[1-Exp(-k(r-r0))]^2-1}+c/r^12
-
-        Call morse_12(vdws%cutoff, vdws%param(:, ivdw), z, dz)
-
-      Case (VDW_RYDBERG)
-
-        ! Morse potential with twelve term:: u=(a+b*r)Exp(-r/c)
-
-        Call rydberg(vdws%cutoff, vdws%param(:, ivdw), z, dz)
-
-      Case (VDW_ZBL)
-
-        ! ZBL potential:: u=Z1Z2/(40r)_{i=1}^4b_ie^{-c_i*r/a}
-
-        Call zbl(vdws%cutoff, vdws%param(:, ivdw), z, dz)
-
-      Case (VDW_ZBL_SWITCH_MORSE)
-
-        ! ZBL switched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
-
-        Call zbls(vdws%cutoff, vdws%param(:, ivdw), z, dz)
-
-      Case (VDW_ZBL_SWITCH_BUCKINGHAM)
-
-        ! ZBL switched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
-
-        Call zblb(vdws%cutoff, vdws%param(:, ivdw), z, dz)
-
-      Case (VDW_LJ_MDF)
-
-        ! LJ tapered with MDF:: u=f(r)LJ(r)
-
-        Call mlj(vdws%cutoff, [vdws%param(1:3, ivdw), vdws%cutoff], z, dz)
-
-      Case (VDW_BUCKINGHAM_MDF)
-
-        ! Buckingham tapered with MDF:: u=f(r)Buck(r)
-
-        Call mbuck(vdws%cutoff, [vdws%param(1:4, ivdw), vdws%cutoff], z, dz)
-
-      Case (VDW_126_MDF)
-
-        ! LJ tapered with MDF:: u=f(r)LJ(r)
-
-        Call mlj126(vdws%cutoff, [vdws%param(1:3, ivdw), vdws%cutoff], z, dz)
-
-      Case (VDW_LJF)
-
-        z = 0.0_wp
-        dz = 0.0_wp
-
-      Case (VDW_SANDERSON)
-
-        Call sanderson(vdws%cutoff, vdws%param(1:3, ivdw), z, dz)
-      Case (VDW_SW)
-        Call sw(vdws%cutoff, vdws%param(1:7, ivdw), z, dz)
-
-
-      Case Default
-
-        Call error(0, 'Unknown Van der Waals potential selected')
+          z = 0.0_wp
+          dz = 0.0_wp
 
       End select
 
@@ -1899,8 +1420,13 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     Type(vdw_type), Intent(InOut) :: vdws
 
-    Integer       :: i, ivdw, keypot
-    Real(Kind=wp) :: dlrpot, e0, kk, r, r0, t, t1
+    Integer                       :: i, ivdw, keypot
+    Real(Kind=wp)                 :: dlrpot, e0, kk, r, r0, t, t1
+    Type(potential_energy)        :: z_dz
+    Type(mlj)                     :: p_mlj
+    Type(mbuck)                   :: p_mbuck
+    Type(mlj126)                  :: p_mlj126
+    Real(Kind=wp)                 :: param(1:5)
 
     ! allocate arrays for tabulating
 
@@ -1915,112 +1441,26 @@ Contains
     Do ivdw = 1, vdws%n_vdw
 
       keypot = vdws%ltp(ivdw)
+
+      If (keypot /= VDW_TAB) Then
+
+        Do i = 1, vdws%max_grid
+          r = Real(i, wp) * dlrpot
+
+          z_dz = vdws%potentials(ivdw)%p%energy(r)
+          vdws%tab_potential(i, ivdw) = z_dz%energy
+          vdws%tab_force(i, ivdw) = z_dz%gamma
+
+        End Do
+
+        vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
+        vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
+      
+      End If
+
       select case (keypot)
-      Case (VDW_12_6)
-
-        ! 12-6 potential :: u=a/r^12-b/r^6
-
-        Do i = 1, vdws%max_grid
-          r = Real(i, wp) * dlrpot
-
-          call LJ126(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
-
-        End Do
-        vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
-        vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
-
-
-      Case (VDW_LENNARD_JONES)
-
-        ! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-(sig/r)^6]
-
-        Do i = 1, vdws%max_grid
-          r = Real(i, wp) * dlrpot
-
-          call LJ(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
-
-        End Do
-        vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
-        vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
-
-
-      Case (VDW_N_M)
-
-        ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
-
-        Do i = 1, vdws%max_grid
-          r = Real(i, wp) * dlrpot
-
-          call n_m(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
-
-        End Do
-        vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
-        vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
-
-      Case (VDW_BUCKINGHAM)
-
-        ! Buckingham exp-6 potential :: u=a*Exp(-r/rho)-c/r^6
-
-        Do i = 1, vdws%max_grid
-          r = Real(i, wp) * dlrpot
-
-          call buckingham(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
-
-        End Do
-        vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
-        vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
-
-      Case (VDW_BORN_HUGGINS_MEYER)
-
-        ! Born-Huggins-Meyer exp-6-8 potential :: u=a*Exp(b*(sig-r))-c/r^6-d/r^8
-
-        Do i = 1, vdws%max_grid
-          r = Real(i, wp) * dlrpot
-
-          call bhm(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
-
-        End Do
-        vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
-        vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
-
-      Case (VDW_HYDROGEN_BOND)
-
-        ! Hydrogen-bond 12-10 potential :: u=a/r^12-b/r^10
-
-        Do i = 1, vdws%max_grid
-          r = Real(i, wp) * dlrpot
-
-          call hbond(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
-
-        End Do
-
-        vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
-        vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
-
-      Case (VDW_N_M_SHIFT)
-
-        ! shifted and force corrected n-m potential (w.smith) ::
-
-        Do i = 1, vdws%max_grid
-          r = Real(i, wp) * dlrpot
-
-          call nm_shift(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
-
-        End Do
-        vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
-        vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
 
       Case (VDW_MORSE)
-
-        ! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}
-
-
-        Do i = 0, vdws%max_grid
-          r = Real(i, wp) * dlrpot
-
-          call morse(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
-
-        End Do
 
         e0 = vdws%param(1, ivdw)
         r0 = vdws%param(2, ivdw)
@@ -2028,146 +1468,40 @@ Contains
         t1 = Exp(+kk * r0)
         vdws%tab_force(0, ivdw) = -2.0_wp * e0 * kk * (1.0_wp - t1) * t1
 
-
-      Case (VDW_WCA)
-
-        ! Weeks-Chandler-Andersen (shifted & truncated Lenard-Jones) (i.t.todorov)
-        ! :: u=4*eps*[{sig/(r-d)}^12-{sig/(r-d)}^6]-eps
-
-        Do i = 1, vdws%max_grid
-          r = Real(i, wp) * dlrpot
-
-          call wca(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
-
-        End Do
-        vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
-        vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
-
       Case (VDW_DPD)
 
         ! DPD potential - Groot-Warren (standard) :: u=(1/2).a.rc.(1-r/rc)^2
 
-        Do i = 0, vdws%max_grid
-          r = Real(i, wp) * dlrpot
-
-          call dpd(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
-
-        End Do
         vdws%tab_force(0, ivdw) = vdws%param(1, ivdw)
 
       Case (VDW_NDPD)
 
-        ! nDPD potential :: u=(1/(n+1)).a.b.rc.(1-r/rc)^(n+1)-(1/2).a.rc.(1-r/rc)^2
-
-        Do i = 0, vdws%max_grid
-          r = Real(i, wp) * dlrpot
-
-          call ndpd(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
-
-        End Do
         vdws%tab_force(0, ivdw) = vdws%param(1, ivdw) * (vdws%param(2, ivdw))
-
-      Case (VDW_AMOEBA)
-
-        ! AMOEBA 14-7 :: u=eps * [1.07/((r/sig)+0.07)]^7 * [(1.12/((r/sig)^7+0.12))-2]
-
-
-        Do i = 1, vdws%max_grid
-          r = Real(i, wp) * dlrpot
-
-          call amoeba(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
-
-        End Do
-        vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
-        vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
-
-      Case (VDW_LENNARD_JONES_COHESIVE)
-
-        ! Lennard-Jones cohesive potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
-
-        Do i = 1, vdws%max_grid
-          r = Real(i, wp) * dlrpot
-
-          call lj_coh(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
-
-        End Do
-        vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
-        vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
-
-      Case (VDW_MORSE_12)
-
-        ! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}+c/r^12
-
-        Do i = 1, vdws%max_grid
-          r = Real(i, wp) * dlrpot
-
-          call morse_12(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
-
-        End Do
-        vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
-        vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
 
       Case (VDW_RYDBERG)
 
         ! Rydberg potential:: u=(a+b*r)Exp(-r/c)
 
-        Do i = 1, vdws%max_grid
-          r = Real(i, wp) * dlrpot
-
-          Call rydberg(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
-
-        End Do
         vdws%tab_potential(0, ivdw) = vdws%param(1, ivdw)
         vdws%tab_force(0, ivdw) = 0.0_wp
-
-      Case (VDW_ZBL)
-
-        ! ZBL potential:: u=Z1Z2/(40r)_{i=1}^4b_ie^{-c_i*r/a}
-
-        Do i = 1, vdws%max_grid
-          r = Real(i, wp) * dlrpot
-
-          Call zbl(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
-
-        End Do
-        vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
-        vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
-
-      Case (VDW_ZBL_SWITCH_MORSE)
-
-        ! ZBL switched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
-
-        Do i = 1, vdws%max_grid
-          r = Real(i, wp) * dlrpot
-
-          Call zbls(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
-
-        End Do
-        vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
-        vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
-
-      Case (VDW_ZBL_SWITCH_BUCKINGHAM)
-
-        ! ZBL switched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
-
-        Do i = 1, vdws%max_grid
-          r = Real(i, wp) * dlrpot
-
-          Call zblb(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
-
-        End Do
-        vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
-        vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
 
       Case (VDW_LJ_MDF)
 
         ! LJ tapered with MDF:: u=f(r)LJ(r)
+        param(1:3) = vdws%param(1:3, ivdw)
+        param(4) = vdws%cutoff
+        Call p_mlj%set_parameters(param(1:4))
 
         Do i = 1, vdws%max_grid
           r = Real(i, wp) * dlrpot
 
-          Call mlj(r, [vdws%param(1:3, ivdw), vdws%cutoff], vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
+          z_dz = p_mlj%energy(r)
+
+          vdws%tab_potential(i, ivdw) = z_dz%energy
+          vdws%tab_force(i, ivdw) = z_dz%gamma
+
         End Do
+        
         vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
         vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
 
@@ -2175,12 +1509,21 @@ Contains
 
         ! Buckingham tapered with MDF:: u=f(r)Buck(r)
 
+        param(1:4) = vdws%param(1:4, ivdw)
+        param(5) = vdws%cutoff
+        
+        Call p_mbuck%set_parameters(param(1:5))
+
         Do i = 1, vdws%max_grid
           r = Real(i, wp) * dlrpot
 
-          Call mbuck(r, [vdws%param(1:4, ivdw), vdws%cutoff], vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
+          z_dz = p_mbuck%energy(r)
+
+          vdws%tab_potential(i, ivdw) = z_dz%energy
+          vdws%tab_force(i, ivdw) = z_dz%gamma
 
         End Do
+
         vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
         vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
 
@@ -2188,54 +1531,24 @@ Contains
 
         ! LJ tapered with MDF:: u=f(r)LJ(r)
 
-        Do i = 1, vdws%max_grid
-          r = Real(i, wp) * dlrpot
+        param(1:3) = vdws%param(1:3, ivdw)
+        param(4) = vdws%cutoff
 
-          Call mlj126(r, [vdws%param(1:3, ivdw), vdws%cutoff], vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
-
-        End Do
-        vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
-        vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
-
-      Case (VDW_LJF)
-
-        ! LJ Frenkel U(r) = \eps*\alpha*((\sigma/r)**2-1)*((rc/r)**2-1)**2
+        Call p_mlj126%set_parameters(param(1:4))
 
         Do i = 1, vdws%max_grid
           r = Real(i, wp) * dlrpot
 
-          Call ljf(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
+          z_dz = p_mlj126%energy(r)
+
+          vdws%tab_potential(i, ivdw) = z_dz%energy
+          vdws%tab_force(i, ivdw) = z_dz%gamma
 
         End Do
+
         vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
         vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
-
-      Case (VDW_SANDERSON)
-
-        ! Sanderson potential :: u=-A*Exp{-[(r-L)/d]^2)}
-        Do i = 1, vdws%max_grid
-          r = Real(i, wp) * dlrpot
-
-          call sanderson(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
-        End Do
-        vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
-        vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
-      Case (VDW_SW)
-
-        Do i = 1, vdws%max_grid
-          r = Real(i, wp) * dlrpot
-
-          call sw(r, vdws%param(:, ivdw), vdws%tab_potential(i, ivdw), vdws%tab_force(i, ivdw))
-
-        End Do
-        vdws%tab_potential(0, ivdw) = Huge(vdws%tab_potential(1, ivdw))
-        vdws%tab_force(0, ivdw) = Huge(vdws%tab_force(1, ivdw))
-
-
-      Case Default
-
-        If (.not. vdws%l_tab) Call error(0, 'Unknown Van der Waals potential selected')
-
+        
       End select
 
       ! no shifting to shifted n-m, DPD and nDPD
@@ -2296,14 +1609,14 @@ Contains
     Type(vdw_type),                             Intent(InOut) :: vdws
     Type(configuration_type),                   Intent(InOut) :: config
 
-    Integer       :: ai, aj, idi, ityp, jatm, k, key, l, mm
-    Real(Kind=wp) :: eng, gamma
-    Real(Kind=wp) :: fix, fiy, fiz, fx, fy, fz
-    Real(Kind=wp) :: gk, gk1, gk2, ppp, vk, vk1, vk2
-    Real(Kind=wp) :: r_rrr, r_rrv, r_rsq, r_rvdw, rrr, rscl, rsq
-    Real(Kind=wp) :: strs1, strs2, strs3, strs5, strs6, strs9, t1, t2
-    Real(Kind=wp) :: stress_temp_comp(9)
-    Real(Kind=wp) :: x_temp(3), f_temp(3)
+    Integer                 :: ai, aj, idi, ityp, jatm, k, key, mm
+    Real(Kind=wp)           :: eng, gamma
+    Real(Kind=wp)           :: fix, fiy, fiz, fx, fy, fz
+    Real(Kind=wp)           :: r_rrr, r_rrv, r_rsq, r_rvdw, rrr, rscl, rsq
+    Real(Kind=wp)           :: strs1, strs2, strs3, strs5, strs6, strs9
+    Real(Kind=wp)           :: stress_temp_comp(9)
+    Real(Kind=wp)           :: x_temp(3), f_temp(3)
+    Type(potential_energy)  :: eng_gamma
     ! define grid resolution for potential arrays and interpolation spacing
 
     If (vdws%newjob) Then
@@ -2380,249 +1693,12 @@ Contains
         eng = 0.0_wp
         gamma = 0.0_wp
 
-        select case (ityp)
-        Case (VDW_12_6)
+        eng_gamma = vdws%potentials(k)%energy(rrr)
 
-          ! 12-6 potential :: u=a/r^12-b/r^6
-
-          Call LJ126(rrr, vdws%param(:,k), eng, gamma)
-
-          eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-          gamma = gamma*r_rsq - vdws%afs(k) * r_rrr
-
-        Case (VDW_LENNARD_JONES)
-
-          ! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-(sig/r)^6]
-
-          call LJ(rrr, vdws%param(:,k), eng, gamma)
-
-          eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-          gamma = gamma*r_rsq - vdws%afs(k) * r_rrr
-
-        Case (VDW_N_M)
-
-          ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(r0/r)^m]
-
-          Call n_m(rrr, vdws%param(:,k), eng, gamma)
-
-          eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-          gamma = gamma*r_rsq - vdws%afs(k) * r_rrr
-
-        Case (VDW_BUCKINGHAM)
-
-          ! Buckingham exp-6 potential :: u=a*Exp(-r/rho)-c/r^6
-
-          Call buckingham(rrr, vdws%param(:, k), eng, gamma)
-
-          eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-          gamma = gamma*r_rsq - vdws%afs(k) * r_rrr
-
-        Case (VDW_BORN_HUGGINS_MEYER)
-
-          ! Born-Huggins-Meyer exp-6-8 potential :: u=a*Exp(b*(sig-r))-c/r^6-d/r^8
-
-          Call bhm(rrr, vdws%param(:, k), eng, gamma)
-
-          eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-          gamma = gamma*r_rsq - vdws%afs(k) * r_rrr
-
-        Case (VDW_HYDROGEN_BOND)
-
-          ! Hydrogen-bond 12-10 potential :: u=a/r^12-b/r^10
-
-          Call hbond(rrr, vdws%param(:, k), eng, gamma)
-
-          eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-          gamma = gamma*r_rsq - vdws%afs(k) * r_rrr
-
-        Case (VDW_N_M_SHIFT)
-
-          ! shifted and force corrected n-m potential (w.smith) ::
-
-          Call nm_shift(rrr, vdws%param(:, k), eng, gamma)
-          gamma = gamma * r_rsq
-
-        Case (VDW_MORSE)
-
-          ! Morse potential :: u=e0*{[1-Exp(-kk(r-r0))]^2-1}
-
-          Call morse(rrr, vdws%param(:, k), eng, gamma)
-
-          eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-          gamma = gamma*r_rsq - vdws%afs(k) * r_rrr
-
-        Case (VDW_WCA)
-
-          ! Weeks-Chandler-Andersen (shifted & truncated Lenard-Jones) (i.t.todorov)
-          ! :: u=4*eps*[{sig/(r-d)}^12-{sig/(r-d)}^6]-eps
-
-          Call wca(rrr, vdws%param(:, k), eng, gamma)
-
-          eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-          gamma = gamma*r_rsq - vdws%afs(k) * r_rrr
-
-        Case (VDW_DPD)
-
-          ! DPD potential - Groot-Warren (standard) :: u=(1/2).a.r.(1-r/rc)^2
-
-          Call dpd(rrr, vdws%param(:, k), eng, gamma)
-          gamma = gamma * r_rsq
-
-        Case (VDW_NDPD)
-
-          ! nDPD potential :: u=(1/(n+1)).a.b.rc.(1-r/rc)^(n+1)-(1/2).a.rc.(1-r/rc)^2
-
-          Call ndpd(rrr, vdws%param(:, k), eng, gamma)
-          gamma = gamma * r_rsq
-
-        Case (VDW_AMOEBA)
-
-          ! AMOEBA 14-7 :: u=eps * [1.07/((r/sig)+0.07)]^7 * [(1.12/((r/sig)^7+0.12))-2]
-
-          Call amoeba(rrr, vdws%param(:, k), eng, gamma)
-
-          eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-          gamma = gamma*r_rsq - vdws%afs(k) * r_rrr
-
-        Case (VDW_LENNARD_JONES_COHESIVE)
-
-          ! Lennard-Jones cohesive potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
-
-          Call lj_coh(rrr, vdws%param(:, k), eng, gamma)
-          eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-          gamma = gamma*r_rsq - vdws%afs(k) * r_rrr
-
-        Case (VDW_MORSE_12)
-
-          ! Morse potential :: u=e0*{[1-Exp(-kk(r-r0))]^2-1}+c/r^12
-
-          Call morse_12(rrr, vdws%param(:, k), eng, gamma)
-
-          eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-          gamma = gamma*r_rsq - vdws%afs(k) * r_rrr
-
-        Case (VDW_RYDBERG)
-
-          ! Rydberg potential:: u=(a+b*r)Exp(-r/c)
-
-          Call rydberg(rrr, vdws%param(:, k), eng, gamma)
-
-          eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-          gamma = gamma*r_rsq - vdws%afs(k) * r_rrr
-
-        Case (VDW_ZBL)
-
-          ! ZBL potential:: u=Z1Z2/(40r)_{i=1}^4b_ie^{-c_i*r/a}
-
-          Call zbl(rrr, vdws%param(:, k), eng, gamma)
-          eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-          gamma = gamma*r_rsq - vdws%afs(k) * r_rrr
-
-        Case (VDW_ZBL_SWITCH_MORSE)
-
-          ! ZBL switched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
-
-          Call zbls(rrr, vdws%param(:, k), eng, gamma)
-          eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-          gamma = gamma*r_rsq - vdws%afs(k) * r_rrr
-
-        Case (VDW_ZBL_SWITCH_BUCKINGHAM)
-
-          ! ZBL switched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
-
-          Call zblb(rrr, vdws%param(:, k), eng, gamma)
-          eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-          gamma = gamma*r_rsq - vdws%afs(k) * r_rrr
-
-        Case (VDW_LJ_MDF)
-
-          ! LJ tapered with MDF:: u=f(r)LJ(r)
-
-          Call mlj(rrr, [vdws%param(1:3, k), vdws%cutoff], eng, gamma)
-
-          eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-          gamma = gamma*r_rsq - vdws%afs(k) * r_rrr
-
-        Case (VDW_BUCKINGHAM_MDF)
-
-          ! Buckingham tapered with MDF:: u=f(r)Buck(r)
-
-          Call mbuck(rrr, [vdws%param(1:4, k), vdws%cutoff], eng, gamma)
-          gamma = gamma * r_rsq
-
-          ! ! by construction is zero outside vdws%cutoff so no shifting
-          !   eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-          !   gamma = gamma - vdws%afs(k) * r_rrr
-
-        Case (VDW_126_MDF)
-
-          ! LJ tapered with MDF:: u=f(r)LJ12-6(r)
-
-          Call mlj126(rrr, [vdws%param(1:3, k), vdws%cutoff], eng, gamma)
-          gamma = gamma * r_rsq
-
-          ! by construction is zero outside vdws%cutoff so no shifting
-
-        Case(VDW_LJF)
-
-          Call ljf(rrr, vdws%param(:, k), eng, gamma)
-          gamma = gamma * r_rsq
-
-          ! by construction is zero outside vdws%cutoff so no shifting
-
-        Case (VDW_SANDERSON)
-          ! Sanderson potential :: u=-A*Exp{-[(r-L)/d]^2)}
-
-          call sanderson(rrr, vdws%param(:,k), eng, gamma)
-
-          eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-          gamma = gamma*r_rsq - vdws%afs(k) * r_rrr
-
-        Case (VDW_SW)
-
-          call sw(rrr, vdws%param(:,k), eng, gamma)
-
-          eng = eng + vdws%afs(k) * rrr + vdws%bfs(k)
-          gamma = gamma*r_rsq - vdws%afs(k) * r_rrr
-
-        Case (VDW_TAB)
-
-          l = Int(rrr * vdws%rdr)
-          ppp = rrr * vdws%rdr - Real(l, wp)
-
-          ! calculate interaction energy using 3-point interpolation
-
-          vk = vdws%tab_potential(l, k)
-          vk1 = vdws%tab_potential(l + 1, k)
-          vk2 = vdws%tab_potential(l + 2, k)
-
-          t1 = vk + (vk1 - vk) * ppp
-          t2 = vk1 + (vk2 - vk1) * (ppp - 1.0_wp)
-
-          eng = t1 + (t2 - t1) * ppp * 0.5_wp
-          ! force-shifting
-          If (vdws%l_force_shift) Then
-            eng = eng + vdws%tab_force(vdws%max_grid - 4, k) * (rscl - 1.0_wp) - &
-                 vdws%tab_potential(vdws%max_grid - 4, k)
-          End If
-
-          ! calculate forces using 3-point interpolation
-
-          gk = vdws%tab_force(l, k); If (l == 0) gk = gk * rrr
-          gk1 = vdws%tab_force(l + 1, k)
-          gk2 = vdws%tab_force(l + 2, k)
-
-          t1 = gk + (gk1 - gk) * ppp
-          t2 = gk1 + (gk2 - gk1) * (ppp - 1.0_wp)
-
-          gamma = (t1 + (t2 - t1) * ppp * 0.5_wp) * r_rsq
-          If (vdws%l_force_shift) gamma = gamma - vdws%tab_force(vdws%max_grid - 4, k) * r_rrv ! force-shifting
-
-
-        end select
+        eng = eng_gamma%energy + vdws%afs(k) * rrr + vdws%bfs(k)
+        gamma = eng_gamma%gamma*r_rsq - vdws%afs(k) * r_rrr
 
         ! calculate forces
-
         fx = gamma * xxt(mm)
         fy = gamma * yyt(mm)
         fz = gamma * zzt(mm)
