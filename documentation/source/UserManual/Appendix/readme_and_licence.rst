@@ -6,20 +6,20 @@ Appendix E: DL_POLY_4 INSTALL Notes & README Wisdom
 BUILDING 
 --------
 
-.. include:: ../../../../building.md 
+.. include:: ../../../../building.rst
 
 CODING STYLE 
 ------------
 
-.. include:: ../../../../coding_style.md 
+.. include:: ../../../../coding_style.rst
 
 CONTRIBUTING 
 ------------
 
-.. include:: ../../../../contributing.md
+.. include:: ../../../../contributing.rst
     
 
 LICENCE
 -------
 
-.. include:: ../../../../LICENCE.md
+.. include:: ../../../../LICENCE.rst
