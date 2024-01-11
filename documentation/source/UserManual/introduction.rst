@@ -666,7 +666,7 @@ Daresbury Laboratory also maintains a associated electronic mailing
 list, *dl_poly_4_news*, to which all registered DL_POLY_4 users are automatically
 subscribed. It is via this list that error reports and announcements of
 new versions are made. If you are a DL_POLY_4 user, but not on this list you may
-request to be added by sending a mail message to `majordomo@dl.ac.uk`_ with
+request to be added by sending a mail message to `majordomo@dl.ac.uk` with
 the one-line message: :math:`subscribe~dl\_poly\_4\_news`.
 
 The DL_Software **Portal** is a web based centre for all DL_POLY users to

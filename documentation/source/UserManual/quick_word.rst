@@ -53,6 +53,6 @@ our mail list by following instructions in Section :ref:`otherInfoSection`.
 If you need one-to-one training, wish to collaborate scientifically and/or
 would like to become a contributor/developer then get in touch with me,
 Dr. I.T. Todorov, by emailing to
-`ilian.todorov@stfc.ac.uk<mailto:ilian.todorov@stfc.ac.uk>`_.
+`ilian.todorov@stfc.ac.uk<mailto:ilian.todorov@stfc.ac.uk>`.
 
 Best of luck!

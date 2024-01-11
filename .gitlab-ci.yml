@@ -226,7 +226,7 @@ pages:
   - cd documentation
   - python -m pip install -r requirements.txt 
   - make html
-  - mv build/html/* ../public/
+  - mv build/html ../public
   - cd ../
   - anybadge -l docs -v sphinx -f docs_badge.svg -c green 
   artifacts:
