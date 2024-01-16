@@ -213,11 +213,12 @@ Contains
 
   End Subroutine read_control
 
-  Subroutine read_devel(params, devel, tmr, seed)
+  Subroutine read_devel(params, devel, tmr, seed, flow)
     Type(parameters_hash_table), Intent(In   ) :: params
     Type(development_type),      Intent(InOut) :: devel
     Type(timer_type),            Intent(InOut) :: tmr
     Type(seed_type),             Intent(InOut) :: seed
+    Type(flow_type),             Intent(InOut) :: flow
 
     Integer                     :: print_level
     Real(kind=wp), Allocatable  :: vtmp(:)
@@ -225,6 +226,7 @@ Contains
     Call params%retrieve('print_level', print_level)
     Call set_print_level(print_level)
     Call params%retrieve('unsafe_comms', devel%l_fast)
+    Call params%retrieve('strict_checks', flow%strict)
 
     Call params%retrieve('output_energy', devel%l_eng)
     Call params%retrieve('io_write_ascii_revive', devel%l_rout)
@@ -2046,8 +2048,6 @@ Contains
     Call params%retrieve('stack_size', stats%mxstak)
 
     Call params%retrieve('ignore_config_indices', read_config_indices)
-
-    Call params%retrieve('strict_checks', flow%strict)
 
     Call params%retrieve('time_run', flow%run_steps, .true.)
 

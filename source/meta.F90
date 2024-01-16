@@ -743,7 +743,7 @@ Contains
 
     ! Setup io immediately
     Call read_io(params, ios, files, comm)
-    Call read_devel(params, devel, tmr, seed)
+    Call read_devel(params, devel, tmr, seed, flow)
     Call read_units(params)
 
     If (output_filename /= "") files(FILE_OUTPUT)%filename = output_filename
