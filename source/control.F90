@@ -20,7 +20,8 @@ Module control
                                       configuration_type
   Use constants,                Only: pi,&
                                       tenunt,&
-                                      zero_plus
+                                      zero_plus,&
+                                      Jm3K_to_kBA3
   Use constraints,              Only: constraints_type
   Use control_parameters,       Only: DATA_BOOL,&
                                       DATA_FLOAT,&
@@ -1105,6 +1106,7 @@ Contains
     End Select
 
     Call params%retrieve('ttm_dens_model', option)
+    ttm%epc_to_chi = 1.0e-12_wp * Jm3K_to_kBA3 / 3.0_wp
     Select Case (option)
     Case ('constant')
       ttm%ttmdyndens = .false.
@@ -1115,12 +1117,11 @@ Contains
       ! Rescale heat capacities and electron-phonon coupling factor using atomic density
       ttm%sh_A = ttm%sh_A * ttm%cellrho
       ttm%Cemax = ttm%Cemax * ttm%cellrho
-      ttm%epc_to_chi = convert_units(ttm%rcellrho / 3.0_wp, 'W.mol.m^-3.K^-1', 'k_B/internal_l^3/internal_t')
+      ttm%epc_to_chi = ttm%epc_to_chi * ttm%rcellrho
 
     Case ('dynamic')
       ttm%ttmdyndens = .true.
       ttm%CeType = ttm%CeType + 4
-      ttm%epc_to_chi = convert_units(1.0_wp / 3.0_wp, 'W.mol.m^-3.K^-1', 'k_B/internal_l^3/internal_t')
 
       Call params%retrieve('ttm_dens', ttm%cellrho)
       If (ttm%cellrho <= zero_plus) ttm%cellrho = ttm%sysrho   ! if no (initial) density specified, use default value
@@ -1133,7 +1134,7 @@ Contains
       ! Rescale heat capacities and electron-phonon coupling factor using atomic density
       ttm%sh_A = ttm%sh_A * ttm%cellrho
       ttm%Cemax = ttm%Cemax * ttm%cellrho
-      ttm%epc_to_chi = convert_units(ttm%rcellrho / 3.0_wp, 'W.mol.m^-3.K^-1', 'k_B/internal_l^3/internal_t')
+      ttm%epc_to_chi = ttm%epc_to_chi * ttm%rcellrho
     End Select
 
     If (ttm%ismetal) Then
