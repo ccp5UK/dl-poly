@@ -35,11 +35,11 @@ Program dl_poly
                                                     init_comms
   Use configuration,                          Only: configuration_type
   Use constraints,                            Only: constraints_type
-  Use old_control,                                Only: read_simtype
+  Use old_control,                            Only: read_simtype
   Use control_parameters,                     Only: dump_parameters,&
-    parameters_hash_table
+                                                    parameters_hash_table
   Use coord,                                  Only: coord_type
-  Use corE_shell,                             Only: core_shell_type
+  Use core_shell,                             Only: core_shell_type
   Use defects,                                Only: defects_type
   Use development,                            Only: development_type
   Use dihedrals,                              Only: dihedrals_type
@@ -70,7 +70,7 @@ Program dl_poly
   Use mpole,                                  Only: mpole_type
   Use msd,                                    Only: msd_type
   Use neighbours,                             Only: neighbours_type
-  Use control,                            Only: initialise_control,&
+  Use control,                                Only: initialise_control,&
                                                     read_control
   Use numerics,                               Only: seed_type
   Use plumed,                                 Only: plumed_type
