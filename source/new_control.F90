@@ -55,7 +55,8 @@ Module new_control
                                       FILE_CONFIG, FILE_FIELD, FILE_HISTORF, FILE_HISTORY, &
                                       FILE_MSD, FILE_OUTPUT, FILE_RDF, FILE_REVCON, FILE_REVIVE, &
                                       FILE_REVOLD, FILE_STATS, FILE_TABANG, FILE_TABBND, &
-                                      FILE_TABDIH, FILE_TABEAM, FILE_TABINV, FILE_TABVDW, FILE_COR, file_type
+                                      FILE_TABDIH, FILE_TABEAM, FILE_TABINV, FILE_TABVDW, FILE_COR, &
+                                      FILE_CURRENT, file_type
   Use flow_control,             Only: DFTB,&
                                       RESTART_KEY_CLEAN,&
                                       RESTART_KEY_NOSCALE,&
@@ -519,6 +520,8 @@ Contains
     files(FILE_RDF)%filename = curr_option
     Call params%retrieve('io_file_msd', curr_option)
     files(FILE_MSD)%filename = curr_option
+    Call params%retrieve('io_file_currents', curr_option)
+    files(FILE_CURRENT)%filename = curr_option
     Call params%retrieve('io_file_tabbnd', curr_option)
     files(FILE_TABBND)%filename = curr_option
     Call params%retrieve('io_file_tabang', curr_option)
@@ -3265,6 +3268,13 @@ Contains
                        name='msd filepath', &
                        val='MSDTMP', &
                        description='Set output MSD filepath', &
+                       data_type=DATA_STRING))
+
+        Call table%set('io_file_currents', control_parameter( &
+                       key='io_file_currents', &
+                       name='currents filepath', &
+                       val='CURRENTS', &
+                       description='Set output CURRENTS filepath', &
                        data_type=DATA_STRING))
 
         Call table%set('io_file_tabbnd', control_parameter( &
