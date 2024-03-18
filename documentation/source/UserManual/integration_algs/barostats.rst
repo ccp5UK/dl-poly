@@ -203,7 +203,7 @@ the end the velocities are scaled by a factor of :math:`\chi`.
       \eta (t + {3 \over 4} \Delta t) \; {\Delta t \over 2} \right] \; \underline{v}(t + \Delta t) \\
       \eta (t + {3 \over 4} \Delta t) \leftarrow& \exp \left( -\chi_{p} \; {\Delta t \over 8} \right)  \;
       \eta (t + {3 \over 4} \Delta t) \nonumber \\
-      \eta (t + \Delta t) &\leftarrow& \eta (t + {3 \over 4} \Delta t) + {\Delta t \over 4} \;
+      \eta (t + \Delta t) \leftarrow& \eta (t + {3 \over 4} \Delta t) + {\Delta t \over 4} \;
       \left[ 3 V(t + \Delta t) \frac{{\cal P}(t + \Delta t) - P_{\rm ext}}{p_{mass}} + \right. \nonumber \\
       & ~~~~~~~~~~~~~~~~~~~~~~~~~~~\left. 3 \frac{2 E_{kin}(t + \Delta t)}{f} \frac{1}{p_{mass}} + \frac{R_{p}(t)}{p_{mass}} \right] \nonumber \\
       \eta (t + \Delta t) \leftarrow& \exp \left( -\chi_{p} \; {\Delta t \over 8} \right)  \;

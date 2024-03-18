@@ -63,7 +63,7 @@ product of the new data point with each temporarily stored value is
 added to a correlation accumulator for this first block. At the first
 block all multiplications must be carried out, in subsequent blocks only
 points between
-:math:`\textbf{correlation\_block\_points}/\textbf{correlation\_window}`
+:math:`\textbf{correlation_block_points}/\textbf{correlation_window}`
 and **correlation_block_points** need be updated. Once the first block
 contains **correlation_block_points** data entries the sum divided by
 the **correlation_window** is passed to the next level, and the

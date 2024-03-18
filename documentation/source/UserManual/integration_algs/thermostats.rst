@@ -477,7 +477,7 @@ symplectic manner as follows:
       \begin{aligned}
       \chi (t + {1 \over 4} \Delta t) \leftarrow& \chi (t) +
       {\Delta t \over 4} \; {{2 E_{kin}(t) - 2 \sigma} \over q_{mass}} \nonumber \\
-      \underline{v}(t) leftarrow& \underline{v}(t) \; \exp \left(
+      \underline{v}(t) \leftarrow& \underline{v}(t) \; \exp \left(
       -\chi (t + {1 \over 4} \Delta t) \; {\Delta t \over 2} \right) \\
       \chi (t + {1 \over 2} \Delta t) \leftarrow& \chi (t + {1 \over 4} \Delta t) +
       {\Delta t \over 4} \; {{2 E_{kin}(t) - 2 \sigma} \over q_{mass}} \nonumber \\\end{aligned}
