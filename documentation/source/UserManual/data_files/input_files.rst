@@ -1729,9 +1729,9 @@ DL_POLY_4 to the available species in the OpenKIM IM.
 
     .. parsed-literal::
 
-      key         a4        potential key, see Table :numref:`(%s)<vdw-table>` 
       atmnam 1      a8        first atom type 
       atmnam 2      a8        second atom type 
+      key           a4        potential key, see Table :numref:`(%s)<vdw-table>` 
       variable 1    real      potential parameter, see Table :numref:`(%s)<vdw-table>`
       variable 2    real      potential parameter, see Table :numref:`(%s)<vdw-table>`
       variable 3    real      potential parameter, see Table :numref:`(%s)<vdw-table>`
@@ -2179,8 +2179,7 @@ DL_POLY_4 to the available species in the OpenKIM IM.
 
     .. parsed-literal:: 
       
-      atmnam 1 (*i*)    a8      first (central)
-      atom type
+      atmnam 1 (*i*)    a8      first (central) atom type
       atmnam 2 (*j*)    a8      second atom type
       atmnam 3 (*k*)    a8      third atom type
       atmnam 4 (*l*)    a8      fourth atom type
