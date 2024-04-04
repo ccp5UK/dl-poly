@@ -468,7 +468,6 @@ Contains
 
         Write (message, '(a,6x,i10)') 'number of molecular types', sites%ntype_mol
         Call info(message, .true., level=3)
-        write(0,*)  sites%mxtmls
         If (sites%ntype_mol > sites%mxtmls) Then
           Call error(10)
         End If
