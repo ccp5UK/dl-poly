@@ -3953,7 +3953,7 @@ Contains
                        units="%", &
                        internal_units="", &
                        description="Set boundary heat flux in Robin boundaries for TTM", &
-                       data_type=DATA_BOOL))
+                       data_type=DATA_FLOAT))
 
         Call table%set("ttm_time_offset", control_parameter( &
                        key="ttm_time_offset", &

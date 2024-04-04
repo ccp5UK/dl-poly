@@ -211,7 +211,7 @@ Contains
     Write (test_unit, '(a,1X,a)') "ttm_variable_ep", "JUNK"
     Write (test_unit, '(a,1X,a)') "ttm_boundary_condition", "JUNK"
     Write (test_unit, '(a,1X,a)') "ttm_boundary_xy", "on"
-    Write (test_unit, '(a,1X,a)') "ttm_boundary_heat_flux", "on %"
+    Write (test_unit, '(a,1X,a)') "ttm_boundary_heat_flux", "100 %"
     Write (test_unit, '(a,1X,a)') "ttm_time_offset", "6.666 ps"
     Write (test_unit, '(a,1X,a)') "ttm_oneway", "on"
     Write (test_unit, '(a,1X,a)') "ttm_stats_frequency", "6.666 steps"
@@ -814,8 +814,8 @@ Contains
     Call params%retrieve("ttm_boundary_condition", ctmp)
     Call assert(ctmp, "junk", "Accurate retrieval of traj_start failed", passed_accum = passed)
 
-    Call params%retrieve("ttm_boundary_heat_flux", ltmp)
-    Call assert(ltmp, "Accurate retrieval of ttm_boundary_heat_flux failed", passed_accum = passed)
+    Call params%retrieve("ttm_boundary_heat_flux", rtmp)
+    Call assert(rtmp, 1.0_wp, "Accurate retrieval of ttm_boundary_heat_flux failed", passed_accum = passed)
 
     Call params%retrieve("ttm_boundary_xy", ltmp)
     Call assert(ltmp, "Accurate retrieval of ttm_boundary_xy failed", passed_accum = passed)
