@@ -25,6 +25,11 @@ if(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
   endif()
 endif()
 
+if (NOT DEFINED ${CMAKE_BUILD_TYPE})
+  message(STATUS "Setting to Release build by default")
+  set(CMAKE_BUILD_TYPE "Release")
+endif ()
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake" "${CMAKE_SOURCE_DIR}/cmake/Modules")
 include(DLPOLYBuildOptions)
 include(DLPOLYBuildFunctions)
