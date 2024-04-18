@@ -16,7 +16,8 @@ Module system
                              IMCON_NOPBC,&
                              IMCON_PARALLELOPIPED,&
                              IMCON_SLAB,&
-                             configuration_type
+                             configuration_type,&
+                             max_megatm
   Use constants,       Only: engunit,&
                              nmpldt,&
                              zero_plus
@@ -678,6 +679,7 @@ Contains
     ! author    - i.t.todorov march 2016
     ! contrib   - w.smith, i.j.bush
     ! contrib   - a.m.elena february 2017
+    ! contrib   - h.l.devereux february 2024 
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -714,7 +716,7 @@ Contains
     Integer, Allocatable, Dimension(:, :, :)                     :: i_xyz
     Integer, Allocatable, Dimension(:)                           :: ltg_scaled
     Integer(Kind=offset_kind)                                    :: top_skip
-    Integer(Kind=li)                                             :: offset, rec
+    Integer(Kind=li)                                             :: offset, rec, expand_megatm
     Integer                                                      :: at_scaled, conftag, fail(1:5), &
                                                                     fftag, fh, i, iang, iatm, &
                                                                     ibond, icnst, idih, idm, ierr, &
@@ -728,6 +730,15 @@ Contains
                                                                     sapmtt, setspc
     Character(Len=recsz)                                         :: record2, record3
     Character(Len=Len(config%atmnam)), Allocatable, Dimension(:) :: atmnam_scaled
+
+    nall = config%nx * config%ny * config%nz
+    expand_megatm = config%megatm
+    ! split computation for type safety
+    expand_megatm = expand_megatm * nall
+    If (expand_megatm > max_megatm) Then
+      Write (message, '(a, i0, a, i0)') "Atoms in config ", config%megatm, ", requested expanded config ", expand_megatm
+      Call error(1091, message)
+    End If
 
     ! Choose which CONFIG and FIELD file to read, depending on the ff tag
     If (ff == 1) Then
@@ -797,8 +808,6 @@ Contains
     fx = Real(config%nx, wp)
     fy = Real(config%ny, wp)
     fz = Real(config%nz, wp)
-
-    nall = config%nx * config%ny * config%nz
 
     ! Define cell vector displacement in z direction
 
@@ -891,7 +900,7 @@ Contains
         Write (record2, Fmt='(a72,a1)') config%cfgname(1:72), lf
         Call io_write_record(io, fh, Int(0, offset_kind), record2)
 
-        Write (record2, Fmt='(3i10,a42,a1)') 0, config%imcon, nall * config%megatm, Repeat(' ', 42), lf
+        Write (record2, Fmt='(3(i0," "),a42,a1)') 0, config%imcon, nall * config%megatm, Repeat(' ', 42), lf
         Call io_write_record(io, fh, Int(1, offset_kind), record2)
 
         Write (record2, Fmt='(3f20.10,a12,a1)') fx * config%cell(1), fx * config%cell(2), fx * config%cell(3), Repeat(' ', 12), lf
@@ -908,7 +917,7 @@ Contains
 
         Write (Unit=files(conftag)%unit_no, Fmt='(a72,a1)', Rec=Int(1, li)) &
           config%cfgname(1:72), lf
-        Write (Unit=files(conftag)%unit_no, Fmt='(3i10,a42,a1)', Rec=Int(2, li)) &
+        Write (Unit=files(conftag)%unit_no, Fmt='(3(i0," "),a42,a1)', Rec=Int(2, li)) &
           0, config%imcon, nall * config%megatm, Repeat(' ', 42), lf
         Write (Unit=files(conftag)%unit_no, Fmt='(3f20.12,a12,a1)', Rec=Int(3, li)) &
           fx * config%cell(1), fx * config%cell(2), fx * config%cell(3), Repeat(' ', 12), lf
@@ -1010,7 +1019,7 @@ Contains
           If (.not. safe) mxiter = mxiter + 1
 
           If ((mxiter == 42 .and. (.not. safe)) .and. l_str) Then
-            Write (message, '(2(a,i10))') 'molecular type #: ', itmols, ' molecule #: ', imols
+            Write (message, '(2(a,(i0," ")))') 'molecular type #: ', itmols, ' molecule #: ', imols
             Call info(message, .true.)
           End If
 
@@ -1061,13 +1070,13 @@ Contains
                 Call warning(message, .true.)
               End If
 
-              Write (messages(1), '(a,3i10)') &
-                'core_shell unit #(local) -> m. type # -> molecule #:', ishls, itmols, imols
+              Write (messages(1), '(a,3(i0," "))') &
+                'core_shell unit #(local) -> m. type # -> molecule #: ', ishls, itmols, imols
               Write (messages(2), '(a,3(1x,l1))') &
                 'member :: global index :: x ::      y ::      z', safex, safey, safez
-              Write (messages(3), '(a,i10,3f10.1)') &
+              Write (messages(3), '(a,(i0," "),3f10.1)') &
                 'core  ', nattot + iatm, xm(iatm), ym(iatm), zm(iatm)
-              Write (messages(4), '(a,i10,3f10.1)') &
+              Write (messages(4), '(a,(i0," "),3f10.1)') &
                 'shell ', nattot + jatm, xm(jatm), ym(jatm), zm(jatm)
               Call info(messages, 4, .true.)
             End If
@@ -1120,13 +1129,13 @@ Contains
                 Call warning(message, .true.)
               End If
 
-              Write (messages(1), '(a,3i10)') &
-                'constraint unit #(local) -> m. type # -> molecule #:', icnst, itmols, imols
+              Write (messages(1), '(a,3(i0," "))') &
+                'constraint unit #(local) -> m. type # -> molecule #: ', icnst, itmols, imols
               Write (messages(2), '(a,3(1x,l1))') &
                 'member :: global index :: x ::      y ::      z', safex, safey, safez
-              Write (messages(3), '(2i10,3f10.1)') &
+              Write (messages(3), '(2(i0," "),3f10.1)') &
                 1, nattot + iatm, xm(iatm), ym(iatm), zm(iatm)
-              Write (messages(4), '(2i10,3f10.1)') &
+              Write (messages(4), '(2(i0," "),3f10.1)') &
                 2, nattot + jatm, xm(jatm), ym(jatm), zm(jatm)
               Call info(messages, 4, .true.)
             End If
@@ -1173,7 +1182,7 @@ Contains
                   safer = .false.
                 End If
                 If ((mxiter == 42 .and. (.not. safer)) .and. l_str) Then
-                  Write (message, '(a,2i10,2(f7.2,a))') &
+                  Write (message, '(a,2(i0," "),2(f7.2,a))') &
                     'distance violation: ', i, j, r, ' > ', t, ' Angstroms'
                   Call warning(message, .true.)
                 End If
@@ -1182,15 +1191,15 @@ Contains
             End Do
 
             If ((mxiter == 42 .and. (.not. safem)) .and. (l_str .and. comm%idnode == 0)) Then
-              Write (messages(1), '(a,3i10)') &
-                'rigid body unit #(local) -> m. type # -> molecule #:', irgd, itmols, imols
+              Write (messages(1), '(a,3(i0," "))') &
+                'rigid body unit #(local) -> m. type # -> molecule #: ', irgd, itmols, imols
               Write (messages(2), '(a)') &
                 'member :: global index :: x ::      y ::      z'
               Call info(messages, 2, .true.)
 
               Do i = 1, lrgd
                 iatm = rigid%lst(i, nrigid) - indatm1
-                Write (message, '(2i10,3f10.1)') i, nattot + iatm, xm(iatm), ym(iatm), zm(iatm)
+                Write (message, '(2(i0," "),3f10.1)') i, nattot + iatm, xm(iatm), ym(iatm), zm(iatm)
                 Call info(message, .true.)
               End Do
             End If
@@ -1251,13 +1260,13 @@ Contains
                 Call warning(message, .true.)
               End If
 
-              Write (messages(1), '(a,3i10)') &
-                'bond unit #(local) -> m. type # -> molecule #:', ibond, itmols, imols
+              Write (messages(1), '(a,3(i0," "))') &
+                'bond unit #(local) -> m. type # -> molecule #: ', ibond, itmols, imols
               Write (messages(2), '(a,3(1x,l1))') &
                 'member :: global index :: x ::      y ::      z', safex, safey, safez
-              Write (messages(3), '(2i10,3f10.1)') &
+              Write (messages(3), '(2(i0," "),3f10.1)') &
                 1, nattot + iatm, xm(iatm), ym(iatm), zm(iatm)
-              Write (messages(4), '(2i10,3f10.1)') &
+              Write (messages(4), '(2(i0," "),3f10.1)') &
                 2, nattot + jatm, xm(jatm), ym(jatm), zm(jatm)
               Call info(messages, 4, .true.)
             End If
@@ -1307,7 +1316,7 @@ Contains
                   safer = .false.
                 End If
                 If ((mxiter == 42 .and. (.not. safer)) .and. (l_str .and. comm%idnode == 0)) Then
-                  Write (message, '(a,2i10,2(f7.2,a))') &
+                  Write (message, '(a,2(i0," "),2(f7.2,a))') &
                     'possible distance violation: ', i, j, r, ' > ', t, ' Angstroms'
                   Call info(message, .true.)
 
@@ -1326,15 +1335,15 @@ Contains
             End Do
 
             If ((mxiter == 42 .and. (.not. safem)) .and. (l_str .and. comm%idnode == 0)) Then
-              Write (messages(1), '(a,3i10)') &
-                'angle unit #(local) -> m. type # -> molecule #:', iang, itmols, imols
+              Write (messages(1), '(a,3(i0," "))') &
+                'angle unit #(local) -> m. type # -> molecule #: ', iang, itmols, imols
               Write (messages(2), '(a)') &
                 'member :: global index :: x ::      y ::      z'
               Call info(messages, 2, .true.)
 
               Do i = 1, 3
                 iatm = angle%lst(i, nangle) - indatm1
-                Write (message, '(2i10,3f10.1)') i, nattot + iatm, xm(iatm), ym(iatm), zm(iatm)
+                Write (message, '(2(i0," "),3f10.1)') i, nattot + iatm, xm(iatm), ym(iatm), zm(iatm)
                 Call info(message, .true.)
               End Do
             End If
@@ -1380,7 +1389,7 @@ Contains
                   safer = .false.
                 End If
                 If ((mxiter == 42 .and. (.not. safer)) .and. (l_str .and. comm%idnode == 0)) Then
-                  Write (message, '(a,2i10,2(f7.2,a))') &
+                  Write (message, '(a,2(i0," "),2(f7.2,a))') &
                     'possible distance violation: ', i, j, r, ' > ', t, ' Angstroms'
                   Call info(message, .true.)
 
@@ -1395,15 +1404,15 @@ Contains
             End Do
 
             If ((mxiter == 42 .and. (.not. safem)) .and. (l_str .and. comm%idnode == 0)) Then
-              Write (messages(1), '(a,3i10)') &
-                'dihedral unit #(local) -> m. type # -> molecule #:', idih, itmols, imols
+              Write (messages(1), '(a,3(i0," "))') &
+                'dihedral unit #(local) -> m. type # -> molecule #: ', idih, itmols, imols
               Write (messages(2), '(a)') &
                 'member :: global index :: x ::      y ::      z'
               Call info(messages, 2, .true.)
 
               Do i = 1, 4
                 iatm = dihedral%lst(i, ndihed) - indatm1
-                Write (message, '(2i10,3f10.1)') i, nattot + iatm, xm(iatm), ym(iatm), zm(iatm)
+                Write (message, '(2(i0," "),3f10.1)') i, nattot + iatm, xm(iatm), ym(iatm), zm(iatm)
                 Call info(message, .true.)
               End Do
             End If
@@ -1449,7 +1458,7 @@ Contains
                   safer = .false.
                 End If
                 If ((mxiter == 42 .and. (.not. safer)) .and. (l_str .and. comm%idnode == 0)) Then
-                  Write (message, '(a,2i10,2(f7.2,a))') &
+                  Write (message, '(a,2(i0," "),2(f7.2,a))') &
                     'possible distance violation: ', i, j, r, ' > ', t, ' Angstroms'
                   Call info(message, .true.)
 
@@ -1465,15 +1474,15 @@ Contains
             End Do
 
             If ((mxiter == 42 .and. (.not. safem)) .and. (l_str .and. comm%idnode == 0)) Then
-              Write (messages(1), '(a,3i10)') &
-                'inversion unit #(local) -> m. type # -> molecule #:', iinv, itmols, imols
+              Write (messages(1), '(a,3(i0," "))') &
+                'inversion unit #(local) -> m. type # -> molecule #: ', iinv, itmols, imols
               Write (messages(2), '(a)') &
                 'member :: global index :: x ::      y ::      z'
               Call info(messages, 2, .true.)
 
               Do i = 1, 4
                 iatm = inversion%lst(i, ninver) - indatm1
-                Write (message, '(2i10,3f10.1)') i, nattot + iatm, xm(iatm), ym(iatm), zm(iatm)
+                Write (message, '(2(i0," "),3f10.1)') i, nattot + iatm, xm(iatm), ym(iatm), zm(iatm)
                 Call info(message, .true.)
               End Do
             End If
@@ -1543,7 +1552,7 @@ Contains
 
                   Else
 
-                    Write (record2, Fmt='(a8,i10,a54,a1)') config%atmnam(loc_ind), index, Repeat(' ', 54), lf
+                    Write (record2, Fmt='(a8,(" ",i0," "),a54,a1)') config%atmnam(loc_ind), index, Repeat(' ', 54), lf
                     Write (record3, Fmt='(3g20.12,a12,a1)') x, y, z, Repeat(' ', 12), lf
 
                     If (io_write == IO_WRITE_UNSORTED_DIRECT .or. &
@@ -1681,7 +1690,7 @@ Contains
     x = 0.5_wp * Min(fx * celprp(7), fy * celprp(8), fz * celprp(9))
 
     Write (messages(1), '(3a)') '*** ', fcfg(1:Len_trim(fcfg)), ' expansion completed !'
-    Write (messages(2), '(a,i10,a)') '*** Size: ', nall * config%megatm, ' particles'
+    Write (messages(2), '(a,(i0," "),a)') '*** Size: ', nall * config%megatm, ' particles'
     Write (messages(3), '(a,f10.2,a)') '*** Maximum radius of cutoff: ', x, ' Angstroms'
     Call info(messages, 3, .true.)
 
@@ -1726,7 +1735,7 @@ Contains
           Call get_word(record, word)
           index = Nint(word_2_real(word))
           Call get_word(record1, word)
-          Write (Unit=files(conftag)%unit_no, Fmt='(a,i10)') word(1:Len_trim(word)), nall * index
+          Write (Unit=files(conftag)%unit_no, Fmt='(a,(" ", i0," "))') word(1:Len_trim(word)), nall * index
 
           ! close force field file
 
@@ -1783,7 +1792,7 @@ Contains
             Call get_word(record, word)
             index = Nint(word_2_real(word))
             Call get_word(record1, word)
-            Write (Unit=files(conftag)%unit_no, Fmt='(a,i10)') word(1:Len_trim(word)), nall * index
+            Write (Unit=files(conftag)%unit_no, Fmt='(a,(" ",i0," "))') word(1:Len_trim(word)), nall * index
 
             ! close mpoles file
 

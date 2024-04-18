@@ -20,12 +20,12 @@ Module parse
   Use errors_warnings,               Only: error,&
                                            warning
   Use, Intrinsic :: iso_fortran_env, Only: IOSTAT_END
-  Use kinds,                         Only: wp,STR_LEN
+  Use kinds,                         Only: wp,STR_LEN, li
 
   Implicit None
 
   Public :: tabs_2_blanks, nls_2_blanks, strip_blanks, get_word, &
-            clean_string, lower_case, get_line, word_2_real
+            clean_string, lower_case, get_line, word_2_real, word_2_integer
 
 Contains
 
@@ -547,6 +547,20 @@ Contains
 
     Close (u)
   End Function number_of_lines
+
+  Function word_2_integer(word)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 function for extracting integers (64 bit) from a string
+    !
+    ! author    - h.l.d February 2024
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Character(Len=*), Intent(In   ) :: word
+    Integer(Kind=li)                :: word_2_integer
+
+    Read (word, '(i19)') word_2_integer
+  End Function word_2_integer
 
   Function word_2_real(word, def, report)
 

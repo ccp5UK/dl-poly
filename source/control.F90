@@ -17,7 +17,8 @@ Module control
   Use comms,                    Only: comms_type, root_id
   Use configuration,            Only: IMCON_NOPBC,&
                                       IMCON_SLAB,&
-                                      configuration_type
+                                      configuration_type,&
+                                      max_megatm
   Use constants,                Only: pi,&
                                       tenunt,&
                                       zero_plus,&
@@ -77,8 +78,9 @@ Module control
                                       IO_WRITE_UNSORTED_MASTER, IO_WRITE_UNSORTED_MPIIO, &
                                       io_get_parameters, io_set_parameters, io_type
   Use kim,                      Only: kim_type
-  Use kinds,                    Only: STR_LEN,&
-                                      wp
+  Use kinds,                    Only: STR_LEN, &
+                                      wp, &
+                                      li
   Use metal,                    Only: metal_type
   Use minimise,                 Only: MIN_DISTANCE,&
                                       MIN_ENERGY,&
@@ -2095,6 +2097,7 @@ Contains
     Real(Kind=wp)               :: rtmp
     Real(Kind=wp), Allocatable  :: vtmp(:)
     Type(control_parameter)     :: param
+    Integer(Kind=li)            :: expand_megatm, nall
 
     Call params%retrieve('title', option)
     config%sysname = option(1:72)
@@ -2340,6 +2343,13 @@ Contains
       config%nx = Nint(vtmp(1))
       config%ny = Nint(vtmp(2))
       config%nz = Nint(vtmp(3))
+      nall = config%nx * config%ny * config%nz
+      expand_megatm = config%scanned_megatm * nall
+      If (expand_megatm > max_megatm) Then
+        Write (messages(1), '(a, i0, a, i0)') "Atoms in config ", config%scanned_megatm, &
+          ", requested expanded config ", expand_megatm
+        Call error(1091, messages(1))
+      End If
     End If
 
     Call params%retrieve('replay', flow%simulation)

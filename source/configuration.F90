@@ -71,7 +71,8 @@ Module configuration
                              get_word,&
                              strip_blanks,&
                              tabs_2_blanks,&
-                             word_2_real
+                             word_2_real,&
+                             word_2_integer
   Use particle,        Only: corePart
   Use site,            Only: site_type
   Use thermostat,      Only: CONSTRAINT_NONE,&
@@ -85,6 +86,7 @@ Module configuration
   Private
 
   Integer, Public, Parameter ::  len_atmnam = 8
+  Integer(Kind=li), Public, Parameter :: max_megatm = 2147483647
 
   Type, Public :: configuration_type
 
@@ -123,6 +125,7 @@ Module configuration
                                      lvom = .true. ! this is confusing and needless complicated
     Integer(Kind=wi), Public      :: mxtana, mxgana, mxbfss, mxbuff
     Integer(Kind=wi), Public      :: mxlshp, mxatms, mxatdm ! mxatms = most ever atoms possible
+    Integer(Kind=li), Public      :: scanned_megatm = 0 ! megatm according to config header
     ! general flags
     Logical                       :: l_ind = .false., l_exp = .false.
     Integer                       :: levcfg, nx = 1, ny = 1, nz = 1, &
@@ -132,7 +135,7 @@ Module configuration
     ! vdws%elrc,vdws%vlrc - vdw energy and virial are scalars and in vdw
     Real(Kind=wp)                 :: dvar = 0.0_wp, fmax, width
     Type(kpoints_type)            :: k
-
+    
   Contains
 
     Private
@@ -2059,6 +2062,7 @@ Contains
     ! author    - i.t.todorov february 2014
     ! contrib   - i.j.bush april 2010
     ! contrib   - a.m.elena february 2017
+    ! contrib   - h.l.devereux february 2024
     !
     ! refactoring:
     !           - a.m.elena march-october 2018
@@ -2220,6 +2224,23 @@ Contains
 
     If (config%imcon < 0 .or. config%imcon > 7) Call error(514)
 
+    ! get expected megatm
+
+    Call get_word(record, word)
+    config%scanned_megatm = word_2_integer(word)
+   
+    If (config%scanned_megatm > max_megatm) Then 
+      Write(message, '(a, i0)') "scanned atoms: ", config%scanned_megatm
+      Call error(1092, message)
+    End If
+
+    If (config%scanned_megatm * config%nx * config%ny * config%nz > max_megatm) Then
+      Write(message, '(7(a, i0))') "Expanded config will be bigger than the limit, CONFIG atoms: ", &
+        config%scanned_megatm, " expansion: ", config%scanned_megatm, " * ", config%nx, " * ", &
+        config%ny, " * ", config%nz, " = ", config%scanned_megatm * config%nx * config%ny * config%nz, &
+        "limit: ", max_megatm
+      Call error(1091, message)
+    End If
     ! specify MD cell (not defined for imcon=0)
 
     If (config%imcon /= 0) Then
@@ -2548,7 +2569,7 @@ Contains
           chbat(k, jj) = record(k:k)
         End Do
 
-        Write (record, Fmt='(4i10,1p,2e16.7,a1)') levcfg, config%imcon, config%megatm, step, tstep, time, lf
+        Write (record, Fmt='(4(i0," "),1p,2e16.7,a1)') levcfg, config%imcon, config%megatm, step, tstep, time, lf
         jj = jj + 1
         Do k = 1, recsz
           chbat(k, jj) = record(k:k)
@@ -2592,7 +2613,7 @@ Contains
       rec_mpi_io = Int(jj, offset_kind) + Int(n_atm(0), offset_kind) * Int(levcfg + 2, offset_kind)
       jj = 0
       Do i = 1, config%natms
-        Write (record, Fmt='(a8,i10,a54,a1)') config%atmnam(i), config%ltg(i), Repeat(' ', 54), lf
+        Write (record, Fmt='(a8,(i0," "),a54,a1)') config%atmnam(i), config%ltg(i), Repeat(' ', 54), lf
         jj = jj + 1
         Do k = 1, recsz
           chbat(k, jj) = record(k:k)
@@ -2664,7 +2685,7 @@ Contains
           chbat(k, jj) = record(k:k)
         End Do
 
-        Write (record, Fmt='(4i10,1p,2e16.7,a1)') levcfg, config%imcon, config%megatm, step, tstep, time, lf
+        Write (record, Fmt='(4(i0," "),1p,2e16.7,a1)') levcfg, config%imcon, config%megatm, step, tstep, time, lf
         jj = jj + 1
         Do k = 1, recsz
           chbat(k, jj) = record(k:k)
@@ -2741,7 +2762,7 @@ Contains
 
           jj = 0
           Do i = 1, jatms
-            Write (record, Fmt='(a8,i10,a54,a1)') config%atmnam(i), iwrk(i), Repeat(' ', 54), lf
+            Write (record, Fmt='(a8,(i0," "),a54,a1)') config%atmnam(i), iwrk(i), Repeat(' ', 54), lf
             jj = jj + 1
             Do k = 1, recsz
               chbat(k, jj) = record(k:k)
@@ -2837,7 +2858,7 @@ Contains
         Call io_write_record(io, fh, Int(jj, offset_kind), record)
         jj = jj + 1
 
-        Write (record, Fmt='(4i10,1p,2e16.7,a1)') levcfg, config%imcon, config%megatm, step, tstep, time, lf
+        Write (record, Fmt='(4(i0," "),1p,2e16.7,a1)') levcfg, config%imcon, config%megatm, step, tstep, time, lf
         Call io_write_record(io, fh, Int(jj, offset_kind), record)
         jj = jj + 1
 
@@ -2924,7 +2945,8 @@ Contains
         rec = rec + Int(1, li)
         Write (Unit=cfile%unit_no, Fmt='(a72,a1)', Rec=rec) config%cfgname(1:72), lf
         rec = rec + Int(1, li)
-        Write (Unit=cfile%unit_no, Fmt='(4i10,1p,2e16.7,a1)', Rec=rec) levcfg, config%imcon, config%megatm, step, tstep, time, lf
+        Write (Unit=cfile%unit_no, Fmt='(4(i0," "),1p,2e16.7,a1)', Rec=rec) &
+          levcfg, config%imcon, config%megatm, step, tstep, time, lf
 
         ! Write optional cell information (if present)
 
@@ -2979,7 +3001,7 @@ Contains
 
           Do i = 1, jatms
             rec1 = rec + Int(iwrk(i) - 1, li) * Int(levcfg + 2) + Int(1, li)
-            Write (Unit=cfile%unit_no, Fmt='(a8,i10,a54,a1)', Rec=rec1) chbuf(i), iwrk(i), Repeat(' ', 54), lf
+            Write (Unit=cfile%unit_no, Fmt='(a8,(i0," "),a54,a1)', Rec=rec1) chbuf(i), iwrk(i), Repeat(' ', 54), lf
             rec1 = rec1 + Int(1, li)
             Write (Unit=cfile%unit_no, Fmt='(3g20.10,a12,a1)', Rec=rec1) &
               & temp_parts(i)%xxx, temp_parts(i)%yyy, temp_parts(i)%zzz, Repeat(' ', 12), lf
