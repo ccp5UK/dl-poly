@@ -26,7 +26,7 @@ Module control_parameters
 
   !> Data types enumeration
   Integer, Parameter, Public :: DATA_NULL = 0, DATA_INT = 1, DATA_FLOAT = 2, DATA_STRING = 3, &
-       DATA_BOOL = 4, DATA_OPTION = 5, DATA_VECTOR = 6, STRING_VECTOR = 7
+       DATA_BOOL = 4, DATA_OPTION = 5, DATA_FLOAT_VECTOR = 6, DATA_INT_VECTOR = 7, DATA_STRING_VECTOR = 8
 
 
   Type, Public, Extends(hash_table) :: parameters_hash_table
@@ -61,10 +61,12 @@ Module control_parameters
     Character(Len=MAX_KEY) :: internal_units = ""
     !> Information to be printed with help
     Character(Len=STR_LEN) :: description = ""
-    !> Control parameter data type (int, float, VECTOR, stringVECTOR, string, bool, option)
+    !> Control parameter data type (int, float, string, bool, option, vectors of)
     Integer :: data_type = DATA_NULL
-    !> length, 1 for scalars, possibly >1 for data_VECTOR and string_VECTOR
-    Integer :: length = 0
+    !> length, 1 for scalars, possibly >1 for vector types
+    Integer :: length = 1
+    !> if length can be variable for vector types
+    Logical :: variable_length = .false.
     !> Is value set
     Logical :: set = .false.
   Contains
@@ -87,6 +89,13 @@ Module control_parameters
   End Interface write_param
 
 Contains
+
+  Elemental Logical Function is_vector(param)
+      Class(control_parameter), Intent(In   ) :: param
+      is_vector = param%data_type == DATA_FLOAT_VECTOR  .or. &
+                  param%data_type == DATA_STRING_VECTOR .or. &
+                  param%data_type == DATA_INT_VECTOR
+    End Function
 
   Subroutine control_help_single(params, key)
     Class(parameters_hash_table), Intent(In   ) :: params
@@ -121,13 +130,14 @@ Contains
     Character(Len=10), Intent(In) :: mode
     Type(control_parameter) :: param
     Character(Len=MAX_KEY), Dimension(:), Allocatable :: keys
-    Character(Len=*), Dimension(0:7), Parameter :: data_name = &
-         [Character(Len=13) :: 'NULL', 'INT', 'FLOAT', 'STRING', &
-         'BOOL', 'OPTION', 'VECTOR', 'STRING_VECTOR']
-    Character(Len=*), Dimension(0:7), Parameter :: python_data_name = &
+    Character(Len=*), Dimension(0:8), Parameter :: data_name = &
+         [Character(Len=18) :: 'NULL', 'INT', 'FLOAT', 'STRING', &
+         'BOOL', 'OPTION', 'DATA_FLOAT_VECTOR', 'DATA_INT_VECTOR', 'DATA_STRING_VECTOR']
+    Character(Len=*), Dimension(0:8), Parameter :: python_data_name = &
          [Character(Len=10) :: 'None', 'int', 'float', 'str', 'bool', &
-         'str', '(float,)*N', '(Char,)*N']
-    Integer :: i
+         'str', 'float', 'int', 'str']
+    Integer          :: i
+    Character(Len=8) :: vector_closing
 
     Call params%get_keys(keys)
 
@@ -182,11 +192,27 @@ Contains
              Trim(param%key), Trim(data_name(param%data_type)), &
              Trim(param%description), Trim(param%val), Trim(param%units)
       Case ('python')
-        If (Len_trim(param%units) > 0) Then
-          Write (ifile, '("''",a, "'':",1X,"(",a,",",1X,a,"),")') Trim(param%key), Trim(python_data_name(param%data_type)), &
-               Trim(python_data_name(DATA_STRING))
-        Else
-          Write (ifile, '("''",a,"'':",1X,a,",")') Trim(param%key), Trim(python_data_name(param%data_type))
+        If (is_vector(param)) Then
+          If (len_trim(param%units) > 0) Then
+            vector_closing = ", str)"
+          Else
+            vector_closing = ")"
+          End If
+          If (param%variable_length) Then
+            Write(ifile, '("""",a, """:", 1X, a)') Trim(param%key), &
+              "("//Trim(python_data_name(param%data_type))//", ..."//vector_closing
+          Else
+            Write(ifile, '("""",a, """:", 1X, a)') Trim(param%key), &
+              "("//Repeat(Trim(python_data_name(param%data_type))//", ",param%length-1)//&
+              Trim(python_data_name(param%data_type))//vector_closing
+          End If
+        Else 
+          If (Len_trim(param%units) > 0) Then
+            Write (ifile, '("""",a, """:",1X,"(",a,",",1X,a,"),")') Trim(param%key), Trim(python_data_name(param%data_type)), &
+                Trim(python_data_name(DATA_STRING))
+          Else
+            Write (ifile, '("""",a,""":",1X,a,",")') Trim(param%key), Trim(python_data_name(param%data_type))
+          End If
         End If
       Case ('test')
         Select Case (param%data_type)
@@ -204,9 +230,11 @@ Contains
           Else
             param%val = "on"
           End If
-        Case (DATA_VECTOR)
+        Case (DATA_FLOAT_VECTOR)
           param%val = "[ 6.666 6.666 6.666 ...]"
-        Case (STRING_VECTOR)
+        Case (DATA_INT_VECTOR)
+          param%val = "[ 6 6 6 ...]"
+        Case (DATA_STRING_VECTOR)
           param%val = "[ "" "" "" ... ]"
         End Select
         Write (ifile, '(3(a,1X))') Trim(param%key), Trim(param%val), Trim(param%units)
@@ -320,7 +348,7 @@ Contains
         Write (unit, '(3(A,1X), "-> ", i0, 1X, A)',iostat=iostat, iomsg=iomsg) Trim(param%key), Trim(param%val), &
         & Trim(param%units), itmp, Trim(param%internal_units)
 
-      Case (DATA_VECTOR)
+      Case (DATA_FLOAT_VECTOR)
         If (Allocated(rtmpN)) Then 
           Deallocate(rtmpN)
           Allocate(rtmpN(1:param%length))

@@ -29,8 +29,9 @@ Module control
                                       DATA_INT,&
                                       DATA_OPTION,&
                                       DATA_STRING,&
-                                      DATA_VECTOR,&
-                                      STRING_VECTOR,&
+                                      DATA_FLOAT_VECTOR,&
+                                      DATA_INT_VECTOR,&
+                                      DATA_STRING_VECTOR,&
                                       control_parameter,&
                                       parameters_hash_table
   Use coord,                    Only: coord_type
@@ -223,7 +224,7 @@ Contains
     Type(flow_type),             Intent(InOut) :: flow
 
     Integer                     :: print_level
-    Real(kind=wp), Allocatable  :: vtmp(:)
+    Integer, Allocatable        :: vtmp(:)
 
     Call params%retrieve('print_level', print_level)
     Call set_print_level(print_level)
@@ -247,7 +248,7 @@ Contains
 
     If (params%is_set('random_seed')) Then
       Call params%retrieve('random_seed', vtmp,3)
-      Call seed%init(Nint(vtmp(1:3)))
+      Call seed%init(vtmp(1:3))
     End If
 
     Call params%retrieve('dftb_test', devel%test_dftb_library)
@@ -2096,6 +2097,7 @@ Contains
     Logical                     :: ltmp, stat
     Real(Kind=wp)               :: rtmp
     Real(Kind=wp), Allocatable  :: vtmp(:)
+    Integer,       Allocatable  :: ivtmp(:)
     Type(control_parameter)     :: param
     Integer(Kind=li)            :: expand_megatm, nall
 
@@ -2337,12 +2339,13 @@ Contains
 
     ! --------------- EXPANSION ------------------------------------------------
 
-    Call params%retrieve('nfold', vtmp, 3)
-    config%l_exp = Any(Nint(vtmp(1:3)) > 1)
+    Call params%retrieve('nfold', ivtmp, 3)
+    config%l_exp = Any(ivtmp(1:3) > 1)
     If (config%l_exp) Then
-      config%nx = Nint(vtmp(1))
-      config%ny = Nint(vtmp(2))
-      config%nz = Nint(vtmp(3))
+      config%nx = ivtmp(1)
+      config%ny = ivtmp(2)
+      config%nz = ivtmp(3)
+
       nall = config%nx * config%ny * config%nz
       expand_megatm = config%scanned_megatm * nall
       If (expand_megatm > max_megatm) Then
@@ -2390,7 +2393,8 @@ Contains
                      name="Random seed", &
                      val="1 2 3", &
                      description="Set random seed", &
-                     data_type=DATA_VECTOR))
+                     data_type=DATA_INT_VECTOR, &
+                     length=3))
 
       Call table%set("density_variance", control_parameter( &
                      key="density_variance", &
@@ -2418,7 +2422,7 @@ Contains
         data_type=DATA_FLOAT))
 
       Call table%set('evb_num_ff', control_parameter( &
-        key="number of evb forcedields", &
+        key="evb_num_ff", &
         name="number of Empirical valence forcefields ", &
         val="1", &
         description="Set number of forcefields to be used in EVB", &
@@ -2664,7 +2668,8 @@ Contains
                          units="", &
                          internal_units="", &
                          description="Enable calculation of correlations", &
-                         data_type=STRING_VECTOR))
+                         data_type=DATA_STRING_VECTOR, &
+                         variable_length=.true.))
 
           Call table%set("correlation_blocks", control_parameter( &
                          key="correlation_blocks", &
@@ -2673,7 +2678,8 @@ Contains
                          units="", &
                          internal_units="", &
                          description="Correlation blocks", &
-                         data_type=DATA_VECTOR))
+                         data_type=DATA_INT_VECTOR, &
+                         variable_length=.true.))
 
           Call table%set("correlation_block_points", control_parameter( &
                          key="correlation_block_points", &
@@ -2682,7 +2688,8 @@ Contains
                          units="", &
                          internal_units="", &
                          description="Correlation blocks", &
-                         data_type=DATA_VECTOR))
+                         data_type=DATA_INT_VECTOR, &
+                         variable_length=.true.))
 
           Call table%set("correlation_window", control_parameter( &
                          key="correlation_window", &
@@ -2691,7 +2698,8 @@ Contains
                          units="", &
                          internal_units="", &
                          description="correlation window averaging", &
-                         data_type=DATA_VECTOR))
+                         data_type=DATA_INT_VECTOR, &
+                         variable_length=.true.))
 
           Call table%set("correlation_dump_frequency", control_parameter( &
                          key="correlation_dump_frequency", &
@@ -3637,7 +3645,8 @@ Contains
                        units="katm", &
                        internal_units="internal_p", &
                        description="Set the target pressure tensor for NsT calculations", &
-                       data_type=DATA_VECTOR))
+                       data_type=DATA_FLOAT_VECTOR, &
+                       length=6))
 
         Call table%set("pressure_hydrostatic", control_parameter( &
                        key="pressure_hydrostatic", &
@@ -3655,7 +3664,8 @@ Contains
                        units="katm", &
                        internal_units="internal_p", &
                        description="Set the target pressure as x, y, z perpendicular to cell faces for NPT calculations", &
-                       data_type=DATA_VECTOR))
+                       data_type=DATA_FLOAT_VECTOR, &
+                       length=3))
 
         Call table%set("temperature", control_parameter( &
                        key="temperature", &
@@ -3728,7 +3738,8 @@ Contains
                        units="", &
                        internal_units="", &
                        description="Direction vector for impact simulations", &
-                       data_type=DATA_VECTOR))
+                       data_type=DATA_FLOAT_VECTOR, &
+                       length=3))
       End block impact
 
       ttm:block
@@ -3752,7 +3763,8 @@ Contains
                        name="Number of TTM electronic cells", &
                        val="50 50 50", &
                        description="Set number of coarse-grained electronic temperature cells (CET)", &
-                       data_type=DATA_VECTOR))
+                       data_type=DATA_FLOAT_VECTOR, &
+                       length = 3))
 
         Call table%set("ttm_metal", control_parameter( &
                        key="ttm_metal", &
@@ -4210,7 +4222,8 @@ Contains
                      name="N Fold", &
                      val="1 1 1", &
                      description="Expand cell before running", &
-                     data_type=DATA_VECTOR))
+                     data_type=DATA_INT_VECTOR, &
+                     length=3))
 
     End block initialisation_parameters
 
@@ -4295,11 +4308,12 @@ Contains
           Call table%set("spme_kvec", control_parameter( &
             key="spme_kvec", &
             name="SPME k-vector samples", &
-            val="[0 0 0]", &
+            val="0 0 0", &
             units="", &
             internal_units="", &
             description="Set number of k-space samples for SPME calculations", &
-            data_type=DATA_VECTOR))
+            data_type=DATA_INT_VECTOR, &
+            length=3))
 
           Call table%set("spme_kvec_spacing", control_parameter( &
             key="spme_kvec_spacing", &
@@ -4569,7 +4583,7 @@ Contains
       param%val = val
       Call get_word(input, unit)
       param%units = unit
-    Case (DATA_VECTOR, STRING_VECTOR)
+    Case (DATA_FLOAT_VECTOR, DATA_INT_VECTOR, DATA_STRING_VECTOR)
       ! Handle Multiline
       i = Index(input, '&')
       tmp = ''
@@ -4592,7 +4606,7 @@ Contains
       Do While (tmp /= '')
         Call get_word(tmp, val)
         ! Check all valid reals
-        If (param%data_type /= STRING_VECTOR) Then
+        If (param%data_type /= DATA_STRING_VECTOR) Then
           test_real = word_2_real(val)
         End If
         param%val = Trim(param%val)//' '//val
