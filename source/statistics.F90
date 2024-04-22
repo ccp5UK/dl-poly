@@ -226,9 +226,6 @@ Module statistics
     !> Whether this step is a step to collect per-particle data
     Logical :: collect_pp = .false.
 
-    !> Whether heat_flux is correlated
-    Logical :: correlating_heat_flux = .false.
-
   Contains
     Private
 
@@ -586,15 +583,14 @@ Contains
   
   End Subroutine allocate_correlator
 
-  Subroutine correlation_result(stats, comm, files, config, sites, nstep, time)
+  Subroutine correlation_result(stats, comm, files, config, sites, dt)
     
     Class(stats_type),        Intent(InOut)       :: stats
     Type(comms_type),         Intent(InOut)       :: comm
     Type(file_type),          Intent(InOut)       :: files(:)
     Type(configuration_type), Intent(In   )       :: config
     Type(site_type),          Intent(In   )       :: sites
-    Integer,                  Intent(In   )       :: nstep
-    Real(Kind=wp),            Intent(In   )       :: time
+    Real(Kind=wp),            Intent(In   )       :: dt
     Integer                                       :: i, tau, j, k, flat_dim, l, r, &
                                                      file_unit, atom
     Real(Kind=wp), Allocatable                    :: cor_accumulator(:,:,:,:), correlation(:,:,:)
@@ -606,7 +602,7 @@ Contains
                                                      component_left, component_right
     Character(Len=2), Dimension(1:3)              :: components_vector
     Character(Len=2), Dimension(1:9)              :: components_matrix
-    Real(Kind=wp)                                 :: t, dt, visc, conv
+    Real(Kind=wp)                                 :: t, visc, conv
     Real(Kind=wp),    Dimension(1:10)             :: therm_cond
     Integer                                       :: points, window, blocks, &
                                                      dim_left, dim_right, &
@@ -619,8 +615,6 @@ Contains
     If (stats%calculate_correlations .eqv. .false.) Then 
       Return 
     End If
-
-    dt = time / nstep
 
     components_vector = (/ 'x', 'y', 'z' /)
     components_matrix = (/'xx', 'xy', 'xz', 'yx', 'yy', 'yz', 'zx', 'zy', 'zz'/)
@@ -719,7 +713,7 @@ Contains
             atom = stats%correlations(j)%correlation%atom
 
             correlation = 0.0
-            Call stats%correlations(j)%correlator%get_correlation(correlation, timesteps, time/nstep, points_cor)
+            Call stats%correlations(j)%correlator%get_correlation(correlation, timesteps, dt, points_cor)
 
             cor_accumulator(config%ltype(atom),:,:,:) = &
               cor_accumulator(config%ltype(atom),:,:,:) + correlation
@@ -840,7 +834,7 @@ Contains
             Call error(0,"correlation not found for correlation result")
           End If
 
-          Call stats%correlations(k)%correlator%get_correlation(correlation, timesteps, time/nstep, points_cor)
+          Call stats%correlations(k)%correlator%get_correlation(correlation, timesteps, dt, points_cor)
 
           points_cor = points_cor - 1
 
@@ -855,7 +849,8 @@ Contains
                   window
 
           If (char_left == stress_name(observable_stress()) .and. &
-              char_right == stress_name(observable_stress())) Then
+              char_right == stress_name(observable_stress()) .and. &
+              points_cor > 1) Then
 
             visc = calculate_viscosity(stats, correlation(1:points_cor, :, :), dt)
 
@@ -873,7 +868,8 @@ Contains
             correlation = correlation * prsunt * prsunt
 
           Else If(char_left == heat_flux_name(observable_heat_flux()) .and. &
-                  char_right == heat_flux_name(observable_heat_flux())) Then
+                  char_right == heat_flux_name(observable_heat_flux()) .and. &
+                  points_cor > 1) Then
 
                   therm_cond = calculate_thermal_conductivity(stats, correlation(1:points_cor, :, :), dt, units)
 
@@ -1350,9 +1346,9 @@ Contains
 
       End If
 
-      If (stats%cor_dump_freq > 0) Then
+      If (stats%cor_dump_freq > 0 .and. nstep >=stats%intsta) Then
         If (Mod(nstep, stats%cor_dump_freq) == 0) Then
-          Call correlation_result(stats, comm, files, config, sites, nstep, time)
+          Call correlation_result(stats, comm, files, config, sites, thermo%tstep)
         End If
       End If 
     End If
@@ -2602,7 +2598,7 @@ Contains
     End If
 
     If (stats%calculate_correlations) Then
-      Call correlation_result(stats,comm,files,config,sites, nstep, time)
+      Call correlation_result(stats,comm,files,config,sites, thermo%tstep)
     End If
     ! print final time check
 

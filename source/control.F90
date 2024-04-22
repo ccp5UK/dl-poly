@@ -1882,7 +1882,6 @@ Contains
           stats%unique_correlations(i)%B%id() == h%id()) Then
 
        stats%require_pp = .true.
-       stats%correlating_heat_flux = .true.
 
       End If
 

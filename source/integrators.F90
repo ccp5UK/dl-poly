@@ -97,6 +97,10 @@ Contains
         Real(Kind=wp)                                     :: v, dt
         Integer                                           :: k
 
+        If (Size(t) < 2) Then 
+            Call error(0, "Too few points for Trapezium rule")
+        End If
+
         v = 0.0_wp
         Do k = 2, Size(t)
             dt = t(k) - t(k-1)
@@ -112,6 +116,10 @@ Contains
         Real                                            :: v, dt
         Integer                                         :: k
 
+        If (Size(t) < 2) Then 
+            Call error(0, "Too few points for Trapezium rule")
+        End If
+
         v = 0.0
         Do k = 2, Size(t)
             dt = t(k) - t(k-1)
@@ -126,6 +134,10 @@ Contains
         Real(Kind=wp),                  Intent(In   ) :: dt
         Real(Kind=wp)                                 :: v
         
+        If (Size(f) < 2) Then 
+            Call error(0, "Too few points for Trapezium rule")
+        End If
+
         v = 0.0_wp
         If (Size(f) == 2) Then
             v = dt * (f(1) + f(2))*0.5_wp
@@ -140,8 +152,12 @@ Contains
         Real(Kind=wp)                                 :: v, dt
         Integer                                       :: k
 
-        If (Size(f) /= Size(t)) Then
-            Call error(0, "unequal data sizes for integrator")
+        If (Size(f) /= Size(t)) Then 
+            Call error(0, "unequal data sizes for Trapezium rule")
+        End If
+
+        If (Size(t) < 2) Then 
+            Call error(0, "Too few points for Trapezium rule")
         End If
         
         v = 0.0_wp
@@ -160,6 +176,10 @@ Contains
         Real(Kind=wp)                                     :: v, dt
         Integer                                           :: k, n
 
+        If (Size(t) < 2) Then 
+            Call error(0, "Simpson's rule")
+        End If
+
         n = Size(t)
         dt = (t(Size(t))-t(1)) / Real(n, Kind=wp)
         v = 0.0_wp
@@ -177,7 +197,7 @@ Contains
             v = 1.0_wp/3.0_wp * v * dt
             If (Mod(Size(t),2 ) == 0) Then
                 ! uneven interval correction (3/8th rule)
-                n = Size(t)-1
+                n = Size(t)
                 v = v + (3.0_wp/8.0_wp) * dt * ( f(t(n-3)) + 3.0_wp*f(t(n-2)) + 3.0_wp*f(t(n-1)) + f(t(n)))
             End If 
         End If
@@ -189,6 +209,10 @@ Contains
         Real, Dimension(:),               Intent(In   ) :: t
         Real                                            :: v, dt
         Integer                                         :: k, n
+
+        If (Size(t) < 2) Then 
+            Call error(0, "Simpson's rule")
+        End If
 
         dt = (t(Size(t))-t(1)) / Real(Size(t))
         v = 0.0
@@ -206,7 +230,7 @@ Contains
             v = 1.0/3.0 * v * dt
             If (Mod(Size(t),2 ) == 0) Then
                 ! uneven interval correction (3/8th rule)
-                n = Size(t)-1
+                n = Size(t)
                 v = v + (3.0/8.0) * dt * ( f(t(n-3)) + 3.0*f(t(n-2)) + 3.0*f(t(n-1)) + f(t(n)))
             End If 
         End If
@@ -219,6 +243,10 @@ Contains
         Real(Kind=wp)                                  :: v
         Integer                                        :: k, n
         
+        If (Size(f) < 2) Then 
+            Call error(0, "Simpson's rule")
+        End If
+
         v = 0.0_wp
         If (Size(f) == 2) Then
             v = dt * (f(1) + f(2))*0.5_wp
@@ -235,7 +263,7 @@ Contains
 
             If (Mod(Size(f),2 ) == 0) Then
                 ! uneven interval correction (3/8th rule)
-                n = Size(f)-1
+                n = Size(f)
                 v = v + (3.0_wp/8.0_wp) * dt * ( f(n-3) + 3.0_wp*f(n-2) + 3.0_wp*f(n-1) + f(n))
             End If 
         End If
@@ -247,8 +275,12 @@ Contains
         Real(Kind=wp)                                 :: v, dt, h0, h1, a, b, c
         Integer                                       :: k, n
 
-        If (Size(f) /= Size(t)) Then
-            Call error(0, "unequal data sizes for integrator")
+        If (Size(f) /= Size(t)) Then 
+            Call error(0, "unequal data sizes for Simpsons rule")
+        End If
+
+        If (Size(t) < 2) Then 
+            Call error(0, "Simpson's rule")
         End If
 
         ! Shklov, N. (December 1960). 
