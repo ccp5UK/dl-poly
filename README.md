@@ -4,10 +4,10 @@ DL_POLY is a general purpose classical molecular dynamics (MD) simulation softwa
 Over the years has been transformed from a replicated memory code to a distributed memory one.
 It can be built in serial form or parallel form via MPI. See instructions below on how to build and contribute.
 
-* [Build instructions](./building.md)
+* [Build instructions](./building.rst)
 * [Build instructions for Archer2](https://ccp5.gitlab.io/dlpoly-setup/archer2.html)
-* [Coding style](./coding_style.md)
-* [Contribution workflow and the review process](./contributing.md)
+* [Coding style](./coding_style.rst)
+* [Contribution workflow and the review process](./contributing.rst)
 * [Documentation](https://ccp5.gitlab.io/dl-poly/)
 
 More info:
