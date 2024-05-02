@@ -36,9 +36,9 @@ Module statistics
                              error_dealloc,&
                              info,&
                              warning
-  Use filename,        Only: FILE_STATS, FILE_COR, &
+  Use filename,        Only: FILE_STATS, FILE_COR, FILE_HEATFLUX, &
                              file_type
-  Use flow_control,    Only: RESTART_KEY_OLD
+  Use flow_control,    Only: RESTART_KEY_OLD, flow_type
   Use io,              Only: &
                              io_allocation_error, io_base_comm_not_set, io_close, io_delete, &
                              io_finalize, io_get_parameters, io_history, io_init, io_open, &
@@ -235,13 +235,16 @@ Module statistics
     Procedure, Public :: init_correlator   => allocate_correlator
     Procedure, Public :: clean_connect     => deallocate_statistics_connect
     Procedure, Public :: update_stress
-    Procedure, Public, Pass :: allocate_per_particle_arrays
-    Procedure, Public, Pass :: deallocate_per_particle_arrays
+    Procedure, Public :: setup_pp_collection
+    Procedure, Public :: pp_result
     Procedure, Public :: correlator_deport
     Procedure, Public :: correlator_recieve
     Procedure, Public :: dump_correlations 
     Procedure, Public :: revive_correlations 
     Procedure, Public :: reindex_correlators
+
+    Procedure         :: allocate_per_particle_arrays
+    Procedure         :: deallocate_per_particle_arrays
     Final :: cleanup
   End Type
 
@@ -362,6 +365,79 @@ Contains
 
   End Subroutine allocate_statistics_arrays
 
+  Subroutine setup_pp_collection(stats, config, flow)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_5 subroutine to check if pp data is computed this step
+    !  if so also allocating pp_arrays and setting up switches for
+    !  force routines 
+    !
+    ! author    - h.l.devereux
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Class(stats_type),         Intent(InOut) :: stats
+    Type(configuration_type),  Intent(In   ) :: config
+    Type(flow_type),           Intent(In   ) :: flow
+
+    If (stats%intsta > 0) Then
+      ! If pp data is required, and to calc stats (per-particle data used) AND not equilibration
+      If (stats%require_pp .and. Mod(flow%step, stats%intsta) == 0 .and. flow%step >= flow%equil_steps) Then
+        stats%collect_pp = .true.
+#ifndef HALF_HALO
+        Call stats%allocate_per_particle_arrays(config%natms)
+#else /* HALF_HALO */
+        Call stats%allocate_per_particle_arrays(config%mxatms)
+#endif /* HALF_HALO */
+      End If
+    End If
+  End Subroutine setup_pp_collection
+
+  Subroutine pp_result(stats, config, comm, flow, files)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_5 subroutine to check if pp data was computed this step
+    !  if so resetting switches, and if io is passed writing on 
+    !  root process to io_file_heatflux
+    !
+    ! author    - h.l.devereux
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Class(stats_type),         Intent(InOut)           :: stats
+    Type(configuration_type),  Intent(In   )           :: config
+    Type(comms_type),          Intent(InOut)           :: comm
+    Type(flow_type),           Intent(In   )           :: flow
+    Type(file_type),           Intent(InOut), Optional :: files(:)
+
+    Logical :: write = .false.
+
+    If (Present(files)) Then 
+      write = .true.
+    End If
+
+    If (stats%collect_pp) Then
+      stats%heat_flux = calculate_heat_flux(stats, config, comm)
+
+      If (flow%heat_flux .and. comm%idnode == 0) Then
+        If (write) Then
+          If (flow%step == 0) Then
+            Open (Newunit=files(FILE_HEATFLUX)%unit_no, File=Trim(files(FILE_HEATFLUX)%filename),Status='replace')
+          Else
+            Open (Newunit=files(FILE_HEATFLUX)%unit_no, File=Trim(files(FILE_HEATFLUX)%filename), Position='append')
+          End If
+          Write (files(FILE_HEATFLUX)%unit_no, '(I8.1, 1X, 5(G19.12, 1X))') flow%step, stats%stptmp, config%volm, stats%heat_flux
+          Close (files(FILE_HEATFLUX)%unit_no)
+        End If
+      End If
+
+      If (flow%write_per_particle) Then
+        Call write_per_part_contribs(config, comm, stats%pp_energy, stats%pp_stress, flow%step)
+      End If
+
+      Call stats%deallocate_per_particle_arrays()
+      stats%collect_pp = .false.
+    End If
+  End Subroutine pp_result
+
   Subroutine allocate_per_particle_arrays(stats, natms)
     Class(stats_type), Intent(InOut) :: stats
     Integer,           Intent(In   ) :: natms
@@ -380,7 +456,6 @@ Contains
 
     stats%pp_energy = 0.0_wp
     stats%pp_stress = 0.0_wp
-    stats%collect_pp = .true.
 
   End Subroutine allocate_per_particle_arrays
 
@@ -393,8 +468,6 @@ Contains
     If (fail > 0) Call error_dealloc("stats%pp_energy", "statistics")
     Deallocate (stats%pp_stress, stat=fail)
     If (fail > 0) Call error_dealloc("stats%pp_stress", "statistics")
-
-    stats%collect_pp = .false.
 
   End Subroutine deallocate_per_particle_arrays
 

@@ -59,8 +59,9 @@ Module control
                                       FILE_MSD, FILE_OUTPUT, FILE_RDF, FILE_REVCON, FILE_REVIVE, &
                                       FILE_REVOLD, FILE_STATS, FILE_TABANG, FILE_TABBND, &
                                       FILE_TABDIH, FILE_TABEAM, FILE_TABINV, FILE_TABVDW, FILE_COR, &
-    FILE_FIELD_2, FILE_FIELD_3, FILE_SETEVB,FILE_POPEVB, FILE_CONFIG_2,FILE_CONFIG_3,FILE_REVCON_2,FILE_REVCON_3,&
-    file_type
+                                      FILE_FIELD_2, FILE_FIELD_3, FILE_SETEVB,FILE_POPEVB, &
+                                      FILE_CONFIG_2,FILE_CONFIG_3,FILE_REVCON_2,FILE_REVCON_3,&
+                                      FILE_HEATFLUX, file_type
   Use flow_control,             Only: DFTB,&
     RESTART_KEY_CLEAN,&
     RESTART_KEY_NOSCALE,&
@@ -521,6 +522,8 @@ Contains
     files(FILE_FIELD_3)%filename = curr_option
     Call params%retrieve('io_file_statis', curr_option)
     files(FILE_STATS)%filename = curr_option
+    Call params%retrieve('io_file_heatflux', curr_option)
+    files(FILE_HEATFLUX)%filename = curr_option
     Call params%retrieve('io_file_history', curr_option)
     files(FILE_HISTORY)%filename = curr_option
     Call params%retrieve('io_file_historf', curr_option)
@@ -3256,31 +3259,38 @@ Contains
                        data_type=DATA_STRING))
 
         Call table%set("io_file_field", control_parameter( &
-          key="io_file_field", &
-          name="Field filepath", &
-          val="FIELD", &
-          description="Set input field filepath", &
-          data_type=DATA_STRING))
+                       key="io_file_field", &
+                       name="Field filepath", &
+                       val="FIELD", &
+                       description="Set input field filepath", &
+                       data_type=DATA_STRING))
 
         Call table%set("io_file_field_2", control_parameter( &
-          key="io_file_field_2", &
-          name="Field filepath", &
-          val="FIELD2", &
-          description="Set input field filepath for evb second state", &
-          data_type=DATA_STRING))
+                       key="io_file_field_2", &
+                       name="Field filepath", &
+                       val="FIELD2", &
+                       description="Set input field filepath for evb second state", &
+                       data_type=DATA_STRING))
         Call table%set("io_file_field_3", control_parameter( &
-          key="io_file_field_3", &
-          name="Field filepath", &
-          val="FIELD3", &
-          description="Set input field filepath for evb third state", &
-          data_type=DATA_STRING))
+                       key="io_file_field_3", &
+                       name="Field filepath", &
+                       val="FIELD3", &
+                       description="Set input field filepath for evb third state", &
+                       data_type=DATA_STRING))
 
 
         Call table%set("io_file_statis", control_parameter( &
-          key="io_file_statis", &
-          name="Statistics filepath", &
+                       key="io_file_statis", &
+                       name="Statistics filepath", &
                        val="STATIS", &
                        description="Set output statistics filepath", &
+                       data_type=DATA_STRING))
+
+        Call table%set("io_file_heatflux", control_parameter( &
+                       key="io_file_heatflux", &
+                       name="HEATFLUX filepath", &
+                       val="HEATFLUX", &
+                       description="Set output heatflux filepath", &
                        data_type=DATA_STRING))
 
         Call table%set("io_file_history", control_parameter( &

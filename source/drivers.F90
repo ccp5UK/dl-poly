@@ -64,6 +64,7 @@ Module drivers
                                   FILE_OUTPUT,&
                                   FILE_POPEVB,&
                                   FILE_REVCON,&
+                                  FILE_HEATFLUX,&
                                   file_type
   Use flow_control,         Only: DFTB,&
                                   RESTART_KEY_CLEAN,&
@@ -1969,8 +1970,7 @@ Contains
     Type(coord_type),          Intent(InOut) :: crd(:)
     Type(adf_type),            Intent(InOut) :: adf(:)
     Type(comms_type),          Intent(InOut) :: comm
-
-    Integer                     :: heat_flux_unit
+ 
     Integer(Kind=wi)            :: ff
     Logical                     :: fregauss
     Real(kind=wp), Dimension(3) :: heat_flux
@@ -2114,19 +2114,9 @@ Contains
 
       End If ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
 
+      ! potentially collect pp_data
       Do ff = 1, flow%NUM_FF
-        stat(ff)%collect_pp = .false.
-        If (stat(ff)%intsta > 0) Then
-          ! If pp data is required, and to calc stats (per-particle data used) AND not equilibration
-          If (stat(ff)%require_pp .and. Mod(flow%step, stat(ff)%intsta) == 0 .and. flow%step >= flow%equil_steps) Then
-              stat(ff)%collect_pp = .true.
-#ifndef HALF_HALO
-            Call stat(ff)%allocate_per_particle_arrays(cnfig(ff)%natms)
-#else /* HALF_HALO */
-            Call stat(ff)%allocate_per_particle_arrays(cnfig(ff)%mxatms)
-#endif /* HALF_HALO */
-          End If
-        End If
+        Call stat(ff)%setup_pp_collection(cnfig(ff), flow)
       End Do
 
       ! Evaluate forces
@@ -2147,24 +2137,12 @@ Contains
 !!$#endif
       Endif
 
-      ! If system has written per-particle data
+      ! If there was per-particle data collect this step, ff==1/root outputs
       Do ff = 1, flow%NUM_FF
-        If (stat(ff)%collect_pp) Then
-          stat(ff)%heat_flux = calculate_heat_flux(stat(ff), cnfig(ff), comm)
-
-          If (flow%heat_flux .and. comm%idnode == 0) Then
-            If (ff == 1) Then
-              Open (Newunit=heat_flux_unit, File='HEATFLUX', Position='append')
-              Write (heat_flux_unit, '(I8.1, 1X, 5(G19.12, 1X))') flow%step, stat(ff)%stptmp, cnfig(ff)%volm, stat(ff)%heat_flux
-              Close (heat_flux_unit)
-            End If
-          End If
-
-          If (flow%write_per_particle) Then
-            Call write_per_part_contribs(cnfig(ff), comm, stat(ff)%pp_energy, stat(ff)%pp_stress, flow%step)
-          End If
-
-          Call stat(ff)%deallocate_per_particle_arrays()
+        If (ff == 1) Then
+          Call stat(ff)%pp_result(cnfig(ff), comm, flow, files=files)
+        Else 
+          Call stat(ff)%pp_result(cnfig(ff), comm, flow)
         End If
       End Do
 

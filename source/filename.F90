@@ -88,8 +88,10 @@ Module filename
   Integer, Parameter, Public :: FILE_REVCON_3 = 28
   !> COR
   Integer, Parameter, Public :: FILE_COR = 29
+  !> HEATFLUX file
+  Integer, Parameter, Public :: FILE_HEATFLUX = 30
   !> Size of filename array
-  Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 29
+  Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 30
 
   Public :: default_filenames
 
@@ -153,7 +155,8 @@ Contains
     default_names(FILE_FIELD_3)  = "FIELD3"
     default_names(FILE_CONFIG_3) = "CONFIG3"
     default_names(FILE_REVCON_3) = "REVCON3"
-    default_names(FILE_COR) = "COR"
+    default_names(FILE_COR)      = "COR"
+    default_names(FILE_HEATFLUX) = "HEATFLUX"
 
     ! Set default filenames
     Do file_no = 1, FILENAME_SIZE
