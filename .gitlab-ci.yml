@@ -210,7 +210,7 @@ build-html:
     - apk --no-cache add make
     - python3 -m venv doc && source ./doc/bin/activate
     - cd documentation
-    - python -m pip install -r requirements.txt 
+    - python3 -m pip install -r requirements.txt 
     - make html
   only:
     - devel
@@ -224,7 +224,7 @@ pages:
   - apk --no-cache add make
   - python3 -m venv doc && source ./doc/bin/activate
   - cd documentation
-  - python -m pip install -r requirements.txt 
+  - python3 -m pip install -r requirements.txt 
   - make html
   - mv build/html ../public
   - cd ../
