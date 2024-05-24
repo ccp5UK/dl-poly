@@ -5,17 +5,23 @@ before_script:
   - source utils/modules.sh
 
 stages:
+  - update
   - doc
   - pages
   - build
   - test
-  - update
 
 update-python:
   stage: update
-  when: manual
+  when: always
+  # https://gitlab.com/gitlab-org/gitlab/-/issues/16474#note_1080341590
+  parallel:
+    matrix:
+        - TAGS: [baphomet, asmodeus, abbaton]
   tags:
-    - gcc
+    - ${TAGS}
+
+
   script:
     - sh utils/python_deps_update.sh
   only:
