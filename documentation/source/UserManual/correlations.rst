@@ -4,7 +4,7 @@ Correlation Functions
 Introduction
 ~~~~~~~~~~~~
 
-DL_POLY_4 includes on the fly computation of time correlations of
+DL_POLY_5 includes on the fly computation of time correlations of
 observable quantities. This functionality allows for key correlation
 functions, and derived quantities, to be calculated without saving
 trajectory data.
@@ -45,7 +45,7 @@ such as the velocity auto-correlation function, per-atom data is also
 required. Long timescale simulations and/or large system sizes present a
 scaling issue for both memory and run-time.
 
-DL_POLY_4 utilises the Multiple-tau correlator
+DL_POLY_5 utilises the Multiple-tau correlator
 :cite:`Ramirez2010Efficient`, which is one particular on the
 fly correlation algorithm that addresses these issues. Briefly the
 method works by accumulating data in a series of hierarchical block
@@ -113,19 +113,21 @@ Input
 
 In the (new style) CONTROL (see Section :ref:`new-control-file`)
 correlations are specified by an array of observable pairs in the format
-**x-y** where **x** and **y** may take the string values in
-Table :numref:`(%s)<tab-cor-control>`. For example to compute
-the VAF and SAF one may write,
+**A_CA-B_CB** where **A** and **B** are observables and **CA** and **CB** 
+are components of those observables. These values may take the 
+forms listed in Table :numref:`(%s)<tab-cor-control>` where long and 
+short form can be mixed. For example to compute the VAF 
+(across all dimensions) and SAF along just **xy** one may write,
 
 ::
 
-       correlation_observable [velocity-velocity s-s]
-       correlation_block_points [600 5000]
-       correlation_blocks [2 1]
-       correlation_window [2 1]
+       correlation_observable [v_x-velocity_x v_y-v_y v_z-v_z s_xy-stress_xy]
+       correlation_block_points [600 600 600 5000]
+       correlation_blocks [2 2 2 1]
+       correlation_window [2 2 2 1]
 
-DL_POLY_4 will then accumulate the VAF with 2 blocks each with 600
-points per block, and a averaging length 2 and the SAF with a single
+DL_POLY_5 will then accumulate the VAF (x,y,z) with 2 blocks each with 600
+points per block, and a averaging length 2 and the SAF (just xy) with a single
 block with 5000 points. By default **correlation_window** :math:`=1`,
 **correlation_block_points** :math:`=100` and **correlation_blocks**
 :math:`=1`.
@@ -138,13 +140,13 @@ block with 5000 points. By default **correlation_window** :math:`=1`,
       Observables indicated as per-particle require storage of data scaling
       with system size :math:`N`, as one correlator for each atom is created.
 
-   ============= ========== ================= ============
-   String        Short-hand Observable        Per-particle
-   ============= ========== ================= ============
-   **velocity**  **v**      particle velocity yes
-   **stress**    **s**      system stress     no
-   **heat_flux** **hf**     system heat flux  no
-   ============= ========== ================= ============
+   ============= ========== ================= ============ =======================================
+   String        Short-hand Observable        Per-particle Components
+   ============= ========== ================= ============ =======================================
+   **velocity**  **v**      particle velocity yes           **x, y, z**
+   **stress**    **s**      system stress     no            **xx, xy, xz, yx, yy, yz, zx, zy, zz**
+   **heat_flux** **hf**     system heat flux  no            **x, y, z**
+   ============= ========== ================= ============ =======================================
 
 
 Through a combination of the three parameters short or long timescale
@@ -162,41 +164,70 @@ Output
 
 When correlation functions are specified by the user the resulting data
 is written as a YAML file, COR, containing the distinct correlations
-with their lag times, components, and any derived quantities. For
-example when computing the SAF the derived viscosity value for the
-simulation is automatically calculated, in this case the COR output file
-may look like the following
+with their lag times, components. The header section may contain derived 
+data computed from the correlation functions available. For
+example when computing the SAF the viscosity and kinematic viscosity 
+value for the simulation is automatically calculated. The value will be
+an averaged over commensurate correlations, i.e. if **s_xy-s_xy** and **s_yz-s_yz** 
+are specified they will be both be used to compute and average viscosity. The 
+individual components comprising the observable data (if applicable) will be 
+outputted in a **components** array of the observables section.
+An example COR file is:
 
 ::
 
-   %YAML 1.2
-   ---
-   title: argon fcc initial conditions
-   correlations:
-       - name: [stress-stress                    , global]
-         parameters:
-               points_per_block: 5000
-               number_of_blocks: 1
-               window_size: 1
-         derived:
-               viscosity:
-                     value:   0.57490361    
-                     units: Katm ps 
-         lags: [   0.0000000    ,  0.10000000E-03,  0.20000000E-03, ...]
-         components: 
-              stress_xx-stress_xx: [   1.0484384,   1.0484383,   1.0484382, ...]
-              stress_xy-stress_xy: [                   ...                     ]
-              ...
-              stress_zz-stress_zz: [                   ...                     ]
-
+      %YAML 1.2
+      ---
+      title: 'CONFIG generated by ASE'
+      observables:
+            viscosity:
+                  value:   0.24150069E-03
+                  components: [  0.39309725E-03,  0.89904136E-04]
+                  units: Katm ps 
+            kinematic-viscosity:
+                  value:   0.21993727E-03
+                  components: [  0.35799788E-03,  0.81876662E-04]
+                  units: Katm ps / (amu / Ang^3)
+            thermal-conductivity:
+                  value:   0.96869183E-06
+                  units: e.V / (ps Ang K)
+      correlations:
+            stress_xy-stress_xy:
+                  parameters:
+                        points_per_block: 5000
+                        number_of_blocks: 1
+                        window_size: 1
+                  lags: [   0.0000000    ,   1.0000000    ,   ... ]
+                  value: [  0.28183438E-03,  0.28071854E-03,  ... ]
+            stress_yz-stress_yz:
+                  parameters:
+                        points_per_block: 100
+                        number_of_blocks: 1
+                        window_size: 1
+                  lags: [   0.0000000    ,   1.0000000    ,   ... ]
+                  value: [  0.64655167E-04,  0.64642762E-04,  ... ]
+            heat_flux_x-heat_flux_x:
+                  parameters:
+                        points_per_block: 100
+                        number_of_blocks: 1
+                        window_size: 1
+                  lags: [   0.0000000    ,   1.0000000    ,   ... ]
+                  value: [  0.23606349E-08,  0.23606349E-08,  ... ]
+            Ar-velocity_x-velocity_y:
+                  parameters:
+                        points_per_block: 100
+                        number_of_blocks: 1
+                        window_size: 1
+                  lags: [   0.0000000    ,   1.0000000    ,   ... ]
+                  value: [  0.14340287E-01,  0.14342140E-01,  ... ]
 
 Specific Correlation Output 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Stress correlations**\ : When accumulating system stress correlation functions a derived sheer-viscosity 
 measurement is written to the output file, along with a kinematic viscosity. These are both calculated using equation 
-:eq:`viscosity-gk_eq`, averaged over the xy, yz, and zx correlations. The latter is calculated by additionally dividing 
-by the system density, thus the kinematic viscosity is 
+:eq:`viscosity-gk_eq`, averaged over any of the xy, yz, zx, yx, zy, and xz  correlations requested. 
+The latter is calculated by additionally dividing by the system density, thus the kinematic viscosity is 
 
 .. math::
 
@@ -206,5 +237,4 @@ where :math:`\rho` is averaged over the simulation time.
 
 **Heatflux correlations**\ : When accumulating heatflux correlations the thermal-conductivity is written to output as a 
 derived measurement. This is calculated following equation :eq:`thermal-conductivity-gk_eq` (i.e. with averaging over x, y, 
-and z directions). Additionally the components of lattice thermal-conductivity are also written for each component pairs, 
-xx, xy, xz, etc.
+and z directions if any correlations are specified).

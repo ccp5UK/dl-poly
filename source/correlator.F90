@@ -254,7 +254,7 @@ Module correlators
 
   Subroutine update(this, data_left, data_right)
     Class(correlator), Intent(InOut) :: this
-    Real(Kind=wp),     Intent(InOut) :: data_left(:), data_right(:)
+    Real(Kind=wp),     Intent(In   ) :: data_left(:), data_right(:)
 
     this%count_updated = this%count_updated + 1
 

@@ -1729,8 +1729,7 @@ Contains
     Character(Len=STR_LEN), Allocatable                 :: option(:)
     Integer,                Allocatable                 :: window(:), blocks(:), points(:)
     Class(observable),      Allocatable                 :: A, B
-    Integer                                             :: dim_left, dim_right, &
-                                                           buffer_size, i, &
+    Integer                                             :: buffer_size, i, &
                                                            this_window, this_blocks, this_points
     Character(Len=STR_LEN)                              :: a_name, b_name
     Logical                                             :: a_per_atom, b_per_atom
@@ -1771,9 +1770,6 @@ Contains
       Call character_to_observable(a_name,A)
       Call character_to_observable(b_name,B)
 
-      dim_left = A%dimension()
-      dim_right = B%dimension()
-
       a_per_atom = .false.
       b_per_atom = .false.
 
@@ -1782,16 +1778,15 @@ Contains
 
       if (a_per_atom .or. b_per_atom) Then
 
-        buffer_size = Max(buffer_size, this_blocks*dim_left               &
-                            + this_blocks*dim_right                       &
-                            + this_blocks                                 &
-                            + this_blocks*this_points*dim_left            &
-                            + this_blocks*this_points*2                   &
-                            + this_blocks*this_points*dim_right           &
-                            + this_blocks                                 &
-                            + this_blocks*this_points*dim_left*dim_right  &
-                            + this_blocks*this_points+3                   &
-        )
+        buffer_size = Max(buffer_size, this_blocks*1       &
+                            + this_blocks*1                &
+                            + this_blocks                  &
+                            + this_blocks*this_points*1    &
+                            + this_blocks*this_points*2    &
+                            + this_blocks*this_points*1    &
+                            + this_blocks                  &
+                            + this_blocks*this_points*1*1  &
+                            + this_blocks*this_points+5)
 
       End If
 
@@ -1883,9 +1878,7 @@ Contains
 
       If (stats%unique_correlations(i)%A%id() == h%id() .or. &
           stats%unique_correlations(i)%B%id() == h%id()) Then
-
        stats%require_pp = .true.
-
       End If
 
       per_atom = stats%unique_correlations(i)%A%per_atom()
@@ -1928,8 +1921,7 @@ Contains
     Character(Len=STR_LEN),      Intent(In   ) :: key
     Integer,                     Intent(In   ) :: blocks, points, window
     Integer,                     Intent(InOut) :: count
-    Integer                                    :: i, buffer_size_per_atom, &
-                                                  dim_left, dim_right
+    Integer                                    :: i, buffer_size_per_atom
     Character(Len=STR_LEN)                     :: a_name, b_name
    Class(observable), Allocatable              :: A, B
    Logical                                     :: per_atom, is_per_atom
@@ -1940,9 +1932,7 @@ Contains
    Call parse_correlation_observable(key, a_name, b_name)
 
    Call character_to_observable(a_name,A)
-   dim_left = A%dimension()
    Call character_to_observable(b_name,B)
-   dim_right = B%dimension()
 
    per_atom = A%per_atom()
 

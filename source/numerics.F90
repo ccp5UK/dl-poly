@@ -184,6 +184,7 @@ Module numerics
   Public :: true_factorial
   Public :: inv_true_factorial
   Public :: three_p_interp
+  Public :: in_range
 
   Interface pbcshfrc
     Module Procedure pbcshfrc_parts
@@ -209,6 +210,11 @@ Module numerics
   End Interface nequal
 
   Public :: equal, nequal
+
+  Interface in_range
+      Module Procedure i_in_range
+      Module Procedure r_in_range
+  End Interface
 
 Contains
 
@@ -3898,5 +3904,17 @@ Contains
 
     nequal = .not. equal_real_wp(a, b)
   End Function nequal_real_wp
+
+  Pure Logical Function i_in_range(v, range)
+    Integer,                 Intent(In   ) :: v
+    Integer, Dimension(1:2), Intent(In   ) :: range
+    i_in_range = v >= range(1) .and. v <= range(2)
+  End Function
+
+  Pure Logical Function r_in_range(v, range)
+    Real,                 Intent(In   ) :: v
+    Real, Dimension(1:2), Intent(In   ) :: range
+    r_in_range = v >= range(1) .and. v <= range(2)
+End Function
 
 End Module numerics

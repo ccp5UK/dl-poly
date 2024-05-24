@@ -56,7 +56,8 @@ Module statistics
                              pbcshfrl,&
                              pbcshift,&
                              shellsort,&
-                             shellsort2
+                             shellsort2,&
+                             in_range
   Use site,            Only: site_type
   Use thermostat,      Only: CONSTRAINT_NONE,&
                              CONSTRAINT_SEMI_ORTHORHOMBIC,&
@@ -78,6 +79,8 @@ Module statistics
 
   ! correlation observables, and interface
   Type, Abstract, Public :: observable
+    Integer          :: component = 0
+    Character(Len=2) :: component_name = ""
     Contains
       Procedure(get_value),     Deferred :: value
       Procedure(get_dimension), Deferred :: dimension
@@ -197,8 +200,6 @@ Module statistics
     Type(correlation),       Allocatable :: unique_correlations(:)
     Integer,                 Allocatable :: unique_correlation_params(:)
     Integer                              :: cor_dump_freq = 0 
-    ! Integer, Allocatable               :: number_of_blocks(:), points_per_block(:), window_size(:)
-    ! Integer, Allocatable               :: min_distance(:), dim_left(:), dim_right(:)
     Type(statistic_accumulator)          :: volume_accum, mass_accum, temperature_accum
     Real(Kind=wp), Allocatable         :: xin(:), yin(:), zin(:)
     Real(Kind=wp), Allocatable         :: xto(:), yto(:), zto(:), rsd(:)
@@ -250,14 +251,15 @@ Module statistics
 
   Abstract Interface 
     ! Kernal for selecting data for correlation
-    Subroutine get_value(t, config, stats, v, atom)
+    Function get_value(t, config, stats, atom) Result(v)
         Import observable, configuration_type, stats_type, wp
-        Class(observable),          Intent(In   ) :: t
-        Type(configuration_type),   Intent(InOut) :: config
-        Type(stats_type),           Intent(InOut) :: stats
-        Real(Kind=wp), Allocatable, Intent(InOut) :: v(:)
-        Integer,       Optional,    Intent(In   ) :: atom
-    End Subroutine get_value
+        Class(observable),                     Intent(In   ) :: t
+        Type(configuration_type),              Intent(InOut) :: config
+        Type(stats_type),                      Intent(InOut) :: stats
+        Integer,       Optional,               Intent(In   ) :: atom
+
+        Real(Kind=wp) :: v
+    End Function get_value
 
     ! utility to get size of observable
     Function get_dimension(t) Result(v)
@@ -285,10 +287,6 @@ Module statistics
       Class(observable), Intent(In   ) :: t
       Logical                          :: v
     End Function is_per_atom
-  End Interface
-
-  Interface operator (==)
-    Module Procedure is_equal
   End Interface
 
   Type, Extends(observable), Public :: observable_velocity
@@ -329,7 +327,7 @@ Module statistics
   Public :: statistics_result
   Public :: correlation_result
   Public :: character_to_observable
-  Public :: code_to_observable
+  Public :: id_component_to_observable
   Public :: update_statistic
 Contains
 
@@ -641,18 +639,13 @@ Contains
     Integer,                  Intent(In   ) :: atom, global, blocks, points, window, &
                                                correlator_index
     Class(observable),        Intent(In   ) :: A, B
-    Integer                                 :: dim_left, dim_right
     
     stats%correlations(correlator_index)%correlation%A = A
     stats%correlations(correlator_index)%correlation%B = B
     stats%correlations(correlator_index)%correlation%atom = atom
     stats%correlations(correlator_index)%correlation%atom_global = global
 
-
-    dim_left = stats%correlations(correlator_index)%correlation%A%dimension()
-    dim_right = stats%correlations(correlator_index)%correlation%B%dimension()
-
-    Call stats%correlations(correlator_index)%correlator%init(blocks, points, window, dim_left, dim_right)
+    Call stats%correlations(correlator_index)%correlator%init(blocks, points, window, 1, 1)
   
   End Subroutine allocate_correlator
 
@@ -666,23 +659,22 @@ Contains
     Real(Kind=wp),            Intent(In   )       :: dt
     Integer                                       :: i, tau, j, k, flat_dim, l, r, &
                                                      file_unit, atom
-    Real(Kind=wp), Allocatable                    :: cor_accumulator(:,:,:,:), correlation(:,:,:)
-    Real(Kind=wp), Allocatable                    :: flat_correlation(:)
-    Real(Kind=wp), Allocatable                    :: timesteps(:)    
+    Real(Kind=wp), Allocatable                    :: cor_accumulator(:,:,:,:), correlation(:,:,:), &
+                                                     flat_correlation(:), timesteps(:), visc(:), &
+                                                     therm_cond(:), k_visc(:)  
     Integer,       Allocatable                    :: type_counts(:)
     Character(Len=MAX_CORRELATION_NAME_LENGTH*2+1)  :: correlation_name
     Character(Len=MAX_CORRELATION_NAME_LENGTH)    :: char_left, char_right, &
                                                      component_left, component_right
     Character(Len=2), Dimension(1:3)              :: components_vector
     Character(Len=2), Dimension(1:9)              :: components_matrix
-    Real(Kind=wp)                                 :: t, visc, conv
-    Real(Kind=wp),    Dimension(1:10)             :: therm_cond
+    Real(Kind=wp)                                 :: t, conv
     Integer                                       :: points, window, blocks, &
-                                                     dim_left, dim_right, &
                                                      points_cor, &
                                                      max_points_cor, &
                                                      min_points_cor
-    Character(Len=STR_LEN)                        :: units
+    Character(Len=STR_LEN)                        :: units_visc, units_therm
+    Logical                                       :: computed_visc, computed_therm
                                               
                         
     If (stats%calculate_correlations .eqv. .false.) Then 
@@ -700,8 +692,50 @@ Contains
       Write (file_unit,'(a)') "%YAML 1.2"
       Write (file_unit,'(a)') "---"
       Write (file_unit, '(a,a,a)') "title: '", Trim(config%cfgname), "'"
+
+      Call calculate_viscosity(stats, dt, visc)
+      Call calculate_thermal_conductivity(stats, dt, units_therm, therm_cond)
+
+      If (Allocated(therm_cond) .or. Allocated(visc)) Then
+        Write (file_unit, '(a)')       "observables:"
+      End if
+
+      If (Allocated(visc)) Then
+        Call to_out_units(1.0_wp, "internal_m", conv, units_visc)
+        Allocate(k_visc(1:Size(visc)))
+        k_visc = visc / ((conv*stats%mass_accum%mu) / stats%volume_accum%mu)
+        Write (file_unit, '(a)')             "      viscosity:"
+        Write (file_unit, '(a,g16.8)')       "            value: ", Sum(visc) / Real(Size(visc), Kind=wp)
+        If (Size(visc) > 1) Then
+          Write (file_unit, '(a,*(g16.8,","))', advance="no") &
+                                             "            components: [", visc(1:Size(visc)-1)
+          Write (file_unit, '(g16.8,"]")') visc(Size(visc))
+        End If
+        Write (file_unit, '(a)')             "            units: Katm ps "
+        Write (file_unit, '(a)')             "      kinematic-viscosity:"
+        Write (file_unit, '(a,g16.8)')       "            value: ", Sum(k_visc) / Real(Size(k_visc), Kind=wp)
+        If (Size(visc) > 1) Then
+          Write (file_unit, '(a,*(g16.8,","))', advance="no") &
+                                             "            components: [", k_visc(1:Size(k_visc)-1)
+          Write (file_unit, '(g16.8,"]")') k_visc(Size(k_visc))
+        End If
+        Write (file_unit, '(a)')             "            units: Katm ps / ("//Trim(units_visc)//" / Ang^3)"
+        Deallocate(visc)
+      End If
+
+      If (Allocated(therm_cond)) Then
+        Write (file_unit, '(a)')       "      thermal-conductivity:"
+        Write (file_unit, '(a,g16.8)') "            value: ", Sum(therm_cond) / Real(Size(therm_cond), Kind=wp)
+        If (Size(therm_cond) > 1) Then
+          Write (file_unit, '(a,*(g16.8,","))', advance="no") &
+                                       "            components: [", therm_cond(1:Size(therm_cond)-1)
+          Write (file_unit, '(g16.8,"]")') therm_cond(Size(therm_cond))
+        End If
+        Write (file_unit, '(a,a)')     "            units: ", Trim(units_therm)
+        Deallocate(therm_cond)
+      End If
+
       Write (file_unit, '(a)') "correlations:"
-    
     End If
 
     Do i = 1, Size(stats%unique_correlations)
@@ -728,29 +762,25 @@ Contains
 
       char_left = stats%unique_correlations(i)%A%name()
       char_right = stats%unique_correlations(i)%B%name()
-      correlation_name = Trim(char_left)//'-'//Trim(char_right)
+      correlation_name = Trim(char_left)//"-"//Trim(char_right)
 
       If (stats%unique_correlations(i)%atom > 0) Then
 
         Do j = 1, stats%number_of_correlations
 
-          If (stats%correlations(j)%correlation%A == stats%unique_correlations(i)%A .and. &
-              stats%correlations(j)%correlation%B == stats%unique_correlations(i)%B ) Then
+          If (is_equivalent(stats%correlations(j)%correlation, stats%unique_correlations(i))) Then
 
             ! found a match, assume all same (they should be)
             
             points = stats%correlations(j)%correlator%points_per_block
             blocks = stats%correlations(j)%correlator%number_of_blocks
-            dim_left = stats%correlations(j)%correlator%left_dim
-            dim_right = stats%correlations(j)%correlator%right_dim
             window = stats%correlations(j)%correlator%window_size
 
-            Allocate(cor_accumulator(1:sites%mxatyp, 1:points*blocks, &
-              1:dim_left, 1:dim_right ))
+            Allocate(cor_accumulator(1:sites%mxatyp, 1:points*blocks, 1:1, 1:1))
 
-            Allocate(correlation(1:points*blocks,1:dim_left,1:dim_right))
+            Allocate(correlation(1:points*blocks,1:1,1:1))
 
-            flat_dim = sites%mxatyp*points*blocks*dim_left*dim_right
+            flat_dim = sites%mxatyp*points*blocks*1*1
 
             Allocate(flat_correlation(1:flat_dim))
             Allocate(type_counts(1:sites%mxatyp))
@@ -780,12 +810,11 @@ Contains
             Cycle
           End If
           
-          If (stats%correlations(j)%correlation%A == stats%unique_correlations(i)%A .and. &
-              stats%correlations(j)%correlation%B == stats%unique_correlations(i)%B ) Then
+          If (is_equivalent(stats%correlations(j)%correlation, stats%unique_correlations(i))) Then
 
             atom = stats%correlations(j)%correlation%atom
 
-            correlation = 0.0
+            correlation = 0.0_wp
             Call stats%correlations(j)%correlator%get_correlation(correlation, timesteps, dt, points_cor)
 
             cor_accumulator(config%ltype(atom),:,:,:) = &
@@ -811,92 +840,55 @@ Contains
         flat_correlation = Reshape(cor_accumulator,(/flat_dim/))
         Call gsum(comm, flat_correlation)
         flat_correlation = flat_correlation 
-        cor_accumulator = Reshape(flat_correlation,(/sites%mxatyp,points*blocks,&
-         dim_left,dim_right/))
+        cor_accumulator = Reshape(flat_correlation,(/sites%mxatyp,points*blocks,1,1/))
 
         ! for later averaging
         Call gsum(comm,type_counts)
         
-        If (comm%idnode == root_id) Then
+        If (comm%idnode == root_id .and. points_cor > 1) Then
 
           Do j = 1,sites%mxatyp
 
-            Write (file_unit, '(*(a))') "    - name: [", correlation_name, ", ", &
-                                                        Trim(sites%unique_atom(j)), "]"
+            Write (file_unit, '(a)')    "    "//Trim(sites%unique_atom(j))//"-"//Trim(correlation_name)//":"
 
-            Write (file_unit, '(a)') "      parameters:"
-            Write (file_unit, '(a,i0)') "            points_per_block: ", &
-                    points
-            Write (file_unit, '(a,i0)') "            number_of_blocks: ", &
-                    blocks
-            Write (file_unit, '(a,i0)') "            window_size: ", &
-                    window
-            
-            Write(file_unit, '(a,*(g16.8,","))',advance="no") "      lags: [", timesteps(1:points_cor-1)
-            
+            Write (file_unit, '(a)')    "        parameters:"
+            Write (file_unit, '(a,i0)') "            points_per_block: ", points
+            Write (file_unit, '(a,i0)') "            number_of_blocks: ", blocks
+            Write (file_unit, '(a,i0)') "            window_size: ", window
+            Write(file_unit, '(a,*(g16.8,","))',advance="no") "        lags: [", timesteps(1:points_cor-1)
             Write(file_unit, '(g16.8,a)') timesteps(points_cor), "]"
 
             cor_accumulator(j,:,:,:) = cor_accumulator(j,:,:,:) / (1+type_counts(j))
 
-            Write (file_unit, '(a)') "      components: "
-
-            Do l = 1,dim_left
-              
-              If (dim_left == 3) Then
-                component_left = Trim(components_vector(l))
-              Else If (dim_left == 9) Then 
-                component_left = Trim(components_matrix(l))
-              End If
-
-              Do r = 1,dim_right
-
-                If (dim_right == 3) Then
-                  component_right = Trim(components_vector(r))
-                Else If (dim_right == 9) Then 
-                  component_right = Trim(components_matrix(r))
-                End If
-
-                Write (file_unit, '(a,a,a)',advance="no") "           ", &
-                  Trim(char_left)//'_'//Trim(component_left)//"-"//Trim(char_right)//'_'//Trim(component_right), ": "
-
-                  Write(file_unit, '(a,*(g16.8,","))',advance="no") "[", cor_accumulator(j,1:points_cor-1,l,r)
-                  
-                  Write(file_unit, '(g16.8,a)') cor_accumulator(j,points_cor,l,r), "]"
-
-              End Do
-            End Do  
+            Write(file_unit, '(a,*(g16.8,","))',advance="no") "        value: [", cor_accumulator(j,1:points_cor-1,1,1)
+            Write(file_unit, '(g16.8,a)') cor_accumulator(j,points_cor,1,1), "]" 
           End Do
         End If
 
       Else
 
         If (comm%idnode == root_id) Then
-
           k = 0
           Do j = 1, stats%number_of_correlations
-
-            If (stats%correlations(j)%correlation%A == stats%unique_correlations(i)%A .and. &
-                stats%correlations(j)%correlation%B == stats%unique_correlations(i)%B ) Then
+            If (is_equivalent(stats%correlations(j)%correlation, stats%unique_correlations(i))) Then
 
               ! found a match (should be unique)
               k = j
               
               points = stats%correlations(j)%correlator%points_per_block
               blocks = stats%correlations(j)%correlator%number_of_blocks
-              dim_left = stats%correlations(j)%correlator%left_dim
-              dim_right = stats%correlations(j)%correlator%right_dim
               window = stats%correlations(j)%correlator%window_size
 
-              Allocate(correlation(1:points*blocks,1:dim_left,1:dim_right))
+              Allocate(correlation(1:points*blocks,1:1,1:1))
 
-              flat_dim = points*blocks*dim_left*dim_right
+              flat_dim = points*blocks*1*1
 
               Allocate(flat_correlation(1:flat_dim))
 
               Allocate(timesteps(1:blocks*points))
 
-              flat_correlation = 0.0
-              correlation = 0.0
+              flat_correlation = 0.0_wp
+              correlation = 0.0_wp
             
               exit
             End If
@@ -908,83 +900,21 @@ Contains
           End If
 
           Call stats%correlations(k)%correlator%get_correlation(correlation, timesteps, dt, points_cor)
-
           points_cor = points_cor - 1
-
-          Write (file_unit, '(*(a))') "    - name: [", correlation_name, ", global]"
-
-          Write (file_unit, '(a)') "      parameters:"
-          Write (file_unit, '(a,i0)') "            points_per_block: ", &
-                  points
-          Write (file_unit, '(a,i0)') "            number_of_blocks: ", &
-                  blocks
-          Write (file_unit, '(a,i0)') "            window_size: ", &
-                  window
-
-          If (char_left == stress_name(observable_stress()) .and. &
-              char_right == stress_name(observable_stress()) .and. &
-              points_cor > 1) Then
-
-            visc = calculate_viscosity(stats, correlation(1:points_cor, :, :), dt)
-
-            Call to_out_units(1.0_wp, "internal_m", conv, units)
-
-            Write (file_unit, '(a)')       "      derived:"
-            Write (file_unit, '(a)')       "            viscosity:"
-            Write (file_unit, '(a,g16.8)') "                  value: ", visc
-            Write (file_unit, '(a)')       "                  units: Katm ps "
-            Write (file_unit, '(a)')       "            kinematic-viscosity:"
-            Write (file_unit, '(a,g16.8)') "                  value: ", &
-              visc/((conv*stats%mass_accum%mu) / stats%volume_accum%mu)
-            Write (file_unit, '(a)')       "                  units: Katm ps / ("//Trim(units)//" / Ang^3)"
-
-            correlation = correlation * prsunt * prsunt
-
-          Else If(char_left == heat_flux_name(observable_heat_flux()) .and. &
-                  char_right == heat_flux_name(observable_heat_flux()) .and. &
-                  points_cor > 1) Then
-
-                  therm_cond = calculate_thermal_conductivity(stats, correlation(1:points_cor, :, :), dt, units)
-
-                  Write (file_unit, '(a)')                         "      derived:"
-                  Write (file_unit, '(a)')                         "            thermal-conductivity:"
-                  Write (file_unit, '(a,g16.8)')                   "                  value: ", therm_cond(10)
-                  Write (file_unit, '(a,a)')                       "                  units: ", Trim(units)
-                  Write (file_unit, '(a, 8(g16.8,","), g16.8, a)') "                  components: [", therm_cond(1:9), "]" 
-
+          If (points_cor > 1) Then
+            Write (file_unit, '(a)') "    "//Trim(correlation_name)//":"
+            Write (file_unit, '(a)')    "        parameters:"
+            Write (file_unit, '(a,i0)') "            points_per_block: ", &
+                    points
+            Write (file_unit, '(a,i0)') "            number_of_blocks: ", &
+                    blocks
+            Write (file_unit, '(a,i0)') "            window_size: ", &
+                    window
+            Write(file_unit, '(a,*(g16.8,","))',advance="no") "        lags: [", timesteps(1:points_cor-1)
+            Write(file_unit, '(g16.8,a)') timesteps(points_cor), "]"
+            Write(file_unit, '(a,*(g16.8,","))',advance="no") "        value: [", correlation(1:points_cor-1,1,1)
+            Write(file_unit, '(g16.8,a)') correlation(points_cor,1,1), "]"
           End If
-          
-          Write(file_unit, '(a,*(g16.8,","))',advance="no") "      lags: [", timesteps(1:points_cor-1)
-          
-          Write(file_unit, '(g16.8,a)') timesteps(points_cor), "]"
-
-          Write (file_unit, '(a)') "      components: "
-
-          Do l = 1,dim_left
-              
-            If (dim_left == 3) Then
-              component_left = Trim(components_vector(l))
-            Else If (dim_left == 9) Then 
-              component_left = Trim(components_matrix(l))
-            End If
-
-            Do r = 1,dim_right
-
-              If (dim_right == 3) Then
-                component_right = Trim(components_vector(r))
-              Else If (dim_right == 9) Then 
-                component_right = Trim(components_matrix(r))
-              End If              
-
-              Write (file_unit, '(a,a,a)',advance="no") "           ", &
-              Trim(char_left)//'_'//Trim(component_left)//"-"//Trim(char_right)//'_'//Trim(component_right), ": "
-
-                Write(file_unit, '(a,*(g16.8,","))',advance="no") "[", correlation(1:points_cor-1,l,r)
-                
-                Write(file_unit, '(g16.8,a)') correlation(points_cor,l,r), "]"
-
-            End Do
-          End Do  
           
         End If
         
@@ -1045,9 +975,8 @@ Contains
     Integer                    :: fail, i, iadd, j, k, kstak
     Logical                    :: ffpass, l_tmp
     Real(Kind=wp)              :: celprp(1:10), h_z, sclnv1, sclnv2, stpcns, stpipv, stprot, &
-                                  stpshl, zistk
+                                  stpshl, zistk, observable_a, observable_b
     Real(Kind=wp), Allocatable :: amsd(:), xxt(:), yyt(:), zzt(:)
-    Real(Kind=wp), Allocatable :: observable_a(:), observable_b(:)
 
 #ifdef CHRONO 
     Call start_timer(tmr, "Statistics Collect")
@@ -1246,37 +1175,18 @@ Contains
         End Do
 
         If ((.not. leql) .or. nstep >= nsteql) Then
-      
           Do j = 1, stats%number_of_correlations
-
             i = stats%correlations(j)%correlation%atom
-
-            If (Allocated(observable_a)) Then 
-              Deallocate(observable_a)
-            End If
-
-            If (Allocated(observable_b)) Then 
-              Deallocate(observable_b)
-            End If
-
             If (i > 0) Then
-                
-              Call stats%correlations(j)%correlation%A%value(config, stats, observable_a, i)
-              Call stats%correlations(j)%correlation%B%value(config, stats, observable_b, i)
-
-              Call stats%correlations(j)%correlator%update(observable_a,observable_b)
-
+              observable_a = stats%correlations(j)%correlation%A%value(config, stats, i)
+              observable_b = stats%correlations(j)%correlation%B%value(config, stats, i)
+              Call stats%correlations(j)%correlator%update((/observable_a/),(/observable_b/))
             Else If (comm%idnode == root_id) Then
-
-              Call stats%correlations(j)%correlation%A%value(config, stats, observable_a)
-              Call stats%correlations(j)%correlation%B%value(config, stats, observable_b)
-
-              Call stats%correlations(j)%correlator%update(observable_a,observable_b)
-            
+              observable_a = stats%correlations(j)%correlation%A%value(config, stats)
+              observable_b = stats%correlations(j)%correlation%B%value(config, stats)
+              Call stats%correlations(j)%correlator%update((/observable_a/),(/observable_b/))
             End If
-
           End Do
-
         End If
 
       Else ! HISTORY is replayed
@@ -2737,66 +2647,114 @@ Contains
 
   End Function calculate_heat_flux
 
-  Function calculate_viscosity(stats, correlation, dt) Result(visc)
-    Type(stats_type),  Intent(In   ) :: stats
-    Real(Kind=wp),     Intent(In   ) :: correlation(:,:,:)
-    Real(Kind=wp),     Intent(In   ) :: dt
-    Real(Kind=wp)                    :: visc
-    Class(integrator), Allocatable   :: inter 
+  Subroutine calculate_viscosity(stats, dt, viscosity)
+    Type(stats_type),  Intent(InOut)              :: stats
+    Real(Kind=wp),     Intent(In   )              :: dt
+    Real(Kind=wp),     Intent(  Out), Allocatable :: viscosity(:)
 
-    ! combine xy, yz, zx
+    Real(Kind=wp),     Allocatable :: correlation(:, :, :), timesteps(:)
+    Class(integrator), Allocatable :: inter 
+    Integer                        :: i, j, points, indices(1:6), &
+                                      comp_a, comp_b, blocks, id_a, id_b
 
     Allocate(simpsons_rule::inter)
 
-    visc = inter%integrate_uniform( (correlation(:,2,2) + correlation(:,6,6) + correlation(:,7,7))/3.0_wp, dt)
+    indices(1:6) = (/2, 3, 4, 6, 7, 8/)
+    Allocate(viscosity(0))
 
-    ! in internal pressure-time units
+    Do i = 1, stats%number_of_correlations
+      id_a = stats%correlations(i)%correlation%A%id()
+      comp_a = stats%correlations(i)%correlation%A%component
+      id_b = stats%correlations(i)%correlation%B%id()
+      comp_b = stats%correlations(i)%correlation%B%component
 
-    visc = ( stats%volume_accum%mu / (boltz*stats%temperature_accum%mu) ) * visc
-    
-    ! now in Katm - internal time 
+      ! 2 3 4 6 7 8 ~ any off diagonal could be used xy, yx, xz, zx, zy, yz
+      If (id_a == stress_id(observable_stress()) .and. id_b == id_a .and. &
+          Any(indices == comp_a) .and. &
+          comp_a == comp_b) Then
+        points = stats%correlations(i)%correlator%points_per_block
+        blocks = stats%correlations(i)%correlator%number_of_blocks
+        Allocate(correlation(1:points*blocks,1:1,1:1))
+        Allocate(timesteps(1:points*blocks))
+        Call stats%correlations(i)%correlator%get_correlation(correlation, timesteps, dt, points)
+        points = points - 1
+        If (points <= 1) Then
+          Deallocate(correlation)
+          Deallocate(timesteps)
+          cycle
+        End If
 
-    visc = visc * prsunt 
+        viscosity = [viscosity, inter%integrate_uniform(correlation(:, 1, 1), dt)]
+        Deallocate(correlation)
+        Deallocate(timesteps)
 
-  End Function calculate_viscosity
-
-
-  Function calculate_thermal_conductivity(stats, correlation, dt, units) Result(therm_cond)
-    Type(stats_type),              Intent(In   ) :: stats
-    Real(Kind=wp),                 Intent(In   ) :: correlation(:,:,:)
-    Real(Kind=wp),                 Intent(In   ) :: dt
-    Character(Len=STR_LEN),        Intent(  Out) :: units
-    Real(Kind=wp)                                :: conv
-    Real(Kind=wp), Dimension(1:10)               :: therm_cond
-    Integer                                      :: i, j, k
-    Class(integrator),             Allocatable   :: inter
-                                        
-
-    ! z component
-    
-    Allocate(simpsons_rule::inter)
-
-    k = 1
-    Do i = 1, 3
-      Do j = 1, 3
-        therm_cond(k) = inter%integrate_uniform(correlation(:,i,j),dt)
-        k = k + 1
-      End Do
+      End If
     End Do
 
-    therm_cond(10) = (therm_cond(1) + therm_cond(5) + therm_cond(9))/3.0_wp
+    If (Size(viscosity) > 0) Then
+      viscosity = prsunt * ( stats%volume_accum%mu / (boltz*stats%temperature_accum%mu) ) * viscosity
+    Else
+      Deallocate(viscosity)
+    End If
 
-    ! careful, DL_POLY already divides by volume in calculate_heat_flux
+  End Subroutine calculate_viscosity
 
-    Call to_out_units(1.0_wp, "internal_e", conv, units)
-
-    therm_cond = stats%volume_accum%mu / ( (stats%temperature_accum%mu**2) * (boltz/engunit)) * therm_cond
-
-    units = Trim(units)//" / (ps Ang K)"
+  Subroutine calculate_thermal_conductivity(stats, dt, units, therm_cond)
+    Type(stats_type),       Intent(InOut)              :: stats
+    Real(Kind=wp),          Intent(In   )              :: dt
+    Character(Len=STR_LEN), Intent(  Out)              :: units
+    Real(Kind=wp),          Intent(  Out), Allocatable :: therm_cond(:)
     
-  End Function calculate_thermal_conductivity
+    Real(Kind=wp)                   :: conv
+    Real(Kind=wp),     Allocatable  :: correlation(:, :, :), timesteps(:)
+    Integer                         :: i, j, k, points, count, indices(1:3), &
+                                       comp_a, comp_b, blocks, id_a, id_b
+    Class(integrator), Allocatable  :: inter
+    
+    Allocate(simpsons_rule::inter)
+    indices = (/1, 2, 3/)
 
+    Allocate(therm_cond(0))
 
+    Do i = 1, stats%number_of_correlations
+      id_a = stats%correlations(i)%correlation%A%id()
+      comp_a = stats%correlations(i)%correlation%A%component
+      id_b = stats%correlations(i)%correlation%B%id()
+      comp_b = stats%correlations(i)%correlation%B%component
+
+      ! 1 2 3 ~ x y z
+      If (id_a == heat_flux_id(observable_heat_flux()) .and. id_b == id_a .and. &
+          Any(indices == comp_a) .and. &
+          comp_a == comp_b) Then
+        points = stats%correlations(i)%correlator%points_per_block
+        blocks = stats%correlations(i)%correlator%number_of_blocks
+        Allocate(correlation(1:points*blocks,1:1, 1:1))
+        Allocate(timesteps(1:points*blocks))
+        Call stats%correlations(i)%correlator%get_correlation(correlation, timesteps, dt, points)
+        points = points - 1
+        If (points <= 1) Then
+          Deallocate(correlation)
+          Deallocate(timesteps)
+          cycle
+        End If
+
+        therm_cond = [therm_cond, inter%integrate_uniform(correlation(:, 1, 1), dt)]
+
+        Deallocate(correlation)
+        Deallocate(timesteps)
+      End If
+    End Do
+
+    If (Size(therm_cond) > 0) Then
+      Call to_out_units(1.0_wp, "internal_e", conv, units)
+      ! already divided through by volume
+      therm_cond = stats%volume_accum%mu / ( (stats%temperature_accum%mu**2) * (boltz/engunit)) * therm_cond
+      units = Trim(units)//" / (ps Ang K)"
+    Else
+      Deallocate(therm_cond)
+    End If
+
+  End Subroutine calculate_thermal_conductivity
 
   Subroutine write_per_part_contribs(config, comm, energies, stresses, nstep) !, forces
     !!----------------------------------------------------------------------!
@@ -2937,16 +2895,18 @@ Contains
       Type(correlator_holder), Allocatable                    :: tmp_cors(:)
       Class(observable),       Allocatable                    :: A, B
       Integer                                                 :: i, iA, iB, global_index, local_index, &
-                                                                 window, blocks, points, dim_left, dim_right, &
-                                                                 jA, jB, new_index, s
+                                                                 window, blocks, points, &
+                                                                 jA, jB, new_index, s, c_a, c_b, j_c_a, j_c_b
 
       If (this%per_atom_correlations .and. this%calculate_correlations) Then
 
-        ! data packed as 
-          ! global atom index
-          ! A observable code
-          ! B observable code
-          ! flat correlator data (see correlator.F90) 
+      ! data packed as 
+        ! global atom index
+        ! A observable code
+        ! A component
+        ! B observable code
+        ! B component
+        ! flat correlator data (see correlator.F90) 
 
         s = buffer_index
         buffer_index = buffer_index + 1
@@ -2954,12 +2914,16 @@ Contains
 
         buffer_index = buffer_index + 1
         iA = INT(buffer(buffer_index))
+        buffer_index = buffer_index + 1
+        c_a = INT(buffer(buffer_index))
 
         buffer_index = buffer_index + 1
         iB = INT(buffer(buffer_index))
+        buffer_index = buffer_index + 1
+        c_b = INT(buffer(buffer_index))
 
-        Call code_to_observable(iA,A)
-        Call code_to_observable(iB,B)
+        Call id_component_to_observable(iA, c_a, A)
+        Call id_component_to_observable(iB, c_b, B)
 
         Allocate(tmp_cors(1:(Size(this%correlations)+1)))
 
@@ -2970,17 +2934,17 @@ Contains
           tmp_cors(i) = this%correlations(i)
 
         End Do
-
-        dim_left = A%dimension()
-        dim_right = B%dimension()
         
         ! obtain correlation parameters
         Do i = 1, Size(this%unique_correlations)
 
           jA = this%unique_correlations(i)%A%id()
+          j_c_a = this%unique_correlations(i)%A%component
           jB = this%unique_correlations(i)%B%id()
+          j_c_b = this%unique_correlations(i)%B%component
 
-          If (iA == jA .and. iB == jB) Then
+
+          If (iA == jA .and. iB == jB .and. j_c_a == c_a .and. j_c_b == c_b) Then
             blocks = this%unique_correlation_params((i-1)*3+1)
             points = this%unique_correlation_params((i-1)*3+2)
             window = this%unique_correlation_params((i-1)*3+3)
@@ -2991,11 +2955,11 @@ Contains
 
         ! initialise new correlator
         new_index = Size(tmp_cors)
-        Call code_to_observable(iA,tmp_cors(new_index)%correlation%A)
-        Call code_to_observable(iB,tmp_cors(new_index)%correlation%B)
+        Call id_component_to_observable(iA,c_a,tmp_cors(new_index)%correlation%A)
+        Call id_component_to_observable(iB,c_b,tmp_cors(new_index)%correlation%B)
         tmp_cors(new_index)%correlation%atom = local_index
         tmp_cors(new_index)%correlation%atom_global = global_index
-        Call tmp_cors(new_index)%correlator%init(blocks,points,window,dim_left,dim_right)
+        Call tmp_cors(new_index)%correlator%init(blocks,points,window,1,1)
 
         Call move_alloc(tmp_cors,this%correlations)
 
@@ -3019,7 +2983,7 @@ Contains
     Integer,                              Intent(In)    :: atom_index
     Integer,                              Intent(InOut) :: buffer_index
     Type(correlator_holder), Allocatable                :: tmp_cors(:)
-    Integer                                             :: i, A, B, j, s, deportations
+    Integer                                             :: i, A, B, c_a, c_b, j, s, deportations
 
     If (this%per_atom_correlations .and. this%calculate_correlations) Then
 
@@ -3027,7 +2991,9 @@ Contains
       ! data packed as 
         ! global atom index
         ! A observable code
+        ! A component
         ! B observable code
+        ! B component
         ! flat correlator data (see correlator.F90) 
     
       j = 0
@@ -3039,13 +3005,19 @@ Contains
       Do i = 1, Size(this%correlations)
         If (this%correlations(i)%correlation%atom_global == config%ltg(atom_index)) Then
           A = this%correlations(i)%correlation%A%id()
+          c_a = this%correlations(i)%correlation%A%component
           B = this%correlations(i)%correlation%B%id()
+          c_b = this%correlations(i)%correlation%B%component
           buffer_index = buffer_index + 1
           buffer(buffer_index) = config%ltg(atom_index)
           buffer_index = buffer_index + 1
           buffer(buffer_index) = A
           buffer_index = buffer_index + 1
+          buffer(buffer_index) = c_a
+          buffer_index = buffer_index + 1
           buffer(buffer_index) = B 
+          buffer_index = buffer_index + 1
+          buffer(buffer_index) = c_b
           Call this%correlations(i)%correlator%deport_buffer(buffer,buffer_index,.true.)
           deportations = deportations + 1
         Else 
@@ -3152,9 +3124,9 @@ Contains
     Type(correlator_buffer_type)                  :: packed_correlators
     Type(indices_buffer_type)                     :: packed_ids
     Integer                                       :: i, buffer_size, correlations, &
-                                                     buffer_index, A, B, &
+                                                     buffer_index, A, B, c_a, c_b, &
                                                      local_correlations, local_buffer_size, &
-                                                     n_local_cor
+                                                     n_local_cor, attributes = 6
     Real(Kind=wp)                                 :: write_sum
   
     n_local_cor = 0
@@ -3176,22 +3148,27 @@ Contains
         buffer_size = buffer_size + this%correlations(i)%correlator%buffer_size-3
       End Do
 
-      Allocate(local_ids(1:4*correlations))
+      ! id_a, id_b, component_a, component_b, atom, buffer_size
+      Allocate(local_ids(1:attributes*correlations)) 
       Allocate(local_buffer(1:buffer_size))
 
       ! collect local buffer first
       buffer_index = 0
       Do i = 1, Size(this%correlations)
         A = this%correlations(i)%correlation%A%id()
+        c_A = this%correlations(i)%correlation%A%component
         B = this%correlations(i)%correlation%B%id()
-        local_ids((i-1)*4+1) = A
-        local_ids((i-1)*4+2) = B
+        c_b = this%correlations(i)%correlation%B%component
+        local_ids((i-1)*attributes+1) = A
+        local_ids((i-1)*attributes+2) = c_a
+        local_ids((i-1)*attributes+3) = B
+        local_ids((i-1)*attributes+4) = c_b
         If (this%correlations(i)%correlation%atom > 0) Then
-          local_ids((i-1)*4+3) = this%correlations(i)%correlation%atom_global
+          local_ids((i-1)*attributes+5) = this%correlations(i)%correlation%atom_global
         Else
-          local_ids((i-1)*4+3) = 0
+          local_ids((i-1)*attributes+5) = 0
         End If
-        local_ids((i-1)*4+4) = this%correlations(i)%correlator%buffer_size-3
+        local_ids((i-1)*attributes+6) = this%correlations(i)%correlator%buffer_size-(attributes-1)
         Call this%correlations(i)%correlator%deport_buffer(local_buffer,buffer_index)
       End Do
 
@@ -3211,18 +3188,18 @@ Contains
     Call gsum(comm,buffer_size)
     Call gsum(comm,correlations)
 
-    Call packed_ids%initialise(comm, 4*correlations)
+    Call packed_ids%initialise(comm, attributes*correlations)
     Call packed_correlators%initialise(comm, buffer_size)
 
     If (comm%idnode == root_id) Then
 
       Allocate(data_buffer(1:buffer_size))
-      Allocate(ids_buffer(1:4*correlations))
+      Allocate(ids_buffer(1:attributes*correlations))
 
     End If
 
     Call gatherv_scatterv_index_arrays(comm, &
-    4*local_correlations, &
+    attributes*local_correlations, &
     packed_ids%mpi%counts, &
     packed_ids%mpi%displ & 
     )
@@ -3249,14 +3226,17 @@ Contains
       buffer_index = 1
       write_sum = 0.0
       Do i = 1, correlations
-        Write (unit) packed_ids%buffer((i-1)*4+1), &
-          packed_ids%buffer((i-1)*4+2), &
-          packed_ids%buffer((i-1)*4+3), &
-          packed_ids%buffer((i-1)*4+4), &
-          packed_correlators%buffer(buffer_index:(buffer_index+packed_ids%buffer((i-1)*4+4)-1))
+        Write (unit) packed_ids%buffer((i-1)*attributes+1), &
+          packed_ids%buffer((i-1)*attributes+2), &
+          packed_ids%buffer((i-1)*attributes+3), &
+          packed_ids%buffer((i-1)*attributes+4), &
+          packed_ids%buffer((i-1)*attributes+5), &
+          packed_ids%buffer((i-1)*attributes+6), &
+          packed_correlators%buffer(buffer_index:(buffer_index+packed_ids%buffer((i-1)*attributes+attributes)-1))
 
-        write_sum = write_sum + Sum(packed_correlators%buffer(buffer_index:(buffer_index+packed_ids%buffer((i-1)*4+4)-1)))
-        buffer_index = buffer_index + packed_ids%buffer((i-1)*4+4)
+        write_sum = write_sum + &
+          Sum(packed_correlators%buffer(buffer_index:(buffer_index+packed_ids%buffer((i-1)*attributes+attributes)-1)))
+        buffer_index = buffer_index + packed_ids%buffer((i-1)*attributes+attributes)
 
       End Do
 
@@ -3284,7 +3264,8 @@ Contains
     Integer                                       :: i, buffer_size, correlations, &
                                                      buffer_index, j, packed_index, &
                                                      A, B, atom, offset, local_correlations, &
-                                                     local_buffer_size, n_local_cor
+                                                     local_buffer_size, n_local_cor, &
+                                                     c_a, c_b, attributes = 6
 
     n_local_cor = 0
     If (Allocated(this%correlations)) n_local_cor = Size(this%correlations)
@@ -3297,7 +3278,7 @@ Contains
     buffer_size = 0
     correlations = 0
     If (this%calculate_correlations) Then                                                 
-      Allocate(local_ids(1:4*Size(this%correlations)))
+      Allocate(local_ids(1:attributes*Size(this%correlations)))
 
       local_correlations = Size(this%correlations)
 
@@ -3306,17 +3287,21 @@ Contains
       ! collect local id buffers
       Do i = 1, Size(this%correlations)
         correlations = correlations + 1
-        buffer_size = buffer_size + this%correlations(i)%correlator%buffer_size-3
+        buffer_size = buffer_size + this%correlations(i)%correlator%buffer_size-(attributes-1)
         A = this%correlations(i)%correlation%A%id()
+        c_a = this%correlations(i)%correlation%A%component
         B = this%correlations(i)%correlation%B%id()
-        local_ids((i-1)*4+1) = A
-        local_ids((i-1)*4+2) = B
+        c_b = this%correlations(i)%correlation%B%component
+        local_ids((i-1)*attributes+1) = A
+        local_ids((i-1)*attributes+2) = c_a
+        local_ids((i-1)*attributes+3) = B
+        local_ids((i-1)*attributes+4) = c_b
         If (this%correlations(i)%correlation%atom > 0) Then
-          local_ids((i-1)*4+3) = config%ltg(this%correlations(i)%correlation%atom)
+          local_ids((i-1)*attributes+5) = config%ltg(this%correlations(i)%correlation%atom)
         Else
-          local_ids((i-1)*4+3) = 0
+          local_ids((i-1)*attributes+5) = 0
         End If
-        local_ids((i-1)*4+4) = this%correlations(i)%correlator%buffer_size-3
+        local_ids((i-1)*attributes+6) = this%correlations(i)%correlator%buffer_size-(attributes-1)
 
       End Do
 
@@ -3335,20 +3320,20 @@ Contains
     Call gsum(comm,buffer_size)
     Call gsum(comm,correlations)
 
-    Call packed_ids%initialise(comm, 4*correlations)
+    Call packed_ids%initialise(comm, attributes*correlations)
     Call packed_correlators%initialise(comm, buffer_size)
 
     If (comm%idnode == root_id) Then
 
       Allocate(data_buffer(1:buffer_size))
       Allocate(sizes_buffer(1:correlations))
-      Allocate(ids_buffer(1:4*correlations))
+      Allocate(ids_buffer(1:attributes*correlations))
       Allocate(offests_buffer(1:correlations))
     
     End If
 
     Call gatherv_scatterv_index_arrays(comm, &
-    4*local_correlations, &
+    attributes*local_correlations, &
     packed_ids%mpi%counts, &
     packed_ids%mpi%displ & 
     )
@@ -3368,16 +3353,16 @@ Contains
           offests_buffer(i) = buffer_index
           If (no_advance) Then
             Read (Unit=unit, IOStat=keyio, Fmt=format, Advance = 'No') &
-              ids_buffer((i-1)*4+1), ids_buffer((i-1)*4+2), ids_buffer((i-1)*4+3), &
-              ids_buffer((i-1)*4+4), &
-              data_buffer(buffer_index:(buffer_index+ids_buffer((i-1)*4+4)-1))
+              ids_buffer((i-1)*attributes+1), ids_buffer((i-1)*attributes+2), ids_buffer((i-1)*attributes+3), &
+              ids_buffer((i-1)*attributes+4), ids_buffer((i-1)*attributes+5), ids_buffer((i-1)*attributes+6), &
+              data_buffer(buffer_index:(buffer_index+ids_buffer((i-1)*attributes+attributes)-1))
           Else
             Read (Unit=unit, IOStat=keyio) &
-              ids_buffer((i-1)*4+1), ids_buffer((i-1)*4+2), ids_buffer((i-1)*4+3), &
-              ids_buffer((i-1)*4+4), &
-              data_buffer(buffer_index:(buffer_index+ids_buffer((i-1)*4+4)-1))
+              ids_buffer((i-1)*attributes+1), ids_buffer((i-1)*attributes+2), ids_buffer((i-1)*attributes+3), &
+              ids_buffer((i-1)*attributes+4), ids_buffer((i-1)*attributes+5), ids_buffer((i-1)*attributes+6), &
+              data_buffer(buffer_index:(buffer_index+ids_buffer((i-1)*attributes+attributes)-1))
           End If
-          sizes_buffer(i) = ids_buffer((i-1)*4+4)
+          sizes_buffer(i) = ids_buffer((i-1)*attributes+attributes)
           buffer_index = buffer_index + sizes_buffer(i)
 
       End Do
@@ -3393,17 +3378,21 @@ Contains
 
       Do i = 1, correlations
 
-        A = packed_ids%buffer((i-1)*4+1)
-        B = packed_ids%buffer((i-1)*4+2)
-        atom = packed_ids%buffer((i-1)*4+3)
+        A = packed_ids%buffer((i-1)*attributes+1)
+        c_a = packed_ids%buffer((i-1)*attributes+2)
+        A = packed_ids%buffer((i-1)*attributes+3)
+        c_a = packed_ids%buffer((i-1)*attributes+4)
+        atom = packed_ids%buffer((i-1)*attributes+5)
 
         packed_index = -1
 
         ! find where this data should be placed
         Do j = 1, correlations
-          If (ids_buffer((j-1)*4+1) == A .and. &
-              ids_buffer((j-1)*4+2) == B .and. &
-              ids_buffer((j-1)*4+3) == atom) Then
+          If (ids_buffer((j-1)*attributes+1) == A   .and. &
+              ids_buffer((j-1)*attributes+2) == c_a .and. &
+              ids_buffer((j-1)*attributes+3) == B   .and. &
+              ids_buffer((j-1)*attributes+4) == c_b .and. &
+              ids_buffer((j-1)*attributes+5) == atom) Then
 
             ! found
             packed_index = j
@@ -3455,32 +3444,85 @@ Contains
 
   !!!!!!!! observables !!!!!!!! 
 
-  Function is_equal(left,right) result (b)
-    Class(observable), Intent(In   ) :: left
-    Class(observable), Intent(In   ) :: right
-    Logical                          :: b
-    Integer                          :: lid, rid
+  Logical Function is_equivalent(left, right)
+    Class(correlation), Intent(In   ) :: left
+    Class(correlation), Intent(In   ) :: right
 
-    lid = left%id()
-    rid = right%id()
+    is_equivalent = left%A%id() == right%A%id() .and. &
+                    left%A%component == right%A%component .and. &
+                    left%B%id() == right%B%id() .and. &
+                    left%B%component == right%B%component
+  End Function is_equivalent
 
-    b = lid == rid      
-  End Function is_equal
+  Integer Function component_symbol_to_index(s)
+    Character(Len=*), Intent(In   ) :: s
+
+    Character(Len=2), Dimension(1:3) :: components_vector
+    Character(Len=2), Dimension(1:9) :: components_matrix
+
+    components_vector = (/ 'x', 'y', 'z' /)
+    components_matrix = (/'xx', 'xy', 'xz', 'yx', 'yy', 'yz', 'zx', 'zy', 'zz'/)
+
+    component_symbol_to_index = FindLoc(components_vector, s, 1)
+    If (component_symbol_to_index == 0) Then
+      component_symbol_to_index = FindLoc(components_matrix, s, 1)
+    End If
+
+    If (component_symbol_to_index == 0) Then
+      Call error(0, "no index for component symbol "//s)
+    End If
+  End Function component_symbol_to_index
 
   Subroutine character_to_observable(c, o)
     Character(Len=*),                Intent(In   ) :: c
     Class(observable), Allocatable,  Intent(  Out) :: o
-    Logical                                        :: success
+    
+    Logical                                    :: success
+    Integer                                    :: i
+    Integer                                    :: component
+    Character(Len=2)                           :: component_sym
+    Character(Len=STR_LEN)                     :: msg, component_name
+    Character(Len=MAX_CORRELATION_NAME_LENGTH) :: observable_name
+
+    i = Scan(c, '_')
+
+    If (in_range(i, (/1, Len(c)-1/))) Then
+      component_name = c(i+1:Len(c))
+      observable_name = c(1:i-1)
+      component_sym = component_name(1:Min(Len(component_name),2))
+      component = component_symbol_to_index(component_sym)
+    Else
+      Write (msg, ('(a)')) "correlation without component, please specify a component with _, got: "//Trim(c)
+      Call error(0, msg)
+    End If
 
     success = .false.
-    If (c == velocity_name(observable_velocity()) .or. c == "v") Then 
+    If (observable_name == velocity_name(observable_velocity()) .or. observable_name == "v") Then 
+      If (Len(Trim(component_sym)) /= 1) Then
+        Write (msg, ('(a)')) "velocity requires components x, y, or z. Got: "//Trim(c)
+        Call error(0, msg)
+      End If
       Allocate(observable_velocity::o)
+      o%component = component
+      o%component_name = component_sym
       success = .true.
-    Else If (c == stress_name(observable_stress()) .or. c == "s") Then
+    Else If (observable_name == stress_name(observable_stress()) .or. observable_name == "s") Then
+      If (Len(Trim(component_sym)) /= 2) Then
+        Write (msg, ('(a)')) "stress requires components xx, xy, xz, yx, yy, yz, zx, zy, or, zz. Got: "//Trim(c)
+        Call error(0, msg)
+      End If
       Allocate(observable_stress::o)
+      o%component = component
+      o%component_name = component_sym
       success = .true.
-    Else If (c == heat_flux_name(observable_heat_flux()) .or. c == "hf") Then
+    Else If (observable_name == heat_flux_name(observable_heat_flux()) .or. observable_name == "hf") Then
+      If (Len(Trim(component_sym)) /= 1) Then
+        Write (msg, ('(a)')) "heat_flux requires components x, y, or z. Got: "//Trim(c)
+        Call error(0, msg)
+      End If
       Allocate(observable_heat_flux::o)
+      o%component = component
+      o%component_name = component_sym
       success = .true.
     End If
 
@@ -3490,55 +3532,62 @@ Contains
 
   End Subroutine character_to_observable
 
-  Subroutine code_to_observable(c, o)
-    Integer,                        Intent(In   )  :: c
+  Subroutine id_component_to_observable(id, component, o)
+    Integer,                        Intent(In   )  :: id, component
     Class(observable), Allocatable, Intent(  Out)  :: o
-    Logical                                        :: success
-    Character(Len=100)                             :: msg
+
+    Logical                          :: success
+    Character(Len=100)               :: msg
+    Character(Len=2), Dimension(1:3) :: components_vector
+    Character(Len=2), Dimension(1:9) :: components_matrix
+
+    components_vector = (/ 'x', 'y', 'z' /)
+    components_matrix = (/'xx', 'xy', 'xz', 'yx', 'yy', 'yz', 'zx', 'zy', 'zz'/)
     
     success = .false.
-    If (c == velocity_id(observable_velocity())) Then 
+    If (id == velocity_id(observable_velocity())) Then 
       Allocate(observable_velocity::o)
+      o%component_name = components_vector(component)
       success = .true.
-    Else If (c == stress_id(observable_stress())) Then
+    Else If (id == stress_id(observable_stress())) Then
       Allocate(observable_stress::o)
+      o%component_name = components_matrix(component)
       success = .true.
-    Else If (c == heat_flux_id(observable_heat_flux())) Then
+    Else If (id == heat_flux_id(observable_heat_flux())) Then
       Allocate(observable_heat_flux::o)
+      o%component_name = components_vector(component)
       success = .true.
     End If
 
     If (success .eqv. .false.) Then
-      Write(msg,'(a,i0)') "correlation observable could not be allocated from internal code: ", c
+      Write(msg,'(a,i0)') "correlation observable could not be allocated from internal code: ", id
       Call error(0,msg)
     End If
 
-  End Subroutine code_to_observable
+    o%component = component
+  End Subroutine id_component_to_observable
   
   !!!!!!!!!! observable_velocity !!!!!!!!!!
 
-  Subroutine velocity_value(t, config, stats, v, atom)
-    Class(observable_velocity),   Intent(In   ) :: t
-    Type(configuration_type),     Intent(InOut) :: config
-    Type(stats_type),             Intent(InOut) :: stats
-    Real(Kind=wp), Allocatable,   Intent(InOut) :: v(:)
-    Integer, Optional,            Intent(In   ) :: atom
-    
-    Integer                                     :: d
+  Function velocity_value(t, config, stats, atom) Result(v)
+    Class(observable_velocity),                         Intent(In   ) :: t
+    Type(configuration_type),                           Intent(InOut) :: config
+    Type(stats_type),                                   Intent(InOut) :: stats
+    Integer,                    Optional,               Intent(In   ) :: atom
 
-    d = velocity_dimension(t)
+    Real(Kind=wp)          :: v
+    Character(Len=STR_LEN) :: msg
+    Real(Kind=wp)          :: velocity(1:3)
 
-    Allocate(v(1:d))
 
-    If (Present(atom)) Then
-      v(1) = config%vxx(atom)
-      v(2) = config%vyy(atom)
-      v(3) = config%vzz(atom)
-    Else
-      Call error(0,message="no atom index specified")
+    If (.not. Present(atom)) Then
+      Call error(0,message="no atom index specified for velocity correlator")
     End If
+
+    velocity = (/config%vxx(atom), config%vyy(atom), config%vzz(atom)/)
+    v = velocity(t%component)
     
-  End Subroutine velocity_value
+  End Function velocity_value
 
   Function velocity_dimension(t) Result(v)
       Class(observable_velocity), Intent(In   ) :: t
@@ -3549,7 +3598,7 @@ Contains
   Function velocity_name(t) Result(v)
       Class(observable_velocity), Intent(In   )   :: t
       Character(Len=MAX_CORRELATION_NAME_LENGTH)  :: v
-      v = 'velocity'
+      v = 'velocity_'//t%component_name
   End Function velocity_name
 
   Function velocity_id(t) Result(v)
@@ -3566,24 +3615,18 @@ Contains
 
   !!!!!!!!!! observable stress !!!!!!!!!!
 
-  Subroutine stress_value(t, config, stats, v, atom)
-    Class(observable_stress),     Intent(In   ) :: t
-    Type(configuration_type),     Intent(InOut) :: config
-    Type(stats_type),             Intent(InOut) :: stats
-    Real(Kind=wp), Allocatable,   Intent(InOut) :: v(:)
-    Integer, Optional,            Intent(In   ) :: atom
-    
-    Integer                                     :: d, i
+  Function stress_value(t, config, stats, atom) Result(v)
+    Class(observable_stress),                           Intent(In   ) :: t
+    Type(configuration_type),                           Intent(InOut) :: config
+    Type(stats_type),                                   Intent(InOut) :: stats
+    Integer,                    Optional,               Intent(In   ) :: atom
+    Character(Len=STR_LEN) :: msg
 
-    d = stress_dimension(t)
+    Real(Kind=wp) :: v
 
-    Allocate(v(1:d))
+    v = stats%strtot(t%component) / stats%stpvol
 
-    Do i = 1, 9
-      v(i) = stats%strtot(i) / stats%stpvol
-    End Do
-
-  End Subroutine stress_value
+  End Function stress_value
 
   Function stress_dimension(t) Result(v)
       Class(observable_stress), Intent(In   ) :: t
@@ -3594,7 +3637,7 @@ Contains
   Function stress_name(t) Result(v)
       Class(observable_stress), Intent(In   )     :: t
       Character(Len=MAX_CORRELATION_NAME_LENGTH)  :: v
-      v = 'stress'
+      v = 'stress_'//t%component_name
   End Function stress_name
 
   Function stress_id(t) Result(v)
@@ -3611,22 +3654,18 @@ Contains
 
     !!!!!!!!!! observable heat_flux !!!!!!!!!!
 
-  Subroutine heat_flux_value(t, config, stats, v, atom)
-    Class(observable_heat_flux),     Intent(In   ) :: t
-    Type(configuration_type),        Intent(InOut) :: config
-    Type(stats_type),                Intent(InOut) :: stats
-    Real(Kind=wp), Allocatable,      Intent(InOut) :: v(:)
-    Integer, Optional,               Intent(In   ) :: atom
+  Function heat_flux_value(t, config, stats, atom) Result(v)
+    Class(observable_heat_flux),                         Intent(In   ) :: t
+    Type(configuration_type),                            Intent(InOut) :: config
+    Type(stats_type),                                    Intent(InOut) :: stats
+    Integer,                    Optional,                Intent(In   ) :: atom
     
-    Integer                                        :: d, i
+    Real(Kind=wp)          :: v
+    Character(Len=STR_LEN) :: msg
 
-    d = heat_flux_dimension(t)
+    v = stats%heat_flux(t%component)
 
-    Allocate(v(1:d))
-
-    v = stats%heat_flux
-
-  End Subroutine heat_flux_value
+  End Function heat_flux_value
 
   Function heat_flux_dimension(t) Result(v)
       Class(observable_heat_flux),   Intent(In   ) :: t
@@ -3637,7 +3676,7 @@ Contains
   Function heat_flux_name(t) Result(v)
       Class(observable_heat_flux), Intent(In   )     :: t
       Character(Len=MAX_CORRELATION_NAME_LENGTH)     :: v
-      v = 'heat_flux'
+      v = 'heat_flux_'//t%component_name
   End Function heat_flux_name
 
   Function heat_flux_id(t) Result(v)
