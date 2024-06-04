@@ -55,6 +55,10 @@ Contains
   Subroutine init_coord(T)
     class(coord_type) :: T
 
+    If (.not. T%coordon) Then
+      Return
+    End If
+
     Allocate (T%arraycuts(1:T%ncoordpairs))
     Allocate (T%discuts(1:T%ncoorddis))
     Allocate (T%arraypairs(1:T%ncoordpairs, 1:2))
@@ -69,6 +73,10 @@ Contains
   Subroutine init_coordlist(T, n, m)
     class(coord_type)      :: T
     Integer, Intent(In   ) :: n, m
+
+    If (.not. T%coordon) Then
+      Return
+    End If
 
     Allocate (T%coordlist(0:n, 1:m))
     Allocate (T%icoordlist(0:n, 1:m))
