@@ -741,6 +741,7 @@ Contains
     Integer, Dimension(3) :: link_cell
     Real(Kind=wp)         :: xhi, yhi, zhi
 
+    Call default_filenames(files)
     ! Setup io immediately
     Call read_io(params, ios, files, comm)
     Call read_devel(params, devel, tmr, seed, flow)
@@ -845,6 +846,9 @@ Contains
                                        domain(ff), ewld(ff), kim_data(ff), comm)
 
       If (stats(ff)%cur%on) Then
+        If (.not. files(FILE_KPOINTS)%exists()) Then
+          Call error(0, "Not file KPOINTS exists")
+        End If
         Call config(ff)%k%init(files(FILE_KPOINTS)%filename, comm)
         Call stats(ff)%cur%init(config(ff)%k%n, 200, files(FILE_CURRENT), comm)
       End If

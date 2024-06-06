@@ -26,6 +26,7 @@ Module filename
     Procedure, Public :: rename => file_type_init
     Procedure, Public :: Close => close_file
     Procedure, Public :: is_null => file_type_null
+    Procedure, Public :: exists
   End Type file_type
 
   ! Core file location keys
@@ -99,7 +100,7 @@ Contains
 
   !> Initialise a file
   Subroutine file_type_init(T, filename)
-    Class(file_type)                :: T
+    Class(file_type), Intent(InOut) :: T
     Character(Len=*), Intent(In   ) :: filename
 
     T%filename = Trim(filename)
@@ -117,7 +118,7 @@ Contains
 
   !> Allocate filename array and set defaults
   Subroutine default_filenames(filenames)
-    Type(file_type) :: filenames(FILENAME_SIZE)
+    Type(file_type), Intent(InOut) :: filenames(FILENAME_SIZE)
 
     Character(Len=STR_FILENAME), Dimension(FILENAME_SIZE) :: default_names
     Integer(Kind=wi)                              :: file_no
@@ -176,5 +177,14 @@ Contains
       T%unit_no = -2
     End If
   End Subroutine close_file
+
+  Function exists(T) Result(exist)
+    Class(file_type), Intent(In   ) :: T
+    Logical                         :: exist
+  
+    ! Check if the file exists
+    Inquire (file=T%filename, exist=exist)
+
+  End Function
 
 End Module filename

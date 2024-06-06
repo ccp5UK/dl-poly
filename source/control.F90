@@ -61,7 +61,7 @@ Module control
                                       FILE_TABDIH, FILE_TABEAM, FILE_TABINV, FILE_TABVDW, FILE_COR, &
                                       FILE_FIELD_2, FILE_FIELD_3, FILE_SETEVB,FILE_POPEVB, &
                                       FILE_CONFIG_2,FILE_CONFIG_3,FILE_REVCON_2,FILE_REVCON_3,&
-                                      FILE_HEATFLUX, file_type
+                                      FILE_HEATFLUX, FILE_CURRENT, file_type
   Use flow_control,             Only: DFTB,&
     RESTART_KEY_CLEAN,&
     RESTART_KEY_NOSCALE,&
@@ -556,6 +556,8 @@ Contains
     files(FILE_TABEAM)%filename = curr_option
     Call params%retrieve('io_file_cor', curr_option)
     files(FILE_COR)%filename = curr_option
+    Call params%retrieve('io_file_currents', curr_option)
+    files(FILE_CURRENT)%filename = curr_option
     Call params%retrieve('io_file_setevb', curr_option)
     files(FILE_SETEVB)%filename = curr_option
     Call params%retrieve('io_file_popevb', curr_option)
@@ -3331,7 +3333,14 @@ Contains
           val='MSDTMP', &
           description='Set output MSD filepath, special options: NONE', &
           data_type=DATA_STRING))
-
+          
+        Call table%set('io_file_currents', control_parameter( &
+          key='io_file_currents', &
+          name='currents filepath', &
+          val='CURRENTS', &
+          description='Set output CURRENTS filepath', &
+          data_type=DATA_STRING))
+          
         Call table%set('io_file_tabbnd', control_parameter( &
           key='io_file_tabbnd', &
           name='tabbnd filepath', &
