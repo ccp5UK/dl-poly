@@ -89,7 +89,8 @@ Program dl_poly
   Use trajectory,                             Only: trajectory_type
   Use ttm,                                    Only: ttm_type
   Use unit_test,                              Only: testing_type
-  Use units,                                  Only: initialise_units
+  Use units,                                  Only: initialise_units, &
+                                                    destroy_units
   Use vdw,                                    Only: vdw_type
   Use z_density,                              Only: z_density_type
   Use constants,                              Only: DLP_VERSION, &
@@ -194,6 +195,7 @@ Program dl_poly
   Call gbcast(dlp_world(0), output_filename, 0)
   Call gbcast(dlp_world(0), finish, 0)
   If (finish) Then
+    Call destroy_units()
     Call exit_comms(dlp_world)
     Stop 0
   End If
@@ -247,7 +249,7 @@ Program dl_poly
   End Select
 
   ! Terminate job
-
+  Call destroy_units()
   Call gsync(dlp_world(0))
   Call exit_comms(dlp_world)
 
