@@ -736,8 +736,8 @@ Contains
           zbl_energy%gamma = zbl_energy%gamma - p%zbl_c(i) * t1
         End Do
         zbl_energy%energy = kk * zbl_energy%energy * ir
-        ! -rU/r
-        zbl_energy%gamma = zbl_energy%energy - a * kk * zbl_energy%gamma
+        ! -dU/dr
+        zbl_energy%gamma = - a * kk * zbl_energy%gamma
     End Function zbl_energy
 
     Subroutine zbl_set_parameters(p, param)
