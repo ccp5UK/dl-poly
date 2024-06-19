@@ -405,7 +405,7 @@ if(BUILD_TESTING)
     endforeach()
   endif()
 
-  foreach(test RANGE 176 180 1)
+  foreach(test RANGE 176 181 1)
     do_test("TEST${test}")
   endforeach()
 

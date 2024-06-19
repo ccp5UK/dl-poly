@@ -1420,6 +1420,7 @@ Contains
           Mod(nstep, zdensity%frequency) == 0) Call z_density_collect(zdensity, config)
     End If
 
+    If (stats%cur%on) Call stats%cur%compute(config, time, comm, sites)
     ! Catch time of starting statistical averages
 
     If (((.not. leql) .or. nstep == nsteql) .and. tmst < tstep) tmst = time

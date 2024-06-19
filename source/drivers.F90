@@ -1820,15 +1820,6 @@ Contains
                        flow%step, flow%time, green, comm)
     End If
 
-    If (flow%freq_output > 0) Then
-      If (stat%cur%on .and. (Mod(flow%step, flow%freq_output) == 0) &
-          .and. (flow%step > flow%equil_steps)) Then
-
-        Call stat%cur%compute(cnfig, flow%time, comm)
-
-      End If
-    End If
-
   End Subroutine statistics_report
 
   Subroutine write_options(cnfig, io, rsdc, cshell, stat, sites, domain, traj, files, dfcts, &

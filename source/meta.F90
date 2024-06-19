@@ -847,10 +847,10 @@ Contains
 
       If (stats(ff)%cur%on) Then
         If (.not. files(FILE_KPOINTS)%exists()) Then
-          Call error(0, "Not file KPOINTS exists")
+          Call error(0, "No file KPOINTS exists")
         End If
         Call config(ff)%k%init(files(FILE_KPOINTS)%filename, comm)
-        Call stats(ff)%cur%init(config(ff)%k%n, 200, files(FILE_CURRENT), comm)
+        Call stats(ff)%cur%init(config(ff)%k%n, 200, files(FILE_CURRENT), comm, config(ff), sites(ff)%mxatyp, stats(ff)%file_yaml)
       End If
 
       Call read_correlation_count(params,stats(ff), comm, config(ff)%natms)
@@ -1074,7 +1074,7 @@ Contains
     Do ff = 1, flow%NUM_FF
       If (stats(ff)%cur%on) Then
         Call config(ff)%k%init(files(FILE_KPOINTS)%filename, comm)
-        Call stats(ff)%cur%init(config(ff)%k%n, 200, files(FILE_CURRENT), comm)
+        Call stats(ff)%cur%init(config(ff)%k%n, 200, files(FILE_CURRENT), comm, config(ff), sites(ff)%mxatyp)
       End If
     End Do
 
