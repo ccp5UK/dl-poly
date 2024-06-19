@@ -1657,7 +1657,9 @@ Contains
     Integer(Kind=wi),         Intent(In   ) :: ff
 
     Character(Len=STR_LEN) :: message, messages(5)
-    Logical            :: ffpass
+    Real(Kind=wp)          :: stats(1:stat%mxnstk)
+    Integer                :: i
+    Logical                :: ffpass
 
 !!!!!!!!!!!!!!!!!  W_STATISTICS_REPORT INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
@@ -1715,11 +1717,30 @@ Contains
         Write (messages(4), '(a)') ''
         Call info(messages, 4, .true.)
 
+        Do i = 1, stat%mxnstk
+          stats(i) = stat%accumulators(i)%mu
+        End Do
+
         Write (messages(1), '(6x,a7,1p,9e12.4)') 'rolling', stat%ravval(1:9)
         Write (messages(2), '(5x,a8,1p,9e12.4)') 'averages', stat%ravval(10:18)
         Write (messages(3), '(13x,9e12.4)') stat%ravval(19:27)
-        Write (messages(4), '(a)') Repeat('-', 130)
-        Call info(messages, 4, .true.)
+        Write (messages(4), '(a)') ''
+
+        If (flow%output_std_dev) Then
+          Call info(messages, 4, .true.)
+          Do i = 1, stat%mxnstk
+            stats(i) = Sqrt(stat%accumulators(i)%var)
+          End Do
+
+          Write (messages(1), '(6x,a7,1p,9e12.4)') 'rolling', stats(1:9)
+          Write (messages(2), '(4x,a9,1p,9e12.4)') 'std. dev.', stats(10:18)
+          Write (messages(3), '(13x,9e12.4)') stats(19:27)
+          Write (messages(4), '(a)') Repeat('-', 130)
+          Call info(messages, 4, .true.)
+        Else
+          Write (messages(4), '(a)') Repeat('-', 130)
+          Call info(messages, 4, .true.)
+        End If
 
         If (flow%step /= 0) Then
           Call flow%line_printed()

@@ -86,6 +86,8 @@ Module flow_control
     !> Calculate heat-flux
     Logical, Public :: heat_flux
 
+    Logical, Public :: output_std_dev = .false.
+
     !> Restart key
     Integer(Kind=wi), Public :: restart_key = RESTART_KEY_CLEAN
     !> Current simulation step

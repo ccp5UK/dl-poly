@@ -107,8 +107,12 @@ Module statistics
   End Type
 
   Type, Public :: statistic_accumulator
-    Real(Kind=wp) :: mu = 0.0_wp, var = 0.0_wp, tmp = 0.0_wp
-    Integer       :: count = 0
+    Real(Kind=wp)                            :: mu = 0.0_wp, mu_old = 0.0_wp, &
+                                                ss = 0.0_wp, var_tmp = 0.0_wp, &
+                                                var = 0.0_wp
+    Integer                                  :: initialised = 0, window = 0, &
+                                                stack_pos = 0
+    Real(Kind=wp), Allocatable, Dimension(:) :: stack
     Contains 
       Procedure update_statistic
   End Type
@@ -200,7 +204,7 @@ Module statistics
     Type(correlation),       Allocatable :: unique_correlations(:)
     Integer,                 Allocatable :: unique_correlation_params(:)
     Integer                              :: cor_dump_freq = 0 
-    Type(statistic_accumulator)          :: volume_accum, mass_accum, temperature_accum
+    Type(statistic_accumulator), Allocatable :: accumulators(:)        
     Real(Kind=wp), Allocatable         :: xin(:), yin(:), zin(:)
     Real(Kind=wp), Allocatable         :: xto(:), yto(:), zto(:), rsd(:)
     Real(Kind=wp), Allocatable         :: stpval(:), stpvl0(:), sumval(:), ssqval(:)
@@ -335,8 +339,8 @@ Contains
     Class(stats_type), Intent(InOut)   :: stats
     Integer,           Intent(In   )   :: mxrgd, mxatms, mxatdm
 
-    Integer                            :: mxnstk, mxstak, nxatms
-    Integer,           Dimension(1:4)  :: fail
+    Integer                            :: mxnstk, mxstak, nxatms, i
+    Integer,           Dimension(1:5)  :: fail
  
     fail = 0
 
@@ -353,6 +357,13 @@ Contains
     Allocate (stats%xto(1:mxatdm), stats%yto(1:mxatdm), stats%zto(1:mxatdm), stats%rsd(1:mxatdm), Stat=fail(2))
     Allocate (stats%stpval(0:mxnstk), stats%stpvl0(0:mxnstk), stats%sumval(0:mxnstk), stats%ssqval(0:mxnstk), Stat=fail(3))
     Allocate (stats%zumval(0:mxnstk), stats%ravval(0:mxnstk), stats%stkval(1:mxstak, 0:mxnstk), Stat=fail(4))
+    
+    Allocate (stats%accumulators(0:mxnstk), Stat=fail(5))
+    Do i = 0, mxnstk
+      Allocate(stats%accumulators(i)%stack(1:mxstak))
+      stats%accumulators(i)%window = mxstak
+    End Do
+
     If (Any(fail > 0)) Call error_alloc("allocate_statistics_arrays", "statistics")
 
     stats%xin = 0.0_wp; stats%yin = 0.0_wp; stats%zin = 0.0_wp
@@ -620,6 +631,10 @@ Contains
       Deallocate (stats%stkval0)
     End If
 
+    If (Allocated(stats%accumulators)) Then 
+      Deallocate(stats%accumulators)
+    End If
+
     !Call deallocate_correlations_arrays()
   End Subroutine cleanup
 
@@ -703,7 +718,7 @@ Contains
       If (Allocated(visc)) Then
         Call to_out_units(1.0_wp, "internal_m", conv, units_visc)
         Allocate(k_visc(1:Size(visc)))
-        k_visc = visc / ((conv*stats%mass_accum%mu) / stats%volume_accum%mu)
+        k_visc = visc / ((conv*config%totmas) / stats%accumulators(19)%mu)
         Write (file_unit, '(a)')             "      viscosity:"
         Write (file_unit, '(a,g16.8)')       "            value: ", Sum(visc) / Real(Size(visc), Kind=wp)
         If (Size(visc) > 1) Then
@@ -1343,6 +1358,10 @@ Contains
 
     If (nstep /= 0) Then
 
+      Do i = 0, stats%mxnstk
+        Call stats%accumulators(i)%update_statistic(stats%stpval(i), nstep)   
+      End Do
+
       ! current stack value
 
       kstak = Mod(nstep - 1, stats%mxstak) + 1
@@ -1400,12 +1419,6 @@ Contains
       If (((.not. leql) .or. nstep >= nsteql) .and. &
           Mod(nstep, zdensity%frequency) == 0) Call z_density_collect(zdensity, config)
     End If
-
-    ! accumulation of volume and mass averages (used e.g. by viscosity calculation)
-
-    Call stats%volume_accum%update_statistic(stats%stpvol)
-    Call stats%mass_accum%update_statistic(config%totmas)
-    Call stats%temperature_accum%update_statistic(stats%stptmp)
 
     ! Catch time of starting statistical averages
 
@@ -2692,7 +2705,7 @@ Contains
     End Do
 
     If (Size(viscosity) > 0) Then
-      viscosity = prsunt * ( stats%volume_accum%mu / (boltz*stats%temperature_accum%mu) ) * viscosity
+      viscosity = prsunt * ( stats%accumulators(19)%mu / (boltz*stats%accumulators(2)%mu) ) * viscosity
     Else
       Deallocate(viscosity)
     End If
@@ -2748,7 +2761,7 @@ Contains
     If (Size(therm_cond) > 0) Then
       Call to_out_units(1.0_wp, "internal_e", conv, units)
       ! already divided through by volume
-      therm_cond = stats%volume_accum%mu / ( (stats%temperature_accum%mu**2) * (boltz/engunit)) * therm_cond
+      therm_cond = stats%accumulators(19)%mu / ( (stats%accumulators(2)%mu**2) * (boltz/engunit)) * therm_cond
       units = Trim(units)//" / (ps Ang K)"
     Else
       Deallocate(therm_cond)
@@ -3691,22 +3704,30 @@ Contains
     v = .false.
   End Function heat_flux_per_atom
 
-  Subroutine update_statistic(acc, v)
-    Class(statistic_accumulator), Intent(InOut) :: acc 
+  Subroutine update_statistic(stat, v, step)
+    Class(statistic_accumulator), Intent(InOut) :: stat
     Real(Kind=wp)                               :: v
+    Integer                                     :: step
 
-    Real(Kind=wp) :: mu_last
+    stat%mu_old = stat%mu
+    stat%stack_pos = Mod((step - 1),stat%window) + 1
 
-    ! tmp for Welford's algorithm
-    mu_last = acc%mu
-    ! online average
-    acc%mu = (acc%count * acc%mu + v) / (acc%count+1)
-    ! Welford's algorithm
-    acc%tmp = acc%tmp + (v - mu_last)*(v - acc%mu)
-    ! unbiased
-    acc%var = acc%tmp / (Max(1,acc%count))
-    acc%count = acc%count + 1
+    If (stat%initialised == stat%window) Then 
+      stat%mu = (stat%window * stat%mu_old - stat%stack(stat%stack_pos) + v) / stat%window
+      stat%ss = stat%ss - stat%stack(stat%stack_pos)**2 + v*v
+      ! also multiply by n / (n-1) for unbiased, mu already divided by n
+      stat%var = stat%ss / (stat%window-1) - (stat%mu**2)  * stat%window / (stat%window - 1)
+    Else 
+      stat%mu = (stat%initialised * stat%mu + v) / (stat%initialised + 1)
+      stat%var_tmp = stat%var_tmp + (v - stat%mu_old) * (v -stat%mu)
+      ! account for bias, / n-1
+      stat%var = stat%var_tmp / Max(1,stat%initialised)
+      stat%ss = stat%ss + v*v
+      stat%initialised = stat%initialised + 1
+    End If
 
-  End Subroutine
+    stat%stack(stat%stack_pos) = v
+
+  End Subroutine update_statistic
 
 End Module statistics

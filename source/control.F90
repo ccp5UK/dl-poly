@@ -2067,6 +2067,8 @@ Contains
 
     Call params%retrieve('io_statis_yaml', stats%file_yaml)
 
+    Call params%retrieve('output_std_dev', flow%output_std_dev)
+
     Call params%retrieve('evb_num_ff', flow%NUM_FF)
     if (flow%NUM_FF > 1 .and. flow%simulation_method /= EmpVB) then
       call error(0,"evb_num_ff specified without simulation_method: evb",.true.)
@@ -3451,6 +3453,13 @@ Contains
                      val='off', &
                      data_type=DATA_BOOL, &
                      description="Output final energy e_tot in output file"))
+
+      Call table%set('output_std_dev', control_parameter( &
+                     key='output_std_dev', &
+                     name='Output Rolling standard deviation', &
+                     val='off', &
+                     data_type=DATA_BOOL, &
+                     description="Output rolling standard deviations in OUTPUT"))
 
       Call table%set("ignore_config_indices", control_parameter( &
                      key="ignore_config_indices", &
