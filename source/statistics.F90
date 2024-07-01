@@ -39,6 +39,8 @@ Module statistics
   Use filename,        Only: FILE_STATS, FILE_COR, FILE_HEATFLUX, &
                              file_type
   Use flow_control,    Only: RESTART_KEY_OLD, flow_type
+  Use hash,            Only: hash_table, &
+                             MAX_KEY
   Use io,              Only: &
                              io_allocation_error, io_base_comm_not_set, io_close, io_delete, &
                              io_finalize, io_get_parameters, io_history, io_init, io_open, &
@@ -77,34 +79,36 @@ Module statistics
 
   Integer, Parameter :: MAX_CORRELATION_NAME_LENGTH = 16
 
-  ! correlation observables, and interface
+  !> correlation observables, and interface
   Type, Abstract, Public :: observable
     Integer          :: component = 0
     Character(Len=2) :: component_name = ""
     Contains
       Procedure(get_value),     Deferred :: value
-      Procedure(get_dimension), Deferred :: dimension
       Procedure(get_name),      Deferred :: name
       Procedure(get_id)  ,      Deferred :: id
       Procedure(is_per_atom),   Deferred :: per_atom
   End Type observable
 
-  Type, Public :: observable_holder
-    Class(observable), Allocatable :: observable
-  End Type
-
-  Type, Public :: correlation
+  !> stores correlations <AB\>
+  Type, Public :: correlation_data
+    !> common observable A
     Class(observable), Allocatable :: A
+    !> common observable B
     Class(observable), Allocatable :: B
-    ! 0 indicates not tracking an atom but a global property
-    ! >= 1 indicates a local atom's index, or global resp.
-    Integer                        :: atom, atom_global
+    !> all (in per atom case) correlations <AB\>
+    Class(correlator), Allocatable :: correlators(:)
+    !> if per-atom the local atom indices (else (/0/))
+    Integer, Allocatable           :: atom(:)
+    !> if per-atom the global atom indices (else (/0/))
+    Integer, Allocatable           ::atom_global(:)
   End Type 
 
-  Type, Public :: correlator_holder
-    Type(correlator)               :: correlator
-    Type(correlation)              :: correlation
-  End Type
+  Type, Private, Extends(hash_table) :: correlation_hash_table
+    Contains
+      Generic,   Public  :: get => get_correlation
+      Procedure, Private :: get_correlation
+  End Type correlation_hash_table
 
   Type, Public :: statistic_accumulator
     Real(Kind=wp)                            :: mu = 0.0_wp, mu_old = 0.0_wp, &
@@ -199,11 +203,7 @@ Module statistics
                                          0.0_wp] ! maximum cycles
     Type(current_type)                 :: cur
     Logical                            :: calculate_correlations = .false., per_atom_correlations = .false.
-    Integer                            :: number_of_correlations = 0, max_buffer_per_atom = 0
-    Type(correlator_holder), Allocatable :: correlations(:)
-    Type(correlation),       Allocatable :: unique_correlations(:)
-    Integer,                 Allocatable :: unique_correlation_params(:)
-    Integer                              :: cor_dump_freq = 0 
+    Integer                            :: cor_deport_buffer = 0, cor_dump_freq = 0, number_of_correlations = 0
     Type(statistic_accumulator), Allocatable :: accumulators(:)        
     Real(Kind=wp), Allocatable         :: xin(:), yin(:), zin(:)
     Real(Kind=wp), Allocatable         :: xto(:), yto(:), zto(:), rsd(:)
@@ -231,12 +231,16 @@ Module statistics
     !> Whether this step is a step to collect per-particle data
     Logical :: collect_pp = .false.
 
+    !> Stores correlation_data by correlation type
+    !>  e.g. stress_xy-v_y. Per atom cors are stored
+    !>  together.
+    Type(correlation_hash_table), Private :: cor_table
   Contains
     Private
 
     Procedure, Public :: init              => allocate_statistics_arrays
     Procedure, Public :: init_connect      => allocate_statistics_connect
-    Procedure, Public :: init_correlations => allocate_correlations_arrays
+    Procedure, Public :: init_correlations => init_correlations_table
     Procedure, Public :: init_correlator   => allocate_correlator
     Procedure, Public :: clean_connect     => deallocate_statistics_connect
     Procedure, Public :: update_stress
@@ -245,8 +249,7 @@ Module statistics
     Procedure, Public :: correlator_deport
     Procedure, Public :: correlator_recieve
     Procedure, Public :: dump_correlations 
-    Procedure, Public :: revive_correlations 
-    Procedure, Public :: reindex_correlators
+    Procedure, Public :: revive_correlations
 
     Procedure         :: allocate_per_particle_arrays
     Procedure         :: deallocate_per_particle_arrays
@@ -254,7 +257,7 @@ Module statistics
   End Type
 
   Abstract Interface 
-    ! Kernal for selecting data for correlation
+    !> Kernal for selecting data for correlation
     Function get_value(t, config, stats, atom) Result(v)
         Import observable, configuration_type, stats_type, wp
         Class(observable),                     Intent(In   ) :: t
@@ -265,21 +268,14 @@ Module statistics
         Real(Kind=wp) :: v
     End Function get_value
 
-    ! utility to get size of observable
-    Function get_dimension(t) Result(v)
-        Import observable
-        Class(observable), Intent(In   ) :: t
-        Integer                          :: v
-    End Function get_dimension
-
-    ! utility to get name of observable (i.e. for i/o)
+    !> utility to get name of observable (i.e. for i/o)
     Function get_name(t) Result(v)
         Import observable, MAX_CORRELATION_NAME_LENGTH
         Class(observable), Intent(In   ) :: t
         Character(Len=MAX_CORRELATION_NAME_LENGTH)                 :: v
     End Function get_name
 
-    ! utility to get numerical id of observable (i.e. for revive)
+    !> utility to get numerical id of observable (i.e. for revive)
     Function get_id(t) Result(v)
       Import observable
       Class(observable), Intent(In   ) :: t
@@ -296,7 +292,6 @@ Module statistics
   Type, Extends(observable), Public :: observable_velocity
   Contains
       Procedure :: value     => velocity_value
-      Procedure :: dimension => velocity_dimension
       Procedure :: name      => velocity_name
       Procedure :: id        => velocity_id
       Procedure :: per_atom  => velocity_per_atom
@@ -305,7 +300,6 @@ Module statistics
   Type, Extends(observable), Public :: observable_stress
   Contains
       Procedure :: value     => stress_value
-      Procedure :: dimension => stress_dimension
       Procedure :: name      => stress_name
       Procedure :: id        => stress_id
       Procedure :: per_atom  => stress_per_atom
@@ -313,7 +307,6 @@ Module statistics
   Type, Extends(observable), Public :: observable_heat_flux
   Contains
       Procedure :: value     => heat_flux_value
-      Procedure :: dimension => heat_flux_dimension
       Procedure :: name      => heat_flux_name
       Procedure :: id        => heat_flux_id
       Procedure :: per_atom  => heat_flux_per_atom
@@ -635,62 +628,112 @@ Contains
       Deallocate(stats%accumulators)
     End If
 
-    !Call deallocate_correlations_arrays()
   End Subroutine cleanup
 
-  Subroutine allocate_correlations_arrays(stats)
+  Subroutine init_correlations_table(stats)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_5 subroutine to initialise the cor_table.
+    !
+    ! author    - h.l.devereux 2023
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     Class(stats_type), Intent(InOut) :: stats
-    Integer,           Dimension(1)  :: fail
 
-    Allocate(stats%correlations(1:stats%number_of_correlations), Stat = fail(1))
+    Call stats%cor_table%init(2*stats%number_of_correlations+1)
 
-    If (Any(fail > 0)) Call error_alloc("allocate_correlations_arrays", "statistics")
+  End Subroutine init_correlations_table
 
-  End Subroutine allocate_correlations_arrays
-
-  Subroutine allocate_correlator(stats, atom, global, blocks, points, window, &
+  Subroutine allocate_correlator(stats, per_atom, config, comm, blocks, points, window, &
     A, B, correlator_index)
-    Class(stats_type),        Intent(InOut) :: stats
-    Integer,                  Intent(In   ) :: atom, global, blocks, points, window, &
-                                               correlator_index
-    Class(observable),        Intent(In   ) :: A, B
-    
-    stats%correlations(correlator_index)%correlation%A = A
-    stats%correlations(correlator_index)%correlation%B = B
-    stats%correlations(correlator_index)%correlation%atom = atom
-    stats%correlations(correlator_index)%correlation%atom_global = global
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_5 subroutine for allocating a particular correlation.
+    !
+    ! author    - h.l.devereux 2023
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Class(stats_type),         Intent(InOut) :: stats
+    Class(configuration_type), Intent(InOut) :: config
+    Class(comms_type),         Intent(InOut) :: comm
+    Logical,                   Intent(In   ) :: per_atom
+    Integer,                   Intent(In   ) :: blocks, points, window
+    Integer,                   Intent(InOut) :: correlator_index
+    Class(observable),         Intent(In   ) :: A, B
 
-    Call stats%correlations(correlator_index)%correlator%init(blocks, points, window, 1, 1)
-  
+    Class(correlation_data), Allocatable :: cor_data
+    Class(correlator),       Allocatable :: tmp_cor
+    Integer                              :: global = 0, i, atoms, atom = 0
+    Character(Len=MAX_KEY)               :: correlation_name
+    
+    atoms = 1
+
+    If (per_atom) Then 
+      atoms = config%natms
+    Else If (comm%idnode /= root_id) Then
+      Return
+    End If
+
+    Write (correlation_name, '(a)') Trim(A%name())//"-"//Trim(B%name())
+
+    Allocate(cor_data)
+    cor_data%A = A
+    cor_data%B = B
+    Allocate(cor_data%atom(1:atoms))
+    Allocate(cor_data%atom_global(1:atoms))
+    Allocate(cor_data%correlators(1:atoms))
+    Do i = 1, atoms
+      Call cor_data%correlators(i)%init(blocks, points, window, 1, 1)
+      If (per_atom) Then
+        atom = i
+        global = config%ltg(atom)
+      End If
+      cor_data%atom(i) = atom
+      cor_data%atom_global(i) = global
+      correlator_index = correlator_index + 1
+    End Do
+
+    If (stats%cor_table%in(correlation_name)) Then
+      Call error(0, "duplicate correlation")
+    End If
+    Call stats%cor_table%set(correlation_name, cor_data)
   End Subroutine allocate_correlator
 
   Subroutine correlation_result(stats, comm, files, config, sites, dt)
-    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_5 subroutine for printing a correlation result
+    ! (values, lags and derived data) into io_file_cor
+    !
+    ! author    - h.l.devereux 2023
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
     Class(stats_type),        Intent(InOut)       :: stats
     Type(comms_type),         Intent(InOut)       :: comm
     Type(file_type),          Intent(InOut)       :: files(:)
     Type(configuration_type), Intent(In   )       :: config
     Type(site_type),          Intent(In   )       :: sites
     Real(Kind=wp),            Intent(In   )       :: dt
-    Integer                                       :: i, tau, j, k, flat_dim, l, r, &
-                                                     file_unit, atom
-    Real(Kind=wp), Allocatable                    :: cor_accumulator(:,:,:,:), correlation(:,:,:), &
-                                                     flat_correlation(:), timesteps(:), visc(:), &
-                                                     therm_cond(:), k_visc(:)  
-    Integer,       Allocatable                    :: type_counts(:)
-    Character(Len=MAX_CORRELATION_NAME_LENGTH*2+1)  :: correlation_name
-    Character(Len=MAX_CORRELATION_NAME_LENGTH)    :: char_left, char_right, &
-                                                     component_left, component_right
-    Character(Len=2), Dimension(1:3)              :: components_vector
-    Character(Len=2), Dimension(1:9)              :: components_matrix
-    Real(Kind=wp)                                 :: t, conv
-    Integer                                       :: points, window, blocks, &
-                                                     points_cor, &
-                                                     max_points_cor, &
-                                                     min_points_cor
-    Character(Len=STR_LEN)                        :: units_visc, units_therm
-    Logical                                       :: computed_visc, computed_therm
-                                              
+
+    Integer                                        :: i, tau, j, k, flat_dim, l, r, &
+                                                      file_unit, atom, points, window, blocks, &
+                                                      points_cor, max_points_cor, min_points_cor, &
+                                                      cor_index
+    Real(Kind=wp), Allocatable                     :: cor_accumulator(:,:,:,:), correlation(:,:,:), &
+                                                      flat_correlation(:), timesteps(:), visc(:), &
+                                                      therm_cond(:), k_visc(:)
+    Integer,       Allocatable                     :: type_counts(:)
+    Character(Len=MAX_CORRELATION_NAME_LENGTH*2+1) :: correlation_name
+    Character(Len=MAX_CORRELATION_NAME_LENGTH)     :: char_left, char_right, &
+                                                      component_left, component_right
+    Character(Len=2), Dimension(1:3)               :: components_vector
+    Character(Len=2), Dimension(1:9)               :: components_matrix
+    Real(Kind=wp)                                  :: t, conv
+    Character(Len=STR_LEN)                         :: units_visc, units_therm
+    Logical                                        :: computed_visc, computed_therm
+    Character(Len=MAX_KEY), Allocatable :: cor_keys(:)   
+    Type(correlation_data) :: cor_data                               
+    
                         
     If (stats%calculate_correlations .eqv. .false.) Then 
       Return 
@@ -753,101 +796,67 @@ Contains
       Write (file_unit, '(a)') "correlations:"
     End If
 
-    Do i = 1, Size(stats%unique_correlations)
+    Call stats%cor_table%get_keys(cor_keys)
 
+    Do i = 1, Size(cor_keys)
+      If (.not. stats%cor_table%in(cor_keys(i))) Cycle
+      Call stats%cor_table%get(cor_keys(i), cor_data)
+      correlation_name = cor_keys(i)
+      
       If (Allocated(correlation)) Then
         Deallocate(correlation)
       End If 
-
       If (Allocated(cor_accumulator)) Then
         Deallocate(cor_accumulator)
       End If 
-
       If (Allocated(flat_correlation)) Then 
         Deallocate(flat_correlation)
       End If
-
       If (Allocated(type_counts)) Then 
         Deallocate(type_counts)
       End If
-
       If (Allocated(timesteps)) Then 
         Deallocate(timesteps)
       End If
 
-      char_left = stats%unique_correlations(i)%A%name()
-      char_right = stats%unique_correlations(i)%B%name()
-      correlation_name = Trim(char_left)//"-"//Trim(char_right)
+      If (cor_data%atom(1) /= 0) Then
+        points = cor_data%correlators(1)%points_per_block
+        blocks = cor_data%correlators(1)%number_of_blocks
+        window = cor_data%correlators(1)%window_size
+        flat_dim = sites%mxatyp*points*blocks*1*1
 
-      If (stats%unique_correlations(i)%atom > 0) Then
+        Allocate(cor_accumulator(1:sites%mxatyp, 1:points*blocks, 1:1, 1:1))
+        Allocate(correlation(1:points*blocks,1:1,1:1))
+        Allocate(flat_correlation(1:flat_dim))
+        Allocate(type_counts(1:sites%mxatyp))
+        Allocate(timesteps(1:points*blocks))
 
-        Do j = 1, stats%number_of_correlations
-
-          If (is_equivalent(stats%correlations(j)%correlation, stats%unique_correlations(i))) Then
-
-            ! found a match, assume all same (they should be)
-            
-            points = stats%correlations(j)%correlator%points_per_block
-            blocks = stats%correlations(j)%correlator%number_of_blocks
-            window = stats%correlations(j)%correlator%window_size
-
-            Allocate(cor_accumulator(1:sites%mxatyp, 1:points*blocks, 1:1, 1:1))
-
-            Allocate(correlation(1:points*blocks,1:1,1:1))
-
-            flat_dim = sites%mxatyp*points*blocks*1*1
-
-            Allocate(flat_correlation(1:flat_dim))
-            Allocate(type_counts(1:sites%mxatyp))
-
-            Allocate(timesteps(1:points*blocks))
-
-            type_counts = 0
-            flat_correlation = 0.0_wp
-            correlation = 0.0_wp
-            cor_accumulator = 0.0_wp
-            timesteps = 0.0_wp
-            
-            ! data allocated, now exit to accumulate 
-
-            exit
-          End If
-
-        End Do
+        type_counts = 0
+        flat_correlation = 0.0_wp
+        correlation = 0.0_wp
+        cor_accumulator = 0.0_wp
+        timesteps = 0.0_wp
 
         ! accumulate average
-
-        Do j = 1, stats%number_of_correlations
-
-          If (stats%correlations(j)%correlator%count_updated == 0) Then
+        Do j = 1, Size(cor_data%atom)
+          If (cor_data%correlators(j)%count_updated == 0) Then
             ! no data was seen in this correlator, distinct from 0 
             ! correlation case
             Cycle
           End If
-          
-          If (is_equivalent(stats%correlations(j)%correlation, stats%unique_correlations(i))) Then
-
-            atom = stats%correlations(j)%correlation%atom
-
-            correlation = 0.0_wp
-            Call stats%correlations(j)%correlator%get_correlation(correlation, timesteps, dt, points_cor)
-
-            cor_accumulator(config%ltype(atom),:,:,:) = &
-              cor_accumulator(config%ltype(atom),:,:,:) + correlation
-
-            type_counts(config%ltype(atom)) = type_counts(config%ltype(atom)) + 1
-
-          End If
-
+          atom = cor_data%atom(j)
+          correlation = 0.0_wp
+          Call cor_data%correlators(j)%get_correlation(correlation, timesteps, dt, points_cor)
+          cor_accumulator(config%ltype(atom),:,:,:) = &
+            cor_accumulator(config%ltype(atom),:,:,:) + correlation
+          type_counts(config%ltype(atom)) = type_counts(config%ltype(atom)) + 1
         End Do
-
         ! now collect onto root
         points_cor = points_cor - 1
         max_points_cor = points_cor
         Call gmax(comm, max_points_cor)
         min_points_cor = points_cor 
         Call gmin(comm, min_points_cor)
-
         If (max_points_cor /= min_points_cor) Then
           Call error(0, "differing number of correlated points between processors for same correlation");
         End If
@@ -856,85 +865,53 @@ Contains
         Call gsum(comm, flat_correlation)
         flat_correlation = flat_correlation 
         cor_accumulator = Reshape(flat_correlation,(/sites%mxatyp,points*blocks,1,1/))
-
         ! for later averaging
         Call gsum(comm,type_counts)
-        
+
         If (comm%idnode == root_id .and. points_cor > 1) Then
-
           Do j = 1,sites%mxatyp
-
             Write (file_unit, '(a)')    "    "//Trim(sites%unique_atom(j))//"-"//Trim(correlation_name)//":"
-
             Write (file_unit, '(a)')    "        parameters:"
             Write (file_unit, '(a,i0)') "            points_per_block: ", points
             Write (file_unit, '(a,i0)') "            number_of_blocks: ", blocks
             Write (file_unit, '(a,i0)') "            window_size: ", window
             Write(file_unit, '(a,*(g16.8,","))',advance="no") "        lags: [", timesteps(1:points_cor-1)
             Write(file_unit, '(g16.8,a)') timesteps(points_cor), "]"
-
             cor_accumulator(j,:,:,:) = cor_accumulator(j,:,:,:) / (1+type_counts(j))
-
             Write(file_unit, '(a,*(g16.8,","))',advance="no") "        value: [", cor_accumulator(j,1:points_cor-1,1,1)
             Write(file_unit, '(g16.8,a)') cor_accumulator(j,points_cor,1,1), "]" 
           End Do
         End If
+      Else If (comm%idnode == root_id) Then
+        points = cor_data%correlators(1)%points_per_block
+        blocks = cor_data%correlators(1)%number_of_blocks
+        window = cor_data%correlators(1)%window_size
+        flat_dim = points*blocks*1*1
 
-      Else
+        Allocate(correlation(1:points*blocks,1:1,1:1))
+        Allocate(flat_correlation(1:flat_dim))
+        Allocate(timesteps(1:blocks*points))
 
-        If (comm%idnode == root_id) Then
-          k = 0
-          Do j = 1, stats%number_of_correlations
-            If (is_equivalent(stats%correlations(j)%correlation, stats%unique_correlations(i))) Then
+        flat_correlation = 0.0_wp
+        correlation = 0.0_wp
 
-              ! found a match (should be unique)
-              k = j
-              
-              points = stats%correlations(j)%correlator%points_per_block
-              blocks = stats%correlations(j)%correlator%number_of_blocks
-              window = stats%correlations(j)%correlator%window_size
-
-              Allocate(correlation(1:points*blocks,1:1,1:1))
-
-              flat_dim = points*blocks*1*1
-
-              Allocate(flat_correlation(1:flat_dim))
-
-              Allocate(timesteps(1:blocks*points))
-
-              flat_correlation = 0.0_wp
-              correlation = 0.0_wp
-            
-              exit
-            End If
-            
-          End Do
-
-          If (k == 0) Then
-            Call error(0,"correlation not found for correlation result")
-          End If
-
-          Call stats%correlations(k)%correlator%get_correlation(correlation, timesteps, dt, points_cor)
-          points_cor = points_cor - 1
-          If (points_cor > 1) Then
-            Write (file_unit, '(a)') "    "//Trim(correlation_name)//":"
-            Write (file_unit, '(a)')    "        parameters:"
-            Write (file_unit, '(a,i0)') "            points_per_block: ", &
-                    points
-            Write (file_unit, '(a,i0)') "            number_of_blocks: ", &
-                    blocks
-            Write (file_unit, '(a,i0)') "            window_size: ", &
-                    window
-            Write(file_unit, '(a,*(g16.8,","))',advance="no") "        lags: [", timesteps(1:points_cor-1)
-            Write(file_unit, '(g16.8,a)') timesteps(points_cor), "]"
-            Write(file_unit, '(a,*(g16.8,","))',advance="no") "        value: [", correlation(1:points_cor-1,1,1)
-            Write(file_unit, '(g16.8,a)') correlation(points_cor,1,1), "]"
-          End If
-          
+        Call cor_data%correlators(1)%get_correlation(correlation, timesteps, dt, points_cor)
+        points_cor = points_cor - 1
+        If (points_cor > 1) Then
+          Write (file_unit, '(a)') "    "//Trim(correlation_name)//":"
+          Write (file_unit, '(a)')    "        parameters:"
+          Write (file_unit, '(a,i0)') "            points_per_block: ", &
+                  points
+          Write (file_unit, '(a,i0)') "            number_of_blocks: ", &
+                  blocks
+          Write (file_unit, '(a,i0)') "            window_size: ", &
+                  window
+          Write(file_unit, '(a,*(g16.8,","))',advance="no") "        lags: [", timesteps(1:points_cor-1)
+          Write(file_unit, '(g16.8,a)') timesteps(points_cor), "]"
+          Write(file_unit, '(a,*(g16.8,","))',advance="no") "        value: [", correlation(1:points_cor-1,1,1)
+          Write(file_unit, '(g16.8,a)') correlation(points_cor,1,1), "]"
         End If
-        
       End If
-
     End Do
 
     If (comm%idnode == root_id) Then
@@ -943,7 +920,6 @@ Contains
 
   End Subroutine correlation_result
     
-
   Subroutine statistics_collect(config, lsim, leql, nsteql, lmsd, keyres, degfre, degshl, &
                                 degrot, nstep, tstep, time, tmst, mxatdm, stats, thermo, zdensity, &
                                 sites, files, comm, ff, tmr)
@@ -992,6 +968,9 @@ Contains
     Real(Kind=wp)              :: celprp(1:10), h_z, sclnv1, sclnv2, stpcns, stpipv, stprot, &
                                   stpshl, zistk, observable_a, observable_b
     Real(Kind=wp), Allocatable :: amsd(:), xxt(:), yyt(:), zzt(:)
+
+    Character(Len=MAX_KEY), Allocatable, Dimension(:) :: cor_keys
+    Type(correlation_data) :: cor_data
 
 #ifdef CHRONO 
     Call start_timer(tmr, "Statistics Collect")
@@ -1189,19 +1168,27 @@ Contains
 
         End Do
 
-        If ((.not. leql) .or. nstep >= nsteql) Then
-          Do j = 1, stats%number_of_correlations
-            i = stats%correlations(j)%correlation%atom
-            If (i > 0) Then
-              observable_a = stats%correlations(j)%correlation%A%value(config, stats, i)
-              observable_b = stats%correlations(j)%correlation%B%value(config, stats, i)
-              Call stats%correlations(j)%correlator%update((/observable_a/),(/observable_b/))
-            Else If (comm%idnode == root_id) Then
-              observable_a = stats%correlations(j)%correlation%A%value(config, stats)
-              observable_b = stats%correlations(j)%correlation%B%value(config, stats)
-              Call stats%correlations(j)%correlator%update((/observable_a/),(/observable_b/))
-            End If
-          End Do
+        If (stats%calculate_correlations) Then
+          If ((.not. leql) .or. nstep >= nsteql) Then
+            Call stats%cor_table%get_keys(cor_keys)
+            Do j = 1, Size(cor_keys)
+              If (.not. stats%cor_table%in(cor_keys(j))) Cycle
+              Call stats%cor_table%get(cor_keys(j), cor_data)
+              If (cor_data%atom(1) == 0 .and. comm%idnode == root_id) Then
+                ! not per atom correlation
+                observable_a = cor_data%A%value(config, stats)
+                observable_b = cor_data%B%value(config, stats)
+                Call cor_data%correlators(1)%update((/observable_a/), (/observable_b/))
+              Else
+                Do i = 1, Size(cor_data%atom)
+                  observable_a = cor_data%A%value(config, stats, cor_data%atom(i))
+                  observable_b = cor_data%B%value(config, stats, cor_data%atom(i))
+                  Call cor_data%correlators(i)%update((/observable_a/), (/observable_b/))
+                End Do
+              End If
+              Call stats%cor_table%set(cor_keys(j), cor_data)
+            End Do
+          End If
         End If
 
       Else ! HISTORY is replayed
@@ -2666,42 +2653,20 @@ Contains
     Real(Kind=wp),     Intent(In   )              :: dt
     Real(Kind=wp),     Intent(  Out), Allocatable :: viscosity(:)
 
-    Real(Kind=wp),     Allocatable :: correlation(:, :, :), timesteps(:)
-    Class(integrator), Allocatable :: inter 
-    Integer                        :: i, j, points, indices(1:6), &
-                                      comp_a, comp_b, blocks, id_a, id_b
+    Real(Kind=wp),     Allocatable  :: correlation(:, :, :)
+    Class(integrator), Allocatable  :: inter
+    Integer                         :: i
+
+    Character(Len=2), Dimension(1:6), Parameter :: components = (/"xy", "xz", "yx", "yz", "zx", "zy"/)
 
     Allocate(simpsons_rule::inter)
-
-    indices(1:6) = (/2, 3, 4, 6, 7, 8/)
     Allocate(viscosity(0))
 
-    Do i = 1, stats%number_of_correlations
-      id_a = stats%correlations(i)%correlation%A%id()
-      comp_a = stats%correlations(i)%correlation%A%component
-      id_b = stats%correlations(i)%correlation%B%id()
-      comp_b = stats%correlations(i)%correlation%B%component
-
-      ! 2 3 4 6 7 8 ~ any off diagonal could be used xy, yx, xz, zx, zy, yz
-      If (id_a == stress_id(observable_stress()) .and. id_b == id_a .and. &
-          Any(indices == comp_a) .and. &
-          comp_a == comp_b) Then
-        points = stats%correlations(i)%correlator%points_per_block
-        blocks = stats%correlations(i)%correlator%number_of_blocks
-        Allocate(correlation(1:points*blocks,1:1,1:1))
-        Allocate(timesteps(1:points*blocks))
-        Call stats%correlations(i)%correlator%get_correlation(correlation, timesteps, dt, points)
-        points = points - 1
-        If (points <= 1) Then
-          Deallocate(correlation)
-          Deallocate(timesteps)
-          cycle
-        End If
-
+    Do i = 1, Size(components)
+      Call get_correlation_value(stats, "stress_"//components(i)//"-stress_"//components(i), correlation)
+      If (Allocated(correlation)) Then
         viscosity = [viscosity, inter%integrate_uniform(correlation(:, 1, 1), dt)]
         Deallocate(correlation)
-        Deallocate(timesteps)
-
       End If
     End Do
 
@@ -2718,44 +2683,22 @@ Contains
     Real(Kind=wp),          Intent(In   )              :: dt
     Character(Len=STR_LEN), Intent(  Out)              :: units
     Real(Kind=wp),          Intent(  Out), Allocatable :: therm_cond(:)
-    
-    Real(Kind=wp)                   :: conv
-    Real(Kind=wp),     Allocatable  :: correlation(:, :, :), timesteps(:)
-    Integer                         :: i, j, k, points, count, indices(1:3), &
-                                       comp_a, comp_b, blocks, id_a, id_b
-    Class(integrator), Allocatable  :: inter
-    
-    Allocate(simpsons_rule::inter)
-    indices = (/1, 2, 3/)
 
+    Real(Kind=wp)                   :: conv
+    Real(Kind=wp),     Allocatable  :: correlation(:, :, :)
+    Class(integrator), Allocatable  :: inter
+    Integer                         :: i
+
+    Character(Len=1), Dimension(1:3), Parameter :: components = (/"x", "y", "z"/)
+
+    Allocate(simpsons_rule::inter)
     Allocate(therm_cond(0))
 
-    Do i = 1, stats%number_of_correlations
-      id_a = stats%correlations(i)%correlation%A%id()
-      comp_a = stats%correlations(i)%correlation%A%component
-      id_b = stats%correlations(i)%correlation%B%id()
-      comp_b = stats%correlations(i)%correlation%B%component
-
-      ! 1 2 3 ~ x y z
-      If (id_a == heat_flux_id(observable_heat_flux()) .and. id_b == id_a .and. &
-          Any(indices == comp_a) .and. &
-          comp_a == comp_b) Then
-        points = stats%correlations(i)%correlator%points_per_block
-        blocks = stats%correlations(i)%correlator%number_of_blocks
-        Allocate(correlation(1:points*blocks,1:1, 1:1))
-        Allocate(timesteps(1:points*blocks))
-        Call stats%correlations(i)%correlator%get_correlation(correlation, timesteps, dt, points)
-        points = points - 1
-        If (points <= 1) Then
-          Deallocate(correlation)
-          Deallocate(timesteps)
-          cycle
-        End If
-
+    Do i = 1, Size(components)
+      Call get_correlation_value(stats, "heat_flux_"//components(i)//"-heat_flux_"//components(i), correlation)
+      If (Allocated(correlation)) Then
         therm_cond = [therm_cond, inter%integrate_uniform(correlation(:, 1, 1), dt)]
-
         Deallocate(correlation)
-        Deallocate(timesteps)
       End If
     End Do
 
@@ -2767,7 +2710,6 @@ Contains
     Else
       Deallocate(therm_cond)
     End If
-
   End Subroutine calculate_thermal_conductivity
 
   Subroutine write_per_part_contribs(config, comm, energies, stresses, nstep) !, forces
@@ -2900,253 +2842,267 @@ Contains
 
   End Subroutine write_per_part_contribs
 
-  Subroutine correlator_recieve(this, config, newatm, buffer, buffer_index)
-      Class(stats_type),                       Intent(InOut)  :: this
+  Subroutine get_correlation_value(stats, name, correlation, atom)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_5 subroutine for getting a correlation from a
+    ! given name (see get_correlation_index). correlation is
+    ! unallocated if the correlation was not found.
+    !
+    ! author    - h.l.devereux 2023
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Type(stats_type),             Intent(InOut) :: stats
+    Character(Len=*),             Intent(In   ) :: name
+    Real(Kind=wp),   Allocatable, Intent(InOut) :: correlation(:, :, :)
+    Integer,         Optional,    Intent(In   ) :: atom
+
+    Integer                    :: cor_index = 1
+    Integer                    :: points, blocks
+    Real(Kind=wp), Allocatable :: timesteps(:)
+    Type(correlation_data)     :: cor_data
+
+    If (stats%cor_table%in(name)) Then
+      Call stats%cor_table%get(name, cor_data)
+      If (Present(atom)) Then
+        cor_index = atom
+      End If
+      points = cor_data%correlators(cor_index)%points_per_block
+      blocks = cor_data%correlators(cor_index)%number_of_blocks
+      If (points-1 > 1) Then
+        Allocate(correlation(1:points*blocks,1:1,1:1))
+        Allocate(timesteps(1:points*blocks))
+        Call cor_data%correlators(cor_index)%get_correlation(correlation, timesteps, 0.0_wp, points)
+      End If
+    End If
+  End Subroutine
+
+  Subroutine correlator_recieve(stats, config, newatm, buffer, buffer_index)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_5 for recieving correlations defined on a per-atom basis
+    ! see also correlator_deport.
+    !
+    ! author    - h.l.devereux 2023
+    !
+    ! data packed as 
+    !   deportations count (if 0, skips) - always written if per-atom correlations calculated
+    !   global atom index                - dependent on deportations count
+    !   A observable code                         |
+    !   A component                               |
+    !   B observable code                         |
+    !   B component                               |
+    !   flat correlator data (see correlator.F90) |
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      Class(stats_type),                       Intent(InOut)  :: stats
       Type(configuration_type),                Intent(InOut)  :: config
       Integer,                                 Intent(In   )  :: newatm
       Real(Kind=wp),           Dimension(:),   Intent(InOut)  :: buffer
       Integer,                                 Intent(InOut)  :: buffer_index
-      Type(correlator_holder), Allocatable                    :: tmp_cors(:)
-      Class(observable),       Allocatable                    :: A, B
-      Integer                                                 :: i, iA, iB, global_index, local_index, &
-                                                                 window, blocks, points, &
-                                                                 jA, jB, new_index, s, c_a, c_b, j_c_a, j_c_b
 
-      If (this%per_atom_correlations .and. this%calculate_correlations) Then
+      Type(correlator),  Allocatable :: tmp_cors(:)
+      Integer,           Allocatable :: tmp_atoms(:), tmp_globals(:)
+      Class(observable), Allocatable :: A, B
+      Integer                        :: i, iA, iB, global_index, local_index, &
+                                        window, blocks, points, deportations, d, &
+                                        jA, jB, new_index, s, c_a, c_b, j_c_a, j_c_b, &
+                                        atom
+      Character(Len=MAX_KEY)         :: name
+      Type(correlation_data)         :: cor_data
 
-      ! data packed as 
-        ! global atom index
-        ! A observable code
-        ! A component
-        ! B observable code
-        ! B component
-        ! flat correlator data (see correlator.F90) 
+      If (stats%per_atom_correlations .and. stats%calculate_correlations) Then
 
         s = buffer_index
         buffer_index = buffer_index + 1
-        global_index = INT(buffer(buffer_index))
+        deportations = INT(buffer(buffer_index))
 
-        buffer_index = buffer_index + 1
-        iA = INT(buffer(buffer_index))
-        buffer_index = buffer_index + 1
-        c_a = INT(buffer(buffer_index))
+        If (deportations < 1) Then
+          buffer_index = s+1
+          Return
+        End If
 
-        buffer_index = buffer_index + 1
-        iB = INT(buffer(buffer_index))
-        buffer_index = buffer_index + 1
-        c_b = INT(buffer(buffer_index))
-
-        Call id_component_to_observable(iA, c_a, A)
-        Call id_component_to_observable(iB, c_b, B)
-
-        Allocate(tmp_cors(1:(Size(this%correlations)+1)))
-
-        local_index = newatm
-
-        Do i = 1, Size(this%correlations)
-
-          tmp_cors(i) = this%correlations(i)
-
-        End Do
-        
-        ! obtain correlation parameters
-        Do i = 1, Size(this%unique_correlations)
-
-          jA = this%unique_correlations(i)%A%id()
-          j_c_a = this%unique_correlations(i)%A%component
-          jB = this%unique_correlations(i)%B%id()
-          j_c_b = this%unique_correlations(i)%B%component
-
-
-          If (iA == jA .and. iB == jB .and. j_c_a == c_a .and. j_c_b == c_b) Then
-            blocks = this%unique_correlation_params((i-1)*3+1)
-            points = this%unique_correlation_params((i-1)*3+2)
-            window = this%unique_correlation_params((i-1)*3+3)
-            exit
-          End If
-
-        End Do
-
-        ! initialise new correlator
-        new_index = Size(tmp_cors)
-        Call id_component_to_observable(iA,c_a,tmp_cors(new_index)%correlation%A)
-        Call id_component_to_observable(iB,c_b,tmp_cors(new_index)%correlation%B)
-        tmp_cors(new_index)%correlation%atom = local_index
-        tmp_cors(new_index)%correlation%atom_global = global_index
-        Call tmp_cors(new_index)%correlator%init(blocks,points,window,1,1)
-
-        Call move_alloc(tmp_cors,this%correlations)
-
-        ! recieve from buffer
-        Call this%correlations(new_index)%correlator%recieve_buffer(buffer,buffer_index)
-
-        buffer_index = s + this%max_buffer_per_atom
-
-        this%number_of_correlations = Size(this%correlations)
+        Do d = 1, deportations
+          buffer_index = buffer_index + 1
+          global_index = INT(buffer(buffer_index))
+          buffer_index = buffer_index + 1
+          iA = INT(buffer(buffer_index))
+          buffer_index = buffer_index + 1
+          c_a = INT(buffer(buffer_index))
+          buffer_index = buffer_index + 1
+          iB = INT(buffer(buffer_index))
+          buffer_index = buffer_index + 1
+          c_b = INT(buffer(buffer_index))
  
-        Call reindex_correlators(this, config)
+          Call id_component_to_observable(iA, c_a, A)
+          Call id_component_to_observable(iB, c_b, B)
+          name = Trim(A%name())//"-"//Trim(B%name())
+          Call stats%cor_table%get(name, cor_data)
+
+          new_index = Size(cor_data%atom)+1
+          Allocate(tmp_cors(1:new_index))
+          Allocate(tmp_atoms(1:new_index))
+          Allocate(tmp_globals(1:new_index))
+          
+          Do atom = 1, Size(cor_data%atom)
+            tmp_cors(atom) = cor_data%correlators(atom)
+            tmp_atoms(atom) = cor_data%atom(atom) 
+            tmp_globals(atom) = cor_data%atom_global(atom)
+          End Do
+
+          tmp_atoms(new_index) = newatm
+          tmp_globals(new_index) = global_index
+          blocks = cor_data%correlators(1)%number_of_blocks
+          points = cor_data%correlators(1)%points_per_block
+          window = cor_data%correlators(1)%window_size
+          Call tmp_cors(new_index)%init(blocks,points,window,1,1)
+          Call tmp_cors(new_index)%recieve_buffer(buffer,buffer_index)
+          Call move_alloc(tmp_cors, cor_data%correlators)
+          Call move_alloc(tmp_atoms, cor_data%atom)
+          Call move_alloc(tmp_globals, cor_data%atom_global)
+          Call stats%cor_table%set(name, cor_data)
+        End Do
+
+        buffer_index = s + deportations*stats%cor_deport_buffer + 1
 
       End If
 
   End Subroutine correlator_recieve
 
-  Subroutine correlator_deport(this, config, buffer, atom_index, buffer_index)
-    Class(stats_type),                    Intent(InOut) :: this
+  Subroutine correlator_deport(stats, config, buffer, atom_index, buffer_index)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_5 for deporting correlations defined on a per-atom basis
+    ! see also correlator_receive.
+    !
+    ! author    - h.l.devereux 2023
+    !
+    ! data packed as 
+    !   deportations count (if 0, skips) - always written if per-atom correlations calculated
+    !   global atom index                - dependent on deportations count
+    !   A observable code                         |
+    !   A component                               |
+    !   B observable code                         |
+    !   B component                               |
+    !   flat correlator data (see correlator.F90) |
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Class(stats_type),                    Intent(InOut) :: stats
     Type(configuration_type),             Intent(InOut) :: config
     Real(Kind=wp), Dimension(:),          Intent(InOut) :: buffer
     Integer,                              Intent(In)    :: atom_index
     Integer,                              Intent(InOut) :: buffer_index
-    Type(correlator_holder), Allocatable                :: tmp_cors(:)
-    Integer                                             :: i, A, B, c_a, c_b, j, s, deportations
+    Type(correlator), Allocatable                       :: tmp_cors(:)
+    Integer,          Allocatable                       :: tmp_atoms(:), tmp_globals(:)
+    Integer                                             :: i, A, B, c_a, c_b, j, s, deportations, atom
+    Character(Len=MAX_KEY)              :: name
+    Type(correlation_data)              :: cor_data
+    Character(Len=MAX_KEY), Allocatable :: cor_keys(:)
 
-    If (this%per_atom_correlations .and. this%calculate_correlations) Then
+    If (stats%per_atom_correlations .and. stats%calculate_correlations) Then
 
-
-      ! data packed as 
-        ! global atom index
-        ! A observable code
-        ! A component
-        ! B observable code
-        ! B component
-        ! flat correlator data (see correlator.F90) 
-    
-      j = 0
       deportations = 0
-      ! deport to buffer
-      
       s = buffer_index
 
-      Do i = 1, Size(this%correlations)
-        If (this%correlations(i)%correlation%atom_global == config%ltg(atom_index)) Then
-          A = this%correlations(i)%correlation%A%id()
-          c_a = this%correlations(i)%correlation%A%component
-          B = this%correlations(i)%correlation%B%id()
-          c_b = this%correlations(i)%correlation%B%component
-          buffer_index = buffer_index + 1
-          buffer(buffer_index) = config%ltg(atom_index)
-          buffer_index = buffer_index + 1
-          buffer(buffer_index) = A
-          buffer_index = buffer_index + 1
-          buffer(buffer_index) = c_a
-          buffer_index = buffer_index + 1
-          buffer(buffer_index) = B 
-          buffer_index = buffer_index + 1
-          buffer(buffer_index) = c_b
-          Call this%correlations(i)%correlator%deport_buffer(buffer,buffer_index,.true.)
-          deportations = deportations + 1
-        Else 
-          j = j + 1
-        End If
-      End Do
-      buffer_index = s + deportations*this%max_buffer_per_atom
-      ! remove old correlator
+      Call stats%cor_table%get_keys(cor_keys)
 
-      Allocate(tmp_cors(1:j))
-
-      j = 1
-      Do i = 1, Size(this%correlations)
-        If (this%correlations(i)%correlation%atom_global /= config%ltg(atom_index)) Then
-          tmp_cors(j) = this%correlations(i)
-          j = j + 1
-        End If
+      Do i = 1, Size(cor_keys)
+        If (.not. stats%cor_table%in(cor_keys(i))) Cycle
+        Call stats%cor_table%get(cor_keys(i), cor_data)
+        If (cor_data%atom(1) == 0) Cycle
+        
+        Do atom = 1, Size(cor_data%atom) 
+          If (cor_data%atom_global(atom) == config%ltg(atom_index)) Then
+            deportations = deportations + 1
+          End If
+        End Do
       End Do
 
-      Call move_alloc(tmp_cors,this%correlations)
+      buffer_index = buffer_index + 1 
+      buffer(buffer_index) = deportations
 
-      this%number_of_correlations = Size(this%correlations)
+      If (deportations == 0) Return
 
-      Call reindex_correlators(this, config)
+      Do i = 1, Size(cor_keys)
+        If (.not. stats%cor_table%in(cor_keys(i))) Cycle
+        Call stats%cor_table%get(cor_keys(i), cor_data)
+        If (cor_data%atom(1) == 0) Cycle
 
+        j = 0
+        A = cor_data%A%id()
+        c_a = cor_data%A%component
+        B = cor_data%B%id()
+        c_b = cor_data%B%component
+        Do atom = 1, Size(cor_data%atom)
+          If (cor_data%atom_global(atom) == config%ltg(atom_index)) Then
+            buffer_index = buffer_index + 1
+            buffer(buffer_index) = config%ltg(atom_index)
+            buffer_index = buffer_index + 1
+            buffer(buffer_index) = A
+            buffer_index = buffer_index + 1
+            buffer(buffer_index) = c_a
+            buffer_index = buffer_index + 1
+            buffer(buffer_index) = B 
+            buffer_index = buffer_index + 1
+            buffer(buffer_index) = c_b
+            Call cor_data%correlators(atom)%deport_buffer(buffer,buffer_index,.true.)
+          Else
+            j = j + 1
+          End If
+        End Do
+
+        ! remove old correlator
+        If (Allocated(tmp_cors)) Deallocate(tmp_cors)
+        If (Allocated(tmp_atoms)) Deallocate(tmp_atoms)
+        If (Allocated(tmp_globals)) Deallocate(tmp_globals)
+        Allocate(tmp_cors(1:j))
+        Allocate(tmp_atoms(1:j))
+        Allocate(tmp_globals(1:j))
+        j = 1
+        Do atom = 1, Size(cor_data%atom)
+          If (cor_data%atom_global(atom) /= config%ltg(atom_index)) Then
+            tmp_cors(j) = cor_data%correlators(j)
+            tmp_atoms(j) = cor_data%atom(j)
+            tmp_globals(j) = cor_data%atom_global(j)
+            j = j + 1
+          End If
+        End Do
+        Call move_alloc(tmp_cors, cor_data%correlators)
+        Call move_alloc(tmp_atoms, cor_data%atom)
+        Call move_alloc(tmp_globals, cor_data%atom_global)
+        name = Trim(cor_data%A%name())//"-"//Trim(cor_data%B%name())
+        Call stats%cor_table%set(name, cor_data)
+
+      End Do
+      buffer_index = s + deportations*stats%cor_deport_buffer + 1
     End If
 
   End Subroutine correlator_deport
 
-  Subroutine reindex_correlators(this, config)
-    Class(stats_type),                    Intent(InOut)     :: this
-    Type(configuration_type),             Intent(In   )     :: config
-    Integer                                                 :: i, j, k, &
-                                                               cor_global, cor_local, iA, iB
-    Logical                                                 :: found
-    Logical,                 Allocatable                    :: cors(:)
-    Type(correlator_holder), Allocatable                    :: tmp_cors(:)
-
-
-    k = 0
-
-    Allocate(cors(1:this%number_of_correlations))
-    cors = .false.
-
-    Do i = 1,this%number_of_correlations
-
-      cor_global = this%correlations(i)%correlation%atom_global
-      cor_local = this%correlations(i)%correlation%atom
-      
-      found = .false.
-      If (cor_local > 0) Then
-        If(cor_global /= config%ltg(cor_local)) Then
-          Do j = 1, config%natms
-            If (config%ltg(j) == cor_global) Then
-              this%correlations(i)%correlation%atom = j
-              cors(i) = .true.
-              k = k + 1
-              Exit
-            End If
-          End Do
-        Else 
-          cors(i) = .true.
-            k = k + 1
-        End If
-      Else
-        cors(i) = .true.
-        k = k + 1
-      End if
-
-    End Do
-
-    ! check all correlations are correct, ignore any 
-    !  that are not tracking a local atom
-
-    Allocate(tmp_cors(1:k))
-
-    k = 1
-    Do i = 1, this%number_of_correlations
-      If (cors(i)) Then
-        tmp_cors(k) = this%correlations(i)
-        iA = tmp_cors(k)%correlation%A%id()
-        iB = tmp_cors(k)%correlation%B%id()
-        k = k + 1
-      End If
-    End Do
-
-    Call move_alloc(tmp_cors,this%correlations)
-
-    this%number_of_correlations = Size(this%correlations)
-
-
-  End Subroutine reindex_correlators 
-
   !!!!!!!! correlators revive !!!!!!!!!
 
-  Subroutine dump_correlations(this, comm, config, unit)
-    Class(stats_type),              Intent(InOut) :: this
+  Subroutine dump_correlations(stats, comm, config, unit)
+    Class(stats_type),              Intent(InOut) :: stats
     Type(comms_type),               Intent(InOut) :: comm
     Type(configuration_type),       Intent(InOut) :: config
     Integer,                        Intent(In   ) :: unit
 
-    Real(Kind=wp),    Allocatable                 :: data_buffer(:), local_buffer(:)
-    Integer,          Allocatable                 :: local_ids(:), ids_buffer(:)
-    Type(correlator_buffer_type)                  :: packed_correlators
-    Type(indices_buffer_type)                     :: packed_ids
-    Integer                                       :: i, buffer_size, correlations, &
-                                                     buffer_index, A, B, c_a, c_b, &
-                                                     local_correlations, local_buffer_size, &
-                                                     n_local_cor, attributes = 6
-    Real(Kind=wp)                                 :: write_sum
-  
-    n_local_cor = 0
-    If (Allocated(this%correlations)) n_local_cor = Size(this%correlations)
-    Call gsum(comm, n_local_cor)
+    Real(Kind=wp),               Allocatable :: data_buffer(:), local_buffer(:)
+    Integer,                     Allocatable :: local_ids(:), ids_buffer(:)
+    Type(correlator_buffer_type)             :: packed_correlators
+    Type(indices_buffer_type)                :: packed_ids
+    Integer                                  :: i, atom, idx, buffer_size, correlations, &
+                                                buffer_index, A, B, c_a, c_b, &
+                                                local_correlations, local_buffer_size, &
+                                                n_local_cor, attributes = 6
+    Real(Kind=wp)                            :: write_sum
+    Character(Len=MAX_KEY)                   :: name
+    Type(correlation_data)                   :: cor_data
+    Character(Len=MAX_KEY),      Allocatable :: cor_keys(:)
 
+  
+    n_local_cor = stats%number_of_correlations
+    Call gsum(comm, n_local_cor)
     If (n_local_cor == 0) Return
 
     ! determine total buffer sizes needed for root
@@ -3155,40 +3111,42 @@ Contains
     correlations = 0
     local_correlations = 0
     local_buffer_size = 0
-    If (this%calculate_correlations) Then
+    If (stats%calculate_correlations) Then
 
-      Do i = 1, Size(this%correlations)
-        correlations = correlations + 1
-        buffer_size = buffer_size + this%correlations(i)%correlator%buffer_size-3
+      Call stats%cor_table%get_keys(cor_keys)
+
+      Do i = 1, Size(cor_keys)
+        If (.not. stats%cor_table%in(cor_keys(i))) Cycle
+        Call stats%cor_table%get(cor_keys(i), cor_data)
+        correlations = correlations + Size(cor_data%atom)
+        buffer_size = buffer_size + Size(cor_data%atom)*(cor_data%correlators(1)%buffer_size-3)
       End Do
-
       ! id_a, id_b, component_a, component_b, atom, buffer_size
       Allocate(local_ids(1:attributes*correlations)) 
       Allocate(local_buffer(1:buffer_size))
-
       ! collect local buffer first
       buffer_index = 0
-      Do i = 1, Size(this%correlations)
-        A = this%correlations(i)%correlation%A%id()
-        c_A = this%correlations(i)%correlation%A%component
-        B = this%correlations(i)%correlation%B%id()
-        c_b = this%correlations(i)%correlation%B%component
-        local_ids((i-1)*attributes+1) = A
-        local_ids((i-1)*attributes+2) = c_a
-        local_ids((i-1)*attributes+3) = B
-        local_ids((i-1)*attributes+4) = c_b
-        If (this%correlations(i)%correlation%atom > 0) Then
-          local_ids((i-1)*attributes+5) = this%correlations(i)%correlation%atom_global
-        Else
-          local_ids((i-1)*attributes+5) = 0
-        End If
-        local_ids((i-1)*attributes+6) = this%correlations(i)%correlator%buffer_size-(attributes-1)
-        Call this%correlations(i)%correlator%deport_buffer(local_buffer,buffer_index)
+      idx = 1
+      Do i = 1, Size(cor_keys)
+        If (.not. stats%cor_table%in(cor_keys(i))) Cycle
+        Call stats%cor_table%get(cor_keys(i), cor_data)
+        Do atom = 1, Size(cor_data%atom)
+          local_ids((idx-1)*attributes+1) = cor_data%A%id()
+          local_ids((idx-1)*attributes+2) = cor_data%A%component
+          local_ids((idx-1)*attributes+3) = cor_data%B%id()
+          local_ids((idx-1)*attributes+4) = cor_data%B%component
+          If (cor_data%atom(1) /= 0) Then
+            local_ids((idx-1)*attributes+5) = cor_data%atom_global(atom)
+          Else
+            local_ids((idx-1)*attributes+5) = 0
+          End If
+          local_ids((idx-1)*attributes+6) = cor_data%correlators(1)%buffer_size-3
+          Call cor_data%correlators(atom)%deport_buffer(local_buffer,buffer_index)
+          idx = idx + 1
+        End Do
       End Do
-
       local_correlations = correlations
       local_buffer_size = buffer_size
-
     End If
 
     If (local_correlations == 0) Then
@@ -3261,8 +3219,8 @@ Contains
 
   End Subroutine dump_correlations
 
-  Subroutine revive_correlations(this, comm, config, unit, keyio, no_advance, format)
-    Class(stats_type),              Intent(InOut) :: this
+  Subroutine revive_correlations(stats, comm, config, unit, keyio, no_advance, format)
+    Class(stats_type),              Intent(InOut) :: stats
     Type(comms_type),               Intent(InOut) :: comm
     Type(configuration_type),       Intent(InOut) :: config
     Integer,                        Intent(In   ) :: unit
@@ -3270,58 +3228,62 @@ Contains
     Character(Len=40),              Intent(In   ) :: format
     Integer,                        Intent(InOut) :: keyio
 
-    Real(Kind=wp),    Allocatable                 :: data_buffer(:), local_buffer(:)
-    Integer,          Allocatable                 :: local_ids(:), ids_buffer(:), &
-                                                     offests_buffer(:), sizes_buffer(:)
-    Type(correlator_buffer_type)                  :: packed_correlators
-    Type(indices_buffer_type)                     :: packed_ids
-    Integer                                       :: i, buffer_size, correlations, &
-                                                     buffer_index, j, packed_index, &
-                                                     A, B, atom, offset, local_correlations, &
-                                                     local_buffer_size, n_local_cor, &
-                                                     c_a, c_b, attributes = 6
+    Real(Kind=wp),               Allocatable :: data_buffer(:), local_buffer(:)
+    Integer,                     Allocatable :: local_ids(:), ids_buffer(:), &
+                                                offests_buffer(:), sizes_buffer(:)
+    Type(correlator_buffer_type)             :: packed_correlators
+    Type(indices_buffer_type)                :: packed_ids
+    Integer                                  :: i, idx, buffer_size, correlations, &
+                                                buffer_index, j, packed_index, &
+                                                A, B, atom, offset, local_correlations, &
+                                                local_buffer_size, n_local_cor, &
+                                                c_a, c_b, attributes = 6
+    Character(Len=MAX_KEY)                   :: name
+    Type(correlation_data)                   :: cor_data
+    Character(Len=MAX_KEY),      Allocatable :: cor_keys(:)   
 
-    n_local_cor = 0
-    If (Allocated(this%correlations)) n_local_cor = Size(this%correlations)
+  
+    n_local_cor = stats%number_of_correlations
     Call gsum(comm, n_local_cor)
-
     If (n_local_cor == 0) Return
-
     local_correlations = 0
     local_buffer_size = 0
     buffer_size = 0
     correlations = 0
-    If (this%calculate_correlations) Then                                                 
-      Allocate(local_ids(1:attributes*Size(this%correlations)))
+    If (stats%calculate_correlations) Then     
+      Call stats%cor_table%get_keys(cor_keys)
 
-      local_correlations = Size(this%correlations)
-
+      Do i = 1, Size(cor_keys)
+        If (.not. stats%cor_table%in(cor_keys(i))) Cycle
+        Call stats%cor_table%get(cor_keys(i), cor_data)
+        correlations = correlations + Size(cor_data%atom)
+        buffer_size = buffer_size + Size(cor_data%atom)*(cor_data%correlators(1)%buffer_size-3)
+      End Do                                            
+      Allocate(local_ids(1:attributes*correlations))
+      local_correlations = correlations
       ! determine total buffer sizes needed for root
 
       ! collect local id buffers
-      Do i = 1, Size(this%correlations)
-        correlations = correlations + 1
-        buffer_size = buffer_size + this%correlations(i)%correlator%buffer_size-(attributes-1)
-        A = this%correlations(i)%correlation%A%id()
-        c_a = this%correlations(i)%correlation%A%component
-        B = this%correlations(i)%correlation%B%id()
-        c_b = this%correlations(i)%correlation%B%component
-        local_ids((i-1)*attributes+1) = A
-        local_ids((i-1)*attributes+2) = c_a
-        local_ids((i-1)*attributes+3) = B
-        local_ids((i-1)*attributes+4) = c_b
-        If (this%correlations(i)%correlation%atom > 0) Then
-          local_ids((i-1)*attributes+5) = config%ltg(this%correlations(i)%correlation%atom)
-        Else
-          local_ids((i-1)*attributes+5) = 0
-        End If
-        local_ids((i-1)*attributes+6) = this%correlations(i)%correlator%buffer_size-(attributes-1)
-
+      idx = 1
+      Do i = 1, Size(cor_keys)
+        If (.not. stats%cor_table%in(cor_keys(i))) Cycle
+        Call stats%cor_table%get(cor_keys(i), cor_data)
+        Do atom = 1, Size(cor_data%atom)
+          local_ids((idx-1)*attributes+1) = cor_data%A%id()
+          local_ids((idx-1)*attributes+2) = cor_data%A%component
+          local_ids((idx-1)*attributes+3) = cor_data%B%id()
+          local_ids((idx-1)*attributes+4) = cor_data%B%component
+          If (cor_data%atom(1) /= 0) Then
+            local_ids((idx-1)*attributes+5) = cor_data%atom_global(atom)
+          Else
+            local_ids((idx-1)*attributes+5) = 0
+          End If
+          local_ids((idx-1)*attributes+6) = cor_data%correlators(1)%buffer_size-3
+          idx = idx + 1
+        End Do
       End Do
-
       Allocate(local_buffer(1:buffer_size))
       local_buffer_size = buffer_size
-
     End If
 
     If (local_correlations == 0) Then
@@ -3358,11 +3320,8 @@ Contains
       packed_ids%buffer)
 
     If (comm%idnode == root_id) Then
-
       ! root reads the data as is
-
       buffer_index = 1
-
       Do i = 1, correlations
           offests_buffer(i) = buffer_index
           If (no_advance) Then
@@ -3378,7 +3337,6 @@ Contains
           End If
           sizes_buffer(i) = ids_buffer((i-1)*attributes+attributes)
           buffer_index = buffer_index + sizes_buffer(i)
-
       End Do
 
     End If
@@ -3394,10 +3352,9 @@ Contains
 
         A = packed_ids%buffer((i-1)*attributes+1)
         c_a = packed_ids%buffer((i-1)*attributes+2)
-        A = packed_ids%buffer((i-1)*attributes+3)
-        c_a = packed_ids%buffer((i-1)*attributes+4)
+        B = packed_ids%buffer((i-1)*attributes+3)
+        c_b = packed_ids%buffer((i-1)*attributes+4)
         atom = packed_ids%buffer((i-1)*attributes+5)
-
         packed_index = -1
 
         ! find where this data should be placed
@@ -3445,9 +3402,14 @@ Contains
       local_buffer, root_id)
 
     buffer_index = 0
-    If (this%calculate_correlations) Then  
-      Do i = 1, Size(this%correlations)
-        Call this%correlations(i)%correlator%recieve_buffer(local_buffer,buffer_index)
+    If (stats%calculate_correlations) Then  
+      Do i = 1, Size(cor_keys)
+        If (.not. stats%cor_table%in(cor_keys(i))) Cycle
+        Call stats%cor_table%get(cor_keys(i), cor_data)
+        Do j = 1, Size(cor_data%correlators)
+          Call cor_data%correlators(j)%recieve_buffer(local_buffer,buffer_index)
+        End Do
+        Call stats%cor_table%set(cor_keys(i), cor_data)
       End Do
     End If
 
@@ -3457,16 +3419,6 @@ Contains
   End Subroutine revive_correlations
 
   !!!!!!!! observables !!!!!!!! 
-
-  Logical Function is_equivalent(left, right)
-    Class(correlation), Intent(In   ) :: left
-    Class(correlation), Intent(In   ) :: right
-
-    is_equivalent = left%A%id() == right%A%id() .and. &
-                    left%A%component == right%A%component .and. &
-                    left%B%id() == right%B%id() .and. &
-                    left%B%component == right%B%component
-  End Function is_equivalent
 
   Integer Function component_symbol_to_index(s)
     Character(Len=*), Intent(In   ) :: s
@@ -3603,12 +3555,6 @@ Contains
     
   End Function velocity_value
 
-  Function velocity_dimension(t) Result(v)
-      Class(observable_velocity), Intent(In   ) :: t
-      Integer                                   :: v
-      v = 3
-  End Function velocity_dimension
-
   Function velocity_name(t) Result(v)
       Class(observable_velocity), Intent(In   )   :: t
       Character(Len=MAX_CORRELATION_NAME_LENGTH)  :: v
@@ -3642,12 +3588,6 @@ Contains
 
   End Function stress_value
 
-  Function stress_dimension(t) Result(v)
-      Class(observable_stress), Intent(In   ) :: t
-      Integer                                 :: v
-      v = 9
-  End Function stress_dimension
-
   Function stress_name(t) Result(v)
       Class(observable_stress), Intent(In   )     :: t
       Character(Len=MAX_CORRELATION_NAME_LENGTH)  :: v
@@ -3680,12 +3620,6 @@ Contains
     v = stats%heat_flux(t%component)
 
   End Function heat_flux_value
-
-  Function heat_flux_dimension(t) Result(v)
-      Class(observable_heat_flux),   Intent(In   ) :: t
-      Integer                                      :: v
-      v = 3
-  End Function heat_flux_dimension
 
   Function heat_flux_name(t) Result(v)
       Class(observable_heat_flux), Intent(In   )     :: t
@@ -3730,5 +3664,32 @@ Contains
     stat%stack(stat%stack_pos) = v
 
   End Subroutine update_statistic
+
+  Subroutine get_correlation(table, key, val, default)
+    !!-----------------------------------------------------------------------
+    !!
+    !! get correlation data from hash table
+    !!
+    !! author    - h.l.devereux Jun 2024
+    !!-----------------------------------------------------------------------
+
+    Class(correlation_hash_table ), Intent(InOut)           :: table
+    Character(Len=*),               Intent(In   )           :: key
+    Type(correlation_data),         Intent(  Out)           :: val
+    Type(correlation_data),         Intent(In   ), Optional :: default
+    Class( * ), Pointer :: ptr
+
+    Call table%get_cont(key, default, ptr)
+
+    Select Type(ptr)
+    Type is (correlation_data)
+      val = ptr
+    Class Default
+      Call error(0, 'Trying to get correlation, but data is not correlation')
+    End Select
+    Deallocate(ptr)
+    Nullify(ptr)
+
+  End Subroutine get_correlation
 
 End Module statistics

@@ -103,7 +103,7 @@ Module control
   Use pmf,                      Only: pmf_type
   Use rdfs,                     Only: rdf_type
   Use rsds,                     Only: rsd_type
-  Use statistics,               Only: stats_type, observable, observable_velocity, observable_holder, &
+  Use statistics,               Only: stats_type, observable, observable_velocity, &
                                       character_to_observable, observable_heat_flux
   Use tersoff,                  Only: tersoff_type
   Use thermostat,               Only: &
@@ -1780,7 +1780,7 @@ Contains
 
       if (a_per_atom .or. b_per_atom) Then
 
-        buffer_size = Max(buffer_size, this_blocks*1       &
+        buffer_size = Max(buffer_size,   this_blocks*1     &
                             + this_blocks*1                &
                             + this_blocks                  &
                             + this_blocks*this_points*1    &
@@ -1794,7 +1794,7 @@ Contains
 
     End Do
 
-    stats%max_buffer_per_atom = buffer_size
+    stats%cor_deport_buffer = buffer_size
 
   End Subroutine correlation_deport_size
 
@@ -1826,29 +1826,24 @@ Contains
     Type(stats_type),                     Intent(InOut) :: stats
     Type(comms_type),                     Intent(InOut) :: comm
     Integer,                              Intent(In   ) :: atoms
-    Character(Len=STR_LEN),   Allocatable               :: option(:)
-    Character(Len=STR_LEN)                              :: a_name, b_name
-    Integer                                             :: this_window, this_blocks, this_points
-    Integer, Allocatable                                :: window(:), blocks(:), points(:)
-    Integer                                             :: i
-    Type(observable_heat_flux)                          :: h
-    Logical                                             :: per_atom, is_per_atom
+
+    Character(Len=STR_LEN), Allocatable               :: option(:)
+    Character(Len=STR_LEN)                            :: a_name, b_name
+    Class(observable),      Allocatable               :: A, B
+    Integer                                           :: this_window, this_blocks, this_points, i
+    Integer,                Allocatable               :: window(:), blocks(:), points(:)
+    Type(observable_heat_flux)                        :: h
 
     stats%calculate_correlations = .false.
     stats%per_atom_correlations = .false.
     stats%number_of_correlations = 0
-
 
     Call params%retrieve('correlation_observable',option, required=.false.)
     Call params%retrieve("correlation_blocks",blocks,required=.false.)
     Call params%retrieve("correlation_block_points",points,required=.false.)
     Call params%retrieve("correlation_window",window,required=.false.)
 
-    If (Allocated(stats%unique_correlations) .eqv. .false.) Allocate(stats%unique_correlations(1:Size(option)))
-    If (Allocated(stats%unique_correlation_params) .eqv. .false.) Allocate(stats%unique_correlation_params(1:3*Size(option)))
-
     Do i = 1,Size(option)
-
       If (i <= Size(blocks)) Then
         this_blocks = blocks(i)
       Else
@@ -1871,43 +1866,22 @@ Contains
         Call error(0, "points per block less than window size")
       End If
 
-      is_per_atom = .false.
-
       Call parse_correlation_observable(option(i), a_name, b_name)
+      Call character_to_observable(a_name, A)
+      Call character_to_observable(b_name, B)
 
-      Call character_to_observable(a_name,stats%unique_correlations(i)%A)
-      Call character_to_observable(b_name,stats%unique_correlations(i)%B)
-
-      If (stats%unique_correlations(i)%A%id() == h%id() .or. &
-          stats%unique_correlations(i)%B%id() == h%id()) Then
+      If (A%id() == h%id() .or. B%id() == h%id()) Then
        stats%require_pp = .true.
       End If
 
-      per_atom = stats%unique_correlations(i)%A%per_atom()
-      If (per_atom) Then
-       is_per_atom = .true.
-      Else
-       per_atom = stats%unique_correlations(i)%B%per_atom()
-       If (per_atom) Then
-         is_per_atom = .true.
-       End If
-      End If
-
-      If (is_per_atom) Then
-        stats%unique_correlations(i)%atom = 1
+      If (A%per_atom() .or. B%per_atom()) Then
         stats%number_of_correlations = stats%number_of_correlations + atoms
         stats%per_atom_correlations = .true.
       Else
-        stats%unique_correlations(i)%atom = 0
         If (comm%idnode == root_id) Then
           stats%number_of_correlations = stats%number_of_correlations + 1
         End If
       End If
-
-      stats%unique_correlation_params((i-1)*3+1) = this_blocks
-      stats%unique_correlation_params((i-1)*3+2) = this_points
-      stats%unique_correlation_params((i-1)*3+3) = this_window
-
     End Do
 
     If (stats%number_of_correlations > 0) Then
@@ -1947,18 +1921,8 @@ Contains
     End If
    End If
 
-   If (is_per_atom) Then
-      Do i = 1,config%natms
-        Call stats%init_correlator(i, config%ltg(i), blocks, points, window, &
-        A, B, count)
-        count = count + 1
-      End Do
-   Else If (comm%idnode == root_id) Then
-      Call stats%init_correlator(0, 0, blocks, points, window, &
-      A, B, count)
-      count = count + 1
-   End If
-
+   Call stats%init_correlator(per_atom, config, comm, blocks, points, window, A, B, count)
+   
   End Subroutine retrieve_correlator_params
 
   Subroutine read_correlations_parameters(params,stats,comm,config)
