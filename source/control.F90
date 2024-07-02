@@ -2066,7 +2066,7 @@ Contains
 
     ! ---------------- PHYSICAL PROPERTIES -------------------------------------
 
-    Call params%retrieve('temperature', thermo%temp)
+    Call params%retrieve('temperature', thermo%temp, required=.true.)
 
     If (params%num_set([Character(22) :: 'pressure_tensor', 'pressure_hydrostatic', 'pressure_perpendicular']) > 1) Then
       Call error(0, 'Multiple pressure specifications')
