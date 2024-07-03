@@ -25,26 +25,52 @@ Module control_parameters
   Private
 
   !> Data types enumeration
-  Integer, Parameter, Public :: DATA_NULL = 0, DATA_INT = 1, DATA_FLOAT = 2, DATA_STRING = 3, &
-       DATA_BOOL = 4, DATA_OPTION = 5, DATA_FLOAT_VECTOR = 6, DATA_INT_VECTOR = 7, DATA_STRING_VECTOR = 8
-
+  Integer, Parameter, Public                            :: DATA_NULL = 0, DATA_INT = 1, &
+                                                           DATA_FLOAT = 2, DATA_STRING = 3, &
+                                                           DATA_BOOL = 4, DATA_OPTION = 5, &
+                                                           DATA_FLOAT_VECTOR = 6, DATA_INT_VECTOR = 7, &
+                                                           DATA_STRING_VECTOR = 8
+  !> Data types internal names
+  Character(Len=18), Dimension(0:8), Parameter, Public  :: data_name = [ Character(Len=18) :: &
+                                                                        'NULL', 'INT', &
+                                                                        'FLOAT', 'STRING', &
+                                                                        'BOOL', 'OPTION', &
+                                                                        'DATA_FLOAT_VECTOR', &
+                                                                        'DATA_INT_VECTOR', &
+                                                                        'DATA_STRING_VECTOR']
+  !> Data types python typenames
+  Character(Len=5), Dimension(0:8), Parameter, Private :: python_data_name = [ Character(Len=5) :: &
+                                                                               'None', 'int', &
+                                                                               'float', 'str', &
+                                                                               'bool', 'str', &
+                                                                               'float', 'int', &
+                                                                               'str']
+  !> Data types output names
+  Character(Len=13), Dimension(0:8), Parameter, Private :: output_name = [Character(Len=13) :: &
+                                                                          'Null', 'Int', &
+                                                                          'Real', 'String', &
+                                                                          'Boolean', 'Option', &
+                                                                          'Real-Vector', 'Int-Vector', &
+                                                                          'String-Vector']
 
   Type, Public, Extends(hash_table) :: parameters_hash_table
   Contains
     !> Update get to include params
-    Generic, Public  :: get => get_param
-    Procedure, Private :: get_param
+    Generic,   Public               :: get => get_param
+    Procedure, Private              :: get_param
     !> Set retrieve up to parse stored params
-    Generic, Public  :: retrieve => retrieve_option_or_string, retrieve_float, &
-         & retrieve_vector_real, retrieve_vector_int, retrieve_vector_string, retrieve_int, retrieve_bool
-    Procedure, Pass(table), Private :: retrieve_option_or_string, retrieve_float, &
-         & retrieve_vector_real, retrieve_vector_int, retrieve_vector_string, retrieve_int, retrieve_bool
+    Generic,   Public               :: retrieve => retrieve_option_or_string, retrieve_float, &
+                                                   retrieve_vector_real, retrieve_vector_int, &
+                                                   retrieve_vector_string, retrieve_int, retrieve_bool
+    Procedure, Private, Pass(table) :: retrieve_option_or_string, retrieve_float, &
+                                       retrieve_vector_real, retrieve_vector_int, &
+                                       retrieve_vector_string, retrieve_int, retrieve_bool
     !> Check if list of things is set
-    Procedure, Public :: is_any_set
-    Procedure :: is_set_single, is_all_set, num_set
-    Generic, Public :: is_set => is_set_single, is_all_set
-    Procedure, Private, Pass :: control_help_single, control_help_all
-    Generic, Public :: help => control_help_single, control_help_all
+    Procedure, Public               :: is_any_set
+    Procedure                       :: is_set_single, is_all_set, num_set
+    Generic,   Public               :: is_set => is_set_single, is_all_set
+    Procedure, Private, Pass        :: control_help_single, control_help_all
+    Generic,   Public               :: help => control_help_single, control_help_all
   End Type parameters_hash_table
 
   Type, Public :: control_parameter
@@ -130,12 +156,7 @@ Contains
     Character(Len=10), Intent(In) :: mode
     Type(control_parameter) :: param
     Character(Len=MAX_KEY), Dimension(:), Allocatable :: keys
-    Character(Len=*), Dimension(0:8), Parameter :: data_name = &
-         [Character(Len=18) :: 'NULL', 'INT', 'FLOAT', 'STRING', &
-         'BOOL', 'OPTION', 'DATA_FLOAT_VECTOR', 'DATA_INT_VECTOR', 'DATA_STRING_VECTOR']
-    Character(Len=*), Dimension(0:8), Parameter :: python_data_name = &
-         [Character(Len=10) :: 'None', 'int', 'float', 'str', 'bool', &
-         'str', 'float', 'int', 'str']
+
     Integer          :: i
     Character(Len=8) :: vector_closing
 
@@ -302,15 +323,11 @@ Contains
     Type(control_parameter), Intent(In   ) :: param
     Integer,                 Intent(In   ) :: unit
 
-    Character(Len=*), Dimension(7), Parameter :: Type = [Character(Len=8) ::  "Int", "Real", &
-         "String", "Boolean ", "Option", "3-Vector", &
-         "6-Vector"]
-
     Write (unit, '(A,A)') "Key: ", Trim(param%key)
     Write (unit, '(A,A)') "Name: ", Trim(param%name)
     Write (unit, '(A,A,1X,A)') "Default: ", Trim(param%val), Trim(param%units)
     Write (unit, '(A,A)') "Description: ", Trim(param%description)
-    Write (unit, '(A,A)') "Type: ", Trim(Type(param%data_type))
+    Write (unit, '(A,A)') "Type: ", Trim(output_name(param%data_type))
     Write (unit, *) ""
 
   End Subroutine write_control_param_help
