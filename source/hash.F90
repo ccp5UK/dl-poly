@@ -267,12 +267,13 @@ Contains
     Integer                          :: location
 
     Character(Len=MAX_KEY) :: key
+    Integer                :: i
 
     location = table%hash(input)
     key = table%table_keys(location)
     ! Handle open addressing
-    Do While (Trim(key) /= Trim(input))
-      If (key == BAD_VAL) Then
+    Do i = 1, table%size
+      If (key == BAD_VAL .or. Trim(key) == Trim(input)) Then
         Exit
       End If
       table%collisions = table%collisions + 1

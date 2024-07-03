@@ -1,11 +1,12 @@
 Module unit_test
 
-  Use comms, only : comms_type
-  Use test_configuration, only : run_configuration_tests
-  Use test_units, only : run_units_tests
-  Use test_control, only : run_control_tests
-  Use test_vdw, Only : run_vdw_tests
-  Use test_integrators, Only : run_integrators_tests
+  Use comms,              Only: comms_type
+  Use test_configuration, Only: run_configuration_tests
+  Use test_units,         Only: run_units_tests
+  Use test_control,       Only: run_control_tests
+  Use test_vdw,           Only: run_vdw_tests
+  Use test_integrators,   Only: run_integrators_tests
+  Use test_hash,          Only: run_hash_tests
   Implicit None
 
   !> Logicals indicating whether tests should be run for
@@ -17,6 +18,7 @@ Module unit_test
     Logical, Public :: dftb_library = .false.
     Logical, Public :: vdw = .false.
     Logical, Public :: integrators = .false.
+    Logical, Public :: hash = .false.
   Contains
     Procedure :: all => set_all_tests_true
     Procedure :: run => run_unit_tests
@@ -32,6 +34,7 @@ Contains
     this%dftb_library = .true.
     this%vdw = .true.
     this%integrators = .true.
+    this%hash = .true.
   End Subroutine set_all_tests_true
 
   Subroutine run_unit_tests(this, comm, passed_all)
@@ -64,6 +67,11 @@ Contains
 
     If (this%integrators) Then
       Call run_integrators_tests(passed)
+      passed_all = passed_all .and. passed
+    End If
+
+    If (this%hash) Then
+      Call run_hash_tests(passed)
       passed_all = passed_all .and. passed
     End If
 

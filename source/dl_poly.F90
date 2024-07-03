@@ -401,12 +401,16 @@ contains
             Case ("integrators")
               Write(eu, '(a)') "Running test: integrators"
               tests%integrators = .true.
+            Case ("hash")
+              Write(eu, '(a)') "Running test: hash"
+              tests%hash = .true.
             Case ("all")
               Write(eu, '(a)') "Running test: control"
               Write(eu, '(a)') "Running test: configuration"
               Write(eu, '(a)') "Running test: units"
               Write(eu, '(a)') "Running test: vdw"
               Write(eu, '(a)') "Running test: integrators"
+              Write(eu, '(a)') "Running test: hash"
               Call tests%all()
             Case Default
               Write (eu, *) "Invalid test option:", Trim(arg)
