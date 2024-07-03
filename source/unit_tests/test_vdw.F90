@@ -57,14 +57,21 @@ Contains
         -2348.0595394172847_wp, 0.71653131057378916_wp, -33161.413558355591_wp, -5.2445617006037446E+031_wp, &
         -24372.373956007261_wp, -195072.00000000000_wp, 17.696734670143684_wp, 0.0000000000000000_wp, &
         -40.000000000000000_wp, -0.1988531815143044_wp, -0.09375000000000000_wp, 15903.665444480088_wp]
+    Real(kind=wp), Dimension(NUM_VDW_POTS), Parameter :: expected_d = [&
+        72.000000000000000_wp, 2545152.0000000000_wp, 1248.0000000000000_wp, -125.84836733507184_wp, &
+        -309.60739986742306_wp, -64.000000000000000_wp, 74836.3636363637_wp, 14161.896901121087_wp, &
+        -2532.0000000000000_wp, 0.50000000000000000_wp, 26134.875864105488_wp, 2523648.0000000000_wp, &
+        14785.896901121087_wp, -0.71653131057378927_wp, 78877.517672567497_wp, 1.2257971029320215E+032_wp, &
+        60222.239684748725_wp, 2545152.0000000000_wp, -125.84836733507184_wp, 72.000000000000000_wp, &
+        384.00000000000000_wp,  0.15466358562223675_wp,  0.59375000000000000_wp,  -137921.54231081533_wp]
 
 
-    Type(vdw_type) :: test
-    Type(neighbours_type) :: neigh
-    Type(stats_type) :: stats
-    Type(configuration_type) :: config
-    Real(wp), Dimension(1:NUM_VDW_POTS) :: eng = 0.0_wp, gamma = 0.0_wp
-    Class(potential_holder), Allocatable :: pots(:)
+    Type(vdw_type)                           :: test
+    Type(neighbours_type)                    :: neigh
+    Type(stats_type)                         :: stats
+    Type(configuration_type)                 :: config
+    Real(Kind=wp), Dimension(1:NUM_VDW_POTS) :: eng = 0.0_wp, gamma = 0.0_wp, delta = 0.0_wp
+    Class(potential_holder), Allocatable     :: pots(:)
     Integer :: i
 
     passed = .true.
@@ -82,11 +89,12 @@ Contains
       config%parts(:)%fyy = 0.0_wp
       config%parts(:)%fzz = 0.0_wp
 
-      Call vdw_forces_direct(1, ones, ones, ones, ones, eng(i), gamma(i), stats, neigh, test, config)
+      Call vdw_forces_direct(1, ones, ones, ones, ones, eng(i), gamma(i), delta(i), stats, neigh, test, config, .true.)
     end do
 
     Call assert(eng, expected_e, "VdW Energies differ from expected", passed_accum = passed)
     Call assert(gamma, expected_v, "VdW Virials differ from expected", passed_accum = passed)
+    Call assert(delta, expected_d, "Vdw d2U/dr2 terms differ from expected", passed_accum = passed)
 
   end Subroutine test_forces_direct
 

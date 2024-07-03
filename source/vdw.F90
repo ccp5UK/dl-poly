@@ -310,13 +310,13 @@ Contains
 
         x = is + i * h
 
-        e = pot%energy(x)
+        e = pot%energy(x, .false.)
         f0 = e%energy
         
-        e = pot%energy(x+h)
+        e = pot%energy(x+h, .false.)
         f1 = e%energy
         
-        e = pot%energy(x+2.0_wp*h)
+        e = pot%energy(x+2.0_wp*h, .false.)
         f2 = e%energy
 
         s = s + x * x * f0 + &
@@ -354,13 +354,13 @@ Contains
 
         x = is + i * h
 
-        e = pot%energy(x)
+        e = pot%energy(x, .false.)
         df0 = e%gamma
         
-        e = pot%energy(x+h)
+        e = pot%energy(x+h, .false.)
         df1 = e%gamma
         
-        e = pot%energy(x+2.0_wp*h)
+        e = pot%energy(x+2.0_wp*h, .false.)
         df2 = e%gamma
 
         s = s + x * x * df0 + &
@@ -427,13 +427,13 @@ Contains
 
         x = is + i * h
 
-        e = p%energy(x)
+        e = p%energy(x, .false.)
         f0 = e%energy
 
-        e = p%energy(x+h)
+        e = p%energy(x+h, .false.)
         f1 = e%energy
 
-        e = p%energy(x+2.0_wp*h)
+        e = p%energy(x+2.0_wp*h, .false.)
         f2 = e%energy
 
         s = s + x * x * f0 + &
@@ -500,13 +500,13 @@ Contains
 
         x = is + i * h
        
-        e = p%energy(x)
+        e = p%energy(x, .false.)
         df0 = e%gamma
 
-        e = p%energy(x+h)
+        e = p%energy(x+h, .false.)
         df1 = e%gamma
 
-        e = p%energy(x+2.0_wp*h)
+        e = p%energy(x+2.0_wp*h, .false.)
         df2 = e%gamma
 
         s = s + x * x * df0 + &
@@ -1002,7 +1002,7 @@ Contains
 
     Do ivdw = 1, vdws%n_vdw
 
-      z_dz = vdws%potentials(ivdw)%p%energy(vdws%cutoff)
+      z_dz = vdws%potentials(ivdw)%p%energy(vdws%cutoff, .false.)
       z = z_dz%energy
       dz = z_dz%gamma
 
@@ -1447,7 +1447,7 @@ Contains
         Do i = 1, vdws%max_grid
           r = Real(i, wp) * dlrpot
 
-          z_dz = vdws%potentials(ivdw)%p%energy(r)
+          z_dz = vdws%potentials(ivdw)%p%energy(r, .false.)
           vdws%tab_potential(i, ivdw) = z_dz%energy
           vdws%tab_force(i, ivdw) = z_dz%gamma
 
@@ -1495,7 +1495,7 @@ Contains
         Do i = 1, vdws%max_grid
           r = Real(i, wp) * dlrpot
 
-          z_dz = p_mlj%energy(r)
+          z_dz = p_mlj%energy(r, .false.)
 
           vdws%tab_potential(i, ivdw) = z_dz%energy
           vdws%tab_force(i, ivdw) = z_dz%gamma
@@ -1517,7 +1517,7 @@ Contains
         Do i = 1, vdws%max_grid
           r = Real(i, wp) * dlrpot
 
-          z_dz = p_mbuck%energy(r)
+          z_dz = p_mbuck%energy(r, .false.)
 
           vdws%tab_potential(i, ivdw) = z_dz%energy
           vdws%tab_force(i, ivdw) = z_dz%gamma
@@ -1539,7 +1539,7 @@ Contains
         Do i = 1, vdws%max_grid
           r = Real(i, wp) * dlrpot
 
-          z_dz = p_mlj126%energy(r)
+          z_dz = p_mlj126%energy(r, .false.)
 
           vdws%tab_potential(i, ivdw) = z_dz%energy
           vdws%tab_force(i, ivdw) = z_dz%gamma
@@ -1575,7 +1575,7 @@ Contains
 
   End Subroutine vdw_generate
 
-  Subroutine vdw_forces_direct(iatm, xxt, yyt, zzt, rrt, engvdw, virvdw, stats, neigh, vdws, config)
+  Subroutine vdw_forces_direct(iatm, xxt, yyt, zzt, rrt, engvdw, virvdw, d2u, stats, neigh, vdws, config, sec_deriv)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1604,13 +1604,14 @@ Contains
     Integer,                                    Intent(In   ) :: iatm
     Type(neighbours_type),                      Intent(In   ) :: neigh
     Type(stats_type),                           Intent(InOut) :: stats
-    Real(Kind=wp),                              Intent(  Out) :: virvdw, engvdw
+    Real(Kind=wp),                              Intent(  Out) :: virvdw, engvdw, d2u
     Real(Kind=wp), Dimension(1:neigh%max_list), Intent(In   ) :: rrt, zzt, yyt, xxt
     Type(vdw_type),                             Intent(InOut) :: vdws
     Type(configuration_type),                   Intent(InOut) :: config
+    Logical,                                    Intent(In   ) :: sec_deriv
 
     Integer                 :: ai, aj, idi, ityp, jatm, k, key, mm
-    Real(Kind=wp)           :: eng, gamma
+    Real(Kind=wp)           :: eng, gamma, delta
     Real(Kind=wp)           :: fix, fiy, fiz, fx, fy, fz
     Real(Kind=wp)           :: r_rrr, r_rrv, r_rsq, r_rvdw, rrr, rscl, rsq
     Real(Kind=wp)           :: strs1, strs2, strs3, strs5, strs6, strs9
@@ -1630,6 +1631,7 @@ Contains
 
     engvdw = 0.0_wp
     virvdw = 0.0_wp
+    d2u = 0.0_wp
 
     ! initialise stress tensor accumulators
 
@@ -1693,10 +1695,11 @@ Contains
         eng = 0.0_wp
         gamma = 0.0_wp
 
-        eng_gamma = vdws%potentials(k)%energy(rrr)
+        eng_gamma = vdws%potentials(k)%energy(rrr, sec_deriv)
 
         eng = eng_gamma%energy + vdws%afs(k) * rrr + vdws%bfs(k)
         gamma = eng_gamma%gamma*r_rsq - vdws%afs(k) * r_rrr
+        delta = eng_gamma%delta
 
         ! calculate forces
         fx = gamma * xxt(mm)
@@ -1733,6 +1736,10 @@ Contains
           ! add virial
 
           virvdw = virvdw - gamma * rsq
+
+          ! add Born term
+
+          d2u = d2u + delta
 
           ! add stress tensor
 

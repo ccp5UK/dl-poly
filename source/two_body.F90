@@ -135,7 +135,7 @@ Contains
                                                    engvdw_rl, factor_nz, tmp, viracc, vircpe_ch, &
                                                    vircpe_dt, vircpe_ex, vircpe_fr, vircpe_nz, &
                                                    vircpe_rc, vircpe_rl, virden, virkim, virmet, &
-                                                   virvdw, virvdw_rc, virvdw_rl
+                                                   virvdw, virvdw_rc, virvdw_rl, d2u
     Real(kind=wp), Allocatable, Dimension(:)    :: coul_coeffs, rrt, xxt, yyt, zzt
     Real(kind=wp), Allocatable, Dimension(:, :) :: vdw_coeffs
 
@@ -387,7 +387,7 @@ Contains
 
           Else If (vdws%l_direct) Then ! direct calculation
 
-            Call vdw_forces_direct(i, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, vdws, config)
+            Call vdw_forces_direct(i, xxt, yyt, zzt, rrt, engacc, viracc, d2u, stats, neigh, vdws, config, .false.)
             engvdw = engvdw + engacc
             virvdw = virvdw + viracc
 
