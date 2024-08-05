@@ -41,7 +41,7 @@ Contains
       T%io_yaml = io_yaml
     Else 
       T%io_yaml = .false.
-    End IF
+    End If
     If (comm%idnode == 0) Then
       Open (Newunit=fcurrent%unit_no, File=fcurrent%filename, Status='unknown', Action="Write")
       If (T%io_yaml) Then
@@ -73,7 +73,6 @@ Contains
         tmp = Dot_product(config%k%r(:, k), [config%parts(i)%xxx, config%parts(i)%yyy, config%parts(i)%zzz])
         h(:, atype) = h(:, atype) + config%weight(i) * [config%vxx(i), config%vyy(i), config%vzz(i)] * Exp(Cmplx(0.0_wp, tmp, wp))
       End Do
-      !current%jlk(:,k,j)=kp%u(:,k)*Dot_product(kp%u(:,k),h)
       Call gsum(comm, h)
       T%jlk(k, :, :) = h
     End Do

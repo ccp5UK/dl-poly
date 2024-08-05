@@ -3915,6 +3915,6 @@ Contains
     Real,                 Intent(In   ) :: v
     Real, Dimension(1:2), Intent(In   ) :: range
     r_in_range = v >= range(1) .and. v <= range(2)
-End Function
+  End Function
 
 End Module numerics

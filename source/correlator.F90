@@ -27,24 +27,43 @@ Module correlators
     Integer, Parameter, Public :: DEFAULT_BLOCKS = 1, DEFAULT_POINTS = 100, DEFAULT_WINDOW = 1
 
     Type, Public :: correlator
-      Real(Kind=wp),     Allocatable :: left_accumulator(:,:)
-      Real(Kind=wp),     Allocatable :: right_accumulator(:,:)
-      Integer(Kind=wi),  Allocatable :: count_accumulated(:)
-      Real(Kind=wp),     Allocatable :: left_shift(:,:,:)
-      Logical,           Allocatable :: shift_not_null(:,:,:)
-      Real(Kind=wp),     Allocatable :: right_shift(:,:,:)
-      Integer(Kind=wi),  Allocatable :: shift_index(:)
-      Real(Kind=wp),     Allocatable :: correlation(:,:,:,:)
-      Integer(Kind=wi),  Allocatable :: count_correlated(:,:)
-      Integer(Kind=wi)               :: number_of_blocks = 0, & 
-                                        max_block_used = 0, &
-                                        left_dim = 0, &
-                                        right_dim = 0, & 
-                                        window_size = 0, & 
-                                        points_per_block = 0, &
-                                        min_dist = 0, &
-                                        buffer_size = 0, &
-                                        count_updated = 0
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_5 Type for calculating Real and Complex correlations, \<AB\>.
+    ! Uses the multi-tau algorithm, see add.
+    !
+    ! Internally both Real and Complex scalars are represented as
+    ! Complex. This keeps code duplication minimal in lieu of
+    ! templates, but incurs some overhead. This becomes important
+    ! for very long lag time, single step accuracy per-atom correlations.
+    !
+    ! author    - h.l.devereux August 2024
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !> Accumulator for A of \<AB\> for each block
+      Complex(Kind=wp), Allocatable :: left_accumulator(:)
+      !> Accumulator for B of \<AB\> for each block
+      Complex(Kind=wp), Allocatable :: right_accumulator(:)
+      !> Count accumulated observable for each block
+      Integer(Kind=wi), Allocatable :: count_accumulated(:)
+      !> Shift array for A, for each block
+      Complex(Kind=wp), Allocatable :: left_shift(:,:)
+      Logical,          Allocatable :: shift_not_null(:,:)
+      !> Shift array for B, for each block
+      Complex(Kind=wp), Allocatable :: right_shift(:,:)
+      !> Current shift for each block
+      Integer(Kind=wi), Allocatable :: shift_index(:)
+      !> Value of correlation at block and point
+      Complex(Kind=wp), Allocatable :: correlation(:,:)
+      Integer(Kind=wi), Allocatable :: count_correlated(:,:)
+      Integer(Kind=wi)              :: number_of_blocks = 0, &
+                                       max_block_used = 0,   &
+                                       window_size = 0,      &
+                                       points_per_block = 0, &
+                                       min_dist = 0,         &
+                                       buffer_size = 0,      &
+                                       count_updated = 0
   
     Contains
       Private
@@ -52,12 +71,16 @@ Module correlators
       Procedure, Public              :: init => allocate_correlator_arrays
       Procedure, Public              :: update
       Procedure, Private             :: add
-      Procedure, Public              :: get_correlation
+      Generic,   Public              :: get_correlation => get_real_correlation, get_complex_correlation
+      Procedure, Private             :: get_real_correlation, get_complex_correlation
+      Procedure, Private             :: get_correlation_values
       Procedure, Public              :: deport_buffer
       Procedure, Public              :: recieve_buffer
       Final                          :: cleanup
   
     End Type
+
+    Public :: correlator_buffer_size
 
     Type, Public :: correlator_buffer_type
       ! correlators from all processes stored in a packed form
@@ -117,12 +140,41 @@ Module correlators
 
     Call this%mpi%finalise()
   End Subroutine finalise_indices_buffer_type
-  
-  Subroutine get_correlation(this, correlation, timesteps, tstep, points_correlated)
+
+  Subroutine get_complex_correlation(this, correlation, timesteps, tstep, points_correlated)
+    Class(correlator),                                     Intent(InOut)  :: this
+    Complex(Kind=wp), Dimension(&
+      1:this%points_per_block*this%number_of_blocks),      Intent(InOut)  :: correlation
+    Real(Kind=wp), Dimension(&
+      1:this%points_per_block*this%number_of_blocks),      Intent(InOut)  :: timesteps
+    Real(Kind=wp),                                         Intent(In   )  :: tstep
+    Integer,                                               Intent(  Out)  :: points_correlated
+
+    Call get_correlation_values(this, correlation, timesteps, tstep, points_correlated)
+  End Subroutine get_complex_correlation
+
+  Subroutine get_real_correlation(this, correlation, timesteps, tstep, points_correlated)
     Class(correlator),                                     Intent(InOut)  :: this
     Real(Kind=wp), Dimension(& 
-      1:this%points_per_block*this%number_of_blocks, &
-      1:this%left_dim, 1:this%right_dim) ,                 Intent(InOut)  :: correlation
+      1:this%points_per_block*this%number_of_blocks),      Intent(InOut)  :: correlation
+    Real(Kind=wp), Dimension(&
+      1:this%points_per_block*this%number_of_blocks),      Intent(InOut)  :: timesteps
+    Real(Kind=wp),                                         Intent(In   )  :: tstep
+    Integer,                                               Intent(  Out)  :: points_correlated
+
+    Complex(Kind=wp), Dimension(&
+      1:this%points_per_block*this%number_of_blocks) :: complex_correlation
+
+    Call get_correlation_values(this, complex_correlation, timesteps, tstep, points_correlated)
+
+    correlation = Real(Real(complex_correlation, Kind=wp), Kind=wp)
+
+  End Subroutine get_real_correlation
+
+  Subroutine get_correlation_values(this, correlation, timesteps, tstep, points_correlated)
+    Class(correlator),                                     Intent(InOut)  :: this
+    Complex(Kind=wp), Dimension(&
+      1:this%points_per_block*this%number_of_blocks),      Intent(InOut)  :: correlation
     Real(Kind=wp), Dimension(&
       1:this%points_per_block*this%number_of_blocks),      Intent(InOut)  :: timesteps
     Real(Kind=wp),                                         Intent(In   )  :: tstep
@@ -135,7 +187,7 @@ Module correlators
     im = 1
     Do i = 1,this%points_per_block
       If (this%count_correlated(1,i) > 0) Then
-        correlation(im,:,:) = correlation(im,:,:) + this%correlation(1,i,:,:) / this%count_correlated(1,i)
+        correlation(im) = correlation(im) + this%correlation(1,i) / this%count_correlated(1,i)
         timesteps(im) = i - 1
         im = im + 1
       End If
@@ -143,7 +195,7 @@ Module correlators
     Do k = 2,this%max_block_used
       Do i = this%min_dist+1,this%points_per_block
         If (this%count_correlated(k,i) > 0) Then
-          correlation(im,:,:) = correlation(im,:,:) + this%correlation(k,i,:,:) / this%count_correlated(k,i)
+          correlation(im) = correlation(im) + this%correlation(k,i) / this%count_correlated(k,i)
           timesteps(im) = Real(i-1,Kind=wp) * (Real(this%window_size, Kind=wp)**(k-1))
           im = im + 1
         EndIf
@@ -154,13 +206,22 @@ Module correlators
     !  depending on the averaging parameter
     points_correlated = im
 
-  End Subroutine get_correlation
+  End Subroutine get_correlation_values
 
   Recursive Subroutine add(this, data_left, data_right, block_index)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_5 subroutine for adding newly observed data to a correlator.
+    ! follows the multi-tau algorithm propagating down the block hierachy.
+    !
+    ! author    - h.l.devereux August 2024
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
     Class(correlator),   Intent(InOut)  :: this
-    Real(Kind=wp),       Intent(In   )  :: data_left(:), data_right(:)
+    Complex(Kind=wp),    Intent(In   )  :: data_left, data_right
     Integer,             Intent(In   )  :: block_index
-    Integer                             :: i, j, s, n, l, r
+    Integer                             :: i, j, s, n
     Logical                             :: flag
     
     If (block_index > this%number_of_blocks) Then
@@ -176,24 +237,24 @@ Module correlators
     End If
     ! add new data to the shifts
     !  and accumulate
-    this%left_shift(block_index,s,:) = data_left
-    this%left_accumulator(block_index,:) = this%left_accumulator(block_index,:) + data_left
-    this%shift_not_null(block_index,s,:) = .true.
+    this%left_shift(block_index,s) = data_left
+    this%left_accumulator(block_index) = this%left_accumulator(block_index) + data_left
+    this%shift_not_null(block_index,s) = .true.
 
-    this%right_shift(block_index,s,:) = data_right
-    this%right_accumulator(block_index,:) = this%right_accumulator(block_index,:) + data_right
-    this%shift_not_null(block_index,s,:) = .true.
+    this%right_shift(block_index,s) = data_right
+    this%right_accumulator(block_index) = this%right_accumulator(block_index) + data_right
+    this%shift_not_null(block_index,s) = .true.
 
     this%count_accumulated(block_index) = this%count_accumulated(block_index) + 1
 
     ! check if we need to move down a block
     If (this%count_accumulated(block_index) == this%window_size) Then
-      Call this%add(this%left_accumulator(block_index,:) / this%window_size, &
-          this%right_accumulator(block_index,:) / this%window_size, &
+      Call this%add(this%left_accumulator(block_index) / this%window_size, &
+          this%right_accumulator(block_index) / this%window_size, &
           block_index + 1)
       ! the data at this block may be reset
-      this%left_accumulator(block_index,:) = 0
-      this%right_accumulator(block_index,:) = 0
+      this%left_accumulator(block_index) = 0
+      this%right_accumulator(block_index) = 0
       this%count_accumulated(block_index) = 0    
     End If
 
@@ -203,15 +264,11 @@ Module correlators
       j = i
       Do n = 1, this%points_per_block
         flag = .false.
-        If ( this%shift_not_null(block_index,i,1) &
-          .and. this%shift_not_null(block_index,j,2) )  Then
-          Do l = 1, this%left_dim
-            Do r = 1, this%right_dim
-              this%correlation(block_index,n,l,r) = this%correlation(block_index,n,l,r) + &
-                this%left_shift(block_index,i,l)*this%right_shift(block_index,j,r) 
-              flag = .true.
-            End Do
-          End Do
+        If ( this%shift_not_null(block_index,i) &
+          .and. this%shift_not_null(block_index,j) )  Then
+          this%correlation(block_index,n) = this%correlation(block_index,n) + &
+            this%left_shift(block_index,i)*Conjg(this%right_shift(block_index,j))
+          flag = .true.
         End If
         If (flag) Then 
           this%count_correlated(block_index,n) = this%count_correlated(block_index,n) + 1
@@ -228,15 +285,11 @@ Module correlators
           j = j + this%points_per_block
         End If
         flag = .false.
-        If ( this%shift_not_null(block_index,i,1) &
-          .and. this%shift_not_null(block_index,j,2) )  Then
-          Do l = 1, this%left_dim
-            Do r = 1, this%right_dim
-              this%correlation(block_index,n,l,r) = this%correlation(block_index,n,l,r) + &
-                this%left_shift(block_index,i,l)*this%right_shift(block_index,j,r) 
-              flag = .true.
-            End Do
-          End Do
+        If ( this%shift_not_null(block_index,i) &
+          .and. this%shift_not_null(block_index,j) )  Then
+          this%correlation(block_index,n) = this%correlation(block_index,n) + &
+            this%left_shift(block_index,i)*Conjg(this%right_shift(block_index,j))
+          flag = .true.
         End If
         If (flag) Then 
           this%count_correlated(block_index,n) = this%count_correlated(block_index,n) + 1
@@ -253,49 +306,63 @@ Module correlators
   End Subroutine add
 
   Subroutine update(this, data_left, data_right)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_5 subroutine for updating the correlator for newly
+    ! observed Real or Complex scalar data. Reals are handled internally
+    ! as Complex in leiu of templates.
+    !
+    ! author    - h.l.devereux August 2024
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
     Class(correlator), Intent(InOut) :: this
-    Real(Kind=wp),     Intent(In   ) :: data_left(:), data_right(:)
+    Complex(Kind=wp),  Intent(In   ) :: data_left, data_right
 
     this%count_updated = this%count_updated + 1
-
     Call add(this,data_left,data_right,1)
 
   End Subroutine update
 
+  !> buffer size for deporting and recieving
+  Integer Function correlator_buffer_size(blocks, points)
+    Integer, Intent(In   ) :: blocks, points
+    correlator_buffer_size = blocks*2  &
+      + blocks*2                       &
+      + blocks                         &
+      + blocks*points*2                &
+      + blocks*points                  &
+      + blocks*points*2                &
+      + blocks                         &
+      + blocks*points*2                &
+      + blocks*points+3    
+  End Function correlator_buffer_size
+
   Subroutine allocate_correlator_arrays(this, number_of_blocks, &
-                                        points_per_block, window_size, dim_left, dim_right)
+                                        points_per_block, window_size)
     Class(correlator),      Intent(InOut) :: this
     Integer,                Intent(In   ) :: number_of_blocks, points_per_block,&
-                                              window_size, dim_left, dim_right
+                                             window_size
     Integer, Dimension(1:9)               :: fails
     
     this%number_of_blocks = number_of_blocks
-    this%left_dim = dim_left
-    this%right_dim = dim_right
     this%window_size = window_size
     this%points_per_block = points_per_block
     this%min_dist = points_per_block / window_size
     this%max_block_used = 0
 
-    Allocate(this%left_accumulator(number_of_blocks,dim_left), Stat=fails(1))
-    Allocate(this%right_accumulator(number_of_blocks,dim_right), Stat=fails(2))
+    Allocate(this%left_accumulator(number_of_blocks), Stat=fails(1))
+    Allocate(this%right_accumulator(number_of_blocks), Stat=fails(2))
     Allocate(this%count_accumulated(number_of_blocks), Stat=fails(3))
-    Allocate(this%left_shift(number_of_blocks,points_per_block,dim_left), Stat=fails(4))
-    Allocate(this%shift_not_null(number_of_blocks,points_per_block,2), Stat=fails(5))
-    Allocate(this%right_shift(number_of_blocks,points_per_block,dim_right), Stat=fails(6))
+    Allocate(this%left_shift(number_of_blocks,points_per_block), Stat=fails(4))
+    Allocate(this%shift_not_null(number_of_blocks,points_per_block), Stat=fails(5))
+    Allocate(this%right_shift(number_of_blocks,points_per_block), Stat=fails(6))
     Allocate(this%shift_index(number_of_blocks), Stat=fails(7))
-    Allocate(this%correlation(number_of_blocks,points_per_block,dim_left,dim_right), Stat=fails(8))
+    Allocate(this%correlation(number_of_blocks,points_per_block), Stat=fails(8))
     Allocate(this%count_correlated(number_of_blocks,points_per_block), Stat=fails(9))
 
-    this%buffer_size =    number_of_blocks*dim_left                             &
-                        + number_of_blocks*dim_right                            &
-                        + number_of_blocks                                      &
-                        + number_of_blocks*points_per_block*dim_left            &
-                        + number_of_blocks*points_per_block*2                   &
-                        + number_of_blocks*points_per_block*dim_right           &
-                        + number_of_blocks                                      &
-                        + number_of_blocks*points_per_block*dim_left*dim_right  &
-                        + number_of_blocks*points_per_block+3                    
+    this%buffer_size = correlator_buffer_size(&
+      number_of_blocks, points_per_block)                  
 
     this%count_accumulated = 0
     this%left_accumulator = 0
@@ -312,31 +379,58 @@ Module correlators
 
   End Subroutine allocate_correlator_arrays
 
+  !> pack complex data into a real buffer (of 2x length)
+  Subroutine pack_complex(dat, buffer, buffer_index)
+    Complex(Kind=wp), Intent(In   ) :: dat(:)
+    Real(Kind=wp),    Intent(InOut) :: buffer(:)
+    Integer,          Intent(InOut) :: buffer_index
+
+    Integer :: i
+
+    Do i = 0, Size(dat)-1
+      buffer(buffer_index+i*2+1) = Real(Real(dat(i+1), Kind=wp), Kind=wp)
+      buffer(buffer_index+i*2+2) = Real(Aimag(dat(i+1)), Kind=wp)
+    End Do
+    buffer_index = buffer_index + Size(dat)*2
+  End Subroutine pack_complex
+
+  !> upack complex data from a real buffer (of 1/2 length)
+  Subroutine unpack_complex(dat, buffer, buffer_index, count)
+    Complex(Kind=wp), Allocatable, Intent(InOut) :: dat(:)
+    Real(Kind=wp),                 Intent(In   ) :: buffer(:)
+    Integer,                       Intent(InOut) :: buffer_index
+    Integer,                       Intent(In   ) :: count
+
+    Integer :: i
+
+    If (Allocated(dat)) Deallocate(dat)
+    Allocate(dat(1:count))
+
+    Do i = 1, Size(dat)
+      dat(i) = Cmplx(buffer(buffer_index+1), buffer(buffer_index+2), Kind=wp)
+      buffer_index = buffer_index + 2
+    End Do
+  End Subroutine
+
   Subroutine deport_buffer(this, buffer, buffer_index, free)
     Class(correlator),             Intent(InOut) :: this
     Real(Kind=wp), Dimension(:),   Intent(InOut) :: buffer
     Integer,                       Intent(InOut) :: buffer_index
-    Integer                                      :: from_index, to_index, elements
     Logical, Optional,             Intent(In   ) :: free  
 
+    Integer :: from_index, to_index, elements
     
     ! pack a buffer to be sent to another process 
 
     ! left accumulator
-    from_index = buffer_index + 1
-    elements = this%number_of_blocks*this%left_dim
-    to_index = from_index+elements - 1
-    buffer(from_index:to_index) = Reshape(this%left_accumulator(:,:),(/elements/))
-    buffer_index = to_index
+    Call pack_complex(Reshape(this%left_accumulator(:), &
+      (/this%number_of_blocks/)), buffer, buffer_index)
 
     ! right accumulator
-    from_index = buffer_index + 1
-    elements = this%number_of_blocks*this%right_dim 
-    to_index = from_index+elements- 1
-    buffer(from_index:to_index) = Reshape(this%right_accumulator(:,:),(/elements/))
-    buffer_index = to_index
+    Call pack_complex(Reshape(this%right_accumulator(:), &
+      (/this%number_of_blocks/)), buffer, buffer_index)
 
-    ! count accumulated
+    !count accumulated
     from_index = buffer_index + 1
     elements = this%number_of_blocks
     to_index = from_index + elements - 1
@@ -344,25 +438,21 @@ Module correlators
     buffer_index = to_index
 
     ! left shift
-    from_index = buffer_index + 1
-    elements = this%number_of_blocks*this%points_per_block*this%left_dim
-    to_index = from_index + elements - 1
-    buffer(from_index:to_index) = Reshape(this%left_shift(:,:,:),(/elements/))
-    buffer_index = to_index
+    Call pack_complex(Reshape(this%left_shift(:,:), &
+      (/this%number_of_blocks*this%points_per_block/)), &
+      buffer, buffer_index)
 
     ! right shift
-    from_index = buffer_index + 1
-    elements = this%number_of_blocks*this%points_per_block*this%right_dim 
-    to_index = from_index+ elements - 1
-    buffer(from_index:to_index) = Reshape(this%right_shift(:,:,:),(/elements/))
-    buffer_index = to_index
+    Call pack_complex(Reshape(this%right_shift(:,:), &
+      (/this%number_of_blocks*this%points_per_block/)), &
+      buffer, buffer_index)
 
     ! shift_not_null
     from_index = buffer_index + 1
-    elements = this%number_of_blocks*this%points_per_block*2
+    elements = this%number_of_blocks*this%points_per_block
     to_index = from_index + elements - 1
     buffer(from_index:to_index) = 0
-    Where(Reshape(this%shift_not_null(:,:,:),(/elements/))) &
+    Where(Reshape(this%shift_not_null(:,:),(/elements/))) &
       buffer(from_index:to_index) = 1
     buffer_index = to_index
 
@@ -374,11 +464,9 @@ Module correlators
     buffer_index = to_index
 
     ! correlation
-    from_index = buffer_index + 1
-    elements = this%number_of_blocks*this%points_per_block*this%left_dim*this%right_dim
-    to_index = from_index+ elements - 1
-    buffer(from_index:to_index) = Reshape(this%correlation(:,:,:,:),(/elements/))
-    buffer_index = to_index
+    Call pack_complex(Reshape(this%correlation(:,:), &
+      (/this%number_of_blocks*this%points_per_block/)), &
+      buffer, buffer_index)
 
     ! count correlated
     from_index = buffer_index + 1
@@ -399,21 +487,17 @@ Module correlators
     Class(correlator),             Intent(InOut)  :: this
     Real(Kind=wp), Dimension(:),   Intent(InOut)  :: buffer
     Integer,                       Intent(InOut)  :: buffer_index
-    Integer                                       :: from_index, to_index
+
+    Integer                       :: from_index, to_index
+    Complex(Kind=wp), Allocatable :: temp(:)
 
     ! left accumulator
-    from_index = buffer_index + 1
-    to_index = from_index + this%number_of_blocks*this%left_dim - 1
-    this%left_accumulator(:,:) = Reshape(buffer(from_index:to_index) &
-      ,(/this%number_of_blocks,this%left_dim/))
-    buffer_index = to_index
+    Call unpack_complex(temp, buffer, buffer_index, this%number_of_blocks)
+    this%left_accumulator(:) = Reshape(temp, (/this%number_of_blocks/))
 
     ! right accumulator
-    from_index = buffer_index + 1
-    to_index = from_index + this%number_of_blocks*this%right_dim - 1
-    this%right_accumulator(:,:) = Reshape(buffer(from_index:to_index) &
-      ,(/this%number_of_blocks,this%right_dim/))
-    buffer_index = to_index
+    Call unpack_complex(temp, buffer, buffer_index, this%number_of_blocks)
+    this%right_accumulator(:) = Reshape(temp, (/this%number_of_blocks/))
 
     ! count accumulated
     from_index = buffer_index + 1
@@ -422,26 +506,24 @@ Module correlators
     buffer_index = to_index
 
     ! left shift
-    from_index = buffer_index + 1
-    to_index = from_index+this%number_of_blocks*this%points_per_block*this%left_dim - 1
-    this%left_shift(:,:,:) = Reshape(buffer(from_index:to_index), &
-      (/this%number_of_blocks,this%points_per_block,this%left_dim/))
-    buffer_index = to_index
+    Call unpack_complex(temp, buffer, buffer_index, &
+      this%number_of_blocks*this%points_per_block)
+    this%left_shift(:,:) = Reshape(temp, &
+      (/this%number_of_blocks,this%points_per_block/))
 
     ! right shift
-    from_index = buffer_index + 1
-    to_index = from_index+this%number_of_blocks*this%points_per_block*this%right_dim - 1
-    this%right_shift(:,:,:) = Reshape(buffer(from_index:to_index), &
-      (/this%number_of_blocks,this%points_per_block,this%right_dim/))
-    buffer_index = to_index
+    Call unpack_complex(temp, buffer, buffer_index, &
+      this%number_of_blocks*this%points_per_block)
+    this%right_shift(:,:) = Reshape(temp, &
+      (/this%number_of_blocks,this%points_per_block/))
 
     ! shift_not_null
     from_index = buffer_index + 1
-    to_index = from_index+this%number_of_blocks*this%points_per_block*2 - 1
-    this%shift_not_null(:,:,:) = .false.
+    to_index = from_index+this%number_of_blocks*this%points_per_block - 1
+    this%shift_not_null(:,:) = .false.
     Where(Reshape(buffer(from_index:to_index), &
-      (/this%number_of_blocks,this%points_per_block,2/))>0) &
-      this%shift_not_null(:,:,:) = .true.
+      (/this%number_of_blocks,this%points_per_block/))>0) &
+      this%shift_not_null(:,:) = .true.
     buffer_index = to_index
 
     ! shift index
@@ -451,11 +533,10 @@ Module correlators
     buffer_index = to_index
 
     ! correlation
-    from_index = buffer_index + 1
-    to_index = from_index+this%number_of_blocks*this%points_per_block*this%left_dim*this%right_dim - 1
-    this%correlation(:,:,:,:) = Reshape(buffer(from_index:to_index), &
-      (/this%number_of_blocks,this%points_per_block,this%left_dim,this%right_dim/))
-    buffer_index = to_index
+    Call unpack_complex(temp, buffer, buffer_index, &
+      this%number_of_blocks*this%points_per_block)
+    this%correlation(:,:) = Reshape(temp, &
+      (/this%number_of_blocks,this%points_per_block/))
 
     ! count correlated
     from_index = buffer_index + 1

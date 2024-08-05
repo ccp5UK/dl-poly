@@ -36,6 +36,7 @@ Module control
                                       parameters_hash_table
   Use coord,                    Only: coord_type
   Use core_shell,               Only: core_shell_type
+  Use correlators,              Only: correlator_buffer_size
   Use defects,                  Only: defects_type
   Use development,              Only: development_type
   Use dihedrals,                Only: dihedrals_type
@@ -1779,17 +1780,9 @@ Contains
       b_per_atom = B%per_atom()
 
       if (a_per_atom .or. b_per_atom) Then
-
-        buffer_size = Max(buffer_size,   this_blocks*1     &
-                            + this_blocks*1                &
-                            + this_blocks                  &
-                            + this_blocks*this_points*1    &
-                            + this_blocks*this_points*2    &
-                            + this_blocks*this_points*1    &
-                            + this_blocks                  &
-                            + this_blocks*this_points*1*1  &
-                            + this_blocks*this_points+5)
-
+        buffer_size = Max(buffer_size, &
+          correlator_buffer_size(&
+            this_blocks, this_points)+2)
       End If
 
     End Do

@@ -148,16 +148,27 @@ block with 5000 points. By default **correlation_window** :math:`=1`,
    **heat_flux** **hf**     system heat flux  no            **x, y, z**
    ============= ========== ================= ============ =======================================
 
+The maximum lag time for a correlation is given by 
 
-Through a combination of the three parameters short or long timescale
-correlations may be computed. For example taking **correlation_blocks**
-:math:`= 1`, **correlation_block_points** :math:`= 100`, and
-**correlation_window** :math:`= 1` will result in a maximum lag time
-correlated of :math:`99 \Delta t` for simulation time step
-:math:`\Delta t`. Whereas taking **correlation_window** :math:`= 2` and
-**correlation_blocks** :math:`= 2` will give a higher maximum
-correlation lag time, :math:`(198 \Delta t)`, but the averaging window
-of :math:`2` will result in a small accuracy reduction.
+.. math:: (p-1)m^{l}\Delta t,
+      :label: cor_max_lag
+
+where :math:`p`` is **correlation_block_points** and :math:`m` 
+is **correlation_window**, and :math:`l` is **correlation_blocks**. 
+The algorithmic scaling is bounded above by,
+
+.. math:: p\frac{m+1}{m}.
+      :label: cor_scaling
+
+For per-atom correlations such as velocity updating one 
+correlator will also scale with an additional factor of :math:`N`, 
+the atom count.
+
+These facts can be combined to obtain a given correlation timescale
+whilst balancing performance. I.e. an higher :math:`p` increase accuracy,
+but has the greatest performance impact. Increase :math:`m` and :math:`l`
+have comparatively less performance impact but give access to longer 
+correlation lengths at some reduced accuracy.
 
 Output
 ^^^^^^
