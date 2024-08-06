@@ -371,20 +371,30 @@ Contains
   End Subroutine set_hash_value
 
   Subroutine get_keys(table, keys)
-    Class(hash_table),                  Intent(In   ) :: table
+    !!-----------------------------------------------------------------------
+    !!
+    !! Get all used keys in table
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins march 2020
+    !! contributions - h.l.devereux August 2024
+    !!-----------------------------------------------------------------------
+    Class(hash_table), Intent(In   ) :: table
+
     Character(Len=MAX_KEY), Allocatable, Dimension(:) :: keys
 
     If (Allocated(keys)) Then
       Deallocate (keys)
     End If
-    Allocate (keys, source=table%key_names)
+
+    Allocate (keys, source=table%key_names(1:table%used_keys))
 
   End Subroutine get_keys
 
   Subroutine print_keys(table)
     !!-----------------------------------------------------------------------
     !!
-    !! Print all keys in table
+    !! Print all used keys in table
     !!
     !! copyright - daresbury laboratory
     !! author    - j.wilkins march 2020
