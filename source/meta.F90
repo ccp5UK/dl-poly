@@ -110,7 +110,6 @@ Module meta
                                                     read_system_parameters,&
                                                     read_ttm,&
                                                     read_units, &
-                                                    read_correlation_count, &
                                                     read_correlations_parameters, &
                                                     correlation_deport_size
   Use numerics,                               Only: seed_type
@@ -853,11 +852,7 @@ Contains
         Call stats(ff)%cur%init(config(ff)%k%n, 200, files(FILE_CURRENT), comm, config(ff), sites(ff)%mxatyp, stats(ff)%file_yaml)
       End If
 
-      Call read_correlation_count(params,stats(ff), comm, config(ff)%natms)
-      If (stats(ff)%calculate_correlations) Then
-        Call stats(ff)%init_correlations()
-        Call read_correlations_parameters(params,stats(ff),comm,config(ff))
-      End If
+      Call read_correlations_parameters(params, stats(ff), comm, config(ff))
 
     End Do
 

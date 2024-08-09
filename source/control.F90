@@ -173,7 +173,6 @@ Module control
   Public :: read_forcefield
   Public :: read_devel
   Public :: read_structure_analysis
-  Public :: read_correlation_count
   Public :: read_correlations_parameters
   Public :: correlation_deport_size
   Public :: read_units
@@ -1735,7 +1734,6 @@ Contains
     Integer                                             :: buffer_size, i, &
                                                            this_window, this_blocks, this_points
     Character(Len=STR_LEN)                              :: a_name, b_name
-    Logical                                             :: a_per_atom, b_per_atom
 
     Call params%retrieve('correlation_observable',option, required=.false.)
     Call params%retrieve("correlation_blocks",blocks,required=.false.)
@@ -1773,13 +1771,7 @@ Contains
       Call character_to_observable(a_name,A)
       Call character_to_observable(b_name,B)
 
-      a_per_atom = .false.
-      b_per_atom = .false.
-
-      a_per_atom = A%per_atom()
-      b_per_atom = B%per_atom()
-
-      if (a_per_atom .or. b_per_atom) Then
+      if (A%per_atom() .or. B%per_atom()) Then
         buffer_size = Max(buffer_size, &
           correlator_buffer_size(&
             this_blocks, this_points)+2)
@@ -1814,50 +1806,23 @@ Contains
 
   End Subroutine parse_correlation_observable
 
-  Subroutine read_correlation_count(params, stats, comm, atoms)
-    Type(parameters_hash_table),          Intent(InOut) :: params
-    Type(stats_type),                     Intent(InOut) :: stats
-    Type(comms_type),                     Intent(InOut) :: comm
-    Integer,                              Intent(In   ) :: atoms
+  Subroutine read_correlations_parameters(params, stats, comm, config)
+    Type(parameters_hash_table), Intent(InOut) :: params
+    Type(stats_type),            Intent(InOut) :: stats
+    Type(comms_type),            Intent(InOut) :: comm
+    Type(configuration_type),    Intent(InOut) :: config
 
-    Character(Len=STR_LEN), Allocatable               :: option(:)
-    Character(Len=STR_LEN)                            :: a_name, b_name
-    Class(observable),      Allocatable               :: A, B
-    Integer                                           :: this_window, this_blocks, this_points, i
-    Integer,                Allocatable               :: window(:), blocks(:), points(:)
-    Type(observable_heat_flux)                        :: h
-
-    stats%calculate_correlations = .false.
-    stats%per_atom_correlations = .false.
-    stats%number_of_correlations = 0
+    Integer                              :: this_window, this_blocks, &
+                                            this_points, i
+    Integer, Allocatable                 :: window(:), blocks(:), points(:)
+    Character(Len=STR_LEN), Allocatable  :: option(:)
+    Character(Len=STR_LEN)               :: a_name, b_name
+    Class(observable),      Allocatable  :: A, B
+    Type(observable_heat_flux)           :: h
 
     Call params%retrieve('correlation_observable',option, required=.false.)
-    Call params%retrieve("correlation_blocks",blocks,required=.false.)
-    Call params%retrieve("correlation_block_points",points,required=.false.)
-    Call params%retrieve("correlation_window",window,required=.false.)
 
     Do i = 1,Size(option)
-      If (i <= Size(blocks)) Then
-        this_blocks = blocks(i)
-      Else
-        this_blocks = DEFAULT_BLOCKS
-      End If
-
-      If (i <= Size(points)) Then
-        this_points = points(i)
-      Else
-        this_points = DEFAULT_POINTS
-      End If
-
-      If (i <= Size(window)) Then
-        this_window = window(i)
-      Else
-        this_window = DEFAULT_window
-      End If
-
-      If (this_points < this_window) Then
-        Call error(0, "points per block less than window size")
-      End If
 
       Call parse_correlation_observable(option(i), a_name, b_name)
       Call character_to_observable(a_name, A)
@@ -1868,7 +1833,7 @@ Contains
       End If
 
       If (A%per_atom() .or. B%per_atom()) Then
-        stats%number_of_correlations = stats%number_of_correlations + atoms
+        stats%number_of_correlations = stats%number_of_correlations + config%natms
         stats%per_atom_correlations = .true.
       Else
         If (comm%idnode == root_id) Then
@@ -1879,88 +1844,41 @@ Contains
 
     If (stats%number_of_correlations > 0) Then
       stats%calculate_correlations = .true.
+      Call stats%init_correlations()
+    Else
+      Return
     End If
 
-  End Subroutine read_correlation_count
-
-  Subroutine retrieve_correlator_params(stats, config, comm, key, count, blocks, points, window)
-    Type(stats_type),            Intent(InOut) :: stats
-    Type(configuration_type),    Intent(InOut) :: config
-    Type(comms_type),            Intent(InOut) :: comm
-    Character(Len=STR_LEN),      Intent(In   ) :: key
-    Integer,                     Intent(In   ) :: blocks, points, window
-    Integer,                     Intent(InOut) :: count
-    Integer                                    :: i, buffer_size_per_atom
-    Character(Len=STR_LEN)                     :: a_name, b_name
-   Class(observable), Allocatable              :: A, B
-   Logical                                     :: per_atom, is_per_atom
-
-   is_per_atom = .false.
-   buffer_size_per_atom = 0
-
-   Call parse_correlation_observable(key, a_name, b_name)
-
-   Call character_to_observable(a_name,A)
-   Call character_to_observable(b_name,B)
-
-   per_atom = A%per_atom()
-
-   If (per_atom) Then
-    is_per_atom = .true.
-   Else
-    per_atom = B%per_atom()
-    If (per_atom) Then
-      is_per_atom = per_atom
-    End If
-   End If
-
-   Call stats%init_correlator(per_atom, config, comm, blocks, points, window, A, B, count)
-   
-  End Subroutine retrieve_correlator_params
-
-  Subroutine read_correlations_parameters(params,stats,comm,config)
-    Type(parameters_hash_table), Intent(InOut) :: params
-    Type(stats_type),            Intent(InOut) :: stats
-    Type(comms_type),            Intent(InOut) :: comm
-    Type(configuration_type),    Intent(InOut) :: config
-    Integer                                    :: this_window, this_blocks, this_points,&
-                                                  count, i
-    Integer, Allocatable                       :: window(:), blocks(:), points(:)
-    Character(Len=STR_LEN), Allocatable        :: option(:)
-
-    count = 1
-
-    Call params%retrieve('correlation_observable',option, required=.false.)
     Call params%retrieve("correlation_blocks",blocks,required=.false.)
     Call params%retrieve("correlation_block_points",points,required=.false.)
     Call params%retrieve("correlation_window",window,required=.false.)
 
     Do i = 1,Size(option)
+      this_blocks = DEFAULT_BLOCKS
+      this_points = DEFAULT_POINTS
+      this_window = DEFAULT_WINDOW
 
       If (i <= Size(blocks)) Then
         this_blocks = blocks(i)
-      Else
-        this_blocks = DEFAULT_BLOCKS
       End If
 
       If (i <= Size(points)) Then
         this_points = points(i)
-      Else
-        this_points = DEFAULT_POINTS
       End If
 
       If (i <= Size(window)) Then
         this_window = window(i)
-      Else
-        this_window = DEFAULT_window
       End If
 
       If (this_points < this_window) Then
         Call error(0, "points per block less than window size")
       End If
 
-      Call retrieve_correlator_params(stats, config, comm, option(i), count, &
-        this_blocks, this_points, this_window)
+      Call parse_correlation_observable(option(i), a_name, b_name)
+      Call character_to_observable(a_name,A)
+      Call character_to_observable(b_name,B)
+      Call stats%init_correlator(A%per_atom() .or. B%per_atom(), config, comm, &
+        this_blocks, this_points, this_window, A, B)
 
     End Do
 

@@ -660,7 +660,7 @@ Contains
   End Subroutine init_correlations_table
 
   Subroutine allocate_correlator(stats, per_atom, config, comm, blocks, points, window, &
-    A, B, correlator_index)
+    A, B)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_5 subroutine for allocating a particular correlation.
@@ -673,7 +673,6 @@ Contains
     Class(comms_type),         Intent(InOut) :: comm
     Logical,                   Intent(In   ) :: per_atom
     Integer,                   Intent(In   ) :: blocks, points, window
-    Integer,                   Intent(InOut) :: correlator_index
     Class(observable),         Intent(In   ) :: A, B
 
     Class(correlation_data), Allocatable :: cor_data
@@ -706,7 +705,6 @@ Contains
         cor_data%atom(i) = 0
         cor_data%atom_global(i) = 0
       End If
-      correlator_index = correlator_index + 1
     End Do
 
     If (stats%cor_table%in(correlation_name)) Then
