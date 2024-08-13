@@ -77,7 +77,14 @@ Module statistics
 
   Private
 
-  Integer, Parameter :: MAX_CORRELATION_NAME_LENGTH = 16
+  Integer, Parameter          :: MAX_CORRELATION_NAME_LENGTH = 16
+  Character(Len=8), Parameter :: stpval_names(1:27) = (/'eng_tot ', 'temp_tot', 'eng_cfg ', 'eng_src ', &
+                                                        'eng_cou ', 'eng_bnd ', 'eng_ang ', 'eng_dih ', & 
+                                                        'eng_tet ', 'eng_pv  ', 'temp_rot', 'vir_cfg ', &
+                                                        'vir_src ', 'vir_cou ', 'vir_bnd ', 'vir_ang ', &
+                                                        'vir_con ', 'vir_tet ', 'volume  ', 'temp_shl', &
+                                                        'eng_shl ', 'vir_shl ', 'alpha   ', 'beta    ', &
+                                                        'gamma   ', 'vir_pmf ', 'press   '/) 
 
   !> correlation observables, and interface
   Type, Abstract, Public :: observable
@@ -311,7 +318,15 @@ Module statistics
       Procedure :: id        => heat_flux_id
       Procedure :: per_atom  => heat_flux_per_atom
   End Type
-  
+
+  Type, Extends(observable), Public :: observable_statis
+  Contains
+      Procedure :: value     => statis_value
+      Procedure :: name      => statis_name
+      Procedure :: id        => statis_id
+      Procedure :: per_atom  => statis_per_atom
+  End Type
+
   Public :: calculate_stress
   Public :: calculate_viscosity
   Public :: calculate_heat_flux
@@ -3442,11 +3457,24 @@ Contains
     Class(observable), Allocatable,  Intent(  Out) :: o
     
     Logical                                    :: success
-    Integer                                    :: i
+    Integer                                    :: i, start
     Integer                                    :: component
     Character(Len=2)                           :: component_sym
     Character(Len=STR_LEN)                     :: msg, component_name
     Character(Len=MAX_CORRELATION_NAME_LENGTH) :: observable_name
+
+    ! Check if in stpval
+    If (Len(Trim(c)) <= Len(stpval_names(1))) Then
+      Do i = 1, Size(stpval_names)
+        start = Index(stpval_names(i), Trim(c))
+        If (start > 0) Then
+         Allocate(observable_statis::o)
+         o%component = i
+         o%component_name = stpval_names(i)
+         Return
+        End If
+      End Do
+    End If
 
     i = Scan(c, '_')
 
@@ -3534,10 +3562,10 @@ Contains
   !!!!!!!!!! observable_velocity !!!!!!!!!!
 
   Function velocity_value(t, config, stats, atom) Result(v)
-    Class(observable_velocity),                         Intent(In   ) :: t
-    Type(configuration_type),                           Intent(InOut) :: config
-    Type(stats_type),                                   Intent(InOut) :: stats
-    Integer,                    Optional,               Intent(In   ) :: atom
+    Class(observable_velocity),            Intent(In   ) :: t
+    Type(configuration_type),              Intent(InOut) :: config
+    Type(stats_type),                      Intent(InOut) :: stats
+    Integer,                    Optional,  Intent(In   ) :: atom
 
     Complex(Kind=wp)       :: v
     Character(Len=STR_LEN) :: msg
@@ -3573,11 +3601,10 @@ Contains
   !!!!!!!!!! observable stress !!!!!!!!!!
 
   Function stress_value(t, config, stats, atom) Result(v)
-    Class(observable_stress),                           Intent(In   ) :: t
-    Type(configuration_type),                           Intent(InOut) :: config
-    Type(stats_type),                                   Intent(InOut) :: stats
-    Integer,                    Optional,               Intent(In   ) :: atom
-
+    Class(observable_stress),             Intent(In   ) :: t
+    Type(configuration_type),             Intent(InOut) :: config
+    Type(stats_type),                     Intent(InOut) :: stats
+    Integer,                    Optional, Intent(In   ) :: atom
     Character(Len=STR_LEN) :: msg
     Complex(Kind=wp)       :: v
 
@@ -3603,13 +3630,13 @@ Contains
     v = .false.
   End Function stress_per_atom
 
-    !!!!!!!!!! observable heat_flux !!!!!!!!!!
+  !!!!!!!!!! observable heat_flux !!!!!!!!!!
 
   Function heat_flux_value(t, config, stats, atom) Result(v)
-    Class(observable_heat_flux),                         Intent(In   ) :: t
-    Type(configuration_type),                            Intent(InOut) :: config
-    Type(stats_type),                                    Intent(InOut) :: stats
-    Integer,                    Optional,                Intent(In   ) :: atom
+    Class(observable_heat_flux),          Intent(In   ) :: t
+    Type(configuration_type),             Intent(InOut) :: config
+    Type(stats_type),                     Intent(InOut) :: stats
+    Integer,                    Optional, Intent(In   ) :: atom
     
     Complex(Kind=wp)       :: v
     Character(Len=STR_LEN) :: msg
@@ -3636,6 +3663,43 @@ Contains
     v = .false.
   End Function heat_flux_per_atom
 
+  !!!!!!!!!! observable statis !!!!!!!!!!
+
+  Function statis_value(t, config, stats, atom) Result(v)
+    Class(observable_statis),                         Intent(In   ) :: t
+    Type(configuration_type),                         Intent(InOut) :: config
+    Type(stats_type),                                 Intent(InOut) :: stats
+    Integer,                    Optional,             Intent(In   ) :: atom
+    
+    Complex(Kind=wp)          :: v
+    Character(Len=STR_LEN)    :: msg
+
+    If (t%component < 1 .or. t%component > Size(stpval_names)) Then
+      Write(msg, '(a, i0)') "Correlating non-existant/unsupported statis component ", t%component
+      Call error(0, msg)
+    End If
+    v = Cmplx(stats%stpval(t%component), 0.0_wp, kind=wp)
+
+  End Function statis_value
+
+  Function statis_name(t) Result(v)
+      Class(observable_statis), Intent(In   )        :: t
+      Character(Len=MAX_CORRELATION_NAME_LENGTH)     :: v
+      v = Trim(stpval_names(t%component))
+  End Function statis_name
+
+  Function statis_id(t) Result(v)
+    Class(observable_statis), Intent(In   ) :: t
+    Integer                                 :: v
+    v = 3
+  End Function statis_id
+
+  Function statis_per_atom(t) Result(v)
+    Class(observable_statis), Intent(In   ) :: t
+    Logical                                 :: v
+    v = .false.
+  End Function statis_per_atom
+
   Subroutine update_statistic(stat, v, step)
     Class(statistic_accumulator), Intent(InOut) :: stat
     Real(Kind=wp)                               :: v
@@ -3661,6 +3725,7 @@ Contains
     stat%stack(stat%stack_pos) = v
 
   End Subroutine update_statistic
+
 
   Subroutine get_correlation(table, key, val, default)
     !!-----------------------------------------------------------------------

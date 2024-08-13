@@ -50,7 +50,7 @@ DL_POLY_5 utilises the Multiple-tau correlator
 fly correlation algorithm that addresses these issues. Briefly the
 method works by accumulating data in a series of hierarchical block
 averages. Three parameters control this **correlation_blocks**,
-**correlation_block_points**, and **correlation_window** (written in
+**correlation_block_points**and **correlation_window** (written in
 terms of CONTROL directives). These control the number of hierarchical
 blocks, the number of distinct points within each block, and the length
 of an averaging window between blocks respectively.
@@ -74,7 +74,7 @@ only ephemeral storage of “raw” data. As the simulation progresses, past
 values are retained at ever decreasing resolution replaced by current
 data. In terms of storage complexity the algorithm scales as
 :math:`(p-1)w^b` per correlation, where for brevity :math:`p` is
-**correlation_block_points**, :math:`w` is **correlation_window** and
+**correlation_block_points**:math:`w` is **correlation_window** and
 :math:`b` is **correlation_blocks**. It should be noted that certain
 correlations, such as velocity, are computed on a per-particle basis.
 This requires :math:`N` correlators for a system of :math:`N` atoms.
@@ -114,8 +114,9 @@ Input
 In the (new style) CONTROL (see Section :ref:`new-control-file`)
 correlations are specified by an array of observable pairs in the format
 **A_CA-B_CB** where **A** and **B** are observables and **CA** and **CB** 
-are components of those observables. These values may take the 
-forms listed in Table :numref:`(%s)<tab-cor-control>` where long and 
+are components of those observables. These values may be STATIS records 1-27, e.g. ``volume``, (see
+Section :ref:`statis-records`).
+Or may take the forms listed in Table :numref:`(%s)<tab-cor-control>` where long and 
 short form can be mixed. For example to compute the VAF 
 (across all dimensions) and SAF along just **xy** one may write,
 
@@ -140,13 +141,14 @@ block with 5000 points. By default **correlation_window** :math:`=1`,
       Observables indicated as per-particle require storage of data scaling
       with system size :math:`N`, as one correlator for each atom is created.
 
-   ============= ========== ================= ============ =======================================
-   String        Short-hand Observable        Per-particle Components
-   ============= ========== ================= ============ =======================================
-   **velocity**  **v**      particle velocity yes           **x, y, z**
-   **stress**    **s**      system stress     no            **xx, xy, xz, yx, yy, yz, zx, zy, zz**
-   **heat_flux** **hf**     system heat flux  no            **x, y, z**
-   ============= ========== ================= ============ =======================================
+   ======================================== ========== ========================================== ============ ============ ======================================= ========================================
+   String                                   Short-hand Observable                                 Per-particle Per-species  Components                              Notes
+   ======================================== ========== ========================================== ============ ============ ======================================= ========================================
+   **velocity**                             **v**      particle velocity                          yes          yes          **x, y, z**                             Automatically split by species
+   **stress**                               **s**      system stress                              no           no           **xx, xy, xz, yx, yy, yz, zx, zy, zz**
+   **heat_flux**                            **hf**     system heat flux                           no           no           **x, y, z**
+   See Table :numref:`(%s)<tab-statis-cor>`            See Table :numref:`(%s)<tab-statis-cor>`   no           no           scalar                                  
+   ======================================== ========== ========================================== ============ ============ ======================================= ========================================
 
 The maximum lag time for a correlation is given by 
 
@@ -154,7 +156,7 @@ The maximum lag time for a correlation is given by
       :label: cor_max_lag
 
 where :math:`p`` is **correlation_block_points** and :math:`m` 
-is **correlation_window**, and :math:`l` is **correlation_blocks**. 
+is **correlation_window**and :math:`l` is **correlation_blocks**. 
 The algorithmic scaling is bounded above by,
 
 .. math:: p\frac{m+1}{m}.
@@ -169,6 +171,51 @@ whilst balancing performance. I.e. an higher :math:`p` increase accuracy,
 but has the greatest performance impact. Increase :math:`m` and :math:`l`
 have comparatively less performance impact but give access to longer 
 correlation lengths at some reduced accuracy.
+
+Correlating STATIS Values
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+All values in the default STATIS output (records 1-27, see Section :ref:`statis-records`)
+may be correlated with any other correlation observable. These are listed in Table 
+:numref:`(%s)<tab-statis-cor>`. Each are scalar values with no component specification 
+needed.
+
+.. _tab-statis-cor:
+
+.. table::
+      Observable STATIS valued which can be correlated.
+
+   ============ ==========
+   String       Observable
+   ============ ==========
+   **eng_tot**  total extended system energy, :math:`E^{x}_{tot}=(E_{kin}+E_{rot})+E_{conf}+E_{consv}` (i.e. including the conserved quantity, :math:`E_{consv}`)
+   **temp_tot** system temperature, :math:`2\frac{E_{kin}+E_{rot}}{f k_{B}}`
+   **eng_cfg**  configurational energy, :math:`E_{conf}`
+   **eng_src**  short range potential energy
+   **eng_cou**  electrostatic energy
+   **eng_bnd**  chemical bond energy
+   **eng_ang**  valence angle and 3-body potential energy
+   **eng_dih**  dihedral, inversion, and 4-body potential energy
+   **eng_tet**  tethering energy
+   **eng_pv**   enthalpy (:math:`E^{x}_{tot} + {\cal P} \cdot V`) for NVE/T/E\ :math:`_{kin}` ensembles enthalpy (:math:`E^{x}_{tot} + P \cdot {\cal V}`) for NP/\ :math:`\sigma`\ T or NP\ :math:`_{n}`\ A/\ :math:`\gamma` ensembles
+   **temp_rot** rotational temperature, :math:`E_{rot}`
+   **vir_cfg**  total virial
+   **vir_src**  short-range virial
+   **vir_cou**  electrostatic virial
+   **vir_bnd**  bond virial
+   **vir_ang**  valence angle and 3-body virial
+   **vir_con**  constraint bond virial
+   **vir_tet**  tethering virial
+   **volume**   volume, :math:`{\cal V}`
+   **temp_shl** core-shell temperature
+   **eng_shl**  core-shell potential energy
+   **vir_shl**  core-shell virial
+   **alpha**    MD cell angle :math:`\alpha`
+   **beta**     MD cell angle :math:`\beta`
+   **gamma**    MD cell angle :math:`\gamma`
+   **vir_pmf**  PMF constraint virial
+   **press**    pressure, :math:`{\cal P}`
+   ============ ==========
 
 Output
 ^^^^^^

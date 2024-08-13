@@ -885,6 +885,8 @@ header records followed by many data records of statistical data.
   **record 2**
   ``string``    a8    energy units
 
+.. _statis-records:
+
 Data records
 ~~~~~~~~~~~~
 
