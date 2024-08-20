@@ -17,7 +17,7 @@ Module statistics
                              Spread_tag, comm_self, comms_type, gcheck, girecv, gmax, gmin, gsend, gsum, &
                              gsync, gtime, gwait, mode_create, mode_wronly, offset_kind, &
                              gatherv_scatterv_index_arrays, ggatherv, gscatterv, root_id, &
-                             gscatter
+                             gscatter, gbcast
                              
   Use configuration,   Only: configuration_type
   Use constants,       Only: boltz,&
@@ -28,7 +28,8 @@ Module statistics
                              pi,&
                              prsunt,&
                              tenunt,&
-                             zero_plus
+                             zero_plus,&
+                             voigt_6x6
   Use currents,        Only: current_type
   Use domains,         Only: domains_type
   Use errors_warnings, Only: error,&
@@ -242,6 +243,18 @@ Module statistics
     !>  e.g. stress_xy-v_y. Per atom cors are stored
     !>  together.
     Type(correlation_hash_table), Private :: cor_table
+    Logical :: elastic_constants = .false.
+
+    !> Store for per-particle Born term (d^2/dr^2 U - 1/r d/dr U) r_i r_j r_k r_l / r^2 using Voigt notation
+    Real(Kind=wp)                      :: born_term(1:21) = 0.0_wp
+    !> Accumulate the born term
+    Type(statistic_accumulator)        :: born_term_accum(1:21)
+    !> Flags for computed born components in vdw
+    Logical                            :: born_calculate(1:21) = .false.
+
+    !> Stats for stress tensor average
+    Type(statistic_accumulator)        :: stress_accum(1:9)
+
   Contains
     Private
 
@@ -249,6 +262,7 @@ Module statistics
     Procedure, Public :: init_connect      => allocate_statistics_connect
     Procedure, Public :: init_correlations => init_correlations_table
     Procedure, Public :: init_correlator   => allocate_correlator
+    Procedure, Public :: init_born_calculate
     Procedure, Public :: clean_connect     => deallocate_statistics_connect
     Procedure, Public :: update_stress
     Procedure, Public :: setup_pp_collection
@@ -311,6 +325,7 @@ Module statistics
       Procedure :: id        => stress_id
       Procedure :: per_atom  => stress_per_atom
   End Type
+
   Type, Extends(observable), Public :: observable_heat_flux
   Contains
       Procedure :: value     => heat_flux_value
@@ -341,7 +356,34 @@ Module statistics
   Public :: character_to_observable
   Public :: id_component_to_observable
   Public :: update_statistic
+
+  Interface write_yaml_vector
+    Module Procedure write_real_yaml_vector
+    Module Procedure write_char_yaml_vector
+  End Interface write_yaml_vector
 Contains
+
+  Subroutine write_real_yaml_vector(file_unit, name, values, indent)
+    Integer,          Intent(In   ) :: file_unit
+    Character(Len=*), Intent(In   ) :: name
+    Real(Kind=wp),    Intent(In   ) :: values(:)
+    Integer,          Intent(In   ) :: indent
+
+    Write (file_unit, '(a,*(g16.8,","))', advance="no") &
+      Repeat(" ",indent)//name//": [", values(1:Size(values)-1)
+    Write (file_unit, '(g16.8,"]")') values(Size(values))
+  End Subroutine write_real_yaml_vector
+
+  Subroutine write_char_yaml_vector(file_unit, name, values, indent)
+    Integer,          Intent(In   ) :: file_unit
+    Character(Len=*), Intent(In   ) :: name
+    Character(Len=*), Intent(In   ) :: values(:)
+    Integer,          Intent(In   ) :: indent
+
+    Write (file_unit, '(a,*(a," , "))', advance="no") &
+    Repeat(" ",indent)//name//": [", values(1:Size(values)-1)
+    Write (file_unit, '(a,"]")') values(Size(values))
+  End Subroutine write_char_yaml_vector
 
   Subroutine allocate_statistics_arrays(stats, mxrgd, mxatms, mxatdm)
     Class(stats_type), Intent(InOut)   :: stats
@@ -379,6 +421,17 @@ Contains
 
     stats%stpval = 0.0_wp; stats%stpvl0 = 0.0_wp; stats%sumval = 0.0_wp; stats%ssqval = 0.0_wp
     stats%zumval = 0.0_wp; stats%ravval = 0.0_wp; stats%stkval = 0.0_wp
+
+    If (stats%elastic_constants) Then
+      Do i = 1, 21
+        Allocate(stats%born_term_accum(i)%stack(1:mxstak))
+        stats%born_term_accum(i)%window = mxstak
+      End Do
+      Do i = 1, 9
+        Allocate(stats%stress_accum(i)%stack(1:mxstak))
+        stats%stress_accum(i)%window = mxstak
+      End Do
+    End If
 
   End Subroutine allocate_statistics_arrays
 
@@ -729,7 +782,7 @@ Contains
     Type(site_type),          Intent(In   )       :: sites
     Real(Kind=wp),            Intent(In   )       :: dt
 
-    Integer                                        :: i, tau, j, k, flat_dim, l, r, &
+    Integer                                        :: i, j, flat_dim, &
                                                       file_unit, atom, points, window, blocks, &
                                                       points_cor, max_points_cor, min_points_cor, &
                                                       cor_index
@@ -738,13 +791,10 @@ Contains
                                                       therm_cond(:), k_visc(:)
     Integer,       Allocatable                     :: type_counts(:)
     Character(Len=MAX_CORRELATION_NAME_LENGTH*2+1) :: correlation_name
-    Character(Len=MAX_CORRELATION_NAME_LENGTH)     :: char_left, char_right, &
-                                                      component_left, component_right
     Character(Len=2), Dimension(1:3)               :: components_vector
     Character(Len=2), Dimension(1:9)               :: components_matrix
-    Real(Kind=wp)                                  :: t, conv
+    Real(Kind=wp)                                  :: conv
     Character(Len=STR_LEN)                         :: units_visc, units_therm
-    Logical                                        :: computed_visc, computed_therm
     Character(Len=MAX_KEY), Allocatable :: cor_keys(:)   
     Type(correlation_data) :: cor_data                               
     
@@ -779,29 +829,25 @@ Contains
         Write (file_unit, '(a)')             "      viscosity:"
         Write (file_unit, '(a,g16.8)')       "            value: ", Sum(visc) / Real(Size(visc), Kind=wp)
         If (Size(visc) > 1) Then
-          Write (file_unit, '(a,*(g16.8,","))', advance="no") &
-                                             "            components: [", visc(1:Size(visc)-1)
-          Write (file_unit, '(g16.8,"]")') visc(Size(visc))
+          Call write_real_yaml_vector(file_unit, "components", visc, 12)
         End If
         Write (file_unit, '(a)')             "            units: Katm ps "
         Write (file_unit, '(a)')             "      kinematic-viscosity:"
         Write (file_unit, '(a,g16.8)')       "            value: ", Sum(k_visc) / Real(Size(k_visc), Kind=wp)
         If (Size(visc) > 1) Then
-          Write (file_unit, '(a,*(g16.8,","))', advance="no") &
-                                             "            components: [", k_visc(1:Size(k_visc)-1)
-          Write (file_unit, '(g16.8,"]")') k_visc(Size(k_visc))
+          Call write_real_yaml_vector(file_unit, "components", k_visc, 12)
         End If
         Write (file_unit, '(a)')             "            units: Katm ps / ("//Trim(units_visc)//" / Ang^3)"
         Deallocate(visc)
       End If
 
+      Call elastic_constants_result(stats, config%natms, file_unit)  
+
       If (Allocated(therm_cond)) Then
         Write (file_unit, '(a)')       "      thermal-conductivity:"
         Write (file_unit, '(a,g16.8)') "            value: ", Sum(therm_cond) / Real(Size(therm_cond), Kind=wp)
         If (Size(therm_cond) > 1) Then
-          Write (file_unit, '(a,*(g16.8,","))', advance="no") &
-                                       "            components: [", therm_cond(1:Size(therm_cond)-1)
-          Write (file_unit, '(g16.8,"]")') therm_cond(Size(therm_cond))
+          Call write_real_yaml_vector(file_unit, "components", therm_cond, 12)
         End If
         Write (file_unit, '(a,a)')     "            units: ", Trim(units_therm)
         Deallocate(therm_cond)
@@ -1359,6 +1405,16 @@ Contains
       Do i = 0, stats%mxnstk
         Call stats%accumulators(i)%update_statistic(stats%stpval(i), nstep)   
       End Do
+
+      If (stats%elastic_constants) Then
+        Call gsum(comm, stats%born_term)
+        Do i = 1, 21
+          Call stats%born_term_accum(i)%update_statistic(stats%born_term(i), nstep)
+        End Do
+        Do i = 1, 9
+          Call stats%stress_accum(i)%update_statistic(stats%strtot(i)/stats%stpvol, nstep)
+        End Do
+      End If
 
       ! current stack value
 
@@ -2689,6 +2745,97 @@ Contains
 
   End Subroutine calculate_viscosity
 
+  Subroutine init_born_calculate(stats, comm)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_5 subroutine for checking which born terms to calculate in
+    ! vdw. If a user correlation conmensurate with it is present, that
+    ! born tensor entry will be calculated as well.
+    !
+    ! author    - h.l.devereux July 2024
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Class(stats_type),              Intent(InOut) :: stats
+    Type(comms_type),               Intent(InOut) :: comm
+
+    Character(Len=1) :: symbols(1:3) = (/"x", "y", "z"/), a, b, c, d
+    Integer          :: v
+    If (comm%idnode == root_id) Then
+      Do v = 1, 21
+        a = symbols(voigt_6x6(v, 1))
+        b = symbols(voigt_6x6(v, 2))
+        c = symbols(voigt_6x6(v, 3))
+        d = symbols(voigt_6x6(v, 4))
+        If (stats%cor_table%in("stress_"//a//b//"-stress_"//c//d)) Then
+          stats%born_calculate(v) = .true.
+        End If
+      End Do
+    End If
+    Call gbcast(comm, stats%born_calculate, root_id)
+  End Subroutine init_born_calculate
+
+  Subroutine elastic_constants_result(stats, megatm, file_unit)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_5 subroutine for writing out elastic constants. Up to 21
+    !   (independent) components are possible. All possible components
+    !   calculable from user stress correlations are outputted in Voigt
+    !   order (see constants.F90:voigt_6x6): C1111, C1122, C1133, ..., 
+    !   C1212.
+    !
+    !   Stress fluctuation method: e.g. G. Clavier, et al., 
+    !   Molecular Simulation, 2017, 
+    !   https://doi.org/10.1080/08927022.2017.1313418
+    !
+    ! author    - h.l.devereux July 2024
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Type(stats_type),              Intent(InOut) :: stats
+    Integer,                       Intent(In   ) :: megatm
+    Integer,                       Intent(In   ) :: file_unit
+
+    Character(Len=1)               :: symbols(1:3) = (/"x", "y", "z"/), a, b, c, d
+    Integer                        :: v, i, j, k, l
+    Real(Kind=wp)                  :: stress_prefactor, kinetic_term, cijkl, del
+    Real(Kind=wp),    Allocatable  :: correlation(:), elasticity(:)
+    Character(Len=6), Allocatable  :: component_names(:)           
+
+    stress_prefactor = prsunt * stats%accumulators(19)%mu/(boltz*stats%accumulators(2)%mu) ! V / (kbT)
+    kinetic_term = prsunt * 2.0_wp*boltz*stats%accumulators(2)%mu * megatm / stats%accumulators(19)%mu ! NKbT/V
+    Allocate(elasticity(0))
+    ! Debug crashes if component_names is allocated as 0
+    ! The Character(Len=6) is left undefined.
+    Allocate(component_names(1))
+    Do v = 1, 21
+      i = voigt_6x6(v, 1)
+      a = symbols(i)
+      j = voigt_6x6(v, 2)
+      b = symbols(j)
+      k = voigt_6x6(v, 3)
+      c = symbols(k)
+      l = voigt_6x6(v, 4)
+      d = symbols(l)
+      Call get_correlation_value(stats, "stress_"//a//b//"-stress_"//c//d, correlation)
+      If (Allocated(correlation)) Then
+        del = 0.0_wp
+        If (i == k .and. j == l) del = del + 1.0_wp
+        If (i == l .and. j == k) del = del + 1.0_wp
+        cijkl = prsunt*stats%born_term_accum(v)%mu/ stats%accumulators(19)%mu &
+              - stress_prefactor*(correlation(1) - &
+              stats%stress_accum((i-1)*3+j)%mu*stats%stress_accum((k-1)*3+l)%mu)+ &
+              kinetic_term * del
+        elasticity = [elasticity, cijkl]
+        component_names = [component_names, Trim("C_"//a//b//c//d)]
+        Deallocate(correlation)
+      End If
+    End Do
+    If (Size(elasticity) > 0) Then
+      Write (file_unit, '(a)') "      elasticity_tensor:"
+      Call write_char_yaml_vector(file_unit, "components", component_names(2:), 12)
+      Call write_real_yaml_vector(file_unit, "values", elasticity, 12)
+      Write (file_unit, '(a)') "            units: Katm"
+    End If
+
+  End Subroutine
+
   Subroutine calculate_thermal_conductivity(stats, dt, units, therm_cond)
     Type(stats_type),       Intent(InOut)              :: stats
     Real(Kind=wp),          Intent(In   )              :: dt
@@ -2915,9 +3062,9 @@ Contains
       Type(correlator),  Allocatable :: tmp_cors(:)
       Integer,           Allocatable :: tmp_atoms(:), tmp_globals(:)
       Class(observable), Allocatable :: A, B
-      Integer                        :: i, iA, iB, global_index, local_index, &
+      Integer                        :: iA, iB, global_index, &
                                         window, blocks, points, deportations, d, &
-                                        jA, jB, new_index, s, c_a, c_b, j_c_a, j_c_b, &
+                                        new_index, s, c_a, c_b, &
                                         atom
       Character(Len=MAX_KEY)         :: name
       Type(correlation_data)         :: cor_data
@@ -3103,11 +3250,9 @@ Contains
     Type(correlator_buffer_type)             :: packed_correlators
     Type(indices_buffer_type)                :: packed_ids
     Integer                                  :: i, atom, idx, buffer_size, correlations, &
-                                                buffer_index, A, B, c_a, c_b, &
-                                                local_correlations, local_buffer_size, &
+                                                buffer_index, local_correlations, local_buffer_size, &
                                                 n_local_cor, attributes = 6
     Real(Kind=wp)                            :: write_sum
-    Character(Len=MAX_KEY)                   :: name
     Type(correlation_data)                   :: cor_data
     Character(Len=MAX_KEY),      Allocatable :: cor_keys(:)
 
@@ -3249,7 +3394,6 @@ Contains
                                                 A, B, atom, offset, local_correlations, &
                                                 local_buffer_size, n_local_cor, &
                                                 c_a, c_b, attributes = 6
-    Character(Len=MAX_KEY)                   :: name
     Type(correlation_data)                   :: cor_data
     Character(Len=MAX_KEY),      Allocatable :: cor_keys(:)   
 

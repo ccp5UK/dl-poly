@@ -387,6 +387,12 @@ Contains
       Call time_elapsed(tmr)
     End If
 
+    If (flow%elastic_constants) Then
+      Do ff = 1, flow%NUM_FF
+        ! check which born terms to calculate in vdw
+        Call stats(ff)%init_born_calculate(comm)
+      End Do
+    End If
     ! devel%l_his: generate HISTORY and exit gracefully
     If (devel%l_his) Then
       Call info('', .true.)
@@ -545,6 +551,13 @@ Contains
 
     ! start-up time when forces are not recalculated
     s = tmr%elapsed
+    
+    Do ff = 1, flow%num_ff
+      If (stats(ff)%elastic_constants .and. (threebody(ff)%ntptbp + fourbody(ff)%n_potential + tersoffs(ff)%n_potential)>0) Then
+          Call warning("Elastic constants only implemented for two body vdw", .true.)
+          exit
+      End If
+    End Do
 
 #ifdef CHRONO
     Call start_timer(tmr, 'Main Calc')
@@ -819,7 +832,9 @@ Contains
       Call read_ensemble(params, thermo(ff), vdws(ff)%max_vdw, ttms(ff)%l_ttm)
       Call read_system_parameters(params, flow, config(ff), thermo(ff), impa, minim(ff), &
                                   plume(ff), cons(ff), pmfs(ff), ttms(ff)%l_ttm)
+
       stats%require_pp = flow%heat_flux .or. flow%write_per_particle
+      stats%elastic_constants = flow%elastic_constants
 
       Call correlation_deport_size(params, stats(ff))
 

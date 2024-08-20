@@ -73,7 +73,7 @@ Module two_body
   Public :: two_body_forces
 Contains
 
-  Subroutine two_body_forces(ensemble, lbook, megfrz, leql, nsteql, nstep, &
+  Subroutine two_body_forces(ensemble, lbook, megfrz, leql, nsteql, nstep, born, &
                              stats, ewld, met, pois, neigh, sites, vdws, rdf, mpoles, electro, &
                              domain, tmr, kim_data, config, comm)
 
@@ -108,6 +108,7 @@ Contains
     Integer,                  Intent(In)    :: megfrz
     Logical,                  Intent(In)    :: leql
     Integer,                  Intent(In)    :: nsteql, nstep
+    Logical,                  Intent(In)    :: born
     Type(stats_type),         Intent(InOut) :: stats
     Type(ewald_type),         Intent(InOut) :: ewld
     Type(metal_type),         Intent(InOut) :: met
@@ -261,6 +262,8 @@ Contains
 
     vircpe_dt = 0.0_wp
 
+    stats%born_term = 0.0_wp
+
 #ifdef CHRONO
     Call stop_timer(tmr, 'Two-Body Init')
 #endif
@@ -387,7 +390,7 @@ Contains
 
           Else If (vdws%l_direct) Then ! direct calculation
 
-            Call vdw_forces_direct(i, xxt, yyt, zzt, rrt, engacc, viracc, d2u, stats, neigh, vdws, config, .false.)
+            Call vdw_forces_direct(i, xxt, yyt, zzt, rrt, engacc, viracc, d2u, stats, neigh, vdws, config, born)
             engvdw = engvdw + engacc
             virvdw = virvdw + viracc
 

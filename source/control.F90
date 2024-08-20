@@ -2207,6 +2207,7 @@ Contains
 
     Call params%retrieve('heat_flux', flow%heat_flux)
     Call params%retrieve('write_per_particle', flow%write_per_particle)
+    Call params%retrieve('elastic_constants', flow%elastic_constants)
 
     ! --------------- EXPANSION ------------------------------------------------
 
@@ -2902,6 +2903,13 @@ Contains
                      name="Dump per-particle interaction information to file", &
                      val="off", &
                      description="Enable dumping of per-particle information", &
+                     data_type=DATA_BOOL))
+
+      Call table%set("elastic_constants", control_parameter( &
+                     key="elastic_constants", &
+                     name="Calculate elastic constants", &
+                     val="off", &
+                     description="Enable calculation of elastic constants", &
                      data_type=DATA_BOOL))
 
       per_particle:block

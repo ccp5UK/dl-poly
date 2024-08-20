@@ -204,6 +204,13 @@ Module constants
   Real(Kind=wp), Parameter     :: smalldr = 1.0e-6_wp
 
   !> New line char
-  Character, Parameter :: lf = new_line('a')
+  Character,     Parameter     :: lf = new_line('a')
+
+  !> Voigt indices ij for 3x3 matrix 
+  Integer,       Parameter     :: voigt_3x3(1:6,1:2) = Transpose(Reshape((/1,1, 2,2, 3,3, 2,3, 3,1, 1,2/), [2,6]))
+  Integer, Private             :: j
+  !> Voigt indices ijkl for 6x6 matrix
+  Integer,       Parameter     :: voigt_6x6(1:21, 1:4) = Transpose(Reshape([([(&
+    (/voigt_3x3(i,1), voigt_3x3(i,2), voigt_3x3(j,1), voigt_3x3(j,2)/), j=i,6)], i=1,6)], [4,21]))
 
 End Module constants

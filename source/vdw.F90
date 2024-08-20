@@ -26,7 +26,8 @@ Module vdw
                                       prsunt,&
                                       r4pie0,&
                                       twopi,&
-                                      zero_plus
+                                      zero_plus,&
+                                      voigt_6x6
   Use errors_warnings,          Only: error,&
                                       error_alloc,&
                                       error_dealloc,&
@@ -1610,14 +1611,14 @@ Contains
     Type(configuration_type),                   Intent(InOut) :: config
     Logical,                                    Intent(In   ) :: sec_deriv
 
-    Integer                 :: ai, aj, idi, ityp, jatm, k, key, mm
+    Integer                 :: ai, aj, idi, ityp, jatm, k, key, mm, i, a, b, c, d
     Real(Kind=wp)           :: eng, gamma, delta
     Real(Kind=wp)           :: fix, fiy, fiz, fx, fy, fz
     Real(Kind=wp)           :: r_rrr, r_rrv, r_rsq, r_rvdw, rrr, rscl, rsq
     Real(Kind=wp)           :: strs1, strs2, strs3, strs5, strs6, strs9
-    Real(Kind=wp)           :: stress_temp_comp(9)
+    Real(Kind=wp)           :: stress_temp_comp(9), born_pre
     Real(Kind=wp)           :: x_temp(3), f_temp(3)
-    Type(potential_energy)  :: eng_gamma
+    Type(potential_energy)  :: pot
     ! define grid resolution for potential arrays and interpolation spacing
 
     If (vdws%newjob) Then
@@ -1694,12 +1695,13 @@ Contains
 
         eng = 0.0_wp
         gamma = 0.0_wp
+        delta = 0.0_wp
 
-        eng_gamma = vdws%potentials(k)%energy(rrr, sec_deriv)
+        pot = vdws%potentials(k)%energy(rrr, sec_deriv)
 
-        eng = eng_gamma%energy + vdws%afs(k) * rrr + vdws%bfs(k)
-        gamma = eng_gamma%gamma*r_rsq - vdws%afs(k) * r_rrr
-        delta = eng_gamma%delta
+        eng = pot%energy + vdws%afs(k) * rrr + vdws%bfs(k)
+        gamma = pot%gamma*r_rsq - vdws%afs(k) * r_rrr
+        delta = pot%delta
 
         ! calculate forces
         fx = gamma * xxt(mm)
@@ -1749,6 +1751,21 @@ Contains
           strs5 = strs5 + yyt(mm) * fy
           strs6 = strs6 + yyt(mm) * fz
           strs9 = strs9 + zzt(mm) * fz
+
+          If (sec_deriv .and. Any(stats%born_calculate)) Then
+            ! ( U'' + 1/r^2 * (-U' * r) ) * 1/r^2
+            x_temp = (/ xxt(mm), yyt(mm), zzt(mm) /)
+            born_pre = (pot%delta + r_rsq * pot%gamma) * r_rsq
+            Do i = 1, 21
+              If (.not. stats%born_calculate(i)) Cycle
+              a = voigt_6x6(i, 1)
+              b = voigt_6x6(i, 2)
+              c = voigt_6x6(i, 3)
+              d = voigt_6x6(i, 4)
+              stats%born_term(i) = stats%born_term(i) + &
+                born_pre*(x_temp(a)*x_temp(b)*x_temp(c)*x_temp(d))
+            End Do
+          End If
 
 #ifndef HALF_HALO
         End If

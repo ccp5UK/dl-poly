@@ -57,6 +57,7 @@ User Manual
    /UserManual/coarse_graining
    /UserManual/ttm
    /UserManual/heat_flux
+   /UserManual/elastic_constants
    /UserManual/correlations
    /UserManual/evb
    /UserManual/construction_and_execution/construction_and_execution

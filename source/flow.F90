@@ -87,6 +87,8 @@ Module flow_control
     Logical, Public :: heat_flux
 
     Logical, Public :: output_std_dev = .false.
+    !> Calculate the elastic constants (if stress correlations provided)
+    Logical, Public :: elastic_constants
 
     !> Restart key
     Integer(Kind=wi), Public :: restart_key = RESTART_KEY_CLEAN

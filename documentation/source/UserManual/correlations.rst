@@ -1,3 +1,5 @@
+.. _correlation-functions:
+
 Correlation Functions
 =====================
 
@@ -31,7 +33,7 @@ Taking as an example the shear-stress auto-correlation function (in
 discrete form),
 
 .. math:: C^{\tau} = \frac{1}{T-\tau}\sum_{t'}^{T} \sigma_{xy}^{t'}\sigma_{xy}^{t'+\tau} \label{stress-cor}
-      :label: stress-cor_eq
+   :label: stress-cor_eq
 
 where :math:`\tau` indicates a discrete lag time, and
 :math:`\sigma_{xy}^{t}` indicates the :math:`xy` component of stress at
@@ -86,7 +88,7 @@ is with analytic expressions for sheer-stress :math:`\sigma_{xy}(t)` in
 continuous time :math:`t`, sheer-viscosity is
 
 .. math:: \eta = \frac{V}{k_{b}T}\int_{0}^{\infty}dt' \langle \sigma_{xy}(0)\sigma_{xy}(t')\rangle.\label{viscosity-gk}
-      :label: viscosity-gk_eq
+   :label: viscosity-gk_eq
 
 Where :math:`V` and :math:`T` are the system volume and temperature
 respectively, with :math:`k_{b}` Boltzmann’s constant. The integral can
@@ -96,7 +98,7 @@ sheer-viscosity from simulation data. Similar relations exist for e.g.
 HFAF and thermal conductivity i.e.
 
 .. math:: \lambda = \frac{V}{3k_{b}T^2}\int_{0}^{\infty} dt' \langle \textbf{J}(0)\cdot \textbf{J}(t') \rangle. \label{thermal-conductivity-gk}
-      :label: thermal-conductivity-gk_eq
+   :label: thermal-conductivity-gk_eq
 
 The prefactor includes a multiplication with volume due to the
 definition of heat flux, :math:`\textbf{J}(t)`, in DL_POLY_4 already
@@ -249,6 +251,10 @@ An example COR file is:
             thermal-conductivity:
                   value:   0.96869183E-06
                   units: e.V / (ps Ang K)
+            elasticity_tensor:
+                components: [C_xxxx , C_xxyy , C_xxzz , C_yyyy , C_yyzz , C_zzzz , C_yzyz , C_zxzx , C_xyxy]
+                values: [   24.007901    ,   10.219979    ,   11.545088    ,   17.599676    ,   8.3646309    ,   19.861066    ,   14.510356    ,   16.062736    ,   14.391474    ]
+                units: Katm
       correlations:
             stress_xy-stress_xy:
                   parameters:
@@ -281,6 +287,20 @@ An example COR file is:
 
 Specific Correlation Output 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. _tab-cor-observables:
+
+.. table:: 
+      Possible observable quantities written out to the COR file.
+
+   ======================== ====================== =================
+   Name                     Related correlation(s) Description        
+   ======================== ====================== ================= 
+   **viscosity**            shear-stress.          From Green-Kubo formula :eq:`viscosity-gk_eq`.
+   **kinematic-viscosity**  shear-stress.          Viscosity divided by density.
+   **thermal-conductivity** heatflux, diagonal.    From Green-Kubo formula :eq:`thermal-conductivity-gk_eq`.
+   **elasticity-tensor**    stress.                From stress-fluctuation method.
+   ======================== ====================== =================
 
 **Stress correlations**\ : When accumulating system stress correlation functions a derived sheer-viscosity 
 measurement is written to the output file, along with a kinematic viscosity. These are both calculated using equation 

@@ -450,7 +450,8 @@ Contains
     If (.not. (met%max_metal == 0 .and. electro%key == ELECTROSTATIC_NULL .and. &
                vdws%no_vdw .and. rdf%max_rdf == 0) .or. kim_data%active) Then
       Call two_body_forces(thermo%ensemble, flow%book, cnfig%megfrz, &
-                           flow%equilibration, flow%equil_steps, flow%step, stat, ewld, met, pois, neigh, sites, vdws, rdf, &
+                           flow%equilibration, flow%equil_steps, flow%step, flow%elastic_constants, &
+                           stat, ewld, met, pois, neigh, sites, vdws, rdf, &
                            mpoles, electro, domain, tmr, kim_data, cnfig, comm)
     End If
 
@@ -785,7 +786,7 @@ Contains
       If (.not. (met(ff)%max_metal == 0 .and. electro(ff)%key == ELECTROSTATIC_NULL .and. &
                  vdws(ff)%no_vdw .and. rdf(ff)%max_rdf == 0) .or. kim_data(ff)%active) Then
         Call two_body_forces(thermo(ff)%ensemble, flow%book, cnfig(ff)%megfrz, &
-                             flow%equilibration, flow%equil_steps, flow%step, stat(ff), ewld(ff), met(ff), &
+                             flow%equilibration, flow%equil_steps, flow%step, flow%elastic_constants, stat(ff), ewld(ff), met(ff), &
                              pois(ff), neigh(ff), sites(ff), vdws(ff), rdf(ff), mpoles(ff), electro(ff), domain(ff), &
                              tmr, kim_data(ff), cnfig(ff), comm)
       End If
@@ -2498,7 +2499,8 @@ Contains
                                    neigh, mpoles, domain, tmr, cnfig, comm)
             End If
             Call two_body_forces(thermo%ensemble, .false., cnfig%megfrz, &
-                                 flow%equilibration, flow%equil_steps, nstph, stat, ewld, met, pois, neigh, sites, &
+                                 flow%equilibration, flow%equil_steps, nstph, flow%elastic_constants, &
+                                 stat, ewld, met, pois, neigh, sites, &
                                  vdws, rdf, mpoles, electro, domain, tmr, kim_data, cnfig, comm)
           End If
 
