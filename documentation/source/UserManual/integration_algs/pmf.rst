@@ -31,8 +31,7 @@ corrections to the atomic positions and respectively the atomic
 velocities of all particles constituting PMF units.
 
 .. index::
-   single: constraints;bond 
-   single: constraints;PMF
+   single: constraints;bond
    
 In presence of both bond constraints and PMF constraints. The constraint
 procedures, i.e. SHAKE or RATTLE, for both types of constraints are

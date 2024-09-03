@@ -32,7 +32,7 @@ Theory
 Taking as an example the shear-stress auto-correlation function (in
 discrete form),
 
-.. math:: C^{\tau} = \frac{1}{T-\tau}\sum_{t'}^{T} \sigma_{xy}^{t'}\sigma_{xy}^{t'+\tau} \label{stress-cor}
+.. math:: C^{\tau} = \frac{1}{T-\tau}\sum_{t'}^{T} \sigma_{xy}^{t'}\sigma_{xy}^{t'+\tau} 
    :label: stress-cor_eq
 
 where :math:`\tau` indicates a discrete lag time, and
@@ -65,7 +65,7 @@ product of the new data point with each temporarily stored value is
 added to a correlation accumulator for this first block. At the first
 block all multiplications must be carried out, in subsequent blocks only
 points between
-:math:`\textbf{correlation_block_points}/\textbf{correlation_window}`
+:math:`\textbf{correlation\_block\_points}/\textbf{correlation\_window}`
 and **correlation_block_points** need be updated. Once the first block
 contains **correlation_block_points** data entries the sum divided by
 the **correlation_window** is passed to the next level, and the
@@ -87,7 +87,7 @@ be integrated to yield a Green-Kubo relation for sheer-viscosity. That
 is with analytic expressions for sheer-stress :math:`\sigma_{xy}(t)` in
 continuous time :math:`t`, sheer-viscosity is
 
-.. math:: \eta = \frac{V}{k_{b}T}\int_{0}^{\infty}dt' \langle \sigma_{xy}(0)\sigma_{xy}(t')\rangle.\label{viscosity-gk}
+.. math:: \eta = \frac{V}{k_{b}T}\int_{0}^{\infty}dt' \langle \sigma_{xy}(0)\sigma_{xy}(t')\rangle.
    :label: viscosity-gk_eq
 
 Where :math:`V` and :math:`T` are the system volume and temperature
@@ -97,7 +97,7 @@ function in Equation :eq:`stress-cor_eq` to estimate
 sheer-viscosity from simulation data. Similar relations exist for e.g.
 HFAF and thermal conductivity i.e.
 
-.. math:: \lambda = \frac{V}{3k_{b}T^2}\int_{0}^{\infty} dt' \langle \textbf{J}(0)\cdot \textbf{J}(t') \rangle. \label{thermal-conductivity-gk}
+.. math:: \lambda = \frac{V}{3k_{b}T^2}\int_{0}^{\infty} dt' \langle \textbf{J}(0)\cdot \textbf{J}(t') \rangle. 
    :label: thermal-conductivity-gk_eq
 
 The prefactor includes a multiplication with volume due to the

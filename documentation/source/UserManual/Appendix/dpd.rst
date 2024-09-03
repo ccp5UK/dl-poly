@@ -64,7 +64,7 @@ Therefore, the equation of motion are the same as these for the
 microcanonical ensemble (NVE) but force, :math:`f_{i}`, on particle
 :math:`i` is now a sum of pair forces:
 
-.. math:: \underline{f}_i = \sum_{j \neq i}^N \left( \underline{f}_{ij}^{C} + \underline{f}_{ij}^{D} + \underline{f}_{ij}^{R} \right)~~, \label{DPD}
+.. math:: \underline{f}_i = \sum_{j \neq i}^N \left( \underline{f}_{ij}^{C} + \underline{f}_{ij}^{D} + \underline{f}_{ij}^{R} \right)~~, 
    :label: DPD_eq
 
 in which :math:`\underline{f}_{ij}^{C}`, :math:`\underline{f}_{ij}^{D}`
@@ -84,7 +84,7 @@ quickly. A common form of interaction potential is an inverse parabola
 
    V(r_{ij}) = \left\{ \begin{array} {l@{\quad:\quad}l}
    \frac{A_{ij}}{2}~r_{c}~\left(1-\frac{r_{ij}}{r_{c}}\right)^{2} & r_{ij} < r_{c} \\
-   0 & r_{ij} \ge r_{c} \end{array} \right.~~, \label{DPDU}
+   0 & r_{ij} \ge r_{c} \end{array} \right.~~, 
 
 where :math:`r_{ij} = |\underline{r}_{j}-\underline{r}_{i}|`,
 :math:`r_{c}` is a cutoff radius and :math:`A_{ij}` is the interaction
@@ -98,7 +98,7 @@ form:
    :label: DPDF_eq
 
    \underline{f}_{ij}^{C} = A_{ij}~w^{C}(r_{ij}) \frac{\underline{r}_{ij}}{r_{ij}} =
-   A_{ij} \left( 1 - \frac{r_{ij}}{r_{c}} \right) \frac{\underline{r}_{ij}}{r_{ij}}~~. \label{DPDF}
+   A_{ij} \left( 1 - \frac{r_{ij}}{r_{c}} \right) \frac{\underline{r}_{ij}}{r_{ij}}~~. 
 
 This is the deterministic or *conservative* force
 :math:`\underline{f}_{ij}^{C}` exerted on particle :math:`i` by particle
@@ -109,7 +109,7 @@ This is the deterministic or *conservative* force
 
    w^{C}(r_{ij}) = \left\{ \begin{array} {l@{\quad:\quad}l}
    \left(1-\frac{r_{ij}}{r_{c}}\right) & r_{ij} < r_{c} \\
-   0 & r_{ij} \ge r_{c} \end{array} \right.~~, \label{DPDS}
+   0 & r_{ij} \ge r_{c} \end{array} \right.~~, 
 
 and the force are zero when :math:`r_{ij} \ge r_{c}` and thus the
 particles have an effective diameter of :math:`1` in units of the cutoff
@@ -143,10 +143,10 @@ the drag coefficient. It follows from the fluctuation-dissipation
 theorem that for thermodynamic equilibrium to result from this method
 the following relations must hold:
 
-.. math:: \sigma_{ij}^2 = 2~\gamma_{ij} k_{B} T \label{DPDC1} 
+.. math:: \sigma_{ij}^2 = 2~\gamma_{ij} k_{B} T  
    :label: DPDC1 
 
-.. math:: w^{D}(r_{ij}) = \left[w^{R}(r_{ij})\right]^{2}. \label{DPDC2} 
+.. math:: w^{D}(r_{ij}) = \left[w^{R}(r_{ij})\right]^{2}.  
    :label: DPDC2
 
 In practice, the switching functions are defined through:
@@ -240,7 +240,7 @@ Derivation of Equilibrium
 The derivation of the DPD algorithm is based on the Fokker-Planck
 equation
 
-.. math:: \frac{\partial \rho}{\partial t} = \mathcal{L} \rho \label{FokkerPlanck}
+.. math:: \frac{\partial \rho}{\partial t} = \mathcal{L} \rho 
    :label: FokkerPlanck_eq
 
 where :math:`\rho` is the equilibrium distribution function and
@@ -261,7 +261,7 @@ with
    \mathcal{L}^{R+D} =& \sum_{i=1}^{N} \hat{e}_{ij} \cdot \frac{\partial}{\partial \underline{p}_{i}}
    \left[ \frac{\sigma^{2}}{2} \left\{w^{R} \left(r_{ij} \right) \right\}^{2} \hat{e}_{ij} \cdot
    \left\{ \frac{\partial}{\partial \underline{p}_{i}} - \frac{\partial}{\partial \underline{p}_{j}} \right\} +
-   \gamma w^{D} \left( \hat{e}_{ij} \cdot \underline{v}_{ij} \right) \right]~~, \label {DPDEvolution}\end{aligned}
+   \gamma w^{D} \left( \hat{e}_{ij} \cdot \underline{v}_{ij} \right) \right]~~,\end{aligned}
 
 where :math:`\hat{e}_{ij} = \frac{\underline{r_{ij}}}{r_{ij}}`.
 

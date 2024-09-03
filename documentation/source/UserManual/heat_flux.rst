@@ -21,7 +21,7 @@ Theory
 
 The heat flux for two-body interactions is defined as:
 
-.. math:: \underline{J} = \frac{1}{V} \left[ \sum\limits^{N}_{i} e_{i} \underline{v}_{i} - \sum\limits^{N}_{i} \underline{\underline{\textbf{S}}}_{i} \underline{v}_{i} \right]\label{heat-flux-definition}
+.. math:: \underline{J} = \frac{1}{V} \left[ \sum\limits^{N}_{i} e_{i} \underline{v}_{i} - \sum\limits^{N}_{i} \underline{\underline{\textbf{S}}}_{i} \underline{v}_{i} \right]
    :label: heat-flux-definition_eq
 
 where :math:`\underline{\underline{\textbf{J}}}` is the heat flux,

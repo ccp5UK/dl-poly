@@ -424,7 +424,7 @@ given molecule. :math:`F^{*}` represents the number of frozen atoms in
 the MD cell. :math:`V_{o}` is the simulation cell volume and
 :math:`\underline{k}` is a reciprocal lattice vector defined by
 
-.. math:: \underline{k} = \ell \underline{u} + m \underline{v} + n \underline{w} \label{k-vector}~~,
+.. math:: \underline{k} = \ell \underline{u} + m \underline{v} + n \underline{w} ~~,
 
 where :math:`\ell,m,n` are integers and :math:`\underline{u},\underline{v},\underline{w}`
 are the *reciprocal space* basis vectors. Both :math:`V_{o}` and
@@ -632,7 +632,7 @@ a more compact form as
 
    \hat{L}_i= \sum_{||\mathbf{s}||= 0}^{p}\mathcal{M}_{i}^{\mathbf{s}}\partial_{i}^{\mathbf{s}} =
    \sum_{s_3 = 0}^{p}\sum_{s_2 = 0}^{p-s_3}\sum_{s_1=0}^{p-s_3-s_2} \mathcal{M}_{j}^{s_1 s_2 s_3}
-   {\partial}_{z_i}^{s_3}{\partial}_{y_i}^{s_2}{\partial}_{x_i}^{s_1}~~.\label{defLi}
+   {\partial}_{z_i}^{s_3}{\partial}_{y_i}^{s_2}{\partial}_{x_i}^{s_1}~~.
 
 Here, :math:`\mathbf{s}= (s_1,s_2,s_3)` is the triplet that runs over
 all independent multipoles, :math:`||\mathbf{s}||= s_1 + s_2 + s_3`,
@@ -660,7 +660,7 @@ position of atom *i* to arrive at
    \sum_{||\mathbf{s}||= 0}^{p}(-1)^{||\mathbf{s}||}\mathcal{M}_{j}^{\mathbf{s}}\partial_{i}^{\mathbf{s}} =
    \sum_{s_3 = 0}^{p}\sum_{s_2 = 0}^{p-s_3}\sum_{s_1=0}^{p-s_3-s_2}
    (-1)^{s_1+s_2+s_3}\mathcal{M}_{j}^{s_1 s_2 s_3}
-   {\partial}_{z_i}^{s_3}{\partial}_{y_i}^{s_2}{\partial}_{x_i}^{s_1}~~.\label{defLj}
+   {\partial}_{z_i}^{s_3}{\partial}_{y_i}^{s_2}{\partial}_{x_i}^{s_1}~~.
 
 .. _apptopairpot:
 
@@ -675,7 +675,7 @@ at position :math:`\mathbf{r_i}` is computed as
    :label: mpolpot_eq
 
    \phi(\mathbf{r_i}) =  \sum_{j \ne i}^{N}\hat{L}_{j_i}\psi(\mathbf{r_{ji}}) = \sum_{j \ne i}^{N} \sum_{\mathbf{s}= \mathbf{0}}^{p}
-   (-1)^{||\mathbf{s}||}\mathcal{M}_{j}^{\mathbf{s}}\partial_{i}^{\mathbf{s}}\psi(r_{ij})~~,\label{eqn:mpolpot}
+   (-1)^{||\mathbf{s}||}\mathcal{M}_{j}^{\mathbf{s}}\partial_{i}^{\mathbf{s}}\psi(r_{ij})~~,
 
 the electrostatic field at :math:`\mathbf{r_i}` is
 
@@ -686,7 +686,7 @@ the electrostatic field at :math:`\mathbf{r_i}` is
    (-1)^{||\mathbf{s}||}\mathcal{M}_{j}^{\mathbf{s}}\left[\begin{array}{l} \partial_{i}^{\mathbf{s}+ \mathbf{e}_1} \\
    \partial_{i}^{\mathbf{s}+ \mathbf{e}_2} \\
    \partial_{i}^{\mathbf{s}+ \mathbf{e}_3}
-   \end{array}\right]\psi(r_{ij})~~,\label{eqn:mpolefield}
+   \end{array}\right]\psi(r_{ij})~~,
 
 where :math:`\mathbf{e}_1=\langle1,0, 0\rangle`,
 :math:`\mathbf{e}_2=\langle0,1,0\rangle`, and
@@ -709,7 +709,7 @@ is given by
    :label: mpolene_eq
 
    U = \sum_{i < j}^{N} \hat{L}_i\hat{L}_{j_i}\psi(r_{ij}) = \sum_{i < j}^{N} \sum_{\mathbf{s}= \mathbf{0}}^{p}
-   (-1)^{||\mathbf{s}||}\mathcal{M}_{j}^{\mathbf{s}}\sum_{\mathbf{k}= \mathbf{0}}^{p}\mathcal{M}_{i}^{\mathbf{k}}\partial_{i}^{\mathbf{s}+\mathbf{k}}\psi(r_{ij})~~,\label{eqn:mpolene}
+   (-1)^{||\mathbf{s}||}\mathcal{M}_{j}^{\mathbf{s}}\sum_{\mathbf{k}= \mathbf{0}}^{p}\mathcal{M}_{i}^{\mathbf{k}}\partial_{i}^{\mathbf{s}+\mathbf{k}}\psi(r_{ij})~~,
 
 where :math:`\mathbf{s}+ \mathbf{k}= (s_1+k_1,s_2+k_2,s_3+k_3)` and the
 force on atom :math:`i` is
@@ -724,7 +724,7 @@ force on atom :math:`i` is
    \partial_{i}^{\mathbf{s}+\mathbf{k}+ \mathbf{e}_1} \\
    \partial_{i}^{\mathbf{s}+\mathbf{k}+ \mathbf{e}_2} \\
    \partial_{i}^{\mathbf{s}+\mathbf{k}+ \mathbf{e}_3}
-   \end{array}\right] \psi(r_{ij})~~.\label{eqn:mpolforce}
+   \end{array}\right] \psi(r_{ij})~~.
 
 To implement
 equations :eq:`mpolpot_eq`-\ :eq:`mpolforce_eq`
@@ -764,20 +764,20 @@ The recurrence relations used in DL_POLY_4 are
 
    a_{\mathbf{s}}(\nu) = \frac{1}{|\mathbf{x}|^2}\left\{\left(\frac{2-\nu}{||\mathbf{s}||} - 2\right)
    \sum_{i=1}^{3}s_i x_i a_{\mathbf{s}-\mathbf{e}_i} + \left(\frac{2-\nu}{||\mathbf{s}||} - 1\right)
-   \sum_{i=1}^{3}s_i (s_i-1) a_{\mathbf{s}-2\mathbf{e}_i} \right\}~~,\label{coulrecur}
+   \sum_{i=1}^{3}s_i (s_i-1) a_{\mathbf{s}-2\mathbf{e}_i} \right\}~~,
 
 .. math::
    :label: exprecur_eq
 
    b_{\mathbf{s}} = \frac{-2\alpha^2}{||\mathbf{s}||} \sum_{i=1}^{3}
-   \left[ s_i x_i b_{\mathbf{s}-\mathbf{e}_i} + s_i (s_i-1) b_{\mathbf{s}-2\mathbf{e}_i} \right]~~,\label{eqn:exprecur}
+   \left[ s_i x_i b_{\mathbf{s}-\mathbf{e}_i} + s_i (s_i-1) b_{\mathbf{s}-2\mathbf{e}_i} \right]~~,
 
 .. math::
    :label: erfcrecur_eq
 
    c_{\mathbf{s}} = \frac{1}{|\mathbf{x}|^2} \left\{\left(\frac{1}{||\mathbf{s}||} - 2\right)
    \sum_{i=1}^{3}s_i x_i c_{\mathbf{s}-\mathbf{e}_i} + \left(\frac{1}{||\mathbf{s}||} - 1\right)
-   \sum_{i=1}^{3}s_i (s_i-1) c_{\mathbf{s}-2\mathbf{e}_i} + \frac{1}{\alpha} b_{\mathbf{s}} \right\}~~,\label{eqn:erfcrecur}
+   \sum_{i=1}^{3}s_i (s_i-1) c_{\mathbf{s}-2\mathbf{e}_i} + \frac{1}{\alpha} b_{\mathbf{s}} \right\}~~,
 
 and
 
@@ -786,7 +786,7 @@ and
 
    d_{\mathbf{s}} = \frac{1}{|\mathbf{x}|^2}\left\{\left(\frac{1}{||\mathbf{s}||} - 2\right)
    \sum_{i=1}^{3}s_i x_i d_{\mathbf{s}-\mathbf{e}_i} + \left(\frac{1}{||\mathbf{s}||} - 1\right)
-   \sum_{i=1}^{3}s_i (s_i-1) d_{\mathbf{s}-2\mathbf{e}_i} -\frac{1}{\alpha} b_{\mathbf{s}} \right\}~~.\label{eqn:erfrecur}
+   \sum_{i=1}^{3}s_i (s_i-1) d_{\mathbf{s}-2\mathbf{e}_i} -\frac{1}{\alpha} b_{\mathbf{s}} \right\}~~.
 
 Direct Coulomb Sum
 ~~~~~~~~~~~~~~~~~~
@@ -942,7 +942,7 @@ order up to hexadecapoles.
 When the multipolar form of SPME is employed, the total electrostatic
 energy for a system on :math:`N` point ions is given as
 
-.. math:: U_c = U_{\textrm{dir}} + U_{\textrm{rec}} - U_{\textrm{excl}} - U_{\textrm{frzn}} - U_{\textrm{self}}~~,\label{eqn:totE}
+.. math:: U_c = U_{\textrm{dir}} + U_{\textrm{rec}} - U_{\textrm{excl}} - U_{\textrm{frzn}} - U_{\textrm{self}}~~,
    :label: SPME_totE_eq
 
 where
@@ -951,25 +951,25 @@ where
    :label: direwald_eq
 
    U_{\textrm{dir}} = \sum_{i < j}^{N^*} \sum_{\mathbf{n}}^{'}\hat{L}_i\hat{L}_{j_i}
-   \frac{\textrm{erfc}(\alpha \cdot |\mathbf{r_{ij}}+ \mathbf{n}|)}{4\pi\epsilon_0\epsilon|\mathbf{r_{ij}}+ \mathbf{n}|}~~,\label{direwald}
+   \frac{\textrm{erfc}(\alpha \cdot |\mathbf{r_{ij}}+ \mathbf{n}|)}{4\pi\epsilon_0\epsilon|\mathbf{r_{ij}}+ \mathbf{n}|}~~,
 
 .. math::
    :label: exclewald_eq
 
    U_{\textrm{excl}} = \frac{1}{4\pi\epsilon_0\epsilon}\sum_{(i,j)\in M^*}
-   \hat{L}_i\hat{L}_{j_i}\frac{\textrm{erf}(\alpha \cdot r_{ij})}{r_{ij}}~~,\label{exclewald}
+   \hat{L}_i\hat{L}_{j_i}\frac{\textrm{erf}(\alpha \cdot r_{ij})}{r_{ij}}~~,
 
 .. math::
    :label: frznewald_eq
 
    U_{\textrm{frzn}} = \frac{1}{4\pi\epsilon_0\epsilon}\sum_{(i,j)\in F^*}
-   \hat{L}_i\hat{L}_{j_i}\frac{\textrm{erf}(\alpha \cdot r_{ij})}{r_{ij}}~~,\label{frznewald}
+   \hat{L}_i\hat{L}_{j_i}\frac{\textrm{erf}(\alpha \cdot r_{ij})}{r_{ij}}~~,
 
 .. math::
    :label: selfewald_eq
 
    U_{\textrm{self}} = \frac{1}{8\pi\epsilon_0\epsilon}\lim_{| \mathbf{r_i}|\to 0}\sum_{i = 1}^{N}
-   \hat{L}_i\hat{L}_i\frac{\textrm{erf}(\alpha \cdot |\mathbf{r_i}|)}{|\mathbf{r_i}|}~~,\label{selfewald}
+   \hat{L}_i\hat{L}_i\frac{\textrm{erf}(\alpha \cdot |\mathbf{r_i}|)}{|\mathbf{r_i}|}~~,
 
 and
 
@@ -977,11 +977,11 @@ and
    :label: recewald_eq
 
    U_{\textrm{rec}} = \frac{1}{2V_o\epsilon_0\epsilon}\displaystyle\sum_{\mathbf{k} \ne 0}
-   \frac{\textrm{exp}(-k^2/4\alpha^2)}{k^2}\left |S(\mathbf{k})\right|^2~~,\label{recewald}
+   \frac{\textrm{exp}(-k^2/4\alpha^2)}{k^2}\left |S(\mathbf{k})\right|^2~~,
 
 with
 
-.. math:: S(\mathbf{k}) = \sum_{i=1}^N \hat{L}_i\textrm{exp}(\imath \mathbf{k}\cdot \mathbf{r_i})~~.\label{eqn:sfac}
+.. math:: S(\mathbf{k}) = \sum_{i=1}^N \hat{L}_i\textrm{exp}(\imath \mathbf{k}\cdot \mathbf{r_i})~~.
    :label: sfac_eq
 
 In the expressions above, :math:`M^*` is the set of all excluded
@@ -1067,7 +1067,7 @@ fills the simulation cell. Define the fractional coordinates of an ion
 is a B-spline of order :math:`n` then the approximation of the
 structure factor is given as
 
-.. math:: S(\mathbf{k}) \approx b_1(k_1)b_2(k_2)b_3(k_3) Q^{\mathcal{F}}(k_1,k_2,k_3)~~,\label{skapprox}
+.. math:: S(\mathbf{k}) \approx b_1(k_1)b_2(k_2)b_3(k_3) Q^{\mathcal{F}}(k_1,k_2,k_3)~~,
    :label: skapprox_eq
 
 where :math:`\mathbf{k}= \langle k_1, k_2, k_3 \rangle` is a
@@ -1087,7 +1087,7 @@ reciprocal space vector,
    M_n(u_{2_i}-l_2-n_2 K_2) \\
    &\times M_n(u_{3_i}-l_3-n_3 K_3)~~,
    \end{aligned}
-   \label{marray1}
+   
 
 where, :math:`u_{\alpha_i}-l_{\alpha}-n_{\alpha}K_{\alpha}` are
 evaluation points of the B-spline on the grid that spans the
@@ -1104,7 +1104,7 @@ cell, the multipolar array can be written explicitly as
    {\partial}_{y_i}^{s_2}{\partial}_{x_i}^{s_1}
    \left\{ M_n(u_{1_i}-l_1) M_n(u_{2_i}-l_2) M_n(u_{3_i}-l_3)\right\}~~.
    \end{aligned}
-   \label{marray2}
+   
 
 To compute the arbitrary order multidimensional derivatives of the
 product of three b-splines in equation :eq:`mparray2_eq`,
@@ -1126,7 +1126,7 @@ DL_POLY_4 uses the closed form formula:
         \left(K_3 a_{32}^{*}\right)^{s_2-k_2-j_2} \binom{s_2-k_2}{j_2} \times \nonumber \\
     & \displaystyle \sum_{j_1=0}^{s_1-k_1}\left(K_2 a_{21}^{*}\right)^{j_1}
         \left(K_3 a_{31}^{*}\right)^{s_1-k_1-j_1} \binom{s_1-k_1}{j_1}
-        {\partial}_{u_{2_i}}^{||\mathbf{j}||}M_n(u_{2_i}-l_2){\partial}_{u_{3_i}}^{||\mathbf{s}-\mathbf{k}-\mathbf{j}||}M_n(u_{3_i}-l_3)~~,\nonumber \label{dprodmn}
+        {\partial}_{u_{2_i}}^{||\mathbf{j}||}M_n(u_{2_i}-l_2){\partial}_{u_{3_i}}^{||\mathbf{s}-\mathbf{k}-\mathbf{j}||}M_n(u_{3_i}-l_3)~~,\nonumber 
    \end{aligned}
 
 where
@@ -1148,7 +1148,7 @@ equationv :eq:`dprodmn_eq` to
    :label: dprodmnsimple_eq
 
    \begin{aligned}
-   \label{dprodmnsimple}
+   
     & {\partial}_{z_i}^{s_3}{\partial}_{y_i}^{s_2}{\partial}_{x_i}^{s_1}
         \left\{ M_n(u_{1_i}-l_1) M_n(u_{2_i}-l_2) M_n(u_{3_i}-l_3)\right\}= \\
     & \left(K_1 a_{11}^{*}\right)^{s_1}\left(K_2 a_{22}^{*}\right)^{s_2}
@@ -1165,7 +1165,7 @@ point :math:`j`, DL_POLY_4 uses the closed form formula
    :label: dmnj2_eq
 
    \frac{d^p}{d u^{p}}M_n(u_j) = \sum_{t=\textrm{max}\{0,j-k\}}^{\textrm{min}\{j-1,p\}}
-   \binom{p}{t}(-1)^{t}M_{k}(u_j-t)~~.\label{dmnj2}
+   \binom{p}{t}(-1)^{t}M_{k}(u_j-t)~~.
 
 In DL_POLY_4 the stress tensor due to the reciprocal space, for an
 arbitrary :math:`p_\textrm{th}` order multipolar electrostatic
@@ -1184,11 +1184,11 @@ interaction is computed by the formula
 
 where
 
-.. math:: \mathcal{J}_i^{\textbf{ \ell}}(\mathbf{k}) = \mathcal{M}_i^{\textbf{ \ell}}{\partial}_i^{\textbf{ \ell}}{\textrm{e}}^{\imath \mathbf{k}\cdot \mathbf{r_i}}~~,
+.. math:: \mathcal{J}_i^{\textbf{ $\ell$}}(\mathbf{k}) = \mathcal{M}_i^{\textbf{ $\ell$}}{\partial}_i^{\textbf{ $\ell$}}{\textrm{e}}^{\imath \mathbf{k}\cdot \mathbf{r_i}}~~,
 
-.. math:: S_i^{\beta}(-\mathbf{k}) = \sum_{\textbf{ \ell}= \mathbf{0}}^{p} \ell_{\beta} \sum_{i=1}^{N} \mathcal{J}_i^{\textbf{ \ell}}(-\mathbf{k})~~,
+.. math:: S_i^{\beta}(-\mathbf{k}) = \sum_{\textbf{ $\ell$}= \mathbf{0}}^{p} \ell_{\beta} \sum_{i=1}^{N} \mathcal{J}_i^{\textbf{ $\ell$}}(-\mathbf{k})~~,
 
-and :math:`\textbf{ \ell}= (\ell_1,\ell_2,\ell_3)` .
+and :math:`\textbf{ $\ell$}= (\ell_1,\ell_2,\ell_3)` .
 
 In DL_POLY_4 the routine ewald_spme_mforces_d computes the reciprocal
 space interactions explicitly for simulations with multipoles of maximum

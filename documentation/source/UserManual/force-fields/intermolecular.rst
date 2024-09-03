@@ -63,7 +63,6 @@ The short ranged pair forces available in DL_POLY_4 are as follows:
       0 & r >  r_{AB}^c \\
       \end{array}
       \right.
-        \label{eq:ljf}
 
    with
 
@@ -148,7 +147,7 @@ The short ranged pair forces available in DL_POLY_4 are as follows:
       U(r_{ij}) = \left\{ \begin{array} {l@{\quad:\quad}l}
       4\epsilon\left[\left(\frac{\sigma}{r_{ij}-\Delta}\right)^{12}-\left(\frac{\sigma}{r_{ij}-\Delta}\right)^{6}\right]
       +\epsilon & r_{ij} < 2^{1 \over 6}~\sigma + \Delta \\
-      0 & r_{ij} \ge 2^{1 \over 6}~\sigma + \Delta \end{array} \right. \label{wca}
+      0 & r_{ij} \ge 2^{1 \over 6}~\sigma + \Delta \end{array} \right.
 
    The WCA potential is the Lennard-Jones potential truncated at the
    position of the minimum and shifted to eliminate discontinuity
@@ -481,13 +480,13 @@ The general form of the EAM and FS types of potentials is
    :label: um_eq
 
    U_{metal} = {1 \over 2} \sum_{i=1}^{N} \sum_{j \ne i}^{N} V_{ij}(r_{ij}) +
-   \sum_{i=1}^{N} F(\rho_{i})~~, \label{um}
+   \sum_{i=1}^{N} F(\rho_{i})~~,
 
 where :math:`F(\rho_{i})` is a functional describing the energy of
 embedding an atom in the bulk density, :math:`\rho_{i}`, which is
 defined as
 
-.. math:: \rho_{i} = \sum_{j=1, j \ne i}^{N} \rho_{ij}(r_{ij})~~. \label{umd}
+.. math:: \rho_{i} = \sum_{j=1, j \ne i}^{N} \rho_{ij}(r_{ij})~~.
    :label: umd_eq
 
 It should be noted that the density is determined by the coordination
@@ -501,12 +500,12 @@ In DL_POLY_4 EAM and thus EEAM can be further generalised to include
 two-band (2B) densities :cite:`ackland-03a,ollson-05a`, for
 :math:`s`- and :math:`d`-bands,
 
-.. math:: F(\rho_{i})=F^{s}(\rho^{s}_{i})+F^{d}(\rho^{d}_{i})~~, \label{2b}
+.. math:: F(\rho_{i})=F^{s}(\rho^{s}_{i})+F^{d}(\rho^{d}_{i})~~,
    :label: 2b_eq
 
 where
 
-.. math:: \rho^{q}_{i} = \sum_{j=1, j \ne i}^{N} \rho^{q}_{ij}(r_{ij})~,~~q=s,d~~, \label{2umd}
+.. math:: \rho^{q}_{i} = \sum_{j=1, j \ne i}^{N} \rho^{q}_{ij}(r_{ij})~,~~q=s,d~~,
    :label: 2umd_eq
 
 instead of just the one, :math:`s`, as in equations :eq:`um_eq`

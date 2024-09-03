@@ -45,7 +45,7 @@ method.
 Cubic periodic boundaries (:math:`\texttt{imcon}~=~1`)
 ======================================================
 
-.. figure:: ../Images/cube.svg 
+.. figure:: ../Images/cube.png 
    :alt: The cubic MD cell
    :width: 60%
    :class: vector-diagram
@@ -63,7 +63,7 @@ coordinates is the centre of the cell.
 Orthorhombic periodic boundaries (:math:`\texttt{imcon}~=~2`)
 =============================================================
 
-.. figure:: ../Images/ortho.svg
+.. figure:: ../Images/ortho.png
    :alt: The orthorhomic MD cell
    :width: 60%
    :class: vector-diagram
@@ -83,7 +83,7 @@ atomic coordinates is the centre of the cell.
 Parallelepiped periodic boundaries (:math:`\texttt{imcon}~=~3`)
 ===============================================================
 
-.. figure:: ../Images/triclinic.svg
+.. figure:: ../Images/triclinic.png
    :alt: The parallelepiped MD cell
    :width: 60% 
    :class: vector-diagram

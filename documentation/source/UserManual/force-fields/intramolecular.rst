@@ -17,7 +17,7 @@ of the atomic forces, virial and stress tensor are also outlined.
 Bond Potentials
 ---------------
 
-.. figure:: ../Images/bond.svg
+.. figure:: ../Images/bond.png
    :alt: The interatomic bond vector
    :width: 60% 
    :name: interatomic_bond_vec_fig
@@ -94,7 +94,7 @@ specified atoms. The potential functions available are as follows:
 
       U(r_{ij}) = \left\{ \begin{array} {l@{\quad:\quad}l}
       -0.5~k~R_{o}^{2}~ln\left[1-\left(\frac{r_{ij}-\Delta}{R_{o}}\right)^{2}\right] & |r_{ij} - \Delta| < R_{o} \\
-      \infty & |r_{ij} - \Delta| \ge R_{o} \end{array} \right. \label{FENE}
+      \infty & |r_{ij} - \Delta| \ge R_{o} \end{array} \right.
 
    The FENE potential is used to maintain the distance between connected
    beads and to prevent chains from crossing each other. It is used in
@@ -136,7 +136,7 @@ obtained using the general formula:
    :label: bondf_eq
 
    \underline{f}_{j} = -\frac{1}{{r}_{ij}} \left[ \frac{\partial }{\partial
-   r_{ij}}U(r_{ij})\right] \underline{r}_{ij}~~. \label{bondf}
+   r_{ij}}U(r_{ij})\right] \underline{r}_{ij}~~.
 
 The force :math:`\underline{f}_{i}` acting on atom :math:`i` is the negative
 of this.
@@ -151,7 +151,7 @@ with only *one* such contribution from each bond.
 
 The contribution to be added to the atomic :index:`stress tensor` is given by
 
-.. math:: \sigma^{\alpha \beta} = r_{ij}^{\alpha} f_{j}^{\beta}~~, \label{bonds}
+.. math:: \sigma^{\alpha \beta} = r_{ij}^{\alpha} f_{j}^{\beta}~~,
    :label: ast_bonds_eq
 
 where :math:`\alpha` and :math:`\beta` indicate the :math:`x,y,z`
@@ -213,7 +213,7 @@ In DL_POLY_4 :index:`distance restraints` are handled by the routine bonds_force
 Valence Angle Potentials
 ------------------------
 
-.. figure:: ../Images/angle.svg
+.. figure:: ../Images/angle.png
    :alt: The valence angle and associated vectors
    :width: 60% 
    :class: vector-diagram
@@ -485,7 +485,7 @@ In DL_POLY_4 :index:`angular restraints` are handled by the routine
 Dihedral Angle Potentials
 -------------------------
 
-.. figure:: ../Images/dihedral.svg
+.. figure:: ../Images/dihedral.png
    :alt: The dihedral angle and associated vectors
    :width: 60%
    :name: dihedral_angle_fig
@@ -770,7 +770,7 @@ following figure. The figure defines the D and L enantiomers consistent
 with the international (IUPAC) convention. When defining the :index:`dihedral<potential;dihedral>`,
 the atom indices are entered in DL_POLY_4 in the order 1-2-3-4.
 
-.. figure:: ../Images/isomers.svg
+.. figure:: ../Images/isomers.png
    :alt: The L and D enantiomers and defining vectors
    :width: 60% 
    :class: vector-diagram
@@ -830,7 +830,7 @@ In DL_POLY_4 :index:`torsional restraints` are handled by the routine
 Inversion Angle Potentials
 --------------------------
 
-.. figure:: ../Images/inversion.svg
+.. figure:: ../Images/inversion.png
    :alt: The inversion angle and associated vectors
    :width: 60% 
    :class: vector-diagram
@@ -1025,7 +1025,7 @@ In DL_POLY_4 :index:`inversion<potential;inversion>` forces are handled by the r
 The Calcite Four-Body Potential
 -------------------------------
 
-.. figure:: ../Images/calcite.svg
+.. figure:: ../Images/calcite.png
    :alt: The vectors of the calcite potential
    :name: calcfig
    :width: 60% 
@@ -1045,12 +1045,12 @@ is dependent on the perpendicular displacement (:math:`u`) of an atom
 :math:`c`, and :math:`d` (see Figure :numref:`%s<calcfig>`) and has the
 form:
 
-.. math:: U_{abcd}(u)=Au^{2}+Bu^{4}~~, \label{calcite1}
+.. math:: U_{abcd}(u)=Au^{2}+Bu^{4}~~,
    :label: calcite1_eq
 
 where the displacement :math:`u` is given by
 
-.. math:: u=\frac{\underline{r}_{ab}\cdot\underline{r}_{bc}\times\underline{r}_{bd}}{|\underline{r}_{bc}\times\underline{r}_{bd}|}~~. \label{calcite2}
+.. math:: u=\frac{\underline{r}_{ab}\cdot\underline{r}_{bc}\times\underline{r}_{bd}}{|\underline{r}_{bc}\times\underline{r}_{bd}|}~~.
    :label: calcite2_eq
 
 Vectors :math:`\underline{r}_{ab}`,\ :math:`\underline{r}_{ac}` and

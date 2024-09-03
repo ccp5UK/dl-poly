@@ -41,7 +41,7 @@ The EVB energy, :math:`E_{\text{EVB}}`, is defined as the lowest eigenvalue
 .. math::
    :label: Eevb_eq
 
-   \label{eq:Eevb}
+   
        E_{\text{EVB}}=min(\lambda_1,...,\lambda_{N_F})
 
 with the corresponding normalized EVB eigenvector
@@ -49,7 +49,7 @@ with the corresponding normalized EVB eigenvector
 .. math::
    :label: Psi-evb-norm_eq
 
-   \label{eq:Psi-evb-norm}
+   
        \Psi_{\text{EVB}}=\Psi_{min(\lambda_1,...,\lambda_{N_F})}.
 
 and
@@ -57,7 +57,7 @@ and
 .. math::
    :label: EevbPsi_eq
 
-   \label{eq:EevbPsi}
+   
        E_{\text{EVB}}=\big\langle \Psi_{\text{EVB}}\big|\hat{H}_{\text{EVB}}\big| \Psi_{\text{EVB}}\big \rangle.
 
 Since the eigenvector :math:`\Psi_{\text{EVB}}` is real and normalized
@@ -65,7 +65,7 @@ we have
 
 .. math::
 
-   \label{eq:evbPsinorm}
+   
       \sum_{k=1}^{N_F} \big|\Psi^{(k)}_{\text{EVB}}\big|^{2}=1
 
 from which we can interpret :math:`|\Psi^{(k)}_{\text{EVB}}\big|^{2}` as
@@ -79,7 +79,7 @@ multiplication
 .. math::
    :label: EevbPsimat_eq
 
-   \label{eq:EevbPsimat}
+   
       E_{\text{EVB}}=\sum_{m,k=1}^{N_F} \tilde{\Psi}^{(m)}_{\text{EVB}} H^{mk}_{\text{EVB}}\Psi^{(k)}_{\text{EVB}}
 
 where :math:`\tilde{\Psi}_{\text{EVB}}` is the transpose of
@@ -91,7 +91,7 @@ Hellman-Feynman theorem
    :label: Fevb_eq
 
    \begin{aligned}
-   \label{eq:Fevb}
+   
       &\vec{F}_{J}^{\text{EVB}}=-\nabla_{\vec{R}_J}E_{\text{EVB}}=-\big\langle \Psi_{\text{EVB}}\big| \nabla_{\vec{R}_J} \hat{H}_{\text{EVB}} \big| \Psi_{\text{EVB}}\big \rangle \nonumber \\
       &= \sum_{\alpha=x,yz} F_{J\alpha}^{\text{EVB}} \,\, \check{\alpha}
       \end{aligned}
@@ -102,7 +102,7 @@ Cartesian vectors and
 .. math::
    :label: Fevb2_eq
 
-   \label{eq:Fevb2}
+   
       F_{J\alpha}^{\text{EVB}}=-\big\langle \Psi_{\text{EVB}}\big| \frac{\partial \hat{H}_{\text{EVB}}}{\partial_{R_{J\alpha}}}\big| \Psi_{\text{EVB}}\big \rangle.
 
 From eq. :eq:`evbmatrix_eq` the matrix components of
@@ -113,7 +113,7 @@ given as follows
 .. math::
    :label: gradevb_eq
 
-   \label{eq:gradevb}
+   
       \frac{\partial H^{mk}_{\text{EVB}}}{\partial R_{J\alpha}}
       =\begin{cases}
       \frac{\partial E_{c}^{(m)}}{\partial R_{J\alpha}}=-F^{(m)}_{J\alpha} \,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\, m=k  \\
@@ -137,7 +137,7 @@ multiplication
 .. math::
    :label: FevbPsimat_eq
 
-   \label{eq:FevbPsimat}
+   
       F_{J\alpha}^{\text{EVB}}=-\sum_{m,k=1}^{N_F} \tilde{\Psi}^{(m)}_{\text{EVB}} \left(\frac{\partial H^{mk}_{\text{EVB}}}{\partial R_{J\alpha}}\right) \Psi^{(k)}_{\text{EVB}}.
 
 
@@ -146,7 +146,7 @@ The above equations define the standard EVB force field (EVB-FF). Even though th
 .. math::
    :label: stress-def1_eq
 
-   \label{eq:stress-def1}
+   
        \frac{\partial E^{(k)}_{c}}{\partial h_{\alpha\beta}}=-V\sum_{\gamma=x,y,z}\sigma_{\alpha\gamma}^{c(k)}h^{-1}_{\beta\gamma}
 
 where :math:`h` is the set of lattice vectors of the supercell with
@@ -157,7 +157,7 @@ inverse relation to eq. :eq:`stress-def1_eq`
 .. math::
    :label: stress_def2_eq
 
-   \label{eq:stress-def2}
+   
        \sigma_{\alpha\beta}^{c(k)}=-\frac{1}{V}\sum_{\gamma=x,y,z}h_{\beta\gamma}\frac{\partial E^{(k)}_{c}}{\partial h_{\alpha\gamma}}
 
 which can be used to define the EVB stress tensor
@@ -165,7 +165,7 @@ which can be used to define the EVB stress tensor
 .. math::
    :label: stress-def3_eq
 
-   \label{eq:stress-def3}
+   
        \sigma_{\alpha\beta}^{\text{EVB}}=-\frac{1}{V}\sum_{\gamma=x,y,z}h_{\beta\gamma}\frac{\partial E_{\text{EVB}}}{\partial h_{\alpha\gamma}}.
 
 Similar to the definition of the EVB force, we evaluate
@@ -175,7 +175,7 @@ eq. :eq:`EevbPsi_eq` and the Hellman-Feynman theorem
 .. math::
    :label: stress-EVB_eq
 
-   \label{eq:stress-EVB}
+   
        \frac{\partial E_{\text{EVB}}}{\partial h_{\alpha\beta}}=\big\langle \Psi_{\text{EVB}}\big| \frac{\partial \hat{H}_{\text{EVB}}}{\partial h_{\alpha\beta}}\big| \Psi_{\text{EVB}}\big \rangle.
 
 The matrix components of the operator
@@ -185,7 +185,7 @@ follow from the definition of the EVB matrix :eq:`evbmatrix_eq` and the use of r
 .. math::
    :label: stress-EVB-mat_eq
 
-   \label{eq:stress-EVB-mat}
+   
        \frac{\partial H^{mk}_{\text{EVB}}}{\partial h_{\alpha\beta}}=\begin{cases}
          \frac{\partial E_{c}^{(m)}}{\partial h_{\alpha\beta}}=-V\sum_{\gamma}\sigma_{\alpha\gamma}^{c(m)}h^{-1}_{\beta\gamma} \,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\, m=k  \\
        \\
@@ -206,7 +206,7 @@ matrix multiplication
 .. math::
    :label: stress-EVB-ab_eq
 
-   \label{eq:stress-EVB-ab}
+   
        \sigma_{\alpha\beta}^{\text{EVB}}=-\frac{1}{V}\sum_{\gamma=x,y,z}h_{\beta\gamma}\sum_{m,k=1}^{N_F} \tilde{\Psi}^{(m)}_{\text{EVB}} \left(\frac{\partial H^{mk}_{\text{EVB}}}{\partial h_{\alpha\beta}}\right) \Psi^{(k)}_{\text{EVB}}.
 
 These expressions provide an alternative to compute the stress tensor
@@ -234,7 +234,7 @@ the presented formalism, we compute the virial
 .. math::
    :label: virial-total_eq
 
-   \label{eq:virial-total}
+   
        \mathcal{V}_{\text{EVB}}=-\sum_{\alpha=x,y,z} \sigma_{\alpha\alpha}^{\text{EVB}}.
 
 The instantaneous total stress tensor, :math:`\sigma^{T}`, is given by
@@ -243,7 +243,7 @@ the following general expression
 .. math::
    :label: stress-total_eq
 
-   \label{eq:stress-total}
+   
        \sigma^{T}=\sigma^{\text{kin}}+\sigma^{\text{EVB}}+\sigma^{\text{RB}}+\sigma^{\text{bc}}
 
 where :math:`\sigma^{\text{kin}}`, :math:`\sigma^{\text{RB}}` and
@@ -263,7 +263,7 @@ the rigid bodies is analogously to eq.
 .. math::
    :label: stress-RG_eq
 
-   \label{eq:stress-RG}
+   
        \sigma_{\alpha\beta}^{\text{RB}}=\sum_{\mathcal{B}=1}^{N_{\text{RB}}}\sum_{I=1}^{\eta_{\mathcal{B}}} {F}_{I_{\mathcal{B}},\alpha}^{\text{EVB}} d_{I_{\mathcal{B}},\beta}
 
 where :math:`\vec{F}_{I_{\mathcal{B}}}` is the total force over particle
@@ -309,7 +309,7 @@ setting the coupling term to be a constant:
 .. math::
    :label: coupl-const_eq
 
-   \label{eq:coupl-const}
+   
    C_{mk}(\epsilon_{mk})=\mathcal{A}_{1,mk}
 
 and the other possibility is to use Gaussian type of function,
@@ -317,7 +317,7 @@ and the other possibility is to use Gaussian type of function,
 .. math::
    :label: coupl-gauss_eq
 
-   \label{eq:coupl-gauss}
+   
    C_{mk}(\epsilon_{mk})=\mathcal{A}_{1,mk} \, \, e^{-\left( \frac{\epsilon_{mk}-\mathcal{A}_{2,mk}} {\mathcal{A}_{3,mk}}  \right)^2 }+\mathcal{A}_{4,mk}.
 
 To determine the parameters for the coupling terms, it is necessary to
@@ -343,7 +343,7 @@ follows
 .. math::
    :label: coupl-neb_eq
 
-   \label{eq:coupl-neb}
+   
    C^{2}_{mk}(\epsilon_{mk})=\left[ \tilde{E}_{\zeta_{mk}}-E^{(m)}_{c,\zeta_{mk}} \right] \left[ \tilde{E}_{\zeta_{mk}}-E^{(k)}_{c,\zeta_{mk}} \right]
 
 where :math:`E^{(m)}_{c,\zeta_{mk}}` and :math:`E^{(k)}_{c,\zeta_{mk}}`
@@ -354,7 +354,7 @@ function of :math:`\zeta_{mk}`
 .. math::
    :label:coupl-EG_eq
 
-   \label{eq:coupl-EG}
+   
    \epsilon_{mk}(\zeta_{mk})=E^{(m)}_{c,\zeta_{mk}}-E^{(k)}_{c,\zeta_{mk}}.
 
 To find the parameters for the coupling :math:`C_{mk}`, one has to plot

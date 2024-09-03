@@ -26,7 +26,7 @@ The instantaneous pressure in a system,
 
    {\cal P}(t) = \frac{\left[ 2 E_{kin}(t) - {\cal W}_{\rm atomic}(t) -
    {\cal W}_{\rm constrain}(t - \Delta t) -
-   {\cal W}_{\rm PMF}(t - \Delta t) \right]} {3 V(t)}~~, \label{prs_inst}
+   {\cal W}_{\rm PMF}(t - \Delta t) \right]} {3 V(t)}~~, 
 
 is a function of the system volume, kinetic energy and virial,
 :math:`{\cal W}`. 
@@ -48,7 +48,7 @@ The instantaneous stress tensor in a system,
    :label: str_inst_eq
 
    \underline{\underline{\mathbf{\sigma}}}(t) = \underline{\underline{\mathbf{\sigma}}}_{kin}(t) + \underline{\underline{\mathbf{\sigma}}}_{\rm atomic}(t) +
-   \underline{\underline{\mathbf{\sigma}}}_{\rm constrain}(t - \Delta t) + \underline{\underline{\mathbf{\sigma}}}_{\rm PMF}(t - \Delta t)~~, \label{str_inst}
+   \underline{\underline{\mathbf{\sigma}}}_{\rm constrain}(t - \Delta t) + \underline{\underline{\mathbf{\sigma}}}_{\rm PMF}(t - \Delta t)~~, 
 
 is a sum of the forcefield, :math:`\underline{\underline{\mathbf{\sigma}}}_{\rm atomic}`,
 constrain, :math:`\underline{\underline{\mathbf{\sigma}}}_{\rm constrains}`, and PMF,
@@ -315,7 +315,7 @@ tension and :math:`h_{z}(t) = V(t) / A_{xy}(t)` is the instantaneous
 hight of the MD box (or MD box volume over area). The instnatneous
 surface tension is defined as
 
-.. math:: \gamma_{\alpha}(t)=-h_{z}(t)\left[ \sigma_{\alpha\alpha}(t) - P_{\rm ext} \right]~~.\label{gamma}
+.. math:: \gamma_{\alpha}(t)=-h_{z}(t)\left[ \sigma_{\alpha\alpha}(t) - P_{\rm ext} \right]~~.
    :label: gamma_eq
 
 The case :math:`\gamma_{\rm ext}=0` generates the NPT anisotropic
@@ -367,7 +367,7 @@ scaled by a factor :math:`\eta`, and the coordinates and cell vectors by
    :label: berbar_eq
 
    \eta (t) = 1 - {\beta \Delta t \over \tau_{P}} \; (P_{\rm ext} -
-   {\cal P}(t)) \label{berbar}
+   {\cal P}(t)) 
 
 where :math:`\beta` is the isothermal compressibility of the system. In
 practice :math:`\beta` is a specified constant which DL_POLY_4takes to
@@ -547,7 +547,7 @@ For isotropic fluctuations the equations of motion are:
    \frac{d}{dt} \underline{r}(t) =& \underline{v}(t) + \eta (t) \; (\underline{r}(t) - \underline{R}_{0}(t)) \nonumber \\
    \frac{d}{dt} \underline{v}(t) =& \frac{\underline{f}(t)}{m} - \left[ \chi(t) + \eta (t) \right] \underline{v}(t) \nonumber \\
    \frac{d}{dt} \chi(t) =& \frac{2 E_{kin}(t) + p_{mass}~\eta (t)^{2} - 2 \sigma - k_{B}~T_{\rm ext}}{q_{mass}} \nonumber \\
-   q_{mass} =& 2~\sigma~\tau_{T}^{2} \label{npth} \\
+   q_{mass} =& 2~\sigma~\tau_{T}^{2}  \\
    \frac{d}{dt}\eta (t) =& 3 V(t) \frac{{\cal P}(t) - P_{\rm ext}}{p_{mass}} - \chi(t) \eta (t) \nonumber \\
    p_{mass} =& (f+3)~k_{B}~T_{\rm ext}~\tau_{P}^{2} \nonumber \\
    \frac{d}{dt}\underline{\underline{\mathbf{H}}}(t) =& \eta (t) \; \underline{\underline{\mathbf{H}}}(t) \nonumber \\
@@ -740,7 +740,7 @@ isotropic algorithm with slight modifications (as now the equations with
    \underline{\underline{\mathbf{\eta}}}(t) \right] \cdot \underline{v}(t) \nonumber \\
    \frac{d}{dt} \chi(t) =& \frac{2 E_{kin}(t) + p_{mass}~\texttt{ Tr}[\underline{\underline{\mathbf{\eta}}}(t) \cdot
    \underline{\underline{\mathbf{\eta}}}(t)^{T}] - 2 \sigma - 3^{2}~k_{B}~T_{\rm ext}}{q_{mass}} \nonumber \\
-   q_{mass} =& 2~\sigma~\tau_{T}^{2} \label{nsth} \\
+   q_{mass} =& 2~\sigma~\tau_{T}^{2}  \\
    \frac{d}{dt}\underline{\underline{\mathbf{\eta}}}(t) =& \frac{\underline{\underline{\mathbf{\sigma}}}(t) -
    P_{\rm ext}~V(t)~\underline{\underline{\mathbf{1}}}}{p_{mass}} - \chi(t) \underline{\underline{\mathbf{\eta}}}(t) \nonumber \\
    p_{mass} =& \frac{(f+3)}{3}~k_{B}~T_{\rm ext}~\tau_{P}^{2} \nonumber \\

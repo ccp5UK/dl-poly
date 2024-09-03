@@ -39,7 +39,7 @@ motion [1]_.
 The mass of a rigid unit :math:`M` is the sum of the atomic masses in
 that unit:
 
-.. math:: M = \sum_{j=1}^{N_{sites}} m_{j}~~, \label{netmass}
+.. math:: M = \sum_{j=1}^{N_{sites}} m_{j}~~, 
    :label: netmass_eq
 
 where :math:`m_{j}` is the mass of an atom and the sum includes all
@@ -67,13 +67,13 @@ from the COM, is given by:
 The net translational force :math:`\underline{F}` acting on the :index:`rigid body`
 unit is the vector sum of the forces acting on the atoms of the body:
 
-.. math:: \underline{F} = \sum_{j=1}^{N_{sites}} \underline{f}_{j} \label{netforce}
+.. math:: \underline{F} = \sum_{j=1}^{N_{sites}} \underline{f}_{j} 
    :label: netforce_eq
 
 and the torque vector :math:`\underline{\tau}` acting on the body in the
 universal frame of reference is given by:
 
-.. math:: \underline{\tau} = \sum_{j=1}^{N_{sites}} \underline{d}_{j} \times \underline{f}_{j}~~,\label{nettorque}
+.. math:: \underline{\tau} = \sum_{j=1}^{N_{sites}} \underline{d}_{j} \times \underline{f}_{j}~~,
    :label: nettorque_eq
 
 where :math:`\underline{f}_{j}` is the force on a rigid unit site.
@@ -92,7 +92,7 @@ and COM stress and virial respectively written down as:
    :label: rb-stress_eq
 
    \begin{aligned}
-   \label{eq:rb-stress}
+   
    \sigma^{\alpha\beta}=&\sum_{j=1}^{N_{sites}} d_{j}^{\alpha} f_{j}^{\beta} \nonumber \\
    {\cal W} =& -\sum_{j=1}^{N_{sites}} \underline{d}_{j} \cdot \underline{f}_{j}~~,\end{aligned}
 
@@ -161,7 +161,7 @@ Thus we need only consider the rotational motion here.
 The rotational equation of motion for a rigid body relates the torque to
 the change in angular momentum:
 
-.. math:: \underline{\tau} = {d \over dt}\underline{J} ={d \over dt}\left(\underline{\underline{\mathbf{I}}} \cdot \underline{\omega}\right)~~.\label{torquemotion}
+.. math:: \underline{\tau} = {d \over dt}\underline{J} ={d \over dt}\left(\underline{\underline{\mathbf{I}}} \cdot \underline{\omega}\right)~~.
    :label: torquemotion
 
 In a thermostat it can be written as:
@@ -181,7 +181,7 @@ thermostat term, these simplify to the Euler’s
    \dot{\hat{\omega}}_{x} =&
    {\hat{\tau}_{x} \over \hat{I}_{xx}}+(\hat{I}_{yy}-\hat{I}_{zz})~\hat{\omega}_{y}~\hat{\omega}_{z} \nonumber \\
    \dot{\hat{\omega}}_{y} =&
-   {\hat{\tau}_{y}\over \hat{I}_{yy}}+(\hat{I}_{zz}-\hat{I}_{xx})~\hat{\omega}_{z}~\hat{\omega}_{z} \label{euler} \\
+   {\hat{\tau}_{y}\over \hat{I}_{yy}}+(\hat{I}_{zz}-\hat{I}_{xx})~\hat{\omega}_{z}~\hat{\omega}_{z}  \\
    \dot{\hat{\omega}}_{z} =&
    {\hat{\tau}_{z}\over \hat{I}_{zz}}+(\hat{I}_{xx}-\hat{I}_{yy})~\hat{\omega}_{x}~\hat{\omega}_{y}~~. \nonumber\end{aligned}
 
@@ -315,7 +315,7 @@ quaternion momenta in the order:
    :label: ns1_eq
 
    e^{i{\cal L}_{3}(\delta t/2)}~e^{i{\cal L}_{2}(\delta t/2)}~e^{i{\cal L}_{1}(\delta t)}~e^{i{\cal L}_{2}(\delta t/2)}~e^{i{\cal L}_{3}(\delta t/2)}~~,
-   \label{ns1}
+   
 
 which preserves the symplecticness of the operations (see reference
 :cite:`martyna-96a`). Note that :math:`\delta t` is some
@@ -337,7 +337,7 @@ with the following properties:
 
    \begin{aligned}
    P_0~\underline{q}=&\{~q_0,~q_1,~q_2,~q_3\} \nonumber \\
-   P_1~\underline{q}=&\{-q_1,~q_0,~q_3,-q_2\} \label{ns2} \\
+   P_1~\underline{q}=&\{-q_1,~q_0,~q_3,-q_2\}  \\
    P_2~\underline{q}=&\{-q_2,-q_3,~q_0,~q_1\} \nonumber \\
    P_3~\underline{q}=&\{-q_3,~q_2,-q_1,~q_0\}~~, \nonumber\end{aligned}
 

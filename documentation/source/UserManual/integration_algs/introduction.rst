@@ -50,13 +50,13 @@ step :math:`t+\Delta t` using the new half-step velocities:
 The instantaneous kinetic energy, for example, can then be obtained from
 the atomic velocities as
 
-.. math:: E_{kin}(t) = {1 \over 2} \sum_{1}^{\cal N} m_{i} v_{i}^{2}(t)~~, \label{ekin}
+.. math:: E_{kin}(t) = {1 \over 2} \sum_{1}^{\cal N} m_{i} v_{i}^{2}(t)~~, 
    :label: ekin_eq
 
 and assuming the system has no net momentum the instantaneous
 temperature is
 
-.. math:: {\cal T}(t) = \frac{2}{k_{B} f} E_{kin}(t)~~, \label{tinst}
+.. math:: {\cal T}(t) = \frac{2}{k_{B} f} E_{kin}(t)~~, 
    :label: tinst_eq
 
 where :math:`i` labels particles (that can be free atoms or :index:`rigid<rigid body>`
@@ -68,7 +68,7 @@ bodies) in the system, :math:`k_{B}` the Boltzmann’s constant and
    :label: freedom_eq
 
    f = 3{\cal N} - 3{\cal N}_{frozen} - 3{\cal N}_{shells} -
-   {\cal N}_{constraints} - 3 - p~~. \label{freedom}
+   {\cal N}_{constraints} - 3 - p~~. 
 
 Here :math:`{\cal N}_{frozen}` indicates the number of frozen atoms in
 the system, :math:`{\cal N}_{shells}` number of core-shell units and

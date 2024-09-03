@@ -52,7 +52,7 @@ the kinetic temperature constraint :math:`\chi` can be found as follows:
    \frac{d}{dt} {\cal T} \propto\frac{d}{dt} \left(\frac{1}{2}\sum_{i} m_{i} \underline{v}_{i}^{2} \right) =
    \sum_{i} m_{i} \underline{v}_{i} \cdot \frac{d}{dt} \underline{v}_{i} =& 0 \nonumber \\
    \sum_{i} m_{i} \underline{v}_{i}(t) \cdot
-   \left\{ \frac{\underline{f}_{i}(t)}{m_{i}} - \chi (t) \; \underline{v}_{i}(t) \right\} =& 0 \label{Evans} \\
+   \left\{ \frac{\underline{f}_{i}(t)}{m_{i}} - \chi (t) \; \underline{v}_{i}(t) \right\} =& 0  \\
    \chi (t) =& \frac {\sum_{i} \underline{v}_{i}(t) \cdot \underline{f}_{i}(t)} {\sum_{i} m_{i} \underline{v}_{i}^{2}(t)}~~, \nonumber\end{aligned}
 
 where :math:`\cal T` is the instantaneous temperature defined in
@@ -139,7 +139,7 @@ fluctuation- dissipation theorem:
    :label: langevin_eq
 
    \left< R^{\alpha}_{i}(t)~R^{\beta}_{j}(t^\prime)\right> =
-   2~\chi~m_{i}~k_{B}T~\delta_{ij}~\delta_{\alpha \beta}~\delta(t-t^\prime)~~, \label{langevin}
+   2~\chi~m_{i}~k_{B}T~\delta_{ij}~\delta_{\alpha \beta}~\delta(t-t^\prime)~~, 
 
 where superscripts denote Cartesian indices, subscripts particle
 indices, :math:`k_{B}` is the Boltzmann constant, :math:`T` the target
@@ -382,7 +382,7 @@ velocities at each step by
 
 where
 
-.. math:: \sigma = \frac{f}{2}~k_{B}~T_{\rm ext} \label{sigma}
+.. math:: \sigma = \frac{f}{2}~k_{B}~T_{\rm ext} 
    :label: sigma_eq
 
 is the target thermostat energy (depending on the external temperature
@@ -556,7 +556,7 @@ dynamics:
    :label: Ornstein-Uhlenbeck_eq
 
    {d \chi (t) \over dt} = \frac{2 E_{kin}(t) - 2 \sigma}{q_{mass}} - \gamma~\chi(t) +
-   \frac{\sqrt{2~\gamma~k_{B}~T_{\rm ext}~q_{mass}}}{q_{mass}}~{d \omega(t) \over d t}~~, \label{Ornstein-Uhlenbeck}
+   \frac{\sqrt{2~\gamma~k_{B}~T_{\rm ext}~q_{mass}}}{q_{mass}}~{d \omega(t) \over d t}~~, 
 
 governed by the Langevin friction :math:`\gamma` (positive, in units of
 ps\ :math:`^{-1}`), where :math:`\omega(t)` is the standard Brownian

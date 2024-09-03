@@ -20,7 +20,6 @@ written as:
    :label: decomp-ene
 
    \begin{aligned}
-   \label{eq:decomp-ene}
    U(\underline{r}_{1},\underline{r}_{2},\ldots,\underline{r}_{N})=&
          \sum_{i_{shel}=1}^{N_{shel}} U_{shel}(i_{shel},\underline{r}_{core},\underline{r}_{shell}) \nonumber \\
    & + \sum_{i_{teth}=1}^{N_{teth}} U_{teth}(i_{teth},\underline{r}_{i}^{\mathbf{ t}=t},\underline{r}_{i}^{\mathbf{ t}=0}) \nonumber \\
@@ -77,7 +76,7 @@ van der Waals interactions (or alternatively DPD soft interactions,
 coarse-grained interactions, hard-wall nuclear interactions) and
 electrostatic interactions (coulombic, also regarded as long-ranged).
 Long-ranged forces require special techniques to evaluate accurately
-(see Section \ :ref:`coulomb`). The metal terms are many-body
+(see Section  :ref:`coulomb`). The metal terms are many-body
 interactions which are functionally presented in an expansion of many
 two-body contributions augmented by a function of the local density,
 which again is derived from the two-body spatial distribution (and these

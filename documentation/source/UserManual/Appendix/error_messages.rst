@@ -1094,7 +1094,7 @@ distance, applied to the pair interactions does not exceed half the
 perpendicular width of the simulation cell. (The perpendicular width is
 the shortest distance between opposing cell faces.) Termination results
 if this is detected. In NVE and NVT simulations this can only happen at
-the start of a simulation, but in NPT and N\ :math:`\mat{\sigma}`\ T, it
+the start of a simulation, but in NPT and N\ :math:`{\sigma}`\ T, it
 may occur at any time.
 
 *Action*:
@@ -1331,7 +1331,7 @@ This happens when the simulation is very numerically unstable. Consider
 carefully the physical grounds of your simulation, i.e. are you using
 the adiabatic shell model for accounting polarisation with too big a
 timestep or too large control distances for the variable timestep, is
-the ensemble type NPT or N\ :math:`\mat{\sigma}`\ T and the system
+the ensemble type NPT or N\ :math:`{\sigma}`\ T and the system
 target temperature too close to the melting temperature?
 
 **Message 118**: error - construction error in pass_shared_units
@@ -2838,7 +2838,7 @@ DL_POLY_4 to accepting it as non-linear while, in fact, it is and then
 failing at the current point. It is quite possible, despite considered
 as wrong practice, that the user defined system of linear RBs is, in
 fact, generated from a system of CBs (3 per RB) which has not been run
-in a high enough SHAKE/RATTLE tolerance accuracy (10-̂8 and higher may be
+in a high enough SHAKE/RATTLE tolerance accuracy (:math:`10^{-8}`` and higher may be
 needed). Check the definition of the rigid unit in the CONFIG file, if
 sensible report the error to the authors.
 

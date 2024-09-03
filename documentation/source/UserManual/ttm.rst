@@ -50,7 +50,7 @@ according to Fourier’s law of heat conduction:
 .. math::
    :label: electronic_system_eq
 
-   \label{eq:electronic_system}
+   
    C_e(T_e) \frac{\partial T_e}{\partial t} - \nabla . [\kappa_e \nabla T_e ] = -G_{ep}(T_e - T_a) + G_s T^{\prime}_a + A(r,t),
 
 where :math:`C_e(T_e)` is the electronic volumetric heat capacity (equal
@@ -76,7 +76,7 @@ equated to the more general heat diffusion :index:`equation<Two-Temperature Mode
 .. math::
    :label: heatdiffusion_eq
 
-   \label{eq:heatdiffusion}
+   
    \frac{\partial T}{\partial t} - \alpha \nabla^2 T = \frac{\dot{q}}{C},
 
 :math:`T` is temperature, :math:`t` is time, :math:`\dot{q}` is a heat
@@ -127,7 +127,7 @@ in Figure :numref:`(%s)<1DFD_fig>`: it is explicit as the temperature at
 time :math:`n+1` *explicitly* depends on the temperature at time
 :math:`n`, and is evidently forward-in-time and space-centred.
 
-.. figure:: Images/finitediff.svg
+.. figure:: Images/finitediff.png
    :alt: One-dimensional finite-difference schematic
    :width: 60.0%
    :name: 1DFD_fig
@@ -157,7 +157,7 @@ finite-difference solution becomes
 
    \begin{aligned}
    T_{i,j,k}^{n+1}  =& T_{i,j,k}^n + \Delta t \bigg[  \alpha \left(\frac{T_{i+1,j,k}^n + T_{i-1,j,k}^{n} + T_{i,j+1,k}^n + T_{i,j-1,k}^{n} + T_{i,j,k+1}^n + T_{i-1,j,k-1}^{n} - 6T_{i,j,k}^n}{\Delta x^2}\right) + \frac{\dot{q}}{C}  \bigg] \nonumber \\
-   =& T_{i,j,k}^n + F [T_{i+1,j,k}^n + T_{i-1,j,k}^{n} + T_{i,j+1,k}^n + T_{i,j-1,k}^{n} + T_{i,j,k+1}^n + T_{i-1,j,k-1}^{n} - 6T_{i,j,k}^n] +  \Delta t  \frac{\dot{q}}{C} \label{eq:finite_solver_1},\end{aligned}
+   =& T_{i,j,k}^n + F [T_{i+1,j,k}^n + T_{i-1,j,k}^{n} + T_{i,j+1,k}^n + T_{i,j-1,k}^{n} + T_{i,j,k+1}^n + T_{i-1,j,k-1}^{n} - 6T_{i,j,k}^n] +  \Delta t  \frac{\dot{q}}{C} \end{aligned}
 
 with a new stability criteria of :math:`0 < F < \frac{1}{6}`. Thus, the
 size of the timestep must satisfy
@@ -175,7 +175,7 @@ can vary spatially, takes the form
    T_{i,j,k}^{n+1}  =& \frac{\Delta t}{\Delta x^2} \left( \frac{\kappa \big[ \frac{1}{2} (T^n_{i+1,j,k} + T^n_{i,j,k})  \big]}{C(T^n_{i,j,k})} (T^n_{i+1,j,k} - T^n_{i,j,k}) +  \frac{\kappa \big[ \frac{1}{2} (T^n_{i-1,j,k} + T^n_{i,j,k})  \big]}{C(T^n_{i,j,k})} (T^n_{i-1,j,k} - T^n_{i,j,k}) \right) \nonumber \\
    +& \frac{\Delta t}{\Delta y^2} \left( \frac{\kappa \big[ \frac{1}{2} (T^n_{i,j+1,k} + T^n_{i,j,k})  \big]}{C(T^n_{i,j,k})} (T^n_{i,j+1,k} - T^n_{i,j,k}) +  \frac{\kappa \big[ \frac{1}{2} (T^n_{i,j-1,k} + T^n_{i,j,k})  \big]}{C(T^n_{i,j,k})} (T^n_{i,j-1,k} - T^n_{i,j,k}) \right) \nonumber \\
    +& \frac{\Delta t}{\Delta z^2} \left( \frac{\kappa \big[ \frac{1}{2} (T^n_{i,j,k+1} + T^n_{i,j,k})  \big]}{C(T^n_{i,j,k})} (T^n_{i,j,k+1} - T^n_{i,j,k}) + \frac{\kappa \big[ \frac{1}{2} (T^n_{i,j,k-1} + T^n_{i,j,k})  \big]}{C(T^n_{i,j,k})} (T^n_{i,j,k-1} - T^n_{i,j,k}) \right) \nonumber \\
-   +& \Delta t \frac{\dot{q^n_{i,j,k}}}{C^n_{i,j,k}} \label{eq:finite_solver_2}.\end{aligned}
+   +& \Delta t \frac{\dot{q^n_{i,j,k}}}{C^n_{i,j,k}} \end{aligned}
 
 Here the electronic thermal conductivity has an explicit spatial
 dependence. To simplify this relationship, :math:`\kappa` can be assumed
@@ -258,7 +258,7 @@ subsystem, and the modified equation of motion takes the form
 .. math::
    :label: modifiedlang_eq
 
-   \label{eq:modifiedlang}
+   
    {d \underline{v}_{p}(t) \over d t} = {\underline{{f}_{p}(t)+\underline{R}_{p}(t)} \over
    m_{p}} - \chi_{p} \; \underline{v}_{p}(t),
 
@@ -285,7 +285,7 @@ satisfy two important time-averaged conditions:
 
    \begin{aligned}
    \langle \underline{R}_{p}(t) \rangle =& 0, \\
-   \langle \underline{R}_{p}(t) \cdot \underline{R}_{q}(t^{\prime}) \rangle &\propto& \delta_{pq} \delta (t-t^{\prime}) \label{eq:flucdissip}\end{aligned}
+   \langle \underline{R}_{p}(t) \cdot \underline{R}_{q}(t^{\prime}) \rangle &\propto& \delta_{pq} \delta (t-t^{\prime}) \end{aligned}
 
 The first condition states that over a significant period of time,
 :math:`\underline{R}_{p}(t)` must not behave as a net source or sink.
@@ -311,7 +311,7 @@ finite electronic temperature grid:
 .. math::
    :label: chiep_eq
 
-   \label{eq:chiep}
+   
    \chi_{ep} = \frac{G_{ep} \Delta V}{3 k_B N},
 
 where :math:`\Delta V` is the volume of the cell
@@ -342,7 +342,7 @@ calculated in a similar fashion to the electron-phonon
 .. math::
    :label: chies_eq
 
-   \label{eq:chies}
+   
    \chi_{es} = \frac{G_{s} \Delta V}{3 k_B N^{\prime}}
 
 where :math:`N^{\prime}` is the number of atoms in the cell with
@@ -357,7 +357,7 @@ to flow to and from the lattice (depending on the temperature gradient
 between ions and electrons), whereas electronic stopping acts solely as
 an energy loss mechanism for the lattice.
 
-.. figure:: Images/ttmheatbath.svg 
+.. figure:: Images/ttmheatbath.png 
    :name: heatbath_fig 
    :width: 40.0%
    :figclass: centre-fig
@@ -409,7 +409,7 @@ be assumed from here on.
 Cascades
 ~~~~~~~~
 
-.. figure:: Images/cascades.svg
+.. figure:: Images/cascades.png
    :name: cascades_fig
    :width: 40.0% 
    :figclass: centre-fig
@@ -435,7 +435,7 @@ spike.
 Swift heavy ions
 ~~~~~~~~~~~~~~~~
 
-.. figure:: Images/swiftheavyion.svg
+.. figure:: Images/swiftheavyion.png
    :name: SHI_fig 
    :width: 60.0% 
    :figclass: centre-fig
@@ -466,7 +466,7 @@ of the evolution of a micron-sized track.
 Laser excitation
 ~~~~~~~~~~~~~~~~
 
-.. figure:: Images/laser.svg
+.. figure:: Images/laser.png
    :name: laser_fig 
    :width: 80.0% 
    :figclass: centre-fig

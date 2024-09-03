@@ -78,7 +78,7 @@ relative error (:math:`\epsilon`) in the real space sum truncated at
    :label: relerr_eq
 
    \epsilon \approx {\rm erfc}(\alpha~r_{\rm cut})/r_{\rm cut}
-   \approx \exp[-(\alpha~r_{\rm cut})^{2}]/r_{\rm cut}~~, \label{relerr}
+   \approx \exp[-(\alpha~r_{\rm cut})^{2}]/r_{\rm cut}~~, 
 
 which reciprocally gives an estimate for :math:`\alpha` for a given
 :math:`\epsilon`:
@@ -103,7 +103,7 @@ The relative error in the reciprocal space term is approximately
 
 where
 
-.. math:: k_{max} = \frac{2\pi}{L}~\frac\texttt{kmax}{2}
+.. math:: k_{max} = \frac{2\pi}{L}~\frac{\texttt{kmax}}{2}
 
 is largest :math:`k`-vector considered in reciprocal space, :math:`L` is
 the width of the cell in the specified direction and ``kmax`` is an

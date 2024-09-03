@@ -51,7 +51,7 @@ giving rise to a *polarisation* dipole
 
 The condition of static equilibrium then gives the polarisability as:
 
-.. math:: \alpha = \frac{1}{4\pi\epsilon_{0}\epsilon} q_{s}^{2}/k_{2}~~, \label{druder}
+.. math:: \alpha = \frac{1}{4\pi\epsilon_{0}\epsilon} q_{s}^{2}/k_{2}~~, 
    :label: druder_eq
 
 where :math:`q_{s}` is the shell charge and :math:`k_{2}` is the force

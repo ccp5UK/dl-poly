@@ -103,7 +103,7 @@ Full instructions can be also found online at
          [10:38:11 alin@abaddon:~/playground/dl-poly]: cd myBuild/
          [10:38:13 alin@abaddon:~/playground/dl-poly/myBuild]: ccmake ..
 
-      .. figure:: ../Images/ccmake.svg 
+      .. figure:: ../Images/ccmake.png 
          :name: ccmake_fig 
          :figclass: centre-fig
          :width: 80% 
@@ -119,7 +119,7 @@ Full instructions can be also found online at
          [10:38:11 alin@abaddon:~/playground/dl-poly]: cd myBuild/
          [10:38:13 alin@abaddon:~/playground/dl-poly/myBuild]: cmake-gui ..
 
-      .. figure:: ../Images/cmake-gui.svg
+      .. figure:: ../Images/cmake-gui.png
          :width: 80%
          :name: ccmake-gui_fig
          :figclass: centre-fig
@@ -577,8 +577,8 @@ short-range cutoffs specified for the system:
    :label: link-cell_eq
 
    \begin{aligned}
-   M_{x} =& \texttt{ Nint} \left[ \frac{W_{x}/P_{x}}\texttt{ cutoff} \right] \nonumber \\
-   W_{x} =& \texttt{ MD~box~width~\perp~plane}(y,z) \label{link-cell} \\
+   M_{x} =& \texttt{ Nint} \left[ \frac{W_{x}}{P_{x}}\texttt{ cutoff} \right] \nonumber \\
+   W_{x} =& \texttt{ MD~box~width~$\perp$~plane}(y,z)  \\
    P_{x} =& \#(\texttt{ nodes})_{x\texttt{ -direction}}~~, \nonumber\end{aligned}
 
 where :math:`x`, :math:`y` and :math:`z` represent the directions along
@@ -605,7 +605,7 @@ speed-up inefficiency is expected when the ratio
    :label: R-factor_eq
 
    R = \frac{M_{x} \cdot M_{y} \cdot M_{z}}{(M_{x}+2)
-   \cdot (M_{y}+2) \cdot (M_{z}+2)-M_{x} \cdot M_{y} \cdot M_{z}} \label{R-factor}
+   \cdot (M_{y}+2) \cdot (M_{z}+2)-M_{x} \cdot M_{y} \cdot M_{z}} 
 
 is close to or drops below one. In such cases there are three strategies
 for improving the situation that can be used singly or in combination.

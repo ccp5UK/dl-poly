@@ -21,7 +21,7 @@ has the form:
 
    \underline{G}_{ij} \approx\ {1 \over 2} {\mu_{ij} \over \Delta t^{2}} \;
    {(d_{ij}^{2} - d_{ij}'^{2}) \over \underline{d}_{ij}^{o} \cdot
-   \underline{d}_{ij}'} \; \underline{d}_{ij}^{o}~~, \label{g12}
+   \underline{d}_{ij}'} \; \underline{d}_{ij}^{o}~~, 
 
 where: :math:`\mu_{ij}` is the reduced mass of the two atoms connected
 by the bond; :math:`\underline{d}_{ij}^{o}` and :math:`\underline{d}_{ij}'` are the
@@ -30,7 +30,7 @@ constrained bondlength; and :math:`\Delta t` is the :index:`Verlet<algorithm;Ver
 time step. It should be noted that this formula is an approximation
 only.
 
-.. figure:: ../Images/shake.svg
+.. figure:: ../Images/shake.png
    :width: 60%
    :class: vector-diagram
    :figclass: centre-fig
@@ -60,7 +60,7 @@ has the form as in :eq:`g12_eq` but missing the factor of a half:
 
    \underline{G}_{ij} \approx\ {\mu_{ij} \over \Delta t^{2}} \;
    {(d_{ij}^{2} - d_{ij}'^{2}) \over \underline{d}_{ij}^{o} \cdot
-   \underline{d}_{ij}'} \; \underline{d}_{ij}^{o}~~. \label{g121}
+   \underline{d}_{ij}'} \; \underline{d}_{ij}^{o}~~. 
 
 
 .. index:: 
@@ -89,7 +89,7 @@ simple to show that the constraint force has the form:
 
    \underline{B}_{ij} \approx\ {\mu_{ij} \over \Delta t} \;
    {\underline{d}_{ij} \cdot (\underline{v}_{j}-\underline{v}_{i}) \over
-   d_{ij}^{2}} \; \underline{d}_{ij}~~. \label{b12}
+   d_{ij}^{2}} \; \underline{d}_{ij}~~. 
 
 The velocity corrections can therefore be written as
 

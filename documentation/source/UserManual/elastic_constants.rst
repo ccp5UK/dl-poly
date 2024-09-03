@@ -10,12 +10,12 @@ DL_POLY_5 can utilise its on the fly correlator (see Section :ref:`correlation-f
 method :cite:`Clavier2017Computation` :cite:`Thompson2022General` :cite:`Pereverzev2022Isothermal`. The
 method calculates the elasticity tensor :math:`C_{\alpha\beta\mu\nu}` from the three contributing factors,
 
-.. math:: C_{\alpha\beta\mu\nu} &= \langle C^{B}_{\alpha\beta\mu\nu}\rangle \\&- \frac{V}{k_{\mathrm{B}}T}[\langle \sigma_{\alpha\beta} \sigma_{\alpha\beta}\rangle-\langle \sigma_{\alpha\beta}\rangle\langle \sigma_{\mu\nu}\rangle] \\&+ \frac{2Nk_{\mathrm{B}}T}{V}(\delta_{\alpha\mu} \delta_{\beta\nu}+\delta_{\alpha\nu}\delta_{\beta\mu}).\label{eq-elastic}
+.. math:: C_{\alpha\beta\mu\nu} &= \langle C^{B}_{\alpha\beta\mu\nu}\rangle \\&- \frac{V}{k_{\mathrm{B}}T}[\langle \sigma_{\alpha\beta} \sigma_{\alpha\beta}\rangle-\langle \sigma_{\alpha\beta}\rangle\langle \sigma_{\mu\nu}\rangle] \\&+ \frac{2Nk_{\mathrm{B}}T}{V}(\delta_{\alpha\mu} \delta_{\beta\nu}+\delta_{\alpha\nu}\delta_{\beta\mu}).
    :label: eq-elastic
 
 Where the first term is the Born term, which is defined for pair wise additive potentials :math:`U(r)` as
 
-.. math:: C^{B}_{\alpha\beta\mu\nu} = \frac{1}{V}\sum_{i, j \neq i}\biggl(\frac{\partial^{2} U(r^{ij})}{\partial {r^{ij}}^{2}}-\frac{1}{r^{ij}}\frac{\partial U(r^{ij})}{\partial r^{ij}}\biggr)\frac{r^{ij}_{\alpha} r^{ij}_{\beta} r^{ij}_{\mu} r^{ij}_{\nu}}{{r^{ij}}^{2}}.\label{eq-born}
+.. math:: C^{B}_{\alpha\beta\mu\nu} = \frac{1}{V}\sum_{i, j \neq i}\biggl(\frac{\partial^{2} U(r^{ij})}{\partial {r^{ij}}^{2}}-\frac{1}{r^{ij}}\frac{\partial U(r^{ij})}{\partial r^{ij}}\biggr)\frac{r^{ij}_{\alpha} r^{ij}_{\beta} r^{ij}_{\mu} r^{ij}_{\nu}}{{r^{ij}}^{2}}.
    :label: eq-born
 
 The second term is the stress-fluctuation term calculated from DL_POLY_5's on the fly correlator. And the final term is the 
@@ -59,7 +59,7 @@ The computable constants are
                         .        & .        & .        & C_{yzyz} & C_{yzzx} & C_{yzxy}\\ 
                         .        & .        & .        & .        & C_{zxzx} & C_{zxxy}\\
                         .        & .        & .        & .        & .        & C_{xyxy}
-          \end{matrix}\label{eq-constants}
+          \end{matrix}
    :label: eq-constants
 
 Output

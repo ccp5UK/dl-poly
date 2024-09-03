@@ -3,7 +3,7 @@
 The INPUT Files
 ===============
 
-.. figure:: ../Images/dlpoly_files.svg
+.. figure:: ../Images/dlpoly_files.png
     :alt: DL_POLY_4 input (left) and output (right) files.
     :width: 50%
     :name: input-files_fig
@@ -1080,7 +1080,7 @@ required, :math:`n`, these will not be processed by .
   although algorithms in DL_POLY_4 could in principle handle any
   high pole order summation, in practice, however, DL_POLY_4 will abort if
   the order is higher than hexadecapole (order 4)! For more information on
-  this functionality refer to Section :ref:`mpoles`.
+  this functionality refer to Section :ref:`mpoles-file`.
 
 Molecular details
 ~~~~~~~~~~~~~~~~~
@@ -1171,8 +1171,7 @@ defining individual molecules:
     indices for all atoms in the systems.
 
     **Note** that DL_POLY_4 determines which shell model to use by
-    scanning shells’ weights provided the FIELD file (see
-    Section :ref:`shell-models`). If all shells have
+    scanning shells’ weights provided the FIELD file. If all shells have
     zero weight the DL_POLY_4 will choose the relaxed shell model. If no
     shell has zero weight then DL_POLY_4 will choose the dynamical one.
     In case when some shells are massless and some are not DL_POLY_4 will
@@ -1290,26 +1289,26 @@ defining individual molecules:
     the molecule contains no flexible chemical bonds. See the note on the
     atomic indices appearing under the **shell** directive above.
 
-  .. list-table::
-    :header-rows: 1
-    :name: tether-table
+    .. list-table:: Tether Potentials
+      :header-rows: 1
+      :name: tether-table
 
-    * - Key 
-      - Potential Type 
-      - Variables 
-      - Functional Form
-    * - **harm** 
-      - Harmonic 
-      - :math:`k`
-      - :math:`U(r) = \frac{1}{2}~k~(r_{i}-r_{i}^{t=0})^{2}`
-    * - **rhrm** 
-      - Restraint 
-      - :math:`k`, :math:`r_{c}` 
-      - :math:`U(r) = \frac{1}{2}~k~(r_{i}-r_{i}^{t=0})^{2}` : :math:`|r_{i}-r_{i}^{t=0}| \le r_{c}` :math:`U(r) = \frac{1}{2}~k~r_{c}^{2}+k~r_{c}(|r_{i}-r_{i}^{t=0}|-r_{c})~:~|r_{i}-r_{i}^{t=0}|>r_{c}` 
-    * - **quar** 
-      - Quartic 
-      - :math:`k`, :math:`k'`, :math:`k''`
-      - :math:`U(r) = \frac{k}{2}~(r_{i}-r_{i}^{t=0})^{2}+\frac{k'}{3}~(r_{i}-r_{i}^{t=0})^{3}` :math:`+\frac{k''}{4}~(r_{i}-r_{i}^{t=0})^{4}`
+      * - Key 
+        - Potential Type 
+        - Variables 
+        - Functional Form
+      * - **harm** 
+        - Harmonic 
+        - :math:`k`
+        - :math:`U(r) = \frac{1}{2}~k~(r_{i}-r_{i}^{t=0})^{2}`
+      * - **rhrm** 
+        - Restraint 
+        - :math:`k`, :math:`r_{c}` 
+        - :math:`U(r) = \frac{1}{2}~k~(r_{i}-r_{i}^{t=0})^{2}` : :math:`|r_{i}-r_{i}^{t=0}| \le r_{c}` :math:`U(r) = \frac{1}{2}~k~r_{c}^{2}+k~r_{c}(|r_{i}-r_{i}^{t=0}|-r_{c})~:~|r_{i}-r_{i}^{t=0}|>r_{c}` 
+      * - **quar** 
+        - Quartic 
+        - :math:`k`, :math:`k'`, :math:`k''`
+        - :math:`U(r) = \frac{k}{2}~(r_{i}-r_{i}^{t=0})^{2}+\frac{k'}{3}~(r_{i}-r_{i}^{t=0})^{3}` :math:`+\frac{k''}{4}~(r_{i}-r_{i}^{t=0})^{4}`
 
 
 #.  **bonds n**
@@ -1337,7 +1336,6 @@ defining individual molecules:
       :header-rows: 1
       :name: bond-table
        
-
       * - Key 
         - Potential Type 
         - Variables 
@@ -1345,7 +1343,7 @@ defining individual molecules:
       * - **tab-tab** 
         - Tabulation 
         - 
-        - See tabulated potential Sections :ref:`bond-potentials` and :ref:`intra-tables` in TABBND file.
+        - See tabulated potential Section :ref:`intra-tables` in TABBND file.
       * - **harm-hrm** 
         - Harmonic 
         - :math:`k`, :math:`r_{0}`
@@ -1432,7 +1430,7 @@ defining individual molecules:
       * - **tab-tab**
         - Tabulation 
         - 
-        - see tabulated potential Sections :ref:`angle-potentials` and :ref:`intra-tables` in TABANG file
+        - see tabulated potential Section :ref:`intra-tables` in TABANG file
       * - **harm-hrm**
         - Harmonic 
         - :math:`k`
@@ -1538,7 +1536,7 @@ defining individual molecules:
         * - **tab** 
           - Tabulation 
           - 
-          - see tabulated potential Sections :ref:`dihedral-potentials`, :ref:`improper-dihedral-potentials` and :ref:`intra-tables`  in TABDIH file
+          - see tabulated potential Section :ref:`intra-tables`  in TABDIH file
         * - **cos** 
           - Cosine 
           - :math:`A`, :math:`\delta`, :math:`m`
@@ -1605,7 +1603,7 @@ defining individual molecules:
         * - **tab** 
           - Tabulation 
           - 
-          - see tabulated potential Sections :ref:`inversion-potentials` and :ref:`intra-tables` in TABINV file
+          - see tabulated potential Section :ref:`intra-tables` in TABINV file
         * - **harm** 
           - Harmonic 
           - :math:`k`, :math:`\phi_{0}` 
@@ -2245,7 +2243,7 @@ Table :numref:`(%s)<external-field-table>`.
 **Note:** only one type of field can be applied at a time.
 
 
-.. list-table::
+.. list-table:: External Fields
   :header-rows: 1 
   :name: external-field-table
   
@@ -2326,7 +2324,7 @@ Table :numref:`(%s)<external-field-table>`.
     \begin{aligned}
     \underline{F} =& q \; (\underline{v} \times \underline{H})~~~~~~\texttt{therefore}, \nonumber \\
     \left[H\right] =& \frac{\left[F\right]}{\left[q\right]~\left[v\right]} = \frac{\left[m\right]~\left[a\right]}{\left[q\right]~\left[v\right]} \nonumber \\
-    \left[H\right] =& \frac{\texttt{Dalton~Å/ps^{2}}}{\texttt{proton~Å/ps}} = \frac{\texttt{Dalton}}{\texttt{proton~ps}} \\ \label{external-field-units}
+    \left[H\right] =& \frac{\texttt{Dalton~Å/ps$^{2}$}}{\texttt{proton~Å/ps}} = \frac{\texttt{Dalton}}{\texttt{proton~ps}} \\ 
     \left[H\right] =& 1.037837512 \times 10^{4}~\texttt{Tesla} \\
     H(DL\_POLY) =& H(MKS)~1.037837512 \times 10^{4}~~. \nonumber
     \end{aligned}
@@ -3113,7 +3111,7 @@ The SETEVB File
 
 The file SETEVB is needed for EVB simulations. If this file is not
 found, the execution of DL_POLY_4 is aborted. See section
-:ref:`setevb` for a detailed explanation of the input
+:ref:`evb-users` for a detailed explanation of the input
 parameters for EVB calculations.
 
 .. [1]

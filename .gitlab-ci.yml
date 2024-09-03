@@ -208,7 +208,7 @@ testing-mpi-intel-paranoid:
   only:
     - merge_requests
 
-build-html:
+build-html-docs:
   image: alpine
   stage: doc
   script:
@@ -218,6 +218,23 @@ build-html:
     - cd documentation
     - python3 -m pip install -r requirements.txt 
     - make html
+  only:
+    - devel
+    - merge_requests
+
+build-pdf-docs:
+  image: listx/texlive:2020
+  stage: doc
+  script:
+    - apk --no-cache add py3-pip python3-dev
+    - apk --no-cache add make
+    - python3 -m venv doc && source ./doc/bin/activate
+    - cd documentation
+    - python3 -m pip install -r requirements.txt 
+    - source make-latex.sh
+  artifacts:
+    paths:
+      - documentation/build/latex/dl_poly.pdf
   only:
     - devel
     - merge_requests
