@@ -54,11 +54,12 @@ parser.add_argument('--verbose', action='store_true', help='verbose output')
 parser.add_argument('--save', action='store_true', help='save results')
 parser.add_argument('--name', type=str, default="", help="name of test to run, e.g. TESTXXX")
 parser.add_argument('--binary_dir', type=Path, default="", help="absolute path to repository binary dir")
+parser.add_argument('--src_dir', type=Path, default="", help="absolute path to the dlpoly source tree")
 args = parser.parse_args()
 
 verbose = args.verbose
 
-root_dir = args.binary_dir.parent.absolute()
+root_dir = args.src_dir.absolute()
 test_dir = args.binary_dir.absolute()/"Testing"
 ref_dir = root_dir/"data/reference"
 test_out_dir = test_dir/"TestsOut"

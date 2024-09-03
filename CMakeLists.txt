@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.15)
 project(DL_POLY Fortran)
 
 set(DLPOLY_VERSION_MAJOR "5")
@@ -329,7 +329,9 @@ endif()
 if(BUILD_TESTING)
   include(CTest)
   message(STATUS "Build with testing support support: make test")
-  find_package(PythonInterp 3.10 REQUIRED)
+
+  find_package(Python 3.10 COMPONENTS Interpreter REQUIRED)
+
   macro (do_test case)
 
     if (EXISTS ${CMAKE_SOURCE_DIR}/data/${case}.tar.xz)
@@ -364,10 +366,10 @@ if(BUILD_TESTING)
     
     if(WITH_MPI)
       add_test(NAME ${case}
-        COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/utils/run-test.py --exe "${CMAKE_BINARY_DIR}/bin/${target_name}" --mpi "${MPIEXEC} ${MPIEXEC_PREFLAGS} -n" --np "${MPI_NPROCS}" --name ${case} --verbose --binary_dir ${CMAKE_BINARY_DIR} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Testing/TestsOut/${case})
+        COMMAND ${Python_EXECUTABLE} ${CMAKE_SOURCE_DIR}/utils/run-test.py --exe "${CMAKE_BINARY_DIR}/bin/${target_name}" --mpi "${MPIEXEC} ${MPIEXEC_PREFLAGS} -n" --np "${MPI_NPROCS}" --name ${case} --verbose --binary_dir ${CMAKE_BINARY_DIR} --src_dir ${CMAKE_SOURCE_DIR} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Testing/TestsOut/${case}) 
     else()
       add_test(NAME ${case}
-        COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/utils/run-test.py --exe "${CMAKE_BINARY_DIR}/bin/${target_name}" --name ${case} --verbose --binary_dir ${CMAKE_BINARY_DIR} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Testing/TestsOut/${case})
+        COMMAND ${Python_EXECUTABLE} ${CMAKE_SOURCE_DIR}/utils/run-test.py --exe "${CMAKE_BINARY_DIR}/bin/${target_name}" --name ${case} --verbose --binary_dir ${CMAKE_BINARY_DIR} --src_dir ${CMAKE_SOURCE_DIR}  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Testing/TestsOut/${case})
     endif()
     set_tests_properties(${case} PROPERTIES PASS_REGULAR_EXPRESSION "Status: PASSED")
 
@@ -418,6 +420,13 @@ if(BUILD_TESTING)
     add_test(NAME ${id} COMMAND ${CMAKE_BINARY_DIR}/bin/${target_name} --test ${name})
     set_tests_properties(${id} PROPERTIES PASS_REGULAR_EXPRESSION "Status: PASSED")
   endforeach()
+
+  # Check for the dlpoly-py package in the specified python environment 
+  message(STATUS "Checking for dlpoly-py package in python environment...") 
+  execute_process(COMMAND ${Python_EXECUTABLE} -c "import dlpoly" RESULT_VARIABLE PyCHECK_EXIT_CODE OUTPUT_QUIET ERROR_QUIET)
+  if (NOT PyCHECK_EXIT_CODE EQUAL 0) 
+    message(WARNING "The required dlpoly-py package is not found in python environment (${Python_EXECUTABLE}). Please install dlpoly-py or use Python_ROOT variable to point to an environment containing the dlpoly-py package before running the test suite.")
+  endif() 
 
 else()
   message(STATUS "Build without testing target")
