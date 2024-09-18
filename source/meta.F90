@@ -393,6 +393,10 @@ Contains
         Call stats(ff)%init_born_calculate(comm)
       End Do
     End If
+    Do ff = 1, flow%NUM_FF
+      Call stats(ff)%check_collection_frequencies(comm)
+    End Do
+
     ! devel%l_his: generate HISTORY and exit gracefully
     If (devel%l_his) Then
       Call info('', .true.)
@@ -833,7 +837,10 @@ Contains
       Call read_system_parameters(params, flow, config(ff), thermo(ff), impa, minim(ff), &
                                   plume(ff), cons(ff), pmfs(ff), ttms(ff)%l_ttm)
 
-      stats%require_pp = flow%heat_flux .or. flow%write_per_particle
+      If (flow%heat_flux .or. flow%write_per_particle) Then
+        stats%pp_eng_str_frequency = stats%intsta
+        Print *, comm%idnode, stats%pp_eng_str_frequency
+      End If
       stats%elastic_constants = flow%elastic_constants
 
       Call correlation_deport_size(params, stats(ff))

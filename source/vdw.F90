@@ -1713,7 +1713,7 @@ Contains
         fiz = fiz + fz
 
 #ifndef HALF_HALO
-        If (jatm > config%natms .and. idi >= config%ltg(jatm) .and. .not. stats%collect_pp) &
+        If (jatm > config%natms .and. idi >= config%ltg(jatm) .and. .not. stats%collect_pp_eng_str) &
              eng = 0.0_wp
 
         If (jatm <= config%natms) Then
@@ -1752,7 +1752,7 @@ Contains
           strs6 = strs6 + yyt(mm) * fz
           strs9 = strs9 + zzt(mm) * fz
 
-          If (sec_deriv .and. Any(stats%born_calculate)) Then
+          If (sec_deriv .and. stats%collect_born .and. Any(stats%born_calculate)) Then
             ! ( U'' + 1/r^2 * (-U' * r) ) * 1/r^2
             x_temp = (/ xxt(mm), yyt(mm), zzt(mm) /)
             born_pre = (pot%delta + r_rsq * pot%gamma) * r_rsq
@@ -1771,7 +1771,7 @@ Contains
         End If
 #endif /* HALF_HALO */
 
-        If (stats%collect_pp) Then
+        If (stats%collect_pp_eng_str) Then
           x_temp = (/ xxt(mm), yyt(mm), zzt(mm) /)
           f_temp = (/ fx, fy, fz /)
           stress_temp_comp = calculate_stress( x_temp, f_temp  )
@@ -2008,7 +2008,7 @@ Contains
 #ifndef HALF_HALO
         End If
 #endif /* HALF_HALO */
-        If (stats%collect_pp) Then
+        If (stats%collect_pp_eng_str) Then
           x_temp = (/ xxt(mm), yyt(mm), zzt(mm) /)
           f_temp = (/ fx, fy, fz /)
           stress_temp_comp = calculate_stress( x_temp, f_temp  )

@@ -105,7 +105,8 @@ Module control
   Use rdfs,                     Only: rdf_type
   Use rsds,                     Only: rsd_type
   Use statistics,               Only: stats_type, observable, observable_velocity, &
-                                      character_to_observable, observable_heat_flux
+                                      character_to_observable, observable_heat_flux, &
+                                      observable_stress
   Use tersoff,                  Only: tersoff_type
   Use thermostat,               Only: &
                                       CONSTRAINT_NONE, CONSTRAINT_SEMI_ORTHORHOMBIC, &
@@ -1732,13 +1733,14 @@ Contains
     Integer,                Allocatable                 :: window(:), blocks(:), points(:)
     Class(observable),      Allocatable                 :: A, B
     Integer                                             :: buffer_size, i, &
-                                                           this_window, this_blocks, this_points
+                                                           this_window, this_blocks, &
+                                                           this_points
     Character(Len=STR_LEN)                              :: a_name, b_name
 
-    Call params%retrieve('correlation_observable',option, required=.false.)
-    Call params%retrieve("correlation_blocks",blocks,required=.false.)
-    Call params%retrieve("correlation_block_points",points,required=.false.)
-    Call params%retrieve("correlation_window",window,required=.false.)
+    Call params%retrieve('correlation_observable', option, required=.false.)
+    Call params%retrieve("correlation_blocks", blocks, required=.false.)
+    Call params%retrieve("correlation_block_points", points, required=.false.)
+    Call params%retrieve("correlation_window", window, required=.false.)
 
     buffer_size = 0
 
@@ -1813,24 +1815,31 @@ Contains
     Type(configuration_type),    Intent(InOut) :: config
 
     Integer                              :: this_window, this_blocks, &
-                                            this_points, i
-    Integer, Allocatable                 :: window(:), blocks(:), points(:)
+                                            this_points, this_freq, i
+    Integer, Allocatable                 :: window(:), blocks(:), points(:), freq(:)
     Character(Len=STR_LEN), Allocatable  :: option(:)
     Character(Len=STR_LEN)               :: a_name, b_name
     Class(observable),      Allocatable  :: A, B
     Type(observable_heat_flux)           :: h
+    Type(observable_stress)              :: s
+    Integer                              :: hid, sid
+
+    hid = h%id()
+    sid = s%id()
 
     Call params%retrieve('correlation_observable',option, required=.false.)
+    Call params%retrieve("correlation_update_frequency", freq, required=.false.)
 
     Do i = 1,Size(option)
+      this_freq = stats%intsta
+      If (i <= Size(freq)) Then
+        this_freq = stats%intsta
+      End If
+      If (this_freq <= 0) Cycle
 
       Call parse_correlation_observable(option(i), a_name, b_name)
       Call character_to_observable(a_name, A)
       Call character_to_observable(b_name, B)
-
-      If (A%id() == h%id() .or. B%id() == h%id()) Then
-       stats%require_pp = .true.
-      End If
 
       If (A%per_atom() .or. B%per_atom()) Then
         stats%number_of_correlations = stats%number_of_correlations + config%natms
@@ -1857,6 +1866,7 @@ Contains
       this_blocks = DEFAULT_BLOCKS
       this_points = DEFAULT_POINTS
       this_window = DEFAULT_WINDOW
+      this_freq = stats%intsta
 
       If (i <= Size(blocks)) Then
         this_blocks = blocks(i)
@@ -1870,15 +1880,35 @@ Contains
         this_window = window(i)
       End If
 
+      If (i <= Size(freq)) Then
+        this_freq = freq(i)
+      End If
+
       If (this_points < this_window) Then
         Call error(0, "points per block less than window size")
+      End If
+
+      If (A%id() == hid .or. B%id() == hid) Then
+        If (stats%pp_eng_str_frequency == 0) Then
+          stats%pp_eng_str_frequency = Min(stats%intsta, this_freq)
+        Else
+          stats%pp_eng_str_frequency = Min(stats%pp_eng_str_frequency, this_freq)
+        End If
+      End If
+
+      If (stats%elastic_constants .and. A%id() == sid .and. B%id() == sid) Then
+        If (stats%born_frequency == 0) Then
+          stats%born_frequency = Min(stats%intsta, this_freq)
+        Else
+          stats%born_frequency = Min(stats%born_frequency, this_freq)
+        End If
       End If
 
       Call parse_correlation_observable(option(i), a_name, b_name)
       Call character_to_observable(a_name,A)
       Call character_to_observable(b_name,B)
       Call stats%init_correlator(A%per_atom() .or. B%per_atom(), config, comm, &
-        this_blocks, this_points, this_window, A, B)
+        this_blocks, this_points, this_window, this_freq, A, B)
 
     End Do
 
@@ -2570,6 +2600,16 @@ Contains
                          units="", &
                          internal_units="", &
                          description="correlation window averaging", &
+                         data_type=DATA_INT_VECTOR, &
+                         variable_length=.true.))
+
+          Call table%set("correlation_update_frequency", control_parameter( &
+                         key="correlation_update_frequency", &
+                         name="correlation update frequency", &
+                         val="", &
+                         units="steps", &
+                         internal_units="steps", &
+                         description="correlation update frequency", &
                          data_type=DATA_INT_VECTOR, &
                          variable_length=.true.))
 

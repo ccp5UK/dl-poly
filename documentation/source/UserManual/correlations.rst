@@ -55,7 +55,9 @@ averages. Three parameters control this **correlation_blocks**,
 **correlation_block_points**and **correlation_window** (written in
 terms of CONTROL directives). These control the number of hierarchical
 blocks, the number of distinct points within each block, and the length
-of an averaging window between blocks respectively.
+of an averaging window between blocks respectively. A fourth parameter 
+**correlation_update_frequency** controls how frequently each correlation 
+is updated (the default is to follow **stats_frequency**).
 
 In more detail, given an empty correlator, as new data is submitted to
 it a sum is accumulated and the data points held in temporary storage.
@@ -117,9 +119,27 @@ In the (new style) CONTROL (see Section :ref:`new-control-file`)
 correlations are specified by an array of observable pairs in the format
 **A_CA-B_CB** where **A** and **B** are observables and **CA** and **CB** 
 are components of those observables. These values may be STATIS records 1-27, e.g. ``volume``, (see
-Section :ref:`statis-records`).
-Or may take the forms listed in Table :numref:`(%s)<tab-cor-control>` where long and 
-short form can be mixed. For example to compute the VAF 
+Section :ref:`statis-records`). Or may take the forms listed in 
+Table :numref:`(%s)<tab-cor-control>` where long and short form can be mixed. 
+Correlation options can be specified for each pair of observables separately, these
+options are listed in Table :numref:`(%s)<tab-cor-options>`
+
+.. _tab-cor-options:
+
+.. table:: 
+      User control directives for correlation options. All are vector options.
+
+   ================================ ============== ===============================================
+   Option                           Type           Purpose                  
+   ================================ ============== ===============================================
+   **correlation_observable**       String Vector  Set correlation observables See Table :numref:`(%s)<tab-cor-control>`
+   **correlation_block_points**     Integer Vector Set correlation points per block
+   **correlation_blocks**           Integer Vector Set correlation blocks
+   **correlation_window**           Integer Vector Set averaging between block
+   **correlation_update_frequency** Integer Vector Set update frequency in steps
+   ================================ ============== ===============================================
+
+For example to compute the VAF 
 (across all dimensions) and SAF along just **xy** one may write,
 
 ::

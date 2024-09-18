@@ -180,7 +180,7 @@ Contains
     config%parts(2)%xxx = 1.0_wp
     config%ltype = 1
 
-    stats%collect_pp = .false.
+    stats%collect_pp_eng_str = .false.
 
   end Subroutine setup_fake_system
 

@@ -313,7 +313,7 @@ Contains
           End If
 #endif /* HALF_HALO */
 
-          If (stats%collect_pp) Then
+          If (stats%collect_pp_eng_str) Then
             x_temp = (/ xxt(m), yyt(m), zzt(m) /)
             f_temp = (/ fx, fy, fz /)
             stress_temp_comp = calculate_stress( x_temp, f_temp  )
@@ -530,7 +530,7 @@ Contains
           End If
 #endif /* HALF_HALO */
 
-          If (stats%collect_pp) Then
+          If (stats%collect_pp_eng_str) Then
             x_temp = (/ xxt(m), yyt(m), zzt(m) /)
             f_temp = (/ fx, fy, fz /)
             stress_temp_comp = calculate_stress( x_temp, f_temp  )
@@ -690,7 +690,7 @@ Contains
           End If
 #endif /* HALF_HALO */
 
-          If (stats%collect_pp) Then
+          If (stats%collect_pp_eng_str) Then
             x_temp = (/ xxt(m), yyt(m), zzt(m) /)
             f_temp = (/ fx, fy, fz /)
             stress_temp_comp = calculate_stress( x_temp, f_temp  )
@@ -858,7 +858,7 @@ Contains
           End If
 #endif /* HALF_HALO */
 
-          If (stats%collect_pp) Then
+          If (stats%collect_pp_eng_str) Then
             x_temp = (/ xxt(m), yyt(m), zzt(m) /)
             f_temp = (/ fx, fy, fz /)
             stress_temp_comp = calculate_stress( x_temp, f_temp  )

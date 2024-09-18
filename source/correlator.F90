@@ -109,6 +109,7 @@ Module correlators
     Integer,                       Intent(In   ) :: size_of
 
     Allocate (this%buffer(size_of))
+    this%buffer = 0.0_wp
     Call this%mpi%init(comm)
   End Subroutine initialise_correlator_buffer_type
 
@@ -128,6 +129,7 @@ Module correlators
     Integer,                       Intent(In   ) :: size_of
 
     Allocate (this%buffer(size_of))
+    this%buffer = 0
     Call this%mpi%init(comm)
   End Subroutine initialise_indices_buffer_type
 
@@ -335,7 +337,7 @@ Module correlators
       + blocks*points*2                &
       + blocks                         &
       + blocks*points*2                &
-      + blocks*points+3    
+      + blocks*points+4
   End Function correlator_buffer_size
 
   Subroutine allocate_correlator_arrays(this, number_of_blocks, &

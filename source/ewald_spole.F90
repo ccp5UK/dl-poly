@@ -152,7 +152,7 @@ Contains
         force_temp = force_temp + force_temp_comp
 
 #ifndef HALF_HALO
-        If (jatm <= config%natms .or. global_id_i < global_id_j .or. stats%collect_pp) Then
+        If (jatm <= config%natms .or. global_id_i < global_id_j .or. stats%collect_pp_eng_str) Then
           If (jatm <= config%natms) Then
 #endif /* HALF_HALO */
 
@@ -202,7 +202,7 @@ Contains
         End If
 #endif /* HALF_HALO */
 
-        If (stats%collect_pp) Then
+        If (stats%collect_pp_eng_str) Then
           stress_temp_comp = calculate_stress(pos_j, force_temp_comp)
           stats%pp_energy(iatm) = stats%pp_energy(iatm) + e_comp * 0.5_wp
           stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
@@ -312,7 +312,7 @@ Contains
     Allocate (to_calc(0:config%nlast), stat=fail(3))
 
     ! If not per-particle only need global sum, else need everything
-    If (.not. stats%collect_pp) Then
+    If (.not. stats%collect_pp_eng_str) Then
       Allocate (Q_abc(0:0), F_abc(3, config%natms), S_abc(9, 0:0), stat=fail(4))
     Else
       Allocate (Q_abc(0:config%natms), F_abc(3, config%natms), S_abc(9, 0:config%natms), stat=fail(4))
@@ -404,12 +404,12 @@ Contains
 
     Call spme_construct_charge_array(to_calc(0), ewld, to_calc(1:), ewld%kspace%recip_indices, coeffs, ewld%kspace%charge_grid)
 
-    If (.not. stats%collect_pp) Then
+    If (.not. stats%collect_pp_eng_str) Then
 
       ! If we don't need per-particle data, we can use the old method of getting the stress (cheaper)
       Call spme_construct_potential_grid_coul(ewld, rcell, ewld%kspace%charge_grid, ewld%kspace%potential_grid, s_abc(:, 0))
       Call spme_calc_force_energy(ewld, comm, domain, config, coeffs, &
-        & rcell, ewld%kspace%recip_indices, ewld%kspace%potential_grid, stats%collect_pp, q_abc, f_abc)
+        & rcell, ewld%kspace%recip_indices, ewld%kspace%potential_grid, stats%collect_pp_eng_str, q_abc, f_abc)
 
     Else
 
@@ -418,7 +418,7 @@ Contains
         spme_datum, stress_kernel, ewld%kspace%stress_grid)
 
       Call spme_calc_force_energy(ewld, comm, domain, config, coeffs, &
-        & rcell, ewld%kspace%recip_indices, ewld%kspace%potential_grid, stats%collect_pp, q_abc, f_abc)
+        & rcell, ewld%kspace%recip_indices, ewld%kspace%potential_grid, stats%collect_pp_eng_str, q_abc, f_abc)
 
       Call spme_calc_stress(ewld, comm, domain, config, coeffs, &
         & rcell, ewld%kspace%recip_indices, ewld%kspace%stress_grid, s_abc)
@@ -461,7 +461,7 @@ Contains
     stats%stress = stats%stress + stress_temp
     vircpe_rc = -Sum(stress_temp(1:9:4))
 
-    If (stats%collect_pp) Then
+    If (stats%collect_pp_eng_str) Then
       stats%pp_energy = stats%pp_energy + Q_abc(1:) + comm%mxnode * spme_datum%self_interaction / config%megatm
       stats%pp_stress = stats%pp_stress + S_abc(:, 1:)
     End If

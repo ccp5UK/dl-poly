@@ -2815,7 +2815,7 @@ Contains
       Else If (word(1:9) == 'heat_flux') Then
 
         flow%heat_flux = .true.
-        stats%require_pp = .true.
+        stats%pp_eng_str_frequency = stats%intsta
         Write (message, '(a)') 'Writing heat flux data'
 
         ! Read Per-particle write
@@ -2823,7 +2823,7 @@ Contains
       Else If (word(1:7) == 'pp_dump') Then
 
         flow%write_per_particle = .true.
-        stats%require_pp = .true.
+        stats%pp_eng_str_frequency = stats%intsta
         Write (message, '(a)') 'Writing per-particle data'
 
         ! read MSDTMP printing option
