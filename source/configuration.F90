@@ -2228,6 +2228,12 @@ Contains
 
     Call get_word(record, word)
     config%scanned_megatm = word_2_integer(word)
+
+    If (config%scanned_megatm /= megatm) Then
+      Write(message, '(2(a, i0))') "Inconsistent atom count in CONFIG: ", &
+        config%scanned_megatm, ", vs. FIELD: ", megatm
+      Call error(0, message)
+    End If
    
     If (config%scanned_megatm > max_megatm) Then 
       Write(message, '(a, i0)') "scanned atoms: ", config%scanned_megatm
