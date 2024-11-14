@@ -53,7 +53,7 @@ Module DLPOLYModule
                                                     init_comms
   Use configuration,                          Only: configuration_type
   Use constraints,                            Only: constraints_type
-  Use control,                                Only: read_simtype
+  Use old_control,                            Only: read_simtype
   Use control_parameters,                     Only: dump_parameters,&
                                                     parameters_hash_table
   Use coord,                                  Only: coord_type
@@ -89,8 +89,8 @@ Module DLPOLYModule
   Use mpole,                                  Only: mpole_type
   Use msd,                                    Only: msd_type
   Use neighbours,                             Only: neighbours_type
-  Use new_control,                            Only: initialise_control,&
-                                                    read_new_control
+  Use control,                                Only: initialise_control,&
+                                                    read_control
   Use numerics,                               Only: seed_type
   Use plumed,                                 Only: plumed_type
   Use pmf,                                    Only: pmf_type
@@ -108,13 +108,16 @@ Module DLPOLYModule
   Use trajectory,                             Only: trajectory_type
   Use ttm,                                    Only: ttm_type
   Use unit_test,                              Only: testing_type
-  Use units,                                  Only: initialise_units
+  Use units,                                  Only: initialise_units, &
+                                                    destroy_units
   Use vdw,                                    Only: vdw_type
   Use z_density,                              Only: z_density_type
+  Use constants,                              Only: DLP_VERSION, &
+                                                    DLP_RELEASE
 #ifdef NVIDIA
   Use constants,                              Only: wp, &
                                                     half_minus, &
-                                                    half_plus
+                                                    half_plus, &
 #endif
 
 
@@ -210,6 +213,7 @@ Module DLPOLYModule
   Call gbcast(dlp_world(0), finish, 0)
   If (finish) Then
 ! YL: do not let it kill the process (`stop`)
+    Call destroy_units()
     Call exit_external_comms(dlp_world)
 !    Stop 0
   End If
@@ -224,9 +228,9 @@ Module DLPOLYModule
 
   ! Temporary error system
   Call init_error_system(eu, dlp_world(0))
-  Call read_new_control(files(1, FILE_CONTROL), params, dlp_world(0), devel(1)%new_control)
+  Call read_control(files(1, FILE_CONTROL), params, dlp_world(0), devel(1)%old_control)
 
-  If (devel(1)%new_control) Then
+  If (.not. devel(1)%old_control) Then
     Call params%retrieve('simulation_method', option)
     Select Case (option)
     Case ('md')
@@ -272,7 +276,8 @@ Module DLPOLYModule
 
   Do ff = 1, flow(1)%NUM_FF
       If (dlp_world(0)%idnode == 0) Then
-          dl_poly_energy = stats(ff)%engcpe + stats(ff)%engsrp + stats(ff)%engtbp + stats(ff)%engbnd + stats(ff)%engang + stats(ff)%engdih + stats(ff)%enginv
+          dl_poly_energy = stats(ff)%engcpe + stats(ff)%engsrp + stats(ff)%engtbp + stats(ff)%engbnd + stats(ff)%engang + &
+                           stats(ff)%engdih + stats(ff)%enginv + stats(ff)%engshl
           ! Print the energy breakdown
           Call print_energies(stats(ff))
       End If
@@ -498,18 +503,19 @@ Module DLPOLYModule
     Write(*,'(A,F23.14,1X,F25.14)') " Dihedral    (engdih) ", stats%engdih*ten_j_per_mol_to_hartree, stats%engdih*ten_j_per_mol_to_kcal_per_mol
     ! inversion
     Write(*,'(A,F23.14,1X,F25.14)') " Inversion   (enginv) ", stats%enginv*ten_j_per_mol_to_hartree, stats%enginv*ten_j_per_mol_to_kcal_per_mol
+    ! core-shell
+    Write(*,'(A,F23.14,1X,F25.14)') " Core-shell  (engshl) ", stats%engshl*ten_j_per_mol_to_hartree, stats%engshl*ten_j_per_mol_to_kcal_per_mol
     ! engstbnd, enganan, engaat, engub missing in this formula
     Write(*,'(A)') " (Not including engstbnd, enganan, engaat, or engub)"
     Write(*,*)
     Write(*,'(A,F23.14,1X,F25.14)') " Total                ", dl_poly_energy*ten_j_per_mol_to_hartree, dl_poly_energy*ten_j_per_mol_to_kcal_per_mol
-    Write(*,'(A)') " (engcpe + engsrp + engtbp + engbnd + engang + engdih + enginv)"
+    Write(*,'(A)') " (engcpe + engsrp + engtbp + engbnd + engang + engdih + enginv + engshl)"
     Write(*,*)
     Write(*,'(A)') " Other terms:"
     Write(*,'(31X,A,17X,A)') " a.u.", "kcal/mol"
     Write(*,'(A,F23.14,1X,F25.14)') " Kinetics    (engke)  ", stats%engke *ten_j_per_mol_to_hartree, stats%engke *ten_j_per_mol_to_kcal_per_mol
     Write(*,'(A,F23.14,1X,F25.14)') " Tersoff     (engter) ", stats%engter*ten_j_per_mol_to_hartree, stats%engter*ten_j_per_mol_to_kcal_per_mol
     Write(*,'(A,F23.14,1X,F25.14)') " 4-body      (engfbp) ", stats%engfbp*ten_j_per_mol_to_hartree, stats%engfbp*ten_j_per_mol_to_kcal_per_mol
-    Write(*,'(A,F23.14,1X,F25.14)') " Core-shell  (engshl) ", stats%engshl*ten_j_per_mol_to_hartree, stats%engshl*ten_j_per_mol_to_kcal_per_mol
     Write(*,'(A,F23.14,1X,F25.14)') " Tether      (engtet) ", stats%engtet*ten_j_per_mol_to_hartree, stats%engtet*ten_j_per_mol_to_kcal_per_mol
     Write(*,'(A,F23.14,1X,F25.14)') " Field       (engfld) ", stats%engfld*ten_j_per_mol_to_hartree, stats%engfld*ten_j_per_mol_to_kcal_per_mol
   End Subroutine
