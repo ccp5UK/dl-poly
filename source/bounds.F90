@@ -1045,7 +1045,7 @@ Contains
         config%mxbfss = 2 * (6 + stats%mxstak)
       End If
 
-      domain%mxbfdp = domain%mxbfdp + (1 + stats%cor_deport_buffer)
+      domain%mxbfdp = domain%mxbfdp + (1 + stats%cor_deport_buffer*2) ! mxbfdp counts for send/rec, stats%cor_deport_buffer is used both ways
 
       domain%mxbfdp = config%mxatdm * domain%mxbfdp
       config%mxbfss = config%mxatdm * config%mxbfss
