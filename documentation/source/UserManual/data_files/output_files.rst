@@ -1078,3 +1078,53 @@ position, at set intervals. This procedure is described in reference
 
 ADFDAT is statistics file containing the angular distributions for the
 atom pairs specified.
+
+.. _currents-file_sec:
+
+The CURRENTS file
+-----------------
+
+When currents are calculated a CURRENTS file will contain the
+values of density, transverse and longitudinal mometum currents, and
+energy currents for each time step (subject to **stats_frequency**), and
+each atom type. See sections :ref:`currents` and :ref:`kpoints-file_sec`.
+
+The format will depend on new CONTROL directive **io_statis_yaml**. See section
+:ref:`currents` for an example of the YAML format.
+
+For the plain text format the CURRENTS file will be formed 
+of a series of blocks with the following structure
+
+.. parsed-literal::
+
+  **record 1:**
+  ``t``     real     simulation time (step*timestep)
+  ``type``  a        1st atom type name
+  ``x1_r``  real     1st kpoint's (real part) x component
+  ``x1_i``  real     1st kpoint's (complex part) x component
+  ``y1_r``  real     1st kpoint's (real part) y component
+  ``y1_i``  real     1st kpoint's (complex part) y component
+  ``z1_r``  real     1st kpoint's (real part) z component
+  ``z1_i``  real     1st kpoint's (complex part) z component
+  ...
+  ``zn_r``  real     nth kpoint's (real part) z component
+  ``zn_i``  real     nth kpoint's (complex part) z component
+  ...
+  **record l:**
+  ``t``     real     simulation time (step*timestep)
+  ``type``  a        lth atom type name
+  ``x1_r``  real     1st kpoint's (real part) x component
+  ``x1_i``  real     1st kpoint's (complex part) x component
+  ``y1_r``  real     1st kpoint's (real part) y component
+  ``y1_i``  real     1st kpoint's (complex part) y component
+  ``z1_r``  real     1st kpoint's (real part) z component
+  ``z1_i``  real     1st kpoint's (complex part) z component
+  ...
+  ``zn_r``  real     nth kpoint's (real part) z component
+  ``zn_i``  real     nth kpoint's (complex part) z component
+
+By default for each time and atom type there will be three such 
+records. The first being the density, the second the longitudinal
+momentum current, and the third the transverse momentum current. 
+If **energy_currents On** is specified there will be a fourth 
+record for energy currents.

@@ -837,9 +837,8 @@ Contains
       Call read_system_parameters(params, flow, config(ff), thermo(ff), impa, minim(ff), &
                                   plume(ff), cons(ff), pmfs(ff), ttms(ff)%l_ttm)
 
-      If (flow%heat_flux .or. flow%write_per_particle) Then
+      If (flow%heat_flux .or. flow%write_per_particle .or. stats(ff)%cur%on) Then
         stats%pp_eng_str_frequency = stats%intsta
-        Print *, comm%idnode, stats%pp_eng_str_frequency
       End If
       stats%elastic_constants = flow%elastic_constants
 

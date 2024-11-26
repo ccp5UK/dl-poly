@@ -158,6 +158,7 @@ Module comms
 
     Module Procedure gcsum_vector
     Module Procedure gcsum_matrix
+    Module Procedure gcsum_matrix3
   End Interface !gsum
 
   Interface gmax
@@ -847,6 +848,60 @@ Contains
     End If
 
   End Subroutine gcsum_matrix
+
+  Subroutine gcsum_matrix3(comm, aaa)
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 global summation subroutine - complex matrix Dim=3
+    !                                         version
+    !
+    ! copyright - daresbury laboratory
+    ! author    - h.l.devereux August 2023
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type(comms_type),                     Intent(InOut) :: comm
+    Complex(Kind=wp), Dimension(:, :, :), Intent(InOut) :: aaa
+
+    Integer                                     :: fail, n_l1, n_l2, n_l3, &
+                                                   n_s, n_u1, n_u2, n_u3
+    ! NB OpenMP complains about 2d buffers being passed:
+    !   Error: There is no specific subroutine for the generic ‘mpi_allreduce’ at (1)
+    ! So we flatten the matrix
+    Complex(Kind=wp), Allocatable, Dimension(:) :: bbb
+
+    If (comm%mxnode == 1) Return
+
+    n_l1 = Lbound(aaa, Dim=1)
+    n_u1 = Ubound(aaa, Dim=1)
+
+    n_l2 = Lbound(aaa, Dim=2)
+    n_u2 = Ubound(aaa, Dim=2)
+
+    n_l3 = Lbound(aaa, Dim=3)
+    n_u3 = Ubound(aaa, Dim=3)
+
+    fail = 0
+    Allocate (bbb(Size(aaa,1)*Size(aaa,2)*Size(aaa,3)), Stat=fail)
+    If (fail > 0) Then
+      Write (comm%ou, '(/,1x,a)') 'error - allocation failure in comms -> gcsum_matrix'
+      Call abort_comms(comm, 0)
+    End If
+
+    n_s = Size(aaa)
+
+    Call MPI_ALLREDUCE(Reshape(aaa,Shape(bbb)), bbb, n_s, MPI_DOUBLE_COMPLEX, MPI_SUM, comm%comm, comm%ierr)
+
+    aaa = Reshape(bbb, Shape(aaa))
+
+    Deallocate (bbb, Stat=fail)
+    If (fail > 0) Then
+      Write (comm%ou, '(/,1x,a)') 'error - deallocation failure in comms -> gcsum_matrix'
+      Call abort_comms(comm, 0)
+    End If
+
+  End Subroutine gcsum_matrix3
 
   Subroutine grsum_scalar(comm, aaa)
 

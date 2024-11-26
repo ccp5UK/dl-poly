@@ -1969,6 +1969,9 @@ Contains
     Call params%retrieve('print_topology_info', flow%print_topology)
 
     Call params%retrieve('currents_calculate', stats%cur%on)
+    If (stats%cur%on) Then
+      Call params%retrieve('energy_stress_currents', stats%cur%k_energy_stress_current_on)
+    End If
 
     Call params%retrieve('io_statis_yaml', stats%file_yaml)
 
@@ -2927,6 +2930,13 @@ Contains
                        name="Calculate currents", &
                        val="off", &
                        description="Enable calculation of currents", &
+                       data_type=DATA_BOOL))
+
+        Call table%set("energy_stress_currents", control_parameter( &
+                       key="energy_stress_currents", &
+                       name="Calculate energy current and k-dependent stress", &
+                       val="off", &
+                       description="Enable calculation of energy currents and k-dependent stress", &
                        data_type=DATA_BOOL))
 
       End block statistics

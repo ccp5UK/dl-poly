@@ -56,6 +56,7 @@ User Manual
    /UserManual/integration_algs/integration_algorithms
    /UserManual/coarse_graining
    /UserManual/ttm
+   /UserManual/currents
    /UserManual/heat_flux
    /UserManual/elastic_constants
    /UserManual/correlations

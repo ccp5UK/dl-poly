@@ -54,7 +54,8 @@ Module vdw
                                       sanderson, MDF, ljf, mlj, &
                                       mbuck, mlj126, sw
   Use site,                      Only: site_type
-  Use statistics,                Only: stats_type, calculate_stress
+  Use statistics,                Only: stats_type, &
+                                       calculate_stress 
   Use units,                     Only: to_out_units
   Implicit None
 
@@ -1611,13 +1612,14 @@ Contains
     Type(configuration_type),                   Intent(InOut) :: config
     Logical,                                    Intent(In   ) :: sec_deriv
 
-    Integer                 :: ai, aj, idi, ityp, jatm, k, key, mm, i, a, b, c, d
+    Integer                 :: ai, aj, idi, ityp, jatm, k, key, mm, i, a, b, c, d, kpoint
     Real(Kind=wp)           :: eng, gamma, delta
     Real(Kind=wp)           :: fix, fiy, fiz, fx, fy, fz
     Real(Kind=wp)           :: r_rrr, r_rrv, r_rsq, r_rvdw, rrr, rscl, rsq
     Real(Kind=wp)           :: strs1, strs2, strs3, strs5, strs6, strs9
     Real(Kind=wp)           :: stress_temp_comp(9), born_pre
-    Real(Kind=wp)           :: x_temp(3), f_temp(3)
+    Real(Kind=wp)           :: x_temp(3), f_temp(3), vi_temp(3), vj_temp(3)
+    Complex(Kind=wp)        :: cur_vir(3), cur_str(6)
     Type(potential_energy)  :: pot
     ! define grid resolution for potential arrays and interpolation spacing
 
@@ -1777,11 +1779,13 @@ Contains
           stress_temp_comp = calculate_stress( x_temp, f_temp  )
           stats%pp_energy(iatm) = stats%pp_energy(iatm) + eng * 0.5_wp
           stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
+          Call stats%calculate_stress_energy_current(config, iatm, jatm, x_temp, r_rsq, gamma)
 #ifndef HALF_HALO
           If (jatm <= config%natms) Then
 #endif /* HALF_HALO */
             stats%pp_energy(jatm) = stats%pp_energy(jatm) + eng * 0.5_wp
             stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
+            Call stats%calculate_stress_energy_current(config, jatm, iatm, -x_temp, r_rsq, -1.0_wp*gamma)
 #ifndef HALF_HALO
           End If
 #endif /* HALF_HALO */
@@ -2014,11 +2018,13 @@ Contains
           stress_temp_comp = calculate_stress( x_temp, f_temp  )
           stats%pp_energy(iatm) = stats%pp_energy(iatm) + eng * 0.5_wp
           stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
+          Call stats%calculate_stress_energy_current(config, iatm, jatm, x_temp, r_rsq, gamma)
 #ifndef HALF_HALO
           If (jatm <= config%natms) Then
 #endif /* HALF_HALO */
             stats%pp_energy(jatm) = stats%pp_energy(jatm) + eng * 0.5_wp
             stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
+            Call stats%calculate_stress_energy_current(config, iatm, jatm, x_temp, r_rsq, gamma)
 #ifndef HALF_HALO
           End If
 #endif /* HALF_HALO */

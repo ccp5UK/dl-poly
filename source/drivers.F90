@@ -2150,15 +2150,6 @@ Contains
 !!$#endif
       Endif
 
-      ! If there was per-particle data collect this step, ff==1/root outputs
-      Do ff = 1, flow%NUM_FF
-        If (ff == 1) Then
-          Call stat(ff)%pp_result(cnfig(ff), comm, flow, files=files)
-        Else 
-          Call stat(ff)%pp_result(cnfig(ff), comm, flow)
-        End If
-      End Do
-
       ! Calculate physical quantities, collect statistics and report at t=0
       If (flow%step == 0) Then
         Do ff = 1, flow%NUM_FF
@@ -2227,6 +2218,15 @@ Contains
         Do ff = 1, flow%NUM_FF
           Call statistics_report(cnfig(ff), ttm(ff), cshell(ff), cons(ff), pmf(ff), stat(ff), msd_data(ff), zdensity, &
                                  sites(ff), domain(ff), flow, files, thermo(ff), tmr, green(ff), minim(ff), comm, ff)
+        End Do
+
+        ! If there was per-particle data collect this step, ff==1/root outputs
+        Do ff = 1, flow%NUM_FF
+          If (ff == 1) Then
+            Call stat(ff)%pp_result(cnfig(ff), comm, flow, files=files)
+          Else
+            Call stat(ff)%pp_result(cnfig(ff), comm, flow)
+          End If
         End Do
 
         ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT

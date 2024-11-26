@@ -234,6 +234,12 @@ Module statistics
     !> Store for per-particle stress data
     Real(Kind=wp), Allocatable         :: pp_stress(:, :)
 
+    !> Store for per-particle current virial contribution, natms, KPOINTS, 1:3
+    Complex(Kind=wp), Allocatable      :: pp_cur_virial(:,:,:)
+
+    !> Store for per-particle k-dependent stress tensor, natms, KPOINTS, 1:6
+    Complex(Kind=wp), Allocatable      :: pp_cur_stress(:,:,:)
+    
     !> Whether this step is a step to collect per-particle data
     Logical :: collect_pp_eng_str = .false.
     Logical :: collect_born = .false.
@@ -271,6 +277,7 @@ Module statistics
     Procedure, Public :: dump_correlations 
     Procedure, Public :: revive_correlations
     Procedure, Public :: check_collection_frequencies
+    Procedure, Public :: calculate_stress_energy_current
 
     Procedure         :: allocate_per_particle_arrays
     Procedure         :: deallocate_per_particle_arrays
@@ -535,13 +542,25 @@ Contains
     Integer :: fail
 
     If (.not. Allocated(stats%pp_energy)) Then
-      Allocate (stats%pp_energy(natms), stat=fail)
+      Allocate(stats%pp_energy(natms), stat=fail)
       If (fail > 0) Call error_alloc("stats%pp_energy", "statistics")
     End If
 
     If (.not. Allocated(stats%pp_stress)) Then
-      Allocate (stats%pp_stress(9, natms), stat=fail)
+      Allocate(stats%pp_stress(9, natms), stat=fail)
       If (fail > 0) Call error_alloc("stats%pp_stress", "statistics")
+    End If
+
+    If ((.not. Allocated(stats%pp_cur_virial)) .and. stats%cur%k_energy_stress_current_on) Then
+      Allocate(stats%pp_cur_virial(1:natms, 1:stats%cur%nkpoints, 1:3), stat=fail)
+      If (fail > 0) Call error_alloc("stats%pp_cur_virial", "statistics")
+      stats%pp_cur_virial = Cmplx(0.0_wp, 0.0_wp, Kind=wp)
+    End If
+
+    If ((.not. Allocated(stats%pp_cur_stress)) .and. stats%cur%k_energy_stress_current_on) Then
+      Allocate(stats%pp_cur_stress(1:natms, 1:stats%cur%nkpoints, 1:6), stat=fail)
+      If (fail > 0) Call error_alloc("stats%pp_cur_stress", "statistics")
+      stats%pp_cur_stress = Cmplx(0.0_wp, 0.0_wp, Kind=wp)
     End If
 
     stats%pp_energy = 0.0_wp
@@ -554,10 +573,17 @@ Contains
 
     Integer :: fail
 
-    Deallocate (stats%pp_energy, stat=fail)
+    Deallocate(stats%pp_energy, stat=fail)
     If (fail > 0) Call error_dealloc("stats%pp_energy", "statistics")
-    Deallocate (stats%pp_stress, stat=fail)
+    Deallocate(stats%pp_stress, stat=fail)
     If (fail > 0) Call error_dealloc("stats%pp_stress", "statistics")
+
+    If (stats%cur%k_energy_stress_current_on) Then
+      Deallocate(stats%pp_cur_virial, stat=fail)
+      If (fail > 0) Call error_dealloc("stats%pp_cur_virial", "statistics")
+      Deallocate(stats%pp_cur_stress, stat=fail)
+      If (fail > 0) Call error_dealloc("stats%pp_cur_stress", "statistics")
+    End If
 
   End Subroutine deallocate_per_particle_arrays
 
@@ -1521,10 +1547,14 @@ Contains
           Mod(nstep, zdensity%frequency) == 0) Call z_density_collect(zdensity, config)
     End If
 
-    If (stats%cur%on .and. Mod(nstep, stats%intsta) == 0) Then
-       Call stats%cur%compute(config, time, comm, sites)
+    If (stats%cur%on .and. Mod(nstep, stats%intsta) == 0 .and. nstep >= nsteql) Then
+      If (stats%cur%k_energy_stress_current_on) Then
+        Call stats%cur%compute(config, time, comm, sites, stats%pp_energy, &
+          stats%pp_cur_virial, stats%pp_cur_stress)
+      Else
+        Call stats%cur%compute(config, time, comm, sites, stats%pp_energy)
+      End If
     End If
-
     ! Catch time of starting statistical averages
 
     If (((.not. leql) .or. nstep == nsteql) .and. tmst < tstep) tmst = time
@@ -2747,8 +2777,8 @@ Contains
     Integer                     :: iatm
     Real(Kind=wp), Dimension(3) :: e_v, S_v, velocity
 
-!! Per-particle energy * velocity
-!! Per-particle stress * velocity
+    !! Per-particle energy * velocity
+    !! Per-particle stress * velocity
     e_v = 0.0_wp
     S_v = 0.0_wp
     Do iatm = 1, config%natms
@@ -2763,6 +2793,45 @@ Contains
     heat_flux = (e_v + S_v) / (engunit * config%volm)
 
   End Function calculate_heat_flux
+
+  Subroutine calculate_stress_energy_current(stats, config, iatm, jatm, rij, r_rsq, gamma)
+    Class(stats_type),        Intent(InOut) :: stats
+    Type(configuration_type), Intent(In   ) :: config
+    Integer,                  Intent(In   ) :: iatm, jatm
+    Real(Kind=wp),            Intent(In   ) :: r_rsq, gamma, rij(1:3)
+
+    Complex(Kind=wp) :: ikdotrij, vir_pre, pkij, cur_str(1:6), cur_vir(1:3)
+    Real(Kind=wp)    :: vi(3), vj(3)
+    Integer          :: b, kpoint
+
+    If (.not. stats%cur%k_energy_stress_current_on) Return
+
+    vi = (/config%vxx(iatm), config%vyy(iatm), config%vzz(iatm)/)
+    vj = (/config%vxx(jatm), config%vyy(jatm), config%vzz(jatm)/)
+    Do kpoint = 1, config%k%n
+      cur_vir = Cmplx(0.0_wp, 0.0_wp, Kind=wp)
+      cur_str = Cmplx(0.0_wp, 0.0_wp, Kind=wp)
+      ikdotrij = Cmplx(0.0_wp, 1.0_wp, Kind=wp) * Dot_product(config%k%r(:, kpoint), rij)
+      If (ikdotrij /= Cmplx(0.0_wp, 0.0_wp, Kind=wp)) Then
+        pkij = (1-Exp(-1.0_wp*ikdotrij))/(ikdotrij)
+        vir_pre = r_rsq*gamma*pkij
+        Do b = 1, 3
+          cur_vir = cur_vir + vir_pre*(vi(b)+vj(b))*rij(b)
+        End Do
+
+        cur_str(1) = wi*(vi(1)**2)-0.5*(rij(1)**2*r_rsq)*pkij
+        cur_str(2) = wi*(vi(1)*vi(2))-0.5*(rij(1)*rij(2)*r_rsq)*pkij
+        cur_str(3) = wi*(vi(1)*vi(3))-0.5*(rij(1)*rij(3)*r_rsq)*pkij
+        cur_str(4) = wi*(vi(2)**2)-0.5*(rij(2)**2*r_rsq)*pkij
+        cur_str(5) = wi*(vi(2)*vi(3))-0.5*(rij(1)*rij(3)*r_rsq)*pkij
+        cur_str(6) = wi*(vi(3)**2)-0.5*(rij(3)**2*r_rsq)*pkij
+      End If
+      stats%pp_cur_virial(iatm, kpoint, :) = stats%pp_cur_virial(iatm, kpoint, :) +&
+        cur_vir
+      stats%pp_cur_stress(iatm, kpoint, :) = stats%pp_cur_stress(iatm, kpoint, :) +&
+        cur_str
+    End Do
+  End Subroutine calculate_stress_energy_current
 
   Subroutine calculate_viscosity(stats, dt, viscosity)
     Type(stats_type),  Intent(InOut)              :: stats

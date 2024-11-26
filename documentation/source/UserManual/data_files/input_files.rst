@@ -3119,3 +3119,29 @@ parameters for EVB calculations.
    simulation and comparisons are carried over a few hundreds of
    timesteps. This is usually accounting for over :math:`90\%` of the
    time to solution.
+
+.. _kpoints-file_sec:
+
+The KPOINTS File
+----------------
+
+The KPOINTS file is needed for currents to be calculated. See
+section :ref:`currents`. The file format is
+
+.. parsed-literal::
+
+  **record 1:**
+  ``n``     integer count of kpoints
+  **record 2:**
+  ``x``     real     1st kpoint x-component
+  ``y``     real     1st kpoint y-component
+  ``z``     real     1st kpoint z-component
+  **record 3:**
+  ``x``     real     2nd kpoint x-component
+  ``y``     real     2nd kpoint y-component
+  ``z``     real     2nd kpoint z-component
+  ...
+  **record n:**
+  ``x``     real     nth kpoint x-component
+  ``y``     real     nth kpoint y-component
+  ``z``     real     nth kpoint z-component
