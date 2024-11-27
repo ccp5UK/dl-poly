@@ -1,7 +1,5 @@
 .. _coulomb:
 
-.. index:: single: potential;electrostatics
-
 Long Ranged Electrostatic (coulombic) Potentials
 ================================================
 

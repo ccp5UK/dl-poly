@@ -1,7 +1,5 @@
 .. _shell-models:
 
-.. index:: polarisation;shell models
-
 Polarisation Shell Models
 =========================
 

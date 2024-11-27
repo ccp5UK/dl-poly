@@ -12,10 +12,10 @@ of the atomic forces, virial and stress tensor are also outlined.
 
 .. _bond-potentials:
 
-.. index:: single: potential; chemical bond
-
 Bond Potentials
 ---------------
+
+.. index:: single: potential; chemical bond
 
 .. figure:: ../Images/bond.png
    :alt: The interatomic bond vector

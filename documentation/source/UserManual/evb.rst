@@ -1,4 +1,4 @@
-Exdenting DL_POLY_4 to reactive systems: the Empirical Valence Bond method
+Extending DL_POLY_4 to reactive systems: the Empirical Valence Bond method
 ==========================================================================
 
 Framework and motivation
@@ -14,9 +14,10 @@ In contrast to RFFs, the advantage of the EVB method lies in the large availabil
 
 The fundamentals of the EVB method are presented in the next section. Strategies to calibrate EVB-FFs are discussed in section :ref:`evb-calibrate`. The computational implementation of the EVB method is described in section :ref:`implement`. Finally, section :ref:`evb-users` provides a guideline to users on how to prepare the settings for EVB simulations with DL_POLY_4.  
 
+.. _evb-method:
+
 The EVB Method 
 --------------
-.. _evbMethod:
 
 Let us assume an atomic system composed of :math:`N_{p}` particles with positions described by the set  of vectors :math:`\mathbf{R}`. The non-reactive force field (FF) for the chemical state $m$ is described by the configurational energy :math:`E_{c}^{(m)}(\mathbf{R})` and the set of forces :math:`\vec{F}_{J}^{(m)}(\mathbf{R})`, where the index :math:`J` runs over the total number of particles. The configurational energy function :math:`E_{c}^{(m)}(\mathbf{R})` has the decomposition of eq. :eq:`decomp-ene`. In the following, however, we shall omit the presence of external fields, such as electric or magnetic. In the current notation, we shall use indexes :math:`m` and :math:`k` for the chemical states (and FFs), :math:`I` and :math:`J` for atoms and Greek letters for Cartesian coordinates. Indexes in parenthesis are used to emphasize the particular chemical state.
 
@@ -91,10 +92,9 @@ Hellman-Feynman theorem
    :label: Fevb_eq
 
    \begin{aligned}
-   
       &\vec{F}_{J}^{\text{EVB}}=-\nabla_{\vec{R}_J}E_{\text{EVB}}=-\big\langle \Psi_{\text{EVB}}\big| \nabla_{\vec{R}_J} \hat{H}_{\text{EVB}} \big| \Psi_{\text{EVB}}\big \rangle \nonumber \\
       &= \sum_{\alpha=x,yz} F_{J\alpha}^{\text{EVB}} \,\, \check{\alpha}
-      \end{aligned}
+   \end{aligned}
 
 where :math:`\check{\alpha}` corresponds to each of the orthonormal
 Cartesian vectors and
@@ -302,7 +302,7 @@ chemical states :math:`m` and :math:`k` where the change of chemistry
 occurs. For the implementation of the EVB method in DL_POLY_4, we have
 used functional forms :math:`C_{mk}` that depend on the energy
 differences :math:`\epsilon_{mk}=E^{(m)}_{c}-E^{(k)}_{c}` to compute the
-stress tensor as described in Sec. :ref:`evbMethod`. We have
+stress tensor as described in Sec. :ref:`evb-method`. We have
 implemented two functional forms for the coupling terms. One is just
 setting the coupling term to be a constant:
 
@@ -530,6 +530,7 @@ Additional points for further consideration:
 .. _setevb_table:
 
 .. list-table::
+   Settings for EVB.
    :header-rows: 1
 
    *  -  Setting 

@@ -797,7 +797,7 @@ Definitions of Variables in the CONFIG File
   **record 2**
   ``levcfg``      integer   CONFIG file key. See Table :numref:`(%s)<levcfg_table>` for permitted values
   ``imcon``       integer   Periodic boundary key. See Table :numref:`(%s)<imcon_table>` for permitted values
-  ``megatm``      integer   Optinal, total number of particles (crystalographic entities)
+  ``megatm``      integer   Total number of particles (crystalographic entities)
 
   **record 3** omitted if ``imcon`` = 0
   ``cell(1)``     real      x component of the :math:`a` cell vector in Å
