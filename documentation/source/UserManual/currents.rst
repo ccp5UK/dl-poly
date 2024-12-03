@@ -71,7 +71,8 @@ User Control
 
 In DL_POLY_5 a user may calculate these quantities (density, 
 longitudinal and transverse momentum currents, and energy current)
-for user supplied samples of :math:`{\bf k}`-space.
+for user supplied samples of :math:`{\bf k}`-space. Currently only two body Van Der Waals has
+full support for energy currents and :math:`{\bf k}`-dependent stress.
 
 Input
 ^^^^^
@@ -131,3 +132,10 @@ the output will be in the form of a YAML file like the snippet below for LiF
 
 Otherwise refer to Section :ref:`currents-file_sec` for the plaintext
 format.
+
+Performance
+^^^^^^^^^^^
+
+For statistics calculation of Equations :eq:`k-density`, :eq:`longitudinal_cur`, :eq:`transverse_cur`, and :eq:`energy_cur` scale with
+the number of user supplied KPOINTS and the number of atoms. Note Equation :eq:`energy_cur` requires additional calculations during 
+force calculation for each atom and user KPOINTS, this will impact Van Der Waals performance. 

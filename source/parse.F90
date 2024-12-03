@@ -25,7 +25,8 @@ Module parse
   Implicit None
 
   Public :: tabs_2_blanks, nls_2_blanks, strip_blanks, get_word, &
-            clean_string, lower_case, get_line, word_2_real, word_2_integer
+            clean_string, lower_case, get_line, word_2_real, &
+            word_2_integer
 
 Contains
 

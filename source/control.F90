@@ -106,7 +106,9 @@ Module control
   Use rsds,                     Only: rsd_type
   Use statistics,               Only: stats_type, observable, observable_velocity, &
                                       character_to_observable, observable_heat_flux, &
-                                      observable_stress
+                                      observable_stress, observable_currents, &
+                                      set_currents_observable, K_STRESS, ENG_CURRENT
+  Use site,                     Only: site_type
   Use tersoff,                  Only: tersoff_type
   Use thermostat,               Only: &
                                       CONSTRAINT_NONE, CONSTRAINT_SEMI_ORTHORHOMBIC, &
@@ -1815,21 +1817,26 @@ Contains
 
   End Subroutine parse_correlation_observable
 
-  Subroutine read_correlations_parameters(params, stats, comm, config)
+  Subroutine read_correlations_parameters(params, stats, comm, config, sites)
     Type(parameters_hash_table), Intent(InOut) :: params
     Type(stats_type),            Intent(InOut) :: stats
     Type(comms_type),            Intent(InOut) :: comm
     Type(configuration_type),    Intent(InOut) :: config
+    Type(site_type),             Intent(InOut) :: sites
 
     Integer                              :: this_window, this_blocks, &
-                                            this_points, this_freq, i
+                                            this_points, this_freq, i, &
+                                            j, k, cur_cor
     Integer, Allocatable                 :: window(:), blocks(:), points(:), freq(:)
     Character(Len=STR_LEN), Allocatable  :: option(:)
     Character(Len=STR_LEN)               :: a_name, b_name
     Class(observable),      Allocatable  :: A, B
+    Type(observable_currents), Allocatable :: Ac, Bc
     Type(observable_heat_flux)           :: h
     Type(observable_stress)              :: s
+    Type(observable_currents)            :: oc
     Integer                              :: hid, sid
+    Logical                              :: is_current
 
     hid = h%id()
     sid = s%id()
@@ -1840,7 +1847,7 @@ Contains
     Do i = 1,Size(option)
       this_freq = stats%intsta
       If (i <= Size(freq)) Then
-        this_freq = stats%intsta
+        this_freq = freq(i)
       End If
       If (this_freq <= 0) Cycle
 
@@ -1848,22 +1855,42 @@ Contains
       Call character_to_observable(a_name, A)
       Call character_to_observable(b_name, B)
 
+      is_current = A%id() == oc%id() .or. B%id() == oc%id()
+      If ((is_current) .and. (A%id() /= B%id())) Then
+        Call warning("Only current-current correlations are supported, ignoring "//Trim(A%name())//"-"//Trim(B%name()), .true.)
+        Cycle
+      End If
+
+      If (is_current .and. (.not. stats%cur%on)) Then
+        Call warning("currents_calculate off, but current correlation specified, ignoring.", .true.)
+        Cycle
+      End If
+
       If (A%per_atom() .or. B%per_atom()) Then
         stats%number_of_correlations = stats%number_of_correlations + config%natms
         stats%per_atom_correlations = .true.
       Else
         If (comm%idnode == root_id) Then
-          stats%number_of_correlations = stats%number_of_correlations + 1
+          If (is_current) Then
+            stats%currents_correlations = stats%currents_correlations + 1
+            stats%number_of_correlations = stats%number_of_correlations + 1
+          Else
+            stats%number_of_correlations = stats%number_of_correlations + 1
+          End If
         End If
       End If
     End Do
 
-    If (stats%number_of_correlations > 0) Then
-      stats%calculate_correlations = .true.
-      Call stats%init_correlations()
-    Else
+    If (stats%number_of_correlations == 0) Then
       Return
     End If
+
+    stats%calculate_correlations = .true.
+    cur_cor = 0
+    If (stats%cur%on) Then
+      cur_cor = stats%cur%nkpoints*sites%mxatyp
+    End If
+    Call stats%init_correlations(cur_cor)
 
     Call params%retrieve("correlation_blocks",blocks,required=.false.)
     Call params%retrieve("correlation_block_points",points,required=.false.)
@@ -1895,6 +1922,10 @@ Contains
         Call error(0, "points per block less than window size")
       End If
 
+      Call parse_correlation_observable(option(i), a_name, b_name)
+      Call character_to_observable(a_name,A)
+      Call character_to_observable(b_name,B)
+
       If (A%id() == hid .or. B%id() == hid) Then
         If (stats%pp_eng_str_frequency == 0) Then
           stats%pp_eng_str_frequency = Min(stats%intsta, this_freq)
@@ -1911,11 +1942,46 @@ Contains
         End If
       End If
 
-      Call parse_correlation_observable(option(i), a_name, b_name)
-      Call character_to_observable(a_name,A)
-      Call character_to_observable(b_name,B)
-      Call stats%init_correlator(A%per_atom() .or. B%per_atom(), config, comm, &
-        this_blocks, this_points, this_window, this_freq, A, B)
+      is_current = A%id() == oc%id() .or. B%id() == oc%id()
+
+      If (is_current .and. (A%id() /= B%id())) Then
+        Cycle
+      End If
+
+      If (is_current) Then
+        If (Allocated(Ac)) Deallocate(Ac)
+        If (Allocated(Bc)) Deallocate(Bc)
+        Allocate(observable_currents::Ac)
+        Allocate(observable_currents::Bc)
+        Call set_currents_observable(A%name(.false.), Ac)
+        Call set_currents_observable(B%name(.false.), Bc)
+
+        If (.not. stats%cur%k_energy_stress_current_on .and. &
+            (Ac%current_type == K_STRESS .or. Bc%current_type == K_STRESS .or. &
+             Ac%current_type == ENG_CURRENT .or. Bc%current_type == ENG_CURRENT)) Then
+          Call warning("energy_stress_currents off, but energy or stress current correlation specified, ignoring.", .true.)
+          Cycle
+        End If
+        Do k = 1, stats%cur%nkpoints
+          Do j = 1, Size(stats%cur%density_jlk, 3)
+            If (Allocated(Ac)) Deallocate(Ac)
+            If (Allocated(Bc)) Deallocate(Bc)
+            Allocate(observable_currents::Ac)
+            Allocate(observable_currents::Bc)
+            Call set_currents_observable(A%name(.false.), Ac, &
+              k, j, A%component_name, A%component, sites%site_name(j))
+
+            Call set_currents_observable(B%name(.false.), Bc, &
+              k, j, B%component_name, B%component, sites%site_name(j))
+
+            Call stats%init_correlator(.false., config, comm, &
+              this_blocks, this_points, this_window, this_freq, Ac, Bc)
+          End Do
+        End Do
+      Else
+        Call stats%init_correlator(A%per_atom() .or. B%per_atom(), config, comm, &
+          this_blocks, this_points, this_window, this_freq, A, B)
+      End If
 
     End Do
 

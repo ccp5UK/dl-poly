@@ -261,13 +261,12 @@ contains
 
   Subroutine parse_command_args(comms_in, params, tests, flow, output_filename, control_filename, finish)
 
-    Type(comms_type),            Intent(In   ) :: comms_in
+    Type(comms_type),            Intent(InOut) :: comms_in
     Type(parameters_hash_table), Intent(In   ) :: params
     Type(testing_type),          Intent(InOut) :: tests
     Type(flow_type),             Intent(InOut) :: flow
     Character(len=1024),         Intent(  Out) :: output_filename, control_filename
     Logical,                     Intent(  Out) :: finish
-    Logical                                    :: passed = .true.
 
     Character(len=1024) :: arg
     Character(Len=10) :: mode
@@ -386,46 +385,31 @@ contains
             End If
 
             Select Case (arg)
-            Case ("control")
-              Write(eu, '(a)') "Running test: control"
-              tests%control = .true.
-            Case ("configuration")
-              Write(eu, '(a)') "Running test: configuration"
-              tests%configuration = .true.
-            Case ("units")
-              Write(eu, '(a)') "Running test: units"
-              tests%units = .true.
-            Case ("vdw")
-              Write(eu, '(a)') "Running test: vdw"
-              tests%vdw = .true.
-            Case ("integrators")
-              Write(eu, '(a)') "Running test: integrators"
-              tests%integrators = .true.
-            Case ("hash")
-              Write(eu, '(a)') "Running test: hash"
-              tests%hash = .true.
-            Case ("all")
-              Write(eu, '(a)') "Running test: control"
-              Write(eu, '(a)') "Running test: configuration"
-              Write(eu, '(a)') "Running test: units"
-              Write(eu, '(a)') "Running test: vdw"
-              Write(eu, '(a)') "Running test: integrators"
-              Write(eu, '(a)') "Running test: hash"
-              Call tests%all()
-            Case Default
-              Write (eu, *) "Invalid test option:", Trim(arg)
-              finish = .true.
-              Exit parse_cmd
+              Case ("control")
+                tests%control = .true.
+              Case ("configuration")
+                tests%configuration = .true.
+              Case ("units")
+                tests%units = .true.
+              Case ("vdw")
+                tests%vdw = .true.
+              Case ("integrators")
+                tests%integrators = .true.
+              Case ("hash")
+                tests%hash = .true.
+              Case ("parse")
+                tests%parse = .true.
+              Case ("all")
+                Call tests%all()
+              Case Default
+                Write (eu, *) "Invalid test option:", Trim(arg)
+                finish = .true.
+                Exit parse_cmd
             End Select
           End Do
 
           Call init_error_system(ou, comms_in)
-          Call tests%run(comms_in, passed)
-          If (passed) Then
-            Write(eu, '(a)') "Status: PASSED"
-          Else
-            Write(eu, '(a)') "Status: FAILED"
-          End If
+          Call tests%run(comms_in, eu)
           finish = .true.
 
         Case ('--replay', '-r')

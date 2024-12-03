@@ -160,17 +160,27 @@ block with 5000 points. By default **correlation_window** :math:`=1`,
 .. table:: 
       User control directives in the new style CONTROL file for on
       the fly correlations. Any combination of observables can be correlated.
-      Observables indicated as per-particle require storage of data scaling
-      with system size :math:`N`, as one correlator for each atom is created.
+      Except for **lc**, **tc**, **kd**, and **ec** which may only be correlated
+      between each other. Observables indicated as Per-particle require computation, 
+      and storage of data scaling with system size :math:`N`, as one correlator for 
+      each atom is created. Correlators marked as Per-species are split automatically
+      across atomic species. For current correlations the correlated :math:`{\bf k}`-space
+      currents are averaged over atoms among each species before correlation. Observables 
+      marked with "scalar" in components require no _x component specification.
 
-   ======================================== ========== ========================================== ============ ============ ======================================= ========================================
-   String                                   Short-hand Observable                                 Per-particle Per-species  Components                              Notes
-   ======================================== ========== ========================================== ============ ============ ======================================= ========================================
-   **velocity**                             **v**      particle velocity                          yes          yes          **x, y, z**                             Automatically split by species
-   **stress**                               **s**      system stress                              no           no           **xx, xy, xz, yx, yy, yz, zx, zy, zz**
-   **heat_flux**                            **hf**     system heat flux                           no           no           **x, y, z**
-   See Table :numref:`(%s)<tab-statis-cor>`            See Table :numref:`(%s)<tab-statis-cor>`   no           no           scalar                                  
-   ======================================== ========== ========================================== ============ ============ ======================================= ========================================
+   ========================= ========== ========================================== ============ ============ ======================================= =========================================
+   String                    Short-hand Observable                                 Per-particle Per-species  Components                              Notes
+   ========================= ========== ========================================== ============ ============ ======================================= =========================================
+   **velocity**              **v**      particle velocity                          yes          yes          **x, y, z**
+   **stress**                **s**      system stress                              no           no           **xx, xy, xz, yx, yy, yz, zx, zy, zz**
+   **heat_flux**             **hf**     system heat flux                           no           no           **x, y, z**
+   **longitudinal_current**  **lc**     Longitudinal component of current          no           yes          **x, y, z**                             Automatically calculated over KPOINTS
+   **transverse_current**    **tc**     Transverse component of current            no           yes          **x, y, z**                             .
+   **kdensity**              **kd**     k-space density                            no           yes          scalar                                  .
+   **energy_density**        **ed**     energy current                             no           yes          **x, y, z**                             .
+   **energy_current**        **ec**     energy current                             no           yes          **x, y, z**                             ., requires **energy_stress_currents On**
+   **kstress**               **ks**     energy current                             no           yes          **xx, xy, xz, yx, yy, yz, zx, zy, zz**  ., requires **energy_stress_currents On**
+   ========================= ========== ========================================== ============ ============ ======================================= =========================================
 
 The maximum lag time for a correlation is given by 
 
@@ -239,6 +249,34 @@ needed.
    **press**    pressure, :math:`{\cal P}`
    ============ ==========
 
+Currents
+^^^^^^^^
+
+:math:`{\bf k}`-space currents (and density) may be calculated by specifying a KPOINTS file 
+see Sections :ref:`currents` and :ref:`kpoints-file_sec`. As shown in 
+Table :numref:`(%s)<tab-cor-control>` a user may auto- or cross-correlate all of these values 
+between eachother. Like other correlations these observables must be requested component 
+wise, e.g. :math:`x, y, z`. However, DL_POLY_5 will automatically generate correlators for all
+user specified KPOINTS across all distinct atom types. 
+
+For example with a Lithium-Flouride (LiF) 
+system and 3 user KPOINTS requesting the correlation **lc_x-tc_z** will calculate the 
+cross correlations of the :math:`x`` component of the longitudinal momentum current 
+with the :math:`z` component of the transverse momentum current for all 3 KPOINTS for both
+Li and F separately. This will generate 6 correlations in COR.
+
+Current correlations will have output names of the form **atomtype-shortname_kpointnumber_component** 
+for example **Li-ks_1_zz-Li-ks_1_zz** and **Li-kd_10-Li-kd_10**. See also the output section below.
+
+Complex Observables
+^^^^^^^^^^^^^^^^^^^
+
+Any complex observable is correlated according to the formula 
+
+.. math:: C(A, B) = \langle A\cdot \text{Conj}(B) \rangle,
+
+where :math:`\text{Conj}(x)` is the complex conjugate of :math:`x`.
+
 Output
 ^^^^^^
 
@@ -305,7 +343,7 @@ An example COR file is:
                   lags: [   0.0000000    ,   1.0000000    ,   ... ]
                   value: [  0.14340287E-01,  0.14342140E-01,  ... ]
 
-Specific Correlation Output 
+Specific Correlation Output
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. _tab-cor-observables:

@@ -123,6 +123,7 @@ set(dlpoly_SRCS
   unit_tests/test_vdw.F90
   unit_tests/test_integrators.F90
   unit_tests/test_hash.F90
+  unit_tests/test_parse.F90
   )
 if(BUILDER)
   set_property(SOURCE development.F90 APPEND PROPERTY

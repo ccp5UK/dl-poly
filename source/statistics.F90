@@ -29,7 +29,8 @@ Module statistics
                              prsunt,&
                              tenunt,&
                              zero_plus,&
-                             voigt_6x6
+                             voigt_6x6,&
+                             voigt_flat_3x3
   Use currents,        Only: current_type
   Use domains,         Only: domains_type
   Use errors_warnings, Only: error,&
@@ -78,7 +79,7 @@ Module statistics
 
   Private
 
-  Integer, Parameter          :: MAX_CORRELATION_NAME_LENGTH = 16
+  Integer, Parameter          :: MAX_CORRELATION_NAME_LENGTH = 24
   Character(Len=8), Parameter :: stpval_names(1:27) = (/'eng_tot ', 'temp_tot', 'eng_cfg ', 'eng_src ', &
                                                         'eng_cou ', 'eng_bnd ', 'eng_ang ', 'eng_dih ', & 
                                                         'eng_tet ', 'eng_pv  ', 'temp_rot', 'vir_cfg ', &
@@ -208,7 +209,7 @@ Module statistics
     Type(current_type)                 :: cur
     Logical                            :: calculate_correlations = .false., per_atom_correlations = .false.
     Integer                            :: cor_deport_buffer = 0, cor_dump_freq = 0, number_of_correlations = 0,&
-                                          next_cor = 1
+                                          next_cor = 1, currents_correlations = 0
     Type(statistic_accumulator), Allocatable :: accumulators(:)
     Type(correlation_data), Allocatable :: correlations(:)     
     Real(Kind=wp), Allocatable         :: xin(:), yin(:), zin(:)
@@ -297,10 +298,11 @@ Module statistics
     End Function get_value
 
     !> utility to get name of observable (i.e. for i/o)
-    Function get_name(t) Result(v)
+    Function get_name(t, with_component) Result(v)
         Import observable, MAX_CORRELATION_NAME_LENGTH
-        Class(observable), Intent(In   ) :: t
-        Character(Len=MAX_CORRELATION_NAME_LENGTH)                 :: v
+        Class(observable), Intent(In   )           :: t
+        Logical,           Intent(In   ), Optional :: with_component
+        Character(Len=MAX_CORRELATION_NAME_LENGTH) :: v
     End Function get_name
 
     !> utility to get numerical id of observable (i.e. for revive)
@@ -349,6 +351,20 @@ Module statistics
       Procedure :: per_atom  => statis_per_atom
   End Type
 
+  Integer, Parameter, Public :: L_MOM_CURRENT = 1, T_MOM_CURRENT = 2, ENG_CURRENT = 3, &
+                        K_DENSITY = 4, ENG_DENSITY = 5, K_STRESS = 6
+
+  Type, Extends(observable), Public :: observable_currents
+    Integer          :: current_type = 0, kpoint = 0, atom_type = 0
+    Character(Len=8) :: atom_type_name = ""
+  Contains
+      Procedure :: value     => current_value
+      Procedure :: name      => current_name
+      Procedure :: id        => current_id
+      Procedure :: per_atom  => current_per_atom
+  End Type
+
+  
   Public :: calculate_stress
   Public :: calculate_viscosity
   Public :: calculate_heat_flux
@@ -362,6 +378,7 @@ Module statistics
   Public :: correlation_result
   Public :: character_to_observable
   Public :: id_component_to_observable
+  Public :: set_currents_observable
   Public :: update_statistic
 
   Interface write_yaml_vector
@@ -744,7 +761,7 @@ Contains
 
   End Subroutine cleanup
 
-  Subroutine init_correlations_table(stats)
+  Subroutine init_correlations_table(stats, currents_cors)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_5 subroutine to initialise the cor_table.
@@ -753,9 +770,10 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     Class(stats_type), Intent(InOut) :: stats
+    Integer,           Intent(In   ) :: currents_cors
     Integer :: s
 
-    s = 2*stats%number_of_correlations
+    s = 2*stats%number_of_correlations+2*stats%currents_correlations*currents_cors
     Call stats%cor_table%init(s+1)
     Allocate(stats%correlations(s))
   End Subroutine init_correlations_table
@@ -780,7 +798,7 @@ Contains
     Class(correlator),       Allocatable :: tmp_cor
     Integer                              :: i, atoms
     Character(Len=MAX_KEY)               :: correlation_name
-    
+
     atoms = 1
 
     If (per_atom) Then 
@@ -788,7 +806,7 @@ Contains
     Else If (comm%idnode /= root_id) Then
       Return
     End If
-
+    
     Write (correlation_name, '(a)') Trim(A%name())//"-"//Trim(B%name())
 
     Allocate(cor_data)
@@ -848,6 +866,7 @@ Contains
     Character(Len=STR_LEN)                         :: units_visc, units_therm
     Character(Len=MAX_KEY), Allocatable :: cor_keys(:)   
     Type(correlation_data), Pointer :: cor_data
+    Type(observable_currents) :: oc
     
                         
     If (stats%calculate_correlations .eqv. .false.) Then 
@@ -1267,6 +1286,15 @@ Contains
     End Do
     iadd = iadd + 9
 
+    If (stats%cur%on .and. Mod(nstep, stats%intsta) == 0 .and. nstep >= nsteql) Then
+      If (stats%cur%k_energy_stress_current_on) Then
+        Call stats%cur%compute(config, time, comm, sites, stats%pp_energy, &
+          stats%pp_cur_virial, stats%pp_cur_stress)
+      Else
+        Call stats%cur%compute(config, time, comm, sites, stats%pp_energy)
+      End If
+    End If
+
     ! mean squared displacements per species, dependent on
     ! particle displacements from initial positions (at t=0)
 
@@ -1547,14 +1575,6 @@ Contains
           Mod(nstep, zdensity%frequency) == 0) Call z_density_collect(zdensity, config)
     End If
 
-    If (stats%cur%on .and. Mod(nstep, stats%intsta) == 0 .and. nstep >= nsteql) Then
-      If (stats%cur%k_energy_stress_current_on) Then
-        Call stats%cur%compute(config, time, comm, sites, stats%pp_energy, &
-          stats%pp_cur_virial, stats%pp_cur_stress)
-      Else
-        Call stats%cur%compute(config, time, comm, sites, stats%pp_energy)
-      End If
-    End If
     ! Catch time of starting statistical averages
 
     If (((.not. leql) .or. nstep == nsteql) .and. tmst < tstep) tmst = time
@@ -3757,7 +3777,70 @@ Contains
     End If
   End Function component_symbol_to_index
 
+  !> True if the observable name refers to a value in current_type
+  Logical Function is_currents_observable(observable_name)
+    Character(Len=MAX_CORRELATION_NAME_LENGTH), Intent(In   ) :: observable_name
+
+    Integer                                                     :: i
+    Character(Len=MAX_CORRELATION_NAME_LENGTH), Dimension(1:12) :: current_names = &
+      (/"longitudinal_current", "transverse_current  ", "energy_current      ", &
+        "kdensity            ", "energy_density      ", "kstress             ", &
+        "lc                  ", "tc                  ", "ec                  ", &
+        "kd                  ", "edc                 ", "ks                  "/)
+
+    Do i = 1, Size(current_names)
+      If (Trim(current_names(i)) == Trim(observable_name)) Then
+        is_currents_observable = .true.
+        return
+      End If
+    End Do
+    is_currents_observable = .false.
+  End Function is_currents_observable
+
+  Subroutine set_currents_observable(observable_name, o, k, atom_type, component_name, component, site_name)
+    Character(Len=MAX_CORRELATION_NAME_LENGTH), Intent(In   )           :: observable_name
+    Class(observable_currents),                 Intent(InOut)           :: o
+    Integer,                                    Intent(In   ), Optional :: k, atom_type, component
+    Character(Len=2),                           Intent(In   ), Optional :: component_name
+    Character(Len=8),                           Intent(In   ), Optional :: site_name
+
+    If (Trim(observable_name) == "longitudinal_current" .or. &
+        Trim(observable_name) == "lc") Then
+      o%current_type = L_MOM_CURRENT
+    Else If (Trim(observable_name) == "transverse_current" .or. &
+             Trim(observable_name) == "tc") Then
+      o%current_type = T_MOM_CURRENT
+    Else If (Trim(observable_name) == "energy_current" .or. &
+             Trim(observable_name) == "ec") Then
+      o%current_type = ENG_CURRENT
+    Else If (Trim(observable_name) == "kdensity" .or. &
+             Trim(observable_name) == "kd") Then
+      o%current_type = K_DENSITY
+    Else If (Trim(observable_name) == "energy_density" .or. &
+             Trim(observable_name) == "edc") Then
+      o %current_type = ENG_DENSITY
+    Else If (Trim(observable_name) == "kstress" .or. &
+             Trim(observable_name) == "ks") Then
+      o%current_type = K_STRESS
+    End If
+
+    If (Present(k)) o%kpoint = k
+    If (Present(atom_type)) o%atom_type = atom_type
+    If (Present(component_name)) o%component_name = component_name
+    If (Present(component)) o%component = component
+    If (Present(site_name)) o%atom_type_name = site_name
+
+  End Subroutine set_currents_observable
+
   Subroutine character_to_observable(c, o)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_5 for parsing correlation observable options.
+    !   format is expected to be NAME_COMPONENT for observables
+    !   with components or simple NAME for those without.
+    !
+    ! author    - h.l.devereux 2023
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     Character(Len=*),                Intent(In   ) :: c
     Class(observable), Allocatable,  Intent(  Out) :: o
     
@@ -3767,34 +3850,38 @@ Contains
     Character(Len=2)                           :: component_sym
     Character(Len=STR_LEN)                     :: msg, component_name
     Character(Len=MAX_CORRELATION_NAME_LENGTH) :: observable_name
+    Type(observable_currents)                  :: oc
 
     ! Check if in stpval
-    If (Len(Trim(c)) <= Len(stpval_names(1))) Then
-      Do i = 1, Size(stpval_names)
-        start = Index(stpval_names(i), Trim(c))
-        If (start > 0) Then
-         Allocate(observable_statis::o)
-         o%component = i
-         o%component_name = stpval_names(i)
-         Return
-        End If
-      End Do
-    End If
+    Do i = 1, Size(stpval_names)
+      If (Index(stpval_names(i), Trim(c)) > 0) Then
+        Allocate(observable_statis::o)
+        o%component = i
+        o%component_name = stpval_names(i)
+        Return
+      End If
+    End Do
 
-    i = Scan(c, '_')
+    i = Scan(c, '_', .true.)
 
     If (in_range(i, (/1, Len(c)-1/))) Then
       component_name = c(i+1:Len(c))
       observable_name = c(1:i-1)
       component_sym = component_name(1:Min(Len(component_name),2))
       component = component_symbol_to_index(component_sym)
+    Else If (c == "kd" .or. c == "kdensity") Then
+      Call set_currents_observable(c, oc)
+      Allocate(observable_currents::o)
+      oc%current_type = K_DENSITY
+      o = oc
+      Return
     Else
       Write (msg, ('(a)')) "correlation without component, please specify a component with _, got: "//Trim(c)
       Call error(0, msg)
     End If
 
     success = .false.
-    If (observable_name == velocity_name(observable_velocity()) .or. observable_name == "v") Then 
+    If (observable_name == velocity_name(observable_velocity(), .false.) .or. observable_name == "v") Then 
       If (Len(Trim(component_sym)) /= 1) Then
         Write (msg, ('(a)')) "velocity requires components x, y, or z. Got: "//Trim(c)
         Call error(0, msg)
@@ -3803,7 +3890,7 @@ Contains
       o%component = component
       o%component_name = component_sym
       success = .true.
-    Else If (observable_name == stress_name(observable_stress()) .or. observable_name == "s") Then
+    Else If (observable_name == stress_name(observable_stress(), .false.) .or. observable_name == "s") Then
       If (Len(Trim(component_sym)) /= 2) Then
         Write (msg, ('(a)')) "stress requires components xx, xy, xz, yx, yy, yz, zx, zy, or, zz. Got: "//Trim(c)
         Call error(0, msg)
@@ -3812,12 +3899,19 @@ Contains
       o%component = component
       o%component_name = component_sym
       success = .true.
-    Else If (observable_name == heat_flux_name(observable_heat_flux()) .or. observable_name == "hf") Then
+    Else If (observable_name == heat_flux_name(observable_heat_flux(), .false.) .or. observable_name == "hf") Then
       If (Len(Trim(component_sym)) /= 1) Then
         Write (msg, ('(a)')) "heat_flux requires components x, y, or z. Got: "//Trim(c)
         Call error(0, msg)
       End If
       Allocate(observable_heat_flux::o)
+      o%component = component
+      o%component_name = component_sym
+      success = .true.
+    Else If (is_currents_observable(observable_name)) Then
+      Call set_currents_observable(observable_name, oc)
+      Allocate(observable_currents::o)
+      o = oc
       o%component = component
       o%component_name = component_sym
       success = .true.
@@ -3830,6 +3924,13 @@ Contains
   End Subroutine character_to_observable
 
   Subroutine id_component_to_observable(id, component, o)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_5 for parsing an id and component into an observable.
+    !  Used for correlation reciept between processors.
+    !
+    ! author    - h.l.devereux 2023
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     Integer,                        Intent(In   )  :: id, component
     Class(observable), Allocatable, Intent(  Out)  :: o
 
@@ -3852,6 +3953,9 @@ Contains
       success = .true.
     Else If (id == heat_flux_id(observable_heat_flux())) Then
       Allocate(observable_heat_flux::o)
+      o%component_name = components_vector(component)
+      success = .true.
+    Else If (id == current_id(observable_currents())) Then
       o%component_name = components_vector(component)
       success = .true.
     End If
@@ -3885,10 +3989,16 @@ Contains
     
   End Function velocity_value
 
-  Function velocity_name(t) Result(v)
-      Class(observable_velocity), Intent(In   )   :: t
+  Function velocity_name(t, with_component) Result(v)
+      Class(observable_velocity), Intent(In   )           :: t
+      Logical,                    Intent(In   ), Optional :: with_component
       Character(Len=MAX_CORRELATION_NAME_LENGTH)  :: v
       v = 'velocity_'//t%component_name
+      If (Present(with_component)) Then
+        If (.not. with_component) Then
+          v = 'velocity'
+        End If
+      End If
   End Function velocity_name
 
   Function velocity_id(t) Result(v)
@@ -3917,10 +4027,16 @@ Contains
 
   End Function stress_value
 
-  Function stress_name(t) Result(v)
-      Class(observable_stress), Intent(In   )     :: t
+  Function stress_name(t, with_component) Result(v)
+      Class(observable_stress), Intent(In   )           :: t
+      Logical,                  Intent(In   ), Optional :: with_component
       Character(Len=MAX_CORRELATION_NAME_LENGTH)  :: v
       v = 'stress_'//t%component_name
+      If (Present(with_component)) Then
+        If (.not. with_component) Then
+          v = 'stress'
+        End If
+      End If
   End Function stress_name
 
   Function stress_id(t) Result(v)
@@ -3950,10 +4066,16 @@ Contains
 
   End Function heat_flux_value
 
-  Function heat_flux_name(t) Result(v)
-      Class(observable_heat_flux), Intent(In   )     :: t
+  Function heat_flux_name(t, with_component) Result(v)
+      Class(observable_heat_flux), Intent(In   )           :: t
+      Logical,                     Intent(In   ), Optional :: with_component
       Character(Len=MAX_CORRELATION_NAME_LENGTH)     :: v
       v = 'heat_flux_'//t%component_name
+      If (Present(with_component)) Then
+        If (.not. with_component) Then
+          v = 'heat_flux'
+        End If
+      End If
   End Function heat_flux_name
 
   Function heat_flux_id(t) Result(v)
@@ -3987,9 +4109,11 @@ Contains
 
   End Function statis_value
 
-  Function statis_name(t) Result(v)
-      Class(observable_statis), Intent(In   )        :: t
-      Character(Len=MAX_CORRELATION_NAME_LENGTH)     :: v
+  Function statis_name(t, with_component) Result(v)
+      Class(observable_statis), Intent(In   )           :: t
+      Logical,                  Intent(In   ), Optional :: with_component
+
+      Character(Len=MAX_CORRELATION_NAME_LENGTH) :: v
       v = Trim(stpval_names(t%component))
   End Function statis_name
 
@@ -4004,6 +4128,110 @@ Contains
     Logical                                 :: v
     v = .false.
   End Function statis_per_atom
+  !!!!!!!!!! observable currents !!!!!!!!!!
+
+  Function current_value(t, config, stats, atom) Result(v)
+    Class(observable_currents),                         Intent(In   ) :: t
+    Type(configuration_type),                            Intent(InOut) :: config
+    Type(stats_type),                                    Intent(InOut) :: stats
+    Integer,                    Optional,                Intent(In   ) :: atom
+    
+    Complex(Kind=wp)       :: v
+    Character(Len=STR_LEN) :: msg
+
+    If (.not. in_range(t%kpoint, (/1, stats%cur%nkpoints/))) Then
+      Call error(0, "invalid kpoint in observable currents")
+    End If
+
+    If (.not. in_range(t%atom_type, (/1, Size(stats%cur%density_jlk, 3)/))) Then
+      Call error(0, "invalid atom type in observable currents")
+    End If
+
+    Select Case (t%current_type)
+      Case (L_MOM_CURRENT)
+       v = stats%cur%longitudinal_jlk(t%kpoint, t%component, t%atom_type)
+      Case (T_MOM_CURRENT)
+        v = stats%cur%transverse_jlk(t%kpoint, t%component, t%atom_type)
+      Case (ENG_CURRENT)
+        v = stats%cur%energy_jlk(t%kpoint, t%component, t%atom_type)
+      Case (K_DENSITY)
+        v = stats%cur%density_jlk(t%kpoint, 1, t%atom_type)
+      Case (ENG_DENSITY)
+        v = stats%cur%energy_density_jlk(t%kpoint, t%component, t%atom_type)
+      Case (K_STRESS)
+        v = stats%cur%stress_jlk(t%kpoint, voigt_flat_3x3(t%component), t%atom_type)
+      Case Default
+        Call error(0, "invalid type for observable currents")
+    End Select
+
+  End Function current_value
+
+  Function current_name(t, with_component) Result(v)
+      Class(observable_currents), Intent(In   )           :: t
+      Logical,                    Intent(In   ), Optional :: with_component
+
+      Character(Len=MAX_CORRELATION_NAME_LENGTH) :: v
+      Character(Len=4)                           :: kpoint
+      Logical                                    :: comp
+
+      If (Present(with_component)) Then
+        comp = with_component
+      Else
+        comp = .true.
+      End If
+
+      Write (kpoint, '(i0)') t%kpoint
+      Select Case (t%current_type)
+        Case (L_MOM_CURRENT)
+          If (comp) Then
+            v = Trim(t%atom_type_name)//"-lc_"//Trim(kpoint)//"_"//Trim(t%component_name)
+          Else
+            v = "lc"
+          End If
+        Case (T_MOM_CURRENT)
+          If (comp) Then
+            v =  Trim(t%atom_type_name)//"-tc_"//Trim(kpoint)//"_"//Trim(t%component_name)
+          Else
+            v = "tc"
+          End If
+        Case (ENG_CURRENT)
+          If (comp) Then
+            v =  Trim(t%atom_type_name)//"-ec_"//Trim(kpoint)//"_"//Trim(t%component_name)
+          Else
+            v = "ec"
+          End If
+        Case (K_DENSITY)
+          If (comp) Then
+            v =  Trim(t%atom_type_name)//"-kd_"//Trim(kpoint)
+          Else
+            v = "kd"
+          End If
+        Case (ENG_DENSITY)
+          If (comp) Then
+            v =  Trim(t%atom_type_name)//"-edc_"//Trim(kpoint)//"_"//Trim(t%component_name)
+          Else
+            v = "edc"
+          End If
+        Case (K_STRESS)
+          If (comp) Then
+            v =  Trim(t%atom_type_name)//"-ks_"//Trim(kpoint)//"_"//Trim(t%component_name)
+          Else
+            v = "ks"
+          End If
+      End Select
+  End Function current_name
+
+  Function current_id(t) Result(v)
+    Class(observable_currents), Intent(In   ) :: t
+    Integer                                    :: v
+    v = 4
+  End Function current_id
+
+  Function current_per_atom(t) Result(v)
+    Class(observable_currents), Intent(In   ) :: t
+    Logical                                    :: v
+    v = .false.
+  End Function current_per_atom
 
   Subroutine update_statistic(stat, v, step)
     Class(statistic_accumulator), Intent(InOut) :: stat

@@ -7,6 +7,7 @@ Module unit_test
   Use test_vdw,           Only: run_vdw_tests
   Use test_integrators,   Only: run_integrators_tests
   Use test_hash,          Only: run_hash_tests
+  Use test_parse,         Only: run_parse_tests
   Implicit None
 
   !> Logicals indicating whether tests should be run for
@@ -19,6 +20,7 @@ Module unit_test
     Logical, Public :: vdw = .false.
     Logical, Public :: integrators = .false.
     Logical, Public :: hash = .false.
+    Logical, Public :: parse = .false.
   Contains
     Procedure :: all => set_all_tests_true
     Procedure :: run => run_unit_tests
@@ -35,44 +37,65 @@ Contains
     this%vdw = .true.
     this%integrators = .true.
     this%hash = .true.
+    this%parse = .true.
   End Subroutine set_all_tests_true
 
-  Subroutine run_unit_tests(this, comm, passed_all)
+  Subroutine run_unit_tests(this, comm, eu)
     Class(testing_type), Intent(InOut) :: this
-    Type(comms_type)                   :: comm
-    Logical,             Intent(  Out) :: passed_all
-    Logical                            :: passed = .true.
+    Type(comms_type),    Intent(InOut) :: comm
+    Integer,             Intent(In   ) :: eu
+
+    Logical :: passed_all
+    Logical :: passed = .true.
 
     passed_all = .true.
 
-    If (this%units) Then 
+    If (this%units) Then
+      Write(eu, '(a)') "Running test: units"
       Call run_units_tests(passed)
       passed_all = passed_all .and. passed
     End If
 
     If (this%control) Then 
+      Write(eu, '(a)') "Running test: control"
       Call run_control_tests(comm, passed)
       passed_all = passed_all .and. passed
     End If
     
     If (this%configuration) Then
+      Write(eu, '(a)') "Running test: configuration"
       Call run_configuration_tests(comm, passed)
       passed_all = passed_all .and. passed
     End If
     
     If (this%vdw) Then 
+      Write(eu, '(a)') "Running test: vdw"
       Call run_vdw_tests(passed)
       passed_all = passed_all .and. passed
     End If
 
     If (this%integrators) Then
+      Write(eu, '(a)') "Running test: integrators"
       Call run_integrators_tests(passed)
       passed_all = passed_all .and. passed
     End If
 
     If (this%hash) Then
+      Write(eu, '(a)') "Running test: hash"
       Call run_hash_tests(passed)
       passed_all = passed_all .and. passed
+    End If
+
+    If (this%parse) Then
+      Write(eu, '(a)') "Running test: parse"
+      Call run_parse_tests(passed)
+      passed_all = passed_all .and. passed
+    End If
+
+    If (passed_all) Then
+      Write(eu, '(a)') "Status: PASSED"
+    Else
+      Write(eu, '(a)') "Status: FAILED"
     End If
 
   End Subroutine run_unit_tests

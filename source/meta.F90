@@ -873,8 +873,6 @@ Contains
         Call stats(ff)%cur%init(config(ff)%k%n, 200, files(FILE_CURRENT), comm, config(ff), sites(ff)%mxatyp, stats(ff)%file_yaml)
       End If
 
-      Call read_correlations_parameters(params, stats(ff), comm, config(ff))
-
     End Do
 
     Call write_parameters(devel, tmr, seed, ios, files, neigh(1), &
@@ -906,6 +904,8 @@ Contains
 
       ! CHECK MD CONFIGURATION
       Call check_config(config(ff), electro(ff)%key, thermo(ff), sites(ff), flow, comm)
+
+      Call read_correlations_parameters(params, stats(ff), comm, config(ff), sites(ff))
     End Do
 
     Call params%destroy()
@@ -1420,9 +1420,9 @@ Contains
     Write (banner(9), fmt1) "#************  ------------------------------------  *************"
     Write (banner(10), fmt1) "#************  i.j.bush, h.a.boateng, r.davidchak,   *************"
     Write (banner(11), fmt1) "#************  m.a.seaton, a.v.brukhno, a.m.elena,   *************"
-    Write (banner(12), fmt1) "#************  s.l.daraszewicz,g.khara,s.t.murphy    *************"
-    Write (banner(13), fmt1) "#************  j.madge,a.b.g.chalk,i.scivetti,       *************"
-    Write (banner(14), fmt1) "#************  j.wilkins                             *************"
+    Write (banner(12), fmt1) "#************  s.l.daraszewicz, g.khara, s.t.murphy  *************"
+    Write (banner(13), fmt1) "#************  j.madge, a.b.g.chalk, i.scivetti,     *************"
+    Write (banner(14), fmt1) "#************  j.wilkins, h.l.devereux               *************"
     Write (banner(15), fmt1) "#*****************************************************************"
     Call info(banner, 15, .true., level=-1)
   End Subroutine print_banner

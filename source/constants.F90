@@ -206,6 +206,8 @@ Module constants
   !> New line char
   Character,     Parameter     :: lf = new_line('a')
 
+  !> Voigt from flat column major indices
+  Integer,       Parameter     :: voigt_flat_3x3(1:9) = (/1, 2, 3, 2, 4, 5, 3, 5, 6/)
   !> Voigt indices ij for 3x3 matrix 
   Integer,       Parameter     :: voigt_3x3(1:6,1:2) = Transpose(Reshape((/1,1, 2,2, 3,3, 2,3, 3,1, 1,2/), [2,6]))
   Integer, Private             :: j
