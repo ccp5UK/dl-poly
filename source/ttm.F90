@@ -118,6 +118,8 @@ Module ttm
     !> Density calculated dynamically
     Logical :: ttmdyndens = .false.
     Logical :: findepo
+    !> Use el-ph velocity cutoff for "fast-moving" particles
+    Logical :: use_elph_cut = .false.
     !> Heat capacity type
     Integer :: CeType = 0
     !> Condictivity type
@@ -164,6 +166,9 @@ Module ttm
     Real(Kind=wp) :: tdepo = 1.0e-3_wp
     !> Temporal deposition cutoff
     Real(Kind=wp) :: tcdepo = 5.0_wp
+    !> el-ph velocity cutoff for "fast-moving" particles
+    Real(Kind=wp) :: elph_cut = 0.0_wp
+    Real(Kind=wp) :: elph_cut_sq = 0.0_wp    
 
     ! DEBUG (TODO)
     Real(Kind=wp) :: epstart

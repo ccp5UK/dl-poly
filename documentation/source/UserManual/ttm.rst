@@ -50,7 +50,7 @@ according to Fourier’s law of heat conduction:
 .. math::
    :label: electronic_system_eq
 
-   
+
    C_e(T_e) \frac{\partial T_e}{\partial t} - \nabla . [\kappa_e \nabla T_e ] = -G_{ep}(T_e - T_a) + G_s T^{\prime}_a + A(r,t),
 
 where :math:`C_e(T_e)` is the electronic volumetric heat capacity (equal
@@ -76,7 +76,7 @@ equated to the more general heat diffusion :index:`equation<Two-Temperature Mode
 .. math::
    :label: heatdiffusion_eq
 
-   
+
    \frac{\partial T}{\partial t} - \alpha \nabla^2 T = \frac{\dot{q}}{C},
 
 :math:`T` is temperature, :math:`t` is time, :math:`\dot{q}` is a heat
@@ -112,7 +112,7 @@ calculated as follows:
 
 Inserting these numerical solutions into Equation
 :eq:`heatdiffusion_eq`, the one-dimensional heat
-diffusion equation can be expressed via a finite-difference scheme 
+diffusion equation can be expressed via a finite-difference scheme
 :index:`as<Two-Temperature Model;Explicit finite-difference scheme>`
 
 .. math:: \frac{T_{i}^{n+1} - T_{i}^n}{\Delta t} - \alpha \left(\frac{T_{i+1}^{n} - 2T_{i}^n + T_{i-1}^{n}}{\Delta x^2}\right) = \frac{\dot{q}}{C}.
@@ -258,7 +258,7 @@ subsystem, and the modified equation of motion takes the form
 .. math::
    :label: modifiedlang_eq
 
-   
+
    {d \underline{v}_{p}(t) \over d t} = {\underline{{f}_{p}(t)+\underline{R}_{p}(t)} \over
    m_{p}} - \chi_{p} \; \underline{v}_{p}(t),
 
@@ -296,7 +296,7 @@ motion. In the standard homogeneous Langevin thermostat, every atom in
 the MD simulation is thermostatted to a target temperature. The
 inhomogeneous case allows for each atom to be thermostatted to the
 electronic temperature of the corresponding continuum electronic cell.
-This leads to the stochastic friction 
+This leads to the stochastic friction
 :index:`term<Two-Temperature Model;electron-phonon coupling>`
 
 .. math:: \Gamma = \frac{6 m_{p} \chi_{ep}^j k_B T_e^j}{\Delta t},
@@ -311,7 +311,7 @@ finite electronic temperature grid:
 .. math::
    :label: chiep_eq
 
-   
+
    \chi_{ep} = \frac{G_{ep} \Delta V}{3 k_B N},
 
 where :math:`\Delta V` is the volume of the cell
@@ -336,13 +336,13 @@ where :math:`\chi_{es}` is the electronic stopping friction,
 :math:`\underline{v}_{p}` is the velocity of atom :math:`p`, and
 :math:`v_{cut}` is the cut-off velocity for which electronic stopping
 becomes significant. The electronic stopping friction term can be
-calculated in a similar fashion to the electron-phonon 
+calculated in a similar fashion to the electron-phonon
 :index:`term<Two-Temperature Model;electronic stopping>`:
 
 .. math::
    :label: chies_eq
 
-   
+
    \chi_{es} = \frac{G_{s} \Delta V}{3 k_B N^{\prime}}
 
 where :math:`N^{\prime}` is the number of atoms in the cell with
@@ -357,8 +357,8 @@ to flow to and from the lattice (depending on the temperature gradient
 between ions and electrons), whereas electronic stopping acts solely as
 an energy loss mechanism for the lattice.
 
-.. figure:: Images/ttmheatbath.png 
-   :name: heatbath_fig 
+.. figure:: Images/ttmheatbath.png
+   :name: heatbath_fig
    :width: 40.0%
    :figclass: centre-fig
 
@@ -411,9 +411,9 @@ Cascades
 
 .. figure:: Images/cascades.png
    :name: cascades_fig
-   :width: 40.0% 
+   :width: 40.0%
    :figclass: centre-fig
-   
+
    Schematic of cascade simulation setup
 
 High-energy cascades require no initial energy deposition into the
@@ -436,8 +436,8 @@ Swift heavy ions
 ~~~~~~~~~~~~~~~~
 
 .. figure:: Images/swiftheavyion.png
-   :name: SHI_fig 
-   :width: 60.0% 
+   :name: SHI_fig
+   :width: 60.0%
    :figclass: centre-fig
 
    Simulation setup for swift heavy ion impact.
@@ -462,13 +462,13 @@ of the evolution of a micron-sized track.
 
 
 .. index:: single: Two-Temperature Model;laser excitation
-   
+
 Laser excitation
 ~~~~~~~~~~~~~~~~
 
 .. figure:: Images/laser.png
-   :name: laser_fig 
-   :width: 80.0% 
+   :name: laser_fig
+   :width: 80.0%
    :figclass: centre-fig
 
    Simulation setup for laser irradiation.
@@ -592,7 +592,7 @@ The volumetric heat capacity :math:`C_e` can be obtained for TTM
 calculations in four different forms with their corresponding options
 for the CONTROL file directive **ttm_heat_cap_model**:
 
--  A temperature-independent constant value (**constant**)\ 
+-  A temperature-independent constant value (**constant**)\
 
    .. math:: C_e = C_0 \rho
 
@@ -739,7 +739,7 @@ use the following types:
 
 -  **gaussian**: specifies a Gaussian distribution in x- and
    y-directions from the centre of the system (applied homogeneously in
-   the z-direction), i.e.\ 
+   the z-direction), i.e.\
 
    .. math:: f(r) = \frac{dE}{dx} \frac{1}{2 \pi \sigma^2} e^{-\frac{r^2}{2\sigma^2}}
 
@@ -852,6 +852,15 @@ the electronic temperature is higher than the ionic temperature: both
 the electron-phonon coupling term in the thermal diffusion equation and
 the inhomogeneous Langevin thermostat are switched off if this condition
 is not met.
+
+To overcome the limitations on the treatment of the high-energy particles
+with electrons, the CONTROL file directive **ttm_e-phonon_cutoff_velocity**
+can be used to address spurious double-interactions: this switches off
+the electron-phonon terms in fast-moving particles that exceed a
+threshold velocity, only applying electronic stopping effects (removing
+the need to specify a thermalization time). Additionally, particles
+subject to electronic stopping are excluded from the CIT voxel to prevent
+inaccurate temperature elevation :cite:`rojano2024modified`.
 
 The CONTROL file directives **ttm_stats_frequency** and
 **ttm_traj_frequency** switches on outputs of statistical information

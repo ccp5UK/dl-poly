@@ -1216,6 +1216,8 @@ Contains
     Call write_param('TTM trajectory (temperature profile) file', ttm%ttmtraj > 0, indent=1, off_level=3)
     If (ttm%ttmstats > 0) Call write_param('TTM trajectory file interval (steps)', ttm%ttmtraj, indent=2)
 
+    If (ttm%elph_cut > zero_plus) Call write_param('TTM electron-phonon cutoff', ttm%elph_cut, 'internal_v', indent=1)   
+
   End Subroutine write_ttm
 
 end module control_output

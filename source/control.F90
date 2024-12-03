@@ -1325,6 +1325,13 @@ Contains
     Call params%retrieve('ttm_stats_frequency', ttm%ttmstats)
     Call params%retrieve('ttm_traj_frequency', ttm%ttmtraj)
 
+    Call params%retrieve('ttm_e-phonon_cutoff_velocity', ttm%elph_cut)
+
+    If (ttm%elph_cut > zero_plus) Then
+      ttm%elph_cut_sq = (ttm%elph_cut)**2
+      ttm%use_elph_cut = (ttm%elph_cut > 1e-5_wp)
+    End If    
+
   End Subroutine read_ttm
 
   Subroutine read_units(params)
@@ -4005,6 +4012,16 @@ Contains
                        description="Set TTM electron-stopping velocity", &
                        data_type=DATA_FLOAT))
 
+        Call table%set("ttm_e-phonon_cutoff_velocity", control_parameter( &
+             key = "ttm_e-phonon_cutoff_velocity", &
+             name = "TTM Electron-phonon cutoff velocity", &
+             val = "0.0", &
+             units = "ang/ps", &
+             internal_units = "internal_v", &
+             description = "Set TTM electron-phonon coupling cutoff velocity", &
+             data_type = DATA_FLOAT))
+
+             
       End block ttm
 
       integrator_tolerances:block

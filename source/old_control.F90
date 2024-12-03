@@ -2600,6 +2600,12 @@ Contains
           Write (messages(2), '(a,i10)') 'ttm trajectory file interval', ttm%ttmtraj
           Call info(messages, 2, .true.)
 
+        Else If (word1(1:8) == 'elph_cut') Then
+
+          ! ttm el-ph coupling cutoff being used.
+          Write(messages(1), '(a,1p,e12.4)') 'ttm electron-phonon cutoff on ', ttm%elph_cut
+          Call info(messages, 1, .true.)          
+
         End If
 
         ! read replay history option
@@ -4441,6 +4447,16 @@ Contains
           ! x- and y-directions
 
           ttm%redistribute = .true.
+
+        Else If (word(1:8) == 'elph_cut') Then
+
+          Call get_word(record, word)
+          ! Get the cutoff.
+          ttm%elph_cut = Abs(word_2_real(word))
+          ttm%elph_cut_sq = (ttm%elph_cut)**2
+
+          ! Only use if is explicitly non-zero
+          ttm%use_elph_cut = (ttm%elph_cut > 1e-5_wp)
 
         End If
 

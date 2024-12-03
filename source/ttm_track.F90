@@ -597,11 +597,18 @@ Contains
       velsq = vx * vx + vy * vy + vz * vz
       tmp = config%weight(i)
 
-      ttm%tempion(ijk) = ttm%tempion(ijk) + tmp * velsq
-
-      ttm%gsource(ijk) = ttm%gsource(ijk) + gsadd
-
-      nat(2 * ijk - 1) = nat(2 * ijk - 1) + 1
+      ! only include low-energy ions in temp estimate and e-ph coupling if the cutoff is activated.
+      If (ttm%use_elph_cut) Then
+        If (velsq < ttm%elph_cut_sq) Then
+          ttm%tempion(ijk) = ttm%tempion(ijk) + tmp * velsq
+          ttm%gsource(ijk) = ttm%gsource(ijk) + gsadd
+          nat(2 * ijk - 1) = nat(2 * ijk - 1) + 1
+        End If
+      Else
+        ttm%tempion(ijk) = ttm%tempion(ijk) + tmp * velsq
+        ttm%gsource(ijk) = ttm%gsource(ijk) + gsadd
+        nat(2 * ijk - 1) = nat(2 * ijk - 1) + 1
+      End If
 
       If ((velsq > thermo%vel_es2) .and. (thermo%chi_es > zero_plus)) Then
         ttm%asource(ijk) = ttm%asource(ijk) + tmp * velsq

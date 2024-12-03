@@ -636,6 +636,8 @@ which will create/overwrite ``CONTROL.new``.
     - ttm_num_elec_cell [:math:`n_{1}~n_{2}~n_{3}`]
   * - **ttm offset** :math:`f` 
     - ttm_time_offset :math:`f` ps 
+  * - **ttm elph_cut** :math:`f` 
+    - ttm_e-phonon_cutoff_velocity :math:`f` ang/ps 
   * - **ttm oneway** 
     - ttm_oneway ON 
   * - **ttm redist**\ ribute
