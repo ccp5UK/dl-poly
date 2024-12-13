@@ -205,9 +205,10 @@ Contains
                Trim(param%description), Trim(param%val), Trim(param%units)
         End If
       Case ('csv')
-        Write (ifile, '(5(a,";"))') &
+        Write (ifile, "(2(a, ','), 2(3a, ','), a)") &
              Trim(param%key), Trim(data_name(param%data_type)), &
-             Trim(param%description), Trim(param%val), Trim(param%units)
+             '"', Trim(param%description), '"', &
+             '"', Trim(param%val), '"', Trim(param%units)
       Case ('default')
         Write (ifile, '(5(a,"| "))') &
              Trim(param%key), Trim(data_name(param%data_type)), &

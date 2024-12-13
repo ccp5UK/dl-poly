@@ -322,7 +322,7 @@ contains
           Call get_command_argument(i, mode)
           If (mode == '') Then
             mode = "default"
-          End IF
+          End If
 
           Select Case (mode)
           Case ('latexdoc', 'latex', 'python', 'csv', 'test', 'default')
@@ -334,7 +334,7 @@ contains
           End Select
 
           Select Case (mode)
-          Case ('latexdoc', 'latex', 'python', 'csv', 'test')
+          Case ('latexdoc', 'latex', 'python', 'csv', 'test', 'default')
             i = i + 1
             Call get_command_argument(i, arg)
           End Select
