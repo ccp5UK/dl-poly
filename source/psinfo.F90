@@ -217,55 +217,60 @@ Contains
 
     Character(len=256) :: aux
     Character(len=50)  :: a, label, val
-    Integer            :: io, u
+    Integer            :: io, u, ind
 
     Open (newunit=u, file="/proc/self/status", form="formatted", status="old", action="read")
     pss%data = 0
     Do
       Read (u, '(a)', iostat=io) aux
       If (io /= 0) Exit
-      Read (aux, *) label, val
-      Select Case (Trim (label))
-      Case ("VmPeak:")
-        Read (val, '(i20)') pss%data(VmPeak)
-        Read (aux, *) a, a, pss%sunit
-      Case ("VmSize:")
-        Read (val, '(i20)') pss%data(VmSize)
-      Case ("VmLck:")
-        Read (val, '(i20)') pss%data(VmLck)
-      Case ("VmPin:")
-        Read (val, '(i20)') pss%data(VmPin)
-      Case ("VmHWM:")
-        Read (val, '(i20)') pss%data(VmHWM)
-      Case ("VmRSS:")
-        Read (val, '(i20)') pss%data(VmRSS)
-      Case ("RssAnon:")
-        Read (val, '(i20)') pss%data(RssAnon)
-      Case ("RssFile:")
-        Read (val, '(i20)') pss%data(RssFile)
-      Case ("RssShmem:")
-        Read (val, '(i20)') pss%data(RssShmem)
-      Case ("VmData:")
-        Read (val, '(i20)') pss%data(VmData)
-      Case ("VmStk:")
-        Read (val, '(i20)') pss%data(VmStk)
-      Case ("VmExe:")
-        Read (val, '(i20)') pss%data(VmExe)
-      Case ("VmLib:")
-        Read (val, '(i20)') pss%data(VmLib)
-      Case ("VmPTE:")
-        Read (val, '(i20)') pss%data(VmPTE)
-      Case ("VmSwap:")
-        Read (val, '(i20)') pss%data(VmSwap)
-      Case ("HugetlbPages:")
-        Read (val, '(i20)') pss%data(HugetlbPages)
-      Case ("Threads:")
-        Read (val, '(i20)') pss%data(Threads)
-      Case ("voluntary_ctxt_switches:")
-        Read (val, '(i20)') pss%data(voluntary_ctxt_switches)
-      Case ("nonvoluntary_ctxt_switches:")
-        Read (val, '(i20)') pss%data(nonvoluntary_ctxt_switches)
-      End Select
+      ind = Index(aux, ":")
+      ! some entries may not have values
+      If (ind /= 0) Then
+        label = aux(0:ind-1)
+        val = aux(ind:)
+        Select Case (Trim (label))
+        Case ("VmPeak:")
+          Read (val, '(i20)') pss%data(VmPeak)
+          Read (aux, *) a, a, pss%sunit
+        Case ("VmSize:")
+          Read (val, '(i20)') pss%data(VmSize)
+        Case ("VmLck:")
+          Read (val, '(i20)') pss%data(VmLck)
+        Case ("VmPin:")
+          Read (val, '(i20)') pss%data(VmPin)
+        Case ("VmHWM:")
+          Read (val, '(i20)') pss%data(VmHWM)
+        Case ("VmRSS:")
+          Read (val, '(i20)') pss%data(VmRSS)
+        Case ("RssAnon:")
+          Read (val, '(i20)') pss%data(RssAnon)
+        Case ("RssFile:")
+          Read (val, '(i20)') pss%data(RssFile)
+        Case ("RssShmem:")
+          Read (val, '(i20)') pss%data(RssShmem)
+        Case ("VmData:")
+          Read (val, '(i20)') pss%data(VmData)
+        Case ("VmStk:")
+          Read (val, '(i20)') pss%data(VmStk)
+        Case ("VmExe:")
+          Read (val, '(i20)') pss%data(VmExe)
+        Case ("VmLib:")
+          Read (val, '(i20)') pss%data(VmLib)
+        Case ("VmPTE:")
+          Read (val, '(i20)') pss%data(VmPTE)
+        Case ("VmSwap:")
+          Read (val, '(i20)') pss%data(VmSwap)
+        Case ("HugetlbPages:")
+          Read (val, '(i20)') pss%data(HugetlbPages)
+        Case ("Threads:")
+          Read (val, '(i20)') pss%data(Threads)
+        Case ("voluntary_ctxt_switches:")
+          Read (val, '(i20)') pss%data(voluntary_ctxt_switches)
+        Case ("nonvoluntary_ctxt_switches:")
+          Read (val, '(i20)') pss%data(nonvoluntary_ctxt_switches)
+        End Select
+      End If
     End Do
     Close (u)
   End Subroutine myInfoStatus
