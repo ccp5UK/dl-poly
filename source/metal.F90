@@ -45,6 +45,8 @@ Module metal
                              lower_case,&
                              word_2_real
   Use site,            Only: site_type
+  Use statistics,      Only: stats_type,&
+                             calculate_stress
 
 #ifdef HALF_HALO
   Use numerics,        Only: local_index
@@ -191,7 +193,7 @@ Contains
   End Subroutine allocate_metal_erf_arrays
 
   Subroutine metal_forces &
-    (iatm, xxt, yyt, zzt, rrt, engmet, virmet, stress, safe, ntype_atom, met, neigh, config)
+    (iatm, xxt, yyt, zzt, rrt, engmet, virmet, stress, safe, ntype_atom, met, neigh, config, stats)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -220,6 +222,7 @@ Contains
     Real(Kind=wp),                              Intent(  Out) :: virmet, engmet
     Real(Kind=wp), Dimension(1:neigh%max_list), Intent(In   ) :: rrt, zzt, yyt, xxt
     Type(configuration_type),                   Intent(InOut) :: config
+    Type(stats_type),                           Intent(InOut) :: stats
 
     Integer       :: ai, aj, idi, jatm, k0, k1, k2, key, keypot, ki, kj, kmn, kmx, l, ld, m, mmm, &
                      nnn
@@ -228,6 +231,7 @@ Contains
                      gamma3, gk0, gk1, gk2, mmmr, nnnr, ppd, ppp, qqq, rdr, rr0, rr1, rrr, rsq, &
                      sig, strs1, strs2, strs3, strs5, strs6, strs9, t1, t2, t3, t4, vk0, vk1, vk2
 
+    Real(Kind=wp) :: x_temp(1:3), f_temp(1:3), stress_temp_comp(9)
     ! initialise potential energy and virial
 
     engmet = 0.0_wp
@@ -868,6 +872,22 @@ Contains
 #ifndef HALF_HALO
           End If
 #endif /* HALF_HALO */
+
+          If (stats%collect_pp_eng_str) Then
+            x_temp = (/ xxt(m), yyt(m), zzt(m) /)
+            f_temp = (/ fx, fy, fz /)
+            stress_temp_comp = calculate_stress( x_temp, f_temp  )
+            stats%pp_energy(iatm) = stats%pp_energy(iatm) + eng * 0.5_wp
+            stats%pp_stress(:, iatm) = stats%pp_stress(:, iatm) + stress_temp_comp * 0.5_wp
+#ifndef HALF_HALO
+            If (jatm <= config%natms) Then
+#endif /* HALF_HALO */
+              stats%pp_energy(jatm) = stats%pp_energy(jatm) + eng * 0.5_wp
+              stats%pp_stress(:, jatm) = stats%pp_stress(:, jatm) + stress_temp_comp * 0.5_wp
+#ifndef HALF_HALO
+            End If
+#endif /* HALF_HALO */
+          End If
 
         End If
 

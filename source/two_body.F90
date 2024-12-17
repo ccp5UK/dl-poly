@@ -368,7 +368,7 @@ Contains
         ! calculate metal forces and potential
 
         If (met%n_potentials > 0) Then
-          Call metal_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, safe, sites%ntype_atom, met, neigh, config)
+          Call metal_forces(i, xxt, yyt, zzt, rrt, engacc, viracc, stats%stress, safe, sites%ntype_atom, met, neigh, config, stats)
 
           engmet = engmet + engacc
           virmet = virmet + viracc

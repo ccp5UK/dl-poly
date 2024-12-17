@@ -16,6 +16,8 @@ interactions.
 To enable the calculation of heat flux add the **heat_flux** keyword
 into the CONTROL file.
 
+Heat flux is currently supported for: direct and tabulated VDW interactions (see Table :numref:`(%s)<vdw-table>`), SPME interactions, and direct and tabulated metal potentials (see Table :numref:`(%s)<metal-table>`). Tersoff, three, and four body potentials are currently unsupported.
+
 Theory
 ~~~~~~
 

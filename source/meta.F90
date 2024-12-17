@@ -908,6 +908,23 @@ Contains
       Call read_correlations_parameters(params, stats(ff), comm, config(ff), sites(ff))
     End Do
 
+    If (flow%heat_flux) Then
+      Do ff = 1, flow%num_ff
+        If (threebody(ff)%ntptbp > 0) Then
+          Write (message, '(a, i0)') "Heat flux contributions unsupported for three-body interactions in field", ff
+          Call warning(message, .true.)
+        End If
+        If (fourbody(ff)%n_potential > 0) Then
+          Write (message, '(a, i0)') "Heat flux contributions unsupported for four-body interactions in field", ff
+          Call warning(message, .true.)
+        End If
+        If (tersoffs(ff)%n_potential > 0) Then
+          Write (message, '(a, i0)') "Heat flux contributions unsupported for Tersoff interactions in field", ff
+          Call warning(message, .true.)
+        End If
+      End Do
+    End If
+
     Call params%destroy()
 
 #ifdef CHRONO
