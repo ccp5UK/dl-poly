@@ -56,8 +56,14 @@ Contains
     unit_test = convert_units(1.0_wp, 'atm', 'GPa')
     Call assert(unit_test, atm_GPa, "atm->GPa fail", passed_accum = passed)
 
+    unit_test = convert_units(1.0_wp, 'bar', 'GPa')
+    Call assert(unit_test, 0.0001_wp, "bar->Gpa fail", passed_accum = passed)
+
     unit_test = convert_units(1.0_wp, 'N/m^2', 'Pa')
     Call assert(unit_test, 1.0_wp, "N/m^2->Pa fail", passed_accum = passed)
+
+    unit_test = convert_units(1.0_wp, 'N/m^2', 'bar')
+    Call assert(unit_test, 0.00001_wp, "M/m^2->bar fail", passed_accum = passed)
 
     unit_test = convert_units(1.0_wp, 'grav', 'm/s^2')
     Call assert(unit_test, 9.81_wp, "g->m/s^2 fail", passed_accum = passed)

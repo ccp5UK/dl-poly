@@ -295,6 +295,7 @@ contains
          & init_unit(abbrev="internal_p (163atm)", name="163 atm", mass=1, length=-1, time=-2, to_internal=1.0_wp))
     call units_table%set("atm", init_unit(abbrev="atm", name="Atmosphere", mass=1, length=-1, time=-2, to_internal=atmosphere))
     call units_table%set("pa", init_unit(abbrev="Pa", name="Pascal", mass=1, length=-1, time=-2, to_internal=pascal))
+    call units_table%set("bar", init_unit(abbrev="bar", name="Bar", mass=1, length=-1, time=-2, to_internal=100000.0_wp*pascal))
 
     ! Force
 
