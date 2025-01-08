@@ -88,13 +88,15 @@ module control_output
   Use thermostat,               Only: &
                                       CONSTRAINT_NONE, CONSTRAINT_SEMI_ORTHORHOMBIC, &
                                       CONSTRAINT_SURFACE_AREA, CONSTRAINT_SURFACE_TENSION, &
-                                      DPD_FIRST_ORDER, DPD_NULL, DPD_SECOND_ORDER, &
+                                      DPD_NULL, DPD_MDVV, DPD_ZEROTH_ORDER, &
+                                      DPD_FIRST_ORDER, DPD_SECOND_ORDER, &
                                       ENS_NPT_BERENDSEN, ENS_NPT_BERENDSEN_ANISO, &
                                       ENS_NPT_LANGEVIN, ENS_NPT_LANGEVIN_ANISO, ENS_NPT_MTK, &
                                       ENS_NPT_MTK_ANISO, ENS_NPT_NOSE_HOOVER, &
                                       ENS_NPT_NOSE_HOOVER_ANISO, ENS_NVE, ENS_NVT_ANDERSON, &
                                       ENS_NVT_BERENDSEN, ENS_NVT_EVANS, ENS_NVT_GENTLE, &
                                       ENS_NVT_LANGEVIN, ENS_NVT_LANGEVIN_INHOMO, ENS_NVT_NOSE_HOOVER,&
+                                      ENS_NVT_DPD_SHARDLOW, ENS_NVT_DPD_MDVV, &
                                       PSEUDO_LANGEVIN_DIRECT, PSEUDO_LANGEVIN, PSEUDO_GAUSSIAN,&
                                       PSEUDO_DIRECT, thermostat_type
   Use three_body,               Only: threebody_type
@@ -872,25 +874,8 @@ Contains
 
     ensembles:Select Case(thermo%ensemble)
     Case (ENS_NVE)
-      Select Case (thermo%key_dpd)
-      Case (DPD_NULL)
-        Call write_param('Ensemble', 'NVE (Microcanonical)', indent=1)
-      Case (DPD_FIRST_ORDER)
 
-        Call write_param('Ensemble', 'NVT dpd (Dissipative Particle Dynamics)', indent=1)
-        Call write_param('Ensemble type', "Shardlow's first order splitting (S1)", indent=1)
-
-      Case (DPD_SECOND_ORDER)
-
-        Call write_param('Ensemble', 'NVT dpd (Dissipative Particle Dynamics)', indent=1)
-        Call write_param('Ensemble type', "Shardlow's first order splitting (S2)", indent=1)
-
-      End Select
-
-      If (allocated(thermo%gamdpd)) then
-        if (thermo%gamdpd(0) > zero_plus) &
-             Call write_param('Drag coefficient', thermo%gamdpd(0), 'Da/ps', indent=2)
-      end If
+      Call write_param('Ensemble', 'NVE (Microcanonical)', indent=1)
 
     Case (ENS_NVT_EVANS)
 
@@ -944,6 +929,24 @@ Contains
   
       End If
 
+    Case (ENS_NVT_DPD_SHARDLOW)
+
+      Call write_param('Ensemble', 'NVT dpd (Dissipative Particle Dynamics)', indent=1)
+
+      Select Case (thermo%key_dpd)
+      Case (DPD_ZEROTH_ORDER)
+        Call write_param('DPD thermostat integration method', "Shardlow's zeroth order splitting (S0)", indent=1)
+      Case (DPD_FIRST_ORDER)
+        Call write_param('DPD thermostat integration method', "Shardlow's first order splitting (S1)", indent=1)
+      Case (DPD_SECOND_ORDER)
+        Call write_param('DPD thermostat integration method', "Shardlow's second order splitting (S2)", indent=1)
+      End Select
+
+    Case (ENS_NVT_DPD_MDVV)
+
+      Call write_param('Ensemble', 'NVT dpd (Dissipative Particle Dynamics)', indent=1)
+      Call write_param('DPD thermostat integration method', "Molecular Dynamics Velocity Verlet (MD-VV)", indent=1)
+
     Case (ENS_NPT_LANGEVIN)
 
       Call write_param('Ensemble', 'NPT isotropic Langevin (Stochastic Dynamics)', indent=1)
@@ -993,6 +996,12 @@ Contains
       Call write_param('Barostat relaxation time', thermo%tau_p, 'internal_t', indent=2)
 
     End Select ensembles
+
+    ! For any dpd thermostat ensembles
+    If (allocated(thermo%gamdpd)) then
+      if (thermo%gamdpd(0) > zero_plus) &
+           Call write_param('Drag coefficient', thermo%gamdpd(0), 'Da/ps', indent=2)
+    end If
 
     ! Semi isotropic ensembles
 

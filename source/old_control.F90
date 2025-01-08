@@ -121,7 +121,8 @@ Module old_control
                                   ENS_NPT_NOSE_HOOVER, ENS_NPT_NOSE_HOOVER_ANISO, ENS_NVE, &
                                   ENS_NVT_ANDERSON, ENS_NVT_BERENDSEN, ENS_NVT_EVANS, &
                                   ENS_NVT_GENTLE, ENS_NVT_LANGEVIN, ENS_NVT_LANGEVIN_INHOMO, &
-                                  ENS_NVT_NOSE_HOOVER, PSEUDO_DIRECT, PSEUDO_GAUSSIAN, &
+                                  ENS_NVT_NOSE_HOOVER, ENS_NVT_DPD_SHARDLOW, &
+                                  PSEUDO_DIRECT, PSEUDO_GAUSSIAN, &
                                   PSEUDO_LANGEVIN, PSEUDO_LANGEVIN_DIRECT, thermostat_type
   Use timer,                Only: timer_type
   Use trajectory,           Only: trajectory_type
@@ -1391,16 +1392,12 @@ Contains
 
           Else If (word(1:3) == 'dpd') Then
 
-            Call info('Ensemble : NVT dpd (Dissipative Particle Dynamics)', .true.)
-
             ! thermo%key_dpd determined in scan_control
 
             If (thermo%key_dpd == DPD_FIRST_ORDER) Then
-              thermo%ensemble = ENS_NVE ! equivalence to doing NVE with some extra fiddling before VV(0)
-              Call info("Ensemble type : Shardlow's first order splitting (S1)", .true.)
+              thermo%ensemble = ENS_NVT_DPD_SHARDLOW
             Else If (thermo%key_dpd == DPD_SECOND_ORDER) Then
-              thermo%ensemble = ENS_NVE ! equivalence to doing NVE with some extra fiddling before VV(0) and after VV(1)
-              Call info("Ensemble type : Shardlow's second order splitting (S2)", .true.)
+              thermo%ensemble = ENS_NVT_DPD_SHARDLOW
             Else
               Call strip_blanks(record)
               Write (message, '(2(a,1X))') Trim(word), record

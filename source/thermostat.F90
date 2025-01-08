@@ -27,10 +27,14 @@ Module thermostat
   ! DPD keys
   !> No DPD
   Integer(Kind=wi), Parameter, Public :: DPD_NULL = 0
+  !> Zeroth order splitting
+  Integer(Kind=wi), Parameter, Public :: DPD_ZEROTH_ORDER = 1
   !> First order splitting
-  Integer(Kind=wi), Parameter, Public :: DPD_FIRST_ORDER = 1
+  Integer(Kind=wi), Parameter, Public :: DPD_FIRST_ORDER = 2
   !> Second order splitting
-  Integer(Kind=wi), Parameter, Public :: DPD_SECOND_ORDER = 2
+  Integer(Kind=wi), Parameter, Public :: DPD_SECOND_ORDER = 3
+  !> MD-VV Style Integrator
+  Integer(Kind=wi), Parameter, Public :: DPD_MDVV = 4
 
   ! Pseudo thermostat keys
   !> Langevin + direct temperature scaling
@@ -79,6 +83,11 @@ Module thermostat
   Integer(Kind=wi), Parameter, Public :: ENS_NPT_NOSE_HOOVER_ANISO = 32
   !> Isobaric isothermal ensemble anisotropic Martyna-Tuckerman-Klein
   Integer(Kind=wi), Parameter, Public :: ENS_NPT_MTK_ANISO = 33
+
+  !> Cannonical ensemble dpd thermostat with Shardlow splitting
+  Integer(Kind=wi), Parameter, Public :: ENS_NVT_DPD_SHARDLOW = 40
+  !> Cannonical ensemble dpd thermostat with md-vv style integration of dpd forces
+  Integer(Kind=wi), Parameter, Public :: ENS_NVT_DPD_MDVV = 41
 
   ! Anisotropic barostat constraint keys
   !> Fully anisotropic, no constraints

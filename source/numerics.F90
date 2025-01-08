@@ -688,7 +688,7 @@ Contains
 
   End Subroutine box_mueller_saru1
 
-  Subroutine box_mueller_saru2(seed, i, j, n, gauss1, l_str)
+  Subroutine box_mueller_saru2(seed, i, j, n, gauss, l_str)
 
     !!----------------------------------------------------------------------!
     !!
@@ -705,31 +705,32 @@ Contains
     !!           - j.madge march-october 2018
     !!           - a.b.g.chalk march-october 2018
     !!           - i.scivetti march-october 2018
+    !! contrib   - k.a.jonathan september 2024 - randomise k seed from n seed
+    !!                                           to avoid correlations
     !!
     !!----------------------------------------------------------------------!
 
     Type(seed_type), Intent(InOut) :: seed
     Integer,         Intent(In   ) :: i, j, n
-    Real(Kind=wp),   Intent(  Out) :: gauss1
+    Real(Kind=wp),   Intent(  Out) :: gauss
     Logical,         Intent(In   ) :: l_str
 
     Integer       :: k
     Real(Kind=wp) :: ran0, ran1, ran2
 
-    ! Initialise counter
-
-    k = n
-
-    ! Avoid overflow due to Box_Mueller rejection rate of sampling = (1-p/4) = 0.214
-
-    If (Huge(1) - k <= 50) k = -Huge(1) + 49
-
     ! CLT approximation
 
     If (.not. l_str) Then
-      ran0 = rt3 * (2.0_wp * sarurnd(seed, i, j, k) - 1.0_wp)
+      gauss = rt3 * (2.0_wp * sarurnd(seed, i, j, n) - 1.0_wp)
       Return
     End If
+
+    ! initialise k seed/counter to random large int, seeded from n
+    ! cannot use n seed as k seed directly as 2 step looping condition below causes correlations
+    ! between n, n+2, n+4, ... for the same i, j
+    ! -50 on Huge to avoid overflow due to Box_Mueller rejection rate of sampling = (1-p/4) = 0.214
+
+    k = Int((2.0_wp * sarurnd(seed,i,j,n) - 1.0_wp) * (Huge(1) - 50))
 
     ! generate uniform random numbers on [-1, 1)
 
@@ -738,13 +739,14 @@ Contains
       ran1 = 2.0_wp * sarurnd(seed, i, j, k) - 1.0_wp
       ran2 = 2.0_wp * sarurnd(seed, i, j, k + 1) - 1.0_wp
       ran0 = ran1**2 + ran2**2
+
       k = k + 2
     End Do
 
-    ! calculate gaussian random numbers 1 & 2
+    ! calculate gaussian random number
 
     ran0 = Sqrt(-2.0_wp * Log(ran0) / ran0)
-    gauss1 = ran0 * ran1
+    gauss = ran0 * ran1
 
   End Subroutine box_mueller_saru2
 

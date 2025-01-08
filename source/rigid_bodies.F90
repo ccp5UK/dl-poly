@@ -179,7 +179,7 @@ Contains
     Allocate (T%list(-1:T%max_list, 1:T%max_rigid), stat=fail(3))
     Allocate (T%legend(0:T%max_frozen, 1:mxatdm), stat=fail(4))
     Allocate (T%list_shared(1:mxlshp), T%map_shared(1:neighbours), stat=fail(5))
-    Allocate (T%frozen(0:T%max_list, 1:T%max_type), T%index_global(0:T%max_list, 1:T%max_type), stat=fail(6))
+    Allocate (T%frozen(0:T%max_list, 1:T%max_type), T%index_global(0:3, 1:T%max_type), stat=fail(6))
     Allocate (T%weight(0:T%max_list, 1:T%max_type), T%weightless(0:T%max_list, 1:T%max_type), stat=fail(7))
     Allocate (T%index_local(0:T%max_list, 1:T%max_rigid), stat=fail(8))
     Allocate (T%x(1:T%max_list, 1:T%max_type), T%y(1:T%max_list, 1:T%max_type), T%z(1:T%max_list, 1:T%max_type), stat=fail(9))

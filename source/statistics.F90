@@ -160,7 +160,8 @@ Module statistics
                                          virfld = 0.0_wp, virdpd = 0.0_wp
     Real(Kind=wp)                      :: strtot(1:9) = 0.0_wp, strkin(1:9) = 0.0_wp, strknf(1:9) = 0.0_wp, &
                                          strknt(1:9) = 0.0_wp, strcom(1:9) = 0.0_wp, strcon(1:9) = 0.0_wp, &
-                                         strpmf(1:9) = 0.0_wp, stress(1:9) = 0.0_wp, strdpd(1:9) = 0.0_wp
+                                         strpmf(1:9) = 0.0_wp, stress(1:9) = 0.0_wp, strdpdr(1:9) = 0.0_wp, &
+                                         strdpdd(1:9) = 0.0_wp
     Real(Kind=wp)                      :: clin(1:9) = 0.0_wp
     ! constraints accumulators
     Real(Kind=wp), Public              :: passcnq(1:5) = (/ & ! QUENCHING per call

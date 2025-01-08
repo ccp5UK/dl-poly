@@ -3955,6 +3955,7 @@ Contains
             If (thermo%key_dpd /= DPD_NULL) Then
               If (All(thermo%gamdpd(1:vdws%max_vdw) <= zero_plus)) Then ! So thermo%gamdpd(0) <= zero_plus too
                 thermo%key_dpd = DPD_NULL
+                thermo%ensemble = ENS_NVE
                 Call info( &
                   'Ensemble NVT dpd defaulting to NVE (Microcanonical) ' &
                   //'due to all drag coefficients equal to zero', .true.)

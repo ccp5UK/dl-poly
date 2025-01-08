@@ -7,6 +7,7 @@ Module dpd
   ! copyright - daresbury laboratory
   ! author    - i.t.todorov march 2016
   ! contrib   - m.a.seaton august 2020
+  !           - k.a.jonathan september 2024
   ! refactoring:
   !           - a.m.elena march-october 2018
   !           - j.madge march-october 2018
@@ -30,13 +31,17 @@ Module dpd
   Use kinds,           Only: wp,STR_LEN
   Use neighbours,      Only: neighbours_type
   Use numerics,        Only: box_mueller_saru2,&
+                             images,&
                              seed_type
-  Use rigid_bodies,    Only: rigid_bodies_type
+  Use rigid_bodies,    Only: getrotmat, rigid_bodies_type
   Use shared_units,    Only: SHARED_UNIT_UPDATE_FORCES,&
                              update_shared_units
   Use statistics,      Only: stats_type
-  Use thermostat,      Only: DPD_FIRST_ORDER,&
+  Use thermostat,      Only: DPD_ZEROTH_ORDER,&
+                             DPD_FIRST_ORDER,&
                              DPD_SECOND_ORDER,&
+                             DPD_MDVV,&
+                             DPD_NULL,&
                              VV_FIRST_STAGE,&
                              VV_SECOND_STAGE,&
                              thermostat_type
@@ -48,17 +53,18 @@ Module dpd
 
   Private
 
-  Public :: dpd_thermostat
+  Public :: dpd_shardlow_integrate, dpd_mdvv_forces
 
 Contains
 
-  Subroutine dpd_thermostat(stage, l_str, rcut, nstep, tstep, stats, thermo, neigh, rigid, domain, config, seed, comm)
+  Subroutine dpd_shardlow_integrate(stage, l_str, rcut, nstep, tstep, stats, thermo, neigh, rigid, domain, config, seed, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
-    ! dl_poly_4 subroutine applying DPD thermostat in a Shardlow's VV manner
-    ! using the verlet neighbour neigh%list
+    ! dl_poly_4 subroutine applying DPD thermostat in a Shardlow splitting 
+    ! manner using the verlet neighbour neigh%list
     !
+    ! thermo%key_dpd = DPD_ZEROTH_ORDER for zeroth order splitting
     ! thermo%key_dpd = DPD_FIRST_ORDER for first order splitting
     ! thermo%key_dpd = DPD_SECOND_ORDER for second order splitting
     !
@@ -71,6 +77,8 @@ Contains
     !           - i.scivetti march-october 2018
     ! contrib   - i.t.todorov may 2020 - 'half-halo' VNL
     !           - m.a.seaton august 2020 - preprocessing tags and array sizes
+    !           - k.a.jonathan september 2024 - zeroth order splitting,
+    !             integration of RBs vels, reduced mass in equations
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -89,333 +97,306 @@ Contains
     Type(comms_type),         Intent(InOut) :: comm
 
     Character(len=256)                       :: message
-    Integer                                  :: ai, aj, fail(1:2), i, idi, idj, j, k, key, limit, &
+    Integer                                  :: ai, aj, fail, i, idi, idj, j, k, key, limit, &
                                                 nst_p
-    Real(Kind=wp)                            :: dgamma, fix, fiy, fiz, fx, fy, fz, gamma, gauss, &
-                                                hstep, rgamma, rrr, rstsq, scl, scrn, strs1, &
-                                                strs2, strs3, strs5, strs6, strs9, tmp, tst_p
-    Real(Kind=wp), Allocatable, Dimension(:) :: fdpdx, fdpdy, fdpdz, rrt, xxt, yyt, zzt
+    Real(Kind=wp)                            :: dgamma, gamma, gauss, &
+                                                hstep, rgamma, rrr, r_sqrt_tstp, scl, scrn, &
+                                                tmp, tst_p, rmassij, xdif, ydif, zdif, &
+                                                vxdif, vydif, vzdif, rdotv, tstepfrac, &
+                                                strsdrag(9), strsrand(9)
+    Real(Kind=wp), Allocatable, Dimension(:) :: fdpdx, fdpdy, fdpdz
 
-    If (Any(thermo%key_dpd /= [DPD_FIRST_ORDER, DPD_SECOND_ORDER]) .or. &
-        (thermo%key_dpd == DPD_FIRST_ORDER .and. stage == VV_SECOND_STAGE)) Return
+    If ( (thermo%key_dpd == DPD_NULL) .or. &
+         (thermo%key_dpd == DPD_MDVV) .or. &
+         (thermo%key_dpd /= DPD_SECOND_ORDER .and. stage == VV_SECOND_STAGE) ) Return
 
     fail = 0
-    Allocate (xxt(1:neigh%max_list), yyt(1:neigh%max_list), zzt(1:neigh%max_list), rrt(1:neigh%max_list), Stat=fail(1))
-#ifdef HALF_HALO
-    Allocate (fdpdx(1:config%mxatms), fdpdy(1:config%mxatms), fdpdz(1:config%mxatms), Stat=fail(2))
-#else
-    Allocate (fdpdx(1:config%mxatdm), fdpdy(1:config%mxatdm), fdpdz(1:config%mxatdm), Stat=fail(2))
-#endif
-    If (Any(fail > 0)) Then
-      Write (message, '(a)') 'dpd_thermostat allocation failure'
+    Allocate (fdpdx(1:config%mxatms), fdpdy(1:config%mxatms), fdpdz(1:config%mxatms), Stat=fail)
+
+    If (fail > 0) Then
+      Write (message, '(a)') 'dpd_shardlow_integrate force array allocation failure'
       Call error(0, message)
     End If
 
-    ! set tstep and nstep wrt to order of splitting
+    ! set effective timestep, tst_p, and random number seed, nst_p, wrt splitting order
 
-    If (thermo%key_dpd == DPD_FIRST_ORDER) Then
+    If (thermo%key_dpd == DPD_ZEROTH_ORDER) Then
+
+      nst_p = nstep
+      ! double tstep accounts for integration over full timestep 
+      ! in one pass for zeroth order splitting
+      tst_p = 2.0_wp * tstep
+
+    Else If (thermo%key_dpd == DPD_FIRST_ORDER) Then
+      
       nst_p = nstep
       tst_p = tstep
-    Else
-      If (stage == VV_FIRST_STAGE) Then
-        nst_p = nstep
-      Else ! If (stage == VV_SECOND_STAGE) Then
-        nst_p = -nstep
-      End If
+
+    Else ! DPD_SECOND_ORDER
+
+      ! accounts for integration over half timestep twice in second order splitting
       tst_p = 0.5_wp * tstep
+
+      If (stage == VV_FIRST_STAGE) Then
+
+        nst_p = nstep
+
+      Else ! VV_SECOND_STAGE
+
+        ! ensures different random number in second shardlow call for second order splitting
+        nst_p = -nstep
+
+      End If
+
     End If
 
     ! Set tstep derivatives
 
     hstep = 0.5_wp * tst_p
-    rstsq = 1.0_wp / Sqrt(tst_p)
+    tstepfrac = hstep / tstep
+    r_sqrt_tstp = 1.0_wp / Sqrt(tstep)
 
-    ! initialise DPD virial and stress contributions
+    ! random force scaled in 2nd order to account for symmetric application over
+    ! effectively a timestep of half the size
+
+    If (thermo%key_dpd == DPD_SECOND_ORDER) Then
+      r_sqrt_tstp = r_sqrt_tstp * Sqrt(2.0_wp)
+    End If
+
+    ! Initialise DPD virial and stress contributions
 
     If (stage == VV_FIRST_STAGE) Then
       stats%virdpd = 0.0_wp
-      stats%strdpd = 0.0_wp
+      stats%strdpdr = 0.0_wp
+      stats%strdpdd = 0.0_wp
     End If
 
-    ! FIRST PASS
-
-    ! Initialise forces
+    ! Initialise local force and stress arrays
 
     fdpdx = 0.0_wp
     fdpdy = 0.0_wp
     fdpdz = 0.0_wp
 
+    strsdrag = 0.0_wp
+    strsrand = 0.0_wp
+
     ! Refresh halo velocities
 
     Call dpd_v_set_halo(domain, config, comm)
 
-    ! outer loop over atoms
+    ! First pass of shardlow ignored in zeroth order splitting
+    If (thermo%key_dpd /= DPD_ZEROTH_ORDER) Then
 
-    Do i = 1, config%natms
+      ! FIRST PASS
 
-      ! Get neigh%list limit
+      ! outer loop over atoms
 
-      limit = Merge(neigh%list(0, i), 0, config%weight(i) > 1.0e-6_wp)
+      Do i = 1, config%natms
 
-      ! calculate interatomic distances
+        ! primary atom type and global index
 
-      Do k = 1, limit
-        j = neigh%list(k, i)
+        ai = config%ltype(i)
+        idi = config%ltg(i)
 
-        xxt(k) = config%parts(i)%xxx - config%parts(j)%xxx
-        yyt(k) = config%parts(i)%yyy - config%parts(j)%yyy
-        zzt(k) = config%parts(i)%zzz - config%parts(j)%zzz
-      End Do
+        ! loop over all valid pairs - ignore massless particles
 
-      ! square of distances
+        limit = Merge(neigh%list(0, i), 0, config%weight(i) > 1.0e-6_wp)
 
-      Do k = 1, limit
-        rrt(k) = Sqrt(xxt(k)**2 + yyt(k)**2 + zzt(k)**2)
-      End Do
+        Do k = 1, limit
 
-      ! initialise stress tensor accumulators
+          ! Secondary atom index, type, and global index
 
-      strs1 = 0.0_wp
-      strs2 = 0.0_wp
-      strs3 = 0.0_wp
-      strs5 = 0.0_wp
-      strs6 = 0.0_wp
-      strs9 = 0.0_wp
-
-      ! global identity and atomic type of i
-
-      idi = config%ltg(i)
-      ai = config%ltype(i)
-
-      ! load forces
-
-      fix = fdpdx(i)
-      fiy = fdpdy(i)
-      fiz = fdpdz(i)
-
-      ! start of primary loop for forces evaluation
-
-      Do k = 1, limit
-
-        ! secondary atomic index
-
-        j = neigh%list(k, i)
-
-        ! interatomic distance
-
-        rrr = rrt(k)
-
-        ! validity of thermalisation
-
-        If (rrr < rcut .and. config%weight(j) > 1.0e-6_wp) Then
-
-          ! secondary atomic type and global index
-
+          j = neigh%list(k,i)
           aj = config%ltype(j)
           idj = config%ltg(j)
 
-          ! Get gaussian random number with zero mean
+          ! Calculate r_ij, |r_ij|
 
-          Call box_mueller_saru2(seed, idi, idj, nst_p, gauss, l_str)
+          xdif = config%parts(i)%xxx - config%parts(j)%xxx
+          ydif = config%parts(i)%yyy - config%parts(j)%yyy
+          zdif = config%parts(i)%zzz - config%parts(j)%zzz
 
-          ! screening function
+          rrr = Sqrt(xdif**2 + ydif**2 + zdif**2)
 
-          scrn = (rcut - rrr) / (rrr * rcut)
+          ! Calculate forces for valid pairs
 
-          ! Get mixing type function
+          If (rrr < rcut .and. config%weight(j) > 1.0e-6_wp) Then
 
-          If (ai > aj) Then
-            key = ai * (ai - 1) / 2 + aj
-          Else
-            key = aj * (aj - 1) / 2 + ai
+            ! Calculate v_ij, and (r_ij . v_ij)
+
+            vxdif = config%vxx(i) - config%vxx(j)
+            vydif = config%vyy(i) - config%vyy(j)
+            vzdif = config%vzz(i) - config%vzz(j)
+
+            rdotv = xdif*vxdif + ydif*vydif + zdif*vzdif
+
+            ! Get mixing type function - key for interaction strength
+
+            If (ai > aj) Then
+              key = ai * (ai - 1) / 2 + aj
+            Else
+              key = aj * (aj - 1) / 2 + ai
+            End If
+
+            ! Get gaussian random number with zero mean (held in gauss var)
+            ! Global id check ensure same random number for same pair of particles
+
+            If (idi < idj) Then
+              Call box_mueller_saru2(seed, idi, idj, nst_p, gauss, l_str)
+            Else
+              Call box_mueller_saru2(seed, idj, idi, nst_p, gauss, l_str)
+            End If
+
+            ! Screening function, related to the drag and random weight functions:
+            ! w_D = scrn**2 * rrr**2
+            ! w_R = scrn * rrr
+
+            scrn = (rcut - rrr) / (rrr * rcut)         
+
+            ! Calculate random and drag components
+
+            rgamma = thermo%sigdpd(key) * scrn * gauss * r_sqrt_tstp
+            dgamma = - thermo%gamdpd(key) * scrn**2 * rdotv
+
+            ! Total force component gamma_ij such that, summed over all pairs
+            ! v_i(t+hstep) = v_i(t) + (hstep / m_i) * (gamma_ij * r_ij)
+
+            gamma = rgamma + dgamma
+
+            ! Update forces
+
+            fdpdx(i) = fdpdx(i) + gamma * xdif
+            fdpdy(i) = fdpdy(i) + gamma * ydif
+            fdpdz(i) = fdpdz(i) + gamma * zdif
+      
+#ifndef HALF_HALO
+            If (j <= config%natms) Then
+#endif /* HALF_HALO */
+
+              fdpdx(j) = fdpdx(j) - gamma * xdif
+              fdpdy(j) = fdpdy(j) - gamma * ydif
+              fdpdz(j) = fdpdz(j) - gamma * zdif
+              
+#ifndef HALF_HALO
+            End If
+#endif /* HALF_HALO */
+
+            !     Assign stress terms (only when second particle is in subdomain
+            !     or has larger global particle index than first to avoid double-counting)
+
+#ifndef HALF_HALO
+            If (j <= config%natms .or. idi < idj) Then
+#endif /* HALF_HALO */
+
+              strsrand(1) = strsrand(1) + rgamma * xdif * xdif * tstepfrac ! random stress_xx
+              strsrand(2) = strsrand(2) + rgamma * ydif * xdif * tstepfrac ! random stress_xy
+              strsrand(3) = strsrand(3) + rgamma * zdif * xdif * tstepfrac ! random stress_xz
+              strsrand(5) = strsrand(5) + rgamma * ydif * ydif * tstepfrac ! random stress_yy
+              strsrand(6) = strsrand(6) + rgamma * ydif * zdif * tstepfrac ! random stress_yz
+              strsrand(9) = strsrand(9) + rgamma * zdif * zdif * tstepfrac ! random stress_zz
+              
+              strsdrag(1) = strsdrag(1) + dgamma * xdif * xdif * tstepfrac ! drag stress_xx
+              strsdrag(2) = strsdrag(2) + dgamma * ydif * xdif * tstepfrac ! drag stress_xy
+              strsdrag(3) = strsdrag(3) + dgamma * zdif * xdif * tstepfrac ! drag stress_xz
+              strsdrag(5) = strsdrag(5) + dgamma * ydif * ydif * tstepfrac ! drag stress_yy
+              strsdrag(6) = strsdrag(6) + dgamma * ydif * zdif * tstepfrac ! drag stress_yz
+              strsdrag(9) = strsdrag(9) + dgamma * zdif * zdif * tstepfrac ! drag stress_zz
+
+#ifndef HALF_HALO
+            End If
+#endif /* HALF_HALO */
+
           End If
 
-          ! Calculate force component
-
-          rgamma = thermo%sigdpd(key) * scrn * gauss * rstsq
-
-          tmp = thermo%gamdpd(key) * (scrn**2)
-          dgamma = -tmp * (xxt(k) * (config%vxx(i) - config%vxx(j)) + &
-                           yyt(k) * (config%vyy(i) - config%vyy(j)) + zzt(k) * (config%vzz(i) - config%vzz(j)))
-
-          gamma = rgamma + dgamma
-
-          ! calculate forces
-
-          fx = gamma * xxt(k)
-          fy = gamma * yyt(k)
-          fz = gamma * zzt(k)
-
-          fix = fix + fx
-          fiy = fiy + fy
-          fiz = fiz + fz
-
-#ifndef HALF_HALO
-          If (j <= config%natms) Then
-#endif /* HALF_HALO */
-
-            fdpdx(j) = fdpdx(j) - fx
-            fdpdy(j) = fdpdy(j) - fy
-            fdpdz(j) = fdpdz(j) - fz
-
-#ifndef HALF_HALO
-          End If
-#endif /* HALF_HALO */
-
-#ifndef HALF_HALO
-          If (j <= config%natms .or. idi < idj) Then
-#endif /* HALF_HALO */
-
-            ! add virial
-
-            stats%virdpd = stats%virdpd - gamma * rrr * rrr
-
-            ! add stress tensor
-
-            strs1 = strs1 + xxt(k) * fx
-            strs2 = strs2 + xxt(k) * fy
-            strs3 = strs3 + xxt(k) * fz
-            strs5 = strs5 + yyt(k) * fy
-            strs6 = strs6 + yyt(k) * fz
-            strs9 = strs9 + zzt(k) * fz
-
-#ifndef HALF_HALO
-          End If
-#endif /* HALF_HALO */
-
-        End If
+        End Do
 
       End Do
 
-      ! load back forces
-
-      fdpdx(i) = fix
-      fdpdy(i) = fiy
-      fdpdz(i) = fiz
-
-      ! complete stress tensor
-
-      stats%strdpd(1) = stats%strdpd(1) + strs1
-      stats%strdpd(2) = stats%strdpd(2) + strs2
-      stats%strdpd(3) = stats%strdpd(3) + strs3
-      stats%strdpd(4) = stats%strdpd(4) + strs2
-      stats%strdpd(5) = stats%strdpd(5) + strs5
-      stats%strdpd(6) = stats%strdpd(6) + strs6
-      stats%strdpd(7) = stats%strdpd(7) + strs3
-      stats%strdpd(8) = stats%strdpd(8) + strs6
-      stats%strdpd(9) = stats%strdpd(9) + strs9
-
-    End Do
-
 #ifdef HALF_HALO
-    ! Share the dpd forces collected in the halo with the parent domains
+      ! Share the dpd forces collected in the halo with the parent domains
 
-    Call refresh_halo_dpd_forces(domain, config, config%mxatms, fdpdx, fdpdy, fdpdz, comm)
+      Call refresh_halo_dpd_forces(domain, config, config%mxatms, fdpdx, fdpdy, fdpdz, comm)
 
 #endif /* HALF_HALO */
-    ! Update velocities or add to conservative forces
 
-    Do i = 1, config%natms
-      If (config%lfree(i) == 0) Then
-        If (config%weight(i) > 1.0e-6_wp) Then
-          tmp = hstep / config%weight(i)
-          config%vxx(i) = config%vxx(i) + tmp * fdpdx(i)
-          config%vyy(i) = config%vyy(i) + tmp * fdpdy(i)
-          config%vzz(i) = config%vzz(i) + tmp * fdpdz(i)
+      ! Update velocities
+
+      Do i = 1, config%natms
+        If (config%lfree(i) == 0) Then
+          If (config%weight(i) > 1.0e-6_wp) Then
+            tmp = hstep / config%weight(i)
+            config%vxx(i) = config%vxx(i) + tmp * fdpdx(i)
+            config%vyy(i) = config%vyy(i) + tmp * fdpdy(i)
+            config%vzz(i) = config%vzz(i) + tmp * fdpdz(i)
+          End If
         End If
-      Else ! a RB member
-        config%parts(i)%fxx = config%parts(i)%fxx + fdpdx(i)
-        config%parts(i)%fyy = config%parts(i)%fyy + fdpdy(i)
-        config%parts(i)%fzz = config%parts(i)%fzz + fdpdz(i)
-      End If
-    End Do
+      End Do
+
+      ! Share and update dpd forces for any RBs shared across domains
+      
+      If (rigid%share) Then
+        Call update_shared_units(config, rigid%list_shared, &
+                                rigid%map_shared, fdpdx, fdpdy, fdpdz, domain, comm)
+      End If    
+
+      ! Integrate velocity updates of RBs due to dpd forces
+
+      Call integrate_rbs_dpd(config, rigid, fdpdx, fdpdy, fdpdz, tst_p)
+
+    End If
 
     ! SECOND PASS
 
-    ! Refresh halo velocities
-
-    Call dpd_v_set_halo(domain, config, comm)
-
-    ! Initialise forces
+    ! Re-initialise local force arrays
 
     fdpdx = 0.0_wp
     fdpdy = 0.0_wp
     fdpdz = 0.0_wp
 
-    ! outer loop over atoms
+    ! Refresh halo velocities
+
+    Call dpd_v_set_halo(domain, config, comm)
 
     Do i = 1, config%natms
 
-      ! Get neigh%list limit
+      ! primary atom type and global index
+
+      ai = config%ltype(i)
+      idi = config%ltg(i)
+
+      ! loop over all valid pairs - ignore massless particles
 
       limit = Merge(neigh%list(0, i), 0, config%weight(i) > 1.0e-6_wp)
 
-      ! calculate interatomic distances
-
-      Do k = 1, limit
-        j = neigh%list(k, i)
-
-        xxt(k) = config%parts(i)%xxx - config%parts(j)%xxx
-        yyt(k) = config%parts(i)%yyy - config%parts(j)%yyy
-        zzt(k) = config%parts(i)%zzz - config%parts(j)%zzz
-      End Do
-
-      ! square of distances
-
-      Do k = 1, limit
-        rrt(k) = Sqrt(xxt(k)**2 + yyt(k)**2 + zzt(k)**2)
-      End Do
-
-      ! initialise stress tensor accumulators
-
-      strs1 = 0.0_wp
-      strs2 = 0.0_wp
-      strs3 = 0.0_wp
-      strs5 = 0.0_wp
-      strs6 = 0.0_wp
-      strs9 = 0.0_wp
-
-      ! global identity and atomic type of i
-
-      idi = config%ltg(i)
-      ai = config%ltype(i)
-
-      ! load forces
-
-      fix = fdpdx(i)
-      fiy = fdpdy(i)
-      fiz = fdpdz(i)
-
-      ! start of primary loop for forces evaluation
-
       Do k = 1, limit
 
-        ! secondary atomic index
+        ! Secondary atom index, type, and global index
 
-        j = neigh%list(k, i)
+        j = neigh%list(k,i)
+        aj = config%ltype(j)
+        idj = config%ltg(j)
 
-        ! interatomic distance
+        ! Calculate r_ij, |r_ij|
 
-        rrr = rrt(k)
+        xdif = config%parts(i)%xxx - config%parts(j)%xxx
+        ydif = config%parts(i)%yyy - config%parts(j)%yyy
+        zdif = config%parts(i)%zzz - config%parts(j)%zzz
 
-        ! validity of thermalisation
+        rrr = Sqrt(xdif**2 + ydif**2 + zdif**2)
+
+        ! Calculate forces for valid pairs
 
         If (rrr < rcut .and. config%weight(j) > 1.0e-6_wp) Then
 
-          ! secondary atomic type and global index
+          ! Calculate v_ij, and (r_ij . v_ij)
 
-          aj = config%ltype(j)
-          idj = config%ltg(j)
+          vxdif = config%vxx(i) - config%vxx(j)
+          vydif = config%vyy(i) - config%vyy(j)
+          vzdif = config%vzz(i) - config%vzz(j)
 
-          ! Get gaussian random number with zero mean
+          rdotv = xdif*vxdif + ydif*vydif + zdif*vzdif
 
-          Call box_mueller_saru2(seed, idi, idj, nst_p, gauss, l_str)
-
-          ! screening function
-
-          scrn = (rcut - rrr) / (rrr * rcut)
-
-          ! Get mixing type function
+          ! Get mixing type function - key for interaction strength
 
           If (ai > aj) Then
             key = ai * (ai - 1) / 2 + aj
@@ -423,55 +404,78 @@ Contains
             key = aj * (aj - 1) / 2 + ai
           End If
 
-          ! Calculate force component
+          ! Get gaussian random number with zero mean (held in gauss var)
+          ! Global id check ensure same random number for same pair of particles
 
-          rgamma = thermo%sigdpd(key) * scrn * gauss * rstsq
+          If (idi < idj) Then
+            Call box_mueller_saru2(seed, idi, idj, nst_p, gauss, l_str)
+          Else
+            Call box_mueller_saru2(seed, idj, idi, nst_p, gauss, l_str)
+          End If
 
-          tmp = thermo%gamdpd(key) * (scrn**2)
-          scl = tmp / (1.0_wp + tmp * tst_p)
-          dgamma = -tmp * (xxt(k) * (config%vxx(i) - config%vxx(j)) + &
-                           yyt(k) * (config%vyy(i) - config%vyy(j)) + zzt(k) * (config%vzz(i) - config%vzz(j)))
+          ! Screening function, related to the drag and random weight functions:
+          ! w_D = scrn**2 * rrr**2
+          ! w_R = scrn * rrr
 
-          gamma = rgamma + scl * (dgamma - rgamma)
+          scrn = (rcut - rrr) / (rrr * rcut)  
+          
+          ! reciprocal reduced mass
+          
+          rmassij = (config%weight(i) + config%weight(j)) / (config%weight(i) * config%weight(j))
 
-          ! calculate forces
+          ! Calculate random and drag components
 
-          fx = gamma * xxt(k)
-          fy = gamma * yyt(k)
-          fz = gamma * zzt(k)
+          tmp = thermo%sigdpd(key) * scrn * gauss * r_sqrt_tstp
 
-          fix = fix + fx
-          fiy = fiy + fy
-          fiz = fiz + fz
+          scl = (thermo%gamdpd(key) * scrn**2) / (1.0_wp + hstep * thermo%gamdpd(key) * scrn**2 * rrr**2 * rmassij)
 
+          rgamma = (1.0_wp - scl * 0.25_wp * rmassij * rrr**2 * tst_p) * tmp
+
+          dgamma = - scl * rdotv
+
+          ! Total force component gamma_ij such that, summed over all pairs
+          ! v_i(t+hstep) = v_i(t) + (hstep / m_i) * (gamma_ij * r_ij)
+
+          gamma = rgamma + dgamma
+
+          ! Update forces
+
+          fdpdx(i) = fdpdx(i) + gamma * xdif
+          fdpdy(i) = fdpdy(i) + gamma * ydif
+          fdpdz(i) = fdpdz(i) + gamma * zdif
+    
 #ifndef HALF_HALO
           If (j <= config%natms) Then
 #endif /* HALF_HALO */
 
-            fdpdx(j) = fdpdx(j) - fx
-            fdpdy(j) = fdpdy(j) - fy
-            fdpdz(j) = fdpdz(j) - fz
-
+            fdpdx(j) = fdpdx(j) - gamma * xdif
+            fdpdy(j) = fdpdy(j) - gamma * ydif
+            fdpdz(j) = fdpdz(j) - gamma * zdif
+          
 #ifndef HALF_HALO
           End If
 #endif /* HALF_HALO */
+
+          !     Assign stress terms (only when second particle is in subdomain
+          !     or has larger global particle index than first to avoid double-counting)
 
 #ifndef HALF_HALO
           If (j <= config%natms .or. idi < idj) Then
 #endif /* HALF_HALO */
 
-            ! add virial
-
-            stats%virdpd = stats%virdpd - gamma * rrr * rrr
-
-            ! add stress tensor
-
-            strs1 = strs1 + xxt(k) * fx
-            strs2 = strs2 + xxt(k) * fy
-            strs3 = strs3 + xxt(k) * fz
-            strs5 = strs5 + yyt(k) * fy
-            strs6 = strs6 + yyt(k) * fz
-            strs9 = strs9 + zzt(k) * fz
+            strsrand(1) = strsrand(1) + rgamma * xdif * xdif * tstepfrac ! random stress_xx
+            strsrand(2) = strsrand(2) + rgamma * ydif * xdif * tstepfrac ! random stress_xy
+            strsrand(3) = strsrand(3) + rgamma * zdif * xdif * tstepfrac ! random stress_xz
+            strsrand(5) = strsrand(5) + rgamma * ydif * ydif * tstepfrac ! random stress_yy
+            strsrand(6) = strsrand(6) + rgamma * ydif * zdif * tstepfrac ! random stress_yz
+            strsrand(9) = strsrand(9) + rgamma * zdif * zdif * tstepfrac ! random stress_zz
+            
+            strsdrag(1) = strsdrag(1) + dgamma * xdif * xdif * tstepfrac ! drag stress_xx
+            strsdrag(2) = strsdrag(2) + dgamma * ydif * xdif * tstepfrac ! drag stress_xy
+            strsdrag(3) = strsdrag(3) + dgamma * zdif * xdif * tstepfrac ! drag stress_xz
+            strsdrag(5) = strsdrag(5) + dgamma * ydif * ydif * tstepfrac ! drag stress_yy
+            strsdrag(6) = strsdrag(6) + dgamma * ydif * zdif * tstepfrac ! drag stress_yz
+            strsdrag(9) = strsdrag(9) + dgamma * zdif * zdif * tstepfrac ! drag stress_zz
 
 #ifndef HALF_HALO
           End If
@@ -481,24 +485,6 @@ Contains
 
       End Do
 
-      ! load back forces
-
-      fdpdx(i) = fix
-      fdpdy(i) = fiy
-      fdpdz(i) = fiz
-
-      ! complete stress tensor
-
-      stats%strdpd(1) = stats%strdpd(1) + strs1
-      stats%strdpd(2) = stats%strdpd(2) + strs2
-      stats%strdpd(3) = stats%strdpd(3) + strs3
-      stats%strdpd(4) = stats%strdpd(4) + strs2
-      stats%strdpd(5) = stats%strdpd(5) + strs5
-      stats%strdpd(6) = stats%strdpd(6) + strs6
-      stats%strdpd(7) = stats%strdpd(7) + strs3
-      stats%strdpd(8) = stats%strdpd(8) + strs6
-      stats%strdpd(9) = stats%strdpd(9) + strs9
-
     End Do
 
 #ifdef HALF_HALO
@@ -507,6 +493,7 @@ Contains
     Call refresh_halo_dpd_forces(domain, config, config%mxatms, fdpdx, fdpdy, fdpdz, comm)
 
 #endif /* HALF_HALO */
+
     ! Update velocities
 
     Do i = 1, config%natms
@@ -517,32 +504,528 @@ Contains
           config%vyy(i) = config%vyy(i) + tmp * fdpdy(i)
           config%vzz(i) = config%vzz(i) + tmp * fdpdz(i)
         End If
-      Else ! a RB member
+      End If
+    End Do
+
+    ! Share and update dpd forces for any RBs shared across domains
+      
+    If (rigid%share) Then
+      Call update_shared_units(config, rigid%list_shared, &
+                              rigid%map_shared, fdpdx, fdpdy, fdpdz, domain, comm)
+    End If    
+
+    ! Integrate velocity updates of RBs due to dpd forces
+
+    Call integrate_rbs_dpd(config, rigid, fdpdx, fdpdy, fdpdz, tst_p)
+
+    ! Symmetrise and globalise random and drag stresses
+
+    strsrand(4) = strsrand(2) ! random stress_yx
+    strsrand(7) = strsrand(3) ! random stress_zx
+    strsrand(8) = strsrand(6) ! random stress_zy
+
+    Call gsum(comm, strsrand)
+
+    strsdrag(4) = strsdrag(2) ! drag stress_yx
+    strsdrag(7) = strsdrag(3) ! drag stress_zx
+    strsdrag(8) = strsdrag(6) ! drag stress_zy
+
+    Call gsum(comm, strsdrag)
+
+    ! Load temporary dpd stress tensors into stats
+
+    stats%strdpdd = stats%strdpdd + strsdrag
+    stats%strdpdr = stats%strdpdr + strsrand
+
+    ! Update virial (vir = - Tr(strdpdr) - Tr(strdpdd))
+
+    stats%virdpd = stats%virdpd &
+                   - stats%strdpdd(1) - stats%strdpdd(5) - stats%strdpdd(9) &
+                   - stats%strdpdr(1) - stats%strdpdr(5) - stats%strdpdr(9)
+
+    Deallocate (fdpdx, fdpdy, fdpdz, Stat=fail)
+    If (fail > 0) Then
+      Write (message, '(a)') 'dpd_shardlow_integrate force array deallocation failure'
+      Call error(0, message)
+    End If
+
+  End Subroutine dpd_shardlow_integrate
+
+  Subroutine dpd_mdvv_forces(stage, l_str, rcut, nstep, tstep, stats, thermo, neigh, rigid, domain, config, seed, comm)
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine applying DPD thermostat in a traditional
+    ! molecular dynamics velocity verlet manner - forces are calculated
+    ! using the verlet neighbour neigh%list and added to the conservative
+    ! forces (config%parts%fxx,yy,zz) for inclusion in standard VV integration
+    !
+    ! copyright - daresbury laboratory
+    ! author    - k.a.jonathan september 2024
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Integer,                  Intent(In   ) :: stage
+    Logical,                  Intent(In   ) :: l_str
+    Real(Kind=wp),            Intent(In   ) :: rcut
+    Integer,                  Intent(In   ) :: nstep
+    Real(Kind=wp),            Intent(In   ) :: tstep
+    Type(stats_type),         Intent(InOut) :: stats
+    Type(thermostat_type),    Intent(In   ) :: thermo
+    Type(neighbours_type),    Intent(In   ) :: neigh
+    Type(rigid_bodies_type),  Intent(InOut) :: rigid
+    Type(domains_type),       Intent(In   ) :: domain
+    Type(configuration_type), Intent(InOut) :: config
+    Type(seed_type),          Intent(InOut) :: seed
+    Type(comms_type),         Intent(InOut) :: comm
+
+    Character(len=256)                       :: message
+    Integer                                  :: ai, aj, fail, i, idi, idj, j, k, key, limit
+    Real(Kind=wp)                            :: dgamma, gamma, gauss, &
+                                                hstep, rgamma, rrr, r_sqrt_tstp, scrn, &
+                                                xdif, ydif, zdif, vxdif, vydif, vzdif, rdotv
+    Real(Kind=wp), Allocatable, Dimension(:) :: fdpdx, fdpdy, fdpdz
+
+    If (thermo%key_dpd /= DPD_MDVV .or. &
+        stage /= VV_SECOND_STAGE) Return
+
+    fail = 0
+    Allocate (fdpdx(1:config%mxatdm), fdpdy(1:config%mxatdm), fdpdz(1:config%mxatdm), Stat=fail)
+
+    If (fail > 0) Then
+      Write (message, '(a)') 'dpd_mdvv_forces force array allocation failure'
+      Call error(0, message)
+    End If
+
+    ! Set tstep derivatives
+
+    hstep = 0.5_wp * tstep
+    r_sqrt_tstp = 1.0_wp / Sqrt(tstep)
+
+    ! Initialise DPD virial and stress contributions
+
+    stats%virdpd = 0.0_wp
+    stats%strdpdr = 0.0_wp
+    stats%strdpdd = 0.0_wp
+
+    ! Initialise local force arrays
+
+    fdpdx = 0.0_wp
+    fdpdy = 0.0_wp
+    fdpdz = 0.0_wp
+
+    ! Refresh halo velocities
+
+    Call dpd_v_set_halo(domain, config, comm)
+
+    ! Calculate forces
+
+    ! outer loop over atoms
+
+    Do i = 1, config%natms
+
+      ! primary atom type and global index
+
+      ai = config%ltype(i)
+      idi = config%ltg(i)
+
+      ! loop over all valid pairs - ignore massless particles
+
+      limit = Merge(neigh%list(0, i), 0, config%weight(i) > 1.0e-6_wp)
+
+      Do k = 1, limit
+
+        ! Secondary atom index, type, and global index
+
+        j = neigh%list(k,i)
+        aj = config%ltype(j)
+        idj = config%ltg(j)
+
+        ! Calculate r_ij, |r_ij|
+
+        xdif = config%parts(i)%xxx - config%parts(j)%xxx
+        ydif = config%parts(i)%yyy - config%parts(j)%yyy
+        zdif = config%parts(i)%zzz - config%parts(j)%zzz
+
+        rrr = Sqrt(xdif**2 + ydif**2 + zdif**2)
+
+        ! Calculate forces for valid pairs
+
+        If (rrr < rcut .and. config%weight(j) > 1.0e-6_wp) Then
+
+          ! Calculate v_ij, and (r_ij . v_ij)
+
+          vxdif = config%vxx(i) - config%vxx(j)
+          vydif = config%vyy(i) - config%vyy(j)
+          vzdif = config%vzz(i) - config%vzz(j)
+
+          rdotv = xdif*vxdif + ydif*vydif + zdif*vzdif
+
+          ! Get mixing type function - key for interaction strength
+
+          If (ai > aj) Then
+            key = ai * (ai - 1) / 2 + aj
+          Else
+            key = aj * (aj - 1) / 2 + ai
+          End If
+
+          ! Get gaussian random number with zero mean (held in gauss var)
+          ! Global id check ensure same random number for same pair of particles
+
+          If (idi < idj) Then
+            Call box_mueller_saru2(seed, idi, idj, nstep, gauss, l_str)
+          Else
+            Call box_mueller_saru2(seed, idj, idi, nstep, gauss, l_str)
+          End If
+
+          ! Screening function, related to the drag and random weight functions:
+          ! w_D = scrn**2 * rrr**2
+          ! w_R = scrn * rrr
+
+          scrn = (rcut - rrr) / (rrr * rcut)         
+
+          ! Calculate random and drag components
+
+          rgamma = thermo%sigdpd(key) * scrn * gauss * r_sqrt_tstp
+          dgamma = - thermo%gamdpd(key) * scrn**2 * rdotv
+
+          ! Total force component gamma_ij such that, summed over all pairs
+          ! v_i(t+hstep) = v_i(t) + (hstep / m_i) * (gamma_ij * r_ij)
+
+          gamma = rgamma + dgamma
+
+          ! Update forces
+
+          fdpdx(i) = fdpdx(i) + gamma * xdif
+          fdpdy(i) = fdpdy(i) + gamma * ydif
+          fdpdz(i) = fdpdz(i) + gamma * zdif
+    
+#ifndef HALF_HALO
+          If (j <= config%natms) Then
+#endif /* HALF_HALO */
+
+            fdpdx(j) = fdpdx(j) - gamma * xdif
+            fdpdy(j) = fdpdy(j) - gamma * ydif
+            fdpdz(j) = fdpdz(j) - gamma * zdif
+            
+#ifndef HALF_HALO
+          End If
+#endif /* HALF_HALO */
+
+          !     Assign stress terms (only when second particle is in subdomain
+          !     or has larger global particle index than first to avoid double-counting)
+
+#ifndef HALF_HALO
+          If (j <= config%natms .or. idi < idj) Then
+#endif /* HALF_HALO */
+
+            stats%strdpdr(1) = stats%strdpdr(1) + rgamma * xdif * xdif ! random stress_xx
+            stats%strdpdr(2) = stats%strdpdr(2) + rgamma * ydif * xdif ! random stress_xy
+            stats%strdpdr(3) = stats%strdpdr(3) + rgamma * zdif * xdif ! random stress_xz
+            stats%strdpdr(5) = stats%strdpdr(5) + rgamma * ydif * ydif ! random stress_yy
+            stats%strdpdr(6) = stats%strdpdr(6) + rgamma * ydif * zdif ! random stress_yz
+            stats%strdpdr(9) = stats%strdpdr(9) + rgamma * zdif * zdif ! random stress_zz
+            
+            stats%strdpdd(1) = stats%strdpdd(1) + dgamma * xdif * xdif ! drag stress_xx
+            stats%strdpdd(2) = stats%strdpdd(2) + dgamma * ydif * xdif ! drag stress_xy
+            stats%strdpdd(3) = stats%strdpdd(3) + dgamma * zdif * xdif ! drag stress_xz
+            stats%strdpdd(5) = stats%strdpdd(5) + dgamma * ydif * ydif ! drag stress_yy
+            stats%strdpdd(6) = stats%strdpdd(6) + dgamma * ydif * zdif ! drag stress_yz
+            stats%strdpdd(9) = stats%strdpdd(9) + dgamma * zdif * zdif ! drag stress_zz
+
+#ifndef HALF_HALO
+          End If
+#endif /* HALF_HALO */
+
+        End If
+
+      End Do
+
+    End Do
+
+#ifdef HALF_HALO
+    ! Share the dpd forces collected in the halo with the parent domains
+
+    Call refresh_halo_dpd_forces(domain, config, config%mxatms, fdpdx, fdpdy, fdpdz, comm)
+
+#endif /* HALF_HALO */
+
+
+    ! Update velocities
+
+    Do i = 1, config%natms
+      If (config%weight(i) > 1.0e-6_wp) Then
         config%parts(i)%fxx = config%parts(i)%fxx + fdpdx(i)
         config%parts(i)%fyy = config%parts(i)%fyy + fdpdy(i)
         config%parts(i)%fzz = config%parts(i)%fzz + fdpdz(i)
       End If
     End Do
 
-    ! Update forces on RBs
+    ! Update forces on RBs shared across domains
 
     If (rigid%share) Then
       Call update_shared_units(config, rigid%list_shared, &
                                rigid%map_shared, SHARED_UNIT_UPDATE_FORCES, domain, comm)
     End If
 
-    ! globalise stats%virdpd
+    ! Symmetrise and globalise random and drag stresses
 
-    Call gsum(comm, stats%virdpd)
+    stats%strdpdr(4) = stats%strdpdr(2) ! random stress_yx
+    stats%strdpdr(7) = stats%strdpdr(3) ! random stress_zx
+    stats%strdpdr(8) = stats%strdpdr(6) ! random stress_zy
 
-    Deallocate (xxt, yyt, zzt, rrt, Stat=fail(1))
-    Deallocate (fdpdx, fdpdy, fdpdz, Stat=fail(2))
-    If (Any(fail > 0)) Then
-      Write (message, '(a)') 'dpd_thermostat deallocation failure'
+    Call gsum(comm, stats%strdpdr)
+
+    stats%strdpdd(4) = stats%strdpdd(2) ! drag stress_yx
+    stats%strdpdd(7) = stats%strdpdd(3) ! drag stress_zx
+    stats%strdpdd(8) = stats%strdpdd(6) ! drag stress_zy
+
+    Call gsum(comm, stats%strdpdd)
+
+    ! Update virial (vir = - Tr(strdpdr) - Tr(strdpdd))
+
+    stats%virdpd = stats%virdpd &
+                   - stats%strdpdd(1) - stats%strdpdd(5) - stats%strdpdd(9) &
+                   - stats%strdpdr(1) - stats%strdpdr(5) - stats%strdpdr(9)
+
+    Deallocate (fdpdx, fdpdy, fdpdz, Stat=fail)
+    If (fail > 0) Then
+      Write (message, '(a)') 'dpd_mdvv_forces force array deallocation failure'
       Call error(0, message)
     End If
 
-  End Subroutine dpd_thermostat
+  End Subroutine dpd_mdvv_forces
+
+  Subroutine integrate_rbs_dpd(config, rigid, fdpdx, fdpdy, fdpdz, tstep)
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for integrating newtonian and rotational, singled
+    ! RBs, due to velocity contributions of dpd thermostatting forces -
+    ! utilises RB integration methods from nve_1_vv, nve.F90
+    !
+    ! copyright - daresbury laboratory
+    ! author    - k.a.jonathan 2024
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type(rigid_bodies_type),  Intent(InOut) :: rigid
+    Type(configuration_type), Intent(InOut) :: config
+    Real(Kind=wp),            Intent(InOut) :: fdpdx(:), fdpdy(:), fdpdz(:), tstep
+
+    Character(Len=STR_LEN)         :: message
+    Integer                    :: fail(1:14), i, i1, i2, irgd, jrgd, krgd, lrgd, rgdtyp
+    Real(Kind=wp)              :: fmx, fmy, fmz, hstep, opx, opy, opz, p0, p1, p2, p3, qt0, &
+                                  qt1, qt2, qt3, rot(1:9), tmp, tqx, tqy, tqz, trx, try, &
+                                  trz, vpx, vpy, vpz, x(1:1), y(1:1), z(1:1)
+    Real(Kind=wp), Allocatable :: fxt(:), fyt(:), fzt(:), ggx(:), ggy(:), ggz(:), &
+                                  q0t(:), q1t(:), q2t(:), q3t(:), rgdoxt(:), rgdoyt(:), &
+                                  rgdozt(:), rgdvxt(:), rgdvyt(:), rgdvzt(:), rgdxxt(:), &
+                                  rgdyyt(:), rgdzzt(:), vxt(:), vyt(:), vzt(:), xxt(:), yyt(:), &
+                                  zzt(:)
+
+    fail = 0
+    Allocate (ggx(1:rigid%max_list * rigid%max_rigid), &
+      ggy(1:rigid%max_list * rigid%max_rigid), &
+      ggz(1:rigid%max_list * rigid%max_rigid), Stat=fail(7))
+    Allocate (xxt(1:config%nlast), yyt(1:config%nlast), zzt(1:config%nlast), Stat=fail(8))
+    Allocate (vxt(1:config%nlast), vyt(1:config%nlast), vzt(1:config%nlast), Stat=fail(9))
+    Allocate (fxt(1:config%nlast), fyt(1:config%nlast), fzt(1:config%nlast), Stat=fail(10))
+    Allocate (q0t(1:rigid%max_rigid), &
+      q1t(1:rigid%max_rigid), &
+      q2t(1:rigid%max_rigid), &
+      q3t(1:rigid%max_rigid), Stat=fail(11))
+    Allocate (rgdxxt(1:rigid%max_rigid), &
+      rgdyyt(1:rigid%max_rigid), &
+      rgdzzt(1:rigid%max_rigid), Stat=fail(12))
+    Allocate (rgdvxt(1:rigid%max_rigid), &
+      rgdvyt(1:rigid%max_rigid), &
+      rgdvzt(1:rigid%max_rigid), Stat=fail(13))
+    Allocate (rgdoxt(1:rigid%max_rigid), &
+      rgdoyt(1:rigid%max_rigid), &
+      rgdozt(1:rigid%max_rigid), Stat=fail(14))
+    If (Any(fail > 0)) Then
+      Write (message, '(a)') 'integrate_rbs_dpd allocation failure'
+      Call error(0, message)
+    End If
+
+    ! Get the RB particles vectors wrt the RB's COM
+
+    krgd = 0
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
+
+      ! For all good RBs
+
+      lrgd = rigid%list(-1, irgd)
+      If (rigid%frozen(0, rgdtyp) < lrgd) Then
+        Do jrgd = 1, lrgd
+          krgd = krgd + 1
+
+          i = rigid%index_local(jrgd, irgd) ! local index of particle/site
+
+          ! COM distances
+
+          ggx(krgd) = config%parts(i)%xxx - rigid%xxx(irgd)
+          ggy(krgd) = config%parts(i)%yyy - rigid%yyy(irgd)
+          ggz(krgd) = config%parts(i)%zzz - rigid%zzz(irgd)
+        End Do
+      End If
+    End Do
+
+    ! minimum image convention for bond vectors
+
+    Call images(config%imcon, config%cell, krgd, ggx, ggy, ggz)
+
+    ! timestep derivatives
+
+    hstep = 0.5_wp * tstep
+
+    ! update velocity of RBs
+
+    krgd = 0
+    Do irgd = 1, rigid%n_types
+      rgdtyp = rigid%list(0, irgd)
+
+      ! For all good RBs
+
+      lrgd = rigid%list(-1, irgd)
+      If (rigid%frozen(0, rgdtyp) < lrgd) Then ! Not that it matters
+
+        ! calculate COM force and torque
+
+        fmx = 0.0_wp; fmy = 0.0_wp; fmz = 0.0_wp
+        tqx = 0.0_wp; tqy = 0.0_wp; tqz = 0.0_wp
+        Do jrgd = 1, lrgd
+          krgd = krgd + 1
+
+          i = rigid%index_local(jrgd, irgd) ! local index of particle/site
+
+          ! If the RB has a frozen particle then no net force
+
+          If (rigid%frozen(0, rgdtyp) == 0) Then
+            fmx = fmx + fdpdx(i)
+            fmy = fmy + fdpdy(i)
+            fmz = fmz + fdpdz(i)
+          End If
+
+          tqx = tqx + ggy(krgd) * fdpdz(i) - ggz(krgd) * fdpdy(i)
+          tqy = tqy + ggz(krgd) * fdpdx(i) - ggx(krgd) * fdpdz(i)
+          tqz = tqz + ggx(krgd) * fdpdy(i) - ggy(krgd) * fdpdx(i)
+        End Do
+
+        ! If the RB has 2+ frozen particles (ill=1) the net torque
+        ! must align along the axis of rotation
+
+        If (rigid%frozen(0, rgdtyp) > 1) Then
+          i1 = rigid%index_local(rigid%index_global(1, rgdtyp), irgd)
+          i2 = rigid%index_local(rigid%index_global(2, rgdtyp), irgd)
+
+          x(1) = config%parts(i1)%xxx - config%parts(i2)%xxx
+          y(1) = config%parts(i1)%yyy - config%parts(i2)%yyy
+          z(1) = config%parts(i1)%zzz - config%parts(i2)%zzz
+
+          Call images(config%imcon, config%cell, 1, x, y, z)
+
+          tmp = (x(1) * tqx + y(1) * tqy + z(1) * tqz) / (x(1)**2 + y(1)**2 + z(1)**2)
+          tqx = x(1) * tmp
+          tqy = y(1) * tmp
+          tqz = z(1) * tmp
+        End If
+
+        ! current rotation matrix
+
+        Call getrotmat(rigid%q0(irgd), rigid%q1(irgd), rigid%q2(irgd), rigid%q3(irgd), rot)
+
+        ! calculate torque in principal frame
+
+        trx = tqx * rot(1) + tqy * rot(4) + tqz * rot(7)
+        try = tqx * rot(2) + tqy * rot(5) + tqz * rot(8)
+        trz = tqx * rot(3) + tqy * rot(6) + tqz * rot(9)
+
+        ! calculate quaternion torques
+
+        qt0 = 2.0_wp * (-rigid%q1(irgd) * trx - rigid%q2(irgd) * try - rigid%q3(irgd) * trz)
+        qt1 = 2.0_wp * (rigid%q0(irgd) * trx - rigid%q3(irgd) * try + rigid%q2(irgd) * trz)
+        qt2 = 2.0_wp * (rigid%q3(irgd) * trx + rigid%q0(irgd) * try - rigid%q1(irgd) * trz)
+        qt3 = 2.0_wp * (-rigid%q2(irgd) * trx + rigid%q1(irgd) * try + rigid%q0(irgd) * trz)
+
+        ! recover quaternion momenta at half time step
+
+        opx = rigid%oxx(irgd) * rigid%rix(1, rgdtyp)
+        opy = rigid%oyy(irgd) * rigid%riy(1, rgdtyp)
+        opz = rigid%ozz(irgd) * rigid%riz(1, rgdtyp)
+
+        p0 = 2.0_wp * (-rigid%q1(irgd) * opx - rigid%q2(irgd) * opy - rigid%q3(irgd) * opz)
+        p1 = 2.0_wp * (rigid%q0(irgd) * opx - rigid%q3(irgd) * opy + rigid%q2(irgd) * opz)
+        p2 = 2.0_wp * (rigid%q3(irgd) * opx + rigid%q0(irgd) * opy - rigid%q1(irgd) * opz)
+        p3 = 2.0_wp * (-rigid%q2(irgd) * opx + rigid%q1(irgd) * opy + rigid%q0(irgd) * opz)
+
+        ! update quaternion momenta to full step
+
+        p0 = p0 + hstep * qt0
+        p1 = p1 + hstep * qt1
+        p2 = p2 + hstep * qt2
+        p3 = p3 + hstep * qt3
+
+        ! update RB angular & COM velocities to full step
+
+        opx = 0.5_wp * (-rigid%q1(irgd) * p0 + rigid%q0(irgd) * p1 + rigid%q3(irgd) * p2 - rigid%q2(irgd) * p3)
+        opy = 0.5_wp * (-rigid%q2(irgd) * p0 - rigid%q3(irgd) * p1 + rigid%q0(irgd) * p2 + rigid%q1(irgd) * p3)
+        opz = 0.5_wp * (-rigid%q3(irgd) * p0 + rigid%q2(irgd) * p1 - rigid%q1(irgd) * p2 + rigid%q0(irgd) * p3)
+
+        rigid%oxx(irgd) = opx * rigid%rix(2, rgdtyp)
+        rigid%oyy(irgd) = opy * rigid%riy(2, rgdtyp)
+        rigid%ozz(irgd) = opz * rigid%riz(2, rgdtyp)
+
+        tmp = hstep / rigid%weight(0, rgdtyp)
+        rigid%vxx(irgd) = rigid%vxx(irgd) + tmp * fmx
+        rigid%vyy(irgd) = rigid%vyy(irgd) + tmp * fmy
+        rigid%vzz(irgd) = rigid%vzz(irgd) + tmp * fmz
+
+        ! update RB members velocities
+
+        Do jrgd = 1, lrgd
+          If (rigid%frozen(jrgd, rgdtyp) == 0) Then
+            i = rigid%index_local(jrgd, irgd) ! local index of particle/site
+
+            If (i <= config%natms) Then
+              x(1) = rigid%x(jrgd, rgdtyp)
+              y(1) = rigid%y(jrgd, rgdtyp)
+              z(1) = rigid%z(jrgd, rgdtyp)
+
+              ! new atomic velocities in body frame
+
+              vpx = rigid%oyy(irgd) * z(1) - rigid%ozz(irgd) * y(1)
+              vpy = rigid%ozz(irgd) * x(1) - rigid%oxx(irgd) * z(1)
+              vpz = rigid%oxx(irgd) * y(1) - rigid%oyy(irgd) * x(1)
+
+              ! new atomic velocities in lab frame
+
+              config%vxx(i) = rot(1) * vpx + rot(2) * vpy + rot(3) * vpz + rigid%vxx(irgd)
+              config%vyy(i) = rot(4) * vpx + rot(5) * vpy + rot(6) * vpz + rigid%vyy(irgd)
+              config%vzz(i) = rot(7) * vpx + rot(8) * vpy + rot(9) * vpz + rigid%vzz(irgd)
+            End If
+          End If
+        End Do
+
+      End If
+    End Do
+
+    Deallocate (ggx, ggy, ggz, Stat=fail(7))
+    Deallocate (xxt, yyt, zzt, Stat=fail(8))
+    Deallocate (vxt, vyt, vzt, Stat=fail(9))
+    Deallocate (fxt, fyt, fzt, Stat=fail(10))
+    Deallocate (q0t, q1t, q2t, q3t, Stat=fail(11))
+    Deallocate (rgdxxt, rgdyyt, rgdzzt, Stat=fail(12))
+    Deallocate (rgdvxt, rgdvyt, rgdvzt, Stat=fail(13))
+    Deallocate (rgdoxt, rgdoyt, rgdozt, Stat=fail(14))
+    If (Any(fail > 0)) Then
+      Write (message, '(a)') 'integrate_rbs_dpd deallocation failure'
+      Call error(0, message)
+    End If
+
+  End Subroutine integrate_rbs_dpd
 
   Subroutine dpd_v_export(mdir, mlast, ixyz0, domain, config, comm)
 

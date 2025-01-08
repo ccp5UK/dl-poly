@@ -42,7 +42,6 @@ Module drivers
   Use dihedrals,            Only: dihedrals_forces,&
                                   dihedrals_type
   Use domains,              Only: domains_type
-  Use dpd,                  Only: dpd_thermostat
   Use electrostatic,        Only: ELECTROSTATIC_NULL,&
                                   electrostatic_type
   Use errors_warnings,      Only: error,&
@@ -124,6 +123,10 @@ Module drivers
                                   nvt_a1_vv
   Use nvt_berendsen,        Only: nvt_b0_vv,&
                                   nvt_b1_vv
+  Use nvt_dpd_mdvv,         Only: nvt_0_dpd_mdvv,&
+                                  nvt_1_dpd_mdvv  
+  Use nvt_dpd_shardlow,     Only: nvt_0_dpd_shardlow,&
+                                  nvt_1_dpd_shardlow
   Use nvt_ekin,             Only: nvt_e0_vv,&
                                   nvt_e1_vv
   Use nvt_gst,              Only: nvt_g0_vv,&
@@ -169,13 +172,13 @@ Module drivers
   Use tethers,              Only: tethers_forces,&
                                   tethers_type
   Use thermostat,           Only: &
-                                  DPD_NULL, DPD_SECOND_ORDER, ENS_NPT_BERENDSEN, &
-                                  ENS_NPT_BERENDSEN_ANISO, ENS_NPT_LANGEVIN, &
+                                  ENS_NPT_BERENDSEN, ENS_NPT_BERENDSEN_ANISO, ENS_NPT_LANGEVIN, &
                                   ENS_NPT_LANGEVIN_ANISO, ENS_NPT_MTK, ENS_NPT_MTK_ANISO, &
                                   ENS_NPT_NOSE_HOOVER, ENS_NPT_NOSE_HOOVER_ANISO, ENS_NVE, &
                                   ENS_NVT_ANDERSON, ENS_NVT_BERENDSEN, ENS_NVT_EVANS, &
                                   ENS_NVT_GENTLE, ENS_NVT_LANGEVIN, ENS_NVT_LANGEVIN_INHOMO, &
-                                  ENS_NVT_NOSE_HOOVER, VV_FIRST_STAGE, VV_SECOND_STAGE, &
+                                  ENS_NVT_NOSE_HOOVER, ENS_NVT_DPD_SHARDLOW, ENS_NVT_DPD_MDVV, &
+                                  VV_FIRST_STAGE, VV_SECOND_STAGE, &
                                   thermostat_type
   Use three_body,           Only: three_body_forces,&
                                   threebody_type
@@ -1119,15 +1122,6 @@ Contains
 #endif
     !!!!!!!!!!!!!!!!!!!!!!  W_INTEGRATE_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
-    ! Sharlow's splittings for VV only (LFV->VV) DPD thermostat - no variable flow%time-stepping!!!
-    ! One-off application for first order splitting and symmetric application for second order splitting
-    ! Velocity field change + generation of DPD virial & stat%stress due to random and drag forces
-
-    If (thermo%key_dpd /= DPD_NULL .and. stage == VV_FIRST_STAGE) Then
-      Call dpd_thermostat(stage, flow%strict, neigh%cutoff, flow%step, thermo%tstep, stat, thermo, &
-                          neigh, rigid, domain, cnfig, seed, comm)
-    End If
-
     ! Integrate equations of motion - velocity verlet
 
     If (.not. rigid%on) Then
@@ -1307,6 +1301,22 @@ Contains
            stat%strkin, stat%engke, &
            cshell, cons, pmf, stat, thermo, sites, vdws, domain, &
            tmr, cnfig, comm)
+
+      Case (ENS_NVT_DPD_SHARDLOW)
+
+        ! DPD thermostat with Shardlow splitting
+
+        Call nvt_0_dpd_shardlow &
+          (stage, flow, neigh, thermo, stat, rigid, domain, &
+           cnfig, seed, comm, cshell, cons, pmf, tmr)
+
+      Case (ENS_NVT_DPD_MDVV)
+
+        ! DPD thermostat with md-vv integration scheme
+
+        Call nvt_0_dpd_mdvv &
+          (stage, flow, neigh, thermo, stat, rigid, domain, &
+            cnfig, seed, comm, cshell, cons, pmf, tmr)
 
       End Select
     Else
@@ -1490,17 +1500,24 @@ Contains
            stat%strcom, stat%vircom, &
            cshell, cons, pmf, stat, thermo, sites, vdws, &
            rigid, domain, tmr, cnfig, comm)
+      
+      Case (ENS_NVT_DPD_SHARDLOW)
 
+        ! DPD thermostat with Shardlow splitting
+
+        Call nvt_1_dpd_shardlow &
+          (stage, flow, neigh, thermo, stat, rigid, domain, &
+            cnfig, seed, comm, cshell, cons, pmf, tmr)
+
+      Case (ENS_NVT_DPD_MDVV)
+
+        ! DPD thermostat with md-vv integration scheme
+
+        Call nvt_1_dpd_mdvv &
+          (stage, flow, neigh, thermo, stat, rigid, domain, &
+            cnfig, seed, comm, cshell, cons, pmf, tmr)
+    
       End Select
-    End If
-
-    ! Sharlow's second order splittings for VV only (LFV->VV) DPD thermostat - no variable flow%time-stepping!!!
-    ! Symmetric application for second order splitting
-    ! Velocity field change + generation of DPD virial & stat%stress due to random and drag forces
-
-    If (thermo%key_dpd == DPD_SECOND_ORDER .and. stage == VV_SECOND_STAGE) Then
-      Call dpd_thermostat(stage, flow%strict, neigh%cutoff, flow%step, thermo%tstep, stat, thermo, &
-                          neigh, rigid, domain, cnfig, seed, comm)
     End If
 
 #ifdef CHRONO
@@ -1672,7 +1689,7 @@ Contains
 
     ! Get complete stress tensor
 
-    stat%strtot = stat%strcon + stat%strpmf + stat%stress + stat%strkin + stat%strcom + stat%strdpd
+    stat%strtot = stat%strcon + stat%strpmf + stat%stress + stat%strkin + stat%strcom + stat%strdpdr + stat%strdpdd
 
     ! Get core-shell kinetic energy for adiabatic shell model
 
@@ -2569,7 +2586,7 @@ Contains
 
           ! Get complete stress tensor
 
-          stat%strtot = stat%strcon + stat%strpmf + stat%stress + stat%strkin + stat%strcom + stat%strdpd
+          stat%strtot = stat%strcon + stat%strpmf + stat%stress + stat%strkin + stat%strcom + stat%strdpdr + stat%strdpdd
 
           ! Calculate physical quantities and collect statistics,
           ! accumulate z-density if needed
@@ -2947,7 +2964,7 @@ Contains
 
           ! Get complete stress tensor
 
-          stat%strtot = stat%strcon + stat%strpmf + stat%stress + stat%strkin + stat%strcom + stat%strdpd
+          stat%strtot = stat%strcon + stat%strpmf + stat%stress + stat%strkin + stat%strcom + stat%strdpdr + stat%strdpdd
 
           ! Calculate physical quantities and collect statistics,
           ! accumulate z-density if needed

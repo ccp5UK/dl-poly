@@ -18,7 +18,7 @@ option(WITH_EXP "Build with experimental and debugs" OFF)
 option(WITH_HALF_HALO "uses half halo for neighbour lists" OFF)
 option(INTERFACED "enables chemshell interface " OFF)
 
-set(TESTS_URL "https://github.com/ccp5UK/dl-poly-data/raw/main/data/5.2.1/" CACHE STRING "Location of test input and reference archives")
+set(TESTS_URL "https://github.com/ccp5UK/dl-poly-data/raw/main/data/5.2.2/" CACHE STRING "Location of test input and reference archives")
 set(SCALAPACK "GCC" CACHE STRING "just a coding for the scalapack one wants")
 set(MPI_NPROCS 8 CACHE STRING "number of MPI processes to be used for code coverage and tests")
 cmake_host_system_information(RESULT AH QUERY FQDN)

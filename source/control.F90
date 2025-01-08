@@ -113,13 +113,15 @@ Module control
   Use thermostat,               Only: &
                                       CONSTRAINT_NONE, CONSTRAINT_SEMI_ORTHORHOMBIC, &
                                       CONSTRAINT_SURFACE_AREA, CONSTRAINT_SURFACE_TENSION, &
-                                      DPD_FIRST_ORDER, DPD_NULL, DPD_SECOND_ORDER, &
+                                      DPD_NULL, DPD_MDVV,&
+                                      DPD_ZEROTH_ORDER, DPD_FIRST_ORDER, DPD_SECOND_ORDER, &
                                       ENS_NPT_BERENDSEN, ENS_NPT_BERENDSEN_ANISO, &
                                       ENS_NPT_LANGEVIN, ENS_NPT_LANGEVIN_ANISO, ENS_NPT_MTK, &
                                       ENS_NPT_MTK_ANISO, ENS_NPT_NOSE_HOOVER, &
                                       ENS_NPT_NOSE_HOOVER_ANISO, ENS_NVE, ENS_NVT_ANDERSON, &
                                       ENS_NVT_BERENDSEN, ENS_NVT_EVANS, ENS_NVT_GENTLE, &
                                       ENS_NVT_LANGEVIN, ENS_NVT_LANGEVIN_INHOMO, ENS_NVT_NOSE_HOOVER,&
+                                      ENS_NVT_DPD_SHARDLOW, ENS_NVT_DPD_MDVV, &
                                       PSEUDO_LANGEVIN_DIRECT, PSEUDO_LANGEVIN, PSEUDO_GAUSSIAN,&
                                       PSEUDO_DIRECT, thermostat_type
   Use three_body,               Only: threebody_type
@@ -634,16 +636,22 @@ Contains
         thermo%vel_es2 = thermo%vel_es2 * thermo%vel_es2 ! square of cutoff velocity for inhomogeneous Langevin thermostat and ttm
 
       Case ('dpd')
-        thermo%ensemble = ENS_NVE
-
-        Call info('Ensemble: NVT dpd (Dissipative Particle Dynamics)', .true.)
 
         Call params%retrieve('ensemble_dpd_order', option)
+        
         Select Case (option)
+        Case ('zero', 'zeroth', '0')
+          thermo%key_dpd = DPD_ZEROTH_ORDER
+          thermo%ensemble = ENS_NVT_DPD_SHARDLOW
         Case ('first', '1')
           thermo%key_dpd = DPD_FIRST_ORDER
+          thermo%ensemble = ENS_NVT_DPD_SHARDLOW
         Case ('second', '2')
           thermo%key_dpd = DPD_SECOND_ORDER
+          thermo%ensemble = ENS_NVT_DPD_SHARDLOW
+        Case ('mdvv', 'md-vv')
+          thermo%key_dpd = DPD_MDVV
+          thermo%ensemble = ENS_NVT_DPD_MDVV
         Case default
           Call bad_option('ensemble_dpd_order', option)
         End Select

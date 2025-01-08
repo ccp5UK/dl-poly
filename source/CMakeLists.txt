@@ -97,6 +97,8 @@ set(dlpoly_SRCS
   nve.F90
   nvt_anderson.F90
   nvt_berendsen.F90
+  nvt_dpd_shardlow.F90
+  nvt_dpd_mdvv.F90
   nvt_ekin.F90
   nvt_gst.F90
   nvt_nose_hoover.F90
