@@ -32,7 +32,7 @@ reduced DoF mapping leads to the generation of an effective CG FF in
 terms of the effective interaction potentials and forces between the CG
 particles, which are often tabulated numerically.
 
-.. index:: single:: WWW
+.. index:: single: WWW
 
 The initial coarse-grain mapping of the original FA trajectory can be
 done with the aid of DL_CGMAP tool – `<http://www.ccp5.ac.uk/software/>`_.

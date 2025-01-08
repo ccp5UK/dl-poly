@@ -6,7 +6,7 @@ Compiling and Running
 When you have obtained DL_POLY_4 from Daresbury Laboratory and unpacked
 it, your next task will be to compile it.
 
-.. index:: singe: WWW 
+.. index:: single: WWW 
 
 CMake - `<http://www.cmake.org/>`_ - is an open-source, cross-platform family
 of tools designed to build, test and package software. CMake is used to

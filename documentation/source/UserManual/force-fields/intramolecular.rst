@@ -1004,7 +1004,7 @@ virial.
 If the force components :math:`f_{\ell}^{\alpha}` for atoms
 :math:`\ell=i,j,k,n` are calculated using the above formulae, it is
 easily seen that the contribution to be added to the atomic 
-:index:`stress tensor`` is given by
+:index:`stress tensor` is given by
 
 .. math::
    :label: ast_invAnlge_eq

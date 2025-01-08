@@ -1158,7 +1158,7 @@ defining individual molecules:
 
     with the force constant :math:`k_{2}` entered in units of
     ``engunit``\ :math:`\times`\ Å\ :math:`^{-2}` and :math:`k_{4}` in
-    ``engunit`` Å:math:`^{-4}`, where usually :math:`k_{2} >> k_{4}`. The
+    ``engunit`` Å\ :math:`^{-4}`, where usually :math:`k_{2} >> k_{4}`. The
     ``engunit`` is the energy unit specified in the **units** directive.
 
     **Note** that the atomic site indices referred to above are indices
@@ -1377,11 +1377,11 @@ defining individual molecules:
         - :math:`k`
         - :math:`U(r) = k \cdot U^{Electrostatics}(r_{ij}) \; \left(= \frac{k}{4\pi\epsilon_{0}\epsilon}\frac{q_{i}q_{j}}{r_{ij}}\right)`
       * - **fene-fne** 
-        - Shifted :math:`^{*}` FENE :cite:warner-72a,bird-77a,grest-86a`
+        - Shifted :math:`^{*}` FENE :cite:`warner-72a,bird-77a,grest-86a`
         - :math:`k`, :math:`R_{o}`, :math:`\Delta`
         - :math:`U(r) = -0.5~k~R_{o}~ln\left[1-\left(\frac{r_{ij}-\Delta}{R_{o}^{2}}\right)^{2}\right]~:~r_{ij} < R_{o} + \Delta`  :math:`U(r) = \infty~:~r_{ij} \ge R_{o} + \Delta` 
       * - **mmst-mst** 
-        - MM3 bond stretch :cite:allinger-89a` 
+        - MM3 bond stretch :cite:`allinger-89a` 
         - :math:`k`, :math:`r_{o}`
         - :math:`U(r) = k~\delta^{2}\left[1-2.55~\delta+(7/12)~2.55^{2}~\delta^{2}\right]~;~\delta~ = r-r_{o}`
 
@@ -2561,7 +2561,7 @@ defining individual molecules:
     by the **atoms** directive.
 
     The atomic polarisability, :math:`\alpha`, and the Thole
-    :cite:thole-81a` dumping factor, :math:`a`, are
+    :cite:`thole-81a` dumping factor, :math:`a`, are
     *optional* and are only parsed for the core (non-Druder) particles of
     core-shell units. If all polarisabilities as well as core and shell
     charges and associated force constants are well defined then
@@ -3084,7 +3084,7 @@ electron-phonon coupling constant in W m\ :math:`^{-3}` K:math:`^{-1}`
 the **ttm cetab**, **ttm ketab**, **ttm detab** and/or **ttm gvar**
 directives are included in the CONTROL file.
 
-The HISTORY/HISTROF File
+The HISTORY/HISTORF File
 ------------------------
 
 The HISTORY file is usually an output file (see

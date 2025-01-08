@@ -150,8 +150,8 @@ for the solvent molecules added to the file.
 
 Hint: to save yourself some work in entering the non-bonded interactions
 variables involving solvent sites to the FIELD file put two bogus atoms
-of each solvent type at the end of the CONNECT_DAT file (for :index:`AMBER`
-:index:`force field`s) the utility ``ambforce`` will then evaluate all the
+of each solvent type at the end of the CONNECT_DAT file (for 
+:index:`AMBER force fields <pair: AMBER; force field>`) the utility ``ambforce`` will then evaluate all the
 :index:`non-bonded<potential;non-bonded>` variables required by . Remember to delete the bogus entries
 from the CONFIG file before running .
 

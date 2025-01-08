@@ -2450,7 +2450,7 @@ Correct your boundary condition or consider using .
 
 .. index:: 
     single: algorithm;SHAKE 
-    signle: constraints;bond 
+    single: constraints;bond 
 
 The RATTLE algorithm for bond constraints is iterative. If the maximum
 number of permitted iterations is exceeded, the program terminates.

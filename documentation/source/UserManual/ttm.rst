@@ -665,7 +665,7 @@ will use either the ionic temperature for overlapping cells or the
 system temperature for CET voxels beyond the CIT system.
 
 
-.. index:: singe: Two-Temperature Model;thermal diffusivity
+.. index:: single: Two-Temperature Model;thermal diffusivity
 
 If the system is non-metallic (specified by **ttm_metal** as off in
 CONTROL), a thermal diffusivity needs to be supplied: no default value

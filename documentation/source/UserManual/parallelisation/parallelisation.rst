@@ -85,7 +85,7 @@ The DD strategy is applied to complex molecular systems as follows:
    must be passed from the neighbouring processors beforehand. The
    forces are usually comprised of:
 
-   #. All common forms of :index:`non-bonded<>potential;non-bonded` atom-atom (van der Waals) forces
+   #. All common forms of :index:`non-bonded<pair: potential;non-bonded>` atom-atom (van der Waals) forces
 
    #. Atom-atom (and site-site) coulombic :index:`forces<potential;electrostatics>`
 

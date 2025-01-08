@@ -74,7 +74,8 @@ Value types
 
 New-style control divides control parameters into distinct classes of
 parameters depending on how they should be handled by the parser. These
-are int, float, bool, string, option and vector (3,6), however, these
+are scalar types int, float, bool, string, and option, or vector types
+int, float, and string. These
 are easily extensible and in future more may be added by developers.
 
 Int
@@ -82,7 +83,7 @@ Int
 
 These values, identified by the ``DATA_INT`` enumeration, are simple
 integer values. There is also a special case for unit-converted integer
-values for steps values (see: §\ `Units<new_control_units>`).
+values for steps values (see Section: :ref:`new_control_units`).
 
 ::
 
@@ -102,14 +103,19 @@ internal units when read.
 Vector
 ~~~~~~
 
-These values, identified by the ``DATA_VECTOR3`` or ``DATA_VECTOR6``
-enumerations, are connected sets of data which may be either floats or
-ints
+These values, identified by the ``DATA_INT_VECTOR``, ``DATA_FLOAT_VECTOR`` 
+or ``DATA_STRING_VECTOR`` enumerations, are connected sets of data which 
+may be either ints, floats, or strings, e.g.
 
 ::
 
    pressure_tensor [ 1.0 2.0 3.0 4.0 5.0 6.0 ] GPa
    ewald_kvec [ 32 64 32 ]
+   correlation_observable [v_x-v_x v_y-v_y v_z-v_z]
+
+Vector data may have a particular size requirement, as is the case for 
+``pressure_tensor`` (6), or may be unbounded as is the case for 
+``correlation_observable``.
 
 Bool
 ~~~~
@@ -212,8 +218,11 @@ New keywords should be added to the parameters hash in
 
 where values in ``<>`` are to be filled in, and ``data-type`` is one of
 ``DATA_INT``, ``DATA_FLOAT``, ``DATA_STRING``, ``DATA_BOOL``,
-``DATA_OPTION``, ``DATA_VECTOR3``, ``DATA_VECTOR6`` and other relevant
-data is filled in.
+``DATA_OPTION``, ``DATA_INT_VECTOR``, ``DATA_FLOAT_VECTOR``, 
+``DATA_STRING_VECTOR`` and other relevant data is filled in. 
+
+Vector values must either have ``variable_length=.true.`` or a specified
+``length`` in the call to ``table%set``.
 
 If your data is unitless, you can remove the ``units`` and
 ``internal_units`` entries and they will default to unitless.

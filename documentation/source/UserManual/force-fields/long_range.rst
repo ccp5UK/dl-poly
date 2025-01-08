@@ -346,26 +346,29 @@ pseudo-periodic) system.
 
 The basic model for a neutral periodic system is a system of charged
 point ions mutually interacting via the Coulomb potential. The Ewald
-method makes two amendments to this simple model. Firstly, each ion is
+method makes two amendments to this simple model. 
+
+Firstly, each ion is
 effectively neutralised (at long-ranged) by the superposition of a
-spherical :index:`Gaussian<constraints;Gaussian>` cloud of opposite charge 
+spherical :index:`Gaussian<pair: constraints;Gaussian>` cloud of opposite charge 
 centred on the ion. The
-combined assembly of point ions and :index:`Gaussian<constraints;Gaussian>`
+combined assembly of point ions and :index:`Gaussian<pair: constraints;Gaussian>`
 charges becomes the *Real
-Space* part of the :index:`Ewald<Ewald;summation>` sum, which is now short ranged and treatable by
+Space* part of the :index:`Ewald<pair: Ewald;summation>` sum, which is now short ranged and treatable by
 the methods described above
-(Chapter :ref:`force-field`) [2]_. The second modification
+(Chapter :ref:`force-field`) [2]_. 
+
+The second modification
 is to superimpose a second set of Gaussian charges, this time with the
 same charges as the original point ions and again centred on the point
 ions (so nullifying the effect of the first set of Gaussians). The
-potential due to these :index:`Gaussian<constraints;Gaussian>`s 
-is obtained from Poisson’s equation and
+potential due to these :index:`Gaussians<pair: constraints;Gaussian>` 
+is obtained from Poisson's equation and
 is solved as a Fourier series in *Reciprocal Space*. The complete 
-:index:`Ewald<Ewald;summation>`
-sum requires an additional correction, known as the self energy
-correction, which arises from a :index:`Gaussian<constraints;Gaussian>` 
+:index:`Ewald<pair: Ewald;summation>` sum requires an additional correction, known as the self energy
+correction, which arises from a :index:`Gaussian<pair: constraints;Gaussian>` 
 acting on its own site, and is
-constant. Ewald’s method, therefore, replaces a potentially infinite sum
+constant. Ewald's method, therefore, replaces a potentially infinite sum
 in real space by two finite sums: one in real space and one in
 reciprocal space; and the self energy correction.
 
@@ -373,19 +376,19 @@ For molecular systems, as opposed to systems comprised simply of point
 ions, additional modifications
 are necessary to correct for the excluded (intra-molecular) coulombic
 interactions. In the real space sum these are simply omitted. In
-reciprocal space however, the effects of individual :index:`Gaussian<constraints;Gaussian>` charges
+reciprocal space however, the effects of individual :index:`Gaussian<pair: constraints;Gaussian>` charges
 cannot easily be extracted, and the correction is made in real space.
 It amounts to removing terms corresponding to the potential energy of
-an ion :math:`\ell` due to the :index:`Gaussian<constraints;Gaussian>` charge on a neighbouring
+an ion :math:`\ell` due to the :index:`Gaussian<pair: constraints;Gaussian>` charge on a neighbouring
 charge :math:`m` (or *vice versa*). This correction appears in the
-term noting a summation over :math:`molecules` in the full :index:`Ewald<Ewald;summation>`
+term noting a summation over :math:`molecules` in the full :index:`Ewald<pair: Ewald;summation>`
 formula below.
 
 The same considerations and modifications ewald_frzn_forces are taken
 into account for frozen atoms, which mutual coulombic interaction must
 also be excluded. This correction appears in the term noting a summation
 over :math:`F^{*}` (all frozen-frozen pairs in the MD cell) in the full
-:index:`Ewald<Ewald;summation>` formula below.
+:index:`Ewald<pair: Ewald;summation>` formula below.
 
 Note the distinction between the *error function* **erf** and the more
 usual *complementary error function* **erfc** found in the real space

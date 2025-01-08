@@ -24,7 +24,7 @@ We shall now look at each of these in more detail. Note that in all
 cases the cell vectors and the positions of the atoms in the cell are to
 be specified in Angstroms (Å).
 
-No periodic boundary (:math:`\texttt{imcon}~=~0`)
+No periodic boundary (``imcon`` 0)
 =================================================
 
 Simulations requiring no periodic boundaries are best suited to *in
@@ -42,7 +42,7 @@ space).
 This boundary condition should not used with the SPM Ewald summation
 method.
 
-Cubic periodic boundaries (:math:`\texttt{imcon}~=~1`)
+Cubic periodic boundaries (``imcon`` 1)
 ======================================================
 
 .. figure:: ../Images/cube.png 
@@ -60,7 +60,7 @@ for a cube with sidelength D, the cell vectors appearing in the CONFIG
 file should be: (D,0,0); (0,D,0); (0,0,D). Note the origin of the atomic
 coordinates is the centre of the cell.
 
-Orthorhombic periodic boundaries (:math:`\texttt{imcon}~=~2`)
+Orthorhombic periodic boundaries (``imcon`` 2)
 =============================================================
 
 .. figure:: ../Images/ortho.png
@@ -80,7 +80,7 @@ Y-direction) and F (in Z-direction), the cell vectors appearing in the
 CONFIG file should be: (D,0,0); (0,E,0); (0,0,F). Note the origin of the
 atomic coordinates is the centre of the cell.
 
-Parallelepiped periodic boundaries (:math:`\texttt{imcon}~=~3`)
+Parallelepiped periodic boundaries (``imcon`` 3)
 ===============================================================
 
 .. figure:: ../Images/triclinic.png
@@ -104,7 +104,7 @@ integers, reflecting the multiplication of the unit cell in each
 principal direction. Note that the atomic coordinate origin is the
 centre of the MD cell.
 
-Slab boundary conditions (:math:`\texttt{imcon}~=~6`)
+Slab boundary conditions (``imcon`` 6)
 =====================================================
 
 Slab boundaries are periodic in the X- and Y-directions, but not in the

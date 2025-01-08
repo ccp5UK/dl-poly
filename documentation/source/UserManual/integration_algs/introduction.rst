@@ -1,8 +1,8 @@
 Introduction
 ============
 
-As a default the DL_POLY_4integration :index:`algorithm`s are based on the
-Velocity :index:`Verlet<algorithm;Verlet>` (VV) scheme, which is both simple and time reversible
+As a default the DL_POLY_4 integration algorithms are based on the
+Velocity :index:`Verlet algorithm <pair: Verlet; algorithm>` (VV), which is both simple and time reversible
 :cite:`allen-89a`. It generates trajectories in the
 microcanonical (NVE) ensemble in which the total energy (kinetic plus
 potential) is conserved. If this property drifts or fluctuates
@@ -109,7 +109,7 @@ line (i.e. rotation around one axis only) or 3 when just one site is
 frozen.
 
 The routine ``nve_0_vv`` implement the Verlet algorithm in velocity
-:index:`verlet<algorithm;Verlet>` for free particles and calculate the instantaneous temperature.
+verlet for free particles and calculate the instantaneous temperature.
 Whereas the routines ``nve_1_vv`` implements the same for systems also
 containing rigid bodies. The conserved quantity is the total energy of
 the system
@@ -119,7 +119,7 @@ the system
 where :math:`U` is the potential energy of the system and
 :math:`E_{kin}` the kinetic energy at time :math:`t`.
 
-The full selection of integration algorithms within DL_POLY_4is as
+The full selection of :index:`integration algorithms <pair: integration; algorithm>` within DL_POLY_4 is as
 follows:
 
 .. list-table::
@@ -129,13 +129,13 @@ follows:
    * - ``nve_1_vv``
      - The same as the above but also incorporating RB integration
    * - ``dpd_thermostat``
-     - Constant T :index:`algorithm<ensemble;DPD NVT>` (DPD:cite:`shardlow-03a`)
+     - Constant T :index:`algorithm<ensemble;DPD NVT>` (DPD :cite:`shardlow-03a`)
    * - ``nvt_e0_vv`` 
-     - Constant :math:`E_{kin}` :index:`algorithm<ensemble;Evans NVT>` (Evans:cite:`evans-84a`)
+     - Constant :math:`E_{kin}` :index:`algorithm<ensemble;Evans NVT>` (Evans :cite:`evans-84a`)
    * - ``nvt_e1_vv`` 
      - The same as the above but also incorporating RB integration
    * - ``nvt_l0_vv`` 
-     - Constant T :index:`algorithm<ensemble;Langevin NVT>` (Langevin:cite:`adelman-76a`)
+     - Constant T :index:`algorithm<ensemble;Langevin NVT>` (Langevin :cite:`adelman-76a`)
    * - ``nvt_l1_vv`` 
      - The same as the above but also incorporating RB integration
    * - ``nvt_l2_vv`` 
@@ -173,7 +173,7 @@ follows:
    * - ``npt_m1_vv`` 
      - The same as the above but also incorporating RB integration
    * - ``npt_l0_vv``
-     -  Constant T,\ :math:`\underline{\underline{\mathbf{\sigma}}}` :index:`algorithm<ensemble;Langevin N$\simga$T>` (Langevin:cite:`quigley-04a`)
+     -  Constant T,\ :math:`\underline{\underline{\mathbf{\sigma}}}` :index:`algorithm<ensemble;Langevin N$\simga$T>` (Langevin :cite:`quigley-04a`)
    * - ``npt_l1_vv``
      - The same as the above but also incorporating RB integration
    * - ``nst_b0_vv`` 
