@@ -645,9 +645,26 @@ insufficient number of timesteps have elapsed. ndump is controlled by
 the directive **dump** in file CONTROL (see above) and listed as
 parameter ``ndump`` in the setup_module file (see
 Section :ref:`file-structure`). The default value is
-``ndump`` :math:`=1000`. REVCON is identical in format to the CONFIG
-input file (see Section \ :ref:`config-file`). REVCON
-should be renamed CONFIG to continue a simulation from one job to the
+``ndump`` :math:`=1000`. 
+
+REVCON is identical in format to the CONFIG input file (see Section \ :ref:`config-file`)
+with the addition of the step number, timestep, and simulation time (steps * timestep)
+on the 2nd meta-data line. I.e the first two lines of a REVCON will read
+
+.. parsed-literal:: 
+ 
+  **record 1**
+  ``header``      a72       title line
+
+  **record 2**
+  ``levcfg``      integer   CONFIG file key. See Table :numref:`(%s)<levcfg_table>` for permitted values
+  ``imcon``       integer   Periodic boundary key. See Table :numref:`(%s)<imcon_table>` for permitted values
+  ``megatm``      integer   Total number of particles (crystalographic entities)
+  ``step``        integer   Simulation step this REVCON was written.
+  ``tstep``       real      Simulation time-step.
+  ``time``        real      Simulation time (steps * timestep).
+
+REVCON should be renamed CONFIG to continue a simulation from one job to the
 next. This is done for you by the copy macro supplied in the execute
 directory of .
 
