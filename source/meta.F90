@@ -924,6 +924,11 @@ Contains
         End If
       End Do
     End If
+    Do ff = 1, flow%num_ff
+      If (Allocated(stats(ff)%mom_dens_names)) Then
+        Call stats(ff)%setup_momentum_density(sites(ff))
+      End If
+    End Do
 
     Call params%destroy()
 
@@ -1205,7 +1210,7 @@ Contains
     ! ALLOCATE RDF, Z-DENSITY, STATISTICS & GREEN-KUBO ARRAYS
     Call rdf%init()
     Call zdensity%init(sites%mxatyp)
-    Call stats%init(rigid%max_rigid, config%mxatms, config%mxatdm)
+    Call stats%init(rigid%max_rigid, config%mxatms, config%mxatdm, sites%mxatyp)
     Call green%init(config%mxatms, sites%mxatyp)
 
     ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS

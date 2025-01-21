@@ -226,9 +226,16 @@ Module statistics
 
     Integer                            :: pp_eng_str_frequency = 0
     Integer                            :: born_frequency = 0
+    Integer                            :: mom_dens_frequency = 0
 
     !> store spot heat flux
     Real(Kind=wp)                      :: heat_flux(1:3) = [0.0_wp, 0.0_wp, 0.0_wp]
+
+    !> store spot momentum density
+    Real(Kind=wp),    Allocatable :: momentum_density(:, :)
+    !> atom types to collect momentum density for
+    Integer,          Allocatable :: mom_dens_types(:)
+    Character(Len=8), Allocatable :: mom_dens_names(:)
 
     !> Store for per-particle energy data
     Real(Kind=wp), Allocatable         :: pp_energy(:)
@@ -280,6 +287,7 @@ Module statistics
     Procedure, Public :: revive_correlations
     Procedure, Public :: check_collection_frequencies
     Procedure, Public :: calculate_stress_energy_current
+    Procedure, Public :: setup_momentum_density
 
     Procedure         :: allocate_per_particle_arrays
     Procedure         :: deallocate_per_particle_arrays
@@ -369,6 +377,7 @@ Module statistics
   Public :: calculate_stress
   Public :: calculate_viscosity
   Public :: calculate_heat_flux
+  Public :: calculate_mom_density
   Public :: calculate_thermal_conductivity
   Public :: statistics_collect
   Public :: statistics_connect_frames
@@ -419,12 +428,12 @@ Contains
     
   End Subroutine check_collection_frequencies
 
-  Subroutine allocate_statistics_arrays(stats, mxrgd, mxatms, mxatdm)
+  Subroutine allocate_statistics_arrays(stats, mxrgd, mxatms, mxatdm, mxatype)
     Class(stats_type), Intent(InOut)   :: stats
-    Integer,           Intent(In   )   :: mxrgd, mxatms, mxatdm
+    Integer,           Intent(In   )   :: mxrgd, mxatms, mxatdm, mxatype
 
     Integer                            :: mxnstk, mxstak, nxatms, i
-    Integer,           Dimension(1:5)  :: fail
+    Integer,           Dimension(1:6)  :: fail
  
     fail = 0
 
@@ -448,6 +457,8 @@ Contains
       stats%accumulators(i)%window = mxstak
     End Do
 
+    Allocate(stats%momentum_density(1:Size(stats%mom_dens_names), 1:3), Stat=fail(6))
+
     If (Any(fail > 0)) Call error_alloc("allocate_statistics_arrays", "statistics")
 
     stats%xin = 0.0_wp; stats%yin = 0.0_wp; stats%zin = 0.0_wp
@@ -468,6 +479,31 @@ Contains
     End If
 
   End Subroutine allocate_statistics_arrays
+
+  Subroutine setup_momentum_density(stats, sites)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_5 subroutine to setup momentum density calculations for 
+    !  user selected atom types.
+    !
+    ! author    - h.l.devereux, Nov 2024
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Class(stats_type), Intent(InOut) :: stats
+    Type(site_type),   Intent(In   ) :: sites
+
+    Integer                :: i, loc
+    Character(Len=8)       :: name
+
+    Do i = 1, Size(stats%mom_dens_names)
+      loc = Findloc(sites%site_name, Trim(stats%mom_dens_names(i)), 1)
+      If (loc == 0) Then
+        Call error(0, "Could not find atom type "//Trim(stats%mom_dens_names(i))//" for momentum_density")
+      End If
+      stats%mom_dens_types(i) = loc
+    End Do
+
+  End Subroutine
 
   Subroutine setup_pp_collection(stats, config, flow)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -504,7 +540,7 @@ Contains
     End If
   End Subroutine setup_pp_collection
 
-  Subroutine pp_result(stats, config, comm, flow, files)
+  Subroutine pp_result(stats, sites, config, comm, flow, files)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_5 subroutine to check if pp data was computed this step
@@ -515,12 +551,14 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     Class(stats_type),         Intent(InOut)           :: stats
+    Type(site_type),           Intent(In   )           :: sites
     Type(configuration_type),  Intent(In   )           :: config
     Type(comms_type),          Intent(InOut)           :: comm
     Type(flow_type),           Intent(In   )           :: flow
     Type(file_type),           Intent(InOut), Optional :: files(:)
 
     Logical :: write = .false.
+    Integer :: i
 
     If (Present(files)) Then 
       write = .true.
@@ -531,12 +569,21 @@ Contains
 
       If (flow%heat_flux .and. comm%idnode == 0 .and. Mod(flow%step, stats%intsta) == 0) Then
         If (write) Then
-          If (flow%step == 0) Then
+          If (flow%step == stats%intsta) Then
             Open (Newunit=files(FILE_HEATFLUX)%unit_no, File=Trim(files(FILE_HEATFLUX)%filename),Status='replace')
           Else
             Open (Newunit=files(FILE_HEATFLUX)%unit_no, File=Trim(files(FILE_HEATFLUX)%filename), Position='append')
           End If
-          Write (files(FILE_HEATFLUX)%unit_no, '(I8.1, 1X, 5(G19.12, 1X))') flow%step, stats%stptmp, config%volm, stats%heat_flux
+          If (Size(stats%mom_dens_types) > 0) Then
+            Write (files(FILE_HEATFLUX)%unit_no, '(I8.1, 1X, 8(G19.12, 1X))', advance='no') flow%step, stats%stptmp, config%volm, &
+              stats%heat_flux
+            Do i = 1, Size(stats%mom_dens_types)
+              Write (files(FILE_HEATFLUX)%unit_no, '(A, 1X, 3(G19.12, 1X))', advance='no') &
+                Trim(sites%unique_atom(i)), stats%momentum_density(i, :)
+            End Do
+          Else
+            Write (files(FILE_HEATFLUX)%unit_no, '(I8.1, 1X, 5(G19.12, 1X))') flow%step, stats%stptmp, config%volm, stats%heat_flux
+          End If
           Close (files(FILE_HEATFLUX)%unit_no)
         End If
       End If
@@ -1293,6 +1340,14 @@ Contains
           stats%pp_cur_virial, stats%pp_cur_stress)
       Else
         Call stats%cur%compute(config, time, comm, sites, stats%pp_energy)
+      End If
+    End If
+
+    If (stats%mom_dens_frequency > 0 .and. nstep > 0) Then
+      If (Mod(nstep, stats%mom_dens_frequency) == 0) Then
+        Do i = 1, Size(stats%mom_dens_types)
+          stats%momentum_density(i, :) = calculate_mom_density(stats, i, config, comm)
+        End Do
       End If
     End If
 
@@ -2787,6 +2842,34 @@ Contains
     t%stress(9) = t%stress(9) + s(6)
 
   End Subroutine update_stress
+
+  Function calculate_mom_density(stats, atype, config, comm) Result(j)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_5 subroutine for calculating momentum density for a given atom
+    ! type.
+    !
+    !
+    ! author    - h.l.devereux Nov 2024
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Use comms, Only: gsum
+    Type(stats_type),         Intent(In   ) :: stats
+    Integer,                  Intent(In   ) :: atype
+    Type(configuration_type), Intent(In   ) :: config
+    Type(comms_type),         Intent(InOut) :: comm
+    Real(Kind=wp), Dimension(3)             :: j
+    
+    Integer :: iatm
+
+    j = 0.0_wp
+    Do iatm = 1, config%natms
+      If (config%ltype(iatm) == atype) Then
+        j = j + config%weight(iatm) * [config%vxx(iatm), config%vyy(iatm), config%vzz(iatm)]
+      End If
+    End Do
+    Call gsum(comm, j)
+    j = j / stats%stpvol
+  End Function
 
   Function calculate_heat_flux(stats, config, comm) Result(heat_flux)
     Use comms, Only: gsum

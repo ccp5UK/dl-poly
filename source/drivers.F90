@@ -2237,15 +2237,6 @@ Contains
                                  sites(ff), domain(ff), flow, files, thermo(ff), tmr, green(ff), minim(ff), comm, ff)
         End Do
 
-        ! If there was per-particle data collect this step, ff==1/root outputs
-        Do ff = 1, flow%NUM_FF
-          If (ff == 1) Then
-            Call stat(ff)%pp_result(cnfig(ff), comm, flow, files=files)
-          Else
-            Call stat(ff)%pp_result(cnfig(ff), comm, flow)
-          End If
-        End Do
-
         ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
         Call write_options(cnfig(1), io, rsdc, cshell(1), stat(1), sites(1), domain(1), traj, files, dfcts, &
                            flow, thermo(1), msd_data(1), green(1), neigh(1), comm)
@@ -2268,6 +2259,15 @@ Contains
         End Do
 
       End If ! DO THAT ONLY IF 0<flow%step<=flow%run_steps AND THIS IS AN OLD JOB (flow%newjob=.false.)
+
+      ! If there was per-particle data collect this step, ff==1/root outputs
+      Do ff = 1, flow%NUM_FF
+        If (ff == 1) Then
+          Call stat(ff)%pp_result(sites(ff), cnfig(ff), comm, flow, files=files)
+        Else
+          Call stat(ff)%pp_result(sites(ff), cnfig(ff), comm, flow)
+        End If
+      End Do
 
       1000 Continue ! Escape forces evaluation at t=0 when flow%step=flow%run_steps=0 and flow%newjob=.false.
 

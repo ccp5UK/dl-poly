@@ -2003,7 +2003,9 @@ Contains
     Type(stats_type),            Intent(InOut) :: stats
     Logical,                     Intent(  Out) :: read_config_indices
 
-    Logical :: ltmp
+    Logical                              :: ltmp
+    Character(Len=STR_LEN), Allocatable  :: option(:)
+    Integer                              :: i
 
     Call params%retrieve('timestep', thermo%tstep, required=.true.)
     If (thermo%tstep < zero_plus) Call error(0, 'Timestep too small')
@@ -2062,6 +2064,16 @@ Contains
     if (flow%NUM_FF > 1 .and. flow%simulation_method /= EmpVB) then
       call error(0,"evb_num_ff specified without simulation_method: evb",.true.)
     end if
+
+    Call params%retrieve('momentum_density', option)
+    If (Len(option) > 0) Then
+      Allocate(stats%mom_dens_names(1:Size(option)))
+      Allocate(stats%mom_dens_types(1:Size(option)))
+      Do i = 1, Size(option)
+        stats%mom_dens_names(i) = option(i)(1:8)
+      End Do
+      stats%mom_dens_frequency = stats%intsta
+    End If
 
   End Subroutine read_run_parameters
 
@@ -3028,6 +3040,13 @@ Contains
                      val="off", &
                      description="Enable calculation of heat flux", &
                      data_type=DATA_BOOL))
+
+      Call table%set("momentum_density", control_parameter( &
+                     key="momentum_density", &
+                     name="Calculate momentum density", &
+                     val="", &
+                     description="Enable calculation of momentum_density", &
+                     data_type=DATA_STRING_VECTOR))
 
       Call table%set("write_per_particle", control_parameter( &
                      key="write_per_particle", &

@@ -6,15 +6,17 @@ Heat Flux
 Introduction
 ~~~~~~~~~~~~
 
-It is possible to use DL_POLY_4 to calculate the heat flux of a material
+It is possible to use DL_POLY_5 to calculate the heat flux of a material
 with two-body interactions in an MD simulation. The heat flux can
 subsequently be used as a means to calculate the thermal conductivity of
-a material via the Green-Kubo relation. Currently, the heat flux is only
-viable for two-body interactions, but valid for any two-body
-interactions.
+a material via the Green-Kubo relation (see Section :ref:`correlation-functions`). 
 
-To enable the calculation of heat flux add the **heat_flux** keyword
-into the CONTROL file.
+It is also possible to calculate the momentum density, which may be required to apply corrections to the 
+thermal-conductivity in multi-component systems when comparing to experimental data.
+
+To enable the calculation of heat flux add **heat_flux On** into the CONTROL file. For the momentum
+density supply a list of atom types to calculate the values for e.g. **momentum_density [Li F]** to
+compute for Li and F atoms.
 
 Heat flux is currently supported for: direct and tabulated VDW interactions (see Table :numref:`(%s)<vdw-table>`), SPME interactions, and direct and tabulated metal potentials (see Table :numref:`(%s)<metal-table>`). Tersoff, three, and four body potentials are currently unsupported.
 
@@ -23,23 +25,32 @@ Theory
 
 The heat flux for two-body interactions is defined as:
 
-.. math:: \underline{J} = \frac{1}{V} \left[ \sum\limits^{N}_{i} e_{i} \underline{v}_{i} - \sum\limits^{N}_{i} \underline{\underline{\textbf{S}}}_{i} \underline{v}_{i} \right]
+.. math:: \mathbf{J} = \frac{1}{V} \sum\limits^{N}_{i} \left[ e_{i} \mathbf{v}_{i} + \frac{1}{2}\sum\limits_{j\neq i} \mathbf{f}_{ij}\cdot\mathbf{v}_{i}\mathbf{r}_{ij} \right]
    :label: heat-flux-definition_eq
 
-where :math:`\underline{\underline{\textbf{J}}}` is the heat flux,
+where :math:`\mathbf{\mathbf{\textbf{J}}}` is the heat flux,
 :math:`V` is the volume of the cell, :math:`N` is the number of
-particles, :math:`e` is the energy, :math:`\underline{v}` is the
-velocity, :math:`\underline{\underline{\textbf{S}}}` is the stress. All
-subscript :math:`i` refer to the particle.
+particles, :math:`e_{i}` is the energy, :math:`\mathbf{v}_{i}` is the
+velocity, :math:`\mathbf{f}_{ij}` is the force of j on i. All
+subscripts :math:`i` refer to a particle.
 
-The thermal conductivity can then be as an auto-correlation of the heat
-flux over a run:
+The thermal conductivity can then be calculated as an auto-correlation of the heat
+flux
 
-.. math:: \kappa = \frac{V}{k_{B} T^{2}} \int\limits_{0}^{\infty} \langle \underline{J}(0)  \underline{J}(t) \rangle \, \mathrm{d}t
+.. math:: \kappa = \frac{V}{k_{B} T^{2}} \int\limits_{0}^{\infty} \langle \mathbf{J}(0)  \mathbf{J}(t) \rangle \, \mathrm{d}t
 
 where :math:`\kappa` is the thermal conductivity, :math:`V` is the
-volume of the cell, :math:`k_{B}` is the Boltzmann constant, :math:`J`
-is the heatflux.
+volume of the cell, :math:`k_{B}` is the Boltzmann constant.
+
+In mixed systems where components significantly differ in mass it may be 
+necessary to correct for mass transfer effects when calculating 
+thermal-conductivity :cite:`armstrong2014thermal`. In order to 
+facilitate these corrections the momentum density may also be 
+calculated. This is defined for components (atomic types) C as,
+
+.. math:: \mathbf{q}_{C} = \frac{1}{V}\sum_{i\in C}m_{i}\mathbf{v}_{i}.
+
+Where :math:`C` is the set of atoms.
 
 Implementation
 ~~~~~~~~~~~~~~
@@ -69,4 +80,11 @@ File
 ~~~~
 
 The heat flux method creates a file called HEATFLUX which contains the
-relevant data structured as: STEP PRESSURE VOLUME HEAT-FLUX
+relevant data structured as 6 Reals per line: STEP TEMPERATURE VOLUME HEAT-FLUX (x, y, z).
+
+If **momentum_density** is specified with some atom types listed then the file 
+will include additional data for each atom type's momentum density on each line 
+after the HEAT-FLUX data. Given **momentum_density [Li]** in a Li-F simulation 
+the data will be structured as 9 Reals per line and a Character: STEP TEMPERATURE VOLUME HEAT-FLUX (x, y, z) Li MOMENTUM-DENSITY-Li (x, y, z).
+
+
