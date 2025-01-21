@@ -399,6 +399,8 @@ contains
                 tests%hash = .true.
               Case ("parse")
                 tests%parse = .true.
+              Case ("numerics")
+                tests%numerics = .true.
               Case ("all")
                 Call tests%all()
               Case Default

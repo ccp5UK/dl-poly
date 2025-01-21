@@ -474,6 +474,7 @@ Contains
     !!
     !! copyright - daresbury laboratory
     !! author    - i.t.todorov march 2016
+    !! amended   - h.l.devereux 2025
     !! refactoring:
     !!           - a.m.elena march-october 2018
     !!           - j.madge march-october 2018
@@ -486,11 +487,10 @@ Contains
     Integer,         Intent(In   ) :: seeda, seedb, seedc
     Real(Kind=wp)                  :: sarurnd
 
-    Integer(Kind=li), Parameter :: two32 = 2_li**32
-    Real(Kind=wp), Parameter    :: rtwo32 = (2.0_wp)**(-32), two32r = 2.0_wp**32
+    Real(Kind=wp), Parameter    :: rtwo32 = (2.0_wp)**(-32)
 
-    Integer(Kind=li) :: itmp, seed1, seed2, seed3, state, u32, v, wstate
-    Real(Kind=wp)    :: statepart1, statepart2, tmp
+    Integer(Kind=li) :: seed1, seed2, seed3, state, u32, v, wstate
+    Real(Kind=wp)    :: statepart1, statepart2
 
     ! Apply possible shifting - usually (0,0,0)
 
@@ -506,124 +506,85 @@ Contains
 
     ! Wrap up
 
-    seed1 = Mod(seed1, two32); If (seed1 < 0) seed1 = seed1 + two32
-    seed2 = Mod(seed2, two32); If (seed2 < 0) seed2 = seed2 + two32
-    seed3 = Mod(seed3, two32); If (seed3 < 0) seed3 = seed3 + two32
+    seed1 = wrap(seed1)
+    seed2 = wrap(seed2)
+    seed3 = wrap(seed3)
 
     ! apply premixing to seeds
 
     ! seed3 ^= (seed1<<7)^(seed2>>6);
 
-    seed3 = Ieor(seed3, Ieor(Ishft(seed1, 7_li), Ishft(seed2, -6_li)))
-    seed3 = Mod(seed3, two32)
+    seed3 = wrap(Ieor(seed3, Ieor(Ishft(seed1, 7_li), Ishft(seed2, -6_li))))
 
     ! seed2 += (seed1>>4)^(seed3>>15);
-
-    itmp = Ieor(Ishft(seed1, -4_li), Ishft(seed3, -15_li))
-    seed2 = seed2 + itmp
-    seed2 = Mod(seed2, two32)
+ 
+    seed2 = wrap(seed2 + wrap(Ieor(Ishft(seed1, -4_li), Ishft(seed3, -15_li))))
 
     ! seed1 ^= (seed2<<9)+(seed3<<8);
 
-    seed1 = Ieor(seed1, Ishft(seed2, 9_li) + Ishft(seed3, 8_li))
-    seed1 = Mod(seed1, two32)
+    seed1 = wrap(Ieor(seed1, Ishft(seed2, 9_li) + Ishft(seed3, 8_li)))
 
     ! seed3 ^= 0xA5366B4D*((seed2>>11) ^ (seed1<<1));
 
-    itmp = Ieor(Ishft(seed2, -11_li), Ishft(seed1, 1_li))
-    tmp = 2771807053.0_wp * Real(itmp, Kind=wp)
-    itmp = Int(Mod(tmp, two32r), Kind=li)
-    seed3 = Ieor(seed3, itmp)
-    seed3 = Mod(seed3, two32)
+    seed3 = wrap(Ieor(seed3, wrap(2771807053_li*wrap(Ieor(Ishft(seed2, -11_li), Ishft(seed1, 1_li))))))
 
     ! seed2 += 0x72BE1579*((seed1<<4) ^ (seed3>>16));
-
-    itmp = Ieor(Ishft(seed1, 4_li), Ishft(seed3, -16_li))
-    tmp = 1925059961.0_wp * Real(itmp, Kind=wp)
-    itmp = Int(Mod(tmp, two32r), Kind=li)
-    seed2 = seed2 + itmp
-    seed2 = Mod(seed2, two32)
+  
+    seed2 = wrap(seed2 + wrap(1925059961_li*Ieor(Ishft(seed1, 4_li), Ishft(seed3, -16_li))))
 
     ! seed1 ^= 0X3F38A6ED*((seed3>>5) ^ (((signed int)seed2)>>22));
 
-    itmp = Ieor(Ishft(seed3, -5_li), Ishft(Int(Int(seed2), Kind=li), -22_li))
-    tmp = 1060677357.0_wp * Real(itmp, Kind=wp)
-    itmp = Int(Mod(tmp, two32r), Kind=li)
-    If (itmp < 0) itmp = itmp + two32
-    seed1 = Ieor(seed1, itmp)
-    seed1 = Mod(seed1, two32)
+    seed1 = wrap(Ieor(seed1, wrap(Ieor(Ishft(seed3, -5_li), Ishft(Int(Int(seed2), Kind=li), -22_li))*1060677357_li)))
 
     ! seed2 += seed1*seed3;
 
-    tmp = Real(seed1, Kind=wp) * Real(seed3, Kind=wp)
-    itmp = Int(Mod(tmp, two32r), Kind=li)
-    seed2 = seed2 + itmp
-    seed2 = Mod(seed2, two32)
+    seed2 = wrap(seed2 + wrap(seed1*seed3))
 
     ! seed1 += seed3 ^ (seed2>>2);
 
-    seed1 = seed1 + Ieor(seed3, Ishft(seed2, -2_li))
-    seed1 = Mod(seed1, two32)
+    seed1 = wrap(seed1 + Ieor(seed3, Ishft(seed2, -2_li)))
 
     ! seed2 ^= ((signed int)seed2)>>17;
 
-    seed2 = Ieor(seed2, Ishft(Int(Int(seed2), Kind=li), -17_li))
-    If (seed2 < 0) seed2 = seed2 + two32
+    seed2 = wrap(Ieor(seed2, Ishft(Int(Int(seed2), Kind=li), -17_li)))
 
     ! convert seeds to state values
 
     ! state = 0x79dedea3*(seed1^(((signed int)seed1)>>14));
 
-    itmp = Ieor(seed1, Ishft(Int(Int(seed1), Kind=li), -14_li))
-    tmp = 2044649123.0_wp * Real(itmp, Kind=wp)
-    state = Int(Mod(tmp, two32r), Kind=li)
-    If (state < 0) state = state + two32
+    state = wrap(2044649123_li * Ieor(seed1, Ishft(Int(Int(seed1), Kind=li), -14_li)))
 
     ! wstate = (state + seed2) ^ (((signed int)state)>>8);
 
-    wstate = Ieor((state + seed2), Ishft(Int(Int(state), Kind=li), -8_li))
-    wstate = Mod(wstate, two32); If (wstate < 0) wstate = wstate + two32
+    wstate = wrap(Ieor((state + seed2), Ishft(Int(Int(state), Kind=li), -8_li)))
 
     ! state = state + (wstate*(wstate^0xdddf97f5));
 
-    itmp = Ieor(wstate, 3722418165_li)
-    tmp = Real(wstate, Kind=wp) * Real(itmp, Kind=wp)
-    itmp = Int(Mod(tmp, two32r), Kind=li)
-    state = state + itmp
-    state = Mod(state, two32)
+    state = wrap(state + wrap(wstate*Ieor(wstate, 3722418165_li)))
 
     ! wstate = 0xABCB96F7 + (wstate>>1);
 
-    wstate = 2882246391_li + Ishft(wstate, -1_li)
-    wstate = Mod(wstate, two32)
+    wstate = wrap(2882246391_li + Ishft(wstate, -1_li))
 
     ! advance LCG state by 1
     ! state = 0x4beb5d59*state + 0x2600e1f7; // LCG
-
-    tmp = 1273716057.0_wp * Real(state, Kind=wp)
-    itmp = Int(Mod(tmp, two32r), Kind=li)
-    state = itmp + 637592055_li
-    state = Mod(state, two32)
+ 
+    state = wrap(wrap(1273716057_li*state) + 637592055_li)
 
     ! advance Weyl state by 1, for oWeylOffset=0x8009d14b & oWeylPeriod=0xda879add
     ! wstate = wstate + oWeylOffset + ((((signed int)wstate)>>31)&oWeylPeriod); // OWS
 
-    wstate = wstate + 2148127051_li + Iand(Ishft(Int(Int(wstate), Kind=li), -31_li), 3666320093_li)
-    wstate = Mod(wstate, two32)
+    wstate = wrap(wstate + 2148127051_li + Iand(Ishft(Int(Int(wstate), Kind=li), -31_li), 3666320093_li))
 
     ! calculate 32-bit pseudo-random number
 
     ! v = (state ^ (state>>26))+wstate;
 
-    v = Ieor(state, Ishft(state, -26_li)) + wstate
-    v = Mod(v, two32)
+    v = wrap(Ieor(state, Ishft(state, -26_li)) + wstate)
 
     ! u32 = (v^(v>>20))*0x6957f5a7;
 
-    itmp = Ieor(v, Ishft(v, -20_li))
-    tmp = Real(itmp, Kind=wp) * 1767372199.0_wp
-    u32 = Int(Mod(tmp, two32r), Kind=li)
-
+    u32 = wrap(1767372199_li*Ieor(v, Ishft(v, -20_li)))
     ! convert to real (double-precision) number between 0 and 1
 
     ! statep1 = ((signed int)u32)*TWO_N32+(0.5+0.5*TWO_N32);
@@ -637,6 +598,15 @@ Contains
     ! sarurand=statep1+statep2
 
     sarurnd = statepart1 + statepart2
+
+    Contains
+
+      !> Wrap -tv signed 64 to unsigned 32 mirroring unsigned int
+      Pure Integer(Kind=li) Function wrap(x)
+        Integer(Kind=li), Intent(In    ) :: x
+        wrap = Mod(x, 2_li**32)
+        If (wrap < 0) wrap = wrap + 2_li**32
+      End Function wrap
 
   End Function sarurnd
 

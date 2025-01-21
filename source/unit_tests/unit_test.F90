@@ -8,6 +8,7 @@ Module unit_test
   Use test_integrators,   Only: run_integrators_tests
   Use test_hash,          Only: run_hash_tests
   Use test_parse,         Only: run_parse_tests
+  Use test_numerics,      Only: run_numerics_tests
   Implicit None
 
   !> Logicals indicating whether tests should be run for
@@ -21,6 +22,7 @@ Module unit_test
     Logical, Public :: integrators = .false.
     Logical, Public :: hash = .false.
     Logical, Public :: parse = .false.
+    Logical, Public :: numerics = .false.
   Contains
     Procedure :: all => set_all_tests_true
     Procedure :: run => run_unit_tests
@@ -38,6 +40,7 @@ Contains
     this%integrators = .true.
     this%hash = .true.
     this%parse = .true.
+    this%numerics = .true.
   End Subroutine set_all_tests_true
 
   Subroutine run_unit_tests(this, comm, eu)
@@ -89,6 +92,12 @@ Contains
     If (this%parse) Then
       Write(eu, '(a)') "Running test: parse"
       Call run_parse_tests(passed)
+      passed_all = passed_all .and. passed
+    End If
+
+    If (this%numerics) Then
+      Write(eu, '(a)') "Running test: numerics"
+      Call run_numerics_tests(passed)
       passed_all = passed_all .and. passed
     End If
 
