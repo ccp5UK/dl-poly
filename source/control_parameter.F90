@@ -159,6 +159,7 @@ Contains
 
     Integer          :: i
     Character(Len=8) :: vector_closing
+    Logical          :: has_units
 
     Call params%get_keys(keys)
 
@@ -184,6 +185,13 @@ Contains
 
     Do i = 1, params%used_keys
       Call params%get(keys(i), param)
+
+      has_units = len_trim(param%units) > 0
+      If (Trim(param%key) == "minimisation_tolerance") Then
+        ! units are determined according to minimisation_criterion
+        has_units = .true.
+      End If
+
       Select Case (mode)
       Case ('latex', 'latexdoc')
         ! Escape _
@@ -215,25 +223,25 @@ Contains
              Trim(param%description), Trim(param%val), Trim(param%units)
       Case ('python')
         If (is_vector(param)) Then
-          If (len_trim(param%units) > 0) Then
+          If (has_units) Then
             vector_closing = ", str)"
           Else
-            vector_closing = ")"
+            vector_closing = "),"
           End If
           If (param%variable_length) Then
-            Write(ifile, '("""",a, """:", 1X, a)') Trim(param%key), &
-              "("//Trim(python_data_name(param%data_type))//", ..."//vector_closing
+            Write(ifile, '(4x,"""",a, """:", 1X, a)') Trim(param%key), &
+              "("//Trim(python_data_name(param%data_type))//", ..."//Trim(vector_closing)
           Else
-            Write(ifile, '("""",a, """:", 1X, a)') Trim(param%key), &
+            Write(ifile, '(4x,"""",a, """:", 1X, a)') Trim(param%key), &
               "("//Repeat(Trim(python_data_name(param%data_type))//", ",param%length-1)//&
-              Trim(python_data_name(param%data_type))//vector_closing
+              Trim(python_data_name(param%data_type))//Trim(vector_closing)
           End If
-        Else 
-          If (Len_trim(param%units) > 0) Then
-            Write (ifile, '("""",a, """:",1X,"(",a,",",1X,a,"),")') Trim(param%key), Trim(python_data_name(param%data_type)), &
+        Else
+          If (has_units) Then
+            Write (ifile, '(4x, """",a, """:",1X,"(",a,",",1X,a,"),")') Trim(param%key), Trim(python_data_name(param%data_type)), &
                 Trim(python_data_name(DATA_STRING))
           Else
-            Write (ifile, '("""",a,""":",1X,a,",")') Trim(param%key), Trim(python_data_name(param%data_type))
+            Write (ifile, '(4x,"""",a,""":",1X,a,",")') Trim(param%key), Trim(python_data_name(param%data_type))
           End If
         End If
       Case ('test')
@@ -271,7 +279,7 @@ Contains
     Case ('latex')
       Write (ifile, '(a)') '\end{longtable}'
     Case ('python')
-      Write (ifile, '(a)') '})'
+      Write (ifile, '(a)') '}, strict=True)'
     Case ('csv', 'test', 'default')
       Continue
     End Select
