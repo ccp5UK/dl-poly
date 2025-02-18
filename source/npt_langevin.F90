@@ -140,15 +140,16 @@ Contains
       thermo%elrc0 = vdws%elrc
       thermo%virlrc0 = vdws%vlrc
 
-      Allocate (thermo%dens0(1:sites%mxatyp), Stat=fail(1))
-      If (fail(1) > 0) Then
-        Write (message, '(a)') 'thermo%dens0 allocation failure'
-        Call error(0, message)
+      If (.not. Allocated(thermo%dens0)) Then
+        Allocate (thermo%dens0(1:sites%mxatyp), Stat=fail(1))
+        If (fail(1) > 0) Then
+          Write (message, '(a)') 'thermo%dens0 allocation failure'
+          Call error(0, message)
+        End If
+        Do i = 1, sites%ntype_atom
+          thermo%dens0(i) = sites%dens(i)
+        End Do
       End If
-      Do i = 1, sites%ntype_atom
-        thermo%dens0(i) = sites%dens(i)
-      End Do
-
       ! inertia parameter for barostat
 
       thermo%temp_lang = 2.0_wp * thermo%sigma / (boltz * Real(degfre, wp))
@@ -602,14 +603,16 @@ Contains
       thermo%elrc0 = vdws%elrc
       thermo%virlrc0 = vdws%vlrc
 
-      Allocate (thermo%dens0(1:sites%mxatyp), Stat=fail(1))
-      If (fail(1) > 0) Then
-        Write (message, '(a)') 'thermo%dens0 allocation failure'
-        Call error(0, message)
+      If (.not. Allocated(thermo%dens0)) Then
+        Allocate (thermo%dens0(1:sites%mxatyp), Stat=fail(1))
+        If (fail(1) > 0) Then
+          Write (message, '(a)') 'thermo%dens0 allocation failure'
+          Call error(0, message)
+        End If
+        Do i = 1, sites%ntype_atom
+          thermo%dens0(i) = sites%dens(i)
+        End Do
       End If
-      Do i = 1, sites%ntype_atom
-        thermo%dens0(i) = sites%dens(i)
-      End Do
 
       ! inertia parameter for barostat
 

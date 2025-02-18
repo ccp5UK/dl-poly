@@ -2192,6 +2192,17 @@ Contains
     thermo%l_tscale = thermo%freq_tscale > 0
     If (thermo%freq_tscale == 0) thermo%freq_tscale = flow%equil_steps + 1
 
+    Call params%retrieve('temperature_increment_frequency', thermo%temp_inc_freq)
+    Call params%retrieve('temperature_increment', thermo%temp_inc)
+    If (thermo%temp_inc < 0) Then
+      ! infer sign from range
+      Call warning("Setting negative temperature increment to positive.", .true.)
+      thermo%temp_inc = Abs(thermo%temp_inc)
+    End If
+    Call params%retrieve('temperature_increment_start', thermo%temp_inc_start)
+    Call params%retrieve('temperature_increment_stop', thermo%temp_inc_stop)
+    thermo%temp_inc_sgn = Sign(1.0_wp, (thermo%temp_inc_stop-thermo%temp))
+
     If (params%is_set('equilibration_force_cap')) Then
       flow%force_cap = .true.
       Call params%retrieve('equilibration_force_cap', config%fmax)
@@ -4212,6 +4223,43 @@ Contains
                      units="steps", &
                      internal_units="steps", &
                      description="Set the frequency of temperature rescaling", &
+                     data_type=DATA_FLOAT))
+
+      Call table%set("temperature_increment_frequency", control_parameter( &
+                     key="temperature_increment_frequency", &
+                     name="Temperature increment frequency", &
+                     val="-1", &
+                     units="steps", &
+                     internal_units="steps", &
+                     description="Set the frequency of temperature incrementing", &
+                     data_type=DATA_FLOAT))
+
+      Call table%set("temperature_increment_start", control_parameter( &
+                     key="temperature_increment_start", &
+                     name="Temperature increment start step", &
+                     val="0", &
+                     units="steps", &
+                     internal_units="steps", &
+                     description="Set the start of temperature incrementing", &
+                     data_type=DATA_FLOAT))
+
+      Call table%set("temperature_increment_stop", control_parameter( &
+                     key="temperature_increment_stop", &
+                     name="Target heating/cooling temperature.", &
+                     val="0", &
+                     units="K", &
+                     internal_units="K", &
+                     description="Set the target heating/cooling temperature", &
+                     data_type=DATA_FLOAT))
+
+
+      Call table%set("temperature_increment", control_parameter( &
+                     key="temperature_increment", &
+                     name="Temperature increment", &
+                     val="0", &
+                     units="K", &
+                     internal_units="K", &
+                     description="Set the (positive) temperature increment", &
                      data_type=DATA_FLOAT))
 
       Call table%set("equilibration_force_cap", control_parameter( &

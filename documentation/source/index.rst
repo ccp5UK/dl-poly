@@ -54,6 +54,7 @@ User Manual
    /UserManual/introduction 
    /UserManual/force-fields/force-fields
    /UserManual/integration_algs/integration_algorithms
+   /UserManual/equilibration
    /UserManual/coarse_graining
    /UserManual/ttm
    /UserManual/currents
@@ -97,7 +98,7 @@ M.T. Dove.
 
 Manual contributions: Laurence Elisson, Andrey Brukhno, Alin M Elena,
 Jim Madge, Aidan Chalk, Ivan Scivetti, Aaron Diver, Oliver Dicks, Alex
-Buccheri, Yaser Afshar and Jacob Wilkins.
+Buccheri, Yaser Afshar, Jacob Wilkins, and Harvey L Devereux.
 
 
 Indices and tables

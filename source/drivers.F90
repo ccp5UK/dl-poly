@@ -2004,6 +2004,7 @@ Contains
     Integer(Kind=wi)            :: ff
     Logical                     :: fregauss
     Type(evb_type)              :: evbff
+    Character(Len=STR_LEN)      :: msg
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV_EVB INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
@@ -2087,6 +2088,10 @@ Contains
 
     Do While ((flow%step < flow%run_steps .or. (flow%step == flow%run_steps .and. flow%newjob)) .and. &
               (tmr%job - tmr%elapsed) > tmr%clear_screen)
+
+      Do ff = 1, flow%NUM_FF
+        Call thermo(ff)%increment(flow%step, cnfig(ff)%degfre, ff==1)
+      End Do
 
       ! Apply impact
       If (impa%active) Then

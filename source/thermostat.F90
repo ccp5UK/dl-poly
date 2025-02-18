@@ -7,11 +7,16 @@
 
 Module thermostat
 
+  Use constants,       Only: boltz
   Use comms,           Only: comms_type,&
                              gmax
-  Use errors_warnings, Only: error
+  Use errors_warnings, Only: error,&
+                             info
   Use kinds,           Only: wi,&
-                             wp
+                             wp,&
+                             li,&
+                             STR_LEN
+  Use numerics,        Only: in_range
   Use particle,        Only: corePart
 
   Implicit None
@@ -112,6 +117,16 @@ Module thermostat
     Logical, Public                    :: anisotropic_pressure = .false.
     !> Simulation temperature
     Real(Kind=wp), Public              :: temp = 0.0_wp
+    !> Temperature increment
+    Real(Kind=wp), Public              :: temp_inc = 0.0_wp
+    !> Temperature increment frequency 
+    Integer(Kind=wi), Public           :: temp_inc_freq = -1_wi
+    !> Temperature increment start 
+    Integer(Kind=wi), Public           :: temp_inc_start = 0_wi
+    !> Final incremented temperature 
+    Real(Kind=wp), Public              :: temp_inc_stop = 0.0_wp
+    !> Direction of temperature increment
+    Real(Kind=wp), Public              :: temp_inc_sgn = 1.0_wp
     !> Simulation pressure
     Real(Kind=wp), Public              :: press = 0.0_wp
     !> Simulation stress
@@ -208,6 +223,7 @@ Module thermostat
     Private
 
     Procedure, Public :: init_dpd => allocate_dpd_arrays
+    Procedure, Public :: increment
     Final             :: cleanup
 
   End Type thermostat_type
@@ -220,6 +236,62 @@ Module thermostat
   Public :: adjust_timestep
 
 Contains
+
+  Subroutine increment(thermo, nstep, degfre, report)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for incrementing thermostat parameters
+    ! author    - h.l.devereux December 2024
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Class(thermostat_type),           Intent(InOut) :: thermo
+    Integer(Kind=wi),                 Intent(In   ) :: nstep
+    Integer(Kind=li),                 Intent(In   ) :: degfre
+    Logical,                Optional, Intent(In   ) :: report
+
+    Character(Len=STR_LEN) :: msg
+    Real(Kind=wp)          :: new_temp
+
+    If (thermo%temp_inc /= 0.0_wp .and. thermo%temp_inc_freq > 0_wi) Then
+      If (nstep >= thermo%temp_inc_start .and. Mod(nstep, thermo%temp_inc_freq) == 0) Then
+        new_temp = thermo%temp + thermo%temp_inc * thermo%temp_inc_sgn
+
+        If ( (thermo%temp_inc_sgn > 0.0_wp .and. new_temp > thermo%temp_inc_stop) .or.&
+             (thermo%temp_inc_sgn < 0.0_wp .and. new_temp < thermo%temp_inc_stop) .or.&
+             (new_temp <= 0.0_wp)) Then
+          thermo%temp_inc_freq = 0_wi 
+          thermo%temp_inc = 0.0_wp
+          If (Present(report)) Then
+            If (report) Then
+              Write (msg, '(a, g16.8, a, i0)') "# Temperature increment stopping at", thermo%temp, &
+                " at step ", nstep
+              Call info(msg, .true.)
+            End If
+          End If
+          Return
+        End If
+
+        thermo%temp = new_temp
+        thermo%sigma = 0.5_wp * Real(degfre, wp) * boltz * thermo%temp
+        thermo%newjob_0 = .true.
+        thermo%newjob_1 = .true.
+        thermo%newjob_2 = .true.
+        thermo%newjob_sb = .true.
+        thermo%newjob_npt_scl_0 = .true.
+        thermo%newjob_npt_scl_1 = .true.
+        thermo%newjob_nst_scl_0 = .true.
+        thermo%newjob_nst_scl_1 = .true.
+
+        If (Present(report)) Then
+          If (report) Then
+            Write (msg, '(a, g16.8, a, i0)') "# Temperature set to", thermo%temp, &
+              " at step ", nstep
+            Call info(msg, .true.)
+          End If
+        End If
+      End If
+    End If
+  End Subroutine increment
 
   Subroutine allocate_dpd_arrays(thermo, max_vdw)
 

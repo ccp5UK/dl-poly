@@ -143,14 +143,15 @@ Contains
       thermo%elrc0 = vdws%elrc
       thermo%virlrc0 = vdws%vlrc
 
-      Allocate (thermo%dens0(1:sites%mxatyp), Stat=fail(1))
-      If (fail(1) > 0) Then
-        Call error_alloc('thermo%dens0', 'nst_h0_vv')
+      If (.not. Allocated(thermo%dens0)) Then
+        Allocate (thermo%dens0(1:sites%mxatyp), Stat=fail(1))
+        If (fail(1) > 0) Then
+          Call error_alloc('thermo%dens0', 'nst_h0_vv')
+        End If
+        Do i = 1, sites%ntype_atom
+          thermo%dens0(i) = sites%dens(i)
+        End Do
       End If
-
-      Do i = 1, sites%ntype_atom
-        thermo%dens0(i) = sites%dens(i)
-      End Do
 
       ! Sort thermo%eta for thermo%iso /= CONSTRAINT_NONE
       ! Initialise and get thermo%h_z for orthorhombic constraints
@@ -618,14 +619,16 @@ Contains
       thermo%elrc0 = vdws%elrc
       thermo%virlrc0 = vdws%vlrc
 
-      Allocate (thermo%dens0(1:sites%mxatyp), Stat=fail(1))
-      If (fail(1) > 0) Then
-        Call error_alloc('thermo%dens0', 'nst_h1_vv')
-      End If
+      If (.not. Allocated(thermo%dens0)) Then 
+        Allocate (thermo%dens0(1:sites%mxatyp), Stat=fail(1))
+        If (fail(1) > 0) Then
+          Call error_alloc('thermo%dens0', 'nst_h1_vv')
+        End If
 
-      Do i = 1, sites%ntype_atom
-        thermo%dens0(i) = sites%dens(i)
-      End Do
+        Do i = 1, sites%ntype_atom
+          thermo%dens0(i) = sites%dens(i)
+        End Do
+      End If
 
       ! Sort thermo%eta for thermo%iso /= CONSTRAINT_NONE
       ! Initialise and get thermo%h_z for orthorhombic constraints
