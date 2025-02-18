@@ -4655,8 +4655,9 @@ Contains
       End Do
       tmp = Adjustl(Trim(tmp)//input)
 
-      If (tmp(1:1) /= '[') Call error(0, '')
+      If (tmp(1:1) /= '[') Call error(0, 'Missing opening bracket "[" for key'//Trim(param%key))
       i = Index(tmp, ']', back=.true.)
+      If (i == 0) Call error(0, 'Missing closing bracket "]" for key'//Trim(param%key))
 
       ! Cut off braces
       input = tmp(i + 1:)
