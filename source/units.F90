@@ -19,7 +19,6 @@ Module units
   Private
 
   Integer, Parameter :: ndims = 7
-  Character, Dimension(ndims), parameter :: dims = ['M','L','T','t','C','l','a'] ! mass length time temp current luminosity angle
 
   Integer, Dimension(ndims), Parameter :: &
        dims_charge = [0,0,1,0,1,0,0], &
@@ -195,7 +194,6 @@ contains
     !! copyright - daresbury laboratory
     !! author - j.wilkins april 2020
     !!-----------------------------------------------------------------------
-    Real(kind=wp), Parameter :: planck_internal = 6.350780668_wp
     Real(kind=wp), Parameter :: electron_charge = 1.0_wp
     Real(kind=wp), Parameter :: coulomb = 6.241509074460763e+18_wp
 
@@ -383,8 +381,7 @@ contains
     Real(kind=wp), Intent(in) :: val
     Character(Len=*), Intent(In) :: from, to
     Logical, Intent(Out), Optional :: stat
-    Real(kind=wp) :: res
-    Integer :: i
+    Real(kind=wp) :: res  
     Type( unit_data ) :: from_unit, to_unit
     Type( unit_data ) :: output
 
@@ -397,16 +394,6 @@ contains
     output = to_unit / from_unit
 
     if (any(output%dims /= 0)) then
-
-#ifdef debug
-      do i = 1, ndims
-        if (from_unit%dims(i) /= 0) write(0, "(A2,i0,'.')", advance='No') dims(i)//"^",from_unit%dims(i)
-      end do
-      write(0,*)
-      do i = 1, ndims
-        if (to_unit%dims(i) /= 0) write(0, "(A2,i0,'.')", advance='No') dims(i)//"^",to_unit%dims(i)
-      end do
-#endif
 
       if (present(stat)) then
         stat=.false.
@@ -440,7 +427,7 @@ contains
     Type( unit_data ),Intent(In) :: from_unit, to_unit
     Logical, Intent(Out), Optional :: stat
     Real(kind=wp) :: res
-    Integer :: i
+
     Type( unit_data ) :: output
 
     if (present(stat)) then
@@ -450,16 +437,6 @@ contains
     output = to_unit / from_unit
 
     if (any(output%dims /= 0)) then
-
-#ifdef debug
-      do i = 1, ndims
-        if (from_unit%dims(i) /= 0) write(0, "(A2,i0,'.')", advance='No') dims(i)//"^",from_unit%dims(i)
-      end do
-      write(0,*)
-      do i = 1, ndims
-        if (to_unit%dims(i) /= 0) write(0, "(A2,i0,'.')", advance='No') dims(i)//"^",to_unit%dims(i)
-      end do
-#endif
 
       if (present(stat)) then
         stat=.false.
@@ -696,7 +673,7 @@ contains
     Type( unit_data ) :: from_unit, to_unit
 
     Type(unit_data), Dimension(ndims) :: out_unit_vals
-    Integer :: i, curr_dim
+    Integer :: i
 
     if (present(stat)) then
       stat = .true.
@@ -753,11 +730,11 @@ contains
 
   end Subroutine to_out_units
 
-  Function init_unit(name, abbrev, to_internal, mass, length, time, temp, mol, current, luminosity, angle)
+  Function init_unit(name, abbrev, to_internal, mass, length, time, temp, current, luminosity, angle)
     Type(unit_data) :: init_unit
     Character(Len = *), Intent( In    ) :: name, abbrev
     Real(Kind = wp), Intent( In    ) :: to_internal
-    Integer, Optional, Intent( In    ) :: mass, length, time, temp, mol, current, luminosity, angle
+    Integer, Optional, Intent( In    ) :: mass, length, time, temp, current, luminosity, angle
 
     init_unit = unit_data(name=name, abbrev=abbrev, conversion_to_internal=to_internal)
     if (present(mass)) then
