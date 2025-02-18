@@ -274,8 +274,8 @@ Contains
       Call start_timer(tmr, 'KIM')
 #endif
       Call kim_energy_and_forces(kim_data, config%natms, config%nlast, config%parts, &
-                                 neigh%list, domain%map, config%lsite, config%ltype, config%lsi, config%lsa, config%ltg, &
-                                 sites%site_name, engkim, virkim, stats%stress, comm)
+                                 neigh%list, domain%map, config%ltype, config%lsi, config%lsa, config%ltg, &
+                                 engkim, virkim, stats%stress, comm)
 #ifdef CHRONO
       Call stop_timer(tmr, 'KIM')
 #endif

@@ -820,8 +820,6 @@ Contains
     Integer, Intent(In), Optional :: off_level, on_level
     Character(Len=STR_LEN) :: output
 
-    Character(Len=5) :: intent_str
-
 
 
     if (val) then

@@ -143,43 +143,40 @@ Module correlators
     Call this%mpi%finalise()
   End Subroutine finalise_indices_buffer_type
 
-  Subroutine get_complex_correlation(this, correlation, timesteps, tstep, points_correlated)
+  Subroutine get_complex_correlation(this, correlation, timesteps, points_correlated)
     Class(correlator),                                     Intent(InOut)  :: this
     Complex(Kind=wp), Dimension(&
       1:this%points_per_block*this%number_of_blocks),      Intent(InOut)  :: correlation
     Real(Kind=wp), Dimension(&
       1:this%points_per_block*this%number_of_blocks),      Intent(InOut)  :: timesteps
-    Real(Kind=wp),                                         Intent(In   )  :: tstep
     Integer,                                               Intent(  Out)  :: points_correlated
 
-    Call get_correlation_values(this, correlation, timesteps, tstep, points_correlated)
+    Call get_correlation_values(this, correlation, timesteps, points_correlated)
   End Subroutine get_complex_correlation
 
-  Subroutine get_real_correlation(this, correlation, timesteps, tstep, points_correlated)
+  Subroutine get_real_correlation(this, correlation, timesteps, points_correlated)
     Class(correlator),                                     Intent(InOut)  :: this
     Real(Kind=wp), Dimension(& 
       1:this%points_per_block*this%number_of_blocks),      Intent(InOut)  :: correlation
     Real(Kind=wp), Dimension(&
       1:this%points_per_block*this%number_of_blocks),      Intent(InOut)  :: timesteps
-    Real(Kind=wp),                                         Intent(In   )  :: tstep
     Integer,                                               Intent(  Out)  :: points_correlated
 
     Complex(Kind=wp), Dimension(&
       1:this%points_per_block*this%number_of_blocks) :: complex_correlation
 
-    Call get_correlation_values(this, complex_correlation, timesteps, tstep, points_correlated)
+    Call get_correlation_values(this, complex_correlation, timesteps, points_correlated)
 
     correlation = Real(Real(complex_correlation, Kind=wp), Kind=wp)
 
   End Subroutine get_real_correlation
 
-  Subroutine get_correlation_values(this, correlation, timesteps, tstep, points_correlated)
+  Subroutine get_correlation_values(this, correlation, timesteps, points_correlated)
     Class(correlator),                                     Intent(InOut)  :: this
     Complex(Kind=wp), Dimension(&
       1:this%points_per_block*this%number_of_blocks),      Intent(InOut)  :: correlation
     Real(Kind=wp), Dimension(&
       1:this%points_per_block*this%number_of_blocks),      Intent(InOut)  :: timesteps
-    Real(Kind=wp),                                         Intent(In   )  :: tstep
     Integer,                                               Intent(  Out)  :: points_correlated
     Integer                                                               :: im, i, k
     

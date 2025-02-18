@@ -275,13 +275,12 @@ Contains
     Integer(Kind=wi),       Intent(In   ) :: mxnode
 
     Real(Kind=c_double), Allocatable :: cutoffs(:)
-    Integer(Kind=c_int)              :: requested_units_accepted
     Integer(Kind=wi)                 :: list_index, max_atoms
     Integer(Kind=c_int)              :: kerror
     Integer(Kind=c_int)              :: n_parameters
     Integer(Kind=c_int)              :: extent
     Integer(Kind=c_int)              :: parameter_index
-    Integer(Kind=wi)                 :: max_len, i
+    Integer(Kind=wi)                 :: max_len
     Integer(Kind=wi)                 :: fail(4)
     Character(Kind=c_char, Len=STR_LEN)  :: parameter_name
     Character(Kind=c_char, Len=1024) :: parameter_description
@@ -878,7 +877,7 @@ Contains
 
   !> Compute KIM energy and forces
   Subroutine kim_energy_and_forces(kim_data, natms, nlast, parts, neigh_list, &
-                                   map, lsite, ltype, lsi, lsa, ltg, site_name, energy_kim, virial_kim, stress, &
+                                   map, ltype, lsi, lsa, ltg, energy_kim, virial_kim, stress, &
                                    comm)
     !> KIM data type
     Type(kim_type), Target,       Intent(InOut) :: kim_data
@@ -895,8 +894,6 @@ Contains
     Integer(Kind=wi),             Intent(In   ) :: neigh_list(-3:, 1:)
     !> Map of neighbouring domain ids
     Integer(Kind=wi),             Intent(In   ) :: map(1:26)
-    !> Site local index to global index
-    Integer(Kind=wi),             Intent(In   ) :: lsite(:)
     !> Type of each local atom
     Integer(Kind=wi),             Intent(In   ) :: ltype(:)
     !> Some sort of local to global arrays
@@ -905,8 +902,6 @@ Contains
     Integer(Kind=wi),             Intent(In   ) :: lsa(:)
     !> Local to global id
     Integer(Kind=wi),             Intent(In   ) :: ltg(:)
-    !> Names of each atom
-    Character(Len=8),             Intent(In   ) :: site_name(:)
     !> KIM model energy
     Real(Kind=wp),                Intent(Out  ) :: energy_kim
     !> KIM model virial
@@ -974,7 +969,7 @@ Contains
 
     ! Distribute the partial forces on boundary atoms calculated on this processor
     ! to the appropriate neighbour
-    Call kim_share_halo_forces(kim_data, parts, natms, nlast, lsi, lsa, &
+    Call kim_share_halo_forces(kim_data, parts, nlast, lsi, lsa, &
                                ltg, map, comm)
 
     ! Virials (and pressure?)
@@ -1173,14 +1168,12 @@ Contains
   !> KIM does not assume that the entirity of an atoms force will be calculated
   !> on the domain to which it belongs. It is therefore necessary to send the
   !> partial forces calculated on padding atoms to the appropriate domain.
-  Subroutine kim_share_halo_forces(kim_data, parts, natms, nlast, lsi, lsa, ltg, &
+  Subroutine kim_share_halo_forces(kim_data, parts, nlast, lsi, lsa, ltg, &
                                    map, comm)
     !> KIM data type
     Type(kim_type), Target,       Intent(InOut) :: kim_data
     !> Particles
     Type(corepart), Dimension(:), Intent(InOut) :: parts
-    !> Number of particles in this domain (excluding the halo)
-    Integer(Kind=wi),             Intent(In   ) :: natms
     !> Number of particles in this domain and it's halo
     Integer(Kind=wi),             Intent(In   ) :: nlast
     !> Some sort of local to global arrays
@@ -1488,9 +1481,8 @@ Contains
     Class(kim_type) :: T
     !> Extent of particle arrays including halo particles (coordinates, forces, etc.)
     Integer(Kind=wi), Intent(In) :: mxatms
-
-    Integer(Kind=wi) :: fail(5)
 #ifdef KIM
+    Integer(Kind=wi) :: fail(5)
     fail = 0
 
     Allocate (T%species_code(mxatms), Stat=fail(2))
@@ -1508,12 +1500,12 @@ Contains
   Subroutine kim_type_cleanup(T)
     Type(kim_type) :: T
 
+#ifdef KIM
     Integer(Kind=c_int) :: kerror
     Integer(Kind=wi)    :: fail
 
     fail = 0
 
-#ifdef KIM
     If (Allocated(T%species_code)) Then
       Deallocate (T%species_code, Stat=fail)
       If (fail /= 0) Then

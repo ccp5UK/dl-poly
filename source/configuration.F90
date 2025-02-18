@@ -3648,9 +3648,6 @@ Contains
   Subroutine print_system_info(config)
     Type(configuration_type),     Intent(In) :: config
 
-    Character(Len=STR_LEN) :: message,unit
-    Real(Kind=wp) :: v
-
     Call info('', .true.)
     Call info('System properties: ', .true.)
     call write_param('Mass', config%tot_mass_w_frz,'internal_m', indent=2)

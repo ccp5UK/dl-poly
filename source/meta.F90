@@ -227,11 +227,11 @@ Contains
     Type(comms_type) :: comm
 
     ! Allocate type arrays
-    Call allocate_types_uniform(flow(1)%NUM_FF, thermo, ewld, tmr, devel, stats, &
+    Call allocate_types_uniform(flow(1)%NUM_FF, thermo, ewld, tmr, stats, &
                                 green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, inversion, &
                                 tether, threebody, zdensity, cons, neigh, pmfs, sites, core_shells, vdws, tersoffs, &
                                 fourbody, rdf, minim, mpoles, ext_field, rigid, electro, domain, &
-                                seed, traj, kim_data, config, ios, ttms, rsdsc, files, crd, adf)
+                                seed, traj, kim_data, config, ios, ttms, rsdsc, crd, adf)
 
     comm = dlp_world(0) ! this shall vanish asap w_ are proper things
 
@@ -321,12 +321,12 @@ Contains
 
     If (.not. devel%old_control) Then
       Call molecular_dynamics_initialise(params, dlp_world, comm, thermo, ewld, tmr, devel, &
-                                         stats, green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, &
+                                         stats, green, plume, msd_data, met, impa, dfcts, bond, angle, dihedral, &
                                          inversion, tether, threebody, zdensity, cons, neigh, pmfs, sites, core_shells, &
                                          vdws, tersoffs, fourbody, rdf, minim, mpoles, ext_field, rigid, electro, &
                                          domain, flow, seed, traj, kim_data, config, &
                                          ios, ttms, rsdsc, files, output_filename, &
-                                         control_filename, crd, adf)
+                                         crd, adf)
     Else
       !! Enable when new becomes standard
       call warning('Control file '//trim(files(FILE_CONTROL)%filename)//' is in old style', .true.)
@@ -696,11 +696,11 @@ Contains
   End Subroutine molecular_dynamics_driver
 
   Subroutine molecular_dynamics_initialise(params, dlp_world, comm, thermo, ewld, tmr, devel, &
-                                           stats, green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, &
+                                           stats, green, plume, msd_data, met, impa, dfcts, bond, angle, dihedral, &
                                            inversion, tether, threebody, zdensity, cons, neigh, pmfs, sites, core_shells, &
                                            vdws, tersoffs, fourbody, rdf, minim, mpoles, ext_field, rigid, electro, &
                                            domain, flow, seed, traj, kim_data, config, ios, ttms, rsdsc, files, output_filename, &
-                                           control_filename, crd, adf)
+                                           crd, adf)
 
     Type(parameters_hash_table), Intent(InOut) :: params
     Type(comms_type),            Intent(InOut) :: dlp_world(0:), comm
@@ -713,7 +713,6 @@ Contains
     Type(plumed_type),           Intent(InOut) :: plume(:)
     Type(msd_type),              Intent(InOut) :: msd_data(:)
     Type(metal_type),            Intent(InOut) :: met(:)
-    Type(poisson_type),          Intent(InOut) :: pois(:)
     Type(impact_type),           Intent(InOut) :: impa
     Type(defects_type),          Intent(InOut) :: dfcts(:)
     Type(bonds_type),            Intent(InOut) :: bond(:)
@@ -747,11 +746,11 @@ Contains
     Type(ttm_type),              Intent(InOut) :: ttms(:)
     Type(rsd_type), Target,      Intent(InOut) :: rsdsc(:)
     Type(file_type),             Intent(InOut) :: files(:)
-    Character(Len=STR_FILENAME), Intent(In   ) :: control_filename, output_filename
+    Character(Len=STR_FILENAME), Intent(In   ) :: output_filename
     Type(coord_type),            Intent(InOut) :: crd(:)
     Type(adf_type),              Intent(InOut) :: adf(:)
 
-    Character(Len=STR_LEN)    :: message, option
+    Character(Len=STR_LEN)    :: message
     Integer               :: ff, i, ierr, ifile, tfile, megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, &
       mtrgd, mtshl, mtteth
     Integer, Dimension(3) :: link_cell
@@ -1224,17 +1223,16 @@ Contains
 
   !> Allocate all types uniformly, _i.e._ N of every type
 
-  Subroutine allocate_types_uniform(array_size, thermo, ewld, tmr, devel, stats, &
+  Subroutine allocate_types_uniform(array_size, thermo, ewld, tmr, stats, &
                                     green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, inversion, &
                                     tether, threebody, zdensity, cons, neigh, pmfs, sites, core_shells, vdws, tersoffs, &
                                     fourbody, rdf, minim, mpoles, ext_field, rigid, electro, domain, &
-                                    seed, traj, kim_data, config, ios, ttms, rsdsc, files, crd, adf)
+                                    seed, traj, kim_data, config, ios, ttms, rsdsc, crd, adf)
 
     Integer(Kind=wi),                       Intent(In   ) :: array_size
     Type(thermostat_type), Allocatable,     Intent(InOut) :: thermo(:)
     Type(ewald_type), Allocatable,          Intent(InOut) :: ewld(:)
     Type(timer_type), Allocatable,          Intent(InOut) :: tmr(:)
-    Type(development_type), Allocatable,    Intent(InOut) :: devel(:)
     Type(stats_type), Allocatable,          Intent(InOut) :: stats(:)
     Type(greenkubo_type), Allocatable,      Intent(InOut) :: green(:)
     Type(plumed_type), Allocatable,         Intent(InOut) :: plume(:)
@@ -1272,7 +1270,6 @@ Contains
     Type(io_type), Allocatable,             Intent(InOut) :: ios(:)
     Type(ttm_type), Allocatable,            Intent(InOut) :: ttms(:)
     Type(rsd_type), Allocatable, Target,    Intent(InOut) :: rsdsc(:)
-    Type(file_type), Allocatable,           Intent(InOut) :: files(:, :)
     Type(coord_type), Allocatable,          Intent(InOut) :: crd(:)
     Type(adf_type), Allocatable,            Intent(InOut) :: adf(:)
 

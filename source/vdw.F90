@@ -1612,14 +1612,13 @@ Contains
     Type(configuration_type),                   Intent(InOut) :: config
     Logical,                                    Intent(In   ) :: sec_deriv
 
-    Integer                 :: ai, aj, idi, ityp, jatm, k, key, mm, i, a, b, c, d, kpoint
+    Integer                 :: ai, aj, idi, ityp, jatm, k, key, mm, i, a, b, c, d
     Real(Kind=wp)           :: eng, gamma, delta
     Real(Kind=wp)           :: fix, fiy, fiz, fx, fy, fz
     Real(Kind=wp)           :: r_rrr, r_rrv, r_rsq, r_rvdw, rrr, rscl, rsq
     Real(Kind=wp)           :: strs1, strs2, strs3, strs5, strs6, strs9
     Real(Kind=wp)           :: stress_temp_comp(9), born_pre
-    Real(Kind=wp)           :: x_temp(3), f_temp(3), vi_temp(3), vj_temp(3)
-    Complex(Kind=wp)        :: cur_vir(3), cur_str(6)
+    Real(Kind=wp)           :: x_temp(3), f_temp(3)
     Type(potential_energy)  :: pot
     ! define grid resolution for potential arrays and interpolation spacing
 

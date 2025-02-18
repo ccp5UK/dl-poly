@@ -493,7 +493,6 @@ Contains
     Type(site_type),   Intent(In   ) :: sites
 
     Integer                :: i, loc
-    Character(Len=8)       :: name
 
     Do i = 1, Size(stats%mom_dens_names)
       loc = Findloc(sites%site_name, Trim(stats%mom_dens_names(i)), 1)
@@ -843,7 +842,6 @@ Contains
     Class(observable),         Intent(In   ) :: A, B
 
     Class(correlation_data), Allocatable :: cor_data
-    Class(correlator),       Allocatable :: tmp_cor
     Integer                              :: i, atoms
     Character(Len=MAX_KEY)               :: correlation_name
 
@@ -914,7 +912,6 @@ Contains
     Character(Len=STR_LEN)                         :: units_visc, units_therm
     Character(Len=MAX_KEY), Allocatable :: cor_keys(:)   
     Type(correlation_data), Pointer :: cor_data
-    Type(observable_currents) :: oc
     
                         
     If (stats%calculate_correlations .eqv. .false.) Then 
@@ -1027,7 +1024,7 @@ Contains
             End If
             atom = cor_data%atom(j)
             correlation = 0.0_wp
-            Call cor_data%correlators(j)%get_correlation(correlation, timesteps, dt, points_cor)
+            Call cor_data%correlators(j)%get_correlation(correlation, timesteps, points_cor)
             cor_accumulator(config%ltype(atom),:) = &
               cor_accumulator(config%ltype(atom),:) + correlation
             type_counts(config%ltype(atom)) = type_counts(config%ltype(atom)) + 1
@@ -1069,7 +1066,7 @@ Contains
 
           flat_correlation = 0.0_wp
           correlation = 0.0_wp
-          Call cor_data%correlators(1)%get_correlation(correlation, timesteps, dt, points_cor)
+          Call cor_data%correlators(1)%get_correlation(correlation, timesteps, points_cor)
           timesteps = timesteps * freq
           points_cor = points_cor - 1
           Call write_yaml_correlation(file_unit, correlation_name, &
@@ -3254,7 +3251,7 @@ Contains
       If (points-1 > 1) Then
         Allocate(correlation(1:points*blocks))
         Allocate(timesteps(1:points*blocks))
-        Call stats%correlations(cor_index)%correlators(atom_index)%get_correlation(correlation, timesteps, 0.0_wp, points)
+        Call stats%correlations(cor_index)%correlators(atom_index)%get_correlation(correlation, timesteps, points)
       End If
     End If
   End Subroutine
@@ -3404,7 +3401,6 @@ Contains
     Integer,          Allocatable                       :: tmp_atoms(:), tmp_globals(:)
     Integer                                             :: i, A, B, c_a, c_b, j, s, &
                                                            deportations, atom, cor_index
-    Character(Len=MAX_KEY)              :: name
     Character(Len=MAX_KEY), Allocatable :: cor_keys(:)
     Type(correlation_data), Pointer     :: cor_data
 
@@ -3502,7 +3498,7 @@ Contains
     Type(indices_buffer_type)                :: packed_ids
     Integer                                  :: i, atom, idx, buffer_size, correlations, &
                                                 buffer_index, local_correlations, local_buffer_size, &
-                                                n_local_cor, freq, cor_index, &
+                                                n_local_cor, cor_index, &
                                                 attributes = 7, header = 4
     Character(Len=MAX_KEY),      Allocatable :: cor_keys(:)
     Type(correlation_data),      Pointer     :: cor_data
@@ -3647,12 +3643,11 @@ Contains
     Type(indices_buffer_type)                :: packed_ids
     Integer                                  :: i, idx, buffer_size, correlations, &
                                                 buffer_index, j, packed_index, &
-                                                A, B, atom, offset, freq, local_correlations, &
+                                                A, B, atom, offset, local_correlations, &
                                                 local_buffer_size, n_local_cor, &
                                                 c_a, c_b, cor_index, &
                                                 attributes = 7, header = 4
-    Character(Len=MAX_KEY)                   :: name
-    Character(Len=MAX_KEY),      Allocatable :: cor_keys(:)   
+    Character(Len=MAX_KEY),      Allocatable :: cor_keys(:)
     Type(correlation_data),      Pointer     :: cor_data
 
   
@@ -3929,7 +3924,7 @@ Contains
     Class(observable), Allocatable,  Intent(  Out) :: o
     
     Logical                                    :: success
-    Integer                                    :: i, start
+    Integer                                    :: i
     Integer                                    :: component
     Character(Len=2)                           :: component_sym
     Character(Len=STR_LEN)                     :: msg, component_name
@@ -4061,7 +4056,6 @@ Contains
     Integer,                    Optional,  Intent(In   ) :: atom
 
     Complex(Kind=wp)       :: v
-    Character(Len=STR_LEN) :: msg
     Real(Kind=wp)          :: velocity(1:3)
 
     If (.not. Present(atom)) Then
@@ -4221,7 +4215,6 @@ Contains
     Integer,                    Optional,                Intent(In   ) :: atom
     
     Complex(Kind=wp)       :: v
-    Character(Len=STR_LEN) :: msg
 
     If (.not. in_range(t%kpoint, (/1, stats%cur%nkpoints/))) Then
       Call error(0, "invalid kpoint in observable currents")

@@ -3784,29 +3784,6 @@ Contains
 
   Contains
 
-    Pure Function ei_cont_frac_for(x) Result(ei)
-    Real(kind=wp), Intent(In   ) :: x
-    Real(kind=wp)                :: ei
-
-    Integer       :: i
-    Real(kind=wp) :: a, b, c, d, old
-
-      c = 0.0_wp
-      d = 1.0_wp / (1.0_wp - x)
-      ei = d * (-Exp(x))
-
-      Do i = 1, max_iter
-        old = ei
-        a = Real(2 * i, wp) + 1.0_wp - x
-        b = Real(i**2, wp)
-        c = 1.0_wp / (a - b * c)
-        d = 1.0_wp / (a - b * d)
-        ei = ei * d / c
-        If (Abs(ei - old) < Abs(tolerance * ei)) Exit
-      End Do
-
-    End Function ei_cont_frac_for
-
     Pure Function ei_cont_frac(x) Result(ei)
 
     Real(kind=wp), Intent(In   ) :: x

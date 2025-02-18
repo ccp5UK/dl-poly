@@ -2003,7 +2003,6 @@ Contains
  
     Integer(Kind=wi)            :: ff
     Logical                     :: fregauss
-    Real(kind=wp), Dimension(3) :: heat_flux
     Type(evb_type)              :: evbff
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV_EVB INCLUSION  !!!!!!!!!!!!!!!!!!!!!!

@@ -163,7 +163,7 @@ Contains
                                                 strs1, strs2, strs3, strs5, strs6, strs9, switch, &
                                                 sxab, sxbc, syab, sybc, szab, szbc, term, theta, &
                                                 theta0, vterm, xab, xac, xbc, xdc, yab, yac, ybc, &
-                                                ydc, zab, zac, zbc, zdc, termab, termbc, rc, cost0,&
+                                                ydc, zab, zac, zbc, zdc, termab, termbc, cost0,&
                                                 rc_ba, rc_bc, rho_ba, rho_bc
 
     Real(Kind=wp), Allocatable, Dimension(:) :: xxt, yyt, zzt

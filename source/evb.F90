@@ -3163,11 +3163,10 @@ Contains
     Type(flow_type),  Intent(In   ) :: flow
     Type(stats_type), Intent(InOut) :: stat(:)
 
+#ifdef EVB
     Integer(Kind = wi) :: m,k           ! Indices for matrix elements
     Integer(Kind = wi) :: mevb, evbinfo ! Working intergers
 
-
-#ifdef EVB
     !Initialise matrix elements
     evb%ene_matrix = 0.0_wp
 

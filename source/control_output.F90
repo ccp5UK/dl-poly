@@ -211,8 +211,6 @@ Contains
     Type(io_type),   Intent(In   ) :: io_data
     Type(file_type), Intent(In   ) :: files(:)
 
-    Character(len=256) :: message
-
     !    Integer :: io_read, io_write, procs_write, procs_read, batch_write, batch_read
 
     Call info('', .true.)
@@ -393,8 +391,6 @@ Contains
     Type(dihedrals_type),  Intent(In   ) :: dihedral
     Type(inversions_type), Intent(In   ) :: inversion
 
-    Character(Len=STR_LEN) :: messages(4)
-
     Call info('', .true.)
 
     If (.not. Any([flow%analyse_bond, flow%analyse_ang, flow%analyse_dih, flow%analyse_inv])) Then
@@ -444,8 +440,6 @@ Contains
     Type(trajectory_type), Intent(In   ) :: traj
     Type(defects_type),    Intent(In   ) :: defect(:)
     Type(rsd_type),        Intent(In   ) :: displacement
-
-    Character(Len=STR_LEN) :: messages(4)
 
     Call info('', .true.)
     Call info('Structural statistics:', .true.)
@@ -706,7 +700,7 @@ Contains
     Type(core_shell_type),    Intent(In   ) :: cshell
     Type(metal_type),         Intent(In   ) :: met
 
-    Character(Len=STR_LEN) :: message, messages(4)
+    Character(Len=STR_LEN) :: message
 
     Call info('', .true.)
     Call info('Link cell: ', .true.)
@@ -865,9 +859,6 @@ Contains
   Subroutine write_ensemble(thermo, ttm)
     Type(thermostat_type), Intent(In   ) :: thermo
     Type(ttm_type),        Intent(In   ) :: ttm
-
-    Character(Len=STR_LEN)               :: message
-    Character(Len=STR_LEN), Dimension(4) :: messages
 
     Call info('', .true.)
     Call info('Thermostat details:', .true.)
