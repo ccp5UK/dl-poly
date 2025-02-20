@@ -38,6 +38,7 @@ Module two_body
   Use kim,             Only: kim_energy_and_forces,&
                              kim_type
   Use kinds,           Only: wp
+  Use mdpd,            Only: mdpd_ld_compute, mdpd_potential
   Use metal,           Only: metal_forces,&
                              metal_ld_compute,&
                              metal_lrc,&
@@ -64,7 +65,7 @@ Module two_body
                              timer_type
   Use vdw,             Only: vdw_forces_tab,&
                              vdw_forces_direct,&
-                             vdw_type
+                             vdw_type, VDW_MDPD
 
   Implicit None
 
@@ -95,6 +96,7 @@ Contains
     ! contrib   - p.s.petkov february 2015
     ! contrib   - a.b.g.chalk january 2017
     ! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
+    ! contrib   - b.t.speake July 2024 (mdpd)
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -293,6 +295,11 @@ Contains
                             domain, config, comm)
     End If
 
+    ! manybody dpd local density evaluation 
+    If (Allocated(vdws%mdpd_params%rd)) Then 
+      Call mdpd_ld_compute(vdws%mdpd_params, neigh, domain, config, comm)
+    End If 
+
     ! calculate coulombic forces, Ewald sum - fourier contribution
 #ifdef CHRONO
     Call start_timer(tmr, 'Long Range')
@@ -380,7 +387,7 @@ Contains
           If (ewld%vdw) Then
             Do ipot = 1, ewld%num_pots
 
-              Call ewald_real_forces_gen(ewld%alpha, ewld%spme_data(ipot), neigh, config, stats, &
+              Call ewald_real_forces_gen(electro, ewld%alpha, ewld%spme_data(ipot), neigh, config, stats, &
                    & vdw_coeffs(:, ipot), i, xxt, yyt, zzt, rrt, engacc, viracc)
 
               engvdw_rl = engvdw_rl + engacc
@@ -414,7 +421,7 @@ Contains
             Case (ELECTROSTATIC_SPME)
               Call error(0, 'Ewald multiples have been disabled due to issues with their prior implementation.')
               If (ewld%direct) Then
-                Call ewald_real_forces_gen(ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
+                Call ewald_real_forces_gen(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
                      & coul_coeffs, i, xxt, yyt, zzt, rrt, engacc, viracc)
               Else
                 Call ewald_real_forces_coul(electro, ewld%spme_data(0), neigh, config, stats, &
@@ -468,9 +475,8 @@ Contains
             Case (ELECTROSTATIC_SPME)
 
               ! calculate coulombic forces, Ewald sum - real space contribution
-
               If (ewld%direct) Then
-                Call ewald_real_forces_gen(ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
+                Call ewald_real_forces_gen(electro, ewld%alpha, ewld%spme_data(0), neigh, config, stats, &
                      & coul_coeffs, i, xxt, yyt, zzt, rrt, engacc, viracc)
               Else
                 Call ewald_real_forces_coul(electro, ewld%spme_data(0), neigh, config, stats, &
@@ -526,6 +532,11 @@ Contains
         If (l_do_rdf) Call rdf_collect(i, rrt, neigh, config, rdf)
 
       End Do
+
+      ! mdpd potential contributions 
+      If (Any(vdws%ltp == VDW_MDPD)) Then 
+        engvdw = engvdw + mdpd_potential(vdws%mdpd_params, config)
+      End If 
 
 #ifdef KIM
     End If

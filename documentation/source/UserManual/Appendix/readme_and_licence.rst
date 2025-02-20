@@ -1,6 +1,6 @@
 .. _readme:
 
-Appendix E: DL_POLY_4 INSTALL Notes & README Wisdom
+Appendix D: DL_POLY_4 INSTALL Notes & README Wisdom
 ===================================================
 
 BUILDING 

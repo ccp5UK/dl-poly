@@ -95,7 +95,7 @@ Module ffield
   Use two_body_potentials, Only: LJ, lj_coh, LJ126, n_m, &
                              nm_shift, morse, morse12, &
                              buckingham, bhm, hbond, &
-                             wca, dpd, ndpd, amoeba, &
+                             wca, dpd, ndpd, mdpd, amoeba, &
                              rydberg, zbl, zblb, fm, zbls, &
                              sanderson, MDF, ljf, mlj, &
                              mbuck, mlj126, sw
@@ -127,7 +127,7 @@ Module ffield
                              VDW_LJF, VDW_LJ_MDF, VDW_MORSE, VDW_MORSE_12, VDW_NULL, VDW_N_M, &
                              VDW_N_M_SHIFT, VDW_RYDBERG, VDW_TAB, VDW_WCA, VDW_ZBL, VDW_NDPD, &
                              VDW_ZBL_SWITCH_BUCKINGHAM, VDW_ZBL_SWITCH_MORSE, VDW_SANDERSON,VDW_SW,&
-                             vdw_direct_fs_generate, vdw_generate, vdw_table_read, vdw_type
+                             VDW_MDPD, vdw_direct_fs_generate, vdw_generate, vdw_table_read, vdw_type
   Use units,           Only: internal_units,&
                              set_out_units,&
                              atomic_units,&
@@ -173,6 +173,7 @@ Contains
     ! contrib   - a.m.elena may 2018 (m126)
     ! amended   - i.t.todorov august 2018 (m126-dpd)
     ! amended   - i.t.todorov october 2018 (external field zbnd default for f enforced)
+    ! contrib   - b.t.speake July 2024 (mdpd)
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -3673,6 +3674,8 @@ Contains
             keypot = VDW_DPD
           Else If (keyword == 'ndpd') Then
             keypot = VDW_NDPD
+          Else If (keyword == 'mdpd') Then 
+            keypot = VDW_MDPD
           Else If (keyword == '14-7') Then
             keypot = VDW_AMOEBA
           Else If (keyword == 'ljc') Then
@@ -3790,6 +3793,12 @@ Contains
               Allocate(dpd::vdws%potentials(itpvdw)%p)
             Case (VDW_NDPD)
               Allocate(ndpd::vdws%potentials(itpvdw)%p)
+            Case (VDW_MDPD) 
+              Allocate(mdpd::vdws%potentials(itpvdw)%p)
+              if (.not. Allocated(vdws%mdpd_params%rd)) Then 
+                Call vdws%mdpd_params%allocate(vdws%n_vdw, sites%ntype_atom)
+              End If 
+              Call vdws%mdpd_params%set_potential_params(itpvdw, parpot(5), parpot(6), parpot(3))
             Case (VDW_AMOEBA)
               Allocate(amoeba::vdws%potentials(itpvdw)%p)
             Case (VDW_LENNARD_JONES_COHESIVE)
@@ -3857,6 +3866,12 @@ Contains
 
           If (katom1 == 0 .or. katom2 == 0) Call error(81)
 
+          if (keypot == VDW_MDPD) Then 
+            If (katom1 == katom2) Then 
+              vdws%mdpd_params%m(katom1) = parpot(4)
+            End If 
+          End If 
+
           ka1 = Max(katom1, katom2)
           ka2 = Min(katom1, katom2)
 
@@ -3902,6 +3917,8 @@ Contains
               thermo%gamdpd(keyvdw) = Abs(parpot(3))
             Case (VDW_NDPD)
               thermo%gamdpd(keyvdw) = Abs(parpot(5))
+            Case (VDW_MDPD)
+              thermo%gamdpd(keyvdw) = Abs(parpot(7))
             Case (VDW_AMOEBA)
               thermo%gamdpd(keyvdw) = Abs(parpot(3))
             Case (VDW_LENNARD_JONES_COHESIVE)
@@ -6286,6 +6303,14 @@ Contains
             Call get_word(record, word)
             Call get_word(record, word)
             Call get_word(record, word)
+            vdws%cutoff = Max(vdws%cutoff, word_2_real(word))
+          Else If (word(1:4) == 'mdpd') Then 
+            Call get_word(record, word)
+            Call get_word(record, word) ! set vdws%mdpd_b ??
+            vdws%mdpd_params%b = Max(vdws%mdpd_params%b, word_2_real(word))
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word) ! 5th parameter 
             vdws%cutoff = Max(vdws%cutoff, word_2_real(word))
           End If
         End Do

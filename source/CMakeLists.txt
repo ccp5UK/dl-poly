@@ -54,6 +54,7 @@ set(dlpoly_SRCS
   core_shell.F90
   rigid_bodies.F90
   dpd.F90
+  mdpd.F90
   integrators.F90
   correlator.F90
   statistics.F90
@@ -111,6 +112,7 @@ set(dlpoly_SRCS
   npt_nose_hoover.F90
   npt_langevin.F90
   npt_mtk.F90
+  charge_smearing.F90
 
   control_parameter.F90
   control.F90
@@ -127,6 +129,8 @@ set(dlpoly_SRCS
   unit_tests/test_hash.F90
   unit_tests/test_parse.F90
   unit_tests/test_numerics.F90
+  unit_tests/test_mdpd_ld.F90
+  unit_tests/test_smearing.F90
   )
 if(BUILDER)
   set_property(SOURCE development.F90 APPEND PROPERTY

@@ -17,6 +17,8 @@ Module ewald_general
   Use bspline,         Only: bspline_coeffs_gen,&
                              bspline_splines_gen,&
                              bspline_type
+  Use charge_smearing, Only: smearing_correction, linear_smearing, & 
+                             slater_exp_smearing, slater_apprx_smearing
   Use comms,           Only: comms_type,&
                              gcheck,&
                              gsum
@@ -27,7 +29,10 @@ Module ewald_general
                              zero_plus
   Use domains,         Only: domains_type,&
                              exchange_grid
-  Use electrostatic,   Only: electrostatic_type
+  Use electrostatic,   Only: electrostatic_type, & 
+                             SMEARING_NULL, SMEARING_LINEAR, &
+                             SMEARING_SLATER_TRUNCATED, SMEARING_SLATER_EXP, & 
+                             SMEARING_GAUSSIAN
   Use errors_warnings, Only: error,&
                              error_alloc,&
                              error_dealloc
@@ -66,7 +71,7 @@ Module ewald_general
 
 Contains
 
-  Subroutine ewald_real_forces_gen(alpha, spme_datum, neigh, config, stats, coeffs, iatm, x_pos, y_pos, z_pos, mod_dr_ij, &
+  Subroutine ewald_real_forces_gen(electro, alpha, spme_datum, neigh, config, stats, coeffs, iatm, x_pos, y_pos, z_pos, mod_dr_ij, &
     & engcpe_rl, vircpe_rl)
 
     !!-----------------------------------------------------------------------
@@ -81,8 +86,10 @@ Contains
     !! amended   - i.t.todorov april 2015
     !! amended   - j. wilkins september 2018
     !! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
+    !! contrib   - b.t.speake July 2024 - Charge smearing 
     !!
     !!-----------------------------------------------------------------------
+    Type(electrostatic_type),                   Intent(In   ) :: electro
     Real(Kind=wp),                              Intent(In   ) :: alpha
     Type(spme_component),                       Intent(In   ) :: spme_datum
     Type(neighbours_type),                      Intent(In   ) :: neigh
@@ -98,6 +105,7 @@ Contains
                                    mod_r_ij, prefac
     Real(Kind=wp), Dimension(9) :: stress_temp, stress_temp_comp
     Real(Kind=wp), Dimension(3) :: force_temp, force_temp_comp, pos_j
+    Type(smearing_correction) :: smear 
 
 !! Current atom
 !! Coulomb charges/ multipole coeffs, etc.
@@ -156,15 +164,57 @@ Contains
         ! calculate components of G
         g_fac = g_p(alpha_r, spme_datum%pot_order)
 
-        e_comp = prefac * g_fac
+        Select Case (electro%smear)
+        
+        Case (SMEARING_LINEAR)
+          If (mod_r_ij >= (2 * electro%r_smear)) Then 
+            e_comp = prefac * g_fac 
+            erf_gamma = prefac * (g_p_d(alpha_r, spme_datum%pot_order) * alpha + &
+                                  & spme_datum%pot_order * g_fac * inv_mod_r_ij)
+          Else If (mod_r_ij < electro%r_smear) Then 
+            smear = linear_smearing(mod_r_ij, electro%r_smear)
+            e_comp = prefac * (smear%energy - g_fac) 
+            erf_gamma = g_p_d(alpha_r, spme_datum%pot_order) * alpha
+            erf_gamma = erf_gamma - (spme_datum%pot_order * g_fac * inv_mod_r_ij) 
+            erf_gamma = prefac * (erf_gamma + (smear%force * inv_mod_r_ij))
+          Else ! R <= rij < 2R
+            smear = linear_smearing(mod_r_ij, electro%r_smear)
+            e_comp = prefac * (g_fac - smear%energy)
+            erf_gamma = g_p_d(alpha_r, spme_datum%pot_order) * alpha
+            erf_gamma = erf_gamma + (spme_datum%pot_order * g_fac * inv_mod_r_ij) 
+            erf_gamma = prefac * (erf_gamma - (smear%force * inv_mod_r_ij))
+          End If 
+        Case (SMEARING_SLATER_EXP) 
+          smear = slater_exp_smearing(mod_r_ij, electro%r_smear, electro%b_smear)
+          e_comp = prefac * (g_fac - smear%energy) 
+          erf_gamma = prefac * (g_p_d(alpha_r, spme_datum%pot_order) * alpha + &
+                      & spme_datum%pot_order * g_fac * inv_mod_r_ij - smear%force)
+        Case (SMEARING_SLATER_TRUNCATED)
+          smear = slater_apprx_smearing(mod_r_ij, electro%r_smear, electro%b_smear)
+          e_comp = prefac * (g_fac - smear%energy)
+          erf_gamma = prefac * (g_p_d(alpha_r, spme_datum%pot_order) * alpha + &
+                            & spme_datum%pot_order * g_fac * inv_mod_r_ij - smear%force)
+        Case (SMEARING_GAUSSIAN)
+          e_comp = prefac * (g_fac - g_p(mod_r_ij / (2.0_wp * electro%r_smear), spme_datum%pot_order))
+          erf_gamma = prefac * (g_p_d(alpha_r, spme_datum%pot_order) * alpha + &
+                            & spme_datum%pot_order * g_fac * inv_mod_r_ij - &
+                            spme_datum%pot_order * g_p(mod_r_ij / (2.0_wp * electro%r_smear), spme_datum%pot_order) * inv_mod_r_ij &
+                            - g_p_d(mod_r_ij / (2.0_wp * electro%r_smear), spme_datum%pot_order) * (1/electro%r_smear))
+        Case Default
+          e_comp = prefac * g_fac 
+          ! Because function is g_p(ar)/(r^n)
+          ! => -n*(g/r^(n + 1) + a(dg/dr))
+          erf_gamma = prefac * (g_p_d(alpha_r, spme_datum%pot_order) * alpha + &
+                                & spme_datum%pot_order * g_fac * inv_mod_r_ij)
+        End Select 
 
-        ! Because function is g_p(ar)/(r^n)
-        ! => -n*(g/r^(n + 1) + a(dg/dr))
-        erf_gamma = prefac * (g_p_d(alpha_r, spme_datum%pot_order) * alpha + &
-          & spme_datum%pot_order * g_fac * inv_mod_r_ij)
+        ! e_comp = prefac * g_fac
+        ! ! Because function is g_p(ar)/(r^n)
+        ! ! => -n*(g/r^(n + 1) + a(dg/dr))
+        ! erf_gamma = prefac * (g_p_d(alpha_r, spme_datum%pot_order) * alpha + &
+        !   & spme_datum%pot_order * g_fac * inv_mod_r_ij)
 
         ! calculate forces ( dU * r/||r|| )
-
         force_temp_comp = erf_gamma * pos_j * inv_mod_r_ij
         force_temp = force_temp + force_temp_comp
 

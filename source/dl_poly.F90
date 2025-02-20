@@ -401,6 +401,10 @@ contains
                 tests%parse = .true.
               Case ("numerics")
                 tests%numerics = .true.
+              Case ("mdpd")
+                tests%mdpd = .true.
+              Case ("smearing")
+                tests%smearing = .true.
               Case ("all")
                 Call tests%all()
               Case Default

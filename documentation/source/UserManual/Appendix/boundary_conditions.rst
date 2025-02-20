@@ -1,6 +1,6 @@
 .. _boundary-conditions:
 
-Appendix B: DL_POLY_4 Boundary Conditions 
+Appendix A: DL_POLY_4 Boundary Conditions 
 +++++++++++++++++++++++++++++++++++++++++
 
 Introduction

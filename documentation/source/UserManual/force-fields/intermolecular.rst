@@ -181,6 +181,23 @@ The short ranged pair forces available in DL_POLY_4 are as follows:
    additional attraction and more control over repulsion with power index :math:`n` while still 
    remaining soft.
 
+#. Many-body DPD potential (\ **mdpd**)
+
+   .. math:: 
+      :label: mdpd_vdw_eq 
+
+      \psi^{ex}(\tilde{\rho}) = \frac{\pi r^{4}_{c,ij}}{30}A_{ij}\overline{\overline{\rho}} + 
+      \frac{B\tilde{rho}^{m_{c(i)}}}{m_{c(i)}}.
+
+   .. math:: 
+
+      F^{C}_{ij} = \left[ A_{ij} (1 - \frac{r_{ij}}{r_{c,ij}}) + \frac{Bn_{ij}(n_{ij} + 1)(n_{ij} + 2)(n_{ij} + 3)}{8\pi r^{4}_{d,ij}} (\rho^{m_{c(i)} - 1}_{i} + \rho^{m_{c(j)} - 1}_{j}) ( 1 - \frac{r_{ij}}{r_{d,ij}} )^{n_{ij} - 1} \right] \frac{\vec{r_{ij}}}{r_{ij}},
+
+   It is an extension to the 'standard DPD' Groot-Warren form that introduces a dependence on the local 
+   densities for each particle. See :ref:`mDPD` for more details.
+
+
+
 #. 14-7 pair potential :cite:`ponder-10a`: (\ **14-7**)
 
    .. math:: U(r_{ij}) = \epsilon\left(\frac{1.07}{(r_{ij}/r_{o})+0.07}\right)^{7}\left(\frac{1.12}{(r_{ij}/r_{o})^{7}+0.12}-2\right)

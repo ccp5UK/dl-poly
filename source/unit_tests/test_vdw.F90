@@ -15,7 +15,7 @@ Module test_vdw
                                       wca, dpd, ndpd, amoeba, &
                                       rydberg, zbl, zblb, fm, zbls, &
                                       sanderson, MDF, ljf, mlj, &
-                                      mbuck, mlj126, sw
+                                      mbuck, mlj126, sw, mdpd
 
   Implicit None
 
@@ -26,7 +26,7 @@ Module test_vdw
   Integer :: tmp
   Real(kind=wp), Dimension(7), Parameter :: params = [(real(tmp,wp), tmp=1,7)]
 
-  Public :: run_vdw_tests
+  Public :: run_vdw_tests, setup_mdpd_parameters
 
 Contains
 
@@ -49,21 +49,24 @@ Contains
         1.0000000000000000_wp, 0.25000000000000000_wp, 555.50928442334305_wp, 15616.000000000000_wp, &
         367.25771964635982_wp, 2.1495939317213679_wp, 16882.652704957309_wp, 3.8142266913481757E+030_wp, &
         11761.890149027380_wp, 16128.000000000000_wp, -2.3934693402873668_wp, -1.0000000000000000_wp, &
-        4.0000000000000000_wp, -0.8948393168143698_wp, -0.4921875000000000_wp, -1765.997274794514_wp]
+        4.0000000000000000_wp, -0.8948393168143698_wp, -0.4921875000000000_wp, -1765.997274794514_wp, &
+        1.60000000000000000_wp]
     Real(kind=wp), Dimension(NUM_VDW_POTS), Parameter :: expected_v = [&
         0.0000000000000000_wp, -195072.00000000000_wp, -288.00000000000000_wp, 17.696734670143684_wp, &
         -45.196300066288472_wp, 8.0000000000000000_wp, -16899.173553719396_wp, -2300.0595394172847_wp, &
         12.000000000000000_wp, -0.5000000000000000_wp, -3719.0014773362891_wp, -192000.00000000000_wp, &
         -2348.0595394172847_wp, 0.71653131057378916_wp, -33161.413558355591_wp, -5.2445617006037446E+031_wp, &
         -24372.373956007261_wp, -195072.00000000000_wp, 17.696734670143684_wp, 0.0000000000000000_wp, &
-        -40.000000000000000_wp, -0.1988531815143044_wp, -0.09375000000000000_wp, 15903.665444480088_wp]
+        -40.000000000000000_wp, -0.1988531815143044_wp, -0.09375000000000000_wp, 15903.665444480088_wp, &
+        -0.800859436692696_wp]
     Real(kind=wp), Dimension(NUM_VDW_POTS), Parameter :: expected_d = [&
         72.000000000000000_wp, 2545152.0000000000_wp, 1248.0000000000000_wp, -125.84836733507184_wp, &
         -309.60739986742306_wp, -64.000000000000000_wp, 74836.3636363637_wp, 14161.896901121087_wp, &
         -2532.0000000000000_wp, 0.50000000000000000_wp, 26134.875864105488_wp, 2523648.0000000000_wp, &
         14785.896901121087_wp, -0.71653131057378927_wp, 78877.517672567497_wp, 1.2257971029320215E+032_wp, &
         60222.239684748725_wp, 2545152.0000000000_wp, -125.84836733507184_wp, 72.000000000000000_wp, &
-        384.00000000000000_wp,  0.15466358562223675_wp,  0.59375000000000000_wp,  -137921.54231081533_wp]
+        384.00000000000000_wp,  0.15466358562223675_wp,  0.59375000000000000_wp,  -137921.54231081533_wp, &
+        0.200000000000000_wp]
 
 
     Type(vdw_type)                           :: test
@@ -164,6 +167,9 @@ Contains
     Call pots(23)%p%set_parameters(params)
     Allocate(sw::pots(24)%p)
     Call pots(24)%p%set_parameters(params)
+    Allocate(mdpd::pots(25)%p)
+    Call pots(25)%p%set_parameters(params)
+    Call setup_mdpd_parameters(test)
 
     neigh%max_list = 2
     neigh%max_exclude = 0
@@ -184,5 +190,21 @@ Contains
 
   end Subroutine setup_fake_system
 
+  Subroutine setup_mdpd_parameters(vdws) 
+    Type(vdw_type), Intent(InOut) :: vdws 
+    vdws%mdpd_params%b = 1 
+    
+    Allocate(vdws%mdpd_params%rd(1))
+    Allocate(vdws%mdpd_params%m(1))
+    Allocate(vdws%mdpd_params%n(1))
+    Allocate(vdws%mdpd_params%rho(2))
+    Allocate(vdws%mdpd_params%rc(1))
+
+    vdws%mdpd_params%n = 2.0_wp 
+    vdws%mdpd_params%m = 2.0_wp 
+    vdws%mdpd_params%rd = 10.0_wp 
+    vdws%mdpd_params%rho = 1.0_wp 
+    vdws%mdpd_params%rc = 1.0_wp
+  End Subroutine 
 
 end Module test_vdw

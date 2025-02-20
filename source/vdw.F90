@@ -38,6 +38,7 @@ Module vdw
                                       STR_LEN
   Use filename,                 Only: FILE_TABVDW, &
                                       file_type
+  Use mdpd,                     Only: mdpd_type, mdpd_force
   Use neighbours,               Only: neighbours_type
   Use numerics,                 Only: nequal
   Use parse,                    Only: get_line,&
@@ -63,7 +64,7 @@ Module vdw
 
   ! VdW potential parameters
   !> Number of available potential types
-  Integer(Kind=wi), Parameter, Public :: NUM_VDW_POTS = 24
+  Integer(Kind=wi), Parameter, Public :: NUM_VDW_POTS = 25
 
   !> No VdW potential
   Integer(Kind=wi), Parameter, Public :: VDW_NULL = -1
@@ -113,6 +114,8 @@ Module vdw
   Integer(Kind=wi), Parameter, Public :: VDW_NDPD = 23
   ! Stillinger Webber 2 body part potential $u = A*\varepsilon*[B(\sigma/r)^p - (sigma/r)^q]*exp(\sigma/(r-aa*\sigma))}$
   Integer(Kind=wi), Parameter, Public :: VDW_SW = 24
+  !> manybody DPD 
+  Integer(Kind=wi), Parameter, Public :: VDW_MDPD = 25
 
   ! Mixing rule parameters
   !> Null
@@ -183,6 +186,8 @@ Module vdw
     !> furst time job
     Logical, Public                       :: newjob = .true.
     Real(Kind=wp), Public                 :: dlrpot, rdr
+    !> Possible mdpd arrays 
+    Type(mdpd_type), Public               :: mdpd_params
 
   Contains
     Private
@@ -1595,6 +1600,7 @@ Contains
     ! contrib   - a.m.elena may 2018 (m126)
     ! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
     ! contrib   - m.a.seaton november 2023 (ndpd)
+    ! contrib   - b.t.speake July 2024 (mdpd)
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -1703,6 +1709,13 @@ Contains
         eng = pot%energy + vdws%afs(k) * rrr + vdws%bfs(k)
         gamma = pot%gamma*r_rsq - vdws%afs(k) * r_rrr
         delta = pot%delta
+
+        if (ityp == VDW_MDPD) Then 
+          gamma = gamma + mdpd_force(rrr, vdws%mdpd_params%rc(k), vdws%mdpd_params%rd(k), &
+                                     vdws%mdpd_params%b, vdws%mdpd_params%m(config%ltype(iatm)), &
+                                     vdws%mdpd_params%m(config%ltype(jatm)), vdws%mdpd_params%n(k), &
+                                     vdws%mdpd_params%rho(iatm), vdws%mdpd_params%rho(jatm))
+        End If 
 
         ! calculate forces
         fx = gamma * xxt(mm)
@@ -1831,6 +1844,7 @@ Contains
     ! contrib   - a.m.elena april 2018 (mlj/mbuc)
     ! contrib   - a.m.elena may 2018 (m126)
     ! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
+    ! contrib   - b.t.speake July 2024 (mdpd)
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -1947,6 +1961,13 @@ Contains
 
         gamma = (t1 + (t2 - t1) * ppp * 0.5_wp) * r_rsq
         If (vdws%l_force_shift) gamma = gamma - vdws%tab_force(vdws%max_grid - 4, k) * r_rrv ! force-shifting
+
+        if (ityp == VDW_MDPD) Then 
+          gamma = gamma + mdpd_force(rrr, vdws%mdpd_params%rc(k), vdws%mdpd_params%rd(k), &
+                                     vdws%mdpd_params%b, &
+                                      2.0_wp, 2.0_wp, vdws%mdpd_params%n(k),  &
+                                      vdws%mdpd_params%rho(iatm), vdws%mdpd_params%rho(jatm))
+        End If 
 
 
         ! calculate forces
@@ -2083,5 +2104,19 @@ Contains
     If (Allocated(T%bfs)) Then
       Deallocate (T%bfs)
     End If
+
+    If (Allocated(T%mdpd_params%rd)) Then 
+      Deallocate(T%mdpd_params%rd)
+    End If 
+    If (Allocated(T%mdpd_params%n)) Then 
+      Deallocate(T%mdpd_params%n) 
+    End If 
+    If (Allocated(T%mdpd_params%m)) Then 
+      Deallocate(T%mdpd_params%m)
+    End If 
+    If (Allocated(T%mdpd_params%rho)) Then 
+      Deallocate(T%mdpd_params%rho)
+    End If 
+
   End Subroutine cleanup
 End Module vdw

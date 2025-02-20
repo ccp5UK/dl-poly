@@ -591,6 +591,345 @@ are:
    :cite:`fuchs-35a` for electrically non-neutral MD cells
    is applied if needed.
 
+
+Charge Smearing
+~~~~~~~~~~~~~~~
+
+Several charge smearing methods are available in DL_POLY_4 which combine with the SPME coulomb potential and 
+force evaluation. Charge smearing can be selected to reduce the possibility of opposite-charge collapse at shorter 
+separations between ion pairs while still ensuring the potential is Coulombic (proportional to the reciprocal 
+of separation) at larger  distances and allowing for unmodified calculations of reciprocal space terms in Ewald sums.
+Three types of charge smearing are currently available in DL_POLY_5; linear :cite:`Groot2003`, Slater-type :cite:`Coslovich2011` (in 
+both its truncated and exact forms) and Gaussian :cite:`GonzalezMelchor2006,Warren2013`. 
+
+All forms of charge smearing can be expressed in terms of corrections to the standard (point-charge) Coulombic 
+potential, 
+
+.. math:: 
+   :label: smearing_pot_eq 
+
+   U (r_{ij}) = \frac{\Gamma q_i q_j}{4 \pi r_{ij}} \left[ 1 - f(r_{ij})\right] 
+
+where :math:`f(r_{ij})` is a distance-dependent correction. The short-range (real space) potential between 
+particles :math:`i` and :math:`j` for Ewald summation can be expressed as, 
+
+.. math:: 
+   :label: smearing_ewald_pot_eq 
+
+   U^{\text{sr}}_{ij} = \frac{\Gamma q_i q_j}{4 \pi r_{ij}} \left[ \textnormal{erfc} (\alpha r_{ij}) - f (r_{ij}) \right]
+
+and the equivalent force and virial contribution between the particles is, 
+
+.. math:: 
+   :label: smearing_ewald_force 
+   
+   \vec{F}_{ij}^{E,\text{sr}} = \frac{\Gamma q_i q_j}{4 \pi r_{ij}^2} \left(\frac{2 \alpha r_{ij}}{\sqrt{\pi}} \exp (-\alpha^2 r_{ij}^2) + \textnormal{erfc}(\alpha r_{ij}) + r_{ij} \frac{df}{dr_{ij}} - f (r_{ij}) \right) \frac{\vec{r}_{ij}}{r_{ij}} 
+
+.. math:: 
+   :label: smearing_ewald_vir
+
+   \mathcal{W}_{ij}^{E,\text{sr}} = -\frac{\Gamma q_i q_j}{4 \pi r_{ij}} \left(\frac{2 \alpha r_{ij}}{\sqrt{\pi}} \exp (-\alpha^2 r_{ij}^2) + \textnormal{erfc}(\alpha r_{ij}) + r_{ij} \frac{df}{dr_{ij}} - f (r_{ij}) \right).
+
+.. Corrections to reciprocal-space terms for pairs of frozen beads can be made using equations (\ref{EwaldFrozenPotential}), (\ref{EwaldFrozenForce}) and (\ref{EwaldFrozenVirial}) for all smearing types.
+
+Linear Charge Smearing 
+++++++++++++++++++++++
+
+Linear charge smearing is based on using the following charge distribution, 
+
+.. math:: 
+
+   \rho(r) = 
+   \begin{cases}
+   \frac{3q}{\pi R^3} \left(1 - \frac{r}{R} \right) & (r<R) \\
+   0 & (r \ge R)
+   \end{cases}
+
+where :math:`R` is a smearing distance. While this charge distribution was devised for a solution with 
+Particle-Particle Particle-Mesh method :cite:`Groot2003`, a pairwise potential can be devised for solutions based 
+on Ewald summation. A good mathematical description of the pairwise potential is, 
+
+.. math:: 
+
+   U (r_{ij}) = 
+   \begin{cases}
+   \frac{\Gamma q_i q_j}{4 \pi r_{ij}} \left[ \frac{52}{35} \frac{r_{ij}}{R} - \frac{4}{5} \left( \frac{r_{ij}}{R} \right)^3 + \frac{2}{5} \left( \frac{r_{ij}}{R} \right)^5 - \frac{2120}{15603} \left( \frac{r_{ij}}{R} \right)^{6.145} \right] & (r_{ij}<R) \\
+   \frac{\Gamma q_i q_j}{4 \pi r_{ij}} \left[1 - \frac{36813504}{11468205} \frac{r_{ij}}{R} \left(1 - \frac{r_{ij}}{2R} \right)^6 \right] & (R \le r_{ij} < 2R) \\
+   \frac{\Gamma q_i q_j}{4 \pi r_{ij}} & (r_{ij} \ge 2R).
+   \end{cases}
+
+
+and the resulting pairwise force between particles :math:`i` and :math:`j` is given by, 
+
+.. math:: 
+
+   \vec{F}_{ij}^E (r_{ij}) = 
+   \begin{cases}
+   \frac{\Gamma q_i q_j}{4 \pi r_{ij}^2} \left[\frac{8}{5} \left(\frac{r_{ij}}{R}\right)^3 - \frac{8}{5} \left(\frac{r_{ij}}{R}\right)^5 + \frac{2597}{3715} \left(\frac{r_{ij}}{R}\right)^{6.145} \right] \frac{\vec{r}_{ij}}{r_{ij}} & (r_{ij} < R) \\
+   \frac{\Gamma q_i q_j}{4 \pi r_{ij}^2} \left[1 - \frac{35776}{3715} \left(\frac{r_{ij}}{R}\right)^2 \left(1 - \frac{r_{ij}}{2R} \right)^5 \right] \frac{\vec{r}_{ij}}{r_{ij}} & (R \le r_{ij} < 2R) \\
+   \frac{\Gamma q_i q_j}{4 \pi r_{ij}^2} \frac{\vec{r}_{ij}}{r_{ij}} & (r_{ij} \ge 2R)
+   \end{cases}
+
+The associated correction function for comparison with the Coloumbic potential is given as, 
+
+.. math:: 
+
+   f (r_{ij}) =
+   \begin{cases}
+   1 - \frac{52}{35} \frac{r_{ij}}{R} + \frac{4}{5} \left( \frac{r_{ij}}{R} \right)^3 - \frac{2}{5} \left( \frac{r_{ij}}{R} \right)^5 + \frac{2120}{15603} \left( \frac{r_{ij}}{R} \right)^{6.145} & (r_{ij} < R) \\
+   \frac{36813504}{11468205} \frac{r_{ij}}{R} \left(1 - \frac{r_{ij}}{2R} \right)^6 & (R \le r_{ij} < 2R) \\
+   0 & (R \ge 2R).
+   \end{cases}
+
+and leads to the following equations for the real space potential for Ewald sums between pairs of charged 
+particles, 
+
+.. math:: 
+   :label: linear_smearing_ewald_pot_eq
+
+   U_{ij}^{\text{sr}} = 
+   \begin{cases}
+   \frac{\Gamma q_i q_j}{4 \pi r_{ij}} \left[\frac{52}{35} \frac{r_{ij}}{R} - \frac{4}{5} \left( \frac{r_{ij}}{R} \right)^3 + \frac{2}{5} \left( \frac{r_{ij}}{R} \right)^5 - \frac{2120}{15603} \left( \frac{r_{ij}}{R} \right)^{6.145} - \textnormal{erf} (\alpha r_{ij})\right] & (r_{ij} < R) \\
+   \frac{\Gamma q_i q_j}{4 \pi r_{ij}} \left[\textnormal{erfc} (\alpha r_{ij}) - \frac{36813504}{11468205} \frac{r_{ij}}{R} \left(1 - \frac{r_{ij}}{2R} \right)^6 \right] & (R \le r_{ij} < 2R) \\
+   \frac{\Gamma q_i q_j}{4 \pi r_{ij}} \textnormal{erfc} (\alpha r_{ij}) & (R \ge 2R)
+   \end{cases}
+
+the pairwise force, 
+
+.. math:: 
+   :label: linear_smearing_ewald_force_eq
+
+   \vec{F}_{ij}^{E,\text{sr}} = 
+   \begin{cases}
+   \frac{\Gamma q_i q_j}{4 \pi r_{ij}^2} \left[\frac{2 \alpha r_{ij}}{\sqrt{\pi}} \exp (-\alpha^2 r_{ij}^2) - \textnormal{erf}(\alpha r_{ij}) + \frac{8}{5} \left(\frac{r_{ij}}{R}\right)^3 - \frac{8}{5} \left(\frac{r_{ij}}{R}\right)^5 + \frac{2597}{3715} \left(\frac{r_{ij}}{R}\right)^{6.145} \right] \frac{\vec{r}_{ij}}{r_{ij}} & (r_{ij} < R) \\
+   \frac{\Gamma q_i q_j}{4 \pi r_{ij}^2} \left[\frac{2 \alpha r_{ij}}{\sqrt{\pi}} \exp (-\alpha^2 r_{ij}^2) + \textnormal{erfc} (\alpha r_{ij}) - \frac{35776}{3715} \left(\frac{r_{ij}}{R}\right)^2 \left(1 - \frac{r_{ij}}{2R} \right)^5\right] \frac{\vec{r}_{ij}}{r_{ij}} & (R \le r_{ij} < 2R) \\
+   \frac{\Gamma q_i q_j}{4 \pi r_{ij}^2} \left[\frac{2 \alpha r_{ij}}{\sqrt{\pi}} \exp (-\alpha^2 r_{ij}^2) + \textnormal{erfc} (\alpha r_{ij}) \right] \frac{\vec{r}_{ij}}{r_{ij}} & (r_{ij} \ge 2R)
+   \end{cases}
+
+
+and contributions to the virial:
+
+.. math:: 
+   :label: linear_smearing_ewals_vir_eq
+
+   \mathcal{W}_{ij}^{E,\text{sr}} = 
+   \begin{cases}
+   -\frac{\Gamma q_i q_j}{4 \pi r_{ij}} \left[\frac{2 \alpha r_{ij}}{\sqrt{\pi}} \exp (-\alpha^2 r_{ij}^2) - \textnormal{erf}(\alpha r_{ij}) + \frac{8}{5} \left(\frac{r_{ij}}{R}\right)^3 - \frac{8}{5} \left(\frac{r_{ij}}{R}\right)^5 + \frac{2597}{3715} \left(\frac{r_{ij}}{R}\right)^{6.145} \right] & (r_{ij} < R) \\
+   -\frac{\Gamma q_i q_j}{4 \pi r_{ij}} \left[\frac{2 \alpha r_{ij}}{\sqrt{\pi}} \exp (-\alpha^2 r_{ij}^2) + \textnormal{erfc} (\alpha r_{ij}) - \frac{35776}{3715} \left(\frac{r_{ij}}{R}\right)^2 \left(1 - \frac{r_{ij}}{2R} \right)^5\right]  & (R \le r_{ij} < 2R) \\
+   -\frac{\Gamma q_i q_j}{4 \pi r_{ij}} \left[\frac{2 \alpha r_{ij}}{\sqrt{\pi}} \exp (-\alpha^2 r_{ij}^2) + \textnormal{erfc} (\alpha r_{ij}) \right] & (r_{ij} \ge 2R)
+   \end{cases}
+
+These forms of charge smearing can be invoked using the directive ``charge_smearing_method``, with the key ``lienar``, in the CONTROL. The smearing length :math:`R` can be given by the directive ``charge_smearing_length``. 
+
+.. note:: 
+   
+   The electrostatic cutoff distance for the Ewald sum should have a value of at least :math:`2R` to ensure the 
+   modified pairwise potential at shorter distances is applied correctly.
+
+
+Slater-Type Charge Smearing
++++++++++++++++++++++++++++ 
+
+Slater-type charge smearing is based on using a decaying exponential function for the correction function 
+:math:`f(r_{ij})` in the electrostatic potential. The Slater charge distribution is given as,
+
+.. math:: 
+
+   \rho(r) = \frac{q}{\pi\lambda^{3}}\exp{(-\frac{2r}{\lambda})}
+
+where :math:`\lambda` is the decay length of the charge. This gives the potential energy between charged 
+particles :math:`i` and :math:`j` :cite:`Warren2014` of 
+
+.. math:: 
+
+   U (r_{ij}) = \frac{\Gamma q_i q_j}{4 \pi r_{ij}} \left[1 - \exp \left(-2 \beta r_{ij} \right) \left(1 + \tfrac{11}{8} \beta r_{ij} + \tfrac{3}{4} \beta^2 r_{ij}^2 + \tfrac{1}{6}\beta^3 r_{ij}^3\right) \right]
+
+and the corresponding electrostatic force is
+
+.. math:: 
+   
+   \vec{F}_{ij}^E (r_{ij}) = \frac{\Gamma q_i q_j}{4 \pi r_{ij}^2} \left[1 - \exp \left(-2 \beta r_{ij} \right) \left( 1 + 2 \beta r_{ij} + 2 \beta^2 r_{ij}^2 + \tfrac{7}{6} \beta^3 r_{ij}^3 + \tfrac{1}{3}\beta ^4 r_{ij}^4\right) \right] \frac{\vec{r}_{ij}}{r_{ij}},
+
+where :math:`\beta = \frac{1}{\lambda}` in both equations.
+
+
+The related correction function to the standard Coulombic potential in
+this case is
+
+.. math:: 
+   
+   f (r_{ij}) = \exp \left(-2 \beta r_{ij} \right) \left(1 + \tfrac{11}{8} \beta r_{ij} + \tfrac{3}{4} \beta^2 r_{ij}^2 + \tfrac{1}{6}\beta^3 r_{ij}^3 \right)
+
+and leads to the following equations for the real space potential for
+Ewald sums between pairs of charged particles:
+
+.. math:: 
+   
+   U_{ij}^{\text{sr}} = \frac{\Gamma q_i q_j}{4 \pi r_{ij}} \left[ \textrm{erfc} (\alpha r_{ij}) - \exp \left(-2 \beta r_{ij} \right) \left(1 + \tfrac{11}{8} \beta r_{ij} + \tfrac{3}{4} \beta^2 r_{ij}^2 + \tfrac{1}{6}\beta^3 r_{ij}^3 \right) \right]
+
+the corresponding pairwise force:
+
+.. math:: 
+   
+   \vec{F}_{ij}^{E,\text{sr}} = \frac{\Gamma q_i q_j}{4 \pi r_{ij}^2} \left[\frac{2 \alpha r_{ij}}{\sqrt{\pi}} \exp (-\alpha^2 r_{ij}^2) + \textrm{erfc}(\alpha r_{ij}) - \exp \left(-2 \beta r_{ij} \right) \left(1 + 2 \beta r_{ij} + 2 \beta^2 r_{ij}^2 + \tfrac{7}{6} \beta^3 r_{ij}^3 + \tfrac{1}{3}\beta^4 r_{ij}^4 \right) \right] \frac{\vec{r}_{ij}}{r_{ij}}
+
+and the real space contribution to the virial:
+
+.. math:: 
+   
+   \mathcal{W}_{ij}^{E,\text{sr}} = -\frac{\Gamma q_i q_j}{4 \pi r_{ij}} \left[\frac{2 \alpha r_{ij}}{\sqrt{\pi}} \exp (-\alpha^2 r_{ij}^2) + \textrm{erfc}(\alpha r_{ij}) - \exp \left(-2 \beta r_{ij} \right) \left(1 + 2 \beta r_{ij} + 2 \beta^2 r_{ij}^2 + \tfrac{7}{6} \beta^3 r_{ij}^3 + \tfrac{1}{3} \beta^4 r_{ij}^4 \right) \right].
+
+An approximation to the above Slater potential can be obtained by
+truncating the polynomial multiplied to the exponential. The following
+frequently-used form has been
+proposed :cite:`GonzalezMelchor2006`:
+
+.. math:: 
+   
+   U (r_{ij}) = \frac{\Gamma q_i q_j}{4 \pi r_{ij}} \left[1 - (1 + \beta r_{ij}) \exp (-2 \beta r_{ij}) \right]
+
+where :math:`\beta` is related to the charge decay length
+:math:`\lambda` in one of three possible ways:
+
+#. :math:`\beta = \frac{1}{\lambda}`: direct correspondence to the exact
+   Slater potential.
+
+#. :math:`\beta = \frac{5}{8 \lambda}`: correspondence to the overlap
+   potential (when :math:`r_{ij} = 0`) [#]_.
+
+#. :math:`\beta = \frac{1}{\sqrt{2} \lambda}`: correspondence to the
+   second moment of charge distribution
+   (:math:`\sigma = \frac{1}{3} \int_0^{\infty} 4 \pi r^4 \rho (r) dr`),
+   which allows comparisons with other charge smearing models.
+
+.. [#] Mixing of charge decay lengths also corresponds with this model, e.g. :cite:`Carrillo-Tripp2003`.
+
+
+The resulting electrostatic force is given as
+
+.. math:: 
+   
+   \vec{F}_{ij}^E (r_{ij}) = \frac{\Gamma q_i q_j}{4 \pi r_{ij}^2} \left[1 - \exp (-2 \beta r_{ij}) \left( 1 + 2 \beta r_{ij} (1 + \beta r_{ij} ) \right) \right] \frac{\vec{r}_{ij}}{r_{ij}},
+
+which is also a truncated form of the force for the exact Slater
+potential. The charge density in this case is slightly different to the
+exact Slater model:
+
+.. math:: 
+   
+   \rho(r) = \frac{q \beta^2}{\pi r} \exp \left(-2 \beta r \right).
+
+The related correction function to the standard Coulombic potential is
+
+.. math:: 
+   
+   f (r_{ij}) = \exp \left(-2 \beta r_{ij} \right) \left(1 + \beta r_{ij} \right)
+
+with the short-range potential energy between particles :math:`i` and :math:`j` given as
+
+.. math:: 
+   
+   U^{\text{sr}}_{ij} = \frac{\Gamma q_i q_j}{4 \pi r_{ij}} \left[ \textrm{erfc} (\alpha r_{ij})  - \exp (-2 \beta r_{ij}) (1+\beta r_{ij}) \right]
+
+and the pairwise force is
+
+.. math:: 
+   
+   \vec{F}_{ij}^{E,\text{sr}} = \frac{\Gamma q_i q_j}{4 \pi r_{ij}^2}  \left[ \frac{2 \alpha r_{ij}}{\sqrt{\pi}} \exp (-\alpha^2 r_{ij}^2) + \textrm{erfc}(\alpha r_{ij}) - \exp (-2\beta r_{ij}) \left(1 + 2\beta r_{ij} (1 + \beta r_{ij}) \right) \right] \frac{\vec{r}_{ij}}{r_{ij}}.
+
+The associated virial contribution is given as
+
+.. math:: 
+   
+   \mathcal{W}_{ij}^{E,\text{sr}} = -\frac{\Gamma q_i q_j}{4 \pi r_{ij}}  \left[ \frac{2 \alpha r_{ij}}{\sqrt{\pi}} \exp (-\alpha^2 r_{ij}^2) + \textrm{erfc}(\alpha r_{ij}) - \exp (-2\beta r_{ij}) \left(1 + 2\beta r_{ij} (1 + \beta r_{ij}) \right) \right].
+
+These forms of charge smearing can be invoked using the directive
+``smear`` in the ``CONTROL`` file with the keyword ``slater`` and
+followed by either ``exact`` or ``approx`` for the exact and approximate
+(truncated) forms of the Slater-type potential: if this additional word
+is omitted, the exact form is assumed. The smearing length
+:math:`\lambda` for both the exact and approximate models can be given
+using the directive ``smear length``, with an additional keyword that
+can optionally be placed after the value of :math:`\lambda`:
+
+-  ``original`` (or no word): use original relationship between
+   :math:`\lambda` and :math:`\beta`, i.e.
+   :math:`\beta = \frac{1}{\lambda}`.
+
+-  ``overlap``: use :math:`\beta = \frac{5}{8 \lambda}` to match
+   overlap potentials.
+
+-  ``distribution``: use :math:`\beta = \frac{1}{\sqrt{2} \lambda}` to
+   match charge distributions.
+
+Alternatively, the value of :math:`\beta` can be specified directly
+using the directive ``smear beta``: the same words after the value can
+be used to identify the relationship between :math:`\beta` and
+:math:`\lambda`.
+
+Gaussian Charge Smearing 
+++++++++++++++++++++++++
+
+A Gaussian charge distribution is described as the following:
+
+.. math:: 
+   
+   \rho(r) = q \left(\frac{1}{2 \pi \sigma_{G}} \right)^{\frac{3}{2}} \exp \left(-\frac{r^2}{2 \sigma_{G}^2} \right)
+
+where :math:`\sigma_{G}` is the length scale of the charge. This gives a
+potential energy between charged particles :math:`i` and :math:`j` of
+
+.. math:: 
+   
+   U (r_{ij}) = \frac{\Gamma q_i q_j}{4 \pi r_{ij}} \textrm{erf} \left(\frac{r_{ij}}{2 \sigma_{G}} \right)
+
+and the corresponding electrostatic force is
+
+.. math:: 
+   
+   \vec{F}_{ij}^E (r_{ij}) = \frac{\Gamma q_i q_j}{4 \pi r_{ij}^2} \left[ \textrm{erf} \left(\frac{r_{ij}}{2 \sigma_{G}} \right) - \frac{r_{ij}}{\sigma_{G} \sqrt{\pi}} \exp \left( -\frac{r_{ij}^2}{4 \sigma_{G}^2} \right) \right] \frac{\vec{r}_{ij}}{r_{ij}}.
+
+The correction function for the Coulombic potential is given as
+
+.. math:: 
+   
+   f (r_{ij}) = 1 - \textrm{erf} \left(\frac{r_{ij}}{2 \sigma_{G}} \right) = \textnormal{erfc} \left(\frac{r_{ij}}{2 \sigma_{G}} \right)
+
+resulting in the following real space potential energy between particles
+:math:`i` and :math:`j`
+
+.. math:: 
+   
+   U^{\text{sr}}_{ij} = \frac{\Gamma q_i q_j}{4 \pi r_{ij}} \left[ \textrm{erfc} (\alpha r_{ij}) - \textrm{erfc} \left(\frac{r_{ij}}{2 \sigma_{G}} \right) \right],
+
+the corresponding pairwise force
+
+.. math:: 
+   
+   \vec{F}_{ij}^{E,\text{sr}} = \frac{\Gamma q_i q_j}{4 \pi r_{ij}^2}  \left[ \textrm{erfc}(\alpha r_{ij}) - \textrm{erfc} \left(\frac{r_{ij}}{2 \sigma_{G}} \right) + \frac{2 \alpha r_{ij}}{\sqrt{\pi}} \exp (-\alpha^2 r_{ij}^2) - \frac{r_{ij}}{\sigma_{G} \sqrt{\pi}} \exp \left( -\frac{r_{ij}^2}{4 \sigma_{G}^2} \right) \right] \frac{\vec{r}_{ij}}{r_{ij}},
+
+and an associated virial contribution as
+
+.. math:: 
+   
+   \mathcal{W}_{ij}^{E,\text{sr}} = -\frac{\Gamma q_i q_j}{4 \pi r_{ij}} \left[ \textrm{erfc}(\alpha r_{ij}) - \textrm{erfc} \left(\frac{r_{ij}}{2 \sigma_{G}} \right) + \frac{2 \alpha r_{ij}}{\sqrt{\pi}} \exp (-\alpha^2 r_{ij}^2) - \frac{r_{ij}}{\sigma_{G} \sqrt{\pi}} \exp \left( -\frac{r_{ij}^2}{4 \sigma_{G}^2} \right) \right].
+
+It should be noted that when :math:`\sigma_{G} = \frac{1}{2 \alpha}`,
+all real space terms (potential, force, virial) reduce to zero and
+therefore do not need to be evaluated: in this situation, all of the
+electrostatic interactions can be dealt with solely in reciprocal space,
+which can reduce the required computation time.
+
+This form of charge smearing can be invoked using the directive
+``smear`` in the ``CONTROL`` file with the keyword ``gauss``. The
+smearing length scale :math:`\sigma_{G}` can be specified using the
+directive ``smear length``: if the word ``equal`` follows the value of
+:math:`\sigma_{G}`, the Ewald sum real-space convergence factor
+:math:`\alpha` will be set equal to :math:`\frac{1}{2 \sigma_{G}}` to
+eliminate real space contributions and the value given in the ``ewald``
+or ``spme`` directive will be ignored.
+
+
 .. _mpoles:
 
 .. index:: multipolar electrostatics

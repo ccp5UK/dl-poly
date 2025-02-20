@@ -14,6 +14,8 @@ Module control
   Use bonds,                    Only: bonds_type
   Use bspline,                  Only: MAX_SPLINES,&
                                       MIN_SPLINES
+  Use charge_smearing,          Only: BETA_ORIGINAL, BETA_OVERLAP, &
+                                      BETA_DISTRIBUTION
   Use comms,                    Only: comms_type, root_id
   Use configuration,            Only: IMCON_NOPBC,&
                                       IMCON_SLAB,&
@@ -46,7 +48,10 @@ Module control
                                       ELECTROSTATIC_DDDP,&
                                       ELECTROSTATIC_SPME,&
                                       ELECTROSTATIC_NULL,&
-                                      electrostatic_type
+                                      electrostatic_type, & 
+                                      SMEARING_LINEAR, SMEARING_SLATER_TRUNCATED, &
+                                      SMEARING_SLATER_EXP, SMEARING_GAUSSIAN, &
+                                      SMEARING_NULL
   Use errors_warnings,          Only: check_print_level,&
                                       error,&
                                       error_units,&
@@ -1669,6 +1674,42 @@ Contains
       electro%damping = Sqrt(Abs(Log(rtmp * neigh%cutoff * tol))) / neigh%cutoff
 
     End If
+
+    If (electro%no_elec .eqv. .false.) Then 
+      Call params%retrieve('charge_smearing_method', option)
+      Select Case (option) 
+      Case ('linear') 
+        electro%smear = SMEARING_LINEAR
+      Case ('slater_approx')
+        electro%smear = SMEARING_SLATER_TRUNCATED 
+        Call params%retrieve("charge_smearing_beta", option)
+        Select Case (option)
+        Case("original")
+          electro%b_smear = BETA_ORIGINAL
+        Case("overlap")
+          electro%b_smear = BETA_OVERLAP
+        Case("distribution")
+          electro%b_smear = BETA_DISTRIBUTION
+        End Select 
+      Case ('slater')
+        electro%smear = SMEARING_SLATER_EXP 
+        Call params%retrieve("charge_smearing_beta", option)
+        Select Case (option)
+        Case("original")
+          electro%b_smear = BETA_ORIGINAL
+        Case("overlap")
+          electro%b_smear = BETA_OVERLAP
+        Case("distribution")
+          electro%b_smear = BETA_DISTRIBUTION
+        End Select 
+      Case ('gaussian')
+        electro%smear = SMEARING_GAUSSIAN
+      End Select 
+      
+      If (electro%smear /= SMEARING_NULL) Then 
+        Call params%retrieve("charge_smearing_length", electro%r_smear)
+      End If 
+    End If 
 
     If (electro%damping > zero_plus) Then
       Call info('Fennell damping applied', .true.)
@@ -4395,6 +4436,29 @@ Contains
                        val="0.0", &
                        description="Calculate electrostatics using Fennell damping (Ewald-like) with given precision", &
                        data_type=DATA_FLOAT))
+
+        Call table%set("charge_smearing_method", control_parameter( &
+                        key="charge_smearing", &
+                        name="Charge smearing method", &
+                        val="off", &
+                        description="Set method for charge smearing, "// &
+                        "options: off, linear, slater_approx, slater, gaussian", &
+                        data_type=DATA_OPTION))
+
+        Call table%set("charge_smearing_length", control_parameter(&
+                        key="charge_smearing_length", &
+                        name="Charge smearing length", &
+                        val="0.0", &
+                        description="Set length parameter for charge smearing in Angstroms", &
+                        data_type=DATA_FLOAT))
+
+        Call table%set("charge_smearing_beta", control_parameter(&
+                        key="charge_smearing_beta", &
+                        name="Charge smearing beta", &
+                        val="original", &
+                        description="Set beta-lambda correspondance for Slater-type charge smearing,"// &
+                        "options: original, overlap, distribution", &
+                        data_type=DATA_OPTION))
 
         spme:block
           Call table%set("spme_precision", control_parameter( &

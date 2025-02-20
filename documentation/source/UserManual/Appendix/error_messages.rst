@@ -1,6 +1,6 @@
 .. _error-messages:
 
-Appendix D: DL_POLY_4 Error Messages & User Action
+Appendix C: DL_POLY_4 Error Messages & User Action
 ==================================================
 
 Introduction

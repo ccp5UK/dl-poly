@@ -1,6 +1,6 @@
 .. _macros:
 
-Appendix C: DL_POLY_4 Macros 
+Appendix B: DL_POLY_4 Macros 
 ++++++++++++++++++++++++++++
 
 .. index:: single: sub-directory

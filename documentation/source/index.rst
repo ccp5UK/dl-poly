@@ -62,6 +62,7 @@ User Manual
    /UserManual/elastic_constants
    /UserManual/correlations
    /UserManual/evb
+   /UserManual/DPD/dpd
    /UserManual/construction_and_execution/construction_and_execution
    /UserManual/data_files/data_files
    /UserManual/parallelisation/parallelisation_and_src

@@ -1809,6 +1809,10 @@ DL_POLY_4 to the available species in the OpenKIM IM.
           - :math:`n`\ DPD :cite:`sokhan-23a`
           - :math:`A`, :math:`b`, :math:`n`, :math:`r_{c}$$^{\ddagger}`
           - :math:`U(r) = \frac{Ab}{n+1}~r_{c}~\left(1-\frac{r}{r_{c}}\right)^{n+1}-\frac{A}{2}~r_{c}~~\left(1-\frac{r}{r_{c}}\right)^{2}~:~r < r_{c}` :math:`U(r) = 0~~~~~~~~~~~~~~~~~~~:~r \ge r_{c}`
+        * - **mdpd**
+          - Generalised many-body DPD :cite:`vanya2020`
+          - :math:`A`, :math:`B`, :math:`n`, :math:`m`, :math:`r_{c}`, :math:`r_{d}`, :math:`\gamma`
+          - See :ref:`DPD-all`
         * - **14-7** 
           - 14-7 buffered AMOEBA FF :cite:`ponder-10a`
           - :math:`\epsilon`, :math:`r_{o}`

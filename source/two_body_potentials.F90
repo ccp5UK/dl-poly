@@ -137,11 +137,18 @@ Module two_body_potentials
   End Type dpd
 
   Type, Extends(potential), Public :: ndpd
-    Real(Kind=wp) ::a, b, n, rc
-    Contains 
-      Procedure :: energy => ndpd_energy 
-      Procedure :: set_parameters => ndpd_set_parameters
+      Real(Kind=wp) ::a, b, n, rc
+      Contains 
+          Procedure :: energy => ndpd_energy 
+          Procedure :: set_parameters => ndpd_set_parameters
   End Type ndpd
+
+  Type, Extends(potential), Public :: mdpd 
+      Real(Kind=wp) :: a, rc
+      Contains 
+          Procedure :: energy => mdpd_energy
+          Procedure :: set_parameters => mdpd_set_parameters
+  End Type mdpd
 
   Type, Extends(potential), Public :: amoeba 
     Real(Kind=wp) :: eps, sig 
@@ -736,14 +743,45 @@ Contains
     Class(ndpd),   Intent(InOut) :: p
     Real(Kind=wp), Intent(In   ) :: param(:)
 
-    If (Size(param) < 4) Then 
-      Call error(0, "too few parameters for ndpd potential")
-    End If
-    p%a = param(1)
-    p%b = param(2)
-    p%n = param(3)
-    p%rc = param(4)
-  End Subroutine ndpd_set_parameters
+        If (Size(param) < 4) Then 
+            Call error(0, "too few parameters for ndpd potential")
+        End If
+        p%a = param(1)
+        p%b = param(2)
+        p%n = param(3)
+        p%rc = param(4)
+    End Subroutine ndpd_set_parameters
+
+    Pure Type(potential_energy) Function mdpd_energy(p, r, comp_sec_deriv)
+        ! manybody DPD :: determines the base GW potential used for mDPD   
+        Class(mdpd),             Intent(In   )  :: p      
+        Real(Kind=wp),           Intent(In   )  :: r
+        Real(Kind=wp)                           :: t1, t2
+        Logical,                 Intent(In   )  :: comp_sec_deriv 
+
+        if (r < p%rc) Then 
+          t2 = r / p%rc
+          t1 = 0.5_wp * p%a * p%rc * (1.0_wp - t2)
+          mdpd_energy%energy = t1 * (1.0_wp - t2)
+          mdpd_energy%gamma = 2.0_wp * t1 * t2
+          If (comp_sec_deriv) Then
+            mdpd_energy%delta = p%a / p%rc
+          Else
+            mdpd_energy%delta = 0.0_wp
+          End If
+        Else 
+          mdpd_energy%energy = 0.0_wp 
+          mdpd_energy%gamma = 0.0_wp 
+          mdpd_energy%delta = 0.0_wp
+        End If 
+    End Function mdpd_energy 
+
+    Subroutine mdpd_set_parameters(p, param)
+        Class(mdpd),             Intent(InOut) :: p
+        Real(Kind=wp),           Intent(In   ) :: param(:)
+        p%a = param(1)
+        p%rc = param(5)
+    End Subroutine mdpd_set_parameters
 
   Pure Type(potential_energy) Function amoeba_energy(p, r, comp_sec_deriv)
     ! AMOEBA 14-7 :: u=eps * [1.07/((r/sig)+0.07)]^7 * [(1.12/((r/sig)^7+0.12))-2]

@@ -2,6 +2,7 @@ Module unit_test
 
   Use comms,              Only: comms_type
   Use test_configuration, Only: run_configuration_tests
+  Use test_smearing,      Only: run_smearing_test
   Use test_units,         Only: run_units_tests
   Use test_control,       Only: run_control_tests
   Use test_vdw,           Only: run_vdw_tests
@@ -9,6 +10,7 @@ Module unit_test
   Use test_hash,          Only: run_hash_tests
   Use test_parse,         Only: run_parse_tests
   Use test_numerics,      Only: run_numerics_tests
+  Use test_mdpd_ld,       Only : run_mdpd_tests
   Implicit None
 
   !> Logicals indicating whether tests should be run for
@@ -23,6 +25,8 @@ Module unit_test
     Logical, Public :: hash = .false.
     Logical, Public :: parse = .false.
     Logical, Public :: numerics = .false.
+    Logical, Public :: mdpd = .false.
+    Logical, Public :: smearing = .false.
   Contains
     Procedure :: all => set_all_tests_true
     Procedure :: run => run_unit_tests
@@ -41,6 +45,8 @@ Contains
     this%hash = .true.
     this%parse = .true.
     this%numerics = .true.
+    this%mdpd = .true.
+    this%smearing = .true.
   End Subroutine set_all_tests_true
 
   Subroutine run_unit_tests(this, comm, eu)
@@ -82,6 +88,18 @@ Contains
       Call run_integrators_tests(passed)
       passed_all = passed_all .and. passed
     End If
+    
+    If (this%mdpd) Then 
+      Write(eu, '(a)') "Running test: mdpd"
+      Call run_mdpd_tests(passed)
+      passed_all = passed_all .and. passed 
+    End If
+
+    If (this%smearing) Then 
+      Write(eu, '(a)') "Running test: charge smearing"
+      Call run_smearing_test(passed)
+      passed_all = passed_all .and. passed
+    End If  
 
     If (this%hash) Then
       Write(eu, '(a)') "Running test: hash"

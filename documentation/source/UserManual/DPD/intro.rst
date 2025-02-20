@@ -1,8 +1,3 @@
-.. _DPD-all:
-
-Appendix A: DL_POLY_4 Dissipative Particle Dynamics
-+++++++++++++++++++++++++++++++++++++++++++++++++++
-
 Introduction
 ============
 
@@ -30,15 +25,11 @@ but as lumps of molecules grouped to form a *fluid particle* in much the
 same spirit as the renormalisation group has been applied in polymer
 physics where lumps of monomers are grouped to form a *bead*. Hence, the
 beads are regarded as carriers of momentum.
-
 It is worth noting that DPD may also be used when such systems
 experience shear and flow gradients.
 
-Outline of Method
-=================
-
-Following :cite:`groot-97a` the DPD algorithm can be
-summarised by the following:
+The DPD algorithm can be
+summarised by the following: :cite:`groot-97a`
 
 -  A condensed phase system may be modelled as a system of ‘free’
    particles interacting directly through *soft* forces. Note that
@@ -60,8 +51,23 @@ summarised by the following:
    calculated as averages over the individual particles, as in
    traditional Molecular Dynamics.
 
-Therefore, the equation of motion are the same as these for the
-microcanonical ensemble (NVE) but force, :math:`f_{i}`, on particle
+
+Outline of Method
+-----------------
+
+In DPD the system is modelled as a system of free particles, which are spherical and interact over 
+a range that is of the same order as their diameters. The particles can be thought of as assemblies 
+or aggregates of molecules, such as solvent molecules or polymers, or more simply as carriers of 
+momentum.
+
+The equations governing the time evolution in a DPD simulation resemble those of ordinary MD:
+
+.. math::
+
+   \frac{d \underline{v}_i}{dt} =& \frac{\underline{f}_i}{m_i} \\
+   \frac{d \underline{r}_i}{dt} =& \underline{v}_i
+
+in which :math:`\underline{r}_i`, :math:`\underline{v}_i` and :math:`\underline{F}_i` are the position, velocity and force of the :math:`i`th particle, which has mass :math:`m_i`. The force, :math:`f_{i}`, on particle
 :math:`i` is now a sum of pair forces:
 
 .. math:: \underline{f}_i = \sum_{j \neq i}^N \left( \underline{f}_{ij}^{C} + \underline{f}_{ij}^{D} + \underline{f}_{ij}^{R} \right)~~, 
@@ -71,7 +77,8 @@ in which :math:`\underline{f}_{ij}^{C}`, :math:`\underline{f}_{ij}^{D}`
 and :math:`\underline{f}_{ij}^{R}` are the *conservative*, *drag* and
 *random* (or *stochastic*) pair forces respectively. Each represents the
 force exerted on particle :math:`i` due to the presence of particle
-:math:`j`.
+:math:`j`. Additional pairwise forces may be included for more complicated systems, such as those 
+involving chains of particles bonded together. :cite:`Schlijper1995`
 
 The conservative interactions are usually *soft* (i.e. weakly
 interacting) so that the particles can pass by each other (or even
@@ -89,9 +96,10 @@ quickly. A common form of interaction potential is an inverse parabola
 where :math:`r_{ij} = |\underline{r}_{j}-\underline{r}_{i}|`,
 :math:`r_{c}` is a cutoff radius and :math:`A_{ij}` is the interaction
 strength (that may be the same for all particle pairs or may be
-different for different particle types).
+different for different particle types). The cutoff radius is ralated to the length scale for 
+the particles (this can also cary for different particles and pairs).
 
-Equation :eq:`DPD_eq` gives rise to a repulsive force of the
+Equation :eq:`DPDU_eq` gives rise to a repulsive force of the
 form:
 
 .. math::
@@ -113,7 +121,8 @@ This is the deterministic or *conservative* force
 
 and the force are zero when :math:`r_{ij} \ge r_{c}` and thus the
 particles have an effective diameter of :math:`1` in units of the cutoff
-radius :math:`r_{c}`. In the DL_POLY_4 context all inter- and
+radius :math:`r_{c}` (often used as the length scale for the system). 
+In the DL_POLY_5 context all inter- and
 intra-molecular forces will fall into this category of force!
 
 The stochastic forces experienced by the particles is again pairwise in
@@ -132,6 +141,7 @@ Finally, the particles are subject to a drag force, which depends on the
 relative velocity between interacting pairs of particles:
 
 .. math::
+   :label: DPD_drag_force_eq
 
    \underline{f}_{ij}^{D} = -\gamma_{ij} w^{D}(r_{ij})
    \left(\underline{r}_{ij} \cdot \underline{v}_{ij}\right) \frac{\underline{r}_{ij}}{r_{ij}^2}~~,
@@ -159,7 +169,7 @@ which ensures that all interactions are switched off at the range
 In many DPD simulations, the stochastic and drag coefficients are often
 constant for all interactions, i.e. :math:`\sigma_{ij} \equiv \sigma`
 and :math:`\gamma_{ij} \equiv \gamma`, although this assumption does not
-have to apply. In DL_POLY_4 the :math:`\gamma_{ij}` coefficients may be
+have to apply. In DL_POLY_5 the :math:`\gamma_{ij}` coefficients may be
 supplied at the end of each specified vdw interaction potential as a
 parameter further to the last one for the particular vdw potential form.
 For a DPD thermostat to work correctly all possible two body
@@ -168,13 +178,14 @@ DL_POLY_4 will attempt first, if a two body interaction is missing, is
 to derive it using mixing rules (default may be overridden by user
 specification). However, if any of :math:`\gamma_{ij} = 0` then
 DL_POLY_4 will check for the existence of a global :math:`\gamma` that
-may be optionally supplied by the user on the **ensemble nvt dpd**\ INT
-line and if it is non-zero a global override will occur. Otherwise, when
+may be optionally supplied by the user in the ``CONTROL`` file by the 
+``ensemble_dpd_drag`` directive 
+and if it is non-zero a global override will occur. Otherwise, when
 the requirements for a DPD thermostat are not satisfied, everything else
 will result in a controlled termination.
 
-Equation of state and dynamic properties
-========================================
+Equation of State and Dynamic Properties
+----------------------------------------
 
 The form of the conservative force determines the equation of state for
 a DPD fluid, which can be derived using the virial theorem to express
@@ -200,13 +211,15 @@ equivalent to :math:`r_{c}^{4}`. This expression permits the use of
 fluid compressibilities to obtain conservative force parameters for bulk
 fluids, e.g. for water :math:`A \approx 75 k_{B} T/\rho`. Alternative
 equations of state may be obtained by modifying the functional form of
-conservative interactions to include localized densities (i.e. many-body
-DPD) :cite:`pagonabarraga-01a,trofimov-02a`.
+conservative interactions. A flexible approach to do this is many-body DPD, 
+:cite:`pagonabarraga-01a,trofimov-02a` which uses conservative forces that depend 
+on localised densities for each particle (calculated using switching functions 
+between pairs of particles within a cutoff).
 
 Transport coefficients for a DPD fluid without conservative forces can
 be derived using the expressions for the drag and stochastic
-forces:cite:`groot-97a,koelman-93a,marsh-97a`. The kinematic
-viscosity can be found to be
+forces, :cite:`groot-97a,koelman-93a,marsh-97a` assuming no conservative forces. 
+For the given switching functions, the kinematic viscosity can be found to be
 
 .. math:: \nu \approx \frac{45 k_{B} T}{4 \pi \gamma \rho r_{c}^{3}} + \frac{2 \pi \gamma \rho r_{c}^{5}}{1575}~~,
 
@@ -235,7 +248,7 @@ the DL_MESO :cite:`seaton-13a` (`<http://www.ccp5.ac.uk/DL\_MESO/>`_)
 with higher Schmidt numbers :cite:`lowe-99a,stoyanov-05a`.
 
 Derivation of Equilibrium
-=========================
+-------------------------
 
 The derivation of the DPD algorithm is based on the Fokker-Planck
 equation
@@ -286,11 +299,13 @@ equation :eq:`DPDEvolution_eq` must sum to zero. It
 follows that the conditions given in equations :eq:`DPDC1`
 and :eq:`DPDC2` must apply.
 
-Summary of Dissipative Particle Dynamics
-========================================
+
+Summary
+-------
 
 DPD is a simple method that can be viewed as a novel thermostatting
-method for molecular dynamics. All that is required is a system of
+method for molecular dynamics or a method for going beyond the traditional 
+molecular regime. All that is required is a system of
 spherical particles enclosed in a periodic box undergoing time evolution
 as a result of the above forces. It should be noted that all computed
 interactions are pairwise, which means that the principle of the
