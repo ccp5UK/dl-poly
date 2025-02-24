@@ -381,7 +381,6 @@ Contains
         End If
 
         ! pack correlations arrays
-
         If (stats%number_of_correlations > 0) Then
           Call stats%correlator_deport(config,buffer,i,imove)
         End If
@@ -1652,6 +1651,8 @@ Contains
         End Do
       Endif
     End Do
+
+    Call stats%correlator_reindex(config)
 
     ! check error flags
 
