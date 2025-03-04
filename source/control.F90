@@ -100,7 +100,8 @@ Module control
   Use msd,                      Only: msd_type
   Use neighbours,               Only: neighbours_type
   Use numerics,                 Only: dcell,&
-                                      seed_type
+                                      seed_type,&
+                                      invert
   Use parse,                    Only: get_line,&
                                       get_word,&
                                       lower_case,&
@@ -2047,6 +2048,8 @@ Contains
     Logical                              :: ltmp
     Character(Len=STR_LEN), Allocatable  :: option(:)
     Integer                              :: i
+    Real(Kind=wp),          Allocatable  :: mtmp(:)
+    Real(Kind=wp)                        :: rtmp, inv_ref_scaling_matrix(1:9)
 
     Call params%retrieve('timestep', thermo%tstep, required=.true.)
     If (thermo%tstep < zero_plus) Call error(0, 'Timestep too small')
@@ -2100,6 +2103,13 @@ Contains
     Call params%retrieve('io_statis_yaml', stats%file_yaml)
 
     Call params%retrieve('output_std_dev', flow%output_std_dev)
+    
+    Call params%retrieve('reference_scaling_matrix', mtmp)
+    If (params%is_set('reference_scaling_matrix') .and. Size(mtmp) == 9) Then
+      Allocate(stats%inv_ref_scaling_matrix(1:3, 1:3))
+      Call invert(mtmp, inv_ref_scaling_matrix, rtmp)
+      stats%inv_ref_scaling_matrix = Transpose(Reshape(inv_ref_scaling_matrix, [3, 3]))
+    End If
 
     Call params%retrieve('evb_num_ff', flow%NUM_FF)
     if (flow%NUM_FF > 1 .and. flow%simulation_method /= EmpVB) then
@@ -3634,6 +3644,16 @@ Contains
                        internal_units="internal_t", &
                        description="Set maximum timestep delta for variable timestep", &
                        data_type=DATA_FLOAT))
+
+        Call table%set("reference_scaling_matrix", control_parameter( &
+                       key="reference_scaling_matrix", &
+                       name="Reference simulation cell used for strain calculations", &
+                       val="", &
+                       units="ang", &
+                       internal_units="internal_l", &
+                       description="Set the reference simulation cell for strain calculations &
+                         (column major) defaults to initial cell.", &
+                       data_type=DATA_FLOAT_VECTOR))
       End block timestep
 
       ensemble:block

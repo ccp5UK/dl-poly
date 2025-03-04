@@ -1209,7 +1209,7 @@ Contains
     ! ALLOCATE RDF, Z-DENSITY, STATISTICS & GREEN-KUBO ARRAYS
     Call rdf%init()
     Call zdensity%init(sites%mxatyp)
-    Call stats%init(rigid%max_rigid, config%mxatms, config%mxatdm, sites%mxatyp)
+    Call stats%init(rigid%max_rigid, config%mxatms, config%mxatdm, sites%mxatyp, thermo%variable_cell)
     Call green%init(config%mxatms, sites%mxatyp)
 
     ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS

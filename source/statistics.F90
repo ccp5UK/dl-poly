@@ -61,7 +61,8 @@ Module statistics
                              pbcshift,&
                              shellsort,&
                              shellsort2,&
-                             in_range
+                             in_range,&
+                             scaling_matrix
   Use site,            Only: site_type
   Use thermostat,      Only: CONSTRAINT_NONE,&
                              CONSTRAINT_SEMI_ORTHORHOMBIC,&
@@ -231,7 +232,13 @@ Module statistics
     Integer                            :: mom_dens_frequency = 0
 
     !> store spot heat flux
-    Real(Kind=wp)                      :: heat_flux(1:3) = [0.0_wp, 0.0_wp, 0.0_wp]
+    Real(Kind=wp)                      :: heat_flux(1:3) = 0.0_wp
+
+    !> spot strain tensor
+    Real(Kind=wp)                      :: strain(1:9) = 0.0_wp
+    Real(Kind=wp), Allocatable         :: inv_ref_scaling_matrix(:, :)
+    !> Accumulate for strain tensor
+    Type(statistic_accumulator)        :: strain_accum(1:9)
 
     !> store spot momentum density
     Real(Kind=wp),    Allocatable :: momentum_density(:, :)
@@ -280,6 +287,7 @@ Module statistics
     Procedure, Public :: init_correlator   => allocate_correlator
     Procedure, Public :: init_born_calculate
     Procedure, Public :: clean_connect     => deallocate_statistics_connect
+    Procedure, Public :: calculate_strain
     Procedure, Public :: update_stress
     Procedure, Public :: setup_pp_collection
     Procedure, Public :: pp_result
@@ -431,9 +439,10 @@ Contains
     
   End Subroutine check_collection_frequencies
 
-  Subroutine allocate_statistics_arrays(stats, mxrgd, mxatms, mxatdm, mxatype)
+  Subroutine allocate_statistics_arrays(stats, mxrgd, mxatms, mxatdm, mxatype, variable_cell)
     Class(stats_type), Intent(InOut)   :: stats
     Integer,           Intent(In   )   :: mxrgd, mxatms, mxatdm, mxatype
+    Logical,           Intent(In   )   :: variable_cell
 
     Integer                            :: mxnstk, mxstak, nxatms, i
     Integer,           Dimension(1:6)  :: fail
@@ -478,6 +487,13 @@ Contains
       Do i = 1, 9
         Allocate(stats%stress_accum(i)%stack(1:mxstak))
         stats%stress_accum(i)%window = mxstak
+      End Do
+    End If
+
+    If (variable_cell) Then
+      Do i = 1, 9
+        Allocate(stats%strain_accum(i)%stack(1:mxstak))
+        stats%strain_accum(i)%window = mxstak
       End Do
     End If
 
@@ -809,6 +825,10 @@ Contains
       Deallocate(stats%accumulators)
     End If
 
+    If (Allocated(stats%inv_ref_scaling_matrix)) Then
+      Deallocate(stats%inv_ref_scaling_matrix)
+    End If
+    
   End Subroutine cleanup
 
   Subroutine init_correlations_table(stats, currents_cors)
@@ -1155,7 +1175,7 @@ Contains
     Integer                    :: fail, i, iadd, j, k, kstak, cor_index
     Logical                    :: ffpass, l_tmp
     Real(Kind=wp)              :: celprp(1:10), h_z, sclnv1, sclnv2, stpcns, stpipv, stprot, &
-                                  stpshl, zistk
+                                  stpshl, zistk, btmp(1:9), rtmp
     Complex(Kind=wp)              observable_a, observable_b
     Real(Kind=wp), Allocatable :: amsd(:), xxt(:), yyt(:), zzt(:)
 
@@ -1172,6 +1192,14 @@ Contains
 
     Allocate (amsd(1:sites%mxatyp), Stat=fail)
     If (fail > 0) Call error_alloc('amsd', 'statistics_collect')
+
+    If (.not. Allocated(stats%inv_ref_scaling_matrix)) Then
+      ! User has not set the reference cell, take it as the inital cell
+      Allocate(stats%inv_ref_scaling_matrix(1:3, 1:3))
+      Call scaling_matrix(config%cell, stats%inv_ref_scaling_matrix)
+      Call invert(Reshape(stats%inv_ref_scaling_matrix, [9]), btmp, rtmp)
+      stats%inv_ref_scaling_matrix = Transpose(Reshape(btmp, [3, 3]))
+    End If
 
     ! open statistics file and put header
     If (stats%intsta > 0 .and. stats%newjob .and. comm%idnode == 0 .and. ffpass) Then
@@ -1294,6 +1322,8 @@ Contains
     End If
 
     Call dcell(config%cell, celprp)
+
+    stats%strain = stats%calculate_strain(config)
 
     ! store current values in statistics array
 
@@ -1573,6 +1603,12 @@ Contains
             Call stats%stress_accum(i)%update_statistic(stats%strtot(i)/stats%stpvol, nstep)
           End Do
         End If
+      End If
+
+      If (thermo%variable_cell) Then
+        Do i = 1, 9
+          Call stats%strain_accum(i)%update_statistic(stats%strain(i), nstep)
+        End Do
       End If
 
       ! current stack value
@@ -2625,6 +2661,15 @@ Contains
         Call info(message, .true.)
       End If
 
+      If (thermo%variable_cell) Then
+        Write (messages(1), '(a)') NEW_LINE('A')//'Strain tensor  (angstroms): '
+        Do i = 0, 2
+          Write (messages(2+i), '(2x,1p,3e12.4)') stats%strain(1+i), stats%strain(4+i), stats%strain(7+i)
+        End Do
+        Write(messages(5), '(2x,a,1p,e12.4,a)') 'trace/3  ', Sum(stats%strain(1:9:4)) / 3.0_wp, NEW_LINE('A')
+        Call info(messages, 5, .true.)
+      End If
+
       Call gtime(timelp)
 
       Write (message, '("time elapsed since job start: ", f12.3, " sec")') timelp
@@ -2705,6 +2750,21 @@ Contains
                                                          stats%sumval(iadd + 5) + stats%sumval(iadd + 9)) / 3.0_wp
         Call info(message, .true.)
         Call info('', .true.)
+      End If
+
+      ! print out the average strain tensor
+      If (thermo%variable_cell .and. comm%idnode == 0) Then
+        Write (messages(1), '(a)') NEW_LINE('A')//'Strain tensor: '
+        Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average (angstroms)', 'r.m.s. fluctuations'
+        Do i = 0, 2
+          Write (messages(3+i), '(2x,1p,3e12.4,5x,3e12.4)') stats%strain_accum(1+i)%mu, stats%strain_accum(4+i)%mu, &
+            stats%strain_accum(7+i)%mu, Sqrt(stats%strain_accum(1+i)%var), Sqrt(stats%strain_accum(4+i)%var), &
+            Sqrt(stats%strain_accum(7+i)%var)
+        End Do
+        Call info(messages, 5, .true.)
+        Write(message, '(2x,a,1p,e12.4,a)') 'trace/3  ', &
+          (stats%strain_accum(1)%mu+stats%strain_accum(5)%mu+stats%strain_accum(9)%mu) / 3.0_wp, NEW_LINE('A')
+        Call info(message, .true.)
       End If
 
       iadd = iadd + 9
@@ -2828,6 +2888,36 @@ Contains
     calculate_stress(3:9:3) = r * f(3)
 
   End Function calculate_stress
+
+  Function calculate_strain(stats, config) Result(strain)
+    !!----------------------------------------------------------------------!
+    !!
+    !! Calculate the strain tensor from the scaling matrix,
+    !!
+    !! \eps = 1/2 * (H_0^(-1, T) H^T H H_0^-1 - I)
+    !! 
+    !! H_0 (ref) is expected to be the ensemble average of
+    !! the scaling matrix H, or the reference box.
+    !!
+    !! CF G. Clavier et al., 2017, Molecular Simulation
+    !!
+    !! author    - h.l.devereux jun 2024
+    !!
+    !!----------------------------------------------------------------------!
+    Class(stats_type),                              Intent(InOut) :: stats
+    Class(configuration_type),                      Intent(In   ) :: config
+    Real(Kind=wp), Dimension(1:3, 1:3) :: eps, h
+    Real(Kind=wp)                      :: det, strain(1:9)
+
+    Call scaling_matrix(config%cell, h)
+    
+    eps = MatMul(Transpose(stats%inv_ref_scaling_matrix), MatMul(Transpose(h), MatMul(h, stats%inv_ref_scaling_matrix)))
+    eps(1, 1) = eps(1, 1) - 1.0_wp
+    eps(2, 2) = eps(2, 2) - 1.0_wp
+    eps(3, 3) = eps(3, 3) - 1.0_wp
+    eps = eps * 0.5_wp
+    strain = Reshape(eps, (/9/))
+  End Function
 
   Subroutine update_stress(t, s)
     Class(stats_type)            :: t
