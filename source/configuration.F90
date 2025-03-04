@@ -2276,6 +2276,12 @@ Contains
       config%cell(8) = word_2_real(word)
       Call get_word(record, word)
       config%cell(9) = word_2_real(word)
+
+      If (All(Abs(config%cell(1:3)) < Tiny(0.0_wp)) .or. &
+          All(Abs(config%cell(4:6)) < Tiny(0.0_wp)) .or. &
+          All(Abs(config%cell(7:9)) < Tiny(0.0_wp))) Then
+        Call error(0, "A cell vector cannot be 0")
+      End If
     End If
 
     ! Close CONFIG
