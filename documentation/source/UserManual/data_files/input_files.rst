@@ -1767,12 +1767,12 @@ DL_POLY_4 to the available species in the OpenKIM IM.
           - :math:`U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - \left( \frac{\sigma}{r}\right)^{6} \right]`
         * - **ljc** 
           - LJ cohesive :cite:`barrat-99a`
-          - :math:`\epsilon`,:math:`\sigma`, :math:`c`
+          - :math:`\epsilon`, :math:`\sigma`, :math:`c`
           - :math:`U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - c~\left( \frac{\sigma}{r}\right)^{6} \right]`
         * - **ljf** 
           - LJ Frenkel :cite:`wang2019` 
           - :math:`\epsilon`, :math:`\sigma`, :math:`r_c`
-          - see Eq. `[eq:ljf] <#eq:ljf>`__
+          - see Eq. :eq:`lj_frenkel_eq`
         * - **nm** 
           - n-m :cite:`mie-03a,clarke-86a`
           - :math:`E_{o}`, :math:`n`, :math:`m`, :math:`r_{0}`
@@ -1807,7 +1807,7 @@ DL_POLY_4 to the available species in the OpenKIM IM.
           - :math:`U(r) = \frac{A}{2}~r_{c}~\left(1-\frac{r}{r_{c}}\right)^{2}~:~r < r_{c}` :math:`U(r) = 0~:~r \ge r_{c}`
         * - **ndpd** 
           - :math:`n`\ DPD :cite:`sokhan-23a`
-          - :math:`A`, :math:`b`, :math:`n`, :math:`r_{c}$$^{\ddagger}`
+          - :math:`A`, :math:`b`, :math:`n`, :math:`r_{c}{}^{\ddagger}`
           - :math:`U(r) = \frac{Ab}{n+1}~r_{c}~\left(1-\frac{r}{r_{c}}\right)^{n+1}-\frac{A}{2}~r_{c}~~\left(1-\frac{r}{r_{c}}\right)^{2}~:~r < r_{c}` :math:`U(r) = 0~~~~~~~~~~~~~~~~~~~:~r \ge r_{c}`
         * - **mdpd**
           - Generalised many-body DPD :cite:`vanya2020`
@@ -2291,7 +2291,7 @@ Table :numref:`(%s)<external-field-table>`.
     - Molecule in HR Zone 
     - :math:`i_{gid}`, :math:`j_{gid}`, :math:`A`, :math:`z_{mn}`, :math:`z_{mx}`
     - :math:`\underline{F}_{z} = \left\{ \begin{array} {l@{~:~}l}A(z_{cm}-z_{mx}) & z_{cm} > z_{mx} \\A(z_{mn}-z_{cm}) & z_{cm} < z_{mn}\end{array} \right.`
-  * - **zrs\ :math:`-`** 
+  * - **zrs-** 
     - HR Zone (push out) 
     - :math:`i_{gid}`, :math:`j_{gid}`, :math:`A`, :math:`z_{mn}`, :math:`z_{mx}`
     - :math:`\underline{F}_{z} = \left\{ \begin{array} {l@{~:~}l}A(z-z_{mx}) & z \ge \frac{z_{mx}+z_{mn}}{2} \\A(z_{mn}-z) & z < \frac{z_{mx}+z_{mn}}{2}\end{array} \right.`

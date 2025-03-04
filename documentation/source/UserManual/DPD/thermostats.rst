@@ -40,7 +40,7 @@ Shardlow Splitting
 ------------------
 
 Shardlow splitting :cite:`shardlow-03a` exploits an operator splitting approach to integrate 
-the drag and random, forces from :eq:`DPD_force_eq`, in the DPD thermostat. The changes in 
+the drag and random, forces from :eq:`DPDF_eq`, in the DPD thermostat. The changes in 
 particle velocities due to the thermostat during a timestep can be determined separately
 from changes due to other forces (conservative, bonding interactions etc.) by rigorously 
 expanding velocity Verlet integration of the thermostatting forces. The separate integration 
