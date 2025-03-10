@@ -2,13 +2,13 @@ Quick Word / INSTALL & RUN
 ==========================
 
 **For the experienced and quick minded this is a very brief resume
-of how to INSTALL & RUN DL_POLY_4 (which is no excuse for skipping the
+of how to INSTALL & RUN DL_POLY_5 (which is no excuse for skipping the
 Introduction, Chapter** :ref:`introduction_ch`\ **!).  For the rest of us it
-sketches out how to start running DL_POLY_4 jobs and where one should look
+sketches out how to start running DL_POLY_5 jobs and where one should look
 to obtain more detailed information if need be.**
 
 If you have followed the procedure for obtaining and downloading the
-DL_POLY_4 package (see Obtaining~the~Source~Code, Section~:ref:`source-code-sec`),
+DL_POLY_5 package (see Obtaining~the~Source~Code, Section~:ref:`source-code-sec`),
 have successfully unpacked it and are ready to compile the source code,
 then jump to the INSTALL Notes in the ``INSTALL`` file, both in the main
 distribution directory as well as in :ref:`Appendix E<readme>`.
@@ -24,7 +24,7 @@ If **unsuccessful** then you should read the Section:
 To run the code you first need to place the necessary input files
 within *execute*.  TEST cases containing suitable input files,
 as well as examples of output files, can be obtained by running CMake 
-or building DL_POLY_4 with the CMake option ``BUILD_TESTING=ON``. For example
+or building DL_POLY_5 with the CMake option ``BUILD_TESTING=ON``. For example
 
     .. code-block::
         

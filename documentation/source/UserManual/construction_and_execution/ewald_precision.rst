@@ -13,7 +13,7 @@ Particle Mesh Ewald sum parameters for a given simulation..
 
 .. index:: single:: Ewald;optimisation
 
-As a guide to beginners DL_POLY_4 will calculate reasonable parameters
+As a guide to beginners DL_POLY_5 will calculate reasonable parameters
 if the **ewald precision** directive is used in the CONTROL file (see
 Section :ref:`The CONTROL File<control-file>`). A relative error (see
 below) of 10\ :math:`^{-6}` is normally sufficient so the directive
@@ -22,7 +22,7 @@ below) of 10\ :math:`^{-6}` is normally sufficient so the directive
    
    ewald precision 1d-6
 
-will make DL_POLY_4 evaluate its best guess at the Ewald parameters
+will make DL_POLY_5 evaluate its best guess at the Ewald parameters
 :math:`\alpha`, ``kmaxa``, ``kmaxb`` and ``kmaxc``, or their doubles if
 **ewald** rather than **spme** is specified. (The user should note that
 this represents an *estimate*, and there are sometimes circumstances
@@ -89,7 +89,7 @@ The recommended value for :math:`\alpha` is :math:`3.2/r_{\rm cut}` or
 greater (too large a value will make the reciprocal space sum very
 slowly convergent). This gives a relative error in the energy of no
 greater than :math:`\epsilon = 4 \times 10^{-5}` in the real space sum.
-When using the directive **ewald precision** DL_POLY_4 makes use of a
+When using the directive **ewald precision** DL_POLY_5 makes use of a
 more sophisticated approximation:
 
 .. math:: {\rm erfc}(x) \approx 0.56 \; \exp(-x^{2})/x
@@ -158,7 +158,7 @@ decomposition. This is to satisfy the requirement that the k-vector/FFT
 transform down each direction per domain is a multiple of 2, 3 and 5
 only, which is due to the GPFA code (single 1D FFT) which the DaFT
 implementation relies on. This allowes for greater flexiblity than the
-power of 2 multiple restriction in DL_POLY_4 predicessor, DL_POLY_3. As
+power of 2 multiple restriction in DL_POLY_5's predecessor, DL_POLY_3. As
 a consequence, however, execution on different processor decompositions
 may lead to different working lengths of the k-vectors/FFT transforms
 and therefore slightly different SPME forces/energies whithin the same

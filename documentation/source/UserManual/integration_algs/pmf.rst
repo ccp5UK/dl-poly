@@ -17,7 +17,7 @@ function integrated to obtain the free energy for the overall process
 contributions to the stress tensor are obtained in a manner analogous to
 that for a bond constraint (see previous section). The only difference
 is that the constraint is now applied between the centres of two groups
-which need not be atoms alone. DL_POLY_4reports the PMF constraint
+which need not be atoms alone. DL_POLY_5 reports the PMF constraint
 virial, :math:`{\cal W}_{PMF}`, for each simulation. Users can convert
 this to the PMF constraint force from
 

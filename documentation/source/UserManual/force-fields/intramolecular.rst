@@ -124,7 +124,7 @@ where :math:`\underline{r}_{\ell}` is the position vector of an atom labelled
 :math:`\ell`.
 
 .. note::
-   some DL_POLY_4 routines may use the convention
+   some DL_POLY_5 routines may use the convention
    that :math:`\underline{r_{ij}}=\underline{r}_{i}-\underline{r}_{j}`
 
 .. index:: single: potential; chemical bond
@@ -157,7 +157,7 @@ The contribution to be added to the atomic :index:`stress tensor` is given by
 where :math:`\alpha` and :math:`\beta` indicate the :math:`x,y,z`
 components. The atomic :index:`stress tensor` derived in this way is symmetric.
 
-In DL_POLY_4 bond forces are handled by the routine ``bonds_forces`` (and
+In DL_POLY_5 bond forces are handled by the routine ``bonds_forces`` (and
 ``intra_coul`` called within).
 
 Distance Restraints
@@ -168,7 +168,7 @@ Distance Restraints
    single: potential;electrostatics
    single: potential;van der Waals
 
-In DL_POLY_4 distance restraints, in which the separation between two
+In DL_POLY_5 distance restraints, in which the separation between two
 atoms, is maintained around some preset value :math:`r_0` is handled as
 a special case of bond potentials. As a consequence, distance restraints
 may be applied only between atoms in the same molecule. Unlike with
@@ -203,7 +203,7 @@ different key words:
    numerically in TABBND (see Section :ref:`bonded-tables` and
    Section  :ref:`intra-tables`).
 
-In DL_POLY_4 :index:`distance restraints` are handled by the routine bonds_forces
+In DL_POLY_5 :index:`distance restraints` are handled by the routine bonds_forces
 (and ``intra_coul`` called within).
 
 
@@ -347,7 +347,7 @@ In these formulae :math:`\theta_{jik}` is the angle between bond vectors
    \theta_{jik}=cos^{-1}\left\{\frac{\underline{r}_{ij}\cdot\underline{r}_{ik}}
    {r_{ij}r_{ik}}\right\}~~.
 
-In DL_POLY_4 the most general form for the valence :index:`angle<potential;valence angle>` potentials can
+In DL_POLY_5 the most general form for the valence :index:`angle<potential;valence angle>` potentials can
 be written as:
 
 .. math:: U(\theta_{jik},r_{ij},r_{ik}) = A(\theta_{jik})~S(r_{ij})~S(r_{ik})~S(r_{ik})~~,
@@ -428,12 +428,12 @@ The contribution to be added to the :index:`atomic stress` tensor is given by
 
 and the :index:`stress tensor` is symmetric.
 
-In DL_POLY_4 valence forces are handled by the routine ``angles_forces``.
+In DL_POLY_5 valence forces are handled by the routine ``angles_forces``.
 
 Angular Restraints
 ------------------
 
-In DL_POLY_4 angle restraints, in which the angle subtended by a triplet
+In DL_POLY_5 angle restraints, in which the angle subtended by a triplet
 of atoms, is maintained around some preset value :math:`\theta_{0}` is
 handled as a special case of angle potentials. As a consequence angle
 restraints may be applied only between atoms in the same molecule.
@@ -475,7 +475,7 @@ restraints, although they have different key words:
    numerically in TABANG (see Section :ref:`bonded-tables` and
    Section  :ref:`intra-tables`).
 
-In DL_POLY_4 :index:`angular restraints` are handled by the routine
+In DL_POLY_5 :index:`angular restraints` are handled by the routine
 ``angles_forces``.
 
 
@@ -499,7 +499,7 @@ Dihedral Angle Potentials
 The dihedral angle potentials describe the interaction arising from
 torsional forces in molecules. (They are sometimes referred to as
 torsion potentials.) They require the specification of four atomic
-positions. The potential functions available in DL_POLY_4 are as
+positions. The potential functions available in DL_POLY_5 are as
 follows:
 
 #. Cosine potential: (\ **cos**)
@@ -721,8 +721,8 @@ virial is zero) and the matrix is symmetric.
 Lastly, it should be noted that the above description does not take into
 account the possible inclusion of distance-dependent 1-4 interactions,
 as permitted by some :index:`force field`s. Such interactions are permissible in
-DL_POLY_4 and are described in the section on pair potentials below.
-DL_POLY_4 also permits scaling of the 1-4 .:index:`van der Waals<potential;van der Waals>` and :index:`Coulomb<potential;electrostatics>`
+DL_POLY_5 and are described in the section on pair potentials below.
+DL_POLY_5 also permits scaling of the 1-4 .:index:`van der Waals<potential;van der Waals>` and :index:`Coulomb<potential;electrostatics>`
 interactions by a numerical factor (see
 Table :numref:`(%s) <dihedral-table>`). 
 
@@ -733,7 +733,7 @@ Table :numref:`(%s) <dihedral-table>`).
    routine). 1-4 interactions do, of course, contribute to the atomic
    virial.
 
-In DL_POLY_4 dihedral forces are handled by the routine dihedrals_forces
+In DL_POLY_5 dihedral forces are handled by the routine dihedrals_forces
 (and ``intra_coul`` and ``dihedrals_14_vdw`` called within).
 
 
@@ -750,7 +750,7 @@ Improper Dihedral Angle Potentials
 
 Improper dihedrals are used to restrict the geometry of molecules and as
 such need not have a simple relation to conventional chemical bonding.
-DL_POLY_4 makes no distinction between dihedral and improper dihedral
+DL_POLY_5 makes no distinction between dihedral and improper dihedral
 angle functions (both are calculated by the same subroutines) and all
 the comments made in the preceding section apply.
 
@@ -768,7 +768,7 @@ vectors :math:`\underline{r}_{12}`, :math:`\underline{r}_{23}` and
 :math:`\underline{r}_{34}`, where the atoms 1,2,3 and 4 are shown in the
 following figure. The figure defines the D and L enantiomers consistent
 with the international (IUPAC) convention. When defining the :index:`dihedral<potential;dihedral>`,
-the atom indices are entered in DL_POLY_4 in the order 1-2-3-4.
+the atom indices are entered in DL_POLY_5 in the order 1-2-3-4.
 
 .. figure:: ../Images/isomers.png
    :alt: The L and D enantiomers and defining vectors
@@ -780,7 +780,7 @@ the atom indices are entered in DL_POLY_4 in the order 1-2-3-4.
 
 .. index:: single: potential;improper dihedral
 
-In DL_POLY_4 improper dihedral forces are handled by the routine
+In DL_POLY_5 improper dihedral forces are handled by the routine
 dihedrals_forces.
 
 Torsional Restraints
@@ -790,7 +790,7 @@ Torsional Restraints
    single: potential;electrostatics 
    single: potential;van der Waals
 
-In DL_POLY_4 the torsional restraints, in which the dihedral angle as
+In DL_POLY_5 the torsional restraints, in which the dihedral angle as
 defined by a quadruplet of atoms, is maintained around some preset value
 :math:`\phi_{0}` is handled as a special case of dihedral potential. As
 a consequence angle restraints may be applied only between atoms in the
@@ -820,7 +820,7 @@ torsional restraints, although they have different key words:
    numerically in TABDIH (see Section :ref:`bonded-tables` and
    Section  :ref:`intra-tables`).
 
-In DL_POLY_4 :index:`torsional restraints` are handled by the routine
+In DL_POLY_5 :index:`torsional restraints` are handled by the routine
 ``dihedrals_forces``.
 
 
@@ -853,7 +853,7 @@ requires the specification of four atomic positions.
 
    The inversion angle potential is a sum of the three possible inversion angle terms
 
-The potential functions available in DL_POLY_4 are as follows:
+The potential functions available in DL_POLY_5 are as follows:
 
 #. Harmonic: (\ **harm**)
 
@@ -1015,7 +1015,7 @@ easily seen that the contribution to be added to the atomic
 The sum of the diagonal elements of the :index:`stress tensor` is zero (since the
 virial is zero) and the matrix is symmetric.
 
-In DL_POLY_4 :index:`inversion<potential;inversion>` forces are handled by the routine
+In DL_POLY_5 :index:`inversion<potential;inversion>` forces are handled by the routine
 ``inversions_forces``.
 
 
@@ -1042,7 +1042,7 @@ help maintain the planar structure of the carbonate anion
 potential described above. However, it is *not* an angular potential. It
 is dependent on the perpendicular displacement (:math:`u`) of an atom
 :math:`a` from a plane defined by three other atoms :math:`b`,
-:math:`c`, and :math:`d` (see Figure :numref:`%s<calcfig>`) and has the
+:math:`c`, and :math:`d` (see Figure :numref:`%s <calcfig>`) and has the
 form:
 
 .. math:: U_{abcd}(u)=Au^{2}+Bu^{4}~~,
@@ -1101,7 +1101,7 @@ and the stress tensor contribution
 
 .. index:: single: potential;calcite
 
-In DL_POLY_4 the calcite forces are handled by the routine
+In DL_POLY_5 the calcite forces are handled by the routine
 ``inversions_forces``, which is a convenient *intramolecular* four-body
 force routine. However, it is manifestly *not* an inversion potential as
 such.
@@ -1111,7 +1111,7 @@ such.
 Inversional Restraints
 ----------------------
 
-In DL_POLY_4 the inversional restraints, in which the inversion angle,
+In DL_POLY_5 the inversional restraints, in which the inversion angle,
 as defined by a quadruplet of atoms, is maintained around some preset
 value :math:`\phi_{0}`, is handled as a special case of inversion
 potential. As a consequence angle restraints may be applied only between
@@ -1134,7 +1134,7 @@ words:
    numerically in TABINV (see Section :ref:`bonded-tables` and
    Section  :ref:`intra-tables`).
 
-In DL_POLY_4 :index:`inversional restraints` are handled by the routine
+In DL_POLY_5 :index:`inversional restraints` are handled by the routine
 ``inversions_forces``.
 
 Tethering Forces
@@ -1142,7 +1142,7 @@ Tethering Forces
 
 .. index:: single: potential;tether
 
-DL_POLY_4 also allows atomic sites to be tethered to a fixed point in
+DL_POLY_5 also allows atomic sites to be tethered to a fixed point in
 space, :math:`\vec{r_{0}}`, taken as their position at the beginning of
 the simulation (t = 0). This is also known as position restraining. The
 specification, which comes as part of the molecular description,
@@ -1157,7 +1157,7 @@ parameters.
    size or shape, the tethers’ reference positions are scaled with the cell
    vectors.
 
-The tethering potential functions available in DL_POLY_4 are as follows:
+The tethering potential functions available in DL_POLY_5 are as follows:
 
 #. Harmonic: (\ **harm**)
 
@@ -1207,4 +1207,4 @@ The contribution to be added to the atomic :index:`stress tensor` is given by
 where :math:`\alpha` and :math:`\beta` indicate the :math:`x,y,z`
 components. The atomic :index:`stress tensor` derived in this way is symmetric.
 
-In DL_POLY_4 tether forces are handled by the routine ``tethers_forces``.
+In DL_POLY_5 tether forces are handled by the routine ``tethers_forces``.

@@ -1,6 +1,6 @@
 .. _coarse-graining:
 
-Course Graining
+Coarse Graining
 ===============
 
 .. _cg-intro:
@@ -8,7 +8,7 @@ Course Graining
 User-Defined Coarse-Grain Models with Tabulated Force-Fields
 ------------------------------------------------------------
 
-One can use DL_POLY_4 for preparing and running simulations of
+One can use DL_POLY_5 for preparing and running simulations of
 (numerically) coarse-grained (CG) models by using tabulated effective
 force-fields (FF) derived from either **(i)** potentials of mean force
 (PMF); or **(ii)** iteratively optimised CG models.
@@ -40,13 +40,13 @@ After the CG mapped trajectory has been obtained, the relevant
 distribution analysis and the Boltzmann Inversion procedure (producing
 tabulated PMF:s) can be performed by using in “replay history” mode,
 with the corresponding directives in CONTROL file. For further iterative
-optimisation of the CG model the user is advised to use DL_POLY_4 as
+optimisation of the CG model the user is advised to use DL_POLY_5 as
 simulation engine within the framework of VOTCA package –
 `<http://www.votca.org/>`_, which provides a handful of various systematic
 coarse-graining methodologies. For more details the user should refer to
 the manuals of these tools.
 
-This section describes how to use DL_POLY_4 for two SCG tasks:
+This section describes how to use DL_POLY_5 for two SCG tasks:
 
 -  Post-simulation analysis of the intramolecular (bonded and angular)
    mean-force interactions, based on the calculation of the
@@ -85,7 +85,7 @@ demonstrated in the example below.
 
 ::
 
-   TITLE: EXAMPLE OF DL_POLY_4  PDF ANALYSIS DIRECTIVES SNIPPET
+   TITLE: EXAMPLE OF DL_POLY_5  PDF ANALYSIS DIRECTIVES SNIPPET
 
    # DIRECTIVES TO INVOKE INTRAMOLECULAR PDF ANALYSIS BY TYPE
    analyse  bonds       sample every 100  nbins 250  rmax 5.0
@@ -133,7 +133,7 @@ targeted PDF:s).
 While the statistics are always collected and stored for the future use
 in the (binary) REVIVE file for all targeted PDF:s (see
 Section :ref:`revive-file`), using the **print
-analysis** directive will instruct DL_POLY_4 to additionally print the
+analysis** directive will instruct DL_POLY_5 to additionally print the
 data in the OUTPUT and \*DAT files, the latter containing each type of
 PDF:s separately (the asterisk stands for one of the following: BND,
 ANG, DIH, or INV). As a result, apart from OUTPUT, three data files will
@@ -217,24 +217,24 @@ all collected PDF:s, but normalised so that the figures in the second
 column *sum up* to 1, which can be checked by examining the third column
 as it bears the running sum of a PDF histogram.
 
-In addition to the PDF:s, DL_POLY_4 also calculates the respective PMF:s
+In addition to the PDF:s, DL_POLY_5 also calculates the respective PMF:s
 and pairwise force dependencies (virial for bonds), which are stored in
 the \*PMF and, upon resampling onto a *bin-edge* grid, \*TAB files. **It
 is important to note** that, unlike the \*PMF files containing the bare
 :math:`-\ln`\ (PDF) data (converted to the requested energy units) *on
 the same grid as the PDF histograms*, the force-field data in \*TAB
 files are *resampled* onto :math:`\max(N_{\rm min},N_{\rm tab})` grid
-points located at the bin edges (as expected by DL_POLY_4 when reading
+points located at the bin edges (as expected by DL_POLY_5 when reading
 the potential and force tables), where :math:`N_{\rm tab}` is the grid
 number for the respective intramolecular unit type read-in from its
 TAB\* file, if provided (otherwise :math:`N_{\rm tab}=0`). Thus, the
-\*TAB files obey the DL_POLY_4 format for numerically defined
+\*TAB files obey the DL_POLY_5 format for numerically defined
 intramolecular force-field tables (TAB*, see below) and, hence, can be
 directly used as such upon renaming: BNDTAB \ :math:`\to` TABBND,
 ANGTAB \ :math:`\to` TABANG, DIHTAB \ :math:`\to` TABDIH and
 INVTAB \ :math:`\to` TABINV. **The user is, however, strongly advised to
 check the quality of the obtained tabulated force-fields before using
-those as input for a CG simulation.** Albeit DL_POLY_4 uses a simple
+those as input for a CG simulation.** Albeit DL_POLY_5 uses a simple
 smoothing algorithm for noise-reduction in PMF:s and implements capping
 of the forces in the regions of zero-valued PDF:s, in undersampled
 regions the PDF and PMF data are likely to suffer from inaccuracy and
@@ -316,17 +316,16 @@ grid number.
    same energy units as specified by the user in the FIELD file (see
    Section :ref:`field-file`) with distances in Å and angles
    in degrees. All the data related to angles are internally transformed
-   and handled by DL_POLY_4 with angles measured in *radians*.
+   and handled by DL_POLY_5 with angles measured in *radians*.
 
-Finally, in order to instruct DL_POLY_4 to use tabulated intramolecular
+Finally, in order to instruct DL_POLY_5 to use tabulated intramolecular
 force-fields read from the TAB\* files the user has to specify in the
 FIELD file the keyword **tab** or **-tab** for each intramolecular
 interaction thereby chosen for tabulation (similarly to how it is
 described in Section :ref:`field-file`). The dash symbol
 (-) in front of the keyword **tab** is only valid for bonds and angles,
 and is interpreted in the same manner as in
-Table :numref:`(%s)<bond-table>` and
-Table :numref:`(%s)<angle-table>`.
+Table :numref:`(%s) <bond-table>` and Table :numref:`(%s) <angle-table>`.
 
 .. note::
    
@@ -341,7 +340,7 @@ files for a newly coarse-grained system.
 
 -  Perform CG mapping of the original FA system with the aid of DL_CGMAP
    or VOTCA (in the case of using VOTCA follow its manual; the remainder
-   of the list describes using DL_POLY_4 only);
+   of the list describes using DL_POLY_5 only);
 
 -  Move the data files for the newly CG-mapped system (FIELD_CG,
    CONFIG_CG, HISTORY_CG) into a separate directory under the standard
@@ -353,10 +352,10 @@ files for a newly coarse-grained system.
    zeros, or **(ii)** use a FIELD file with fictitious records for all
    the interactions to be tabulated, with the interaction keywords and
    parameters chosen arbitrarily in accord with
-   Table :numref:`(%s)<bond-table>`,
-   Table :numref:`(%s)<angle-table>`,
-   Table :numref:`(%s)<dihedral-table>` and
-   Table :numref:`(%s)<inversion-table>`. 
+   Table :numref:`(%s) <bond-table>`,
+   Table :numref:`(%s) <angle-table>`,
+   Table :numref:`(%s) <dihedral-table>` and
+   Table :numref:`(%s) <inversion-table>`. 
 
    .. note::
 
@@ -366,7 +365,7 @@ files for a newly coarse-grained system.
       records with the fictitious ones (it is advisory to store the initial
       FIELD_CG for the future use, when the actual TAB\* files are ready).
 
--  Run DL_POLY_4 with the **replay history**, **rdf** and/or **analysis**
+-  Run DL_POLY_5 with the **replay history**, **rdf** and/or **analysis**
    options invoked in the CONTROL file, which will result in creation of
    the targeted inter- and intra-molecular PDF data files (RDFDAT,
    BNDDAT, ANGDAT, DIHDAT, INVDAT) and the respective PMF files as
@@ -376,7 +375,7 @@ files for a newly coarse-grained system.
    structured in the same manner and format as their intramolecular
    counterparts. The user can then convert the VDWTAB file into a
    correctly formatted TABLE file by using the utility called pmf2tab.f
-   (subject to compilation; found in DL_POLY_4 directory utility) as
+   (subject to compilation; found in DL_POLY_5 directory utility) as
    follows.
 
    ::
@@ -387,5 +386,5 @@ files for a newly coarse-grained system.
    Redo the analysis on coarser/finer grid(s), if necessary.
 
 -  When satisfied with the created TAB\* files, run a
-   DL_POLY_4 simulation for the prepared CG (or simply user-defined)
+   DL_POLY_5 simulation for the prepared CG (or simply user-defined)
    model system.

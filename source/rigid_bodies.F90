@@ -810,7 +810,7 @@ Contains
     End If
   End Subroutine rigid_bodies_quench
 
-  Subroutine rigid_bodies_setup(l_str, l_top, megatm, megfrz, degtra, degrot, rcut, sites, rigid, config, comm)
+  Subroutine rigid_bodies_setup(l_str, l_top, megatm, megfrz, degtra, degrot, rcut, sites, rigid, config, stats, comm)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine for constructing RBs' rotational inertia tesnors
@@ -833,6 +833,7 @@ Contains
     Type(site_type),          Intent(InOut) :: sites
     Type(rigid_bodies_type),  Intent(InOut) :: rigid
     Type(configuration_type), Intent(InOut) :: config
+    Type(stats_type),         Intent(InOut) :: stats
     Type(comms_type),         Intent(InOut) :: comm
 
     Character(Len=STR_LEN)         :: message, messages(2)
@@ -865,7 +866,7 @@ Contains
 
     Call rigid_bodies_tags(config, rigid, comm)
     Call rigid_bodies_coms(config, rigid%xxx, rigid%yyy, rigid%zzz, rigid)
-    Call rigid_bodies_widths(rcut, rigid, config, comm)
+    Call rigid_bodies_widths(rcut, rigid, config, stats, comm)
 
     ! Find as many as possible different groups of RB units on this domain
     ! and qualify a representative by the oldest copy of the very first one
@@ -2386,7 +2387,7 @@ Contains
     End If
   End Subroutine rigid_bodies_tags
 
-  Subroutine rigid_bodies_widths(rcut, rigid, config, comm)
+  Subroutine rigid_bodies_widths(rcut, rigid, config, stats, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2406,6 +2407,7 @@ Contains
     Real(Kind=wp),            Intent(In   ) :: rcut
     Type(rigid_bodies_type),  Intent(InOut) :: rigid
     Type(configuration_type), Intent(InOut) :: config
+    Type(stats_type),         Intent(InOut) :: stats
     Type(comms_type),         Intent(InOut) :: comm
 
     Character(Len=STR_LEN)         :: message
@@ -2472,7 +2474,7 @@ Contains
 
     Call gmax(comm, width)
     If (width > rcut) Then
-      Call warning(8, width, rcut, 0.0_wp)
+      Call warning(8, width, rcut, Merge(1.0_wp, 0.0_wp, stats%dpd_units))
       Call error(642)
     End If
 

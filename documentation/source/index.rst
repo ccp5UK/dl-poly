@@ -9,7 +9,7 @@ Welcome to DL_POLY Documentation!
 About 
 -----
 
-DL_POLY_4 is a general purpose parallel molecular dynamics simulation package
+DL_POLY_5 is a general purpose parallel molecular dynamics simulation package
 developed at Daresbury Laboratory by I.T. Todorov & W. Smith. The
 DL_POLY project was developed under the auspices of the Engineering
 and Physical Sciences Research Council (EPSRC) for the EPSRC's
@@ -20,7 +20,7 @@ Advanced Research Computing Groups) at Daresbury Laboratory and the
 Natural Environment Research Council (NERC) for the NERC's eScience
 project Computational Chemistry in the Environment (eMinerals),
 directed by M.T. Dove.
-DL_POLY_4 is developed worlwide and distributed under GNU Lesser General Public License version 3.0.
+DL_POLY_5 is developed worldwide and distributed under GNU Lesser General Public License version 3.0.
 
 Latest version of , issues and comments can be made at
 `<https://gitlab.com/ccp5/dl-poly>`_
@@ -82,14 +82,14 @@ results from its use.
 Acknowledgements
 ----------------
 
-DL_POLY_4 was developed at Daresbury Laboratory (DL -
+DL_POLY_5 was developed at Daresbury Laboratory (DL -
 `<https://stfc.ukri.org/about-us/where-we-work/daresbury-laboratory/>`_),
 the Science & Technology Facilities Council (STFC -
 `<http://www.stfc.ac.uk/>`_), UK, with support from the Engineering and
 Physical Sciences Research Council (EPSRC - `<http://www.epsrc.ac.uk/>`_)
 and the Natural Environment Research Council (NERC -
 `<http://www.nerc.ac.uk/>`_).
-Advice, assistance and encouragement in the development of DL_POLY_4 has been
+Advice, assistance and encouragement in the development of DL_POLY_5 has been
 given by many people. We gratefully acknowledge the following:
 
 T.R. Forester, I.J. Bush, M. Leslie, M.F. Guest, R.J. Allan,

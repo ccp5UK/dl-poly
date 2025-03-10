@@ -4,15 +4,15 @@ The INPUT Files
 ===============
 
 .. figure:: ../Images/dlpoly_files.png
-    :alt: DL_POLY_4 input (left) and output (right) files.
+    :alt: DL_POLY_5 input (left) and output (right) files.
     :width: 50%
     :name: input-files_fig
     :figclass: centre-fig
 
-    DL_POLY_4 input (left) and output (right) files. **Note**: files
+    DL_POLY_5 input (left) and output (right) files. **Note**: files
     marked with an asterisk are non-mandatory.
 
-DL_POLY_4 may require many input files. However, only CONTROL, CONFIG
+DL_POLY_5 may require many input files. However, only CONTROL, CONFIG
 and FIELD are mandatory. The MPOLES and TAB\* are complimentary to FIELD
 and are only required when opted within. HISTORY is required when an old
 trajectory is opted for re-play in CONTROL. REFERENCE is optionally
@@ -22,12 +22,12 @@ In the following sections we describe the form and content of these
 files.
 
 It is worth noting that historically DL_POLY used hard-coded names for
-different I/O files as shown in Figure :numref:`(%s)<input-files_fig>`. Upon
+different I/O files as shown in Figure :numref:`(%s) <input-files_fig>`. Upon
 instructions in the CONTROL many I/O file name can be overridden with
 specific, user-defined filenames (see ). Even the CONTROL file can be
 named differently but in this case the alternative name **must be passed
-as a command line argument** to the DL_POLY_4 executable (usually named
-**DLPOLY.Z**). Thus the DL_POLY_4 engine can be efficiently embedded and
+as a command line argument** to the DL_POLY_5 executable (usually named
+**DLPOLY.Z**). Thus the DL_POLY_5 engine can be efficiently embedded and
 utilised within external frameworks for user-definable work-flows.
 
 .. _control-file:
@@ -36,7 +36,7 @@ The CONTROL File
 ----------------
 
 The CONTROL file is read by the subroutine ``read_new_control`` and
-defines the control variables for running a DL_POLY_4 job. Keywords are
+defines the control variables for running a DL_POLY_5 job. Keywords are
 character strings that appear as the first entry on a data record (or
 line) and which invoke a particular operation or provide numerical
 parameters. Keywords can appear in any order in the CONTROL file and
@@ -46,10 +46,10 @@ that defines the timestep), others are optional.
 This way of constructing the file is very convenient, but it has
 inherent dangers. It is, for example, quite easy to specify
 contradictory directives, or invoke :index:`algorithm`\ s that do not work
-together. By large DL_POLY_4 tries to sort out these difficulties and
+together. By large DL_POLY_5 tries to sort out these difficulties and
 print helpful error messages, but it does not claim to be fully
 foolproof. It is important to think carefully about a simulation
-beforehand and ensure that DL_POLY_4 is being asked to do something that
+beforehand and ensure that DL_POLY_5 is being asked to do something that
 is physically reasonable. It should also be remembered that the present
 capabilities the package may not allow the simulation required and it
 may be necessary for you yourself to add new features.
@@ -59,7 +59,7 @@ appearing are described in the following section.
 
 ::  
 
-  title DL_POLY_4 CONTROL DIRECTIVES
+  title DL_POLY_5 CONTROL DIRECTIVES
 
   # I/O REDIRECT
   io_file_output my-dl_poly-run
@@ -243,7 +243,7 @@ unit”. A word must not exceed 256 characters in length.
 
 Additional annotation must be rendered as a comment.
 
-The first keyword (i.e. not comment) in the CONTROL file is must be
+The first keyword (i.e. not comment) in the CONTROL file is must be
 title and a suiltable title.
 
 .. _control_options:
@@ -277,9 +277,9 @@ Further Comments on the CONTROL File
 
    #. timestep
 
-#. Some directives are optional. If not specified DL_POLY_4 may give
+#. Some directives are optional. If not specified DL_POLY_5 may give
    default values if necessary. (defaults are specified above in the
-   list of directives) However fail-safe DL_POLY_4 is, ensure parameters
+   list of directives) However fail-safe DL_POLY_5 is, ensure parameters
    are appropriate for the system of interest and defaults should only
    be used after it is known that they are valid.
 
@@ -298,7 +298,7 @@ Further Comments on the CONTROL File
    :math:`\textbf{time\_equilibration}~\ge~\textbf{time\_run}` (i.e.
    optimise structure at start only!). In this way it can be used as a
    configuration optimiser at the beginning of the equilibration period
-   or when a "dry run" (**time_run** :math:`= 0`) is performed (i.e.
+   or when a "dry run" (**time_run**\ :math:`= 0`) is performed (i.e.
    equilibrate without any actual dynamics!). **Note** that the default
    CGM search algorithm stepping uses a step that is proportional to the
    square of the instantaneous value of the **timestep** and thus its
@@ -319,7 +319,7 @@ Further Comments on the CONTROL File
    **timestep_variable_min_dist** (:math:`0.03` Å), which can also be
    optionally altered if used as directives (note the rule that
    **timestep_variable_max_dist**
-   :math:`>~2.5` **timestep_variable_min_dist** applies). Also, an
+   :math:`>~2.5`\ **timestep_variable_min_dist** applies). Also, an
    additional **timestep_variable_max_delta** (in ps) control can be
    applied. These serve as control values in the variable timestep
    algorithm, which calculates the greatest distance a particle has
@@ -402,7 +402,7 @@ Further Comments on the CONTROL File
    **Note** that this optimisation is only applied when the simulation
    runs in equilibration mode.
 
-   The algorithm is developed in the DL_POLY_4 routine
+   The algorithm is developed in the DL_POLY_5 routine
    ``zero_k_optimise``.
 
 #. The **impact** directives will not be activated if the particle index
@@ -432,7 +432,7 @@ Further Comments on the CONTROL File
 
    The user is also required to specify the width of the pseudo
    thermostat, **pseudo_thermostat_width**, which must be larger than
-   2 Å  and less than or equal to a quarter of minimum width of the MD
+   2 Å and less than or equal to a quarter of minimum width of the MD
    cell. The thermostat is an pseudo_thermostat_width thick buffer layer
    attached on the inside at the MD cell boundaries.
 
@@ -528,7 +528,7 @@ Further Comments on the CONTROL File
    lose their meaning as such and so does the conserved quantity for
    true ensembles.
 
-   The algorithms are developed in the DL_POLY_4 routine ``pseudo_vv``.
+   The algorithms are developed in the DL_POLY_5 routine ``pseudo_vv``.
 
 #. The **defects_calculate** option will trigger reading of REFERENCE
    (see Section :ref:`reference-file`), which defines a reference
@@ -548,7 +548,7 @@ Further Comments on the CONTROL File
    MD cell to the reference MD cell based on a user defined
    site-interstitial cutoff, :math:`R_{def}`,
 
-   .. math:: {\rm Min}\left[0.3,r_{\rm cut}/3\right]~Å~\le~R_{def}~\le~{\rm Min}\left[1.2,r_{\rm cut}/2\right]~Å \nonumber
+   .. math:: {\rm Min}\left[0.3,r_{\rm cut}/3\right]~\AA~\le~R_{def}~\le~{\rm Min}\left[1.2,r_{\rm cut}/2\right]~\AA \nonumber
 
    with a default value of
    :math:`{\rm Min}\left[0.75,r_{\rm cut}/3\right]` Å. (If the supplied
@@ -600,12 +600,21 @@ Further Comments on the CONTROL File
    dynamics and small stepping (default :math:`Max(k_{core-shell})/2`)
    to expensive force evaluations.
 
+#. The dielectric constant relative to vacuum, :math:`\epsilon`, is set 
+   using the **coul_dielectric_constant** directive and defaults to a 
+   value of 1, i.e. the value for vacuum. An alternative approach (and
+   preferred for simulations specifying quantities in DPD units) is to 
+   specify a non-zero Bjerrum length :math:`\lambda_B` using 
+   the **coul_bjerrum_length** directive, which is used along with the
+   system temperature to determine the dielectric constant [1]_.
+   
 #. The choice of reaction field electrostatics (directive **coul_method
    reaction_field**) relies on the specification of the relative
-   dielectric constant external to the cavity. This is specified by the
-   **coul_dielectric_constant** directive.
+   dielectric constant external to the cavity. This is specified by either
+   one of the **coul_dielectric_constant** or **coul_bjerrum_length**
+   directives.
 
-#. DL_POLY_4 uses two different potential cutoffs. These are as follows:
+#. DL_POLY_5 uses two different potential cutoffs. These are as follows:
 
    #. :math:`r_{\rm cut}` - the universal cutoff set by **cutoff**. It
       applies to the real space part of the electrostatics calculations
@@ -617,7 +626,7 @@ Further Comments on the CONTROL File
 
 #. Constraint algorithms in , SHAKE/RATTLE (see
    Section :ref:`shake-rattle`), use default iteration
-   precision of 10\ :math:`^{-6}` and limit of iteration cycles of 250.
+   precision of 10\ :sup:`-6` and limit of iteration cycles of 250.
    Users may experience that during optimisation of a new built system
    containing constraints simulation may fail prematurely since a
    constraint algorithm failed to converge. In such cases directives
@@ -625,7 +634,7 @@ Further Comments on the CONTROL File
    decrease) may be used to decrease the strain in the system and
    stablise the simulation numerics until equilibration is achieved.
 
-#. DL_POLY_4’s DD strategy assumes that the local (per domain/node or link cell)
+#. DL_POLY_5's DD strategy assumes that the local (per domain/node or link cell)
    density of various system entities (i.e. atoms, bonds, angles, etc.)
    does not vary much during a simulation and some limits for these are
    assumed empirically. This may not the case in extremely
@@ -633,7 +642,7 @@ Further Comments on the CONTROL File
    exceeded or in some specific systems where these do not hold from the
    start. A way to tackle such circumstances and avoid simulations crash
    (by controlled termination) is to use the **density_variance**
-   :math:`f` option. In the ``set_bounds`` subroutine DL_POLY_4 makes
+   :math:`f` option. In the ``set_bounds`` subroutine DL_POLY_5 makes
    assumptions at the beginning of the simulation and corrects the
    lengths of bonded-like interaction lists arrays
    (``mxshl, mxcons, mxrgd, mxteth, mxbond, mxangl, mxdihd, mxinv``) as
@@ -641,28 +650,28 @@ Further Comments on the CONTROL File
    (``mxatms, mxatdm``) lists arrays when the option is activated with
    :math:`f > 0`. Greater values of :math:`f` will correspond to
    allocation bigger global arrays and larger memory consumption by
-   DL_POLY_4 during the simulation. **Note** that this option may demand
+   DL_POLY_5 during the simulation. **Note** that this option may demand
    more memory than available on the computer architecture. In such
-   cases DL_POLY_4 will terminate with an array allocation failure
+   cases DL_POLY_5 will terminate with an array allocation failure
    message.
 
-#. As a default, DL_POLY_4 does not store statistical data during the
+#. As a default, DL_POLY_5 does not store statistical data during the
    equilibration period. If the directive **record_equilibration** is
    used, equilibration data will be incorporated into the overall
    statistics.
 
 #. The **vaf_calculate** directive switches on velocity autocorrelation
    function (VAF) calculations for individual atomic species in
-   DL_POLY_4 after equilibration or immediately at start if the
+   DL_POLY_5 after equilibration or immediately at start if the
    directive **record_equilibration** is used. It controls how often VAF
    profiles are started what the size of each profile (in timesteps).
    Overlapping profiles are possible and require more memory to store
    them (and initial velocities) while they are being calculated. By
-   default DL_POLY_4 will report time-averaged VAF profiles. This can be
+   default DL_POLY_5 will report time-averaged VAF profiles. This can be
    overridden using the **vaf_averaging** directive, which will instead
    report individual ‘instantaneous’ VAF profiles.
 
-#. The **no vom** option will trigger a default bypass of the ``getvom``
+#. The **fixed_com** option will trigger a default bypass of the ``getvom``
    routine which will return zero and thus no COM removal will happen.
    **Note that this will lead to COM momentum accumulation for many
    though not all ensembles!**. Such accumulation will propagate to the
@@ -686,15 +695,15 @@ Further Comments on the CONTROL File
    moved a distance larger than :math:`r_{\rm pad}/2`. It is worth
    noting that padding is at expense of extra memory but if used wisely
    it could improve time to solution from 10% to 100% depending on
-   force-field complexity. If it is too large or too small (that is why
-   the :math:`f \ge {\rm Min}[0.05,0.5\%.r_{\rm cut}]` Å limit) it will
-   lead to performace degradation. It is recomended that
+   force-field complexity. If it is too large or too small (that is the 
+   reason for the :math:`f \ge {\rm Min}[0.05,0.5\%.r_{\rm cut}]` Å limit) 
+   it will lead to performace degradation. It is recomended that
    :math:`r_{\rm pad}` is set up at a value of
    :math:`\approx 1 \div 5\%` of the cutoff, :math:`r_{\rm cut}`, as
    long as the major link-cell algorithm uses a link-cell decomposition
    that not worse than :math:`4 \otimes 4 \otimes 4` per domain. For
    such setups, in practice, one may expect average compute speedups
-   [1]_ of the order of :math:`10 \div 30\%` for force-fields involving
+   [2]_ of the order of :math:`10 \div 30\%` for force-fields involving
    the Ewald summation methodology and :math:`60 \div 100\%` for
    force-fields without electrostatics evaluations involving the Ewald
    summation methodology.
@@ -716,7 +725,7 @@ Further Comments on the CONTROL File
    interactions. This is not a default behaviour. The option is also
    triggered by the **polarisation** directvies.
 
-#. The various **ttm** options all have the effect of switching on the
+#. The **ttm_calculate** options has the effect of switching on the
    two-temperature :index:`model<Two-Temperature Model>` 
    (TTM), which assumes the use of the
    inhomogeneous Langevin NVT ensemble. It is not possible to specify
@@ -795,35 +804,34 @@ Definitions of Variables in the CONFIG File
   ``header``      a72       title line
 
   **record 2**
-  ``levcfg``      integer   CONFIG file key. See Table :numref:`(%s)<levcfg_table>` for permitted values
-  ``imcon``       integer   Periodic boundary key. See Table :numref:`(%s)<imcon_table>` for permitted values
+  ``levcfg``      integer   CONFIG file key. See Table :numref:`(%s) <levcfg_table>` for permitted values
+  ``imcon``       integer   Periodic boundary key. See Table :numref:`(%s) <imcon_table>` for permitted values
   ``megatm``      integer   Total number of particles (crystalographic entities)
 
   **record 3** omitted if ``imcon`` = 0
-  ``cell(1)``     real      x component of the :math:`a` cell vector in Å
-  ``cell(2)``     real      y component of the :math:`a` cell vector in Å
-  ``cell(3)``     real      z component of the :math:`a` cell vector in Å
+  ``cell(1)``     real      x component of the *a* cell vector in Å (or DPD length units)
+  ``cell(2)``     real      y component of the *a* cell vector in Å (or DPD length units)
+  ``cell(3)``     real      z component of the *a* cell vector in Å (or DPD length units)
 
   **record 4** omitted if ``imcon`` = 0
-  ``cell(4)``     real      x component of the :math:`b` cell vector in Å
-  ``cell(5)``     real      y component of the :math:`b` cell vector in Å
-  ``cell(6)``     real      z component of the :math:`b` cell vector in Å
+  ``cell(4)``     real      x component of the *b* cell vector in Å (or DPD length units)
+  ``cell(5)``     real      y component of the *b* cell vector in Å (or DPD length units)
+  ``cell(6)``     real      z component of the *b* cell vector in Å (or DPD length units)
 
   **record 5** omitted if ``imcon`` = 0
-  ``cell(7)``     real      x component of the :math:`c` cell vector in Å
-  ``cell(8)``     real      y component of the :math:`c` cell vector in Å
-  ``cell(9)``     real      z component of the :math:`c` cell vector in Å
+  ``cell(7)``     real      x component of the *c* cell vector in Å (or DPD length units)
+  ``cell(8)``     real      y component of the *c* cell vector in Å (or DPD length units)
+  ``cell(9)``     real      z component of the *c* cell vector in Å (or DPD length units)
 
 **Note** that **record 2** may contain more information apart from the
-mandatory as listed above. If the file has been produced by DL_POLY_4
+mandatory as listed above. If the file has been produced by DL_POLY_5
 then it also contains other items intended to help possible parallel I/O
 reading. Also, it is worth mentioning that the periodic boundary
-conditions (PBC), as specified in Table :numref:`(%s)<imcon_table>` and
-described in detail in
-:ref:`Appendix B<boundary-conditions>`, refer
+conditions (PBC), as specified in Table :numref:`(%s) <imcon_table>` and
+described in detail in :ref:`Appendix B<boundary-conditions>`, refer
 generally to a **triclinic type of super-cell**, for which there are
 **no symmetry assumptions! Records 3, 4 and 5** contain the Cartesian
-components of the super-cell’s lattice vectors in Å. DL_POLY_4 can only
+components of the super-cell’s lattice vectors in Å. DL_POLY_5 can only
 tract triclinic type of super-cells as the only types of super-cell
 shapes that are commensurate with the domain decomposition (DD)
 parallelisation strategy of it. However, this is not a restriction for
@@ -843,19 +851,19 @@ of increasing index. Within each block the data are as follows:
   ``index``    integer  atom index
   
   **record ii**
-  ``xxx``      real     x coordinate in Å
-  ``yyy``      real     y coordinate in Å
-  ``zzz``      real     z coordinate in Å
+  ``xxx``      real     x coordinate in Å (or DPD length units)
+  ``yyy``      real     y coordinate in Å (or DPD length units)
+  ``zzz``      real     z coordinate in Å (or DPD length units)
   
   **record iii** included only if ``levcfg`` :math:`>0`
-  ``vxx``      real     x component of velocity in Å/picosecond
-  ``vyy``      real     y component of velocity in Å/picosecond
-  ``vzz``      real     x component of velocity in Å/picosecond
+  ``vxx``      real     x component of velocity in Å/picosecond (or DPD velocity units)
+  ``vyy``      real     y component of velocity in Å/picosecond (or DPD velocity units)
+  ``vzz``      real     x component of velocity in Å/picosecond (or DPD velocity units)
   
   **record iv** included only if ``levcfg`` :math:`>1`
-  ``fxx``      real     x component of force in Å\ :math:`\cdot`\ Dalton/picosecond\ :math:`^{2}`
-  ``fyy``      real     y component of force in Å\ :math:`\cdot`\ Dalton/picosecond\ :math:`^{2}`
-  ``fzz``      real     z component of force in Å\ :math:`\cdot`\ Dalton/picosecond\ :math:`^{2}`
+  ``fxx``      real     x component of force in Å\ :math:`\cdot`\ Dalton/picosecond\ :sup:`2` (or DPD force units) 
+  ``fyy``      real     y component of force in Å\ :math:`\cdot`\ Dalton/picosecond\ :sup:`2` (or DPD force units)
+  ``fzz``      real     z component of force in Å\ :math:`\cdot`\ Dalton/picosecond\ :sup:`2` (or DPD force units)
 
 **Note** that on **record i** only the atom name is strictly mandatory,
 any other items are not read by DL_POLY_CLASSIC but may be added to aid alternative uses
@@ -863,7 +871,7 @@ of the file, for example alike DL_POLY :index:`GUI`
 :cite:`smith-gui`, DL_POLY_CLASSIC assume that the atoms’ indices are in a
 sequentially ascending order starting form 1. However, needs the index
 or the **no ind**\ ex option needs to be specified in the CONTROL file!
-It is worth mentioning that DL_POLY_4 (as well as DL_POLY_CLASSIC) assumes that the
+It is worth mentioning that DL_POLY_5 (as well as DL_POLY_CLASSIC) assumes that the
 origin of Cartesian system with respect to which the particle positions
 are specified is the middle of MD cell. Also, as both the cell vectors
 and the particles’ positions are specified in Å, there is a **fine
@@ -871,7 +879,7 @@ connection** between them! This would not be the case if the particles’
 positions were kept in reduced space with fractional coordinates. Last
 but not least, it is worth pointing out that composite entities, such as
 velocities and forces, have their units expressed as composites of the
-default DL_POLY units as shown in Section \ `[units] <#units>`__.
+default DL_POLY units as shown in Section \ `[units] <#units>`__.
 
 .. _levcfg_table:
 .. table:: CONFIG File Key (record 2)
@@ -904,10 +912,10 @@ Further Comments on the CONFIG File
 
 The CONFIG file has the same format as the output file REVCON
 (Section :ref:`revcon-file`). When restarting from a
-previous run of DL_POLY_4 (i.e. using the **restart**, **restart
+previous run of DL_POLY_5 (i.e. using the **restart**, **restart
 noscale** or restart scale directives in the CONTROL file - above), the
 CONFIG file must be replaced by the REVCON file, which is renamed as the
-CONFIG file. The copy macro in the *execute* sub-directory of DL_POLY_4
+CONFIG file. The copy macro in the *execute* sub-directory of DL_POLY_5
 does this for you.
 
 The CONFIG file has the same format as the optional output file CFGMIN,
@@ -1043,6 +1051,9 @@ d.
    **K**\ elvin/Boltzmann, for Kelvin per Boltzmann
 
 e.
+   **dpd**, for DPD-based units (see :ref:`DPD_units`)
+
+f.
    **internal**, for DL_POLY internal units (10 Joules per mol).
 
 If no units keyword is entered, DL_POLY internal units are assumed for
@@ -1077,8 +1088,8 @@ required, :math:`n`, these will not be processed by .
 
 .. note::
   
-  although algorithms in DL_POLY_4 could in principle handle any
-  high pole order summation, in practice, however, DL_POLY_4 will abort if
+  Although algorithms in DL_POLY_5 could in principle handle any
+  high pole order summation, in practice, however, DL_POLY_5 will abort if
   the order is higher than hexadecapole (order 4)! For more information on
   this functionality refer to Section :ref:`mpoles-file`.
 
@@ -1090,7 +1101,7 @@ organisational correspondence between the FIELD file and the CONFIG file
 described above. It is required that the order of specification of
 molecular types and their atomic constituents in the FIELD file follows
 the order of indices in which they appear in the CONFIG file. Failure to
-adhere to this common sequence will be detected by DL_POLY_4 and result
+adhere to this common sequence will be detected by DL_POLY_5 and result
 in premature termination of the job. It is therefore essential to work
 from the CONFIG file when constructing the FIELD file. It is not as
 difficult as it sounds!
@@ -1103,7 +1114,7 @@ The entry of the molecular details begins with the mandatory directive:
 
 where *n* is an integer specifying the number of different *types* of
 molecule appearing in the FIELD file. Once this directive has been
-encountered, DL_POLY_4 enters the molecular description environment in
+encountered, DL_POLY_5 enters the molecular description environment in
 which only molecular description keywords and data are valid.
 
 Immediately following the **molecules** directive, are the records
@@ -1128,7 +1139,7 @@ defining individual molecules:
     .. parsed-literal:: 
 
       ``sitnam``  a8      atomic site name
-      ``weight``  real    atomic site mass (in Daltons)
+      ``weight``  real    atomic site mass (in Daltons or DPD mass units)
       ``chge``    real    atomic site charge (in protons)
       ``nrept``   integer repeat counter
       ``ifrz``    integer ‘frozen’ atom (if ``ifrz`` > 0`)
@@ -1157,9 +1168,10 @@ defining individual molecules:
     .. math:: U(r)=\frac{1}{2}k_{2} r_{ij}^{2}+\frac{1}{4!}k_{4} r_{ij}^{4}~~,
 
     with the force constant :math:`k_{2}` entered in units of
-    ``engunit``\ :math:`\times`\ Å\ :math:`^{-2}` and :math:`k_{4}` in
-    ``engunit`` Å\ :math:`^{-4}`, where usually :math:`k_{2} >> k_{4}`. The
+    ``engunit``\ :math:`\times`\ Å\ :sup:`-2` and :math:`k_{4}` in
+    ``engunit`` Å\ :sup:`-4`, where usually :math:`k_{2} >> k_{4}`. The
     ``engunit`` is the energy unit specified in the **units** directive.
+    (In the case of DPD units, substitute Å with the DPD length unit.)
 
     **Note** that the atomic site indices referred to above are indices
     arising from numbering each atom in the molecule from 1 to the number
@@ -1167,14 +1179,14 @@ defining individual molecules:
     numbering scheme should be used for all descriptions of this
     molecule, including the **constraints**, **pmf**, **rigid**,
     **teth**, **bonds**, **angles**, **dihedrals** and **inversions**
-    entries described below. DL_POLY_4 will itself construct the global
+    entries described below. DL_POLY_5 will itself construct the global
     indices for all atoms in the systems.
 
-    **Note** that DL_POLY_4 determines which shell model to use by
+    **Note** that DL_POLY_5 determines which shell model to use by
     scanning shells’ weights provided the FIELD file. If all shells have
-    zero weight the DL_POLY_4 will choose the relaxed shell model. If no
-    shell has zero weight then DL_POLY_4 will choose the dynamical one.
-    In case when some shells are massless and some are not DL_POLY_4 will
+    zero weight the DL_POLY_5 will choose the relaxed shell model. If no
+    shell has zero weight then DL_POLY_5 will choose the dynamical one.
+    In case when some shells are massless and some are not DL_POLY_5 will
     terminate execution controllably and provide information about the
     error and possible possible choices of action in the OUTPUT file (see
     Section :ref:`output-files`). Shell models’ extensions
@@ -1225,8 +1237,8 @@ defining individual molecules:
     no :index:`PMF<constraints;PMF>` constraints are present. See the note on the atomic indices
     appearing under the **shell** directive.
 
-    **Note** that if a site weighting is not supplied DL_POLY_4 will
-    assume it is zero. However, DL_POLY_4 detects that all sites in a PMF
+    **Note** that if a site weighting is not supplied DL_POLY_5 will
+    assume it is zero. However, DL_POLY_5 detects that all sites in a PMF
     unit have zero weighting then the PMF unit sites will be assigned the
     masses of the original atomic sites.
 
@@ -1241,11 +1253,11 @@ defining individual molecules:
 
     **Note** that the PMF constraint is intramolecular. To define a
     constraint between two molecules, the molecules must be described as
-    part of the same DL_POLY_4 “molecule”. DL_POLY_4 allows only one type
+    part of the same DL_POLY_5 “molecule”. DL_POLY_5 allows only one type
     of PMF constraint per system. The value of nummols for this molecule
     determines the number of PMF constraint in the system.
 
-    **Note** that in DL_POLY_4 PMF constraints are handeled in every
+    **Note** that in DL_POLY_5 PMF constraints are handled in every
     available ensemble.
 
 #.  **rigid n**
@@ -1277,13 +1289,13 @@ defining individual molecules:
 
     .. parsed-literal:: 
 
-      tether key      a4        potential key, see Table :numref:`(%s)<tether-table>`
+      tether key      a4        potential key, see Table :numref:`(%s) <tether-table>`
       index 1 (*i*)     integer   atomic site index
-      variable 1      real      potential parameter, see Table :numref:`(%s)<tether-table>`
-      variable 2      real      potential parameter, see Table :numref:`(%s)<tether-table>`
+      variable 1      real      potential parameter, see Table :numref:`(%s) <tether-table>`
+      variable 2      real      potential parameter, see Table :numref:`(%s) <tether-table>`
 
     The meaning of these variables is given in Table
-    :numref:`(%s)<tether-table>`.
+    :numref:`(%s) <tether-table>`.
 
     This directive (and associated data records) need not be specified if
     the molecule contains no flexible chemical bonds. See the note on the
@@ -1317,16 +1329,16 @@ defining individual molecules:
 
     .. parsed-literal::
 
-      Bond key      a4        potential key, see Table :numref:`(%s)<bond-table>`
+      Bond key      a4        potential key, see Table :numref:`(%s) <bond-table>`
       index 1 (*i*)   integer   first atomic site index in bond 
       index 2 (*j*)   integer   second atomic site index in bond 
-      variable 1    real      potential parameter, see Table :numref:`(%s)<bond-table>` 
-      variable 2    real      potential parameter, see Table :numref:`(%s)<bond-table>`
-      variable 3    real      potential parameter, see Table :numref:`(%s)<bond-table>`
-      variable 4    real      potential parameter, see Table :numref:`(%s)<bond-table>`
+      variable 1    real      potential parameter, see Table :numref:`(%s) <bond-table>` 
+      variable 2    real      potential parameter, see Table :numref:`(%s) <bond-table>`
+      variable 3    real      potential parameter, see Table :numref:`(%s) <bond-table>`
+      variable 4    real      potential parameter, see Table :numref:`(%s) <bond-table>`
 
     The meaning of these variables is given in
-    Table :numref:`(%s)<bond-table>`.
+    Table :numref:`(%s) <bond-table>`.
 
     This directive (and associated data records) need not be specified if
     the molecule contains no flexible chemical bonds. See the note on the
@@ -1392,7 +1404,7 @@ defining individual molecules:
 
     **Note:** Bond :index:`potentials<potential;bond>` with a dash (-) as the first character of
     the keyword, do not contribute to the excluded atoms list (see
-    Section :ref:`force-field`). In this case DL_POLY_4
+    Section :ref:`force-field`). In this case DL_POLY_5
     will also calculate the :index:`non-bonded<potential;non-bonded>` pair potentials between the
     described atoms, unless these are deactivated by another potential
     specification. 
@@ -1403,17 +1415,17 @@ defining individual molecules:
 
     .. parsed-literal::
 
-      Angle key     a4        potential key, see Table :numref:`(%s)<angle-table>`
+      Angle key     a4        potential key, see Table :numref:`(%s) <angle-table>`
       index 1 (*i*)   integer   first atomic site index 
       index 2 (*j*)   integer   second atomic site index (central site)
       index 3 (*k*)   integer   third atomic site index 
-      variable 1    real      potential parameter, see Table :numref:`(%s)<angle-table>` 
-      variable 2    real      potential parameter, see Table :numref:`(%s)<angle-table>` 
-      variable 3    real      potential parameter, see Table :numref:`(%s)<angle-table>` 
-      variable 4    real      potential parameter, see Table :numref:`(%s)<angle-table>`
+      variable 1    real      potential parameter, see Table :numref:`(%s) <angle-table>` 
+      variable 2    real      potential parameter, see Table :numref:`(%s) <angle-table>` 
+      variable 3    real      potential parameter, see Table :numref:`(%s) <angle-table>` 
+      variable 4    real      potential parameter, see Table :numref:`(%s) <angle-table>`
 
     The meaning of these variables is given in Table
-    :numref:`(%s)<angle-table>`.
+    :numref:`(%s) <angle-table>`.
 
     This directive (and associated data records) need not be specified if
     the molecule contains no angular terms. See the note on the atomic
@@ -1494,7 +1506,7 @@ defining individual molecules:
     **Note:** :index:`valence<potential;valence angle>` angle potentials with a dash (-) as the first
     character of the keyword, do not contribute to the *excluded atoms
     list* (see Section :ref:`force-field`). In this case
-    DL_POLY_4 will calculate the :index:`non-bonded<potential;non-bonded>` pair potentials between the
+    DL_POLY_5 will calculate the :index:`non-bonded<potential;non-bonded>` pair potentials between the
     described atoms. 
 
 #.  **dihedrals n**
@@ -1503,21 +1515,21 @@ defining individual molecules:
 
     .. parsed-literal::
 
-      Dihedral key    a4        potential key, see Table :numref:`(%s)<dihedral-table>`
+      Dihedral key    a4        potential key, see Table :numref:`(%s) <dihedral-table>`
       index 1 (*i*)     integer   first atomic site index
       index 2 (*j*)     integer   second atomic site index (central site)
       index 3 (*k*)     integer   third atomic site index 
       index 4 (*l*)     integer   fourth atomic site index
-      variable 1      real      first potential parameter, see  Table :numref:`(%s)<dihedral-table>` 
-      variable 2      real      second potential parameter, see  Table :numref:`(%s)<dihedral-table>` 
-      variable 3      real      third potential parameter, see  Table :numref:`(%s)<dihedral-table>`
+      variable 1      real      first potential parameter, see  Table :numref:`(%s) <dihedral-table>` 
+      variable 2      real      second potential parameter, see  Table :numref:`(%s) <dihedral-table>` 
+      variable 3      real      third potential parameter, see  Table :numref:`(%s) <dihedral-table>`
       variable 4      real      1-4 electrostatic interaction scale factor
       variable 5      real      1-4 :index:`van<potential;van der Waals>` der Waals interaction scale factor
-      variable 6      real      fourth potential parameter, see Table :numref:`(%s)<dihedral-table>`
-      variable 7      real      fifth potential parameter, see Table :numref:`(%s)<dihedral-table>` 
+      variable 6      real      fourth potential parameter, see Table :numref:`(%s) <dihedral-table>`
+      variable 7      real      fifth potential parameter, see Table :numref:`(%s) <dihedral-table>` 
 
     The meaning of the variables 1-3,6-7 is given in Table
-    :numref:`(%s)<dihedral-table>`. The variables 4 and 5 specify
+    :numref:`(%s) <dihedral-table>`. The variables 4 and 5 specify
     the scaling factor for the 1-4 electrostatic and van der Waals
     non-bonded interactions respectively.
 
@@ -1576,17 +1588,17 @@ defining individual molecules:
 
     .. parsed-literal::
 
-      Inversion key     a4        potential key, see Table :numref:`(%s)<inversion-table>`
+      Inversion key     a4        potential key, see Table :numref:`(%s) <inversion-table>`
       index 1 (*i*)       integer   first atomic site index (central site) 
       index 2 (*j*)       integer   second atomic site index 
       index 3 (*k*)       integer   third atomic site index 
       index 4 (*l*)       integer   fourth atomic site index
-      variable 1        real      potential parameter, see Table :numref:`(%s)<inversion-table>` 
-      variable 2        real      potential parameter, see Table :numref:`(%s)<inversion-table>` 
-      variable 3        real      potential parameter, see Table :numref:`(%s)<inversion-table>`
+      variable 1        real      potential parameter, see Table :numref:`(%s) <inversion-table>` 
+      variable 2        real      potential parameter, see Table :numref:`(%s) <inversion-table>` 
+      variable 3        real      potential parameter, see Table :numref:`(%s) <inversion-table>`
 
     The meaning of the variables 1-2 is given in Table
-    :numref:`(%s)<inversion-table>`.
+    :numref:`(%s) <inversion-table>`.
 
     This directive (and associated data records) need not be specified if
     the molecule contains no inversion angle terms. See the note on the
@@ -1633,7 +1645,7 @@ defining individual molecules:
     Section :ref:`calcite` for details.
 
 #.  **finish**
-    This directive is entered to signal to DL_POLY_4 that the entry of
+    This directive is entered to signal to DL_POLY_5 that the entry of
     the details of a molecule has been completed.
 
     The entries for a second molecule may now be entered, beginning with
@@ -1665,14 +1677,14 @@ metal, **tersoff** - Tersoff, **tbp** - three-body and **fbp** -
 four-body. Each of these types is specified by a specific **keyword** as
 described bellow.
 
-When DL_POLY_4 is cross-compiled with an OpenKIM functionality (see
+When DL_POLY_5 is cross-compiled with an OpenKIM functionality (see
 Section :ref:`kim`), it is possible to specify a complete model
 of inter-molecular interactions, by calling the OpenKIM model name
 provided it available in your local KIM library. Two **keyword**\ s are
 employed when using OpenKIM IMs, one to select the IM and perform
 necessary initialisation (**kim_init**), and the other
 (**kim_interactions**) to define a mapping between atom types in
-DL_POLY_4 to the available species in the OpenKIM IM.
+DL_POLY_5 to the available species in the OpenKIM IM.
 
 #.  **kim_init model_name**
     where the *model_name* is the OpenKIM model identifier, it uses the
@@ -1681,9 +1693,9 @@ DL_POLY_4 to the available species in the OpenKIM IM.
 
 #.  **kim_interactions site_names**
     where *site_names* defines a list of unique atomic names. It
-    defines a mapping between atom types in DL_POLY_4 to the available
+    defines a mapping between atom types in DL_POLY_5 to the available
     species in the OpenKIM IM. For example, consider an OpenKIM IM that
-    supports Si and C species. If the DL_POLY_4 simulation has four
+    supports Si and C species. If the DL_POLY_5 simulation has four
     atoms, where the first three are Si, and the fourth is C, the
     *kim_interactions* would be used as:
 
@@ -1691,14 +1703,14 @@ DL_POLY_4 to the available species in the OpenKIM IM.
       
       kim_interactions Si C
 
-    The Si and C arguments map the DL_POLY_4 atom types to the Si and C
+    The Si and C arguments map the DL_POLY_5 atom types to the Si and C
     species as defined within KIM PM.
 
-    In addition to the usual DL_POLY_4 error messages, the KIM library
+    In addition to the usual DL_POLY_5 error messages, the KIM library
     itself may generate errors, which should be printed to the screen. In
     this case, it is also useful to check the *kim.log* file for
     additional error information. The file *kim.log* should be generated
-    in the same directory where DL_POLY_4 is running.
+    in the same directory where DL_POLY_5 is running.
 
     **Note** that although a KIM model fully describes a model system, it
     is still possible to specify further, complementing intra- and
@@ -1706,14 +1718,14 @@ DL_POLY_4 to the available species in the OpenKIM IM.
     only when the model system is extended beyond what the specific KIM
     model is intended to describe.
 
-    By default, all the species in the DL_POLY_4 system should match to
+    By default, all the species in the DL_POLY_5 system should match to
     the available species in the OpenKIM IM.
 
     **Note** that there is an **experimental feature**, implemented in
     the , where one can use a KIM IM in a hybrid style. In this case, one
     can create a system where part of species are interacting using a KIM
     IM (e.g., a machine learning model in KIM), and the rest of the
-    species are interacting with the internal DL_POLY_4 intra- and
+    species are interacting with the internal DL_POLY_5 intra- and
     inter-molecular interactions provided in the FIELD. While this new
     feature provides great flexibility, it is not fully compliant with
     the KIM API interface standard. Thus using this feature some of the
@@ -1729,18 +1741,18 @@ DL_POLY_4 to the available species in the OpenKIM IM.
 
       atmnam 1      a8        first atom type 
       atmnam 2      a8        second atom type 
-      key           a4        potential key, see Table :numref:`(%s)<vdw-table>` 
-      variable 1    real      potential parameter, see Table :numref:`(%s)<vdw-table>`
-      variable 2    real      potential parameter, see Table :numref:`(%s)<vdw-table>`
-      variable 3    real      potential parameter, see Table :numref:`(%s)<vdw-table>`
-      variable 4    real      potential parameter, see Table :numref:`(%s)<vdw-table>`
-      variable 5    real      potential parameter, see Table :numref:`(%s)<vdw-table>`
-      variable 6    real      potential parameter, see Table :numref:`(%s)<vdw-table>`
-      variable 7    real      potential parameter, see Table :numref:`(%s)<vdw-table>`
+      key           a4        potential key, see Table :numref:`(%s) <vdw-table>` 
+      variable 1    real      potential parameter, see Table :numref:`(%s) <vdw-table>`
+      variable 2    real      potential parameter, see Table :numref:`(%s) <vdw-table>`
+      variable 3    real      potential parameter, see Table :numref:`(%s) <vdw-table>`
+      variable 4    real      potential parameter, see Table :numref:`(%s) <vdw-table>`
+      variable 5    real      potential parameter, see Table :numref:`(%s) <vdw-table>`
+      variable 6    real      potential parameter, see Table :numref:`(%s) <vdw-table>`
+      variable 7    real      potential parameter, see Table :numref:`(%s) <vdw-table>`
 
 
     The variables pertaining to each potential are described in Table
-    :numref:`(%s)<vdw-table>`.
+    :numref:`(%s) <vdw-table>`.
 
     **Note** that any pair potential not specified in the FIELD file,
     will be assumed to be zero.
@@ -1792,7 +1804,7 @@ DL_POLY_4 to the available species in the OpenKIM IM.
         * - **snm** 
           - Shifted force\ :math:`^{\dagger}` n-m :cite:`mie-03a,clarke-86a`
           - :math:`E_{o}`, :math:`n`, :math:`m`, :math:`r_{0}`
-          - :math:`U(r) = \frac{\alpha E_{o}}{(n-m)}\times` :math:`r_{c}`\ :math:`^{\ddagger}`                                                                 :math:`\left[ m\beta^{n} \left\{ \left( \frac{r_{o}}{r} \right)^{n} - \left( \frac{1}{\gamma} \right)^{n} \right\} - n\beta^{m} \left\{\left( \frac{r_{o}}{r} \right)^{m} - \left( \frac{1}{\gamma}\right)^{m}\right\} \right]`  :math:`+ \frac{nm\alpha E_{o}}{(n-m)} \left( \frac{r-\gamma r_{o}}{\gamma r_{o}} \right) \left\{ \left( \frac{\beta}{\gamma}\right)^{n} - \left( \frac{\beta}{\gamma} \right)^{m} \right\}`
+          - :math:`U(r) = \frac{\alpha E_{o}}{(n-m)}\times` :math:`r_{c}`\ :math:`^{\ddagger}`  :math:`\left[ m\beta^{n} \left\{ \left( \frac{r_{o}}{r} \right)^{n} - \left( \frac{1}{\gamma} \right)^{n} \right\} - n\beta^{m} \left\{\left( \frac{r_{o}}{r} \right)^{m} - \left( \frac{1}{\gamma}\right)^{m}\right\} \right]`  :math:`+ \frac{nm\alpha E_{o}}{(n-m)} \left( \frac{r-\gamma r_{o}}{\gamma r_{o}} \right) \left\{ \left( \frac{\beta}{\gamma}\right)^{n} - \left( \frac{\beta}{\gamma} \right)^{m} \right\}`
         * - **mors** 
           - Morse 
           - :math:`E_{0}`, :math:`r_{0}`, :math:`k`
@@ -1864,7 +1876,7 @@ DL_POLY_4 to the available species in the OpenKIM IM.
     (and/or ``rcut``) in CONTROL is found shorter than any of
     :math:`r_{c}` (including the WCA equivalent
     :math:`2^{1 \over 6}~\sigma + \Delta`) values specified in FIELD then
-    ``rvdw`` (and/or ``rcut``) will be reset by DL_POLY_4 to the largest
+    ``rvdw`` (and/or ``rcut``) will be reset by DL_POLY_5 to the largest
     of all values!
 
     :math:`^{*}` Note: :math:`\Delta` defaults to zero if
@@ -1880,19 +1892,19 @@ DL_POLY_4 to the available species in the OpenKIM IM.
       
       atmnam 1      a8      first atom type
       atmnam 2      a8      second atom type
-      key           a4      potential key, see Table :numref:`(%s)<metal-table>`
-      variable 1    real    potential parameter, see Table :numref:`(%s)<metal-table>`
-      variable 2    real    potential parameter, see Table :numref:`(%s)<metal-table>`
-      variable 3    real    potential parameter, see Table :numref:`(%s)<metal-table>`
-      variable 4    real    potential parameter, see Table :numref:`(%s)<metal-table>`
-      variable 5    real    potential parameter, see Table :numref:`(%s)<metal-table>`
-      variable 6    real    potential parameter, see Table :numref:`(%s)<metal-table>`
-      variable 7    real    potential parameter, see Table :numref:`(%s)<metal-table>`
-      variable 8    real    potential parameter, see Table :numref:`(%s)<metal-table>`
-      variable 9    real    potential parameter, see Table :numref:`(%s)<metal-table>`
+      key           a4      potential key, see Table :numref:`(%s) <metal-table>`
+      variable 1    real    potential parameter, see Table :numref:`(%s) <metal-table>`
+      variable 2    real    potential parameter, see Table :numref:`(%s) <metal-table>`
+      variable 3    real    potential parameter, see Table :numref:`(%s) <metal-table>`
+      variable 4    real    potential parameter, see Table :numref:`(%s) <metal-table>`
+      variable 5    real    potential parameter, see Table :numref:`(%s) <metal-table>`
+      variable 6    real    potential parameter, see Table :numref:`(%s) <metal-table>`
+      variable 7    real    potential parameter, see Table :numref:`(%s) <metal-table>`
+      variable 8    real    potential parameter, see Table :numref:`(%s) <metal-table>`
+      variable 9    real    potential parameter, see Table :numref:`(%s) <metal-table>`
 
     The variables pertaining to each potential are described in Table
-    :numref:`(%s)<metal-table>`.
+    :numref:`(%s) <metal-table>`.
 
     .. list-table:: Metal Potential
         :header-rows: 1
@@ -1942,7 +1954,7 @@ DL_POLY_4 to the available species in the OpenKIM IM.
 
     :math:`^{\dagger}`\ **Note** that the parameters :math:`\alpha` and
     :math:`r_{\rm o}` must be the same for all defined potentials of this
-    type. DL_POLY_4 will set :math:`\alpha={\rm Max}(0,\alpha_{pq})` and
+    type. DL_POLY_5 will set :math:`\alpha={\rm Max}(0,\alpha_{pq})` and
     :math:`r_{\rm o}={\rm Max}(0,r_{{\rm o}\_pq})` for all defined
     interactions of this type between species :math:`p` and :math:`q`. If
     after this any is left undefined, i.e. zero, the undefined entities
@@ -1959,7 +1971,7 @@ DL_POLY_4 to the available species in the OpenKIM IM.
       atmnam 1    a8    first atom type
       atmnam 2    a8    second atom type
 
-    By default in and DL_POLY_4 every **vdw** and **met** potential
+    By default in and DL_POLY_5 every **vdw** and **met** potential
     specifies an RDF pair. If the control option **rdf f** is specified
     in the CONTROL file then all pairs defined in **vdw** and/or **met**
     potentials sections will also have their RDF calculated. The user has
@@ -1968,7 +1980,7 @@ DL_POLY_4 to the available species in the OpenKIM IM.
     define fictitious potentials with zero contributions or (ii) to use
     **rdf n** option - which not only provides a neater way for
     specification of RDF pairs but also better memory efficiency since
-    DL_POLY_4 will not allocate (additional) potential arrays for
+    DL_POLY_5 will not allocate (additional) potential arrays for
     fictitious interactions that will not be used. (This option is not
     available in .)
 
@@ -2017,19 +2029,19 @@ DL_POLY_4 to the available species in the OpenKIM IM.
         
         **potential 1 : record 1**
         atmnam        a8      atom type
-        key           a4      potential key, see Table :numref:`(%s)<tersoff-table>`
-        variable 1    real    potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable 2    real    potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable 3    real    potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable 4    real    potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable 5    real    cutoff range for this potential (Å)
+        key           a4      potential key, see Table :numref:`(%s) <tersoff-table>`
+        variable 1    real    potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable 2    real    potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable 3    real    potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable 4    real    potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable 5    real    cutoff range for this potential (Å or DPD length units)
         **potential 1 : record 2**
-        variable 6    real    potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable 7    real    potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable 8    real    potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable 9    real    potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable 10   real    potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable 11   real    potential parameter, see Table :numref:`(%s)<tersoff-table>`
+        variable 6    real    potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable 7    real    potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable 8    real    potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable 9    real    potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable 10   real    potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable 11   real    potential parameter, see Table :numref:`(%s) <tersoff-table>`
             ...       ...       ...
             ...       ...       ...
         **potential n : record 2n-1**
@@ -2039,9 +2051,9 @@ DL_POLY_4 to the available species in the OpenKIM IM.
         **cross term 1 : record 2n+1**
         atmnam 1      a8      first atom type
         atmnam 2      a8      second atom type
-        variable a    real    potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable b    real    potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable c    real    potential parameter, see Table :numref:`(%s)<tersoff-table>`
+        variable a    real    potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable b    real    potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable c    real    potential parameter, see Table :numref:`(%s) <tersoff-table>`
             ...       ...       ...
             ...       ...       ...
         **cross term n(n+1)/2 : record 2n+n(n+1)/2`**
@@ -2055,25 +2067,25 @@ DL_POLY_4 to the available species in the OpenKIM IM.
         
         **potential 1 : record 1**
         atmnam        a8        atom type
-        key           a4        potential key, see Table :numref:`(%s)<tersoff-table>`
-        variable 1    real      potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable 2    real      potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable 3    real      potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable 4    real      potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable 5    real      cutoff range for this potential (Å)
+        key           a4        potential key, see Table :numref:`(%s) <tersoff-table>`
+        variable 1    real      potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable 2    real      potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable 3    real      potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable 4    real      potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable 5    real      cutoff range for this potential (Å or DPD length units)
         **potential 1 : record 2**
-        variable 6    real      potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable 7    real      potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable 8    real      potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable 9    real      potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable 10   real      potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable 11   real      potential parameter, see Table :numref:`(%s)<tersoff-table>`
+        variable 6    real      potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable 7    real      potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable 8    real      potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable 9    real      potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable 10   real      potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable 11   real      potential parameter, see Table :numref:`(%s) <tersoff-table>`
         **potential 1 : record 3**
-        variable 12   real      potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable 13   real      potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable 14   real      potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable 15   real      potential parameter, see Table :numref:`(%s)<tersoff-table>`
-        variable 16   real      potential parameter, see Table :numref:`(%s)<tersoff-table>`
+        variable 12   real      potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable 13   real      potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable 14   real      potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable 15   real      potential parameter, see Table :numref:`(%s) <tersoff-table>`
+        variable 16   real      potential parameter, see Table :numref:`(%s) <tersoff-table>`
             ...       ...         ...
             ...       ...         ...
         **potential n : record 2n-1**
@@ -2082,10 +2094,10 @@ DL_POLY_4 to the available species in the OpenKIM IM.
             ...       ...         ...
 
     The variables pertaining to each potential are described in Table
-    :numref:`(%s)<tersoff-table>`.
+    :numref:`(%s) <tersoff-table>`.
 
     Note that the fifth variable is the range at which the particular
-    :index:`tersoff<potential;Tersoff>` potential is truncated. The distance is in Å.
+    :index:`tersoff<potential;Tersoff>` potential is truncated. The distance is in Å (or DPD length units).
 
     .. list-table:: Tersoff Potential
       :header-rows: 1
@@ -2122,15 +2134,15 @@ DL_POLY_4 to the available species in the OpenKIM IM.
       atmnam 1 (*i*)      a8      first atom type
       atmnam 2 (*j*)      a8      second (central) atom type
       atmnam 3 (*k*)      a8      third atom type
-      key               a4      potential key, see Table :numref:`(%s)<tbp-table>`
-      variable 1        real    potential parameter, see Table :numref:`(%s)<tbp-table>`
-      variable 2        real    potential parameter, see Table :numref:`(%s)<tbp-table>`
-      variable 3        real    potential parameter, see Table :numref:`(%s)<tbp-table>`
-      variable 4        real    potential parameter, see Table :numref:`(%s)<tbp-table>`
-      variable 5        real    cutoff range for this potential (Å)
+      key               a4      potential key, see Table :numref:`(%s) <tbp-table>`
+      variable 1        real    potential parameter, see Table :numref:`(%s) <tbp-table>`
+      variable 2        real    potential parameter, see Table :numref:`(%s) <tbp-table>`
+      variable 3        real    potential parameter, see Table :numref:`(%s) <tbp-table>`
+      variable 4        real    potential parameter, see Table :numref:`(%s) <tbp-table>`
+      variable 5        real    cutoff range for this potential (Å or DPD length units)
 
     The variables pertaining to each potential are described in Table
-    :numref:`(%s)<tbp-table>`.
+    :numref:`(%s) <tbp-table>`.
 
     Note that the fifth variable is the range at which the :index:`three<potential;three-body>` body
     potential is truncated. The distance is in Å, measured from the
@@ -2185,13 +2197,13 @@ DL_POLY_4 to the available species in the OpenKIM IM.
       atmnam 2 (*j*)    a8      second atom type
       atmnam 3 (*k*)    a8      third atom type
       atmnam 4 (*l*)    a8      fourth atom type
-      key             a4      potential key, see Table :numref:`(%s)<fbp-table>`
-      variable 1      real    potential parameter, see Table :numref:`(%s)<fbp-table>`
-      variable 2      real    potential parameter, see Table :numref:`(%s)<fbp-table>`
-      variable 3      real    cutoff range for this potential (Å)
+      key             a4      potential key, see Table :numref:`(%s) <fbp-table>`
+      variable 1      real    potential parameter, see Table :numref:`(%s) <fbp-table>`
+      variable 2      real    potential parameter, see Table :numref:`(%s) <fbp-table>`
+      variable 3      real    cutoff range for this potential (Å or DPD length units)
 
     The variables pertaining to each potential are described in Table
-    :numref:`(%s)<fbp-table>`.
+    :numref:`(%s) <fbp-table>`.
 
     Note that the third variable is the range at which the :index:`four-body<potential;four-body>`
     potential is truncated. The distance is in Å, measured from the
@@ -2233,16 +2245,16 @@ parameters in the following manner:
 
 .. parsed-literal:: 
 
-  field key     a4      external field key, see Table :numref:`(%s)<external-field-table>`
-  variable 1    real    potential parameter, see Table :numref:`(%s)<external-field-table>`
-  variable 2    real    potential parameter, see Table :numref:`(%s)<external-field-table>`
-  variable 3    real    potential parameter, see Table :numref:`(%s)<external-field-table>`
-  variable 4    real    potential parameter, see Table :numref:`(%s)<external-field-table>`
-  variable 5    real    potential parameter, see Table :numref:`(%s)<external-field-table>`
-  variable 6    real    potential parameter, see Table :numref:`(%s)<external-field-table>`
+  field key     a4      external field key, see Table :numref:`(%s) <external-field-table>`
+  variable 1    real    potential parameter, see Table :numref:`(%s) <external-field-table>`
+  variable 2    real    potential parameter, see Table :numref:`(%s) <external-field-table>`
+  variable 3    real    potential parameter, see Table :numref:`(%s) <external-field-table>`
+  variable 4    real    potential parameter, see Table :numref:`(%s) <external-field-table>`
+  variable 5    real    potential parameter, see Table :numref:`(%s) <external-field-table>`
+  variable 6    real    potential parameter, see Table :numref:`(%s) <external-field-table>`
 
 The variables pertaining to each field potential are described in
-Table :numref:`(%s)<external-field-table>`.
+Table :numref:`(%s) <external-field-table>`.
 
 **Note:** only one type of field can be applied at a time.
 
@@ -2320,7 +2332,7 @@ Table :numref:`(%s)<external-field-table>`.
   sides of the equation defining the field are balanced. For example, the
   magnetic field units, :math:`\underline{H} = (H_{1},H_{2},H_{3})`, in
   the DL_POLY FIELD scope will follow from the interaction definition as
-  seen in Table :numref:`(%s)<external-field-table>`:
+  seen in Table :numref:`(%s) <external-field-table>`:
 
 .. math::
   :label: external-field-units_eq
@@ -2333,7 +2345,7 @@ Table :numref:`(%s)<external-field-table>`.
     H(DL\_POLY) =& H(MKS)~1.037837512 \times 10^{4}~~. \nonumber
     \end{aligned}
 
-Thus to apply a magnetic field of 1 Tesla along the :math:`y` axis, one
+Thus to apply a magnetic field of 1 Tesla along the :math:`y` axis, one
 could specify in FIELD the following:
 
 ::
@@ -2364,6 +2376,7 @@ with the following conversion factors values:
    k_{kcal/mol \to DL\_POLY} &=& 418.4 \nonumber \\
    k_{kJ/mol \to DL\_POLY} &=& 100.0 \\
    k_{K/Boltz \to DL\_POLY} &=& 0.831451115 \nonumber \\
+   k_{DPD \to DL\_POLY} &=& 1.0 \nonumber \\
    k_{DL\_POLY \to DL\_POLY} &=& 1.0~~. \nonumber\end{aligned}
 
 Obviously, for :math:`eV` units
@@ -2384,6 +2397,10 @@ the FIELD file should be amended to read:
    external
    magnetic 0  1/1.07564305   0
    ...
+
+Note that if :math:`DPD` units are in use, the 'real-life' conversion
+factors will differ depending on the choices for the DPD mass, length
+and energy units.
 
 .. _crd_sec:
 
@@ -2427,7 +2444,7 @@ Closing the FIELD File
 The FIELD file must be closed with the directive:
 **close**
 which signals the end of the force field data. Without this directive
-DL_POLY_4 will abort.
+DL_POLY_5 will abort.
 
 .. _mpoles-file:
 
@@ -2436,7 +2453,7 @@ The MPOLES File
 
 The MPOLES file serves to define the multipolar momenta of the sites
 defined in FIELD (see Section :ref:`field-file`). It is only
-read by DL_POLY_4 when the directive is specified at the top of FIELD.
+read by DL_POLY_5 when the directive is specified at the top of FIELD.
 The file is read by the subroutine ``read_mpoles``. The MPOLES file
 and has the same molecular topology syntax and rules as FIELD except
 that
@@ -2515,7 +2532,7 @@ organisational correspondence between the FIELD file and the CONFIG file
 described above. It is required that the order of specification of
 molecular types and their atomic constituents in the FIELD file follows
 the order of indices in which they appear in the CONFIG file. Failure to
-adhere to this common sequence will be detected by DL_POLY_4 and result
+adhere to this common sequence will be detected by DL_POLY_5 and result
 in premature termination of the job. It is therefore essential to work
 from the CONFIG file when constructing the FIELD file. It is not as
 difficult as it sounds!
@@ -2526,7 +2543,7 @@ The entry of the molecular details begins with the mandatory directive:
 
 where *n* is an integer specifying the number of different *types* of
 molecule appearing in the FIELD file. Once this directive has been
-encountered, DL_POLY_4 enters the molecular description environment in
+encountered, DL_POLY_5 enters the molecular description environment in
 which only molecular description keywords and data are valid.
 
 Immediately following the **molecules** directive, are the records
@@ -2553,7 +2570,7 @@ defining individual molecules:
       ``sitnam``    a8        atomic site name
       ``order``     integer   multipolar order supplied
       ``nrept``     integer   repeat counter
-      ``\alpha``    real(1)   *optional* atomic polarisability (in Å\ :math:`^{3}`)
+      ``\alpha``    real(1)   *optional* atomic polarisability (in Å\ :sup:`3` or cubed DPD length units)
       ``a``         real(1)   *optional* Thole dumping factor
 
     The integer ``nrept`` may be omitted (in which case a value or 1 is
@@ -2572,33 +2589,33 @@ defining individual molecules:
     :math:`a` may default for (Druder nuclei) core particles if no Thole
     dumping is specified in both MPOLES and CONTROL.
 
-    For each pole ``order`` specified DL_POLY_4 will read a new line that
+    For each pole ``order`` specified DL_POLY_5 will read a new line that
     will specify the pole order momenta. If a site has a specified pole
     order, :math:`m`, smaller than the one specified in FIELD, :math:`n`,
     then the :math:`m+1` to :math:`n` order poles’ momenta will be zero.
     Similarly, if a site has momenta of poles of higher order than the
     one specified in FIELD, :math:`n`, these will not be processed by .
 
-    DL_POLY_4 will read same order momenta in their natural vector
+    DL_POLY_5 will read same order momenta in their natural vector
     format:
 
     .. parsed-literal:: 
       
       ``charge``        real(1)     scalar *q* (in protons)
-      ``dipole``        real(3)     vector (*x*,*y*,*z*) (in protons/Å)
-      ``quadrupole``    real(6)     vector (*xx*,*xy*,*xz*,*yy*,*yz*,*zz*) (in protons/Å\ :math:`^{2}`)
-      ``octupole``      real(10)    vector (*xxx*,*xxy*,*xxz*,*xyy*,*xyz*,*xzz*,*yyy*,*yyz*,*yzz*,*zzz*) (in protons/Å\ :math:`^{3}`)
-      ``hexadecapole``  real(15)    vector (*xxxx*,*xxxy*,*xxxz*,....,*yyyz*,*yyzz*,*yzzz*,*zzzz*)` (in protons/Å\ :math:`^{4}`)
+      ``dipole``        real(3)     vector (*x*,*y*,*z*) (in protons/Å or protons/DPD length unit)
+      ``quadrupole``    real(6)     vector (*xx*,*xy*,*xz*,*yy*,*yz*,*zz*) (in protons/Å\ :sup:`2` or protons/squared DPD length unit)
+      ``octupole``      real(10)    vector (*xxx*,*xxy*,*xxz*,*xyy*,*xyz*,*xzz*,*yyy*,*yyz*,*yzz*,*zzz*) (in protons/Å\ :sup:`3` or protons/cubed DPD length unit)
+      ``hexadecapole``  real(15)    vector (*xxxx*,*xxxy*,*xxxz*,....,*yyyz*,*yyzz*,*yzzz*,*zzzz*)` (in protons/Å\ :sup:`4` or protons/quartic DPD length unit)
 
     **Note** that the charge values supplied in FIELD will be overwritten
     with those supplied here!
 
-    **Note**, although algorithms in DL_POLY_4 could in principle handle
-    any high pole order summation, in practice, however, DL_POLY_4 will
+    **Note**, although algorithms in DL_POLY_5 could in principle handle
+    any high pole order summation, in practice, however, DL_POLY_5 will
     abort if the order is higher than hexadecapole (order 4)!
 
 #. **finish**
-   This directive is entered to signal DL_POLY_4 that the entry of the
+   This directive is entered to signal DL_POLY_5 that the entry of the
    details of a molecule has been completed.
 
    The entries for a second molecule may now be entered, beginning with
@@ -2613,7 +2630,7 @@ Closing the MPOLES File
 
 The MPOLES file must be closed with the directive:
 **close**
-after which DL_POLY_4 will resume will processing the intermolecular
+after which DL_POLY_5 will resume will processing the intermolecular
 part of FIELD.
 
 .. _reference-file:
@@ -2641,7 +2658,7 @@ This file contains statistics arrays from a previous job. It is not
 required if the current job is not a continuation of a previous run
 (i.e. if the **restart** directive is not present in the CONTROL file -
 see above). The file is unformatted and therefore not human readable.
-DL_POLY_4 normally produces the file REVIVE (see
+DL_POLY_5 normally produces the file REVIVE (see
 Section :ref:`revive-file`) at the end of a job which
 contains the statistics data. REVIVE should be copied to REVOLD before a
 continuation run commences. This may be done by the copy macro supplied
@@ -2703,9 +2720,9 @@ Section :ref:`parameters`).
 Further Comments
 ~~~~~~~~~~~~~~~~
 
-Note that different versions of DL_POLY_4 may have a different order of
+Note that different versions of DL_POLY_5 may have a different order of
 the above parameters or include more or less such. Therefore different
-versions of DL_POLY_4 may render any existing REVOLD file unreadable by
+versions of DL_POLY_5 may render any existing REVOLD file unreadable by
 the code.
 
 .. _table-file:
@@ -2725,7 +2742,7 @@ Chapter :ref:`source-code_sec`).
 The option of using tabulated potentials is specified in the FIELD file
 (see above). The specific potentials that are to be tabulated are
 indicated by the use of the **tab** keyword on the record defining the
-short range potential (see Table :numref:`(%s)<vdw-table>`).
+short range potential (see Table :numref:`(%s) <vdw-table>`).
 
 The TABLE File Format
 ~~~~~~~~~~~~~~~~~~~~~
@@ -2741,8 +2758,8 @@ Definitions of Variables
   **record 1**
   ``header``    a200      file header
   **record 2**
-  ``delpot``    real      mesh resolution in Å (``delpot`` = ``cutpot`` / ``(ngrid-4)``)
-  ``cutpot``    real      cutoff used to define tables in Å
+  ``delpot``    real      mesh resolution in Å or DPD length units (``delpot`` = ``cutpot`` / ``(ngrid-4)``)
+  ``cutpot``    real      cutoff used to define tables in Å or DPD length units
   ``ngrid``     integer   number of grid points in tables
 
 The subsequent records define each tabulated potential in turn, in the
@@ -2772,11 +2789,11 @@ Further Comments
 ~~~~~~~~~~~~~~~~
 
 It should be noted that the number of grid points in the TABLE file
-should not be less than the number of grid points DL_POLY_4 is
+should not be less than the number of grid points DL_POLY_5 is
 expecting. (This number is given by the parameter ``mxgvdw`` calculated
 in the ``setup_module`` file - see
 Section :ref:`interpolation` and
-:ref:`parameters`.) DL_POLY_4 will re-interpolate the
+:ref:`parameters`.) DL_POLY_5 will re-interpolate the
 tables if
 :math:`\texttt{delpot} = \frac{\texttt{cutpot}}{{\texttt{ngrid}-4}}~<~\texttt{dlrvdw} = \frac{\texttt{rvdw}}{{\texttt{mxgvdw}-4}}`
 (usually when :math:`\texttt{ngrid}>\texttt{mxgvdw}`), but will abort if
@@ -2830,11 +2847,11 @@ Definitions of Variables
 
 For an :math:`n` component alloy, ``numpot`` is
 
--  :math:`n(n+5)/2` for the EAM potential :math:`or`
+-  :math:`n(n+5)/2` for the EAM potential *or*
 
--  :math:`3n(n+1)/2` for the EEAM potential :math:`or`
+-  :math:`3n(n+1)/2` for the EEAM potential *or*
 
--  :math:`n(n+4)` for the 2BEAM potential :math:`or`
+-  :math:`n(n+4)` for the 2BEAM potential *or*
 
 -  :math:`5n(n+1)/2` for the 2BEEAM potential.
 
@@ -2877,19 +2894,12 @@ in** - allowing for incompletion of the very last record.
 .. parsed-literal:: 
   
   **header record:**
-  **keyword**     a4        type of EAM function: **pair**, **embe**\ d or **dens**\ ity, with
-                        2B extension alternatives for the *s*-band - [**semb**\ ed and **sden**\ sity]
-                        and *d*-band - **demb**\ ed = **embe**\ d and **dden**\ sity = **dens**\ ity
+  ``keyword``     a4        type of EAM function: **pair**, **embe**\ d or **dens**\ ity, with 2B extension alternatives for the *s*-band - [**semb**\ ed and **sden**\ sity] and *d*-band - **demb**\ ed = **embe**\ d and **dden**\ sity = **dens**\ ity
   ``atom 1``      a8        first atom type
-  ``atom 2``      a8        second atom type - only specified for **pair** potential functions and
-                        for the (*i*) **dens**\ ity functions in the EEAM potential case :math:`or`
-                        (*ii*) **sden**\ sity functions in the 2BEAM potential case :math:`or`
-                        (*iii*) **sden** and **dden** functions in the 2BEEAM potential case
+  ``atom 2``      a8        second atom type - only specified for **pair** potential functions and for the (*i*) **dens**\ ity functions in the EEAM potential case *or* (*ii*) **sden**\ sity functions in the 2BEAM potential case *or* (*iii*) **sden** and **dden** functions in the 2BEEAM potential case
   ``ngrid``       integer   number of function data points to read in
-  ``limit 1``     real      lower interpolation limit in Å for **dens/sden/dden** and **pair**
-                        or in density units for **embe/semb/demb**
-  ``limit 2``     real      upper interpolation limit in Å for **dens/sden/dden** and **pair**
-                        or in density units for **embe/semb/demb**
+  ``limit 1``     real      lower interpolation limit in Å or DPD length units for **dens/sden/dden** and **pair** or in density units for **embe/semb/demb**
+  ``limit 2``     real      upper interpolation limit in Å or DPD length units for **dens/sden/dden** and **pair** or in density units for **embe/semb/demb**
   **function data records:** (*number of data records* = ``Int``\ ((``ngrid``\ +3)/4))
   ``data 1``      real      data item 1
   ``data 2``      real      data item 2
@@ -2908,19 +2918,19 @@ are generated from these (by the ``metal_table_derivatives`` routine)
 using a five point interpolation procedure. During simulation,
 interactions beyond distance :math:`Min(r_{\rm cut},\texttt{limit~2})`
 are discarded, whereas interactions at distances shorter than
-``limit 1`` will cause the simulation to abort. For the purpose of
+``limit 1`` will cause the simulation to abort. For the purpose of
 extrapolating the embedding functions :math:`F(\rho)` beyond its
-``limit 2`` specified in the tabulated array, it is assumed that
+``limit 2`` specified in the tabulated array, it is assumed that
 
 .. math:: F(\rho > \texttt{limit~2}) = F(\rho = \texttt{limit~2})~~.
 
 The simulation will however abort if any local density is less than the
-``limit 1`` for its corresponding embedding function.
+``limit 1`` for its corresponding embedding function.
 
 It is worth noting that in the 2BEAM and 2BEEAM the :math:`s`-band
 contribution is usually only for the alloy component, so that local
 concentrations of a single element revert to the standard EAM or EEAM!
-In such case, the densities functions must be zeroed in the DL_POLY_4
+In such case, the densities functions must be zeroed in the DL_POLY_5
 TABEAM file. A convenient way to do this, for example, will be data
 record of the type:
 
@@ -2933,7 +2943,7 @@ record of the type:
 The TABBND, TABANG, TABDIH & TABINV Files
 -----------------------------------------
 
-DL_POLY_4 allows the specification of tabulated data for intramolecular
+DL_POLY_5 allows the specification of tabulated data for intramolecular
 interactions:
 
 -  TABBND - for chemical bonds potentials - distance dependent
@@ -2960,8 +2970,7 @@ Definitions of Variables
   ``header``    a200      file header
   **record 2**
   ``#``         a1        a hash (#) symbol
-  ``cutpot``    real      cutoff in Å - **only expected in TABBND** as the
-                      cutoff ranges are known for TABANG, TABDIH & TABINV
+  ``cutpot``    real      cutoff in Å or DPD length units - **only expected in TABBND** as the cutoff ranges are known for TABANG, TABDIH & TABINV
   ``ngrid``     integer   number of grid points in table for all potentials
   **record 3**
   ``#``         a1        a hash (#) symbol
@@ -2980,8 +2989,8 @@ potential and force tables.
   ``atom 2``    a8      second atom type
   ``atom 3``    a8      third atom type - only required for TABANG
   ``atom 4``    a8      forth atom type - only required for TABDIH & TABINV
-  **interaction data records 0/1–ngrid:**
-  ``abscissa``  real    consecutive value over the full cutoff/range in Å for TABBND and degrees for TABANG, TABDIH & TABINV
+  **interaction data records 0/1-ngrid:**
+  ``abscissa``  real    consecutive value over the full cutoff/range in Å or DPD length units for TABBND and degrees for TABANG, TABDIH & TABINV
   ``potential`` real    potential at the abscissa grid point in **units** as specified in FIELD
   ``force``     real    complementary force (virial for TABBND) value
 
@@ -2991,7 +3000,7 @@ Further Comments
 ~~~~~~~~~~~~~~~~
 
 It should be noted that the number of grid points in the table files
-should not be less than the number of grid points DL_POLY_4 is
+should not be less than the number of grid points DL_POLY_5 is
 expecting. For more information the reader is advised to examine
 ``setup_module`` and inspect the ``mxg``\ int variables, where int
 refers to ``bnd`` for bonds, ``ang`` for angles, ``dih`` for dihedrals
@@ -3051,7 +3060,7 @@ and each subsequent record is formatted as follows:
 with the origin of CET cell coordinates at the centre of the grid.
 
 The file is read by the subroutine ``ttm_system_init``. It will not be
-accepted by DL_POLY_4 if the number of CET cells in each direction does
+accepted by DL_POLY_5 if the number of CET cells in each direction does
 not match the values given in the CONTROL file or insufficient
 electronic temperatures are supplied. No matching up of restart timestep
 or elapsed simulation time between REVOLD and DUMP_E is absolutely
@@ -3065,7 +3074,7 @@ The Ce.dat, Ke.dat, De.dat and g.dat Files
 .. index:: 
   single: Two-Temperature Model
 
-The two-temperature model (TTM) implementation in DL_POLY_4 allows
+The two-temperature model (TTM) implementation in DL_POLY_5 allows
 specification of the following tabulated data:
 
 -  Ce.dat - for electronic volumetric heat capacity - temperature
@@ -3080,10 +3089,10 @@ specification of the following tabulated data:
 
 Each file is free-formatted and only consist of two columns: the first
 column gives temperature in K, while the second gives electronic
-volumetric heat capacity in J m\ :math:`^{-3}` K:math:`^{-1}` (Ce.dat),
-thermal conductivity in W m\ :math:`^{-1}` K:math:`^{-1}` (Ke.dat),
-thermal diffusivity in m\ :math:`^{2}` s:math:`^{-1}` (De.dat) or the
-electron-phonon coupling constant in W m\ :math:`^{-3}` K:math:`^{-1}`
+volumetric heat capacity in J m\ :sup:`-3` K\ :sup:`-1` (Ce.dat),
+thermal conductivity in W m\ :sup:`-1` K\ :sup:`-1` (Ke.dat),
+thermal diffusivity in m\ :sup:`2` s\ :sup:`-1` (De.dat) or the
+electron-phonon coupling constant in W m\ :sup:`-3` K\ :sup:`-1`
 (g.dat). These files are read by the subroutine ``ttm_table_read`` if
 the **ttm cetab**, **ttm ketab**, **ttm detab** and/or **ttm gvar**
 directives are included in the CONTROL file.
@@ -3114,15 +3123,9 @@ The SETEVB File
 ---------------
 
 The file SETEVB is needed for EVB simulations. If this file is not
-found, the execution of DL_POLY_4 is aborted. See section
+found, the execution of DL_POLY_5 is aborted. See section
 :ref:`evb-users` for a detailed explanation of the input
 parameters for EVB calculations.
-
-.. [1]
-   I.e. I/O effects are excluded from comparison with a default
-   simulation and comparisons are carried over a few hundreds of
-   timesteps. This is usually accounting for over :math:`90\%` of the
-   time to solution.
 
 .. _kpoints-file_sec:
 
@@ -3149,3 +3152,20 @@ section :ref:`currents`. The file format is
   ``x``     real     nth kpoint x-component
   ``y``     real     nth kpoint y-component
   ``z``     real     nth kpoint z-component
+
+
+.. [1]
+   The Bjerrum length is equal to :math:`\lambda_B = \frac{e^2}{4 \pi \epsilon_0 \epsilon k_{B} T}`,
+   i.e. the separation at which the Coulombic interaction between two
+   elementary point charges equals the thermal energy scale.
+
+
+.. [2]
+   I.e. I/O effects are excluded from comparison with a default
+   simulation and comparisons are carried over a few hundreds of
+   timesteps. This is usually accounting for over :math:`90\%` of the
+   time to solution.
+
+.. raw:: latex
+
+  \clearpage

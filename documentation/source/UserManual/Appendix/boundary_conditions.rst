@@ -1,6 +1,6 @@
 .. _boundary-conditions:
 
-Appendix A: DL_POLY_4 Boundary Conditions 
+Appendix A: DL_POLY_5 Boundary Conditions 
 +++++++++++++++++++++++++++++++++++++++++
 
 Introduction
@@ -8,7 +8,7 @@ Introduction
 
 .. index:: single: boundary conditions
 
-DL_POLY_4 is designed to accommodate a number of different periodic
+DL_POLY_5 is designed to accommodate a number of different periodic
 boundary conditions, which are defined by the shape and size of the
 simulation cell. Briefly, these are as follows (which also indicates the
 IMCON flag defining the simulation cell type in the CONFIG file - see
@@ -32,7 +32,7 @@ vacuuo* simulations, such as the conformational study of an isolated
 polymer molecule. This boundary condition is not recommended for studies
 in a solvent, since evaporation is likely to be a problem.
 
-Note this boundary condition have to be used with caution. DL_POLY_4 is
+Note this boundary condition have to be used with caution. DL_POLY_5 is
 not naturally suited to carry out efficient calculations on systems with
 great fluctuation of the local density in space, as is the case for
 clusters in vacuum. The parallelisation and domain decomposition is
@@ -54,7 +54,7 @@ Cubic periodic boundaries (``imcon`` 1)
    The cubic MD cell
 
 The cubic MD cell is perhaps the most commonly used in simulation and
-has the advantage of great simplicity. In DL_POLY_4 the cell is defined
+has the advantage of great simplicity. In DL_POLY_5 the cell is defined
 with the principle axes passing through the centres of the faces. Thus
 for a cube with sidelength D, the cell vectors appearing in the CONFIG
 file should be: (D,0,0); (0,D,0); (0,0,D). Note the origin of the atomic
@@ -73,7 +73,7 @@ Orthorhombic periodic boundaries (``imcon`` 2)
    The orthorhomic MD cell
 
 The orthorhombic cell is also a common periodic boundary, which closely
-resembles the cubic cell in use. In DL_POLY_4 the cell is defined with
+resembles the cubic cell in use. In DL_POLY_5 the cell is defined with
 principle axes passing through the centres of the faces. For an
 orthorhombic cell with sidelengths D (in X-direction), E (in
 Y-direction) and F (in Z-direction), the cell vectors appearing in the
@@ -96,7 +96,7 @@ The parallelepiped (e.g. monoclinic or triclinic) cell is generally used
 in simulations of crystalline materials, where its shape and dimension
 is commensurate with the unit cell of the crystal. Thus for a unit cell
 specified by three principal vectors :math:`\underline{a}`, :math:`\underline{b}`,
-:math:`\underline{c}`, the MD cell is defined in the DL_POLY_4 CONFIG file by
+:math:`\underline{c}`, the MD cell is defined in the DL_POLY_5 CONFIG file by
 the vectors (L\ :math:`a_{1}`,L\ :math:`a_{2}`,L\ :math:`a_{3}`),
 (M\ :math:`b_{1}`,M\ :math:`b_{2}`,M\ :math:`b_{3}`),
 (N\ :math:`c_{1}`,N\ :math:`c_{2}`,N\ :math:`c_{3}`), in which L,M,N are

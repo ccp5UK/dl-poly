@@ -103,7 +103,7 @@ HFAF and thermal conductivity i.e.
    :label: thermal-conductivity-gk_eq
 
 The prefactor includes a multiplication with volume due to the
-definition of heat flux, :math:`\textbf{J}(t)`, in DL_POLY_4 already
+definition of heat flux, :math:`\textbf{J}(t)`, in DL_POLY_5 already
 including a volume division, see
 Equation :eq:`heat-flux-definition_eq`.
 
@@ -120,9 +120,9 @@ correlations are specified by an array of observable pairs in the format
 **A_CA-B_CB** where **A** and **B** are observables and **CA** and **CB** 
 are components of those observables. These values may be STATIS records 1-27, e.g. ``volume``, (see
 Section :ref:`statis-records`). Or may take the forms listed in 
-Table :numref:`(%s)<tab-cor-control>` where long and short form can be mixed. 
+Table :numref:`(%s) <tab-cor-control>` where long and short form can be mixed. 
 Correlation options can be specified for each pair of observables separately, these
-options are listed in Table :numref:`(%s)<tab-cor-options>`
+options are listed in Table :numref:`(%s) <tab-cor-options>`
 
 .. _tab-cor-options:
 
@@ -132,7 +132,7 @@ options are listed in Table :numref:`(%s)<tab-cor-options>`
    ================================ ============== ===============================================
    Option                           Type           Purpose                  
    ================================ ============== ===============================================
-   **correlation_observable**       String Vector  Set correlation observables See Table :numref:`(%s)<tab-cor-control>`
+   **correlation_observable**       String Vector  Set correlation observables See Table :numref:`(%s) <tab-cor-control>`
    **correlation_block_points**     Integer Vector Set correlation points per block
    **correlation_blocks**           Integer Vector Set correlation blocks
    **correlation_window**           Integer Vector Set averaging between block
@@ -209,7 +209,7 @@ Correlating STATIS Values
 
 All values in the default STATIS output (records 1-27, see Section :ref:`statis-records`)
 may be correlated with any other correlation observable. These are listed in Table 
-:numref:`(%s)<tab-statis-cor>`. Each are scalar values with no component specification 
+:numref:`(%s) <tab-statis-cor>`. Each are scalar values with no component specification 
 needed.
 
 .. _tab-statis-cor:
@@ -254,7 +254,7 @@ Currents
 
 :math:`{\bf k}`-space currents (and density) may be calculated by specifying a KPOINTS file 
 see Sections :ref:`currents` and :ref:`kpoints-file_sec`. As shown in 
-Table :numref:`(%s)<tab-cor-control>` a user may auto- or cross-correlate all of these values 
+Table :numref:`(%s) <tab-cor-control>` a user may auto- or cross-correlate all of these values 
 between eachother. Like other correlations these observables must be requested component 
 wise, e.g. :math:`x, y, z`. However, DL_POLY_5 will automatically generate correlators for all
 user specified KPOINTS across all distinct atom types. 

@@ -1,14 +1,14 @@
 Warning and Error Processing
 ============================
 
-The DL_POLY_4 Internal Warning Facility
+The DL_POLY_5 Internal Warning Facility
 ---------------------------------------
 
-DL_POLY_4 contains a number of various in-built checks scattered
+DL_POLY_5 contains a number of various in-built checks scattered
 throughout the package which detect a range of possible inconsistencies
 or errors. In all cases, such a check fails the subroutine ``warning``
 is called, resulting in an appropriate message that identifies the
-inconsistency. In some cases an inconsistency is resolved by DL_POLY_4
+inconsistency. In some cases an inconsistency is resolved by DL_POLY_5
 supplying a default value or assuming a priority of one directive over
 the another (in clash of mutually exclusive directives). However, in
 other cases this cannot be done and controlled termination of the
@@ -16,10 +16,10 @@ program execution is called by the subroutine ``error``. In any case
 appropriate diagnostic message is displayed notifying the user of the
 nature of the problem.
 
-The DL_POLY_4 Internal Error Facility
+The DL_POLY_5 Internal Error Facility
 -------------------------------------
 
-DL_POLY_4 contains a number of in-built error checks scattered
+DL_POLY_5 contains a number of in-built error checks scattered
 throughout the package which detect a wide range of possible errors. In
 all cases, when an error is detected the subroutine ``error`` is called,
 resulting in an appropriate message and termination of the program
@@ -51,6 +51,6 @@ identify the appropriate message to be printed.
 
 .. index:: single: error messages
 
-A full list of the DL_POLY_4 error messages and the appropriate user
+A full list of the DL_POLY_5 error messages and the appropriate user
 action can be found in :ref:`Appendix D<error-messages>`
 of this document.

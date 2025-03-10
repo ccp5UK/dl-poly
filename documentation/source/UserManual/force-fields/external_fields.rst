@@ -5,7 +5,7 @@ External Fields
 
 .. index:: single: potential;external fields
 
-In addition to the molecular force field, DL_POLY_4 allows the use of an
+In addition to the molecular force field, DL_POLY_5 allows the use of an
 *external* force field. Examples of fields available include:
 
 #. Electric field: (\ **elec**)
@@ -106,17 +106,16 @@ on the piston), which do not include any core-shell, CB, PMF or RB
 units! The field releases the system’s centre of mass to move
 unconstrained and gain momentum. This makes any temperature control
 options control the full kinetic energy of the system and thus the only
-ensemble valid under this conditions and possible within DL_POLY_4 at
+ensemble valid under this conditions and possible within DL_POLY_5 at
 the present is the micro-canonical (NVE)!
 
 The user is advised to be careful with the parameters’ units! For more
 insight, do examine
-Table :numref:`(%s)<external-field-table>` and the
-example at
-equation :eq:`external-field-units_eq` in
+Table :numref:`(%s) <external-field-table>` and the
+example at equation :eq:`external-field-units_eq` in
 Section :ref:`field-file`.
 
 .. index:: single:potential;external field
    
-In DL_POLY_4 external field forces are handled by the routines
+In DL_POLY_5 external field forces are handled by the routines
 ``external_field_apply`` and .

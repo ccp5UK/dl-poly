@@ -3,21 +3,21 @@
 Thermostats
 ===========
 
-DL_POLY_5 supports several DPD based thermostats which can be applied to 
-both DPD or traditional MD type simulations. To use any DPD based thermostat the ``ensemble_method``
+DL_POLY_5 supports several DPD-based thermostats which can be applied to 
+both DPD or traditional MD type simulations. To use any DPD-based thermostat the ``ensemble_method``
 directive in the ``CONTROL`` file must be set to ``dpd``. The ``ensemble_dpd_order`` directive is then 
-used to specify the type of DPD based thermostat to be used. 
+used to specify the type of DPD-based thermostat to be used. 
 
 All DPD based thermostats require setting the value of the drag coefficient :math:`\gamma_{ij}` 
 from :eq:`DPD_drag_force_eq`. This can be specified in the ``FIELD`` file as a per-pair interaction 
-parameter when using a DPD based force field.
-If the drag coefficient has not been specified in the ``FIELD`` file as part of a dpd based interaction, 
+parameter when using a DPD-based force field.
+If the drag coefficient has not been specified in the ``FIELD`` file as part of a DPD-based interaction, 
 the ``ensemble_dpd_drag`` directive can be used to set a global value for the drag coefficient to be used 
 within the DPD thermostats.
 
 .. note::
-    If the ``ensemble_dpd_drag`` value is specified then all interactions will use this value regardless 
-    of any values specified in the ``FIELD`` file. 
+    The ``ensemble_dpd_drag`` value is used for any interaction that does not specify :math:`\gamma_{ij}`
+    in the ``FIELD`` file and a value cannot be derived from mixing rules.
 
 Molecular Dynamics Velocity Verlet for DPD
 ------------------------------------------
@@ -40,7 +40,7 @@ Shardlow Splitting
 ------------------
 
 Shardlow splitting :cite:`shardlow-03a` exploits an operator splitting approach to integrate 
-the drag and random, forces from :eq:`DPDF_eq`, in the DPD thermostat. The changes in 
+the drag and random forces from :eq:`DPD_eq`, in the DPD thermostat. The changes in 
 particle velocities due to the thermostat during a timestep can be determined separately
 from changes due to other forces (conservative, bonding interactions etc.) by rigorously 
 expanding velocity Verlet integration of the thermostatting forces. The separate integration 
@@ -88,7 +88,7 @@ Second-order
 The **second-order** Shardlow operator is virtually identical to the first-order operator, except for replacing all instances of :math:`\Delta t` with :math:`\frac{\Delta t}{2}` in the above velocity corrections and applying them twice, both before (starting at :math:`t`) and after (starting at :math:`t + \tfrac{1}{2}\Delta t`) integration of other forces. In both cases, correct integration of drag and random forces from known velocity data allows larger timesteps to be used than for standard Velocity Verlet integration. 
 
 Second-order Shardlow splitting is specified by setting the ``ensemble_dpd_order`` directive to ``second`` or 
-``1`` in the ``CONTROL`` file. 
+``2`` in the ``CONTROL`` file. 
 
 Zeroth-order
 ~~~~~~~~~~~~

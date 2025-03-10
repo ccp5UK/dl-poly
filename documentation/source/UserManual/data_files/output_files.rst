@@ -3,7 +3,7 @@
 The OUTPUT Files
 ================
 
-DL_POLY_4 may produce many output files. However only OUTPUT (an
+DL_POLY_5 may produce many output files. However only OUTPUT (an
 incremental summary file of the simulation), STATIS (a statistical
 history file), REVCON (a restart configuration file - final) and REVIVE
 (a restart statistics accumulators file - final) are mandatory. DUMP_E
@@ -54,9 +54,9 @@ The HISTORY has the following structure:
   ``header``    a72       file header
   **record 2**
   ``keytrj``    integer   trajectory key (see Table \ `[keytrj] <#keytrj>`__) in last frame
-  ``imcon``     integer   periodic boundary key (see Table :numref:`(%s)<imcon_table>`) in last frame
+  ``imcon``     integer   periodic boundary key (see Table :numref:`(%s) <imcon_table>`) in last frame
   ``megatm``    integer   number of atoms in simulation cell in last frame
-  ``frame``     integer   number configuration frames in file
+  ``frame``     integer   number of configuration frames in file
   ``records``   integer   number of records in file
 
 For timesteps greater than ``nstraj`` the HISTORY file is appended at
@@ -74,17 +74,17 @@ the following information for each configuration:
   ``tstep``       real      integration timestep (ps)
   ``time``        real      elapsed simulation time (ps)
   **record ii**
-  ``cell(1)``     real      x component of *a* cell vector in Å
-  ``cell(2)``     real      y component of *a* cell vector in Å
-  ``cell(3)``     real      z component of *a* cell vector in Å
+  ``cell(1)``     real      x component of *a* cell vector in Å (or DPD length units)
+  ``cell(2)``     real      y component of *a* cell vector in Å (or DPD length units)
+  ``cell(3)``     real      z component of *a* cell vector in Å (or DPD length units)
   **record iii**
-  ``cell(4)``     real      x component of *b* cell vector in Å
-  ``cell(5)``     real      y component of *b* cell vector in Å
-  ``cell(6)``     real      z component of *b* cell vector in Å
+  ``cell(4)``     real      x component of *b* cell vector in Å (or DPD length units)
+  ``cell(5)``     real      y component of *b* cell vector in Å (or DPD length units)
+  ``cell(6)``     real      z component of *b* cell vector in Å (or DPD length units)
   **record iv**
-  ``cell(7)``     real      x component of *c* cell vector in Å
-  ``cell(8)``     real      y component of *c* cell vector in Å
-  ``cell(9)``     real      z component of *c* cell vector in Å
+  ``cell(7)``     real      x component of *c* cell vector in Å (or DPD length units)
+  ``cell(8)``     real      y component of *c* cell vector in Å (or DPD length units)
+  ``cell(9)``     real      z component of *c* cell vector in Å (or DPD length units)
 
 This is followed by the configuration for the current timestep. i.e. for
 each atom in the system the following data are included:
@@ -96,19 +96,19 @@ each atom in the system the following data are included:
   ``iatm``      integer   atom index
   ``weight``    real      atomic mass (a.m.u.)
   ``charge``    real      atomic charge (e)
-  ``rsd``       real      displacement from position at *t* = 0 in Å
+  ``rsd``       real      displacement from position at *t* = 0 in Å (or DPD length units)
   **record b** 
   ``xxx``       real      x coordinate
   ``yyy``       real      y coordinate
   ``zzz``       real      z coordinate
   **record c** only for ``keytrj`` > 0
-  ``vxx``       real      x component of velocity in Å/picosecond
-  ``vyy``       real      y component of velocity in Å/picosecond
-  ``vzz``       real      z component of velocity in Å/picosecond
+  ``vxx``       real      x component of velocity in Å/picosecond (or DPD velocity units)
+  ``vyy``       real      y component of velocity in Å/picosecond (or DPD velocity units)
+  ``vzz``       real      z component of velocity in Å/picosecond (or DPD velocity units)
   **record d** only for ``keytrj`` > 1
-  ``fxx``       real      x component of force in Å\ :math:`\cdot`\ Dalton/picosecond\ :math:`^{2}`
-  ``fyy``       real      y component of force in Å\ :math:`\cdot`\ Dalton/picosecond\ :math:`^{2}`
-  ``fzz``       real      z component of force in Å\ :math:`\cdot`\ Dalton/picosecond\ :math:`^{2}`
+  ``fxx``       real      x component of force in Å\ :math:`\cdot`\ Dalton/picosecond\ :math:`^{2}` (or DPD force units)
+  ``fyy``       real      y component of force in Å\ :math:`\cdot`\ Dalton/picosecond\ :math:`^{2}` (or DPD force units)
+  ``fzz``       real      z component of force in Å\ :math:`\cdot`\ Dalton/picosecond\ :math:`^{2}` (or DPD force units)
 
 Thus the data for each atom is a minimum of two records and a maximum of
 4.
@@ -153,8 +153,8 @@ with the following information for each configuration:
   ``timestep``    a8 the      character string “timestep”
   ``nstep``       integer     the current time-step
   ``megatm``      integer     number of atoms in simulation cell (again)
-  ``tstep``       real        integration timestep (ps)
-  ``time``        real        elapsed simulation time (ps)
+  ``tstep``       real        integration timestep (ps or DPD time units)
+  ``time``        real        elapsed simulation time (ps or DPD time units)
 
 This is followed by the configuration for the current timestep. i.e. for
 each atom in the system the following data are included:
@@ -163,8 +163,8 @@ each atom in the system the following data are included:
 
   **record a**
   ``atmnam``    a8        atomic label
-  ``iatm``      integer   atom index :math:`\sqrt{\texttt{MSD}(t)}` real square root of the atomic mean square displacements (in Å)
-  T(mean)       real      atomic mean temperature (in Kelvin)
+  ``iatm``      integer   atom index :math:`\sqrt{\texttt{MSD}(t)}` real square root of the atomic mean square displacements (in Å or DPD length units)
+  T(mean)       real      atomic mean temperature (in Kelvin or DPD temperature units)
 
 .. _defects-file:
 
@@ -192,7 +192,7 @@ The DEFECTS has the following structure:
   **record 1**
   ``header``    a72       file header
   **record 2**
-  ``rdef``      real      site-interstitial cutoff (Å) in last frame
+  ``rdef``      real      site-interstitial cutoff (Å or DPD length units) in last frame
   ``frame``     integer   number configuration frames in file
   ``records``   integer   number of records in file
 
@@ -205,10 +205,10 @@ with the following information for each configuration:
   **record i**
   ``timestep``      a8        the character string “timestep”
   ``nstep``         integer   the current time-step
-  ``tstep``         real      integration timestep (ps)
-  ``time``          real      elapsed simulation time (ps)
-  ``imcon``         integer   periodic boundary key (see Table :numref:`(%s)<imcon_table>`)
-  ``rdef``          real      site-interstitial cutoff (Å)
+  ``tstep``         real      integration timestep (ps or DPD time units)
+  ``time``          real      elapsed simulation time (ps or DPD time units)
+  ``imcon``         integer   periodic boundary key (see Table :numref:`(%s) <imcon_table>`)
+  ``rdef``          real      site-interstitial cutoff (Å or DPD length units)
   **record ii**
   ``defects``       a7        the  character string “defects”
   ``ndefs``         integer   the total number of defects
@@ -281,7 +281,7 @@ The RSDDAT has the following structure:
   **record 1**
   ``header``    a72       file header
   **record 2**
-  ``rdef``      real      displacement qualifying cutoff (Å) in last frame
+  ``rdef``      real      displacement qualifying cutoff (Å or DPD length units) in last frame
   ``frame``     integer   number configuration frames in file
   ``records``   integer   number of records in file
 
@@ -294,10 +294,10 @@ file, with the following information for each configuration:
   **record i**
   ``timestep``        a8        the character string “timestep”
   ``nstep``           integer   the current time-step
-  ``tstep``           real      integration timestep (ps)
-  ``time``            real      elapsed simulation time (ps)
-  ``imcon``           integer   periodic boundary key (see Table :numref:`(%s)<imcon_table>`)
-  ``rrsd``            real      displacement qualifying cutoff (Å)
+  ``tstep``           real      integration timestep (ps or DPD time units)
+  ``time``            real      elapsed simulation time (ps or DPD time units)
+  ``imcon``           integer   periodic boundary key (see Table :numref:`(%s) <imcon_table>`)
+  ``rrsd``            real      displacement qualifying cutoff (Å or DPD length units)
   **record ii**
   ``displacements``   a13       the character string “displacements”
   ``nrsd``            integer   the total number of displacements
@@ -345,10 +345,10 @@ appear on the end of the second line of the file:
    obtain the structure,
 
 #. the configuration energy of the minimised configuration expressed in
-   DL_POLY_4 units (Section `[units] <#units>`__), and
+   DL_POLY_5 units (Section `[units] <#units>`__), and
 
 #. the configuration energy of the initial structure expressed in
-   DL_POLY_4 units (Section `[units] <#units>`__).
+   DL_POLY_5 units (Section `[units] <#units>`__).
 
 .. _output-file:
 
@@ -367,7 +367,7 @@ destined for hardcopy output.
 Header
 ~~~~~~
 
-Gives the DL_POLY_4 version number, the number of processors in use, the
+Gives the DL_POLY_5 version number, the number of processors in use, the
 link-cell algorithm in use and a title for the job as given in the
 header line of the input file CONTROL. This part of the file is written
 from the subroutines ``dl_poly``, ``set_bounds`` and ``read_control``.
@@ -410,7 +410,7 @@ also written out.
 Simulation Progress
 ~~~~~~~~~~~~~~~~~~~
 
-This part of the file is written by the DL_POLY_4 root segment
+This part of the file is written by the DL_POLY_5 root segment
 ``dl_poly``. The header line is printed at the top of each page as:
 
 ::
@@ -430,7 +430,7 @@ The labels refer to :
   **line 1**
   ``step``         MD step number
   ``eng_tot``     total internal energy of the system
-  ``temp_tot``    system temperature (in Kelvin)
+  ``temp_tot``    system temperature (in Kelvin or DPD temperature units)
   ``eng_cfg``     configurational energy of the system
   ``eng_src``     configurational energy due to short-range potential contributions
   ``eng_cou``     configurational energy due to electrostatic :index:`potential<potential;electrostatics>`
@@ -439,9 +439,9 @@ The labels refer to :
   ``eng_dih``     configurational energy due to :index:`dihedral<potential;dihedral>` inversion and :index:`four-body<potential;four-body>` potentials
   ``eng_tet``     configurational energy due to :index:`tethering<potential;tether>` potentials
   **line 2**
-  ``time(ps)``    elapsed simulation time (in pico-seconds) since the beginning of the job
+  ``time(ps)``    elapsed simulation time (in pico-seconds or DPD time units) since the beginning of the job
   ``eng_pv``      enthalpy of system
-  ``temp_rot``    rotational temperature (in Kelvin)
+  ``temp_rot``    rotational temperature (in Kelvin or DPD temperature units)
   ``vir_cfg``     total configurational contribution to the virial
   ``vir_src``     short range potential contribution to the virial
   ``vir_cou``     electrostatic :index:`potential<potential;electrostatics>` contribution to the virial
@@ -451,8 +451,8 @@ The labels refer to :
   ``vir_tet``     tethering :index:`potential<potential;tether>` contribution to the virial
   **line 3**
   ``cpu (s)``     elapsed cpu time (in seconds) since the beginning of the job
-  ``volume``      system volume (in Å\ :math:`^{3}`)
-  ``temp_shl``    core-shell temperature (in Kelvin)
+  ``volume``      system volume (in Å\ :math:`^{3}` or cubic DPD length units)
+  ``temp_shl``    core-shell temperature (in Kelvin or DPD temperature units)
   ``eng_shl``     configurational energy due to core-shell potentials
   ``vir_shl``     core-shell potential contribution to the virial
   ``alpha``       angle between *b* and *c* cell vectors (in degrees)
@@ -491,8 +491,8 @@ Pressure Units
 
 .. index:: single: units;pressure
 
-The unit of pressure is katms, irrespective of what energy unit is
-chosen.
+The unit of pressure is katms for all energy units apart from DPD,
+which uses energy per cubic DPD length unit.
 
 Two-Temperature Model
 ~~~~~~~~~~~~~~~~~~~~~
@@ -508,7 +508,8 @@ corresponding number of divisions of the MD timestep. If dynamic
 calculation of the average atomic density in active cells is requested,
 this value is included along with the number of active ionic temperature
 cells. Reports are also given when energy deposition starts and
-finishes.
+finishes. (Note that this functionality assumes atomistic modelling is 
+in use, so DPD units cannot be used for two-temperature simulations.)
 
 Sample of Final Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -546,7 +547,7 @@ Radial Distribution Functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If both calculation and printing of radial distribution functions have
-been requested (by selecting directives **rdf** and print rdf in the
+been requested (by selecting directives **rdf_calculate** and **rdf_print** in the
 CONTROL file) radial distribution functions are printed out. This is
 written from the subroutine rdf_compute. First the number of time-steps
 used for the collection of the histograms is stated.
@@ -571,8 +572,8 @@ Z-density Profile
 ~~~~~~~~~~~~~~~~~
 
 If both calculation and printing of Z-density profiles have been
-requested (by selecting directives **zden** and **print zden** in the
-CONTROL file Z-density profiles are printed out as the last part of the
+requested (by selecting directives **zden_calculate** and **zden_print** in the
+CONTROL file) Z-density profiles are printed out as the last part of the
 OUTPUT file. This is written by the subroutine z_density_compute. First
 the number of time-steps used for the collection of the histograms is
 stated. Then each function is given in turn. For each function a header
@@ -588,8 +589,8 @@ Velocity Autocorrelation Functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If both calculation and printing of velocity autocorrelation functions
-have been requested (by selecting directives **vaf** and **print vaf**
-in the CONTROL file the velocity autocorrelation function for the system
+have been requested (by selecting directives **vaf_calculate** and **vaf_print**
+in the CONTROL file) the velocity autocorrelation function for the system
 (either time-averaged or the last complete sample) is printed out as the
 last part of the OUTPUT file. This is written by the subroutine
 ``vaf_compute``. First the details of the calculations are stated:
@@ -639,11 +640,11 @@ The REVCON File
 This file is formatted and written by the subroutine ``revive``. REVCON
 is the restart configuration file. The file is written every ``ndump``
 time steps in case of a system crash during execution and at the
-termination of the job. A successful run of DL_POLY_4 will always
+termination of the job. A successful run of DL_POLY_5 will always
 produce a REVCON file, but a failed job may not produce the file if an
 insufficient number of timesteps have elapsed. ndump is controlled by
-the directive **dump** in file CONTROL (see above) and listed as
-parameter ``ndump`` in the setup_module file (see
+the directive **data_dump_frequency** in file CONTROL (see above) and 
+listed as parameter ``ndump`` in the setup_module file (see
 Section :ref:`file-structure`). The default value is
 ``ndump`` :math:`=1000`. 
 
@@ -657,8 +658,8 @@ on the 2nd meta-data line. I.e the first two lines of a REVCON will read
   ``header``      a72       title line
 
   **record 2**
-  ``levcfg``      integer   CONFIG file key. See Table :numref:`(%s)<levcfg_table>` for permitted values
-  ``imcon``       integer   Periodic boundary key. See Table :numref:`(%s)<imcon_table>` for permitted values
+  ``levcfg``      integer   CONFIG file key. See Table :numref:`(%s) <levcfg_table>` for permitted values
+  ``imcon``       integer   Periodic boundary key. See Table :numref:`(%s) <imcon_table>` for permitted values
   ``megatm``      integer   Total number of particles (crystalographic entities)
   ``step``        integer   Simulation step this REVCON was written.
   ``tstep``       real      Simulation time-step.
@@ -722,15 +723,15 @@ The data supplied are as follows:
   ``atname 1``  a8      first atom name
   ``atname 2``  a8      second atom name
   **following records** (*mxgrdf* records)
-  ``radius``    real    interatomic distance (Å)
+  ``radius``    real    interatomic distance (Å or DPD length unit)
   ``g(r)``      real    RDF at given radius
   ``n(r)``      real    RDF at given radius
 
-**Note 1.** The RDFDAT file is optional and appears when the **print
-rdf** option is specified in the CONTROL file.
+**Note 1.** The RDFDAT file is optional and appears when the **rdf_print** 
+option is specified in the CONTROL file.
 
 **Note 2.** Along with the RDFDAT file, two other files will be created
-whenever the **print ana**\ lysis directive is invoked: VDWPMF & VDWTAB,
+whenever the **analysis** directives are invoked: VDWPMF & VDWTAB,
 both containing the data for potentials of mean force and the
 corresponding virials calculated based on the obtained RDF:s, i.e. PMF
 :math:`\sim -\ln({\rm RDF})` (in the energy units specified in the FIELD
@@ -742,7 +743,7 @@ force-field, for example in the case of initial coarse-graining of an
 atomistic system. In particular, one can convert the VDWTAB file into a
 correctly formatted TABLE file (Section :ref:`table-file`)
 by using the utility called ``pmf2tab.f`` (subject to compilation; found
-in DL_POLY_4 directory ``utility``) as follows,
+in DL_POLY_5 directory ``utility``) as follows,
 
 ``[user@host]$ pmf2tab.exe < VDWTAB``
 
@@ -763,13 +764,13 @@ The USRDAT File
   ``# info``    a30       information to follow string
   **record 3**
   ``bins``      integer   number of bins
-  ``cutoff``    real      cutoff in Å
+  ``cutoff``    real      cutoff in Å (or DPD length unit)
   ``frames``    integer   number of sampled configurations
-  ``volume``    real      average cell volue Å\ :math:`^{3}`
+  ``volume``    real      average cell volume Å\ :math:`^{3}` (or cubic DPD length units)
   **record 4**
   ``#``         a1        a hash (#) symbol
   **following records** (*mxgusr* records)
-  ``radius``    real      interatomic distance (Å)
+  ``radius``    real      interatomic distance (Å or DPD length unit)
   ``g(r)``      real      RDF at given radius
 
 .. _zdn-file:
@@ -796,10 +797,10 @@ There follow the data for each individual Z-density function, i.e.
   **first record**
   ``atname``    a8    unique atom name
   **following records** (*mxgrdf* records)
-  ``z``         real  distance in z direction (Å)
+  ``z``         real  distance in z direction (Å or DPD length units)
   :math:`\rho(z)` real Z-density at given height ``z``
 
-**Note** the ZDNDAT file is optional and appears when the **print rdf**
+**Note** the ZDNDAT file is optional and appears when the **zden_print**
 option is specified in the CONTROL file.
 
 .. _vaf-files:
@@ -826,12 +827,12 @@ are as follows:
   ``atname``    a8        atom name
   ``binvaf``    integer   number of data points in VAF profile, *excluding* :math:`t=0`
   ``vaforigin`` real      absolute value of VAF at :math:`t=0`  (:math:`C(0) \equiv 3k_B T/m`)
-  ``vaftime0``  real      simulation time (ps) at beginning of (last) VAF profile (:math:`t=0`)
+  ``vaftime0``  real      simulation time (ps or DPD time units) at beginning of (last) VAF profile (:math:`t=0`)
   **following records** (*binvaf*\ +1 records)
-  ``t``         real      time (ps)
+  ``t``         real      time (ps or DPD time units)
   ``Z(t)``      real      scaled velocity autocorrelation function (:math:`C(t)/C(0)`) at given time :math:`t`
 
-**Note** the VAFDAT files are optional and appear when the **print vaf**
+**Note** the VAFDAT files are optional and appear when the **vaf_print**
 option is specified in the CONTROL file.
 
 .. _bonded-files:
@@ -855,7 +856,7 @@ usage in coarse grained model systems.
   **record 3**
   ``# info``      a30         information to follow string
   ``bins``        integer     number of bins for all PDFs
-  ``cutoff``      real        cutoff in Å for bonds and RDFs or degrees for angular intramolecular interactions
+  ``cutoff``      real        cutoff in Å (or DPD length units) for bonds and RDFs or degrees for angular intramolecular interactions
   ``frames``      integer     number of sampled configurations
   ``types``       integer     number of unique types of these interactions
   **record 4**
@@ -1106,8 +1107,8 @@ values of density, transverse and longitudinal mometum currents, and
 energy currents for each time step (subject to **stats_frequency**), and
 each atom type. See sections :ref:`currents` and :ref:`kpoints-file_sec`.
 
-The format will depend on new CONTROL directive **io_statis_yaml**. See section
-:ref:`currents` for an example of the YAML format.
+The format will depend on the new CONTROL directive **io_statis_yaml**. 
+See section :ref:`currents` for an example of the YAML format.
 
 For the plain text format the CURRENTS file will be formed 
 of a series of blocks with the following structure

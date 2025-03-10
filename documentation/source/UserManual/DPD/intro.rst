@@ -19,23 +19,21 @@ their models. DPD is particularly useful for simulating coarse-grained
 systems on the near-molecular scale, such as polymers, biopolymers,
 lipids, emulsions and surfactants – systems in which large scale
 structure evolves on a time scale that is too long to be modelled
-effectively by traditional MD. The particles in DPD
-:cite:`espanol-95a` are not regarded as molecules in a fluid
-but as lumps of molecules grouped to form a *fluid particle* in much the
-same spirit as the renormalisation group has been applied in polymer
-physics where lumps of monomers are grouped to form a *bead*. Hence, the
-beads are regarded as carriers of momentum.
-It is worth noting that DPD may also be used when such systems
+effectively by traditional MD. The particles in DPD :cite:`espanol-95a` are 
+not *necessarily* regarded as specific molecules but as lumps of molecules 
+grouped to form a *fluid particle* in much the same spirit as the renormalisation 
+group has been applied in polymer physics, where lumps of monomers are grouped 
+together to form a *bead*. Hence, the beads are regarded as carriers of 
+momentum. It is worth noting that DPD may also be used when such systems
 experience shear and flow gradients.
 
-The DPD algorithm can be
-summarised by the following: :cite:`groot-97a`
+The DPD algorithm can be summarised by the following: :cite:`groot-97a`
 
 -  A condensed phase system may be modelled as a system of ‘free’
    particles interacting directly through *soft* forces. Note that
-   DL_POLY_4 allows for the application of the DPD thermostat beyond
-   systems of free particles only. Thus it will be valid on systems with
-   any inratamolecular like interactions.
+   DL_POLY_5 allows for the application of the DPD thermostat beyond
+   systems of free particles only. Thus it will be valid for systems with
+   any intramolecular-like interactions.
 
 -  The system is coupled to a heat bath via stochastic forces, which act
    on the particles in a pairwise manner.
@@ -64,32 +62,32 @@ The equations governing the time evolution in a DPD simulation resemble those of
 
 .. math::
 
-   \frac{d \underline{v}_i}{dt} =& \frac{\underline{f}_i}{m_i} \\
+   \frac{d \underline{v}_i}{dt} =& \frac{\underline{F}_i}{m_i} \\
    \frac{d \underline{r}_i}{dt} =& \underline{v}_i
 
-in which :math:`\underline{r}_i`, :math:`\underline{v}_i` and :math:`\underline{F}_i` are the position, velocity and force of the :math:`i`th particle, which has mass :math:`m_i`. The force, :math:`f_{i}`, on particle
+in which :math:`\underline{r}_i`, :math:`\underline{v}_i` and :math:`\underline{F}_i` are the position, velocity and force of the :math:`i`\ th particle, which has mass :math:`m_i`. The force, :math:`f_{i}`, on particle
 :math:`i` is now a sum of pair forces:
 
-.. math:: \underline{f}_i = \sum_{j \neq i}^N \left( \underline{f}_{ij}^{C} + \underline{f}_{ij}^{D} + \underline{f}_{ij}^{R} \right)~~, 
+.. math:: \underline{F}_i = \sum_{j \neq i}^N \left( \underline{F}_{ij}^{C} + \underline{F}_{ij}^{D} + \underline{F}_{ij}^{R} \right)~~, 
    :label: DPD_eq
 
-in which :math:`\underline{f}_{ij}^{C}`, :math:`\underline{f}_{ij}^{D}`
-and :math:`\underline{f}_{ij}^{R}` are the *conservative*, *drag* and
+in which :math:`\underline{F}_{ij}^{C}`, :math:`\underline{F}_{ij}^{D}`
+and :math:`\underline{F}_{ij}^{R}` are the *conservative*, *drag* and
 *random* (or *stochastic*) pair forces respectively. Each represents the
 force exerted on particle :math:`i` due to the presence of particle
-:math:`j`. Additional pairwise forces may be included for more complicated systems, such as those 
-involving chains of particles bonded together. :cite:`Schlijper1995`
+:math:`j`. Additional pairwise forces may be included for more complicated systems, 
+such as those involving chains of particles bonded together. :cite:`Schlijper1995`
 
 The conservative interactions are usually *soft* (i.e. weakly
 interacting) so that the particles can pass by each other (or even
 through each other) relatively easily so that equilibrium is achieved
 quickly. A common form of interaction potential is an inverse parabola
-(part of VDW types of potentials, see Section \ :ref:`vdw`)
+(one of the VDW-type potentials, see Section \ :ref:`vdw`)
 
 .. math::
    :label: DPDU_eq
 
-   V(r_{ij}) = \left\{ \begin{array} {l@{\quad:\quad}l}
+   U(r_{ij}) = \left\{ \begin{array} {l@{\quad:\quad}l}
    \frac{A_{ij}}{2}~r_{c}~\left(1-\frac{r_{ij}}{r_{c}}\right)^{2} & r_{ij} < r_{c} \\
    0 & r_{ij} \ge r_{c} \end{array} \right.~~, 
 
@@ -97,7 +95,7 @@ where :math:`r_{ij} = |\underline{r}_{j}-\underline{r}_{i}|`,
 :math:`r_{c}` is a cutoff radius and :math:`A_{ij}` is the interaction
 strength (that may be the same for all particle pairs or may be
 different for different particle types). The cutoff radius is ralated to the length scale for 
-the particles (this can also cary for different particles and pairs).
+the particles (this can also carry for different particles and pairs).
 
 Equation :eq:`DPDU_eq` gives rise to a repulsive force of the
 form:
@@ -105,11 +103,11 @@ form:
 .. math::
    :label: DPDF_eq
 
-   \underline{f}_{ij}^{C} = A_{ij}~w^{C}(r_{ij}) \frac{\underline{r}_{ij}}{r_{ij}} =
+   \underline{F}_{ij}^{C} = A_{ij}~w^{C}(r_{ij}) \frac{\underline{r}_{ij}}{r_{ij}} =
    A_{ij} \left( 1 - \frac{r_{ij}}{r_{c}} \right) \frac{\underline{r}_{ij}}{r_{ij}}~~. 
 
 This is the deterministic or *conservative* force
-:math:`\underline{f}_{ij}^{C}` exerted on particle :math:`i` by particle
+:math:`\underline{F}_{ij}^{C}` exerted on particle :math:`i` by particle
 :math:`j`. Note the switching function:
 
 .. math::
@@ -119,19 +117,19 @@ This is the deterministic or *conservative* force
    \left(1-\frac{r_{ij}}{r_{c}}\right) & r_{ij} < r_{c} \\
    0 & r_{ij} \ge r_{c} \end{array} \right.~~, 
 
-and the force are zero when :math:`r_{ij} \ge r_{c}` and thus the
-particles have an effective diameter of :math:`1` in units of the cutoff
-radius :math:`r_{c}` (often used as the length scale for the system). 
-In the DL_POLY_5 context all inter- and
-intra-molecular forces will fall into this category of force!
+and the force is zero when :math:`r_{ij} \ge r_{c}`, thus the
+particles have an effective radius of :math:`1` in units of the cutoff
+radius :math:`r_{c}` (often used as the length scale for the system 
+:math:`[L]`). In the context of DL_POLY_5, *all inter- and
+intra-molecular forces* will be considered as conservative forces.
 
-The stochastic forces experienced by the particles is again pairwise in
+The stochastic force experienced by the particles is again pairwise in
 nature and takes the form:
 
-.. math:: \underline{f}_{ij}^{R} = \sigma_{ij} w^{R}(r_{ij}) \zeta_{ij} \Delta t^{-\frac{1}{2}} \frac{\underline{r}_{ij}}{r_{ij}}~~,
+.. math:: \underline{F}_{ij}^{R} = \sigma_{ij} w^{R}(r_{ij}) \zeta_{ij} \Delta t^{-\frac{1}{2}} \frac{\underline{r}_{ij}}{r_{ij}}~~,
 
 in which :math:`\Delta t` is the time step and :math:`w^{R}(r_{ij})` is
-a switching function which imposes a finite limit on the range of the
+a switching function, which imposes a finite limit on the range of the
 stochastic force. :math:`\zeta_{ij}` is a random number with zero mean
 and unit variance. The constant :math:`\sigma_{ij}` is related to the
 temperature, as is understood from the role of the stochastic force in
@@ -143,7 +141,7 @@ relative velocity between interacting pairs of particles:
 .. math::
    :label: DPD_drag_force_eq
 
-   \underline{f}_{ij}^{D} = -\gamma_{ij} w^{D}(r_{ij})
+   \underline{F}_{ij}^{D} = -\gamma_{ij} w^{D}(r_{ij})
    \left(\underline{r}_{ij} \cdot \underline{v}_{ij}\right) \frac{\underline{r}_{ij}}{r_{ij}^2}~~,
 
 where :math:`w^{D}(r_{ij})` is once again a switching function and
@@ -159,9 +157,9 @@ the following relations must hold:
 .. math:: w^{D}(r_{ij}) = \left[w^{R}(r_{ij})\right]^{2}.  
    :label: DPDC2
 
-In practice, the switching functions are defined through:
+In practice, the switching functions are most often defined through:
 
-.. math:: w^{R}(r_{ij}) = \left[w^{C}(r_{ij})\right]^{2}~~,
+.. math:: w^{R}(r_{ij}) = w^{C}(r_{ij})~~,
 
 which ensures that all interactions are switched off at the range
 :math:`r_{ij} = r_{c}`.
@@ -170,19 +168,19 @@ In many DPD simulations, the stochastic and drag coefficients are often
 constant for all interactions, i.e. :math:`\sigma_{ij} \equiv \sigma`
 and :math:`\gamma_{ij} \equiv \gamma`, although this assumption does not
 have to apply. In DL_POLY_5 the :math:`\gamma_{ij}` coefficients may be
-supplied at the end of each specified vdw interaction potential as a
-parameter further to the last one for the particular vdw potential form.
+supplied at the end of each specified vdw interaction potential as an
+additional parameter beyond the final one for the particular vdw potential form.
 For a DPD thermostat to work correctly all possible two body
-interactions must be defined and all :math:`\gamma_{ij} \ne 0`. What
-DL_POLY_4 will attempt first, if a two body interaction is missing, is
-to derive it using mixing rules (default may be overridden by user
-specification). However, if any of :math:`\gamma_{ij} = 0` then
-DL_POLY_4 will check for the existence of a global :math:`\gamma` that
-may be optionally supplied by the user in the ``CONTROL`` file by the 
-``ensemble_dpd_drag`` directive 
-and if it is non-zero a global override will occur. Otherwise, when
-the requirements for a DPD thermostat are not satisfied, everything else
-will result in a controlled termination.
+interactions must be defined and at least one value of :math:`\gamma_{ij} > 0`. 
+If a two body interaction is missing, DL_POLY_5 will first attempt to 
+derive it using mixing rules: the default may be overridden by user
+specification. However, if any :math:`\gamma_{ij} = 0` in the ``FIELD`` file
+or is missing and cannot be derived from mixing rules, DL_POLY_5 will check 
+for the existence of a global :math:`\gamma` value that may be optionally 
+supplied by the user in the ``CONTROL`` file using the `ensemble_dpd_drag` 
+directive: if this value is non-zero, this value will be used as an override. 
+Otherwise, if all :math:`\gamma_{ij}` are set to zero, DL_POLY_5 will shut 
+off the DPD thermostat and resort to an NVE ensemble. 
 
 Equation of State and Dynamic Properties
 ----------------------------------------
@@ -194,13 +192,14 @@ system pressure as follows:
 .. math::
 
    \begin{aligned}
-   {\cal P} =& \rho k_{B}T + \frac{1}{3V} \left\langle \sum_{j>i} (\underline{r}_i-\underline{r}_j) \cdot \underline{f}_{ij}^{C} \right\rangle \\
+   {\cal P} =& \rho k_{B}T + \frac{1}{3V} \left\langle \sum_{j>i} (\underline{r}_i-\underline{r}_j) \cdot \underline{F}_{ij}^{C} \right\rangle \\
    =& \rho k_{B} T + \frac{2 \pi}{3} \rho^{2} \int_{0}^{r_{c}} A \left( 1 - \frac{r}{r_{c}} \right) r^{3} g(r)~dr~~,
    \end{aligned}
 
 where :math:`g(r)` is a radial distribution function for the soft sphere
 model :cite:`groot-97a` and :math:`\rho` is the DPD particle
-density. For sufficiently large densities (:math:`\rho > 2`),
+density given in terms of the number of particles per unit volume
+:math:`r_{c}^3`. For sufficiently large densities (:math:`\rho > 2`),
 :math:`g(r)` takes the same form and the equation of state can be
 well-approximated by:
 
@@ -209,16 +208,16 @@ well-approximated by:
 where the parameter :math:`\alpha \approx 0.101 \pm 0.001` has units
 equivalent to :math:`r_{c}^{4}`. This expression permits the use of
 fluid compressibilities to obtain conservative force parameters for bulk
-fluids, e.g. for water :math:`A \approx 75 k_{B} T/\rho`. Alternative
-equations of state may be obtained by modifying the functional form of
-conservative interactions. A flexible approach to do this is many-body DPD, 
+fluids, e.g. for water with one molecule per particle, :math:`A \approx 75 k_{B} T/\rho`. 
+Alternative equations of state may be obtained by modifying the functional form of
+conservative interactions. A flexible approach to do this is :ref:`many-body DPD <mdpd>`, 
 :cite:`pagonabarraga-01a,trofimov-02a` which uses conservative forces that depend 
 on localised densities for each particle (calculated using switching functions 
 between pairs of particles within a cutoff).
 
 Transport coefficients for a DPD fluid without conservative forces can
 be derived using the expressions for the drag and stochastic
-forces, :cite:`groot-97a,koelman-93a,marsh-97a` assuming no conservative forces. 
+forces :cite:`groot-97a,koelman-93a,marsh-97a`. 
 For the given switching functions, the kinematic viscosity can be found to be
 
 .. math:: \nu \approx \frac{45 k_{B} T}{4 \pi \gamma \rho r_{c}^{3}} + \frac{2 \pi \gamma \rho r_{c}^{5}}{1575}~~,
@@ -234,11 +233,15 @@ The ratio of these two properties, the Schmidt number
 
 and for values of the drag coefficient and density frequently used in
 DPD simulations, this value is of the order of unity, which is an
-appropriate magnitude for gases but three orders of magnitude too small
-for liquids.
+appropriate magnitude for gases but a couple of orders of magnitude 
+too small for liquids.
 
 This property of standard DPD does *not* rule it out for simulations of
-liquid phases except when hydrodynamics are important. It may also be
+liquid phases, bearing in mind that (1) conservative interactions also contribute
+towards a fluid's dynamic properties, and (2) if the hydrodynamic behaviour of
+a liquid is less important than its thermodynamic properties, the DPD thermostat
+does not affect these properties and can actually help a system reach 
+thermodynamic equilibrium reasonably quickly. It may also be
 argued that the self-diffusion of DPD particles might not correspond to
 that of individual molecules and thus a Schmidt number of the order
 :math:`10^{3}` is unnecessary for modelling liquids
@@ -270,7 +273,7 @@ with
    \begin{aligned}
    \mathcal{L}^{C} =& -\sum_{i=1}^{N} \frac{\underline{p}_{i}}{m_{i}}
    \frac{\partial}{\partial \underline{r}_{i}} - \sum_{i \neq j}^{N}
-   \underline{f}_{ij}^{C} \frac{\partial}{\partial \underline{p}_{i}} \\
+   \underline{F}_{ij}^{C} \frac{\partial}{\partial \underline{p}_{i}} \\
    \mathcal{L}^{R+D} =& \sum_{i=1}^{N} \hat{e}_{ij} \cdot \frac{\partial}{\partial \underline{p}_{i}}
    \left[ \frac{\sigma^{2}}{2} \left\{w^{R} \left(r_{ij} \right) \right\}^{2} \hat{e}_{ij} \cdot
    \left\{ \frac{\partial}{\partial \underline{p}_{i}} - \frac{\partial}{\partial \underline{p}_{j}} \right\} +
@@ -288,7 +291,7 @@ for which the equilibrium solution is evidently
 .. math::
 
    \rho^{eq} = \frac{1}{Z} \exp \left( \frac{1}{k_{B} T} \left[ \sum_{i=1}^{N}
-   \frac{p_{i}^{2}}{2 m_{i}} + \frac{1}{2} \sum_{j \neq i}^{N} \phi (r_{ij}) \right] \right)
+   \frac{p_{i}^{2}}{2 m_{i}} + \frac{1}{2} \sum_{j \neq i}^{N} U (r_{ij}) \right] \right)
 
 which is, of course, the Boltzmann distribution function for an
 equilibrium system. Thus it is apparent that for the simulation based on

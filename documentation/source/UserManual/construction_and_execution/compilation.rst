@@ -3,7 +3,7 @@
 Compiling and Running 
 ======================
 
-When you have obtained DL_POLY_4 from Daresbury Laboratory and unpacked
+When you have obtained DL_POLY_5 from Daresbury Laboratory and unpacked
 it, your next task will be to compile it.
 
 .. index:: single: WWW 
@@ -17,11 +17,11 @@ choice. The suite of CMake tools was created by Kitware in response to
 the need for a powerful, cross-platform build environment for
 open-source projects such as ITK, VTK, KDE, etc...
 
-In order to build a DL_POLY_4 executable with cmake there are two stages
+In order to build a DL_POLY_5 executable with cmake there are two stages
 - **Stage 1**: generating the build files (e.g. makefiles); and
 **Stage 2**: building the code (e.g. make).
 
-For the examples within this section we assume that DL_POLY_4 has been
+For the examples within this section we assume that DL_POLY_5 has been
 downloaded, the archived contents extracted and we are stepped in the
 the main folder (root). All commands and discussions that follow are
 relative to this root folder of .
@@ -33,7 +33,7 @@ Full instructions can be also found online at
    One can pass different options to the build system to generate the
    build files. It is important to determine these before one choses
    the ones they consider relevant for their purposes. Finding out all
-   available options for DL_POLY_4 can be done in the following ways:
+   available options for DL_POLY_5 can be done in the following ways:
 
    #. by using cmake:
 
@@ -67,7 +67,7 @@ Full instructions can be also found online at
       information about your system and picked the some defaults, a.g.
       **WITH_MPI:BOOL=ON**.
 
-   #. by reading the DL_POLY_4 option file:
+   #. by reading the DL_POLY_5 option file:
       All available options and their description are stored in
       ``cmake/DLPOLYBuildOptions.cmake``.
 
@@ -95,7 +95,7 @@ Full instructions can be also found online at
    #. by using ccmake:
       Press :math:`<`\ c\ :math:`>` to configure and
       :math:`<`\ e\ :math:`>` if errors appears. A typical output is
-      shown in Figure :numref:`(%s)<ccmake_fig>`.
+      shown in Figure :numref:`(%s) <ccmake_fig>`.
 
       ::
 
@@ -108,10 +108,10 @@ Full instructions can be also found online at
          :figclass: centre-fig
          :width: 80% 
 
-         Typical ccmake output for DL_POLY_4
+         Typical ccmake output for DL_POLY_5
 
    #. by using cmake-gui:
-      A typical output is shown in Figure :numref:`(%s)<ccmake-gui_fig>`.
+      A typical output is shown in Figure :numref:`(%s) <ccmake-gui_fig>`.
 
       ::
 
@@ -124,7 +124,7 @@ Full instructions can be also found online at
          :name: ccmake-gui_fig
          :figclass: centre-fig
 
-         Typical cmake-gui output for DL_POLY_4
+         Typical cmake-gui output for DL_POLY_5
 
    One may also choose to pass the command line options via
    **-DOPTION=value**. Explicit compiler specification can be achieved
@@ -136,7 +136,7 @@ Full instructions can be also found online at
 -  **Stage 2**: Build the executable.
    Building is as simple as typing make -jX, where X is the number of
    desired compilation threads to work in parallel. Once the build
-   process is successful one can find the DL_POLY_4 executable in the
+   process is successful one can find the DL_POLY_5 executable in the
    folder *bin* (freshly generated if it did not exists before). One
    can then copy or link the executable to any accessible to them
    place on the system they wish.
@@ -216,16 +216,16 @@ Note on the Interpolation Scheme
    single: potential;metal 
    single: Ewald;summation
 
-In DL_POLY_4 two-body-like contributions (van der Waals, metal and real
+In DL_POLY_5 two-body-like contributions (van der Waals, metal and real
 space Ewald summation) to energy and force are evaluated by
 interpolation of tables constructed at the beginning of execution. The
-DL_POLY_4 interpolation scheme is based on a 3-point linear
+DL_POLY_5 interpolation scheme is based on a 3-point linear
 interpolation in :math:`r`. 
 
 .. note:: 
    
    A 5-point linear interpolation
-   in :math:`r` is ised in DL_POLY_4 for interpolation of the EAM (metal)
+   in :math:`r` is ised in DL_POLY_5 for interpolation of the EAM (metal)
    forces from EAM table data (TABEAM).
 
 The number of grid points (``mxgrvdw``) required for interpolation in
@@ -241,12 +241,12 @@ real space grids.
 Running
 -------
 
-To run the DL_POLY_4 executable (DLPOLY.Z) you will initially require at
+To run the DL_POLY_5 executable (DLPOLY.Z) you will initially require at
 least three input data files, which you must provide in the *execute*
 sub-directory, (or whichever sub-directory you will execute the run).
 The first of these is the CONTROL file
 (Section :ref:`The CONTROL File<control-file>`), which indicates to
-DL_POLY_4 what kind of simulation conditions you want to run, how much
+DL_POLY_5 what kind of simulation conditions you want to run, how much
 data you want to gather and for how long you want the job to run. The
 second file you need is the CONFIG file
 (Section :ref:`The CONFIG File<config-file>`). This contains the atom
@@ -264,7 +264,7 @@ TABLE (Section :ref:`The TABLE File<table-file>`), TABEAM
 (Section :ref:`The TABEAM File<tabeam-file>`), TABBND, TABANG, TABDIH and
 TABINV Files (Section :ref:`The TABBND, TABANG, TABDIH & TABINV Files<intra-tables>`); which contain
 potential and force arrays for particular type of interaction that is
-not supplied with an explicit analytical for in DL_POLY_4 (usually
+not supplied with an explicit analytical for in DL_POLY_5 (usually
 because they are too complex, e.g. spline potentials, , non-analytic
 functionals as in TEABEAM, etc.). Other optional files may also be
 required such as REFERENCE
@@ -280,7 +280,7 @@ Examples of input files are found in the *data* sub-directory, which can
 be copied into the *execute* subdirectory using the select macro found
 in the *execute* sub-directory.
 
-A successful run of DL_POLY_4 will generate several data files, which
+A successful run of DL_POLY_5 will generate several data files, which
 appear in the *execute* sub-directory. The most obvious one is the file
 OUTPUT (Section :ref:`The OUTPUT Files<output-files>`), which provides an
 effective summary of the job run: the input information; starting
@@ -344,24 +344,24 @@ price as larger batches and buffers also requires more memory. So at
 smaller processor counts the job will abort at the point of trying to
 use some of the allocated arrays responsible for these.
 
-More information about DL_POLY_4 parallel I/O can be found in the
+More information about DL_POLY_5 parallel I/O can be found in the
 following references
 :cite:`todorov-09a,todorov-08a,bush-10a`.
 
 Restarting
 ----------
 
-The best approach to running DL_POLY_4 is to define from the outset
+The best approach to running DL_POLY_5 is to define from the outset
 precisely the simulation you wish to perform and create the input files
 specific to this requirement. The program will then perform the
 requested simulation, but may terminate prematurely through error,
 inadequate time allocation or computer failure. Errors in input data are
-your responsibility, but DL_POLY_4 will usually give diagnostic messages
+your responsibility, but DL_POLY_5 will usually give diagnostic messages
 to help you sort out the trouble. Running out of job time is common and
 provided you have correctly specified the job time variables (using the
 **close time** and **job time** directives - see
 Section :ref:`The CONTROL File<control-file>`) in the CONTROL file,
-DL_POLY_4 will stop in a controlled manner, allowing you to restart the
+DL_POLY_5 will stop in a controlled manner, allowing you to restart the
 job as if it had not been interrupted.
 
 To restart a simulation after normal termination you will again require
@@ -371,9 +371,9 @@ run*), the FIELD (and TABLE and/or TABEAM) file, and a CONFIG file,
 which is the exact copy of the REVCON file created by the previous job.
 You will also require a new file: REVOLD
 (Section :ref:`The REVOLD File<revold-file>`), which is an exact copy of
-the previous REVIVE file. If you attempt to restart DL_POLY_4 without
+the previous REVIVE file. If you attempt to restart DL_POLY_5 without
 this additional file available, the job will most probably fail.
-**Note** that DL_POLY_4 will append new data to the existing STATIS and
+**Note** that DL_POLY_5 will append new data to the existing STATIS and
 HISTORY files if the run is restarted, other output files will be
 **overwritten**.
 
@@ -383,7 +383,7 @@ dumped at regular intervals to meet just such an emergency. In this case
 check carefully that the input files are intact and use any extra files;
 such as STATIS, HISTORY, etc.; with caution - there may be duplicated,
 mangled or missing records. The reprieve processing capabilities of
-DL_POLY_4 are not foolproof - the job may crash while these files are
+DL_POLY_5 are not foolproof - the job may crash while these files are
 being written from memory to disk on a parallel architecture for
 example, but they can help a great deal. You are advised to keep backup
 copies of these files, noting the times they were written, to help you
@@ -426,9 +426,9 @@ state for the required state point, for the given force field employed.
 This can make the simulation unstable in the initial stages and can even
 prevent it from proceeding.
 
-For this reason DL_POLY_4 has available a selection of structure
+For this reason DL_POLY_5 has available a selection of structure
 relaxation methods. Broadly speaking, these are energy minimisation
-algorithms, but their role in DL_POLY_4 is not to provide users with
+algorithms, but their role in DL_POLY_5 is not to provide users with
 true structural optimisation procedures capable of finding the ground
 state structure. They are simply intended to help users improve the
 quality of the starting structure prior to a statistical dynamical
@@ -448,7 +448,7 @@ The available algorithms are:
    This is nominally a
    simple minimisation of the system configuration energy using the
    conjugate gradients method :cite:`shewchuk-94a`. The
-   algorithm coded into DL_POLY_4 is an adaptation that allows for
+   algorithm coded into DL_POLY_5 is an adaptation that allows for
    rotation and translation of rigid bodies. Rigid (constraint) bonds
    however are treated as stiff harmonic springs - a strategy which we
    find does allow the bonds to converge within the accuracy required by
@@ -461,7 +461,7 @@ The available algorithms are:
    minimisation - dynamics - minimisation etc., which is intended to
    help the structure relax from overstrained conditions (see
    Section :ref:`The CONTROL File<control-file>`). When using the
-   programmed minimisation DL_POLY_4 writes (and rewrites) the file
+   programmed minimisation DL_POLY_5 writes (and rewrites) the file
    CFGMIN :ref:`The CFGMIN File<cfgminfile>`, which represents the lowest
    energy structure found during the programmed minimisation. CFGMIN is
    written in CONFIG file format (see
@@ -532,7 +532,7 @@ Notes on the Minimisation Procedures
    without the user intervening.
 
 #. Finally, we emphasise once again that the purpose of the minimisers
-   in DL_POLY_4 is to help improve the quality of the starting structure
+   in DL_POLY_5 is to help improve the quality of the starting structure
    and we believe they are adequate for that purpose. We do not
    recommend them as general molecular structure optimisers. They may
    however prove useful for relaxing crystal structures to 0 Kelvin for
@@ -544,7 +544,7 @@ Section :ref:`The CONTROL File<control-file>` for more information.
 Simulation Efficiency and Performance
 -------------------------------------
 
-Although the DL_POLY_4 underlining parallelisation strategy (DD and
+Although the DL_POLY_5 underlining parallelisation strategy (DD and
 link-cells, see Section :ref:`Parallelisation<parallelisation>`) is
 extremely efficient, it cannot always provide linear parallelisation
 speed gain with increasing processor count for a fixed size system.
@@ -555,16 +555,16 @@ is is that increasing the processor count for a fixed size system
 decreases not only the work- and memory-load per processor but also the
 ratio size of domain to size of halo (both in counts of link cells).
 When this ratio falls down to values close to one and below, the time
-DL_POLY_4 spends on inevitable communication (MPI messages across
+DL_POLY_5 spends on inevitable communication (MPI messages across
 neighbouring domains to refresh the halo data) increases with respect to
-and eventually becomes prevalent to the time DL_POLY_4 spends on numeric
+and eventually becomes prevalent to the time DL_POLY_5 spends on numeric
 calculations (integration and forces). In such regimes, the **overall**
-DL_POLY_4 efficiency falls down since processors spend more time on
+DL_POLY_5 efficiency falls down since processors spend more time on
 staying idle while communicating than on computing.
 
-It is important that the user recognises when DL_POLY_4 becomes
+It is important that the user recognises when DL_POLY_5 becomes
 vulnerable to decreased efficiency and what possible measures could be
-taken to avoid this. DL_POLY_4 calculates and reports the major and
+taken to avoid this. DL_POLY_5 calculates and reports the major and
 secondary link-cell algorithms (:math:`M_{x} \cdot M_{y} \cdot M_{z}`)
 employed in the simulations immediately after execution. :math:`M_{x}`
 (analogously for :math:`M_{y}` and :math:`M_{z}`) is the integer number
@@ -596,7 +596,7 @@ communication distribution balancing. Whereas the latter, is a
 sufficient condition and guarantees prevalence of computation over
 communications.
 
-DL_POLY_4 issues a built-in warning when a link-cell algorithms has a
+DL_POLY_5 issues a built-in warning when a link-cell algorithms has a
 dimension less than three (i.e. less than three link-cells per domain in
 given direction). A useful rule of thumb is that parallelisation
 speed-up inefficiency is expected when the ratio
@@ -613,7 +613,7 @@ As obvious from equation :eq:`link-cell_eq` these are:
 **(i)** decrease the number of nodes used in parallel, **(ii)** decrease
 the cutoff and **(iii)** increase system size. It is crucial to note
 that increased parallelisation efficiency remains even when the
-link-cell algorithm is used inefficiently. However, DL_POLY_4 will issue
+link-cell algorithm is used inefficiently. However, DL_POLY_5 will issue
 an error message and cease execution if it detects it cannot fit a
 link-cell per domain as this is the minimum the link-cell algorithm can
 work with - :math:`(1 \cdot 1 \cdot 1)` corresponding to ratio
@@ -622,7 +622,7 @@ work with - :math:`(1 \cdot 1 \cdot 1)` corresponding to ratio
 It is worth outlining in terms of the
 :math:`{\cal O}(\texttt{ computation~;~communication})` function what
 the rough scaling performance is like of the most computation and
-communication intensive parts of DL_POLY_4 in an MD timestep.
+communication intensive parts of DL_POLY_5 in an MD timestep.
 
 (a)
    Domain hallo re-construction in ``set_halo_particles``,

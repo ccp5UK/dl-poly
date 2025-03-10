@@ -12,7 +12,7 @@ system temperature is maintained close to the requested temperature,
 :math:`T_{\rm ext}`. When this is done the equations of motion are
 modified and the system no longer samples the microcanonical ensemble.
 Instead trajectories in the canonical (NVT) ensemble, or something close
-to it are generated. DL_POLY_4 comes with seven different thermostats:
+to it are generated. DL_POLY_5 comes with seven different thermostats:
 Evans (Gaussian constraints) :cite:`evans-84a`, Langevin
 (both standard :cite:`adelman-76a,izaguirre-01a` and
 inhomogeneous :cite:`duffy-07a` variants), Andersen
@@ -114,7 +114,7 @@ The algorithm is self-consistent and requires no iterations.
 The conserved quantity by these algorithms is the system kinetic energy.
 
 The VV flavour of the Gaussian constraints algorithm is implemented in
-the DL_POLY_4routines ``nvt_e0_vv``. The routine ``nvt_e1_vv`` implement
+the DL_POLY_5 routines ``nvt_e0_vv``. The routine ``nvt_e1_vv`` implements
 the same but also incorporate RB dynamics.
 
 Langevin Thermostat
@@ -270,9 +270,9 @@ which, for non-negative :math:`\chi, \Delta t` is always
    temperatures.
 
 The VV flavour of the Langevin thermostat is implemented in the
-DL_POLY_4routines ``nvt_l0_vv``. The routines ``nvt_l1_vv`` implements
+DL_POLY_5 routines ``nvt_l0_vv``. The routines ``nvt_l1_vv`` implements
 the same but also incorporate RB dynamics. The inhomogeneous Langevin
-thermostat is implemented in the DL_POLY_4routine ``nvt_l2_vv`` no RB
+thermostat is implemented in the DL_POLY_5 routine ``nvt_l2_vv``: no RB
 dynamics are currently available for this form of Langevin thermostat.
 
 Andersen Thermostat
@@ -365,7 +365,7 @@ The VV implementation of the Andersen algorithm is as follows:
 The algorithm is self-consistent and requires no iterations.
 
 The VV flavour of the Andersen thermostat is implemented in the
-DL_POLY_4routine ``nvt_a0_vv``. The routine ``nvt_a1_vv`` implements the
+DL_POLY_5 routine ``nvt_a0_vv``. The routine ``nvt_a1_vv`` implements the
 same but also incorporate RB dynamics.
 
 Berendsen Thermostat
@@ -438,7 +438,7 @@ in the following manner
 The Berendsen algorithms conserve total momentum but not energy.
 
 The VV flavour of the Berendsen thermostat is implemented in the
-DL_POLY_4routine ``nvt_b0_vv``. The routine ``nvt_b1_vv`` implements the
+DL_POLY_5 routine ``nvt_b0_vv``. The routine ``nvt_b1_vv`` implements the
 same but also incorporate RB dynamics.
 
 Nosé-Hoover Thermostat
@@ -533,7 +533,7 @@ where :math:`f` is the system’s degrees of freedom - equation
 :eq:`freedom_eq`.
 
 The VV flavour of the Nosé-Hoover thermostat is implemented in the
-DL_POLY_4routine ``nvt_h0_vv``. The routine ``nvt_h1_vv`` implements the
+DL_POLY_5 routine ``nvt_h0_vv``. The routine ``nvt_h1_vv`` implements the
 same but also incorporate RB dynamics.
 
 Gentle Stochastic Thermostat
@@ -659,7 +659,7 @@ where :math:`f` is the system’s degrees of freedom - equation
 :eq:`freedom_eq`.
 
 The VV flavour of the Gentle Stochastic Thermostat is implemented in the
-DL_POLY_4routine ``nvt_g0_vv``. The routine ``nvt_g1_vv`` implements the
+DL_POLY_5 routine ``nvt_g0_vv``. The routine ``nvt_g1_vv`` implements the
 same but also incorporate RB dynamics.
 
 .. _dpd:

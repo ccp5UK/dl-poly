@@ -24,7 +24,8 @@ Module control
   Use constants,                Only: pi,&
                                       tenunt,&
                                       zero_plus,&
-                                      Jm3K_to_kBA3
+                                      Jm3K_to_kBA3,&
+                                      r4pie0
   Use constraints,              Only: constraints_type
   Use control_parameters,       Only: DATA_BOOL,&
                                       DATA_FLOAT,&
@@ -69,10 +70,10 @@ Module control
                                       FILE_CONFIG_2,FILE_CONFIG_3,FILE_REVCON_2,FILE_REVCON_3,&
                                       FILE_HEATFLUX, FILE_CURRENT, file_type
   Use flow_control,             Only: DFTB,&
-    RESTART_KEY_CLEAN,&
-    RESTART_KEY_NOSCALE,&
-    RESTART_KEY_OLD,&
-    RESTART_KEY_SCALE,EmpVB,&
+                                      RESTART_KEY_CLEAN,&
+                                      RESTART_KEY_NOSCALE,&
+                                      RESTART_KEY_OLD,&
+                                      RESTART_KEY_SCALE,EmpVB,&
                                       flow_type
   Use four_body,                Only: four_body_type
   Use greenkubo,                Only: greenkubo_type
@@ -150,7 +151,7 @@ Module control
                                       TTM_TDEPO_PULSE, ttm_type
   Use units,                    Only: &
                                       atomic_units, convert_units, current_units => out_units, &
-                                      hartree_units, internal_units, kb_units, kcal_units, &
+                                      dpd_units, hartree_units, internal_units, kb_units, kcal_units, &
                                       kj_units, set_out_units, set_timestep, si_units, units_scheme, &
                                       to_out_units
   Use vdw,                      Only: MIX_FENDER_HALSEY,&
@@ -1350,8 +1351,9 @@ Contains
 
   End Subroutine read_ttm
 
-  Subroutine read_units(params)
+  Subroutine read_units(params, stats)
     Type(parameters_hash_table), Intent(In   ) :: params
+    Type(stats_type),            Intent(InOut) :: stats(:)
 
     Character(Len=STR_LEN) :: option
     Real(kind=wp)          :: test
@@ -1366,28 +1368,40 @@ Contains
       Case ('internal')
 
         out_units = internal_units
+        stats%dpd_units = .false.
 
       Case ('si')
 
         out_units = si_units
+        stats%dpd_units = .false.
 
       Case ('atomic')
 
         out_units = atomic_units
+        stats%dpd_units = .false.
 
       Case ('hartree')
 
         out_units = hartree_units
+        stats%dpd_units = .false.
       Case ('kj')
 
         out_units = kj_units
+        stats%dpd_units = .false.
       Case ('kcal')
 
         out_units = kcal_units
+        stats%dpd_units = .false.
       Case ('boltzman')
 
         out_units = kb_units
+        stats%dpd_units = .false.
 
+      Case ('dpd')
+
+        out_units = dpd_units
+        stats%dpd_units = .true.
+        
       End Select
     End If
 
@@ -1422,7 +1436,7 @@ Contains
 
   End Subroutine read_units
 
-  Subroutine read_forcefield(params, neigh, config, xhi, yhi, zhi, flow, vdws, electro, ewld, mpoles, cshell, met, &
+  Subroutine read_forcefield(params, stats, neigh, config, xhi, yhi, zhi, flow, vdws, electro, ewld, mpoles, cshell, met, &
                              kim_Data, bond, threebody, fourbody, tersoffs)
     !!-----------------------------------------------------------------------
     !!
@@ -1433,6 +1447,7 @@ Contains
     !! contrib - a.m.elena march 2021 - we always need a cell if NO_PBC or SLAB
     !!-----------------------------------------------------------------------
     Type(parameters_hash_table), Intent(In   ) :: params
+    Type(stats_type),            Intent(In   ) :: stats
     Type(neighbours_type),       Intent(InOut) :: neigh
     Type(configuration_type),    Intent(InOut) :: config
     Real(Kind=wp),               Intent(In   ) :: xhi, yhi, zhi
@@ -1660,7 +1675,19 @@ Contains
     ! If it's been forcibly set by polarisation_model
     If (.not. electro%lecx) Call params%retrieve('coul_extended_exclusion', electro%lecx)
 
-    Call params%retrieve('coul_dielectric_constant', electro%eps)
+    ! Get either dielectric constant relative to vacuum or Bjerrum length:
+    ! convert Bjerrum length to relative dielectric for electrostatic calculations
+
+    If (params%is_set('coul_bjerrum_length')) Then
+      Call params%retrieve('coul_bjerrum_length', electro%len_bjer)
+      If (electro%len_bjer > zero_plus) Then
+        electro%eps = r4pie0 / electro%len_bjer
+      Else
+        Call error(0, 'Cannot specify zero or negative Bjerrum length')
+      End If
+    Else
+      Call params%retrieve('coul_dielectric_constant', electro%eps)
+    End If
 
     If (params%is_set([Character(14) :: 'coul_damping', 'coul_precision'])) Then
       Call error(0, 'Both damping and precision set')
@@ -1714,7 +1741,11 @@ Contains
 
     If (electro%damping > zero_plus) Then
       Call info('Fennell damping applied', .true.)
-      If (neigh%cutoff < 12.0_wp) Call warning(7, neigh%cutoff, 12.0_wp, 0.0_wp)
+      If (stats%dpd_units .and. neigh%cutoff < 2.5_wp) Then
+        Call warning(7, neigh%cutoff, 2.5_wp, 0.0_wp)
+      Else If (neigh%cutoff < 12.0_wp) Then
+        Call warning(7, neigh%cutoff, 12.0_wp, 0.0_wp)
+      End If
     End If
     If (ewld%active) Then
 
@@ -2069,7 +2100,7 @@ Contains
         thermo%mxstp = Huge(1.0_wp)
       End If
       If (thermo%mxdis < 2.5_wp * thermo%mndis .or. thermo%mndis <= 0.0_wp) Then
-        Call warning(140, thermo%mndis, thermo%mxdis, 0.0_wp)
+        Call warning(140, thermo%mndis, thermo%mxdis, Merge(1.0_wp, 0.0_wp, stats%dpd_units))
         Call error(518)
       End If
     End If
@@ -2128,7 +2159,7 @@ Contains
 
   End Subroutine read_run_parameters
 
-  Subroutine read_system_parameters(params, flow, config, thermo, impa, minim, plume, cons, pmf, ttm_active)
+  Subroutine read_system_parameters(params, flow, config, thermo, impa, minim, plume, cons, pmf, ttm_active, dpd_units)
     Type(parameters_hash_table), Intent(In   ) :: params
     Type(flow_type),             Intent(InOut) :: flow
     Type(configuration_type),    Intent(InOut) :: config
@@ -2138,7 +2169,7 @@ Contains
     Type(plumed_type),           Intent(InOut) :: plume
     Type(constraints_type),      Intent(InOut) :: cons
     Type(pmf_type),              Intent(In   ) :: pmf
-    Logical,                     Intent(In   ) :: ttm_active
+    Logical,                     Intent(In   ) :: ttm_active, dpd_units
 
     Character(Len=STR_LEN)      :: messages(3)
     Character(Len=STR_LEN)      :: option
@@ -2343,7 +2374,11 @@ Contains
       Call params%retrieve("pseudo_thermostat_width", thermo%width_pseudo)
       If (thermo%width_pseudo < 2.0_wp) Then
         thermo%width_pseudo = 2.0_wp
-        Call info('thermostat thickness insufficient - reset to 2 Angs', .true.)
+        If (dpd_units) Then
+          Call info('thermostat thickness insufficient - reset to 2 dpd_l', .true.)
+        Else
+          Call info('thermostat thickness insufficient - reset to 2 Angs', .true.)
+        End If
       End If
 
       Call params%retrieve("pseudo_thermostat_temperature", thermo%temp_pseudo)
@@ -3145,7 +3180,7 @@ Contains
                        key="io_units_scheme", &
                        name="I/O units scheme", &
                        val="internal", &
-                       description="Set I/O units scheme, options: internal, si, atomic, hartree, kj, kcal, boltzman", &
+                       description="Set I/O units scheme, options: internal, si, atomic, hartree, kj, kcal, boltzmann, dpd", &
                        data_type=DATA_OPTION))
 
         Call table%set("io_units_length", control_parameter( &
@@ -3651,8 +3686,8 @@ Contains
                        val="", &
                        units="ang", &
                        internal_units="internal_l", &
-                       description="Set the reference simulation cell for strain calculations &
-                         (column major) defaults to initial cell.", &
+                       description="Set the reference simulation cell for strain calculations "//&
+                       "(column major) defaults to initial cell.", &
                        data_type=DATA_FLOAT_VECTOR))
       End block timestep
 
@@ -3942,7 +3977,7 @@ Contains
                        name="TTM Electronic conductivity", &
                        val="0.0", &
                        units="W/m/K", &
-                       internal_units="k_b/ps/Ang", &
+                       internal_units="k_b/ps/ang", &
                        description="Set electronic conductivity in TTM ", &
                        data_type=DATA_FLOAT))
 
@@ -4423,7 +4458,7 @@ Contains
                        key="coul_damping", &
                        name="Electrostatics Fennell damping", &
                        val="0.0", &
-                       units="1/Ang", &
+                       units="1/ang", &
                        internal_units="1/internal_l", &
                        description="Calculate electrostatics using Fennell damping (Ewald-like) with given alpha", &
                        data_type=DATA_FLOAT))
@@ -4433,6 +4468,15 @@ Contains
                        name="Dielectric Constant", &
                        val="1.0", &
                        description="Set dielectric constant relative to vacuum", &
+                       data_type=DATA_FLOAT))
+
+        Call table%set("coul_bjerrum_length", control_parameter( &
+                       key="coul_bjerrum_length", &
+                       name="Bjerrum Length", &
+                       val="0.0", &
+                       units="ang", &
+                       internal_units="internal_l", &
+                       description="Set Bjerrum length (use instead of dielectric constant relative to vacuum)", &
                        data_type=DATA_FLOAT))
 
         Call table%set("coul_extended_exclusion", control_parameter( &
@@ -4469,14 +4513,16 @@ Contains
                         key="charge_smearing_length", &
                         name="Charge smearing length", &
                         val="0.0", &
-                        description="Set length parameter for charge smearing in Angstroms", &
+                        units="ang", &
+                        internal_units="internal_l", &
+                        description="Set length parameter for charge smearing", &
                         data_type=DATA_FLOAT))
 
         Call table%set("charge_smearing_beta", control_parameter(&
                         key="charge_smearing_beta", &
                         name="Charge smearing beta", &
                         val="original", &
-                        description="Set beta-lambda correspondance for Slater-type charge smearing,"// &
+                        description="Set beta-lambda correspondence for Slater-type charge smearing,"// &
                         "options: original, overlap, distribution", &
                         data_type=DATA_OPTION))
 

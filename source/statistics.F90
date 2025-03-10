@@ -277,6 +277,8 @@ Module statistics
 
     !> Stats for stress tensor average
     Type(statistic_accumulator)        :: stress_accum(1:9)
+    !> Whether to report properties (temperature, pressure, stresses, viscosity) in DPD units
+    Logical :: dpd_units = .false. 
 
   Contains
     Private
@@ -1148,6 +1150,7 @@ Contains
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
     ! contrib   - i.t.todorov july 2019 - RSD as the true displacement
+    !           - m.a.seaton october 2024 - DPD units
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1175,7 +1178,7 @@ Contains
     Integer                    :: fail, i, iadd, j, k, kstak, cor_index
     Logical                    :: ffpass, l_tmp
     Real(Kind=wp)              :: celprp(1:10), h_z, sclnv1, sclnv2, stpcns, stpipv, stprot, &
-                                  stpshl, zistk, btmp(1:9), rtmp
+                                  stpshl, zistk, prsunt0, tenunt0, boltz0, btmp(1:9), rtmp
     Complex(Kind=wp)              observable_a, observable_b
     Real(Kind=wp), Allocatable :: amsd(:), xxt(:), yyt(:), zzt(:)
 
@@ -1189,6 +1192,12 @@ Contains
     ffpass = ff == 1
 
     fail = 0
+
+    ! sort out conversion factors for pressure, stress, tension etc.
+
+    prsunt0 = Merge(1.0_wp, prsunt, stats%dpd_units)
+    tenunt0 = Merge(1.0_wp, tenunt, stats%dpd_units)
+    boltz0 = Merge(1.0_wp, boltz, stats%dpd_units)
 
     Allocate (amsd(1:sites%mxatyp), Stat=fail)
     If (fail > 0) Call error_alloc('amsd', 'statistics_collect')
@@ -1287,15 +1296,15 @@ Contains
 
     ! rotational temperature
 
-    stprot = 2.0_wp * (stats%engrot) / (boltz * Max(1.0_wp, Real(degrot, wp)))
+    stprot = 2.0_wp * (stats%engrot) / (boltz0 * Max(1.0_wp, Real(degrot, wp)))
 
     ! core-shell units temperature
 
-    stpshl = 2.0_wp * (stats%shlke) / (boltz * Max(1.0_wp, Real(degshl, wp)))
+    stpshl = 2.0_wp * (stats%shlke) / (boltz0 * Max(1.0_wp, Real(degshl, wp)))
 
     ! system temperature
 
-    stats%stptmp = 2.0_wp * (stats%engke + stats%engrot) / (boltz * Real(degfre, wp))
+    stats%stptmp = 2.0_wp * (stats%engke + stats%engrot) / (boltz0 * Real(degfre, wp))
 
     ! system virial, stats%virtot has been computed in calculate_forces
 
@@ -1354,7 +1363,7 @@ Contains
     stats%stpval(24) = Acos(celprp(5)) * 180.0_wp / pi
     stats%stpval(25) = Acos(celprp(4)) * 180.0_wp / pi
     stats%stpval(26) = stats%virpmf / engunit
-    stats%stpval(27) = stats%stpprs * prsunt
+    stats%stpval(27) = stats%stpprs * prsunt0
 
     iadd = 27
 
@@ -1362,7 +1371,7 @@ Contains
     ! pressure tensor (derived for the stress tensor)
 
     Do i = 1, 9
-      stats%stpval(iadd + i) = stats%strtot(i) * prsunt / stats%stpvol
+      stats%stpval(iadd + i) = stats%strtot(i) * prsunt0 / stats%stpvol
     End Do
     iadd = iadd + 9
 
@@ -2477,16 +2486,26 @@ Contains
 
   End Subroutine statistics_connect_spread
 
-  Subroutine write_header()
+  Subroutine write_header(dpd_units)
+    Logical, Intent(In) :: dpd_units
     Character(Len=STR_LEN), Dimension(5) :: messages
 
     Write (messages(1), '(a)') Repeat('-', 130)
-    Write (messages(2), '(9x,a4,5x,a7,1x,a11,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
-      'step', 'eng_tot', 'temp_tot[K]', 'eng_cfg', 'eng_src', 'eng_cou', 'eng_bnd', 'eng_ang', 'eng_dih', 'eng_tet'
-    Write (messages(3), '(5x,a8,5x,a7,1x,a11,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
-      'time[ps]', ' eng_pv', 'temp_rot[K]', 'vir_cfg', 'vir_src', 'vir_cou', 'vir_bnd', 'vir_ang', 'vir_con', 'vir_tet'
-    Write (messages(4), '(5x,a8,5x,a7,1x,a11,5x,a7,5x,a7,4x,a8,5x,a7,4x,a8,5x,a7,7x,a5)') &
-      'cpu  [s]', 'volume', 'temp_shl[K]', 'eng_shl', 'vir_shl', 'alpha[o]', 'beta[o]', 'gamma[o]', 'vir_pmf', 'press'
+    If (dpd_units) Then
+      Write (messages(2), '(9x,a4,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
+        'step', 'eng_tot', 'temp_tot', 'eng_cfg', 'eng_src', 'eng_cou', 'eng_bnd', 'eng_ang', 'eng_dih', 'eng_tet'
+      Write (messages(3), '(2x,a11,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
+        'time[dpd_t]', ' eng_pv', 'temp_rot', 'vir_cfg', 'vir_src', 'vir_cou', 'vir_bnd', 'vir_ang', 'vir_con', 'vir_tet'
+      Write (messages(4), '(2x,a11,5x,a7,4x,a8,5x,a7,5x,a7,4x,a8,5x,a7,4x,a8,5x,a7,7x,a5)') &
+        'cpu     [s]', 'volume', 'temp_shl', 'eng_shl', 'vir_shl', 'alpha[o]', 'beta[o]', 'gamma[o]', 'vir_pmf', 'press'
+    Else
+      Write (messages(2), '(9x,a4,5x,a7,1x,a11,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
+        'step', 'eng_tot', 'temp_tot[K]', 'eng_cfg', 'eng_src', 'eng_cou', 'eng_bnd', 'eng_ang', 'eng_dih', 'eng_tet'
+      Write (messages(3), '(5x,a8,5x,a7,1x,a11,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
+        'time[ps]', ' eng_pv', 'temp_rot[K]', 'vir_cfg', 'vir_src', 'vir_cou', 'vir_bnd', 'vir_ang', 'vir_con', 'vir_tet'
+      Write (messages(4), '(5x,a8,5x,a7,1x,a11,5x,a7,5x,a7,4x,a8,5x,a7,4x,a8,5x,a7,7x,a5)') &
+        'cpu  [s]', 'volume', 'temp_shl[K]', 'eng_shl', 'vir_shl', 'alpha[o]', 'beta[o]', 'gamma[o]', 'vir_pmf', 'press'
+    End If
     Write (messages(5), '(a)') Repeat('-', 130)
     Call info(messages, 5, .true.)
 
@@ -2530,11 +2549,16 @@ Contains
     Character(Len=STR_LEN), Dimension(5) :: messages
     Integer                              :: i, iadd, mxnstk
     Logical                              :: check
-    Real(Kind=wp)                        :: avvol, dc, h_z, srmsd, timelp, tmp, tx, ty
+    Real(Kind=wp)                        :: avvol, dc, h_z, srmsd, timelp, tmp, tx, ty, prsunt0, tenunt0
 
     mxnstk = stats%mxnstk
 
     Call info('', .true.)
+
+    ! sort out units for pressure, stress, tension etc.
+
+    prsunt0 = Merge(1.0_wp, prsunt, stats%dpd_units)
+    tenunt0 = Merge(1.0_wp, tenunt, stats%dpd_units)
 
     ! VNL skipping statistics
 
@@ -2630,9 +2654,15 @@ Contains
     If ((nstep == 0 .and. nstrun == 0) .or. stats%numacc == 0) Then
       Write (message, '(a)') '# dry run terminated'
     Else
-      Write (message, '(2(a,i9,a,f10.3),a)') '# run terminated after ', nstep, &
-        ' steps (', time, ' ps), final averages calculated over', stats%numacc, &
-        ' steps (', tmp, ' ps)'
+      If (stats%dpd_units) Then
+        Write (message, '(2(a,i9,a,f10.3),a)') '# run terminated after ', nstep, &
+          ' steps (', time, ' dpd_t), final averages calculated over', stats%numacc, &
+          ' steps (', tmp, ' dpd_t)'
+      Else
+        Write (message, '(2(a,i9,a,f10.3),a)') '# run terminated after ', nstep, &
+          ' steps (', time, ' ps), final averages calculated over', stats%numacc, &
+          ' steps (', tmp, ' ps)'
+      End If
     End If
     Call info(message, .true.)
 
@@ -2648,7 +2678,11 @@ Contains
       iadd = 27
 
       If (comm%idnode == 0) Then
-        Write (message, '(a)') 'Pressure tensor  (katms):'
+        If (stats%dpd_units) Then
+          Write (message, '(a)') 'Pressure tensor  (katms):'
+        Else
+          Write (message, '(a)') 'Pressure tensor  (dpd_p):'
+        End If
         Call info(message, .true.)
 
         Do i = iadd, iadd + 6, 3
@@ -2696,7 +2730,7 @@ Contains
       avvol = stats%sumval(19)
 
       ! final averages and fluctuations
-      Call write_header()
+      Call write_header(stats%dpd_units)
 
       Write (messages(1), '(i13,1p,9e12.4)') stats%numacc, stats%sumval(1:9)
       Write (messages(2), '(f13.5,1p,9e12.4)') tmp, stats%sumval(10:18)
@@ -2704,9 +2738,9 @@ Contains
       Write (messages(4), '(a)') ''
       Call info(messages, 4, .true.)
 
-      Write (messages(1), '(6x,a8,1p,9e12.4)') ' r.m.s. ', stats%ssqval(1:9)
-      Write (messages(2), '(6x,a8,1p,9e12.4)') 'fluctu- ', stats%ssqval(10:18)
-      Write (messages(3), '(6x,a8,1p,9e12.4)') 'ations  ', stats%ssqval(19:27)
+      Write (messages(1), '(5x,a8,1p,9e12.4)') ' r.m.s. ', stats%ssqval(1:9)
+      Write (messages(2), '(5x,a8,1p,9e12.4)') 'fluctu- ', stats%ssqval(10:18)
+      Write (messages(3), '(5x,a8,1p,9e12.4)') 'ations  ', stats%ssqval(19:27)
       Write (messages(4), '(a)') Repeat('-', 130)
       Call info(messages, 4, .true.)
 
@@ -2738,7 +2772,11 @@ Contains
 
       If (comm%idnode == 0) Then
         Write (messages(1), '(a)') 'Pressure tensor:'
-        Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (katms)', 'r.m.s. fluctuations'
+        If (stats%dpd_units) Then
+          Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (dpd_p)', 'r.m.s. fluctuations'
+        Else
+          Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (katms)', 'r.m.s. fluctuations'
+        End If
         Call info(messages, 2, .true.)
 
         Do i = iadd, iadd + 6, 3
@@ -2774,12 +2812,16 @@ Contains
       ! Write out estimated diffusion coefficients
 
       Write (messages(1), '(a)') 'Approximate 3D Diffusion Coefficients and square root of MSDs:'
-      Write (messages(2), '(6x,a4,2x,a19,6x,a15)') 'atom', 'DC (10^-9 m^2 s^-1)', 'Sqrt[MSD] (Ang)'
+      If (stats%dpd_units) Then
+        Write (messages(2), '(6x,a4,3x,a18,4x,a17)') 'atom', 'DC (dpd_l^2/dpd_t)', 'Sqrt[MSD] (dpd_l)'
+      Else
+        Write (messages(2), '(6x,a4,2x,a19,6x,a15)') 'atom', 'DC (10^-9 m^2 s^-1)', 'Sqrt[MSD] (Ang)'
+      End If
       Call info(messages, 2, .true.)
 
       Do i = 1, sites%ntype_atom
         If (sites%num_type_nf(i) > zero_plus) Then
-          dc = 10.0_wp * (stats%ravval(iadd + i) - stats%sumval(iadd + i)) / &
+          dc = Merge(1.0_wp, 10.0_wp, stats%dpd_units) * (stats%ravval(iadd + i) - stats%sumval(iadd + i)) / &
                (3.0_wp * Real(stats%numacc - Min(stats%mxstak, stats%numacc - 1), wp) * thermo%tstep)
           If (dc < 1.0e-10_wp) dc = 0.0_wp
 
@@ -2799,7 +2841,11 @@ Contains
       If (thermo%variable_cell) Then
 
         If (comm%idnode == 0) Then
-          Write (message, '(a32,33x,a19)') 'Average cell vectors     (Angs) ', 'r.m.s. fluctuations'
+          If (stats%dpd_units) Then
+            Write (message, '(a32,33x,a19)') 'Average cell vectors    (dpd_l) ', 'r.m.s. fluctuations'
+          Else
+            Write (message, '(a32,33x,a19)') 'Average cell vectors     (Angs) ', 'r.m.s. fluctuations'
+          End If
           Call info(message, .true.)
 
           Do i = iadd, iadd + 6, 3
@@ -2817,7 +2863,11 @@ Contains
         If (thermo%iso /= CONSTRAINT_NONE) Then
           h_z = stats%sumval(iadd + 1)
 
-          Write (message, "('Average surface area, fluctuations & mean estimate (Angs^2)')")
+          If (stats%dpd_units) Then
+            Write (message, "('Average surface area, fluctuations & mean estimate (dpd_l^2)')")
+          Else
+            Write (message, "('Average surface area, fluctuations & mean estimate (Angs^2)')")
+          End If
           Call info(message, .true.)
           Write (message, '(1p,3e12.4)') stats%sumval(iadd + 2), stats%ssqval(iadd + 2), avvol / h_z
           Call info(message, .true.)
@@ -2825,13 +2875,21 @@ Contains
           iadd = iadd + 2
 
           If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
-            tx = -h_z * (stats%sumval(29) / prsunt - (thermo%press + thermo%stress(1))) * tenunt
-            ty = -h_z * (stats%sumval(30) / prsunt - (thermo%press + thermo%stress(5))) * tenunt
-            Write (message, "('Average surface tension, fluctuations & mean estimate in x (dyn/cm)')")
+            tx = -h_z * (stats%sumval(29) / prsunt0 - (thermo%press + thermo%stress(1))) * tenunt0
+            ty = -h_z * (stats%sumval(30) / prsunt0 - (thermo%press + thermo%stress(5))) * tenunt0
+            If (stats%dpd_units) Then
+              Write (message, "('Average surface tension, fluctuations & mean estimate in x (dpd_f/dpd_l)')")
+            Else
+              Write (message, "('Average surface tension, fluctuations & mean estimate in x (dyn/cm)')")
+            End If
             Call info(message, .true.)
             Write (message, '(1p,3e12.4)') stats%sumval(iadd + 1), stats%ssqval(iadd + 1), tx
             Call info(message, .true.)
-            Write (message, "('Average surface tension, fluctuations & mean estimate in y (dyn/cm)')")
+            If (stats%dpd_units) Then
+              Write (message, "('Average surface tension, fluctuations & mean estimate in y (dpd_f/dpd_l)')")
+            Else
+              Write (message, "('Average surface tension, fluctuations & mean estimate in y (dyn/cm)')")
+            End If
             Call info(message, .true.)
             Write (message, '(1p,3e12.4)') stats%sumval(iadd + 2), stats%ssqval(iadd + 2), ty
             Call info(message, .true.)
@@ -3039,6 +3097,9 @@ Contains
     Integer                         :: i, freq
 
     Character(Len=2), Dimension(1:6), Parameter :: components = (/"xy", "xz", "yx", "yz", "zx", "zy"/)
+    Real(Kind=wp)                  :: boltz0
+
+    boltz0 = Merge(1.0_wp, boltz, stats%dpd_units)
 
     Allocate(simpsons_rule::inter)
     Allocate(viscosity(0))
@@ -3053,7 +3114,7 @@ Contains
     End Do
 
     If (Size(viscosity) > 0) Then
-      viscosity = prsunt * ( stats%accumulators(19)%mu / (boltz*stats%accumulators(2)%mu) ) * viscosity
+      viscosity = prsunt * ( stats%accumulators(19)%mu / (boltz0*stats%accumulators(2)%mu) ) * viscosity
     Else
       Deallocate(viscosity)
     End If
@@ -3156,13 +3217,15 @@ Contains
     Real(Kind=wp),          Intent(In   )              :: dt
     Character(Len=STR_LEN), Intent(  Out)              :: units
     Real(Kind=wp),          Intent(  Out), Allocatable :: therm_cond(:)
-
-    Real(Kind=wp)                   :: conv
+    
+    Real(Kind=wp)                   :: conv, boltz0
     Real(Kind=wp),     Allocatable  :: correlation(:)
     Class(integrator), Allocatable  :: inter
     Integer                         :: i, freq
 
     Character(Len=1), Dimension(1:3), Parameter :: components = (/"x", "y", "z"/)
+    
+    boltz0 = Merge(1.0_wp, boltz, stats%dpd_units)
 
     Allocate(simpsons_rule::inter)
     Allocate(therm_cond(0))
@@ -3179,8 +3242,12 @@ Contains
     If (Size(therm_cond) > 0) Then
       Call to_out_units(1.0_wp, "internal_e", conv, units)
       ! already divided through by volume
-      therm_cond = stats%accumulators(19)%mu / ( (stats%accumulators(2)%mu**2) * (boltz/engunit)) * therm_cond
-      units = Trim(units)//" / (ps Ang K)"
+      therm_cond = stats%accumulators(19)%mu / ( (stats%accumulators(2)%mu**2) * (boltz0/engunit)) * therm_cond
+      If (stats%dpd_units) Then
+        units = Trim(units)//" / (dpd_t dpd_l dpd_temp)"
+      Else
+        units = Trim(units)//" / (ps Ang K)"
+      End If
     Else
       Deallocate(therm_cond)
     End If

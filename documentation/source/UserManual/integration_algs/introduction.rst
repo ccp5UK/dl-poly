@@ -1,7 +1,7 @@
 Introduction
 ============
 
-As a default the DL_POLY_4 integration algorithms are based on the
+As a default the DL_POLY_5 integration algorithms are based on the
 Velocity :index:`Verlet algorithm <pair: Verlet; algorithm>` (VV), which is both simple and time reversible
 :cite:`allen-89a`. It generates trajectories in the
 microcanonical (NVE) ensemble in which the total energy (kinetic plus
@@ -119,7 +119,7 @@ the system
 where :math:`U` is the potential energy of the system and
 :math:`E_{kin}` the kinetic energy at time :math:`t`.
 
-The full selection of :index:`integration algorithms <pair: integration; algorithm>` within DL_POLY_4 is as
+The full selection of :index:`integration algorithms <pair: integration; algorithm>` within DL_POLY_5 is as
 follows:
 
 .. list-table::

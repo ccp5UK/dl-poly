@@ -84,6 +84,7 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    !           - m.a.seaton december 2024
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -129,8 +130,13 @@ Contains
 
       Case (3)
 
-        Write (ounit, '(/,1x,3(a,f7.3),a,/)') &
-          '#** warning - DD cutoff(+padding) is: ', a, ' Angstroms while minimum half-cell width is: ', b, ' Angstroms !!! ***'
+        If (c>0.0_wp) Then
+          Write (ounit, '(/,1x,3(a,f7.3),a,/)') &
+            '#** warning - DD cutoff(+padding) is: ', a, ' dpd_l while minimum half-cell width is: ', b, ' dpd_l !!! ***'
+        Else
+          Write (ounit, '(/,1x,3(a,f7.3),a,/)') &
+            '#** warning - DD cutoff(+padding) is: ', a, ' Angstroms while minimum half-cell width is: ', b, ' Angstroms !!! ***'
+        End If
 
       Case (4)
 
@@ -158,14 +164,25 @@ Contains
 
       Case (7)
 
-        Write (ounit, '(/,1x,a,f7.3,a,/,1x,a,/)') &
-          '#** warning - DD cutoff is ', a, ' Angstroms !!! ***', &
-          '#** Fennell damping is not recommended for cutoffs shorter than 10-12 Angstroms !!! ***'
+        If (b<10.0_wp) Then
+          Write (ounit, '(/,1x,a,f7.3,a,/,1x,a,/)') &
+            '#** warning - DD cutoff is ', a, ' dpd_l !!! ***', &
+            '#** Fennell damping is not recommended for cutoffs shorter than 2.5 dpd_l !!! ***'
+        Else
+          Write (ounit, '(/,1x,a,f7.3,a,/,1x,a,/)') &
+            '#** warning - DD cutoff is ', a, ' Angstroms !!! ***', &
+            '#** Fennell damping is not recommended for cutoffs shorter than 10-12 Angstroms !!! ***'
+        End If
 
       Case (8)
 
-        Write (ounit, '(/,1x,a,2(f7.3,a),/)') &
-          '#** warning - : detected maximum rigid body width: ', a, ' Angstroms while the DD cutoff is ', b, ' Angstroms !!! ***'
+        If (c>0.0_wp) Then
+          Write (ounit, '(/,1x,a,2(f7.3,a),/)') &
+            '#** warning - : detected maximum rigid body width: ', a, ' dpd_l while the DD cutoff is ', b, ' dpd_l !!! ***'
+        Else
+          Write (ounit, '(/,1x,a,2(f7.3,a),/)') &
+            '#** warning - : detected maximum rigid body width: ', a, ' Angstroms while the DD cutoff is ', b, ' Angstroms !!! ***'
+        End If
 
       Case (10)
 
@@ -197,14 +214,14 @@ Contains
 
         Write (ounit, '(3(/,1x,a),/)') &
           "#** warning - DL_POLY_2/Classic directive 'delr - Verlet shell strip cutoff' defaulted to ***", &
-          "#** DL_POLY_4 directive 'padding - real space cutoff padding option' ***", &
+          "#** DL_POLY_5 directive 'padding - real space cutoff padding option' ***", &
           "#** neigh%padding=Max(padding,delr/4) !!! ***"
 
       Case (36)
 
         Write (ounit, '(2(/,1x,a),/)') &
           "#** warning - DL_POLY_2/Classic directive 'mult(iple timestep)' defaulted to ***", &
-          "#** DL_POLY_4 directive 'infrequent k-space SPME evaluation' !!! ***"
+          "#** DL_POLY_5 directive 'infrequent k-space SPME evaluation' !!! ***"
 
       Case (37)
 
@@ -216,12 +233,19 @@ Contains
 
       Case (40)
 
+        ! Warning message only used for old-style CONTROL files
         Write (ounit, '(/,1x,a,f7.3,a,/)') '#** warning - tentative cutoff reset to ', a, ' Angstroms !!! ***'
 
       Case (50)
 
-        Write (ounit, '(2(/,1x,a),f7.3,a,/)') &
-          '#** warning - short-range interactions cutoff reset ***', '#** new cutoff radius (rvdw) ', a, ' Angstroms !!! ***'
+        ! Cannot find this warning message used anywhere: deprecate/remove?
+        If (c>0.0_wp) Then
+          Write (ounit, '(2(/,1x,a),f7.3,a,/)') &
+            '#** warning - short-range interactions cutoff reset ***', '#** new cutoff radius (rvdw) ', a, ' dpd_l !!! ***'
+        Else
+          Write (ounit, '(2(/,1x,a),f7.3,a,/)') &
+            '#** warning - short-range interactions cutoff reset ***', '#** new cutoff radius (rvdw) ', a, ' Angstroms !!! ***'
+        End If
 
       Case (60)
 
@@ -229,7 +253,12 @@ Contains
 
       Case (70)
 
-        Write (ounit, '(/,1x,a,f7.3,a,/)') '#** warning - switching length reset to ', a, ' Angstroms !!! ***'
+        ! Cannot find this warning message used anywhere: deprecate/remove?
+        If (c>0.0_wp) Then
+          Write (ounit, '(/,1x,a,f7.3,a,/)') '#** warning - switching length reset to ', a, ' dpd_l !!! ***'
+        Else
+          Write (ounit, '(/,1x,a,f7.3,a,/)') '#** warning - switching length reset to ', a, ' Angstroms !!! ***'
+        End If
 
       Case (80)
 
@@ -288,10 +317,17 @@ Contains
 
       Case (140)
 
-        Write (ounit, '(/,1x,2a,2(f8.5,a),/,1x,a,/)') &
-          '#** warning - control distances for variable timestep: ', &
-          'Dmin = ', a, ' and Dmax = ', b, ' (Angstroms) !!! ***', &
-          '#** do not comply with safty condition: Dmax > 2.5 Dmin > 0 !!! ***'
+        If (c>0.0_wp) Then
+          Write (ounit, '(/,1x,2a,2(f8.5,a),/,1x,a,/)') &
+            '#** warning - control distances for variable timestep: ', &
+            'Dmin = ', a, ' and Dmax = ', b, ' (dpd_l) !!! ***', &
+            '#** do not comply with safty condition: Dmax > 2.5 Dmin > 0 !!! ***'
+        Else
+          Write (ounit, '(/,1x,2a,2(f8.5,a),/,1x,a,/)') &
+            '#** warning - control distances for variable timestep: ', &
+            'Dmin = ', a, ' and Dmax = ', b, ' (Angstroms) !!! ***', &
+            '#** do not comply with safty condition: Dmax > 2.5 Dmin > 0 !!! ***'
+        End If
 
       Case (150)
 
@@ -375,6 +411,7 @@ Contains
 
       Case (280)
 
+        ! Warning message only used for old-style CONTROL files
         Write (ounit, '(/,1x,a,/,1x,2(a,f9.3),a,/)') &
           '#** warning - pseudo thermostat cannot be applied for this model system since !!! ***', &
           '#** specified thermostat wall thickness ', a, ' > 1/4 minimum MD cell width ', b, ' (Angstroms) !!! ***'
@@ -536,6 +573,7 @@ Contains
 
       Case (310)
 
+        ! Warning message only used for old-style CONTROL files
         Write (ounit, '(/,1x,a,/,1x,a,2(f6.2,a),/)') &
           '#** warning - control distance for defect look-up MUST be in the interval [Min(0.3,rcut/3);Min(1.2,rcut/2)] !!! ***', &
           '#** defects distance condition will default from ', a, ' to ', b, ' (Angstroms) !!! ***'
@@ -551,7 +589,8 @@ Contains
           '#** warning - iteration cycles length limit for conjugate gradient minimisers exceded !!! ***', &
           '#** specified convergence tolerance: ', a, ' , needed one for a pass: ', b, ' !!! ***'
 
-      Case (340)
+        ! Warning message only used for old-style CONTROL files
+        Case (340)
 
         Write (ounit, '(3(/,1x,a),2(f7.4,a),/,1x,a,f7.4,a,/)') &
           '#** warning - inconsistent binsize for spatial distribution functions !!! ***', &
@@ -652,6 +691,7 @@ Contains
 
       Case (470)
 
+        ! Warning message only used for old-style CONTROL files
         Write (ounit, '(/,1x,a,/,1x,a,2(f5.2,a),/)') &
           '#** warning - control distance for diplacement qualification MUST be >= 0.25 Angstroms !!! ***', &
           '#** displacements distance condition will default from ', a, ' to ', b, ' Angstroms !!! ***'
@@ -877,7 +917,7 @@ Contains
 
     If (eworld%idnode == 0) Then
 
-      Write (ounit, '(/,1x,a,i5)') 'DL_POLY_4 terminated due to error ', kode
+      Write (ounit, '(/,1x,a,i5)') 'DL_POLY_5 terminated due to error ', kode
 
       select case (kode)
       Case (1)

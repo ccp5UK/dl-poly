@@ -6,8 +6,8 @@ Examples
 Example Simulations
 ===================
 
-Because of the size of the data files for the DL_POLY_4 standard test
-cases, they are not shipped in the standard download of the DL_POLY_4
+Because of the size of the data files for the DL_POLY_5 standard test
+cases, they are not shipped in the standard download of the DL_POLY_5
 source. Test files are downloaded automatically when building/ running
 CMake with the CMake variable BUILD_TESTING=ON. This can be done as
 follows:
@@ -21,7 +21,7 @@ follows:
 Unpack the files in the ‘data’ subdirectory using ‘gunzip’ and ‘tar -xf’
 to create the ‘TEST_X’ directory.
 
-These are provided to give examples of DL_POLY_4 simulations and
+These are provided to give examples of DL_POLY_5 simulations and
 demonstrate a limited set of relevant functionality over a limited
 extent of molecular systems’ complexity only. **Without modification,
 they are not necessarily appropriate for serious simulation of the given
@@ -33,7 +33,7 @@ all).
 
 The README.txt file supplied both in the *data* directory and in the
 directory on the CCP5 FTP server provides a list of all example
-simulations used as test cases to check that DL_POLY_4 is working
+simulations used as test cases to check that DL_POLY_5 is working
 correctly, including those described in more detail below. All the jobs
 are of a size suitable to test the code in parallel execution. They may
 not be suitable for a single processor computer. The files are stored in
@@ -215,7 +215,7 @@ VOTCA, `<http://www.votca.org/>`_, or DL_CGMAP
 These test cases are to exemplify the Coarse-Graining (CG) procedure
 (see Chapter \ :ref:`coarse-graining`), including
 FA-to-CG mapping and obtaining the PMF data by means of Boltzmann
-Inversion :cite:`reith-03a`. As a result, DL_POLY_4 could be
+Inversion :cite:`reith-03a`. As a result, DL_POLY_5 could be
 used for simulating a CG system with numerically defined, tabulated FFs,
 see TABBND, TABANG, TABDIH and TABINV files for intra-molecular
 potentials, and TABLE for inter-molecular (short-range, VDW) potentials.
@@ -252,7 +252,7 @@ COLVAR.
 
 .. note::
    
-   a DL_POLY_4 version with PLUMED enabled is used for this.
+   a DL_POLY_5 version with PLUMED enabled is used for this.
 
 
 Example 29: Iron with tabulated EAM (metal) Potential, TTM and Cascade

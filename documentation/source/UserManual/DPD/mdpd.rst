@@ -176,8 +176,9 @@ many-body forces are conservative, the maximum value specified within the ```FIE
 
 .. note:: 
 
-   The expression for :math:`\psi^{ex}` is this generalised for of many-body DPD differes from the original 
+   The expression for :math:`\psi^{ex}` is this generalised for of many-body DPD differs from the original 
    two-parameter form by a factor of :math:`\frac{\pi r_{d}^{4}}{15r_{c}^{6}}` for the term :math:`B`. Moving to the 
    generalised form from the two-parameter model would require :math:`B` to be multiplied by the same factor. 
-   Since DL_POLY_5 only implements the generalised form, care must be taken when using it to apply the two-parameter model, particularly with respect to unit conversions. 
+   Since DL_POLY_5 only implements the generalised form, care must be taken when using it to apply the two-parameter model, 
+   particularly with respect to unit conversions. 
 

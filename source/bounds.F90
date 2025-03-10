@@ -153,7 +153,7 @@ Contains
       ! halt program if potential cutoff exceeds the minimum half-cell config%width
 
       If (neigh%cutoff >= config%width / 2.0_wp) Then
-        Call warning(3, neigh%cutoff, config%width / 2.0_wp, 0.0_wp)
+        Call warning(3, neigh%cutoff, config%width / 2.0_wp, Merge(1.0_wp, 0.0_wp, stats%dpd_units))
 
         If (.not. devel%l_trm) Then
           Call error(95)
@@ -236,7 +236,7 @@ Contains
       Write (messages(1), '(a)') &
           '#** warning - primary link cell algorithm has a link cell dimension that is < 3 !!! ***'
       Write (messages(2), '(a)') &
-          '#** DL_POLY_4 RUNNING IN LOW EFFICIENCY MODE !!! ***'
+          '#** DL_POLY_5 RUNNING IN LOW EFFICIENCY MODE !!! ***'
       Call info(messages, 2, .true., level=3)
     End If
 
@@ -359,7 +359,7 @@ Contains
       ! halt program if potential cutoff exceeds the minimum half-cell config%width
 
       If (neigh%cutoff >= config%width / 2.0_wp) Then
-        Call warning(3, neigh%cutoff, config%width / 2.0_wp, 0.0_wp)
+        Call warning(3, neigh%cutoff, config%width / 2.0_wp, Merge(1.0_wp, 0.0_wp, stats%dpd_units))
         If (.not. devel%l_trm) Then
           Call error(95)
         End If
@@ -449,7 +449,7 @@ Contains
       Write (messages(1), '(a)') &
           '#** warning - primary link cell algorithm has a link cell dimension that is < 3 !!! ***'
       Write (messages(2), '(a)') &
-          '#** DL_POLY_4 RUNNING IN LOW EFFICIENCY MODE !!! ***'
+          '#** DL_POLY_5 RUNNING IN LOW EFFICIENCY MODE !!! ***'
       Call info(messages, 2, .true., level=3)
     End If
 

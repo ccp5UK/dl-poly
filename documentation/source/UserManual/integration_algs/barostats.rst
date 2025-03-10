@@ -4,7 +4,7 @@ Barostats
 The size and shape of the simulation cell may be dynamically adjusted by
 coupling the system to a barostat in order to obtain a desired average
 pressure (:math:`P_{\rm ext}`) and/or isotropic :index:`stress tensor`
-(:math:`\underline{\underline{\mathbf{\sigma}}}`). DL_POLY_4has four such algorithms: the Langevin
+(:math:`\underline{\underline{\mathbf{\sigma}}}`). DL_POLY_5 has four such algorithms: the Langevin
 type barostat :cite:`quigley-04a`, the Berendsen barostat
 :cite:`berendsen-84a`, the Nosé-Hoover type barostat
 :cite:`hoover-85a` and the Martyna-Tuckerman-Klein (MTK)
@@ -67,7 +67,7 @@ constrain, :math:`\underline{\underline{\mathbf{\sigma}}}_{\rm constrains}`, and
 Langevin Barostat
 -----------------
 
-DL_POLY_4implements a Langevin barostat :cite:`quigley-04a`
+DL_POLY_5 implements a Langevin barostat :cite:`quigley-04a`
 for isotropic and anisotropic cell fluctuations.
 
 Cell size variations
@@ -215,7 +215,7 @@ the end the velocities are scaled by a factor of :math:`\chi`.
    .. math:: \underline{v}(t + \Delta t) \leftarrow \exp \left( -\chi \; {\Delta t \over 4} \right) \; \underline{v}(t + \Delta t)~~,
 
 The VV flavour of the langevin barostat (and Nosé-Hoover thermostat) is
-implemented in the DL_POLY_4routine ``npt_l0_vv``. The routine
+implemented in the DL_POLY_5 routine ``npt_l0_vv``. The routine
 ``npt_l1_vv`` implements the same but also incorporate RB dynamics.
 
 Cell size and shape variations
@@ -337,7 +337,7 @@ following modification in the N\ :math:`P_{n}\gamma`\ T set of equatons
    \frac{R_{p,xx}(t)+R_{p,yy}(t)}{2~p_{mass}}~~:~~(\alpha = \beta) = x,y~~.\nonumber\end{aligned}
 
 The VV flavour of the non-isotropic Langevin barostat (and Nosé-Hoover
-thermostat) is implemented in the DL_POLY_4routine ``nst_l0_vv``. The
+thermostat) is implemented in the DL_POLY_5 routine ``nst_l0_vv``. The
 routine ``nst_l1_vv`` implements the same but also incorporate RB
 dynamics.
 
@@ -370,7 +370,7 @@ scaled by a factor :math:`\eta`, and the coordinates and cell vectors by
    {\cal P}(t)) 
 
 where :math:`\beta` is the isothermal compressibility of the system. In
-practice :math:`\beta` is a specified constant which DL_POLY_4takes to
+practice :math:`\beta` is a specified constant which DL_POLY_5 takes to
 be the isothermal compressibility of liquid water. The exact value is
 not critical to the algorithm as it relies on the ratio
 :math:`\tau_{P}/\beta`. :math:`\tau_{P}` is a specified time constant
@@ -435,7 +435,7 @@ where is the cell matrix whose columns are the three cell vectors
 The Berendsen algorithms conserve total momentum but not energy.
 
 The VV flavour of the Berendsen barostat (and thermostat) is implemented
-in the DL_POLY_4routine ``npt_b0_vv``. The routines ``npt_b1_vv``
+in the DL_POLY_5 routine ``npt_b0_vv``. The routines ``npt_b1_vv``
 implements the same but also incorporate RB dynamics.
 
 Cell size and shape variations
@@ -518,7 +518,7 @@ following change in the equations above
    \frac{\sigma_{xx}(t)+\sigma_{yy}(t)}{2~V(t)} \right]~~:~~(\alpha = \delta) = x,y~~.
 
 The VV flavour of the non-isotropic Berendsen barostat (and thermostat)
-is implemented in the DL_POLY_4routine ``nst_b0_vv``. The routine
+is implemented in the DL_POLY_5 routine ``nst_b0_vv``. The routine
 ``nst_b1_vv`` implements the same but also incorporate RB dynamics.
 
 
@@ -527,7 +527,7 @@ is implemented in the DL_POLY_4routine ``nst_b0_vv``. The routine
 Nosé-Hoover Barostat
 --------------------
 
-DL_POLY_4uses the Melchionna modification of the Nosé-Hoover algorithm
+DL_POLY_5 uses the Melchionna modification of the Nosé-Hoover algorithm
 :cite:`melchionna-93a` in which the equations of motion
 involve a Nosé-Hoover :index:`thermostat<thermostat;Nosé-Hoover>` 
 and a :index:`barostat<barostat;Nosé-Hoover>` in the same spirit.
@@ -719,7 +719,7 @@ timestep :math:`t + \Delta t` and is the cell matrix whose columns are
 the three cell vectors :math:`\underline{a}, \underline{b}, \underline{c}`.
 
 The VV flavour of the Nosé-Hoover barostat (and thermostat) is
-implemented in the DL_POLY_4routine ``npt_h0_vv``. The routine
+implemented in the DL_POLY_5 routine ``npt_h0_vv``. The routine
 ``npt_h1_vv`` implements the same but also incorporate RB dynamics.
 
 Cell size and shape variations
@@ -776,7 +776,7 @@ The modifications in (ii) couched algorithms
    V(t + \Delta t) \leftarrow& \exp \left(\texttt{ Tr}
    \left[ \underline{\underline{\mathbf{\eta}}}(t + {1 \over 2} \Delta t) \right] \; \Delta t \right) \; V(t)~~.\end{aligned}
 
-It is worth noting DL_POLY_4uses Taylor expansion truncated to the
+It is worth noting DL_POLY_5 uses Taylor expansion truncated to the
 quadratic term to approximate exponentials of tensorial terms.
 
 The conserved quantity is, to within a constant, the Gibbs free energy
@@ -866,14 +866,14 @@ following changes in the equations above
    (f+2)~k_{B}~T_{\rm ext}~\int_o^t \chi (s) ds~~.\nonumber\end{aligned}
 
 The VV flavour of the non-isotropic Nosé-Hoover barostat (and
-thermostat) is implemented in the DL_POLY_4routine ``nst_h0_vv``. The
+thermostat) is implemented in the DL_POLY_5 routine ``nst_h0_vv``. The
 routine ``nst_h1_vv`` implements the same but also incorporate RB
 dynamics.
 
 Martyna-Tuckerman-Klein Barostat
 --------------------------------
 
-DL_POLY_4includes the Martyna-Tuckerman-Klein (MTK) interpretation of
+DL_POLY_5 includes the Martyna-Tuckerman-Klein (MTK) interpretation of
 the VV flavoured Nosé-Hoover algorithms :cite:`martyna-96a`
 for isotropic and anisotropic cell fluctuations in which the equations
 of motion are only slightly augmented with respect to those for the
@@ -1028,6 +1028,6 @@ the system :cite:`martyna-94a`, which is not the case for
 Nosé-Hoover NPT and N\ :math:`\underline{\underline{\mathbf{\sigma}}}`\ T ensembles.
 
 The NPT and N\ :math:`\underline{\underline{\mathbf{\sigma}}}`\ T versions of the MTK ensemble are
-implemented in the DL_POLY_4routines ``npt_m0_vv`` and ``nst_m0_vv``.
+implemented in the DL_POLY_5 routines ``npt_m0_vv`` and ``nst_m0_vv``.
 The corresponding routines incorporating RB dynamics are ``npt_m1_vv``,
 and ``nst_m1_vv``.

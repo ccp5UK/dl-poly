@@ -12,7 +12,7 @@ The Intermolecular Potential Functions
 
 In this section we outline the two-body, metal, Tersoff, three-body and
 four-body potential functions in . An important distinction between
-these and intramolecular (bond) forces in DL_POLY_4 is that they are
+these and intramolecular (bond) forces in DL_POLY_5 is that they are
 specified by *atom types* rather than atom indices.
 
 .. _vdw:
@@ -20,7 +20,7 @@ specified by *atom types* rather than atom indices.
 Short Ranged (van der Waals) Potentials
 ---------------------------------------
 
-The short ranged pair forces available in DL_POLY_4 are as follows:
+The short ranged pair forces available in DL_POLY_5 are as follows:
 
 #. 12-6 potential: (\ **12-6**)
 
@@ -138,8 +138,7 @@ The short ranged pair forces available in DL_POLY_4 are as follows:
    .. math:: U(r_{ij}) = E_{o}~[\{1-\exp(-k(r_{ij}-r_{o}))\}^{2}-1]
       :label: morse_vdw_eq
 
-#. Shifted Weeks-Chandler-Andersen (WCA) potential
-   :cite:`weeks-71a`: (\ **wca**)
+#. Shifted Weeks-Chandler-Andersen (WCA) potential :cite:`weeks-71a`: (\ **wca**)
 
    .. math::
       :label: wca_eq
@@ -302,7 +301,7 @@ The short ranged pair forces available in DL_POLY_4 are as follows:
 
 #. Tabulation: (\ **tab**). The potential is defined numerically only.
 
-The parameters defining these potentials are supplied to DL_POLY_4 at
+The parameters defining these potentials are supplied to DL_POLY_5 at
 run time (see the description of the FIELD file in
 Section :ref:`field-file`). Each atom type in the system
 is specified by a unique eight-character label defined by the user. The
@@ -331,7 +330,7 @@ and is used in the calculation of the forces. Both arrays are tabulated
 in units of energy. The use of interpolation arrays, rather than the
 explicit formulae, makes the routines for calculating the potential
 energy and atomic forces very general, and enables the use of user
-defined pair potential functions. DL_POLY_4 also allows the user to read
+defined pair potential functions. DL_POLY_5 also allows the user to read
 in the interpolation arrays directly from a file (implemented in the
 vdw_table_read routine) and the TABLE file
 (Section :ref:`table-file`). This is particularly useful if
@@ -381,7 +380,7 @@ where :math:`N_{a},N_{b}` are the numbers of atoms of types :math:`a`
 and :math:`b` in the system, :math:`V` is the system volume and
 :math:`g_{ab}(r)` and :math:`U_{ab}(r)` are the appropriate pair
 correlation function and pair potential respectively. It is usual to
-assume :math:`g_{ab}(r)=1` for :math:`r>r_{\rm vdw}` . DL_POLY_4
+assume :math:`g_{ab}(r)=1` for :math:`r>r_{\rm vdw}` . DL_POLY_5
 sometimes makes the additional assumption that the repulsive part of the
 short ranged potential is negligible beyond :math:`r_{\rm vdw}` .
 
@@ -402,7 +401,7 @@ where the same approximations are applied.
    14-7 pair potential’s corrections to system energy and virial are solved
    numerically.
 
-In DL_POLY_4 the short ranged forces are calculated by the subroutine
+In DL_POLY_5 the short ranged forces are calculated by the subroutine
 ``vdw_forces``. The long-ranged corrections are calculated by routine
 ``vdw_lrc``. The calculation makes use of the :index:`Verlet<algorithm;Verlet>` 
 neighbour list (see above).
@@ -410,13 +409,13 @@ neighbour list (see above).
 Notes on mixing rules for short-ranged interactions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 allows a short cut for mixing some of the explicitly specified
+DL_POLY_5 allows a short cut for mixing some of the explicitly specified
 pair interactions for single species of the same type so that
 cross-species interactions are generated if unspecified. This is only
 possible for the **12-6, lj, dpd, 14-7, wca & ljc** types. The mixing is
 derived from the Lennard-Jones style characteristic paramteres for
 energy (:math:`\epsilon`) and distance (:math:`\sigma` or :math:`r_{0}`)
-terms. The available types of mixing within DL_POLY_4 are borrowed from
+terms. The available types of mixing within DL_POLY_5 are borrowed from
 :cite:`al-matar-04a`. The rules’ names and formulae are as
 follows:
 
@@ -463,7 +462,7 @@ Metal Potentials
 
 .. index:: single: potential;metal
 
-The metal potentials in DL_POLY_4 follow two similar but distinct
+The metal potentials in DL_POLY_5 follow two similar but distinct
 formalisms. The first of these is the embedded atom model (EAM)
 :cite:`baskes-84a,baskes-86a` and the second is the
 Finnis-Sinclair model (FS) :cite:`finnis-84a`. Both are
@@ -513,7 +512,7 @@ potential dependent on the local density (environmental).
 electrostatic and overlap interactions. :math:`N` is the number of
 interacting particles in the MD box.
 
-In DL_POLY_4 EAM and thus EEAM can be further generalised to include
+In DL_POLY_5 EAM and thus EEAM can be further generalised to include
 two-band (2B) densities :cite:`ackland-03a,ollson-05a`, for
 :math:`s`- and :math:`d`-bands,
 
@@ -532,7 +531,7 @@ potentials is only possible if the single band ones are generalised to
 2B forms. The user is, again, reminded to be consistent in the choice of
 potential when modelling alloys.
 
-The types of metal potentials available in DL_POLY_4 are as follows:
+The types of metal potentials available in DL_POLY_5 are as follows:
 
 #. EAM :index:`potential<potential;EAM>`: (\ **eam**) There are no explicit mathematical
    expressions for EAM potentials, so this potential type is read
@@ -653,7 +652,7 @@ The types of metal potentials available in DL_POLY_4 are as follows:
    .. note::
       
       The parameters :math:`\alpha` and :math:`r_{\rm o}`
-      must be the same for all defined potentials of this type. DL_POLY_4
+      must be the same for all defined potentials of this type. DL_POLY_5
       will set :math:`\alpha={\rm Max}(0,\alpha_{pq})` and
       :math:`r_{\rm o}={\rm Max}(0,r_{{\rm o}\_pq})` for all defined
       interactions of this type between species :math:`p` and :math:`q`. If
@@ -665,7 +664,7 @@ All of these metal potentials can be decomposed into pair contributions
 and thus fit within the general tabulation scheme of , where they are
 treated as pair interactions (though note that the metal cutoff,
 :math:`r_{\rm met}` has nothing to do with short ranged cutoff,
-:math:`r_{\rm vdw}`). DL_POLY_4 calculates this potential in two stages:
+:math:`r_{\rm vdw}`). DL_POLY_5 calculates this potential in two stages:
 the first calculates the local density, :math:`\rho_{i}`, for each atom;
 and the second calculates the potential energy and forces. Interpolation
 arrays, vmet, gmet and fmet (metal_generate, metal_table_read) are used
@@ -888,7 +887,7 @@ components. The atomic stress tensor is symmetric.
 
 .. index:: single: long-ranged corrections;metal
    
-The long-ranged correction for the DL_POLY_4 metal potential is in two
+The long-ranged correction for the DL_POLY_5 metal potential is in two
 parts. Firstly, by analogy with the short ranged potentials, the
 correction to the local density is
 
@@ -1124,7 +1123,7 @@ In the energy and virial corrections we have used the approximation:
 
 where :math:`<\rho_{i}^{1/2}>` is regarded as a constant of the system.
 
-In DL_POLY_4 the metal forces are handled by the routine ``metal_forces``.
+In DL_POLY_5 the metal forces are handled by the routine ``metal_forces``.
 The local density is calculated by the routines ``metal_ld_collect_eam``,
 ``metal_ld_collect_fst``, ``metal_ld_compute``, ``metal_ld_set_halo`` and
 ``metal_ld_export``. The long-ranged corrections are calculated by
@@ -1227,7 +1226,7 @@ potential frameworks:
    densities to each other, but not to atoms of the same type.
 
 The above rules have the following consequences to the specifications of
-these potentials in the DL_POLY_4 FIELD file for an alloy composed of
+these potentials in the DL_POLY_5 FIELD file for an alloy composed of
 :math:`n` different metal atom types both the EAM types and FS types of
 potentials require the specification of :math:`n(n+1)/2` pair functions
 :math:`V^{AB}_{ij}(r_{ij})`. However, the its only the simple EAM type
@@ -1248,12 +1247,12 @@ density functions for the :math:`s`-band are required.
 It is worth noting that in the 2BEAM and 2BEEAM the :math:`s`-band
 contribution is usually only for the alloy component, so that local
 concentrations of a single element revert to the standard EAM or EEAM!
-In such case, the densities functions must be zeroed in the DL_POLY_4
+In such case, the densities functions must be zeroed in the DL_POLY_5
 TABEAM file.
 
 For EAM, EEAM, 2BEAM and 2BEEAM potentials all the functions are
 supplied in tabular form via the table file TABEAM (see
-section :ref:`tabeam-file`) to which DL_POLY_4 is
+section :ref:`tabeam-file`) to which DL_POLY_5 is
 redirected by the FIELD file data. The FS potentials are defined via the
 necessary parameters in the FIELD file.
 
@@ -1577,8 +1576,8 @@ calculated by the link-cell method :cite:`eastwood-80a`.
 
 .. index:: single: potential;Tersoff
 
-DL_POLY_4 applies no long-ranged corrections to the Tersoff potentials.
-In DL_POLY_4 Tersoff forces are handled by the routine ``tersoff_forces``.
+DL_POLY_5 applies no long-ranged corrections to the Tersoff potentials.
+In DL_POLY_5 Tersoff forces are handled by the routine ``tersoff_forces``.
 
 .. _three-body:
 
@@ -1587,7 +1586,7 @@ Three-Body Potentials
 
 .. index:: single: potential;three-body
 
-The three-body potentials in DL_POLY_4 are mostly valence :index:`angle<potential;valence angle>`
+The three-body potentials in DL_POLY_5 are mostly valence :index:`angle<potential;valence angle>`
 forms. (They are primarily included to permit simulation of amorphous materials
 e.g. silicate glasses.) However, these have been extended to include the
 :index:`Dreiding<force field;Dreiding>` :cite:`mayo-90a` hydrogen bond. The potential forms
@@ -1677,7 +1676,7 @@ the section valence angle potentials above.
 
 .. index:: single: potential;three-body
 
-DL_POLY_4 applies no long-ranged corrections to the three-body
+DL_POLY_5 applies no long-ranged corrections to the three-body
 potentials. The three-body forces are calculated by the routine
 ``three_body_forces``.
 
@@ -1688,11 +1687,11 @@ Four-Body Potentials
 
 .. index:: potential;four-body
 
-The four-body potentials in DL_POLY_4 are entirely inversion 
+The four-body potentials in DL_POLY_5 are entirely inversion 
 :index:`angle<potential;inversion>`
 forms, primarily included to permit simulation of amorphous materials
 (particularly borate glasses). The potential forms available in
-DL_POLY_4 are as follows:
+DL_POLY_5 are as follows:
 
 #. Harmonic: (\ **harm**)
 
@@ -1734,6 +1733,6 @@ section on inversion angle potentials above.
 
 .. index:: single: potential;four-body
 
-DL_POLY_4 applies no long-ranged corrections to the four body
+DL_POLY_5 applies no long-ranged corrections to the four body
 potentials. The four-body forces are calculated by the routine
 ``four_body_forces``.

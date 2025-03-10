@@ -10,8 +10,8 @@ DL_POLY :cite:`smith-96a` is a package of subroutines,
 programs and data files, designed to facilitate molecular dynamics
 simulations of macromolecules, polymers, ionic systems and solutions on
 a distributed memory parallel computer. It is available in two forms: DL_POLY_Classic
-(written by Bill Smith & Tim Forester, `<http://www.ccp5.ac.uk/DL\_POLY\_CLASSIC/>`_) and DL_POLY_4(written by Ilian Todorov &
-Bill Smith) :cite:`todorov-04a,todorov-06a`. Both versions
+(written by Bill Smith & Tim Forester, `<http://www.ccp5.ac.uk/DL\_POLY\_CLASSIC/>`_) and DL_POLY_5
+(written by Ilian Todorov & Bill Smith) :cite:`todorov-04a,todorov-06a`. Both versions
 were originally written on behalf of :index:`CCP5`, the UK's Collaborative
 Computational Project on Molecular Simulation, which has been in
 existence since 1980 :cite:`smith-87a` (`<http://www.ccp5.ac.uk/DL\_POLY/>`_).
@@ -19,19 +19,19 @@ existence since 1980 :cite:`smith-87a` (`<http://www.ccp5.ac.uk/DL\_POLY/>`_).
 The two forms of DL_POLY differ primarily in their method of exploiting
 parallelism. DL_POLY_Classic uses a Replicated Data (RD) strategy
 :cite:`smith-91a,smith-93a,smith-94a,smith-94b` which works
-well simulations of up to 30,000 atoms on up to 100 processors. DL_POLY_4 is based
+well simulations of up to 30,000 atoms on up to 100 processors. DL_POLY_5 is based
 on the Domain Decomposition (DD) strategy
 :cite:`todorov-04a,todorov-06a,pinches-91a,rapaport-91b,smith-91a,smith-93a`,
 and is best suited for large molecular simulations from :math:`10^{3}`
 to :math:`10^{9}` atoms on large processor counts. The two packages are
-reasonably compatible, so that it is possible to scale up from a DL_POLY_Classic to a DL_POLY_4
+reasonably compatible, so that it is possible to scale up from a DL_POLY_Classic to a DL_POLY_5
 simulation with little effort. It should be apparent from these comments
-that DL_POLY_4 is not intended as a replacement for DL_POLY_Classic.
+that DL_POLY_5 is not intended as a replacement for DL_POLY_Classic.
 
 Users are reminded that we are interested in hearing what other features
 could be usefully incorporated. We obviously have ideas of our own and
 CCP5 strongly influences developments, but other input would be welcome
-nevertheless. We also request that our users respect the integrity of DL_POLY_4
+nevertheless. We also request that our users respect the integrity of DL_POLY_5
 source and not pass it on to third parties. We require that all users of
 the package register with us, not least because we need to keep everyone
 abreast of new developments and discovered bugs. We have developed
@@ -45,12 +45,12 @@ DL_POLY project website -
 Functionality
 ~~~~~~~~~~~~~
 
-The following is a list of the features DL_POLY_4 supports.
+The following is a list of the features DL_POLY_5 supports.
 
 Molecular Systems
 -----------------
 
-DL_POLY_4 will simulate the following molecular species:
+DL_POLY_5 will simulate the following molecular species:
 
 -  Simple atomic systems and mixtures, e.g. Ne, Ar, Kr, etc.
 
@@ -84,7 +84,7 @@ DL_POLY_4 will simulate the following molecular species:
 Force Field
 -----------
 
-The DL_POLY_4 :index:`force field<single: force field; DL_POLY>` includes the following features:
+The DL_POLY_5 :index:`force field<single: force field; DL_POLY>` includes the following features:
 
 #. All common forms of :index:`non-bonded<single: potential; non-bonded>` atom-atom (van der Waals) potentials
 
@@ -124,7 +124,7 @@ to user specific :index:`force field`\ s.
 Boundary Conditions
 -------------------
 
-DL_POLY_4 will accommodate the following boundary conditions:
+DL_POLY_5 will accommodate the following boundary conditions:
 
 #. None, e.g. isolated molecules in vacuo
 
@@ -149,8 +149,8 @@ Java Graphical User Interface
 
 .. |reg|   unicode:: U+000AE 
 
-The DL_POLY_4 Graphical User Interface (GUI) is the same one that also comes with
-DL_POLY_Classic, which is written in the Javaprogramming\ |reg| language from Sun\ |reg| Microsystems.
+The DL_POLY_5 Graphical User Interface (GUI) is the same one that also comes with
+DL_POLY_Classic, which is written in the Java programming\ |reg| language from Sun\ |reg| Microsystems.
 A major advantage of this is the free availability of the Java
 programming environment from Sun\ |reg|, and also its portability across
 platforms. The compiled GUI may be run without recompiling on any Java\ |reg|
@@ -167,7 +167,7 @@ Algorithms
 Parallel Algorithms
 +++++++++++++++++++
 
-DL_POLY_4 exclusively employs the Domain Decomposition parallelisation strategy
+DL_POLY_5 exclusively employs the Domain Decomposition parallelisation strategy
 :cite:`pinches-91a,rapaport-91b,smith-91a,smith-93a` (see
 Section: :ref:`parallelisation`).
 
@@ -186,7 +186,7 @@ Molecular Dynamics Algorithms
    single: rigid body
    single: algorithm; NOSQUISH
 
-DL_POLY_4 offers a selection of MD integration algorithms based on Velocity Verlet
+DL_POLY_5 offers a selection of MD integration algorithms based on Velocity Verlet
 (VV) :cite:`allen-89a`. These generate NVE,
 NVE\ :math:`_{kin}`, NVT, NPT and NT ensembles with a selection of
 thermostats and barostats. Parallel versions of the RATTLE
@@ -231,7 +231,7 @@ The following MD :index:`algorithms<algorithm>` are available:
 
 .. index:: dlpoly2
 
-DL_POLY_Classic features incompatible or unavalable in DL_POLY_4
+DL_POLY_Classic features incompatible or unavalable in DL_POLY_5
 ----------------------------------------------------------------
 
 -  Force field
@@ -276,14 +276,14 @@ DL_POLY_Classic features incompatible or unavalable in DL_POLY_4
 Programming Style
 ~~~~~~~~~~~~~~~~~
 
-The programming style of DL_POLY_4 is intended to be as uniform as possible. The
+The programming style of DL_POLY_5 is intended to be as uniform as possible. The
 following stylistic rules apply throughout. Potential contributors of
 code are requested to note the stylistic convention.
 
 Programming Language
 --------------------
 
-DL_POLY_4 is written in free format :index:`FORTRAN90`. In DL_POLY_4 we have adopted the convention
+DL_POLY_5 is written in free format :index:`FORTRAN90`. In DL_POLY_5 we have adopted the convention
 of *explicit type declaration* i.e. we have used
 
 ::
@@ -296,8 +296,8 @@ in all subroutines. Thus all variables must be given an explicit type:
 Modularisation and Intent
 -------------------------
 
-DL_POLY_4 exploits the full potential of the modularisation concept in :index:`FORTRAN90`.
-Variables having in common description of certain feature or method in DL_POLY_4
+DL_POLY_5 exploits the full potential of the modularisation concept in :index:`FORTRAN90`.
+Variables having in common description of certain feature or method in DL_POLY_5
 are grouped in modules. This simplifies subroutines’ calling sequences
 and decreases error-proneness in programming as subroutines must define
 what they use and from which module. To decrease error-proneness
@@ -317,16 +317,16 @@ subroutines have defined intent, i.e. whether they are to be:
 Memory Management
 -----------------
 
-DL_POLY_4 exploits the dynamic array allocation features of :index:`FORTRAN90` to assign
+DL_POLY_5 exploits the dynamic array allocation features of :index:`FORTRAN90` to assign
 the necessary array dimensions.
 
 Target Platforms
 ----------------
 
-DL_POLY_4 is intended for distributed memory parallel computers.
+DL_POLY_5 is intended for distributed memory parallel computers.
 
-Compilation of DL_POLY_4 in parallel mode requires **only** a :index:`FORTRAN90` compiler and
-Message Passing Interface (MPI) to handle communications. Compilation of DL_POLY_4
+Compilation of DL_POLY_5 in parallel mode requires **only** a :index:`FORTRAN90` compiler and
+Message Passing Interface (MPI) to handle communications. Compilation of DL_POLY_5
 in serial mode is also possible and requires **only** a :index:`FORTRAN90` compiler.
 
 Internal Documentation
@@ -373,7 +373,7 @@ compliant with the MPI working precision ``mpi_wp`` as defined in
 Units
 -----
 
-Internally all :index:`DL_POLY_4<units;DL_POLY>` subroutines and functions assume the use of the following
+Internally all :index:`DL_POLY_5<units;DL_POLY>` subroutines and functions assume the use of the following
 defined *molecular units*:
 
 -  The unit of time (:math:`t_{o}`) is :math:`1 \times 10^{-12}` seconds
@@ -420,42 +420,43 @@ In addition, the following conversion factors are used:
    temperature (in Kelvin).
 
 .. note::
-   In the DL_POLY_4 OUTPUT file, the print out of :index:`pressure<units;pressure>` is in units of katms
-   (kilo-atmospheres) at all times. The unit of energy is either DL_POLY
-   units specified above, or in other units specified by the user at run
-   time (see Section :ref:`field-file`. The default is the
-   DL_POLY unit.
+   In the DL_POLY_5 OUTPUT file, the print out of :index:`pressure<units;pressure>` is 
+   in units of katms (kilo-atmospheres) at all times, except when DPD units are in use
+   (which uses energy per unit volume, :math:`[E] [L]^{-3}`). The unit of energy is 
+   either DL_POLY units specified above, or in other units specified by the user at 
+   run time (see Section :ref:`field-file`). The default is the DL_POLY unit.
 
-Externally, DL_POLY_4 accepts information in its own specific formatting as
+Externally, DL_POLY_5 accepts information in its own specific formatting as
 described in Section :ref:`input-files`. Irrespective of
 formatting rules, all values provided to define input entities are read
 in DL_POLY units (except otherwise specified as in the case of energy
-units) or their composite mixture representing the corresponding entity
-physically, i.e. velocities’ components are in Ångstroms/picosecond.
+units and, for DPD simulations, temperature units) or their composite 
+mixture representing the corresponding entity physically, i.e. velocities’ 
+components are in Ångstroms/picosecond.
 
-**Exception:** It should be noted that when DL_POLY_4 is used in a DPD mode (see
-Section :ref:`dpd` and  :ref:`Appendix A<DPD-all>`) then
-the meaning of the molecular units is somewhat lost and it is only the
-interrelationship between units that is important (which can be
-exploited by the modeller)! The fundamental units for a DPD simulation
-are related those of mass :math:`[M]`, length :math:`[L]` and energy
-:math:`[E]` - all irrespectively of the actually chosen energy units by
-the **UNITS** directive in the FIELD file. Therefore, the DPD unit of time
-is equivalent to :math:`[L]\sqrt{[M]/[E]}` while temperature (in the
-form :math:`k_{B}T`) is defined as two-thirds of the kinetic energy of
-the system’s particles. Similarly, volume is in units of :math:`[L]^{3}`
-and pressure in :math:`[E]/[L]^{3}`.
+**Exception:** It should be noted that when DL_POLY_5 is used in DPD mode (see
+Section :ref:`DPD-all`) then the meaning of the 
+molecular units is somewhat lost and it is only the inter-relationship between 
+units that is important. This can be exploited by the modeller when using 'dpd' 
+with the **UNITS** directive in the FIELD file! The fundamental units for a DPD 
+simulation are related to those of mass :math:`[M]`, length :math:`[L]` and 
+energy :math:`[E]`. Therefore, the DPD unit of time is equivalent to 
+:math:`[t] = [L]\sqrt{[M]/[E]}` while temperature (in the form :math:`k_{B}T`) 
+is defined as two-thirds of the mean kinetic energy of the system’s particles. 
+Similarly, volume is in units of :math:`[L]^{3}` and pressure in :math:`[E]/[L]^{3}`, 
+while velocities and forces are in :math:`[L][t]^{-1} = \sqrt{[M]/[E]}` and 
+:math:`[M][L][t]^{-2} = [E]/[L]` respectively.
 
 Error Messages
 --------------
 
-All errors detected by DL_POLY_4 during run time initiate a call to the subroutine
+All errors detected by DL_POLY_5 during run time initiate a call to the subroutine
 ``error``, which prints an error message in the standard output file and
 terminates the program. All terminations of the program are global (i.e.
 every node of the parallel computer will be informed of the termination
 condition and stop executing).
 
-In addition to terminal error messages, DL_POLY_4 will sometimes print warning
+In addition to terminal error messages, DL_POLY_5 will sometimes print warning
 messages. These indicate that the code has detected something that is
 unusual or inconsistent. The detection is non-fatal, but the user should
 make sure that the warning does represent a harmless condition.
@@ -478,8 +479,8 @@ Directory Structure
    single: sub-directory;java
    single: sub-directory;utility
 
-The entire DL_POLY_4 package is stored in a UNIX directory structure. The topmost
-directory is named *dl_poly_4.nn*, where *nn* is a generation number.
+The entire DL_POLY_5 package is stored in a UNIX directory structure. The topmost
+directory is named *dl_poly_5.nn*, where *nn* is a generation number.
 Beneath this directory are several sub-directories named:
 *manual*, *source*, *build*, *cmake*, *utils*, *execute*, 
 *data*, *bench*, *java*, and *utility*.
@@ -491,25 +492,25 @@ Briefly, the content of each sub-directory is as follows:
    * - sub-directory
      - contents 
    * - *manual* 
-     - DL_POLY_4 main user manual and DL_POLY_4 Java GUI manual 
+     - DL_POLY_5 main user manual and DL_POLY_5 Java GUI manual 
    * - *source* 
-     - primary subroutines for the DL_POLY_4 package 
+     - primary subroutines for the DL_POLY_5 package 
    * - *build* 
-     - makefiles to assemble and compile DL_POLY_4 source 
+     - makefiles to assemble and compile DL_POLY_5 source 
    * - *cmake*
-     - contains files needed for DL_POLY_4 ``cmake`` build system
+     - contains files needed for DL_POLY_5 ``cmake`` build system
    * - *utils*
      - contains a series of scripts needed for testing 
    * - *execute* 
-     - the DL_POLY_4 run-time directory 
+     - the DL_POLY_5 run-time directory 
    * - *data* 
-     - example input and output files for DL_POLY_4 
+     - example input and output files for DL_POLY_5 
    * - *bench* 
      -  large test cases suitable for benchmarking 
    * - *java*
      - directory of Java and FORTRAN routines for the Java GUI
    * - *utility*
-     - directory of routines donated by DL_POLY_4 users
+     - directory of routines donated by DL_POLY_5 users
 
 A more detailed description of each sub-directory follows.
 
@@ -518,8 +519,8 @@ A more detailed description of each sub-directory follows.
 The *source* Sub-directory
 --------------------------
 
-In this sub-directory all the essential source code for DL_POLY_4, excluding the
-utility software is stored. In keeping with the ‘package’ concept of DL_POLY_4,
+In this sub-directory all the essential source code for DL_POLY_5, excluding the
+utility software is stored. In keeping with the ‘package’ concept of DL_POLY_5,
 it does not contain any complete programs; these are assembled at
 compile time using an appropriate makefile. The subroutines in this
 sub-directory are documented in Chapter :ref:`source-code_sec`.
@@ -530,10 +531,10 @@ The *build* Sub-directory
 -------------------------
 
 This sub-directory contains legacy makefiles for the creation (i.e.
-compilation and linking) of the DL_POLY_4 simulation program. The makefiles
+compilation and linking) of the DL_POLY_5 simulation program. The makefiles
 supplied select the appropriate subroutines from the *source*
 sub-directory and deposit the executable program in the *execute*
-directory. Building DL_POLY_4 by using these legacy makefiles is described in
+directory. Building DL_POLY_5 by using these legacy makefiles is described in
 Section :ref:`compilation`.
 
 .. index:: single: sub-directory;cmake
@@ -541,8 +542,8 @@ Section :ref:`compilation`.
 The *cmake* Sub-directory
 -------------------------
 
-This sub-directory contains necessary scripts and information needed for DL_POLY_4
-the CMake system. Building DL_POLY_4 with ``cmake`` is described in
+This sub-directory contains necessary scripts and information needed for DL_POLY_5
+the CMake system. Building DL_POLY_5 with ``cmake`` is described in
 Section :ref:`compilation`.
 
 .. index:: single: sub-directory;utils
@@ -550,7 +551,7 @@ Section :ref:`compilation`.
 The *utils* Sub-directory
 -------------------------
 
-This sub-directory contains a framework of scripts needed by DL_POLY_4 developers
+This sub-directory contains a framework of scripts needed by DL_POLY_5 developers
 for testing purposes. The general user is welcome to look and learn from
 it. The scripts are the documentation themselves.
 
@@ -559,15 +560,15 @@ it. The scripts are the documentation themselves.
 The *execute* Sub-directory
 ---------------------------
 
-In the supplied version of DL_POLY_4, this sub-directory contains only a few
+In the supplied version of DL_POLY_5, this sub-directory contains only a few
 macros for copying and storing data from and to the *data* sub-directory
 and for submitting programs for execution (see
-:ref:`Appendix C<macros>`). However, if the DL_POLY_4 program is assembled
+:ref:`Appendix C<macros>`). However, if the DL_POLY_5 program is assembled
 by using a legacy makefile, the executable will be placed in this
 sub-directory and could be used from here. Then output files from a job
 run in here will also appear here, so users may find it convenient to
 use this sub-directory as originally intended. (The experienced user is
-not at all required to use DL_POLY_4 this way however.)
+not at all required to use DL_POLY_5 this way however.)
 
 .. index:: single: sub-directory;data
 
@@ -575,7 +576,7 @@ The *data* Sub-directory
 ------------------------
 
 This sub-directory contains examples of input and output files for
-testing the released version of DL_POLY_4. The examples of input data are copied
+testing the released version of DL_POLY_5. The examples of input data are copied
 into the *execute* sub-directory when a program is being tested. The test
 cases are documented in Chapter :ref:`examples_sec`. Note that these
 are no longer within the distribution of any DL_POLY version but are
@@ -586,7 +587,7 @@ downloaded when building with testing enabled in cmake.
 The *java* Sub-directory
 ------------------------
 
-The DL_POLY_4 Java Graphical User Interface (:index:`GUI`) is based on the Java\ |reg| language
+The DL_POLY_5 Java Graphical User Interface (:index:`GUI`) is based on the Java\ |reg| language
 developed by Sun\ |reg|. The Java\ |reg| source code for this GUI is to be found in
 this sub-directory. The source is complete and sufficient to create a
 working GUI, provided the user has installed the Java\ |reg| Development Kit,
@@ -611,14 +612,14 @@ store them in the *utility* sub-directory.
 .. _distribution:
 .. index:: 
    single: user registration 
-   single: DL_POLY_4 software licence
+   single: DL_POLY_5 software licence
 
 Obtaining the Source Code
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To obtain a copy of DL_POLY_4 it is necessary to have internet connection. Log on
-to the DL_POLY :index:`website<WWW>` - `<http://www.ccp5.ac.uk/DL\_POLY/>`_, and follow the links to the DL_POLY_4 registration
-page, where you will firstly be shown the DL_POLY_4 academic software licence (see
+To obtain a copy of DL_POLY_5 it is necessary to have internet connection. Log on
+to the DL_POLY :index:`website<WWW>` - `<http://www.ccp5.ac.uk/DL\_POLY/>`_, and follow the links to the DL_POLY_5 registration
+page, where you will firstly be shown the DL_POLY_5 academic software licence (see
 :ref:`Appendix E<readme>`), which details the terms and
 conditions under which the code will be supplied. **By proceeding further
 with the registration and download process you are signalling your
@@ -629,10 +630,10 @@ name, address and e-mail address. The code is supplied free of charge to
 software licence.
 
 Once the online registration has been completed, information on
-downloading the DL_POLY_4 source code will be sent by e-mail, so **it is therefore
+downloading the DL_POLY_5 source code will be sent by e-mail, so **it is therefore
 essential to supply a correct e-mail address.**
 
-The *data* and *bench* subdirectories of DL_POLY_4 are not issued in the standard
+The *data* and *bench* subdirectories of DL_POLY_5 are not issued in the standard
 package, but can be downloaded directly from the FTP site (in the ``ccp5/DL_POLY/DL_POLY_4.0/``
 directory).
 
@@ -663,9 +664,9 @@ The DL_POLY :index:`website<WWW>` - `<http://www.ccp5.ac.uk/DL\_POLY/>`_, provid
 #. Access to the DL_Software portal.
 
 Daresbury Laboratory also maintains a associated electronic mailing
-list, *dl_poly_4_news*, to which all registered DL_POLY_4 users are automatically
+list, *dl_poly_4_news*, to which all registered DL_POLY_5 users are automatically
 subscribed. It is via this list that error reports and announcements of
-new versions are made. If you are a DL_POLY_4 user, but not on this list you may
+new versions are made. If you are a DL_POLY_5 user, but not on this list you may
 request to be added by sending a mail message to `majordomo@dl.ac.uk` with
 the one-line message: :math:`subscribe~dl\_poly\_4\_news`.
 

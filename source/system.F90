@@ -664,7 +664,7 @@ Contains
   End Subroutine system_init
 
   Subroutine system_expand(l_str, rcut, io, cshell, cons, bond, angle, &
-                           dihedral, inversion, sites, rigid, config, files, comm, ff)
+                           dihedral, inversion, sites, rigid, config, stats, files, comm, ff)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -680,6 +680,7 @@ Contains
     ! contrib   - w.smith, i.j.bush
     ! contrib   - a.m.elena february 2017
     ! contrib   - h.l.devereux february 2024 
+    ! contrib   - m.a.seaton december 2024
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -695,6 +696,7 @@ Contains
     Type(site_type),          Intent(In   ) :: sites
     Type(rigid_bodies_type),  Intent(In   ) :: rigid
     Type(configuration_type), Intent(InOut) :: config
+    Type(stats_type),         Intent(InOut) :: stats
     Type(file_type),          Intent(InOut) :: files(:)
     Type(comms_type),         Intent(InOut) :: comm
     Integer,                  Intent(In   ) :: ff
@@ -1060,16 +1062,25 @@ Contains
               safer = .false.
             End If
             If ((mxiter == 42 .and. (.not. safer)) .and. (l_str .and. comm%idnode == 0)) Then
-              Write (message, '(a,2(f7.2,a))') &
-                'possible distance violation: ', r, ' > ', t, ' Angstroms'
+              If (stats%dpd_units) Then
+                Write (message, '(a,2(f7.2,a))') &
+                  'possible distance violation: ', r, ' > ', t, ' dpd_l'
+              Else
+                Write (message, '(a,2(f7.2,a))') &
+                  'possible distance violation: ', r, ' > ', t, ' Angstroms'
+              End If
               Call info(message, .true.)
 
               t = c2
               If (r > t) Then
-                Write (message, Fmt='(a,f7.2,a)') 'cutoff: ', t, ' Angstroms'
+                If (stats%dpd_units) Then
+                  Write (message, Fmt='(a,f7.2,a)') 'cutoff: ', t, ' dpd_l'
+                Else
+                  Write (message, Fmt='(a,f7.2,a)') 'cutoff: ', t, ' Angstroms'
+                End If
                 Call warning(message, .true.)
               End If
-
+              
               Write (messages(1), '(a,3(i0," "))') &
                 'core_shell unit #(local) -> m. type # -> molecule #: ', ishls, itmols, imols
               Write (messages(2), '(a,3(1x,l1))') &
@@ -1119,13 +1130,22 @@ Contains
               safer = .false.
             End If
             If ((mxiter == 42 .and. (.not. safer)) .and. (l_str .and. comm%idnode == 0)) Then
-              Write (message, '(a,2(f7.2,a))') &
-                'possible distance violation: ', r, ' > ', t, ' Angstroms'
+              If (stats%dpd_units) Then
+                Write (message, '(a,2(f7.2,a))') &
+                  'possible distance violation: ', r, ' > ', t, ' dpd_l'
+              Else
+                Write (message, '(a,2(f7.2,a))') &
+                  'possible distance violation: ', r, ' > ', t, ' Angstroms'
+              End If
               Call info(message, .true.)
 
               t = c3
               If (r > t) Then
-                Write (message, Fmt='(a,f7.2,a)') 'cutoff: ', t, ' Angstroms'
+                If (stats%dpd_units) Then
+                  Write (message, Fmt='(a,f7.2,a)') 'cutoff: ', t, ' dpd_l'
+                Else
+                  Write (message, Fmt='(a,f7.2,a)') 'cutoff: ', t, ' Angstroms'
+                End If
                 Call warning(message, .true.)
               End If
 
@@ -1182,8 +1202,13 @@ Contains
                   safer = .false.
                 End If
                 If ((mxiter == 42 .and. (.not. safer)) .and. l_str) Then
-                  Write (message, '(a,2(i0," "),2(f7.2,a))') &
-                    'distance violation: ', i, j, r, ' > ', t, ' Angstroms'
+                  If (stats%dpd_units) Then
+                    Write (message, '(a,2(i0," "),2(f7.2,a))') &
+                      'distance violation: ', i, j, r, ' > ', t, ' dpd_l'
+                  Else
+                    Write (message, '(a,2(i0," "),2(f7.2,a))') &
+                      'distance violation: ', i, j, r, ' > ', t, ' Angstroms'
+                  End If
                   Call warning(message, .true.)
                 End If
                 safem = (safem .and. safer)
@@ -1246,8 +1271,13 @@ Contains
               safer = .false.
             End If
             If ((mxiter == 42 .and. (.not. safer)) .and. (l_str .and. comm%idnode == 0)) Then
-              Write (message, '(a,2(f7.2,a))') &
-                'possible distance violation: ', r, ' > ', t, ' Angstroms'
+              If (stats%dpd_units) Then
+                Write (message, '(a,2(f7.2,a))') &
+                  'possible distance violation: ', r, ' > ', t, ' dpd_l'
+              Else
+                Write (message, '(a,2(f7.2,a))') &
+                  'possible distance violation: ', r, ' > ', t, ' Angstroms'
+              End If
               Call info(message, .true.)
 
               If (.not. bond%restrained(nbonds)) Then
@@ -1256,7 +1286,11 @@ Contains
                 t = 3.0_wp * c2
               End If
               If (r > t) Then
-                Write (message, Fmt='(a,f7.2,a)') 'cutoff: ', t, ' Angstroms'
+                If (stats%dpd_units) Then
+                  Write (message, Fmt='(a,f7.2,a)') 'cutoff: ', t, ' dpd_l'
+                Else
+                  Write (message, Fmt='(a,f7.2,a)') 'cutoff: ', t, ' Angstroms'
+                End If
                 Call warning(message, .true.)
               End If
 
@@ -1316,8 +1350,13 @@ Contains
                   safer = .false.
                 End If
                 If ((mxiter == 42 .and. (.not. safer)) .and. (l_str .and. comm%idnode == 0)) Then
-                  Write (message, '(a,2(i0," "),2(f7.2,a))') &
-                    'possible distance violation: ', i, j, r, ' > ', t, ' Angstroms'
+                  If (stats%dpd_units) Then
+                    Write (message, '(a,2(i0," "),2(f7.2,a))') &
+                    'possible distance violation: ', i, j, r, ' > ', t, ' dpd_l'
+                  Else
+                    Write (message, '(a,2(i0," "),2(f7.2,a))') &
+                      'possible distance violation: ', i, j, r, ' > ', t, ' Angstroms'
+                  End If
                   Call info(message, .true.)
 
                   If (.not. angle%restrained(nangle)) Then
@@ -1326,7 +1365,11 @@ Contains
                     t = c4 * Real(j - i + 1, wp)
                   End If
                   If (r > t) Then
-                    Write (message, '(a,f7.2,a)') 'cutoff: ', t, ' Angstroms'
+                    If (stats%dpd_units) Then
+                      Write (message, '(a,f7.2,a)') 'cutoff: ', t, ' dpd_l'
+                    Else
+                      Write (message, '(a,f7.2,a)') 'cutoff: ', t, ' Angstroms'
+                    End If
                     Call warning(message, .true.)
                   End If
                 End If
@@ -1389,13 +1432,22 @@ Contains
                   safer = .false.
                 End If
                 If ((mxiter == 42 .and. (.not. safer)) .and. (l_str .and. comm%idnode == 0)) Then
-                  Write (message, '(a,2(i0," "),2(f7.2,a))') &
-                    'possible distance violation: ', i, j, r, ' > ', t, ' Angstroms'
+                  If (stats%dpd_units) Then
+                    Write (message, '(a,2(i0," "),2(f7.2,a))') &
+                    'possible distance violation: ', i, j, r, ' > ', t, ' dpd_l'
+                  Else
+                    Write (message, '(a,2(i0," "),2(f7.2,a))') &
+                      'possible distance violation: ', i, j, r, ' > ', t, ' Angstroms'
+                  End If
                   Call info(message, .true.)
 
                   t = (c2 + c3) * Real(j - i + 1, wp) / 2.0_wp
                   If (r > t) Then
-                    Write (message, Fmt='(a,f7.2,a)') 'cutoff: ', t, ' Angstroms'
+                    If (stats%dpd_units) Then
+                      Write (message, Fmt='(a,f7.2,a)') 'cutoff: ', t, ' dpd_l'
+                    Else
+                      Write (message, Fmt='(a,f7.2,a)') 'cutoff: ', t, ' Angstroms'
+                    End If
                     Call warning(message, .true.)
                   End If
                 End If
@@ -1458,13 +1510,22 @@ Contains
                   safer = .false.
                 End If
                 If ((mxiter == 42 .and. (.not. safer)) .and. (l_str .and. comm%idnode == 0)) Then
-                  Write (message, '(a,2(i0," "),2(f7.2,a))') &
-                    'possible distance violation: ', i, j, r, ' > ', t, ' Angstroms'
+                  If (stats%dpd_units) Then
+                    Write (message, '(a,2(i0," "),2(f7.2,a))') &
+                      'possible distance violation: ', i, j, r, ' > ', t, ' dpd_l'
+                  Else
+                    Write (message, '(a,2(i0," "),2(f7.2,a))') &
+                      'possible distance violation: ', i, j, r, ' > ', t, ' Angstroms'
+                  End If
                   Call info(message, .true.)
 
                   t = c3
                   If (r > t) Then
-                    Write (message, Fmt='(a,f7.2,a)') 'cutoff: ', t, ' Angstroms'
+                    If (stats%dpd_units) Then
+                      Write (message, Fmt='(a,f7.2,a)') 'cutoff: ', t, ' dpd_l'
+                    Else
+                      Write (message, Fmt='(a,f7.2,a)') 'cutoff: ', t, ' Angstroms'
+                    End If
                     Call warning(message, .true.)
                   End If
                 End If
@@ -1691,7 +1752,11 @@ Contains
 
     Write (messages(1), '(3a)') '*** ', fcfg(1:Len_trim(fcfg)), ' expansion completed !'
     Write (messages(2), '(a,(i0," "),a)') '*** Size: ', nall * config%megatm, ' particles'
-    Write (messages(3), '(a,f10.2,a)') '*** Maximum radius of cutoff: ', x, ' Angstroms'
+    If (stats%dpd_units) Then
+      Write (messages(3), '(a,f10.2,a)') '*** Maximum radius of cutoff: ', x, ' dpd_l'
+    Else
+      Write (messages(3), '(a,f10.2,a)') '*** Maximum radius of cutoff: ', x, ' Angstroms'
+    End If
     Call info(messages, 3, .true.)
 
     Write (message, '(a,f12.3,a)') 'time elapsed since job start: ', t, ' sec'

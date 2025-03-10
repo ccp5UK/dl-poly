@@ -482,7 +482,7 @@ Contains
     get_total_mass = mass
   End Function get_total_mass
 
-  Subroutine check_config(config, electro_key, thermo, sites, flow, comm)
+  Subroutine check_config(config, electro_key, thermo, sites, flow, dpd_units, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -508,6 +508,7 @@ Contains
     Type(thermostat_type), Intent(In) :: thermo
     Type(site_type), Intent(In) :: sites
     Type(flow_type), Intent(In) :: flow
+    Logical, Intent(In) :: dpd_units
     Type(comms_type), Intent(InOut) :: comm
 
     Logical                :: safe
@@ -571,7 +572,11 @@ Contains
     ! Specify molecular dynamics simulation cell
 
     If (config%newjob_check_config) Then
-      Write (message, "('Simulation cell vectors [Ang]:')")
+      If (dpd_units) Then
+        Write (message, "('Simulation cell vectors [dpd_l]:')")
+      Else
+        Write (message, "('Simulation cell vectors [Ang]:')")
+      End If
       Call Info(message, .true.)
       Write (message, "(3f20.10)") config%cell(1:3)
       Call Info(message, .true.)
@@ -579,7 +584,11 @@ Contains
       Call Info(message, .true.)
       Write (message, "(3f20.10)") config%cell(7:9)
       Call Info(message, .true.)
-      Write (message, "('System volume:     ',2x,1p,g22.12, ' Ang^3')") det
+      If (dpd_units) Then
+        Write (message, "('System volume:     ',2x,1p,g22.12, ' dpd_l^3')") det
+      Else
+        Write (message, "('System volume:     ',2x,1p,g22.12, ' Ang^3')") det
+      End If
       Call Info(message, .true.)
     End If
 
@@ -934,7 +943,7 @@ Contains
         config%imcon == IMCON_RHOMBIC_DODEC .or. &
         config%imcon == IMCON_HEXAGONAL) Call error(300)
 
-    ! Real space cutoff shortened by 50% but not < 1 Angstrom
+    ! Real space cutoff shortened by 50% but not < 1 Angstrom/dpd_l
     !(or ==rcut_def in scan_control)
 
     cut = Max(0.5_wp * rcut, 1.0_wp) + 1.0e-6_wp
@@ -2406,7 +2415,7 @@ Contains
     If (config%imcon == IMCON_TRUNC_OCTO .or. &
         config%imcon == IMCON_RHOMBIC_DODEC .or. &
         config%imcon == IMCON_HEXAGONAL) Then
-      Write (message, '(A,I0.1,A)') 'Imcon ', config%imcon, ' no longer supported in DL_POLY_4'
+      Write (message, '(A,I0.1,A)') 'Imcon ', config%imcon, ' no longer supported in DL_POLY_5'
       Call error(0, message)
     End If
 
@@ -3651,15 +3660,20 @@ Contains
 
   End Subroutine setup_cell_props
 
-  Subroutine print_system_info(config)
+  Subroutine print_system_info(config, dpd_units)
     Type(configuration_type),     Intent(In) :: config
+    Logical,                      Intent(In) :: dpd_units
 
     Call info('', .true.)
     Call info('System properties: ', .true.)
     call write_param('Mass', config%tot_mass_w_frz,'internal_m', indent=2)
     If (config%imcon /= IMCON_NOPBC .or. config%imcon /= IMCON_SLAB) Then
       Call write_param('Volume', config%volm, 'internal_l^3', indent=2)
-      Call write_param('Density', config%density, 'internal_m/internal_l^3', 'g/cm^3', indent=2)
+      If (dpd_units) Then
+        Call write_param('Density', config%density, 'internal_m/internal_l^3', 'dpd_m/dpd_l^3', indent=2)
+      Else
+        Call write_param('Density', config%density, 'internal_m/internal_l^3', 'g/cm^3', indent=2)
+      End If
     End If
   End Subroutine print_system_info
 

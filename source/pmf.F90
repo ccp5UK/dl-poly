@@ -1077,9 +1077,15 @@ Contains
                 ' , with head particle numbers, U1:', pmf%listpmf(1, 1, ipmf), &
                 ' & U2:', pmf%listpmf(1, 2, ipmf)
               Call info(message)
-              Write (message, '(a,f8.2,a,1p,e12.4)') &
-                'converges to a length of', Sqrt(pt2(ipmf) + pmf%dis2), &
-                ' Angstroms with factor', esig(ipmf)
+              If (stat%dpd_units) Then
+                Write (message, '(a,f8.2,a,1p,e12.4)') &
+                  'converges to a length of', Sqrt(pt2(ipmf) + pmf%dis2), &
+                  ' dpd_l with factor', esig(ipmf)
+              Else
+                Write (message, '(a,f8.2,a,1p,e12.4)') &
+                  'converges to a length of', Sqrt(pt2(ipmf) + pmf%dis2), &
+                  ' Angstroms with factor', esig(ipmf)
+              End If
               Call info(message)
               Call warning('Contributes towards next error', .true.)
             End If

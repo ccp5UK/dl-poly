@@ -1,18 +1,18 @@
-Extending DL_POLY_4 to reactive systems: the Empirical Valence Bond method
+Extending DL_POLY_5 to reactive systems: the Empirical Valence Bond method
 ==========================================================================
 
 Framework and motivation
 ------------------------
 
-A key component of DL_POLY_4 is the Force Field (FF) to model the interactions between atoms. As already described in previous chapters, such atomic interactions are often modelled by relatively simple functional forms with parameters either fitted to experimental data or derived from quantum mechanical calculations. In most of the classical FFs available, functional forms and fitted parameters remain unchanged during the course of the molecular dynamics (MD) simulation. Indeed, this is the type of FFs that DL_POLY_4 can handle. In reactive processes, however, the nature of the interactions inevitable changes due to the formation of new chemical species. For this reason, standard FFs (thence DL_POLY_4) are not suitable to simulate chemical reactions. We shall refer to such FFs as non-reactive.
+A key component of DL_POLY_5 is the Force Field (FF) to model the interactions between atoms. As already described in previous chapters, such atomic interactions are often modelled by relatively simple functional forms with parameters either fitted to experimental data or derived from quantum mechanical calculations. In most of the classical FFs available, functional forms and fitted parameters remain unchanged during the course of the molecular dynamics (MD) simulation. Indeed, this is the type of FFs that DL_POLY_5 can handle. In reactive processes, however, the nature of the interactions inevitable changes due to the formation of new chemical species. For this reason, standard FFs (thence DL_POLY_5) are not suitable to simulate chemical reactions. We shall refer to such FFs as non-reactive.
 
 An alternative to simulate chemical reactions is offered by the so called Reactive FFs (RFFs). In contrast to standard FFs where interactions are modelled for a particular state with a given topology and chemistry, RFFs are designed to model the interatomic interactions valid for multiple states that are chemically different. The task of designing RFFs, however, is very challenging and requires a high level of expertise to tackle a multi-dimensional problem, where the modelled interactions are often expressed by complicated functional forms with many strongly coupled parameters that are optimised via the use of sophisticated tools. Even though RFFs have evolved considerably in the last years, a general parametrization is not yet available and, instead, parameters have to be tuned to specific chemical systems and environments.
 
-Within this framework and to the purpose of extending the applicability of DL_POLY_4 to simulate reactive processes, the Empirical Valence Bond (EVB) method :cite:`duarte2017` offers an appealing alternative for computational implementation and development. In contrast to facing the challenges of building RFFs, the EVB method defines a suitable matrix using computed quantities of the participating chemical states, where each state is modelled by a non-reactive FF. Via the definition of appropriate coupling terms and matrix diagonalization at each time step, it is possible to obtain potential energy landscapes that account for the change in chemistry when sampling conformations between the participating, chemically different, states.
+Within this framework and to the purpose of extending the applicability of DL_POLY_5 to simulate reactive processes, the Empirical Valence Bond (EVB) method :cite:`duarte2017` offers an appealing alternative for computational implementation and development. In contrast to facing the challenges of building RFFs, the EVB method defines a suitable matrix using computed quantities of the participating chemical states, where each state is modelled by a non-reactive FF. Via the definition of appropriate coupling terms and matrix diagonalization at each time step, it is possible to obtain potential energy landscapes that account for the change in chemistry when sampling conformations between the participating, chemically different, states.
 
 In contrast to RFFs, the advantage of the EVB method lies in the large availability of standard non-reactive FFs libraries. In addition, despite the initial task to calibrate the coupling terms against reference data, research has demonstrated that these couplings are invariant to the surrounding electrostatics, making it possible to simulate the same reactive unit in different environments. For further details about the applications of the EVB method, we refer the user to ref. :cite:`scivetti-evb`.
 
-The fundamentals of the EVB method are presented in the next section. Strategies to calibrate EVB-FFs are discussed in section :ref:`evb-calibrate`. The computational implementation of the EVB method is described in section :ref:`implement`. Finally, section :ref:`evb-users` provides a guideline to users on how to prepare the settings for EVB simulations with DL_POLY_4.  
+The fundamentals of the EVB method are presented in the next section. Strategies to calibrate EVB-FFs are discussed in section :ref:`evb-calibrate`. The computational implementation of the EVB method is described in section :ref:`implement`. Finally, section :ref:`evb-users` provides a guideline to users on how to prepare the settings for EVB simulations with DL_POLY_5.  
 
 .. _evb-method:
 
@@ -299,7 +299,7 @@ The quality of EVB for the description of reactive processes depends on
 the choice for the coupling terms :math:`C_{mk}`, particularly to
 reproduce accurate interactions at the intermediate region between
 chemical states :math:`m` and :math:`k` where the change of chemistry
-occurs. For the implementation of the EVB method in DL_POLY_4, we have
+occurs. For the implementation of the EVB method in DL_POLY_5, we have
 used functional forms :math:`C_{mk}` that depend on the energy
 differences :math:`\epsilon_{mk}=E^{(m)}_{c}-E^{(k)}_{c}` to compute the
 stress tensor as described in Sec. :ref:`evb-method`. We have
@@ -394,7 +394,7 @@ parameters in the SETEVB file (see Sec.
 Computational implementation
 ----------------------------
 
-In the standard format, DL_POLY_4 reads the initial coordinates,
+In the standard format, DL_POLY_5 reads the initial coordinates,
 velocities and forces from the CONFIG file. Each particle is labelled
 according to its specification in the FIELD file, which contains the
 information of the FF type and parameters for the interactions between
@@ -431,7 +431,7 @@ EVB stress tensor obtained via
 eq. :eq:`stress-EVB-ab_eq`, and the total
 virial from eq. :eq:`virial-total_eq`. Such EVB
 calculations are conducted for each time step taking advantage of the
-domain decomposition as implemented in DL_POLY_4.
+domain decomposition as implemented in DL_POLY_5.
 All the :math:`N_F` force fields are computed in a loop architecture,
 i.e. one after the other, before being coupled via the EVB method.
 This means that all the available processors are used to compute each
@@ -450,7 +450,7 @@ Setting EVB calculations
 ------------------------
 
 Setting input files and parameters for the EVB simulation of :math:`N_F`
-coupled FFs in DL_POLY_4 requires of:
+coupled FFs in DL_POLY_5 requires of:
 
 -  the CONTROL file with the directive :math:`evb\,\,\,\, N_F`
 
@@ -467,7 +467,7 @@ coupled FFs in DL_POLY_4 requires of:
 
 To avoid problems, users are advised to check consistency between CONFIG
 and FIELD files for each of the chemical states separately, as for any
-standard simulation with DL_POLY_4. It is important to remark that the
+standard simulation with DL_POLY_5. It is important to remark that the
 numbering and coordinates for all the atoms should be same of all CONFIG
 files, and all CONFIG files must have the same number of atoms. For
 example, atom 1 with tag A in CONFIG (labelling consistent with FIELD
@@ -475,10 +475,10 @@ file) should be also atom 1 in CONFIG2, even though it might have a
 different tag B (labelling assigned in FIELD2). The file SETEVB is
 compulsory for EVB simulations. For a EVB site described by :math:`N_F`
 fields, the SETEVB file must contain all the settings specified via the
-structure details in Table :numref:`(%s)<setevb_table>`. The
+structure details in Table :numref:`(%s) <setevb_table>`. The
 definition of the :math:`N_F` values of :math:`evbtypemols` in the
 SETEVB file requires of particular care. As described in table
-:numref:`(%s)<setevb_table>`, these values indicate how many of
+:numref:`(%s) <setevb_table>`, these values indicate how many of
 the first defined type-of-molecules for each FIELD files are used to
 describe the EVB reactive site. To further clarify on this statement,
 let us consider a single EVB reactive unit interacting with non-reactive
@@ -507,7 +507,7 @@ and charges for all non-EVB atoms is the same for all FIELD files.
 Likewise, all intermolecular (Tersoff, metallic, three-body, four-body),
 intramolecular (bond, angle, dihedral and inversion) and vdW
 interactions between these non-EVB atoms must be the same for all FIELD
-files. If any of these requirements is not fulfilled, DL_POLY_4 aborts
+files. If any of these requirements is not fulfilled, DL_POLY_5 aborts
 the execution and print an error message that (hopefully) will guide the
 user to identify and fix the inconsistency. Finally, the EVB
 implementation offers the possibility to restart the simulation, as

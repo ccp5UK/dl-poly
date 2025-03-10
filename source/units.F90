@@ -6,6 +6,7 @@ Module units
   !! copyright - daresbury laboratory
   !! author - j.wilkins april 2020
   !! contrib - a.m.elena april 2022 - add more units schemes
+  !! contrib - m.a.seaton october 2024 - added dpd unit scheme
   !!-----------------------------------------------------------------------
 
   Use kinds,           Only: wp,STR_LEN
@@ -165,6 +166,23 @@ Module units
     surf_ten = 'e.V/ang^2', &
     emf = 'e.V/q_e')
 
+    Type(units_scheme), Public, Protected, Save :: dpd_units = units_scheme( &
+    length = 'dpd_l', &
+    time = 'dpd_t', &
+    mass = 'dpd_m', &
+    charge = 'internal_q', &
+    energy = 'dpd_e', &
+    temp = 'dpd_temp', &
+    current = 'A', &
+    luminosity = '', &
+    angle = 'rad', &
+    pressure = 'dpd_p', &
+    force = 'dpd_f', &
+    velocity = 'dpd_v', &
+    power = 'dpd_e/dpd_t', &
+    surf_ten = 'dpd_f/dpd_l', &
+    emf = 'dpd_e/internal_q')
+
   Type(units_scheme), Public, Protected, Save :: out_units
 
   Type(units_hash_table), Private, save :: units_table
@@ -233,6 +251,7 @@ contains
     call units_table%set("min", init_unit(abbrev="min", name="Minute", time=1, to_internal=60.0_wp*second))
     call units_table%set("s", init_unit(abbrev="s", name="Second", time=1, to_internal=second))
     call units_table%set("aut", init_unit(abbrev="aut", name="Atomic Time Unit", time=1, to_internal=aut))
+    call units_table%set("dpd_t", init_unit(abbrev="t", name="DPD Time Unit", time=1, to_internal=1.0_wp))
 
     ! Length
 
@@ -242,6 +261,7 @@ contains
     call units_table%set("m", init_unit(abbrev="m", name="Metre", length=1, to_internal=metre))
     call units_table%set('in', init_unit(abbrev="in", name="Inch", length=1, to_internal=inch))
     call units_table%set("ft", init_unit(abbrev="ft", name="Foot", length=1, to_internal=12.0_wp*inch))
+    call units_table%set("dpd_l", init_unit(abbrev="l", name="DPD Length Unit", length=1, to_internal=1.0_wp))
 
     ! Mass
 
@@ -252,6 +272,7 @@ contains
     call units_table%set("g", init_unit(abbrev="g", name="Gram", mass=1, to_internal=1.0e-3_wp*kilogram))
     call units_table%set("lb", init_unit(abbrev="lb", name="Pound", mass=1, to_internal=pound))
     call units_table%set("oz", init_unit(abbrev="oz", name="Ounce", mass=1, to_internal=pound/16.0_wp))
+    call units_table%set("dpd_m", init_unit(abbrev="m", name="DPD Mass Unit", mass=1, to_internal=1.0_wp))
 
     ! Charge
 
@@ -282,10 +303,13 @@ contains
          & mass=1, length=2, time=-2, to_internal=hartree))
     call units_table%set("ry", init_unit(abbrev="Ry", name="Rydberg", &
          & mass=1, length=2, time=-2, to_internal=0.5_wp*hartree))
+    call units_table%set("dpd_e", &
+         & init_unit(abbrev="e", name="DPD Energy Unit", mass=1, length=2, time=-2, to_internal=1.0_wp))
 
     ! Temperature
 
     call units_table%set("k", init_unit(abbrev="K", name="Kelvin", temp=1, to_internal=1.0_wp))
+    call units_table%set("dpd_temp", init_unit(abbrev="T", name="DPD Temperature Unit", temp=1, to_internal=1.0_wp/boltz))
 
     ! Pressure
 
@@ -294,6 +318,7 @@ contains
     call units_table%set("atm", init_unit(abbrev="atm", name="Atmosphere", mass=1, length=-1, time=-2, to_internal=atmosphere))
     call units_table%set("pa", init_unit(abbrev="Pa", name="Pascal", mass=1, length=-1, time=-2, to_internal=pascal))
     call units_table%set("bar", init_unit(abbrev="bar", name="Bar", mass=1, length=-1, time=-2, to_internal=100000.0_wp*pascal))
+    call units_table%set("dpd_p", init_unit(abbrev="p", name="DPD Pressure Unit", mass=1, length=-1, time=-2, to_internal=1.0_wp))
 
     ! Force
 
@@ -303,6 +328,8 @@ contains
          & init_unit(abbrev="N", name="Newton", mass=1, length=1, time=-2, to_internal=newton))
     call units_table%set("dyn", &
          & init_unit(abbrev="dyn", name="Dyne", mass=1, length=1, time=-2, to_internal=1e-5_wp*newton))
+    call units_table%set("dpd_f", &
+         & init_unit(abbrev="f", name="DPD Force Unit", mass=1, length=1, time=-2, to_internal=1.0_wp))
 
     ! Velocity
 
@@ -310,6 +337,8 @@ contains
          & init_unit(abbrev="ang/ps", name="Angstrom per picosecond", length=1, time=-1, to_internal=1.0_wp))
     call units_table%set("auv", &
          & init_unit(abbrev="auv", name="Atomic Velocity Unit", length=1, time=-1, to_internal=bohr/aut))
+    call units_table%set("dpd_v", &
+         & init_unit(abbrev="v", name="DPD Velocity Unit", length=1, time=-1, to_internal=1.0_wp))
 
     ! Constants
 

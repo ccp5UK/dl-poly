@@ -1,11 +1,11 @@
-Introduction to the DL_POLY_4 Force Field
+Introduction to the DL_POLY_5 Force Field
 =========================================
 
 The :index:`force field` is the set of functions needed to define the
 interactions in a molecular system. These may have a wide variety of
 analytical forms, with some basis in chemical physics, which must be
 parameterised to give the correct energy and forces. A huge variety of
-forms is possible and for this reason the DL_POLY_4 :index:`force field<force field;DL_POLY>` is
+forms is possible and for this reason the DL_POLY_5 :index:`force field<force field;DL_POLY>` is
 designed to be agnostic and adaptable. While it is not supplied with its
 own :index:`force field` parameters, many of the functions familiar to :index:`GROMOS<pair:force field;GROMOS>`
 :cite:`gunsteren-87a`, :index:`Dreiding<pair:force field;Dreiding>` :cite:`mayo-90a`
@@ -13,7 +13,7 @@ and :index:`AMBER<force field;AMBER>` :cite:`weiner-86a` users have been coded i
 package, as well as less familiar forms. In addition retains the
 possibility of the user defining additional potentials.
 
-In DL_POLY_4 the total configuration energy of a molecular system may be
+In DL_POLY_5 the total configuration energy of a molecular system may be
 written as:
 
 .. math::
@@ -39,7 +39,7 @@ empirical interaction functions representing ion core-shell
 :index:`polarisation<polarisation;shell model>`, tethered :index:`particles<potential;tether>`, chemical :index:`bonds<potential;chemical bond>`, valence :index:`angles<potential;valence angle>`,
 :index:`dihedral<potential;dihedral>` (and :index:`improper<potential;improper dihedral>` dihedral angles), inversion :index:`angles<potential;inversion>`, two-body,
 :index:`Tersoff<potential;Tersoff>`, :index:`three-body<potential;three-body>` and :index:`four-body<potential;four-body>` forces respectively. The first six are
-regarded by DL_POLY_4 as *intra*-molecular interactions and the next
+regarded by DL_POLY_5 as *intra*-molecular interactions and the next
 four as *inter*-molecular interactions. The final term :math:`U_{extn}`
 represents an *external field* :index:`potential<potential;external field>`. The position vectors
 :math:`\underline{r}_{a},\underline{r}_{b},\underline{r}_{c}` and :math:`\underline{r}_{d}`
@@ -52,7 +52,7 @@ interactions present in the simulated system, and the indices
 :math:`i_{shel},~i_{teth},~i_{bond},~i_{angl},~i_{dihd}` and
 :math:`i_{inv}` uniquely specify an individual interaction of each type.
 It is important to note that there is no global specification of the
-intramolecular interactions in DL_POLY_4- all core-shell units, tethered
+intramolecular interactions in DL_POLY_5- all core-shell units, tethered
 particles, chemical bonds, valence angles, dihedral angles and inversion
 angles must be individually cited. The same applies for bond :index:`constraints<constraints;bond>`
 and PMF :index:`constraints<constraints;PMF>`.
@@ -70,7 +70,7 @@ The indices :math:`i`, :math:`j` (and :math:`k`, :math:`n`) appearing in
 the intermolecular interactions’ (non-bonded) terms indicate the atoms
 involved in the interaction. There is normally a very large number of
 these and they are therefore specified globally according to the atom
-*types* involved rather than indices. In DL_POLY_4 it is assumed that
+*types* involved rather than indices. In DL_POLY_5 it is assumed that
 the "pure" two-body terms arise from short-ranged interactions such as
 van der Waals interactions (or alternatively DPD soft interactions,
 coarse-grained interactions, hard-wall nuclear interactions) and
@@ -80,7 +80,7 @@ Long-ranged forces require special techniques to evaluate accurately
 interactions which are functionally presented in an expansion of many
 two-body contributions augmented by a function of the local density,
 which again is derived from the two-body spatial distribution (and these
-are, therefore, evaluated in the two-body routines). In DL_POLY_4 the
+are, therefore, evaluated in the two-body routines). In DL_POLY_5 the
 three-body terms are restricted to valence angle and H-bond forms.
 
 
@@ -90,7 +90,7 @@ three-body terms are restricted to valence angle and H-bond forms.
 
 Throughout this chapter the description of the force field assumes the
 simulated system is described as an assembly of atoms. This is for
-convenience only, and readers should understand that DL_POLY_4 does
+convenience only, and readers should understand that DL_POLY_5 does
 recognize molecular entities, defined through constraint bonds and rigid
 bodies. In the case of rigid bodies, the atomic forces are resolved into
 molecular forces and torques. These matters are discussed in greater

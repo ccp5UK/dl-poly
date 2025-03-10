@@ -2947,7 +2947,7 @@ Contains
         Call info(messages, 4, .true.)
 
         ! read DL_POLY_2/Classic delr Verlet shell strip cutoff option (compatibility)
-        ! as DL_POLY_4 real space cutoff padding option
+        ! as DL_POLY_5 real space cutoff padding option
 
       Else If (word(1:4) == 'delr') Then
 
@@ -2958,7 +2958,7 @@ Contains
         Call info(message, .true.)
 
         ! read DL_POLY_2/Classic multiple timestep option (compatibility)
-        ! as DL_POLY_4 infrequent k-space SPME evaluation option
+        ! as DL_POLY_5 infrequent k-space SPME evaluation option
 
       Else If (word(1:4) == 'mult') Then
 
@@ -4111,7 +4111,7 @@ Contains
         green%samp = Ceiling(Real(green%binsize, wp) / Real(green%freq, wp))
 
         ! read DL_POLY_2/Classic delr Verlet shell strip cutoff option (compatibility)
-        ! as DL_POLY_4 real space cutoff padding option
+        ! as DL_POLY_5 real space cutoff padding option
 
       Else If (word(1:4) == 'delr') Then
 
@@ -4120,7 +4120,7 @@ Contains
         neigh%padding = Max(neigh%padding, 0.25_wp * Abs(word_2_real(word)))
 
         ! read DL_POLY_2/Classic multiple timestep option (compatibility)
-        ! as DL_POLY_4 infrequent k-space SPME evaluation option
+        ! as DL_POLY_5 infrequent k-space SPME evaluation option
 
       Else If (word(1:4) == 'mult') Then
 

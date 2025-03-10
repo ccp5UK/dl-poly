@@ -124,7 +124,7 @@ Contains
     ! Calculate and print PDFs
     If (stats%lpana) Then
       If (bond%bin_pdf > 0 .and. bond%n_frames > 0) Then
-        Call bonds_compute(temp, sites%unique_atom, bond, config, comm)
+        Call bonds_compute(temp, sites%unique_atom, bond, config, stats%dpd_units, comm)
       End If
       If (angle%bin_adf > 0 .and. angle%n_frames > 0) Then
         Call angles_compute(temp, sites%unique_atom, angle, config, comm)

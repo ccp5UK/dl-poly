@@ -10,6 +10,9 @@ module control_output
   Use angles,                                 Only: angles_type
   Use angular_distribution,                   Only: adf_type
   Use bonds,                                  Only: bonds_type
+  Use charge_smearing,          Only: BETA_ORIGINAL,&
+                                      BETA_OVERLAP,&
+                                      BETA_DISTRIBUTION
   Use comms,                    Only: comms_type
   Use configuration,            Only: IMCON_NOPBC,&
                                       IMCON_SLAB,&
@@ -29,7 +32,10 @@ module control_output
                                       ELECTROSTATIC_COULOMB_REACTION_FIELD,&
                                       ELECTROSTATIC_DDDP,&
                                       ELECTROSTATIC_SPME,&
-                                      ELECTROSTATIC_NULL,&
+                                      ELECTROSTATIC_NULL,& 
+                                      SMEARING_LINEAR, SMEARING_SLATER_TRUNCATED, &
+                                      SMEARING_SLATER_EXP, SMEARING_GAUSSIAN, &
+                                      SMEARING_NULL, &
                                       electrostatic_type
   Use errors_warnings,          Only: check_print_level,&
                                       error,&
@@ -198,7 +204,7 @@ Contains
     If (check_print_level(1)) Call write_units()
     If (check_print_level(1)) Call write_system_parameters(flow, config, stats, thermo, impa, minim, plume, cons, pmf)
     If (check_print_level(1)) Call write_ensemble(thermo, ttm)
-    If (check_print_level(1)) Call write_forcefield(link_cell, neigh, vdws, electro, ewld, mpoles, cshell, met)
+    If (check_print_level(1)) Call write_forcefield(link_cell, neigh, vdws, electro, ewld, mpoles, cshell, met, stats)
     If (ttm%l_ttm .and. check_print_level(1)) Call write_ttm(thermo, ttm)
     If (check_print_level(1)) Call write_bond_analysis(stats, flow, bond, angle, dihedral, inversion)
     If (check_print_level(1)) &
@@ -690,7 +696,7 @@ Contains
 
   End Subroutine write_system_parameters
 
-  Subroutine write_forcefield(link_cell, neigh, vdws, electro, ewld, mpoles, cshell, met)
+  Subroutine write_forcefield(link_cell, neigh, vdws, electro, ewld, mpoles, cshell, met, stats)
     Integer, Dimension(3),    Intent(In   ) :: link_cell
     Type(neighbours_type),    Intent(In   ) :: neigh
     Type(vdw_type),           Intent(In   ) :: vdws
@@ -699,6 +705,7 @@ Contains
     Type(mpole_type),         Intent(In   ) :: mpoles
     Type(core_shell_type),    Intent(In   ) :: cshell
     Type(metal_type),         Intent(In   ) :: met
+    Type(stats_type),         Intent(In   ) :: stats
 
     Character(Len=STR_LEN) :: message
 
@@ -816,7 +823,11 @@ Contains
 
       If (ewld%precision > 0.0_wp) Call write_param('Ewald sum precision', ewld%precision, indent=2)
 
-      Call write_param('Ewald convergence parameter', ewld%alpha, 'Ang^-1', indent=2)
+      If (stats%dpd_units) Then
+        Call write_param('Ewald convergence parameter', ewld%alpha, 'dpd_l^-1', indent=2)
+      Else
+        Call write_param('Ewald convergence parameter', ewld%alpha, 'Ang^-1', indent=2)
+      End If
       Write (message, '(a,3i5)') '  -- Ewald kmax1 kmax2 kmax3   (x2): ', ewld%kspace%k_vec_dim_cont
       Call info(message, .true.)
 
@@ -842,7 +853,13 @@ Contains
     End Select
 
     If (electro%key /= ELECTROSTATIC_NULL) Then
-      If (Abs(electro%eps - 1.0_wp) > zero_plus) Call write_param('Relative dielectric constant', electro%eps, indent=2)
+      If (Abs(electro%eps - 1.0_wp) > zero_plus) Then
+        If (stats%dpd_units .or. electro%len_bjer > zero_plus) Then
+          Call write_param('Bjerrum length', electro%len_bjer, 'internal_l', indent=2)          
+        Else
+          Call write_param('Relative dielectric constant', electro%eps, indent=2)
+        End If
+      End If
 
       ! Fix with electro merge
       Call write_param('Fennell damping', &
@@ -852,6 +869,35 @@ Contains
 
       Call write_param('Extended Coulombic eXclusion', electro%lecx, indent=2)
 
+    End If
+
+    Select Case (electro%smear)
+    Case (SMEARING_NULL)
+      Call write_param('Charge smearing', 'None', indent=2)
+    Case (SMEARING_LINEAR)
+      Call write_param('Charge smearing', 'Linear', indent=2)
+    Case (SMEARING_SLATER_EXP)
+      Call write_param('Charge smearing', 'Slater (full)', indent=2)
+    Case (SMEARING_SLATER_TRUNCATED)
+      Call write_param('Charge smearing', 'Slater (truncated)', indent=2)
+    Case (SMEARING_GAUSSIAN)
+      Call write_param('Charge smearing', 'Gaussian', indent=2)
+    End Select
+    If (electro%smear /= SMEARING_NULL) &
+      Call write_param('Smearing length', electro%r_smear, 'internal_l', indent=2)
+    
+    If (electro%smear == SMEARING_SLATER_EXP .or. electro%smear == SMEARING_SLATER_TRUNCATED) Then
+      Select Case (electro%b_smear)
+      Case (BETA_ORIGINAL)
+        Call write_param('Correspondence between Slater smearing length and beta',&
+                         'original reciprocal (exact Slater)', indent=2)
+      Case (BETA_OVERLAP)
+        Call write_param('Correspondence between Slater smearing length and beta',&
+                         'overlap potential', indent=2)
+      Case (BETA_DISTRIBUTION)
+        Call write_param('Correspondence between Slater smearing length and beta',&
+                         'second moment of charge distribution', indent=2)
+      End Select
     End If
 
   End Subroutine write_forcefield

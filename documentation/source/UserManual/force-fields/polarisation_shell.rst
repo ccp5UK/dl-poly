@@ -75,7 +75,7 @@ The `CHARMM <https://www.charmm.org/>`__ model for self-induced
 polarisablility relies on the Druder formalism as described above.
 However, the CHARMM core-shell model interactions, conventions and
 controls have further specificity :cite:`mackerell-16a` that
-is worth outlining in DL_POLY_4 terms.
+is worth outlining in DL_POLY_5 terms.
 
 To enable the CHARMM core-shell model in , the user, *at the very
 least*, needs to specify atomic polarisabilities (and, optionally, the
@@ -102,14 +102,14 @@ force constant, :math:`k_{2}` (positive), the shell charge
 :math:`q_{s}`, and the atomic polarisability, :math:`\alpha` (positive).
 Thus if one is missing, undefined or zero, it can be recovered from the
 rest in . CHARMM only allows for :math:`q_{s}` to be recovered. **Note**
-that in DL_POLY_4 if any :math:`q_{s}` is recovered, it has an opposite
+that in DL_POLY_5 if any :math:`q_{s}` is recovered, it has an opposite
 sign to that of its corresponding :math:`q_{c}`! In the special case
 when all Druders’ force constants, :math:`k_{2}`, are undefined or zero
-(in FIELD), DL_POLY_4 will resort to using the value of
+(in FIELD), DL_POLY_5 will resort to using the value of
 1000 kcal mol\ :math:`^{-1}`\ Å\ :math:`^{-2}` for all core-shell units,
 as per CHARMM recommendations in :cite:`mackerell-16a`. In
 all other cases if two (or more) of these three quantities are undefined
-or zero DL_POLY_4 will terminate execution in a controlled manner,
+or zero DL_POLY_5 will terminate execution in a controlled manner,
 indicating the exact nature of the problem.
 
 CHARMM postulates a scaled intra-molecular self-induction between 1-2
@@ -124,10 +124,10 @@ cross-interaction are considered.
 .. note:: 
    **Note** that this is not the case for
    the 1-4 one, which is excluded in this scenario but it could still be
-   scaled via torsion 1-4 coulombic scaling!. In DL_POLY_4’s CHARMM context, also,
+   scaled via torsion 1-4 coulombic scaling!. In DL_POLY_5’s CHARMM context, also,
    then all possible coulombic cross-interactions are considered in the
    case of an inversion angle interaction. It is worth **stressing** that
-   in DL_POLY_4 will further exclude (disregard as non-contributing) any
+   in DL_POLY_5 will further exclude (disregard as non-contributing) any
    core-core bonded interactions if they are frozen or mapped onto a RB!
 
 Let’s demonstrate this for a conventional bond angle unit, 1-2-3, with
@@ -164,7 +164,7 @@ Dynamical (Adiabatic Shells) Shell Model
 ----------------------------------------
 
 The dynamical shell model is a method of incorporating polarisability
-into a molecular dynamics simulation. The method used in DL_POLY_4 is
+into a molecular dynamics simulation. The method used in DL_POLY_5 is
 that devised by Fincham *et al* :cite:`fincham-93a` and is
 known as the adiabatic shell model.
 
@@ -212,7 +212,7 @@ degrees of freedom.
 
 Relaxation of the shells is carried out at each time step and involves a
 search in the multidimensional space of shell configurations. The search
-in DL_POLY_4 is based on the powerful conjugate-gradients technique
+in DL_POLY_5 is based on the powerful conjugate-gradients technique
 :cite:`shewchuk-94a` in an adaptation as shown in
 :cite:`lindan-93a`. Each time step a few iterations
 (10:math:`\div`\ 30) are needed to achieve convergence to zero net
@@ -256,7 +256,7 @@ materials.
 Further Notes
 -------------
 
-In DL_POLY_4 the core-shell forces of the rigid shell model are handled
+In DL_POLY_5 the core-shell forces of the rigid shell model are handled
 by the routine core_shell_forces. In case of the adiabatic shell model
 the kinetic energy is calculated by core_shell_kinetic and temperature
 scaling applied by routine core_shell_quench. In case of the relaxed
@@ -264,19 +264,19 @@ shell model shell are relaxed to zero force by core_shell_relaxed.
 
 .. note::
    
-   DL_POLY_4 determines which shell model to use by scanning
+   DL_POLY_5 determines which shell model to use by scanning
    shell weights provided the FIELD file (see
    Section :ref:`field-file`). If all shells have zero
-   weight the DL_POLY_4 will choose the relaxed shell model. If no shell
-   has zero weight then DL_POLY_4 will choose the dynamical one. In case
-   when some shells are massless and some are not DL_POLY_4 will terminate
+   weight the DL_POLY_5 will choose the relaxed shell model. If no shell
+   has zero weight then DL_POLY_5 will choose the dynamical one. In case
+   when some shells are massless and some are not DL_POLY_5 will terminate
    execution controllably and provide information about the error and
    possible possible choices of action in the OUTPUT file (see
    Section :ref:`output-file`).
 
 .. note::
    
-   All DL_POLY_4’s :index:`shell models<polarisation;shell models>` 
+   All DL_POLY_5’s :index:`shell models<polarisation;shell models>` 
    can be used in conjunction with the
    methods for long-ranged forces described above. This also includes uses
    in the context of multipolar electrostatics where self-induced
@@ -284,7 +284,7 @@ shell model shell are relaxed to zero force by core_shell_relaxed.
    such as CHARMM, AMBER, AMOEBA. 
    
 Currently, there are the following
-restrictions within DL_POLY_4:
+restrictions within DL_POLY_5:
 
 -  shell particles are restricted to only bear a charge.
 
@@ -305,7 +305,7 @@ bonds and angles over the shells as the shells represent the electronic
 clouds between which the bonding occurs. However, this is right the
 opposite in the liquid, organic and bio-chemical communities, where all
 bonding is between the nuclei (cores) and the shells are only there to
-account purely for the polarisability. As DL_POLY_4 allows for too much
+account purely for the polarisability. As DL_POLY_5 allows for too much
 flexibility in the space of possible model definitions, it is strongly
 advised that the modeller must exercise great care to define the correct
-force-field model representation within DL_POLY_4 input files!
+force-field model representation within DL_POLY_5 input files!

@@ -5,21 +5,21 @@ Open Knowledgebase of Interatomic Models - OpenKIM
 
 .. index:: WWW
 
-DL_POLY_4 force-field allows for model interactions specification by
+DL_POLY_5 force-field allows for model interactions specification by
 using an OpenKIM model -
 `<https://openkim.org/>`_. A KIM model contains all necessary (non-bonded)
 interactions and their parameters for a specific model within a
 designated container. Thus a KIM model can be used as a force-field
-container when made available to DL_POLY_4 at run time (see the
+container when made available to DL_POLY_5 at run time (see the
 description of the FIELD file in
 Section :ref:`field-file`) upon a specification within
 FIELD together with a matching molecular description for the model
 system, also specified in FIELD. Due to the history of the OpenKIM
-initiative and the constraints of the logic of the DL_POLY_4 FIELD
+initiative and the constraints of the logic of the DL_POLY_5 FIELD
 file the designated place for a KIM model specification is in the
 non-bonded interactions section :ref:`non-bonded_sec`.
 
-Employing OpenKIM interatomic models (IMs) provides DL_POLY_4 users with
+Employing OpenKIM interatomic models (IMs) provides DL_POLY_5 users with
 multiple benefits, including:
 
 Reliability
@@ -54,7 +54,7 @@ Reproducibility
    publications to give credit to the developers and further facilitate
    reproducibility.
 
-Currently, DL_POLY_4 supports one type of IM archived in OpenKIM, which
+Currently, DL_POLY_5 supports one type of IM archived in OpenKIM, which
 is called a KIM Portable Model (PM). A KIM PM is an independent computer
 implementation of an IM written in one of the languages supported by KIM
 (C, C++, Fortran) that conforms to the KIM Application Programming
@@ -103,8 +103,8 @@ instructions <https://openkim.org/doc/usage/obtaining-models/>`_ .
 
 .. note::
    
-   To use OpenKIM functionality within DL_POLY_4 one must
-   further ensure that DL_POLY_4 is compiled with OpenKIM support (see
+   To use OpenKIM functionality within DL_POLY_5 one must
+   further ensure that DL_POLY_5 is compiled with OpenKIM support (see
    building.md).
 
 Citation of OpenKIM IMs
@@ -120,7 +120,7 @@ specific IM codes used in the simulations, in addition to the relevant
 scientific references for the IM. The citation format for an IM is
 displayed on its page on `OpenKIM <https://openkim.org/>`__ along with
 the corresponding BibTex file, and is automatically added to the
-DL_POLY_4    *log.cite* file.
+DL_POLY_5    *log.cite* file.
 
 Citing the IM software (KIM infrastructure and specific PM or SM codes)
 used in the simulation gives credit to the researchers who developed

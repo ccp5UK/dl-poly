@@ -216,7 +216,7 @@ Contains
 
   End Subroutine allocate_bond_dst_arrays
 
-  Subroutine bonds_compute(temp, unique_atom, bond, config, comm)
+  Subroutine bonds_compute(temp, unique_atom, bond, config, dpd_units, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -237,6 +237,7 @@ Contains
     Character(Len=8), Dimension(:), Intent(In   ) :: unique_atom
     Type(bonds_type),               Intent(InOut) :: bond
     Type(configuration_type),       Intent(InOut) :: config
+    Logical,                        Intent(In   ) :: dpd_units
     Type(comms_type),               Intent(InOut) :: comm
 
     Character(Len=STR_LEN)         :: message, messages(2)
@@ -300,7 +301,11 @@ Contains
       Write (npdfdt, '(a)') '# BONDS: Probability Density Functions (PDF) := histogram(bin)/hist_sum(bins)/dr_bin'
       Write (npdfdt, '(a,i10,1x,f8.3,2(1x,i10))') '# bins, cutoff, frames, types: ', bond%bin_pdf, bond%rcut, bond%n_frames, kk
       Write (npdfdt, '(a)') '#'
-      Write (npdfdt, '(a,f8.5)') '# r(Angstroms)  PDF_norm(r)  PDF_norm(r)/dVol(r)   @   dr_bin = ', delr
+      If (dpd_units) Then
+        Write (npdfdt, '(a,f8.5)') '# r(dpd_l)      PDF_norm(r)  PDF_norm(r)/dVol(r)   @   dr_bin = ', delr
+      Else
+        Write (npdfdt, '(a,f8.5)') '# r(Angstroms)  PDF_norm(r)  PDF_norm(r)/dVol(r)   @   dr_bin = ', delr
+      End If
       Write (npdfdt, '(a)') '#'
     End If
 
@@ -313,7 +318,11 @@ Contains
 
         Write (messages(1), '(a,2(a8,1x),2(i10,1x))') 'type, index, instances: ', &
           unique_atom(bond%typ(1, i)), unique_atom(bond%typ(2, i)), j, bond%typ(0, i)
-        Write (messages(2), '(a,f8.5)') 'r(Angstroms)  P_bond(r)  Sum_P_bond(r)   @   dr_bin = ', delr
+        If (dpd_units) Then
+          Write (messages(2), '(a,f8.5)') 'r(dpd_l)      P_bond(r)  Sum_P_bond(r)   @   dr_bin = ', delr
+        Else
+          Write (messages(2), '(a,f8.5)') 'r(Angstroms)  P_bond(r)  Sum_P_bond(r)   @   dr_bin = ', delr
+        End If
         Call info(messages, 2, .true.)
         If (comm%idnode == 0) Then
           Write (npdfdt, '(a,2(a8,1x),2(i10,1x))') '# type, index, instances: ', &

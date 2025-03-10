@@ -135,7 +135,8 @@ Module ffield
                              hartree_units,&
                              kj_units,&
                              kb_units,&
-                             kcal_units
+                             kcal_units,&
+                             dpd_units
 
   Implicit None
 
@@ -413,6 +414,8 @@ Contains
         Else If (word(1:1) == 'k') Then
           engunit = boltz
           Call info('energy units = Kelvin/Boltzmann', .true., level=3)
+        Else If (word(1:3) == 'dpd') Then
+          Call info('energy units = DPD', .true., level=3)
         Else If (word(1:1) == ' ') Then
           Call info('energy units = dl_poly internal units (10 J/mol)', .true., level=3)
         Else
@@ -3945,7 +3948,8 @@ Contains
               thermo%gamdpd(keyvdw) = Abs(parpot(8))
             End Select
 
-            If (thermo%gamdpd(0) > zero_plus) thermo%gamdpd(keyvdw) = thermo%gamdpd(0) ! override
+            If (thermo%gamdpd(keyvdw)<=zero_plus .and. thermo%gamdpd(0) > zero_plus) &
+               thermo%gamdpd(keyvdw) = thermo%gamdpd(0) ! override
           End If
         End Do
 
@@ -3970,7 +3974,9 @@ Contains
             End Do
 
             If (thermo%key_dpd /= DPD_NULL) Then
-              If (All(thermo%gamdpd(1:vdws%max_vdw) <= zero_plus)) Then ! So thermo%gamdpd(0) <= zero_plus too
+              If (All(thermo%gamdpd(1:vdws%max_vdw-1) <= zero_plus)) Then ! So thermo%gamdpd(0) <= zero_plus too
+                                                                          ! (note vdws%max_vdw is one too big due to
+                                                                          ! setup_potential_parameters, so ignore last value)
                 thermo%key_dpd = DPD_NULL
                 thermo%ensemble = ENS_NVE
                 Call info( &
@@ -3979,7 +3985,7 @@ Contains
 
               Else
                 If (thermo%gamdpd(0) > zero_plus) Then
-                  Call warning('all defined interactions have their drag coefficient overridden', .true.)
+                  Call warning('all previously undefined interactions have their drag coefficient overridden', .true.)
                 End If
 
                 If (vdws%mixing == MIX_NULL) Then
@@ -4314,15 +4320,15 @@ Contains
           End If
 
           If (thermo%key_dpd /= DPD_NULL) Then
-            If (All(thermo%gamdpd(1:vdws%max_vdw) <= zero_plus)) Then
+            If (All(thermo%gamdpd(1:vdws%max_vdw-1) <= zero_plus)) Then
               thermo%key_dpd = DPD_NULL
 
               Call info('Ensemble NVT dpd defaulting to NVE (Microcanonical)' &
                         //'due to all drag coefficients equal to zero', .true.)
-            Else If (Any(thermo%gamdpd(1:vdws%max_vdw) <= zero_plus)) Then
+            Else If (Any(thermo%gamdpd(1:vdws%max_vdw-1) <= zero_plus)) Then
               ! in principle we should come up with the error before here
-              Call warning('there is a two-body interaction with a' &
-                           //'non-zero mutual drag coefficient', .true.)
+              Call warning('there is a two-body interaction with a ' &
+                           //'zero mutual dpd drag coefficient', .true.)
               thermo%sigdpd(1:vdws%max_vdw) = Sqrt(2.0_wp * boltz * thermo%temp * thermo%gamdpd(1:vdws%max_vdw)) ! define thermo%sigdpd
             Else
               thermo%sigdpd(1:vdws%max_vdw) = Sqrt(2.0_wp * boltz * thermo%temp * thermo%gamdpd(1:vdws%max_vdw)) ! define thermo%sigdpd
@@ -5814,6 +5820,9 @@ Contains
         Else If (word(1:1) == 'k') Then
           Call info('set units to Kelvin/Boltzmann', .true., level=3)
           Call set_out_units(kb_units)
+        Else If (word(1:3) == 'dpd') Then
+          Call info('set units to DPD', .true., level=3)
+          Call set_out_units(dpd_units)
         Else If ( word(1:1) == ' ') Then
           Call info('set units to dl_poly internal units (10 J/mol)', .true., level=3)
           Call set_out_units(internal_units)

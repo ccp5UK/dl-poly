@@ -22,10 +22,10 @@ particularly simple, if no angular forces are required (notable
 exceptions to this are zeolites and silicate glasses - see below). Such
 systems require only the specification of the atomic types and the
 necessary pair forces. The reader is referred to the description of the
-DL_POLY_4 FIELD file for further details
+DL_POLY_5 FIELD file for further details
 (Section:ref:`The FIELD File<field-file>`).
 
-DL_POLY_4 can simulate zeolites and silicate (or other) glasses. Both
+DL_POLY_5 can simulate zeolites and silicate (or other) glasses. Both
 these materials require the use of angular forces to describe the local
 structure correctly. In both cases the angular terms are included as
 *three-body terms*, the forms of which are described in
@@ -61,7 +61,7 @@ The primary functions of DL-FIELD are as follows:
 
 #. **Force field model converter:** DL_FIELD converts the user’s atom models,
    supplied in PDB file format, into input files that are recognisable
-   and ready to run with and DL_POLY_4 programs with minimum user’s
+   and ready to run with and DL_POLY_5 programs with minimum user’s
    intervention. This basically involves the conversion of the user’s
    atomic configuration in simple xyz coordinates into identifiable atom
    types base on a particular user-selectable potential schemes and then
@@ -158,14 +158,14 @@ from the CONFIG file before running .
 Analysing Results
 -----------------
 
-DL_POLY_4 is not designed to calculate every conceivable property you
+DL_POLY_5 is not designed to calculate every conceivable property you
 might wish from a simulation. Apart from some obvious thermodynamic
 quantities and radial distribution functions, it does not calculate
 anything beyond the atomic trajectories. You must therefore be prepared
 to post-process the HISTORY file if you want other information. There
 are some utilities in the package to help with this, but the list is far
 from exhaustive. In time, we hope to have many more. Our users are
-invited to submit code to the DL_POLY_4 *public* library to help with
+invited to submit code to the DL_POLY_5 *public* library to help with
 this.
 
 The utilities available are described in the User Manual. Users should

@@ -5,7 +5,7 @@ Free Energy Capabilities via the PLUMED plugin
 
 .. index:: single: WWW
    
-DL_POLY_4 supports a native integration with PLUMED -
+DL_POLY_5 supports a native integration with PLUMED -
 `<http://www.plumed.org/>`_. PLUMED is an open source library for free energy
 calculations in molecular systems which works together with some of the
 most popular molecular dynamics engines. Free energy calculations can be
@@ -18,9 +18,9 @@ both FORTRAN and C/C++ codes.
 
 Using PLUMED can be as simple as adding the keyword **plumed** in your
 CONTROL file. By default the input file for PLUMED is called PLUMED and
-shall be placed in the same place as your other DL_POLY_4 input files.
-Once DL_POLY_4 runs by default OUTPUT.PLUMED will be generated in
-addition to the normal PLUMED and DL_POLY_4 output files. The default
+shall be placed in the same place as your other DL_POLY_5 input files.
+Once DL_POLY_5 runs by default OUTPUT.PLUMED will be generated in
+addition to the normal PLUMED and DL_POLY_5 output files. The default
 names of the files can be changed by using **input** and **log**
 parameters with the **plumed** keyword (see
 Section :ref:`control-file`).
@@ -33,5 +33,5 @@ Section :ref:`control-file`).
 
 .. note::
    
-   To use the PLUMED functionality within DL_POLY_4 one must
-   further ensure that DL_POLY_4 is cross-compiled with it.
+   To use the PLUMED functionality within DL_POLY_5 one must
+   further ensure that DL_POLY_5 is cross-compiled with it.

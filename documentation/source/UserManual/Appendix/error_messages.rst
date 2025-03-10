@@ -1,6 +1,6 @@
 .. _error-messages:
 
-Appendix C: DL_POLY_4 Error Messages & User Action
+Appendix C: DL_POLY_5 Error Messages & User Action
 ==================================================
 
 Introduction
@@ -8,7 +8,7 @@ Introduction
 
 .. index:: single: error messages
 
-In this appendix we document the error messages encoded in DL_POLY_4 and
+In this appendix we document the error messages encoded in DL_POLY_5 and
 the recommended user action. The correct response is described as the
 **standard user response** in the appropriate sections below, to which
 the user should refer before acting on the error encountered.
@@ -22,19 +22,19 @@ wording appears below.
 The Standard User Response
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 uses :index:`FORTRAN90` dynamic array allocation to set the array sizes
+DL_POLY_5 uses :index:`FORTRAN90` dynamic array allocation to set the array sizes
 at run time. This means that a single executable may be compiled to over
 all the likely uses of the code. It is not foolproof however. Sometimes
 an estimate of the required array sizes is difficult to obtain and the
-calculated value may be too small. For this reason DL_POLY_4 retains
+calculated value may be too small. For this reason DL_POLY_5 retains
 array dimension checks and will terminate when an array bound error
 occurs.
 
 When a dimension error occurs, the **standard user response** is to
-edit the DL_POLY_4
+edit the DL_POLY_5
 subroutine ``set_bounds``. Locate where the variable defining the
 array dimension is fixed and increase accordingly. To do this you
-should make use of the dimension information that DL_POLY_4 prints in
+should make use of the dimension information that DL_POLY_5 prints in
 the OUTPUT file prior to termination. If no information is supplied,
 simply doubling the size of the variable will usually do the trick. If
 the variable concerned is defined in one of the support subroutines
@@ -44,25 +44,25 @@ has been called! Finally the code must be recompiled, as in this case
 it will only be necessary to recompile ``set_bounds`` and not the
 whole code.
 
-The DL_POLY_4 Error Messages
+The DL_POLY_5 Error Messages
 ----------------------------
 
 **Message 1**: error - word_2_real failure
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The semantics in some of the INPUT files is wrong. DL_POLY_4 has tried
+The semantics in some of the INPUT files is wrong. DL_POLY_5 has tried
 to read a number but the has found a word in non-number format.
 
 *Action*:
 
 Look into your INPUT files and correct the semantics where appropriate
-and resubmit. DL_POLY_4 will have printed out in the OUTPUT file what
+and resubmit. DL_POLY_5 will have printed out in the OUTPUT file what
 the found non-uniform word is.
 
 **Message 2**: error - too many atom types in FIELD (scan_field)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This error arises when DL_POLY_4 scans the FIELD file and discovers that
+This error arises when DL_POLY_5 scans the FIELD file and discovers that
 there are too many different types of atoms in the system (i.e. the
 number of unique atom types exceeds the 1000).
 
@@ -97,10 +97,10 @@ resubmit.
 **Message 5**: error - unknown energy unit requested
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The DL_POLY_4 FIELD file permits a choice of units for input of energy
+The DL_POLY_5 FIELD file permits a choice of units for input of energy
 parameters. These may be: electron-Volts (**eV**); k-calories per mol
 (**kcal**/mol); k-Joules per mol (**kJ**/mol); Kelvin per Boltzmann
-(**K**\ elvin/Boltzmann); or the DL_POLY_4 internal units, 10 Joules per
+(**K**\ elvin/Boltzmann); or the DL_POLY_5 internal units, 10 Joules per
 mol (**internal**). There is no default value. Failure to specify any of
 these correctly, or reference to other energy units, will result in this
 error message. See documentation of the FIELD file.
@@ -114,7 +114,7 @@ resubmit.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A **units** directive is mandatory in the FIELD file. This error
-indicates that DL_POLY_4 has failed to find the required record.
+indicates that DL_POLY_5 has failed to find the required record.
 
 *Action*:
 
@@ -155,7 +155,7 @@ value, of say 10\ :math:`_{-5}`.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This should never happen! This indicates an erroneous FIELD file or
-corrupted DL_POLY_4 executable. Unlike , DL_POLY_4 does not have a set
+corrupted DL_POLY_5 executable. Unlike , DL_POLY_5 does not have a set
 limit on the number of kinds of molecules it can handle in any
 simulation (this is not the same as the number of molecules).
 
@@ -167,7 +167,7 @@ Examine FIELD for erroneous directives, correct and resubmit.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The number of different types of molecules in a simulation should only
-be specified once. If DL_POLY_4 encounters more than one molecules
+be specified once. If DL_POLY_5 encounters more than one molecules
 directive, it will terminate execution.
 
 *Action*:
@@ -178,7 +178,7 @@ resubmit.
 **Message 12**: error - unknown molecule directive in FIELD file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Once DL_POLY_4 encounters the **molecules** directive in the FIELD file,
+Once DL_POLY_5 encounters the **molecules** directive in the FIELD file,
 it assumes the following records will supply data describing the
 intra-molecular :index:`force field`. It does not then expect to encounter
 directives not related to these data. This error message results if it
@@ -194,7 +194,7 @@ resubmit.
 **Message 13**: error - molecule species not specified
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This error arises when DL_POLY_4 encounters :index:`non-bonded<potential;non-bonded>` 
+This error arises when DL_POLY_5 encounters :index:`non-bonded<potential;non-bonded>` 
 force data in the
 FIELD file, *before* the molecular species have been specified. Under
 these circumstances it cannot assign the data correctly, and therefore
@@ -209,7 +209,7 @@ in the FIELD file and resubmit.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This should never happen! This error most likely arises when the FIELD
-file or/and DL_POLY_4 executable are corrupted.
+file or/and DL_POLY_5 executable are corrupted.
 
 *Action*:
 
@@ -219,7 +219,7 @@ combination of these works, send the problem to us.
 **Message 15**: error - duplicate vdw potential specified
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In processing the FIELD file, DL_POLY_4 keeps a record of the specified
+In processing the FIELD file, DL_POLY_5 keeps a record of the specified
 short range pair potentials as they are read in. If it detects that a
 given pair potential has been specified before, no attempt at a
 resolution of the ambiguity is made and this error message results. See
@@ -232,10 +232,10 @@ Locate the duplication in the FIELD file, rectify and resubmit.
 **Message 16**: error - strange exit from FIELD file processing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This should never happen! It simply means that DL_POLY_4 has ceased
+This should never happen! It simply means that DL_POLY_5 has ceased
 processing the FIELD data, but has not reached the end of the file or
 encountered a **close** directive. Probable cause: corruption of the
-DL_POLY_4 executable or of the FIELD file. We would be interested to
+DL_POLY_5 executable or of the FIELD file. We would be interested to
 hear of other reasons!
 
 *Action*:
@@ -245,10 +245,10 @@ See action notes on message 14 above.
 **Message 17**: error - strange exit from CONTROL file processing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This should never happen! It simply means that DL_POLY_4 has ceased
+This should never happen! It simply means that DL_POLY_5 has ceased
 processing the CONTROL data, but has not reached the end of the file or
 encountered a **close** directive. Probable cause: corruption of the
-DL_POLY_4 executable or of the FIELD file. We would be interested to
+DL_POLY_5 executable or of the FIELD file. We would be interested to
 hear of other reasons!
 
 *Action*:
@@ -259,7 +259,7 @@ combination of these works, send the problem to us.
 **Message 18**: error - duplicate three-body potential specified
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has encountered a repeat specification of a :index:`three-body<potential;three-body>`
+DL_POLY_5 has encountered a repeat specification of a :index:`three-body<potential;three-body>`
 potential in the FIELD file.
 
 *Action*:
@@ -279,7 +279,7 @@ Locate the duplicated :index:`four-body<potential;four-body>` potential, remove 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This should never happen! This error most likely arises when the FIELD
-file or/and DL_POLY_4 executable are corrupted.
+file or/and DL_POLY_5 executable are corrupted.
 
 *Action*:
 
@@ -296,8 +296,8 @@ beginning.
 Recreate or correct the erroneous entries in the FIELD file and try
 again.
 
-**Message 22**: error - unsuitable radial increment in TABLETABBNDTABANGTABDIHTABINV file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Message 22**: error - unsuitable radial increment in TABLE/TABBND/TABANG/TABDIH/TABINV file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. index:: single: potential;tabulated
 
@@ -322,7 +322,7 @@ The tables must be recalculated with an appropriate increment.
 
 This error arises when the specification of the short range potentials
 is different in the FIELD and TABLE files. This usually means that the
-order of specification of the potentials is different. When DL_POLY_4
+order of specification of the potentials is different. When DL_POLY_5
 finds a change in the order of specification, it assumes that the user
 has forgotten to enter one.
 
@@ -334,10 +334,10 @@ presented in the TABLE file. Then check the TABLE file to make sure all
 the :index:`tabulated<potential;tabulated>` potentials are present in 
 the order the FIELD file indicates.
 
-**Message 24**: error - end of file encountered in TABLETABBNDTABANGTABDIHTABINV file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Message 24**: error - end of file encountered in TABLE/TABBND/TABANG/TABDIH/TABINV file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This means the TABLETABBNDTABANGTABDIHTABINV file is incomplete in some
+This means the TABLE/TABBND/TABANG/TABDIH/TABINV file is incomplete in some
 way: either by having too few potentials included, or the number of data
 points is incorrect.
 
@@ -345,12 +345,12 @@ points is incorrect.
 
 Examine the TABLE file contents and regenerate it if it appears to be
 incomplete. If it look intact, check that the number of data points
-specified is what DL_POLY_4 is expecting.
+specified is what DL_POLY_5 is expecting.
 
 **Message 25**: error - wrong atom type found in CONFIG file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-On reading the input file CONFIG, DL_POLY_4 performs a check to ensure
+On reading the input file CONFIG, DL_POLY_5 performs a check to ensure
 that the atoms specified in the configuration provided are compatible
 with the corresponding FIELD file. This message results if they are not
 *or the parallel reading wrongly assumed that CONFIG complies with the
@@ -368,7 +368,7 @@ working with it.
 **Message 26**: error - neutral group option now redundant
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 does not have the neutral group option.
+DL_POLY_5 does not have the neutral group option.
 
 *Action*:
 
@@ -383,18 +383,18 @@ molecule it is part of.
 
 *Action*:
 
-Find the erroneous entry in FIELD, correct it and try running DL_POLY_4
+Find the erroneous entry in FIELD, correct it and try running DL_POLY_5
 again.
 
 **Message 28**: error - wrongly indexed atom entries found in CONFIG file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has detected that the atom indices in the CONFIG file do not
+DL_POLY_5 has detected that the atom indices in the CONFIG file do not
 form a contnual and/or non-repeating group of indices.
 
 *Action*:
 
-Make sure the CONFIG file is complies with the DL_POLY_4 standards. You
+Make sure the CONFIG file is complies with the DL_POLY_5 standards. You
 may use the **no index** option in the CONTROL file to override the
 crystalographic sites’ reading from the CONFIG file from reading by
 index to reading by order of the atom entries with consecutive
@@ -406,7 +406,7 @@ CONFIG file by order (consecutively).
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This should never happen! This error most likely arises when the FIELD
-file or/and DL_POLY_4 executable are corrupted.
+file or/and DL_POLY_5 executable are corrupted.
 
 *Action*:
 
@@ -417,20 +417,20 @@ See action notes on message 14 above.
 
 .. index:: single: potential;bond
 
-DL_POLY_4 limits the number of chemical bond units in the system to be
+DL_POLY_5 limits the number of chemical bond units in the system to be
 simulated (actually, the number to be processed by each node) and checks
 for the violation of this. Termination will result if the condition is
 violated.
 
 *Action*:
 
-Use **densvar** option in CONTROL to increase ``mxbond`` (alternatively,
+Use **density_variance** option in CONTROL to increase ``mxbond`` (alternatively,
 increase it by hand in ``set_bounds`` and recompile) and resubmit.
 
 **Message 32**: error - coincidence of particles in core-shell unit
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has found a fault in the definition of a core-shell unit in
+DL_POLY_5 has found a fault in the definition of a core-shell unit in
 the FIELD file. The same particle has been assigned to the core and
 shell sites.
 
@@ -441,7 +441,7 @@ Correct the erroneous entry in FIELD and resubmit.
 **Message 33**: error - coincidence of particles in constraint bond unit
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has found a fault in the definition of a constraint bond unit
+DL_POLY_5 has found a fault in the definition of a constraint bond unit
 in the FIELD file. The same particle has been assigned to the both
 sites.
 
@@ -452,7 +452,7 @@ Correct the erroneous entry in FIELD and resubmit.
 **Message 34**: error - length of constraint bond unit \ :math:`>=` real space cutoff (rcut)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has found a constraint bond unit length (FIELD) larger than
+DL_POLY_5 has found a constraint bond unit length (FIELD) larger than
 the real space cutoff (``rcut``) (CONTROL).
 
 *Action*:
@@ -463,7 +463,7 @@ FIELD and resubmit. For small system consider using .
 **Message 35**: error - coincidence of particles in chemical bond unit
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has found a faulty chemical bond in FIELD (defined between the
+DL_POLY_5 has found a faulty chemical bond in FIELD (defined between the
 same particle).
 
 *Action*:
@@ -473,7 +473,7 @@ Correct the erroneous entry in FIELD and resubmit.
 **Message 36**: error - only one \*bonds\* directive per molecule is allowed
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has found more than one bonds entry per molecule in FIELD.
+DL_POLY_5 has found more than one bonds entry per molecule in FIELD.
 
 *Action*:
 
@@ -486,7 +486,7 @@ This should not usually happen!
 
 *Action*:
 
-Consider using ``densvar`` option in CONTROL for extremely
+Consider using **density_variance** option in CONTROL for extremely
 non-equilibrium simulations. Alternatively, increase ``mxbfxp``
 parameter in ``set_bounds`` recompile and resubmit. Send the problem to
 us if this is persistent.
@@ -514,14 +514,14 @@ See action notes on message 14 above.
 
 .. index:: single: constraints;bond
 
-DL_POLY_4 limits the number of bond constraint units in the system to be
+DL_POLY_5 limits the number of bond constraint units in the system to be
 simulated (actually, the number to be processed by each node) and checks
 for the violation of this. Termination will result if the condition is
 violated.
 
 *Action*:
 
-Use **densvar** option in CONTROL to increase ``mxcons`` (alternatively,
+Use **density_variance** option in CONTROL to increase ``mxcons`` (alternatively,
 increase it by hand in ``set_bounds`` and recompile) and resubmit.
 
 **Message 42**: error - undefined direction passed to deport_atomic_data
@@ -541,7 +541,7 @@ the potentials in use do not hold the system stable.
 
 *Action*:
 
-Consider using ``densvar`` option in CONTROL for extremely
+Consider using **density_variance** option in CONTROL for extremely
 non-equilibrium simulations. Alternatively, increase ``mxbfdp``
 parameter in ``set_bounds`` recompile and resubmit.
 
@@ -564,7 +564,7 @@ system.
 *Action*:
 
 Check if CONFIG and FIELD numbers of particles match. Try executing on
-various number of processors. Try using the **densvar** option in
+various number of processors. Try using the **density_variance** option in
 CONTROL to increase ``mxatms`` (alternatively, increase it by hand in
 ``set_bounds`` and recompile) and resubmit. Send the problem to us if
 this is persistent.
@@ -598,7 +598,7 @@ recompile and resubmit.
 **Message 49**: error - frozen shell (core-shell) unit specified
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The DL_POLY_4 option to freeze the location of an atom (i.e. hold it
+The DL_POLY_5 option to freeze the location of an atom (i.e. hold it
 permanently in one position) is not permitted for the shells in
 core-shell units.
 
@@ -611,7 +611,7 @@ non-polarisable atom instead.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This should never happen! This error most likely arises when the FIELD
-file or/and DL_POLY_4 executable are corrupted.
+file or/and DL_POLY_5 executable are corrupted.
 
 *Action*:
 
@@ -622,20 +622,20 @@ See action notes on message 14 above.
 
 .. index:: single: potential;valence angle
 
-DL_POLY_4 limits the number of valence angle units in the system to be
+DL_POLY_5 limits the number of valence angle units in the system to be
 simulated (actually, the number to be processed by each node) and checks
 for the violation of this. Termination will result if the condition is
 violated.
 
 *Action*:
 
-Use **densvar** option in CONTROL to increase ``mxangl`` (alternatively,
+Use **density_variance** option in CONTROL to increase ``mxangl`` (alternatively,
 increase it by hand in ``set_bounds`` and recompile) and resubmit.
 
 **Message 52**: error - end of FIELD file encountered
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This message results when DL_POLY_4 reaches the end of the FIELD file,
+This message results when DL_POLY_5 reaches the end of the FIELD file,
 without having read all the data it expects. Probable causes: missing
 data or incorrect specification of integers on the various directives.
 
@@ -646,7 +646,7 @@ Check FIELD file for missing or incorrect data, correct and resubmit.
 **Message 53**: error - end of CONTROL file encountered
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This message results when DL_POLY_4 reaches the end of the CONTROL file,
+This message results when DL_POLY_5 reaches the end of the CONTROL file,
 without having read all the data it expects. Probable cause: missing
 **finish** directive.
 
@@ -666,7 +666,7 @@ See naction otes on message 38 above.
 **Message 55**: error - end of CONFIG file encountered
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This error arises when DL_POLY_4 attempts to read more data from the
+This error arises when DL_POLY_5 attempts to read more data from the
 CONFIG file than is actually present. The probable cause is an incorrect
 or absent CONFIG file, but it may be due to the FIELD file being
 incompatible in some way with the CONFIG file.
@@ -719,14 +719,14 @@ corrupted frames and you must correct it before trying again.
 
 .. index:: single: polarisation;shell model
 
-DL_POLY_4 limits the number of core-shell units in the system to be
+DL_POLY_5 limits the number of core-shell units in the system to be
 simulated (actually, the number to be processed by each node) and checks
 for the violation of this. Termination will result if the condition is
 violated.
 
 *Action*:
 
-Use **densvar** option in CONTROL to increase ``mxshl`` (alternatively,
+Use **density_variance** option in CONTROL to increase ``mxshl`` (alternatively,
 increase it by hand in ``set_bounds`` and recompile) and resubmit.
 
 **Message 60**: error - too many dihedral angles specified
@@ -743,14 +743,14 @@ See action notes on message 14 above.
 
 .. index:: potential;dihedral
 
-DL_POLY_4 limits the number of dihedral angle units in the system to be
+DL_POLY_5 limits the number of dihedral angle units in the system to be
 simulated (actually, the number to be processed by each node) and checks
 for the violation of this. Termination will result if the condition is
 violated.
 
 *Action*:
 
-Use **densvar** option in CONTROL to increase ``mxdihd`` (alternatively,
+Use **density_variance** option in CONTROL to increase ``mxdihd`` (alternatively,
 increase it by hand in ``set_bounds`` and recompile) and resubmit.
 
 **Message 62**: error - too many tethered atoms specified
@@ -767,14 +767,14 @@ See action notes on message 14 above.
 
 .. index:: single: potential;tether
 
-DL_POLY_4 limits the number of tethered atoms in the system to be
+DL_POLY_5 limits the number of tethered atoms in the system to be
 simulated (actually, the number to be processed by each node) and checks
 for the violation of this. Termination will result if the condition is
 violated.
 
 *Action*:
 
-Use **densvar** option in CONTROL to increase ``mxteth`` (alternatively,
+Use **density_variance** option in CONTROL to increase ``mxteth`` (alternatively,
 increase it by hand in ``set_bounds`` and recompile) and resubmit.
 
 **Message 64**: error - incomplete core-shell unit found in build_book_intra
@@ -789,7 +789,7 @@ Report problem to authors.
 **Message 65**: error - too many excluded pairs specified
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This should never happen! This error arises when DL_POLY_4 is
+This should never happen! This error arises when DL_POLY_5 is
 identifying the atom pairs that cannot have a pair potential between
 them, by virtue of being chemically bonded for example (see subroutine
 ``build_excl_intra``). Some of the working arrays used in this operation
@@ -802,7 +802,7 @@ Contact authors.
 **Message 66**: error - coincidence of particles in bond angle unit
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has found a fault in the definition of a bond angle in the
+DL_POLY_5 has found a fault in the definition of a bond angle in the
 FIELD file.
 
 *Action*:
@@ -812,7 +812,7 @@ Correct the erroneous entry in FIELD and resubmit.
 **Message 67**: error - coincidence of particles in dihedral unit
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has found a fault in the definition of a dihedral unit in the
+DL_POLY_5 has found a fault in the definition of a dihedral unit in the
 FIELD file.
 
 *Action*:
@@ -822,7 +822,7 @@ Correct the erroneous entry in FIELD and resubmit.
 **Message 68**: error - coincidence of particles in inversion unit
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has found a fault in the definition of a inversion unit in the
+DL_POLY_5 has found a fault in the definition of a inversion unit in the
 FIELD file.
 
 *Action*:
@@ -836,12 +836,12 @@ The number of link cells required for the build up of the Verlet
 neighbour list (as in link_cell_pairs) or the calculation of three- &
 four-body as well tersoff forces (as in three_body_forces,
 four_body_forces, tersoff_body_forces) in the given model exceeds the
-number allowed for by the DL_POLY_4 arrays. Probable cause: your system
+number allowed for by the DL_POLY_5 arrays. Probable cause: your system
 has expanded unacceptably much to . This may not be physically sensible!
 
 *Action*:
 
-Consider using ``densvar`` option in CONTROL for extremely
+Consider using **density_variance** option in CONTROL for extremely
 non-equilibrium simulations.
 
 **Message 70**: error - constraint_quench failure
@@ -849,7 +849,7 @@ non-equilibrium simulations.
 
 .. index:: single: constraints;bond
 
-When a simulation with bond constraints is started, DL_POLY_4 attempts
+When a simulation with bond constraints is started, DL_POLY_5 attempts
 to extract the kinetic energy of the constrained atom-atom bonds arising
 from the assignment of initial random velocities. If this procedure
 fails, the program will terminate. The likely cause is a badly generated
@@ -893,7 +893,7 @@ Report to authors.
 **Message 74**: error - unidentified atom in tersoff potential list
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This shows that DL_POLY_4 has encountered and erroneous entry for
+This shows that DL_POLY_5 has encountered and erroneous entry for
 Tersoff potentials in FIELD.
 
 *Action*:
@@ -903,7 +903,7 @@ Correct FIELD and resubmit.
 **Message 76**: error - duplicate tersoff potential specified
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This shows that DL_POLY_4 has encountered and erroneous entry for
+This shows that DL_POLY_5 has encountered and erroneous entry for
 Tersoff potentials in FIELD.
 
 *Action*:
@@ -915,20 +915,20 @@ Correct FIELD and resubmit.
 
 .. index:: single: potential;inversion
 
-DL_POLY_4 limits the number of inversion units in the system to be
+DL_POLY_5 limits the number of inversion units in the system to be
 simulated (actually, the number to be processed by each node) and checks
 for the violation of this. Termination will result if the condition is
 violated.
 
 *Action*:
 
-Use **densvar** option in CONTROL to increase ``mxinv`` (alternatively,
+Use **density_variance** option in CONTROL to increase ``mxinv`` (alternatively,
 increase it by hand in ``set_bounds`` and recompile) and resubmit.
 
 **Message 79**: error - tersoff potential cutoff undefined
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This shows that DL_POLY_4 has encountered and erroneous entry for
+This shows that DL_POLY_5 has encountered and erroneous entry for
 Tersoff potentials in FIELD.
 
 *Action*:
@@ -947,7 +947,7 @@ Report to authors.
 **Message 81**: error - unidentified atom in pair potential list
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This shows that DL_POLY_4 has encountered and erroneous entry for vdw or
+This shows that DL_POLY_5 has encountered and erroneous entry for vdw or
 metal potentials in FIELD or cited TABle file.
 
 *Action*:
@@ -958,7 +958,7 @@ Correct FIELD and/or cited TABle file.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This should never happen! In checking the vdw and metal potentials
-specified in the FIELD file DL_POLY_4 calculates a unique integer
+specified in the FIELD file DL_POLY_5 calculates a unique integer
 indices that henceforth identify every specific potential within the
 program. If this index becomes too large, termination of the program
 results.
@@ -979,7 +979,7 @@ Report to authors.
 **Message 84**: error - unidentified atom in three-body/angles potential list
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This shows that DL_POLY_4 has encountered and erroneous entry at
+This shows that DL_POLY_5 has encountered and erroneous entry at
 three-body or angles definitions in FIELD.
 
 *Action*:
@@ -989,7 +989,7 @@ Correct FIELD and resubmit.
 **Message 85**: error - required velocities not in CONFIG file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If the user attempts to start up a DL_POLY_4 simulation with any type of
+If the user attempts to start up a DL_POLY_5 simulation with any type of
 **restart** directive (see description of CONTROL file,) the program
 will expect the CONFIG file to contain atomic velocities as well as
 positions. Termination results if these are not present.
@@ -998,14 +998,14 @@ positions. Termination results if these are not present.
 
 Either replace the CONFIG file with one containing the velocities, or if
 not available, remove the **restart ...** directive altogether and let
-DL_POLY_4 create the velocities for itself.
+DL_POLY_5 create the velocities for itself.
 
 **Message 86**: error - calculated three-body potential index too large
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. index:: potential;three-body
 
-This should never happen! DL_POLY_4 has a permitted maximum for the
+This should never happen! DL_POLY_5 has a permitted maximum for the
 calculated index for any three-body potential in the system (i.e. as
 defined in the FIELD file). If there are :math:`m` distinct types of
 atom in the system, the index can possibly range from :math:`1` to
@@ -1140,7 +1140,7 @@ Regenerate CONFIG (and FIELD) and resubmit.
 **Message 101**: error - calculated four-body potential index too large
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This should never happen! DL_POLY_4 has a permitted maximum for the
+This should never happen! DL_POLY_5 has a permitted maximum for the
 calculated index for any four-body potential in the system (i.e. as
 defined in the FIELD file). If there are :math:`m` distinct types of
 atom in the system, the index can possibly range from :math:`1` to
@@ -1169,11 +1169,11 @@ resubmit.
 Various algorithms (constraint and core-shell ones) require that
 information about ‘shared’ atoms be passed between nodes. If there are
 too many such atoms, the arrays holding the information will be exceeded
-and DL_POLY_4 will terminate execution.
+and DL_POLY_5 will terminate execution.
 
 *Action*:
 
-Use **densvar** option in CONTROL to increase ``mxlshp`` (alternatively,
+Use **density_variance** option in CONTROL to increase ``mxlshp`` (alternatively,
 increase it by hand in ``set_bounds`` and recompile) and resubmit.
 
 **Message 104**: error - arrays listme and lstout exceeded in pass_shared_units
@@ -1184,7 +1184,7 @@ exceeded.
 
 *Action*:
 
-Consider using ``densvar`` option in CONTROL for extremely
+Consider using **density_variance** option in CONTROL for extremely
 non-equilibrium simulations.
 
 **Message 105**: error - shake algorithm (constraints_shake) failed to converge
@@ -1218,7 +1218,7 @@ list array dimensions.
 
 *Action*:
 
-Consider using ``densvar`` option in CONTROL for extremely
+Consider using **density_variance** option in CONTROL for extremely
 non-equilibrium simulations or increase by hand ``mxlist`` in
 ``set_bounds``.
 
@@ -1226,7 +1226,7 @@ non-equilibrium simulations or increase by hand ``mxlist`` in
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This should never happen! A possible reason is corruption in FIELD
-or/and DL_POLY_4 executable.
+or/and DL_POLY_5 executable.
 
 *Action*:
 
@@ -1235,7 +1235,7 @@ See action notes on message 14 above.
 **Message 108**: error - unidentified atom in rdf look up list
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-During reading of RDF look up pairs in FIELD DL_POLY_4 has found an
+During reading of RDF look up pairs in FIELD DL_POLY_5 has found an
 unlisted previously atom type.
 
 *Action*:
@@ -1247,7 +1247,7 @@ already defined one in the erroneous line. Resubmit.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This should never happen! In checking the RDF pairs specified in the
-FIELD file DL_POLY_4 calculates a unique integer index that henceforth
+FIELD file DL_POLY_5 calculates a unique integer index that henceforth
 identify every RDF pair within the program. If this index becomes too
 large, termination of the program results.
 
@@ -1258,7 +1258,7 @@ Report to authors.
 **Message 108**: error - duplicate rdf look up pair specified
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-During reading of RDF look up pairs in FIELD DL_POLY_4 has found a
+During reading of RDF look up pairs in FIELD DL_POLY_5 has found a
 duplicate entry in the list.
 
 *Action*:
@@ -1268,18 +1268,18 @@ Delete the duplicate line and resubmit.
 **Message 111**: error - bond constraint unit separation :math:`>` rcut (the system cutoff)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This should never happen! DL_POLY_4 has not been able to find an atom in
+This should never happen! DL_POLY_5 has not been able to find an atom in
 a processor domain or its bordering neighbours.
 
 *Action*:
 
 Probable cause: link cells too small. Use larger potential cutoff.
-Contact DL_POLY_4 authors.
+Contact DL_POLY_5 authors.
 
 **Message 112**: error - only one \*constraints\* directive per molecule is allowed
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has found more than one constraints entry per molecule in
+DL_POLY_5 has found more than one constraints entry per molecule in
 FIELD.
 
 *Action*:
@@ -1294,7 +1294,7 @@ exceeded.
 
 *Action*:
 
-Consider using ``densvar`` option in CONTROL for extremely
+Consider using **density_variance** option in CONTROL for extremely
 non-equilibrium simulations. Alternatively, you will need to print extra
 diagnostic data from the ``deport_atomic_data`` subroutine to find which
 boded-like contribution has exceeded its assumed limit and then correct
@@ -1308,7 +1308,7 @@ The array ``legend`` has been exceeded.
 *Action*:
 
 Try increasing parameter ``mxfix`` in ``set_bounds``, recompile and
-resubmit. Contact DL_POLY_4 authors if the problem persists.
+resubmit. Contact DL_POLY_5 authors if the problem persists.
 
 **Message 115**: error - transfer buffer exceeded in update_shared_units
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1318,7 +1318,7 @@ The transfer buffer has been exceeded.
 *Action*:
 
 Consider increasing parameter ``mxbfsh`` in ``set_bounds``, recompile
-and resubmit. Contact DL_POLY_4 authors if the problem persists.
+and resubmit. Contact DL_POLY_5 authors if the problem persists.
 
 **Message 116**: error - incorrect atom transfer in update_shared_units
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1346,7 +1346,7 @@ Report to authors.
 **Message 120**: error - invalid determinant in matrix inversion
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 occasionally needs to calculate matrix inverses (usually the
+DL_POLY_5 occasionally needs to calculate matrix inverses (usually the
 inverse of the matrix of cell vectors, which is of size 3 :math:`\times`
 3). For safety’s sake a check on the determinant is made, to prevent
 inadvertent use of a singular matrix.
@@ -1358,7 +1358,7 @@ Locate the incorrect matrix and fix it - e.g. are cell vectors correct?
 **Message 122**: error - FIELD file not found
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 failed to find a FIELD file in your directory.
+DL_POLY_5 failed to find a FIELD file in your directory.
 
 *Action*:
 
@@ -1367,7 +1367,7 @@ Supply a valid FIELD file before you start a simulation
 **Message 124**: error - CONFIG file not found
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 failed to find a CONFIG file in your directory.
+DL_POLY_5 failed to find a CONFIG file in your directory.
 
 *Action*:
 
@@ -1376,7 +1376,7 @@ Supply a valid CONFIG file before you start a simulation
 **Message 126**: error - CONTROL file not found
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 failed to find a CONTROL file in your directory.
+DL_POLY_5 failed to find a CONTROL file in your directory.
 
 *Action*:
 
@@ -1442,7 +1442,7 @@ determine if particles gain too much speed and leave domains.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 During reading of metal potentials (pairs of atom types) in FIELD
-DL_POLY_4 has found a duplicate pair of atoms in the list.
+DL_POLY_5 has found a duplicate pair of atoms in the list.
 
 *Action*:
 
@@ -1451,7 +1451,7 @@ Delete one of the duplicate entries and resubmit.
 **Message 150**: error - unknown van der waals potential selected
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 checks when constructing the interpolation tables for the
+DL_POLY_5 checks when constructing the interpolation tables for the
 short ranged potentials that the potential function requested is one
 which is of a form known to the program. If the requested potential form
 is unknown, termination of the program results. The most probable cause
@@ -1460,13 +1460,13 @@ file.
 
 *Action*:
 
-Read the DL_POLY_4 documentation and find the potential keyword for the
+Read the DL_POLY_5 documentation and find the potential keyword for the
 potential desired.
 
 **Message 151**: error - unknown EAM keyword in TABEAM
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 checks when constructing the interpolation tables for the EAM
+DL_POLY_5 checks when constructing the interpolation tables for the EAM
 metal potentials that the potential function requested is one which is
 of a form known to the program. If the requested potential form is
 unknown, termination of the program results. The most probable cause of
@@ -1474,7 +1474,7 @@ this is the incorrect choice of the potential keyword in the FIELD file.
 
 *Action*:
 
-Read the DL_POLY_4 documentation and find the potential keyword for the
+Read the DL_POLY_5 documentation and find the potential keyword for the
 potential desired.
 
 **Message 152**: error - undefined direction passed to dpd_v_export
@@ -1525,7 +1525,7 @@ The transfer buffer has been exceeded.
 
 *Action*:
 
-Consider using ``densvar`` option in CONTROL for extremely
+Consider using **density_variance** option in CONTROL for extremely
 non-equilibrium simulations. Alternatively, increase ``mxbfss``
 parameters in ``set_bounds`` recompile and resubmit.
 
@@ -1546,18 +1546,17 @@ This error means the statistics arrays appearing in subroutine
 
 *Action*:
 
-Contact DL_POLY_4 authors.
+Contact DL_POLY_5 authors.
 
-**Message 172**: error - duplicate intra-molecular entries specified
-in TABBNDTABANGTABDIHTABINV
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Message 172**: error - duplicate intra-molecular entries specified in TABBND/TABANG/TABDIH/TABINV
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A duplicate entry has been encountered in the intra-molecular table
 file.
 
 *Action*:
 
-Contact DL_POLY_4 authors.
+Contact DL_POLY_5 authors.
 
 **Message 200**: error - rdf/z-density buffer array too small in system_revive
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1568,12 +1567,12 @@ should never happen!
 
 *Action*:
 
-Contact DL_POLY_4 authors.
+Contact DL_POLY_5 authors.
 
 **Message 210**: error - only one \*angles\* directive per molecule is allowed
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has found more than one angles entry per molecule in FIELD.
+DL_POLY_5 has found more than one angles entry per molecule in FIELD.
 
 *Action*:
 
@@ -1582,7 +1581,7 @@ Correct the erroneous part in FIELD and resubmit.
 **Message 220**: error - only one \*dihedrals\* directive per molecule is allowed
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has found more than one dihedrals entry per molecule in FIELD.
+DL_POLY_5 has found more than one dihedrals entry per molecule in FIELD.
 
 *Action*:
 
@@ -1591,7 +1590,7 @@ Correct the erroneous part in FIELD and resubmit.
 **Message 230**: error - only one \*inversions\* directive per molecule is allowed
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has found more than one inversions entry per molecule in
+DL_POLY_5 has found more than one inversions entry per molecule in
 FIELD.
 
 *Action*:
@@ -1601,7 +1600,7 @@ Correct the erroneous part in FIELD and resubmit.
 **Message 240**: error - only one \*tethers\* directive per molecule is allowed
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has found more than one tethers entry per molecule in FIELD.
+DL_POLY_5 has found more than one tethers entry per molecule in FIELD.
 
 *Action*:
 
@@ -1610,7 +1609,7 @@ Correct the erroneous part in FIELD and resubmit.
 **Message 300**: error - incorrect boundary condition for link-cell algorithms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The use of link cells in DL_POLY_4 implies the use of appropriate
+The use of link cells in DL_POLY_5 implies the use of appropriate
 boundary conditions. This error results if the user specifies octahedral
 or dodecahedral boundary conditions, which are only available in .
 
@@ -1636,7 +1635,7 @@ or/and increase system size.
 **Message 307**: error - link cell algorithm violation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 does not like what you are asking it to do. Probable cause:
+DL_POLY_5 does not like what you are asking it to do. Probable cause:
 the cutoff is too large to use link cells in this case.
 
 *Action*:
@@ -1647,7 +1646,7 @@ or/and increase system size.
 **Message 308**: error - link cell algorithm in contention with SPME sum precision
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 does not like what you are asking it to do. Probable cause:
+DL_POLY_5 does not like what you are asking it to do. Probable cause:
 you ask for SPME precision that is not achievable by the current
 settings of the link cell algorithm.
 
@@ -1659,7 +1658,7 @@ precision or/and increase cutoff.
 **Message 340**: error - invalid integration option requested
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has detected an incompatibility in the simulation
+DL_POLY_5 has detected an incompatibility in the simulation
 instructions, namely that the requested integration algorithm is not
 compatible with the physical model. It *may* be possible to override
 this error trap, but it is up to the user to establish if this is
@@ -1697,7 +1696,7 @@ again.
 **Message 380**: error - simulation temperature not specified or :math:`< 1` K
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has failed to find a **temp** directive in the CONTROL file.
+DL_POLY_5 has failed to find a **temp** directive in the CONTROL file.
 
 *Action*:
 
@@ -1707,7 +1706,7 @@ temperature specified.
 **Message 381**: error - simulation timestep not specified
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has failed to find a **timestep** directive in the CONTROL
+DL_POLY_5 has failed to find a **timestep** directive in the CONTROL
 file.
 
 *Action*:
@@ -1718,7 +1717,7 @@ timestep specified.
 **Message 382**: error - simulation cutoff not specified
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has failed to find a **cutoff** directive in the CONTROL file.
+DL_POLY_5 has failed to find a **cutoff** directive in the CONTROL file.
 
 *Action*:
 
@@ -1753,7 +1752,7 @@ ensemble.
 .. index:: single: potential;van der Waals
 
 The user has not set any cutoff in CONTROL, (``rvdw``) - the van der
-Waals potentials cutoff is needed in order for DL_POLY_4 to proceed.
+Waals potentials cutoff is needed in order for DL_POLY_5 to proceed.
 
 *Action*:
 
@@ -1774,7 +1773,7 @@ cell vectors.
 **Message 414**: error - conflicting ensemble options in CONTROL file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has found more than one **ensemble** directive in the CONTROL
+DL_POLY_5 has found more than one **ensemble** directive in the CONTROL
 file.
 
 *Action*:
@@ -1784,7 +1783,7 @@ Locate extra **ensemble** directives in CONTROL file and remove.
 **Message 416**: error - conflicting force options in CONTROL file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has found incompatible directives in the CONTROL file
+DL_POLY_5 has found incompatible directives in the CONTROL file
 specifying the electrostatic interactions options.
 
 *Action*:
@@ -1795,7 +1794,7 @@ Locate the conflicting directives in the CONTROL file and correct.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A request for a non-existent :index:`ensemble` has been made or a request with
-conflicting options that DL_POLY_4 cannot deal with.
+conflicting options that DL_POLY_5 cannot deal with.
 
 *Action*:
 
@@ -1805,7 +1804,7 @@ specifications.
 **Message 432**: error - undefined tersoff potential
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This shows that DL_POLY_4 has encountered an unfamiliar entry for
+This shows that DL_POLY_5 has encountered an unfamiliar entry for
 Tersoff potentials in FIELD.
 
 *Action*:
@@ -1838,13 +1837,13 @@ appropriately.
 **Message 440**: error - undefined angular potential
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A form of angular potential has been requested which DL_POLY_4 does not
+A form of angular potential has been requested which DL_POLY_5 does not
 recognise.
 
 *Action*:
 
 Locate the offending potential in the FIELD file and remove. Replace
-with one acceptable to DL_POLY_4 if this is possible. Alternatively, you
+with one acceptable to DL_POLY_5 if this is possible. Alternatively, you
 may consider defining the required potential in the code yourself.
 Amendments to subroutines ``read_field`` and ``angles_forces`` will be
 required.
@@ -1852,13 +1851,13 @@ required.
 **Message 442**: error - undefined three-body potential
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A form of three-body potential has been requested which DL_POLY_4 does
+A form of three-body potential has been requested which DL_POLY_5 does
 not recognise.
 
 *Action*:
 
 Locate the offending potential in the FIELD file and remove. Replace
-with one acceptable to DL_POLY_4 if this is reasonable. Alternatively,
+with one acceptable to DL_POLY_5 if this is reasonable. Alternatively,
 you may consider defining the required potential in the code yourself.
 Amendments to subroutines ``read_field`` and ``three_body_forces`` will
 be required.
@@ -1868,7 +1867,7 @@ be required.
 
 .. index:: single: potential;four-body
 
-DL_POLY_4 has been requested to process a four-body potential it does
+DL_POLY_5 has been requested to process a four-body potential it does
 not recognise.
 
 *Action*:
@@ -1884,7 +1883,7 @@ subroutines read_field and ``three_body_forces``.
 
 .. index:: potential;bond
 
-DL_POLY_4 has been requested to process a bond potential it does not
+DL_POLY_5 has been requested to process a bond potential it does not
 recognise.
 
 *Action*:
@@ -1928,7 +1927,7 @@ To prevent this error occurring again increase ``rvdw``.
 **Message 447**: error - only one \*shells\* directive per molecule is allowed
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has found more than one shells entry per molecule in FIELD.
+DL_POLY_5 has found more than one shells entry per molecule in FIELD.
 
 *Action*:
 
@@ -1939,13 +1938,13 @@ Correct the erroneous part in FIELD and resubmit.
 
 .. index:: potential;dihedral
 
-A form of dihedral potential has been requested which DL_POLY_4 does not
+A form of dihedral potential has been requested which DL_POLY_5 does not
 recognise.
 
 *Action*:
 
 Locate the offending potential in the FIELD file and remove. Replace
-with one acceptable to DL_POLY_4 if this is reasonable. Alternatively,
+with one acceptable to DL_POLY_5 if this is reasonable. Alternatively,
 you may consider defining the required potential in the code yourself.
 Amendments to subroutines ``read_field`` and ``dihedral_forces`` (and
 its variants) will be required.
@@ -1955,13 +1954,13 @@ its variants) will be required.
 
 .. index:: single: potential;inversion
 
-A form of inversion potential has been encountered which DL_POLY_4 does
+A form of inversion potential has been encountered which DL_POLY_5 does
 not recognise.
 
 *Action*:
 
 Locate the offending potential in the FIELD file and remove. Replace
-with one acceptable to DL_POLY_4 if this is reasonable. Alternatively,
+with one acceptable to DL_POLY_5 if this is reasonable. Alternatively,
 you may consider defining the required potential in the code yourself.
 Amendments to subroutines ``read_field`` and ``inversions_forces`` will
 be required.
@@ -1971,13 +1970,13 @@ be required.
 
 .. index:: potential;tether
 
-A form of tethering potential has been requested which DL_POLY_4 does
+A form of tethering potential has been requested which DL_POLY_5 does
 not recognise.
 
 *Action*:
 
 Locate the offending potential in the FIELD file and remove. Replace
-with one acceptable to DL_POLY_4 if this is reasonable. Alternatively,
+with one acceptable to DL_POLY_5 if this is reasonable. Alternatively,
 you may consider defining the required potential in the code yourself.
 Amendments to subroutines ``read_field`` and ``tethers_forces`` will be
 required.
@@ -1998,13 +1997,13 @@ add the required cutoff. Resubmit the job.
 **Message 452**: error - undefined vdw potential
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A form of vdw potential has been requested which DL_POLY_4 does not
+A form of vdw potential has been requested which DL_POLY_5 does not
 recognise.
 
 *Action*:
 
 Locate the offending potential in the FIELD file and remove. Replace
-with one acceptable to DL_POLY_4 if this is reasonable. Alternatively,
+with one acceptable to DL_POLY_5 if this is reasonable. Alternatively,
 you may consider defining the required potential in the code yourself.
 Amendments to subroutines ``read_field``, ``vdw_generate``\ \* and
 ``dihedrals_14_vdw`` will be required.
@@ -2031,7 +2030,7 @@ recognise.
 *Action*:
 
 Locate the offending potential in the FIELD file and remove. Replace
-with one acceptable to DL_POLY_4 if this is reasonable. Alternatively,
+with one acceptable to DL_POLY_5 if this is reasonable. Alternatively,
 you may consider defining the required potential in the code yourself.
 Amendments to subroutines ``read_field`` and ``external_field_apply``
 will be required.
@@ -2050,7 +2049,7 @@ particles.
 **Message 461**: error - undefined metal potential
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A form of metal potential has been requested which DL_POLY_4 does not
+A form of metal potential has been requested which DL_POLY_5 does not
 recognise.
 
 *Action*:
@@ -2131,7 +2130,7 @@ correctly formatted.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The specification of a n-m potential in the FIELD file implies that the
-exponent m is larger than exponent n. (Not all versions of DL_POLY_4 are
+exponent m is larger than exponent n. (Not all versions of DL_POLY_5 are
 affected by this.)
 
 *Action*:
@@ -2265,7 +2264,7 @@ PMF units are oveconstrained.
 
 *Action*:
 
-DL_POLY_4 algorithms cannot handle overconstrained PMF units. Decrease
+DL_POLY_5 algorithms cannot handle overconstrained PMF units. Decrease
 the number of constraints on the PMFs.
 
 **Message 497**: error - pmf_quench failure
@@ -2320,8 +2319,8 @@ repetition of a site is allowed in a PMF unit.
 
 Correct the erroneous entries in FIELD.
 
-**Message 504**: error - cutoff too large for TABLETABBND file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Message 504**: error - cutoff too large for TABLE/TABBND file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The requested cutoff exceeds the information in the TABLE file or the
 TABBND cutoff is larger than half the system cutoff ``rcut``.
@@ -2439,7 +2438,7 @@ Increase accuracy when generating a supercell.
 **Message 514**: error - allowed image conventions are: 0, 1, 2, 3 and 6
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has found unsupported boundary condition specified in CONFIG.
+DL_POLY_5 has found unsupported boundary condition specified in CONFIG.
 
 *Action*:
 
@@ -2469,7 +2468,7 @@ stressed in some way? Too far from equilibrium?
 **Message 517**: error - allowed configuration information levels are: 0, 1 and 2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has found an erroneous configuration information level,
+DL_POLY_5 has found an erroneous configuration information level,
 :math:`l: 0 .le. l .le. 2`, (i) for the trajectory option in CONTROL or
 (ii) in the header of CONFIG.
 
@@ -2480,7 +2479,7 @@ Correct the error in CONFIG and rerun.
 **Message 518**: error - control distances for variable timestep not intact
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has found the control distances for the variable timestep
+DL_POLY_5 has found the control distances for the variable timestep
 algorithm to be in contention with each other.
 
 *Action*:
@@ -2500,7 +2499,7 @@ Change the ``restart`` option in CONTROL and rerun.
 **Message 520**: error - domain decomposition failed
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A DL_POLY_4 check during the domain decomposition mapping has been
+A DL_POLY_5 check during the domain decomposition mapping has been
 violated. The number of nodes allowed for imcon = 0 is only 1,2,4 and 8!
 The number of nodes allowed for imcon = 6 is restricted to 2 along the z
 direction! The number of nodes should not be a prime number since these
@@ -2508,13 +2507,13 @@ are not factorisable/decomposable!
 
 *Action*:
 
-You must ensure DL_POLY_4 execution on a number of processors that
+You must ensure DL_POLY_5 execution on a number of processors that
 complies with the advise above.
 
 **Message 530**: error - pseudo thermostat thickness MUST comply with: 2 Angs \ :math:`<=` thickness :math:`<` a quarter of the minimum MD cell width
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has found a check violated while reading CONTROL.
+DL_POLY_5 has found a check violated while reading CONTROL.
 
 *Action*:
 
@@ -2523,7 +2522,7 @@ Correct accordingly in CONTROL and resubmit.
 **Message 540**: error - pseudo thermostat MUST only be used in bulk simulations, i.e. imcon MUST be 1, 2 or 3
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has found a check violated while reading CONTROL.
+DL_POLY_5 has found a check violated while reading CONTROL.
 
 *Action*:
 
@@ -2707,7 +2706,7 @@ bonding description and try running again.
 **Message 625**: error - only one \*rigid\* directive per molecule is allowed
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has found more than one rigids entry per molecule in FIELD.
+DL_POLY_5 has found more than one rigids entry per molecule in FIELD.
 
 *Action*:
 
@@ -2717,7 +2716,7 @@ Correct the erroneous part in FIELD and resubmit.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This should never happen! This indicates an erroneous FIELD file or
-corrupted DL_POLY_4 executable. Unlike , DL_POLY_4 does not have a set
+corrupted DL_POLY_5 executable. Unlike , DL_POLY_5 does not have a set
 limit on the number of rigid body types it can handle in any simulation
 (this is not the same as the total number of RBs in the system or per
 domain).
@@ -2758,20 +2757,20 @@ Examine FIELD for erroneous directives, correct and resubmit.
 **Message 640**: error - too many rigid body units per domain
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 limits the number of :index:`rigid body` units in the system to be
+DL_POLY_5 limits the number of :index:`rigid body` units in the system to be
 simulated (actually, the number to be processed by each node) and checks
 for the violation of this. Termination will result if the condition is
 violated.
 
 *Action*:
 
-Use **densvar** option in CONTROL to increase ``mxrgd`` (alternatively,
+Use **density_variance** option in CONTROL to increase ``mxrgd`` (alternatively,
 increase it by hand in ``set_bounds`` and recompile) and resubmit.
 
 **Message 642**: error - rigid body unit diameter :math:`>` rcut (the system cutoff)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 domain decomposition limits the size of a RB to a largest
+DL_POLY_5 domain decomposition limits the size of a RB to a largest
 diagonal :math:`<` system cutoff. I.e. the largest RB type is still
 within a linked cell volume.
 
@@ -2810,7 +2809,7 @@ mass and quaternion vectors it has calculated.
 
 *Action*:
 
-Check the contents of the CONFIG file. DL_POLY_4 builds its local body
+Check the contents of the CONFIG file. DL_POLY_5 builds its local body
 description of a rigid unit type from the *first* occurrence of such a
 unit in the CONFIG file. The error most likely occurs because subsequent
 occurrences were not sufficiently similar to this reference structure.
@@ -2827,14 +2826,14 @@ to find the principal axis for a rigid unit.
 
 *Action*:
 
-This is an unlikely error. DL_POLY_4 should correctly handle linear,
+This is an unlikely error. DL_POLY_5 should correctly handle linear,
 planar and 3-dimensional rigid units. There is the remote possibility
 that the unit has all of its mass-bearing particles frozen while some of
 the massless are not or the unit has just one mass-bearing particle.
 Another, more likely, possibility, in case of linear molecules is that
 the precision of the coordinates of these linear molecules’
 constituentsi, as produced by the user, is not good enough, which leads
-DL_POLY_4 to accepting it as non-linear while, in fact, it is and then
+DL_POLY_5 to accepting it as non-linear while, in fact, it is and then
 failing at the current point. It is quite possible, despite considered
 as wrong practice, that the user defined system of linear RBs is, in
 fact, generated from a system of CBs (3 per RB) which has not been run
@@ -2936,7 +2935,7 @@ conductivities.
 *Action*:
 
 Ensure that a readable text file named Ke.dat is available in the
-directory where DL_POLY_4 is being run. (This must be supplied if the
+directory where DL_POLY_5 is being run. (This must be supplied if the
 **ttm ketab** directive is given in the CONTROL file.)
 
 **Message 685**: error - no data found in thermal conductivity table file (Ke.dat)
@@ -2959,7 +2958,7 @@ capacities.
 *Action*:
 
 Ensure that a readable text file named Ce.dat is available in the
-directory where DL_POLY_4 is being run. (This must be supplied if the
+directory where DL_POLY_5 is being run. (This must be supplied if the
 **ttm cetab** directive is given in the CONTROL file.)
 
 **Message 687**: error - no data found in volumetric heat capacity table file (Ce.dat)
@@ -2984,7 +2983,7 @@ capacities.
 *Action*:
 
 Ensure that a readable text file named De.dat is available in the
-directory where DL_POLY_4 is being run. (This must be supplied if the
+directory where DL_POLY_5 is being run. (This must be supplied if the
 **ttm detab** directive is given in the CONTROL file.)
 
 **Message 689**: error - no data found in thermal diffusivity table file (De.dat)
@@ -3007,7 +3006,7 @@ coupling constants.
 *Action*:
 
 Ensure that a readable text file named g.dat is available in the
-directory where DL_POLY_4 is being run. (This must be supplied if the
+directory where DL_POLY_5 is being run. (This must be supplied if the
 **ttm gvar** directive is given in the CONTROL file.)
 
 **Message 691**: error - no data found in coupling constant table file (g.dat)
@@ -3024,7 +3023,7 @@ be greater than or equal to 0 kelvin.
 **Message 692**: error - end of file encountered in table file (Ke.dat, Ce.dat, De.dat or g.dat)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 encountered the end of one of the tabulated files (Ke.dat,
+DL_POLY_5 encountered the end of one of the tabulated files (Ke.dat,
 Ce.dat, De.dat or g.dat) for two-temperature model calculations
 prematurely.
 
@@ -3086,7 +3085,7 @@ Check that the DUMP_E file is not corrupted or incomplete in some way.
 **Message 1000**: error - working precision mismatch between FORTRAN90 and MPI implementation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has failed to match the available modes of MPI precision for
+DL_POLY_5 has failed to match the available modes of MPI precision for
 real numbers to the defined in sc kinds_f90 :index:`FORTRAN90` working precision
 ``wp`` for real numbers. ``wp`` is a precompile parameter.
 
@@ -3101,7 +3100,7 @@ corrections to sc kinds_f90 and/or ``comms_module``.
 **Message 1001**: error - allocation failure in comms_module :math:`->` gcheck_vector
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has failed to find available memory to allocate an array or
+DL_POLY_5 has failed to find available memory to allocate an array or
 arrays, i.e. there is lack of sufficient memory (per node) on the
 execution machine.
 
@@ -3117,7 +3116,7 @@ this.
 **Message 1002**: error - deallocation failure in comms_module :math:`->` gcheck_vector
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 has failed to deallocate an array or arrays, i.e. to free
+DL_POLY_5 has failed to deallocate an array or arrays, i.e. to free
 memory that is no longer in use.
 
 *Action*:

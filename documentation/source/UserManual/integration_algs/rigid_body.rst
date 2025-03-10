@@ -92,7 +92,6 @@ and COM stress and virial respectively written down as:
    :label: rb-stress_eq
 
    \begin{aligned}
-   
    \sigma^{\alpha\beta}=&\sum_{j=1}^{N_{sites}} d_{j}^{\alpha} f_{j}^{\beta} \nonumber \\
    {\cal W} =& -\sum_{j=1}^{N_{sites}} \underline{d}_{j} \cdot \underline{f}_{j}~~,\end{aligned}
 
@@ -214,15 +213,14 @@ equation describing this is:
    single: algorithm;FIQA 
    single: algorithm;NOSQUISH
 
-Rotational motion in DL_POLY_4is handled by two different methods. For
-the LFV implementation, the Fincham Implicit Quaternion Algorithm (FIQA)
-is used :cite:`fincham-92a`. The VV implementation uses the
-NOSQUISH algorithm of Miller *et al.* :cite:`miller-02a`.
-The implementation NOSQUSH is coded in ``no_squish`` both contained
-within ``quaternion_container``.
-
-The LFV implementation begins by integrating the angular velocity
-equation in the local frame:
+Rotational motion in DL_POLY_5 is handled by the NOSQUISH algorithm of 
+Miller *et al.* :cite:`miller-02a`. Its implementation is coded in
+``no_squish``, contained within ``quaternion_container``. Previous
+versions of DL_POLY included an implementation of the Fincham Implicit 
+Quaternion Algorithm (FIQA) :cite:`fincham-92a` for LFV, the details for
+which are shown here to compare with the implementation of NOSQUISH
+for VV integration. The LFV implementation begins by integrating the 
+angular velocity equation in the local frame:
 
 .. math::
 
@@ -319,7 +317,7 @@ quaternion momenta in the order:
 
 which preserves the symplecticness of the operations (see reference
 :cite:`martyna-96a`). Note that :math:`\delta t` is some
-submultiple of :math:`\Delta t`. (In DL_POLY_4 the default is
+submultiple of :math:`\Delta t`. (In DL_POLY_5 the default is
 :math:`\Delta t=10
 \delta t`.) The operators themselves are of the following kind:
 
@@ -389,7 +387,7 @@ are augmented to include the RBs’ COM virial and stress contributions.
    single: barostat 
    single: thermostat
 
-In DL_POLY_4 all degrees of freedom, translational and rotational, are
+In DL_POLY_5 all degrees of freedom, translational and rotational, are
 considered equal and thus treated in the same manner in all available
 thermostats. Similarly, in the same spirit of equi-partitioning, all
 translational degrees of freedom, the free particles’ ones and the RBs’
@@ -478,7 +476,7 @@ degrees of freedom.
    transferred to the basic particles in a physically meaningful way.
 
 .. [2]
-   It is worth noting that in DL_POLY_4all degrees of freedom,
+   It is worth noting that in DL_POLY_5 all degrees of freedom,
    translational (both the free particles’ ones and the RBs’ COMs ones)
    and rotational, are considered equal and thus treated in the same
    manner in all available thermostats!

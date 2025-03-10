@@ -352,7 +352,7 @@ Contains
     ! Set up non-bonded interaction (verlet) list using link cells
     If ((.not. (met%max_metal == 0 .and. electro%key == ELECTROSTATIC_NULL .and. &
                 vdws%no_vdw .and. rdf%max_rdf == 0) .or. kim_data%active) .and. neigh%update) Then
-      Call link_cell_pairs(vdws%cutoff, met%rcut, flow%book, cnfig%megfrz, cshell, devel, &
+      Call link_cell_pairs(vdws%cutoff, met%rcut, flow%book, stat%dpd_units, cnfig%megfrz, cshell, devel, &
                            neigh, mpoles, domain, tmr, cnfig, comm)
     End If
 
@@ -679,8 +679,8 @@ Contains
       ! Set up non-bonded interaction (verlet) list using link cells
       If ((.not. (met(ff)%max_metal == 0 .and. electro(ff)%key == ELECTROSTATIC_NULL .and. &
                   vdws(ff)%no_vdw .and. rdf(ff)%max_rdf == 0) .or. kim_data(ff)%active) .and. neigh(ff)%update) Then
-        Call link_cell_pairs(vdws(ff)%cutoff, met(ff)%rcut, flow%book, cnfig(ff)%megfrz, cshell(ff), devel, &
-                             neigh(ff), mpoles(ff), domain(ff), tmr, cnfig(ff), comm)
+        Call link_cell_pairs(vdws(ff)%cutoff, met(ff)%rcut, flow%book, stat(ff)%dpd_units, cnfig(ff)%megfrz, cshell(ff), &
+                             devel, neigh(ff), mpoles(ff), domain(ff), tmr, cnfig(ff), comm)
       End If
     End Do
 
@@ -1723,7 +1723,7 @@ Contains
         Call gtime(tmr%elapsed)
 
         If (flow%new_page()) Then
-          Call write_header()
+          Call write_header(stat%dpd_units)
         Else If (ttm%l_ttm) Then
           Write (messages(1), '(a)') Repeat('-', 130)
           Call info(messages, 1, .true.)
@@ -1741,7 +1741,7 @@ Contains
 
         Write (messages(1), '(6x,a7,1p,9e12.4)') 'rolling', stat%ravval(1:9)
         Write (messages(2), '(5x,a8,1p,9e12.4)') 'averages', stat%ravval(10:18)
-        Write (messages(3), '(13x,9e12.4)') stat%ravval(19:27)
+        Write (messages(3), '(13x,1p,9e12.4)') stat%ravval(19:27)
         Write (messages(4), '(a)') ''
 
         If (flow%output_std_dev) Then
@@ -1752,7 +1752,7 @@ Contains
 
           Write (messages(1), '(6x,a7,1p,9e12.4)') 'rolling', stats(1:9)
           Write (messages(2), '(4x,a9,1p,9e12.4)') 'std. dev.', stats(10:18)
-          Write (messages(3), '(13x,9e12.4)') stats(19:27)
+          Write (messages(3), '(13x,1p,9e12.4)') stats(19:27)
           Write (messages(4), '(a)') Repeat('-', 130)
           Call info(messages, 4, .true.)
         Else
@@ -2465,7 +2465,7 @@ Contains
 
           ! CHECK MD CONFIGURATION
 
-          Call check_config(cnfig, electro%key, thermo, sites, flow, comm)
+          Call check_config(cnfig, electro%key, thermo, sites, flow, stat%dpd_units, comm)
 
           ! First frame positions (for estimates of MSD when cnfig%levcfg==0)
 
@@ -2498,7 +2498,7 @@ Contains
           If (flow%book) Then
             Call build_book_intra(flow%strict, flow%print_topology, flow%simulation, &
                                   flow, cshell, cons, pmf, bond, angle, dihedral, &
-                                  inversion, tether, neigh, sites, rigid, domain, cnfig, comm)
+                                  inversion, tether, neigh, sites, rigid, domain, cnfig, stat, comm)
             If (flow%exclusions) Then
               Call build_excl_intra(electro%lecx, cshell, cons, bond, angle, dihedral, &
                                     inversion, neigh, rigid, cnfig, comm)
@@ -2516,7 +2516,7 @@ Contains
             stat%vircpe = 0.0_wp
             ! Set up non-bonded interaction (verlet) list using link cells
             If (neigh%update) Then
-              Call link_cell_pairs(vdws%cutoff, met%rcut, flow%book, cnfig%megfrz, cshell, devel, &
+              Call link_cell_pairs(vdws%cutoff, met%rcut, flow%book, stat%dpd_units, cnfig%megfrz, cshell, devel, &
                                    neigh, mpoles, domain, tmr, cnfig, comm)
             End If
             Call two_body_forces(thermo%ensemble, .false., cnfig%megfrz, &
@@ -2877,7 +2877,7 @@ Contains
 
           ! CHECK MD CONFIGURATION
 
-          Call check_config(cnfig, electro%key, thermo, sites, flow, comm)
+          Call check_config(cnfig, electro%key, thermo, sites, flow, stat%dpd_units, comm)
 
           ! First frame positions (for estimates of MSD when cnfig%levcfg==0)
 
@@ -2910,7 +2910,7 @@ Contains
           If (flow%book) Then
             Call build_book_intra(flow%strict, flow%print_topology, flow%simulation, &
                                   flow, cshell, cons, pmf, bond, angle, dihedral, &
-                                  inversion, tether, neigh, sites, rigid, domain, cnfig, comm)
+                                  inversion, tether, neigh, sites, rigid, domain, cnfig, stat, comm)
             If (flow%exclusions) Then
               Call build_excl_intra(electro%lecx, cshell, cons, bond, angle, dihedral, &
                                     inversion, neigh, rigid, cnfig, comm)
@@ -3012,7 +3012,7 @@ Contains
 
           Write (messages(1), '(6x,a7,1p,9e12.4)') 'rolling', stat%ravval(1:9)
           Write (messages(2), '(5x,a8,1p,9e12.4)') 'averages', stat%ravval(10:18)
-          Write (messages(3), '(13x,9e12.4)') stat%ravval(19:27)
+          Write (messages(3), '(13x,1p,9e12.4)') stat%ravval(19:27)
           Write (messages(4), '(a)') Repeat('-', 130)
           Call info(messages, 4, .true.)
 

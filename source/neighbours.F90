@@ -353,10 +353,10 @@ Contains
   !> amended   - i.t.todorov may 2020 - flickering fix fixed
   !> contrib   - m.a.seaton august 2020 - 'half-halo' VNL search preprocessing tags
 
-  Subroutine link_cell_pairs(rvdw, rmet, lbook, megfrz, cshell, devel, neigh, &
+  Subroutine link_cell_pairs(rvdw, rmet, lbook, dpd_units, megfrz, cshell, devel, neigh, &
                              mpoles, domain, tmr, config, comm)
 
-    Logical, Intent(In) :: lbook
+    Logical, Intent(In) :: lbook, dpd_units
     Integer, Intent(In) :: megfrz
     Real(Kind=wp), Intent(In) :: rvdw, rmet
     Type(core_shell_type), Intent(InOut) :: cshell
@@ -1372,13 +1372,23 @@ Contains
       Call gsum(comm, cnt)
 
       If (.not. safe) Then
-        Write (message, '(i20,2a,f7.3,a)') &
-          Int(cnt(0), li), ' pair(s) of particles in CONFIG ', &
-          'violate(s) the minimum separation distance of ', devel%r_dis, ' Angs'
+        If (dpd_units) Then
+          Write (message, '(i20,2a,f7.3,a)') &
+            Int(cnt(0), li), ' pair(s) of particles in CONFIG ', &
+            'violate(s) the minimum separation distance of ', devel%r_dis, ' dpd_l'
+        Else
+          Write (message, '(i20,2a,f7.3,a)') &
+            Int(cnt(0), li), ' pair(s) of particles in CONFIG ', &
+            'violate(s) the minimum separation distance of ', devel%r_dis, ' Angs'
+        End If
         Call warning(message, .true.)
       End If
 
-      Call info('Pair totals of short range interactions over cutoffs (in Angstroms):', .true.)
+      If (dpd_units) Then
+        Call info('Pair totals of short range interactions over cutoffs (in dpd_l):', .true.)
+      Else
+        Call info('Pair totals of short range interactions over cutoffs (in Angstroms):', .true.)
+      End If
       If (Abs(neigh%cutoff_extended - neigh%cutoff) > smalldr) Then
         Write (message, '(2x,a,i20,a,f7.3)') &
           'extended       -  ', Int(cnt(1), li), '  within neigh%cutoff_extended = ', neigh%cutoff_extended

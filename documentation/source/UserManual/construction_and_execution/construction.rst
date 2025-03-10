@@ -4,30 +4,30 @@ Constructing : an Overview
 Constructing the Standard Versions
 ----------------------------------
 
-DL_POLY_4 was designed as a package of useful subroutines rather than a
+DL_POLY_5 was designed as a package of useful subroutines rather than a
 single program, which means that users are to be able to construct a
 working simulation program of their own design from the subroutines
 available, which is capable of performing a specific simulation.
 However, we recognise that many, perhaps most, users will be content
 with creating a standard version that covers all of the possible
-applications with DL_POLY_4 native functionalities and may be a few
+applications with DL_POLY_5 native functionalities and may be a few
 external ones for this reason we have only provided the necessary tools
 to assemble such a version. The methods of creating the standard
 versions is described in detail in this chapter, however a brief
 step-by-step description follows.
 
-#. DL_POLY_4 is supplied as a ZIP compressed file. This must
-   uncompressed to create the DL_POLY_4 directory
+#. DL_POLY_5 is supplied as a ZIP compressed file. This must
+   uncompressed to create the DL_POLY_5 directory
    (Section `[directory-structure] <#directory-structure>`__).
 
-#. The next step is to compile DL_POLY_4 either by using the traditional
+#. The next step is to compile DL_POLY_5 either by using the traditional
    Makefiles or by creating OS customised ones using **cmake**. In
    either case **make** will be used to produce a binary executable (see
    Section :ref:`Compiling and Running<compilation>`), which as a default will
    be named DLPOLY.Z and located in the *execute* subdirectory if
    compiling in traditional mode or in the place of using **cmake**.
 
-#. DL_POLY_4 also has a Java GUI. The files for this are stored in the
+#. DL_POLY_5 also has a Java GUI. The files for this are stored in the
    subdirectory *java*. Compilation of this is simple and requires
    running the javac compiler and the jar utility. Details for these
    procedures are provided in the GUI manual
@@ -48,7 +48,7 @@ step-by-step description follows.
 
 This simple procedure is enough to create a standard version to run most
 simulations. There may however be some difficulty with array sizes.
-DL_POLY_4 contains features which allocate arrays after scanning the
+DL_POLY_5 contains features which allocate arrays after scanning the
 input files for a simulation. Sometimes these initial estimates are
 insufficient for a long simulation when, for example, the system volume
 changes markedly during the simulation or when a system is artificially
@@ -64,12 +64,12 @@ lengthening of the density dependent global arrays the user may use the
 these arrays will require a larger amount of memory from the execution
 machine for the simulation, which it may not be able to provide. See
 Section :ref:`Source Code<file-structure>` for more insight on the
-DL_POLY_4 source code structure.
+DL_POLY_5 source code structure.
 
 Constructing Non-standard Versions
 ----------------------------------
 
-In constructing a non-standard DL_POLY_4 simulation program, the first
+In constructing a non-standard DL_POLY_5 simulation program, the first
 requirement is for the user to write a program to function as the root
 segment. The root segment ``/VV/dl_poly`` is placed in the *source*
 directory and contains the set-up and close-down calls for a molecular
@@ -84,11 +84,11 @@ approaches the allotted job time within a pre-set closure time and/or if
 the *memory* usage approaches the allocated limit for density dependent
 arrays. Users are recommended to study the aforementioned root
 directories as a model for other implementations of the package they may
-wish to construct. Some advise on hierarchies of all the DL_POLY_4
+wish to construct. Some advise on hierarchies of all the DL_POLY_5
 subroutines can be found in
 Section :ref:`File Structure<file-structure>`.
 
-Should additional functionality be added to DL_POLY_4 by the user, the
+Should additional functionality be added to DL_POLY_5 by the user, the
 ``set_bounds`` routine (and its support subroutines) may need modifying
 to allow specification of the dimensions of any new arrays.
 
@@ -96,9 +96,9 @@ Any molecular dynamics simulation performs five different kinds of
 operation: initialisation; forces calculation; integration of the
 equations of motion; calculation of system properties; and job
 termination. It is worth considering these operations in turn and to
-indicate which DL_POLY_4 routines are available to perform them. We do
+indicate which DL_POLY_5 routines are available to perform them. We do
 not give a detailed description, but provide only a guide. Readers are
-recommended to examine the different routines described in the DL_POLY_4
+recommended to examine the different routines described in the DL_POLY_5
 User Manual for further details (particularly regarding further
 dependencies i.e. additional routines that may be called).
 
@@ -107,7 +107,7 @@ held together by rigid bonds.
 
 Initialisation requires firstly that the program determine what platform
 resources are made available to the specific simulation job. This is
-done by the DL_POLY_4 routine ``map_domains`` in ``domains_module`` that
+done by the DL_POLY_5 routine ``map_domains`` in ``domains_module`` that
 attempts to allocate and map the resources (nodes in parallel) in
 compliance with the DD :index:`strategy<parallelisation>`. ``map_domains`` is called within the
 routine ``set_bounds``, which also sets the necessary limits for various
@@ -176,7 +176,7 @@ Integration of the equations of motion is handled by one of the routines
 listed and described in
 Chapter :ref:`Integration Algorithms<integration-algorithms>`.
 
-As mentioned elsewhere, DL_POLY_4 does not contain many routines for
+As mentioned elsewhere, DL_POLY_5 does not contain many routines for
 computing system properties during a simulation. Radial distributions
 may be calculated however, by using the routines ``rdf_collect``,
 ``rdf_excl_collect``, ``rdf_frzn_collect`` a and ``rdf_compute``.

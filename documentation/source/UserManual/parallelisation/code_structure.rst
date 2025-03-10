@@ -8,7 +8,7 @@ Source Code
 Modularisation Principles
 -------------------------
 
-Modules in DL_POLY_4 are constructed to define parameters and variables
+Modules in DL_POLY_5 are constructed to define parameters and variables
 (scalars and arrays) and/or develop methods that share much in common.
 The division is far from arbitrary and module interdependence is reduced
 to minimum. However, some dependencies exist which leads to the
@@ -26,7 +26,7 @@ following division by groups in hierarchical order:
 -  **MPI module**:: ``mpi_module``
 
    The MPI module implements all MPI functional calls used in . It is
-   only used when DL_POLY_4 is to be compiled in serial mode.
+   only used when DL_POLY_5 is to be compiled in serial mode.
 
 -  **communication module**:: ``comms_module`` (``mpi_module``)
 
@@ -34,7 +34,7 @@ following division by groups in hierarchical order:
    MPI related functions and subroutines such as: initialisation and
    exit; global synchronisation, sum, maximum and minimum; node ID and
    number of nodes; simulation time. It is dependent on ``kinds_f90``
-   and on ``mpi_module`` if MPI is emulated for DL_POLY_4 compilation in
+   and on ``mpi_module`` if MPI is emulated for DL_POLY_5 compilation in
    serial mode. The ``mpi_module`` implements all MPI functional calls
    used in .
 
@@ -59,7 +59,7 @@ following division by groups in hierarchical order:
 -  **netCDF module**:: ``netcdf_module``
 
    The netCDF module contains all important netCDF functions and global
-   variables in DL_POLY_4 context. It is dependent on ``kinds_f90``.
+   variables in DL_POLY_5 context. It is dependent on ``kinds_f90``.
 
 -  **I/O module**:: ``io_module``
 
@@ -113,7 +113,7 @@ following division by groups in hierarchical order:
 
    This modules define all variables and arrays needed for the SPME (i)
    refreshment k-space driven properties (ii) and multipola
-   relectrostatics control variable and arrays in the DL_POLY_4 scope
+   relectrostatics control variable and arrays in the DL_POLY_5 scope
    when. They depend on ``kinds_f90`` and but their allocation methods
    on ``setup_module``.
 
@@ -122,13 +122,13 @@ following division by groups in hierarchical order:
 
    The intermolecular modules define all variables and potential arrays
    needed for the calculation of the particular interaction in the
-   DL_POLY_4 scope. They depend on ``kinds_f90``. Their allocation
+   DL_POLY_5 scope. They depend on ``kinds_f90``. Their allocation
    methods depend on ``setup_module``.
 
 -  **extra-molecular interactions modules**:: kim_module plumed_module
 
    These modules define all variables, arrays and functions needed
-   OpenKIM and PLUMED integrable into DL_POLY_4 plugins. They depend on
+   OpenKIM and PLUMED integrable into DL_POLY_5 plugins. They depend on
    ``kinds_f90``. Their allocation methods depend on ``setup_module``.
 
 -  **intra-molecular interactions and site-related modules**::
@@ -136,27 +136,27 @@ following division by groups in hierarchical order:
 
    These modules define all variables and potential or statistical grid
    arrays needed for the calculation of the particular interaction or
-   distribution function in the DL_POLY_4 scope. They all depend on
+   distribution function in the DL_POLY_5 scope. They all depend on
    ``kinds_f90`` with allocation methods depending on ``setup_module``.
 
 -  **external field module**:: ``external_field_module``
 
    This module defines all variables and potential arrays needed for the
-   application of an external field in the DL_POLY_4 scope. It depends
+   application of an external field in the DL_POLY_5 scope. It depends
    on ``kinds_f90`` and its allocation method on ``setup_module``.
 
 -  **langevin module**:: ``langevin_module``
 
    This module defines all variables and arrays needed for the
    application of NPT and N\ :math:`\underline{\underline{\mathbf{\sigma}}}`\ T Langevin routines
-   in the DL_POLY_4 scope. It depends on ``kinds_f90`` and its
+   in the DL_POLY_5 scope. It depends on ``kinds_f90`` and its
    allocation method on ``setup_module``.
 
 -  **minimise module**:: ``minimise_module``
 
    This module defines all variables and arrays needed for the
    application of a Conjugate Gradient Method minimisation routine in
-   the DL_POLY_4 scope. It depends on ``kinds_f90`` and its allocation
+   the DL_POLY_5 scope. It depends on ``kinds_f90`` and its allocation
    method on ``setup_module``.
 
 -  **msd module**:: ``msd_module``
@@ -166,14 +166,14 @@ following division by groups in hierarchical order:
 -  **statistics module**:: ``statistics_module``
 
    This module defines all variables and arrays needed for the
-   statistical accountancy of a simulation in . It depends on
+   statistical accountancy of a simulation in DL_POLY_5. It depends on
    ``kinds_f90`` and its allocation methods on ``setup_module`` and
    ``comms_module``.
 
 -  **greenkubo module**:: ``greenkubo_module``
 
    This module defines all variables and arrays needed for calculation
-   of Green-Kubo relations during a simulation in . It depends on
+   of Green-Kubo relations during a simulation in DL_POLY_5. It depends on
    ``kinds_f90`` and its allocation methods on ``setup_module``.
 
 -  **kinetic module**:: ``kinetic_module``
@@ -184,8 +184,8 @@ following division by groups in hierarchical order:
 
 -  **DaFT module**:: ``gpfa_module parallel_fft``
 
-   These modules contain all necessary functionality for DL_POLY_4 DaFT
-   and it GPFA 1D FFT dependence. They have dependencies on
+   These modules contain all necessary functionality for DL_POLY_5 DaFT
+   and its GPFA 1D FFT dependence. They have dependencies on
    ``kinds_f90``, ``comms_module.f90`` and ``setup_module.f90``.
 
 .. _file-structure:
@@ -193,7 +193,7 @@ following division by groups in hierarchical order:
 File Structure
 --------------
 
-Generally, the DL_POLY_4 file structure can be divided into four groups
+Generally, the DL_POLY_5 file structure can be divided into four groups
 as follows:
 
 -  **general files** in the *source* directory
@@ -201,28 +201,28 @@ as follows:
 -  **SERIAL specific** files in the *source/SERIAL* directory
 
 The files in each group are listed in hierarchal order as closely as
-possible as examplified in the relevant DL_POLY_4 Makefies in the
+possible as examplified in the relevant DL_POLY_5 Makefies in the
 *build* subdirectory. The further down the category the file, the more
 dependent it is on the files listed above it.
 
 Module Files
 ------------
 
-The DL_POLY_4 module files contain all global variables (scalars and
+The DL_POLY_5 module files contain all global variables (scalars and
 arrays) and parameters as well as some general methods and generic
 functions intrinsically related to the purpose or/and contents of the
 specific module. The file-names and the methods or/and functions
 developed in them have self-explanatory names. More information of their
 purpose can be found in their headers.
 
-The rest of files in DL_POLY_4 are dependent on the module files in
+The rest of files in DL_POLY_5 are dependent on the module files in
 various ways. The dependency relation to a module file is explicitly
 stated in the declaration part of the code.
 
 General Files
 -------------
 
-The DL_POLY_4 general files are common to both MPI and SERIAL version of
+The DL_POLY_5 general files are common to both MPI and SERIAL version of
 the code. In most cases, they have self-explanatory names as their order
 is matched as closely as possible to that occurring in the main segment
 of the code - ``dl_poly``. Only the first five files are exception of

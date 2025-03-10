@@ -69,6 +69,8 @@ Module electrostatic
     Real(Kind=wp), Public                 :: damping = 0.0_wp
     !> Relative dielectric constant
     Real(Kind=wp), Public                 :: eps = 1.0_wp
+    !> Bjerrum length
+    Real(Kind=wp), Public                 :: len_bjer = 0.0_wp
     Logical, Public                       :: lecx = .false.
     Integer, Public                       :: nstfce = 1
     Real(Kind=wp), Public                 :: force_shift = 0.0_wp, energy_shift = 0.0_wp

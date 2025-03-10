@@ -981,10 +981,17 @@ Contains
                 ' , with particle numbers:', cons%listcon(1, k), &
                 ' &', cons%listcon(2, k)
               Call info(message)
-              Write (message, '(a,f8.2,a,1p,e12.4)') &
-                'converges to a length of ', &
-                Sqrt(dt2(k) + cons%prmcon(cons%listcon(0, k))**2), &
-                ' Angstroms with a factor', esig(k) / cons%prmcon(cons%listcon(0, k))
+              If (stat%dpd_units) Then
+                Write (message, '(a,f8.2,a,1p,e12.4)') &
+                  'converges to a length of ', &
+                  Sqrt(dt2(k) + cons%prmcon(cons%listcon(0, k))**2), &
+                  ' dpd_l with a factor', esig(k) / cons%prmcon(cons%listcon(0, k))
+              Else
+                Write (message, '(a,f8.2,a,1p,e12.4)') &
+                  'converges to a length of ', &
+                  Sqrt(dt2(k) + cons%prmcon(cons%listcon(0, k))**2), &
+                  ' Angstroms with a factor', esig(k) / cons%prmcon(cons%listcon(0, k))
+              End If
               Call info(message)
               Write (message, '(a)') 'contributes towards next error'
               Call warning(message)

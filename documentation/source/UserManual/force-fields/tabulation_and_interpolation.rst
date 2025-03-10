@@ -1,7 +1,7 @@
 Tabulation and interpolation in the treatment of intermolecular interactions
 ============================================================================
 
-By default DL_POLY_4 tabulates in memory most of the intermolecular
+By default DL_POLY_5 tabulates in memory most of the intermolecular
 interactions keeping values of the potential and the negative of its
 first derivative times the distance (or virial) over an equidistant
 grid. This is done for reasons of speed as due to the large variety of

@@ -32,7 +32,9 @@ Module meta
                                                     scan_config,&
                                                     write_config
   Use constants,                              Only: DLP_RELEASE,&
-                                                    DLP_VERSION
+                                                    DLP_VERSION,&
+                                                    boltz,&
+                                                    zero_plus
   Use constraints,                            Only: constraints_type
   Use old_control,                            Only: read_control,&
                                                     scan_control_io,&
@@ -418,7 +420,7 @@ Contains
       If (config(ff)%l_exp) Then
         Call system_expand(flow%strict, neigh(ff)%cutoff, ios, core_shells(ff), &
                            cons(ff), bond(ff), angle(ff), dihedral(ff), inversion(ff), sites(ff), &
-                           rigid(ff), config(ff), files, comm, ff)
+                           rigid(ff), config(ff), stats(ff), files, comm, ff)
       End If
 
       If (flow%NUM_FF > 1) Then
@@ -452,7 +454,7 @@ Contains
         Call build_book_intra(flow%strict, flow%print_topology, flow%simulation, &
                               flow, core_shells(ff), cons(ff), pmfs(ff), bond(ff), angle(ff), &
                               dihedral(ff), inversion(ff), tether(ff), &
-                              neigh(ff), sites(ff), rigid(ff), domain(ff), config(ff), comm)
+                              neigh(ff), sites(ff), rigid(ff), domain(ff), config(ff), stats(ff), comm)
         ! Setting newjob_build_book to FALSE if ff == flow%NUM_FF
         If (ff == flow%NUM_FF) Then
           flow%newjob_build_book = .false.
@@ -513,7 +515,7 @@ Contains
          rigid(ff), domain(ff), config(ff), seed, comm)
 
       Call compute_density(config(ff),comm)
-      Call print_system_info(config(ff))
+      Call print_system_info(config(ff),stats(ff)%dpd_units)
 
     End Do
 
@@ -760,7 +762,7 @@ Contains
     ! Setup io immediately
     Call read_io(params, ios, files, comm)
     Call read_devel(params, devel, tmr, seed, flow)
-    Call read_units(params)
+    Call read_units(params, stats)
 
     If (output_filename /= "") files(FILE_OUTPUT)%filename = output_filename
 
@@ -804,7 +806,7 @@ Contains
     If (flow%simulation_method == EmpVB .and. (flow%num_ff <= 1 .or. flow%num_ff > MAX_FF)) &
       Call error(0, "Invalid number of coupled force-fields for EVB requested")
 
-    Call read_units(params)
+    Call read_units(params, stats)
     Do ff = 1, flow%NUM_FF
       ! Get densvar
       Call params%retrieve('density_variance', config(ff)%dvar)
@@ -827,15 +829,21 @@ Contains
       Call read_bond_analysis(params, flow, bond(ff), angle(ff), dihedral(ff), inversion(ff), config(ff)%mxgana)
       Call read_structure_analysis(params, stats(ff), msd_data(ff), rdf(ff), green(ff), &
                                    zdensity(ff), adf(ff), crd(ff), traj, dfcts, rsdsc(ff))
-      Call read_forcefield(params, neigh(ff), config(ff), xhi, yhi, zhi, flow, &
+      Call read_forcefield(params, stats(ff), neigh(ff), config(ff), xhi, yhi, zhi, flow, &
                            vdws(ff), electro(ff), ewld(ff), mpoles(ff), core_shells(ff), met(ff), kim_Data(ff), &
                            bond(ff), threebody(ff), fourbody(ff), tersoffs(ff))
       Call read_run_parameters(params, flow, thermo(ff), stats(ff), config(ff)%l_ind)
+
+      ! adjust relative dielectric if Bjerrum length specified and not using DPD units:
+      ! finally have temperature available to do this
+      If (electro(ff)%len_bjer>zero_plus .and. .not. stats(ff)%dpd_units) Then
+        electro(ff)%eps = electro(ff)%eps / (boltz * thermo(ff)%temp)
+      End If
+
       Call read_ttm(params, ttms(ff), config(ff), megatm)
       Call read_ensemble(params, thermo(ff), vdws(ff)%max_vdw, ttms(ff)%l_ttm)
       Call read_system_parameters(params, flow, config(ff), thermo(ff), impa, minim(ff), &
-                                  plume(ff), cons(ff), pmfs(ff), ttms(ff)%l_ttm)
-
+                                  plume(ff), cons(ff), pmfs(ff), ttms(ff)%l_ttm, stats(ff)%dpd_units)
       If (flow%heat_flux .or. flow%write_per_particle .or. stats(ff)%cur%on) Then
         stats%pp_eng_str_frequency = stats%intsta
       End If
@@ -902,7 +910,7 @@ Contains
       End If
 
       ! CHECK MD CONFIGURATION
-      Call check_config(config(ff), electro(ff)%key, thermo(ff), sites(ff), flow, comm)
+      Call check_config(config(ff), electro(ff)%key, thermo(ff), sites(ff), flow, stats(ff)%dpd_units, comm)
 
       Call read_correlations_parameters(params, stats(ff), comm, config(ff), sites(ff))
     End Do
@@ -1135,7 +1143,7 @@ Contains
       End If
 
       ! CHECK MD CONFIGURATION
-      Call check_config(config(ff), electro(ff)%key, thermo(ff), sites(ff), flow, comm)
+      Call check_config(config(ff), electro(ff)%key, thermo(ff), sites(ff), flow, stats(ff)%dpd_units, comm)
     End Do
 
 #ifdef CHRONO
@@ -1459,10 +1467,10 @@ Contains
 
     Call info('', .true.)
     Write (banner(1), fmt1) '#'//Repeat("*", 65)
-    Write (banner(2), fmt1) '#*** Thank you for using the DL_POLY_4 package in your work.  ****'
+    Write (banner(2), fmt1) '#*** Thank you for using the DL_POLY_5 package in your work.  ****'
     Write (banner(3), fmt1) '#*** Please, acknowledge our efforts by including the         ****'
     Write (banner(4), fmt1) '#*** following references when publishing data obtained using ****'
-    Write (banner(5), fmt1) '#*** DL_POLY_4:                                               ****'
+    Write (banner(5), fmt1) '#*** DL_POLY_5:                                               ****'
     Write (banner(6), fmt1) '#***   - I.T. Todorov, W. Smith, K. Trachenko & M.T. Dove,    ****'
     Write (banner(7), fmt1) '#***     J. Mater. Chem., 16, 1911-1918 (2006),               ****'
     Write (banner(8), fmt1) '#***     https://doi.org/10.1039/B517931A                     ****'

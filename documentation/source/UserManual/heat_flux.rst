@@ -18,7 +18,7 @@ To enable the calculation of heat flux add **heat_flux On** into the CONTROL fil
 density supply a list of atom types to calculate the values for e.g. **momentum_density [Li F]** to
 compute for Li and F atoms.
 
-Heat flux is currently supported for: direct and tabulated VDW interactions (see Table :numref:`(%s)<vdw-table>`), SPME interactions, and direct and tabulated metal potentials (see Table :numref:`(%s)<metal-table>`). Tersoff, three, and four body potentials are currently unsupported.
+Heat flux is currently supported for: direct and tabulated VDW interactions (see Table :numref:`(%s) <vdw-table>`), SPME interactions, and direct and tabulated metal potentials (see Table :numref:`(%s) <metal-table>`). Tersoff, three, and four body potentials are currently unsupported.
 
 Theory
 ~~~~~~

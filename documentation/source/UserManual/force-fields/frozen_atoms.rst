@@ -5,11 +5,11 @@ Frozen atoms, core-shell units and rigid body units are treated in a
 manner similar to that of the **intra**-molecular interactions due to
 their “by site” definition.
 
-DL_POLY_4 allows for atoms to be completely immobilized ( *i.e.*
+DL_POLY_5 allows for atoms to be completely immobilized ( *i.e.*
 “frozen” at a fixed point in the MD cell). This is achieved by setting
 all forces and velocities associated with that atom to zero during each
 MD timestep. Frozen atoms are signalled by assigning an atom a non-zero
-value for the freeze parameter in the FIELD file. DL_POLY_4 does not
+value for the freeze parameter in the FIELD file. DL_POLY_5 does not
 calculate contributions to the virial or the :index:`stress tensor` arising from
 the constraints required to freeze atomic positions. Neither does it
 calculate contributions from *intra*- and *inter*- molecular
@@ -20,7 +20,7 @@ constant pressure simulations. In the case of frozen rigid bodies, their
 simulations and the positions of their constituent sites are then moved
 accordingly.
 
-In DL_POLY_4 the frozen atom option is handled by the subroutine
+In DL_POLY_5 the frozen atom option is handled by the subroutine
 freeze_atoms.
 
 .. index:: single: equations of motion;Euler

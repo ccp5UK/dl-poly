@@ -1,12 +1,12 @@
 .. _macros:
 
-Appendix B: DL_POLY_4 Macros 
+Appendix B: DL_POLY_5 Macros 
 ++++++++++++++++++++++++++++
 
 .. index:: single: sub-directory
 
 Macros are simple executable files containing standard UNIX commands. A
-number of the are supplied with DL_POLY_4 and are found in the *execute*
+number of the are supplied with DL_POLY_5 and are found in the *execute*
 sub-directory. These are not guaranteed to be immaculate but with little
 adaptation they can become a useful tool to a researcher. The available
 macros are as follows:
@@ -51,14 +51,14 @@ copy invokes the UNIX commands:
    mv -v REVCON CONFIG
    mv -v REVIVE REVOLD
 
-which collectively prepare the DL_POLY_4 files in the *execute*
+which collectively prepare the DL_POLY_5 files in the *execute*
 :index:`sub-directory` for the continuation of a simulation. It is always a good
 idea to store these files elsewhere in addition to using this macro.
 
 *gopoly*
 ~~~~~~~~
 
-gopoly is used to submit a DL_POLY_4 job to the HPC\ :math:`x`, which
+gopoly is used to submit a DL_POLY_5 job to the HPC\ :math:`x`, which
 operates a LOAD-LEVELER job queuing system. It invokes the following
 script:
 
@@ -106,7 +106,7 @@ in the above script.
 *gui*
 ~~~~~
 
-gui is a macro that starts up the DL_POLY_4 Java GUI. It invokes the
+gui is a macro that starts up the DL_POLY_5 Java GUI. It invokes the
 following UNIX commands:
 
 ::

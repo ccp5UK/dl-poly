@@ -27,6 +27,7 @@ Module build_book
   Use shared_units,    Only: pass_shared_units,&
                              tag_legend
   Use site,            Only: site_type
+  Use statistics,      Only: stats_type
   Use tethers,         Only: tethers_type
 
   Implicit None
@@ -40,7 +41,7 @@ Contains
 
   Subroutine build_book_intra(l_str, l_top, lsim, flow, &
                               cshell, cons, pmf, bond, angle, dihedral, &
-                              inversion, tether, neigh, sites, rigid, domain, config, comm)
+                              inversion, tether, neigh, sites, rigid, domain, config, stats, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -74,6 +75,7 @@ Contains
     Type(rigid_bodies_type),  Intent(InOut) :: rigid
     Type(domains_type),       Intent(In   ) :: domain
     Type(configuration_type), Intent(InOut) :: config
+    Type(stats_type),         Intent(InOut) :: stats
     Type(comms_type),         Intent(InOut) :: comm
 
     Character(Len=STR_LEN)                 :: message, messages(7)
@@ -1647,7 +1649,7 @@ Contains
 
       If (rigid%on) Then
         Call rigid_bodies_setup(l_str, l_top, config%megatm, config%megfrz, config%degtra, config%degrot, &
-                                neigh%cutoff, sites, rigid, config, comm)
+                                neigh%cutoff, sites, rigid, config, stats, comm)
       End If
 
       Call report_topology(config%megatm, config%megfrz, config%atmfre, config%atmfrz, &
@@ -1672,7 +1674,7 @@ Contains
 
       Call rigid_bodies_tags(config, rigid, comm)
       Call rigid_bodies_coms(config, rigid%xxx, rigid%yyy, rigid%zzz, rigid)
-      Call rigid_bodies_widths(neigh%cutoff, rigid, config, comm)
+      Call rigid_bodies_widths(neigh%cutoff, rigid, config, stats, comm)
 
     End If
 

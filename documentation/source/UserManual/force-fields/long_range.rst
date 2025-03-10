@@ -5,7 +5,7 @@ Long Ranged Electrostatic (coulombic) Potentials
 
 .. index:: single: potential;electrostatics
 
-DL_POLY_4 incorporates several techniques for dealing with long-ranged
+DL_POLY_5 incorporates several techniques for dealing with long-ranged
 electrostatic potentials [1]_. These are as follows:
 
 #. Direct Coulomb sum
@@ -29,14 +29,14 @@ techniques can be used with either periodic or non-periodic systems
 safely, although in the case of the :index:`direct Coulomb sum` there are likely
 to be problems with convergence.
 
-DL_POLY_4 will correctly handle the electrostatics of both molecular and
+DL_POLY_5 will correctly handle the electrostatics of both molecular and
 atomic species. However, it is assumed that the system is electrically
 neutral. A warning message is printed if the system is found to be
 charged, but otherwise the simulation proceeds as normal.
 
 .. note::
    
-   DL_POLY_4 does not use the basic Ewald method, which is an
+   DL_POLY_5 does not use the basic Ewald method, which is an
    option in , on account of it being too slow for large scale systems. The
    SPME method is the standard Ewald method in .
 
@@ -79,7 +79,7 @@ The contribution to be added to the atomic :index:`stress tensor` is
 where :math:`\alpha,\beta` are :math:`x,y,z` components. The atomic
 :index:`stress tensor` is symmetric.
 
-In DL_POLY_4 these forces are handled by the subroutine ``coul_cp_forces``.
+In DL_POLY_5 these forces are handled by the subroutine ``coul_cp_forces``.
 
 .. index:: force-shifted Coulomb sum
 
@@ -176,7 +176,7 @@ The contribution to be added to the atomic :index:`stress tensor` is given by
 where :math:`\alpha,\beta` are :math:`x,y,z` components. The atomic
 stress tensor is symmetric.
 
-In DL_POLY_4 these forces are handled by the routine ``coul_fscp_forces``.
+In DL_POLY_5 these forces are handled by the routine ``coul_fscp_forces``.
 
 .. index:: single: distance dependant dielectric
 
@@ -196,7 +196,7 @@ The interatomic potential for two charged ions is
 with :math:`q_{\ell}` the charge on an atom labelled :math:`\ell`, and
 :math:`r_{ij}` the magnitude of the separation vector
 :math:`\underline{r}_{ij}=\underline{r}_{j}-\underline{r}_{i}` . :math:`\epsilon(r)` is
-the distance :index:`dependent dielectric` function. In DL_POLY_4 it is assumed
+the distance :index:`dependent dielectric` function. In DL_POLY_5 it is assumed
 that this function has the form
 
 .. math:: \epsilon(r)~=~\epsilon~r~~,
@@ -223,7 +223,7 @@ The contribution to be added to the atomic :index:`stress tensor` is given by
 where :math:`\alpha,\beta` are :math:`x,y,z` components. The atomic
 :index:`stress tensor` is symmetric.
 
-In DL_POLY_4 these forces are handled by the routine ``coul_dddp_forces``.
+In DL_POLY_5 these forces are handled by the routine ``coul_dddp_forces``.
 
 .. index:: single: reaction field
 
@@ -239,7 +239,7 @@ which in turn interacts with the given molecule. The model allows the
 replacement of the infinite Coulomb sum by a finite sum plus the
 reaction field.
 
-The reaction field model coded into DL_POLY_4 is the implementation of
+The reaction field model coded into DL_POLY_5 is the implementation of
 Neumann based on charge-charge interactions
 :cite:`neumann-85a`. In this model, the total coulombic
 potential is given by
@@ -265,7 +265,7 @@ The effective pair potential is therefore
 
 This expression unfortunately leads to large fluctuations in the system
 coulombic energy, due to the large ‘step’ in the function at the cavity
-boundary. In DL_POLY_4 this is countered by subtracting the value of the
+boundary. In DL_POLY_5 this is countered by subtracting the value of the
 potential at the cavity boundary from each pair contribution. The term
 subtracted is
 
@@ -282,7 +282,7 @@ The effective pair force on an atom :math:`j` arising from another atom
    \underline{f}_{j}=\frac{q_{i}q_{j}}{4\pi\epsilon_{0}\epsilon}\left[
    \frac{1}{r_{ij}^{3}}-\frac{B_{0}}{R_{c}^{3}}\right] \underline{r}_{ij}~~.
 
-In DL_POLY_4 the reaction field is optionally extended to emulate
+In DL_POLY_5 the reaction field is optionally extended to emulate
 long-range ordering in a force-shifted manner by countering the reaction
 term and using a distance depending damping function
 :math:`{\rm erfc}(\alpha~r_{ij})` (identical to that seen in the
@@ -330,7 +330,7 @@ and the contribution to the atomic :index:`stress tensor` is
 where :math:`\alpha,\beta` are :math:`x,y,z` components. The atomic
 :index:`stress tensor` is symmetric.
 
-In DL_POLY_4 the reaction field is handled by the subroutine
+In DL_POLY_5 the reaction field is handled by the subroutine
 ``coul_rfp_forces``.
 
 .. _SPME:
@@ -454,17 +454,17 @@ variables: the real space cutoff :math:`r_{\rm cut}`; the convergence
 parameter :math:`\alpha` and the largest reciprocal space vector
 :math:`\underline{k}_{max}` used in the reciprocal space sum. These are
 discussed more fully in
-Section  :ref:`ewald-precision`. DL_POLY_4 can
+Section  :ref:`ewald-precision`. DL_POLY_5 can
 provide estimates if requested (see CONTROL file description
 :ref:`control-file`).
 
 .. index:: single: Ewald;SPME
 
 As its name implies the Smoothed Particle Mesh Ewald (SPME) method is a
-modification of the standard Ewald method. DL_POLY_4 implements the SPME
+modification of the standard Ewald method. DL_POLY_5 implements the SPME
 method of Essmann *et al.* :cite:`essmann-95a`. Formally,
 this method is capable of treating van der Waals forces also, but in
-DL_POLY_4 it is confined to electrostatic forces only. The main
+DL_POLY_5 it is confined to electrostatic forces only. The main
 difference from the standard Ewald method is in its treatment of the
 reciprocal space terms. By means of an interpolation procedure involving
 (complex) B-splines, the sum in reciprocal space is represented on a
@@ -558,7 +558,7 @@ formulae are easily evaluated.
 The virial and the stress tensor are calculated in the same manner as
 for the conventional Ewald sum.
 
-The DL_POLY_4 subroutines required to calculate the SPME contributions
+The DL_POLY_5 subroutines required to calculate the SPME contributions
 are:
 
 #. spme_container containing
@@ -570,7 +570,7 @@ are:
    #. spl_cexp, which calculates the FFT and B-spline complex
       exponentials
 
-#. parallel_fft and gpfa_module (native DL_POLY_4 subroutines that
+#. parallel_fft and gpfa_module (native DL_POLY_5 subroutines that
    respect the domain decomposition concept) which calculate the 3D
    complex fast Fourier transforms
 
@@ -595,7 +595,7 @@ are:
 Charge Smearing
 ~~~~~~~~~~~~~~~
 
-Several charge smearing methods are available in DL_POLY_4 which combine with the SPME coulomb potential and 
+Several charge smearing methods are available in DL_POLY_5 which combine with the SPME coulomb potential and 
 force evaluation. Charge smearing can be selected to reduce the possibility of opposite-charge collapse at shorter 
 separations between ion pairs while still ensuring the potential is Coulombic (proportional to the reciprocal 
 of separation) at larger  distances and allowing for unmodified calculations of reciprocal space terms in Ewald sums.
@@ -937,10 +937,10 @@ or ``spme`` directive will be ignored.
 Multipolar Electrostatics
 -------------------------
 
-DL_POLY_4 offers advanced potential energy calculations through
+DL_POLY_5 offers advanced potential energy calculations through
 multipolar electrostatics. This is an extension to the point-charge
 model where the charge density of chemical species are described by
-higher order point multipoles. The generic algorithms in DL_POLY_4 are
+higher order point multipoles. The generic algorithms in DL_POLY_5 are
 designed to allow for arbitrary order :cite:`boateng-15a`
 multipoles but for practical reasons the functionality is limited to
 hexadecapoles only.
@@ -1007,7 +1007,7 @@ position of atom *i* to arrive at
 Application to Pair Potentials
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In DL_POLY_4 for :math:`N` point-multipoles interacting via a pair
+In DL_POLY_5 for :math:`N` point-multipoles interacting via a pair
 potential function :math:`\psi`, the multipolar electrostatic potential
 at position :math:`\mathbf{r_i}` is computed as
 
@@ -1068,7 +1068,7 @@ force on atom :math:`i` is
 
 To implement
 equations :eq:`mpolpot_eq`-\ :eq:`mpolforce_eq`
-for the variety of potentials in DL_POLY_4 a number of recurrence
+for the variety of potentials in DL_POLY_5 a number of recurrence
 relations are used to compute the multi-dimensional derivatives of the
 kernels corresponding to the potentials. These kernels are
 
@@ -1097,7 +1097,7 @@ with
    &=\frac{\partial^{||\mathbf{s}||}\Gamma(|\bar{\mathbf{x}}|)}{\partial_{x_1}^{s_1}\partial_{x_2}^{s_2}\partial_{x_3}^{s_3}}~~.
    \end{aligned}
 
-The recurrence relations used in DL_POLY_4 are
+The recurrence relations used in DL_POLY_5 are
 
 .. math::
    :label: coulrecur_eq
@@ -1142,13 +1142,13 @@ equation :eq:`coulrecur_eq` with :math:`\nu = 1` . Thus,
 
 .. math:: \partial_i^{\mathbf{s}}\psi(r_{ij}) = a_{\mathbf{s}}(1)~~.
 
-In DL_POLY_4 the multipolar direct Coulomb sum is handled by the routine
+In DL_POLY_5 the multipolar direct Coulomb sum is handled by the routine
 ``coul_cp_mforces``.
 
 Force-Shifted Coulomb Sum
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 employs two forms of the force-shifted Coulomb sum. In the
+DL_POLY_5 employs two forms of the force-shifted Coulomb sum. In the
 first form, the potential energy due to two interacting ions :math:`i`
 and :math:`j` is
 
@@ -1189,7 +1189,7 @@ for :math:`r_{ij}` in the second term is given by
    D_i^{\mathbf{s}}\psi(r_{ij}) = \frac{2}{\sqrt{\pi}}c_{\mathbf{s}} + \left(\frac{\textrm{erfc}(\alpha \cdot r_{\textrm{cut}})}{r_{\textrm{cut}}^2} +
    \frac{2\alpha}{\sqrt{\pi}} \frac{\textrm{exp}(-\alpha^2r_{\textrm{cut}}^2)}{r_{\textrm{cut}}} \right) \cdot a_{\mathbf{s}}(-1)~~.
 
-In DL_POLY_4 the multipolar force-shifted Coulomb sum is handled by the
+In DL_POLY_5 the multipolar force-shifted Coulomb sum is handled by the
 routine ``coul_fscp_mforces``.
 
 Coulomb Sum with Distance Dependent Dielectric
@@ -1206,13 +1206,13 @@ equation :eq:`coulrecur_eq` with :math:`\nu = 2` . Hence,
 
 .. math:: \partial_i^{\mathbf{s}}\psi(r_{ij}) = a_{\mathbf{s}}(2)~~.
 
-In DL_POLY_4 the multipolar Coulomb sum with distance dependent
+In DL_POLY_5 the multipolar Coulomb sum with distance dependent
 dielectric is handled by the routine coul_dddp_mforces.
 
 Reaction Field
 ~~~~~~~~~~~~~~
 
-DL_POLY_4 provides two forms of a multipolar reaction field potential.
+DL_POLY_5 provides two forms of a multipolar reaction field potential.
 In the first form, the effective pair potential energy due to two
 interacting point multipoles :math:`i` and :math:`j` is given as
 
@@ -1266,13 +1266,13 @@ and the derivative for :math:`r_{ij}^2` in the last term is given by
    \frac{2\alpha}{\sqrt{\pi}}\frac{\textrm{exp}(-\alpha^2r_{\textrm{cut}}^2)}{r_{\textrm{cut}}}\right) \cdot a_{\mathbf{s}}(-1) +
    \frac{B_0}{2r_{\textrm{cut}}^3} \cdot a_{\mathbf{s}}(-2)~~.
 
-In DL_POLY_4 the multipolar reaction field is handled by the routine
+In DL_POLY_5 the multipolar reaction field is handled by the routine
 coul_rfp_mforces.
 
 Smoothed Particle Mesh Ewald
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DL_POLY_4 provides two different smooth particle Mesh Ewald
+DL_POLY_5 provides two different smooth particle Mesh Ewald
 implementations for multipolar electrostatics. The first implementation
 is for systems with charges, dipoles and quadrupoles and does not use
 recurrence relations. The second implementation, which uses recurrence
@@ -1336,14 +1336,14 @@ Real Space Sum
 The relevant kernel for the real space from
 equation :eq:`direwald_eq` is
 :math:`\displaystyle \psi(r_{ij}) = \frac{\textrm{erfc}(\alpha |\mathbf{r_{ij}}+ \mathbf{n}|)}{|\mathbf{r_{ij}}+ \mathbf{n}|}` .
-DL_POLY_4 uses the recurrence giving in
+DL_POLY_5 uses the recurrence giving in
 equation :eq:`erfcrecur_eq` to generate the
 multidimensional derivatives of the kernel. Thus, the derivatives of the
 kernel are computed as
 
 .. math:: \mathbf{D}_i^{\mathbf{s}}\psi(r_{ij}) = \frac{2}{\sqrt{\pi}}c_{\mathbf{s}}~~.
 
-In DL_POLY_4 the routine ewald_real_mforces_d computes the real space
+In DL_POLY_5 the routine ewald_real_mforces_d computes the real space
 interactions explicitly for simulations with multipoles of order 2
 without using the recurrence relation. The routine ewald_real_mforces
 handles the general version of up to order 4 using recurrence relations.
@@ -1354,14 +1354,14 @@ Excluded Sum
 The relevant kernel for the real space from
 equation :eq:`exclewald_eq` is
 :math:`\displaystyle \psi(r_{ij}) = \frac{\textrm{erf}(\alpha \cdot r_{ij})}{r_{ij}}` .
-DL_POLY_4 uses the recurrence giving in
+DL_POLY_5 uses the recurrence giving in
 equation :eq:`erfrecur_eq` to generate the
 multidimensional derivatives of the kernel. Thus, the derivatives of the
 kernel are computed as
 
 .. math:: \mathbf{D}_i^{\mathbf{s}}\psi(r_{ij}) = \frac{2}{\sqrt{\pi}}d_{\mathbf{s}}~~.
 
-In DL_POLY_4 the routine ewald_excl_mforces_d computes the reciprocal
+In DL_POLY_5 the routine ewald_excl_mforces_d computes the reciprocal
 space corrections due to the exclusions between intramolecularly related
 atoms explicitly for simulations with multipoles of order 2 without
 using the recurrence relation. The routine ewald_excl_mforces handles
@@ -1373,14 +1373,14 @@ Frozen Sum
 The relevant kernel for the real space from
 equation :eq:`frznewald_eq` is
 :math:`\displaystyle \psi(r_{ij}) = \frac{\textrm{erf}(\alpha \cdot r_{ij})}{r_{ij}}` .
-DL_POLY_4 uses the recurrence giving in
+DL_POLY_5 uses the recurrence giving in
 equation :eq:`erfrecur_eq` to generate the
 multidimensional derivatives of the kernel. Thus, the derivatives of the
 kernel are computed as
 
 .. math:: \mathbf{D}_i^{\mathbf{s}}\psi(r_{ij}) = \frac{2}{\sqrt{\pi}}d_{\mathbf{s}}~~.
 
-In DL_POLY_4 the routine ewald_frzn_mforces computes computes the
+In DL_POLY_5 the routine ewald_frzn_mforces computes computes the
 reciprocal space corrections due to the exclusions between frozen atoms
 generically for simulations with multipoles up to order 4 using
 recurrence relations.
@@ -1388,7 +1388,7 @@ recurrence relations.
 Self-Interaction
 ~~~~~~~~~~~~~~~~
 
-DL_POLY_4 computes :math:`U_{self}` directly for interactions involving
+DL_POLY_5 computes :math:`U_{self}` directly for interactions involving
 multipoles up to order 4 using the series representation of the kernel
 :math:`\displaystyle \psi(r_{ij}) = \frac{\textrm{erf}(\alpha \cdot r_i)}{r_i}` .
 The self interaction is computed in ewald_real_mforces_d for simulations
@@ -1448,7 +1448,7 @@ cell, the multipolar array can be written explicitly as
 
 To compute the arbitrary order multidimensional derivatives of the
 product of three b-splines in equation :eq:`mparray2_eq`,
-DL_POLY_4 uses the closed form formula:
+DL_POLY_5 uses the closed form formula:
 
 .. math::
    :label: dprodmn_eq
@@ -1481,14 +1481,12 @@ an orthogonal box, where
 
 .. math:: a_{12}^{*}=a_{13}^{*}=a_{21}^{*}=a_{23}^{*}=a_{31}^{*}=a_{32}^{*}=0~~,
 
-DL_POLY_4 uses the simplification of
-equationv :eq:`dprodmn_eq` to
+DL_POLY_5 uses the simplification of equation :eq:`dprodmn_eq` to
 
 .. math::
    :label: dprodmnsimple_eq
 
    \begin{aligned}
-   
     & {\partial}_{z_i}^{s_3}{\partial}_{y_i}^{s_2}{\partial}_{x_i}^{s_1}
         \left\{ M_n(u_{1_i}-l_1) M_n(u_{2_i}-l_2) M_n(u_{3_i}-l_3)\right\}= \\
     & \left(K_1 a_{11}^{*}\right)^{s_1}\left(K_2 a_{22}^{*}\right)^{s_2}
@@ -1499,7 +1497,7 @@ equationv :eq:`dprodmn_eq` to
 The formulas in equations :eq:`dprodmn_eq` and :eq:`dprodmnsimple_eq` require derivatives of a
 b-spline. To compute an arbitrary :math:`p_\textrm{th}` order derivative
 of a b-spline of order :math:`n`, :math:`M_n`, at an arbitrary grid
-point :math:`j`, DL_POLY_4 uses the closed form formula
+point :math:`j`, DL_POLY_5 uses the closed form formula
 
 .. math::
    :label: dmnj2_eq
@@ -1507,7 +1505,7 @@ point :math:`j`, DL_POLY_4 uses the closed form formula
    \frac{d^p}{d u^{p}}M_n(u_j) = \sum_{t=\textrm{max}\{0,j-k\}}^{\textrm{min}\{j-1,p\}}
    \binom{p}{t}(-1)^{t}M_{k}(u_j-t)~~.
 
-In DL_POLY_4 the stress tensor due to the reciprocal space, for an
+In DL_POLY_5 the stress tensor due to the reciprocal space, for an
 arbitrary :math:`p_\textrm{th}` order multipolar electrostatic
 interaction is computed by the formula
 
@@ -1530,12 +1528,12 @@ where
 
 and :math:`\textbf{ $\ell$}= (\ell_1,\ell_2,\ell_3)` .
 
-In DL_POLY_4 the routine ewald_spme_mforces_d computes the reciprocal
+In DL_POLY_5 the routine ewald_spme_mforces_d computes the reciprocal
 space interactions explicitly for simulations with multipoles of maximum
 order 2. The routine ewald_spme_mforces handles the general version with
 multipoles up to order 4.
 
-The DL_POLY_4 subroutines required to calculate the contributions from
+The DL_POLY_5 subroutines required to calculate the contributions from
 the reciprocal space, in addition to the routines used for the point
 charges, are:
 
@@ -1556,7 +1554,7 @@ charges, are:
 
 .. [2]
    Strictly speaking, the real space sum ranges over all periodic images
-   of the simulation cell, but in the DL_POLY_4 implementation, the
+   of the simulation cell, but in the DL_POLY_5 implementation, the
    parameters are chosen to restrict the sum to the simulation cell and
    its nearest neighbours, i.e. the *minimum images* of the cell
    contents.
