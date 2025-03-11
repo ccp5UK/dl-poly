@@ -1449,7 +1449,7 @@ Contains
     Write (banner(11), fmt1) "#************  m.a.seaton, a.v.brukhno, a.m.elena,   *************"
     Write (banner(12), fmt1) "#************  s.l.daraszewicz, g.khara, s.t.murphy  *************"
     Write (banner(13), fmt1) "#************  j.madge, a.b.g.chalk, i.scivetti,     *************"
-    Write (banner(14), fmt1) "#************  j.wilkins, h.l.devereux               *************"
+    Write (banner(14), fmt1) "#************  j.wilkins, h.l.devereux, b.t.speake   *************"
     Write (banner(15), fmt1) "#*****************************************************************"
     Call info(banner, 15, .true., level=-1)
   End Subroutine print_banner
@@ -1466,15 +1466,17 @@ Contains
     ! Ask for reference in publications
 
     Call info('', .true.)
-    Write (banner(1), fmt1) '#'//Repeat("*", 65)
-    Write (banner(2), fmt1) '#*** Thank you for using the DL_POLY_5 package in your work.  ****'
-    Write (banner(3), fmt1) '#*** Please, acknowledge our efforts by including the         ****'
-    Write (banner(4), fmt1) '#*** following references when publishing data obtained using ****'
-    Write (banner(5), fmt1) '#*** DL_POLY_5:                                               ****'
-    Write (banner(6), fmt1) '#***   - I.T. Todorov, W. Smith, K. Trachenko & M.T. Dove,    ****'
-    Write (banner(7), fmt1) '#***     J. Mater. Chem., 16, 1911-1918 (2006),               ****'
-    Write (banner(8), fmt1) '#***     https://doi.org/10.1039/B517931A                     ****'
-    Call info(banner, 8, .true., level=-1)
+    Write (banner( 1), fmt1) '#'//Repeat("*", 65)
+    Write (banner( 2), fmt1) '#*** Thank you for using the DL_POLY_5 package in your work.  ****'
+    Write (banner( 3), fmt1) '#*** Please, acknowledge our efforts by including the         ****'
+    Write (banner( 4), fmt1) '#*** following references when publishing data obtained using ****'
+    Write (banner( 5), fmt1) '#*** DL_POLY_5:                                               ****'
+    Write (banner( 6), fmt1) '#***   - H.L. Devereux, C. Cockrell, A.M. Elena, I. Bush,     ****'
+    Write (banner( 7), fmt1) '#***     A.B.G Chalk, J. Madge, I. Scivetti, J.S. Wilkins,    ****'
+    Write (banner( 8), fmt1) '#***     I.T. Todorov, W. Smith, K. Trachenko                 ****'
+    Write (banner( 9), fmt1) '#***     Submitted For Publication, (2025)                    ****'
+    Write (banner(10), fmt1) '#***     https://doi.org/10.48550/arXiv.2503.07526.           ****'
+    Call info(banner, 10, .true., level=-1)
     If (electro%key == ELECTROSTATIC_SPME) Then
       Write (banner(1), fmt1) '#***   - I.J. Bush, I.T. Todorov & W. Smith,                  ****'
       Write (banner(2), fmt1) '#***     Comp. Phys. Commun., 175, 323-329 (2006),            ****'

@@ -99,7 +99,21 @@ M.T. Dove.
 
 Manual contributions: Laurence Elisson, Andrey Brukhno, Alin M Elena,
 Jim Madge, Aidan Chalk, Ivan Scivetti, Aaron Diver, Oliver Dicks, Alex
-Buccheri, Yaser Afshar, Jacob Wilkins, and Harvey L Devereux.
+Buccheri, Yaser Afshar, Jacob Wilkins, Harvey L Devereux,
+Michael Seaton and Benjamin T. Speake.
+
+Please, acknowledge our efforts by including the        
+following references when publishing data obtained using
+DL_POLY_5:                                              
+
+- H.L. Devereux, C. Cockrell, A.M. Elena, I. Bush,     
+  A.B.G Chalk, J. Madge, I. Scivetti, J.S. Wilkins,   
+  I.T. Todorov, W. Smith, K. Trachenko,             
+  *submitted for publication*, (2025)                         
+  https://doi.org/10.48550/arXiv.2503.07526.      
+- I.T. Todorov, W. Smith, K. Trachenko & M.T. Dove,
+  J. Mater. Chem., 16, 1911-1918 (2006),
+  https://doi.org/10.1039/B517931A   
 
 
 Indices and tables

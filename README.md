@@ -20,6 +20,9 @@ More info:
   J. Mater. Chem., 16, 1911-1918 (2006), https://doi.org/10.1039/B517931A
 - Martyn F. Guest, Alin M. Elena & Aidan B. G. Chalk
   Molecular Simulation (2019), https://doi.org/10.1080/08927022.2019.1603380
+- H. L. Devereux, C. Cockrell, A. M. Elena, Ian Bush, Aidan B. G. Chalk, Jim Madge, Ivan Scivetti, 
+  J. S. Wilkins, I. T. Todorov, W. Smith, K. Trachenko
+  *submitted for publication*, (2025), https://doi.org/10.48550/arXiv.2503.07526.
 
 * [Extra info on building and distro binaries](https://ccp5.gitlab.io/dlpoly-setup/)
 * [Exercises with dlpoly-py](https://gitlab.com/ccp5/dlpoly-py/-/tree/devel/examples?ref_type=heads)
