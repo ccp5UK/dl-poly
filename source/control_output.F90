@@ -18,7 +18,9 @@ module control_output
                                       IMCON_SLAB,&
                                       configuration_type
   Use constants,                Only: pi,&
+                                      r4pie0,&
                                       tenunt,&
+                                      boltz,&
                                       zero_plus
   Use constraints,              Only: constraints_type
   Use control_parameters,       Only: write_param
@@ -204,7 +206,7 @@ Contains
     If (check_print_level(1)) Call write_units()
     If (check_print_level(1)) Call write_system_parameters(flow, config, stats, thermo, impa, minim, plume, cons, pmf)
     If (check_print_level(1)) Call write_ensemble(thermo, ttm)
-    If (check_print_level(1)) Call write_forcefield(link_cell, neigh, vdws, electro, ewld, mpoles, cshell, met, stats)
+    If (check_print_level(1)) Call write_forcefield(link_cell, neigh, vdws, electro, ewld, mpoles, cshell, met, stats, thermo%temp)
     If (ttm%l_ttm .and. check_print_level(1)) Call write_ttm(thermo, ttm)
     If (check_print_level(1)) Call write_bond_analysis(stats, flow, bond, angle, dihedral, inversion)
     If (check_print_level(1)) &
@@ -696,7 +698,7 @@ Contains
 
   End Subroutine write_system_parameters
 
-  Subroutine write_forcefield(link_cell, neigh, vdws, electro, ewld, mpoles, cshell, met, stats)
+  Subroutine write_forcefield(link_cell, neigh, vdws, electro, ewld, mpoles, cshell, met, stats, temp)
     Integer, Dimension(3),    Intent(In   ) :: link_cell
     Type(neighbours_type),    Intent(In   ) :: neigh
     Type(vdw_type),           Intent(In   ) :: vdws
@@ -706,6 +708,7 @@ Contains
     Type(core_shell_type),    Intent(In   ) :: cshell
     Type(metal_type),         Intent(In   ) :: met
     Type(stats_type),         Intent(In   ) :: stats
+    Real(kind=wp),            Intent(In   ) :: temp
 
     Character(Len=STR_LEN) :: message
 
@@ -855,9 +858,17 @@ Contains
     If (electro%key /= ELECTROSTATIC_NULL) Then
       If (Abs(electro%eps - 1.0_wp) > zero_plus) Then
         If (stats%dpd_units .or. electro%len_bjer > zero_plus) Then
-          Call write_param('Bjerrum length', electro%len_bjer, 'internal_l', indent=2)          
+          Call write_param('Bjerrum length', electro%len_bjer, 'internal_l', indent=2)
+          Call write_param('Relative dielectric constant', electro%eps, indent=2)
         Else
           Call write_param('Relative dielectric constant', electro%eps, indent=2)
+          Call write_param('Bjerrum length', r4pie0/(electro%eps*boltz*temp), 'internal_l', indent=2)
+        End If
+      Else
+        If (stats%dpd_units) Then
+          Call write_param('Bjerrum length', r4pie0/(electro%eps), 'internal_l', indent=2)
+        Else
+          Call write_param('Bjerrum length', r4pie0/(electro%eps*boltz*temp), 'internal_l', indent=2)
         End If
       End If
 

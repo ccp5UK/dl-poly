@@ -801,7 +801,7 @@ Contains
       res = val
     End If
 
-    Write(output, '(1A,1A,1A,": ",G12.5E2)') INDENT_STR(1:get_indent_str(indent)), trim(name), trim(unit_str), res
+    Write(output, '(1A,1A,1A,": ",1PG12.5E2)') INDENT_STR(1:get_indent_str(indent)), trim(name), trim(unit_str), res
     Call info(output, .true., level)
 
   End Subroutine write_single_param_unit

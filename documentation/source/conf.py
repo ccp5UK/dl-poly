@@ -18,11 +18,11 @@
 # -- Project information -----------------------------------------------------
 
 project = 'DL_POLY'
-copyright = '2022, DL_POLY Collective'
+copyright = '2025, DL_POLY Collective'
 author = 'DL_POLY Collective'
 
 # The full version, including alpha/beta/rc tags
-release = '5.1.0'
+release = '5.3.0'
 
 
 # -- General configuration ---------------------------------------------------

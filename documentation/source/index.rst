@@ -22,8 +22,8 @@ project Computational Chemistry in the Environment (eMinerals),
 directed by M.T. Dove.
 DL_POLY_5 is developed worldwide and distributed under GNU Lesser General Public License version 3.0.
 
-Latest version of , issues and comments can be made at
-`<https://gitlab.com/ccp5/dl-poly>`_
+The latest version of DL_POLY_5 can be found at `<https://gitlab.com/ccp5/dl-poly>`_: issues and comments can also be made there.
+
 
 Manual Notation
 ---------------

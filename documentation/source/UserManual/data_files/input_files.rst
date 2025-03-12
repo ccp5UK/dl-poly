@@ -1803,7 +1803,7 @@ DL_POLY_5 to the available species in the OpenKIM IM.
           - :math:`U(r) = \left( \frac{A}{r^{12}} \right) - \left( \frac{B}{r^{10}} \right)`
         * - **snm** 
           - Shifted force\ :math:`^{\dagger}` n-m :cite:`mie-03a,clarke-86a`
-          - :math:`E_{o}`, :math:`n`, :math:`m`, :math:`r_{0}`
+          - :math:`E_{o}`, :math:`n`, :math:`m`, :math:`r_{0}`, :math:`r_{c}{}^{\ddagger}`
           - :math:`U(r) = \frac{\alpha E_{o}}{(n-m)}\times` :math:`r_{c}`\ :math:`^{\ddagger}`  :math:`\left[ m\beta^{n} \left\{ \left( \frac{r_{o}}{r} \right)^{n} - \left( \frac{1}{\gamma} \right)^{n} \right\} - n\beta^{m} \left\{\left( \frac{r_{o}}{r} \right)^{m} - \left( \frac{1}{\gamma}\right)^{m}\right\} \right]`  :math:`+ \frac{nm\alpha E_{o}}{(n-m)} \left( \frac{r-\gamma r_{o}}{\gamma r_{o}} \right) \left\{ \left( \frac{\beta}{\gamma}\right)^{n} - \left( \frac{\beta}{\gamma} \right)^{m} \right\}`
         * - **mors** 
           - Morse 
@@ -1815,7 +1815,7 @@ DL_POLY_5 to the available species in the OpenKIM IM.
           - :math:`U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r-\Delta} \right)^{12} - \left( \frac{\sigma}{r-\Delta}\right)^{6} \right] + \epsilon : r_{ij} < 2^{1 \over 6}~\sigma + \Delta` :math:`U(r) = 0 : r_{ij} \ge 2^{1 \over 6}~\sigma + \Delta`
         * - **dpd** 
           - Standard DPD :cite:`groot-97a` (Groot-Warren) :math:`^{\dagger}`
-          - :math:`A`, :math:`r_{c}`,
+          - :math:`A`, :math:`r_{c}{}^{\ddagger}`
           - :math:`U(r) = \frac{A}{2}~r_{c}~\left(1-\frac{r}{r_{c}}\right)^{2}~:~r < r_{c}` :math:`U(r) = 0~:~r \ge r_{c}`
         * - **ndpd** 
           - :math:`n`\ DPD :cite:`sokhan-23a`
@@ -1823,7 +1823,7 @@ DL_POLY_5 to the available species in the OpenKIM IM.
           - :math:`U(r) = \frac{Ab}{n+1}~r_{c}~\left(1-\frac{r}{r_{c}}\right)^{n+1}-\frac{A}{2}~r_{c}~~\left(1-\frac{r}{r_{c}}\right)^{2}~:~r < r_{c}` :math:`U(r) = 0~~~~~~~~~~~~~~~~~~~:~r \ge r_{c}`
         * - **mdpd**
           - Generalised many-body DPD :cite:`vanya2020`
-          - :math:`A`, :math:`B`, :math:`n`, :math:`m`, :math:`r_{c}`, :math:`r_{d}`, :math:`\gamma`
+          - :math:`A`, :math:`B`, :math:`n`, :math:`m`, :math:`r_{c}{}^{\ddagger}`, :math:`r_{d}`
           - See :ref:`DPD-all`
         * - **14-7** 
           - 14-7 buffered AMOEBA FF :cite:`ponder-10a`
@@ -1871,13 +1871,20 @@ DL_POLY_5 to the available species in the OpenKIM IM.
 
     :math:`^{\ddagger}` Note: All local potential cutoffs, :math:`r_{c}`,
     default to the general van der Waals cutoff, ``rvdw``, or the general
-    domain decomposition cutoff, ``rcut``, if unspecified or set to zero
-    in the FIELD file! Similarly, if the specified value of ``rvdw``
-    (and/or ``rcut``) in CONTROL is found shorter than any of
-    :math:`r_{c}` (including the WCA equivalent
-    :math:`2^{1 \over 6}~\sigma + \Delta`) values specified in FIELD then
-    ``rvdw`` (and/or ``rcut``) will be reset by DL_POLY_5 to the largest
-    of all values!
+    domain decomposition cutoff, ``rcut``, if *all* are unspecified or set to
+    zero in the FIELD file! Any non-zero values of :math:`r_{c}` in the FIELD file
+    will take precedence over any value specified in the CONTROL file when
+    determining the general van der Waals cutoff ``rvdw``, with two notable
+    consequences: (1) a value for ``rvdw`` given in the CONTROL file *cannot*
+    override any non-zero values given in the FIELD file, and (2) the largest
+    non-zero cutoff value given in the FIELD file (including the WCA equivalent
+    :math:`2^{1 \over 6}~\sigma + \Delta`) will *always* be used as the general
+    van der Waals cutoff. The general domain decomposition cutoff ``rcut`` will
+    only be set to the general van der Waals cutoff if it is not otherwise specified
+    in the CONTROL file or it is smaller. Therefore, we strongly
+    recommend users check the OUTPUT file for the van der Waals cutoff
+    DL_POLY_5 has determined for a given simulation, as this value *will* be used
+    for all potentials involving force-shifting or long-range corrections!
 
     :math:`^{*}` Note: :math:`\Delta` defaults to zero if
     :math:`|\Delta| > 0.5~\sigma` or it is not specified in the FIELD

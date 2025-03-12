@@ -6295,7 +6295,7 @@ Contains
             Call get_word(record, word)
             Call get_word(record, word)
             Call get_word(record, word)
-!            Call get_word(record, word)    ! Need to include this line to detect correct r_c value!
+            Call get_word(record, word)
             vdws%cutoff = Max(vdws%cutoff, word_2_real(word))
           Else If (word(1:3) == 'wca') Then
             Call get_word(record, word)
