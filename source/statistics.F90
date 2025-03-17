@@ -471,6 +471,10 @@ Contains
       stats%accumulators(i)%window = mxstak
     End Do
 
+    If (.not. Allocated(stats%mom_dens_names)) Then
+      Allocate(stats%mom_dens_names(0))
+      Allocate(stats%mom_dens_types(0))
+    End If
     Allocate(stats%momentum_density(1:Size(stats%mom_dens_names), 1:3), Stat=fail(6))
 
     If (Any(fail > 0)) Call error_alloc("allocate_statistics_arrays", "statistics")
