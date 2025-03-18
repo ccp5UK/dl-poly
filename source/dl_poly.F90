@@ -405,6 +405,8 @@ contains
                 tests%mdpd = .true.
               Case ("smearing")
                 tests%smearing = .true.
+              Case ("coulomb")
+                tests%coul = .true.
               Case ("all")
                 Call tests%all()
               Case Default

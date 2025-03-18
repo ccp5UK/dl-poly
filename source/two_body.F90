@@ -490,7 +490,7 @@ Contains
 
               ! distance dependant dielectric potential
 
-              Call coul_dddp_forces(i, electro%eps, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, config)
+              Call coul_dddp_forces(i, electro, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, config)
 
               engcpe_rl = engcpe_rl + engacc
               vircpe_rl = vircpe_rl + viracc
@@ -499,7 +499,7 @@ Contains
 
               ! coulombic 1/r potential with no truncation or damping
 
-              Call coul_cp_forces(i, electro%eps, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, config)
+              Call coul_cp_forces(i, electro, xxt, yyt, zzt, rrt, engacc, viracc, stats, neigh, config)
 
               engcpe_rl = engcpe_rl + engacc
               vircpe_rl = vircpe_rl + viracc

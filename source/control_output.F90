@@ -37,7 +37,7 @@ module control_output
                                       ELECTROSTATIC_NULL,& 
                                       SMEARING_LINEAR, SMEARING_SLATER_TRUNCATED, &
                                       SMEARING_SLATER_EXP, SMEARING_GAUSSIAN, &
-                                      SMEARING_NULL, &
+                                      SMEARING_NULL, SMEARING_GAUSSIAN_EQUAL, &
                                       electrostatic_type
   Use errors_warnings,          Only: check_print_level,&
                                       error,&
@@ -893,10 +893,14 @@ Contains
       Call write_param('Charge smearing', 'Slater (truncated)', indent=2)
     Case (SMEARING_GAUSSIAN)
       Call write_param('Charge smearing', 'Gaussian', indent=2)
+    Case (SMEARING_GAUSSIAN_EQUAL)
+      Call write_param('Charge smearing', 'Gaussian (no real space spme contributions)', indent=2)
     End Select
-    If (electro%smear /= SMEARING_NULL) &
+
+    If (electro%smear /= SMEARING_NULL) Then 
       Call write_param('Smearing length', electro%r_smear, 'internal_l', indent=2)
-    
+    End If 
+
     If (electro%smear == SMEARING_SLATER_EXP .or. electro%smear == SMEARING_SLATER_TRUNCATED) Then
       Select Case (electro%b_smear)
       Case (BETA_ORIGINAL)

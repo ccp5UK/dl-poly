@@ -2,7 +2,10 @@ Module test_smearing
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
-  ! dl_poly_4 module for unit testing the charge smearing functions 
+  ! dl_poly_4 module for unit testing the charge smearing functions. Tests 
+  ! standalone smearing correction functions as well as the generated erfc
+  ! tables used for Coulombic interactions. No smearing case is equivalent to 
+  ! a pure real space SPME based coulomb interaction contribution. 
   !
   ! copyright - daresbury laboratory
   ! author    - b.t.speake July 2024
@@ -12,7 +15,7 @@ Module test_smearing
   Use asserts,            Only: assert 
   Use charge_smearing,    Only: linear_smearing, smearing_correction, slater_exp_smearing, &
                                 slater_apprx_smearing
-  Use constants,          Only: wp   
+  Use kinds,              Only: wp   
   Use electrostatic,      Only: electrostatic_type, ELECTROSTATIC_SPME, SMEARING_LINEAR, & 
                                 SMEARING_SLATER_EXP, SMEARING_SLATER_TRUNCATED, &
                                 SMEARING_GAUSSIAN
@@ -53,8 +56,8 @@ Module test_smearing
     Call electro%init_erf_tables(10)
     Call electro%erfcgen(10.0_wp, 1.0_wp)
 
-    Call assert(electro%erfc%table, pot_tab, "No smearing energies differ from expected", passed_accum=passed)
-    Call assert(electro%erfc_deriv%table, frc_tab, "No smearing forces contribs differ from expected", &
+    Call assert(electro%erfc%table, pot_tab, "No smearing (pure spme) energies differ from expected", passed_accum=passed)
+    Call assert(electro%erfc_deriv%table, frc_tab, "No smearing (pure spme) force contributions differ from expected", &
                   passed_accum=passed)
 
   End Subroutine no_smearing_test
@@ -70,14 +73,14 @@ Module test_smearing
     r_sm = 2.5_wp
     r_cut = 6.0_wp 
 
-    pot_tab = [0.389395115258886_wp,  0.435440859987689_wp, -5.251976538909083E-003_wp, &
-              -8.217339933034941E-005_wp,  3.095634086667356E-013_wp,  3.630860707313369E-018_wp, &
+    pot_tab = [-0.200823686687457_wp,       0.253130568583740_wp,      -5.251976538909083E-003_wp, &
+               -8.217339933034941E-005_wp,  3.095634086667356E-013_wp,  3.630860707313369E-018_wp, &
                 6.091771272421279E-024_wp,  1.440933202113285E-030_wp,  4.759289549312803E-038_wp, &
                 2.180462812244352E-046_wp]
-    frc_tab = [0.346331287912567_wp,  6.362343864518229E-002_wp, -5.243053583648856E-003_wp, &
-              -1.232577170563967E-004_wp,  6.392171975873630E-013_wp,  7.371138462006662E-018_wp, &
-              1.219771565454547E-023_wp,  2.850181451370495E-030_wp,  9.308230029307534E-038_wp, &
-              4.219460859476861E-046_wp]
+    frc_tab = [-0.311316293071378_wp,       2.651005403186380E-002_wp, -5.243053583648856E-003_wp, &
+               -1.232577170563967E-004_wp,  6.392171975873630E-013_wp,  7.371138462006662E-018_wp, &
+                1.219771565454547E-023_wp,  2.850181451370495E-030_wp,  9.308230029307534E-038_wp, &
+                4.219460859476861E-046_wp]
 
     electro%key = ELECTROSTATIC_SPME
     electro%smear = SMEARING_LINEAR 
@@ -92,9 +95,9 @@ Module test_smearing
 
     smear = linear_smearing(r_ij, r_sm)
 
-    Call assert(smear%energy, 0.875559580394158_wp, "Linear smearing energy (direct) differs from expected", &
+    Call assert(smear%energy,-0.501583276748699_wp, "Linear smearing energy (direct) differs from expected", &
                   passed_accum=passed)
-    Call assert(smear%force, 0.472331398872055_wp, "Linear smearing force contrib (direct) differs from expected", &
+    Call assert(smear%force, -0.166068601127945_wp, "Linear smearing force contrib (direct) differs from expected", &
                   passed_accum=passed)
 
     r_sm = 1.5_wp
@@ -106,9 +109,9 @@ Module test_smearing
 
     r_ij = 5.0_wp
     smear = linear_smearing(r_ij, r_sm) 
-    Call assert(smear%energy, 0.939383452266769_wp, "Linear smearing energy (direct) differs from expected r=5", &
+    Call assert(smear%energy, 0.0_wp, "Linear smearing energy (direct) differs from expected r=5", &
                   passed_accum=passed)
-    Call assert(smear%force, -14.0907516026736_wp, "Linear smearing force contrib (direct) differs from expected r=5", &
+    Call assert(smear%force, -0.0_wp, "Linear smearing force contrib (direct) differs from expected r=5", &
                   passed_accum=passed)
   End Subroutine 
 
@@ -126,10 +129,10 @@ Module test_smearing
     -5.581037581401504E-007_wp &
     ]
     frc_tab = [ &
-    -0.303359643733863_wp,      -5.734766404663466E-002_wp, -1.340851452754087E-002_wp, &
-    -3.271493724684916E-003_wp, -7.923628446424872E-004_wp, -1.884853750639163E-004_wp, &
-    -4.399028018331754E-005_wp, -1.008810101078366E-005_wp, -2.277782667603317E-006_wp, &
-    -5.073552250058613E-007_wp &
+    -0.170321265409243_wp,      -1.720319082936640E-002_wp, -2.681702904996800E-003_wp, &
+    -4.907240587027374E-004_wp, -9.508354135709846E-005_wp, -1.884853750639163E-005_wp, &
+    -3.770595444284361E-006_wp, -7.566075758087742E-007_wp, -1.518521778402211E-007_wp, &
+    -3.044131350035167E-008_wp &
     ]
 
     electro%key = ELECTROSTATIC_SPME
@@ -206,10 +209,10 @@ Module test_smearing
     -2.289177619965212E-010_wp &
     ]
     frc_tab = [&
-    -0.261530291098046_wp,      -3.179604331266336E-002_wp, -5.347220688763021E-003_wp, &
-    -8.514598759018228E-004_wp, -1.114415219325913E-004_wp, -1.129845661515756E-005_wp, &
-    -8.609343633764907E-007_wp, -4.845574035947950E-008_wp, -1.992505630302243E-009_wp, &
-    -5.942345534965294E-011_wp &
+    -0.176161482357041_wp,      -1.911823481824899E-002_wp, -2.982009464290113E-003_wp, &
+    -4.568172199638683E-004_wp, -5.849970142689654E-005_wp, -5.852746039275783E-006_wp, &
+    -4.421577131798989E-007_wp, -2.474072821432637E-008_wp, -1.013136528933572E-009_wp, &
+    -3.012377964642021E-011_wp &
     ]
 
     electro%key = ELECTROSTATIC_SPME 

@@ -27,7 +27,7 @@ Module bounds
   Use dihedrals,       Only: dihedrals_type
   Use domains,         Only: domains_type,&
                              map_domains
-  Use electrostatic,   Only: electrostatic_type
+  Use electrostatic,   Only: electrostatic_type, ELECTROSTATIC_SPME
   Use errors_warnings, Only: check_print_level,&
                              error,&
                              info,&
@@ -809,7 +809,11 @@ Contains
       electro%erfc_deriv%nsamples = -1
     Else
       Call electro%init_erf_tables(Max(1004, Nint(neigh%cutoff / delr_max) + 4))
-      call electro%erfcgen(neigh%cutoff, ewld%alpha)
+      If (electro%key == ELECTROSTATIC_SPME) Then 
+        call electro%erfcgen(neigh%cutoff, ewld%alpha)
+      Else If (electro%damp) Then 
+        call electro%erfcgen(neigh%cutoff, electro%damping)
+      End If
     End If
 
     ! maximum number of grid points for vdw interactions - overwritten

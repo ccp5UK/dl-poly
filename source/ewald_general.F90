@@ -32,7 +32,7 @@ Module ewald_general
   Use electrostatic,   Only: electrostatic_type, & 
                              SMEARING_NULL, SMEARING_LINEAR, &
                              SMEARING_SLATER_TRUNCATED, SMEARING_SLATER_EXP, & 
-                             SMEARING_GAUSSIAN
+                             SMEARING_GAUSSIAN, SMEARING_GAUSSIAN_EQUAL
   Use errors_warnings, Only: error,&
                              error_alloc,&
                              error_dealloc
@@ -127,6 +127,9 @@ Contains
     vircpe_rl = 0.0_wp
     stress_temp = 0.0_wp
     force_temp = 0.0_wp
+
+    ! Ignore interaction if gaussian smearing used with the equal condition 
+    If (electro%smear == SMEARING_GAUSSIAN_EQUAL) Return 
 
     ! global identity of iatm
 

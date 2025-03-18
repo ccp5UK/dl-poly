@@ -24,7 +24,7 @@ Module ewald_spole
                              sqrpi,&
                              zero_plus
   Use domains,         Only: domains_type
-  Use electrostatic,   Only: electrostatic_type
+  Use electrostatic,   Only: electrostatic_type, SMEARING_GAUSSIAN_EQUAL
   Use errors_warnings, Only: error,&
                              error_alloc,&
                              error_dealloc
@@ -107,6 +107,9 @@ Contains
     stress_temp = 0.0_wp
     force_temp = 0.0_wp
 
+    ! ignored real contributions if gaussian smearing length = 1 / (2*alpha)
+    If (electro%smear == SMEARING_GAUSSIAN_EQUAL) Return 
+
     ! global identity of iatm
 
     global_id_i = config%ltg(iatm)
@@ -137,14 +140,7 @@ Contains
         ! Complete prefactor
         prefac = atom_coeffs_i * prefac
 
-        nearest_sample_index = Int(mod_r_ij * electro%erfc_deriv%recip_spacing)
-        difference = mod_r_ij * electro%erfc_deriv%recip_spacing - Real(nearest_sample_index, wp)
-        points = electro%erfc_deriv%table(nearest_sample_index:nearest_sample_index + 2)
-        If (nearest_sample_index == 0) points(1) = points(1) * mod_r_ij
-        temp(1) = points(1) + (points(2) - points(1)) * difference
-        temp(2) = points(2) + (points(3) - points(2)) * (difference - 1.0_wp)
-        erf_gamma = prefac * (temp(1) + (temp(2) - temp(1)) * difference * 0.5_wp)
-        ! erf_gamma = prefac * electro%erfc_deric%calc(mod_r_ij)
+        erf_gamma = prefac * electro%erfc_deriv%calc(mod_r_ij)
 
         ! calculate forces ( dU * r/||r|| )
 
@@ -165,13 +161,7 @@ Contains
 #endif /* HALF_HALO */
 
           ! calculate components of G
-          nearest_sample_index = Int(mod_r_ij * electro%erfc%recip_spacing)
-          difference = mod_r_ij * electro%erfc%recip_spacing - Real(nearest_sample_index, wp)
-          points = electro%erfc%table(nearest_sample_index:nearest_sample_index + 2)
-          If (nearest_sample_index == 0) points(1) = points(1) * mod_r_ij
-          temp(1) = points(1) + (points(2) - points(1)) * difference
-          temp(2) = points(2) + (points(3) - points(2)) * (difference - 1.0_wp)
-          e_comp = prefac * (temp(1) + (temp(2) - temp(1)) * difference * 0.5_wp)
+          e_comp = prefac * electro%erfc%calc(mod_r_ij)
 
 #ifndef HALF_HALO
         End If

@@ -55,8 +55,11 @@ Module charge_smearing
     ! 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     Real(Kind=wp), Intent(In) :: rij, R 
-    Real(Kind=wp)             :: pot, force 
+    Real(Kind=wp)             :: pot, force
     Real(Kind=wp)             :: rijR, rijR2, rijR3, rijR5, rijR6
+
+    pot = 0.0_wp 
+    force = 0.0_wp 
 
     rijR = rij / R 
 
@@ -66,16 +69,16 @@ Module charge_smearing
       rijR5 = rijR3 * rijR2           ! ^5 
       rijR6 = rijR**(6.145)           ! ^6.145 
 
-      pot = 1.4857142857142858_wp * rijR ! 52 / 35 = 1.4857142857142858
+      pot = 1.0_wp - (1.4857142857142858_wp * rijR) ! 52 / 35 = 1.4857142857142858
       pot = pot - (0.8_wp * rijR3) 
       pot = pot + (0.4_wp * rijR5) ! rijR3 * rijR2 ?? 
       pot = pot - (0.13587130679997436_wp * rijR6) ! 2120 / 15603 = 0.13587130679997436 
 
-      force = 1.6_wp * rijR3 
+      force = 1.0_wp - (1.6_wp * rijR3) 
       force = force - (1.6_wp * rijR5) 
       force = force + (0.6990578734858681_wp * rijR6) ! 2597 / 3715 = 0.6990578734858681
 
-    Else  
+    Else If (rij < (2.0_wp * R)) Then 
       rijR5 = (1 - 0.5 * rijR)            ! tmp (1 - rij/2R)
       rijR2 = rijR5 * rijR5               ! ^2
       rijR5 = rijR5  * rijR2 * rijR2      ! ^5 
@@ -117,7 +120,7 @@ Module charge_smearing
       rijR5 = rijR3 * rijR2           ! ^5 
       rijR6 = rijR**(6.145)           ! ^6.145 
 
-      pot = 1.4857142857142858_wp * rijR ! 52 / 35 = 1.4857142857142858
+      pot = 1.0_wp - (1.4857142857142858_wp * rijR) ! 52 / 35 = 1.4857142857142858
       pot = pot - (0.8_wp * rijR3) 
       pot = pot + (0.4_wp * rijR5) ! rijR3 * rijR2 ?? 
       pot = pot - (0.13587130679997436_wp * rijR6) ! 2120 / 15603 = 0.13587130679997436 
@@ -160,7 +163,7 @@ Module charge_smearing
       rijR5 = rijR3 * rijR2           ! ^5 
       rijR6 = rijR**(6.145)           ! ^6.145 
 
-      force = 1.6_wp * rijR3 
+      force = 1.0_wp - (1.6_wp * rijR3) 
       force = force - (1.6_wp * rijR5) 
       force = force + (0.6990578734858681_wp * rijR6) ! 2597 / 3715 = 0.6990578734858681
 

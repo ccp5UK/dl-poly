@@ -40,6 +40,7 @@ Module electrostatic
   Integer(Kind=wi), Parameter, Public :: SMEARING_SLATER_TRUNCATED = 2 
   Integer(Kind=wi), Parameter, Public :: SMEARING_SLATER_EXP = 3 
   Integer(Kind=wi), Parameter, Public :: SMEARING_GAUSSIAN = 4 
+  Integer(Kind=wi), Parameter, Public :: SMEARING_GAUSSIAN_EQUAL = 5
 
   !> Type containing electrostatic potential data
   Type, Public :: electrostatic_type
@@ -55,6 +56,7 @@ Module electrostatic
     Integer(Kind=wi), Public              :: b_smear = BETA_ORIGINAL
     !> No electrostatics switch
     Logical, Public                       :: no_elec = .false.
+    !> specifies if the correction terms (force shift/reaction field) have been initialised
     Logical, Public                       :: initialised = .false.
     Logical, Public                       :: multipolar = .false.
     Type(mpole_type), Public              :: mpoles
@@ -115,7 +117,6 @@ contains
 
     if (electro%erfc%initialised .and. electro%erfc_deriv%initialised) return
 
-    ! add case for guassian smearing where sigma = 1/2alpha here so don't need to call later ?
     call electro%erfc%init(rcut, erfc_ar_over_r)
     call electro%erfc_deriv%init(rcut, erfc_ar_over_r_deriv)
 
@@ -126,9 +127,7 @@ contains
 
       Select Case (electro%smear)
       Case (SMEARING_LINEAR) 
-        If (rrr < electro%r_smear) Then 
-          erfc_ar_over_r = linear_smearing_pot(rrr, electro%r_smear) - calc_erfc_n(alpha*rrr)
-        Else If (rrr < (2 * electro%r_smear)) Then 
+        If (rrr < (2 * electro%r_smear)) Then 
           erfc_ar_over_r = calc_erfc_n(alpha*rrr)  - linear_smearing_pot(rrr, electro%r_smear)
         Else 
           erfc_ar_over_r = calc_erfc_n(alpha*rrr)
@@ -147,6 +146,10 @@ contains
           erfc_ar_over_r = calc_erfc_n(alpha*rrr) - calc_erfc_n(rrr / (2.0_wp*electro%r_smear))
         End If 
 
+      Case (SMEARING_GAUSSIAN_EQUAL)
+        erfc_ar_over_r = 0.0_wp 
+        Return  
+
       Case Default 
         erfc_ar_over_r = calc_erfc_n(alpha*rrr)
       End Select 
@@ -162,10 +165,7 @@ contains
 
       Select Case (electro%smear)
       Case (SMEARING_LINEAR) 
-        If (rrr < electro%r_smear) Then 
-          erfc_ar_over_r_deriv = alpha*calc_erfc_deriv_n(alpha*rrr) - (calc_erfc_n(alpha*rrr) * inv_r) + &
-                                    linear_smearing_force(rrr, electro%r_smear) * inv_r
-        Else If (rrr < (2 * electro%r_smear)) Then 
+        If (rrr < (2.0_wp * electro%r_smear)) Then 
           erfc_ar_over_r_deriv = ((calc_erfc_n(alpha*rrr) * inv_r) + alpha*calc_erfc_deriv_n(alpha*rrr)) - &
                                     linear_smearing_force(rrr, electro%r_smear) * inv_r
         Else 
@@ -173,12 +173,12 @@ contains
         End If 
 
       Case (SMEARING_SLATER_EXP)
-        erfc_ar_over_r_deriv = ((calc_erfc_n(alpha*rrr) * inv_r) + alpha*calc_erfc_deriv_n(alpha*rrr))
-        erfc_ar_over_r_deriv = erfc_ar_over_r_deriv - slater_exp_smearing_force(rrr, electro%r_smear, electro%b_smear)
+        erfc_ar_over_r_deriv = (calc_erfc_n(alpha*rrr) - slater_exp_smearing_force(rrr, electro%r_smear, electro%b_smear)) * inv_r
+        erfc_ar_over_r_deriv = erfc_ar_over_r_deriv  + alpha*calc_erfc_deriv_n(alpha*rrr)
 
       Case (SMEARING_SLATER_TRUNCATED) 
-        erfc_ar_over_r_deriv = ((calc_erfc_n(alpha*rrr) * inv_r) + alpha*calc_erfc_deriv_n(alpha*rrr))
-        erfc_ar_over_r_deriv = erfc_ar_over_r_deriv - (slater_apprx_smearing_force(rrr, electro%r_smear, electro%b_smear) * inv_r)
+        erfc_ar_over_r_deriv = (calc_erfc_n(alpha*rrr) - slater_apprx_smearing_force(rrr, electro%r_smear, electro%b_smear)) * inv_r
+        erfc_ar_over_r_deriv = erfc_ar_over_r_deriv  + alpha*calc_erfc_deriv_n(alpha*rrr)
 
       Case (SMEARING_GAUSSIAN) 
         If (electro%r_smear == (1.0_wp / (2.0_wp*alpha))) Then 
@@ -186,8 +186,12 @@ contains
         Else 
           erfc_ar_over_r_deriv = ((calc_erfc_n(alpha*rrr) * inv_r) + alpha*calc_erfc_deriv_n(alpha*rrr))
           erfc_ar_over_r_deriv = erfc_ar_over_r_deriv - (calc_erfc_n(rrr / (2.0_wp*electro%r_smear)) * inv_r)
-          erfc_ar_over_r_deriv = erfc_ar_over_r_deriv - (calc_erfc_deriv_n(rrr / (2.0_wp*electro%r_smear)) / electro%r_smear)
+          erfc_ar_over_r_deriv = erfc_ar_over_r_deriv - (calc_erfc_deriv_n(rrr / (2.0_wp*electro%r_smear)) / (2 * electro%r_smear))
         End If 
+
+      Case (SMEARING_GAUSSIAN_EQUAL)
+        erfc_ar_over_r_deriv = 0.0_wp 
+        Return 
 
       Case Default 
         erfc_ar_over_r_deriv = ((calc_erfc_n(alpha*rrr) * inv_r) + alpha*calc_erfc_deriv_n(alpha*rrr))

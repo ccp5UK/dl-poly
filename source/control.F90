@@ -52,7 +52,7 @@ Module control
                                       electrostatic_type, & 
                                       SMEARING_LINEAR, SMEARING_SLATER_TRUNCATED, &
                                       SMEARING_SLATER_EXP, SMEARING_GAUSSIAN, &
-                                      SMEARING_NULL
+                                      SMEARING_NULL, SMEARING_GAUSSIAN_EQUAL
   Use errors_warnings,          Only: check_print_level,&
                                       error,&
                                       error_units,&
@@ -1700,12 +1700,13 @@ Contains
       rtmp = Max(Min(rtmp, 0.5_wp), 1.0e-20_wp)
       tol = Sqrt(Abs(Log(rtmp * neigh%cutoff)))
       electro%damping = Sqrt(Abs(Log(rtmp * neigh%cutoff * tol))) / neigh%cutoff
-
     End If
 
     If (electro%no_elec .eqv. .false.) Then 
       Call params%retrieve('charge_smearing_method', option)
       Select Case (option) 
+      Case ('off')
+        electro%smear = SMEARING_NULL
       Case ('linear') 
         electro%smear = SMEARING_LINEAR
       Case ('slater_approx')
@@ -1732,17 +1733,28 @@ Contains
         End Select 
       Case ('gaussian')
         electro%smear = SMEARING_GAUSSIAN
+      Case ('gaussian_equal')
+        electro%smear = SMEARING_GAUSSIAN_EQUAL 
+        If (electro%key /= ELECTROSTATIC_SPME) Then 
+          Call error(0, 'The EQUAL condition for Gaussian smearing is only applicatble for SPME')
+        End If 
+      Case Default 
+        Call bad_option('charge_smearing_method', option)
       End Select 
       
       If (electro%smear /= SMEARING_NULL) Then 
         Call params%retrieve("charge_smearing_length", electro%r_smear)
+        If (electro%smear == SMEARING_GAUSSIAN_EQUAL) Then 
+          ewld%alpha = 1.0_wp / (2.0_wp * electro%r_smear) 
+        End If 
       End If 
     End If 
 
     If (electro%damping > zero_plus) Then
+      electro%damp = .true.
       Call info('Fennell damping applied', .true.)
-      If (stats%dpd_units .and. neigh%cutoff < 2.5_wp) Then
-        Call warning(7, neigh%cutoff, 2.5_wp, 0.0_wp)
+      If (stats%dpd_units) Then 
+        If (neigh%cutoff < 2.5_wp) Call warning(7, neigh%cutoff, 2.5_wp, 0.0_wp)
       Else If (neigh%cutoff < 12.0_wp) Then
         Call warning(7, neigh%cutoff, 12.0_wp, 0.0_wp)
       End If
@@ -1779,8 +1791,9 @@ Contains
         Call error(0, 'Cannot specify both precision and manual spme parameters')
 
       Else If (params%is_set('spme_alpha')) Then
-
-        Call params%retrieve('spme_alpha', ewld%alpha)
+        If (electro%smear /= SMEARING_GAUSSIAN_EQUAL) Then 
+          Call params%retrieve('spme_alpha', ewld%alpha)
+        End If 
         If (params%is_set([Character(18) :: 'spme_kvec', 'spme_kvec_spacing'])) Then
 
           Call error(0, 'Cannot specify both explicit k-vec grid and k-vec spacing')
@@ -1806,7 +1819,9 @@ Contains
         Call params%retrieve('spme_precision', ewld%precision)
 
         tol = Sqrt(Abs(Log(ewld%precision * neigh%cutoff)))
-        ewld%alpha = Sqrt(Abs(Log(ewld%precision * neigh%cutoff * tol))) / neigh%cutoff
+        If (electro%smear /= SMEARING_GAUSSIAN_EQUAL) Then 
+          ewld%alpha = Sqrt(Abs(Log(ewld%precision * neigh%cutoff * tol))) / neigh%cutoff
+        End If 
         tol1 = Sqrt(-Log(ewld%precision * neigh%cutoff * (2.0_wp * tol * ewld%alpha)**2))
 
         ewld%kspace%k_vec_dim_cont = 2 * Nint(0.25_wp + cell_properties(7:9) * ewld%alpha * tol1 / pi)
@@ -4506,7 +4521,7 @@ Contains
                         name="Charge smearing method", &
                         val="off", &
                         description="Set method for charge smearing, "// &
-                        "options: off, linear, slater_approx, slater, gaussian", &
+                        "options: off, linear, slater_approx, slater, gaussian, gaussian_equal", &
                         data_type=DATA_OPTION))
 
         Call table%set("charge_smearing_length", control_parameter(&

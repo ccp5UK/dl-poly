@@ -595,8 +595,8 @@ are:
 Charge Smearing
 ~~~~~~~~~~~~~~~
 
-Several charge smearing methods are available in DL_POLY_5 which combine with the SPME coulomb potential and 
-force evaluation. Charge smearing can be selected to reduce the possibility of opposite-charge collapse at shorter 
+Several charge smearing methods are available in DL_POLY_5 which can be appleid to the any of the point charge based Coulomb interaction
+methods described above. Charge smearing can be selected to reduce the possibility of opposite-charge collapse at shorter 
 separations between ion pairs while still ensuring the potential is Coulombic (proportional to the reciprocal 
 of separation) at larger  distances and allowing for unmodified calculations of reciprocal space terms in Ewald sums.
 Three types of charge smearing are currently available in DL_POLY_5; linear :cite:`Groot2003`, Slater-type :cite:`Coslovich2011` (in 
@@ -610,8 +610,8 @@ potential,
 
    U (r_{ij}) = \frac{\Gamma q_i q_j}{4 \pi r_{ij}} \left[ 1 - f(r_{ij})\right] 
 
-where :math:`f(r_{ij})` is a distance-dependent correction. The short-range (real space) potential between 
-particles :math:`i` and :math:`j` for Ewald summation can be expressed as, 
+where :math:`f(r_{ij})` is a distance-dependent correction. As an example, the short-range (real space) potential between 
+particles :math:`i` and :math:`j` for Ewald summation would now be expressed as, 
 
 .. math:: 
    :label: smearing_ewald_pot_eq 
@@ -914,20 +914,24 @@ and an associated virial contribution as
    
    \mathcal{W}_{ij}^{E,\text{sr}} = -\frac{\Gamma q_i q_j}{4 \pi r_{ij}} \left[ \textrm{erfc}(\alpha r_{ij}) - \textrm{erfc} \left(\frac{r_{ij}}{2 \sigma_{G}} \right) + \frac{2 \alpha r_{ij}}{\sqrt{\pi}} \exp (-\alpha^2 r_{ij}^2) - \frac{r_{ij}}{\sigma_{G} \sqrt{\pi}} \exp \left( -\frac{r_{ij}^2}{4 \sigma_{G}^2} \right) \right].
 
-It should be noted that when :math:`\sigma_{G} = \frac{1}{2 \alpha}`,
-all real space terms (potential, force, virial) reduce to zero and
+This form of charge smearing can be invoked using the directive
+``charge_smearing_method`` in the ``CONTROL`` file with the keyword ``gaussian``. The
+smearing length scale :math:`\sigma_{G}` can be specified using the
+directive ``charge_smearing_length``.
+
+It should be noted that when :math:`\alpha = \frac{1}{2 \sigma_{G}}`,
+all real space terms (potential, force, virial) for the SPME interactions reduce to zero and
 therefore do not need to be evaluated: in this situation, all of the
 electrostatic interactions can be dealt with solely in reciprocal space,
-which can reduce the required computation time.
+which can reduce the required computation time. 
+This case can be enforced by using the ``gaussian_equal`` keyword for the 
+``charge_smearing_method`` directive in which case the value of :math:`\alpha` for the 
+SPME interactions will be set to :math:`\frac{1}{2 \sigma_{G}}` based on the supplied 
+smearing length scale and all real space SPME interactions will be ignored. This key can only be used 
+when SPME based coulombic interactions are used. 
 
-This form of charge smearing can be invoked using the directive
-``smear`` in the ``CONTROL`` file with the keyword ``gauss``. The
-smearing length scale :math:`\sigma_{G}` can be specified using the
-directive ``smear length``: if the word ``equal`` follows the value of
-:math:`\sigma_{G}`, the Ewald sum real-space convergence factor
-:math:`\alpha` will be set equal to :math:`\frac{1}{2 \sigma_{G}}` to
-eliminate real space contributions and the value given in the ``ewald``
-or ``spme`` directive will be ignored.
+
+
 
 
 .. _mpoles:

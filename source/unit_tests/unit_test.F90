@@ -11,6 +11,7 @@ Module unit_test
   Use test_parse,         Only: run_parse_tests
   Use test_numerics,      Only: run_numerics_tests
   Use test_mdpd_ld,       Only : run_mdpd_tests
+  Use test_coul,          Only: run_coulomb_tests
   Implicit None
 
   !> Logicals indicating whether tests should be run for
@@ -27,6 +28,7 @@ Module unit_test
     Logical, Public :: numerics = .false.
     Logical, Public :: mdpd = .false.
     Logical, Public :: smearing = .false.
+    Logical, Public :: coul = .false.
   Contains
     Procedure :: all => set_all_tests_true
     Procedure :: run => run_unit_tests
@@ -47,6 +49,7 @@ Contains
     this%numerics = .true.
     this%mdpd = .true.
     this%smearing = .true.
+    this%coul = .true.
   End Subroutine set_all_tests_true
 
   Subroutine run_unit_tests(this, comm, eu)
@@ -116,6 +119,12 @@ Contains
     If (this%numerics) Then
       Write(eu, '(a)') "Running test: numerics"
       Call run_numerics_tests(passed)
+      passed_all = passed_all .and. passed
+    End If
+
+    If (this%coul) Then 
+      Write(eu, '(a)') "Running test: coulomb (point charge)"
+      Call run_coulomb_tests(passed)
       passed_all = passed_all .and. passed
     End If
 

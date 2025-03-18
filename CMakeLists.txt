@@ -411,10 +411,10 @@ if(BUILD_TESTING)
     do_test("TEST${test}")
   endforeach()
 
-  set(UNIT_TESTS control configuration units vdw integrators hash parse numerics mdpd smearing)
-  set(UNIT_TESTS_ID U001 U002 U003 U004 U005 U006 U007 U008 U009 U010)
+  set(UNIT_TESTS control configuration units vdw integrators hash parse numerics mdpd smearing coulomb)
+  set(UNIT_TESTS_ID U001 U002 U003 U004 U005 U006 U007 U008 U009 U010 U011)
 
-  foreach(test RANGE 0 9 1)
+  foreach(test RANGE 0 10 1)
     list(GET UNIT_TESTS_ID ${test} id)
     list(GET UNIT_TESTS ${test} name)
     add_test(NAME ${id} COMMAND ${CMAKE_BINARY_DIR}/bin/${target_name} --test ${name})
