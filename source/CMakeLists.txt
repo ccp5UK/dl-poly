@@ -177,6 +177,8 @@ endif()
 if(WITH_EVB)
   set_property(TARGET dlpoly APPEND PROPERTY
     COMPILE_DEFINITIONS "EVB")
+else()
+  set_source_files_properties(evb.F90 PROPERTIES COMPILE_FLAGS "-Wno-unused-dummy-argument -Wno-unused-function")
 endif()
 
 if(WITH_PLUMED)
@@ -185,6 +187,8 @@ if(WITH_PLUMED)
   if (INTERNAL_PLUMED)
     add_dependencies(dlpoly int-plumed)
   endif()
+else()
+  set_source_files_properties(plumed.F90 PROPERTIES COMPILE_FLAGS "-Wno-unused-dummy-argument")
 endif()
 
 if(WITH_KIM)
@@ -194,6 +198,8 @@ if(WITH_KIM)
     add_dependencies(dlpoly int-kim-api)
   endif()
   target_include_directories(dlpoly PUBLIC  ${KIM_INC})
+else()
+  set_source_files_properties(kim.F90 PROPERTIES COMPILE_FLAGS "-Wno-unused-variable -Wno-unused-dummy-argument -Wno-unused-function")
 endif()
 
 if(WITH_DFTBP)
@@ -208,6 +214,8 @@ endif()
 if(WITH_ASSERT)
   set_property(TARGET dlpoly APPEND PROPERTY
     COMPILE_DEFINITIONS "WITH_ASSERT")
+else()
+  set_source_files_properties(asserts.F90 PROPERTIES COMPILE_FLAGS "-Wno-unused-dummy-argument")
 endif()
 
 
