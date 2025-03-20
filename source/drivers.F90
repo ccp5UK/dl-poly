@@ -210,7 +210,9 @@ Module drivers
   Public :: md_vv
   Public :: replay_historf
   Public :: replay_history
+#ifdef DFTBP
   Public :: calculate_dftb_forces
+#endif
 
 Contains
 
@@ -944,13 +946,13 @@ Contains
   !!                         Returns updated forces in config
   !! @param[in]    devel     Object containing developement data
   !
+#ifdef DFTB
   Subroutine calculate_dftb_forces(comm, flow, config, devel)
     Type(comms_type), Intent(InOut) :: comm
     Type(flow_type), Intent(In) :: flow
     Type(configuration_type), Intent(InOut) :: config
     Type(development_type), Intent(In) :: devel
 
-#ifdef DFTBP
     !> Gathered coordinates and mpi index arrays
     Type(coordinate_buffer_type) :: gathered
     !> Gathered atom names
@@ -1008,8 +1010,8 @@ Contains
       Deallocate (atomic_charges)
     Endif
 
-#endif
   End Subroutine calculate_dftb_forces
+#endif
 
   Subroutine refresh_mappings(cnfig, flow, cshell, cons, pmf, stat, msd_data, bond, angle, &
                               dihedral, inversion, tether, neigh, sites, mpoles, rigid, domain, &
@@ -2161,14 +2163,9 @@ Contains
                                   minim, mpoles, ext_field, rigid, electro, domain, kim_data, msd_data, tmr, &
                                   files, green, devel, ewld, met, seed, thermo, crd, comm)
       Else If (flow%simulation_method == DFTB) Then
+#ifdef DFTB
         Call calculate_dftb_forces(comm, flow, cnfig(1), devel)
-        !Output forces for app test
-        !TODO(Alex) Remove this in favour of STATIS
-!!$#ifdef DFTBP
-!!$         If(devel%app_test%dftb_library) Then
-!!$            Call output_dftb_forces(comm, flow, cnfig)
-!!$         Endif
-!!$#endif
+#endif
       Endif
 
       ! Calculate physical quantities, collect statistics and report at t=0
