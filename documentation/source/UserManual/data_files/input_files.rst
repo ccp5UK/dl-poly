@@ -1749,10 +1749,20 @@ DL_POLY_5 to the available species in the OpenKIM IM.
       variable 5    real      potential parameter, see Table :numref:`(%s) <vdw-table>`
       variable 6    real      potential parameter, see Table :numref:`(%s) <vdw-table>`
       variable 7    real      potential parameter, see Table :numref:`(%s) <vdw-table>`
+      variable 8    real      potential parameter, see Table :numref:`(%s) <vdw-table>`
+      variable 9    real      potential parameter, see Table :numref:`(%s) <vdw-table>`
 
 
     The variables pertaining to each potential are described in Table
-    :numref:`(%s) <vdw-table>`.
+    :numref:`(%s) <vdw-table>`. If any of the :ref:`DPD thermostats <DPD_thermostats>` are 
+    in use, two additional parameters for the atom pair's dissipative force parameter 
+    :math:`\gamma_{ij}` and the thermostat cutoff distance :math:`r_{t,ij}` can be
+    included after the parameters for the pair potential and used instead of any 
+    default values. If :math:`\gamma_{ij}` is not specified, DL_POLY_5 will either 
+    use mixing rules or a global value specified by **ensemble_dpd_drag** in the 
+    CONTROL file. If :math:`r_{t,ij}` is not supplied, DL_POLY_5 will use either the 
+    pair potential's interaction cutoff distance (e.g. :math:`r_c` for standard DPD) 
+    or, failing that, the maximum van der Waals cutoff distance ``rvdw``.
 
     **Note** that any pair potential not specified in the FIELD file,
     will be assumed to be zero.
@@ -2609,10 +2619,10 @@ defining individual molecules:
     .. parsed-literal:: 
       
       ``charge``        real(1)     scalar *q* (in protons)
-      ``dipole``        real(3)     vector (*x*,*y*,*z*) (in protons/Å or protons/DPD length unit)
-      ``quadrupole``    real(6)     vector (*xx*,*xy*,*xz*,*yy*,*yz*,*zz*) (in protons/Å\ :sup:`2` or protons/squared DPD length unit)
-      ``octupole``      real(10)    vector (*xxx*,*xxy*,*xxz*,*xyy*,*xyz*,*xzz*,*yyy*,*yyz*,*yzz*,*zzz*) (in protons/Å\ :sup:`3` or protons/cubed DPD length unit)
-      ``hexadecapole``  real(15)    vector (*xxxx*,*xxxy*,*xxxz*,....,*yyyz*,*yyzz*,*yzzz*,*zzzz*)` (in protons/Å\ :sup:`4` or protons/quartic DPD length unit)
+      ``dipole``        real(3)     vector (*x*, *y*, *z*) (in protons/Å or protons/DPD length unit)
+      ``quadrupole``    real(6)     vector (*xx*, *xy*, *xz*, *yy*, *yz*, *zz*) (in protons/Å\ :sup:`2` or protons/squared DPD length unit)
+      ``octupole``      real(10)    vector (*xxx*, *xxy*, *xxz*, *xyy*, *xyz*, *xzz*, *yyy*, *yyz*, *yzz*, *zzz*) (in protons/Å\ :sup:`3` or protons/cubed DPD length unit)
+      ``hexadecapole``  real(15)    vector (*xxxx*, *xxxy*, *xxxz*,...., *yyyz*, *yyzz*, *yzzz*, *zzzz*)` (in protons/Å\ :sup:`4` or protons/quartic DPD length unit)
 
     **Note** that the charge values supplied in FIELD will be overwritten
     with those supplied here!

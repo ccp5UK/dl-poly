@@ -3711,12 +3711,14 @@ Contains
           End If
 
           If (keypot == VDW_TAB) Then
-            If (thermo%key_dpd /= DPD_NULL) Then ! make sure thermo%gamdpd is read and reported for DPD
+            If (thermo%key_dpd /= DPD_NULL) Then ! make sure thermo%gamdpd and thermo%dpdcut are read and reported for DPD
               Call get_word(record, word)
               parpot(1) = word_2_real(word)
+              Call get_word(record, word)
+              parpot(2) = word_2_real(word)
               If (flow%print_topology) Then
                 Write (message, '(2x,i10,5x,2a8,8x,f20.6,1x,a9)') &
-                  itpvdw, atom1, atom2, parpot(1), 'tabulated'
+                  itpvdw, atom1, atom2, parpot(1), parpot(2), 'tabulated'
                 Call info(message, .true., level=3)
               End If
             Else
@@ -3729,7 +3731,7 @@ Contains
           Else
 
             if (thermo%key_dpd /= DPD_NULL) then
-              itmp = vdws%max_param + 1
+              itmp = vdws%max_param + 2
             else
               itmp = vdws%max_param
             end if
@@ -3790,6 +3792,7 @@ Contains
               parpot(2) = Abs(parpot(2))
               If (parpot(3) > parpot(2) / 2.0_wp) &
                 parpot(3) = Sign(1.0_wp, parpot(3)) * parpot(2) / 2.0_wp
+              parpot(5:6) = parpot(4:5) ! shift DPD parameters along before calculating WCA cutoff distance
               parpot(4) = 2.0_wp**(1.0_wp / 6.0_wp) * parpot(2) + parpot(3)
               Allocate(wca::vdws%potentials(itpvdw)%p)
             Case (VDW_DPD)
@@ -3894,62 +3897,137 @@ Contains
             vdws%param(i, itpvdw) = parpot(i)
           End Do
 
-          If (thermo%key_dpd /= DPD_NULL) Then ! store possible specification of DPD's gamma_ij
+          If (thermo%key_dpd /= DPD_NULL) Then ! store possible specification of DPD's gamma_ij and cut_ij
             Select Case (keypot)
             Case (VDW_TAB)
               thermo%gamdpd(keyvdw) = Abs(parpot(1))
+              thermo%dpdcut(keyvdw) = Abs(parpot(2))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
+                 thermo%dpdcut(keyvdw) = vdws%cutoff
             Case (VDW_12_6)
               thermo%gamdpd(keyvdw) = Abs(parpot(3))
+              thermo%dpdcut(keyvdw) = Abs(parpot(4))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
+                 thermo%dpdcut(keyvdw) = vdws%cutoff
             Case (VDW_LENNARD_JONES)
               thermo%gamdpd(keyvdw) = Abs(parpot(3))
+              thermo%dpdcut(keyvdw) = Abs(parpot(4))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
+                 thermo%dpdcut(keyvdw) = vdws%cutoff
             Case (VDW_N_M)
               thermo%gamdpd(keyvdw) = Abs(parpot(5))
+              thermo%dpdcut(keyvdw) = Abs(parpot(6))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
+                 thermo%dpdcut(keyvdw) = vdws%cutoff
             Case (VDW_BUCKINGHAM)
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
+              thermo%dpdcut(keyvdw) = Abs(parpot(5))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
+                 thermo%dpdcut(keyvdw) = vdws%cutoff
             Case (VDW_BORN_HUGGINS_MEYER)
               thermo%gamdpd(keyvdw) = Abs(parpot(6))
+              thermo%dpdcut(keyvdw) = Abs(parpot(7))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
+                 thermo%dpdcut(keyvdw) = vdws%cutoff
             Case (VDW_HYDROGEN_BOND)
               thermo%gamdpd(keyvdw) = Abs(parpot(3))
+              thermo%dpdcut(keyvdw) = Abs(parpot(4))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
+                 thermo%dpdcut(keyvdw) = vdws%cutoff
             Case (VDW_N_M_SHIFT)
               thermo%gamdpd(keyvdw) = Abs(parpot(6))
+              thermo%dpdcut(keyvdw) = Abs(parpot(7))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with r_c if not supplied 
+                 thermo%dpdcut(keyvdw) = Abs(parpot(5))
             Case (VDW_MORSE)
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
+              thermo%dpdcut(keyvdw) = Abs(parpot(5))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
+                 thermo%dpdcut(keyvdw) = vdws%cutoff
             Case (VDW_WCA)
-              thermo%gamdpd(keyvdw) = Abs(parpot(4))
+              thermo%gamdpd(keyvdw) = Abs(parpot(5))
+              thermo%dpdcut(keyvdw) = Abs(parpot(6))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with 2^(1/6)+Delta if not supplied 
+                 thermo%dpdcut(keyvdw) = Abs(parpot(4))
             Case (VDW_DPD)
               thermo%gamdpd(keyvdw) = Abs(parpot(3))
+              thermo%dpdcut(keyvdw) = Abs(parpot(4))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with r_c if not supplied 
+                 thermo%dpdcut(keyvdw) = Abs(parpot(2))
             Case (VDW_NDPD)
               thermo%gamdpd(keyvdw) = Abs(parpot(5))
+              thermo%dpdcut(keyvdw) = Abs(parpot(6))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with r_c if not supplied 
+                 thermo%dpdcut(keyvdw) = Abs(parpot(4))
             Case (VDW_MDPD)
               thermo%gamdpd(keyvdw) = Abs(parpot(7))
+              thermo%dpdcut(keyvdw) = Abs(parpot(8))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with r_c if not supplied 
+                 thermo%dpdcut(keyvdw) = Abs(parpot(5))
             Case (VDW_AMOEBA)
               thermo%gamdpd(keyvdw) = Abs(parpot(3))
+              thermo%dpdcut(keyvdw) = Abs(parpot(4))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
+                 thermo%dpdcut(keyvdw) = vdws%cutoff
             Case (VDW_LENNARD_JONES_COHESIVE)
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
+              thermo%dpdcut(keyvdw) = Abs(parpot(5))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
+                 thermo%dpdcut(keyvdw) = vdws%cutoff
             Case (VDW_MORSE_12)
               thermo%gamdpd(keyvdw) = Abs(parpot(5))
+              thermo%dpdcut(keyvdw) = Abs(parpot(6))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
+                 thermo%dpdcut(keyvdw) = vdws%cutoff
             Case (VDW_RYDBERG)
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
+              thermo%dpdcut(keyvdw) = Abs(parpot(5))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
+                 thermo%dpdcut(keyvdw) = vdws%cutoff
             Case (VDW_ZBL)
               thermo%gamdpd(keyvdw) = Abs(parpot(5))
+              thermo%dpdcut(keyvdw) = Abs(parpot(6))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
+                 thermo%dpdcut(keyvdw) = vdws%cutoff
             Case (VDW_ZBL_SWITCH_MORSE)
               thermo%gamdpd(keyvdw) = Abs(parpot(8))
+              thermo%dpdcut(keyvdw) = Abs(parpot(9))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
+                 thermo%dpdcut(keyvdw) = vdws%cutoff
             Case (VDW_ZBL_SWITCH_BUCKINGHAM)
               thermo%gamdpd(keyvdw) = Abs(parpot(8))
+              thermo%dpdcut(keyvdw) = Abs(parpot(9))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
+                 thermo%dpdcut(keyvdw) = vdws%cutoff
             Case (VDW_LJ_MDF)
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
+              thermo%dpdcut(keyvdw) = Abs(parpot(5))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
+                 thermo%dpdcut(keyvdw) = vdws%cutoff
             Case (VDW_BUCKINGHAM_MDF)
               thermo%gamdpd(keyvdw) = Abs(parpot(5))
+              thermo%dpdcut(keyvdw) = Abs(parpot(6))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
+                 thermo%dpdcut(keyvdw) = vdws%cutoff
             Case (VDW_LJF)
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
+              thermo%dpdcut(keyvdw) = Abs(parpot(5))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with r_c if not supplied 
+                 thermo%dpdcut(keyvdw) = Abs(parpot(3))
             Case (VDW_SANDERSON)
               thermo%gamdpd(keyvdw) = Abs(parpot(4))
+              thermo%dpdcut(keyvdw) = Abs(parpot(5))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
+                 thermo%dpdcut(keyvdw) = vdws%cutoff
             Case (VDW_SW)
               thermo%gamdpd(keyvdw) = Abs(parpot(8))
+              thermo%dpdcut(keyvdw) = Abs(parpot(9))
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
+                 thermo%dpdcut(keyvdw) = vdws%cutoff
             End Select
 
             If (thermo%gamdpd(keyvdw)<=zero_plus .and. thermo%gamdpd(0) > zero_plus) &
-               thermo%gamdpd(keyvdw) = thermo%gamdpd(0) ! override
+               thermo%gamdpd(keyvdw) = thermo%gamdpd(0) ! override gamma with value in CONTROL if not supplied
           End If
         End Do
 
@@ -4158,8 +4236,10 @@ Contains
                         If (Any(del > zero_plus)) &
                           del(0) = 0.5_wp * (del(1) + del(2))
 
-                        If (thermo%key_dpd /= DPD_NULL) &
+                        If (thermo%key_dpd /= DPD_NULL) Then
                           thermo%gamdpd(ksite) = Sqrt(thermo%gamdpd(isite) * thermo%gamdpd(jsite))
+                          thermo%dpdcut(ksite) = 0.5 * (thermo%dpdcut(isite) + thermo%dpdcut(jsite))
+                        End If
 
                       Case (MIX_FENDER_HALSEY)
 
@@ -4177,6 +4257,7 @@ Contains
                             thermo%gamdpd(ksite) = &
                             2.0_wp * thermo%gamdpd(isite) * thermo%gamdpd(jsite) / &
                             (thermo%gamdpd(isite) + thermo%gamdpd(jsite))
+                          thermo%dpdcut(ksite) = 0.5 * (thermo%dpdcut(isite) + thermo%dpdcut(jsite))
                         End If
 
                       Case (MIX_HOGERVORST)
@@ -4190,8 +4271,10 @@ Contains
                         If (Any(del > zero_plus)) &
                           del(0) = Sqrt(del(1) * del(2))
 
-                        If (thermo%key_dpd /= DPD_NULL) &
+                        If (thermo%key_dpd /= DPD_NULL) Then
                           thermo%gamdpd(ksite) = Sqrt(thermo%gamdpd(isite) * thermo%gamdpd(jsite))
+                          thermo%dpdcut(ksite) = Sqrt(thermo%dpdcut(isite) * thermo%dpdcut(jsite))
+                        End If
 
                       Case (MIX_HALGREN)
 
@@ -4211,6 +4294,9 @@ Contains
                                 4.0_wp * thermo%gamdpd(isite) * thermo%gamdpd(jsite) / &
                                 (Sqrt(thermo%gamdpd(isite)) + Sqrt(thermo%gamdpd(jsite)))**2
                             End If
+                            thermo%dpdcut(ksite) = &
+                              (thermo%dpdcut(isite)**3 + thermo%dpdcut(jsite)**3) / &
+                              (thermo%dpdcut(isite)**2 + thermo%dpdcut(jsite)**2)
                           End If
                         End If
 
@@ -4227,8 +4313,12 @@ Contains
                         If (Any(del > zero_plus)) &
                           del(0) = (0.5_wp * (del(1)**6 + del(2)**6))**(1.0_wp / 6.0_wp)
 
-                        If (thermo%key_dpd /= DPD_NULL) &
-                          thermo%gamdpd(ksite) = Sqrt(thermo%gamdpd(isite) * thermo%gamdpd(jsite)) * ((sig(1) * sig(2))**3) / tmp
+                        If (thermo%key_dpd /= DPD_NULL) Then
+                          tmp = 0.5_wp * (thermo%dpdcut(isite)**6 + thermo%dpdcut(jsite)**6)
+                          thermo%gamdpd(ksite) = Sqrt(thermo%gamdpd(isite) * thermo%gamdpd(jsite)) * &
+                            ((thermo%dpdcut(isite) * thermo%dpdcut(jsite))**3) / tmp
+                          thermo%dpdcut(ksite) = tmp**(1.0_wp / 6.0_wp)
+                        End If
 
                       Case (MIX_TANG_TOENNIES)
 
@@ -4245,8 +4335,13 @@ Contains
                         If (Any(del > zero_plus)) &
                           del(0) = 0.5_wp * sig(0) * (del(1) / sig(1) + del(2) / sig(2))
 
-                        If (thermo%key_dpd /= DPD_NULL) &
-                          thermo%gamdpd(ksite) = 0.5_wp * eps(0) * (thermo%gamdpd(isite) / eps(1) + thermo%gamdpd(jsite) / eps(2))
+                        If (thermo%key_dpd /= DPD_NULL) Then
+                          tmp = (thermo%gamdpd(isite) * thermo%dpdcut(isite)**6) * &
+                            (thermo%gamdpd(jsite) * thermo%dpdcut(jsite)**6)
+                          thermo%gamdpd(ksite) = tmp / (((thermo%gamdpd(isite) * thermo%dpdcut(isite)**12)**(1.0_wp / 13.0_wp) + &
+                            (thermo%gamdpd(jsite) * thermo%dpdcut(jsite)**12)**(1.0_wp / 13.0_wp)) * 0.5_wp)**13
+                          thermo%dpdcut(ksite) = (Sqrt(tmp) / thermo%gamdpd(ksite))**(1.0_wp / 6.0_wp)
+                        End If
 
                       Case (MIX_FUNCTIONAL)
 
@@ -4269,8 +4364,19 @@ Contains
                         If (Any(del > zero_plus)) &
                           del(0) = 0.5_wp * sig(0) * (del(1) / sig(1) + del(2) / sig(2))
 
-                        If (thermo%key_dpd /= DPD_NULL) &
-                          thermo%gamdpd(ksite) = 0.5_wp * eps(0) * (thermo%gamdpd(isite) / eps(1) + thermo%gamdpd(jsite) / eps(2))
+                        If (thermo%key_dpd /= DPD_NULL) Then
+                          thermo%gamdpd(ksite) = 0.0_wp; thermo%dpdcut(ksite) = 0.0_wp
+                          Do itmp = 0, 2
+                            tmp = (thermo%dpdcut(isite)**3 + thermo%dpdcut(jsite)**3)**2 / &
+                              (4.0_wp * (thermo%dpdcut(isite) * thermo%dpdcut(jsite))**itmp)  
+                            thermo%gamdpd(ksite) = thermo%gamdpd(ksite) + tmp**(Real(6, wp) / Real(6 - 2 * itmp, wp))
+                            thermo%dpdcut(ksite) = thermo%dpdcut(ksite) + tmp**(Real(1, wp) / Real(6 - 2 * itmp, wp))
+                          End Do
+                          tmp = 1.0_wp / thermo%gamdpd(ksite)
+                          thermo%gamdpd(ksite) = 3.0_wp * Sqrt(thermo%gamdpd(isite) * thermo%gamdpd(jsite)) * &
+                                                          (thermo%dpdcut(isite) * thermo%dpdcut(jsite))**3 * tmp
+                          thermo%dpdcut(ksite) = thermo%dpdcut(ksite) / 3.0_wp
+                        End If
 
                       End Select
 
@@ -4295,9 +4401,9 @@ Contains
 
                       If (flow%print_topology) Then
                         If (thermo%key_dpd /= DPD_NULL) Then
-                          Write (rfmt, '(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,', vdws%max_param + 1, 'f20.6)'
+                          Write (rfmt, '(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,', vdws%max_param + 2, 'f20.6)'
                           Write (message, rfmt) vdws%n_vdw, sites%unique_atom(i), &
-                            sites%unique_atom(j), keyword, vdws%param(1:vdws%max_param + 1, vdws%n_vdw)
+                            sites%unique_atom(j), keyword, vdws%param(1:vdws%max_param + 2, vdws%n_vdw)
                         Else
                           Write (rfmt, '(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,', vdws%max_param, 'f20.6)'
                           Write (message, rfmt) vdws%n_vdw, sites%unique_atom(i), &
@@ -5605,6 +5711,7 @@ Contains
     ! contrib   - a.m.elena february 2017
     ! contrib   - i.t.todorov may 2017
     ! contrib   - v.sokhan may 2017
+    ! contrib   - m.a.seaton march 2025
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -6288,8 +6395,12 @@ Contains
           Call get_word(record, word)
           Call get_word(record, word)
 
+          ! find maximum value of vdw cutoff (including dpd thermostat cutoffs)
           If (word(1:3) == 'tab') Then
             vdws%l_tab = .true.
+            Call get_word(record, word)
+            Call get_word(record, word) ! dpd thermostat cutoff
+            vdws%cutoff = Max(vdws%cutoff, word_2_real(word))
           Else If (word(1:3) == 'snm') Then
             Call get_word(record, word)
             Call get_word(record, word)
@@ -6297,21 +6408,33 @@ Contains
             Call get_word(record, word)
             Call get_word(record, word)
             vdws%cutoff = Max(vdws%cutoff, word_2_real(word))
+            Call get_word(record, word)
+            Call get_word(record, word) ! dpd thermostat cutoff
+            vdws%cutoff = Max(vdws%cutoff, word_2_real(word))
           Else If (word(1:3) == 'wca') Then
             Call get_word(record, word)
             Call get_word(record, word); tmp1 = word_2_real(word)
             Call get_word(record, word); tmp2 = word_2_real(word)
             tmp = tmp2 + tmp1 * 2.0_wp**(1.0_wp / 6.0_wp)
             vdws%cutoff = Max(vdws%cutoff, tmp)
+            Call get_word(record, word)
+            Call get_word(record, word) ! dpd thermostat cutoff
+            vdws%cutoff = Max(vdws%cutoff, word_2_real(word))
           Else If (word(1:3) == 'dpd') Then
             Call get_word(record, word)
             Call get_word(record, word)
+            vdws%cutoff = Max(vdws%cutoff, word_2_real(word))
+            Call get_word(record, word)
+            Call get_word(record, word) ! dpd thermostat cutoff
             vdws%cutoff = Max(vdws%cutoff, word_2_real(word))
           Else If (word(1:4) == 'ndpd') Then
             Call get_word(record, word)
             Call get_word(record, word)
             Call get_word(record, word)
             Call get_word(record, word)
+            vdws%cutoff = Max(vdws%cutoff, word_2_real(word))
+            Call get_word(record, word)
+            Call get_word(record, word) ! dpd thermostat cutoff
             vdws%cutoff = Max(vdws%cutoff, word_2_real(word))
           Else If (word(1:4) == 'mdpd') Then 
             Call get_word(record, word)
@@ -6320,6 +6443,61 @@ Contains
             Call get_word(record, word)
             Call get_word(record, word)
             Call get_word(record, word) ! 5th parameter 
+            vdws%cutoff = Max(vdws%cutoff, word_2_real(word))
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word) ! dpd thermostat cutoff
+            vdws%cutoff = Max(vdws%cutoff, word_2_real(word))
+          Else If (word(1:3) == 'ljf') Then
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word)
+            vdws%cutoff = Max(vdws%cutoff, word_2_real(word))
+            Call get_word(record, word)
+            Call get_word(record, word) ! dpd thermostat cutoff
+            vdws%cutoff = Max(vdws%cutoff, word_2_real(word))
+          Else If (word(1:3) == 'bhm') Then
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word) ! dpd thermostat cutoff
+            vdws%cutoff = Max(vdws%cutoff, word_2_real(word))
+          Else If (word(1:2) == 'nm' .or. word(1:4) == 'mstw' .or. word(1:4) == 'mbuc') Then
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word) ! dpd thermostat cutoff
+            vdws%cutoff = Max(vdws%cutoff, word_2_real(word))
+          Else If (word(1:3) == 'ljc' .or. word(1:3) == 'mlj' .or. word(1:4) == 'm126' .or. word(1:4) == 'sand' .or. &
+                   word(1:3) == 'ryd' .or. word(1:4) == 'buck' .or. word(1:4) == 'mors') Then
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word) ! dpd thermostat cutoff
+            vdws%cutoff = Max(vdws%cutoff, word_2_real(word))
+          Else If (word(1:4) == 'zbls' .or. word(1:4) == 'zblb' .or. word(1:2) == 'sw') Then
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word) ! dpd thermostat cutoff
+            vdws%cutoff = Max(vdws%cutoff, word_2_real(word))
+          Else If (word(1:2) == 'lj' .or. word(1:4) == '12-6' .or. word(1:4) == '14-7' .or. &
+                   word(1:3) == 'zbl' .or. word(1:4) == 'hbnd') Then
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word)
+            Call get_word(record, word) ! dpd thermostat cutoff
             vdws%cutoff = Max(vdws%cutoff, word_2_real(word))
           End If
         End Do

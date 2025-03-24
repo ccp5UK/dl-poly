@@ -132,7 +132,8 @@ Module meta
   Use temperature,                            Only: set_temperature
   Use tersoff,                                Only: tersoff_type
   Use tethers,                                Only: tethers_type
-  Use thermostat,                             Only: thermostat_type
+  Use thermostat,                             Only: thermostat_type,&
+                                                    DPD_NULL
   Use three_body,                             Only: threebody_type
   Use timer,                                  Only: init_timer_system,&
                                                     start_timer,&
@@ -862,7 +863,7 @@ Contains
                           rigid(ff), electro(ff), domain(ff), config(ff), &
                           ewld(ff), kim_data(ff), files, flow, comm, &
                           xhi, yhi, zhi, megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, &
-                          mtshl, mtteth, link_cell, ff)
+                          mtshl, mtteth, link_cell, (thermo(ff)%key_dpd/=DPD_NULL), ff)
 
       Call molecular_dynamics_allocate(sites(ff), config(ff), neigh(ff), thermo(ff), vdws(ff), core_shells(ff), &
                                        cons(ff), pmfs(ff), rigid(ff), tether(ff), bond(ff), angle(ff), &

@@ -9,15 +9,30 @@ directive in the ``CONTROL`` file must be set to ``dpd``. The ``ensemble_dpd_ord
 used to specify the type of DPD-based thermostat to be used. 
 
 All DPD based thermostats require setting the value of the drag coefficient :math:`\gamma_{ij}` 
-from :eq:`DPD_drag_force_eq`. This can be specified in the ``FIELD`` file as a per-pair interaction 
-parameter when using a DPD-based force field.
-If the drag coefficient has not been specified in the ``FIELD`` file as part of a DPD-based interaction, 
-the ``ensemble_dpd_drag`` directive can be used to set a global value for the drag coefficient to be used 
-within the DPD thermostats.
+from :eq:`DPD_drag_force_eq` and a cutoff distance :math:`r_{t,ij}` for the switching functions,
+defined as:
+
+.. math:: w^{D}(r_{ij}) = \left[w^{R}(r_{ij})\right]^{2} = \left\{ \begin{array} {l@{\quad:\quad}l}
+   \left(1-\frac{r_{ij}}{r_{t,ij}}\right)^{2} & r_{ij} < r_{t,ij} \\ 0 & r_{ij} \ge r_{t,ij} \end{array} \right.~~,
+
+where :math:`r_{t,ij}` is most often chosen as the DPD interaction cutoff distance
+:math:`r_{c}`. Both values can be specified in the ``FIELD`` file as additional 
+per-pair interaction parameters when using any vdw pairwise interaction, including
+a standard DPD (Groot-Warren) force field.
+
+If the drag coefficient has not been specified in the ``FIELD`` file as part of a DPD-based (or other vdw) 
+interaction, the **ensemble_dpd_drag** directive in the ``CONTROL`` file can be used to set a global value 
+for the drag coefficient to be used within the DPD thermostats. 
 
 .. note::
-    The ``ensemble_dpd_drag`` value is used for any interaction that does not specify :math:`\gamma_{ij}`
+    The **ensemble_dpd_drag** value is used for any interaction that does not specify :math:`\gamma_{ij}`
     in the ``FIELD`` file and a value cannot be derived from mixing rules.
+
+Similarly, if no thermostat cutoff distance has been specified in the ``FIELD`` file as part of a vdw
+interaction or an interaction cutoff cannot readily be obtained from it, if it cannot otherwise be derived
+from mixing rules, DL_POLY_5 will use the maximum vdw cutoff distance. If this latter value cannot be
+obtained from existing interactions, it can be specified using the **vdw_cutoff** directive in the ``CONTROL``
+file.
 
 Molecular Dynamics Velocity Verlet for DPD
 ------------------------------------------
@@ -29,7 +44,7 @@ combined with all other forces between particles; pairwise conservative (standar
 external (body) forces etc. 
 
 The combination of the DPD thermostat with the standard molecular dynamics type Velocity Verlet algorithm is the simplest and least 
-time-consuming DPD based thermostatting algorithm available in DL_POLY_5. The drag force does, however, depend upon particle velocities
+time-consuming DPD-based thermostatting algorithm available in DL_POLY_5. The drag force does, however, depend upon particle velocities
 and is therefore only approximated using the mid-step values. This can produce a system temperature that is higher than that specified by 
 the user and would require a small time step :math:`\Delta t` to reduce the offset to a tolerable level.  
 
@@ -52,8 +67,8 @@ First-order
 ~~~~~~~~~~~
 
 The **first-order** Shardlow operator can be achieved in two stages, equivalent to the first and second 
-stages of velocity Verlet integration of drag and random forces (:math:`\underline{f}_{ij}^{D}` and 
-:math:`\underline{f}_{ij}^{R}`). The first stage is simply integration of the forces over half of the 
+stages of velocity Verlet integration of drag and random forces (:math:`\underline{F}_{ij}^{D}` and 
+:math:`\underline{F}_{ij}^{R}`). The first stage is simply integration of the forces over half of the 
 timestep :math:`\Delta t` for all particle pairs(:math:`i` and :math:`j`) within the thermostat cutoff:
 
 .. math:: 
@@ -79,7 +94,7 @@ where :math:`\mu_{ij} = \frac{m_i m_j}{m_i + m_j}` is the reduced mass between t
 :math:`\frac{1}{2}\mu_{ij}^{-1}` is their mean reciprocal mass. 
 Other forces can subsequently be integrated using the standard velocity Verlet algorithm, which do not depend upon the particle velocities. 
 
-First-order shardlow splitting is specified by setting the ``ensemble_dpd_order`` directive to ``first`` or 
+First-order Shardlow splitting is specified by setting the ``ensemble_dpd_order`` directive to ``first`` or 
 ``1`` in the ``CONTROL`` file. 
 
 Second-order 

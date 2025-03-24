@@ -178,7 +178,7 @@ Module drivers
                                   ENS_NVT_ANDERSON, ENS_NVT_BERENDSEN, ENS_NVT_EVANS, &
                                   ENS_NVT_GENTLE, ENS_NVT_LANGEVIN, ENS_NVT_LANGEVIN_INHOMO, &
                                   ENS_NVT_NOSE_HOOVER, ENS_NVT_DPD_SHARDLOW, ENS_NVT_DPD_MDVV, &
-                                  VV_FIRST_STAGE, VV_SECOND_STAGE, &
+                                  VV_FIRST_STAGE, VV_SECOND_STAGE, DPD_NULL, &
                                   thermostat_type
   Use three_body,           Only: three_body_forces,&
                                   threebody_type
@@ -2435,7 +2435,8 @@ Contains
       Call stat%init_connect(cnfig%mxatdm)
       10 Continue
       If (nstph > nstpe) Then
-        Call statistics_connect_set(cnfig, neigh%cutoff_extended, cnfig%mxatdm, msd_data%l_msd, stat, domain, comm)
+        Call statistics_connect_set(cnfig, neigh%cutoff_extended, cnfig%mxatdm, msd_data%l_msd, (thermo%key_dpd/=DPD_NULL), &
+                                    stat, domain, comm)
       End If
 
       ! Make a move - Read a frame
@@ -2479,12 +2480,14 @@ Contains
             !              xin(natms+1: ) = 0.0_wp
             !              yin(natms+1: ) = 0.0_wp
             !              zin(natms+1: ) = 0.0_wp
-            Call statistics_connect_set(cnfig, neigh%cutoff_extended, cnfig%mxatdm, msd_data%l_msd, stat, domain, comm)
+            Call statistics_connect_set(cnfig, neigh%cutoff_extended, cnfig%mxatdm, msd_data%l_msd, (thermo%key_dpd/=DPD_NULL), &
+                                        stat, domain, comm)
           End If
 
           ! get xto/xin/msdtmp arrays sorted
 
-          Call statistics_connect_frames(cnfig, cnfig%megatm, cnfig%mxatdm, msd_data%l_msd, stat, domain, comm)
+          Call statistics_connect_frames(cnfig, cnfig%megatm, cnfig%mxatdm, msd_data%l_msd, (thermo%key_dpd/=DPD_NULL), &
+                                         stat, domain, comm)
           Call stat%clean_connect()
 
           ! SET domain borders and link-cells as default for new jobs
@@ -2848,7 +2851,8 @@ Contains
     Do
       Call stat%init_connect(cnfig%mxatdm)
       10 Continue
-      If (nstph > nstpe) Call statistics_connect_set(cnfig, neigh%cutoff_extended, cnfig%mxatdm, msd_data%l_msd, stat, domain, comm)
+      If (nstph > nstpe) Call statistics_connect_set(cnfig, neigh%cutoff_extended, cnfig%mxatdm, msd_data%l_msd, &
+                                                     (thermo%key_dpd/=DPD_NULL), stat, domain, comm)
 
       ! Make a move - Read a frame
 
@@ -2891,12 +2895,14 @@ Contains
             !              xin(natms+1: ) = 0.0_wp
             !              yin(natms+1: ) = 0.0_wp
             !              zin(natms+1: ) = 0.0_wp
-            Call statistics_connect_set(cnfig, neigh%cutoff_extended, cnfig%mxatdm, msd_data%l_msd, stat, domain, comm)
+            Call statistics_connect_set(cnfig, neigh%cutoff_extended, cnfig%mxatdm, msd_data%l_msd, (thermo%key_dpd/=DPD_NULL), &
+                                        stat, domain, comm)
           End If
 
           ! get xto/xin/msdtmp arrays sorted
 
-          Call statistics_connect_frames(cnfig, cnfig%megatm, cnfig%mxatdm, msd_data%l_msd, stat, domain, comm)
+          Call statistics_connect_frames(cnfig, cnfig%megatm, cnfig%mxatdm, msd_data%l_msd, (thermo%key_dpd/=DPD_NULL), &
+                                         stat, domain, comm)
           Call stat%clean_connect()
 
           ! SET domain borders and link-cells as default for new jobs

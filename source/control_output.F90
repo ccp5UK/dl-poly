@@ -1052,7 +1052,7 @@ Contains
     ! For any dpd thermostat ensembles
     If (allocated(thermo%gamdpd)) then
       if (thermo%gamdpd(0) > zero_plus) &
-           Call write_param('Drag coefficient', thermo%gamdpd(0), 'Da/ps', indent=2)
+           Call write_param('Drag coefficient', thermo%gamdpd(0), 'internal_m/internal_t', indent=2)
     end If
 
     ! Semi isotropic ensembles

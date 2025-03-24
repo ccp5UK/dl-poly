@@ -59,7 +59,7 @@ Module nvt_dpd_shardlow
 
         ! one-off application for zeroth and first order splitting, initial application for second order
         ! velocity field change + generation of DPD virial & stat%stress due to random and drag forces
-        Call dpd_shardlow_integrate(stage, flow%strict, neigh%cutoff, flow%step, thermo%tstep, stat, thermo, &
+        Call dpd_shardlow_integrate(stage, flow%strict, flow%step, thermo%tstep, stat, thermo, &
                                     neigh, rigid, domain, cnfig, seed, comm)
 
         ! integrate equations of motion - velocity verlet stage 1
@@ -79,7 +79,7 @@ Module nvt_dpd_shardlow
         ! symmetric application for second order splitting only
         ! velocity field change + generation of DPD virial & stat%stress due to random and drag forces
         If (thermo%key_dpd == DPD_SECOND_ORDER) Then
-            Call dpd_shardlow_integrate(stage, flow%strict, neigh%cutoff, flow%step, thermo%tstep, stat, thermo, &
+            Call dpd_shardlow_integrate(stage, flow%strict, flow%step, thermo%tstep, stat, thermo, &
                                         neigh, rigid, domain, cnfig, seed, comm)
         End If
 
@@ -121,7 +121,7 @@ Module nvt_dpd_shardlow
 
         ! one-off application for zeroth and first order splitting, initial application for second order
         ! velocity field change + generation of DPD virial & stat%stress due to random and drag forces
-        Call dpd_shardlow_integrate(stage, flow%strict, neigh%cutoff, flow%step, thermo%tstep, stat, thermo, &
+        Call dpd_shardlow_integrate(stage, flow%strict, flow%step, thermo%tstep, stat, thermo, &
                                     neigh, rigid, domain, cnfig, seed, comm)
 
         ! integrate equations of motion - velocity verlet stage 1
@@ -143,7 +143,7 @@ Module nvt_dpd_shardlow
         ! symmetric application for second order splitting only
         ! velocity field change + generation of DPD virial & stat%stress due to random and drag forces
         If (thermo%key_dpd == DPD_SECOND_ORDER) Then
-          Call dpd_shardlow_integrate(stage, flow%strict, neigh%cutoff, flow%step, thermo%tstep, stat, thermo, &
+          Call dpd_shardlow_integrate(stage, flow%strict, flow%step, thermo%tstep, stat, thermo, &
                                       neigh, rigid, domain, cnfig, seed, comm)
         End If
 

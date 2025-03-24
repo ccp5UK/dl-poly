@@ -57,7 +57,7 @@ Module dpd
 
 Contains
 
-  Subroutine dpd_shardlow_integrate(stage, l_str, rcut, nstep, tstep, stats, thermo, neigh, rigid, domain, config, seed, comm)
+  Subroutine dpd_shardlow_integrate(stage, l_str, nstep, tstep, stats, thermo, neigh, rigid, domain, config, seed, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -79,12 +79,13 @@ Contains
     !           - m.a.seaton august 2020 - preprocessing tags and array sizes
     !           - k.a.jonathan september 2024 - zeroth order splitting,
     !             integration of RBs vels, reduced mass in equations
+    !           - m.a.seaton march 2025 - added DPD cutoffs for particle pairs
+    !             (removes need for global cutoff)
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                  Intent(In   ) :: stage
     Logical,                  Intent(In   ) :: l_str
-    Real(Kind=wp),            Intent(In   ) :: rcut
     Integer,                  Intent(In   ) :: nstep
     Real(Kind=wp),            Intent(In   ) :: tstep
     Type(stats_type),         Intent(InOut) :: stats
@@ -154,14 +155,7 @@ Contains
 
     hstep = 0.5_wp * tst_p
     tstepfrac = hstep / tstep
-    r_sqrt_tstp = 1.0_wp / Sqrt(tstep)
-
-    ! random force scaled in 2nd order to account for symmetric application over
-    ! effectively a timestep of half the size
-
-    If (thermo%key_dpd == DPD_SECOND_ORDER) Then
-      r_sqrt_tstp = r_sqrt_tstp * Sqrt(2.0_wp)
-    End If
+    r_sqrt_tstp = Merge (Sqrt(0.5_wp / hstep), 1.0_wp / Sqrt(tstep), thermo%key_dpd /= DPD_ZEROTH_ORDER)
 
     ! Initialise DPD virial and stress contributions
 
@@ -210,7 +204,15 @@ Contains
           aj = config%ltype(j)
           idj = config%ltg(j)
 
-          ! Calculate r_ij, |r_ij|
+          ! Get mixing type function - key for interaction strength and cutoff
+
+          If (ai > aj) Then
+            key = ai * (ai - 1) / 2 + aj
+          Else
+            key = aj * (aj - 1) / 2 + ai
+          End If
+
+        ! Calculate r_ij, |r_ij|
 
           xdif = config%parts(i)%xxx - config%parts(j)%xxx
           ydif = config%parts(i)%yyy - config%parts(j)%yyy
@@ -220,7 +222,7 @@ Contains
 
           ! Calculate forces for valid pairs
 
-          If (rrr < rcut .and. config%weight(j) > 1.0e-6_wp) Then
+          If (rrr < thermo%dpdcut(key) .and. config%weight(j) > 1.0e-6_wp) Then
 
             ! Calculate v_ij, and (r_ij . v_ij)
 
@@ -229,14 +231,6 @@ Contains
             vzdif = config%vzz(i) - config%vzz(j)
 
             rdotv = xdif*vxdif + ydif*vydif + zdif*vzdif
-
-            ! Get mixing type function - key for interaction strength
-
-            If (ai > aj) Then
-              key = ai * (ai - 1) / 2 + aj
-            Else
-              key = aj * (aj - 1) / 2 + ai
-            End If
 
             ! Get gaussian random number with zero mean (held in gauss var)
             ! Global id check ensure same random number for same pair of particles
@@ -251,7 +245,7 @@ Contains
             ! w_D = scrn**2 * rrr**2
             ! w_R = scrn * rrr
 
-            scrn = (rcut - rrr) / (rrr * rcut)         
+            scrn = (thermo%dpdcut(key) - rrr) / (rrr * thermo%dpdcut(key))         
 
             ! Calculate random and drag components
 
@@ -376,7 +370,15 @@ Contains
         aj = config%ltype(j)
         idj = config%ltg(j)
 
-        ! Calculate r_ij, |r_ij|
+        ! Get mixing type function - key for interaction strength and cutoff
+
+        If (ai > aj) Then
+          key = ai * (ai - 1) / 2 + aj
+        Else
+          key = aj * (aj - 1) / 2 + ai
+        End If
+
+      ! Calculate r_ij, |r_ij|
 
         xdif = config%parts(i)%xxx - config%parts(j)%xxx
         ydif = config%parts(i)%yyy - config%parts(j)%yyy
@@ -386,7 +388,7 @@ Contains
 
         ! Calculate forces for valid pairs
 
-        If (rrr < rcut .and. config%weight(j) > 1.0e-6_wp) Then
+        If (rrr < thermo%dpdcut(key) .and. config%weight(j) > 1.0e-6_wp) Then
 
           ! Calculate v_ij, and (r_ij . v_ij)
 
@@ -395,14 +397,6 @@ Contains
           vzdif = config%vzz(i) - config%vzz(j)
 
           rdotv = xdif*vxdif + ydif*vydif + zdif*vzdif
-
-          ! Get mixing type function - key for interaction strength
-
-          If (ai > aj) Then
-            key = ai * (ai - 1) / 2 + aj
-          Else
-            key = aj * (aj - 1) / 2 + ai
-          End If
 
           ! Get gaussian random number with zero mean (held in gauss var)
           ! Global id check ensure same random number for same pair of particles
@@ -417,7 +411,7 @@ Contains
           ! w_D = scrn**2 * rrr**2
           ! w_R = scrn * rrr
 
-          scrn = (rcut - rrr) / (rrr * rcut)  
+          scrn = (thermo%dpdcut(key) - rrr) / (rrr * thermo%dpdcut(key))  
           
           ! reciprocal reduced mass
           
@@ -429,7 +423,7 @@ Contains
 
           scl = (thermo%gamdpd(key) * scrn**2) / (1.0_wp + hstep * thermo%gamdpd(key) * scrn**2 * rrr**2 * rmassij)
 
-          rgamma = (1.0_wp - scl * 0.25_wp * rmassij * rrr**2 * tst_p) * tmp
+          rgamma = (1.0_wp - scl * 0.5_wp * rmassij * rrr**2 * hstep) * tmp
 
           dgamma = - scl * rdotv
 
@@ -551,7 +545,7 @@ Contains
 
   End Subroutine dpd_shardlow_integrate
 
-  Subroutine dpd_mdvv_forces(stage, l_str, rcut, nstep, tstep, stats, thermo, neigh, rigid, domain, config, seed, comm)
+  Subroutine dpd_mdvv_forces(stage, l_str, nstep, tstep, stats, thermo, neigh, rigid, domain, config, seed, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -562,12 +556,13 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - k.a.jonathan september 2024
+    ! contrib   - m.a.seaton march 2025 - added DPD cutoffs for particle pairs
+    !             (removes need for global cutoff)
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                  Intent(In   ) :: stage
     Logical,                  Intent(In   ) :: l_str
-    Real(Kind=wp),            Intent(In   ) :: rcut
     Integer,                  Intent(In   ) :: nstep
     Real(Kind=wp),            Intent(In   ) :: tstep
     Type(stats_type),         Intent(InOut) :: stats
@@ -641,7 +636,15 @@ Contains
         aj = config%ltype(j)
         idj = config%ltg(j)
 
-        ! Calculate r_ij, |r_ij|
+        ! Get mixing type function - key for interaction strength and cutoff
+
+        If (ai > aj) Then
+          key = ai * (ai - 1) / 2 + aj
+        Else
+          key = aj * (aj - 1) / 2 + ai
+        End If
+
+      ! Calculate r_ij, |r_ij|
 
         xdif = config%parts(i)%xxx - config%parts(j)%xxx
         ydif = config%parts(i)%yyy - config%parts(j)%yyy
@@ -651,7 +654,7 @@ Contains
 
         ! Calculate forces for valid pairs
 
-        If (rrr < rcut .and. config%weight(j) > 1.0e-6_wp) Then
+        If (rrr < thermo%dpdcut(key) .and. config%weight(j) > 1.0e-6_wp) Then
 
           ! Calculate v_ij, and (r_ij . v_ij)
 
@@ -660,14 +663,6 @@ Contains
           vzdif = config%vzz(i) - config%vzz(j)
 
           rdotv = xdif*vxdif + ydif*vydif + zdif*vzdif
-
-          ! Get mixing type function - key for interaction strength
-
-          If (ai > aj) Then
-            key = ai * (ai - 1) / 2 + aj
-          Else
-            key = aj * (aj - 1) / 2 + ai
-          End If
 
           ! Get gaussian random number with zero mean (held in gauss var)
           ! Global id check ensure same random number for same pair of particles
@@ -682,7 +677,7 @@ Contains
           ! w_D = scrn**2 * rrr**2
           ! w_R = scrn * rrr
 
-          scrn = (rcut - rrr) / (rrr * rcut)         
+          scrn = (thermo%dpdcut(key) - rrr) / (rrr * thermo%dpdcut(key))         
 
           ! Calculate random and drag components
 

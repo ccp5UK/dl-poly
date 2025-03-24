@@ -66,7 +66,7 @@ Module nvt_dpd_mdvv
 
         ! calculate dpd forces and add them to conservative forces (config%parts%fxx,yy,zz)
         ! for integration in future VV stages + generation of DPD virial & stat%stress due to random/drag forces
-        Call dpd_mdvv_forces(stage, flow%strict, neigh%cutoff, flow%step, thermo%tstep, stat, thermo, &
+        Call dpd_mdvv_forces(stage, flow%strict, flow%step, thermo%tstep, stat, thermo, &
                              neigh, rigid, domain, cnfig, seed, comm)
 
         ! integrate equations of motion - velocity verlet stage 2
@@ -122,7 +122,7 @@ Module nvt_dpd_mdvv
 
         ! Calculate dpd forces and add them to conservative forces (config%parts%fxx,yy,zz)
         ! for integration in future VV stages + generation of DPD virial & stat%stress due to random/drag forces
-        Call dpd_mdvv_forces(stage, flow%strict, neigh%cutoff, flow%step, thermo%tstep, stat, thermo, &
+        Call dpd_mdvv_forces(stage, flow%strict, flow%step, thermo%tstep, stat, thermo, &
                              neigh, rigid, domain, cnfig, seed, comm)
 
         ! integrate equations of motion - velocity verlet stage 2

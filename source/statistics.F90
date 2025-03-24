@@ -67,6 +67,7 @@ Module statistics
   Use thermostat,      Only: CONSTRAINT_NONE,&
                              CONSTRAINT_SEMI_ORTHORHOMBIC,&
                              CONSTRAINT_SURFACE_TENSION,&
+                             DPD_NULL,&
                              thermostat_type
   Use timer,           Only: start_timer,&
                              stop_timer,&
@@ -1179,7 +1180,7 @@ Contains
 
     Character(Len=100)         :: fmtt, sunits
     Character(Len=STR_LEN)     :: message
-    Integer                    :: fail, i, iadd, j, k, kstak, cor_index
+    Integer                    :: fail, i, iadd, j, k, kstak, cor_index, strend
     Logical                    :: ffpass, l_tmp
     Real(Kind=wp)              :: celprp(1:10), h_z, sclnv1, sclnv2, stpcns, stpipv, stprot, &
                                   stpshl, zistk, prsunt0, tenunt0, boltz0, btmp(1:9), rtmp
@@ -1240,11 +1241,15 @@ Contains
         Else If (Abs(engunit - eu_kjpm) <= zero_plus) Then
           sunits = "kjoule/mol"
         Else If (Abs(engunit - 1.0_wp) <= zero_plus) Then
-          sunits = "DL_POLY Internal UNITS (10 J/mol)"
+          If (stats%dpd_units) Then
+            sunits = "DPD units"
+          Else
+            sunits = "DL_POLY Internal UNITS (10 J/mol)"
+          End If
         Else If (Abs(engunit - boltz) <= zero_plus) Then
           sunits = "Kelvin/Boltzmann"
         Else ! once in a blue moon
-          sunits = "DPD (Unknown)"
+          sunits = "Unknown"
         End If
         Write (files(FILE_STATS)%unit_no, '(a,a)') "energy unitS: ", Trim(sunits)
         If (stats%file_yaml) Then
@@ -1261,6 +1266,15 @@ Contains
             'Md Cell Angle Β', 'Md Cell Angle Gamma', 'Pmf Constraint Virial', 'Pressure', &
             'External Degree Of Freedom', 'stress xx', 'stress xy', 'stress xz', 'stress yx', &
             'stress yy', 'stress yz', 'stress zx', 'stress zy', 'stress zz'
+          If (thermo%key_dpd /= DPD_NULL) &
+            Write (files(FILE_STATS)%unit_no, '(*(a,", "))', advance="no") 'config stress xx', 'config stress xy', &
+              'config stress xz', 'config stress yx', 'config stress yy', 'config stress yz', 'config stress zx', &
+              'config stress zy', 'config stress zz', 'dissipative stress xx', 'dissipative stress xy', 'dissipative stress xz', &
+              'dissipative stress yx', 'dissipative stress yy', 'dissipative stress yz', 'dissipative stress zx', &
+              'dissipative stress zy', 'dissipative stress zz', 'random stress xx', 'random stress xy', 'random stress xz', &
+              'random stress yx', 'random stress yy', 'random stress yz', 'random stress zx', 'random stress zy', &
+              'random stress zz', 'kinetic stress xx', 'kinetic stress xy', 'kinetic stress xz', 'kinetic stress yx', &
+              'kinetic stress yy', 'kinetic stress yz', 'kinetic stress zx', 'kinetic stress zy', 'kinetic stress zz'
           Do i = 1, sites%ntype_atom - 1
             Write (files(FILE_STATS)%unit_no, '(a)', advance="no") "amsd "//sites%unique_atom(i)//", "
           End Do
@@ -1394,6 +1408,28 @@ Contains
           stats%momentum_density(i, :) = calculate_mom_density(stats, i, config, comm)
         End Do
       End If
+    End If
+
+    ! separated stress tensors for DPD calculations:
+    ! conservative/configurational, dissipative, random, kinetic
+
+    If (thermo%key_dpd/=DPD_NULL) Then
+      Do i = 1, 9
+        stats%stpval(iadd + i) = (stats%strcon(i) + stats%strpmf(i) + stats%stress(i) + stats%strcom(i)) * prsunt0/stats%stpvol
+      End Do
+      iadd = iadd + 9
+      Do i = 1, 9
+        stats%stpval(iadd + i) = stats%strdpdd(i) * prsunt0 / stats%stpvol
+      End Do
+      iadd = iadd + 9
+      Do i = 1, 9
+        stats%stpval(iadd + i) = stats%strdpdr(i) * prsunt0 / stats%stpvol
+      End Do
+      iadd = iadd + 9
+      Do i = 1, 9
+        stats%stpval(iadd + i) = stats%strkin(i) * prsunt0 / stats%stpvol
+      End Do
+      iadd = iadd + 9
     End If
 
     ! mean squared displacements per species, dependent on
@@ -1564,16 +1600,17 @@ Contains
           stats%statis_file_open = .true.
         End If
 
+        strend = Merge (36, 72, (thermo%key_dpd/=DPD_NULL))
         If (lmsd) Then
           If (stats%file_yaml) Then
             Write (fmtt, '(a,i0,a)') '(2x,a4,i0,",",', iadd + 1 - 2 * mxatdm, '(g16.8,","),g16.8,a2)'
             Write (files(FILE_STATS)%unit_no, fmt=Trim(fmtt)) "- [ ", nstep, time, &
-              stats%stpval(1:27), stats%stpval(0), stats%stpval(28:36), &
-              stats%stpval(37 + 2 * mxatdm:iadd), ' ]'
+              stats%stpval(1:27), stats%stpval(0), stats%stpval(28:strend), &
+              stats%stpval(strend + 1 + 2 * mxatdm:iadd), ' ]'
           Else
             Write (files(FILE_STATS)%unit_no, '(i10,1p,e14.6,0p,i10,/, (1p,5e14.6))') &
-              nstep, time, iadd + 1 - 2 * mxatdm, stats%stpval(1:27), stats%stpval(0), stats%stpval(28:36), &
-              stats%stpval(37 + 2 * mxatdm:iadd)
+              nstep, time, iadd + 1 - 2 * mxatdm, stats%stpval(1:27), stats%stpval(0), stats%stpval(28:strend), &
+              stats%stpval(strend + 1 + 2 * mxatdm:iadd)
           End If
         Else
           If (stats%file_yaml) Then
@@ -1695,7 +1732,7 @@ Contains
 
   End Subroutine statistics_collect
 
-  Subroutine statistics_connect_frames(config, megatm, mxatdm, lmsd, stats, domain, comm)
+  Subroutine statistics_connect_frames(config, megatm, mxatdm, lmsd, dpd, stats, domain, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1715,7 +1752,7 @@ Contains
 
     Integer(Kind=wi), Intent(In) :: megatm
     Integer(Kind=wi), Intent(In) :: mxatdm
-    Logical, Intent(In) :: lmsd
+    Logical, Intent(In) :: lmsd, dpd
     Type(stats_type), Intent(InOut) :: stats
     Type(domains_type), Intent(In) :: domain
     Type(configuration_type), Intent(InOut) :: config
@@ -1800,7 +1837,7 @@ Contains
                 stats%zto(config%lsi(i)) = stats%zto0(stats%lsi0(i0))
 
                 If (lmsd) Then
-                  j = 36 + 2 * config%lsi(i)
+                  j = Merge (72, 36, dpd) + 2 * config%lsi(i)
                   j0 = 2 * stats%lsi0(i0)
                   stats%stpvl0(j - 1) = stats%stpvl00(j0 - 1)
                   stats%stpvl0(j) = stats%stpvl00(j0)
@@ -1990,7 +2027,7 @@ Contains
 
       ! Spread atom data in the mdir direction
 
-      If (mdir /= 0) Call statistics_connect_spread(config, mdir, mxatdm, lmsd, stats, domain, comm)
+      If (mdir /= 0) Call statistics_connect_spread(config, mdir, mxatdm, lmsd, dpd, stats, domain, comm)
 
       ! Sort past frame remainder of global atom indices
 
@@ -2005,7 +2042,7 @@ Contains
 
   End Subroutine statistics_connect_frames
 
-  Subroutine statistics_connect_set(config, rcut, mxatdm, lmsd, stats, domain, comm)
+  Subroutine statistics_connect_set(config, rcut, mxatdm, lmsd, dpd, stats, domain, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2025,7 +2062,7 @@ Contains
 
     Real(Kind=wp), Intent(In) :: rcut
     Integer(Kind=wi), Intent(In) :: mxatdm
-    Logical, Intent(In) :: lmsd
+    Logical, Intent(In) :: lmsd, dpd
     Type(stats_type), Intent(InOut) :: stats
     Type(domains_type), Intent(In) :: domain
     Type(configuration_type), Intent(InOut) :: config
@@ -2033,7 +2070,7 @@ Contains
 
     Real(Kind=wp) :: cut
 
-    Integer           :: nlx, nly, nlz, i, i0, kk
+    Integer           :: nlx, nly, nlz, i, i0, kk, strend
     Real(Kind=wp) :: det, celprp(1:10), rcell(1:9), x, y, z, &
                      xdc, ydc, zdc, cwx, cwy, cwz, ecwx, ecwy, ecwz
 
@@ -2116,14 +2153,15 @@ Contains
       stats%yto0(1:stats%natms0) = stats%yto(1:stats%natms0) !;stats%yto0(stats%natms0+1: ) = 0
       stats%zto0(1:stats%natms0) = stats%zto(1:stats%natms0) !;stats%zto0(stats%natms0+1: ) = 0
 
+      strend = Merge (72, 36, dpd)
       If (lmsd) Then
         i0 = 2 * stats%natms0
-        stats%stpvl00(1:i0) = stats%stpvl0(37:36 + i0) !;stats%stpvl00(i0+1: )=0.0_wp
-        stats%stpval0(1:i0) = stats%stpval(37:36 + i0) !;stats%stpval0(i0+1: )=0.0_wp
-        stats%zumval0(1:i0) = stats%zumval(37:36 + i0) !;stats%zumval0(i0+1: )=0.0_wp
-        stats%ravval0(1:i0) = stats%ravval(37:36 + i0) !;stats%ravval0(i0+1: )=0.0_wp
-        stats%ssqval0(1:i0) = stats%ssqval(37:36 + i0) !;stats%ssqval0(i0+1: )=0.0_wp
-        stats%sumval0(1:i0) = stats%sumval(37:36 + i0) !;stats%sumval0(i0+1: )=0.0_wp
+        stats%stpvl00(1:i0) = stats%stpvl0(strend+1:strend + i0) !;stats%stpvl00(i0+1: )=0.0_wp
+        stats%stpval0(1:i0) = stats%stpval(strend+1:strend + i0) !;stats%stpval0(i0+1: )=0.0_wp
+        stats%zumval0(1:i0) = stats%zumval(strend+1:strend + i0) !;stats%zumval0(i0+1: )=0.0_wp
+        stats%ravval0(1:i0) = stats%ravval(strend+1:strend + i0) !;stats%ravval0(i0+1: )=0.0_wp
+        stats%ssqval0(1:i0) = stats%ssqval(strend+1:strend + i0) !;stats%ssqval0(i0+1: )=0.0_wp
+        stats%sumval0(1:i0) = stats%sumval(strend+1:strend + i0) !;stats%sumval0(i0+1: )=0.0_wp
         Do kk = 1, stats%mxstak
           stats%stkval0(kk, 1:i0) = stats%stkval(kk, 1:i0) !;stats%stkval0(kk,i0+1: )=0.0_wp
         End Do
@@ -2132,7 +2170,7 @@ Contains
 
   End Subroutine statistics_connect_set
 
-  Subroutine statistics_connect_spread(config, mdir, mxatdm, lmsd, stats, domain, comm)
+  Subroutine statistics_connect_spread(config, mdir, mxatdm, lmsd, dpd, stats, domain, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2153,7 +2191,7 @@ Contains
 
     Type(configuration_type), Intent(InOut) :: config
     Integer(Kind=wi),         Intent(In   ) :: mdir, mxatdm
-    Logical,                  Intent(In   ) :: lmsd
+    Logical,                  Intent(In   ) :: lmsd, dpd
     Type(stats_type),         Intent(InOut) :: stats
     Type(domains_type),       Intent(In   ) :: domain
     Type(comms_type),         Intent(InOut) :: comm
@@ -2551,7 +2589,7 @@ Contains
 
     Character(Len=STR_LEN)               :: message
     Character(Len=STR_LEN), Dimension(5) :: messages
-    Integer                              :: i, iadd, mxnstk
+    Integer                              :: i, iadd, mxnstk, strend
     Logical                              :: check
     Real(Kind=wp)                        :: avvol, dc, h_z, srmsd, timelp, tmp, tx, ty, prsunt0, tenunt0
 
@@ -2757,10 +2795,12 @@ Contains
 
       ! Some extra information - <P*V> term - only matters for NP/sT ensembles
 
+      strend = Merge (37, 73, thermo%key_dpd/=DPD_NULL)
+
       If (thermo%variable_cell) Then
         Write (message, "(a,1p,e12.4,5x,a,1p,e12.4)") &
-          "<P*V> term:            ", stats%sumval(37 + sites%ntype_atom + 2 * Merge(mxatdm, 0, lmsd)), &
-          " r.m.s. fluctuations:  ", stats%ssqval(37 + sites%ntype_atom + 2 * Merge(mxatdm, 0, lmsd))
+          "<P*V> term:            ", stats%sumval(strend + sites%ntype_atom + 2 * Merge(mxatdm, 0, lmsd)), &
+          " r.m.s. fluctuations:  ", stats%ssqval(strend + sites%ntype_atom + 2 * Merge(mxatdm, 0, lmsd))
         Call info(message, .true.)
       End If
 
@@ -2811,6 +2851,83 @@ Contains
 
       iadd = iadd + 9
 
+      ! print out the separate contributions to pressure tensor if using DPD
+
+      If (thermo%key_dpd/=DPD_NULL .and. comm%idnode == 0) Then
+        Write (messages(1), '(a)') 'Pressure tensor (conservative contributions):'
+        If (stats%dpd_units) Then
+          Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (dpd_p)', 'r.m.s. fluctuations'
+        Else
+          Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (katms)', 'r.m.s. fluctuations'
+        End If
+        Call info(messages, 2, .true.)
+
+        Do i = iadd, iadd + 6, 3
+          Write (message, '(2x,1p,3e12.4,5x,3e12.4)') stats%sumval(i + 1:i + 3), stats%ssqval(i + 1:i + 3)
+          Call info(message, .true.)
+        End Do
+
+        Write (message, '(2x,a,1p,e12.4)') 'trace/3  ', (stats%sumval(iadd + 1) + &
+                                                         stats%sumval(iadd + 5) + stats%sumval(iadd + 9)) / 3.0_wp
+        Call info(message, .true.)
+        Call info('', .true.)
+        iadd = iadd + 9
+        Write (messages(1), '(a)') 'Pressure tensor (dissipative contributions):'
+        If (stats%dpd_units) Then
+          Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (dpd_p)', 'r.m.s. fluctuations'
+        Else
+          Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (katms)', 'r.m.s. fluctuations'
+        End If
+        Call info(messages, 2, .true.)
+
+        Do i = iadd, iadd + 6, 3
+          Write (message, '(2x,1p,3e12.4,5x,3e12.4)') stats%sumval(i + 1:i + 3), stats%ssqval(i + 1:i + 3)
+          Call info(message, .true.)
+        End Do
+
+        Write (message, '(2x,a,1p,e12.4)') 'trace/3  ', (stats%sumval(iadd + 1) + &
+                                                         stats%sumval(iadd + 5) + stats%sumval(iadd + 9)) / 3.0_wp
+        Call info(message, .true.)
+        Call info('', .true.)
+        iadd = iadd + 9
+        Write (messages(1), '(a)') 'Pressure tensor (random contributions):'
+        If (stats%dpd_units) Then
+          Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (dpd_p)', 'r.m.s. fluctuations'
+        Else
+          Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (katms)', 'r.m.s. fluctuations'
+        End If
+        Call info(messages, 2, .true.)
+
+        Do i = iadd, iadd + 6, 3
+          Write (message, '(2x,1p,3e12.4,5x,3e12.4)') stats%sumval(i + 1:i + 3), stats%ssqval(i + 1:i + 3)
+          Call info(message, .true.)
+        End Do
+
+        Write (message, '(2x,a,1p,e12.4)') 'trace/3  ', (stats%sumval(iadd + 1) + &
+                                                         stats%sumval(iadd + 5) + stats%sumval(iadd + 9)) / 3.0_wp
+        Call info(message, .true.)
+        Call info('', .true.)
+        iadd = iadd + 9
+        Write (messages(1), '(a)') 'Pressure tensor (kinetic contributions):'
+        If (stats%dpd_units) Then
+          Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (dpd_p)', 'r.m.s. fluctuations'
+        Else
+          Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (katms)', 'r.m.s. fluctuations'
+        End If
+        Call info(messages, 2, .true.)
+
+        Do i = iadd, iadd + 6, 3
+          Write (message, '(2x,1p,3e12.4,5x,3e12.4)') stats%sumval(i + 1:i + 3), stats%ssqval(i + 1:i + 3)
+          Call info(message, .true.)
+        End Do
+
+        Write (message, '(2x,a,1p,e12.4)') 'trace/3  ', (stats%sumval(iadd + 1) + &
+                                                         stats%sumval(iadd + 5) + stats%sumval(iadd + 9)) / 3.0_wp
+        Call info(message, .true.)
+        Call info('', .true.)
+        iadd = iadd + 9
+      End If
+      
       If (lmsd) iadd = iadd + 2 * mxatdm
 
       ! Write out estimated diffusion coefficients

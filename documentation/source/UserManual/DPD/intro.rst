@@ -166,21 +166,30 @@ which ensures that all interactions are switched off at the range
 
 In many DPD simulations, the stochastic and drag coefficients are often
 constant for all interactions, i.e. :math:`\sigma_{ij} \equiv \sigma`
-and :math:`\gamma_{ij} \equiv \gamma`, although this assumption does not
-have to apply. In DL_POLY_5 the :math:`\gamma_{ij}` coefficients may be
-supplied at the end of each specified vdw interaction potential as an
-additional parameter beyond the final one for the particular vdw potential form.
+and :math:`\gamma_{ij} \equiv \gamma`, although this assumption does *not*
+have to apply. The cutoff distances for the switching functions are 
+often set equal to those for the interaction itself, i.e. 
+:math:`r_{t,ij} = r_{c}`, although again this is not compulsory. In DL_POLY_5 
+the :math:`\gamma_{ij}` coefficients and :math:`r_{t,ij}` cutoff distances may be
+supplied at the end of each specified vdw interaction potential as 
+additional parameters beyond the final one for the particular vdw potential form. 
+(See the section on specifying :ref:`non-bonded interactions in the FIELD file <non-bonded_sec>` 
+for more details.) 
+
 For a DPD thermostat to work correctly all possible two body
-interactions must be defined and at least one value of :math:`\gamma_{ij} > 0`. 
-If a two body interaction is missing, DL_POLY_5 will first attempt to 
-derive it using mixing rules: the default may be overridden by user
-specification. However, if any :math:`\gamma_{ij} = 0` in the ``FIELD`` file
-or is missing and cannot be derived from mixing rules, DL_POLY_5 will check 
-for the existence of a global :math:`\gamma` value that may be optionally 
-supplied by the user in the ``CONTROL`` file using the `ensemble_dpd_drag` 
-directive: if this value is non-zero, this value will be used as an override. 
-Otherwise, if all :math:`\gamma_{ij}` are set to zero, DL_POLY_5 will shut 
-off the DPD thermostat and resort to an NVE ensemble. 
+interactions must be defined, including cutoff distances, and at least one 
+value of :math:`\gamma_{ij} > 0`. If a two body interaction is missing, 
+DL_POLY_5 will first attempt to derive it using mixing rules: the default may 
+be overridden by user specification. However, if any :math:`\gamma_{ij} = 0` 
+in the ``FIELD`` file or is missing and cannot be derived from mixing rules, 
+DL_POLY_5 will check for the existence of a global :math:`\gamma` value that 
+may be optionally supplied by the user in the ``CONTROL`` file using the 
+**ensemble_dpd_drag** directive: if this value is non-zero, this value will be 
+used as an override. Otherwise, if all :math:`\gamma_{ij}` are set to zero, 
+DL_POLY_5 will shut off the DPD thermostat and resort to an NVE ensemble. 
+If no thermostat cutoff distances are supplied and they cannot be obtained
+from vdw interactions, DL_POLY_5 will use the maximum vdw cutoff distance as
+an override.
 
 Equation of State and Dynamic Properties
 ----------------------------------------

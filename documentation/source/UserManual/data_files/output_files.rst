@@ -527,7 +527,15 @@ of statistics is given. Then the averages over the production portion of
 the run are given for the variables described in the previous section.
 The root mean square variation in these variables follow on the next two
 lines. The :index:`energy<units;DL_POLY>` and :index:`pressure<units;pressure>` 
-units are as for the preceding section.
+units are as for the preceding section. 
+
+The Cauchy stress or pressure tensor is then provided, giving average values 
+and root mean squared variations for all nine components, all in units of
+pressure. If a DPD thermostat was in use, separated pressure tensors 
+resulting from conservative (configurational), dissipative, random and 
+kinetic contributions are then provided: again the mean values for each
+component and the root mean squared variations are displayed in pressure 
+units. 
 
 Also provided in this section are estimates of the diffusion coefficient
 and the mean square displacement for the different atomic species in the
@@ -536,7 +544,7 @@ therefore approximate. Accurate determinations of the diffusion
 coefficients can be obtained using the ``msd`` utility program, which
 processes the HISTORY file (see User Manual).
 
-If an NPT (N:math:`\mat{\sigma}`\ T) simulation is performed the OUTPUT
+If an NPT (N\ :math:`\sigma`\ T) simulation is performed the OUTPUT
 file also provides the mean pressure (and stress tensor in pressure
 units as density) and mean simulation cell vectors. In case when
 extended N\ :math:`\underline{\underline{\mathbf{\sigma}}}`\ T ensembles are used then further mean
@@ -918,6 +926,7 @@ array elements required (determined by the parameter ``mxnstk`` in the
 
      \begin{aligned}
      \texttt{mxnstk} \ge ~& 28 + 9~(\rm stress~tensor~elements) ~+ \nonumber \\
+      & 36~(\rm separated~stress~tensor~elements) ~+ \nonumber \\
       & \texttt{ntpatm}~(\rm number~of~unique~atomic~sites) ~+ \nonumber \\
       & 10~(\rm if~constant~pressure~simulation~requested) ~+ \nonumber \\
       & 2~(\rm if~iso~>~0~requested) + 2~(\rm if~iso~>~1~requested) ~+ \nonumber \\
@@ -977,6 +986,25 @@ information of calculated *instantaneous* observables is:
   ``stress(4)``     real      yx component of stress tensor
   ``...``           real      ...
   ``stress(9)``     real      zz component of stress tensor
+  **the next 36 entries for separated contributions of the stress tensor in pressure units - if a simulation with DPD is undertaken**
+  ``strcon(1)``     real      xx component of conservative contribution to stress tensor
+  ``strcon(2)``     real      xy component of conservative contribution to stress tensor
+  ``strcon(3)``     real      xz component of conservative contribution to stress tensor
+  ``strcon(4)``     real      yx component of conservative contribution to stress tensor
+  ``...``           real      ...
+  ``strcon(9)``     real      zz component of conservative contribution to stress tensor
+  ``strdis(1)``     real      xx component of dissipative contribution to stress tensor
+  ``strdis(2)``     real      xy component of dissipative contribution to stress tensor
+  ``...``           real      ...
+  ``strdis(9)``     real      zz component of dissipative contribution to stress tensor
+  ``strran(1)``     real      xx component of random contribution to stress tensor
+  ``strran(2)``     real      xy component of random contribution to stress tensor
+  ``...``           real      ...
+  ``strran(9)``     real      zz component of random contribution to stress tensor
+  ``strkin(1)``     real      xx component of kinetic contribution to stress tensor
+  ``strkin(2)``     real      xy component of kinetic contribution to stress tensor
+  ``...``           real      ...
+  ``strkin(9)``     real      zz component of kinetic contribution to stress tensor
   **the next ``ntpatm`` entries**
   ``amsd(1)``       real      mean squared displacement of first atom types
   ``amsd(2)``       real      mean squared displacement of second atom types

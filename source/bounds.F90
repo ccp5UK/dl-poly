@@ -63,7 +63,8 @@ Module bounds
                              TERS_TERSOFF,&
                              tersoff_type
   Use tethers,         Only: tethers_type
-  Use thermostat,      Only: thermostat_type
+  Use thermostat,      Only: thermostat_type,&
+                             DPD_NULL
   Use three_body,      Only: threebody_type
   Use ttm,             Only: ttm_setup_bounds,&
                              ttm_type
@@ -86,7 +87,7 @@ Contains
        neigh, vdws, tersoffs, fourbody, rdf, mpoles, ext_field, &
        rigid, electro, domain, config, ewld, kim_data, files, flow, comm, &
        xhi, yhi, zhi, megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, &
-       mtshl, mtteth, link_cell, ff)
+       mtshl, mtteth, link_cell, dpd, ff)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -138,6 +139,7 @@ Contains
     Integer,                   Intent(In   ) :: megatm, mtangl, mtbond, mtcons, mtdihd, mtinv, mtrgd, &
          mtshl, mtteth
     Integer, Dimension(3),     Intent(  Out) :: link_cell
+    Logical,                   Intent(In   ) :: dpd
     Integer,                   Intent(In   ) :: ff
 
     Character(Len=STR_LEN) :: message,messages(2)
@@ -203,7 +205,7 @@ Contains
 
     Call setup_buffers(config%dvar, dens, dens0, megatm, link_cell, mxgrid, config, domain, stats, neigh, &
        green, site, cshell, cons, pmf, rdf, rigid, tether, bond, angle, dihedral, inversion, zdensity, ewld, mpoles, &
-       electro%no_elec, msd_data%l_msd, comm)
+       electro%no_elec, msd_data%l_msd, dpd, comm)
 
     ! reset (increase) link-cell maximum (neigh%max_cell)
     ! if tersoff or three- or four-body potentials exist
@@ -416,7 +418,7 @@ Contains
     Call setup_buffers(fdvar, dens, dens0, megatm, link_cell, mxgrid, config, domain, stats, neigh, &
                        green, site, cshell, cons, pmf, rdf, rigid, tether, bond, angle, dihedral, inversion, &
                        zdensity, ewld, mpoles, &
-                       electro%no_elec, msd_data%l_msd, comm)
+                       electro%no_elec, msd_data%l_msd, (thermo%key_dpd/=DPD_NULL), comm)
 
     ! reset (increase) link-cell maximum (neigh%max_cell)
     ! if tersoff or three- or four-body potentials exist
@@ -851,7 +853,7 @@ Contains
   Subroutine setup_buffers(fdvar, maximum_local_density, maximum_domain_density, megatm, link_cell, max_grid, &
                            config, domain, stats, neigh, green, site, cshell, cons, pmf, rdf, &
                            rigid, tether, bond, angle, dihedral, inversion, zdensity, ewld, mpoles, &
-                           no_elec, msd, comm)
+                           no_elec, msd, dpd, comm)
     Real(Kind=wp),            Intent(In   ) :: fdvar, maximum_local_density, maximum_domain_density
     Integer,                  Intent(In   ) :: megatm
     Integer, Dimension(3),    Intent(In   ) :: link_cell
@@ -875,7 +877,7 @@ Contains
     Type(z_density_type),     Intent(In   ) :: zdensity
     Type(ewald_type),         Intent(InOut) :: ewld
     Type(mpole_type),         Intent(In   ) :: mpoles
-    Logical,                  Intent(In   ) :: no_elec, msd
+    Logical,                  Intent(In   ) :: no_elec, msd, dpd
     Type(comms_type),         Intent(In   ) :: comm
 
     Real(Kind=wp), Parameter :: bigint_r = Real(Huge(1), wp)
@@ -1000,10 +1002,11 @@ Contains
     stats%mxstak = Max(100, stats%mxstak)
 
     ! maximum number of variables in stack arrays
-    ! update number if the MSD option is used, 51=1+27+...+9+9+1+2+2
+    ! update number if the DPD and/or MSD options are used, 51=1+27+...+9+9+1+2+2
     ! consult statistic_collect for more information
 
     stats%mxnstk = 51 + site%mxatyp
+    If (dpd) stats%mxnstk = stats%mxnstk + 36
     If (msd) stats%mxnstk = stats%mxnstk + 2 * config%mxatdm
 
     ! maximum dimensions of transfer buffers)))
