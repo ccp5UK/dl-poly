@@ -177,6 +177,9 @@ Contains
 ! use electrostatic, only : electrostatic_type
 !    use mpoles_container, only : limit_erfr_deriv
 
+    If (Present(mpoles)) Then
+      Call error(0, 'Ewald multiples have been disabled due to issues with their prior implementation.')
+    End If
     If (.not. spme_datum%initialised) &
       & Call error(0, 'SPME datum -- '//spme_datum%name//' -- not initialised in spme_self_interaction')
 
