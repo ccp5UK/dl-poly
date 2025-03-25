@@ -130,7 +130,7 @@ Contains
 
     If (pois%normb > zero_plus) Then
       Call P_solver_omp(pois, comm)
-      Call biCGStab_calc_forces(eng, virr, strs, pois, config, comm)
+      Call biCGStab_calc_forces(eng, virr, strs, pois, config)
     Else
       Call error(0, 'pois%normb too small')
     End If
@@ -838,13 +838,12 @@ Contains
 
   End Subroutine Adot_omp
 
-  Subroutine biCGStab_calc_forces(cenergy, vir, stress, pois, config, comm)
+  Subroutine biCGStab_calc_forces(cenergy, vir, stress, pois, config)
 
     !! This routine has no header !
     Real(Kind=wp),            Intent(InOut) :: cenergy, vir, stress(1:9)
     Type(poisson_type),       Intent(InOut) :: pois
     Type(configuration_type), Intent(InOut) :: config
-    Type(comms_type),         Intent(InOut) :: comm
 
     Integer       :: i, ii, j, jj, k, kk, n
     Real(Kind=wp) :: cfxx, cfyy, cfzz, det, r8veps0, rcell(1:9), reps0dv, txx, tyy, tzz, uenergy
@@ -924,108 +923,6 @@ Contains
 
   End Subroutine biCGStab_calc_forces
 
-  Subroutine Write_potential(pois, domain)
-    !! This routine has no header !
-    Type(poisson_type), Intent(InOut) :: pois
-    Type(domains_type), Intent(In   ) :: domain
-
-    Character(len=128) :: filename, line
-    Integer            :: kk, kpk, kpkp, ounit, tt
-
-    ounit = 39
-    line = "pot"
-    Write (filename, '(a,i1,i1,i1,a)') Trim(Adjustl(line)), domain%idx, domain%idy, domain%idz, ".dx"
-    Open (Unit=ounit, File=Trim(Adjustl(filename)), Status='replace')
-    Write (ounit, '(a,1x,I7,1x,I7,1x,I7)') "object 1 class gridpositions counts ", pois%block_x, pois%block_y, pois%block_z
-    Write (ounit, '(a,1x,f9.3,1x,f9.3,1x,f9.3)') "origin ", &
-      Real(domain%idx * (pois%grid_dimensions(1) / domain%nx), wp) * pois%delta, &
-      Real(domain%idy * (pois%grid_dimensions(2) / domain%ny), wp) * pois%delta, &
-      Real(domain%idz * (pois%grid_dimensions(3) / domain%nz), wp) * pois%delta
-    Write (ounit, '(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/pois%delta, 0.0_wp, 0.0_wp/)
-    Write (ounit, '(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/0.0_wp, pois%delta, 0.0_wp/)
-    Write (ounit, '(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/0.0_wp, 0.0_wp, pois%delta/)
-    Write (ounit, '(a,I5,1x,I5,1x,I5)') "object 2 class gridconnections counts ", pois%block_x, pois%block_y, pois%block_z
-    Write (ounit, '(a,1x,I20,1x,a)') 'object 3 class array type Double rank 0 items ', &
-      &pois%block_x * pois%block_y * pois%block_z, 'data follows'
-
-    tt = 0
-    line = ''
-    Do kpkp = 1, pois%block_x
-      Do kk = 1, pois%block_y
-        Do kpk = 1, pois%block_z
-          Write (line, "(a,3E15.5)") Trim(line), Real(pois%phi(kpkp, kk, kpk), 4)
-          tt = tt + 1
-          If (Mod(tt, 3) == 0) Then
-            Write (ounit, '(a)') Trim(Adjustl(line))
-            line = ''
-            tt = 0
-          End If
-        End Do
-      End Do
-    End Do
-
-    Write (ounit, '(a)') Trim(Adjustl(line))
-    Write (ounit, '(a)') 'attribute "dep" string "positions"'
-    Write (ounit, '(a)') 'object "PME potential (kT/e, T=300K)" class field'
-    Write (ounit, '(a)') 'component "positions" value 1'
-    Write (ounit, '(a)') 'component "connections" value 2'
-    Write (ounit, '(a)') 'component "data" value 3'
-
-    Close (Unit=ounit)
-
-  End Subroutine Write_potential
-
-  Subroutine Write_b(pois, domain)
-    !! This routine has no header !
-    Type(poisson_type), Intent(InOut) :: pois
-    Type(domains_type), Intent(In   ) :: domain
-
-    Character(len=128) :: filename, line
-    Integer            :: kk, kpk, kpkp, ounit, tt
-
-    ounit = 39
-    line = "pois%b"
-    Write (filename, '(a,i1,i1,i1,a)') Trim(Adjustl(line)), domain%idx, domain%idy, domain%idz, ".dx"
-    Open (Unit=ounit, File=Trim(Adjustl(filename)), Status='replace')
-    Write (ounit, '(a,1x,I7,1x,I7,1x,I7)') "object 1 class gridpositions counts ", pois%block_x, pois%block_y, pois%block_z
-    Write (ounit, '(a,1x,f9.3,1x,f9.3,1x,f9.3)') "origin ", &
-      Real(domain%idx * (pois%grid_dimensions(1) / domain%nx), wp) * pois%delta, &
-      Real(domain%idy * (pois%grid_dimensions(2) / domain%ny), wp) * pois%delta, &
-      Real(domain%idz * (pois%grid_dimensions(3) / domain%nz), wp) * pois%delta
-    Write (ounit, '(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/Real(pois%delta), 0.0, 0.0/)
-    Write (ounit, '(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/0.0, Real(pois%delta), 0.0/)
-    Write (ounit, '(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/0.0, 0.0, Real(pois%delta)/)
-    Write (ounit, '(a,I5,1x,I5,1x,I5)') "object 2 class gridconnections counts ", pois%block_x, pois%block_y, pois%block_z
-    Write (ounit, '(a,1x,I20,1x,a)') 'object 3 class array type Double rank 0 items ', &
-      &pois%block_x * pois%block_y * pois%block_z, 'data follows'
-
-    tt = 0
-    line = ''
-    Do kpkp = 1, pois%block_x
-      Do kk = 1, pois%block_y
-        Do kpk = 1, pois%block_z
-          Write (line, "(a,3E15.5)") Trim(line), Real(pois%b(kpkp, kk, kpk), 4)
-          tt = tt + 1
-          If (Mod(tt, 3) == 0) Then
-            Write (ounit, '(a)') Trim(Adjustl(line))
-            line = ''
-            tt = 0
-          End If
-        End Do
-      End Do
-    End Do
-
-    Write (ounit, '(a)') Trim(Adjustl(line))
-    Write (ounit, '(a)') 'attribute "dep" string "positions"'
-    Write (ounit, '(a)') 'object "PME potential (kT/e, T=300K)" class field'
-    Write (ounit, '(a)') 'component "positions" value 1'
-    Write (ounit, '(a)') 'component "connections" value 2'
-    Write (ounit, '(a)') 'component "data" value 3'
-
-    Close (Unit=ounit)
-
-  End Subroutine Write_b
-
   Function dPhidX(i, j, k, pois) Result(dphi)
 
     Integer,            Intent(In   ) :: i, j, k
@@ -1094,36 +991,6 @@ Contains
     dphi = dphi / (par4 * pois%delta)
 
   End Function dPhidZ
-
-  Function d2PhidX2(i, j, k, pois) Result(dphi)
-
-    Integer,            Intent(In   ) :: i, j, k
-    Type(poisson_type), Intent(InOut) :: pois
-    Real(Kind=wp)                     :: dphi
-
-   dphi = (pois%phi(i + 2, j, k) + pois%phi(i - 1, j, k) - pois%phi(i + 1, j, k) - pois%phi(i - 2, j, k)) / (3.0_wp * pois%delta**2)
-
-  End Function d2PhidX2
-
-  Function d2PhidY2(i, j, k, pois) Result(dphi)
-
-    Integer,            Intent(In   ) :: i, j, k
-    Type(poisson_type), Intent(InOut) :: pois
-    Real(Kind=wp)                     :: dphi
-
-   dphi = (pois%phi(i, j + 2, k) + pois%phi(i, j - 1, k) - pois%phi(i, j + 1, k) - pois%phi(i, j - 2, k)) / (3.0_wp * pois%delta**2)
-
-  End Function d2PhidY2
-
-  Function d2PhidZ2(i, j, k, pois) Result(dphi)
-
-    Integer,            Intent(In   ) :: i, j, k
-    Type(poisson_type), Intent(InOut) :: pois
-    Real(Kind=wp)                     :: dphi
-
-   dphi = (pois%phi(i, j, k + 2) + pois%phi(i, j, k - 1) - pois%phi(i, j, k + 1) - pois%phi(i, j, k - 2)) / (3.0_wp * pois%delta**2)
-
-  End Function d2PhidZ2
 
   Subroutine poisson_excl_forces(iatm, rcut, eps, xxt, yyt, zzt, rrt, engcpe_ex, vircpe_ex, stress, neigh, config)
 
