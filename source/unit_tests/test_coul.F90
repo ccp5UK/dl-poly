@@ -63,7 +63,7 @@ Contains
     electro%key = ELECTROSTATIC_COULOMB 
     electro%r_smear =  2.0_wp 
 
-    Call setup_fake_system(electro, neigh, stats, config)
+    Call setup_fake_system(neigh, stats, config)
 
     Allocate (xxt(1:neigh%max_list), yyt(1:neigh%max_list), zzt(1:neigh%max_list), rrt(1:neigh%max_list), Stat=fail)
     ! calculate interatomic distances
@@ -132,7 +132,7 @@ Contains
     electro%key = ELECTROSTATIC_DDDP
     electro%r_smear =  2.0_wp 
 
-    Call setup_fake_system(electro, neigh, stats, config)
+    Call setup_fake_system(neigh, stats, config)
 
     Allocate (xxt(1:neigh%max_list), yyt(1:neigh%max_list), zzt(1:neigh%max_list), rrt(1:neigh%max_list), Stat=fail)
     ! calculate interatomic distances
@@ -201,7 +201,7 @@ Contains
     electro%key = ELECTROSTATIC_COULOMB_FORCE_SHIFT
     electro%r_smear =  2.0_wp 
 
-    Call setup_fake_system(electro, neigh, stats, config)
+    Call setup_fake_system(neigh, stats, config)
 
     Allocate (xxt(1:neigh%max_list), yyt(1:neigh%max_list), zzt(1:neigh%max_list), rrt(1:neigh%max_list), Stat=fail)
     ! calculate interatomic distances
@@ -276,7 +276,7 @@ Contains
     electro%damp = .true.
     electro%damping = 1.0_wp 
     
-    Call setup_fake_system(electro, neigh, stats, config)
+    Call setup_fake_system(neigh, stats, config)
 
     Allocate (xxt(1:neigh%max_list), yyt(1:neigh%max_list), zzt(1:neigh%max_list), rrt(1:neigh%max_list), Stat=fail)
     ! calculate interatomic distances
@@ -351,7 +351,7 @@ Contains
     electro%r_smear =  2.0_wp
     electro%eps = 1.5_wp
 
-    Call setup_fake_system(electro, neigh, stats, config)
+    Call setup_fake_system(neigh, stats, config)
 
     Allocate (xxt(1:neigh%max_list), yyt(1:neigh%max_list), zzt(1:neigh%max_list), rrt(1:neigh%max_list), Stat=fail)
     ! calculate interatomic distances
@@ -427,7 +427,7 @@ Contains
     electro%damp = .true.
     electro%damping = 1.0_wp 
     
-    Call setup_fake_system(electro, neigh, stats, config)
+    Call setup_fake_system(neigh, stats, config)
 
     Allocate (xxt(1:neigh%max_list), yyt(1:neigh%max_list), zzt(1:neigh%max_list), rrt(1:neigh%max_list), Stat=fail)
     ! calculate interatomic distances
@@ -477,8 +477,7 @@ Contains
 
   End Subroutine test_reaction_field_damped
 
-  Subroutine setup_fake_system(elec, neigh, stats, config)
-    Type(electrostatic_type), Intent(InOut) :: elec 
+  Subroutine setup_fake_system(neigh, stats, config)
     Type(neighbours_type),    Intent(InOut) :: neigh
     Type(stats_type),         Intent(InOut) :: stats
     Type(configuration_type), Intent(InOut) :: config

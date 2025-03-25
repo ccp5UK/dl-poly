@@ -1,19 +1,19 @@
 Module test_mdpd_ld 
 
-  Use vdw, Only: vdw_type, VDW_MDPD
-  Use configuration, Only: configuration_type
-  Use domains, Only: domains_type
-  Use neighbours, Only: neighbours_type
-  Use comms, Only: comms_type
-  Use asserts, Only: assert
-  Use constants, Only: wp 
+  Use vdw,                 Only: vdw_type, VDW_MDPD
+  Use configuration,       Only: configuration_type
+  Use domains,             Only: domains_type
+  Use neighbours,          Only: neighbours_type
+  Use comms,               Only: comms_type
+  Use asserts,             Only: assert
+  Use constants,           Only: wp 
   Use two_body_potentials, Only: potential_holder
 
   Implicit None
   
   Real(kind=wp), Dimension(2), Parameter :: ones = 1.0_wp
-  Real(kind=wp), Parameter :: r = 1.0_wp
-  Integer :: tmp
+  Real(kind=wp),               Parameter :: r = 1.0_wp
+  Integer                                :: tmp
   Real(kind=wp), Dimension(7), Parameter :: params = [(real(tmp,wp), tmp=1,7)]
 
   Public :: run_mdpd_tests
@@ -21,23 +21,21 @@ Module test_mdpd_ld
 Contains 
 
   Subroutine run_mdpd_tests(passed) 
-    Logical, Intent(Out) :: passed 
+    Logical, Intent(Out) :: passed
     passed = .true.
     Call mdpd_ld_test(passed)
-
   End Subroutine run_mdpd_tests
 
   Subroutine mdpd_ld_test(passed)
     Use mdpd, Only: weight_rho
-    Logical, Intent(InOut) :: passed 
-    Type(vdw_type) :: vdws 
-    Type(configuration_type) :: config 
-    Type(comms_type) :: comm 
-    Type(neighbours_type) :: neigh 
-    Type(domains_type) :: domain
+    Logical, Intent(InOut) :: passed
+
+    Type(vdw_type)                       :: vdws 
+    Type(configuration_type)             :: config
+    Type(neighbours_type)                :: neigh
     Class(potential_holder), Allocatable :: pots(:)
-    Integer :: i, j, k, aj, ai, key
-    Real(Kind=wp) :: rho, xxt, yyt, zzt, rrr
+    Integer                              :: i, j, k, aj, ai, key
+    Real(Kind=wp)                        :: rho, xxt, yyt, zzt, rrr
 
     Call setup_fake_system(vdws, pots, neigh, config)
 
@@ -81,11 +79,12 @@ Contains
   End Subroutine 
 
   Subroutine setup_fake_system(test, pots, neigh, config)
-    Use two_body_potentials, Only : mdpd
-    Type(vdw_type), Intent(InOut) :: test
+    Use two_body_potentials, Only: mdpd
+
+    Type(vdw_type),                       Intent(InOut) :: test
     Class(potential_holder), Allocatable, Intent(InOut) :: pots(:)
-    Type(neighbours_type), Intent(InOut) :: neigh
-    Type(configuration_type), Intent(InOut) :: config
+    Type(neighbours_type),                Intent(InOut) :: neigh
+    Type(configuration_type),             Intent(InOut) :: config
 
     test%max_vdw = 1
     test%max_param = 7
