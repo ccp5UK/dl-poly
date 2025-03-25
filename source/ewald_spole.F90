@@ -81,11 +81,10 @@ Contains
     Real(Kind=wp), Dimension(1:neigh%max_list), Intent(In   ) :: x_pos, y_pos, z_pos, mod_dr_ij
     Real(Kind=wp),                              Intent(  Out) :: engcpe_rl, vircpe_rl
 
-    Integer                     :: global_id_i, global_id_j, jatm, m, nearest_sample_index
-    Real(Kind=wp)               :: atom_coeffs_i, difference, e_comp, erf_gamma, mod_r_ij, prefac
+    Integer                     :: global_id_i, global_id_j, jatm, m
+    Real(Kind=wp)               :: atom_coeffs_i, e_comp, erf_gamma, mod_r_ij, prefac
     Real(Kind=wp), Dimension(9) :: stress_temp, stress_temp_comp
-    Real(Kind=wp), Dimension(3) :: force_temp, force_temp_comp, points, pos_j
-    Real(Kind=wp), Dimension(2) :: temp
+    Real(Kind=wp), Dimension(3) :: force_temp, force_temp_comp, pos_j
 
 !! Current atom
 !! Atoms positions (neighbours, not global) and inter-particle separations

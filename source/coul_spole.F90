@@ -1,21 +1,21 @@
 Module coul_spole
-  Use kinds,           Only : wp
-  Use charge_smearing, Only : slater_exp_smearing_force, slater_exp_smearing_pot, &
+  Use kinds,           Only: wp
+  Use charge_smearing, Only: slater_exp_smearing_force, slater_exp_smearing_pot, &
                               slater_apprx_smearing_force, slater_apprx_smearing_pot, &
                               linear_smearing_force, linear_smearing_pot, smearing_correction, &
                               slater_exp_smearing, slater_apprx_smearing, linear_smearing
-  Use configuration,   Only : configuration_type
-  Use constants,       Only : r4pie0,zero_plus,sqrpi
-  Use errors_warnings, Only : error, error_alloc, error_dealloc
-  Use numerics,        Only : calc_erfc_n, calc_erfc_deriv_n
-  Use neighbours,      Only : neighbours_type
-  Use electrostatic,   Only : electrostatic_type, &
+  Use configuration,   Only: configuration_type
+  Use constants,       Only: r4pie0,zero_plus,sqrpi
+  Use errors_warnings, Only: error, error_alloc, error_dealloc
+  Use numerics,        Only: calc_erfc_n, calc_erfc_deriv_n
+  Use neighbours,      Only: neighbours_type
+  Use electrostatic,   Only: electrostatic_type, &
                               ELECTROSTATIC_SPME,ELECTROSTATIC_DDDP, &
                               ELECTROSTATIC_COULOMB,ELECTROSTATIC_COULOMB_FORCE_SHIFT, &
                               ELECTROSTATIC_COULOMB_REACTION_FIELD, SMEARING_SLATER_EXP, &
                               SMEARING_SLATER_TRUNCATED, SMEARING_GAUSSIAN, SMEARING_LINEAR, &
                               SMEARING_NULL
-  Use statistics,      Only : calculate_stress, stats_type
+  Use statistics,      Only: calculate_stress, stats_type
   Implicit None
 
   Private
@@ -111,14 +111,12 @@ Contains
     !!
     !!------------------------------------------------------------------------!
 
-    Real( Kind = wp ), Intent( In    ) :: chgprd,rcut,rrr,rsq
-    Real( Kind = wp ), Intent(   Out ) :: coul,fcoul
-    Logical,           Intent( InOut ) :: safe
-    Type( electrostatic_type ), Intent( InOut ) :: electro
+    Real(Kind=wp),            Intent(In   ) :: chgprd,rcut,rrr,rsq
+    Real(Kind=wp),            Intent(  Out) :: coul,fcoul
+    Logical,                  Intent(InOut) :: safe
+    Type(electrostatic_type), Intent(InOut) :: electro
 
-    Logical, save :: newjob = .true.
-
-    Real( Kind = wp ) :: exp1,tt,erc,fer
+    Real(Kind=wp)             :: erc,fer
     Type(smearing_correction) :: smear
 
     If (.not. electro%initialised) Then
@@ -247,21 +245,19 @@ Contains
     !!
     !!------------------------------------------------------------------------!
 
-    Integer,                                          Intent( In    ) :: iatm
-    Type( neighbours_type ),                          Intent( In    ) :: neigh
-    Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
-    Real( Kind = wp ),                                Intent(   Out ) :: engcpe,vircpe
-    Type( stats_type ),                               Intent( InOut ) :: stats
-    Type( electrostatic_type ),                       Intent( InOut ) :: electro
-    Type( configuration_type ),                       Intent( InOut ) :: config
-    Real( Kind = wp ), Dimension( 9 )                                 :: stress_temp, stress_temp_comp
-    Real( Kind = wp ), Dimension( 3 )                                 :: f_temp, x_temp
-    Real( Kind = wp ) :: coul
+    Integer,                                    Intent(In   ) :: iatm
+    Type(neighbours_type),                      Intent(In   ) :: neigh
+    Real(Kind=wp), Dimension(1:neigh%max_list), Intent(In   ) :: xxt,yyt,zzt,rrt
+    Real(Kind=wp),                              Intent(  Out) :: engcpe,vircpe
+    Type(stats_type),                           Intent(InOut) :: stats
+    Type(electrostatic_type),                   Intent(InOut) :: electro
+    Type(configuration_type),                   Intent(InOut) :: config
 
-    Integer           :: idi,jatm,m
-
-    Real( Kind = wp ) :: chgea,chgprd,rsq,rrr,egamma, &
-      fix,fiy,fiz,fx,fy,fz
+    Real(Kind=wp), Dimension(9) :: stress_temp, stress_temp_comp
+    Real(Kind=wp), Dimension(3) :: f_temp, x_temp
+    Real(Kind=wp)               :: coul,chgea,chgprd,rsq,rrr,egamma, &
+                                   fix,fiy,fiz,fx,fy,fz
+    Integer                     :: idi,jatm,m
 
     If (.not. electro%initialised) Then
       electro%initialised = .true.
@@ -471,23 +467,24 @@ Contains
     !!
     !!------------------------------------------------------------------------!
 
-    Integer,                                          Intent( In    ) :: iatm
-    Type( neighbours_type ),                          Intent( In    ) :: neigh
-    Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
-    Real( Kind = wp ),                                Intent(   Out ) :: engcpe,vircpe
-    Type( stats_type ),                               Intent( InOut ) :: stats
-    Type( electrostatic_type ),                       Intent( InOut ) :: electro
-    Type( configuration_type ),                       Intent( InOut ) :: config
-    Real( Kind = wp ), Dimension( 9 )                                 :: stress_temp, stress_temp_comp
-    Real( Kind = wp ), Dimension( 3 )                                 :: x_temp, f_temp       
-    Real( Kind = wp ) :: coul
+    Integer,                                               Intent(In   ) :: iatm
+    Type(neighbours_type),                                 Intent(In   ) :: neigh
+    Real(Kind=wp),            Dimension(1:neigh%max_list), Intent(In   ) :: xxt,yyt,zzt,rrt
+    Real(Kind=wp),                                         Intent(  Out) :: engcpe,vircpe
+    Type(stats_type),                                      Intent(InOut) :: stats
+    Type(electrostatic_type),                              Intent(InOut) :: electro
+    Type(configuration_type),                              Intent(InOut) :: config
+
+    Real(Kind=wp), Dimension(9) :: stress_temp, stress_temp_comp
+    Real(Kind=wp), Dimension(3) :: x_temp, f_temp       
+    Real(Kind=wp)               :: coul
 
     !> Intermediate reaction field variable
-    ! Real( Kind = wp ) :: b0
+    ! Real(Kind=wp) :: b0
 
     Integer           :: idi,jatm,m
 
-    Real( Kind = wp ) :: chgea,chgprd,rsq,rrr,egamma, &
+    Real(Kind=wp) :: chgea,chgprd,rsq,rrr,egamma, &
       fix,fiy,fiz,fx,fy,fz
 
     If (.not. electro%initialised) Then
@@ -696,13 +693,13 @@ Contains
     !!
     !!------------------------------------------------------------------------!
 
-    Integer,                                      Intent(In   ) :: iatm
-    Type(electrostatic_type),                     Intent(In   ) :: electro
-    Type(neighbours_type),                        Intent(In   ) :: neigh
-    Real(Kind=wp), Dimension(1:neigh%max_list),   Intent(In   ) :: xxt,yyt,zzt,rrt
-    Real(Kind=wp),                                Intent(  Out) :: engcpe,vircpe
-    Type(stats_type),                             Intent(InOut) :: stats
-    Type(configuration_type),                     Intent(InOut) :: config
+    Integer,                                               Intent(In   ) :: iatm
+    Type(electrostatic_type),                              Intent(In   ) :: electro
+    Type(neighbours_type),                                 Intent(In   ) :: neigh
+    Real(Kind=wp),            Dimension(1:neigh%max_list), Intent(In   ) :: xxt,yyt,zzt,rrt
+    Real(Kind=wp),                                         Intent(  Out) :: engcpe,vircpe
+    Type(stats_type),                                      Intent(InOut) :: stats
+    Type(configuration_type),                              Intent(InOut) :: config
 
     Real(Kind=wp), Dimension(9)    :: stress_temp, stress_temp_comp
     Real(Kind=wp), Dimension(3)    :: x_temp, f_temp       
@@ -882,18 +879,18 @@ Contains
     !!
     !!------------------------------------------------------------------------!
 
-    Integer,                                      Intent(In   ) :: iatm
-    Type(electrostatic_type),                     Intent(In   ) :: electro
-    Type(neighbours_type ),                       Intent(In   ) :: neigh
-    Real(Kind=wp), Dimension(1:neigh%max_list),   Intent(In   ) :: xxt,yyt,zzt,rrt
-    Real(Kind=wp),                                Intent(  Out) :: engcpe,vircpe
-    Type(stats_type),                             Intent(InOut) :: stats
-    Type(configuration_type),                     Intent(InOut) :: config
+    Integer,                                               Intent(In   ) :: iatm
+    Type(electrostatic_type),                              Intent(In   ) :: electro
+    Type(neighbours_type),                                 Intent(In   ) :: neigh
+    Real(Kind=wp),            Dimension(1:neigh%max_list), Intent(In   ) :: xxt,yyt,zzt,rrt
+    Real(Kind=wp),                                         Intent(  Out) :: engcpe,vircpe
+    Type(stats_type),                                      Intent(InOut) :: stats
+    Type(configuration_type),                              Intent(InOut) :: config
     
     Real(Kind=wp), Dimension(9)  :: stress_temp, stress_temp_comp
     Real(Kind=wp), Dimension(3)  :: x_temp, f_temp       
     Integer                      :: idi,jatm,m
-    Real( Kind = wp )            :: chgea,chgprd,rrr,rsq,coul,fcoul, &
+    Real(Kind=wp)                :: chgea,chgprd,rrr,rsq,coul,fcoul, &
                                     fix,fiy,fiz,fx,fy,fz
     Type(smearing_correction)    :: smear
 
