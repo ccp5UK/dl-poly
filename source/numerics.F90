@@ -1323,11 +1323,8 @@ Contains
   Subroutine scaling_matrix(cell_vec, scale_mat)
     !!----------------------------------------------------------------------!
     !!
-    !! Calculate the scaling matrix h from cell vectors, where
-    !!
-    !!      ||a|| ||b||\cos(\gamma) ||c||\cos(\beta)
-    !! h =  0     ||b||\sin(\gamma) (b\cdot c - b_xc_x)/b_y
-    !!      0     0                 \sqrt(||c||^2-c_x^2-c_y^2) 
+    !! Construct the scaling matrix h from cell vectors, where h has the
+    !! columns composed of the cell vectors a, b, c.
     !!
     !! author    - h.l.devereux jun 2024
     !!
@@ -1335,16 +1332,9 @@ Contains
     Real(Kind=wp), Dimension(1:9),      Intent(In   ) :: cell_vec
     Real(Kind=wp), Dimension(1:3, 1:3), Intent(  Out) :: scale_mat
 
-    Real(Kind=wp), Dimension(1:10) :: props
-    Real(Kind=wp) :: s_gamma, hyz, hzz 
-
-    Call dcell(cell_vec, props)
-    s_gamma = Sqrt(1.0_wp-props(4)**2)
-    hyz = (dot_product(cell_vec(4:6), cell_vec(7:9)) - cell_vec(4)*cell_vec(7))/cell_vec(5)
-    hzz = Sqrt(props(3)**2 - cell_vec(7)**2-cell_vec(8)**2)
-    scale_mat = Reshape((/props(1), 0.0_wp, 0.0_wp, &
-                  props(2)*props(4), props(2)*s_gamma, 0.0_wp, &
-                  props(3)*props(5), hyz, hzz/), [3,3])
+    scale_mat(1:3, 1) = cell_vec(1:3)
+    scale_mat(1:3, 2) = cell_vec(4:6)
+    scale_mat(1:3, 3) = cell_vec(7:9)
 
   End Subroutine scaling_matrix
 
