@@ -612,26 +612,26 @@ Contains
 
         thermo%ensemble = ENS_NVT_ANDERSON
 
-        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t, .true.)
         Call params%retrieve('ensemble_thermostat_softness', thermo%soft)
 
       Case ('berendsen')
 
         thermo%ensemble = ENS_NVT_BERENDSEN
 
-        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t, .true.)
 
       Case ('hoover', 'nose', 'nose-hoover')
 
         thermo%ensemble = ENS_NVT_NOSE_HOOVER
 
-        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t, .true.)
 
       Case ('gentle', 'gst')
 
         thermo%ensemble = ENS_NVT_GENTLE
 
-        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
+        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t, .true.)
         Call params%retrieve('ensemble_thermostat_friction', thermo%gama)
 
       Case ('ttm')
@@ -690,22 +690,22 @@ Contains
 
         thermo%ensemble = ENS_NPT_BERENDSEN
 
-        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
-        Call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
+        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t, .true.)
+        Call params%retrieve('ensemble_barostat_coupling', thermo%tau_p, .true.)
 
       Case ('hoover', 'nose', 'nose-hoover')
 
         thermo%ensemble = ENS_NPT_NOSE_HOOVER
 
-        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
-        Call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
+        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t, .true.)
+        Call params%retrieve('ensemble_barostat_coupling', thermo%tau_p, .true.)
 
       Case ('mtk')
 
         thermo%ensemble = ENS_NPT_MTK
 
-        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
-        Call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
+        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t, .true.)
+        Call params%retrieve('ensemble_barostat_coupling', thermo%tau_p, .true.)
 
       Case default
         Call bad_option('NPT ensemble_method', option)
@@ -730,22 +730,22 @@ Contains
 
         thermo%ensemble = ENS_NPT_BERENDSEN_ANISO
 
-        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
-        Call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
+        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t, .true.)
+        Call params%retrieve('ensemble_barostat_coupling', thermo%tau_p, .true.)
 
       Case ('hoover', 'nose', 'nose-hoover')
 
         thermo%ensemble = ENS_NPT_NOSE_HOOVER_ANISO
 
-        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
-        Call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
+        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t, .true.)
+        Call params%retrieve('ensemble_barostat_coupling', thermo%tau_p, .true.)
 
       Case ('mtk')
 
         thermo%ensemble = ENS_NPT_MTK_ANISO
 
-        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t)
-        Call params%retrieve('ensemble_barostat_coupling', thermo%tau_p)
+        Call params%retrieve('ensemble_thermostat_coupling', thermo%tau_t, .true.)
+        Call params%retrieve('ensemble_barostat_coupling', thermo%tau_p, .true.)
 
       Case default
         Call bad_option('NST ensemble method', option)
