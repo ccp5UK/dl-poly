@@ -563,6 +563,38 @@ Contains
     Read (word, '(i19)') word_2_integer
   End Function word_2_integer
 
+  !> Check if word is an integer.
+  Function is_integer(word)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_5 function to check if a string is an integer.
+    ! NB will fail if any character is not in "0123456789", except for
+    ! word(1:1) which may be "-". Use Trim, Adjustl.
+    !
+    ! author    - h.l.d March 2025
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Character(Len=*), Intent(In   ) :: word
+    Integer :: i
+    Logical :: is_integer
+
+    is_integer = .true.
+    If (Len(word) == 0) Then
+      is_integer = .false.
+      Return
+    End If
+    Do i = 1, Len(word)
+      If (Index("0123456789", word(i:i)) == 0) Then
+        If (i == 1 .and. word(1:1) /= "-") Then
+          is_integer = .false.
+          Return
+        Else If (i > 1) Then
+          is_integer = .false.
+        End If
+      End If
+    End Do
+  End Function is_integer
+
   Function word_2_real(word, def, report)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -116,6 +116,41 @@ Module control_parameters
 
 Contains
 
+  !> Right-pad a string with by (defaults to " ") to to_length.
+  Function r_pad(string, to_length, by) Result(padded)
+    Character(Len=*), Intent(In   )           :: string
+    Integer,          Intent(In   )           :: to_length
+    Character(Len=1), Intent(In   ), Optional :: by
+
+    Character(Len=:), Allocatable :: padded
+    Character(Len=1)              :: token
+
+    If (Len(string) >= to_length) Then
+      padded = string
+    Else
+      If (Present(by)) Then
+        token = by
+      Else
+        token = " "
+      End If
+      padded = string//Repeat(token, to_length-Len(string))
+    End If
+  End Function r_pad
+
+  Function elide(string, to_length) Result(elided)
+    Character(Len=*), Intent(In   ) :: string
+    Integer,          Intent(In   ) :: to_length
+
+    Character(Len=:), Allocatable :: elided
+
+    If (Len(string) <= to_length) Then
+      elided = string
+    Else
+      elided = string(1:to_length-3)//"..."
+    End If
+  End Function elide
+
+
   Elemental Logical Function is_vector(param)
       Class(control_parameter), Intent(In   ) :: param
       is_vector = param%data_type == DATA_FLOAT_VECTOR  .or. &
@@ -150,18 +185,39 @@ Contains
 
   End Subroutine control_help_all
 
-  Subroutine dump_parameters(ifile, params, mode)
-    Integer, Intent(In) :: ifile
-    Class(parameters_hash_table), Intent(In) :: params
-    Character(Len=10), Intent(In) :: mode
-    Type(control_parameter) :: param
-    Character(Len=MAX_KEY), Dimension(:), Allocatable :: keys
+  Subroutine dump_parameters(ifile, params, mode, out_width)
+    Integer,                      Intent(In   )           :: ifile
+    Class(parameters_hash_table), Intent(In   )           :: params
+    Character(Len=10),            Intent(In   )           :: mode
+    Integer,                      Intent(In   ), Optional :: out_width
 
-    Integer          :: i
-    Character(Len=8) :: vector_closing
-    Logical          :: has_units
+    Type(control_parameter)                           :: param
+    Character(Len=MAX_KEY), Dimension(:), Allocatable :: keys
+    Integer                                           :: i, column_widths(1:5), width
+    Character(Len=8)                                  :: vector_closing
+    Character(Len=STR_LEN*5)                          :: line
+    Logical                                           :: has_units
+
+    If (Present(out_width)) Then
+      width = Min(out_width, 5*STR_LEN)
+    Else
+      width = 0
+    End If
 
     Call params%get_keys(keys)
+
+    column_widths = 0
+    Do i = 1, params%used_keys
+      Call params%get(keys(i), param)
+      column_widths(1) = Max(column_widths(1), Len(Trim(param%key)))
+      column_widths(2) = Max(column_widths(2), Len(Trim(data_name(param%data_type))))
+      column_widths(3) = Max(column_widths(3), Len(Trim(param%val)))
+      column_widths(4) = Max(column_widths(4), Len(Trim(param%units)))
+      column_widths(5) = Max(column_widths(5), Len(Trim(param%description)))
+    End Do
+    If (width == 0) Then
+      width = Sum(column_widths)+10
+    End If
 
     Select Case (mode)
     Case ('latexdoc')
@@ -178,7 +234,16 @@ Contains
     Case ('csv', 'test')
       Continue
     Case ('default')
-      Write (ifile, '(a)') 'Param | type | description | default value | unit '
+      Write (line, '(5(a,"| "))') r_pad("Param", column_widths(1)), &
+        r_pad("type", column_widths(2)), &
+        r_pad("default value", column_widths(3)), &
+        r_pad("unit", column_widths(4)), &
+        r_pad("description", column_widths(5))
+      If (Len(Trim(line)) > width) Then
+        Write (ifile, '(a)') elide(line, width)
+      Else
+        Write(ifile, '(a)') Trim(line)
+      End If
     Case Default
       Call error(0, 'Bad mode option '//Trim(mode))
     End Select
@@ -218,9 +283,17 @@ Contains
              '"', Trim(param%description), '"', &
              '"', Trim(param%val), '"', Trim(param%units)
       Case ('default')
-        Write (ifile, '(5(a,"| "))') &
-             Trim(param%key), Trim(data_name(param%data_type)), &
-             Trim(param%description), Trim(param%val), Trim(param%units)
+        Write (line, '(5(a,"| "))') &
+          r_pad(Trim(param%key), column_widths(1)), &
+          r_pad(Trim(data_name(param%data_type)), column_widths(2)), &
+          r_pad(Trim(param%val), column_widths(3)), &
+          r_pad(Trim(param%units), column_widths(4)), &
+          r_pad(Trim(param%description), column_widths(5))
+        If (Len(Trim(line)) > width) Then
+          Write (ifile, '(a)') elide(line, width)
+        Else
+          Write(ifile, '(a)') Trim(line)
+        End If
       Case ('python')
         If (is_vector(param)) Then
           If (has_units) Then

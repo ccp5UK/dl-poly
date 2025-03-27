@@ -73,6 +73,8 @@ Program dl_poly
   Use control,                                Only: initialise_control,&
                                                     read_control
   Use numerics,                               Only: seed_type
+  Use parse,                                  Only: word_2_integer,&
+                                                    is_integer
   Use plumed,                                 Only: plumed_type
   Use pmf,                                    Only: pmf_type
   Use poisson,                                Only: poisson_type
@@ -270,7 +272,7 @@ contains
 
     Character(len=1024) :: arg
     Character(Len=10) :: mode
-    Integer :: i
+    Integer :: i, j
 
     output_filename = ''
     control_filename = ''
@@ -289,8 +291,9 @@ contains
           Write (eu, '(a)') "Usage: "//Trim(arg)//" [-h] [-V] [-r] [-c <CONTROL_FILENAME>] [-o <OUTPUT_FILENAME>]"
           Write (eu, '(a)') "use -h to see this help and quit"
           Write (eu, '(a)') "use --version, -V to print version information and quit"
-          Write (eu, '(a)') "use --help, --keywords, -k  to see all keywords for control file"
+          Write (eu, '(a)') "use --keywords, -k  to see all keywords for control file"
           Write (eu, '(a)') "use --help <keyword> to see keyword info"
+          Write (eu, '(a)') "use --help [n] to print keyword table [line length n, defaults to 0 for full lines]" 
           Write (eu, '(a)') "use --control or -c <control.file> use the control file given"
           Write (eu, '(a)') "use --output or -o <output.file> print output in the output.file indicated"
           Write (eu, '(a)') "use -o SCREEN print output on the screen"
@@ -352,12 +355,15 @@ contains
         Case ('--help')
           i = i + 1
           Call get_command_argument(i, arg)
-          If (arg == '') Then
+          If (is_integer(Trim(arg))) Then
+            j = Int(word_2_integer(arg))
+            Call dump_parameters(ou, params, 'default   ', j)
+          Else If (arg == '') Then
             mode = 'default'
             Call dump_parameters(ou, params, mode)
           Else
             Call params%help(arg)
-          End IF
+          End If
           finish = .true.
           Exit parse_cmd
 

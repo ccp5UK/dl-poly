@@ -2,7 +2,7 @@ Module test_parse
 
     Use asserts,         Only: assert
     Use kinds,           Only: li
-    Use parse,           Only: word_2_integer
+    Use parse,           Only: word_2_integer, is_integer
 
     Implicit None
 
@@ -20,8 +20,20 @@ Module test_parse
         Do i = 0, 10
             bigint = ishft(bigint, i)
             Write (iword, '(i19)') bigint
+            Call assert(is_integer(Trim(Adjustl(iword))), "is_integer fail" , passed_accum = passed_all)
             Call assert(bigint == word_2_integer(iword), "word_2_integer fail", passed_accum = passed_all)
         End Do
+
+        Call assert(is_integer("9109272394"), "is_integer fail", passed_accum = passed_all)
+        Call assert(is_integer("0"), "is_integer fail", passed_accum = passed_all)
+        Call assert(is_integer("-1"), "is_integer fail", passed_accum = passed_all)
+        Call assert(is_integer("-392480"), "is_integer fail", passed_accum = passed_all)
+        Call assert(.not. is_integer("--230923"), "is_integer fail", passed_accum = passed_all)
+        Call assert(.not. is_integer("+230923"), "is_integer fail", passed_accum = passed_all)
+        Call assert(.not. is_integer("-dlfnaldkh"), "is_integer fail", passed_accum = passed_all)
+        Call assert(.not. is_integer("dfkasdhf"), "is_integer fail", passed_accum = passed_all)
+        Call assert(.not. is_integer(""), "is_integer fail", passed_accum = passed_all)
+        Call assert(.not. is_integer(" "), "is_integer fail", passed_accum = passed_all)
 
     End Subroutine run_parse_tests
 
