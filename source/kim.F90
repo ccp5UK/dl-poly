@@ -235,6 +235,9 @@ Contains
 !> Line number in the source file where error happened
 
     Write (line_str, '(i3)') line
+    ! gfortran-11 generates a -Wmaybe-uninitialized here for .error_message.
+    ! this was a bug, gfortran-12 does not generate this warning.
+    ! https://fortran-lang.discourse.group/t/warning-str-may-be-used-uninitialized/5539/3
     error_message = 'KIM error: '//Trim(message)//' line: '// &
                     Trim(Adjustl(line_str))//' file: '//FILE_NAME
     Call error(0, error_message, .true.)
@@ -252,6 +255,9 @@ Contains
 !> Line number in the source file
 
     Write (line_str, '(i3)') line
+    ! gfortran-11 generates a -Wmaybe-uninitialized here for .warning_message.
+    ! this was a bug, gfortran-12 does not generate this warning.
+    ! https://fortran-lang.discourse.group/t/warning-str-may-be-used-uninitialized/5539/3
     warning_message = 'KIM warning: '//Trim(message)//' line: '// &
                       Trim(Adjustl(line_str))//' file: '//FILE_NAME
     Call warning(warning_message, .true.)

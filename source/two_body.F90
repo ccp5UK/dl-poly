@@ -318,7 +318,7 @@ Contains
       Do ipot = 1, ewld%num_pots
 
         Call ewald_spme_forces_gen(ewld, ewld%spme_data(ipot), domain, config, comm, &
-          & vdw_coeffs(:, ipot), stats, engacc, viracc, tmr)
+          & vdw_coeffs(:, ipot), stats, engacc, viracc)
 
         engvdw_rc = engvdw_rc + engacc
         virvdw_rc = virvdw_rc + viracc

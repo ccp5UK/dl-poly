@@ -361,6 +361,12 @@ Contains
     Real(Kind=wp)               :: rtmp
     Real(Kind=wp), Allocatable  :: rtmpN(:)
 
+    ! These unused dummys must be defined for Write.
+    ! The associates suppress the -Wunused-dummy-argument
+    ! for these arguments.
+    Associate(iotype => iotype); End Associate
+    Associate(v_list => v_list); End Associate
+
     Select Case (param%data_type)
       Case (DATA_FLOAT)
         Read (param%val, *) rtmp

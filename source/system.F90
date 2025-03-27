@@ -1902,7 +1902,7 @@ Contains
 
   End Subroutine system_expand
 
-  Subroutine system_revive(rcut, nstep, time, sites, io, tmst, stats, devel, &
+  Subroutine system_revive(rcut, nstep, time, sites, tmst, stats, devel, &
                            green, thermo, bond, angle, dihedral, inversion, zdensity, rdf, config, &
                            files, comm)
 
@@ -1927,7 +1927,6 @@ Contains
     Integer,                  Intent(In   ) :: nstep
     Real(Kind=wp),            Intent(In   ) :: time
     Type(site_type),          Intent(InOut) :: sites
-    Type(io_type),            Intent(InOut) :: io
     Real(Kind=wp),            Intent(In   ) :: tmst
     Type(stats_type),         Intent(InOut) :: stats
     Type(development_type),   Intent(In   ) :: devel

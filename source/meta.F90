@@ -642,7 +642,7 @@ Contains
         Call write_config(config(ff), files(frevc), 2, flow%step, thermo(ff)%tstep, ios, flow%time, comm)
       End Do
 
-      Call system_revive(neigh(1)%cutoff, flow%step, flow%time, sites(1), ios, flow%start_time, stats(1), &
+      Call system_revive(neigh(1)%cutoff, flow%step, flow%time, sites(1), flow%start_time, stats(1), &
                          devel, green(1), thermo(1), bond(1), angle(1), dihedral(1), inversion(1), zdensity(1), rdf(1), config(1), &
                          files, comm)
       If (ttms(1)%l_ttm) Then

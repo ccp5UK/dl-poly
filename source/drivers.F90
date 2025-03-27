@@ -2006,7 +2006,6 @@ Contains
     Integer(Kind=wi)            :: ff
     Logical                     :: fregauss
     Type(evb_type)              :: evbff
-    Character(Len=STR_LEN)      :: msg
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV_EVB INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
@@ -2245,7 +2244,7 @@ Contains
         ! Save restart data in event of system crash
         If (Mod(flow%step, flow%freq_restart) == 0 .and. flow%step /= flow%run_steps .and. (.not. devel%l_tor)) Then
           ! Only print the data from FIELD 1
-          Call system_revive(neigh(1)%cutoff, flow%step, flow%time, sites(1), io, flow%start_time, &
+          Call system_revive(neigh(1)%cutoff, flow%step, flow%time, sites(1), flow%start_time, &
                              stat(1), devel, green(1), thermo(1), bond(1), angle(1), dihedral(1), inversion(1), zdensity, rdf(1), &
                              cnfig(1), files, comm)
           Call write_config(cnfig(1), files(FILE_REVCON), 2, flow%step, thermo(1)%tstep, io, flow%time, comm)
@@ -2646,7 +2645,7 @@ Contains
           ! Save restart data in event of system crash
 
           If (Mod(nstph, flow%freq_restart) == 0 .and. nstph /= flow%run_steps .and. (.not. devel%l_tor)) Then
-            Call system_revive(neigh%cutoff, flow%step, flow%time, sites, io, flow%start_time, &
+            Call system_revive(neigh%cutoff, flow%step, flow%time, sites, flow%start_time, &
                                stat, devel, green, thermo, bond, angle, dihedral, inversion, zdensity, &
                                rdf, cnfig, files, comm)
           End If
@@ -2718,7 +2717,7 @@ Contains
     ! Save restart data because of next action (and disallow the same in dl_poly)
 
     If (.not. devel%l_tor) Then
-      Call system_revive(neigh%cutoff, flow%step, flow%time, sites, io, flow%start_time, stat, &
+      Call system_revive(neigh%cutoff, flow%step, flow%time, sites, flow%start_time, stat, &
                          devel, green, thermo, bond, angle, dihedral, inversion, zdensity, rdf, &
                          cnfig, files, comm)
     End If
@@ -3050,7 +3049,7 @@ Contains
           ! Save restart data in event of system crash
 
           If (Mod(nstph, flow%freq_restart) == 0 .and. nstph /= flow%run_steps .and. (.not. devel%l_tor)) Then
-            Call system_revive(neigh%cutoff, flow%step, flow%time, sites, io, flow%start_time, &
+            Call system_revive(neigh%cutoff, flow%step, flow%time, sites, flow%start_time, &
                                stat, devel, green, thermo, bond, angle, dihedral, inversion, zdensity, &
                                rdf, cnfig, files, comm)
           End If
@@ -3122,7 +3121,7 @@ Contains
     ! Save restart data because of next action (and disallow the same in dl_poly)
 
     If (.not. devel%l_tor) Then
-      Call system_revive(neigh%cutoff, flow%step, flow%time, sites, io, flow%start_time, stat, &
+      Call system_revive(neigh%cutoff, flow%step, flow%time, sites, flow%start_time, stat, &
                          devel, green, thermo, bond, angle, dihedral, inversion, zdensity, rdf, &
                          cnfig, files, comm)
     End If

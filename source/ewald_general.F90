@@ -280,7 +280,7 @@ Contains
   End Subroutine ewald_real_forces_gen
 
   Subroutine ewald_spme_forces_gen(ewld, spme_datum, domain, config, comm, coeffs, stats, &
-    & engcpe_rc, vircpe_rc, tmr)
+    & engcpe_rc, vircpe_rc)
     !!----------------------------------------------------------------------!
     !!
     !! dl_poly_4 subroutine for calculating coulombic energy and force terms
@@ -302,7 +302,6 @@ Contains
     Real(kind=wp), Dimension(:), Intent(In   ) :: coeffs
     Type(stats_type),            Intent(inout) :: stats
     Real(kind=wp),               Intent(  Out) :: engcpe_rc, vircpe_rc
-    Type(timer_type),            Intent(InOut) :: tmr
 
     Integer                                                 :: dim, i
     Integer, Allocatable, Dimension(:)                      :: to_calc
@@ -1063,7 +1062,7 @@ Contains
 
 !!! Kernels
 
-  Function potential_kernel(B_m, pot, pi_m_over_a, conv_factor, pot_order)
+  Function potential_kernel(B_m, pot, pi_m_over_a, pot_order)
     !!----------------------------------------------------------------------!
     !!
     !! Kernel for calculating energy and forces for SPME method
@@ -1075,7 +1074,6 @@ Contains
     Real(Kind=wp)    :: B_m
     Complex(Kind=wp) :: pot
     Real(Kind=wp)    :: pi_m_over_a
-    Real(kind=wp)    :: conv_factor
     Integer          :: pot_order
     Complex(Kind=wp) :: potential_kernel
 
