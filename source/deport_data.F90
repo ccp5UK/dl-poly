@@ -63,7 +63,8 @@ Module deport_data
   Use site,             Only: site_type
   Use statistics,       Only: stats_type
   Use tethers,          Only: tethers_type
-  Use thermostat,       Only: thermostat_type
+  Use thermostat,       Only: thermostat_type,&
+                              DPD_NULL
   Use timer,            Only: start_timer,&
                               stop_timer,&
                               timer_type
@@ -389,7 +390,7 @@ Contains
 
         If (lmsd) Then
           If (imove + 2 * (6 + stats%mxstak) <= iblock) Then
-            jj = 36 + 2 * i
+            jj = Merge (36, 72, thermo%key_dpd==DPD_NULL) + 2 * i
             buffer(imove + 1) = stats%stpvl0(jj - 1)
             buffer(imove + 2) = stats%stpvl0(jj)
             buffer(imove + 3) = stats%stpval(jj - 1)
@@ -872,8 +873,8 @@ Contains
       End If
 
       If (lmsd) Then
-        jj = 36 + 2 * i
-        j = 36 + 2 * keep
+        jj = Merge (36, 72, thermo%key_dpd==DPD_NULL) + 2 * i
+        j = Merge (36, 72, thermo%key_dpd==DPD_NULL) + 2 * keep
         stats%stpvl0(j - 1) = stats%stpvl0(jj - 1)
         stats%stpvl0(j) = stats%stpvl0(jj)
         stats%stpval(j - 1) = stats%stpval(jj - 1)
@@ -1046,7 +1047,7 @@ Contains
       ! unpack MSD arrays
 
       If (lmsd) Then
-        jj = 36 + 2 * newatm
+        jj = Merge (36, 72, thermo%key_dpd==DPD_NULL) + 2 * newatm
         stats%stpvl0(jj - 1) = buffer(kmove + 1)
         stats%stpvl0(jj) = buffer(kmove + 2)
         stats%stpval(jj - 1) = buffer(kmove + 3)

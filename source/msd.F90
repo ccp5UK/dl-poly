@@ -69,7 +69,7 @@ Module msd
   Public :: msd_write
 Contains
 
-  Subroutine msd_write(config, keyres, megatm, nstep, tstep, time, stpval, dof_site, io, msd_data, files, comm)
+  Subroutine msd_write(config, keyres, megatm, nstep, tstep, time, stpval, dof_site, io, msd_data, files, dpd, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -96,6 +96,7 @@ Contains
     Type(msd_type),              Intent(Inout) :: msd_data
     Type(file_type),             Intent(InOut) :: files(:)
     Type(comms_type),            Intent(InOut) :: comm
+    Logical,                     Intent(In   ) :: dpd
 
     Integer, Parameter :: recsz = 53
 
@@ -106,7 +107,7 @@ Contains
     Character(Len=8), Allocatable, Dimension(:)    :: chbuf
     Character(Len=recsz)                           :: record
     Integer                                        :: batsz, fail(1:2), fh, i, ierr, io_write, &
-                                                      jatms, jdnode, jj, k
+                                                      jatms, jdnode, jj, k, msdstart
     Integer(Kind=offset_kind)                      :: rec_mpi_io
     Integer, Allocatable, Dimension(:)             :: iwrk, n_atm
     Logical                                        :: lexist, ready, safe
@@ -117,6 +118,11 @@ Contains
 ! Some parameters and variables needed by io interfaces
 
     If (.not. (nstep >= msd_data%start .and. Mod(nstep - msd_data%start, msd_data%freq) == 0)) Return
+
+    ! find starting point in statistical array for MSDs 
+    ! (whether or not DPD thermostat/component stress tensors are in use)
+
+    msdstart = Merge (72, 36, dpd)
 
     ! Get write buffer size and line feed character
 
@@ -313,10 +319,10 @@ Contains
       Do i = 1, config%natms
         k = 2 * i
 
-        If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(36 + k) / (boltz * 3.0_wp)
+        If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(msdstart + k) / (boltz * 3.0_wp)
 
         Write (record, Fmt='(a8,i10,1p,2e13.4,a8,a1)') config%atmnam(i), &
-          config%ltg(i), Sqrt(stpval(36 + k - 1)), tmp, Repeat(' ', 8), lf
+          config%ltg(i), Sqrt(stpval(msdstart + k - 1)), tmp, Repeat(' ', 8), lf
         jj = jj + 1
         Do k = 1, recsz
           chbat(k, jj) = record(k:k)
@@ -368,9 +374,9 @@ Contains
           iwrk(i) = config%ltg(i)
           chbuf(i) = config%atmnam(i)
 
-          ddd(i) = Sqrt(stpval(36 + k - 1))
+          ddd(i) = Sqrt(stpval(msdstart + k - 1))
 
-          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(36 + k) / (boltz * 3.0_wp)
+          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(msdstart + k) / (boltz * 3.0_wp)
           eee(i) = tmp
         End Do
 
@@ -419,9 +425,9 @@ Contains
         Do i = 1, config%natms
           k = 2 * i
 
-          ddd(i) = Sqrt(stpval(36 + k - 1))
+          ddd(i) = Sqrt(stpval(msdstart + k - 1))
 
-          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(36 + k) / (boltz * 3.0_wp)
+          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(msdstart + k) / (boltz * 3.0_wp)
           eee(i) = tmp
         End Do
 
@@ -491,9 +497,9 @@ Contains
       Do i = 1, config%natms
         k = 2 * i
 
-        ddd(i) = Sqrt(stpval(36 + k - 1))
+        ddd(i) = Sqrt(stpval(msdstart + k - 1))
 
-        If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(36 + k) / (boltz * 3.0_wp)
+        If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(msdstart + k) / (boltz * 3.0_wp)
         eee(i) = tmp
       End Do
 
@@ -559,9 +565,9 @@ Contains
           iwrk(i) = config%ltg(i)
           chbuf(i) = config%atmnam(i)
 
-          ddd(i) = Sqrt(stpval(36 + k - 1))
+          ddd(i) = Sqrt(stpval(msdstart + k - 1))
 
-          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(36 + k) / (boltz * 3.0_wp)
+          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(msdstart + k) / (boltz * 3.0_wp)
           eee(i) = tmp
         End Do
 
@@ -599,9 +605,9 @@ Contains
         Do i = 1, config%natms
           k = 2 * i
 
-          ddd(i) = Sqrt(stpval(36 + k - 1))
+          ddd(i) = Sqrt(stpval(msdstart + k - 1))
 
-          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(36 + k) / (boltz * 3.0_wp)
+          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp = config%weight(i) * stpval(msdstart + k) / (boltz * 3.0_wp)
           eee(i) = tmp
         End Do
 

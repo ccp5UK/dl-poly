@@ -1885,7 +1885,7 @@ Contains
     If (msd_data%l_msd) Then
       Call msd_write(cnfig, flow%restart_key, cnfig%megatm, flow%step, thermo%tstep, &
                      flow%time, stat%stpval, sites%dof_site, &
-                     io, msd_data, files, comm)
+                     io, msd_data, files, thermo%key_dpd/=DPD_NULL, comm)
     End If
 
     If (rsdc%lrsd) Then
@@ -2623,7 +2623,7 @@ Contains
           End If
           If (msd_data%l_msd) Then
             Call msd_write(cnfig, flow%restart_key, cnfig%megatm, flow%step, thermo%tstep, flow%time, stat%stpval, &
-                           sites%dof_site, io, msd_data, files, comm)
+                           sites%dof_site, io, msd_data, files, thermo%key_dpd/=DPD_NULL, comm)
           End If
           If (rsdc%lrsd) Then
             Call rsd_write(flow%restart_key, flow%step, thermo%tstep, io, rsdc, &
@@ -3036,7 +3036,7 @@ Contains
           End If
           If (msd_data%l_msd) Then
             Call msd_write(cnfig, flow%restart_key, cnfig%megatm, flow%step, thermo%tstep, flow%time, stat%stpval, &
-                           sites%dof_site, io, msd_data, files, comm)
+                           sites%dof_site, io, msd_data, files, thermo%key_dpd/=DPD_NULL, comm)
           End If
           If (rsdc%lrsd) Then
             Call rsd_write(flow%restart_key, flow%step, thermo%tstep, io, rsdc, &
