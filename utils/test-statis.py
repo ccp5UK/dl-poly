@@ -64,8 +64,9 @@ def actual(exe: Path, workdir: Path, *, numProcs: int = 1, mpi: str = "mpirun -n
                    eam_file=workdir/"TABEAM",
                    ang_file=workdir/"TABANG")
 
-    dl.run(numProcs=numProcs, mpi=mpi, debug=True)
-
+    code = dl.run(numProcs=numProcs, mpi=mpi, debug=True)
+    if code != 0:
+        raise RuntimeError(f"Error code {code} while running DL_POLY")
     dl.load_statis()
 
     statis = dl.statis
