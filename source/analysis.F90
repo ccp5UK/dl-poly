@@ -24,7 +24,9 @@ Module analysis
                            usr_compute
   Use site,          Only: site_type
   Use statistics,    Only: stats_type
-  Use thermostat,    Only: thermostat_type
+  Use thermostat,    Only: thermostat_type,&
+                           ENS_NPT_LANGEVIN,&
+                           DPD_NULL
   Use z_density,     Only: z_density_compute,&
                            z_density_type
 
@@ -58,7 +60,7 @@ Contains
     Type(file_type),          Intent(InOut) :: files(:)
     Type(comms_type),         Intent(InOut) :: comm
 
-    Integer(Kind=wi) :: i
+    Integer(Kind=wi) :: i, sumvalend
     Real(Kind=wp)    :: avvol, temp
 
 !> Ensemble key
@@ -92,9 +94,10 @@ Contains
     ! Redefine volume for analysis routines
     config%volm = avvol
     ! Redefine config%cell dimensions for analysis routines for npt/nst
-    If (thermo%ensemble >= 20) Then
+    If (thermo%ensemble >= ENS_NPT_LANGEVIN) Then
+      sumvalend = Merge (36, 72, thermo%key_dpd==DPD_NULL)
       Do i = 1, 9
-        config%cell(i) = stats%sumval(36 + sites%ntype_atom + i)
+        config%cell(i) = stats%sumval(sumvalend + sites%ntype_atom + i)
       End Do
     End If
 

@@ -7,7 +7,7 @@ DL_POLY_5 includes a unit scheme specifically for Dissipative Particle Dynamics 
 that can be specified in both :ref:`CONTROL <control-file>` and :ref:`FIELD <field-file>` files. 
 A directive in each of these files needs to be specified:
 
-* The **io_unit_scheme** directive in CONTROL needs to be set to **dpd**, so DL_POLY_5 will correctly
+* The **io_units_scheme** directive in CONTROL needs to be set to **dpd**, so DL_POLY_5 will correctly
   output its results in DPD units. **Note that this option is not available for older-style CONTROL files!**
 * The **units** directive in FIELD needs to be set to **dpd** so the user can provide interaction parameters 
   and particle properties (masses etc.) in DPD units.

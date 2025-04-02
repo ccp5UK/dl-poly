@@ -70,6 +70,10 @@ Module thermostat
   Integer(Kind=wi), Parameter, Public :: ENS_NVT_GENTLE = 14
   !> Cannonical ensemble inhomogeneous Langevin (stocastic dynamics)
   Integer(Kind=wi), Parameter, Public :: ENS_NVT_LANGEVIN_INHOMO = 15
+  !> Canonical ensemble dpd thermostat with Shardlow splitting
+  Integer(Kind=wi), Parameter, Public :: ENS_NVT_DPD_SHARDLOW = 16
+  !> Canonical ensemble dpd thermostat with md-vv style integration of dpd forces
+  Integer(Kind=wi), Parameter, Public :: ENS_NVT_DPD_MDVV = 17
 
   !> Isobaric ensemble isothermal Langevin (stochastic dynamics) (isotropic)
   Integer(Kind=wi), Parameter, Public :: ENS_NPT_LANGEVIN = 20
@@ -88,11 +92,6 @@ Module thermostat
   Integer(Kind=wi), Parameter, Public :: ENS_NPT_NOSE_HOOVER_ANISO = 32
   !> Isobaric isothermal ensemble anisotropic Martyna-Tuckerman-Klein
   Integer(Kind=wi), Parameter, Public :: ENS_NPT_MTK_ANISO = 33
-
-  !> Cannonical ensemble dpd thermostat with Shardlow splitting
-  Integer(Kind=wi), Parameter, Public :: ENS_NVT_DPD_SHARDLOW = 40
-  !> Cannonical ensemble dpd thermostat with md-vv style integration of dpd forces
-  Integer(Kind=wi), Parameter, Public :: ENS_NVT_DPD_MDVV = 41
 
   ! Anisotropic barostat constraint keys
   !> Fully anisotropic, no constraints

@@ -718,6 +718,8 @@ Contains
     Type(rdf_type),            Intent(InOut) :: rdf
     Integer,                   Intent(  Out) :: mxgrid
 
+    Real(Kind=wp) :: zlen
+
     ! Set grids for opted intramolecular distribution analysis if unset
     ! SO THEY ARE SWITCHES FOR EXISTENCE TOO
 
@@ -755,10 +757,14 @@ Contains
     config%mxtana = 0 ! initialise for buffer size purposes, set in read_field
 
     ! maximum number of rdf potentials (rdf%max_rdf = rdf%max_rdf)
-    ! rdf%max_grid - maximum dimension of rdf%rdf and z-density arrays
+    ! rdf%max_grid - maximum dimension of rdf%rdf
+    ! zdensity%max_grid - maximum dimension of zdensity%density
+
+    ! length of cell in z direction
+    zlen = Abs(config%cell(3)) + Abs(config%cell(6)) + Abs(config%cell(9))
 
     If (zdensity%l_collect) Then
-      zdensity%max_grid = Nint(neigh%cutoff / zdensity%bin_width)
+      zdensity%max_grid = Nint(zlen / zdensity%bin_width)
     Else
       zdensity%max_grid = 0
     End If
