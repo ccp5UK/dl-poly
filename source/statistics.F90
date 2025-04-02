@@ -1600,7 +1600,7 @@ Contains
           stats%statis_file_open = .true.
         End If
 
-        strend = Merge (36, 72, (thermo%key_dpd/=DPD_NULL))
+        strend = Merge (36, 72, thermo%key_dpd==DPD_NULL)
         If (lmsd) Then
           If (stats%file_yaml) Then
             Write (fmtt, '(a,i0,a)') '(2x,a4,i0,",",', iadd + 1 - 2 * mxatdm, '(g16.8,","),g16.8,a2)'
@@ -2795,7 +2795,7 @@ Contains
 
       ! Some extra information - <P*V> term - only matters for NP/sT ensembles
 
-      strend = Merge (37, 73, thermo%key_dpd/=DPD_NULL)
+      strend = Merge (37, 73, thermo%key_dpd==DPD_NULL)
 
       If (thermo%variable_cell) Then
         Write (message, "(a,1p,e12.4,5x,a,1p,e12.4)") &
