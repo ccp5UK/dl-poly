@@ -1479,11 +1479,14 @@ Contains
 
         ! DPD potential - Groot-Warren (standard) :: u=(1/2).a.rc.(1-r/rc)^2
 
+        vdws%tab_potential(0, ivdw) = 0.5_wp * vdws%param(1, ivdw) * vdws%param(2, ivdw)
         vdws%tab_force(0, ivdw) = vdws%param(1, ivdw)
 
       Case (VDW_NDPD)
 
-        vdws%tab_force(0, ivdw) = vdws%param(1, ivdw) * (vdws%param(2, ivdw))
+        vdws%tab_potential(0, ivdw) = vdws%param(1, ivdw)*vdws%param(4, ivdw) * &
+                                      (vdws%param(3, ivdw)/(vdws%param(4, ivdw)+1.0_wp) - 0.5_wp)
+        vdws%tab_force(0, ivdw) = vdws%param(1, ivdw) * (vdws%param(2, ivdw) - 1.0_wp)
 
       Case (VDW_RYDBERG)
 
