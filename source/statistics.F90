@@ -2926,6 +2926,8 @@ Contains
         Call info(message, .true.)
         Call info('', .true.)
         iadd = iadd + 9
+      Else If (thermo%key_dpd/=DPD_NULL .and. comm%idnode /= 0) Then
+        iadd = iadd + 36
       End If
       
       If (lmsd) iadd = iadd + 2 * mxatdm
