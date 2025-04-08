@@ -154,7 +154,8 @@ Contains
     Allocate (xxt(1:neigh%max_list), yyt(1:neigh%max_list), zzt(1:neigh%max_list), rrt(1:neigh%max_list), Stat=fail)
     If (fail > 0) Call error_alloc('distance arrays', 'two_body_forces')
 
-    l_do_rdf = (rdf%l_collect .and. ((.not. leql) .or. nstep >= nsteql) .and. Mod(nstep, rdf%freq) == 0)
+    l_do_rdf = (rdf%l_collect .and. ((.not. leql) .or. nstep >= nsteql) &
+                .and. Mod(nstep, rdf%freq) == 0 .and. nstep >= rdf%step_start)
 
     ! If k-space SPME is evaluated infrequently check whether
     ! at this timestep to evaluate or "refresh" with old values.

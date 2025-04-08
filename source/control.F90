@@ -943,6 +943,7 @@ Contains
            & Call params%retrieve('rdf_error_analysis_blocks', rdf%num_blocks)
 
       Call params%retrieve('rdf_frequency', rdf%freq)
+      Call params%retrieve('rdf_start', rdf%step_start)
       Call params%retrieve('rdf_print', rdf%l_print)
       Call params%retrieve('io_rdf_yaml', rdf%is_yaml)
 
@@ -3030,6 +3031,15 @@ Contains
                          units="steps", &
                          internal_units="steps", &
                          description="Set frequency of RDF sampling", &
+                         data_type=DATA_FLOAT))
+
+          Call table%set("rdf_start", control_parameter( &
+                         key="rdf_start", &
+                         name="RDF Starting step", &
+                         val="0", &
+                         units="steps", &
+                         internal_units="steps", &
+                         description="Set the start of RDF sampling", &
                          data_type=DATA_FLOAT))
 
           Call table%set("rdf_binsize", control_parameter( &

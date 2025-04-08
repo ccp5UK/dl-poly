@@ -51,6 +51,8 @@ Module rdfs
     Integer(Kind=wi), Public              :: num_blocks = 2
     !> RDF collection frequency (in steps)
     Integer(Kind=wi), Public              :: freq = 1
+    !> RDF step to start collection
+    Integer(Kind=wi), Public              :: step_start = 0
     !> Number of configurations used in RDF calculation
     Integer(Kind=wi), Public              :: n_configs = 0
     !> Number of rdf look up pairs
