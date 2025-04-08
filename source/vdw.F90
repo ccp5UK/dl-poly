@@ -1624,7 +1624,7 @@ Contains
     Integer                 :: ai, aj, idi, ityp, jatm, k, key, mm, i, a, b, c, d
     Real(Kind=wp)           :: eng, gamma, delta
     Real(Kind=wp)           :: fix, fiy, fiz, fx, fy, fz
-    Real(Kind=wp)           :: r_rrr, r_rrv, r_rsq, r_rvdw, rrr, rscl, rsq
+    Real(Kind=wp)           :: r_rrr, r_rrv, r_rsq, rrr
     Real(Kind=wp)           :: strs1, strs2, strs3, strs5, strs6, strs9
     Real(Kind=wp)           :: stress_temp_comp(9), born_pre
     Real(Kind=wp)           :: x_temp(3), f_temp(3)
@@ -1695,11 +1695,7 @@ Contains
         ! Distance derivatives
 
         r_rrr = 1.0_wp / rrr
-        r_rvdw = 1.0_wp / vdws%cutoff
-        rsq = rrr**2
-        r_rsq = r_rrr**2 !1.0_wp / rsq
-        r_rrv = r_rrr * r_rvdw
-        rscl = rrr * r_rvdw
+        r_rsq = r_rrr**2
 
         ! Zero energy and force components
 
@@ -1754,7 +1750,7 @@ Contains
 
           ! add virial
 
-          virvdw = virvdw - gamma * rsq
+          virvdw = virvdw - gamma * rrr*rrr
 
           ! add Born term
 
@@ -1805,7 +1801,6 @@ Contains
           End If
 #endif /* HALF_HALO */
         End If
-
       End If
 
     End Do
