@@ -1248,7 +1248,7 @@ Contains
             i3 = 1
 
             pass1 = .true.
-            dettest = 1.0e-1_wp
+            dettest = Merge(1.0e-3_wp, 1.0e-1_wp, stats%dpd_units)
 
             Do While (pass1 .and. i2 < lrgd - 1)
 
@@ -1643,7 +1643,7 @@ Contains
 
     ! set-up quaternions
 
-    Call q_setup(rigid, config, comm)
+    Call q_setup(rigid, config, comm, stats%dpd_units)
 
   End Subroutine rigid_bodies_setup
 
@@ -3385,7 +3385,7 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Subroutine q_setup(rigid, config, comm)
+  Subroutine q_setup(rigid, config, comm, dpd)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -3404,6 +3404,7 @@ Contains
     Type(rigid_bodies_type),  Intent(InOut) :: rigid
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
+    Logical,                  Intent(In   ) :: dpd
 
     Character(Len=STR_LEN)         :: message
     Integer                    :: fail, i1, i2, i3, ill, irgd, itmp, jrgd, krgd, lrgd, rgdtyp
@@ -3579,7 +3580,7 @@ Contains
 
     ! test quaternion setup
 
-    tol = 1.0e-2_wp
+    tol = Merge(1.0e-4_wp, 1.0e-2_wp, dpd)
     rsq = 0.0_wp
     krgd = 0
     ill = 0

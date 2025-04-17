@@ -637,7 +637,7 @@ Contains
           Call update_shared_units(config, rigid%list_shared, &
                                    rigid%map_shared, SHARED_UNIT_UPDATE_POSITIONS, domain, comm)
         End If
-        Call q_setup(rigid, config, comm)
+        Call q_setup(rigid, config, comm, stats%dpd_units)
       End If
 
     End If
