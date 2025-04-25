@@ -1461,7 +1461,7 @@ Contains
     ! define dens0 & dens
 
     dens0 = pda_max / vcell ! maximum local density
-    dens = pda_dom_max / vcell ! maximum domain density
+    dens = pda_dom_max / vcell ! maximum average domain density
 
     Deallocate (pda, Stat=fail(1))
     If (fail(1) > 0) Call error_dealloc('particle density array', 'read_config')

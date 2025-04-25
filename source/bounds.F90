@@ -97,6 +97,7 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - j.s.wilkins june 2020
+    ! contrib.  - i.t.todorov april 2025 setup_buffer fixes
     ! based on  - i.t.todorov december 2016
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -195,7 +196,7 @@ Contains
 
     ! Link-cell and VNL matters
 
-    call setup_vnl(config%dvar, neigh, flow, domain, ewld, devel, config, met, vdws, electro, rdf, &
+    Call setup_vnl(config%dvar, neigh, flow, domain, ewld, devel, config, met, vdws, electro, rdf, &
          cell_properties, link_cell, kim_data, comm, padding2)
 
     ! decide on MXATMS while reading CONFIG and scan particle density
@@ -203,7 +204,7 @@ Contains
     Call read_config(config, megatm, config%levcfg, config%l_ind, flow%strict, neigh%cutoff, config%dvar, xhi, yhi, &
          zhi, dens0, dens, io, domain, files, comm, ff)
 
-    Call setup_buffers(config%dvar, dens, dens0, megatm, link_cell, mxgrid, config, domain, stats, neigh, &
+    Call setup_buffers(config%dvar, dens0, dens, megatm, link_cell, mxgrid, config, domain, stats, neigh, &
        green, site, cshell, cons, pmf, rdf, rigid, tether, bond, angle, dihedral, inversion, zdensity, ewld, mpoles, &
        electro%no_elec, msd_data%l_msd, dpd, comm)
 
@@ -415,7 +416,7 @@ Contains
     Call read_config(config, megatm, config%levcfg, config%l_ind, flow%strict, neigh%cutoff, config%dvar, xhi, yhi, &
                      zhi, dens0, dens, io, domain, files, comm, ff)
 
-    Call setup_buffers(fdvar, dens, dens0, megatm, link_cell, mxgrid, config, domain, stats, neigh, &
+    Call setup_buffers(fdvar, dens0, dens, megatm, link_cell, mxgrid, config, domain, stats, neigh, &
                        green, site, cshell, cons, pmf, rdf, rigid, tether, bond, angle, dihedral, inversion, &
                        zdensity, ewld, mpoles, &
                        electro%no_elec, msd_data%l_msd, (thermo%key_dpd/=DPD_NULL), comm)
@@ -856,11 +857,11 @@ Contains
 
   End Subroutine setup_grids
 
-  Subroutine setup_buffers(fdvar, maximum_local_density, maximum_domain_density, megatm, link_cell, max_grid, &
+  Subroutine setup_buffers(fdvar, maximum_local_density, average_domain_density, megatm, link_cell, max_grid, &
                            config, domain, stats, neigh, green, site, cshell, cons, pmf, rdf, &
                            rigid, tether, bond, angle, dihedral, inversion, zdensity, ewld, mpoles, &
                            no_elec, msd, dpd, comm)
-    Real(Kind=wp),            Intent(In   ) :: fdvar, maximum_local_density, maximum_domain_density
+    Real(Kind=wp),            Intent(In   ) :: fdvar, maximum_local_density, average_domain_density
     Integer,                  Intent(In   ) :: megatm
     Integer, Dimension(3),    Intent(In   ) :: link_cell
     Integer,                  Intent(In   ) :: max_grid
@@ -894,29 +895,29 @@ Contains
 
 ! Real(Kind=Wp) :: xhi, yhi, zhi
 
-    ! Create f(fdvar,maximum_local_density,maximum_domain_density) function of density push, maximum 'local' density, maximum domains' density
+    ! Create f(fdvar,maximum_local_density,average_domain_density) function of density push, maximum 'local' density, maximum domains' density
 
     If ((comm%mxnode == 1 .or. Any(link_cell < 3)) .or. &
         (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB) .or. &
-        (maximum_local_density / maximum_domain_density <= 0.5_wp) .or. (fdvar > 10.0_wp)) Then
-      fdens = maximum_domain_density ! for all possibly bad cases resort to max density
+        (average_domain_density / maximum_local_density <= 0.5_wp) .or. (fdvar > 10.0_wp)) Then
+      fdens = maximum_local_density ! for all possibly bad cases resort to max density
     Else
-      fdens = fdvar * (0.5_wp * maximum_domain_density + 0.5_wp * maximum_local_density) ! mix 50:50 and push
+      fdens = fdvar * (0.5_wp * average_domain_density + 0.5_wp * maximum_local_density) ! mix 50:50 and push
     End If
 
     ! Get reasonable to set fdens limit - all particles in one link-cell
 
-    tol = Real(megatm, wp) / (Real(Product(link_cell), wp) * Real(comm%mxnode, wp))
+    tol = Real(megatm, wp) / (Real(comm%mxnode, wp))
     fdens = Min(fdens, tol)
 
     ! density variation affects the link-cell arrays' dimension
     ! more than domains(+halo) arrays' dimensions, in case of
     ! events of extreme collapse in atomic systems (aggregation)
 
-    ! neigh%max_list is the maximum length of link-cell neigh%list (maximum_domain_density * 4/3 pi neigh%cutoff_extended^3)
-    ! + 75% extra tolerance - i.e f(maximum_local_density,maximum_domain_density)*(7.5/3)*pi*neigh%cutoff_extended^3
+    ! neigh%max_list is the maximum length of link-cell neigh%list (average_domain_density * 4/3 pi neigh%cutoff_extended^3)
+    ! + 25% extra tolerance - i.e f(maximum_local_density,average_domain_density)*(5/3)*pi*neigh%cutoff_extended^3
 
-    neigh%max_list = Nint(fdens * (7.5_wp / 3.0_wp) * pi * neigh%cutoff_extended**3)
+    neigh%max_list = Nint(fdens * (5.0_wp / 3.0_wp) * pi * neigh%cutoff_extended**3)
     neigh%max_list = Min(neigh%max_list, megatm - 1) ! neigh%max_exclude
 
     If (neigh%max_list < neigh%max_exclude - 1) Then
@@ -1142,7 +1143,7 @@ Contains
     Logical                                       :: no_default_padding
     Real(Kind=wp)                                 :: ewald_padding, default_padding, serial_padding, cutoff_padding
 
-    Integer, Dimension(3)                   :: print_decomp
+    Integer, Dimension(3)                         :: print_decomp
 
     Integer                                       :: bspline_node_check
     Integer                                       :: tries
