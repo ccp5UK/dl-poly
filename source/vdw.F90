@@ -1962,9 +1962,9 @@ Contains
 
         if (ityp == VDW_MDPD) Then 
           gamma = gamma + mdpd_force(rrr, vdws%mdpd_params%rc(k), vdws%mdpd_params%rd(k), &
-                                     vdws%mdpd_params%b, &
-                                      2.0_wp, 2.0_wp, vdws%mdpd_params%n(k),  &
-                                      vdws%mdpd_params%rho(iatm), vdws%mdpd_params%rho(jatm))
+                                     vdws%mdpd_params%b, vdws%mdpd_params%m(config%ltype(iatm)), &
+                                     vdws%mdpd_params%m(config%ltype(jatm)), vdws%mdpd_params%n(k), &
+                                     vdws%mdpd_params%rho(iatm), vdws%mdpd_params%rho(jatm))
         End If 
 
 

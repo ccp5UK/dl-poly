@@ -316,7 +316,7 @@ Contains
       ! Update velocities
 
       Do i = 1, config%natms
-        If (config%lfree(i) == 0) Then
+        If (config%lfrzn(i)==0 .and. config%lfree(i) == 0) Then
           If (config%weight(i) > 1.0e-6_wp) Then
             tmp = hstep / config%weight(i)
             config%vxx(i) = config%vxx(i) + tmp * fdpdx(i)
@@ -491,7 +491,7 @@ Contains
     ! Update velocities
 
     Do i = 1, config%natms
-      If (config%lfree(i) == 0) Then
+      If (config%lfrzn(i)==0 .and. config%lfree(i) == 0) Then
         If (config%weight(i) > 1.0e-6_wp) Then
           tmp = hstep / config%weight(i)
           config%vxx(i) = config%vxx(i) + tmp * fdpdx(i)
