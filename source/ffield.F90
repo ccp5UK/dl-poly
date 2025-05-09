@@ -3717,7 +3717,7 @@ Contains
               Call get_word(record, word)
               parpot(2) = word_2_real(word)
               If (flow%print_topology) Then
-                Write (message, '(2x,i10,5x,2a8,8x,f20.6,1x,a9)') &
+                Write (message, '(2x,i10,5x,2a8,8x,2f20.6,1x,a9)') &
                   itpvdw, atom1, atom2, parpot(1), parpot(2), 'tabulated'
                 Call info(message, .true., level=3)
               End If
