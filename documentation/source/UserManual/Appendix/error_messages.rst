@@ -128,27 +128,27 @@ Add **units** directive to FIELD file and resubmit.
 Change the external field directive in FIELD file and or the type of
 ensemble in CONTROL and resubmit.
 
-**Message 8**: error - ewald precision must be a POSITIVE real number
+**Message 8**: error - spme precision must be a POSITIVE real number
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Ewald precision must be a positive non-zero real number. For example
+SPME precision must be a positive non-zero real number. For example
 10e-5 is accepted as a standard.
 
 *Action*:
 
-Put a correct number at the "ewald precision" directive in the CONTROL
+Put a correct number at the "spme_precision" directive in the CONTROL
 file and resubmit.
 
-**Message 9**: error - ewald sum parameters must be well defined
+**Message 9**: error - SPME sum parameters must be well defined
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Ewald sum parameters must be well defined.
+SPME sum parameters must be well defined.
 
 *Action*:
 
 Referer to the manual and references within for understanding the
 meaning of the parameters and how to chose them. Alternatively, try
-using the “ewald precision” CONTROL directive with a sensible precision
+using the “spme_precision” CONTROL directive with a sensible precision
 value, of say 10\ :math:`_{-5}`.
 
 **Message 10**: error - too many molecular types specified
@@ -296,13 +296,13 @@ beginning.
 Recreate or correct the erroneous entries in the FIELD file and try
 again.
 
-**Message 22**: error - unsuitable radial increment in TABLE/TABBND/TABANG/TABDIH/TABINV file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Message 22**: error - unsuitable radial increment in TABVDW/TABBND/TABANG/TABDIH/TABINV file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. index:: single: potential;tabulated
 
 This arises when the tabulated van der Waals potentials presented in the
-TABLE file have an increment that is greater than that used to define
+TABVDW file have an increment that is greater than that used to define
 the other potentials in the simulation. Ideally, the increment should be
 :math:`r_{\rm cut}/(\texttt{mxgrid}-4)`, where :math:`r_{\rm cut}` is
 the largest potential cutoff of all supplied ,for the short range
@@ -317,33 +317,33 @@ have grids sized less than the generic ``mxgrid-4``.
 
 The tables must be recalculated with an appropriate increment.
 
-**Message 23**: error - incompatible FIELD and TABLE file potentials
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Message 23**: error - incompatible FIELD and TABVDW file potentials
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This error arises when the specification of the short range potentials
-is different in the FIELD and TABLE files. This usually means that the
+is different in the FIELD and TABVDW files. This usually means that the
 order of specification of the potentials is different. When DL_POLY_5
 finds a change in the order of specification, it assumes that the user
 has forgotten to enter one.
 
 *Action*:
 
-Check the FIELD and TABLE files. Make sure that you correctly specify
+Check the FIELD and TABVDW files. Make sure that you correctly specify
 the pair potentials in the FIELD file, indicating which ones are to be
-presented in the TABLE file. Then check the TABLE file to make sure all
+presented in the TABVDW file. Then check the TABVDW file to make sure all
 the :index:`tabulated<potential;tabulated>` potentials are present in 
 the order the FIELD file indicates.
 
-**Message 24**: error - end of file encountered in TABLE/TABBND/TABANG/TABDIH/TABINV file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Message 24**: error - end of file encountered in TABVDW/TABBND/TABANG/TABDIH/TABINV file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This means the TABLE/TABBND/TABANG/TABDIH/TABINV file is incomplete in some
+This means the TABVDW/TABBND/TABANG/TABDIH/TABINV file is incomplete in some
 way: either by having too few potentials included, or the number of data
 points is incorrect.
 
 *Action*:
 
-Examine the TABLE file contents and regenerate it if it appears to be
+Examine the TABVDW file contents and regenerate it if it appears to be
 incomplete. If it look intact, check that the number of data points
 specified is what DL_POLY_5 is expecting.
 
@@ -372,7 +372,7 @@ DL_POLY_5 does not have the neutral group option.
 
 *Action*:
 
-Use the Ewald sum option. (It’s better anyway.)
+Use the SPME sum option. (It’s better anyway.)
 
 **Message 27**: error - unit’s member indexed outside molecule’s site range
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1821,7 +1821,7 @@ file, it is also necessary to specify the real space cutoff ``rcut``.
 
 *Action*:
 
-Place the **cut** directive *before* the **ewald precision** directive
+Place the **cut** directive *before* the **spme_precision** directive
 in the CONTROL file and rerun.
 
 **Message 436**: error - unrecognised ensemble
@@ -2319,17 +2319,17 @@ repetition of a site is allowed in a PMF unit.
 
 Correct the erroneous entries in FIELD.
 
-**Message 504**: error - cutoff too large for TABLE/TABBND file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Message 504**: error - cutoff too large for TABVDW/TABBND file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The requested cutoff exceeds the information in the TABLE file or the
+The requested cutoff exceeds the information in the TABVDW file or the
 TABBND cutoff is larger than half the system cutoff ``rcut``.
 
 *Action*:
 
-In the case when this is received while reading TABLE, reduce the value
+In the case when this is received while reading TABVDW, reduce the value
 of the vdw cutoff (``rvdw``) in the CONTROL file or reconstruct the
-TABLE file. In the case when this is received while reading TABBND then
+TABVDW file. In the case when this is received while reading TABBND then
 specify a larger ``rcut`` in CONTROL.
 
 **Message 505**: error - EAM metal densities or pair crossfunctions out of range

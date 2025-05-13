@@ -370,7 +370,7 @@ Contains
       Case (220)
 
         Write (ounit, '(/,1x,a,/)') &
-          '#** warning - Ewald sum requested in a non-periodic system !!! ***'
+          '#** warning - SPME (Ewald sum) requested in a non-periodic system !!! ***'
 
       Case (230)
 
@@ -950,11 +950,11 @@ Contains
 
       Case (8)
 
-        Write (ounit, '(/,1x,a)') '# error - ewald precision MUST be a POSITIVE real number'
+        Write (ounit, '(/,1x,a)') '# error - SPME precision MUST be a POSITIVE real number'
 
       Case (9)
 
-        Write (ounit, '(/,1x,a)') '# error - ewald sum parameters MUST be well defined'
+        Write (ounit, '(/,1x,a)') '# error - SPME (Ewald sum)  parameters MUST be well defined'
 
       Case (10)
 
@@ -1006,15 +1006,15 @@ Contains
 
       Case (22)
 
-        Write (ounit, '(/,1x,a)') '# error - unsuitable radial increment in TABLE||TABBND||TABANG||TABDIH||TABINV file'
+        Write (ounit, '(/,1x,a)') '# error - unsuitable radial increment in TABVDW||TABBND||TABANG||TABDIH||TABINV file'
 
       Case (23)
 
-        Write (ounit, '(/,1x,a)') '# error - incompatible FIELD and TABLE file potentials'
+        Write (ounit, '(/,1x,a)') '# error - incompatible FIELD and TABVDW file potentials'
 
       Case (24)
 
-        Write (ounit, '(/,1x,a)') '# error - end of file encountered in TABLE||TABEAM||TABBND||TABANG||TABDIH||TABINV file'
+        Write (ounit, '(/,1x,a)') '# error - end of file encountered in TABVDW||TABEAM||TABBND||TABANG||TABDIH||TABINV file'
 
       Case (25)
 
@@ -1547,7 +1547,7 @@ Contains
 
       Case (433)
 
-        Write (ounit, '(/,1x,a)') '# error - neigh%cutoff MUST be specified for the Ewald sum precision'
+        Write (ounit, '(/,1x,a)') '# error - neigh%cutoff MUST be specified for the SPME (Ewald sum) precision'
 
       Case (436)
 
@@ -1703,7 +1703,7 @@ Contains
 
       Case (504)
 
-        Write (ounit, '(/,1x,a)') '# error - cutoff too large for TABLE file'
+        Write (ounit, '(/,1x,a)') '# error - cutoff too large for TABVDW file'
 
       Case (505)
 

@@ -20,26 +20,20 @@ below) of 10\ :math:`^{-6}` is normally sufficient so the directive
 
 :: 
    
-   ewald precision 1d-6
+   spme precision 1d-6
 
 will make DL_POLY_5 evaluate its best guess at the Ewald parameters
-:math:`\alpha`, ``kmaxa``, ``kmaxb`` and ``kmaxc``, or their doubles if
-**ewald** rather than **spme** is specified. (The user should note that
+:math:`\alpha`, ``kmaxa``, ``kmaxb`` and ``kmaxc``.  (The user should note that
 this represents an *estimate*, and there are sometimes circumstances
 where the estimate can be improved upon. This is especially the case
 when the system contains a strong directional anisotropy, such as a
 surface.) These four parameters may also be set explicitly by the
-**ewald sum** directive in the CONTROL file. For example the directive
+**spme** directives in the CONTROL file. For example the directive
 
 :: 
    
-   ewald sum 0.35 6 6 8
-
-which is equvalent to
-
-:: 
-   
-   spme sum 0.35 12 12 16
+   spme_alpha 0.35
+   spme_kvec 6 6 8
 
 would set :math:`\alpha=0.35` Å\ :math:`^{-1}`, :math:`\texttt{kmaxa}=12`,
 :math:`{\tt
@@ -161,7 +155,7 @@ implementation relies on. This allowes for greater flexiblity than the
 power of 2 multiple restriction in DL_POLY_5's predecessor, DL_POLY_3. As
 a consequence, however, execution on different processor decompositions
 may lead to different working lengths of the k-vectors/FFT transforms
-and therefore slightly different SPME forces/energies whithin the same
+and therefore slightly different SPME forces/energies within the same
 level of SPME/Ewald precision/accuracy specified. 
 
 .. note:: 
@@ -171,7 +165,7 @@ level of SPME/Ewald precision/accuracy specified.
    inefficient performance!
 
 .. [1]
-   **Important note**: As the SPME method substitues the standard Ewald
+   **Important note**: As the SPME method substitues internally the standard Ewald
    the values of ``kmaxa``, ``kmaxb`` and ``kmaxc`` are the double of
    those in the prescription of the standard Ewald since they specify
    the sides of a cube, not a radius of convergence.

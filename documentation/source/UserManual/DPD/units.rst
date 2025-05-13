@@ -77,7 +77,7 @@ It should be noted that:
     directly (e.g. cutoffs in angstroms), they will still be assumed to be in DPD units.
 
 #.  If **units dpd** is used in the second line of the FIELD file, all quantities in this file and other
-    related files (including CONFIG and TABLE files) will be read as though they are in DPD units. 
+    related files (including CONFIG and TABVDW files) will be read as though they are in DPD units. 
     That means all energy-based parameters will be in units of :math:`[E]`, all distances and positions 
     in :math:`[L]`, all masses in :math:`[M]` etc. Since these units are implicitly used by DL_MESO_DPD
     :cite:`seaton-13a`, FIELD and CONFIG files from this code can therefore be used by DL_POLY_5 with

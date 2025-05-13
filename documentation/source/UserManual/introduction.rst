@@ -24,8 +24,8 @@ on the Domain Decomposition (DD) strategy
 :cite:`todorov-04a,todorov-06a,pinches-91a,rapaport-91b,smith-91a,smith-93a`,
 and is best suited for large molecular simulations from :math:`10^{3}`
 to :math:`10^{9}` atoms on large processor counts. The two packages are
-reasonably compatible, so that it is possible to scale up from a DL_POLY_Classic to a DL_POLY_5
-simulation with little effort. It should be apparent from these comments
+reasonably compatible, so that it is possible to scale up from a DL_POLY_Classic
+simulation to a DL_POLY_5 one with little effort. It should be apparent from these comments
 that DL_POLY_5 is not intended as a replacement for DL_POLY_Classic.
 
 Users are reminded that we are interested in hearing what other features
@@ -86,9 +86,11 @@ Force Field
 
 The DL_POLY_5 :index:`force field<single: force field; DL_POLY>` includes the following features:
 
-#. All common forms of :index:`non-bonded<single: potential; non-bonded>` atom-atom (van der Waals) potentials
+#. All common forms of :index:`non-bonded<single: potential; non-bonded>` atom-atom (van der Waals) potentials,
+where these also include bead-bead forms of Dissipative Particle Dynamics (DPD) interactions (inclusive of many-body DPD)
 
-#. Atom-atom (and site-site) :index:`coulombic<single:potential; electrostatics>` potentials
+#. Atom-atom (and site-site) :index:`coulombic<single:potential; electrostatics>` potentials, where these can be
+screened at desired distances as in DPD models
 
 #. :index:`Metal-metal<single: potential; metal>` (local density dependent) potentials :cite:`baskes-84a,baskes-86a,finnis-84a,sutton-90a,sutton-91a,todd-93a`
 
@@ -217,8 +219,6 @@ The following MD :index:`algorithms<algorithm>` are available:
 
 #. Martyna, Tuckerman and Klein (MTK) constant T,P :index:`algorithm<ensemble;Martyna-Tuckerman-Klein NPT>`  :cite:`martyna-96a`
 
-.. |sigma| unicode:: U+03A3
-
 #. Langevin constant T,\ :math:`\underline{\underline{\mathbf{\sigma}}}` :index:`algorithm<ensemble;Langevin N|sigma|T>` :cite:`quigley-04a`
 
 #. Berendsen constant T,\ :math:`\underline{\underline{\mathbf{\sigma}}}` :index:`algorithm<ensemble;Berendsen N$\sigma$T>` :cite:`berendsen-84a`
@@ -272,6 +272,8 @@ DL_POLY_Classic features incompatible or unavalable in DL_POLY_5
    -  Hyperdynamics
 
    -  Solvation Energies
+
+   - Path Integral MD (PIMD)
 
 Programming Style
 ~~~~~~~~~~~~~~~~~
@@ -617,43 +619,24 @@ store them in the *utility* sub-directory.
 Obtaining the Source Code
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To obtain a copy of DL_POLY_5 it is necessary to have internet connection. Log on
-to the DL_POLY :index:`website<WWW>` - `<http://www.ccp5.ac.uk/DL\_POLY/>`_, and follow the links to the DL_POLY_5 registration
-page, where you will firstly be shown the DL_POLY_5 academic software licence (see
-:ref:`Appendix E<readme>`), which details the terms and
-conditions under which the code will be supplied. **By proceeding further
-with the registration and download process you are signalling your
-acceptance of the terms of this licence.** Click the ‘Registration’ button
-to find the registration page, where you will be invited to enter your
-name, address and e-mail address. The code is supplied free of charge to
-**academic** users, but **commercial** users will be required to purchase a
-software licence.
-
-Once the online registration has been completed, information on
-downloading the DL_POLY_5 source code will be sent by e-mail, so **it is therefore
-essential to supply a correct e-mail address.**
-
-The *data* and *bench* subdirectories of DL_POLY_5 are not issued in the standard
-package, but can be downloaded directly from the FTP site (in the ``ccp5/DL_POLY/DL_POLY_4.0/``
-directory).
-
-**Note:** Daresbury Laboratory is the **sole centre** for the distribution of and
-copies obtained from elsewhere will be regarded as illegal and will not
-be supported.
+To obtain a copy of DL_POLY_5 visit the DL_POLY GitLab
+:index:`website<WWW>` - `<https://gitlab.com/ccp5/dl-poly/>`_, and follow
+instructions within i.e. the Building notes.
 
 OS and Hardware Specific Ports
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Note that no support is offered for these highly specific developments!**
-
-
+However, the DL_POLY GitLab has plenty of notes on specific builds and offers
+the opportunity to submit requests, filed as Issues within GitLab.
 
 .. _otherInfoSection:
 
 Other Information
 ~~~~~~~~~~~~~~~~~
 
-The DL_POLY :index:`website<WWW>` - `<http://www.ccp5.ac.uk/DL\_POLY/>`_, provides additional information in the form of
+The DL_POLY :index:`website<WWW>` - `<http://www.ccp5.ac.uk/DL\_POLY/>`_,
+provides additional information in the form of
 
 #. Access to all documentation (including licences)
 
@@ -664,13 +647,8 @@ The DL_POLY :index:`website<WWW>` - `<http://www.ccp5.ac.uk/DL\_POLY/>`_, provid
 #. Access to the DL_Software portal.
 
 Daresbury Laboratory also maintains a associated electronic mailing
-list, *dl_poly_4_news*, to which all registered DL_POLY_5 users are automatically
+list, *dl_poly_5_news*, to which all registered DL_POLY_5 users are automatically
 subscribed. It is via this list that error reports and announcements of
-new versions are made. If you are a DL_POLY_5 user, but not on this list you may
-request to be added by sending a mail message to `majordomo@dl.ac.uk` with
-the one-line message: :math:`subscribe~dl\_poly\_4\_news`.
-
-The DL_Software **Portal** is a web based centre for all DL_POLY users to
-exchange comments and queries. You may access the forum through the
-DL_POLY website. A registration (and vetting) process is required before
-you can use the forum, but it is open, in principle, to everyone.
+new versions are made.  If you are a DL_POLY_5 user, but not on this list you may
+sign up by filling your details in the :index:`form<WWW>` - `<http://www.ccp5.ac.uk/DL\_POLY/>`_,
+and submitting it.

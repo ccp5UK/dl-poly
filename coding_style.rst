@@ -10,21 +10,26 @@ Units
 =====
 
 All routines employ DL_POLY internal units. Output contains, when
-relevant, the units.
+relevant, the units.  Input must always have units specified as required.
 
 ::
 
-   SIMULATION CONTROL PARAMETERS
+   title DL_POLY_5 CONTROL DIRECTIVES
 
-   simulation temperature (K)          1.0000E+01
+   # SYSTEM TARGET TEMPERATURE AND PRESSURE
+   pressure_hydrostatic  0.001 katm
+   temperature  300.0 K
 
-   simulation pressure (katms)         0.0000E+00
+   # SYSTEM CUTOFFS AND ELECTROSTATICS
+   vdw_cutoff  8 ang
+   padding  0.35 ang
+   cutoff  10.0 ang
+   coul_method spme
+   spme_precision 1e-05
 
-   Integration : Leapfrog Verlet
-   Ensemble : NVT Nose-Hoover
-   thermostat relaxation time (ps)     1.0000E-01
+   timestep  0.001 ps
 
-   selected number of timesteps         5000
+   ...
 
 General Style
 =============

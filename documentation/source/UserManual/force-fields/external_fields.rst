@@ -118,4 +118,4 @@ Section :ref:`field-file`.
 .. index:: single:potential;external field
    
 In DL_POLY_5 external field forces are handled by the routines
-``external_field_apply`` and .
+``external_field_apply`` and ``external field correct``

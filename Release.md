@@ -1,13 +1,14 @@
-Release notes for DL_POLY_4
+Release notes for DL_POLY_5
 ===========================
 
-
-Version 5.0.0: February 2021
+Version 5.1.0: December 2021
 ----------------------------
 
-+ Change of license DL_POLY_4 is now LGPL 3.0
+Version 5.0.0: February 2021
+-----------------------------
++ Change of license DL_POLY_5 is now LGPL 3.0
 + Version bump to 5.0.0
-+ Empirical Valence bond formalism is implemeneted, see Manual.
++ Empirical Valence bond formalism is implemented, see Manual.
 + Thermal conductivity can be estimated now using, heat flux
 + A more logical consistent structure for control file is available
 + new command line arguments, see -h for details
@@ -22,7 +23,7 @@ Version 4.10.0: August 2020
 ---------------------------
 
 + Improvements, updates, new features:
-  + totally refactores DL_POLY_4, using OOP principles and modern software engineering
+  + totally refactors DL_POLY_4, using OOP principles and modern software engineering
   + new SPME to allow per particle calculations for various quantities as stress and energy, see pp_dump
   + new IO systems, almost all the usual files now can be customised
   + a new method to compute neighbour lists that can offer non-negligible speedups for certain soft-matter systems, use
@@ -41,7 +42,7 @@ Version 4.10.0: August 2020
   + angular distribution function added for on the fly calculations
   + on the fly coordination calculation for radiation damage simulations
   + current calculations
-  + new potentials available, ZBL, calcite Raitieri tappered, Generalised Lennard Jones by Frenkel, etc...
+  + new potentials available, ZBL, calcite Raitieri tappered, Generalised Lennard-Jones by Frenkel, etc...
   + integrate was removed, no leapfrog integration scheme.
   + expansion of the two-temperature model (TTM) to triclinic (non-orthorhombic) systems - ttm\_modile, langevin\_forces, ttm\_ion\_diffusion, ttm\_thermal\_diffusion
   + processing tabbed data is reinforced for all reading routines parse\_module, read\_field
@@ -545,4 +546,3 @@ Version 4.01: October 2010
 + efficient domain decomposition of SPME electrostatics for processor numbers in each direction as multiples of 2, 3 and/or 5 (upgrade to 1-D FFT solver used in DaFT), thanks to Ian Bush at NAG Ltd. (UK) with funding from EPSRC's dCSE programme
 + CUDA+OpenMP port, thanks to Christos Kartsaklis and Ruairi Nestor at ICHEC (Dublin, Ireland)
 + Microsoft port with Microsoft self-installers (MSI), thanks to Igor Kozin at STFC DL (UK)
-

@@ -119,8 +119,8 @@ appearing are described in the following section.
   subcelling_threshold_density   50.0 %
   coul_extended_exclusion ON
   coul_dielectric_constant 1.0
-  coul_method ewald
-  ewald_precision 1e-05
+  coul_method spme
+  spme_precision 1e-05
 
   # RELAXED SHELL MODEL TOLERANCE
   rlx_tol  1.0
@@ -720,7 +720,7 @@ Further Comments on the CONTROL File
 
 #. The **coul_extended_exclusion** option will make sure that for all
    *conventional* (no distance restraints) intra-molecular interactions
-   (bonds, angles, digedrals, inversions) as well as for CB and RB units
+   (bonds, angles, dihedrals, inversions) as well as for CB and RB units
    any intra-core-shell interactions fall within the list of excluded
    interactions. This is not a default behaviour. The option is also
    triggered by the **polarisation** directvies.
@@ -1778,7 +1778,7 @@ DL_POLY_5 to the available species in the OpenKIM IM.
         * - **tab** 
           - Tabulation 
           - 
-          - see tabulated potential Sections :ref:`vdw` and :ref:`intra-tables` in TABLE file
+          - see tabulated potential Sections :ref:`vdw` and :ref:`intra-tables` in TABVDW file
         * - **12-6** 
           - 12-6 
           - :math:`A`, :math:`B`
@@ -2744,10 +2744,10 @@ the code.
 
 .. _table-file:
 
-The TABLE File
---------------
+The TABVDW File
+---------------
 
-The TABLE file provides an alternative way of reading in the short range
+The TABVDW file provides an alternative way of reading in the short range
 potentials - in tabular form. This is particularly useful if an
 analytical form of the potential does not exist or is too complicated to
 specify in the ``vdw_generate`` subroutine. The table file is read by
@@ -2761,8 +2761,8 @@ The option of using tabulated potentials is specified in the FIELD file
 indicated by the use of the **tab** keyword on the record defining the
 short range potential (see Table :numref:`(%s) <vdw-table>`).
 
-The TABLE File Format
-~~~~~~~~~~~~~~~~~~~~~
+The TABVDW File Format
+~~~~~~~~~~~~~~~~~~~~~~
 
 The file is free-formatted but blank and commented lines are not
 allowed.
@@ -2805,7 +2805,7 @@ potential and force tables.
 Further Comments
 ~~~~~~~~~~~~~~~~
 
-It should be noted that the number of grid points in the TABLE file
+It should be noted that the number of grid points in the TABVDW file
 should not be less than the number of grid points DL_POLY_5 is
 expecting. (This number is given by the parameter ``mxgvdw`` calculated
 in the ``setup_module`` file - see

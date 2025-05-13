@@ -30,7 +30,7 @@ Using issues
    important for newer members.
 -  New features, *e.g.* task parallelism by Aidan, shaped particles by
    Vlad, shall have an issue too, the comments shall be used to provide
-   succint reports on progress.
+   succinct reports on progress.
 
 Labels
 ~~~~~~
@@ -54,7 +54,7 @@ The reviewer/s have the following responsibilities, \* Ensuring all
 contribution rules have been followed \* Ensuring the `coding
 style <./coding_style.md>`__ is adhered to \* Only accepting a merge if
 all tests have passed \* Using the comments system to request changes
-for the submittor to make
+for the submitter to make
 
 Using the git for development
 -----------------------------
@@ -99,10 +99,10 @@ Alternatively you can create the branch in the cli using
 
 .. code:: sh
 
-   # clone the repository, if you already have a local repository this is not nessecary
+   # clone the repository, if you already have a local repository this is not necessary
    $ git clone git@gitlab.com:username/dl-poly.git dl-poly-issueXYZ
    $ pushd dl-poly-issueXYZ
-   # create and checkout a new branch (this is equivilent to git branch followed by git checkout)
+   # create and checkout a new branch (this is equivalent to git branch followed by git checkout)
    $ git checkout -b issueXYZ
    # create a remote tracking branch for you to push your changes to
    $ git push -u origin issueXYZ
@@ -279,7 +279,7 @@ To delete a remote branch on the remote *origin* use
 Code Coverage
 -------------
 
-If one builds DL_POLY_4 with **-DWITH_COVERAGE=ON** two targets will be
+If one builds DL_POLY_5 with **-DWITH_COVERAGE=ON** two targets will be
 available *make coverage* and *make runcoverage*. First will run the
 code coverage on all tests from *make test*.
 

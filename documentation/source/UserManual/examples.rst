@@ -67,7 +67,7 @@ Example 3: KNaSi\ :math:`_{2}`\ O\ :math:`_{5}` - Potassium/Sodium Disilicate Gl
 
 Potassium Sodium disilicate glass (NaKSi:math:`_{2}`\ O\ :math:`_{5}`)
 using two and three-body potentials. Some of the two-body potentials are
-read from the TABLE file. Simulation at 1000 K using NVT Nosé-Hoover
+read from the TABVDW file. Simulation at 1000 K using NVT Nosé-Hoover
 ensemble with SPME. Cubic periodic boundaries are in use. The total
 system size is 69,120 ions.
 
@@ -218,7 +218,7 @@ FA-to-CG mapping and obtaining the PMF data by means of Boltzmann
 Inversion :cite:`reith-03a`. As a result, DL_POLY_5 could be
 used for simulating a CG system with numerically defined, tabulated FFs,
 see TABBND, TABANG, TABDIH and TABINV files for intra-molecular
-potentials, and TABLE for inter-molecular (short-range, VDW) potentials.
+potentials, and TABVDW for inter-molecular (short-range, VDW) potentials.
 
 Both tests are also available as parts of the tutorial cases from the
 VOTCA package :cite:`ruhle-09a`. Therefore, the CONFIG,

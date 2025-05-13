@@ -34,7 +34,7 @@ step-by-step description follows.
    :cite:`smith-gui`.
 
 #. To run the executable for the first time you require the files
-   CONTROL, FIELD and CONFIG; and possibly a few tabulated files (TABLE,
+   CONTROL, FIELD and CONFIG; and possibly a few tabulated files (TABVDW,
    TABEAM, etc.). These must be present in the directory from which the
    program is executed. (See Section :ref:`The INPUT Files<input-files>`
    for the description of the input files.)
@@ -113,7 +113,7 @@ compliance with the DD :index:`strategy<parallelisation>`. ``map_domains`` is ca
 routine ``set_bounds``, which also sets the necessary limits for various
 simulation array sizes and all global variables as declared in
 ``setup_module`` to convenient values based on a rough scan through the
-CONFIG, CONTROL, FIELD and optionally TABLE and TABEAM
+CONFIG, CONTROL, FIELD and optionally TABVDW and TABEAM
 (Section :ref:`The INPUT Files<input-files>`) files. The routine also calls
 the ``read_config`` routine to obtain atomic positions and optionally
 velocities and forces from the CONFIG file. After allocation of all

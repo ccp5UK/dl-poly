@@ -110,7 +110,7 @@ may be either ints, floats, or strings, e.g.
 ::
 
    pressure_tensor [ 1.0 2.0 3.0 4.0 5.0 6.0 ] GPa
-   ewald_kvec [ 32 64 32 ]
+   spme_kvec [ 32 64 32 ]
    correlation_observable [v_x-v_x v_y-v_y v_z-v_z]
 
 Vector data may have a particular size requirement, as is the case for 
@@ -439,16 +439,16 @@ which will create/overwrite ``CONTROL.new``.
     - coul_dielectric_constant :math:`f` 
   * - **equil**\ ibration (steps) :math:`f` 
     - time_equilibration :math:`f`  steps
-  * - **ewald precision** :math:`f` 
-    - coul_method ewald 
+  * - **spme precision** :math:`f` 
+    - coul_method spme 
   * - 
-    - ewald_precision :math:`f` 
-  * - **ewald** (sum) :math:`\alpha~k_{1}~k_{2}~k_{3}` 
-    - coul_method ewald 
+    - spme_precision :math:`f` 
+  * - **spme** (sum) :math:`\alpha~k_{1}~k_{2}~k_{3}` 
+    - coul_method spme 
   * - 
-    - ewald_alpha :math:`\alpha{}` 
+    - spme_alpha :math:`\alpha{}` 
   * - 
-    - ewald_kvec [ :math:`k_{1}~k_{2}~k_{3}` ] 
+    - spme_kvec [ :math:`k_{1}~k_{2}~k_{3}` ] 
   * - **exclu**\ de
     - coul_extended_exclusion ON
   * - **finish**
@@ -682,7 +682,7 @@ which will create/overwrite ``CONTROL.new``.
   * - **mxstep** :math:`f` 
     - timestep_variable_max_delta :math:`f` ps 
   * - **vdw direct** 
-    - vdw_method (tabulated:math:`|`\ direct\ :math:`|`\ ewald\ :math:`|`\ off)
+    - vdw_method (tabulated:math:`|`\ direct\ :math:`|`\ spme\ :math:`|`\ off)
   * - **vdw mix**\ ing *rule* 
     - vdw_mix_method (Lorentz-Berthelot:math:`|`\ Fender-Hasley\ :math:`|`\ Hogervorst\ :math:`|` Waldman-Hagler\ :math:`|`\ Tang-Toennies\ :math:`|`\ Functional)
   * - **vdw shift** 

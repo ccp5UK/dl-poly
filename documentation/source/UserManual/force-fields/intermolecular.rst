@@ -332,7 +332,7 @@ explicit formulae, makes the routines for calculating the potential
 energy and atomic forces very general, and enables the use of user
 defined pair potential functions. DL_POLY_5 also allows the user to read
 in the interpolation arrays directly from a file (implemented in the
-vdw_table_read routine) and the TABLE file
+vdw_table_read routine) and the TABVDW file
 (Section :ref:`table-file`). This is particularly useful if
 the pair potential function has no simple analytical description (e.g.
 spline potentials).

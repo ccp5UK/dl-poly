@@ -26,7 +26,8 @@ More info:
 
 * [Extra info on building and distro binaries](https://ccp5.gitlab.io/dlpoly-setup/)
 * [Exercises with dlpoly-py](https://gitlab.com/ccp5/dlpoly-py/-/tree/devel/examples?ref_type=heads)
-* [Tutorials](https://ccp5.gitlab.io/dlpoly/)
+* [Tutorials](https://dl-sdg.github.io/) (via DLS_DigitalGuide)
+* [Tutorials - old](https://ccp5.gitlab.io/dlpoly/)
 * [Python companion helper](https://pypi.org/project/dlpoly-py/)
 
 Main support channels are the mailing list and matrix room, be sure you check the archive before you start.

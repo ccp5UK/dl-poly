@@ -749,7 +749,7 @@ Section \ :ref:`IPDF-analysis`. The purpose of these
 files is to provide the user with means of setting up a PMF-based
 force-field, for example in the case of initial coarse-graining of an
 atomistic system. In particular, one can convert the VDWTAB file into a
-correctly formatted TABLE file (Section :ref:`table-file`)
+correctly formatted TABVDW file (Section :ref:`table-file`)
 by using the utility called ``pmf2tab.f`` (subject to compilation; found
 in DL_POLY_5 directory ``utility``) as follows,
 

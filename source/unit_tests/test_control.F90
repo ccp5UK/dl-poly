@@ -444,19 +444,19 @@ Contains
     Call assert(rtmp, 6.666_wp, "Accurate retrieval of equilibration_force_cap failed", passed_accum = passed)
 
     Call params%retrieve("spme_alpha", rtmp)
-    Call assert(rtmp, 6.666_wp, "Accurate retrieval of ewald_alpha failed", passed_accum = passed)
+    Call assert(rtmp, 6.666_wp, "Accurate retrieval of spme_alpha failed", passed_accum = passed)
 
     Call params%retrieve("spme_kvec_spacing", rtmp)
-    Call assert(rtmp, 6.666_wp, "Accurate retrieval of ewald_kvec_spacing failed", passed_accum = passed)
+    Call assert(rtmp, 6.666_wp, "Accurate retrieval of spme_kvec_spacing failed", passed_accum = passed)
 
     Call params%retrieve("spme_kvec", vtmp, 3)
-    Call assert(vtmp(1:3), [6.666_wp, 6.666_wp, 6.666_wp], "Accurate retrieval of ewald_kvec failed", passed_accum = passed)
+    Call assert(vtmp(1:3), [6.666_wp, 6.666_wp, 6.666_wp], "Accurate retrieval of spme_kvec failed", passed_accum = passed)
 
     Call params%retrieve("spme_nsplines", itmp)
-    Call assert(itmp, 66666, "Accurate retrieval of ewald_nsplines failed", passed_accum = passed)
+    Call assert(itmp, 66666, "Accurate retrieval of spme_nsplines failed", passed_accum = passed)
 
     Call params%retrieve("spme_precision", rtmp)
-    Call assert(rtmp, 6.666_wp, "Accurate retrieval of ewald_precision failed", passed_accum = passed)
+    Call assert(rtmp, 6.666_wp, "Accurate retrieval of spme_precision failed", passed_accum = passed)
 
     Call params%retrieve("fixed_com", ltmp)
     Call assert(.not. ltmp, "Accurate retrieval of fixed_com failed", passed_accum = passed)

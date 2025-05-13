@@ -15,7 +15,7 @@ Building notes
    options
 -  to change the install path use **-DCMAKE_INSTALL_PREFIX=**
    (*-DCMAKE_INSTALL_PREFIX=$HOME/101/DL_POLY*)
--  automatic testing can be done after **DL_POLY_4** is built, using
+-  automatic testing can be done after **DL_POLY_5** is built, using
    **make test**
 -  to see all the tests available use **ctest -N**
 -  to run one specific test use **ctest -R**

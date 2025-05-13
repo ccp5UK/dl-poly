@@ -50,15 +50,46 @@ cff-version: 1.0.3
 date-released: 2018-09-10
 doi: N/A
 keywords: 
-  - DL_POLY_4.09
-license: STFC specific, available in ./LICENCE, similar in spirit to https://opensource.org/licenses/Artistic-2.0
-license-url: https://www.scd.stfc.ac.uk/Pages/DL_POLY-Registration.aspx
+  - DL_POLY_5
+license: L-GPL v3.0
+license-url: https://www.ccp5.ac.uk/DL_POLY/
 
 message: Please, do cite your DL_POLY usage by using the following metadata:
-title: DL_POLY_4
-version: 09
-date-released: 2018-09-10
+title: DL_POLY_5
+version: 3.0
+date-released: 2025-03-15
 references:
+  - type: article
+    scope: Always cite this paper when using DL_POLY:
+    authors:
+      - family-names: Devereux
+        given-names: Harvey L.
+      - family-names: Cockrell
+        given-names: Cillian
+      - family-names: Elena
+        given-names: Alin Marin
+      - family-names: Bush
+        given-names: Ian John
+      - family-names: Chalk
+        given-names: Aidan B. G.
+      - family-names: Madge
+        given-names: Jim
+      - family-names: Scivetti
+        given-names: Ivan
+      - family-names: Wilkins
+        given-names: Jacob S.
+      - family-names: Todorov
+        given-names: Ilian Todorov
+      - family-names: Smith
+        given-names: William
+      - family-names: Trachenko
+        given-names: Kostya
+    title: "DL_POLY 5: Calculation of system properties on the fly for very large systems via massive parallelism"
+    year: 2025
+    journal: Computer Physics Communications
+    volume: 
+    pages: 
+    doi: 10.48550/arXiv.2503.07526
   - type: article
     scope: Always cite this paper when using DL_POLY:
     authors:

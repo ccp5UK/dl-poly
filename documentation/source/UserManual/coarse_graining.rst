@@ -251,11 +251,11 @@ Setting up Tabulated Intramolecular Force-Field Files
 
 For a user-defined, e.g. coarse-grained, model system the effective
 potentials must be provided in a tabulated form. For non-bonded
-short-range (VdW) interactions the TABLE file must be prepared as
+short-range (VdW) interactions the TABVDW file must be prepared as
 described in Section :ref:`table-file`. However, the
 tabulated data format for intramolecular interactions (bonds, bending
 angles, dihedral and inversion angles in a polymer) differs from that of
-the TABLE file and assumes three columns: abscissa (distance in Å or
+the TABVDW file and assumes three columns: abscissa (distance in Å or
 angle in degrees), and two ordinates: potential and force data (virial
 for distance dependent interactions – e.g. bonds, and force for angle
 dependent interactions – e.g. angles). Shown below are examples of
@@ -374,7 +374,7 @@ files for a newly coarse-grained system.
    (derived from RDF:s) will be produced, along with RDFDAT. They are
    structured in the same manner and format as their intramolecular
    counterparts. The user can then convert the VDWTAB file into a
-   correctly formatted TABLE file by using the utility called pmf2tab.f
+   correctly formatted TABVDW file by using the utility called pmf2tab.f
    (subject to compilation; found in DL_POLY_5 directory utility) as
    follows.
 

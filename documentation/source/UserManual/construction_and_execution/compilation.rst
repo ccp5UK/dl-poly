@@ -260,7 +260,7 @@ interactions and external fields. Sometimes one or a few more extra
 files may also be required: MPOLES
 (Section :ref:`The MPOLES File<mpoles-file>`) - which contains the
 specification of higher order charge distributions (multipolar momenta);
-TABLE (Section :ref:`The TABLE File<table-file>`), TABEAM
+TABVDW (Section :ref:`The TABVDW File<table-file>`), TABEAM
 (Section :ref:`The TABEAM File<tabeam-file>`), TABBND, TABANG, TABDIH and
 TABINV Files (Section :ref:`The TABBND, TABANG, TABDIH & TABINV Files<intra-tables>`); which contain
 potential and force arrays for particular type of interaction that is
@@ -367,7 +367,7 @@ job as if it had not been interrupted.
 To restart a simulation after normal termination you will again require
 the original CONTROL file (*augment it to include the* **restart**
 *directive and/or extend the length and duration of the new targeted MD
-run*), the FIELD (and TABLE and/or TABEAM) file, and a CONFIG file,
+run*), the FIELD (and TABVDW and/or TABEAM) file, and a CONFIG file,
 which is the exact copy of the REVCON file created by the previous job.
 You will also require a new file: REVOLD
 (Section :ref:`The REVOLD File<revold-file>`), which is an exact copy of

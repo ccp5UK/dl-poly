@@ -56,7 +56,7 @@ Module vdw
                                       mbuck, mlj126, sw
   Use site,                      Only: site_type
   Use statistics,                Only: stats_type, &
-                                       calculate_stress 
+                                       calculate_stress
   Use units,                     Only: to_out_units
   Implicit None
 
@@ -1126,9 +1126,9 @@ Contains
     End If
     If (delpot > delr_max .and. (.not. safe)) Then
       Write (messages(1), '(a,1p,e15.7)') 'expected (maximum) radial increment: ', delr_max
-      Write (messages(2), '(a,1p,e15.7)') 'TABLE  file actual radial increment: ', delpot
+      Write (messages(2), '(a,1p,e15.7)') 'TABVDW file actual radial increment: ', delpot
       Write (messages(3), '(a,i10)') 'expected (minimum) number of grid points: ', vdws%max_grid
-      Write (messages(4), '(a,i10)') 'TABLE  file actual number of grid points: ', ngrid
+      Write (messages(4), '(a,i10)') 'TABVDW file actual number of grid points: ', ngrid
       Call info(messages, 4, .true.)
       Call error(22)
     End If
@@ -1138,7 +1138,7 @@ Contains
     If (Abs(1.0_wp - (delpot / dlrpot)) > 1.0e-8_wp) Then
       remake = .true.
       rdr = 1.0_wp / delpot
-      Write (message, '(a,i10)') 'TABLE arrays resized for mxgrid = ', vdws%max_grid - 4
+      Write (message, '(a,i10)') 'TABVDW arrays resized for mxgrid = ', vdws%max_grid - 4
       Call info(message, .true.)
     End If
 
@@ -1149,7 +1149,7 @@ Contains
       Call error(0, 'Transfer buffer too small in vdw_table_read')
     End If
 
-    If (cutpot < vdws%cutoff) Call error(0, 'Cutoff too large for TABLE file')
+    If (cutpot < vdws%cutoff) Call error(0, 'Cutoff too large for TABVDW file')
 
     fail = 0
     Allocate (buffer(0:ngrid), Stat=fail)
@@ -1186,17 +1186,17 @@ Contains
         End Do
 
         If (katom1 == 0 .or. katom2 == 0) Then
-          Write (message, '(a,a,a,a,a)') '****', atom1, '***', atom2, '**** entry in TABLE'
+          Write (message, '(a,a,a,a,a)') '****', atom1, '***', atom2, '**** entry in TABVDW'
           Call error(81, message, .true.)
         End If
 
         keyvdw = (Max(katom1, katom2) * (Max(katom1, katom2) - 1)) / 2 + Min(katom1, katom2)
 
         ! Only one vdw potential per pair is allowed
-        ! (FIELD AND TABLE potentials overlapping)
+        ! (FIELD AND TABVDW potentials overlapping)
 
         If (vdws%list(keyvdw) /= ivdw) &
-             Call error(0, 'Incompatible FIELD and TABLE file potentials')
+             Call error(0, 'Incompatible FIELD and TABVDW file potentials')
 
         ! read in potential arrays
 
