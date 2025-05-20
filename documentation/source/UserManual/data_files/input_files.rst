@@ -239,7 +239,19 @@ as a command sentence (record). Commented records (beginning with a # or
 !) and blank lines are not processed and may be added to aid legibility
 (see example above). Records must be limited in length to 200
 characters. Records are read in as up to three words “keyword value
-unit”. A word must not exceed 256 characters in length.
+unit”. A word must not exceed 256 characters in length. 
+
+It is possible to split a record across multiple lines using "&". See below for
+an example. Note any spacing must come on the new line
+
+::
+
+  pressure_tensor [ 6.666 6.666 6.666&
+   6.666 6.666 6.666 ] katm
+  correlation_observable [v_x&
+  -v_x&
+   v_y-v_y]
+
 
 Additional annotation must be rendered as a comment.
 

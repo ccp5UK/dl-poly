@@ -432,7 +432,7 @@ Contains
   !
   !  End Subroutine get_line
 
-  Subroutine get_line(safe, ifile, record, comm)
+  Subroutine get_line(safe, ifile, record, comm, strip_blank)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -449,13 +449,21 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Logical,          Intent(  Out) :: safe
-    Integer,          Intent(In   ) :: ifile
-    Character(Len=*), Intent(  Out) :: record
-    Type(comms_type), Intent(InOut) :: comm
+    Logical,                    Intent(  Out) :: safe
+    Integer,                    Intent(In   ) :: ifile
+    Character(Len=*),           Intent(  Out) :: record
+    Type(comms_type),           Intent(InOut) :: comm
+    Logical,          Optional, Intent(In   ) :: strip_blank
 
     Integer                            :: fail, i, rec_len
     Integer, Allocatable, Dimension(:) :: line
+    Logical                            :: strip
+
+    If (Present(strip_blank)) Then
+      strip = strip_blank
+    Else
+      strip = .true.
+    End If
 
     rec_len = Len(record)
 
@@ -508,7 +516,10 @@ Contains
 
     200 Continue
 
-    Call tabs_2_blanks(record) ; Call strip_blanks(record)
+    Call tabs_2_blanks(record)
+    If (strip) Then
+      Call strip_blanks(record)
+    End If
 
     Deallocate (line, Stat=fail)
     If (fail > 0) Call error(1012)

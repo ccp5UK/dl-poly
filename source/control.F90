@@ -4798,7 +4798,8 @@ Contains
     Type(parameters_hash_table), Intent(InOut) :: params
     Type(comms_type),            Intent(InOut) :: comm
 
-    Character(Len=STR_LEN)  :: input, key, units, val
+    Character(Len=STR_LEN)  :: input, key, units, val, tmp
+    Integer                 :: i
     Logical                 :: line_read
     Type(control_parameter) :: param
 
@@ -4815,7 +4816,23 @@ Contains
       If (.not. params%in(key)) Call error(0, 'Unrecognised key '//Trim(key))
       Call params%get(key, param)
       If (param%set) Call error(0, 'Param '//Trim(key)//' already set')
-      Call read_control_param(input, param, ifile, comm)
+      If (param%data_type == DATA_FLOAT_VECTOR .or. param%data_type == DATA_INT_VECTOR &
+          .or. param%data_type == DATA_STRING_VECTOR) Then
+        ! Handle Multiline
+        i = Index(input, '&')
+        If (i > 0) Then
+          tmp = ''
+          Do While (i > 0)
+            tmp = Trim(tmp)//Trim(input(:i-1))
+            If (input(i + 1:) /= '') Call error(0, 'Unexpected junk '//Trim(input)//' after key '//Trim(param%key))
+            Call get_line(line_read, ifile, input, comm, .false.)
+            i = Index(input, '&')
+          End Do
+          input = Trim(tmp)//Trim(input)
+        End If
+      End If
+      input = Adjustl(input)
+      Call read_control_param(input, param)
       param%set = .true.
       Call params%set(key, param)
     End Do
@@ -4823,16 +4840,13 @@ Contains
     Call params%fix()
   End Subroutine parse_control_file
 
-  Subroutine read_control_param(input, param, ifile, comm)
+  Subroutine read_control_param(input, param)
     Character(Len=*),        Intent(InOut) :: input
     Type(control_parameter), Intent(InOut) :: param
-    Integer,                 Intent(In   ) :: ifile
-    Type(comms_type),        Intent(InOut) :: comm
 
     Character(Len=MAX_KEY) :: unit
-    Character(Len=STR_LEN) :: tmp, val
+    Character(Len=STR_LEN) :: val
     Integer                :: i, test_int
-    Logical                :: line_read
     Real(kind=wp)          :: test_real
 
     Select Case (param%data_type)
@@ -4847,37 +4861,27 @@ Contains
       Call get_word(input, unit)
       param%units = unit
     Case (DATA_FLOAT_VECTOR, DATA_INT_VECTOR, DATA_STRING_VECTOR)
-      ! Handle Multiline
-      i = Index(input, '&')
-      tmp = ''
-      Do While (i > 0)
-        tmp = Trim(tmp)//input(:i - 1)
-        If (input(i + 1:) /= '') Call error(0, 'Unexpected junk '//Trim(input)//' after key '//Trim(param%key))
-        Call get_line(line_read, ifile, input, comm)
-        i = Index(input, '&')
-      End Do
-      tmp = Adjustl(Trim(tmp)//input)
-
-      If (tmp(1:1) /= '[') Call error(0, 'Missing opening bracket "[" for key'//Trim(param%key))
-      i = Index(tmp, ']', back=.true.)
+      If (input(1:1) /= '[') Call error(0, 'Missing opening bracket "[" for key'//Trim(param%key))
+      i = Index(input, ']', back=.true.)
       If (i == 0) Call error(0, 'Missing closing bracket "]" for key'//Trim(param%key))
 
-      ! Cut off braces
-      input = tmp(i + 1:)
-      tmp = tmp(2:i - 1)
-
-      param%val = ""
-      Do While (tmp /= '')
-        Call get_word(tmp, val)
-        ! Check all valid reals
-        If (param%data_type /= DATA_STRING_VECTOR) Then
-          test_real = word_2_real(val)
-        End If
-        param%val = Trim(param%val)//' '//val
-      End Do
-
-      Call get_word(input, unit)
+      Call get_word(input(i+1:), unit)
       param%units = unit
+      ! Cut off braces (and any units)
+      input = input(2:i - 1)
+
+      If (param%data_type /= DATA_STRING_VECTOR) Then
+        param%val = ""
+        Do While (input /= '')
+          Call get_word(input, val)
+          ! Check all valid reals
+          test_real = word_2_real(val)
+          param%val = Trim(param%val)//' '//val
+        End Do
+      Else
+        param%val = input
+        input = ""
+      End If
 
     Case (DATA_OPTION, DATA_BOOL)
       Call get_word(input, val)

@@ -22,12 +22,13 @@ Contains
     Type(comms_type), Intent(InOut) :: comm
     Logical,          Intent(  Out) :: passed
 
-    Character(Len=STR_LEN)      :: ctmp
-    Integer                     :: itmp, test_unit
-    Logical                     :: ltmp
-    Real(kind=wp)               :: rtmp, ts
-    Real(kind=wp), Allocatable  :: vtmp(:)
-    Type(parameters_hash_table) :: params
+    Character(Len=STR_LEN)              :: ctmp
+    Integer                             :: itmp, test_unit
+    Logical                             :: ltmp
+    Real(kind=wp)                       :: rtmp, ts
+    Real(kind=wp), Allocatable          :: vtmp(:)
+    Type(parameters_hash_table)         :: params
+    Character(Len=STR_LEN), Allocatable :: option(:)
 
     passed = .true.
 
@@ -172,7 +173,8 @@ Contains
     Write (test_unit, '(a,1X,a)') "ensemble_semi_isotropic", "JUNK"
     Write (test_unit, '(a,1X,a)') "ensemble_semi_orthorhombic", "on"
     Write (test_unit, '(a,1X,a)') "ensemble_tension", "6.666 N/m"
-    Write (test_unit, '(a,1X,a)') "pressure_tensor", "[ 6.666 6.666 6.666 6.666 6.666 6.666 ] katm"
+    Write (test_unit, '(a,1X,a)') "pressure_tensor", "[ 6.666 6.666 6.666&"
+    Write (test_unit, '(a)')      " 6.666 6.666 6.666 ] katm"
     Write (test_unit, '(a,1X,a)') "pressure_hydrostatic", "6.666 katm"
     Write (test_unit, '(a,1X,a)') "pressure_perpendicular", "[ 6.666 6.666 6.666 ] katm"
     Write (test_unit, '(a,1X,a)') "temperature", "6.666 K"
@@ -265,6 +267,9 @@ Contains
     Write (test_unit, '(a,1X,a)') "plumed_restart", "off"
     Write (test_unit, '(a,1X,a)') "strict_checks", "off"
     Write (test_unit, '(a,1X,a)') "unsafe_comms", "on"
+    Write (test_unit, '(a,1X,a)') "correlation_observable", "[v_x&"
+    Write (test_unit, '(a)')      "-v_x&"
+    Write (test_unit, '(a)')      " v_y-v_y]"
 
     Rewind (test_unit)
 
@@ -967,6 +972,17 @@ Contains
     Call params%retrieve("zden_print", ltmp)
     Call assert(.not. ltmp, "Accurate retrieval of zden_print failed", passed_accum = passed)
 
+    Call params%retrieve("correlation_observable", option)
+    Call assert(Allocated(option), "Accurate retrieval of multiline correlation_observable failed", passed_accum = passed)
+    Call assert(Size(option) == 2, "Accurate retrieval of multiline correlation_observable failed", passed_accum = passed)
+    If (Allocated(option)) Then
+      If (Size(option) == 2) Then
+        Call assert(Trim(option(1)), "v_x-v_x", &
+          "Accurate retrieval of multiline correlation_observable failed", passed_accum = passed)
+        Call assert(Trim(option(2)), "v_y-v_y", &
+          "Accurate retrieval of multiline correlation_observable failed", passed_accum = passed)
+      End If
+    End If
 
     Call destroy_units()
 
