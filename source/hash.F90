@@ -17,7 +17,7 @@ Module hash
 
   Private
 
-  Integer, Parameter :: MAX_KEY = 50
+  Integer, Parameter          :: MAX_KEY = 50
   Character(Len=*), Parameter :: BAD_VAL = "VAL_NOT_IN_KEYS"
 
   Type, Public :: container
@@ -25,41 +25,40 @@ Module hash
     Private
     Class(*), Pointer, Private :: Data => Null()
   Contains
-!     Generic, Public :: Assignment( = ) => set, get
-    Procedure, Private :: set => set_container
+    Procedure, Private          :: set => set_container
     Procedure, Pass(C), Private :: get => get_container
   End Type container
 
   Type, Public :: hash_table
     !! Type containing hash table of parameters
     Private
-    Type(container), Dimension(:), Allocatable :: table_data
+    Type(container),        Dimension(:), Allocatable :: table_data
     Character(Len=MAX_KEY), Dimension(:), Allocatable :: table_keys
     Character(Len=MAX_KEY), Dimension(:), Allocatable :: key_names
-    Integer, Public :: collisions = 0
-    Integer, Public :: used_keys = -1
-    Integer :: size = -1
+    Integer, Public                                   :: collisions = 0
+    Integer, Public                                   :: used_keys = -1
+    Integer                                           :: size = -1
     !> Values in hash table can be overwritten: Default = True; Set with table%fix
-    Logical :: can_overwrite = .true.
-    Logical :: allocated = .false.
+    Logical                                           :: can_overwrite = .true.
+    Logical                                           :: allocated = .false.
   Contains
 
     Private
-    Procedure, Public, Pass :: init => allocate_hash_table
-    Procedure, Public, Pass :: set => set_hash_value
-    Generic, Public  :: get => get_int, get_double, get_complex
-    Procedure, Public, Pass :: hash => hash_value
-    Procedure, Public, Pass :: print_keys, get_keys
-    Procedure, Public, Pass(table_to) :: fill => fill_from_table
-    Procedure, Public, Pass :: copy => copy_table
-    Procedure, Public, Pass :: resize => resize_table
-    Procedure, Public, Pass :: expand => expand_table
-    Procedure, Private :: get_int, get_double, get_complex
-    Procedure, Public :: get_cont => get_hash_value
-    Procedure, Private, Pass :: get_loc => get_loc
-    Procedure, Public, Pass :: in => contains_value
-    Procedure, Public, Pass :: fix => fix_table
-    Procedure, Public, Pass :: destroy => destroy
+    Procedure, Public,  Pass           :: init => allocate_hash_table
+    Procedure, Public,  Pass           :: set => set_hash_value
+    Generic,   Public                  :: get => get_int, get_double, get_complex
+    Procedure, Public,  Pass           :: hash => hash_value
+    Procedure, Public,  Pass           :: print_keys, get_keys
+    Procedure, Public,  Pass(table_to) :: fill => fill_from_table
+    Procedure, Public,  Pass           :: copy => copy_table
+    Procedure, Public,  Pass           :: resize => resize_table
+    Procedure, Public,  Pass           :: expand => expand_table
+    Procedure, Private                 :: get_int, get_double, get_complex
+    Procedure, Public                  :: get_cont => get_hash_value
+    Procedure, Private, Pass           :: get_loc  => get_loc
+    Procedure, Public,  Pass           :: contains => contains_value
+    Procedure, Public,  Pass           :: fix => fix_table
+    Procedure, Public,  Pass           :: destroy => destroy
     Final :: cleanup
 
   End Type hash_table
@@ -361,7 +360,7 @@ Contains
       Call error(0, 'Cannot overwrite key '//key)
     End If
 
-    If (.not. table%in(key)) Then
+    If (.not. table%contains(key)) Then
       table%used_keys = table%used_keys + 1
       table%key_names(table%used_keys) = key
     End If

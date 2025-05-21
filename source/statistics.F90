@@ -905,7 +905,7 @@ Contains
     End Do
     cor_data%freq = freq
 
-    If (stats%cor_table%in(correlation_name)) Then
+    If (stats%cor_table%contains(correlation_name)) Then
       Call error(0, "duplicate correlation")
     End If
     Call stats%cor_table%set(correlation_name, stats%next_cor)
@@ -1008,7 +1008,7 @@ Contains
     Call stats%cor_table%get_keys(cor_keys)
 
     Do i = 1, Size(cor_keys)
-      If (.not. stats%cor_table%in(cor_keys(i))) Cycle
+      If (.not. stats%cor_table%contains(cor_keys(i))) Cycle
       Call stats%cor_table%get(cor_keys(i), cor_index)
       Associate(cor_data => stats%correlations(cor_index))
         freq = cor_data%freq
@@ -1458,7 +1458,7 @@ Contains
           If ((.not. leql) .or. nstep >= nsteql) Then
             Call stats%cor_table%get_keys(cor_keys)
             Do j = 1, Size(cor_keys)
-              If (.not. stats%cor_table%in(cor_keys(j))) Cycle
+              If (.not. stats%cor_table%contains(cor_keys(j))) Cycle
               Call stats%cor_table%get(cor_keys(j), cor_index)
               Associate(cor_data => stats%correlations(cor_index))
                 If (nstep > 0 .and. &
@@ -3264,7 +3264,7 @@ Contains
         b = symbols(voigt_6x6(v, 2))
         c = symbols(voigt_6x6(v, 3))
         d = symbols(voigt_6x6(v, 4))
-        If (stats%cor_table%in("stress_"//a//b//"-stress_"//c//d)) Then
+        If (stats%cor_table%contains("stress_"//a//b//"-stress_"//c//d)) Then
           stats%born_calculate(v) = .true.
         End If
       End Do
@@ -3525,7 +3525,7 @@ Contains
     Integer                    :: points, blocks
     Real(Kind=wp), Allocatable :: timesteps(:)
 
-    If (stats%cor_table%in(name)) Then
+    If (stats%cor_table%contains(name)) Then
       Call stats%cor_table%get(name, cor_index)
       atom_index = 1
       If (Present(atom)) Then
@@ -3554,7 +3554,7 @@ Contains
 
     Integer :: cor_index    
 
-    If (stats%cor_table%in(name)) Then
+    If (stats%cor_table%contains(name)) Then
       Call stats%cor_table%get(name, cor_index)
       get_correlation_frequency = stats%correlations(cor_index)%freq
     Else
@@ -3581,7 +3581,7 @@ Contains
     If (stats%per_atom_correlations .and. stats%calculate_correlations) Then
       Call stats%cor_table%get_keys(cor_keys)
       Do j = 1, Size(cor_keys)
-        If (.not. stats%cor_table%in(cor_keys(j))) Cycle
+        If (.not. stats%cor_table%contains(cor_keys(j))) Cycle
         Call stats%cor_table%get(cor_keys(j), cor_index)
         Associate(cor_data => stats%correlations(cor_index))
           If (cor_data%atom(1) > 0) Then
@@ -3720,7 +3720,7 @@ Contains
       Call stats%cor_table%get_keys(cor_keys)
 
       Do i = 1, Size(cor_keys)
-        If (.not. stats%cor_table%in(cor_keys(i))) Cycle
+        If (.not. stats%cor_table%contains(cor_keys(i))) Cycle
         Call stats%cor_table%get(cor_keys(i), cor_index)
         If (stats%correlations(cor_index)%atom(1) == 0) Cycle
         If (Findloc(stats%correlations(cor_index)%atom_global, config%ltg(atom_index), 1) /= 0) Then
@@ -3733,7 +3733,7 @@ Contains
       If (deportations == 0) Return
 
       Do i = 1, Size(cor_keys)
-        If (.not. stats%cor_table%in(cor_keys(i))) Cycle
+        If (.not. stats%cor_table%contains(cor_keys(i))) Cycle
         Call stats%cor_table%get(cor_keys(i), cor_index)
         If (stats%correlations(cor_index)%atom(1) == 0) Cycle
         Associate(cor_data => stats%correlations(cor_index))
@@ -3807,7 +3807,7 @@ Contains
       Call stats%cor_table%get_keys(cor_keys)
 
       Do i = 1, Size(cor_keys)
-        If (.not. stats%cor_table%in(cor_keys(i))) Cycle
+        If (.not. stats%cor_table%contains(cor_keys(i))) Cycle
         Call stats%cor_table%get(cor_keys(i), cor_index)
         Associate(cor_data => stats%correlations(cor_index))
           correlations = correlations + cor_data%atoms_used
@@ -3821,7 +3821,7 @@ Contains
       buffer_index = 0
       idx = 1
       Do i = 1, Size(cor_keys)
-        If (.not. stats%cor_table%in(cor_keys(i))) Cycle
+        If (.not. stats%cor_table%contains(cor_keys(i))) Cycle
         Call stats%cor_table%get(cor_keys(i), cor_index)
         Associate(cor_data => stats%correlations(cor_index))
           Do atom = 1, cor_data%atoms_used
@@ -3948,7 +3948,7 @@ Contains
       Call stats%cor_table%get_keys(cor_keys)
 
       Do i = 1, Size(cor_keys)
-        If (.not. stats%cor_table%in(cor_keys(i))) Cycle
+        If (.not. stats%cor_table%contains(cor_keys(i))) Cycle
         Call stats%cor_table%get(cor_keys(i), cor_index)
         Associate(cor_data => stats%correlations(cor_index))
           correlations = correlations + Size(cor_data%atom)
@@ -3962,7 +3962,7 @@ Contains
       ! collect local id buffers
       idx = 1
       Do i = 1, Size(cor_keys)
-        If (.not. stats%cor_table%in(cor_keys(i))) Cycle
+        If (.not. stats%cor_table%contains(cor_keys(i))) Cycle
         Call stats%cor_table%get(cor_keys(i), cor_index)
         Associate(cor_data => stats%correlations(cor_index))
           Do atom = 1, Size(cor_data%atom)
@@ -4105,7 +4105,7 @@ Contains
     buffer_index = 0
     If (stats%calculate_correlations) Then  
       Do i = 1, Size(cor_keys)
-        If (.not. stats%cor_table%in(cor_keys(i))) Cycle
+        If (.not. stats%cor_table%contains(cor_keys(i))) Cycle
         Call stats%cor_table%get(cor_keys(i), cor_index)
         Associate(cor_data => stats%correlations(cor_index))
           Do j = 1, Size(cor_data%correlators)

@@ -883,11 +883,11 @@ contains
     factor = null_unit
     tmp = string(2:)
     call lower_case(tmp)
-    if (.not. units_table%in(tmp) .and. verify(trim(string(2:)), number) /= 0) then
+    if (.not. units_table%contains(tmp) .and. verify(trim(string(2:)), number) /= 0) then
       i = index(prefix_symbol, string(2:2))
       tmp = string(3:)
       call lower_case(tmp)
-      if (i < 1 .or. .not. units_table%in(tmp)) call error(0, "Unit not found "//string(2:))
+      if (i < 1 .or. .not. units_table%contains(tmp)) call error(0, "Unit not found "//string(2:))
       factor = prefix(i)
       string = string(1:1) // string(3:)
     end if

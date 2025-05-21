@@ -4813,7 +4813,7 @@ Contains
       ! Skip blanks
       If (key == "") Cycle
       Call lower_case(key)
-      If (.not. params%in(key)) Call error(0, 'Unrecognised key '//Trim(key))
+      If (.not. params%contains(key)) Call error(0, 'Unrecognised key '//Trim(key))
       Call params%get(key, param)
       If (param%set) Call error(0, 'Param '//Trim(key)//' already set')
       If (param%data_type == DATA_FLOAT_VECTOR .or. param%data_type == DATA_INT_VECTOR &
