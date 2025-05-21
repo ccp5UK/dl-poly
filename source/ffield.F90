@@ -4188,7 +4188,6 @@ Contains
                       vdws%ltp(vdws%n_vdw) = keypot
 
                       ! Get mixing in LJ's style characteristic energy(EPSILON) & distance(SIGMA) terms
-
                       eps = 0.0_wp; sig = 0.0_wp; del = 0.0_wp
                       If (keypot == VDW_12_6) Then ! 12-6
                         keyword = '12-6'
@@ -4386,16 +4385,31 @@ Contains
                       Case (VDW_12_6) ! 12-6
                         vdws%param(1, vdws%n_vdw) = 4.0_wp * eps(0) * (sig(0)**12)
                         vdws%param(2, vdws%n_vdw) = 4.0_wp * eps(0) * (sig(0)**6)
+                        Allocate(LJ126::vdws%potentials(vdws%n_vdw)%p)
                         Call vdws%potentials(vdws%n_vdw)%p%set_parameters(vdws%param(1:2, vdws%n_vdw))
                       Case (VDW_LENNARD_JONES, VDW_DPD, VDW_AMOEBA, VDW_LENNARD_JONES_COHESIVE, &
                            VDW_LJ_MDF, VDW_126_MDF) ! LJ, DPD, 14-7, LJC
                         vdws%param(1, vdws%n_vdw) = eps(0)
                         vdws%param(2, vdws%n_vdw) = sig(0)
+                        If (keypot == VDW_LENNARD_JONES) Then
+                            Allocate(LJ::vdws%potentials(vdws%n_vdw)%p)
+                        Else If (keypot == VDW_DPD) Then
+                            Allocate(dpd::vdws%potentials(vdws%n_vdw)%p)
+                        Else If (keypot == VDW_AMOEBA) Then
+                            Allocate(amoeba::vdws%potentials(vdws%n_vdw)%p)
+                        Else If (keypot == VDW_LENNARD_JONES_COHESIVE) Then
+                            Allocate(lj_coh::vdws%potentials(vdws%n_vdw)%p)
+                        Else If (keypot == VDW_LJ_MDF) Then
+                            Allocate(mlj::vdws%potentials(vdws%n_vdw)%p)
+                        Else If (keypot == VDW_126_MDF) Then
+                            Allocate(mlj126::vdws%potentials(vdws%n_vdw)%p)
+                        End If
                         Call vdws%potentials(vdws%n_vdw)%p%set_parameters(vdws%param(1:2, vdws%n_vdw))
                       Case (VDW_WCA) ! WCA
                         vdws%param(1, vdws%n_vdw) = eps(0)
                         vdws%param(2, vdws%n_vdw) = sig(0)
                         vdws%param(3, vdws%n_vdw) = del(0)
+                        Allocate(wca::vdws%potentials(vdws%n_vdw)%p)
                         Call vdws%potentials(vdws%n_vdw)%p%set_parameters(vdws%param(1:3, vdws%n_vdw))
                       End Select
 

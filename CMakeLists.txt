@@ -411,6 +411,8 @@ if(BUILD_TESTING)
     do_test("TEST${test}")
   endforeach()
 
+  do_test("TEST185")
+
   set(UNIT_TESTS control configuration units vdw integrators hash parse numerics mdpd smearing coulomb)
   set(UNIT_TESTS_ID U001 U002 U003 U004 U005 U006 U007 U008 U009 U010 U011)
 
