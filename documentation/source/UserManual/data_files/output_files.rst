@@ -807,6 +807,7 @@ There follow the data for each individual Z-density function, i.e.
   **following records** (*mxgrdf* records)
   ``z``         real  distance in z direction (Å or DPD length units)
   :math:`\rho(z)` real Z-density at given height ``z``
+  :math: `n(z)` real rolling Z-density integral at given height ``z``
 
 **Note** the ZDNDAT file is optional and appears when the **zden_print**
 option is specified in the CONTROL file.

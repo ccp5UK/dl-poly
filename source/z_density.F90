@@ -149,13 +149,8 @@ Contains
     Type(site_type),          Intent(In   ) :: sites
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=STR_LEN) :: messages(2)
     Integer            :: j, k
-    Real(Kind=wp)      :: delr, dvolz, factor, rho, rho1, rrr, sum, sum1, zlen
-
-    Write (messages(1), '(a)') 'z density profiles:'
-    Write (messages(2), '(2x,a,i8,a)') 'calculated using ', zdensity%n_samples, ' configurations'
-    Call info(messages, 2, .true.)
+    Real(Kind=wp)      :: delr, dvolz, factor, rho, rrr, sum, zlen
 
     ! open Z density file and write headers
 
@@ -185,9 +180,6 @@ Contains
     ! for every species
 
     Do k = 1, sites%ntype_atom
-      Write (messages(1), '(2x,a,a8)') 'rho(r): ', sites%unique_atom(k)
-      Write (messages(2), '(9x,a1,6x,a3,9x,a4)') 'r', 'rho', 'n(r)'
-      Call info(messages, 2, .true.)
       If (comm%idnode == 0) Then
         Write (nzdndt, '(a8)') sites%unique_atom(k)
       End If
@@ -207,26 +199,8 @@ Contains
         rho = zdensity%density(j, k) * factor
         sum = sum + rho * dvolz
 
-        ! null it if < 1.0e-6_wp
-
-        If (rho < 1.0e-6_wp) Then
-          rho1 = 0.0_wp
-        Else
-          rho1 = rho
-        End If
-
-        If (sum < 1.0e-6_wp) Then
-          sum1 = 0.0_wp
-        Else
-          sum1 = sum
-        End If
-
-        ! print out information
-
-        Write (messages(1), '(2x,f10.4,1p,2e14.6)') rrr, rho1, sum1
-        Call info(messages(1), .true.)
         If (comm%idnode == 0) Then
-          Write (nzdndt, "(1p,2e14.6)") rrr, rho
+          Write (nzdndt, "(1p,3e14.6)") rrr, rho, sum
         End If
       End Do
     End Do
