@@ -6883,7 +6883,7 @@ Contains
     If (bond%max_bonds > 0) bond%max_legend = (mxb * (mxb + 1)) + 1
     mxf(6) = bond%max_legend
 
-    If (angle%max_angles > 0) angle%max_legend = (mxb + 1)**2 / 2 + mxb / 2 + 1
+    If (angle%max_angles > 0) angle%max_legend = (mxb + 1)**2 / 2 + mxb + 1
     mxf(7) = angle%max_legend
 
     If (dihedral%max_angles > 0) dihedral%max_legend = ((mxb - 1) * mxb * (mxb + 1)) / 2 + 2 * mxb + 1
