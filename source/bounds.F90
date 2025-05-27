@@ -900,15 +900,10 @@ Contains
     If ((comm%mxnode == 1 .or. Any(link_cell < 3)) .or. &
         (config%imcon == IMCON_NOPBC .or. config%imcon == IMCON_SLAB) .or. &
         (average_domain_density / maximum_local_density <= 0.5_wp) .or. (fdvar > 10.0_wp)) Then
-      fdens = maximum_local_density ! for all possibly bad cases resort to max density
+      fdens = fdvar * maximum_local_density ! for all possibly bad cases resort to max density
     Else
       fdens = fdvar * (0.5_wp * average_domain_density + 0.5_wp * maximum_local_density) ! mix 50:50 and push
     End If
-
-    ! Get reasonable to set fdens limit - all particles in one link-cell
-
-    tol = Real(megatm, wp) / (Real(comm%mxnode, wp))
-    fdens = Min(fdens, tol)
 
     ! density variation affects the link-cell arrays' dimension
     ! more than domains(+halo) arrays' dimensions, in case of
@@ -917,9 +912,8 @@ Contains
     ! neigh%max_list is the maximum length of link-cell neigh%list (average_domain_density * 4/3 pi neigh%cutoff_extended^3)
     ! + 25% extra tolerance - i.e f(maximum_local_density,average_domain_density)*(5/3)*pi*neigh%cutoff_extended^3
 
-    neigh%max_list = Nint(fdens * (5.0_wp / 3.0_wp) * pi * neigh%cutoff_extended**3)
+    neigh%max_list = Nint(fdens * (5.0_wp / 3.0_wp) * pi * neigh%cutoff_extended**3)+5
     neigh%max_list = Min(neigh%max_list, megatm - 1) ! neigh%max_exclude
-
     If (neigh%max_list < neigh%max_exclude - 1) Then
       Call warning(6, Real(neigh%max_list, wp), Real(neigh%max_exclude, wp), 0.0_wp)
       neigh%max_list = neigh%max_exclude - 1
