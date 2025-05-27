@@ -245,7 +245,7 @@ Contains
       ntpbnd, ntpcrd, ntpcrd2, ntpcrd3, ntpdih, ntpinv, rwidth
     Logical                        :: atmchk, l_ang, l_bnd, l_con, l_dih, l_inv, l_rgd, l_shl, &
       l_tet, ldpd_safe, lmet_safe, lmols, lpmf, lshl_abort, &
-      lshl_all, lshl_one, lter_safe, lunits, safe
+      lshl_all, lshl_one, lter_safe, lunits, ldpd_units, safe
     Real(Kind=wp)                  :: charge, d_core, d_core_p, d_core_s, del(0:2), eps(0:2), &
       k_crsh, k_crsh_p, k_crsh_s, p_core, p_core_p, p_core_s, &
       parpot(1:30), pmf_tmp(1:2), q_core, q_core_p, q_core_s, &
@@ -276,6 +276,10 @@ Contains
     ! Initialise energy units for interactions flag
 
     lunits = .false.
+
+    ! Initialise DPD units for external fields flag
+
+    ldpd_units = .false.
 
     ! Initialise global atomic site index and running counters of
     ! shells, constraints, PMF, RBs,
@@ -415,6 +419,7 @@ Contains
           engunit = boltz
           Call info('energy units = Kelvin/Boltzmann', .true., level=3)
         Else If (word(1:3) == 'dpd') Then
+          ldpd_units = .true.
           Call info('energy units = DPD', .true., level=3)
         Else If (word(1:1) == ' ') Then
           Call info('energy units = dl_poly internal units (10 J/mol)', .true., level=3)
@@ -5382,14 +5387,16 @@ Contains
         If (Any([FIELD_ELECTRIC, FIELD_ELECTRIC_OSCILLATING] == ext_field%key)) Then
           If (.not. lunits) Call error(6)
           ! Convert units: input values for electrical field are only in units of V/A
-          ext_field%conv_fact = engunit * VA_to_dl
+          !                unless in DPD units: dpd_e/(dpd_l*dpd_q)
+          ext_field%conv_fact = Merge(1.0_wp, engunit * VA_to_dl, ldpd_units)
           Do i = 1, 3
             ext_field%param(i) = ext_field%param(i) * engunit / ext_field%conv_fact
           End Do
 
         Else If (ext_field%key == FIELD_MAGNETIC) Then
           ! Convert units: input values for electrical field are only in units of Tesla
-          ext_field%conv_fact = engunit * tesla_to_dl
+          !                unless in DPD units: dpd_e*dpd_t/(dpd_l*dpd_q)
+          ext_field%conv_fact = Merge(1.0_wp, engunit * tesla_to_dl, ldpd_units)
           Do i = 1, 3
             ext_field%param(i) = ext_field%param(i) * engunit / ext_field%conv_fact
           End Do
@@ -5404,7 +5411,8 @@ Contains
           ext_field%param(1) = ext_field%param(1) * engunit
 
         Else If (ext_field%key == FIELD_WALL_PISTON) Then
-          ext_field%param(3) = ext_field%param(3) / prsunt ! piston pressure specified in k-atm
+          If (.not. ldpd_units) ext_field%param(3) = ext_field%param(3) / prsunt ! piston pressure specified in k-atm
+                                                                                 ! if not in DPD units
           ext_field%param(3) = ext_field%param(3) * config%cell(5) * config%cell(9) ! convert to force
 
         Else If (Any([FIELD_ZRES, FIELD_ZRES_MINUS, FIELD_ZRES_PLUS] == ext_field%key)) Then

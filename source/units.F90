@@ -170,7 +170,7 @@ Module units
     length = 'dpd_l', &
     time = 'dpd_t', &
     mass = 'dpd_m', &
-    charge = 'internal_q', &
+    charge = 'dpd_q', &
     energy = 'dpd_e', &
     temp = 'dpd_temp', &
     current = 'A', &
@@ -181,7 +181,7 @@ Module units
     velocity = 'dpd_v', &
     power = 'dpd_e/dpd_t', &
     surf_ten = 'dpd_f/dpd_l', &
-    emf = 'dpd_e/internal_q')
+    emf = 'dpd_e/dpd_q')
 
   Type(units_scheme), Public, Protected, Save :: out_units
 
@@ -284,6 +284,8 @@ contains
          & init_unit(abbrev="e", name="Elementary charge", current=1, time=1, to_internal=electron_charge))
     call units_table%set("c", &
          & init_unit(abbrev="C", name="Coulomb", current=1, time=1, to_internal=coulomb))
+    call units_table%set("dpd_q", &
+         & init_unit(abbrev="q", name="DPD charge unit (elementary charge)", current=1, time=1, to_internal=1.0_wp))
 
     ! Current
 

@@ -2363,73 +2363,78 @@ Table :numref:`(%s) <external-field-table>`.
   the DL_POLY FIELD scope will follow from the interaction definition as
   seen in Table :numref:`(%s) <external-field-table>`:
 
-.. math::
-  :label: external-field-units_eq
+  .. math::
+    :label: external-field-units_eq
 
-    \begin{aligned}
-    \underline{F} =& q \; (\underline{v} \times \underline{H})~~~~~~\texttt{therefore}, \nonumber \\
-    \left[H\right] =& \frac{\left[F\right]}{\left[q\right]~\left[v\right]} = \frac{\left[m\right]~\left[a\right]}{\left[q\right]~\left[v\right]} \nonumber \\
-    \left[H\right] =& \frac{\texttt{Dalton~Å/ps$^{2}$}}{\texttt{proton~Å/ps}} = \frac{\texttt{Dalton}}{\texttt{proton~ps}} \\ 
-    \left[H\right] =& 1.037837512 \times 10^{4}~\texttt{Tesla} \\
-    H(DL\_POLY) =& H(MKS)~1.037837512 \times 10^{4}~~. \nonumber
-    \end{aligned}
+      \begin{aligned}
+      \underline{F} =& q \; (\underline{v} \times \underline{H})~~~~~~\texttt{therefore}, \nonumber \\
+      \left[H\right] =& \frac{\left[F\right]}{\left[q\right]~\left[v\right]} = \frac{\left[m\right]~\left[a\right]}{\left[q\right]~\left[v\right]} \nonumber \\
+      \left[H\right] =& \frac{\texttt{Dalton~Å/ps$^{2}$}}{\texttt{proton~Å/ps}} = \frac{\texttt{Dalton}}{\texttt{proton~ps}} \\ 
+      \left[H\right] =& 1.037837512 \times 10^{4}~\texttt{Tesla} \\
+      H(DL\_POLY) =& H(MKS)~1.037837512 \times 10^{4}~~. \nonumber
+      \end{aligned}
 
-Thus to apply a magnetic field of 1 Tesla along the :math:`y` axis, one
-could specify in FIELD the following:
+  Thus to apply a magnetic field of 1 Tesla along the :math:`y` axis, one
+  could specify in FIELD the following:
 
-::
+  ::
 
-   UNITS internal
-   ...
-   external
-   magnetic 0  1/1.037837512e04   0
-   ...
+     UNITS internal
+     ...
+     external
+     magnetic 0  1/1.037837512e04   0
+     ...
 
-when working in DL_POLY internal units. If we worked in *unit* units
-then
+  when working in DL_POLY internal units. If we worked in *unit* units
+  then
 
-.. math::
+  .. math::
 
-   \begin{aligned}
-   H &\propto& Energy \nonumber \\
-   Energy(DL\_POLY) &=& Energy(unit) ~ k_{unit \to DL\_POLY} \nonumber \\
-   H(DL\_POLY) &=& H(MKS)~1.037837512 \times 10^{4} \\
-   H(unit) &=& H(MKS)~\frac{1.037837512 \times 10^{4}}{k_{unit \to DL\_POLY}}~~, \nonumber\end{aligned}
+     \begin{aligned}
+     H &\propto& Energy \nonumber \\
+     Energy(DL\_POLY) &=& Energy(unit) ~ k_{unit \to DL\_POLY} \nonumber \\
+     H(DL\_POLY) &=& H(MKS)~1.037837512 \times 10^{4} \\
+     H(unit) &=& H(MKS)~\frac{1.037837512 \times 10^{4}}{k_{unit \to DL\_POLY}}~~, \nonumber\end{aligned}
 
-with the following conversion factors values:
+  with the following conversion factors values:
 
-.. math::
+  .. math::
 
-   \begin{aligned}
-   k_{eV \to DL\_POLY} &=& 9648.530821 \nonumber \\
-   k_{kcal/mol \to DL\_POLY} &=& 418.4 \nonumber \\
-   k_{kJ/mol \to DL\_POLY} &=& 100.0 \\
-   k_{K/Boltz \to DL\_POLY} &=& 0.831451115 \nonumber \\
-   k_{DPD \to DL\_POLY} &=& 1.0 \nonumber \\
-   k_{DL\_POLY \to DL\_POLY} &=& 1.0~~. \nonumber\end{aligned}
+     \begin{aligned}
+     k_{eV \to DL\_POLY} &=& 9648.530821 \nonumber \\
+     k_{kcal/mol \to DL\_POLY} &=& 418.4 \nonumber \\
+     k_{kJ/mol \to DL\_POLY} &=& 100.0 \\
+     k_{K/Boltz \to DL\_POLY} &=& 0.831451115 \nonumber \\
+     k_{DPD \to DL\_POLY} &=& 1.0 \nonumber \\
+     k_{DL\_POLY \to DL\_POLY} &=& 1.0~~. \nonumber\end{aligned}
 
-Obviously, for :math:`eV` units
+  Obviously, for :math:`eV` units
 
-.. math::
+  .. math::
 
-   \begin{aligned}
-   H(unit) &=& H(MKS)~\frac{1.037837512 \times 10^{4}}{k_{unit \to DL\_POLY}} \nonumber \\
-   k_{eV \to DL\_POLY} &=& 9648.530821 \\
-   H(eV) &=& H(MKS)~1.07564305~~, \nonumber\end{aligned}
+     \begin{aligned}
+     H(unit) &=& H(MKS)~\frac{1.037837512 \times 10^{4}}{k_{unit \to DL\_POLY}} \nonumber \\
+     k_{eV \to DL\_POLY} &=& 9648.530821 \\
+     H(eV) &=& H(MKS)~1.07564305~~, \nonumber\end{aligned}
 
-the FIELD file should be amended to read:
+  the FIELD file should be amended to read:
 
-::
+  ::
 
-   UNITS eV
-   ...
-   external
-   magnetic 0  1/1.07564305   0
-   ...
+     UNITS eV
+     ...
+     external
+     magnetic 0  1/1.07564305   0
+     ...
 
-Note that if :math:`DPD` units are in use, the 'real-life' conversion
-factors will differ depending on the choices for the DPD mass, length
-and energy units.
+  Note that if :math:`DPD` units are in use, the 'real-life' conversion
+  factors will differ depending on the choices for the DPD mass, length
+  and energy units. (The DPD charge unit is equal to the charge magnitude
+  of an electron.) As such, any external field parameters will always be
+  given in DPD units, i.e. electric fields in :math:`\frac{[E]}{[q] [L]}`
+  rather than in volts per angstrom, magnetic fields in :math:`\frac{[E] [t]}{[q] [L]}`
+  instead of teslas, and piston pressures in :math:`\frac{[E]}{[L]^3}`
+  in place of kilo-atmospheres.
 
 .. _crd_sec:
 

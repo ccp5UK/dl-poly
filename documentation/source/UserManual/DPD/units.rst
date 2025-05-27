@@ -58,7 +58,7 @@ their equivalents in DL_POLY internal units are shown in the table below.
     +------------------------+---------------+----------------------------------------------------+-------------------------------------------------------------------------------+
     |Velocity :math:`[V]`    | **dpd_v**     | :math:`\sqrt{\frac{[M]}{[E]}} \equiv [L] [t]^{-1}` | **internal_v** = 1 Å ps\ :sup:`-1`                                            |
     +------------------------+---------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-    |Charge :math:`[Q]`      | -             | -                                                  | **internal_q**, :math:`q_{o} = |e| \approx 1.602 \times 10^{-19}` C           |
+    |Charge :math:`[Q]`      | **dpd_q**     | :math:`[q]`                                        | **internal_q**, :math:`q_{o} = |e| \approx 1.602 \times 10^{-19}` C           |
     +------------------------+---------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 
 It should be noted that:
@@ -79,9 +79,10 @@ It should be noted that:
 #.  If **units dpd** is used in the second line of the FIELD file, all quantities in this file and other
     related files (including CONFIG and TABVDW files) will be read as though they are in DPD units. 
     That means all energy-based parameters will be in units of :math:`[E]`, all distances and positions 
-    in :math:`[L]`, all masses in :math:`[M]` etc. Since these units are implicitly used by DL_MESO_DPD
-    :cite:`seaton-13a`, FIELD and CONFIG files from this code can therefore be used by DL_POLY_5 with
-    little to no modification.
+    in :math:`[L]`, all masses in :math:`[M]` etc. This also extends to external field parameters, e.g.
+    when applying gravitational, electric or magnetic fields. Since these units are implicitly used by 
+    DL_MESO_DPD :cite:`seaton-13a`, FIELD and CONFIG files from this code can therefore be used by 
+    DL_POLY_5 with little to no modification.
 
 #.  The time unit :math:`[t] = [L] \sqrt{\frac{[M]}{[E]}}` is based upon matching up dimensions and units,
     and is sometimes referred to as the *natural* time unit. The alternative of matching the time unit to 
@@ -95,7 +96,7 @@ It should be noted that:
     is equivalent to :math:`1/k_{B}` K to deal with several places in DL_POLY_5 where the Boltzmann constant 
     :math:`k_{B}` is used. 
     
-#.  No specific DPD unit exists for charge, but DL_POLY_5 will instead use its internal charge unit, 
+#.  The DPD unit for charge :math:`[q]` is equivalent to DL_POLY_5's internal charge unit,  
     the absolute charge on an electron. Since the Coulombic conversion factor :math:`\gamma_{o}` scales 
     with both length and energy (:math:`{\ell}_{o}` and :math:`E_o`), we do not recommend directly 
     specifying the dielectric constant :math:`\epsilon` in the CONTROL file for DPD simulations. 
