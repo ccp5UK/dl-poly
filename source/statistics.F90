@@ -2532,23 +2532,23 @@ Contains
     Logical, Intent(In) :: dpd_units
     Character(Len=STR_LEN), Dimension(5) :: messages
 
-    Write (messages(1), '(a)') Repeat('-', 130)
+    Write (messages(1), '("#",a)') Repeat('-', 130)
     If (dpd_units) Then
-      Write (messages(2), '(9x,a4,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
+      Write (messages(2), '("#",9x,a4,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
         'step', 'eng_tot', 'temp_tot', 'eng_cfg', 'eng_src', 'eng_cou', 'eng_bnd', 'eng_ang', 'eng_dih', 'eng_tet'
-      Write (messages(3), '(2x,a11,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
+      Write (messages(3), '("#",2x,a11,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
         'time[dpd_t]', ' eng_pv', 'temp_rot', 'vir_cfg', 'vir_src', 'vir_cou', 'vir_bnd', 'vir_ang', 'vir_con', 'vir_tet'
-      Write (messages(4), '(2x,a11,5x,a7,4x,a8,5x,a7,5x,a7,4x,a8,5x,a7,4x,a8,5x,a7,7x,a5)') &
+      Write (messages(4), '("#",2x,a11,5x,a7,4x,a8,5x,a7,5x,a7,4x,a8,5x,a7,4x,a8,5x,a7,7x,a5)') &
         'cpu     [s]', 'volume', 'temp_shl', 'eng_shl', 'vir_shl', 'alpha[o]', 'beta[o]', 'gamma[o]', 'vir_pmf', 'press'
     Else
-      Write (messages(2), '(9x,a4,5x,a7,1x,a11,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
+      Write (messages(2), '("#",9x,a4,5x,a7,1x,a11,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
         'step', 'eng_tot', 'temp_tot[K]', 'eng_cfg', 'eng_src', 'eng_cou', 'eng_bnd', 'eng_ang', 'eng_dih', 'eng_tet'
-      Write (messages(3), '(5x,a8,5x,a7,1x,a11,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
+      Write (messages(3), '("#",5x,a8,5x,a7,1x,a11,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
         'time[ps]', ' eng_pv', 'temp_rot[K]', 'vir_cfg', 'vir_src', 'vir_cou', 'vir_bnd', 'vir_ang', 'vir_con', 'vir_tet'
-      Write (messages(4), '(5x,a8,5x,a7,1x,a11,5x,a7,5x,a7,4x,a8,5x,a7,4x,a8,5x,a7,7x,a5)') &
+      Write (messages(4), '("#",5x,a8,5x,a7,1x,a11,5x,a7,5x,a7,4x,a8,5x,a7,4x,a8,5x,a7,7x,a5)') &
         'cpu  [s]', 'volume', 'temp_shl[K]', 'eng_shl', 'vir_shl', 'alpha[o]', 'beta[o]', 'gamma[o]', 'vir_pmf', 'press'
     End If
-    Write (messages(5), '(a)') Repeat('-', 130)
+    Write (messages(5), '("#",a)') Repeat('-', 130)
     Call info(messages, 5, .true.)
 
   End Subroutine write_header
@@ -2774,37 +2774,38 @@ Contains
       ! final averages and fluctuations
       Call write_header(stats%dpd_units)
 
-      Write (messages(1), '(i13,1p,9e12.4)') stats%numacc, stats%sumval(1:9)
-      Write (messages(2), '(f13.5,1p,9e12.4)') tmp, stats%sumval(10:18)
-      Write (messages(3), '(0p,f13.3,1p,9e12.4)') timelp, stats%sumval(19:27)
-      Write (messages(4), '(a)') ''
+      Write (messages(1), '("#",i13,1p,9e12.4)') stats%numacc, stats%sumval(1:9)
+      Write (messages(2), '("#",f13.5,1p,9e12.4)') tmp, stats%sumval(10:18)
+      Write (messages(3), '("#",0p,f13.3,1p,9e12.4)') timelp, stats%sumval(19:27)
+      Write (messages(4), '("#",a)') ''
       Call info(messages, 4, .true.)
 
-      Write (messages(1), '(5x,a8,1p,9e12.4)') ' r.m.s. ', stats%ssqval(1:9)
-      Write (messages(2), '(5x,a8,1p,9e12.4)') 'fluctu- ', stats%ssqval(10:18)
-      Write (messages(3), '(5x,a8,1p,9e12.4)') 'ations  ', stats%ssqval(19:27)
-      Write (messages(4), '(a)') Repeat('-', 130)
+      Write (messages(1), '("#",5x,a8,1p,9e12.4)') ' r.m.s. ', stats%ssqval(1:9)
+      Write (messages(2), '("#",5x,a8,1p,9e12.4)') 'fluctu- ', stats%ssqval(10:18)
+      Write (messages(3), '("#",5x,a8,1p,9e12.4)') 'ations  ', stats%ssqval(19:27)
+      Write (messages(4), '("#",a)') Repeat('-', 130)
       Call info(messages, 4, .true.)
 
       ! Some extra information - conserved quantity=extended ensemble energy
 
-      Write (message, "(a,1p,e12.4,5x,a,1p,e12.4)") &
-        "Extended energy:       ", stats%sumval(0), &
-        " r.m.s. fluctuations:  ", stats%ssqval(0)
-      Call info(message, .true.)
+      Write (messages(1), "(a)") "Extended energy:"
+      Write (messages(2), "(a,e12.4)") " average: ", stats%sumval(0)
+      Write (messages(3), "(a,e12.4)") " r.m.s. fluctuations:  ", stats%ssqval(0)
+      Call info(messages, 3, .true.)
 
       ! Some extra information - <P*V> term - only matters for NP/sT ensembles
 
       strend = Merge (37, 73, thermo%key_dpd==DPD_NULL)
 
       If (thermo%variable_cell) Then
-        Write (message, "(a,1p,e12.4,5x,a,1p,e12.4)") &
-          "<P*V> term:            ", stats%sumval(strend + sites%ntype_atom + 2 * Merge(mxatdm, 0, lmsd)), &
-          " r.m.s. fluctuations:  ", stats%ssqval(strend + sites%ntype_atom + 2 * Merge(mxatdm, 0, lmsd))
-        Call info(message, .true.)
+        Write (messages(1), "(a)") NEW_LINE('a')//"<P*V> term:"
+        Write (messages(2), "(a,e12.4)") " average: ", stats%sumval(strend + sites%ntype_atom + 2 * Merge(mxatdm, 0, lmsd))
+        Write (messages(3), "(a,e12.4)") " r.m.s. fluctuations:  ", &
+          stats%ssqval(strend + sites%ntype_atom + 2 * Merge(mxatdm, 0, lmsd))
+        Call info(messages, 3, .true.)
       End If
 
-      Write (messages(1), "(130('-'))")
+      Write (messages(1), "('#',130('-'))")
       Write (messages(2), '(a)') ''
       Call info(messages, 2, .true.)
 

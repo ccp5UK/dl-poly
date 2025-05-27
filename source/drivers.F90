@@ -1727,24 +1727,24 @@ Contains
         If (flow%new_page()) Then
           Call write_header(stat%dpd_units)
         Else If (ttm%l_ttm) Then
-          Write (messages(1), '(a)') Repeat('-', 130)
+          Write (messages(1), '("#",a)') Repeat('-', 130)
           Call info(messages, 1, .true.)
         End If
 
-        Write (messages(1), '(i13,1p,9e12.4)') flow%step, stat%stpval(1:9)
-        Write (messages(2), '(f13.5,1p,9e12.4)') flow%time, stat%stpval(10:18)
-        Write (messages(3), '(0p,f13.3,1p,9e12.4)') tmr%elapsed, stat%stpval(19:27)
-        Write (messages(4), '(a)') ''
+        Write (messages(1), '("#",i13,1p,9e12.4)') flow%step, stat%stpval(1:9)
+        Write (messages(2), '("#",f13.5,1p,9e12.4)') flow%time, stat%stpval(10:18)
+        Write (messages(3), '("#",0p,f13.3,1p,9e12.4)') tmr%elapsed, stat%stpval(19:27)
+        Write (messages(4), '("#",a)') ''
         Call info(messages, 4, .true.)
 
         Do i = 1, stat%mxnstk
           stats(i) = stat%accumulators(i)%mu
         End Do
 
-        Write (messages(1), '(6x,a7,1p,9e12.4)') 'rolling', stat%ravval(1:9)
-        Write (messages(2), '(5x,a8,1p,9e12.4)') 'averages', stat%ravval(10:18)
-        Write (messages(3), '(13x,1p,9e12.4)') stat%ravval(19:27)
-        Write (messages(4), '(a)') ''
+        Write (messages(1), '("#",6x,a7,1p,9e12.4)') 'rolling', stat%ravval(1:9)
+        Write (messages(2), '("#",5x,a8,1p,9e12.4)') 'averages', stat%ravval(10:18)
+        Write (messages(3), '("#",13x,1p,9e12.4)') stat%ravval(19:27)
+        Write (messages(4), '("#",a)') ''
 
         If (flow%output_std_dev) Then
           Call info(messages, 4, .true.)
@@ -1752,13 +1752,13 @@ Contains
             stats(i) = Sqrt(stat%accumulators(i)%var)
           End Do
 
-          Write (messages(1), '(6x,a7,1p,9e12.4)') 'rolling', stats(1:9)
-          Write (messages(2), '(4x,a9,1p,9e12.4)') 'std. dev.', stats(10:18)
-          Write (messages(3), '(13x,1p,9e12.4)') stats(19:27)
-          Write (messages(4), '(a)') Repeat('-', 130)
+          Write (messages(1), '("#",6x,a7,1p,9e12.4)') 'rolling', stats(1:9)
+          Write (messages(2), '("#",4x,a9,1p,9e12.4)') 'std. dev.', stats(10:18)
+          Write (messages(3), '("#",13x,1p,9e12.4)') stats(19:27)
+          Write (messages(4), '("#",a)') Repeat('-', 130)
           Call info(messages, 4, .true.)
         Else
-          Write (messages(4), '(a)') Repeat('-', 130)
+          Write (messages(4), '("#",a)') Repeat('-', 130)
           Call info(messages, 4, .true.)
         End If
 
@@ -2995,27 +2995,27 @@ Contains
 
           Call gtime(tmr%elapsed)
           If (flow%new_page()) Then
-            Write (messages(1), '(a)') Repeat('-', 130)
-            Write (messages(2), '(9x,a4,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
+            Write (messages(1), '("#",a)') Repeat('-', 130)
+            Write (messages(2), '("#",9x,a4,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
               'step', 'eng_tot', 'temp_tot', 'eng_cfg', 'eng_src', 'eng_cou', 'eng_bnd', 'eng_ang', 'eng_dih', 'eng_tet'
-            Write (messages(3), '(5x,a8,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
+            Write (messages(3), '("#",5x,a8,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
               'time(ps)', ' eng_pv', 'temp_rot', 'vir_cfg', 'vir_src', 'vir_cou', 'vir_bnd', 'vir_ang', 'vir_con', 'vir_tet'
-            Write (messages(4), '(5x,a8,5x,a6,4x,a8,5x,a7,5x,a7,7x,a5,8x,a4,7x,a5,5x,a7,7x,a5)') &
+            Write (messages(4), '("#",5x,a8,5x,a6,4x,a8,5x,a7,5x,a7,7x,a5,8x,a4,7x,a5,5x,a7,7x,a5)') &
               'cpu  (s)', 'volume', 'temp_shl', 'eng_shl', 'vir_shl', 'alpha', 'beta', 'gamma', 'vir_pmf', 'press'
-            Write (messages(5), '(a)') Repeat('-', 130)
+            Write (messages(5), '("#",a)') Repeat('-', 130)
             Call info(messages, 5, .true.)
           End If
 
-          Write (messages(1), '(i13,1p,9e12.4)') flow%step, stat%stpval(1:9)
-          Write (messages(2), '(f13.5,1p,9e12.4)') flow%time, stat%stpval(10:18)
-          Write (messages(3), '(0p,f13.3,1p,9e12.4)') tmr%elapsed, stat%stpval(19:27)
-          Write (messages(4), '(a)') ''
+          Write (messages(1), '("#",i13,1p,9e12.4)') flow%step, stat%stpval(1:9)
+          Write (messages(2), '("#",f13.5,1p,9e12.4)') flow%time, stat%stpval(10:18)
+          Write (messages(3), '("#",0p,f13.3,1p,9e12.4)') tmr%elapsed, stat%stpval(19:27)
+          Write (messages(4), '("#",a)') ''
           Call info(messages, 4, .true.)
 
-          Write (messages(1), '(6x,a7,1p,9e12.4)') 'rolling', stat%ravval(1:9)
-          Write (messages(2), '(5x,a8,1p,9e12.4)') 'averages', stat%ravval(10:18)
-          Write (messages(3), '(13x,1p,9e12.4)') stat%ravval(19:27)
-          Write (messages(4), '(a)') Repeat('-', 130)
+          Write (messages(1), '("#",6x,a7,1p,9e12.4)') 'rolling', stat%ravval(1:9)
+          Write (messages(2), '("#",5x,a8,1p,9e12.4)') 'averages', stat%ravval(10:18)
+          Write (messages(3), '("#",13x,1p,9e12.4)') stat%ravval(19:27)
+          Write (messages(4), '("#",a)') Repeat('-', 130)
           Call info(messages, 4, .true.)
 
           If (nstph /= 0) Then

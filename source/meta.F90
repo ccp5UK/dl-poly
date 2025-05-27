@@ -614,8 +614,9 @@ Contains
     If (stats(1)%statis_file_open) Call files(FILE_STATS)%close ()
 
     ! Report termination of the MD simulation
-    Write (message, '(3(a,f12.3),a)') '# run terminating... elapsed  cpu time: ', &
-      tmr%elapsed, ' sec, job time: ', tmr%job, ' sec, close time: ', tmr%clear_screen, ' sec'
+    Write (message, '(a, 2(a,f12.3),a)') '# run terminating... ', &
+      ' sec, job time: ', tmr%job, ' sec, close time: ', tmr%clear_screen, ' sec'
+    Write (message, '(a, f12.3)') "Elapsed cpu time: ", tmr%elapsed 
     Call info(message, .true.)
 
     ! Two-temperature model simulations: calculate final ionic temperatures and
