@@ -390,16 +390,6 @@ Contains
       Call time_elapsed(tmr)
     End If
 
-    If (flow%elastic_constants) Then
-      Do ff = 1, flow%NUM_FF
-        ! check which born terms to calculate in vdw
-        Call stats(ff)%init_born_calculate(comm)
-      End Do
-    End If
-    Do ff = 1, flow%NUM_FF
-      Call stats(ff)%check_collection_frequencies(comm)
-    End Do
-
     ! devel%l_his: generate HISTORY and exit gracefully
     If (devel%l_his) Then
       Call info('', .true.)
@@ -428,11 +418,6 @@ Contains
         Write (message, '(i0)') ff
         Call info("#** Long range information for field "//Trim(message)//" ***", .true.)
       End If
-      ! READ REVOLD (thermodynamic and structural data from restart file)
-      Call system_init(neigh(ff)%cutoff, flow%restart_key, flow%time, flow%start_time, flow%step, &
-                       stats(ff), devel, green(ff), thermo(ff), met(ff), &
-                       bond(ff), angle(ff), dihedral(ff), inversion(ff), &
-                       zdensity(ff), sites(ff), vdws(ff), rdf(ff), config(ff), files, comm)
 
       ! SET domain borders and link-config%cells as default for new jobs
       ! exchange atomic data and positions in border regions
@@ -493,7 +478,22 @@ Contains
           Call tether(ff)%deallocate_temp()
         End If
       End If
+
+      Call read_correlations_parameters(params, stats(ff), rigid(ff), comm, config(ff), sites(ff))
+
+      If (flow%elastic_constants) Then
+        Call stats(ff)%init_born_calculate(comm)
+      End If
+      Call stats(ff)%check_collection_frequencies(comm)
+
+      ! READ REVOLD (thermodynamic and structural data from restart file)
+      Call system_init(neigh(ff)%cutoff, flow%restart_key, flow%time, flow%start_time, flow%step, &
+                       stats(ff), devel, green(ff), thermo(ff), met(ff), &
+                       bond(ff), angle(ff), dihedral(ff), inversion(ff), &
+                       zdensity(ff), sites(ff), vdws(ff), rdf(ff), config(ff), files, comm)
     End Do
+
+    Call params%destroy()
 
     Call info('', .true.)
     Call info("#** bookkeeping done ***", .true.)
@@ -668,7 +668,7 @@ Contains
        cons(1)%megcon, pmfs(1)%megpmf, &
        flow%step, flow%time, flow%start_time, &
        config(1)%mxatdm, neigh(1)%unconditional_update, &
-       stats(1), thermo(1), sites(1), comm, files, tmr)
+       stats(1), rigid(1), thermo(1), sites(1), comm, files, tmr)
 
     ! Final anlysis
     Call analysis_result(neigh(1)%cutoff, thermo(1), &
@@ -881,7 +881,6 @@ Contains
         Call config(ff)%k%init(files(FILE_KPOINTS)%filename, comm)
         Call stats(ff)%cur%init(config(ff)%k%n, 200, files(FILE_CURRENT), comm, config(ff), sites(ff)%mxatyp, stats(ff)%file_yaml)
       End If
-
     End Do
 
     Call write_parameters(devel, tmr, seed, ios, files, neigh(1), &
@@ -913,8 +912,6 @@ Contains
 
       ! CHECK MD CONFIGURATION
       Call check_config(config(ff), electro(ff)%key, thermo(ff), sites(ff), flow, stats(ff)%dpd_units, comm)
-
-      Call read_correlations_parameters(params, stats(ff), comm, config(ff), sites(ff))
     End Do
 
     If (flow%heat_flux) Then
@@ -938,8 +935,6 @@ Contains
         Call stats(ff)%setup_momentum_density(sites(ff))
       End If
     End Do
-
-    Call params%destroy()
 
 #ifdef CHRONO
     Call stop_timer(tmr, 'Initialisation')
@@ -1200,7 +1195,7 @@ Contains
     Call core_shells%init(config%mxatdm, sites%mxtmls, config%mxlshp, domain%neighbours)
     Call cons%init(sites%mxtmls, config%mxatdm, config%mxlshp, domain%neighbours)
     Call pmfs%init(sites%mxtmls, config%mxatdm)
-    Call rigid%init(config%mxlshp, sites%mxtmls, config%mxatdm, domain%neighbours)
+    Call rigid%init(config%mxlshp, sites%mxtmls, config%mxatdm, config%mxatms, domain%neighbours)
     Call tether%init(sites%mxtmls, config%mxatdm)
     Call bond%init(config%mxatdm, sites%mxtmls)
     Call angle%init(config%mxatdm, sites%mxtmls)

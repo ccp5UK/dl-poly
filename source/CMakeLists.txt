@@ -88,6 +88,7 @@ set(dlpoly_SRCS
   gpfa235.F90
   gpfa_wrappers.F90
   parallel_fft.F90
+  npt_utils.F90
   drivers.F90
   thermostat.F90
   analysis.F90

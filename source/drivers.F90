@@ -19,7 +19,8 @@ Module drivers
                                   gather_atomic_names,&
                                   gather_coordinates,&
                                   len_atmnam,&
-                                  write_config
+                                  write_config,&
+                                  getcom
   Use constants,            Only: boltz
   Use constraints,          Only: constraints_quench,&
                                   constraints_type
@@ -108,6 +109,7 @@ Module drivers
                                   npt_m1_vv
   Use npt_nose_hoover,      Only: npt_h0_vv,&
                                   npt_h1_vv
+  Use npt_utils,            Only: xscale
   Use nst_berendsen,        Only: nst_b0_vv,&
                                   nst_b1_vv
   Use nst_langevin,         Only: nst_l0_vv,&
@@ -116,7 +118,8 @@ Module drivers
                                   nst_m1_vv
   Use nst_nose_hoover,      Only: nst_h0_vv,&
                                   nst_h1_vv
-  Use numerics,             Only: seed_type
+  Use numerics,             Only: seed_type,&
+                                  pbcshift
   Use nve,                  Only: nve_0_vv,&
                                   nve_1_vv
   Use nvt_anderson,         Only: nvt_a0_vv,&
@@ -148,8 +151,7 @@ Module drivers
                                   rigid_bodies_quench,&
                                   rigid_bodies_stress,&
                                   rigid_bodies_tags,&
-                                  rigid_bodies_type,&
-                                  xscale
+                                  rigid_bodies_type
   Use rsds,                 Only: rsd_type,&
                                   rsd_write
   Use shared_units,         Only: SHARED_UNIT_UPDATE_FORCES,&
@@ -1654,10 +1656,11 @@ Contains
 
   End Subroutine kinetic_options
 
-  Subroutine statistics_report(cnfig, ttm, cshell, cons, pmf, stat, msd_data, zdensity, &
+  Subroutine statistics_report(cnfig, rigid, ttm, cshell, cons, pmf, stat, msd_data, zdensity, &
                                sites, domain, flow, files, thermo, tmr, green, minim, comm, ff)
 
     Type(configuration_type), Intent(InOut) :: cnfig
+    Type(rigid_bodies_type),  Intent(InOut) :: rigid
     Type(ttm_type),           Intent(InOut) :: ttm
     Type(core_shell_type),    Intent(InOut) :: cshell
     Type(constraints_type),   Intent(InOut) :: cons
@@ -1702,7 +1705,7 @@ Contains
     ! Calculate physical quantities and collect statistics
 
     Call statistics_collect &
-      (cnfig, flow%simulation, flow%equilibration, flow%equil_steps, msd_data%l_msd, &
+      (cnfig, rigid, flow%simulation, flow%equilibration, flow%equil_steps, msd_data%l_msd, &
        flow%restart_key, &
        cnfig%degfre, cnfig%degshl, cnfig%degrot, &
        flow%step, thermo%tstep, flow%time, flow%start_time, &
@@ -2176,7 +2179,7 @@ Contains
             Call checkcoord(cnfig(ff), crd(ff), sites(ff), flow, stat(ff), comm)
             Call adf_calculate(cnfig(ff), sites(ff), flow, crd(ff), adf(ff), comm)
           End If
-          Call statistics_report(cnfig(ff), ttm(ff), cshell(ff), cons(ff), pmf(ff), stat(ff), msd_data(ff), zdensity, &
+          Call statistics_report(cnfig(ff), rigid(ff), ttm(ff), cshell(ff), cons(ff), pmf(ff), stat(ff), msd_data(ff), zdensity, &
                                  sites(ff), domain(ff), flow, files, thermo(ff), tmr, green(ff), minim(ff), comm, ff)
         Enddo
       End If
@@ -2233,7 +2236,7 @@ Contains
 
         ! Calculate physical quantities, collect statistics and report regularly
         Do ff = 1, flow%NUM_FF
-          Call statistics_report(cnfig(ff), ttm(ff), cshell(ff), cons(ff), pmf(ff), stat(ff), msd_data(ff), zdensity, &
+          Call statistics_report(cnfig(ff), rigid(ff), ttm(ff), cshell(ff), cons(ff), pmf(ff), stat(ff), msd_data(ff), zdensity, &
                                  sites(ff), domain(ff), flow, files, thermo(ff), tmr, green(ff), minim(ff), comm, ff)
         End Do
 
@@ -2602,7 +2605,7 @@ Contains
           Call vaf_collect(cnfig, sites%mxatyp, flow%equilibration, flow%equil_steps, nstph - 1, flow%time, green, comm)
 
           Call statistics_collect &
-            (cnfig, flow%simulation, flow%equilibration, flow%equil_steps, msd_data%l_msd, &
+            (cnfig, rigid, flow%simulation, flow%equilibration, flow%equil_steps, msd_data%l_msd, &
              flow%restart_key, &
              cnfig%degfre, cnfig%degshl, cnfig%degrot, &
              nstph, tsths, flow%time, tmsh, &
@@ -2983,7 +2986,7 @@ Contains
           Call vaf_collect(cnfig, sites%mxatyp, flow%equilibration, flow%equil_steps, nstph - 1, flow%time, green, comm)
 
           Call statistics_collect &
-            (cnfig, flow%simulation, flow%equilibration, flow%equil_steps, msd_data%l_msd, &
+            (cnfig, rigid, flow%simulation, flow%equilibration, flow%equil_steps, msd_data%l_msd, &
              flow%restart_key, &
              cnfig%degfre, cnfig%degshl, cnfig%degrot, &
              nstph, tsths, flow%time, tmsh, &

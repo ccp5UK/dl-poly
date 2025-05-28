@@ -162,6 +162,7 @@ Contains
     ! global atom counter
 
     nsatm = 0
+    rigid%unique_types = 0
 
     ! loop over molecule types in the system
 
@@ -412,9 +413,16 @@ Contains
             End If
           End Do
 
-          ! Construct RBs list
+          ! Construct RBs list for this molecule
 
           Do lrigid = 1, rigid%num(itmols)
+            ! Add to list of unique rigid body types
+            If (imols == 1) Then
+              rigid%unique_types = rigid%unique_types + 1
+            End If
+            rigid%type(jrigid+1) = rigid%unique_types
+            Write (rigid%type_name(jrigid+1), '(a,"-",i0)') Trim(sites%mol_name(itmols)), lrigid
+
             mrigid = rigid%lst(0, lrigid + krigid)
 
             irgd = 0; irgd0 = 0
@@ -871,13 +879,19 @@ Contains
             End If
           End Do
 
+        Else
+          If (rigid%num(itmols) > 0 .and. imols == 1) Then
+            ! Add to list of unique rigid body types skipped
+            Do lrigid = 1, rigid%num(itmols)
+              rigid%unique_types = rigid%unique_types + 1
+            End Do
+          End If
         End If
 
         isite = isite + sites%num_site(itmols)
         nsatm = neatm
 
       End Do
-
       ! Update global unit numbers for all passed molecules so far
 
       kshels = kshels + cshell%numshl(itmols)
@@ -1649,7 +1663,7 @@ Contains
 
       If (rigid%on) Then
         Call rigid_bodies_setup(l_str, l_top, config%megatm, config%megfrz, config%degtra, config%degrot, &
-                                neigh%cutoff, sites, rigid, config, stats, comm)
+                                neigh%cutoff, sites, rigid, config, stats%dpd_units, comm)
       End If
 
       Call report_topology(config%megatm, config%megfrz, config%atmfre, config%atmfrz, &
@@ -1674,7 +1688,7 @@ Contains
 
       Call rigid_bodies_tags(config, rigid, comm)
       Call rigid_bodies_coms(config, rigid%xxx, rigid%yyy, rigid%zzz, rigid)
-      Call rigid_bodies_widths(neigh%cutoff, rigid, config, stats, comm)
+      Call rigid_bodies_widths(neigh%cutoff, rigid, config, stats%dpd_units, comm)
 
     End If
 
@@ -1695,12 +1709,14 @@ Contains
        rigid%q0, rigid%q1, rigid%q2, rigid%q3, rigid%vxx, rigid%vyy, rigid%vzz, &
        rigid%oxx, rigid%oyy, rigid%ozz)
 
-    If (rigid%on .and. comm%mxnode > 1) Call pass_shared_units &
+    If (rigid%on .and. comm%mxnode > 1) Then
+      Call pass_shared_units &
       (config, rigid%max_rigid, Lbound(rigid%list, Dim=1), Ubound(rigid%list, Dim=1), rigid%n_types, &
        rigid%list, rigid%max_frozen, rigid%legend, rigid%share, rigid%list_shared, &
        rigid%map_shared, flow%oldjob_shared_units, domain, comm, &
        rigid%q0, rigid%q1, rigid%q2, rigid%q3, rigid%vxx, rigid%vyy, rigid%vzz, &
        rigid%oxx, rigid%oyy, rigid%ozz)
+    End If
 
   End Subroutine build_book_intra
 

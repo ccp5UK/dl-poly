@@ -111,10 +111,13 @@ Module control
   Use pmf,                      Only: pmf_type
   Use rdfs,                     Only: rdf_type
   Use rsds,                     Only: rsd_type
+  Use rigid_bodies,             Only: rigid_bodies_type
   Use statistics,               Only: stats_type, observable, observable_velocity, &
                                       character_to_observable, observable_heat_flux, &
                                       observable_stress, observable_currents, &
-                                      set_currents_observable, K_STRESS, ENG_CURRENT
+                                      set_currents_observable, K_STRESS, ENG_CURRENT,&
+                                      NOT_DISTRIBUTED_OBSERVABLE, &
+                                      PER_ATOM_OBSERVABLE, PER_RIGID_OBSERVABLE
   Use site,                     Only: site_type
   Use tersoff,                  Only: tersoff_type
   Use thermostat,               Only: &
@@ -1879,10 +1882,11 @@ Contains
       Call character_to_observable(a_name,A)
       Call character_to_observable(b_name,B)
 
-      if (A%per_atom() .or. B%per_atom()) Then
+      if (A%distributed() /= NOT_DISTRIBUTED_OBSERVABLE .or. &
+          B%distributed() /= NOT_DISTRIBUTED_OBSERVABLE) Then
         buffer_size = Max(buffer_size, &
           correlator_buffer_size(&
-            this_blocks, this_points)+2)
+            this_blocks, this_points)+4)
       End If
 
     End Do
@@ -1914,9 +1918,10 @@ Contains
 
   End Subroutine parse_correlation_observable
 
-  Subroutine read_correlations_parameters(params, stats, comm, config, sites)
+  Subroutine read_correlations_parameters(params, stats, rigid, comm, config, sites)
     Type(parameters_hash_table), Intent(InOut) :: params
     Type(stats_type),            Intent(InOut) :: stats
+    Type(rigid_bodies_type),     Intent(InOut) :: rigid
     Type(comms_type),            Intent(InOut) :: comm
     Type(configuration_type),    Intent(InOut) :: config
     Type(site_type),             Intent(InOut) :: sites
@@ -1934,6 +1939,7 @@ Contains
     Type(observable_currents)            :: oc
     Integer                              :: hid, sid
     Logical                              :: is_current
+    Logical                              :: per_atom, per_rigid
 
     hid = h%id()
     sid = s%id()
@@ -1963,9 +1969,14 @@ Contains
         Cycle
       End If
 
-      If (A%per_atom() .or. B%per_atom()) Then
+      If (A%distributed() == PER_ATOM_OBSERVABLE .or. &
+          B%distributed() == PER_ATOM_OBSERVABLE) Then
         stats%number_of_correlations = stats%number_of_correlations + config%natms
         stats%per_atom_correlations = .true.
+      Else If (A%distributed() == PER_RIGID_OBSERVABLE .or. &
+               B%distributed() == PER_RIGID_OBSERVABLE) Then
+        stats%per_atom_correlations = .true.
+        stats%number_of_correlations = stats%number_of_correlations + rigid%total
       Else
         If (comm%idnode == root_id) Then
           If (is_current) Then
@@ -2045,6 +2056,11 @@ Contains
         Cycle
       End If
 
+      per_atom = A%distributed() == PER_ATOM_OBSERVABLE .or. &
+        B%distributed() == PER_ATOM_OBSERVABLE
+      per_rigid = A%distributed() == PER_RIGID_OBSERVABLE .or. &
+        B%distributed() == PER_RIGID_OBSERVABLE
+
       If (is_current) Then
         If (Allocated(Ac)) Deallocate(Ac)
         If (Allocated(Bc)) Deallocate(Bc)
@@ -2071,12 +2087,12 @@ Contains
             Call set_currents_observable(B%name(.false.), Bc, &
               k, j, B%component_name, B%component, sites%site_name(j))
 
-            Call stats%init_correlator(.false., config, comm, &
+            Call stats%init_correlator(.false., .false., config, rigid, comm, &
               this_blocks, this_points, this_window, this_freq, Ac, Bc)
           End Do
         End Do
       Else
-        Call stats%init_correlator(A%per_atom() .or. B%per_atom(), config, comm, &
+        Call stats%init_correlator(per_atom, per_rigid, config, rigid, comm, &
           this_blocks, this_points, this_window, this_freq, A, B)
       End If
 

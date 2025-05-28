@@ -61,7 +61,9 @@ Module deport_data
   Use shared_units,     Only: pass_shared_units,&
                               tag_legend
   Use site,             Only: site_type
-  Use statistics,       Only: stats_type
+  Use statistics,       Only: stats_type,&
+                              PER_ATOM_OBSERVABLE,&
+                              PER_RIGID_OBSERVABLE
   Use tethers,          Only: tethers_type
   Use thermostat,       Only: thermostat_type,&
                               DPD_NULL
@@ -131,7 +133,7 @@ Contains
                                                 kdihed, kdnode, keep, kinver, kk, kmove, kpmf, &
                                                 krigid, kshels, kteths, kx, ky, kz, l, latm, ll, &
                                                 matm, natm, newatm
-    Integer, Allocatable, Dimension(:)       :: i1pmf, i2pmf, ind_off, ind_on, lrgd
+    Integer, Allocatable, Dimension(:)       :: i1pmf, i2pmf, ind_off, ind_on, lrgd, atom_deports, rb_cor_deports
     Logical                                  :: check, lex, ley, lez, lsx, lsy, lsz, lwrap, safe, &
                                                 safe1, stay
     Real(Kind=wp)                            :: uuu, vvv, www, xadd, yadd, zadd
@@ -145,6 +147,9 @@ Contains
       Write (message, '(a)') 'deport_atomic_data allocation failure 1'
       Call error(0, message)
     End If
+
+    Allocate(atom_deports(0))
+    Allocate(rb_cor_deports(0))
 
     ! Set buffer limit (half for outgoing data - half for incoming)
 
@@ -286,6 +291,8 @@ Contains
         ind_off(0) = ii
         ind_off(ii) = i
 
+        atom_deports = [atom_deports, config%ltg(i)]
+
         ! If safe to proceed
 
         If (imove + 18 <= iblock) Then
@@ -379,11 +386,6 @@ Contains
           Else
             safe = .false.
           End If
-        End If
-
-        ! pack correlations arrays
-        If (stats%number_of_correlations > 0) Then
-          Call stats%correlator_deport(config,buffer,i,imove)
         End If
 
         ! pack MSD arrays
@@ -811,6 +813,27 @@ Contains
       End If
     End Do
 
+    ! pack correlations arrays, only if sending to another node.
+    If (stats%number_of_correlations > 0 .and. comm%idnode /= jdnode) Then
+      Do i = 1, Size(atom_deports)
+        Call stats%correlator_deport(buffer,atom_deports(i),imove, PER_ATOM_OBSERVABLE)
+      End Do
+
+      If (rigid%on .and. stats%rigid_body_correlations) Then
+        Do i = 1, Size(atom_deports)
+          jrigid = rigid%is_lead_atom(atom_deports(i))
+          If (jrigid /= 0) Then
+            ! Lead atom was deported, correlator follows.
+            rb_cor_deports = [rb_cor_deports, jrigid]
+          End If
+        End Do
+
+        Do i = 1, Size(rb_cor_deports)
+          Call stats%correlator_deport(buffer,rigid%list(1, rb_cor_deports(i)),imove, PER_RIGID_OBSERVABLE)
+        End Do
+      End If
+    End If
+
     ! Check for array bound overflow (have arrays coped with outgoing data)
 
     Call gcheck(comm, safe)
@@ -935,7 +958,6 @@ Contains
     Call gwait(comm)
 
     ! exchange buffers between nodes (this is a MUST)
-
     If (jmove > 0) Then
       Call girecv(comm, buffer(iblock + 1:iblock + jmove), kdnode, Deport_tag)
     End If
@@ -964,6 +986,11 @@ Contains
       Call error(0, message)
     End If
 
+    Deallocate(atom_deports)
+    Deallocate(rb_cor_deports)
+    Allocate(atom_deports(0))
+    Allocate(rb_cor_deports(0))
+
     ! load transferred data
 
     Do i = 1, jmove
@@ -991,6 +1018,8 @@ Contains
       config%ltg(newatm) = Nint(buffer(kmove + 10))
       config%lsite(newatm) = Nint(buffer(kmove + 11))
       config%ixyz(newatm) = Nint(buffer(kmove + 12))
+
+      atom_deports = [atom_deports, config%ltg(newatm)]
 
       ! unpack initial positions arrays
 
@@ -1036,12 +1065,6 @@ Contains
 
           kmove = kmove + 3
         End Do
-      End If
-
-      ! unpack correlations arrays
-
-      If (stats%number_of_correlations > 0) Then
-        Call stats%correlator_recieve(config,newatm,buffer,kmove)
       End If
 
       ! unpack MSD arrays
@@ -1653,8 +1676,32 @@ Contains
       Endif
     End Do
 
-    Call stats%correlator_reindex(config)
+    ! unpack correlations arrays, only if recieving from another node.
+    If (stats%number_of_correlations > 0 .and. comm%idnode /= kdnode) Then
+      Do i = 1, Size(atom_deports)
+        Call stats%correlator_recieve(buffer,kmove,PER_ATOM_OBSERVABLE)
+      End Do
 
+      If (rigid%on .and. stats%rigid_body_correlations) Then
+        Do i = 1, Size(atom_deports)
+          jrigid = rigid%is_lead_atom(atom_deports(i))
+          If (jrigid /= 0) Then
+            ! Lead atom was recieved, correlator follows.
+            rb_cor_deports = [rb_cor_deports, jrigid]
+          End If
+        End Do
+
+        Do i = 1, Size(rb_cor_deports)
+          Call stats%correlator_recieve(buffer,kmove,PER_RIGID_OBSERVABLE)
+        End Do
+      End If
+
+    End If
+
+    ! Reindex only if sending or recieving from another node.
+    If (comm%idnode /= kdnode .or. comm%idnode /= jdnode) Then
+      Call stats%correlator_reindex(config, rigid)
+    End If
     ! check error flags
 
     Call gcheck(comm, safe)

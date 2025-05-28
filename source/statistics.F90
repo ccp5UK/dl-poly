@@ -63,6 +63,7 @@ Module statistics
                              shellsort2,&
                              in_range,&
                              scaling_matrix
+  Use rigid_bodies,    Only: rigid_bodies_type
   Use site,            Only: site_type
   Use thermostat,      Only: CONSTRAINT_NONE,&
                              CONSTRAINT_SEMI_ORTHORHOMBIC,&
@@ -90,15 +91,19 @@ Module statistics
                                                         'eng_shl ', 'vir_shl ', 'alpha   ', 'beta    ', &
                                                         'gamma   ', 'vir_pmf ', 'press   '/) 
 
+  Integer, Parameter, Public :: NOT_DISTRIBUTED_OBSERVABLE = 0,   &
+                                PER_ATOM_OBSERVABLE = 1, &
+                                PER_RIGID_OBSERVABLE = 2
   !> correlation observables, and interface
   Type, Abstract, Public :: observable
     Integer          :: component = 0
     Character(Len=2) :: component_name = ""
     Contains
-      Procedure(get_value),     Deferred :: value
-      Procedure(get_name),      Deferred :: name
-      Procedure(get_id)  ,      Deferred :: id
-      Procedure(is_per_atom),   Deferred :: per_atom
+      Procedure(get_value), Deferred         :: value
+      Procedure(get_name),  Deferred         :: name
+      Procedure(get_id),    Deferred, NoPass :: id
+      Procedure,                      NoPass :: distributed => not_distributed
+      Procedure                              :: subtype => no_subtype
   End Type observable
 
   !> stores correlations <AB\>
@@ -109,14 +114,18 @@ Module statistics
     Class(observable), Allocatable :: B
     !> All (in per atom case) correlations <AB\>.
     Type(correlator), Allocatable :: correlators(:)
-    !> If per-atom the local atom indices (else (/0/)).
-    Integer, Allocatable           :: atom(:)
-    !> If per-atom the global atom indices (else (/0/)).
-    Integer, Allocatable           :: atom_global(:)
+    !> If distributed the local indices (else (/0/)).
+    Integer, Allocatable           :: indices(:)
+    !> If distributed the global indices (else (/0/)).
+    Integer, Allocatable           :: indices_global(:)
     !> Step frequency to update the correlation.
-    Integer                        :: freq
-    !> Number of actual atoms in atom and atom_global.
-    Integer                        :: atoms_used
+    Integer                        :: freq = 0
+    !> Number of valid indices in indices and indices_global.
+    Integer                        :: indices_used = 0
+
+    Contains
+      Procedure, Public :: is_per_atom
+      Procedure, Public :: is_per_rigid
   End Type 
 
   Type, Public :: statistic_accumulator
@@ -281,6 +290,8 @@ Module statistics
     !> Whether to report properties (temperature, pressure, stresses, viscosity) in DPD units
     Logical :: dpd_units = .false. 
 
+    Logical :: rigid_body_correlations = .false.
+
   Contains
     Private
 
@@ -310,12 +321,13 @@ Module statistics
 
   Abstract Interface 
     !> Kernal for selecting data for correlation
-    Function get_value(t, config, stats, atom) Result(v)
-        Import observable, configuration_type, stats_type, wp
+    Function get_value(t, config, rigid, stats, index) Result(v)
+        Import observable, configuration_type, rigid_bodies_type, stats_type, wp
         Class(observable),                     Intent(In   ) :: t
         Type(configuration_type),              Intent(InOut) :: config
+        Type(rigid_bodies_type),               Intent(InOut) :: rigid
         Type(stats_type),                      Intent(InOut) :: stats
-        Integer,       Optional,               Intent(In   ) :: atom
+        Integer,       Optional,               Intent(In   ) :: index
         !> Observable value, complex to handle Real and Complex
         Complex(Kind=wp) :: v
     End Function get_value
@@ -329,49 +341,54 @@ Module statistics
     End Function get_name
 
     !> utility to get numerical id of observable (i.e. for revive)
-    Function get_id(t) Result(v)
-      Import observable
-      Class(observable), Intent(In   ) :: t
-      Integer                          :: v
+    Function get_id() Result(v)
+      Integer :: v
     End Function get_id
 
-    Function is_per_atom(t) Result(v)
-      Import observable
-      Class(observable), Intent(In   ) :: t
-      Logical                          :: v
-    End Function is_per_atom
   End Interface
 
   Type, Extends(observable), Public :: observable_velocity
   Contains
-      Procedure :: value     => velocity_value
-      Procedure :: name      => velocity_name
-      Procedure :: id        => velocity_id
-      Procedure :: per_atom  => velocity_per_atom
+      Procedure         :: value        => velocity_value
+      Procedure         :: name         => velocity_name
+      Procedure, NoPass :: id           => velocity_id
+      Procedure, NoPass :: distributed  => distributed_per_atom
   End Type
 
   Type, Extends(observable), Public :: observable_stress
   Contains
-      Procedure :: value     => stress_value
-      Procedure :: name      => stress_name
-      Procedure :: id        => stress_id
-      Procedure :: per_atom  => stress_per_atom
+      Procedure         :: value        => stress_value
+      Procedure         :: name         => stress_name
+      Procedure, NoPass :: id           => stress_id
   End Type
 
   Type, Extends(observable), Public :: observable_heat_flux
   Contains
-      Procedure :: value     => heat_flux_value
-      Procedure :: name      => heat_flux_name
-      Procedure :: id        => heat_flux_id
-      Procedure :: per_atom  => heat_flux_per_atom
+      Procedure         :: value        => heat_flux_value
+      Procedure         :: name         => heat_flux_name
+      Procedure, NoPass :: id           => heat_flux_id
   End Type
 
   Type, Extends(observable), Public :: observable_statis
   Contains
-      Procedure :: value     => statis_value
-      Procedure :: name      => statis_name
-      Procedure :: id        => statis_id
-      Procedure :: per_atom  => statis_per_atom
+      Procedure         :: value        => statis_value
+      Procedure         :: name         => statis_name
+      Procedure, NoPass :: id           => statis_id
+  End Type
+
+  !> Rigid body observable types
+  Integer, Parameter :: RIGID_VELOCITY = 1, &
+                        RIGID_POSITION = 2, &
+                        RIGID_ORIENTATIONAL_VELOCITY = 3
+
+  Type, Extends(observable), Public :: observable_rigid
+    Integer :: rigid_type = 0
+  Contains
+      Procedure         :: value        => rigid_value
+      Procedure         :: name         => rigid_name
+      Procedure, NoPass :: id           => rigid_id
+      Procedure, NoPass :: distributed  => distributed_per_rigid
+      Procedure         :: subtype      => rigid_subtype
   End Type
 
   Integer, Parameter, Public :: L_MOM_CURRENT = 1, T_MOM_CURRENT = 2, ENG_CURRENT = 3, &
@@ -381,10 +398,9 @@ Module statistics
     Integer          :: current_type = 0, kpoint = 0, atom_type = 0
     Character(Len=8) :: atom_type_name = ""
   Contains
-      Procedure :: value     => current_value
-      Procedure :: name      => current_name
-      Procedure :: id        => current_id
-      Procedure :: per_atom  => current_per_atom
+      Procedure         :: value        => current_value
+      Procedure         :: name         => current_name
+      Procedure, NoPass :: id           => current_id
   End Type
 
   
@@ -588,7 +604,6 @@ Contains
     If (Present(files)) Then 
       write = .true.
     End If
-
     If (stats%collect_pp_eng_str) Then
       stats%heat_flux = calculate_heat_flux(stats, config, comm)
 
@@ -855,7 +870,25 @@ Contains
     Allocate(stats%correlations(s))
   End Subroutine init_correlations_table
 
-  Subroutine allocate_correlator(stats, per_atom, config, comm, &
+  Logical Function is_per_atom(cor_data)
+    Class(correlation_data), Intent(In   ) :: cor_data
+    is_per_atom = cor_data%A%distributed() == PER_ATOM_OBSERVABLE .or. &
+      cor_data%B%distributed() == PER_ATOM_OBSERVABLE
+  End Function is_per_atom
+
+  Logical Function is_per_rigid(cor_data)
+    Class(correlation_data), Intent(In   ) :: cor_data
+    is_per_rigid = cor_data%A%distributed() == PER_RIGID_OBSERVABLE .or. &
+    cor_data%B%distributed() == PER_RIGID_OBSERVABLE
+  End Function is_per_rigid
+
+  Logical Function is_not_distributed(cor_data)
+    Class(correlation_data), Intent(In   ) :: cor_data
+    is_not_distributed = cor_data%A%distributed() == NOT_DISTRIBUTED_OBSERVABLE .and. &
+      cor_data%B%distributed() == NOT_DISTRIBUTED_OBSERVABLE
+  End Function is_not_distributed
+
+  Subroutine allocate_correlator(stats, per_atom, per_rigid, config, rigid, comm, &
     blocks, points, window, freq, A, B)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -866,41 +899,65 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     Class(stats_type),         Intent(InOut) :: stats
     Class(configuration_type), Intent(InOut) :: config
+    Class(rigid_bodies_type),  Intent(InOut) :: rigid
     Class(comms_type),         Intent(InOut) :: comm
     Logical,                   Intent(In   ) :: per_atom
+    Logical,                   Intent(In   ) :: per_rigid
     Integer,                   Intent(In   ) :: blocks, points, window, freq
     Class(observable),         Intent(In   ) :: A, B
 
     Class(correlation_data), Allocatable :: cor_data
-    Integer                              :: i, atoms
+    Integer                              :: i
+    Integer,                 Allocatable :: indices(:)
     Character(Len=MAX_KEY)               :: correlation_name
 
-    atoms = 1
+    Allocate(indices(0))
 
     If (per_atom) Then 
-      atoms = config%natms
+      Do i = 1, config%natms
+        indices = [indices, i]
+      End Do
+    Else If (per_rigid) Then
+      Do i = 1,  Size(rigid%index_local,2)
+        ! Correlator follows the lead atom.
+        If (rigid%index_local(1, i) /= 0 .and. rigid%index_local(1, i) < config%natms) Then
+          indices = [indices, i]
+        End If
+      End Do
+      If (size(indices) > 0) Then
+        stats%rigid_body_correlations = .true.
+      End If
     Else If (comm%idnode /= root_id) Then
       Return
     End If
-    
+
+    If (Size(indices) == 0) Then
+      indices = [indices, 0]
+    End If
+
     Write (correlation_name, '(a)') Trim(A%name())//"-"//Trim(B%name())
 
     Allocate(cor_data)
     cor_data%A = A
     cor_data%B = B
-    Allocate(cor_data%atom(1:atoms))
-    Allocate(cor_data%atom_global(1:atoms))
-    Allocate(cor_data%correlators(1:atoms))
-    cor_data%atoms_used = 0
-    Do i = 1, atoms
+    Allocate(cor_data%indices(1:Size(indices)))
+    Allocate(cor_data%indices_global(1:Size(indices)))
+    Allocate(cor_data%correlators(1:Size(indices)))
+
+    cor_data%indices_used = 0
+    Do i = 1, Size(indices)
       Call cor_data%correlators(i)%init(blocks, points, window)
       If (per_atom) Then
-        cor_data%atom(i) = i
-        cor_data%atom_global(i) = config%ltg(i)
-        cor_data%atoms_used = cor_data%atoms_used + 1
+        cor_data%indices(i) = indices(i)
+        cor_data%indices_global(i) = config%ltg(indices(i))
+        cor_data%indices_used = cor_data%indices_used + 1
+      Else If (per_rigid) Then
+        cor_data%indices(i) = indices(i)
+        cor_data%indices_global(i) = rigid%list(1, indices(i))
+        cor_data%indices_used = cor_data%indices_used + 1
       Else
-        cor_data%atom(i) = 0
-        cor_data%atom_global(i) = 0
+        cor_data%indices(i) = 0
+        cor_data%indices_global(i) = 0
       End If
     End Do
     cor_data%freq = freq
@@ -913,7 +970,110 @@ Contains
     stats%next_cor = stats%next_cor + 1
   End Subroutine allocate_correlator
 
-  Subroutine correlation_result(stats, comm, files, config, sites, dt)
+  Subroutine write_yaml_correlation(file_unit, name, &
+    points_cor, points, blocks, window, freq, steps, value)
+    Integer,                     Intent(InOut) :: file_unit
+    Integer,                     Intent(In   ) :: points_cor, &
+                                                  points, blocks, window, &
+                                                  freq
+    Character(Len=*),            Intent(In   ) :: name
+    Real(Kind=wp), Dimension(:), Intent(In   ) :: steps, value
+
+    If (points_cor > 1) Then
+      Write (file_unit, '(a)') "    "//Trim(name)//":"
+      Write (file_unit, '(a)')    "        parameters:"
+      Write (file_unit, '(a,i0)') "            points_per_block: ", points
+      Write (file_unit, '(a,i0)') "            number_of_blocks: ", blocks
+      Write (file_unit, '(a,i0)') "            window_size: ", window
+      Write(file_unit,  '(a,i0)') "            update_frequency: ", freq
+      Write(file_unit, '(a,*(g16.8,","))',advance="no") "        lags: [", steps(1:points_cor-1)
+      Write(file_unit, '(g16.8,a)') steps(points_cor), "]"
+      Write(file_unit, '(a,*(g16.8,","))',advance="no") "        value: [", value(1:points_cor-1)
+      Write(file_unit, '(g16.8,a)') value(points_cor), "]"
+    End If
+  End Subroutine write_yaml_correlation
+
+  Subroutine gather_correlation(cor_data, points, blocks, window, count, types, names, &
+    dt, correlation_name, file_unit, comm)
+    Type(correlation_data),                         Intent(InOut) :: cor_data
+    Integer,                                        Intent(In   ) :: points, blocks, window, &
+                                                                     count, types(:)
+    Integer,                                        Intent(InOut) :: file_unit
+    Character(Len=*),                               Intent(In   ) :: names(:)
+    Real(Kind=wp),                                  Intent(In   ) :: dt
+    Character(Len=MAX_CORRELATION_NAME_LENGTH*2+1), Intent(In   ) :: correlation_name
+    Type(comms_type),                               Intent(InOut) :: comm
+
+    Real(Kind=wp), Allocatable :: cor_accumulator(:,:), &
+                                  correlation(:),       &
+                                  flat_correlation(:),  &
+                                  timesteps(:)
+    Integer,       Allocatable :: type_counts(:)
+    Integer                    :: flat_dim, points_cor, atom, j, &
+                                  max_points_cor, min_points_cor
+
+    flat_dim = count*points*blocks
+
+    Allocate(cor_accumulator(1:count, 1:points*blocks))
+    Allocate(correlation(1:points*blocks))
+    Allocate(flat_correlation(1:flat_dim))
+    Allocate(type_counts(1:count))
+    Allocate(timesteps(1:points*blocks))
+
+    type_counts = 0
+    flat_correlation = 0.0_wp
+    correlation = 0.0_wp
+    cor_accumulator = 0.0_wp
+    timesteps = 0.0_wp
+    points_cor = 0
+    min_points_cor = 0
+    max_points_cor = 0
+    ! accumulate average
+    Do j = 1, cor_data%indices_used
+      If (cor_data%correlators(j)%count_updated == 0) Then
+        ! no data was seen in this correlator, distinct from 0
+        ! correlation case
+        Cycle
+      End If
+      atom = cor_data%indices(j)
+
+      If (types(atom) == 0) Then
+        Cycle
+      End If
+      correlation = 0.0_wp
+      Call cor_data%correlators(j)%get_correlation(correlation, timesteps, points_cor)
+      cor_accumulator(types(atom),:) = &
+        cor_accumulator(types(atom),:) + correlation
+      type_counts(types(atom)) = type_counts(types(atom)) + 1
+    End Do
+    ! now collect onto root
+    points_cor = points_cor - 1
+    max_points_cor = points_cor
+    Call gmax(comm, max_points_cor)
+    min_points_cor = points_cor
+    Call gmin(comm, min_points_cor)
+    If (max_points_cor /= min_points_cor) Then
+      Call error(0, "differing number of correlated points between processors for same correlation");
+    End If
+
+    flat_correlation = Reshape(cor_accumulator,(/flat_dim/))
+    Call gsum(comm, flat_correlation)
+    flat_correlation = flat_correlation
+    cor_accumulator = Reshape(flat_correlation,(/count,points*blocks/))
+    ! for later averaging
+    Call gsum(comm,type_counts)
+    timesteps = timesteps * cor_data%freq
+    If (comm%idnode == root_id .and. points_cor > 1) Then
+      Do j = 1,count
+        cor_accumulator(j,:) = cor_accumulator(j,:) / (1+type_counts(j))
+        Call write_yaml_correlation(file_unit, Trim(names(j))//"-"//Trim(correlation_name), &
+          points_cor, points, blocks, window, cor_data%freq, timesteps, &
+          cor_accumulator(j,:))
+      End Do
+    End If
+  End Subroutine gather_correlation
+
+  Subroutine correlation_result(stats, rigid, comm, files, config, sites, dt)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_5 subroutine for printing a correlation result
@@ -923,6 +1083,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Class(stats_type),        Intent(InOut)       :: stats
+    Type(rigid_bodies_type),  Intent(InOut)       :: rigid
     Type(comms_type),         Intent(InOut)       :: comm
     Type(file_type),          Intent(InOut)       :: files(:)
     Type(configuration_type), Intent(In   )       :: config
@@ -942,8 +1103,10 @@ Contains
     Character(Len=2), Dimension(1:9)               :: components_matrix
     Real(Kind=wp)                                  :: conv
     Character(Len=STR_LEN)                         :: units_visc, units_therm
-    Character(Len=MAX_KEY), Allocatable :: cor_keys(:)   
-    Type(correlation_data), Pointer :: cor_data
+    Character(Len=MAX_KEY), Allocatable            :: cor_keys(:)
+    Type(correlation_data)                         :: cor_data
+    Logical                                        :: per_atom, per_rigid
+    Type(observable_currents)                      :: oc
     
                         
     If (stats%calculate_correlations .eqv. .false.) Then 
@@ -1011,8 +1174,12 @@ Contains
       If (.not. stats%cor_table%contains(cor_keys(i))) Cycle
       Call stats%cor_table%get(cor_keys(i), cor_index)
       Associate(cor_data => stats%correlations(cor_index))
-        freq = cor_data%freq
+        freq = stats%correlations(cor_index)%freq
         correlation_name = cor_keys(i)
+        per_atom = stats%correlations(cor_index)%A%distributed() == PER_ATOM_OBSERVABLE .or. &
+                   stats%correlations(cor_index)%B%distributed() == PER_ATOM_OBSERVABLE
+        per_rigid = stats%correlations(cor_index)%A%distributed() == PER_RIGID_OBSERVABLE .or. &
+                       stats%correlations(cor_index)%B%distributed() == PER_RIGID_OBSERVABLE
 
         If (Allocated(correlation)) Then
           Deallocate(correlation)
@@ -1029,76 +1196,24 @@ Contains
         If (Allocated(timesteps)) Then
           Deallocate(timesteps)
         End If
-        If (cor_data%atom(1) /= 0) Then
-          points = cor_data%correlators(1)%points_per_block
-          blocks = cor_data%correlators(1)%number_of_blocks
-          window = cor_data%correlators(1)%window_size
-          flat_dim = sites%mxatyp*points*blocks
 
-          Allocate(cor_accumulator(1:sites%mxatyp, 1:points*blocks))
-          Allocate(correlation(1:points*blocks))
-          Allocate(flat_correlation(1:flat_dim))
-          Allocate(type_counts(1:sites%mxatyp))
-          Allocate(timesteps(1:points*blocks))
-
-          type_counts = 0
-          flat_correlation = 0.0_wp
-          correlation = 0.0_wp
-          cor_accumulator = 0.0_wp
-          timesteps = 0.0_wp
-
-          ! accumulate average
-          Do j = 1, cor_data%atoms_used
-            If (cor_data%correlators(j)%count_updated == 0) Then
-              ! no data was seen in this correlator, distinct from 0
-              ! correlation case
-              Cycle
-            End If
-            atom = cor_data%atom(j)
-            correlation = 0.0_wp
-            Call cor_data%correlators(j)%get_correlation(correlation, timesteps, points_cor)
-            cor_accumulator(config%ltype(atom),:) = &
-              cor_accumulator(config%ltype(atom),:) + correlation
-            type_counts(config%ltype(atom)) = type_counts(config%ltype(atom)) + 1
-          End Do
-          ! now collect onto root
-          points_cor = points_cor - 1
-          max_points_cor = points_cor
-          Call gmax(comm, max_points_cor)
-          min_points_cor = points_cor
-          Call gmin(comm, min_points_cor)
-          If (max_points_cor /= min_points_cor) Then
-            Call error(0, "differing number of correlated points between processors for same correlation");
-          End If
-
-          flat_correlation = Reshape(cor_accumulator,(/flat_dim/))
-          Call gsum(comm, flat_correlation)
-          flat_correlation = flat_correlation
-          cor_accumulator = Reshape(flat_correlation,(/sites%mxatyp,points*blocks/))
-          ! for later averaging
-          Call gsum(comm,type_counts)
-          timesteps = timesteps * freq
-          If (comm%idnode == root_id .and. points_cor > 1) Then
-            Do j = 1,sites%mxatyp
-              cor_accumulator(j,:) = cor_accumulator(j,:) / (1+type_counts(j))
-              Call write_yaml_correlation(file_unit, Trim(sites%unique_atom(j))//"-"//Trim(correlation_name), &
-                points_cor, points, blocks, window, freq, timesteps, &
-                cor_accumulator(j,:))
-            End Do
-          End If
+        points = stats%correlations(cor_index)%correlators(1)%points_per_block
+        blocks = stats%correlations(cor_index)%correlators(1)%number_of_blocks
+        window = stats%correlations(cor_index)%correlators(1)%window_size
+        If (per_atom) Then
+          Call gather_correlation(stats%correlations(cor_index), points, blocks, window, sites%mxatyp, &
+            config%ltype, sites%unique_atom, dt, correlation_name, file_unit, comm)
+        Else If (per_rigid) Then
+          Call gather_correlation(stats%correlations(cor_index), points, blocks, window, rigid%unique_types, &
+            rigid%type, rigid%type_name, dt, correlation_name, file_unit, comm)
         Else If (comm%idnode == root_id) Then
-          points = cor_data%correlators(1)%points_per_block
-          blocks = cor_data%correlators(1)%number_of_blocks
-          window = cor_data%correlators(1)%window_size
           flat_dim = points*blocks
 
           Allocate(correlation(1:points*blocks))
-          Allocate(flat_correlation(1:flat_dim))
           Allocate(timesteps(1:blocks*points))
 
-          flat_correlation = 0.0_wp
           correlation = 0.0_wp
-          Call cor_data%correlators(1)%get_correlation(correlation, timesteps, points_cor)
+          Call stats%correlations(cor_index)%correlators(1)%get_correlation(correlation, timesteps, points_cor)
           timesteps = timesteps * freq
           points_cor = points_cor - 1
           Call write_yaml_correlation(file_unit, correlation_name, &
@@ -1111,32 +1226,9 @@ Contains
       Close(file_unit)
     End If
 
-    Contains
-
-      Subroutine write_yaml_correlation(file_unit, name, &
-          points_cor, points, blocks, window, freq, steps, value)
-        Integer,                     Intent(InOut) :: file_unit, points_cor, &
-                                                      points, blocks, window, &
-                                                      freq
-        Character(Len=*),            Intent(In   ) :: name
-        Real(Kind=wp), Dimension(:), Intent(In   ) :: steps, value
-
-        If (points_cor > 1) Then
-          Write (file_unit, '(a)') "    "//Trim(name)//":"
-          Write (file_unit, '(a)')    "        parameters:"
-          Write (file_unit, '(a,i0)') "            points_per_block: ", points
-          Write (file_unit, '(a,i0)') "            number_of_blocks: ", blocks
-          Write (file_unit, '(a,i0)') "            window_size: ", window
-          Write(file_unit,  '(a,i0)') "            update_frequency: ", freq
-          Write(file_unit, '(a,*(g16.8,","))',advance="no") "        lags: [", steps(1:points_cor-1)
-          Write(file_unit, '(g16.8,a)') steps(points_cor), "]"
-          Write(file_unit, '(a,*(g16.8,","))',advance="no") "        value: [", value(1:points_cor-1)
-          Write(file_unit, '(g16.8,a)') value(points_cor), "]"
-        End If
-      End Subroutine write_yaml_correlation
   End Subroutine correlation_result
     
-  Subroutine statistics_collect(config, lsim, leql, nsteql, lmsd, keyres, degfre, degshl, &
+  Subroutine statistics_collect(config, rigid, lsim, leql, nsteql, lmsd, keyres, degfre, degshl, &
                                 degrot, nstep, tstep, time, tmst, mxatdm, stats, thermo, zdensity, &
                                 sites, files, comm, ff, tmr)
 
@@ -1160,6 +1252,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type(configuration_type), Intent(InOut) :: config
+    Type(rigid_bodies_type),  Intent(InOut) :: rigid
     Logical,                  Intent(In   ) :: lsim, leql
     Integer,                  Intent(In   ) :: nsteql
     Logical,                  Intent(In   ) :: lmsd
@@ -1463,18 +1556,18 @@ Contains
               Associate(cor_data => stats%correlations(cor_index))
                 If (nstep > 0 .and. &
                     Mod(nstep, cor_data%freq) == 0) Then
-                  If (cor_data%atom(1) == 0 &
+                  If (cor_data%indices_used == 0 &
                       .and. comm%idnode == root_id) Then
-                    ! not per atom correlation
-                    observable_a = cor_data%A%value(config, stats)
-                    observable_b = cor_data%B%value(config, stats)
+                    ! not distributed correlation
+                    observable_a = cor_data%A%value(config, rigid, stats)
+                    observable_b = cor_data%B%value(config, rigid, stats)
                     Call cor_data%correlators(1)%update(observable_a, observable_b)
                   Else
-                    Do i = 1, cor_data%atoms_used
+                    Do i = 1, cor_data%indices_used
                       observable_a = &
-                        cor_data%A%value(config, stats, cor_data%atom(i))
+                        cor_data%A%value(config, rigid, stats, cor_data%indices(i))
                       observable_b = &
-                        cor_data%B%value(config, stats, cor_data%atom(i))
+                        cor_data%B%value(config, rigid, stats, cor_data%indices(i))
                       Call cor_data%correlators(i)%update(observable_a, observable_b)
                     End Do
                   End If
@@ -1627,7 +1720,7 @@ Contains
 
       If (stats%cor_dump_freq > 0 .and. nstep >=stats%intsta) Then
         If (Mod(nstep, stats%cor_dump_freq) == 0) Then
-          Call correlation_result(stats, comm, files, config, sites, thermo%tstep)
+          Call correlation_result(stats, rigid, comm, files, config, sites, thermo%tstep)
         End If
       End If 
     End If
@@ -2556,7 +2649,8 @@ Contains
   Subroutine statistics_result(config, minim, lmsd, &
                                nstrun, keyshl, megcon, megpmf, &
                                nstep, time, tmst, &
-                               mxatdm, neigh_uncond_update, stats, thermo, sites, comm, files, tmr)
+                               mxatdm, neigh_uncond_update, stats, &
+                               rigid, thermo, sites, comm, files, tmr)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2581,6 +2675,7 @@ Contains
     Integer(Kind=wi),         Intent(In   ) :: mxatdm
     Logical,                  Intent(InOut) :: neigh_uncond_update
     Type(stats_type),         Intent(InOut) :: stats
+    Type(rigid_bodies_type),  Intent(InOut) :: rigid
     Type(thermostat_type),    Intent(In   ) :: thermo
     Type(site_type),          Intent(In   ) :: sites
     Type(comms_type),         Intent(InOut) :: comm
@@ -3049,7 +3144,7 @@ Contains
     End If
 
     If (stats%calculate_correlations) Then
-      Call correlation_result(stats,comm,files,config,sites, thermo%tstep)
+      Call correlation_result(stats,rigid,comm,files,config,sites, thermo%tstep)
     End If
     ! print final time check
 
@@ -3563,7 +3658,7 @@ Contains
     End If
   End Function get_correlation_frequency
 
-  Subroutine correlator_reindex(stats, config)
+  Subroutine correlator_reindex(stats, config, rigid)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_5 for updating correlator local indices for per-atom
@@ -3574,6 +3669,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     Class(stats_type),                       Intent(InOut)  :: stats
     Type(configuration_type),                Intent(InOut)  :: config
+    Type(rigid_bodies_type),                 Intent(InOut)  :: rigid
 
     Integer                         :: i, j, new_index, cor_index
     Type(correlation_data), Pointer :: cor_data
@@ -3585,10 +3681,18 @@ Contains
         If (.not. stats%cor_table%contains(cor_keys(j))) Cycle
         Call stats%cor_table%get(cor_keys(j), cor_index)
         Associate(cor_data => stats%correlations(cor_index))
-          If (cor_data%atom(1) > 0) Then
-            Do i = 1, cor_data%atoms_used
-              new_index = Findloc(cor_data%atom_global, config%ltg(i), 1)
-              cor_data%atom(new_index) = i
+          If (is_per_atom(cor_data)) Then
+            Do i = 1, cor_data%indices_used
+              new_index = Findloc(cor_data%indices_global, config%ltg(i), 1)
+              cor_data%indices(new_index) = i
+            End Do
+          Else If (is_per_rigid(cor_data)) Then
+            Do i = 1, Size(rigid%list, 2)
+              new_index = Findloc(cor_data%indices_global, rigid%list(1, i), 1)
+              ! Rigid bodies may be shared. But only need one cor.
+              If (new_index /= 0) Then
+                cor_data%indices(new_index) = i
+              End If
             End Do
           End If
         End Associate
@@ -3596,7 +3700,7 @@ Contains
     End If
   End Subroutine correlator_reindex
 
-  Subroutine correlator_recieve(stats, config, newatm, buffer, buffer_index)
+  Subroutine correlator_recieve(stats, buffer, buffer_index, dep_type)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_5 for recieving correlations defined on a per-atom basis
@@ -3616,15 +3720,15 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       Class(stats_type),                       Intent(InOut)  :: stats
-      Type(configuration_type),                Intent(InOut)  :: config
-      Integer,                                 Intent(In   )  :: newatm
       Real(Kind=wp),           Dimension(:),   Intent(InOut)  :: buffer
       Integer,                                 Intent(InOut)  :: buffer_index
+      Integer,                                 Intent(In   )  :: dep_type
 
       Class(observable), Allocatable  :: A, B
-      Integer                         :: iA, iB, global_index, &
+      Integer                         :: iA, iB, gid, &
                                          window, blocks, points, deportations, d, &
-                                         new_index, s, c_a, c_b, freq, cor_index, n
+                                         new_index, s, c_a, c_b, freq, cor_index, n, &
+                                         type_a, type_b
       Character(Len=MAX_KEY)          :: name
       Type(correlation_data), Pointer :: cor_data
 
@@ -3641,7 +3745,7 @@ Contains
 
         Do d = 1, deportations
           buffer_index = buffer_index + 1
-          global_index = INT(buffer(buffer_index))
+          gid = INT(buffer(buffer_index))
           buffer_index = buffer_index + 1
           iA = INT(buffer(buffer_index))
           buffer_index = buffer_index + 1
@@ -3652,28 +3756,31 @@ Contains
           c_b = INT(buffer(buffer_index))
           buffer_index = buffer_index + 1
           freq = INT(buffer(buffer_index))
+          buffer_index = buffer_index + 1
+          type_a = INT(buffer(buffer_index))
+          buffer_index = buffer_index + 1
+          type_b = INT(buffer(buffer_index))
 
-          Call id_component_to_observable(iA, c_a, A)
-          Call id_component_to_observable(iB, c_b, B)
+          Call id_component_to_observable(iA, c_a, A, type_a)
+          Call id_component_to_observable(iB, c_b, B, type_b)
           name = Trim(A%name())//"-"//Trim(B%name())
           Call stats%cor_table%get(name, cor_index)
           Associate(cor_data => stats%correlations(cor_index))
-            new_index = cor_data%atoms_used+1
-            If (new_index > Size(cor_data%atom)) Then
+            new_index = cor_data%indices_used+1
+            If (new_index > Size(cor_data%indices)) Then
               ! A spare entry does not exist, extend by 1.
               cor_data%correlators = [cor_data%correlators, cor_data%correlators(Size(cor_data%correlators))]
-              cor_data%atom = [cor_data%atom, cor_data%atom(Size(cor_data%atom))]
-              cor_data%atom_global = [cor_data%atom_global, cor_data%atom_global(Size(cor_data%atom_global))]
+              cor_data%indices = [cor_data%indices, cor_data%indices(Size(cor_data%indices))]
+              cor_data%indices_global = [cor_data%indices_global, cor_data%indices_global(Size(cor_data%indices_global))]
             End If
 
-            cor_data%atom(new_index) = newatm
-            cor_data%atom_global(new_index) = global_index
+            cor_data%indices_global(new_index) = gid
             blocks = cor_data%correlators(1)%number_of_blocks
             points = cor_data%correlators(1)%points_per_block
             window = cor_data%correlators(1)%window_size
             Call cor_data%correlators(new_index)%recieve_buffer(buffer,buffer_index)
             cor_data%freq = freq
-            cor_data%atoms_used = cor_data%atoms_used + 1
+            cor_data%indices_used = cor_data%indices_used + 1
           End Associate
         End Do
 
@@ -3683,7 +3790,7 @@ Contains
 
   End Subroutine correlator_recieve
 
-  Subroutine correlator_deport(stats, config, buffer, atom_index, buffer_index)
+  Subroutine correlator_deport(stats, buffer, gid, buffer_index, dep_type)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_5 for deporting correlations defined on a per-atom basis
@@ -3703,47 +3810,51 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     Class(stats_type),                    Intent(InOut) :: stats
-    Type(configuration_type),             Intent(InOut) :: config
     Real(Kind=wp), Dimension(:),          Intent(InOut) :: buffer
-    Integer,                              Intent(In)    :: atom_index
+    Integer,                              Intent(In   ) :: gid, dep_type
     Integer,                              Intent(InOut) :: buffer_index
 
-    Integer                             :: i, A, B, c_a, c_b, s, n,&
-                                           deportations, cor_index, location
+    Integer                             :: i, A, B, c_a, c_b, s, n, &
+                                           cor_index, location, &
+                                           type_a, type_b
+    Integer,                Allocatable :: locations(:), cor_indices(:)
     Character(Len=MAX_KEY), Allocatable :: cor_keys(:)
     Type(correlation_data), Pointer     :: cor_data
 
     If (stats%per_atom_correlations .and. stats%calculate_correlations) Then
 
-      deportations = 0
       s = buffer_index
+      Allocate(locations(0))
+      Allocate(cor_indices(0))
 
       Call stats%cor_table%get_keys(cor_keys)
 
       Do i = 1, Size(cor_keys)
         If (.not. stats%cor_table%contains(cor_keys(i))) Cycle
         Call stats%cor_table%get(cor_keys(i), cor_index)
-        If (stats%correlations(cor_index)%atom(1) == 0) Cycle
-        If (Findloc(stats%correlations(cor_index)%atom_global, config%ltg(atom_index), 1) /= 0) Then
-          deportations = deportations + 1
-        End If
+        Associate(cor_data => stats%correlations(cor_index))
+          If (cor_data%A%distributed() /= dep_type) Cycle
+          location = Findloc(cor_data%indices_global, gid, 1)
+          ! RB entries may be "deported" multiple times due to sharing.
+          If (location /= 0 .and. location <= cor_data%indices_used) Then
+            locations = [locations, location]
+            cor_indices = [cor_indices, cor_index]
+          End If
+        End Associate
       End Do
 
       buffer_index = buffer_index + 1 
-      buffer(buffer_index) = deportations
-      If (deportations == 0) Return
+      buffer(buffer_index) = Size(cor_indices)
+      If (Size(cor_indices) == 0) Return
 
-      Do i = 1, Size(cor_keys)
-        If (.not. stats%cor_table%contains(cor_keys(i))) Cycle
-        Call stats%cor_table%get(cor_keys(i), cor_index)
-        If (stats%correlations(cor_index)%atom(1) == 0) Cycle
-        Associate(cor_data => stats%correlations(cor_index))
+      Do i = 1, Size(cor_indices)
+        Associate(cor_data => stats%correlations(cor_indices(i)))
           A = cor_data%A%id()
           c_a = cor_data%A%component
           B = cor_data%B%id()
           c_b = cor_data%B%component
           buffer_index = buffer_index + 1
-          buffer(buffer_index) = config%ltg(atom_index)
+          buffer(buffer_index) = gid
           buffer_index = buffer_index + 1
           buffer(buffer_index) = A
           buffer_index = buffer_index + 1
@@ -3754,23 +3865,26 @@ Contains
           buffer(buffer_index) = c_b
           buffer_index = buffer_index + 1
           buffer(buffer_index) = cor_data%freq
+          buffer_index = buffer_index + 1
+          buffer(buffer_index) = cor_data%A%subtype()
+          buffer_index = buffer_index + 1
+          buffer(buffer_index) = cor_data%B%subtype()
 
-          location = Findloc(stats%correlations(cor_index)%atom_global, config%ltg(atom_index), 1)
+          location = locations(i)
           Call cor_data%correlators(location)%deport_buffer(buffer,buffer_index,.true.)
           ! remove old correlator
-          n = cor_data%atoms_used-1
+          n = cor_data%indices_used-1
           If (location /= n+1) Then
             ! replace hole with off-end element
             cor_data%correlators(location) = cor_data%correlators(n+1)
-            cor_data%atom(location) = cor_data%atom(n+1)
-            cor_data%atom_global(location) = cor_data%atom_global(n+1)
+            cor_data%indices(location) = cor_data%indices(n+1)
+            cor_data%indices_global(location) = cor_data%indices_global(n+1)
           End If
-          cor_data%atoms_used = cor_data%atoms_used - 1
+          cor_data%indices_used = cor_data%indices_used - 1
         End Associate
       End Do
-      buffer_index = s + deportations*stats%cor_deport_buffer + 1
+      buffer_index = s + Size(cor_indices)*stats%cor_deport_buffer + 1
     End If
-
 
   End Subroutine correlator_deport
 
@@ -3789,7 +3903,7 @@ Contains
     Integer                                  :: i, atom, idx, buffer_size, correlations, &
                                                 buffer_index, local_correlations, local_buffer_size, &
                                                 n_local_cor, cor_index, &
-                                                attributes = 7, header = 4
+                                                attributes = 9, header = 4
     Character(Len=MAX_KEY),      Allocatable :: cor_keys(:)
 
   
@@ -3811,12 +3925,12 @@ Contains
         If (.not. stats%cor_table%contains(cor_keys(i))) Cycle
         Call stats%cor_table%get(cor_keys(i), cor_index)
         Associate(cor_data => stats%correlations(cor_index))
-          correlations = correlations + cor_data%atoms_used
-          buffer_size = buffer_size + cor_data%atoms_used*(cor_data%correlators(1)%buffer_size-header)
+          correlations = correlations + cor_data%indices_used
+          buffer_size = buffer_size + cor_data%indices_used*(cor_data%correlators(1)%buffer_size-header)
         End Associate
       End Do
       ! id_a, id_b, component_a, component_b, atom, buffer_size
-      Allocate(local_ids(1:attributes*correlations)) 
+      Allocate(local_ids(1:attributes*correlations))
       Allocate(local_buffer(1:buffer_size))
       ! collect local buffer first
       buffer_index = 0
@@ -3825,18 +3939,20 @@ Contains
         If (.not. stats%cor_table%contains(cor_keys(i))) Cycle
         Call stats%cor_table%get(cor_keys(i), cor_index)
         Associate(cor_data => stats%correlations(cor_index))
-          Do atom = 1, cor_data%atoms_used
+          Do atom = 1, cor_data%indices_used
             local_ids((idx-1)*attributes+1) = cor_data%A%id()
             local_ids((idx-1)*attributes+2) = cor_data%A%component
             local_ids((idx-1)*attributes+3) = cor_data%B%id()
             local_ids((idx-1)*attributes+4) = cor_data%B%component
             local_ids((idx-1)*attributes+5) = cor_data%freq
-            If (cor_data%atom(1) /= 0) Then
-              local_ids((idx-1)*attributes+6) = cor_data%atom_global(atom)
+            local_ids((idx-1)*attributes+6) = cor_data%A%subtype()
+            local_ids((idx-1)*attributes+7) = cor_data%B%subtype()
+            If (cor_data%indices(1) /= 0) Then
+              local_ids((idx-1)*attributes+8) = cor_data%indices_global(atom)
             Else
-              local_ids((idx-1)*attributes+6) = 0
+              local_ids((idx-1)*attributes+8) = 0
             End If
-            local_ids((idx-1)*attributes+7) = cor_data%correlators(1)%buffer_size-header
+            local_ids((idx-1)*attributes+9) = cor_data%correlators(1)%buffer_size-header
             Call cor_data%correlators(atom)%deport_buffer(local_buffer,buffer_index)
             idx = idx + 1
           End Do
@@ -3903,6 +4019,8 @@ Contains
           packed_ids%buffer((i-1)*attributes+5), &
           packed_ids%buffer((i-1)*attributes+6), &
           packed_ids%buffer((i-1)*attributes+7), &
+          packed_ids%buffer((i-1)*attributes+8), &
+          packed_ids%buffer((i-1)*attributes+9), &
           packed_correlators%buffer(buffer_index:(buffer_index+packed_ids%buffer((i-1)*attributes+attributes)-1))
         buffer_index = buffer_index + packed_ids%buffer((i-1)*attributes+attributes)
 
@@ -3933,8 +4051,8 @@ Contains
                                                 buffer_index, j, packed_index, &
                                                 A, B, atom, offset, local_correlations, &
                                                 local_buffer_size, n_local_cor, &
-                                                c_a, c_b, cor_index, &
-                                                attributes = 7, header = 4
+                                                c_a, c_b, cor_index, type_a, type_b, &
+                                                attributes = 9, header = 4
     Character(Len=MAX_KEY),      Allocatable :: cor_keys(:)
     Type(correlation_data),      Pointer     :: cor_data
   
@@ -3952,8 +4070,8 @@ Contains
         If (.not. stats%cor_table%contains(cor_keys(i))) Cycle
         Call stats%cor_table%get(cor_keys(i), cor_index)
         Associate(cor_data => stats%correlations(cor_index))
-          correlations = correlations + Size(cor_data%atom)
-          buffer_size = buffer_size + Size(cor_data%atom)*(cor_data%correlators(1)%buffer_size-header)
+          correlations = correlations + Size(cor_data%indices)
+          buffer_size = buffer_size + Size(cor_data%indices)*(cor_data%correlators(1)%buffer_size-header)
         End Associate
       End Do                                            
       Allocate(local_ids(1:attributes*correlations))
@@ -3966,18 +4084,20 @@ Contains
         If (.not. stats%cor_table%contains(cor_keys(i))) Cycle
         Call stats%cor_table%get(cor_keys(i), cor_index)
         Associate(cor_data => stats%correlations(cor_index))
-          Do atom = 1, Size(cor_data%atom)
+          Do atom = 1, Size(cor_data%indices)
             local_ids((idx-1)*attributes+1) = cor_data%A%id()
             local_ids((idx-1)*attributes+2) = cor_data%A%component
             local_ids((idx-1)*attributes+3) = cor_data%B%id()
             local_ids((idx-1)*attributes+4) = cor_data%B%component
             local_ids((idx-1)*attributes+5) = cor_data%freq
-            If (cor_data%atom(1) /= 0) Then
-              local_ids((idx-1)*attributes+6) = cor_data%atom_global(atom)
+            local_ids((idx-1)*attributes+6) = cor_data%A%subtype()
+            local_ids((idx-1)*attributes+7) = cor_data%B%subtype()
+            If (cor_data%indices(1) /= 0) Then
+              local_ids((idx-1)*attributes+8) = cor_data%indices_global(atom)
             Else
-              local_ids((idx-1)*attributes+6) = 0
+              local_ids((idx-1)*attributes+8) = 0
             End If
-            local_ids((idx-1)*attributes+7) = cor_data%correlators(1)%buffer_size-header
+            local_ids((idx-1)*attributes+9) = cor_data%correlators(1)%buffer_size-header
             idx = idx + 1
           End Do
         End Associate
@@ -4028,13 +4148,13 @@ Contains
             Read (Unit=unit, IOStat=keyio, Fmt=format, Advance = 'No') &
               ids_buffer((i-1)*attributes+1), ids_buffer((i-1)*attributes+2), ids_buffer((i-1)*attributes+3), &
               ids_buffer((i-1)*attributes+4), ids_buffer((i-1)*attributes+5), ids_buffer((i-1)*attributes+6), &
-              ids_buffer((i-1)*attributes+7), &
+              ids_buffer((i-1)*attributes+7), ids_buffer((i-1)*attributes+8), ids_buffer((i-1)*attributes+9), &
               data_buffer(buffer_index:(buffer_index+ids_buffer((i-1)*attributes+attributes)-1))
           Else
             Read (Unit=unit, IOStat=keyio) &
               ids_buffer((i-1)*attributes+1), ids_buffer((i-1)*attributes+2), ids_buffer((i-1)*attributes+3), &
               ids_buffer((i-1)*attributes+4), ids_buffer((i-1)*attributes+5), ids_buffer((i-1)*attributes+6), &
-              ids_buffer((i-1)*attributes+7), &
+              ids_buffer((i-1)*attributes+7), ids_buffer((i-1)*attributes+8), ids_buffer((i-1)*attributes+9), &
               data_buffer(buffer_index:(buffer_index+ids_buffer((i-1)*attributes+attributes)-1))
           End If
           sizes_buffer(i) = ids_buffer((i-1)*attributes+attributes)
@@ -4056,7 +4176,9 @@ Contains
         c_a = packed_ids%buffer((i-1)*attributes+2)
         B = packed_ids%buffer((i-1)*attributes+3)
         c_b = packed_ids%buffer((i-1)*attributes+4)
-        atom = packed_ids%buffer((i-1)*attributes+6)
+        type_a = packed_ids%buffer((i-1)*attributes+6)
+        type_b = packed_ids%buffer((i-1)*attributes+7)
+        atom = packed_ids%buffer((i-1)*attributes+8)
         packed_index = -1
 
         ! find where this data should be placed
@@ -4065,7 +4187,9 @@ Contains
               ids_buffer((j-1)*attributes+2) == c_a .and. &
               ids_buffer((j-1)*attributes+3) == B   .and. &
               ids_buffer((j-1)*attributes+4) == c_b .and. &
-              ids_buffer((j-1)*attributes+6) == atom) Then
+              ids_buffer((j-1)*attributes+6) == type_a .and. &
+              ids_buffer((j-1)*attributes+7) == type_b .and. &
+              ids_buffer((j-1)*attributes+8) == atom) Then
 
             ! found
             packed_index = j
@@ -4123,6 +4247,46 @@ Contains
   End Subroutine revive_correlations
 
   !!!!!!!! observables !!!!!!!! 
+
+    !> True if the observable name refers to a values in rigid_bodies_type
+  Pure Logical Function is_rigid_observable(observable_name)
+    Character(Len=MAX_CORRELATION_NAME_LENGTH), Intent(In   ) :: observable_name
+
+    Select Case (Trim(observable_name))
+    Case ("rigid_body_position")
+      is_rigid_observable = .true.
+    Case ("rigid_body_velocity")
+      is_rigid_observable = .true.
+    Case ("rigid_body_omega")
+      is_rigid_observable = .true.
+    Case ("rbp")
+      is_rigid_observable = .true.
+    Case ("rbv")
+      is_rigid_observable = .true.
+    Case ("rbo")
+      is_rigid_observable = .true.
+    Case Default
+      is_rigid_observable = .false.
+    End Select
+  End Function is_rigid_observable
+
+  Subroutine set_rigid_observable_name(observable_name, o)
+    Character(Len=MAX_CORRELATION_NAME_LENGTH), Intent(In   ) :: observable_name
+    Class(observable_rigid),                 Intent(InOut) :: o
+
+    If (Trim(observable_name) == "rigid_body_position" .or. &
+        Trim(observable_name) == "rbp") Then
+      o%rigid_type = RIGID_POSITION
+    Else If (Trim(observable_name) == "rigid_body_velocity" .or. &
+             Trim(observable_name) == "rbv") Then
+      o%rigid_type = RIGID_VELOCITY
+    Else If (Trim(observable_name) == "rigid_body_omega" .or. &
+             Trim(observable_name) == "rbo") Then
+      o%rigid_type = RIGID_ORIENTATIONAL_VELOCITY
+    End If
+
+  End Subroutine set_rigid_observable_name
+
 
   Integer Function component_symbol_to_index(s)
     Character(Len=*), Intent(In   ) :: s
@@ -4217,6 +4381,7 @@ Contains
     Character(Len=STR_LEN)                     :: msg, component_name
     Character(Len=MAX_CORRELATION_NAME_LENGTH) :: observable_name
     Type(observable_currents)                  :: oc
+    Type(observable_rigid)                     :: or
 
     ! Check if in stpval
     Do i = 1, Size(stpval_names)
@@ -4281,7 +4446,15 @@ Contains
       o%component = component
       o%component_name = component_sym
       success = .true.
+    Else If (is_rigid_observable(observable_name)) Then
+      Call set_rigid_observable_name(observable_name, or)
+      Allocate(observable_rigid::o)
+      o = or
+      o%component = component
+      o%component_name = component_sym
+      success = .true.
     End If
+
 
     If (success .eqv. .false.) Then
       Call error(0,"correlation observable could not be allocated from character: "//c)
@@ -4289,7 +4462,7 @@ Contains
 
   End Subroutine character_to_observable
 
-  Subroutine id_component_to_observable(id, component, o)
+  Subroutine id_component_to_observable(id, component, o, subtype)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_5 for parsing an id and component into an observable.
@@ -4297,32 +4470,40 @@ Contains
     !
     ! author    - h.l.devereux 2023
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    Integer,                        Intent(In   )  :: id, component
+    Integer,                        Intent(In   )  :: id, component, subtype
     Class(observable), Allocatable, Intent(  Out)  :: o
 
     Logical                          :: success
     Character(Len=100)               :: msg
     Character(Len=2), Dimension(1:3) :: components_vector
     Character(Len=2), Dimension(1:9) :: components_matrix
+    Type(observable_rigid)           :: or
 
     components_vector = (/ 'x', 'y', 'z' /)
     components_matrix = (/'xx', 'xy', 'xz', 'yx', 'yy', 'yz', 'zx', 'zy', 'zz'/)
     
     success = .false.
-    If (id == velocity_id(observable_velocity())) Then
+    If (id == velocity_id()) Then
       Allocate(observable_velocity::o)
       o%component_name = components_vector(component)
       success = .true.
-    Else If (id == stress_id(observable_stress())) Then
+    Else If (id == stress_id()) Then
       Allocate(observable_stress::o)
       o%component_name = components_matrix(component)
       success = .true.
-    Else If (id == heat_flux_id(observable_heat_flux())) Then
+    Else If (id == heat_flux_id()) Then
       Allocate(observable_heat_flux::o)
       o%component_name = components_vector(component)
       success = .true.
-    Else If (id == current_id(observable_currents())) Then
+    Else If (id == current_id()) Then
+      Allocate(observable_currents::o)
       o%component_name = components_vector(component)
+      success = .true.
+    Else If (id == rigid_id()) Then
+      Allocate(observable_rigid::o)
+      or%component_name = components_vector(component)
+      or%rigid_type = subtype
+      o = or
       success = .true.
     End If
 
@@ -4333,23 +4514,45 @@ Contains
 
     o%component = component
   End Subroutine id_component_to_observable
+
+  !> Observable has no subtype.
+  Integer(Kind=wi) Function no_subtype(t)
+    Class(observable), Intent(In   ) :: t
+    no_subtype = 0_wi
+  End Function no_subtype
+
+  !> Observable not distributed.
+  Integer(Kind=wi) Function not_distributed()
+    not_distributed = NOT_DISTRIBUTED_OBSERVABLE
+  End Function not_distributed
+
+  !> Observable is distributed per atom.
+  Integer(Kind=wi) Function distributed_per_atom()
+    distributed_per_atom = PER_ATOM_OBSERVABLE
+  End Function distributed_per_atom
+
+  !> Observable is distributed per rigid body.
+  Integer(Kind=wi) Function distributed_per_rigid()
+    distributed_per_rigid = PER_RIGID_OBSERVABLE
+  End Function distributed_per_rigid
   
   !!!!!!!!!! observable_velocity !!!!!!!!!!
 
-  Function velocity_value(t, config, stats, atom) Result(v)
+  Function velocity_value(t, config, rigid, stats, index) Result(v)
     Class(observable_velocity),            Intent(In   ) :: t
     Type(configuration_type),              Intent(InOut) :: config
+    Type(rigid_bodies_type),               Intent(InOut) :: rigid
     Type(stats_type),                      Intent(InOut) :: stats
-    Integer,                    Optional,  Intent(In   ) :: atom
+    Integer,                    Optional,  Intent(In   ) :: index
 
     Complex(Kind=wp)       :: v
     Real(Kind=wp)          :: velocity(1:3)
 
-    If (.not. Present(atom)) Then
+    If (.not. Present(index)) Then
       Call error(0,message="no atom index specified for velocity correlator")
     End If
 
-    velocity = (/config%vxx(atom), config%vyy(atom), config%vzz(atom)/)
+    velocity = (/config%vxx(index), config%vyy(index), config%vzz(index)/)
     v = Cmplx(velocity(t%component), Kind=wp)
     
   End Function velocity_value
@@ -4366,25 +4569,19 @@ Contains
       End If
   End Function velocity_name
 
-  Function velocity_id(t) Result(v)
-    Class(observable_velocity),   Intent(In   ) :: t
-    Integer                                     :: v
+  Function velocity_id() Result(v)
+    Integer :: v
     v = 0
   End Function velocity_id
 
-  Function velocity_per_atom(t) Result(v)
-    Class(observable_velocity), Intent(In   ) :: t
-    Logical                                   :: v
-    v = .true.
-  End Function velocity_per_atom
-
   !!!!!!!!!! observable stress !!!!!!!!!!
 
-  Function stress_value(t, config, stats, atom) Result(v)
+  Function stress_value(t, config, rigid, stats, index) Result(v)
     Class(observable_stress),             Intent(In   ) :: t
     Type(configuration_type),             Intent(InOut) :: config
+    Type(rigid_bodies_type),              Intent(InOut) :: rigid
     Type(stats_type),                     Intent(InOut) :: stats
-    Integer,                    Optional, Intent(In   ) :: atom
+    Integer,                    Optional, Intent(In   ) :: index
     Complex(Kind=wp)       :: v
 
     v = Cmplx(stats%strtot(t%component) / stats%stpvol, Kind=wp)
@@ -4403,25 +4600,19 @@ Contains
       End If
   End Function stress_name
 
-  Function stress_id(t) Result(v)
-    Class(observable_stress), Intent(In   ) :: t
-    Integer                                 :: v
+  Function stress_id() Result(v)
+    Integer :: v
     v = 1
   End Function stress_id
 
-  Function stress_per_atom(t) Result(v)
-    Class(observable_stress), Intent(In   ) :: t
-    Logical                                 :: v
-    v = .false.
-  End Function stress_per_atom
-
   !!!!!!!!!! observable heat_flux !!!!!!!!!!
 
-  Function heat_flux_value(t, config, stats, atom) Result(v)
+  Function heat_flux_value(t, config, rigid, stats, index) Result(v)
     Class(observable_heat_flux),          Intent(In   ) :: t
     Type(configuration_type),             Intent(InOut) :: config
+    Type(rigid_bodies_type),              Intent(InOut) :: rigid
     Type(stats_type),                     Intent(InOut) :: stats
-    Integer,                    Optional, Intent(In   ) :: atom
+    Integer,                    Optional, Intent(In   ) :: index
     
     Complex(Kind=wp)       :: v
 
@@ -4441,25 +4632,19 @@ Contains
       End If
   End Function heat_flux_name
 
-  Function heat_flux_id(t) Result(v)
-    Class(observable_heat_flux), Intent(In   ) :: t
-    Integer                                    :: v
+  Function heat_flux_id() Result(v)
+    Integer :: v
     v = 2
   End Function heat_flux_id
 
-  Function heat_flux_per_atom(t) Result(v)
-    Class(observable_heat_flux), Intent(In   ) :: t
-    Logical                                    :: v
-    v = .false.
-  End Function heat_flux_per_atom
-
   !!!!!!!!!! observable statis !!!!!!!!!!
 
-  Function statis_value(t, config, stats, atom) Result(v)
-    Class(observable_statis),                         Intent(In   ) :: t
-    Type(configuration_type),                         Intent(InOut) :: config
-    Type(stats_type),                                 Intent(InOut) :: stats
-    Integer,                    Optional,             Intent(In   ) :: atom
+  Function statis_value(t, config, rigid, stats, index) Result(v)
+    Class(observable_statis),             Intent(In   ) :: t
+    Type(configuration_type),             Intent(InOut) :: config
+    Type(rigid_bodies_type),              Intent(InOut) :: rigid
+    Type(stats_type),                     Intent(InOut) :: stats
+    Integer,                    Optional, Intent(In   ) :: index
     
     Complex(Kind=wp)          :: v
     Character(Len=STR_LEN)    :: msg
@@ -4480,24 +4665,19 @@ Contains
       v = Trim(stpval_names(t%component))
   End Function statis_name
 
-  Function statis_id(t) Result(v)
-    Class(observable_statis), Intent(In   ) :: t
-    Integer                                 :: v
+  Function statis_id() Result(v)
+    Integer :: v
     v = 3
   End Function statis_id
 
-  Function statis_per_atom(t) Result(v)
-    Class(observable_statis), Intent(In   ) :: t
-    Logical                                 :: v
-    v = .false.
-  End Function statis_per_atom
   !!!!!!!!!! observable currents !!!!!!!!!!
 
-  Function current_value(t, config, stats, atom) Result(v)
+  Function current_value(t, config, rigid, stats, index) Result(v)
     Class(observable_currents),                         Intent(In   ) :: t
-    Type(configuration_type),                            Intent(InOut) :: config
-    Type(stats_type),                                    Intent(InOut) :: stats
-    Integer,                    Optional,                Intent(In   ) :: atom
+    Type(configuration_type),                           Intent(InOut) :: config
+    Type(rigid_bodies_type),                            Intent(InOut) :: rigid
+    Type(stats_type),                                   Intent(InOut) :: stats
+    Integer,                    Optional,               Intent(In   ) :: index
     
     Complex(Kind=wp)       :: v
 
@@ -4583,17 +4763,62 @@ Contains
       End Select
   End Function current_name
 
-  Function current_id(t) Result(v)
-    Class(observable_currents), Intent(In   ) :: t
-    Integer                                    :: v
+  Function current_id() Result(v)
+    Integer :: v
     v = 4
   End Function current_id
 
-  Function current_per_atom(t) Result(v)
-    Class(observable_currents), Intent(In   ) :: t
-    Logical                                    :: v
-    v = .false.
-  End Function current_per_atom
+  !!!!!!!!!! observable_rigid !!!!!!!!!!
+
+  Function rigid_value(t, config, rigid, stats, index) Result(v)
+    Class(observable_rigid),               Intent(In   ) :: t
+    Type(configuration_type),              Intent(InOut) :: config
+    Type(rigid_bodies_type),               Intent(InOut) :: rigid
+    Type(stats_type),                      Intent(InOut) :: stats
+    Integer,                    Optional,  Intent(In   ) :: index
+
+    Complex(Kind=wp)       :: v
+    Character(Len=STR_LEN) :: msg
+    Real(Kind=wp)          :: values(1:3)
+
+    If (.not. Present(index)) Then
+      Call error(0,message="no rigid body index specified for rigid body velocity correlator")
+    End If
+
+    If (t%rigid_type == RIGID_POSITION) Then
+      values = (/rigid%xxx(index), rigid%yyy(index), rigid%zzz(index)/)
+    Else If (t%rigid_type == RIGID_VELOCITY) Then
+      values = (/rigid%vxx(index), rigid%vyy(index), rigid%vzz(index)/)
+    Else If (t%rigid_type == RIGID_ORIENTATIONAL_VELOCITY) Then
+      values = (/rigid%oxx(index), rigid%oyy(index), rigid%ozz(index)/)
+    End If
+    v = Cmplx(values(t%component), Kind=wp)
+
+  End Function rigid_value
+
+  Function rigid_name(t, with_component) Result(v)
+      Class(observable_rigid), Intent(In   )   :: t
+      Logical,                  Intent(In   ), Optional :: with_component
+      Character(Len=MAX_CORRELATION_NAME_LENGTH)  :: v
+      If (t%rigid_type == RIGID_POSITION) Then
+        v = 'rb_position_'//t%component_name
+      Else If (t%rigid_type == RIGID_VELOCITY) Then
+        v = 'rb_velocity_'//t%component_name
+      Else If (t%rigid_type == RIGID_ORIENTATIONAL_VELOCITY) Then
+        v = 'rb_omega_'//t%component_name
+      End If
+
+  End Function rigid_name
+
+  Function rigid_id() Result(v)
+    Integer :: v
+    v = 5
+  End Function rigid_id
+
+  Integer(Kind=wi) Function rigid_subtype(t)
+    Class(observable_rigid), Intent(In   ) :: t
+    rigid_subtype = t%rigid_type
+  End Function
 
   Subroutine update_statistic(stat, v, step)
     Class(statistic_accumulator), Intent(InOut) :: stat

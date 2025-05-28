@@ -29,7 +29,6 @@ Module rigid_bodies
   Use kinds,           Only: li,STR_LEN,&
                              wi,&
                              wp
-  Use neighbours,      Only: neighbours_type
   Use numerics,        Only: images,&
                              invert,&
                              jacobi,&
@@ -37,7 +36,6 @@ Module rigid_bodies
                              pbcshift
   Use shared_units,    Only: update_shared_units
   Use site,            Only: site_type
-  Use statistics,      Only: stats_type
   Use thermostat,      Only: ENS_NPT_BERENDSEN,&
                              ENS_NPT_BERENDSEN_ANISO,&
                              ENS_NPT_LANGEVIN,&
@@ -64,13 +62,18 @@ Module rigid_bodies
     !> Number of types of rigid body
     Integer(Kind=wi), Public              :: n_types = 0
     Integer(Kind=wi), Public              :: n_types_book
+    Integer(Kind=wi), Public              :: unique_types
     !> Total number of rigid bodies
     Integer(Kind=wi), Public              :: total
     !> Number of rigid bodies of each type?
     Integer(Kind=wi), Allocatable, Public :: num(:)
+    !> Type of each rigid body
+    Integer(Kind=wi), Allocatable, Public :: type(:)
+    !> Type name of each rigid body
+    Character(Len=48), Allocatable, Public :: type_name(:)
     !> Atom indicies (local)
     Integer(Kind=wi), Allocatable, Public :: lst(:, :)
-    !> Atom indices
+    !> Atom indices (global)
     Integer(Kind=wi), Allocatable, Public :: list(:, :)
     !> Legend
     Integer(Kind=wi), Allocatable, Public :: legend(:, :)
@@ -143,12 +146,14 @@ Module rigid_bodies
 
     Procedure, Public :: init => allocate_rigid_bodies_arrays
     Procedure, Public :: deallocate_temp => deallocate_rigid_bodies_arrays
+    Procedure, Public :: count_local
+    Procedure, Public :: is_lead_atom
     Final             :: cleanup
   End Type rigid_bodies_type
 
   Public :: rigid_bodies_stress, &
             getrotmat, q_setup, rigid_bodies_split_torque, &
-            rigid_bodies_move, rigid_bodies_quench, no_squish, xscale, &
+            rigid_bodies_move, rigid_bodies_quench, no_squish, &
             rigid_bodies_tags, rigid_bodies_coms, rigid_bodies_setup, &
             rigid_bodies_widths
 
@@ -166,9 +171,9 @@ Module rigid_bodies
 
 Contains
 
-  Subroutine allocate_rigid_bodies_arrays(T, mxlshp, mxtmls, mxatdm, neighbours)
+  Subroutine allocate_rigid_bodies_arrays(T, mxlshp, mxtmls, mxatdm, mxatms, neighbours)
     Class(rigid_bodies_type)        :: T
-    Integer(Kind=wi), Intent(In   ) :: mxlshp, mxtmls, mxatdm, neighbours
+    Integer(Kind=wi), Intent(In   ) :: mxlshp, mxtmls, mxatdm, mxatms, neighbours
 
     Integer, Dimension(1:15) :: fail
 
@@ -189,6 +194,7 @@ Contains
     Allocate (T%xxx(1:T%max_rigid), T%yyy(1:T%max_rigid), T%zzz(1:T%max_rigid), stat=fail(13))
     Allocate (T%vxx(1:T%max_rigid), T%vyy(1:T%max_rigid), T%vzz(1:T%max_rigid), stat=fail(14))
     Allocate (T%oxx(1:T%max_rigid), T%oyy(1:T%max_rigid), T%ozz(1:T%max_rigid), stat=fail(15))
+    Allocate(T%type(1:T%max_rigid), T%type_name(1:T%max_rigid))
 
     If (Any(fail > 0)) Call error(1042)
 
@@ -211,6 +217,8 @@ Contains
     T%xxx = 0.0_wp; T%yyy = 0.0_wp; T%zzz = 0.0_wp
     T%vxx = 0.0_wp; T%vyy = 0.0_wp; T%vzz = 0.0_wp
     T%oxx = 0.0_wp; T%oyy = 0.0_wp; T%ozz = 0.0_wp
+    T%type = 0
+    T%type_name = "        "
   End Subroutine allocate_rigid_bodies_arrays
 
   Subroutine deallocate_rigid_bodies_arrays(T)
@@ -333,7 +341,38 @@ Contains
     If (Allocated(T%ozz)) Then
       Deallocate (T%ozz)
     End If
+    If (Allocated(T%type)) Then
+      Deallocate(T%type)
+    End If
+    If (Allocated(T%type_name)) Then
+      Deallocate(T%type_name)
+    End If
   End Subroutine cleanup
+
+  !> Count local rigid bodies.
+  Pure Integer(Kind=wi) Function count_local(rigid)
+    Class(rigid_bodies_type), Intent(In   ) :: rigid
+
+    Integer r
+
+    count_local = 0_wi
+    Do r = 1, Size(rigid%list,2)
+      If (rigid%list(1, r) > 0_wi) Then
+        count_local = count_local+1_wi
+      End If
+    End Do
+  End Function count_local
+
+  !> Check if global atom index gid is the lead atom of a rigid body. Return rb index if so. 0 else.
+  Integer Function is_lead_atom(rigid, gid)
+    Class(rigid_bodies_type), Intent(In   ) :: rigid
+    Integer,                  Intent(In   ) :: gid
+
+    is_lead_atom = 0
+    If (gid /= 0) Then
+      is_lead_atom = FindLoc(rigid%list(1, :), gid, 1)
+    End If
+  End Function is_lead_atom
 
   Subroutine rigid_bodies_coms_arrays(config, xxx, yyy, zzz, rgdxxx, rgdyyy, rgdzzz, rigid)
 
@@ -810,7 +849,7 @@ Contains
     End If
   End Subroutine rigid_bodies_quench
 
-  Subroutine rigid_bodies_setup(l_str, l_top, megatm, megfrz, degtra, degrot, rcut, sites, rigid, config, stats, comm)
+  Subroutine rigid_bodies_setup(l_str, l_top, megatm, megfrz, degtra, degrot, rcut, sites, rigid, config, using_dpd_units, comm)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine for constructing RBs' rotational inertia tesnors
@@ -833,7 +872,7 @@ Contains
     Type(site_type),          Intent(InOut) :: sites
     Type(rigid_bodies_type),  Intent(InOut) :: rigid
     Type(configuration_type), Intent(InOut) :: config
-    Type(stats_type),         Intent(InOut) :: stats
+    Logical,                  Intent(In   ) :: using_dpd_units
     Type(comms_type),         Intent(InOut) :: comm
 
     Character(Len=STR_LEN)         :: message, messages(2)
@@ -866,7 +905,7 @@ Contains
 
     Call rigid_bodies_tags(config, rigid, comm)
     Call rigid_bodies_coms(config, rigid%xxx, rigid%yyy, rigid%zzz, rigid)
-    Call rigid_bodies_widths(rcut, rigid, config, stats, comm)
+    Call rigid_bodies_widths(rcut, rigid, config, using_dpd_units, comm)
 
     ! Find as many as possible different groups of RB units on this domain
     ! and qualify a representative by the oldest copy of the very first one
@@ -1248,7 +1287,7 @@ Contains
             i3 = 1
 
             pass1 = .true.
-            dettest = Merge(1.0e-3_wp, 1.0e-1_wp, stats%dpd_units)
+            dettest = Merge(1.0e-3_wp, 1.0e-1_wp, using_dpd_units)
 
             Do While (pass1 .and. i2 < lrgd - 1)
 
@@ -1643,7 +1682,7 @@ Contains
 
     ! set-up quaternions
 
-    Call q_setup(rigid, config, comm, stats%dpd_units)
+    Call q_setup(rigid, config, comm, using_dpd_units)
 
   End Subroutine rigid_bodies_setup
 
@@ -2387,7 +2426,7 @@ Contains
     End If
   End Subroutine rigid_bodies_tags
 
-  Subroutine rigid_bodies_widths(rcut, rigid, config, stats, comm)
+  Subroutine rigid_bodies_widths(rcut, rigid, config, using_dpd_units, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2407,7 +2446,7 @@ Contains
     Real(Kind=wp),            Intent(In   ) :: rcut
     Type(rigid_bodies_type),  Intent(InOut) :: rigid
     Type(configuration_type), Intent(InOut) :: config
-    Type(stats_type),         Intent(InOut) :: stats
+    Logical,                  Intent(In   ) :: using_dpd_units
     Type(comms_type),         Intent(InOut) :: comm
 
     Character(Len=STR_LEN)         :: message
@@ -2474,7 +2513,7 @@ Contains
 
     Call gmax(comm, width)
     If (width > rcut) Then
-      Call warning(8, width, rcut, Merge(1.0_wp, 0.0_wp, stats%dpd_units))
+      Call warning(8, width, rcut, Merge(1.0_wp, 0.0_wp, using_dpd_units))
       Call error(642)
     End If
 
@@ -2484,893 +2523,6 @@ Contains
       Call error(0, message)
     End If
   End Subroutine rigid_bodies_widths
-
-  Subroutine xscale(config, tstep, thermo, stats, neigh, rigid, domain, tmr, comm)
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 routine to scale initial positions with change in box shape
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov january 2017
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Type(configuration_type), Intent(InOut) :: config
-    Real(Kind=wp),            Intent(In   ) :: tstep
-    Type(thermostat_type),    Intent(InOut) :: thermo
-    Type(stats_type),         Intent(InOut) :: stats
-    Type(neighbours_type),    Intent(InOut) :: neigh
-    Type(rigid_bodies_type),  Intent(InOut) :: rigid
-    Type(domains_type),       Intent(In   ) :: domain
-    Type(timer_type),         Intent(InOut) :: tmr
-    Type(comms_type),         Intent(InOut) :: comm
-
-    Character(Len=STR_LEN)         :: message
-    Integer                    :: fail, i, irgd, j, jrgd, lrgd
-    Real(Kind=wp)              :: a1, a2, a3, a5, a6, a9, b1, b2, b3, b5, b6, b9, com(1:3), scale, &
-                                  x, xa, y, ya, z, za
-    Real(Kind=wp), Allocatable :: rgdxin(:), rgdyin(:), rgdzin(:)
-
-#ifdef CHRONO
-    Call start_timer(tmr, 'xscale')
-#endif
-
-    If (.not. thermo%variable_cell) Then 
-#ifdef CHRONO
-      Call stop_timer(tmr, 'xscale')
-#endif
-      Return
-    End If
-    If (.not. rigid%on) Then
-
-      If (thermo%ensemble == ENS_NPT_BERENDSEN .or. thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
-
-        ! berendsen npt/nst
-
-        If (thermo%ensemble == ENS_NPT_BERENDSEN) Then
-
-          scale = thermo%eta(1)
-
-          Do i = 1, config%natms
-            stats%xin(i) = scale * stats%xin(i)
-            stats%yin(i) = scale * stats%yin(i)
-            stats%zin(i) = scale * stats%zin(i)
-          End Do
-
-        Else
-
-          Do i = 1, config%natms
-            xa = stats%xin(i) * thermo%eta(1) + stats%yin(i) * thermo%eta(2) + stats%zin(i) * thermo%eta(3)
-            ya = stats%xin(i) * thermo%eta(4) + stats%yin(i) * thermo%eta(5) + stats%zin(i) * thermo%eta(6)
-            za = stats%xin(i) * thermo%eta(7) + stats%yin(i) * thermo%eta(8) + stats%zin(i) * thermo%eta(9)
-
-            stats%xin(i) = xa
-            stats%yin(i) = ya
-            stats%zin(i) = za
-          End Do
-
-        End If
-
-      Else If (thermo%ensemble == ENS_NPT_NOSE_HOOVER .or. thermo%ensemble == ENS_NPT_NOSE_HOOVER_ANISO) Then
-
-        ! hoover npt/nst
-
-        Call getcom(stats%xin, stats%yin, stats%zin, config, com, comm)
-
-        If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
-
-          scale = Exp(tstep * thermo%eta(1))
-
-          Do i = 1, config%natms
-            stats%xin(i) = scale * (stats%xin(i) - com(1)) + com(1)
-            stats%yin(i) = scale * (stats%yin(i) - com(2)) + com(2)
-            stats%zin(i) = scale * (stats%zin(i) - com(3)) + com(3)
-          End Do
-
-        Else
-
-          ! second order taylor expansion of Exp(tstep*thermo%eta)
-
-          a1 = tstep * thermo%eta(1)
-          a2 = tstep * thermo%eta(2)
-          a3 = tstep * thermo%eta(3)
-          a5 = tstep * thermo%eta(5)
-          a6 = tstep * thermo%eta(6)
-          a9 = tstep * thermo%eta(9)
-
-          b1 = (a1 * a1 + a2 * a2 + a3 * a3) * 0.5_wp + a1 + 1.0_wp
-          b2 = (a1 * a2 + a2 * a5 + a3 * a6) * 0.5_wp + a2
-          b3 = (a1 * a3 + a2 * a6 + a3 * a9) * 0.5_wp + a3
-          b5 = (a2 * a2 + a5 * a5 + a6 * a6) * 0.5_wp + a5 + 1.0_wp
-          b6 = (a2 * a3 + a5 * a6 + a6 * a9) * 0.5_wp + a6
-          b9 = (a3 * a3 + a6 * a6 + a9 * a9) * 0.5_wp + a9 + 1.0_wp
-
-          Do i = 1, config%natms
-            xa = stats%xin(i) - com(1)
-            ya = stats%yin(i) - com(2)
-            za = stats%zin(i) - com(3)
-
-            stats%xin(i) = xa * b1 + ya * b2 + za * b3 + com(1)
-            stats%yin(i) = xa * b2 + ya * b5 + za * b6 + com(2)
-            stats%zin(i) = xa * b3 + ya * b6 + za * b9 + com(3)
-          End Do
-
-        End If
-
-      Else If (thermo%ensemble == ENS_NPT_LANGEVIN .or. &
-               thermo%ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
-               thermo%ensemble == ENS_NPT_MTK .or. &
-               thermo%ensemble == ENS_NPT_MTK_ANISO) Then
-
-        ! Langevin and MTK npt/nst
-
-        If (thermo%ensemble == ENS_NPT_LANGEVIN .or. thermo%ensemble == ENS_NPT_MTK) Then
-
-          scale = Exp(tstep * thermo%eta(1))
-
-          Do i = 1, config%natms
-            stats%xin(i) = scale * stats%xin(i)
-            stats%yin(i) = scale * stats%yin(i)
-            stats%zin(i) = scale * stats%zin(i)
-          End Do
-
-        Else
-
-          ! second order taylor expansion of Exp(tstep*thermo%eta)
-
-          a1 = tstep * thermo%eta(1)
-          a2 = tstep * thermo%eta(2)
-          a3 = tstep * thermo%eta(3)
-          a5 = tstep * thermo%eta(5)
-          a6 = tstep * thermo%eta(6)
-          a9 = tstep * thermo%eta(9)
-
-          b1 = (a1 * a1 + a2 * a2 + a3 * a3) * 0.5_wp + a1 + 1.0_wp
-          b2 = (a1 * a2 + a2 * a5 + a3 * a6) * 0.5_wp + a2
-          b3 = (a1 * a3 + a2 * a6 + a3 * a9) * 0.5_wp + a3
-          b5 = (a2 * a2 + a5 * a5 + a6 * a6) * 0.5_wp + a5 + 1.0_wp
-          b6 = (a2 * a3 + a5 * a6 + a6 * a9) * 0.5_wp + a6
-          b9 = (a3 * a3 + a6 * a6 + a9 * a9) * 0.5_wp + a9 + 1.0_wp
-
-          Do i = 1, config%natms
-            xa = stats%xin(i)
-            ya = stats%yin(i)
-            za = stats%zin(i)
-
-            stats%xin(i) = xa * b1 + ya * b2 + za * b3
-            stats%yin(i) = xa * b2 + ya * b5 + za * b6
-            stats%zin(i) = xa * b3 + ya * b6 + za * b9
-          End Do
-
-        End If
-
-      End If
-
-      If (.not. neigh%update) Then
-
-        If (thermo%ensemble == ENS_NPT_BERENDSEN .or. thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
-
-          ! berendsen npt/nst
-
-          If (thermo%ensemble == ENS_NPT_BERENDSEN) Then
-
-            scale = thermo%eta(1)
-
-            Do i = 1, config%natms
-              neigh%xbg(i) = scale * neigh%xbg(i)
-              neigh%ybg(i) = scale * neigh%ybg(i)
-              neigh%zbg(i) = scale * neigh%zbg(i)
-            End Do
-
-          Else
-
-            Do i = 1, config%natms
-              xa = neigh%xbg(i) * thermo%eta(1) + neigh%ybg(i) * thermo%eta(2) + neigh%zbg(i) * thermo%eta(3)
-              ya = neigh%xbg(i) * thermo%eta(4) + neigh%ybg(i) * thermo%eta(5) + neigh%zbg(i) * thermo%eta(6)
-              za = neigh%xbg(i) * thermo%eta(7) + neigh%ybg(i) * thermo%eta(8) + neigh%zbg(i) * thermo%eta(9)
-
-              neigh%xbg(i) = xa
-              neigh%ybg(i) = ya
-              neigh%zbg(i) = za
-            End Do
-
-          End If
-
-        Else If (thermo%ensemble == ENS_NPT_NOSE_HOOVER .or. thermo%ensemble == ENS_NPT_NOSE_HOOVER_ANISO) Then
-
-          ! hoover npt/nst
-
-          Call getcom(neigh%xbg, neigh%ybg, neigh%zbg, config, com, comm)
-
-          If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
-
-            scale = Exp(tstep * thermo%eta(1))
-
-            Do i = 1, config%natms
-              neigh%xbg(i) = scale * (neigh%xbg(i) - com(1)) + com(1)
-              neigh%ybg(i) = scale * (neigh%ybg(i) - com(2)) + com(2)
-              neigh%zbg(i) = scale * (neigh%zbg(i) - com(3)) + com(3)
-            End Do
-
-          Else
-
-            ! second order taylor expansion of Exp(tstep*thermo%eta)
-
-            a1 = tstep * thermo%eta(1)
-            a2 = tstep * thermo%eta(2)
-            a3 = tstep * thermo%eta(3)
-            a5 = tstep * thermo%eta(5)
-            a6 = tstep * thermo%eta(6)
-            a9 = tstep * thermo%eta(9)
-
-            b1 = (a1 * a1 + a2 * a2 + a3 * a3) * 0.5_wp + a1 + 1.0_wp
-            b2 = (a1 * a2 + a2 * a5 + a3 * a6) * 0.5_wp + a2
-            b3 = (a1 * a3 + a2 * a6 + a3 * a9) * 0.5_wp + a3
-            b5 = (a2 * a2 + a5 * a5 + a6 * a6) * 0.5_wp + a5 + 1.0_wp
-            b6 = (a2 * a3 + a5 * a6 + a6 * a9) * 0.5_wp + a6
-            b9 = (a3 * a3 + a6 * a6 + a9 * a9) * 0.5_wp + a9 + 1.0_wp
-
-            Do i = 1, config%natms
-              xa = neigh%xbg(i) - com(1)
-              ya = neigh%ybg(i) - com(2)
-              za = neigh%zbg(i) - com(3)
-
-              neigh%xbg(i) = xa * b1 + ya * b2 + za * b3 + com(1)
-              neigh%ybg(i) = xa * b2 + ya * b5 + za * b6 + com(2)
-              neigh%zbg(i) = xa * b3 + ya * b6 + za * b9 + com(3)
-            End Do
-
-          End If
-
-        Else If (thermo%ensemble == ENS_NPT_LANGEVIN .or. &
-                 thermo%ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
-                 thermo%ensemble == ENS_NPT_MTK .or. &
-                 thermo%ensemble == ENS_NPT_MTK_ANISO) Then
-
-          ! Langevin and MTK npt/nst
-
-          If (thermo%ensemble == ENS_NPT_LANGEVIN .or. thermo%ensemble == ENS_NPT_MTK) Then
-
-            scale = Exp(tstep * thermo%eta(1))
-
-            Do i = 1, config%natms
-              neigh%xbg(i) = scale * neigh%xbg(i)
-              neigh%ybg(i) = scale * neigh%ybg(i)
-              neigh%zbg(i) = scale * neigh%zbg(i)
-            End Do
-
-          Else
-
-            ! second order taylor expansion of Exp(tstep*thermo%eta)
-
-            a1 = tstep * thermo%eta(1)
-            a2 = tstep * thermo%eta(2)
-            a3 = tstep * thermo%eta(3)
-            a5 = tstep * thermo%eta(5)
-            a6 = tstep * thermo%eta(6)
-            a9 = tstep * thermo%eta(9)
-
-            b1 = (a1 * a1 + a2 * a2 + a3 * a3) * 0.5_wp + a1 + 1.0_wp
-            b2 = (a1 * a2 + a2 * a5 + a3 * a6) * 0.5_wp + a2
-            b3 = (a1 * a3 + a2 * a6 + a3 * a9) * 0.5_wp + a3
-            b5 = (a2 * a2 + a5 * a5 + a6 * a6) * 0.5_wp + a5 + 1.0_wp
-            b6 = (a2 * a3 + a5 * a6 + a6 * a9) * 0.5_wp + a6
-            b9 = (a3 * a3 + a6 * a6 + a9 * a9) * 0.5_wp + a9 + 1.0_wp
-
-            Do i = 1, config%natms
-              xa = neigh%xbg(i)
-              ya = neigh%ybg(i)
-              za = neigh%zbg(i)
-
-              neigh%xbg(i) = xa * b1 + ya * b2 + za * b3
-              neigh%ybg(i) = xa * b2 + ya * b5 + za * b6
-              neigh%zbg(i) = xa * b3 + ya * b6 + za * b9
-            End Do
-
-          End If
-
-        End If
-
-      End If
-
-    Else ! RBs exist
-
-      fail = 0
-      Allocate (rgdxin(1:rigid%max_rigid), rgdyin(1:rigid%max_rigid), rgdzin(1:rigid%max_rigid), Stat=fail)
-      If (fail > 0) Then
-        Write (message, '(a)') 'xscale allocation failure'
-        Call error(0, message)
-      End If
-
-      ! Halo initial RB members positions across onto neighbouring domains
-      ! to get initial COMs
-
-      If (rigid%share) Then
-        Call update_shared_units(config, rigid%list_shared, &
-                                 rigid%map_shared, stats%xin, stats%yin, stats%zin, domain, comm)
-      End If
-      Call rigid_bodies_coms(config, stats%xin, stats%yin, stats%zin, rgdxin, rgdyin, rgdzin, rigid)
-
-      If (thermo%ensemble == ENS_NPT_BERENDSEN .or. thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
-
-        ! berendsen npt/nst
-
-        If (thermo%ensemble == ENS_NPT_BERENDSEN) Then
-
-          scale = thermo%eta(1)
-
-          Do j = 1, config%nfree
-            i = config%lstfre(j)
-
-            stats%xin(i) = scale * stats%xin(i)
-            stats%yin(i) = scale * stats%yin(i)
-            stats%zin(i) = scale * stats%zin(i)
-          End Do
-
-          Do irgd = 1, rigid%n_types
-            x = rgdxin(irgd)
-            y = rgdyin(irgd)
-            z = rgdzin(irgd)
-
-            rgdxin(irgd) = scale * rgdxin(irgd)
-            rgdyin(irgd) = scale * rgdyin(irgd)
-            rgdzin(irgd) = scale * rgdzin(irgd)
-
-            lrgd = rigid%list(-1, irgd)
-            Do jrgd = 1, lrgd
-              i = rigid%index_local(jrgd, irgd)
-
-              If (i <= config%natms) Then
-                stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
-                stats%yin(i) = stats%yin(i) - y + rgdyin(irgd)
-                stats%zin(i) = stats%zin(i) - z + rgdzin(irgd)
-              End If
-            End Do
-          End Do
-
-        Else
-
-          Do j = 1, config%nfree
-            i = config%lstfre(j)
-
-            xa = stats%xin(i) * thermo%eta(1) + stats%yin(i) * thermo%eta(2) + stats%zin(i) * thermo%eta(3)
-            ya = stats%xin(i) * thermo%eta(4) + stats%yin(i) * thermo%eta(5) + stats%zin(i) * thermo%eta(6)
-            za = stats%xin(i) * thermo%eta(7) + stats%yin(i) * thermo%eta(8) + stats%zin(i) * thermo%eta(9)
-
-            stats%xin(i) = xa
-            stats%yin(i) = ya
-            stats%zin(i) = za
-          End Do
-
-          Do irgd = 1, rigid%n_types
-            x = rgdxin(irgd)
-            y = rgdyin(irgd)
-            z = rgdzin(irgd)
-
-            xa = rgdxin(irgd) * thermo%eta(1) + rgdyin(irgd) * thermo%eta(2) + rgdzin(irgd) * thermo%eta(3)
-            ya = rgdxin(irgd) * thermo%eta(4) + rgdyin(irgd) * thermo%eta(5) + rgdzin(irgd) * thermo%eta(6)
-            za = rgdxin(irgd) * thermo%eta(7) + rgdyin(irgd) * thermo%eta(8) + rgdzin(irgd) * thermo%eta(9)
-
-            rgdxin(irgd) = xa
-            rgdyin(irgd) = ya
-            rgdzin(irgd) = za
-
-            lrgd = rigid%list(-1, irgd)
-            Do jrgd = 1, lrgd
-              i = rigid%index_local(jrgd, irgd)
-
-              If (i <= config%natms) Then
-                stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
-                stats%yin(i) = stats%yin(i) - y + rgdyin(irgd)
-                stats%zin(i) = stats%zin(i) - z + rgdzin(irgd)
-              End If
-            End Do
-          End Do
-
-        End If
-
-      Else If (thermo%ensemble == ENS_NPT_NOSE_HOOVER .or. thermo%ensemble == ENS_NPT_NOSE_HOOVER_ANISO) Then
-
-        ! hoover npt/nst
-
-        Call getcom(stats%xin, stats%yin, stats%zin, config, com, comm)
-
-        If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
-
-          scale = Exp(tstep * thermo%eta(1))
-
-          Do j = 1, config%nfree
-            i = config%lstfre(j)
-
-            stats%xin(i) = scale * (stats%xin(i) - com(1)) + com(1)
-            stats%yin(i) = scale * (stats%yin(i) - com(2)) + com(2)
-            stats%zin(i) = scale * (stats%zin(i) - com(3)) + com(3)
-          End Do
-
-          Do irgd = 1, rigid%n_types
-            x = rgdxin(irgd)
-            y = rgdyin(irgd)
-            z = rgdzin(irgd)
-
-            rgdxin(irgd) = scale * (rgdxin(irgd) - com(1)) + com(1)
-            rgdyin(irgd) = scale * (rgdyin(irgd) - com(2)) + com(2)
-            rgdzin(irgd) = scale * (rgdzin(irgd) - com(3)) + com(3)
-
-            lrgd = rigid%list(-1, irgd)
-            Do jrgd = 1, lrgd
-              i = rigid%index_local(jrgd, irgd)
-
-              If (i <= config%natms) Then
-                stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
-                stats%yin(i) = stats%yin(i) - y + rgdyin(irgd)
-                stats%zin(i) = stats%zin(i) - z + rgdzin(irgd)
-              End If
-            End Do
-          End Do
-
-        Else
-
-          ! second order taylor expansion of Exp(tstep*thermo%eta)
-
-          a1 = tstep * thermo%eta(1)
-          a2 = tstep * thermo%eta(2)
-          a3 = tstep * thermo%eta(3)
-          a5 = tstep * thermo%eta(5)
-          a6 = tstep * thermo%eta(6)
-          a9 = tstep * thermo%eta(9)
-
-          b1 = (a1 * a1 + a2 * a2 + a3 * a3) * 0.5_wp + a1 + 1.0_wp
-          b2 = (a1 * a2 + a2 * a5 + a3 * a6) * 0.5_wp + a2
-          b3 = (a1 * a3 + a2 * a6 + a3 * a9) * 0.5_wp + a3
-          b5 = (a2 * a2 + a5 * a5 + a6 * a6) * 0.5_wp + a5 + 1.0_wp
-          b6 = (a2 * a3 + a5 * a6 + a6 * a9) * 0.5_wp + a6
-          b9 = (a3 * a3 + a6 * a6 + a9 * a9) * 0.5_wp + a9 + 1.0_wp
-
-          Do j = 1, config%nfree
-            i = config%lstfre(j)
-
-            xa = stats%xin(i) - com(1)
-            ya = stats%yin(i) - com(2)
-            za = stats%zin(i) - com(3)
-
-            stats%xin(i) = xa * b1 + ya * b2 + za * b3 + com(1)
-            stats%yin(i) = xa * b2 + ya * b5 + za * b6 + com(2)
-            stats%zin(i) = xa * b3 + ya * b6 + za * b9 + com(3)
-          End Do
-
-          Do irgd = 1, rigid%n_types
-            x = rgdxin(irgd)
-            y = rgdyin(irgd)
-            z = rgdzin(irgd)
-
-            xa = rgdxin(irgd) - com(1)
-            ya = rgdyin(irgd) - com(2)
-            za = rgdzin(irgd) - com(3)
-
-            rgdxin(irgd) = xa * b1 + ya * b2 + za * b3 + com(1)
-            rgdyin(irgd) = xa * b2 + ya * b5 + za * b6 + com(2)
-            rgdzin(irgd) = xa * b3 + ya * b6 + za * b9 + com(3)
-
-            lrgd = rigid%list(-1, irgd)
-            Do jrgd = 1, lrgd
-              i = rigid%index_local(jrgd, irgd)
-
-              If (i <= config%natms) Then
-                stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
-                stats%yin(i) = stats%yin(i) - y + rgdyin(irgd)
-                stats%zin(i) = stats%zin(i) - z + rgdzin(irgd)
-              End If
-            End Do
-          End Do
-
-        End If
-
-      Else If (thermo%ensemble == ENS_NPT_LANGEVIN .or. &
-               thermo%ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
-               thermo%ensemble == ENS_NPT_MTK .or. &
-               thermo%ensemble == ENS_NPT_MTK_ANISO) Then
-
-        ! Langevin and MTK npt/nst
-
-        If (thermo%ensemble == ENS_NPT_LANGEVIN .or. thermo%ensemble == ENS_NPT_MTK) Then
-
-          scale = Exp(tstep * thermo%eta(1))
-
-          Do j = 1, config%nfree
-            i = config%lstfre(j)
-
-            stats%xin(i) = scale * stats%xin(i)
-            stats%yin(i) = scale * stats%yin(i)
-            stats%zin(i) = scale * stats%zin(i)
-          End Do
-
-          Do irgd = 1, rigid%n_types
-            x = rgdxin(irgd)
-            y = rgdyin(irgd)
-            z = rgdzin(irgd)
-
-            rgdxin(irgd) = scale * rgdxin(irgd)
-            rgdyin(irgd) = scale * rgdyin(irgd)
-            rgdzin(irgd) = scale * rgdzin(irgd)
-
-            lrgd = rigid%list(-1, irgd)
-            Do jrgd = 1, lrgd
-              i = rigid%index_local(jrgd, irgd)
-
-              If (i <= config%natms) Then
-                stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
-                stats%yin(i) = stats%yin(i) - y + rgdyin(irgd)
-                stats%zin(i) = stats%zin(i) - z + rgdzin(irgd)
-              End If
-            End Do
-          End Do
-
-        Else
-
-          ! second order taylor expansion of Exp(tstep*thermo%eta)
-
-          a1 = tstep * thermo%eta(1)
-          a2 = tstep * thermo%eta(2)
-          a3 = tstep * thermo%eta(3)
-          a5 = tstep * thermo%eta(5)
-          a6 = tstep * thermo%eta(6)
-          a9 = tstep * thermo%eta(9)
-
-          b1 = (a1 * a1 + a2 * a2 + a3 * a3) * 0.5_wp + a1 + 1.0_wp
-          b2 = (a1 * a2 + a2 * a5 + a3 * a6) * 0.5_wp + a2
-          b3 = (a1 * a3 + a2 * a6 + a3 * a9) * 0.5_wp + a3
-          b5 = (a2 * a2 + a5 * a5 + a6 * a6) * 0.5_wp + a5 + 1.0_wp
-          b6 = (a2 * a3 + a5 * a6 + a6 * a9) * 0.5_wp + a6
-          b9 = (a3 * a3 + a6 * a6 + a9 * a9) * 0.5_wp + a9 + 1.0_wp
-
-          Do j = 1, config%nfree
-            i = config%lstfre(j)
-
-            xa = stats%xin(i)
-            ya = stats%yin(i)
-            za = stats%zin(i)
-
-            stats%xin(i) = xa * b1 + ya * b2 + za * b3
-            stats%yin(i) = xa * b2 + ya * b5 + za * b6
-            stats%zin(i) = xa * b3 + ya * b6 + za * b9
-          End Do
-
-          Do irgd = 1, rigid%n_types
-            x = rgdxin(irgd)
-            y = rgdyin(irgd)
-            z = rgdzin(irgd)
-
-            xa = rgdxin(irgd)
-            ya = rgdyin(irgd)
-            za = rgdzin(irgd)
-
-            rgdxin(irgd) = xa * b1 + ya * b2 + za * b3
-            rgdyin(irgd) = xa * b2 + ya * b5 + za * b6
-            rgdzin(irgd) = xa * b3 + ya * b6 + za * b9
-
-            lrgd = rigid%list(-1, irgd)
-            Do jrgd = 1, lrgd
-              i = rigid%index_local(jrgd, irgd)
-
-              If (i <= config%natms) Then
-                stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
-                stats%yin(i) = stats%yin(i) - y + rgdyin(irgd)
-                stats%zin(i) = stats%zin(i) - z + rgdzin(irgd)
-              End If
-            End Do
-          End Do
-
-        End If
-
-      End If
-
-      If (.not. neigh%update) Then
-
-        Call rigid_bodies_coms(config, neigh%xbg, neigh%ybg, neigh%zbg, rgdxin, rgdyin, rgdzin, rigid)
-
-        If (thermo%ensemble == ENS_NPT_BERENDSEN .or. thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
-
-          ! berendsen npt/nst
-
-          If (thermo%ensemble == ENS_NPT_BERENDSEN) Then
-
-            scale = thermo%eta(1)
-
-            Do j = 1, config%nfree
-              i = config%lstfre(j)
-
-              neigh%xbg(i) = scale * neigh%xbg(i)
-              neigh%ybg(i) = scale * neigh%ybg(i)
-              neigh%zbg(i) = scale * neigh%zbg(i)
-            End Do
-
-            Do irgd = 1, rigid%n_types
-              x = rgdxin(irgd)
-              y = rgdyin(irgd)
-              z = rgdzin(irgd)
-
-              rgdxin(irgd) = scale * rgdxin(irgd)
-              rgdyin(irgd) = scale * rgdyin(irgd)
-              rgdzin(irgd) = scale * rgdzin(irgd)
-
-              lrgd = rigid%list(-1, irgd)
-              Do jrgd = 1, lrgd
-                i = rigid%index_local(jrgd, irgd)
-
-                If (i <= config%natms) Then
-                  neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
-                  neigh%ybg(i) = neigh%ybg(i) - y + rgdyin(irgd)
-                  neigh%zbg(i) = neigh%zbg(i) - z + rgdzin(irgd)
-                End If
-              End Do
-            End Do
-
-          Else
-
-            Do j = 1, config%nfree
-              i = config%lstfre(j)
-
-              xa = neigh%xbg(i) * thermo%eta(1) + neigh%ybg(i) * thermo%eta(2) + neigh%zbg(i) * thermo%eta(3)
-              ya = neigh%xbg(i) * thermo%eta(4) + neigh%ybg(i) * thermo%eta(5) + neigh%zbg(i) * thermo%eta(6)
-              za = neigh%xbg(i) * thermo%eta(7) + neigh%ybg(i) * thermo%eta(8) + neigh%zbg(i) * thermo%eta(9)
-
-              neigh%xbg(i) = xa
-              neigh%ybg(i) = ya
-              neigh%zbg(i) = za
-            End Do
-
-            Do irgd = 1, rigid%n_types
-              x = rgdxin(irgd)
-              y = rgdyin(irgd)
-              z = rgdzin(irgd)
-
-              xa = rgdxin(irgd) * thermo%eta(1) + rgdyin(irgd) * thermo%eta(2) + rgdzin(irgd) * thermo%eta(3)
-              ya = rgdxin(irgd) * thermo%eta(4) + rgdyin(irgd) * thermo%eta(5) + rgdzin(irgd) * thermo%eta(6)
-              za = rgdxin(irgd) * thermo%eta(7) + rgdyin(irgd) * thermo%eta(8) + rgdzin(irgd) * thermo%eta(9)
-
-              rgdxin(irgd) = xa
-              rgdyin(irgd) = ya
-              rgdzin(irgd) = za
-
-              lrgd = rigid%list(-1, irgd)
-              Do jrgd = 1, lrgd
-                i = rigid%index_local(jrgd, irgd)
-
-                If (i <= config%natms) Then
-                  neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
-                  neigh%ybg(i) = neigh%ybg(i) - y + rgdyin(irgd)
-                  neigh%zbg(i) = neigh%zbg(i) - z + rgdzin(irgd)
-                End If
-              End Do
-            End Do
-
-          End If
-
-        Else If (thermo%ensemble == ENS_NPT_NOSE_HOOVER .or. thermo%ensemble == ENS_NPT_NOSE_HOOVER_ANISO) Then
-
-          ! hoover npt/nst
-
-          Call getcom(neigh%xbg, neigh%ybg, neigh%zbg, config, com, comm)
-
-          If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
-
-            scale = Exp(tstep * thermo%eta(1))
-
-            Do j = 1, config%nfree
-              i = config%lstfre(j)
-
-              neigh%xbg(i) = scale * (neigh%xbg(i) - com(1)) + com(1)
-              neigh%ybg(i) = scale * (neigh%ybg(i) - com(2)) + com(2)
-              neigh%zbg(i) = scale * (neigh%zbg(i) - com(3)) + com(3)
-            End Do
-
-            Do irgd = 1, rigid%n_types
-              x = rgdxin(irgd)
-              y = rgdyin(irgd)
-              z = rgdzin(irgd)
-
-              rgdxin(irgd) = scale * (rgdxin(irgd) - com(1)) + com(1)
-              rgdyin(irgd) = scale * (rgdyin(irgd) - com(2)) + com(2)
-              rgdzin(irgd) = scale * (rgdzin(irgd) - com(3)) + com(3)
-
-              lrgd = rigid%list(-1, irgd)
-              Do jrgd = 1, lrgd
-                i = rigid%index_local(jrgd, irgd)
-
-                If (i <= config%natms) Then
-                  neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
-                  neigh%ybg(i) = neigh%ybg(i) - y + rgdyin(irgd)
-                  neigh%zbg(i) = neigh%zbg(i) - z + rgdzin(irgd)
-                End If
-              End Do
-            End Do
-
-          Else
-
-            ! second order taylor expansion of Exp(tstep*thermo%eta)
-
-            a1 = tstep * thermo%eta(1)
-            a2 = tstep * thermo%eta(2)
-            a3 = tstep * thermo%eta(3)
-            a5 = tstep * thermo%eta(5)
-            a6 = tstep * thermo%eta(6)
-            a9 = tstep * thermo%eta(9)
-
-            b1 = (a1 * a1 + a2 * a2 + a3 * a3) * 0.5_wp + a1 + 1.0_wp
-            b2 = (a1 * a2 + a2 * a5 + a3 * a6) * 0.5_wp + a2
-            b3 = (a1 * a3 + a2 * a6 + a3 * a9) * 0.5_wp + a3
-            b5 = (a2 * a2 + a5 * a5 + a6 * a6) * 0.5_wp + a5 + 1.0_wp
-            b6 = (a2 * a3 + a5 * a6 + a6 * a9) * 0.5_wp + a6
-            b9 = (a3 * a3 + a6 * a6 + a9 * a9) * 0.5_wp + a9 + 1.0_wp
-
-            Do j = 1, config%nfree
-              i = config%lstfre(j)
-
-              xa = neigh%xbg(i) - com(1)
-              ya = neigh%ybg(i) - com(2)
-              za = neigh%zbg(i) - com(3)
-
-              neigh%xbg(i) = xa * b1 + ya * b2 + za * b3 + com(1)
-              neigh%ybg(i) = xa * b2 + ya * b5 + za * b6 + com(2)
-              neigh%zbg(i) = xa * b3 + ya * b6 + za * b9 + com(3)
-            End Do
-
-            Do irgd = 1, rigid%n_types
-              x = rgdxin(irgd)
-              y = rgdyin(irgd)
-              z = rgdzin(irgd)
-
-              xa = rgdxin(irgd) - com(1)
-              ya = rgdyin(irgd) - com(2)
-              za = rgdzin(irgd) - com(3)
-
-              rgdxin(irgd) = xa * b1 + ya * b2 + za * b3 + com(1)
-              rgdyin(irgd) = xa * b2 + ya * b5 + za * b6 + com(2)
-              rgdzin(irgd) = xa * b3 + ya * b6 + za * b9 + com(3)
-
-              lrgd = rigid%list(-1, irgd)
-              Do jrgd = 1, lrgd
-                i = rigid%index_local(jrgd, irgd)
-
-                If (i <= config%natms) Then
-                  neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
-                  neigh%ybg(i) = neigh%ybg(i) - y + rgdyin(irgd)
-                  neigh%zbg(i) = neigh%zbg(i) - z + rgdzin(irgd)
-                End If
-              End Do
-            End Do
-
-          End If
-
-        Else If (thermo%ensemble == ENS_NPT_LANGEVIN .or. &
-                 thermo%ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
-                 thermo%ensemble == ENS_NPT_MTK .or. &
-                 thermo%ensemble == ENS_NPT_MTK_ANISO) Then
-
-          ! Langevin and MTK npt/nst
-
-          If (thermo%ensemble == ENS_NPT_LANGEVIN .or. thermo%ensemble == ENS_NPT_MTK) Then
-
-            scale = Exp(tstep * thermo%eta(1))
-
-            Do j = 1, config%nfree
-              i = config%lstfre(j)
-
-              neigh%xbg(i) = scale * neigh%xbg(i)
-              neigh%ybg(i) = scale * neigh%ybg(i)
-              neigh%zbg(i) = scale * neigh%zbg(i)
-            End Do
-
-            Do irgd = 1, rigid%n_types
-              x = rgdxin(irgd)
-              y = rgdyin(irgd)
-              z = rgdzin(irgd)
-
-              rgdxin(irgd) = scale * rgdxin(irgd)
-              rgdyin(irgd) = scale * rgdyin(irgd)
-              rgdzin(irgd) = scale * rgdzin(irgd)
-
-              lrgd = rigid%list(-1, irgd)
-              Do jrgd = 1, lrgd
-                i = rigid%index_local(jrgd, irgd)
-
-                If (i <= config%natms) Then
-                  neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
-                  neigh%ybg(i) = neigh%ybg(i) - y + rgdyin(irgd)
-                  neigh%zbg(i) = neigh%zbg(i) - z + rgdzin(irgd)
-                End If
-              End Do
-            End Do
-
-          Else
-
-            ! second order taylor expansion of Exp(tstep*thermo%eta)
-
-            a1 = tstep * thermo%eta(1)
-            a2 = tstep * thermo%eta(2)
-            a3 = tstep * thermo%eta(3)
-            a5 = tstep * thermo%eta(5)
-            a6 = tstep * thermo%eta(6)
-            a9 = tstep * thermo%eta(9)
-
-            b1 = (a1 * a1 + a2 * a2 + a3 * a3) * 0.5_wp + a1 + 1.0_wp
-            b2 = (a1 * a2 + a2 * a5 + a3 * a6) * 0.5_wp + a2
-            b3 = (a1 * a3 + a2 * a6 + a3 * a9) * 0.5_wp + a3
-            b5 = (a2 * a2 + a5 * a5 + a6 * a6) * 0.5_wp + a5 + 1.0_wp
-            b6 = (a2 * a3 + a5 * a6 + a6 * a9) * 0.5_wp + a6
-            b9 = (a3 * a3 + a6 * a6 + a9 * a9) * 0.5_wp + a9 + 1.0_wp
-
-            Do j = 1, config%nfree
-              i = config%lstfre(j)
-
-              xa = neigh%xbg(i)
-              ya = neigh%ybg(i)
-              za = neigh%zbg(i)
-
-              neigh%xbg(i) = xa * b1 + ya * b2 + za * b3
-              neigh%ybg(i) = xa * b2 + ya * b5 + za * b6
-              neigh%zbg(i) = xa * b3 + ya * b6 + za * b9
-            End Do
-
-            Do irgd = 1, rigid%n_types
-              x = rgdxin(irgd)
-              y = rgdyin(irgd)
-              z = rgdzin(irgd)
-
-              xa = rgdxin(irgd)
-              ya = rgdyin(irgd)
-              za = rgdzin(irgd)
-
-              rgdxin(irgd) = xa * b1 + ya * b2 + za * b3
-              rgdyin(irgd) = xa * b2 + ya * b5 + za * b6
-              rgdzin(irgd) = xa * b3 + ya * b6 + za * b9
-
-              lrgd = rigid%list(-1, irgd)
-              Do jrgd = 1, lrgd
-                i = rigid%index_local(jrgd, irgd)
-
-                If (i <= config%natms) Then
-                  neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
-                  neigh%ybg(i) = neigh%ybg(i) - y + rgdyin(irgd)
-                  neigh%zbg(i) = neigh%zbg(i) - z + rgdzin(irgd)
-                End If
-              End Do
-            End Do
-
-          End If
-
-        End If
-
-        ! Halo final RB members positions across onto neighbouring domains
-
-        If (rigid%share) Then
-          Call update_shared_units(config, rigid%list_shared, &
-                                   rigid%map_shared, neigh%xbg, neigh%ybg, neigh%zbg, domain, comm)
-        End If
-      End If
-
-      Deallocate (rgdxin, rgdyin, rgdzin, Stat=fail)
-      If (fail > 0) Then
-        Write (message, '(a)') 'xscale deallocation failure, node'
-        Call error(0, message)
-      End If
-
-    End If
-
-    Call pbcshift(config%imcon, config%cell, config%natms, stats%xin, stats%yin, stats%zin)
-    If (neigh%unconditional_update) Call pbcshift(config%imcon, config%cell, config%natms, neigh%xbg, neigh%ybg, neigh%zbg)
-
-#ifdef CHRONO
-    Call stop_timer(tmr, 'xscale')
-#endif
-
-  End Subroutine xscale
 
   !!!!!!!!!!!!!!!!!!!!! THIS IS QUATERNIONS_CONTAINER !!!!!!!!!!!!!!!!!!!!
   !

@@ -227,7 +227,7 @@ Module correlators
       Return 
     End If
 
-    s = this%shift_index(block_index) 
+    s = this%shift_index(block_index)
 
     ! indicate blocks at this depth have data
     !   and add to accumulators
