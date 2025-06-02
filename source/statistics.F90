@@ -2844,7 +2844,7 @@ Contains
 
       Call gtime(timelp)
 
-      Write (message, '("time elapsed since job start: ", f12.3, " sec")') timelp
+      Write (message, '("# time elapsed since job start: ", f12.3, " sec")') timelp
       Call info(message, .true.)
       Return
     End If
@@ -3154,7 +3154,7 @@ Contains
 
     Call gtime(timelp)
 
-    Write (message, '("time elapsed since job start: ", f12.3, " sec")') timelp
+    Write (message, '("# time elapsed since job start: ", f12.3, " sec")') timelp
     Call info(message, .true.)
 
   End Subroutine statistics_result

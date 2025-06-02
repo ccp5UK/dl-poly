@@ -778,7 +778,7 @@ Contains
     ! Print elapsed time and option header
 
     Call gtime(t)
-    Write (message, '(a,f12.3,a)') 'time elapsed since job start: ', t, ' sec'
+    Write (message, '(a,f12.3,a)') '# time elapsed since job start: ', t, ' sec'
     Call info(message, .true.)
     Write (messages(1), '(a)') '*** Expanding the MD system by a nx*ny*nz volumetric replication        ***'
     Write (messages(2), '(a)') '*** of its contents along the MD cell lattice vectors, creating         ***'
@@ -1759,7 +1759,7 @@ Contains
     End If
     Call info(messages, 3, .true.)
 
-    Write (message, '(a,f12.3,a)') 'time elapsed since job start: ', t, ' sec'
+    Write (message, '(a,f12.3,a)') '# time elapsed since job start: ', t, ' sec'
     Call info(message, .true.)
 
     If (comm%idnode == 0) Then
@@ -1885,7 +1885,7 @@ Contains
 
       20 Continue
 
-      Write (message, '(a,f12.3,a)') 'time elapsed since job start: ', t, ' sec'
+      Write (message, '(a,f12.3,a)') '# time elapsed since job start: ', t, ' sec'
       Call info(message, .true.)
     End If
     Call gsync(comm)

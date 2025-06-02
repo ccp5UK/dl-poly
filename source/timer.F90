@@ -551,10 +551,10 @@ Contains
                            total_max, total_min
     Type(node), Pointer :: current_timer
 
-    fline = '(1X, "+", 28("-"), 2("+", 10("-")), 7("+", 12("-")), "+")'
-    fhead = '(1X, "|", 12X, "Name", 12X, "| Process  ", "|  Calls   ", "|  Call Min  ", "|  Call Max  ",'//&
+    fline = '("#", 1X, "+", 28("-"), 2("+", 10("-")), 7("+", 12("-")), "+")'
+    fhead = '("#", 1X, "|", 12X, "Name", 12X, "| Process  ", "|  Calls   ", "|  Call Min  ", "|  Call Max  ",'//&
           & '"|  Call Ave  ", "|  Tot Min   ", "|   Tot Max  ", "|   Tot Ave  ", "|      %     ", "|")'
-    fcontent = '(1X, "|", 1X, A7, 1X, A18, 1X, "|", 1X, A8, 1X, "|", 1X, I8, 1X, "|", 1X, ES10.3, 1X, "|", 1X, ES10.3, 1X,'//&
+    fcontent = '("#", 1X, "|", 1X, A7, 1X, A18, 1X, "|", 1X, A8, 1X, "|", 1X, I8, 1X, "|", 1X, ES10.3, 1X, "|", 1X, ES10.3, 1X,'//&
           & '"|", 1X, ES10.3, 1X, "|", 1X, ES10.3, 1X, "|", 1X, ES10.3, 1X, "|", 1X, ES10.3, 1X, "|", 1X, F10.2, 1X, "|")'
 
     message(:) = ''
@@ -829,7 +829,7 @@ Contains
     Character(Len=STR_LEN) :: message
 
     Call gtime(tmr%elapsed)
-    Write (message, '(a,f12.3,a)') "time elapsed since job start: ", tmr%elapsed, " sec"
+    Write (message, '(a,f12.3,a)') "# time elapsed since job start: ", tmr%elapsed, " sec"
     Call timer_write(message, tmr)
 
   End Subroutine time_elapsed
