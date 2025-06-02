@@ -2682,7 +2682,8 @@ Contains
     Type(file_type),          Intent(InOut) :: files(:)
     Type(timer_type),         Intent(InOut) :: tmr
 
-    Character(Len=STR_LEN)               :: message
+    Character(Len=STR_LEN)               :: message, unit
+    Character(Len=10)                     :: atom_key
     Character(Len=STR_LEN), Dimension(5) :: messages
     Integer                              :: i, iadd, mxnstk, strend
     Logical                              :: check
@@ -3029,28 +3030,31 @@ Contains
       If (lmsd) iadd = iadd + 2 * mxatdm
 
       ! Write out estimated diffusion coefficients
-
-      Write (messages(1), '(a)') 'Approximate 3D Diffusion Coefficients and square root of MSDs:'
       If (stats%dpd_units) Then
-        Write (messages(2), '(6x,a4,3x,a18,4x,a17)') 'atom', 'DC (dpd_l^2/dpd_t)', 'Sqrt[MSD] (dpd_l)'
+        unit = "{value: dpd_l^2/dpd_t, sqrt MSD: dpd_l}"
       Else
-        Write (messages(2), '(6x,a4,2x,a19,6x,a15)') 'atom', 'DC (10^-9 m^2 s^-1)', 'Sqrt[MSD] (Ang)'
+        unit = "{value: 10^-9 m^2 s^-1, sqrt MSD: Angs}"
       End If
+      Write (messages(1), '(a)') 'Approximate Diffusion Coefficients:'
+      Write (messages(2), '(a)') '  atoms:'
       Call info(messages, 2, .true.)
-
       Do i = 1, sites%ntype_atom
+        Write (atom_key, '(2x,a)') Adjustl(Trim(sites%unique_atom(i))//":")
         If (sites%num_type_nf(i) > zero_plus) Then
           dc = Merge(1.0_wp, 10.0_wp, stats%dpd_units) * (stats%ravval(iadd + i) - stats%sumval(iadd + i)) / &
                (3.0_wp * Real(stats%numacc - Min(stats%mxstak, stats%numacc - 1), wp) * thermo%tstep)
           If (dc < 1.0e-10_wp) dc = 0.0_wp
 
           srmsd = Sqrt(stats%ravval(iadd + i))
-          Write (message, '(2x,a8,1p,2(8x,e13.4))') sites%unique_atom(i), dc, srmsd
+          Write (message, '(4x,a,1p,2(e13.4,a))') atom_key//"{value: ", dc, ", sqrt MSD: ", srmsd, "}"
         Else
-          Write (message, '(2x,a8,1p,2(8x,e13.4))') sites%unique_atom(i), 0.0_wp, 0.0_wp
+          Write (message, '(4x,a,1p,2(e13.4,a))') atom_key//"{value: ", 0.0_wp, ", sqrt MSD: ", 0.0_wp, "}"
         End If
         Call info(message, .true.)
       End Do
+      Write (message, '(2x,2a)') 'units: ', Trim(unit)
+      Call info(message, .true.)
+
       Call info('', .true.)
 
       iadd = iadd + sites%ntype_atom
