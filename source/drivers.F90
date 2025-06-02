@@ -1776,31 +1776,31 @@ Contains
     If (flow%step == flow%equil_steps .and. ffpass) Then
 
       If (flow%step > 0) Then
-        Call info(Repeat('-', 130), .true.)
-        Write (message, '(a,i10)') 'switching off equilibration at step ', flow%step
+        Call info("#"//Repeat('-', 130), .true.)
+        Write (message, '(a,i10)') 'switching off equilibration at step: ', flow%step
         Call info(message, .true.)
 
         If (thermo%l_zero) Then
           thermo%l_zero = .false.
-          Write (message, '(a,i10)') 'switching off zero Kelvin optimiser at step ', flow%step
+          Write (message, '(a,i10)') 'switching off zero Kelvin optimiser at step: ', flow%step
           Call info(message, .true.)
         End If
 
         If (minim%minimise) Then
           minim%minimise = .false.
-          Write (message, '(a,i10)') 'switching off CGM minimiser at step ', flow%step
+          Write (message, '(a,i10)') 'switching off CGM minimiser at step: ', flow%step
           Call info(message, .true.)
         End If
 
         If (thermo%l_tscale) Then
           thermo%l_tscale = .false.
-          Write (message, '(a,i10)') 'switching off temperature scaling at step ', flow%step
+          Write (message, '(a,i10)') 'switching off temperature scaling at step: ', flow%step
           Call info(message, .true.)
         End If
 
         If (thermo%l_tgaus) Then
           thermo%l_tgaus = .false.
-          Write (message, '(a,i10)') 'switching off temperature regaussing at step ', flow%step
+          Write (message, '(a,i10)') 'switching off temperature regaussing at step: ', flow%step
           Call info(message, .true.)
         End If
       End If
@@ -1832,7 +1832,7 @@ Contains
       End If
 
       If (flow%step > 0 .or. cons%megcon > 0 .or. pmf%megpmf > 0) Then
-        Call info(Repeat('-', 130), .true.)
+        Call info("#"//Repeat('-', 130), .true.)
       End If
     End If
 
