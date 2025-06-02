@@ -2262,11 +2262,11 @@ Contains
 
     Call params%retrieve('fixed_com', config%l_vom)
     If (.not. config%l_vom .and. .not. ttm_active) Then
-      Call info('"no fixed_com" option auto-switched on - COM momentum removal will be abandoned', .true.)
+      Call info('# "no fixed_com" option auto-switched on - COM momentum removal will be abandoned', .true.)
       Call warning('this may lead to a build up of the COM momentum ' &
                    //'and a manifestation of the "flying ice-cube" effect', .true.)
     Else If (config%l_vom .and. ttm_active) Then
-      Call info('"fixed_com" option auto-switched on - COM momentum removal will be applied globally', .true.)
+      Call info('# "fixed_com" option auto-switched on - COM momentum removal will be applied globally', .true.)
       Call warning('this can interfere with temperature-cell COM momentum removal ' &
                    //'and affect dynamics', .true.)
     End If
@@ -2388,7 +2388,6 @@ Contains
     If (option /= 'off') Then
 
       thermo%l_stochastic_boundaries = .true.
-      Call info('pseudo thermostat attached to MD cell boundary', .true.)
 
       Select Case (option)
       Case ('langevin-direct')

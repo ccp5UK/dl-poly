@@ -606,7 +606,7 @@ Contains
       Call info('  File output info:', .true.)
     End If
 
-    If (flow%freq_restart > 0) Call write_param('Restart dumping interview (steps)', flow%freq_restart, indent=2)
+    If (flow%freq_restart > 0) Call write_param('Restart dumping interval (steps)', flow%freq_restart, indent=2)
     If (flow%freq_output > 0) Call write_param('Data printing interval (steps)', flow%freq_output, indent=2)
     If (stats%intsta > 0) Call write_param('Statistics file interval (steps)', stats%intsta, indent=2)
 
@@ -618,15 +618,15 @@ Contains
 
     Select Case (flow%restart_key)
     Case (RESTART_KEY_SCALE)
-      Call info('  Scaled restart requested (starting a new simulation)', .true.)
+      Call info('  Restart: scaled restart requested (starting a new simulation)', .true.)
     Case (RESTART_KEY_NOSCALE)
-      Call info('  Unscaled restart requested (starting a new simulation)', .true.)
+      Call info('  Restart: unscaled restart requested (starting a new simulation)', .true.)
     Case (RESTART_KEY_OLD)
-      Call info('  Restart requested (continuing an old simulation)', .true.)
+      Call info('  Restart: restart requested (continuing an old simulation)', .true.)
       Call warning('  Timestep from REVOLD overides specification in CONTROL', .true.)
     Case (RESTART_KEY_CLEAN)
       If (config%levcfg /= 0) Then
-        Call info('  Clean start requested, discarding CONFIG velocities', .true.)
+        Call info('  Restart: Clean start requested, discarding CONFIG velocities', .true.)
       End If
     End Select
 
@@ -745,9 +745,9 @@ Contains
       Call write_param('VdW cutoff', vdws%cutoff, 'internal_l', indent=2)
 
       If (vdws%mixing /= MIX_NULL) Then
-        Call info('  -- Vdw cross terms mixing opted (for undefined mixed potentials)', .true.)
-        Call info('    mixing is limited to potentials of the same type only', .true.)
-        Call info('    mixing restricted to LJ-like potentials (12-6,LJ,WCA,DPD,AMOEBA)', .true.)
+        Call info('  -- Vdw mixing: On', .true.)
+        Call warning('Mixing is limited to potentials of the same type only', .true.)
+        Call warning('Mixing is restricted to LJ-like potentials (12-6,LJ,WCA,DPD,AMOEBA)', .true.)
 
         Select Case (vdws%mixing)
         Case (MIX_LORENTZ_BERTHELOT)
