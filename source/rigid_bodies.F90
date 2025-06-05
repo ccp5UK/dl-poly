@@ -875,7 +875,7 @@ Contains
     Logical,                  Intent(In   ) :: using_dpd_units
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=STR_LEN)         :: message, messages(2)
+    Character(Len=STR_LEN)         :: message, messages(6)
     Integer                    :: fail(1:2), frzrgd, i, i1, i2, i3, iatm1, ifrz, ill, irgd, &
                                   isite1, itmols, jrgd, krgd, lrgd, nrigid, nsite, ntmp, rgdtyp, &
                                   rotrgd, trargd
@@ -1501,27 +1501,19 @@ Contains
     ! summarise results
 
     If (comm%idnode == 0 .and. l_print) Then
-      Call info('summary of rigid body set up', .true.)
+      Call info('Summary of rigid body set up:', .true.)
 
       nrigid = 0
       Do itmols = 1, sites%ntype_mol
-        Write (message, '(2x,a,i6)') 'in molecule', itmols
+        Write (message, '(2x,a,i6)') Trim(sites%mol_name(itmols))//': '
         Call info(message, .true.)
 
         If (rigid%num(itmols) == 0) Then
-          Write (message, '(2x,a)') 'no rigid bodies specified'
+          Write (message, '(2x,a)') '  no rigid bodies specified'
           Call info(message, .true.)
         End If
 
         Do i = 1, rigid%num(itmols)
-          If (Mod(nrigid, 5) == 0) Then
-            Write (messages(1), '(2x,a)') &
-              'type :: members :: frozen status :: unfrozen mass :: ' &
-              //'translational DoF :: rotational DoF'
-            Write (messages(2), '(4x,a)') &
-              'rotational inertia:        x                   y                   z'
-            Call info(messages, 2, .true.)
-          End If
           nrigid = nrigid + 1
 
           lrgd = rigid%lst(0, nrigid)
@@ -1550,19 +1542,29 @@ Contains
             trargd = 0
             rotrgd = 0
           End If
-
-          Write (messages(1), '(i5,2x,i6,9x,i6,9x,f13.6,8x,i6,14x,i6)') &
-            nrigid, lrgd, ifrz, rigid%weight(0, nrigid), trargd, rotrgd
-          Write (messages(2), '(18x,3f20.10)') &
-            rigid%rix(1, nrigid), rigid%riy(1, nrigid), rigid%riz(1, nrigid)
-          Call info(messages, 2, .true.)
+          Write (message, '(4x, i0, ":")') i 
+          Call info(message, .true.)
+          Write (messages(1), '(6x, a, i6)')    "  Type:              ", nrigid
+          Write (messages(2), '(6x, a, i6)')    "  Members:           ", lrgd
+          Write (messages(3), '(6x, a, i6)')    "  Frozen:            ", ifrz
+          Write (messages(4), '(6x, a, f13.6)') "  Unfrozen mass:     ", rigid%riy(1, nrigid)
+          Write (messages(5), '(6x, a, i6)' )   "  Translational DoF: ", trargd
+          Write (messages(6), '(6x, a, i6)')    "  Rotational DoF:    ", rotrgd
+          Call info(messages, 6, .true.)
+          Write (message, '(6x, a, 3(a, f13.6), "}")') "  Rotational inertia: {", &
+            "x: ", rigid%rix(1, nrigid),&
+            ", y: ", rigid%riy(1, nrigid),&
+            ", z: ", rigid%riz(1, nrigid)
+          Call info(message, .true.)
           If (lrgd > ifrz) Then
-            Write (message, '(6x,a)') &
-              'member  ::   coordinates:        x                   y                   z'
+            Write (message, '(6x, a)') "  Member coordinates:"
             Call info(message, .true.)
             Do jrgd = 1, lrgd
-              Write (message, '(3x,i6,17x,3f20.10)') &
-                jrgd, rigid%x(jrgd, nrigid), rigid%y(jrgd, nrigid), rigid%z(jrgd, nrigid)
+               Write (message, '(8x, i0, ": ", 3(a, f13.6), "}")') &
+                 jrgd,&
+                 "{ x: ", rigid%x(jrgd, nrigid),&
+                 ", y: ", rigid%y(jrgd, nrigid),&
+                 ", z: ", rigid%z(jrgd, nrigid)
               Call info(message, .true.)
             End Do
           End If
