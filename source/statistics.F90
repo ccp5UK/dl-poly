@@ -449,6 +449,50 @@ Contains
     Write (file_unit, '(a,"]")') values(Size(values))
   End Subroutine write_char_yaml_vector
 
+  Subroutine write_yaml_tensor(name, average, fluctuation, unit)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_5 subroutine to write a YAML format 3x3 matrix given by
+    ! average values (optionally with fluctuations).
+    !
+    ! author    - h.l.devereux, Nov 2024
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Character(Len=*),           Intent(In   ) :: name, unit
+    Real(Kind=wp),              Intent(In   ) :: average(:)
+    Real(Kind=wp),    Optional, Intent(In   ) :: fluctuation(:)
+
+    Character(Len=STR_LEN), Dimension(11) :: messages
+
+    Write (messages(1), '(a)') Trim(name)//":"
+    If (Present(fluctuation)) Then
+      Write (messages(2), '(2x, a)') "Average:"
+    Else
+      Write (messages(2), '(2x, a)') "Value:"
+    End If
+    Write (messages(3), "(4x, '[', 1p, 3(e12.4, ','))") average(1:3)
+    Write (messages(4), "(5x, 1p, 3(e12.4, ','))") average(4:6)
+    Write (messages(5), "(5x, 1p, 2(e12.4, ','), e12.4, ']')") average(7:9)
+    If (Present(fluctuation)) Then
+      Write (messages(6), '(2x, a)') "r.m.s. fluctuations:"
+      Write (messages(7), "(4x, '[', 1p, 3(e12.4, ','))") fluctuation(1:3)
+      Write (messages(8), "(5x, 1p, 3(e12.4, ','))") fluctuation(4:6)
+      Write (messages(9), "(5x, 1p, 2(e12.4, ','), e12.4, ']')") fluctuation(7:9)
+      Write (messages(10), "(2x, a, 1p, e12.4)") "trace/3: ", (average(1)+average(5)+average(9)) / 3.0
+      Write (messages(11), "(2x, 2a)") "units: ", Trim(unit)
+    Else
+      Write (messages(6), "(2x, a, 1p, e12.4)") "trace/3: ", (average(1)+average(5)+average(9)) / 3.0
+      Write (messages(7), "(2x, 2a)") "units: ", Trim(unit)
+    End If
+
+    If (Present(fluctuation)) Then
+      Call info(messages, 11, .true.)
+    Else
+      Call info(messages, 7, .true.)
+    End If
+
+  End Subroutine
+
   Subroutine check_collection_frequencies(stats, comm)
     Class(stats_type), Intent(InOut) :: stats
     Class(comms_type), Intent(InOut) :: comm
@@ -2683,7 +2727,7 @@ Contains
     Type(timer_type),         Intent(InOut) :: tmr
 
     Character(Len=STR_LEN)               :: message, unit
-    Character(Len=10)                     :: atom_key
+    Character(Len=10)                    :: atom_key
     Character(Len=STR_LEN), Dimension(5) :: messages
     Integer                              :: i, iadd, mxnstk, strend
     Logical                              :: check
@@ -2816,30 +2860,24 @@ Contains
       iadd = 27
 
       If (comm%idnode == 0) Then
+
         If (stats%dpd_units) Then
-          Write (message, '(a)') 'Pressure tensor  (katms):'
+          unit = "katms"
         Else
-          Write (message, '(a)') 'Pressure tensor  (dpd_p):'
+          unit = "dpd_p"
         End If
-        Call info(message, .true.)
-
-        Do i = iadd, iadd + 6, 3
-          Write (message, '(2x,1p,3e12.4)') stats%stpval(i + 1:i + 3)
-          Call info(message, .true.)
-        End Do
-
-        Write (message, '(2x,a,1p,e12.4)') 'trace/3  ', (stats%stpval(iadd + 1) + &
-                                                         stats%stpval(iadd + 5) + stats%stpval(iadd + 9)) / 3.0_wp
-        Call info(message, .true.)
+        Call write_yaml_tensor("Pressure tensor", stats%stpval(iadd+1:iadd+10), unit=unit)
+        Call info('', .true.)
       End If
 
       If (thermo%variable_cell) Then
-        Write (messages(1), '(a)') NEW_LINE('A')//'Strain tensor  (angstroms): '
-        Do i = 0, 2
-          Write (messages(2+i), '(2x,1p,3e12.4)') stats%strain(1+i), stats%strain(4+i), stats%strain(7+i)
-        End Do
-        Write(messages(5), '(2x,a,1p,e12.4,a)') 'trace/3  ', Sum(stats%strain(1:9:4)) / 3.0_wp, NEW_LINE('A')
-        Call info(messages, 5, .true.)
+        If (stats%dpd_units) Then
+          unit = "dpd_l"
+        Else
+          unit = "Angs"
+        End If
+        Call write_yaml_tensor("Strain tensor", stats%strain, unit=unit)
+        Call info('', .true.)
       End If
 
       Call gtime(timelp)
@@ -2912,117 +2950,63 @@ Contains
       ! print out average pressure tensor
 
       If (comm%idnode == 0) Then
-        Write (messages(1), '(a)') 'Pressure tensor:'
         If (stats%dpd_units) Then
-          Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (dpd_p)', 'r.m.s. fluctuations'
+          unit = "dpd_p"
         Else
-          Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (katms)', 'r.m.s. fluctuations'
+          unit = "katms"
         End If
-        Call info(messages, 2, .true.)
-
-        Do i = iadd, iadd + 6, 3
-          Write (message, '(2x,1p,3e12.4,5x,3e12.4)') stats%sumval(i + 1:i + 3), stats%ssqval(i + 1:i + 3)
-          Call info(message, .true.)
-        End Do
-
-        Write (message, '(2x,a,1p,e12.4)') 'trace/3  ', (stats%sumval(iadd + 1) + &
-                                                         stats%sumval(iadd + 5) + stats%sumval(iadd + 9)) / 3.0_wp
-        Call info(message, .true.)
+        Call write_yaml_tensor("Pressure tensor", stats%sumval(iadd+1:iadd+10), stats%ssqval(iadd+1:iadd+10), unit)
         Call info('', .true.)
       End If
 
       ! print out the average strain tensor
       If (thermo%variable_cell .and. comm%idnode == 0) Then
-        Write (messages(1), '(a)') NEW_LINE('A')//'Strain tensor: '
-        Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average (angstroms)', 'r.m.s. fluctuations'
-        Do i = 0, 2
-          Write (messages(3+i), '(2x,1p,3e12.4,5x,3e12.4)') stats%strain_accum(1+i)%mu, stats%strain_accum(4+i)%mu, &
-            stats%strain_accum(7+i)%mu, Sqrt(stats%strain_accum(1+i)%var), Sqrt(stats%strain_accum(4+i)%var), &
-            Sqrt(stats%strain_accum(7+i)%var)
-        End Do
-        Call info(messages, 5, .true.)
-        Write(message, '(2x,a,1p,e12.4,a)') 'trace/3  ', &
-          (stats%strain_accum(1)%mu+stats%strain_accum(5)%mu+stats%strain_accum(9)%mu) / 3.0_wp, NEW_LINE('A')
-        Call info(message, .true.)
+        If (stats%dpd_units) Then
+          unit = "dpd_l"
+        Else
+          unit = "Angs"
+        End If
+        Call write_yaml_tensor("Strain tensor", &
+          (/stats%strain_accum(1)%mu, stats%strain_accum(2)%mu, stats%strain_accum(3)%mu,&
+            stats%strain_accum(4)%mu, stats%strain_accum(5)%mu, stats%strain_accum(6)%mu,&
+            stats%strain_accum(7)%mu, stats%strain_accum(8)%mu, stats%strain_accum(9)%mu/),&
+          (/Sqrt(stats%strain_accum(1)%var), Sqrt(stats%strain_accum(2)%var), Sqrt(stats%strain_accum(3)%var),&
+            Sqrt(stats%strain_accum(4)%var), Sqrt(stats%strain_accum(5)%var), Sqrt(stats%strain_accum(6)%var),&
+            Sqrt(stats%strain_accum(7)%var), Sqrt(stats%strain_accum(8)%var), Sqrt(stats%strain_accum(9)%var)/),&
+            unit)
+        Call info('', .true.)
       End If
 
       iadd = iadd + 9
 
       ! print out the separate contributions to pressure tensor if using DPD
-
       If (thermo%key_dpd/=DPD_NULL .and. comm%idnode == 0) Then
-        Write (messages(1), '(a)') 'Pressure tensor (conservative contributions):'
         If (stats%dpd_units) Then
-          Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (dpd_p)', 'r.m.s. fluctuations'
+          unit = "dpd_p"
         Else
-          Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (katms)', 'r.m.s. fluctuations'
+          unit = "katms"
         End If
-        Call info(messages, 2, .true.)
 
-        Do i = iadd, iadd + 6, 3
-          Write (message, '(2x,1p,3e12.4,5x,3e12.4)') stats%sumval(i + 1:i + 3), stats%ssqval(i + 1:i + 3)
-          Call info(message, .true.)
-        End Do
-
-        Write (message, '(2x,a,1p,e12.4)') 'trace/3  ', (stats%sumval(iadd + 1) + &
-                                                         stats%sumval(iadd + 5) + stats%sumval(iadd + 9)) / 3.0_wp
-        Call info(message, .true.)
+        Call write_yaml_tensor("Pressure tensor (conservative contributions)",&
+          stats%sumval(iadd+1:iadd+10), stats%ssqval(iadd+1:iadd+10), unit)
         Call info('', .true.)
         iadd = iadd + 9
-        Write (messages(1), '(a)') 'Pressure tensor (dissipative contributions):'
-        If (stats%dpd_units) Then
-          Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (dpd_p)', 'r.m.s. fluctuations'
-        Else
-          Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (katms)', 'r.m.s. fluctuations'
-        End If
-        Call info(messages, 2, .true.)
 
-        Do i = iadd, iadd + 6, 3
-          Write (message, '(2x,1p,3e12.4,5x,3e12.4)') stats%sumval(i + 1:i + 3), stats%ssqval(i + 1:i + 3)
-          Call info(message, .true.)
-        End Do
-
-        Write (message, '(2x,a,1p,e12.4)') 'trace/3  ', (stats%sumval(iadd + 1) + &
-                                                         stats%sumval(iadd + 5) + stats%sumval(iadd + 9)) / 3.0_wp
-        Call info(message, .true.)
+        Call write_yaml_tensor("Pressure tensor (dissipative contributions)",&
+          stats%sumval(iadd+1:iadd+10), stats%ssqval(iadd+1:iadd+10), unit)
         Call info('', .true.)
         iadd = iadd + 9
-        Write (messages(1), '(a)') 'Pressure tensor (random contributions):'
-        If (stats%dpd_units) Then
-          Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (dpd_p)', 'r.m.s. fluctuations'
-        Else
-          Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (katms)', 'r.m.s. fluctuations'
-        End If
-        Call info(messages, 2, .true.)
 
-        Do i = iadd, iadd + 6, 3
-          Write (message, '(2x,1p,3e12.4,5x,3e12.4)') stats%sumval(i + 1:i + 3), stats%ssqval(i + 1:i + 3)
-          Call info(message, .true.)
-        End Do
-
-        Write (message, '(2x,a,1p,e12.4)') 'trace/3  ', (stats%sumval(iadd + 1) + &
-                                                         stats%sumval(iadd + 5) + stats%sumval(iadd + 9)) / 3.0_wp
-        Call info(message, .true.)
+        Call write_yaml_tensor("Pressure tensor (random contributions)",&
+          stats%sumval(iadd+1:iadd+10), stats%ssqval(iadd+1:iadd+10), unit)
         Call info('', .true.)
         iadd = iadd + 9
-        Write (messages(1), '(a)') 'Pressure tensor (kinetic contributions):'
-        If (stats%dpd_units) Then
-          Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (dpd_p)', 'r.m.s. fluctuations'
-        Else
-          Write (messages(2), '(6x,a32,5x,17x,a19)') 'Average pressure tensor  (katms)', 'r.m.s. fluctuations'
-        End If
-        Call info(messages, 2, .true.)
 
-        Do i = iadd, iadd + 6, 3
-          Write (message, '(2x,1p,3e12.4,5x,3e12.4)') stats%sumval(i + 1:i + 3), stats%ssqval(i + 1:i + 3)
-          Call info(message, .true.)
-        End Do
-
-        Write (message, '(2x,a,1p,e12.4)') 'trace/3  ', (stats%sumval(iadd + 1) + &
-                                                         stats%sumval(iadd + 5) + stats%sumval(iadd + 9)) / 3.0_wp
-        Call info(message, .true.)
+        Call write_yaml_tensor("Pressure tensor (kinetic contributions)",&
+          stats%sumval(iadd+1:iadd+10), stats%ssqval(iadd+1:iadd+10), unit)
         Call info('', .true.)
         iadd = iadd + 9
+
       Else If (thermo%key_dpd/=DPD_NULL .and. comm%idnode /= 0) Then
         iadd = iadd + 36
       End If
@@ -3065,16 +3049,15 @@ Contains
 
         If (comm%idnode == 0) Then
           If (stats%dpd_units) Then
-            Write (message, '(a32,33x,a19)') 'Average cell vectors    (dpd_l) ', 'r.m.s. fluctuations'
+            unit = "dpd_l"
           Else
-            Write (message, '(a32,33x,a19)') 'Average cell vectors     (Angs) ', 'r.m.s. fluctuations'
+            unit = "Angs"
           End If
-          Call info(message, .true.)
 
-          Do i = iadd, iadd + 6, 3
-            Write (message, '(3f20.10,5x,1p,3e12.4)') stats%sumval(i + 1:i + 3), stats%ssqval(i + 1:i + 3)
-            Call info(message, .true.)
-          End Do
+          Call write_yaml_tensor("Cell vectors",&
+            stats%sumval(iadd+1:iadd+10), stats%ssqval(iadd+1:iadd+10), unit)
+          Call info('', .true.)
+
         End If
 
         iadd = iadd + 9
