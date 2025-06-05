@@ -373,7 +373,7 @@ Contains
     Character(Len = 256)  :: evbunit
 
     Call info(' ',.True.)
-    Call info(' Reading EVB settings from the SETEVB file and checking correctness...',.True.)
+    Call info('# Reading EVB settings from the SETEVB file and checking correctness...',.True.)
     Call info(' ',.True.)
 
     ! Check if units are the same for all FIELD files
@@ -718,52 +718,52 @@ Contains
     End If
 
   ! Print info about coupling
-    Write(messages(1),'(1x,a)') '------------'
-    Write(messages(2),'(1x,a)') 'EVB settings'
-    Write(messages(3),'(1x,a)') '------------'
+    Write(messages(1),'("#",1x,a)') '------------'
+    Write(messages(2),'("#",1x,a)') 'EVB settings'
+    Write(messages(3),'("#",1x,a)') '------------'
     Call info(messages,3,.True.)
-    Write(messages(1),'(1x,a)') '1) Coupling terms between Force Fields.'
-    Write(messages(2),'(1x,a)') 'The adopted functional form for the coupling between fields m and k (C_{mk})'
-    Write(messages(3),'(1x,a)') 'can be of two types: constant (const) or Gaussian (gauss)'
-    Write(messages(4),'(1x,a)') '(See manual for details of the Gaussian functional form)'
-    Write(messages(5),'(1x,a)') 'Details for coupling terms are summarised in the following table:'
+    Write(messages(1),'("#",1x,a)') '1) Coupling terms between Force Fields.'
+    Write(messages(2),'("#",1x,a)') 'The adopted functional form for the coupling between fields m and k (C_{mk})'
+    Write(messages(3),'("#",1x,a)') 'can be of two types: constant (const) or Gaussian (gauss)'
+    Write(messages(4),'("#",1x,a)') '(See manual for details of the Gaussian functional form)'
+    Write(messages(5),'("#",1x,a)') 'Details for coupling terms are summarised in the following table:'
     Call info(messages,5,.True.)
-    Write(messages(1),'(1x,a)')               '______________________________________________________________________&
+    Write(messages(1),'("#",1x,a)')               '______________________________________________________________________&
                                              &_____________________________'
-    Write(messages(2),'(1x,a,5x,a,5x,a)')           'Force Field pair' , 'Type' , 'Parameters ('//trim(evbunit)//')'
-    Write(messages(3),'(5x,a,5x,a,10x,a,4(15x,a))')             'm','k', '    '  , 'A1', 'A2','A3','A4'
-    Write(messages(4),'(1x,a)')               '______________________________________________________________________&
+    Write(messages(2),'("#",1x,a,5x,a,5x,a)')           'Force Field pair' , 'Type' , 'Parameters ('//trim(evbunit)//')'
+    Write(messages(3),'("#",5x,a,5x,a,10x,a,4(15x,a))')             'm','k', '    '  , 'A1', 'A2','A3','A4'
+    Write(messages(4),'("#",1x,a)')               '______________________________________________________________________&
                                              &_____________________________'
     Call info(messages,4,.True.)
     Do i=1,flow%NUM_FF
      Do j=i+1,flow%NUM_FF
        If(evb%typcoupl(i,j)=='const')Then
-         Write(message,'(2(4x,i2),10x,a,10x,1(E12.5,5x))') i , j, evb%typcoupl(i,j), (evb%coupl_param(i,j,k),k=1,1)
+         Write(message,'("#",2(4x,i2),10x,a,10x,1(E12.5,5x))') i , j, evb%typcoupl(i,j), (evb%coupl_param(i,j,k),k=1,1)
          Call info(message,.True.)
        ElseIf(evb%typcoupl(i,j)=='gauss')Then
-         Write(message,'(2(4x,i2),10x,a,10x,4(E12.5,5x))') i , j, evb%typcoupl(i,j), (evb%coupl_param(i,j,k),k=1,4)
+         Write(message,'("#",2(4x,i2),10x,a,10x,4(E12.5,5x))') i , j, evb%typcoupl(i,j), (evb%coupl_param(i,j,k),k=1,4)
          Call info(message,.True.)
        End If
      End Do
     EnD Do
-    Write(message,'(1x,a)')               '______________________________________________________________________&
+    Write(message,'("#",1x,a)')               '______________________________________________________________________&
                                              &_____________________________'
     Call info(message,.True.)
     Call info(' ',.True.)
-    Write(messages(1),'(1x,a)') '2) Energy shift for each Force Fields.'
-    Write(messages(2),'(1x,a)') 'In addition to the interactions described in each FIELD file, one'
-    Write(messages(3),'(1x,a)') 'might want to shift the potential by a certain amount'
-    Write(messages(4),'(1x,a)') 'Energy shifts are reported in the following table:'
+    Write(messages(1),'("#",1x,a)') '2) Energy shift for each Force Fields.'
+    Write(messages(2),'("#",1x,a)') 'In addition to the interactions described in each FIELD file, one'
+    Write(messages(3),'("#",1x,a)') 'might want to shift the potential by a certain amount'
+    Write(messages(4),'("#",1x,a)') 'Energy shifts are reported in the following table:'
     Call info(messages,4,.True.)
-    Write(messages(1),'(1x,a)') '_______________________________________________________'
-    Write(messages(2),'(1x,a,10x,a)') 'Force Field', 'Energy shift ('//trim(evbunit)//')'
-    Write(messages(3),'(1x,a)') '_______________________________________________________'
+    Write(messages(1),'("#",1x,a)') '_______________________________________________________'
+    Write(messages(2),'("#",1x,a,10x,a)') 'Force Field', 'Energy shift ('//trim(evbunit)//')'
+    Write(messages(3),'("#",1x,a)') '_______________________________________________________'
     Call info(messages,3,.True.)
     Do i=1,flow%NUM_FF
-      Write(message,'(4x,i2,22x,E12.5)') i , evb%eshift(i)
+      Write(message,'("#",4x,i2,22x,E12.5)') i , evb%eshift(i)
       Call info(message,.True.)
     EnD Do
-    Write(message,'(1x,a)')     '_______________________________________________________'
+    Write(message,'("#",1x,a)')     '_______________________________________________________'
     Call info(message,.True.)
     Call info(' ',.True.)
 
@@ -886,7 +886,7 @@ Contains
     Character(Len = 256)   :: labelint
 
     Call info(' ',.True.)
-    Call info(' intrinsic properties of atoms...',.True.)
+    Call info('# intrinsic properties of atoms...',.True.)
 
     ! Initialise flags
     lmass=.False.
@@ -1061,7 +1061,7 @@ Contains
     Real(Kind = wp)        :: cell(flow%NUM_FF,3,3)
 
     Call info(' ',.True.)
-    Call info(' atomic coordinates, symmetry and dimensions for the simulation cell...',.True.)
+    Call info('# atomic coordinates, symmetry and dimensions for the simulation cell...',.True.)
 
     ! Comparison between different CONFIG files: check the value imcon (image convention/symmetry)
     Do m = 1, flow%NUM_FF-1
@@ -1247,7 +1247,7 @@ Contains
     Real(Kind = wp)        :: param(2)
 
     Call info(' ',.True.)
-    Call info(' constraints (if any)...',.True.)
+    Call info('# constraints (if any)...',.True.)
 
     ! Initialise flags
     siteevb   = .False.   ! To check if the constraint unit is part of the EVB site (rigid bodies are not allowed)
@@ -1794,7 +1794,7 @@ Contains
     siterror = .False.
 
     Write(messages(1),'(1x,a)')           'error -'
-    Write(messages(4),'(1x,3a)')          'ACTION: chek settings for ' , trim(string), ' in FIELD files'
+    Write(messages(4),'(1x,3a)')          'ACTION: check settings for ' , trim(string), ' in FIELD files'
 
     If(present(comm))Then
 
@@ -1968,7 +1968,7 @@ Contains
     vdwerror=.False.
 
     Call info(' ',.True.)
-    Call info(' vdW interactions for the non-reactive part of the system...', .True.)
+    Call info('# vdW interactions for the non-reactive part of the system...', .True.)
 
     ! Check to find if there are vdW interactions specified in each FIELD file.
     ! In case there are no vdw Interactions for any of the FIELD files, counter icvdw
@@ -2095,7 +2095,7 @@ Contains
             Write(messages(2), '(1x,4a,i2)') 'has a different setting for the ', trim(labelint), ' with respect to the same ', &
                                              'interaction in FF ', m2
           End If
-          Write(messages(3),'(1x,a)')     'ACTION: chek consistency of settings in vdw interactions for sites that are not &
+          Write(messages(3),'(1x,a)')     'ACTION: check consistency of settings in vdw interactions for sites that are not &
                                           &part of the reactive region'
           Call info(messages, 3, .True.)
           Call error(0)
@@ -2173,7 +2173,7 @@ Contains
 
 
     Call info(' ',.True.)
-    Call info(' inter-molecular interactions for the non-reactive part of the system...', .True.)
+    Call info('# inter-molecular interactions for the non-reactive part of the system...', .True.)
 
     ! Initialise flags
     sitemiss=.False.
@@ -2575,7 +2575,7 @@ Contains
 
     siterror = .False.
     Write(messages(1),'(1x,a)')        'error -'
-    Write(messages(4),'(1x,3a)')       'ACTION: chek settings for ' , trim(string), &
+    Write(messages(4),'(1x,3a)')       'ACTION: check settings for ' , trim(string), &
                                        ' interactions, as they MUST be the same for all FIELD files'
 
     If(present(stlab))Then
@@ -2687,7 +2687,7 @@ Contains
     Allocate(numtot(flow%NUM_FF))
 
     Call info(' ',.True.)
-    Call info(' intra-molecular interactions for the non-reactive part of the system...', .True.)
+    Call info('# intra-molecular interactions for the non-reactive part of the system...', .True.)
 
     ! Initialise the number for each type of interaction at EVB site
     evb%num_bond       = 0

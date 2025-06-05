@@ -2024,7 +2024,7 @@ Contains
       Call evbff%init(flow%NUM_FF)
       ! Read EVB settings
       Call read_evb_settings(evbff, flow, sites, files, comm)
-      Call info('Start EVB checking for the consistency of:', .true.)
+      Call info('# Start EVB checking for the consistency of:', .true.)
       ! Check consistency of intra-molecular interactions between different force fiels
       ! for atoms that are not part of the EVB site
       Call evb_check_intramolecular(evbff, flow, sites, bond, angle, dihedral, inversion)
@@ -2041,7 +2041,7 @@ Contains
       ! Check consistency of intrinsic properties for sites
       Call evb_check_vdw(evbff, flow, sites, vdws)
       Call info(' ', .true.)
-      Call info('EVB checking was successful !', .true.)
+      Call info('# EVB checking was successful !', .true.)
       Call info(' ', .true.)
     End If
 
