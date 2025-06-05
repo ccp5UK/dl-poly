@@ -1081,8 +1081,7 @@ Contains
     End Select
 
     If (Any(thermo%iso == [CONSTRAINT_SURFACE_AREA, CONSTRAINT_SURFACE_TENSION])) Then
-      Call info('  -- Semi-isotropic ensembles are only correct for infinite', .true.)
-      Call info('       interfaces placed perpendicularly to the z axis', .true.)
+      Call warning('Semi-isotropic ensembles are only correct for infinite interfaces placed perpendicularly to the z axis', .true.)
     End If
 
   End Subroutine write_ensemble

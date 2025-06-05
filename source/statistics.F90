@@ -3030,9 +3030,9 @@ Contains
           If (dc < 1.0e-10_wp) dc = 0.0_wp
 
           srmsd = Sqrt(stats%ravval(iadd + i))
-          Write (message, '(4x,a,1p,2(e13.4,a))') atom_key//"{value: ", dc, ", sqrt MSD: ", srmsd, "}"
+          Write (message, '(4x,a,1p,2(e13.4,a))') atom_key//" {value: ", dc, ", sqrt MSD: ", srmsd, "}"
         Else
-          Write (message, '(4x,a,1p,2(e13.4,a))') atom_key//"{value: ", 0.0_wp, ", sqrt MSD: ", 0.0_wp, "}"
+          Write (message, '(4x,a,1p,2(e13.4,a))') atom_key//" {value: ", 0.0_wp, ", sqrt MSD: ", 0.0_wp, "}"
         End If
         Call info(message, .true.)
       End Do
