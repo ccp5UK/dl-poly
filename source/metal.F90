@@ -1299,7 +1299,7 @@ Contains
     Type(configuration_type), Intent(In   ) :: config
     Type(comms_type),         Intent(InOut) :: comm
 
-    Character(Len=STR_LEN) :: message, messages(3)
+    Character(Len=STR_LEN) :: message, messages(4)
     Integer            :: i, j, k0, k1, k2, keypot, kmet, mmm, nnn
     Real(Kind=wp)      :: aaa, ccc, eee, elrc0, elrc1, elrc2, elrcsum, eps, mmmr, nnnr, ppp, qqq, &
                           rr0, sig, tmp, vlrc0, vlrc1, vlrc2, zet
@@ -1483,22 +1483,23 @@ Contains
 
     If (met%newjob) Then
       met%newjob = .false.
-
-      Write (messages(1), '(a,1p,e15.6)') &
-        'long-range correction to metal energy ', met%elrc(0) / engunit
+      Call info('', .true.)
+      Write (messages(1), '(a)') 'Metal long-range corrections:'
       Write (messages(2), '(a,1p,e15.6)') &
-        'lr correction for metal atom density ', elrcsum / engunit**2
+        '  metal energy: ', met%elrc(0) / engunit
       Write (messages(3), '(a,1p,e15.6)') &
-        '1st partial lr correction to metal virial', met%vlrc(0) / engunit
-      Call info(messages, 3, .true.)
-
-      Call info('density dependent energy and virial corrections:', .true.)
+        '  metal atom density: ', elrcsum / engunit**2
+      Write (messages(4), '(a,1p,e15.6)') &
+        '  1st partial to metal virial: ', met%vlrc(0) / engunit
+      Call info(messages, 4, .true.)
+      Call info('', .true.)
+      Call info('Metal density dependent energy and virial corrections:', .true.)
       If (comm%idnode == 0) Then
         Do i = 1, sites%ntype_atom
           kmet = met%list((i * (i + 1)) / 2)
           If (met%list(kmet) > 0) Then
-            Write (message, "(2x,a8,1p,2e15.6)") &
-              sites%unique_atom(i), met%elrc(i) / engunit, met%vlrc(i) / engunit
+            Write (message, "(2x,a8,':',a,1p,2(1e15.6,a))") &
+              sites%unique_atom(i), " { energy: ", met%elrc(i) / engunit, ", virial: ", met%vlrc(i) / engunit, "}"
             Call info(message, .true.)
           End If
         End Do
