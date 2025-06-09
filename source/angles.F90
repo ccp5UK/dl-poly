@@ -1225,7 +1225,7 @@ Contains
     If (Abs(1.0_wp - (delpot / dlrpot)) > 1.0e-8_wp) Then
       remake = .true.
       rdr = 1.0_wp / delpot
-      Write (message, '(a,i10)') 'TABANG arrays resized for mxgrid = ', angle%bin_tab - 4
+      Write (message, '(a,i10)') 'TABANG arrays resized for mxgrid: ', angle%bin_tab - 4
       Call info(message, .true.)
     End If
 
@@ -1471,7 +1471,7 @@ Contains
 
     If (comm%idnode == 0) Call files(FILE_TABANG)%close ()
     Call info('', .true.)
-    Call info('potential tables read from TABANG file', .true.)
+    Call info('# potential tables read from TABANG file', .true.)
 
     ! Break if not safe
 

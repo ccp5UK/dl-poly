@@ -1848,10 +1848,10 @@ Contains
     End If
     If (delpot > delth_max .and. (.not. safe)) Then
       Write (messages(1), *) ''
-      Write (messages(2), '(a,1p,e15.7)') 'expected (maximum) angular increment : ', delth_max
-      Write (messages(3), '(a,1p,e15.7)') 'TABDIH file actual angular increment : ', delpot
-      Write (messages(4), '(a,0p,i10)') 'expected (minimum) number of grid points : ', dihedral%bin_tab - 4
-      Write (messages(5), '(a,0p,i10)') 'TABDIH file actual number of grid points : ', ngrid
+      Write (messages(2), '(a,1p,e15.7)') 'expected (maximum) angular increment: ', delth_max
+      Write (messages(3), '(a,1p,e15.7)') 'TABDIH file actual angular increment: ', delpot
+      Write (messages(4), '(a,0p,i10)') 'expected (minimum) number of grid points: ', dihedral%bin_tab - 4
+      Write (messages(5), '(a,0p,i10)') 'TABDIH file actual number of grid points: ', ngrid
       Call info(messages, 5, .true.)
       Call error(22)
     End If
@@ -1861,7 +1861,7 @@ Contains
     If (Abs(1.0_wp - (delpot / dlrpot)) > 1.0e-8_wp) Then
       remake = .true.
       rdr = 1.0_wp / delpot
-      Write (message, '(a,i10)') 'TABDIH arrays resized for mxgrid = ', dihedral%bin_tab - 4
+      Write (message, '(a,i10)') 'TABDIH arrays resized for mxgrid: ', dihedral%bin_tab - 4
       Call info('', .true.)
       Call info(message, .true.)
     End If
@@ -2109,7 +2109,7 @@ Contains
 
     If (comm%idnode == 0) Call files(FILE_TABDIH)%close ()
     Call info('', .true.)
-    Call info('potential tables read from TABDIH file', .true.)
+    Call info('# potential tables read from TABDIH file', .true.)
 
     ! Break if not safe
 

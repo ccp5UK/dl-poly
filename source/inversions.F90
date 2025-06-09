@@ -1318,10 +1318,10 @@ Contains
       delpot = dlrpot
     End If
     If (delpot > delth_max .and. (.not. safe)) Then
-      Write (messages(1), '(a,1p,e15.7)') 'expected (maximum) angular increment : ', delth_max
-      Write (messages(2), '(a,1p,e15.7)') 'TABINV file actual angular increment : ', delpot
-      Write (messages(3), '(a,i10)') 'expected (minimum) number of grid points : ', inversion%bin_tab - 4
-      Write (messages(4), '(a,i10)') 'TABINV file actual number of grid points : ', ngrid
+      Write (messages(1), '(a,1p,e15.7)') 'expected (maximum) angular increment: ', delth_max
+      Write (messages(2), '(a,1p,e15.7)') 'TABINV file actual angular increment: ', delpot
+      Write (messages(3), '(a,i10)') 'expected (minimum) number of grid points: ', inversion%bin_tab - 4
+      Write (messages(4), '(a,i10)') 'TABINV file actual number of grid points: ', ngrid
       Call info(messages, 4, .true.)
       Call error(22)
     End If
@@ -1331,7 +1331,7 @@ Contains
     If (Abs(1.0_wp - (delpot / dlrpot)) > 1.0e-8_wp) Then
       remake = .true.
       rdr = 1.0_wp / delpot
-      Write (message, '(a,i10)') 'TABINV arrays resized for mxgrid = ', inversion%bin_tab - 4
+      Write (message, '(a,i10)') 'TABINV arrays resized for mxgrid: ', inversion%bin_tab - 4
       Call info(message, .true.)
     End If
 
@@ -1599,7 +1599,7 @@ Contains
     End Do
 
     If (comm%idnode == 0) Call files(FILE_TABINV)%close ()
-    Call info('potential tables read from TABINV file', .true.)
+    Call info('# potential tables read from TABINV file', .true.)
 
     ! Break if not safe
 

@@ -1138,7 +1138,7 @@ Contains
     If (Abs(1.0_wp - (delpot / dlrpot)) > 1.0e-8_wp) Then
       remake = .true.
       rdr = 1.0_wp / delpot
-      Write (message, '(a,i10)') 'TABVDW arrays resized for mxgrid = ', vdws%max_grid - 4
+      Write (message, '(a,i10)') 'TABVDW arrays resized for mxgrid: ', vdws%max_grid - 4
       Call info(message, .true.)
     End If
 
@@ -1331,7 +1331,7 @@ Contains
 
     End Do
 
-    Call info('potential tables read from TABLE file', .true.)
+    Call info('# potential tables read from TABLE file', .true.)
     If (comm%idnode == 0) Call files(FILE_TABVDW)%close ()
 
     ! convert to internal units

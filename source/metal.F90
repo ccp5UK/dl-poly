@@ -1918,7 +1918,7 @@ Contains
 
     If (comm%idnode == 0) Call files(FILE_TABEAM)%close ()
     If (l_top) Then
-      Write (message, '(a)') 'potential tables read from TABEAM file'
+      Write (message, '(a)') '# potential tables read from TABEAM file'
       Call info(message, .true.)
     End If
 

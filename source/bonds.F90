@@ -1103,10 +1103,10 @@ Contains
       delpot = dlrpot
     End If
     If (delpot > delr_max .and. (.not. safe)) Then
-      Write (messages(1), '(a,1p,e15.7)') 'expected (maximum) radial increment : ', delr_max
-      Write (messages(2), '(a,1p,e15.7)') 'TABBND file actual radial increment : ', delpot
-      Write (messages(3), '(a,0p,i10)') ' expected (minimum) number of grid points : ', bond%bin_tab - 4
-      Write (messages(4), '(a,0p,i10)') ' TABBND file actual number of grid points : ', ngrid
+      Write (messages(1), '(a,1p,e15.7)') 'expected (maximum) radial increment: ', delr_max
+      Write (messages(2), '(a,1p,e15.7)') 'TABBND file actual radial increment: ', delpot
+      Write (messages(3), '(a,0p,i10)') ' expected (minimum) number of grid points: ', bond%bin_tab - 4
+      Write (messages(4), '(a,0p,i10)') ' TABBND file actual number of grid points: ', ngrid
       Call info(messages, 4, .true.)
 
       Call error(22)
@@ -1117,7 +1117,7 @@ Contains
     If (Abs(1.0_wp - (delpot / dlrpot)) > 1.0e-8_wp) Then
       remake = .true.
       rdr = 1.0_wp / delpot
-      Write (message, '(a,i10)') ' TABBND arrays resized for mxgrid = ', bond%bin_tab - 4
+      Write (message, '(a,i10)') ' TABBND arrays resized for mxgrid: ', bond%bin_tab - 4
       Call info(message, .true.)
     End If
 
@@ -1359,7 +1359,7 @@ Contains
 
     If (comm%idnode == 0) Call files(FILE_TABBND)%close ()
     Call info('', .true.)
-    Call info('potential tables read from TABBND file')
+    Call info('# potential tables read from TABBND file', .true.)
 
     ! Break if not safe
 
