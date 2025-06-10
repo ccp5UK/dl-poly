@@ -932,7 +932,7 @@ Contains
     Case (ENS_NVT_EVANS)
 
       Call write_param('Ensemble', 'NVT Evans (Isokinetic)', indent=1)
-      Call info('  Gaussian temperature constraints in use', .true.)
+      Call write_param('Gaussian temperature constraints', 'on', indent=1)
 
     Case (ENS_NVT_LANGEVIN)
 
@@ -970,13 +970,14 @@ Contains
       Call write_param('e-stopping friction', thermo%chi_es, 'internal_t^-1', indent=2)
       Call write_param('e-stopping velocity', thermo%vel_es2, 'internal_l.internal_t^-1', indent=2)
       If (ttm%l_ttm) Then
-        Call info('  Applying thermostat with Two-Temperature Model, using local cell electronic temperatures', .true.)
+        Call info('  # Applying thermostat with Two-Temperature Model, using local cell electronic temperatures', .true.)
         If (ttm%ttmthvel .and. ttm%ttmthvelz) Then
-          Call info('  with only z-components of velocities adjusted using local centre-of-mass corrections for each cell', .true.)
+          Call info('  # with only z-components of velocities adjusted using local centre-of-mass corrections for each cell'&
+            , .true.)
         Else If (ttm%ttmthvel) Then
-          Call info('  with velocities adjusted using local centre-of-mass corrections for each cell', .true.)
+          Call info('  # with velocities adjusted using local centre-of-mass corrections for each cell', .true.)
         Else
-          Call info('  without adjusting velocities for local centre-of-mass corrections in each cell', .true.)
+          Call info('  # without adjusting velocities for local centre-of-mass corrections in each cell', .true.)
         End If
   
       End If
@@ -1062,13 +1063,13 @@ Contains
       Continue
     Case (CONSTRAINT_SURFACE_AREA)
       Call write_param('Semi-isotropic barostat', 'constant normal pressure (Pn)', indent=1)
-      Call write_param('       (N-Pn-A-T)      ', 'constant surface area (A)', indent=1)
+      Call write_param('(N-Pn-A-T)      ', 'constant surface area (A)', indent=2)
 
     Case (CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC)
 
       If (thermo%tension > 0.0_wp) Then
         Call write_param('Semi-isotropic barostat', 'constant normal pressure (Pn)', indent=1)
-        Call write_param('     (N-Pn-gamma-T)    ', 'constant surface tension (gamma)', indent=1)
+        Call write_param('(N-Pn-gamma-T)    ', 'constant surface tension (gamma)', indent=2)
         Call write_param('Simulation surface tension', thermo%tension, 'internal_f/internal_l', 'dyn/cm', indent=2)
       Else
         Call write_param('Semi-isotropic barostat', 'orthorhombic MD cell constraints', indent=1)

@@ -527,7 +527,7 @@ Contains
     End If
 
     If (config%newjob_check_config) Then
-      Write (message, "('configuration file name: ',10x,a)") config%cfgname
+      Write (message, "('configuration file name: ',10x,a)") '"'//Trim(config%cfgname)//'"'
       Call info(message, .true.)
       Write (message, "('selected image convention:',5x,a)") imcon2words(config%imcon)
       Call info(message, .true.)

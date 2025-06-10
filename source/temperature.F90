@@ -190,7 +190,7 @@ Contains
     End If
     If (thermo%sigma > 1.0e-6_wp .and. engk < 1.0e-6_wp .and. (keyres /= RESTART_KEY_CLEAN .and. nstrun /= 0)) Then
       Call warning('0K velocity field detected in CONFIG with a restart at non 0K temperature in CONTROL', .true.)
-      Call info('*** clean start enforced ***', .true.)
+      Call info('# *** clean start enforced ***', .true.)
 
       keyres = RESTART_KEY_CLEAN
     End If

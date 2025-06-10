@@ -4448,7 +4448,7 @@ Contains
             If (All(thermo%gamdpd(1:vdws%max_vdw-1) <= zero_plus)) Then
               thermo%key_dpd = DPD_NULL
 
-              Call info('Ensemble NVT dpd defaulting to NVE (Microcanonical)' &
+              Call info('# Ensemble NVT dpd defaulting to NVE (Microcanonical) ' &
                         //'due to all drag coefficients equal to zero', .true.)
             Else If (Any(thermo%gamdpd(1:vdws%max_vdw-1) <= zero_plus)) Then
               ! in principle we should come up with the error before here
