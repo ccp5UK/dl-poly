@@ -733,10 +733,10 @@ Contains
 
       If (l_str) Then
         Write (message, '(a,3x,a,6x,a,11x,a,8x,a,4x,a,6x,a,1p,e11.4,3x,a,e11.4)') &
-          'Relaxing shells to cores:', 'pass', 'eng_tot', 'grad_tol', 'dis_tol', 'dcs_max', 'tol=', &
+          '# Relaxing shells to cores:', 'pass', 'eng_tot', 'grad_tol', 'dis_tol', 'dcs_max', 'tol=', &
           cshell%rlx_tol(1), 'step=', cshell%step
         Call info(message, .true.)
-        Write (message, "(1x,130('-'))")
+        Write (message, "('#',130('-'))")
         Call info(message, .true.)
       End If
     End If
@@ -953,17 +953,17 @@ Contains
 
     i = Nint(stat%passshl(1))
     If (l_str) Then
-      Write (message, '(1x,i31,1x,1p,2e18.8,4x,f7.4,4x,f7.4,12x,e18.8)') i - 1, stpcfg / engunit, cshell%grad_tol, &
+      Write (message, '("#",i31,1x,1p,2e18.8,4x,f7.4,4x,f7.4,12x,e18.8)') i - 1, stpcfg / engunit, cshell%grad_tol, &
         cshell%dist_tol(1), cshell%dist_tol(2), cshell%eng_tol
       Call info(message, .true.)
       If (Mod(i, 25) == 0) Then
-        Write (message, "(1x,130('-'))")
+        Write (message, "('#',130('-'))")
         Call info(message, .true.)
-        Write (message, '(1x,a,3x,a,6x,a,11x,a,9x,a,4x,a,6x,a,1p,e11.4,3x,a,e11.4)') &
-          'Relaxing shells to cores:', 'pass', 'eng_tot', 'grad_tol', 'ds_tol', 'dcs_max', 'tol=', &
+        Write (message, '(a,3x,a,6x,a,11x,a,9x,a,4x,a,6x,a,1p,e11.4,3x,a,e11.4)') &
+          '# Relaxing shells to cores:', 'pass', 'eng_tot', 'grad_tol', 'ds_tol', 'dcs_max', 'tol=', &
           cshell%rlx_tol(1), 'step=', cshell%step
         Call info(message, .true.)
-        Write (message, "(1x,130('-'))")
+        Write (message, "('#',130('-'))")
         Call info(message, .true.)
 
         If (comm%idnode == 0) Then
@@ -987,16 +987,16 @@ Contains
       i = Nint(stat%passshl(1))
       If (.not. l_str) Then
         Write (message, '(a,4x,a,6x,a,11x,a,8x,a,4x,a,6x,a,1p,e11.4,3x,a,e11.4)') &
-          'Relaxed shells to cores:', 'pass', 'eng_tot', 'grad_tol', 'dis_tol', 'dcs_max', 'tol=', &
+          '# Relaxed shells to cores:', 'pass', 'eng_tot', 'grad_tol', 'dis_tol', 'dcs_max', 'tol=', &
           cshell%rlx_tol(1), 'step=', cshell%step
         Call info(message, .true.)
-        Write (message, "(1x,130('-'))")
+        Write (message, "('#',130('-'))")
         Call info(message, .true.)
       End If
-      Write (message, '(1x,i31,1x,1p,2e18.8,4x,f7.4,4x,f7.4,12x,e18.8)') &
+      Write (message, '("#",i31,1x,1p,2e18.8,4x,f7.4,4x,f7.4,12x,e18.8)') &
         i - 1, stpcfg / engunit, cshell%grad_tol, cshell%dist_tol(1), cshell%dist_tol(2), cshell%eng_tol
       Call info(message, .true.)
-      Write (message, "(1x,130('-'))")
+      Write (message, "('#',130('-'))")
       Call info(message, .true.)
 
       ! Collect passage statistics

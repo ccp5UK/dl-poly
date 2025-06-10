@@ -308,11 +308,11 @@ Contains
       ! Print header
 
       If (l_str) Then
-        Write (message, '(3(1x,a),6x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
+        Write (message, '("#", 3(1x,a),6x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
           'Minimising', minim%word, 'pass', 'eng_tot', 'grad_tol', 'eng_tol', 'dist_tol', 'tol=', &
           minim%tolerance, 'step=', minim%step
         Call info(message, .true.)
-        Write (message, "(1x,130('-'))")
+        Write (message, "('#',130('-'))")
         Call info(message, .true.)
       End If
     End If
@@ -552,16 +552,16 @@ Contains
 
     i = Nint(stats%passmin(1))
     If (l_str) Then
-      Write (message, '(1x,i23,1p,4e18.8)') i - 1, minim%eng / engunit, minim%grad_tol, minim%eng_tol, minim%dist_tol
+      Write (message, '("#",i23,1p,4e18.8)') i - 1, minim%eng / engunit, minim%grad_tol, minim%eng_tol, minim%dist_tol
       Call info(message, .true.)
       If (Mod(i, 25) == 0) Then
-        Write (message, "(1x,130('-'))")
+        Write (message, "('#',130('-'))")
         Call info(message, .true.)
-        Write (message, '(3(1x,a),6x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
+        Write (message, '("#",3(1x,a),6x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
           'Minimising', minim%word, 'pass', 'eng_tot', 'grad_tol', 'eng_tol', 'dist_tol', 'tol=', &
           minim%tolerance, 'minim%step=', minim%step
         Call info(message, .true.)
-        Write (message, "(1x,130('-'))")
+        Write (message, "('#',130('-'))")
         Call info(message, .true.)
 
         If (comm%idnode == 0) Then
@@ -585,16 +585,16 @@ Contains
 
       i = Nint(stats%passmin(1))
       If (.not. l_str) Then
-        Write (message, '(3(1x,a),5x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
+        Write (message, '("#", 3(1x,a),5x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
        'Minimised', minim%word, 'passes', 'eng_tot', 'grad_tol', 'eng_tol', 'dist_tol', 'tol=', minim%tolerance, &
           'step=', minim%step
         Call info(message, .true.)
-        Write (message, "(1x,130('-'))")
+        Write (message, "('#',130('-'))")
         Call info(message, .true.)
       End If
-      Write (message, '(1x,i23,1p,4e18.8)') i, minim%eng / engunit, minim%grad_tol, minim%eng_tol, minim%dist_tol
+      Write (message, '("#",i23,1p,4e18.8)') i, minim%eng / engunit, minim%grad_tol, minim%eng_tol, minim%dist_tol
       Call info(message, .true.)
-      Write (message, "(1x,130('-'))")
+      Write (message, "('#',130('-'))")
       Call info(message, .true.)
 
       ! Collect passage statistics
