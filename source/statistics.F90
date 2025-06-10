@@ -493,6 +493,33 @@ Contains
 
   End Subroutine
 
+  Subroutine write_surface_area_result(average, fluctuation, mean, unit, context)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_5 subroutine to write a YAML format surface area result.
+    !
+    ! author    - h.l.devereux, June 2025
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Real(Kind=wp),    Intent(In   )           :: average, fluctuation, mean
+    Character(Len=*), Intent(In   )           :: unit
+    Character(Len=*), Intent(In   ), Optional :: context
+
+    Character(Len=STR_LEN), Dimension(1:5) :: messages
+
+    If (Present(context)) Then
+      Write (messages(1), '(a)') "Surface area "//context//":"
+    Else
+      Write (messages(1), '(a)') "Surface area:"
+    End If
+    Write (messages(2), '(2x, a, 1p, e12.4)') 'Average:       ', average
+    Write (messages(3), '(2x, a, 1p, e12.4)') 'Fluctuation:   ', fluctuation
+    Write (messages(4), '(2x, a, 1p, e12.4)') 'Mean estimate: ', mean
+    Write (messages(5), '(2x, a)') 'Units: '//unit
+
+    Call info(messages, 5, .true.)
+  End Subroutine write_surface_area_result
+
   Subroutine check_collection_frequencies(stats, comm)
     Class(stats_type), Intent(InOut) :: stats
     Class(comms_type), Intent(InOut) :: comm
@@ -3070,36 +3097,35 @@ Contains
           h_z = stats%sumval(iadd + 1)
 
           If (stats%dpd_units) Then
-            Write (message, "('Average surface area, fluctuations & mean estimate (dpd_l^2)')")
+            Call write_surface_area_result(stats%sumval(iadd + 2),&
+                    stats%ssqval(iadd + 2), avvol / h_z, "dpd_l^2")
           Else
-            Write (message, "('Average surface area, fluctuations & mean estimate (Angs^2)')")
+            Call write_surface_area_result(stats%sumval(iadd + 2),&
+                    stats%ssqval(iadd + 2), avvol / h_z, "Angs^2")
           End If
-          Call info(message, .true.)
-          Write (message, '(1p,3e12.4)') stats%sumval(iadd + 2), stats%ssqval(iadd + 2), avvol / h_z
-          Call info(message, .true.)
-
+          
           iadd = iadd + 2
 
           If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
             tx = -h_z * (stats%sumval(29) / prsunt0 - (thermo%press + thermo%stress(1))) * tenunt0
             ty = -h_z * (stats%sumval(30) / prsunt0 - (thermo%press + thermo%stress(5))) * tenunt0
+            Call info('', .true.)
             If (stats%dpd_units) Then
-              Write (message, "('Average surface tension, fluctuations & mean estimate in x (dpd_f/dpd_l)')")
+              Call write_surface_area_result(stats%sumval(iadd + 1),&
+                    stats%ssqval(iadd + 1), tx, "dpd_f/dpd_l", "in x")
             Else
-              Write (message, "('Average surface tension, fluctuations & mean estimate in x (dyn/cm)')")
+              Call write_surface_area_result(stats%sumval(iadd + 1),&
+                    stats%ssqval(iadd + 1), tx, "dyn/cm", "in x")
             End If
-            Call info(message, .true.)
-            Write (message, '(1p,3e12.4)') stats%sumval(iadd + 1), stats%ssqval(iadd + 1), tx
-            Call info(message, .true.)
+            Call info('', .true.)
             If (stats%dpd_units) Then
-              Write (message, "('Average surface tension, fluctuations & mean estimate in y (dpd_f/dpd_l)')")
+              Call write_surface_area_result(stats%sumval(iadd + 2),&
+                    stats%ssqval(iadd + 2), ty, "dpd_f/dpd_l", "in y")
             Else
-              Write (message, "('Average surface tension, fluctuations & mean estimate in y (dyn/cm)')")
+              Call write_surface_area_result(stats%sumval(iadd + 2),&
+                    stats%ssqval(iadd + 1), ty, "dyn/cm", "in y")
             End If
-            Call info(message, .true.)
-            Write (message, '(1p,3e12.4)') stats%sumval(iadd + 2), stats%ssqval(iadd + 2), ty
-            Call info(message, .true.)
-
+            Call info('', .true.)
             iadd = iadd + 2
           End If
         End If
