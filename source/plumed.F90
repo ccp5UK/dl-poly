@@ -112,32 +112,37 @@ Contains
     Character(Len=STR_LEN) :: messages(9), banner(15)
 
     Write (banner(1), '(a)') ""
-    Write (banner(2), '(a)') "***_____________________________________ "
-    Write (banner(3), '(a)') "***|     .--                            |"
-    Write (banner(4), '(a)') "***|  _/ o)  \                          |"
-    Write (banner(5), '(a)') "***| `""'.'=- |                          |"
-    Write (banner(6), '(a)') "***|     )   (                          |"
-    Write (banner(7), '(a)') "***|    /     `=._                      |"
-    Write (banner(8), '(a)') "***|   |    .-   .`=._                  |"
-    Write (banner(9), '(a)') "***|   |   ;   .' ' _.:===.             |"
-    Write (banner(10), '(a)') "***|   ',   '-====""``""""~^`'=.,          |"
-    Write (banner(11), '(a)') "***|     '.,_____,,..=-""'""""','=,       |"
-    Write (banner(12), '(a)') "***|      /` /`               ', '= .   |"
-    Write (banner(13), '(a)') "***|     /,=='-,                 ''= )  |"
-    Write (banner(14), '(a)') "***|   ;==`-,                           |"
-    Write (banner(15), '(a)') "***--------------------------------------"
+    Write (banner(2), '(a)') "#***_____________________________________ "
+    Write (banner(3), '(a)') "#***|     .--                            |"
+    Write (banner(4), '(a)') "#***|  _/ o)  \                          |"
+    Write (banner(5), '(a)') "#***| `""'.'=- |                          |"
+    Write (banner(6), '(a)') "#***|     )   (                          |"
+    Write (banner(7), '(a)') "#***|    /     `=._                      |"
+    Write (banner(8), '(a)') "#***|   |    .-   .`=._                  |"
+    Write (banner(9), '(a)') "#***|   |   ;   .' ' _.:===.             |"
+    Write (banner(10), '(a)') "#***|   ',   '-====""``""""~^`'=.,          |"
+    Write (banner(11), '(a)') "#***|     '.,_____,,..=-""'""""','=,       |"
+    Write (banner(12), '(a)') "#***|      /` /`               ', '= .   |"
+    Write (banner(13), '(a)') "#***|     /,=='-,                 ''= )  |"
+    Write (banner(14), '(a)') "#***|   ;==`-,                           |"
+    Write (banner(15), '(a)') "#***--------------------------------------"
     Call info(banner, 15, .true., level=-1)
 
-    Write (messages(1), '(a)') "*** Activating PLUMED Extension. ***"
-    Write (messages(2), '(a)') "*** Using PLUMED input file: "//Trim(plume%input)
-    Write (messages(3), '(a)') "*** Using PLUMED log file: "//Trim(plume%logfile)
-    Write (messages(4), '(a,i0)') "*** Using PLUMED API version: ", plume%version
-    Write (messages(5), '(a,i0)') "*** Using PLUMED Real precision: ", plume%prec
-    Write (messages(6), '(a,es15.6)') "*** Using PLUMED energy conversion factor: ", plumed_energyUnits
-    Write (messages(7), '(a,es15.6)') "*** Using PLUMED length conversion factor: ", plumed_lengthUnits
-    Write (messages(8), '(a,es15.6)') "*** Using PLUMED time conversion factor: ", plumed_timeUnits
-    Write (messages(9), '(a,i0)') "*** Using PLUMED restart (0: no, 1: yes): ", plume%restart
-    Call info(messages, 9, .true., level=2)
+    Write (messages(1), '(a)') "# *** Activating PLUMED Extension. ***"
+    Write (messages(2), '(a)') "PLUMED Settings:"
+    Write (messages(3), '(a)') "  input file: "//Trim(plume%input)
+    Write (messages(4), '(a)') "  log file: "//Trim(plume%logfile)
+    Write (messages(5), '(a,i0)') "  API version: ", plume%version
+    Write (messages(6), '(a,i0)') "  real precision: ", plume%prec
+    Write (messages(7), '(a,es15.6)') "  energy conversion factor: ", plumed_energyUnits
+    Write (messages(8), '(a,es15.6)') "  length conversion factor: ", plumed_lengthUnits
+    Write (messages(9), '(a,es15.6)') "  time conversion factor: ", plumed_timeUnits
+    If (plume%restart == 0) Then
+      Write (messages(10), '(a)') "  restart: no"
+    Else
+      Write (messages(10), '(a)') "  restart: yes"
+    End If
+    Call info(messages, 10, .true., level=2)
 #else
     Call plumed_message()
 #endif
