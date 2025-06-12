@@ -2288,7 +2288,7 @@ Contains
     End Select
 
     If (config%levcfg == 0 .and. flow%restart_key /= RESTART_KEY_CLEAN) Then
-      Call warning('CONFIG contains positions only, forcing clean restart')
+      Call warning('CONFIG contains positions only, forcing clean restart', .true.)
       flow%restart_key = RESTART_KEY_CLEAN
     End If
 
