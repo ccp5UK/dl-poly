@@ -21,6 +21,9 @@ Module meta
                                                     exit_comms,&
                                                     gsum,&
                                                     gsync,&
+                                                    gsend,&
+                                                    grecv,&
+                                                    root_id,&
                                                     gtime
   Use configuration,                          Only: check_config,&
                                                     configuration_type,&
@@ -316,9 +319,12 @@ Contains
     Type(coord_type),            Intent(InOut) :: crd(:)
     Type(adf_type),              Intent(InOut) :: adf(:)
 
-    Character(len=256) :: message
-    Integer(Kind=wi)   :: ff, ff_index, frevc, vacuum
-    Real(kind=wp)      :: s
+    Character(len=256)             :: message
+    Integer(Kind=wi)               :: ff, ff_index, frevc
+    Integer                        :: i
+    Logical                        :: vacuum
+    Logical,           Allocatable :: mapped_on_vacuum(:)
+    Real(kind=wp)                  :: s
 
     Call gtime(tmr%elapsed) ! Initialise wall clock time
 
@@ -550,14 +556,34 @@ Contains
 
     ! Indicate nodes mapped on vacuum (no particles)
     ! Here the checkis done with natms of CONFIG, later in evb_check_config we check if ntms is the same for all CONFIG files
-    vacuum = 0
-    If (config(1)%natms == 0) Then
-      vacuum = 1
-      Call warning('mapped on vacuum (no particles)')
+
+    If (comm%idnode == root_id) then
+      Allocate(mapped_on_vacuum(1:comm%mxnode))
     End If
-    Call gsum(comm, vacuum)
-    If (vacuum > 0) Then
-      Call warning(2, Real(vacuum, wp), Real(comm%mxnode, wp), 0.0_wp)
+    vacuum = .false.
+    If (config(1)%natms == 0) Then
+      vacuum = .true.
+    End If
+    If (comm%idnode /= root_id) Then
+      Call gsend(comm, vacuum, root_id, 0)
+    End If
+
+    If (comm%idnode == root_id) Then
+      Do i = 1, comm%mxnode-1
+        Call grecv(comm, mapped_on_vacuum(i+1), i, 0)
+      End Do
+      mapped_on_vacuum(1) = vacuum
+      If (Any(mapped_on_vacuum)) Then
+       Call warning("Some nodes are mapped on a vacuum (no particles)", .true.)
+       Write (message, '(a)') "Nodes mapped on a vacuum: "
+       Call info(message, .true.)
+       Do i = 1, comm%mxnode
+         If (mapped_on_vacuum(i)) Then
+           Write (message, '(2x,"- ",i0)') i
+           Call info(message, .true.)
+         End If
+       End Do
+      End If
     End If
 
     ! start-up time when forces are not recalculated
