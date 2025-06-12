@@ -1044,8 +1044,8 @@ Contains
 
     Write (number, '(f14.5)') ttm%depostart
     Write (messages(1), "(a,a,a)") &
-      'electronic energy deposition starting at time = ', Trim(Adjustl(number)), ' ps'
-    Write (messages(2), "(130('-'))")
+      '# electronic energy deposition starting at time = ', Trim(Adjustl(number)), ' ps'
+    Write (messages(2), "('#', 130('-'))")
     Call info(messages, 2, .true.)
 
   End Subroutine depoinit
@@ -1338,15 +1338,16 @@ Contains
       If (comm%idnode == 0) Then
         Close (Unit=ntable)
       End If
-      Write (message, '(a)') 'thermal conductivity table read from Ke.dat file for two-temperature model'
+      Write (message, '(a)') '# thermal conductivity table read from Ke.dat file for two-temperature model'
       Call info(message, .true.)
-      Write (message, '(1x,"minimum temperature            (K) = ",ES12.4)') Minval(ttm%ketable(:, 1))
+
+      Write (message, '(a)') "Thermal conductivity:"
       Call info(message, .true.)
-      Write (message, '(1x,"maximum temperature            (K) = ",ES12.4)') Maxval(ttm%ketable(:, 1))
+      Write (message, '(1x,"temperature: { min: ",ES12.4, ", max: ", ES12.4, ", units: K }" )') &
+        Minval(ttm%ketable(:, 1)), Maxval(ttm%ketable(:, 1))
       Call info(message, .true.)
-      Write (message, '(1x,"minimum t. c. value            (K) = ",ES12.4)') Minval(ttm%ketable(:, 2))
-      Call info(message, .true.)
-      Write (message, '(1x,"maximum t. c. value            (K) = ",ES12.4)') Maxval(ttm%ketable(:, 2))
+      Write (message, '(1x,"t. c.:       { min: ",ES12.4, ", max: ", ES12.4, ", units: K }" )') &
+        Minval(ttm%ketable(:, 2)), Maxval(ttm%ketable(:, 2))
       Call info(message, .true.)
 
       ! convert thermal conductivity values from W m^-1 K^-1 to kB A^-1 ps^-1
@@ -1384,15 +1385,15 @@ Contains
       If (comm%idnode == 0) Then
         Close (Unit=ntable)
       End If
-      Write (message, '(a)') 'electronic volumetric heat capacity table read from Ce.dat file for two-temperature model'
+      Write (message, '(a)') "# electronic volumetric heat capacity table read from Ce.dat file for two-temperature model"
       Call info(message, .true.)
-      Write (message, '(1x,"minimum temperature            (K) = ",ES12.4)') Minval(ttm%cetable(:, 1))
+      Write (message, '(a)') "Electronic volumetric heat capacity:"
       Call info(message, .true.)
-      Write (message, '(1x,"maximum temperature            (K) = ",ES12.4)') Maxval(ttm%cetable(:, 1))
+      Write (message, '(1x,"temperature: { min: ",ES12.4, ", max: ", ES12.4, ", units: K }" )') &
+        Minval(ttm%cetable(:, 1)), Maxval(ttm%cetable(:, 1))
       Call info(message, .true.)
-      Write (message, '(1x,"minimum v.h.c. value (J m^-3 K^-1) = ",ES12.4)') Minval(ttm%cetable(:, 2))
-      Call info(message, .true.)
-      Write (message, '(1x,"maximum v.h.c. value (J m^-3 K^-1) = ",ES12.4)') Maxval(ttm%cetable(:, 2))
+      Write (message, '(1x,"v.h.c:       { min: ",ES12.4, ", max: ", ES12.4, ", units: J m^-3 K^-1 }" )') &
+        Minval(ttm%cetable(:, 2)), Maxval(ttm%cetable(:, 2))
       Call info(message, .true.)
 
       ! convert volumetric heat capacity values from J m^-3 K^-1 to kB A^-3
@@ -1430,16 +1431,18 @@ Contains
       If (comm%idnode == 0) Then
         Close (Unit=ntable)
       End If
-      Write (message, '(a)') 'thermal diffusivity table read from De.dat file for two-temperature model'
+      Write (message, '(a)') '# thermal diffusivity table read from De.dat file for two-temperature model'
       Call info(message, .true.)
-      Write (message, '(1x,"minimum temperature            (K) = ",ES12.4)') Minval(ttm%detable(:, 1))
+
+      Write (message, '(a)') "Thermal diffusivity:"
       Call info(message, .true.)
-      Write (message, '(1x,"maximum temperature            (K) = ",ES12.4)') Maxval(ttm%detable(:, 1))
+      Write (message, '(1x,"temperature: { min: ",ES12.4, ", max: ", ES12.4, ", units: K }" )') &
+        Minval(ttm%detable(:, 1)), Maxval(ttm%detable(:, 1))
       Call info(message, .true.)
-      Write (message, '(1x,"minimum diffusivity value  (m^2/s) = ",ES12.4)') Minval(ttm%detable(:, 2))
+      Write (message, '(1x,"diffusivity: { min: ",ES12.4, ", max: ", ES12.4, ", units: m^2/s }" )') &
+        Minval(ttm%detable(:, 2)), Maxval(ttm%detable(:, 2))
       Call info(message, .true.)
-      Write (message, '(1x,"maximum diffusivity value  (m^2/s) = ",ES12.4)') Maxval(ttm%detable(:, 2))
-      Call info(message, .true.)
+
 
       ! convert thermal diffusivity values from m^2 s^-1 to A^2 ps^-1
 
@@ -1477,15 +1480,15 @@ Contains
       If (comm%idnode == 0) Then
         Close (Unit=ntable)
       End If
-      Write (message, '(a)') 'electron-phonon coupling table read from g.dat file for two-temperature model'
+      Write (message, '(a)') '# electron-phonon coupling table read from g.dat file for two-temperature model'
       Call info(message, .true.)
-      Write (message, '(1x,"minimum temperature            (K) = ",ES12.4)') Minval(ttm%gtable(:, 1))
+      Write (message, '(a)') "Electron-phonon coupling:"
       Call info(message, .true.)
-      Write (message, '(1x,"maximum temperature            (K) = ",ES12.4)') Maxval(ttm%gtable(:, 1))
+      Write (message, '(1x,"temperature: { min: ",ES12.4, ", max: ", ES12.4, ", units: K }" )') &
+        Minval(ttm%gtable(:, 1)), Maxval(ttm%gtable(:, 1))
       Call info(message, .true.)
-      Write (message, '(1x,"minimum e-p value    (W m^-3 K^-1) = ",ES12.4)') Minval(ttm%gtable(:, 2))
-      Call info(message, .true.)
-      Write (message, '(1x,"maximum e-p value    (W m^-3 K^-1) = ",ES12.4)') Maxval(ttm%gtable(:, 2))
+      Write (message, '(1x,"e-p:         { min: ",ES12.4, ", max: ", ES12.4, ", units: W m^-3 K^-1 }" )') &
+        Minval(ttm%gtable(:, 2)), Maxval(ttm%gtable(:, 2))
       Call info(message, .true.)
 
       ! convert electron-phonon coupling values from W m^-3 K^-1 to ps^-1

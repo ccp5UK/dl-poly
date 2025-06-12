@@ -267,15 +267,15 @@ Contains
       If (currenttime < 1.0_wp) Then
         Write (number, '(f14.3)') currenttime * 1000.0_wp
         Write (messages(1), '(a,es12.5,3a)') &
-          'electronic energy deposition of ', lat_I_sum, &
+          '# electronic energy deposition of ', lat_I_sum, &
           ' eV completed successfully after ', Trim(Adjustl(number)), ' fs'
       Else
         Write (number, '(f14.6)') currenttime
         Write (messages(1), '(a,es12.5,3a)') &
-          'electronic energy deposition of ', lat_I_sum, &
+          '# electronic energy deposition of ', lat_I_sum, &
           ' eV completed successfully after ', Trim(Adjustl(number)), ' ps'
       End If
-      Write (messages(2), '(a)') Repeat('-', 130)
+      Write (messages(2), '(a)') '#'//Repeat('-', 130)
 
       Call info(messages, 2, .true.)
 
@@ -916,7 +916,7 @@ Contains
     Type(domains_type),    Intent(In   ) :: domain
     Type(comms_type),      Intent(InOut) :: comm
 
-    Character(Len=STR_LEN)         :: messages(6)
+    Character(Len=STR_LEN)         :: messages(7)
     Integer                    :: fail, i, ii, ijk, j, jj, k, kk, redtstep, redtstepmx, &
                                   ixp, ixm, iyp, iym, izp, izm, ixpiyp, ixpiym, ixmiyp, ixmiym, &
                                   ixpizp, ixpizm, ixmizp, ixmizm, iypizp, iypizm, iymizp, iymizm
@@ -1021,16 +1021,17 @@ Contains
     ! write information to OUTPUT
 
     If (Mod(nstep, nstbpo) == 0 .or. nstep == 1) Then
-      Write (messages(1), '(a)') 'ttm thermal diffusion timesteps:'
-      Write (messages(2), '(4x,a,3x,a,5x,a)') 'optimal/ps', 'actual/ps', 'diff/md'
-      Write (messages(3), '(2x,2es12.4,2x,i10)') opttstep, tstep / Real(redtstepmx, Kind=wp), redtstepmx
+      Write (messages(1), '(a,i0,a)') 'ttm thermal diffusion timesteps ', nstep, ':'
+      Write (messages(2), '(2x,a,es12.4)') "optimal/ps: ", opttstep
+      Write (messages(3), '(2x,a,es12.4)') "actual/ps:  ", tstep / Real(redtstepmx, Kind=wp)
+      Write (messages(4), '(2x,a,i10)')    "diff/md:    ", redtstepmx
       If (ttm%ttmdyndens) Then
-        Write (messages(4), '(a)') 'active ion temperature cells:'
-        Write (messages(5), '(4x,a,2x,a)') 'atom dens.', 'no. of active cells'
-        Write (messages(6), '(2x,es12.4,11x,i10)') ttm%cellrho, ttm%acell
-        Call info(messages, 6, .true.)
+        Write (messages(5), '(a,i0,a)') 'active ion temperature cells ', nstep, ':'
+        Write (messages(6), '(2x,a,es12.4)') 'atom dens:           ', ttm%cellrho
+        Write (messages(7), '(2x,a,i10)')    'no. of active cells: ', ttm%acell
+        Call info(messages, 7, .true.)
       Else
-        Call info(messages, 3, .true.)
+        Call info(messages, 4, .true.)
       End If
     End If
 
