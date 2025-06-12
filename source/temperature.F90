@@ -57,7 +57,7 @@ Module temperature
 Contains
 
   Subroutine set_temperature(keyres, nstep, nstrun, &
-                             engrot, dof_site, cshell, stat, cons, pmf, thermo, minim, &
+                             engrot, dof_site, ff_index, cshell, stat, cons, pmf, thermo, minim, &
                              rigid, domain, config, seed, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -78,6 +78,7 @@ Contains
     Integer,                     Intent(In   ) :: nstep, nstrun
     Real(Kind=wp),               Intent(  Out) :: engrot
     Real(Kind=wp), Dimension(:), Intent(In   ) :: dof_site
+    Integer,                     Intent(In   ) :: ff_index
     Type(core_shell_type),       Intent(InOut) :: cshell
     Type(stats_type),            Intent(InOut) :: stat
     Type(constraints_type),      Intent(InOut) :: cons
@@ -144,7 +145,12 @@ Contains
 
     ! Report DoF
 
-    Write (messages(1), '(a)') 'degrees of freedom break-down list:'
+    If (ff_index > 0) Then
+      Write (messages(1), '(a,i0,a)') 'degrees of freedom break-down list for field ',&
+        ff_index, ':'
+    Else
+      Write (messages(1), '(a)') 'degrees of freedom break-down list:'
+    End If
     Write (messages(2), '(2x,a,i0)') 'free particles:             ', meg
     Write (messages(3), '(2x,a,i0)') 'centre of mass:             ', -com
     Write (messages(4), '(2x,a,i0)') 'non-periodicity:            ', -non

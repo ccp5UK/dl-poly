@@ -2711,7 +2711,7 @@ Contains
       cnfig%cell = stat%clin
 
       Call set_temperature(flow%restart_key, flow%step, flow%run_steps, &
-                           stat%engrot, sites%dof_site, cshell, stat, cons, pmf, &
+                           stat%engrot, sites%dof_site, 0, cshell, stat, cons, pmf, &
                            thermo, minim, rigid, domain, cnfig, seed, comm)
 
     End If
@@ -3115,7 +3115,7 @@ Contains
       cnfig%cell = stat%clin
 
       Call set_temperature(flow%restart_key, flow%step, flow%run_steps, &
-                           stat%engrot, sites%dof_site, cshell, stat, cons, pmf, &
+                           stat%engrot, sites%dof_site, 0, cshell, stat, cons, pmf, &
                            thermo, minim, rigid, domain, cnfig, seed, comm)
 
     End If

@@ -482,7 +482,7 @@ Contains
     get_total_mass = mass
   End Function get_total_mass
 
-  Subroutine check_config(config, electro_key, thermo, sites, flow, dpd_units, comm)
+  Subroutine check_config(config, electro_key, thermo, sites, flow, dpd_units, comm, ff_index)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -494,7 +494,7 @@ Contains
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov january 2015
     ! amended   - i.t.todorov november 2019 (global index printing for errors)
-    !
+    ! contrib   - h.l.devereux jun 2025 (evb ff index included in output)
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -503,20 +503,21 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer, Intent(In) :: electro_key
-    Type(configuration_type), Intent(InOut) :: config
-    Type(thermostat_type), Intent(In) :: thermo
-    Type(site_type), Intent(In) :: sites
-    Type(flow_type), Intent(In) :: flow
-    Logical, Intent(In) :: dpd_units
-    Type(comms_type), Intent(InOut) :: comm
+    Integer,                  Intent(In   )           :: electro_key
+    Type(configuration_type), Intent(InOut)           :: config
+    Type(thermostat_type),    Intent(In   )           :: thermo
+    Type(site_type),          Intent(In   )           :: sites
+    Type(flow_type),          Intent(In   )           :: flow
+    Logical,                  Intent(In   )           :: dpd_units
+    Type(comms_type),         Intent(InOut)           :: comm
+    Integer,                  Intent(In   ), Optional :: ff_index
 
     Logical                :: safe
-    Integer                :: fail, k, l, m, &
+    Integer                :: fail, k, l, m,&
                               indatm, totatm, mol_sit, loc_ind
     Real(Kind=wp)      :: rcell(1:9), det
 
-    Character(Len=STR_LEN) :: message
+    Character(Len=STR_LEN) :: message, messages(6), units
 
     Integer, Allocatable :: iwrk(:)
 
@@ -527,10 +528,14 @@ Contains
     End If
 
     If (config%newjob_check_config) Then
-      Write (message, "('configuration file name: ',10x,a)") '"'//Trim(config%cfgname)//'"'
-      Call info(message, .true.)
-      Write (message, "('selected image convention:',5x,a)") imcon2words(config%imcon)
-      Call info(message, .true.)
+      If (Present(ff_index)) Then
+        Write (messages(1), '(a,i0,":")') "Configuration file ", ff_index
+      Else
+        Write (messages(1), '(a)') 'Configuration file: '
+      End If
+      Write (messages(2), '(2x,a)') "file name: "//'"'//Trim(config%cfgname)//'"'
+      Write (messages(3), '(2x,a)') "selected image convention: "//imcon2words(config%imcon)
+      Call info(messages, 3, .true.)
     End If
 
     ! Check things for non-periodic systems
@@ -573,23 +578,20 @@ Contains
 
     If (config%newjob_check_config) Then
       If (dpd_units) Then
-        Write (message, "('Simulation cell vectors [dpd_l]:')")
+        units = "dpd_l"
+        !Write (message, "('Simulation cell vectors [dpd_l]:')")
       Else
-        Write (message, "('Simulation cell vectors [Ang]:')")
+        units = "Ang"
+        !Write (message, "('Simulation cell vectors [Ang]:')")
       End If
-      Call Info(message, .true.)
-      Write (message, "(3f20.10)") config%cell(1:3)
-      Call Info(message, .true.)
-      Write (message, "(3f20.10)") config%cell(4:6)
-      Call Info(message, .true.)
-      Write (message, "(3f20.10)") config%cell(7:9)
-      Call Info(message, .true.)
-      If (dpd_units) Then
-        Write (message, "('System volume:     ',2x,1p,g22.12, ' dpd_l^3')") det
-      Else
-        Write (message, "('System volume:     ',2x,1p,g22.12, ' Ang^3')") det
-      End If
-      Call Info(message, .true.)
+
+      Write (messages(1), '(2x,a)') "Cell vectors: "
+      Write (messages(2), '(4x,"[",1p,3(e12.4, ","))') config%cell(1:3)
+      Write (messages(3), "(5x, 1p, 3(e12.4, ','))") config%cell(4:6)
+      Write (messages(4), "(5x, 1p, 2(e12.4, ','), e12.4, ']')") config%cell(7:9)
+      Write (messages(5), '(2x,a,1p,e12.4,a)') "Volume: ", det
+      Write (messages(6), "(2x,a)") "Units: "//Trim(units)//", "//Trim(units)//"^3"
+      Call info(messages, 6, .true.)
     End If
 
     ! Check on validity of CONFIG contents wrt FIELD
@@ -3660,13 +3662,20 @@ Contains
 
   End Subroutine setup_cell_props
 
-  Subroutine print_system_info(config, dpd_units)
-    Type(configuration_type),     Intent(In) :: config
-    Logical,                      Intent(In) :: dpd_units
+  Subroutine print_system_info(config, dpd_units, ff_index)
+    Type(configuration_type), Intent(In   ) :: config
+    Logical,                  Intent(In   ) :: dpd_units
+    Integer,                  Intent(In   ) :: ff_index
 
+    Character(Len=STR_LEN) :: message
     Call info('', .true.)
-    Call info('System properties: ', .true.)
-    call write_param('Mass', config%tot_mass_w_frz,'internal_m', indent=2)
+    If (ff_index > 0) Then
+      Write (message, '(a,i0,a)') 'System properties for field ', ff_index, ':'
+      Call info(message, .true.)
+    Else
+      Call info('System properties: ', .true.)
+    End If
+    Call write_param('Mass', config%tot_mass_w_frz,'internal_m', indent=2)
     If (config%imcon /= IMCON_NOPBC .or. config%imcon /= IMCON_SLAB) Then
       Call write_param('Volume', config%volm, 'internal_l^3', indent=2)
       If (dpd_units) Then

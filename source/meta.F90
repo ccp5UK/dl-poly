@@ -317,7 +317,7 @@ Contains
     Type(adf_type),              Intent(InOut) :: adf(:)
 
     Character(len=256) :: message
-    Integer(Kind=wi)   :: ff, frevc, vacuum
+    Integer(Kind=wi)   :: ff, ff_index, frevc, vacuum
     Real(kind=wp)      :: s
 
     Call gtime(tmr%elapsed) ! Initialise wall clock time
@@ -432,7 +432,9 @@ Contains
     ! For any intra-like interaction, construct book keeping arrays and
     ! exclusion arrays for overlapped two-body inter-like interactions
     Do ff = 1, flow%NUM_FF
+      ff_index = 0
       If (flow%NUM_FF > 1) Then
+        ff_index = ff
         Write (message, '(i0)') ff
         Call info("#** Topology for field "//Trim(message)//" ***", .true.)
       End If
@@ -487,7 +489,7 @@ Contains
       Call stats(ff)%check_collection_frequencies(comm)
 
       ! READ REVOLD (thermodynamic and structural data from restart file)
-      Call system_init(neigh(ff)%cutoff, flow%restart_key, flow%time, flow%start_time, flow%step, &
+      Call system_init(neigh(ff)%cutoff, flow%restart_key, flow%time, flow%start_time, flow%step, ff_index, &
                        stats(ff), devel, green(ff), thermo(ff), met(ff), &
                        bond(ff), angle(ff), dihedral(ff), inversion(ff), &
                        zdensity(ff), sites(ff), vdws(ff), rdf(ff), config(ff), files, comm)
@@ -500,7 +502,9 @@ Contains
     Call time_elapsed(tmr)
 
     Do ff = 1, flow%NUM_FF
+      ff_index = 0
       If (flow%NUM_FF > 1) Then
+        ff_index = ff
         Write (message, '(i0)') ff
         Call info("#** Details of neighbour list for field "//Trim(message)//" ***", .true.)
       End If
@@ -512,11 +516,11 @@ Contains
       ! SET initial system temperature
       Call set_temperature &
         (flow%restart_key, flow%step, flow%run_steps, &
-         stats(ff)%engrot, sites(ff)%dof_site, core_shells(ff), stats(ff), cons(ff), pmfs(ff), thermo(ff), minim(ff), &
+         stats(ff)%engrot, sites(ff)%dof_site, ff_index, core_shells(ff), stats(ff), cons(ff), pmfs(ff), thermo(ff), minim(ff), &
          rigid(ff), domain(ff), config(ff), seed, comm)
 
       Call compute_density(config(ff),comm)
-      Call print_system_info(config(ff),stats(ff)%dpd_units)
+      Call print_system_info(config(ff),stats(ff)%dpd_units, ff_index)
 
     End Do
 
@@ -911,7 +915,11 @@ Contains
       End If
 
       ! CHECK MD CONFIGURATION
-      Call check_config(config(ff), electro(ff)%key, thermo(ff), sites(ff), flow, stats(ff)%dpd_units, comm)
+      If (flow%NUM_FF > 1) Then
+        Call check_config(config(ff), electro(ff)%key, thermo(ff), sites(ff), flow, stats(ff)%dpd_units, comm, ff)
+      Else
+        Call check_config(config(ff), electro(ff)%key, thermo(ff), sites(ff), flow, stats(ff)%dpd_units, comm)
+      End If
     End Do
 
     If (flow%heat_flux) Then

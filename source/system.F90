@@ -77,7 +77,7 @@ Module system
   Public :: system_expand
 Contains
 
-  Subroutine system_init(rcut, keyres, time, tmst, nstep, &
+  Subroutine system_init(rcut, keyres, time, tmst, nstep, ff_index, &
                          stats, devel, green, thermo, met, bond, angle, dihedral, inversion, &
                          zdensity, sites, vdws, rdf, config, files, comm)
 
@@ -89,6 +89,7 @@ Contains
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov november 2016
     ! contrib   - m.a.seaton june 2014
+    ! contrib   - h.l.devereux jun 2025 (evb ff index included in output)
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -101,6 +102,7 @@ Contains
     Integer,                  Intent(InOut) :: keyres
     Real(Kind=wp),            Intent(  Out) :: time, tmst
     Integer,                  Intent(  Out) :: nstep
+    Integer,                  Intent(In   ) :: ff_index
     Type(stats_type),         Intent(InOut) :: stats
     Type(development_type),   Intent(In   ) :: devel
     Type(greenkubo_type),     Intent(InOut) :: green
@@ -655,7 +657,7 @@ Contains
     ! vdws%elrc & vdws%vlrc arrays are zeroed in vdws,
     ! no lrc when vdw interactions are force-shifted
 
-    If (vdws%n_vdw > 0 .and. (.not. vdws%l_force_shift)) Call vdw_lrc(sites, vdws, config, comm)
+    If (vdws%n_vdw > 0 .and. (.not. vdws%l_force_shift)) Call vdw_lrc(sites, vdws, config, comm, ff_index)
 
     ! met%elrc & met%vlrc arrays are zeroed in metal_module
 

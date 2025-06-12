@@ -621,7 +621,7 @@ Contains
 
   End Function intRaddMM3
 
-  Subroutine vdw_lrc(sites, vdws, config, comm)
+  Subroutine vdw_lrc(sites, vdws, config, comm, ff_index)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -636,6 +636,7 @@ Contains
     ! contrib   - a.m.elena october 2017 (zbl/zbls)
     ! contrib   - a.m.elena december 2017 (zblb)
     ! contrib   - a.m.elena may 2018 (mdf)
+    ! contrib   - h.l.devereux jun 2025 (evb ff index included in output)
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -648,6 +649,7 @@ Contains
     Type(vdw_type),           Intent(InOut) :: vdws
     Type(configuration_type), Intent(InOut) :: config
     Type(comms_type),         Intent(InOut) :: comm
+    Integer,                  Intent(In   ) :: ff_index
 
     Character(Len=STR_LEN)                       :: messages(3)
     Integer                                  :: fail, i, ivdw, j, k, keypot
@@ -958,7 +960,12 @@ Contains
       End If
     End If
 
-    Write (messages(1), '(a)') 'long-range correction for:'
+
+    If (ff_index > 0) Then
+      Write (messages(1), '(a, i0, a)') 'long-range corrections for field ', ff_index, ':'
+    Else
+      Write (messages(1), '(a)') 'long-range corrections:'
+    End If
     Call to_out_units(vdws%elrc,'internal_e',v,unit)
     Write (messages(2), '(2x,a,e15.6)') 'vdw energy('//Trim(unit)//'): ', v
     Call to_out_units(plrc,'internal_p',v,unit)
