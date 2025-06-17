@@ -92,6 +92,8 @@ Module ffield
                              strip_blanks,&
                              word_2_real
   Use pmf,             Only: pmf_type
+  Use parse,           Only: is_integer,&
+                             word_2_integer
   Use two_body_potentials, Only: LJ, lj_coh, LJ126, n_m, &
                              nm_shift, morse, morse12, &
                              buckingham, bhm, hbond, &
@@ -1109,18 +1111,15 @@ Contains
                 If (lrgd < 2 .or. lrgd > rigid%max_list) Call error(632)
 
                 Do jrgd = 1, lrgd
-                  If (Mod(jrgd, 16) == 0) Then
-                    word(1:1) = '#'
-                    Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                      Call get_line(safe, files(fftag)%unit_no, record, comm)
-                      If (.not.safe) Call ferror(52)
-                      Call get_word(record, word)
-                    End Do
-                  Else
-                    Call get_word(record, word)
+                  Call get_word(record, word)
+                  If (.not. is_integer(Trim(word))) Then
+                    Call info('', .true.)
+                    Write (message, '(3(a,i0),a)') 'Rigid body: ', irgd, ', member: ',&
+                      jrgd, ' in molecule: ', itmols, ' "'//Trim(sites%mol_name(itmols))//'"'
+                    Call info(message, .true.)
+                    Call error(0, 'Malformed rigid unit, expect integer got: "'//Trim(word)//'"', .true.)
                   End If
-
-                  iatm1 = Nint(word_2_real(word))
+                  iatm1 = Int(word_2_integer(word))
                   rigid%lst(jrgd, nrigid) = iatm1
 
                   isite1 = nsite - sites%num_site(itmols) + iatm1
@@ -6142,16 +6141,7 @@ Contains
                 rigid%max_list = Max(rigid%max_list, jrgd)
 
                 Do lrgd = 1, jrgd
-                  If (Mod(lrgd, 16) == 0) Then
-                    word(1:1) = '#'
-                    Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                      Call get_line(safe, files(fftag)%unit_no, record, comm)
-                      If (.not. safe) Call ferror(52)
-                      Call get_word(record, word)
-                    End Do
-                  Else
-                    Call get_word(record, word)
-                  End If
+                  Call get_word(record, word)
                 End Do
               End Do
 
