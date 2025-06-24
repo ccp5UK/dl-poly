@@ -204,3 +204,6 @@ TEST180 -  Argon System, radial distribution function
 TEST181 -  LiF System, currents calculation
 TEST182 -  many-body DPD liquid density contrast - Test for mDPD potentials 
 TEST183 -  AlkylSuphate DPD test for Slater type charge smearing
+TEST184 -  Rigid body positions, velocity, and orientation correlations for SF6
+TEST185 -  TIP6P, test of all vdw_mix_methods for LJ
+TEST186 -  Mo, OpenKIM portable model SNAP_ChenDengTran_2017_Mo__MO_698578166685_000
