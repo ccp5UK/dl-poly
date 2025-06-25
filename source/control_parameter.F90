@@ -100,7 +100,7 @@ Module control_parameters
     Generic :: Write (formatted) => write_control_param
   End Type control_parameter
 
-  Character(Len=5), Parameter :: INDENT_STR = '  -- '
+  Character(Len=5), Parameter :: INDENT_STR = '     '
 
   Public :: dump_parameters
   Public :: control_help_single, control_help_all
@@ -845,7 +845,7 @@ Contains
     Case (1)
       indent_str = 2
     case (2)
-      indent_str = 5
+      indent_str = 4
     End Select
 
   End Function get_indent_str

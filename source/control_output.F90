@@ -453,49 +453,51 @@ Contains
     Call info('Structural statistics:', .true.)
 
 
-    Call write_param('RDF collection', rdf%l_collect, off_level=3, indent=1)
     If (rdf%l_collect) Then
+      Call info('  RDF collection:', .true.)
       Call write_param('Collect every (steps)', rdf%freq, indent=2)
       Call write_param('Bin size', rdf%rbin, 'internal_l', indent=2)
 
       If (rdf%l_print) Then
-        Call info('  -- RDF printing requested', .true., level=3)
+        Call info('    RDF printing requested', .true., level=3)
       Else If (stats%lpana) Then
-        Call info('  -- RDF printing triggered due to a PDA printing request', .true.)
+        Call info('    RDF printing triggered due to a PDA printing request', .true.)
       Else
-        Call info('  -- No RDF printing requested', .true.)
+        Call info('    No RDF printing requested', .true.)
       End If
-
-      ! If (rdf%max_rdf == 0) Then
-      !   Call info('  -- No RDF pairs specified in FIELD', .true., level=3)
-      ! Else
-      !   Call info('  -- RDF pairs specified in FIELD', .true.)
-      ! End If
+    Else
+      Call write_param('RDF collection', rdf%l_collect, off_level=3, indent=1)
     End If
 
-    Call write_param('Z-density profile collection', zdensity%l_collect, off_level=3, indent=1)
     If (zdensity%l_collect) Then
+      Call info('  Z-density profile collection:', .true.)
       Call write_param('Collect every (steps)', zdensity%frequency, indent=2)
       Call write_param('Bin size', zdensity%bin_width, 'internal_l', indent=2)
       Call write_param('Z-density printing', zdensity%l_print, indent=2, on_level=3)
+    Else
+      Call write_param('Z-density profile collection', zdensity%l_collect, off_level=3, indent=1)
     End If
 
-    Call write_param('VAF profile collection', vaf%samp > 0, off_level=3, indent=1)
     If (vaf%samp > 0) Then
+      Call info('  VAF profile collection:', .true.)
       Call write_param('Collect every (steps)', vaf%freq, indent=2)
       Call write_param('Bin size', vaf%binsize, indent=2)
       Call write_param('VAF printing', vaf%l_print, indent=2, on_level=3)
       Call write_param('VAF time-averaging', vaf%l_average, indent=2)
+    Else
+      Call write_param('VAF profile collection', vaf%samp > 0, off_level=3, indent=1)
     End If
 
-    Call write_param('MSDTMP profile collection', msd_data%l_msd, off_level=3, indent=1)
     If (msd_data%l_msd) Then
+      Call info('  MSDTMP profile collection:',.true.)
       Call write_param('File start', msd_data%start, indent=2)
       Call write_param('File interval', msd_data%freq, indent=2)
+    Else
+      Call write_param('MSDTMP profile collection', msd_data%l_msd, off_level=3, indent=1)
     End If
 
-    Call write_param('Trajectory recording', traj%ltraj, off_level=3, indent=1)
     If (traj%ltraj) Then
+      Call info('  Trajectorey recording:',.true.)
       Call write_param('File start', traj%start, indent=2)
       Call write_param('File interval', traj%freq, indent=2)
       Select Case (traj%key)
@@ -508,31 +510,37 @@ Contains
       Case (TRAJ_KEY_COMPRESSED)
         Call write_param('Trajectory file detail', 'COMPRESSED', indent=2)
       End Select
+    Else
+      Call write_param('Trajectory recording', traj%ltraj, off_level=3, indent=1)
     End If
 
-    Call write_param('Defects analysis', defect(1)%ldef, off_level=3, indent=1)
     If (defect(1)%ldef) Then
+      Call info('  Defects analysis:', .true.)
       Call write_param('File start', defect(1)%nsdef, indent=2)
       Call write_param('File interval', defect(1)%isdef, indent=2)
       Call write_param('Distance condition', defect(1)%rdef, 'internal_l', indent=2)
       Call write_param('DEFECTS1 file option', defect(2)%ldef, off_level=3)
+    Else
+      Call write_param('Defects analysis', defect(1)%ldef, off_level=3, indent=1)
     End If
 
-    Call write_param('Displacements analysis', displacement%lrsd, off_level=3, indent=1)
     If (displacement%lrsd) Then
+      Call info('  Displacements analysis:', .true.)
       Call write_param('File start', displacement%nsrsd, indent=2)
       Call write_param('File interval', displacement%isrsd, indent=2)
       Call write_param('Distance condition', displacement%rrsd, 'internal_l', indent=2)
+    Else
+      Call write_param('Displacements analysis', displacement%lrsd, off_level=3, indent=1)
     End If
 
     Call write_param('Coordination analysis', coords%coordon, off_level=3, indent=1)
     If (coords%coordon) Then
-      Call info('  -- display to be implemented', .true.)
+      Call info('    # display to be implemented', .true.)
     End If
 
     Call write_param('Angular distribution analysis', adf%adfon, off_level=3, indent=1)
     If (adf%adfon) Then
-      Call info('  -- display to be implemented', .true.)
+      Call info('    # display to be implemented', .true.)
     End If
 
   End Subroutine write_structure_analysis
@@ -557,7 +565,8 @@ Contains
     If (.not. thermo%lvar) Then
       Call write_param('Fixed simulation timestep', thermo%tstep, 'internal_t', indent=1)
     Else
-      Call write_param('Variable simulation timestep', thermo%tstep, 'internal_t', indent=1)
+      Call info("  Variable simulation timestep:", .true.)
+      Call write_param('Initial timestep', thermo%tstep, 'internal_t', indent=2)
       Call write_param('Minimum distance Dmin', thermo%mndis, 'internal_l', indent=2)
       Call write_param('Maximum distance Dmin', thermo%mxdis, 'internal_l', indent=2)
       If (thermo%mxstp > zero_plus .and. thermo%mxstp < 1.0e10_wp) Then
@@ -568,7 +577,8 @@ Contains
     If (flow%run_steps > 0) Call write_param('Run Duration (steps)', flow%run_steps, indent=1)
 
     If (flow%equil_Steps > 0) Then
-      Call write_param('Equilibration period (steps)', flow%equil_steps, indent=1)
+      Call info("  Equilibration:", .true.)
+      Call write_param('Equilibration period (steps)', flow%equil_steps, indent=2)
       Call write_param('Include equilibration in averages', .not. flow%equilibration, indent=2, off_level=3)
 
       Call write_param('Temperature regaussing', thermo%freq_tgaus > 0, indent=2, off_level=3)
@@ -580,8 +590,8 @@ Contains
       Call write_param('Force capping', flow%force_cap, indent=2, off_level=3)
       If (flow%force_cap) Call write_param('Force capping limit', config%fmax, 'k_b.temp/ang', indent=2)
 
-      Call write_param('Minimisation', minim%minimise, indent=2, off_level=3)
       If (minim%minimise) Then
+        Call info("  Minimsation:", .true.)
         Select Case (minim%key)
         Case (MIN_FORCE)
           Call write_param('Minimisation criterion', "Force", indent=2)
@@ -597,6 +607,8 @@ Contains
         Call write_param('Minimisation frequency (steps)', minim%freq, indent=2)
         Call write_param('Minimisation tolerance', minim%tolerance, trim(message), indent=2)
         Call write_param('Minimisation CGM step', minim%step_length, 'internal_l', indent=2)
+      Else
+        Call write_param('Minimisation', minim%minimise, indent=2, off_level=3)
       End If
     End If
 
@@ -632,9 +644,8 @@ Contains
 
     Call write_param('Simulation temperature', thermo%temp, 'K', indent=1)
 
-    Call write_param('Pseudo-thermostat attached to MD cell boundary', thermo%l_stochastic_boundaries, indent=1, off_level=3)
     If (thermo%l_stochastic_boundaries) Then
-
+      Call info('  Pseudo-thermostat attached to MD cell boundary:', .true.)
       Select Case (thermo%key_pseudo)
       Case (PSEUDO_LANGEVIN_DIRECT)
         Call write_param('Thermostat control', 'Langevin + direct temperature scaling', indent=2)
@@ -648,6 +659,8 @@ Contains
 
       Call write_param('Thermostat thickness', thermo%width_pseudo, 'internal_l', indent=2)
       Call write_param('Thermostat temperature', thermo%temp_pseudo, 'K', indent=2)
+    Else
+      Call write_param('Pseudo-thermostat attached to MD cell boundary', thermo%l_stochastic_boundaries, indent=1, off_level=3)
     End If
 
     If (thermo%press > 0.0_wp) Then
@@ -677,23 +690,27 @@ Contains
       Call write_param('Permitted density variance', config%dvar - 1.0_wp, '', '%', indent=1)
     End If
 
-    Call write_param('Impact calculation', impa%active, indent=1, off_level=3)
     If (impa%active) Then
+      Call info('  Impact calculation: ', .true.)
       Call write_param('Particle (index)', impa%imd, indent=2)
       Call write_param('Timestep (steps)', impa%tmd, indent=2)
       Call write_param('Energy', impa%emd, 'ke.V', indent=2)
 
-      Write (message, '(a,3(1p g12.5e2))') '  -- v-r(x,y,z): ', impa%vmx, impa%vmy, impa%vmz
+      Write (message, '(a,3(1p g12.5e2),a)') '    v-r(x,y,z): [', impa%vmx, impa%vmy, impa%vmz, ']'
       Call info(message, .true.)
 
+    Else
+      Call write_param('Impact calculation', impa%active, indent=1, off_level=3)
     End If
 
-    Call write_param('PLUMED calculation', plume%l_plumed, indent=1, off_level=3)
     If (plume%l_plumed) Then
+      Call info('  PLUMED calculation: ', .true.)
       Call write_param('PLUMED input', plume%input, indent=2)
       Call write_param('PLUMED log', plume%logfile, indent=2)
       Call write_param('PLUMED precision', plume%prec, indent=2, level=2)
       Call write_param('PLUMED restart', plume%restart, indent=2)
+    Else
+      Call write_param('PLUMED calculation', plume%l_plumed, indent=1, off_level=3)
     End If
 
   End Subroutine write_system_parameters
@@ -719,7 +736,7 @@ Contains
 
     Call write_param('Subcelling threshold density', neigh%pdplnc, indent=1)
     Call write_param('Cutoff padding', neigh%padding, 'internal_l', indent=1)
-    Write (message, '(a,3i6)') "  Final link-cell decomposition (x,y,z): ", link_cell
+    Write (message, '(a,2(i6, ", "), i6, "]")') "  Final link-cell decomposition (x,y,z): [", link_cell
     Call info(message, .true., level=1)
 
     ! ---------------- CUTOFF --------------------------------------------------
@@ -742,46 +759,46 @@ Contains
     End If
 
     If (.not. vdws%no_vdw) Then
-      Call write_param('VdW cutoff', vdws%cutoff, 'internal_l', indent=2)
+      Call write_param('VdW cutoff', vdws%cutoff, 'internal_l', indent=1)
 
       If (vdws%mixing /= MIX_NULL) Then
-        Call info('  -- Vdw mixing: On', .true.)
+        Call info('  Vdw mixing: On', .true.)
         Call warning('Mixing is limited to potentials of the same type only', .true.)
         Call warning('Mixing is restricted to LJ-like potentials (12-6,LJ,WCA,DPD,AMOEBA)', .true.)
 
         Select Case (vdws%mixing)
         Case (MIX_LORENTZ_BERTHELOT)
-          Call write_param('Mixing scheme', 'Lorentz-Berthelot - e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2', indent=2)
+          Call write_param('Mixing scheme', 'Lorentz-Berthelot - e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2', indent=1)
 
         Case (MIX_FENDER_HALSEY)
-          Call write_param('Mixing scheme', 'Fender-Halsey - e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2', indent=2)
+          Call write_param('Mixing scheme', 'Fender-Halsey - e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2', indent=1)
 
         Case (MIX_HOGERVORST)
           Call write_param('Mixing scheme', 'Hogervorst (good hope) - ' &
-                    //'e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i*s_j)^(1/2)', indent=2)
+                    //'e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i*s_j)^(1/2)', indent=1)
 
         Case (MIX_HALGREN)
           Call write_param('Mixing scheme', 'Halgren HHG - ' &
-                    //'e_ij=4*e_i*e_j/[e_i^(1/2)+e_j^(1/2)]^2 ; s_ij=(s_i^3+s_j^3)/(s_i^2+s_j^2)', indent=2)
+                    //'e_ij=4*e_i*e_j/[e_i^(1/2)+e_j^(1/2)]^2 ; s_ij=(s_i^3+s_j^3)/(s_i^2+s_j^2)', indent=1)
 
         Case (MIX_WALDMAN_HAGLER)
           Call write_param('Mixing scheme', 'Waldman-Hagler - ' &
-                    //'e_ij=2*(e_i*e_j)^(1/2)*(s_i*s_j)^3/(s_i^6+s_j^6) ;s_ij=[(s_i^6+s_j^6)/2]^(1/6)', indent=2)
+                    //'e_ij=2*(e_i*e_j)^(1/2)*(s_i*s_j)^3/(s_i^6+s_j^6) ;s_ij=[(s_i^6+s_j^6)/2]^(1/6)', indent=1)
 
         Case (MIX_TANG_TOENNIES)
           Call write_param('Mixing scheme', 'Tang-Toennies - ' &
-                    //' e_ij=[(e_i*s_i^6)*(e_j*s_j^6)] / {[(e_i*s_i^12)^(1/13)+(e_j*s_j^12)^(1/13)]/2}^13', indent=2)
+                    //' e_ij=[(e_i*s_i^6)*(e_j*s_j^6)] / {[(e_i*s_i^12)^(1/13)+(e_j*s_j^12)^(1/13)]/2}^13', indent=1)
           Call info(Repeat(' ', 43)//'s_ij={[(e_i*s_i^6)*(e_j*s_j^6)]^(1/2) / e_ij}^(1/6)', .true.)
 
         Case (MIX_FUNCTIONAL)
           Call write_param('Mixing scheme', 'Functional - ' &
                     //'e_ij=3 * (e_i*e_j)^(1/2) * (s_i*s_j)^3 / ' &
-                    //'SUM_L=0^2{[(s_i^3+s_j^3)^2 / (4*(s_i*s_j)^L)]^(6/(6-2L))}', indent=2)
+                    //'SUM_L=0^2{[(s_i^3+s_j^3)^2 / (4*(s_i*s_j)^L)]^(6/(6-2L))}', indent=1)
           Call info(Repeat(' ', 40)//'s_ij=(1/3) * SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))}', .true.)
         End Select
       End If
 
-      Call write_param('VdW force-shifting', vdws%l_force_shift, indent=2, off_level=3)
+      Call write_param('VdW force-shifting', vdws%l_force_shift, indent=1, off_level=3)
     End If
 
     ! ---------------- METALS --------------------------------------------------
@@ -807,12 +824,14 @@ Contains
       End Select
     End If
 
-    Call write_param('Core-shell', cshell%mxshl > 0, indent=1, off_level=3)
     If (cshell%mxshl > 0) Then
+      Call info("  Core-shell:", .true.)
       Call write_param('Relaxed shell model CGM tolerance', cshell%rlx_tol(1), 'internal_f', indent=2)
       If (cshell%rlx_tol(2) > 0.0_wp) Then
         Call write_param('Relaxed shell model CGM step', cshell%rlx_tol(2), 'internal_l', indent=2)
       End If
+    Else
+      Call write_param('Core-shell', cshell%mxshl > 0, indent=1, off_level=3)
     End If
 
     ! ---------------- ELECTROSTATICS ------------------------------------------
@@ -822,96 +841,96 @@ Contains
       Call write_param('Electrostatics', 'Disabled', indent=1)
     Case (ELECTROSTATIC_SPME)
 
-      Call write_param('Electrostatics', 'Smooth Particle Mesh Ewald', indent=1)
+      Call write_param('Electrostatics method', 'Smooth Particle Mesh Ewald', indent=1)
 
-      If (ewld%precision > 0.0_wp) Call write_param('Ewald sum precision', ewld%precision, indent=2)
+      If (ewld%precision > 0.0_wp) Call write_param('Ewald sum precision', ewld%precision, indent=1)
 
       If (stats%dpd_units) Then
-        Call write_param('Ewald convergence parameter', ewld%alpha, 'dpd_l^-1', indent=2)
+        Call write_param('Ewald convergence parameter', ewld%alpha, 'dpd_l^-1', indent=1)
       Else
-        Call write_param('Ewald convergence parameter', ewld%alpha, 'Ang^-1', indent=2)
+        Call write_param('Ewald convergence parameter', ewld%alpha, 'Ang^-1', indent=1)
       End If
-      Write (message, '(a,3i5)') '  -- Ewald kmax1 kmax2 kmax3   (x2): ', ewld%kspace%k_vec_dim_cont
+      Write (message, '(a,3i5)') '  Ewald kmax1 kmax2 kmax3   (x2): ', ewld%kspace%k_vec_dim_cont
       Call info(message, .true.)
 
       If (Any(ewld%kspace%k_vec_dim /= ewld%kspace%k_vec_dim_cont)) Then
-        Write (message, '(a,3i5)') '  -- DaFT adjusted kmax values (x2): ', ewld%kspace%k_vec_dim
+        Write (message, '(a,3i5)') '  DaFT adjusted kmax values (x2): ', ewld%kspace%k_vec_dim
         Call info(message, .true.)
       End If
 
-      Call write_param('B-Spline interpolation order', ewld%bspline%num_splines, indent=2)
+      Call write_param('B-Spline interpolation order', ewld%bspline%num_splines, indent=1)
 
     Case (ELECTROSTATIC_DDDP)
-      Call write_param('Electrostatics', 'Distance Dependent Dielectric', indent=1)
+      Call write_param('Electrostatics method', 'Distance Dependent Dielectric', indent=1)
 
     Case (ELECTROSTATIC_COULOMB)
-      Call write_param('Electrostatics', 'Coulombic Potential', indent=1)
+      Call write_param('Electrostatics method', 'Coulombic Potential', indent=1)
 
     Case (ELECTROSTATIC_COULOMB_FORCE_SHIFT)
-      Call write_param('Electrostatics', 'Force-Shifted Coulombic Potential', indent=1)
+      Call write_param('Electrostatics method', 'Force-Shifted Coulombic Potential', indent=1)
 
     Case (ELECTROSTATIC_COULOMB_REACTION_FIELD)
-      Call write_param('Electrostatics', 'Reaction Field', indent=1)
+      Call write_param('Electrostatics method', 'Reaction Field', indent=1)
 
     End Select
 
     If (electro%key /= ELECTROSTATIC_NULL) Then
       If (Abs(electro%eps - 1.0_wp) > zero_plus) Then
         If (stats%dpd_units .or. electro%len_bjer > zero_plus) Then
-          Call write_param('Bjerrum length', electro%len_bjer, 'internal_l', indent=2)
-          Call write_param('Relative dielectric constant', electro%eps, indent=2)
+          Call write_param('Bjerrum length', electro%len_bjer, 'internal_l', indent=1)
+          Call write_param('Relative dielectric constant', electro%eps, indent=1)
         Else
-          Call write_param('Relative dielectric constant', electro%eps, indent=2)
-          Call write_param('Bjerrum length', r4pie0/(electro%eps*boltz*temp), 'internal_l', indent=2)
+          Call write_param('Relative dielectric constant', electro%eps, indent=1)
+          Call write_param('Bjerrum length', r4pie0/(electro%eps*boltz*temp), 'internal_l', indent=1)
         End If
       Else
         If (stats%dpd_units) Then
-          Call write_param('Bjerrum length', r4pie0/(electro%eps), 'internal_l', indent=2)
+          Call write_param('Bjerrum length', r4pie0/(electro%eps), 'internal_l', indent=1)
         Else
-          Call write_param('Bjerrum length', r4pie0/(electro%eps*boltz*temp), 'internal_l', indent=2)
+          Call write_param('Bjerrum length', r4pie0/(electro%eps*boltz*temp), 'internal_l', indent=1)
         End If
       End If
 
       ! Fix with electro merge
       Call write_param('Fennell damping', &
-           electro%key /= ELECTROSTATIC_SPME .and. electro%damping > zero_plus, indent=2, off_level=3)
+           electro%key /= ELECTROSTATIC_SPME .and. electro%damping > zero_plus, indent=1, off_level=3)
       If (electro%key /= ELECTROSTATIC_SPME .and. electro%damping > zero_plus) &
-        Call write_param('Damping parameter', electro%damping, 'internal_l^-1', indent=2)
+        Call write_param('Damping parameter', electro%damping, 'internal_l^-1', indent=1)
 
-      Call write_param('Extended Coulombic eXclusion', electro%lecx, indent=2)
+      Call write_param('Extended Coulombic eXclusion', electro%lecx, indent=1)
 
     End If
 
     Select Case (electro%smear)
     Case (SMEARING_NULL)
-      Call write_param('Charge smearing', 'None', indent=2)
+      Call write_param('Charge smearing', 'None', indent=1)
     Case (SMEARING_LINEAR)
-      Call write_param('Charge smearing', 'Linear', indent=2)
+      Call write_param('Charge smearing', 'Linear', indent=1)
     Case (SMEARING_SLATER_EXP)
-      Call write_param('Charge smearing', 'Slater (full)', indent=2)
+      Call write_param('Charge smearing', 'Slater (full)', indent=1)
     Case (SMEARING_SLATER_TRUNCATED)
-      Call write_param('Charge smearing', 'Slater (truncated)', indent=2)
+      Call write_param('Charge smearing', 'Slater (truncated)', indent=1)
     Case (SMEARING_GAUSSIAN)
-      Call write_param('Charge smearing', 'Gaussian', indent=2)
+      Call write_param('Charge smearing', 'Gaussian', indent=1)
     Case (SMEARING_GAUSSIAN_EQUAL)
-      Call write_param('Charge smearing', 'Gaussian (no real space spme contributions)', indent=2)
+      Call write_param('Charge smearing', 'Gaussian (no real space spme contributions)', indent=1)
     End Select
 
     If (electro%smear /= SMEARING_NULL) Then 
-      Call write_param('Smearing length', electro%r_smear, 'internal_l', indent=2)
+      Call write_param('Smearing length', electro%r_smear, 'internal_l', indent=1)
     End If 
 
     If (electro%smear == SMEARING_SLATER_EXP .or. electro%smear == SMEARING_SLATER_TRUNCATED) Then
       Select Case (electro%b_smear)
       Case (BETA_ORIGINAL)
         Call write_param('Correspondence between Slater smearing length and beta',&
-                         'original reciprocal (exact Slater)', indent=2)
+                         'original reciprocal (exact Slater)', indent=1)
       Case (BETA_OVERLAP)
         Call write_param('Correspondence between Slater smearing length and beta',&
-                         'overlap potential', indent=2)
+                         'overlap potential', indent=1)
       Case (BETA_DISTRIBUTION)
         Call write_param('Correspondence between Slater smearing length and beta',&
-                         'second moment of charge distribution', indent=2)
+                         'second moment of charge distribution', indent=1)
       End Select
     End If
 
@@ -937,38 +956,38 @@ Contains
     Case (ENS_NVT_LANGEVIN)
 
       Call write_param('Ensemble', 'NVT Langevin (Stochastic Dynamics)', indent=1)
-      Call write_param('Thermostat friction', thermo%chi, 'internal_t^-1', indent=2)
+      Call write_param('Thermostat friction', thermo%chi, 'internal_t^-1', indent=1)
 
     Case (ENS_NVT_ANDERSON)
 
       Call write_param('Ensemble', 'NVT Andersen', indent=1)
-      Call write_param('Thermostat relaxation time', thermo%tau_t, 'internal_t', indent=2)
-      Call write_param('Softness', thermo%soft, indent=2)
+      Call write_param('Thermostat relaxation time', thermo%tau_t, 'internal_t', indent=1)
+      Call write_param('Softness', thermo%soft, indent=1)
 
     Case (ENS_NVT_BERENDSEN)
 
       Call write_param('Ensemble', 'NVT Berendsen', indent=1)
-      Call write_param('Thermostat relaxation time', thermo%tau_t, 'internal_t', indent=2)
+      Call write_param('Thermostat relaxation time', thermo%tau_t, 'internal_t', indent=1)
       Call warning('If you plan to use the Berendsen thermostat, '// &
            'please read https://doi.org/10.1021/acs.jctc.8b00446', .true.)
 
     Case (ENS_NVT_NOSE_HOOVER)
 
       Call write_param('Ensemble', 'NVT Nose-Hoover', indent=1)
-      Call write_param('Thermostat relaxation time', thermo%tau_t, 'internal_t', indent=2)
+      Call write_param('Thermostat relaxation time', thermo%tau_t, 'internal_t', indent=1)
 
     Case (ENS_NVT_GENTLE)
 
       Call write_param('Ensemble', 'NVT gentle stochastic thermostat', indent=1)
-      Call write_param('Thermostat relaxation time', thermo%tau_t, 'internal_t', indent=2)
-      Call write_param('Thermostat friction', thermo%gama, 'internal_t^-1', indent=2)
+      Call write_param('Thermostat relaxation time', thermo%tau_t, 'internal_t', indent=1)
+      Call write_param('Thermostat friction', thermo%gama, 'internal_t^-1', indent=1)
 
     Case (ENS_NVT_LANGEVIN_INHOMO)
 
       Call write_param('Ensemble', 'NVT inhomogeneous Langevin (Stochastic Dynamics)', indent=1)
-      Call write_param('e-phonon friction', thermo%chi_ep, 'internal_t^-1', indent=2)
-      Call write_param('e-stopping friction', thermo%chi_es, 'internal_t^-1', indent=2)
-      Call write_param('e-stopping velocity', thermo%vel_es2, 'internal_l.internal_t^-1', indent=2)
+      Call write_param('e-phonon friction', thermo%chi_ep, 'internal_t^-1', indent=1)
+      Call write_param('e-stopping friction', thermo%chi_es, 'internal_t^-1', indent=1)
+      Call write_param('e-stopping velocity', thermo%vel_es2, 'internal_l.internal_t^-1', indent=1)
       If (ttm%l_ttm) Then
         Call info('  # Applying thermostat with Two-Temperature Model, using local cell electronic temperatures', .true.)
         If (ttm%ttmthvel .and. ttm%ttmthvelz) Then
@@ -1003,80 +1022,84 @@ Contains
     Case (ENS_NPT_LANGEVIN)
 
       Call write_param('Ensemble', 'NPT isotropic Langevin (Stochastic Dynamics)', indent=1)
-      Call write_param('Thermostat friction', thermo%chi, 'internal_t^-1', indent=2)
-      Call write_param('Barostat friction', thermo%tai, 'internal_t^-1', indent=2)
+      Call write_param('Thermostat friction', thermo%chi, 'internal_t^-1', indent=1)
+      Call write_param('Barostat friction', thermo%tai, 'internal_t^-1', indent=1)
 
     Case (ENS_NPT_BERENDSEN)
 
       Call write_param('Ensemble', 'NPT isotropic Berendsen', indent=1)
-      Call write_param('Thermostat relaxation time', thermo%tau_t, 'internal_t', indent=2)
-      Call write_param('Barostat relaxation time', thermo%tau_p, 'internal_t', indent=2)
+      Call write_param('Thermostat relaxation time', thermo%tau_t, 'internal_t', indent=1)
+      Call write_param('Barostat relaxation time', thermo%tau_p, 'internal_t', indent=1)
 
     Case (ENS_NPT_NOSE_HOOVER)
 
       Call write_param('Ensemble', 'NPT isotropic Nose-Hoover (Melchionna)', indent=1)
-      Call write_param('Thermostat relaxation time', thermo%tau_t, 'internal_t', indent=2)
-      Call write_param('Barostat relaxation time', thermo%tau_p, 'internal_t', indent=2)
+      Call write_param('Thermostat relaxation time', thermo%tau_t, 'internal_t', indent=1)
+      Call write_param('Barostat relaxation time', thermo%tau_p, 'internal_t', indent=1)
 
     Case (ENS_NPT_MTK)
 
       Call write_param('Ensemble', 'NPT isotropic Martyna-Tuckerman-Klein', indent=1)
-      Call write_param('Thermostat relaxation time', thermo%tau_t, 'internal_t', indent=2)
-      Call write_param('Barostat relaxation time', thermo%tau_p, 'internal_t', indent=2)
+      Call write_param('Thermostat relaxation time', thermo%tau_t, 'internal_t', indent=1)
+      Call write_param('Barostat relaxation time', thermo%tau_p, 'internal_t', indent=1)
 
     Case (ENS_NPT_LANGEVIN_ANISO)
 
       Call write_param('Ensemble', 'NPT anisotropic Langevin (Stochastic Dynamics)', indent=1)
-      Call write_param('Thermostat friction', thermo%chi, 'internal_t^-1', indent=2)
-      Call write_param('Barostat friction', thermo%tai, 'internal_t^-1', indent=2)
+      Call write_param('Thermostat friction', thermo%chi, 'internal_t^-1', indent=1)
+      Call write_param('Barostat friction', thermo%tai, 'internal_t^-1', indent=1)
 
     Case (ENS_NPT_BERENDSEN_ANISO)
 
       Call write_param('Ensemble', 'NPT anisotropic Berendsen', indent=1)
-      Call write_param('Thermostat relaxation time', thermo%tau_t, 'internal_t', indent=2)
-      Call write_param('Barostat relaxation time', thermo%tau_p, 'internal_t', indent=2)
+      Call write_param('Thermostat relaxation time', thermo%tau_t, 'internal_t', indent=1)
+      Call write_param('Barostat relaxation time', thermo%tau_p, 'internal_t', indent=1)
 
     Case (ENS_NPT_NOSE_HOOVER_ANISO)
 
       Call write_param('Ensemble', 'NPT anisotropic Nose-Hoover (Melchionna)', indent=1)
-      Call write_param('Thermostat relaxation time', thermo%tau_t, 'internal_t', indent=2)
-      Call write_param('Barostat relaxation time', thermo%tau_p, 'internal_t', indent=2)
+      Call write_param('Thermostat relaxation time', thermo%tau_t, 'internal_t', indent=1)
+      Call write_param('Barostat relaxation time', thermo%tau_p, 'internal_t', indent=1)
 
     Case (ENS_NPT_MTK_ANISO)
 
       Call write_param('Ensemble', 'NPT anisotropic Martyna-Tuckerman-Klein', indent=1)
-      Call write_param('Thermostat relaxation time', thermo%tau_t, 'internal_t', indent=2)
-      Call write_param('Barostat relaxation time', thermo%tau_p, 'internal_t', indent=2)
+      Call write_param('Thermostat relaxation time', thermo%tau_t, 'internal_t', indent=1)
+      Call write_param('Barostat relaxation time', thermo%tau_p, 'internal_t', indent=1)
 
     End Select ensembles
 
     ! For any dpd thermostat ensembles
     If (allocated(thermo%gamdpd)) then
       if (thermo%gamdpd(0) > zero_plus) &
-           Call write_param('Drag coefficient', thermo%gamdpd(0), 'internal_m/internal_t', indent=2)
+           Call write_param('Drag coefficient', thermo%gamdpd(0), 'internal_m/internal_t', indent=1)
     end If
 
     ! Semi isotropic ensembles
+    If (Any(thermo%iso == (/CONSTRAINT_SURFACE_AREA, CONSTRAINT_SEMI_ORTHORHOMBIC,&
+                            CONSTRAINT_SURFACE_TENSION/))) Then
+      Call info('  Semi-isotropic barostat: ', .true.)
+    End If
 
     Select Case (thermo%iso)
     Case (CONSTRAINT_NONE)
       Continue
     Case (CONSTRAINT_SURFACE_AREA)
-      Call write_param('Semi-isotropic barostat', 'constant normal pressure (Pn)', indent=1)
-      Call write_param('(N-Pn-A-T)      ', 'constant surface area (A)', indent=2)
+      Call write_param('Pressure', 'constant normal pressure (Pn)', indent=2)
+      Call write_param('(N-Pn-A-T)', 'constant surface area (A)', indent=2)
 
     Case (CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC)
 
       If (thermo%tension > 0.0_wp) Then
-        Call write_param('Semi-isotropic barostat', 'constant normal pressure (Pn)', indent=1)
-        Call write_param('(N-Pn-gamma-T)    ', 'constant surface tension (gamma)', indent=2)
+        Call write_param('Pressure', 'constant normal pressure (Pn)', indent=2)
+        Call write_param('(N-Pn-gamma-T)', 'constant surface tension (gamma)', indent=2)
         Call write_param('Simulation surface tension', thermo%tension, 'internal_f/internal_l', 'dyn/cm', indent=2)
-      Else
-        Call write_param('Semi-isotropic barostat', 'orthorhombic MD cell constraints', indent=1)
+      Else If (thermo%iso /= CONSTRAINT_SEMI_ORTHORHOMBIC) Then
+        Call write_param('Constraints', 'orthorhombic MD cell constraints', indent=2)
       End If
 
       If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
-        Call write_param('Semi-isotropic barostat', 'semi-orthorhombic MD cell constraints', indent=1)
+        Call write_param('Constraints', 'semi-orthorhombic MD cell constraints', indent=2)
       End If
 
     End Select
@@ -1096,11 +1119,12 @@ Contains
     Call info('', .true.)
     Call info('TTM Parameters: ', .true.)
 
-    Write (messages(1), '(a,3(1x,i8.1))') '  Ionic temperature grid size (x,y,z): ', ttm%ntsys(1:3)
-    Write (messages(2), '(a,3(1x,1p g12.5e2))') '  Temperature grid size (x,y,z): ', ttm%delx, ttm%dely, ttm%delz
-    Write (messages(3), '(a,1p g12.5e2)') '  Average number of atoms/cell: ', ttm%sysrho * ttm%volume
+    Write (messages(1), '(a,2(i8.1,", "), i8.1,"]")') '  Ionic temperature grid size (x,y,z): [', ttm%ntsys(1:3)
+    Write (messages(2), '(a,2(1p,g12.5e2,", "),(1p,g12.5e2),"]")') &
+      '  Temperature grid size (x,y,z): [', ttm%delx, ttm%dely, ttm%delz
+    Write (messages(3), '(a,1p, g12.5e2)') '  Average number of atoms/cell: ', ttm%sysrho * ttm%volume
     Call info(messages, 3, .true.)
-    Write (message, '(a,3(1x,i8.1))') '  Electronic temperature grid size (x,y,z): ', ttm%eltsys(1:3)
+    Write (message, '(a,2(i8.1,", "),(i8.1),"]")') '  Electronic temperature grid size (x,y,z): [', ttm%eltsys(1:3)
     Call info(message, .true.)
 
     If (ttm%ismetal) Then
@@ -1116,69 +1140,72 @@ Contains
       Call write_param('Initial atomic density', ttm%cellrho, 'internal_l^-3', indent=1)
     End If
 
+    Call info('  Electronic specific heat capacity:', .true.)
     Select Case (ttm%cetype)
     Case (TTM_CE_CONST) !Constant
-      Call write_param('Electronic specific heat capacity', 'Constant', indent=1)
+      Call write_param('Form', 'Constant', indent=2)
       Call write_param('Electronic S.H.C. (kB/atom)', ttm%Ce0 / ttm%cellrho, indent=2)
 
     Case (TTM_CE_CONST_DYN) !Constant
-      Call write_param('Electronic specific heat capacity', 'Constant', indent=1)
+      Call write_param('Form', 'Constant', indent=2)
       Call write_param('Electronic S.H.C. (kB/atom)', ttm%Ce0, indent=2)
 
     Case (TTM_CE_TANH) !tanh
-      Call write_param('Electronic specific heat capacity', 'Hyperbolic tangent', indent=1)
+      Call write_param('Form', 'Hyperbolic tangent', indent=2)
       Call write_param('Constant term A (kB/atom): ', ttm%sh_A / ttm%cellrho, indent=2)
       Call write_param('Temperature term B', ttm%sh_B * 1.0e4_wp, 'K^-1', indent=2)
 
     Case (TTM_CE_TANH_DYN) !tanh
-      Call write_param('Electronic specific heat capacity', 'Hyperbolic tangent', indent=1)
+      Call write_param('Form', 'Hyperbolic tangent', indent=2)
       Call write_param('Constant term A (kB/atom): ', ttm%sh_A, indent=2)
       Call write_param('Temperature term B', ttm%sh_B * 1.0e4_wp, 'K^-1', indent=2)
 
     Case (TTM_CE_LINEAR, TTM_CE_LINEAR_DYN) !linear
-      Call write_param('Electronic specific heat capacity', 'Linear', indent=1)
+      Call write_param('Form', 'Linear', indent=2)
       Call write_param('Max. electronic S.H.C. (kB/atom): ', ttm%Cemax, indent=2)
       Call write_param('Fermi Temperature', ttm%Tfermi, 'K', indent=2)
 
     Case (TTM_CE_TABULATED) !tabulated
-      Call write_param('Electronic specific heat capacity', 'Tabulated', indent=1)
+      Call write_param('Form', 'Tabulated', indent=2)
 
     End Select
 
     If (ttm%ismetal) Then
+      Call info('  Electronic thermal conductivity: ', .true.)
       Select Case (ttm%ketype) ! print thermal conductivity type only for metals
       Case (TTM_KE_INFINITE) ! Infinite
-        Call write_param('Electronic thermal conductivity', 'Infinity', indent=1)
+        Call write_param('Form', 'Infinity', indent=2)
 
       Case (TTM_KE_CONST) ! Constant
-        Call write_param('Electronic thermal conductivity', 'Constant', indent=1)
+        Call write_param('Form', 'Constant', indent=2)
         Call write_param('Electronic T.C.', ttm%Ka0, 'k_b/ps/Ang', 'W/m/K', indent=2)
 
       Case (TTM_KE_DRUDE) ! Drude
-        Call write_param('Electronic thermal conductivity', 'Drude model', indent=1)
+        Call write_param('Form', 'Drude model', indent=2)
         Call write_param('T.C. at system temp.', ttm%Ka0, 'k_b/ps/Ang', 'W/m/K', indent=2)
 
       Case (TTM_KE_TABULATED) ! Tabulated
-        Call write_param('Electronic thermal conductivity', 'Tabulated', indent=1)
+        Call write_param('Form', 'Tabulated', indent=2)
 
       End Select
 
     Else
+      Call info('  Electronic thermal diffusivity: ', .true.)
       Select Case (ttm%detype) ! print thermal diffusivity type only for non-metals
       Case (TTM_DE_METAL) ! Off (for metals: will probably not get here!)
-        Call write_param('Electronic thermal diffusivity', 'Off', indent=1, level=3)
+        Call write_param('Form', 'Off', indent=2, level=3)
       Case (TTM_DE_CONST) ! Constant
-        Call write_param('Electronic thermal diffusivity', 'Constant', indent=1)
+        Call write_param('Form', 'Constant', indent=2)
         Call write_param('Electronic T.D.', ttm%diff0, 'internal_l^2/internal_t', indent=2)
 
       Case (TTM_DE_RECIP) ! Recip
 
-        Call write_param('Electronic thermal diffusivity', 'Reciprocal', indent=1)
+        Call write_param('Form', 'Reciprocal', indent=2)
         Call write_param('Datum Electronic T.D.', ttm%diff0/thermo%temp, 'internal_l^2/internal_t/K', indent=2)
         Call write_param('Fermi Temperature', ttm%Tfermi, 'K', indent=2)
 
       Case (TTM_DE_TABULATED) ! Tabulated
-        Call write_param('Electronic thermal diffusivity', 'Tabulated', indent=1)
+        Call write_param('Form', 'Tabulated', indent=2)
 
       End Select
     End If
@@ -1187,26 +1214,30 @@ Contains
     Call write_param('Energy redistribution', ttm%redistribute, indent=1, off_level=3)
     Call write_param('Elec. stopping power', ttm%dedx, 'e.V/ang', indent=1)
 
+    If (Any(ttm%sdepoType == (/TTM_SDEPO_GAUSS, TTM_SDEPO_FLAT, TTM_SDEPO_EXP/))) Then
+      Call info('  Spatial energy deposition: ', .true.)
+    End If
+
     If (ttm%fluence < zero_plus) Then
       Select Case (ttm%sdepoType)
       Case (TTM_SDEPO_GAUSS)
-        Call write_param('Spatial energy deposition', 'Gaussian', indent=1)
+        Call write_param('Form', 'Gaussian', indent=2)
         Call write_param('Sigma of distribution', ttm%sig, 'ang', indent=2)
         Call write_param('Distribution cutoff', ttm%sigmax * ttm%sig, 'ang', indent=2)
 
       Case (TTM_SDEPO_FLAT)
-        Call write_param('Spatial energy deposition', 'Homogeneous', indent=1)
+        Call write_param('Form', 'Homogeneous', indent=2)
       End Select
 
     Else
       Select Case (ttm%sdepoType)
       Case (TTM_SDEPO_FLAT)
-        Call write_param('Spatial energy deposition', 'Homogeneous Laser', indent=1)
+        Call write_param('Form', 'Homogeneous Laser', indent=2)
         Call write_param('Absorbed fluence', ttm%fluence, 'e.V/ang^2', indent=2)
         Call write_param('Penetration depth', ttm%pdepth, 'internal_l', indent=2)
 
       Case (TTM_SDEPO_EXP)
-        Call write_param('Spatial energy deposition', 'Z-exponential decaying Laser', indent=1)
+        Call write_param('Form', 'Z-exponential decaying Laser', indent=2)
         Call write_param('Absorbed fluence at surface', ttm%fluence, 'e.V/ang^2', indent=2)
         Call write_param('Penetration depth', ttm%pdepth, 'internal_l', indent=2)
 
@@ -1214,22 +1245,23 @@ Contains
 
     End If
 
+    Call info('  Temporal energy deposition:', .true.)
     Select Case (ttm%tdepotype)
     Case (TTM_TDEPO_GAUSS)
-      Call write_param('Temporal energy deposition', 'Gaussian', indent=1)
+      Call write_param('Form', 'Gaussian', indent=2)
       Call write_param('Sigma of distribution', ttm%tdepo, 'ps', indent=2)
       Call write_param('Distribution cutoff', 2.0_wp * ttm%tcdepo * ttm%tdepo, 'ps', indent=2)
 
     Case (TTM_TDEPO_EXP)
-      Call write_param('Temporal energy deposition', 'Decaying exponential', indent=1)
+      Call write_param('Form', 'Decaying exponential', indent=2)
       Call write_param('Tau of distribution', ttm%tdepo, 'ps', indent=2)
       Call write_param('Distribution cutoff', ttm%tcdepo * ttm%tdepo, 'ps', indent=2)
 
     Case (TTM_TDEPO_DELTA)
-      Call write_param('Temporal energy deposition', 'Dirac delta', indent=1)
+      Call write_param('Form', 'Dirac delta', indent=2)
 
     Case (TTM_TDEPO_PULSE)
-      Call write_param('Temporal energy deposition', 'Square pulse', indent=1)
+      Call write_param('Form', 'Square pulse', indent=2)
       Call write_param('Pulse duration', ttm%tdepo, 'ps', indent=2)
 
     End Select
@@ -1237,33 +1269,34 @@ Contains
     Select Case (ttm%gvar)
     Case (TTM_EPVAR_HOMO)
       Call write_param('Variable electron-phonon coupling', 'Homogeneous', indent=1)
-      Call info('    (overrides value given for ensemble, required tabulated stopping terms in g.dat file)', .true.)
+      Call info('    # (overrides value given for ensemble, required tabulated stopping terms in g.dat file)', .true.)
     Case (TTM_EPVAR_HETERO)
       Call write_param('Variable electron-phonon coupling', 'Heterogeneous', indent=1)
-      Call info('    (overrides value given for ensemble, required tabulated stopping terms in g.dat file)', .true.)
+      Call info('    # (overrides value given for ensemble, required tabulated stopping terms in g.dat file)', .true.)
     End Select
 
+    Call info('  Electronic temperature boundary conditions: ', .true.)
     Select Case (ttm%bcTypeE)
     Case (TTM_BC_PERIODIC)
-      Call write_param('Electronic temperature boundary conditions', 'Periodic', indent=1)
+      Call write_param('Form', 'Periodic', indent=2)
 
     Case (TTM_BC_DIRICHLET)
-      Call write_param('Electronic temperature boundary conditions', 'Dirichlet', indent=1)
-      Call info('  -- Boundaries set to system temperature', .true.)
+      Call write_param('Form', 'Dirichlet', indent=2)
+      Call info('    # Boundaries set to system temperature', .true.)
 
     Case (TTM_BC_NEUMANN)
-      Call write_param('Electronic temperature boundary conditions', 'Neumann', indent=1)
+      Call write_param('Form', 'Neumann', indent=2)
 
     Case (TTM_BC_DIRICHLET_XY)
-      Call write_param('Electronic temperature boundary conditions', 'Dirichlet (XY), Neumann (Z)', indent=1)
-      Call info('  -- XY boundaries set to system temperature', .true.)
+      Call write_param('Form', 'Dirichlet (XY), Neumann (Z)', indent=2)
+      Call info('    # XY boundaries set to system temperature', .true.)
 
     Case (TTM_BC_ROBIN)
-      Call write_param('Electronic temperature boundary conditions', 'Robin', indent=1)
+      Call write_param('Form', 'Robin', indent=2)
       Call write_param('Temperature leakage', ttm%fluxout, '', '%', indent=2)
 
     Case (TTM_BC_ROBIN_XY)
-      Call write_param('Electronic temperature boundary conditions', 'Robin (XY), Neumann (Z)', indent=1)
+      Call write_param('Form', 'Robin (XY), Neumann (Z)', indent=2)
       Call write_param('Temperature leakage', ttm%fluxout, '', '%', indent=2)
 
     End Select
@@ -1272,10 +1305,10 @@ Contains
     Call write_param('One-way electron-phonon coupling', ttm%oneway, indent=1, off_level=3)
 
     Call write_param('TTM statistics file', ttm%ttmstats > 0, indent=1, off_level=3)
-    If (ttm%ttmstats > 0) Call write_param('TTM statistics file interval (steps)', ttm%ttmstats, indent=2)
+    If (ttm%ttmstats > 0) Call write_param('TTM statistics file interval (steps)', ttm%ttmstats, indent=1)
 
     Call write_param('TTM trajectory (temperature profile) file', ttm%ttmtraj > 0, indent=1, off_level=3)
-    If (ttm%ttmstats > 0) Call write_param('TTM trajectory file interval (steps)', ttm%ttmtraj, indent=2)
+    If (ttm%ttmtraj > 0) Call write_param('TTM trajectory file interval (steps)', ttm%ttmtraj, indent=1)
 
     If (ttm%elph_cut > zero_plus) Call write_param('TTM electron-phonon cutoff', ttm%elph_cut, 'internal_v', indent=1)   
 
