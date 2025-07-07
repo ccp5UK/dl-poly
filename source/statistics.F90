@@ -2888,9 +2888,9 @@ Contains
       If (comm%idnode == 0) Then
 
         If (stats%dpd_units) Then
-          unit = "katms"
-        Else
           unit = "dpd_p"
+        Else
+          unit = "katms"
         End If
         Call write_yaml_tensor("Pressure tensor", stats%stpval(iadd+1:iadd+10), unit=unit)
         Call info('', .true.)
