@@ -351,8 +351,8 @@ Contains
     End If
 
     Do ff = 1, flow%num_ff
-      ! set them here rather than at every vdw_forces_direct computation
-      Call vdws(ff)%update_potential_cutoffs()
+      ! Set some run-time constants here rather than every vdw_forces_direct computation.
+      Call vdws(ff)%set_constants()
     End Do
 
     Call info('', .true.)

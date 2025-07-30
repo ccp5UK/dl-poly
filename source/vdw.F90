@@ -165,6 +165,8 @@ Module vdw
     Real(Kind=wp), Allocatable, Public    :: param(:, :)
     !> VdW cut off
     Real(Kind=wp), Public                 :: cutoff = 0.0_wp
+    !> Inverse VdW cut off
+    Real(Kind=wp), Public                 :: inv_cutoff = 0.0_wp
     !> Energy long range correction
     Real(Kind=wp), Public                 :: elrc = 0.0_wp
     !> Virial long range correction
@@ -174,6 +176,8 @@ Module vdw
     Real(Kind=wp), Allocatable, Public    :: tab_potential(:, :)
     !> Tabulated force
     Real(Kind=wp), Allocatable, Public    :: tab_force(:, :)
+    !> Null interaction
+    Logical, Allocatable, Public          :: null_interaction(:)
     !> Maximum number of grid points
     Integer(Kind=wi), Public              :: max_grid
     ! Possible force-shifting arrays
@@ -183,8 +187,6 @@ Module vdw
     Integer(Kind=wi), Public              :: max_vdw
     !> Maximum number of VdW parameters
     Integer(Kind=wi), Public              :: max_param
-    !> furst time job
-    Logical, Public                       :: newjob = .true.
     Real(Kind=wp), Public                 :: dlrpot, rdr
     !> Possible mdpd arrays 
     Type(mdpd_type), Public               :: mdpd_params
@@ -192,17 +194,47 @@ Module vdw
   Contains
     Private
 
-    Procedure, Public :: init => allocate_vdw_arrays
-    Procedure, Public :: init_table => allocate_vdw_table_arrays
-    Procedure, Public :: init_direct => allocate_vdw_direct_fs_arrays
-    Procedure, Public :: print => dump_vdws
-    Procedure, Public :: update_potential_cutoffs => potential_cutoffs
-    Final             :: cleanup
+    Procedure, Public  :: init => allocate_vdw_arrays
+    Procedure, Public  :: init_table => allocate_vdw_table_arrays
+    Procedure, Public  :: init_direct => allocate_vdw_direct_fs_arrays
+    Procedure, Public  :: print => dump_vdws
+    Procedure, Private :: potential_cutoffs
+    Procedure, Public  :: set_constants
+    Final              :: cleanup
   End Type vdw_type
 
   Public :: vdw_forces_tab, vdw_forces_direct, vdw_generate, vdw_table_read, vdw_lrc, vdw_direct_fs_generate
 
 Contains
+
+  Subroutine set_constants(vdws)
+    Class(vdw_type), Intent(InOut) :: vdws
+
+    Integer :: k
+
+    If (vdws%no_vdw) Then
+      Return
+    End If
+
+    ! Pre-calculate the inverse cutoff.
+    vdws%inv_cutoff = 1.0_wp / vdws%cutoff
+    If (.not. vdws%l_direct) Then
+            ! Pre-calculate 'null' interactions where pot is 0.
+      vdws%null_interaction = .false.
+      Do k = 1, vdws%n_vdw
+        If (Abs(vdws%tab_potential(0, k)) < zero_plus) Then
+          vdws%null_interaction(k) = .true.
+          vdws%ltp(k) = VDW_NULL
+        End If
+      End Do
+    End If
+    ! Define grid resolution for potential arrays and interpolation spacing.
+    vdws%dlrpot = vdws%cutoff / Real(vdws%max_grid - 4, wp)
+    vdws%rdr = 1.0_wp / vdws%dlrpot
+
+    ! Set cutoffs for particular potentials that bake them in.
+    Call potential_cutoffs(vdws)
+  End Subroutine
 
   Subroutine potential_cutoffs(vdws)
     Class(vdw_type),  Intent(InOut) :: vdws
@@ -270,6 +302,7 @@ Contains
 
     Allocate (T%tab_potential(0:T%max_grid, 1:T%max_vdw), Stat=fail(1))
     Allocate (T%tab_force(0:T%max_grid, 1:T%max_vdw), Stat=fail(2))
+    Allocate (T%null_interaction(1:T%max_vdw))
 
     If (Any(fail > 0)) Call error_alloc('Table arrays', 'allocate_vdw_table_arrays')
 
@@ -1587,7 +1620,6 @@ Contains
       If (Abs(vdws%tab_potential(0, ivdw)) <= zero_plus) Then
         vdws%tab_potential(0, ivdw) = Sign(Tiny(vdws%tab_potential(0, ivdw)), vdws%tab_potential(0, ivdw))
       End If
-
     End Do
 
   End Subroutine vdw_generate
@@ -1636,14 +1668,6 @@ Contains
     Real(Kind=wp)           :: stress_temp_comp(9), born_pre
     Real(Kind=wp)           :: x_temp(3), f_temp(3)
     Type(potential_energy)  :: pot
-    ! define grid resolution for potential arrays and interpolation spacing
-
-    If (vdws%newjob) Then
-      vdws%newjob = .false.
-
-      vdws%dlrpot = vdws%cutoff / Real(vdws%max_grid - 4, wp)
-      vdws%rdr = 1.0_wp / vdws%dlrpot
-    End If
 
     ! initialise potential energy and virial
 
@@ -1871,17 +1895,8 @@ Contains
     Integer       :: ai, aj, idi, ityp, jatm, k, key, l, mm
     Real(kind=wp) :: t1, t2, vk, vk1, vk2, gk, gk1, gk2, ppp
     Real(kind=wp) :: fix, fiy, fiz, fx, fy, fz, gamma, eng
-    Real(kind=wp) :: rrr, rsq, rscl, r_rvdw, r_rrv, r_rsq, r_rrr
+    Real(kind=wp) :: rrr, rsq, r_rvdw, r_rrv, r_rsq, r_rrr
     Real(Kind=wp) :: strs1, strs2, strs3, strs5, strs6, strs9
-
-    ! define grid resolution for potential arrays and interpolation spacing
-
-    If (vdws%newjob) Then
-      vdws%newjob = .false.
-
-      vdws%dlrpot = vdws%cutoff / Real(vdws%max_grid - 4, wp)
-      vdws%rdr = 1.0_wp / vdws%dlrpot
-    End If
 
     ! initialise potential energy and virial
 
@@ -1913,6 +1928,11 @@ Contains
 
     Do mm = 1, neigh%list(0, iatm)
 
+      ! interatomic distance
+      rrr = rrt(mm)
+
+      If (rrr >= vdws%cutoff) Cycle
+
       ! atomic and potential function indices
 
       jatm = neigh%list(mm, iatm)
@@ -1926,25 +1946,15 @@ Contains
 
       k = vdws%list(key)
 
-      If (Abs(vdws%tab_potential(0, k)) < zero_plus) cycle
-
-      ! interatomic distance
-
-      rrr = rrt(mm)
-
+      ityp = vdws%ltp(k)
       ! validity and truncation of potential
 
-      ityp = vdws%ltp(k)
-      If (ityp /= VDW_NULL .and. rrr < vdws%cutoff) Then
+      If (ityp /= VDW_NULL) Then
 
         ! Distance derivatives
 
         r_rrr = 1.0_wp / rrr
-        r_rvdw = 1.0_wp / vdws%cutoff
-        rsq = rrr**2
-        r_rsq = r_rrr**2 !1.0_wp / rsq
-        r_rrv = r_rrr * r_rvdw
-        rscl = rrr * r_rvdw
+        r_rsq = r_rrr**2
 
         ! Zero energy and force components
 
@@ -1965,7 +1975,7 @@ Contains
         t2 = gk1 + (gk2 - gk1) * (ppp - 1.0_wp)
 
         gamma = (t1 + (t2 - t1) * ppp * 0.5_wp) * r_rsq
-        If (vdws%l_force_shift) gamma = gamma - vdws%tab_force(vdws%max_grid - 4, k) * r_rrv ! force-shifting
+        If (vdws%l_force_shift) gamma = gamma - vdws%tab_force(vdws%max_grid - 4, k) * r_rrr * vdws%inv_cutoff ! force-shifting
 
         if (ityp == VDW_MDPD) Then 
           gamma = gamma + mdpd_force(rrr, vdws%mdpd_params%rc(k), vdws%mdpd_params%rd(k), &
@@ -2013,7 +2023,7 @@ Contains
           eng = t1 + (t2 - t1) * ppp * 0.5_wp
           ! force-shifting
           If (vdws%l_force_shift) Then
-            eng = eng + vdws%tab_force(vdws%max_grid - 4, k) * (rscl - 1.0_wp) - &
+            eng = eng + vdws%tab_force(vdws%max_grid - 4, k) * (rrr * vdws%inv_cutoff - 1.0_wp) - &
                  vdws%tab_potential(vdws%max_grid - 4, k)
           End If
 
@@ -2023,7 +2033,7 @@ Contains
 
           ! add virial
 
-          virvdw = virvdw - gamma * rsq
+          virvdw = virvdw - gamma * rrr*rrr
 
           ! add stress tensor
 

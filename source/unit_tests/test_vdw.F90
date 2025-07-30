@@ -85,7 +85,8 @@ Contains
       ! Cycle through each pot
       test%ltp = i
       test%potentials(1) = pots(i)
-      Call test%update_potential_cutoffs()
+      test%l_direct = .true.
+      Call test%set_constants()
       
       stats%stress = 0.0_wp
       config%parts(:)%fxx = 0.0_wp
@@ -110,7 +111,6 @@ Contains
 
     test%max_vdw = 1
     test%max_param = 7
-    test%newjob = .false.
     test%cutoff = 10.0_wp
     Call test%init()
     Call test%init_direct()

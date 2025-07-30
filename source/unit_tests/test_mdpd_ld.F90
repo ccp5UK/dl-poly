@@ -41,7 +41,8 @@ Contains
 
     vdws%ltp = VDW_MDPD 
     vdws%potentials(1) = pots(1) 
-    Call vdws%update_potential_cutoffs() 
+    vdws%l_direct = .true.
+    Call vdws%set_constants() 
 
     config%parts(:)%fxx = 0.0_wp 
     config%parts(:)%fyy = 0.0_wp 
@@ -88,7 +89,6 @@ Contains
 
     test%max_vdw = 1
     test%max_param = 7
-    test%newjob = .false.
     test%cutoff = 10.0_wp
     Call test%init()
     Call test%init_direct()
