@@ -171,9 +171,9 @@ Module rigid_bodies
 
 Contains
 
-  Subroutine allocate_rigid_bodies_arrays(T, mxlshp, mxtmls, mxatdm, mxatms, neighbours)
+  Subroutine allocate_rigid_bodies_arrays(T, mxlshp, mxtmls, mxatdm, neighbours)
     Class(rigid_bodies_type)        :: T
-    Integer(Kind=wi), Intent(In   ) :: mxlshp, mxtmls, mxatdm, mxatms, neighbours
+    Integer(Kind=wi), Intent(In   ) :: mxlshp, mxtmls, mxatdm, neighbours
 
     Integer, Dimension(1:15) :: fail
 

@@ -1679,7 +1679,7 @@ Contains
     ! unpack correlations arrays, only if recieving from another node.
     If (stats%number_of_correlations > 0 .and. comm%idnode /= kdnode) Then
       Do i = 1, Size(atom_deports)
-        Call stats%correlator_recieve(buffer,kmove,PER_ATOM_OBSERVABLE)
+        Call stats%correlator_recieve(buffer,kmove)
       End Do
 
       If (rigid%on .and. stats%rigid_body_correlations) Then
@@ -1692,7 +1692,7 @@ Contains
         End Do
 
         Do i = 1, Size(rb_cor_deports)
-          Call stats%correlator_recieve(buffer,kmove,PER_RIGID_OBSERVABLE)
+          Call stats%correlator_recieve(buffer,kmove)
         End Do
       End If
 

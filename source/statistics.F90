@@ -18,7 +18,7 @@ Module statistics
                              gsync, gtime, gwait, mode_create, mode_wronly, offset_kind, &
                              gatherv_scatterv_index_arrays, ggatherv, gscatterv, root_id, &
                              gscatter, gbcast
-                             
+
   Use configuration,   Only: configuration_type
   Use constants,       Only: boltz,&
                              engunit,&
@@ -49,7 +49,7 @@ Module statistics
                              io_set_parameters, io_type, io_unknown_write_level, &
                              io_unknown_write_option, io_write_batch, io_write_sorted_file
   Use integrators,     Only: trapezium_rule, simpsons_rule, integrator
-  
+
   Use kinds,           Only: STR_LEN,&
                              li,&
                              wi,&
@@ -84,12 +84,12 @@ Module statistics
 
   Integer, Parameter          :: MAX_CORRELATION_NAME_LENGTH = 24
   Character(Len=8), Parameter :: stpval_names(1:27) = (/'eng_tot ', 'temp_tot', 'eng_cfg ', 'eng_src ', &
-                                                        'eng_cou ', 'eng_bnd ', 'eng_ang ', 'eng_dih ', & 
+                                                        'eng_cou ', 'eng_bnd ', 'eng_ang ', 'eng_dih ', &
                                                         'eng_tet ', 'eng_pv  ', 'temp_rot', 'vir_cfg ', &
                                                         'vir_src ', 'vir_cou ', 'vir_bnd ', 'vir_ang ', &
                                                         'vir_con ', 'vir_tet ', 'volume  ', 'temp_shl', &
                                                         'eng_shl ', 'vir_shl ', 'alpha   ', 'beta    ', &
-                                                        'gamma   ', 'vir_pmf ', 'press   '/) 
+                                                        'gamma   ', 'vir_pmf ', 'press   '/)
 
   Integer, Parameter, Public :: NOT_DISTRIBUTED_OBSERVABLE = 0,   &
                                 PER_ATOM_OBSERVABLE = 1, &
@@ -126,7 +126,7 @@ Module statistics
     Contains
       Procedure, Public :: is_per_atom
       Procedure, Public :: is_per_rigid
-  End Type 
+  End Type
 
   Type, Public :: statistic_accumulator
     Real(Kind=wp)                            :: mu = 0.0_wp, mu_old = 0.0_wp, &
@@ -135,7 +135,7 @@ Module statistics
     Integer                                  :: initialised = 0, window = 0, &
                                                 stack_pos = 0
     Real(Kind=wp), Allocatable, Dimension(:) :: stack
-    Contains 
+    Contains
       Procedure update_statistic
   End Type
 
@@ -225,7 +225,7 @@ Module statistics
     Integer                            :: cor_deport_buffer = 0, cor_dump_freq = 0, number_of_correlations = 0,&
                                           next_cor = 1, currents_correlations = 0
     Type(statistic_accumulator), Allocatable :: accumulators(:)
-    Type(correlation_data), Allocatable :: correlations(:)     
+    Type(correlation_data), Allocatable :: correlations(:)
     Real(Kind=wp), Allocatable         :: xin(:), yin(:), zin(:)
     Real(Kind=wp), Allocatable         :: xto(:), yto(:), zto(:), rsd(:)
     Real(Kind=wp), Allocatable         :: stpval(:), stpvl0(:), sumval(:), ssqval(:)
@@ -267,7 +267,7 @@ Module statistics
 
     !> Store for per-particle k-dependent stress tensor, natms, KPOINTS, 1:6
     Complex(Kind=wp), Allocatable      :: pp_cur_stress(:,:,:)
-    
+
     !> Whether this step is a step to collect per-particle data
     Logical :: collect_pp_eng_str = .false.
     Logical :: collect_born = .false.
@@ -288,7 +288,7 @@ Module statistics
     !> Stats for stress tensor average
     Type(statistic_accumulator)        :: stress_accum(1:9)
     !> Whether to report properties (temperature, pressure, stresses, viscosity) in DPD units
-    Logical :: dpd_units = .false. 
+    Logical :: dpd_units = .false.
 
     Logical :: rigid_body_correlations = .false.
 
@@ -307,7 +307,7 @@ Module statistics
     Procedure, Public :: pp_result
     Procedure, Public :: correlator_deport
     Procedure, Public :: correlator_recieve
-    Procedure, Public :: dump_correlations 
+    Procedure, Public :: dump_correlations
     Procedure, Public :: revive_correlations
     Procedure, Public :: check_collection_frequencies
     Procedure, Public :: calculate_stress_energy_current
@@ -319,7 +319,7 @@ Module statistics
     Final :: cleanup
   End Type
 
-  Abstract Interface 
+  Abstract Interface
     !> Kernal for selecting data for correlation
     Function get_value(t, config, rigid, stats, index) Result(v)
         Import observable, configuration_type, rigid_bodies_type, stats_type, wp
@@ -403,7 +403,7 @@ Module statistics
       Procedure, NoPass :: id           => current_id
   End Type
 
-  
+
   Public :: calculate_stress
   Public :: calculate_viscosity
   Public :: calculate_heat_flux
@@ -526,17 +526,17 @@ Contains
 
     Call gbcast(comm, stats%pp_eng_str_frequency, root_id)
     Call gbcast(comm, stats%born_frequency, root_id)
-    
+
   End Subroutine check_collection_frequencies
 
-  Subroutine allocate_statistics_arrays(stats, mxrgd, mxatms, mxatdm, mxatype, variable_cell)
+  Subroutine allocate_statistics_arrays(stats, mxrgd, mxatms, mxatdm, variable_cell)
     Class(stats_type), Intent(InOut)   :: stats
-    Integer,           Intent(In   )   :: mxrgd, mxatms, mxatdm, mxatype
+    Integer,           Intent(In   )   :: mxrgd, mxatms, mxatdm
     Logical,           Intent(In   )   :: variable_cell
 
     Integer                            :: mxnstk, mxstak, nxatms, i
     Integer,           Dimension(1:6)  :: fail
- 
+
     fail = 0
 
     If (mxrgd > 0) Then
@@ -552,7 +552,7 @@ Contains
     Allocate (stats%xto(1:mxatdm), stats%yto(1:mxatdm), stats%zto(1:mxatdm), stats%rsd(1:mxatdm), Stat=fail(2))
     Allocate (stats%stpval(0:mxnstk), stats%stpvl0(0:mxnstk), stats%sumval(0:mxnstk), stats%ssqval(0:mxnstk), Stat=fail(3))
     Allocate (stats%zumval(0:mxnstk), stats%ravval(0:mxnstk), stats%stkval(1:mxstak, 0:mxnstk), Stat=fail(4))
-    
+
     Allocate (stats%accumulators(0:mxnstk), Stat=fail(5))
     Do i = 0, mxnstk
       Allocate(stats%accumulators(i)%stack(1:mxstak))
@@ -596,7 +596,7 @@ Contains
   Subroutine setup_momentum_density(stats, sites)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
-    ! dl_poly_5 subroutine to setup momentum density calculations for 
+    ! dl_poly_5 subroutine to setup momentum density calculations for
     !  user selected atom types.
     !
     ! author    - h.l.devereux, Nov 2024
@@ -622,7 +622,7 @@ Contains
     !
     ! dl_poly_5 subroutine to check if pp data is computed this step
     !  if so also allocating pp_arrays and setting up switches for
-    !  force routines 
+    !  force routines
     !
     ! author    - h.l.devereux
     !
@@ -656,7 +656,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_5 subroutine to check if pp data was computed this step
-    !  if so resetting switches, and if io is passed writing on 
+    !  if so resetting switches, and if io is passed writing on
     !  root process to io_file_heatflux
     !
     ! author    - h.l.devereux
@@ -672,7 +672,7 @@ Contains
     Logical :: write = .false.
     Integer :: i
 
-    If (Present(files)) Then 
+    If (Present(files)) Then
       write = .true.
     End If
     If (stats%collect_pp_eng_str) Then
@@ -914,14 +914,14 @@ Contains
       Deallocate (stats%stkval0)
     End If
 
-    If (Allocated(stats%accumulators)) Then 
+    If (Allocated(stats%accumulators)) Then
       Deallocate(stats%accumulators)
     End If
 
     If (Allocated(stats%inv_ref_scaling_matrix)) Then
       Deallocate(stats%inv_ref_scaling_matrix)
     End If
-    
+
   End Subroutine cleanup
 
   Subroutine init_correlations_table(stats, currents_cors)
@@ -984,7 +984,7 @@ Contains
 
     Allocate(indices(0))
 
-    If (per_atom) Then 
+    If (per_atom) Then
       Do i = 1, config%natms
         indices = [indices, i]
       End Do
@@ -1065,13 +1065,12 @@ Contains
   End Subroutine write_yaml_correlation
 
   Subroutine gather_correlation(cor_data, points, blocks, window, count, types, names, &
-    dt, correlation_name, file_unit, comm)
+    correlation_name, file_unit, comm)
     Type(correlation_data),                         Intent(InOut) :: cor_data
     Integer,                                        Intent(In   ) :: points, blocks, window, &
                                                                      count, types(:)
     Integer,                                        Intent(InOut) :: file_unit
     Character(Len=*),                               Intent(In   ) :: names(:)
-    Real(Kind=wp),                                  Intent(In   ) :: dt
     Character(Len=MAX_CORRELATION_NAME_LENGTH*2+1), Intent(In   ) :: correlation_name
     Type(comms_type),                               Intent(InOut) :: comm
 
@@ -1161,10 +1160,9 @@ Contains
     Type(site_type),          Intent(In   )       :: sites
     Real(Kind=wp),            Intent(In   )       :: dt
 
-    Integer                                        :: i, j, flat_dim, &
-                                                      file_unit, atom, points, window, blocks, &
-                                                      points_cor, max_points_cor, min_points_cor, &
-                                                      cor_index, freq
+    Integer                                        :: i, flat_dim, &
+                                                      file_unit, points, window, blocks, &
+                                                      points_cor, cor_index, freq
     Real(Kind=wp), Allocatable                     :: cor_accumulator(:,:), correlation(:), &
                                                       flat_correlation(:), timesteps(:), visc(:), &
                                                       therm_cond(:), k_visc(:)
@@ -1175,14 +1173,14 @@ Contains
     Real(Kind=wp)                                  :: conv
     Character(Len=STR_LEN)                         :: units_visc, units_therm
     Character(Len=MAX_KEY), Allocatable            :: cor_keys(:)
-    Type(correlation_data)                         :: cor_data
+    Type(correlation_data), Pointer                :: cor_data
     Logical                                        :: per_atom, per_rigid
-    Type(observable_currents)                      :: oc
-    
-                        
-    If (stats%calculate_correlations .eqv. .false.) Then 
-      Return 
+
+    If (stats%calculate_correlations .eqv. .false.) Then
+      Return
     End If
+
+    cor_data => NULL()
 
     components_vector = (/ 'x', 'y', 'z' /)
     components_matrix = (/'xx', 'xy', 'xz', 'yx', 'yy', 'yz', 'zx', 'zy', 'zz'/)
@@ -1246,7 +1244,7 @@ Contains
       Call stats%cor_table%get(cor_keys(i), cor_index)
       Associate(cor_data => stats%correlations(cor_index))
         freq = stats%correlations(cor_index)%freq
-        correlation_name = cor_keys(i)
+        correlation_name = cor_keys(i)(1:(MAX_CORRELATION_NAME_LENGTH*2+1))
         per_atom = stats%correlations(cor_index)%A%distributed() == PER_ATOM_OBSERVABLE .or. &
                    stats%correlations(cor_index)%B%distributed() == PER_ATOM_OBSERVABLE
         per_rigid = stats%correlations(cor_index)%A%distributed() == PER_RIGID_OBSERVABLE .or. &
@@ -1273,10 +1271,10 @@ Contains
         window = stats%correlations(cor_index)%correlators(1)%window_size
         If (per_atom) Then
           Call gather_correlation(stats%correlations(cor_index), points, blocks, window, sites%mxatyp, &
-            config%ltype, sites%unique_atom, dt, correlation_name, file_unit, comm)
+            config%ltype, sites%unique_atom, correlation_name, file_unit, comm)
         Else If (per_rigid) Then
           Call gather_correlation(stats%correlations(cor_index), points, blocks, window, rigid%unique_types, &
-            rigid%type, rigid%type_name, dt, correlation_name, file_unit, comm)
+            rigid%type, rigid%type_name, correlation_name, file_unit, comm)
         Else If (comm%idnode == root_id) Then
           flat_dim = points*blocks
 
@@ -1298,7 +1296,7 @@ Contains
     End If
 
   End Subroutine correlation_result
-    
+
   Subroutine statistics_collect(config, rigid, lsim, leql, nsteql, lmsd, keyres, degfre, degshl, &
                                 degrot, nstep, tstep, time, tmst, mxatdm, stats, thermo, zdensity, &
                                 sites, files, comm, ff, tmr)
@@ -1354,7 +1352,9 @@ Contains
     Character(Len=MAX_KEY), Allocatable, Dimension(:) :: cor_keys
     Type(correlation_data), Pointer :: cor_data
 
-#ifdef CHRONO 
+    cor_data => NULL()
+
+#ifdef CHRONO
     Call start_timer(tmr, "Statistics Collect")
 #endif
 
@@ -1757,7 +1757,7 @@ Contains
     End If
 
     ! write statistics file
-    If (stats%intsta > 0) Then 
+    If (stats%intsta > 0) Then
       If (comm%idnode == 0 .and. Mod(nstep, stats%intsta) == 0 .and. ffpass) Then
         If (.not. stats%statis_file_open) Then
           Open (Newunit=files(FILE_STATS)%unit_no, File=files(FILE_STATS)%filename, Position='append')
@@ -1793,7 +1793,7 @@ Contains
         If (Mod(nstep, stats%cor_dump_freq) == 0) Then
           Call correlation_result(stats, rigid, comm, files, config, sites, thermo%tstep)
         End If
-      End If 
+      End If
     End If
     ! check on number of variables for stack
 
@@ -1804,7 +1804,7 @@ Contains
     If (nstep /= 0) Then
 
       Do i = 0, stats%mxnstk
-        Call stats%accumulators(i)%update_statistic(stats%stpval(i), nstep)   
+        Call stats%accumulators(i)%update_statistic(stats%stpval(i), nstep)
       End Do
 
       If (stats%born_frequency > 0) Then
@@ -1890,7 +1890,7 @@ Contains
     Deallocate (amsd, Stat=fail)
     If (fail > 0) Call error_alloc("amsd", "statistics_collect")
 
-#ifdef CHRONO 
+#ifdef CHRONO
     Call stop_timer(tmr, "Statistics Collect")
 #endif
 
@@ -2191,7 +2191,7 @@ Contains
 
       ! Spread atom data in the mdir direction
 
-      If (mdir /= 0) Call statistics_connect_spread(config, mdir, mxatdm, lmsd, dpd, stats, domain, comm)
+      If (mdir /= 0) Call statistics_connect_spread(config, mdir, mxatdm, lmsd, stats, domain, comm)
 
       ! Sort past frame remainder of global atom indices
 
@@ -2334,7 +2334,7 @@ Contains
 
   End Subroutine statistics_connect_set
 
-  Subroutine statistics_connect_spread(config, mdir, mxatdm, lmsd, dpd, stats, domain, comm)
+  Subroutine statistics_connect_spread(config, mdir, mxatdm, lmsd, stats, domain, comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2355,7 +2355,7 @@ Contains
 
     Type(configuration_type), Intent(InOut) :: config
     Integer(Kind=wi),         Intent(In   ) :: mdir, mxatdm
-    Logical,                  Intent(In   ) :: lmsd, dpd
+    Logical,                  Intent(In   ) :: lmsd
     Type(stats_type),         Intent(InOut) :: stats
     Type(domains_type),       Intent(In   ) :: domain
     Type(comms_type),         Intent(InOut) :: comm
@@ -2721,7 +2721,7 @@ Contains
                                nstrun, keyshl, megcon, megpmf, &
                                nstep, time, tmst, &
                                mxatdm, neigh_uncond_update, stats, &
-                               rigid, thermo, sites, comm, files, tmr)
+                               rigid, thermo, sites, comm, files)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2751,7 +2751,6 @@ Contains
     Type(site_type),          Intent(In   ) :: sites
     Type(comms_type),         Intent(InOut) :: comm
     Type(file_type),          Intent(InOut) :: files(:)
-    Type(timer_type),         Intent(InOut) :: tmr
 
     Character(Len=STR_LEN)               :: message, unit
     Character(Len=10)                    :: atom_key
@@ -3037,7 +3036,7 @@ Contains
       Else If (thermo%key_dpd/=DPD_NULL .and. comm%idnode /= 0) Then
         iadd = iadd + 36
       End If
-      
+
       If (lmsd) iadd = iadd + 2 * mxatdm
 
       ! Write out estimated diffusion coefficients
@@ -3103,7 +3102,7 @@ Contains
             Call write_surface_area_result(stats%sumval(iadd + 2),&
                     stats%ssqval(iadd + 2), avvol / h_z, "Angs^2")
           End If
-          
+
           iadd = iadd + 2
 
           If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
@@ -3185,7 +3184,7 @@ Contains
     !! Calculate the strain tensor from the scaling matrix,
     !!
     !! \eps = 1/2 * (H_0^(-1, T) H^T H H_0^-1 - I)
-    !! 
+    !!
     !! H_0 (ref) is expected to be the ensemble average of
     !! the scaling matrix H, or the reference box.
     !!
@@ -3197,10 +3196,10 @@ Contains
     Class(stats_type),                              Intent(InOut) :: stats
     Class(configuration_type),                      Intent(In   ) :: config
     Real(Kind=wp), Dimension(1:3, 1:3) :: eps, h
-    Real(Kind=wp)                      :: det, strain(1:9)
+    Real(Kind=wp)                      :: strain(1:9)
 
     Call scaling_matrix(config%cell, h)
-    
+
     eps = MatMul(Transpose(stats%inv_ref_scaling_matrix), MatMul(Transpose(h), MatMul(h, stats%inv_ref_scaling_matrix)))
     eps(1, 1) = eps(1, 1) - 1.0_wp
     eps(2, 2) = eps(2, 2) - 1.0_wp
@@ -3240,7 +3239,7 @@ Contains
     Type(configuration_type), Intent(In   ) :: config
     Type(comms_type),         Intent(InOut) :: comm
     Real(Kind=wp), Dimension(3)             :: j
-    
+
     Integer :: iatm
 
     j = 0.0_wp
@@ -3387,11 +3386,11 @@ Contains
     ! dl_poly_5 subroutine for writing out elastic constants. Up to 21
     !   (independent) components are possible. All possible components
     !   calculable from user stress correlations are outputted in Voigt
-    !   order (see constants.F90:voigt_6x6): C1111, C1122, C1133, ..., 
+    !   order (see constants.F90:voigt_6x6): C1111, C1122, C1133, ...,
     !   C1212.
     !
-    !   Stress fluctuation method: e.g. G. Clavier, et al., 
-    !   Molecular Simulation, 2017, 
+    !   Stress fluctuation method: e.g. G. Clavier, et al.,
+    !   Molecular Simulation, 2017,
     !   https://doi.org/10.1080/08927022.2017.1313418
     !
     ! author    - h.l.devereux July 2024
@@ -3404,7 +3403,7 @@ Contains
     Integer                        :: v, i, j, k, l
     Real(Kind=wp)                  :: stress_prefactor, kinetic_term, cijkl, del
     Real(Kind=wp),    Allocatable  :: correlation(:), elasticity(:)
-    Character(Len=6), Allocatable  :: component_names(:)           
+    Character(Len=6), Allocatable  :: component_names(:)
 
     stress_prefactor = prsunt * stats%accumulators(19)%mu/(boltz*stats%accumulators(2)%mu) ! V / (kbT)
     kinetic_term = prsunt * 2.0_wp*boltz*stats%accumulators(2)%mu * megatm / stats%accumulators(19)%mu ! NKbT/V
@@ -3449,14 +3448,14 @@ Contains
     Real(Kind=wp),          Intent(In   )              :: dt
     Character(Len=STR_LEN), Intent(  Out)              :: units
     Real(Kind=wp),          Intent(  Out), Allocatable :: therm_cond(:)
-    
+
     Real(Kind=wp)                   :: conv, boltz0
     Real(Kind=wp),     Allocatable  :: correlation(:)
     Class(integrator), Allocatable  :: inter
     Integer                         :: i, freq
 
     Character(Len=1), Dimension(1:3), Parameter :: components = (/"x", "y", "z"/)
-    
+
     boltz0 = Merge(1.0_wp, boltz, stats%dpd_units)
 
     Allocate(simpsons_rule::inter)
@@ -3661,7 +3660,7 @@ Contains
     Type(stats_type),             Intent(InOut) :: stats
     Character(Len=*),             Intent(In   ) :: name
 
-    Integer :: cor_index    
+    Integer :: cor_index
 
     If (stats%cor_table%contains(name)) Then
       Call stats%cor_table%get(name, cor_index)
@@ -3688,6 +3687,8 @@ Contains
     Type(correlation_data), Pointer :: cor_data
     Character(Len=MAX_KEY), Allocatable, Dimension(:) :: cor_keys
 
+    cor_data => NULL()
+
     If (stats%per_atom_correlations .and. stats%calculate_correlations) Then
       Call stats%cor_table%get_keys(cor_keys)
       Do j = 1, Size(cor_keys)
@@ -3713,7 +3714,7 @@ Contains
     End If
   End Subroutine correlator_reindex
 
-  Subroutine correlator_recieve(stats, buffer, buffer_index, dep_type)
+  Subroutine correlator_recieve(stats, buffer, buffer_index)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_5 for recieving correlations defined on a per-atom basis
@@ -3721,7 +3722,7 @@ Contains
     !
     ! author    - h.l.devereux 2023
     !
-    ! data packed as 
+    ! data packed as
     !   deportations count (if 0, skips) - always written if per-atom correlations calculated
     !   global atom index                - dependent on deportations count
     !   A observable code                         |
@@ -3735,15 +3736,16 @@ Contains
       Class(stats_type),                       Intent(InOut)  :: stats
       Real(Kind=wp),           Dimension(:),   Intent(InOut)  :: buffer
       Integer,                                 Intent(InOut)  :: buffer_index
-      Integer,                                 Intent(In   )  :: dep_type
 
       Class(observable), Allocatable  :: A, B
       Integer                         :: iA, iB, gid, &
                                          window, blocks, points, deportations, d, &
-                                         new_index, s, c_a, c_b, freq, cor_index, n, &
+                                         new_index, s, c_a, c_b, freq, cor_index, &
                                          type_a, type_b
       Character(Len=MAX_KEY)          :: name
       Type(correlation_data), Pointer :: cor_data
+
+      cor_data => NULL()
 
       If (stats%per_atom_correlations .and. stats%calculate_correlations) Then
 
@@ -3811,7 +3813,7 @@ Contains
     !
     ! author    - h.l.devereux 2023
     !
-    ! data packed as 
+    ! data packed as
     !   deportations count (if 0, skips) - always written if per-atom correlations calculated
     !   global atom index                - dependent on deportations count
     !   A observable code                         |
@@ -3828,11 +3830,12 @@ Contains
     Integer,                              Intent(InOut) :: buffer_index
 
     Integer                             :: i, A, B, c_a, c_b, s, n, &
-                                           cor_index, location, &
-                                           type_a, type_b
+                                           cor_index, location
     Integer,                Allocatable :: locations(:), cor_indices(:)
     Character(Len=MAX_KEY), Allocatable :: cor_keys(:)
     Type(correlation_data), Pointer     :: cor_data
+
+    cor_data => NULL()
 
     If (stats%per_atom_correlations .and. stats%calculate_correlations) Then
 
@@ -3856,7 +3859,7 @@ Contains
         End Associate
       End Do
 
-      buffer_index = buffer_index + 1 
+      buffer_index = buffer_index + 1
       buffer(buffer_index) = Size(cor_indices)
       If (Size(cor_indices) == 0) Return
 
@@ -3903,10 +3906,9 @@ Contains
 
   !!!!!!!! correlators revive !!!!!!!!!
 
-  Subroutine dump_correlations(stats, comm, config, unit)
+  Subroutine dump_correlations(stats, comm, unit)
     Class(stats_type),              Intent(InOut) :: stats
     Type(comms_type),               Intent(InOut) :: comm
-    Type(configuration_type),       Intent(InOut) :: config
     Integer,                        Intent(In   ) :: unit
 
     Real(Kind=wp),               Allocatable :: data_buffer(:), local_buffer(:)
@@ -3919,7 +3921,7 @@ Contains
                                                 attributes = 9, header = 4
     Character(Len=MAX_KEY),      Allocatable :: cor_keys(:)
 
-  
+
     n_local_cor = stats%number_of_correlations
     Call gsum(comm, n_local_cor)
     If (n_local_cor == 0) Return
@@ -4001,7 +4003,7 @@ Contains
     Call gatherv_scatterv_index_arrays(comm, &
     attributes*local_correlations, &
     packed_ids%mpi%counts, &
-    packed_ids%mpi%displ & 
+    packed_ids%mpi%displ &
     )
 
     Call ggatherv(comm, local_ids, &
@@ -4012,7 +4014,7 @@ Contains
     Call gatherv_scatterv_index_arrays(comm, &
       local_buffer_size, &
       packed_correlators%mpi%counts, &
-      packed_correlators%mpi%displ & 
+      packed_correlators%mpi%displ &
     )
 
     Call ggatherv(comm, local_buffer, &
@@ -4046,10 +4048,9 @@ Contains
 
   End Subroutine dump_correlations
 
-  Subroutine revive_correlations(stats, comm, config, unit, keyio, no_advance, format)
+  Subroutine revive_correlations(stats, comm, unit, keyio, no_advance, format)
     Class(stats_type),              Intent(InOut) :: stats
     Type(comms_type),               Intent(InOut) :: comm
-    Type(configuration_type),       Intent(InOut) :: config
     Integer,                        Intent(In   ) :: unit
     Logical,                        Intent(In   ) :: no_advance
     Character(Len=40),              Intent(In   ) :: format
@@ -4068,7 +4069,9 @@ Contains
                                                 attributes = 9, header = 4
     Character(Len=MAX_KEY),      Allocatable :: cor_keys(:)
     Type(correlation_data),      Pointer     :: cor_data
-  
+
+    cor_data => NULL()
+
     n_local_cor = stats%number_of_correlations
     Call gsum(comm, n_local_cor)
     If (n_local_cor == 0) Return
@@ -4076,7 +4079,7 @@ Contains
     local_buffer_size = 0
     buffer_size = 0
     correlations = 0
-    If (stats%calculate_correlations) Then     
+    If (stats%calculate_correlations) Then
       Call stats%cor_table%get_keys(cor_keys)
 
       Do i = 1, Size(cor_keys)
@@ -4086,7 +4089,7 @@ Contains
           correlations = correlations + Size(cor_data%indices)
           buffer_size = buffer_size + Size(cor_data%indices)*(cor_data%correlators(1)%buffer_size-header)
         End Associate
-      End Do                                            
+      End Do
       Allocate(local_ids(1:attributes*correlations))
       local_correlations = correlations
       ! determine total buffer sizes needed for root
@@ -4138,13 +4141,13 @@ Contains
       Allocate(sizes_buffer(1:correlations))
       Allocate(ids_buffer(1:attributes*correlations))
       Allocate(offests_buffer(1:correlations))
-    
+
     End If
 
     Call gatherv_scatterv_index_arrays(comm, &
     attributes*local_correlations, &
     packed_ids%mpi%counts, &
-    packed_ids%mpi%displ & 
+    packed_ids%mpi%displ &
     )
 
     Call ggatherv(comm, local_ids, &
@@ -4222,7 +4225,7 @@ Contains
           data_buffer(offset:(offset+buffer_size-1))
 
         buffer_index = buffer_index + buffer_size
-      
+
       End Do
 
     End If
@@ -4232,7 +4235,7 @@ Contains
     Call gatherv_scatterv_index_arrays(comm, &
     local_buffer_size, &
     packed_correlators%mpi%counts, &
-    packed_correlators%mpi%displ & 
+    packed_correlators%mpi%displ &
     )
 
     Call gscatterv(comm, packed_correlators%buffer, &
@@ -4241,7 +4244,7 @@ Contains
       local_buffer, root_id)
 
     buffer_index = 0
-    If (stats%calculate_correlations) Then  
+    If (stats%calculate_correlations) Then
       Do i = 1, Size(cor_keys)
         If (.not. stats%cor_table%contains(cor_keys(i))) Cycle
         Call stats%cor_table%get(cor_keys(i), cor_index)
@@ -4259,7 +4262,7 @@ Contains
 
   End Subroutine revive_correlations
 
-  !!!!!!!! observables !!!!!!!! 
+  !!!!!!!! observables !!!!!!!!
 
     !> True if the observable name refers to a values in rigid_bodies_type
   Pure Logical Function is_rigid_observable(observable_name)
@@ -4386,7 +4389,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     Character(Len=*),                Intent(In   ) :: c
     Class(observable), Allocatable,  Intent(  Out) :: o
-    
+
     Logical                                    :: success
     Integer                                    :: i
     Integer                                    :: component
@@ -4401,7 +4404,7 @@ Contains
       If (Index(stpval_names(i), Trim(c)) > 0) Then
         Allocate(observable_statis::o)
         o%component = i
-        o%component_name = stpval_names(i)
+        Write (o%component_name, '(i2)') i
         Return
       End If
     End Do
@@ -4425,7 +4428,7 @@ Contains
     End If
 
     success = .false.
-    If (observable_name == velocity_name(observable_velocity(), .false.) .or. observable_name == "v") Then 
+    If (observable_name == velocity_name(observable_velocity(), .false.) .or. observable_name == "v") Then
       If (Len(Trim(component_sym)) /= 1) Then
         Write (msg, ('(a)')) "velocity requires components x, y, or z. Got: "//Trim(c)
         Call error(0, msg)
@@ -4494,7 +4497,7 @@ Contains
 
     components_vector = (/ 'x', 'y', 'z' /)
     components_matrix = (/'xx', 'xy', 'xz', 'yx', 'yy', 'yz', 'zx', 'zy', 'zz'/)
-    
+
     success = .false.
     If (id == velocity_id()) Then
       Allocate(observable_velocity::o)
@@ -4548,7 +4551,7 @@ Contains
   Integer(Kind=wi) Function distributed_per_rigid()
     distributed_per_rigid = PER_RIGID_OBSERVABLE
   End Function distributed_per_rigid
-  
+
   !!!!!!!!!! observable_velocity !!!!!!!!!!
 
   Function velocity_value(t, config, rigid, stats, index) Result(v)
@@ -4567,7 +4570,7 @@ Contains
 
     velocity = (/config%vxx(index), config%vyy(index), config%vzz(index)/)
     v = Cmplx(velocity(t%component), Kind=wp)
-    
+
   End Function velocity_value
 
   Function velocity_name(t, with_component) Result(v)
@@ -4626,7 +4629,7 @@ Contains
     Type(rigid_bodies_type),              Intent(InOut) :: rigid
     Type(stats_type),                     Intent(InOut) :: stats
     Integer,                    Optional, Intent(In   ) :: index
-    
+
     Complex(Kind=wp)       :: v
 
     v = Cmplx(stats%heat_flux(t%component), Kind=wp)
@@ -4658,7 +4661,7 @@ Contains
     Type(rigid_bodies_type),              Intent(InOut) :: rigid
     Type(stats_type),                     Intent(InOut) :: stats
     Integer,                    Optional, Intent(In   ) :: index
-    
+
     Complex(Kind=wp)          :: v
     Character(Len=STR_LEN)    :: msg
 
@@ -4691,7 +4694,7 @@ Contains
     Type(rigid_bodies_type),                            Intent(InOut) :: rigid
     Type(stats_type),                                   Intent(InOut) :: stats
     Integer,                    Optional,               Intent(In   ) :: index
-    
+
     Complex(Kind=wp)       :: v
 
     If (.not. in_range(t%kpoint, (/1, stats%cur%nkpoints/))) Then
@@ -4791,7 +4794,6 @@ Contains
     Integer,                    Optional,  Intent(In   ) :: index
 
     Complex(Kind=wp)       :: v
-    Character(Len=STR_LEN) :: msg
     Real(Kind=wp)          :: values(1:3)
 
     If (.not. Present(index)) Then
@@ -4841,12 +4843,12 @@ Contains
     stat%mu_old = stat%mu
     stat%stack_pos = Mod((step - 1),stat%window) + 1
 
-    If (stat%initialised == stat%window) Then 
+    If (stat%initialised == stat%window) Then
       stat%mu = (stat%window * stat%mu_old - stat%stack(stat%stack_pos) + v) / stat%window
       stat%ss = stat%ss - stat%stack(stat%stack_pos)**2 + v*v
       ! also multiply by n / (n-1) for unbiased, mu already divided by n
       stat%var = stat%ss / (stat%window-1) - (stat%mu**2)  * stat%window / (stat%window - 1)
-    Else 
+    Else
       stat%mu = (stat%initialised * stat%mu + v) / (stat%initialised + 1)
       stat%var_tmp = stat%var_tmp + (v - stat%mu_old) * (v -stat%mu)
       ! account for bias, / n-1

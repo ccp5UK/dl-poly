@@ -617,7 +617,7 @@ Contains
 
       End If
 
-      Call stats%revive_correlations(comm, config, files(FILE_REVOLD)%unit_no, keyio, devel%l_rin, forma)
+      Call stats%revive_correlations(comm, files(FILE_REVOLD)%unit_no, keyio, devel%l_rin, forma)
 
       Call gsync(comm)
 
@@ -2324,7 +2324,7 @@ Contains
 
     End If
 
-    Call stats%dump_correlations(comm, config, files(FILE_REVIVE)%unit_no)
+    Call stats%dump_correlations(comm, files(FILE_REVIVE)%unit_no)
 
     Call gsync(comm)
 

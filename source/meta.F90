@@ -717,7 +717,7 @@ Contains
        cons(1)%megcon, pmfs(1)%megpmf, &
        flow%step, flow%time, flow%start_time, &
        config(1)%mxatdm, neigh(1)%unconditional_update, &
-       stats(1), rigid(1), thermo(1), sites(1), comm, files, tmr)
+       stats(1), rigid(1), thermo(1), sites(1), comm, files)
 
     ! Final anlysis
     Call analysis_result(neigh(1)%cutoff, thermo(1), &
@@ -1248,7 +1248,7 @@ Contains
     Call core_shells%init(config%mxatdm, sites%mxtmls, config%mxlshp, domain%neighbours)
     Call cons%init(sites%mxtmls, config%mxatdm, config%mxlshp, domain%neighbours)
     Call pmfs%init(sites%mxtmls, config%mxatdm)
-    Call rigid%init(config%mxlshp, sites%mxtmls, config%mxatdm, config%mxatms, domain%neighbours)
+    Call rigid%init(config%mxlshp, sites%mxtmls, config%mxatdm, domain%neighbours)
     Call tether%init(sites%mxtmls, config%mxatdm)
     Call bond%init(config%mxatdm, sites%mxtmls)
     Call angle%init(config%mxatdm, sites%mxtmls)
@@ -1267,7 +1267,7 @@ Contains
     ! ALLOCATE RDF, Z-DENSITY, STATISTICS & GREEN-KUBO ARRAYS
     Call rdf%init()
     Call zdensity%init(sites%mxatyp)
-    Call stats%init(rigid%max_rigid, config%mxatms, config%mxatdm, sites%mxatyp, thermo%variable_cell)
+    Call stats%init(rigid%max_rigid, config%mxatms, config%mxatdm, thermo%variable_cell)
     Call green%init(config%mxatms, sites%mxatyp)
 
     ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
