@@ -88,6 +88,7 @@ Module meta
   Use four_body,                              Only: four_body_type
   Use greenkubo,                              Only: greenkubo_type
   Use halo,                                   Only: set_halo_particles
+  Use hash,                                   Only: MAX_KEY
   Use impacts,                                Only: impact_type
   Use inversions,                             Only: inversions_type
   Use io,                                     Only: io_type
@@ -180,7 +181,7 @@ Contains
                                 tether, threebody, zdensity, cons, neigh, pmfs, sites, core_shells, vdws, tersoffs, &
                                 fourbody, rdf, minim, mpoles, ext_field, rigid, electro, domain, flow, &
                                 seed, traj, kim_data, config, ios, ttms, rsdsc, files, output_filename, &
-                                control_filename, crd, adf)
+                                control_filename, crd, adf, control_override_keys, control_override_vals)
     Type(parameters_hash_table),            Intent(InOut) :: params
     Type(comms_type),                       Intent(InOut) :: dlp_world(0:)
     Type(thermostat_type), Allocatable,     Intent(InOut) :: thermo(:)
@@ -227,6 +228,8 @@ Contains
     Type(rsd_type), Allocatable, Target,    Intent(InOut) :: rsdsc(:)
     Type(file_type), Allocatable,           Intent(InOut) :: files(:, :)
     Character(len=1024),                    Intent(In   ) :: output_filename, control_filename
+    Character(Len=MAX_KEY),                 Intent(In   ) :: control_override_keys(:)
+    Character(Len=STR_LEN),                 Intent(In   ) :: control_override_vals(:)
     Type(coord_type), Allocatable,          Intent(InOut) :: crd(:)
     Type(adf_type), Allocatable,            Intent(InOut) :: adf(:)
 
@@ -248,7 +251,8 @@ Contains
                                    core_shells, vdws, tersoffs, fourbody, rdf, &
                                    minim, mpoles, ext_field, rigid, electro, domain, flow(1), &
                                    seed(1), traj(1), kim_data, config, ios(1), ttms, rsdsc, files(1, :), &
-                                   output_filename, control_filename, crd, adf)
+                                   output_filename, control_filename, crd, adf, &
+                                   control_override_keys, control_override_vals)
 
     Call deallocate_types_uniform(thermo, ewld, tmr, devel, stats, &
                                   green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, inversion, &
@@ -268,7 +272,8 @@ Contains
                                        ext_field, rigid, electro, &
                                        domain, flow, seed, traj, kim_data, config, &
                                        ios, ttms, rsdsc, files, output_filename, &
-                                       control_filename, crd, adf)
+                                       control_filename, crd, adf, &
+                                       control_override_keys, control_override_vals)
 
     Type(parameters_hash_table), Intent(InOut) :: params
     Type(comms_type),            Intent(InOut) :: dlp_world(0:), comm
@@ -316,6 +321,8 @@ Contains
     Type(rsd_type), Target,      Intent(InOut) :: rsdsc(:)
     Type(file_type),             Intent(InOut) :: files(:)
     Character(Len=STR_FILENAME), Intent(In   ) :: control_filename, output_filename
+    Character(Len=MAX_KEY),      Intent(In   ) :: control_override_keys(:)
+    Character(Len=STR_LEN),      Intent(In   ) :: control_override_vals(:)
     Type(coord_type),            Intent(InOut) :: crd(:)
     Type(adf_type),              Intent(InOut) :: adf(:)
 
@@ -336,6 +343,7 @@ Contains
                                          domain, flow, seed, traj, kim_data, config, &
                                          ios, ttms, rsdsc, files, output_filename, &
                                          crd, adf)
+
     Else
       !! Enable when new becomes standard
       call warning('Control file '//trim(files(FILE_CONTROL)%filename)//' is in old style', .true.)
@@ -350,12 +358,23 @@ Contains
                                              control_filename, crd, adf)
     End If
 
+    Call info('', .true.)
+
+    If (Size(control_override_keys) >= 1) Then
+      Call info('Command line CONTROL overrides:', .true.)
+      Do i = 1, Size(control_override_keys)
+        Call info(' '//Trim(control_override_keys(i))//': "'//&
+          Trim(control_override_vals(i))//'"', .true.)
+      End Do
+
+      Call info('', .true.)
+    End If
+
     Do ff = 1, flow%num_ff
       ! Set some run-time constants here rather than every vdw_forces_direct computation.
       Call vdws(ff)%set_constants()
     End Do
 
-    Call info('', .true.)
     Call info("#** all reading and connectivity checks done ***", .true.)
     Call time_elapsed(tmr)
 

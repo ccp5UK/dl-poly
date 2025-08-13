@@ -45,6 +45,16 @@ The standard form of the new control is that of:
 
 All new-style control parameters are of this form.
 
+This standard form makes it possible to override these values at the command line:
+
+::
+
+   --keyword 'value'
+
+Note '' are required for inclusion of units. See also the help option
+of DLPOLY's executable. Any values overridden will be logged in the 
+OUTPUT file.
+
 Values are **required** if a keyword is present. Units are **required**
 for non-dimensionless data.
 

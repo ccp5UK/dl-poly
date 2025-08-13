@@ -182,6 +182,7 @@ Module control
 
   Public :: initialise_control
   Public :: read_control
+  Public :: read_control_param
   Public :: read_io
   Public :: read_ttm
   Public :: read_ensemble
@@ -4853,7 +4854,6 @@ Contains
       Call params%set(key, param)
     End Do
 
-    Call params%fix()
   End Subroutine parse_control_file
 
   Subroutine read_control_param(input, param)

@@ -37,7 +37,8 @@ Program dl_poly
   Use constraints,                            Only: constraints_type
   Use old_control,                            Only: read_simtype
   Use control_parameters,                     Only: dump_parameters,&
-                                                    parameters_hash_table
+                                                    parameters_hash_table,&
+                                                    control_parameter
   Use coord,                                  Only: coord_type
   Use core_shell,                             Only: core_shell_type
   Use defects,                                Only: defects_type
@@ -45,7 +46,8 @@ Program dl_poly
   Use dihedrals,                              Only: dihedrals_type
   Use domains,                                Only: domains_type
   Use electrostatic,                          Only: electrostatic_type
-  Use errors_warnings,                        Only: init_error_system
+  Use errors_warnings,                        Only: init_error_system,&
+                                                    info
   Use ewald,                                  Only: ewald_type
   Use external_field,                         Only: external_field_type
   Use filename,                               Only: FILENAME_SIZE,&
@@ -57,6 +59,7 @@ Program dl_poly
                                                     flow_type
   Use four_body,                              Only: four_body_type
   Use greenkubo,                              Only: greenkubo_type
+  Use hash,                                   Only: MAX_KEY
   Use kinds,                                  Only: STR_LEN
   Use impacts,                                Only: impact_type
   Use inversions,                             Only: inversions_type
@@ -71,7 +74,8 @@ Program dl_poly
   Use msd,                                    Only: msd_type
   Use neighbours,                             Only: neighbours_type
   Use control,                                Only: initialise_control,&
-                                                    read_control
+                                                    read_control,&
+                                                    read_control_param
   Use numerics,                               Only: seed_type
   Use parse,                                  Only: word_2_integer,&
                                                     is_integer
@@ -106,62 +110,65 @@ Program dl_poly
   Implicit None
 
   ! all your simulation variables
-  Type(comms_type), Allocatable          :: dlp_world(:)
-  Type(thermostat_type), Allocatable     :: thermo(:)
-  Type(ewald_type), Allocatable          :: ewld(:)
-  Type(timer_type), Allocatable          :: tmr(:)
-  Type(development_type), Allocatable    :: devel(:)
-  Type(stats_type), Allocatable          :: stats(:)
-  Type(greenkubo_type), Allocatable      :: green(:)
-  Type(plumed_type), Allocatable         :: plume(:)
-  Type(msd_type), Allocatable            :: msd_data(:)
-  Type(metal_type), Allocatable          :: met(:)
-  Type(poisson_type), Allocatable        :: pois(:)
-  Type(impact_type), Allocatable         :: impa(:)
-  Type(defects_type), Allocatable        :: dfcts(:, :)
-  Type(bonds_type), Allocatable          :: bond(:)
-  Type(angles_type), Allocatable         :: angle(:)
-  Type(dihedrals_type), Allocatable      :: dihedral(:)
-  Type(inversions_type), Allocatable     :: inversion(:)
-  Type(tethers_type), Allocatable        :: tether(:)
-  Type(threebody_type), Allocatable      :: threebody(:)
-  Type(z_density_type), Allocatable      :: zdensity(:)
-  Type(constraints_type), Allocatable    :: cons(:)
-  Type(neighbours_type), Allocatable     :: neigh(:)
-  Type(pmf_type), Allocatable            :: pmfs(:)
-  Type(site_type), Allocatable           :: sites(:)
-  Type(core_shell_type), Allocatable     :: core_shells(:)
-  Type(vdw_type), Allocatable            :: vdws(:)
-  Type(tersoff_type), Allocatable        :: tersoffs(:)
-  Type(four_body_type), Allocatable      :: fourbody(:)
-  Type(rdf_type), Allocatable            :: rdf(:)
-  Type(minimise_type), Allocatable       :: minim(:)
-  Type(mpole_type), Allocatable          :: mpoles(:)
-  Type(external_field_type), Allocatable :: ext_field(:)
-  Type(rigid_bodies_type), Allocatable   :: rigid(:)
-  Type(electrostatic_type), Allocatable  :: electro(:)
-  Type(domains_type), Allocatable        :: domain(:)
-  Type(flow_type), Allocatable           :: flow(:)
-  Type(seed_type), Allocatable           :: seed(:)
-  Type(trajectory_type), Allocatable     :: traj(:)
-  Type(kim_type), Allocatable, Target    :: kim_data(:)
-  Type(configuration_type), Allocatable  :: config(:)
-  Type(io_type), Allocatable             :: ios(:)
-  Type(ttm_type), Allocatable            :: ttms(:)
-  Type(rsd_type), Allocatable            :: rsdsc(:)
-  Type(file_type), Allocatable           :: files(:, :)
-  Type(coord_type), Allocatable          :: crd(:)
-  Type(adf_type), Allocatable            :: adf(:)
+  Type(comms_type),          Allocatable         :: dlp_world(:)
+  Type(thermostat_type),     Allocatable         :: thermo(:)
+  Type(ewald_type),          Allocatable         :: ewld(:)
+  Type(timer_type),          Allocatable         :: tmr(:)
+  Type(development_type),    Allocatable         :: devel(:)
+  Type(stats_type),          Allocatable         :: stats(:)
+  Type(greenkubo_type),      Allocatable         :: green(:)
+  Type(plumed_type),         Allocatable         :: plume(:)
+  Type(msd_type),            Allocatable         :: msd_data(:)
+  Type(metal_type),          Allocatable         :: met(:)
+  Type(poisson_type),        Allocatable         :: pois(:)
+  Type(impact_type),         Allocatable         :: impa(:)
+  Type(defects_type),        Allocatable         :: dfcts(:, :)
+  Type(bonds_type),          Allocatable         :: bond(:)
+  Type(angles_type),         Allocatable         :: angle(:)
+  Type(dihedrals_type),      Allocatable         :: dihedral(:)
+  Type(inversions_type),     Allocatable         :: inversion(:)
+  Type(tethers_type),        Allocatable         :: tether(:)
+  Type(threebody_type),      Allocatable         :: threebody(:)
+  Type(z_density_type),      Allocatable         :: zdensity(:)
+  Type(constraints_type),    Allocatable         :: cons(:)
+  Type(neighbours_type),     Allocatable         :: neigh(:)
+  Type(pmf_type),            Allocatable         :: pmfs(:)
+  Type(site_type),           Allocatable         :: sites(:)
+  Type(core_shell_type),     Allocatable         :: core_shells(:)
+  Type(vdw_type),            Allocatable         :: vdws(:)
+  Type(tersoff_type),        Allocatable         :: tersoffs(:)
+  Type(four_body_type),      Allocatable         :: fourbody(:)
+  Type(rdf_type),            Allocatable         :: rdf(:)
+  Type(minimise_type),       Allocatable         :: minim(:)
+  Type(mpole_type),          Allocatable         :: mpoles(:)
+  Type(external_field_type), Allocatable         :: ext_field(:)
+  Type(rigid_bodies_type),   Allocatable         :: rigid(:)
+  Type(electrostatic_type),  Allocatable         :: electro(:)
+  Type(domains_type),        Allocatable         :: domain(:)
+  Type(flow_type),           Allocatable         :: flow(:)
+  Type(seed_type),           Allocatable         :: seed(:)
+  Type(trajectory_type),     Allocatable         :: traj(:)
+  Type(kim_type),            Allocatable, Target :: kim_data(:)
+  Type(configuration_type),  Allocatable         :: config(:)
+  Type(io_type),             Allocatable         :: ios(:)
+  Type(ttm_type),            Allocatable         :: ttms(:)
+  Type(rsd_type),            Allocatable         :: rsdsc(:)
+  Type(file_type),           Allocatable         :: files(:, :)
+  Type(coord_type),          Allocatable         :: crd(:)
+  Type(adf_type),            Allocatable         :: adf(:)
 
-  Type(parameters_hash_table) :: params
-  Type(testing_type) :: tests
+  Type(parameters_hash_table)         :: params
+  Type(control_parameter)             :: param
+  Type(testing_type)                  :: tests
 
   ! Local Variables
-  Character(len=1024)           :: control_filename
-  Character(len=1024)           :: output_filename
-  Character(Len=STR_LEN)        :: option
-  Logical                       :: finish
-  Integer                       :: ifile
+  Character(len=1024)                 :: control_filename
+  Character(len=1024)                 :: output_filename
+  Character(Len=STR_LEN)              :: option
+  Logical                             :: finish
+  Integer                             :: ifile, i
+  Character(Len=MAX_KEY), Allocatable :: control_override_keys(:)
+  Character(Len=STR_LEN), Allocatable :: control_override_vals(:)
 
 #ifdef NVIDIA
   half_plus = Nearest(0.5_wp, +1.0_wp)
@@ -190,11 +197,21 @@ Program dl_poly
   ! Assume we're using old format
   finish = .false.
   If (dlp_world(0)%idnode == 0) Then
-    Call parse_command_args(dlp_world(0), params, tests, flow(1), output_filename, control_filename, finish)
+    Call parse_command_args(dlp_world(0), params, tests, flow(1), output_filename, control_filename,&
+      control_override_keys, control_override_vals, finish)
+    i = Size(control_override_keys)
+  End If
+
+  Call gbcast(dlp_world(0), i, 0)
+  If (dlp_world(0)%idnode /= 0) Then
+    Allocate(control_override_keys(1:i))
+    Allocate(control_override_vals(1:i))
   End If
 
   Call gbcast(dlp_world(0), control_filename, 0)
   Call gbcast(dlp_world(0), output_filename, 0)
+  Call gbcast(dlp_world(0), control_override_keys, 0)
+  Call gbcast(dlp_world(0), control_override_vals, 0)
   Call gbcast(dlp_world(0), finish, 0)
   If (finish) Then
     Call destroy_units()
@@ -234,6 +251,17 @@ Program dl_poly
 
   End If
 
+  ! Apply any overrides.
+  Do i = 2, Size(control_override_keys)
+    ! Logged to OUTPUT in molecular_dynamics.
+    Call params%get(control_override_keys(i), param)
+    option = control_override_vals(i)
+    Call read_control_param(option, param)
+    Call params%set(control_override_keys(i), param)
+  End Do
+
+  Call params%fix()
+
   ! Select metasimulation method
   ! IS: The following two subroutines should be merged into a single one. We separate them
   ! for the time being though.
@@ -243,7 +271,8 @@ Program dl_poly
                             green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, inversion, tether, &
                             threebody, zdensity, cons, neigh, pmfs, sites, core_shells, vdws, tersoffs, fourbody, &
                             rdf, minim, mpoles, ext_field, rigid, electro, domain, flow, seed, traj, &
-                            kim_data, config, ios, ttms, rsdsc, files, output_filename, control_filename, crd, adf)
+                            kim_data, config, ios, ttms, rsdsc, files, output_filename, control_filename, crd, adf, &
+                            control_override_keys(2:), control_override_vals(2:))
   Case (FFS)
     Write (0, *) "simulation type: FFS"
   Case Default
@@ -261,18 +290,26 @@ Program dl_poly
 
 contains
 
-  Subroutine parse_command_args(comms_in, params, tests, flow, output_filename, control_filename, finish)
+  Subroutine parse_command_args(comms_in, params, tests, flow, output_filename, control_filename,&
+    control_override_keys, control_override_vals, finish)
 
-    Type(comms_type),            Intent(InOut) :: comms_in
-    Type(parameters_hash_table), Intent(In   ) :: params
-    Type(testing_type),          Intent(InOut) :: tests
-    Type(flow_type),             Intent(InOut) :: flow
-    Character(len=1024),         Intent(  Out) :: output_filename, control_filename
-    Logical,                     Intent(  Out) :: finish
+    Type(comms_type),                    Intent(InOut) :: comms_in
+    Type(parameters_hash_table),         Intent(In   ) :: params
+    Type(testing_type),                  Intent(InOut) :: tests
+    Type(flow_type),                     Intent(InOut) :: flow
+    Character(Len=1024),                 Intent(  Out) :: output_filename, control_filename
+    Character(Len=MAX_KEY), Allocatable, Intent(  Out) :: control_override_keys(:)
+    Character(Len=STR_LEN), Allocatable, Intent(  Out) :: control_override_vals(:)
+    Logical,                             Intent(  Out) :: finish
 
-    Character(len=1024) :: arg
-    Character(Len=10) :: mode
-    Integer :: i, j
+    Character(Len=1024)    :: arg
+    Character(Len=MAX_KEY) :: param
+    Character(Len=STR_LEN) :: param_value
+    Character(Len=10)      :: mode
+    Integer                :: i, j
+
+    Allocate(control_override_keys(1))
+    Allocate(control_override_vals(1))
 
     output_filename = ''
     control_filename = ''
@@ -295,6 +332,7 @@ contains
           Write (eu, '(a)') "use --help <keyword> to see keyword info"
           Write (eu, '(a)') "use --help [n] to print keyword table [line length n, defaults to 0 for full lines]" 
           Write (eu, '(a)') "use --control or -c <control.file> use the control file given"
+          Write (eu, '(a)') "use --[<CONTROL_OPTION>] '<CONTROL_OPTION_VALUE>' to override a control option"
           Write (eu, '(a)') "use --output or -o <output.file> print output in the output.file indicated"
           Write (eu, '(a)') "use -o SCREEN print output on the screen"
           Write (eu, '(a)') "use --dump <type> <file> print keywords to file or SCREEN"
@@ -430,9 +468,27 @@ contains
           flow%simulation = .false.
 
         Case default
-          Write (eu, *) "No idea what you want, try -h "
+          ! Default to bad input.
           finish = .true.
-          Exit parse_cmd
+          If (Index(arg, "--") == 1) Then
+            param = arg(3:3+MAX_KEY)
+            i = i + 1
+            Call get_command_argument(i, arg)
+            param_value = arg(1:STR_LEN)
+            If (params%contains(param)) Then
+              control_override_keys = [control_override_keys, param]
+              control_override_vals = [control_override_vals, param_value]
+              ! Acceptable control override, may continue.
+              finish = .false.
+            Else
+              finish = .true.
+            End If
+          End If
+
+          If (finish) Then
+            Write (eu, *) "No idea what you want, try -h "
+            Exit parse_cmd
+          End If
         End Select
 
         If (i == command_argument_count()) Exit parse_cmd

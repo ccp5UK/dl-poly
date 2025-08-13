@@ -423,6 +423,20 @@ if(BUILD_TESTING)
     set_tests_properties(${id} PROPERTIES PASS_REGULAR_EXPRESSION "Status: PASSED")
   endforeach()
 
+  file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/Testing/TestsOut/TEST_COMMAND_LINE)
+    if(WITH_MPI)
+    add_test(NAME TEST_COMMAND_LINE
+      COMMAND ${Python_EXECUTABLE} ${CMAKE_SOURCE_DIR}/utils/test_cmd_line.py 
+      "${CMAKE_BINARY_DIR}/bin/${target_name}" --mpi "${MPIEXEC} ${MPIEXEC_PREFLAGS} -np ${MPI_NPROCS}"
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Testing/TestsOut/TEST_COMMAND_LINE)
+  else()
+    add_test(NAME TEST_COMMAND_LINE
+      COMMAND ${Python_EXECUTABLE} ${CMAKE_SOURCE_DIR}/utils/test_cmd_line.py 
+      "${CMAKE_BINARY_DIR}/bin/${target_name}"
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Testing/TestsOut/TEST_COMMAND_LINE)
+  endif()
+  set_tests_properties(TEST_COMMAND_LINE PROPERTIES PASS_REGULAR_EXPRESSION "Status: PASSED")
+
   # Check for the dlpoly-py package in the specified python environment 
   message(STATUS "Checking for dlpoly-py package in python environment...") 
   execute_process(COMMAND ${Python_EXECUTABLE} -c "import dlpoly" RESULT_VARIABLE PyCHECK_EXIT_CODE OUTPUT_QUIET ERROR_QUIET)
