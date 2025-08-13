@@ -2081,11 +2081,12 @@ Contains
             If (Allocated(Bc)) Deallocate(Bc)
             Allocate(observable_currents::Ac)
             Allocate(observable_currents::Bc)
+
             Call set_currents_observable(A%name(.false.), Ac, &
-              k, j, A%component_name, A%component, sites%site_name(j))
+              k, j, A%component_name, A%component, sites%unique_atom(j))
 
             Call set_currents_observable(B%name(.false.), Bc, &
-              k, j, B%component_name, B%component, sites%site_name(j))
+              k, j, B%component_name, B%component, sites%unique_atom(j))
 
             Call stats%init_correlator(.false., .false., config, rigid, comm, &
               this_blocks, this_points, this_window, this_freq, Ac, Bc)
