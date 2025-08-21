@@ -1766,15 +1766,7 @@ DL_POLY_5 to the available species in the OpenKIM IM.
 
 
     The variables pertaining to each potential are described in Table
-    :numref:`(%s) <vdw-table>`. If any of the :ref:`DPD thermostats <DPD_thermostats>` are 
-    in use, two additional parameters for the atom pair's dissipative force parameter 
-    :math:`\gamma_{ij}` and the thermostat cutoff distance :math:`r_{t,ij}` can be
-    included after the parameters for the pair potential and used instead of any 
-    default values. If :math:`\gamma_{ij}` is not specified, DL_POLY_5 will either 
-    use mixing rules or a global value specified by **ensemble_dpd_drag** in the 
-    CONTROL file. If :math:`r_{t,ij}` is not supplied, DL_POLY_5 will use either the 
-    pair potential's interaction cutoff distance (e.g. :math:`r_c` for standard DPD) 
-    or, failing that, the maximum van der Waals cutoff distance ``rvdw``.
+    :numref:`(%s) <vdw-table>`. 
 
     **Note** that any pair potential not specified in the FIELD file,
     will be assumed to be zero.
@@ -2263,6 +2255,25 @@ DL_POLY_5 to the available species in the OpenKIM IM.
 
     :math:`^\ddagger` :math:`\phi` is the :math:`i`-:math:`j`-:math:`k`-:math:`l` :index:`four-body<potential;four-body>`
     angle.
+
+#.  **dpd n** 
+    Where *n* is the number of thermostat pair interactions to be entered, followed by *n* records each specifying a particular set of parameters 
+    for the pair interactions within the DPD thermostat in the following manner: 
+
+    .. parsed-literal:: 
+      
+      atmnam 1 (*i*)    a8        first (central) atom type
+      atmnam 2 (*j*)    a8        second atom type
+      variable 1      real      drag coefficient 
+      variable 2      real      thermostat pair cutoff
+      variable 3      real      the power for the DPD switching function
+      variable 4      real      reciprocal power law distance paramter (only required if using a reciprocal power switching function)
+
+    The drag coefficient :math:`\gamma_{ij}` is the only required parameter, the thermostat cutoff :math:`r_{t,ij}` will default to the vdw cutoff 
+    for the specified pair if not provided and the switching function power, :math:`s`, will default to 2 to give the quadritic form as defined in :eq:`dpd_switching_quad`. 
+    The final variable, :math:`r^{0}_{ij}`, is specific to the reciprocal power law switching function :eq:`dpd_switching_rpow` and is only required if :math:`s < 0`. If a 
+    pair is not explicitly specified within this section its parameters are assumed to be the defaults and :math:`gamma_{ij}` will be set either via mixing-rules or through 
+    the **ensemble_dpd_drag** directive in the ``CONTROL`` file.
 
 External Field
 ~~~~~~~~~~~~~~

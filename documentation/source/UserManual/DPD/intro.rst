@@ -171,8 +171,7 @@ have to apply. The cutoff distances for the switching functions are
 often set equal to those for the interaction itself, i.e. 
 :math:`r_{t,ij} = r_{c}`, although again this is not compulsory. In DL_POLY_5 
 the :math:`\gamma_{ij}` coefficients and :math:`r_{t,ij}` cutoff distances may be
-supplied at the end of each specified vdw interaction potential as 
-additional parameters beyond the final one for the particular vdw potential form. 
+supplied in the DPD section within the ``FIELD`` file. 
 (See the section on specifying :ref:`non-bonded interactions in the FIELD file <non-bonded_sec>` 
 for more details.) 
 

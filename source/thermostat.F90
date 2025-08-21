@@ -173,6 +173,10 @@ Module thermostat
     Real(Kind=wp), Allocatable, Public :: sigdpd(:)
     !> DPD cutoff distances
     Real(Kind=wp), Allocatable, Public :: dpdcut(:)
+    !> DPD switching function power 
+    Real(Kind=wp), Allocatable, Public :: dpdpow(:)
+    !> DPD switching function r_t param (only for reciprocal power switching functions)
+    Real(Kind=wp), Allocatable, Public :: dpdrsw(:)
     !> Pseudo thermostat switch
     Logical, Public                    :: l_stochastic_boundaries = .false.
     !> Pseudo thermostat type
@@ -306,12 +310,14 @@ Contains
     fail = 0
 
     Allocate (thermo%gamdpd(0:max_vdw), thermo%sigdpd(1:max_vdw), thermo%dpdcut(1:max_vdw), stat=fail)
+    Allocate (thermo%dpdpow(0:max_vdw), stat=fail)
 
     If (fail > 0) Call error(1081)
 
     thermo%gamdpd = 0.0_wp
     thermo%sigdpd = 0.0_wp
     thermo%dpdcut = 0.0_wp
+    thermo%dpdpow = 2.0_wp 
 
   End Subroutine allocate_dpd_arrays
 
@@ -349,6 +355,12 @@ Contains
     If (Allocated(thermo%tpr)) Then
       Deallocate (thermo%tpr)
     End If
+    If (Allocated(thermo%dpdpow)) Then 
+      Deallocate (thermo%dpdpow) 
+    End If 
+    If (Allocated(thermo%dpdrsw)) Then 
+      Deallocate (thermo%dpdrsw)
+    End IF 
 
   End Subroutine cleanup
 

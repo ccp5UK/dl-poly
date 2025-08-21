@@ -105,6 +105,7 @@ Contains
                                                 tmp, tst_p, rmassij, xdif, ydif, zdif, &
                                                 vxdif, vydif, vzdif, rdotv, tstepfrac, &
                                                 strsdrag(9), strsrand(9)
+    Real(Kind=wp)                            :: w_R, w_D
     Real(Kind=wp), Allocatable, Dimension(:) :: fdpdx, fdpdy, fdpdz
 
     If ( (thermo%key_dpd == DPD_NULL) .or. &
@@ -245,12 +246,23 @@ Contains
             ! w_D = scrn**2 * rrr**2
             ! w_R = scrn * rrr
 
-            scrn = (thermo%dpdcut(key) - rrr) / (rrr * thermo%dpdcut(key))         
+            If (thermo%dpdpow(key) < 0.0_wp) Then 
+              ! reciprocal power switching function 
+              w_R = (1 + (rrr / thermo%dpdrsw(key))) ** (abs(thermo%dpdpow(key)) / 2.0_wp)
+              w_R = 1 / w_R 
+              w_R = w_R / rrr  
+            Else If (abs(thermo%dpdpow(key) - 2.0_wp) <= 1e-8_wp) Then 
+              w_R = (thermo%dpdcut(key) - rrr) / (rrr * thermo%dpdcut(key))     
+            Else 
+              w_R = (1 - (rrr / thermo%dpdcut(key))) ** (thermo%dpdpow(key) / 2.0_wp) 
+              w_R = w_R / rrr 
+            End If 
+            w_D = w_R * w_R 
 
             ! Calculate random and drag components
 
-            rgamma = thermo%sigdpd(key) * scrn * gauss * r_sqrt_tstp
-            dgamma = - thermo%gamdpd(key) * scrn**2 * rdotv
+            rgamma = thermo%sigdpd(key) * w_R * gauss * r_sqrt_tstp
+            dgamma = - thermo%gamdpd(key) * w_D * rdotv
 
             ! Total force component gamma_ij such that, summed over all pairs
             ! v_i(t+hstep) = v_i(t) + (hstep / m_i) * (gamma_ij * r_ij)
@@ -411,7 +423,18 @@ Contains
           ! w_D = scrn**2 * rrr**2
           ! w_R = scrn * rrr
 
-          scrn = (thermo%dpdcut(key) - rrr) / (rrr * thermo%dpdcut(key))  
+          If (thermo%dpdpow(key) < 0.0_wp) Then 
+            ! reciprocal power switching function 
+            w_R = (1 + (rrr / thermo%dpdrsw(key))) ** (abs(thermo%dpdpow(key)) / 2.0_wp)
+            w_R = 1 / w_R 
+            w_R = w_R / rrr  
+          Else If (abs(thermo%dpdpow(key) - 2.0_wp) <= 1e-8_wp) Then 
+            w_R = (thermo%dpdcut(key) - rrr) / (rrr * thermo%dpdcut(key))     
+          Else 
+            w_R = (1 - (rrr / thermo%dpdcut(key))) ** (thermo%dpdpow(key) / 2.0_wp) 
+            w_R = w_R / rrr 
+          End If 
+          w_D = w_R * w_R 
           
           ! reciprocal reduced mass
           
@@ -419,9 +442,9 @@ Contains
 
           ! Calculate random and drag components
 
-          tmp = thermo%sigdpd(key) * scrn * gauss * r_sqrt_tstp
+          tmp = thermo%sigdpd(key) * w_R * gauss * r_sqrt_tstp
 
-          scl = (thermo%gamdpd(key) * scrn**2) / (1.0_wp + hstep * thermo%gamdpd(key) * scrn**2 * rrr**2 * rmassij)
+          scl = (thermo%gamdpd(key) * w_D) / (1.0_wp + hstep * thermo%gamdpd(key) * w_D * rrr**2 * rmassij)
 
           rgamma = (1.0_wp - scl * 0.5_wp * rmassij * rrr**2 * hstep) * tmp
 
@@ -577,7 +600,7 @@ Contains
     Character(len=256)                       :: message
     Integer                                  :: ai, aj, fail, i, idi, idj, j, k, key, limit
     Real(Kind=wp)                            :: dgamma, gamma, gauss, &
-                                                hstep, rgamma, rrr, r_sqrt_tstp, scrn, &
+                                                hstep, rgamma, rrr, r_sqrt_tstp, w_R, w_D, &
                                                 xdif, ydif, zdif, vxdif, vydif, vzdif, rdotv
     Real(Kind=wp), Allocatable, Dimension(:) :: fdpdx, fdpdy, fdpdz
 
@@ -677,12 +700,23 @@ Contains
           ! w_D = scrn**2 * rrr**2
           ! w_R = scrn * rrr
 
-          scrn = (thermo%dpdcut(key) - rrr) / (rrr * thermo%dpdcut(key))         
+          If (thermo%dpdpow(key) < 0.0_wp) Then 
+            ! reciprocal power switching function 
+            w_R = (1 + (rrr / thermo%dpdrsw(key))) ** (abs(thermo%dpdpow(key)) / 2.0_wp)
+            w_R = 1 / w_R 
+            w_R = w_R / rrr  
+          Else If (abs(thermo%dpdpow(key) - 2.0_wp) <= 1e-8_wp) Then 
+            w_R = (thermo%dpdcut(key) - rrr) / (rrr * thermo%dpdcut(key))     
+          Else 
+            w_R = (1 - (rrr / thermo%dpdcut(key))) ** (thermo%dpdpow(key) / 2.0_wp) 
+            w_R = w_R / rrr 
+          End If 
+          w_D = w_R * w_R         
 
           ! Calculate random and drag components
 
-          rgamma = thermo%sigdpd(key) * scrn * gauss * r_sqrt_tstp
-          dgamma = - thermo%gamdpd(key) * scrn**2 * rdotv
+          rgamma = thermo%sigdpd(key) * w_R * gauss * r_sqrt_tstp
+          dgamma = - thermo%gamdpd(key) * w_D * rdotv
 
           ! Total force component gamma_ij such that, summed over all pairs
           ! v_i(t+hstep) = v_i(t) + (hstep / m_i) * (gamma_ij * r_ij)

@@ -122,3 +122,37 @@ Verlet style integration is replaced by an implicit algorithm over a single step
 
 Second-order Shardlow splitting is specified by setting the ``ensemble_dpd_order`` directive to ``zeroth`` or 
 ``0`` in the ``CONTROL`` file. 
+
+
+.. _DPD_switching_functions:
+
+Switching Functions 
+-------------------
+
+The DPD thermostat employs switching functions :math:`\omega^{R}(r_{ij})` and :math:`\omega^{D}(r_{ij})` which are used when calculating the random and drag forces within the 
+thermostats. These follow the relationship that :math:`\omega^{D}(r_{ij}) = \omega^{R}(r_{ij})^{2}` and typically has a quadratic form,
+
+.. math::
+    :label: dpd_switching_quad
+
+    \omega^{D}(r_{ij})^{2} = \left(1 - \frac{r}{r_{t,ij}}\right)^{2}
+
+where :math:`r_{t,ij}` is a thermostat cutoff beyond which :math:`\omega^{D}(r_{ij}) = 0`. Whilst this is the default and most widely used form for the switching function, DL_POLY_5 has 
+the option to define a power law based alternatives:
+
+.. math::
+    :label: dpd_switching_power
+    
+    \omega^{D}(r_{ij}) = \left(1 - \frac{r}{r_{t,ij}}\right)^{s}
+
+.. math::
+    :label: dpd_switching_rpow
+
+     \omega^{D}(r_{ij}) = \left(1 + \frac{r}{r^{0}_{ij}}\right)^{-s}
+
+For the later an additional distance based parameter :math:`r^{0}_{ij}` is required.
+See the section on the :ref:`non-bonded interactions in the FIELD file <non-bonded_sec>` for details on how to specify these alternate functions.  
+
+
+
+    

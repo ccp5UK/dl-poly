@@ -254,6 +254,7 @@ Contains
       q_shel, q_shel_p, q_shel_s, sig(0:2), tmp, weight
 
     Integer( Kind = wi )           :: fftag
+    Integer(Kind=wi) :: ndpdth, itdpdth
 
     ! Choose which FIELD file to read
     If (ff == 1) Then
@@ -3715,30 +3716,14 @@ Contains
           End If
 
           If (keypot == VDW_TAB) Then
-            If (thermo%key_dpd /= DPD_NULL) Then ! make sure thermo%gamdpd and thermo%dpdcut are read and reported for DPD
-              Call get_word(record, word)
-              parpot(1) = word_2_real(word)
-              Call get_word(record, word)
-              parpot(2) = word_2_real(word)
-              If (flow%print_topology) Then
-                Write (message, '(2x,i10,5x,2a8,8x,2f20.6,1x,a9)') &
-                  itpvdw, atom1, atom2, parpot(1), parpot(2), 'tabulated'
-                Call info(message, .true., level=3)
-              End If
-            Else
-              If (flow%print_topology) Then
-                Write (message, '(2x,i10,5x,2a8,1x,a9)') &
-                  itpvdw, atom1, atom2, 'tabulated'
-                Call info(message, .true., level=3)
-              End If
+            If (flow%print_topology) Then
+              Write (message, '(2x,i10,5x,2a8,1x,a9)') &
+                itpvdw, atom1, atom2, 'tabulated'
+              Call info(message, .true., level=3)
             End If
           Else
 
-            if (thermo%key_dpd /= DPD_NULL) then
-              itmp = vdws%max_param + 2
-            else
-              itmp = vdws%max_param
-            end if
+            itmp = vdws%max_param
 
             Do i = 1, itmp
               Call get_word(record, word)
@@ -3796,7 +3781,6 @@ Contains
               parpot(2) = Abs(parpot(2))
               If (parpot(3) > parpot(2) / 2.0_wp) &
                 parpot(3) = Sign(1.0_wp, parpot(3)) * parpot(2) / 2.0_wp
-              parpot(5:6) = parpot(4:5) ! shift DPD parameters along before calculating WCA cutoff distance
               parpot(4) = 2.0_wp**(1.0_wp / 6.0_wp) * parpot(2) + parpot(3)
               Allocate(wca::vdws%potentials(itpvdw)%p)
             Case (VDW_DPD)
@@ -3901,137 +3885,32 @@ Contains
             vdws%param(i, itpvdw) = parpot(i)
           End Do
 
-          If (thermo%key_dpd /= DPD_NULL) Then ! store possible specification of DPD's gamma_ij and cut_ij
+          If (thermo%key_dpd /= DPD_NULL) Then ! set defaults for cut_ij for the DPD thermostat
             Select Case (keypot)
-            Case (VDW_TAB)
-              thermo%gamdpd(keyvdw) = Abs(parpot(1))
-              thermo%dpdcut(keyvdw) = Abs(parpot(2))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
-                 thermo%dpdcut(keyvdw) = vdws%cutoff
-            Case (VDW_12_6)
-              thermo%gamdpd(keyvdw) = Abs(parpot(3))
-              thermo%dpdcut(keyvdw) = Abs(parpot(4))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
-                 thermo%dpdcut(keyvdw) = vdws%cutoff
-            Case (VDW_LENNARD_JONES)
-              thermo%gamdpd(keyvdw) = Abs(parpot(3))
-              thermo%dpdcut(keyvdw) = Abs(parpot(4))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
-                 thermo%dpdcut(keyvdw) = vdws%cutoff
-            Case (VDW_N_M)
-              thermo%gamdpd(keyvdw) = Abs(parpot(5))
-              thermo%dpdcut(keyvdw) = Abs(parpot(6))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
-                 thermo%dpdcut(keyvdw) = vdws%cutoff
-            Case (VDW_BUCKINGHAM)
-              thermo%gamdpd(keyvdw) = Abs(parpot(4))
-              thermo%dpdcut(keyvdw) = Abs(parpot(5))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
-                 thermo%dpdcut(keyvdw) = vdws%cutoff
-            Case (VDW_BORN_HUGGINS_MEYER)
-              thermo%gamdpd(keyvdw) = Abs(parpot(6))
-              thermo%dpdcut(keyvdw) = Abs(parpot(7))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
-                 thermo%dpdcut(keyvdw) = vdws%cutoff
-            Case (VDW_HYDROGEN_BOND)
-              thermo%gamdpd(keyvdw) = Abs(parpot(3))
-              thermo%dpdcut(keyvdw) = Abs(parpot(4))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
-                 thermo%dpdcut(keyvdw) = vdws%cutoff
             Case (VDW_N_M_SHIFT)
-              thermo%gamdpd(keyvdw) = Abs(parpot(6))
-              thermo%dpdcut(keyvdw) = Abs(parpot(7))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with r_c if not supplied 
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! default cut_ij with r_c if not supplied 
                  thermo%dpdcut(keyvdw) = Abs(parpot(5))
-            Case (VDW_MORSE)
-              thermo%gamdpd(keyvdw) = Abs(parpot(4))
-              thermo%dpdcut(keyvdw) = Abs(parpot(5))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
-                 thermo%dpdcut(keyvdw) = vdws%cutoff
             Case (VDW_WCA)
-              thermo%gamdpd(keyvdw) = Abs(parpot(5))
-              thermo%dpdcut(keyvdw) = Abs(parpot(6))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with 2^(1/6)+Delta if not supplied 
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! default cut_ij with 2^(1/6)+Delta if not supplied 
                  thermo%dpdcut(keyvdw) = Abs(parpot(4))
             Case (VDW_DPD)
-              thermo%gamdpd(keyvdw) = Abs(parpot(3))
-              thermo%dpdcut(keyvdw) = Abs(parpot(4))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with r_c if not supplied 
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! default cut_ij with r_c if not supplied 
                  thermo%dpdcut(keyvdw) = Abs(parpot(2))
             Case (VDW_NDPD)
-              thermo%gamdpd(keyvdw) = Abs(parpot(5))
-              thermo%dpdcut(keyvdw) = Abs(parpot(6))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with r_c if not supplied 
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! default cut_ij with r_c if not supplied 
                  thermo%dpdcut(keyvdw) = Abs(parpot(4))
             Case (VDW_MDPD)
-              thermo%gamdpd(keyvdw) = Abs(parpot(7))
-              thermo%dpdcut(keyvdw) = Abs(parpot(8))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with r_c if not supplied 
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! default cut_ij with r_c if not supplied 
                  thermo%dpdcut(keyvdw) = Abs(parpot(5))
-            Case (VDW_AMOEBA)
-              thermo%gamdpd(keyvdw) = Abs(parpot(3))
-              thermo%dpdcut(keyvdw) = Abs(parpot(4))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
-                 thermo%dpdcut(keyvdw) = vdws%cutoff
-            Case (VDW_LENNARD_JONES_COHESIVE)
-              thermo%gamdpd(keyvdw) = Abs(parpot(4))
-              thermo%dpdcut(keyvdw) = Abs(parpot(5))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
-                 thermo%dpdcut(keyvdw) = vdws%cutoff
-            Case (VDW_MORSE_12)
-              thermo%gamdpd(keyvdw) = Abs(parpot(5))
-              thermo%dpdcut(keyvdw) = Abs(parpot(6))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
-                 thermo%dpdcut(keyvdw) = vdws%cutoff
-            Case (VDW_RYDBERG)
-              thermo%gamdpd(keyvdw) = Abs(parpot(4))
-              thermo%dpdcut(keyvdw) = Abs(parpot(5))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
-                 thermo%dpdcut(keyvdw) = vdws%cutoff
-            Case (VDW_ZBL)
-              thermo%gamdpd(keyvdw) = Abs(parpot(5))
-              thermo%dpdcut(keyvdw) = Abs(parpot(6))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
-                 thermo%dpdcut(keyvdw) = vdws%cutoff
-            Case (VDW_ZBL_SWITCH_MORSE)
-              thermo%gamdpd(keyvdw) = Abs(parpot(8))
-              thermo%dpdcut(keyvdw) = Abs(parpot(9))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
-                 thermo%dpdcut(keyvdw) = vdws%cutoff
-            Case (VDW_ZBL_SWITCH_BUCKINGHAM)
-              thermo%gamdpd(keyvdw) = Abs(parpot(8))
-              thermo%dpdcut(keyvdw) = Abs(parpot(9))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
-                 thermo%dpdcut(keyvdw) = vdws%cutoff
-            Case (VDW_LJ_MDF)
-              thermo%gamdpd(keyvdw) = Abs(parpot(4))
-              thermo%dpdcut(keyvdw) = Abs(parpot(5))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
-                 thermo%dpdcut(keyvdw) = vdws%cutoff
-            Case (VDW_BUCKINGHAM_MDF)
-              thermo%gamdpd(keyvdw) = Abs(parpot(5))
-              thermo%dpdcut(keyvdw) = Abs(parpot(6))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
-                 thermo%dpdcut(keyvdw) = vdws%cutoff
             Case (VDW_LJF)
-              thermo%gamdpd(keyvdw) = Abs(parpot(4))
-              thermo%dpdcut(keyvdw) = Abs(parpot(5))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with r_c if not supplied 
+              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! default cut_ij with r_c if not supplied 
                  thermo%dpdcut(keyvdw) = Abs(parpot(3))
-            Case (VDW_SANDERSON)
-              thermo%gamdpd(keyvdw) = Abs(parpot(4))
-              thermo%dpdcut(keyvdw) = Abs(parpot(5))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
-                 thermo%dpdcut(keyvdw) = vdws%cutoff
-            Case (VDW_SW)
-              thermo%gamdpd(keyvdw) = Abs(parpot(8))
-              thermo%dpdcut(keyvdw) = Abs(parpot(9))
-              If (thermo%dpdcut(keyvdw) <= zero_plus) & ! override cut_ij with vdws%cutoff if not supplied 
-                 thermo%dpdcut(keyvdw) = vdws%cutoff
+            Case Default
+              If (thermo%dpdcut(keyvdw) <= zero_plus) Then  
+                thermo%dpdcut(keyvdw) = vdws%cutoff ! default cut_ij with vdws%cutoff if not supplied
+              End If 
             End Select
 
-            If (thermo%gamdpd(keyvdw)<=zero_plus .and. thermo%gamdpd(0) > zero_plus) &
-               thermo%gamdpd(keyvdw) = thermo%gamdpd(0) ! override gamma with value in CONTROL if not supplied
           End If
         End Do
 
@@ -4055,48 +3934,12 @@ Contains
               vdws%ltp(i) = VDW_NULL
             End Do
 
-            If (thermo%key_dpd /= DPD_NULL) Then
-              If (All(thermo%gamdpd(1:vdws%max_vdw-1) <= zero_plus)) Then ! So thermo%gamdpd(0) <= zero_plus too
-                                                                          ! (note vdws%max_vdw is one too big due to
-                                                                          ! setup_potential_parameters, so ignore last value)
-                thermo%key_dpd = DPD_NULL
-                thermo%ensemble = ENS_NVE
-                Call info( &
-                  'Ensemble NVT dpd defaulting to NVE (Microcanonical) ' &
-                  //'due to all drag coefficients equal to zero', .true.)
-
-              Else
-                If (thermo%gamdpd(0) > zero_plus) Then
-                  Call warning('all previously undefined interactions have their drag coefficient overridden', .true.)
-                End If
-
-                If (vdws%mixing == MIX_NULL) Then
-                  Call info('vdw/dpd cross terms mixing (for undefined mixed potentials) may be required', .true.)
-
-                  If (thermo%gamdpd(0) > zero_plus .and. (.not. flow%strict)) Then
-                    vdws%mixing = MIX_LORENTZ_BERTHELOT
-                    Write (messages(1), '(a)') &
-                      'type of mixing defaulted - LorentzBerthelot :: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2'
-                    Write (messages(2), '(a)') &
-                      'mixing is limited to potentials of the same type only'
-                    Write (messages(3), '(a)') &
-                      'mixing restricted to LJ-like potentials (12-6,LJ,WCA,DPD,14-7,LJC)'
-                    Call info(messages, 3, .true.)
-                  End If
-                End If
-              End If
-            End If
-
             ! If the user opted for possible vdw potential mixing or when required by DPD thermostat
 
             If (vdws%mixing /= MIX_NULL) Then
 
-              If (flow%print_topology .or. thermo%key_dpd /= DPD_NULL) Then
-                If (thermo%key_dpd == DPD_NULL) Then
+              If (flow%print_topology) Then
                   Call info('vdw potential mixing under testing... internal units', .true.)
-                Else
-                  Call info('dpd potential mixing under testing...', .true.)
-                End If
               End If
 
               ! Detect if there are qualifying candidates
@@ -4239,11 +4082,6 @@ Contains
                         If (Any(del > zero_plus)) &
                           del(0) = 0.5_wp * (del(1) + del(2))
 
-                        If (thermo%key_dpd /= DPD_NULL) Then
-                          thermo%gamdpd(ksite) = Sqrt(thermo%gamdpd(isite) * thermo%gamdpd(jsite))
-                          thermo%dpdcut(ksite) = 0.5 * (thermo%dpdcut(isite) + thermo%dpdcut(jsite))
-                        End If
-
                       Case (MIX_FENDER_HALSEY)
 
                         ! Fender-Halsey : e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2
@@ -4254,14 +4092,6 @@ Contains
 
                         If (Any(del > zero_plus)) &
                           del(0) = 0.5_wp * (del(1) + del(2))
-
-                        If (thermo%key_dpd /= DPD_NULL) Then
-                          If (thermo%gamdpd(isite) + thermo%gamdpd(jsite) > zero_plus) &
-                            thermo%gamdpd(ksite) = &
-                            2.0_wp * thermo%gamdpd(isite) * thermo%gamdpd(jsite) / &
-                            (thermo%gamdpd(isite) + thermo%gamdpd(jsite))
-                          thermo%dpdcut(ksite) = 0.5 * (thermo%dpdcut(isite) + thermo%dpdcut(jsite))
-                        End If
 
                       Case (MIX_HOGERVORST)
 
@@ -4274,11 +4104,6 @@ Contains
                         If (Any(del > zero_plus)) &
                           del(0) = Sqrt(del(1) * del(2))
 
-                        If (thermo%key_dpd /= DPD_NULL) Then
-                          thermo%gamdpd(ksite) = Sqrt(thermo%gamdpd(isite) * thermo%gamdpd(jsite))
-                          thermo%dpdcut(ksite) = Sqrt(thermo%dpdcut(isite) * thermo%dpdcut(jsite))
-                        End If
-
                       Case (MIX_HALGREN)
 
                         ! Halgren HHG: e_ij=4*e_i*e_j/[e_i^(1/2)+e_j^(1/2)]^2 ; s_ij=(s_i^3+s_j^3)/(s_i^2+s_j^2)
@@ -4289,19 +4114,6 @@ Contains
 
                         If (Any(del > zero_plus)) &
                           del(0) = (del(1)**3 + del(2)**3) / (del(1)**2 + del(2)**2)
-
-                        If (thermo%key_dpd /= DPD_NULL) Then
-                          If (thermo%gamdpd(isite) >= zero_plus .and. thermo%gamdpd(jsite) >= zero_plus) Then
-                            If (Sqrt(thermo%gamdpd(isite)) + Sqrt(thermo%gamdpd(jsite)) > zero_plus) Then
-                              thermo%gamdpd(ksite) = &
-                                4.0_wp * thermo%gamdpd(isite) * thermo%gamdpd(jsite) / &
-                                (Sqrt(thermo%gamdpd(isite)) + Sqrt(thermo%gamdpd(jsite)))**2
-                            End If
-                            thermo%dpdcut(ksite) = &
-                              (thermo%dpdcut(isite)**3 + thermo%dpdcut(jsite)**3) / &
-                              (thermo%dpdcut(isite)**2 + thermo%dpdcut(jsite)**2)
-                          End If
-                        End If
 
                       Case (MIX_WALDMAN_HAGLER)
 
@@ -4315,13 +4127,6 @@ Contains
 
                         If (Any(del > zero_plus)) &
                           del(0) = (0.5_wp * (del(1)**6 + del(2)**6))**(1.0_wp / 6.0_wp)
-
-                        If (thermo%key_dpd /= DPD_NULL) Then
-                          tmp = 0.5_wp * (thermo%dpdcut(isite)**6 + thermo%dpdcut(jsite)**6)
-                          thermo%gamdpd(ksite) = Sqrt(thermo%gamdpd(isite) * thermo%gamdpd(jsite)) * &
-                            ((thermo%dpdcut(isite) * thermo%dpdcut(jsite))**3) / tmp
-                          thermo%dpdcut(ksite) = tmp**(1.0_wp / 6.0_wp)
-                        End If
 
                       Case (MIX_TANG_TOENNIES)
 
@@ -4337,14 +4142,6 @@ Contains
 
                         If (Any(del > zero_plus)) &
                           del(0) = 0.5_wp * sig(0) * (del(1) / sig(1) + del(2) / sig(2))
-
-                        If (thermo%key_dpd /= DPD_NULL) Then
-                          tmp = (thermo%gamdpd(isite) * thermo%dpdcut(isite)**6) * &
-                            (thermo%gamdpd(jsite) * thermo%dpdcut(jsite)**6)
-                          thermo%gamdpd(ksite) = tmp / (((thermo%gamdpd(isite) * thermo%dpdcut(isite)**12)**(1.0_wp / 13.0_wp) + &
-                            (thermo%gamdpd(jsite) * thermo%dpdcut(jsite)**12)**(1.0_wp / 13.0_wp)) * 0.5_wp)**13
-                          thermo%dpdcut(ksite) = (Sqrt(tmp) / thermo%gamdpd(ksite))**(1.0_wp / 6.0_wp)
-                        End If
 
                       Case (MIX_FUNCTIONAL)
 
@@ -4366,20 +4163,6 @@ Contains
 
                         If (Any(del > zero_plus)) &
                           del(0) = 0.5_wp * sig(0) * (del(1) / sig(1) + del(2) / sig(2))
-
-                        If (thermo%key_dpd /= DPD_NULL) Then
-                          thermo%gamdpd(ksite) = 0.0_wp; thermo%dpdcut(ksite) = 0.0_wp
-                          Do itmp = 0, 2
-                            tmp = (thermo%dpdcut(isite)**3 + thermo%dpdcut(jsite)**3)**2 / &
-                              (4.0_wp * (thermo%dpdcut(isite) * thermo%dpdcut(jsite))**itmp)  
-                            thermo%gamdpd(ksite) = thermo%gamdpd(ksite) + tmp**(Real(6, wp) / Real(6 - 2 * itmp, wp))
-                            thermo%dpdcut(ksite) = thermo%dpdcut(ksite) + tmp**(Real(1, wp) / Real(6 - 2 * itmp, wp))
-                          End Do
-                          tmp = 1.0_wp / thermo%gamdpd(ksite)
-                          thermo%gamdpd(ksite) = 3.0_wp * Sqrt(thermo%gamdpd(isite) * thermo%gamdpd(jsite)) * &
-                                                          (thermo%dpdcut(isite) * thermo%dpdcut(jsite))**3 * tmp
-                          thermo%dpdcut(ksite) = thermo%dpdcut(ksite) / 3.0_wp
-                        End If
 
                       End Select
 
@@ -4418,15 +4201,9 @@ Contains
                       End Select
 
                       If (flow%print_topology) Then
-                        If (thermo%key_dpd /= DPD_NULL) Then
-                          Write (rfmt, '(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,', vdws%max_param + 2, 'f20.6)'
-                          Write (message, rfmt) vdws%n_vdw, sites%unique_atom(i), &
-                            sites%unique_atom(j), keyword, vdws%param(1:vdws%max_param + 2, vdws%n_vdw)
-                        Else
-                          Write (rfmt, '(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,', vdws%max_param, 'f20.6)'
-                          Write (message, rfmt) vdws%n_vdw, sites%unique_atom(i), &
-                            sites%unique_atom(j), keyword, vdws%param(1:vdws%max_param, vdws%n_vdw)
-                        End If
+                        Write (rfmt, '(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,', vdws%max_param, 'f20.6)'
+                        Write (message, rfmt) vdws%n_vdw, sites%unique_atom(i), &
+                          sites%unique_atom(j), keyword, vdws%param(1:vdws%max_param, vdws%n_vdw)
                         Call info(message, .true.)
                       End If
 
@@ -4441,22 +4218,6 @@ Contains
 
             End If
 
-          End If
-
-          If (thermo%key_dpd /= DPD_NULL) Then
-            If (All(thermo%gamdpd(1:vdws%max_vdw-1) <= zero_plus)) Then
-              thermo%key_dpd = DPD_NULL
-
-              Call info('# Ensemble NVT dpd defaulting to NVE (Microcanonical) ' &
-                        //'due to all drag coefficients equal to zero', .true.)
-            Else If (Any(thermo%gamdpd(1:vdws%max_vdw-1) <= zero_plus)) Then
-              ! in principle we should come up with the error before here
-              Call warning('there is a two-body interaction with a ' &
-                           //'zero mutual dpd drag coefficient', .true.)
-              thermo%sigdpd(1:vdws%max_vdw) = Sqrt(2.0_wp * boltz * thermo%temp * thermo%gamdpd(1:vdws%max_vdw)) ! define thermo%sigdpd
-            Else
-              thermo%sigdpd(1:vdws%max_vdw) = Sqrt(2.0_wp * boltz * thermo%temp * thermo%gamdpd(1:vdws%max_vdw)) ! define thermo%sigdpd
-            End If
           End If
 
           ! generate vdw force arrays
@@ -5440,6 +5201,215 @@ Contains
 
         If (ext_field%key == FIELD_WALL_PISTON .and. thermo%ensemble /= ENS_NVE) Call error(7)
 
+      ! read DPD thermostat parameters (ignored if DPD thermostat not in use)
+      Else If (word(1:3) == 'dpd' .and. thermo%key_dpd /= DPD_NULL) Then 
+
+        Call get_word(record, word) 
+        ndpdth = Nint(word_2_real(word))
+        Call get_word(record, word)
+
+        If (ndpdth > vdws%max_vdw) Call error(80) ! make this error call more specific
+        
+        Write (message, '(a,i10)') 'number of specified DPD pairwise thermostat parameters ', ndpdth 
+        Call info(message, .true., level=3)
+        If (flow%print_topology) Then 
+          Write (message, '(8x,a4,5x,a6,2x,a6,7x,a10)') &
+                  'pair', 'atom 1', 'atom 2', 'parameters'
+          Call info(message, .true., level=3)
+        End If 
+
+        Do itdpdth = 1, ndpdth 
+
+          word(1:1) = '#'
+          Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+            Call get_line(safe, files(fftag)%unit_no, record, comm)
+            If (.not. safe) Call ferror(52)
+            Call get_word(record, word)
+          End Do 
+
+          atom1 = word(1:8)
+          Call get_word(record, word)
+          atom2 = word(1:8)
+
+          parpot = 0.0_wp
+
+          Do i = 1, 3    !  gamma,  cut_ij,  s 
+            Call get_word(record, word)
+            parpot(i) = word_2_real(word)
+          End Do 
+
+          katom1 = 0 
+          katom2 = 0 
+          
+          
+          Do jtpatm = 1, sites%ntype_atom
+            If (atom1 == sites%unique_atom(jtpatm)) katom1 = jtpatm
+            If (atom2 == sites%unique_atom(jtpatm)) katom2 = jtpatm
+          End Do
+
+          If (katom1 == 0 .or. katom2 == 0) Call error(81)
+
+          ka1 = Max(katom1, katom2)
+          ka2 = Min(katom1, katom2)
+
+          keyvdw = (ka1 * (ka1 - 1)) / 2 + ka2
+
+          If (keyvdw > vdws%max_vdw) Call error(82)
+
+          ! If (vdws%list(keyvdw) /= 0) Call error(15)
+
+          thermo%gamdpd(keyvdw) = parpot(1)
+          thermo%dpdcut(keyvdw) = parpot(2)
+          
+          If (abs(parpot(3)) > zero_plus) Then 
+            If (parpot(3) < zero_plus) Then 
+              ! reciprical power requires an extra r0_ij parameter
+              Call get_word(record, word)
+              parpot(4) = word_2_real(word)
+              If (parpot(4) > zero_plus) Then 
+                If (Allocated(thermo%dpdrsw)) Then 
+                  thermo%dpdrsw(keyvdw) = parpot(4)
+                Else 
+                  Allocate(thermo%dpdrsw(0:vdws%max_vdw), stat=fail(1))
+                  If (fail(1) > 0) Call error(1081)
+                  thermo%dpdrsw = 0.0_wp 
+                  thermo%dpdrsw(keyvdw) = parpot(4)
+                End If 
+              Else 
+                Call error(0, "Invalid r0_ij value for a reciprocal power DPD switching function. Please consult documentation. ")
+              End If 
+            End If 
+            thermo%dpdpow(keyvdw) = parpot(3)
+          End If 
+
+          If (flow%print_topology) Then
+            Write (rfmt, '(a,i0,a)') '(2x,i10,5x,2a8,1x,', 4, 'f15.6)'
+            Write (message, rfmt) itdpdth, atom1, atom2, parpot(1:4)
+            Call info(message, .true., level=3)
+          End If        
+          
+        End Do 
+
+        ! Check for undefined pairs 
+        ntab =  (sites%ntype_atom * (sites%ntype_atom + 1)) / 2
+        If (ndpdth < ntab) Then 
+          If (vdws%mixing == MIX_NULL) Then 
+            Call info('dpd cross terms mixing (for undefined mixed potentials) may be required', .true.)
+            vdws%mixing = MIX_LORENTZ_BERTHELOT
+            Write (message, '(a)') &
+              'mixing defaulted to LorentzBerthelot :: gamma_ij = (gamma_ii * gamma_jj)^(1/2) ; r_t,ij = (r_t,ii + r_t,jj) / 2'
+            Call info(message, .true.)
+          End If
+
+          ! Apply mixing rules 
+          nsite = 0 ! number of new cross pair potentials 
+          ! Check and assign isite=1 to prevent excessive If statements in loop 
+          If (thermo%gamdpd(1) <= zero_plus .and. thermo%gamdpd(0) > zero_plus) Then
+            thermo%gamdpd(1) = thermo%gamdpd(0) 
+            If (flow%print_topology) Then 
+              Write(rfmt, '(a)') '(2x,a10,5x,2a8,1x,4f15.6)'
+              Write(message, rfmt) 'def', sites%unique_atom(1), sites%unique_atom(1), &
+                thermo%gamdpd(ksite), thermo%dpdcut(ksite), 2.0_wp, 0.0_wp 
+              Call info(message, .true., level=3)
+            End If
+          End If 
+          Do i = 1, sites%ntype_atom 
+            isite = (i *(i - 1)) / 2 + i 
+            If (thermo%gamdpd(isite) > zero_plus) Then ! \gamma_ii provided 
+              Do j = i + 1, sites%ntype_atom 
+                jsite = (j * (j - 1)) / 2 + j 
+                If (thermo%gamdpd(jsite) <= zero_plus) Then ! \gamma_jj not provided 
+                  ! Default to CONTROL file directive if provided 
+                  If (thermo%gamdpd(0) > zero_plus) Then 
+                    thermo%gamdpd(jsite) = thermo%gamdpd(0)
+                    If (flow%print_topology) Then 
+                      Write(rfmt, '(a)') '(2x,a10,5x,2a8,1x,4f15.6)'
+                      Write(message, rfmt) 'def', sites%unique_atom(j), sites%unique_atom(j), &
+                        thermo%gamdpd(ksite), thermo%dpdcut(ksite), 2.0_wp, 0.0_wp 
+                      Call info(message, .true., level=3)
+                    End If
+                  Else 
+                    Call warning('the self interaction for bead: ' &
+                                    //sites%unique_atom(j) &
+                                    //' is unresolved and thus thermostating' &
+                                    //' is ill defined in a DPD context', &
+                                    .true.)
+                    Call error(512)
+                  End If 
+                End If 
+
+                ! calculate and apply mixing if no existing ij term 
+                ksite = jsite + i - j 
+                If (thermo%gamdpd(ksite) <= zero_plus) Then 
+                  Select Case (vdws%mixing)
+                  Case (MIX_LORENTZ_BERTHELOT)
+                    thermo%gamdpd(ksite) = Sqrt(thermo%gamdpd(isite) * thermo%gamdpd(jsite))
+                    thermo%dpdcut(ksite) = 0.5 * (thermo%dpdcut(isite) + thermo%dpdcut(jsite))
+                  Case (MIX_FENDER_HALSEY)
+                    If (thermo%gamdpd(isite) + thermo%gamdpd(jsite) > zero_plus) Then
+                      thermo%gamdpd(ksite) = 2.0_wp * thermo%gamdpd(isite) * thermo%gamdpd(jsite) /  &
+                          (thermo%gamdpd(isite) + thermo%gamdpd(jsite))
+                    End IF 
+                    thermo%dpdcut(ksite) = 0.5 * (thermo%dpdcut(isite) + thermo%dpdcut(jsite))
+                  Case (MIX_HOGERVORST)
+                    thermo%gamdpd(ksite) = Sqrt(thermo%gamdpd(isite) * thermo%gamdpd(jsite))
+                    thermo%dpdcut(ksite) = Sqrt(thermo%dpdcut(isite) * thermo%dpdcut(jsite))
+                  Case (MIX_HALGREN)
+                    ! If (thermo%gamdpd(isite) >= zero_plus .and. thermo%gamdpd(jsite) >= zero_plus) Then
+                    If (thermo%gamdpd(jsite) >= zero_plus) Then
+                      If (Sqrt(thermo%gamdpd(isite)) + Sqrt(thermo%gamdpd(jsite)) > zero_plus) Then
+                        thermo%gamdpd(ksite) = &
+                          4.0_wp * thermo%gamdpd(isite) * thermo%gamdpd(jsite) / &
+                          (Sqrt(thermo%gamdpd(isite)) + Sqrt(thermo%gamdpd(jsite)))**2
+                      End If
+                      thermo%dpdcut(ksite) = &
+                        (thermo%dpdcut(isite)**3 + thermo%dpdcut(jsite)**3) / &
+                        (thermo%dpdcut(isite)**2 + thermo%dpdcut(jsite)**2)
+                    End If
+                  Case (MIX_WALDMAN_HAGLER)
+                    tmp = 0.5_wp * (thermo%dpdcut(isite)**6 + thermo%dpdcut(jsite)**6)
+                    thermo%gamdpd(ksite) = Sqrt(thermo%gamdpd(isite) * thermo%gamdpd(jsite)) * &
+                      ((thermo%dpdcut(isite) * thermo%dpdcut(jsite))**3) / tmp
+                    thermo%dpdcut(ksite) = tmp**(1.0_wp / 6.0_wp)
+                  Case (MIX_TANG_TOENNIES)
+                    tmp = (thermo%gamdpd(isite) * thermo%dpdcut(isite)**6) * &
+                        (thermo%gamdpd(jsite) * thermo%dpdcut(jsite)**6)
+                    thermo%gamdpd(ksite) = tmp / (((thermo%gamdpd(isite) * thermo%dpdcut(isite)**12)**(1.0_wp / 13.0_wp) + &
+                        (thermo%gamdpd(jsite) * thermo%dpdcut(jsite)**12)**(1.0_wp / 13.0_wp)) * 0.5_wp)**13
+                    thermo%dpdcut(ksite) = (Sqrt(tmp) / thermo%gamdpd(ksite))**(1.0_wp / 6.0_wp)
+                  Case (MIX_FUNCTIONAL)
+                    thermo%gamdpd(ksite) = 0.0_wp; thermo%dpdcut(ksite) = 0.0_wp
+                    Do itmp = 0, 2
+                      tmp = (thermo%dpdcut(isite)**3 + thermo%dpdcut(jsite)**3)**2 / &
+                        (4.0_wp * (thermo%dpdcut(isite) * thermo%dpdcut(jsite))**itmp)  
+                      thermo%gamdpd(ksite) = thermo%gamdpd(ksite) + tmp**(Real(6, wp) / Real(6 - 2 * itmp, wp))
+                      thermo%dpdcut(ksite) = thermo%dpdcut(ksite) + tmp**(Real(1, wp) / Real(6 - 2 * itmp, wp))
+                    End Do
+                    tmp = 1.0_wp / thermo%gamdpd(ksite)
+                    thermo%gamdpd(ksite) = 3.0_wp * Sqrt(thermo%gamdpd(isite) * thermo%gamdpd(jsite)) * &
+                                                    (thermo%dpdcut(isite) * thermo%dpdcut(jsite))**3 * tmp
+                    thermo%dpdcut(ksite) = thermo%dpdcut(ksite) / 3.0_wp
+                  End Select 
+
+                  If (flow%print_topology) Then 
+                    Write(rfmt, '(a)') '(2x,a10,5x,2a8,1x,4f15.6)'
+                    Write(message, rfmt) 'mixed', sites%unique_atom(i), sites%unique_atom(j), &
+                      thermo%gamdpd(ksite), thermo%dpdcut(ksite), 2.0_wp, 0.0_wp 
+                    Call info(message, .true., level=3)
+                  End If
+                End IF 
+              End Do 
+            Else 
+              Call warning('the interaction between bead types: ' &
+                              //sites%unique_atom(i)//' & '//sites%unique_atom(i) &
+                              //' is unresolved and thus thermostating' &
+                              //' is ill defined in a DPD context', &
+                              .true.)
+              Call error(512)
+            End If 
+          End Do 
+        End If 
+
         ! close force field file
 
       Else If (word(1:5) == 'close') Then
@@ -5479,6 +5449,32 @@ Contains
              met%n_potentials /= 0 .or. tersoffs%n_potential /= 0) .and. &
             kim_data%active) Then
           Call warning('open KIM model in use together with extra intermolecular interactions', .true.)
+        End If
+
+        ! DPD thermostat 
+        ! default to NVE if no gamma_ij is given for any species pair 
+        If (thermo%key_dpd /= DPD_NULL) Then
+          If (All(thermo%gamdpd(1:vdws%max_vdw-1) <= zero_plus)) Then
+            If (thermo%gamdpd(0) > zero_plus) Then 
+              ! override all drag coefficients with the default value from the CONTROL file 
+              thermo%gamdpd(1:vdws%max_vdw-1) = thermo%gamdpd(0)
+              ! define thermo%sigdpd
+              thermo%sigdpd(1:vdws%max_vdw) = Sqrt(2.0_wp * boltz * thermo%temp * thermo%gamdpd(1:vdws%max_vdw)) 
+            Else 
+              thermo%key_dpd = DPD_NULL
+              thermo%ensemble = ENS_NVE
+              Call info('# Ensemble NVT dpd defaulting to NVE (Microcanonical) ' &
+                      //'due to all drag coefficients equal to zero', .true.)
+            End If 
+          Else
+            If (Any(thermo%gamdpd(1:vdws%max_vdw-1) <= zero_plus)) Then
+              ! in principle we should come up with the error before here
+              Call warning('there is a two-body interaction with a ' &
+                            //'zero mutual dpd drag coefficient', .true.)
+            End If
+            ! define thermo%sigdpd
+            thermo%sigdpd(1:vdws%max_vdw) = Sqrt(2.0_wp * boltz * thermo%temp * thermo%gamdpd(1:vdws%max_vdw)) 
+          End If
         End If
 
         ! EXIT IF ALL IS OK
