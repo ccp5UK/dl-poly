@@ -371,6 +371,15 @@ Module statistics
       Procedure, NoPass :: id           => heat_flux_id
   End Type
 
+  Type, Extends(observable), Public :: observable_mom_dens
+    Integer :: atom_type
+    Character(Len=8) :: atom_type_name = ""
+  Contains
+      Procedure         :: value        => mom_dens_value
+      Procedure         :: name         => mom_dens_name
+      Procedure, NoPass :: id           => mom_dens_id
+  End Type
+
   Type, Extends(observable), Public :: observable_statis
   Contains
       Procedure         :: value        => statis_value
@@ -4468,6 +4477,15 @@ Contains
       o%component = component
       o%component_name = component_sym
       success = .true.
+    Else If (observable_name == "mom_dens" .or. observable_name == "md") Then
+      If (Len(Trim(component_sym)) /= 1) Then
+        Write (msg, ('(a)')) "momentum_density requires components x, y, or z. Got: "//Trim(c)
+        Call error(0, msg)
+      End If
+      Allocate(observable_mom_dens::o)
+      o%component = component
+      o%component_name = component_sym
+      success = .true.
     Else If (is_currents_observable(observable_name)) Then
       Call set_currents_observable(observable_name, oc)
       Allocate(observable_currents::o)
@@ -4665,6 +4683,38 @@ Contains
     Integer :: v
     v = 2
   End Function heat_flux_id
+
+  !!!!!!!!!! observable mom_dens !!!!!!!!!!
+
+  Function mom_dens_value(t, config, rigid, stats, index) Result(v)
+    Class(observable_mom_dens),          Intent(In   ) :: t
+    Type(configuration_type),             Intent(InOut) :: config
+    Type(rigid_bodies_type),              Intent(InOut) :: rigid
+    Type(stats_type),                     Intent(InOut) :: stats
+    Integer,                    Optional, Intent(In   ) :: index
+
+    Complex(Kind=wp)       :: v
+
+    v = Cmplx(stats%momentum_density(t%atom_type, t%component), Kind=wp)
+
+  End Function mom_dens_value
+
+  Function mom_dens_name(t, with_component) Result(v)
+      Class(observable_mom_dens), Intent(In   )           :: t
+      Logical,                    Intent(In   ), Optional :: with_component
+      Character(Len=MAX_CORRELATION_NAME_LENGTH) :: v
+      v = Trim(t%atom_type_name)//'-mom_dens_'//t%component_name
+      If (Present(with_component)) Then
+        If (.not. with_component) Then
+          v = Trim(t%atom_type_name)//'-mom_dens'
+        End If
+      End If
+  End Function mom_dens_name
+
+  Function mom_dens_id() Result(v)
+    Integer :: v
+    v = 6
+  End Function mom_dens_id
 
   !!!!!!!!!! observable statis !!!!!!!!!!
 

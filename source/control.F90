@@ -115,6 +115,7 @@ Module control
   Use statistics,               Only: stats_type, observable, observable_velocity, &
                                       character_to_observable, observable_heat_flux, &
                                       observable_stress, observable_currents, &
+                                      observable_mom_dens, &
                                       set_currents_observable, K_STRESS, ENG_CURRENT,&
                                       NOT_DISTRIBUTED_OBSERVABLE, &
                                       PER_ATOM_OBSERVABLE, PER_RIGID_OBSERVABLE
@@ -1938,6 +1939,7 @@ Contains
     Type(observable_heat_flux)           :: h
     Type(observable_stress)              :: s
     Type(observable_currents)            :: oc
+    Type(observable_mom_dens)            :: Aomd, Bomd
     Integer                              :: hid, sid
     Logical                              :: is_current
     Logical                              :: per_atom, per_rigid
@@ -2093,11 +2095,45 @@ Contains
               this_blocks, this_points, this_window, this_freq, Ac, Bc)
           End Do
         End Do
+      Else If (A%id() == Aomd%id() .or. B%id() == Aomd%id()) Then
+        If (A%id() == B%id()) Then
+          Do j = 1, Size(stats%mom_dens_types)
+            Aomd%atom_type = stats%mom_dens_types(j)
+            Aomd%atom_type_name = stats%mom_dens_names(j)
+            Do k = 1, Size(stats%mom_dens_types)
+              Bomd%atom_type = stats%mom_dens_types(k)
+              Bomd%atom_type_name = stats%mom_dens_names(k)
+              Aomd%component = A%component
+              Aomd%component_name = A%component_name
+              Bomd%component = B%component
+              Bomd%component_name = B%component_name
+              Call stats%init_correlator(.false., .false., config, rigid, comm, &
+                this_blocks, this_points, this_window, this_freq, Aomd, Bomd)
+            End Do
+          End Do
+        Else If (A%id() == Aomd%id()) Then
+          Do j = 1, Size(stats%mom_dens_types)
+            Aomd%atom_type = stats%mom_dens_types(j)
+            Aomd%atom_type_name = stats%mom_dens_names(j)
+            Aomd%component = A%component
+            Aomd%component_name = A%component_name
+            Call stats%init_correlator(.false., .false., config, rigid, comm, &
+              this_blocks, this_points, this_window, this_freq, Aomd, B)
+          End Do
+        Else
+          Do j = 1, Size(stats%mom_dens_types)
+            Bomd%atom_type = stats%mom_dens_types(j)
+            Bomd%atom_type_name = stats%mom_dens_names(j)
+            Bomd%component = B%component
+            Bomd%component_name = B%component_name
+            Call stats%init_correlator(.false., .false., config, rigid, comm, &
+              this_blocks, this_points, this_window, this_freq, A, Bomd)
+          End Do
+        End If
       Else
         Call stats%init_correlator(per_atom, per_rigid, config, rigid, comm, &
           this_blocks, this_points, this_window, this_freq, A, B)
       End If
-
     End Do
 
   End Subroutine read_correlations_parameters
