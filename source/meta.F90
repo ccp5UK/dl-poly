@@ -826,8 +826,11 @@ Contains
       End Select
     End Do
 
-    If (files(FILE_OUTPUT)%unit_no /= error_unit) &
+    If (files(FILE_OUTPUT)%unit_no /= error_unit) Then
       Open (Newunit=files(FILE_OUTPUT)%unit_no, File=Trim(files(FILE_OUTPUT)%filename), Status='replace')
+    End If
+
+    Call gsync(comm)
     dlp_world(0)%ou = files(FILE_OUTPUT)%unit_no
 
     Call init_error_system(files(FILE_OUTPUT)%unit_no, dlp_world(0))
@@ -1074,6 +1077,7 @@ Contains
     Else
       files(FILE_OUTPUT)%unit_no = error_unit
     End If
+    Call gsync(comm)
     dlp_world(0)%ou = files(FILE_OUTPUT)%unit_no
     Call init_error_system(files(FILE_OUTPUT)%unit_no, dlp_world(0))
 

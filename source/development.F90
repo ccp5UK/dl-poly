@@ -211,7 +211,7 @@ Contains
     Character(Len=47) :: aux
     Character(Len=STR_LEN) :: aux2
     Character(Len=5)  :: zone
-    Character(Len=66) :: message
+    Character(Len=67) :: message
     Character(Len=8)  :: date
     Integer           :: i, value(1:8)
 
