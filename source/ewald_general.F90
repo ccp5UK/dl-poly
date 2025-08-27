@@ -790,15 +790,13 @@ Contains
     Real(Kind=wp), Dimension(:, :),                    Intent(  Out) :: forces
 
     Character(Len=STR_LEN)                                   :: message
-    Integer                                              :: fail, i, j, jj, k, kk, l, ll
+    Integer                                              :: fail, i, j, jj, k, kk, l, ll, fs
     Integer, Dimension(3, 2)                             :: extended_domain
     Real(Kind=wp)                                        :: atom_coeffs, energy_total
     Real(Kind=wp), Allocatable, Dimension(:, :, :)       :: extended_potential_grid
     Real(Kind=wp), Dimension(1:2)                        :: energy_temp
-    Real(Kind=wp), Dimension(3)                          :: curr_force_temp, force_total, &
-                                                            recip_kmax
+    Real(Kind=wp), Dimension(3)                          :: curr_force_temp, force_total, f
     Real(Kind=wp), Dimension(3, 1:3)                     :: force_temp
-    Real(Kind=wp), Dimension(3, 3)                       :: recip_cell_mat
     Real(Kind=wp), Dimension(ewld%bspline%num_splines)   :: bspline_d0_x, bspline_d0_y, &
                                                             bspline_d0_z, bspline_d1_x, &
                                                             bspline_d1_y, bspline_d1_z
@@ -818,9 +816,6 @@ Contains
 !! Temporary force vec
 !! In matrix form
 !! Size of extended grid with halo splines
-
-    recip_cell_mat = Reshape(recip_cell, [3, 3])
-    recip_kmax = Matmul(recip_cell_mat, ewld%kspace%k_vec_dim_real)
 
     ! Exchange grid
     extended_domain(:, 1) = ewld%kspace%domain_indices(:, 1) - ewld%bspline%num_spline_padded
@@ -847,6 +842,7 @@ Contains
     energies(0) = 0.0_wp
     forces = 0.0_wp
     force_total = 0.0_wp
+    fs = 0
 
     ! Calculate per-particle contributions
     atom: Do i = 1, config%natms
@@ -869,9 +865,9 @@ Contains
 
         energy_temp(2) = atom_coeffs * bspline_d0_z(l)
 
-        force_temp(1, 3) = atom_coeffs * bspline_d0_z(l)
-        force_temp(2, 3) = atom_coeffs * bspline_d0_z(l)
-        force_temp(3, 3) = atom_coeffs * bspline_d1_z(l)
+        force_temp(1, 3) = atom_coeffs * bspline_d0_z(l) * ewld%kspace%k_vec_dim_real(1)
+        force_temp(2, 3) = atom_coeffs * bspline_d0_z(l) * ewld%kspace%k_vec_dim_real(2)
+        force_temp(3, 3) = atom_coeffs * bspline_d1_z(l) * ewld%kspace%k_vec_dim_real(3)
 
         Do k = 1, ewld%bspline%num_splines
           kk = recip_indices(2, i) + 1 - ewld%bspline%num_splines + k
@@ -885,12 +881,11 @@ Contains
           Do j = 1, ewld%bspline%num_splines
             jj = recip_indices(1, i) + 1 - ewld%bspline%num_splines + j
 
-            force_temp(1, 1) = force_temp(1, 2) * bspline_d1_x(j) * extended_potential_grid(jj, kk, ll) * recip_kmax(1)
-            force_temp(2, 1) = force_temp(2, 2) * bspline_d0_x(j) * extended_potential_grid(jj, kk, ll) * recip_kmax(2)
-            force_temp(3, 1) = force_temp(3, 2) * bspline_d0_x(j) * extended_potential_grid(jj, kk, ll) * recip_kmax(3)
+            force_temp(1, 1) = force_temp(1, 2) * bspline_d1_x(j) * extended_potential_grid(jj, kk, ll)
+            force_temp(2, 1) = force_temp(2, 2) * bspline_d0_x(j) * extended_potential_grid(jj, kk, ll)
+            force_temp(3, 1) = force_temp(3, 2) * bspline_d0_x(j) * extended_potential_grid(jj, kk, ll)
 
             ! Sum force contributions
-            force_total = force_total - force_temp(:, 1)
             curr_force_temp = curr_force_temp + force_temp(:, 1)
             ! energy_total now holds omega_j * 2piV
             energy_total = energy_total + energy_temp(1) * bspline_d0_x(j) * extended_potential_grid(jj, kk, ll)
@@ -899,19 +894,27 @@ Contains
         End Do
       End Do
 
+      f(1) = Sum(recip_cell(1:3)*curr_force_temp)
+      f(2) = Sum(recip_cell(4:6)*curr_force_temp)
+      f(3) = Sum(recip_cell(7:9)*curr_force_temp)
+
       ! Add to total accumulators
       energies(0) = energies(0) + energy_total
       If (per_part_step) energies(i) = energy_total
-      forces(:, i) = forces(:, i) - curr_force_temp
+      forces(:, i) = forces(:, i) - f
+      force_total = force_total - f
+      fs = fs + 1
 
     End Do atom
 
     ! Correct for CoM term
     Call gsum(comm, force_total)
+    Call gsum(comm, fs)
 
-    force_total = force_total / Real(config%megatm, wp)
+    force_total = force_total / Real(fs, wp)
     ! Remove CoM
     Do i = 1, config%natms
+      If (Abs(coeffs(i)) <= zero_plus) Cycle
       forces(:, i) = (forces(:, i) - force_total)
     End Do
 
