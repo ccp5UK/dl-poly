@@ -109,7 +109,7 @@ Contains
   Subroutine plumed_print_about(plume)
     Type(plumed_type), Intent(In) :: plume
 #ifdef PLUMED
-    Character(Len=STR_LEN) :: messages(9), banner(15)
+    Character(Len=STR_LEN) :: messages(10), banner(15)
 
     Write (banner(1), '(a)') ""
     Write (banner(2), '(a)') "#***_____________________________________ "
