@@ -13,70 +13,72 @@ Module statistics
 !> contrib  - i.scivetti September 2019. Required changes to allow EVB simulations
 !
 
-  Use comms,           Only: &
-                             Spread_tag, comm_self, comms_type, gcheck, girecv, gmax, gmin, gsend, gsum, &
-                             gsync, gtime, gwait, mode_create, mode_wronly, offset_kind, &
-                             gatherv_scatterv_index_arrays, ggatherv, gscatterv, root_id, &
-                             gscatter, gbcast
+  Use comms,              Only: &
+                                Spread_tag, comm_self, comms_type, gcheck, girecv, gmax, gmin, gsend, gsum, &
+                                gsync, gtime, gwait, mode_create, mode_wronly, offset_kind, &
+                                gatherv_scatterv_index_arrays, ggatherv, gscatterv, root_id, &
+                                gscatter, gbcast
 
-  Use configuration,   Only: configuration_type
-  Use constants,       Only: boltz,&
-                             engunit,&
-                             eu_ev,&
-                             eu_kcpm,&
-                             eu_kjpm,&
-                             pi,&
-                             prsunt,&
-                             tenunt,&
-                             zero_plus,&
-                             voigt_6x6,&
-                             voigt_flat_3x3
-  Use currents,        Only: current_type
-  Use domains,         Only: domains_type
-  Use errors_warnings, Only: error,&
-                             error_alloc,&
-                             error_dealloc,&
-                             info,&
-                             warning
-  Use filename,        Only: FILE_STATS, FILE_COR, FILE_HEATFLUX, &
-                             file_type
-  Use flow_control,    Only: RESTART_KEY_OLD, flow_type
-  Use hash,            Only: hash_table, &
-                             MAX_KEY
-  Use io,              Only: &
-                             io_allocation_error, io_base_comm_not_set, io_close, io_delete, &
-                             io_finalize, io_get_parameters, io_history, io_init, io_open, &
-                             io_set_parameters, io_type, io_unknown_write_level, &
-                             io_unknown_write_option, io_write_batch, io_write_sorted_file
-  Use integrators,     Only: trapezium_rule, simpsons_rule, integrator
+  Use configuration,      Only: configuration_type,&
+                                compute_density
+  Use constants,          Only: boltz,&
+                                engunit,&
+                                eu_ev,&
+                                eu_kcpm,&
+                                eu_kjpm,&
+                                pi,&
+                                prsunt,&
+                                tenunt,&
+                                zero_plus,&
+                                voigt_6x6,&
+                                voigt_flat_3x3
+  Use control_parameters, Only: write_param
+  Use currents,           Only: current_type
+  Use domains,            Only: domains_type
+  Use errors_warnings,    Only: error,&
+                                error_alloc,&
+                                error_dealloc,&
+                                info,&
+                                warning
+  Use filename,           Only: FILE_STATS, FILE_COR, FILE_HEATFLUX, &
+                                file_type
+  Use flow_control,       Only: RESTART_KEY_OLD, flow_type
+  Use hash,               Only: hash_table, &
+                                MAX_KEY
+  Use io,                 Only: &
+                                io_allocation_error, io_base_comm_not_set, io_close, io_delete, &
+                                io_finalize, io_get_parameters, io_history, io_init, io_open, &
+                                io_set_parameters, io_type, io_unknown_write_level, &
+                                io_unknown_write_option, io_write_batch, io_write_sorted_file
+  Use integrators,        Only: trapezium_rule, simpsons_rule, integrator
 
-  Use kinds,           Only: STR_LEN,&
-                             li,&
-                             wi,&
-                             wp
-  Use numerics,        Only: dcell,&
-                             invert,&
-                             pbcshfrc,&
-                             pbcshfrl,&
-                             pbcshift,&
-                             shellsort,&
-                             shellsort2,&
-                             in_range,&
-                             scaling_matrix
-  Use rigid_bodies,    Only: rigid_bodies_type
-  Use site,            Only: site_type
-  Use thermostat,      Only: CONSTRAINT_NONE,&
-                             CONSTRAINT_SEMI_ORTHORHOMBIC,&
-                             CONSTRAINT_SURFACE_TENSION,&
-                             DPD_NULL,&
-                             thermostat_type
-  Use timer,           Only: start_timer,&
-                             stop_timer,&
-                             timer_type
-  Use z_density,       Only: z_density_collect,&
-                             z_density_type
-  Use correlators,     Only: correlator, correlator_buffer_type, indices_buffer_type
-  Use units,           Only: to_out_units
+  Use kinds,              Only: STR_LEN,&
+                                li,&
+                                wi,&
+                                wp
+  Use numerics,           Only: dcell,&
+                                invert,&
+                                pbcshfrc,&
+                                pbcshfrl,&
+                                pbcshift,&
+                                shellsort,&
+                                shellsort2,&
+                                in_range,&
+                                scaling_matrix
+  Use rigid_bodies,       Only: rigid_bodies_type
+  Use site,               Only: site_type
+  Use thermostat,         Only: CONSTRAINT_NONE,&
+                                CONSTRAINT_SEMI_ORTHORHOMBIC,&
+                                CONSTRAINT_SURFACE_TENSION,&
+                                DPD_NULL,&
+                                thermostat_type
+  Use timer,              Only: start_timer,&
+                                stop_timer,&
+                                timer_type
+  Use z_density,          Only: z_density_collect,&
+                                z_density_type
+  Use correlators,        Only: correlator, correlator_buffer_type, indices_buffer_type
+  Use units,              Only: to_out_units
 
   Implicit None
 
@@ -3073,6 +3075,7 @@ Contains
 
       If (thermo%variable_cell) Then
 
+        Call compute_density(config,comm)
         If (comm%idnode == 0) Then
           If (stats%dpd_units) Then
             unit = "dpd_l"
@@ -3082,6 +3085,16 @@ Contains
 
           Call write_yaml_tensor("Cell vectors",&
             stats%sumval(iadd+1:iadd+10), stats%ssqval(iadd+1:iadd+10), unit)
+          Call info('', .true.)
+
+          Call info('Final system properties:', .true.)
+          If (stats%dpd_units) Then
+            Call write_param('Volume', config%volm, 'internal_l^3', 'dpd_l^3', indent=1)
+            Call write_param('Density', config%density, 'internal_m/internal_l^3', 'dpd_m/dpd_l^3', indent=1)
+          Else
+            Call write_param('Volume', config%volm, 'internal_l^3', indent=1)
+            Call write_param('Density', config%density, 'internal_m/internal_l^3', 'g/cm^3', indent=1)
+          End If
           Call info('', .true.)
 
         End If
