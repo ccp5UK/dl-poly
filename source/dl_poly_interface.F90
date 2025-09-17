@@ -55,7 +55,8 @@ Module DLPOLYModule
   Use constraints,                            Only: constraints_type
   Use old_control,                            Only: read_simtype
   Use control_parameters,                     Only: dump_parameters,&
-                                                    parameters_hash_table
+                                                    parameters_hash_table,&
+                                                    control_parameter
   Use coord,                                  Only: coord_type
   Use core_shell,                             Only: core_shell_type
   Use defects,                                Only: defects_type
@@ -63,7 +64,8 @@ Module DLPOLYModule
   Use dihedrals,                              Only: dihedrals_type
   Use domains,                                Only: domains_type
   Use electrostatic,                          Only: electrostatic_type
-  Use errors_warnings,                        Only: init_error_system
+  Use errors_warnings,                        Only: init_error_system,&
+                                                    info
   Use ewald,                                  Only: ewald_type
   Use external_field,                         Only: external_field_type
   Use filename,                               Only: FILENAME_SIZE,&
@@ -75,6 +77,7 @@ Module DLPOLYModule
                                                     flow_type
   Use four_body,                              Only: four_body_type
   Use greenkubo,                              Only: greenkubo_type
+  Use hash,                                   Only: MAX_KEY
   Use kinds,                                  Only: STR_LEN
   Use impacts,                                Only: impact_type
   Use inversions,                             Only: inversions_type
@@ -90,8 +93,11 @@ Module DLPOLYModule
   Use msd,                                    Only: msd_type
   Use neighbours,                             Only: neighbours_type
   Use control,                                Only: initialise_control,&
-                                                    read_control
+                                                    read_control,&
+                                                    read_control_param
   Use numerics,                               Only: seed_type
+  Use parse,                                  Only: word_2_integer,&
+                                                    is_integer
   Use plumed,                                 Only: plumed_type
   Use pmf,                                    Only: pmf_type
   Use poisson,                                Only: poisson_type
@@ -120,69 +126,69 @@ Module DLPOLYModule
                                                     half_plus, &
 #endif
 
-
   Implicit None
 
 ! External MPI communicator
   Integer       :: comm_external
 
   ! all your simulation variables
-  Type(comms_type), Allocatable          :: dlp_world(:)
-  Type(thermostat_type), Allocatable     :: thermo(:)
-  Type(ewald_type), Allocatable          :: ewld(:)
-  Type(timer_type), Allocatable          :: tmr(:)
-  Type(development_type), Allocatable    :: devel(:)
-  Type(stats_type), Allocatable          :: stats(:)
-  Type(greenkubo_type), Allocatable      :: green(:)
-  Type(plumed_type), Allocatable         :: plume(:)
-  Type(msd_type), Allocatable            :: msd_data(:)
-  Type(metal_type), Allocatable          :: met(:)
-  Type(poisson_type), Allocatable        :: pois(:)
-  Type(impact_type), Allocatable         :: impa(:)
-  Type(defects_type), Allocatable        :: dfcts(:, :)
-  Type(bonds_type), Allocatable          :: bond(:)
-  Type(angles_type), Allocatable         :: angle(:)
-  Type(dihedrals_type), Allocatable      :: dihedral(:)
-  Type(inversions_type), Allocatable     :: inversion(:)
-  Type(tethers_type), Allocatable        :: tether(:)
-  Type(threebody_type), Allocatable      :: threebody(:)
-  Type(z_density_type), Allocatable      :: zdensity(:)
-  Type(constraints_type), Allocatable    :: cons(:)
-  Type(neighbours_type), Allocatable     :: neigh(:)
-  Type(pmf_type), Allocatable            :: pmfs(:)
-  Type(site_type), Allocatable           :: sites(:)
-  Type(core_shell_type), Allocatable     :: core_shells(:)
-  Type(vdw_type), Allocatable            :: vdws(:)
-  Type(tersoff_type), Allocatable        :: tersoffs(:)
-  Type(four_body_type), Allocatable      :: fourbody(:)
-  Type(rdf_type), Allocatable            :: rdf(:)
-  Type(minimise_type), Allocatable       :: minim(:)
-  Type(mpole_type), Allocatable          :: mpoles(:)
-  Type(external_field_type), Allocatable :: ext_field(:)
-  Type(rigid_bodies_type), Allocatable   :: rigid(:)
-  Type(electrostatic_type), Allocatable  :: electro(:)
-  Type(domains_type), Allocatable        :: domain(:)
-  Type(flow_type), Allocatable           :: flow(:)
-  Type(seed_type), Allocatable           :: seed(:)
-  Type(trajectory_type), Allocatable     :: traj(:)
-  Type(kim_type), Allocatable, Target    :: kim_data(:)
-  Type(configuration_type), Allocatable  :: config(:)
-  Type(io_type), Allocatable             :: ios(:)
-  Type(ttm_type), Allocatable            :: ttms(:)
-  Type(rsd_type), Allocatable            :: rsdsc(:)
-  Type(file_type), Allocatable           :: files(:, :)
-  Type(coord_type), Allocatable          :: crd(:)
-  Type(adf_type), Allocatable            :: adf(:)
+  Type(comms_type),          Allocatable         :: dlp_world(:)
+  Type(thermostat_type),     Allocatable         :: thermo(:)
+  Type(ewald_type),          Allocatable         :: ewld(:)
+  Type(timer_type),          Allocatable         :: tmr(:)
+  Type(development_type),    Allocatable         :: devel(:)
+  Type(stats_type),          Allocatable         :: stats(:)
+  Type(greenkubo_type),      Allocatable         :: green(:)
+  Type(plumed_type),         Allocatable         :: plume(:)
+  Type(msd_type),            Allocatable         :: msd_data(:)
+  Type(metal_type),          Allocatable         :: met(:)
+  Type(poisson_type),        Allocatable         :: pois(:)
+  Type(impact_type),         Allocatable         :: impa(:)
+  Type(defects_type),        Allocatable         :: dfcts(:, :)
+  Type(bonds_type),          Allocatable         :: bond(:)
+  Type(angles_type),         Allocatable         :: angle(:)
+  Type(dihedrals_type),      Allocatable         :: dihedral(:)
+  Type(inversions_type),     Allocatable         :: inversion(:)
+  Type(tethers_type),        Allocatable         :: tether(:)
+  Type(threebody_type),      Allocatable         :: threebody(:)
+  Type(z_density_type),      Allocatable         :: zdensity(:)
+  Type(constraints_type),    Allocatable         :: cons(:)
+  Type(neighbours_type),     Allocatable         :: neigh(:)
+  Type(pmf_type),            Allocatable         :: pmfs(:)
+  Type(site_type),           Allocatable         :: sites(:)
+  Type(core_shell_type),     Allocatable         :: core_shells(:)
+  Type(vdw_type),            Allocatable         :: vdws(:)
+  Type(tersoff_type),        Allocatable         :: tersoffs(:)
+  Type(four_body_type),      Allocatable         :: fourbody(:)
+  Type(rdf_type),            Allocatable         :: rdf(:)
+  Type(minimise_type),       Allocatable         :: minim(:)
+  Type(mpole_type),          Allocatable         :: mpoles(:)
+  Type(external_field_type), Allocatable         :: ext_field(:)
+  Type(rigid_bodies_type),   Allocatable         :: rigid(:)
+  Type(electrostatic_type),  Allocatable         :: electro(:)
+  Type(domains_type),        Allocatable         :: domain(:)
+  Type(flow_type),           Allocatable         :: flow(:)
+  Type(seed_type),           Allocatable         :: seed(:)
+  Type(trajectory_type),     Allocatable         :: traj(:)
+  Type(kim_type),            Allocatable, Target :: kim_data(:)
+  Type(configuration_type),  Allocatable         :: config(:)
+  Type(io_type),             Allocatable         :: ios(:)
+  Type(ttm_type),            Allocatable         :: ttms(:)
+  Type(rsd_type),            Allocatable         :: rsdsc(:)
+  Type(file_type),           Allocatable         :: files(:, :)
+  Type(coord_type),          Allocatable         :: crd(:)
+  Type(adf_type),            Allocatable         :: adf(:)
 
-  Type(parameters_hash_table) :: params
-  Type(testing_type) :: tests
+  Type(parameters_hash_table)         :: params
+  Type(control_parameter)             :: param
+  Type(testing_type)                  :: tests
 
   ! Local Variables
-  Character(len=1024)           :: arg
-  Character(Len=STR_LEN)        :: option
-  Character(Len=10)             :: mode
-  Logical                       :: finish
-  Integer                       :: i, ifile
+  Character(Len=STR_LEN)              :: option
+  Logical                             :: finish
+  Integer                             :: ifile, i
+  Character(Len=MAX_KEY), Allocatable :: control_override_keys(:)
+  Character(Len=STR_LEN), Allocatable :: control_override_vals(:)
 
 #ifdef NVIDIA
   half_plus = Nearest(0.5_wp, +1.0_wp)
@@ -193,6 +199,9 @@ Module DLPOLYModule
 
   Allocate (dlp_world(0:0))
   Call init_external_comms(dlp_world(0), comm_external)
+
+  ! Temporary error system
+  Call init_error_system(eu, dlp_world(0))
   !dlp_world(0)%ou=nrite
   !Call init_error_system(nrite,dlp_world(0))
   Call gsync(dlp_world(0))
@@ -207,9 +216,26 @@ Module DLPOLYModule
   flow(1)%simulation = .true.
   ! Assume we're using old format
   finish = .false.
+  If (dlp_world(0)%idnode == 0) Then
+    ! YL 16/09/2025: we don't need parse_command_args(), however control_override_keys and control_override_vals are allocated
+    !                therein for the main node
+    Allocate(control_override_keys(1))
+    Allocate(control_override_vals(1))
+!    Call parse_command_args(dlp_world(0), params, tests, flow(1), output_filename, control_filename,&
+!      control_override_keys, control_override_vals, finish)
+    i = Size(control_override_keys)
+  End If
+
+  Call gbcast(dlp_world(0), i, 0)
+  If (dlp_world(0)%idnode /= 0) Then
+    Allocate(control_override_keys(1:i))
+    Allocate(control_override_vals(1:i))
+  End If
 
   Call gbcast(dlp_world(0), control_filename, 0)
   Call gbcast(dlp_world(0), output_filename, 0)
+  Call gbcast(dlp_world(0), control_override_keys, 0)
+  Call gbcast(dlp_world(0), control_override_vals, 0)
   Call gbcast(dlp_world(0), finish, 0)
   If (finish) Then
 ! YL: do not let it kill the process (`stop`)
@@ -226,10 +252,7 @@ Module DLPOLYModule
     Call files(1, FILE_CONTROL)%rename('CONTROL')
   End If
 
-  ! Temporary error system
-  Call init_error_system(eu, dlp_world(0))
   Call read_control(files(1, FILE_CONTROL), params, dlp_world(0), devel(1)%old_control)
-
   If (.not. devel(1)%old_control) Then
     Call params%retrieve('simulation_method', option)
     Select Case (option)
@@ -253,6 +276,17 @@ Module DLPOLYModule
 
   End If
 
+  ! Apply any overrides.
+  Do i = 2, Size(control_override_keys)
+    ! Logged to OUTPUT in molecular_dynamics.
+    Call params%get(control_override_keys(i), param)
+    option = control_override_vals(i)
+    Call read_control_param(option, param)
+    Call params%set(control_override_keys(i), param)
+  End Do
+
+  Call params%fix()
+
   ! Select metasimulation method
   ! IS: The following two subroutines should be merged into a single one. We separate them
   ! for the time being though.
@@ -262,7 +296,8 @@ Module DLPOLYModule
                             green, plume, msd_data, met, pois, impa, dfcts, bond, angle, dihedral, inversion, tether, &
                             threebody, zdensity, cons, neigh, pmfs, sites, core_shells, vdws, tersoffs, fourbody, &
                             rdf, minim, mpoles, ext_field, rigid, electro, domain, flow, seed, traj, &
-                            kim_data, config, ios, ttms, rsdsc, files, output_filename, control_filename, crd, adf)
+                            kim_data, config, ios, ttms, rsdsc, files, output_filename, control_filename, crd, adf, &
+                            control_override_keys(2:), control_override_vals(2:))
   Case (FFS)
     Write (0, *) "simulation type: FFS"
   Case Default
@@ -270,7 +305,7 @@ Module DLPOLYModule
   End Select
 
   ! Terminate job
-
+  Call destroy_units()
   Call gsync(dlp_world(0))
   Call exit_external_comms(dlp_world)
 
@@ -300,7 +335,9 @@ Module DLPOLYModule
   Deallocate (flow)
   Deallocate (dlp_world)
 
-  contains
+contains
+
+  ! YL subroutine parse_command_args is not needed
   Subroutine init_external_comms(comm, comm_external)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -475,6 +512,7 @@ Module DLPOLYModule
     End Do
 
   End Subroutine exit_external_comms
+
   Subroutine print_energies(stats)
 
     Type(stats_type), intent(in) :: stats
