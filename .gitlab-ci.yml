@@ -16,8 +16,9 @@ update-python:
   when: always
   # https://gitlab.com/gitlab-org/gitlab/-/issues/16474#note_1080341590
   parallel:
+    # Asmodeus removed temporarily.
     matrix:
-        - TAGS: [baphomet, asmodeus, abbaton]
+        - TAGS: [baphomet, abbaton]
   tags:
     - ${TAGS}
 
