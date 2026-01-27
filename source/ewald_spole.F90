@@ -139,7 +139,7 @@ Contains
         ! Complete prefactor
         prefac = atom_coeffs_i * prefac
 
-        erf_gamma = prefac * electro%erfc_deriv%calc(mod_r_ij)
+        erf_gamma = prefac * electro%erfc_gamma%calc(mod_r_ij)
 
         ! calculate forces ( dU * r/||r|| )
 
@@ -160,7 +160,7 @@ Contains
 #endif /* HALF_HALO */
 
           ! calculate components of G
-          e_comp = prefac * electro%erfc%calc(mod_r_ij)
+          e_comp = prefac * electro%erfc_over_r%calc(mod_r_ij)
 
 #ifndef HALF_HALO
         End If

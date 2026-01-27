@@ -5,10 +5,10 @@
 !>
 !> Author - J.Madge July 2018
 !> Amended - J.S. Wilkins October 2018
-!> Contrib - B.T Speake July 2024 - charge smearing 
+!> Contrib - B.T Speake July 2024 - charge smearing
 Module electrostatic
   Use charge_smearing, Only : linear_smearing_pot, linear_smearing_force, &
-                              slater_exp_smearing_pot, slater_exp_smearing_force, & 
+                              slater_exp_smearing_pot, slater_exp_smearing_force, &
                               BETA_ORIGINAL, slater_apprx_smearing_pot, &
                               slater_apprx_smearing_force
   Use kinds, Only : wi,wp
@@ -34,12 +34,12 @@ Module electrostatic
   !> Direct space Poisson solver
   Integer(Kind=wi), Parameter, Public :: ELECTROSTATIC_POISSON = 6
 
-  ! Charge smearing keys 
-  Integer(Kind=wi), Parameter, Public :: SMEARING_NULL = 0 
-  Integer(Kind=wi), Parameter, Public :: SMEARING_LINEAR = 1 
-  Integer(Kind=wi), Parameter, Public :: SMEARING_SLATER_TRUNCATED = 2 
-  Integer(Kind=wi), Parameter, Public :: SMEARING_SLATER_EXP = 3 
-  Integer(Kind=wi), Parameter, Public :: SMEARING_GAUSSIAN = 4 
+  ! Charge smearing keys
+  Integer(Kind=wi), Parameter, Public :: SMEARING_NULL = 0
+  Integer(Kind=wi), Parameter, Public :: SMEARING_LINEAR = 1
+  Integer(Kind=wi), Parameter, Public :: SMEARING_SLATER_TRUNCATED = 2
+  Integer(Kind=wi), Parameter, Public :: SMEARING_SLATER_EXP = 3
+  Integer(Kind=wi), Parameter, Public :: SMEARING_GAUSSIAN = 4
   Integer(Kind=wi), Parameter, Public :: SMEARING_GAUSSIAN_EQUAL = 5
 
   !> Type containing electrostatic potential data
@@ -48,11 +48,11 @@ Module electrostatic
 
     !> Electrostatic potential key
     Integer(Kind=wi), Public              :: key = ELECTROSTATIC_NULL
-    !> Charge smearing key 
+    !> Charge smearing key
     Integer(Kind=wi), Public              :: smear = SMEARING_NULL
-    !> Charge smearing length 
-    Real(Kind=wp), Public                 :: r_smear = 0.0_wp 
-    !> Slater charge smearing beta relation 
+    !> Charge smearing length
+    Real(Kind=wp), Public                 :: r_smear = 0.0_wp
+    !> Slater charge smearing beta relation
     Integer(Kind=wi), Public              :: b_smear = BETA_ORIGINAL
     !> No electrostatics switch
     Logical, Public                       :: no_elec = .false.
@@ -77,14 +77,11 @@ Module electrostatic
     Integer, Public                       :: nstfce = 1
     Real(Kind=wp), Public                 :: force_shift = 0.0_wp, energy_shift = 0.0_wp
     Real(Kind=wp), Dimension(0:2), Public :: reaction_field = 0.0_wp
-    type (interp_table), Public           :: erfc, erfc_deriv
+    Type(interp_table), Public             :: erfc_over_r, erfc_gamma
 
   Contains
     Procedure, Public                     :: init_erf_tables
     Procedure, Public                     :: erfcgen
-    ! If an exact erfc is desired
-    Procedure, NoPass, Public             :: calc_erfc => calc_erfc_n
-    Procedure, NoPass, Public             :: calc_erfc_deriv => calc_erfc_deriv_n
   End Type electrostatic_type
 
 contains
@@ -92,46 +89,57 @@ contains
     Class(electrostatic_type), Intent(InOut) :: electro
     Integer,                   Intent(In   ) :: nsamples
 
-    electro%erfc%nsamples = nsamples
-    electro%erfc_deriv%nsamples = nsamples
+    electro%erfc_over_r%nsamples = nsamples
+    electro%erfc_gamma%nsamples = nsamples
 
   End Subroutine init_erf_tables
 
   Subroutine erfcgen(electro,rcut,alpha)
     !!-----------------------------------------------------------------------
     !!
-    !! dl_poly_4 routine for generating interpolation tables for erfc/r and its
-    !! derivative - for use with Ewald sum
+    !! dl_poly_4 routine for generating interpolation tables for erfc/r and
+    !! -(d/dr erfc/r) / r. For use with Ewald sum.
     !!
     !! copyright - daresbury laboratory
     !! author    - t.forester december 1994
     !! amended   - i.t.todorov february 2016
     !! amended   - j.s.wilkins september 2019
+    !! ammended  - h.l.devereux january 2025
     !! contrib   - b.t.speake July 2024 - charge smearing
     !!-----------------------------------------------------------------------
     Implicit None
 
     Class(electrostatic_type),   Intent (InOut) :: electro
+    Real(Kind=wp),               Intent(In   )  :: rcut,alpha
 
-    Real(Kind=wp),                Intent(In   ) :: rcut,alpha
+    if (electro%erfc_over_r%initialised .and. electro%erfc_gamma%initialised) return
 
-    if (electro%erfc%initialised .and. electro%erfc_deriv%initialised) return
-
-    call electro%erfc%init(rcut, erfc_ar_over_r)
-    call electro%erfc_deriv%init(rcut, erfc_ar_over_r_deriv)
+    call electro%erfc_over_r%init(rcut, erfc_ar_over_r)
+    call electro%erfc_gamma%init(rcut, erfc_gamma)
 
   contains
     Function erfc_ar_over_r(rrr)
+      !!-----------------------------------------------------------------------
+      !!
+      !! dl_poly_4 Function to calculate erfc / r.
+      !!
+      !! copyright - daresbury laboratory
+      !! author    - t.forester december 1994
+      !! amended   - i.t.todorov february 2016
+      !! amended   - j.s.wilkins september 2019
+      !! ammended  - h.l.devereux january 2025
+      !! contrib   - b.t.speake July 2024 - charge smearing
+      !!-----------------------------------------------------------------------
       Real(Kind=wp) :: rrr
       Real(Kind=wp) :: erfc_ar_over_r
 
       Select Case (electro%smear)
-      Case (SMEARING_LINEAR) 
-        If (rrr < (2 * electro%r_smear)) Then 
+      Case (SMEARING_LINEAR)
+        If (rrr < (2 * electro%r_smear)) Then
           erfc_ar_over_r = calc_erfc_n(alpha*rrr)  - linear_smearing_pot(rrr, electro%r_smear)
-        Else 
+        Else
           erfc_ar_over_r = calc_erfc_n(alpha*rrr)
-        End If 
+        End If
 
       Case (SMEARING_SLATER_EXP)
         erfc_ar_over_r = calc_erfc_n(alpha*rrr) - slater_exp_smearing_pot(rrr, electro%r_smear, electro%b_smear)
@@ -139,67 +147,78 @@ contains
       Case (SMEARING_SLATER_TRUNCATED)
         erfc_ar_over_r = calc_erfc_n(alpha*rrr) - slater_apprx_smearing_pot(rrr, electro%r_smear, electro%b_smear)
 
-      Case (SMEARING_GAUSSIAN) 
-        If (electro%r_smear == (1.0_wp / (2.0_wp*alpha))) Then 
-          erfc_ar_over_r = 0.0_wp 
-        Else 
+      Case (SMEARING_GAUSSIAN)
+        If (electro%r_smear == (1.0_wp / (2.0_wp*alpha))) Then
+          erfc_ar_over_r = 0.0_wp
+        Else
           erfc_ar_over_r = calc_erfc_n(alpha*rrr) - calc_erfc_n(rrr / (2.0_wp*electro%r_smear))
-        End If 
+        End If
 
       Case (SMEARING_GAUSSIAN_EQUAL)
-        erfc_ar_over_r = 0.0_wp 
-        Return  
+        erfc_ar_over_r = 0.0_wp
+        Return
 
-      Case Default 
+      Case Default
         erfc_ar_over_r = calc_erfc_n(alpha*rrr)
-      End Select 
+      End Select
 
-      erfc_ar_over_r = erfc_ar_over_r / rrr 
-    end Function erfc_ar_over_r
+      erfc_ar_over_r = erfc_ar_over_r / rrr
+    End Function erfc_ar_over_r
 
-    Function erfc_ar_over_r_deriv(rrr)
+    Function erfc_gamma(rrr)
+    !!-----------------------------------------------------------------------
+    !!
+    !! dl_poly_4 function to calculate -(d/dr erfc/r) / r.
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - t.forester december 1994
+    !! amended   - i.t.todorov february 2016
+    !! amended   - j.s.wilkins september 2019
+    !! ammended  - h.l.devereux january 2025
+    !! contrib   - b.t.speake July 2024 - charge smearing
+    !!-----------------------------------------------------------------------
       Real(Kind=wp) :: rrr, inv_rsq, inv_r
-      Real(Kind=wp) :: erfc_ar_over_r_deriv
+      Real(Kind=wp) :: erfc_gamma
 
-      inv_r = 1 / rrr 
+      inv_r = 1 / rrr
 
       Select Case (electro%smear)
-      Case (SMEARING_LINEAR) 
-        If (rrr < (2.0_wp * electro%r_smear)) Then 
-          erfc_ar_over_r_deriv = ((calc_erfc_n(alpha*rrr) * inv_r) + alpha*calc_erfc_deriv_n(alpha*rrr)) - &
+      Case (SMEARING_LINEAR)
+        If (rrr < (2.0_wp * electro%r_smear)) Then
+          erfc_gamma = ((calc_erfc_n(alpha*rrr) * inv_r) - alpha*calc_erfc_deriv_n(alpha*rrr)) - &
                                     linear_smearing_force(rrr, electro%r_smear) * inv_r
-        Else 
-          erfc_ar_over_r_deriv = ((calc_erfc_n(alpha*rrr) * inv_r) + alpha*calc_erfc_deriv_n(alpha*rrr))
-        End If 
+        Else
+          erfc_gamma = ((calc_erfc_n(alpha*rrr) * inv_r) - alpha*calc_erfc_deriv_n(alpha*rrr))
+        End If
 
       Case (SMEARING_SLATER_EXP)
-        erfc_ar_over_r_deriv = (calc_erfc_n(alpha*rrr) - slater_exp_smearing_force(rrr, electro%r_smear, electro%b_smear)) * inv_r
-        erfc_ar_over_r_deriv = erfc_ar_over_r_deriv  + alpha*calc_erfc_deriv_n(alpha*rrr)
+        erfc_gamma = (calc_erfc_n(alpha*rrr) - slater_exp_smearing_force(rrr, electro%r_smear, electro%b_smear)) * inv_r
+        erfc_gamma = erfc_gamma  - alpha*calc_erfc_deriv_n(alpha*rrr)
 
-      Case (SMEARING_SLATER_TRUNCATED) 
-        erfc_ar_over_r_deriv = (calc_erfc_n(alpha*rrr) - slater_apprx_smearing_force(rrr, electro%r_smear, electro%b_smear)) * inv_r
-        erfc_ar_over_r_deriv = erfc_ar_over_r_deriv  + alpha*calc_erfc_deriv_n(alpha*rrr)
+      Case (SMEARING_SLATER_TRUNCATED)
+        erfc_gamma = (calc_erfc_n(alpha*rrr) - slater_apprx_smearing_force(rrr, electro%r_smear, electro%b_smear)) * inv_r
+        erfc_gamma = erfc_gamma  - alpha*calc_erfc_deriv_n(alpha*rrr)
 
-      Case (SMEARING_GAUSSIAN) 
-        If (electro%r_smear == (1.0_wp / (2.0_wp*alpha))) Then 
-          erfc_ar_over_r_deriv = 0.0_wp 
-        Else 
-          erfc_ar_over_r_deriv = ((calc_erfc_n(alpha*rrr) * inv_r) + alpha*calc_erfc_deriv_n(alpha*rrr))
-          erfc_ar_over_r_deriv = erfc_ar_over_r_deriv - (calc_erfc_n(rrr / (2.0_wp*electro%r_smear)) * inv_r)
-          erfc_ar_over_r_deriv = erfc_ar_over_r_deriv - (calc_erfc_deriv_n(rrr / (2.0_wp*electro%r_smear)) / (2 * electro%r_smear))
-        End If 
+      Case (SMEARING_GAUSSIAN)
+        If (electro%r_smear == (1.0_wp / (2.0_wp*alpha))) Then
+          erfc_gamma = 0.0_wp
+        Else
+          erfc_gamma = ((calc_erfc_n(alpha*rrr) * inv_r) - alpha*calc_erfc_deriv_n(alpha*rrr))
+          erfc_gamma = erfc_gamma - (calc_erfc_n(rrr / (2.0_wp*electro%r_smear)) * inv_r)
+          erfc_gamma = erfc_gamma + (calc_erfc_deriv_n(rrr / (2.0_wp*electro%r_smear)) / (2 * electro%r_smear))
+        End If
 
       Case (SMEARING_GAUSSIAN_EQUAL)
-        erfc_ar_over_r_deriv = 0.0_wp 
-        Return 
+        erfc_gamma = 0.0_wp
+        Return
 
-      Case Default 
-        erfc_ar_over_r_deriv = ((calc_erfc_n(alpha*rrr) * inv_r) + alpha*calc_erfc_deriv_n(alpha*rrr))
-      End Select 
+      Case Default
+        erfc_gamma = ((calc_erfc_n(alpha*rrr) * inv_r) - alpha*calc_erfc_deriv_n(alpha*rrr))
+      End Select
 
       inv_rsq = inv_r * inv_r
-      erfc_ar_over_r_deriv = erfc_ar_over_r_deriv * inv_rsq
-    end Function erfc_ar_over_r_deriv
+      erfc_gamma = erfc_gamma * inv_rsq
+    End Function erfc_gamma
 
 
   End Subroutine erfcgen

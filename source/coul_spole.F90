@@ -28,61 +28,61 @@ Contains
 
     !!------------------------------------------------------------------------!
     !!
-    !! dl_poly_5 subroutine for calculating the correction terms used in 
-    !! force shifted and reaction field based Coulomb interactions based on 
-    !! the electrostatic cutoff distance alongside any additional damping or 
-    !! charge smearing. 
+    !! dl_poly_5 subroutine for calculating the correction terms used in
+    !! force shifted and reaction field based Coulomb interactions based on
+    !! the electrostatic cutoff distance alongside any additional damping or
+    !! charge smearing.
     !!
     !! copyright - daresbury laboratory
-    !! author    - b.t.speake march 2025 
+    !! author    - b.t.speake march 2025
     !!
     !!------------------------------------------------------------------------!
-    
-    Type(electrostatic_type), Intent(InOut) :: electro 
-    Real(Kind=wp),            Intent(In   ) :: rcut 
-    Real(Kind=wp)                           :: b0 
-    Type(smearing_correction)               :: smear 
 
-    If (electro%damp) Then 
+    Type(electrostatic_type), Intent(InOut) :: electro
+    Real(Kind=wp),            Intent(In   ) :: rcut
+    Real(Kind=wp)                           :: b0
+    Type(smearing_correction)               :: smear
+
+    If (electro%damp) Then
       Call electro%erfcgen(rcut, electro%damping)
-      electro%force_shift =   electro%erfc_deriv%end_sample * rcut
-      electro%energy_shift = -(electro%erfc%end_sample + electro%force_shift*rcut)
+      electro%force_shift =   electro%erfc_gamma%end_sample * rcut
+      electro%energy_shift = -(electro%erfc_over_r%end_sample + electro%force_shift*rcut)
 
-    Else If (electro%key == ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then 
+    Else If (electro%key == ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then
       Select Case (electro%smear)
-      Case (SMEARING_LINEAR) 
+      Case (SMEARING_LINEAR)
         smear = linear_smearing(rcut, electro%r_smear)
         electro%force_shift = (1.0_wp - smear%force) / (rcut * rcut)
-        electro%energy_shift = (-1.0_wp - smear%energy) / rcut 
-        electro%energy_shift = electro%energy_shift - electro%force_shift * rcut 
+        electro%energy_shift = (-1.0_wp - smear%energy) / rcut
+        electro%energy_shift = electro%energy_shift - electro%force_shift * rcut
 
       Case (SMEARING_SLATER_EXP)
         smear = slater_exp_smearing(rcut, electro%r_smear, electro%b_smear)
         electro%force_shift =  1.0_wp - smear%force
         electro%force_shift = electro%force_shift / (rcut * rcut)
         electro%energy_shift = -1.0_wp - smear%energy
-        electro%energy_shift = (electro%energy_shift / rcut) - electro%force_shift * rcut 
-      
+        electro%energy_shift = (electro%energy_shift / rcut) - electro%force_shift * rcut
+
       Case (SMEARING_SLATER_TRUNCATED)
         smear = slater_apprx_smearing(rcut, electro%r_smear, electro%b_smear)
         electro%force_shift =  1.0_wp - smear%force
         electro%force_shift = electro%force_shift / (rcut * rcut)
         electro%energy_shift = -1.0_wp - smear%energy
-        electro%energy_shift = (electro%energy_shift / rcut) - electro%force_shift * rcut 
+        electro%energy_shift = (electro%energy_shift / rcut) - electro%force_shift * rcut
 
       Case (SMEARING_GAUSSIAN)
         electro%energy_shift = -(1.0_wp - calc_erfc_n(rcut / (2.0_wp*electro%r_smear))) / rcut
-        electro%force_shift = electro%energy_shift - (0.5_wp / electro%r_smear) *&
+        electro%force_shift = electro%energy_shift + (0.5_wp / electro%r_smear) *&
                                        calc_erfc_deriv_n(rcut / (2.0_wp*electro%r_smear))
         electro%force_shift = electro%force_shift / rcut
-        electro%energy_shift = electro%energy_shift - electro%force_shift * rcut 
-        
-      Case Default 
+        electro%energy_shift = electro%energy_shift - electro%force_shift * rcut
+
+      Case Default
         electro%force_shift =  1.0_wp/rcut**2
         electro%energy_shift = -2.0_wp/rcut ! = -(1.0_wp/rcut+aa*rcut)
-      End Select 
+      End Select
 
-    End If 
+    End If
 
     If (electro%key == ELECTROSTATIC_COULOMB_REACTION_FIELD) Then
       b0    = 2.0_wp*(electro%eps - 1.0_wp)/(2.0_wp*electro%eps + 1.0_wp)
@@ -101,8 +101,8 @@ Contains
     !! electrostatics: adjusted by a config%weighting factor
     !!
     !! copyright - daresbury laboratory
-    !! amended   - i.t.todorov february 2016 
-    !!           - b.t.speake march 2025 
+    !! amended   - i.t.todorov february 2016
+    !!           - b.t.speake march 2025
     !! refactoring:
     !!           - a.m.elena march-october 2018
     !!           - j.madge march-october 2018
@@ -136,8 +136,8 @@ Contains
       coul = chgprd/rrr
       fcoul= coul/rsq
 
-      ! apply any smearing corrections to the electrostatic potential/force 
-      If (electro%smear /= SMEARING_NULL) Then  
+      ! apply any smearing corrections to the electrostatic potential/force
+      If (electro%smear /= SMEARING_NULL) Then
         Select Case (electro%smear)
         Case (SMEARING_LINEAR)
           smear = linear_smearing(rrr, electro%r_smear)
@@ -147,12 +147,12 @@ Contains
           smear = slater_apprx_smearing(rrr, electro%r_smear, electro%b_smear)
         Case (SMEARING_GAUSSIAN)
           smear%energy = calc_erfc_n(rrr / (2.0_wp*electro%r_smear))
-          smear%force = smear%energy - (0.5_wp / electro%r_smear) *&
+          smear%force = smear%energy + (0.5_wp / electro%r_smear) *&
                             calc_erfc_deriv_n(rrr / (2.0_wp*electro%r_smear))
-        End Select 
+        End Select
         coul = coul - (smear%energy / rrr)
         fcoul = fcoul - (smear%force / (rsq * rrr))
-      End If 
+      End If
 
       ! distance dependent dielectric
 
@@ -166,8 +166,8 @@ Contains
     Else If (Any([ELECTROSTATIC_COULOMB_FORCE_SHIFT,ELECTROSTATIC_COULOMB_REACTION_FIELD] == electro%key)) Then
 
       If (electro%damp) Then ! calculate damping contributions
-        erc = electro%erfc%calc(rrr)
-        fer = electro%erfc_deriv%calc(rrr)
+        erc = electro%erfc_over_r%calc(rrr)
+        fer = electro%erfc_gamma%calc(rrr)
 
         coul = chgprd*(erc + electro%force_shift*rrr + electro%energy_shift)
         fcoul= chgprd*(fer - electro%force_shift/rrr)
@@ -177,19 +177,19 @@ Contains
           fcoul= fcoul + chgprd*(-electro%reaction_field(0))
         End If
 
-      Else ! no damping 
-        If (electro%key == ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then ! force shifted 
+      Else ! no damping
+        If (electro%key == ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then ! force shifted
           coul = chgprd*(1.0_wp/rrr + electro%force_shift*rrr+ electro%energy_shift)
           fcoul= chgprd*(1.0_wp/rsq - electro%force_shift)/rrr
 
-        Else If (electro%key == ELECTROSTATIC_COULOMB_REACTION_FIELD) Then ! reaction field 
+        Else If (electro%key == ELECTROSTATIC_COULOMB_REACTION_FIELD) Then ! reaction field
           coul = chgprd*(1.0_wp/rrr + electro%reaction_field(2)*rsq - electro%reaction_field(1))
           fcoul= chgprd*(1.0_wp/rsq/rrr - electro%reaction_field(0))
 
         End If
 
-        ! apply any smearing corrections to the electrostatic potential/force 
-        If (electro%smear /= SMEARING_NULL) Then  
+        ! apply any smearing corrections to the electrostatic potential/force
+        If (electro%smear /= SMEARING_NULL) Then
           Select Case (electro%smear)
           Case (SMEARING_LINEAR)
             smear = linear_smearing(rrr, electro%r_smear)
@@ -199,12 +199,12 @@ Contains
             smear = slater_apprx_smearing(rrr, electro%r_smear, electro%b_smear)
           Case (SMEARING_GAUSSIAN)
             smear%energy = calc_erfc_n(rrr / (2.0_wp*electro%r_smear))
-            smear%force = smear%energy - (0.5_wp / electro%r_smear) *&
+            smear%force = smear%energy + (0.5_wp / electro%r_smear) *&
                               calc_erfc_deriv_n(rrr / (2.0_wp*electro%r_smear))
-          End Select 
+          End Select
           coul = coul - (smear%energy / rrr)
           fcoul = fcoul - (smear%force / (rsq * rrr))
-        End If 
+        End If
 
       End If
 
@@ -236,7 +236,7 @@ Contains
     !! author    - t.forester october 1995
     !! amended   - i.t.todorov november 2014
     !! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
-    !!           - b.t.speake March 2025 
+    !!           - b.t.speake March 2025
     !! refactoring:
     !!           - a.m.elena march-october 2018
     !!           - j.madge march-october 2018
@@ -319,7 +319,7 @@ Contains
           ! calculate forces
 
           If (electro%damp) Then
-            egamma = electro%erfc_deriv%calc(rrr) - electro%force_shift / rrr
+            egamma = electro%erfc_gamma%calc(rrr) - electro%force_shift / rrr
             egamma = egamma * chgprd
           Else
             Select Case (electro%smear)
@@ -329,14 +329,14 @@ Contains
             Case (SMEARING_SLATER_TRUNCATED)
               egamma = (1.0_wp - slater_apprx_smearing_force(rrr, electro%r_smear, electro%b_smear)) / rsq
               egamma = (egamma - electro%force_shift) * (chgprd / rrr)
-            Case (SMEARING_GAUSSIAN) 
+            Case (SMEARING_GAUSSIAN)
               egamma = (1.0_wp - calc_erfc_n(rrr / (2.0_wp*electro%r_smear))) / rrr
-              egamma = egamma - (1.0_wp / (2.0_wp * electro%r_smear)) * calc_erfc_deriv_n(rrr / (2.0_wp*electro%r_smear))
-              egamma = (egamma / rrr) - electro%force_shift 
+              egamma = egamma + (1.0_wp / (2.0_wp * electro%r_smear)) * calc_erfc_deriv_n(rrr / (2.0_wp*electro%r_smear))
+              egamma = (egamma / rrr) - electro%force_shift
               egamma = egamma * (chgprd / rrr)
-            Case Default 
+            Case Default
               egamma=chgprd*(1.0_wp/rsq - electro%force_shift)/rrr
-            End Select 
+            End Select
           End If
 
           fx = egamma*xxt(m)
@@ -366,7 +366,7 @@ Contains
             ! calculate potential energy and virial
 
             If (electro%damp) Then
-              coul = electro%erfc%calc(rrr) + electro%force_shift*rrr + electro%energy_shift
+              coul = electro%erfc_over_r%calc(rrr) + electro%force_shift*rrr + electro%energy_shift
               coul = coul * chgprd
 
             Else
@@ -458,7 +458,7 @@ Contains
     !! author    - t.forester february 1995
     !! amended   - i.t.todorov november 2014
     !! contrib   - a.v.brukhno & m.a.seaton august 2020 - 'half-halo' VNL
-    !!           - b.t.speake march 2025 
+    !!           - b.t.speake march 2025
     !! refactoring:
     !!           - a.m.elena march-october 2018
     !!           - j.madge march-october 2018
@@ -476,7 +476,7 @@ Contains
     Type(configuration_type),                              Intent(InOut) :: config
 
     Real(Kind=wp), Dimension(9) :: stress_temp, stress_temp_comp
-    Real(Kind=wp), Dimension(3) :: x_temp, f_temp       
+    Real(Kind=wp), Dimension(3) :: x_temp, f_temp
     Real(Kind=wp)               :: coul
 
     !> Intermediate reaction field variable
@@ -548,26 +548,26 @@ Contains
           ! calculate forces
 
           If (electro%damp) Then
-            egamma = (electro%erfc_deriv%calc(rrr) - &
+            egamma = (electro%erfc_gamma%calc(rrr) - &
               & electro%force_shift/rrr - electro%reaction_field(0))*chgprd
           Else
             Select Case (electro%smear)
             Case (SMEARING_LINEAR)
-              egamma = (1.0 - linear_smearing_force(rrr, electro%r_smear)) / rsq 
+              egamma = (1.0 - linear_smearing_force(rrr, electro%r_smear)) / rsq
               egamma = ((egamma / rrr) - electro%reaction_field(0)) * chgprd
             Case (SMEARING_SLATER_EXP)
-              egamma = (1.0 - slater_exp_smearing_force(rrr, electro%r_smear, electro%b_smear)) / rsq 
+              egamma = (1.0 - slater_exp_smearing_force(rrr, electro%r_smear, electro%b_smear)) / rsq
               egamma = ((egamma / rrr) - electro%reaction_field(0)) * chgprd
             Case (SMEARING_SLATER_TRUNCATED)
-              egamma = (1.0 - slater_apprx_smearing_force(rrr, electro%r_smear, electro%b_smear)) / rsq 
+              egamma = (1.0 - slater_apprx_smearing_force(rrr, electro%r_smear, electro%b_smear)) / rsq
               egamma = ((egamma / rrr) - electro%reaction_field(0)) * chgprd
             Case (SMEARING_GAUSSIAN)
               egamma = (1.0_wp - calc_erfc_n(rrr / (2.0_wp*electro%r_smear))) / rrr
-              egamma = egamma - (1.0_wp / (2.0_wp * electro%r_smear)) * calc_erfc_deriv_n(rrr / (2.0_wp*electro%r_smear))
-              egamma = ((egamma / rsq) - electro%reaction_field(0)) * chgprd 
-            Case Default 
+              egamma = egamma + (1.0_wp / (2.0_wp * electro%r_smear)) * calc_erfc_deriv_n(rrr / (2.0_wp*electro%r_smear))
+              egamma = ((egamma / rsq) - electro%reaction_field(0)) * chgprd
+            Case Default
               egamma=chgprd*(1.0_wp/rsq/rrr - electro%reaction_field(0))
-            End Select 
+            End Select
           End If
 
           fx = egamma*xxt(m)
@@ -600,7 +600,7 @@ Contains
 
               ! calculate interaction energy using 3-point interpolation
 
-              coul = (electro%erfc%calc(rrr) + electro%force_shift*rrr + electro%energy_shift + &
+              coul = (electro%erfc_over_r%calc(rrr) + electro%force_shift*rrr + electro%energy_shift + &
                 electro%reaction_field(2)*(rsq-neigh%cutoff_2))*chgprd
 
             Else
@@ -621,9 +621,9 @@ Contains
                 coul = (1.0_wp - calc_erfc_n(rrr / (2.0_wp*electro%r_smear))) / rrr
                 coul = coul + electro%reaction_field(2)*rsq - electro%reaction_field(1)
                 coul = coul * chgprd
-              Case Default 
+              Case Default
                 coul = chgprd*(1.0_wp/rrr + electro%reaction_field(2)*rsq - electro%reaction_field(1))
-              End Select 
+              End Select
             End If
 
             engcpe = engcpe + coul
@@ -684,7 +684,7 @@ Contains
     !! copyright - daresbury laboratory
     !! author    - t.forester february 1993
     !! amended   - i.t.todorov november 2014
-    !! contrib   - b.t.speake march 2025 
+    !! contrib   - b.t.speake march 2025
     !! refactoring:
     !!           - a.m.elena march-october 2018
     !!           - j.madge march-october 2018
@@ -702,7 +702,7 @@ Contains
     Type(configuration_type),                              Intent(InOut) :: config
 
     Real(Kind=wp), Dimension(9)    :: stress_temp, stress_temp_comp
-    Real(Kind=wp), Dimension(3)    :: x_temp, f_temp       
+    Real(Kind=wp), Dimension(3)    :: x_temp, f_temp
     Integer                        :: idi,jatm,m
     Real(Kind=wp)                  :: chgea,chgprd,rrr,coul,fcoul, &
                                       fix,fiy,fiz,fx,fy,fz
@@ -761,8 +761,8 @@ Contains
           coul = chgprd/rrr
           fcoul = coul/rrr**2
 
-          ! apply any smearing corrections to the electrostatic potential/force 
-          If (electro%smear /= SMEARING_NULL) Then  
+          ! apply any smearing corrections to the electrostatic potential/force
+          If (electro%smear /= SMEARING_NULL) Then
             Select Case (electro%smear)
             Case (SMEARING_LINEAR)
               smear = linear_smearing(rrr, electro%r_smear)
@@ -772,12 +772,12 @@ Contains
               smear = slater_apprx_smearing(rrr, electro%r_smear, electro%b_smear)
             Case (SMEARING_GAUSSIAN)
               smear%energy = calc_erfc_n(rrr / (2.0_wp*electro%r_smear))
-              smear%force = smear%energy - (0.5_wp / electro%r_smear) *&
+              smear%force = smear%energy + (0.5_wp / electro%r_smear) *&
                                 calc_erfc_deriv_n(rrr / (2.0_wp*electro%r_smear))
-            End Select 
+            End Select
             coul = coul - (smear%energy / rrr)
             fcoul = fcoul - (smear%force / (rrr**3))
-          End If 
+          End If
 
           fx = fcoul*xxt(m)
           fy = fcoul*yyt(m)
@@ -886,9 +886,9 @@ Contains
     Real(Kind=wp),                                         Intent(  Out) :: engcpe,vircpe
     Type(stats_type),                                      Intent(InOut) :: stats
     Type(configuration_type),                              Intent(InOut) :: config
-    
+
     Real(Kind=wp), Dimension(9)  :: stress_temp, stress_temp_comp
-    Real(Kind=wp), Dimension(3)  :: x_temp, f_temp       
+    Real(Kind=wp), Dimension(3)  :: x_temp, f_temp
     Integer                      :: idi,jatm,m
     Real(Kind=wp)                :: chgea,chgprd,rrr,rsq,coul,fcoul, &
                                     fix,fiy,fiz,fx,fy,fz
@@ -951,8 +951,8 @@ Contains
           coul = chgprd/rsq
           fcoul = 2.0_wp*coul/rsq
 
-          ! apply any smearing corrections to the electrostatic potential/force 
-          If (electro%smear /= SMEARING_NULL) Then  
+          ! apply any smearing corrections to the electrostatic potential/force
+          If (electro%smear /= SMEARING_NULL) Then
             Select Case (electro%smear)
             Case (SMEARING_LINEAR)
               smear = linear_smearing(rrr, electro%r_smear)
@@ -962,12 +962,12 @@ Contains
               smear = slater_apprx_smearing(rrr, electro%r_smear, electro%b_smear)
             Case (SMEARING_GAUSSIAN)
               smear%energy = calc_erfc_n(rrr / (2.0_wp*electro%r_smear))
-              smear%force = smear%energy - (0.5_wp / electro%r_smear) *&
+              smear%force = smear%energy + (0.5_wp / electro%r_smear) *&
                                 calc_erfc_deriv_n(rrr / (2.0_wp*electro%r_smear))
-            End Select 
+            End Select
             coul = coul - (smear%energy / rsq)
             fcoul = fcoul - (smear%force / (rsq * rsq))
-          End If 
+          End If
 
           fx = fcoul*xxt(m)
           fy = fcoul*yyt(m)

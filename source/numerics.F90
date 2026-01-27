@@ -3675,7 +3675,7 @@ Contains
     Real(kind=wp), Intent(In   ) :: x
     Real(kind=wp)                :: d_erfc
 
-    d_erfc = 2.0_wp * Exp(-(x**2)) * rsqrpi
+    d_erfc = -2.0_wp * Exp(-(x**2)) * rsqrpi
 
   End Function calc_erfc_deriv_n
 

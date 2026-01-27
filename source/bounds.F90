@@ -814,8 +814,8 @@ Contains
     ! maximum number of grid points for electrostatics
 
     If (ewld%direct .or. (electro%no_elec .and. .not. ewld%vdw)) Then
-      electro%erfc%nsamples = -1
-      electro%erfc_deriv%nsamples = -1
+      electro%erfc_over_r%nsamples = -1
+      electro%erfc_gamma%nsamples = -1
     Else
       Call electro%init_erf_tables(Max(1004, Nint(neigh%cutoff / delr_max) + 4))
       If (electro%key == ELECTROSTATIC_SPME) Then 
@@ -853,7 +853,7 @@ Contains
 
     mxgrid = Max(config%mxgana, vdws%max_grid, met%maxgrid, zdensity%max_grid, &
                  rdf%max_grid, rdf%max_grid_usr, bond%bin_tab, angle%bin_tab, dihedral%bin_tab, &
-                 inversion%bin_tab, electro%erfc%nsamples, vdws%max_grid, met%maxgrid, tersoffs%max_grid)
+                 inversion%bin_tab, electro%erfc_over_r%nsamples, vdws%max_grid, met%maxgrid, tersoffs%max_grid)
 
   End Subroutine setup_grids
 

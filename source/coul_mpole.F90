@@ -474,8 +474,8 @@ Contains
 
         Call electro%erfcgen(neigh%cutoff, electro%damping)
 
-        electro%force_shift = electro%erfc_deriv%end_sample * neigh%cutoff
-        electro%energy_shift = -(electro%erfc%end_sample + electro%force_shift * neigh%cutoff)
+        electro%force_shift = electro%erfc_gamma%end_sample * neigh%cutoff
+        electro%energy_shift = -(electro%erfc_over_r%end_sample + electro%force_shift * neigh%cutoff)
 
       Else
 
@@ -579,7 +579,7 @@ Contains
 
             ! erfcr = (t1 + (t2-t1)*ppp*0.5_wp)/electro%damping
 
-            erfcr = electro%erfc%calc(rrr) / electro%damping
+            erfcr = electro%erfc_over_r%calc(rrr) / electro%damping
             ! compute derivatives of the ewald real space kernel
 
             Call ewald_deriv(-2, 2 * mpoles%max_order + 1, 1, erfcr, electro%damping * xxt(m), &
@@ -1013,8 +1013,8 @@ Contains
 
         Call electro%erfcgen(neigh%cutoff, electro%damping)
 
-        electro%force_shift = electro%erfc_deriv%end_sample * neigh%cutoff
-        electro%energy_shift = -(electro%erfc%end_sample + electro%force_shift * neigh%cutoff)
+        electro%force_shift = electro%erfc_gamma%end_sample * neigh%cutoff
+        electro%energy_shift = -(electro%erfc_over_r%end_sample + electro%force_shift * neigh%cutoff)
 
       Else
 
@@ -1123,7 +1123,7 @@ Contains
             ! get the value of the ewald real space kernel using 3pt interpolation
 
             ! erfcr = (t1 + (t2-t1)*ppp*0.5_wp)/electro%damping
-            erfcr = electro%erfc%calc(rrr) / electro%damping
+            erfcr = electro%erfc_over_r%calc(rrr) / electro%damping
 
             ! compute derivatives of the ewald real space kernel
 

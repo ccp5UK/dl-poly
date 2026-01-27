@@ -515,21 +515,21 @@ Contains
     Integer(Kind=wi)                        :: fail
  
     electro%initialised = .false.
-    If (electro%erfc%initialised) Then 
-      Deallocate (electro%erfc%table, stat=fail)
+    If (electro%erfc_over_r%initialised) Then 
+      Deallocate (electro%erfc_over_r%table, stat=fail)
       If (fail > 0) Call error_dealloc('electro%erfc%table', 'init_interp_table')
-      electro%erfc%spacing = -1.0_wp
-      electro%erfc%recip_spacing = -1.0_wp
-      electro%erfc%nsamples = 0
-      electro%erfc%initialised = .false.
+      electro%erfc_over_r%spacing = -1.0_wp
+      electro%erfc_over_r%recip_spacing = -1.0_wp
+      electro%erfc_over_r%nsamples = 0
+      electro%erfc_over_r%initialised = .false.
     End If 
-    If (electro%erfc_deriv%initialised) Then 
-      Deallocate (electro%erfc_deriv%table, stat=fail)
+    If (electro%erfc_gamma%initialised) Then 
+      Deallocate (electro%erfc_gamma%table, stat=fail)
       If (fail > 0) Call error_dealloc('electro%erfc_deriv%table', 'init_interp_table')
-      electro%erfc_deriv%spacing = -1.0_wp
-      electro%erfc_deriv%recip_spacing = -1.0_wp
-      electro%erfc_deriv%nsamples = 0
-      electro%erfc_deriv%initialised = .false.
+      electro%erfc_gamma%spacing = -1.0_wp
+      electro%erfc_gamma%recip_spacing = -1.0_wp
+      electro%erfc_gamma%nsamples = 0
+      electro%erfc_gamma%initialised = .false.
     End If 
     Call electro%init_erf_tables(Max(1004, Nint(rcut / 0.01_wp) + 4))
     Call electro%erfcgen(rcut, electro%damping)
