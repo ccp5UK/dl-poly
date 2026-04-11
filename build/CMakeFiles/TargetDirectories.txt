@@ -1,0 +1,14 @@
+/app/build/CMakeFiles/edit_cache.dir
+/app/build/CMakeFiles/rebuild_cache.dir
+/app/build/CMakeFiles/list_install_components.dir
+/app/build/CMakeFiles/install.dir
+/app/build/CMakeFiles/install/local.dir
+/app/build/CMakeFiles/install/strip.dir
+/app/build/source/CMakeFiles/dlpoly.dir
+/app/build/source/CMakeFiles/DLPOLY.Z.dir
+/app/build/source/CMakeFiles/edit_cache.dir
+/app/build/source/CMakeFiles/rebuild_cache.dir
+/app/build/source/CMakeFiles/list_install_components.dir
+/app/build/source/CMakeFiles/install.dir
+/app/build/source/CMakeFiles/install/local.dir
+/app/build/source/CMakeFiles/install/strip.dir

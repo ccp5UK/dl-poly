@@ -1,0 +1,9 @@
+#%Module1.0
+
+proc ModulesHelp { } {
+  puts stderr "Simple module for DL_POLY b0083a6"
+}
+module-whatis   "Simple module for DL_POLY b0083a6"
+
+prepend-path PATH /usr/local/bin
+prepend-path LD_LIBRARY_PATH /usr/local/lib
