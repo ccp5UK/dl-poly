@@ -1163,7 +1163,7 @@ Contains
           Do While (check .and. kshels < Min(jshels, cshell%mxshl))
             kshels = kshels + 1
             check = .not. (jj == cshell%listshl(0, kshels) .and. & ! core-shell units don't intersect
-                           iatm == cshell%listshl(1, kshels)) ! .and. jatm == cshell%listshl(2,kshels) )
+                           iatm == cshell%listshl(1, kshels) .and. jatm == cshell%listshl(2, kshels))
           End Do
 
           ! add new core-shell unit
