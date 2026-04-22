@@ -1,0 +1,3 @@
+## 2024-06-25 - Fortran Exponentiation Optimization
+**Learning:** In Fortran, raising a floating-point number to a floating-point power (like `x**2.0_wp` or `x**3.0_wp`) is significantly slower than raising it to an integer power (`x**2` or `x**3`). The compiler evaluates floating-point exponents using expensive math library functions (often equivalent to `exp(y * log(x))`), while integer exponents are optimized into simple multiplications (e.g., `x * x`).
+**Action:** When identifying performance bottlenecks in Fortran code, look for floating-point exponents and replace them with integer exponents where applicable to yield a measurable speedup without sacrificing precision or readability.
