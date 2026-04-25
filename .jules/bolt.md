@@ -1,0 +1,3 @@
+## 2024-04-25 - Prefer Integer Exponentiation over Floating Point
+**Learning:** In Fortran math kernels, expressions like `x**2.0_wp` default to using `pow()` or `exp(y * log(x))` internally, which is significantly slower than integer exponentiation `x**2` that gets compiled directly into repeated multiplication (`x*x`). Since this codebase involves heavy numerical calculation and molecular dynamic simulations, this is a critical difference.
+**Action:** Always prefer integer exponents `**2` instead of floating point `**2.0_wp` everywhere in Fortran calculation paths to optimize hot-loop computations.
