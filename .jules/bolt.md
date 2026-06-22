@@ -1,0 +1,3 @@
+## 2024-05-18 - Fortran Exponentiation Optimization
+**Learning:** In Fortran, float exponentiation like x**2.0_wp uses an expensive generic floating point algorithm such as exp(y * log(x)), while integer exponentiation x**2 relies on efficient multiplication (e.g. x * x). This is significantly faster.
+**Action:** Whenever possible, use integer constants for small, fixed exponents in Fortran instead of floating point constants (e.g., x**2 instead of x**2.0_wp or x**2.0). Also, applying floating point exponents to negative bases can produce NaN due to log evaluation, so integer exponents avoid stability issues.
