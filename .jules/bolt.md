@@ -1,0 +1,3 @@
+## 2024-06-25 - Fortran Exponentiation Optimization
+**Learning:** In this Fortran codebase, using floating-point exponentiation (e.g., `**2.0_wp`) for integer powers causes the compiler to invoke expensive math library calls like `exp(y * log(x))` rather than performing simple multiplication, leading to significant performance degradation in hot loops. Additionally, negative bases with floating-point exponents can cause NaN errors or exceptions.
+**Action:** Always prefer integer exponentiation (e.g., `**2` instead of `**2.0_wp`) when calculating integer powers to avoid expensive intrinsic function calls and improve robustness.
