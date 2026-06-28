@@ -1,0 +1,3 @@
+## 2024-05-18 - Fortran Exponentiation Performance
+**Learning:** In Fortran, integer exponentiation (e.g., `x**2`) is significantly faster than floating-point exponentiation (e.g., `x**2.0_wp`). Floating-point exponentiation forces the compiler to call costly math library functions like `exp(y * log(x))`, whereas integer exponentiation compiles down to simple multiplications (e.g., `x*x`). Furthermore, evaluating negative bases with floating-point exponents can cause NaN errors or exceptions in Fortran.
+**Action:** Always prefer integer exponents (e.g., `**2` instead of `**2.0_wp`) in performance-critical Fortran routines such as those calculating integrators or potentials.
