@@ -1,8 +1,158 @@
 Release notes for DL_POLY_5
 ===========================
 
+Version 5.3.0: March 2025
+-------------------------
+
++ Improvements and new features
+  + CMake build type is not Release if not set, or the already set value.
+  + Support > 10 digits integers in write_config.
+  + Allow renaming of HEATFLUX.
+  + Use dlpoly-py based test framework in CI.
+  + Support correlations componentwise.
+  + Currents now separated by species.
+  + Correlations stored in a hash table for runtime addressing.
+  + Test hash in CI and fix unending loop.
+  + Make temperature a required parameter in CONTROL.
+  + Adds 2nd derivatives of the energy for two body potentials.
+  + Support complex correlatables.
+  + Adds Correlations of STATIS values.
+  + Adds Elastic constants calculated form stress correlations.
+  + Support individual frequencies for correlations.
+  + Update ctests and user new CMake version.
+  + Error if FIELDs atom count inconsistent with CONFIG.
+  + Add chemshell shell energies in the total system energy.
+  + Move correlation data out of hash table for performance reasons.
+  + Add k-space density and long/tran/energy currents to CURRENTS.
+  + Add correlations of CURRENTS.
+  + Collect per-particle data with metal_forces.
+  + Add bar as a unit.
+  + Add refactored, corrected and expanded dpd thermostat.
+  + Test SARU RNG against SARU's reference implementation.
+  + Add momentum density (mass flux) to CURRENTS.
+  + Add heating and cooling.
+  + Add charge smearing with DPD.
+  + Improve parallel correlator performance.
+  + Adds strain tensor calculation.
+
++ Bug fixes and maintenance
+  + Fix formatting errors in docs.
+  + Move strict checks to pre-field parsing.
+  + Fix TTM boundary heat flux as a DATA_FLOAT not BOOL.
+  + Fix formatting of vector params for python dump.
+  + Fix unnecessary per-particle SPME calls.
+  + Fix dead links in readme.
+  + Fix coordlist unnecessary allocations.
+  + Fix memory leak in units.
+  + Fix crash if no KPOINTS file and CURRENTS are calculated.
+  + Fix ZBL potential.
+  + Fix currents computations.
+  + Fix latex pdf documentation build.
+  + Remove kinds.mod - stray file.
+  + Fix crash with old-style control files.
+  + Handle entries without values in psinfo.
+  + Fix parameter dump to dump CSV.
+  + Fix indices in documentation.
+
+Version 5.2.0: February 2024
+----------------------------
+
++ Improvements and new features
+  + Easybuild recipes.
+  + Unit printing in OUTPUT.
+  + CI and build scripts for automated testing, including contributors.
+  + Adds Sphinx manual.
+  + Adds presets for Windows and Darwin.
+  + New units (Tesla) and updated abbreviations.
+  + Improve handling of CLI.
+  + Adds Vector and string vector CONTROL data types.
+  + Add multi-tau correlation algorithm with stress and velocity correlations.
+  + Add dlpoly-py based test framework for CI.
+  + Use Python virtual environment in CI.
+  + Viscosity measurement from stress correlations.
+  + Support larger filenames internally.
+  + Add MSD and RDF tests.
+  + Adds numerical integration routines (trapezium/simpsons rule).
+  + Support 0 (which is the default) for statistics frequency in CONTROL.
+  + YAML output option for timers.
+  + Support nul file names NONE, NUL, /dev/null.
+  + Support Fortran 2018, compile to it as default.
+  + Adds kinematic viscosity and thermal-conductivity components for correlations.
+  + Adds nDPD VdW potential.
+  + Sphinx documentation fixes and build badge generation.
+  + Update readme links.
+  + Convert MD files to RST.
+  + Abstract tow body potentials to two_body_potentials.F90
+  + Allow renaming of CURRENTS file.
+  + Use Github data for test data.
+
+
++ Removed or deprecated features
+  + Replace ewald with spme in new control.
+  + Enforce new control as the default.
+
++ Bug fixes and maintenance
+  + Enforce plumed versions in install scripts.
+  + Chemshell interface tested.
+  + Version automated.
+  + IFX testing.
+  + Fix stress contributions to energy (NST).
+  + Fix analysis bin size initial values in new control.
+  + Fix issue with semi-isotropic constraints.
+  + Silence dummy argument warnings in control_parameter.
+  + Fix per-particle stress calculation issue.
+  + Add missing control options in new control.
+  + Fix TTM derivative in new CONTROL.
+  + Fix issue with VAF and revive.
+  + Remove some unused values.
+  + Fix unit tests and execute them in CI.
+  + Fix output of titles for YAML.
+  + Corrected DPD potential and force.
+  + Fix step unit conversion.
+  + Compile GPFA without argument-missmatch.
+  + Temporary error system initialised as soon as possible.
+  + Fix spelling error (Berthelot).
+  + Fixes for SW.
+  + Remove unused files.
+  + Fix TTM units in control.
+
 Version 5.1.0: December 2021
 ----------------------------
+
++ Improvements and new features.
+  + Py-ChemShell dl_poly_interface.
+  + Improved error message output relating to the new control format.
+  + Update readme with more information, papers, and other project links.
+  + Improve stability of Langevin impulse, fix variable timesteps.
+  + Add instructions for ARCHER.
+  + Three body: SW implementation.
+  + Two-body: add Sanderson potential.
+  + spme now a new control option.
+  + Dump control options to screen.
+  + Adds density output information and output units.
+  + Adds more aggressive debugging compiler flags.
+  + More unit schemes supported in new control, and as output unit schemes.
+
++ Removed or deprecated features
+  + NETCDF removed.
+
++ Bug fixes, and maintenance
+  + LAPACK no longer a CMake requirement.
+  + Pass compilers to KIM in CMake.
+  + Fix readme links.
+  + Fix compiler issues with nvfortran.
+  + Fix defect deallocation bugs.
+  + REVCON and REVIVE output synced.
+  + Fix minimisation units.
+  + Fix TTM restart and MPI bugs.
+  + Fix compile error in metal.
+  + Address issues flagged by Valgrind.
+  + Fix printed version.
+  + Address compiler warnings.
+  + Fix bounds for non-periodic and slab.
+  + Cleanup of errors and warnings.
+  + Cleanup of output units.
+
 
 Version 5.0.0: February 2021
 -----------------------------
