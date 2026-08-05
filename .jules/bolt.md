@@ -1,0 +1,3 @@
+## 2026-08-05 - Optimize Fortran exponentiation
+**Learning:** For Fortran performance optimization, integer exponentiation (e.g., x**2 or x**3) is strongly preferred over floating-point exponentiation (e.g., x**2.0_wp). Floating-point exponents trigger expensive math library function calls like exp(y * log(x)). It also improves code robustness, as evaluating negative bases with floating-point exponents can cause NaN errors or exceptions in Fortran.
+**Action:** Always verify math equations in Fortran to replace floating-point exponentiation with integer exponentiation when the exponent is a whole number.
