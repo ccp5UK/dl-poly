@@ -275,6 +275,7 @@ Contains
     link = 0
     lct = 0
     lst = 0
+    listin = 0
 
     ! Get the total number of link-cells in MD cell per direction
 
@@ -426,7 +427,6 @@ Contains
             ! and its length (mini-neigh%list of neighbour cell contents)
 
             k = 0
-            listin = 0
 
             ! secondary loop over subcells
 
