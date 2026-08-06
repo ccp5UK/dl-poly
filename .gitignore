@@ -1,3 +1,7 @@
 data/*.tar.xz
 data/reference
 source/*.mod
+build/*
+!build/build-kim.sh
+!build/build-plumed.sh
+!build/CMakeLists.txt
