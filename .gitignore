@@ -1,3 +1,4 @@
 data/*.tar.xz
 data/reference
 source/*.mod
+build/*

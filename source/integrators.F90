@@ -311,9 +311,10 @@ Contains
       If (Mod(n,2) == 1) Then 
         h0 = t(Size(t)-1)-t(Size(t)-2)
         h1 = t(Size(t))-t(Size(t)-1)
-        v = v + f(Size(f))   * (2.0_wp * h1 ** 2.0_wp + 3.0_wp * h0 * h1) / (6.0_wp * (h0 + h1))
-        v = v + f(Size(f)-1) * (h1 ** 2.0_wp + 3.0_wp * h1 * h0)      / (6.0_wp * h0)
-        v = v - f(Size(f)-2) * h1 ** 3.0_wp               / (6.0_wp * h0 * (h0 + h1))
+        ! ⚡ Bolt: Use integer exponentiation for better performance
+        v = v + f(Size(f))   * (2.0_wp * h1 ** 2 + 3.0_wp * h0 * h1) / (6.0_wp * (h0 + h1))
+        v = v + f(Size(f)-1) * (h1 ** 2 + 3.0_wp * h1 * h0)      / (6.0_wp * h0)
+        v = v - f(Size(f)-2) * h1 ** 3               / (6.0_wp * h0 * (h0 + h1))
       End If
     End If    
   End Function simpsons_rule_non_uniform
