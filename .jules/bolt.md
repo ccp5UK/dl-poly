@@ -1,0 +1,3 @@
+## 2024-05-13 - Replace Floating-Point Exponents With Integer Exponents
+**Learning:** Found several places where `**2.0_wp` or `**3.0_wp` are used in performance-critical areas like `sanderson_energy` (in `two_body_potentials.F90`) and Simpson integration rules (`integrators.F90`). In Fortran, float-based exponentiation triggers expensive generic math library function calls (often `exp(y * log(x))`), while integer exponents (`**2` or `**3`) usually compile into simpler inline multiplications.
+**Action:** Replace these `**.0_wp` literals with integer counterparts (`**2` or `**3`) for faster execution.
