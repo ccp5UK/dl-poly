@@ -1059,11 +1059,11 @@ Contains
 
     L = p%L
     d = p%d
-    b = ((r - L)/d)**2.0_wp
+    b = ((r - L)/d)**2 ! ⚡ Bolt: Using integer exponentiation for performance
     t = p%A * Exp(-b)
 
     sanderson_energy%energy = -t
-    sanderson_energy%gamma = -2.0_wp*(r-L)*r*t/(d**2.0_wp)
+    sanderson_energy%gamma = -2.0_wp*(r-L)*r*t/(d**2) ! ⚡ Bolt: Using integer exponentiation for performance
     If (comp_sec_deriv) Then
       sanderson_energy%delta = 2.0_wp*t*(p%d**2 - 2.0_wp*(r-p%L)**2) / (d**4)
     Else
