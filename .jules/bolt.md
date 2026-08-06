@@ -1,0 +1,3 @@
+## 2024-05-24 - Floating-Point Exponentiation in Fortran
+**Learning:** In Fortran, raising to a floating-point power (e.g., `x**2.0_wp` or `x**3.0_wp`) is often not optimized by the compiler into simple multiplications, even with optimization flags like `-O3`. Instead, it results in expensive calls to math library functions like `exp(y * log(x))`. This causes a massive performance degradation (up to 7x slower in unoptimized builds).
+**Action:** Always prefer integer exponents (e.g., `x**2`, `x**3`) for whole-number powers to ensure the compiler generates fast, inline multiplication instructions.
