@@ -5156,7 +5156,7 @@ Contains
             Call get_word(record, word)
             itmp = Nint(Abs(word_2_real(word, 0.0_wp)))
             If (itmp == 0) Then
-              tmp = Min(Real(comm%mxnode, wp), 2.0_wp * Real(comm%mxnode, wp)**0.5_wp)
+              tmp = Min(Real(comm%mxnode, wp), 2.0_wp * Sqrt(Real(comm%mxnode, wp)))
               itmp = 2**Int(Nearest(Log(tmp) / Log(2.0_wp), +1.0_wp))
               Do While (Mod(comm%mxnode, itmp) /= 0)
                 itmp = itmp - 1
@@ -5165,7 +5165,7 @@ Contains
               Call info(message, .true., level=3)
             Else
               If (itmp > comm%mxnode) Then
-                tmp = Min(Real(comm%mxnode, wp), 2.0_wp * Real(comm%mxnode, wp)**0.5_wp)
+                tmp = Min(Real(comm%mxnode, wp), 2.0_wp * Sqrt(Real(comm%mxnode, wp)))
                 itmp = 2**Int(Nearest(Log(tmp) / Log(2.0_wp), +1.0_wp))
                 Do While (Mod(comm%mxnode, itmp) /= 0)
                   itmp = itmp - 1
@@ -5205,7 +5205,7 @@ Contains
             Write (message, '(a,i10)') 'I/O readers (enforced) ', 1
             Call info(message, .true., level=3)
           Else
-            tmp = Min(Real(comm%mxnode, wp), 2.0_wp * Real(comm%mxnode, wp)**0.5_wp)
+            tmp = Min(Real(comm%mxnode, wp), 2.0_wp * Sqrt(Real(comm%mxnode, wp)))
             itmp = 2**Int(Nearest(Log(tmp) / Log(2.0_wp), +1.0_wp))
             Write (message, '(a,i10)') 'I/O readers (enforced) ', itmp
             Call info(message, .true., level=3)
@@ -5316,7 +5316,7 @@ Contains
             Call get_word(record, word)
             itmp = Nint(Abs(word_2_real(word, 0.0_wp)))
             If (itmp == 0) Then
-              tmp = Min(Real(comm%mxnode, wp), 8.0_wp * Real(comm%mxnode, wp)**0.5_wp)
+              tmp = Min(Real(comm%mxnode, wp), 8.0_wp * Sqrt(Real(comm%mxnode, wp)))
               itmp = 2**Int(Nearest(Log(tmp) / Log(2.0_wp), +1.0_wp))
               Do While (Mod(comm%mxnode, itmp) /= 0)
                 itmp = itmp - 1
@@ -5325,7 +5325,7 @@ Contains
               Call info(message, .true., level=3)
             Else
               If (itmp > comm%mxnode) Then
-                tmp = Min(Real(comm%mxnode, wp), 8.0_wp * Real(comm%mxnode, wp)**0.5_wp)
+                tmp = Min(Real(comm%mxnode, wp), 8.0_wp * Sqrt(Real(comm%mxnode, wp)))
                 itmp = 2**Int(Nearest(Log(tmp) / Log(2.0_wp), +1.0_wp))
                 Do While (Mod(comm%mxnode, itmp) /= 0)
                   itmp = itmp - 1
@@ -5365,7 +5365,7 @@ Contains
             Write (message, '(a,i10)') 'I/O writers (enforced) ', 1
             Call info(message, .true., level=3)
           Else
-            tmp = Min(Real(comm%mxnode, wp), 8.0_wp * Real(comm%mxnode, wp)**0.5_wp)
+            tmp = Min(Real(comm%mxnode, wp), 8.0_wp * Sqrt(Real(comm%mxnode, wp)))
             itmp = 2**Int(Nearest(Log(tmp) / Log(2.0_wp), +1.0_wp))
             Write (message, '(a,i10)') 'I/O writers (enforced) ', itmp
             Call info(message, .true., level=3)
@@ -5477,7 +5477,7 @@ Contains
 
       ! number of readers
 
-      tmp = Min(Real(comm%mxnode, wp), 2.0_wp * Real(comm%mxnode, wp)**0.5_wp)
+      tmp = Min(Real(comm%mxnode, wp), 2.0_wp * Sqrt(Real(comm%mxnode, wp)))
       itmp = 2**Int(Nearest(Log(tmp) / Log(2.0_wp) + epsilon_wp, +1.0_wp))
       Do While (Mod(comm%mxnode, itmp) /= 0)
         itmp = itmp - 1
@@ -5521,7 +5521,7 @@ Contains
 
       ! number of writers
 
-      tmp = Min(Real(comm%mxnode, wp), 8.0_wp * Real(comm%mxnode, wp)**0.5_wp)
+      tmp = Min(Real(comm%mxnode, wp), 8.0_wp * Sqrt(Real(comm%mxnode, wp)))
       itmp = 2**Int(Nearest(Log(tmp) / Log(2.0_wp) + epsilon_wp, +1.0_wp))
       Do While (Mod(comm%mxnode, itmp) /= 0)
         itmp = itmp - 1
