@@ -13,16 +13,16 @@ It can be built in serial form or parallel form via MPI. See instructions below 
 More info:
 
 - W. Smith, T.R. Forester
-  Computer Physics Communications, 79, 52-62 (1994), https://doi.org/10.1016/0010-4655(94)90229-1
+  Computer Physics Communications, **79**, 52-62 (1994), https://doi.org/10.1016/0010-4655(94)90229-1
 - W. Smith, T.R. Forester
-  Computer Physics Communications, 79, 63-77 (1994), https://doi.org/10.1016/0010-4655(94)90230-5
+  Computer Physics Communications, **79**, 63-77 (1994), https://doi.org/10.1016/0010-4655(94)90230-5
 - I.T. Todorov, W. Smith, K. Trachenko & M.T. Dove
-  J. Mater. Chem., 16, 1911-1918 (2006), https://doi.org/10.1039/B517931A
+  J. Mater. Chem., **16**, 1911-1918 (2006), https://doi.org/10.1039/B517931A
 - Martyn F. Guest, Alin M. Elena & Aidan B. G. Chalk
   Molecular Simulation (2019), https://doi.org/10.1080/08927022.2019.1603380
-- H. L. Devereux, C. Cockrell, A. M. Elena, Ian Bush, Aidan B. G. Chalk, Jim Madge, Ivan Scivetti, 
+- H. L. Devereux, C. Cockrell, A. M. Elena, Ian Bush, Aidan B. G. Chalk, Jim Madge, Ivan Scivetti,
   J. S. Wilkins, I. T. Todorov, W. Smith, K. Trachenko
-  *submitted for publication*, (2025), https://doi.org/10.48550/arXiv.2503.07526.
+  Computer Physics Communications, **323**, 110128 (2026), https://doi.org/10.1016/j.cpc.2026.110128
 
 * [Extra info on building and distro binaries](https://ccp5.gitlab.io/dlpoly-setup/)
 * [Exercises with dlpoly-py](https://gitlab.com/ccp5/dlpoly-py/-/tree/devel/examples?ref_type=heads)
