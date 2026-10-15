@@ -1,0 +1,3 @@
+## 2026-08-08 - Optimize floating-point exponentiation to integer and sqrt
+**Learning:** In Fortran, exponentiation with floating-point exponents like x**2.0_wp or x**0.5_wp compiles down to expensive standard library math functions like exp(y * log(x)), making it significantly slower than direct integer exponentiation x**2 or optimized intrinsic functions like sqrt(x). This creates a severe performance bottleneck in heavily used code paths such as two-body potential energy calculations and integrators.
+**Action:** Always prefer integer exponents (e.g. **2, **3) for whole number powers, and intrinsic functions like sqrt(x) for roots, instead of .0_wp suffixed floating-point exponents.

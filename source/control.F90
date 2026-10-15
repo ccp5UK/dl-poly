@@ -318,7 +318,7 @@ Contains
       Call params%retrieve('io_read_readers', itmp)
 
       If (itmp == 0) Then
-        rtmp = Min(Real(comm%mxnode, wp), 2.0_wp * Real(comm%mxnode, wp)**0.5_wp)
+        rtmp = Min(Real(comm%mxnode, wp), 2.0_wp * Sqrt(Real(comm%mxnode, wp)))
         itmp = 2**Int(Nearest(Log(rtmp) / Log(2.0_wp), +1.0_wp))
         Do While (Mod(comm%mxnode, itmp) /= 0)
           itmp = itmp - 1
@@ -328,7 +328,7 @@ Contains
           itmp = itmp - 1
         End Do
       Else If (itmp > comm%mxnode) Then
-        rtmp = Min(Real(comm%mxnode, wp), 2.0_wp * Real(comm%mxnode, wp)**0.5_wp)
+        rtmp = Min(Real(comm%mxnode, wp), 2.0_wp * Sqrt(Real(comm%mxnode, wp)))
         itmp = 2**Int(Nearest(Log(rtmp) / Log(2.0_wp), +1.0_wp))
         Do While (Mod(comm%mxnode, itmp) /= 0)
           itmp = itmp - 1
@@ -365,7 +365,7 @@ Contains
       Call info(message, .true.)
 
     Case Default
-      rtmp = Min(Real(comm%mxnode, wp), 2.0_wp * Real(comm%mxnode, wp)**0.5_wp)
+      rtmp = Min(Real(comm%mxnode, wp), 2.0_wp * Sqrt(Real(comm%mxnode, wp)))
       itmp = 2**Int(Nearest(Log(rtmp) / Log(2.0_wp), +1.0_wp))
       ! the number of readers is now ready to set
       Call io_set_parameters(io_data, user_n_io_procs_read=itmp)
@@ -444,7 +444,7 @@ Contains
       Call params%retrieve('io_write_writers', itmp)
 
       If (itmp == 0) Then
-        rtmp = Min(Real(comm%mxnode, wp), 8.0_wp * Real(comm%mxnode, wp)**0.5_wp)
+        rtmp = Min(Real(comm%mxnode, wp), 8.0_wp * Sqrt(Real(comm%mxnode, wp)))
         itmp = 2**Int(Nearest(Log(rtmp) / Log(2.0_wp), +1.0_wp))
         Do While (Mod(comm%mxnode, itmp) /= 0)
           itmp = itmp - 1
@@ -456,7 +456,7 @@ Contains
         End Do
 
       Else If (itmp > comm%mxnode) Then
-        rtmp = Min(Real(comm%mxnode, wp), 8.0_wp * Real(comm%mxnode, wp)**0.5_wp)
+        rtmp = Min(Real(comm%mxnode, wp), 8.0_wp * Sqrt(Real(comm%mxnode, wp)))
         itmp = 2**Int(Nearest(Log(rtmp) / Log(2.0_wp), +1.0_wp))
         Do While (Mod(comm%mxnode, itmp) /= 0)
           itmp = itmp - 1
@@ -490,7 +490,7 @@ Contains
       Continue
 
     Case Default
-      rtmp = Min(Real(comm%mxnode, wp), 8.0_wp * Real(comm%mxnode, wp)**0.5_wp)
+      rtmp = Min(Real(comm%mxnode, wp), 8.0_wp * Sqrt(Real(comm%mxnode, wp)))
       itmp = 2**Int(Nearest(Log(rtmp) / Log(2.0_wp), +1.0_wp))
       ! the number of writers is now ready to set
       Call io_set_parameters(io_data, user_n_io_procs_write=itmp)
